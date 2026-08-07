@@ -43,9 +43,7 @@ from .adversarial_features import (
 )
 
 
-# ---------------------------------------------------------------------------
 # LSH 桶分布特征 - 将基本块签名散列为固定维直方图
-# ---------------------------------------------------------------------------
 
 def block_signature_distribution(
     block_insns: Dict[int, List[str]],
@@ -70,9 +68,7 @@ def block_signature_distribution(
     return [c / total for c in bucket_counts]
 
 
-# ---------------------------------------------------------------------------
 # 块内不变量聚合 - 将每块特征聚合为全局统计量
-# ---------------------------------------------------------------------------
 
 def aggregate_block_invariants(
     block_invariants: List[BlockInvariantFeatures],
@@ -144,9 +140,7 @@ def aggregate_block_invariants(
     return vec[:64]
 
 
-# ---------------------------------------------------------------------------
 # CFG n-gram 特征压缩 - 稀疏 n-gram -> 固定维向量
-# ---------------------------------------------------------------------------
 
 def compress_cfg_ngrams(
     ngrams: Dict[Tuple[int, ...], CFGAwareNGram],
@@ -198,9 +192,7 @@ def compress_cfg_ngrams(
     return vec
 
 
-# ---------------------------------------------------------------------------
 # 主提取器 - 将三类特征拼接为统一向量
-# ---------------------------------------------------------------------------
 
 @dataclass
 class RobustFeatureVector:

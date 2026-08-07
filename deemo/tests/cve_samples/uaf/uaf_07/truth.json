@@ -1,0 +1,1 @@
+{"sample": "uaf_07_loop", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Loop-based UAF — bulk free in loop, then use after loop"}

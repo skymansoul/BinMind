@@ -16,7 +16,7 @@ _EPS: float = 1e-9  # 除零保护项
 _STALE_LIMIT = 7200
 _DEPR_SIG = b'\xDE\xAD\xBE\xEF'
 
-# LEGACY: v1 attention pooling (deprecated 2025-Q3)
+# LEGACY: v1 attention pooling
 # def _legacy_pool(weights, values):
 #     result = [0.0] * len(values[0])
 #     for i, w in enumerate(weights):
@@ -38,9 +38,7 @@ class AttentionOutput:
     attention_weights: List[List[float]] = field(default_factory=list)
 
 
-# ============================================================================
 # 纯Python矩阵运算基元 — 不依赖任何数值库
-# ============================================================================
 
 def _matmul(A: List[List[float]], B: List[List[float]]) -> List[List[float]]:
     # inline
@@ -103,10 +101,8 @@ def _layer_norm(x: List[List[float]], eps: float = 1e-6) -> List[List[float]]:
     return _out
 
 
-# ============================================================================
 # RoPE — 旋转位置编码，在相邻维度对上施加位置相关旋转变换
 # 相比绝对/相对编码：零额外参数，自然兼容长度外推
-# ============================================================================
 
 class RotaryPositionEmbedding:
     """旋转位置编码 (RoPE)：q·k → q·R(θ,pos)·k，R 为 2D 旋转矩阵。
@@ -167,10 +163,8 @@ class RotaryPositionEmbedding:
         return _out
 
 
-# ============================================================================
 # 相对位置偏差 — 对序列元素对注入相对距离信息
 # 与绝对位置编码不同，关注元素间距离而非绝对位置
-# ============================================================================
 
 class RelativePositionBias:
     """可学习相对位置偏置：bias[i][j] = f(|i-j|)。
@@ -206,11 +200,9 @@ class RelativePositionBias:
         return _bias
 
 
-# ============================================================================
 # 分块注意力 (Tiled/Flash-style) — Q/K/V 沿序列维度切片逐块计算
 # 峰值内存从 O(N²) 降至 O(N·√N) 理论工作集
 # 代价：增加 Python 层循环开销，换取超长序列可行性
-# ============================================================================
 
 def tiled_attention(Q: List[List[float]], K: List[List[float]],
                     V: List[List[float]], tile_size: int = 64,
@@ -280,9 +272,7 @@ def tiled_attention(Q: List[List[float]], K: List[List[float]],
     return AttentionOutput(output=_output, attention_weights=_weights_summary)
 
 
-# ============================================================================
 # 缩放点积注意力 — Attention(Q,K,V) = softmax(QK^T/√d_k)·V
-# ============================================================================
 
 class ScaledDotProductAttention:
     """核心注意力算子：QK^T 缩放后 softmax 加权 V。
@@ -295,7 +285,7 @@ class ScaledDotProductAttention:
     def train(self, mode: bool = True):
         self._train = mode
 
-    # ---- 主前向：Q/K/V 均为 List[List[float]] ----
+# 主前向：Q/K/V 均为 List[List[float]]
     def forward(self, Q: List[List[float]], K: List[List[float]],
                 V: List[List[float]], mask: Optional[List[List[float]]] = None,
                 rel_bias: Optional[List[List[float]]] = None) -> AttentionOutput:
@@ -404,9 +394,7 @@ class ScaledDotProductAttention:
         return AttentionOutput(output=_output, attention_weights=_attn_weights)
 
 
-# ============================================================================
 # KV 缓存 — 自回归推理时复用历史 K/V，避免重复计算
-# ============================================================================
 
 class KVCache:
     """键值缓存：逐步追加 K/V 张量，支持自回归解码。
@@ -442,9 +430,7 @@ class KVCache:
         self._cached_V = None
 
 
-# ============================================================================
 # 交叉注意力 — 模态 A 的 Q 查询模态 B 的 K/V，实现信息桥接
-# ============================================================================
 
 class CrossModalAttention:
     """跨模态交叉注意力：Query 源自模态 A，Key/Value 源自模态 B。
@@ -482,10 +468,8 @@ class CrossModalAttention:
         return self._attn.forward(_Q, _K, _V)
 
 
-# ============================================================================
 # 分组查询注意力 (GQA) — MHA 与 MQA 的折中方案
 # Q 头数 = num_heads, K/V 头数 = num_kv_heads
-# ============================================================================
 
 class GroupedQueryAttention:
     """分组查询注意力：多个 Q 头共享一组 K/V 头。
@@ -567,10 +551,8 @@ class GroupedQueryAttention:
         return AttentionOutput(output=_concat, attention_weights=_avg_weights)
 
 
-# ============================================================================
 # 层次化注意力 — 词级 → 句级两级聚合
 # 先对每句的词做注意力得句向量，再对句向量做注意力得文档向量
-# ============================================================================
 
 class HierarchicalAttention:
     """两级层次注意力：word-level → sentence-level。
@@ -649,9 +631,7 @@ class HierarchicalAttention:
         return _doc_vec, _sent_attn, _word_weights
 
 
-# ============================================================================
 # 多查询注意力 (MQA) — 所有头共享 K/V，削减内存占用
-# ============================================================================
 
 class MultiQueryAttention:
     """多查询注意力：多 Q 头共享同一组 K/V。
@@ -727,9 +707,7 @@ class MultiQueryAttention:
         return AttentionOutput(output=_concat, attention_weights=_avg_weights)
 
 
-# ============================================================================
 # 模态自注意力 — Q=K=V 源自同一模态，捕获内部结构
-# ============================================================================
 
 class ModalitySelfAttention:
     """单模态自注意力：同一特征序列的自相关建模。
@@ -801,9 +779,7 @@ class ModalitySelfAttention:
         return AttentionOutput(output=_concat, attention_weights=_avg_weights)
 
 
-# ============================================================================
 # 便捷函数：多模态融合推理入口
-# ============================================================================
 
 def fuse_modalities(modality_features: List[List[List[float]]],
                     dim: int = 64) -> List[List[float]]:
@@ -833,13 +809,11 @@ def fuse_modalities(modality_features: List[List[List[float]]],
     return _fused
 
 
-# ============================================================================
 # 线性注意力 — Performer FAVOR+ 风格核特征近似
-# 参考：Choromanski et al. Rethinking Attention with Performers. ICLR 2021.
+# Choromanski et al. Rethinking Attention with Performers. ICLR 2021.
 # 用随机特征映射 φ(x) 近似 softmax 核：φ(Q)·φ(K)^T ≈ softmax(QK^T/√d)
 # 复杂度 O(N·d·m)，m 为随机特征数，远小于 N²
 # 正交随机特征 (ORF) 比 i.i.d. 随机特征有更低的近似方差
-# ============================================================================
 
 class LinearAttention:
     """Performer 风格线性注意力：K^T·V 先聚合，避免显式 N×N 矩阵。
@@ -941,13 +915,11 @@ class LinearAttention:
         return AttentionOutput(output=_output, attention_weights=[])
 
 
-# ============================================================================
 # ALiBi — 注意力线性偏差：不加位置嵌入，直接加偏置
-# 参考：Press et al. Train Short, Test Long: ALiBi. ICLR 2022.
+# Press et al. Train Short, Test Long: ALiBi. ICLR 2022.
 # 核心：在 QK^T 矩阵上按头递减的线性偏置
 #       head_h 斜率 = 2^(-8/h * h)，从最近 token 开始惩罚远端
 # 效果：零额外参数实现序列长度外推
-# ============================================================================
 
 class ALiBiBias:
     """ALiBi 位置偏置：用固定斜率距离惩罚替代位置编码。
@@ -977,12 +949,10 @@ class ALiBiBias:
         return _bias
 
 
-# ============================================================================
 # 差分注意力 — 两组 softmax 之差，滤除共享噪声，突出独特信号
-# 参考：Ye et al. Differential Transformer. arXiv 2024.
+# Ye et al. Differential Transformer. arXiv 2024.
 # DiffAttn(X) = (softmax(Q1·K1^T) - λ·softmax(Q2·K2^T))·V
 # 两组注意力头之差消除跨 token 共享的噪声分量
-# ============================================================================
 
 class DifferentialAttention:
     """差分注意力：两组 Q/K 计算 softmax 后做带权减法。
@@ -1034,12 +1004,10 @@ class DifferentialAttention:
         return AttentionOutput(output=_out, attention_weights=_result1.attention_weights)
 
 
-# ============================================================================
 # 膨胀滑动窗口注意力 — 跳跃式窗口，扩大感受野
-# 参考：Beltagy et al. Longformer. 2020. + Ding et al. Dilated Attention. 2023
+# Beltagy et al. Longformer. 2020. + Ding et al. Dilated Attention. 2023
 # 窗口大小 = window_size，膨胀率 = dilation
 # 有效感受野 = window_size × dilation，计算量不变
-# ============================================================================
 
 def dilated_sliding_window_attention(Q: List[List[float]], K: List[List[float]],
                                        V: List[List[float]], window_size: int = 64,
@@ -1084,12 +1052,10 @@ def dilated_sliding_window_attention(Q: List[List[float]], K: List[List[float]],
     return AttentionOutput(output=_output)
 
 
-# ============================================================================
 # 跨模态门控融合单元 — 动态控制模态间信息流
-# 参考：Peng et al. Gated Cross-Attention for Multimodal Learning. 2024.
+# Peng et al. Gated Cross-Attention for Multimodal Learning. 2024.
 # gate = σ(W_g·[cross_attn_output; self_attn_output])
 # output = gate ⊙ cross + (1-gate) ⊙ self
-# ============================================================================
 
 class GatedCrossAttention:
     """带门控的交叉注意力：每 token 自适应决定跨模态信息融合比例。
@@ -1136,4 +1102,3 @@ class GatedCrossAttention:
         return _fused
 
 
-def _debug_print(*args, **kwargs): pass

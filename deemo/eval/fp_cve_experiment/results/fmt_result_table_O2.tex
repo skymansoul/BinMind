@@ -1,0 +1,15 @@
+% Auto-generated (FMT corpus, O2 variant)
+\begin{table}[htbp]
+\centering
+\caption{Format-string detection comparison (O2; 15 TP + 15 safe). FMT-SAC classifies the format source and verifies specifier-argument consistency, cutting false positives from 15 to 1.}
+\label{tab:fmt-o2}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Tool & TP & FP & FN & Precision & Recall & F1 \\
+\midrule
+FMT baseline (detector) & 15 & 15 & 0 & 0.500 & 1.000 & 0.667 \\
+\textbf{FMT-SAC (Ours)} & 15 & 1 & 0 & 0.938 & 1.000 & 0.968 \\
+\bottomrule
+\end{tabular}
+\end{table}

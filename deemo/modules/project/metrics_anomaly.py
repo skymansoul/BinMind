@@ -1,8 +1,8 @@
 # 指标异常检测: 自适应阈值/指数加权移动统计/多尺度残差/季节性分解启发式
-# 参考: KAN-AD "Time Series Anomaly Detection with Kolmogorov-Arnold Networks" (arXiv:2411.00278, ICML 2025)
-#       MTAD "Tools and Benchmarks for Multivariate Time Series Anomaly Detection" (arXiv:2401.06175, 2024)
-#       Argos "Agentic Time-Series Anomaly Detection with Autonomous Rule Generation via LLMs" (arXiv:2501.14170, 2025)
-#       TelecomTS数据集分析 (arXiv:2510.06063, 2025)
+# KAN-AD "Time Series Anomaly Detection with Kolmogorov-Arnold Networks" (, ICML 2025)
+#       MTAD "Tools and Benchmarks for Multivariate Time Series Anomaly Detection" (, 2024)
+#       Argos "Agentic Time-Series Anomaly Detection with Autonomous Rule Generation via LLMs" (, 2025)
+#       TelecomTS数据集分析 (, 2025)
 import math, logging, time, json, threading
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Callable

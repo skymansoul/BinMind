@@ -5,12 +5,12 @@
 # 方法: Sequitur风格层次结构归纳 + entropy辅助字段边界识别。
 # Sequitur在线性时间内从序列中提取层次产生式，天然适合协议格式自动逆向。
 #
-# 参考:
-#   Grammar-based whitebox fuzzing (Godefroid et al. PLDI 2008) — 从参考实现自动构建语法
-#   Parser-directed fuzzing (Mathis et al. PLDI 2019) — 解析器导向模糊测试
-#   ChatAFL (NDSS 2024) — "机器可读语法提取"模块思路
-#   Sequitur (Nevill-Manning & Witten 1997): identifying hierarchical structure in sequences
-#   Pulsar (Gascon et al. USENIX 2015): protocol reverse engineering via statistical analysis
+#
+#   Grammar-based whitebox fuzzing — 从参考实现自动构建语法
+#   Parser-directed fuzzing — 解析器导向模糊测试
+#   ChatAFL — "机器可读语法提取"模块思路
+#   Sequitur: identifying hierarchical structure in sequences
+#   Pulsar: protocol reverse engineering via statistical analysis
 import re
 import math
 import struct
@@ -49,7 +49,7 @@ class GrammarInferrer:
         self._digram_index: Dict[Tuple[str, str], List[int]] = defaultdict(list)
         self._token_freq: Counter = Counter()
 
-    # ---- token化 ----
+    # token化
     @staticmethod
     def tokenize_bytes(data: bytes) -> List[str]:
         """将字节序列转换为token列表。
@@ -79,7 +79,7 @@ class GrammarInferrer:
         """全部字节转换为"0xNN" hex token，适合严格二进制协议。"""
         return [f'0x{b:02X}' for b in data]
 
-    # ---- Sequitur核心 ----
+    # Sequitur核心
     def infer(self, samples: List[bytes]) -> Dict[str, GrammarRule]:
         """从样本集推断语法。返回规则字典。"""
         self._rules.clear()
@@ -133,7 +133,7 @@ class GrammarInferrer:
         self._rule_counter += 1
         return f'<R{self._rule_counter}>'
 
-    # ---- 后处理 ----
+    # 后处理
     def _postprocess_optional_fields(self) -> None:
         """对出现频率<50%的alternative标记为可选 (BNF '?')。
 
@@ -154,7 +154,7 @@ class GrammarInferrer:
                     # 低频 -> 标记为可选
                     alt.insert(0, '?')
 
-    # ---- 语法启发式 ----
+    # 语法启发式
     def detect_repeating_fields(self, samples: List[bytes]
                                 ) -> List[Tuple[int, int]]:
         """检测重复字段块 (如数组元素)。
@@ -209,7 +209,7 @@ class GrammarInferrer:
                         findings.append((offset, f'{endian}_u{sz * 8}'))
         return findings
 
-    # ---- 导出 ----
+    # 导出
     def to_bnf(self) -> str:
         lines = []
         for rule in self._rules.values():
@@ -228,7 +228,7 @@ class GrammarInferrer:
             ])
         return grammar
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             'rules': len(self._rules),
@@ -241,9 +241,7 @@ class GrammarInferrer:
         }
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口
-# ---------------------------------------------------------------------------
 def infer_from_messages(messages: List[bytes]) -> GrammarInferrer:
     """从一组协议消息中快速推断语法。"""
     inferrer = GrammarInferrer()

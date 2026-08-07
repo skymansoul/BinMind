@@ -1,0 +1,8 @@
+{
+  "id": "safe_02_path_clamped",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "cve": "",
+  "component": "",
+  "mode": "分配大小经 if(size>256) size=256 约束"
+}

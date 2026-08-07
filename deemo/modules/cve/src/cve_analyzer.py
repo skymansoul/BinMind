@@ -24,7 +24,7 @@ class CVEAnalyzer:
         兼容双KB模式——按需传入CVEKB JSON实例。"""
         self._kb = kb if kb is not None else get_kb()
 
-    # ---- 主分发 ----
+# 主分发
     def analyze(self, target: str) -> Dict[str, Any]:
         """主入口。接受文件路径、二进制路径或SBOM路径。
         按目标类型分发。
@@ -61,7 +61,7 @@ class CVEAnalyzer:
             return "binary"
         return "file"
 
-    # ---- 兼容方法 ----
+# 兼容方法
     def analyze_strings(self, strings: List[str]) -> List[CVEEntry]:
         """兼容方法——从提取的字符串中解析CVE ID并检索知识库。
         匹配CVE-YYYY-NNNNN格式。"""
@@ -80,7 +80,7 @@ class CVEAnalyzer:
 
         return list(found.values())
 
-    # ---- 知识库访问 ----
+# 知识库访问
     def get_cve(self, cve_id: str) -> Optional[CVEEntry]:
         """从知识库获取单个CVE条目。"""
         return self._kb.get(cve_id)
@@ -90,7 +90,7 @@ class CVEAnalyzer:
         entries, _ = self._kb.search(query=query, limit=limit)
         return entries
 
-    # ---- 语义搜索 ----
+# 语义搜索
     def semantic_search(self, query: str, top_n: int = 10) -> List[Tuple[CVEEntry, float]]:
         """基于BM25的CVE描述语义检索。
         每次调用新建CVESearchEngine——引擎未缓存。
@@ -101,7 +101,7 @@ class CVEAnalyzer:
         engine.build()
         return engine.search(query, top_n=top_n)
 
-    # ---- 富化 ----
+# 富化
     def enrich_with_epss(self, cve_ids: List[str]) -> Dict[str, Dict]:
         """批量EPSS富化。返回 cve_id -> {score, percentile}。"""
         try:
@@ -112,7 +112,7 @@ class CVEAnalyzer:
             # cve_epss不可用——返回空富化
             return {cve_id: {"epss_score": None, "epss_percentile": None} for cve_id in cve_ids}
 
-    # ---- 优先级排序 ----
+# 优先级排序
     def prioritize(self, entries: List[CVEEntry]) -> List[CVEEntry]:
         """按严重度 + EPSS评分 + SSVC决策排序。
         各评分模块独立try/except——单模块失败不中断整个管道。"""
@@ -159,7 +159,7 @@ class CVEAnalyzer:
         enriched.sort(key=sort_key)
         return enriched
 
-    # ---- 内部分析器 ----
+# 内部分析器
     def _analyze_file(self, path: str) -> Dict[str, Any]:
         """分析文本文件——读取内容并搜索知识库。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}

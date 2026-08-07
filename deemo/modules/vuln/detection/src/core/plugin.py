@@ -63,7 +63,7 @@ class PluginBase(ABC):
         return f"Plugin({self.name} v{self.version})"
 
 
-# ---- 插件管理器 ----
+# 插件管理器
 
 class PluginManager:
     """插件注册、发现与调度。
@@ -131,7 +131,7 @@ class PluginManager:
         return len(self._plugins)
 
 
-# ---- 插件发现 ----
+# 插件发现
 
 def discover_plugins(plugin_dir: str) -> List[PluginBase]:
     """从指定目录发现所有PluginBase子类。
@@ -166,7 +166,7 @@ def discover_plugins(plugin_dir: str) -> List[PluginBase]:
     return plugins
 
 
-# ---- 内置插件示例 ----
+# 内置插件示例
 
 class BufferOverflowDetector(PluginBase):
     """基于objdump反汇编中危险函数调用检测缓冲区溢出"""

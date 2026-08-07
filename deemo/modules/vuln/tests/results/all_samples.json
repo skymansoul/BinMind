@@ -1,0 +1,452 @@
+[
+  {
+    "sample": "cve-2015-0235_ghost",
+    "detected": true,
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.058
+  },
+  {
+    "sample": "cve-2016-4484_cryptsetup",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.058
+  },
+  {
+    "sample": "cve-2017-1000253_pie",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "cve-2018-1000001_glibc",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.058
+  },
+  {
+    "sample": "cve-2019-7304_dirty_sock",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.055
+  },
+  {
+    "sample": "cve-2021-3156_sudo_baron",
+    "detected": false,
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 2,
+    "time_s": 0.055
+  },
+  {
+    "sample": "cve-2022-0185_kernel",
+    "detected": true,
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 2,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.054
+  },
+  {
+    "sample": "cve-2023-24329_curl",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.055
+  },
+  {
+    "sample": "cve-2024-2961_glibc",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "cve_2017_1000112",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.021
+  },
+  {
+    "sample": "cve_2018_1000001",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.057
+  },
+  {
+    "sample": "cve_2019_12900",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.022
+  },
+  {
+    "sample": "cve_2020_10713",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.06
+  },
+  {
+    "sample": "cve_2021_3156",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.022
+  },
+  {
+    "sample": "cve_2022_0185",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "cve_2022_23222",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.04
+  },
+  {
+    "sample": "cve_2023_0179",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.021
+  },
+  {
+    "sample": "heap_cond_overflow",
+    "detected": true,
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.059
+  },
+  {
+    "sample": "heap_loop_overflow",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.025
+  },
+  {
+    "sample": "heap_nested_alloc",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.023
+  },
+  {
+    "sample": "heap_off_by_one",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.021
+  },
+  {
+    "sample": "heap_overflow_01_basic",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 1,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "heap_overflow_02_off_by_one",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.061
+  },
+  {
+    "sample": "heap_overflow_03_calloc",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.057
+  },
+  {
+    "sample": "heap_overflow_04_loop",
+    "detected": true,
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.055
+  },
+  {
+    "sample": "heap_overflow_05_realloc",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.058
+  },
+  {
+    "sample": "heap_overflow_06_struct",
+    "detected": true,
+    "raw": 5,
+    "confirmed": 1,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 4,
+    "time_s": 0.055
+  },
+  {
+    "sample": "heap_size_constrained",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.022
+  },
+  {
+    "sample": "heap_struct_padding",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.055
+  },
+  {
+    "sample": "sample01_heap_overflow_basic",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "sample02_off_by_one",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.057
+  },
+  {
+    "sample": "sample04_loop_overflow",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.058
+  },
+  {
+    "sample": "sample05_fmt_string_heap",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.059
+  },
+  {
+    "sample": "sample06_CVE-2022-24834",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "sample07_CVE-2023-25139",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.057
+  },
+  {
+    "sample": "sample08_int_overflow_to_heap",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.055
+  },
+  {
+    "sample": "sample09_CVE-2015-0235_ghost",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.056
+  },
+  {
+    "sample": "sample10_CVE-2020-10713",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.058
+  },
+  {
+    "sample": "sample11_realloc_misuse",
+    "detected": false,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 1,
+    "time_s": 0.056
+  },
+  {
+    "sample": "sample12_multi_free_heap",
+    "detected": false,
+    "raw": 4,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 4,
+    "time_s": 0.059
+  },
+  {
+    "sample": "sample13_struct_field_overflow",
+    "detected": true,
+    "raw": 3,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 2,
+    "time_s": 0.057
+  },
+  {
+    "sample": "sample14_nested_loop_heap",
+    "detected": false,
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.064
+  },
+  {
+    "sample": "sample15_CVE-2017-1000112",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 1,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.062
+  },
+  {
+    "sample": "sample16_safe_guarded",
+    "detected": true,
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 1,
+    "uncertain": 0,
+    "filtered": 0,
+    "time_s": 0.058
+  },
+  {
+    "sample": "sample17_false_positive_test",
+    "detected": true,
+    "raw": 5,
+    "confirmed": 1,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered": 4,
+    "time_s": 0.057
+  }
+]

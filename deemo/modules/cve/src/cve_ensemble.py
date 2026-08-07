@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 12:03
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-22 12:03
+# 修改: 2026-06-22 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: Stacking异构集成元评分
 # 异构集成元评分器 — 多模型Stacking融合的最优权重学习
 #
@@ -12,9 +12,9 @@
 #   Level-0: K个基评分器 {f_1, ..., f_K}, 每个输出分数s_i ∈ [0,1].
 #   Level-1: 元学习器 g(s_1, ..., s_K) → final_score.
 # 元学习器可以是:
-#   - 线性加权: score = softmax(w)·s (最简单, 可解释).
-#   - 逻辑回归: 校准基评分器的系统性偏.
-#   - 轻量MLP: 捕获基评分器间的非线性交互.
+# 线性加权: score = softmax(w)·s (最简单, 可解释).
+# 逻辑回归: 校准基评分器的系统性偏.
+# 轻量MLP: 捕获基评分器间的非线性交互.
 #
 # 训练: 在留出验证集上最小化交叉熵.
 #   使用L-BFGS风格的坐标下降优化权重.
@@ -31,9 +31,9 @@
 #   2. 上下文感知权重: 不同CWE类型使用不同的模型组合.
 #   3. Platt缩放+稀疏L1: 同时校准和选择, 避免过拟合.
 #
-# 参考:
-#   [Wolpert 1992] Stacked Generalization (Neural Networks)
-#   [van der Laan et al. 2007] Super Learner (Statistical Applications)
+#
+# Stacked Generalization (Neural Networks)
+# Super Learner (Statistical Applications)
 
 import math, random
 from collections import defaultdict

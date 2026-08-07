@@ -7,7 +7,7 @@
   传统置信区间依赖分布假设(正态性),在非对称风险分布下失效.
 
 方案:
-  Split-conformal prediction (Vovk et al. 2005).
+  Split-conformal prediction.
   1. 将历史风险观测分为训练集和校准集
   2. 在训练集上拟合 RiskScorer
   3. 在校准集上计算非一致性得分(残差绝对值)
@@ -22,8 +22,8 @@
   避免全局分位数在异构节点间的不适当覆盖(firmware节点和smart_contract
   节点的风险分布完全不同,强制共享分位数会导致区间过宽或覆盖不足).
 
-ref: Vovk, Gammerman, Shafer (2005) "Algorithmic Learning in a Random World".
-ref: Lei et al. (2018) "Distribution-Free Predictive Inference for Regression" --
+ref: Vovk, Gammerman, Shafer "Algorithmic Learning in a Random World".
+ref: Lei et al. "Distribution-Free Predictive Inference for Regression" --
      split-conformal 的理论保证.
 """
 

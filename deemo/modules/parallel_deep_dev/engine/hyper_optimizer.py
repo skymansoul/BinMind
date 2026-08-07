@@ -1,5 +1,5 @@
 """
-创建: 2025-07-31
+创建: 2026-07-13
 修改:
   2025-08-03 - GP/Cholesky 委托给 gp_regression.py，评分委托给 hyper_quality.py，持久化统一
 贝叶斯优化的生成管线超参自调优 — 跨会话学习最优参数组合。
@@ -54,9 +54,7 @@ from parallel_deep_dev.engine.gp_regression import (
 )
 
 
-# ---------------------------------------------------------------------------
 # 参数空间定义
-# ---------------------------------------------------------------------------
 PARAM_BOUNDS: dict[str, tuple[float, float]] = {
     "temperature": (0.1, 0.9),
     "max_tokens": (4000.0, 24000.0),
@@ -103,9 +101,7 @@ class HyperOptimizer:
         self._observations: list[Observation] = []
         self._load_observations()
 
-    # ------------------------------------------------------------------
     # 观测记录
-    # ------------------------------------------------------------------
 
     def record(
         self,
@@ -125,9 +121,7 @@ class HyperOptimizer:
         self._observations.append(obs)
         self._save_observations()
 
-    # ------------------------------------------------------------------
     # 参数推荐
-    # ------------------------------------------------------------------
 
     def suggest(self, n_random_restarts: int = 20) -> Suggestion | None:
         """使用 GP+EI 推荐下一组最优参数。
@@ -184,9 +178,7 @@ class HyperOptimizer:
             return None
         return max(self._observations, key=lambda o: o.score)
 
-    # ------------------------------------------------------------------
     # 统计
-    # ------------------------------------------------------------------
 
     def stats(self) -> dict:
         if not self._observations:
@@ -205,9 +197,7 @@ class HyperOptimizer:
             ),
         }
 
-    # ------------------------------------------------------------------
     # 持久化
-    # ------------------------------------------------------------------
 
     def _save_observations(self) -> None:
         try:
@@ -242,9 +232,7 @@ class HyperOptimizer:
                 detail=d.get("detail", {}),
             ))
 
-    # ------------------------------------------------------------------
     # 内部
-    # ------------------------------------------------------------------
 
     def _params_to_vector(self, params: dict[str, float]) -> list[float]:
         vec: list[float] = []
@@ -290,8 +278,6 @@ class HyperOptimizer:
 
 # GP回归/线性代数/正态分布委托给 engine/gp_regression.py
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 # 质量评分 + 会话记录委托给 engine/hyper_quality.py

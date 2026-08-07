@@ -1,18 +1,17 @@
 """UAF 使用链追踪器 — free 后指针通过赋值/返回值/结构体字段逃逸的完整追踪.
 
-创建: 2025-08-05
+创建: 2026-07-04
 目的: uaf_candidate_scorer.py 仅做函数内三因素概率评分，对跨函数 UAF 无力。
       本模块追踪 free(p) 后 p 的别名通过赋值链、函数返回值、结构体字段存储
       传播到后续解引用的完整路径，将 UAF 检测从概率猜测提升为路径证据。
 
-方法依据: arXiv:2410.23764 (Toman et al., 2024) 的编译期 UAF 静态检测框架
+方法依据: 的编译期 UAF 静态检测框架
           使用 Andersen 式包含分析追踪指针赋值闭包。本模块在二进制 IR 层面
           做简化版：不依赖类型信息，仅追踪寄存器/内存位置的赋值传递。
 """
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class UseChain:
@@ -23,7 +22,6 @@ class UseChain:
     escape_path: List[str]     # 中间传递节点
     chain_length: int
     confidence: float           # 0-1, 基于路径直接性
-
 
 class UAFUseChainTracker:
     """UAF 使用链追踪器 — free→use 的完整路径重建.

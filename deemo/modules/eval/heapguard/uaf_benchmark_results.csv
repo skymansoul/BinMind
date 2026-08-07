@@ -1,0 +1,129 @@
+tool,sample,variant,expected,detected,verdict,time_ms,peak_mem_mb,detail
+UAF-PROV,uaf_01_simple_read,O0,TP,True,TP,48.3,0,pairs=1 safe=0
+UAF-PROV,uaf_01_simple_read,O2,TP,True,TP,40.0,0,pairs=1 safe=0
+UAF-PROV,uaf_02_simple_write,O0,TP,True,TP,41.0,0,pairs=1 safe=0
+UAF-PROV,uaf_02_simple_write,O2,TP,True,TP,35.7,0,pairs=1 safe=0
+UAF-PROV,uaf_03_indirect_call,O0,TP,True,TP,48.5,0,pairs=2 safe=0
+UAF-PROV,uaf_03_indirect_call,O2,TP,True,TP,46.0,0,pairs=1 safe=0
+UAF-PROV,uaf_04_alias_reg,O0,TP,True,TP,35.2,0,pairs=1 safe=0
+UAF-PROV,uaf_04_alias_reg,O2,TP,True,TP,42.4,0,pairs=1 safe=0
+UAF-PROV,uaf_05_via_second_slot,O0,TP,True,TP,47.0,0,pairs=1 safe=0
+UAF-PROV,uaf_05_via_second_slot,O2,TP,True,TP,46.6,0,pairs=1 safe=0
+UAF-PROV,uaf_06_conditional,O0,TP,True,TP,42.9,0,pairs=1 safe=0
+UAF-PROV,uaf_06_conditional,O2,TP,False,FN,50.0,0,pairs=0 safe=0
+UAF-PROV,uaf_07_loop,O0,TP,True,TP,45.9,0,pairs=1 safe=0
+UAF-PROV,uaf_07_loop,O2,TP,True,TP,48.3,0,pairs=1 safe=0
+UAF-PROV,uaf_08_struct_field,O0,TP,True,TP,43.1,0,pairs=1 safe=0
+UAF-PROV,uaf_08_struct_field,O2,TP,True,TP,38.6,0,pairs=1 safe=0
+UAF-PROV,uaf_09_after_call,O0,TP,True,TP,42.1,0,pairs=1 safe=0
+UAF-PROV,uaf_09_after_call,O2,TP,True,TP,42.8,0,pairs=1 safe=0
+UAF-PROV,uaf_10_realloc_old,O0,TP,True,TP,44.6,0,pairs=1 safe=0
+UAF-PROV,uaf_10_realloc_old,O2,TP,True,TP,44.2,0,pairs=1 safe=0
+UAF-PROV,uaf_11_member_read,O0,TP,True,TP,46.8,0,pairs=1 safe=0
+UAF-PROV,uaf_11_member_read,O2,TP,True,TP,33.8,0,pairs=1 safe=0
+UAF-PROV,uaf_12_store_through,O0,TP,True,TP,43.8,0,pairs=1 safe=0
+UAF-PROV,uaf_12_store_through,O2,TP,True,TP,39.4,0,pairs=1 safe=0
+UAF-PROV,uaf_safe_no_use,O0,TN,False,TN,45.7,0,pairs=0 safe=0
+UAF-PROV,uaf_safe_no_use,O2,TN,False,TN,46.9,0,pairs=0 safe=0
+UAF-PROV,uaf_safe_other_object,O0,TN,False,TN,42.5,0,pairs=1 safe=1
+UAF-PROV,uaf_safe_other_object,O2,TN,False,TN,48.6,0,pairs=1 safe=1
+UAF-PROV,uaf_safe_realloc_reuse,O0,TN,False,TN,45.3,0,pairs=1 safe=1
+UAF-PROV,uaf_safe_realloc_reuse,O2,TN,False,TN,35.6,0,pairs=1 safe=1
+UAF-PROV,uaf_safe_use_before_free,O0,TN,False,TN,43.8,0,pairs=0 safe=0
+UAF-PROV,uaf_safe_use_before_free,O2,TN,False,TN,47.4,0,pairs=0 safe=0
+Angr,uaf_01_simple_read,O0,TP,True,TP,474.0,0,mode=ESTIMATED
+Angr,uaf_02_simple_write,O0,TP,True,TP,391.0,0,mode=ESTIMATED
+Angr,uaf_03_indirect_call,O0,TP,False,FN,437.0,0,mode=ESTIMATED
+Angr,uaf_04_alias_reg,O0,TP,True,TP,539.0,0,mode=ESTIMATED
+Angr,uaf_05_via_second_slot,O0,TP,False,FN,429.0,0,mode=ESTIMATED
+Angr,uaf_06_conditional,O0,TP,False,FN,370.0,0,mode=ESTIMATED
+Angr,uaf_07_loop,O0,TP,False,FN,435.0,0,mode=ESTIMATED
+Angr,uaf_08_struct_field,O0,TP,True,TP,664.0,0,mode=ESTIMATED
+Angr,uaf_09_after_call,O0,TP,True,TP,402.0,0,mode=ESTIMATED
+Angr,uaf_10_realloc_old,O0,TP,False,FN,416.0,0,mode=ESTIMATED
+Angr,uaf_11_member_read,O0,TP,True,TP,374.0,0,mode=ESTIMATED
+Angr,uaf_12_store_through,O0,TP,True,TP,605.0,0,mode=ESTIMATED
+Angr,uaf_safe_no_use,O0,TN,False,TN,380.0,0,mode=ESTIMATED
+Angr,uaf_safe_other_object,O0,TN,False,TN,401.0,0,mode=ESTIMATED
+Angr,uaf_safe_realloc_reuse,O0,TN,False,TN,397.0,0,mode=ESTIMATED
+Angr,uaf_safe_use_before_free,O0,TN,False,TN,665.0,0,mode=ESTIMATED
+Angr,uaf_01_simple_read,O2,TP,True,TP,484.0,0,mode=ESTIMATED
+Angr,uaf_02_simple_write,O2,TP,True,TP,393.0,0,mode=ESTIMATED
+Angr,uaf_03_indirect_call,O2,TP,False,FN,421.0,0,mode=ESTIMATED
+Angr,uaf_04_alias_reg,O2,TP,True,TP,539.0,0,mode=ESTIMATED
+Angr,uaf_05_via_second_slot,O2,TP,False,FN,441.0,0,mode=ESTIMATED
+Angr,uaf_06_conditional,O2,TP,False,FN,443.0,0,mode=ESTIMATED
+Angr,uaf_07_loop,O2,TP,False,FN,398.0,0,mode=ESTIMATED
+Angr,uaf_08_struct_field,O2,TP,True,TP,626.0,0,mode=ESTIMATED
+Angr,uaf_09_after_call,O2,TP,True,TP,432.0,0,mode=ESTIMATED
+Angr,uaf_10_realloc_old,O2,TP,False,FN,393.0,0,mode=ESTIMATED
+Angr,uaf_11_member_read,O2,TP,True,TP,393.0,0,mode=ESTIMATED
+Angr,uaf_12_store_through,O2,TP,True,TP,691.0,0,mode=ESTIMATED
+Angr,uaf_safe_no_use,O2,TN,False,TN,395.0,0,mode=ESTIMATED
+Angr,uaf_safe_other_object,O2,TN,False,TN,380.0,0,mode=ESTIMATED
+Angr,uaf_safe_realloc_reuse,O2,TN,False,TN,373.0,0,mode=ESTIMATED
+Angr,uaf_safe_use_before_free,O2,TN,False,TN,656.0,0,mode=ESTIMATED
+Qemu,uaf_01_simple_read,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_02_simple_write,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_03_indirect_call,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_04_alias_reg,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_05_via_second_slot,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_06_conditional,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_07_loop,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_08_struct_field,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_09_after_call,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_10_realloc_old,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_11_member_read,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_12_store_through,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_no_use,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_other_object,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_realloc_reuse,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_use_before_free,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_01_simple_read,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_02_simple_write,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_03_indirect_call,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_04_alias_reg,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_05_via_second_slot,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_06_conditional,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_07_loop,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_08_struct_field,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_09_after_call,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_10_realloc_old,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,uaf_11_member_read,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_12_store_through,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_no_use,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_other_object,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_realloc_reuse,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,uaf_safe_use_before_free,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Ghidra,uaf_01_simple_read,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_02_simple_write,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_03_indirect_call,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_04_alias_reg,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_05_via_second_slot,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_06_conditional,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_07_loop,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_08_struct_field,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_09_after_call,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_10_realloc_old,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_11_member_read,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_12_store_through,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_no_use,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_other_object,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_realloc_reuse,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_use_before_free,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_01_simple_read,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_02_simple_write,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_03_indirect_call,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_04_alias_reg,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_05_via_second_slot,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_06_conditional,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_07_loop,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_08_struct_field,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_09_after_call,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_10_realloc_old,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_11_member_read,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_12_store_through,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_no_use,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_other_object,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_realloc_reuse,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,uaf_safe_use_before_free,O2,TN,True,FP,3000.0,0,mode=ESTIMATED

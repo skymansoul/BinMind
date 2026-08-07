@@ -45,9 +45,7 @@ from enum import Enum, auto
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 归一化 IR 指令定义
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CanonicalIRInsn:
@@ -61,9 +59,7 @@ class CanonicalIRInsn:
     original_text: str = ''
 
 
-# ---------------------------------------------------------------------------
 # 寄存器重命名表
-# ---------------------------------------------------------------------------
 
 # x86_64 规范寄存器 -> 虚拟寄存器
 _X86_RENAME = {
@@ -118,9 +114,7 @@ def rename_register(reg: str, arch: str = 'x86_64') -> str:
     return _X86_RENAME.get(r, f'%{r}')
 
 
-# ---------------------------------------------------------------------------
 # Pass 0: 汇编 -> 归一化 IR 提升
-# ---------------------------------------------------------------------------
 
 def lift_to_canonical_ir(
     asm_lines: List[str],
@@ -224,9 +218,7 @@ def lift_to_canonical_ir(
     return ir_list
 
 
-# ---------------------------------------------------------------------------
 # Pass 1: 窥孔归约 - 编译器特有模式 -> 规范形式
-# ---------------------------------------------------------------------------
 
 _PEEPHOLE_RULES = [
     # 规则格式: (match_pattern, result_pattern)
@@ -308,9 +300,7 @@ def _apply_combined_peephole(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIR
     return result
 
 
-# ---------------------------------------------------------------------------
 # Pass 2: 常量折叠 - IR 级别的预计算
-# ---------------------------------------------------------------------------
 
 def apply_constant_folding(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRInsn]:
     """IR 级别的常量折叠--计算编译时常量表达式
@@ -361,9 +351,7 @@ def apply_constant_folding(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRIn
     return result
 
 
-# ---------------------------------------------------------------------------
 # Pass 3: 死代码消除
-# ---------------------------------------------------------------------------
 
 def apply_dead_code_elimination(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRInsn]:
     """消除对输出无影响的指令--后向活性分析
@@ -411,9 +399,7 @@ def apply_dead_code_elimination(ir_list: List[CanonicalIRInsn]) -> List[Canonica
     return [ir_list[i] for i in range(len(ir_list)) if keep[i]]
 
 
-# ---------------------------------------------------------------------------
 # 完整归一化流水线
-# ---------------------------------------------------------------------------
 
 def canonicalize(
     asm_lines: List[str],

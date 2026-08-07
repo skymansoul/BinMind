@@ -5,11 +5,10 @@
 2025-07-28 10:51 - 修复参考点设为 nadir_point × 1.1 时 double-counting 的边界问题
 2025-07-31 16:05 - 归档持久化与 CorpusManager 的 seed 序列化格式兼容
 
-参考:
-  AMOS2 (The Computer Journal, 2026)          -- 状态依赖/独立种子度量 + AHP-TOPSIS 排序
-  NSGA-II (Deb et al., IEEE TEC 2002)         -- 快速非支配排序算法
-  HypE (Bader & Zitzler, ECJ 2011)            -- 基于超体积的进化多目标优化
-  EcoFuzz (USENIX 2020)                       -- exploration/exploitation 自适应切换
+  AMOS2          -- 状态依赖/独立种子度量 + AHP-TOPSIS 排序
+  NSGA-II         -- 快速非支配排序算法
+  HypE            -- 基于超体积的进化多目标优化
+  EcoFuzz                        -- exploration/exploitation 自适应切换
 
 设计目标:
   fuzzing 中种子的 "质量" 是多维度的: 覆盖面、执行速度、代数新鲜度、
@@ -33,7 +32,6 @@ from typing import Callable, Dict, FrozenSet, List, Optional, Set, Tuple
 # 归档文件标识
 _ARCHIVE_MAGIC = b"BMPA"  # BinMind Pareto Archive
 
-
 @dataclass
 class ParetoEntry:
     """Pareto 归档中的一条记录。"""
@@ -42,7 +40,6 @@ class ParetoEntry:
     generation: int                      # 归档该种子时的代数
     archived_at: float = field(default_factory=time.time)
     metadata: dict = field(default_factory=dict)
-
 
 def _dominates(a: Tuple[float, ...], b: Tuple[float, ...]) -> bool:
     """判断 a 是否 Pareto-支配 b: a 在所有维度 ≥ b, 且至少一个维度严格 >。
@@ -56,7 +53,6 @@ def _dominates(a: Tuple[float, ...], b: Tuple[float, ...]) -> bool:
         if va > vb:
             at_least_one_strict = True
     return at_least_one_strict
-
 
 def _non_dominated_sort(objectives: List[Tuple[float, ...]]
                         ) -> List[List[int]]:
@@ -99,7 +95,6 @@ def _non_dominated_sort(objectives: List[Tuple[float, ...]]
 
     return fronts
 
-
 class ParetoArchive:
     """维护跨代 Pareto 前沿的种子归档器。
 
@@ -129,7 +124,7 @@ class ParetoArchive:
             "edge_count", "inv_exec_time", "generation_freshness", "rarity"
         ]
         self._entries: Dict[str, ParetoEntry] = {}
-        # 参考点用于 hypervolume 计算 (每个维度的最小值)
+        # 点用于 hypervolume 计算 (每个维度的最小值)
         self._reference_point: Optional[Tuple[float, ...]] = None
         self._total_submitted: int = 0
         self._total_accepted: int = 0

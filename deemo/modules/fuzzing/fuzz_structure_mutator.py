@@ -5,7 +5,7 @@
   - 块级操作: 交换/复制/删除/倒转整块数据
   - 协议感知: 识别length/checksum/magic字段并定向处理
   - 自适应算子选择: MOPT风格的变异概率在线更新
-G2Fuzz (USENIX Security 2025, arXiv:2501.19282), AFL++ MOPT, 字典变异系统综述 (SAJC 2025)。
+G2Fuzz , AFL++ MOPT, 字典变异系统综述。
 """
 
 import math
@@ -18,7 +18,6 @@ from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
-
 
 class StructMutOp(str, Enum):
     """结构感知变异操作枚举。"""
@@ -33,8 +32,7 @@ class StructMutOp(str, Enum):
     CHUNK_REVERSE = "chunk_reverse"      # 反转字节序
     DICT_GUIDED_FIELD = "dict_guided_field"  # 字典token注入字段
 
-
-# ==== 字段边界检测 ====
+# 字段边界检测
 # 基于EntropyBoundaryDetector的边界位置将种子切分为字段列表
 
 @dataclass
@@ -48,8 +46,7 @@ class DataField:
     is_checksum_field: bool = False   # 校验和字段标记
     is_magic_field: bool = False      # 魔数字段标记
 
-
-# ==== 字段划分引擎 ====
+# 字段划分引擎
 
 class FieldPartitioner:
     """熵边界 + 启发式模式匹配的字段划分。
@@ -138,7 +135,6 @@ class FieldPartitioner:
             if f.entropy < 2.0 and fsize <= 8:
                 f.is_checksum_field = True
 
-
 def _field_entropy(data: bytes) -> float:
     """字节香农熵。空数据返回0.0。"""
     if not data:
@@ -151,8 +147,7 @@ def _field_entropy(data: bytes) -> float:
         ent -= p * math.log2(p)
     return ent
 
-
-# ==== 结构感知变异器 ====
+# 结构感知变异器
 
 class StructureAwareMutator:
     """对字段结构执行语义保留变异操作。
@@ -230,7 +225,7 @@ class StructureAwareMutator:
         else:
             return None
 
-    # -- 具体变异操作 --
+# 具体变异操作
 
     def _do_field_swap(self, raw: bytearray, fields: List[DataField]) -> bytes:
         """随机交换两个字段的内容区段。"""
@@ -312,7 +307,7 @@ class StructureAwareMutator:
         raw.insert(ins, random.randint(0, 255))
         return bytes(raw)
 
-    # -- MOPT概率更新 --
+# MOPT概率更新
 
     def notify_result(self, op: StructMutOp, produced_new_coverage: bool) -> None:
         """记录一次变异结果, 每50轮触发概率重分配。"""
@@ -355,8 +350,7 @@ class StructureAwareMutator:
             }
         return stats
 
-
-# ==== 协议格式检测 ====
+# 协议格式检测
 # 识别常见格式以启发结构感知变异策略
 
 def detect_protocol_format(data: bytes) -> str:
@@ -406,8 +400,7 @@ def detect_protocol_format(data: bytes) -> str:
 
     return "unknown"
 
-
-# ==== 便捷入口 ====
+# 便捷入口
 
 def structure_aware_mutate(
     seed_data: bytes,
@@ -422,5 +415,4 @@ def structure_aware_mutate(
         mutator = StructureAwareMutator()
     return mutator.mutate(seed_data, boundaries)
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

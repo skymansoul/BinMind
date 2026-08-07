@@ -19,7 +19,7 @@ _LATERAL_TIDS = {
     "ssh": "T1021.004",
 }
 
-# ===== API 与字符串特征库 =====
+# API 与字符串特征库
 _WMI_APIS = [
     "IWbemServices", "IWbemLocator", "ConnectServer",
     "ExecMethod", "ExecQuery", "Win32_Process",

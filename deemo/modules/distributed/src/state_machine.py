@@ -1,11 +1,11 @@
 # 严格状态机 — 为 Task 生命周期提供显式转移表
 # 显式状态跟踪: 任务生命周期的确定性建模是故障恢复策略的前提
-# 参考 AWS Step Functions 的状态转移思想：每步转移前验证合法性
+# AWS Step Functions 的状态转移思想：每步转移前验证合法性
 #
 # 设计了可插拔 Guard/Action 机制：
-#   - Guard:   转移前检查条件（如：重试次数未超限）
-#   - Action:  转移后的副作用（如：更新时间戳、发事件）
-#   - 非法转移抛出 InvalidTransition，不再静默退化
+# Guard:   转移前检查条件（如：重试次数未超限）
+# Action:  转移后的副作用（如：更新时间戳、发事件）
+# 非法转移抛出 InvalidTransition，不再静默退化
 #
 # 与 models.py 中的 TaskStatus 区别：models 只是枚举，state_machine 是执行规则
 
@@ -31,7 +31,7 @@ class InvalidTransition(Exception):
         self.reason = reason
 
 
-# ===== 转移表构建器 =====
+# 转移表构建器
 
 class TransitionTable:
     """状态转移图 — 有向图，查询某状态可合法转移到的目标集合。
@@ -63,7 +63,7 @@ class TransitionTable:
         return specific | self._wildcard
 
 
-# ===== Guard / Action =====
+# Guard / Action
 
 class TransitionGuard:
     """转移守卫 — 返回 False 阻止转移"""
@@ -111,7 +111,7 @@ class LogTransitionAction(TransitionAction):
         )
 
 
-# ===== 默认任务状态机 =====
+# 默认任务状态机
 
 _TASK_TRANSITIONS = TransitionTable()
 _TASK_TRANSITIONS.allow("pending", "queued")
@@ -135,7 +135,7 @@ _DEFAULT_ACTIONS: List[TransitionAction] = [
 ]
 
 
-# ===== 状态机引擎 =====
+# 状态机引擎
 
 class TaskStateMachine:
     """任务状态机执行引擎。
@@ -230,7 +230,7 @@ class TaskStateMachine:
         self._actions.append(action)
 
 
-# ===== 自定义状态机构建器 =====
+# 自定义状态机构建器
 
 class StateMachineBuilder:
     """流式构建任务状态机的工具类。

@@ -1,7 +1,7 @@
 """
 密码学Oracle统计验证引擎 — 基于重复试验和假设检验的蜕变关系自动验证。
 
-创建: 2025-09-21 14:37
+创建: 2026-04-30 14:37
 修改:
   2025-09-21 14:37 — 初始实现: 二项检验/置换检验/序贯概率比/效应量估计
 
@@ -20,11 +20,10 @@
 
   输出: 每个oracle的p值 + 效应量(Cohen's h) + 所需最小样本量估计。
 
-参考:
-  - Fisher (1925): 精确检验 — 二项分布p值。
-  - Wald (1945): Sequential Probability Ratio Test — 边试验边决策。
-  - Cohen (1988): Statistical Power Analysis — 效应量h的定义。
-  - NIST SP 800-22 (2010): 随机数统计检验套件 — 检验设计方法论参考。
+  - Fisher: 精确检验 — 二项分布p值。
+  - Wald: Sequential Probability Ratio Test — 边试验边决策。
+  - Cohen: Statistical Power Analysis — 效应量h的定义。
+  - NIST SP 800-22: 随机数统计检验套件 — 检验设计方法论参考。
 
 边界条件:
   - 统计检验的质量取决于试验次数N — N<30时p值不稳定。
@@ -36,7 +35,6 @@ import math
 import os
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
-
 
 @dataclass
 class StatVerdict:
@@ -50,8 +48,7 @@ class StatVerdict:
     verdict: str = "INCONCLUSIVE"   # PASS / FAIL / INCONCLUSIVE
     min_trials_needed: int = 0      # 要达到80%检验力所需的最小试验数估计
 
-
-# ── L1: 精确二项检验 ──
+# L1: 精确二项检验
 
 def binomial_verdict(oracle_fn: Callable[[], bool],
                      trials: int = 100,
@@ -123,8 +120,7 @@ def binomial_verdict(oracle_fn: Callable[[], bool],
         verdict='PASS' if passed else 'FAIL',
         min_trials_needed=min_n)
 
-
-# ── L2: 置换检验 (雪崩效应) ──
+# L2: 置换检验 (雪崩效应)
 
 def permutation_test_avalanche(samples: List[int],   # 观测汉明距离列表
                                 digest_bits: int = 256,
@@ -180,8 +176,7 @@ def permutation_test_avalanche(samples: List[int],   # 观测汉明距离列表
         verdict='PASS' if passed else 'FAIL',
         min_trials_needed=min_n)
 
-
-# ── L3: 序贯概率比检验 (SPRT) ──
+# L3: 序贯概率比检验 (SPRT)
 
 def sprt_verify(oracle_fn: Callable[[], bool],
                 theta_0: float = 0.95,   # H₀: 通过率 ≥ 0.95
@@ -259,8 +254,7 @@ def sprt_verify(oracle_fn: Callable[[], bool],
         effect_size=round(abs(theta_0 - theta_1), 4),
         verdict='INCONCLUSIVE', min_trials_needed=n_trials * 2)
 
-
-# ── 便捷入口 ──
+# 便捷入口
 
 def run_statistical_verification(oracle_fn: Callable[[], bool],
                                   method: str = 'auto',

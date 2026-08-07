@@ -169,7 +169,7 @@ class EBPFTaintTracker:
         cls, op = insn["cls"], insn["op_alu"]
         dst, src, imm, off = insn["dst"], insn["src"], insn["imm"], insn["off"]
 
-        # 条件分支隐式流追踪——VeRefine (OOPSLA 2025) 概念：
+        # 条件分支隐式流追踪——VeRefine 概念：
         # 分支条件依赖污染数据时，分支体内所有赋值均获得隐式污染标记，
         # 因控制流本身携带信息量。
         if cls == BPF_JMP and op != 0x80 and op != 0x90:
@@ -279,7 +279,7 @@ class EBPFTaintTracker:
                     result: TrackerResult):
         # 隐式流污染传播：若当前指令位于受污染的分支体内，
         # 即使源操作数无直接污染，目标操作数也获得隐式污染标记。
-        # 这是 VeRefine (OOPSLA 2025) 中流敏感精化类型的核心机制。
+        # 这是 VeRefine 中流敏感精化类型的核心机制。
         has_implicit = False
         for branch_idx, branch_tags in self._branch_taint.items():
             if branch_idx < _find_branch_dominator_end(
@@ -408,7 +408,7 @@ def create_ebpf_tracker() -> EBPFTaintTracker:
     return EBPFTaintTracker()
 
 
-# ─── 批量跟踪与导出 ───
+# 批量跟踪与导出
 
 def batch_track(programs: list[bytes]) -> list[dict]:
     """批量污点跟踪多个 eBPF 程序，返回每个程序的摘要。"""

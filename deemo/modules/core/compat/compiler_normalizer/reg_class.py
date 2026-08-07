@@ -31,7 +31,7 @@ ARM64 用 X0, MIPS 用 V0。面向人类的语义是"函数返回值寄存器",
   - ref: MIPS o32 ABI — A0-A3 用于参数, V0-V1 用于返回值
 """
 
-# ===== 寄存器类定义 =====
+# 寄存器类定义
 # 从设计角度, 完整的寄存器类应包含:
 #   ARG_n     — 函数调用的第 n 个参数
 #   RET       — 函数返回值
@@ -70,7 +70,7 @@ class RegClass:
         return hash((self.kind, self.subkind, self.index))
 
 
-# ===== 寄存器 → 类映射表 =====
+# 寄存器 → 类映射表
 # {规范寄存器名: RegClass}
 # 所有寄存器名大写, 使用 64 位名 (RAX 而非 EAX/AX/AL)
 
@@ -79,7 +79,7 @@ REG_CLASS_TABLE: dict[str, RegClass] = {}
 def _build_reg_class_table():
     """为一组架构构建寄存器类映射表。"""
 
-    # ── x86-64 (System V AMD64 ABI) ──
+# x86-64 (System V AMD64 ABI)
     sv64_params = [
         ('RDI', 1), ('RSI', 2), ('RDX', 3), ('RCX', 4),
         ('R8', 5), ('R9', 6),
@@ -100,12 +100,12 @@ def _build_reg_class_table():
     REG_CLASS_TABLE['RDI'] = RegClass('arg', 'int', 1)
     REG_CLASS_TABLE['RSI'] = RegClass('arg', 'int', 2)
 
-    # ── Microsoft x64 Calling Convention ──
+# Microsoft x64 Calling Convention
     # 与 System V 的主要差异: 前 4 个参数使用 RCX,RDX,R8,R9
     # 此处为 System V 优先, 如需 MSVC 适配需调用方切换映射表
     # 此段后续可微调, 当前先保证正确性
 
-    # ── ARM64 (AAPCS) ──
+# ARM64 (AAPCS)
     # 先注册所有特殊用途寄存器, 再做批量分类 — 避免批量循环中的 KeyError
     REG_CLASS_TABLE['SP'] = RegClass('stack_ptr', '', -1)
     REG_CLASS_TABLE['X29'] = RegClass('frame_ptr', '', -1)
@@ -129,7 +129,7 @@ def _build_reg_class_table():
     for i in range(19, 29):
         REG_CLASS_TABLE[f'X{i}'] = RegClass('gp_saved', 'callee_saved', -1)
 
-    # ── MIPS32 (o32 ABI) ──
+# MIPS32 (o32 ABI)
     for i, r in enumerate(['A0', 'A1', 'A2', 'A3'], 1):
         REG_CLASS_TABLE[r] = RegClass('arg', 'int', i)
     REG_CLASS_TABLE['V0'] = RegClass('ret', 'int', 0)

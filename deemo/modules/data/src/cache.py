@@ -1,5 +1,5 @@
 # 分级缓存 —— L1 内存 LRU+TTL + L2 mmap 磁盘缓存
-# 参考 Caffeine (W-TinyLFU) 和 ristretto (cost-based 淘汰) 的设计理念
+# Caffeine (W-TinyLFU) 和 ristretto (cost-based 淘汰) 的设计理念
 # 当前为 byte-aware LRU —— 按条目大小而非条目数做淘汰决策
 # L2 用 mmap 固定槽大小避免碎片, hash 碰撞导致 false miss (可容忍)
 #
@@ -14,7 +14,7 @@
 #   S3LRU 分三个 segment (probation → protected → ghost),
 #   新条目从 probation 开始, 多次命中后晋升到 protected,
 #   淘汰时从 probation 剔除到 ghost (仅保留元数据)。
-#   参考 Memcached 的 slab automover 和 Caffeine 的 SLRU 策略。
+#   Memcached 的 slab automover 和 Caffeine 的 SLRU 策略。
 
 import mmap
 import os
@@ -30,7 +30,7 @@ _SLOT_META_FMT = '<Q32sI'
 _SLOT_META_SZ = struct.calcsize(_SLOT_META_FMT)
 
 
-# ---- Count-Min Sketch (CMS) ----
+# Count-Min Sketch (CMS)
 # d=4 rows, w=1024 columns → 4KB, expected error ε ≈ 2/w = 0.2%
 
 class CountMinSketch:
@@ -111,7 +111,7 @@ class DoorKeeper:
             self._bits[byte_idx] |= (1 << bit_idx)
 
 
-# ---- SLRU (Segmented LRU) ----
+# SLRU (Segmented LRU)
 # 将缓存分为 Probation (试用段) 和 Protected (保护段)。
 # 新条目 → Probation。在 Probation 中被命中 → 晋升到 Protected。
 # 淘汰时: 先踢 Protected 尾部, 再踢 Probation 尾部。
@@ -190,7 +190,7 @@ class S3LRUCache:
         }
 
 
-# ---- LRU with TinyLFU admission ----
+# LRU with TinyLFU admission
 
 class LRUCache:
     """纯内存 LRU + TTL, 双向链表 O(1) 操作。

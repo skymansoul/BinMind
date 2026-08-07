@@ -56,52 +56,50 @@ class SyncSite:
     called_symbol: str          # 被调用的导入符号名
 
 
-# ==============================================================================
 # 多平台同步原语映射表
-# ==============================================================================
 
 _SYNC_PRIMITIVE_MAP: Dict[str, SyncPrimitive] = {
-    # --- POSIX mutex ---
+# POSIX mutex
     'pthread_mutex_lock':    SyncPrimitive('pthread_mutex_lock',    SyncType.MUTEX_LOCK),
     'pthread_mutex_trylock': SyncPrimitive('pthread_mutex_trylock', SyncType.MUTEX_TRYLOCK),
     'pthread_mutex_unlock':  SyncPrimitive('pthread_mutex_unlock',  SyncType.MUTEX_UNLOCK),
-    # --- POSIX rwlock ---
+# POSIX rwlock
     'pthread_rwlock_rdlock':  SyncPrimitive('pthread_rwlock_rdlock',  SyncType.RWLOCK_RDLOCK),
     'pthread_rwlock_wrlock':  SyncPrimitive('pthread_rwlock_wrlock',  SyncType.RWLOCK_WRLOCK),
     'pthread_rwlock_unlock':  SyncPrimitive('pthread_rwlock_unlock',  SyncType.RWLOCK_UNLOCK),
-    # --- POSIX spinlock —— 与 mutex 在锁序分析中等价 ---
+# POSIX spinlock —— 与 mutex 在锁序分析中等价
     'pthread_spin_lock':     SyncPrimitive('pthread_spin_lock',     SyncType.SPIN_LOCK),
     'pthread_spin_trylock':  SyncPrimitive('pthread_spin_trylock',  SyncType.MUTEX_TRYLOCK),
     'pthread_spin_unlock':   SyncPrimitive('pthread_spin_unlock',   SyncType.SPIN_UNLOCK),
-    # --- POSIX condi vari ---
+# POSIX condi vari
     'pthread_cond_wait':     SyncPrimitive('pthread_cond_wait',     SyncType.COND_WAIT),
     'pthread_cond_timedwait': SyncPrimitive('pthread_cond_timedwait', SyncType.COND_WAIT),
     'pthread_cond_signal':   SyncPrimitive('pthread_cond_signal',   SyncType.COND_SIGNAL),
     'pthread_cond_broadcast': SyncPrimitive('pthread_cond_broadcast', SyncType.COND_BROADCAST),
-    # --- POSIX barrier ---
+# POSIX barrier
     'pthread_barrier_wait':  SyncPrimitive('pthread_barrier_wait',  SyncType.BARRIER_WAIT),
-    # --- POSIX semaphore ---
+# POSIX semaphore
     'sem_wait':   SyncPrimitive('sem_wait',   SyncType.SEMAPHORE_WAIT),
     'sem_trywait': SyncPrimitive('sem_trywait', SyncType.SEMAPHORE_WAIT),
     'sem_post':   SyncPrimitive('sem_post',   SyncType.SEMAPHORE_POST),
-    # --- POSIX thread lifecycle ---
+# POSIX thread lifecycle
     'pthread_create': SyncPrimitive('pthread_create', SyncType.THREAD_CREATE),
     'pthread_join':   SyncPrimitive('pthread_join',   SyncType.THREAD_JOIN),
-    # --- Windows Crit Sec ---
+# Windows Crit Sec
     'EnterCriticalSection':       SyncPrimitive('EnterCriticalSection',       SyncType.MUTEX_LOCK),
     'TryEnterCriticalSection':    SyncPrimitive('TryEnterCriticalSection',    SyncType.MUTEX_TRYLOCK),
     'LeaveCriticalSection':       SyncPrimitive('LeaveCriticalSection',       SyncType.MUTEX_UNLOCK),
     'InitializeCriticalSection':  SyncPrimitive('InitializeCriticalSection',  SyncType.MUTEX_LOCK),  # 不参与锁分析但记录
     'DeleteCriticalSection':      SyncPrimitive('DeleteCriticalSection',      SyncType.MUTEX_UNLOCK),
-    # --- Windows SRW Lock (Vista+) ---
+# Windows SRW Lock (Vista+)
     'AcquireSRWLockExclusive': SyncPrimitive('AcquireSRWLockExclusive', SyncType.MUTEX_LOCK),
     'AcquireSRWLockShared':    SyncPrimitive('AcquireSRWLockShared',    SyncType.RWLOCK_RDLOCK),
     'ReleaseSRWLockExclusive': SyncPrimitive('ReleaseSRWLockExclusive', SyncType.MUTEX_UNLOCK),
     'ReleaseSRWLockShared':    SyncPrimitive('ReleaseSRWLockShared',    SyncType.RWLOCK_UNLOCK),
-    # --- Windows thread lifecycle ---
+# Windows thread lifecycle
     'CreateThread':  SyncPrimitive('CreateThread',  SyncType.THREAD_CREATE),
     '_beginthreadex': SyncPrimitive('_beginthreadex', SyncType.THREAD_CREATE),
-    # --- Darwin (macOS/iOS) ---
+# Darwin (macOS/iOS)
     'os_unfair_lock_lock':   SyncPrimitive('os_unfair_lock_lock',   SyncType.MUTEX_LOCK),
     'os_unfair_lock_unlock': SyncPrimitive('os_unfair_lock_unlock', SyncType.MUTEX_UNLOCK),
     'dispatch_semaphore_wait':    SyncPrimitive('dispatch_semaphore_wait',    SyncType.SEMAPHORE_WAIT),

@@ -1,0 +1,26 @@
+{
+  "enhanced": {
+    "TP": 11,
+    "FP": 4,
+    "FN": 17,
+    "TN": 16,
+    "time_ms": 25998.679999999986,
+    "recall": 39.29,
+    "precision": 73.33,
+    "fpr": 20.0,
+    "f1": 0.5116,
+    "avg_time_ms": 541.64
+  },
+  "baseline": {
+    "TP": 9,
+    "FP": 3,
+    "FN": 19,
+    "TN": 17,
+    "time_ms": 23837.27,
+    "recall": 32.14,
+    "precision": 75.0,
+    "fpr": 15.0,
+    "f1": 0.45,
+    "avg_time_ms": 496.61
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_07_getenv_format",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2017-1000371 类环境变量格式串",
+  "expect_overflow": true,
+  "trigger": "设置 HOME=%x",
+  "why": "环境变量内容被当格式串"
+}

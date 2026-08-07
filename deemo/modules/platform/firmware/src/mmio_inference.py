@@ -1,5 +1,5 @@
-# 创建: 2025-08-14 16:48
-# 修改: 2025-08-14 — T0-T4 MMIO 寄存器分类 + LMS 模式检测
+# 创建: 2026-07-08 16:48
+# 修改: 2026-07-08 — T0-T4 MMIO 寄存器分类 + LMS 模式检测
 """
 MMIO 外设模型推断 — 从裸机固件中自动识别外设寄存器和中断映射。
 
@@ -21,11 +21,11 @@ MMIO 寄存器类型 (ref: μEmu, ES-Fuzz):
 外设推断: 同时考虑地址邻近性和行为相似性——两个 MMIO 地址即使不相邻,
 如果共享相同的访问模式(LMS/func/ISR), 也可能属于同一外设。
 
-ref: XtractIO (Scholtens, Univ. Twente 2025) — LMS/FRI/SIV 模式检测,
+ref: XtractIO — LMS/FRI/SIV 模式检测,
      本项目将其扩展到 T0-T4 类型分类 + ISR 关联
-ref: ES-Fuzz (Huang & Shin, arXiv 2026) — adaptive MMIO data-chunk
+ref: ES-Fuzz — adaptive MMIO data-chunk
      modeling, 本项目取其"多读合并"思路用于寄存器类型推断
-ref: μEmu (Zhou et al., USENIX 2022) — T0-T3 寄存器分类的原始定义
+ref: μEmu — T0-T3 寄存器分类的原始定义
 ref: Pretender (Gustafson et al.) — DBSCAN 外设边界聚类
 """
 
@@ -70,7 +70,7 @@ class Peripheral:
     name_hint: str = ''          # 从固件符号表推断的名称
 
 
-# --- 寄存器分类器 ---
+# 寄存器分类器
 
 class MMIORegisterClassifier:
     """基于访问模式的 MMIO 寄存器 T0-T4 分类。"""
@@ -97,8 +97,8 @@ class MMIORegisterClassifier:
                 reg.reg_type = RegType.T4_UNCLASSIFIED
 
 
-# --- LMS (Load-Modify-Store) 模式检测 ---
-# XtractIO (2025) 的核心贡献: LMS 模式是 MMIO 寄存器最可靠的信号。
+# LMS (Load-Modify-Store) 模式检测
+# XtractIO 的核心贡献: LMS 模式是 MMIO 寄存器最可靠的信号。
 # 模式: load reg, [mmio_addr] → modify reg (and/or/xor) → store reg, [mmio_addr]
 # 同一函数内, 对同一 MMIO 地址的先读后写, 中间有 ALU 操作。
 
@@ -145,7 +145,7 @@ def detect_lms_patterns(instructions: list[dict],
     return dict(lms_hits)
 
 
-# --- 外设边界检测 ---
+# 外设边界检测
 # 空间聚类 + 行为相似性 = 外设边界推断。
 # DBSCAN 风格: 两个寄存器属于同一外设 if (address proximity) AND
 # (behavior similarity: 相同 T-type 或相同 function set 交集 ≥50%)。
@@ -219,7 +219,7 @@ def _behavior_similarity(a: MMIORegister, b: MMIORegister) -> float:
     return score
 
 
-# --- 中断向量表关联 ---
+# 中断向量表关联
 
 def link_isr_to_mmio(
     ivt: dict[int, int],           # {vector_index: isr_address}
@@ -250,7 +250,7 @@ def link_isr_to_mmio(
     return isr_mmio
 
 
-# --- 助手函数 ---
+# 助手函数
 
 def _find_function_boundaries(ins: list[dict]) -> list[tuple[int, int]]:
     """从指令列表推断函数边界 (简单启发式)。"""

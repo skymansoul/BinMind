@@ -1,5 +1,5 @@
 # 统一指标收集 —— 从四工具扫描结果汇总检出率/耗时/内存/误报。
-# 创建: 2026-08-14
+# 创建: 2026-07-08
 
 import json, time, os
 from dataclasses import dataclass, field

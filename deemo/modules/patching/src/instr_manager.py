@@ -35,11 +35,9 @@ class InstrumentationBackend(ABC):
         return ["x86_64"]
 
 
-# ============================================================
 # FridaBackend：JavaScript 片段生成器
 # 内存操作走 Memory.protect + Memory.writeByteArray，
 # 比直接 NativeCallback 慢但跨平台稳定
-# ============================================================
 class FridaBackend(InstrumentationBackend):
 
     def get_engine_name(self) -> str:
@@ -293,10 +291,8 @@ int main(int argc, char *argv[]) {{
 """.format(addr=target_address, patch_bytes=_patch_hex_str, patch_len=len(patch_bytes))
 
 
-# ============================================================
 # InstrumentationManager：注册表 + 分发
 # 允许外部注册自定义 backend
-# ============================================================
 class InstrumentationManager:
     """动态插桩后端注册表与分发器。"""
 

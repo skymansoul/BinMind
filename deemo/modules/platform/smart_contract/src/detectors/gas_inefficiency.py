@@ -7,7 +7,6 @@ from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 
 
-def _debug_print(msg): pass  # noqa
 
 
 # 冗余SLOAD检测窗口大小

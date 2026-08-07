@@ -247,7 +247,7 @@ class PatchDiffLocator:
             log.error("[PatchDiff] Analysis failed: %s", e)
             return PatchAnalysisResult(original_binary=self.original_binary, patched_binary=self.patched_binary, error=str(e))
 
-    # ── 函数签名匹配 ──────────────────────────────────────────────
+# 函数签名匹配
     # Jaccard 相似度：不只靠函数名，用 callee 集合匹配改名函数。
     # 思路源自 diaphora/radiff2。
 
@@ -274,7 +274,7 @@ class PatchDiffLocator:
             union = len(m_a | m_b)
             diff.signature_score = inter / union if union > 0 else 0.0
 
-    # ── BFS 影响传播 ──────────────────────────────────────────────
+# BFS 影响传播
     # 从 patch 函数出发，反向 BFS 到所有受影响的 callers
 
     def _propagate_impact(self):
@@ -310,7 +310,7 @@ class PatchDiffLocator:
                         queue.append(caller)
         return impact
 
-    # ── DOT 调用图导出 ────────────────────────────────────────────
+# DOT 调用图导出
 
     def generate_callgraph_dot(self, output_path=None):
         """输出 Graphviz DOT 格式调用图。"""
@@ -329,7 +329,7 @@ class PatchDiffLocator:
                 f.write(dot)
         return dot
 
-    # ── 熵差值相似度 ──────────────────────────────────────────────
+# 熵差值相似度
 
     def _entropy_delta(self, data_a, data_b):
         # inline
@@ -347,7 +347,7 @@ class PatchDiffLocator:
             data_b = data_b.encode('utf-8', errors='replace')
         return abs(_entropy(data_a) - _entropy(data_b))
 
-    # ── 以下方法保留原始实现 ──────────────────────────────────────
+# 以下方法保留原始实现
 
     def _extract_functions(self):
         self.original_functions = self._get_functions_from_binary(self.original_binary)

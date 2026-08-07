@@ -10,14 +10,14 @@
 #   类别4: 反覆盖率反馈 — 虚假路径/膨胀代码路径阻碍引导
 #   输出每种防护的位置、绕过难度 (1-10) 和影响的未覆盖代码量
 # 技术效果: 四类反fuzzing模式检测+绕过难度评分, 补充C-Fuzz/T-Fuzz仅聚焦绕过而缺乏检测能力的空白
-# 参考:
-#   C-Fuzz (IEEE 2025) — 强制控制流跳转绕过,
+#
+#   C-Fuzz — 强制控制流跳转绕过,
 #     本项目借鉴其反fuzzing模式分类但聚焦检测而非绕过
-#   T-Fuzz (USENIX 2018, TaintScope) — NCC检测,
+#   T-Fuzz — NCC检测,
 #     本项目借鉴其非关键检查分类思想
-#   PFuzzer (EuroS&P 2025) — 环境敏感反分析fuzzing,
+#   PFuzzer — 环境敏感反分析fuzzing,
 #     本项目借鉴其环境敏感代码分类
-#   Trail of Bits fuzzing-obstacles (2025) — 编译时旁路模式
+#   Trail of Bits fuzzing-obstacles — 编译时旁路模式
 from __future__ import annotations
 import logging
 import re

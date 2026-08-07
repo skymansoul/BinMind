@@ -30,10 +30,8 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 from .intent_route import IntentCategory
 
 
-# ---------------------------------------------------------------------------
 # 采集器→意图信息增益矩阵。同一采集器对不同意图类别贡献的比特量不同。
 # 数值为经验估计的占位值, 实际部署时通过 A/B 标定或在线贝叶斯优化替换。
-# ---------------------------------------------------------------------------
 
 _GAIN_MATRIX: Dict[str, Dict[IntentCategory, float]] = {
     "host_enum": {

@@ -1,6 +1,6 @@
 """值集分析器 (Value-Set Analysis) — strided interval 域用于堆指针追踪.
 
-创建: 2025-08-05 14:22
+创建: 2026-07-04 14:22
 用途: 在二进制IR层面追踪堆指针通过算术运算和赋值后的可能取值,
       使用 strided interval (s[lb, ub], stride) 而非简单区间域。
 
@@ -13,10 +13,10 @@
     这使我们可以证明某些"看起来越界"的访问实际上在合法范围内。
 
 理论依据:
-  Balakrishnan & Reps (2004) "Analyzing Memory Accesses in x86 Executables"
-  (CC) — CodeSurfer/x86 中 VSA 的原始描述
-  Reps & Balakrishnan (2008) "Improved Memory-Access Analysis for x86 Executables"
-  (CC) — strided interval 域的扩展
+  Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables"
+ — CodeSurfer/x86 中 VSA 的原始描述
+  Reps & Balakrishnan "Improved Memory-Access Analysis for x86 Executables"
+ — strided interval 域的扩展
 """
 
 from dataclasses import dataclass

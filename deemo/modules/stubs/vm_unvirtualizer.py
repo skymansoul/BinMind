@@ -1,6 +1,6 @@
 # compat/ 代理导出 — VM 去虚拟化桩
 # 使用 types.ModuleType 创建隔离命名空间，与 string_unobfuscator 策略统一
-# 参考: VulCatch (arXiv:2408.07181) 伪代码提升管线 & DeBinVul (arXiv:2411.04981) 反编译分析
+# VulCatch 伪代码提升管线 & DeBinVul 反编译分析
 import os as _os
 import types as _types
 import importlib.util as _iu

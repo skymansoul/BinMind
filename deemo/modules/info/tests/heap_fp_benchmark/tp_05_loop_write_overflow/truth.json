@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_05_loop_write_overflow",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "cve": "CVE-2022-22623 类 (循环逐字节堆写)",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "while 循环以固定次数 (64) 逐字节写入 16 字节缓冲区"
+}

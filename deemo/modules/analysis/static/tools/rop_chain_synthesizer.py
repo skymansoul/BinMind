@@ -69,7 +69,7 @@ class ROPSynthesizer:
             'jmp_reg': ['jmp '],
         }
 
-    # ===== 构件搜索 =====
+# 构件搜索
 
     def find_gadgets(self, data: bytes, base_addr: int = 0) -> List[Gadget]:
         """从二进制数据中扫描所有RET-terminated gadget"""
@@ -239,7 +239,7 @@ class ROPSynthesizer:
 
         return _gadgets
 
-    # ===== 构件分类 =====
+# 构件分类
     def classify_gadget_from_text(self, instructions: List[str]) -> str:
         """基于指令文本做语义分类 — 多重标签取优先级最高的"""
         _text = ' '.join(instructions).lower()
@@ -339,7 +339,7 @@ class ROPSynthesizer:
             _chain.append(_jmp_rsp)
         return _chain
 
-    # ---- 辅助搜索 ----
+# 辅助搜索
     def _find_pop_gadget(self, gadgets: List[Gadget], reg: str) -> Optional[Gadget]:
         """查找 pop <reg>; ret 的gadget，优先匹配干净的单pop"""
         # 严格匹配: instructions以 "pop <reg>" 开头
@@ -410,7 +410,7 @@ class ROPSynthesizer:
             _off = _p + 1
         return _positions
 
-    # ===== payload序列化 =====
+# payload序列化
     def to_payload(self, chain: List[Gadget]) -> bytes:
         """将gadget链表序列化为ROP payload字节流"""
         _payload = b''

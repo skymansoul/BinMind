@@ -5,12 +5,11 @@
 2025-08-15 09:17 - 平滑度评分: 信号与低频本征模的对齐程度
 2025-08-16 14:08 - 高通滤波: 移除低频分量→残差信号→检测异常种子
 
-参考:
-  Shuman et al. (2013) "The Emerging Field of Signal Processing on Graphs"
+  Shuman et al. "The Emerging Field of Signal Processing on Graphs"
     (IEEE SPM) — GSP 的综述: 图傅里叶变换、滤波、采样
-  Ortega et al. (2018) "Graph Signal Processing: Overview, Challenges,
+  Ortega et al. "Graph Signal Processing: Overview, Challenges,
     and Applications" (Proc. IEEE) — GSP 在各领域的应用
-  Hammond, Vandergheynst & Gribonval (2011) "Wavelets on Graphs via
+  Hammond, Vandergheynst & Gribonval "Wavelets on Graphs via
     Spectral Graph Theory" (ACHA) — 图谱小波
 
 在 fuzzing 中零先例。将覆盖值视为 ISRG 图上的信号:
@@ -30,10 +29,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ---- GSPS 参数 ----
+# GSPS 参数
 _N_EIGENVECTORS = 8          # 保留的本征向量数
-
 
 @dataclass
 class GraphSignalResult:
@@ -46,7 +43,6 @@ class GraphSignalResult:
     lowpass_energy_ratio: float  # 低频能量 / 总能量
     # 异常种子 (高通残差大)
     anomaly_seeds: List[Tuple[str, float]]  # (seed_id, residual_norm)
-
 
 class GraphSignalProcessor:
     """图信号处理器 — 覆盖信号在 ISRG 图上的频谱分析.

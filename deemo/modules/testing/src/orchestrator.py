@@ -38,7 +38,6 @@ class PipelineConfig:
     parallel_groups: List[Set[str]] = field(default_factory=list)
 
 
-# ================================================
 class TestOrchestrator:
     """测试流水线编排器。
 
@@ -57,7 +56,7 @@ class TestOrchestrator:
         self.max_workers = max_workers
         self._lock = threading.Lock()
 
-    # **** Stage管理 ****
+# Stage管理
     def add_stage(self, stage: TestStage):
         self._stages[stage.name] = stage
         self._levels = []  # 使流水线缓存失效
@@ -69,7 +68,7 @@ class TestOrchestrator:
         self._stages.pop(name, None)
         self._levels = []
 
-    # **** 流水线构建 ****
+# 流水线构建
     def build_pipeline(self) -> List[List[str]]:
         """Kahn风格拓扑排序，分为执行level。
 
@@ -115,7 +114,7 @@ class TestOrchestrator:
             self.build_pipeline()
         return self._levels
 
-    # **** 执行 ****
+# 执行
     def execute(self, stages: List[str] = None,
                 parallel: bool = False,
                 context: Dict[str, Any] = None) -> Dict[str, StageResult]:
@@ -208,7 +207,7 @@ class TestOrchestrator:
                 except Exception:
                     pass  # _run_stage已记录结果
 
-    # **** 结果 ****
+# 结果
     @property
     def stage_results(self) -> Dict[str, StageResult]:
         return self._results

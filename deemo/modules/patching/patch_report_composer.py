@@ -1,8 +1,8 @@
 """补丁报告编排器 —— 跨模块聚合，输出格式化综合报告。
 
 将 patching 各模块分析结果聚合为单一结构化报告。
-参考 rubric-guided 评估标准 [arXiv:2511.10865] 的思路和
-VeriBin [NDSS 2025] 的多层次报告格式。
+参考 rubric-guided 评估标准 的思路和
+VeriBin 的多层次报告格式。
 
 报告维度：
   1. 补丁安全性 (PatchSafetyVerifier)
@@ -24,7 +24,6 @@ from collections import OrderedDict
 
 _log_ = logging.getLogger(__name__)
 
-
 @dataclass
 class DimensionScore:
     # 单个评估维度的评分
@@ -35,7 +34,6 @@ class DimensionScore:
     source_module: str = ""
     details: Dict = field(default_factory=dict)
     weight: float = 0.0         # 综合评分中的权重
-
 
 @dataclass
 class CompositeReport:
@@ -120,12 +118,11 @@ class CompositeReport:
 
         return '\n'.join(_lines)
 
-
 class PatchReportComposer:
     """综合报告编排器 —— 聚合所有子模块分析结果。
 
     采用 rubric-guided 评估，每个维度预设权重，生成结构化评分报告。
-    参考评分标准 [arXiv:2511.10865]。
+    参考评分标准 []。
     """
 
     # 维度权重 —— 安全性权重最高
@@ -142,9 +139,7 @@ class PatchReportComposer:
     def __init__(self, weights: Optional[Dict[str, float]] = None):
         self._weights = weights or dict(self._DEFAULT_WEIGHTS)
 
-    # ============================================================
     # 主编排 —— 接受各模块输出 raw result
-    # ============================================================
     def compose(self, binary_path: str = "",
                 patched_binary_path: str = "",
                 safety_result: Optional[Dict] = None,
@@ -214,7 +209,7 @@ class PatchReportComposer:
 
         return _rpt
 
-    # ── 各维度评估 ──────────────────────────────────────────────────
+# 各维度评估
 
     def _eval_safety(self, result: Optional[Dict]) -> DimensionScore:
         _d = DimensionScore(name="Patch Safety", source_module="patch_safety_verifier",
@@ -402,7 +397,7 @@ class PatchReportComposer:
 
         return _d
 
-    # ── 综合评分 ────────────────────────────────────────────────────
+# 综合评分
 
     def _compute_overall_score(self, dimensions: List[DimensionScore]) -> float:
         _total_weight = 0.0
@@ -476,8 +471,7 @@ class PatchReportComposer:
                     sum(1 for _d in report.dimensions if _d.status == 'warning'),
                     report.overall_score, report.overall_grade))
 
-
-# ── 便捷入口 ──────────────────────────────────────────────────────
+# 便捷入口
 
 def compose_patch_report(binary_path: str = "",
                          safety_result: Optional[Dict] = None,

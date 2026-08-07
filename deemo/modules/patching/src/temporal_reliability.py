@@ -8,14 +8,14 @@
 本模块补充时间维度：模拟补丁在 runtime 环境演进下的可靠性衰减，
 提供 time-to-refresh 和 unsafe 临界点预测。
 
-// ref: "Patch Longevity Study" [2025 OpenReview]
+// ref: "Patch Longevity Study"
 //   首次系统性论证 patch 性能随时间指数衰减。
 //   本模块移植到 binary patch 领域：防御效力随 runtime
 //   环境漂移（libc/kernel/编译器版本变更）而衰减。
 //   核心差异：binary patch 衰减源于 ABI 不兼容 + 新 gadget
 //   出现 + 防御机制适应。
 //
-// ref: Concept Drift [2025 PhD thesis, Padova]
+// ref: Concept Drift
 //   drift analysis + time-aware classifier 启发
 //   环境漂移检测器设计：定期采样 runtime 指纹，CUSUM 检测漂移点。
 //
@@ -120,7 +120,7 @@ class TemporalReliabilityReport:
         }
 
 
-# ── 衰减常数估计 ────────────────────────────────────────────────
+# 衰减常数估计
 
 def estimate_decay_constant(patch_complexity: float,
                             attack_surface: float,
@@ -144,7 +144,7 @@ def estimate_decay_constant(patch_complexity: float,
     return base * complexity_factor * attack_factor * diversity_dampening
 
 
-# ── 环境漂移检测器 ──────────────────────────────────────────────
+# 环境漂移检测器
 
 class EnvironmentDriftDetector:
     """环境漂移检测 — CUSUM 轻量检测器。
@@ -198,7 +198,7 @@ class EnvironmentDriftDetector:
         return sum(self._baseline.distance(s) for s in recent) / len(recent)
 
 
-# ── 环境指纹采集器 ──────────────────────────────────────────────
+# 环境指纹采集器
 
 def capture_environment(binary_path: str = "") -> EnvironmentFingerprint:
     """采集当前 runtime 环境指纹。
@@ -246,7 +246,7 @@ def capture_environment(binary_path: str = "") -> EnvironmentFingerprint:
     return fp
 
 
-# ── 时间衰减 ──────────────────────────────────────────────────
+# 时间衰减
 
 class TemporalReliabilityModel:
     """补丁可靠性时间衰减。
@@ -358,7 +358,7 @@ class TemporalReliabilityModel:
         )
 
 
-# ── 便捷函数 ────────────────────────────────────────────────────
+# 便捷函数
 
 def predict_patch_longevity(initial_reliability: float,
                             patch_complexity: float = 0.3,

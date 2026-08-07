@@ -17,7 +17,7 @@ def _debug_print(msg: str) -> None:
 
 _log = logging.getLogger(__name__)
 
-# ---- ARM内存标记扩展模拟器 ----
+# ARM内存标记扩展模拟器
 # 基于ARMv8.5-A MTE规范，模拟tagged memory行为
 # 支持TikTag式推测执行攻击分析
 
@@ -34,7 +34,7 @@ class TagMismatchFault(Exception):
 		)
 
 
-# ===== 违规类型与数据结构 =====
+# 违规类型与数据结构
 
 
 class MTEViolationType(StrEnum):
@@ -94,7 +94,7 @@ class MTEReport:
 		self.notes = notes
 
 
-# ===== TagSpace: 标签空间管理器 =====
+# TagSpace: 标签空间管理器
 # 分配/释放4-bit标签。tag=0保留为未标记/默认。
 # 标签猜测攻击防护：分配时增加随机延迟（模拟硬件随机化）。
 
@@ -113,7 +113,7 @@ class TagSpace:
 
 	def alloc_tag(self) -> int:
 		# 循环扫描+随机跳跃，降低相邻分配可预测性
-		# TikTag (S&P 2025) 攻击面缓解：确定性标签分配使攻击者可预测未来标签值
+		# TikTag 攻击面缓解：确定性标签分配使攻击者可预测未来标签值
 		with self._lock:
 			start = self._counter
 			# 随机跳跃步长（奇数保证模空间全覆盖）
@@ -143,7 +143,7 @@ class TagSpace:
 		return 0 <= tag <= self.max_tag
 
 
-# ===== MTE状态机 =====
+# MTE状态机
 # 维护内存和标签映射，追踪分配/释放生命周期
 # 融合TikTag推测执行分析能力
 
@@ -173,7 +173,7 @@ class MTEState:
 		self._lock = threading.Lock()
 		self._enabled = True
 
-	# ---- 标签分配策略 ----
+# 标签分配策略
 	# 三种策略对应不同加固级别
 
 	def tag_allocation(self, address: int, size: int, strategy: str = "sequential") -> int:
@@ -208,7 +208,7 @@ class MTEState:
 
 		return tag
 
-	# ---- 带标签检查的存储 ----
+# 带标签检查的存储
 
 	def store_with_tag(self, address: int, data: bytes, tag: int | None = None):
 		_g = address // self._granule
@@ -219,7 +219,7 @@ class MTEState:
 			raise IndexError(f"写入越界: 0x{address:x}+{len(data)}")
 		self._memory[address:address + len(data)] = data
 
-	# ---- 带标签验证的加载 ----
+# 带标签验证的加载
 
 	def load_with_tag(self, address: int, size: int, expected_tag: int | None = None) -> bytes:
 		_g = address // self._granule
@@ -230,12 +230,12 @@ class MTEState:
 			raise IndexError(f"读取越界: 0x{address:x}+{size}")
 		return bytes(self._memory[address:address + size])
 
-	# ---- 基础标签操作 ----
+# 基础标签操作
 
 	def check_tag(self, address: int) -> int:
 		return self._tags[address // self._granule] & 0x0F
 
-	# ---- 内存安全检测 ----
+# 内存安全检测
 
 	def detect_double_free(self, address: int) -> bool:
 		return address in self._freed_set
@@ -259,10 +259,10 @@ class MTEState:
 			for _g in range(_start_g, min(_end_g, len(self._tags))):
 				self.memory_tags.pop(_g * self._granule, None)
 
-	# ---- TikTag式推测标签访问 ----
+# TikTag式推测标签访问
 	# 模拟推测执行窗口内标签检查：
-	# - 推测执行不立即触发异常，记录结果
-	# - 通过cache oracle推断标签值
+# 推测执行不立即触发异常，记录结果
+# 通过cache oracle推断标签值
 
 	def check_speculative_tag_access(self, address: int) -> tuple[bool, int]:
 		# 推测性标签访问 -- TikTag cache oracle风格
@@ -287,7 +287,7 @@ class MTEState:
 		self._tag_probe_history.append((address, predicted_tag, actual_tag, 1 if correct else 0))
 		return bytes(self._memory[address:address + size]), correct
 
-	# ---- 兼容MTEAnalyzer接口 ----
+# 兼容MTEAnalyzer接口
 
 	def align(self, addr: int) -> int:
 		return addr - (addr % self.TAG_GRANULE)
@@ -594,7 +594,7 @@ class MTEAnalyzer:
 			self._events = []
 
 
-# ===== MTESimulator 接口类 =====
+# MTESimulator 接口类
 # 包装MTEState，提供更易用外部接口
 
 
@@ -643,7 +643,7 @@ class MTESimulator:
 		}
 
 
-# ===== 地址标签提取 =====
+# 地址标签提取
 # ARM TBI (Top Byte Ignore): 高8位存储tag
 
 

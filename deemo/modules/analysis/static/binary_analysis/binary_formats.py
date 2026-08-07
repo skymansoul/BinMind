@@ -38,7 +38,7 @@ class BinaryFormatParser:
             return None
         return fmt.value
 
-    # ---- ELF 解析 ----
+# ELF 解析
 
     def _parse_elf_header(self, data: bytes) -> dict:
         """解析 ELF 头部 (64/32 bit autodetect)"""
@@ -94,7 +94,7 @@ class BinaryFormatParser:
             "shnum": hdr[11],
         }
 
-    # ---- PE 解析 ----
+# PE 解析
 
     def _parse_pe_header(self, data: bytes) -> dict:
         """解析 PE 头部 (PE32/PE32+ autodetect)"""
@@ -153,7 +153,7 @@ class BinaryFormatParser:
             "magic": f"0x{magic:08X}",
         }
 
-    # ===== 主入口 =====
+# 主入口
 
     def parse_header(self, data: bytes) -> dict:
         """根据 detect 结果自动选择解析器，返回结构化头部信息"""
@@ -177,7 +177,7 @@ class BinaryFormatParser:
         self._last_result = result
         return result
 
-    # ---- 便捷方法 ----
+# 便捷方法
 
     def arch_from_header(self, data: bytes) -> Arch:
         """从二进制头部推断目标架构"""
@@ -195,7 +195,7 @@ class BinaryFormatParser:
         return self._last_result
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 # 留着备用，后面分析 raw binary 时可能需要更细粒度的熵分块
 
 def _shannon_entropy(data: bytes) -> float:

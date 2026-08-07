@@ -1,5 +1,5 @@
 # 水位线流量控制 — 队列深度驱动的二元状态机
-# 参考 TCP 滑动窗口与 Reactive Streams request(n) 模式：
+# TCP 滑动窗口与 Reactive Streams request(n) 模式：
 #   depth < LOW  → 通知上游 resume
 #   depth > HIGH → 通知上游 pause
 #   LOW ≤ depth ≤ HIGH → 保持当前状态，避免边界振荡
@@ -29,7 +29,7 @@ class WatermarkConfig:
             raise ValueError(f"low ({self.low}) must be < high ({self.high})")
 
 
-# == 单队列水位监控 ==
+# 单队列水位监控
 
 class WatermarkMonitor:
     """单队列水位监控器。维护 flowing / paused 二元状态，带滞回切换。
@@ -99,7 +99,7 @@ class WatermarkMonitor:
         return f"Watermark({st}, depth={self._depth}, low={self._cfg.low}, high={self._cfg.high})"
 
 
-# == 多队列加权水位 ==
+# 多队列加权水位
 
 @dataclass
 class QueueWeight:
@@ -171,7 +171,7 @@ class MultiQueueWatermark:
             }
 
 
-# == 流量控制器 ==
+# 流量控制器
 
 class FlowController:
     """上游流量整形器。生产者调用 produce() 通知增量，消费者调用 consume() 释放容量。
@@ -238,5 +238,4 @@ class FlowController:
             f"flowing={self._monitor.is_flowing})"
         )
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

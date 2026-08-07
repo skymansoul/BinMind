@@ -15,7 +15,7 @@
 #   L4 VERIFIED   — 通过 MR 检查 + 非相干性校验, 0.6 ≤ s < 0.85
 #   L5 HARDENED   — 对抗测试无显著异常+溯源链完整+文档齐全, s ≥ 0.85
 #
-# 区别于 RACE (arXiv:2407.11470) 和 CodeQUEST (arXiv:2502.07399):
+# 区别于 RACE 和 CodeQUEST:
 #   两者评估通用 LLM 代码生成的 Readability/Maintainability/Correctness/Efficiency。
 #   本模块专门针对桩实现的质量剖面，结合验证阶段深度与溯源完整性，
 #   这两个维度在通用代码质量评估中不存在。
@@ -134,7 +134,7 @@ class QualityScorer:
         reports.sort(key=lambda r: -r.composite)
         return reports
 
-    # ---- 各维度评分 ----
+# 各维度评分
     @staticmethod
     def _score_structural(source: str) -> float:
         """结构质量: 检查嵌套深度、函数长度、pass/... 占比。"""

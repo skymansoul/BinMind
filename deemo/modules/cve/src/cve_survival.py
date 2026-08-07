@@ -1,5 +1,5 @@
-# 创建: 2026-07-31 09:53
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-25 09:53
+# 修改: 2026-07-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: Cox竞争风险生存分析
 # 竞争风险生存分析 — CVE从披露到利用的时间-事件建模
 #
@@ -28,10 +28,10 @@
 # 这直接关联到累积发生率函数 CIF_1(t) = 1 - exp(-∫_0^t λ_1*(s)ds).
 #
 # 输出:
-#   - 30天/90天/365天利用概率
-#   - 中位利用时间 (如果利用先于补丁)
-#   - 补丁的"保护效应" (补丁发布后利用风险下降比例)
-#   - 时变风险曲线 (利用风险如何随时间变化)
+# 30天/90天/365天利用概率
+# 中位利用时间 (如果利用先于补丁)
+# 补丁的"保护效应" (补丁发布后利用风险下降比例)
+# 时变风险曲线 (利用风险如何随时间变化)
 #
 # 非显而易见性:
 #   1. 竞争风险框架在医学统计中成熟, 但从未用于CVE利用预测.
@@ -39,10 +39,10 @@
 #   2. 时变协变量处理: EPSS每月更新, KEV随时收录 → 需分段指数模型.
 #   3. Fine-Gray模型替代了LEV的独立窗口乘积, 正确处理了时间依赖性.
 #
-# 参考:
-#   [Cox 1972] Regression Models and Life-Tables (JRSS-B)
-#   [Fine & Gray 1999] A Proportional Hazards Model for the Subdistribution
-#   [NIST CSWP 41, May 2025] LEV metric — 离散时间, 忽略竞争风险
+#
+# Regression Models and Life-Tables (JRSS-B)
+# A Proportional Hazards Model for the Subdistribution
+# LEV metric — 离散时间, 忽略竞争风险
 #   [搜素结果] 未发现Cox模型或竞争风险在CVE利用预测中的现有应用
 
 import math
@@ -329,7 +329,7 @@ class CoxCompetingRiskModel:
         return self._fitted
 
 
-# ---- KB集成 ----
+# KB集成
 
 def build_survival_records(kb, max_records: int = 5000
                            ) -> List[SurvivalRecord]:
@@ -387,7 +387,7 @@ def build_survival_records(kb, max_records: int = 5000
     return records
 
 
-# ---- 内部辅助 ----
+# 内部辅助
 
 def _get_str(entry, field: str, default: str = ""):
     if hasattr(entry, field):

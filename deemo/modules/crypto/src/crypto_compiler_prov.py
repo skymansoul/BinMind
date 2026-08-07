@@ -24,12 +24,11 @@
     4. SIMD向量化: SSE vs AVX vs NEON → 编译器向量宽度选择差异。
     5. 常量加载模式: 立即数 vs RIP相对 vs 常量池加载 → 编译器代码模型差异。
 
-参考:
-  - Schneider et al. (USENIX 2024): "Breaking Bad: How Compilers Break
+  - Schneider et al.: "Breaking Bad: How Compilers Break
     Constant-Time Implementations" — GCC/Clang优化破坏CT保证的具体pass分析。
-  - MulCPI (Electronics 2024): 编译器家族+优化级别识别, 99.3%准确率。
+  - MulCPI: 编译器家族+优化级别识别, 99.3%准确率。
     本项目补充其缺失的密码学特化维度。
-  - ToolPhet (IEEE Access 2024): 新兴编译器(Rust/Go/Nim)识别。本项目同样支持
+  - ToolPhet: 新兴编译器(Rust/Go/Nim)识别。本项目同样支持
     Go/Rust的密码学库(如crypto/tls, ring)的编译器特征。
 
 边界条件:
@@ -43,7 +42,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class CompilerProvenance:
     compiler_family: str = ""       # GCC / Clang / MSVC / Go / Rustc / HANDWRITTEN
@@ -54,8 +52,7 @@ class CompilerProvenance:
     ct_preservation: str = ""       # 常量时间代码的编译器保护状态
     simd_used: str = ""             # SSE / AVX2 / AVX-512 / NEON / NONE
 
-
-# ── 编译器指纹库 ──
+# 编译器指纹库
 
 # 函数序言模式 — 编译器特有
 _PROLOGUE_PATTERNS: Dict[str, List[bytes]] = {
@@ -108,7 +105,6 @@ _CT_PRESERVATION_PATTERNS: List[Tuple[bytes, str, str]] = [
     (b'lfence', 'GCC', 'GCC Spectre缓解(间接CT保护)'),
 ]
 
-
 def _detect_compiler_family(data: bytes, offset: int = 0) -> Tuple[str, float, List[str]]:
     """检测编译器家族。分析函数序言模式和代码布局特征。"""
     window = data[offset:offset + 2048] if offset + 2048 <= len(data) else data[offset:]
@@ -134,7 +130,6 @@ def _detect_compiler_family(data: bytes, offset: int = 0) -> Tuple[str, float, L
     # 置信度: 1个匹配→0.55, 2个→0.75, 3+个→0.88
     conf = min(0.88, 0.40 + max_score * 0.16)
     return best, conf, evidence
-
 
 def _detect_optimization_level(data: bytes, offset: int = 0) -> Tuple[str, float, List[str]]:
     """从循环展开模式推断优化级别。"""
@@ -171,7 +166,6 @@ def _detect_optimization_level(data: bytes, offset: int = 0) -> Tuple[str, float
     else:
         return 'O1/O2', 0.50, [f'moderate: {len(loop_back_edges)} loops, avg body={avg_loop_size:.0f}B']
 
-
 def _detect_simd(data: bytes, offset: int = 0) -> Tuple[str, float]:
     """检测SIMD向量化级别。"""
     window = data[offset:offset + 4096] if offset + 4096 <= len(data) else data[offset:]
@@ -189,7 +183,6 @@ def _detect_simd(data: bytes, offset: int = 0) -> Tuple[str, float]:
             return level, min(0.90, 0.55 + scores[level] * 0.05)
     return 'NONE', 0.70
 
-
 def _detect_ct_preservation(data: bytes, compiler_family: str) -> str:
     """评估编译器是否保留了常量时间结构。"""
     findings = []
@@ -206,7 +199,6 @@ def _detect_ct_preservation(data: bytes, compiler_family: str) -> str:
             return 'MSVC对CT结构保守, 但SIMD intrinsic可能引入时序变化'
     return '; '.join(findings[:3])
 
-
 def _check_handwritten_asm(data: bytes) -> bool:
     """检测手写汇编特征: 无标准函数序言/异常的寄存器使用/人工对齐模式。"""
     # 手写汇编通常无push rbp; mov rbp,rsp序言
@@ -215,7 +207,6 @@ def _check_handwritten_asm(data: bytes) -> bool:
     # 但可能有异常的对齐(NOP填充>16字节)和寄存器保存模式
     nop_density = data[:512].count(0x90) / min(512, len(data))
     return not has_standard_prologue and nop_density > 0.05
-
 
 def infer_compiler_provenance(data: bytes, anchor_offset: int = 0,
                               algorithm: str = "") -> CompilerProvenance:

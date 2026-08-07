@@ -17,9 +17,9 @@ Design principles:
     deep-path bug.
   - Every result carries a confidence [0,1]; callers set their own threshold.
 
-ref: Balakrishnan & Reps (WCRE 2004) — VSA; this module takes the value-set
+ref: Balakrishnan & Reps — VSA; this module takes the value-set
      idea but simplifies to O(n) per-function vs. O(n^3) per-program.
-ref: Aho et al. (2006) Compilers §9.2 — SSA def-use chain construction.
+ref: Aho et al. Compilers §9.2 — SSA def-use chain construction.
 """
 
 from collections import defaultdict

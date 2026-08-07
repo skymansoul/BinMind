@@ -17,7 +17,7 @@ class ReturnViolation:
         self.actual   = int(actual) if actual is not None else 0
         self.sev      = str(sev) if sev else 'HIGH'
 
-# ── 舍入 5: ROP构件 catalog ─────────────────────────────────────────
+# 舍入 5: ROP构件 catalog
 # 影子栈检测的基础上增加ROP gadget分类和利用难度评估
 # Gadget按功能分为: 栈操作 (pop;ret), 寄存器加载, 内存写入 (mov [reg];ret)
 # 系统调用 (系统调用;ret), 间接跳转 (jmp [reg]) 五类
@@ -128,7 +128,7 @@ class ShadowStackDetector:
             ),
         }
 
-    # ── 舍入 5: ROP构件 cataloging ──────────────────────────────────
+# 舍入 5: ROP构件 cataloging
     def catalog_gadgets(self, gadget_count: int = 50) -> List[ROPGadget]:
         """从二进制中提取并分类ROP gadget。使用radare2的/R命令搜索
         ret-terminated指令序列，然后按功能分类（栈操作/寄存器加载/

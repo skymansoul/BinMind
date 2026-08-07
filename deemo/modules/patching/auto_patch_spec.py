@@ -68,7 +68,7 @@ class BinaryPatch:
     applied: bool = False
 
 
-# ── spec 缓存 ──────────────────────────────────────────────────────────
+# spec 缓存
 # CWE + affected_function + vuln_type 组成复合键，避免同漏洞重复推演。
 # 容量 64 条，LRU 淘汰。规则路径命中则跳过远程调用。
 
@@ -100,7 +100,7 @@ def _cache_put(vuln_context, spec):
     _spec_cache[k] = spec
 
 
-# ── 规则驱动 spec 构造 ────────────────────────────────────────────────
+# 规则驱动 spec 构造
 # 查表直出：CWE ID + vuln type 映射预置 spec，零远程开销。
 # 覆盖 CWE-121, CWE-122, CWE-416, CWE-476, CWE-190, CWE-134。
 

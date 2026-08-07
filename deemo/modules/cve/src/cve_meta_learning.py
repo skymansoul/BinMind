@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 21:43
-# 修改: 2026-08-04 15:30 (解析梯度替换数值梯度, Reptile算法替代MAML)
+# 创建: 2026-05-25 21:43
+# 修改: 2026-05-25 15:30 (解析梯度替换数值梯度, Reptile算法替代MAML)
 # 简述: Reptile一阶元学习 — 少样本跨CWE利用预测
 # 元学习 — 少样本跨CWE利用预测 (Reptile一阶解析梯度实现)
 #
@@ -7,7 +7,7 @@
 # 有大量训练数据, 但新CWE类型 (AI提示注入, ML供应链投毒)
 # 仅有几个样本. 传统MLP从零训练泛化差, 需等待积累数据.
 #
-# 解决方案: Reptile (Nichol et al. 2018) — MAML的一阶近似.
+# 解决方案: Reptile — MAML的一阶近似.
 # MAML需要昂贵的二阶梯度 (∇_θ ∇_θ' L), 在纯Python中不可行.
 # Reptile使用一阶更新: θ ← θ + β·(1/K)·Σ_k (θ'_k - θ)
 # 其中θ'_k = SGD(θ, D_support_k, inner_steps).
@@ -21,11 +21,11 @@
 # 与外循环MAML的等价性:
 #   Reptile在inner_steps→∞时恢复联合训练,
 #   在inner_steps=1时近似MAML的一阶泰勒展开.
-#   实证中 (Nichol et al. 2018 §5.1) Reptile匹配MAML性能.
+#   实证中 Reptile匹配MAML性能.
 #
-# 参考:
-#   [Nichol et al. 2018] Reptile: First-Order Meta-Learning (arXiv:1803.02999)
-#   [Finn et al. 2017] MAML (ICML) — 二阶基线
+#
+# Reptile: First-Order Meta-Learning
+# MAML (ICML) — 二阶基线
 #   [检索确认] 2025-2026年零论文将元学习应用于CVE/CWE预测
 
 import math, random
@@ -46,7 +46,7 @@ class ReptileCVEModel:
         self._trained = False
         self._adapt_history: List[Dict] = []
 
-    # ---- 前向传播 + 解析梯度 ----
+# 前向传播 + 解析梯度
 
     def _forward(self, x, W1=None, b1=None, W2=None, b2=None):
         """Sigmoid(W2·ReLU(W1·x+b1)+b2). 返回 (output, hidden_pre_act, hidden_post_act)."""
@@ -104,7 +104,7 @@ class ReptileCVEModel:
         new_b2 = [b2[0] - lr * db2[0]]
         return new_W1, new_b1, new_W2, new_b2
 
-    # ---- Reptile 元训练 ----
+# Reptile 元训练
 
     def meta_train(self, tasks, k_shot=5, inner_lr=0.01, outer_lr=0.1,
                    inner_steps=5, epochs=30, batch_tasks=4):
@@ -156,7 +156,7 @@ class ReptileCVEModel:
             outer_lr *= 0.97
         self._trained = True
 
-    # ---- 推理 ----
+# 推理
 
     def adapt_and_predict(self, support_X, support_y, query_X, inner_lr=0.01, inner_steps=5):
         """用支持集SGD微调后预测查询集."""
@@ -176,7 +176,7 @@ class ReptileCVEModel:
     def adapt_count(self): return len(self._adapt_history)
 
 
-# ---- KB集成 (保持兼容) ----
+# KB集成 (保持兼容)
 
 def build_maml_tasks_from_kb(kb, min_cwe_samples=8):
     entries, _ = kb.search(limit=10000)

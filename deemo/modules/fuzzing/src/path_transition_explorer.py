@@ -23,11 +23,11 @@
   同一种子在不同探索阶段的效果完全不同 (被测程序的内部状态不同)。
   路径转换图显式建模了这种非平稳性。
 
-ref: Truzz (2026) — path transition probabilities + byte-level
+ref: Truzz — path transition probabilities + byte-level
      validation check protection, 本项目实现状态转换图 + 上下文选择
-ref: PathFuzzing (arXiv:2507.09892, 2025) — path encoding as binary
+ref: PathFuzzing  — path encoding as binary
      strings, 本项目取其"将路径表示为紧凑签名"的方法
-ref: SEAFuzz (IEEE 2025) — structural exploration-aware scheduling,
+ref: SEAFuzz  — structural exploration-aware scheduling,
      本项目的状态转换图是对其"结构建模"的动态扩展
 """
 
@@ -38,14 +38,12 @@ from dataclasses import dataclass, field
 from collections import defaultdict, Counter
 from typing import Optional
 
-
 @dataclass
 class ProgramState:
     """被测程序的紧凑状态哈希——coverage bitmap 的摘要。"""
     state_hash: str = ''          # coverage bitmap 的 SHA-256 前 8 字符
     edge_count: int = 0           # 已覆盖的总边数
     new_edges_since_last: int = 0 # 自上一状态后新发现的边数
-
 
 @dataclass
 class StateTransition:
@@ -56,7 +54,6 @@ class StateTransition:
     new_edges: int
     count: int = 1                # 此转换发生的次数
 
-
 @dataclass
 class SeedContextScore:
     """种子在特定上下文中的有效性评分。"""
@@ -66,13 +63,11 @@ class SeedContextScore:
     transition_count: int
     predicted_harvest: float      # 预测的新边收获数
 
-
-# --- 状态哈希 ---
+# 状态哈希
 
 def hash_coverage_state(coverage_bitmap: bytes) -> str:
     """将覆盖位图压缩为紧凑状态哈希——用于状态去重。"""
     return hashlib.sha256(coverage_bitmap).hexdigest()[:12]
-
 
 def has_state_changed(old_bitmap: bytes, new_bitmap: bytes,
                       min_new_edges: int = 1) -> bool:
@@ -83,8 +78,7 @@ def has_state_changed(old_bitmap: bytes, new_bitmap: bytes,
                     if new_bitmap[i] != old_bitmap[i])
     return new_edges >= min_new_edges
 
-
-# --- 转换图 ---
+# 转换图
 
 class PathTransitionGraph:
     """路径转换图——追踪种子执行导致的状态转换。
@@ -208,8 +202,7 @@ class PathTransitionGraph:
             'current_state': self._current_state[:8] + '...',
         }
 
-
-# --- 上下文感知调度适配器 ---
+# 上下文感知调度适配器
 
 def context_aware_schedule(
     seeds: list[str],
@@ -232,7 +225,6 @@ def context_aware_schedule(
         allocation[sid] = base * ctx_factor
 
     return allocation
-
 
 __all__ = [
     'PathTransitionGraph', 'ProgramState', 'StateTransition',

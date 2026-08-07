@@ -7,7 +7,7 @@
 #
 # 设计动机:
 #   Fuzzing产出的崩溃输入通常含大量无关字节。最小化到触发崩溃的最小
-#   子集有助于根因分析。传统ddmin (Zeller 1999)将所有字节视为等价
+#   子集有助于根因分析。传统ddmin将所有字节视为等价
 #   原子单元，对二进制格式输入效率低且可能破坏格式有效性。
 #
 # 核心方法:
@@ -21,15 +21,14 @@
 #
 #   无结构信息时退化为标准ddmin+字节级渐进缩减。
 #
-# 参考文献:
-#   WDD: Weighted Delta Debugging (Zhou & Xu, ICSE 2025)
+# 文献:
+#   WDD: Weighted Delta Debugging
 #     — 提出按输入元素大小加权分区，大块优先检测，减少测试次数。
 #     本项目借鉴其加权思想但替换为字段类型优先级——类型敏感缩减
 #     比纯大小加权在二进制格式上更高效。
-#   GReduce (ACM TOSEM 2025, arXiv:2402.04623)
+#   GReduce
 #     — 通过生成器trace缩减保持输入有效性。本项目取其结构保持缩减
 #       思想，但以推断字段边界而非生成器trace作为结构来源。
-#   Zeller & Hildebrandt 2002 "Simplifying and Isolating Failure-Inducing Input"
 #     — ddmin原始算法，本项目阶段2的退化路径。
 import math
 import time
@@ -76,7 +75,7 @@ class InputMinimizer:
         self._max_iter = max_iterations
         self._predicate_calls = 0
 
-    # ---- 主入口 ----
+    # 主入口
     def minimize(self, data: bytes,
                  predicate: Callable[[bytes], bool],
                  timeout_s: float = 30.0) -> bytes:
@@ -107,7 +106,7 @@ class InputMinimizer:
 
         return current
 
-    # ---- 阶段实现 ----
+    # 阶段实现
     def _field_aware_reduce(self, data: bytes,
                             predicate: Callable[[bytes], bool],
                             deadline: float) -> bytes:
@@ -282,7 +281,7 @@ class InputMinimizer:
 
         return bytes(current)
 
-    # ---- 内部 ----
+    # 内部
     def _test(self, predicate: Callable[[bytes], bool],
               data: bytes) -> bool:
         """调用谓词并更新计数器。"""

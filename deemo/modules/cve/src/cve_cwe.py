@@ -38,7 +38,7 @@ _CWE_CACHE_PATH = os.path.join(
 _CWE_ID_RE = re.compile(r'CWE-\d+', re.IGNORECASE)
 
 
-# ---- 种子数据: 前 50 最常见 CWE ----
+# 种子数据: 前 50 最常见 CWE
 # 描述来自 MITRE CWE 数据库，手动精简。
 # 这些覆盖绝大多数真实漏洞 — 其余懒加载。
 # 格式: {cwe_id: {name, description, extended_description}}
@@ -204,7 +204,7 @@ class CWEClient:
                     )
                 conn.commit()
 
-    # ---- 本地缓存访问 ----
+# 本地缓存访问
     def get_cwe(self, cwe_id: str) -> Optional[Dict[str, Any]]:
         """从缓存获取 CWE 数据。未缓存时返回 None。
         输入归一化: '79', 'cwe-79', 'CWE-79' 均映射到 'CWE-79'。"""
@@ -235,7 +235,7 @@ class CWEClient:
         """检查 CWE 是否在本地缓存中。"""
         return self.get_cwe(cwe_id) is not None
 
-    # ---- API 获取 ----
+# API 获取
     def fetch_cwe(self, cwe_id: str) -> Optional[Dict[str, Any]]:
         """从 MITRE API 获取 CWE 数据并缓存。
         返回与 get_cwe() 相同格式的 dict，失败时返回 None。"""
@@ -333,7 +333,7 @@ class CWEClient:
             "cached": True,
         }
 
-    # ---- 扩充 ----
+# 扩充
     def enrich_entry(self, entry) -> Dict[str, Any]:
         """向 CVE 条目添加 CWE 元数据。entry 可以是 CVEEntry 或 dict。
         返回含 {cwe_enrichment: [{id, name, description, ...}]} 的 dict。
@@ -390,7 +390,7 @@ class CWEClient:
             pass
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 def _normalize_cwe_id(raw: str) -> Optional[str]:
     """将各种 CWE ID 格式归一化为 'CWE-NNN'。
     处理: '79', 'cwe-79', 'CWE-79', 'CWE-079'。

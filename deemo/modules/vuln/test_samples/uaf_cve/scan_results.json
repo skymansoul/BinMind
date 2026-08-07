@@ -1,0 +1,525 @@
+[
+  {
+    "sample_id": "uaf_01_simple_read",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 37.3,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        15,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 15,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_02_simple_write",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 33.9,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        15,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 15,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_03_indirect_call",
+    "detected": true,
+    "n_pairs": 2,
+    "n_uaf": 2,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 2,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 2
+    },
+    "prov_ms": 35.2,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        16,
+        18,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 18,
+        "free_idx": 16,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      },
+      {
+        "func": "main",
+        "use_idx": 19,
+        "free_idx": 16,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_04_alias_reg",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 32.8,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        15,
+        17,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 17,
+        "free_idx": 15,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_05_via_second_slot",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 34.3,
+    "naive_detected": false,
+    "naive_findings": [],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 17,
+        "free_idx": 15,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_06_conditional",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 34.0,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        17,
+        19,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 19,
+        "free_idx": 17,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 7,
+        "use_alloc": 7,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_07_loop",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 33.2,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        17,
+        21,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 21,
+        "free_idx": 17,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_08_struct_field",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 34.4,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        15,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 15,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_09_after_call",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 32.0,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        16,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 16,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_10_realloc_old",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 36.2,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        16,
+        23,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 23,
+        "free_idx": 16,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_11_member_read",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 34.9,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        15,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 15,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_12_store_through",
+    "detected": true,
+    "n_pairs": 1,
+    "n_uaf": 1,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 1,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {
+      "R4_same_obj": 1
+    },
+    "prov_ms": 36.3,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        15,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 15,
+        "free_idx": 13,
+        "verdict": "UAF",
+        "rule": "R4_same_obj",
+        "free_alloc": 5,
+        "use_alloc": 5,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_safe_no_use",
+    "detected": false,
+    "n_pairs": 0,
+    "n_uaf": 0,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 0,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {},
+    "prov_ms": 34.5,
+    "naive_detected": false,
+    "naive_findings": [],
+    "findings": []
+  },
+  {
+    "sample_id": "uaf_safe_other_object",
+    "detected": false,
+    "n_pairs": 1,
+    "n_uaf": 0,
+    "n_safe": 1,
+    "n_suspicious": 0,
+    "n_findings": 0,
+    "fp_reduction_pct": 50.0,
+    "per_rule": {
+      "R2_diff_obj": 1
+    },
+    "prov_ms": 38.7,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        18,
+        20,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 20,
+        "free_idx": 18,
+        "verdict": "SAFE",
+        "rule": "R2_diff_obj",
+        "free_alloc": 5,
+        "use_alloc": 8,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_safe_realloc_reuse",
+    "detected": false,
+    "n_pairs": 1,
+    "n_uaf": 0,
+    "n_safe": 1,
+    "n_suspicious": 0,
+    "n_findings": 0,
+    "fp_reduction_pct": 50.0,
+    "per_rule": {
+      "R2_diff_obj": 1
+    },
+    "prov_ms": 40.6,
+    "naive_detected": true,
+    "naive_findings": [
+      [
+        13,
+        22,
+        "rax",
+        ""
+      ]
+    ],
+    "findings": [
+      {
+        "func": "main",
+        "use_idx": 22,
+        "free_idx": 13,
+        "verdict": "SAFE",
+        "rule": "R2_diff_obj",
+        "free_alloc": 5,
+        "use_alloc": 15,
+        "base_reg": "rax"
+      }
+    ]
+  },
+  {
+    "sample_id": "uaf_safe_use_before_free",
+    "detected": false,
+    "n_pairs": 0,
+    "n_uaf": 0,
+    "n_safe": 0,
+    "n_suspicious": 0,
+    "n_findings": 0,
+    "fp_reduction_pct": 0.0,
+    "per_rule": {},
+    "prov_ms": 36.4,
+    "naive_detected": false,
+    "naive_findings": [],
+    "findings": []
+  }
+]

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-30 — 基础断点续传; 修改: 2026-08-04 — 增量+内容寻址+智能恢复
+# coding: utf-8
+# 创建: 2026-06-16 — 基础断点续传; 修改: 2026-08-04 — 增量+内容寻址+智能恢复
 """
 增量差分检查点 — 首个全量, 后续仅存变更键 delta; 大值 blob 去重; 智能恢复
 仅重跑输入变化的钩子; N 次后链压缩合并.
@@ -94,7 +94,7 @@ class CheckpointManager:
         return r if r is not None else self.execute_with_checkpoints(
             prov_scheduler, context, max_workers=max_workers, parallel=parallel)
 
-    # ---- 写入 ----
+# 写入
     def _write_checkpoint(self, prov, context, completed_levels, total_levels, completed_tasks):
         cid = f'ckpt_{int(time.time()*1000)}_{completed_levels}'
         is_full = len(self._manifests) == 0
@@ -140,7 +140,7 @@ class CheckpointManager:
         if not os.path.exists(p):
             with open(p, 'w', encoding='utf-8') as f: f.write(raw)
 
-    # ---- 恢复 ----
+# 恢复
     def _smart_resume(self, sched, context, completed, ckpt_data):
         ckpt_ctx = ckpt_data.get('context_snapshot', {})
         orig = sched._execute_one
@@ -175,7 +175,7 @@ class CheckpointManager:
             if e.get('hook_name') == name: keys.update(e.get('read_keys', []))
         return keys
 
-    # ---- 加载 ----
+# 加载
     def _load_full_context(self, path):
         try:
             with open(path, 'r', encoding='utf-8') as f: data = json.load(f)
@@ -209,7 +209,7 @@ class CheckpointManager:
                 return json.loads(f.read())
         except: return None
 
-    # ---- 维护 ----
+# 维护
     def _prune_and_compact(self):
         if len(self._manifests) >= self._compact_after: self._compact_chain()
         if len(self._manifests) <= self._max: return

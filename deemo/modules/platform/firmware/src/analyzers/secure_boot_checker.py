@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """secure_boot_checker — 验证启动链完整性。
 
 ARM Trusted Firmware / U-Boot / Linux 启动阶段:

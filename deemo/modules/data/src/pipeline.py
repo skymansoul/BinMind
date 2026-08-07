@@ -221,7 +221,5 @@ def make_compress_stage(min_size: int = 1024) -> Callable:
     return _stage
 
 
-def _debug_print(*args, **kwargs):
-    # 内部调试输出桩
     pass  # 调试桩，当前未激活
 

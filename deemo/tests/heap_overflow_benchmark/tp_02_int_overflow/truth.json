@@ -1,0 +1,16 @@
+{
+  "sample_id": "TP-02",
+  "label": "tp",
+  "cwe": "CWE-190->CWE-122",
+  "description": "Integer overflow in size calc: malloc(w*h) wraps to small value",
+  "alloc_size": 0,
+  "write_offset": 0,
+  "write_size": 65536,
+  "expect_overflow": true,
+  "lpvra_expected_verdict": "OVERFLOW",
+  "verdict_reason": "alloc_size=0 (wrap), loop writes 65536 bytes",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "OVERFLOW"
+  }
+}

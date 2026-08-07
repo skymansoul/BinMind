@@ -1,0 +1,32 @@
+{
+  "name": "FP-03_guard_check",
+  "is_vuln": false,
+  "pattern": "guard_check",
+  "cve": "",
+  "tools": {
+    "CACBV": {
+      "detected": false,
+      "findings": [],
+      "ms": 0.288
+    },
+    "Baseline": {
+      "detected": true,
+      "findings": [
+        {
+          "func": "safe_guarded",
+          "alloc_var": "buf",
+          "alloc_size": "size",
+          "write": "memcpy(buf, ...)",
+          "extent": "len",
+          "verdict": "OVERFLOW",
+          "confidence": 0.55,
+          "fp_reasons": [
+            "dynamic-extent"
+          ],
+          "overflow_bytes": 0
+        }
+      ],
+      "ms": 0.263
+    }
+  }
+}

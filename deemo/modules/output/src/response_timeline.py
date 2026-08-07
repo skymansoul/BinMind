@@ -15,7 +15,6 @@
 
   每阶段的行动根据漏洞特征动态生成，而非静态模板。
 
-参考:
   NIST SP 800-61r2: Computer Security Incident Handling Guide
   SANS Incident Response Process: Preparation→Identification→Containment→...
   ITIL Incident Management: 事件优先级→响应SLA映射
@@ -28,14 +27,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class PhaseType(Enum):
     CONTAIN = "contain"        # 遏制
     ANALYZE = "analyze"        # 分析
     REMEDIATE = "remediate"    # 修复
     DEPLOY = "deploy"          # 部署
     REVIEW = "review"          # 复盘
-
 
 @dataclass
 class TimelinePhase:
@@ -47,7 +44,6 @@ class TimelinePhase:
     owner: str = ''
     success_criteria: str = ''
 
-
 @dataclass
 class ResponseTimeline:
     """完整事件响应时间线。"""
@@ -55,7 +51,6 @@ class ResponseTimeline:
     urgency_level: str
     phases: List[TimelinePhase] = field(default_factory=list)
     total_containment_cost_est: str = ''
-
 
 def _contain_actions(
     is_heap: bool = False,
@@ -79,7 +74,6 @@ def _contain_actions(
         actions.append('评估是否需要立即下线服务')
     return actions
 
-
 def _analyze_actions(
     has_poc: bool = False,
     root_cause_known: bool = False,
@@ -95,7 +89,6 @@ def _analyze_actions(
         actions.append(f'评估影响范围: {", ".join(affected_versions[:3])}')
     actions.append('更新 CMDB 中受影响资产的状态')
     return actions
-
 
 def _remediate_actions(
     is_open_source: bool = False,
@@ -116,7 +109,6 @@ def _remediate_actions(
     actions.append('在 staging 环境中验证修复不引入回归')
     return actions
 
-
 def _deploy_actions(
     is_shared_library: bool = False,
     requires_reboot: bool = False,
@@ -132,7 +124,6 @@ def _deploy_actions(
     actions.append('监控错误率/崩溃率/性能指标 24h')
     return actions
 
-
 def _review_actions(
     was_exploited: bool = False,
     regulatory_reportable: bool = False,
@@ -145,7 +136,6 @@ def _review_actions(
     actions.append('更新安全测试用例以覆盖此类漏洞')
     actions.append('评估是否需要在 CI/CD 中加入自动化检测')
     return actions
-
 
 def generate_timeline(
     vulnerability_name: str = '',

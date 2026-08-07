@@ -23,7 +23,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 
-# ---- 算子词表 ----
+# 算子词表
 
 # 统一算子标识集, 横向兼容 MutationOp.name 与 StructMutOp.value
 DEFAULT_RL_OPS: Tuple[str, ...] = (
@@ -78,7 +78,7 @@ def seed_context_features(seed_meta: dict, data_len: int = 0,
     return feat
 
 
-# ---- 对数线性自回归序列打分 ----
+# 对数线性自回归序列打分
 
 class SequenceScorer:
     """对数线性自回归变异序列策略核心。
@@ -108,7 +108,7 @@ class SequenceScorer:
         self._pos: Dict[Tuple[str, int], float] = {}
         self._ctx: Dict[Tuple[str, int], float] = {}
 
-    # -- 打分与概率计算 --
+# 打分与概率计算
 
     def score_step(self, op: str, prev_op: Optional[str],
                    pos: int, ctx: Optional[List[float]]) -> float:
@@ -145,7 +145,7 @@ class SequenceScorer:
             prev = map_op_name(op)
         return lp
 
-    # -- 自回归采样 --
+# 自回归采样
 
     def sample_sequence(self, length: int, ctx: Optional[List[float]] = None,
                         temperature: float = 1.0,
@@ -160,7 +160,7 @@ class SequenceScorer:
             prev = seq[-1]
         return seq
 
-    # -- REINFORCE + 熵正则化步进 --
+# REINFORCE + 熵正则化步进
 
     def apply_update(self, seq: Sequence[str], ctx: Optional[List[float]],
                      advantage: float, lr: float, entropy_coef: float) -> None:
@@ -224,7 +224,7 @@ class SequenceScorer:
             self._ctx[k] = self._ctx.get(k, 0.0) + lr * (
                 advantage * g + entropy_coef * en4.get(k, 0.0))
 
-    # -- 统计查询 --
+# 统计查询
 
     def op_prior(self) -> Dict[str, float]:
         """unigram权重经softmax后的边际分布, 排除转/位/上下文影响。"""
@@ -250,7 +250,7 @@ def _sample_from_probs(probs: Dict[str, float], rng) -> str:
     return next(iter(probs))
 
 
-# ---- RL序列调度器 (外部入口) ----
+# RL序列调度器 (外部入口)
 
 class RLSequenceScheduler:
     """策略梯度驱动的变异序列调度器, 在线学习算子序列生成策略。
@@ -295,7 +295,7 @@ class RLSequenceScheduler:
         self._total_updates = 0
         self._reward_history: List[float] = []
 
-    # -- 序列选择入口 --
+# 序列选择入口
 
     def select_sequence(self, context: Optional[List[float]] = None) -> List[str]:
         """按当前策略采样一条算子序列, 更新选择计数。"""
@@ -308,7 +308,7 @@ class RLSequenceScheduler:
         self._total_selections += 1
         return seq
 
-    # -- 奖赏反馈与组触发更新 --
+# 奖赏反馈与组触发更新
 
     def notify_reward(self, reward: float, seq: Sequence[str],
                       context: Optional[List[float]] = None) -> Optional[dict]:
@@ -352,7 +352,7 @@ class RLSequenceScheduler:
         self._pending = []
         return summary
 
-    # -- 统计查询 --
+# 统计查询
 
     def get_probabilities(self) -> Dict[str, float]:
         """unigram边际概率, 与GRPOScheduler.get_probabilities同接口形状。"""
@@ -391,7 +391,7 @@ class RLSequenceScheduler:
         self._reward_history.clear()
 
 
-# ---- 奖赏塑形 ----
+# 奖赏塑形
 
 def compute_sequence_reward(new_edges: int, total_edges_before: int,
                             crash_found: bool = False, hang_found: bool = False,
@@ -421,7 +421,7 @@ def compute_sequence_reward(new_edges: int, total_edges_before: int,
     return reward
 
 
-# ---- Bandit种子选择 + RL变异序列叠加 ----
+# Bandit种子选择 + RL变异序列叠加
 
 class HybridSeedMutationScheduler:
     """Bandit种子调度与RL变异序列调度的组合调度器。

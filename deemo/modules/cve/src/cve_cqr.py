@@ -1,45 +1,45 @@
-# 创建: 2026-07-30 22:31
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-08-09 22:31
+# 修改: 2026-08-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 共形分位数回归自适应区间
 # 共形分位数回归 — CVE评分的自适应宽度预测区间
 #
 # 问题: 标准共形预测 (cve_conformal) 使用全局常数q_hat,
 # 对每个CVE产生等宽预测区间. 但CVE的评分不确定性是异方差的:
-#   - 常见CWE (如XSS) 的预测方差低 → 窄区间足够.
-#   - 罕见CWE (如AI投毒) 的预测方差高 → 需要宽区间.
+# 常见CWE (如XSS) 的预测方差低 → 窄区间足够.
+# 罕见CWE (如AI投毒) 的预测方差高 → 需要宽区间.
 # 等宽区间导致: 对"容易"的CVE过于保守 (浪费决策带宽),
 # 对"困难"的CVE覆盖不足 (误判风险).
 #
-# 解决方案: 共形分位数回归 (CQR, Romano et al. 2019).
+# 解决方案: 共形分位数回归.
 # 训练两个分位数回归器 Q_α/2(x) 和 Q_{1-α/2}(x),
 # 然后用共形校准修正系统性偏差:
 #   L(x) = Q_α/2(x) - q_lo
 #   U(x) = Q_{1-α/2}(x) + q_hi
 # 其中 q_lo, q_hi 在校准集上计算, 确保 P(y∈[L,U]) ≥ 1-α.
 #
-# 关键改进 (LCMQR 2025):
+# 关键改进:
 #   CCQR使用 Max-then-Average 评分但在校准阶段错误地
 #   使用了 Average-then-Max 结构. LCMQR修正为一致使用
 #   Average-then-Max, 提供更紧的区间 (Jensen不等式).
 #   本实现采用LCMQR的一致评分.
 #
 # 与cve_conformal.py的关系:
-#   - ConformalExploitScorer: 等宽区间 (参数方法).
-#   - CQRScorer: 自适应宽度区间 (非参数方法).
+# ConformalExploitScorer: 等宽区间 (参数方法).
+# CQRScorer: 自适应宽度区间 (非参数方法).
 #   两者互补: CQR用于异方差场景, 标准共形用于同方差场景.
 #
 # 非显而易见性:
 #   1. 首次将CQR应用于CVE评分的不确定性量化.
-#      LCMQR (2025) 和 DCP (2026) 是通用方法,
+#      LCMQR 和 DCP 是通用方法,
 #      但零应用面向CVE漏洞评分.
 #   2. LCMQR一致评分: 避免CCQR的理论缺陷.
 #   3. 分位数回归器使用梯度增强 (pinball loss),
 #      适配CVE特征的混合类型 (连续+离散).
 #
-# 参考:
-#   [Romano et al. 2019] CQR: Conformalized Quantile Regression (NeurIPS)
-#   [LCMQR 2025] 修正CCQR的理论不一致性 (arXiv:2411.19523)
-#   [DCP 2026] Distribution-aware Conformal Prediction 统一框架
+#
+# CQR: Conformalized Quantile Regression (NeurIPS)
+# 修正CCQR的理论不一致性
+# Distribution-aware Conformal Prediction 统一框架
 
 import math
 from typing import Callable, Dict, List, Optional, Tuple
@@ -208,7 +208,7 @@ class CQRScorer:
         return self._calibrated
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_cqr_from_data(X_train: List[List[float]], y_train: List[float],
                         X_cal: List[List[float]], y_cal: List[float],

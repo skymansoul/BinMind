@@ -1,0 +1,8 @@
+{
+  "sample": "v02_walk_safe",
+  "cve": "SAFE-ctr",
+  "mode": "walk_write",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "malloc(2l+2) 覆盖最长输出 2l+1 → 安全"
+}

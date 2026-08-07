@@ -1,10 +1,10 @@
 """渐进式多阶段模糊测试流水线，串联不同策略以最大化长期覆盖收益。
 
 文献:
-  EcoFuzz (USENIX 2020)    -- exploration/exploitation 状态机
+  EcoFuzz     -- exploration/exploitation 状态机
   HFL: Hybrid Fuzzing on the Linux Kernel -- 内核混合模糊测试
   SAFL                     -- 符号执行与引导模糊测试的逐步覆盖加速
-  Driller (NDSS 2016)      -- 选择性符号执行增强模糊测试
+  Driller       -- 选择性符号执行增强模糊测试
   CSEFuzz                  -- 基于符号执行的模糊测试
 
 设计前提:
@@ -27,14 +27,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 class PipelineStage(str, Enum):
     RAMP_UP = "ramp_up"        # 启动: 建立覆盖基线
     EXPLORE = "explore"        # 拓展: 广度优先，探新边
     DEEPEN = "deepen"          # 深掘: 深度变异，突破复杂分支
     CONVERGE = "converge"      # 收束: 精细化，消重，崩溃确认
     TERMINATED = "terminated"  # 终结
-
 
 @dataclass
 class StageConfig:
@@ -52,7 +50,6 @@ class StageConfig:
     dict_weight: float = 0.3           # 字典权重
     symex_enabled: bool = False        # 符号辅助开关
 
-
 @dataclass
 class PipelineState:
     """流水线运行时快照。"""
@@ -64,7 +61,6 @@ class PipelineState:
     stage_changes: int = 0
     execs_per_second: float = 0.0
     coverage_growth_rate: float = 0.0   # 边/分钟
-
 
 class ProgressivePipeline:
     """渐进式多阶段流水线调度器。
@@ -215,7 +211,6 @@ class ProgressivePipeline:
                 "scheduler": self.current_config.scheduler_strategy,
             },
         }
-
 
 # ···· 自适应阶段检测 (EcoFuzz 式在线推断) ························
 

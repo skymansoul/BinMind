@@ -1,0 +1,188 @@
+{
+  "summary": {
+    "tp": 25,
+    "fp": 0,
+    "tn": 4,
+    "fn": 0,
+    "recall": 1.0,
+    "precision": 1.0,
+    "fpr": 0.0
+  },
+  "rows": [
+    {
+      "name": "fmt_basic_direct",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 84.7
+    },
+    {
+      "name": "fmt_conditional_fmtstr",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 90.7
+    },
+    {
+      "name": "fmt_constant_safe",
+      "is_safe": true,
+      "detected": false,
+      "time_ms": 84.7
+    },
+    {
+      "name": "fmt_direct_user",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 81.1
+    },
+    {
+      "name": "fmt_double_percent",
+      "is_safe": true,
+      "detected": false,
+      "time_ms": 119.1
+    },
+    {
+      "name": "fmt_double_printf",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 94.7
+    },
+    {
+      "name": "fmt_external_input",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.5
+    },
+    {
+      "name": "fmt_got_overwrite",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 84.8
+    },
+    {
+      "name": "fmt_heap_fmt",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 81.7
+    },
+    {
+      "name": "fmt_heap_fmtstr",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 79.8
+    },
+    {
+      "name": "fmt_indirect_arg",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.2
+    },
+    {
+      "name": "fmt_indirect_fmt",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 128.4
+    },
+    {
+      "name": "fmt_inline_const",
+      "is_safe": true,
+      "detected": false,
+      "time_ms": 79.4
+    },
+    {
+      "name": "fmt_loop_printf",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 81.1
+    },
+    {
+      "name": "fmt_loop_write",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 79.4
+    },
+    {
+      "name": "fmt_n_bytes_written",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 81.3
+    },
+    {
+      "name": "fmt_n_write",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 112.6
+    },
+    {
+      "name": "fmt_nested_call",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 89.4
+    },
+    {
+      "name": "fmt_offset_leak",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 79.8
+    },
+    {
+      "name": "fmt_positional",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.2
+    },
+    {
+      "name": "fmt_positional_arg",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.5
+    },
+    {
+      "name": "fmt_snprintf_safe",
+      "is_safe": true,
+      "detected": false,
+      "time_ms": 79.6
+    },
+    {
+      "name": "fmt_snprintf_trunc",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.9
+    },
+    {
+      "name": "fmt_stack_leak",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 79.2
+    },
+    {
+      "name": "fmt_stack_write",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 80.3
+    },
+    {
+      "name": "fmt_vprintf_proxy",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 82.5
+    },
+    {
+      "name": "fmt_vprintf_wrap",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 125.4
+    },
+    {
+      "name": "fmt_width_leak",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 80.0
+    },
+    {
+      "name": "fmt_wrapper_func",
+      "is_safe": false,
+      "detected": true,
+      "time_ms": 122.0
+    }
+  ],
+  "timestamp": "2026-08-11 01:58:04"
+}

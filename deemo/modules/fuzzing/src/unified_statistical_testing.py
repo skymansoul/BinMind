@@ -1,11 +1,11 @@
 """统一统计检验框架 — 多策略评估 + 多重检验校正 + 效应量.
 
-创建: 2025-08-27 08:33
-修改: 2025-08-29 15:47 — 添加 Bayesian 因子 + 等价检验 (TOST)
+创建: 2026-06-22 08:33
+修改: 2026-06-22 15:47 — 添加 Bayesian 因子 + 等价检验 (TOST)
 
-参考: Wasserstein & Lazar (2016) "The ASA Statement on p-Values" (TAS)
-       Lakens (2017) "Equivalence Testing" (SPPS)
-       Kass & Raftery (1995) "Bayes Factors" (JASA)
+参考: Wasserstein & Lazar "The ASA Statement on p-Values" (TAS)
+       Lakens "Equivalence Testing" (SPPS)
+       Kass & Raftery "Bayes Factors" (JASA)
 
 技术定位:
   将 FDR-CC (BH过程), Granger (因果), SPRT (序贯), Mann-Whitney (非参数),

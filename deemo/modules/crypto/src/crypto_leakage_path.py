@@ -22,11 +22,10 @@
     - constant_time_verifier: 验证是否常量时间(是否)
     - crypto_leakage_path: 重建具体泄漏路径(哪里→哪里→多少信息)
 
-参考:
-  - FLOWFUZZ (TOSEM 2025): 信息流泄漏oracle — 通过变异秘密数据检测泄漏。
+  - FLOWFUZZ: 信息流泄漏oracle — 通过变异秘密数据检测泄漏。
     本项目在静态层面做路径重建, 不执行代码。
-  - CacheShield (USENIX 2017): 缓存侧信道防御 — 展示了"泄漏路径"概念。
-  - DATA (CCS 2018): 数据流追踪做侧信道检测 — 动态分析方法论。
+  - CacheShield: 缓存侧信道防御 — 展示了"泄漏路径"概念。
+  - DATA: 数据流追踪做侧信道检测 — 动态分析方法论。
 
 边界条件:
   - 路径重建是概率性的 — 基于字节模式近似, 不依赖精确反汇编。
@@ -38,14 +37,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
 @dataclass
 class LeakageNode:
     node_type: str = ""         # SECRET_SOURCE / TRANSFORM / OBSERVABLE_SINK
     location: int = 0
     label: str = ""
     data_size_hint: int = 0     # 流经此节点的数据字节数(近似)
-
 
 @dataclass
 class LeakagePath:
@@ -57,8 +54,7 @@ class LeakagePath:
     channel_type: str = ""               # TIMING / CACHE / POWER / DIRECT
     confidence: float = 0.0
 
-
-# ── 秘密源模式 ──
+# 秘密源模式
 _SECRET_SOURCE_PATTERNS: List[Tuple[bytes, str, int]] = [
     (b'RAND_bytes', 'OpenSSL key generation', 32),
     (b'randombytes_buf', 'libsodium key generation', 32),
@@ -70,13 +66,13 @@ _SECRET_SOURCE_PATTERNS: List[Tuple[bytes, str, int]] = [
     (b'DeriveKey', 'key derivation', 32),
 ]
 
-# ── 数据传播模式(内存操作) ──
+# 数据传播模式(内存操作)
 _PROPAGATION_PATTERNS: List[bytes] = [
     b'memcpy', b'memmove', b'mov', b'copy',
     b'assign', b'store', b'write', b'put',
 ]
 
-# ── 可观测汇聚点模式 ──
+# 可观测汇聚点模式
 _OBSERVABLE_SINK_PATTERNS: List[Tuple[bytes, str, str, float]] = [
     # (模式, 信道类型, 描述, 信息泄漏估计)
     (b'send(', 'DIRECT', 'network send', 1.0),
@@ -97,12 +93,11 @@ _OBSERVABLE_SINK_PATTERNS: List[Tuple[bytes, str, str, float]] = [
     (b'SIB', 'CACHE', 'scaled-index addressing (table lookup)', 0.25),
 ]
 
-# ── 分支密度阈值(用于判断秘密依赖分支) ──
+# 分支密度阈值(用于判断秘密依赖分支)
 _BRANCH_BYTES = frozenset({
     0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
     0x7C, 0x7D, 0x7E, 0x7F, 0xEB,
 })
-
 
 def _find_sources(data: bytes, anchor: int, window: int = 4096
                   ) -> List[LeakageNode]:
@@ -116,7 +111,6 @@ def _find_sources(data: bytes, anchor: int, window: int = 4096
                 node_type='SECRET_SOURCE',
                 location=start + pos, label=label, data_size_hint=size_hint))
     return nodes
-
 
 def _find_sinks(data: bytes, anchor: int, window: int = 4096
                 ) -> List[LeakageNode]:
@@ -132,7 +126,6 @@ def _find_sinks(data: bytes, anchor: int, window: int = 4096
                 label=f'{desc} ({channel})',
                 data_size_hint=0))
     return nodes
-
 
 def _find_propagation_nodes(data: bytes, source_loc: int, sink_locs: List[int]
                             ) -> List[LeakageNode]:
@@ -151,7 +144,6 @@ def _find_propagation_nodes(data: bytes, source_loc: int, sink_locs: List[int]
                         location=lo + off,
                         label=f'data propagation: {pat.decode("ascii", errors="replace")}'))
     return nodes[:8]
-
 
 def reconstruct_leakage_paths(data: bytes,
                               crypto_findings: Optional[List] = None,

@@ -2,7 +2,7 @@
 利用原语质量评分 — 可控性×可达范围×可靠性×副作用的四维评估。
 
 问题定义:
-  Colorstreams (USENIX 2025) 用符号执行 + SMT 求解量化"攻击者控制域"，
+  Colorstreams 用符号执行 + SMT 求解量化"攻击者控制域"，
   但这是重量级方法，不适于报告阶段的快速评估。
   安全审计报告需要回答: "这个漏洞的利用原语有多强?"
 
@@ -15,10 +15,9 @@
   四者乘积 → 原语质量分 (PQF = Primitive Quality Factor) [0, 1]。
   乘积形式而非和: 任一维度为零 → 整体原语质量为零。
 
-参考:
-  Colorstreams (USENIX 2025): wQC (weighted Quantitative Control) 度量
-  ARCANIST (USENIX 2025): gadget chain synthesis with primitive abstraction
-  BridgeRouter (IEEE S&P 2025): OOB→arbitrary write 原语升级
+  Colorstreams: wQC (weighted Quantitative Control) 度量
+  ARCANIST: gadget chain synthesis with primitive abstraction
+  BridgeRouter: OOB→arbitrary write 原语升级
 
   本模块与上述工具的位置不同:
     Colorstreams/ARCANIST/BridgeRouter: 利用生成阶段，需要符号执行
@@ -33,7 +32,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class PrimitiveType(Enum):
     CRASH = "crash"                  # 仅崩溃，无控制
     READ_OOB = "read_oob"            # 越界读 — 可能的信息泄露
@@ -43,7 +41,6 @@ class PrimitiveType(Enum):
     READ_ARBITRARY = "read_arbitrary"      # 任意读
     EXEC_CONTROL = "exec_control"    # 直接执行控制 (EIP/RIP 劫持)
     CODE_EXEC = "code_exec"          # 已达成代码执行
-
 
 # 原语能力矩阵 — 每种原语在各维度上的默认能力分
 _PRIMITIVE_CAPABILITY: Dict[PrimitiveType, Tuple[float, float, float, float]] = {
@@ -57,7 +54,6 @@ _PRIMITIVE_CAPABILITY: Dict[PrimitiveType, Tuple[float, float, float, float]] = 
     PrimitiveType.EXEC_CONTROL:      (0.95, 0.9,  0.6,  0.4),
     PrimitiveType.CODE_EXEC:         (1.0,  1.0,  0.9,  0.9),
 }
-
 
 @dataclass
 class PrimitiveQuality:
@@ -82,7 +78,6 @@ class PrimitiveQuality:
         else:
             self.tier = 'trivial'
 
-
 def _parse_primitive_type(vuln_info: Dict[str, Any]) -> PrimitiveType:
     """从漏洞描述推断原语类型。"""
     vtype = vuln_info.get('type', '').lower()
@@ -105,7 +100,6 @@ def _parse_primitive_type(vuln_info: Dict[str, Any]) -> PrimitiveType:
         return PrimitiveType.READ_OOB
 
     return PrimitiveType.CRASH
-
 
 def score_primitive(
     vuln_info: Dict[str, Any],
@@ -158,7 +152,6 @@ def score_primitive(
         pqf=pqf,
     )
 
-
 def chain_potential(primitives: List[PrimitiveQuality]) -> Dict[str, Any]:
     """
     多原语组合潜力评估 — 如果存在信息泄露+任意写 → 完整利用链可行。
@@ -202,7 +195,6 @@ def chain_potential(primitives: List[PrimitiveQuality]) -> Dict[str, Any]:
 
     return {'chain_possible': False, 'missing_link': 'all',
             'best_pqf': best_pqf}
-
 
 def batch_score_primitives(
     vulnerabilities: List[Dict[str, Any]],

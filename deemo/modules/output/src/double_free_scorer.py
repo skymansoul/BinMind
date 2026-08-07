@@ -12,7 +12,6 @@ Double-Free 利用性评分 — 分配器版本×tcache/fastbin 检测×合并�
     3. chunk 大小类别 (tcache vs fastbin vs smallbin)
     4. 合并路径 — chunk 是否可能被 consolidate (触发额外检查)
 
-参考:
   glibc 2.27-2.33: tcache 无 double-free 检测
   glibc 2.34+: tcache key (per-chunk 随机值)
   fastbin: 仅检查链表头 (易绕过, 两次 free 之间插入一次 free 即可)
@@ -26,13 +25,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class ChunkSizeClass(Enum):
     TCHACHE = "tcache"      # ≤ 1032 bytes (默认 64 tcache bins)
     FASTBIN = "fastbin"     # ≤ 128 bytes (global_max_fast)
     SMALLBIN = "smallbin"   # ≤ 1024 bytes
     LARGEBIN = "largebin"   # > 1024 bytes → 使用 mmap 或 largebin
-
 
 # 各版本的 double-free 检测状态
 # True = 有检测保护, False = 无保护
@@ -50,7 +47,6 @@ _FASTBIN_TOP_CHECK: Dict[str, bool] = {
     'glibc_2.37': True, 'glibc_2.39': True,
 }
 
-
 @dataclass
 class DoubleFreeScore:
     """Double-free 利用性评分。"""
@@ -63,7 +59,6 @@ class DoubleFreeScore:
     bypass_needed: List[str] = field(default_factory=list)
     technique: str = ''
 
-
 def _classify_size(size_bytes: int) -> ChunkSizeClass:
     if size_bytes <= 1032:
         return ChunkSizeClass.TCHACHE
@@ -72,7 +67,6 @@ def _classify_size(size_bytes: int) -> ChunkSizeClass:
     if size_bytes <= 1024:
         return ChunkSizeClass.SMALLBIN
     return ChunkSizeClass.LARGEBIN
-
 
 def _detect_glibc_protection(
     libc_version: str = '',
@@ -84,7 +78,6 @@ def _detect_glibc_protection(
         if ver.startswith(v[:3]):
             return _TCACHE_PROTECTION.get(f'glibc_{v}', True), _FASTBIN_TOP_CHECK.get(f'glibc_{v}', True)
     return True, True  # 保守假设有保护
-
 
 def score_double_free(
     chunk_size: int = 64,

@@ -6,7 +6,7 @@
 方案：Ng-Jordan-Weiss归一化谱聚类。加权邻接矩阵(边置信度),
 归一化拉普拉斯, 特征分解, K-Means在特征空间聚类。Eigengap自动选k。
 
-ref: Ng, Jordan, Weiss (NeurIPS 2002). von Luxburg (2007).
+ref: Ng, Jordan, Weiss. von Luxburg.
 """
 
 from __future__ import annotations

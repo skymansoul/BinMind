@@ -10,7 +10,6 @@ Fuses independent detector outputs into unified vulnerability reports:
 Weighted average fusion with consistency bonus: +10% when multiple methods agree.
 """
 
-from __future__ import annotations
 
 import logging
 import os
@@ -170,7 +169,7 @@ def create_default_orchestrator() -> DetectionOrchestrator:
     """
     orch = DetectionOrchestrator()
 
-    # ---- 格式化字符串 ----
+    # 格式化字符串
     from core.format_string_detector import detect_format_string_vulns
 
     def fmt_static(bin_path: str, func: str) -> MethodResult:
@@ -182,7 +181,7 @@ def create_default_orchestrator() -> DetectionOrchestrator:
 
     orch.register_method('format_string', 'static', fmt_static, 0.30)
 
-    # ---- 栈溢出 ----
+    # 栈溢出
     from core.stack_overflow_analyzer import analyze_stack_overflow
 
     def so_angr(bin_path: str, func: str) -> MethodResult:
@@ -194,7 +193,7 @@ def create_default_orchestrator() -> DetectionOrchestrator:
 
     orch.register_method('stack_overflow', 'angr', so_angr, 0.50)
 
-    # ---- 模式回退 (栈溢出) ----
+    # 模式回退 (栈溢出)
     from core.pattern_fallback import match_patterns
 
     def so_pattern(bin_path: str, func: str) -> MethodResult:
@@ -219,7 +218,7 @@ def create_default_orchestrator() -> DetectionOrchestrator:
 
     orch.register_method('stack_overflow', 'pattern_fallback', so_pattern, 0.30)
 
-    # ---- UAF ----
+    # UAF
     from core.uaf_detector import UAFDetector
 
     def uaf_detect(bin_path: str, func: str) -> MethodResult:

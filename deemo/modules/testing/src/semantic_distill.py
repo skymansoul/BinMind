@@ -6,7 +6,7 @@
 #   程序行为 (不同的错误路径、不同的状态转换、不同的输出模式)。
 #   纯覆盖去重会丢弃行为多样但覆盖冗余的种子。
 #
-#   混合fuzzing框架 (Lin 2025) 使用 CodeBERT+PCA+FAISS 做在线语义反馈,
+#   混合fuzzing框架 使用 CodeBERT+PCA+FAISS 做在线语义反馈,
 #   但依赖GPU嵌入且为在线场景设计。本模块针对离线场景:
 #   "已有百万级语料, 如何选取最有代表性的 k 个种子用于 CI 回归测试?"
 #
@@ -21,12 +21,12 @@
 #   本模块: 行为多样性驱动的蒸馏, 正交于覆盖率, 可叠加使用
 #   (先用 regression_corpus 做覆盖去重, 再用本模块做语义蒸馏)
 #
-# 参考文献:
+# 文献:
 #   Carbonell & Goldstein 1998, "The Use of MMR for Document Retrieval"
 #     — MMR 算法的奠基性工作
-#   Hybrid fuzzing (Lin 2025, arXiv:2511.03995) — 语义反馈用于在线fuzzing;
+#   Hybrid fuzzing — 语义反馈用于在线fuzzing;
 #     本项目取其"行为嵌入"思想但用于离线语料蒸馏
-#   MoonLight (2019) — 加权最小集合覆盖做语料蒸馏;
+#   MoonLight — 加权最小集合覆盖做语料蒸馏;
 #     本项目取其蒸馏目标但以MMR替代集合覆盖
 
 from __future__ import annotations

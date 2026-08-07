@@ -1,5 +1,5 @@
 # 二进制字符串处理: 字符编码检测、可打印字符串提取、转义/反转义、规范化
-# JSIMPLIFIER [arXiv:2512.14070 [待验证]] 的多阶段预处理管线包含编码归一化、字符串数组反混淆
+# JSIMPLIFIER] 的多阶段预处理管线包含编码归一化、字符串数组反混淆
 # 和 AST 级分析 —— 本模块提供其实施所依赖的底层字符串操作原语。
 import re
 import unicodedata
@@ -9,7 +9,7 @@ from typing import List, Optional, Iterator
 _LEGACY_THRESHOLD = 0.75
 
 
-# ---- 编码检测 -----------------------------------------------------------
+# 编码检测
 
 
 # 保留——后面可能用
@@ -58,7 +58,7 @@ def detect_encoding(data: bytes, default: str = "latin-1") -> str:
             pass
     return default
 
-# ---- 字符串提取 ---------------------------------------------------------
+# 字符串提取
 
 _ASCII_PRINTABLE = re.compile(b'[\x20-\x7E]{4,}')
 _UNICODE_PRINTABLE = re.compile(r'[ -~一-鿿぀-ゟ゠-ヿ]{4,}')
@@ -100,7 +100,7 @@ def extract_strings_auto(data: bytes, min_length: int = 4) -> List[str]:
             seen.add(s); result.append(s)
     return result
 
-# ---- 转义与反转义 -------------------------------------------------------
+# 转义与反转义
 
 _ESCAPE_MAP = {
     '\x00': '\\x00', '\x01': '\\x01', '\x02': '\\x02', '\x03': '\\x03',
@@ -129,7 +129,7 @@ def unescape_to_bytes(escaped: str) -> bytes:
     import codecs
     return escaped.encode("latin-1").decode("unicode_escape").encode("latin-1")
 
-# ---- 规范化 -------------------------------------------------------------
+# 规范化
 
 def normalize_line_endings(text: str, to: str = "\n") -> str:
     """统一换行符: 将 CRLF、CR 统一为 LF（或指定符）。"""
@@ -152,7 +152,7 @@ def truncate_with_ellipsis(text: str, max_len: int = 80) -> str:
         return text
     return text[:max_len - 1] + '…'
 
-# ---- 模糊匹配辅助 -------------------------------------------------------
+# 模糊匹配辅助
 
 def ngram_set(text: str, n: int = 3) -> set:
     """生成字符 n-gram 集合，用于模糊匹配。"""
@@ -171,7 +171,7 @@ def ngram_similarity(a: str, b: str, n: int = 3) -> float:
         return 0.0
     return len(sa & sb) / len(sa | sb)
 
-# ---- 十进制/十六进制/二进制 格式化 --------------------------------------
+# 十进制/十六进制/二进制 格式化
 
 def format_size(size_bytes: int) -> str:
     """人类可读的文件大小格式化。"""
@@ -190,7 +190,6 @@ def hex_dump_compact(data: bytes, max_len: int = 64) -> str:
     return " ".join(f"{b:02X}" for b in data[:max_len]) + " ..."
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

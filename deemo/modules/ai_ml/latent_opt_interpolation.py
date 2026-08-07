@@ -87,7 +87,7 @@ class LatentInterpolationTrainer:
         if o0 is None or o3 is None:
             return 0.0, InterpolationMetrics(0, 0, 0, 0)
 
-        # 步骤1: 线性插值
+        # 线性插值
         interp_loss = 0.0
         real_intermediate = []
 
@@ -104,7 +104,7 @@ class LatentInterpolationTrainer:
         n_interp = max(1, len(real_intermediate))
         interp_loss /= n_interp
 
-        # 步骤2: 线性度——O0→O1→O2→O3是否接近直线
+        # 线性度——O0→O1→O2→O3是否接近直线
         ordered = sorted([v for v in variants
                          if v.opt_level in ('O0', 'O1', 'O2', 'O3')],
                         key=lambda v: ['O0', 'O1', 'O2', 'O3'].index(v.opt_level))
@@ -121,11 +121,11 @@ class LatentInterpolationTrainer:
                 linearity += 1.0 / (1.0 + cross)
             linearity /= (len(ordered) - 2)
 
-        # 步骤3: 一致性——O0和O3嵌入做同一预测
+        # 一致性——O0和O3嵌入做同一预测
         consistency = float(np.dot(o0.embedding, o3.embedding)) / max(
             1e-8, float(np.linalg.norm(o0.embedding)) * float(np.linalg.norm(o3.embedding)))
 
-        # 步骤4: 间隙——O0-O3距离
+        # 间隙——O0-O3距离
         gap = float(np.linalg.norm(o0.embedding - o3.embedding))
 
         metrics = InterpolationMetrics(

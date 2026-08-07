@@ -12,7 +12,6 @@ from config import Config, ensure_directories
 logger = logging.getLogger(__name__)
 
 
-def _debug_print(msg): pass  # noqa
 
 _LEGACY_MODE = False  # 保留
 
@@ -176,12 +175,12 @@ class VulnerabilityDatabaseCore:
         ('free', 'malloc'): {'score': 50, 'note': 'UAF 风险'},
     }
 
-    # --- legacy scoring (pre-v2.1) ---
+# legacy scoring (pre-v2.1)
     # def _legacy_danger_score(funcs):
     #     score_map = {'gets': 30, 'strcpy': 20, 'system': 40}
     #     raw = sum(score_map.get(f, 5) for f in funcs)
     #     return min(raw, 150)
-    # --- end legacy ---
+# end legacy
 
     def __init__(self, db_path: str = None):
         """

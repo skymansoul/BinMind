@@ -15,13 +15,12 @@ Kaplan-Meier 生存函数:
   d_i = 在时间 t_i 被修复的数量, n_i = 在 t_i 时刻仍"存活"的数量
   中位寿命 = S(t) 首次穿越 0.5 的时间
 
-参考:
-  Kaplan & Meier (1958): 非参数生存估计
-  Cox (1972): 比例风险回归模型
-  NVD CVE 生命周期分析 (2024): 中位修复时间 ~55 天基线
+  Kaplan & Meier: 非参数生存估计
+  Cox: 比例风险回归模型
+  NVD CVE 生命周期分析: 中位修复时间 ~55 天基线
 
 修改记录:
-  创建 2026-08-01 — 六因子乘法模型
+  创建 2026-05-21 — 六因子乘法模型
   2026-08-04 — 追加 Kaplan-Meier 经验生存曲线 + 混合估计
 """
 
@@ -30,7 +29,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 _BASELINE_LIFESPAN_DAYS = 55.0
-
 
 @dataclass
 class SurvivalCurve:
@@ -42,7 +40,6 @@ class SurvivalCurve:
     percentile_75: float               # 75% 被修复的天数
     total_events: int                  # 总事件数 (已修复)
     total_censored: int                # 截尾数 (尚未修复)
-
 
 def fit_survival(
     events: List[Tuple[float, bool]],
@@ -106,7 +103,6 @@ def fit_survival(
         median_days=median, percentile_25=p25, percentile_75=p75,
         total_events=total_fixed, total_censored=total_censored)
 
-
 def _find_percentile(times: List[float], probs: List[float],
                      target: float) -> float:
     """S(t) 首次 ≤ target 的 t。线性插值。"""
@@ -120,8 +116,7 @@ def _find_percentile(times: List[float], probs: List[float],
             return round(prev_t + frac * (t - prev_t), 1)
     return times[-1] if times else _BASELINE_LIFESPAN_DAYS
 
-
-# --- 因子模型的六个因子 (保留原有逻辑) ---
+# 因子模型的六个因子 (保留原有逻辑)
 
 def _activity_factor(commits_per_month: float) -> float:
     if commits_per_month <= 0: return 2.0
@@ -154,7 +149,6 @@ def _ecosystem_factor(is_lib: bool, deps: int = 0) -> float:
         return 1.2
     return 0.9
 
-
 @dataclass
 class LifespanEstimate:
     vuln_identifier: str
@@ -170,7 +164,6 @@ class LifespanEstimate:
         elif self.expected_days >= 90: self.risk_of_prolonged = 'significant_delay'
         elif self.expected_days >= 30: self.risk_of_prolonged = 'moderate'
         else: self.risk_of_prolonged = 'expected_timely'
-
 
 def estimate_lifespan(
     identifier: str = '', commits_per_month: float = 10.0,
@@ -225,7 +218,6 @@ def estimate_lifespan(
         confidence_interval=(ci_low, ci_high),
         estimation_method=method)
 
-
 def batch_estimate(
     vulnerabilities: List[Dict[str, Any]],
     survival_curve: Optional[SurvivalCurve] = None,
@@ -246,7 +238,6 @@ def batch_estimate(
         results.append(est)
     results.sort(key=lambda e: e.expected_days)
     return results
-
 
 def lifespan_summary(estimates: List[LifespanEstimate]) -> Dict[str, Any]:
     if not estimates:

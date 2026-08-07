@@ -3,10 +3,9 @@
 检测向量：SYN flood、UDP flood、DNS amplification、NTP amplification、
 ICMP flood、Slowloris慢速攻击。
 
-参考：
-- PARTHENON (IEEE TNSM 2024): 两级监控 —— 粗粒度sketch + ML分类
-- LARDM (JSA 2025): Gini impurity流量异常量化 + 数据面决策树
-- P4-DPDK (IEEE BlackSea 2025): 计数min-sketch + 连接跟踪
+- PARTHENON: 两级监控 —— 粗粒度sketch + ML分类
+- LARDM: Gini impurity流量异常量化 + 数据面决策树
+- P4-DPDK: 计数min-sketch + 连接跟踪
 """
 import math
 from collections import defaultdict, deque, Counter
@@ -24,7 +23,6 @@ _SKETCH_BUCKETS = 1024
 # 阈值sigma倍数
 _SIGMA_MULTIPLIER = 3.5
 
-
 @dataclass
 class DdosAlert:
     attack_type: str     # syn_flood / udp_flood / dns_amp / ntp_amp / icmp_flood / slowloris
@@ -34,7 +32,6 @@ class DdosAlert:
     ratio: float
     severity: str
     timestamp: float = 0.0
-
 
 class SketchCounter:
     # 简化Count-Min Sketch计数器 —— LARDM启发式哈希碰撞过滤。
@@ -72,7 +69,6 @@ class SketchCounter:
 
     def total(self) -> int:
         return self._total
-
 
 class DdosDetector:
     """DDoS 多向量检测引擎。
@@ -269,7 +265,6 @@ class DdosDetector:
             "baseline_stable": self._baseline_initialized,
         }
 
-
 def detect_ddos_from_packets(packets: List[Dict]) -> Dict[str, Any]:
     """从包列表快速检测DDoS —— 封装DdosDetector流水线。
 
@@ -285,7 +280,6 @@ def detect_ddos_from_packets(packets: List[Dict]) -> Dict[str, Any]:
         )
     det.evaluate_window()
     return det.summary()
-
 
 __all__ = ["DdosDetector", "DdosAlert", "SketchCounter",
            "detect_ddos_from_packets"]

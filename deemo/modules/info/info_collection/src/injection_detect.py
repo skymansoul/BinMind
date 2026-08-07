@@ -5,7 +5,7 @@ import re
 from typing import List, Dict, Tuple
 from itertools import chain
 
-# ===== MITRE ATT&CK 技术ID映射 =====
+# MITRE ATT&CK 技术ID映射
 MITRE_ATTACK = {
     "pe_injection": "T1055.001",
     "process_hollowing": "T1055.012",

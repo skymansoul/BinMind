@@ -21,8 +21,7 @@
   异常偏高的二进制 → "值得深度审计"。
   异常偏低的二进制 → "可能存在分析盲区 (加壳/混淆/非标准编译)"。
 
-参考:
-  Alhazmi-Malaiya VDM (2005-2007): 源代码级漏洞发现模型。
+  Alhazmi-Malaiya VDM: 源代码级漏洞发现模型。
   本模块差异化: 二进制级 + 幂律 (非线性) + 离群检测。
 
 修改记录:
@@ -34,12 +33,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # 默认幂律指数 — 基于经验观察，后续可用数据集校准
 _DEFAULT_ALPHA = 0.55
 # 缩放常数: 一个 100KB 的二进制期望约 1.5 个漏洞
 _DEFAULT_K = 0.12
-
 
 @dataclass
 class DensityScore:
@@ -52,7 +49,6 @@ class DensityScore:
     z_score: float                  # (actual - expected) / sqrt(expected)
     density_anomaly: str = 'normal' # sparse / normal / dense / extreme
     flag: str = ''                  # 行动建议
-
 
 def _expected_vulns(
     size_kb: float,
@@ -72,7 +68,6 @@ def _expected_vulns(
         base *= (1.0 + import_bonus)
     return base
 
-
 def _anomaly_label(z_score: float) -> str:
     az = abs(z_score)
     if az >= 3.0:
@@ -80,7 +75,6 @@ def _anomaly_label(z_score: float) -> str:
     if az >= 2.0:
         return 'dense' if z_score > 0 else 'sparse'
     return 'normal'
-
 
 def _generate_flag(z_score: float, actual: int, expected: float) -> str:
     if z_score >= 3.0:
@@ -96,7 +90,6 @@ def _generate_flag(z_score: float, actual: int, expected: float) -> str:
         return (f'漏洞密度偏低 ({actual} vs 期望 {expected:.1f}) — '
                 '可能分析不完整')
     return ''
-
 
 def assess_density(
     binary_name: str = '',
@@ -127,7 +120,6 @@ def assess_density(
         flag=_generate_flag(z, actual_vuln_count, expected),
     )
 
-
 def batch_density(
     binaries: List[Dict[str, Any]],
     alpha: float = _DEFAULT_ALPHA,
@@ -148,7 +140,6 @@ def batch_density(
         results.append(score)
     results.sort(key=lambda s: abs(s.z_score), reverse=True)
     return results
-
 
 def density_summary(results: List[DensityScore]) -> Dict[str, Any]:
     """漏洞密度评估统计摘要。"""

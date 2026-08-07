@@ -11,7 +11,7 @@ SARIF 查看器 (如 VS Code SARIF Viewer、GitHub Code Scanning UI)
 可按此结构展示漏洞发现的多层分析轨迹。
 
 修改记录:
-  2025-07-22 16:08 - 从 sarif_output.py 拆分，独立维护 codeFlows 映射逻辑
+2025-07-22 16:08 - 独立维护 codeFlows 映射逻辑
 """
 
 from typing import Any, Dict, List

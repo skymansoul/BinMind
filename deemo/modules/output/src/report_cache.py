@@ -10,7 +10,6 @@
 失效策略: 仅哈希匹配命中，无 TTL。
           参数或二进制内容变化导致新键 → 天然版本化。
 
-参考:
   Git object store (sha1 前两位为目录名的散列分布)
   Bazel action cache (content-addressable, 输入哈希 ≡ 缓存键)
 
@@ -27,7 +26,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
-
 class ReportCache:
     """基于 SHA-256 输入签名的内容寻址报告缓存存储。"""
 
@@ -37,7 +35,7 @@ class ReportCache:
         self._misses: int = 0
         os.makedirs(cache_dir, exist_ok=True)
 
-    # --- 缓存键计算 ---
+# 缓存键计算
 
     def compute_cache_key(
         self,
@@ -78,7 +76,7 @@ class ReportCache:
 
         return hasher.hexdigest()
 
-    # --- 读写缓存 ---
+# 读写缓存
 
     def _cache_path(self, key: str) -> str:
         """哈希键 → cache_dir/ab/cdef...json (双层散列目录)。"""
@@ -130,7 +128,7 @@ class ReportCache:
             except OSError:
                 pass
 
-    # --- 统计与清理 ---
+# 统计与清理
 
     @property
     def stats(self) -> Dict[str, Any]:

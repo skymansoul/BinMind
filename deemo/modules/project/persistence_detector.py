@@ -16,10 +16,9 @@
 # 每路径输出检测命令、隐蔽性评分 (1-10)、清理方法
 # 技术效果: 比rkhunter多检测4类LOTL持久化机制,
 #   符号链接/环境变量劫持类持久化检出率100%
-# 参考:
+#
 #   MITRE ATT&CK TA0003 (Persistence) — 持久化技术分类
 #   GTFObin/LOLBAS项目 — Living-off-the-Land二进制
-from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

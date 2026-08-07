@@ -8,7 +8,7 @@
 #   现有方案:
 #     EnFuzz/Cupid: 静态等分CPU → 浪费资源在低效fuzzer上
 #     autofz: 基于覆盖趋势切换fuzzer → 覆盖≠漏洞
-#     BandFuzz (2025): 多臂老虎机优化覆盖 → 同上, 且假设平稳奖励分布,
+#     BandFuzz: 多臂老虎机优化覆盖 → 同上, 且假设平稳奖励分布,
 #       但fuzzer的漏洞发现率随时间高度非平稳 (初期快速, 后期枯竭)
 #
 # 本模块的方法 — 事件速率驱动的动态调度:
@@ -19,10 +19,10 @@
 #   5. 可选协变量调整: 覆盖增长率/输入复杂度/漂移信号作为危险率修正因子
 #
 # 为什么用事件速率而非多臂老虎机:
-#   - 老虎机假设平稳奖励分布; 基于时间窗口的速率估计原生处理时变风险
-#   - 不需要参数分布假设 (非参数窗口统计)
-#   - 天然支持删失数据 (fuzzer仍在运行但尚未发现下一个崩溃)
-#   - 危险率有直观物理解释: "此刻发现新崩溃的瞬时速率"
+# 老虎机假设平稳奖励分布; 基于时间窗口的速率估计原生处理时变风险
+# 不需要参数分布假设 (非参数窗口统计)
+# 天然支持删失数据 (fuzzer仍在运行但尚未发现下一个崩溃)
+# 危险率有直观物理解释: "此刻发现新崩溃的瞬时速率"
 #
 # 注: 本模块使用指数加权时间窗口估计而非Kaplan-Meier乘积限估计。
 #     选择窗口法而非KM的原因是:
@@ -32,12 +32,12 @@
 #
 # 与现有模块的接合:
 #   - drift_calibrator.py: 覆盖停滞信号 → 提升该fuzzer的协变量调整因子
-#   - exploit_primitive.py: ESA评分 → 对高ESA崩溃做加权
-#   - multi_fuzz.py: 本模块的输出 → CPU份额重分配指令
+# exploit_primitive.py: ESA评分 → 对高ESA崩溃做加权
+# multi_fuzz.py: 本模块的输出 → CPU份额重分配指令
 #
-# 参考文献:
-#   BandFuzz (Shi et al. 2025, arXiv:2507.10845) — 多臂老虎机协同fuzzing
-#   autofz (Fu et al. 2023) — 趋势驱动的动态fuzzer组合
+# 文献:
+#   BandFuzz — 多臂老虎机协同fuzzing
+#   autofz — 趋势驱动的动态fuzzer组合
 #   Cox 1972, JRSS B 34(2):187-220 — 比例危险模型的形式借鉴
 
 from __future__ import annotations
@@ -329,7 +329,7 @@ class SurvivalAwareScheduler:
             lines.append(f"已停用: {', '.join(retired)}")
         return "\n".join(lines)
 
-    # ---- 查询 ----
+    # 查询
 
     def best_fuzzer(self) -> Optional[str]:
         """当前危险率最高的fuzzer"""
@@ -372,9 +372,7 @@ class SurvivalAwareScheduler:
         self._total_esa_weighted = 0.0
 
 
-# ============================================================
 # 扩展: Cox比例危险模型 — 协变量感知的危险率预测
-# ============================================================
 
 class HeuristicCovariateAdjuster:
     """启发式协变量调整器——使用Cox模型的形式但系数为手动设定。
@@ -412,9 +410,7 @@ class HeuristicCovariateAdjuster:
         return base_hazard * factor
 
 
-# ============================================================
 # 便捷入口
-# ============================================================
 
 def quick_schedule(fuzzer_crash_counts: Dict[str, List[float]],
                    stall_s: float = 600.0,

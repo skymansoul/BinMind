@@ -16,11 +16,11 @@
 #   3. 有符号溢出检查→UB假设可能导致检查被移除
 #   4. volatile遗漏→编译器重排破坏同步
 # 技术效果: 检测编译器优化可能引入的6类安全模式, 覆盖
-#   已知编译器优化导致的安全问题 (如CVE-2009-1897 NULL指针优化消除)
-# 参考:
+#   已知编译器优化导致的安全问题
+#
 #   CVE-2009-1897 (Linux kernel) — NULL指针检查被GCC优化消除
-#   Wang et al. "Towards Optimization-Safe Systems" (HotOS 2013)
-#   MemBuster (USENIX 2025) — 内存安全优化的形式化验证
+#   Wang et al. "Towards Optimization-Safe Systems"
+#   MemBuster — 内存安全优化的形式化验证
 from __future__ import annotations
 import logging
 import re

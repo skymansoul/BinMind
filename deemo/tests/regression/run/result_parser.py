@@ -1,6 +1,6 @@
 """结果解析模块 — TP/FP/FN 统计 + JSON 汇总.
 
-创建: 2025-08-25 17:08
+创建: 2026-06-01 17:08
 用途: 读取 scan_runner 的扫描结果 + ground truth 标注, 计算检出率/误报率/漏报率。
 
 ground truth 格式 (每个样本目录下的 truth.json):

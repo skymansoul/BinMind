@@ -9,7 +9,7 @@
 #
 # 与现有模块的接合:
 #   - diff_tester.py: 接收 MetamorphicReport, 补充差分测试结果
-#   - drift_calibrator.py: 蜕变违例率上升时可触发策略调整建议
+# drift_calibrator.py: 蜕变违例率上升时可触发策略调整建议
 #   - triage_reporter.py: 蜕变违例可作为 TriageEntry 导出
 #
 # 核心度量:
@@ -20,10 +20,10 @@
 #     c) 工具之间的交互效应 (多引擎模式下, 某引擎的异常可能仅
 #        在蜕变变换后才暴露)
 #
-# 参考文献:
+# 文献:
 #   Segura et al. 2016, "A Survey on Metamorphic Testing", ACM Computing Surveys
 #     — 蜕变测试系统综述, 本项目参照其 MR 选择准则和执行框架
-#   ROSA (Koch et al. ICSE 2025) — 蜕变预言机驱动 fuzzing;
+#   ROSA — 蜕变预言机驱动 fuzzing;
 #     本项目取其 MR+oracle+fuzzing 的三元结构, 但将 MR 作用于分析工具
 #     而非被测二进制, 构成一种元测试 (meta-testing) 框架
 
@@ -126,7 +126,7 @@ class MetamorphicOracle:
     def engine_names(self) -> List[str]:
         return list(self._engines.keys())
 
-    # ---- 主检查入口 ----
+    # 主检查入口
 
     def check(self,
               inputs: List[bytes],
@@ -197,7 +197,7 @@ class MetamorphicOracle:
         """对单条关系 + 单个引擎 + 单个原始输入执行一次检查"""
         t0 = time.perf_counter()
 
-        # Step 1: 执行原始输入
+        # 执行原始输入
         try:
             orig_output = runner(original_input)
         except Exception as exc:
@@ -216,7 +216,7 @@ class MetamorphicOracle:
                 execution_time_ms=elapsed,
             )
 
-        # Step 2: 生成变换后输入并执行
+        # 生成变换后输入并执行
         try:
             transformed_input = mr.input_transform(original_input)
         except Exception as exc:
@@ -252,7 +252,7 @@ class MetamorphicOracle:
                 execution_time_ms=elapsed,
             )
 
-        # Step 3: 断言蜕变关系
+        # 断言蜕变关系
         elapsed = (time.perf_counter() - t0) * 1000
         try:
             passed, msg = mr.output_predicate(orig_output, trans_output)
@@ -292,7 +292,7 @@ class MetamorphicOracle:
             execution_time_ms=elapsed,
         )
 
-    # ---- 多引擎共识模式 ----
+    # 多引擎共识模式
 
     def check_consensus(self,
                         inputs: List[bytes],
@@ -331,7 +331,7 @@ class MetamorphicOracle:
         base_report.summary = self._build_summary(base_report)
         return base_report
 
-    # ---- 反馈接口: 供 fuzzer 使用 ----
+    # 反馈接口: 供 fuzzer 使用
 
     def violation_signal(self) -> float:
         """返回 [0, 1] 的蜕变违例信号, 供种子能量调度使用。
@@ -353,7 +353,7 @@ class MetamorphicOracle:
             }),
         }
 
-    # ---- 辅助 ----
+    # 辅助
 
     @staticmethod
     def _hash_output(output: Any) -> str:
@@ -395,7 +395,7 @@ class MetamorphicOracle:
                 lines.append(f"  ... 及其他 {len(report.violations) - 10} 条")
         return "\n".join(lines)
 
-    # ---- 统计与重置 ----
+    # 统计与重置
 
     def stats(self) -> Dict[str, Any]:
         return {

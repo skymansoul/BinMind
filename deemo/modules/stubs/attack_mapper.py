@@ -1,5 +1,5 @@
 # re-export from compat/ — MITRE ATT&CK 技战术映射桩
-# 参考: Automated Generation of Attack Graphs Using NVD (Aksu et al., 2018) &
+# Automated Generation of Attack Graphs Using NVD &
 #   Arbiter (Vadayath et al.) — 动静结合的攻击链映射
 import os as _os, importlib.util as _iu
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'attack_mapper.py')

@@ -21,9 +21,9 @@
 #      特征提取时间与保留维度数成正比 (线性加速).
 #
 # 与现有工作:
-#   - LASSO: 面向回归/分类的 L1 正则化. 本方案面向排序保持.
+# LASSO: 面向回归/分类的 L1 正则化. 本方案面向排序保持.
 #   - contrastive_weight.py: 学习连续权重 (稠密). 本方案学习稀疏掩码.
-#   - 特征选择 (mutual information, RFE): 贪心/启发式.
+# 特征选择 (mutual information, RFE): 贪心/启发式.
 #     本方案直接优化排序质量, 全局最优 (凸优化).
 
 import math
@@ -190,9 +190,7 @@ class SparseFeatureSelector:
         return 0.0
 
 
-# ---------------------------------------------------------------------------
 # 三元组生成器: 从去重打分自动构造训练数据
-# ---------------------------------------------------------------------------
 
 def generate_triplets(scores_matrix: List[List[float]],
                        n_triplets: int = 500) -> List[Tuple[int, int, int]]:

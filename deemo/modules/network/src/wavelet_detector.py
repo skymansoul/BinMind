@@ -7,9 +7,9 @@
 # 偏离正常分布的KL散度≥阈值触发告警。
 #
 # 子带能量异常→信道类型推断:
-#   - 高频子带(HH*, HL*): JitterBug类微小抖动调制
-#   - 中频子带: TRCTC类流量时序重放
-#   - 低频聚集(非1/f): Model-Based类统计伪装
+# 高频子带(HH*, HL*): JitterBug类微小抖动调制
+# 中频子带: TRCTC类流量时序重放
+# 低频聚集(非1/f): Model-Based类统计伪装
 
 from __future__ import annotations
 

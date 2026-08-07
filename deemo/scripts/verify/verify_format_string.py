@@ -55,7 +55,7 @@ def main():
         "overall": "unknown",
     }
 
-    # === Stage 1: checksec (格式化字符串漏洞在高防护下仍有利用价值) ===
+# Stage 1: checksec (格式化字符串漏洞在高防护下仍有利用价值)
     t0 = time.time()
     from core.checksec import detect_checksec, checksec_summary
     checksec = detect_checksec(binary_path)
@@ -65,7 +65,7 @@ def main():
     }
     print(f"  [checksec] {checksec_summary(checksec)}")
 
-    # === Stage 2: static detection ===
+# Stage 2: static detection
     t0 = time.time()
     from core.format_string_detector import detect_format_string_vulns
     # 先不用 LLM，获得纯静态基线
@@ -93,7 +93,7 @@ def main():
             f" offset={f['offset']} conf={f['confidence']:.2f}"
         )
 
-    # === Stage 3: LLM enhancement (optional) ===
+# Stage 3: LLM enhancement (optional)
     if args.use_llm and findings_static:
         t0 = time.time()
         findings_llm = detect_format_string_vulns(
@@ -112,7 +112,7 @@ def main():
                 ] = round(delta, 2)
         print(f"  [llm] {len(findings_llm)} findings after LLM enhancement")
 
-    # === Stage 4: offset validation ===
+# Stage 4: offset validation
     if args.expected_offset > 0 and findings_static:
         offsets = [f["offset"] for f in findings_static if f["offset"] > 0]
         if offsets:
@@ -131,7 +131,7 @@ def main():
                 f" detected={closest} {status}"
             )
 
-    # === Summary ===
+# Summary
     _print_summary(results, findings_static)
     results_path = os.path.join(args.output_dir, "verify_format_string.json")
     with open(results_path, "w", encoding="utf-8") as f:

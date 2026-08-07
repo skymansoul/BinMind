@@ -1,6 +1,6 @@
 # 补丁质量评估器——评估漏洞修复的正确性、完整性和安全回归风险。
-# 参考SAN2PATCH (USENIX Security 2025) 四阶段验证模式和VRpilot
-# (arXiv:2405.15690) 迭代反馈验证方法。
+# SAN2PATCH 四阶段验证模式和VRpilot
+# 迭代反馈验证方法。
 #
 # 评估维度:
 #   1. 正确性——补丁是否修复了目标漏洞（功能维度）
@@ -376,7 +376,7 @@ class PatchQualityEvaluator:
         return recs
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def evaluate_patch(original_code: str, patched_code: str,
                     vuln_type: str = "", cve_id: str = "",

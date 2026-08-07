@@ -56,13 +56,11 @@ _OPCODE_CLASSES = {
 }
 
 
-# ---------------------------------------------------------------------------
 # Handler 相似聚类 —— 基于 Jaccard 相似度的层次聚类
 # 原理: 对每个 handler，提取其 opcode 频率向量，计算两两 Jaccard
 # 相似度。相似度 > 0.7 的 handler 合并为一类。这对于识别 VM 指令集
 # 中的"指令族"（如所有算术指令、所有内存指令）有效
-# 参考: VMDragonSlayer (2025) 的 ML-driven 处理器 分类
-# ---------------------------------------------------------------------------
+# VMDragonSlayer 的 ML-driven 处理器 分类
 
 def _handler_opcode_vector(raw: bytes, addr: int, size: int = 64) -> Dict[int, int]:
     """提取 handler 地址处的操作码频率向量"""

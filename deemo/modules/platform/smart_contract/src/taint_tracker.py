@@ -46,7 +46,6 @@ class TaintState:
             storage_taint=dict(self.storage_taint),
         )
 
-# ===========================================================================
 
 
 class TaintTracker:
@@ -63,9 +62,7 @@ class TaintTracker:
         self._storage: Dict[int, TaintSource] = {}
         self._pc_to_op: Dict[int, EVMOp] = {}
 
-    # ==================================================================
     # Intra-block tracking
-    # ==================================================================
 
     def track_block(self, ops: List[EVMOp],
                     initial: Optional[TaintState] = None) -> TaintState:
@@ -95,12 +92,12 @@ class TaintTracker:
             storage_taint=dict(self._storage),
         )
 
-    # ******** 指令分发表 ********
+# 指令分发表
 
     def _dispatch(self, op: EVMOp):
         return self._DISPATCH.get(op.opcode, self._handle_generic)(op)
 
-    # ---- Push-style: 标记 taint source ----
+# Push-style: 标记 taint source
     def _handle_taint_source(self, op: EVMOp):
         """将操作码输出标记为污点来源。"""
         _src = TaintSource(opcode=op.opcode, offset=op.pc, mnemonic=op.name)
@@ -109,7 +106,7 @@ class TaintTracker:
         for _ in range(_push_count):
             self._stack.append(_src)
 
-    # ---- Arithmetic/bitwise: taint 从输入传播到输出 ----
+# Arithmetic/bitwise: taint 从输入传播到输出
     def _handle_propagate(self, op: EVMOp):
         _pop_count, _push_count = self._get_stack_effect(op)
         # 收集输入的 taint
@@ -127,7 +124,7 @@ class TaintTracker:
         for _ in range(_push_count):
             self._stack.append(_result)
 
-    # ---- DUP: 复制 taint ----
+# DUP: 复制 taint
     def _handle_dup(self, op: EVMOp):
         _n = op.opcode - 0x7f  # DUPn duplicates n-th item (1-indexed from top)
         if len(self._stack) >= _n:
@@ -136,14 +133,14 @@ class TaintTracker:
         else:
             self._stack.append(None)
 
-    # ---- SWAP: 交换 taint ----
+# SWAP: 交换 taint
     def _handle_swap(self, op: EVMOp):
         _n = op.opcode - 0x8f  # SWAPn swaps top with (n+1)-th
         if len(self._stack) >= _n + 1:
             self._stack[-1], self._stack[-(_n + 1)] = \
                 self._stack[-(_n + 1)], self._stack[-1]
 
-    # ---- Memory ops: taint memory ----
+# Memory ops: taint memory
     def _handle_mstore(self, op: EVMOp):
         # MSTORE: offset, value -> (no output)
         if len(self._stack) >= 2:
@@ -168,7 +165,7 @@ class TaintTracker:
                     break
             self._stack.append(_t)
 
-    # ---- Storage ops ----
+# Storage ops
     def _handle_sload(self, op: EVMOp):
         if self._stack:
             _slot_t = self._stack.pop()
@@ -196,7 +193,7 @@ class TaintTracker:
                     description="Tainted data written to storage slot (SSTORE sink)",
                 ))
 
-    # ---- CALL family: potential sinks ----
+# CALL family: potential sinks
     def _handle_call_sink(self, op: EVMOp):
         """CALL/CALLCODE/DELEGATECALL/STATICCALL 的各项参数中
         若包含污点数据，标记为 finding。"""
@@ -225,7 +222,7 @@ class TaintTracker:
         for _ in range(_push_count):
             self._stack.append(_ret_taint)
 
-    # ---- CREATE family ----
+# CREATE family
     def _handle_create_sink(self, op: EVMOp):
         _pop_count, _push_count = self._get_stack_effect(op)
         _args = []
@@ -249,7 +246,7 @@ class TaintTracker:
         for _ in range(_push_count):
             self._stack.append(_ret_taint)
 
-    # ---- SELFDESTRUCT sink ----
+# SELFDESTRUCT sink
     def _handle_selfdestruct_sink(self, op: EVMOp):
         if self._stack:
             _addr = self._stack.pop()
@@ -262,7 +259,7 @@ class TaintTracker:
                     description="Tainted beneficiary address in SELFDESTRUCT",
                 ))
 
-    # ---- JUMP/JUMPI ----
+# JUMP/JUMPI
     def _handle_jump(self, op: EVMOp):
         if self._stack:
             _target = self._stack.pop()
@@ -288,7 +285,7 @@ class TaintTracker:
                     description="Tainted conditional jump destination",
                 ))
 
-    # ---- RETURN/REVERT ----
+# RETURN/REVERT
     def _handle_return(self, op: EVMOp):
         if len(self._stack) >= 2:
             _len = self._stack.pop()
@@ -302,18 +299,18 @@ class TaintTracker:
                     description=f"Tainted data returned via {op.name}",
                 ))
 
-    # ---- Generic / no-taint-propagate ----
+# Generic / no-taint-propagate
     def _handle_generic(self, op: EVMOp):
         _pop_count, _push_count = self._get_stack_effect(op)
         self._pop_stack(_pop_count)
         for _ in range(_push_count):
             self._stack.append(None)
 
-    # ---- POP: no taint propagation ----
+# POP: no taint propagation
     def _handle_pop(self, op: EVMOp):
         self._pop_stack(1)
 
-    # ==== Helpers ====
+# Helpers
 
     def _get_stack_effect(self, op: EVMOp) -> Tuple[int, int]:
         """从 OPCODES 表获取栈输入/输出数。"""
@@ -326,9 +323,7 @@ class TaintTracker:
         for _ in range(min(n, len(self._stack))):
             self._stack.pop()
 
-    # ==================================================================
     # Inter-block flow
-    # ==================================================================
 
     def flow_across_blocks(self, blocks: Dict[int, List[EVMOp]],
                            edges: Dict[int, List[int]],
@@ -391,9 +386,7 @@ class TaintTracker:
                 _merged.storage_taint[_k] = _v
         return _merged
 
-    # ==================================================================
     # Full analysis entry
-    # ==================================================================
 
     def detect_taint_flow(self, ops: List[EVMOp],
                           blocks: Dict[int, List[EVMOp]] = None,
@@ -406,11 +399,11 @@ class TaintTracker:
             self.track_block(ops)
             return list(self._findings)
 
-    # ******** 指令分发表 ********
+# 指令分发表
 
     _DISPATCH = {}  # built below
 
-# ---- Build dispatch table ----
+# Build dispatch table
 _t = TaintTracker.__new__(TaintTracker)
 
 for _opcode, _info in OPCODES.items():

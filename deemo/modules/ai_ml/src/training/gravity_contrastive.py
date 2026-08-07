@@ -1,9 +1,9 @@
-# 创建: 2025-08-14 11:15
-# 修改: 2025-08-14 — 引力模型 CFG 增广 + MoCo 动量对比 + InfoNCE
+# 创建: 2026-05-18 11:15
+# 修改: 2026-05-18 — 引力模型 CFG 增广 + MoCo 动量对比 + InfoNCE
 """
 引力模型对比学习二进制嵌入 — 自监督预训练, 无需标注。
 
-BEGA (IEEE 2026) 的简化实现: 将 CFG 节点视为具有"质量"的质点,
+BEGA 的简化实现: 将 CFG 节点视为具有"质量"的质点,
 节点间的"引力"决定边丢弃概率——模拟不同编译器/优化级别对 CFG 的扰动。
 
 核心思想:
@@ -23,12 +23,12 @@ BEGA (IEEE 2026) 的简化实现: 将 CFG 节点视为具有"质量"的质点,
   负样本队列大小不依赖 batch size——128 的队列在 CPU-only 环境下可维持,
   而 SimCLR 需要大 batch (≥256) 才有足够的负样本多样性。
 
-ref: BEGA (IEEE, Feb 2026) — gravity-model augmentation for CFG contrastive
+ref: BEGA — gravity-model augmentation for CFG contrastive
      learning, 本项目简化其重力计算并增加动量编码器
-ref: MoCo (He et al., CVPR 2020) — momentum contrast for unsupervised learning
-ref: GraphCL (You et al., NeurIPS 2020) — 图对比学习的 DropEdge/FeatureMask
+ref: MoCo — momentum contrast for unsupervised learning
+ref: GraphCL — 图对比学习的 DropEdge/FeatureMask
      增广策略, 本项目的重力模型是 GraphCL 的 adaptive 版本
-ref: DropEdge (Rong et al., ICLR 2020) — 度感知边丢弃, 本项目用引力模型
+ref: DropEdge — 度感知边丢弃, 本项目用引力模型
      替代随机丢弃, 保留更多结构信息
 """
 
@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-# --- 引力模型 ---
+# 引力模型
 
 @dataclass
 class GravityCFGNode:
@@ -98,7 +98,7 @@ def gravity_edge_probability(src_node: GravityCFGNode,
     return base_dropout * 0.5 + (1.0 - base_dropout * 0.5) * prob
 
 
-# --- 增广视图生成 ---
+# 增广视图生成
 
 def generate_augmented_view(
     nodes: dict[int, GravityCFGNode],
@@ -127,7 +127,7 @@ def generate_augmented_view(
     return augmented
 
 
-# --- 嵌入计算 ---
+# 嵌入计算
 # 简化的消息传递: 对增广视图中的节点特征做一次邻域聚合。
 # 完整 GNN 的近似——用于演示自监督对比学习框架,
 # 生产环境替换为 GAT/GCN 编码器。
@@ -184,7 +184,7 @@ def compute_graph_embedding(
     return embed
 
 
-# --- 动量对比 (MoCo) ---
+# 动量对比 (MoCo)
 
 class MomentumContrastEmbedder:
     """动量对比学习 — 单 GPU/CPU 可运行的自监督预训练。
@@ -279,7 +279,7 @@ class MomentumContrastEmbedder:
         }
 
 
-# --- 预训练循环适配器 ---
+# 预训练循环适配器
 
 def pretrain_step(
     nodes: dict[int, GravityCFGNode],

@@ -16,7 +16,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# ---- helpers ----
+# helpers
 
 # 保留--后面可能用
 # def _legacy_handler(data):
@@ -182,7 +182,5 @@ def create_dataflow_embedder(dim: int = 64) -> DataFlowEmbedder:
     return DataFlowEmbedder(embed_dim=dim)
 
 
-def _debug_print(*args, **kwargs):
-    # Internal debug output 桩
     pass  # 调试桩，当前未使用
 

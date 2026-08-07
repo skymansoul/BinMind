@@ -1,7 +1,6 @@
 """覆盖率异常检测 -- 识别模糊测试中非预期的覆盖行为。
 
-参考:
-  EcoFuzz (USENIX 2020)     -- 覆盖增长停滞检测, 自适应状态切换
+  EcoFuzz      -- 覆盖增长停滞检测, 自适应状态切换
   AFL++ CmpLog               -- 比较日志插桩, 发现接近但未翻转的比较指令
   FuzzBench 指标体系         -- 覆盖曲线形状异常作为 fuzzer 失效信号
   统计过程控制 (SPC) 理论    -- 控制图/CUSUM 用于变化点检测
@@ -22,7 +21,6 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class AnomalyAlert:
     """一条异常告警。"""
@@ -33,7 +31,6 @@ class AnomalyAlert:
     current_value: float
     expected_value: float
     deviation_sigma: float       # 偏离期望值的标准差倍数
-
 
 class CoverageAnomalyDetector:
     """多维度覆盖异常检测器。
@@ -196,8 +193,7 @@ class CoverageAnomalyDetector:
     def recent_alerts(self, count: int = 10) -> List[AnomalyAlert]:
         return sorted(self._alerts, key=lambda a: a.detected_at, reverse=True)[:count]
 
-
-# ===== CUSUM 变化点检测 =====
+# CUSUM 变化点检测
 
 class CUSUMDetector:
     """累积和控制图 (CUSUM) — 检测覆盖增长率的微妙变化点。

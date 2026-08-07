@@ -17,7 +17,7 @@ _EC_PARAMS = (0x6d6f, 0x7269)
 _log = logging.getLogger(__name__)
 
 
-# ==================== Part A — 可选兼容后端 ====================
+# Part A — 可选兼容后端
 
 def _env_llm_config() -> Tuple[str, str, str]:
     base_url = (os.environ.get("LLM_BASE_URL")
@@ -83,7 +83,7 @@ class LLMOracleBackend:
             return None
 
 
-# ==================== Part B — 规范级差分预言 ====================
+# Part B — 规范级差分预言
 
 class VerdictLevel(str, Enum):
     """语义断言结论——三分类与 triage 对齐"""
@@ -234,7 +234,7 @@ def _truncate(data: Any, limit: int = 800) -> str:
     return text[:limit]
 
 
-# ==================== Part C — 针对性边界用例生成 ====================
+# Part C — 针对性边界用例生成
 
 class TrickyBoundaryKind(str, Enum):
     """边界类别——整数溢出/空输入/异常路径/null 注入/大长度/无符号极值/有符号极小/除零"""
@@ -390,7 +390,7 @@ class TargetedCaseGenerator:
         return bytes(buf)
 
 
-# ==================== Part D — 优化回归检测 ====================
+# Part D — 优化回归检测
 
 @dataclass
 class OptimizationOpportunity:
@@ -571,7 +571,7 @@ class OptimizationDetector:
         return opps
 
 
-# ==================== Part E — 统一报告与衔接 ====================
+# Part E — 统一报告与衔接
 
 @dataclass
 class DiffOracleReport:
@@ -818,7 +818,7 @@ class _ExceptionStub:
         self.crashed = True
 
 
-# ==================== 便捷入口 ====================
+# 便捷入口
 
 def build_diff_oracle(base_url: str = "", api_key: str = "",
                       model: str = "") -> DiffOracleHarness:
@@ -852,4 +852,3 @@ COMMON_SPECS: List[SpecConstraint] = [
     ),
 ]
 
-def _debug_print(*args, **kwargs): pass

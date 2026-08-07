@@ -4,7 +4,6 @@ NetFlow v5/v9与IPFIX (RFC 7011)是市场份额最高的流记录格式。
 NetFlow衍生格式占62.7%, IPFIX占45.1%[Coutinho & Araujo 2025综述]。
 本模块实现二进制流记录解析和流级异常评分。
 
-参考：
 - arXiv:2602.05594 — Deep Learning for NetFlow-based NIDS
 - RFC 3954 (NetFlow v9), RFC 7011 (IPFIX)
 """
@@ -34,7 +33,6 @@ _IPFIX_HEADER_SIZE = 16
 _NF5_PROTO_MAP = {1: "ICMP", 6: "TCP", 17: "UDP", 47: "GRE",
                    50: "ESP", 51: "AH", 58: "ICMPv6", 132: "SCTP"}
 
-
 @dataclass
 class NetFlowRecord:
     """单条流记录——兼容NetFlow v5/v9/IPFIX"""
@@ -56,7 +54,6 @@ class NetFlowRecord:
     pkts_per_sec: float = 0.0
     avg_pkt_size: float = 0.0
 
-
 @dataclass
 class NetFlowAnomaly:
     """流级异常检测结果"""
@@ -65,7 +62,6 @@ class NetFlowAnomaly:
     severity: str = "medium"
     score: float = 0.0
     description: str = ""
-
 
 class NetFlow5Parser:
     # NetFlow v5: 1999年格式，每条记录固定48字节，核心路由仍广泛使用
@@ -113,7 +109,6 @@ class NetFlow5Parser:
 
         return rec
 
-
 class NetFlow9Parser:
     """NetFlow v9 模板化流解析器。
 
@@ -149,7 +144,6 @@ class NetFlow9Parser:
             pos += flowset_len
         return [header], raw_records
 
-
 class IPFIXParser:
     """IPFIX (RFC 7011) 解析器 —— 基于IANA信息元素。
 
@@ -170,7 +164,6 @@ class IPFIXParser:
             "sequence_number": hdr[3],
             "observation_domain_id": hdr[4],
         }
-
 
 class FlowAnomalyScorer:
     """流记录异常评分引擎 —— 多维度加权评分。
@@ -260,7 +253,6 @@ class FlowAnomalyScorer:
             description="; ".join(reasons) if reasons else "无异常",
         )
 
-
 class NetFlowAnalyzer:
     """NetFlow/IPFIX 分析调度器 —— 解析+异常评分流水线。
 
@@ -327,12 +319,10 @@ class NetFlowAnalyzer:
             ],
         }
 
-
 def analyze_netflow(data: bytes) -> Dict[str, Any]:
     analyzer = NetFlowAnalyzer()
     analyzer.feed(data)
     return analyzer.summary()
-
 
 __all__ = ["NetFlowAnalyzer", "NetFlowRecord", "NetFlowAnomaly",
            "FlowAnomalyScorer", "NetFlow5Parser", "analyze_netflow"]

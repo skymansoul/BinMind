@@ -13,10 +13,9 @@
 #   4. 去随机化概率: 给定爆破尝试次数N, 一次成功的概率
 # 技术效果: 精确识别可利用的部分覆写窗口,
 #   将"ASLR绕过"从二元是/否变为概率化评估
-# 参考:
-#   Binarly US Patent 12,287,885 (May 2025) — 二进制可达性分析,
+#
+#   Binarly US Patent 12,287,885 — 二进制可达性分析,
 #     本项目互补: 量化ASLR对可达路径的影响
-from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field

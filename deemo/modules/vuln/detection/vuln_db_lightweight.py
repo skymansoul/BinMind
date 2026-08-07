@@ -232,6 +232,5 @@ def get_vuln_db(db_path=None):
     return VulnerabilityDatabase(db_path=db_path)
 
 
-def _debug_print(*args, **kwargs):
     """内部调试输出桩。"""
     pass  # 调试桩，当前未启用

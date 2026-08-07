@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---- 谱分解参数 ----
+# 谱分解参数
 _MAX_POWER_ITERS = 200        # 幂迭代最大次数
 _CONVERGENCE_TOL = 1e-8       # 收敛容差
 _N_SPECTRAL_DIMS = 6          # 谱嵌入维数 (前 k 个特征向量)

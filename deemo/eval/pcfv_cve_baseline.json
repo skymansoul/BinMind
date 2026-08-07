@@ -1,0 +1,242 @@
+[
+  {
+    "sample": "CVE-2015-0235_ghost",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.023
+  },
+  {
+    "sample": "CVE-2016-10190_ffmpeg",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.024
+  },
+  {
+    "sample": "CVE-2017-1000253_pie",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.022
+  },
+  {
+    "sample": "CVE-2018-1000001_glibc",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.021
+  },
+  {
+    "sample": "CVE-2019-11477_tcp_sack",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.021
+  },
+  {
+    "sample": "CVE-2020-10713_grub2",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.02
+  },
+  {
+    "sample": "CVE-2021-3156_sudo",
+    "raw": 3,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 3,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.021
+  },
+  {
+    "sample": "CVE-2021-4034_polkit",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.027
+  },
+  {
+    "sample": "CVE-2022-0185_linux_fs",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 1,
+    "n_fn": 5,
+    "time": 0.022
+  },
+  {
+    "sample": "CVE-2022-23222_kernel_bpf",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.022
+  },
+  {
+    "sample": "CVE-2022-25636_netfilter",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.023
+  },
+  {
+    "sample": "CVE-2023-0179_kernel_bpf2",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.021
+  },
+  {
+    "sample": "CVE-2023-0464_openssl",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.023
+  },
+  {
+    "sample": "CVE-2024-21626_runc",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.024
+  },
+  {
+    "sample": "CVE-2024-6387_openssh",
+    "raw": 1,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 1,
+    "filtered_fp": 0,
+    "n_fn": 4,
+    "time": 0.026
+  },
+  {
+    "sample": "GAPSBV-STRESS-01",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.023
+  },
+  {
+    "sample": "GAPSBV-STRESS-02",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.021
+  },
+  {
+    "sample": "GAPSBV-STRESS-03",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.025
+  },
+  {
+    "sample": "GAPSBV-STRESS-04",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.022
+  },
+  {
+    "sample": "GAPSBV-STRESS-05",
+    "raw": 2,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 2,
+    "n_fn": 3,
+    "time": 0.024
+  },
+  {
+    "sample": "LOOP-CUMULATIVE-01",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.023
+  },
+  {
+    "sample": "LOOP-CUMULATIVE-02",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.025
+  },
+  {
+    "sample": "LOOP-CUMULATIVE-03",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.022
+  },
+  {
+    "sample": "LOOP-CUMULATIVE-04",
+    "raw": 0,
+    "confirmed": 0,
+    "likely": 0,
+    "uncertain": 0,
+    "filtered_fp": 0,
+    "n_fn": 3,
+    "time": 0.022
+  }
+]

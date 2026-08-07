@@ -38,9 +38,7 @@ from src.wasi_sandbox_escape import (
 )
 
 
-# ============================================================================
 # 1. 导入检查——WASIImportAnalyzer
-# ============================================================================
 
 class TestImportChecking:
     """验证WASIImportAnalyzer正确将WASI导入分类为危险/安全并映射到能力集。"""
@@ -133,9 +131,7 @@ class TestImportChecking:
         assert d["is_dangerous"] is True
 
 
-# ============================================================================
 # 2. 内存增长分析——guard page绕过检测
-# ============================================================================
 
 class TestMemoryGrowthAnalysis:
     """验证MemoryEscapeAnalyzer检测可疑内存增长模式以实现guard page绕过和沙箱逃逸。"""
@@ -230,9 +226,7 @@ class TestMemoryGrowthAnalysis:
         assert "wemby_corruption_risk" in d
 
 
-# ============================================================================
 # 3. Table操作分析
-# ============================================================================
 
 class TestTableManipulation:
     """验证table.grow + call_indirect模式的检测——该组合可启用WASM沙箱逃逸的间接调用劫持。"""
@@ -327,9 +321,7 @@ class TestTableManipulation:
         assert "is_suspicious" in d
 
 
-# ============================================================================
 # 4. 路径穿越检测
-# ============================================================================
 
 class TestPathTraversal:
     """验证FileSystemEscapeAnalyzer在WASI文件描述符操作中检测路径穿越模式。"""
@@ -499,9 +491,7 @@ class TestPathTraversal:
         assert d["is_dangerous"] is True
 
 
-# ============================================================================
 # 5. 能力组合分析
-# ============================================================================
 
 class TestCapabilityAnalysis:
     """验证CapabilityModelAnalyzer检测危险能力组合。"""
@@ -578,9 +568,7 @@ class TestCapabilityAnalysis:
         assert result["capability_score"] == 10.0
 
 
-# ============================================================================
 # 6. 网络逃逸分析
-# ============================================================================
 
 class TestNetworkAnalysis:
     """验证NetworkEscapeAnalyzer检测基于套接字的逃逸向量。"""
@@ -620,9 +608,7 @@ class TestNetworkAnalysis:
         assert result["connect_attempts"] == 0
 
 
-# ============================================================================
 # 7. 便捷函数
-# ============================================================================
 
 class TestQuickScanImports:
     """验证quick_scan_imports便捷函数。"""
@@ -651,9 +637,7 @@ class TestQuickScanImports:
         assert result["safe_count"] >= 1
 
 
-# ============================================================================
 # 8. PoC构建器
-# ============================================================================
 
 class TestPoCGenerator:
     """验证不同逃逸向量类型的PoC代码构建。"""
@@ -697,9 +681,7 @@ class TestPoCGenerator:
         assert "Unknown" in poc
 
 
-# ============================================================================
 # 9. WASISandboxEscapeAnalyzer集成
-# ============================================================================
 
 class TestEscapeAnalyzerIntegration:
     """WASISandboxEscapeAnalyzer.analyze()集成测试。"""

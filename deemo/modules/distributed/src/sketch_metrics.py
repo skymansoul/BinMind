@@ -12,7 +12,7 @@
 #
 # 关键: 两者都是可合并的 (mergeable) — 可将多个节点的 sketch 合并
 # 得到全局估计，无需传输原始数据。这是分布式监控的基础。
-# MimoSketch (IEEE TKDE 2025) 的分布式方向，本模块特化为调度度量。
+# MimoSketch 的分布式方向，本模块特化为调度度量。
 
 from __future__ import annotations
 

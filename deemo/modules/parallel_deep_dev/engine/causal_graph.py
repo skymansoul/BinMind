@@ -1,7 +1,7 @@
 """
-创建: 2025-07-28
+创建: 2026-05-08
 修改:
-  2025-07-30 - extract_edges 委托给 causal_extractor.py 控制文件大小
+2025-07-30 - extract_edges 委托给 causal_extractor.py
 增量式因果影响传播图 — 多边类型依赖分析，支持实时变更冲击半径查询。
 
 问题：并行 worker 修改文件时不知道自己的改动会影响哪些其他模块。
@@ -23,13 +23,12 @@ decay ∈ (0, 1)，默认 0.5，确保 3 跳以上的影响降至 12.5% 以下�
 与现有工作的差异：
   - causal-graph-mcp 建模 mutation/assertion/side-effect 边但需 SQLite 存储，
     不适合实时并行开发场景的内存增量更新
-  - CHID (Göçmen 2025) 结合调用图 + 历史挖掘但用于 PR review 后处理，
+  - CHID 结合调用图 + 历史挖掘但用于 PR review 后处理，
     不适用于代码生成过程中的实时预警
   - 本模块采用惰性重解析策略：仅当文件被 worker 修改且被其他 worker 查询时才
     重新解析该文件的依赖边，将增量更新开销从 O(n) 降至 O(d)（d=变更文件数）
 """
 
-from __future__ import annotations
 
 import os
 import threading
@@ -37,9 +36,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 
-# ---------------------------------------------------------------------------
 # 边类型与权重 — 反映"被破坏的概率"
-# ---------------------------------------------------------------------------
 EDGE_WEIGHTS: dict[str, float] = {
     "IMPORTS":  0.2,
     "CALLS":    0.5,
@@ -89,9 +86,7 @@ class CausalGraph:
         self._stale: set[str] = set()
         self._lock = threading.Lock()
 
-    # ------------------------------------------------------------------
     # 构建与增量更新
-    # ------------------------------------------------------------------
 
     def build_from_files(self, filepaths: list[str]) -> int:
         """从文件列表构建初始依赖图。返回发现的边总数。"""
@@ -123,9 +118,7 @@ class CausalGraph:
         self._upsert_edges(filepath, edges)
         return len(edges)
 
-    # ------------------------------------------------------------------
     # 影响查询 — 给定变更文件集，计算受影响的文件及影响分数
-    # ------------------------------------------------------------------
 
     def impact_query(
         self,
@@ -197,9 +190,7 @@ class CausalGraph:
         results = self.impact_query([changed_file])
         return [r.file for r in results if r.impact_score >= threshold]
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _upsert_edges(self, filepath: str, edges: list[CausalityEdge]) -> None:
         with self._lock:
@@ -241,7 +232,7 @@ class CausalGraph:
             }
 
 
-# 静态边提取委托给 engine/causal_extractor.py — 保持单文件 ≤300 行限制
+# 静态边提取委托给 engine/causal_extractor.py
 from parallel_deep_dev.engine.causal_extractor import extract_edges as _extract_edges
 
 

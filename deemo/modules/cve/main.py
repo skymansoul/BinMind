@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """BinMind CVE模块 — 命令行入口。
 
 用法:
@@ -184,7 +184,6 @@ if __name__ == "__main__":
     sys.exit(main())
 
 
-def _debug_print(*args, **kwargs):
     """内部调试输出桩。"""
     pass  # 调试桩，当前未启用
 

@@ -4,7 +4,7 @@
 
 """Anti-Detection Patch Hardener — 抵抗恶意软件对补丁的检测。
 
-2025 年研究 (Knakiri/Amsi-Patching-2025, Oak Ridge adversarial binaries survey)
+2025 年研究
 表明恶意软件会主动检测内存中的补丁字节签名并绕过。
 现有防御关注保护完整二进制，不做补丁级别的隐身。
 
@@ -84,7 +84,7 @@ class StealthReport:
         }
 
 
-# ── 多态字节选择器 ────────────────────────────────────────────────
+# 多态字节选择器
 
 class PolymorphicByteSelector:
     """生成同一语义修复的多组等价字节序。
@@ -140,7 +140,7 @@ class PolymorphicByteSelector:
         return variants
 
 
-# ── 时序归一化器 ─────────────────────────────────────────────────
+# 时序归一化器
 
 class TimingNormalizer:
     """在补丁检查路径中插入随机延迟掩码。
@@ -179,7 +179,7 @@ class TimingNormalizer:
         return delay_insts
 
 
-# ── 完整性检查抵抗器 ──────────────────────────────────────────────
+# 完整性检查抵抗器
 
 class IntegrityCheckResistor:
     """检测并规避 binary 中的完整性检查。
@@ -250,7 +250,7 @@ class IntegrityCheckResistor:
         return safe, avoided, modified
 
 
-# ── 隐身加固引擎 ──────────────────────────────────────────────────
+# 隐身加固引擎
 
 class PatchStealthHardener:
     """补丁隐身加固引擎。

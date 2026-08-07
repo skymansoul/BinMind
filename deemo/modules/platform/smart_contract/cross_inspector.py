@@ -1,13 +1,13 @@
 # CrossInspector: 跨合约漏洞检测 — 状态依赖图 (SDG) 分析
-# 参考:
+#
 #   "CrossInspector: A Static Analysis Approach for Cross-Contract
-#    Vulnerability Detection" (arXiv 2408.15292, Aug 2024)
+#    Vulnerability Detection"
 #    核心: 通过构建 State Dependency Graph (SDG) 实现跨合约数据流追踪,
 #    97% 精度识别 timestamp/block 依赖漏洞
 #    方法: (1) 合约内 CFG + 调用图 → (2) 跨合约调用边 →
 #          (3) SDG 构建 → (4) 依赖模式匹配
 #   "Decompiling Smart Contracts with a Large Language Model"
-#    (arXiv 2506.19624, Jun 2025) — LLM 辅助反编译提高 SDG 精度
+# — LLM 辅助反编译提高 SDG 精度
 
 import re
 import logging

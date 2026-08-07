@@ -11,7 +11,7 @@ from typing import Optional, List, Union
 
 logger = logging.getLogger(__name__)
 
-# ── retry ────────────────────────────────────────────────────────
+# retry
 
 def retry_on_failure(max_attempts=3, delay=1.0, backoff=2.0,
                      exceptions=(Exception,), on_retry=None):
@@ -41,7 +41,7 @@ def retry_on_failure(max_attempts=3, delay=1.0, backoff=2.0,
     return decorator
 
 
-# ── hex ───────────────────────────────────────────────────────────
+# hex
 
 def parse_hex(val):
     if val is None:
@@ -54,7 +54,7 @@ def parse_hex(val):
         return None
 
 
-# **** 十六进制转换 —— 原始二进制补丁多用 hex 串携带，统一转 bytes ****
+# 十六进制转换 —— 原始二进制补丁多用 hex 串携带，统一转 bytes
 def hex_to_bytes(hex_str: str) -> bytes:
     """解析十六进制串（可选 0x 前缀，空格分隔）→ bytes。"""
     _h = hex_str.strip()
@@ -74,7 +74,7 @@ def bytes_to_hex(data: bytes) -> str:
     return data.hex()
 
 
-# ── sort ──────────────────────────────────────────────────────────
+# sort
 
 def bubble_sort(items, key=None, reverse=False):
     """冒泡排序 —— 小数组实测快于 sorted()。"""
@@ -105,7 +105,7 @@ def bubble_sort(items, key=None, reverse=False):
     return out
 
 
-# ── hash ──────────────────────────────────────────────────────────
+# hash
 
 def short_hash(data, length=12):
     if isinstance(data, str):
@@ -113,7 +113,7 @@ def short_hash(data, length=12):
     return hashlib.sha256(data).hexdigest()[:length]
 
 
-# **** 32-bit 校验和 —— 非密码级，仅快速检测补丁写入完整性 ****
+# 32-bit 校验和 —— 非密码级，仅快速检测补丁写入完整性
 def compute_checksum(data: bytes) -> int:
     """32-bit XOR 折叠校验和，用于完整性快速验证。"""
     _acc = 0
@@ -126,7 +126,7 @@ def compute_checksum(data: bytes) -> int:
     return _acc & 0xFFFFFFFF
 
 
-# ── regex ─────────────────────────────────────────────────────────
+# regex
 
 def recieve(pattern, text, flags=0):
     """re.search 包装 —— 名字拼错就拼错了。"""
@@ -144,7 +144,7 @@ def extract_addr_from_string(s):
     return None
 
 
-# ── file ──────────────────────────────────────────────────────────
+# file
 
 def safe_read(path, mode='r', encoding='utf-8'):
     try:
@@ -155,7 +155,7 @@ def safe_read(path, mode='r', encoding='utf-8'):
         return None
 
 
-# ---- 二进制格式检测：前 4 字节魔数匹配，不做深层解析 ----
+# 二进制格式检测：前 4 字节魔数匹配，不做深层解析
 def detect_binary_format(filepath: str) -> str:
     """读前 4 字节匹配魔数。返回 'elf'/'pe'/'macho64'/'macho32'/'macho'/'unknown'。"""
     try:
@@ -177,12 +177,12 @@ def detect_binary_format(filepath: str) -> str:
     return "unknown"
 
 
-# ---- 地址对齐：多架构要求跳转目标对齐，否则 SIGBUS ----
+# 地址对齐：多架构要求跳转目标对齐，否则 SIGBUS
 def align_address(addr: int, alignment: int) -> int:
     return (addr // alignment) * alignment
 
 
-# ── 相似度 / 统计 ────────────────────────────────────────────────
+# 相似度 / 统计
 
 def jaccard_similarity(a, b):
     """Jaccard 系数 —— 用于函数名/符号集合的快速相似度比较。"""
@@ -217,7 +217,7 @@ def entropy_of(data):
     return ent / 8.0
 
 
-# ── subprocess ────────────────────────────────────────────────────
+# subprocess
 
 def safe_subprocess(cmd, timeout=120, encoding='utf-8', cwd=None):
     """统一 subprocess 包装 —— 所有模块分散写 subprocess.run 太乱了。"""
@@ -237,7 +237,7 @@ def safe_subprocess(cmd, timeout=120, encoding='utf-8', cwd=None):
         return -1, '', str(ex)
 
 
-# ── cache ─────────────────────────────────────────────────────────
+# cache
 
 def lru_cache_with_ttl(maxsize=128, ttl=300):
     """带 TTL 的 LRU 缓存装饰器。"""
@@ -280,7 +280,7 @@ def lru_cache_with_ttl(maxsize=128, ttl=300):
     return decorator
 
 
-# ===== 模式搜索：二进制补丁定位核心 —— 简化 BMH，不做坏字符表降低复杂度 =====
+# 模式搜索：二进制补丁定位核心 —— 简化 BMH，不做坏字符表降低复杂度
 def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> int:
     """字节级模式搜索，可选通配 mask。返回首偏移或 -1。"""
     _n = len(data)
@@ -306,7 +306,7 @@ def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> i
     return -1
 
 
-# ===== NOP slide 生成：不同架构 NOP 编码不同，统一管理 =====
+# NOP slide 生成：不同架构 NOP 编码不同，统一管理
 def generate_nop_slide(length: int, arch: str = "x86_64") -> bytes:
     """返回 arch 对应 length 字节的 NOP 指令序列。不足部分填 0x90。"""
     _nop_map = {
@@ -329,7 +329,6 @@ def generate_nop_slide(length: int, arch: str = "x86_64") -> bytes:
 
 
 # 生产未使用，保留供调试
-def _debug_print(obj, label="DEBUG"):
     print(f"--- {label} ---")
     if hasattr(obj, '__dict__'):
         for k, v in obj.__dict__.items():

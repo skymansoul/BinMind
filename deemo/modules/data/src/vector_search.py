@@ -2,11 +2,11 @@
 # 将二进制签名转换为固定维度特征向量 (feature vector)，
 # 通过 LSH (Locality-Sensitive Hashing) 索引实现亚线性 kNN 搜索。
 #
-# 参考:
-#   DeepLSH [ICSE 2024]: 深度 LSH 训练 crash report 语义 hash,
+#
+#   DeepLSH: 深度 LSH 训练 crash report 语义 hash,
 #     与 MinHash/SimHash 在 Jaccard/Cosine 指标上系统对比,
 #     100M 查询规模下 ~24s 搜索 (vs exact k-NN 数小时级)。
-#   SemHash-LLM [arXiv:2607.01601]: 多粒度语义 hash 框架,
+#   SemHash-LLM: 多粒度语义 hash 框架,
 #     联合语义投影 hash + attention-weighted MinHash + 对比边界训练，
 #     面向万亿级文档去重。
 #
@@ -22,9 +22,7 @@ import math
 import struct
 from typing import List, Tuple, Optional, Dict, Any
 
-# ---------------------------------------------------------------------------
 # 特征提取: binary → feature vector
-# ---------------------------------------------------------------------------
 
 def extract_features(sig: dict, data: bytes = b"") -> List[float]:
     # 特征维度 ~30 (有 data) / ~12 (无 data):
@@ -33,18 +31,18 @@ def extract_features(sig: dict, data: bytes = b"") -> List[float]:
     # 无 data 时 entropy 和 zero_ratio 填入默认值 0.5/0.1
     feats = []
 
-    # --- 文件大小 (log 压缩极端值) ---
+# 文件大小 (log 压缩极端值)
     fsize = sig.get("file_size", 0)
     feats.append(math.log(fsize + 1) / 20.0)   # normalize to ~[0, 1]
 
-    # --- 压缩比 ---
+# 压缩比
     compressed_sz = sig.get("compressed_size", 0)
     if compressed_sz > 0 and fsize > 0:
         feats.append(min(compressed_sz / fsize, 2.0) / 2.0)
     else:
         feats.append(0.5)
 
-    # --- 字节熵估计 (histogram spread) ---
+# 字节熵估计 (histogram spread)
     if data and len(data) > 0:
         entropy = _byte_entropy(data)
         feats.append(entropy / 8.0)   # max entropy for bytes = 8
@@ -54,7 +52,7 @@ def extract_features(sig: dict, data: bytes = b"") -> List[float]:
     else:
         feats.extend([0.5, 0.1])
 
-    # --- 元数据计数 ---
+# 元数据计数
     tags = sig.get("tags")
     if isinstance(tags, str):
         import json
@@ -64,17 +62,17 @@ def extract_features(sig: dict, data: bytes = b"") -> List[float]:
             tags = []
     feats.append(min(len(tags) if isinstance(tags, list) else 0, 20) / 20.0)
 
-    # --- stage one-hot ---
+# stage one-hot
     stage = sig.get("stage", "raw")
     for s in ["raw", "analysis", "report", "archive"]:
         feats.append(1.0 if stage == s else 0.0)
 
-    # --- 生命周期年龄 ---
+# 生命周期年龄
     import time
     age_days = (time.time() - sig.get("updated_at", time.time())) / 86400.0
     feats.append(min(age_days / 365.0, 1.0))  # clamp to [0,1]
 
-    # --- 文件路径长度 ---
+# 文件路径长度
     fp = sig.get("file_path", "")
     feats.append(min(len(fp) / 1000.0, 1.0))
 
@@ -103,12 +101,10 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-# ---------------------------------------------------------------------------
 # Random Projection LSH for Cosine Similarity
 # 依据: Charikar, "Similarity Estimation Techniques from Rounding Algorithms",
 #   STOC 2002. 随机超平面 hash: sign(w · x) → 1 bit。
 #   K 个超平面 → K-bit hash → L 个表 → LSH 索引。
-# ---------------------------------------------------------------------------
 
 class RandomProjectionLSH:
     """Cosine LSH: K 个随机超平面将向量映射为 K-bit hash。
@@ -186,9 +182,7 @@ class RandomProjectionLSH:
                 "avg_bucket_size": round(sum(bucket_sizes) / max(sum(1 for b in self._buckets if b), 1), 2)}
 
 
-# ---------------------------------------------------------------------------
 # VectorIndex — 向量搜索索引管理器
-# ---------------------------------------------------------------------------
 
 class VectorIndex:
     """签名向量索引 —— 封装特征提取 + LSH 索引 + 查询。

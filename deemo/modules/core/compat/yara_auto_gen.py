@@ -102,9 +102,9 @@ def compose_rule(rule_name: str, strings: list[dict], meta: dict | None = None,
     return '\n'.join(lines)
 
 
-# --- 行为特征 YARA 规则 ---
+# 行为特征 YARA 规则
 # 除静态字节码外，利用 API 调用序列生成行为规则
-# 参考: LATTE (TOSEM 2025) — 将数据依赖路径编码为可匹配的签名
+# LATTE — 将数据依赖路径编码为可匹配的签名
 def generate_behavioral_rule(api_sequence: list[str], rule_name: str = '',
                               min_api_count: int = 3) -> str | None:
     """从 API 调用序列生成行为 YARA 规则。
@@ -127,7 +127,6 @@ def generate_behavioral_rule(api_sequence: list[str], rule_name: str = '',
     return '\n'.join(lines)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

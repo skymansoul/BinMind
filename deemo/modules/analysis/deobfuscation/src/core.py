@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 # from .legacy_deobf import old_sccp
 
 
-# ══════════════════════════════════════════════════════════════════════
 # FunctionDeobfuscator
-# ══════════════════════════════════════════════════════════════════════
 
 
 class FunctionDeobfuscator:
@@ -37,7 +35,7 @@ class FunctionDeobfuscator:
     def __init__(self) -> None:
         self._logger = logging.getLogger(__name__)
 
-    # ── Dead Code Elimination ──
+# Dead Code Elimination
 
     def eliminate_dead_code(
         self, instructions: List[Dict[str, Any]]
@@ -117,7 +115,7 @@ class FunctionDeobfuscator:
 
         return result
 
-    # ── Constant Propagation ──
+# Constant Propagation
 
     def propagate_constants(
         self, instructions: List[Dict[str, Any]]
@@ -214,7 +212,7 @@ class FunctionDeobfuscator:
         )
         return result
 
-    # ── 不透明谓词 Elimination ──
+# 不透明谓词 Elimination
 
     def eliminate_opaque_predicates(
         self, instructions: List[Dict[str, Any]]
@@ -269,7 +267,7 @@ class FunctionDeobfuscator:
         )
         return result
 
-    # ── OLLVM CFF Recovery ──
+# OLLVM CFF Recovery
 
     def recover_ollvm_cff(
         self, instructions: List[Dict[str, Any]], entry: int
@@ -296,7 +294,7 @@ class FunctionDeobfuscator:
         返回:
         Tuple (clean_instructions, recovery_metadata)
         """
-        # Step 1: 查找 分发器 block
+        # 查找 分发器 block
         # 分发器 characteristics: indirect jump, multiple predecessors
         dispatcher_idx: int = -1
         for i, insn in enumerate(instructions):
@@ -317,7 +315,7 @@ class FunctionDeobfuscator:
             self._logger.info("No CFF dispatcher block found")
             return instructions, metadata
 
-        # Step 2: Identify state variable
+        # Identify state variable
         # Look for mov/cmp a 寄存器 分发器 jump
         relevant_blocks: List[Dict[str, Any]] = []
         for i, insn in enumerate(instructions):
@@ -335,7 +333,7 @@ class FunctionDeobfuscator:
 
         return relevant_blocks, metadata
 
-    # ── 调度器 ──
+# 调度器
 
     def deobfuscate(
         self,
@@ -445,9 +443,7 @@ class FunctionDeobfuscator:
         return result
 
 
-# ══════════════════════════════════════════════════════════════════════
 # Deobf调度器
-# ══════════════════════════════════════════════════════════════════════
 
 
 class DeobfOrchestrator:
@@ -658,9 +654,7 @@ class DeobfOrchestrator:
         }
 
 
-# ══════════════════════════════════════════════════════════════════════
 # StringDecoder
-# ══════════════════════════════════════════════════════════════════════
 
 
 class StringDecoder:
@@ -961,9 +955,7 @@ class StringDecoder:
         return result
 
 
-# ══════════════════════════════════════════════════════════════════════
 # 自然语言处理String分类器
-# ══════════════════════════════════════════════════════════════════════
 
 
 class NLPStringClassifier:
@@ -1254,7 +1246,7 @@ class NLPStringClassifier:
         }
 
 
-# ── 辅助函数 ──
+# 辅助函数
 
 
 def _is_immediate(s: str) -> bool:

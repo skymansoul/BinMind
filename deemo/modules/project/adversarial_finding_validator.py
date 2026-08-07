@@ -7,16 +7,15 @@
 #   校准决定最终判定, 同时监测各维度检出率漂移以捕获系统级攻击
 # 技术效果: 三个独立分析维度的交叉验证可检测模式不一致的发现,
 #   各维度权重按EWMA历史精度动态调整, 减少单一维度误判的影响
-# 参考:
-#   NatGVD (arXiv:2510.04987, 2025) — 图模型对抗攻击自然性保持,
+#
+#   NatGVD — 图模型对抗攻击自然性保持,
 #     验证: 独立研究, 53%绕过率, IEEE TPS-ISA会议收录
 #   Carlevaro et al. "Conformal Predictions for Probabilistically Robust
-#     Scalable ML Classification" (2024) — 保形安全集概念
+#     Scalable ML Classification" — 保形安全集概念
 # 设计边界:
-#   - 三个维度相互独立: 攻击者同时欺骗三者的成本远高于欺骗单一维度
-#   - 加权方案由各维度历史精度动态调整 (模拟EWMA加权)
-#   - 漂移检测使用CUSUM, 不依赖参数分布假设
-from __future__ import annotations
+# 三个维度相互独立: 攻击者同时欺骗三者的成本远高于欺骗单一维度
+# 加权方案由各维度历史精度动态调整 (模拟EWMA加权)
+# 漂移检测使用CUSUM, 不依赖参数分布假设
 import bisect
 import hashlib
 import logging

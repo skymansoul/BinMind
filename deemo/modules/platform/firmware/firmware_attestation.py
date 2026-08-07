@@ -1,6 +1,6 @@
 # 固件远程证明与TPM/IMA度量链验证
-# 参考：
-#   "Bringing Forensic Readiness to Modern Computer Firmware" (arXiv 2505.05697, 2025)
+#
+#   "Bringing Forensic Readiness to Modern Computer Firmware"
 #     — 固件取证就绪框架，TPM PCR度量值映射至具体UEFI模块
 #   NIST SP 800-155（BIOS完整性度量指南）
 #   TCG PC Client Platform Firmware Profile Specification 1.05
@@ -288,7 +288,7 @@ def verify_firmware_attestation(pcr_quote: dict, event_log: str = "",
     return verifier.verify()
 
 
-# ---- TPM事件日志直接读取（非验证模式）----
+# TPM事件日志直接读取（非验证模式）
 def read_tpm_event_log(path: str) -> list[dict]:
     """快速读取TPM事件日志为可读字典列表 — 取证预览用。"""
     verifier = FirmwareAttestationVerifier(event_log_path=path)

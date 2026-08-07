@@ -3,8 +3,8 @@
 当字节级变异无法突破分支时, 提取路径条件 → 约束求解 → 回注新输入到模糊测试队列。
 桥接层不实现符号引擎, 仅编排 Angr/启发式回退的求解流程。
 
-参考: PathFuzzing 路径比特编码 (arXiv:2507.09892), FuzzBox QEMU 符号覆盖分析 (arXiv:2509.05643),
-Examiner-Pro Unicorn+Angr 差分测试 (IEEE TSE 2024)。
+参考: PathFuzzing 路径比特编码 , FuzzBox QEMU 符号覆盖分析 ,
+Examiner-Pro Unicorn+Angr 差分测试 。
 """
 
 import hashlib
@@ -28,7 +28,6 @@ try:
 except ImportError:
     pass
 
-
 @dataclass
 class BranchConstraint:
     """一条分支指令的约束条件快照。
@@ -39,7 +38,6 @@ class BranchConstraint:
     taken: bool                   # 当前执行路径是否沿 take 方向
     condition_expr: str = ""      # 约束文本, 如 "rax == 0"
     symbolic_vars: List[str] = field(default_factory=list)
-
 
 @dataclass
 class PathSolverResult:
@@ -53,7 +51,6 @@ class PathSolverResult:
     new_input: Optional[bytes]    # 满足翻转条件的新输入, 失败时为 None
     solver_time_ms: float = 0.0
     solver_name: str = ""         # 求解器标识: "angr" 或 "heuristic"
-
 
 class SymbolicBridge:
     """模糊测试循环中的符号求解编排器。
@@ -245,7 +242,6 @@ class SymbolicBridge:
             "solve_rate": self._stats["solved"] / total,
         }
 
-
 # 从反编译伪代码中提取分支条件表达式
 
 def extract_branch_conditions_from_decomp(
@@ -267,7 +263,6 @@ def extract_branch_conditions_from_decomp(
         conditions.append((addr, cond))
 
     return conditions
-
 
 # 单约束等值比较的直接字节替换求解
 

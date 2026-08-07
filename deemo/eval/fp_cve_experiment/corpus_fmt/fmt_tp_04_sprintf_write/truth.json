@@ -1,0 +1,6 @@
+{
+  "id": "fmt_tp_04_sprintf_write",
+  "expected_vuln": true,
+  "vuln_type": "format_string",
+  "mode": "sprintf 可写缓冲 + %n"
+}

@@ -7,11 +7,9 @@ from typing import Optional, Any
 logger = logging.getLogger(__name__)
 
 
-# ============================================================
 # ConfigDict: 带属性访问的 dict —— 弥合 config.get('key')
 # 与 config.KEY 之间的差异，CLI 和旧模块都期望这两者。
 # INTJ: 一个对象统一所有，不再猜测用哪个 API。
-# ============================================================
 class ConfigDict(dict):
     """带属性访问的 dict 子类。支持 config.KEY 和 config.get('key')。"""
 
@@ -30,12 +28,12 @@ class ConfigDict(dict):
         if name in self:
             del self[name]
 
-    # ---- 浅拷贝，避免修改传播到默认值 ----
+# 浅拷贝，避免修改传播到默认值
     def copy(self):
         return ConfigDict(super().copy())
 
 
-# ── 默认配置（镜像 config/default.yaml）─────────────────────────
+# 默认配置（镜像 config/default.yaml）
 _DEFAULTS = {
     # 远程服务配置
     "AI_PROVIDER": "openai",
@@ -143,7 +141,7 @@ def _load_yaml_file(filepath: str) -> dict:
         return {}
 
 
-# ── 模块级 config 单例 ──────────────────────────────────────────
+# 模块级 config 单例
 # ConfigDict 令 config.KEY 和 config.get('key') 同时可用。
 config = ConfigDict(_DEFAULTS)
 

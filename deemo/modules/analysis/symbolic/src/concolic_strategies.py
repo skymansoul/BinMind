@@ -53,9 +53,7 @@ __all__ = [
 ]
 
 
-# =============================================================================
 # CrashCategory — crash taxonomy for triage 分类
-# =============================================================================
 class CrashCategory(Enum):
     """Crash taxonomy for triage 分类"""
     STACK_OVERFLOW = "stack_overflow"
@@ -66,9 +64,7 @@ class CrashCategory(Enum):
     UNKNOWN = "unknown"
 
 
-# =============================================================================
 # FuzzDictEntry — one dictionary token for AFL/lib模糊测试器 corpus
-# =============================================================================
 @dataclass
 class FuzzDictEntry:
     """One dictionary token for AFL/lib模糊测试器 corpus"""
@@ -80,12 +76,10 @@ class FuzzDictEntry:
     coverage_gain: float
 
 
-# =============================================================================
 # CrashTriage分类器
 #   基于崩溃地址+错误信息+约束模式的分类器
 #   匹配优先级从具体到抽象 — 先检查特定函数偏移，再检查通用错误文本
 #   约束模式匹配作为兜底，当崩溃地址无法解析时被激活
-# =============================================================================
 class CrashTriageClassifier:
     """Classify crashes one {栈_overflow, 堆_corruption
     format_string, integer_overflow, null_deref, unknown}
@@ -165,10 +159,8 @@ class CrashTriageClassifier:
     def __init__(self) -> None:
         self._classification_cache: Dict[str, CrashCategory] = {}
 
-    # ------------------------------------------------------------------
     # triage_stage_address: 地址优先匹配 — 低地址段优先判断栈/空指针
     # 堆地址典型范围在 0x7f. 附近（libc 分配的 mmap 区域）
-    # ------------------------------------------------------------------
     def _triage_by_address(self, crash_addr: int) -> Optional[CrashCategory]:
         normalized = crash_addr & self.ADDRESS_NORMALIZE_MASK
         if normalized == 0:
@@ -299,11 +291,9 @@ class CrashTriageClassifier:
         return category, 0.35
 
 
-# =============================================================================
 # FuzzDictGenerator: 从高熵种子生成 AFL/lib模糊测试器 字典
 # 格式：每行 "SEED_xxx"="<hex bytes>" 或 "SEED_xxx"="<escaped ascii>"
 # 按种子有效性排序：coverage_gain 降序 → entropy 降序 → 收集轮次升序
-# =============================================================================
 class FuzzDictGenerator:
     """Produce an AFL/lib模糊测试器-compatible dictionary high-entropy seeds
     
@@ -453,12 +443,10 @@ class FuzzDictGenerator:
         self._entries.clear()
 
 
-# =============================================================================
 # StructuredMetrics — 结构化指标收集器
 # 替代分散的 logger.info/warning 调用
 # 每轮结束时调用 _snapshot_metrics() 一次性输出，避免日志碎片化
 # 下游解析工具可直接读取此结构体而非 grep 日志行
-# =============================================================================
 @dataclass
 class StructuredMetrics:
     """Per-舍入 metrics — replaces scattered inline 日志器 calls
@@ -479,12 +467,10 @@ class StructuredMetrics:
     round_number: int = 0
 
 
-# =============================================================================
 # Seed变异流水线 — 种子变异流水线
 # 在种子收集后、注入符号执行器前应用
 # 三个变异算子，由 mut_rates 字典控制激活概率
 # 变异率保持低位：破坏性低，多样性增益高
-# =============================================================================
 class SeedMutationPipeline:
     """Applies 变异 operators a seed corpus increase diversity
     
@@ -504,7 +490,7 @@ class SeedMutationPipeline:
             'block_swap': 0.005,
         }
 
-    # ---------- operator implementations ----------
+# operator implementations
 
     def _op_byte_flip(self, data: bytes) -> bytes:
         """Flip random bits byte mut_rates['byte_flip'] probability"""
@@ -563,11 +549,9 @@ class SeedMutationPipeline:
         return seeds
 
 
-# =============================================================================
 # _entropy_of — Shannon entropy over byte sequence
 # 种子质量衰减：连续无覆盖率增长的轮次越多，新种子的注入权重越低
 # 采用 sigmoid 衰减而非线性，避免过早放弃但能快速响应长期停滞
-# =============================================================================
 def _entropy_of(byte_seq: bytes) -> float:
     """计算 Shannon entropy over *byte_seq*. 返回 0.0 for empty input"""
     if not byte_seq:

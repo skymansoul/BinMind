@@ -282,7 +282,7 @@ class UEFIFirmwareAnalyzer:
                 n_size / 1024 / 1024))
         self.firmware_path = s_path
 
-    # ---- Analysis pipeline ----
+# Analysis pipeline
 
     def analyze(self):
         logger.info("[UEFI] starting firmware analysis...")
@@ -317,7 +317,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] modules found: {}".format(len(self.modules)))
         logger.info("[UEFI] SMM modules: {}".format(len(self.smm_modules)))
 
-    # ---- uefi_firmware path ----
+# uefi_firmware path
 
     def _parse_with_uefi_firmware(self):
         try:
@@ -377,7 +377,7 @@ class UEFIFirmwareAnalyzer:
             return None
         return module
 
-    # ---- Built-in parser ----
+# Built-in parser
 
     def _parse_with_builtin(self):
         logger.info("[UEFI] using built-in parser...")
@@ -567,7 +567,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] saveindexfailed: {}".format(e))
 
-    # ---- PE analysis ----
+# PE analysis
     # 暂留 — 旧版 GUID 去重逻辑，新方法有遗漏时兜底
     # _seen_guids = set()
     # for _mod in self.modules:
@@ -643,7 +643,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] PE analysis failed ({}): {}".format(module.name, e))
 
-    # ---- DXE dependency graph ----
+# DXE dependency graph
 
     def _build_dxe_dependency_graph(self):
         if not self.dxe_modules:
@@ -664,7 +664,7 @@ class UEFIFirmwareAnalyzer:
             logger.info("[UEFI] DXE dependency graph built: %d protocol nodes",
                         len(self._dxe_dep_graph))
 
-    # ---- SMM vulnerability detection ----
+# SMM vulnerability detection
 
     def _detect_smm_vulnerabilities(self):
         logger.info("[UEFI] running SMM vulnerability detection...")
@@ -821,7 +821,7 @@ class UEFIFirmwareAnalyzer:
             })
         return vulns
 
-    # ---- NIST 800-193 ----
+# NIST 800-193
 
     def _assess_nist_800_193(self):
         # NIST SP 800-193 固件弹性三维度：检测 / 保护 / 恢复，不可偏废
@@ -852,7 +852,7 @@ class UEFIFirmwareAnalyzer:
                 })
         self.analysis_stats['nist_800_193'] = resiliency_scores
 
-    # ---- Report ----
+# Report
 
     def _generate_report(self):
         report = {

@@ -1,6 +1,6 @@
 """
 parallel_deep_dev — BinMind 深度创新并行开发包
-==================================================
+
 用法:
   python -m parallel_deep_dev           # 完整执行
   python -m parallel_deep_dev --dry-run # 仅预览 prompt

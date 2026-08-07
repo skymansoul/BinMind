@@ -26,10 +26,9 @@
 - 本模块: 评估补丁的*安全性*——是否真正消除漏洞类。
 - 前者是代码审查视角，后者是攻击者视角。
 
-参考：
 - "SoK: All You Ever Wanted to Know About x86/x64 Binary Disassembly"
-  (USENIX 2022) — 补丁二进制对比的方法学基础。
-- "PatchVerif" (NDSS 2021) — 补丁正确性验证的符号执行方法。
+ — 补丁二进制对比的方法学基础。
+- "PatchVerif" — 补丁正确性验证的符号执行方法。
 """
 
 from collections import defaultdict
@@ -37,20 +36,17 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class PathChangeType(Enum):
     REMOVED = "removed"       # 补丁后不可达
     ADDED = "added"           # 补丁后新出现
     MODIFIED = "modified"     # 路径仍在但约束改变
     UNCHANGED = "unchanged"   # 完全相同
 
-
 class PatchVerdict(Enum):
     ROOT_CAUSE_FIXED = "root_cause_fixed"
     SURFACE_PATCH = "surface_patch"
     NEW_VULN_INTRODUCED = "new_vuln_introduced"
     INCONCLUSIVE = "inconclusive"
-
 
 @dataclass
 class PathEquivalenceClass:
@@ -61,7 +57,6 @@ class PathEquivalenceClass:
     reachable_after: bool = False
     change_type: PathChangeType = PathChangeType.UNCHANGED
     is_vuln_related: bool = False
-
 
 @dataclass
 class PatchVerificationResult:
@@ -79,7 +74,6 @@ class PatchVerificationResult:
     new_suspicious_paths: List[str] = field(default_factory=list)
     # 详细分析
     analysis: str = ""
-
 
 class PatchEffectivenessVerifier:
     """补丁有效性自动验证器。
@@ -107,9 +101,7 @@ class PatchEffectivenessVerifier:
         self._post_paths: List[Dict] = []
         self._equiv_classes: List[PathEquivalenceClass] = []
 
-    # -----------------------------------------------------------------
     # 加载 API
-    # -----------------------------------------------------------------
 
     def load_pre_patch_paths(self, paths: List[Dict]):
         """加载补丁前的符号执行路径。
@@ -122,9 +114,7 @@ class PatchEffectivenessVerifier:
         """加载补丁后的符号执行路径。"""
         self._post_paths = paths
 
-    # -----------------------------------------------------------------
     # 验证 API
-    # -----------------------------------------------------------------
 
     def verify(
         self, vuln_type: str = "unknown",
@@ -174,9 +164,7 @@ class PatchEffectivenessVerifier:
             analysis=_analysis,
         )
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _classify_paths(self) -> List[PathEquivalenceClass]:
         """将补丁前后的路径归入等价类并分类。"""
@@ -293,7 +281,6 @@ class PatchEffectivenessVerifier:
             return f"Patch introduced {len(new_sus)} new suspicious path classes."
         return f"Insufficient path data for conclusive assessment."
 
-
 def _constraint_similarity(
     conds_a: List[str], conds_b: List[str],
 ) -> float:
@@ -305,8 +292,7 @@ def _constraint_similarity(
         return 0.0
     return len(_set_a & _set_b) / len(_union)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _pre_paths = [
         {"path_id": "p1", "conditions": ["len>0", "len<256", "src!=NULL"],
@@ -344,7 +330,6 @@ def _smoke_test():
     )
     assert len(_result.residual_vuln_paths) > 0, "should find residual vuln paths"
     print("[OK] PatchEffectivenessVerifier smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

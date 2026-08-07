@@ -1,20 +1,20 @@
 # 定向灰盒模糊测试基元 — 目标驱动的路径探索与距离度量
-# 参考: BEACON (IEEE S&P 2022) — 可证明路径剪枝的定向灰盒模糊测试:
+# BEACON — 可证明路径剪枝的定向灰盒模糊测试:
 #       将到达目标的路径编码为线性规划问题, 剪枝不可避免偏离目标的路径
-# 参考: Hawkeye (CCS 2017) — 基于期望的定向灰盒模糊器:
+# Hawkeye — 基于期望的定向灰盒模糊器:
 #       引入"邻近度"新度量, 结合函数级和基本块级距离
-# 参考: MC2 (USENIX 2023) — 严格高效的定向灰盒模糊测试:
+# MC2 — 严格高效的定向灰盒模糊测试:
 #       使用支配者树和 post-dominator 分析精确定义到目标的距离
-# 参考: SELECTFUZZ (IEEE S&P 2022) — 选择性路径探索: 仅符号化
+# SELECTFUZZ — 选择性路径探索: 仅符号化
 #       与目标分支相关的输入字节, 大幅降低求解器负载
-# 参考: SoK (IEEE S&P 2024) — 定向模糊测试目标选择方法综述
+# SoK — 定向模糊测试目标选择方法综述
 
 import heapq as _hp
 import math as _math
 from collections import defaultdict as _dd, deque as _deque
 
-# ===== 基本块级距离度量 =====
-# 参考: Hawkeye 的距离定义 — 到目标块的最短路径长度
+# 基本块级距离度量
+# Hawkeye 的距离定义 — 到目标块的最短路径长度
 # 使用调和平均结合函数间和函数内距离 (favor 两者都短的路径)
 
 
@@ -25,7 +25,7 @@ def compute_block_distance(callgraph: dict[str, list[str]],
     if not target_addrs:
         return {}
 
-    # --- 函数级距离 (CG) ---
+# 函数级距离 (CG)
     # 先确定哪些函数包含目标块
     target_funcs: set[str] = set()
     func_blocks: dict[str, list[int]] = _dd(list)
@@ -58,7 +58,7 @@ def compute_block_distance(callgraph: dict[str, list[str]],
     if not func_dist:
         return {}
 
-    # --- 块级距离 (CFG) ---
+# 块级距离 (CFG)
     max_func_d = max(func_dist.values()) if func_dist else 1
 
     block_dist: dict[int, tuple[int, int]] = {}  # (func_d, cfg_d)
@@ -122,8 +122,8 @@ def _retrieve_predecessors(addr: int, cfg: dict[int, dict]) -> list[int]:
     return preds
 
 
-# ===== 基于距离的种子优先级排序 =====
-# 参考: Hawkeye 的种子调度策略 — 距目标更近的种子 → 更高变异次数
+# 基于距离的种子优先级排序
+# Hawkeye 的种子调度策略 — 距目标更近的种子 → 更高变异次数
 # 距离分布随 fuzzing 进行而演变，动态距离需要周期性重算
 
 def prioritize_seeds_by_distance(seeds: list[dict],
@@ -148,10 +148,10 @@ def prioritize_seeds_by_distance(seeds: list[dict],
     return [s for _, s in scored]
 
 
-# ===== 基于支配者树的路径剪枝 =====
-# 参考: MC2 的支配者关系应用 — 若目标在 block A 的 post-dominator 集中,
+# 基于支配者树的路径剪枝
+# MC2 的支配者关系应用 — 若目标在 block A 的 post-dominator 集中,
 # 则经过 A 是到达目标的必要条件; 反之可直接剪枝
-# 参考: BEACON 的可证明剪枝 — 使用 ILP 求解精确剪枝条件
+# BEACON 的可证明剪枝 — 使用 ILP 求解精确剪枝条件
 
 def prune_by_dominance(cfg: dict[int, dict],
                         target_addr: int,
@@ -190,8 +190,8 @@ def prune_by_dominance(cfg: dict[int, dict],
     return False
 
 
-# ===== 关键路径识别 (Critical Path Identification) =====
-# 参考: SELECTFUZZ 的选择性符号化 — 仅对目标分支路径上的字节符号化
+# 关键路径识别 (Critical Path Identification)
+# SELECTFUZZ 的选择性符号化 — 仅对目标分支路径上的字节符号化
 # 位图标记: 输入中哪些字节影响了到目标的路径
 # 实现: 污点标签沿数据依赖反向传播至输入字节
 
@@ -239,9 +239,9 @@ def mark_critical_bytes(trace_insns: list[tuple[int, str, str]],
     return critical
 
 
-# ===== 定向模糊测试的能耗调度 =====
+# 定向模糊测试的能耗调度
 # 基于模拟退火的种子能量分配: 距离越小 → 能量越高
-# 参考: AFL 的基于执行速度的调度 → 扩展到基于距离
+# AFL 的基于执行速度的调度 → 扩展到基于距离
 
 def directed_energy_schedule(seed_distance: float, base_energy: int = 100,
                                decay_rate: float = 3.0) -> int:

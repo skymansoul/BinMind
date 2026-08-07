@@ -1,0 +1,71 @@
+{
+  "gasri": {
+    "n": 16,
+    "tp": 12,
+    "tn": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0,
+    "per_sample": {
+      "cve_2014_0038_recvfrom": "TP",
+      "cve_2015_0240_samba": "TP",
+      "cve_2017_1000253_pie": "TP",
+      "cve_2018_1000001_glibc": "TP",
+      "cve_2019_15846_rsync": "TP",
+      "cve_2020_10713_grub": "TP",
+      "cve_2021_3156_sudo": "TP",
+      "cve_2022_0185_kernel": "TP",
+      "cve_2022_3602_openssl": "TP",
+      "cve_2023_2513_bpf": "TP",
+      "cve_2023_38545_curl": "TP",
+      "cve_2024_2961_glibc": "TP",
+      "safe_alignment_padding": "TN",
+      "safe_alloc_controllable": "TN",
+      "safe_disjoint_allocs": "TN",
+      "safe_guard_bounded": "TN"
+    }
+  },
+  "naive": {
+    "n": 16,
+    "tp": 12,
+    "tn": 0,
+    "fp": 4,
+    "fn": 0,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.8571,
+    "fpr": 1.0,
+    "per_sample": {
+      "cve_2014_0038_recvfrom": "TP",
+      "cve_2015_0240_samba": "TP",
+      "cve_2017_1000253_pie": "TP",
+      "cve_2018_1000001_glibc": "TP",
+      "cve_2019_15846_rsync": "TP",
+      "cve_2020_10713_grub": "TP",
+      "cve_2021_3156_sudo": "TP",
+      "cve_2022_0185_kernel": "TP",
+      "cve_2022_3602_openssl": "TP",
+      "cve_2023_2513_bpf": "TP",
+      "cve_2023_38545_curl": "TP",
+      "cve_2024_2961_glibc": "TP",
+      "safe_alignment_padding": "FP",
+      "safe_alloc_controllable": "FP",
+      "safe_disjoint_allocs": "FP",
+      "safe_guard_bounded": "FP"
+    }
+  },
+  "fp_reduction_pct": 100.0,
+  "n_samples": 16,
+  "rule_stats": {
+    "R7_unbound_alloc": 1,
+    "R4_proven": 7,
+    "R0_unbounded": 2,
+    "R6_suspicious": 2,
+    "R3_bounded": 3,
+    "R5_shared_src": 1,
+    "R2_guard": 1
+  }
+}

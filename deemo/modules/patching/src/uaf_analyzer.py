@@ -12,7 +12,7 @@
 该对象为"已释放"，后续任何对该指针寄存器或派生地址的内存访问
 即标记为 UAF。
 
-方法依据: Undangle [USENIX Security 2024] 的 demand-driven
+方法依据: Undangle 的 demand-driven
          指针生命周期分析思想，但操作在汇编而非 LLVM IR。
 
 限制：
@@ -63,7 +63,7 @@ class UAFReport:
         }
 
 
-# ── 指针生命周期追踪器 ────────────────────────────────────────────
+# 指针生命周期追踪器
 
 class PointerLifecycleTracker:
     """逐指令追踪指针对象的生命周期。

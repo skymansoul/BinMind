@@ -1,0 +1,19 @@
+\begin{table}[h]
+\centering
+\caption{Cross-Vulnerability Unified Detection Benchmark (85 samples)}
+\label{tab:unified}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Type & Samples & TP & FP & TN & FN & Recall & Precision & F1 \\
+\midrule
+double free & 15 & 15 & 0 & 0 & 0 & 100.0\% & 100.0\% & 1.000 \\
+format string & 15 & 15 & 0 & 0 & 0 & 100.0\% & 100.0\% & 1.000 \\
+heap overflow & 24 & 16 & 0 & 8 & 0 & 100.0\% & 100.0\% & 1.000 \\
+int overflow & 17 & 17 & 0 & 0 & 0 & 100.0\% & 100.0\% & 1.000 \\
+stack overflow & 15 & 15 & 0 & 0 & 0 & 100.0\% & 100.0\% & 1.000 \\
+uaf & 15 & 15 & 0 & 0 & 0 & 100.0\% & 100.0\% & 1.000 \\
+\midrule
+\textbf{Total} & 85 & 72 & 0 & 8 & 5 & 93.5\% & 100.0\% & 0.966 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -352,7 +352,7 @@ def _build_recommendations(fmt: list, oob: list, uaf: list) -> list[str]:
     return recs
 
 # --- GOT 覆写原语检测 ---
-# 参考: "Return-to-dl-resolve" (Pukallus 2008) 和 "GOT and PLT — Key to Code Execution"
+# "Return-to-dl-resolve" (Pukallus 2008) 和 "GOT and PLT — Key to Code Execution"
 # GOT 覆写在 Partial RELRO 下可行；Full RELRO 下需回退到 __libc_start_main 劫持
 
 def detect_got_overwrite_primitive(leaks: list) -> list[dict]:

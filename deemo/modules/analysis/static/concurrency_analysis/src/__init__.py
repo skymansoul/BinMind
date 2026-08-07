@@ -14,11 +14,11 @@
 #      交叉引用识别），检查是否存在共同的锁保护
 #
 # 已知局限：
-# - 间接调用（函数指针/vt）的目标解析不完全——这是二进制程序的固有问题
+# 间接调用（函数指针/vt）的目标解析不完全——这是二进制程序的固有问题
 #   - 条件变量的 wait/signal 模式检测依赖启发式（pthread_cond_wait 附近找不到
 #     mutex_lock 则报告为潜在误用）
 #
-# ref: arXiv:2305.08701 — ConcStatic 的锁图构建方法（源代码级）
+# — ConcStatic 的锁图构建方法（源代码级）
 # 本项目将其推广到二进制层面并增加了间接调用的 heuristic 回退策略
 
 from .sync_primitive import (

@@ -5,7 +5,7 @@ Allocates energy to seeds based on the global rarity of the coverage edges
 they hit, using an exponential forgetting factor so historical frequency
 decays over time and the scheduler remains sensitive to newly discovered edges.
 
-Uses the core formula from Entropic (Böhme et al., 2020) with an exponential
+Uses the core formula from Entropic with an exponential
 decay window instead of a fixed one.
 
 Distinct from adaptive_scheduler.py (MAB method-level) and complementary to
@@ -17,10 +17,9 @@ Key parameters:
 
 References:
   Böhme et al., 2020, IEEE S&P, "Entropic: Boosting Fuzzing with Information Theory"
-  T-Scheduler (She et al., 2024, AsiaCCS)
+  T-Scheduler
 """
 
-from __future__ import annotations
 
 import logging
 import math

@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+  \centering
+  \caption{Ablation Study: Layered FP Reduction}
+  \label{tab:ablation_fp_reduction}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Configuration & Precision & Recall & F1 & FPR \\
+    \midrule
+    Baseline (pattern only) & 0.8000 & 0.9231 & 0.8571 & 0.7500 \\
+    + HOSV (constraint graph) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+    + GAPSBV-CJ (constraint join) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

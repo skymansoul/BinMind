@@ -5,7 +5,7 @@ AgentRepair — 候选补丁排序器
     rank = w_verify * verify_score + w_static * static_score + w_scale * scale_score
 验证结果权重最高 — 测试反馈优先。
 改动规模越小越优 — 最小化补丁副作用面。
-（参考 Agentic Program Repair [arXiv:2507.18755]；SynthFix [arXiv:2604.17184]）
+
 
 边界条件：
   - validations 接受 ValidationResult 对象或状态字符串，缺失按 skipped 处理；
@@ -129,7 +129,7 @@ class CandidatePatchRanker:
                 r.rank_score, (' :: ' + r.description) if r.description else ''))
         return '\n'.join(lines)
 
-    # -- 评分原语 -------------------------------------------------------
+# 评分原语
 
     def _static_score(self, patch_diff):
         """静态分 — 基于补丁新增行的安全模式密度。"""

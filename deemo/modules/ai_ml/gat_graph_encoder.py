@@ -2,8 +2,8 @@
 # 设计边界: 纯Python实现, 不依赖PyTorch/NumPy; 支持多头注意力和EdgeDrop正则化
 #
 # 架构参考:
-# BobGAT (LLNL, 2024) — 分层GAT, 按函数边界聚合
-# GATv2 (Brody et al., ICLR 2022) — 动态注意力, 修复了原始GAT的静态排序问题
+# BobGAT — 分层GAT, 按函数边界聚合
+# GATv2 — 动态注意力, 修复了原始GAT的静态排序问题
 
 from __future__ import annotations
 import math
@@ -16,9 +16,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 辅助数学函数 — 纯Python线性代数
-# ---------------------------------------------------------------------------
 
 def _vec_dot(a: List[float], b: List[float]) -> float:
     """向量内积，不做维度检查（调用方保证长度一致）"""
@@ -63,9 +61,7 @@ def _softmax(logits: List[float]) -> List[float]:
 def _elu(x: float, alpha: float = 1.0) -> float:
     return x if x >= 0 else alpha * (math.exp(x) - 1.0)
 
-# ---------------------------------------------------------------------------
 # 权重初始化
-# ---------------------------------------------------------------------------
 
 _WEIGHT_INIT_SEED = 0
 _WEIGHT_INIT_RNG: Optional[random.Random] = None
@@ -97,9 +93,7 @@ def _l2_normalize(v: List[float]) -> List[float]:
         return v[:]
     return [x / norm for x in v]
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class GATEncoderConfig:
@@ -111,9 +105,9 @@ class GATEncoderConfig:
         out_dim: 最终输出维度
         num_heads: 注意力头数 (每层独立配置时使用列表)
         dropout_rate: 节点特征dropout概率
-        edge_dropout_rate: 边丢弃概率 (EdgeDrop [Rong et al. ICLR 2020])
+        edge_dropout_rate: 边丢弃概率
         residual: 是否使用残差连接
-        use_gatv2: 使用GATv2动态注意力 [Brody et al. 2022] 还是原始GAT
+        use_gatv2: 使用GATv2动态注意力 还是原始GAT
         activation: 激活函数 ('relu' | 'elu' | 'leaky_relu')
     """
     in_dim: int = 12

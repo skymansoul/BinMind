@@ -13,17 +13,17 @@
 #   动态加载时静态通道退化但动态通道全效
 # 技术效果: 跨编译器+跨优化级的Recall@1从单一通道的0.55提升至0.79,
 #   跨混淆 (OLLVM) 的Recall@1从0.31提升至0.58
-# 参考:
-#   LIBSIG (CGO 2026, 2025预印) — 动态库签名二进制指纹,
+#
+#   LIBSIG — 动态库签名二进制指纹,
 #     本项目借鉴其库调用序列思想但不限于纯动态签名
-#   UniASM (Neurocomputing 2025) — 跨架构无微调BCSD,
+#   UniASM — 跨架构无微调BCSD,
 #     本项目借鉴其语义保持的嵌入思想但使用确定性哈希
-#   BASSET (IEEE 2025) — 多级混合语义索引,
+#   BASSET — 多级混合语义索引,
 #     本项目借鉴其多特征融合思路但使用双通道互补而非分层
 # 设计边界:
-#   - 不依赖反汇编——仅操作ELF/PE符号表和字节级CFG启发式
-#   - MinHash/SimHash均为局部敏感哈希 (LSH), 碰撞概率≈相似度
-#   - 跨架构限制: ARM Thumb和x86_64的CFG提取使用不同启发式
+# 不依赖反汇编——仅操作ELF/PE符号表和字节级CFG启发式
+# MinHash/SimHash均为局部敏感哈希 (LSH), 碰撞概率≈相似度
+# 跨架构限制: ARM Thumb和x86_64的CFG提取使用不同启发式
 from __future__ import annotations
 import hashlib
 import logging

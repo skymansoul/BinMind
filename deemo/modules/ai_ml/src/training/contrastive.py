@@ -5,7 +5,7 @@
 import numpy as np
 
 
-# ===== InfoNCE Loss: 自监督对比学习的核心损失 =====
+# InfoNCE Loss: 自监督对比学习的核心损失
 # 设计权衡：temperature 越低，模型对困难负样本越敏感
 # 0.07 是 SimCLR 经验值，适合 128～512 维嵌入
 # 对称计算（i→i+N 和 i+N→i）提升梯度稳定性，代价是 2x 计算量
@@ -61,7 +61,7 @@ class InfoNCELoss:
         return (_loss_a + _loss_b) * 0.5
 
 
-# ===== Triplet Margin Loss: 三元组排序损失 =====
+# Triplet Margin Loss: 三元组排序损失
 # margin 越大，要求 anchor-positive 和 anchor-negative 距离差越大
 # 0.5 适合已归一化的嵌入空间
 
@@ -131,7 +131,7 @@ def two_phase_train(model, data, epochs_phase1=20, epochs_phase2=20):
     _triplet_loss = TripletMarginLoss(margin=0.5)
     _infonce_loss = InfoNCELoss(temperature=0.07)
 
-    # ---- Phase 1: TripletMargin 粗粒度分离 ----
+# Phase 1: TripletMargin 粗粒度分离
     for _ep in range(epochs_phase1):
         _a, _p, _n = _sample_triplets(_feat, _lbl, batch_size=32)
         _a_emb = model(_a)
@@ -145,7 +145,7 @@ def two_phase_train(model, data, epochs_phase1=20, epochs_phase2=20):
 
         _history['phase1'].append(float(_loss))
 
-    # ---- Phase 2: InfoNCE 细粒度对齐 ----
+# Phase 2: InfoNCE 细粒度对齐
     for _ep in range(epochs_phase2):
         # 构造配对数据：随机选 N/2 对同类样本
         _n_pair = min(_feat.shape[0] // 2, 64)
@@ -226,7 +226,6 @@ def _semi_hard_negative_indices(anchor, positive, negatives):
     return _valid2 if len(_valid2) > 0 else np.arange(len(negatives))
 
 
-# ============================================================================
 # CFG 断裂为不连通分量的比例（作为消融实验的核心因变量）
 #
 # AblationFramework — 图增强策略消融实验的标准化评估框架。
@@ -242,11 +241,10 @@ def _semi_hard_negative_indices(anchor, positive, negatives):
 #
 # 变体集：
 # no_drop: 不做边丢弃（基线）
-# uniform_drop: 固定概率 δ 随机丢弃所有边（DropEdge, Rong 2020）
+# uniform_drop: 固定概率 δ 随机丢弃所有边
 # degree_drop: 丢弃概率 ∝ 度数（高度节点边更易丢--作为反例对照）
 # gravity_drop: 丢弃概率 ∝ 1/度数（高度节点边更不易丢--本方案）
 # semantic_drop: 按边类型（条件跳转/无条件跳转/调用）差异化丢弃概率
-# ============================================================================
 
 class AblationFramework:
     """图增强策略消融实验框架。

@@ -1,4 +1,4 @@
-"""核心逻辑测试 (2026-08-02 重构)。
+"""核心逻辑测试。
 
 覆盖：RuleEngine、VulnerabilityRule 匹配、规则导入导出、
 RuleCondition 操作符、dot-notation 字段访问。

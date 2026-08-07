@@ -1,0 +1,17 @@
+sample_id,expected,prov,naive,n_pairs,n_uaf,n_safe,fp_reduction_pct
+uaf_01_simple_read,TP,TP,TP,1,1,0,0.0
+uaf_02_simple_write,TP,TP,TP,1,1,0,0.0
+uaf_03_indirect_call,TP,TP,TP,2,2,0,0.0
+uaf_04_alias_reg,TP,TP,TP,1,1,0,0.0
+uaf_05_via_second_slot,TP,TP,FN,1,1,0,0.0
+uaf_06_conditional,TP,TP,TP,1,1,0,0.0
+uaf_07_loop,TP,TP,TP,1,1,0,0.0
+uaf_08_struct_field,TP,TP,TP,1,1,0,0.0
+uaf_09_after_call,TP,TP,TP,1,1,0,0.0
+uaf_10_realloc_old,TP,TP,TP,1,1,0,0.0
+uaf_11_member_read,TP,TP,TP,1,1,0,0.0
+uaf_12_store_through,TP,TP,TP,1,1,0,0.0
+uaf_safe_no_use,TN,TN,TN,0,0,0,0.0
+uaf_safe_other_object,TN,TN,FP,1,0,1,50.0
+uaf_safe_realloc_reuse,TN,TN,FP,1,0,1,50.0
+uaf_safe_use_before_free,TN,TN,TN,0,0,0,0.0

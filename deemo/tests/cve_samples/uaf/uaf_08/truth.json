@@ -1,0 +1,1 @@
+{"sample": "uaf_08_struct_field", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Struct field UAF — free struct, then access struct field via dangling pointer"}

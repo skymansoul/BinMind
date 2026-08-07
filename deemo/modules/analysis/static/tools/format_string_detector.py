@@ -21,11 +21,11 @@ static_analysis.py 仅检查函数名含printf→每个printf都被标记, 误�
 理论依据:
   格式字符串漏洞的核心是格式参数的可控性, 而非 printf 的存在
   在 printf 调用点做轻量级逆向切片即可覆盖 >90% 的利用场景
-  (基于 Linux kernel CVE 2015-2023 中 47 个格式字符串漏洞的实证分析)
+
 
 引用:
-  - Dowser (IEEE S&P 2012): 污点引导的缓冲区溢出检测, 污点传播方法论
-  - Driller (NDSS 2016): 混合fuzzing中的污点引导, 选择性符号执行概念
+  - Dowser: 污点引导的缓冲区溢出检测, 污点传播方法论
+  - Driller: 混合fuzzing中的污点引导, 选择性符号执行概念
   本方案将污点传播简化为 12 步逆向切片——适合无符号的二进制场景
 """
 
@@ -262,7 +262,7 @@ class FormatStringDetector:
                 return 'user_input', [f'call {callee} (input_source)'], 0.85
         return 'unknown', [], 0.4
 
-    # ---- 分类辅助 ----
+# 分类辅助
     @staticmethod
     def _is_register(s: str) -> bool:
         return bool(re.match(

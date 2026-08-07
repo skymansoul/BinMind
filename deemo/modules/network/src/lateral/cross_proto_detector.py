@@ -143,9 +143,7 @@ class CrossProtocolLateralDetector:
 
         return {"nodes": sorted(_nodes), "edges": _edges}
 
-    # -----------------------------------------------------------------
     # 模式检测
-    # -----------------------------------------------------------------
 
     def _detect_fan_out_scan(self) -> List[LateralMovementPath]:
         """检测扇出扫描——1→N的扫描/登录。"""
@@ -232,9 +230,7 @@ class CrossProtocolLateralDetector:
 
         return _paths
 
-    # -----------------------------------------------------------------
     # 工具
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _sliding_windows(
@@ -268,7 +264,7 @@ class CrossProtocolLateralDetector:
         return list(_seen.values())
 
 
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _detector = CrossProtocolLateralDetector(
         scan_window=120.0, protocol_jump_window=600.0,

@@ -98,7 +98,7 @@ class TransplantReport:
         }
 
 
-# ── 函数匹配器 ────────────────────────────────────────────────────
+# 函数匹配器
 
 class VersionFunctionMatcher:
     """在两个版本的 binary 间匹配对应函数。
@@ -203,7 +203,7 @@ class VersionFunctionMatcher:
         return min(score, 1.0)
 
 
-# ── 偏移自适应器 ──────────────────────────────────────────────────
+# 偏移自适应器
 
 class OffsetAdapter:
     """将源函数的补丁偏移映射到目标函数的对应位置。
@@ -272,7 +272,7 @@ class OffsetAdapter:
         return -1
 
 
-# ── 移植引擎 ──────────────────────────────────────────────────────
+# 移植引擎
 
 class PatchTransplanter:
     """补丁跨版本移植引擎。

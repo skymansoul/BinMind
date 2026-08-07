@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_23_realloc_null_oldptr","description":"Realloc failure — old pointer used assuming still valid","cwe":"CWE-416","vuln_type":"use-after-free"}

@@ -9,7 +9,7 @@
 #   - diff_tester.py: 比较多个工具对同一输入的输出一致性 (跨工具oracle)
 #   - diff_oracle.py: 以自然语言规范断言单次执行结果 (规范oracle)
 #   - statistical_oracle.py: 比较输出度量的分布差异 (统计oracle)
-#   - 本模块: 比较同一工具在语义保持变换前后的输出一致性 (蜕变oracle)
+# 本模块: 比较同一工具在语义保持变换前后的输出一致性 (蜕变oracle)
 #     四者正交互补, 覆盖不同类别的缺陷。
 #
 # 蜕变关系设计原则:
@@ -17,14 +17,14 @@
 #   2. 输出关系必须是可自动验证的 (不依赖人工判断)
 #   3. 关系必须对编译器优化级别鲁棒 (O0/O1/O2/O3 下均成立)
 #
-# 参考文献:
+# 文献:
 #   Chen et al. 1998, "Metamorphic Testing: A New Approach to Generating
 #     Next Test Cases", HKUST Technical Report HKUST-CS98-01
 #     — 蜕变测试的奠基性工作, 定义蜕变关系 (MR) 的形式化框架
-#   ROSA (Koch et al. ICSE 2025) — 蜕变预言机 + fuzzing 检测后门,
+#   ROSA — 蜕变预言机 + fuzzing 检测后门,
 #     本项目取其蜕变关系与模糊测试结合的思想, 但面向二进制分析
 #     工具的正确性测试而非后门检测
-#   OBsmith (2024) — LLM驱动的混淆器测试, 同时使用差分和蜕变测试;
+#   OBsmith — LLM驱动的混淆器测试, 同时使用差分和蜕变测试;
 #     本项目的蜕变关系设计借鉴了其"语义保持变换链"概念
 
 from __future__ import annotations
@@ -80,9 +80,7 @@ class MetamorphicRelation:
     known_limitations: List[str] = field(default_factory=list)
 
 
-# ============================================================
 # 输入变换函数 (语义保持)
-# ============================================================
 
 def _nop_inject_at_offset(data: bytes, offset: int, count: int = 1) -> bytes:
     """在指定偏移处注入 NOP (0x90) 序列——x86-64"""
@@ -117,9 +115,7 @@ def _equivalent_reg_swap(data: bytes) -> bytes:
     return data
 
 
-# ============================================================
 # 输出断言函数
-# ============================================================
 
 def _instruction_count_monotonic(orig_output: Any, trans_output: Any) -> Tuple[bool, str]:
     """NOP 注入后指令数应单调不减——且增量等于注入的 NOP 数"""
@@ -208,9 +204,7 @@ def _exit_code_equivalence(orig_output: Any, trans_output: Any) -> Tuple[bool, s
     return False, f"退出码不一致: {orig_ec} ≠ {trans_ec}"
 
 
-# ============================================================
 # 辅助提取函数
-# ============================================================
 
 _INSTR_PATTERN = re.compile(
     r'\b(mov|push|pop|add|sub|cmp|jmp|je|jne|jg|jl|jge|jle|'
@@ -254,9 +248,7 @@ def _to_text(output: Any) -> str:
     return str(output)
 
 
-# ============================================================
 # 预定义蜕变关系集
-# ============================================================
 
 def nop_injection_mr(nop_count: int = 3, offset: int = 0) -> MetamorphicRelation:
     """NOP 注入蜕变关系:
@@ -346,9 +338,7 @@ def unreachable_block_mr() -> MetamorphicRelation:
     )
 
 
-# ============================================================
 # 预定义关系注册表
-# ============================================================
 
 PREDEFINED_RELATIONS: Dict[str, MetamorphicRelation] = {
     "nop_1": nop_injection_mr(nop_count=1, offset=0),

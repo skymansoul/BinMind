@@ -20,11 +20,10 @@
     - 证书信息(算法/有效期/自签名标记)
     - 合规状态(NIST/CNSA/PCI/BSI标准)
 
-参考:
-  - CycloneDX 1.5 (OWASP, 2024): SBOM标准 — 新增密码学组件类型。
-  - SCANOSS (2024): CBOM生成工具 — 源码/依赖层; 本项目为二进制层。
-  - US Executive Order 14028 (2021): 联邦软件供应链安全要求。
-  - NIST SP 800-218 (2022): 安全软件开发框架(SSDF)。
+  - CycloneDX 1.5: SBOM标准 — 新增密码学组件类型。
+  - SCANOSS: CBOM生成工具 — 源码/依赖层; 本项目为二进制层。
+  - US Executive Order 14028: 联邦软件供应链安全要求。
+  - NIST SP 800-218: 安全软件开发框架(SSDF)。
 
 边界条件:
   - CBOM质量取决于检测模块的输出完整性 — 漏检的算法不出现在CBOM中。
@@ -35,7 +34,6 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
-
 
 @dataclass
 class CryptoComponent:
@@ -50,7 +48,6 @@ class CryptoComponent:
     standard_reference: str = ""  # FIPS 197 / CNSA 2.0 / etc.
     status: str = ""              # COMPLIANT / TRANSITIONING / DEPRECATED / PROHIBITED
 
-
 @dataclass
 class CBOMDocument:
     bom_format: str = "CycloneDX"
@@ -60,7 +57,6 @@ class CBOMDocument:
     target_binary: str = ""
     components: List[CryptoComponent] = field(default_factory=list)
     metadata: Dict = field(default_factory=dict)
-
 
 def _classify_algorithm_type(algo: str) -> str:
     algo_upper = algo.upper()
@@ -73,7 +69,6 @@ def _classify_algorithm_type(algo: str) -> str:
     if any(kw in algo_upper for kw in ('ECDH', 'DH', 'X25519', 'ML-KEM', 'KYBER')):
         return 'kem'
     return 'unknown'
-
 
 def _estimate_security_bits(algo: str) -> int:
     algo_upper = algo.upper()
@@ -102,7 +97,6 @@ def _estimate_security_bits(algo: str) -> int:
         m = re.search(r'(\d+)', algo)
         return min(128, int(m.group(1)) // 2 - 16) if m else 112
     return 128
-
 
 def generate_cbom(target_binary: str = "",
                   crypto_findings: Optional[List] = None,
@@ -225,7 +219,6 @@ def generate_cbom(target_binary: str = "",
             'library_count': sum(1 for c in components if c.component_type == 'library'),
             'has_cve_matches': bool(cve_matches),
         })
-
 
 def export_cbom_json(cbom: CBOMDocument, indent: int = 2) -> str:
     """将CBOM导出为CycloneDX JSON格式。"""

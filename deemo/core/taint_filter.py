@@ -1,5 +1,4 @@
 # 两级污点过滤
-from __future__ import annotations
 from typing import List, Set, Optional
 import re
 

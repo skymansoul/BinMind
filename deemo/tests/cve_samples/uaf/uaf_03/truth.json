@@ -1,0 +1,1 @@
+{"sample": "uaf_03_cross_func", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Cross-function UAF via global pointer — free in one function, use in another"}

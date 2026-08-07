@@ -11,7 +11,7 @@
     漏洞→可利用性: 基于加固差分 (无 Canary → 栈溢出的利用权重显著升高)
 
 与现有工作的区别:
-  - MIRAGE (IEEE TDSC 2025): 跨二进制攻击图，本模块是单二进制的三层模型
+  - MIRAGE: 跨二进制攻击图，本模块是单二进制的三层模型
   - Binarly US 12,287,885: 纯可达性 (ICFG)，无风险加权
   - Microsoft Attack Surface Analyzer: Windows 特化，无漏洞/加固整合
 

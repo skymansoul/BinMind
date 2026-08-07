@@ -1,0 +1,210 @@
+{
+  "metrics": {
+    "tp": 12,
+    "fp": 0,
+    "fn": 0,
+    "tn": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0
+  },
+  "metrics_hosv_only": {
+    "tp": 2,
+    "fp": 0,
+    "fn": 10,
+    "tn": 6,
+    "precision": 1.0,
+    "recall": 0.1667,
+    "f1": 0.2857,
+    "fpr": 0.0
+  },
+  "per_sample": [
+    {
+      "sample": "v01_walk_escape",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 2.59,
+      "reasons": [
+        "[EXT:walk_write_asymptotic] 'b': malloc(l + 1) alloc_coef=1 vs ptr-walk write_coef=2 (steps/iter, strlen(s)-driven) → asymptotic overflow for long input"
+      ]
+    },
+    {
+      "sample": "v02_walk_safe",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.8,
+      "reasons": []
+    },
+    {
+      "sample": "v03_struct_ob1",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.92,
+      "reasons": [
+        "[EXT:struct_idx_off_by_one] 'arr': arr[i] with i<=10 writes 10+1 elems × 68B = 748B > usable -2 (structural OOB)"
+      ]
+    },
+    {
+      "sample": "v04_struct_safe",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.58,
+      "reasons": []
+    },
+    {
+      "sample": "v05_scanf_oob",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.31,
+      "reasons": [
+        "[EXT:scanf] 'b': malloc(32) + unbounded scanf → overflow possible"
+      ]
+    },
+    {
+      "sample": "v06_scanf_bounded",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.22,
+      "reasons": []
+    },
+    {
+      "sample": "v07_gets_oob",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.19,
+      "reasons": [
+        "[EXT:gets] 'b': malloc(48) + unbounded gets → overflow possible"
+      ]
+    },
+    {
+      "sample": "v08_nullterm",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 1.45,
+      "reasons": [
+        "[EXT:null_terminator] 'd': malloc(strlen(l)) = l bytes, 'd[l]=0' writes 1B past end (off-by-one)"
+      ]
+    },
+    {
+      "sample": "v09_nullterm_safe",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.85,
+      "reasons": []
+    },
+    {
+      "sample": "v10_calloc_wrap",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.14,
+      "reasons": [
+        "[EXT:calloc_wraparound] 'p': calloc(65536, 65536) wraps on 32-bit size_t → undersized heap object"
+      ]
+    },
+    {
+      "sample": "v11_factory_cross",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.24,
+      "reasons": [
+        "[EXT:factory_cross] 'p': factory make_buf() alloc=n + unbounded strcpy → cross-function overflow risk"
+      ]
+    },
+    {
+      "sample": "v12_factory_safe",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.19,
+      "reasons": []
+    },
+    {
+      "sample": "v13_loop_memcpy",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.39,
+      "reasons": [
+        "[EXT:walk_write] 'b': malloc(64) usable=72, ptr-walk write 8 iters * 16 steps + 0 trailing = 128 > 72"
+      ]
+    },
+    {
+      "sample": "v14_loop_safe",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.39,
+      "reasons": []
+    },
+    {
+      "sample": "v15_ptr_arith",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.39,
+      "reasons": [
+        "[EXT:struct_idx] 'arr': malloc(-2) usable=32, arr[8] bound=9 elem=4B → 36B write > usable"
+      ]
+    },
+    {
+      "sample": "v16_nullterm_fgets",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": true,
+      "ext_vuln": false,
+      "time_ms": 0.56,
+      "reasons": [
+        "[HOSV] 'b': malloc(16)@L6 + unbounded loop_write@L9"
+      ]
+    },
+    {
+      "sample": "v17_memcpy_oob",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": true,
+      "ext_vuln": false,
+      "time_ms": 0.58,
+      "reasons": [
+        "[HOSV] 'b': malloc(8)@L5 + memcpy(unknown size)@L7 — unbounded copy into fixed buffer"
+      ]
+    },
+    {
+      "sample": "v18_guard_miss",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.46,
+      "reasons": [
+        "[EXT:struct_idx] 'a': malloc(-2) usable=200, arr[i] bound=100 elem=4B → 400B write > usable"
+      ]
+    }
+  ]
+}

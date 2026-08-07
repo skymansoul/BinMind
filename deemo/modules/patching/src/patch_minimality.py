@@ -4,7 +4,7 @@
 
 """Patch Minimality Certifier — 补丁字节级最小性证明。
 
-CodeHawk (Aarno Labs 2024) 做"最少字节变更"的 micropatching，
+CodeHawk 做"最少字节变更"的 micropatching，
 但不证明当前补丁是否是全局最小。本模块填补此空白。
 
 方法：二分消去法 (delta-debugging inspired) + 语义保持验证。
@@ -21,12 +21,12 @@ CodeHawk (Aarno Labs 2024) 做"最少字节变更"的 micropatching，
 算法复杂度：O(n · log n · k)，n=变更块数，k=单次验证时间。
 对补丁变更 ≤ 500 bytes 的典型情况，< 30 秒收敛。
 
-与 VeriBin (NDSS 2025) StA 属性的关系：
+与 VeriBin StA 属性的关系：
   VeriBin 验证补丁是否 safe-to-apply。
   本模块在此基础上验证补丁是否 minimal——找到了更小的有效补丁
   即证明原补丁非最小。
 
-// 设计依据：经典 delta debugging (ddmin, Zeller 1999) 的 O(n²) 到 O(n log n) 加速，
+// 设计依据：经典 delta debugging 的 O(n²) 到 O(n log n) 加速，
 // 利用补丁的"块独立性"启发式——两个不相邻的字节块通常独立。
 """
 
@@ -90,7 +90,7 @@ class MinimalityReport:
         }
 
 
-# ── 变更块提取器 ──────────────────────────────────────────────────
+# 变更块提取器
 
 class ChunkExtractor:
     """从 original/patched binary 中提取变更块。"""
@@ -131,7 +131,7 @@ class ChunkExtractor:
         return chunks
 
 
-# ── 二分消去引擎 ──────────────────────────────────────────────────
+# 二分消去引擎
 
 class BinaryReductionEngine:
     """基于二分消去的补丁最小化。
@@ -232,7 +232,7 @@ class BinaryReductionEngine:
         return bytes(result)
 
 
-# ── 语义保持验证器 (桩) ──────────────────────────────────────────
+# 语义保持验证器 (桩)
 
 class SemanticsPreservingVerifier:
     """验证缩减后的补丁是否仍修复漏洞。
@@ -263,7 +263,7 @@ class SemanticsPreservingVerifier:
             return False
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def certify_minimality(original: bytes, patched: bytes,
                        verifier: Callable[[bytes], bool] = None

@@ -21,12 +21,11 @@ ROP 小工具质量评分 — 寄存器效应 × 副作用 × 语义分类 × �
 
 与现有工具的区分:
   ROPgadget/ropper: 查找小工具，不评分
-  ARCANIST (USENIX 2025): 自动合成 gadget chain — 重量级, 需要符号执行
+  ARCANIST: 自动合成 gadget chain — 重量级, 需要符号执行
   本模块: 轻量启发式评分，报告阶段使用
 
-参考:
-  ARCANIST (Bailluet et al., USENIX 2025): automated gadget chain synthesis
-  MAJORCA (arXiv 2021): multi-arch JOP/ROP chain assembler
+  ARCANIST: automated gadget chain synthesis
+  MAJORCA: multi-arch JOP/ROP chain assembler
 
 修改记录:
   2026-08-02 16:34 - 初始版本，四维小工具质量模型
@@ -37,7 +36,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class GadgetClass(Enum):
     LOAD = "load"            # pop/mov from memory → 加载控制值
     STORE = "store"          # mov to memory → 写入原语
@@ -47,7 +45,6 @@ class GadgetClass(Enum):
     JUMP = "jump"            # jmp/call → 间接控制转移
     NOP = "nop"              # ret only → 填充小工具
     OTHER = "other"
-
 
 # 关键寄存器 — 在 ROP 链中通常承载重要值
 _CRITICAL_REGS = frozenset({
@@ -73,7 +70,6 @@ _SEMANTIC_PATTERNS: List[Tuple[str, GadgetClass]] = [
     (r'\b(jmp|call)\b', GadgetClass.JUMP),
 ]
 
-
 @dataclass
 class GadgetQuality:
     """单个 ROP 小工具的四维质量评估。"""
@@ -87,7 +83,6 @@ class GadgetQuality:
     gadget_class: GadgetClass = GadgetClass.OTHER
     ends_with_ret: bool = True
 
-
 def _parse_registers(insns: str) -> Set[str]:
     """从指令文本中提取涉及的寄存器。"""
     found = set()
@@ -95,7 +90,6 @@ def _parse_registers(insns: str) -> Set[str]:
         if token in _CRITICAL_REGS:
             found.add(token)
     return found
-
 
 def _classify_gadget(insns: str) -> GadgetClass:
     """指令序列 → 语义分类。"""
@@ -108,7 +102,6 @@ def _classify_gadget(insns: str) -> GadgetClass:
         if re.search(pattern, ins_lower):
             return gclass
     return GadgetClass.OTHER
-
 
 def score_gadget(
     address: str,
@@ -128,7 +121,7 @@ def score_gadget(
     regs = _parse_registers(instructions)
     gclass = _classify_gadget(instructions)
 
-    # --- register_score ---
+# register_score
     has_pop = bool(re.search(r'\bpop\b', ins_lower))
     pops_useful = False
     for r in regs:
@@ -145,14 +138,14 @@ def score_gadget(
     else:
         reg_score = 0.6
 
-    # --- side_effect_score ---
+# side_effect_score
     has_destructive = any(
         re.search(r'\b' + d + r'\b', ins_lower) for d in _DESTRUCTIVE_INS
     )
     # ret 不算破坏性，但 gadget 中间的 call/jmp 会破坏控制流
     side_score = 0.2 if has_destructive else 0.9
 
-    # --- semantic_score ---
+# semantic_score
     if gclass == GadgetClass.OTHER:
         sem_score = 0.3
     elif gclass == GadgetClass.NOP:
@@ -164,7 +157,7 @@ def score_gadget(
     else:
         sem_score = 0.7
 
-    # --- chain_score ---
+# chain_score
     ends_ret = ins_lower.endswith('ret') or ins_lower.endswith('retn')
     instr_count = len([i for i in instructions.split(';') if i.strip()])
 
@@ -191,7 +184,6 @@ def score_gadget(
         ends_with_ret=ends_ret,
     )
 
-
 def score_gadgets(
     gadgets: List[Dict[str, str]],
     min_gqf: float = 0.3,
@@ -208,7 +200,6 @@ def score_gadgets(
             results.append(q)
     results.sort(key=lambda q: q.gqf, reverse=True)
     return results
-
 
 def gadget_class_summary(scored: List[GadgetQuality]) -> Dict[str, Any]:
     """小工具分类统计 + 利用阶段推荐。"""

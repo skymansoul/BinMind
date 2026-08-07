@@ -2,7 +2,7 @@
 # TOCTOU pattern matching alone cannot detect unprotected shared-variable
 # access. Lockset analysis tracks the set of locks held during each access;
 # inconsistent locksets across accesses to the same variable → potential race.
-# Adapted from Eraser (Savage et al., ACM TOCS 1997) lockset algorithm
+# Adapted from Eraser lockset algorithm
 # for static analysis — inferred from code structure rather than dynamic traces.
 import re
 from collections import defaultdict

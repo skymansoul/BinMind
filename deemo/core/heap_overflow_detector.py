@@ -23,12 +23,12 @@ from core.ir_normalizer import normalize_ir
 
 @dataclass
 class HeapAllocSite:
-    """A heap allocation — malloc/calloc/realloc call."""
     pc: int
-    alloc_func: str       # 'malloc' | 'calloc' | 'realloc'
-    size_arg: int         # 分配大小 (常量) 或 0 (动态大小, 无法静态确定)
+    alloc_func: str
+    size_arg: int
     size_is_dynamic: bool
-    result_var: str = ''  # 接收返回值的变量名
+    result_var: str = ''
+    size_expr: str = ''  # 动态分配时的符号表达式
 
 
 @dataclass

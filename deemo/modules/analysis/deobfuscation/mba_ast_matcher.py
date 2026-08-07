@@ -16,8 +16,8 @@ egraph_mba.py 的 _match_single_rule 只实现了 6 条规则的"操作符名快
 4. RHS 重建: 使用绑定后的变量映射在 e-graph 中构建 RHS 节点
 
 规则来源及其出处:
-- Lee et al. 2024 (arXiv:2404.05431): 25 条核心规则，含 e-graph 形式化
-- Skees et al. 2024 (arXiv:2406.10016): 半线性扩展（含常量掩码处理）
+- Lee et al. 2024: 25 条核心规则，含 e-graph 形式化
+- Skees et al. 2024: 半线性扩展（含常量掩码处理）
 - 恶意软件家族特定规则: TrickBot (x<<3)-x==x*7, Z加载器 carry-addi
 - ACM CCS 2023 "NeuReduce" 的 2 条神经网络发现的规则，标注为 "heuristic
 discovered" 因其等价性仅在有限随机测试中验证
@@ -39,9 +39,7 @@ except ImportError:
     _HAS_Z3 = False
 
 
-#---------------------------------------------------------------------------
 # 模式 AST 节点定义
-#---------------------------------------------------------------------------
 
 @dataclass
 class PatternNode:
@@ -71,9 +69,7 @@ class MatchResult:
     rule_source: str = ""
 
 
-#---------------------------------------------------------------------------
 # 核心模式匹配器
-#---------------------------------------------------------------------------
 
 class ASTPatternMatcher:
     """递归下降的结构化 AST 模式匹配
@@ -184,7 +180,7 @@ class ASTPatternMatcher:
         通用编译器无法从 tuple 表示中推断正确的树形结构
         """
         patterns = {
-            # R0: (x ^ y) + 2*(x & y) = x + y [Lee 2024, 2404.05431]
+            # R0: (x ^ y) + 2*(x & y) = x + y
             0: PatternNode(op='+', children=[
                 PatternNode(op='^', children=[
                     PatternNode(is_var=True, var_name='x'),
@@ -234,9 +230,7 @@ class ASTPatternMatcher:
         }
         return patterns.get(rule_id)
 
-    #-------------------------------------------------------------------
     # 匹配引擎
-    #-------------------------------------------------------------------
 
     def match(self, enode: Any, pattern: PatternNode,
               bindings: Optional[Dict[str, int]] = None) -> Optional[Dict[str, int]]:
@@ -294,9 +288,7 @@ class ASTPatternMatcher:
         return bindings
 
 
-#---------------------------------------------------------------------------
 # 高层匹配接口 —— 对 e-graph 做全量规则匹配
-#---------------------------------------------------------------------------
 
 def match_all_rules(egraph: Any, rules: List[Tuple],
                     max_matches: int = 500) -> List[MatchResult]:

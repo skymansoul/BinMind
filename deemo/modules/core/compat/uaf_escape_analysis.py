@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """UAF 指针逃逸分析 — 判定释放后的悬垂指针是否逃逸到可被攻击者控制的存储位置.
 
 UAF 从缺陷升级为可利用漏洞的关键条件: 释放后的悬垂指针被存储到
@@ -9,7 +9,7 @@ UAF 从缺陷升级为可利用漏洞的关键条件: 释放后的悬垂指针�
 与 uaf_detector.py 的关系: uaf_detector 做状态机检测(UAF 存在性),
 本模块做可利用性分级(UAF 严重度). 二者组合给出完整的 UAF 风险评估.
 
-参考: Undangle (ISSTA 2012) 的指针别名分析 + UAFL (ICSE 2020) 的
+参考: Undangle 的指针别名分析 + UAFL 的
 typestate 引导 fuzzing. 本模块的差异: 不依赖别名分析或 fuzzing,
 而是做静态的指针存储目标分类(栈/堆/全局/vtable)来判定逃逸.
 """

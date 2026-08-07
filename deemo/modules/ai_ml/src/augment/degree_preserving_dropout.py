@@ -6,7 +6,7 @@
 #
 # 理论依据：
 # 二进制程序的 CFG 具有天然的度偏斜--入口块和循环头拥有高度数，
-# 而错误处理块和出口块度数很低。标准的 DropEdge (Rong et al., ICLR 2020)
+# 而错误处理块和出口块度数很低。标准的 DropEdge
 # 对所有边使用统一丢弃概率 p，导致低度节点的边以概率 p 被随机删除。
 # 在稀疏 CFG 中（平均度数通常 < 2），一条低度节点只有 1-2 条边，
 # 固定概率丢弃会以高概率使此类节点变为孤立节点。
@@ -29,10 +29,9 @@
 # BEGA 需要 O(|E| * iter) 的引力场迭代。本模块仅需 O(|V|) 度数计算，
 # 适用于大规模图或实时推理场景。两者可组合--先 BEGA 粗筛，再度保持精调。
 #
-# 参考文献：
-# DropEdge: Rong et al., "DropEdge: Towards Deep Graph Convolutional
-# Networks on Node Classification", ICLR 2020.
-# BEGA: 见 bega_gravity.py 的引用链。
+# 文献：
+# DropEdge: 统一概率随机边丢弃
+# BEGA: 见 bega_gravity.py
 
 import math
 from typing import Optional, Tuple
@@ -43,9 +42,7 @@ except ImportError:
     np = None
 
 
-# ---------------------------------------------------------------------------
 # 核心函数
-# ---------------------------------------------------------------------------
 
 def degree_preserving_dropout(
     adj: "np.ndarray",
@@ -78,17 +75,17 @@ def degree_preserving_dropout(
     if len(edges) == 0:
         return augmented
 
-    # ---- 度数计算 ----
+# 度数计算
     in_deg = np.array(adj.sum(axis=0)).flatten()
     out_deg = np.array(adj.sum(axis=1)).flatten()
     total_deg = in_deg + out_deg
 
-    # ---- 稀疏度自适应因子 ----
+# 稀疏度自适应因子
     avg_degree = total_deg.mean()
     sparse_factor = min(1.0, avg_degree / max(beta, 1e-9))
     effective_prob = drop_prob * sparse_factor
 
-    # ---- 逐边丢弃决策 ----
+# 逐边丢弃决策
     for i, j in edges:
         max_deg = max(total_deg[i], total_deg[j])
         if max_deg > 0:
@@ -140,9 +137,7 @@ def compute_effective_drop_rates(
     return effective_prob, probs
 
 
-# ---------------------------------------------------------------------------
 # 便捷封装
-# ---------------------------------------------------------------------------
 
 class DegreePreservingDropout:
     """度保持边丢弃的可调用封装——与 GraphAugmenter 接口兼容。"""

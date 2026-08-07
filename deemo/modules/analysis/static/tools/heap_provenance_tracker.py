@@ -1,5 +1,5 @@
 # 指针来源追踪引擎 — 确定每个寄存器中的堆指针来自哪个 malloc 调用
-# 方法论依据: Heap Disjointness (ISSTA 2024) — 堆对象区分是误报控制的核心
+# 方法论依据: Heap Disjointness — 堆对象区分是误报控制的核心
 # 本模块将 symbolic heap location 的概念适配为 binary-level 的寄存器追踪
 
 import re

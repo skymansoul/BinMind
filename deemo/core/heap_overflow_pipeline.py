@@ -17,10 +17,12 @@ from typing import Optional
 def detect_heap_overflows_full(
     ir_lines: list[str],
     decompiled_text: str = '',
+    enable_hovf: bool = True,
 ) -> tuple[list, dict]:
     """Full pipeline: context tracking + size propagation + boundary detection + FP filtering.
 
     返回 (candidates, pipeline_stats)
+    enable_hovf=False 时跳过 Stage 3.5, 用于消融对照.
     """
     stats = {'stage_context': 0, 'stage_size_prop': 0,
              'stage_detect': 0, 'stage_filter': 0}
@@ -43,24 +45,38 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
+    # Stage 1.2: 源码级强化候选提取 — 8种写入模式补充
+    if not candidates and decompiled_text:
+        try:
+            from core.source_level_candidate_extractor import (
+                extract_candidates_from_code,
+            )
+            src_candidates, _ = extract_candidates_from_code(decompiled_text)
+            candidates = src_candidates
+            stats['stage_src_extract'] = len(candidates)
+        except ImportError:
+            pass
+
     if not candidates:
-        return [], stats
+        # 基础与源码级通道均无候选时, 仍须运行 HOVF 追加通道,
+        # 该通道独立检测强类型解引用与带偏移库写入, 可单独产出候选.
+        pass
+    else:
+        # Stage 1.5: correct allocation sizes with context
+        if alloc_context:
+            from core.heap_context_tracker import get_effective_alloc_size
+            for c in candidates[:]:
+                var = c.alloc_site.result_var
+                if var:
+                    effective = get_effective_alloc_size(
+                        var, c.overflow_store.pc, alloc_context)
+                    if effective > c.alloc_site.size_arg:
+                        c.alloc_site.size_arg = effective
+                        # 重新检查溢出条件
+                        if c.overflow_store.offset < effective:
+                            candidates.remove(c)
 
-    # Stage 1.5: correct allocation sizes with context
-    if alloc_context:
-        from core.heap_context_tracker import get_effective_alloc_size
-        for c in candidates[:]:
-            var = c.alloc_site.result_var
-            if var:
-                effective = get_effective_alloc_size(
-                    var, c.overflow_store.pc, alloc_context)
-                if effective > c.alloc_site.size_arg:
-                    c.alloc_site.size_arg = effective
-                    # 重新检查溢出条件
-                    if c.overflow_store.offset < effective:
-                        candidates.remove(c)
-
-    # Stage 2: size propagation for dynamic allocations
+     # Stage 2: size propagation for dynamic allocations
     dyn_count = 0
     try:
         from core.heap_size_propagator import propagate_size_for_var
@@ -76,6 +92,25 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
+    # Stage 2.5: 分配大小污点追踪 — 标注size来源是否为外部输入
+    taint_count = 0
+    try:
+        from core.alloc_size_taint import analyze_alloc_taint, TaintLevel
+        code_text = '\n'.join(ir_lines)
+        taint_sites = analyze_alloc_taint(code_text)
+        for c in candidates:
+            for ts in taint_sites:
+                if ts.taint_level == TaintLevel.NOT_TAINTED:
+                    c.alloc_site._size_taint = 'not_tainted'
+                    taint_count += 1
+                elif ts.taint_level == TaintLevel.TAINTED:
+                    c.alloc_site._size_taint = 'tainted'
+                else:
+                    c.alloc_site._size_taint = 'indeterminate'
+        stats['stage_taint'] = taint_count
+    except (ImportError, AttributeError):
+        pass
+
     # 阶段3: 三阶段误报过滤
     try:
         from core.heap_fp_filter_stages import apply_fp_filters
@@ -84,6 +119,20 @@ def detect_heap_overflows_full(
         stats['stage_filter'] = before - len(candidates)
     except ImportError:
         pass
+
+    # Stage 3.5: HOVF 追加通道 + 分配器宽松核验 (附加阶段, 不改动既有结果)
+    if enable_hovf:
+        try:
+            from core.hovf_engine import refine_heap_candidates
+            from core.hovf_write_extract import extract_hovf_alloc_sites
+            alloc_sites = extract_hovf_alloc_sites(ir_lines)
+            before = len(candidates)
+            candidates, hovf_stats = refine_heap_candidates(
+                ir_lines, alloc_sites, candidates, slack_bound='usable')
+            stats['stage_hovf'] = before - len(candidates)
+            stats['hovf_stats'] = hovf_stats
+        except (ImportError, AttributeError):
+            pass
 
     candidates.sort(key=lambda c: -c.confidence)
     return candidates, stats

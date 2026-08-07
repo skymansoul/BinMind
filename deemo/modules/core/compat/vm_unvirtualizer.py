@@ -81,7 +81,7 @@ def attempt_lifting_pattern(handler_seq: list[dict]) -> str | None:
     return None
 
 
-# --- Handler 去重与 NOP 消除 ---
+# Handler 去重与 NOP 消除
 # VM 混淆器常插入大量语义 NOP（如 xor eax,eax; add eax,0; rol eax,0）
 # 去重后 handler 数量可减少 30-50%，简化后续分析
 import re as _re
@@ -129,7 +129,7 @@ def compute_handler_entropy(handler_list: list[dict]) -> float:
     return -sum((c / n) * _math.log2(c / n) for c in counts.values())
 
 
-# --- Headless VM 检测批量入口 ---
+# Headless VM 检测批量入口
 def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
     """无头批量 VM 保护壳检测。对多个二进制执行 handler 分类和复杂度评估。
     # 不拆——保持上下文连贯性，拆了反而难读
@@ -158,7 +158,6 @@ def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
     return out
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

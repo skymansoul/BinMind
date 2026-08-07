@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_13_snprintf_tainted_fmt",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2018-14634 类 snprintf 格式串",
+  "expect_overflow": true,
+  "trigger": "argv 注入 %x",
+  "why": "snprintf 格式参数仍来自用户"
+}

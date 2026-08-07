@@ -1,7 +1,7 @@
-# created: 2026-08-06
+# created: 2026-05-14
 # 缓冲区大小推断——基于抽象值区间的堆/栈溢出验证
 # 从malloc/memcpy参数推断分配大小和拷贝长度，比较两者检测溢出
-# 理论依据: IntTracer (ICSE 2024)的区间抽象解释思想
+# 理论依据: 区间抽象解释思想
 
 from __future__ import annotations
 

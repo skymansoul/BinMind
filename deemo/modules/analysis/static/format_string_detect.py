@@ -12,7 +12,7 @@
 #      格式说明符超过6个 → 攻击面增大.
 #   4. 误报抑制: 排除字面量格式字符串(编译时常量).
 #
-# 创建: 2026-08-04  初始版本
+# 创建: 2026-06-01  初始版本
 
 import re
 from typing import Dict, List, Optional, Tuple
@@ -22,6 +22,9 @@ _PRINTF_FAMILY = {
     "printf", "fprintf", "sprintf", "snprintf",
     "vprintf", "vfprintf", "vsprintf", "vsnprintf",
     "dprintf", "vdprintf", "syslog", "vsyslog",
+    "__mingw_printf", "__mingw_fprintf", "__mingw_sprintf",
+    "__mingw_snprintf", "__mingw_vprintf", "__mingw_vfprintf",
+    "__mingw_vsprintf", "__mingw_vsnprintf",
 }
 
 # 格式说明符正则
@@ -47,7 +50,16 @@ class FormatStringDetector:
         if func not in _PRINTF_FAMILY:
             return None
 
-        fmt_idx = 1 if func in ("fprintf","dprintf") else 0
+        # 格式字符串参数位置: printf=0, fprintf/dprintf=1, snprintf=2
+        # (snprintf(buf, size, fmt, ...) 的 fmt 在第3实参)
+        base = func.replace("__mingw_", "").replace("v", "", 1) \
+            if func.startswith("__mingw") else func
+        if base in ("fprintf", "dprintf"):
+            fmt_idx = 1
+        elif base in ("snprintf", "vsnprintf"):
+            fmt_idx = 2
+        else:
+            fmt_idx = 0
         if fmt_idx >= len(args):
             return None
 
@@ -56,16 +68,45 @@ class FormatStringDetector:
 
         # 格式字符串来自寄存器 — 无法静态确定内容, 保守标记
         fmt_arg = args[fmt_idx].strip().lower().lstrip("%")
-        is_register = any(fmt_arg.startswith(p) for p in
-                          ("r","e","rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp",
-                           "r8","r9","r10","r11","r12","r13","r14","r15",
-                           "eax","ebx","ecx","edx","esi","edi","ebp","esp"))
-        if is_register and fmt_source == "unknown":
-            f = {"type":"fmt_from_register","function":func,"address":address,
-                 "fmt_source":"register","severity":"medium",
-                 "description": "format string from register, content unknown"}
+        # RIP 相对寻址 [rip+0x...] → 需区分目标节:
+        #   .rdata/.rodata (只读字面量) → 安全
+        #   .data/.bss (可写全局, 如全局格式字符串指针) → 攻击者可能可控
+        is_rip_relative = ("rip" in fmt_arg and "[" in fmt_arg
+                           and "]" in fmt_arg)
+        if is_rip_relative:
+            if any(k in fmt_arg for k in (".rdata", ".rodata")):
+                return None  # 只读节字面量, 非攻击者可控
+            # 可写节或未知: 保守告警
+            f = {"type": "fmt_from_register", "function": func,
+                 "address": address, "fmt_source": "global",
+                 "severity": "medium",
+                 "description": "format string from writable global, "
+                                "content unknown"}
             self._findings.append(f)
             return f
+
+        # 栈/堆内存操作数 ([rbp+0x10], [rax]) — 内容可能是运行时可控数据
+        is_mem_operand = ("[" in fmt_arg and "]" in fmt_arg
+                          and not is_rip_relative)
+        is_literal = (fmt_arg.startswith("0x") or
+                      (len(fmt_arg) > 2 and
+                       (fmt_arg.startswith('"') or "ptr" not in fmt_arg
+                        and "[" not in fmt_arg
+                        and any(c in fmt_arg for c in ("%.", "%s", "%d", "%x", "%p")))))
+        # 寄存器: 排除 RIP 相对 (已返回) 与纯地址常量
+        is_register = (any(fmt_arg.startswith(p) for p in
+                           ("r","e","rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp",
+                            "r8","r9","r10","r11","r12","r13","r14","r15",
+                            "eax","ebx","ecx","edx","esi","edi","ebp","esp"))
+                       and not fmt_arg.startswith("rip"))
+        if (is_register or is_mem_operand) and fmt_source != "literal":
+            f = {"type":"fmt_from_register","function":func,"address":address,
+                 "fmt_source":"register","severity":"medium",
+                 "description": "format string from register/memory, content unknown"}
+            self._findings.append(f)
+            return f
+        if is_literal:
+            return None  # 编译时常量, 安全
 
         specs = self._parse_specs(args[fmt_idx])
 

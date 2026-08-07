@@ -16,8 +16,7 @@
 
   输出: N bits leaked → 暴力破解可行时间 → 利用链可行性。
 
-参考:
-  Binosi et al. (CCS 2024): Correlation Entropy 框架
+  Binosi et al.: Correlation Entropy 框架
   ASLR entropy baseline: 本项目的 aslr_entropy.py
 
 修改记录:
@@ -29,7 +28,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class LeakType(Enum):
     CODE_PTR = "code_pointer"       # .text / .plt 中的地址
     STACK_PTR = "stack_pointer"     # 栈上的地址
@@ -38,8 +36,7 @@ class LeakType(Enum):
     DATA_VALUE = "data_value"       # 非指针数据 (密钥/token/结构体)
     UNKNOWN = "unknown"
 
-
-# 指针类型 → OS → 有效比特 (CCS 2024 基线)
+# 指针类型 → OS → 有效比特
 _EFFECTIVE_BITS: Dict[LeakType, Dict[str, float]] = {
     LeakType.CODE_PTR: {
         'linux': 28.8, 'linux_5.18+': 28.8, 'linux_hardened': 32.0,
@@ -70,7 +67,6 @@ _EFFECTIVE_BITS: Dict[LeakType, Dict[str, float]] = {
 # 暴力破解速率假设 (tries/sec)
 _DEFAULT_TPS = 300
 
-
 @dataclass
 class LeakQuantification:
     """信息泄露比特量化结果。"""
@@ -80,7 +76,6 @@ class LeakQuantification:
     correlation_danger: str         # none / low / medium / critical
     aslr_degradation: float         # OS 基线 ASLR 的退化百分比
     exploit_chain_value: str = ''   # 该泄露对利用链的价值
-
 
 def _classify_leak(
     leak_description: str,
@@ -109,7 +104,6 @@ def _classify_leak(
 
     return LeakType.UNKNOWN
 
-
 def _bit_to_time(bits: float, tps: float = _DEFAULT_TPS) -> float:
     """有效比特 → 暴力破解期望时间 (秒)。"""
     if bits <= 0:
@@ -117,7 +111,6 @@ def _bit_to_time(bits: float, tps: float = _DEFAULT_TPS) -> float:
     # 期望尝试次数 (with replacement / geometric)
     expected_tries = 2.0 ** bits
     return expected_tries / tps
-
 
 def _time_to_label(seconds: float) -> str:
     if seconds <= 0:
@@ -133,7 +126,6 @@ def _time_to_label(seconds: float) -> str:
     if seconds < 86400 * 365:
         return f'{seconds/86400/30:.0f}mo'
     return f'{seconds/86400/365:.0f}yr'
-
 
 def quantify_leak(
     leak_description: str = '',
@@ -195,7 +187,6 @@ def quantify_leak(
         aslr_degradation=round(base_bits / 28.8 * 100, 1) if base_bits > 0 else 0.0,
         exploit_chain_value=value,
     )
-
 
 def leak_summary(q: LeakQuantification) -> Dict[str, Any]:
     """泄露量化摘要。"""

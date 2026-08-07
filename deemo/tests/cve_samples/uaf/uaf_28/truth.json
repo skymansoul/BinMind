@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_28_nested_cond_free","description":"Nested conditional free — free in inner if, use in outer scope","cwe":"CWE-416","vuln_type":"use-after-free"}

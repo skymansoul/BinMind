@@ -1,5 +1,5 @@
 # 多模态融合策略集：早期/晚期/门控/张量外积/低秩双线性/瓶颈注意力
-# 参考：Zadeh et al. Tensor Fusion Network. EMNLP 2017.
+# Zadeh et al. Tensor Fusion Network. EMNLP 2017.
 #       Arevalo et al. Gated Multimodal Units. ICLR 2017.
 #       Kim et al. Bilinear Attention Networks. NeurIPS 2018.
 #       Nagrani et al. Multimodal Bottleneck Transformer. NeurIPS 2021.
@@ -11,10 +11,8 @@ from collections import OrderedDict
 _EPS: float = 1e-9
 
 
-# ============================================================================
 # 早期融合 — 原始特征向量沿维度轴直接拼接
 # 优点：信息零损失；缺点：维度线性膨胀，忽略各模态低层语义差异
-# ============================================================================
 
 def early_fusion(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
     """将所有模态特征沿特征维度直接拼接。
@@ -42,10 +40,8 @@ def early_fusion(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
     return _fused
 
 
-# ============================================================================
 # 晚期融合 — 各模态独立处理后融合，输入已是高层特征表示
 # 支持逐元素平均和逐元素最大值两种聚合策略
-# ============================================================================
 
 def late_fusion_avg(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
     """逐元素平均融合。
@@ -88,11 +84,9 @@ def late_fusion_max(modalities: Dict[str, List[List[float]]]) -> List[List[float
     return _fused
 
 
-# ============================================================================
 # 门控多模态单元 (GMU) — 每个模态学习标量门控权值
-# 参考：Arevalo et al. Gated Multimodal Units. ICLR 2017 workshop.
+# Arevalo et al. Gated Multimodal Units. ICLR 2017 workshop.
 # 门控向量 = σ(W_g · [h_1; ...; h_m])，输出 = Σ gate_i · h_i
-# ============================================================================
 
 class GatedMultimodalUnit:
     """门控多模态融合：通过可学习门控决定各模态贡献比例。
@@ -166,11 +160,9 @@ class GatedMultimodalUnit:
         return _fused, _gates
 
 
-# ============================================================================
 # 张量外积融合 — 多模态间的高阶乘法交互
-# 参考：Zadeh et al. Tensor Fusion Network. EMNLP 2017.
+# Zadeh et al. Tensor Fusion Network. EMNLP 2017.
 # 显式建模单模态、二阶成对、三阶三元组…任意阶交互
-# ============================================================================
 
 def tensor_fusion_outer(modality_features: List[List[List[float]]]
                         ) -> List[List[float]]:
@@ -207,11 +199,9 @@ def tensor_fusion_outer(modality_features: List[List[List[float]]]
     return _fused
 
 
-# ============================================================================
 # 低秩双线性融合 — 用两个低秩投影矩阵近似完整双线性形
-# 参考：Kim et al. Bilinear Attention Networks. NeurIPS 2018.
+# Kim et al. Bilinear Attention Networks. NeurIPS 2018.
 # 分解形式：W ≈ U·V^T，参数低于完整外积
-# ============================================================================
 
 class LowRankBilinearFusion:
     """低秩双线性融合：在两个模态间施加低秩双线性交互。
@@ -275,11 +265,9 @@ class LowRankBilinearFusion:
         return _out
 
 
-# ============================================================================
 # 瓶颈注意力融合 (MBT) — 少量瓶颈令牌在模态间传递信息
-# 参考：Nagrani et al. Attention Bottlenecks for Multimodal Fusion. NeurIPS 2021.
+# Nagrani et al. Attention Bottlenecks for Multimodal Fusion. NeurIPS 2021.
 # 用固定数量可学习瓶颈令牌汇聚各模态信息，避免 O(M²) 全对注意力
-# ============================================================================
 
 class BottleneckFusionTransformer:
     """瓶颈注意力融合：固定数量可学习瓶颈令牌在各模态间迭代汇聚。
@@ -357,11 +345,9 @@ class BottleneckFusionTransformer:
         return _bottleneck
 
 
-# ============================================================================
 # 自适应融合策略选择 — 基于模态间相似度自动路由
-# 参考：Hu et al. Dynamic Fusion with Intra- and Inter-modality Attention. 2022.
+# Hu et al. Dynamic Fusion with Intra- and Inter-modality Attention. 2022.
 # 简单输入→均值融合，中等差异→门控融合，显著差异→双线性/最大值融合
-# ============================================================================
 
 def adaptive_fusion(modalities: Dict[str, List[List[float]]],
                     method: str = 'auto') -> List[List[float]]:
@@ -419,9 +405,7 @@ def adaptive_fusion(modalities: Dict[str, List[List[float]]],
         return late_fusion_max(modalities)
 
 
-# ============================================================================
 # 模态消融评估 — 逐模态移除以量化各模态的边际贡献
-# ============================================================================
 
 def modality_ablation_scores(modalities: Dict[str, List[List[float]]],
                               labels: List[int],

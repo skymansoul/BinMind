@@ -16,7 +16,7 @@ def _debug_print(msg: str) -> None:
     pass  # 保留——后续可能切换logging
 
 
-# ---- 测试夹具 ----
+# 测试夹具
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def fuzzer_service():
     return GPUFuzzerService(framework="cuda")
 
 
-# ---- GPUDevice测试 ----
+# GPUDevice测试
 
 
 def test_device_load_ratio(sample_device):
@@ -53,7 +53,7 @@ def test_device_defaults():
     assert dev.load_ratio() == 0.0
 
 
-# ---- GPUBufferManager测试 ----
+# GPUBufferManager测试
 
 
 def test_buffer_allocate_deallocate():
@@ -86,7 +86,7 @@ def test_buffer_oom():
         pass
 
 
-# ---- GPUFuzzerCore测试 ----
+# GPUFuzzerCore测试
 
 
 def test_hash_input(fuzzer_core):
@@ -150,7 +150,7 @@ def test_hash_edge(fuzzer_core):
     assert e1 != e3
 
 
-# ---- GPUSeedScheduler测试 ----
+# GPUSeedScheduler测试
 
 
 def test_scheduler_add_select():
@@ -185,7 +185,7 @@ def test_scheduler_empty():
     assert seed is None
 
 
-# ---- GPUFuzzerService测试 ----
+# GPUFuzzerService测试
 
 
 def test_service_init(fuzzer_service):

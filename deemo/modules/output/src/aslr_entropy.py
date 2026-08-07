@@ -15,13 +15,12 @@ Miller-Madow 校正:
   近似于 NSB 的一阶 Taylor 展开——保留了 NSB 在小样本场景的优势
   但避免了 NSB 的数值积分开销。
 
-参考:
-  Binosi et al. (CCS 2024): NSB entropy estimation across OSes
-  Miller (1955) & Madow (MS thesis): plug-in entropy bias correction
-  Nemenman, Shafee & Bialek (2001): NSB entropy estimator
+  Binosi et al.: NSB entropy estimation across OSes
+  Miller & Madow (MS thesis): plug-in entropy bias correction
+  Nemenman, Shafee & Bialek: NSB entropy estimator
 
 修改记录:
-  创建 2026-08-01 — 静态基线评估 (assess_aslr_entropy)
+  创建 2026-05-27 — 静态基线评估 (assess_aslr_entropy)
   2026-08-03 — 追加样本驱动的 Miller-Madow 熵估计
 """
 
@@ -29,7 +28,6 @@ import math
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-
 
 _OS_ENTROPY_BASELINE: Dict[str, Tuple[float, float, float, float]] = {
     'linux':       (28.8, 28.8, 28.8, 28.8),
@@ -46,7 +44,6 @@ _ENTROPY_TIME_LABELS = [
     (25, 'hours'), (20, 'minutes'), (15, 'seconds'), (0, 'trivial (<1 second)'),
 ]
 
-
 @dataclass
 class AslrEntropyScore:
     os_fingerprint: str
@@ -60,7 +57,6 @@ class AslrEntropyScore:
     hardening_gaps: List[str] = field(default_factory=list)
     estimation_method: str = 'baseline'    # 'baseline' / 'miller_madow'
     confidence_interval: Optional[Tuple[float, float]] = None
-
 
 def _miller_madow_entropy(samples: List[int], bits_to_extract: int = 36) -> Tuple[float, float, float]:
     """
@@ -102,7 +98,6 @@ def _miller_madow_entropy(samples: List[int], bits_to_extract: int = 36) -> Tupl
 
     return round(h_mm, 2), round(h_plug, 2), K
 
-
 def _estimate_confidence(h_mm: float, N: int, K: int) -> Tuple[float, float]:
     """基于样本量的粗略置信区间。K/N 比越高 → 区间越宽。"""
     if N < 50: return (0.0, 0.0)
@@ -110,7 +105,6 @@ def _estimate_confidence(h_mm: float, N: int, K: int) -> Tuple[float, float]:
     half_width = (K / max(N, 1)) * (1.0 / math.sqrt(N)) * 10.0
     half_width = min(half_width, h_mm * 0.5)  # 不超过估计值的一半
     return round(max(0, h_mm - half_width), 1), round(h_mm + half_width, 1)
-
 
 def estimate_entropy_from_samples(
     samples: List[int],
@@ -129,7 +123,6 @@ def estimate_entropy_from_samples(
         'confidence_interval': ci,
         'brute_force_time': _entropy_to_brute_force_label(h_mm) if h_mm > 0 else 'N/A',
     }
-
 
 def _detect_os_profile(
     binary_format: str,
@@ -152,12 +145,10 @@ def _detect_os_profile(
         except (ValueError, IndexError): pass
     return 'linux'
 
-
 def _entropy_to_brute_force_label(bits: float) -> str:
     for threshold, label in _ENTROPY_TIME_LABELS:
         if bits >= threshold: return label
     return 'trivial (<1 second)'
-
 
 def assess_aslr_entropy(
     binary_format: str = 'elf', is_pie: bool = False,
@@ -231,7 +222,6 @@ def assess_aslr_entropy(
         overall_score=overall, weakest_region=weakest,
         brute_force_feasibility=_entropy_to_brute_force_label(min(regions.values())),
         hardening_gaps=gaps, estimation_method=method, confidence_interval=ci)
-
 
 def aslr_summary(score: AslrEntropyScore) -> Dict[str, Any]:
     recs = list(score.hardening_gaps)

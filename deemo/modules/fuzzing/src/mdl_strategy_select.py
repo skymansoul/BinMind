@@ -4,10 +4,9 @@
 2025-08-13 08:44 - Rissanen MDL + NML 通用编码 + 随机复杂度
 2025-08-14 13:21 - 在线更新: 新观测后 O(1) 增量编码长度
 
-参考:
-  Rissanen (1978) "Modeling by Shortest Data Description" (Automatica)
-  Rissanen (1996) "Fisher Information and Stochastic Complexity" (IEEE IT)
-  Grünwald (2007) "The Minimum Description Length Principle" (MIT Press)
+  Rissanen "Modeling by Shortest Data Description" (Automatica)
+  Rissanen "Fisher Information and Stochastic Complexity" (IEEE IT)
+  Grünwald "The Minimum Description Length Principle" (MIT Press)
   — 第11章: 归一化最大似然 (NML) 的渐近形式
 
 在 fuzzing 中零先例。MDL 选择压缩数据最好的策略:
@@ -23,7 +22,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class MDLResult:
     strategy_name: str
@@ -32,7 +30,6 @@ class MDLResult:
     total_mdl: float          # 总描述长度
     n_observations: int
     optimal: bool
-
 
 class MDLStrategySelector:
     """MDL 策略选择器 — 选择压缩覆盖数据最好的突变策略.

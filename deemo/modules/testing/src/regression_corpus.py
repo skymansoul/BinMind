@@ -7,12 +7,12 @@
 #
 # 背景: 长期fuzzing产生的百万级语料无法全部跑CI回归测试，必须做智能选取。
 #
-# 参考:
-#   LibAFL (Fioraldi et al. CCS 2022): modular fuzzer framework
+#
+#   LibAFL: modular fuzzer framework
 #     with corpus management primitives
-#   Evaluating Fuzz Testing (Klees et al. CCS 2018): 语料质量度量
-#   Regression Test Selection (Yoo & Harman. CSUR 2012): 回归测试选取综述
-#   ClusterFuzz (Google 2019-) production corpus management
+#   Evaluating Fuzz Testing: 语料质量度量
+#   Regression Test Selection: 回归测试选取综述
+#   ClusterFuzz production corpus management
 import os
 import time
 import json
@@ -63,7 +63,7 @@ class RegressionCorpusManager:
         self._global_coverage: Set[int] = set()
         self._crash_entries: Dict[str, CorpusEntry] = {}
 
-    # ---- 导入 ----
+    # 导入
     def ingest_file(self, filepath: str,
                     entry_id: str = "") -> Optional[str]:
         """导入单个语料文件。返回entry_id。"""
@@ -104,7 +104,7 @@ class RegressionCorpusManager:
         del self._entries[worst_id]
         self._entry_order = [e for e in self._entry_order if e != worst_id]
 
-    # ---- 覆盖信息注入 ----
+    # 覆盖信息注入
     def set_coverage(self, entry_id: str,
                      blocks: Set[int],
                      edges: Set[Tuple[int, int]] = None) -> None:
@@ -123,7 +123,7 @@ class RegressionCorpusManager:
             entry.priority = 10.0
             self._crash_entries[entry_id] = entry
 
-    # ---- 去重 ----
+    # 去重
     def deduplicate(self) -> int:
         """基于SHA-256去重。保留最小尺寸副本。返回移除数量。"""
         seen: Dict[str, str] = {}  # hash -> entry_id
@@ -149,7 +149,7 @@ class RegressionCorpusManager:
                 seen[h] = eid
         return removed
 
-    # ---- 优先级排序 ----
+    # 优先级排序
     def prioritize(self) -> None:
         """按多因素计算优先级: 崩溃 > 覆盖率贡献 > 大小 > 发现时间。"""
         for entry in self._entries.values():
@@ -171,7 +171,7 @@ class RegressionCorpusManager:
                     score += 1.0 / max(1, age_h / 24)
             entry.priority = max(0.1, min(10.0, score))
 
-    # ---- 最小集合选取 ----
+    # 最小集合选取
     def select_minimal_set(self,
                            target_coverage_pct: float = 0.95
                            ) -> List[CorpusEntry]:
@@ -235,7 +235,7 @@ class RegressionCorpusManager:
                 selected.append(entry)
         return selected
 
-    # ---- 导出 ----
+    # 导出
     def export(self, output_dir: str,
                entries: List[CorpusEntry] = None) -> int:
         """写出语料到目录。返回写出文件数。"""
@@ -271,7 +271,7 @@ class RegressionCorpusManager:
         with open(output_path, 'w', encoding='utf-8') as fh:
             json.dump(manifest, fh, indent=2)
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             'total_entries': len(self._entries),
@@ -287,9 +287,7 @@ class RegressionCorpusManager:
         }
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口
-# ---------------------------------------------------------------------------
 import math
 
 
@@ -305,5 +303,4 @@ def quick_ci_subset(corpus_dir: str,
                     key=lambda e: -e.priority)[:max_files]
     return mgr.export(output_dir, ranked)
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

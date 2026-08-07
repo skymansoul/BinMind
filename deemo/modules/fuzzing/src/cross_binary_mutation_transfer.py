@@ -25,8 +25,7 @@
   "跳转表偏移量"、"字符串常量"等语义角色具有跨二进制的结构同源性。
 - 语义特征向量捕获这些结构角色，使模型可以泛化。
 
-参考：
-- "Transfer Learning for Fuzzing" (arXiv 2024) — 迁移种子调度器到新目标。
+- "Transfer Learning for Fuzzing" — 迁移种子调度器到新目标。
   与本方案的差异：我们迁移的是变异位置知识，粒度更细。
 """
 
@@ -37,7 +36,6 @@ from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 _TOLERANCE = 1e-9
-
 
 @dataclass
 class ByteOffsetProfile:
@@ -70,7 +68,6 @@ class ByteOffsetProfile:
             self.entropy_local,
         ]
 
-
 @dataclass
 class OffsetFeedback:
     """一个字节偏移的变异效能反馈。"""
@@ -80,7 +77,6 @@ class OffsetFeedback:
     coverage_gains: int = 0      # 累计新边数
     crash_triggers: int = 0
     efficacy_score: float = 0.0  # [0, 1] 变异效能
-
 
 class SemanticFeatureBridge:
     """语义特征桥接器——字节偏移的语义画像提取。
@@ -119,7 +115,6 @@ class SemanticFeatureBridge:
             data_ref_count=_info.get("data_xref_count", 0),
             entropy_local=_entropy,
         )
-
 
 class CrossBinaryMutationTransfer:
     """跨二进制变异效能迁移器。
@@ -213,9 +208,7 @@ class CrossBinaryMutationTransfer:
         _total = sum(_abs_w) + _TOLERANCE
         return {_names[i]: _abs_w[i] / _total for i in range(len(_names))}
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _predict_single(self, features: List[float]) -> float:
         """线性预测 + sigmoid 激活。"""
@@ -243,7 +236,6 @@ class CrossBinaryMutationTransfer:
     def is_warm(self) -> bool:
         """模型是否已预热到可迁移状态。"""
         return self._total_updates >= 50 and len(self._learned_binaries) >= 1
-
 
 class GaussianProcessTransfer(CrossBinaryMutationTransfer):
     """GP增强的跨二进制迁移——用非参数贝叶斯回归替代线性模型。
@@ -409,7 +401,6 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
         self._gp_X = [self._gp_X[i] for i in _selected]
         self._gp_y = [self._gp_y[i] for i in _selected]
 
-
 def _byte_entropy(data: bytes) -> float:
     """计算字节序列的 Shannon 熵（归一化到 [0, 1]）。"""
     if not data:
@@ -424,8 +415,7 @@ def _byte_entropy(data: bytes) -> float:
         _h -= _p * math.log2(_p)
     return _h / 8.0  # 归一化到 [0,1]
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -530,7 +520,6 @@ def _smoke_test():
         assert _std2 < _std, "uncertainty should decrease after observation"
 
     print("[OK] GaussianProcessTransfer smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

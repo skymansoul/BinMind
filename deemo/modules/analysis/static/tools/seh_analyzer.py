@@ -33,7 +33,7 @@ class AnalysisResult:
     warnings: list = field(default_factory=list)
 
 
-# ── VEH 优先级分析 ─────────────────────────────────────────────────────────
+# VEH 优先级分析
 # VEH (Vectored Exception Handler) 通过 AddVectoredExceptionHandler 注册，
 # 优先级高于 SEH —— 在 SEH 链遍历之前先调用 VEH 链
 # 若 VEH handler 地址位于可写内存段，攻击者可通过任意写原语劫持 VEH

@@ -241,7 +241,7 @@ class PTVulnerabilityAnalyzer:
                 'recommend_deep_pt_analysis': len(pt_only) > len(pt_edges) * 0.2}
 
 
-# ── 舍入 6: Side-channel constant-time auditor ──────────────────────────
+# 舍入 6: Side-channel constant-time auditor
 class SideChannelAuditor:
     """基于PT trace的侧信道恒定时间审计器
     

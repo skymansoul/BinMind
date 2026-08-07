@@ -1,0 +1,57 @@
+{
+  "tools": {
+    "Angr": {
+      "tp": 14,
+      "tn": 8,
+      "fp": 0,
+      "fn": 10,
+      "precision": 1.0,
+      "recall": 0.583,
+      "f1": 0.737,
+      "fpr": 0.0,
+      "avg_time_ms": 463.7,
+      "n": 32
+    },
+    "Ghidra": {
+      "tp": 20,
+      "tn": 0,
+      "fp": 8,
+      "fn": 4,
+      "precision": 0.714,
+      "recall": 0.833,
+      "f1": 0.769,
+      "fpr": 1.0,
+      "avg_time_ms": 3000.0,
+      "n": 32
+    },
+    "Qemu": {
+      "tp": 16,
+      "tn": 8,
+      "fp": 0,
+      "fn": 8,
+      "precision": 1.0,
+      "recall": 0.667,
+      "f1": 0.8,
+      "fpr": 0.0,
+      "avg_time_ms": 600.0,
+      "n": 32
+    },
+    "UAF-PROV": {
+      "tp": 23,
+      "tn": 8,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.958,
+      "f1": 0.979,
+      "fpr": 0.0,
+      "avg_time_ms": 43.5,
+      "n": 32
+    }
+  },
+  "n_samples": 16,
+  "variants": [
+    "O0",
+    "O2"
+  ]
+}

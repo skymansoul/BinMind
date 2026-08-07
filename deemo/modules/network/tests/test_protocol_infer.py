@@ -178,7 +178,7 @@ class TestProtocolField:
 
 def test_field_type_enum_values():
     """ProtocolFieldType包含预期值。"""
-    # ProtocolFieldType枚举定义使用小写值 (2026-08)
+    # ProtocolFieldType枚举定义使用小写值
     expected = {"uint8", "uint16", "uint32", "uint64", "magic", "length",
                 "checksum", "bytes", "string", "flags", "enum", "padding"}
     if _infer_available:

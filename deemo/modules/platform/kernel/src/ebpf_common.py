@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Dict
 from enum import IntEnum
 
-# ---- BPF 操作码常量（class + operation 编码） ----
+# BPF 操作码常量（class + operation 编码）
 class BpfClass(IntEnum):
     LD    = 0x00  # 非标准 load
     LDX   = 0x01  # 加载至寄存器
@@ -20,11 +20,11 @@ class BpfClass(IntEnum):
 
 BPF_CLASS_MASK = 0x07
 
-# ---- 源操作数修饰符 ----
+# 源操作数修饰符
 BPF_K = 0x00  # 立即数
 BPF_X = 0x08  # 寄存器值
 
-# ---- ALU / ALU64 操作码（4位字段，位4-7） ----
+# ALU / ALU64 操作码（4位字段，位4-7）
 _ALU_OPS: Dict[int, str] = {
     0x00: "ADD", 0x10: "SUB", 0x20: "MUL", 0x30: "DIV",
     0x40: "OR",  0x50: "AND", 0x60: "LSH", 0x70: "RSH",
@@ -32,7 +32,7 @@ _ALU_OPS: Dict[int, str] = {
     0xc0: "ARSH", 0xd0: "END",
 }
 
-# ---- JMP / JMP32 操作码 ----
+# JMP / JMP32 操作码
 _JMP_OPS: Dict[int, str] = {
     0x00: "JA",   0x10: "JEQ",  0x20: "JGT",  0x30: "JGE",
     0x40: "JSET", 0x50: "JNE",  0x60: "JSGT", 0x70: "JSGE",
@@ -40,14 +40,14 @@ _JMP_OPS: Dict[int, str] = {
     0xc0: "JSLT", 0xd0: "JSLE",
 }
 
-# ---- 特殊操作码 ----
+# 特殊操作码
 BPF_DW = 0x18    # 双字（64位）加载立即数
 
-# ---- 与 CVE 相关的 helper 函数 ID ----
+# 与 CVE 相关的 helper 函数 ID
 # BPF_FUNC_dynptr_data = 188（依内核版本变化）
 DYNPTR_DATA_FUNC_IDS = frozenset({188, 190, 192})
 
-# ---- 诊断用寄存器名 ----
+# 诊断用寄存器名
 _R_NAMES = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"]
 
 
@@ -87,7 +87,7 @@ class EbpfProgram:
         self._raw: bytes = b""
         _v = None  # 惰性初始化状态占位
 
-    # ===== 指令解析 =====
+# 指令解析
     def load(self, raw_bytes: bytes) -> 'EbpfProgram':
         """解析原始eBPF字节码入指令列表。返回self支持链式调用。"""
         self._raw = raw_bytes
@@ -139,7 +139,7 @@ class EbpfProgram:
 
         return _insns
 
-    # ===== CVE 模式扫描引擎 =====
+# CVE 模式扫描引擎
 
     def run_cve_checks(self) -> List[Dict]:
         """执行所有CVE检测，返回发现的漏洞列表。"""
@@ -290,7 +290,7 @@ class EbpfProgram:
                     })
         return _findings
 
-    # ===== 辅助诊断 =====
+# 辅助诊断
 
     @property
     def instructions(self) -> List[BpfInstruction]:
@@ -307,7 +307,7 @@ class EbpfProgram:
         return _m
 
 
-# ---- 共享 struct 格式辅助（struct.calcsize 跨平台对齐） ----
+# 共享 struct 格式辅助（struct.calcsize 跨平台对齐）
 # FIXME: ARM 与 x86_64 对齐不同 — 使用 calcsize，不硬编码大小
 
 # 通用 eBPF 指令解包格式
@@ -321,14 +321,14 @@ def insn_unpack(raw_bytes: bytes, offset: int = 0) -> tuple:
     return struct.unpack_from(EBNPF_INSN_FMT, raw_bytes, offset)
 
 
-# ---- 寄存器集工具 ----
+# 寄存器集工具
 BPF_REG_NAMES = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"]
 BPF_CALLER_SAVED = frozenset({0, 1, 2, 3, 4, 5})
 BPF_CALLEE_SAVED = frozenset({6, 7, 8, 9})
 BPF_FP = 10
 
 
-# ---- helper 函数注册表（扩展版） ----
+# helper 函数注册表（扩展版）
 HELPER_ID_TO_NAME = {
     1: "map_lookup_elem", 2: "map_update_elem", 3: "map_delete_elem",
     4: "probe_read", 5: "ktime_get_ns", 6: "trace_printk",
@@ -342,7 +342,7 @@ HELPER_ID_TO_NAME = {
     59: "bpf_ringbuf_output",
 }
 
-# ---- 通用操作码分类 ----
+# 通用操作码分类
 # 边界条件: BPF_CLASS_MASK 对所有内核版本必须保持 0x07
 CLS_NAMES = {0: "LD", 1: "LDX", 2: "ST", 3: "STX", 4: "ALU", 5: "JMP", 6: "JMP32", 7: "ALU64"}
 

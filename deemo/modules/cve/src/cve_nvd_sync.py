@@ -48,7 +48,7 @@ class NVDSyncEngine:
         self._state_path = state_path or _SYNC_STATE_PATH
         self._state = self._load_state()
 
-    # ---- 同步 ----
+# 同步
 
     def sync(self, full: bool = False) -> Dict[str, Any]:
         """执行增量同步。full=True或无历史同步则执行全量同步。
@@ -176,7 +176,7 @@ class NVDSyncEngine:
         self._save_state()
         return stats
 
-    # ---- API ----
+# API
 
     def _fetch_page(
         self,
@@ -208,7 +208,7 @@ class NVDSyncEngine:
             print(f"[NVD Sync] fetch failed: {e}")
             return None
 
-    # ---- 状态持久化 ----
+# 状态持久化
 
     def _load_state(self) -> Dict[str, Any]:
         """从JSON文件加载同步状态。"""
@@ -237,7 +237,7 @@ class NVDSyncEngine:
         return self._state.get("total_synced", 0)
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def quick_sync(kb: CVEKnowledgeBase, full: bool = False) -> Dict[str, Any]:
     """一次性：创建引擎并运行同步。返回统计字典。"""

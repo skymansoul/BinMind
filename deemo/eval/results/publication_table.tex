@@ -1,0 +1,48 @@
+\begin{table}[htbp]
+\centering
+\caption{Heap Overflow Detection: Multi-Tool Comparison (40 samples)}
+\label{tab:heap-comparison}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Tool & TP & FP & TN & FN & Prec. & Rec. & F1 & FPR \\
+\midrule
+\textbf{BinMind-Full} & \textbf{23} & \textbf{0} & \textbf{17} & \textbf{0} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{0.00} \\
+Angr  & 23 & 17 & 0 & 0 & 0.575 & 1.000 & 0.730 & 1.000 \\
+Ghidra & 23 & 17 & 0 & 0 & 0.575 & 1.000 & 0.730 & 1.000 \\
+QEMU  & 23 & 17 & 0 & 0 & 0.575 & 1.000 & 0.730 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{PC-BVF Ablation Study (12 targeted samples)}
+\label{tab:ablation}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Configuration & TP & FP & TN & FN & Prec. & Rec. & F1 & FPR \\
+\midrule
+Baseline (Regex) & 4 & 8 & 0 & 0 & 0.333 & 1.000 & 0.500 & 1.000 \\
+CJ only & 0 & 0 & 8 & 4 & 0.000 & 0.000 & 0.000 & 0.000 \\
+CJ+BVF & 0 & 0 & 8 & 4 & 0.000 & 0.000 & 0.000 & 0.000 \\
+\textbf{CJ+BVF+PC-BVF} & \textbf{4} & \textbf{0} & \textbf{8} & \textbf{0} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{0.000} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Multi-Vulnerability Unified Verification}
+\label{tab:multi-vuln}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Vulnerability Type & TP & FP & TN & FN & Prec. & Rec. & F1 & FPR \\
+\midrule
+Heap Overflow (GAPSBV-CJ+PC-BVF) & 23 & 0 & 17 & 0 & 1.00 & 1.00 & 1.00 & 0.00 \\
+Format String (FCPV) & 24 & 0 & 7 & 0 & 1.00 & 1.00 & 1.00 & 0.00 \\
+UAF (HOIG) & 14 & 0 & 6 & 0 & 1.00 & 1.00 & 1.00 & 0.00 \\
+\midrule
+\textbf{Total} & \textbf{61} & \textbf{0} & \textbf{30} & \textbf{0} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{0.00} \\
+\bottomrule
+\end{tabular}
+\end{table}

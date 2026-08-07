@@ -43,7 +43,7 @@ class _FakeEnum:
     def value(self): return self._v
 setattr(_m.MutationStrategy, 'BIT_FLIP', _FakeEnum('bit_flip'))
 
-# --- 变异策略扩展 ---
+# 变异策略扩展
 # 基于 AFL++ 的变异调度策略（Michal Zalewski, "american fuzzy lop"）和
 # libFuzzer 的熵引导变异选择，补充结构化格式感知的变异算子。
 import random as _random, struct as _struct
@@ -91,8 +91,8 @@ def splice_segments(corpus: list[bytes], target: bytearray, splice_point: int) -
     return target
 
 
-# --- Def-Use 链引导的变异调度 ---
-# 参考: FuzzRDUCC (Feng et al. 2025) — 从二进制可执行文件重建 def-use 链，
+# Def-Use 链引导的变异调度
+# FuzzRDUCC — 从二进制可执行文件重建 def-use 链，
 # 将其作为覆盖率引导之外的第二维反馈信号，优先变异影响未覆盖 def-use 对的数据字节。
 # 核心观察：仅靠控制流覆盖率无法区分"同一 BB 内不同数据流路径"的语义差异。
 
@@ -155,8 +155,8 @@ def prioritize_mutation_bytes(trace_data: list[dict],
     return sorted(scored_offsets, key=lambda o: -scored_offsets[o])
 
 
-# --- 污点引导的输入变异 (LATTE-inspired) ---
-# 参考: LATTE (ACM TOSEM 2025) — LLM-Powered Static Binary Taint Analysis
+# 污点引导的输入变异 (LATTE-inspired)
+# LATTE — LLM-Powered Static Binary Taint Analysis
 # 将污点传播路径与 fuzzing 输入字节关联，优先变异流向危险 sink 的字节
 # 危险 sink: memcpy/strcpy/system/popen/exec 等 — 污染数据流入这些点即高危
 

@@ -17,7 +17,6 @@
   - UMP (User Mode Prevention): ARM 等价于 SMAP
   - KPTI: 内核页表隔离 → 用户页在内核态不可访问
 
-参考:
   CWE-476: NULL Pointer Dereference
   Linux mmap_min_addr (默认 65536) / vm.mmap_min_addr
   SMAP/SMEP (x86) / PAN (ARM) 缓解措施
@@ -30,14 +29,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class DerefMode(Enum):
     USER_READ = "user_read"         # 用户态读 NULL
     USER_WRITE = "user_write"       # 用户态写 NULL
     KERNEL_READ = "kernel_read"     # 内核态读 NULL
     KERNEL_WRITE = "kernel_write"   # 内核态写 NULL
     UNKNOWN = "unknown"
-
 
 # 缓解措施 → 惩罚分 (从基准中减去)
 _MITIGATION_PENALTY: Dict[str, float] = {
@@ -51,7 +48,6 @@ _MITIGATION_PENALTY: Dict[str, float] = {
     'guard_page': 3.0,      # NULL 页周围有 guard page
 }
 
-
 @dataclass
 class NullDerefScore:
     """空指针解引用利用性评分。"""
@@ -63,12 +59,10 @@ class NullDerefScore:
     primitives_possible: List[str] = field(default_factory=list)
     escalation: str = ''
 
-
 def _classify_mode(is_kernel: bool, is_write: bool) -> DerefMode:
     if is_kernel:
         return DerefMode.KERNEL_WRITE if is_write else DerefMode.KERNEL_READ
     return DerefMode.USER_WRITE if is_write else DerefMode.USER_READ
-
 
 def _base_exploitability(mode: DerefMode, offset: int) -> float:
     """
@@ -93,7 +87,6 @@ def _base_exploitability(mode: DerefMode, offset: int) -> float:
         base -= 2.0  # 大概率不是真正的 NULL deref
 
     return base
-
 
 def score_null_deref(
     is_kernel: bool = False,

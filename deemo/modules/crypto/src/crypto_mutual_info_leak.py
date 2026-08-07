@@ -18,10 +18,9 @@
     CH3 (功率): ALU操作数×每操作≈2bit Hamming差异
     CH4 (直接泄漏): memcpy/send/printf → 可达全部密钥bit
 
-参考:
-  - Standaert et al. (EUROCRYPT 2009): 侧信道泄漏的信息论框架 — 互信息的形式化定义
+  - Standaert et al.: 侧信道泄漏的信息论框架 — 互信息的形式化定义
     和测量方法论。本模块的启发式方法与严格信息论分析有本质区别。
-  - SILENT (Dunsche et al., arXiv:2504.19821): 非参数时序测量 — 展示了
+  - SILENT: 非参数时序测量 — 展示了
     从实际trace中做统计推断所需的样本量和检验方法。
 
 边界条件:
@@ -35,7 +34,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class ChannelCapacity:
     channel_name: str = ""         # TIMING / CACHE / POWER / DIRECT
@@ -44,7 +42,6 @@ class ChannelCapacity:
     secret_entropy: float = 0.0    # 秘密的总熵(bit)
     mutual_info: float = 0.0       # I(S;O) 估计
     confidence: float = 0.0
-
 
 @dataclass
 class ChannelCapacityReport:
@@ -57,8 +54,7 @@ class ChannelCapacityReport:
     leakage_ratio: float = 0.0               # 泄漏比例 = 估计泄漏/key_size
     risk_assessment: str = ""
 
-
-# ── 信道容量估计 ──
+# 信道容量估计
 
 def _estimate_timing_capacity(data: bytes, anchor: int, window: int = 2048) -> ChannelCapacity:
     """估计时序侧信道容量: 每个秘密依赖分支→1bit, N个分支→max(N, log2(N!))bit。"""
@@ -99,7 +95,6 @@ def _estimate_timing_capacity(data: bytes, anchor: int, window: int = 2048) -> C
     return ChannelCapacity('TIMING', round(raw_cap, 2), round(leaked, 2),
                            0.0, 0.0, min(0.85, 0.4 + total_branch_signals * 0.04))
 
-
 def _estimate_cache_capacity(data: bytes, anchor: int, window: int = 2048) -> ChannelCapacity:
     """估计缓存侧信道容量: 每个秘密依赖的索引寻址→log2(缓存组数)≈6-10bit。"""
     region = data[max(0, anchor):anchor + window]
@@ -136,7 +131,6 @@ def _estimate_cache_capacity(data: bytes, anchor: int, window: int = 2048) -> Ch
     return ChannelCapacity('CACHE', round(raw_cap, 2), round(leaked, 2),
                            0.0, 0.0, min(0.80, 0.35 + indexed_accesses * 0.03))
 
-
 def _estimate_power_capacity(data: bytes, anchor: int, window: int = 2048) -> ChannelCapacity:
     """估计功率侧信道容量: Hamming重量差异×操作数≈每指令可区分bit数。"""
     region = data[max(0, anchor):anchor + window]
@@ -156,7 +150,6 @@ def _estimate_power_capacity(data: bytes, anchor: int, window: int = 2048) -> Ch
     return ChannelCapacity('POWER', round(raw_cap, 2), round(leaked, 2),
                            0.0, 0.0, 0.5)
 
-
 def _estimate_direct_capacity(data: bytes, anchor: int, window: int = 4096,
                                key_size_bits: int = 128) -> ChannelCapacity:
     """估计直接导出信道: memcpy/printf/send→全部密钥bit可能被导出。"""
@@ -172,7 +165,6 @@ def _estimate_direct_capacity(data: bytes, anchor: int, window: int = 4096,
     leaked = key_size_bits * min(1.0, direct_exports * 0.5)
     return ChannelCapacity('DIRECT', float(key_size_bits), leaked,
                            float(key_size_bits), leaked, 0.95 if direct_exports >= 2 else 0.80)
-
 
 def estimate_channel_capacity(data: bytes,
                                crypto_findings: Optional[List] = None,

@@ -1,4 +1,4 @@
-# 创建: 2025-09-28
+# 创建: 2026-06-11
 # 堆分配约束求解器 — 区间域建模 + 对齐约束 + 溢出可满足性
 
 """堆分配约束求解器。
@@ -59,7 +59,7 @@ class OverflowVerdict:
     reason: str = ""
 
 
-# ── 区间抽象引擎 ──────────────────────────────────────────────────
+# 区间抽象引擎
 
 class IntervalAbstractor:
     """从汇编指令序列中提取对寄存器值的区间约束。
@@ -131,7 +131,7 @@ class IntervalAbstractor:
         return False
 
 
-# ── 溢出可满足性求解器 ────────────────────────────────────────────
+# 溢出可满足性求解器
 
 class OverflowSatisfiabilitySolver:
     """判断 alloc size 区间 vs write size 区间 → 溢出是否可能。

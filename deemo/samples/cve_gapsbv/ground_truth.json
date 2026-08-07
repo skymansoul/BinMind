@@ -1,0 +1,202 @@
+{
+  "cve_2014_0160_heartbleed": {
+    "cve": "CVE-2014-0160",
+    "type": "heap_overflow",
+    "is_vuln": true,
+    "heap_relevant": true,
+    "vuln_pattern": "heartbleed_missing_bounds_check",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "OpenSSL Heartbleed — CWE-126 缓冲区越界读. memcpy写入未超出目标分配, 但源数据读取越界."
+  },
+  "cve_2015_0235_ghost": {
+    "cve": "CVE-2015-0235",
+    "type": "heap_overflow",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "ghost_realloc_size_miscalculation",
+    "alloc_func": "realloc",
+    "write_func": "memcpy",
+    "notes": "GHOST: realloc后用旧buf_size做边界检查. 样本代码中write_sz被clamp到buf_size, 静态分析可判定为INCONCLUSIVE(保守保留). 漏洞依赖realloc语义差异."
+  },
+  "cve_2016_2177_openssl": {
+    "cve": "CVE-2016-2177",
+    "type": "integer_overflow_to_heap_overflow",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "integer_overflow_to_heap_overflow",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "OpenSSL — 整数溢出→分配不足. 但样本代码中record_len被clamp到[1,16384], alloc=record_len+256, 静态分析正确判定SAFE. 漏洞依赖整数回绕语义, 非线性静态分析目标."
+  },
+  "cve_2017_1000252_kvm": {
+    "cve": "CVE-2017-1000252",
+    "type": "stack_overflow",
+    "is_vuln": true,
+    "heap_relevant": false,
+    "vuln_pattern": "stack_buffer_via_parameter",
+    "alloc_func": "none",
+    "write_func": "memcpy",
+    "notes": "KVM virtio — 非堆溢出: 栈上缓冲区作为参数传入, 无heap分配. 非heap overflow检测目标."
+  },
+  "cve_2017_11176_mq_notify": {
+    "cve": "CVE-2017-11176",
+    "type": "use_after_free",
+    "is_vuln": true,
+    "heap_relevant": false,
+    "vuln_pattern": "race_condition_uaf",
+    "alloc_func": "malloc",
+    "write_func": "memset",
+    "notes": "mq_notify — 纯UAF(竞态), 非堆溢出. malloc(msg_len)+memset(buf,'M',msg_len)大小一致. 静态分析正确不报堆溢出."
+  },
+  "cve_2018_6552_kernel": {
+    "cve": "CVE-2018-6552",
+    "type": "heap_overflow",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "missing_size_check_in_dma_buffer",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "Kernel DMA buffer — 乘积溢出+子缓冲区逻辑越界. 样本中alloc_sz=subbuf_sz*n_subbufs全局边界未溢出, 但copy_sz>subbuf_sz是逻辑缺陷. 静态分析INCONCLUSIVE是合理的保守判定."
+  },
+  "cve_2019_1010298_libssh2": {
+    "cve": "CVE-2019-1010298",
+    "type": "heap_overflow",
+    "is_vuln": true,
+    "heap_relevant": true,
+    "vuln_pattern": "alloc_write_different_vars",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "libssh2 — 经典堆溢出: malloc(window_sz)但memcpy(packet_sz), window_sz!=packet_sz无检查. 应被检测."
+  },
+  "cve_2020_10711_kernel": {
+    "cve": "CVE-2020-10711",
+    "type": "heap_overflow",
+    "is_vuln": true,
+    "heap_relevant": true,
+    "vuln_pattern": "null_terminator_off_by_one",
+    "alloc_func": "kmalloc",
+    "write_func": "memcpy",
+    "notes": "Kernel — null终止符 off-by-one"
+  },
+  "cve_2020_10713_grub2": {
+    "cve": "CVE-2020-10713",
+    "type": "heap_overflow",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "strcpy_unbounded_write",
+    "alloc_func": "malloc",
+    "write_func": "strcpy",
+    "notes": "GRUB2 BootHole — malloc(len+1)+strcpy(buf,line). 样本中分配和写入一致, 无堆溢出路径. strcpy语义为copy_size=-1(无限), BVF应保守判INCONCLUSIVE而非SAFE."
+  },
+  "cve_2021_3156_sudo": {
+    "cve": "CVE-2021-3156",
+    "type": "heap_overflow",
+    "is_vuln": true,
+    "heap_relevant": true,
+    "vuln_pattern": "sudoedit_escape_handling_overflow",
+    "alloc_func": "malloc",
+    "write_func": "array_store",
+    "notes": "Sudo Baron Samedit — 动态数组索引写入(buf[out++] = x)"
+  },
+  "cve_2022_0185_kernel": {
+    "cve": "CVE-2022-0185",
+    "type": "heap_overflow",
+    "is_vuln": true,
+    "heap_relevant": true,
+    "vuln_pattern": "filesystem_context_overflow",
+    "alloc_func": "kmalloc",
+    "write_func": "memcpy",
+    "notes": "Kernel — 文件系统上下文解析中的长度字段溢出"
+  },
+  "cve_2022_23222_kernel": {
+    "cve": "CVE-2022-23222",
+    "type": "verifier_bypass",
+    "is_vuln": true,
+    "heap_relevant": false,
+    "vuln_pattern": "bpf_verifier_bypass",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "BPF verifier绕过 — 漏洞依赖32/64位符号扩展语义差异, 样本代码中idx<0检查会拦截负值. 非静态分析可检测目标."
+  },
+  "cve_2023_0461_kernel": {
+    "cve": "CVE-2023-0461",
+    "type": "use_after_free",
+    "is_vuln": true,
+    "heap_relevant": false,
+    "vuln_pattern": "io_uring_fixed_buffer_uaf",
+    "alloc_func": "malloc",
+    "write_func": "memset",
+    "notes": "Kernel io_uring — UAF(释放后使用), 非堆溢出."
+  },
+  "cve_2023_2235_kernel": {
+    "cve": "CVE-2023-2235",
+    "type": "use_after_free",
+    "is_vuln": true,
+    "heap_relevant": false,
+    "vuln_pattern": "perf_event_uaf_race",
+    "alloc_func": "malloc",
+    "write_func": "memset",
+    "notes": "Kernel perf_event — 纯UAF竞态, 非堆溢出. 共享指针释放后仍在使用."
+  },
+  "cve_2024_21894_openssl": {
+    "cve": "CVE-2024-21894",
+    "type": "heap_overflow",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "struct_field_overflow_after_calloc",
+    "alloc_func": "calloc",
+    "write_func": "memcpy",
+    "notes": "OpenSSL POLY1305 — calloc分配struct后memcpy到ctx->buf字段. 样本代码中已有防御检查(len>POLY1305_BLOCK_SIZE时clamp), 静态分析正确判定INCONCLUSIVE. 原始漏洞依赖缺少此检查的旧版本."
+  },
+  "fp_test_01_guard_protected": {
+    "cve": "FP-TEST-01",
+    "type": "non_vulnerable",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "guard_protected_write",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "FP reduction test: if(user_size < 64) memcpy — guard condition应该过滤"
+  },
+  "fp_test_02_affine_provable_safe": {
+    "cve": "FP-TEST-02",
+    "type": "non_vulnerable",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "affine_relation_proves_safe",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "FP test: malloc(n*4+8), memcpy(n*4) — affine分析证明diff=-8, 始终安全"
+  },
+  "fp_test_03_constant_bound_safe": {
+    "cve": "FP-TEST-03",
+    "type": "non_vulnerable",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "constant_bound_within_allocation",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "FP test: malloc(256), memcpy(128) — 常量比较, 始终安全"
+  },
+  "fp_test_04_interprocedural_alloc": {
+    "cve": "FP-TEST-04",
+    "type": "non_vulnerable",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "cross_function_alloc_write_safe",
+    "alloc_func": "malloc",
+    "write_func": "memcpy",
+    "notes": "FP test: alloc在helper()中, memcpy在caller中 — 跨函数分析"
+  },
+  "fp_test_05_loop_bound_guarded": {
+    "cve": "FP-TEST-05",
+    "type": "non_vulnerable",
+    "is_vuln": false,
+    "heap_relevant": true,
+    "vuln_pattern": "loop_bound_within_allocation",
+    "alloc_func": "malloc",
+    "write_func": "store",
+    "notes": "FP test: for(i=0; i<BUF_SIZE; i++) buf[i]=x — 循环边界由分配大小约束"
+  }
+}

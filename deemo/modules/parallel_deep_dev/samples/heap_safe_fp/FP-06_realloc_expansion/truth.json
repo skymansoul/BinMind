@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "realloc_expand",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "alloc-dedup",
+  "cve": "",
+  "func": "safe_realloc",
+  "name": "FP-06_realloc_expansion"
+}

@@ -1,0 +1,188 @@
+{
+  "uaf": {
+    "CVE-2019-10149_uaf_exim": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2019-15947_uaf": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2020-10713_uaf_grub2": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2022-0185_uaf_filesystem": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2023-0597_uaf_netfilter": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2024-1086_uaf_nf_tables": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP001_intra_stack": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP002_double_free": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP003_callback": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP004_cond_free": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP005_alias_chain": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP006_stack_slot": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-TP007_cross_func": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-FP001_safe_realloc": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-FP002_null_guard": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    },
+    "CVE-2025-UAF-FP003_diff_object": {
+      "detected": false,
+      "confirmed": 0,
+      "filtered": 0
+    }
+  },
+  "fmt": {
+    "CVE-2012-0809_format_string": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP001_syslog": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP002_fprintf": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP04_printf_direct": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP05_snprintf_stack": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP06_vsprintf_variadic": {
+      "detected": false,
+      "sites": 4,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP07_fprintf_file": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP08_sprintf_stack_overflow": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP09_printf_heap_sink": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP10_log_wrapper_chain": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP11_error_report": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP12_syslog_variadic": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP13_double_format": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-TP14_gethostname_format": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-FP001_safe_printf": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-FP02_printf_const_fmt": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-FP03_fprintf_const_fmt": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-FP04_snprintf_const_fmt": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    },
+    "CVE-2025-FMT-FP05_sprintf_named": {
+      "detected": false,
+      "sites": 3,
+      "dangerous": 0
+    }
+  },
+  "summary": {
+    "uaf_recall": "0/13",
+    "uaf_fp_alarms": 0,
+    "fmt_recall": "0/14",
+    "fmt_fp_alarms": 0,
+    "note": "绿叶创新点保留现状。UAF/fmt检测器按SysV ABI设计(rdi=首参), MinGW/MS-x64下用rcx, 指针参数回溯受限; DoubleFree检测不受ABI影响, 已在UAF样本上检出。本轮核心创新聚焦堆溢出, 不改动绿叶检测器。"
+  }
+}

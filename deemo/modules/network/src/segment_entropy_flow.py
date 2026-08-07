@@ -97,7 +97,7 @@ class SegmentEntropyTracker:
         """
         new_alerts: List[EntropyFlowAlert] = []
 
-        # 步骤1: 计算每段对的字节分布→条件熵
+        # 计算每段对的字节分布→条件熵
         pair_entropies: Dict[Tuple[str, str], float] = {}
         for (src, dst), stats in segment_flows.items():
             pkt = stats.get("pkt_count", 0)
@@ -113,7 +113,7 @@ class SegmentEntropyTracker:
             )
             pair_entropies[(src, dst)] = self._pair_entropy(sf)
 
-        # 步骤2: 按源段聚合→计算各源段出向条件熵分布
+        # 按源段聚合→计算各源段出向条件熵分布
         src_bytes: Dict[str, float] = defaultdict(float)
         for (src, dst), ent in pair_entropies.items():
             src_bytes[src] += segment_flows[(src, dst)].get("byte_count", 0)
@@ -123,7 +123,7 @@ class SegmentEntropyTracker:
             # 条件熵加权: H(D|S)通过字节量归一化
             pair_entropies[(src, dst)] = ent
 
-        # 步骤3: 基线对比→异常检测
+        # 基线对比→异常检测
         for (src, dst), ent in pair_entropies.items():
             key = (src, dst)
             # 新段对检测

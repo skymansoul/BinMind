@@ -29,9 +29,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Error hierarchy
-# ---------------------------------------------------------------------------
 
 class SymbolicError(Exception):
     """Base 异常 for 符号执行 errors
@@ -84,9 +82,7 @@ class StateSerializationError(SymbolicError):
     pass
 
 
-# ---------------------------------------------------------------------------
 # 格式化 conversion
-# ---------------------------------------------------------------------------
 
 def smtlib_to_z3(smtlib_str: str) -> Optional[Any]:
     """
@@ -141,9 +137,7 @@ def z3_to_smtlib(expr: Any) -> str:
         return repr(expr)
 
 
-# ---------------------------------------------------------------------------
 # Constraint parsing
-# ---------------------------------------------------------------------------
 
 def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
     """
@@ -201,9 +195,7 @@ def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
     return []
 
 
-# ---------------------------------------------------------------------------
 # State 序列化
-# ---------------------------------------------------------------------------
 
 def serialize_state(state: Any) -> Dict[str, Any]:
     """
@@ -337,9 +329,7 @@ def _deserialize_symexpr(data: Dict[str, Any]) -> Any:
     return SymExpr.concrete(value, size_bits=size)
 
 
-# ---------------------------------------------------------------------------
 # 覆盖率 computation
-# ---------------------------------------------------------------------------
 
 def compute_path_coverage(
     reached: Set[Tuple[int, int]],
@@ -395,9 +385,7 @@ def compute_branch_coverage(
     return min(1.0, covered / total_branches)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _validate_symbolic_smt(smtlib_str: str) -> bool:
     """

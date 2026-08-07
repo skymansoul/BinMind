@@ -16,11 +16,10 @@
 # Used by format_string_detector to determine if printf format args derive
 # from user-controlled input (recv/read/fgets return values).
 #
-# References:
-#   - VSA (Balakrishnan & Reps, 2004): abstract domain value-set tracking
-#   - BAP (CMU): full IR-level dataflow analysis; this module stays at asm level
+# erences:
+# VSA: abstract domain value-set tracking
+# BAP (CMU): full IR-level dataflow analysis; this module stays at asm level
 
-from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field

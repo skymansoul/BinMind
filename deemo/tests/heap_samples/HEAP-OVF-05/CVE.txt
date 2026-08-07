@@ -1,2 +1,0 @@
-Name: HEAP-OVF-05
-Type: heap-realloc-overflow

@@ -1,0 +1,89 @@
+{
+  "samples": {
+    "fmt_cve_01": {
+      "cve": "CVE-2020-6449",
+      "title": "Direct user fmt — printf(user_input)",
+      "category": "direct_user_fmt",
+      "is_vuln": true,
+      "pattern": "printf(user_input)",
+      "fmt_str": "%x %x %n"
+    },
+    "fmt_cve_02": {
+      "cve": "CVE-2019-5798",
+      "title": "Indirect fmt via heap buffer",
+      "category": "indirect_fmt",
+      "is_vuln": true,
+      "pattern": "snprintf(buf,sz,user,args...)",
+      "fmt_str": "%s %s %n"
+    },
+    "fmt_cve_03": {
+      "cve": "CVE-2018-1000115",
+      "title": "Fmt in error path — printf(recv_data)",
+      "category": "error_path_fmt",
+      "is_vuln": true,
+      "pattern": "printf(recv_buf)",
+      "fmt_str": "Error: %s %n"
+    },
+    "fmt_cve_04": {
+      "cve": "CVE-2017-1000370",
+      "title": "Stack probing via %n$ — positional args",
+      "category": "positional_fmt",
+      "is_vuln": true,
+      "pattern": "printf(user_fmt, a1, a2)",
+      "fmt_str": "%7$n"
+    },
+    "fmt_cve_05": {
+      "cve": "CVE-2016-6290",
+      "title": "Wide-char write — %hn for 2-byte write",
+      "category": "wide_write_fmt",
+      "is_vuln": true,
+      "pattern": "wprintf(user_fmt)",
+      "fmt_str": "%hn %hn"
+    },
+    "fmt_cve_06": {
+      "cve": "CVE-2015-8612",
+      "title": "syslog format — syslog(user_msg)",
+      "category": "syslog_fmt",
+      "is_vuln": true,
+      "pattern": "syslog(LOG_ERR, user_msg)",
+      "fmt_str": "%n"
+    },
+    "fmt_cve_07": {
+      "cve": "CVE-2021-31566",
+      "title": "Multi %n — arbitrary write chain",
+      "category": "multi_write_fmt",
+      "is_vuln": true,
+      "pattern": "fprintf(stderr, user_fmt)",
+      "fmt_str": "%n %n %n"
+    },
+    "fmt_cve_08": {
+      "cve": "CVE-2020-10878",
+      "title": "Perl fmt — sprintf(user)",
+      "category": "sprintf_fmt",
+      "is_vuln": true,
+      "pattern": "sprintf(buf, user_fmt, args)",
+      "fmt_str": "%*d %n"
+    },
+    "fmt_cve_09": {
+      "cve": "SAFE-FMT-001",
+      "title": "Safe: constant fmt string",
+      "category": "safe_constant_fmt",
+      "is_vuln": false,
+      "pattern": "printf(\"%s\", user)",
+      "fmt_str": "%s"
+    },
+    "fmt_cve_10": {
+      "cve": "SAFE-FMT-002",
+      "title": "Safe: no %n — info leak only",
+      "category": "safe_info_leak",
+      "is_vuln": false,
+      "pattern": "printf(user_fmt)",
+      "fmt_str": "%x %x %s"
+    }
+  },
+  "summary": {
+    "total": 10,
+    "fmt_vuln": 8,
+    "fmt_safe": 2
+  }
+}

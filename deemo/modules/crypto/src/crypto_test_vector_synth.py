@@ -19,12 +19,11 @@
   测试向量仅供参考实现 — 本模块生成的是数学推导的预期值,
   不执行被检测的二进制。实际验证需要harness桥接。
 
-参考:
   - NIST CAVP (Cryptographic Algorithm Validation Program): 标准KAT数据集。
-  - NIST SP 800-38A (2001): AES测试向量 — 已知答案加密/解密测试。
-  - RFC 4231 (2005): HMAC-SHA-*测试向量。
-  - RFC 5869 (2010): HKDF测试向量。
-  - Wycheproof (Google, 2024): 密码学测试向量项目 — 覆盖边界情况。
+  - NIST SP 800-38A: AES测试向量 — 已知答案加密/解密测试。
+  - RFC 4231: HMAC-SHA-*测试向量。
+  - RFC 5869: HKDF测试向量。
+  - Wycheproof: 密码学测试向量项目 — 覆盖边界情况。
 
 边界条件:
   - 合成测试向量基于算法的数学定义 — 若检测到的实现是算法变种, KAT不匹配。
@@ -37,7 +36,6 @@ import struct
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class TestVector:
     test_id: str = ""
@@ -48,7 +46,6 @@ class TestVector:
     expected_output_hex: str = ""
     description: str = ""
 
-
 @dataclass
 class TestVectorSuite:
     algorithm: str = ""
@@ -56,12 +53,10 @@ class TestVectorSuite:
     source_standard: str = ""  # NIST CAVP / RFC 4231 / RFC 5869 / self-derived
     notes: List[str] = field(default_factory=list)
 
-
-# ── AES测试向量 (NIST SP 800-38A F.1) ──
+# AES测试向量 (NIST SP 800-38A F.1)
 _AES128_KAT_KEY = bytes.fromhex('2b7e151628aed2a6abf7158809cf4f3c')
 _AES128_KAT_PT = bytes.fromhex('6bc1bee22e409f96e93d7e117393172a')
 _AES128_KAT_CT = bytes.fromhex('3ad77bb40d7a3660a89ecaf32466ef97')
-
 
 def _synthesize_aes_vectors() -> List[TestVector]:
     """合成AES-128-ECB的KAT向量 — 使用标准NIST测试值。"""
@@ -100,14 +95,12 @@ def _synthesize_aes_vectors() -> List[TestVector]:
 
     return vectors
 
-
-# ── SHA-256测试向量 (NIST CAVP短消息) ──
+# SHA-256测试向量 (NIST CAVP短消息)
 _SHA256_KAT_INPUTS = [
     ('', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     ('61', '4c9c18917432c439f3bbcb7c6b482cf84c5311c0c262185bcc9ffffe4b40cba9'),
     ('616263', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'),
 ]
-
 
 def _synthesize_sha256_vectors() -> List[TestVector]:
     vectors = []
@@ -128,13 +121,11 @@ def _synthesize_sha256_vectors() -> List[TestVector]:
 
     return vectors
 
-
-# ── HMAC-SHA256测试向量 (RFC 4231) ──
+# HMAC-SHA256测试向量 (RFC 4231)
 _HMAC_RFC4231 = [
     ('0b' * 20, '4869205468657265', 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7'),
     ('0c' * 20, '546573742057697468', '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843'),
 ]
-
 
 def _synthesize_hmac_vectors() -> List[TestVector]:
     vectors = []
@@ -147,8 +138,7 @@ def _synthesize_hmac_vectors() -> List[TestVector]:
             description='RFC 4231 HMAC-SHA256 test case'))
     return vectors
 
-
-# ── KDF测试向量生成 ──
+# KDF测试向量生成
 def _synthesize_kdf_vectors(algorithm: str) -> List[TestVector]:
     """根据检测到的KDF算法合成测试向量。"""
     vectors = []
@@ -163,8 +153,7 @@ def _synthesize_kdf_vectors(algorithm: str) -> List[TestVector]:
             description='PBKDF2-HMAC-SHA256: password="password", salt="salt", c=1, dkLen=32'))
     return vectors
 
-
-# ── 合成调度器 ──
+# 合成调度器
 
 _SYNTHESIZERS = {
     'AES': _synthesize_aes_vectors,
@@ -175,7 +164,6 @@ _SYNTHESIZERS = {
     'HMAC-SHA256': _synthesize_hmac_vectors,
     'HMAC-SHA512': _synthesize_hmac_vectors,
 }
-
 
 def synthesize_test_vectors(crypto_findings: Optional[List] = None
                             ) -> List[TestVectorSuite]:
@@ -221,7 +209,6 @@ def synthesize_test_vectors(crypto_findings: Optional[List] = None
                 notes=[f'自动合成 {len(vectors)} 个测试向量']))
 
     return suites
-
 
 def _infer_standard(algorithm: str) -> str:
     if 'AES' in algorithm:

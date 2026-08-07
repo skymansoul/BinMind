@@ -8,13 +8,13 @@ from typing import List, Dict, Tuple, Optional
 class YaraRuleGenerator:
     """Auto-构造 YARA 4.x rules 二进制分析 results"""
 
-    # ---- 初始化 ----
+# 初始化
 
     def __init__(self, author="BinMind Auto-Generator"):
         self._author = author
         self._rule_counter = 0
 
-    # ---- 基于字符串生成规则 ----
+# 基于字符串生成规则
 
     def generate_string_rule(self, strings: List[str],
                               rule_name: str = None,
@@ -148,7 +148,7 @@ class YaraRuleGenerator:
 
         return '\n'.join(_parts)
 
-    # ===== 基于节区哈希生成规则 =====
+# 基于节区哈希生成规则
 
     def generate_section_rule(self, sections_data: Dict[str, bytes],
                                rule_name: str = None,
@@ -198,7 +198,7 @@ class YaraRuleGenerator:
 
         return '\n'.join(_parts)
 
-    # ---- 组合规则生成 ----
+# 组合规则生成
 
     def generate_composite_rule(self, strings: List[str] = None,
                                  imports: Dict[str, List[str]] = None,
@@ -298,7 +298,7 @@ class YaraRuleGenerator:
         self._rule_counter += 1
         return f"BinMind_AutoGen_{_c:03d}"
 
-    # ===== 批量生成: 从分析结果一键生成所有类型规则 =====
+# 批量生成: 从分析结果一键生成所有类型规则
 
     def batch_generate(self, strings: List[str] = None,
                        imports: Dict[str, List[str]] = None,

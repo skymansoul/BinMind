@@ -14,9 +14,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class QualityIssue:
@@ -62,9 +60,7 @@ class QualityReport:
         }
 
 
-# ---------------------------------------------------------------------------
 # 质量评估器
-# ---------------------------------------------------------------------------
 
 class DataQualityAssessor:
     """数据质量评估器
@@ -385,7 +381,7 @@ class DataQualityAssessor:
 
         return issues
 
-    # ---- 分数计算 ----
+# 分数计算
     def _calc_completeness(self, X, issues) -> float:
         nan_issues = [i for i in issues if i.kind == 'missing_value']
         if not nan_issues:
@@ -422,9 +418,7 @@ class DataQualityAssessor:
         return min(1.0, avg_conf * 2.0)
 
 
-# ---------------------------------------------------------------------------
 # 工厂
-# ---------------------------------------------------------------------------
 
 def create_quality_assessor(missing_threshold: float = 0.3,
                             outlier_std: float = 3.0) -> DataQualityAssessor:

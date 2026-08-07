@@ -12,7 +12,7 @@ DAG消息传递风险预测 -- 有向无环图感知的图神经网络用于传�
   3. 读出: sigmoid(W_readout * h_final + b)
   4. 全参数训练: 解析梯度经ReLU反向传播至W_msg, W_update, W_embed
 
-ref: Gilmer et al. (ICML 2017) "Neural Message Passing for Quantum Chemistry".
+ref: Gilmer et al. "Neural Message Passing for Quantum Chemistry".
 """
 
 from __future__ import annotations

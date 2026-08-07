@@ -1,0 +1,8 @@
+{
+  "sample": "v17_memcpy_oob",
+  "cve": "CVE-2014-0160",
+  "mode": "walk_write",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "外部 n 可达 32, 分配仅 8 → memcpy 越界"
+}

@@ -15,7 +15,7 @@ import tempfile
 import pytest
 
 
-# ── 导入各子模块 ──────────────────────────────────────────
+# 导入各子模块
 
 try:
     from fuzzing.fuzz_cluster_autoscaler import (
@@ -54,7 +54,7 @@ except ImportError:
     _dict_available = False
 
 
-# ── 集群自动伸缩集成测试 ──────────────────────────────────
+# 集群自动伸缩集成测试
 
 @pytest.mark.skipif(not _cluster_available, reason="fuzz_cluster_autoscaler not importable")
 class TestClusterIntegration:
@@ -159,7 +159,7 @@ class TestClusterIntegration:
         assert len(pending) >= 1
 
 
-# ── 种子进化集成测试 ──────────────────────────────────────
+# 种子进化集成测试
 
 @pytest.mark.skipif(not _seed_available, reason="fuzz_seed_evolution not importable")
 class TestSeedEvolutionIntegration:
@@ -199,7 +199,7 @@ class TestSeedEvolutionIntegration:
         assert len(distilled) <= 10
 
 
-# ── 字典生成集成测试 ──────────────────────────────────────
+# 字典生成集成测试
 
 @pytest.mark.skipif(not _dict_available, reason="fuzz_dictionary_generator not importable")
 class TestDictionaryIntegration:
@@ -245,7 +245,7 @@ class TestDictionaryIntegration:
         assert '\\"' in output or '"' in output
 
 
-# ── 故障注入集成测试 ──────────────────────────────────────
+# 故障注入集成测试
 
 @pytest.mark.skipif(not _fault_available, reason="fault_injection_fuzzer not importable")
 class TestFaultInjectionIntegration:
@@ -290,7 +290,7 @@ class TestFaultInjectionIntegration:
         assert data == b""
 
 
-# ── 独立集成测试 (无需模块导入) ────────────────────────────
+# 独立集成测试 (无需模块导入)
 
 def test_config_to_runner_integration_inline():
     """模拟: 配置 → 运行器 → 结果 管道."""

@@ -18,7 +18,7 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 
-# ========== 数据模型 ==========
+# 数据模型
 
 @dataclass
 class BenchmarkEntry:
@@ -105,7 +105,7 @@ class BenchmarkCache:
         finally:
             conn.close()
 
-    # ---- CRUD ----
+# CRUD
 
     def insert(self, entry: BenchmarkEntry) -> int:
         with self._lock:
@@ -293,7 +293,7 @@ class BenchmarkCache:
         )
 
 
-# ========== 性能计时器 ==========
+# 性能计时器
 
 class BenchmarkTimer:
     """带缓存记录的微基准计时器"""
@@ -366,7 +366,7 @@ class BenchmarkTimer:
         return result
 
 
-# ========== 工厂 ==========
+# 工厂
 
 _global_cache: Optional[BenchmarkCache] = None
 

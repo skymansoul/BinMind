@@ -5,9 +5,8 @@
 2025-08-03 13:42 - SPRT 策略比较: 两种突变策略的随时有效对比
 2025-08-05 09:08 - 覆盖平台早期预警: 鞅增长速率映射为终止建议
 
-参考:
-  Shafer & Vovk (2019) "Game-Theoretic Foundations for Probability and Finance"
-  Ramdas et al. (2023) "Anytime-Valid Inference" (Statistical Science)
+  Shafer & Vovk "Game-Theoretic Foundations for Probability and Finance"
+  Ramdas et al. "Anytime-Valid Inference" (Statistical Science)
 
 在 fuzzing 中无先例。fuzzing 基准测试长期受困于"运行多久才算够",
 因为传统固定样本检验需要预设停止时间且不能 peeking。
@@ -28,11 +27,9 @@ from typing import Dict, List, Optional, Tuple
 
 from .martingale_tester import TestMartingale, SequentialProbabilityRatioTest
 
-
 _DECISION_WINDOW = 500        # 覆盖平台检测的窗口大小
 _LOG10_THRESHOLD_WARN = 1.5   # log10 证据 >1.5 → 警告覆盖可能停滞
 _LOG10_THRESHOLD_STOP = 2.5   # log10 证据 >2.5 → 建议停止
-
 
 @dataclass
 class FuzzingEvidence:
@@ -44,7 +41,6 @@ class FuzzingEvidence:
     plateau_detected: bool
     recommended_action: str       # "continue" | "warn" | "stop"
     strategy_comparison: Optional[str]  # SPRT 结论
-
 
 class MartingaleFuzzingAssessor:
     """鞅制导模糊测试评估器 — 随时有效的统计推断.

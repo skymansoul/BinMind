@@ -24,7 +24,7 @@ class GraphDB:
         if NX_AVAILABLE and backend == "networkx":
             self._nx_graph = nx.DiGraph()
 
-    # ---------- 持久化：保存/加载 ---------- {{{
+# 持久化：保存/加载 ---------- {{{
 
     def save(self, filepath: str, compress: bool = True) -> str:
         """将图序列化到磁盘。compress=True 时用 gzip 压缩，返回 sha256 校验和。"""
@@ -115,7 +115,7 @@ class GraphDB:
                 pass
         return []
 
-    # ---------- 子图提取：k-hop 邻域 ---------- {{{
+# 子图提取：k-hop 邻域 ---------- {{{
 
     def subgraph_around(self, center: str, radius: int = 2) -> Optional["GraphDB"]:
         """提取以 center 为源的 k-hop 子图，拷贝属性。孤点返回空子图。"""
@@ -144,7 +144,7 @@ class GraphDB:
 
     # }}}
 
-    # ---------- 综合图统计指标 ---------- {{{
+# 综合图统计指标 ---------- {{{
 
     def stats(self) -> Dict[str, Any]:
         """返回图级别统计：节点/边数、密度、弱/强连通分量数、孤立点计数。"""

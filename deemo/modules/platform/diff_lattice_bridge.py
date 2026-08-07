@@ -18,7 +18,7 @@ Diff→格桥接——连接OTA差分分析与版本格。
   3. vuln_introduction类变更注册到VersionNode.vuln_hashes
   4. VersionLattice.find_introduction_point()定位引入点
 
-ref: Khorrami et al. "Binary Diff Summarization Using LLMs" (arXiv:2509.23970)
+ref: Khorrami et al. "Binary Diff Summarization Using LLMs"
      — 将LLM辅助的diff摘要与版本格绑定，diff→漏洞引入见证的端到端自动化。
 """
 

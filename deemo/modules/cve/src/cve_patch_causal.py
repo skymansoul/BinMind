@@ -32,12 +32,12 @@
   - 多源交叉验证: GHSA 和 OSV 各自独立返回候选 CVE, 交集置信度最高,
     单源命中则标记为 'tentative' 并降低置信度。
 
-ref: "BinDiff: Binary Diffing" (Dullien et al., 2005) — 结构化二进制差异分析
+ref: "BinDiff: Binary Diffing" — 结构化二进制差异分析
      的奠基工作。本项目在此基础上增加安全语义层, 将纯结构差异提升为
      安全意图推断。
 ref: "VulFi: Vulnerability Detection via Binary Patch Analysis" — 通过补丁分析
      检测漏洞, 本项目将其逆向: 通过差异分析推断已修复的漏洞。
-ref: MIST (Microsoft Technical Report, 2023) — 对 CVE 描述做 NER 抽取
+ref: MIST — 对 CVE 描述做 NER 抽取
      受影响的函数名和攻击向量, 本项目的 CVE 匹配层借鉴了此方法。
 
 边界条件:
@@ -55,7 +55,7 @@ from collections import defaultdict as _dd
 from typing import Any, Optional
 
 
-# ===== Layer 1: 变更块安全语义分类 =====
+# Layer 1: 变更块安全语义分类
 
 # 汇编模式 → 安全语义映射表
 # 每个模式: (regex, semantic_label, cwe_hint, confidence_boost)
@@ -134,7 +134,7 @@ def classify_patch_hunk(added_asm: list[str], removed_asm: list[str]) -> dict:
     }
 
 
-# ===== Layer 2: EBGF — 熵基准二进制片段指纹 =====
+# Layer 2: EBGF — 熵基准二进制片段指纹
 
 def compute_ebgf(block_bytes_list: list[bytes]) -> str:
     """为基本块集合计算 EBGF 指纹。
@@ -176,7 +176,7 @@ def compute_ebgf(block_bytes_list: list[bytes]) -> str:
     return hashlib.sha256(_raw).hexdigest()
 
 
-# ===== Layer 3: 多源 CVE 匹配 =====
+# Layer 3: 多源 CVE 匹配
 
 class PatchCausalMatcher:
     """补丁差异 → CVE 因果链匹配器。
@@ -348,7 +348,7 @@ class PatchCausalMatcher:
         }
 
 
-# ===== 便捷函数: 完整因果链分析 =====
+# 便捷函数: 完整因果链分析
 
 def analyze_patch_causality(
     added_blocks: list[tuple[int, list[str], bytes]],
@@ -408,7 +408,7 @@ def analyze_patch_causality(
     }
 
 
-# ===== 冒烟测试 =====
+# 冒烟测试
 
 def _smoke_test():
     """验证三层推断的基本通路。"""

@@ -6,7 +6,7 @@ import re
 from typing import List, Dict, Set
 from collections import OrderedDict
 
-# ===== Windows 持久化特征库 =====
+# Windows 持久化特征库
 _WIN_REGISTRY_KEYS = [
     r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
     r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
@@ -59,7 +59,7 @@ _WIN_COM_HIJACK = [
     "TreatAs", "ProgID",
 ]
 
-# ===== Linux 持久化特征库 =====
+# Linux 持久化特征库
 _LINUX_CRON_PATHS = [
     "/etc/crontab", "/etc/cron.d", "/var/spool/cron/crontabs",
     "/var/spool/cron", "/etc/cron.hourly", "/etc/cron.daily",
@@ -95,7 +95,7 @@ _LINUX_XDG_AUTOSTART = [
     ".desktop", "X-GNOME-Autostart",
 ]
 
-# ===== Mac 持久化特征库 =====
+# Mac 持久化特征库
 _MAC_LAUNCHD_PATHS = [
     "~/Library/LaunchAgents", "/Library/LaunchAgents",
     "/Library/LaunchDaemons", "/System/Library/LaunchDaemons",

@@ -112,7 +112,7 @@ class ConstraintExtractor:
         return 4  # 默认 32-bit
 
 
-# ── 约束导向变异器 ────────────────────────────────────────────────
+# 约束导向变异器
 
 class ConstraintGuidedMutator:
     """约束感知的变异引擎。
@@ -173,7 +173,7 @@ class ConstraintGuidedMutator:
 
         return variants
 
-    # ── L1: 约束定向变异 ──────────────────────────────────────────
+# L1: 约束定向变异
 
     def _mutate_constraint_aware(self, data: bytes,
                                  hints: List[ConstraintHint],
@@ -212,7 +212,7 @@ class ConstraintGuidedMutator:
 
         return bytes(buf)
 
-    # ── L2: 边界微扰变异 ──────────────────────────────────────────
+# L2: 边界微扰变异
 
     def _mutate_boundary_probe(self, data: bytes,
                                hints: List[ConstraintHint],
@@ -250,7 +250,7 @@ class ConstraintGuidedMutator:
 
         return bytes(buf) if modified else None
 
-    # ── L3: 拓扑保持变异 ──────────────────────────────────────────
+# L3: 拓扑保持变异
 
     def _mutate_topology_preserving(self, data: bytes, idx: int) -> Optional[bytes]:
         """保持输入结构，仅修改 payload 区域。
@@ -301,7 +301,7 @@ class ConstraintGuidedMutator:
             return 4
         return 64  # 默认保守跳过
 
-    # ── L4: 多样性探索变异 ────────────────────────────────────────
+# L4: 多样性探索变异
 
     def _mutate_diversity(self, data: bytes, idx: int) -> Optional[bytes]:
         """随机探索变异 — 基于传统 fuzzing 策略。

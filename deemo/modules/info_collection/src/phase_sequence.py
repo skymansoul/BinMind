@@ -10,7 +10,7 @@ API 时序模式匹配的杀伤链阶段推断。
 在观测到的 API 调用序列中做最长公共子序列 (LCS) 匹配,
 按匹配覆盖率分配阶段信念质量。一个函数可同时属于多个阶段。
 
-与 RINSER (arXiv:2509.04887) 的差异: RINSER 预测被混淆的 API 名称,
+与 RINSER 的差异: RINSER 预测被混淆的 API 名称,
 本模块从已识别的 API 序列中推断阶段归属, 属于下游任务。
 """
 
@@ -23,11 +23,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 杀伤链阶段 → API 调用时序模式
 # 每个模式是一个 API 调用列表, 按调用顺序排列。
 # 支持通配符 '*' 表示任意单个 API。
-# ---------------------------------------------------------------------------
 
 _PHASE_PATTERNS: Dict[str, List[List[str]]] = {
     "侦察": [

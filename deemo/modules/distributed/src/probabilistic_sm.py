@@ -3,9 +3,9 @@
 # state_machine.py 的 TaskStateMachine 用确定性守卫:
 #   if task.status == "running" and elapsed > timeout → "failed"
 # 实际系统中守卫条件有不确定性:
-#   - GC 暂停造成的假超时 (应重试而非标记失败)
-#   - 瞬态网络故障 (重试即可恢复)
-#   - 资源争用的渐进效应 (负载越高, 超时概率越大)
+# GC 暂停造成的假超时 (应重试而非标记失败)
+# 瞬态网络故障 (重试即可恢复)
+# 资源争用的渐进效应 (负载越高, 超时概率越大)
 #
 # 本模块用概率守卫替代确定性守卫:
 #   P(transition | observation) ∝ likelihood × prior

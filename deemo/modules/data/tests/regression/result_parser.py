@@ -1,5 +1,5 @@
 # 结果解析与统计 — 从扫描结果计算检出率/误报率/漏报率.
-# 创建: 2026-08-05
+# 创建: 2026-05-12
 
 import json, os
 from collections import defaultdict

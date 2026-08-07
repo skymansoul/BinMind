@@ -22,7 +22,7 @@ class BackupManager:
         self._conn.row_factory = sqlite3.Row
         self._ensure_schema()
 
-    # === 建表: WAL 模式下先建表再考虑后续优化 ===
+# 建表: WAL 模式下先建表再考虑后续优化
     def _ensure_schema(self):
         _sql = """
         CREATE TABLE IF NOT EXISTS patches (
@@ -46,7 +46,7 @@ class BackupManager:
             "CREATE INDEX IF NOT EXISTS idx_patches_created ON patches(created_at)")
         self._conn.commit()
 
-    # === 静态工具 ===
+# 静态工具
     @staticmethod
     def _compress(data: bytes) -> bytes:
         return gzip.compress(data, compresslevel=6)
@@ -70,10 +70,8 @@ class BackupManager:
     def _sha256_bytes(data: bytes) -> str:
         return hashlib.sha256(data).hexdigest()
 
-    # ============================================================
     # 备份: 哈希确认文件状态 → 压缩原始字节 → INSERT
     # 只存被补丁偏移处的原始字节, 回滚精确不波及文件其他位置
-    # ============================================================
     def create_backup(self, filepath: str, offset: int, original_bytes: bytes) -> int:
         """记录补丁前状态。返回 patch_id 供 apply/rollback。"""
         _filehash = self._sha256_file(filepath)
@@ -86,7 +84,7 @@ class BackupManager:
         logger.info("backup #%d created for %s @ offset %d", _id, filepath, offset)
         return _id
 
-    # === 应用: 在文件 offset 处写入 patch_bytes, 同步更新 DB ===
+# 应用: 在文件 offset 处写入 patch_bytes, 同步更新 DB
     def apply_patch(self, patch_id: int, patch_bytes: bytes) -> bool:
         _row = self._conn.execute(
             "SELECT filepath, offset, original_bytes FROM patches WHERE id = ?",
@@ -111,7 +109,7 @@ class BackupManager:
             logger.error("apply_patch #%d failed: %s", patch_id, e)
             return False
 
-    # === 验证: 读文件当前内容与期望 patch_bytes 比对 ===
+# 验证: 读文件当前内容与期望 patch_bytes 比对
     def verify_patch(self, patch_id: int) -> bool:
         _row = self._conn.execute(
             "SELECT filepath, offset, patch_bytes FROM patches WHERE id = ?",
@@ -139,10 +137,8 @@ class BackupManager:
             logger.error("verify_patch #%d error: %s", patch_id, e)
             return False
 
-    # ============================================================
     # 回滚: DB 读压缩原字节 → 解压 → 写回文件
     # 最后安全网, 极简实现, 不做额外验证链
-    # ============================================================
     def rollback(self, patch_id: int) -> bool:
         _row = self._conn.execute(
             "SELECT filepath, offset, original_bytes FROM patches WHERE id = ?",
@@ -167,7 +163,7 @@ class BackupManager:
             logger.error("rollback #%d failed: %s", patch_id, e)
             return False
 
-    # === 列表: 按 filepath 过滤, 时间倒序 ===
+# 列表: 按 filepath 过滤, 时间倒序
     def list_patches(self, filepath: Optional[str] = None) -> List[Dict]:
         if filepath:
             _rows = self._conn.execute(
@@ -178,7 +174,7 @@ class BackupManager:
                 "SELECT * FROM patches ORDER BY created_at DESC")
         return [dict(r) for r in _rows]
 
-    # === 清理: 仅删除已验证且超过保留期的旧记录 ===
+# 清理: 仅删除已验证且超过保留期的旧记录
     def auto_expire(self, days: int = 30) -> int:
         _sql = (
             "DELETE FROM patches WHERE verified = 1 "

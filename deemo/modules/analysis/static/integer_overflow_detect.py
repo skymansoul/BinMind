@@ -1,7 +1,7 @@
 # 整数溢出检测器 (Integer Overflow Detection)
 #
 # 检测可能导致堆/栈溢出的整数溢出模式:
-#   1. 乘法溢出: a * b 的结果超出类型范围.
+#   1. 乘法/移位溢出: a * b 或 a << k 的结果超出类型范围.
 #   2. 加法溢出: 分配大小计算中的加法溢出.
 #   3. 符号混淆: 有符号与无符号比较中的截断/扩展.
 #
@@ -12,15 +12,20 @@
 #   1. 安全相关筛选: 检测所有算术指令, 但仅当溢出结果
 #      流向 malloc/realloc/memcpy 等危险函数时才告警.
 #      单纯的计算溢出(如循环计数器)不报告.
-#   2. 区间推导: 从操作数类型推导可能的值域.
-#      32位操作数 → [0, 2^32-1]; 16位 → [0, 65535].
-#      若乘法结果超出类型范围 → 标记.
+#   2. 调用实参解析: objdump 的 call 指令只有函数名操作数,
+#      实参需从调用点前序 mov/lea 反查 (Win64: rcx/rdx/r8/r9;
+#      SysV: rdi/rsi/rdx/rcx/r8/r9). 溢出操作结果寄存器与
+#      实参寄存器关联时判定流向危险函数.
 #   3. 常见模式: malloc(a * b) 若无溢出检查 → 报告.
 #      malloc(a + b) 若 a 和 b 均可控 → 报告.
 #
-# 创建: 2026-08-06
+# 创建: 2026-05-19
+# 修改: 2026-05-19 — 实参寄存器解析, 适配 objdump 指令格式
 
 from typing import Dict, List, Optional, Tuple
+
+_WIN64_ARGS = ("rcx", "rdx", "r8", "r9")
+_SYSV_ARGS = ("rdi", "rsi", "rdx", "rcx", "r8", "r9")
 
 
 class IntegerOverflowDetector:
@@ -36,10 +41,17 @@ class IntegerOverflowDetector:
     # 乘法和移位是最常见的溢出来源
     OVERFLOW_OPS = {"imul","mul","shl","sal","add","sub"}
 
-    def __init__(self):
+    def __init__(self, use_win64_abi: bool = False):
         self._findings: List[dict] = []
         self._reg_types: Dict[str, Tuple[int, int]] = {}  # reg → (bit_width, signed)
         self._pending_ops: List[dict] = []  # 最近的算术操作, 待确认是否流向危险函数
+        self._args = _WIN64_ARGS if use_win64_abi else _SYSV_ARGS
+        self._instructions: List[dict] = []
+        self._ins_idx = 0
+
+    def set_instructions(self, instructions: List[dict]):
+        """预置指令序列, 供危险调用实参反查."""
+        self._instructions = instructions
 
     def analyze(self, ins: dict):
         """逐指令分析."""
@@ -80,11 +92,14 @@ class IntegerOverflowDetector:
 
         # 危险调用检测
         if mnem == "call" and ops:
-            func = ops[0].strip().lower().split("@")[0].split(".")[-1]
+            func = self._extract_func(ops[0])
             if func in self.DANGEROUS_CONSUMERS:
-                # 检查前几个操作数是否来自待定的溢出操作
-                for op_info in self._pending_ops[-5:]:  # 最近5个溢出操作
-                    if op_info["result_reg"] == self._normalize(ops[1]) if len(ops) > 1 else False:
+                # 反查调用点实参寄存器
+                arg_regs = self._resolve_call_args(self._ins_idx, addr)
+                for op_info in self._pending_ops[-8:]:
+                    result = op_info["result_reg"]
+                    # 溢出结果寄存器与任一实参寄存器同源
+                    if result in arg_regs:
                         self._findings.append({
                             "type": "integer_overflow_to_dangerous",
                             "overflow_type": op_info["overflow_type"],
@@ -94,10 +109,78 @@ class IntegerOverflowDetector:
                             "severity": "critical" if func in ("malloc","calloc","realloc")
                                         else "high",
                         })
+                        break
+                    # 溢出结果经 mov 链传播到实参 (rax→rcx→malloc)
+                    if self._reaches_arg(result, arg_regs, self._ins_idx):
+                        self._findings.append({
+                            "type": "integer_overflow_to_dangerous",
+                            "overflow_type": op_info["overflow_type"],
+                            "overflow_addr": op_info["address"],
+                            "consumer": func,
+                            "consumer_addr": addr,
+                            "severity": "critical" if func in ("malloc","calloc","realloc")
+                                        else "high",
+                        })
+                        break
+
+        self._ins_idx += 1
 
         # 定期清理 (保持待定列表在合理大小)
         if len(self._pending_ops) > 20:
             self._pending_ops = self._pending_ops[-10:]
+
+    def _extract_func(self, target: str) -> str:
+        """从 call 操作数提取函数名 (含 <__mingw_malloc> 归一化)."""
+        import re
+        t = target.strip().lower()
+        for p in ("call ", "callq "):
+            if t.startswith(p):
+                t = t[len(p):]
+        m = re.search(r"<([^>]+)>", t)
+        if m:
+            t = m.group(1)
+        name = t.split("@")[0].split("(")[0].split(".")[-1]
+        return _MINGW_NORMALIZE.get(name, name)
+
+    def _resolve_call_args(self, idx: int, call_addr: int) -> set:
+        """从调用点前序指令解析实参寄存器 (值来源寄存器集合)."""
+        args = set()
+        if not self._instructions or idx <= 0:
+            return args
+        # 定位 call 在指令列表中的下标
+        call_i = idx
+        for j in range(call_i - 1, max(0, call_i - 25) - 1, -1):
+            p = self._instructions[j]
+            p_ops = p.get("operands", [])
+            if len(p_ops) < 2:
+                continue
+            dst = self._normalize(p_ops[0])
+            if dst in self._args:
+                src = p_ops[1].strip().lower().replace("$","")
+                args.add(self._normalize(src))
+        return args
+
+    def _reaches_arg(self, result_reg: str, arg_regs: set,
+                     idx: int) -> bool:
+        """检查 result_reg 是否经 mov 链传播到任一实参寄存器."""
+        if result_reg in arg_regs:
+            return True
+        # 前向扫描: result → temp → arg
+        if not self._instructions:
+            return False
+        current = result_reg
+        for j in range(idx + 1, min(idx + 15, len(self._instructions))):
+            p = self._instructions[j]
+            p_ops = p.get("operands", [])
+            if len(p_ops) < 2:
+                continue
+            dst = self._normalize(p_ops[0])
+            src = self._normalize(p_ops[1]) if len(p_ops) > 1 else ""
+            if src == current:
+                if dst in arg_regs:
+                    return True
+                current = dst
+        return False
 
     def _can_overflow(self, src1: str, src2: str) -> bool:
         """检查乘法操作数是否可能溢出.
@@ -138,6 +221,8 @@ class IntegerOverflowDetector:
 
     def reset(self):
         self._findings.clear(); self._pending_ops.clear()
+        self._instructions = []
+        self._ins_idx = 0
 
     @staticmethod
     def _normalize(op: str) -> str:
@@ -157,6 +242,14 @@ class IntegerOverflowDetector:
         for mapping in (w32_to_w64, w16_to_w64, w8_to_w64):
             if op in mapping: return mapping[op]
         return op
+
+
+# MinGW 函数名归一化 (与 disasm_util 保持一致)
+_MINGW_NORMALIZE = {
+    "__mingw_malloc": "malloc", "__mingw_calloc": "calloc",
+    "__mingw_realloc": "realloc", "__mingw_memcpy": "memcpy",
+    "__mingw_memmove": "memmove", "__mingw_memset": "memset",
+}
 
 
 __all__ = ["IntegerOverflowDetector"]

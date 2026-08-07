@@ -3,10 +3,10 @@
 # 职责仅限数据流转发，不含分析逻辑
 #
 # v2 扩展: 集成四个专利级分析模块
-#   - cfg_entropy_fingerprint: 多尺度 CFG 结构熵指纹
+# cfg_entropy_fingerprint: 多尺度 CFG 结构熵指纹
 #   - exploit_chain_inference: Markov 链 exploit 路径推断
-#   - posture_regression: 跨版本安全态势退化检测
-#   - entropy_gradient_profiler: 字节级熵梯度多层混淆检测
+# posture_regression: 跨版本安全态势退化检测
+# entropy_gradient_profiler: 字节级熵梯度多层混淆检测
 
 from typing import Dict, Any, Optional, List
 

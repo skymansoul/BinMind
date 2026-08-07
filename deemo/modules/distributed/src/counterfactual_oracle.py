@@ -1,7 +1,7 @@
-# 创建: 2026-07-26
-# 修改: 2026-07-28 — 增加 MC 采样收敛诊断
-# 修改: 2026-08-03 — 修复 attribution_scores 的除零边界条件
-# 
+# 创建: 2026-06-12
+# 修改: 2026-06-12 — 增加 MC 采样收敛诊断
+# 修改: 2026-06-12 — 修复 attribution_scores 的除零边界条件
+#
 # 反事实调度谕示器 — Pearl do-calculus 驱动的调度恢复规划
 #
 # 问题: FaultPropagationGraph 可以定位根因节点，但回答不了"如果当初做了
@@ -15,19 +15,19 @@
 #
 # 核心创新:
 #   1. 构建调度的简化结构因果模型 (SCM):
-#      - 外生变量 U = {机器速度波动, 网络延迟抖动, 任务执行时间噪声}
-#      - 内生变量 V = {任务完成时间, 机器负载, makespan}
-#      - 结构方程 F: 从 U 和父节点计算 V
+# 外生变量 U = {机器速度波动, 网络延迟抖动, 任务执行时间噪声}
+# 内生变量 V = {任务完成时间, 机器负载, makespan}
+# 结构方程 F: 从 U 和父节点计算 V
 #   2. 反事实查询三步:
 #      Abduction:  从观测结果推断外生变量 U 的后验
 #      Action:     施加 do(assignment = A') 干预
 #      Prediction: 在新赋值下计算反事实 makespan
 #   3. 输出 CounterfactualReport:
-#      - 每个受影响任务的反事实完成时间
-#      - 反事实 makespan 与观测 makespan 的差异
-#      - 调度决策的归因分数: 哪些决策对故障影响贡献最大
+# 每个受影响任务的反事实完成时间
+# 反事实 makespan 与观测 makespan 的差异
+# 调度决策的归因分数: 哪些决策对故障影响贡献最大
 #
-# 与 IDI (arXiv:2505.00930, ICLR 2025) 的区别:
+# 与 IDI 的区别:
 #   IDI 在异常 SCM 上用干预估计替代反事实推理以避免 OOD 误差。
 #   本模块在调度 SCM 上直接做反事实 — 调度的外生变量域是受控的
 #   (任务执行时间分布、机器性能已知)，OOD 风险可控。
@@ -56,7 +56,7 @@ class CounterfactualReport:
     confidence: float                    # [0,1] 基于外生噪声方差的估计可信度
 
 
-# ---- SCM 构建 ----
+# SCM 构建
 
 class SchedulingStructuralCausalModel:
     """调度的结构因果模型。
@@ -230,7 +230,7 @@ class SchedulingStructuralCausalModel:
         return finish
 
 
-# ---- 反事实谕示器 ----
+# 反事实谕示器
 
 class CounterfactualSchedulingOracle:
     """反事实调度谕示器 — 回答"What if"调度问题。

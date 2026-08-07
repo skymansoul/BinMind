@@ -13,10 +13,9 @@
 #   4. 大块NOP sled等价: 长序列单字节指令 (0x90/0xCC)
 # 技术效果: 在已知JIT spray PoC上检出率96%,
 #   可检测V8/LuaJIT/Java HotSpot JIT spray
-# 参考:
-#   JIT Spray (Blazakis, WOOT 2010) — 原始JIT spray技术
-#   Constant Blinding (V8/JSC 2017-2025) — 缓解与绕过
-from __future__ import annotations
+#
+#   JIT Spray — 原始JIT spray技术
+#   Constant Blinding — 缓解与绕过
 import logging
 import struct
 from collections import Counter

@@ -18,10 +18,10 @@
 #   同类操作符（如bitflip_1/bitflip_2/bitflip_4）共享衰减因子——
 #   若bitflip组整体表现差，组内各操作符概率同步压低，避免组内轮换维持虚假多样性。
 #
-# 参考文献:
-#   CovRL-Fuzz (Eom et al. ISSTA 2024) — coverage-guided RL for fuzzer mutator;
+# 文献:
+#   CovRL-Fuzz — coverage-guided RL for fuzzer mutator;
 #       本项目取其覆盖反馈驱动变异选择思想但替换为轻量EWMA在线学习。
-#   CTFuzz (Pham et al. IEEE Access 2024) — multi-level mutation action
+#   CTFuzz — multi-level mutation action
 #       sequences learned via deep Q-learning; 本项目借鉴操作符分层思想
 #       但采用非参数统计 (分位排名) 替代神经网络，降低计算开销。
 import math
@@ -107,7 +107,7 @@ class AdaptiveMutationSelector:
                 return grp
         return ""
 
-    # ---- 选择 ----
+    # 选择
     def select_operator(self) -> str:
         """返回选中的操作符名。冷启动时均匀随机。"""
         self._round += 1
@@ -146,7 +146,7 @@ class AdaptiveMutationSelector:
                 return name
         return names[-1]
 
-    # ---- 反馈 ----
+    # 反馈
     def record_outcome(self, operator_name: str, new_edges: int) -> None:
         """记录操作符执行结果。new_edges: 本次变异产生的新覆盖边数。"""
         op = self._operators.get(operator_name)
@@ -173,7 +173,7 @@ class AdaptiveMutationSelector:
         below = sum(1 for v in recent if v <= new_edges)
         return below / max(1, len(recent))
 
-    # ---- 衰减 ----
+    # 衰减
     def decay_epoch(self, decay_factor: float = 0.95) -> None:
         """全局衰减: 每轮对所有操作符的EWMA乘以decay_factor。
 
@@ -205,7 +205,7 @@ class AdaptiveMutationSelector:
             # 截断在 [0.05, 10.0]，防止数值溢出
             op.ewma_reward = max(0.05, min(10.0, op.ewma_reward))
 
-    # ---- 诊断 ----
+    # 诊断
     def operator_entropy(self) -> float:
         """操作符概率分布的香农熵 [0, log2(N)]。
 

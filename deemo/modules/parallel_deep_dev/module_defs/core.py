@@ -23,11 +23,11 @@ CORE = {
             "差异点：现有 HookManager 的顺序执行无法利用多核，且缺乏钩子间协作机制。"
         ),
         "papers": [
-            {"id": "arXiv:2509.01835", "title": "CVE-GENIE: From CVE Entries to Verifiable Exploits — An Automated Multi-Agent Framework",
+            {"id": "", "title": "CVE-GENIE: From CVE Entries to Verifiable Exploits — An Automated Multi-Agent Framework",
              "venue": "arXiv 2025", "key_idea": "EAGER多智能体框架(Exploit/Assessment/Generalization/End-to-end/Rebuilding)"},
-            {"id": "arXiv:2605.05000", "title": "Slyp: Agentic Vulnerability Reasoning on COTS Binaries",
+            {"id": "", "title": "Slyp: Agentic Vulnerability Reasoning on COTS Binaries",
              "venue": "arXiv 2026", "key_idea": "ReAct代理管道 + MCP工具服务器 → 39个0day, 23个CVE, $203K赏金"},
-            {"id": "arXiv:2603.19138", "title": "Implicit Patterns in LLM-Based Binary Analysis",
+            {"id": "", "title": "Implicit Patterns in LLM-Based Binary Analysis",
              "venue": "arXiv 2026", "key_idea": "521个二进制/99K推理步骤 → 四种涌现模式：早剪枝(83.5%)/路径锁定(97.6%)"},
         ],
     },

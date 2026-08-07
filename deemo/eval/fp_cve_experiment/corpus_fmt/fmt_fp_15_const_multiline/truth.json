@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_15_const_multiline",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "多行常量格式串拼接"
+}

@@ -1,5 +1,5 @@
-# 创建: 2025-08-17 13:18
-# 修改: 2025-08-17 — PSB 并行分段 + TNT/TIP/FUP 包解析 + 边覆盖位图
+# 创建: 2026-06-16 13:18
+# 修改: 2026-06-16 — PSB 并行分段 + TNT/TIP/FUP 包解析 + 边覆盖位图
 """
 Intel PT 覆盖位图重建 — 硬件 trace 包 → 边覆盖 bitmap, 零插桩。
 
@@ -23,11 +23,11 @@ PT 覆盖重建流程:
   - 不可检测: 无内存修改, 传统反插桩检查无法感知 PT
   - 完整覆盖: TNT 包 1 bit/分支, TIP 包记录所有间接跳转目标
 
-ref: LibIHT (SUR 2025) — LBR+BTS hardware tracing with CFG reconstruction,
+ref: LibIHT — LBR+BTS hardware tracing with CFG reconstruction,
      本项目将 LBR 替换为 Intel PT (更紧凑的分支编码)
 ref: HardTaint — selective PT tracing + parallel PSB decoding,
      本项目的并行解码策略直接借鉴其 PSB 分段方法
-ref: Hybrid PT+DBI (J. Communications, Dec 2025) — ~2× overhead,
+ref: Hybrid PT+DBI — ~2× overhead,
      本项目取其 PT 解码+覆盖位图转换管线但去除 DBI 依赖
 """
 
@@ -67,7 +67,7 @@ class PTDecodeResult:
     decode_time_ms: float = 0.0
 
 
-# --- PT 包解析 ---
+# PT 包解析
 # TNT: 1 byte header + N bits (packed into subsequent bytes)
 # TIP: 2-8 byte header + compressed address
 # PSB: 16 byte magic pattern
@@ -138,7 +138,7 @@ def parse_pt_packets(trace_data: bytes,
     return packets
 
 
-# --- 控制流重建 ---
+# 控制流重建
 
 def reconstruct_control_flow(packets: list[PTPacket],
                               binary_base: int = 0) -> list[tuple[int, int]]:
@@ -169,7 +169,7 @@ def reconstruct_control_flow(packets: list[PTPacket],
     return bbs
 
 
-# --- 边覆盖位图生成 ---
+# 边覆盖位图生成
 
 def bb_sequence_to_edge_bitmap(bbs: list[tuple[int, int]],
                                 bitmap_size: int = 65536) -> bytearray:
@@ -198,7 +198,7 @@ def _hash_edge(prev: int, curr: int) -> int:
     return ((prev >> 4) ^ (curr << 8)) & 0xFFFFFFFF
 
 
-# --- 并行解码 + 合并 ---
+# 并行解码 + 合并
 # PT trace 按 PSB 分段→并行解码→合并覆盖位图→fuzzer 反馈。
 
 class PTCoverageReconstructor:

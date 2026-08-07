@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# ── VMIdentifier ──
+# VMIdentifier
 
 
 class VMIdentifier:
@@ -260,7 +260,7 @@ class VMIdentifier:
         }
 
 
-# ── VMUnvirtualizer ──
+# VMUnvirtualizer
 
 
 class VMUnvirtualizer:

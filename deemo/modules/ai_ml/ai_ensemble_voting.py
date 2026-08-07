@@ -218,7 +218,7 @@ class AIEnsembleVoter:
         max_entropy = math.log(2.0)  # ≈ 0.693147
         return min(1.0, entropy / max_entropy)
 
-    # ========== 跨模态对比一致性矩阵 & 重校准惩罚因子 ==========
+# 跨模态对比一致性矩阵 & 重校准惩罚因子
     def _record_pairwise_agreement(self, verdicts):
         """每次集成分析后更新pairwise一致性矩阵 — 低开销，只统计二元标签"""
         prov_names = [v.provider for v in verdicts]

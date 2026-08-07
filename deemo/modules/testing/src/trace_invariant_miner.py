@@ -6,7 +6,7 @@
 #   statistical_oracle.py 比较两个实现的度量分布, 不捕获单实现的内部不变量。
 #   崩溃驱动的fuzzing完全忽视了"行为异常但未崩溃"的输入。
 #
-#   FuzzSight (Charoenwet et al. 2025) 证明: 从非崩溃fuzzing输入中推断的
+#   FuzzSight 证明: 从非崩溃fuzzing输入中推断的
 #   "likely invariants" 可检测到 75% 的回归bug和 80% 的漏洞——无需崩溃。
 #   但FuzzSight工作在源码级 (Java/Python), 本模块工作在二进制执行trace级。
 #
@@ -20,17 +20,17 @@
 #   4. 对每个新输入, 计算不变量违反分数 → 反馈给fuzzer种子能量
 #
 # 为什么从二进制trace推断:
-#   - 不需要源码、不需要调试符号
-#   - 利用现有 subreg_taint.py 提供寄存器值的精确语义
-#   - 观测点 = 指令地址, 比源码行号更细粒度
+# 不需要源码、不需要调试符号
+# 利用现有 subreg_taint.py 提供寄存器值的精确语义
+# 观测点 = 指令地址, 比源码行号更细粒度
 #
-# 参考文献:
-#   FuzzSight (Charoenwet et al. 2025, arXiv:2510.15512)
+# 文献:
+#   FuzzSight
 #     — likely invariants + fuzzing 做代码审查; 本项目取其不变量推断思想
 #       但适配到二进制trace级别
-#   Daikon (Ernst et al. 2001, IEEE TSE) — 动态不变量检测的奠基性工作;
+#   Daikon — 动态不变量检测的奠基性工作;
 #     本项目取其观测点+不变量模板概念但简化模板集以降低计算开销
-#   QuickInv (Nilsson & Norozi 2025) — theory exploration做不变量发现;
+#   QuickInv — theory exploration做不变量发现;
 #     本项目取其"从执行trace发现"的思想但以统计频率替代形式验证
 
 from __future__ import annotations

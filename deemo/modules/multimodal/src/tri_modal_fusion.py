@@ -24,10 +24,10 @@
                                 │
                          vulnerability_score + provenance
 
-ref: Baltrusaitis et al., "Multimodal Machine Learning: A Survey and Taxonomy" (2019)
+ref: Baltrusaitis et al., "Multimodal Machine Learning: A Survey and Taxonomy"
      — 五类融合范式分类，本实现对应协同表征学习+门控融合的混合范式。
 ref: arXiv:2203.xxxxx (Performer) — 线性注意力作为跨模态信息路由的底层算子。
-ref: US Patent 12,242,617 (Zien Inc., 2025) — IoT固件的污点分析方案。
+ref: US Patent 12,242,617 — IoT固件的污点分析方案。
      本实现在此基础上引入了更多分析模态和自适应门控机制。
 """
 

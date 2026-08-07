@@ -9,7 +9,7 @@
 from .config_loader import ConfigLoader, load_config, get_config
 from .utils import setup_logging, retry_with_backoff, TTLCache
 
-# --- 三模态融合 (2025-07-21) ---
+# 三模态融合
 # 可选依赖——ImportError 时静默跳过，维持向后兼容。
 try:
     from .tri_modal_fusion import (

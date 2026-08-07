@@ -1,9 +1,9 @@
 # kernel_vuln_analyzer.py — 内核漏洞模式分析
 # 检测 UAF、竞态条件、权限提升等内核级漏洞模式。
-# FUZE (Wu, USENIX 2018) — 内核 UAF 利用编排
-# SLAKE (CCS 2025) — Slab 内存操纵
-# RetSpill (CCS 2023) — 用户态数据注入内核
-# K-LEAK (NDSS 2025) — 多步信息泄露利用
+# FUZE — 内核 UAF 利用编排
+# SLAKE — Slab 内存操纵
+# RetSpill — 用户态数据注入内核
+# K-LEAK — 多步信息泄露利用
 # DDRace — 并发 UAF 定向模糊测试
 import re as _re
 from dataclasses import dataclass as _dc

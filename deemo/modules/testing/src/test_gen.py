@@ -18,7 +18,6 @@ class Grammar:
         self.rules.setdefault(nonterminal, []).extend(productions)
 
 
-# ================================================
 class TestGenerator:
     """多维测试用例生成器。
 
@@ -29,7 +28,7 @@ class TestGenerator:
         self._rng = random.Random(seed)
         self._stat = {"generated": 0, "mutated": 0}
 
-    # ---- 随机字节生成 ----
+    # 随机字节生成
     def generate_random(self, count: int = 100,
                         size_range: Tuple[int, int] = (1, 4096)) -> List[bytes]:
         """生成随机字节流测试用例。"""
@@ -40,7 +39,7 @@ class TestGenerator:
         self._stat["generated"] += count
         return _cases
 
-    # ---- 边界值生成 ----
+    # 边界值生成
     def generate_boundary(self, count: int = 50) -> List[bytes]:
         """生成边界值测试用例: 0, 1, 0x7F, 0x80, 0xFE, 0xFF,
         零长度、单字节、大小端最大值、全0块、全0xFF块。
@@ -75,7 +74,7 @@ class TestGenerator:
         self._stat["generated"] += len(_cases)
         return _cases
 
-    # ---- 语法驱动生成 ----
+    # 语法驱动生成
     def generate_grammar(self, grammar: Grammar,
                          count: int = 50,
                          max_depth: int = 20) -> List[bytes]:
@@ -125,7 +124,7 @@ class TestGenerator:
                     _terms.append(_tok)
         return _terms
 
-    # ---- 基于变异的生成 ----
+    # 基于变异的生成
     def generate_mutation(self, seed_data: bytes,
                           count: int = 50) -> List[bytes]:
         """基于种子的变异生成。操作: 位翻转、字节翻转、字节插入/删除、
@@ -203,7 +202,7 @@ class TestGenerator:
         _arr[_pos] = (_arr[_pos] + _delta) & 0xFF
         return bytes(_arr)
 
-    # ---- 二进制模板生成 ----
+    # 二进制模板生成
     def generate_binary_template(self,
                                   template_desc: str) -> Optional[bytes]:
         """根据描述生成最小有效二进制文件。

@@ -1,7 +1,7 @@
 """
 差分测试数据模型原语。
 
-从 differential_tester.py 中提取——这些dataclass和枚举构成自包含的数据契约。
+dataclass与枚举构成自包含的数据契约。
 与引擎（动词）分离后，其他模块可直接导入模型而无需引入subprocess/threading
 及1500行的引擎类。字段变更即意味着所有消费者的传输格式变更。
 """

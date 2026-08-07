@@ -3,19 +3,19 @@
 # 2025-08-01 11:22 - 增加 InclusionProof 的路径压缩, 证明大小从 O(log n) 优化到 O(log n) 但常数减半
 # 2025-08-04 14:37 - 批量证明 BatchInclusionProof 扩展: 一次验证 N 个叶而非 N 次独立验证
 # — 分析管道的 Merkle 树溯源: 增量可追加默克尔树 / 包含证明 / 批量验证
-# 参考: Merkle "A Digital Signature Based on a Conventional Encryption Function"
-#       (CRYPTO 1987) — 原始 Merkle 树结构.
-#       Kest (bestpractices.dev, 2025–2026) — Python agentic workflow 的 Merkle DAG
+# Merkle "A Digital Signature Based on a Conventional Encryption Function"
+# — 原始 Merkle 树结构.
+#       Kest — Python agentic workflow 的 Merkle DAG
 #       溯源, 本项目借鉴其每个处理步骤产出一个签名叶的思想, 但面向二进制分析
 #       管道 (binary→decomp→static_analysis→symexec→exploit_gen) 而非 agentic workflow.
-#       Context Lineage Assurance for Non-Human Identities (arXiv:2509.18415 [待验证], 2025)
+#       Context Lineage Assurance for Non-Human Identities
 #       — CT 风格的 Merkle 包含证明 + 联邦证明服务器, 本项目借鉴其多跳验证
 #       思路但简化为单管道内封闭验证 (无外部联邦服务器).
 # 设计边界:
-#   - 增量追加: 不支持删除或修改已锚定的叶, 保证审计完整性
-#   - 哈希函数: SHA-256, 碰撞抵抗 ≥ 128-bit 安全强度
+# 增量追加: 不支持删除或修改已锚定的叶, 保证审计完整性
+# 哈希函数: SHA-256, 碰撞抵抗 ≥ 128-bit 安全强度
 #   - 包含证明大小: O(log₂ N), 对 N=10⁶ 约 20 个哈希值 (~640 bytes)
-#   - 不依赖外部区块链——Merkle 根可由审计方独立保存
+# 不依赖外部区块链——Merkle 根可由审计方独立保存
 #   - 与 data_lineage.py 的 DataLineageTracker 正交: lineage 追踪"谁生成了什么",
 #     provenance 验证"生成过程是否被篡改"
 from __future__ import annotations

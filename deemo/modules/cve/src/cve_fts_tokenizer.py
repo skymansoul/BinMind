@@ -27,7 +27,7 @@ except ImportError:
     _HAS_JIEBA = False
     jieba = None  # type: ignore
 
-# ---- CJK Unicode 范围（手工整理，与 cve_search.py 一致） ----
+# CJK Unicode 范围（手工整理，与 cve_search.py 一致）
 # Python re 模块不支持 Unicode 属性转义 (\p{Han})，
 # 故显式列出常见中日韩代码块。
 
@@ -143,7 +143,7 @@ def tokenize_cjk(text: str) -> str:
     return ' '.join(result_parts)
 
 
-# ---- 索引辅助函数 ----
+# 索引辅助函数
 
 def index_description_for_fts(desc: str) -> str:
     """准备 CVE 描述文本以插入 FTS5。
@@ -157,7 +157,7 @@ def prepare_query_for_fts(query: str) -> str:
     return tokenize_cjk(query)
 
 
-# ---- 直接 sqlite 分词器回调 ----
+# 直接 sqlite 分词器回调
 # FTS5 允许在 C 层注册自定义分词器，Python 端通过预分词绕开。
 # 以下函数供 cve_kb 在 INSERT 和 SEARCH 时调用。
 
@@ -217,7 +217,7 @@ def search_fts(kb_conn, query: str, limit: int = 50) -> List[str]:
             return []
 
 
-# ---- 便捷函数：判断文本是否含 CJK ----
+# 便捷函数：判断文本是否含 CJK
 def has_cjk(text: str) -> bool:
     """快速检查文本是否含有 CJK 字符。"""
     if not text:
@@ -228,6 +228,5 @@ def has_cjk(text: str) -> bool:
     return False
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未启用。"""
     pass

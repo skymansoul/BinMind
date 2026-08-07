@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | 堆状态机——UAF/Double-Free的静态检测
+# 创建: 2026-06-13 | 堆状态机——UAF/Double-Free的静态检测
 #
 """堆生命周期状态机 — 对malloc/free/realloc的调用图+数据流建模。
 
@@ -17,7 +17,7 @@
 这保证了零漏报(对所有可证明安全的路径已过滤),
 代价是仍有一些假阳性(不可达的路径被保守地认为可达)。
 
-HexType (NDSS 2020) 使用类似的状态机但依赖动态类型信息。
+HexType 使用类似的状态机但依赖动态类型信息。
 本实现纯静态——不需要运行时信息, 直接工作在反汇编输出上。
 
 与现有模块集成:
@@ -105,9 +105,7 @@ class HeapStateModel:
         # 函数间传递: 调用点→被调用函数的参数→ptr_id
         self._interprocedural: Dict[Tuple[str, int], str] = {}
 
-    # -----------------------------------------------------------------
     # 摄入API
-    # -----------------------------------------------------------------
 
     def ingest_alloc(
         self, addr: int, func_name: str, ptr_expr: str,
@@ -169,9 +167,7 @@ class HeapStateModel:
 
         return _pid
 
-    # -----------------------------------------------------------------
     # 检测API
-    # -----------------------------------------------------------------
 
     def detect_vulnerabilities(self) -> List[HeapVulnFinding]:
         """对所有已追踪指针执行UAF/Double-Free检测。"""
@@ -215,9 +211,7 @@ class HeapStateModel:
 
         return _findings
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _resolve_ptr(self, func_name: str, ptr_expr: str) -> Optional[str]:
         """解析指针——通过别名表找到对应的ptr_id。"""
@@ -232,7 +226,7 @@ class HeapStateModel:
         self._aliases[f"{callee_func}::arg{arg_index}"] = ptr_id
 
 
-# ---- smoke ----
+# smoke
 def _check():
     _m = HeapStateModel()
 

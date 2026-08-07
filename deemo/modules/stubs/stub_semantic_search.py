@@ -97,7 +97,7 @@ class SemanticSearchEngine:
         results.sort(key=lambda r: -r.score)
         return results[:top_k]
 
-    # ---- 索引构建 ----
+# 索引构建
     def _build_index(self) -> None:
         contracts = self.contractor.scan_all()
         # 收集全部文档用于 IDF
@@ -238,7 +238,7 @@ class SemanticSearchEngine:
                 parts.append(p.name)
         return ' '.join(parts)
 
-    # ---- 相似度计算 ----
+# 相似度计算
     @staticmethod
     def _cosine_similarity(query_terms: list[str],
                            doc_tfidf: dict[str, float]) -> float:
@@ -278,7 +278,7 @@ class SemanticSearchEngine:
             return 0.0
         return len(q_types & param_types) / len(q_types | param_types)
 
-    # ---- 分词 ----
+# 分词
     @staticmethod
     def _tokenize(text: str) -> list[str]:
         text = text.lower()
@@ -314,7 +314,7 @@ class SemanticSearchEngine:
         return sig
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def find_stub(query: str, top_k: int = 5) -> list[SearchResult]:
     """一行式桩语义搜索。"""
     return SemanticSearchEngine().search(query, top_k)

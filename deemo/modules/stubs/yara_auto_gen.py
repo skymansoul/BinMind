@@ -1,6 +1,6 @@
 # compat/ 代理导出 — YARA 规则自动构造
 # 最小加载策略: 直接 from import，上游保持简洁接口
-# 参考: MultiMal (SANER 2025) 多模态融合检测的规则构造方法
+# MultiMal 多模态融合检测的规则构造方法
 from modules.core.compat.yara_auto_gen import *
 
 # YARA 规则质量评分

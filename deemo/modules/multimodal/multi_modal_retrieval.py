@@ -1,7 +1,7 @@
 # 跨模态检索：双向查询 + 重排序 + 检索质量指标评估
 # 支持文本→图像、图像→文本、音频→文本等多方向检索
 # 基础算法：余弦最近邻 + 倒排索引加速 + Rocchio 查询扩展
-# 参考：Frome et al. DeViSE. NIPS 2013. Faghri et al. VSE++. BMVC 2018.
+# Frome et al. DeViSE. NIPS 2013. Faghri et al. VSE++. BMVC 2018.
 
 import math
 from typing import Dict, List, Optional, Tuple, Any
@@ -10,10 +10,8 @@ from collections import defaultdict
 _EPS: float = 1e-9
 
 
-# ============================================================================
 # LSH 倒排索引 — 随机投影将连续向量离散化到哈希桶，实现 O(1) 近似最近邻
-# 参考：Datar et al. LSH scheme based on p-stable distributions. SoCG 2004.
-# ============================================================================
+# Datar et al. LSH scheme based on p-stable distributions. SoCG 2004.
 
 class LSHIndex:
     """基于随机投影的局部敏感哈希（LSH）索引。
@@ -93,9 +91,7 @@ class LSHIndex:
         return _scored[:topk]
 
 
-# ============================================================================
 # 双向检索器 — 维护 A/B 双模态索引，支持两个方向互查
-# ============================================================================
 
 class BidirectionalRetriever:
     """双向跨模态检索器：同时索引 A 模态和 B 模态。
@@ -125,9 +121,7 @@ class BidirectionalRetriever:
         return self._index_a.query(query_b, topk)
 
 
-# ============================================================================
 # 检索质量评估 — Recall@K, mAP, MedianRank, R-Precision
-# ============================================================================
 
 def recall_at_k(scores_matrix: List[List[float]], k: int = 10) -> float:
     """Recall@K：对角线正样本是否进入前 K 个检索结果。
@@ -188,11 +182,9 @@ def median_rank(scores_matrix: List[List[float]]) -> float:
     return float(_ranks[_mid])
 
 
-# ============================================================================
 # Rocchio 查询扩展 — 在嵌入空间实现相关反馈
-# 参考：Rocchio algorithm for relevance feedback. SMART system, 1971.
+# Rocchio algorithm for relevance feedback. SMART system, 1971.
 # 嵌入空间形式：q_new = α·q_0 + β·mean(relevant) - γ·mean(irrelevant)
-# ============================================================================
 
 def rocchio_query_expansion(query_vec: List[float],
                              relevant_embeddings: List[List[float]],
@@ -230,9 +222,7 @@ def rocchio_query_expansion(query_vec: List[float],
     return [x / _norm for x in _expanded]
 
 
-# ============================================================================
 # 元数据重排序 — 在初步检索结果上施加硬约束/软加分
-# ============================================================================
 
 class MetadataReranker:
     """元数据驱动的结果重排：对初检候选集叠加硬过滤与软加权。
@@ -259,11 +249,9 @@ class MetadataReranker:
         return _filtered[:topk]
 
 
-# ============================================================================
 # 跨模态哈希 (CMH) — 将异构模态嵌入映射至公共汉明空间
-# 参考：Jiang & Li. Deep Cross-Modal Hashing. CVPR 2017.
+# Jiang & Li. Deep Cross-Modal Hashing. CVPR 2017.
 # 二值化后汉明距离检索，存储开销降至 O(N·bits) 级别
-# ============================================================================
 
 class CrossModalHasher:
     """迭代量化（ITQ）风格的跨模态哈希器。

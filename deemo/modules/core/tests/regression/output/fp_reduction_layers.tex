@@ -1,0 +1,18 @@
+% Auto-generated FP reduction layer table
+\begin{table}[htbp]
+  \centering
+  \caption{False Positive Reduction by Detection Layer}
+  \label{tab:fp_reduction_layers}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    \textbf{Layer} & \textbf{In} & \textbf{Out} & \textbf{FP Cut} & \textbf{TP Ret.} & \textbf{Cum.\ FP} \\
+    \midrule
+    L0_baseline & 0 & 20 & 0 & 12 & -- \\
+    L1_value_range & 20 & 15 & 5 & 12 & 62.5% \\
+    L2_taint & 15 & 13 & 2 & 12 & 87.5% \\
+    L3_interproc & 13 & 13 & 0 & 12 & 87.5% \\
+    L4_path_abstract & 13 & 12 & 0 & 11 & 87.5% \\
+    L5_constraint & 12 & 12 & 0 & 11 & 87.5% \\
+    \bottomrule
+  \end{tabular}
+\end{table}

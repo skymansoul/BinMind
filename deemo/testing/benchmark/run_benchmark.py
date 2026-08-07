@@ -1,6 +1,6 @@
 # 对比实验主启动脚本 —— 喂样本→跑四工具→收集指标。
 # 用法: python -m testing.benchmark.run_benchmark --samples <dir> [--timeout N]
-# 创建: 2026-08-14
+# 创建: 2026-07-23
 
 import json, os, sys, time
 from testing.benchmark.collect_metrics import collect_all_metrics, generate_latex_table

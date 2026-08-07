@@ -1,6 +1,6 @@
 # 对比实验可视化 — matplotlib 柱状图, 检出率/误报率分组
 # 输入: benchmark_results.csv  输出: comparison_chart.png
-# 创建: 2026-08-06
+# 创建: 2026-04-28
 
 import csv, os, sys
 

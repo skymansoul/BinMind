@@ -54,9 +54,7 @@ class BudgetPlan:
     remaining_budget: float
 
 
-# ---------------------------------------------------------------------------
 # 各模态类型的默认成本 —— 反映不同分析方法的相对资源消耗
-# ---------------------------------------------------------------------------
 
 _DEFAULT_PROFILES: Dict[str, ModalityProfile] = {
     "static_analysis": ModalityProfile("static_analysis", cost=1.5, reliability=0.85, info_gain_avg=0.55),

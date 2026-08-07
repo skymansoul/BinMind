@@ -1,6 +1,6 @@
 # 漏洞驱动代码重写引擎——从漏洞描述符生成安全函数变体。
 # 策略链：IR构造→约束求解→模板合成→编译验证。
-# 参考CGC(Cyber Grand Challenge)的CRS/CRS-NG自动补丁生成范式。
+# CGC(Cyber Grand Challenge)的CRS/CRS-NG自动补丁生成范式。
 
 import logging, os, re, time, hashlib, tempfile, subprocess
 from typing import Dict, List, Optional, Any, Tuple, Set

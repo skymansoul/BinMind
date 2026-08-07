@@ -86,7 +86,7 @@ class RewriteResult:
     log: List[str] = field(default_factory=list)
 
 
-# ===== 保护规则代码片段库 =====
+# 保护规则代码片段库
 # 每种保护类型对应一段 C 级检查代码
 
 _PROTECTION_TEMPLATES: Dict[ProtectionType, str] = {
@@ -114,9 +114,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         self._results_log: List[str] = []
         self._framework = InstrumentationFramework.FRIDA
 
-    # ============================================================
     # 主入口 —— 遍历规则，生成+应用+验证，最多 3 次重试
-    # ============================================================
     def rewrite(self, rules: List[ProtectionRule]) -> RewriteResult:
         """逐规则生成热补丁并验证，失败重试最多 3 次。"""
         _result = RewriteResult()
@@ -185,7 +183,7 @@ class SelfHealingRewriter(BaseAnalyzer):
             time.sleep(0.5 * (2 ** (_retry - 1)))
         return False, _log
 
-    # **** FRIDA JavaScript hook ****
+# FRIDA JavaScript hook
     def _frida_hook_template(self, rule: ProtectionRule) -> str:
         _mod = os.path.basename(self._binary_path) or "target"
         _lines = [
@@ -250,7 +248,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         return '\n'.join(_lines)
 
 
-# **** 便捷入口：一步完成自愈保护 ****
+# 便捷入口：一步完成自愈保护
 def apply_self_healing_protection(binary_path: str,
                                    cve_info: Optional[CVEInfo] = None,
                                    framework: InstrumentationFramework = InstrumentationFramework.FRIDA) -> InstrumentationResult:

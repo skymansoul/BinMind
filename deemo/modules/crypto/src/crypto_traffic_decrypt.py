@@ -137,14 +137,14 @@ class TrafficAnalysisResult:
         self.quic_version: str = ""
 
 
-# ── GREASE过滤器 ──
+# GREASE过滤器
 
 def _is_grease(value: int) -> bool:
     """RFC 8701 GREASE: 0x{byte}{byte}形式的值, 其中byte ∈ {0A..FA}。"""
     return value in _GREASE_CIPHER_SUITES
 
 
-# ── TLS记录层解析 ──
+# TLS记录层解析
 
 def _detect_tls_record(data: bytes, offset: int) -> Optional[dict]:
     if offset + 5 > len(data):
@@ -175,7 +175,7 @@ def _detect_dtls_record(data: bytes, offset: int) -> Optional[dict]:
             "epoch": epoch, "sequence": seq}
 
 
-# ── JA4 TLS指纹计算 ──
+# JA4 TLS指纹计算
 # JA4 = md5(QUIC|tls_version|SNI|alpns|cipher_suites|extensions)
 
 def _compute_ja4(tls_version: str, sni: str, cipher_suites: List[str],
@@ -192,7 +192,7 @@ def _compute_ja4(tls_version: str, sni: str, cipher_suites: List[str],
     return hashlib.md5(raw).hexdigest()[:12]
 
 
-# ── ClientHello解析 ──
+# ClientHello解析
 
 def _parse_client_hello(data: bytes, offset: int) -> Optional[dict]:
     try:
@@ -261,7 +261,7 @@ def _extract_tls_extensions(data: bytes, start: int, end_hint: int) -> List[int]
     return exts
 
 
-# ── WireGuard Noise握手检测 ──
+# WireGuard Noise握手检测
 
 def _detect_wireguard(data: bytes) -> Optional[dict]:
     """通过Noise协议帧检测WireGuard握手消息。"""
@@ -286,7 +286,7 @@ def _detect_wireguard(data: bytes) -> Optional[dict]:
     return findings if findings["messages"] or "noise_protocol" in findings else None
 
 
-# ── SSHv2 KEX解析 ──
+# SSHv2 KEX解析
 
 def _parse_ssh_kex(data: bytes) -> dict:
     """从二进制数据中提取SSH KEX算法名称。"""
@@ -300,7 +300,7 @@ def _parse_ssh_kex(data: bytes) -> dict:
     return result
 
 
-# ── QUIC版本解析 ──
+# QUIC版本解析
 
 _QUIC_VERSIONS = {
     0x00000001: "QUIC v1 (RFC 8999)",
@@ -333,7 +333,7 @@ def _detect_quic(data: bytes) -> Optional[dict]:
     return findings if findings["versions"] else None
 
 
-# ── ECH (Encrypted ClientHello) 检测 ──
+# ECH (Encrypted ClientHello) 检测
 
 def _detect_ech(data: bytes) -> bool:
     """
@@ -354,7 +354,7 @@ _crypto_patterns = {
 }
 
 
-# ── 主流量分析器 ──
+# 主流量分析器
 
 class CryptoTrafficAnalyzer:
     def __init__(self):
@@ -423,7 +423,7 @@ class CryptoTrafficAnalyzer:
             result.findings.append(quic_info)
 
 
-# ── 密钥材料提取 ──
+# 密钥材料提取
 
 class KeyExtractor:
     def __init__(self):
@@ -459,7 +459,7 @@ class KeyExtractor:
         return keys
 
 
-# ── 三级库回退解密器 ──
+# 三级库回退解密器
 
 class TrafficDecryptor:
     def decrypt(self, data: bytes, key: bytes | KeyMaterial | None) -> DecryptionResult:
@@ -509,7 +509,7 @@ class TrafficDecryptor:
         return result
 
 
-# ── 便捷导出 ──
+# 便捷导出
 
 def extract_keys(binary: bytes | str) -> list[KeyMaterial]:
     return KeyExtractor().extract(binary)
@@ -525,7 +525,7 @@ def analyze_traffic(data: bytes) -> list[TrafficAnalysisResult]:
     return CryptoTrafficAnalyzer().analyze(data)
 
 
-# ── TLS 1.3 0-RTT Early Data检测 (2026-07-28) ──
+# TLS 1.3 0-RTT Early Data检测
 # 0-RTT允许客户端首次飞行发送应用数据, 代价是重放攻击面。
 # 检测指标: (1) ClientHello含early_data(TLS扩展42),
 # (2) pre_shared_key扩展含early_data_indication,

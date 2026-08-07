@@ -12,7 +12,6 @@ from modules.output.src.report_cache import ReportCache
 logger = logging.getLogger(__name__)
 
 
-def _debug_print(msg): pass  # noqa
 
 
 def round_up(value: float) -> float:
@@ -23,11 +22,11 @@ def round_up(value: float) -> float:
     return ceil(value * 10) / 10.0
 
 
-# --- legacy score rounding (pre-CVSS 3.1) ---
+# legacy score rounding (pre-CVSS 3.1)
 # def _round_score(val, precision=1):
 #     factor = 10 ** precision
 #     return round(val * factor) / factor
-# --- end legacy ---
+# end legacy
 
 
 class ReportGeneratorCore:

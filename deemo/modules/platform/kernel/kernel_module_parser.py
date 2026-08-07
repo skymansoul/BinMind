@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 
-# ---- ELF 常量 ----
+# ELF 常量
 ELF_MAGIC   = b'\x7fELF'
 ELFCLASS32  = 1
 ELFCLASS64  = 2
@@ -87,7 +87,7 @@ class KernelModule:
         }
 
 
-# ===== 底层二进制解析工具 =====
+# 底层二进制解析工具
 
 def _read_elf_ident(data: bytes) -> Tuple[int, int, int]:
     """解码EI_CLASS与字节序。返回(class, endian_char, ptr_size)。"""
@@ -160,7 +160,7 @@ def _read_section_data(data: bytes, shdr: SectionInfo) -> bytes:
     return data[_start:_end]
 
 
-# ===== 符号表解析 =====
+# 符号表解析
 
 def _parse_symbols(data: bytes, sec_data: bytes, str_data: bytes,
                    ptr_size: int, endian: str) -> List[SymbolInfo]:
@@ -211,7 +211,7 @@ def _classify_symbols(symbols: List[SymbolInfo], license_str: str) -> Dict[str, 
     return _r
 
 
-# ===== modinfo 解析 =====
+# modinfo 解析
 
 def _parse_modinfo(modinfo_data: bytes) -> Dict[str, str]:
     """解析.modinfo节区：null分隔的key=value对。"""
@@ -236,7 +236,7 @@ def _parse_vermagic(vermagic_str: str) -> str:
     return vermagic_str
 
 
-# ─── BPF程序探测 ───
+# BPF程序探测
 # Linux 5.x+内核模块可能内嵌BPF程序，以节区名前缀识别
 
 _BPF_SECTION_PREFIXES = (
@@ -263,7 +263,7 @@ def _detect_bpf_sections(sections: List[SectionInfo]) -> Tuple[bool, int]:
     return count > 0, count
 
 
-# ─── GPL兼容性校验 ───
+# GPL兼容性校验
 # 非GPL模块链接EXPORT_SYMBOL_GPL符号即构成许可证违规
 
 def _check_gpl_compatibility(symbols: List[SymbolInfo],
@@ -289,7 +289,7 @@ def _check_gpl_compatibility(symbols: List[SymbolInfo],
     }
 
 
-# ─── 符号CRC统计 ───
+# 符号CRC统计
 # CONFIG_MODVERSIONS编译的模块在__versions段携带CRC校验和
 
 def _count_symbol_crcs(modinfo: Dict[str, str]) -> int:
@@ -304,7 +304,7 @@ def _count_symbol_crcs(modinfo: Dict[str, str]) -> int:
     return len([e for e in _versions.split('\x00') if e.strip()])
 
 
-# ===== 主解析入口 =====
+# 主解析入口
 
 def parse_ko(filepath: str) -> Optional[KernelModule]:
     """解析.ko内核模块文件。"""
@@ -408,9 +408,9 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
     )
 
 
-# ===== 快速验证 =====
+# 快速验证
 
-# ─── 安全缓解措施探测 ───
+# 安全缓解措施探测
 # 检查模块是否应用了retpoline/IBT/CET等控制流完整性防护。
 
 def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
@@ -482,7 +482,7 @@ def is_valid_ko(filepath: str) -> bool:
     return True
 
 
-# ─── 批量目录扫描 ───
+# 批量目录扫描
 
 def scan_directory(dirpath: str) -> List[KernelModule]:
     """扫描目录下所有.ko文件，返回解析后的模块列表。

@@ -1,0 +1,179 @@
+{
+  "samples": {
+    "int_cve_01": {
+      "cve": "CVE-2021-31566",
+      "title": "Mul overflow → heap undersize",
+      "category": "mul_heap_alloc",
+      "is_vuln": true,
+      "op": "mul",
+      "width": 32,
+      "left_range": [
+        0,
+        65536
+      ],
+      "right_range": [
+        0,
+        65536
+      ],
+      "signed": false
+    },
+    "int_cve_02": {
+      "cve": "CVE-2019-13135",
+      "title": "Add overflow → buffer overrun",
+      "category": "add_buffer",
+      "is_vuln": true,
+      "op": "add",
+      "width": 32,
+      "left_range": [
+        2147483632,
+        4294967295
+      ],
+      "right_range": [
+        0,
+        256
+      ],
+      "signed": false
+    },
+    "int_cve_03": {
+      "cve": "CVE-2020-10713",
+      "title": "Truncation → size bypass",
+      "category": "truncation",
+      "is_vuln": true,
+      "op": "trunc",
+      "width": 32,
+      "left_range": [
+        4294967296,
+        4294967552
+      ],
+      "right_range": [
+        0,
+        0
+      ],
+      "signed": false
+    },
+    "int_cve_04": {
+      "cve": "CVE-2018-1000001",
+      "title": "Signed→unsigned conversion",
+      "category": "signed_unsigned",
+      "is_vuln": true,
+      "op": "sub",
+      "width": 32,
+      "left_range": [
+        0,
+        0
+      ],
+      "right_range": [
+        0,
+        1
+      ],
+      "signed": true
+    },
+    "int_cve_05": {
+      "cve": "CVE-2017-1000112",
+      "title": "Left shift overflow",
+      "category": "shift_overflow",
+      "is_vuln": true,
+      "op": "shl",
+      "width": 32,
+      "left_range": [
+        1,
+        268435456
+      ],
+      "right_range": [
+        4,
+        8
+      ],
+      "signed": false
+    },
+    "int_cve_06": {
+      "cve": "CVE-2016-2177",
+      "title": "Mul overflow in length calc",
+      "category": "mul_length",
+      "is_vuln": true,
+      "op": "mul",
+      "width": 32,
+      "left_range": [
+        0,
+        268435456
+      ],
+      "right_range": [
+        16,
+        16
+      ],
+      "signed": false
+    },
+    "int_cve_07": {
+      "cve": "CVE-2022-22817",
+      "title": "Narrowing cast overflow",
+      "category": "narrowing",
+      "is_vuln": true,
+      "op": "trunc",
+      "width": 16,
+      "left_range": [
+        65536,
+        131072
+      ],
+      "right_range": [
+        0,
+        0
+      ],
+      "signed": false
+    },
+    "int_cve_08": {
+      "cve": "CVE-2020-35516",
+      "title": "Sub overflow → negative alloc",
+      "category": "sub_underflow",
+      "is_vuln": true,
+      "op": "sub",
+      "width": 32,
+      "left_range": [
+        0,
+        100
+      ],
+      "right_range": [
+        200,
+        300
+      ],
+      "signed": true
+    },
+    "int_cve_09": {
+      "cve": "SAFE-INT-001",
+      "title": "Safe: bounds check before mul",
+      "category": "safe_bounds",
+      "is_vuln": false,
+      "op": "mul",
+      "width": 32,
+      "left_range": [
+        0,
+        100
+      ],
+      "right_range": [
+        0,
+        100
+      ],
+      "signed": false
+    },
+    "int_cve_10": {
+      "cve": "SAFE-INT-002",
+      "title": "Safe: small operands, no overflow",
+      "category": "safe_small",
+      "is_vuln": false,
+      "op": "add",
+      "width": 64,
+      "left_range": [
+        0,
+        1000
+      ],
+      "right_range": [
+        0,
+        1000
+      ],
+      "signed": false
+    }
+  },
+  "summary": {
+    "total": 10,
+    "int_vuln": 8,
+    "int_safe": 2
+  }
+}

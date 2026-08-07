@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 AdaThermoLBF 兼容桥接层 —— 为现有 dedup/cache 接口提供温度自适应替换方案。
 
@@ -10,7 +10,7 @@ AdaThermoLBF 兼容桥接层 —— 为现有 dedup/cache 接口提供温度自�
   - ThermoDedupEngine: DedupEngine 子类, 将静态 Bloom 置换为温度自适应过滤器。
 
 论文关联: 同 ada_thermo_lbf —— 温度加权 + 可删除位 + 对抗上界 (DWLBF 2025,
-arXiv:2508.00882, arXiv:2409.06556, ICML 2025)。
+,, ICML 2025)。
 """
 
 import time
@@ -29,10 +29,7 @@ __all__ = [
     "self_test",
 ]
 
-
-# ---------------------------------------------------------------------------
 # BloomLikeFilter —— dedup.BloomFilter 签名兼容适配
-# ---------------------------------------------------------------------------
 
 class BloomLikeFilter:
     """dedup.BloomFilter 的等接口适配器。
@@ -66,7 +63,7 @@ class BloomLikeFilter:
     def estimated_fpr(self) -> float:
         return self._lbf.estimated_fpr()
 
-    # ---- 温度自适应扩展接口 (诊断与调优用) ----
+# 温度自适应扩展接口 (诊断与调优用)
     def delete(self, data: bytes) -> bool:
         return self._lbf.delete(data)
 
@@ -85,10 +82,7 @@ class BloomLikeFilter:
     def stats(self) -> Dict:
         return self._lbf.stats()
 
-
-# ---------------------------------------------------------------------------
 # CuckooLikeFilter —— dedup.CuckooFilter 等接口适配
-# ---------------------------------------------------------------------------
 
 class CuckooLikeFilter:
     """dedup.CuckooFilter 的兼容封装 (insert/contains/delete/load_factor)。
@@ -121,10 +115,7 @@ class CuckooLikeFilter:
     def load_factor(self) -> float:
         return len(self._lbf) / self._capacity
 
-
-# ---------------------------------------------------------------------------
 # ThermoFilterCache —— 温度自适应值缓存, LRUCache 替换方案
-# ---------------------------------------------------------------------------
 
 class ThermoFilterCache:
     """温度自适应值缓存 —— AdaThermoLBF 负向预判 + 低温条目优先逐出。
@@ -237,10 +228,7 @@ class ThermoFilterCache:
             "filter": self._lbf.stats(),
         }
 
-
-# ---------------------------------------------------------------------------
 # ThermoDedupEngine —— DedupEngine 温度自适应派生
-# ---------------------------------------------------------------------------
 
 class ThermoDedupEngine(DedupEngine):
     """DedupEngine 的温度自适应实现 —— 静态 Bloom 替换为 AdaThermoLBF。
@@ -266,7 +254,6 @@ class ThermoDedupEngine(DedupEngine):
     def escalate(self, budget: Optional[float] = None) -> Dict:
         return self._bloom.resilience_escalate(budget)
 
-
 def thermo_dedup_from_config(db, config=None, **kw):
     """从 config 构造 ThermoDedupEngine (对应 dedup.dedup_from_config)。"""
     if config is None:
@@ -274,14 +261,10 @@ def thermo_dedup_from_config(db, config=None, **kw):
         config = get_config()
     return ThermoDedupEngine(db, config.dedup, **kw)
 
-
 # 别名 —— 与 dedup_from_config 命名对称
 thermo_dedup_engine_from_config = thermo_dedup_from_config
 
-
-# ---------------------------------------------------------------------------
 # self_test —— 模块导入冒烟 + 正确性验证
-# ---------------------------------------------------------------------------
 
 def self_test() -> Dict:
     """冒烟测试: 验证无假阴性 + 删除语义 + 兼容接口 + 对抗上界。

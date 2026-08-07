@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-# ===== CI 退出码映射 =====
+# CI 退出码映射
 CI_EXIT_CODE = {
     0: 'SUCCESS',
     1: 'ERROR',
@@ -40,7 +40,7 @@ class CIConfig:
     output_file: str = ""
     verbose: bool = False
 
-# ===== CI 环境检测 =====
+# CI 环境检测
 def detect_ci_environment() -> Optional[str]:
     """检测当前 CI 平台，返回平台名或 None"""
     env = os.environ
@@ -60,7 +60,7 @@ def detect_ci_environment() -> Optional[str]:
         return 'Unknown CI'
     return None
 
-# ===== CI 集成类 =====
+# CI 集成类
 class CIIntegration:
     """SARIF v2.1.0 / JUnit XML / Markdown / JSON 多格式报告输出"""
 
@@ -82,7 +82,7 @@ class CIIntegration:
     def detect_ci_environment(self) -> Optional[str]:
         return detect_ci_environment()
 
-    # ---- 报告生成 ----
+# 报告生成
     def generate_report(self, findings: list[CIFinding],
                         fmt: Optional[str] = None) -> Any:
         fmt = fmt or self.report_format or self.config.output_format
@@ -289,7 +289,7 @@ class CIIntegration:
             },
         }
 
-    # ---- 报告写入 ----
+# 报告写入
     def write_report(self, findings: list[CIFinding],
                      filepath: Optional[str] = None) -> str:
         filepath = filepath or self.config.output_file
@@ -308,7 +308,7 @@ class CIIntegration:
 
         return filepath
 
-    # ---- 失败判定 ----
+# 失败判定
     def _should_fail(self, findings: list[CIFinding]) -> bool:
         if not findings:
             return False
@@ -347,7 +347,7 @@ class CIIntegration:
             return 2
         return 0
 
-# ===== GitHub Actions 集成 =====
+# GitHub Actions 集成
 def _github_annotation(finding: CIFinding) -> str:
     """生成 GitHub Actions workflow 注解字符串 (::warning/::error)"""
     if finding.severity in (CIFindingSeverity.ERROR, CIFindingSeverity.CRITICAL):
@@ -375,7 +375,7 @@ def output_github_annotations(findings: list[CIFinding]):
     for f in findings:
         print(_github_annotation(f))
 
-# ===== GitLab CI 集成 =====
+# GitLab CI 集成
 def _gitlab_report(findings: list[CIFinding]) -> dict:
     """生成 GitLab SAST 格式"""
     vulns = []
@@ -414,11 +414,11 @@ def _gitlab_report(findings: list[CIFinding]) -> dict:
         },
     }
 
-# ---- XML 转义辅助 ----
+# XML 转义辅助
 def _xml_escape(text: str) -> str:
     return html.escape(str(text), quote=True)
 
-# ===== 便捷入口 =====
+# 便捷入口
 def run_ci_check(binary_path: str,
                  config: Optional[CIConfig] = None) -> tuple:
     """完整 CI 检查管道：分析 -> findings -> 报告 -> 退出码"""
@@ -455,8 +455,8 @@ def generate_sarif_report(findings: list[CIFinding], binary_path: str = '',
     ci = CIIntegration()
     return ci._format_sarif(findings)
 
-# --- CycloneDX SBOM v1.5 输出 (OWASP 标准) ---
-# 参考: https://cyclonedx.org/specification/overview/
+# CycloneDX SBOM v1.5 输出 (OWASP 标准)
+# https://cyclonedx.org/specification/overview/
 # GitHub Advanced Security、Dependency-Track、Snyk 均支持 CycloneDX 导入
 # SBOM (Software Bill of Materials) 格式用于供应链安全审计
 

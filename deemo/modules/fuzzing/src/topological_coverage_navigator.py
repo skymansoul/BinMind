@@ -6,8 +6,8 @@
 2025-08-06 08:39 - 谱嵌入多样性评分
 2025-08-20 09:34 - 修正: 标注仅计算 β₀ 连通分量, 非完整持久同调 (无 β₁ 环检测)
 
-参考: Edelsbrunner & Harer (2010), Carlsson (2009).
-Maggs (2024) ANU thesis 提供了 TDA+fuzzing 的理论框架。
+参考: Edelsbrunner & Harer, Carlsson.
+Maggs ANU thesis 提供了 TDA+fuzzing 的理论框架。
 当前实现仅计算 β₀ (连通分量数), 尚未实现完整的持久图 (barcode) 和 β₁ (环) 检测。
 未来可通过整合 Ripser 等库升级为完整持久同调。"""
 

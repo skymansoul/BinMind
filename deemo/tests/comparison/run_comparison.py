@@ -1,4 +1,4 @@
-# 创建: 2025-08-05
+# 创建: 2026-06-12
 # 对比实验启动脚本 — 自动将同批样本喂给 BinMind/Angr/QEMU/Ghidra,
 # 统计各工具耗时/误报/漏报/内存. 输出JSON汇总.
 # 依赖: angr, qemu-user (需在PATH中), ghidra (需设置GHIDRA_HOME或默认路径)

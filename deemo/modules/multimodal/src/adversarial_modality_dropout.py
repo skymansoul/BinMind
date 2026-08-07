@@ -14,7 +14,7 @@ EGAC (Entropy-Gradient Adversarial Curriculum) 的核心：
 3. 模型对该模式的熵损失下降 → 自动降遮断率（课程调度）。
 4. 保留 10% 探索概率，随机遮断以发现新的脆弱模式。
 
-与 AECF (arXiv 2505.15417) 的关键区别：
+与 AECF  的关键区别：
 AECF 的惩罚系数是全局固定的；EGAC 的课程是逐样本自调节回路——
 遮断选择基于信息冲击而非均匀采样，每次 mask 恰是该样本最不可替代的模态。
 """
@@ -24,7 +24,6 @@ from collections import defaultdict
 from typing import Callable, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 class EntropyGradientCurriculum:
     """熵梯度驱动的对抗式模态遮断课程。
@@ -81,9 +80,7 @@ class EntropyGradientCurriculum:
         # 初始化遮断模式概率——均匀分布
         self._init_mask_probs()
 
-    # ------------------------------------------------------------------
     # 公开 API
-    # ------------------------------------------------------------------
 
     def select_mask(
         self,
@@ -169,9 +166,7 @@ class EntropyGradientCurriculum:
             for k, v in self._mask_probabilities.items()
         }
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _init_mask_probs(self):
         """初始化所有单模态遮断的等概率分布。"""
@@ -267,7 +262,6 @@ class EntropyGradientCurriculum:
 
         self._mask_probabilities = _adjusted
 
-
 def fast_renyi_entropy(values: List[float], alpha: float = 2.0) -> float:
     """单样本快速 Renyi 熵计算——无需构造概率分布。
 
@@ -282,7 +276,6 @@ def fast_renyi_entropy(values: List[float], alpha: float = 2.0) -> float:
         return 0.0
     # Renyi-2 的方差近似：H_2 ≈ 0.5 * ln(2πe * σ²)
     return 0.5 * math.log(2.0 * math.pi * math.e * _var)
-
 
 def egac_train_step_wrapper(
     modal_features: Dict[str, List[List[float]]],
@@ -327,8 +320,7 @@ def egac_train_step_wrapper(
 
     return _fused, _mask, _loss
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -383,7 +375,6 @@ def _smoke_test():
     print(f"[smoke] EGAC wrapper — mask: {_mask}, loss: {_loss:.4f}")
 
     print("[OK] EntropyGradientCurriculum smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

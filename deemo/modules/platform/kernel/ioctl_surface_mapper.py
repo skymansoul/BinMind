@@ -1,5 +1,5 @@
-# 创建: 2025-08-15 13:30
-# 修改: 2025-08-15 — CTL_CODE/_IOC 解码 + switch-case 分发表恢复
+# 创建: 2026-06-24 13:30
+# 修改: 2026-06-24 — CTL_CODE/_IOC 解码 + switch-case 分发表恢复
 """
 IOCTL 调度面自动映射器 — 从二进制驱动中恢复控制码分发表。
 
@@ -23,11 +23,11 @@ Linux (unlocked_ioctl + _IOC 宏) 两种 IOCTL 模型。
   - 完整覆盖: 符号执行受限于路径爆炸, 静态分析可遍历所有 case
   - 架构无关: 工作于 Ghidra/Radare2 的 IR 输出, 不依赖具体 ISA
 
-ref: Windows IOCTL Census (arXiv:2606.07732, 2026) — corpus-scale
+ref: Windows IOCTL Census — corpus-scale
      IOCTL dispatch surface recovery, 本项目实现其单二进制分析管线
-ref: Linux IOCTL Census (arXiv:2606.10290, 2026) — source-derived
+ref: Linux IOCTL Census — source-derived
      IOCTL database, 本项目将其 libclang 方法改编为 binary-level IR 分析
-ref: IoCtlance (NDSS 2021) — IOCTL fuzzing via symbolic execution,
+ref: IoCtlance — IOCTL fuzzing via symbolic execution,
      本项目提供互补的静态分析路径 (覆盖面更全, 无路径爆炸)
 """
 
@@ -76,7 +76,7 @@ class IOCTLDispatchTable:
     unguarded_handlers: int = 0
 
 
-# --- IOCTL 码解码 ---
+# IOCTL 码解码
 # Windows CTL_CODE(DeviceType, Function, Method, Access) 宏:
 #   bits[31:16] = DeviceType, [15:14] = Access, [13:2] = Function, [1:0] = Method
 
@@ -101,7 +101,7 @@ def decode_linux_ioctl(code: int) -> dict:
     }
 
 
-# --- 分发函数定位 ---
+# 分发函数定位
 
 def locate_dispatch_function(instructions: list[dict],
                              ioctl_reg_name: str = '') -> int:
@@ -132,7 +132,7 @@ def locate_dispatch_function(instructions: list[dict],
     return best_addr
 
 
-# --- 控制码提取 ---
+# 控制码提取
 
 def extract_ioctl_codes(instructions: list[dict],
                         dispatch_addr: int,
@@ -174,7 +174,7 @@ def extract_ioctl_codes(instructions: list[dict],
     return handlers
 
 
-# --- 输入污点标记 ---
+# 输入污点标记
 
 def find_buffered_input_sinks(instructions: list[dict],
                               handler_addr: int) -> list[int]:
@@ -217,7 +217,7 @@ def find_buffered_input_sinks(instructions: list[dict],
     return sinks
 
 
-# --- 主映射器 ---
+# 主映射器
 
 class IOCTLSurfaceMapper:
     """单驱动的 IOCTL 攻击面完整映射。
@@ -300,7 +300,7 @@ class IOCTLSurfaceMapper:
         return {'os_type': self._os_type}
 
 
-# --- 助手 ---
+# 助手
 
 def _group_by_function(ins: list[dict]) -> dict[int, list[dict]]:
     funcs: dict[int, list[dict]] = {}

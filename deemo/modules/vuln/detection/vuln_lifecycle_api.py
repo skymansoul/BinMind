@@ -100,7 +100,7 @@ class VulnLifecycleAPI:
         if storage_path and os.path.exists(storage_path):
             self._load()
 
-    # ---- CRUD ----
+# CRUD
 
     def create(self, **kwargs) -> VulnRecord:
         """创建新漏洞记录。vuln_id未提供时自动生成。"""
@@ -183,7 +183,7 @@ class VulnLifecycleAPI:
                 results.append(r); continue
         return results
 
-    # ---- 状态迁移引擎 ----
+# 状态迁移引擎
 
     def transition(self, vuln_id: str, new_status: VulnStatus,
                    reason: str = "", changed_by: str = "system") -> bool:
@@ -228,7 +228,7 @@ class VulnLifecycleAPI:
             return []
         return _VALID_TRANSITIONS.get(rec.status, [])
 
-    # ---- 批量操作 ----
+# 批量操作
 
     def transition_batch(self, vuln_ids: List[str], new_status: VulnStatus,
                          reason: str = "") -> Dict[str, bool]:
@@ -244,7 +244,7 @@ class VulnLifecycleAPI:
         q = component.lower()
         return [r for r in self._records.values() if q in r.affected_component.lower()]
 
-    # ---- 统计 ----
+# 统计
 
     def stats(self) -> Dict[str, Any]:
         by_status: Dict[str, int] = {}
@@ -258,7 +258,7 @@ class VulnLifecycleAPI:
             "by_severity": by_severity,
         }
 
-    # ---- 持久化 ----
+# 持久化
 
     def save(self, path: str = "") -> str:
         p = path or self._storage_path or "vuln_lifecycle.json"

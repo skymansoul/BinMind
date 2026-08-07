@@ -2,14 +2,13 @@
 CFG 熵指纹 — 基于控制流图结构特征的漏洞倾向快速预筛。
 
 依据:
-  McCabe (1976) 圈复杂度: M = E - N + 2P，高复杂度函数更可能含缺陷。
+  McCabe 圈复杂度: M = E - N + 2P，高复杂度函数更可能含缺陷。
   信息论视角: 基本块大小分布的 Shannon 熵反映控制流的不均匀度—
   高熵 = 分支密集且不均匀 = 更可能隐藏边界条件缺陷。
 
-  参考:
-    DEGNN (MDPI Drones, 2025) — 将 CFG 结构特征用于跨架构漏洞相似度检索，
+    DEGNN — 将 CFG 结构特征用于跨架构漏洞相似度检索，
     证明仅结构特征即可达到 Recall@1 > 0.8 的漏洞函数召回。
-    GBsim (PMC 2025) — GCN+BERT 混合，但单独的结构特征已有 0.75+ AUC。
+    GBsim — GCN+BERT 混合，但单独的结构特征已有 0.75+ AUC。
 
 创新点:
   现有二进制漏洞预筛依赖 ML 模型 (需要训练数据和 GPU)，本项目提供
@@ -24,7 +23,6 @@ CFG 熵指纹 — 基于控制流图结构特征的漏洞倾向快速预筛。
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-
 def _shannon_entropy(counts: List[float]) -> float:
     """Shannon 熵: H = -Σ p_i × log2(p_i)。空列表/全零 → 0.0。"""
     total = sum(counts)
@@ -36,7 +34,6 @@ def _shannon_entropy(counts: List[float]) -> float:
             p = c / total
             entropy -= p * math.log2(p)
     return entropy
-
 
 def compute_cfg_fingerprint(
     basic_block_sizes: List[int],
@@ -118,7 +115,6 @@ def compute_cfg_fingerprint(
         'edge_count_estimated': edge_count,
     }
 
-
 def triage_functions(
     functions: List[Dict[str, Any]],
     max_depth: int = 50
@@ -147,7 +143,6 @@ def triage_functions(
 
     scored.sort(key=lambda f: f['cfg_fingerprint']['vuln_likelihood'], reverse=True)
     return scored[:max_depth]
-
 
 def quick_filter(
     functions: List[Dict[str, Any]],

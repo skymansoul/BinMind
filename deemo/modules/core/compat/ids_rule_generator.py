@@ -2,7 +2,7 @@
 __all__ = ['IDSRuleGenerator', 'AttackSignature', 'IDSRuleContent', 'RuleProtocol',
            'RuleAction', 'RulePriority', 'generate_ids_rules', 'score_rule_quality',
            'filter_high_quality_rules', 'generate_pcre_rule', 'generate_threshold_rule']
-# 参考 Anomaly2Sign (Coscia et al. 2024) 决策树方法
+# Anomaly2Sign (Coscia et al. 2024) 决策树方法
 
 import os, struct, hashlib, time, json
 from dataclasses import dataclass, field
@@ -683,7 +683,7 @@ def generate_ids_rules(binary_info=None, vulns_info=None, output_dir=None, **kw)
 
 
 # --- 语义反馈规则质量评分 ---
-# 参考: Lin (2025) "Hybrid Fuzzing with LLM-Guided Input Mutation and Semantic Feedback"
+# Lin (2025) "Hybrid Fuzzing with LLM-Guided Input Mutation and Semantic Feedback"
 # 将规则质量从二元（匹配/不匹配）升级为多维评分：
 # 特异性 (specificity) — 误报率估计
 # 泛化性 (generality) — 变种检测能力

@@ -1,5 +1,5 @@
 # created: 2026-08-07
-# modified: 2026-08-22 — corrected novelty claims; SPRT is Wald(1945), contribution is domain-specific prior estimation and evidence decay
+# modified: 2026-08-22 — corrected novelty claims; SPRT is Wald, contribution is domain-specific prior estimation and evidence decay
 # 序贯假设检验——在线漏洞检测中的证据累积决策
 #
 # 核心问题: 现有漏洞检测是单次分类。在持续扫描场景中，
@@ -10,9 +10,9 @@
 #   2. 领域定制: 漏洞先验从CVE历史/威胁情报估计，证据随时间指数衰减
 #   3. 可控错误率: SPRT框架提供Type I/II error的形式化保证
 #
-# SPRT是Wald(1945)的经典方法。本工作的非平凡改进在于:
-#   - 先验估计: 利用CVE历史和供应商安全记录估计P(H1)
-#   - 证据衰减: 旧扫描证据随时间指数衰减，防止过时信息污染
+# SPRT是Wald的经典方法。本工作的非平凡改进在于:
+# 先验估计: 利用CVE历史和供应商安全记录估计P(H1)
+# 证据衰减: 旧扫描证据随时间指数衰减，防止过时信息污染
 
 from __future__ import annotations
 

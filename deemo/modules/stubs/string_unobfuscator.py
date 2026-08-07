@@ -1,6 +1,6 @@
 # compat/ 重导出 — 字符串去混淆入口
 # types.ModuleType 隔离加载，架构与 vm_unvirtualizer 一致
-# 参考: VulCatch 伪代码提升模块 (KAN + CodeT5) & Implicit Patterns (arXiv:2603.19138) 路径探索策略
+# VulCatch 伪代码提升模块 (KAN + CodeT5) & Implicit Patterns () 路径探索策略
 import os as _os
 import types as _types
 import importlib.util as _iu

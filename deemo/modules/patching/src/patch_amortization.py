@@ -20,7 +20,7 @@
 
 算法选择：
   精确解 → NP 完全（集覆盖），补丁数 ≤ 50 时可用 ILP。
-  本实现用贪心近似（Chvátal, 1979）：每步选覆盖最多未覆盖漏洞的补丁，
+  本实现用贪心近似：每步选覆盖最多未覆盖漏洞的补丁，
   保证 H(max_vulns_per_patch) 近似比，实测补丁数 ≤ 100 时差距 < 5%。
 
 与现有方法的差异：
@@ -101,7 +101,7 @@ class AmortizationResult:
         }
 
 
-# ── 子sumption 图构建 ─────────────────────────────────────────────
+# 子sumption 图构建
 
 class SubsumptionGraph:
     """补丁间子sumption关系的有向图。
@@ -215,7 +215,7 @@ class SubsumptionGraph:
         return overlap / max_total if max_total > 0 else 0.0
 
 
-# ── 最小集覆盖求解器 ──────────────────────────────────────────────
+# 最小集覆盖求解器
 
 class MinimalSetCoverSolver:
     """贪心集覆盖求解器 + 整数线性规划回退。
@@ -361,7 +361,7 @@ class MinimalSetCoverSolver:
         return candidates
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def amortize_patches(patches: List[PatchCoverage]) -> AmortizationResult:
     """一键补丁摊销分析。"""

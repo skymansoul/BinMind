@@ -1,13 +1,13 @@
 """污点传播引擎 — 多源污点追踪，支持寄存器/内存/立即数三种粒度"""
-# 参考: TACE (FSE 2024) — 污点加速的符号执行，污点引导约束简化，提速 50x
-# 参考: LATTE (ACM TOSEM 2025) — LLM 增强的静态二进制污点分析
-# 参考: FuzzRDUCC (Feng et al. 2025) — Def-Use 链引导的变异调度
+# TACE — 污点加速的符号执行，污点引导约束简化，提速 50x
+# LATTE — LLM 增强的静态二进制污点分析
+# FuzzRDUCC — Def-Use 链引导的变异调度
 
 import re as _re
 from collections import deque as _deque
 from typing import Any
 
-# ===== 污点标签 =====
+# 污点标签
 # 每个污点标签记录: 来源(source)、传播路径、置信度
 # 支持多源混合 — 同一数据可被多个来源污染
 
@@ -80,7 +80,7 @@ class TaintSet:
         return f'TaintSet({list(self.tags.values())})'
 
 
-# ===== 寄存器状态 =====
+# 寄存器状态
 # 模拟 x86-64 通用寄存器 + 标志位 + 栈帧
 # 每条指令读取寄存器 → 获取其污点状态；写入寄存器 → 传播来自操作数的污点
 
@@ -127,9 +127,9 @@ class TaintRegisterState:
         self._mem.clear()
 
 
-# ===== 污点传播规则 =====
+# 污点传播规则
 # 基于 x86/x64 指令语义的污点传播
-# 参考: BAP (Binary Analysis Platform) 的 VSA 污点传播模型
+# BAP (Binary Analysis Platform) 的 VSA 污点传播模型
 #           — Carnegie Mellon, Brumley et al.
 
 # 危险 sink — 污染数据流入这些函数即触发告警
@@ -217,10 +217,10 @@ def _set_operand_taint(operand: str, taint: TaintSet,
         reg_state.write_reg(op, taint)
 
 
-# ===== 多路径污点传播 =====
+# 多路径污点传播
 # 条件分支时，两个路径均需追踪 — 分叉后合并
 # 使用 BFS 以避免深度递归，配合深度上限防路径爆炸
-# 参考: TACE 的约束去冗余策略 — 仅追踪包含污染数据的路径
+# TACE 的约束去冗余策略 — 仅追踪包含污染数据的路径
 
 def multi_path_taint_trace(entry_block: dict,
                             cfg: dict[int, dict],
@@ -286,9 +286,9 @@ def multi_path_taint_trace(entry_block: dict,
     return visited
 
 
-# --- 污点源识别 ---
+# 污点源识别
 # 自动识别二进制中可能的污点源: recv/read/fread/scanf 等
-# 参考: LATTE 的 API 语义识别 — 基于库函数签名的污点源自动标记
+# LATTE 的 API 语义识别 — 基于库函数签名的污点源自动标记
 
 _TAINT_SOURCE_APIS = frozenset({
     'read', 'fread', 'fgets', 'gets', 'scanf', 'sscanf',
@@ -319,7 +319,7 @@ def identify_taint_sources(callee_list: list[str],
     return sources
 
 
-# --- 污点路径报告 ---
+# 污点路径报告
 def generate_taint_report(tainted_blocks: dict[int, TaintSet],
                             sink_addresses: list[int]) -> dict:
     """生成污点分析报告: 哪些污点源可达哪些 sink。

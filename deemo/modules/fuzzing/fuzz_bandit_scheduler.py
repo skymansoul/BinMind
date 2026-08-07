@@ -1,10 +1,9 @@
 """多臂老虎机(MAB)种子调度器 --- LinUCB / UCB / Exp3 / Thompson Sampling 四种策略。
 
-参考:
-  LinFuzz (IEEE Access 2024) -- 上下文MAB调度, LinUCB 建模种子价值
-  pAFL (ICCNS 2024)       -- UCB 自适应能量分配, exploration/exploitation 平衡
-  RumFuzz (IEEE SOSE 2024) -- 改进 Exp3 + 种子-崩溃距离度量
-  TMS-Fuzz (JSS 2026)      -- Thompson Sampling 种子组选择
+  LinFuzz  -- 上下文MAB调度, LinUCB 建模种子价值
+  pAFL       -- UCB 自适应能量分配, exploration/exploitation 平衡
+  RumFuzz  -- 改进 Exp3 + 种子-崩溃距离度量
+  TMS-Fuzz       -- Thompson Sampling 种子组选择
 
 与 src/scheduler.py 中 AFLfast 调度器互补: AFLfast 基于马尔可夫链,
 此处提供基于统计学习理论的替代方案, 均可通过 strategy 参数切换。
@@ -19,8 +18,7 @@ from typing import Dict, List, Optional, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
 
-
-# ===== 上下文特征提取 =====
+# 上下文特征提取
 # LinUCB 要求每个臂(种子)关联一个特征向量, 此处选取 6 维特征:
 #   [exec_time_norm, edge_count_norm, generation_inv, file_size_norm,
 #    is_recent_find, rarity_score]
@@ -49,11 +47,10 @@ def _extract_context(seed_meta: dict, data_len: int = 0) -> List[float]:
     ]
     return feat
 
-
-# ===== LinUCB 调度器 =====
+# LinUCB 调度器
 
 class LinUCBScheduler:
-    """LinUCB 在线学习调度器 [LinFuzz 2024]。
+    """LinUCB 在线学习调度器。
 
     对每个种子维护 ridge 回归参数 (A_a, b_a), 每次选择时:
       p = θ_a^T x + α * sqrt(x^T A_a^{-1} x)
@@ -142,8 +139,7 @@ class LinUCBScheduler:
 
         self._inv_update(seed_id, x)
 
-
-# ===== UCB1 调度器 (pAFL 2024 风格) =====
+# UCB1 调度器
 
 class UCBScheduler:
     """UCB1 种子调度 [pAFL 2024]。
@@ -189,8 +185,7 @@ class UCBScheduler:
         self._rewards[seed_id] += reward
         self._total_picks += 1
 
-
-# ===== Exp3 调度器 (RumFuzz 2024 风格) =====
+# Exp3 调度器
 
 class Exp3Scheduler:
     """对抗性老虎机 Exp3 调度 [RumFuzz 2024]。
@@ -248,8 +243,7 @@ class Exp3Scheduler:
         old_w = self._weights[seed_id]
         self._weights[seed_id] = old_w * math.exp(self.lr * r_hat / max(1, prob))
 
-
-# ===== Thompson Sampling 调度器 (TMS-Fuzz 2026 风格) =====
+# Thompson Sampling 调度器
 
 class ThompsonScheduler:
     """Beta-Bernoulli Thompson Sampling 种子调度 [TMS-Fuzz 2026]。
@@ -285,12 +279,10 @@ class ThompsonScheduler:
         else:
             self._beta[seed_id] += 1.0
 
-
-# ===== 统一调度门面 =====
+# 统一调度门面
 # 将四种 MAB 调度器封装为与 Scheduler.pick_seed() 兼容的接口
 
 _VALID_BANDIT_STRATEGIES = frozenset({"linucb", "ucb", "exp3", "thompson"})
-
 
 class BanditScheduler:
     """MAB 种子调度器统一入口。
@@ -401,8 +393,7 @@ class BanditScheduler:
         self._pick_counts.clear()
         self._reward_history.clear()
 
-
-# ---- 便捷工厂函数 ----
+# 便捷工厂函数
 
 def create_bandit_scheduler(strategy: str = "linucb", **kw) -> BanditScheduler:
     """根据策略名称创建 BanditScheduler 实例。

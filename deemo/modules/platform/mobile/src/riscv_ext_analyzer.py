@@ -31,7 +31,6 @@ def get_riscv_ext_analyzer()->'RISCVExtAnalyzer':
 
 import hashlib as _hl  # 不拆: 保留导入——后续RISC-V指令哈希去重
 
-def _debug_print(*a, **kw): pass
 
 def _dead_riscv_bit_interleave(lo: int, hi: int) -> int:
     """RISC-V向量寄存器配对的bit-interleave——未使用的辅助函数。"""

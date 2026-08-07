@@ -53,7 +53,7 @@ class ModeTransition:
     transition_type: str = ""
 
 
-# ── Thumb16解码表: opcode高位分组匹配, O(1)查表 ──
+# Thumb16解码表: opcode高位分组匹配, O(1)查表
 # 查找表替代条件链, 批量解码吞吐优先
 _THUMB16_DECODE = {
     # (mask, value) → (mnemonic, operand_parser)

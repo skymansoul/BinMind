@@ -5,13 +5,12 @@
 2025-08-09 14:12 - Bartlett 修正: 二阶矩调整加速收敛到卡方极限
 2025-08-10 09:33 - 双样本 EL: 两种突变策略覆盖增益的均值差推断
 
-参考:
-  Owen (1988) "Empirical Likelihood Ratio Confidence Intervals for a Single
+  Owen "Empirical Likelihood Ratio Confidence Intervals for a Single
     Functional" (Biometrika) — EL 的原始论文
-  Owen (2001) "Empirical Likelihood" (Chapman & Hall) — 系统性专著
-  Qin & Lawless (1994) "Empirical Likelihood and General Estimating Equations"
+  Owen "Empirical Likelihood" (Chapman & Hall) — 系统性专著
+  Qin & Lawless "Empirical Likelihood and General Estimating Equations"
     (Annals of Statistics) — EL 从均值扩展到估计方程
-  DiCiccio, Hall & Romano (1991) "Empirical Likelihood is Bartlett-Correctable"
+  DiCiccio, Hall & Romano "Empirical Likelihood is Bartlett-Correctable"
     (Annals of Statistics) — Bartlett 修正使覆盖误差从 O(1/n) 降至 O(1/n²)
 
 在 fuzzing 文献中的位置:
@@ -35,12 +34,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
-# ---- ELCI 参数 ----
+# ELCI 参数
 _MAX_EL_ITER = 50             # EL 优化最大迭代次数
 _CONVERGENCE_TOL = 1e-8       # 牛顿法收敛容差
 _CHISQ_95_1DF = 3.841         # χ²_{1,0.95}
-
 
 @dataclass
 class ELCIResult:
@@ -52,7 +49,6 @@ class ELCIResult:
     el_ratio_at_mean: float    # -2log ELR at H₀: μ = sample_mean
     bartlett_factor: float     # Bartlett 修正因子
     converged: bool
-
 
 class EmpiricalLikelihoodInference:
     """经验似然推断器 — 非参数置信区间.
@@ -109,7 +105,7 @@ class EmpiricalLikelihoodInference:
         hi = self._find_boundary(x_bar, 3.0 * s / math.sqrt(n),
                                  chisq_critical, direction=1)
 
-        # -2log ELR at μ = x_bar (应接近 0)
+# 2log ELR at μ = x_bar (应接近 0)
         elr_at_mean = self._neg2_log_elr(x_bar)
 
         return ELCIResult(

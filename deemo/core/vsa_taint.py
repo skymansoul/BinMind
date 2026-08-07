@@ -19,12 +19,11 @@ Limitations:
     conservatively marked as UNKNOWN
 
 References:
-  - Balakrishnan & Reps (CCS 2004): original VSA paper
-  - BinDSA (ISSTA 2025): context-sensitive heap modeling
-  - DEEPVSA (USENIX Security 2019): ML-assisted VSA
+  - Balakrishnan & Reps: original VSA paper
+  - BinDSA: context-sensitive heap modeling
+  - DEEPVSA: ML-assisted VSA
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum, auto

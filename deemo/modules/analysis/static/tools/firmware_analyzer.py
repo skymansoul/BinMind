@@ -9,7 +9,7 @@ import math
 class FirmwareAnalyzer:
     """U-Boot/DTB/UEFI/ATF detection, FS extraction, IoT vuln scanning"""
 
-    # ---- 初始化: 固件特征库 ----
+# 初始化: 固件特征库
 
     def __init__(self):
         # Boot加载器 magics
@@ -133,7 +133,7 @@ class FirmwareAnalyzer:
             },
         }
 
-    # ---- Boot加载器检测: U-Boot/DTB/UEFI/ATF ----
+# Boot加载器检测: U-Boot/DTB/UEFI/ATF
 
     def detect_bootloader(self, data: bytes) -> List[Dict]:
         _findings = []
@@ -249,7 +249,7 @@ class FirmwareAnalyzer:
 
         return _dedup
 
-    # ===== IoT漏洞扫描 =====
+# IoT漏洞扫描
 
     def scan_iot_vulns(self, strings: List[str]) -> List[Dict]:
         _findings = []
@@ -278,7 +278,7 @@ class FirmwareAnalyzer:
 
         return _findings
 
-    # ---- BusyBox/Dropbear版本检测 ----
+# BusyBox/Dropbear版本检测
 
     def extract_software_versions(self, strings: List[str]) -> List[Dict]:
         _versions = []
@@ -387,7 +387,7 @@ class FirmwareAnalyzer:
             },
         }
 
-    # ---- 辅助: 字符串提取 ----
+# 辅助: 字符串提取
 
     def _extract_strings(self, data: bytes, min_len=4) -> List[str]:
         _strings = []

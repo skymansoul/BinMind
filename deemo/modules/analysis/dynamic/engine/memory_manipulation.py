@@ -213,7 +213,7 @@ class MemoryManipulationDetector:
                     evidence=[desc],
                 ))
 
-    # --- 新增: 堆 Spray检测 ---
+# 新增: 堆 Spray检测
     # 检测重复的VirtualAlloc模式 — 相同大小的RWX分配在短窗口内集中出现
     # 是heap spray攻击的强烈信号。参考CVE-2017-11882等利用中观察到的模式
     def _scan_heap_spray(self, data: bytes) -> None:
@@ -240,7 +240,7 @@ class MemoryManipulationDetector:
                 ))
                 break  # 一类签名只报一次
 
-    # --- 新增: AtomBombing检测 ---
+# 新增: AtomBombing检测
     # AtomBombing利用全局原子表(Global Atom Table)传递shellcode数据到目标进程。
     # 检测签名: GlobalGetAtomNameA/W + Nt队列ApcThread + WriteProcessMemory 链
     def _scan_atom_bombing(self, data: bytes) -> None:
@@ -265,7 +265,7 @@ class MemoryManipulationDetector:
                 evidence=[f"AtomBombing indicators: {', '.join(evidence_parts)}"],
             ))
 
-    # --- 新增: 注入技术到ATT&CK ID的映射 ---
+# 新增: 注入技术到ATT&CK ID的映射
     def classify_injection_technique(self) -> Dict[str, List[str]]:
         """将检测到的注入指标映射到MITRE ATT&CK技术ID
         未识别的技术归入通用T1055（Process Injection）类别"""

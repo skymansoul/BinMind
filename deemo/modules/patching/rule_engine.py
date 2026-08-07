@@ -7,7 +7,7 @@ from functools import lru_cache
 _log = logging.getLogger(__name__)
 
 
-# ===== 规则数据类 =====
+# 规则数据类
 @dataclass
 class Rule:
     name: str
@@ -148,7 +148,7 @@ class VulnerabilityRule:
         return _results
 
 
-# **** 操作符表：纯函数，无副作用 ****
+# 操作符表：纯函数，无副作用
 OPERATORS: Dict[str, Callable] = {
     'equals': lambda dv, ev: dv == ev,
     'not_equals': lambda dv, ev: dv != ev,
@@ -175,7 +175,7 @@ class RuleEngine:
         if rules_file and os.path.isfile(rules_file):
             self.import_rules(rules_file)
 
-    # ---- 注册规则，按优先级降序 ----
+# 注册规则，按优先级降序
     def add_rule(self, rule: Rule):
         self._rules.append(rule)
         # 2026-08-02: 统一用 src.utils.bubble_sort（返回新列表）
@@ -257,7 +257,7 @@ class RuleEngine:
     # 2026-08-02: 移除重复的 _bubble_sort，统一用 src.utils.bubble_sort
     # def _bubble_sort(self, items, key=None): ...  # 已合并
 
-    # ===== JSON 导入导出 =====
+# JSON 导入导出
     def export_rules(self, filepath: str):
         _data = []
         for _r in self._rules:
@@ -296,5 +296,4 @@ class RuleEngine:
             self.add_rule(_rule)
         _log.info("Imported %d rules from %s", len(self._rules), filepath)
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

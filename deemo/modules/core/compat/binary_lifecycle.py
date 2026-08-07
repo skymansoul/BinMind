@@ -54,7 +54,7 @@ if _BLM:
             try: _c.log = logging.getLogger(__name__)
             except Exception: pass  # 修复: bare except → Exception
 
-# --- 成熟度评估模型 ---
+# 成熟度评估模型
 # 基于 CMMI 2.0 实践域简化的二进制成熟度评分
 # 评分维度：代码年龄、CVE 密度趋势、签名状态、更新频率
 
@@ -95,7 +95,7 @@ def compute_weighted_maturity(metrics: dict,
     # CVE 趋势：密度上升 → 低分
     cves = metrics.get('cve_history', [])
     if len(cves) >= 2:
-        recent = len([c for c in cves if c.get('year', 0) >= 2025])
+        recent = len()
         older = len(cves) - recent
         if older > 0:
             trend = recent / older
@@ -113,8 +113,8 @@ def compute_weighted_maturity(metrics: dict,
     return (round(total, 1), scores)
 
 
-# --- 安全补丁延迟度量 (Patch Latency Metric) ---
-# 参考: Google Project Zero 的 0day 漏洞披露政策中的 90 天窗口
+# 安全补丁延迟度量 (Patch Latency Metric)
+# Google Project Zero 的 0day 漏洞披露政策中的 90 天窗口
 # 以及 FIRST.org 的 EPSS (Exploit Prediction Scoring System)
 # 度量从 CVE 公布到二进制补丁发布的时间差 → 暴露窗口越长，风险越高
 import time as _time
@@ -157,7 +157,5 @@ def compute_patch_latency(cve_published: float, patch_applied: float,
     }
 
 
-def _debug_print(*args, **kwargs):
-    # Internal: debug output stub.
     pass  # 调试桩，当前未使用
 

@@ -1,0 +1,135 @@
+{
+  "results": [
+    {
+      "tool": "BinMind-GAPSBV",
+      "found": 1,
+      "confirmed": 1,
+      "duration_s": 0.113,
+      "success": true,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0,
+        "stage_cumulative": 0,
+        "stage_copy_constraint": 0,
+        "stage_gapsbv": 0,
+        "stage_gapsbv5d": 0,
+        "stage_vfg": 0,
+        "stage_enhanced_filter": 0
+      },
+      "sample": "cve_01_simple_overflow"
+    },
+    {
+      "tool": "BinMind-GAPSBV",
+      "found": 1,
+      "confirmed": 1,
+      "duration_s": 0.002,
+      "success": true,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0,
+        "stage_cumulative": 0,
+        "stage_copy_constraint": 0,
+        "stage_gapsbv": 0,
+        "stage_gapsbv5d": 0,
+        "stage_vfg": 0,
+        "stage_enhanced_filter": 0
+      },
+      "sample": "cve_02_off_by_one"
+    },
+    {
+      "tool": "BinMind-GAPSBV",
+      "found": 0,
+      "confirmed": 0,
+      "duration_s": 0.001,
+      "success": true,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 0,
+        "stage_filter": 0,
+        "stage_cumulative": 0
+      },
+      "sample": "cve_03_int_overflow_calc"
+    },
+    {
+      "tool": "BinMind-GAPSBV",
+      "found": 1,
+      "confirmed": 1,
+      "duration_s": 0.003,
+      "success": true,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0,
+        "stage_cumulative": 0,
+        "stage_copy_constraint": 0,
+        "stage_gapsbv": 0,
+        "stage_gapsbv5d": 0,
+        "stage_vfg": 0,
+        "stage_enhanced_filter": 0
+      },
+      "sample": "cve_04_strcpy_overflow"
+    },
+    {
+      "tool": "BinMind-GAPSBV",
+      "found": 1,
+      "confirmed": 1,
+      "duration_s": 0.001,
+      "success": true,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0,
+        "stage_cumulative": 0,
+        "stage_copy_constraint": 0,
+        "stage_gapsbv": 0,
+        "stage_gapsbv5d": 0,
+        "stage_vfg": 0,
+        "stage_enhanced_filter": 0
+      },
+      "sample": "cve_05_loop_overflow"
+    }
+  ],
+  "metrics": {
+    "BinMind-GAPSBV": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1,
+      "total_ms": 120.0,
+      "n": 5,
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1": 0.8889,
+      "fpr": 0,
+      "avg_ms": 24.0
+    }
+  },
+  "ground_truth": {
+    "cve_01_simple_overflow": true,
+    "cve_02_off_by_one": true,
+    "cve_03_int_overflow_calc": true,
+    "cve_04_strcpy_overflow": true,
+    "cve_05_loop_overflow": true,
+    "cve_06_user_controlled_size": true,
+    "cve_07_realloc_overflow": true,
+    "cve_08_calloc_overflow": true,
+    "cve_09_safe_but_triggers_fp": false,
+    "cve_10_input_constrained_safe": false,
+    "cve_11_memcpy_arith_size": true,
+    "cve_12_alignment_edge": true,
+    "cve_13_struct_field_pattern": true,
+    "cve_14_multi_chunk": true,
+    "cve_15_constrained_input": true,
+    "cve_16_real_world_pattern": true,
+    "cve_17_multi_field_struct": true,
+    "cve_18_loop_accumulate": true,
+    "cve_19_same_offset_accumulate": true
+  }
+}

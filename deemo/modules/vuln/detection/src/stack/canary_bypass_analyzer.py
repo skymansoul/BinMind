@@ -1,12 +1,12 @@
 """Canary 绕过分析器 — 检测栈 canary 保护 + 评估绕过可能性.
 
-创建: 2025-08-06
+创建: 2026-06-11
 目的: stack_bound_infer.py 仅判断 canary 是否存在。本模块进一步分析:
       1. canary 值是否可被泄露 (通过格式化字符串/越界读)
       2. canary 检查是否被优化掉 (死代码消除/尾调用优化)
       3. 是否存在 fork() 后 canary 不变的多进程场景
 
-方法依据: PBAEG (Cybersecurity 2025) 的 canary 绕过检测方法 —
+方法依据: PBAEG 的 canary 绕过检测方法 —
           通过符号执行路径上的 canary 访问模式判断泄露可行性。
           本模块在二进制 IR 层面做简化: 不需要完整符号执行,
           仅检查 canary 值是否流向任何输出函数 (write/printf/send)。

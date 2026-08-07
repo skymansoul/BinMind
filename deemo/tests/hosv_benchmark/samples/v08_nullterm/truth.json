@@ -1,0 +1,8 @@
+{
+  "sample": "v08_nullterm",
+  "cve": "CVE-2017-1000405",
+  "mode": "null_terminator",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "malloc(l) 缺终止符空间, d[l]=0 越界 1 字节"
+}

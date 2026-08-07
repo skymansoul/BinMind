@@ -1,5 +1,5 @@
 """
-校准置信度与风险控制路由 (CC-RCR)。
+校准置信度与风险控制路由。
 
 为什么需要校准: LLM 的 token-probability 置信度在 RLHF 后通常过度集中
 于 0.7-0.9 区间, 不构成真实概率。规则分类器的归一化分数同样缺乏统计语义。
@@ -12,7 +12,7 @@
 再以加权几何平均融合为校准概率向量。
 基于校准概率做三态决策: route / defer / escalate。
 
-与 UniCR (Oehri et al., arXiv:2509.01455) 的差异:
+与 UniCR 的差异:
 UniCR 面向生成式拒绝, 本模块面向执行路由 —— 不丢弃请求,
 而是降级到更低成本的采集路径或排队等待更完整的上下文。
 """
@@ -64,9 +64,7 @@ class CalibrationConfig:
     rule_weight: float = 0.40      # 规则分类器校准后的权重
 
 
-# ---------------------------------------------------------------------------
 # 校准函数
-# ---------------------------------------------------------------------------
 
 
 def _temperature_scale(confidence: float, temperature: float) -> float:
@@ -96,10 +94,8 @@ def _geometric_mean(a: float, b: float, wa: float, wb: float) -> float:
     return math.exp((wa * math.log(a) + wb * math.log(b)) / w_sum)
 
 
-# ---------------------------------------------------------------------------
 # 类别先验: 基于安全分析中各类别的经验出现频率
 # 先验用于调整校准概率, 罕见类别的低置信度应给予更保守的处理
-# ---------------------------------------------------------------------------
 
 _CATEGORY_PRIORS: Dict[IntentCategory, float] = {
     IntentCategory.STATIC_COLLECTION: 0.30,

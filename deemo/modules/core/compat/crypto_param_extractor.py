@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from enum import Enum, auto
 
 
-# ===== 枚举 =====
+# 枚举
 class CryptoAlgorithm(Enum):
     AES = "aes"
     DES = "des"
@@ -42,7 +42,7 @@ class CryptoLibrary(Enum):
     CUSTOM = "custom"
 
 
-# ===== 数据结构 =====
+# 数据结构
 @dataclass
 class KeyMaterial:
     key_bytes: bytes = field(default_factory=bytes)
@@ -58,7 +58,7 @@ class ConstantTimeScore:
     evidence: List[str] = field(default_factory=list)
 
 
-# ===== S-Box 常量 =====
+# S-Box 常量
 class SBoxConstants:
     AES_SBOX: bytes = bytes([
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -139,7 +139,7 @@ class SBoxConstants:
     ])
 
 
-# ===== AlgorithmDetector =====
+# AlgorithmDetector
 class AlgorithmDetector:
     def __init__(self, data: bytes = b''):
         self._data = data
@@ -167,7 +167,6 @@ class AlgorithmDetector:
             return CryptoAlgorithm.MD5
         return CryptoAlgorithm.CUSTOM
 
-    # ----
     def _scan_sboxes(self, data: bytes) -> List[Tuple[str, int]]:
         hits: List[Tuple[str, int]] = []
         sb = self.SBox
@@ -188,23 +187,19 @@ class AlgorithmDetector:
                 hits.append((name, pos))
         return hits
 
-    # ----
     def _detect_aes(self, data: bytes) -> bool:
         sb = self.SBox
         return (sb.AES_SBOX in data or sb.AES_INV_SBOX in data
                 or sb.AES_SBOX[:16] in data or sb.AES_INV_SBOX[:16] in data)
 
-    # ----
     def _detect_sm4(self, data: bytes) -> bool:
         sb = self.SBox
         return (sb.SM4_SBOX in data or sb.SM4_SBOX[:16] in data)
 
-    # ----
     def _detect_gost(self, data: bytes) -> bool:
         sb = self.SBox
         return (sb.GOST_SBOX in data or sb.GOST_SBOX[:16] in data)
 
-    # ----
     def _detect_crc32(self, data: bytes) -> bool:
         poly_le = struct.pack('<I', 0xEDB88320)
         poly_be = struct.pack('>I', 0xEDB88320)
@@ -212,11 +207,9 @@ class AlgorithmDetector:
         poly_be2 = struct.pack('>I', 0x82F63B78)
         return (poly_le in data or poly_be in data or poly_le2 in data or poly_be2 in data)
 
-    # ----
     def _detect_chacha20(self, data: bytes) -> bool:
         return b'expand 32-byte k' in data or b'expand 16-byte k' in data
 
-    # ----
     def _detect_sha(self, data: bytes) -> bool:
         sha256_iv = bytes([
             0x6a, 0x09, 0xe6, 0x67, 0xbb, 0x67, 0xae, 0x85,
@@ -228,13 +221,12 @@ class AlgorithmDetector:
         ])
         return sha256_iv in data or sha1_iv in data
 
-    # ----
     def _detect_md5(self, data: bytes) -> bool:
         md5_iv = struct.pack('<IIII', 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476)
         return md5_iv in data
 
 
-# ===== KeyExtractor =====
+# KeyExtractor
 class KeyExtractor:
     _HEX_KEY_RE = re.compile(rb'(?:0x)?([0-9A-Fa-f]{16,128})')
     _BASE64_KEY_RE = re.compile(rb'["\']?([A-Za-z0-9+/]{24,}={0,2})["\']?')
@@ -283,7 +275,7 @@ class KeyExtractor:
         return keys
 
 
-# ===== IVExtractor =====
+# IVExtractor
 class IVExtractor:
     def extract_iv(self, data: bytes, algo: CryptoAlgorithm = None) -> List[bytes]:
         ivs: List[bytes] = []
@@ -328,7 +320,7 @@ class IVExtractor:
         return -sum(f / len(data) * math.log2(f / len(data)) for f in freq if f > 0)
 
 
-# ===== ModeDetector =====
+# ModeDetector
 class ModeDetector:
     _GHASH_CONST = struct.pack('>Q', 0xE100000000000000)  # GCM GF(2^128) reduction polynomial
 
@@ -359,7 +351,6 @@ class ModeDetector:
         # ECB: 无明显链式操作的重复块调用
         return BlockCipherMode.ECB
 
-    # ----
     def _detect_gcm(self, data: bytes) -> bool:
         if self._GHASH_CONST in data:
             return True
@@ -372,7 +363,7 @@ class ModeDetector:
         return False
 
 
-# ===== ConstantTimeDetector =====
+# ConstantTimeDetector
 class ConstantTimeDetector:
     def assess_constant_time(self, data: bytes, func_addr: int = None) -> ConstantTimeScore:
         evidence: List[str] = []
@@ -416,7 +407,7 @@ class ConstantTimeDetector:
         )
 
 
-# ===== LibraryDetector =====
+# LibraryDetector
 class LibraryDetector:
     _LIB_SYMBOLS = {
         CryptoLibrary.OPENSSL: [b'EVP_', b'SSL_', b'OPENSSL_', b'CRYPTO_', b'PEM_', b'PKCS'],
@@ -455,7 +446,7 @@ class LibraryDetector:
         return CryptoLibrary.CUSTOM
 
 
-# ===== CryptoParamExtractor (兼容) =====
+# CryptoParamExtractor (兼容)
 class CryptoParamExtractor:
     def __init__(self, path: str = ''):
         self.path = path
@@ -556,7 +547,7 @@ class CryptoParamExtractor:
         return params.get('algorithm', 'unknown')
 
 
-# ==== 顶层便捷函数 ====
+# 顶层便捷函数
 def scan_crypto(filepath: str) -> list:
     """兼容 plugins.crypto_scan 的 scan_crypto 入口"""
     extractor = CryptoParamExtractor(filepath)

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "cve_2014_0160_heartbleed",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2015_0235_ghost",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2016_10190_ffmpeg",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2016_2177_openssl",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2017_1000253_pie",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2018_6789_exim",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2019_11477_sack",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2020_10713_grub2",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2021_3156_sudo",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2022_0185_kernel",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2022_23222_bpf",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2023_0464_openssl",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2023_3576_openssl",
+    "detected": false,
+    "findings": 0,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2023_4911_looney",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  },
+  {
+    "id": "cve_2024_1086_nftables",
+    "detected": true,
+    "findings": 1,
+    "error": "shim mode"
+  }
+]

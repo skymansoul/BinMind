@@ -23,7 +23,7 @@ class StegoFinding:
     description: str
 
 
-# ---- 归档文件魔数库 ----
+# 归档文件魔数库
 MAGIC_DB: List[Tuple[bytes, str, int]] = [
     (b'\x50\x4B\x03\x04', 'ZIP', 30),
     (b'\x50\x4B\x05\x06', 'ZIP_EOCD', 22),
@@ -70,7 +70,7 @@ _EOF_MARKERS = [
 ]
 
 
-# ---- PE overlay检测 ----
+# PE overlay检测
 def detect_overlay_data(pe_data: bytes) -> Optional[StegoFinding]:
     _dl = len(pe_data)
     if _dl < 0x40 or pe_data[:2] != b'MZ':
@@ -106,7 +106,7 @@ def detect_overlay_data(pe_data: bytes) -> Optional[StegoFinding]:
     return None
 
 
-# ---- EOF尾部间隙检测 ----
+# EOF尾部间隙检测
 def detect_eof_gaps(data: bytes) -> List[StegoFinding]:
     """检测文件格式EOF标记之后追加的隐藏数据。"""
     _out = []
@@ -130,7 +130,7 @@ def detect_eof_gaps(data: bytes) -> List[StegoFinding]:
     return _out
 
 
-# ---- Section间隙 ----
+# Section间隙
 def detect_section_gaps(pe_data: bytes) -> List[StegoFinding]:
     _out = []
     _dl = len(pe_data)
@@ -173,7 +173,7 @@ def detect_section_gaps(pe_data: bytes) -> List[StegoFinding]:
     return _out
 
 
-# ---- 内嵌归档 ----
+# 内嵌归档
 def detect_embedded_archives(data: bytes) -> List[StegoFinding]:
     _out = []
     _dl = len(data)
@@ -192,7 +192,7 @@ def detect_embedded_archives(data: bytes) -> List[StegoFinding]:
     return _out
 
 
-# ---- 高熵区扫描 ----
+# 高熵区扫描
 def scan_high_entropy_regions(data: bytes, window: int = 256) -> List[StegoFinding]:
     _out = []
     _dl = len(data)
@@ -225,7 +225,7 @@ def scan_high_entropy_regions(data: bytes, window: int = 256) -> List[StegoFindi
     return _out
 
 
-# ---- LSB 卡方隐写分析 (Westfeld & Pfitzmann, 2000) ----
+# LSB 卡方隐写分析
 def _lsb_chi_square(data: bytes) -> Tuple[float, float]:
     """PoV (Pairs of Values) χ²检验。返回(chi_sq, p_value)。p > 0.95→LSB嵌入嫌疑。"""
     n = len(data)
@@ -315,7 +315,7 @@ def detect_bmp_lsb(data: bytes) -> List[StegoFinding]:
     return []
 
 
-# ---- 主检测器 ----
+# 主检测器
 class SteganographyDetector:
     def __init__(self, data: bytes):
         self._data = data

@@ -1,0 +1,913 @@
+{
+  "results": [
+    {
+      "id": "uaf_fp_01_exclusive_branch",
+      "expected_vuln": false,
+      "mode": "if/else \u5206\u652f\u4e92\u65a5: free \u4e0e use \u4e0d\u540c\u65f6\u6267\u884c",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 2,
+          "pairs": 2,
+          "time_ms": 84.0,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 78.7,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_02_null_after_free",
+      "expected_vuln": false,
+      "mode": "\u91ca\u653e\u540e\u7f6e NULL, \u540e\u7eed if(p) \u9632\u62a4",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 26.9,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 21.7,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_03_reassign",
+      "expected_vuln": false,
+      "mode": "\u91ca\u653e\u540e\u91cd\u65b0\u5206\u914d, \u65b0\u5bf9\u8c61\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 62.2,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 57.7,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_04_use_before_free",
+      "expected_vuln": false,
+      "mode": "use \u5148\u4e8e free (\u5730\u5740\u5e8f: free \u5728\u524d\u624d\u6784\u6210\u5019\u9009)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 25.9,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 34.2,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_05_independent_objs",
+      "expected_vuln": false,
+      "mode": "\u4e24\u4e2a\u72ec\u7acb\u5bf9\u8c61, free(a) \u540e\u5199 b",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 42.8,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 1,
+          "pairs": 1,
+          "time_ms": 44.2,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_06_early_return_use",
+      "expected_vuln": false,
+      "mode": "\u63d0\u524d\u8fd4\u56de\u8def\u5f84\u4e0a\u7684\u4f7f\u7528 (\u4e0d\u7ecf\u8fc7 free)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 1,
+          "pairs": 1,
+          "time_ms": 93.5,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 89.3,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_07_guard_free_use_excl",
+      "expected_vuln": false,
+      "mode": "\u540c\u4e00\u5b88\u536b\u63a7\u5236 free \u4e0e use (\u4e8c\u8005\u540c\u771f\u540c\u5047)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 2,
+          "pairs": 2,
+          "time_ms": 74.7,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 85.8,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_08_use_in_loop_before_free",
+      "expected_vuln": false,
+      "mode": "\u5faa\u73af\u5185\u4f7f\u7528\u5747\u5728 free \u4e4b\u524d",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 69.9,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 79.5,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_09_free_in_sibling_fn",
+      "expected_vuln": false,
+      "mode": "\u5144\u5f1f\u51fd\u6570\u91ca\u653e, \u672c\u51fd\u6570\u4e0d\u4f7f\u7528 (\u8de8\u51fd\u6570\u8bef\u5173\u8054)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 27.7,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 25.3,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_10_value_copy",
+      "expected_vuln": false,
+      "mode": "\u6309\u503c\u590d\u5236\u540e\u4f7f\u7528\u526f\u672c, \u539f\u6307\u9488\u91ca\u653e",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 59.1,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 60.2,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_11_conditional_reassign",
+      "expected_vuln": false,
+      "mode": "\u5b88\u536b\u5185\u91cd\u65b0\u8d4b\u503c, \u5b88\u536b\u5916\u4f7f\u7528\u65b0\u6307\u9488",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 56.5,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 65.4,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_12_freed_then_unused",
+      "expected_vuln": false,
+      "mode": "\u91ca\u653e\u540e\u65e0\u4efb\u4f55\u4f7f\u7528 (\u7eaf\u91ca\u653e\u8def\u5f84)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 62.4,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 66.1,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_13_stack_array",
+      "expected_vuln": false,
+      "mode": "\u6808\u4e0a\u6570\u7ec4\u8bfb\u5199\u88ab\u8bef\u5224\u4e3a\u5806\u6307\u9488",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 61.1,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 80.7,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_14_free_after_use_in_call",
+      "expected_vuln": false,
+      "mode": "\u8c03\u7528\u5e8f\u5217: use \u5728 free \u8c03\u7528\u524d (\u53c2\u6570\u6c42\u503c\u5e8f)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 22.8,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 23.5,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_fp_15_no_free",
+      "expected_vuln": false,
+      "mode": "\u65e0 free \u8c03\u7528 (\u4ec5\u5206\u914d\u4e0e\u4f7f\u7528)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 22.2,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 22.8,
+          "detected": false
+        }
+      },
+      "detected": false,
+      "tp": false,
+      "fn": false,
+      "fp": false,
+      "tn": true
+    },
+    {
+      "id": "uaf_tp_01_direct",
+      "expected_vuln": true,
+      "mode": "\u76f4\u63a5\u91ca\u653e\u540e\u7acb\u5373\u89e3\u5f15\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 60.3,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 62.5,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_02_alias",
+      "expected_vuln": true,
+      "mode": "\u522b\u540d\u6307\u9488 q \u4e0e p \u6307\u5411\u540c\u4e00\u5bf9\u8c61, free(p) \u540e\u7ecf q \u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 2,
+          "confirmed": 2,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 2,
+          "time_ms": 22.3,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 2,
+          "confirmed": 2,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 2,
+          "time_ms": 21.7,
+          "detected": true
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_03_cross_fn",
+      "expected_vuln": true,
+      "mode": "\u8de8\u51fd\u6570: alloc_fn \u8fd4\u56de\u6307\u9488, free_fn \u91ca\u653e, use_fn \u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 56.6,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 56.4,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_04_cond_free",
+      "expected_vuln": true,
+      "mode": "\u6761\u4ef6\u91ca\u653e\u540e\u65e0\u6761\u4ef6\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 0,
+          "possible": 1,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 61.0,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 1,
+          "confirmed": 0,
+          "possible": 1,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 58.4,
+          "detected": true
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_05_struct_field",
+      "expected_vuln": true,
+      "mode": "\u7ed3\u6784\u4f53\u5b57\u6bb5\u6307\u9488 free \u540e\u5b57\u6bb5\u8bbf\u95ee",
+      "variants": {
+        "vuln.exe": {
+          "kept": 2,
+          "confirmed": 2,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 2,
+          "time_ms": 61.5,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 59.5,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_06_realloc",
+      "expected_vuln": true,
+      "mode": "realloc \u5931\u8d25\u540e\u65e7\u6307\u9488\u4f7f\u7528 (\u60ac\u5782)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 59.3,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 57.2,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_07_func_ptr",
+      "expected_vuln": true,
+      "mode": "\u91ca\u653e\u540e\u7ecf\u51fd\u6570\u6307\u9488\u8c03\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 23.1,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 24.0,
+          "detected": true
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_08_loop_free",
+      "expected_vuln": true,
+      "mode": "\u5faa\u73af\u5185\u91ca\u653e, \u5faa\u73af\u540e\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 0,
+          "possible": 1,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 65.6,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 58.8,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_09_double_free",
+      "expected_vuln": true,
+      "mode": "double free (\u540c\u7c7b\u65f6\u5e8f\u7f3a\u9677)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 25.8,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 27.0,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_10_stack_reload",
+      "expected_vuln": true,
+      "mode": "\u91ca\u653e\u540e\u4ece\u6808\u69fd\u91cd\u8f7d\u6307\u9488\u518d\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 87.6,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 59.3,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_11_global_dangle",
+      "expected_vuln": true,
+      "mode": "\u5168\u5c40\u6307\u9488\u91ca\u653e\u540e\u5176\u4ed6\u51fd\u6570\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 61.3,
+          "detected": false
+        },
+        "vuln_O2.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 59.2,
+          "detected": true
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_12_null_check",
+      "expected_vuln": true,
+      "mode": "NULL\u68c0\u67e5\u540e\u4f7f\u7528 (\u8bed\u4e49\u4fee\u6b63: NULL\u68c0\u67e5\u4e0d\u6784\u6210\u9632\u62a4)",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 58.2,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 56.8,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_13_guard_free_use",
+      "expected_vuln": true,
+      "mode": "\u5b88\u536b\u5206\u652f\u4e2d free, \u5b88\u536b\u5916\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 0,
+          "possible": 1,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 70.8,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 55.7,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_14_io_uring_style",
+      "expected_vuln": true,
+      "mode": "\u5f02\u6b65\u98ce\u683c: \u91ca\u653e\u540e\u7ecf\u7ed3\u6784\u4f53\u56de\u8c03\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 62.4,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 59.2,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    },
+    {
+      "id": "uaf_tp_15_thread_sim",
+      "expected_vuln": true,
+      "mode": "\u7ebf\u7a0b\u7ade\u4e89\u6a21\u62df: free \u540e\u53e6\u4e00\"\u7ebf\u7a0b\u51fd\u6570\"\u4f7f\u7528",
+      "variants": {
+        "vuln.exe": {
+          "kept": 1,
+          "confirmed": 1,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 1,
+          "time_ms": 61.6,
+          "detected": true
+        },
+        "vuln_O2.exe": {
+          "kept": 0,
+          "confirmed": 0,
+          "possible": 0,
+          "filtered": 0,
+          "pairs": 0,
+          "time_ms": 67.3,
+          "detected": false
+        }
+      },
+      "detected": true,
+      "tp": true,
+      "fn": false,
+      "fp": false,
+      "tn": false
+    }
+  ],
+  "metrics": {
+    "tp": 15,
+    "fn": 0,
+    "fp": 0,
+    "tn": 15,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  }
+}

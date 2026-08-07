@@ -1,5 +1,5 @@
-# 创建: 2025-09-07 16:03
-# 修改: 2025-09-22 09:40 — 重构：从通用DBSCAN升级为补丁专用距离+自适应聚类
+# 创建: 2026-08-08 16:03
+# 修改: 2026-08-08 09:40 — 重构：从通用DBSCAN升级为补丁专用距离+自适应聚类
 
 """Patch Equivalence Clustering — 补丁专用的加权距离聚类。
 
@@ -91,7 +91,7 @@ class ClusterReport:
         }
 
 
-# ── 补丁专用距离 ──────────────────────────────────────────────────
+# 补丁专用距离
 
 def patch_weighted_distance(a: PatchFeatures, b: PatchFeatures) -> float:
     """补丁间的加权特征距离。
@@ -156,7 +156,7 @@ def _func_jaccard(a: List[str], b: List[str]) -> float:
     return 1.0 - inter / union if union > 0 else 1.0
 
 
-# ── 自适应 eps ────────────────────────────────────────────────────
+# 自适应 eps
 
 def adaptive_eps(dist_matrix: List[List[float]], k: int = 3) -> float:
     """基于k-距离排序曲线的自适应eps校准。
@@ -185,7 +185,7 @@ def adaptive_eps(dist_matrix: List[List[float]], k: int = 3) -> float:
     return k_dists[min(elbow_idx + 1, len(k_dists) - 1)]
 
 
-# ── 聚类器 ────────────────────────────────────────────────────────
+# 聚类器
 
 class DensityClusterer:
     """补丁专用加权距离 + 自适应eps的密度聚类。"""
@@ -286,7 +286,7 @@ class DensityClusterer:
         return cwes.most_common(1)[0][0] if cwes else "unknown"
 
 
-# ── 特征提取器 ────────────────────────────────────────────────────
+# 特征提取器
 
 class PatchFeatureExtractor:
     def extract(self, patch_id: str, original_bytes: bytes,

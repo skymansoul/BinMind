@@ -19,12 +19,11 @@
   - BinDiff: 图形同构匹配，无攻击面入口感知
   - Binarly US 12,287,885: 跨二进制 ICFG，需完整反汇编
 
-参考:
-  PatchDiff-AI (Akamai 2025): 补丁差异驱动根因分析
+  PatchDiff-AI: 补丁差异驱动根因分析
   BinDiff Manual §4: 基本块匹配算法
 
 修改记录:
-  创建 2026-07-29 — 核心评估 (assess_patch, batch_assess, fix_summary)
+  创建 2026-05-07 — 核心评估 (assess_patch, batch_assess, fix_summary)
   2026-07-30 — 辅助函数拆分至 patch_helpers.py
 """
 
@@ -35,7 +34,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from modules.output.src.patch_helpers import (
     bb_signature, _estimate_reachable, _entry_candidates, BlockMatch
 )
-
 
 @dataclass
 class FixAssessment:
@@ -60,7 +58,6 @@ class FixAssessment:
         if self.fix_completeness_score >= 3.0:
             return 'likely_unfixed'
         return 'vulnerability_migrated'
-
 
 def assess_patch(
     function_name: str,
@@ -149,7 +146,6 @@ def assess_patch(
         matched_blocks=block_matches, new_blocks_added=new_blocks_added,
         severity_change=sev_change)
 
-
 def batch_assess(
     vuln_functions: List[Dict[str, Any]],
     old_binary_blocks: Dict[str, List[List[str]]],
@@ -171,7 +167,6 @@ def batch_assess(
             function_name=fname, old_blocks=old_bb, new_blocks=new_bb,
             vuln_block_indices=vf.get('vuln_block_indices'))
     return results
-
 
 def fix_summary(assessments: Dict[str, FixAssessment]) -> Dict[str, Any]:
     if not assessments:

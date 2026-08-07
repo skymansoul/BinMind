@@ -1,0 +1,1034 @@
+{
+  "summary": {
+    "tools": {
+      "Existing": {
+        "tp": 7,
+        "fp": 4,
+        "tn": 11,
+        "fn": 18,
+        "precision": 0.6364,
+        "recall": 0.28,
+        "f1": 0.3889,
+        "fpr": 0.2667,
+        "avg_ms": 0.4
+      },
+      "UOVF": {
+        "tp": 10,
+        "fp": 0,
+        "tn": 15,
+        "fn": 15,
+        "precision": 1.0,
+        "recall": 0.4,
+        "f1": 0.5714,
+        "fpr": 0.0,
+        "avg_ms": 0.5
+      }
+    },
+    "fp_reduction_ratio": 1.0,
+    "recall_delta": 0.12,
+    "f1_delta": 0.1825,
+    "samples_total": 40
+  },
+  "per_sample": [
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 9.5,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 13.6,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.4
+        }
+      },
+      "name": "tn_01_null_after_free",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tn_02_reassign_after_free",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.3
+        }
+      },
+      "name": "tn_03_guarded_use",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tn_04_realloc_self",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tn_05_branch_exclusive",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tn_06_different_scope",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tp_01_direct_uaf",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "tp_02_alias_uaf",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tp_03_cross_func_uaf",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "tp_04_realloc_alias_uaf",
+      "cve_id": "CVE-2023-28328",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "tp_05_loop_uaf",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "tp_06_conditional_uaf",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.0,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_conditional_free",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.1,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_dangling_global",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.0,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.0,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.0
+        }
+      },
+      "name": "uaf_double_free",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.0,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_func_ptr",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "uaf_io_uring",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.3
+        }
+      },
+      "name": "uaf_list_remove",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_multi_path",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.0,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_realloc_null",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_realloc_race",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_signal_handler",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_simple_deref",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "uaf_stale_callback",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_thread_pool",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "uaf_vector_grow",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "uaf_vtable_override",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.4,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.3
+        }
+      },
+      "name": "FP_uaf_alias_safe",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.6,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.4,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.4
+        }
+      },
+      "name": "FP_uaf_guarded_path",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.4,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.3
+        }
+      },
+      "name": "FP_uaf_null_after_free",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.7,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.6,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.6
+        }
+      },
+      "name": "FP_uaf_refcount_protected",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "FP_uaf_reuse_after_free",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "safe_free_then_null",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "safe_realloc_then_use",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "safe_refcount_free",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.2,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 0,
+        "elapsed_ms": 0.1,
+        "verdict": "SAFE",
+        "success": true,
+        "uovf_stats": {
+          "chains": 0,
+          "confirmed": 0,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.1
+        }
+      },
+      "name": "safe_scope_guard",
+      "cve_id": "",
+      "is_vuln": false
+    },
+    {
+      "existing": {
+        "detections": 0,
+        "elapsed_ms": 0.3,
+        "verdict": "SAFE",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "TP_uaf_alias_use",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.5,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 2,
+        "elapsed_ms": 0.4,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 2,
+          "confirmed": 2,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.4
+        }
+      },
+      "name": "TP_uaf_callback_use",
+      "cve_id": "CVE-2021-38003",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.3,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "TP_uaf_clear_violation",
+      "cve_id": "",
+      "is_vuln": true
+    },
+    {
+      "existing": {
+        "detections": 1,
+        "elapsed_ms": 0.2,
+        "verdict": "OVERFLOW",
+        "success": true
+      },
+      "uovf": {
+        "detections": 1,
+        "elapsed_ms": 0.3,
+        "verdict": "OVERFLOW",
+        "success": true,
+        "uovf_stats": {
+          "chains": 1,
+          "confirmed": 1,
+          "filtered": 0,
+          "uncertain": 0,
+          "fp_reduction_ratio": 0.0,
+          "elapsed_ms": 0.2
+        }
+      },
+      "name": "TP_uaf_loop_use",
+      "cve_id": "",
+      "is_vuln": true
+    }
+  ]
+}

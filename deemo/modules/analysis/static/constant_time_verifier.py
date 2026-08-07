@@ -6,8 +6,8 @@
 二进制层面的常量时间违规检测 —— 不需要源码级标注的静态数据流方法
 
 现有方案:
-- Binsec/Rel (Daniel et al., S&P 2020): 关系符号执行，精确但需要全 SE 管线
-- DOCC (Schneider et al., 2024 arXiv:2410.13489): 动态 trace 分析，覆盖率依赖执行路径
+- Binsec/Rel: 关系符号执行，精确但需要全 SE 管线
+- DOCC: 动态 trace 分析，覆盖率依赖执行路径
 - ctgrind/FlowTracker: Valgrind 插件，需源码级 secret 标记
 
 本模块的差异化: 静态数据流分析，直接运行在反汇编的基本块上。不执行程序
@@ -22,7 +22,7 @@ B. 秘密索引访存: MOV RAX, [RBX + RCX*4] 中 RCX 被 secret 污染
 C. 秘密边界循环: 循环回边的迭代计数依赖 secret 值
 
 ref: Schneider et al. "Breaking Bad: 编译器s Break Constant-Time."
-(arXiv:2410.13489, 2024) —— 编译器在 -O2 以上引入的 CT 违规 43% 仅出现在
+ —— 编译器在 -O2 以上引入的 CT 违规 43% 仅出现在
 二进制层面，IR/源码层面不可见。本模块的二进制直接分析规避了此盲区
 """
 
@@ -36,9 +36,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 架构无关的指令抽象
-# ---------------------------------------------------------------------------
 
 class InsnKind(IntEnum):
     MOV = 0
@@ -94,9 +92,7 @@ class InsnInfo:
     implicit_reads: List[str] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
 # 污点追踪（寄存器级别 —— 简化，配合 subreg_taint.py 可升级为字节级）
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TaintState:
@@ -179,9 +175,7 @@ class ForwardTaintPropagator:
         return new_state
 
 
-# ---------------------------------------------------------------------------
 # 三类违规检测
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CTViolation:
@@ -358,9 +352,7 @@ class ConstantTimeVerifier:
         }
 
 
-# ---------------------------------------------------------------------------
 # 辅助
-# ---------------------------------------------------------------------------
 
 def _is_reg(op: InsnOperand) -> bool:
     return op.kind == "reg" and bool(op.name)

@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_05_struct_field",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "结构体字段指针 free 后字段访问"
+}

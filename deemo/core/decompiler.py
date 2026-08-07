@@ -114,7 +114,7 @@ def _decompile_ghidra(binary_path: str, func_name: str) -> Optional[Dict]:
     return None
 
 
-# ---- AI-assisted analysis ----
+# AI-assisted analysis
 
 _AI_SYSTEM_PROMPT = """You are a binary reverse-engineering expert.
 Analyze the provided decompiled C code for security vulnerabilities.

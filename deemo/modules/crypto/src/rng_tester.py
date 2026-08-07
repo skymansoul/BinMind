@@ -1,4 +1,4 @@
-# ==== NIST SP 800-22 随机数测试套件 (子集) ====
+# NIST SP 800-22 随机数测试套件 (子集)
 # 自包含实现 -- 不依赖 scipy/numpy。O(n) 或 O(n log n) 内完成。
 # gamma 函数: Lanczos 逼近 (log-gamma), erfc: Abramowitz 7.1.26。
 # DFT 测试: numpy 可选加速, 无 numpy 时对 <8k bits 用 O(n^2) 降级。
@@ -14,7 +14,7 @@ except ImportError:
     _HAS_NUMPY = False
 
 
-# ---- 数学辅助: gamma(log) + erfc ----
+# 数学辅助: gamma(log) + erfc
 def _lgamma(x: float) -> float:
     """Lanczos log-gamma, 精度约1e-15."""
     _g = 7
@@ -80,7 +80,7 @@ def _erfc(x: float) -> float:
     return _poly * math.exp(-x * x)
 
 
-# ---- NIST SP 800-22 检验 ----
+# NIST SP 800-22 检验
 def monobit_test(bits: List[int]) -> float:
     """频率 (单比特) 检验: H0 -> P(0)=P(1)=0.5。返回 p 值."""
     _n = len(bits)
@@ -260,7 +260,7 @@ def dft_test(bits: List[int]) -> float:
     return _erfc(abs(_d) / math.sqrt(2))
 
 
-# ---- 综合检验 ----
+# 综合检验
 def test_randomness(data: bytes) -> Dict[str, float]:
     # 对字节数据执行 NIST 检验集, 返回 {test_name: p_value}
     _bits = [(b >> i) & 1 for b in data for i in range(8)]

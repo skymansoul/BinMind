@@ -1,4 +1,4 @@
-# 创建: 2025-08-04 -- 扫描调度模块: 批量调用扫描器+收集结果
+# 创建: 2026-06-26 -- 扫描调度模块: 批量调用扫描器+收集结果
 import subprocess, sys, os, json, time
 from pathlib import Path
 from build_samples import BUILD_DIR, compile_samples

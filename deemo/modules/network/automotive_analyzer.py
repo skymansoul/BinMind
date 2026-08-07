@@ -60,7 +60,7 @@ class CANAnalysisResult:
     bypasses: list
 
 
-# ---- CAN DBC 信号指纹库 ----
+# CAN DBC 信号指纹库
 # 编译自约300个ECU固件镜像（VAG/Toyota/Ford 动力总成ECU）。
 # 负载模式为供应商侧DBC遗留痕迹——同一信号布局跨OEM复用，
 # 因供应商均源自Bosch/Continental/Denso。

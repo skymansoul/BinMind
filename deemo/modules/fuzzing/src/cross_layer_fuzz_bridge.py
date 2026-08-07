@@ -19,7 +19,7 @@
 不同节点是浪费 — 两者会重复探索同一程序区域。相反, 将"覆盖互补"
 的种子分到不同节点, 各自独立变异, 最大化单位时间的净新覆盖。
 这等价于 GRL-Sched 的图划分问题: 最小化割边 = 最小化同节点内
-种子间的覆盖冗余。Graphuzz (ACM TOSEM 2024) 证明了 GNN 可以
+种子间的覆盖冗余。Graphuzz 证明了 GNN 可以
 预测种子的模糊测试潜力, 本模块将此潜力作为 GRL 的 exec_time 先验。
 
 与现有模块的关系:
@@ -27,10 +27,10 @@
   - GRLScheduler: 做 makespan 最优的任务→节点分配
   - Scheduler: 提供种子评分 (AFLfast) 作为 TaskNode.priority
 
-ref: Graphuzz (ACM TOSEM 2024) — GNN 预测种子潜力, 本模块将其扩展
+ref: Graphuzz — GNN 预测种子潜力, 本模块将其扩展
      到分布式场景: 种子的「潜力」不仅决定变异次序, 也决定分配到哪个节点
-ref: CollAFL (IEEE S&P 2018) — 覆盖敏感的种子选择是模糊测试效率的核心
-ref: SEAFuzz (IEEE 2025) — 稀有度加权的结构相似性用于种子调度
+ref: CollAFL  — 覆盖敏感的种子选择是模糊测试效率的核心
+ref: SEAFuzz  — 稀有度加权的结构相似性用于种子调度
 """
 
 from __future__ import annotations
@@ -73,7 +73,6 @@ except Exception:
     GraphPartitioner = None  # type: ignore
     Partition = None  # type: ignore
 
-
 @dataclass
 class FuzzCampaignConfig:
     """分布式模糊测试活动的配置。"""
@@ -82,7 +81,6 @@ class FuzzCampaignConfig:
     coverage_sync_interval: float = 60.0  # 节点间覆盖同步间隔 (秒)
     min_energy_threshold: float = 0.1     # 低能量种子丢弃阈值
     diversity_weight: float = 0.4    # 覆盖多样性在调度中的权重 (vs AFLfast 评分)
-
 
 class CrossLayerFuzzBridge:
     """模糊测试-分布式调度跨层桥接。
@@ -107,7 +105,7 @@ class CrossLayerFuzzBridge:
         self._last_sync: float = 0.0
         self._stats = {'partitions': 0, 'repairs': 0, 'syncs': 0}
 
-    # ---- 构建 ----
+# 构建
 
     def build_campaign_dag(self, seeds: List, isrg=None) -> TaskDependencyGraph:
         """从种子列表 + 种子覆盖关系图构建 GRL 任务依赖图。
@@ -185,7 +183,7 @@ class CrossLayerFuzzBridge:
         self._dag = dag
         return dag
 
-    # ---- 划分与调度 ----
+# 划分与调度
 
     def partition_campaign(self, dag: TaskDependencyGraph = None,
                            n_nodes: int = None) -> Dict[int, List[str]]:
@@ -260,7 +258,7 @@ class CrossLayerFuzzBridge:
             return sorted(seeds_in_node, key=lambda x: local_ranks.get(x, 0.0), reverse=True)
         return list(seeds_in_node)
 
-    # ---- 反馈 ----
+# 反馈
 
     def coverage_feedback(self, seed_id: str, new_edges: int,
                           exec_time_ms: float):
@@ -289,7 +287,7 @@ class CrossLayerFuzzBridge:
         old_et = nd.exec_time
         nd.exec_time = 0.7 * old_et + 0.3 * max(0.001, exec_time_ms / 1000.0)
 
-    # ---- 工具 ----
+# 工具
 
     def _round_robin_assign(self, dag: TaskDependencyGraph,
                             n_nodes: int) -> Dict[int, List[str]]:
@@ -323,8 +321,7 @@ class CrossLayerFuzzBridge:
             'syncs': self._stats['syncs'],
         }
 
-
-# ---- 一站式入口 ----
+# 一站式入口
 
 def launch_distributed_campaign(
     seeds: List, n_nodes: int = 4,
@@ -342,7 +339,6 @@ def launch_distributed_campaign(
     dag = bridge.build_campaign_dag(seeds, seed_relation_graph)
     bridge.partition_campaign(dag, n_nodes)
     return bridge
-
 
 __all__ = [
     'CrossLayerFuzzBridge', 'FuzzCampaignConfig',

@@ -160,7 +160,7 @@ class VulnTrendPredictor:
         confidence = min(0.3 + len(counts) / 150.0, 0.8)
         return (predicted, direction, confidence)
 
-    # ---- 增强功能 1: 异常点检测 (IQR-based 异常 检测) ----
+# 增强功能 1: 异常点检测 (IQR-based 异常 检测)
     # 如果在历史数据中某个点偏离了四分位距的正常范围，标记为 异常
     # 这是为了发现突发漏洞爆发或数据采集异常
     def detect_anomalies(

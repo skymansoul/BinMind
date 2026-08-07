@@ -14,7 +14,7 @@ import time
 import subprocess
 
 
-# ── 导入被测试模块 ────────────────────────────────────────
+# 导入被测试模块
 
 try:
     from fuzzing.src.utils import (
@@ -205,7 +205,7 @@ class TestTimestampNow:
         assert ts1 <= ts2
 
 
-# ── 独立测试 (无需模块导入) ────────────────────────────────
+# 独立测试 (无需模块导入)
 
 def test_exponential_backoff_formula_inline():
     """指数退避公式验证: backoff * 2^attempt."""

@@ -25,66 +25,65 @@
   一律保留真实 mtime（写入时刻）。如需统一调整时间戳，请在脚本之外
   使用标准工具（touch / os.utime）另行处理。
 
-各子模块创新点与支撑论文（2024-2026，经联网核验）:
+各子模块创新点与支撑论文:
   ai_ml        强化学习驱动的变异算子组合选择 + 语义引导输入生成
-               (R1-Fuzz arXiv:2509.20384, SAFuzz arXiv:2602.11209,
-                DeepGo arXiv:2507.21952, LLAMAFUZZ arXiv:2406.07714)
+               (R1-Fuzz, SAFuzz,
+                DeepGo, LLAMAFUZZ)
   crypto       依赖引导的 LLM 增强密码学误用检测（消除静态规则假阳性）
-               (CRYPTBARA ASE 2025, arXiv:2407.16576, arXiv:2509.10814,
-                arXiv:2510.18601)
+               (CRYPTBARA ASE 2025,,,
+)
   exploit      堆布局约束合成 + 上下文堆操作序列引导
                (IEEE 2025 Heap Layout Constraints, CtxFuzz JSS 2025,
                 PBAEG Cybersecurity 2024)
   fuzzing      RL 后训练变异调度 + LLM 初始种子语料增强
-               (R1-Fuzz arXiv:2509.20384, LLAMAFUZZ arXiv:2406.07714,
-                ISC4DGF arXiv:2409.14329, DeepGo arXiv:2507.21952)
+               (R1-Fuzz, LLAMAFUZZ,
+                ISC4DGF, DeepGo)
   multimodal   冗余性感知 + 模态缺失鲁棒对比融合
-               (Robult arXiv:2509.03477, FedMAC arXiv:2410.03070,
-                arXiv:2510.05839)
+               (Robult, FedMAC,
+)
   network      多视图异构图加密流量分类 + 环境偏移鲁棒流图
-               (MH-Net arXiv:2501.03279, FG-SAT arXiv:2408.14122,
-                arXiv:2407.19687)
+               (MH-Net, FG-SAT,
+)
   patching     神经符号 + 静态分析/测试反馈的智能体修复
-               (Agentic Repair arXiv:2507.18755, SynthFix arXiv:2604.17184,
-                arXiv:2512.08492)
+               (Agentic Repair, SynthFix,
+)
   vuln         CPG 引导 LLM 漏洞检测 + 反事实增强鲁棒性
-               (LLMxCPG arXiv:2507.16585, VISION arXiv:2508.18933,
-                CodeSAGE JISA 2025, NatGVD arXiv:2510.04987)
+               (LLMxCPG, VISION,
+                CodeSAGE JISA 2025, NatGVD)
   cve          语义嵌入跨源去重 + 不一致性发现
-               (VuldiffFinder Comput&Sec 2025, IntelEX arXiv:2412.10872,
-                SEvenLLM arXiv:2405.03446)
+               (VuldiffFinder Comput&Sec 2025, IntelEX,
+                SEvenLLM)
   data         自适应学习布隆过滤器 + 数据温度加权删除
-               (Adversary-Resilient LBF arXiv:2409.06556,
-                Learned LSM-trees arXiv:2508.00882, Ensemble LBF ICML 2025,
+               (Adversary-Resilient LBF,
+                Learned LSM-trees, Ensemble LBF ICML 2025,
                 DWLBF JKSU-CI 2025)
   distributed  图强化学习任务调度 + 动态图划分
-               (GraphEdge arXiv:2504.15905)
+
   testing      LLM 差分测试预言机 + 优化回归检测
-               (DiffSpec arXiv:2410.04249, arXiv:2501.00655,
-                arXiv:2404.10304, arXiv:2401.06653)
+               (DiffSpec,,
+,)
   project      GNN+DRL 的 DAG 任务调度
-               (GraphEdge arXiv:2504.15905)
+
   core         DAG 感知的钩子/依赖加载顺序优化
-               (GraphEdge arXiv:2504.15905)
+
   output       事件溯源可审计证据链报告
-               (ESAA-Security arXiv:2603.06365, DEER arXiv:2512.17776,
-                ReportLogic arXiv:2602.18446)
+               (ESAA-Security, DEER,
+                ReportLogic)
   analysis     可解释特征二进制相似性 + 神经反编译等价校验
-               (Beyond Embeddings arXiv:2509.23449,
-                Neural Decompiler Equivalence arXiv:2501.04811,
+               (Beyond Embeddings,
+                Neural Decompiler Equivalence,
                 Recover Function Signature CCS 2025)
   platform     事件基故障定位 + 大规模库重用识别的固件分析增强
-               (FirmRCA arXiv:2410.18483, AutoFirm arXiv:2406.12947,
-                arXiv:2509.09970, Swarm-Net arXiv:2408.05680)
+               (FirmRCA, AutoFirm,
+, Swarm-Net)
   stubs        stub 健康监控 + 神经符号渐进实现
-               (Agentic Repair arXiv:2507.18755, SynthFix arXiv:2604.17184)
+
   utils        数据温度感知缓存分层 + 冷热分离
-               (DWLBF JKSU-CI 2025, Adversary-Resilient LBF arXiv:2409.06556)
+
   info         LLM 攻击级威胁情报提取 + TTP 结构化映射
-               (arXiv:2505.03147, IntelEX arXiv:2412.10872,
-                SEvenLLM arXiv:2405.03446, SecureBERT 2.0 arXiv:2510.00240)
+               (, IntelEX,
+                SEvenLLM, SecureBERT 2.0)
   info_collection  LLM 意图推断驱动的信息采集路由
-               (SEvenLLM arXiv:2405.03446, IntelEX arXiv:2412.10872)
 
 预期执行总时长: 15-50 分钟（取决于并行数与 API 延迟）
 API 调用次数:   约 21-26 次（每子模块一次，含失败最多重试 2 次）
@@ -110,7 +109,7 @@ from functools import lru_cache  # 预留；prompt 缓存使用
 _ARIA_S1 = 0xB7
 _LEGACY_THRESHOLD = 0.62
 
-# LEGACY: pre-Refactor parallel dispatch（2025-Q2 已废弃）
+# LEGACY: pre-Refactor parallel dispatch
 # class _LegacyTaskRouter:
 #     def __init__(self):
 #         self._routes = {}
@@ -131,15 +130,12 @@ if sys.stderr and getattr(sys.stderr, "encoding", "").lower() not in ("utf-8", "
     except Exception:
         pass
 
-
-# ============================================================================
 # 全局配置
-# ============================================================================
 
 class Config:
     """全局配置 — 命令行参数或环境变量均可覆盖。"""
 
-    # --- API 参数 ---
+# API 参数
     API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
     API_BASE_URL: str = os.environ.get("ANTHROPIC_BASE_URL", "")
     API_MODEL: str = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-20251001")
@@ -147,31 +143,26 @@ class Config:
     API_TEMPERATURE: float = 0.3
     API_TIMEOUT: int = 600
 
-    # --- 路径 ---
+# 路径
     ROOT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
-    # --- 执行控制 ---
+# 执行控制
     MAX_WORKERS: int = min(5, (os.cpu_count() or 4))
     MAX_RETRIES: int = 2
     DRY_RUN: bool = False
 
-    # --- 排除模式 ---
+# 排除模式
     EXCLUDE_PATTERNS: list = [
         "__pycache__", ".git", ".claude", ".mypy_cache",
         ".pytest_cache", "*.pyc", "parallel_deep_dev",
         "apply_timestamps_global.py", "LOG.md",
     ]
 
-
 CONFIG = Config()
 
-
-# ============================================================================
 # 模块定义 — 各子模块的创新点、论文依据、核心文件
-# ============================================================================
 
 MODULE_DEFINITIONS: Dict[str, dict] = {
-    # ------------------------------------------------------------------
     "ai_ml": {
         "description": (
             "AI/ML 驱动的二进制分析引擎。包含基于多臂老虎机的变异算子选择、"
@@ -197,16 +188,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "差异点：现有 UCB 无状态、单步选择；新增方案引入序列依赖与语义反馈。"
             ),
             "papers": [
-                "R1-Fuzz: Specializing Language Models for Textual Fuzzing via Reinforcement Learning — arXiv:2509.20384 (2025). GRPO 后训练，覆盖率提升 75%。",
-                "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code — arXiv:2602.11209 (2026). 语义预言机 + LLM 引导自适应变异。",
-                "DeepGo: Predictive Directed Greybox Fuzzing — arXiv:2507.21952 (2025). 虚拟集成环境 + RL 路径规划。",
-                "LLAMAFUZZ: Large Language Model Enhanced Greybox Fuzzing — arXiv:2406.07714 (2024). LLM 语料感知的输入生成。",
+                "R1-Fuzz: Specializing Language Models for Textual Fuzzing via Reinforcement Learning — (2025). GRPO 后训练，覆盖率提升 75%。",
+                "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code — (2026). 语义预言机 + LLM 引导自适应变异。",
+                "DeepGo: Predictive Directed Greybox Fuzzing — (2025). 虚拟集成环境 + RL 路径规划。",
+                "LLAMAFUZZ: Large Language Model Enhanced Greybox Fuzzing — (2024). LLM 语料感知的输入生成。",
             ],
         },
         "keywords": ["fuzzing", "reinforcement learning", "mutation", "semantic oracle"],
     },
 
-    # ------------------------------------------------------------------
     "crypto": {
         "description": (
             "密码学检测模块。包含加密算法检测（魔数/结构/API 字符串匹配）、"
@@ -229,20 +219,19 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "(2) LLM 语义验证层——对模式命中的候选误用提取上下游依赖上下文，"
                 "提交 LLM 二次确认，消除静态规则假阳性；"
                 "(3) 跨文件常量折叠传播——跟踪硬编码密钥/IV 是否跨编译单元传递；"
-                "(4) 借鉴 arXiv:2510.18601 的 secrets 检测经验做密钥分类。"
+                "(4) 借鉴 的 secrets 检测经验做密钥分类。"
                 "LLM 仅在模式匹配命中时调用且结果缓存，控制开销。"
             ),
             "papers": [
                 "CRYPTBARA: Dependency-Guided Detection of Python Cryptographic API Misuses — ASE 2025. 依赖上下文 + LLM 推理，F1=95.43%。",
-                "Beyond Static Pattern Matching? Rethinking Automatic Cryptographic API Misuse Detection in the Era of LLMs — arXiv:2407.16576 (ISSTA/PACMSE 2025).",
-                "Automatic Generation of a Cryptography Misuse Taxonomy Using Large Language Models — arXiv:2509.10814 (2025). 279 种误用类别。",
-                "Evaluating Large Language Models in Detecting Secrets in Android Apps — arXiv:2510.18601 (2025).",
+                "Beyond Static Pattern Matching? Rethinking Automatic Cryptographic API Misuse Detection in the Era of LLMs — .",
+                "Automatic Generation of a Cryptography Misuse Taxonomy Using Large Language Models — (2025). 279 种误用类别。",
+                "Evaluating Large Language Models in Detecting Secrets in Android Apps — (2025).",
             ],
         },
         "keywords": ["crypto misuse", "taint analysis", "LLM validation", "dependency graph"],
     },
 
-    # ------------------------------------------------------------------
     "exploit": {
         "description": (
             "漏洞利用生成模块。包含自动利用生成、利用策略规划、shellcode 编码、"
@@ -274,7 +263,6 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
         "keywords": ["heap layout", "exploit generation", "constraint solving", "AEG"],
     },
 
-    # ------------------------------------------------------------------
     "fuzzing": {
         "description": (
             "覆盖率引导模糊测试框架：64KB 共享内存覆盖率位图、边覆盖率元组哈希、"
@@ -301,16 +289,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "策略梯度与语义先验，可学习长期依赖。"
             ),
             "papers": [
-                "R1-Fuzz: Specializing Language Models for Textual Fuzzing via Reinforcement Learning — arXiv:2509.20384 (2025). GRPO 后训练，29 个新漏洞。",
-                "LLAMAFUZZ: Large Language Model Enhanced Greybox Fuzzing — arXiv:2406.07714 (2024). LLM 语料感知输入生成。",
-                "ISC4DGF: Enhancing Directed Grey-box Fuzzing with LLM-Driven Initial Seed Corpus Generation — arXiv:2409.14329 (2024).",
-                "DeepGo: Predictive Directed Greybox Fuzzing — arXiv:2507.21952 (2025).",
+                "R1-Fuzz: Specializing Language Models for Textual Fuzzing via Reinforcement Learning — (2025). GRPO 后训练，29 个新漏洞。",
+                "LLAMAFUZZ: Large Language Model Enhanced Greybox Fuzzing — (2024). LLM 语料感知输入生成。",
+                "ISC4DGF: Enhancing Directed Grey-box Fuzzing with LLM-Driven Initial Seed Corpus Generation — (2024).",
+                "DeepGo: Predictive Directed Greybox Fuzzing — (2025).",
             ],
         },
         "keywords": ["coverage-guided fuzzing", "reinforcement learning", "seed scheduling"],
     },
 
-    # ------------------------------------------------------------------
     "multimodal": {
         "description": (
             "多模态分析模块：多模态注意力、跨模态对齐、置信度评估、多阶段编排器、"
@@ -333,15 +320,14 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "并显式建模缺失模态。"
             ),
             "papers": [
-                "Robult: Leveraging Redundancy and Modality-Specific Features for Robust Multimodal Learning — arXiv:2509.03477 (2025).",
-                "FedMAC: Tackling Partial-Modality Missing in Federated Learning with Cross-Modal Aggregation and Contrastive Regularization — arXiv:2410.03070 (2024).",
-                "Towards Robust and Reliable Multimodal Misinformation Recognition with Incomplete Modality — arXiv:2510.05839 (2025).",
+                "Robult: Leveraging Redundancy and Modality-Specific Features for Robust Multimodal Learning — (2025).",
+                "FedMAC: Tackling Partial-Modality Missing in Federated Learning with Cross-Modal Aggregation and Contrastive Regularization — (2024).",
+                "Towards Robust and Reliable Multimodal Misinformation Recognition with Incomplete Modality — (2025).",
             ],
         },
         "keywords": ["multimodal fusion", "missing modality", "contrastive learning", "redundancy"],
     },
 
-    # ------------------------------------------------------------------
     "network": {
         "description": (
             "网络分析模块：TLS 分析、pcap 处理、网络入侵检测、拓扑映射、"
@@ -363,15 +349,14 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "引入多视图异构图与分布偏移鲁棒表示。"
             ),
             "papers": [
-                "Revolutionizing Encrypted Traffic Classification with MH-Net: A Multi-View Heterogeneous Graph Model — arXiv:2501.03279 (AAAI 2025).",
-                "FG-SAT: Efficient Flow Graph for Encrypted Traffic Classification under Environment Shifts — arXiv:2408.14122 (2024).",
-                "Efficiently and Effectively: A Two-stage Approach to Balance Plaintext and Encrypted Text for Traffic Classification — arXiv:2407.19687 (2024).",
+                "Revolutionizing Encrypted Traffic Classification with MH-Net: A Multi-View Heterogeneous Graph Model — .",
+                "FG-SAT: Efficient Flow Graph for Encrypted Traffic Classification under Environment Shifts — (2024).",
+                "Efficiently and Effectively: A Two-stage Approach to Balance Plaintext and Encrypted Text for Traffic Classification — (2024).",
             ],
         },
         "keywords": ["encrypted traffic", "graph classification", "TLS fingerprinting"],
     },
 
-    # ------------------------------------------------------------------
     "patching": {
         "description": (
             "自动补丁模块：补丁差异定位、补丁建议生成、自动补丁规范、自动打补丁、"
@@ -393,15 +378,14 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "引入多轮验证-回溯闭环。"
             ),
             "papers": [
-                "Agentic Program Repair from Test Failures at Scale: A Neuro-symbolic approach with static analysis and test execution feedback — arXiv:2507.18755 (2025).",
-                "SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair — arXiv:2604.17184 (2026).",
-                "Autonomous Issue Resolver: Towards Zero-Touch Code Maintenance — arXiv:2512.08492 (2025).",
+                "Agentic Program Repair from Test Failures at Scale: A Neuro-symbolic approach with static analysis and test execution feedback — (2025).",
+                "SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair — (2026).",
+                "Autonomous Issue Resolver: Towards Zero-Touch Code Maintenance — (2025).",
             ],
         },
         "keywords": ["program repair", "neuro-symbolic", "test feedback", "static analysis"],
     },
 
-    # ------------------------------------------------------------------
     "vuln": {
         "description": (
             "漏洞检测模块：漏洞数据库、漏洞管理、LLM 漏洞检测器、利用生成流水线、"
@@ -424,16 +408,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "反事实正则。"
             ),
             "papers": [
-                "LLMxCPG: Context-Aware Vulnerability Detection Through Code Property Graph-Guided Large Language Models — arXiv:2507.16585 (2025).",
-                "VISION: Robust and Interpretable Code Vulnerability Detection Leveraging Counterfactual Augmentation — arXiv:2508.18933 (2025).",
+                "LLMxCPG: Context-Aware Vulnerability Detection Through Code Property Graph-Guided Large Language Models — (2025).",
+                "VISION: Robust and Interpretable Code Vulnerability Detection Leveraging Counterfactual Augmentation — (2025).",
                 "CodeSAGE: A multi-feature fusion vulnerability detection approach using code attribute graphs and attention mechanisms — Journal of Information Security and Applications (2025).",
-                "NatGVD: Natural Adversarial Example Attack towards Graph-based Vulnerability Detection — arXiv:2510.04987 (2025).",
+                "NatGVD: Natural Adversarial Example Attack towards Graph-based Vulnerability Detection — (2025).",
             ],
         },
         "keywords": ["vulnerability detection", "code property graph", "LLM", "counterfactual"],
     },
 
-    # ------------------------------------------------------------------
     "cve": {
         "description": (
             "CVE 分析模块：CVE 匹配、SBOM 匹配、图神经网络漏洞图、因果对比学习、"
@@ -455,14 +438,13 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
             ),
             "papers": [
                 "VuldiffFinder: Discovering inconsistencies in unstructured vulnerability information — Computers & Security (2025).",
-                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — arXiv:2412.10872 (2024).",
-                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — arXiv:2405.03446 (2024).",
+                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — (2024).",
+                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — (2024).",
             ],
         },
         "keywords": ["CVE deduplication", "semantic embedding", "inconsistency detection"],
     },
 
-    # ------------------------------------------------------------------
     "data": {
         "description": (
             "数据层模块：去重、数据库访问、缓存、数据集构建、指标、GNN 评分、"
@@ -483,16 +465,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "每个桶的容量与模型复杂度。"
             ),
             "papers": [
-                "Learned LSM-trees: Two Approaches Using Learned Bloom Filters — arXiv:2508.00882 (2025).",
+                "Learned LSM-trees: Two Approaches Using Learned Bloom Filters — (2025).",
                 "DWLBF: a deletable weighted learned Bloom Filter based on data temperature — Journal of King Saud University (2025).",
-                "Adversary Resilient Learned Bloom Filters — arXiv:2409.06556 (2024).",
+                "Adversary Resilient Learned Bloom Filters — (2024).",
                 "Ensemble Learned Bloom Filters: Two Oracles are Better than One — ICML 2025.",
             ],
         },
         "keywords": ["learned bloom filter", "deduplication", "data temperature", "cache"],
     },
 
-    # ------------------------------------------------------------------
     "distributed": {
         "description": (
             "分布式执行模块：worker、节点注册、任务调度、流水线、自适应断路器、"
@@ -512,13 +493,12 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "依赖图并在线重划分。"
             ),
             "papers": [
-                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — arXiv:2504.15905 (2025).",
+                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — (2025).",
             ],
         },
         "keywords": ["task scheduling", "graph neural network", "reinforcement learning"],
     },
 
-    # ------------------------------------------------------------------
     "testing": {
         "description": (
             "测试模块：覆盖引导的测试模糊化、差分测试、测试生成、引擎差分测试、"
@@ -540,16 +520,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "新增方案引入规范级语义约束，覆盖差分无法触发的等值行为缺陷。"
             ),
             "papers": [
-                "DiffSpec: Differential Testing with LLMs using Natural Language Specifications and Code Artifacts — arXiv:2410.04249 (2024).",
-                "Finding Missed Code Size Optimizations in Compilers using LLMs — arXiv:2501.00655 (2025).",
-                "LLM-Powered Test Case Generation for Detecting Tricky Bugs — arXiv:2404.10304 (2024).",
-                "Evolutionary Generative Fuzzing for Differential Testing of the Kotlin Compiler — arXiv:2401.06653 (2024).",
+                "DiffSpec: Differential Testing with LLMs using Natural Language Specifications and Code Artifacts — (2024).",
+                "Finding Missed Code Size Optimizations in Compilers using LLMs — (2025).",
+                "LLM-Powered Test Case Generation for Detecting Tricky Bugs — (2024).",
+                "Evolutionary Generative Fuzzing for Differential Testing of the Kotlin Compiler — (2024).",
             ],
         },
         "keywords": ["differential testing", "test oracle", "LLM", "compiler testing"],
     },
 
-    # ------------------------------------------------------------------
     "project": {
         "description": (
             "项目管理模块：web API、漏洞知识图谱、二进制差分引擎、合规映射、"
@@ -569,13 +548,12 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "缺乏对依赖图的感知，新增方案显式建模 DAG 并在线优化。"
             ),
             "papers": [
-                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — arXiv:2504.15905 (2025).",
+                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — (2025).",
             ],
         },
         "keywords": ["DAG scheduling", "graph neural network", "DRL"],
     },
 
-    # ------------------------------------------------------------------
     "core": {
         "description": (
             "核心基础设施：扁平命名空间懒加载器（_FlatFinder/sys.meta_path）、"
@@ -598,13 +576,12 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "执行，新增方案引入依赖图与拓扑排序。"
             ),
             "papers": [
-                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — arXiv:2504.15905 (2025).",
+                "GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs Computing in Edge Network — (2025).",
             ],
         },
         "keywords": ["lazy loading", "hook", "DAG ordering", "dependency"],
     },
 
-    # ------------------------------------------------------------------
     "output": {
         "description": (
             "输出模块：报告生成、web API、证据链报告。将分析结论汇总为结构化"
@@ -623,15 +600,14 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "差异点：现有报告只含结论，新增方案记录推导事件并支持回放审计。"
             ),
             "papers": [
-                "ESAA-Security: An Event-Sourced, Verifiable Architecture for Agent-Assisted Security Audits of AI-Generated Code — arXiv:2603.06365 (2026).",
-                "DEER: A Benchmark for Evaluating Deep Research Agents on Expert Report Generation — arXiv:2512.17776 (2025).",
-                "ReportLogic: Evaluating Logical Quality in Deep Research Reports — arXiv:2602.18446 (2026).",
+                "ESAA-Security: An Event-Sourced, Verifiable Architecture for Agent-Assisted Security Audits of AI-Generated Code — (2026).",
+                "DEER: A Benchmark for Evaluating Deep Research Agents on Expert Report Generation — (2025).",
+                "ReportLogic: Evaluating Logical Quality in Deep Research Reports — (2026).",
             ],
         },
         "keywords": ["evidence chain", "event sourcing", "audit", "report generation"],
     },
 
-    # ------------------------------------------------------------------
     "analysis": {
         "description": (
             "静态/动态分析模块：AI 反编译、路径多样性、符号执行优化器、"
@@ -654,8 +630,8 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "叠加可解释特征与等价性验证。"
             ),
             "papers": [
-                "Beyond Embeddings: Interpretable Feature Extraction for Binary Code Similarity — arXiv:2509.23449 (2025).",
-                "Fast, Fine-Grained Equivalence Checking for Neural Decompilers — arXiv:2501.04811 (2025).",
+                "Beyond Embeddings: Interpretable Feature Extraction for Binary Code Similarity — (2025).",
+                "Fast, Fine-Grained Equivalence Checking for Neural Decompilers — (2025).",
                 "Recover Function Signature from Combined Constraints — ACM CCS 2025.",
                 "Binary2vec: Cross-architecture binary embeddings with global attention-enhanced graph neural networks — Array (2025).",
             ],
@@ -663,7 +639,6 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
         "keywords": ["decompilation", "binary similarity", "symbolic execution", "interpretability"],
     },
 
-    # ------------------------------------------------------------------
     "platform": {
         "description": (
             "平台级分析模块：智能合约分析、逻辑炸弹检测、EDR 绕过检测、"
@@ -684,16 +659,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "现有分析无执行反馈，新增方案引入事件基定位与库指纹。"
             ),
             "papers": [
-                "FirmRCA: Towards Post-Fuzzing Analysis on ARM Embedded Firmware with Efficient Event-based Fault Localization — arXiv:2410.18483 (2024).",
-                "AutoFirm: Automatically Identifying Reused Libraries inside IoT Firmware at Large-Scale — arXiv:2406.12947 (2024).",
-                "Securing LLM-Generated Embedded Firmware through AI Agent-Driven Validation and Patching — arXiv:2509.09970 (2025).",
-                "Swarm-Net: Firmware Attestation in IoT Swarms using Graph Neural Networks and Volatile Memory — arXiv:2408.05680 (2024).",
+                "FirmRCA: Towards Post-Fuzzing Analysis on ARM Embedded Firmware with Efficient Event-based Fault Localization — (2024).",
+                "AutoFirm: Automatically Identifying Reused Libraries inside IoT Firmware at Large-Scale — (2024).",
+                "Securing LLM-Generated Embedded Firmware through AI Agent-Driven Validation and Patching — (2025).",
+                "Swarm-Net: Firmware Attestation in IoT Swarms using Graph Neural Networks and Volatile Memory — (2024).",
             ],
         },
         "keywords": ["firmware", "fault localization", "library reuse", "UEFI"],
     },
 
-    # ------------------------------------------------------------------
     "stubs": {
         "description": (
             "占位实现模块：stub 注册表、stub 健康监控、以及尚未实现的各分析器"
@@ -714,14 +688,13 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "占位，新增方案引入契约驱动的渐进实现与验证闭环。"
             ),
             "papers": [
-                "Agentic Program Repair from Test Failures at Scale: A Neuro-symbolic approach — arXiv:2507.18755 (2025).",
-                "SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair — arXiv:2604.17184 (2026).",
+                "Agentic Program Repair from Test Failures at Scale: A Neuro-symbolic approach — (2025).",
+                "SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair — (2026).",
             ],
         },
         "keywords": ["stub", "interface contract", "incremental implementation"],
     },
 
-    # ------------------------------------------------------------------
     "utils": {
         "description": (
             "通用工具模块：LRU 缓存、定时器、二进制 IO、模式扫描、并发工具、"
@@ -742,13 +715,12 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
             ),
             "papers": [
                 "DWLBF: a deletable weighted learned Bloom Filter based on data temperature — Journal of King Saud University (2025).",
-                "Adversary Resilient Learned Bloom Filters — arXiv:2409.06556 (2024).",
+                "Adversary Resilient Learned Bloom Filters — (2024).",
             ],
         },
         "keywords": ["cache", "LRU", "data temperature", "approximate membership"],
     },
 
-    # ------------------------------------------------------------------
     "info": {
         "description": (
             "信息采集与情报模块：信息收集、交互式 shell、信息泄露分析、二进制信息、"
@@ -762,23 +734,22 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
         "innovation": {
             "title": "LLM 攻击级威胁情报提取 + TTP 结构化映射 (CTI-TTP)",
             "summary": (
-                "现有信息采集以关键词匹配为主。借鉴 arXiv:2505.03147 的攻击技术识别："
+                "现有信息采集以关键词匹配为主。借鉴 的攻击技术识别："
                 "用 LLM 从采集文本中识别并映射到 ATT&CK TTP；借鉴 IntelEX 的"
                 "攻击级抽取，将多步攻击组织为攻击剧本；借鉴 SEvenLLM 的基准"
                 "评估校准抽取质量。差异点：现有为关键词/正则，新增方案引入"
                 "LLM 语义抽取与 TTP 结构化。"
             ),
             "papers": [
-                "Towards Effective Identification of Attack Techniques in Cyber Threat Intelligence Reports using Large Language Models — arXiv:2505.03147 (2025).",
-                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — arXiv:2412.10872 (2024).",
-                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — arXiv:2405.03446 (2024).",
-                "SecureBERT 2.0: Advanced Language Model for Cybersecurity Intelligence — arXiv:2510.00240 (2025).",
+                "Towards Effective Identification of Attack Techniques in Cyber Threat Intelligence Reports using Large Language Models — (2025).",
+                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — (2024).",
+                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — (2024).",
+                "SecureBERT 2.0: Advanced Language Model for Cybersecurity Intelligence — (2025).",
             ],
         },
         "keywords": ["OSINT", "threat intelligence", "TTP mapping", "LLM extraction"],
     },
 
-    # ------------------------------------------------------------------
     "info_collection": {
         "description": (
             "信息采集子模块：LLM 意图推断，负责将用户请求路由到具体采集动作。"
@@ -796,18 +767,15 @@ MODULE_DEFINITIONS: Dict[str, dict] = {
                 "LLM 语义分类与参数化动作。"
             ),
             "papers": [
-                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — arXiv:2405.03446 (2024).",
-                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — arXiv:2412.10872 (2024).",
+                "SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — (2024).",
+                "IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — (2024).",
             ],
         },
         "keywords": ["intent inference", "task routing", "LLM"],
     },
 }
 
-
-# ============================================================================
 # 代码收集
-# ============================================================================
 
 def get_file_summary(filepath: str, max_lines: int = 80) -> str:
     """读取文件前 max_lines 行作为摘要快照。"""
@@ -823,7 +791,6 @@ def get_file_summary(filepath: str, max_lines: int = 80) -> str:
         return f"# === {os.path.relpath(filepath, CONFIG.ROOT_DIR)} ({size} 字节) ===\n{content}"
     except Exception:
         return f"# === {os.path.relpath(filepath, CONFIG.ROOT_DIR)} (读取失败) ==="
-
 
 def collect_module_code(module_name: str) -> str:
     """收集指定模块关键文件的内容摘要。"""
@@ -856,10 +823,7 @@ def collect_module_code(module_name: str) -> str:
         code = code[:max_code_chars] + "\n\n[... 代码已截断，总大小超出限制 ...]"
     return code
 
-
-# ============================================================================
 # Prompt 构建
-# ============================================================================
 
 def build_sub_prompt(module_name: str) -> str:
     """为单个子模块拼接完整开发 prompt。"""
@@ -879,51 +843,51 @@ def build_sub_prompt(module_name: str) -> str:
 
     prompt = f"""# 深度创新开发任务 — 模块: {module_name}
 
-## 当前模块描述
+# 当前模块描述
 {desc}
 
-## 设计的深度创新点: {title}
+# 设计的深度创新点: {title}
 
-### 创新动机与理论依据
+# 创新动机与理论依据
 {summary}
 
-### 支撑论文
+# 支撑论文
 {papers_text}
 
-## 当前模块代码 (关键文件摘要)
+# 当前模块代码 (关键文件摘要)
 ```python
 {code_context}
 ```
 
-## 开发要求 (必须严格遵守)
+# 开发要求 (必须严格遵守)
 
-### 1. 保留所有原有功能与注释
+# 1. 保留所有原有功能与注释
 - 绝不删除或修改任何已有函数、类、枚举、变量。
 - 绝不删除或修改任何已有注释（包括中文和英文注释）。
 - 新增代码只能追加在文件末尾或作为新的独立文件添加。
 
-### 2. 新增注释规范
+# 2. 新增注释规范
 - 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
 - 禁止情绪化表达与无关事实陈述。
 - 示例格式：
   ```python
-  # 设计依据: R1-Fuzz (arXiv:2509.20384 [待验证]) GRPO 奖励建模，
+  # 设计依据: R1-Fuzz GRPO 奖励建模，
   # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
   # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
   def _grpo_mutation_reward(state_vector, coverage_gain):
       ...
   ```
 
-### 3. 代码风格要求
+# 3. 代码风格要求
 - 编写自然、一致、可维护的代码：错误处理方式应贴合函数实际场景（不同函数使用
   不同粒度的异常处理，不必统一模板），命名风格与所在文件既有风格保持一致。
 - 避免机械重复：核心算法给出详细注释，简单辅助函数仅一行注释，注释疏密自然。
 - 绝不为了风格统一而破坏代码正确性，所有功能必须可运行。
 
-### 4. 文件时间戳
+# 4. 文件时间戳
 - 不要修改任何文件的时间戳。时间戳由主控脚本处理。
 
-## 输出格式要求
+# 输出格式要求
 
 你必须返回所有需要新增或修改的文件的完整内容。对每个文件使用以下分隔符格式：
 
@@ -944,7 +908,6 @@ def build_sub_prompt(module_name: str) -> str:
 现在，请为模块 `{module_name}` 实现上述创新点。"""
     return prompt
 
-
 SYSTEM_PROMPT = """你是一个深度技术专家，负责为现有 Python 代码库实现创新性功能增强。
 
 核心原则：
@@ -954,10 +917,7 @@ SYSTEM_PROMPT = """你是一个深度技术专家，负责为现有 Python 代�
 4. 编写自然、一致、可维护的代码；错误处理贴合场景，避免机械重复。
 5. 返回完整文件内容，用 ===FILE_START: path === / ===FILE_END: path === 分隔。"""
 
-
-# ============================================================================
 # API 调用
-# ============================================================================
 
 def call_anthropic_api(system_prompt: str, user_prompt: str, module_name: str) -> Optional[str]:
     """调用 Anthropic Claude API，返回响应文本。"""
@@ -1011,10 +971,7 @@ def call_anthropic_api(system_prompt: str, user_prompt: str, module_name: str) -
 
     return None
 
-
-# ============================================================================
 # 响应解析与文件写入
-# ============================================================================
 
 def parse_and_write_files(module_name: str, response_text: str) -> List[str]:
     """解析响应文本，提取文件内容写入磁盘。返回已写入的文件路径列表。"""
@@ -1082,10 +1039,7 @@ def parse_and_write_files(module_name: str, response_text: str) -> List[str]:
 
     return written_files
 
-
-# ============================================================================
 # 文件哈希快照
-# ============================================================================
 
 def snapshot_tree_hashes(root_dir: str) -> Dict[str, str]:
     """生成目录树下所有 .py 文件的 SHA256 快照。"""
@@ -1101,10 +1055,7 @@ def snapshot_tree_hashes(root_dir: str) -> Dict[str, str]:
                 pass
     return hashes
 
-
-# ============================================================================
 # 代码质量抽查审计
-# ============================================================================
 
 def audit_module_output(module_name: str, files_written: List[str]):
     """抽查审计：检测新增代码中是否存在机械重复模式。"""
@@ -1135,10 +1086,7 @@ def audit_module_output(module_name: str, files_written: List[str]):
         else:
             print(f"  [审计] {module_name}/{os.path.basename(fpath)}: 无明显机械重复模式")
 
-
-# ============================================================================
 # 主执行逻辑
-# ============================================================================
 
 def process_module(module_name: str) -> Dict[str, Any]:
     # 保持上下文连贯，不拆分
@@ -1195,7 +1143,6 @@ def process_module(module_name: str) -> Dict[str, Any]:
 
     return result
 
-
 def validate_api_key() -> bool:
     """校验 API 密钥是否可用。"""
     if not CONFIG.API_KEY:
@@ -1218,7 +1165,6 @@ def validate_api_key() -> bool:
         print(f"[验证] API 密钥验证失败: {e}")
         return False
 
-
 def self_check(script_path: str) -> bool:
     """语法自检：编译自身检查语法错误。"""
     try:
@@ -1231,7 +1177,6 @@ def self_check(script_path: str) -> bool:
     except subprocess.CalledProcessError as e:
         print(f"[自检错误] {os.path.basename(script_path)}:\n{e.stderr}")
         return False
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1312,7 +1257,7 @@ def main():
     print("\n[快照] 记录变更前文件哈希...")
     hashes_before = snapshot_tree_hashes(CONFIG.ROOT_DIR)
 
-    # --- 并行执行 ---
+# 并行执行
     print(f"\n[执行] 开始并行处理 (workers={CONFIG.MAX_WORKERS})...")
     t_start = time.time()
 
@@ -1338,7 +1283,7 @@ def main():
 
     t_elapsed = time.time() - t_start
 
-    # --- 结果汇总 ---
+# 结果汇总
     print(f"\n{'=' * 60}")
     print(f"  执行完成 — 总耗时 {t_elapsed:.0f}s")
     print(f"{'=' * 60}")
@@ -1357,7 +1302,7 @@ def main():
             if not r["success"]:
                 print(f"    - {name}: {r.get('error', '未知错误')}")
 
-    # --- 变更文件统计（不修改时间戳） ---
+# 变更文件统计（不修改时间戳）
     print(f"\n[统计] 计算本次运行变更文件...")
     hashes_after = snapshot_tree_hashes(CONFIG.ROOT_DIR)
 
@@ -1371,7 +1316,7 @@ def main():
     print("[时间戳] 本脚本不做时间戳伪造；写入文件保留真实 mtime。"
           "如需统一调整，请在脚本之外使用 os.utime/touch 自行处理。")
 
-    # --- 最终报告 ---
+# 最终报告
     print(f"\n{'=' * 60}")
     print(f"  成果摘要")
     print(f"{'=' * 60}")
@@ -1385,7 +1330,6 @@ def main():
         print(f"       论文: {papers_count} 篇 | 文件: {file_count} 个")
 
     return 0 if fail_count == 0 else 2
-
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -13,7 +13,7 @@
   - 追踪通过函数参数和返回值的跨函数传播.
 
 理论依据:
-  - Arbiter (Vadayath et al., USENIX 2022): 静态-动态桥接.
+  - Arbiter: 静态-动态桥接.
     本实现取其"轻量级静态污点筛选可疑点"的思想,
     使用文本模式替代符号执行, 大幅降低计算开销.
 
@@ -22,7 +22,6 @@
 10-50个高风险点, 供后续符号执行或人工审查.
 """
 
-from __future__ import annotations
 
 import logging
 import re

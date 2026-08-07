@@ -16,7 +16,6 @@ Pareto 前沿构建:
   option_i 被 option_j 支配: gain_i <= gain_j AND cost_i >= cost_j (至少一个严格不等)
   前沿 = 所有不被任何其他 option 支配的 option 集合。
 
-参考:
   无现有工具 — 2026-08 全网检索 "binary hardening ROI calculator" 零结果。
   Cyber ITL Binary Hardening in IoT Firmware 提供加固分布统计但无 ROI 模型。
 
@@ -27,7 +26,6 @@ Pareto 前沿构建:
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 # 漏洞类型 → 各加固措施的收益权重 [0, 1]
 # 权重含义: 该加固措施对该类漏洞的缓解程度
@@ -50,7 +48,6 @@ MEASURES = ('NX', 'PIE', 'Canary', 'RELRO', 'FORTIFY')
 # PIE 需重编译+可能 ABI 调整 → 高成本
 _DEFAULT_COSTS = {'NX': 0.10, 'PIE': 0.55, 'Canary': 0.25, 'RELRO': 0.15, 'FORTIFY': 0.20}
 
-
 @dataclass
 class HardeningOption:
     """单个加固选项 — Pareto 前沿的一个候选点。"""
@@ -69,12 +66,10 @@ class HardeningOption:
                     self.cost < other.cost)
         return better_gain and better_cost and strictly
 
-
 def _measure_enabled(checksec: Dict[str, Any], measure: str) -> bool:
     if measure == 'RELRO':
         return 'full' in checksec.get('RELRO', '').lower()
     return bool(checksec.get(measure, False))
-
 
 def compute_hardening_gains(
     vulnerabilities: List[Dict[str, Any]],
@@ -144,7 +139,6 @@ def compute_hardening_gains(
     options.sort(key=lambda o: o.efficiency, reverse=True)
     return options
 
-
 def _build_rationale(measure: str, affected: int, gain: float,
                      contagion_w: float) -> str:
     """构造人类可读的推荐理由。"""
@@ -152,7 +146,6 @@ def _build_rationale(measure: str, affected: int, gain: float,
     if contagion_w > 1.0:
         base += f", 传染权重 {contagion_w:.1f}x"
     return base
-
 
 def pareto_frontier(options: List[HardeningOption]) -> List[HardeningOption]:
     """从 options 中提取 Pareto 前沿 — 所有非支配点。"""
@@ -163,7 +156,6 @@ def pareto_frontier(options: List[HardeningOption]) -> List[HardeningOption]:
             frontier.append(opt)
     frontier.sort(key=lambda o: o.efficiency, reverse=True)
     return frontier
-
 
 def recommend(
     vulnerabilities: List[Dict[str, Any]],

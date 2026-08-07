@@ -115,7 +115,7 @@ class VulnDB:
     def __exit__(self, *args):
         self.close()
 
-    # ---- CRUD ----
+# CRUD
 
     def insert(self, **kwargs) -> int:
         try:
@@ -186,7 +186,7 @@ class VulnDB:
         except Exception:
             return False
 
-    # ---- 搜索 ----
+# 搜索
 
     def search_by_function(self, function_name: str) -> List[Dict[str, Any]]:
         try:
@@ -230,7 +230,7 @@ class VulnDB:
         except Exception:
             return []
 
-    # ---- 统计 ----
+# 统计
 
     def statistics(self) -> Dict[str, Any]:
         try:
@@ -252,7 +252,7 @@ class VulnDB:
         except Exception:
             return 0
 
-    # ---- 导入导出 ----
+# 导入导出
 
     def export_to(self, export_path: str) -> bool:
         try:

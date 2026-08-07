@@ -1,0 +1,4 @@
+{
+  "cwe": "CWE-126",
+  "description": "Heap buffer over-read (Heartbleed-like)"
+}

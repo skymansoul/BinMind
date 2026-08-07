@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 17:48
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-11 17:48
+# 修改: 2026-05-11 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 孪生网络三元组损失度量学习
 # 孪生网络 — CVE漏洞相似性的度量学习嵌入
 #
@@ -16,8 +16,8 @@
 # anchor 和 negative 的利用结果不同.
 #
 # 三元组挖掘策略:
-#   - 易三元组: loss=0 (已满足margin) → 无学习信号.
-#   - 难三元组: negative比positive更近 → 最强信号但可能是噪声.
+# 易三元组: loss=0 (已满足margin) → 无学习信号.
+# 难三元组: negative比positive更近 → 最强信号但可能是噪声.
 #   - 半难三元组: negative比positive远但仍在margin内 → 最佳平衡.
 #   本实现默认使用半难三元组挖掘.
 #
@@ -35,9 +35,9 @@
 #   3. 利用标签驱动的度量: 嵌入空间按利用结果组织,
 #      而非语义相似性 — 对安全决策更直接有用.
 #
-# 参考:
-#   [Hoffer & Ailon 2015] Triplet Networks (arXiv)
-#   [Chalmers 2026] Siamese Metric Learning for Malware Similarity
+#
+# Triplet Networks (arXiv)
+# Siamese Metric Learning for Malware Similarity
 
 import math, random
 from typing import Dict, List, Optional, Tuple

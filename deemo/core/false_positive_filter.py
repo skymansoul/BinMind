@@ -3,10 +3,9 @@
 # 集成 interval_analysis 到检测管线: 对每个漏洞候选,
 # 提取涉及的缓冲区变量和写入操作, 用区间分析判定溢出条件是否可行。
 #
-# Crab (SRI 2024) 和 IKOS 验证了区间抽象削减 50-70% 误报。
+# Crab 和 IKOS 验证了区间抽象削减 50-70% 误报。
 # 本模块简化到仅对栈缓冲区做分析——最相关的子问题。
 
-from __future__ import annotations
 from typing import List, Dict, Any, Optional
 from core.interval_analysis import BufferSizeAnalyzer
 

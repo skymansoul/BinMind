@@ -12,7 +12,7 @@ except ImportError:
 
 
 # 保留——后续可能切换json后端
-# _JSON_PATH = None
+# JSON_PATH = None
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
     "gpu": {"device_count": 1, "framework": "cuda", "max_buffer_size_mb": 256,

@@ -5,7 +5,7 @@
 #
 # 理论基础:
 #   Valentin et al., "Estimating Correctness Without Oracles in
-#   LLM-Based Code Generation" (arXiv:2507.00057, 2025):
+#   LLM-Based Code Generation":
 #   非相干性 I(d) = P(实现₁(X) ≠ 实现₂(X)) ≥ 0
 #   且 I(d) ≤ 2 × 错误率(d)，即非相干性是错误率的下界。
 #   → 零假阳性：不一致一定意味着至少一侧错误。
@@ -27,7 +27,7 @@ from modules.stubs.stub_contract import (
 )
 
 
-# ---- 双策略实现对 ----
+# 双策略实现对
 @_dc
 class DualImplementation:
     """同一合约的两条独立策略生成结果。"""
@@ -188,7 +188,7 @@ class IncoherenceChecker:
         func_results['__summary__'] = summary
         return func_results
 
-    # ---- 辅助方法 ----
+# 辅助方法
     def _compile(self, source: str, label: str):
         """编译源码为隔离的模块对象。"""
         try:
@@ -272,7 +272,7 @@ class IncoherenceChecker:
             return '<unrepresentable>'
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def check_dual_implementation(contract: _StubContract,
                               source_template: str,
                               source_llm: str) -> dict:

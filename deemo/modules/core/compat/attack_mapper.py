@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Tuple
 from enum import Enum
 
 
-# ===== 核心数据结构 =====
+# 核心数据结构
 @dataclass
 class AttackTechnique:
     technique_id: str = ""
@@ -60,7 +60,7 @@ AttackMapping = VulnerabilityMappingClass
 VulnerabilityMapping = VulnerabilityMappingClass
 
 
-# ---- 12 种核心 ATT&CK v15 技术 (Q3 2025 高发路径) ----
+# 12 种核心 ATT&CK v15 技术
 _TECH_DB: Dict[str, AttackTechnique] = {
     "T1190": AttackTechnique("T1190", "Exploit Public-Facing Application",
         "利用面向公众的应用程序漏洞获取初始访问", ["Initial Access"]),
@@ -89,7 +89,7 @@ _TECH_DB: Dict[str, AttackTechnique] = {
 }
 
 
-# ---- 漏洞类型 → ATT&CK 技术映射核心表 ----
+# 漏洞类型 → ATT&CK 技术映射核心表
 _VULN_MAP = {
     "buffer_overflow": "T1055",
     "command_injection": "T1059",
@@ -122,7 +122,7 @@ _VULN_MAP = {
 }
 
 
-# ---- CWE → ATT&CK 映射 (15+ CWEs) ----
+# CWE → ATT&CK 映射 (15+ CWEs)
 _CWE_TO_TECHNIQUE = {
     787: "T1055",   # Out-of-bounds Write
     125: "T1592",   # Out-of-bounds Read
@@ -280,7 +280,7 @@ def _match_with_confidence(vuln_type: str, cwe_id=None, cvss_score: float = 0.0)
     )
 
 
-# ===== AttackMapper =====
+# AttackMapper
 class AttackMapper:
     """漏洞→ATT&CK 映射器 — 核心入口"""
 
@@ -293,7 +293,6 @@ class AttackMapper:
         if custom_mapping_file:
             self._load_custom_mappings(custom_mapping_file)
 
-    # ----
     def _load_custom_mappings(self, filepath):
         import json, os
         if os.path.isfile(filepath):
@@ -302,7 +301,6 @@ class AttackMapper:
             for k, v in custom.items():
                 _VULN_MAP[k] = v
 
-    # ----
     def map_vulnerability(self, vuln_type="", context=None, cwe_id=None,
                           impact_type=None, target_type=None, cvss=None, **kwargs):
         lookup = impact_type if impact_type else vuln_type
@@ -336,7 +334,6 @@ class AttackMapper:
         self.mappings[vuln_type] = m
         return m
 
-    # ----
     def map_vulnerabilities(self, vulns):
         results = []
         for v in (vulns or []):
@@ -350,23 +347,19 @@ class AttackMapper:
             })
         return results
 
-    # ----
     def get_technique_details(self, technique_id):
         return _TECH_DB.get(technique_id)
 
-    # ----
     def get_related_techniques(self, technique_id):
         t = _TECH_DB.get(technique_id)
         if not t:
             return []
         return [v for k, v in _TECH_DB.items() if k != technique_id][:3]
 
-    # ----
     def get_tactics_for_technique(self, technique_id):
         t = _TECH_DB.get(technique_id)
         return t.tactics if t else []
 
-    # ----
     def get_techniques_for_tactic(self, tactic):
         tactic_lower = tactic.lower() if isinstance(tactic, str) else str(tactic)
         results = []
@@ -375,7 +368,6 @@ class AttackMapper:
                 results.append(t)
         return results
 
-    # ----
     def get_mitigations(self, technique):
         mitigations_base = {
             "T1055": ["Control Flow Guard", "Process signature verification"],
@@ -476,7 +468,7 @@ class AttackMapper:
 ATTACKMapper = AttackMapper
 
 
-# ==== 顶层便捷函数 ====
+# 顶层便捷函数
 def map_vulnerability_to_attack(vuln):
     mapper = AttackMapper()
     if isinstance(vuln, dict):

@@ -2,8 +2,8 @@
 自适应训练型布隆过滤器 — SplineSketch 反馈驱动 PLBF 分组优化。
 
 理论依据:
-  PLBF (Sato & Matsui 2024): 频率分组 + 指数衰减 Bloom 分配。
-  LSHBloom (arXiv 2024): MinHashLSH+Bloom 过滤器, 0.6% 磁盘空间, 270% 加速。
+  PLBF: 频率分组 + 指数衰减 Bloom 分配。
+  LSHBloom: MinHashLSH+Bloom 过滤器, 0.6% 磁盘空间, 270% 加速。
 
 模块位置: data/adaptive_learned_filter.py
 """

@@ -1,0 +1,52 @@
+{
+  "detector": "heap_ops",
+  "total_samples": 200,
+  "total_elapsed_ms": 17923.5,
+  "ppahav_enabled": true,
+  "metrics": [
+    {
+      "type": "heap_overflow",
+      "tp": 14,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0
+    },
+    {
+      "type": "uaf",
+      "tp": 2,
+      "fp": 5,
+      "fn": 0,
+      "tn": 10,
+      "precision": 0.2857,
+      "recall": 1.0,
+      "f1": 0.4444,
+      "fp_rate": 0.3333
+    },
+    {
+      "type": "format_string",
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "tn": 16,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0
+    },
+    {
+      "type": "integer_overflow",
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "tn": 14,
+      "precision": 0.6667,
+      "recall": 1.0,
+      "f1": 0.8,
+      "fp_rate": 0.0667
+    }
+  ]
+}

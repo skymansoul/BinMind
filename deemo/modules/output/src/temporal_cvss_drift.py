@@ -10,12 +10,11 @@ CVSS 时间维度漂移追踪 — checksec 差分修正的衰减/增强双机制
   λ = λ_base × hardening_factor × exploit_pub_factor × patch_factor
 增强: amplification(t) = Π(1 + A_i×(1-exp(-μ×age_i)))
 
-参考:
   EP3975080A1 (IBM): CVSS temporal 事件驱动参数化
   checksec 加固检测: pwntools/pwnlib
 
 修改记录:
-  创建 2026-08-01 — TemporalDriftTracker 核心
+  创建 2026-07-18 — TemporalDriftTracker 核心
   2026-08-03 — 数据模型拆分至 drift_models.py
 """
 
@@ -27,7 +26,6 @@ from modules.output.src.drift_models import (
     ChecksecSnapshot, TemporalEvent, DriftState, DriftDirection,
     EVENT_DEFAULT_MAGNITUDE,
 )
-
 
 class TemporalDriftTracker:
     """

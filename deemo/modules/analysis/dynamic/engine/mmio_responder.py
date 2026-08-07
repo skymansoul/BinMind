@@ -133,7 +133,7 @@ class MMIOResponder:
             return fn
         return decorator
 
-    # --- 新增: 批量读写 ---
+# 新增: 批量读写
     # 外设配置通常涉及多个连续寄存器的读写，批量操作减少函数调用开销
     def read_block(self, offset: int, length: int) -> bytes:
         """批量读取MMIO区域 — 用于DMA传输和配置块导出
@@ -174,7 +174,7 @@ class MMIOResponder:
             raise PermissionError(f"Register {name} is read-only")
         self._handle_write(reg.offset, value)
 
-    # --- 新增: 访问统计分析 ---
+# 新增: 访问统计分析
     # 外设寄存器访问频率与模式分析帮助识别固件的硬件交互热点
     def access_stats(self) -> dict:
         """返回MMIO访问统计：读/写计数、按偏移量分组的频率分布

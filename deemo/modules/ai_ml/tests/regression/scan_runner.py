@@ -1,4 +1,4 @@
-# created: 2026-08-07
+# created: 2026-07-22
 # 扫描调度——对编译产物调用ai_ml检测管线, 收集原始输出
 # 每个sample的O0/O3产物独立扫描, 输出保存到build/{sample}/{opt}/scan_result.json
 

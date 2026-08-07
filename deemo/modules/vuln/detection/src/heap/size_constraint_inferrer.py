@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | malloc/memcpy间的size约束关系推断
+# 创建: 2026-05-31 | malloc/memcpy间的size约束关系推断
 #
 """堆溢出误报削减——基于区间抽象解释的size约束关系推断。
 
@@ -27,9 +27,8 @@ malloc分配的范围内。例如:
 - 本模块: 分析分配大小与拷贝大小的约束关系 (heap overflow专用)
 三者互补——value_composer看"值的历史", 本模块看"值的范围"。
 
-参考:
-- Cousot & Cousot (1977): Abstract Interpretation框架
-- Mango (USENIX 2024): 值组合追踪 (Rich Expressions)
+- Cousot & Cousot: Abstract Interpretation框架
+- Mango: 值组合追踪 (Rich Expressions)
 - 本模块取AI的区间域+前向传播, 实现为轻量级单遍分析 (O(N)),
   不解完整的不动点——仅在遇到汇(call memcpy)时做约束检查。
 """
@@ -38,12 +37,10 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 from enum import Enum
 
-
 class SizeRelation(Enum):
     SAFE = 0           # memcpy.size ≤ malloc.size 可证明
     VULNERABLE = 1     # memcpy.size > malloc.size 可证明
     UNCERTAIN = 2      # 无法证明——保守标记
-
 
 @dataclass
 class Interval:
@@ -66,7 +63,6 @@ class Interval:
         _hi = "∞" if self.is_unbounded else str(self.hi)
         return f"[{self.lo}, {_hi}]"
 
-
 @dataclass
 class MallocSite:
     """一次malloc调用点的信息。"""
@@ -76,7 +72,6 @@ class MallocSite:
     size_interval: Interval = field(default_factory=Interval)
     size_is_tainted: bool = False
     allocated_max: int = 0
-
 
 @dataclass
 class MemcpySite:
@@ -90,7 +85,6 @@ class MemcpySite:
     relation_to_alloc: SizeRelation = SizeRelation.UNCERTAIN
     related_malloc: Optional[MallocSite] = None
 
-
 @dataclass
 class SizeConstraintReport:
     """一次扫描的完整size约束分析报告。"""
@@ -100,7 +94,6 @@ class SizeConstraintReport:
     vulnerable_memcpy: int = 0  # 可证明溢出的memcpy
     uncertain_memcpy: int = 0   # 无法证明的(保守告警)
     fp_reduction_ratio: float = 0.0
-
 
 class SizeConstraintInferrer:
     """基于区间抽象解释的size约束推断——堆溢出专用。
@@ -220,8 +213,7 @@ class SizeConstraintInferrer:
         self._mallocs.clear()
         self._memcpys.clear()
 
-
-# ---- smoke ----
+# smoke
 def _check():
     _inf = SizeConstraintInferrer()
 
@@ -244,7 +236,7 @@ def _check():
     # 溢出case: malloc(size_reg="rcx", size_hint=128) → memcpy(不同reg=1024)
     _inf.track_malloc(0x3000, "buggy", "rcx", size_hint=128)
     # memcpy用rbx, 约束为1024, 远超malloc分配的128
-    _inf.constrain_reg("rbx", Interval(1024, 1024))
+    _inf.constrain_reg("rbx", Interval)
     _r3 = _inf.check_memcpy(0x3020, "buggy", "rbx")
     # 不同寄存器→UNCERTAIN (无法关联到具体malloc)——这是保守策略的体现
     assert _r3 == SizeRelation.UNCERTAIN, f"different reg→uncertain, got {_r3}"
@@ -253,14 +245,13 @@ def _check():
     _inf2 = SizeConstraintInferrer()
     _inf2.track_malloc(0x4000, "bug2", "rdi", size_hint=128)
     # 模拟寄存器被覆盖为更大的值——lo>allocated_max
-    _inf2._intervals["rdi"] = Interval(1024, 1024)
+    _inf2._intervals["rdi"] = Interval
     _r4 = _inf2.check_memcpy(0x4020, "bug2", "rdi")
     assert _r4 == SizeRelation.VULNERABLE, f"overflow should be VULNERABLE, got {_r4}"
 
     # 汇总: 1 SAFE (case1), 1 UNCERTAIN (case2), 1 UNCERTAIN+1 VULNERABLE (case3+4)
     print(f"[size_infer] case1: r1={_r1} | case2: r2={_r2} | case3: r3={_r3} | case4: r4={_r4}")
     print("[OK] size_constraint_inferrer passed")
-
 
 if __name__ == "__main__":
     _check()

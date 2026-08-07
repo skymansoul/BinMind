@@ -6,12 +6,11 @@ WebAssembly二进制解析与WASI组件分析。
   - WASI导入函数识别与能力集分类
   - 内存安全与危险导出检测
   - WBSan风格的shadow memory有效性验证 (WWW '25)
-  - WasmChecker风格的抽象解释静态分析 (IEEE 2024)
+  - WasmChecker风格的抽象解释静态分析
 
-参考：
   - WASM v1.0规范与Bytecode Alliance的wasmparser设计模式
   - WBSan (WWW '25): 首个Wasm二进制sanitizer，shadow memory+red zone检测4类内存缺陷
-  - WasmChecker (IEEE 2024): 抽象解释实现97.33%召回率，平均13.85秒/<1MB
+  - WasmChecker: 抽象解释实现97.33%召回率，平均13.85秒/<1MB
 """
 
 import struct
@@ -23,34 +22,29 @@ from enum import IntEnum
 
 logger = logging.getLogger(__name__)
 
-
 class SectionType:
     """WASM段类型标识常量。"""
     CUSTOM = 0; TYPE = 1; IMPORT = 2; FUNCTION = 3; TABLE = 4
     MEMORY = 5; GLOBAL = 6; EXPORT = 7; START = 8; ELEMENT = 9
     CODE = 10; DATA = 11; DATA_COUNT = 12
 
-
 class ValType(IntEnum):
     """WASM值类型——WBSan shadow memory的粒度基于这些类型。"""
     I32 = 0x7F; I64 = 0x7E; F32 = 0x7D; F64 = 0x7C
     V128 = 0x7B; FUNCREF = 0x70; EXTERNREF = 0x6F
 
-
-# ── WBSan风格的shadow memory状态 ──
+# WBSan风格的shadow memory状态
 # 每个线性内存字节对应一个shadow byte，编码其有效性状态
 SHADOW_VALID = 0x00
 SHADOW_FREED = 0x01
 SHADOW_REDZONE = 0x02
 SHADOW_UNINIT = 0x03
 
-
 @dataclass
 class TypeEntry:
     form: int = 0
     param_types: list = field(default_factory=list)
     return_type: int = 0
-
 
 @dataclass
 class Function:
@@ -59,13 +53,11 @@ class Function:
     local_types: list = field(default_factory=list)
     code_size: int = 0
 
-
 @dataclass
 class Export:
     name: str = ""
     kind: int = 0
     index: int = 0
-
 
 @dataclass
 class Import:
@@ -74,13 +66,11 @@ class Import:
     kind: int = 0
     index: int = 0
 
-
 @dataclass
 class Global:
     type: int = 0
     mut: bool = False
     init: int = 0
-
 
 @dataclass
 class Table:
@@ -89,13 +79,11 @@ class Table:
     initial: int = 0
     maximum: int = 0
 
-
 @dataclass
 class Memory:
     flags: int = 0
     initial: int = 0
     maximum: int = 0
-
 
 class WasmAnalysisResult:
     __slots__ = ('version', 'functions', 'types', 'exports', 'imports',
@@ -117,7 +105,6 @@ class WasmAnalysisResult:
         self.vulnerabilities = vulnerabilities if vulnerabilities is not None else []
         self.shadow_memory_issues: List[Dict] = []
         self.abstract_interpretation_findings: List[Dict] = []
-
 
 class WasmParser:
     """WebAssembly二进制解析器。
@@ -330,7 +317,7 @@ class WasmParser:
 
         self.result.vulnerabilities = vulns
 
-    # ── WBSan风格的shadow memory检测 ──
+# WBSan风格的shadow memory检测
     def _detect_shadow_memory_issues(self):
         """对每个memory段构建shadow memory模型，检查red zone配置与UAF风险。
 
@@ -371,11 +358,11 @@ class WasmParser:
 
         self.result.shadow_memory_issues = issues
 
-    # ── WasmChecker风格的抽象解释 ──
+# WasmChecker风格的抽象解释
     def _run_abstract_interpretation(self):
         """对每个函数执行轻量级抽象解释，检测潜在的越界与类型错误。
 
-        WasmChecker (IEEE 2024) 使用迭代状态分析+漏洞过滤pipeline实现97%召回率。
+        WasmChecker  使用迭代状态分析+漏洞过滤pipeline实现97%召回率。
         此处实现简化版：对每个函数的局部变量进行类型状态跟踪，
         检测i32.load/store的offset是否可能越界。
         """
@@ -412,7 +399,6 @@ class WasmParser:
             })
 
         self.result.abstract_interpretation_findings = findings
-
 
 class WASIAnalyzer:
     """WASI组件分析器。解析WASI导入函数、能力集与系统调用接口。"""
@@ -466,7 +452,6 @@ class WASIAnalyzer:
             'abstract_interpretation_findings': self.result.abstract_interpretation_findings,
         }
 
-
 def analyze_wasm(binary_path: str) -> Dict[str, Any]:
     with open(binary_path, 'rb') as f:
         data = f.read()
@@ -491,7 +476,6 @@ def analyze_wasm(binary_path: str) -> Dict[str, Any]:
         'abstract_interpretation': result.abstract_interpretation_findings,
         'wasi': wasi_info
     }
-
 
 # 兼容性存根
 from dataclasses import dataclass as _dc, field as _f
@@ -527,7 +511,6 @@ def create_wasm_analyzer(binary_path=""):
 # WASM shadow memory有效性状态缓存——WBSan redzone预计算
 _SHADOW_STATE_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_wasm_opcode_counter(data: bytes) -> int:
     """WASM opcode频率统计——nullary指令计数, 未接入主分析。"""

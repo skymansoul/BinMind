@@ -11,10 +11,10 @@
 #   层4: 补丁完整性 — 检查修复是否覆盖了所有相关的代码路径
 # 技术效果: 从补丁变更模式反推漏洞类型, 辅助安全分析师
 #   快速评估补丁的安全影响和紧迫性
-# 参考:
-#   ESBMC-AI (AST 2025) — BMC验证修复后代码,
+#
+#   ESBMC-AI — BMC验证修复后代码,
 #     本项目借鉴其detect-fix-verify循环但聚焦补丁差异分析
-#   Lancet (USENIX Security 2025) — 崩溃利用病理学,
+#   Lancet — 崩溃利用病理学,
 #     本项目借鉴其漏洞类型分类但适配补丁差异场景
 from __future__ import annotations
 import hashlib

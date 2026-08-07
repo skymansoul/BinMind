@@ -1,0 +1,103 @@
+{
+  "module": "HOIG (Heap Object Identity Graph)",
+  "total_samples": 11,
+  "tp": 6,
+  "fp": 0,
+  "tn": 5,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "accuracy": 1.0,
+  "avg_time_ms": 0.06,
+  "details": {
+    "intr_simple": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "p invalidated at line 4, used at line 5",
+      "time_ms": 0.21
+    },
+    "intr_alias": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "q invalidated at line 4, used at line 5",
+      "time_ms": 0.05
+    },
+    "intr_realloc_old_ptr": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "p invalidated at line 3, used at line 4",
+      "time_ms": 0.04
+    },
+    "intr_field_alias": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "m invalidated at line 5, used at line 6",
+      "time_ms": 0.07
+    },
+    "edge_null_check": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "p invalidated at line 3, used at line 5",
+      "time_ms": 0.03
+    },
+    "edge_nullify": {
+      "verdict": "SAFE",
+      "expected": "SAFE",
+      "correct": true,
+      "confidence": 0.8,
+      "reason": "No UAF detected by HOIG",
+      "time_ms": 0.03
+    },
+    "edge_realloc_new": {
+      "verdict": "SAFE",
+      "expected": "SAFE",
+      "correct": true,
+      "confidence": 0.8,
+      "reason": "No UAF detected by HOIG",
+      "time_ms": 0.04
+    },
+    "edge_strdup": {
+      "verdict": "CONFIRMED",
+      "expected": "CONFIRMED",
+      "correct": true,
+      "confidence": 0.9,
+      "reason": "orig invalidated at line 3, used at line 4",
+      "time_ms": 0.03
+    },
+    "fp_diff_obj": {
+      "verdict": "SAFE",
+      "expected": "SAFE",
+      "correct": true,
+      "confidence": 0.8,
+      "reason": "No UAF detected by HOIG",
+      "time_ms": 0.03
+    },
+    "fp_safe_realloc": {
+      "verdict": "SAFE",
+      "expected": "SAFE",
+      "correct": true,
+      "confidence": 0.8,
+      "reason": "No UAF detected by HOIG",
+      "time_ms": 0.03
+    },
+    "fp_refcount": {
+      "verdict": "SAFE",
+      "expected": "SAFE",
+      "correct": true,
+      "confidence": 0.8,
+      "reason": "No UAF detected by HOIG",
+      "time_ms": 0.05
+    }
+  }
+}

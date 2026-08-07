@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_02_reassign_after_free",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: free 后重分配",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "p 重新指向新堆对象, 解引用的是新内存"
+}

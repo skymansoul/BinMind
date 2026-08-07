@@ -1,5 +1,5 @@
 """
-创建: 2025-07-31
+创建: 2026-05-30
 修改:
   2025-08-01 - 信号计算委托给 quality_signals.py
 Worker 输出质量哨兵 — 多信号异常检测，退化时触发重生成。
@@ -11,7 +11,7 @@ API 负载波动或 prompt 上下文累积，worker 可能产出退化代码：
   - 结构复杂度异常（全是单行函数或全是巨型函数）
 
 当前系统无质量门禁——只要 API 返回非空文本就写入文件。
-LettuceDetect-v2 (2026) 检测代码幻觉但需专用模型；GUARDIAN (NeurIPS 2025)
+LettuceDetect-v2 检测代码幻觉但需专用模型；GUARDIAN
 建模多 agent 错误传播但关注交互图而非单 worker 输出质量。
 
 方案：四维轻量质量信号，零 API 开销，纯静态计算。
@@ -214,16 +214,14 @@ class QualitySentinel:
             }
 
 
-# 信号计算委托给 engine/quality_signals.py — 保持单文件 ≤300 行
+# 信号计算委托给 engine/quality_signals.py
 from parallel_deep_dev.engine.quality_signals import (
     compute_repetition, compute_symbol_density,
     compute_structure_entropy, compute_comment_ratio,
 )
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def sentinel_check_batch(
     sentinel: QualitySentinel,

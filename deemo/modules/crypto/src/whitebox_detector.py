@@ -20,12 +20,11 @@
     4. XOR表: 对编码数据执行XOR操作的辅助表 → nibble-wise XOR查找。
     5. 外部编码字符串: "whitebox"/"wbc"/"wb_aes"/"encoded"等开发者留下的调试符号。
 
-参考:
-  - Chow et al. (SAC 2002): "White-Box Cryptography and an AES Implementation" —
+  - Chow et al.: "White-Box Cryptography and an AES Implementation" —
     WBC的原始论文, 定义了T-box/编码表/XOR表的结构模式。
-  - Castelnovi & Houzelot (TCHES 2024): 证明小内部编码不能阻止DCA —
+  - Castelnovi & Houzelot: 证明小内部编码不能阻止DCA —
     本模块可辅助评估二进制中的WBC是否使用了足够强的编码。
-  - Hu et al. (Entropy 2025): SM4白盒方案 — 使用4阶非线性编码+表访问重排,
+  - Hu et al.: SM4白盒方案 — 使用4阶非线性编码+表访问重排,
     仅需1.44MB → 本模块可检测此类紧凑WBC的编码签名。
 
 边界条件:
@@ -42,7 +41,6 @@ from typing import Dict, List, Optional, Set, Tuple
 from .constants import AES_SBOX, SM4_SBOX
 from .utils import shannon_entropy
 
-
 @dataclass
 class WBCFinding:
     algorithm: str = ""
@@ -52,28 +50,24 @@ class WBCFinding:
     location: int = 0
     table_count: int = 0           # 检测到的编码表数量
 
-
-# ── WBC特征阈值 ──
+# WBC特征阈值
 _LARGE_TABLE_MIN_BYTES = 64 * 1024     # 单个大表≥64KB
 _TBOX_ENTRY_SIZE = 4                     # T-box每项4字节(8→32bit)
 _MIN_TBOX_ENTRIES = 256                  # 标准T-box有256项
 _ENCODED_SBOX_ENTROPY_MIN = 0.98        # 编码S-box熵接近1.0(仍是排列)
 _XOR_TABLE_MIN = 16 * 16                 # 最小XOR表: 16×16 nibble组合
 
-
-# ── 已知标准S-box集合(用于编码S-box排除) ──
+# 已知标准S-box集合(用于编码S-box排除)
 _KNOWN_SBOXES: Set[bytes] = {
     bytes(AES_SBOX), bytes(AES_SBOX),
     bytes(SM4_SBOX),
 }
-
 
 def _is_bytes_permutation(data: bytes, start: int, length: int = 256) -> bool:
     """检查data[start:start+length]是否为完美排列(每个字节值恰好出现一次)。"""
     if start + length > len(data):
         return False
     return len(set(data[start:start + length])) == length
-
 
 def _detect_large_tables(data: bytes) -> List[Tuple[int, int, float]]:
     """
@@ -113,7 +107,6 @@ def _detect_large_tables(data: bytes) -> List[Tuple[int, int, float]]:
 
     return tables
 
-
 def _detect_encoded_sbox(data: bytes, offset: int) -> Tuple[bool, float, str]:
     """
     检测是否为编码S-box(经仿射变换的AES/SM4 S-box)。
@@ -146,7 +139,6 @@ def _detect_encoded_sbox(data: bytes, offset: int) -> Tuple[bool, float, str]:
         return True, wb_conf, f'encoded permutation, unique XOR diffs vs AES={unique_diffs}'
 
     return False, 0.0, ""
-
 
 def _detect_tbox_structure(data: bytes, offset: int) -> Tuple[bool, int, float]:
     """
@@ -184,7 +176,6 @@ def _detect_tbox_structure(data: bytes, offset: int) -> Tuple[bool, int, float]:
 
     return False, 0, 0.0
 
-
 def _detect_xor_tables(data: bytes, start_offset: int, search_radius: int = 8192
                        ) -> Tuple[int, float]:
     """
@@ -209,8 +200,7 @@ def _detect_xor_tables(data: bytes, start_offset: int, search_radius: int = 8192
 
     return xor_count, best_conf
 
-
-# ── WBC字符串指纹 ──
+# WBC字符串指纹
 _WBC_STRING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'whitebox', 'whitebox', 0.85),
     (b'white-box', 'whitebox', 0.85),
@@ -227,7 +217,6 @@ _WBC_STRING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'XorTable', 'XOR-table', 0.85),
     (b'lookup_table_encode', 'encoded-lookup', 0.80),
 ]
-
 
 class WhiteBoxDetector:
     """白盒密码学静态检测器。"""

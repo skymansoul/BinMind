@@ -1,5 +1,5 @@
-# 创建: 2025-08-15 14:50
-# 修改: 2025-08-15 — RISC-V/ARMv6M 8-byte 压缩追踪桩 + 环形 buffer
+# 创建: 2026-04-30 14:50
+# 修改: 2026-04-30 — RISC-V/ARMv6M 8-byte 压缩追踪桩 + 环形 buffer
 """
 嵌入式目标 DBI 追踪适配器 — RISC-V/ARM Cortex-M 的轻量动态插桩。
 
@@ -22,11 +22,11 @@ RISC-V 压缩指令的优势:
   追踪桩占用减少 50%, 对 I-cache 压力更小。
   ARMv6M 的 Thumb 模式也有类似效果。
 
-ref: R-Visor (LCTES 2025) — extensible DBI for RISC-V open ISAs,
+ref: R-Visor — extensible DBI for RISC-V open ISAs,
      本项目取其 ISA 适配思想但针对无 OS 嵌入式场景改用离线重写
-ref: Intel PT + DBI hybrid (J. Communications 2025) — hardware trace
+ref: Intel PT + DBI hybrid — hardware trace
      + software instrumentation, 本项目取其 trace buffer 压缩编码
-ref: HALF (Dec 2025) — process hollowing 低开销 DBI, 本项目借鉴其
+ref: HALF — process hollowing 低开销 DBI, 本项目借鉴其
      "最小化 host process 足迹"思路, 适配到 MCU 级别
 """
 
@@ -87,7 +87,7 @@ class TraceBuffer:
         self.head = 0
 
 
-# --- ISA 指令编码器 ---
+# ISA 指令编码器
 # 为每种目标 ISA 生成追踪桩的机器码。
 # 桩代码结构: [保存上下文] → [写入 BB ID 到 trace buffer] → [恢复上下文] → [跳回]
 
@@ -128,7 +128,7 @@ def encode_tracepoint_armv6m(bb_id: int, trace_buf_addr: int,
     )
 
 
-# --- 离线重写引擎 ---
+# 离线重写引擎
 
 class EmbeddedDBIRewriter:
     """嵌入式固件的离线 DBI 重写器。
@@ -201,7 +201,7 @@ class EmbeddedDBIRewriter:
         }
 
 
-# --- Trace 解码器 ---
+# Trace 解码器
 # 从嵌入式设备的 trace buffer 输出中解码执行路径。
 
 class TraceDecoder:

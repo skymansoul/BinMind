@@ -13,7 +13,7 @@ def kb():
     db.close()
 
 
-# ===== NVD sync (4 tests) =====
+# NVD sync (4 tests)
 
 class TestNVDSync:
     def test_engine_init(self, kb):
@@ -57,7 +57,7 @@ class TestNVDSync:
             sync_mod._HAS_URLLIB = saved
 
 
-# ===== Cross-deployment correlation (7 tests) =====
+# Cross-deployment correlation (7 tests)
 
 class TestCorrelation:
     def test_correlate_two_deployments(self):
@@ -117,7 +117,7 @@ class TestCorrelation:
         assert "2" in s  # affects 2 deployments
 
 
-# ===== Remediation (8 tests) =====
+# Remediation (8 tests)
 
 class TestRemediation:
     def test_import_matches(self):

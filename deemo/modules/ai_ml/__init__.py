@@ -6,10 +6,10 @@
 import importlib
 
 _submodules: dict[str, str] = {
-    # -- 结构化子包 --
+# 结构化子包
     "src": ".src",
 
-    # -- 常用 flat 模块（按需懒加载，其余交 _FlatFinder 覆盖） --
+# 常用 flat 模块（按需懒加载，其余交 _FlatFinder 覆盖）
     "deep_search": ".deep_search",
     "nn_model_scanner": ".nn_model_scanner",
     "vuln_ml": ".vuln_ml",
@@ -106,7 +106,7 @@ _submodules: dict[str, str] = {
     "neurosymbolic_type_infer": ".neurosymbolic_type_infer",
     "adversarial_robust_finetune": ".adversarial_robust_finetune",
     "contrastive_graph_retrieval": ".contrastive_graph_retrieval",
-    # 跨架构模型合并 / 自洽性漏洞验证 / 嵌入漂移监测 (2026 Q3 专利补齐)
+    # 跨架构模型合并 / 自洽性漏洞验证 / 嵌入漂移监测
     "model_merge_cross_arch": ".model_merge_cross_arch",
     "self_consistency_vuln": ".self_consistency_vuln",
     "embedding_drift_monitor": ".embedding_drift_monitor",

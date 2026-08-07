@@ -168,7 +168,7 @@ class ConcolicExecutor:
 
         self._init_submodules()
 
-    # ---------- metric 辅助函数 ----------
+# metric 辅助函数
     def _record_metric(self, name: str, value: int):
         """Accumulate a counter metric_accumulator. 无副作用，纯累加"""
         if self.metric_accumulator is not None:
@@ -212,11 +212,9 @@ class ConcolicExecutor:
         symbolic_available = self.symbolic_executor is not None and self.symbolic_executor.is_available()
         return dynamic_available or symbolic_available
 
-    # ------------------------------------------------------------------
     # 种子衰减权重：sigmoid 函数，中心点在 max_stagnation 处
     # 设计意图 — 连续 N 轮无新路径后，低熵种子被抑制，保留高熵种子
     # 避免完全停止注入（可能恰好需要某一轮才触达关键路径）
-    # ------------------------------------------------------------------
     def _seed_injection_weight(self) -> float:
         k = 1.2  # steepness
         x0 = self._max_stagnation
@@ -379,12 +377,10 @@ class ConcolicExecutor:
             logger.debug(f"[Concolic] Seed: {seed.source_name} = {seed.value[:16].hex()}... ent={seed.entropy:.1f}")
         return True
 
-    # ------------------------------------------------------------------
     # 停滞检测：若本轮未发现新路径，stagnation_counter++
     # 连续 _max_stagnation 轮后进入"探索优先"模式：
-    #   - 种子注入权重下降
-    #   - 增加每轮路径探索深度
-    # ------------------------------------------------------------------
+# 种子注入权重下降
+# 增加每轮路径探索深度
     def _detect_stagnation(self, current_path_count: int):
         if current_path_count <= self._prev_path_count:
             self._stagnation_counter += 1
@@ -392,10 +388,8 @@ class ConcolicExecutor:
             self._stagnation_counter = 0
         self._prev_path_count = current_path_count
 
-    # ------------------------------------------------------------------
     # Crash triage: 利用崩溃地址/错误信息/约束对已发现漏洞进行分类
     # 在分析结束时自动调用，为每个 vulnerability 添加 crash_category 标签
-    # ------------------------------------------------------------------
     def _classify_vulnerability_crashes(self, result: ConcolicResult) -> None:
         """Tag 漏洞 *result* a crash category via
         CrashTriage分类器, purely augmenting existing entry dicts
@@ -803,10 +797,8 @@ class ConcolicExecutor:
 
         return new_paths
 
-    # ------------------------------------------------------------------
     # Fuzz dict construction: 从已收集的种子池中选出高熵种子
     # 按 覆盖率_gain + entropy 排序，输出 AFL/lib模糊测试器 字典
-    # ------------------------------------------------------------------
     def _build_fuzz_dictionary_from_seeds(self) -> None:
         """Populate FuzzDictGenerator collected seeds
         

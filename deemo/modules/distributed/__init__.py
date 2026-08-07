@@ -151,10 +151,10 @@ def __getattr__(name: str):
     raise AttributeError("module {} has no attribute {}".format(__name__, name))
 
 
-# ===== GRL-Sched 拓展 (2026-08-03) =====
+# GRL-Sched 拓展
 # 追加注册 — 保持既有映射不变，仅扩展懒加载表与符号导出
 # GRL-Sched: 图强化学习任务调度 + 动态图划分
-# 论文: GraphEdge — arXiv:2504.15905 [待验证]
+# 论文: GraphEdge — [待验证]
 __all__ += [
     "TaskDependencyGraph", "TaskNode", "DependencyEdge",
     "GraphPartitioner", "Partition",
@@ -174,10 +174,10 @@ _MODULE_MAP.update({
     "grl_schedule": ".src.grl_scheduler",
 })
 
-# ===== 故障自愈拓展 — 因果传播 + 增量调度 + 投机 + 自适应检查点 =====
+# 故障自愈拓展 — 因果传播 + 增量调度 + 投机 + 自适应检查点
 # 各符号注册在上方 _MODULE_MAP 与 __all__ 中已完成
 
-# ===== 专利级拓展: 鲁棒GNN + 反事实谕示 + 时序超图 + 共形预测 (2026-08) =====
+# 专利级拓展: 鲁棒GNN + 反事实谕示 + 时序超图 + 共形预测
 # 随机平滑认证的 GNN 编码器 / Pearl do-calculus 调度恢复 / 时序超图卷积 / 共形预测滞后检测
 __all__ += [
     "RobustGNNCertifier", "RobustSchedulerMixin",
@@ -202,7 +202,7 @@ _MODULE_MAP.update({
     "ConformalSpeculationGate": ".src.conformal_straggler",
 })
 
-# ===== 专利级拓展: Lyapunov碳调度 + 死锁验证 + 在线预测 + 调度自监控 (2026-08) =====
+# 专利级拓展: Lyapunov碳调度 + 死锁验证 + 在线预测 + 调度自监控
 # 李雅普诺夫碳感知准入 / 资源分配图死锁验证 / 自适应RLS执行时间预测 / 非参数CUSUM健康监控
 __all__ += [
     "LyapunovCarbonGate", "CarbonIntensityProvider",
@@ -232,7 +232,7 @@ _MODULE_MAP.update({
     "snapshot_from_metrics": ".src.scheduler_monitor",
 })
 
-# ===== 专利级拓展: 最优传输分配 + 纳什公平调度 + 管线重物质化 + 差分隐私 (2026-08) =====
+# 专利级拓展: 最优传输分配 + 纳什公平调度 + 管线重物质化 + 差分隐私
 # Sinkhorn最优传输任务分配 / 多租户纳什均衡公平调度 / 管线重物质化检查点 / ε-差分隐私度量
 __all__ += [
     "sinkhorn_assign", "OTAssigner",
@@ -253,7 +253,7 @@ _MODULE_MAP.update({
     "DPMetricsCollector": ".src.dp_metrics",
 })
 
-# ===== 专利级拓展: 因果发现 + PID伸缩 + 自适应负载均衡 + 拜占庭窃取 (2026-08) =====
+# 专利级拓展: 因果发现 + PID伸缩 + 自适应负载均衡 + 拜占庭窃取
 # Granger+转移熵因果依赖发现 / PID控制论弹性伸缩 / 自适应Power-of-d负载均衡 / 见证人BFT工作窃取
 __all__ += [
     "transfer_entropy", "CausalDependencyDiscoverer",
@@ -272,7 +272,7 @@ _MODULE_MAP.update({
     "NodeReputation": ".src.byzantine_stealing",
 })
 
-# ===== 专利级拓展: 草图度量 + 活性验证 + 对抗老虎机 + 联邦蒸馏 (2026-08) =====
+# 专利级拓展: 草图度量 + 活性验证 + 对抗老虎机 + 联邦蒸馏
 # Count-Min+HLL亚线性度量 / 运行时LTL活性验证 / EXP3-IX对抗老虎机 / 联邦策略蒸馏
 __all__ += [
     "CountMinSketch", "HyperLogLog", "SketchMetrics",
@@ -301,7 +301,7 @@ _MODULE_MAP.update({
     "federated_round": ".src.federated_distill",
 })
 
-# ===== 专利级拓展: EVT尾部 + Hawkes到达 + OCO权重 + 谱划分 (2026-08) =====
+# 专利级拓展: EVT尾部 + Hawkes到达 + OCO权重 + 谱划分
 # GPD极值尾部预测 / Hawkes自激到达模型 / 在线凸优化权重自整定 / Fiedler向量谱划分
 __all__ += [
     "fit_gpd_mle", "EVTTailPredictor",
@@ -317,7 +317,7 @@ _MODULE_MAP.update({
     "SpectralPartitioner": ".src.spectral_partition",
 })
 
-# ===== 专利级拓展: Wasserstein DRO + 分位数追踪 + MoE门控 + FTRL检查点 (2026-08) =====
+# ===== 专利级拓展: Wasserstein DRO + 分位数追踪 + MoE门控 + FTRL检查点 =====
 # Wasserstein分布鲁棒调度 / 在线单调分位数追踪 / 混合专家策略门控 / FTRL遗憾最优检查点
 __all__ += [
     "wasserstein1", "wasserstein_radius", "WassersteinRobustScheduler",
@@ -335,7 +335,7 @@ _MODULE_MAP.update({
     "FTRLCheckpointController": ".src.regret_checkpoint",
 })
 
-# ===== 专利级拓展: PAC-Bayes认证 + 切换代价优化 + 容量约束调度 (2026-08) =====
+# 专利级拓展: PAC-Bayes认证 + 切换代价优化 + 容量约束调度
 # PAC-贝叶斯调度策略泛化认证 / L1稀疏切换代价在线优化 / 容量约束优先级隔离调度
 __all__ += [
     "catoni_bound", "PACBayesCertifier",
@@ -351,7 +351,7 @@ _MODULE_MAP.update({
     "CapacityConstrainedScheduler": ".src.capacity_scheduler",
 })
 
-# ===== 专利级拓展: 学习型优先级 + 贝叶斯熔断 + 流行病Gossip溯源 (2026-08) =====
+# 专利级拓展: 学习型优先级 + 贝叶斯熔断 + 流行病Gossip溯源
 # CDF学习型优先队列 / BOCD贝叶斯变点熔断 / 谣言中心性Gossip溯源
 __all__ += [
     "PiecewiseLinearCDF", "LearnedPriorityQueue",
@@ -367,7 +367,7 @@ _MODULE_MAP.update({
     "EpidemicSourceDetector": ".src.epidemic_gossip",
 })
 
-# ===== 专利级拓展: 压缩共识 + 到达模拟器 (2026-08) =====
+# 专利级拓展: 压缩共识 + 到达模拟器
 # QSGD随机量化状态压缩共识 / 别名法离散事件到达模拟
 __all__ += [
     "qsgd_compress", "qsgd_decompress", "compression_ratio",
@@ -383,7 +383,7 @@ _MODULE_MAP.update({
     "DiscreteEventSimulator": ".src.arrival_simulator",
 })
 
-# ===== 专利级拓展: Anytime部分结果 + 集成元调度 (2026-08) =====
+# 专利级拓展: Anytime部分结果 + 集成元调度
 # 可中断渐进精度截止期限调度 / 加权多数投票多策略集成
 __all__ += [
     "AnytimeTask", "AnytimeScheduler",
@@ -395,7 +395,7 @@ _MODULE_MAP.update({
     "WeightedMajorityEnsemble": ".src.ensemble_meta",
 })
 
-# ===== 专利级拓展: 自动修复引擎 + 调用链追踪 (2026-08) =====
+# 专利级拓展: 自动修复引擎 + 调用链追踪
 # 闭环故障修复动作生成+风险评估 / 轻量分布式调用链追踪+依赖图推断
 __all__ += [
     "ActionType", "RemediationAction", "RemediationEngine",
@@ -408,7 +408,7 @@ _MODULE_MAP.update({
     "Span": ".src.call_chain_tracer",
     "CallChainTracer": ".src.call_chain_tracer",
 })
-# 推测复制 / 数据局部性 / 能力匹配 (2026 Q3 专利补齐)
+# 推测复制 / 数据局部性 / 能力匹配
 __all__ += [
     "SpeculativeDuplicationManager",
     "DataLocalityTracker", "DataLocalityScheduler",
@@ -423,7 +423,7 @@ _MODULE_MAP.update({
     "TaskRequirement": ".src.capability_matching",
 })
 
-# ===== 专利级拓展: 零拷贝状态传输 + 概率状态机 (2026-08) =====
+# 专利级拓展: 零拷贝状态传输 + 概率状态机
 __all__ += [
     "ZeroCopyStateBuffer", "ZeroCopyTaskState", "ZeroCopyTransfer",
     "ProbabilisticGuard", "ProbabilisticStateMachine",
@@ -436,7 +436,7 @@ _MODULE_MAP.update({
     "ProbabilisticStateMachine": ".src.probabilistic_sm",
 })
 
-# ===== 专利级拓展: 推测复制管理 + 取消传播 (2026-08) =====
+# 专利级拓展: 推测复制管理 + 取消传播
 # 自适应副本数推测复制 / 频谱感知分布式取消传播
 __all__ += [
     "SpeculativeDuplicationManager",

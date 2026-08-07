@@ -12,10 +12,9 @@
 #   边: 状态转移 (获取capability/创建namespace/ptrace注入等)
 #   权重: 攻击难度 (1-10)
 #   Dijkstra求从当前状态到目标状态的最短路径(最小难度和)
-# 参考 (已验证真实):
+# (已验证真实):
 #   Linux capabilities man page (capabilities(7)) — capability位定义
 #   CVE-2022-0492 (container escape via cgroup release_agent) — 跨层攻击实例
-from __future__ import annotations
 import heapq, logging
 from collections import defaultdict
 from dataclasses import dataclass, field

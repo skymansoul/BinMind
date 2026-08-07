@@ -13,14 +13,14 @@
 
 多粒度: 指令级 → 基本块 → 函数，原始匹配后取加权综合。
 
-// ref: PS3 [ICSE 2024] 使用四种语义签名进行 patch presence test，
+// ref: PS3 使用四种语义签名进行 patch presence test，
 // 本实现借鉴其签名分类思路（寄存器写/内存写/条件/调用），
 // 但不要求 SMT solver 也不依赖源码编译。
 // 与 PS3 的关键区别：PS3 需要符号模拟 + SMT 等值检查，
 // 本项目走轻量 concrete signature matching 路线，
 // 代价是反编译器优化差异可能导致误判，收益是无外部依赖。
-// ref: REACT [ASE 2024] 在 IR 级提取特征，本项目直接在汇编级完成类似操作。
-// ref: Lares [arXiv:2511.01252] 基于代码理解的不需编译的 PPT，
+// ref: REACT 在 IR 级提取特征，本项目直接在汇编级完成类似操作。
+// ref: Lares 基于代码理解的不需编译的 PPT，
 // 本项目签名为 deterministic 的静态提取，外部理解引擎作为可选增强（预留接口）。
 """
 
@@ -34,7 +34,7 @@ from typing import List, Dict, Optional, Tuple, Set
 
 _log = logging.getLogger(__name__)
 
-# ── 语义签名标签 ──────────────────────────────────────────────
+# 语义签名标签
 # 四种签名类型对应 PS3 的分类法，这里做了工程化适配
 
 class SigKind:
@@ -85,7 +85,7 @@ class MatchResult:
     confidence: float = 0.0
 
 
-# ── 汇编级语义签名提取器 ──────────────────────────────────────
+# 汇编级语义签名提取器
 
 class SemanticSignatureExtractor:
     """从反汇编文本中提取语义签名。
@@ -199,7 +199,7 @@ class SemanticSignatureExtractor:
 
         return sigs
 
-    # ── helpers ────────────────────────────────────────────────
+# helpers
 
     @staticmethod
     def _is_write_mnemonic(m: str) -> bool:
@@ -313,7 +313,7 @@ class SemanticSignatureExtractor:
         return "large"
 
 
-# ── 匹配引擎 ───────────────────────────────────────────────────
+# 匹配引擎
 
 class PatchPresenceTester:
     """基于语义签名的 patch presence 判定器。
@@ -392,7 +392,7 @@ class PatchPresenceTester:
             confidence=self._compute_confidence(combined, threshold, tp.instruction_count)
         )
 
-    # ── 多粒度匹配 ─────────────────────────────────────────────
+# 多粒度匹配
 
     def _instruction_level_match(self, tp: FunctionSignatureProfile,
                                   rp: FunctionSignatureProfile) -> float:
@@ -433,7 +433,7 @@ class PatchPresenceTester:
         ratio = min(a, b) / max(a, b) if max(a, b) > 0 else 0.0
         return (1.0 - ratio) * 0.3
 
-    # ── 自适应阈值 ────────────────────────────────────────────
+# 自适应阈值
 
     def _calibrate_threshold(self, tp: FunctionSignatureProfile,
                               rp: FunctionSignatureProfile) -> float:
@@ -462,7 +462,7 @@ class PatchPresenceTester:
         size_bonus = min(inst_count / 60.0, 1.0) * 0.2
         return min(round(norm + size_bonus, 3), 1.0)
 
-    # ── 加权 Jaccard ──────────────────────────────────────────
+# 加权 Jaccard
 
     def _weighted_jaccard(self, a: Set[SemanticSignature],
                            b: Set[SemanticSignature]) -> float:
@@ -486,7 +486,7 @@ class PatchPresenceTester:
             yield (s.kind, s.content)
 
 
-# ── CVE KB 集成 ─────────────────────────────────────────────────
+# CVE KB 集成
 # 将 CVEKnowledgeBase 中的参考 patch 函数预先提取为签名画像，
 # 批量匹配时复用画像，避免对每个 target 重复提取参考侧。
 

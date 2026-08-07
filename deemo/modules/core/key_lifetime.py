@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 键生命周期管理 — 基于 DAG 拓扑 + 钩子模式签名, 计算每个 context 键的最后消费者,
 在其执行后主动回收内存.
 
-Spark LCRD (2025) 在 RDD 级做 DAG 感知缓存回收, 但基于重用频率的启发式,
+Spark LCRD 在 RDD 级做 DAG 感知缓存回收, 但基于重用频率的启发式,
 不清楚某个中间结果是否还会被使用. 本模块的差异:
   1. 精确的最后消费者判定 — 结合 schema_inference 的读写签名, 确定性计算
   2. 键级粒度 — 不是整个 RDD/DataFrame, 而是 context dict 中的单个键

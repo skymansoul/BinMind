@@ -1,0 +1,21 @@
+\begin{table}[htbp]
+\centering
+\caption{GAPSBV 4-Tier Pipeline: 18-Sample Heap Overflow Regression (2026-08-06)}
+\label{tab:gapsbv-regression}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Method} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{FP Rate} & \textbf{FP Count} & \textbf{FP Reduction} \\
+\midrule
+Baseline (regex-only) & 66.7\% & 40.0\% & 0.500 & 100.0\% & 3/3 & --- \\
++Tier 0 (Allocator Semantics) & 75.0\% & 40.0\% & 0.522 & 66.7\% & 2/3 & -33.3\% \\
++Tier 1 (Affine Interval) & 75.0\% & 40.0\% & 0.522 & 66.7\% & 2/3 & 0.0\% \\
++Tier 2 (Selective SymExec) & 75.0\% & 40.0\% & 0.522 & 66.7\% & 2/3 & 0.0\% \\
++Tier 3 (Infeasible Path Pruner) & 75.0\% & 40.0\% & 0.522 & 66.7\% & 2/3 & 0.0\% \\
+\midrule
+\multicolumn{7}{l}{\footnotesize 18 samples: 15 TP + 3 FP. Tier 0 eliminated 1 FP (sample\_07: malloc(5)+memset(8) ≤ 16B usable via request2size).} \\
+\multicolumn{7}{l}{\footnotesize Tiers 1-3 inactive: C-to-IR converter lacks assembly-level cmp/jcc patterns needed for interval/constraint propagation.} \\
+\multicolumn{7}{l}{\footnotesize 9 FNs: loop writes, variable-size allocations, sprintf patterns not representable in simplified IR.} \\
+\multicolumn{7}{l}{\footnotesize Full pipeline throughput: Tier 0 single-function analysis in < 20ms.} \\
+\bottomrule
+\end{tabular}
+\end{table}

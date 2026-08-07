@@ -1,5 +1,5 @@
 # compat/ 子模块代理 — GPU 内核安全分析，sys.path 方式加载上游模块。
-# 参考: NeuroScope (USENIX Security 2025) 基于 DNN 的二进制逆向与 GPU 内存安全。
+# NeuroScope 基于 DNN 的二进制逆向与 GPU 内存安全。
 import os as _os, sys as _sys
 
 _upstream_dir = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat')

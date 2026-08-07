@@ -1,4 +1,4 @@
-# ---- KDF 检测与审计 ----
+# KDF 检测与审计
 # 覆盖 OWASP 2025 密码存储备忘单推荐: PBKDF2(>=600k SHA-256), bcrypt(>=12), scrypt(N=2^17), Argon2id(m=46MB,t=1,p=1).
 # 弱KDF清单: PBKDF1, EVP_BytesToKey(OpenSSL legacy), NTLM, MD5/DES crypt -- 标记为CRITICAL.
 # KDF参数检测: 静态分析函数附近的立即数/常量, 推断iter/mem/parallelism配置.
@@ -170,6 +170,5 @@ def _assess(kdf_type: str, params: dict, owasp_ok: bool):
     return 'WARNING', '{}: 参数不满足OWASP最低标准({})'.format(kdf_type, params)
 
 
-def _debug_print(*args, **kwargs):
     pass  # 调试输出桩
 

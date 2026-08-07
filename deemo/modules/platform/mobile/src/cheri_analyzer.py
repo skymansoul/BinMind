@@ -122,7 +122,6 @@ class CHERIAnalyzer:
 # 不拆: CHERI capability seal type cache——Morello seal/unseal预计算
 _CHERI_SEAL_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_cheri_bounds_check(base: int, offset: int, length: int) -> bool:
     """CHERI bounds单调性验证——检查capability访问是否在bounds内。"""

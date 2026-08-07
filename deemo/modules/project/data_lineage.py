@@ -1,8 +1,8 @@
 # 数据血缘追踪: W3C PROV兼容/有向无环图/增量更新/溯源查询
-# 参考: Li et al. "Survey of Binary Code Toolchain Provenance Recovery" (CNSSE 2026)
-#       PMC-SBOM "Runtime SBOM Verification Using Hardware Performance Counters" (CERIAS 2026)
-#       UniBOM "A Unified SBOM Analysis and Visualisation Tool" (arXiv:2511.22359 [待验证], 2025)
-#       Herschel et al. "Provenance for Data: A Survey" (ACM CSUR 2017)
+# Li et al. "Survey of Binary Code Toolchain Provenance Recovery"
+#       PMC-SBOM "Runtime SBOM Verification Using Hardware Performance Counters"
+#       UniBOM "A Unified SBOM Analysis and Visualisation Tool"
+#       Herschel et al. "Provenance for Data: A Survey"
 import json, logging, time, hashlib, uuid as _uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any, Iterator
@@ -11,7 +11,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# W3C PROV兼容数据模型 [PROV-DM 2013]
+# W3C PROV兼容数据模型
 
 class ProvType:
     ENTITY     = "entity"       # 数据实体

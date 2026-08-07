@@ -14,7 +14,7 @@ _submodules = {
     "multi_modal_fusion": ".multi_modal_fusion",
     "multi_modal_survival": ".multi_modal_survival",
     "multi_modal_conformal": ".multi_modal_conformal",
-    # 跨模态幻觉检测 / Shapley归因 / 时序衰减加权 / 跨模态异常检测 (2026 Q3 专利补齐)
+    # 跨模态幻觉检测 / Shapley归因 / 时序衰减加权 / 跨模态异常检测
     "cross_modal_hallucination": ".cross_modal_hallucination",
     "modal_shapley_attribution": ".modal_shapley_attribution",
     "temporal_modal_weighting": ".temporal_modal_weighting",

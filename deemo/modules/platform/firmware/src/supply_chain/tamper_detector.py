@@ -15,7 +15,6 @@ IoT/嵌入式固件的供应链攻击日益普遍：
 3. 行为差异分析: 对可疑函数做轻量级符号执行→比较补丁前后的路径约束变化。
    新增网络send/connect调用→高概率后门。
 
-参考：
 - "Reproducible Builds" (Debian项目): 构建可重现性的方法论。
 - firmware_attestation.py: TPM/安全启动的硬件级验证。本模块是软件供应链级。
 """
@@ -25,14 +24,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class TamperSeverity(Enum):
     NONE = "none"
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
-
 
 @dataclass
 class FirmwareComponent:
@@ -44,7 +41,6 @@ class FirmwareComponent:
     known_good_hash: str = ""  # 已知安全版本的哈希
     is_modified: bool = False
 
-
 @dataclass
 class TamperFinding:
     """一个篡改检测发现。"""
@@ -53,7 +49,6 @@ class TamperFinding:
     evidence_type: str       # "hash_mismatch" / "added_function" / "behavior_change" / "unknown_component"
     description: str
     affected_addresses: List[int]
-
 
 @dataclass
 class TamperReport:
@@ -65,7 +60,6 @@ class TamperReport:
     findings: List[TamperFinding]
     overall_risk: TamperSeverity
     recommendation: str
-
 
 class SupplyChainTamperDetector:
     """固件供应链篡改检测器。"""
@@ -183,8 +177,7 @@ class SupplyChainTamperDetector:
             return f"MEDIUM: {unknown} unknown components. Expand known-good database."
         return "LOW: no tampering evidence detected."
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _detector = SupplyChainTamperDetector()
     _detector.register_known_component("mbedTLS", "2.28.0", "abc123def")
@@ -212,7 +205,6 @@ def _smoke_test():
     assert _report.overall_risk == TamperSeverity.CRITICAL
     assert _report.modified_components == 1
     print("[OK] SupplyChainTamperDetector smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

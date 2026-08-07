@@ -23,7 +23,7 @@ class UnsupportedArchError(AnalysisError):
     default_code = "UNSUPPORTED_ARCH"
 
 
-# ---- 工具链错误
+# 工具链错误
 
 
 class R2NotFoundError(AnalysisError):
@@ -35,7 +35,7 @@ class R2NotFoundError(AnalysisError):
         super().__init__(message or "radare2 binary not found. Set R2_PATH env var.", error_code=self.default_code)
 
 
-# ===== 分析过程错误 =====
+# 分析过程错误
 
 
 class DisassemblyError(AnalysisError):

@@ -282,7 +282,7 @@ class UEFIFirmwareAnalyzer:
                 n_size / 1024 / 1024))
         self.firmware_path = s_path
 
-    # ---- 分析流程 ----
+# 分析流程
 
     def analyze(self):
         # 上下文连贯
@@ -317,7 +317,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] modules found: {}".format(len(self.modules)))
         logger.info("[UEFI] SMM modules: {}".format(len(self.smm_modules)))
 
-    # ---- uefi_firmware路径 ----
+# uefi_firmware路径
 
     def _parse_with_uefi_firmware(self):
         try:
@@ -377,7 +377,7 @@ class UEFIFirmwareAnalyzer:
             return None
         return module
 
-    # ---- 内置解析器 ----
+# 内置解析器
 
     def _parse_with_builtin(self):
         logger.info("[UEFI] using built-in parser...")
@@ -567,7 +567,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] saveindexfailed: {}".format(e))
 
-    # ---- PE分析 ----
+# PE分析
 
     def _analyze_modules(self):
         logger.info("[UEFI] analyzing PE modules...")
@@ -636,7 +636,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] PE analysis failed ({}): {}".format(module.name, e))
 
-    # ---- DXE依赖图 ----
+# DXE依赖图
 
     def _build_dxe_dependency_graph(self):
         if not self.dxe_modules:
@@ -657,7 +657,7 @@ class UEFIFirmwareAnalyzer:
             logger.info("[UEFI] DXE dependency graph built: %d protocol nodes",
                         len(self._dxe_dep_graph))
 
-    # ---- SMM漏洞检测 ----
+# SMM漏洞检测
 
     def _detect_smm_vulnerabilities(self):
         logger.info("[UEFI] running SMM vulnerability detection...")
@@ -813,7 +813,7 @@ class UEFIFirmwareAnalyzer:
             })
         return vulns
 
-    # ---- NIST 800-193 ----
+# NIST 800-193
 
     def _assess_nist_800_193(self):
         all_imports_flat: set[str] = set()
@@ -843,7 +843,7 @@ class UEFIFirmwareAnalyzer:
                 })
         self.analysis_stats['nist_800_193'] = resiliency_scores
 
-    # ---- 报告 ----
+# 报告
 
     def _generate_report(self):
         report = {
@@ -936,5 +936,3 @@ def analyze_uefi_firmware(firmware_path, output_dir=None, extract_modules=True, 
     return analyzer.analyze()
 
 
-def _debug_print(*args, **kwargs):
-    pass

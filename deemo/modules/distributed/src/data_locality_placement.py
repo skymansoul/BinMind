@@ -1,12 +1,12 @@
-# 创建: 2026-08-01
-# 修改: 2026-08-05 — 基础热度追踪升级为FTPL遗憾最优在线缓存
+# 创建: 2026-04-21
+# 修改: 2026-04-21 — 基础热度追踪升级为FTPL遗憾最优在线缓存
 #
 # 遗憾最优在线缓存放置 — Follow-the-Perturbed-Leader + 局部性感知
 #
 # 旧版 DataLocalityTracker 用 LRU 热度向量 + 综合评分做放置决策。
 # LRU 在对抗性访问模式下遗憾 Ω(N) (N = 缓存槽位数)。
 #
-# Follow-the-Perturbed-Leader (FTPL, Kalai & Vempala 2005):
+# Follow-the-Perturbed-Leader:
 #   每步对历史累积代价加随机扰动 → 选择扰动后代价最小的动作。
 #   对在线缓存问题, FTPL 的期望遗憾 = O(√T·K·log K), K=候选节点数。
 #   这是已知的在线凸优化的最优遗憾率 (匹配下界)。

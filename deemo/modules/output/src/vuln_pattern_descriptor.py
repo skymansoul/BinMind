@@ -19,10 +19,9 @@
   P-Code 保留了指令展开痕迹 (x86 string ops → 多条 P-Code)，VEX 保留寄存器压力差异。
   伪 C 层在 Ghidra decompiler 输出上运作，已消除这些 ISA 残余。
 
-参考:
-  Lin et al. (ARTMAN 2025): P-Code 跨架构 50.2% 准确率 (MIPS→ARM)
-  Zhou (HKUST 2025): 编译器级 IR 提升跨架构一致性
-  VEX-IR + skip-gram (2024): 跨平台但需训练数据
+  Lin et al.: P-Code 跨架构 50.2% 准确率 (MIPS→ARM)
+  Zhou: 编译器级 IR 提升跨架构一致性
+  VEX-IR + skip-gram: 跨平台但需训练数据
 
 修改记录:
   2026-08-02 11:42 - 初始版本，伪C层特征提取 + 矩统计量
@@ -33,7 +32,6 @@ import math
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-
 
 @dataclass
 class VulnPattern:
@@ -50,7 +48,6 @@ class VulnPattern:
     loop_nesting_max: int          # 最大循环嵌套深度
     danger_density: float          # 危险操作占基本块比例 (0-1)
     signature_hash: str = ""       # 特征向量的哈希，用于快速去重
-
 
 def _basic_block_moments(block_sizes: List[int]) -> Tuple[float, float, float]:
     """基本块大小分布的前三阶矩 (均值/标准差/偏度)。"""
@@ -75,7 +72,6 @@ def _basic_block_moments(block_sizes: List[int]) -> Tuple[float, float, float]:
 
     return (round(mean_norm, 4), round(std_norm, 4), round(skew_norm, 4))
 
-
 def _estimate_loop_nesting(pseudocode: str) -> int:
     """
     反编译伪 C 中估算最大循环嵌套深度。
@@ -97,7 +93,6 @@ def _estimate_loop_nesting(pseudocode: str) -> int:
 
     return max_depth
 
-
 def _call_depth_entropy(call_depths: List[int]) -> float:
     """
     调用树深度分布的 Shannon 熵 — 度量调用结构的复杂度。
@@ -113,7 +108,6 @@ def _call_depth_entropy(call_depths: List[int]) -> float:
         entropy -= p * math.log2(p)
     max_entropy = math.log2(len(counter) + 1)
     return round(entropy / max_entropy, 4) if max_entropy > 0 else 0.0
-
 
 def _danger_density(block_instructions: List[List[str]]) -> float:
     """
@@ -132,7 +126,6 @@ def _danger_density(block_instructions: List[List[str]]) -> float:
     if total_ins == 0:
         return 0.0
     return round(min(danger_count / total_ins, 1.0), 4)
-
 
 def extract_pattern(
     function_name: str,
@@ -174,7 +167,6 @@ def extract_pattern(
         signature_hash=sig_hash,
     )
 
-
 def pattern_cosine_similarity(a: VulnPattern, b: VulnPattern) -> float:
     """
     两个 VulnPattern 的余弦相似度 [0, 1]。
@@ -205,7 +197,6 @@ def pattern_cosine_similarity(a: VulnPattern, b: VulnPattern) -> float:
     if norm_a < 1e-8 or norm_b < 1e-8:
         return 0.0
     return round(dot / (norm_a * norm_b), 4)
-
 
 def cross_arch_match(
     source_pattern: VulnPattern,

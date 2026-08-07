@@ -20,8 +20,7 @@
 
   输出: 校准后的误报概率 P(FP|evidence) = 1 - P(TP|evidence)
 
-参考:
-  Bayesian Networks for SA Alert Optimization (2024 硕士论文):
+  Bayesian Networks for SA Alert Optimization:
     使用 BN 后处理静态分析告警。本模块的差异化:
     1) 序贯更新而非单步 BN 推断
     2) 似然比参数化每个分析源，而非从数据学习 BN 结构
@@ -34,7 +33,6 @@
 import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # 各证据源的预校准似然比参数
 # 基于典型静态分析工具的 FPR/TPR 文献值
@@ -62,7 +60,6 @@ _TYPE_PRIOR: Dict[str, float] = {
 }
 _DEFAULT_PRIOR = 0.15  # 未知类型的保守先验
 
-
 @dataclass
 class CalibrationStep:
     """单步校准记录 — 一个证据源判定后的后验。"""
@@ -71,7 +68,6 @@ class CalibrationStep:
     prior: float
     posterior: float
     lr_used: float
-
 
 class SequentialFpCalibrator:
     """
@@ -141,7 +137,6 @@ class SequentialFpCalibrator:
         self._current = self._prior
         self._steps.clear()
 
-
 def calibrate_from_fusion(
     vuln_type: str,
     source_verdicts: Dict[str, bool],
@@ -179,7 +174,6 @@ def calibrate_from_fusion(
         'update_steps': steps_out,
         'step_count': len(steps_out),
     }
-
 
 def _fp_confidence_label(fp_rate: float) -> str:
     if fp_rate <= 0.05:

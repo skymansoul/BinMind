@@ -417,7 +417,7 @@ class TimeSeriesForecaster:
 
     # ---- Holt-Winters 三重指数平滑 (Triple Exponential Smoothing) ----
     # 同时建模水平(level)、趋势(trend)、季节性(seasonality)三个分量
-    # 参考 Holt 1957, Winters 1960; 在漏洞爆发预测中，季节性对应补丁周期
+    # Holt 1957, Winters 1960; 在漏洞爆发预测中，季节性对应补丁周期
     @staticmethod
     def _holt_winters(
         s: List[float],
@@ -494,10 +494,8 @@ class TimeSeriesForecaster:
         forecast_val = max(0.0, forecast_val)
         return (forecast_val, max(0.0, forecast_val - 1.96 * std), forecast_val + 1.96 * std)
 
-    # ------------------------------------------------------------------
     # 回测评估 — 用历史数据验证各方法预测精度，返回指标排名
     # 思想：留出最后 holdout_days 的数据作为验证集，用前面数据训练并预测
-    # ------------------------------------------------------------------
     @classmethod
     def evaluate_methods(
         cls,
@@ -786,10 +784,10 @@ class VulnTrendForecaster:
 
         seasonality = self.seasonal.detect(ts_series)
 
-        # ---- 异常评分 — 检测漏洞爆发信号 ----
+# 异常评分 — 检测漏洞爆发信号
         anomaly = self.anomaly_scorer.score(series) if len(series) >= 7 else 0.0
 
-        # ---- 回测评估 — 对比所有方法的预测精度 ----
+# 回测评估 — 对比所有方法的预测精度
         backtest_metrics = None
         if len(series) >= 10:
             backtest_metrics = TimeSeriesForecaster.evaluate_methods(series)

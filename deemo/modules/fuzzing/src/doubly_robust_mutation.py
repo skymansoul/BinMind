@@ -2,7 +2,7 @@
 
 修改记录:
 2025-08-17 14:31 - AIPW 双重鲁棒估计 + logistic 倾向得分 + 线性结果模型
-参考: Robins, Rotnitzky & Zhao (1994) JASA; Bang & Robins (2005) Biometrics.
+参考: Robins, Rotnitzky & Zhao JASA; Bang & Robins Biometrics.
 在 fuzzing 中零先例。即使倾向得分模型或结果模型之一错误,
 ATE 估计仍一致 (双重鲁棒性)。评估突变策略的因果效应。"""
 
@@ -61,21 +61,21 @@ class DoublyRobustEvaluator:
         if n < 10 or self._n_treated < 3 or self._n_control < 3:
             return None
 
-        # 步骤1: 倾向得分模型 (logistic regression 在线更新)
+        # 倾向得分模型 (logistic regression 在线更新)
         ps_scores = []
         for obs in self._obs:
             e_hat = self._propensity_score(obs.covariates)
             e_hat = max(0.05, min(0.95, e_hat))  # 截断防极端
             ps_scores.append(e_hat)
 
-        # 步骤2: 结果回归模型 (线性)
+        # 结果回归模型 (线性)
         mu1_preds = []
         mu0_preds = []
         for obs in self._obs:
             mu1_preds.append(self._outcome_model(obs.covariates, treated=True))
             mu0_preds.append(self._outcome_model(obs.covariates, treated=False))
 
-        # 步骤3: DR 估计
+        # DR 估计
         dr_sum = 0.0
         dr_sq_sum = 0.0
         for i, obs in enumerate(self._obs):

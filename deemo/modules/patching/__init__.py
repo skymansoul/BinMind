@@ -14,7 +14,7 @@ _src = _os.path.join(_cur, 'src')
 if _src not in _sys.path:
     _sys.path.insert(0, _src)
 
-# ── __getattr__ 懒加载 ──────────────────────────────────────
+# __getattr__ 懒加载
 
 __all__ = [
     # auto patcher
@@ -176,7 +176,7 @@ def __getattr__(name):
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
-# ── AgentRepair (2026-08-03) — 符号+静态/测试反馈闭环修复 ──
+# AgentRepair — 符号+静态/测试反馈闭环修复
 # 多轮修复引擎 / 漏洞类型路由 / 候选排序 / 安全校验
 __all__.extend([
     'AgentRepairEngine', 'RepairRound', 'RepairTrajectory', 'RepairOutcome',
@@ -207,7 +207,7 @@ _lazy_map.update({
     'ValidationStatus': ('safe_repair_validator', 'ValidationStatus'),
 })
 
-# ── 补丁存在性检测 + 差分执行验证 (2026-08-03) ──────────────────
+# 补丁存在性检测 + 差分执行验证
 # PPT：语义签名提取与匹配，不依赖源码。
 # DiffExec：轻量 concrete execution oracle，与 VeriBin 互补。
 __all__.extend([
@@ -236,7 +236,7 @@ _lazy_map.update({
     'diff_exec_verify': ('src.differential_executor', 'diff_exec_verify'),
 })
 
-# ── Concolic 执行 + IR 等值缓存 (2026-08-14) ──────────────────
+# Concolic 执行 + IR 等值缓存
 # Concolic：符号+具体混合测试合成，精确定位补丁新路径。
 # IR Cache：语义指纹归一化 + LFU-DA 淘汰，免重复重编译。
 __all__.extend([
@@ -266,7 +266,7 @@ _lazy_map.update({
     'LFUDACache': ('src.ir_equiv_cache', 'LFUDACache'),
 })
 
-# ── 多补丁交互图 + 时间衰减可靠性 (2026-09-05) ──────────────────
+# 多补丁交互图 + 时间衰减可靠性
 # InteractionGraph：补丁冲突/依赖检测 + 安全应用拓扑序。
 # TemporalReliability：可靠性时间衰减建模 + 环境漂移告警。
 __all__.extend([
@@ -297,7 +297,7 @@ _lazy_map.update({
     'estimate_decay_constant': ('src.temporal_reliability', 'estimate_decay_constant'),
 })
 
-# ── Patch Provenance Chain (2025-08-11) ───────────────────────────
+# Patch Provenance Chain
 # Merkle-DAG 内容寻址补丁来源、Ed25519 证明链、独立可验证性。
 __all__.extend([
     'ProvenanceNode', 'ProvenanceStore', 'EdgeKind', 'AttestationPayload',
@@ -321,7 +321,7 @@ _lazy_map.update({
     'produce_transparency_log_entry': ('src.provenance_verifier', 'produce_transparency_log_entry'),
 })
 
-# ── Adversarial Bypass Discovery (2025-08-12) ─────────────────────
+# Adversarial Bypass Discovery
 # 基于适应度导向搜索的补丁边界漏洞发现。
 __all__.extend([
     'PatchSite', 'ExecutionTrace', 'BypassFitness', 'BypassFitnessEvaluator',
@@ -345,7 +345,7 @@ _lazy_map.update({
     'find_patch_bypasses': ('src.adversarial_bypass_finder', 'find_patch_bypasses'),
 })
 
-# ── Patch Spectrum Analyzer (2025-08-13) ─────────────────────────
+# Patch Spectrum Analyzer
 # 基于频域分析的补丁异常/后门检测。
 __all__.extend([
     'PatchDiffVector', 'PatchDiffExtractor', 'SpectralFeatures',
@@ -372,7 +372,7 @@ _lazy_map.update({
     'detect_spectral_anomaly': ('src.spectral_anomaly', 'detect_spectral_anomaly'),
 })
 
-# ── Patch Amortization Engine (2025-08-14) ────────────────────────
+# Patch Amortization Engine
 # 补丁子sumption图 + 最小集覆盖优化，消除冗余补丁。
 __all__.extend([
     'PatchCoverage', 'SubsumptionEdge', 'SubsumptionGraph',
@@ -388,7 +388,7 @@ _lazy_map.update({
     'amortize_patches': ('src.patch_amortization', 'amortize_patches'),
 })
 
-# ── Live Patch Efficacy Watchdog (2025-08-15) ─────────────────────
+# Live Patch Efficacy Watchdog
 # 运行时效力衰减监控，Bayesian 更新 + CUSUM 漂移检测。
 __all__.extend([
     'EfficacyState', 'WatchdogSignal', 'EfficacyReport',
@@ -404,7 +404,7 @@ _lazy_map.update({
     'EfficacyWatchdog': ('src.efficacy_watchdog', 'EfficacyWatchdog'),
 })
 
-# ── Micro-Arch Leakage Detector (2025-08-16) ─────────────────────
+# Micro-Arch Leakage Detector
 # 补丁引入的时序侧信道检测，KS + Welch + Cohen's d。
 __all__.extend([
     'LeakageVerdict', 'TimingSample', 'LeakageReport',
@@ -420,7 +420,7 @@ _lazy_map.update({
     'detect_uarch_leakage': ('src.uarch_leakage', 'detect_uarch_leakage'),
 })
 
-# ── Patch Obfuscation Hardening (2025-08-20) ─────────────────────
+# Patch Obfuscation Hardening
 # 补丁抗逆向工程：寄存器重分配/等价指令替换/NOP雪崩。
 __all__.extend([
     'PatchObfuscator', 'PatchObfuscationResult', 'ObfuscationRecipe',
@@ -434,7 +434,7 @@ _lazy_map.update({
     'LivenessAnalyzer': ('src.patch_obfuscator', 'LivenessAnalyzer'),
 })
 
-# ── Patch Applicability Resolver (2025-08-21) ────────────────────
+# Patch Applicability Resolver
 # 异构 fleet 补丁适用性矩阵 + Hungarian 最优匹配。
 __all__.extend([
     'ApplicabilityTier', 'FleetBinary', 'PatchCandidate',
@@ -454,7 +454,7 @@ _lazy_map.update({
     'resolve_applicability': ('src.patch_applicability', 'resolve_applicability'),
 })
 
-# ── Patch Debt Quantifier (2025-08-22) ───────────────────────────
+# Patch Debt Quantifier
 # 补丁技术债务四维量化：gadget/熵/膨胀/优化偏离 + 偿还计划。
 __all__.extend([
     'DebtSeverity', 'DebtDimensions', 'DebtReport',
@@ -472,7 +472,7 @@ _lazy_map.update({
     'PatchDebtQuantifier': ('src.patch_debt', 'PatchDebtQuantifier'),
 })
 
-# ── Guaranteed Atomic Rollback (2025-08-25) ───────────────────────
+# Guaranteed Atomic Rollback
 # 三阶段原子回滚 + 密码学完整性证明 + Provenance DAG 集成。
 __all__.extend([
     'RollbackStatus', 'ByteRegion', 'RollbackProof',
@@ -486,7 +486,7 @@ _lazy_map.update({
     'AtomicRollbackEngine': ('src.atomic_rollback', 'AtomicRollbackEngine'),
 })
 
-# ── Concurrency Hazard Detector (2025-08-26) ──────────────────────
+# Concurrency Hazard Detector
 # 补丁引入的并发风险：锁序/原子性/屏障/共享访问/调用约定。
 __all__.extend([
     'HazardSeverity', 'ConcurrencyHazard', 'HazardReport',
@@ -500,7 +500,7 @@ _lazy_map.update({
     'ConcurrencyHazardDetector': ('src.concurrency_hazard', 'ConcurrencyHazardDetector'),
 })
 
-# ── Performance Impact Predictor (2025-08-27) ─────────────────────
+# Performance Impact Predictor
 # 补丁性能回归静态预测：指令成本 + 访存模式 + 分支预测影响。
 __all__.extend([
     'ImpactCategory', 'InstructionCost', 'PerfDelta', 'PerfImpactReport',
@@ -516,7 +516,7 @@ _lazy_map.update({
     'PerfImpactPredictor': ('src.perf_impact', 'PerfImpactPredictor'),
 })
 
-# ── Patch Semantic Explainer (2025-08-30) ─────────────────────────
+# Patch Semantic Explainer
 # 汇编变更分类 + 结构化语义解释：边界检查/NULL检查/函数替换/净化。
 __all__.extend([
     'ChangeCategory', 'SemanticExplanation', 'PatchExplanation',
@@ -531,7 +531,7 @@ _lazy_map.update({
     'PatchExplainer': ('src.patch_explainer', 'PatchExplainer'),
 })
 
-# ── Binary ABI Integrity Checker (2025-08-31) ─────────────────────
+# Binary ABI Integrity Checker
 # 补丁的二进制接口完整性：栈帧/callee-saved/返回值/参数。
 __all__.extend([
     'ABIImpact', 'ABIViolation', 'ABIReport', 'ABIIntegrityChecker',
@@ -544,7 +544,7 @@ _lazy_map.update({
     'ABIIntegrityChecker': ('src.abi_integrity', 'ABIIntegrityChecker'),
 })
 
-# ── Call Site Impact Analyzer (2025-09-01) ────────────────────────
+# Call Site Impact Analyzer
 # 补丁对调用点的连锁影响：clobber传播 + 栈偏移 + 参数适配。
 __all__.extend([
     'ImpactLevel', 'CallSite', 'CallSiteImpact', 'ImpactReport',
@@ -560,7 +560,7 @@ _lazy_map.update({
     'CallSiteImpactAnalyzer': ('src.callsite_impact', 'CallSiteImpactAnalyzer'),
 })
 
-# ── Memory-Safety Certifier (2025-09-03) ──────────────────────────
+# Memory-Safety Certifier
 # 补丁差分的内存安全认证：UAF/双重释放/缓冲区溢出/内存泄漏。
 __all__.extend([
     'MemorySafetyIssue', 'SafetyFinding', 'MemorySafetyReport',
@@ -575,7 +575,7 @@ _lazy_map.update({
     'MemorySafetyCertifier': ('src.memory_safety_cert', 'MemorySafetyCertifier'),
 })
 
-# ── Diff Taint Tracker (2025-09-04) ──────────────────────────────
+# Diff Taint Tracker
 # 补丁前后的污点流差分：source→sink 路径 + 净化验证。
 __all__.extend([
     'TaintNodeType', 'TaintNode', 'TaintFlow', 'DiffTaintReport',
@@ -591,7 +591,7 @@ _lazy_map.update({
     'DiffTaintAnalyzer': ('src.diff_taint', 'DiffTaintAnalyzer'),
 })
 
-# ── Patch Evolutionary Lineage (2025-09-05) ───────────────────────
+# Patch Evolutionary Lineage
 # 补丁演化谱系重建：特征距离矩阵 + UPGMA 系统树 + merge 检测。
 __all__.extend([
     'LineageEvent', 'PatchRecord', 'LineageNode', 'LineageTree',
@@ -610,7 +610,7 @@ _lazy_map.update({
     'reconstruct_lineage': ('src.patch_lineage', 'reconstruct_lineage'),
 })
 
-# ── Patch Forensics Timeline (2025-09-07) ─────────────────────────
+# Patch Forensics Timeline
 # 补丁取证时间线：时序异常检测 + 三方交叉验证 + 篡改置信度。
 __all__.extend([
     'AnomalyKind', 'PatchEvent', 'ForensicAnomaly', 'ForensicTimeline',
@@ -625,7 +625,7 @@ _lazy_map.update({
     'ForensicTimelineBuilder': ('src.patch_forensics', 'ForensicTimelineBuilder'),
 })
 
-# ── Cross-Patch Fix Distiller (2025-09-08) ────────────────────────
+# Cross-Patch Fix Distiller
 # 修复本质提取 + 跨二进制匹配 + 修复建议生成。
 __all__.extend([
     'FixCategory', 'FixEssence', 'FixCandidate', 'DistillationReport',
@@ -642,7 +642,7 @@ _lazy_map.update({
     'FixDistiller': ('src.fix_distiller', 'FixDistiller'),
 })
 
-# ── Patch Metamorphic Tester (2025-09-09) ─────────────────────────
+# Patch Metamorphic Tester
 # 补丁蜕变测试：5 条蜕变关系 + 语义等价变体验证。
 __all__.extend([
     'MRStatus', 'MetamorphicRelation', 'MRResult', 'MetamorphicReport',
@@ -658,7 +658,7 @@ _lazy_map.update({
     'MetamorphicTester': ('src.metamorphic_test', 'MetamorphicTester'),
 })
 
-# ── Patch Minimality Certifier (2025-09-11) ───────────────────────
+# Patch Minimality Certifier
 # 二分消去法字节级最小化 + 语义保持验证。
 __all__.extend([
     'MinimalityStatus', 'ByteChunk', 'MinimalityReport',
@@ -676,7 +676,7 @@ _lazy_map.update({
     'certify_minimality': ('src.patch_minimality', 'certify_minimality'),
 })
 
-# ── Anti-Detection Patch Hardener (2025-09-12) ────────────────────
+# Anti-Detection Patch Hardener
 # 多态字节/时序归一化/完整性检查抵抗——对抗恶意软件补丁检测。
 __all__.extend([
     'StealthTechnique', 'StealthModification', 'StealthReport',
@@ -694,7 +694,7 @@ _lazy_map.update({
     'PatchStealthHardener': ('src.patch_stealth', 'PatchStealthHardener'),
 })
 
-# ── Optimization Compatibility Analyzer (2025-09-13) ──────────────
+# Optimization Compatibility Analyzer
 # 补丁对编译器优化假设的兼容性：内联/循环展开/常量传播/DCE/PGO。
 __all__.extend([
     'OptimIssueType', 'OptimIssue', 'OptimCompatReport',
@@ -709,7 +709,7 @@ _lazy_map.update({
     'OptimCompatAnalyzer': ('src.optim_compat', 'OptimCompatAnalyzer'),
 })
 
-# ── Self-Verifying Patch Injector (2025-09-15) ────────────────────
+# Self-Verifying Patch Injector
 # 嵌入运行时自校验的补丁：字节完整性/语义健全性/运行时行为。
 __all__.extend([
     'VerifyLevel', 'VerifyCheckpoint', 'SelfVerifyReport',
@@ -723,7 +723,7 @@ _lazy_map.update({
     'SelfVerifyGenerator': ('src.self_verify', 'SelfVerifyGenerator'),
 })
 
-# ── Patch-to-PoC Generator (2025-09-16) ───────────────────────────
+# Patch-to-PoC Generator
 # 从二进制补丁反向推导漏洞触发条件 + PoC 输入合成。
 __all__.extend([
     'PoCStrategy', 'VulnTrigger', 'PoCReport',
@@ -738,7 +738,7 @@ _lazy_map.update({
     'PoCGenerator': ('src.patch_to_poc', 'PoCGenerator'),
 })
 
-# ── Cross-Version Patch Transplant (2025-09-17) ───────────────────
+# Cross-Version Patch Transplant
 # 补丁跨版本移植：函数匹配 + 偏移自适应 + 语义保持验证。
 __all__.extend([
     'TransplantStatus', 'PatchSite', 'TransplantResult',
@@ -756,7 +756,7 @@ _lazy_map.update({
     'PatchTransplanter': ('src.patch_transplant', 'PatchTransplanter'),
 })
 
-# ── Patch Survival Analyzer (2025-09-19) ──────────────────────────
+# Patch Survival Analyzer
 # Kaplan-Meier 生存曲线 + 对数秩检验 + Nelson-Aalen 累积风险。
 __all__.extend([
     'SurvivalRecord', 'KMEstimate', 'SurvivalReport',
@@ -771,7 +771,7 @@ _lazy_map.update({
     'PatchSurvivalAnalyzer': ('src.patch_survival', 'PatchSurvivalAnalyzer'),
 })
 
-# ── Deployment Risk Scorer (2025-09-20) ───────────────────────────
+# Deployment Risk Scorer
 # 多信号 Bayesian 风险融合 + 硬约束 + ROC 阈值校准。
 __all__.extend([
     'DeployDecision', 'RiskSignals', 'RiskReport',
@@ -785,7 +785,7 @@ _lazy_map.update({
     'BayesianRiskFuser': ('src.deploy_risk', 'BayesianRiskFuser'),
 })
 
-# ── Info-Theoretic Patch Distance (2025-09-21) ────────────────────
+# Info-Theoretic Patch Distance
 # JSD/NCD/MI 三种信息论距离 + permutation test 显著性。
 __all__.extend([
     'InfoDistance', 'InfoDistReport',
@@ -803,7 +803,7 @@ _lazy_map.update({
     'InfoDistanceCalculator': ('src.info_distance', 'InfoDistanceCalculator'),
 })
 
-# ── Patch Differential Slicing (2025-09-23) ───────────────────────
+# Patch Differential Slicing
 # 汇编级前后向程序切片：数据/控制依赖 + 影响半径分析。
 __all__.extend([
     'SliceResult', 'SliceReport', 'DefUseAnalyzer', 'AssemblySlicer',
@@ -816,7 +816,7 @@ _lazy_map.update({
     'AssemblySlicer': ('src.patch_slice', 'AssemblySlicer'),
 })
 
-# ── Patch Equivalence Clustering (2025-09-24) ─────────────────────
+# Patch Equivalence Clustering
 # 补丁无监督等价类聚类：多特征 DBSCAN + medoid + 自动标注。
 __all__.extend([
     'PatchFeatures', 'PatchCluster', 'ClusterReport',
@@ -831,7 +831,7 @@ _lazy_map.update({
     'DensityClusterer': ('src.patch_cluster', 'DensityClusterer'),
 })
 
-# ── Trust Propagation Network (2025-09-25) ────────────────────────
+# Trust Propagation Network
 # 补丁信任沿依赖图传播：PageRank 式迭代 + 信任瓶颈检测。
 __all__.extend([
     'TrustNode', 'TrustReport', 'TrustPropagator', 'build_trust_network',

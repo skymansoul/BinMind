@@ -1,6 +1,6 @@
 # 堆溢出误报过滤器 — 组合来源追踪+对齐归一化, 系统性地压低误报率
 # 核心创新: 仅当 (1)写目标与分配来自同一malloc AND (2)写入超出对齐后有效大小 → 才报告
-# 方法论依据: Cross-Domain Sparse Abstract Execution (ICSE 2024) — 值域交叉验证降低96.63%误报
+# 方法论依据: Cross-Domain Sparse Abstract Execution — 值域交叉验证降低96.63%误报
 
 from dataclasses import dataclass, field
 from enum import Enum

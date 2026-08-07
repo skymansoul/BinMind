@@ -1,9 +1,9 @@
 """Thompson采样测试策略选择器 — 基于历史漏洞发现率的自适应策略优化。
 
 理论依据:
-  BandFuzz (arXiv:2507.10845): Cupid 自动模糊器选择器。
-  FuzzingBrain V2 (arXiv:2605.21779): 两层模糊测试架构。
-  SAFuzz (arXiv:2602.11209): 语义预言机 -> 85.7%精确率。
+  BandFuzz: Cupid 自动模糊器选择器。
+  FuzzingBrain V2: 两层模糊测试架构。
+  SAFuzz: 语义预言机 -> 85.7%精确率。
 
 模块位置: testing/src/thompson_test_selector.py
 """

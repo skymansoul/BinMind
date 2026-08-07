@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{PCFC Ablation Study --- Incremental Contribution of Path-Condition Filtering for Format String Detection}
+\label{tab:pcfc_ablation}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Config & TP & FP & TN & FN & P & R & F1 & FPR \\
+\midrule
+  B0_FCPV_Only & 10 & 11 & 2 & 0 & 0.4762 & 1.0000 & 0.6452 & 0.8462 \\
+  B1_Mutex & 10 & 4 & 9 & 0 & 0.7143 & 1.0000 & 0.8333 & 0.3077 \\
+  B2_Mutex_EarlyRet & 10 & 1 & 12 & 0 & 0.9091 & 1.0000 & 0.9524 & 0.0769 \\
+  B3_Full_PCFC & 10 & 0 & 13 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

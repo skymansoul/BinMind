@@ -1,5 +1,4 @@
 # IR 规则匹配引擎
-from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import re
 

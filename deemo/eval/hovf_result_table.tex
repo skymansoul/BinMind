@@ -1,0 +1,19 @@
+% Auto-generated: BinMind-HOVF multi-tool heap overflow benchmark
+% Generated: 2026-08-11
+
+\begin{table}[htbp]
+\centering
+\caption{Multi-Tool Heap Overflow Detection Comparison (HOVF benchmark, 101 samples)}
+\label{tab:hovf-multitool}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+\textbf{Tool} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN} & \textbf{Prec} & \textbf{Recall} & \textbf{F1} & \textbf{FPR} & \textbf{Time(ms)} \\
+\midrule
+Angr & 54 & 17 & 0 & 0 & 76.1\% & 100.0\% & 0.8640 & 100.0\% & 1046 \\
+BinMind-Baseline & 35 & 4 & 28 & 33 & 89.7\% & 51.5\% & 0.6542 & 12.5\% & 1 \\
+BinMind-HOVF & 50 & 2 & 30 & 18 & 96.2\% & 73.5\% & 0.8333 & 6.2\% & 1 \\
+Ghidra & 54 & 17 & 0 & 0 & 76.1\% & 100.0\% & 0.8640 & 100.0\% & 40 \\
+QEMU-Tracer & 54 & 17 & 0 & 0 & 76.1\% & 100.0\% & 0.8640 & 100.0\% & 40 \\
+\bottomrule
+\end{tabular}
+\end{table}

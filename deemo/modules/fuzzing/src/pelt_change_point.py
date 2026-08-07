@@ -5,12 +5,11 @@
 2025-08-10 15:52 - CROPS: 多惩罚值弹性检测, 输出变点数 vs 惩罚曲线
 2025-08-11 09:18 - 变点语义标注: regime shift / strategy improvement / plateau
 
-参考:
-  Killick, Fearnhead & Eckley (2012) "Optimal Detection of Changepoints
+  Killick, Fearnhead & Eckley "Optimal Detection of Changepoints
     With a Linear Computational Cost" (JASA) — PELT 原始论文
-  Jackson et al. (2005) "An Algorithm for Optimal Partitioning of Data on
+  Jackson et al. "An Algorithm for Optimal Partitioning of Data on
     an Interval" — OP (Optimal Partitioning) 方法
-  Haynes, Eckley & Fearnhead (2017) "Computationally Efficient Changepoint
+  Haynes, Eckley & Fearnhead "Computationally Efficient Changepoint
     Detection for a Range of Penalties" (Statistics and Computing)
     — CROPS 方法: 从单一惩罚到弹性检测
 
@@ -35,12 +34,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
-# ---- PELT 参数 ----
+# PELT 参数
 _DEFAULT_PENALTY = 3.0       # BIC 类惩罚 (2*log(n))
 _MIN_SEGMENT_LENGTH = 5      # 最小分段长度
 _MAX_CHANGEPOINTS = 30       # 最大变点数
-
 
 @dataclass
 class ChangePoint:
@@ -50,7 +47,6 @@ class ChangePoint:
     value_after: float         # 变点后的分段均值
     delta: float               # 变化幅度
     semantic: str              # "breakthrough"|"regression"|"plateau"
-
 
 @dataclass
 class PELTResult:
@@ -64,7 +60,6 @@ class PELTResult:
     n_breakthroughs: int
     n_regressions: int
     latest_regime: str         # 最近分段的语义
-
 
 class PELTChangeDetector:
     """PELT 变点检测器 — 覆盖时间序列的结构性变化检测.

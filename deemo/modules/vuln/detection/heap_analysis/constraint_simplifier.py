@@ -12,7 +12,7 @@
   但若 rdx 的来源是 rdi+0 → rdx=64 → 64 >= 64 → 可证明安全 → 过滤。
 
 修改记录:
-  创建 2026-08-05
+  创建 2026-05-15
 """
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple

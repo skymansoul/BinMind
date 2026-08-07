@@ -9,7 +9,7 @@
   但审计者需要的不是缺陷列表, 而是可操作的攻击可行性评估:
     "此弱点能否被实际利用? 需要多少资源? 攻击收益是否值得?"
 
-  CryptAttackTester (CRYPTO 2024) 在算法设计层做高保证的攻击成本分析 —
+  CryptAttackTester 在算法设计层做高保证的攻击成本分析 —
   但对二进制实现的审计者而言, 需要的是"从二进制检测到的弱点→攻击路径→
   复杂度→可行性"的快速评估, 而非CAT的严格形式化证明。
 
@@ -25,10 +25,9 @@
     - 实际可行(商用硬件AWS/GCP, 预算$10K-$1M)
     - 即时可利用(笔记本电脑, <24小时, <$100)
 
-参考:
-  - CryptAttackTester (CRYPTO 2024): 高保证攻击成本量化 — 本模块做近似估计。
-  - NIST SP 800-57 Pt.1 Rev.5 (2020): 密钥管理 — 安全强度与攻击成本对照。
-  - ATT&CK for ICS (2024): 攻击可行性分类方法论。
+  - CryptAttackTester: 高保证攻击成本量化 — 本模块做近似估计。
+  - NIST SP 800-57 Pt.1 Rev.5: 密钥管理 — 安全强度与攻击成本对照。
+  - ATT&CK for ICS: 攻击可行性分类方法论。
 
 边界条件:
   - 攻击复杂度估算为数量级近似 — 不精确到常数因子。
@@ -41,14 +40,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class FeasibilityLevel(Enum):
     TRIVIAL = 0       # 笔记本电脑, <1小时, <$10
     PRACTICAL = 1     # 商用硬件, <1周, <$10K
     ACADEMIC = 2      # 需要集群/超算, <1年, <$1M
     THEORETICAL = 3   # 计算上不可行(>2^100), 但数学上存在攻击路径
     NOT_FEASIBLE = 4  # 无已知攻击路径
-
 
 @dataclass
 class AttackEstimate:
@@ -63,8 +60,7 @@ class AttackEstimate:
     prerequisites: List[str] = field(default_factory=list)
     mitigation: str = ""
 
-
-# ── 攻击复杂度参考表 ──
+# 攻击复杂度参考表
 # 硬件假设: 1台AWS p4d.24xlarge ≈ 2^40 ops/s; 1台普通笔记本 ≈ 2^30 ops/s
 # 成本: $1/小时的GPU ≈ 2^40 ops; 1年集群=$10M ≈ 2^90 ops
 # 时间边界: 1天=2^16秒, 1周=2^19秒, 1年=2^25秒
@@ -72,7 +68,6 @@ class AttackEstimate:
 _OPS_PER_SECOND_LAPTOP = 2**30     # ~10亿op/s
 _OPS_PER_SECOND_CLUSTER = 2**50    # ~1e15 op/s (大规模GPU集群)
 _OPS_PER_SECOND_SUPERCOMPUTER = 2**60  # ~1e18 op/s
-
 
 def _estimate_from_complexity(bits: float) -> Tuple[FeasibilityLevel, str, str]:
     """从攻击复杂度(bits)估算时间/成本/可行性。"""
@@ -112,7 +107,6 @@ def _estimate_from_complexity(bits: float) -> Tuple[FeasibilityLevel, str, str]:
         return (FeasibilityLevel.NOT_FEASIBLE,
                 '>100 years', '>$1B (economically irrational)')
 
-
 def _estimate_brute_force(algo: str, details: str = '') -> AttackEstimate:
     """估算暴力破解攻击的可行性。"""
     key_bits = 128  # 默认
@@ -146,7 +140,6 @@ def _estimate_brute_force(algo: str, details: str = '') -> AttackEstimate:
         prerequisites=['已知密文+对应的明文块(已知明文攻击)'],
         mitigation='使用256-bit密钥; 使用硬件TRNG生成密钥')
 
-
 def _estimate_collision(algo: str) -> AttackEstimate:
     """估算哈希碰撞攻击的可行性。"""
     collision_bits = {'MD5': 18, 'SHA-1': 63, 'SHA-256': 128, 'SHA-512': 256}
@@ -162,7 +155,6 @@ def _estimate_collision(algo: str) -> AttackEstimate:
         feasibility=level,
         prerequisites=['选择前缀碰撞能力'],
         mitigation=f'替换为SHA-384/SHA-512/BLAKE2b')
-
 
 def _estimate_side_channel(leakage_report=None) -> Optional[AttackEstimate]:
     """估算侧信道攻击的可行性。"""
@@ -196,7 +188,6 @@ def _estimate_side_channel(leakage_report=None) -> Optional[AttackEstimate]:
         feasibility=level,
         prerequisites=['目标设备的物理/远程侧信道访问', '已知明文/密文对'],
         mitigation='实现常量时间代码; 添加随机延迟/掩码; 使用硬件侧信道对策')
-
 
 def assess_attack_feasibility(
         algo_names: Optional[List[str]] = None,

@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 @dataclass
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -134,7 +134,6 @@ def cached(ttl=300, ns="default"):
     return d
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未使用."""
     pass
 

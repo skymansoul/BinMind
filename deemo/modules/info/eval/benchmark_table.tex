@@ -1,0 +1,32 @@
+% Auto-generated --- CB-HOD v1.1 + PSVR-HLM v3.0 Three-Method Benchmark
+% 24 heap overflow samples (17 CVE + 7 NEG), 2026-08-07
+\begin{table*}[htbp]
+\centering
+\caption{Heap Overflow Detection: Three-Method Comparison on 24 Samples}
+\label{tab:three_method_benchmark}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\textbf{Method} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN} &
+\textbf{Recall} & \textbf{Prec} & \textbf{FPR} & \textbf{F1} & \textbf{Time} \\
+\midrule
+AC3 v1 (Import-Pair Baseline)  & 16 & 7 & 0 & 1 & 94.1\% & 69.6\% & 100.0\% & 0.800 & 0.2 ms \\
+CB-HOD v1.1 (Constraint-Driven) & 16 & 1 & 6 & 1 & 94.1\% & 94.1\% & 14.3\% & 0.941 & 1.2 ms \\
+PSVR-HLM v3.0 (Full Pipeline)   & 16 & 0 & 7 & 1 & 94.1\% & 100.0\% & 0.0\% & 0.970 & 1.2 ms \\
+\midrule
+\textbf{Improvements} \\
+\midrule
+AC3 $\rightarrow$ CB-HOD & --- & $-$6 & +6 & --- & --- & +24.5pp & $-85.7$pp & +0.141 & +1.0 ms \\
+AC3 $\rightarrow$ PSVR-HLM & --- & $-$7 & +7 & --- & --- & +30.4pp & $-100.0$pp & +0.170 & +1.0 ms \\
+\bottomrule
+\end{tabular}
+\par\smallskip\small
+\textbf{Key Findings:}
+(1) CB-HOD v1.1 eliminates 6 of 7 baseline false positives (85.7\% FPR reduction)
+by replacing import-table pairing with pointer-tracking + interval constraint solving.
+(2) PSVR-HLM v3.0 eliminates the last FP via source-level safety pattern recognition
+(loop\_guard\_break), achieving 0\% FPR.
+(3) All three methods share 1 FN (CVE-2024-004 off-by-one), a fundamental limit of
+regex-based size expression extraction.
+(4) Total analysis time remains in the millisecond range --- 3--4 orders of magnitude
+faster than symbolic execution approaches.
+\end{table*}

@@ -1,6 +1,6 @@
 # 序列化与压缩包装器: JSON (含 numpy 扩展)、MessagePack、pickle 安全加载、zlib/lzma 压缩
-# ReF Decompile [arXiv:2502.12221 [待验证]] 的 relabeling 策略需将函数控制流标注序列化
-# 为中间格式；SoK [arXiv:2606.17398] 指出的统一管线中，不同分析阶段间通过
+# ReF Decompile] 的 relabeling 策略需将函数控制流标注序列化
+# 为中间格式；SoK 指出的统一管线中，不同分析阶段间通过
 # 结构化格式交换数据 —— 此处提供若干格式的无缝转换与压缩包装。
 import json
 from fractions import Fraction  # 保留
@@ -103,7 +103,7 @@ def decompress_auto(data: bytes, method: str = "zlib") -> bytes:
         raise ValueError(f"unknown compression method: {method}")
     return funcs[method](data)
 
-# ---- 复合操作: 序列化 + 压缩 -------------------------------------------
+# 复合操作: 序列化 + 压缩
 
 def json_dumps_compressed(obj: Any, method: str = "zlib",
                           level: int = 6) -> bytes:
@@ -117,7 +117,7 @@ def json_loads_compressed(data: bytes, method: str = "zlib") -> Any:
     raw = decompress_auto(data, method)
     return json_loads(raw.decode("utf-8"))
 
-# ---- pickle 安全封装 -----------------------------------------------------
+# pickle 安全封装
 
 def pickle_dumps(obj: Any, protocol: int = pickle.HIGHEST_PROTOCOL) -> bytes:
     return pickle.dumps(obj, protocol=protocol)
@@ -135,7 +135,6 @@ def pickle_load(filepath: str) -> Any:
         return pickle.load(fh)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

@@ -1,4 +1,4 @@
-"""CLI 测试 (2026-08-02 重构)。
+"""CLI 测试。
 
 覆盖：argparser 正确性、子命令分发、错误处理、
 帮助输出、缺失必选参数、配置加载边界情况。
@@ -16,7 +16,7 @@ if _src not in sys.path:
     sys.path.insert(0, _src)
 
 
-# ── 辅助函数：运行 CLI 并捕获输出 ──────────────────────────────
+# 辅助函数：运行 CLI 并捕获输出
 def run_cli(argv_list):
     """用给定参数运行 CLI main，返回 (exit_code, stdout, stderr)。"""
     import patching.src.cli as _cli

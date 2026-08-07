@@ -70,8 +70,8 @@ class FuzzResult:
     novel_paths: int = 0
 
 
-# ---- 种子调度与能量分配 ----
-# 参考AFL effort分配思路：稀有路径获更多变异预算
+# 种子调度与能量分配
+# AFL effort分配思路：稀有路径获更多变异预算
 
 class _SeedBucket:
     """单种子元数据，调度决策用"""
@@ -249,7 +249,7 @@ class GPUFuzzerCore:
         self._unique_hangs: set = set()
         self._max_buffer_size = max_buffer_size
 
-    # ---- 哈希辅助 ----
+# 哈希辅助
 
     @staticmethod
     def _hash_input(input_bytes: bytes) -> int:
@@ -267,7 +267,7 @@ class GPUFuzzerCore:
         _v ^= (_v >> 7)
         return _v
 
-    # ---- 兴趣度评分 ----
+# 兴趣度评分
 
     def _interest_score(self, input_bytes: bytes) -> float:
         h = self._hash_input(input_bytes)
@@ -279,7 +279,7 @@ class GPUFuzzerCore:
         increment = 1.0 if caused_crash else 0.15
         self._interest_scores[h] = min(10.0, old + increment)
 
-    # ---- AFLFast种子能量调度 ----
+# AFLFast种子能量调度
     # 基于执行时间与覆盖率稀有度加权
 
     def aflfast_seed_energy(self, seed: dict) -> float:
@@ -306,7 +306,7 @@ class GPUFuzzerCore:
             perf_score *= 0.7
         return max(perf_score / _handicap, 1.0)
 
-    # ---- 边界值变异 ----
+# 边界值变异
 
     def interesting_values_mutation(self, data: bytearray) -> bytearray:
         if len(data) == 0:
@@ -324,7 +324,7 @@ class GPUFuzzerCore:
             _mutated[_pos] = ~_mutated[_pos] & 0xFF
         return _mutated
 
-    # ---- 变异引擎 ----
+# 变异引擎
     # 混合确定性+破坏性变异策略
 
     def _mutate_input(self, data: bytearray) -> bytearray:
@@ -371,7 +371,7 @@ class GPUFuzzerCore:
                 _out[_insert_pos:_insert_pos] = _block
         return _out
 
-    # ---- 确定性模拟执行 ----
+# 确定性模拟执行
     # 基于核函数hash与输入数据生成可重现轨迹
 
     def _simulate_execution(self, kernel: str, input_data: bytes) -> tuple:
@@ -391,7 +391,7 @@ class GPUFuzzerCore:
             exit_code = 139  # SIGSEGV模拟
         return exit_code, edge_set
 
-    # ---- 校准: 对新种子运行确定性阶段 ----
+# 校准: 对新种子运行确定性阶段
 
     def _calibrate(self, seed: dict):
         data = seed["data"]
@@ -405,7 +405,7 @@ class GPUFuzzerCore:
         seed.setdefault("handicap", 1)
         seed.setdefault("cov_factor", 1.0)
 
-    # ---- 核心Fuzz循环 ----
+# 核心Fuzz循环
     # 主循环: 种子调度 → 变异 → 执行 → 覆盖率分析 → 入队/丢弃
 
     def fuzz_kernel(
@@ -488,7 +488,7 @@ class GPUFuzzerCore:
         })
         return results
 
-    # ---- 多设备调度 ----
+# 多设备调度
     # 按显存/核心数比例分配任务
 
     def multi_device_schedule(
@@ -511,7 +511,7 @@ class GPUFuzzerCore:
             _offset += _n
         return schedule
 
-    # ---- 生成变异 ----
+# 生成变异
 
     def _generate_random_mutations(self, seed: bytes, count: int) -> List[bytes]:
         results = []

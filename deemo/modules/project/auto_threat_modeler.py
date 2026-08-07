@@ -11,11 +11,10 @@
 #   边: 数据流 (带STRIDE威胁标签)
 #   权重: 威胁严重度
 #   Dijkstra: 从外部入口到高价值资产的最短(最高威胁)路径
-# 参考 (已验证真实):
+# (已验证真实):
 #   OWASP Threat Modeling Cheat Sheet — STRIDE方法论
 #   MITRE ATT&CK v16 — 威胁技术映射
-#   Shostack "Threat Modeling: Designing for Security" (Wiley 2014)
-from __future__ import annotations
+#   Shostack "Threat Modeling: Designing for Security"
 import hashlib, heapq, logging, re
 from collections import defaultdict
 from dataclasses import dataclass, field

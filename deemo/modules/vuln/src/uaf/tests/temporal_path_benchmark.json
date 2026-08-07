@@ -1,0 +1,817 @@
+{
+  "generated": "2026-08-08 05:07:19",
+  "total_samples": 12,
+  "tp": 8,
+  "fp": 0,
+  "tn": 4,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "results": [
+    {
+      "sample": "sample_uaf_01_simple",
+      "category": "simple",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 3,
+      "filtered_fp": 54,
+      "temporal_filtered": 4,
+      "temporal_verified": 1,
+      "double_free_verified": 0,
+      "elapsed_ms": 153.7,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@140001772",
+          "free_line": 537,
+          "use_line": 539,
+          "use_reg": "rax",
+          "confidence": 0.9500000000000001,
+          "decision": "confirmed_uaf",
+          "temporal_verified": true,
+          "evidence": "temporal-verified: alloc@531#malloc freed in rax line 537\u2192539"
+        },
+        {
+          "obj_id": "obj#3@140001772",
+          "free_line": 537,
+          "use_line": 672,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001772 freed at line 537, used via rax at line 672"
+        },
+        {
+          "obj_id": "obj#3@140001772",
+          "free_line": 537,
+          "use_line": 676,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001772 freed at line 537, used via rax at line 676"
+        },
+        {
+          "obj_id": "obj#3@140001772",
+          "free_line": 537,
+          "use_line": 923,
+          "use_reg": "rax",
+          "confidence": 0.12,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "temporal-skip: cross-function free@537(fn@525)\u2192use@923(fn@846)"
+        },
+        {
+          "obj_id": "obj#3@140001772",
+          "free_line": 537,
+          "use_line": 961,
+          "use_reg": "rax",
+          "confidence": 0.12,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "temporal-skip: cross-function free@537(fn@525)\u2192use@961(fn@846)"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_02_reg_overwrite",
+      "category": "safe_fp",
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "detected_uaf": 0,
+      "detected_df": 0,
+      "confirmed": 2,
+      "filtered_fp": 59,
+      "temporal_filtered": 10,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 161.3,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 537,
+          "use_line": 543,
+          "use_reg": "rax",
+          "confidence": 0.7,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 537, used via rax at line 543"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 537,
+          "use_line": 582,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 537, used via rax at line 582"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 537,
+          "use_line": 588,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 537, used via rax at line 588"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 537,
+          "use_line": 602,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 537, used via rax at line 602"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 537,
+          "use_line": 670,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 537, used via rax at line 670"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_03_conditional",
+      "category": "conditional",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 3,
+      "filtered_fp": 59,
+      "temporal_filtered": 9,
+      "temporal_verified": 1,
+      "double_free_verified": 0,
+      "elapsed_ms": 155.6,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 539,
+          "use_line": 541,
+          "use_reg": "rax",
+          "confidence": 0.9500000000000001,
+          "decision": "confirmed_uaf",
+          "temporal_verified": true,
+          "evidence": "temporal-verified: alloc@531#malloc freed in rax line 539\u2192541"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 539,
+          "use_line": 573,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 539, used via rax at line 573"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 539,
+          "use_line": 579,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 539, used via rax at line 579"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 539,
+          "use_line": 593,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 539, used via rax at line 593"
+        },
+        {
+          "obj_id": "obj#3@140001770",
+          "free_line": 539,
+          "use_line": 661,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001770 freed at line 539, used via rax at line 661"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_04_alias",
+      "category": "cross_fn",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 3,
+      "filtered_fp": 59,
+      "temporal_filtered": 9,
+      "temporal_verified": 1,
+      "double_free_verified": 0,
+      "elapsed_ms": 159.9,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 538,
+          "use_line": 542,
+          "use_reg": "rax",
+          "confidence": 0.9500000000000001,
+          "decision": "confirmed_uaf",
+          "temporal_verified": true,
+          "evidence": "temporal-verified: alloc@530#malloc freed in rax line 538\u2192542"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 538,
+          "use_line": 571,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 538, used via rax at line 571"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 538,
+          "use_line": 577,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 538, used via rax at line 577"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 538,
+          "use_line": 591,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 538, used via rax at line 591"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 538,
+          "use_line": 659,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 538, used via rax at line 659"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_05_multi_obj",
+      "category": "safe_multi",
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "detected_uaf": 0,
+      "detected_df": 0,
+      "confirmed": 2,
+      "filtered_fp": 54,
+      "temporal_filtered": 4,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 148.5,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 541,
+          "use_line": 685,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 541, used via rax at line 685"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 541,
+          "use_line": 689,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 541, used via rax at line 689"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 541,
+          "use_line": 936,
+          "use_reg": "rax",
+          "confidence": 0.12,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "temporal-skip: cross-function free@541(fn@525)\u2192use@936(fn@859)"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 541,
+          "use_line": 974,
+          "use_reg": "rax",
+          "confidence": 0.12,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "temporal-skip: cross-function free@541(fn@525)\u2192use@974(fn@859)"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 541,
+          "use_line": 1157,
+          "use_reg": "rax",
+          "confidence": 0.12,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "temporal-skip: cross-function free@541(fn@525)\u2192use@1157(fn@1140)"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_06_cross_fn",
+      "category": "cross_fn",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 3,
+      "filtered_fp": 59,
+      "temporal_filtered": 2,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 152.3,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@140001773",
+          "free_line": 549,
+          "use_line": 551,
+          "use_reg": "rax",
+          "confidence": 0.5599999999999999,
+          "decision": "confirmed_uaf",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001773 freed at line 549, used via rax at line 551"
+        },
+        {
+          "obj_id": "obj#3@140001773",
+          "free_line": 549,
+          "use_line": 582,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001773 freed at line 549, used via rax at line 582"
+        },
+        {
+          "obj_id": "obj#3@140001773",
+          "free_line": 549,
+          "use_line": 588,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001773 freed at line 549, used via rax at line 588"
+        },
+        {
+          "obj_id": "obj#3@140001773",
+          "free_line": 549,
+          "use_line": 602,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001773 freed at line 549, used via rax at line 602"
+        },
+        {
+          "obj_id": "obj#3@140001773",
+          "free_line": 549,
+          "use_line": 670,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@140001773 freed at line 549, used via rax at line 670"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_07_double_free",
+      "category": "double_free",
+      "expected_uaf": 1,
+      "expected_df": 1,
+      "detected_uaf": 1,
+      "detected_df": 1,
+      "confirmed": 3,
+      "filtered_fp": 59,
+      "temporal_filtered": 9,
+      "temporal_verified": 1,
+      "double_free_verified": 1,
+      "elapsed_ms": 150.0,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 539,
+          "use_line": 539,
+          "use_reg": "",
+          "confidence": 1.0,
+          "decision": "confirmed_uaf",
+          "temporal_verified": true,
+          "evidence": "double-free-verified: obj#3@14000176d free@539 alloc@530"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 539,
+          "use_line": 566,
+          "use_reg": "rax",
+          "confidence": 0.95,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 539, used via rax at line 566"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 539,
+          "use_line": 572,
+          "use_reg": "rax",
+          "confidence": 0.8999999999999999,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 539, used via rax at line 572"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 539,
+          "use_line": 586,
+          "use_reg": "rax",
+          "confidence": 0.8999999999999999,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 539, used via rax at line 586"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 539,
+          "use_line": 654,
+          "use_reg": "rax",
+          "confidence": 0.8999999999999999,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 539, used via rax at line 654"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_08_realloc",
+      "category": "cross_fn",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 2,
+      "filtered_fp": 59,
+      "temporal_filtered": 2,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 151.1,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 544,
+          "use_reg": "rax",
+          "confidence": 0.48999999999999994,
+          "decision": "likely_uaf",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 544"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 579,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 579"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 585,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 585"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 599,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 599"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 667,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 667"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_09_safe_stack",
+      "category": "safe_no_heap",
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "detected_uaf": 0,
+      "detected_df": 0,
+      "confirmed": 1,
+      "filtered_fp": 34,
+      "temporal_filtered": 1,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 117.1,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#1@140001511",
+          "free_line": 1858,
+          "use_line": 1863,
+          "use_reg": "rax",
+          "confidence": 0.5599999999999999,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#1@140001511 freed at line 1858, used via rax at line 1863"
+        },
+        {
+          "obj_id": "obj#1@140001511",
+          "free_line": 1858,
+          "use_line": 1891,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#1@140001511 freed at line 1858, used via rax at line 1891"
+        },
+        {
+          "obj_id": "obj#1@140001511",
+          "free_line": 1858,
+          "use_line": 1903,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#1@140001511 freed at line 1858, used via rax at line 1903"
+        },
+        {
+          "obj_id": "obj#1@140001511",
+          "free_line": 1858,
+          "use_line": 1908,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#1@140001511 freed at line 1858, used via rax at line 1908"
+        },
+        {
+          "obj_id": "obj#1@140001511",
+          "free_line": 1858,
+          "use_line": 1959,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#1@140001511 freed at line 1858, used via rax at line 1959"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_10_safe_no_free",
+      "category": "safe_no_free",
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "detected_uaf": 0,
+      "detected_df": 0,
+      "confirmed": 1,
+      "filtered_fp": 34,
+      "temporal_filtered": 1,
+      "temporal_verified": 0,
+      "double_free_verified": 0,
+      "elapsed_ms": 119.0,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 1872,
+          "use_line": 1877,
+          "use_reg": "rax",
+          "confidence": 0.5599999999999999,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 1872, used via rax at line 1877"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 1872,
+          "use_line": 1905,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 1872, used via rax at line 1905"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 1872,
+          "use_line": 1917,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 1872, used via rax at line 1917"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 1872,
+          "use_line": 1922,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 1872, used via rax at line 1922"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 1872,
+          "use_line": 1973,
+          "use_reg": "rax",
+          "confidence": 0.42,
+          "decision": "safe_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 1872, used via rax at line 1973"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_11_struct_field",
+      "category": "cross_fn",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 3,
+      "filtered_fp": 50,
+      "temporal_filtered": 9,
+      "temporal_verified": 1,
+      "double_free_verified": 0,
+      "elapsed_ms": 162.2,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 539,
+          "use_reg": "rax",
+          "confidence": 0.9500000000000001,
+          "decision": "confirmed_uaf",
+          "temporal_verified": true,
+          "evidence": "temporal-verified: alloc@530#malloc freed in rax line 537\u2192539"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 577,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 577"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 583,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 583"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 597,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 597"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 537,
+          "use_line": 665,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 537, used via rax at line 665"
+        }
+      ]
+    },
+    {
+      "sample": "sample_uaf_12_loop",
+      "category": "conditional",
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "detected_uaf": 1,
+      "detected_df": 0,
+      "confirmed": 2,
+      "filtered_fp": 50,
+      "temporal_filtered": 9,
+      "temporal_verified": 1,
+      "double_free_verified": 0,
+      "elapsed_ms": 153.9,
+      "match": true,
+      "findings": [
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 547,
+          "use_line": 556,
+          "use_reg": "rax",
+          "confidence": 0.85,
+          "decision": "likely_uaf",
+          "temporal_verified": true,
+          "evidence": "temporal-verified: alloc@530#malloc freed in rax line 547\u2192556"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 547,
+          "use_line": 583,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 547, used via rax at line 583"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 547,
+          "use_line": 589,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 547, used via rax at line 589"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 547,
+          "use_line": 603,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 547, used via rax at line 603"
+        },
+        {
+          "obj_id": "obj#3@14000176d",
+          "free_line": 547,
+          "use_line": 671,
+          "use_reg": "rax",
+          "confidence": 0.6,
+          "decision": "temporal_filtered",
+          "temporal_verified": false,
+          "evidence": "obj#3@14000176d freed at line 547, used via rax at line 671"
+        }
+      ]
+    }
+  ]
+}

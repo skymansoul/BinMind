@@ -3,7 +3,7 @@
 # 对其执行路径分支条件做符号化，翻转约束生成穿透magic bytes等
 # 复杂比较的新输入。参考Driller / QSYM / SAVIOR的混合执行范式。
 #
-# 参考文献:
+# 文献:
 #   Stephens et al. NDSS 2016, "Driller: Augmenting Fuzzing Through
 #     Selective Symbolic Execution"
 #   Yun et al. USENIX 2018, "QSYM: A Practical Concolic Execution Engine"
@@ -174,7 +174,7 @@ class ConcolicBridge:
         # 外部执行引擎回调: (input: bytes) -> List[PathConstraint]
         self._exec_callback: Optional[Callable] = None
 
-    # ---- 外部引擎绑定 ----
+    # 外部引擎绑定
     def set_executor(self, callback: Callable[[bytes], List[PathConstraint]]
                      ) -> None:
         """绑定外部符号执行回调。
@@ -183,7 +183,7 @@ class ConcolicBridge:
         """
         self._exec_callback = callback
 
-    # ---- 约束收集 ----
+    # 约束收集
     def explore_input(self, input_data: bytes) -> List[PathConstraint]:
         in_hash = hashlib.sha256(input_data).hexdigest()
         if in_hash in self._solved_inputs:
@@ -197,7 +197,7 @@ class ConcolicBridge:
         self._solved_inputs.add(in_hash)
         return constraints
 
-    # ---- 分支翻转 ----
+    # 分支翻转
     def generate_solve_targets(self) -> List[PathConstraint]:
         """获取当前未探索分支的翻转约束列表。
 
@@ -297,7 +297,7 @@ class ConcolicBridge:
                 constraint.input_size, 'big')
         return None
 
-    # ---- 双向反馈 ----
+    # 双向反馈
     def fuzz_to_symbolic(self, interesting_inputs: List[bytes]
                          ) -> List[bytes]:
         """从fuzzer的有趣输入集中筛选 -> 符号执行 -> 产出新输入。
@@ -319,7 +319,7 @@ class ConcolicBridge:
                         self._solved_inputs.add(h)
         return new_seeds
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             'unique_branches': self._collector.unique_branches,

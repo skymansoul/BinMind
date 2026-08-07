@@ -4,8 +4,7 @@
 应用场景: 同一二进制多次分析 (补丁前后、不同 fuzzer 轮次)
 快速识别新增/消失/变更的发现。
 
-参考:
-  Akamai PatchDiff-AI (2025) — 补丁差异驱动根因分析，前后版本函数级对比
+  Akamai PatchDiff-AI — 补丁差异驱动根因分析，前后版本函数级对比
   SEMSIFT (github.com/cognis-digital/semsift) — 仅扫描 diff 行，非全库扫描
   US 10,614,218 B2 — 增量 IR 合并，函数级粒度差异追踪
 
@@ -23,13 +22,11 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from enum import Enum
 
-
 class DiffStatus(Enum):
     ADDED = "added"          # 新增发现
     REMOVED = "removed"      # 已消失 (推测已修复)
     CHANGED = "changed"      # 同一发现属性变动 (严重度/置信度等)
     UNCHANGED = "unchanged"  # 无差异
-
 
 @dataclass
 class FindingDiff:
@@ -50,7 +47,6 @@ class FindingDiff:
             return f"[~] 变更 ({fields}): {self.new_finding.get('title', self.finding_id)}"
         return f"[=] 无变化: {self.old_finding.get('title', self.finding_id)}"
 
-
 def _make_match_key(finding: Dict) -> str:
     """
     稳定匹配键: MD5(function_name \x00 vulnerability_type \x00 cwe) 前 12 位。
@@ -66,7 +62,6 @@ def _make_match_key(finding: Dict) -> str:
     raw = f"{func}\x00{vtype}\x00{cwe}"
     return hashlib.md5(raw.encode()).hexdigest()[:12]
 
-
 def _detect_changes(old: Dict, new: Dict) -> List[str]:
     """比较两个匹配发现的差异字段列表。"""
     changed = []
@@ -76,7 +71,6 @@ def _detect_changes(old: Dict, new: Dict) -> List[str]:
         if old_v != new_v:
             changed.append(key)
     return changed
-
 
 def diff_findings(
     old_findings: List[Dict],
@@ -147,7 +141,6 @@ def diff_findings(
     diffs.sort(key=lambda d: order.get(d.status, 99))
 
     return diffs
-
 
 def generate_diff_report(
     old_findings: List[Dict],

@@ -37,7 +37,7 @@ class VerificationResult:
     details: Dict = field(default_factory=dict)
 
 
-# ---- PoC模板引擎 ----
+# PoC模板引擎
 
 class PoCGenerator:
     """按漏洞类型生成测试payload。
@@ -99,7 +99,7 @@ class PoCGenerator:
         return env
 
 
-# --- 崩溃分类 ----
+# 崩溃分类
 
 _CRASH_PATTERNS = [
     (re.compile(r'SIGSEGV|segmentation\s+fault|Segmentation fault', re.IGNORECASE), "SIGSEGV"),
@@ -142,7 +142,7 @@ def analyze_crash(stderr: str, exit_code: int) -> Tuple[str, str]:
     return crash_type, crash_addr
 
 
-# ==== 沙箱执行器 ====
+# 沙箱执行器
 
 class SandboxRunner:
     """受控环境执行二进制+payload，捕获崩溃信息。
@@ -223,7 +223,7 @@ class SandboxRunner:
             return [binary_path] + args
 
 
-# ==== 验证流程 ====
+# 验证流程
 
 def verify_vulnerability(binary_path: str, cve_id: str = "",
                          vuln_type: str = "buffer_overflow",

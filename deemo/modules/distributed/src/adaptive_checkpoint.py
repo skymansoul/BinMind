@@ -10,19 +10,19 @@
 # 最优 T 取决于故障率 λ，但 λ 随时间变化。
 #
 # 本模块用 Exponential-Weight Average (EWA) 在线学习自适应调节 T:
-#   - 维护 K 个候选间隔 {T₁, ..., Tₖ}，每个有权重 w_i
-#   - 每轮选择 T_i = argmax w_i (或按 softmax 采样以探索)
+# 维护 K 个候选间隔 {T₁, ..., Tₖ}，每个有权重 w_i
+# 每轮选择 T_i = argmax w_i (或按 softmax 采样以探索)
 #   - 观察实际损失 (检查点开销 + 回滚代价)，按 exp(-η·loss) 更新权重
 #   这等价于 "Prediction with Expert Advice" 框架下的无悔学习。
 #
 # 与前沿工作的关系:
-#   - 对比方案: 使用在线学习的自适应检查点 (无外部依赖)
+# 对比方案: 使用在线学习的自适应检查点 (无外部依赖)
 #     来调整 λ_t。本模块的不同在于: (a) 不需要训练数据，(b) EWA 有理论遗憾界，
 #     (c) 计算量极小 (O(K) per decision)。
 #   - MoC-System (ASPLOS '25): 部分检查点 (PEC) 仅保存专家子集。
 #     本模块的增量检查点 (仅保存上次检查点后变更的状态) 在思想上有相似性，
 #     但实现更通用 (不限于 MoE)。
-#   - 本模块与 speculative_exec 的协同: 投机失败不计入回滚代价，
+# 本模块与 speculative_exec 的协同: 投机失败不计入回滚代价，
 #     因为投机副本本身就设计为可丢弃 — 这避免了反馈回路中的错误信号。
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Callable, Any, Tuple
 
 
-# ---- 候选检查间隔 (秒) ----
+# 候选检查间隔 (秒)
 # 7 个候选覆盖从激进 (15s) 到保守 (480s) 的范围
 _DEFAULT_CANDIDATES = (15.0, 30.0, 60.0, 120.0, 180.0, 300.0, 480.0)
 
@@ -101,7 +101,7 @@ class AdaptiveCheckpointController:
         self._last_full_snapshot_keys: set = set()
         self._lock = threading.Lock()
 
-    # ---- 核心决策 ----
+# 核心决策
 
     def should_checkpoint(self, state_size_hint: int = 0) -> bool:
         """当前时刻是否应做检查点。由外部定时器或事件驱动调用。"""
@@ -165,7 +165,7 @@ class AdaptiveCheckpointController:
                 + (1.0 - self._ema_alpha) * self._ema_failure_rate
             )
 
-    # ---- 增量检查点支持 ----
+# 增量检查点支持
 
     def mark_dirty(self, *keys: str):
         """标记自上次检查点后被修改的状态键。增量检查点时仅序列化这些键。"""
@@ -177,7 +177,7 @@ class AdaptiveCheckpointController:
             return True
         return len(self._dirty_keys) / total_state_keys >= self._dirty_threshold
 
-    # ---- 内部 ----
+# 内部
 
     def _update_weights(self):
         """基于最近 N 次检查点 + 其间故障的平均损失，更新候选权重。
@@ -214,7 +214,7 @@ class AdaptiveCheckpointController:
             total2 = sum(self._weights)
             self._weights = [w / total2 for w in self._weights]
 
-    # ---- 查询 ----
+# 查询
 
     @property
     def current_interval(self) -> float:
@@ -242,7 +242,7 @@ class AdaptiveCheckpointController:
             }
 
 
-# ---- 联合优化: 检查点 + 投机预算 ----
+# 联合优化: 检查点 + 投机预算
 
 class JointBudgetController:
     """联合预算控制器 — 在检查点开销与投机预算之间做全局 trade-off。

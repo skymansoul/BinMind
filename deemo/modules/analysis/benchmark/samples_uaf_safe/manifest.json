@@ -1,0 +1,602 @@
+[
+  {
+    "pattern": "null_after_free",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "null_after_free",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "null_after_free",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "null_after_free",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "null_after_free",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "null_after_free",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\null_after_free_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\null_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "reassign_after_free",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\reassign_after_free_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\reassign_after_free\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "different_object",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\different_object_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\different_object\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "conditional_mutual_ex",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\conditional_mutual_ex_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\conditional_mutual_ex\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "realloc_semantics",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\realloc_semantics_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\realloc_semantics\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "struct_field",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\struct_field_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\struct_field\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "alias_tracking",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\alias_tracking_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\alias_tracking\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "stack_copy",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\stack_copy_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\stack_copy\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "cross_function",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\cross_function_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\cross_function\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "vuln",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "vuln",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "vuln",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_vuln_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\vuln.c",
+    "expected": "UAF",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "safe",
+    "opt": "O0",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_O0.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O0 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_O0.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "safe",
+    "opt": "O2",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_O2.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -O2 -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_O2.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  },
+  {
+    "pattern": "early_return_guard",
+    "variant": "safe",
+    "opt": "Os",
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_Os.exe",
+    "compile_cmd": "x86_64-w64-mingw32-gcc -Os -no-pie -fno-stack-protector -fno-asynchronous-unwind-tables -w -o C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\build\\early_return_guard_safe_Os.exe C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_uaf_safe\\early_return_guard\\safe.c",
+    "expected": "SAFE",
+    "type": "use_after_free"
+  }
+]

@@ -4,8 +4,8 @@
 三目标:最大化风险降幅,最小化补丁成本,最小化运维影响.
 首次将NSGA-II非支配排序+counterfactual适应度+层特定成本模型联合应用.
 
-ref: Deb et al. (2002) "A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II".
-ref: CyGATE (arXiv:2508.00478) -- 博弈论补丁优化,最接近的已有工作.
+ref: Deb et al. "A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II".
+ref: CyGATE -- 博弈论补丁优化,最接近的已有工作.
 """
 from __future__ import annotations
 
@@ -130,7 +130,7 @@ class NSGA2PatchOptimizer:
             sol.rank = 0
         return final_fronts[0]
 
-    # ---- 内部 ----
+# 内部
 
     def _init_population(self) -> List[PatchSolution]:
         pop = []

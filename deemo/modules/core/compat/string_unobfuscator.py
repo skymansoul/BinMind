@@ -97,7 +97,7 @@ def validate_with_xrefs(candidate_str: str, data_xrefs: set[int]) -> float:
     return 0.3
 
 
-# --- 模拟执行去混淆 ---
+# 模拟执行去混淆
 def emulate_linear_decryptor(func_bytes: bytes, key_material: bytes | None = None) -> bytes | None:
     # 不拆——保持上下文连贯性，拆了反而难读
     import struct as _struct
@@ -121,7 +121,6 @@ def emulate_linear_decryptor(func_bytes: bytes, key_material: bytes | None = Non
     return bytes(result)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

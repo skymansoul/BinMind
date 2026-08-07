@@ -1,6 +1,6 @@
 """在线牛顿步突变自适应 — 对角 Hessian + 协方差追踪.
 
-参考: Hazan et al. (2007). 使用对角近似的 ONS 更新权重。
+参考: Hazan et al.. 使用对角近似的 ONS 更新权重。
 对角 Hessian 下等价于自适应步长的一阶方法;
 全矩阵 ONS 的理论 O(log T) 界在对角近似下不严格成立。"""
 
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 
-# ---- ONS 参数 ----
+# ONS 参数
 _DEFAULT_ETA = 0.05           # ONS 学习率
 _MIN_EIGENVALUE = 0.01        # Hessian 对角的最小值 (保证可逆)
 _HESSIAN_RESET_ROUNDS = 100   # Hessian 重置周期

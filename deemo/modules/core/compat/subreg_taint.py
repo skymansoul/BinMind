@@ -42,13 +42,13 @@ from typing import Any
 from modules.core.compat.taint_flow import TaintTag, TaintSet
 
 
-# ===== x86/x64 寄存器别名映射 =====
+# x86/x64 寄存器别名映射
 # 8 个槽位: [7][6][5][4][3][2][1][0]
 # 部分写规则 (Intel SDM Vol.1 §3.4.1.1):
 #   - 写 32b 寄存器 (EAX) → 槽位 [3:0] 被覆盖, [7:4] 被清零 (64b 模式专属)
 #   - 写 16b 寄存器 (AX)  → 槽位 [1:0] 被覆盖, [7:2] 不受影响
 #   - 写 8b  寄存器 (AL)  → 槽位 [0]   被覆盖, [7:1] 不受影响
-#   - 写 8b  寄存器 (AH)  → 槽位 [1]   被覆盖, 其余不受影响
+# 写 8b  寄存器 (AH)  → 槽位 [1]   被覆盖, 其余不受影响
 #
 # _REG_SLOT_MAP: {寄存器名: (父寄存器名, 槽位范围 (low, high) inclusive, 写时清零高位的范围)}
 # 清零规则: None → 不自动清零; (low, high) → 写该寄存器时额外清零的槽位范围
@@ -98,7 +98,7 @@ def _build_reg_slot_map():
 _build_reg_slot_map()
 
 
-# ===== 子寄存器污点状态 =====
+# 子寄存器污点状态
 
 class SubRegTaintState:
     """字节级污点状态管理器。
@@ -124,7 +124,7 @@ class SubRegTaintState:
         self._merge_mode = merge_mode
         self._stats = {'slot_writes': 0, 'slot_reads': 0, 'zero_clears': 0}
 
-    # --- 内部槽位访问 ---
+# 内部槽位访问
     def _ensure_slots(self, parent_reg: str):
         if parent_reg not in self._slots:
             self._slots[parent_reg] = [TaintSet() for _ in range(8)]
@@ -139,7 +139,7 @@ class SubRegTaintState:
         parent, slot_rng, zr = info
         return (parent, slot_rng[0], slot_rng[1], zr)
 
-    # --- 读写接口 ---
+# 读写接口
     def read_reg(self, reg_name: str) -> TaintSet:
         """读取寄存器的污点状态, 合并所有相关槽位。"""
         parent, lo, hi, _ = self._resolve(reg_name)
@@ -205,7 +205,7 @@ class SubRegTaintState:
         self._slots[parent][actual_byte] = taint
         self._stats['slot_writes'] += 1
 
-    # --- 内存接口 (与 TaintRegisterState 兼容) ---
+# 内存接口 (与 TaintRegisterState 兼容)
     def read_mem(self, addr: int, size: int = 4) -> TaintSet:
         result = TaintSet()
         for off in range(size):
@@ -227,7 +227,7 @@ class SubRegTaintState:
         return dict(self._stats)
 
 
-# ===== 子寄存器感知的指令传播 =====
+# 子寄存器感知的指令传播
 # 扩展 propagate_instruction 以处理部分寄存器写入。
 # 当遇到 'mov al, [rsi]' 时, 不是污染整个 RAX, 而是仅污染字节槽位 0。
 # 当后续读取 'mov ebx, eax' 时, 合并 EAX 的 4 个槽位 (槽位 [3:0]) 作为源污点。
@@ -294,7 +294,7 @@ def _set_subreg_taint(operand: str, taint: TaintSet, state: SubRegTaintState):
         state.write_reg(op, taint)
 
 
-# ===== 跨架构寄存器映射 (ARM64 / MIPS32 预留) =====
+# 跨架构寄存器映射 (ARM64 / MIPS32 预留)
 # 架构特定寄存器通过统一的 _REG_SLOT_MAP 模型接入。
 # ARM64: X0-X30 为 8 字节寄存器, W0-W30 为对应的 4 字节低半部分
 #   (映射到槽位 [3:0], 写 Wn 时清零 [7:4] — 与 x86-64 的 EAX/RAX 语义相同)

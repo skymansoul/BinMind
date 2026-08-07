@@ -75,7 +75,7 @@ class OSVClient:
             """)
             conn.commit()
 
-    # ---- 查询 ----
+# 查询
 
     def query(
         self, package_name: str, ecosystem: str, version: str = ""
@@ -140,7 +140,7 @@ class OSVClient:
 
         return results
 
-    # ---- API调用 ----
+# API调用
 
     def _fetch_from_api(self, package: str, ecosystem: str, version: str) -> List[Dict]:
         """单包OSV API查询。"""
@@ -184,7 +184,7 @@ class OSVClient:
         results_raw = data.get("results", []) if isinstance(data, dict) else []
         return [r.get("vulns", []) if isinstance(r, dict) else [] for r in results_raw]
 
-    # ---- 缓存操作 ----
+# 缓存操作
 
     def _cache_get(self, ecosystem: str, package: str, version: str) -> Optional[List[Dict]]:
         conn = self._get_conn()
@@ -227,7 +227,7 @@ class OSVClient:
             pass
 
 
-# ---- OSV → CVEEntry 转换 ----
+# OSV → CVEEntry 转换
 
 def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
     """将OSV漏洞字典转换为CVEEntry。
@@ -313,7 +313,7 @@ def osv_batch_to_entries(osv_results: Dict[str, List[Dict]]) -> List[CVEEntry]:
     return entries
 
 
-# ---- 与知识库交叉引用 ----
+# 与知识库交叉引用
 
 def crossref_osv_with_kb(
     osv_client: OSVClient,
@@ -357,7 +357,7 @@ def crossref_osv_with_kb(
     }
 
 
-# ---- 生态辅助函数 ----
+# 生态辅助函数
 # 将常见生态名称映射到OSV的规范名称
 
 _ECOSYSTEM_ALIASES = {

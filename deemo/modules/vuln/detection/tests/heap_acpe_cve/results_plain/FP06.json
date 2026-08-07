@@ -1,0 +1,34 @@
+{
+  "id": "FP06",
+  "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP06\\bin\\plain\\alloc_derived_copy.exe",
+  "acpe": {
+    "detected": false,
+    "kept": 0,
+    "error": "",
+    "findings": [
+      {
+        "func": "derived_copy",
+        "addr": 5368715157,
+        "write_func": "call",
+        "relation": "EQUIV",
+        "verdict": "safe",
+        "reasoning": "write size == alloc size (A:1) — capacity self-consistent"
+      }
+    ]
+  },
+  "baseline": {
+    "detected": true,
+    "kept": 1,
+    "findings": [
+      {
+        "func": "derived_copy",
+        "addr": 5368715157,
+        "decision": "likely_vuln",
+        "phase": "none",
+        "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+        "alloc_size": 128,
+        "write_size": 0
+      }
+    ]
+  }
+}

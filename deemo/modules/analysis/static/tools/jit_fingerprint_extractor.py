@@ -32,9 +32,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # JIT 引擎指令模式指纹库
-# ---------------------------------------------------------------------------
 
 # 每模式: (正则表达式, 模式名, 权重)
 _JIT_FINGERPRINTS: Dict[str, List[Tuple[str, str, float]]] = {

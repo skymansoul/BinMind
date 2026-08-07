@@ -14,9 +14,7 @@ from collections import defaultdict as _defaultdict
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class GraphNode:
@@ -117,9 +115,7 @@ class SimilarityResult:
     confidence: float = 0.0
 
 
-# ---------------------------------------------------------------------------
 # GNN Encoder (message-passing with mean-pool aggregation + EdgeDrop)
-# ---------------------------------------------------------------------------
 
 class GNNEncoder:
     """Message-passing GNN encoder for function graphs.
@@ -273,9 +269,7 @@ class GNNEncoder:
         return self.readout(node_embs)
 
 
-# ---------------------------------------------------------------------------
 # Multi-View GNN (with 注意力-based view fusion)
-# ---------------------------------------------------------------------------
 
 class MultiViewGNN:
     """Multi-view GNN combining CFG, DFG, call, and mnemonic views.
@@ -458,9 +452,7 @@ class MultiViewGNN:
         return features
 
 
-# ---------------------------------------------------------------------------
 # Contrastive Loss
-# ---------------------------------------------------------------------------
 
 class ContrastiveLoss:
     """InfoNCE / NT-Xent contrastive loss for embedding similarity learning."""
@@ -507,11 +499,9 @@ class ContrastiveLoss:
         return dot / (_math.sqrt(na) * _math.sqrt(nb))
 
 
-# ---------------------------------------------------------------------------
 # 图数据增强器 -- 边扰动与节点特征噪声，用于对比学习自监督预训练
 # GraphAugmenter: edge perturbation + node feature dropout
-# 参考: You et al., "GraphCL: Graph Contrastive Learning with Augmentations", NeurIPS 2020
-# ---------------------------------------------------------------------------
+# You et al., "GraphCL: Graph Contrastive Learning with Augmentations", NeurIPS 2020
 
 class GraphAugmenter:
     """图数据增强 -- 生成图的两个增强视图用于对比预训练。
@@ -572,9 +562,7 @@ class GraphAugmenter:
             ni += 1
 
 
-# ---------------------------------------------------------------------------
 # Multi-View GNN Embedder
-# ---------------------------------------------------------------------------
 
 class MultiViewGNNEmbedder:
     """High-level interface for embedding function graphs and computing similarities."""
@@ -682,9 +670,7 @@ class MultiViewGNNEmbedder:
         self.m_cache.clear()
 
 
-# ---------------------------------------------------------------------------
 # Multi-View GNN Embedder Analyzer
-# ---------------------------------------------------------------------------
 
 class MultiViewGNNEmbedderAnalyzer:
     """Analyzer for embedding and comparing function graphs."""
@@ -751,10 +737,8 @@ class MultiViewGNNEmbedderAnalyzer:
         return self.m_embedder.search_similar(query, self.m_database, top_k)
 
 
-# ---------------------------------------------------------------------------
 # Graph builder utility
 # 增强版 -- 计算图结构全局特征 (圈复杂度、平均度、边密度)
-# ---------------------------------------------------------------------------
 
 def build_function_graph_from_blocks(function_name: str, function_address: int,
                                      blocks: List[Dict[str, Any]],

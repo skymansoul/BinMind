@@ -148,7 +148,7 @@ class TestHashPseudocode:
         db.close()
 
 
-# ── 备用测试：不依赖模块的独立逻辑验证 ──
+# 备用测试：不依赖模块的独立逻辑验证
 
 def test_inline_crud_pattern():
     """字典模拟基本CRUD模式"""

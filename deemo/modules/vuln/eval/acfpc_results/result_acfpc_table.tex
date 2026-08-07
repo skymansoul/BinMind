@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\caption{Heap overflow detection: ACFPC vs general-purpose tools. 20 samples (15 vulnerable + 5 safe). QEMU/Ghidra entries are ESTIMATED (tools unavailable on host); ACFPC and Angr are REAL runs.}
+\label{tab:acfpc}
+\begin{tabular}{lcccccccc}
+\toprule
+\multirow{2}{*}{Tool} & \multicolumn{4}{c}{Confusion} & \multicolumn{2}{c}{Rates} & \multirow{2}{*}{F1} & \multirow{2}{*}{Avg ms} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-7}
+ & TP & FP & TN & FN & Prec & Rec & & \\
+\midrule
+\multicolumn{9}{l}{\emph{With symbols (normal, -O0)}} \\
+ACFPC & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 116.2 \\
+Angr & 11 & 3 & 2 & 4 & 78.6\% & 73.3\% & 0.759 & 473.3 \\
+QEMU & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 50.4 \\
+Ghidra & 15 & 5 & 0 & 0 & 75.0\% & 100.0\% & 0.857 & 52.6 \\
+\midrule
+\multicolumn{9}{l}{\emph{Stripped (no symbols, -O1)}} \\
+ACFPC & 13 & 0 & 5 & 2 & 100.0\% & 86.7\% & 0.929 & 122.6 \\
+Angr & 12 & 3 & 2 & 3 & 80.0\% & 80.0\% & 0.800 & 533.7 \\
+QEMU & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 51.0 \\
+Ghidra & 15 & 5 & 0 & 0 & 75.0\% & 100.0\% & 0.857 & 50.2 \\
+\bottomrule
+\end{tabular}
+\end{table}

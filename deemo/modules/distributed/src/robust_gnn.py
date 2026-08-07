@@ -6,7 +6,7 @@
 # → makespan 显著膨胀。
 #
 # 现有防御的不足:
-#   β-GNN (arXiv:2503.20630) 针对节点分类的集成防御，不适用于调度回归任务。
+#   β-GNN 针对节点分类的集成防御，不适用于调度回归任务。
 #   图对抗训练需大量标注，调度场景无标签可用。
 #
 # 本模块方案:
@@ -69,7 +69,7 @@ def _lower_confidence_bound(k: int, n: int, alpha: float) -> float:
 def _approx_erf_inv(x: float) -> float:
     """erfinv 的轻量近似 — 避免 scipy 依赖。
 
-    使用 Winitzki 近似 (2008)，最大误差 < 0.001。
+    使用 Winitzki 近似，最大误差 < 0.001。
     """
     if x <= -1.0:
         return -1e3
@@ -113,7 +113,7 @@ class RobustGNNCertifier:
     def dim(self) -> int:
         return self._base.dim
 
-    # ---- 核心: 随机平滑编码 ----
+# 核心: 随机平滑编码
 
     def encode(
         self, dag: TaskDependencyGraph
@@ -166,7 +166,7 @@ class RobustGNNCertifier:
                 out[p][j] += emb[idx[nid]][j]
         return out
 
-    # ---- 认证: 调度稳定性半径 ----
+# 认证: 调度稳定性半径
 
     def certify_schedule_stability(
         self,
@@ -243,7 +243,7 @@ class RobustGNNCertifier:
             }
         return results
 
-    # ---- 内部 ----
+# 内部
 
     def _noise_features(self, feats: List[List[float]]) -> List[List[float]]:
         """对特征矩阵逐元素加高斯噪声。"""

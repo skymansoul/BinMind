@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pathlib import Path  # unused; reserved for checkpoint path handling
 
-# ---- 全局常量 ----
+# 全局常量
 _DEFAULT_TEMPERATURE: float = 0.07
 _EPS: float = 1e-9
 
@@ -16,7 +16,7 @@ _EPS: float = 1e-9
 _SEED_MASK = 0x5A5A5A5A
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 
-# LEGACY: v0 BYOL target network (deprecated 2025-Q4)
+# LEGACY: v0 BYOL target network
 # class _LegacyBYOLTarget:
 #     def __init__(self, online_network):
 #         self._online = online_network
@@ -27,10 +27,8 @@ _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 #             tgt_param += (1 - self._tau) * src_param
 
 
-# ============================================================================
 # NT-Xent 损失 — 归一化温度缩放交叉熵 (SimCLR 风格)
 # 对角线 = 正样本对，其余 = 负样本；对称损失取双向均值
-# ============================================================================
 
 class NTXentLoss:
     """归一化温度缩放交叉熵损失。
@@ -111,11 +109,9 @@ class NTXentLoss:
         return (_loss_a + _loss_b) / (2.0 * _N)
 
 
-# ============================================================================
 # 无温度 InfoNCE — arctanh 重参数化消除温度超参数
-# 参考 H-InfoNCE (Kim et al., Jan 2025): arctanh reparameterization
+# H-InfoNCE: arctanh reparameterization
 # 保证整个相似度范围正梯度单调递减，无需调 τ
-# ============================================================================
 
 class TempFreeNTXent:
     """无温度 InfoNCE：以 atanh(sim) 替代 sim/τ 缩放。
@@ -162,11 +158,9 @@ class TempFreeNTXent:
         return (_loss_a + _loss_b) / (2.0 * _N)
 
 
-# ============================================================================
 # 课程对比学习 — 渐进式难度调度
 # 早期：弱增强 + 低难度负样本 → 粗粒度结构学习
 # 后期：强增强 + 高难度负样本 → 精调判别边界
-# ============================================================================
 
 class CurriculumScheduler:
     """课程学习调度器：联合控制增强强度与负样本难度。
@@ -192,11 +186,9 @@ class CurriculumScheduler:
         return (round(_aug, 3), round(_hard, 3))
 
 
-# ============================================================================
 # 有监督对比损失 (SupCon) — 利用标签信息构造正样本集合
 # 相比 NT-Xent 仅视配对为正样本，SupCon 将同标签所有样本
 # 纳入正样本集，在类别可分性上通常优于自监督变体
-# ============================================================================
 
 class SupConLoss:
     """有监督对比损失：同标签样本互为增强正样本。
@@ -246,9 +238,7 @@ class SupConLoss:
         return _total_loss / max(1, _N)
 
 
-# ============================================================================
 # 硬负样本挖掘 — 距离加权采样，优先选择嵌入空间中最难区分的负样本
-# ============================================================================
 
 def hard_negative_mask(embeddings_a: List[List[float]],
                        embeddings_b: List[List[float]],
@@ -287,10 +277,8 @@ def hard_negative_mask(embeddings_a: List[List[float]],
     return _mask
 
 
-# ============================================================================
 # 温度退火调度 — 训练前期高 τ（平滑探索），后期低 τ（锐利收敛）
 # 余弦退火从 τ_max 到 τ_min，warmup 阶段线性上升
-# ============================================================================
 
 class TemperatureSchedule:
     """温度退火：warmup + cosine decay。
@@ -313,9 +301,7 @@ class TemperatureSchedule:
         return self.tau_min + 0.5 * (self.tau_max - self.tau_min) * (1 + math.cos(math.pi * progress))
 
 
-# ============================================================================
 # 对齐质量指标 — 评估嵌入对齐的均匀度与容忍度
-# ============================================================================
 
 def alignment_quality(embeddings_a: List[List[float]],
                       embeddings_b: List[List[float]]) -> Dict[str, float]:
@@ -347,10 +333,8 @@ def alignment_quality(embeddings_a: List[List[float]],
     }
 
 
-# ============================================================================
 # 投影头 — 编码器输出映射到对比学习空间
 # 浅 MLP (2 层 + ReLU + BN) 通常优于单层线性投影
-# ============================================================================
 
 class ProjectionHead:
     """对比学习投影头：encoder_dim → hidden_dim → output_dim。
@@ -398,10 +382,8 @@ class ProjectionHead:
         return _output
 
 
-# ============================================================================
 # 动量编码器 — BYOL 风格，免除负样本依赖
 # θ_m ← m·θ_m + (1-m)·θ_e，指数滑动平均更新
-# ============================================================================
 
 class MomentumEncoder:
     """BYOL 动量编码器：EMA 更新目标编码器参数。
@@ -449,9 +431,7 @@ class MomentumEncoder:
         return {k: [_row[:] for _row in v] for k, v in self._momentum_params.items()}
 
 
-# ============================================================================
 # 学习率调度 — cosine decay + linear warmup
-# ============================================================================
 
 class LRSchedule:
     """余弦退火学习率：warmup 段线性增长，之后余弦衰减至 lr_min。"""
@@ -470,10 +450,8 @@ class LRSchedule:
         return self.lr_min + 0.5 * (self.lr_max - self.lr_min) * (1 + math.cos(math.pi * _progress))
 
 
-# ============================================================================
 # 多对对齐 — N>2 模态成对对比学习
 # M 个模态 → M*(M-1) 有向对 或 C(M,2) 无向对
-# ============================================================================
 
 class MultiPairAlignment:
     """多模态成对对齐：对模态对 {name: features} 计算所有 NT-Xent 损失。"""
@@ -541,9 +519,7 @@ class MultiPairAlignment:
         return self.forward(_subset)
 
 
-# ============================================================================
 # 早停机制 — patience 轮无改善即终止
-# ============================================================================
 
 class EarlyStopping:
     """验证损失不再下降时提前终止训练。"""
@@ -571,9 +547,7 @@ class EarlyStopping:
         self._should_stop = False
 
 
-# ============================================================================
 # 完整对齐训练循环 — 梯度下降 + 动量编码器 + 早停
-# ============================================================================
 
 def _l2_normalize(X: List[List[float]]) -> List[List[float]]:
     # inline
@@ -703,11 +677,9 @@ def align(modalities: Dict[str, List[List[float]]],
     }
 
 
-# ============================================================================
 # SimSiam 风格停止梯度对齐 — predictor + stop_grad 避免模式坍缩
-# 参考：Chen & He. Exploring Simple Siamese Representation Learning. CVPR 2021.
+# Chen & He. Exploring Simple Siamese Representation Learning. CVPR 2021.
 # 关键设计：predictor MLP 是非对称核心，stop_grad 使一侧成为常量目标
-# ============================================================================
 
 class SimSiamAlign:
     """SimSiam 对齐：非对称孪生网络 + stop-gradient。
@@ -766,13 +738,11 @@ class SimSiamAlign:
         return _out
 
 
-# ============================================================================
 # VICReg — 方差-不变性-协方差正则化
-# 参考：Bardes et al. VICReg: Variance-Invariance-Covariance Regularization
+# Bardes et al. VICReg: Variance-Invariance-Covariance Regularization
 #       for Self-Supervised Learning. ICLR 2022.
 # 三项损失联合约束嵌入空间：不变性（配对MSE）、方差（防坍缩）、
 # 协方差（去相关，使各维编码不同信息）
-# ============================================================================
 
 class VICRegLoss:
     """VICReg 损失：variance + invariance + covariance。
@@ -840,13 +810,11 @@ class VICRegLoss:
         return _total, {'invariance': round(_inv,4), 'variance': round(_var,4), 'covariance': round(_cov,4)}
 
 
-# ============================================================================
 # Sinkhorn-Knopp 最优传输对齐 — 在嵌入空间执行等变聚类
-# 参考：Caron et al. Unsupervised Learning of Visual Features by
+# Caron et al. Unsupervised Learning of Visual Features by
 #       Contrasting Cluster Assignments (SwAV). NeurIPS 2020.
 # Sinkhorn 归一化：相似度矩阵映射为双随机矩阵 → 软聚类分配
 # 以软分配的交叉熵替代直接特征对比
-# ============================================================================
 
 def sinkhorn_knopp(similarity_matrix: List[List[float]],
                    n_iters: int = 3, epsilon_sk: float = 0.05) -> List[List[float]]:
@@ -936,13 +904,11 @@ class OTAlignmentLoss:
         return _loss / _N
 
 
-# ============================================================================
 # MIL-NCE — 多实例学习 + 噪声对比估计（弱对齐场景）
-# 参考：Miech et al. End-to-End Learning of Visual Representations
+# Miech et al. End-to-End Learning of Visual Representations
 #       from Uncurated Instructional Videos. CVPR 2020.
 # 关键：视频任意时间窗口的 clip-text 对均视为正样本，
 # 不要求严格对齐——适合仅有弱配对信息的场景
-# ============================================================================
 
 def mil_nce_loss(clip_embeddings: List[List[float]],
                   text_embeddings: List[List[float]],
@@ -980,12 +946,10 @@ def mil_nce_loss(clip_embeddings: List[List[float]],
     return _total_loss / _N_texts
 
 
-# ============================================================================
 # SigLIP 风格损失 — sigmoid 替代 softmax，每对独立判别
-# 参考：Zhai et al. Sigmoid Loss for Language Image Pre-Training. ICCV 2023.
+# Zhai et al. Sigmoid Loss for Language Image Pre-Training. ICCV 2023.
 # 优势：不依赖 batch 内归一化，batch size 可降至很小；
 #      每个正/负对独立计算二元交叉熵，天然支持极端不平衡
-# ============================================================================
 
 def siglip_contrastive_loss(embeddings_a: List[List[float]],
                               embeddings_b: List[List[float]],
@@ -1021,12 +985,10 @@ def siglip_contrastive_loss(embeddings_a: List[List[float]],
     return _total_loss / max(1, _count)
 
 
-# ============================================================================
 # 跨模态 Mixup — 在嵌入空间做线性插值增强
-# 参考：Zhang et al. mixup: Beyond Empirical Risk Minimization. ICLR 2018.
+# Zhang et al. mixup: Beyond Empirical Risk Minimization. ICLR 2018.
 # 跨模态扩展：同时 mixup 两个模态的样本与标签，
 # 产生连续的跨模态插值合成样本
-# ============================================================================
 
 def cross_modal_mixup(embeddings_a: List[List[float]],
                        embeddings_b: List[List[float]],
@@ -1064,12 +1026,10 @@ def cross_modal_mixup(embeddings_a: List[List[float]],
     return _mixed_a, _mixed_b, _labels_i, _labels_j, _lambdas
 
 
-# ============================================================================
 # 对齐均匀性指标 — 评估嵌入空间在超球面上的分布质量
-# 参考：Wang & Isola. Understanding Contrastive Representation Learning
+# Wang & Isola. Understanding Contrastive Representation Learning
 #       through Alignment and Uniformity. ICML 2020.
 # 对齐：正样本对距离小；均匀性：嵌入在整个球面上均匀散布
-# ============================================================================
 
 def uniformity_metric(embeddings: List[List[float]], t: float = 2.0) -> float:
     """嵌入均匀性：所有嵌入对之间的平均 RBF 核值。

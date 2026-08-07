@@ -9,7 +9,7 @@ from enum import IntFlag
 name = "BehaviorTracer"
 module = "behavior_tracer"
 
-# ── API taxonomy ───────────────────────────────────────────────────────────
+# API taxonomy
 _FILE_OPS = {
     'CreateFile', 'OpenFile', 'ReadFile', 'WriteFile', 'DeleteFile',
     'fopen', 'fread', 'fwrite', 'fclose', 'open', 'read', 'write',
@@ -54,7 +54,7 @@ _CRYPTO_OPS = {
     'BCryptEncrypt', 'BCryptDecrypt', 'EVP_EncryptInit', 'EVP_DecryptInit',
 }
 
-# ── types ──────────────────────────────────────────────────────────────────
+# types
 class BehaviorCategory(IntFlag):
     NONE = 0
     FILE_IO = 1 << 0
@@ -160,7 +160,7 @@ def _sliding_window_match(seq, pattern, window_len):
     return False
 
 
-# ── main tracer ────────────────────────────────────────────────────────────
+# main tracer
 
 class BehaviorTracer:
     """Dynamic API-call-sequence behaviour 分类器"""
@@ -235,7 +235,7 @@ class BehaviorTracer:
         result.malicious_score = round(min(max_score, 1.0), 2)
         return result
 
-    # --- 新增: ATT&CK 战术映射 ---
+# 新增: ATT&CK 战术映射
     # 将行为分类映射到MITRE ATT&CK战术ID，支持后续威胁情报关联
     def map_to_attack_tactics(self, result: TraceResult) -> List[str]:
         """将检测到的行为类别映射到MITRE ATT&CK战术ID

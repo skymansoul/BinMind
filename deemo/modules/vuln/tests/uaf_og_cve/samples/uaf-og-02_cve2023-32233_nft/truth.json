@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2023-32233",
+  "desc": "CVE-2023-32233 (Linux nf_tables) UAF 复现 — nft 规则集释放后,",
+  "trigger": "   匿名集合的 use 计数器仍被递减 (free 后写 *ptr). 简化:"
+}

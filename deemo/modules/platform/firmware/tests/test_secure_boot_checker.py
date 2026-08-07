@@ -30,9 +30,7 @@ def _debug_print(*args, **kwargs):
 	print(prefix, *args, file=sys.stderr, **kwargs)
 
 
-# ============================================================================
 # 辅助函数
-# ============================================================================
 
 def _make_fake_binary(path, content=b'\x00' * 128):
 	"""将小型二进制块写入磁盘."""
@@ -54,9 +52,7 @@ def _hash_file(path, algo='sha256'):
 	return hasher.hexdigest()
 
 
-# ============================================================================
 # 已知正确的启动链测试
-# ============================================================================
 
 class TestKnownGoodBootChain:
 	"""验证所有阶段均匹配预期哈希的启动链."""
@@ -123,9 +119,7 @@ class TestKnownGoodBootChain:
 		assert result['stages'][0]['status'] == 'missing'
 
 
-# ============================================================================
 # 漏洞U-Boot版本检测
-# ============================================================================
 
 class TestVulnerableUBootDetection:
 	"""已知漏洞U-Boot版本应产生CVE发现."""
@@ -206,9 +200,7 @@ class TestVulnerableUBootDetection:
 		assert len(arm_tf) > 0
 
 
-# ============================================================================
 # 哈希算法处理
-# ============================================================================
 
 class TestHashAlgorithmHandling:
 	"""HashAlgorithm类及哈希计算测试."""
@@ -270,9 +262,7 @@ class TestHashAlgorithmHandling:
 			shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-# ============================================================================
 # BootStage / SignatureStatus / StageVerification — 保留
-# ============================================================================
 
 class TestBootStageEnum:
 	"""保留 — BootStage枚举值保留."""

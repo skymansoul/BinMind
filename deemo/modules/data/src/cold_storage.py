@@ -1,6 +1,6 @@
 """多级冷存储调度 — 按数据温度自主迁移 + 分层压缩"""
-# 参考 "Taming Server Memory TCO with Multiple Software-Defined Compressed Tiers"
-# [Kumar et al., arXiv:2404.13886] 的多级压缩内存模型，适配到磁盘存储场景。
+# "Taming Server Memory TCO with Multiple Software-Defined Compressed Tiers"
+# 的多级压缩内存模型，适配到磁盘存储场景。
 # 两级存储 (SSD hot → HDD archive) 的分层灵感来源为通用存储架构实践.
 #
 # 温度定义:
@@ -21,9 +21,7 @@ from dataclasses import dataclass, field
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 温度等级 + 存储策略
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TierSpec:
@@ -68,9 +66,7 @@ class StoragePolicy:
         return self.tiers[-1]
 
 
-# ---------------------------------------------------------------------------
 # TierManager — 执行实际数据搬迁
-# ---------------------------------------------------------------------------
 
 class TierManager:
     """签名数据的物理存储分层管理。

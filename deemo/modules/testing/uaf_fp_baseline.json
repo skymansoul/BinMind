@@ -1,0 +1,136 @@
+{
+  "stats": {
+    "binary": {
+      "tp": 8,
+      "fp": 6,
+      "fn": 0,
+      "tn": 2
+    },
+    "fpmin": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "tn": 8
+    },
+    "pdl": {
+      "tp": 6,
+      "fp": 1,
+      "fn": 2,
+      "tn": 7
+    }
+  },
+  "rows": [
+    {
+      "sample": "fp_01_pass_freed_to_printf",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "FP"
+    },
+    {
+      "sample": "fp_02_realloc_fail_keep_old",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_03_cond_null_after_free",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_04_branch_mutex_free_use",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_05_cond_free_before_use",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_06_stack_slot_reused",
+      "expected": "SAFE",
+      "binary": "TN",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_07_free_then_reassign",
+      "expected": "SAFE",
+      "binary": "TN",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "fp_08_wrapper_free_returns",
+      "expected": "SAFE",
+      "binary": "FP",
+      "fpmin": "TN",
+      "pdl": "TN"
+    },
+    {
+      "sample": "uaf_01_pass_freed_to_strlen",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_02_realloc_then_use_old",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_03_double_free_same_path",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_04_use_after_free_direct",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_05_cond_free_then_use",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_06_stack_slot_dangling",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "TP"
+    },
+    {
+      "sample": "uaf_07_struct_field_uaf",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "FN"
+    },
+    {
+      "sample": "uaf_08_wrapper_returns_freed",
+      "expected": "UAF",
+      "binary": "TP",
+      "fpmin": "TP",
+      "pdl": "FN"
+    }
+  ]
+}

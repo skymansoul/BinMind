@@ -16,7 +16,7 @@ import hashlib
 import time
 
 
-# ── 导入被测试模块 ────────────────────────────────────────
+# 导入被测试模块
 
 try:
     from fuzzing.src.core import (
@@ -279,7 +279,7 @@ class TestMutateWithDict:
         assert results == [b"AAAA"]
 
 
-# ── 覆盖率位图测试 ────────────────────────────────────────
+# 覆盖率位图测试
 
 @pytest.mark.skipif(not _coverage_available, reason="fuzzing.src.coverage not importable")
 class TestCoverageBitmap:

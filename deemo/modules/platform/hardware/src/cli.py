@@ -79,7 +79,7 @@ def build_parser() -> _ap.ArgumentParser:
     return parser
 
 
-# ---- 处理器 ----
+# 处理器
 
 
 def _handle_fuzz(args) -> int:

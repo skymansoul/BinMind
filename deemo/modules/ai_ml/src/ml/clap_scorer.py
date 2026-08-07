@@ -19,9 +19,7 @@ import threading
 from typing import Dict, List, Optional
 
 
-# ---------------------------------------------------------------------------
 # 对比嵌入空间的维度--在精度与计算开销之间折中，经验值 16 维对 <50 候选模型够用
-# ---------------------------------------------------------------------------
 _CONTRASTIVE_EMBEDDING_DIM = 16
 
 
@@ -60,11 +58,9 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
     return max(-1.0, min(1.0, dot / (math.sqrt(norm_a) * math.sqrt(norm_b))))
 
 
-# ---------------------------------------------------------------------------
 # 对比任务—模型对齐评分器（CLAP 范式：将异构特征映射到共享嵌入空间，用余弦相似度
 # 替代启发式加权求和。优势在于同类任务天然聚集，新模型只需计算一次嵌入即可参与
 # 排序，无需重新标定权重。）
-# ---------------------------------------------------------------------------
 class ContrastiveAlignmentScorer:
     """CLAP‑style 跨模态对比对齐：任务侧嵌入与模型侧嵌入做余弦内积，得分越高越匹配。
 
@@ -87,7 +83,7 @@ class ContrastiveAlignmentScorer:
         self._complexity_scale = 0.3  # 连续特征在嵌入更新中的学习率
         self._cost_scale = 0.2
 
-    # ---- 任务嵌入 -----------------------------------------------------------
+# 任务嵌入
     def embed_task(self, features: "TaskFeatures") -> List[float]:
         """为任务特征构建对比嵌入。
 
@@ -126,7 +122,7 @@ class ContrastiveAlignmentScorer:
                     del self._task_embeddings_cache[ek]
         return fused
 
-    # ---- 模型嵌入 -----------------------------------------------------------
+# 模型嵌入
     def embed_model(self, config: "ModelConfig") -> List[float]:
         """为模型配置构建对比嵌入。
 
@@ -183,9 +179,7 @@ class ContrastiveAlignmentScorer:
                 del self._model_embeddings_cache[model_name]
 
 
-# ---------------------------------------------------------------------------
 # 全局对比评分器单例
-# ---------------------------------------------------------------------------
 _global_contrastive_scorer: Optional[ContrastiveAlignmentScorer] = None
 
 

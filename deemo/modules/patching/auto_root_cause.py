@@ -10,7 +10,7 @@ _log = logging.getLogger(__name__)
 name = "AutoRootCauseAnalyzer"
 function_name = ""
 
-# ── crash 类型分类体系 ──────────────────────────────────────────────────
+# crash 类型分类体系
 
 _CRASH_PATTERNS = {
     "SEGFAULT_ON_ADDRESS": [
@@ -56,7 +56,7 @@ _CRASH_PATTERNS = {
     ],
 }
 
-# ── 寄存器状态启发式 ────────────────────────────────────────────────────
+# 寄存器状态启发式
 # 8 条规则，覆盖 x86_64 和 arm64（x0-x30, sp, lr, pc）
 
 _REGISTER_RULES = [
@@ -94,7 +94,7 @@ _REGISTER_RULES = [
         "RDI = NULL with RAX set: likely failed allocation check leading to NULL deref",
         0.15
     ),
-    # ── arm64 专用规则 ──────────────────────────────────────────
+# arm64 专用规则
     (
         lambda regs: _parse_hex(regs.get('pc', '0')) in (0x0, 0) or
                      _parse_hex(regs.get('lr', '0')) in (0x0, 0),
@@ -129,7 +129,7 @@ def _parse_hex(val):
         return None
 
 
-# ── 严重度与可利用性评级 ──────────────────────────────────────────────
+# 严重度与可利用性评级
 
 class VulnerabilitySeverity(IntEnum):
     INFO = 0
@@ -170,7 +170,7 @@ class CWEDatabase:
         return CWEDatabase._DB.get(crash_type, ("CWE-0", "Unknown"))
 
 
-# ── crash 签名哈希 ──────────────────────────────────────────────────────
+# crash 签名哈希
 # 双轨 hash：exact hash 精确去重，fuzzy hash 同类聚类。
 # Fuzzy hash 截取 call stack frame 的函数名 + offset（剔除地址），
 # 对抗 ASLR 导致的地址漂移。参考 arXiv crash dedup 方案。
@@ -196,7 +196,7 @@ def _crash_fuzzy_hash(crash_type, stack_trace):
     return h.hexdigest()[:16]
 
 
-# ── crash 聚类 ─────────────────────────────────────────────────────────
+# crash 聚类
 
 class CrashCluster:
     """同类 crash 聚合器 — 跟踪同一根因的多次崩溃。
@@ -229,7 +229,7 @@ class CrashCluster:
         }
 
 
-# ── 能力分类 ────────────────────────────────────────────────────────────
+# 能力分类
 # crash type + register state → exploit primitive 集合。
 # 快速 triage：crash 可控性 → weaponize 所需 primitive 清单。
 
@@ -258,7 +258,7 @@ def triage_capabilities(ctx):
     return caps
 
 
-# ── 分析数据类型 ───────────────────────────────────────────────────────
+# 分析数据类型
 
 class VulnerabilityContext:
     def __init__(self):
@@ -348,7 +348,7 @@ def _assess_exploitability(crash_type, context):
     return Exploitability.POSSIBLE
 
 
-# ── 主分析器 ──────────────────────────────────────────────────────────
+# 主分析器
 
 class AutoRootCauseAnalyzer:
     def __init__(self):
@@ -552,7 +552,7 @@ class AutoRootCauseAnalyzer:
         return m.group(0) if m else trace_line[:80]
 
 
-# ── 向后兼容模块级别名 ──────────────────────────────────────────────
+# 向后兼容模块级别名
 
 RootCauseAnalysis = AnalysisReport
 

@@ -7,7 +7,6 @@ Activation is automatic when the corresponding data (CFG blocks, seed queue,
 active paths) is available during the run.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict

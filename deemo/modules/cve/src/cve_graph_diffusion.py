@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 08:34
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-04-25 08:34
+# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 连续时间图扩散风险传播
 # 图扩散 — CVE异构图上的连续时间利用知识传播
 #
@@ -37,9 +37,9 @@
 #      捕获CVE在其直接邻域 (同产品) 和全局社区 (同厂商家族) 的角色.
 #   3. 与CVEExploitGraph互补: GCN做监督预测, 扩散做无监督表示增强.
 #
-# 参考:
-#   [Klicpera et al. 2019] Diffusion Improves Graph Learning (NeurIPS)
-#   [Chamberlain et al. 2021] GRAND: Graph Neural Diffusion (ICML)
+#
+# Diffusion Improves Graph Learning (NeurIPS)
+# GRAND: Graph Neural Diffusion (ICML)
 #   [检索确认] 2025-2026年零论文将图扩散应用于CVE异构图
 
 import math
@@ -203,7 +203,7 @@ class GraphDiffusionPropagator:
         return influence
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_diffusion_from_graph(graph, time_scales: Optional[List[float]] = None
                                ) -> GraphDiffusionPropagator:

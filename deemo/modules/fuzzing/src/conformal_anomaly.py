@@ -5,14 +5,13 @@
 2025-08-03 09:27 - 滑动校准窗口 + Mondrian 分层 (按种子类别分层校准)
 2025-08-04 16:41 - 自适应 ε: 随样本量增大自动收紧显著性水平
 
-参考:
-  Vovk, Gammerman & Shafer (2005) "Algorithmic Learning in a Random World"
+  Vovk, Gammerman & Shafer "Algorithmic Learning in a Random World"
     — 保形预测的理论基础: 可交换性假设下的有限样本有效性
-  Papadopoulos et al. (2002) "Inductive Confidence Machines for Regression"
+  Papadopoulos et al. "Inductive Confidence Machines for Regression"
     (ECML) — 归纳保形预测 (ICP), 将训练/校准分拆以降低计算量
-  Shafer & Vovk (2019) "Game-Theoretic Foundations for Probability and Finance"
+  Shafer & Vovk "Game-Theoretic Foundations for Probability and Finance"
     — 第 2 章: 测试 martingale 与保形预测的对偶关系
-  Bates et al. (2023) "Distribution-free Prediction Sets" (JASA)
+  Bates et al. "Distribution-free Prediction Sets" (JASA)
     — 证明了 split-conformal 在任意分布下的覆盖率保证
 
 在 fuzzing 文献中的位置:
@@ -40,13 +39,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ---- CADF 参数 ----
+# CADF 参数
 _CALIBRATION_SIZE = 100      # 校准集最大大小
 _K_NEIGHBORS = 8             # k-NN 的 k
 _DEFAULT_EPSILON = 0.05      # 默认显著性水平 (5% 假阳性率)
 _DECAY_FACTOR = 0.98         # 旧校准样本的权重衰减
-
 
 @dataclass
 class ExecutionProfile:
@@ -59,7 +56,6 @@ class ExecutionProfile:
     # 归一化后的特征向量 (用于距离计算)
     features: List[float] = field(default_factory=list)
     profile_id: str = ""         # 用于分层校准的类别标签
-
 
 class ConformalAnomalyDetector:
     """基于归纳保形预测的异常检测器.

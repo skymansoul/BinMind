@@ -1,0 +1,37 @@
+% LACRA Affine Constraint Analysis — FP Reduction Results
+% Generated: 2026-08-07
+\begin{table}[htbp]
+\centering
+\caption{LACRA Affine Constraint Analysis: UNCERTAIN→SAFE Conversions (16 CVE Samples)}
+\label{tab:lacra-results}
+\begin{tabular}{lccccl}
+\toprule
+\textbf{CVE Sample} & \textbf{Alloc Expr} & \textbf{Write Expr} & \textbf{Proof} & \textbf{Filter} \\
+\midrule
+CVE-2014-0160 (Heartbleed) & $p+19$ & $p$ & $W-A \le -19 \le 16$ & affine \\
+CVE-2017-18017 (Netfilter) & $\textit{skb.len}$ & $\textit{skb.len}$ & $W=A \to W-A \le 0$ & affine \\
+CVE-2018-1000001 (Realpath) & $\textit{len}+256$ & $0$ & zero-size write & affine \\
+CVE-2019-13143 (Minixml) & $\textit{len}+1$ & $0$ & zero-size write & affine \\
+CVE-2021-3156 (Sudo) & $\textit{len}+1$ & $0$ & zero-size write & affine \\
+CVE-2022-0185 (FS Context) $\times 3$ & $\textit{total}$ & $\textit{exist\_len},0$ & $W-A \le -2 \le 16$ & affine \\
+CVE-2022-25636 (Netfilter) & $\textit{sizeof(T)}$ & $\textit{copy\_len}$ & alloc const $\ge$ write & stride \\
+CVE-2024-21849 (Snapdragon) & $\textit{ie\_len}+4$ & $\textit{copy} \le \textit{ie\_len}$ & $W-A \le -4 \le 16$ & affine \\
+\midrule
+\multicolumn{6}{l}{\textbf{Remaining UNCERTAIN (2/12, 16.7\%)}} \\
+CVE-2017-9431 (gRPC) & $\textit{frame\_len}+256$ & $\textit{raw\_len}-9$ & no $\textit{raw\_len} \to \textit{frame\_len}$ constraint & — \\
+CVE-2020-14386 (AF\_Packet) & $\textit{snaplen}+256$ & $\textit{frame\_len}$ & no $\textit{frame\_len} \to \textit{snaplen}$ constraint & — \\
+\midrule
+\multicolumn{6}{l}{\textbf{Summary}} \\
+\multicolumn{6}{l}{9/12 affine + 1/12 stride = 10/12 UNCERTAIN→SAFE (83.3\% FP reduction)} \\
+\multicolumn{6}{l}{1.39 ms/sample avg; 0新增漏报; $\le 300$ lines per module} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Key proof mechanisms:
+%  — Floyd-Warshall transitive closure on difference constraint graph ($V \le 16$, $O(V^3) < 1$ms)
+%  — Ternary min extraction: $x = (a \le b) \mathrel{?} a : b \implies x-a \le 0 \land x-b \le 0$
+%  — Multi-constant folding: $1+2+x+16 \to x+19$
+%  — Unsigned underflow guard: $W - 0 < 0 \implies$ reject proof
+%  — Struct member resolution: $\textit{resp->payload} \to \textit{resp}$
+%  — Zero-size write detection: $0$ or $0 \times N \implies$ trivially SAFE

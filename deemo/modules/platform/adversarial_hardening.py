@@ -10,7 +10,7 @@
   4. 异常边检测 — 标记置信度显著偏离先验期望的边
 
 ref: Beta-Binomial conjugacy (Gelman et al.) — 共轭先验理论基础。
-ref: VulRG (arXiv:2502.11143) — 图风险评分，无对抗鲁棒性。
+ref: VulRG — 图风险评分，无对抗鲁棒性。
 """
 
 from __future__ import annotations

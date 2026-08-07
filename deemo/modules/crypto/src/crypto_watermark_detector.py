@@ -27,10 +27,9 @@
     D4: 时间戳/构建号/版本字符串的不一致性
     D5: 已知水印库的API签名
 
-参考:
-  - Qu & Potkonjak (1998): "Fingerprinting intellectual property" —
+  - Qu & Potkonjak: "Fingerprinting intellectual property" —
     硬件IP水印的早期工作, 本项目将概念移植到二进制软件。
-  - Nagaraja et al. (2010): "Stegobot" — 隐写通道用于机器人通信,
+  - Nagaraja et al.: "Stegobot" — 隐写通道用于机器人通信,
     密码学常数的微调作为隐写载体。
 
 边界条件:
@@ -44,7 +43,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from .constants import AES_SBOX, SM4_SBOX, GOST_SBOX, CAMELLIA_SBOX
 
-
 @dataclass
 class WatermarkFinding:
     category: str = ""             # CONSTANT_DEVIATION / ARTIFACT / PATH_LEAK / TIMESTAMP / API_SIGNATURE
@@ -56,8 +54,7 @@ class WatermarkFinding:
     detected_value: str = ""       # 检测到的异常值
     hypothesis: str = ""           # 最有说服力的解释
 
-
-# ── D1: 常量偏差检测 ──
+# D1: 常量偏差检测
 
 def _check_constant_deviation(data: bytes, reference: bytes,
                                algo_name: str, offset: int,
@@ -100,8 +97,7 @@ def _check_constant_deviation(data: bytes, reference: bytes,
         detected_value=f'{n_dev} byte(s) deviating',
         hypothesis='可能是供应商水印(微调1-2字节不影响安全性)或非标准实现')
 
-
-# ── D2-D4: 其他水印维度 ──
+# D2-D4: 其他水印维度
 
 _DEV_ARTIFACT_PATTERNS: List[Tuple[bytes, str, float, str]] = [
     (b'/home/', 'Unix home directory path', 0.65, 'PATH_LEAK'),
@@ -125,7 +121,6 @@ _KNOWN_WATERMARK_SCHEMES: List[Tuple[bytes, str, float]] = [
     (b'tamper_detect', 'tamper detection keyword', 0.55),
     (b'integrity_check', 'integrity check presence', 0.40),
 ]
-
 
 def detect_watermarks(data: bytes,
                       crypto_findings: Optional[List] = None,

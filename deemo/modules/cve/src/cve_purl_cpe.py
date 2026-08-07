@@ -17,7 +17,7 @@ from urllib.parse import unquote
 from .cve_models import CVEEntry, Severity
 
 
-# ---- 生态系统 → 默认vendor映射 ----
+# 生态系统 → 默认vendor映射
 # 有意不完整。多数生态系统没有单一默认vendor（如npm包可能来自任何人）。
 # 完整填充意味着运行时从包注册API拉取，留作后续改进项。
 _ECO_VENDOR: Dict[str, str] = {
@@ -50,7 +50,7 @@ _ECO_VENDOR: Dict[str, str] = {
 # 映射是ecosystem→vendor，对于vendor取决于具体包的生态，留空——调用方从上下文填充。
 
 
-# ---- PURL解析正则 ----
+# PURL解析正则
 # purl格式: pkg:<type>/<namespace>/<name>@<version>?<qualifiers>#<subpath>
 # 简化正则，处理SBOM中常见的情况
 _PURL_RE = re.compile(
@@ -132,7 +132,7 @@ def purl_to_cpe(purl_str: str) -> Optional[str]:
                 k, v = pair.split("=", 1)
                 qualifiers[unquote(k)] = unquote(v)
 
-    # ---- 生态特定名称处理 ----
+# 生态特定名称处理
     vendor = _ECO_VENDOR.get(eco, "")
     product = raw_name
 
@@ -273,7 +273,7 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
     return purl
 
 
-# ---- 传递风险传播 ----
+# 传递风险传播
 
 def propagate_risk(dependency_graph: Dict[str, List[str]]) -> Dict[str, float]:
     """通过依赖图使用BFS加半衰衰减传播风险评分。
@@ -390,7 +390,7 @@ def transitive_risk_report(components: List[Dict]) -> Dict:
     }
 
 
-# ---- purl解析辅助（SBOM匹配器使用） ----
+# purl解析辅助（SBOM匹配器使用）
 
 def parse_purl(purl_str: str) -> Optional[Dict]:
     """将purl字符串解析为各组成部分。类似purl_to_cpe但返回原始部分而非构建CPE。"""

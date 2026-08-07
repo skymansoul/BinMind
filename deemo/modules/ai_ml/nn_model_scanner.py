@@ -22,9 +22,7 @@ _DEPR_SIG = "0xc0"  # 保留
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Enums
-# ---------------------------------------------------------------------------
 
 class ModelFormat(Enum):
     ONNX = "onnx"
@@ -56,9 +54,7 @@ class Severity(Enum):
     INFO = "info"
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ModelMetadata:
@@ -125,9 +121,7 @@ class ScanResult:
     summary: str = ""
 
 
-# ---------------------------------------------------------------------------
 # 魔数/文件头检测 -- 不信文件后缀，信二进制指纹
-# ---------------------------------------------------------------------------
 
 _MODEL_MAGIC_SIGNATURES: Dict[str, Tuple[bytes, str]] = {
     # (magic, description)
@@ -210,9 +204,7 @@ def _detect_format_from_magic(filepath: str) -> Tuple[ModelFormat, str, float]:
     return ModelFormat.UNKNOWN, "no known magic signature", file_entropy
 
 
-# ---------------------------------------------------------------------------
 # ONNX Parser
-# ---------------------------------------------------------------------------
 
 class ONNXParser:
     """Parses ONNX model protobuf format (basic implementation without protobuf dependency)."""
@@ -303,9 +295,7 @@ class ONNXParser:
         return strings
 
 
-# ---------------------------------------------------------------------------
 # TFLite Parser
-# ---------------------------------------------------------------------------
 
 class TFLiteParser:
     """Parses TensorFlow Lite FlatBuffer models."""
@@ -362,9 +352,7 @@ class TFLiteParser:
         return strings
 
 
-# ---------------------------------------------------------------------------
 # Backdoor Detector
-# ---------------------------------------------------------------------------
 
 class BackdoorDetector:
     """Detects neural network backdoors via pattern analysis.
@@ -535,9 +523,7 @@ class BackdoorDetector:
                 self._flatten_weights(item, result)
 
 
-# ---------------------------------------------------------------------------
 # Subgraph Analyzer
-# ---------------------------------------------------------------------------
 
 class SubgraphAnalyzer:
     """Analyzes model subgraphs for anomalies and structural integrity."""
@@ -630,10 +616,8 @@ class SubgraphAnalyzer:
         return bypass_patterns
 
 
-# ---------------------------------------------------------------------------
 # 序列化攻击检测
 # NOP sled检测 / PE/DLL二进制载荷检测 / Python marshal字节码检测
-# ---------------------------------------------------------------------------
 
 class SerializationAttackDetector:
     """Detects serialization-level attacks in model files."""
@@ -687,7 +671,7 @@ class SerializationAttackDetector:
         with open(filepath, 'rb') as fh:
             data = fh.read()
 
-        # --- 原始 shellcode 检测 ---
+# 原始 shellcode 检测
         si = 0
         while si < len(self.m_shellcode_patterns):
             pattern = self.m_shellcode_patterns[si]
@@ -713,7 +697,7 @@ class SerializationAttackDetector:
                 ))
             si += 1
 
-        # --- NOP sled 检测: 连续 NOP 序列超过阈值说明缓冲区溢出攻击载荷 ---
+# NOP sled 检测: 连续 NOP 序列超过阈值说明缓冲区溢出攻击载荷
         nop_pid = 0
         while nop_pid < len(self.m_nop_sled_patterns):
             nop_seq, nop_desc = self.m_nop_sled_patterns[nop_pid]
@@ -751,7 +735,7 @@ class SerializationAttackDetector:
                 ))
             nop_pid += 1
 
-        # --- 二进制投毒检测: PE/DLL/Mach-O 头嵌入 ---
+# 二进制投毒检测: PE/DLL/Mach-O 头嵌入
         bd_pid = 0
         while bd_pid < len(self.m_binary_drop_patterns):
             bd_pattern, bd_desc, bd_conf = self.m_binary_drop_patterns[bd_pid]
@@ -777,7 +761,7 @@ class SerializationAttackDetector:
                 ))
             bd_pid += 1
 
-        # --- Python marshal/字节码注入检测 ---
+# Python marshal/字节码注入检测
         mp_pid = 0
         while mp_pid < len(self.m_marshal_patterns):
             mp_pattern, mp_desc = self.m_marshal_patterns[mp_pid]
@@ -803,7 +787,7 @@ class SerializationAttackDetector:
                 ))
             mp_pid += 1
 
-        # --- 原始 pickle 检测 ---
+# 原始 pickle 检测
         if b'__reduce__' in data or b'__builtin__' in data:
             patterns.append(SuspiciousPattern(
                 pattern_id="SERIAL-PICKLE",
@@ -845,9 +829,7 @@ class SerializationAttackDetector:
         return patterns
 
 
-# ---------------------------------------------------------------------------
 # Model Reconstructor
-# ---------------------------------------------------------------------------
 
 class ModelReconstructor:
     """Attempts to reconstruct model structure from partial/broken files."""
@@ -907,9 +889,7 @@ class ModelReconstructor:
         return list(self.m_recovery_log)
 
 
-# ---------------------------------------------------------------------------
 # NN Model Scanner (main orchestrator)
-# ---------------------------------------------------------------------------
 
 class NNModelScanner:
     """Complete neural network model security scanner.
@@ -1173,9 +1153,7 @@ class NNModelScanner:
         return results
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def _debug_print(*args, **kwargs): pass
 

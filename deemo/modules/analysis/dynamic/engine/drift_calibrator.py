@@ -47,9 +47,7 @@ from .drift_detector import (
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 校准动作处理器注册表
-# ---------------------------------------------------------------------------
 
 CalibrationHandler = Callable[[], bool]
 # 返回 True = 成功执行, False = 执行失败或不可用
@@ -113,9 +111,7 @@ class CalibrationRegistry:
         return results
 
 
-# ---------------------------------------------------------------------------
 # 主校准器
-# ---------------------------------------------------------------------------
 
 class DriftCalibrator:
     """分析管道漂移校准器--完整的监控-检测-校准-验证闭环
@@ -274,7 +270,7 @@ class DriftCalibrator:
         else:
             _log.warning("DriftCalibrator: verification failed after max escalations")
 
-    # ---- 便捷查询 ----
+# 便捷查询
     @property
     def is_healthy(self) -> bool:
         """快速健康检查--管道是否正常运行"""

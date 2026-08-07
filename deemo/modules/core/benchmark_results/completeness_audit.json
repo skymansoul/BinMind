@@ -1,0 +1,268 @@
+{
+  "timestamp": "2026-08-07 00:13:43",
+  "covered_types": {
+    "heap_overflow": {
+      "name": "Heap Overflow",
+      "max_depth": 7,
+      "target_depth": 6,
+      "gap": -1,
+      "status": "SATURATED",
+      "modules": {
+        "constraint_solver": {
+          "depth": 6,
+          "lines": 293
+        },
+        "alloc_constraint_encoder": {
+          "depth": 6,
+          "lines": 174
+        },
+        "congruence_domain": {
+          "depth": 6,
+          "lines": 244
+        },
+        "value_range": {
+          "depth": 3,
+          "lines": 168
+        },
+        "path_abstract_interpret": {
+          "depth": 7,
+          "lines": 287
+        },
+        "narrow_refine": {
+          "depth": 6,
+          "lines": 127
+        },
+        "batch_path_filter": {
+          "depth": 5,
+          "lines": 86
+        },
+        "cfg_extractor": {
+          "depth": 5,
+          "lines": 108
+        },
+        "constraint_filter": {
+          "depth": 6,
+          "lines": 60
+        },
+        "alloc_constraints": {
+          "depth": 6,
+          "lines": 80
+        },
+        "interproc_taint": {
+          "depth": 7,
+          "lines": 231
+        },
+        "interproc_enhance": {
+          "depth": 7,
+          "lines": 58
+        },
+        "fp_calibrator": {
+          "depth": 7,
+          "lines": 265
+        },
+        "deep_heap_orchestrator": {
+          "depth": 7,
+          "lines": 285
+        }
+      },
+      "cvss": [
+        "CWE-122",
+        "CWE-787"
+      ]
+    },
+    "use_after_free": {
+      "name": "Use-After-Free",
+      "max_depth": 7,
+      "target_depth": 6,
+      "gap": -1,
+      "status": "SATURATED",
+      "modules": {
+        "uaf_constraint": {
+          "depth": 6,
+          "lines": 264
+        },
+        "uaf_pipeline": {
+          "depth": 6,
+          "lines": 294
+        },
+        "uaf_enhance": {
+          "depth": 7,
+          "lines": 301
+        },
+        "uaf_detector": {
+          "depth": 2,
+          "lines": 263
+        },
+        "uaf_escape_analysis": {
+          "depth": 2,
+          "lines": 161
+        }
+      },
+      "cvss": [
+        "CWE-416",
+        "CWE-415"
+      ]
+    },
+    "format_string": {
+      "name": "Format String",
+      "max_depth": 6,
+      "target_depth": 4,
+      "gap": -2,
+      "status": "SATURATED",
+      "modules": {
+        "fmt_constraint": {
+          "depth": 6,
+          "lines": 278
+        }
+      },
+      "cvss": [
+        "CWE-134"
+      ]
+    },
+    "integer_overflow": {
+      "name": "Integer Overflow",
+      "max_depth": 6,
+      "target_depth": 6,
+      "gap": 0,
+      "status": "SATURATED",
+      "modules": {
+        "int_overflow": {
+          "depth": 6,
+          "lines": 249
+        },
+        "int_overflow_enhance": {
+          "depth": 6,
+          "lines": 275
+        }
+      },
+      "cvss": [
+        "CWE-190",
+        "CWE-191",
+        "CWE-680"
+      ]
+    },
+    "off_by_one": {
+      "name": "Off-by-One",
+      "max_depth": 2,
+      "target_depth": 3,
+      "gap": 1,
+      "status": "GAP=1",
+      "modules": {
+        "off_by_one": {
+          "depth": 2,
+          "lines": 298
+        }
+      },
+      "cvss": [
+        "CWE-193",
+        "CWE-131"
+      ]
+    },
+    "double_free": {
+      "name": "Double-Free",
+      "max_depth": 5,
+      "target_depth": 3,
+      "gap": -2,
+      "status": "SATURATED",
+      "modules": {
+        "double_free": {
+          "depth": 5,
+          "lines": 240
+        }
+      },
+      "cvss": [
+        "CWE-415"
+      ]
+    },
+    "type_confusion": {
+      "name": "Type Confusion",
+      "max_depth": 4,
+      "target_depth": 3,
+      "gap": -1,
+      "status": "SATURATED",
+      "modules": {
+        "type_confusion": {
+          "depth": 4,
+          "lines": 281
+        }
+      },
+      "cvss": [
+        "CWE-843"
+      ]
+    },
+    "uninitialized_memory": {
+      "name": "Uninitialized Memory",
+      "max_depth": 7,
+      "target_depth": 3,
+      "gap": -4,
+      "status": "SATURATED",
+      "modules": {
+        "uninitialized_memory": {
+          "depth": 7,
+          "lines": 254
+        }
+      },
+      "cvss": [
+        "CWE-457"
+      ]
+    },
+    "buffer_underflow": {
+      "name": "Buffer Underflow",
+      "max_depth": 2,
+      "target_depth": 3,
+      "gap": 1,
+      "status": "GAP=1",
+      "modules": {
+        "buffer_underflow": {
+          "depth": 2,
+          "lines": 274
+        }
+      },
+      "cvss": [
+        "CWE-124"
+      ]
+    },
+    "cross_pipeline": {
+      "name": "Cross-Pipeline Correlation",
+      "max_depth": 7,
+      "target_depth": 1,
+      "gap": -6,
+      "status": "SATURATED",
+      "modules": {
+        "cross_pipeline_correlate": {
+          "depth": 7,
+          "lines": 299
+        }
+      },
+      "cvss": [
+        "N/A"
+      ]
+    }
+  },
+  "missing_types": [
+    {
+      "type": "race_condition_heap",
+      "cwe": "CWE-362",
+      "description": "\u5806\u4e0a\u7684\u7ade\u6001\u6761\u4ef6 (TOCTOU)",
+      "priority": "MEDIUM",
+      "estimated_layers": 2
+    },
+    {
+      "type": "null_ptr_deref",
+      "cwe": "CWE-476",
+      "description": "\u7a7a\u6307\u9488\u89e3\u5f15\u7528\u8def\u5f84\u5206\u6790",
+      "priority": "LOW",
+      "estimated_layers": 2
+    }
+  ],
+  "summary": {
+    "vuln_types_covered": 10,
+    "vuln_types_missing": 2,
+    "total_modules": 28,
+    "total_lines": 6197,
+    "layer_coverage_pct": 139.5,
+    "types_saturated": 8,
+    "types_with_gaps": 2,
+    "top_priority_gap": "Off-by-One (gap=1 layers)"
+  }
+}

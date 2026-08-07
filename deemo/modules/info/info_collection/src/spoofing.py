@@ -5,7 +5,7 @@
 import re
 from typing import List, Dict, Tuple, Set
 
-# ---- 特征模式库 ----
+# 特征模式库
 
 _PROCESS_HOLLOWING_APIS = [
     "CreateProcess", "NtUnmapViewOfSection", "ZwUnmapViewOfSection",

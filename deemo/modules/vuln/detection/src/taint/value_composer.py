@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | 值组合标签系统
+# 创建: 2026-05-26 | 值组合标签系统
 #
 """污点值组合分析 — 在二进制污点传播之上叠加"转换链"以降低误报。
 
@@ -13,7 +13,7 @@
   - 经过长度约束: 如 atoi/memcpy_size_check — 需审查但风险降低
   - 经过枚举/白名单: strcmp/switch-case — 基本安全
 
-Mango (USENIX 2024) 证明这种"值域感知"可将 FP 降低约 47%.
+Mango 证明这种"值域感知"可将 FP 降低约 47%.
 本实现不依赖中间语言——直接在汇编指令模式上做模式匹配。
 
 输出:
@@ -207,7 +207,7 @@ class ValueCompositionTracker:
         return _summary
 
 
-# ---- smoke ----
+# smoke
 def _check():
     """验证核心逻辑——无外部依赖。"""
     _t = ValueCompositionTracker()

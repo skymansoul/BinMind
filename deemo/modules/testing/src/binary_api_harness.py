@@ -8,7 +8,7 @@
 #     b) 每个函数的参数类型和约束
 #     c) 函数之间的调用依赖 (必须先调用 init 再调用 parse)
 #
-#   OGHARN (ICSE 2025) 从 C 头文件推断 API, PromeFuzz (CCS 2025)
+#   OGHARN 从 C 头文件推断 API, PromeFuzz
 #   用 LLM + 知识库——两者都需要源码/文档。
 #   本模块面向无源码二进制: 仅从导入表和CFG推断。
 #
@@ -16,15 +16,15 @@
 #   1. 解析导入表, 识别输入消费函数 (read/recv/fread/fgetc/mmap等)
 #   2. 从调用图反向追踪: 哪些内部函数消费了这些输入?
 #   3. 对每个输入消费函数, 提取其CFG参数约束:
-#      - 参数个数 (通过调用约定推断: x86-64下看rdi/rsi/rdx使用)
-#      - 缓冲区大小约束 (cmp指令与参数寄存器的关系)
-#      - 返回值检查模式 (test eax, eax; jz → 期望非零返回)
+# 参数个数 (通过调用约定推断: x86-64下看rdi/rsi/rdx使用)
+# 缓冲区大小约束 (cmp指令与参数寄存器的关系)
+# 返回值检查模式 (test eax, eax; jz → 期望非零返回)
 #   4. 生成针对性的 C harness——为每个API函数生成正确的参数准备代码
 #
 # 技术依据:
-#   OGHARN (Sherman & Nagy, ICSE 2025) — oracle-guided harness synthesis;
+#   OGHARN — oracle-guided harness synthesis;
 #     本项目取其 harness 生成框架但适配到二进制级
-#   PromeFuzz (Liu et al. CCS 2025) — RAG+LLM harness生成;
+#   PromeFuzz — RAG+LLM harness生成;
 #     本项目取其 API 知识库概念但以导入表+CFG替代文档知识库
 
 from __future__ import annotations
@@ -145,7 +145,7 @@ class BinaryAPISurfaceAnalyzer:
         """主入口: 分析并返回推断的API函数列表"""
         api_funcs: List[APIFunction] = []
 
-        # Step 1: 识别输入消费的导入函数
+        # 识别输入消费的导入函数
         input_imports: Dict[int, str] = {}  # addr → import_name
         for caller, callees in self._call_graph.items():
             for callee in callees:
@@ -155,7 +155,7 @@ class BinaryAPISurfaceAnalyzer:
                     if base in self._INPUT_SOURCE_PATTERNS:
                         input_imports[callee] = name
 
-        # Step 2: 反向追踪——找到调用输入导入函数的内部函数
+        # 反向追踪——找到调用输入导入函数的内部函数
         for input_addr, import_name in input_imports.items():
             callers = self._reverse_cg.get(input_addr, [])
             for caller_addr in callers:
@@ -164,7 +164,7 @@ class BinaryAPISurfaceAnalyzer:
                 if api and api.confidence > 0.2:
                     api_funcs.append(api)
 
-        # Step 3: 去重 (同地址的函数只保留置信度最高的)
+        # 去重 (同地址的函数只保留置信度最高的)
         seen: Dict[int, APIFunction] = {}
         for api in api_funcs:
             if api.func_addr not in seen or api.confidence > seen[api.func_addr].confidence:

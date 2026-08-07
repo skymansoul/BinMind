@@ -20,20 +20,18 @@ crypto_protocol_state.py 从二进制重建协议状态机（TLS/SSH/IPSec）。
 4. 输出降级攻击路径列表，按 exploitability 排序。
 
 与既有工作的区别：
-- Beurdouche et al. (S&P 2015): 手动审查TLS状态机。
+- Beurdouche et al.: 手动审查TLS状态机。
 - TLS-Attacker (Ruhr Uni): 运行时主动探测→需要运行目标。
 - 本方案: 从静态重建的状态机自动推理→无需运行、无需源码。
 
-参考：
-- "A Messy State of the Union" (S&P 2015): TLS状态机缺陷模板。
-- TLS-Attacker (USENIX 2017): 协议Fuzzing框架。
+- "A Messy State of the Union": TLS状态机缺陷模板。
+- TLS-Attacker: 协议Fuzzing框架。
 """
 
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 class SecurityLevel(Enum):
     """协议状态的安全等级——基于使用的密码学原语强度。"""
@@ -42,7 +40,6 @@ class SecurityLevel(Enum):
     LOW = 2        # TLS 1.0 / RSA key exchange / CBC
     WEAK = 1       # SSLv3 / NULL cipher / EXPORT
     UNKNOWN = 0
-
 
 @dataclass
 class ProtoState:
@@ -53,7 +50,6 @@ class ProtoState:
     crypto_params: Dict[str, str] = field(default_factory=dict)
     # {cipher_suite, key_exchange, auth_method, protocol_version, ...}
 
-
 @dataclass
 class StateTransition:
     """状态机中的一条转移。"""
@@ -62,7 +58,6 @@ class StateTransition:
     trigger: str           # 触发该转移的API调用/协议消息
     is_authenticated: bool  # 该转移是否受密码学验证保护
     auth_binding: str = ""  # 若受保护，保护它的密码学操作
-
 
 @dataclass
 class DowngradePath:
@@ -74,7 +69,6 @@ class DowngradePath:
     exploitability: float    # [0, 1] 可 exploiting性评分
     unprotected_edges: List[StateTransition]
     description: str = ""
-
 
 class DowngradePathFinder:
     """协议降级攻击路径自动发现器。
@@ -105,9 +99,7 @@ class DowngradePathFinder:
         # 每个状态的出边索引
         self._outgoing: Dict[str, List[StateTransition]] = defaultdict(list)
 
-    # -----------------------------------------------------------------
     # 公开 API
-    # -----------------------------------------------------------------
 
     def load_state_machine(
         self,
@@ -212,9 +204,7 @@ class DowngradePathFinder:
             ),
         }
 
-    # -----------------------------------------------------------------
     # 内部 — DFS 降级路径搜索
-    # -----------------------------------------------------------------
 
     def _dfs_downgrade(
         self,
@@ -295,8 +285,7 @@ class DowngradePathFinder:
                 _seen[_key] = _p
         return list(_seen.values())
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     # 构造一个简化的TLS状态机
     _states = [
@@ -351,7 +340,6 @@ def _smoke_test():
     )
 
     print("[OK] DowngradePathFinder smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

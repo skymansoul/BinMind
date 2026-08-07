@@ -37,9 +37,7 @@ from .state_merge_lsh import (
 )
 
 
-# ---------------------------------------------------------------------------
 # 合并候选评估
-# ---------------------------------------------------------------------------
 
 @dataclass
 class MergeCandidate:
@@ -206,7 +204,7 @@ class StateMergeOracle:
         self._fingerprints.pop(absorbed_id, None)
         self._callstack_cache.pop(absorbed_id, None)
 
-    # ---- 内部方法 ----
+# 内部方法
 
     def _select_density(self, n_states: int) -> Tuple[float, float]:
         """根据状态池大小选择合并密度"""

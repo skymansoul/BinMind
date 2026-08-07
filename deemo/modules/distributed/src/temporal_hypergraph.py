@@ -20,7 +20,7 @@ from typing import Optional, List, Dict, Set, Tuple
 from .grl_graph import TaskDependencyGraph
 
 
-# ---- 时序超图数据结构 ----
+# 时序超图数据结构
 
 class TemporalHypergraph:
     """时序超图 — 按时间窗口组织的超边集合。
@@ -167,7 +167,7 @@ class TemporalHypergraph:
         return thg
 
 
-# ---- 时序超图卷积 ----
+# 时序超图卷积
 
 class TemporalHypergraphConv:
     """时序超图卷积网络 — 无外部框架依赖的纯 Python 实现。
@@ -215,7 +215,7 @@ class TemporalHypergraphConv:
             return {}
 
         dim = self.dim
-        # Step 1: 超边嵌入 = 成员节点嵌入的均值
+        # 超边嵌入 = 成员节点嵌入的均值
         edge_emb: List[List[float]] = []
         for he in hyperedges:
             members = [node_emb[v] for v in he if v in node_emb]
@@ -230,7 +230,7 @@ class TemporalHypergraphConv:
                 avg[j] /= len(members)
             edge_emb.append(avg)
 
-        # Step 2: 按超边聚合更新节点
+        # 按超边聚合更新节点
         updated = {nid: list(emb) for nid, emb in node_emb.items()}
         for e_idx, he in enumerate(hyperedges):
             w = weights[e_idx] if e_idx < len(weights) else 1.0
@@ -311,7 +311,7 @@ class TemporalHypergraphConv:
         return [x / n for x in agg]
 
 
-# ---- 调度集成: 将超图嵌入注入 GRL 调度器 ----
+# 调度集成: 将超图嵌入注入 GRL 调度器
 
 def hypergraph_augmented_features(
     dag: TaskDependencyGraph,

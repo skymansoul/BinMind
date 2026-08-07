@@ -17,17 +17,17 @@
 #   3. 共享度评分: 对每对二进制计算 shared_fragment_ratio =
 #      |intersection(chunks)| / min(|chunks_a|, |chunks_b|).
 #      与整体 SimHash 相似度互补:
-#        - SimHash 高 + fragment 高 → 整体重复
-#        - SimHash 低 + fragment 中 → 部分代码复用 (库共享)
-#        - SimHash 低 + fragment 低 → 不相关
+# SimHash 高 + fragment 高 → 整体重复
+# SimHash 低 + fragment 中 → 部分代码复用 (库共享)
+# SimHash 低 + fragment 低 → 不相关
 #   4. 时间衰减索引: 每个 chunk→binary 映射带时间戳,
 #      超过 TTL 的旧映射自动过期, 防止已删除/已更新的二进制
 #      产生虚假匹配.
 #
 # 与现有工作:
-#   - BinDiff/Diaphora: 函数级一对一比对, 不支持语料级搜索.
-#   - 本方案: 片段级多对多搜索, O(1) 反向索引查询.
-#   - 无已知论文将 CDC+MinHash+反向索引用于跨二进制 clone 检测.
+# BinDiff/Diaphora: 函数级一对一比对, 不支持语料级搜索.
+# 本方案: 片段级多对多搜索, O(1) 反向索引查询.
+# 无已知论文将 CDC+MinHash+反向索引用于跨二进制 clone 检测.
 
 import hashlib
 import math

@@ -1,0 +1,8 @@
+{
+  "sample": "v18_guard_miss",
+  "cve": "GENERIC-grd",
+  "mode": "struct_idx",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "守卫 n<=100 仅钳制上限, 分配仅 50 个元素; n 取 51..100 时循环写越界"
+}

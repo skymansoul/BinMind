@@ -6,7 +6,7 @@ WebAssembly 二进制分析器
 - 模块/函数/表/内存/全局变量解析
 - 导入/导出段分析
 - 控制流平坦化检测（WASM 特有模式）
-- 基于 [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的跨领域分析框架
+- 基于 的跨领域分析框架
 
 WASM 格式参考：https://WebAssembly.github.io/spec/core/binary/
 """
@@ -184,7 +184,6 @@ class WASMAnalyzer:
     
     解析 WASM 二进制格式，提取结构化信息
     并进行安全性评估
-    参考 [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的跨领域框架
     """
 
     WASM_MAGIC = b'\x00asm'

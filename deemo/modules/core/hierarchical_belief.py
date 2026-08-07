@@ -16,9 +16,9 @@
     其中 τ² 是跨单元格的方差估计.
 
   与现有方案的区别:
-    - bayesianbandits 库 (2024) 用 sklearn Pipeline 共享 learner,
+    - bayesianbandits 库 用 sklearn Pipeline 共享 learner,
       但要求 arm 间同构特征空间 —— 我们的特征签名是异构的.
-    - Reddit 两阶段 bandit (2024) 用 DNN 提供冷启动先验,
+    - Reddit 两阶段 bandit 用 DNN 提供冷启动先验,
       但需要离线训练且不适合 <50 样本的场景.
     收缩估计器无需离线训练, 在线 O(1) 更新, 适合管道内嵌.
 

@@ -1,5 +1,5 @@
 # compat/ 子模块代理 — 差异分析入口，实现见 core/compat/diff_analysis.py
-# 参考: VulHawk (Luo et al., NDSS 2023) 跨指令集熵搜索;
+# VulHawk (Luo et al., NDSS 2023) 跨指令集熵搜索;
 # αDiff 跨版本二进制代码相似性; BinDiff 补丁前后对比策略。
 import os as _os, importlib.util as _iu
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'diff_analysis.py')

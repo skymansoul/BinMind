@@ -1,13 +1,13 @@
 # GRL-Sched 第二层: 动态图划分 (GraphPartitioner)
 #
 # 目标: 最小化割边 (通信代价) 同时维持负载均衡。
-# 基于多级划分框架 (Karypis & Kumar, SIAM J. Sci. Comput. 1998):
+# 基于多级划分框架:
 #   1. 初始划分 _layer_initial — 按层级 round-robin，层内并行、层间通信
 #   2. 细化 _kernighan_lin — Kernighan-Lin 局部交换降低割边，带平衡约束
 #   3. 在线重划分 repartition — 仅对受影响邻域重排，复用未变化节点的归属
 #
 # 边界条件:
-#   - n_partitions <= 1 或 节点数 < 分区数 时退化为平凡划分
+# n_partitions <= 1 或 节点数 < 分区数 时退化为平凡划分
 #   - node_loads 由外部注入 (如 NodeRegistry.get_available_nodes 的负载)，缺省按节点数均衡
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ class GraphPartitioner:
     def __init__(self, seed: Optional[int] = None) -> None:
         self._rng = random.Random(seed)
 
-    # ---- 主入口 ----
+# 主入口
 
     def partition(self, dag: TaskDependencyGraph, n_partitions: int,
                   node_loads: Optional[Dict[str, float]] = None,
@@ -121,7 +121,7 @@ class GraphPartitioner:
                                 loads=node_loads or {}, allowed_to_move=candidate)
         return Partition(refined, n_p)
 
-    # ---- 初始划分 ----
+# 初始划分
 
     def _trivial(self, dag: TaskDependencyGraph, n_p: int) -> Dict[str, int]:
         return {n: i % n_p for i, n in enumerate(dag.node_ids)}
@@ -156,7 +156,7 @@ class GraphPartitioner:
                 part_load[p] += loads.get(nid, 1.0)
         return assignments
 
-    # ---- Kernighan-Lin 细化 ----
+# Kernighan-Lin 细化
 
     def _kernighan_lin(self, dag: TaskDependencyGraph, assignments: Dict[str, int],
                        n_p: int, loads: Dict[str, float], max_passes: int) -> Dict[str, int]:
@@ -259,7 +259,7 @@ class GraphPartitioner:
                 delta -= e.comm_cost
         return delta
 
-    # ---- 评估 ----
+# 评估
 
     def _cut_weight(self, dag: TaskDependencyGraph, assignments: Dict[str, int]) -> float:
         """总割边权重 — 跨分区边的 comm_cost 之和，即通信总代价。"""

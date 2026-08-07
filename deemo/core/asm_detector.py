@@ -1,7 +1,7 @@
 """
 汇编级回退检测 — 不依赖反编译器，直接在 .text 段扫描漏洞特征。
 
-问题: 反编译器可能消除漏洞特征 (arXiv:2501.04183, Decompiling for
+问题: 反编译器可能消除漏洞特征 (, Decompiling for
 Constant-Time Analysis)。加壳/混淆后的二进制，Ghidra/IDA 反编译输出
 不可靠甚至完全失败。当前所有检测都依赖反编译伪代码——反编译失败时
 静默降级为无结果。
@@ -42,7 +42,6 @@ _DANGER_CALLS = {
     'free',                                          # UAF/double-free
     'system', 'popen',                               # 命令注入
 }
-
 
 def detect_from_assembly(
     binary_path: str,
@@ -87,7 +86,6 @@ def detect_from_assembly(
 
     return findings
 
-
 def _extract_text_section(binary_path: str) -> tuple[bytes | None, int]:
     """从 ELF 中提取 .text 段的内容和基址。"""
     try:
@@ -129,7 +127,6 @@ def _extract_text_section(binary_path: str) -> tuple[bytes | None, int]:
         _log.debug("ELF section extraction failed: %s", e)
     return None, 0
 
-
 def _detect_format_string_asm(
     instructions: list[tuple[int, str, str, str]],
     func_name: str | None,
@@ -158,7 +155,6 @@ def _detect_format_string_asm(
                 })
                 break
     return findings
-
 
 def _detect_stack_overflow_asm(
     instructions: list[tuple[int, str, str, str]],
@@ -203,7 +199,6 @@ def _detect_stack_overflow_asm(
                         pass
                 break
     return findings
-
 
 def _detect_uaf_asm(
     instructions: list[tuple[int, str, str, str]],
@@ -251,7 +246,6 @@ def _detect_uaf_asm(
                     })
                     break
     return findings
-
 
 def _capstone_group_name(insn) -> str:
     try:

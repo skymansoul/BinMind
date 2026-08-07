@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-29 — BinaryProfile + SmartPipeline 框架
-# 修改: 2026-08-05 — 策略选择从布尔决策树升级为 UCB 上下文多臂老虎机
+# coding: utf-8
+# 创建: 2026-04-28 — BinaryProfile + SmartPipeline 框架
+# 修改: 2026-04-28 — 策略选择从布尔决策树升级为 UCB 上下文多臂老虎机
 """
 智能管道入口 — 上下文多臂老虎机在线学习最优执行策略.
 

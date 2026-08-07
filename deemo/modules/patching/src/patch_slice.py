@@ -4,7 +4,7 @@
 
 """Patch Differential Slicing — 补丁影响范围的程序切片分析。
 
-程序切片 (program slicing, Weiser 1981) 从未被应用于二进制补丁分析。
+程序切片 从未被应用于二进制补丁分析。
 本模块填补此空白：以补丁修改的指令为切片准则 (slicing criterion)，
 计算补丁的全部影响半径。
 
@@ -76,7 +76,7 @@ class SliceReport:
         }
 
 
-# ── 数据依赖分析器 ────────────────────────────────────────────────
+# 数据依赖分析器
 
 class DefUseAnalyzer:
     """汇编级定义-使用链分析。
@@ -141,7 +141,7 @@ class DefUseAnalyzer:
         return defs, uses
 
 
-# ── 切片引擎 ──────────────────────────────────────────────────────
+# 切片引擎
 
 class AssemblySlicer:
     """汇编级程序切片器。

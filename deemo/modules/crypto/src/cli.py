@@ -136,7 +136,7 @@ def format_json(obj, compact: bool = False) -> str:
                       default=str, separators=separators)
 
 
-# -- 命令处理函数 (与重构后模块保持向后兼容) --
+# 命令处理函数 (与重构后模块保持向后兼容)
 
 def cmd_detect(args):
     from .crypto_detector import CryptoDetector

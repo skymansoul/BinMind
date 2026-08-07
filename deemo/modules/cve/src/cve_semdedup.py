@@ -1,23 +1,23 @@
 # SemDedup: 语义嵌入跨源去重 + 非结构化信息不一致性发现
 #
 # 核心参考文献 (设计依据, 逐点对应到下方实现):
-#   [VuldiffFinder, Computers & Security 2025]
-#     -- 非结构化漏洞信息中的不一致性发现.
+#
+# 非结构化漏洞信息中的不一致性发现.
 #        SemDeduper.group 的 "CVE ID 精确一致必然同簇 / 无 ID 时
 #        描述语义相似度 + 受影响包键值交集" 合并策略, 以及
 #        FieldConflictDetector 的 CVSS/版本区间/CPE/日期逐字段对齐,
 #        均源自该文对跨源重复与冲突的建模.
-#   [CausalMoE-RAG, IJECS 2026, doi:10.1016/j.ijecs.2026.05524]
-#     -- LLM+RAG+因果推理融合的漏洞知识图谱框架.
+#
+# LLM+RAG+因果推理融合的漏洞知识图谱框架.
 #        StructuredExtractor 采用其分层抽取思路: 规则匹配为主,
 #        LLM语义理解为兜底, 将自然语言描述映射为结构化字段.
-#   [Gao et al. 2023, USENIX Security] 软件供应链安全综述
-#     -- 跨源漏洞数据融合的方法论基础.
+# 软件供应链安全综述
+# 跨源漏洞数据融合的方法论基础.
 #        本文的可插拔嵌入后端设计参考其对多源异构数据处理的一般原则.
 #
 # 设计约束:
 #   - 全部为纯 Python 实现, 无 numpy/scikit-learn 硬依赖.
-#   - LLM/嵌入 API 均为可选: 未配置环境变量时静默降级为本地算法.
+# LLM/嵌入 API 均为可选: 未配置环境变量时静默降级为本地算法.
 #   - 版本比较复用 cve_matcher._compare_versions / coerce_version,
 #     版本区间嵌入复用 cve_causal_contrastive 的因果对比学习接口.
 
@@ -72,9 +72,7 @@ _LEGACY_THRESHOLD = 0.62
 _CVE_ID_RE = re.compile(r"CVE-\d{4}-\d{4,}", re.IGNORECASE)
 
 
-# =====================================================================
 # 通用文本/向量工具
-# =====================================================================
 
 def _norm_text(text: str) -> str:
     """折叠空白并小写 — 相似度比较前的标准归一."""
@@ -136,9 +134,7 @@ def _parse_date(date_str: Optional[str]) -> Optional[float]:
         return None
 
 
-# =====================================================================
 # 跨源统一记录
-# =====================================================================
 
 @dataclass
 class SourceRecord:
@@ -350,9 +346,7 @@ def _affected_name_keys(record: SourceRecord) -> Set[str]:
     return names
 
 
-# =====================================================================
 # 可插拔嵌入后端
-# =====================================================================
 
 class EmbeddingBackend:
     """嵌入后端抽象 — 统一 embed(text) -> Optional[稀疏向量].
@@ -507,9 +501,7 @@ def get_embedding_backend(kind: str = "auto",
     return CharNGramEmbeddingBackend()
 
 
-# =====================================================================
 # 合并实体与去重
-# =====================================================================
 
 @dataclass
 class MergedRecord:
@@ -760,9 +752,7 @@ def _union_ranges(range_lists: List[List[Dict[str, Any]]]) -> List[Dict[str, Any
     return result
 
 
-# =====================================================================
 # 字段级冲突标注
-# =====================================================================
 
 @dataclass
 class ConflictItem:
@@ -978,9 +968,7 @@ def _range_summary(ranges: List[Dict[str, Any]]) -> Optional[Dict[str, Optional[
     }
 
 
-# =====================================================================
 # 非结构化描述 -> 统一模式结构化抽取 (IntelEX 思路)
-# =====================================================================
 
 # 攻击向量关键词 -> 归一化 CVSS-AV 类别
 _ATTACK_VECTOR_KEYWORDS: List[Tuple[str, List[str]]] = [
@@ -1192,9 +1180,7 @@ def _looks_like_version(v: str) -> bool:
     return bool(_SEMVER_LIKE.match(v)) or bool(re.match(r"^\d{2}\.\d{2}$", v))
 
 
-# =====================================================================
 # 版本区间嵌入增强 (复用 cve_causal_contrastive 接口)
-# =====================================================================
 
 class VersionRangeEmbeddingEnhancer:
     """版本区间嵌入增强 — 对去重实体复用因果对比学习接口.
@@ -1371,9 +1357,7 @@ class VersionRangeEmbeddingEnhancer:
         return self._fitted
 
 
-# =====================================================================
 # 一站式流水线
-# =====================================================================
 
 class SemDedupPipeline:
     """SemDedup 完整流水线: 去重 -> 冲突检测 -> 结构化抽取 -> 区间嵌入增强.

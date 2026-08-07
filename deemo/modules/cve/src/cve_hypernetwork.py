@@ -1,5 +1,5 @@
-# 创建: 2026-07-30 13:47
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-13 13:47
+# 修改: 2026-05-13 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 超网络CWE→评分参数生成
 # 超网络 — 从CWE/厂商元数据生成CVE评分模型权重
 #
@@ -16,14 +16,14 @@
 #
 # 超网络的关键性质:
 #   1. 参数共享: 超网络本身跨所有CWE类型共享, 但每个CWE获得定制参数.
-#      类似MotherNet (ICLR 2025) 但面向安全领域.
+#      类似MotherNet 但面向安全领域.
 #   2. 零样本泛化: 给定未见CWE的描述嵌入, 超网络可直接生成合理参数.
 #      无需该CWE的任何训练样本.
 #   3. 快速适应: 新CWE出现时无需重训练, 仅需一次超网络前向传播.
 #
 # 与现有模块的关系:
-#   - MAMLCVEModel: 基于梯度的少样本适应, 需要内循环微调.
-#   - 超网络: 基于前向的参数生成, 零样本即可生成参数.
+# MAMLCVEModel: 基于梯度的少样本适应, 需要内循环微调.
+# 超网络: 基于前向的参数生成, 零样本即可生成参数.
 #   - CNP (cve_neural_process): 上下文调制预测, 非参数生成.
 #   三者互补: Hypernetwork生成参数, MAML微调参数, CNP绕过参数.
 #
@@ -36,10 +36,10 @@
 #   3. 层级参数生成: 先产生共享中间表示,
 #      再分支生成各层的权重/偏置, 减少参数量.
 #
-# 参考:
-#   [Ha et al. 2017] HyperNetworks (ICLR)
-#   [MotherNet 2025] Fast Training via Hyper-Network Transformers (ICLR)
-#   [UHN 2026] Universal Hypernetworks for Arbitrary Models (arXiv:2604.02215)
+#
+# HyperNetworks (ICLR)
+# Fast Training via Hyper-Network Transformers (ICLR)
+# Universal Hypernetworks for Arbitrary Models
 
 import math
 import random
@@ -267,7 +267,7 @@ class HypernetworkCVEScorer:
         return self._trained
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_hypernetwork_from_kb(kb, epochs: int = 60
                                ) -> HypernetworkCVEScorer:

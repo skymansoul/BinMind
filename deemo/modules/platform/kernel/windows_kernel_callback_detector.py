@@ -39,7 +39,7 @@ class CallbackType:
     DMA_GUARD = "dma_guard"
     DMA_ATTACK = "dma_attack_indicator"
 
-# ─── MITRE ATT&CK 技术映射 ───
+# MITRE ATT&CK 技术映射
 # 每个回调类型对应的 ATT&CK (sub-)technique ID(s)
 CALLBACK_ATTACK_MAPPING = {
     "process_notify": ["T1057", "T1543.003"],

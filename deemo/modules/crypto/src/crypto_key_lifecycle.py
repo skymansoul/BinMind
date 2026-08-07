@@ -23,10 +23,9 @@
     3. 密钥销毁点: 识别explicit_bzero/SecureZeroMemory/OPENSSL_cleanse调用。
     4. 泄漏路径: 密钥使用后/销毁前的memcpy/sprintf/内存共享序列→潜在的意外导出。
 
-参考:
-  - GnuZero (DSN 2025): 编译器级零化检测 — 可检测优化消除的memset;
+  - GnuZero: 编译器级零化检测 — 可检测优化消除的memset;
     本项目在二进制层面补充"泄漏路径"和"生命周期完整性"维度。
-  - FIPS 140-3 IG 2.4 (2022): 密钥管理生命周期要求 — zeroization强制要求。
+  - FIPS 140-3 IG 2.4: 密钥管理生命周期要求 — zeroization强制要求。
   - CWE-226/244: 敏感信息清理缺陷 — 本模块输出可映射到CWE分类。
 
 边界条件:
@@ -40,7 +39,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-
 class KeyLifecyclePhase(Enum):
     GENERATION = 0
     DERIVATION = 1      # HKDF/PBKDF2等密钥派生
@@ -50,14 +48,12 @@ class KeyLifecyclePhase(Enum):
     ZEROIZED = 5         # 显式清零
     LEAKED = 6           # 可能泄漏(日志/memcpy/core dump)
 
-
 @dataclass
 class KeyLifecycleEvent:
     phase: KeyLifecyclePhase
     location: int = 0
     evidence: str = ""
     confidence: float = 0.0
-
 
 @dataclass
 class KeyLifecycleReport:
@@ -70,8 +66,7 @@ class KeyLifecycleReport:
     risk_level: str = "LOW"
     details: List[str] = field(default_factory=list)
 
-
-# ── 密钥生成API模式 ──
+# 密钥生成API模式
 _KEYGEN_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'RAND_bytes', 'OpenSSL RAND_bytes', 0.88),
     (b'RAND_priv_bytes', 'OpenSSL private RAND', 0.90),
@@ -86,7 +81,7 @@ _KEYGEN_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'genkey', 'generic keygen', 0.65),
 ]
 
-# ── 密钥销毁API模式 ──
+# 密钥销毁API模式
 _ZEROIZE_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'explicit_bzero', 'explicit_bzero', 0.95),
     (b'explicit_memset', 'explicit_memset', 0.95),
@@ -100,7 +95,7 @@ _ZEROIZE_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'burn', 'burn/key cleanup', 0.60),
 ]
 
-# ── 密钥泄漏风险模式 ──
+# 密钥泄漏风险模式
 _LEAK_RISK_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'memcpy', 'memcpy near key buffer', 0.55),
     (b'sprintf', 'sprintf near key buffer', 0.70),
@@ -114,7 +109,6 @@ _LEAK_RISK_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'log_', 'logging', 0.60),
     (b'dump_', 'memory dump', 0.75),
 ]
-
 
 def _detect_key_generation(data: bytes, anchor: int, window: int = 512
                            ) -> List[KeyLifecycleEvent]:
@@ -130,7 +124,6 @@ def _detect_key_generation(data: bytes, anchor: int, window: int = 512
                 location=start + pos, evidence=desc, confidence=conf))
     return events
 
-
 def _detect_zeroization(data: bytes, anchor: int, window: int = 1024
                         ) -> List[KeyLifecycleEvent]:
     """在密钥使用点之后检测显式清零。"""
@@ -144,7 +137,6 @@ def _detect_zeroization(data: bytes, anchor: int, window: int = 1024
                 phase=KeyLifecyclePhase.ZEROIZED,
                 location=start + pos, evidence=desc, confidence=conf))
     return events
-
 
 def _detect_leak_risks(data: bytes, anchor: int, window: int = 512
                        ) -> List[KeyLifecycleEvent]:
@@ -161,7 +153,6 @@ def _detect_leak_risks(data: bytes, anchor: int, window: int = 512
                     confidence=conf))
                 break
     return events[:8]  # 限制数量避免噪音
-
 
 def trace_key_lifecycle(data: bytes,
                         crypto_findings: Optional[List] = None

@@ -5,12 +5,11 @@
 2025-08-12 16:08 - 曲线对齐: DTW (动态时间规整) 消除时间缩放差异
 2025-08-13 08:37 - FPC 得分聚类: 按覆盖增长模式对 fuzzing 活动分组
 
-参考:
-  Ramsay & Silverman (2005) "Functional Data Analysis" 2nd ed.
+  Ramsay & Silverman "Functional Data Analysis" 2nd ed.
     — 第8章: FPCA, 第9章: 函数型线性模型
-  Yao, Müller & Wang (2005) "Functional Data Analysis for Sparse
+  Yao, Müller & Wang "Functional Data Analysis for Sparse
     Longitudinal Data" (JASA) — 稀疏FPCA (PACE方法)
-  Rice & Silverman (1991) "Estimating the Mean and Covariance Structure
+  Rice & Silverman "Estimating the Mean and Covariance Structure
     of Functional Data" (JRSS-B) — 平滑样条+FPCA
 
 在 fuzzing 文献中的位置:
@@ -32,11 +31,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ---- FPCA 参数 ----
+# FPCA 参数
 _N_GRID_POINTS = 64          # 公共网格点数
 _N_FPC_COMPONENTS = 4        # 保留的主成分数
-
 
 @dataclass
 class FPCAResult:
@@ -49,7 +46,6 @@ class FPCAResult:
     eigenfunctions: List[List[float]]  # φ_k(t)
     # 每条曲线的 FPC 得分
     fpc_scores: Dict[str, List[float]]  # curve_id → [ξ_1, ξ_2, ...]
-
 
 class FunctionalPCACoverage:
     """函数型 PCA 覆盖分析器.
@@ -92,14 +88,14 @@ class FunctionalPCACoverage:
         if n_curves < 2:
             return None
 
-        # 步骤1: 插值到公共网格
+        # 插值到公共网格
         self._curve_ids = list(self._curves.keys())
         grid_matrix = self._interpolate_to_grid()
 
         n = len(self._curve_ids)
         p = self.n_grid
 
-        # 步骤2: 中心化 (减去均值函数)
+        # 中心化 (减去均值函数)
         mean_func = [0.0] * p
         for i in range(n):
             for j in range(p):
@@ -107,7 +103,7 @@ class FunctionalPCACoverage:
         centered = [[grid_matrix[i][j] - mean_func[j] for j in range(p)]
                    for i in range(n)]
 
-        # 步骤3: 协方差算子 (p×p)
+        # 协方差算子 (p×p)
         # C(s,t) = (1/n) Σ (y_i(s)-μ(s))(y_i(t)-μ(t))
         cov = [[0.0] * p for _ in range(p)]
         for k in range(n):
@@ -115,10 +111,10 @@ class FunctionalPCACoverage:
                 for j in range(p):
                     cov[i][j] += centered[k][i] * centered[k][j] / n
 
-        # 步骤4: 特征分解 (幂迭代 + deflation)
+        # 特征分解 (幂迭代 + deflation)
         evals, evecs = self._power_iteration_deflation(cov)
 
-        # 步骤5: FPC 得分
+        # FPC 得分
         scores = {}
         for idx, curve_id in enumerate(self._curve_ids):
             xi = []

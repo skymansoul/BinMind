@@ -1,0 +1,301 @@
+sample,cve_id,ground_truth,tool,verdict,detections,elapsed_ms,success,error
+FMT-01-direct,,True,FMT-Existing,OVERFLOW,2,9.1,True,
+FMT-01-direct,,True,FOVF,OVERFLOW,1,13.2,True,
+FMT-01-direct,,True,Angr,ERROR,0,0,False,binary missing
+FMT-01-direct,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-01-direct,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-02-fprintf,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-02-fprintf,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-02-fprintf,,True,Angr,ERROR,0,0,False,binary missing
+FMT-02-fprintf,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-02-fprintf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-03-sprintf,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-03-sprintf,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-03-sprintf,,True,Angr,ERROR,0,0,False,binary missing
+FMT-03-sprintf,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-03-sprintf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-04-snprintf,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-04-snprintf,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-04-snprintf,,True,Angr,ERROR,0,0,False,binary missing
+FMT-04-snprintf,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-04-snprintf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-05-safe,,False,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-05-safe,,False,FOVF,SAFE,0,0.1,True,
+FMT-05-safe,,False,Angr,ERROR,0,0,False,binary missing
+FMT-05-safe,,False,Ghidra,ERROR,0,0,False,binary missing
+FMT-05-safe,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-06-partial,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-06-partial,,True,FOVF,OVERFLOW,1,1.4,True,
+FMT-06-partial,,True,Angr,ERROR,0,0,False,binary missing
+FMT-06-partial,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-06-partial,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-07-syslog,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-07-syslog,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-07-syslog,,True,Angr,ERROR,0,0,False,binary missing
+FMT-07-syslog,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-07-syslog,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-08,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-08,,True,FOVF,OVERFLOW,1,0.3,True,
+FMT-08,,True,Angr,ERROR,0,0,False,binary missing
+FMT-08,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-08,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-09,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-09,,True,FOVF,OVERFLOW,1,0.2,True,
+FMT-09,,True,Angr,ERROR,0,0,False,binary missing
+FMT-09,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-09,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-10,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-10,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-10,,True,Angr,ERROR,0,0,False,binary missing
+FMT-10,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-10,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-11,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-11,,True,FOVF,OVERFLOW,1,0.3,True,
+FMT-11,,True,Angr,ERROR,0,0,False,binary missing
+FMT-11,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-11,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-12,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-12,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-12,,True,Angr,ERROR,0,0,False,binary missing
+FMT-12,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-12,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-13,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-13,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-13,,True,Angr,ERROR,0,0,False,binary missing
+FMT-13,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-13,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-14,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-14,,True,FOVF,OVERFLOW,1,0.1,True,
+FMT-14,,True,Angr,ERROR,0,0,False,binary missing
+FMT-14,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-14,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+FMT-15,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+FMT-15,,True,FOVF,OVERFLOW,2,0.1,True,
+FMT-15,,True,Angr,ERROR,0,0,False,binary missing
+FMT-15,,True,Ghidra,ERROR,0,0,False,binary missing
+FMT-15,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+fmt_direct,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+fmt_direct,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_direct,,True,Angr,OVERFLOW,12,1540.0,True,
+fmt_direct,,True,Ghidra,OVERFLOW,6,51.0,True,
+fmt_direct,,True,QEMU-Tracer,OVERFLOW,32,59.0,True,
+fmt_dprintf,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+fmt_dprintf,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_dprintf,,True,Angr,OVERFLOW,12,1730.0,True,
+fmt_dprintf,,True,Ghidra,OVERFLOW,6,78.0,True,
+fmt_dprintf,,True,QEMU-Tracer,OVERFLOW,32,60.0,True,
+fmt_fprintf,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_fprintf,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_fprintf,,True,Angr,OVERFLOW,12,1380.0,True,
+fmt_fprintf,,True,Ghidra,OVERFLOW,6,64.0,True,
+fmt_fprintf,,True,QEMU-Tracer,OVERFLOW,32,65.0,True,
+fmt_fprintf_file,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+fmt_fprintf_file,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_fprintf_file,,True,Angr,OVERFLOW,12,1570.0,True,
+fmt_fprintf_file,,True,Ghidra,OVERFLOW,6,61.0,True,
+fmt_fprintf_file,,True,QEMU-Tracer,OVERFLOW,32,62.0,True,
+fmt_indirect_title,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_indirect_title,,True,FOVF,OVERFLOW,1,0.6,True,
+fmt_indirect_title,,True,Angr,OVERFLOW,12,1310.0,True,
+fmt_indirect_title,,True,Ghidra,OVERFLOW,6,71.0,True,
+fmt_indirect_title,,True,QEMU-Tracer,OVERFLOW,34,71.0,True,
+fmt_recursive,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_recursive,,True,FOVF,OVERFLOW,1,0.3,True,
+fmt_recursive,,True,Angr,OVERFLOW,12,1680.0,True,
+fmt_recursive,,True,Ghidra,OVERFLOW,6,57.0,True,
+fmt_recursive,,True,QEMU-Tracer,OVERFLOW,32,59.0,True,
+fmt_snprintf_leak,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+fmt_snprintf_leak,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_snprintf_leak,,True,Angr,OVERFLOW,12,1390.0,True,
+fmt_snprintf_leak,,True,Ghidra,OVERFLOW,6,71.0,True,
+fmt_snprintf_leak,,True,QEMU-Tracer,OVERFLOW,33,58.0,True,
+fmt_snprintf_ret,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_snprintf_ret,,True,FOVF,OVERFLOW,2,0.1,True,
+fmt_snprintf_ret,,True,Angr,OVERFLOW,12,1810.0,True,
+fmt_snprintf_ret,,True,Ghidra,OVERFLOW,6,73.0,True,
+fmt_snprintf_ret,,True,QEMU-Tracer,OVERFLOW,34,67.0,True,
+fmt_sprintf_chain,,True,FMT-Existing,OVERFLOW,2,0.1,True,
+fmt_sprintf_chain,,True,FOVF,OVERFLOW,1,0.1,True,
+fmt_sprintf_chain,,True,Angr,OVERFLOW,12,1570.0,True,
+fmt_sprintf_chain,,True,Ghidra,OVERFLOW,7,59.0,True,
+fmt_sprintf_chain,,True,QEMU-Tracer,OVERFLOW,33,60.0,True,
+fmt_syslog,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_syslog,,True,FOVF,OVERFLOW,1,0.2,True,
+fmt_syslog,,True,Angr,OVERFLOW,12,1690.0,True,
+fmt_syslog,,True,Ghidra,OVERFLOW,6,75.0,True,
+fmt_syslog,,True,QEMU-Tracer,OVERFLOW,32,85.0,True,
+fmt_syslog_indirect,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_syslog_indirect,,True,FOVF,OVERFLOW,1,0.7,True,
+fmt_syslog_indirect,,True,Angr,OVERFLOW,12,1460.0,True,
+fmt_syslog_indirect,,True,Ghidra,OVERFLOW,6,74.0,True,
+fmt_syslog_indirect,,True,QEMU-Tracer,OVERFLOW,34,74.0,True,
+fmt_vprintf,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_vprintf,,True,FOVF,OVERFLOW,1,0.3,True,
+fmt_vprintf,,True,Angr,OVERFLOW,12,1740.0,True,
+fmt_vprintf,,True,Ghidra,OVERFLOW,6,61.0,True,
+fmt_vprintf,,True,QEMU-Tracer,OVERFLOW,32,69.0,True,
+fmt_vsnprintf,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_vsnprintf,,True,FOVF,OVERFLOW,2,0.5,True,
+fmt_vsnprintf,,True,Angr,OVERFLOW,12,1450.0,True,
+fmt_vsnprintf,,True,Ghidra,OVERFLOW,6,57.0,True,
+fmt_vsnprintf,,True,QEMU-Tracer,OVERFLOW,34,69.0,True,
+fmt_wide_char,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_wide_char,,True,FOVF,OVERFLOW,2,0.2,True,
+fmt_wide_char,,True,Angr,OVERFLOW,12,1670.0,True,
+fmt_wide_char,,True,Ghidra,OVERFLOW,6,89.0,True,
+fmt_wide_char,,True,QEMU-Tracer,OVERFLOW,34,60.0,True,
+fmt_wrapper,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+fmt_wrapper,,True,FOVF,OVERFLOW,1,0.2,True,
+fmt_wrapper,,True,Angr,OVERFLOW,12,1390.0,True,
+fmt_wrapper,,True,Ghidra,OVERFLOW,6,64.0,True,
+fmt_wrapper,,True,QEMU-Tracer,OVERFLOW,32,57.0,True,
+CVE-2015-8612_fmt_bt,CVE-2015-8612,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2015-8612_fmt_bt,CVE-2015-8612,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2015-8612_fmt_bt,CVE-2015-8612,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2015-8612_fmt_bt\vuln.  Perhaps try t
+CVE-2015-8612_fmt_bt,CVE-2015-8612,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2015-8612_fmt_bt,CVE-2015-8612,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2016-9840_fmt_zlib,CVE-2016-9840,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2016-9840_fmt_zlib,CVE-2016-9840,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2016-9840_fmt_zlib,CVE-2016-9840,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2016-9840_fmt_zlib\vuln.  Perhaps try
+CVE-2016-9840_fmt_zlib,CVE-2016-9840,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2016-9840_fmt_zlib,CVE-2016-9840,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2017-1000369_fmt_exim,CVE-2017-1000369,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2017-1000369_fmt_exim,CVE-2017-1000369,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2017-1000369_fmt_exim,CVE-2017-1000369,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2017-1000369_fmt_exim\vuln.  Perhaps 
+CVE-2017-1000369_fmt_exim,CVE-2017-1000369,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2017-1000369_fmt_exim,CVE-2017-1000369,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2018-11529_fmt_vlc,CVE-2018-11529,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2018-11529_fmt_vlc,CVE-2018-11529,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2018-11529_fmt_vlc,CVE-2018-11529,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2018-11529_fmt_vlc\vuln.  Perhaps try
+CVE-2018-11529_fmt_vlc,CVE-2018-11529,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2018-11529_fmt_vlc,CVE-2018-11529,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2019-12817_fmt_ppc,CVE-2019-12817,True,FMT-Existing,OVERFLOW,2,0.2,True,
+CVE-2019-12817_fmt_ppc,CVE-2019-12817,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2019-12817_fmt_ppc,CVE-2019-12817,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2019-12817_fmt_ppc\vuln.  Perhaps try
+CVE-2019-12817_fmt_ppc,CVE-2019-12817,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2019-12817_fmt_ppc,CVE-2019-12817,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2019-19043_fmt_iwl,CVE-2019-19043,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2019-19043_fmt_iwl,CVE-2019-19043,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2019-19043_fmt_iwl,CVE-2019-19043,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2019-19043_fmt_iwl\vuln.  Perhaps try
+CVE-2019-19043_fmt_iwl,CVE-2019-19043,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2019-19043_fmt_iwl,CVE-2019-19043,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2020-10757_fmt_fuse,CVE-2020-10757,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2020-10757_fmt_fuse,CVE-2020-10757,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2020-10757_fmt_fuse,CVE-2020-10757,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2020-10757_fmt_fuse\vuln.  Perhaps tr
+CVE-2020-10757_fmt_fuse,CVE-2020-10757,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2020-10757_fmt_fuse,CVE-2020-10757,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2020-25656_fmt_vt,CVE-2020-25656,True,FMT-Existing,OVERFLOW,2,0.2,True,
+CVE-2020-25656_fmt_vt,CVE-2020-25656,True,FOVF,OVERFLOW,1,0.3,True,
+CVE-2020-25656_fmt_vt,CVE-2020-25656,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2020-25656_fmt_vt\vuln.  Perhaps try 
+CVE-2020-25656_fmt_vt,CVE-2020-25656,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2020-25656_fmt_vt,CVE-2020-25656,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2021-20226_fmt_io,CVE-2021-20226,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2021-20226_fmt_io,CVE-2021-20226,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2021-20226_fmt_io,CVE-2021-20226,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2021-20226_fmt_io\vuln.  Perhaps try 
+CVE-2021-20226_fmt_io,CVE-2021-20226,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2021-20226_fmt_io,CVE-2021-20226,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2021-33034_fmt_usb,CVE-2021-33034,True,FMT-Existing,OVERFLOW,2,0.2,True,
+CVE-2021-33034_fmt_usb,CVE-2021-33034,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2021-33034_fmt_usb,CVE-2021-33034,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2021-33034_fmt_usb\vuln.  Perhaps try
+CVE-2021-33034_fmt_usb,CVE-2021-33034,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2021-33034_fmt_usb,CVE-2021-33034,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2022-0168_fmt_cifs,CVE-2022-0168,True,FMT-Existing,OVERFLOW,2,0.2,True,
+CVE-2022-0168_fmt_cifs,CVE-2022-0168,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2022-0168_fmt_cifs,CVE-2022-0168,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2022-0168_fmt_cifs\vuln.  Perhaps try
+CVE-2022-0168_fmt_cifs,CVE-2022-0168,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2022-0168_fmt_cifs,CVE-2022-0168,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2022-26490_fmt_ntfs,CVE-2022-26490,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2022-26490_fmt_ntfs,CVE-2022-26490,True,FOVF,OVERFLOW,3,0.4,True,
+CVE-2022-26490_fmt_ntfs,CVE-2022-26490,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2022-26490_fmt_ntfs\vuln.  Perhaps tr
+CVE-2022-26490_fmt_ntfs,CVE-2022-26490,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2022-26490_fmt_ntfs,CVE-2022-26490,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2022-32250_fmt_nf,CVE-2022-32250,True,FMT-Existing,OVERFLOW,2,0.2,True,
+CVE-2022-32250_fmt_nf,CVE-2022-32250,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2022-32250_fmt_nf,CVE-2022-32250,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2022-32250_fmt_nf\vuln.  Perhaps try 
+CVE-2022-32250_fmt_nf,CVE-2022-32250,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2022-32250_fmt_nf,CVE-2022-32250,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2023-27114_fmt_r2,CVE-2023-27114,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2023-27114_fmt_r2,CVE-2023-27114,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2023-27114_fmt_r2,CVE-2023-27114,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2023-27114_fmt_r2\vuln.  Perhaps try 
+CVE-2023-27114_fmt_r2,CVE-2023-27114,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2023-27114_fmt_r2,CVE-2023-27114,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+CVE-2023-34029_fmt_kvm,CVE-2023-34029,True,FMT-Existing,OVERFLOW,2,0.1,True,
+CVE-2023-34029_fmt_kvm,CVE-2023-34029,True,FOVF,OVERFLOW,1,0.2,True,
+CVE-2023-34029_fmt_kvm,CVE-2023-34029,True,Angr,ERROR,0,0,False,Unable to find a loader backend for C:\Users\Administrator\Desktop\BinMind\deemo\tests\format_string_samples\CVE-2023-34029_fmt_kvm\vuln.  Perhaps try
+CVE-2023-34029_fmt_kvm,CVE-2023-34029,True,Ghidra,ERROR,0,0,False,objdump exit 1
+CVE-2023-34029_fmt_kvm,CVE-2023-34029,True,QEMU-Tracer,SAFE,0,0,False,objdump exit 1
+sample_fmt_01,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_01,,True,FOVF,OVERFLOW,1,0.3,True,
+sample_fmt_01,,True,Angr,OVERFLOW,12,1690.0,True,
+sample_fmt_01,,True,Ghidra,OVERFLOW,7,63.0,True,
+sample_fmt_01,,True,QEMU-Tracer,OVERFLOW,33,74.0,True,
+sample_fmt_02,,False,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_02,,False,FOVF,SAFE,0,0.1,True,
+sample_fmt_02,,False,Angr,OVERFLOW,12,1380.0,True,
+sample_fmt_02,,False,Ghidra,OVERFLOW,7,64.0,True,
+sample_fmt_02,,False,QEMU-Tracer,OVERFLOW,33,68.0,True,
+sample_fmt_03,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_03,,True,FOVF,OVERFLOW,1,0.2,True,
+sample_fmt_03,,True,Angr,OVERFLOW,12,1710.0,True,
+sample_fmt_03,,True,Ghidra,OVERFLOW,8,59.0,True,
+sample_fmt_03,,True,QEMU-Tracer,OVERFLOW,33,71.0,True,
+sample_fmt_04,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_04,,True,FOVF,OVERFLOW,1,0.3,True,
+sample_fmt_04,,True,Angr,OVERFLOW,12,1420.0,True,
+sample_fmt_04,,True,Ghidra,OVERFLOW,7,58.0,True,
+sample_fmt_04,,True,QEMU-Tracer,OVERFLOW,33,58.0,True,
+sample_fmt_05,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_05,,True,FOVF,OVERFLOW,1,0.3,True,
+sample_fmt_05,,True,Angr,ERROR,0,0,False,binary missing
+sample_fmt_05,,True,Ghidra,ERROR,0,0,False,binary missing
+sample_fmt_05,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+sample_fmt_06,,False,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_06,,False,FOVF,SAFE,0,0.2,True,
+sample_fmt_06,,False,Angr,OVERFLOW,12,1870.0,True,
+sample_fmt_06,,False,Ghidra,OVERFLOW,7,73.0,True,
+sample_fmt_06,,False,QEMU-Tracer,OVERFLOW,33,65.0,True,
+sample_fmt_07,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_07,,True,FOVF,OVERFLOW,1,0.2,True,
+sample_fmt_07,,True,Angr,OVERFLOW,12,1420.0,True,
+sample_fmt_07,,True,Ghidra,OVERFLOW,6,80.0,True,
+sample_fmt_07,,True,QEMU-Tracer,OVERFLOW,32,63.0,True,
+sample_fmt_08,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_08,,True,FOVF,OVERFLOW,1,0.2,True,
+sample_fmt_08,,True,Angr,OVERFLOW,12,1760.0,True,
+sample_fmt_08,,True,Ghidra,OVERFLOW,7,68.0,True,
+sample_fmt_08,,True,QEMU-Tracer,OVERFLOW,33,68.0,True,
+sample_fmt_09,,False,FMT-Existing,OVERFLOW,2,0.1,True,
+sample_fmt_09,,False,FOVF,SAFE,0,0.1,True,
+sample_fmt_09,,False,Angr,OVERFLOW,12,1370.0,True,
+sample_fmt_09,,False,Ghidra,OVERFLOW,6,61.0,True,
+sample_fmt_09,,False,QEMU-Tracer,OVERFLOW,32,54.0,True,
+sample_fmt_10,,True,FMT-Existing,OVERFLOW,2,0.3,True,
+sample_fmt_10,,True,FOVF,OVERFLOW,1,0.9,True,
+sample_fmt_10,,True,Angr,OVERFLOW,12,1690.0,True,
+sample_fmt_10,,True,Ghidra,OVERFLOW,7,76.0,True,
+sample_fmt_10,,True,QEMU-Tracer,OVERFLOW,35,66.0,True,
+sample_fmt_11,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_11,,True,FOVF,OVERFLOW,1,0.6,True,
+sample_fmt_11,,True,Angr,OVERFLOW,12,1470.0,True,
+sample_fmt_11,,True,Ghidra,OVERFLOW,6,56.0,True,
+sample_fmt_11,,True,QEMU-Tracer,OVERFLOW,32,55.0,True,
+sample_fmt_12,,True,FMT-Existing,OVERFLOW,2,0.2,True,
+sample_fmt_12,,True,FOVF,OVERFLOW,1,0.2,True,
+sample_fmt_12,,True,Angr,OVERFLOW,12,1740.0,True,
+sample_fmt_12,,True,Ghidra,OVERFLOW,7,70.0,True,
+sample_fmt_12,,True,QEMU-Tracer,OVERFLOW,33,76.0,True,
+sample_fmt_13,,True,FMT-Existing,OVERFLOW,2,0.4,True,
+sample_fmt_13,,True,FOVF,OVERFLOW,2,0.4,True,
+sample_fmt_13,,True,Angr,ERROR,0,0,False,binary missing
+sample_fmt_13,,True,Ghidra,ERROR,0,0,False,binary missing
+sample_fmt_13,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+sample_fmt_14,,True,FMT-Existing,OVERFLOW,2,0.3,True,
+sample_fmt_14,,True,FOVF,OVERFLOW,3,1.5,True,
+sample_fmt_14,,True,Angr,ERROR,0,0,False,binary missing
+sample_fmt_14,,True,Ghidra,ERROR,0,0,False,binary missing
+sample_fmt_14,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+sample_fmt_15,,True,FMT-Existing,OVERFLOW,2,0.4,True,
+sample_fmt_15,,True,FOVF,OVERFLOW,2,0.7,True,
+sample_fmt_15,,True,Angr,ERROR,0,0,False,binary missing
+sample_fmt_15,,True,Ghidra,ERROR,0,0,False,binary missing
+sample_fmt_15,,True,QEMU-Tracer,ERROR,0,0,False,binary missing

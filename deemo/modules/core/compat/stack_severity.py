@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """栈溢出严重度分级 — canary 感知 + 溢出距离 + 写入目标加权.
 
 stack_overflow_analyzer 做二元检测. 本模块做严重度分级:

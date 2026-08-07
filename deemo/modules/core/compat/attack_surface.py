@@ -1,4 +1,4 @@
-# 基于 Manadhata & Wing (2010) I/O 自动化评分模型
+# 基于 Manadhata & Wing I/O 自动化评分模型
 
 import os, struct, subprocess, math
 from dataclasses import dataclass, field
@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from enum import Enum, auto
 
 
-# ===== 枚举 =====
+# 枚举
 class AttackSurfaceType(Enum):
     FILE = "file_operation"
     NET = "network_interface"
@@ -29,7 +29,7 @@ class RiskLevel(Enum):
     CRITICAL = 4
 
 
-# ===== 数据类 =====
+# 数据类
 @dataclass
 class AttackSurfacePoint:
     name: str = ""
@@ -120,7 +120,7 @@ class AttackSurfaceResult:
     def binary_path(self, value): pass
 
 
-# ---- 本地化字符串表 ----
+# 本地化字符串表
 _T = {
     'en': {
         'target_file': 'target file',
@@ -313,7 +313,7 @@ def _check_fortify(binary_info: dict) -> bool:
     return binary_info.get('fortify', False)
 
 
-# ===== AttackSurfaceMapper =====
+# AttackSurfaceMapper
 class AttackSurfaceMapper:
     def __init__(self, binary_path: str = ""):
         self._path = binary_path

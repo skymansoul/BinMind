@@ -38,7 +38,7 @@ class WASMContractParser:
 		if self.magic_valid:
 			self._parse()
 
-	# ---- Section parsing ----
+# Section parsing
 
 	def _parse(self):
 		"""顺序解析WASM各section。"""
@@ -149,7 +149,7 @@ class WASMContractParser:
 				'kind': kind
 			})
 
-	# ---- LEB128 decoding ----
+# LEB128 decoding
 
 	def _read_varuint(self, offset: int, data: Optional[bytes] = None) -> Tuple[int, int]:
 		"""在data(默认self.data)的offset处解码无符号LEB128整数。
@@ -169,7 +169,7 @@ class WASMContractParser:
 			shift += 7
 		return result, length
 
-	# ---- Inspection methods ----
+# Inspection methods
 
 	def has_sensitive_imports(self) -> bool:
 		"""检查导入列表是否包含区块链宿主环境模块。"""
@@ -199,7 +199,6 @@ class WASMContractParser:
 
 
 # 不拆: 调试残余
-def _debug_print(*args, **kwargs):
 	"""条件调试输出 — BINMIND_DEBUG时打印。"""
 	import os
 	if os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes"):

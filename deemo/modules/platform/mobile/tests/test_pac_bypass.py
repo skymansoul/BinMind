@@ -40,14 +40,12 @@ _AUTH_BY_NAME = {v: k for k, v in AUTH_OPCODES.items()}
 _XPAC_BY_NAME = {v: k for k, v in XPAC_OPCODES.items()}
 
 
-# ============================================================================
 # 1. ARM64指令扫描
-# ============================================================================
 
 class TestARM64InstructionScanning:
     """验证_decode_arm64_insn正确识别PAC相关指令，对非PAC字返回空。"""
 
-    # --- PAC签名指令（各自唯一基址） ---
+# PAC签名指令（各自唯一基址）
 
     def test_pacia_decoding(self):
         word = struct.unpack('<I', _encode_insn(_PAC_BY_NAME['PACIA']))[0]
@@ -85,7 +83,7 @@ class TestARM64InstructionScanning:
         mnem, _ = _decode_arm64_insn(word)
         assert mnem == 'PACGA'
 
-    # --- AUTH认证指令 ---
+# AUTH认证指令
 
     def test_autia_decoding(self):
         word = struct.unpack('<I', _encode_insn(_AUTH_BY_NAME['AUTIA']))[0]
@@ -112,7 +110,7 @@ class TestARM64InstructionScanning:
         mnem, _ = _decode_arm64_insn(word)
         assert mnem == 'AUTDBSP'
 
-    # --- XPAC剥离指令 ---
+# XPAC剥离指令
 
     def test_xpacd_decoding(self):
         """XPACD (0xDAC147E0) 不与PAC/AUTH操作码冲突。"""
@@ -126,7 +124,7 @@ class TestARM64InstructionScanning:
         mnem, _ = _decode_arm64_insn(word)
         assert mnem == 'XPACLRI'
 
-    # --- 分支+认证指令 ---
+# 分支+认证指令
 
     def test_retaa_decoding(self):
         """RETAA被正确解码为分支认证指令。"""
@@ -139,7 +137,7 @@ class TestARM64InstructionScanning:
         mnem, _ = _decode_arm64_insn(word)
         assert mnem == 'RETAB'
 
-    # --- 阴性用例 ---
+# 阴性用例
 
     def test_unknown_insn_returns_empty(self):
         mnem, _ = _decode_arm64_insn(0xDEADBEEF)
@@ -158,9 +156,7 @@ class TestARM64InstructionScanning:
         assert mnem == ''
 
 
-# ============================================================================
 # 2. PAC操作码检测——完整二进制分析
-# ============================================================================
 
 class TestPACOpcodeDetection:
     """验证PACBypassAnalyzer正确分类二进制中的签名、认证、剥离和分支认证gadget。"""
@@ -274,9 +270,7 @@ class TestPACOpcodeDetection:
         assert len(result.signing_gadgets) >= 1
 
 
-# ============================================================================
 # 3. 熵评估——旁路难度判断
-# ============================================================================
 
 class TestEntropyEvaluation:
     """验证_entropy_assessment对不同签名/认证/剥离gadget比例生成正确的难度字符串。"""
@@ -324,9 +318,7 @@ class TestEntropyEvaluation:
         assert 'without verification' in ea.lower()
 
 
-# ============================================================================
 # 4. 密钥域统计
-# ============================================================================
 
 class TestKeyDomainStats:
     """验证密钥域（IA, IB, DA, DB）统计计算。"""
@@ -364,9 +356,7 @@ class TestKeyDomainStats:
         assert stats['IA']['asymmetry'] == 0.0
 
 
-# ============================================================================
 # 5. 快速扫描便捷函数
-# ============================================================================
 
 class TestQuickScan:
     """验证quick_scan便捷函数。"""
@@ -396,9 +386,7 @@ class TestQuickScan:
         assert result['signing'] == 2
 
 
-# ============================================================================
 # 6. 工厂函数
-# ============================================================================
 
 class TestFactory:
     """验证create_pac_bypass_analyzer工厂函数。"""
@@ -413,9 +401,7 @@ class TestFactory:
         assert a1 is not a2
 
 
-# ============================================================================
 # 7. 数据类完整性
-# ============================================================================
 
 class TestDataClasses:
     """验证PACGadget、PACLeak和AnalysisResult数据类字段。"""

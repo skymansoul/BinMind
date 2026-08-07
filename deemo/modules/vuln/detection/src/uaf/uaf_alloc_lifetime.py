@@ -1,11 +1,11 @@
 """UAF 分配生命周期分析 — malloc-free 配对 + 逃逸窗口检测.
 
-创建: 2025-08-05
+创建: 2026-05-25
 目的: uaf_candidate_scorer.py 的生命期间距评分仅用指令数/基本块计数做归一化，
       未考虑指针在 free 后到函数返回之间的"危险窗口"。本模块精确计算
       free(p) 到 p 的最后一次可达引用之间的指令数，若此窗口 > 阈值 → 高风险。
 
-方法依据: UAFL (USENIX Security 2024) 的 typestate 分析追踪对象状态转移,
+方法依据: UAFL 的 typestate 分析追踪对象状态转移,
           本模块在二进制 IR 层面做简化: 不构建完整 typestate, 仅追踪
           malloc→free→use 的时序关系。
 """

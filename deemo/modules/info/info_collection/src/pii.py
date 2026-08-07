@@ -1,6 +1,6 @@
 # pii — 18 类敏感数据扫描器
 # 三级过滤管线：regex 匹配 → 校验函数（Luhn/BIN/IBAN/base58）→ 上下文关键词
-# 参考 Microsoft Presidio 分层架构，二级校验降低误报
+# Microsoft Presidio 分层架构，二级校验降低误报
 
 import re
 import os
@@ -146,7 +146,7 @@ _GPS_PATTERN = re.compile(
     r'[-+]?\d{1,3}\.\d{4,}[\s,]+[-+]?\d{1,3}\.\d{4,}'
 )
 
-# ===== 校验函数 =====
+# 校验函数
 _BASE58_ALPHABET = set('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
 
 

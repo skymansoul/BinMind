@@ -81,7 +81,7 @@ class CoverageVisualization:
         }
 
 
-# ── 覆盖停滞检测结果 ────────────────────────────────────────────
+# 覆盖停滞检测结果
 
 @dataclass
 class StagnationReport:
@@ -103,7 +103,7 @@ class FuzzCoverageVisualizer:
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
 
-    # ── 解析覆盖数据 ────────────────────────────────────────────
+# 解析覆盖数据
 
     def parse_coverage_data(self, coverage_file: str) -> CoverageData:
         try:
@@ -132,7 +132,7 @@ class FuzzCoverageVisualizer:
                 covered_blocks=0,
                 coverage_rate=0.0)
 
-    # ── 热力图生成 ──────────────────────────────────────────────
+# 热力图生成
 
     def generate_heatmap(self, coverage_data: CoverageData) -> CoverageVisualization:
         heatmap_cells = []
@@ -171,7 +171,7 @@ class FuzzCoverageVisualizer:
         except Exception:  # 修复: bare except → Exception (hash fallback)
             return 0
 
-    # ── 导出 ─────────────────────────────────────────────────────
+# 导出
 
     def export_visualization_data(self, visualization: CoverageVisualization, output_file: str) -> bool:
         try:
@@ -190,7 +190,7 @@ class FuzzCoverageVisualizer:
         visualization = self.generate_heatmap(coverage_data)
         return visualization.to_dict()
 
-    # ── 多文件合并 ──────────────────────────────────────────────
+# 多文件合并
 
     def merge_multiple_coverage(self, coverage_files: List[str]) -> CoverageData:
         merged = CoverageData(
@@ -241,7 +241,7 @@ class FuzzCoverageVisualizer:
 
         return merged
 
-    # ── 趋势分析 ─────────────────────────────────────────────────
+# 趋势分析
 
     def analyze_coverage_trend(self, coverage_history: List[CoverageData]) -> List[Dict[str, Any]]:
         trend = []
@@ -257,7 +257,7 @@ class FuzzCoverageVisualizer:
 
         return trend
 
-    # ── 边覆盖率过渡矩阵 ─────────────────────────────────────────
+# 边覆盖率过渡矩阵
 
     def edge_transition_matrix(
         self, coverage: CoverageData,
@@ -290,7 +290,7 @@ class FuzzCoverageVisualizer:
             }
         }
 
-    # ── 差分覆盖分析 ─────────────────────────────────────────────
+# 差分覆盖分析
 
     def diff_coverage(
         self, baseline: CoverageData, current: CoverageData
@@ -322,7 +322,7 @@ class FuzzCoverageVisualizer:
             'current_timestamp': current.timestamp,
         }
 
-    # ── 覆盖停滞检测 ─────────────────────────────────────────────
+# 覆盖停滞检测
 
     def detect_stagnation(
         self, trend: List[Dict[str, Any]]
@@ -370,7 +370,7 @@ class FuzzCoverageVisualizer:
             suggestion=suggestion,
         )
 
-    # ── Flamegraph 折叠格式输出 ──────────────────────────────────
+# Flamegraph 折叠格式输出
 
     def export_flamegraph_collapsed(
         self, coverage: CoverageData, output_file: Optional[str] = None
@@ -395,7 +395,7 @@ class FuzzCoverageVisualizer:
                 f.write(output)
         return output
 
-    # ── 简易 HTML 报告 ───────────────────────────────────────────
+# 简易 HTML 报告
 
     def export_html_report(
         self, coverage: CoverageData, output_file: str = "coverage_report.html"
@@ -442,7 +442,7 @@ th {{ background:#f5f5f5; text-align:left; }}
         return out_path
 
 
-# ── 模块级便捷入口 ──────────────────────────────────────────────
+# 模块级便捷入口
 
 def generate_coverage_heatmap(binary_path: str, coverage_file: str) -> Dict[str, Any]:
     visualizer = FuzzCoverageVisualizer()

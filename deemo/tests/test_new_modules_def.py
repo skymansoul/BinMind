@@ -10,7 +10,7 @@ import tempfile
 import pytest
 
 
-# ---- test sample_manager ----
+# test sample_manager
 
 class TestSampleManager:
     """样本管理器单元测试。"""
@@ -111,7 +111,7 @@ class TestSampleManagerExport:
                     os.unlink(p)
 
 
-# ---- test experiment_tracker ----
+# test experiment_tracker
 
 class TestExperimentTracker:
     """实验追踪器单元测试。"""
@@ -180,7 +180,7 @@ class TestExperimentTracker:
         assert 'eval_test' not in report  # summary 不包含实验名
 
 
-# ---- test adaptive_scheduler ----
+# test adaptive_scheduler
 
 class TestAdaptiveScheduler:
     """自适应调度器单元测试。"""
@@ -242,7 +242,7 @@ class TestAdaptiveScheduler:
         assert r > r_fail  # 成功应比失败得分高
 
 
-# ---- test cfg_extractor ----
+# test cfg_extractor
 
 class TestCFGExtractor:
     """CFG 提取器单元测试。"""

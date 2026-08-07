@@ -1,11 +1,11 @@
 # 零熵区域优化 + 向量化 CDC 增强
-# 参考:
+#
 #   Al Jarah et al., "The Impact of Low-Entropy on Chunking Techniques for
-#     Data Deduplication" (IEEE CLOUD 2024): 零熵/低熵数据块对 CDC 算法
+#     Data Deduplication": 零熵/低熵数据块对 CDC 算法
 #     (Rabin, FastCDC, AE, RAM) 的性能损耗分析 —— 零熵区域导致 chunk
 #     边界检测失效，chunk 大小分布严重偏离预期。
 #   Al Jarah, "Exploiting Zero-Entropy Data for Efficient Deduplication"
-#     (Master's Thesis, 2025): ZERO 预处理 —— 在 CDC 之前扫描并提取
+#: ZERO 预处理 —— 在 CDC 之前扫描并提取
 #     零熵区域 → RLE 编码 → 剩余数据走标准 CDC → 空间节省上限 29%。
 #   VectorCDC 方向 (SIMD 加速 hashless CDC):
 #     使用向量指令加速 CDC, 吞吐量显著提升.
@@ -22,9 +22,7 @@
 
 from typing import List, Tuple, Optional, Iterator
 
-# ---------------------------------------------------------------------------
 # 零熵区域检测
-# ---------------------------------------------------------------------------
 
 def detect_zero_runs(data: bytes, min_run: int = 64,
                       target_byte: int = None) -> List[Tuple[int, int, int]]:
@@ -67,9 +65,7 @@ def zero_entropy_ratio(data: bytes, min_run: int = 64) -> float:
     return total_ze / max(len(data), 1)
 
 
-# ---------------------------------------------------------------------------
 # ZeroRegionExtractor — 零熵提取 + RLE 编码
-# ---------------------------------------------------------------------------
 
 class ZeroRegionExtractor:
     """从二进制数据中剥离零熵区域并做 RLE 编码压缩。
@@ -138,11 +134,9 @@ class ZeroRegionExtractor:
         }
 
 
-# ---------------------------------------------------------------------------
 # ZeroSkipCDC — 零熵跳过模式的 CDC
 # 在标准 gear hash CDC 基础上，检测到零熵区域时直接跳过，
 # 将整段零熵区域作为一个 chunk 或在区域边界强制切分。
-# ---------------------------------------------------------------------------
 
 def zero_skip_cdc(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
                   mask_bits: int = 12, zero_min_run: int = 64) -> List[bytes]:

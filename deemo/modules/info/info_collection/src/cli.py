@@ -59,7 +59,7 @@ def _get_pii():
     return pii
 
 
-# ===== 格式化 =====
+# 格式化
 def _format_json(obj, indent: int = 2) -> str:
     class _Encoder(json.JSONEncoder):
         def default(self, o):

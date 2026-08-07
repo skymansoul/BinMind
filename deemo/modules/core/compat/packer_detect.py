@@ -1,12 +1,12 @@
-# 参考: GUARD (Hwang et al., ACM SAC 2025) — 壳检测与模拟执行结合的 API 反混淆
-# 参考: VMPredator (Kim et al., arXiv:2605.30902, May 2026) —
+# GUARD — 壳检测与模拟执行结合的 API 反混淆
+# VMPredator —
 #       VMProtect/ Themida 等商业化混淆器的识别与自动解包
-# 参考: DeepVMUnProtect (IEEE TIFS 2025) — 神经网络在 VM 保护壳识别中的应用
+# DeepVMUnProtect — 神经网络在 VM 保护壳识别中的应用
 
 import struct as _struct
 import math as _math
 
-# ===== 壳特征签名库 =====
+# 壳特征签名库
 # 基于入口点字节模式、节名特征、导入表稀疏度的多维度检测
 # 每条签名: {name, ep_bytes, section_pattern, import_count_threshold, entropy_threshold}
 
@@ -86,7 +86,7 @@ _PACKER_SIGNATURES: list[dict] = [
 ]
 
 
-# ===== 检测引擎 =====
+# 检测引擎
 class PackerDetector:
     """多策略壳检测器。
     策略矩阵:
@@ -161,7 +161,7 @@ class PackerDetector:
                        'evidence': ['no signature matched']})
         return top
 
-    # ---- 辅助方法 ----
+# 辅助方法
     @staticmethod
     def _extract_sections(pe_data: bytes) -> list[str]:
         sections = []
@@ -232,7 +232,7 @@ class PackerDetector:
         return min(high_count, len(section_names)) if section_names else high_count
 
 
-# ===== 全局熵分析 =====
+# 全局熵分析
 def shannon_entropy(data: bytes) -> float:
     """字节级香农熵。值域 [0, 8] — 8 为完全均匀分布。
     此函数在 packer_detect 和 spectral_entropy 中均有引用。"""
@@ -245,9 +245,9 @@ def shannon_entropy(data: bytes) -> float:
     return -sum((f / n) * _math.log2(f / n) for f in freq if f > 0)
 
 
-# ===== 导入表完整性评估 =====
+# 导入表完整性评估
 # 壳常破坏或混淆 IAT — 导入函数数极少是典型信号
-# 参考: GUARD 的 sIAT (scattered Import Address Table) 检测算法
+# GUARD 的 sIAT (scattered Import Address Table) 检测算法
 
 def assess_iat_integrity(pe_data: bytes) -> dict:
     """评估 PE 导入表的完整性。
@@ -295,9 +295,9 @@ def _estimate_dll_count(pe_data: bytes) -> int:
     return count
 
 
-# --- 多层壳检测 (嵌套壳) ---
+# 多层壳检测 (嵌套壳)
 # 商业保护方案常使用多层壳 — Themida + VMProtect 或自定义壳 + UPX 外层
-# 参考: VMPredator 的三锚点检测法 — VM entry / exit / handler
+# VMPredator 的三锚点检测法 — VM entry / exit / handler
 
 def detect_nested_packer(pe_data: bytes) -> list[str]:
     """检测可能存在的嵌套壳。

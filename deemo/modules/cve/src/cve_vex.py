@@ -195,7 +195,7 @@ def export_vex_json(
     return output_path
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _get_justification_label(key: str) -> str:
     """将简短理由键映射到CycloneDX标签。"""
@@ -218,7 +218,7 @@ def _severity_recommendation(severity: str) -> str:
     return ""
 
 
-# ---- 为匹配结果标记VEX状态 ----
+# 为匹配结果标记VEX状态
 # 在运行build_sbom_report后调用以用人工VEX决策标注匹配项。
 
 def annotate_vex_status(
@@ -245,7 +245,7 @@ def annotate_vex_status(
     return matches
 
 
-# ---- 自动状态: 启发式VEX决策 ----
+# 自动状态: 启发式VEX决策
 # 当无人工决策时，基于严重度、EPSS评分和匹配置信度应用启发式规则
 
 def auto_vex_status(matches: List[Dict]) -> List[Dict]:

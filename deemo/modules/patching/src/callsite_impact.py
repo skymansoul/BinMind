@@ -100,7 +100,7 @@ class ImpactReport:
         }
 
 
-# ── 调用点扫描器 ──────────────────────────────────────────────────
+# 调用点扫描器
 
 class CallSiteScanner:
     """在汇编中识别 call 指令及其上下文。
@@ -190,7 +190,7 @@ class CallSiteScanner:
         return 0
 
 
-# ── 影响分析器 ────────────────────────────────────────────────────
+# 影响分析器
 
 class CallSiteImpactAnalyzer:
     """调用点影响分析器。
@@ -313,7 +313,7 @@ class CallSiteImpactAnalyzer:
         impact.impact_description = "调用点不受补丁影响"
         return impact
 
-    # ── 辅助分析 ──────────────────────────────────────────────────
+# 辅助分析
 
     @staticmethod
     def _callee_clobber_set(asm: List[str]) -> Set[str]:

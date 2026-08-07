@@ -1,14 +1,13 @@
 """
 寄存器级 VSA-Lite — Capstone 反汇编上的 stride-interval 值集分析。
 
-DEEPVSA (2024) 用分层 Bi-LSTM 增强 VSA, 需 160 万行执行轨迹训练。
+DEEPVSA 用分层 Bi-LSTM 增强 VSA, 需 160 万行执行轨迹训练。
 本模块做确定性 stride-interval 追踪: 每条 mov/lea 指令追踪寄存器值区间,
 跨基本块汇合取并集, 遇 call 保守置 ⊤。仅追踪 malloc 返回值和 memcpy 目标地址。
 
-参考: Balakrishnan & Reps (2004) "Analyzing Memory Accesses in x86 Executables"。
+参考: Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables"。
 """
 
-from __future__ import annotations
 
 import re
 import struct

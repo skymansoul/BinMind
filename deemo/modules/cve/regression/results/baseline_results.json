@@ -1,0 +1,242 @@
+[
+  {
+    "sample_id": "cve_2013_4788_android_media",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2013_4788_android_media",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 8
+  },
+  {
+    "sample_id": "cve_2015_0235_ghost",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2015_0235_ghost",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2016_10158_php_exif",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2016_10158_php_exif",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 28
+  },
+  {
+    "sample_id": "cve_2016_6301_ntpd",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2016_6301_ntpd",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 2
+  },
+  {
+    "sample_id": "cve_2017_1000112_linux_udp",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2017_1000112_linux_udp",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 2
+  },
+  {
+    "sample_id": "cve_2017_7269_iis_scstorage",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2017_7269_iis_scstorage",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 2
+  },
+  {
+    "sample_id": "cve_2018_1000001_curl_tftp",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2018_1000001_curl_tftp",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2018_14634_kernel_create_elf",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2018_14634_kernel_create_elf",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2019_1579_paloalto_gp",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2019_1579_paloalto_gp",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 28
+  },
+  {
+    "sample_id": "cve_2019_2215_binder_trans",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2019_2215_binder_trans",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 2
+  },
+  {
+    "sample_id": "cve_2019_3462_debian_apt",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2019_3462_debian_apt",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2020_0022_bt_l2cap",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2020_0022_bt_l2cap",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 12
+  },
+  {
+    "sample_id": "cve_2021_3156_sudo_baron",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2021_3156_sudo_baron",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2021_4034_polkit_pkexec",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2021_4034_polkit_pkexec",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2022_0185_fs_context",
+    "opt": "O0",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "cve_2022_0185_fs_context",
+    "opt": "O2",
+    "verdict": "TP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "safe_01_correlated",
+    "opt": "O0",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_01_correlated",
+    "opt": "O2",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_02_guarded",
+    "opt": "O0",
+    "verdict": "FP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "safe_02_guarded",
+    "opt": "O2",
+    "verdict": "FP",
+    "confirmed_count": 1
+  },
+  {
+    "sample_id": "safe_03_padding",
+    "opt": "O0",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_03_padding",
+    "opt": "O2",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_04_alloc_plus_one",
+    "opt": "O0",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_04_alloc_plus_one",
+    "opt": "O2",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_05_exact_constant",
+    "opt": "O0",
+    "verdict": "TN",
+    "confirmed_count": 0
+  },
+  {
+    "sample_id": "safe_05_exact_constant",
+    "opt": "O2",
+    "verdict": "TN",
+    "confirmed_count": 0
+  }
+]

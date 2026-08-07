@@ -7,10 +7,10 @@
 # DSF: Dempster-Shafer Fusion — 基于证据理论的多源 CVE 情报融合
 #
 # 核心参考文献:
-#   [Zhang, Zhang & Li 2025, Information Fusion, doi:10.1016/j.inffus.2024.102710]
+#
 #     大规模多源 DST 融合框架: BPA 构造、冲突解决、层次化融合.
 #     本文将其三层架构简化为: 源可靠性评估 → 质量函数构造 → Dempster 组合.
-#   [Saint-Christophe et al. 2024, EGC 2024]
+#
 #     融合系统对腐败源的脆弱性分析, 提出冲突作为检测度量的思想.
 #     本文将其冲突门控机制落地: 当 Dempster 组合的冲突系数 K > 0.7 时,
 #     自动降级为加权平均 (Yager 规则), 避免高冲突下的反直觉结果.
@@ -412,7 +412,7 @@ class DSFusionEngine:
         return self._fusion_count
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def fuse_cve_assessments(
     sources: Dict[str, Dict[str, Any]],

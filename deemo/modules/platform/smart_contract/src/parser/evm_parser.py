@@ -44,7 +44,7 @@ class EVMBytecodeParser:
         self._parsed = False
         self._cfg_built = False
 
-    # ---- Parsing ----
+# Parsing
 
     def parse_hex(self, hex_str: str) -> List[EVMOp]:
         """解析hex字符串（带或不带0x前缀）为指令序列。"""
@@ -89,7 +89,7 @@ class EVMBytecodeParser:
             return self._parse()
         return self.ops
 
-    # ---- Basic blocks ----
+# Basic blocks
 
     def build_basic_blocks(self) -> Dict[int, List[EVMOp]]:
         """按JUMPDEST边界将线性指令流切分为基本块。
@@ -200,7 +200,7 @@ class EVMBytecodeParser:
         blocks = self.build_basic_blocks()
         return sorted(blocks.items())
 
-    # ---- Function selectors ----
+# Function selectors
 
     def find_function_selectors(self) -> Dict[str, int]:
         """从Solidity dispatch模式提取4字节函数选择器。
@@ -233,7 +233,7 @@ class EVMBytecodeParser:
                 return a.pc
         return None
 
-    # ---- Utility methods ----
+# Utility methods
 
     def get_instructions(self) -> List[EVMOp]:
         """返回已解析的指令列表。"""

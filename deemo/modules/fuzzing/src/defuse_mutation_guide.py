@@ -1,5 +1,5 @@
-# 创建: 2025-08-13 10:08
-# 修改: 2025-08-13 — def-use 链重建 + Jaccard 聚类 + 约束引导变异
+# 创建: 2026-07-15 10:08
+# 修改: 2026-07-15 — def-use 链重建 + Jaccard 聚类 + 约束引导变异
 """
 约束感知的定值-使用链引导变异 — 二进制层 def-use 重建 + 约束求解驱动定向变异。
 
@@ -24,11 +24,11 @@
   - taint_debloat.py: 去冗余污点, 本模块的 def-use 分析在此基础上运行
   - constraint_predictor_nonlinear.py: 本模块的约束求解路径可选择调用
 
-ref: FuzzRDUCC (arXiv:2509.04967, 2025) — binary def-use chain coverage fuzzing,
+ref: FuzzRDUCC  — binary def-use chain coverage fuzzing,
      本模块在其"重建"基础上增加"约束引导赋值"阶段
-ref: Vuzzer (NDSS 2017) — 使用污点追踪+魔术字节检测引导变异,
+ref: Vuzzer  — 使用污点追踪+魔术字节检测引导变异,
      本模块的字节影响力归并受其启发但增加了聚类+约束求解
-ref: S2E (Chipounov et al., ASPLOS 2011) — 选择性符号执行,
+ref: S2E — 选择性符号执行,
      本模块的"仅符号化输入相关约束"策略与此一致
 """
 
@@ -40,8 +40,7 @@ from collections import defaultdict
 from typing import Any, Optional
 from dataclasses import dataclass, field
 
-
-# --- 数据结构 ---
+# 数据结构
 
 @dataclass
 class TaintRecord:
@@ -51,7 +50,6 @@ class TaintRecord:
     input_offsets: set[int]    # 影响此分支的输入字节偏移集合
     constraint_type: str = ''  # 'eq', 'neq', 'lt', 'gt', 'range'
 
-
 @dataclass
 class DefUseChain:
     """一条定值-使用链: 输入偏移 → 影响的 [分支地址列表]。"""
@@ -59,7 +57,6 @@ class DefUseChain:
     branch_addrs: list[int] = field(default_factory=list)
     influence_count: int = 0     # 总影响次数 (同一分支多次执行的计数)
     constraint_types: set[str] = field(default_factory=set)
-
 
 @dataclass
 class MutationCluster:
@@ -70,8 +67,7 @@ class MutationCluster:
     priority: float = 0.0         # 变异优先级 —— 越高越先变异
     suggested_values: list[int] = field(default_factory=list)  # 候选字节序列
 
-
-# --- 污点驱动的条件分支收集 ---
+# 污点驱动的条件分支收集
 
 class ConditionBranchCollector:
     """收集条件跳转的输入依赖关系 — 在动态执行期间被 fuzz harness 调用。
@@ -137,8 +133,7 @@ class ConditionBranchCollector:
     def record_count(self) -> int:
         return len(self._records)
 
-
-# --- 变异聚类器 ---
+# 变异聚类器
 # 将独立的输入字节按"影响的分支集相似度"聚合成变异区间。
 # 相似度度量: Jaccard 指数: |A ∩ B| / |A ∪ B|
 # 相邻字节 + Jaccard > 0.5 → 合并为同一聚类
@@ -151,7 +146,6 @@ def _jaccard(a: set, b: set) -> float:
     inter = len(a & b)
     union = len(a | b)
     return inter / union
-
 
 def cluster_defuse_chains(chains: list[DefUseChain],
                           merge_threshold: float = 0.5) -> list[MutationCluster]:
@@ -202,8 +196,7 @@ def cluster_defuse_chains(chains: list[DefUseChain],
     clusters.sort(key=lambda c: c.priority, reverse=True)
     return clusters
 
-
-# --- 字节翻转求解器 ---
+# 字节翻转求解器
 # 输入: 一个条件分支和影响它的输入字节区间
 # 输出: 建议翻转的字节值列表 (试探性 — 无完整符号执行时仅做启发式)
 
@@ -252,7 +245,6 @@ def _estimate_flip_value(branch_addr: int,
         suggestions.append(b ^ 0x01)
 
     return suggestions[:10]  # 限制输出数量
-
 
 class ConstraintGuidedMutator:
     """约束引导变异器 — 消费聚类结果, 生成目标导向的变异种子。
@@ -367,8 +359,7 @@ class ConstraintGuidedMutator:
         self._mutation_history.clear()
         self._collector.clear()
 
-
-# --- 端到端管线适配器 ---
+# 端到端管线适配器
 # 将收集→聚类→变异流程封装为单个函数, 方便在 fuzz harness 中调用。
 
 def defuse_guided_mutation_pipeline(
@@ -388,8 +379,7 @@ def defuse_guided_mutation_pipeline(
     mutator.prepare(seed)
     return mutator.generate_mutations(seed, max_mutants)
 
-
-# --- 分支覆盖率指纹 ---
+# 分支覆盖率指纹
 # 轻量级的"此分支是否已被覆盖"检查——用于快速判断变异是否触发了新路径。
 # 与 full edge coverage bitmap 不同, 仅追踪在执行中影响了条件跳转的分支。
 
@@ -426,7 +416,6 @@ class BranchCoverageFingerprint:
     def reset(self) -> None:
         self._bitmap = bytearray(256)
         self._hash_count = 0
-
 
 __all__ = [
     'ConditionBranchCollector', 'DefUseChain', 'MutationCluster',

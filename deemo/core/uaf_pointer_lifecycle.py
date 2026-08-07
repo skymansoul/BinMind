@@ -21,14 +21,11 @@
   不处理多线程并发UAF(需要happens-before分析, 纯静态无法精确捕获)
   间接调用(jump table/vtable)保守假设可能触发free
 
-参考:
   - Caballero et al., USENIX Security 2012, "Undangle: Early Detection of
     Dangling Pointers in Use-After-Free and Double-Free Vulnerabilities"
   - Gennissen & O'Keeffe, 2023, "HeapHop: Heap-use-after-free detection via
     dynamic points-to analysis"
 """
-
-from __future__ import annotations
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -41,7 +38,6 @@ class PtrState(Enum):
     FREED = 3
     DANGLING = 4  # UAF确认
 
-
 # 分配/释放/使用函数集
 _ALLOC_SET = {'malloc', 'calloc', 'realloc', 'memalign', 'aligned_alloc',
               'strdup', 'strndup', 'asprintf', 'vasprintf'}
@@ -51,7 +47,6 @@ _USE_SET = {'memcpy', 'memmove', 'strcpy', 'strncpy', 'strcat', 'strncat',
             'send', 'write', 'read', 'fread', 'fgets', 'gets'}
 # printf类函数格式串后的第一个参数也可能是指针的使用
 _PRINTF_LIKE = {'printf', 'fprintf', 'sprintf', 'snprintf'}
-
 
 def _extract_ptr_operations(pseudocode: str) -> List[Dict[str, Any]]:
     """从伪代码提取所有指针操作: alloc/free/use, 附带行号。"""
@@ -89,7 +84,6 @@ def _extract_ptr_operations(pseudocode: str) -> List[Dict[str, Any]]:
                 ops.append({'line': i, 'type': 'deref', 'func': 'operator',
                            'var': var, 'text': line.strip()[:120]})
     return sorted(ops, key=lambda o: o['line'])
-
 
 def analyze_pointer_lifecycle(pseudocode: str, func_name: str = "",
                               global_ptrs: Optional[Dict[str, PtrState]] = None
@@ -153,29 +147,31 @@ def analyze_pointer_lifecycle(pseudocode: str, func_name: str = "",
 
     return findings, states
 
-
 def inter_procedural_uaf_scan(
     func_pseudocodes: Dict[str, str],
     call_graph: Optional[Dict[str, List[str]]] = None,
 ) -> List[Dict[str, Any]]:
-    """跨函数UAF扫描 -- 在调用图中传播指针状态。
+    """跨函数UAF扫描 -- 在调用图中传播指针状态.
 
     func_pseudocodes: {func_name: pseudocode}
     call_graph: {caller: [callee, ...]}
 
     对每个函数独立分析, 收集全局指针(函数间传递的指针参数),
-    跨函数追踪其状态变化。
+    跨函数追踪其状态变化. 使用已访问集合防止循环调用导致无限传播.
     """
     all_findings = []
     global_states: Dict[str, PtrState] = {}
+    visited_funcs: Set[str] = set()
 
     for fname, pcode in func_pseudocodes.items():
+        if fname in visited_funcs:
+            continue
+        visited_funcs.add(fname)
         findings, final_states = analyze_pointer_lifecycle(
             pcode, fname, global_states)
         all_findings.extend(findings)
-        # 传播状态到调用者
         for var, state in final_states.items():
             if state in (PtrState.FREED, PtrState.DANGLING):
-                global_states[var] = state  # 跨函数保留危险状态
+                global_states[var] = state
 
     return sorted(all_findings, key=lambda f: -f['confidence'])

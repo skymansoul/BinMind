@@ -1,7 +1,7 @@
 """
 ML-QED-Lite 特征提取 — PQC 二进制检测的 27 维特征向量。
 
-参考: ML-QED-Lite (ePrint 2026/1419) Table 2 特征集，
+参考: ML-QED-Lite Table 2 特征集，
 联合函数符号 + 库依赖提供最佳 F1 分数。
 """
 
@@ -17,9 +17,7 @@ __all__ = [
     "_FEATURE_NAMES",
 ]
 
-# ============================================================================
 # 特征定义 — ML-QED-Lite Table 2
-# ============================================================================
 
 # 27 维: 符号特征 (0-9) + 库依赖 (10-19) + 二进制结构 (20-26)
 # 消融实验: 符号+依赖联合使用 → 最优 F1
@@ -105,10 +103,10 @@ def _extract_features(
     n_imported = len(imported_symbols)
     syms_lower = [s.lower() for s in imported_symbols]
 
-    # --- 0: 导入符号总数 ---
+# 0: 导入符号总数
     feats[0] = float(n_imported)
 
-    # --- 1-9: PQC/密码/内存符号计数 ---
+# 1-9: PQC/密码/内存符号计数
     pqc_keywords = [
         "kyber", "dilithium", "sphincs", "falcon", "ml-kem", "ml-dsa",
         "slh-dsa", "pqcrystals", "pqclean", "liboqs", "ntt_", "poly_",
@@ -130,7 +128,7 @@ def _extract_features(
     feats[8] = 1.0 if any("verify" in s or "open" in s for s in syms_lower) else 0.0
     feats[9] = 1.0 if any("consttime" in s or "ct_" in s or "secure_cmp" in s for s in syms_lower) else 0.0
 
-    # --- 10-19: 库依赖 (版本号 + 检测标志) ---
+# 10-19: 库依赖 (版本号 + 检测标志)
     libcrypto_ver = library_deps.get("libcrypto", "")
     ver_match = re.search(r"(\d+)\.(\d+)", libcrypto_ver) if libcrypto_ver else None
     feats[10] = float(int(ver_match.group(1))) if ver_match else 0.0
@@ -154,7 +152,7 @@ def _extract_features(
                 break
     feats[19] = 1.0 if unknown_hint else 0.0
 
-    # --- 20-26: 二进制结构 ---
+# 20-26: 二进制结构
     feats[20] = float(len(data).bit_length())  # log2(文件大小)
 
     # ELF section 计数

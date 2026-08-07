@@ -5,7 +5,7 @@
 
 vuln_chain_analyzer.py 使用静态BFS+调用图可达性——这是"固定地图导航"。
 实际漏洞利用受环境因素（ASLR/栈保护/libc版本）影响，路径可行性动态变化。
-Vulnet (NetSoft 2024) 证明了RL模拟→ML泛化的可行性。
+Vulnet 证明了RL模拟→ML泛化的可行性。
 
 本模块的核心机制——环境感知的Q-learning攻击路径发现：
 1. 状态 = (当前漏洞节点, 已获取原语, 环境配置)。
@@ -18,9 +18,8 @@ Vulnet (NetSoft 2024) 证明了RL模拟→ML泛化的可行性。
 - GAT-APG: 需要预建攻击图和GNN训练。本方案在线学习，无需预训练。
 - 粒度差: 网络级 vs 函数/原语级——本方案更细一个数量级。
 
-参考：
-- Terranova et al. (RAID 2024): POMDP攻击路径预测的公式化。
-- VulNet (NetSoft 2024): RL模拟→预测器的架构借鉴。
+- Terranova et al.: POMDP攻击路径预测的公式化。
+- VulNet: RL模拟→预测器的架构借鉴。
 """
 
 import math
@@ -30,7 +29,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 @dataclass
 class VulnState:
@@ -43,7 +41,6 @@ class VulnState:
         _prim_key = ",".join(sorted(self.acquired_primitives))
         return f"{self.current_node}|{_prim_key}"
 
-
 @dataclass
 class AttackAction:
     """RL动作——从当前漏洞跳到下一个漏洞。"""
@@ -51,7 +48,6 @@ class AttackAction:
     required_primitives: Set[str] = field(default_factory=set)
     success_prob: float = 0.5
     cost: float = 1.0
-
 
 @dataclass
 class VulnGraphEdge:
@@ -61,7 +57,6 @@ class VulnGraphEdge:
     edge_type: str
     distance: int = 1
     is_exploitable: bool = False
-
 
 class QLearningAttackPathFinder:
     """Q-learning驱动的攻击路径发现器。
@@ -101,9 +96,7 @@ class QLearningAttackPathFinder:
         self._episodes: int = 0
         self._total_reward: float = 0.0
 
-    # -----------------------------------------------------------------
     # 训练
-    # -----------------------------------------------------------------
 
     def train(self, episodes: int = 1000):
         """执行 Q-learning 训练循环。"""
@@ -200,9 +193,7 @@ class QLearningAttackPathFinder:
 
         return round(_prob, 4)
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _available_actions(self, state: VulnState) -> List[AttackAction]:
         """当前状态下可用的攻击动作。"""
@@ -267,8 +258,7 @@ class QLearningAttackPathFinder:
         _new_prims = next_state.acquired_primitives - state.acquired_primitives
         return len(_new_prims) * 0.5 - 0.1 * action.cost
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _nodes = [
         {"node_id": "v1", "vuln_type": "stack_overflow", "severity": "HIGH",
@@ -303,7 +293,6 @@ def _smoke_test():
 
     assert len(_path) >= 1, f"should find at least 1-step path"
     print("[OK] QLearningAttackPathFinder smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

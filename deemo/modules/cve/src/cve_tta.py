@@ -1,16 +1,16 @@
-# 创建: 2026-08-01 09:12
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-17 09:12
+# 修改: 2026-05-17 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 熵基漂移检测+安全门控TTA
 # 测试时自适应 — CVE评分模型的在线漂移适应
 #
 # 问题: CVE评分模型在训练后假设输入分布稳定. 但2024-2026年数据表明:
-#   - NVD在2026年4月停止全量富化 → 训练/测试分布断裂
-#   - CVE利用速度从56天→10小时 → 模型对新CVE的系统性低评分 (滞后偏)
-#   - EPSS模型每30天更新, 但新CVE类型 (AI/ML供应链) 不在训练分布中
+# NVD在2026年4月停止全量富化 → 训练/测试分布断裂
+# CVE利用速度从56天→10小时 → 模型对新CVE的系统性低评分 (滞后偏)
+# EPSS模型每30天更新, 但新CVE类型 (AI/ML供应链) 不在训练分布中
 # 这些问题导致模型在实际部署中性能持续退化, 传统方案需全量重训练.
 #
 # 解决方案: 测试时自适应 (Test-Time Adaptation, TTA).
-# 基于RaL-TTA (Guan & Ren 2026) 的思想, 适配到CVE评分领域:
+# 基于RaL-TTA 的思想, 适配到CVE评分领域:
 #   1. 在线漂移检测: 监控预测熵的滑动统计量,
 #      使用KS检验比较近期熵分布与校准基线.
 #   2. 安全门控 (SafeGate): 三级风险分类
@@ -31,10 +31,10 @@
 #   2. 双层级适应: 轻量BN更新 (LowRisk) vs 锚点回退 (HighRisk).
 #   3. 与共形预测的深度集成: TTA调整点估计, 共形提供区间保证.
 #
-# 参考:
-#   [Guan & Ren 2026] RaL-TTA: Risk-Aware Lightweight TTA for IIoT (F1=0.954)
-#   [Wang et al. 2021] TENT: Test-Time Entropy Minimization (ICLR)
-#   [NIST CSWP 41, 2025] 确认EPSS模型的滞后偏问题
+#
+# RaL-TTA: Risk-Aware Lightweight TTA for IIoT (F1=0.954)
+# TENT: Test-Time Entropy Minimization (ICLR)
+# 确认EPSS模型的滞后偏问题
 #   [检索确认] 2025-2026年零论文将TTA应用于CVE评分
 
 import math
@@ -270,7 +270,7 @@ class TestTimeAdapter:
         return self._detector
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_tta_scorer(scoring_fn, historical_scores: List[float]
                      ) -> TestTimeAdapter:

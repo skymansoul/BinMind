@@ -22,10 +22,9 @@
     形成可分离的聚类, 独立于具体ISA编码。AES-128在ARM Cortex-M和x86-64上编译后,
     其语义类分布向量的余弦相似度 > 0.92。
 
-参考:
-  - VexIR2Vec (FSE 2025): VEX-IR lifting实现架构无关嵌入; 本项目避开了重量级IR提升,
+  - VexIR2Vec: VEX-IR lifting实现架构无关嵌入; 本项目避开了重量级IR提升,
     直接在raw byte层面做操作码分类 — 精度稍低但无需反汇编框架依赖。
-  - GBsim (Entropy 2025): 将CFG基本块视为NLP句子序列做跨架构嵌入; 本项目聚焦于
+  - GBsim: 将CFG基本块视为NLP句子序列做跨架构嵌入; 本项目聚焦于
     密码学特有的紧凑循环结构, 用简化特征集换取可解释性。
 
 边界条件:
@@ -40,7 +39,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Set, Tuple
 
-# ── 操作码语义分类 ──
+# 操作码语义分类
 # 将不同ISA的原始opcode映射到12个抽象语义类。
 # 设计准则:
 #   1. 同类操作在密码学实现中具有相同的结构意义
@@ -133,17 +132,14 @@ _THUMB_OPCLASS: Dict[int, int] = {
 _REX_PREFIXES: Set[int] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
                             0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F}
 
-
 def _classify_opcode_x86(opcode_byte: int) -> int:
     """x86/x64单字节→语义类。0x0F双字节opcode单独处理。"""
     return _X86_OPCLASS.get(opcode_byte, OPCLASS_OTHER)
-
 
 def _classify_opcode_thumb2(halfword: int) -> int:
     """ARM Thumb-2 16-bit指令→语义类。仅用高5bit粗分。"""
     hi5 = (halfword >> 11) & 0x1F
     return _THUMB_OPCLASS.get(hi5, OPCLASS_OTHER)
-
 
 def classify_byte_sequence(data: bytes, arch_hint: str = "auto") -> List[int]:
     """
@@ -196,8 +192,7 @@ def classify_byte_sequence(data: bytes, arch_hint: str = "auto") -> List[int]:
 
     return result
 
-
-# ── 语义指纹核心数据结构 ──
+# 语义指纹核心数据结构
 
 @dataclass
 class SemanticFingerprint:
@@ -226,8 +221,7 @@ class SemanticFingerprint:
         """两个指纹的汉明距离 — 用于LSH候选筛选。"""
         return (self.to_128bit_hash() ^ other.to_128bit_hash()).bit_count()
 
-
-# ── 特征提取 ──
+# 特征提取
 
 def _compute_class_distribution(class_seq: List[int]) -> Tuple[float, ...]:
     """计算12类归一化分布。空序列返回均匀分布。"""
@@ -236,7 +230,6 @@ def _compute_class_distribution(class_seq: List[int]) -> Tuple[float, ...]:
     counter = Counter(class_seq)
     total = len(class_seq)
     return tuple(counter.get(i, 0) / total for i in range(12))
-
 
 def _compute_transition_features(class_seq: List[int]) -> Tuple[float, float, float, float]:
     """
@@ -265,7 +258,6 @@ def _compute_transition_features(class_seq: List[int]) -> Tuple[float, float, fl
         _prob(OPCLASS_SHIFT, OPCLASS_XOR),
         _prob(OPCLASS_BRANCH, OPCLASS_XOR),
     )
-
 
 def _detect_loop_structure(class_seq: List[int]) -> float:
     """
@@ -307,11 +299,9 @@ def _detect_loop_structure(class_seq: List[int]) -> float:
         return 0.20
     return 0.05
 
-
 def _compute_xor_density(dist: Tuple[float, ...]) -> float:
     """XOR类占比 — 密码学最基础的判别信号。"""
     return dist[OPCLASS_XOR] if len(dist) > OPCLASS_XOR else 0.0
-
 
 def _compute_shift_xor_ratio(dist: Tuple[float, ...]) -> float:
     """SHIFT/XOR比值 → SPN vs Feistel鉴别。"""
@@ -320,7 +310,6 @@ def _compute_shift_xor_ratio(dist: Tuple[float, ...]) -> float:
     if xor < 0.01:
         return 0.0
     return shift / xor
-
 
 def _derive_128bit_hash(dist: Tuple[float, ...], trans: Tuple[float, float, float, float],
                          loop_sig: float, xor_density: float) -> bytes:
@@ -365,8 +354,7 @@ def _derive_128bit_hash(dist: Tuple[float, ...], trans: Tuple[float, float, floa
 
     return bytes(result)
 
-
-# ── 公开API ──
+# 公开API
 
 def extract_fingerprint(data: bytes, anchor_offset: int = 0,
                         window_size: int = 512, arch_hint: str = "auto",
@@ -396,7 +384,6 @@ def extract_fingerprint(data: bytes, anchor_offset: int = 0,
         hash_bytes=hash_bytes,
     )
 
-
 def match_fingerprints(query: SemanticFingerprint,
                        candidates: List[SemanticFingerprint],
                        hamming_threshold: int = 8) -> List[Tuple[SemanticFingerprint, int, float]]:
@@ -415,7 +402,6 @@ def match_fingerprints(query: SemanticFingerprint,
             results.append((cand, dist_val, confidence))
     results.sort(key=lambda x: x[1])
     return results
-
 
 def fingerprint_from_detections(data: bytes,
                                 findings: List,  # List[CryptoFinding]
@@ -437,7 +423,6 @@ def fingerprint_from_detections(data: bytes,
             # 单个finding提取失败不应中断批量处理
             continue
     return fingerprints
-
 
 def compute_similarity_matrix(fingerprints: List[SemanticFingerprint]) -> List[List[float]]:
     """计算指纹集合的成对相似度矩阵 — 用于聚类和可视化。"""

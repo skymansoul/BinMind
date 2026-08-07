@@ -1,21 +1,21 @@
 # Use-After-Free 检测策略集合 — 静态/动态/混合三种方法
-# 参考: Undangle (ISSTA 2012) — 基于指针分析的悬垂指针早期检测:
+# Undangle — 基于指针分析的悬垂指针早期检测:
 #       在 free 处分析指针别名关系, 识别可能被后续解引用的悬垂指针
-# 参考: UAFL (ICSE 2020) — 类型状态引导的 UAF 模糊测试:
+# UAFL — 类型状态引导的 UAF 模糊测试:
 #       将 UAF 建模为 typestate 属性 (alloc→free→use), fuzzer 定位违规
-# 参考: UFO (ICSE 2018) — 预测性并发 UAF 检测:
+# UFO — 预测性并发 UAF 检测:
 #       通过线程交织的预测分析, 发现非确定性调度下的潜在 UAF
-# 参考: Spatio-temporal context reduction (ICSE 2018) —
+# Spatio-temporal context reduction —
 #       基于指针分析的静态 UAF 检测, 时空上下文减缩提升精度
-# 参考: UAFSan (ISSTA 2021) — 对象标识符驱动的动态 UAF 检测:
+# UAFSan — 对象标识符驱动的动态 UAF 检测:
 #       为每个堆对象分配唯一 ID, 运行时检查解引用的对象是否已被释放
-# 参考: FreeSentry (NDSS 2015) — 释放时指针失效:
+# FreeSentry — 释放时指针失效:
 #       free() 时主动将所有指向该对象的指针置为无效值
 
 from collections import defaultdict as _dd, deque as _deque
 from typing import Any
 
-# ===== UAF 原型定义 =====
+# UAF 原型定义
 # UAF 的类型状态: Allocated → Freed → Used (第三个状态即漏洞)
 # 简化状态机: 4 个状态检测 alloc/free/use 三元组
 
@@ -47,10 +47,10 @@ class HeapObjectState:
         return self.status == 'used_after_free'
 
 
-# ===== 基于指针分析的静态 UAF 检测 =====
-# 参考: Undangle — 在 free 处计算指向该对象的指针集合 (别名分析)
+# 基于指针分析的静态 UAF 检测
+# Undangle — 在 free 处计算指向该对象的指针集合 (别名分析)
 # 若存在活跃指针且后续路径可达, 标记为潜在 UAF
-# 参考: STCR (Spatio-temporal context reduction) — 通过路径敏感性
+# STCR (Spatio-temporal context reduction) — 通过路径敏感性
 # 减缩 context 数量, 在精度和可伸缩性之间平衡
 
 def static_uaf_detect(alloc_sites: dict[int, dict],
@@ -128,8 +128,8 @@ def static_uaf_detect(alloc_sites: dict[int, dict],
     return uaf_candidates
 
 
-# ===== Typestate 驱动的动态 UAF Fuzzing 策略 =====
-# 参考: UAFL — 将 UAF 检测形式化为 typestate 属性的违反检测
+# Typestate 驱动的动态 UAF Fuzzing 策略
+# UAFL — 将 UAF 检测形式化为 typestate 属性的违反检测
 # Typestate: alloc → (use* | free → ⊥) (free 后禁止再 use)
 # Fuzzer 的 fitness 函数: 越接近 typestate violation 的输入得分越高
 
@@ -165,8 +165,8 @@ def uaf_typestate_distance(trace_events: list[dict]) -> float:
     return 2.0  # no suspicious pattern
 
 
-# ===== 并发 UAF 检测 =====
-# 参考: UFO — 预测性并发 UAF 分析:
+# 并发 UAF 检测
+# UFO — 预测性并发 UAF 分析:
 # 通过线程交织预测, 发现即使当前 trace 未触发的潜在 UAF
 # 关键洞察: 若线程 A free 对象 O，线程 B 的后续执行可能访问 O
 
@@ -226,9 +226,9 @@ def predict_concurrent_uaf(thread_traces: dict[int, list[dict]]) -> list[dict]:
     return predictions
 
 
-# ===== 基于堆对象生命周期的 ID 追踪 =====
-# 参考: UAFSan — 为每个堆分配赋予运行时 ID，free 时标记 ID 失效
-# 参考: FreeSentry — 主动指针失效: free(ptr) 时遍历所有指向该对象的指针并置 NULL
+# 基于堆对象生命周期的 ID 追踪
+# UAFSan — 为每个堆分配赋予运行时 ID，free 时标记 ID 失效
+# FreeSentry — 主动指针失效: free(ptr) 时遍历所有指向该对象的指针并置 NULL
 # 静态等价: 检查每条 use 路径上指针的 liveness → 若指针已失效则为 UAF
 
 def track_object_liveness(alloc_infos: list[dict]) -> dict[int, dict]:

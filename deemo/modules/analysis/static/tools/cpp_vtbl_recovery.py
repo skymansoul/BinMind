@@ -36,7 +36,7 @@ class RecoveryResult:
     hierarchy_graph: str = ""  # HELIOS 启发的层次化图的文本表示
 
 
-# ── HELIOS 启发层次图抽象 ──────────────────────────────────────────────────
+# HELIOS 启发层次图抽象
 
 
 class HierarchicalGraphEncoder:

@@ -12,7 +12,7 @@ import tempfile
 import pytest
 
 
-# ---- 合成 ELF 辅助函数 ----
+# 合成 ELF 辅助函数
 
 
 
@@ -71,7 +71,7 @@ def _make_minimal_elf_64(
     return path
 
 
-# ---- test checksec ----
+# test checksec
 
 class TestChecksec:
     """checksec 模块单元测试。"""
@@ -123,7 +123,7 @@ class TestChecksecELF:
         assert 'full' in summary.lower()
 
 
-# ---- test plt_scanner ----
+# test plt_scanner
 
 class TestPLTScanner:
     """PLT 扫描器单元测试。"""
@@ -151,7 +151,7 @@ class TestPLTScanner:
         assert 'puts' in _EXPLOITABLE_CATEGORIES
 
 
-# ---- test libc_identifier ----
+# test libc_identifier
 
 class TestLibcIdentifier:
     """libc 识别器单元测试。"""
@@ -185,7 +185,7 @@ class TestLibcIdentifier:
         assert 'unavailable' in ctx
 
 
-# ---- test binary_profile ----
+# test binary_profile
 
 class TestBinaryProfile:
     """二进制画像单元测试。"""

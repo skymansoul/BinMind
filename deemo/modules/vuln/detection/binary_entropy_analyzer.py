@@ -1,12 +1,12 @@
 # 二进制熵分析器——通过信息熵与统计特征检测加壳/混淆/加密段。
-# 参考Applied Network Science (2025)图基混淆检测及传统PEiD熵检测方法。
+# Applied Network Science图基混淆检测及传统PEiD熵检测方法。
 #
 # 检测维度:
-#   - 整体熵: Shannon熵 > 7.0暗示加密/压缩（正常代码~5.0-6.5）
-#   - 分段熵: 按section/segment分别计算，高熵.text段异常
-#   - 字节分布: chi-square检验观测分布与均匀分布的距离
-#   - N-gram重复率: 重复模式密度高→加壳器存根可能性
-#   - 可打印字符比: < 10%暗示二进制payload段
+# 整体熵: Shannon熵 > 7.0暗示加密/压缩（正常代码~5.0-6.5）
+# 分段熵: 按section/segment分别计算，高熵.text段异常
+# 字节分布: chi-square检验观测分布与均匀分布的距离
+# N-gram重复率: 重复模式密度高→加壳器存根可能性
+# 可打印字符比: < 10%暗示二进制payload段
 #
 # 当前实现——Shannon熵+分段分析
 # 增强——chi-square检验与ML分类器集成（sklearn可选）

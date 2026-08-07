@@ -1,8 +1,8 @@
 """
 合成边界加固 (SBH) —— 边界刺探查询生成与分类器加固。
 
-Constitutional Classifiers (arXiv:2501.18837) 用合成数据训练安全护栏,
-Boundary Point Jailbreaking (arXiv:2602.15001) 用课程学习识别决策边界。
+Constitutional Classifiers 用合成数据训练安全护栏,
+Boundary Point Jailbreaking 用课程学习识别决策边界。
 本模块将两者结合: 生成跨越分类边界的合成查询,
 测试分类器在边界附近的一致性, 不一致的边界点用于加固规则权重。
 
@@ -62,9 +62,7 @@ class HardeningReport:
     # 建议的权重调整: (关键词, 类别, 调整量)
 
 
-# ---------------------------------------------------------------------------
 # 邻接类别对: 语义上易混淆的类别对
-# ---------------------------------------------------------------------------
 
 _ADJACENT_PAIRS: List[Tuple[IntentCategory, IntentCategory]] = [
     (IntentCategory.STATIC_COLLECTION, IntentCategory.DYNAMIC_INTERACTION),

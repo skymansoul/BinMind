@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{UAF HOIG Ablation Study}
+\label{tab:uaf_hoig_ablation}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Config & TP & FP & TN & FN & P & R & F1 & FPR \\
+\midrule
+  A0_Baseline & 11 & 1 & 8 & 6 & 0.9167 & 0.6471 & 0.7586 & 0.1111 \\
+  A1_CallGraph & 11 & 1 & 8 & 6 & 0.9167 & 0.6471 & 0.7586 & 0.1111 \\
+  A2_Propagator & 14 & 1 & 8 & 3 & 0.9333 & 0.8235 & 0.8750 & 0.1111 \\
+  A3_PathSensitive & 11 & 0 & 9 & 6 & 1.0000 & 0.6471 & 0.7857 & 0.0000 \\
+  A4_Full & 17 & 0 & 9 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

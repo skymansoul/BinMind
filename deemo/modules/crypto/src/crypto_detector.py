@@ -1,4 +1,4 @@
-# ---- 密码学算法检测 ----
+# 密码学算法检测
 # 核心: 魔数常量匹配 + S盒结构分析 + API字符串指纹, 三维正交识别算法。
 # Boyer-Moore-Horspool用于大文件加速; S盒检测前16字节quick-eliminate后全256验证。
 # 去重策略: 同偏移+同算法 -> 保留高置信度; 同算法+偏移差<16 -> 合并为一个finding。
@@ -65,7 +65,7 @@ def _match_full_sbox(data: bytes, sbox: bytes, start: int) -> bool:
     return True
 
 
-# ---- S-box模糊匹配 (2026-08-02) ----
+# S-box模糊匹配
 # 计算`start`处256字节窗口与参考`sbox`的逐字节Hamming距离。
 # 返回 (is_match, distance, entropy)。
 # INTJ设计选择: 精确匹配优先; 模糊匹配仅在精确失败时触发。
@@ -93,7 +93,7 @@ def _fuzzy_match_sbox(data: bytes, sbox: bytes, start: int,
     return True, dist, _ent
 
 
-# ---- 魔数常量检测 ----
+# 魔数常量检测
 def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
     _out = []
 
@@ -222,7 +222,7 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
     return _out
 
 
-# ---- 结构检测 ----
+# 结构检测
 def detect_by_structure(data: bytes) -> List[CryptoFinding]:
     _out = []
     _dl = len(data)
@@ -287,7 +287,7 @@ def detect_by_structure(data: bytes) -> List[CryptoFinding]:
     return _out
 
 
-# ---- API字符串指纹 ----
+# API字符串指纹
 _CRYPTO_API_PATTERNS = [
     ('OpenSSL/EV', ['EVP_Encrypt', 'EVP_Decrypt', 'EVP_CIPHER', 'EVP_MD',
                     'EVP_Digest', 'EVP_PKEY', 'EVP_aes_', 'EVP_chacha20',
@@ -340,7 +340,7 @@ def detect_by_api_strings(strings: List[str]) -> List[CryptoFinding]:
     return _out
 
 
-# ---- 硬件加速检测 ----
+# 硬件加速检测
 def detect_hardware_accel(data: bytes) -> List[str]:
     _found = []
     for _name, _pat in [('AES-NI', AESNI_OPCODES),
@@ -351,7 +351,7 @@ def detect_hardware_accel(data: bytes) -> List[str]:
     return _found
 
 
-# ---- 去重 ----
+# 去重
 def _dedup(findings: List[CryptoFinding], eps: int = 16) -> List[CryptoFinding]:
     if not findings:
         return []
@@ -370,7 +370,7 @@ def _dedup(findings: List[CryptoFinding], eps: int = 16) -> List[CryptoFinding]:
     return sorted(_merged, key=lambda f: -f.confidence)
 
 
-# ---- 主检测器 ----
+# 主检测器
 class CryptoDetector:
     def __init__(self, data: bytes, strings: Optional[List[str]] = None):
         self._data = data

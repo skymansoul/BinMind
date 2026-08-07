@@ -5,7 +5,6 @@ Common type definitions used by taint_tracker, cfg_path_filter, and asm_detector
 Housed in a standalone module to avoid circular imports.
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 

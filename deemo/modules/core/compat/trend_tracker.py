@@ -180,7 +180,7 @@ class TrendTracker:
         return deltas
 
     # ---- Holt-Winters 三重指数平滑 (季节性+趋势+水平) ----
-    # 参考: Hyndman & Athanasopoulos (2018) "Forecasting: Principles and Practice" Ch.7
+    # Hyndman & Athanasopoulos (2018) "Forecasting: Principles and Practice" Ch.7
     # 乘法季节性模型适用于安全事件数据 — 漏洞数量在季度安全审计周期中呈乘法波动
     def holt_winters_forecast(self, steps: int = 10, period: int = 7,
                                alpha: float = 0.3, beta: float = 0.1,

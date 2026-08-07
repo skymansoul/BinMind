@@ -5,7 +5,7 @@ import os
 import logging
 from dataclasses import dataclass, field
 
-# ---- 默认值 ----
+# 默认值
 _DEFAULT_BINARY_PATHS = ["/usr/bin", "/bin", "/usr/local/bin", "C:\\Windows\\System32"]
 _DEFAULT_ENTROPY_THRESHOLD = 7.2
 _DEFAULT_STRING_MIN_LENGTH = 4

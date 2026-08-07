@@ -19,7 +19,7 @@
 
 与现有工作的关系:
 - dynamic_struct_prober.py: 单 trace -> 本模块: 多 trace 贝叶斯聚合
-- WYTIWYG (ASPLOS 2024): 精确栈变量恢复->本模块: 堆结构体
+- WYTIWYG: 精确栈变量恢复->本模块: 堆结构体
 - 单次探测局限性在 WYTIWYG 第 7 节讨论--多 trace 是其推荐的方向
 """
 
@@ -31,9 +31,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class FieldAccess:

@@ -1,0 +1,6 @@
+{
+  "id": "fmt_tp_15_got_overwrite",
+  "expected_vuln": true,
+  "vuln_type": "format_string",
+  "mode": "%n 组合利用 (可写目标)"
+}

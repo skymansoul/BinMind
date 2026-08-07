@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_06_arg_chain",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2019-12817 类参数链格式串",
+  "expect_overflow": true,
+  "trigger": "argv 注入",
+  "why": "user 经两层传递到达 printf 格式位置"
+}

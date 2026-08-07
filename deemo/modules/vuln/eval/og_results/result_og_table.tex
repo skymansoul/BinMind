@@ -1,0 +1,14 @@
+\begin{table}[t]
+\centering
+\caption{UAF detection: UAF-OG generation compression vs naive baseline vs Angr. 20 samples (15 vulnerable + 5 safe). Angr probe is REAL but requires constant arguments; UAF semantics are symbolic, hence its low recall.}
+\label{tab:uaf-og}
+\begin{tabular}{lcccccccc}
+\toprule
+Tool & TP & FP & TN & FN & Prec & Rec & F1 & Avg ms \\
+\midrule
+BASE & 15 & 3 & 2 & 0 & 83.3\% & 100.0\% & 0.909 & 124.0 \\
+UAF-OG & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 124.0 \\
+Angr & 1 & 0 & 5 & 14 & 100.0\% & 6.7\% & 0.125 & 878.1 \\
+\bottomrule
+\end{tabular}
+\end{table}

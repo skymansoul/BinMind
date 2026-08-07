@@ -11,7 +11,7 @@ from collections import defaultdict as _defaultdict
 
 __dbg = _logging.getLogger(__name__)
 
-# ── 数值安全常量 ──────────────────────────────────────────────
+# 数值安全常量
 _MIN_PROB = 1e-15
 _MAX_PROB = 1.0 - _MIN_PROB
 _MAX_LOGIT = 50.0          # exp(50) 约 5e21，仍在 float64 安全范围
@@ -39,9 +39,7 @@ def _logsumexp(values):
     return mx + _math.log(sum(_math.exp(v - mx) for v in values) + _MIN_PROB)
 
 
-# ═══════════════════════════════════════════════════════════════
 # Platt对角Hessian缩放 → BFGS 回退
-# ═══════════════════════════════════════════════════════════════
 
 class BinomialCalibrator:
     """Platt scaling: fit a logistic correction on top of raw model scores.
@@ -73,7 +71,7 @@ class BinomialCalibrator:
             __dbg.warning("Platt fit: mismatched or empty arrays")
             return
 
-        # ── 目标正则化: Platt原文避免极端概率 ──
+# 目标正则化: Platt原文避免极端概率
         prior1 = max(sum(t) / float(len(t)), _MIN_PROB)
         prior0 = 1.0 - prior1
         target = []
@@ -93,7 +91,7 @@ class BinomialCalibrator:
         max_iters = 80
         tol = 1e-7
 
-        # ── 阶段一: 对角Hessian Newton ──
+# 阶段一: 对角Hessian Newton
         old_obj = float('inf')
         converged = False
 
@@ -135,7 +133,7 @@ class BinomialCalibrator:
         if converged:
             self._hessian_used = 'diag'
         else:
-            # ── 阶段二: 完整2×2 Hessian逆 ──
+# 阶段二: 完整2×2 Hessian逆
             __dbg.debug("Platt: diagonal Hessian stalled, switching to full 2×2 inverse")
             # 重置并重新开始，使用完整 Hessian
             a = 0.0
@@ -203,9 +201,7 @@ class BinomialCalibrator:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════
 # PAV保序回归
-# ═══════════════════════════════════════════════════════════════
 
 class IsotonicCalibrator:
     """Isotonic regression via PAV (Pool Adjacent Violators) for monotonic calibration.
@@ -308,9 +304,7 @@ class IsotonicCalibrator:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════
 # 温度缩放(数值稳定)
-# ═══════════════════════════════════════════════════════════════
 
 class TemperatureScaler:
     """Temperature scaling for multi-class / binary confidence calibration.
@@ -370,9 +364,9 @@ class TemperatureScaler:
                 nll -= log_prob_true
 
                 # Gradient of NLL w.r.t T: ∂/∂T ( -log p_true )
-                # = -∂/∂T [ z_true/T - log Σ exp(z_c/T) ]
-                # = z_true/T² - Σ p_c * z_c / T²
-                # = (z_true - E[z]) / T²
+# -∂/∂T [ z_true/T - log Σ exp(z_c/T) ]
+# z_true/T² - Σ p_c * z_c / T²
+# (z_true - E[z]) / T²
                 # 在 scaled 空间中：∂NLL/∂T = (scaled_true - E[scaled]) / T
                 exp_scaled = [_math.exp(scaled[ci] - _logsumexp(scaled) + log_denom)  # shortcut
                               for ci in range(n_classes)]
@@ -428,9 +422,7 @@ class TemperatureScaler:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════
 # 校准指标(等频分箱)
-# ═══════════════════════════════════════════════════════════════
 
 class CalibrationMetrics:
     """Expected Calibration Error (ECE), Maximum Calibration Error (MCE),
@@ -581,9 +573,7 @@ class CalibrationMetrics:
         return avg_conf, avg_acc, bin_cnts, bin_bounds
 
 
-# ═══════════════════════════════════════════════════════════════
 # 统一接口
-# ═══════════════════════════════════════════════════════════════
 
 class ConfidenceCalibrator:
     """Unified interface: choose Platt, isotonic, or temperature scaling.

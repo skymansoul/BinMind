@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """CTI-TTP — 攻击级威胁情报提取与 ATT&CK TTP 结构化映射。
 
 功能边界：
@@ -11,16 +11,16 @@
 4. 输出衔接 —— 提供结构化事件对象 CTIEvent，供下游情报关联消费。
 
 论文依据（实现时引用）：
-[1] arXiv:2505.03147  Towards Effective Identification of Attack Techniques
+[1]  Towards Effective Identification of Attack Techniques
     in Cyber Threat Intelligence Reports using Large Language Models
     —— 语义识别引擎对 CTI 报告中的攻击技术识别显著优于纯规则，作为 TTP 映射
        主路径的依据。
-[2] arXiv:2412.10872  IntelEX: A LLM-driven Attack-level Threat Intelligence
+[2]  IntelEX: A LLM-driven Attack-level Threat Intelligence
     Extraction Framework —— 攻击剧本（playbook）抽取框架的设计蓝本。
-[3] arXiv:2405.03446  SEvenLLM: Benchmarking, Eliciting, and Enhancing
+[3]  SEvenLLM: Benchmarking, Eliciting, and Enhancing
     Abilities of Large Language Models in Cyber Threat Intelligence
     —— 字段完整性/一致性质量校准思路的借鉴来源。
-[4] arXiv:2510.00240  SecureBERT 2.0: Advanced Language Model for
+[4]  SecureBERT 2.0: Advanced Language Model for
     Cybersecurity Intelligence —— 领域语言模型在 CTI 抽取中的应用依据。
 
 设计约束：
@@ -54,16 +54,14 @@ _LLM_DEFAULT_MAX_TOKENS = 2000
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 _HASH_ROUNDS = 10007
 
-# ============================================================================
 # ATT&CK 规则库（降级路径，无外部模型时使用）
-# ============================================================================
 # 结构: technique_id -> (tactic, name, keywords)
 # 规则库仅作外部模型不可用时的粗粒度降级映射，覆盖常见技术；
 # 关键词以多词短语为主，降低单字词的误报。置信度由命中关键词数量线性
 # 提升，上限 0.95 — 规则命中不产生满置信度，留待人工复核。
 
 _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
-    # ---- Initial Access ----
+# Initial Access
     "T1190": ("initial-access", "Exploit Public-Facing Application",
               ["exploit public-facing", "cve-", "remote code execution", "未授权访问", "边界设备漏洞", "exposed service"]),
     "T1133": ("initial-access", "External Remote Services",
@@ -77,7 +75,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1091": ("initial-access", "Replication Through Removable Media",
               ["removable media", "usb 传播", "autorun", "移动介质"]),
 
-    # ---- Execution ----
+# Execution
     "T1059.003": ("execution", "Command and Scripting Interpreter: Windows Command Shell",
                   ["cmd /c", "cmd.exe", "command shell", "批处理", "batch file", "cmdlet"]),
     "T1059.001": ("execution", "Command and Scripting Interpreter: PowerShell",
@@ -97,7 +95,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1203": ("execution", "Exploitation for Client Execution",
               ["client-side exploit", "浏览器漏洞利用", "office 漏洞", "客户端漏洞"]),
 
-    # ---- Persistence ----
+# Persistence
     "T1547.001": ("persistence", "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
                   ["registry run key", "run key", r"hklm\software\microsoft\windows\currentversion\run",
                    "startup folder", "启动项", "开机自启动"]),
@@ -112,7 +110,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1505.003": ("persistence", "Server Software Component: Web Shell",
                   ["webshell", "web shell", "php 后门", "asp 木马", "一句话木马"]),
 
-    # ---- Privilege Escalation ----
+# Privilege Escalation
     "T1068": ("privilege-escalation", "Exploitation for Privilege Escalation",
               ["privilege escalation", "本地提权", "local privilege escalation", "lpe", "内核提权"]),
     "T1055": ("privilege-escalation", "Process Injection",
@@ -125,7 +123,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1574.006": ("privilege-escalation", "Hijack Execution Flow: Dynamic Linker Hijacking",
                   ["ld.so.preload", "ld_preload", "动态链接器劫持", "rpath 劫持"]),
 
-    # ---- Defense Evasion ----
+# Defense Evasion
     "T1070": ("defense-evasion", "Indicator Removal on Host",
               ["log clear", "删除日志", "wevtutil cl", "timestomp", "清理痕迹", "清除攻击痕迹", "anti-forensics"]),
     "T1027": ("defense-evasion", "Obfuscated Files or Information",
@@ -143,7 +141,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1112": ("defense-evasion", "Modify Registry",
               ["registry modify", "修改注册表", "reg add", "注册表篡改"]),
 
-    # ---- Credential Access ----
+# Credential Access
     "T1003": ("credential-access", "OS Credential Dumping",
               ["credential dump", "lsass", "mimikatz", "hashdump", "sam hive", "凭据转储", "ntds.dit"]),
     "T1110": ("credential-access", "Brute Force",
@@ -155,7 +153,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1555": ("credential-access", "Credentials from Password Stores",
               ["password store", "credential manager", "密码库", "浏览器密码", "凭据保险库"]),
 
-    # ---- Discovery ----
+# Discovery
     "T1087": ("discovery", "Account Discovery",
               ["account discovery", "枚举账号", "list accounts", "net user 枚举"]),
     "T1082": ("discovery", "System Information Discovery",
@@ -175,7 +173,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1033": ("discovery", "System Owner/User Discovery",
               ["whoami", "system owner", "当前用户", "id -un", "用户身份探测"]),
 
-    # ---- Lateral Movement ----
+# Lateral Movement
     "T1021.001": ("lateral-movement", "Remote Services: Remote Desktop Protocol",
                   ["rdp", "remote desktop", "3389 端口", "mstsc", "远程桌面连接"]),
     "T1021.002": ("lateral-movement", "Remote Services: SMB/Windows Admin Shares",
@@ -185,7 +183,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1570": ("lateral-movement", "Lateral Tool Transfer",
               ["tool transfer", "certutil -urlcache", "scp 传输", "工具投递", "横向工具传输"]),
 
-    # ---- Collection ----
+# Collection
     "T1005": ("collection", "Data from Local System",
               ["data from local", "本地数据收集", "采集文件", "打包本地文件"]),
     "T1039": ("collection", "Data from Network Shared Drive",
@@ -197,7 +195,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1119": ("collection", "Automated Collection",
               ["automated collection", "自动收集数据"]),
 
-    # ---- Command and Control ----
+# Command and Control
     "T1071.001": ("command-and-control", "Application Layer Protocol: Web Protocols",
                   ["c2 server", "c&c server", "command and control", "beacon", "回连服务器", "c2 服务器", "恶意回连"]),
     "T1573": ("command-and-control", "Encrypted Channel",
@@ -211,7 +209,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1572": ("command-and-control", "Protocol Tunneling",
               ["protocol tunneling", "协议隧道", "dnscat", "chisel", "frp 隧道", "dns 隧道"]),
 
-    # ---- Exfiltration ----
+# Exfiltration
     "T1041": ("exfiltration", "Exfiltration Over C2 Channel",
               ["exfiltration", "数据外传", "data exfil", "c2 信道外传", "泄露数据"]),
     "T1048": ("exfiltration", "Exfiltration Over Alternative Protocol",
@@ -219,7 +217,7 @@ _ATTACK_RULES: Dict[str, Tuple[str, str, List[str]]] = {
     "T1567": ("exfiltration", "Exfiltration Over Web Service",
               ["exfil to cloud", "外传到网盘", "pastebin 外传", "云盘外传"]),
 
-    # ---- Impact ----
+# Impact
     "T1486": ("impact", "Data Encrypted for Impact",
               ["ransomware", "勒索软件", "encrypt files", "文件加密", "crypto locker", "勒索病毒"]),
     "T1489": ("impact", "Service Stop",
@@ -248,9 +246,7 @@ _TACTIC_ALIASES = {
     "c2": "command-and-control", "c&c": "command-and-control",
 }
 
-# ============================================================================
 # IOC 正则库
-# ============================================================================
 _IOC_PATTERNS: Dict[str, re.Pattern] = {
     "ipv4": re.compile(
         r'\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b'),
@@ -278,13 +274,11 @@ _IOC_PATTERNS: Dict[str, re.Pattern] = {
 # IOC 值尾随标点清理：正则可能吞入相邻标点（尤其中文全角标点）
 _TRAILING_PUNCT = set("。，,.;;:!?！？、)）]】》\"'`")
 
-
 def _strip_ioc_trailing(value: str) -> str:
     v = value.rstrip()
     while v and v[-1] in _TRAILING_PUNCT:
         v = v[:-1].rstrip()
     return v
-
 
 _IOC_TYPE_VALIDATORS: Dict[str, re.Pattern] = {
     "ipv4": re.compile(r'^\d{1,3}(\.\d{1,3}){3}$'),
@@ -301,10 +295,7 @@ _IOC_TYPE_VALIDATORS: Dict[str, re.Pattern] = {
     "file_path": re.compile(r'^[A-Za-z]:\\|^/'),
 }
 
-
-# ============================================================================
 # 数据模型
-# ============================================================================
 @dataclass
 class AttackTechnique:
     """ATT&CK 技术映射结果。source: 'rule' | 'llm'。"""
@@ -325,7 +316,6 @@ class AttackTechnique:
             "source": self.source,
         }
 
-
 @dataclass
 class IOC:
     """失陷指标。ioc_type 取值见 _IOC_PATTERNS 键。"""
@@ -341,7 +331,6 @@ class IOC:
             "confidence": round(self.confidence, 3),
             "source": self.source,
         }
-
 
 @dataclass
 class AttackStep:
@@ -363,7 +352,6 @@ class AttackStep:
             "confidence": round(self.confidence, 3),
         }
 
-
 @dataclass
 class QualityReport:
     """质量校准报告。overall 为 [0,1] 综合分。"""
@@ -381,7 +369,6 @@ class QualityReport:
             "field_scores": {k: round(v, 3) for k, v in self.field_scores.items()},
             "flags": self.flags,
         }
-
 
 @dataclass
 class AttackPlaybook:
@@ -410,7 +397,6 @@ class AttackPlaybook:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
-
 
 @dataclass
 class CTIEvent:
@@ -451,21 +437,16 @@ class CTIEvent:
                 keys.add(f"tactic:{t.tactic.lower()}")
         return sorted(keys)
 
-
-# ============================================================================
 # 工具函数
-# ============================================================================
 def _now_iso() -> str:
     from datetime import datetime
     return datetime.now().isoformat(timespec="seconds")
-
 
 def _make_event_id(source: str) -> str:
     if not source:
         return "cti-" + uuid.uuid4().hex[:12]
     digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:12]
     return f"cti-{digest}"
-
 
 def _coerce_conf(value: Any) -> float:
     try:
@@ -474,7 +455,6 @@ def _coerce_conf(value: Any) -> float:
         return 0.5
     return max(0.0, min(1.0, c))
 
-
 def _normalize_technique_id(tid: str) -> str:
     if not tid:
         return ""
@@ -482,7 +462,6 @@ def _normalize_technique_id(tid: str) -> str:
     if not tid.startswith("T"):
         tid = "T" + tid
     return tid
-
 
 def _normalize_tactic(tactic: str) -> str:
     # 战术名规范化：去连字符、空格 → 查别名表
@@ -493,11 +472,9 @@ def _normalize_tactic(tactic: str) -> str:
         return _TACTIC_ALIASES[key]
     return tactic.strip().lower()
 
-
 def _clean_json(s: str) -> str:
     # 去除尾逗号：JSON 规范不允许，外部模型输出常出现
     return re.sub(r',\s*([}\]])', r'\1', s)
-
 
 def _extract_json(raw: str) -> Optional[Any]:
     # 从文本中提取 JSON 结构：code fence → 数组 → 对象
@@ -523,7 +500,6 @@ def _extract_json(raw: str) -> Optional[Any]:
             pass
     return None
 
-
 def _first_match(patterns: List[re.Pattern], text: str) -> str:
     for pat in patterns:
         m = pat.search(text)
@@ -532,7 +508,6 @@ def _first_match(patterns: List[re.Pattern], text: str) -> str:
             if 2 <= len(val) <= 80:
                 return val
     return ""
-
 
 def _merge_iocs(*groups: List[IOC]) -> List[IOC]:
     seen: set = set()
@@ -545,7 +520,6 @@ def _merge_iocs(*groups: List[IOC]) -> List[IOC]:
             seen.add(key)
             out.append(ioc)
     return out
-
 
 def _normalize_ioc_type(label: str, value: str) -> str:
     # IOC 类型标签 → 规范类型名
@@ -569,13 +543,11 @@ def _normalize_ioc_type(label: str, value: str) -> str:
         return label
     return label
 
-
 def _ioc_value_matches_type(ioc_type: str, value: str) -> bool:
     pat = _IOC_TYPE_VALIDATORS.get(ioc_type)
     if pat is None:
         return True  # 未知类型不判罚
     return bool(pat.match(value.strip()))
-
 
 # 归因/目标抽取模式 — 规则降级路径字段填充
 _ATTRIBUTION_PATTERNS = [
@@ -590,10 +562,7 @@ _TARGET_PATTERNS = [
     re.compile(r'(?:受影响|攻击目标|受害对象|受害者)[：:\s]+([一-龥A-Za-z0-9.\-]{2,40})'),
 ]
 
-
-# ============================================================================
 # 语义抽取客户端（可选依赖封装）
-# ============================================================================
 class LLMClient:
     """OpenAI 兼容客户端封装，语义抽取引擎为可选依赖。
 
@@ -718,10 +687,7 @@ class LLMClient:
         _log.warning("CTI-LLM 调用失败: %s", last_err)
         return None
 
-
-# ============================================================================
 # 系统提示（两段式抽取：TTP 映射与剧本抽取独立）
-# ============================================================================
 # 两段式抽取 — TTP 映射与剧本抽取独立 prompt，便于分别调试与降级。
 # 要求输出严格 JSON，便于程序化消费。
 _TTP_SYSTEM_PROMPT = (
@@ -751,10 +717,7 @@ _PLAYBOOK_SYSTEM_PROMPT = (
     "只输出 JSON，不要输出其他文字。"
 )
 
-
-# ============================================================================
 # TTP 映射器
-# ============================================================================
 class TTPMapper:
     """ATT&CK TTP 映射器。
 
@@ -782,7 +745,7 @@ class TTPMapper:
                 results.append(t)
         return [t for t in results if t.confidence >= self.min_confidence]
 
-    # -- 规则路径 --------------------------------------------------------
+# 规则路径
     def _rule_based_mapping(self, text: str) -> List[AttackTechnique]:
         return [t for t, _pos in self._rule_matches_with_positions(text)]
 
@@ -822,7 +785,7 @@ class TTPMapper:
         results.sort(key=lambda x: x[1])
         return results
 
-    # -- 语义引擎路径 --------------------------------------------------------
+# 语义引擎路径
     def _llm_mapping(self, text: str) -> List[AttackTechnique]:
         if not self._llm or not self._llm.available():
             return []
@@ -849,10 +812,7 @@ class TTPMapper:
             ))
         return results
 
-
-# ============================================================================
 # IOC 提取器
-# ============================================================================
 class IOCExtractor:
     """IOC 正则提取器（规则路径，始终可用）。
 
@@ -882,7 +842,6 @@ class IOCExtractor:
                                confidence=_ioc_confidence(ioc_type), source="rule"))
         return out
 
-
 def _ioc_confidence(ioc_type: str) -> float:
     # 高确定性类型给予更高置信度
     if ioc_type in ("ipv4", "ipv6", "md5", "sha1", "sha256"):
@@ -893,10 +852,7 @@ def _ioc_confidence(ioc_type: str) -> float:
         return 0.8
     return 0.7
 
-
-# ============================================================================
 # 质量校准器
-# ============================================================================
 class QualityAssessor:
     """抽取质量校准器。
 
@@ -980,7 +936,6 @@ class QualityAssessor:
             return {"score": 0.0, "flags": flags}
         return {"score": round(score / checks, 3), "flags": flags}
 
-
 _TS_TOKEN_PATTERNS = [
     (re.compile(r'(\d{4})-(\d{2})-(\d{2})'),
      lambda m: (int(m.group(1)), int(m.group(2)), int(m.group(3)))),
@@ -988,14 +943,12 @@ _TS_TOKEN_PATTERNS = [
      lambda m: (int(m.group(1)), int(m.group(2)), int(m.group(3)))),
 ]
 
-
 def _ts_key(s: str) -> Optional[Tuple[int, int, int]]:
     for pat, fn in _TS_TOKEN_PATTERNS:
         m = pat.search(s)
         if m:
             return fn(m)
     return None
-
 
 def _timestamps_non_decreasing(stamps: List[str]) -> bool:
     keys = []
@@ -1006,10 +959,7 @@ def _timestamps_non_decreasing(stamps: List[str]) -> bool:
         keys.append(k)
     return keys == sorted(keys)
 
-
-# ============================================================================
 # 攻击剧本抽取器
-# ============================================================================
 class PlaybookExtractor:
     """攻击剧本抽取器（依据 [2] IntelEX 攻击级抽取范式）。
 
@@ -1158,7 +1108,6 @@ class PlaybookExtractor:
             iocs=iocs,
         )
 
-
 def _rule_summary(text: str, techniques: List[AttackTechnique]) -> str:
     """规则路径摘要：以识别到的主技术链概括攻击流程。"""
     if not techniques:
@@ -1167,24 +1116,18 @@ def _rule_summary(text: str, techniques: List[AttackTechnique]) -> str:
     chain = " → ".join(f"{t.tactic}/{t.name}" for t in top)
     return f"识别到 {len(techniques)} 项攻击技术，主链：{chain}"
 
-
-# ============================================================================
 # 模块级便捷函数
-# ============================================================================
 def map_ttp(text: str, use_llm: bool = True) -> List[AttackTechnique]:
     """便捷入口：ATT&CK TTP 映射。"""
     return TTPMapper(use_llm=use_llm).map_text(text)
-
 
 def extract_iocs(text: str) -> List[IOC]:
     """便捷入口：IOC 正则提取。"""
     return IOCExtractor().extract(text)
 
-
 def extract_playbook(text: str, use_llm: bool = True) -> AttackPlaybook:
     """便捷入口：攻击剧本抽取（含质量校准）。"""
     return PlaybookExtractor(use_llm=use_llm).extract(text)
-
 
 def extract_cti_ttp(text: str, source: str = "", use_llm: bool = True) -> CTIEvent:
     """统一入口：文本 → 攻击剧本 → 结构化事件对象。
@@ -1201,7 +1144,6 @@ def extract_cti_ttp(text: str, source: str = "", use_llm: bool = True) -> CTIEve
         extracted_at=_now_iso(),
         playbook=pb,
     )
-
 
 __all__ = [
     "AttackTechnique", "IOC", "AttackStep", "QualityReport", "AttackPlaybook",

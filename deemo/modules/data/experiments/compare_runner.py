@@ -1,6 +1,6 @@
 # 横向对比实验主调度器
 # 将同一批样本喂给各工具, 统计检测耗时/误报/漏报/峰值内存.
-# 创建: 2026-08-05
+# 创建: 2026-05-13
 
 import os, sys, json, time, subprocess
 from dataclasses import dataclass, field

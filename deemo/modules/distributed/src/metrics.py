@@ -11,7 +11,7 @@ import math
 from typing import Optional, Dict, List
 
 
-# ===== 指标基类 =====
+# 指标基类
 
 class Metric:
     __slots__ = ('name', 'help_text', 'type_str', '_labels')
@@ -33,7 +33,7 @@ class Metric:
         return "{" + ", ".join(parts) + "}"
 
 
-# ===== 累加计数器 =====
+# 累加计数器
 
 class Counter(Metric):
     """只增不减的单调计数器"""
@@ -56,7 +56,7 @@ class Counter(Metric):
             return self._value
 
 
-# ===== 瞬时值仪表盘 =====
+# 瞬时值仪表盘
 
 class Gauge(Metric):
     """可增可减的瞬时值度量"""
@@ -87,7 +87,7 @@ class Gauge(Metric):
             return self._value
 
 
-# ===== 直方图 =====
+# 直方图
 
 class Histogram(Metric):
     """预定义桶的直方图 — 输出 _bucket/_sum/_count 序列"""
@@ -137,7 +137,7 @@ class Histogram(Metric):
             return sorted(self._buckets.keys())[-1]
 
 
-# ===== 客户端分位数摘要 =====
+# 客户端分位数摘要
 
 class Summary(Metric):
     """客户端分位数摘要 — 存储原始值列表，抓取时计算分位数。
@@ -186,7 +186,7 @@ class Summary(Metric):
         return self._sum
 
 
-# ===== 全局注册表 =====
+# 全局注册表
 
 class Registry:
     """指标注册表 — 线程安全的全局指标容器"""
@@ -215,7 +215,7 @@ class Registry:
 _default_registry = Registry()
 
 
-# ===== Prometheus 文本序列化 =====
+# Prometheus 文本序列化
 
 def _prometheus_text(registry: Registry = None) -> str:
     """生成 Prometheus exposition 格式文本。
@@ -250,7 +250,7 @@ def _prometheus_text(registry: Registry = None) -> str:
                 lines.append(
                     f"{metric.name}_bucket{full} {metric._buckets[boundary]}"
                 )
-            # _sum, _count 后缀行
+# sum, _count 后缀行
             lines.append(f"{metric.name}_sum{label} {metric._sum}")
             lines.append(f"{metric.name}_count{label} {metric._count}")
         elif isinstance(metric, Summary):

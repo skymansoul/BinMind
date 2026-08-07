@@ -1,5 +1,5 @@
-# 创建: 2025-08-13 18:55
-# 修改: 2025-08-13 — 确定性模式匹配 I/O 签名 + 算法意图 + 倒排索引
+# 创建: 2026-07-28 18:55
+# 修改: 2026-07-28 — 确定性模式匹配 I/O 签名 + 算法意图 + 倒排索引
 """
 可解释的二进制特征提取器 — 结构化推理, 无需训练。
 
@@ -15,10 +15,10 @@ GNN 嵌入模型输出不可解释的向量 → 用户不知道两个函数为�
 
 特征以 JSON-like 结构存储, 配合倒排索引实现亚秒级搜索。
 
-ref: arXiv:2509.23449 (2025) "Beyond Embeddings" — LLM-agent 提取
+ref: "Beyond Embeddings" — LLM-agent 提取
      可解释特征, 本项目将 LLM 替换为确定性模式匹配 + 抽象解释,
      消除 API 依赖同时保持跨架构泛化能力
-ref: AutoBERT (CPSS 2025) — BERT-based embedding for cross-ISA,
+ref: AutoBERT — BERT-based embedding for cross-ISA,
      本项目与其互补: 嵌入模型做语义近似, 本模块做精确语义标注
 ref: Hex-Rays microcode — 中间表示的启发式语义标注, 本项目
      将其思路扩展到无源码二进制 + 跨架构场景
@@ -32,7 +32,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-
 class IOKind(Enum):
     FILE_DESC = 'file_descriptor'
     SOCKET = 'socket'
@@ -41,7 +40,6 @@ class IOKind(Enum):
     STRUCT_PTR = 'struct_pointer'
     CONSTANT = 'constant'
     UNKNOWN = 'unknown'
-
 
 class SideEffectKind(Enum):
     FILE_READ = 'file_read'
@@ -53,7 +51,6 @@ class SideEffectKind(Enum):
     PROCESS_SPAWN = 'process_spawn'
     PURE_COMPUTE = 'pure_computation'
     SYS_CALL = 'system_call'
-
 
 class AlgorithmIntent(Enum):
     HASH = 'hash_function'
@@ -69,7 +66,6 @@ class AlgorithmIntent(Enum):
     COMPARE = 'comparison'
     CHECKSUM = 'checksum'
     ENCODE = 'encoder'
-
 
 @dataclass
 class FunctionFeatures:
@@ -98,8 +94,7 @@ class FunctionFeatures:
     # 匹配质量 [0,1]
     confidence: float = 0.0
 
-
-# --- 模式匹配器 ---
+# 模式匹配器
 # 每个匹配器返回 (FeatureKind, confidence) 或 None。
 
 # 已知加密常量表 (前 4 字节的 hex 字符串)
@@ -116,7 +111,6 @@ _CRYPTO_CONSTANTS = {
     '9e3779b9': 'GOLDEN_RATIO',
 }
 
-
 def _detect_crypto_constants(instructions: list[dict]) -> list[str]:
     """检测指令中的已知加密常量。"""
     found = []
@@ -130,7 +124,6 @@ def _detect_crypto_constants(instructions: list[dict]) -> list[str]:
         if h in _CRYPTO_CONSTANTS:
             found.append(_CRYPTO_CONSTANTS[h])
     return found
-
 
 def _detect_algorithm_intent(instructions: list[dict],
                              callees: list[str]) -> set[AlgorithmIntent]:
@@ -191,7 +184,6 @@ def _detect_algorithm_intent(instructions: list[dict],
 
     return intents
 
-
 def _detect_side_effects(callees: list[str]) -> set[SideEffectKind]:
     """从被调用函数名检测副作用类型。"""
     effects: set[SideEffectKind] = set()
@@ -224,7 +216,6 @@ def _detect_side_effects(callees: list[str]) -> set[SideEffectKind]:
 
     return effects
 
-
 def _detect_io_signature(args_info: list[dict]) -> dict[int, IOKind]:
     """从参数信息推断 I/O 签名。"""
     sig: dict[int, IOKind] = {}
@@ -247,8 +238,7 @@ def _detect_io_signature(args_info: list[dict]) -> dict[int, IOKind]:
             sig[idx] = IOKind.UNKNOWN
     return sig
 
-
-# --- 主提取器 ---
+# 主提取器
 
 class InterpretableFeatureExtractor:
     """从反编译输出中提取可解释特征。
@@ -331,8 +321,7 @@ class InterpretableFeatureExtractor:
             'confidence': round(feats.confidence, 3),
         }
 
-
-# --- 倒排索引 ---
+# 倒排索引
 # 按特征维度的值建索引, O(1) 时间查找"所有做 encryption 的函数"。
 
 class InvertedFeatureIndex:
@@ -392,7 +381,6 @@ class InvertedFeatureIndex:
             'indexed_functions': len(self._entries),
             'index_entries': len(self._index),
         }
-
 
 __all__ = [
     'FunctionFeatures', 'InterpretableFeatureExtractor',

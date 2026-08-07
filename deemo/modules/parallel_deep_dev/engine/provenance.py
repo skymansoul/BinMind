@@ -1,12 +1,12 @@
 """
-创建: 2025-07-30
+创建: 2026-06-20
 修改:
   2025-08-01 - 静态方法 _extract_top_level_symbols，记录器拆分
 跨 Worker 代码溯源图 — 追踪并行 agent 间的代码贡献传播链。
 
 问题：N 个 worker 并行生成代码且产出文件间存在 import 依赖时，
 调试跨模块 bug 需要知道"哪个 worker 的哪次生成引入了这个逻辑"。
-Agent Trace (Cursor 2026) 和 ai-blame (2026) 聚焦单 agent 的人/AI 二元归属，
+Agent Trace 和 ai-blame 聚焦单 agent 的人/AI 二元归属，
 不处理多 worker 交叉贡献的合并溯源。
 
 方案：有向无环溯源图 (Provenance DAG)。

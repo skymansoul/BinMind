@@ -25,11 +25,11 @@ TESTING = {
             "差异点：当前测试选择是静态配置，缺乏运行时自适应的策略优化。"
         ),
         "papers": [
-            {"id": "arXiv:2507.10845", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
+            {"id": "", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
              "venue": "arXiv 2025", "key_idea": "ML驱动协同模糊测试 + Cupid自动模糊器选择"},
-            {"id": "arXiv:2605.21779", "title": "FuzzingBrain V2: Multi-Agent LLM System for Automated Vulnerability Discovery",
+            {"id": "", "title": "FuzzingBrain V2: Multi-Agent LLM System for Automated Vulnerability Discovery",
              "venue": "arXiv 2026", "key_idea": "可疑点抽象+两层模糊测试 → 90%检测率, 41个0day"},
-            {"id": "arXiv:2602.11209", "title": "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code",
+            {"id": "", "title": "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code",
              "venue": "arXiv 2026", "key_idea": "语义预言机 → 85.7%精确率, 1.71x加速"},
         ],
     },

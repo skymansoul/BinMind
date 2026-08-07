@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{CVE Heap Overflow: Full Pipeline Multi-Tool Comparison}
+\label{tab:cve-full-comparison}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Tool & TP & FP & TN & FN & Prec. & Rec. & F1 \\
+\midrule
+BinMind-Full & 16 & 0 & 0 & 0 & 1.00 & 1.00 & 1.00 \\
+Angr & 16 & 0 & 0 & 0 & 1.00 & 1.00 & 1.00 \\
+Ghidra & 0 & 0 & 0 & 16 & 0.00 & 0.00 & 0.00 \\
+QEMU & 0 & 0 & 0 & 16 & 0.00 & 0.00 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}

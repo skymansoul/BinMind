@@ -5,10 +5,9 @@
   路由 -> 候选生成 -> 安全验证 -> 排序 -> 回溯。
 失败轮次的验证反馈并入约束，驱动下一轮生成，直至通过或触顶。
 
-参考：
-  - Agentic Program Repair from Test Failures at Scale [arXiv:2507.18755]
-  - SynthFix: Adaptive Code Vulnerability Repair [arXiv:2604.17184]
-  - Autonomous Issue Resolver [arXiv:2512.08492]
+  - Agentic Program Repair from Test Failures at Scale
+  - SynthFix: Adaptive Code Vulnerability Repair
+  - Autonomous Issue Resolver
 
 区别于 patch_suggestion 单轮生成：本引擎引入多轮闭环、
 类型自适应路由、候选排序与轨迹留痕。
@@ -40,11 +39,9 @@ _STATUS_ORDER = {
     'skipped': 3,
 }
 
-
 def _now_iso():
     from datetime import datetime, timezone
     return datetime.now(timezone.utc).isoformat()
-
 
 @dataclass
 class RepairCandidate:
@@ -66,7 +63,6 @@ class RepairCandidate:
             'new_code': self.new_code,
         }
 
-
 @dataclass
 class RepairRound:
     """一轮修复记录 —— 候选 + 验证结果 + 决策。"""
@@ -87,11 +83,10 @@ class RepairRound:
             'feedback': self.feedback,
         }
 
-
 class RepairTrajectory:
     """修复轨迹 — 逐轮候选、反馈、决策，可审计。
 
-    对应 Autonomous Issue Resolver [arXiv:2512.08492] 的
+    对应 Autonomous Issue Resolver 的
     zero-touch 修复过程留痕：任一轮均可回溯。
     """
 
@@ -153,7 +148,6 @@ class RepairTrajectory:
             lines.append("")
         return '\n'.join(lines)
 
-
 class RepairOutcome:
     """修复结果 — 成功带最终补丁，失败带最优候选。"""
 
@@ -174,7 +168,6 @@ class RepairOutcome:
             'trajectory': self.trajectory.to_dict(),
         }
 
-
 class AgentRepairEngine:
     """多轮修复引擎 — 编排路由/生成/验证/排序/回溯。"""
 
@@ -185,7 +178,7 @@ class AgentRepairEngine:
         self._validator = validator or SafeRepairValidator(allow_exec=allow_exec)
         self._ranker = ranker or CandidatePatchRanker()
 
-    # -- public ---------------------------------------------------------
+# public
 
     def repair(self, vulnerable_code, vuln_type="unknown", function_name="",
                root_cause="", cwe_id=None, constraints=None, language="c"):
@@ -248,7 +241,7 @@ class AgentRepairEngine:
                                  best_round.rank_score)
         return RepairOutcome(False, "", "no acceptable candidate produced", trajectory)
 
-    # -- 候选生成 --------------------------------------------------------
+# 候选生成
 
     def _generate_candidates(self, code, vuln_type, route, rnd, constraints, feedback):
         """按路由族与反馈生成候选集。
@@ -397,7 +390,7 @@ class AgentRepairEngine:
             description='占位候选 — 无实质修改',
             route='template', family='unknown')
 
-    # -- 代码变换 --------------------------------------------------------
+# 代码变换
 
     def _insert_guard(self, code, guards):
         """守卫语句插入函数体入口（第一个 { 之后）。"""
@@ -535,7 +528,7 @@ class AgentRepairEngine:
         out['round'] = rnd
         return out
 
-    # -- 杂项 ------------------------------------------------------------
+# 杂项
 
     @staticmethod
     def _decide(status):
@@ -578,7 +571,6 @@ class AgentRepairEngine:
     def _new_id():
         return 'rc_' + uuid.uuid4().hex[:8]
 
-
 def agent_repair(vulnerable_code, vuln_type="unknown", function_name="",
                  root_cause="", cwe_id=None, constraints=None,
                  language="c", max_rounds=3):
@@ -586,7 +578,6 @@ def agent_repair(vulnerable_code, vuln_type="unknown", function_name="",
     engine = AgentRepairEngine(max_rounds=max_rounds)
     return engine.repair(vulnerable_code, vuln_type, function_name,
                          root_cause, cwe_id, constraints, language)
-
 
 def repair_to_dict(outcome):
     """修复结果转 dict（含轨迹），供报告合成器消费。"""

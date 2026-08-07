@@ -18,11 +18,10 @@ vectors require no constraint solving to compute, enabling fast sorting over
 large numbers of active paths. Solver budget is only spent on top-k paths.
 
 Reference:
-  Yang (2025), U.Toronto PhD Thesis, "ML-Assisted Symbolic Analysis"
+  Yang, U.Toronto PhD Thesis, "ML-Assisted Symbolic Analysis"
   KLEE Workshop 2024, "State Merging and Prioritization"
 """
 
-from __future__ import annotations
 
 import hashlib
 import logging

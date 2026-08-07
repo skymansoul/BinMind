@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_07_func_ptr",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "释放后经函数指针调用"
+}

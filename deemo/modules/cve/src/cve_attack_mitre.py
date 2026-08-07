@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 
 from .cve_models import CVEEntry
 
-# ---- CWE → ATT&CK 映射表 ----
+# CWE → ATT&CK 映射表
 # 格式: cwe_id → [(technique_id, technique_name, tactic, confidence)]
 # confidence: 该 CWE 指示该 ATT&CK 技术的可靠程度。
 # 手工整理自 MITRE CWE/CAPEC/ATT&CK 交叉引用，2024 年验证。
@@ -246,7 +246,7 @@ def get_tactic_summary(entries: List) -> Dict[str, Any]:
     }
 
 
-# ---- 查找特定技术详情 ----
+# 查找特定技术详情
 # 所映射技术的 ATT&CK 技术最小元数据集。
 
 _ATTACK_TECHNIQUE_INFO: Dict[str, Dict[str, str]] = {
@@ -284,7 +284,7 @@ def get_technique_info(technique_id: str) -> Optional[Dict[str, str]]:
     return _ATTACK_TECHNIQUE_INFO.get(technique_id)
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _get(entry, field: str, default=None):
     if hasattr(entry, field):

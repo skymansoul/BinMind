@@ -1,7 +1,7 @@
 """
 现代语言运行时分析——Rust协程/Go协程/Swift ARC + Ruby风格unsafe Rust探测。
 
-Ruby (arXiv 2211.00111v3, 2026.07) 核心结论：
+Ruby 核心结论：
   unsafe Rust编译后safe/unsafe边界在二进制中不可见。
   编译器优化差异产生可区分的指令模式。
   unsafe代码标志：缺失边界检查、裸指针算术、volatile访存。
@@ -39,7 +39,7 @@ def _demangle_rust_name(mangled:str)->Optional[str]:
         return '::'.join(parts) if parts else mangled
     except (IndexError, ValueError): return mangled  # 修正: bare except → IndexError/ValueError
 
-# ── Ruby风格unsafe Rust启发规则 ──
+# Ruby风格unsafe Rust启发规则
 # unsafe代码在ARM64二进制中的指纹指令模式
 _UNSAFE_RUST_PATTERNS = [
     # volatile访存——unsafe指针操作的标志（addr_of!或裸*ptr）
@@ -225,7 +225,6 @@ def analyze_modern_language(binary_path:str,language:str='auto')->Dict[str,Any]:
 # 不拆: unsafe Rust模式缓存——Ruby启发式探测的预编译正则
 _UNSAFE_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_rust_unsafe_scanner(data: bytes) -> int:
     """统计unsafe Rust中裸指针解引用次数——未接入主分析流。"""

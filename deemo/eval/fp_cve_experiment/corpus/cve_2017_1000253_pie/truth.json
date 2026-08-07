@@ -1,0 +1,8 @@
+{
+  "id": "cve_2017_1000253_pie",
+  "expected_vuln": true,
+  "vuln_type": "heap_overflow",
+  "cve": "CVE-2017-1000253",
+  "component": "glibc realpath PIE",
+  "mode": "realpath 分配大小与拷贝长度不匹配"
+}

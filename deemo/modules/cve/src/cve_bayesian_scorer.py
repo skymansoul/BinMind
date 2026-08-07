@@ -1,6 +1,6 @@
 # 创建: 2026-08-01 07:03
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 修改: 2026-08-05 09:45 (解析梯度替换数值梯度: 手动推导异方差损失反向传播, mini-batch SGD)
+# 修改: 2026-08-01 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 修改: 2026-08-01 09:45 (解析梯度替换数值梯度: 手动推导异方差损失反向传播, mini-batch SGD)
 # 简述: MC Dropout贝叶斯评分 — 认知+偶然不确定性分解
 # 贝叶斯CVE评分 — MC Dropout驱动的认知+偶然不确定性估计
 #
@@ -9,7 +9,7 @@
 #   2. 偶然 (Aleatoric): 数据固有噪声 → 不可约.
 # 区分两者的实际价值: 高认知+低偶然→需更多数据; 低认知+高偶然→不可预测.
 #
-# 解决方案: MC Dropout (Gal & Ghahramani 2016) + 双头输出 (Kendall & Gal 2017).
+# 解决方案: MC Dropout + 双头输出.
 # 训练时: 标准MLP + Dropout正则化.
 # 推理时: 保持Dropout开启, T次随机前向传播.
 #   总方差 = 认知方差 (样本间) + 偶然方差 (平均预测方差).
@@ -26,10 +26,10 @@
 #   mini-batch SGD: 批量累积梯度, 减少Python循环开销.
 #   训练速度提升 ~500-1000x (相对数值梯度逐参数差分).
 #
-# 参考:
-#   [Gal & Ghahramani 2016] Dropout as Bayesian Approximation (ICML)
-#   [Kendall & Gal 2017] Aleatoric+Epistemic Uncertainty (NeurIPS)
-#   [VB-Score 2025] 通用评分框架, 非CVE特定
+#
+# Dropout as Bayesian Approximation (ICML)
+# Aleatoric+Epistemic Uncertainty (NeurIPS)
+# 通用评分框架, 非CVE特定
 
 import math, random
 from typing import Dict, List, Optional, Tuple

@@ -1,15 +1,14 @@
-# 创建: 2025-08-15 11:53
-# 修改: 2025-08-15 — Vietoris-Rips + 单链聚类 Betti-0 持久性
-# 修改: 2025-08-16 — 修正标注: 仅计算连通分量, 非完整持久同调
+# 创建: 2026-05-25 11:53
+# 修改: 2026-05-25 — Vietoris-Rips + 单链聚类 Betti-0 持久性
+# 修改: 2026-05-25 — 修正标注: 仅计算连通分量, 非完整持久同调
 """基于 landmark 的稀疏持久同调计算 — 为 TopologicalCoverageNavigator 提供拓扑特征.
 
 修改记录:
 2025-08-04 14:55 - 从 topological_coverage_navigator.py 分离, 独立的持久性计算模块
 2025-08-06 08:39 - union-find + 单链聚类: β₀ 连通分量和持久图
 
-参考:
-  Edelsbrunner & Harer (2010) "Computational Topology" 第 7 章
-  Carlsson (2009) "Topology and Data" (Bull. AMS)
+  Edelsbrunner & Harer "Computational Topology" 第 7 章
+  Carlsson "Topology and Data" (Bull. AMS)
 """
 
 import math
@@ -22,7 +21,6 @@ _N_LANDMARKS = 64
 _PERSISTENCE_MIN_LIFETIME = 0.15
 _BOUNDARY_ALPHA = 0.25
 
-
 def jaccard_distance(fp_a: FrozenSet[int], fp_b: FrozenSet[int]) -> float:
     if not fp_a and not fp_b:
         return 0.0
@@ -31,7 +29,6 @@ def jaccard_distance(fp_a: FrozenSet[int], fp_b: FrozenSet[int]) -> float:
     inter = len(fp_a & fp_b)
     union = len(fp_a | fp_b)
     return 1.0 - (inter / union if union > 0 else 0.0)
-
 
 def maximin_landmarks(point_ids: List[str],
                       fingerprints: Dict[str, FrozenSet[int]],
@@ -65,7 +62,6 @@ def maximin_landmarks(point_ids: List[str],
             if d < min_dists[sid]:
                 min_dists[sid] = d
     return selected
-
 
 def single_linkage_persistence(
     landmark_ids: List[str],
@@ -157,7 +153,6 @@ def single_linkage_persistence(
             })
     features.sort(key=lambda x: x["persistence"], reverse=True)
     return features
-
 
 def detect_frontier_boundaries(
     point_ids: List[str],

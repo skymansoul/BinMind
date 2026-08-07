@@ -19,10 +19,9 @@
   检测故意弱化, 但都不提供系统化的"故障树"视角 — 什么可能出错, 影响是什么,
   如何排序修复优先级。
 
-参考:
   - ISO 26262-3:2018 (汽车功能安全): FMEA方法论标准。
-  - SAE J1739 (2021): FMEA实施指南。
-  - NIST SP 800-53 Rev.5 (2020): SA-11(8)要求对关键系统做失效模式分析。
+  - SAE J1739: FMEA实施指南。
+  - NIST SP 800-53 Rev.5: SA-11(8)要求对关键系统做失效模式分析。
   - CWE (Common Weakness Enumeration): 映射到密码学相关CWE编号。
 
 边界条件:
@@ -35,7 +34,6 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Dict, List, Optional, Tuple
 
-
 class Severity(IntEnum):
     """失效影响的严重度 — 参考ISO 26262 ASIL分级。"""
     S10 = 10  # 密钥完全暴露 / 任意密文解密
@@ -44,7 +42,6 @@ class Severity(IntEnum):
     S4 = 4    # 侧信道信息泄漏 / 部分密钥恢复
     S2 = 2    # 降级攻击可行 / 弱参数
     S1 = 1    # 信息性: 未来风险 / 标准不符合
-
 
 class Occurrence(IntEnum):
     """失效发生概率 — 基于二进制审计信号的频率。"""
@@ -55,7 +52,6 @@ class Occurrence(IntEnum):
     O2 = 2    # 很低: 硬件TRNG+健康监测 / 现代算法
     O1 = 1    # 极低: 最高安全级别实现
 
-
 class Detection(IntEnum):
     """失效可检测性 — 静态分析可以多容易地发现此失效。"""
     D10 = 10  # 几乎不可能静态检测
@@ -64,7 +60,6 @@ class Detection(IntEnum):
     D4 = 4    # 中等: 字符串+结构分析可检测
     D2 = 2    # 容易: 魔数匹配或字符串直接检测
     D1 = 1    # 极容易: 标准检测即可发现
-
 
 @dataclass
 class FailureMode:
@@ -79,8 +74,7 @@ class FailureMode:
     binary_indicators: List[str] = field(default_factory=list)
     recommended_mitigation: str = ""
 
-
-# ── 密码学失效模式知识库 ──
+# 密码学失效模式知识库
 
 def _build_failure_mode_kb() -> List[FailureMode]:
     """构建密码学实现的失效模式库。基于CWE和实际CVE统计。"""
@@ -161,8 +155,7 @@ def _build_failure_mode_kb() -> List[FailureMode]:
 
     return kb
 
-
-# ── FMEA分析器 ──
+# FMEA分析器
 
 class CryptoFMEA:
     """密码学FMEA — 评估失效模式在当前二进制中的适用性和风险。"""

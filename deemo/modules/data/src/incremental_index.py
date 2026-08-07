@@ -9,7 +9,7 @@
 #      Memtable (内存 Cuckoo Filter + Python dict) 吸收写入,
 #      达到阈值后冻结为 immutable SSTable, 异步与现有层合并.
 #      合并使用 Cuckoo Filter 的 load-factor-based merge
-#      (J. Big Data 2025: Cuckoo 支持删除 + filter 合并).
+#.
 #   2. 分层 Bloom 预过滤: 每层配备独立的 Bloom filter,
 #      查询时逐层探测: Memtable → Level-0 → Level-1 → ...
 #      命中即返回, 未命中查询下一层. 减少无效探测.
@@ -21,11 +21,11 @@
 #      每层大小按倍数增长 (×4), 类似 LSM 的 level size ratio.
 #
 # 与现有工作:
-#   - LSM-tree + Cuckoo (J. Big Data 2025): 面向 KV 存储.
+#   - LSM-tree + Cuckoo: 面向 KV 存储.
 #     本方案将 Cuckoo 的删除+合并特性适配到签名索引场景.
 #   - PGM-index (streaming construction): 面向排序数组.
 #     本方案面向无序签名哈希, 使用概率结构替代学习索引.
-#   - 标准 LSH 索引: 批量重建. 本方案增量分层, 写入 O(1).
+# 标准 LSH 索引: 批量重建. 本方案增量分层, 写入 O(1).
 
 import math
 import time
@@ -129,9 +129,7 @@ class MiniCuckoo:
         return fp if fp != 0 else 1
 
 
-# ---------------------------------------------------------------------------
 # 分层索引
-# ---------------------------------------------------------------------------
 
 class _IndexLevel:
     """单层索引: Cuckoo filter (快速排除) + 精确存储 (dict/set)."""

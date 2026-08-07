@@ -10,7 +10,7 @@
 15-40% (余弦距离)。这导致基于指纹的漏洞搜索在跨优化级别场景中失准——
 一个 CVE 在 -O0 的二进制中被指纹匹配到, 但在 -O2 的同一二进制中却被漏报
 
-现有方案 (SAILR, USENIX 2024; LLM4Decompile, arXiv 2024) 通过改进反编译
+现有方案 通过改进反编译
 输出来缩小优化差距, 但无法处理反编译器已输出的指纹级差异
 
 本模块采用互补策略: 接受指纹差异的客观存在, 通过学习一个从多优化级别
@@ -36,13 +36,13 @@ RBF 核 k(x, x') = exp(-γ||x-x'||²), γ 通过 LOOCV 选择
 在 -O3 的指纹上验证——模拟实战中最常见的场景 (漏洞库为 -O0
 目标二进制为 -O3)
 
-ref: Bollegala et al. (2011) "Cross-Domain Senti 分类 Using
+ref: Bollegala et al. "Cross-Domain Senti 分类 Using
 Spectral Feature Align" — 跨域特征对齐的谱方法, 本项目将其
 从 NLP 情感分析迁移至二进制指纹归一化
-ref: Gretton et al. (2012) "A Kernel Two-Sample Test" (JMLR) —
+ref: Gretton et al. "A Kernel Two-Sample Test" (JMLR) —
 MMD (Maximum Mean Discrepancy) 作为跨优化级别分布差异的度量
 用于检验归一化后的指纹分布是否对齐
-ref: SAILR (Basque et al., USENIX Securi 2024) — 编译器感知的反编译
+ref: SAILR — 编译器感知的反编译
 结构化, 本项目与其互补: SAILR 改进反编译输出, 我们归一化指纹
 
 边界条件与风险:
@@ -87,7 +87,7 @@ class OptLevelNormalizer:
         self._fitted = False
         self._feature_dim: int = 0
 
-    # ---- fit: 从参考指纹对学习变换参数 ----
+# fit: 从参考指纹对学习变换参数
 
     def fit(self, reference_pairs: list[tuple[dict, dict, str]],
             o0_label: str = 'O0') -> dict:
@@ -158,7 +158,7 @@ class OptLevelNormalizer:
             'feature_dim': self._feature_dim,
         }
 
-    # ---- 变换: 应用归一化变换 ----
+# 变换: 应用归一化变换
 
     def transform(self, fingerprint: dict, opt_level: str = 'O2') -> dict:
         """将任意优化级别的指纹变换到 O0-等效空间
@@ -189,7 +189,7 @@ class OptLevelNormalizer:
 
         return _vec_to_fp(_vec, fingerprint)
 
-    # ---- 内部方法 ----
+# 内部方法
 
     def _fit_krr(self, X_o0: list[list[float]], X_o3: list[list[float]]):
         """拟合核岭回归: O0 → O3 的残差映射
@@ -320,7 +320,7 @@ class OptLevelNormalizer:
         return _math.sqrt(max(_mmd2, 0.0))
 
 
-# ===== 辅助函数 =====
+# 辅助函数
 
 def _fp_to_vec(fp: dict) -> list[float]:
     """指纹 → 扁平特征向量"""
@@ -436,7 +436,7 @@ def _solve_linear_system(A: list[list[float]], b: list[float]) -> list[float]:
     return _x
 
 
-# ===== 轻量冒烟测试 =====
+# 轻量冒烟测试
 
 def _smoke_test():
     """验证分位数对齐 + KRR 的基本通路"""

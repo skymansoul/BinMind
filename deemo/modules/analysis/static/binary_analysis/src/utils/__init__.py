@@ -1,4 +1,4 @@
-# ---- Lazy import pattern: 延迟加载避免循环依赖与启动开销 ----
+# Lazy import pattern: 延迟加载避免循环依赖与启动开销
 
 _MODULES = {
     "helpers": None,
@@ -40,7 +40,7 @@ def _load(module_name: str):
         globals()[name] = getattr(_MODULES[module_name], name)
 
 
-# ===== 常用入口在模块级可访问，第一次访问时触发加载 =====
+# 常用入口在模块级可访问，第一次访问时触发加载
 
 
 def __getattr__(name: str):

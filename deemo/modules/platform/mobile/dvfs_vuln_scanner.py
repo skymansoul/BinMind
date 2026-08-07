@@ -1,15 +1,15 @@
 # DVFS硬件漏洞扫描器
-# 参考：
+#
 #   "Exploring and exploiting the hardware vulnerabilities in the low-power
-#    units of modern processors" (Science China Information Sciences, Jan 2025)
+#    units of modern processors"
 #    清华团队揭示三种DVFS硬件漏洞：
 #    (1) CPU低电压故障注入，突破ARM TrustZone。
 #    (2) GPU低电压故障注入，NVIDIA GPU推理产出错误。
 #    (3) 频率隐蔽信道，无需共享内存的跨核通信。
 #    三者均为纯软件利用，无需物理访问或代码缺陷。
 #   "CLKscrew: Exposing the Perils of Security-Oblivious Energy Management"
-#    (USENIX Security 2017)，DVFS攻击先驱。
-#   VoltPillager (USENIX Security 2021)，Intel SGX片上电压故障注入。
+#，DVFS攻击先驱。
+#   VoltPillager，Intel SGX片上电压故障注入。
 
 import os
 import re
@@ -43,7 +43,6 @@ _DVFS_SYSFS_PATHS = [
     "/sys/class/devfreq/",
 ]
 
-
 @dataclass
 class DVFSScanResult:
     vulnerability: str
@@ -54,7 +53,6 @@ class DVFSScanResult:
     attack_scenario: str = ""
     confidence: float = 0.0
     reference: str = ""
-
 
 class DVFSScanner:
     """DVFS硬件配置安全扫描器。
@@ -184,7 +182,7 @@ class DVFSScanner:
                             safe_value="chmod 600 /dev/mem",
                             attack_scenario="/dev/mem 可被非 root 用户读取 → DVFS 寄存器可被直接映射和修改",
                             confidence=0.95,
-                            reference="VoltPillager (USENIX Security 2021)"
+                            reference="VoltPillager "
                         ))
                 except OSError:
                     pass
@@ -220,7 +218,6 @@ class DVFSScanner:
                        if re.match(r'cpu\d+$', c)])
         except Exception:
             return 4  # 检测失败时取保守值
-
 
 def scan_dvfs_vulnerabilities() -> list[DVFSScanResult]:
     scanner = DVFSScanner(scan_sysfs=True, scan_registers=False)

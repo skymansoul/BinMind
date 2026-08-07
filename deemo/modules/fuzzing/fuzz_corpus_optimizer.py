@@ -1,10 +1,9 @@
 """语料库多样性与优化 -- RandSet/KRAKEN-FUZZ 风格的运行时语料修剪。
 
-参考:
-  RandSet     (arXiv:2602.22729, 2025) -- 随机化集合覆盖的语料规约, 高频调度友好
-  KRAKEN-FUZZ (SBFT 2025 @ ICSE 2025)    -- 动态飞行中语料最小化
-  MCM         (IST 2025)                  -- 历史模糊测试结果驱动的多语料最小化
-  ISC4DGF     (JCST 2025)                 -- LLM驱动定向模糊测试初始语料生成
+  RandSet      -- 随机化集合覆盖的语料规约, 高频调度友好
+  KRAKEN-FUZZ    -- 动态飞行中语料最小化
+  MCM                  -- 历史模糊测试结果驱动的多语料最小化
+  ISC4DGF                 -- LLM驱动定向模糊测试初始语料生成
 
 提供:
   - 基于覆盖集合覆盖的语料贪心规约 (afl-cmin 算法)
@@ -28,7 +27,6 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class SeedScore:
     """种子的多维度评分。"""
@@ -43,13 +41,11 @@ class SeedScore:
     efficiency_score: float = 0.0    # 执行效率
     composite_score: float = 0.0     # 综合评分
 
-
 class DiversityMetric(str, Enum):
     JACCARD = "jaccard"
     ENTROPY = "entropy"
     FINGERPRINT = "fingerprint"
     COVERAGE_UNION = "coverage_union"
-
 
 class CorpusOptimizer:
     """语料库质量优化器。
@@ -69,7 +65,7 @@ class CorpusOptimizer:
         self._historical_edge_freq: Dict[int, int] = defaultdict(int)
         self._campaign_count: int = 0
 
-    # ===== 注册种子评分 =====
+# 注册种子评分
 
     def register_seed(self, seed_id: str, coverage: Set[int],
                       exec_time_ms: float = 0.0, file_size: int = 0,
@@ -108,7 +104,7 @@ class CorpusOptimizer:
             rarity_sum += 1.0 / (1.0 + freq)
         return rarity_sum / len(coverage)
 
-    # ===== 贪心覆盖规约 (afl-cmin 算法) =====
+# 贪心覆盖规约 (afl-cmin 算法)
 
     def greedy_minimize(self, seed_ids: List[str]) -> List[str]:
         """选择最小种子子集, 使并集覆盖等价于全集。
@@ -148,7 +144,7 @@ class CorpusOptimizer:
 
         return selected
 
-    # ===== 随机化规约 (RandSet 2025) =====
+# 随机化规约
 
     def randomized_minimize(self, seed_ids: List[str],
                             target_ratio: float = 0.15) -> List[str]:
@@ -189,7 +185,7 @@ class CorpusOptimizer:
 
         return kept
 
-    # ===== KRAKEN-FUZZ 飞行中修剪 =====
+# KRAKEN-FUZZ 飞行中修剪
 
     def inflight_prune(self, threshold_ratio: float = 0.1) -> int:
     # 不拆——保持上下文连贯性
@@ -225,7 +221,7 @@ class CorpusOptimizer:
 
         return len(to_remove)
 
-    # ===== 多样性度量 =====
+# 多样性度量
 
     def diversity_score(self, seed_ids: List[str],
                         metric: DiversityMetric = DiversityMetric.JACCARD) -> float:
@@ -287,7 +283,7 @@ class CorpusOptimizer:
 
         return 0.0
 
-    # ===== 综合优化报告 =====
+# 综合优化报告
 
     def optimize_report(self, seed_ids: List[str]) -> Dict:
         """对语料库执行一轮完整优化并生成报告。"""
@@ -331,7 +327,6 @@ class CorpusOptimizer:
         self._historical_edge_freq = defaultdict(int, state.get("historical_freq", {}))
         self._prune_history = state.get("prune_history", [])
         self._campaign_count = state.get("campaign_count", 0)
-
 
 def optimize_corpus(seed_ids: List[str],
                     coverage_getter: Callable[[str], Set[int]],

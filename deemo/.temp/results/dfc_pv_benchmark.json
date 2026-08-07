@@ -1,0 +1,745 @@
+{
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "fpr": 0.0,
+  "tp": 25,
+  "fp": 0,
+  "fn": 0,
+  "tn": 6,
+  "results": {
+    "df_adv_16": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 11,
+          "second_free_line": 12,
+          "variable": "p",
+          "alias_chain": "s -> r -> q -> p",
+          "confidence": 0.85,
+          "pattern": "alias_chain",
+          "reason": "'s' free@L11 and 'p' free@L12 (chain: s -> r -> q -> p)",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_17": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 8,
+          "second_free_line": 13,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'p' free@L8 and 'p' free@L13",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_18": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "df_adv_19": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 11,
+          "variable": "g_ptr",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'level_b' freed at L10, direct free at L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_20": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 8,
+          "second_free_line": 10,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'p' free@L8 and 'p' free@L10",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_21": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "df_adv_22": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 11,
+          "second_free_line": 12,
+          "variable": "s->b",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'helper' freed at L11, direct free at L12",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 11,
+          "second_free_line": 13,
+          "variable": "s",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'helper' freed at L11, direct free at L13",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 6,
+          "second_free_line": 12,
+          "variable": "s->b",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'s->a' free@L6 (in helper) and 's->b' free@L12 (in main)",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_23": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 8,
+          "second_free_line": 9,
+          "variable": "p",
+          "alias_chain": "q -> p",
+          "confidence": 0.85,
+          "pattern": "alias_chain",
+          "reason": "'q - 8' free@L8 and 'p' free@L9 (chain: q -> p)",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_24": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "df_adv_25": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 13,
+          "second_free_line": 14,
+          "variable": "g",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'func2' freed at L13, direct free at L14",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_26": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 11,
+          "variable": "buf",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'closer' freed at L10, direct free at L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_27": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "df_adv_28": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 10,
+          "variable": "arr[2]",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'arr[0]' free@L9 and 'arr[2]' free@L10",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 11,
+          "variable": "arr",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'arr[0]' free@L9 and 'arr' free@L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 11,
+          "variable": "arr",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'arr[2]' free@L10 and 'arr' free@L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_29": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "df_adv_30": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 12,
+          "second_free_line": 13,
+          "variable": "target",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'wrap_free' freed at L12, direct free at L13",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "df_adv_31": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 14,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.82,
+          "pattern": "callback_df",
+          "reason": "'p' double-freed inside wrapper chain 'process'",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 14,
+          "variable": "data",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'data' free@L10 and 'data' free@L14",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_01": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 11,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.82,
+          "pattern": "callback_df",
+          "reason": "'p' double-freed inside wrapper chain 'process'",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 11,
+          "variable": "data",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'data' free@L9 and 'data' free@L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_02": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 10,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'p' free@L9 and 'p' free@L10",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_03": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 8,
+          "second_free_line": 9,
+          "variable": "g_alias",
+          "alias_chain": "",
+          "confidence": 0.88,
+          "pattern": "cross_func",
+          "reason": "'p' free@L8 and 'g_alias' free@L9",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_04": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 9,
+          "variable": "p",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "loop",
+          "reason": "'p' free@L9 inside loop body",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_05": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 10,
+          "variable": "buf",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'buf' free@L9 and 'buf' free@L10",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 9,
+          "second_free_line": 12,
+          "variable": "buf",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'buf' free@L9 and 'buf' free@L12",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        },
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 10,
+          "second_free_line": 12,
+          "variable": "buf",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'buf' free@L10 and 'buf' free@L12",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_06": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 12,
+          "second_free_line": 13,
+          "variable": "g_buf",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'handler' freed at L13, direct free at L12",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_07": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "double_free_08": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 11,
+          "second_free_line": 12,
+          "variable": "a->next",
+          "alias_chain": "",
+          "confidence": 0.8,
+          "pattern": "dangling_field",
+          "reason": "'a->next' free@L12 after 'a' freed@L11",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_09": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 5,
+          "second_free_line": 6,
+          "variable": "gp",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'gp' free@L5 (in cleanup) and 'gp' free@L6 (in main)",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_10": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 5,
+          "second_free_line": 5,
+          "variable": "shared",
+          "alias_chain": "",
+          "confidence": 0.85,
+          "pattern": "cross_func",
+          "reason": "'do_free' freed at L5, direct free at L5",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_11": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 5,
+          "second_free_line": 5,
+          "variable": "c->d2",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'c->d1' free@L5 and 'c->d2' free@L5",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_12": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 5,
+          "second_free_line": 5,
+          "variable": "e->val",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'e->key' free@L5 and 'e->val' free@L5",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_13": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 6,
+          "second_free_line": 6,
+          "variable": "resource",
+          "alias_chain": "",
+          "confidence": 0.88,
+          "pattern": "wrapper",
+          "reason": "'release' wraps free called 2x",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_14": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 5,
+          "second_free_line": 6,
+          "variable": "buf",
+          "alias_chain": "",
+          "confidence": 0.82,
+          "pattern": "callback_df",
+          "reason": "'buf' double-freed inside wrapper chain 'process'",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    },
+    "double_free_15": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "type": "double-free",
+          "verdict": "VULN",
+          "first_free_line": 6,
+          "second_free_line": 6,
+          "variable": "b.data",
+          "alias_chain": "",
+          "confidence": 0.9,
+          "pattern": "direct",
+          "reason": "'a.data' free@L6 and 'b.data' free@L6",
+          "cwe": "CWE-415",
+          "severity": "Critical"
+        }
+      ]
+    }
+  }
+}

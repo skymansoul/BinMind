@@ -5,10 +5,10 @@
 #           信息）"，以可学习门控系数按冗余度动态分配权重；对缺失模态用其余模态的冗余
 #           部分做条件重建；融合表征与各单模态表征之间施加跨模态对比正则；融合置信度
 #           依据可用模态数与冗余一致性校准，并衔接 multi_modal_confidence.py。
-# 参考论文（实现时对应关系见各节注释）:
-#   [1] Robult — arXiv:2509.03477 [待验证]  冗余/特异特征分解 + 门控加权融合
-#   [2] FedMAC — arXiv:2410.03070 [待验证]  跨模态聚合重建缺失模态 + 对比正则化
-#   [3] Incomplete Modality Misinfo Recognition — arXiv:2510.05839 [待验证]  融合置信度校准
+# 论文（实现时对应关系见各节注释）:
+#   [1] Robult — [待验证]  冗余/特异特征分解 + 门控加权融合
+#   [2] FedMAC — [待验证]  跨模态聚合重建缺失模态 + 对比正则化
+#   [3] Incomplete Modality Misinfo Recognition — [待验证]  融合置信度校准
 # 设计权衡: 纯 Python 实现，与模块内其余文件一致，不依赖 torch/numpy；
 #           投影权重以正弦确定性初始化，保证跨进程可复现；门控系数以启发式接口更新，
 #           完整反向传播可在 torch 中直接复用本文件的分解-重建-融合结构。
@@ -17,18 +17,16 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-# ==== 数值与默认超参 ====
+# 数值与默认超参
 _EPS: float = 1e-9           # 除零/对数保护
 _DEFAULT_TEMP: float = 0.07  # 对比损失温度，与 multi_modal_alignment.py 的 NTXent 对齐
 _DEFAULT_LATENT: int = 64    # 冗余共享子空间维度
 
 
-# ============================================================================
 # 缺失模态掩码 — 以 0/1 显式建模各模态是否可用
 # 缺失的定义: 键存在但值为 None / 空表，或输入字典缺键。
 # 掩码的下游用途: (a) 融合时跳过缺失模态；(b) 确定重建目标集合；
 #                 (c) 置信度校准中的 coverage 因子。
-# ============================================================================
 
 def build_modality_mask(
         modalities: Dict[str, Optional[List[List[float]]]]
@@ -49,7 +47,6 @@ def build_modality_mask(
     return _names, _mask
 
 
-# ============================================================================
 # 冗余-特异特征分解器 [1] (Robult)
 # 将每个模态特征 X_m 投影到共享冗余子空间 R_m 与模态特异子空间 S_m:
 #     R_m = tanh(X_m · W_red_m)      // 冗余部分，跨模态共享信息
@@ -58,7 +55,6 @@ def build_modality_mask(
 # 表示该样本信息中共享分量的占比——作为动态门控与置信度校准的依据。
 # W_red_m 按同一结构种子初始化 → 冗余部分在 D 维共享子空间中对齐，
 # 使 [2] 的跨模态聚合在几何上成立（同一坐标系内加权）。
-# ============================================================================
 
 class RedundantSpecificDecomposer:
     """冗余-特异分解器: 维护每模态冗余/特异投影、可学习门控系数与重建查询向量。"""
@@ -160,7 +156,6 @@ class RedundantSpecificDecomposer:
         return list(self._query.get(name, [0.0] * self.latent_dim))
 
 
-# ============================================================================
 # 跨模态条件重建器 [2] (FedMAC cross-modal aggregation)
 # 对缺失模态 m*: 用可用模态的冗余部分 R_k 依注意力加权聚合出 R_hat_m*:
 #     w_k ∝ exp( cos(q_m*, R_k) / τ )
@@ -168,7 +163,6 @@ class RedundantSpecificDecomposer:
 # q_m* 是可学习查询向量，表达"m* 的冗余信息应在共享子空间中何处"。
 # 特异部分无法跨模态重建（模态独有），故重建仅覆盖冗余部分——与 [1] 的
 # 冗余性建模一致: 冗余信息在缺失时可恢复，特异信息缺失不可逆。
-# ============================================================================
 
 class CrossModalReconstructor:
     """跨模态重建器: 用可用模态冗余部分重建缺失模态的冗余表征。"""
@@ -230,14 +224,12 @@ class CrossModalReconstructor:
         return _out, _conf
 
 
-# ============================================================================
 # 跨模态对比正则 [2] (FedMAC contrastive regularization)
 # 融合表征 F 与各单模态联合表征 Z_m 在批次内做 NT-Xent:
 # 同一样本的 (F[n], Z_m[n]) 为正样本对，其余样本为负样本。
 # 缺失模态不参与（mask=0 → 跳过），避免对空表征产生噪声梯度。
 # 该项使 F 在部分模态缺失情形下仍与可用模态表征保持一致——融合不被某个
 # 强模态劫持，缺失鲁棒性提升。温度与 multi_modal_alignment.NTXentLoss 对齐。
-# ============================================================================
 
 class CrossModalContrastiveLoss:
     """融合表征 ↔ 单模态表征的 NT-Xent 对比损失。"""
@@ -295,7 +287,6 @@ class CrossModalContrastiveLoss:
         return _loss / max(_count, 1)
 
 
-# ============================================================================
 # 融合置信度校准 [3]（衔接 multi_modal_confidence.py）
 # 校准置信度由三因子修正原始置信度 raw:
 #     coverage     = 可用模态数 / 总模态数            // 缺失越多，信息越不完整
@@ -304,7 +295,6 @@ class CrossModalContrastiveLoss:
 # 设计权衡: coverage 以 sqrt 压缩，避免单一模态缺失时置信度被过度压制；
 #           consistency<1 表示冗余信号冲突，直接线性压制；
 #           sample_count=0 时不做样本量混合（纯结构校准）。
-# ============================================================================
 
 class RedunFuseConfidence:
     """冗余感知的融合置信度校准器。"""
@@ -376,7 +366,6 @@ class RedunFuseConfidence:
         return self.calibrate(_blended, mask, consistency, sample_count)
 
 
-# ============================================================================
 # RedunFuse 融合器 — 分解 → 重建 → 门控融合 → 对比正则 → 置信度校准
 # 融合公式（逐样本）:
 #     F[n] = Σ_m w_m[n]·C_m[n] / Σ_m w_m[n]
@@ -384,7 +373,6 @@ class RedunFuseConfidence:
 #     缺失模态: C_m = R_hat_m（重建冗余部分），w_m = 0.5+0.5·注意力集中度
 # 相比 multi_modal_fusion.py 的静态/固定门控:
 #     权重 w_m 由冗余度逐样本动态分配；缺失模态不再被静默忽略，而是显式重建。
-# ============================================================================
 
 class RedunFuse:
     """RedunFuse 端到端融合器。"""
@@ -479,10 +467,8 @@ class RedunFuse:
         }
 
 
-# ============================================================================
 # 便捷函数 — 与 multi_modal_fusion.adaptive_fusion 同层级的单点入口
 # 自动推断各模态输入维度，缺失模态以 None/空表传入即可。
-# ============================================================================
 
 def redunfuse(modalities: Dict[str, Optional[List[List[float]]]],
               latent_dim: int = _DEFAULT_LATENT,

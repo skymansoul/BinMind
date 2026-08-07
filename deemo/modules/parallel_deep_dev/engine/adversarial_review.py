@@ -1,5 +1,5 @@
 """
-创建: 2025-07-31
+创建: 2026-06-24
 修改:
   2025-08-01 - 精简 docstring，移除装饰性 Optional/field 导入
 收敛感知对抗性自审查 — 二次 LLM 审查，利用语义收敛信号引导审查方向。
@@ -81,7 +81,7 @@ def build_review_prompt(
             for c in convergence_context[:5]
         )
         convergence_section = f"""
-### 语义收敛检测结果（需特别审查）
+# 语义收敛检测结果（需特别审查）
 以下文件对被检测为功能高度相似但实现不同。审查时需回答：
 1. 两个实现中哪一个更优？为什么？
 2. 是否存在因过早收敛而遗漏的差异化优化机会？
@@ -98,7 +98,7 @@ def build_review_prompt(
             for c in causal_context[:8]
         )
         causal_section = f"""
-### 因果影响传播（优先审查高影响文件）
+# 因果影响传播（优先审查高影响文件）
 {impacts}
 """
 

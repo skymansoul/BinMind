@@ -11,8 +11,7 @@
   · 动态工具 (ASAN/Valgrind): 零误报, 但需要触发路径, 覆盖率低
   · 本模块: 静态分析 + 分配器语义, 在不降低召回的前提下压缩 ~40% 误报
 
-参考:
-  · CAFD (arXiv:2509.22530) — value-flow 追踪分配大小的思路
+  · CAFD — value-flow 追踪分配大小的思路
   · glibc ptmalloc 源码 — malloc.c 中 checked_request2size/request2size 宏
 """
 
@@ -25,7 +24,6 @@ from core.allocator_constraints import (
     AllocSize, AllocatorConstraintChecker, ReallocCheck,
 )
 
-
 @dataclass
 class FilteredFinding:
     """过滤后的单个堆操作评估。"""
@@ -35,7 +33,6 @@ class FilteredFinding:
     reason: str
     actual_alloc: int    # 分配器实际分配的可用字节数
     fp_likelihood: float  # 误报概率 [0,1], 0=确定真阳性, 1=确定误报
-
 
 class HeapFalsePositiveFilter:
     """
@@ -146,6 +143,5 @@ class HeapFalsePositiveFilter:
         for f in findings:
             counts[f.verdict] += 1
         return counts
-
 
 __all__ = ['FilteredFinding', 'HeapFalsePositiveFilter']

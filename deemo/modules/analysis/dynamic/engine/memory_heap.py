@@ -152,10 +152,10 @@ class MemoryCorruptionPreciseLocator:
         report = f'''
 # 内存破坏精确定位报告
 
-## 漏洞类型
+# 漏洞类型
 {vulnerability.get('type', 'unknown')}
 
-## 触发指令
+# 触发指令
 Address: {hex(location.get('trigger_addr', 0))}
 Instruction: {location.get('trigger_instruction', 'unknown')}
 Operation Type: {trace.get('operation_type', 'unknown')}
@@ -166,7 +166,7 @@ Operation Type: {trace.get('operation_type', 'unknown')}
                 report += f"- {op['instruction']} {op['destination']}, [{op['address_expression']}]\n"
         return report
 
-# ── Round 6: 竞态条件检测 ───────────────────────────────────
+# Round 6: 竞态条件检测
 
 @dataclass
 class RaceCondition:

@@ -6,10 +6,10 @@
 
 创新点：
   1. 置信度分桶多样性奖励 — 避免仅选高置信度冗余见证
-  2. 惰性贪心加速 — 候选>200时显著降低计算量 (Minoux 1978)
+  2. 惰性贪心加速 — 候选>200时显著降低计算量
   3. 增量维护 — 图变更时仅重算受影响见证
 
-ref: Nemhauser et al. (1978) — 子模函数最大化的 (1-1/e) 近似保证。
+ref: Nemhauser et al. — 子模函数最大化的 (1-1/e) 近似保证。
 """
 
 from __future__ import annotations
@@ -107,7 +107,7 @@ class SubmodularCoverageFunction:
         augmented = selected | {candidate}
         return self.coverage(augmented) - current
 
-    # ---- 内部 ----
+# 内部
 
     def _compute_node_coverage(self, selected: Set[Tuple[str, str]]
                                ) -> Dict[str, float]:

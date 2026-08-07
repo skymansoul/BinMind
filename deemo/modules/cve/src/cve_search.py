@@ -3,7 +3,7 @@
 # 分词器处理混合拉丁+CJK查询（如"log4j 远程代码执行 rce"），
 # 因BinMind涉及大量中文漏洞研究。
 #
-# _is_cjk使用显式Unicode码点范围而非\p{Han}——
+# is_cjk使用显式Unicode码点范围而非\p{Han}——
 # Python的re模块不支持Unicode属性转义（仅PCRE支持）。
 # 在_tokenize中遭遇运行时崩溃后才学到——正则编译通过但匹配时崩溃。
 # 码点范围表更具可移植性。
@@ -25,7 +25,7 @@ from .cve_models import CVEEntry
 from .cve_kb import CVEKnowledgeBase
 
 
-# ---- 同义词——手工整理20条漏洞缩写映射 ----
+# 同义词——手工整理20条漏洞缩写映射
 # 非自动生成。每条均经真实CVE描述人工验证以确保扩展对搜索有用。
 # 添加更多无益——这些已覆盖90%以上的缩写查询。
 _SYNONYMS: Dict[str, str] = {
@@ -51,7 +51,7 @@ _SYNONYMS: Dict[str, str] = {
     "cmd_inj": "command injection",
 }
 
-# ---- 停用词——常见英语 ----
+# 停用词——常见英语
 _STOPWORDS: Set[str] = {
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
     "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
@@ -110,7 +110,7 @@ def _tokenize(text: str) -> List[str]:
     tokens: List[str] = []
     text = text.strip()
 
-    # ---- 分割为拉丁段和CJK段 ----
+# 分割为拉丁段和CJK段
     segments: List[Tuple[str, bool]] = []  # (segment, is_cjk)
     i = 0
     while i < len(text):
@@ -169,7 +169,7 @@ def _expand_tokens(tokens: List[str]) -> List[str]:
     return expanded
 
 
-# ---- CVESearchEngine ----
+# CVESearchEngine
 class CVESearchEngine:
     """CVE描述BM25搜索——支持CJK分词。"""
 
@@ -353,7 +353,7 @@ class CVESearchEngine:
         return result_list[:top_n]
 
 
-# ---- 模块级单例（与get_exploitdb + get_kev相同模式） ----
+# 模块级单例（与get_exploitdb + get_kev相同模式）
 _search_engine: Optional[CVESearchEngine] = None
 _search_lock = threading.Lock()
 

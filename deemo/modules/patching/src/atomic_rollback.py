@@ -87,7 +87,7 @@ class RollbackProof:
         }
 
 
-# ── 原子回滚引擎 ──────────────────────────────────────────────────
+# 原子回滚引擎
 
 class AtomicRollbackEngine:
     """三阶段原子回滚引擎。
@@ -110,7 +110,7 @@ class AtomicRollbackEngine:
         self._status: Dict[str, RollbackStatus] = {}
         self._proofs: List[RollbackProof] = []
 
-    # ── Phase 1: Snapshot ─────────────────────────────────────────
+# Phase 1: Snapshot
 
     def snapshot(self, binary_path: str,
                  patch_regions: List[Tuple[int, int]],
@@ -145,7 +145,7 @@ class AtomicRollbackEngine:
         _log.info("Snapshot: %d regions for %s", len(regions), binary_path)
         return regions
 
-    # ── Phase 2: Verify after apply ────────────────────────────────
+# Phase 2: Verify after apply
 
     def verify_after_apply(self, binary_path: str) -> Tuple[bool, List[str]]:
         """补丁应用后验证：检查未修改区域的完整性。
@@ -208,7 +208,7 @@ class AtomicRollbackEngine:
         # 仅检查是否为零页或全 FF 页（编译器输出的合法模式）
         return True  # 简化：生产环境应存储完整 chunk 哈希表
 
-    # ── Phase 3: Rollback ─────────────────────────────────────────
+# Phase 3: Rollback
 
     def rollback(self, binary_path: str,
                  patch_id: str = "",
@@ -319,7 +319,7 @@ class AtomicRollbackEngine:
         except ImportError:
             pass
 
-    # ── 查询接口 ──────────────────────────────────────────────────
+# 查询接口
 
     def get_status(self, binary_path: str) -> RollbackStatus:
         return self._status.get(binary_path, RollbackStatus.SNAPSHOTTED)

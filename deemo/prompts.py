@@ -1,7 +1,7 @@
 DECOMP_ANALYSIS_TEMPLATE = """
 你是一个资深的二进制安全研究员和漏洞挖掘专家。请分析以下反编译后的 C 代码，识别潜在的安全漏洞。
 
-## 二进制文件信息
+# 二进制文件信息
 - 文件路径: {binary_path}
 - 函数名: {function_name}
 - 保护机制:
@@ -11,18 +11,18 @@ DECOMP_ANALYSIS_TEMPLATE = """
   - Canary: {canary}
   - ASLR: {aslr}
 
-## 导入的危险函数:
+# 导入的危险函数:
 {dangerous_functions}
 
-## 关键字符串:
+# 关键字符串:
 {key_strings}
 
-## 反编译代码:
+# 反编译代码:
 ```c
 {pseudocode}
 ```
 
-## 分析要求:
+# 分析要求:
 1. 仔细阅读代码，识别可能存在的安全漏洞
 2. 关注以下常见漏洞类型:
    - 栈溢出 (Stack Overflow)
@@ -64,23 +64,23 @@ DECOMP_ANALYSIS_TEMPLATE = """
 CRASH_ANALYSIS_TEMPLATE = """
 你是一个资深的二进制安全研究员。请分析以下程序崩溃信息，判断漏洞类型。
 
-## 崩溃信息
-### 寄存器状态:
+# 崩溃信息
+# 寄存器状态:
 {registers}
 
-### 栈回溯:
+# 栈回溯:
 {stack_trace}
 
-### 崩溃时的指令:
+# 崩溃时的指令:
 {fault_instruction}
 
-### 程序输出:
+# 程序输出:
 {program_output}
 
-## 保护机制信息:
+# 保护机制信息:
 {protection_info}
 
-## 分析要求:
+# 分析要求:
 1. 根据崩溃信息判断漏洞类型
 2. 分析漏洞可利用性
 3. 估算可能的利用难度
@@ -103,32 +103,32 @@ CRASH_ANALYSIS_TEMPLATE = """
 EXPLOIT_GENERATION_TEMPLATE = """
 你是一个资深的二进制漏洞利用专家。请根据以下信息生成 pwntools 利用脚本草案。
 
-## 漏洞信息
+# 漏洞信息
 - 漏洞类型: {vulnerability_type}
 - 漏洞描述: {vulnerability_description}
 - 目标文件: {binary_path}
 
-## 保护机制
+# 保护机制
 - NX: {nx}
 - PIE: {pie}
 - RELRO: {relro}
 - Canary: {canary}
 
-## 二进制信息
+# 二进制信息
 - 架构: {arch}
 - 位数: {bits}
 - 基地址 (如果PIE): {base_address}
 
-## 相关函数/符号地址
+# 相关函数/符号地址
 {symbols}
 
-## 已知 Gadgets
+# 已知 Gadgets
 {gadgets}
 
-## 利用思路
+# 利用思路
 {exploitation_approach}
 
-## 要求:
+# 要求:
 1. 使用 Python 3 和 pwntools 库
 2. 包含详细的注释说明
 3. 考虑保护机制的绕过策略
@@ -145,26 +145,26 @@ EXPLOIT_GENERATION_TEMPLATE = """
 EXPLOIT_ITERATION_TEMPLATE = """
 你是一个资深的二进制漏洞利用专家。之前的利用脚本执行失败，请根据失败信息优化脚本。
 
-## 原始脚本:
+# 原始脚本:
 ```python
 {original_script}
 ```
 
-## 失败信息:
+# 失败信息:
 {failure_info}
 
-## 保护机制:
+# 保护机制:
 - NX: {nx}
 - PIE: {pie}
 - RELRO: {relro}
 - Canary: {canary}
 
-## 可用信息:
+# 可用信息:
 {additional_info}
 
-## 迭代次数: {iteration_count}
+# 迭代次数: {iteration_count}
 
-## 要求:
+# 要求:
 1. 分析失败原因
 2. 提出改进方案
 3. 生成优化后的利用脚本
@@ -185,11 +185,11 @@ EXPLOIT_ITERATION_TEMPLATE = """
 REPORT_SUMMARY_TEMPLATE = """
 # 二进制漏洞分析报告
 
-## 项目信息
+# 项目信息
 - 分析日期: {date}
 - 目标文件: {binary_path}
 
-## 执行摘要
+# 执行摘要
 {summary}
 
 ---

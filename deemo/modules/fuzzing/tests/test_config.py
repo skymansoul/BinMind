@@ -14,7 +14,7 @@ import tempfile
 import pytest
 
 
-# ── 配置文件路径 ──────────────────────────────────────────
+# 配置文件路径
 
 try:
     from fuzzing.src.cli import _load_config, _find_default_config
@@ -124,7 +124,7 @@ class TestDefaultConfigDiscovery:
             assert os.path.isfile(result)
 
 
-# ── 独立测试 (无需模块导入) ────────────────────────────────
+# 独立测试 (无需模块导入)
 
 def test_env_var_override_inline():
     """环境变量覆盖模式 — 手动模拟."""

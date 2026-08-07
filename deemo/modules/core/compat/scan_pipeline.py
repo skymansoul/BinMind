@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """检测管线编排器 — 串联 IR提取→特征归一化→四检测器→融合→输出."""
 
 import os, json, time
@@ -84,7 +84,7 @@ def run_pipeline(
     ir_ops = ir_ops or {}
     callee_names = callee_names or {}
 
-    # Step 1: 抽象堆模型
+    # 抽象堆模型
     heap_model = AbstractHeapModel()
     heap_violations: List[Violation] = []
     if trace_events:
@@ -102,7 +102,7 @@ def run_pipeline(
         heap_violations = heap_model.flush_violations()
         heap_violations.extend(heap_model.check_dangling())
 
-    # Step 2-3: 堆溢出 + 污点过滤
+    # 堆溢出 + 污点过滤
     taint_stats: Dict[str, Any] = {'applied': False}
     heap_candidates: List[Dict] = []
     if alloc_records:
@@ -113,7 +113,7 @@ def run_pipeline(
             heap_candidates, def_use_chains, ir_ops, instructions)
         taint_stats = downgrade_summary(taint_results)
 
-    # Step 3b: 值区间+分配器约束+污点距离 三阶段误报过滤
+    # 值区间 + 分配器约束 + 污点距离 三阶段误报过滤
     fp_filter_stats: Dict[str, Any] = {'applied': False}
     if heap_candidates:
         from modules.core.compat.fp_filter import batch_filter_and_report
@@ -124,7 +124,7 @@ def run_pipeline(
         heap_candidates = retained
         fp_filter_stats = {'applied': True, **fp_report}
 
-    # Step 4: UAF 检测
+    # UAF 检测
     uaf_findings: List[Dict] = []
     if alloc_sites_input:
         from modules.core.compat.uaf_detector import static_uaf_detect
@@ -132,7 +132,7 @@ def run_pipeline(
             alloc_sites_input, free_sites_input or {},
             use_sites_input or {}, alias_map=None)
 
-    # Step 5: 格式化字符串检测
+    # 格式化字符串检测
     fmt_findings = []
     fmt_summary: Dict[str, Any] = {'total_printf_calls_analyzed': 0}
     if ir_ops:
@@ -142,7 +142,7 @@ def run_pipeline(
                 printf_calls, taint_map or {}, string_values or {}, instructions)
             fmt_summary = summarize_findings(fmt_findings)
 
-    # Step 6: 栈溢出检测
+    # 栈溢出检测
     stack_candidates = []
     stack_summary: Dict[str, Any] = {'total_candidates': 0}
     if disasm_lines and write_ops:
@@ -151,7 +151,7 @@ def run_pipeline(
             frames, write_ops, taint_map or {}, instructions)
         stack_summary = summarize_stack_findings(stack_candidates)
 
-    # Step 7: 融合
+    # 融合
     report = synthesize(
         heap_findings=heap_candidates,
         uaf_findings=uaf_findings,

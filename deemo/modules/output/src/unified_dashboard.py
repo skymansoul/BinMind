@@ -15,13 +15,12 @@
 
   输出: 0-100 统一指数 + 置信带 + 六维雷达数据 + 权重解释。
 
-参考:
-  Shannon (1948): 信息熵作为不确定性的度量
+  Shannon: 信息熵作为不确定性的度量
   OWASP Risk Rating Methodology: 风险 = 可能性 × 影响
   无现有动态加权仪表盘工具 — 2026-08 检索确认
 
 修改记录:
-  创建 2026-08-02 — 静态加权版
+  创建 2026-08-01 — 静态加权版
   2026-08-04 — 追加熵加权动态聚合 + 置信带
 """
 
@@ -29,12 +28,10 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-
 _DIMENSION_PRIORS = {
     'exploitability': 0.25, 'exposure': 0.20, 'hardening': 0.15,
     'code_quality': 0.15, 'remediation': 0.10, 'mitigation': 0.15,
 }
-
 
 @dataclass
 class RiskDashboard:
@@ -46,7 +43,6 @@ class RiskDashboard:
     risk_trend: str = 'stable'
     confidence_band: Tuple[float, float] = (0, 0)
     executive_summary: str = ''
-
 
 def _entropy_weights(
     dim_scores: Dict[str, List[float]],
@@ -92,7 +88,6 @@ def _entropy_weights(
     total = sum(blended.values())
     return {k: round(v / total, 4) for k, v in blended.items()}
 
-
 def _dimension_exploitability(
     primitive_quality: float = 5.0, heap_exploit: float = 5.0,
     format_string: float = 0.0, off_by_one: float = 0.0,
@@ -108,7 +103,6 @@ def _dimension_exploitability(
     avg = round(sum(active)/len(active), 1) if active else 0.0
     return avg, scores
 
-
 def _dimension_exposure(
     risk_composite: float = 5.0, ipc_risk: float = 0.0,
     signal_risk: float = 0.0, contagion_score: float = 5.0,
@@ -116,7 +110,6 @@ def _dimension_exposure(
     scores = [risk_composite, ipc_risk, signal_risk, contagion_score]
     active = [s for s in scores if s > 0]
     return (round(sum(active)/len(active), 1) if active else 0.0), scores
-
 
 def _dimension_hardening(
     aslr_score: float = 50.0, bitrot: float = 5.0,
@@ -126,7 +119,6 @@ def _dimension_hardening(
          hardening_gain * 0.15 + (10 - opt_sensitivity) * 3.33 * 0.15)
     return round(h, 1), [aslr_score/10, 10-bitrot, hardening_gain, 10-opt_sensitivity]
 
-
 def _dimension_code_quality(
     security_debt: float = 5.0, vuln_density_z: float = 0.0,
     reliability: float = 0.8,
@@ -134,7 +126,6 @@ def _dimension_code_quality(
     base = (security_debt * 0.4 + min(abs(vuln_density_z) * 10, 10) * 0.3 +
             (1 - reliability) * 10 * 0.3)
     return round(base, 1), [security_debt, min(abs(vuln_density_z)*10, 10), (1-reliability)*10]
-
 
 def _dimension_remediation(
     remediation_diff: float = 5.0, urgency_hours: float = 168.0,
@@ -145,7 +136,6 @@ def _dimension_remediation(
     return (round(remediation_diff * 0.4 + urg_norm * 0.35 + life_norm * 0.25, 1),
             [remediation_diff, urg_norm, life_norm])
 
-
 def _dimension_mitigation(
     sandbox_difficulty: float = 5.0, cfi_penalty: float = 0.0,
     heap_protection: float = 5.0,
@@ -154,13 +144,11 @@ def _dimension_mitigation(
          heap_protection * 0.30)
     return round(h, 1), [sandbox_difficulty, 10-min(cfi_penalty,10), heap_protection]
 
-
 def _risk_level(index: float) -> str:
     if index >= 75: return 'critical'
     if index >= 50: return 'high'
     if index >= 25: return 'medium'
     return 'low'
-
 
 def generate_dashboard(
     primitive_quality: float = 5.0, heap_exploit: float = 5.0,

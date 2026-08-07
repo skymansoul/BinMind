@@ -1,0 +1,6 @@
+{
+  "id": "uaf_fp_01_exclusive_branch",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "if/else 分支互斥: free 与 use 不同时执行"
+}

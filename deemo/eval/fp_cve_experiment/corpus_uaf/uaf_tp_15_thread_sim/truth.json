@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_15_thread_sim",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "线程竞争模拟: free 后另一\"线程函数\"使用"
+}

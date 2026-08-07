@@ -7,7 +7,7 @@
   按置信度排序忽略了验证后可能推翻当前认知的高不确定性边。
 
 方案：
-  LinUCB (Li et al. 2010) 上下文线性赌博机。
+  LinUCB 上下文线性赌博机。
   - 臂 (arm) = 每条候选传播边
   - 上下文 (context) = 边的8维特征向量
   - 奖励 (reward) = 验证后置信度的变化量 |c_after - c_before|
@@ -24,8 +24,8 @@
   首次将上下文赌博机应用于漏洞传播图的边验证优先级排序。
   上下文特征编码传播特有的语义（层跨度、跨层标记、规则名哈希）。
 
-ref: Li et al. (WWW 2010) "A Contextual-Bandit Approach to Personalized News Article Recommendation".
-ref: AdvBandit (arXiv:2603.00567) -- 神经上下文赌博机的对抗攻击，最接近的已有工作。
+ref: Li et al. "A Contextual-Bandit Approach to Personalized News Article Recommendation".
+ref: AdvBandit -- 神经上下文赌博机的对抗攻击，最接近的已有工作。
 """
 
 from __future__ import annotations

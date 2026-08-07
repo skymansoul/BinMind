@@ -21,9 +21,7 @@ if str(_PARENT) not in sys.path:
 _log = logging.getLogger("binmind.multimodal.cli")
 
 
-# ---------------------------------------------------------------------------
 # 配置加载辅助
-# ---------------------------------------------------------------------------
 def _load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     """YAML 配置优先，环境变量次之，默认值兜底。"""
     cfg: Dict[str, Any] = {}
@@ -59,9 +57,7 @@ def _load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     return cfg
 
 
-# ---------------------------------------------------------------------------
 # 子命令处理函数
-# ---------------------------------------------------------------------------
 def _cmd_analyze(args: argparse.Namespace) -> int:
     """分析子命令：并行多目标分析调度。"""
     print(json.dumps({"status": "ok", "command": "analyze", "message": None}))
@@ -93,9 +89,7 @@ def _cmd_fusion(args: argparse.Namespace) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
 # 日志配置
-# ---------------------------------------------------------------------------
 def _setup_logging(level: str = "INFO", log_file: Optional[str] = None):
     """统一日志：stderr 输出 + 可选文件持久化。"""
     fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -113,9 +107,7 @@ def _setup_logging(level: str = "INFO", log_file: Optional[str] = None):
     )
 
 
-# ---------------------------------------------------------------------------
 # argparse 解析器构建
-# ---------------------------------------------------------------------------
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="binmind-multimodal",
@@ -164,9 +156,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-# ---------------------------------------------------------------------------
 # 主入口
-# ---------------------------------------------------------------------------
 def main(argv: Optional[List[str]] = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)

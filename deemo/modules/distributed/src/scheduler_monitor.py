@@ -1,9 +1,9 @@
 # 调度器自监控 — 非参数 CUSUM 检测调度质量退化
 #
 # 分布式调度器在长期运行中会因多种原因退化:
-#   - 内部状态膨胀 (队列元数据累积 → 调度延迟上升)
-#   - 资源碎片的渐进效应 (类似内存碎片，但碎片的是 CPU/GPU 时间片)
-#   - 下游依赖漂移 (熔断器长期半开 → 有效吞吐下降)
+# 内部状态膨胀 (队列元数据累积 → 调度延迟上升)
+# 资源碎片的渐进效应 (类似内存碎片，但碎片的是 CPU/GPU 时间片)
+# 下游依赖漂移 (熔断器长期半开 → 有效吞吐下降)
 #   这些问题在任务级监控中不可见——每个任务单独看都在正常完成。
 #   但在调度器层面表现为: 调度延迟分布右移、公平性指标漂移、空转比例上升。
 #
@@ -14,7 +14,7 @@
 #         非参数变体，不假设正态性，对离群值鲁棒。
 #   输出: 退化告警 (WARNING / CRITICAL) + 建议的缓解动作
 #
-# 与 AdaptiveStream (IEEE ICDMW 2025) 的区别:
+# 与 AdaptiveStream 的区别:
 #   AdaptiveStream 做通用的分布式核 CUSUM，面向任意数据流。
 #   本模块专为调度器指标设计，统计量选择与缓解建议是领域特定的。
 
@@ -53,7 +53,7 @@ class NonparametricCUSUM:
     每步将新观测与历史窗口的秩比较，增量更新 CUSUM 统计量。
     秩变换消除了分布假设，对离群值天然鲁棒。
 
-    参考: Hawkins & Olwell (1998) "Cumulative Sum Charts and Charting for
+    参考: Hawkins & Olwell "Cumulative Sum Charts and Charting for
     Quality Improvement" 的自适应 CUSUM 设计。
     """
 
@@ -208,7 +208,7 @@ class SchedulerHealthMonitor:
             )
         return hints
 
-    # ---- 查询 ----
+# 查询
 
     def stats(self) -> dict:
         with self._lock:
@@ -228,7 +228,7 @@ class SchedulerHealthMonitor:
             }
 
 
-# ---- 便捷构造 ----
+# 便捷构造
 
 def snapshot_from_metrics(
     queue_depth: int = 0, sched_latency_ms: float = 0.0,

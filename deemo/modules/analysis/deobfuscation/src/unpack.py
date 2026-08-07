@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ── 脱壳器 ──
+# 脱壳器
 
 
 class Unpacker:
@@ -270,7 +270,7 @@ class Unpacker:
         }
 
 
-# ── PyInstaller脱壳器 ──
+# PyInstaller脱壳器
 
 # PyInstaller magic numbers - 只处理最新的版本
 _PYINSTALLER_MAGIC = b"MEI\x0C\x0D\x0A\x0A\x0D\x0A\x0A"

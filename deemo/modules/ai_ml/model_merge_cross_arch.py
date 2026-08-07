@@ -10,7 +10,7 @@
 #      深层(语义)ISA间差异小→均匀混合，每层独立α
 #   3. 功能保留检查: 合并后单ISA退化>阈值→回退该ISA原始权重
 #
-# 新颖性: AdaMMS(2025)针对多模态LLM，本工作首次针对跨ISA GNN二进制模型
+# 新颖性: AdaMMS针对多模态LLM，本工作首次针对跨ISA GNN二进制模型
 
 from __future__ import annotations
 

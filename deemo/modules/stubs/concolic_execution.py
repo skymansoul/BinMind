@@ -1,7 +1,7 @@
 # compat 重导出 — 混合执行引擎桩
 # 具体执行 + 符号执行路径优先队列
-# 参考: CO3/SHACO (USENIX Security 2024) 硬件在环 concolic co-execution &
-#        ADFEmu (2025) DMA 仿真引导 + DSE 路径探索
+# CO3/SHACO 硬件在环 concolic co-execution &
+#        ADFEmu DMA 仿真引导 + DSE 路径探索
 import os as _os
 
 _up = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'concolic_execution.py')
@@ -12,7 +12,7 @@ exec(compile(_src, _up, 'exec'), globals())
 # 路径搜索策略扩展
 # CO3 三数量级加速依赖高效路径选择；
 # 提供启发式评分备选方案，按新基本块覆盖与路径深度加权排序。
-# 参考: "Driller" (Stephens et al., NDSS 2016) — 选择性符号执行
+# "Driller" — 选择性符号执行
 
 import heapq as _heapq
 from collections import defaultdict as _defdict

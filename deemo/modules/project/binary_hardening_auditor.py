@@ -3,10 +3,10 @@
 #   遗漏了现代二进制中的大量安全机制:
 #   - CFI (Control Flow Integrity): clang-cfi, MS Control Flow Guard
 #   - Shadow Stack: CET (Intel), PAC (ARM64), SCS (clang)
-#   - GOT保护: Full RELRO, -z now, GOT[0]只读
+# GOT保护: Full RELRO, -z now, GOT[0]只读
 #   - 堆加固: FREELIST_PTR_OBFUSCATION, PROTECT_FREELIST_PTR
-#   - FORTIFY_SOURCE级别: 0/1/2/3 (各自启用不同检查)
-#   - sanitizer: ASAN/MSAN/UBSAN/TSAN (开发构建)
+# FORTIFY_SOURCE级别: 0/1/2/3 (各自启用不同检查)
+# sanitizer: ASAN/MSAN/UBSAN/TSAN (开发构建)
 #   - 其他: PIE, NOEXECSTACK, RODATA_RELOC, IMMEDIATE_BIND
 #   缺少任何一项的审计导致安全评估不完整
 # 解决手段: 全面检测13类二进制加固机制, 每类输出:
@@ -16,7 +16,6 @@
 #   最终输出综合利用难度评分 (0-100)
 # 技术效果: 比checksec多检测9类机制, 提供面向利用的难度量化
 #   而非简单的是/否状态, 准确反映二进制的实际利用阻力
-from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field

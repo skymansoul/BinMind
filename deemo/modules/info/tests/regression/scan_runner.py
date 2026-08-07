@@ -1,4 +1,4 @@
-# Created: 2025-07-29 10:30:00
+# Created: 2026-06-24 10:30:00
 # scan_runner — CAIR检测器调度模块
 # 对编译产物逐个调用 tiered_vuln_detector.detect_all_tiers(),
 # 收集每个样本每层 Tier 的检出结果和耗时。

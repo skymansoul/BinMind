@@ -70,7 +70,7 @@ def kb():
     db.close()
 
 
-# ---- Parse tests (3) ----
+# Parse tests (3)
 
 class TestKEVParse:
     def test_parse_dict_format(self):
@@ -92,7 +92,7 @@ class TestKEVParse:
         assert client._parse("invalid") == []
 
 
-# ---- Cache tests (3) ----
+# Cache tests (3)
 
 class TestKEVCache:
     def test_load_cached_empty(self, temp_dir):
@@ -123,7 +123,7 @@ class TestKEVCache:
         assert client.is_kev("CVE-9999-9999") is False
 
 
-# ---- Sync tests (3) ----
+# Sync tests (3)
 
 class TestKEVSync:
     def test_sync_to_kb(self, temp_dir, kb):
@@ -166,7 +166,7 @@ class TestKEVSync:
         assert count == 0
 
 
-# ---- Priority sort (3 tests) ----
+# Priority sort (3 tests)
 
 class TestKEVPriority:
     def test_kev_entries_come_first(self, temp_dir):
@@ -205,7 +205,7 @@ class TestKEVPriority:
         assert len(sorted_entries) == 5
 
 
-# ---- Singleton (2 tests) ----
+# Singleton (2 tests)
 
 class TestKEVSingleton:
     def test_get_kev_returns_same_instance(self):
@@ -221,7 +221,7 @@ class TestKEVSingleton:
         assert isinstance(result, bool)
 
 
-# ---- SSVC integration (3 tests) ----
+# SSVC integration (3 tests)
 
 class TestKEVSSVCIntegration:
     def test_kev_flag_affects_ssvc(self, kb):

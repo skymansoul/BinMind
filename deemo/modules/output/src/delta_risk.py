@@ -17,9 +17,8 @@
   评分 = max(import_risk, codepath_risk, hardening_regression_risk)
   取 max 而非 product — 单类风险即可构成新的攻击面。
 
-参考:
-  无现有工作 (2026-08 检索确认).
-  PLocator (ACM TOSEM 2025): 跨优化补丁定位，但只检测存在性非风险.
+  无现有工作.
+  PLocator: 跨优化补丁定位，但只检测存在性非风险.
   patch_impact.py: 评估修复完整性, 本模块评估引入风险.
 
 修改记录:
@@ -29,7 +28,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 @dataclass
 class DeltaRisk:
@@ -53,7 +51,6 @@ class DeltaRisk:
         else:
             self.risk_level = 'low'
 
-
 # 高风险导入关键词 — 新增这些导入提升引入风险
 _HIGH_RISK_IMPORTS: Dict[str, float] = {
     'system': 0.9, 'popen': 0.85, 'exec': 0.9, 'CreateProcess': 0.85,
@@ -68,10 +65,8 @@ _HIGH_RISK_IMPORTS: Dict[str, float] = {
     'VirtualProtect': 0.5,
 }
 
-
 def _normalize(name: str) -> str:
     return name.lower().lstrip('_').replace('__imp_', '')
-
 
 def _import_risk(old_imports: List[str], new_imports: List[str]) -> Tuple[float, List[str]]:
     """
@@ -98,7 +93,6 @@ def _import_risk(old_imports: List[str], new_imports: List[str]) -> Tuple[float,
     risk = (1.0 - risk_product) * 10.0
     return round(min(risk, 10.0), 1), risky_added
 
-
 def _codepath_risk(
     old_bb_count: int, new_bb_count: int,
     old_func_count: int, new_func_count: int,
@@ -117,7 +111,6 @@ def _codepath_risk(
     # sigmoid 映射到 [0, 10]
     risk = 10.0 / (1.0 + math.exp(-4.0 * (growth_score - 0.15)))
     return round(risk, 1)
-
 
 def _hardening_regression_risk(
     old_checksec: Dict[str, Any], new_checksec: Dict[str, Any]
@@ -139,7 +132,6 @@ def _hardening_regression_risk(
     # 严重性: 同时丢失多个加固 → 非线性惩罚
     return round(min(regressions * 2.5, 10.0), 1)
 
-
 def _new_endpoint_strings(old_strings: List[str], new_strings: List[str]) -> List[str]:
     """
     新增字符串中的潜在端点 — URL/路径/域名模式的简单匹配。
@@ -153,7 +145,6 @@ def _new_endpoint_strings(old_strings: List[str], new_strings: List[str]) -> Lis
         elif any(kw in sl for kw in ('/api/', '/v1/', '/v2/', 'endpoint', 'callback')):
             endpoints.append(s)
     return endpoints
-
 
 def assess_delta_risk(
     binary_name: str = '',
@@ -196,7 +187,6 @@ def assess_delta_risk(
         new_imports=risky_imports,
         new_string_endpoints=endpoints,
     )
-
 
 def delta_risk_summary(risk: DeltaRisk) -> Dict[str, Any]:
     """增量风险评估摘要。"""

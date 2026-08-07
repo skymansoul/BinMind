@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# ── capstone import ──────────────────────────────────────────────────────
+# capstone import
 try:
     import capstone as _cs_mod
     _HAS_CAPSTONE = True
@@ -30,7 +30,7 @@ except ImportError:
     logger.debug("capstone not installed -- instruction-level diff degraded")
 
 
-# ── 二进制头解析——最小依赖，不引入pefile/pyelftools ────────────────────
+# 二进制头解析——最小依赖，不引入pefile/pyelftools
 
 @dataclass
 class _BinaryMeta:
@@ -145,7 +145,7 @@ def _detect_compiler_hints(binary_path: str, meta: _BinaryMeta) -> str:
     return ','.join(hints) if hints else 'unknown'
 
 
-# ── 代码段提取 ──────────────────────────────────────────────────────────
+# 代码段提取
 
 def _extract_code_section(binary_path: str) -> Tuple[bytes, int]:
     """提取代码段用于反汇编比对。返回 (code_bytes, base_vaddr)"""
@@ -217,9 +217,9 @@ def _extract_code_section(binary_path: str) -> Tuple[bytes, int]:
     return b'', 0
 
 
-# ── 指令级指纹提取 ──────────────────────────────────────────────────────
+# 指令级指纹提取
 # 用于编译器差分比对：提取指令分布直方图作为编译器指纹
-# 参考: Rosenblum et al. (2008) "编译器 Provenance Attribution"
+# Rosenblum et al. "编译器 Provenance Attribution"
 
 def _extract_instruction_fingerprint(code: bytes, base_addr: int,
                                      meta: _BinaryMeta) -> Dict[str, Any]:
@@ -304,7 +304,7 @@ def _extract_instruction_fingerprint(code: bytes, base_addr: int,
     return result
 
 
-# ── 代码块哈希 (保留原有接口) ──────────────────────────────────────────
+# 代码块哈希 (保留原有接口)
 
 
 class BinaryNormalizer:
@@ -312,7 +312,7 @@ class BinaryNormalizer:
     采用局部敏感哈希 (ssdeep/TLSH) 思想：以固定块大小分片哈希，比较哈希相似度
     而非逐字节比对。这样跨编译器产生的偏移漂移、寄存器分配差异不影响比对结果
     """
-    _BLOCK_SIZE = 64  # 哈希块大小——64 字节是 -cache line 宽度，常见指令对齐边界
+# _BLOCK_SIZE = 64  # 哈希块大小——64 字节是 -cache line 宽度，常见指令对齐边界
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path

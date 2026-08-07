@@ -10,14 +10,14 @@
 # (b) 同函数名不同版本 -- 补丁/重构导致的结构微调
 # (c) 不同函数但碰巧有相似的 CFG 骨架 -- 分支结构同构但数据流不同
 #
-# 参考:
-# CoCoHaNeRe (Fan et al. ACM TOSEM 2025) — 双向困难负样本挖掘用于代码搜索。
+#
+# CoCoHaNeRe — 双向困难负样本挖掘用于代码搜索。
 # 本项目在此基础上改进：CoCoHaNeRe 针对源码级搜索（自然语言→代码），
 # 本项目适配二进制→二进制场景，困难度估计加入控制流图结构距离。
-# NV-Retriever (de Souza P. Moreira et al. arXiv:2407.15831) — positive-aware
+# NV-Retriever — positive-aware
 # hard negative 选择。本项目借鉴其 threshold-based filtering 思路，
 # 在二进制领域将相似度阈值替换为 CFG 编辑距离。
-# MixUp (Zhang et al. ICLR 2018) / Manifold Mixup (Verma et al. ICML 2019)
+# MixUp / Manifold Mixup
 # — 在嵌入空间做凸组合生成软负样本，本项目约束 MixUp 权重在 [0.3, 0.7]
 # 以确保生成的样本不是已有样本的简单拷贝。
 
@@ -30,9 +30,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # CFG 结构距离 — 用于困难度估计
-# ---------------------------------------------------------------------------
 
 
 def _cfg_degree_distribution(adj: np.ndarray) -> np.ndarray:
@@ -77,9 +75,7 @@ def cfg_structure_distance(adj_a: np.ndarray, adj_b: np.ndarray) -> float:
     return float(js)
 
 
-# ---------------------------------------------------------------------------
 # 结构感知负样本采样器
-# ---------------------------------------------------------------------------
 
 
 class StructureAwareNegativeSampler:
@@ -174,9 +170,7 @@ class StructureAwareNegativeSampler:
         return sampled[:n_samples]
 
 
-# ---------------------------------------------------------------------------
 # MixUp 软负样本生成
-# ---------------------------------------------------------------------------
 
 
 class CFGMixUpNegatives:
@@ -265,9 +259,7 @@ class CFGMixUpNegatives:
         return negatives, labels
 
 
-# ---------------------------------------------------------------------------
 # 课程硬度调度器
-# ---------------------------------------------------------------------------
 
 
 class CurriculumHardnessScheduler:

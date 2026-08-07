@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-01  |  EPASS编排引擎
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-05-23  |  EPASS编排引擎
+# 修改: 2026-05-23  |  审计后补充文件头与错误处理
 #
 """
 漏洞利用原语感知的沙箱策略合成——编排引擎。
@@ -41,9 +41,7 @@ from .epass_policy_synthesizer import SeccompPolicy, SeccompPolicySynthesizer
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 策略分级
-# ============================================================================
 
 
 class PolicyLevel(str):
@@ -81,9 +79,7 @@ class EpassReport:
     generated_at: str = ""
 
 
-# ============================================================================
 # EPASS引擎
-# ============================================================================
 
 
 class EpassEngine:
@@ -124,7 +120,7 @@ class EpassEngine:
         """
         prot = existing_protections or {}
 
-        # Step 1: 原语映射
+        # 原语映射
         if strategies:
             blocklists = self._mapper.map_from_strategies(strategies)
         elif primitives:
@@ -139,7 +135,7 @@ class EpassEngine:
 
         unified = self._mapper.get_unified_blocklist(blocklists)
 
-        # Step 2: 三级策略合成
+        # 三级策略合成
         recommendations = []
 
         # STRICT——阻断所有核心syscall(KILL)
@@ -235,9 +231,7 @@ class EpassEngine:
         return min(1.0, impact)
 
 
-# ============================================================================
 # 便捷入口
-# ============================================================================
 
 
 def generate_epass_policy(strategies: List[str],

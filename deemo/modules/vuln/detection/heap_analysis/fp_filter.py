@@ -12,7 +12,7 @@
   本模块: 基于数据流约束的逻辑判定 (程序语义)
 
 修改记录:
-  创建 2026-08-05
+  创建 2026-05-28
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any

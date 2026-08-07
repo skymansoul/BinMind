@@ -1,4 +1,4 @@
-# Created: 2025-07-22 19:22:25
+# Created: 2026-08-01 19:22:25
 #
 # entropy_gradient_profiler — 字节级熵梯度分析与多层混淆检测
 # 双尺度滑动窗口 Shannon 熵 → 一阶梯度 → 峰检测 → 层边界推断。

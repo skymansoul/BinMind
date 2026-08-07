@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-31 — CriticalPathAnalyzer + BackpressureSensor
-# 修改: 2026-08-01 — GracefulDegradationExecutor, 复合权重公式
+# coding: utf-8
+# 创建: 2026-05-19 — CriticalPathAnalyzer + BackpressureSensor
+# 修改: 2026-05-19 — GracefulDegradationExecutor, 复合权重公式
 """
 关键路径感知的优雅降级 — 资源受限时保护高影响力钩子.
 

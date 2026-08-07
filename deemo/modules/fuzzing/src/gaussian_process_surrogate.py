@@ -1,6 +1,6 @@
 """高斯过程覆盖代理模型 — Matern 3/2 核 + EI 采集 + 诱导点稀疏化.
 
-参考: Rasmussen & Williams (2006).
+参考: Rasmussen & Williams.
 注: n≤200 时 Cholesky 全量重建 O(n³), 非严格在线更新。
 n>200 后切换诱导点模式 O(m²n), m=50。适合中等规模种子池的覆盖预测。"""
 
@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ---- GP 参数 ----
+# GP 参数
 _MAX_OBSERVATIONS = 200      # 转为诱导点模式的阈值
 _N_INDUCING = 50             # 诱导点数
 _MATERN_NU = 1.5             # Matern 平滑参数 (3/2)

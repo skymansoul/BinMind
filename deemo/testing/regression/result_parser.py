@@ -1,5 +1,5 @@
 # 结果解析模块 —— 从扫描输出中提取发现项, 匹配已知漏洞位置, 统计检出/漏报。
-# 创建: 2026-08-14
+# 创建: 2026-07-08
 
 import json, re, os
 from dataclasses import dataclass, field

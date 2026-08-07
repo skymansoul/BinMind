@@ -90,7 +90,7 @@ class PipelineDashboard:
         m.summary = self._summarize(m)
         return m
 
-    # ---- 采集器 ----
+# 采集器
     def _collect_inventory(self, m: PipelineMetrics) -> None:
         try:
             from modules.stubs.stub_contract import (

@@ -22,7 +22,7 @@ Variegate (GrammaTech) 在源码级生成功能等价的程序变体来做二进
   若某变体违反任一 MR → 混淆变换引入了 bug。
 
 与 metamorphic testing literature 的差异：
-  现有研究 [SysRev 2024] 关注深度代码模型的蜕变测试。
+  现有研究 关注深度代码模型的蜕变测试。
   本模块首次将蜕变测试应用于二进制补丁变体验证。
 """
 
@@ -82,7 +82,7 @@ class MetamorphicReport:
         }
 
 
-# ── 蜕变关系定义 ──────────────────────────────────────────────────
+# 蜕变关系定义
 
 class MetamorphicRelations:
     """补丁的 5 条蜕变关系定义。
@@ -169,7 +169,7 @@ class MetamorphicRelations:
             return False, "变体移除了原始补丁的崩溃路径——可能允许漏洞利用继续执行"
         return True, "崩溃路径已保留"
 
-    # ── 辅助 ──────────────────────────────────────────────────────
+# 辅助
 
     @staticmethod
     def _extract_return_values(asm: List[str]) -> List[str]:
@@ -207,7 +207,7 @@ class MetamorphicRelations:
         return mods
 
 
-# ── 蜕变测试引擎 ──────────────────────────────────────────────────
+# 蜕变测试引擎
 
 class MetamorphicTester:
     """补丁蜕变测试引擎。

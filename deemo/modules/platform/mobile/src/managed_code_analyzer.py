@@ -17,7 +17,7 @@ JAVA_DANGEROUS_METHODS={'ObjectInputStream':{'description':'Deserialization vuln
 
 DOTNET_DANGEROUS_METHODS={'BinaryFormatter.Deserialize':{'description':'Deserialization vuln - BinaryFormatter RCE','severity':'Critical'},'Type.InvokeMember':{'description':'Dynamic invocation - reflection bypass','severity':'High'},'XmlSerializer.Deserialize':{'description':'Deserialization vuln - XmlSerializer','severity':'High'},'DataContractSerializer.ReadObject':{'description':'Deserialization vuln - DataContractSerializer','severity':'High'},'JavaScriptSerializer.Deserialize':{'description':'Deserialization vuln - JavaScriptSerializer','severity':'High'},'Type.GetType':{'description':'Dynamic loading','severity':'Medium'},'Assembly.Load':{'description':'Dynamic loading - load assembly','severity':'Medium'},'Activator.CreateInstance':{'description':'Dynamic creation','severity':'Medium'},'MethodInfo.Invoke':{'description':'Dynamic invocation','severity':'Medium'},'Process.Start':{'description':'Command execution','severity':'Critical'},'File.OpenRead':{'description':'File operation','severity':'Low'},'File.OpenWrite':{'description':'File operation','severity':'Low'},'File.ReadAllText':{'description':'File operation','severity':'Low'},'File.WriteAllText':{'description':'File operation','severity':'Low'},'WebClient.DownloadString':{'description':'Network','severity':'Medium'},'WebClient.DownloadFile':{'description':'Network','severity':'Medium'},'HttpClient.GetString':{'description':'HTTP','severity':'Medium'},'HttpWebRequest.Create':{'description':'HTTP','severity':'Medium'},'MD5.Create':{'description':'Weak crypto - MD5','severity':'Low'},'SHA1.Create':{'description':'Weak crypto - SHA1','severity':'Low'},'SqlCommand.ExecuteReader':{'description':'SQL execution','severity':'High'},'SqlCommand.ExecuteNonQuery':{'description':'SQL execution','severity':'High'},'SqlConnection.Open':{'description':'SQL connection','severity':'Low'}}
 
-# ── DeMistify/ModelXray ML模型签名库 ──
+# DeMistify/ModelXray ML模型签名库
 # 端侧AI框架的模型文件特征——检测APK中嵌入的ML模型
 _ML_MODEL_SIGNATURES = {
     # TensorFlow Lite
@@ -56,7 +56,7 @@ _ML_MODEL_SIGNATURES = {
                    '模型解密密钥的引用——泄露了解密方法的线索'),
 }
 
-# DeMistify (ICSE 2024): 82.73%成功率识别ML模型
+# DeMistify: 82.73%成功率识别ML模型
 # 移动端ML框架的典型文件扩展名——在APK/ZIP中检测
 _ML_FRAMEWORK_EXTENSIONS = {
     '.tflite': 'TensorFlow Lite', '.lite': 'TFLite (alt ext)',
@@ -516,7 +516,6 @@ def detect_managed_code_type(fp):
 # 不拆: DeMistify/ModelXray ML模型签名去重缓存
 _ML_SIG_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_bytecode_opcode_counter(bytecode: bytes) -> int:
     """Java字节码指令频次统计——NOP计数，用于反混淆评估。"""

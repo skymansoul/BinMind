@@ -25,7 +25,7 @@ DISTRIBUTED = {
             "差异点：现有阈值策略是被动的，汤普森采样可实现前瞻性资源预分配。"
         ),
         "papers": [
-            {"id": "arXiv:2507.10845", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
+            {"id": "", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
              "venue": "arXiv 2025", "key_idea": "ML驱动协同模糊测试资源分配"},
             {"id": "Cupid", "title": "Cupid: Automatic Fuzzer Selection for Collaborative Fuzzing",
              "venue": "arXiv 2025", "key_idea": "数据驱动互补模糊器组合 → 显著降低CPU小时"},

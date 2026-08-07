@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 14:28
-# 修改: 2025-08-16 — GPD 矩估计 + 残余风险 + 早期停止策略
+# 创建: 2026-06-29 14:28
+# 修改: 2026-06-29 — GPD 矩估计 + 残余风险 + 早期停止策略
 """
 极值理论差分模糊测试风险估计 — 量化"还有多少 bug 没找到"。
 
@@ -31,9 +31,9 @@ GPD 拟合:
 
 ref: ASE 2025 "Risk Estimation in Differential Fuzzing via EVT" —
      GPD 尾部拟合 + 残余风险估计 + 早期停止策略
-ref: Coles (2001) "An Introduction to Statistical Modeling of Extreme
+ref: Coles "An Introduction to Statistical Modeling of Extreme
      Values" — EVT 的标准参考书, GPD 的 MLE 估计
-ref: Pickands (1975) "Statistical Inference Using Extreme Order Statistics"
+ref: Pickands "Statistical Inference Using Extreme Order Statistics"
      — POT (Peaks Over Threshold) 方法的原始论文
 """
 
@@ -66,7 +66,7 @@ class RiskEstimate:
     recommendation: str = ''  # 'continue' | 'stop' | 'extend'
 
 
-# --- GPD 拟合 (简化 MLE) ---
+# GPD 拟合 (简化 MLE)
 
 def fit_gpd(exceedances: list[float], threshold: float,
             max_iter: int = 50) -> GPDEstimate:
@@ -110,7 +110,7 @@ def fit_gpd(exceedances: list[float], threshold: float,
     )
 
 
-# --- 残余风险估计 ---
+# 残余风险估计
 
 def estimate_remaining_risk(gpd: GPDEstimate,
                              total_rounds: int,
@@ -163,7 +163,7 @@ def estimate_remaining_risk(gpd: GPDEstimate,
     )
 
 
-# --- 差异严重程度评分 ---
+# 差异严重程度评分
 
 def score_diff_severity(output_a: bytes, output_b: bytes,
                         crash_a: bool, crash_b: bool) -> float:
@@ -186,7 +186,7 @@ def score_diff_severity(output_a: bytes, output_b: bytes,
     return 1.0 + 3.0 * (diff_bytes / max(1, max(len(output_a), len(output_b))))
 
 
-# --- EVT 风险管线 ---
+# EVT 风险管线
 
 class EVTRiskEstimator:
     """EVT 差分模糊测试风险估计器——早期停止 + 残余风险报告。"""

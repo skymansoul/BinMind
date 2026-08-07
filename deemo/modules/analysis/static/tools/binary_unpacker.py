@@ -10,7 +10,7 @@ import math
 class BinaryUnpacker:
     """17 加壳器 签名s, PE section entropy 性能分析, 脱壳 strategy builder"""
 
-    # ---- 初始化: 17个加壳工具签名库 ----
+# 初始化: 17个加壳工具签名库
 
     def __init__(self):
         # 已知加壳工具: section名称 + 特征字符串 + 入口点特征
@@ -127,7 +127,7 @@ class BinaryUnpacker:
             'NtUnmapViewOfSection',
         ]
 
-    # ---- 基于section名称+熵检测加壳 ----
+# 基于section名称+熵检测加壳
 
     def detect_packer(self, sections: List[str],
                       section_entropy: Dict[str, float] = None,
@@ -289,7 +289,7 @@ class BinaryUnpacker:
             ),
         }
 
-    # ===== PE section熵分析 =====
+# PE section熵分析
 
     def analyze_section_entropy(self, sections_data: Dict[str, bytes]) -> Dict:
         _result = {}
@@ -312,7 +312,7 @@ class BinaryUnpacker:
 
         return _result
 
-    # ---- 综合打包体分析 ----
+# 综合打包体分析
 
     def analyze(self, pe_data: bytes = None,
                 sections: List[str] = None,
@@ -367,7 +367,7 @@ class BinaryUnpacker:
                 _ent -= _p * math.log2(_p)
         return _ent
 
-    # ===== PE基础解析 =====
+# PE基础解析
 
     def parse_pe_basic(self, data: bytes) -> Optional[Dict]:
         if len(data) < 64 or data[:2] != b'MZ':

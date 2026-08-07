@@ -11,7 +11,7 @@ import stat
 _SAMPLE_DIR = os.path.join(os.path.dirname(__file__), 'samples', 'synthetic')
 
 _SAMPLES: list = [
-    # ──── 栈溢出 (4) ────
+# 栈溢出 (4)
     {
         'id': 'STACK_BOF_01',
         'desc': 'gets() 无条件栈溢出',
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
         'compile': 'gcc -o vuln vuln.c -fno-stack-protector',
     },
 
-    # ──── 格式化字符串 (2) ────
+# 格式化字符串 (2)
     {
         'id': 'FMT_STR_01',
         'desc': 'printf(user_input) 直接使用用户输入作为格式化字符串',
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
         'compile': 'gcc -o vuln vuln.c',
     },
 
-    # ──── UAF (2) ────
+# UAF (2)
     {
         'id': 'UAF_01',
         'desc': 'free 后解引用堆指针',
@@ -193,7 +193,7 @@ int main() {
         'compile': 'gcc -o vuln vuln.c',
     },
 
-    # ──── 堆溢出 (2) ────
+# 堆溢出 (2)
     {
         'id': 'HEAP_BOF_01',
         'desc': 'malloc 后 memcpy 超出分配大小',
@@ -283,18 +283,18 @@ echo "Build complete: ${{BASE}}_default, ${{BASE}}_no_mitigation, ${{BASE}}_asan
 def _readme(s: dict) -> str:
     return f"""# {s['id']}
 
-## 漏洞类型
+# 漏洞类型
 {s['desc']}
 
-## 参考
+#
 {s['ref']}
 
-## 编译
+# 编译
 ```bash
 ./build.sh
 ```
 
-## 触发
+# 触发
 ```bash
 ./STACK_BOF_01_default $(python3 -c "print('A'*100)")
 ```

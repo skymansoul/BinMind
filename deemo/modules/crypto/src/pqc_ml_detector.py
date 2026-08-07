@@ -2,12 +2,12 @@
 ML-QED-Lite: 机器学习增强的后量子密码迁移检测 -- 三级管道。
 
 理论依据:
-  1. ML-QED-Lite (ePrint 2026/1419): XGBoost 分类器 + 函数符号/库依赖/二进制属性
+  1. ML-QED-Lite: XGBoost 分类器 + 函数符号/库依赖/二进制属性
      -> 零误报的 PQC 库版本指纹识别, 228x 内存优化。
-  2. QED-Lite (ePrint 2026/660): 855x 加速的轻量级检测, 100% 真阳性率。
-  3. BinCrypto (PACMPL/OOPSLA 2025): 区间域路径不敏感模拟, 83.2% 准确率
+  2. QED-Lite: 855x 加速的轻量级检测, 100% 真阳性率。
+  3. BinCrypto: 区间域路径不敏感模拟, 83.2% 准确率
      识别加密函数, 近 2x 超越 Where'sCrypto。
-  4. FoC (ACM TOSEM 2025): LLM 二进制函数摘要 + 相似性检测,
+  4. FoC: LLM 二进制函数摘要 + 相似性检测,
      ROUGE-L 提升 14.61%, 支持剥离二进制中的加密函数分析。
 
 三级检测管道:
@@ -45,9 +45,7 @@ except ImportError:
     _XGB_AVAILABLE = False
 
 
-# ============================================================================
 # Tier 1: 特征提取 + XGBoost 分类
-# ============================================================================
 
 # 27 维特征: 对应 ML-QED-Lite 论文 Table 2 的特征集
 # 设计依据: ML-QED-Lite 消融实验证明函数符号 (features 0-9) 和库依赖
@@ -135,10 +133,10 @@ def _extract_features(
     n_imported = len(imported_symbols)
     syms_lower = [s.lower() for s in imported_symbols]
 
-    # --- 0: 导入符号总数 ---
+# 0: 导入符号总数
     feats[0] = float(n_imported)
 
-    # --- 1-9: PQC/密码/内存符号计数 ---
+# 1-9: PQC/密码/内存符号计数
     pqc_keywords = [
         "kyber", "dilithium", "sphincs", "falcon", "ml-kem", "ml-dsa",
         "slh-dsa", "pqcrystals", "pqclean", "liboqs", "ntt_", "poly_",
@@ -160,7 +158,7 @@ def _extract_features(
     feats[8] = 1.0 if any("verify" in s or "open" in s for s in syms_lower) else 0.0
     feats[9] = 1.0 if any("consttime" in s or "ct_" in s or "secure_cmp" in s for s in syms_lower) else 0.0
 
-    # --- 10-19: 库依赖 (版本号 + 检测标志) ---
+# 10-19: 库依赖 (版本号 + 检测标志)
     libcrypto_ver = library_deps.get("libcrypto", "")
     ver_match = re.search(r"(\d+)\.(\d+)", libcrypto_ver) if libcrypto_ver else None
     feats[10] = float(int(ver_match.group(1))) if ver_match else 0.0
@@ -184,7 +182,7 @@ def _extract_features(
                 break
     feats[19] = 1.0 if unknown_hint else 0.0
 
-    # --- 20-26: 二进制文件结构特征 ---
+# 20-26: 二进制文件结构特征
     feats[20] = float(len(data).bit_length())  # log2(文件大小)
 
     # ELF section 计数 (简化)
@@ -223,9 +221,7 @@ def _extract_features(
     return feats
 
 
-# ============================================================================
 # Tier 1: XGBoost 分类器
-# ============================================================================
 
 class PQCLibraryClassifier:
     """
@@ -366,9 +362,7 @@ class PQCLibraryClassifier:
         return sorted(results, key=lambda r: r.confidence, reverse=True)[:top_k]
 
 
-# ============================================================================
 # Tier 2: BinCrypto 区间域模拟 (简化版)
-# ============================================================================
 
 def _simulate_qed_lite_fingerprint(data: bytes) -> List[dict]:
     """
@@ -449,9 +443,7 @@ def _simulate_qed_lite_fingerprint(data: bytes) -> List[dict]:
     return findings
 
 
-# ============================================================================
 # Tier 3: FoC 启发的 LLM 函数摘要
-# ============================================================================
 
 def generate_pqc_function_summary(
     function_code: str,
@@ -513,9 +505,7 @@ def generate_pqc_function_summary(
         return ""
 
 
-# ============================================================================
 # 三级管道编排
-# ============================================================================
 
 class PQCMLPipeline:
     """
@@ -569,7 +559,7 @@ class PQCMLPipeline:
 
         all_results: List[PQCMLResult] = []
 
-        # --- Tier 1: XGBoost 特征提取 + 分类 ---
+# Tier 1: XGBoost 特征提取 + 分类
         features = _extract_features(raw, imported_symbols, library_deps, path)
         tier1_results = self._classifier.classify(features)
 
@@ -579,7 +569,7 @@ class PQCMLPipeline:
                 continue  # 高置信度非 PQC, 不加入结果
             all_results.append(r)
 
-        # --- Tier 2: QED-Lite 指纹验证 ---
+# Tier 2: QED-Lite 指纹验证
         tier2_findings = _simulate_qed_lite_fingerprint(raw)
         for finding in tier2_findings:
             # 与 Tier 1 结果关联: 若库名部分匹配, 提升置信度
@@ -617,7 +607,7 @@ class PQCMLPipeline:
         return all_results
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 
 def detect_pqc_ml(
     path: str,

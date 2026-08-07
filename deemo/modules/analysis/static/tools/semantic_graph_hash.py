@@ -40,9 +40,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 语义类 (复用项目全局分类--12 个等价类)
-# ---------------------------------------------------------------------------
 
 _SEMANTIC_CLASS = {
     'mov': 0, 'lea': 0, 'push': 0, 'pop': 0, 'xchg': 0,
@@ -62,9 +60,7 @@ def _mnemonic_class(mnemonic: str) -> int:
     return _SEMANTIC_CLASS.get(m, 7)
 
 
-# ---------------------------------------------------------------------------
 # 语义图数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class SemanticBlockNode:
@@ -88,9 +84,7 @@ class DataflowEdge:
     semantic_class: int = 0   # 变量的语义类
 
 
-# ---------------------------------------------------------------------------
 # 语义图哈希构造器
-# ---------------------------------------------------------------------------
 
 class SemanticGraphHasher:
     """从 CFG + 数据流信息构造语义图哈希
@@ -121,25 +115,25 @@ class SemanticGraphHasher:
 
         返回: 64 字符的十六进制哈希字符串
         """
-        # Step 1: 构建语义节点
+        # 构建语义节点
         nodes = self._build_nodes(blocks)
 
-        # Step 2: 支配树拓扑排序
+        # 支配树拓扑排序
         ranks = self._dom_tree_rank(nodes, cfg_edges)
 
-        # Step 3: 节点特征编码
+        # 节点特征编码
         node_hashes = self._encode_nodes(nodes, ranks)
 
-        # Step 4: CFG 边编码
+        # CFG 边编码
         edge_encodings = self._encode_cfg_edges(cfg_edges, ranks)
 
-        # Step 5: 数据流边编码
+        # 数据流边编码
         if dataflow_edges:
             df_encodings = self._encode_dataflow_edges(dataflow_edges, ranks)
         else:
             df_encodings = []
 
-        # Step 6: 全部序列化并哈希
+        # 全部序列化并哈希
         hasher = hashlib.sha256()
         # 节点 (按 rank 序)
         for nid in sorted(ranks, key=ranks.get):
@@ -277,9 +271,7 @@ class SemanticGraphHasher:
         return encodings
 
 
-# ---------------------------------------------------------------------------
 # 哈希距离
-# ---------------------------------------------------------------------------
 
 def hash_distance(h1: str, h2: str) -> float:
     """两个语义图哈希的归一化汉明距离 [0, 1]

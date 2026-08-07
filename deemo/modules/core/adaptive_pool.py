@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 自适应线程池 — 前馈+PID 双模控制的并发度动态调节.
 
@@ -142,7 +142,7 @@ class AdaptivePool:
 
         self._ensure_executor()
 
-    # ---- 公开 API (与 ThreadPoolExecutor 兼容) ----
+# 公开 API (与 ThreadPoolExecutor 兼容)
     def submit(self, fn: Callable, *args, **kwargs) -> Future:
         """提交任务; 每次调用后评估池大小是否需要调整."""
         self._ensure_executor()
@@ -170,7 +170,7 @@ class AdaptivePool:
     def metrics(self) -> PoolMetrics:
         return self._metrics
 
-    # ---- 内部控制 ----
+# 内部控制
     def _ensure_executor(self):
         if self._executor is None:
             self._executor = ThreadPoolExecutor(max_workers=self._current)

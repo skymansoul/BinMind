@@ -1,0 +1,362 @@
+[
+  {
+    "cve": "CVE-2010-3089",
+    "type": "integer_overflow",
+    "pattern": "mul_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof.c"
+  },
+  {
+    "cve": "CVE-2010-3089",
+    "type": "integer_overflow",
+    "pattern": "mul_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof.c"
+  },
+  {
+    "cve": "CVE-2010-3089",
+    "type": "integer_overflow",
+    "pattern": "mul_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2010_3089_mailto\\cve_2010_3089_mailto_intof.c"
+  },
+  {
+    "cve": "CVE-2014-2851",
+    "type": "integer_overflow",
+    "pattern": "u16_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof.c"
+  },
+  {
+    "cve": "CVE-2014-2851",
+    "type": "integer_overflow",
+    "pattern": "u16_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof.c"
+  },
+  {
+    "cve": "CVE-2014-2851",
+    "type": "integer_overflow",
+    "pattern": "u16_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2014_2851_ping\\cve_2014_2851_ping_intof.c"
+  },
+  {
+    "cve": "CVE-2017-7184",
+    "type": "integer_overflow",
+    "pattern": "add_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof.c"
+  },
+  {
+    "cve": "CVE-2017-7184",
+    "type": "integer_overflow",
+    "pattern": "add_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof.c"
+  },
+  {
+    "cve": "CVE-2017-7184",
+    "type": "integer_overflow",
+    "pattern": "add_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2017_7184_xfrm\\cve_2017_7184_xfrm_intof.c"
+  },
+  {
+    "cve": "CVE-2018-1000026",
+    "type": "integer_overflow",
+    "pattern": "shl_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof.c"
+  },
+  {
+    "cve": "CVE-2018-1000026",
+    "type": "integer_overflow",
+    "pattern": "shl_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof.c"
+  },
+  {
+    "cve": "CVE-2018-1000026",
+    "type": "integer_overflow",
+    "pattern": "shl_overflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2018_1000026_bcm\\cve_2018_1000026_bcm_intof.c"
+  },
+  {
+    "cve": "CVE-2016-6187",
+    "type": "integer_overflow",
+    "pattern": "truncation",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof.c"
+  },
+  {
+    "cve": "CVE-2016-6187",
+    "type": "integer_overflow",
+    "pattern": "truncation",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof.c"
+  },
+  {
+    "cve": "CVE-2016-6187",
+    "type": "integer_overflow",
+    "pattern": "truncation",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_6187_compat\\cve_2016_6187_compat_intof.c"
+  },
+  {
+    "cve": "CVE-2015-8958",
+    "type": "integer_overflow",
+    "pattern": "signed_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof.c"
+  },
+  {
+    "cve": "CVE-2015-8958",
+    "type": "integer_overflow",
+    "pattern": "signed_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof.c"
+  },
+  {
+    "cve": "CVE-2015-8958",
+    "type": "integer_overflow",
+    "pattern": "signed_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2015_8958_sunras\\cve_2015_8958_sunras_intof.c"
+  },
+  {
+    "cve": "CVE-2020-10757",
+    "type": "integer_overflow",
+    "pattern": "shl_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof.c"
+  },
+  {
+    "cve": "CVE-2020-10757",
+    "type": "integer_overflow",
+    "pattern": "shl_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof.c"
+  },
+  {
+    "cve": "CVE-2020-10757",
+    "type": "integer_overflow",
+    "pattern": "shl_mul",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2020_10757_mremap\\cve_2020_10757_mremap_intof.c"
+  },
+  {
+    "cve": "CVE-2019-11479",
+    "type": "integer_overflow",
+    "pattern": "loop_add",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof.c"
+  },
+  {
+    "cve": "CVE-2019-11479",
+    "type": "integer_overflow",
+    "pattern": "loop_add",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof.c"
+  },
+  {
+    "cve": "CVE-2019-11479",
+    "type": "integer_overflow",
+    "pattern": "loop_add",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_11479_mss\\cve_2019_11479_mss_intof.c"
+  },
+  {
+    "cve": "CVE-2022-42703",
+    "type": "integer_overflow",
+    "pattern": "add_underflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof.c"
+  },
+  {
+    "cve": "CVE-2022-42703",
+    "type": "integer_overflow",
+    "pattern": "add_underflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof.c"
+  },
+  {
+    "cve": "CVE-2022-42703",
+    "type": "integer_overflow",
+    "pattern": "add_underflow",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2022_42703_mm\\cve_2022_42703_mm_intof.c"
+  },
+  {
+    "cve": "CVE-2013-1959",
+    "type": "integer_overflow",
+    "pattern": "downcast",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof.c"
+  },
+  {
+    "cve": "CVE-2013-1959",
+    "type": "integer_overflow",
+    "pattern": "downcast",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof.c"
+  },
+  {
+    "cve": "CVE-2013-1959",
+    "type": "integer_overflow",
+    "pattern": "downcast",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2013_1959_userns\\cve_2013_1959_userns_intof.c"
+  },
+  {
+    "cve": "CVE-2016-9555",
+    "type": "integer_overflow",
+    "pattern": "signed_negative",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof.c"
+  },
+  {
+    "cve": "CVE-2016-9555",
+    "type": "integer_overflow",
+    "pattern": "signed_negative",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof.c"
+  },
+  {
+    "cve": "CVE-2016-9555",
+    "type": "integer_overflow",
+    "pattern": "signed_negative",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2016_9555_sctp\\cve_2016_9555_sctp_intof.c"
+  },
+  {
+    "cve": "CVE-2019-19332",
+    "type": "integer_overflow",
+    "pattern": "calloc_dual",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof_O0.exe",
+    "compiler": "gcc",
+    "opt": "O0",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof.c"
+  },
+  {
+    "cve": "CVE-2019-19332",
+    "type": "integer_overflow",
+    "pattern": "calloc_dual",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof_O2.exe",
+    "compiler": "gcc",
+    "opt": "O2",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof.c"
+  },
+  {
+    "cve": "CVE-2019-19332",
+    "type": "integer_overflow",
+    "pattern": "calloc_dual",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof_Os.exe",
+    "compiler": "gcc",
+    "opt": "Os",
+    "compiled": true,
+    "source": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\analysis\\benchmark\\samples_intof\\cve_2019_19332_kvm\\cve_2019_19332_kvm_intof.c"
+  }
+]

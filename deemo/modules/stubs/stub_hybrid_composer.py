@@ -190,7 +190,7 @@ class HybridComposer:
         # LLM 不可用或失败 → 保留模板的 NotImplementedError 骨架
         return template_choice
 
-    # ---- 合并 ----
+# 合并
     def _merge(self, contract: _StubContract,
                choices: list[FuncStrategyChoice]) -> str:
         """合并各策略生成函数体为完整模块。"""
@@ -230,7 +230,7 @@ class HybridComposer:
         lines.append(f'__all__ = {contract.public_api_names()!r}')
         return '\n'.join(lines)
 
-    # ---- 辅助 ----
+# 辅助
     @staticmethod
     def _type_coverage(fc: _FuncContract) -> float:
         params = [p for p in fc.params if p.kind not in ('varargs', 'varkw')]

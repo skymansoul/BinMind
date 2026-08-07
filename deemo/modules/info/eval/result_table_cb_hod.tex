@@ -1,0 +1,32 @@
+% eval/result_table_cb_hod.tex — CB-HOD v1.1 三方法对比 LaTeX 表格
+% 24 heap overflow 样本 (17 CVE + 7 NEG), 2026-08-07 实测
+\begin{table*}[htbp]
+\centering
+\caption{Heap Overflow Detection: Three-Method Comparison on 24 Samples}
+\label{tab:cb_hod_comparison}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\textbf{Method} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN} &
+\textbf{Recall} & \textbf{Precision} & \textbf{FP Rate} & \textbf{F1} & \textbf{Time} \\
+\midrule
+AC3-v1 (Import-Pair Baseline)  & 16 & 7  & 0 & 1 & 94.1\% & 69.6\%  & 100.0\% & 0.800 & 0.2 ms \\
+CB-HOD v1.1 (Constraint-Driven) & 16 & 1  & 6 & 1 & 94.1\% & 94.1\%  & 14.3\%  & 0.941 & 1.2 ms \\
+PSVR-HLM v3.0 (Full Pipeline)   & 16 & 0  & 7 & 1 & 94.1\% & 100.0\% & 0.0\%   & 0.970 & 1.2 ms \\
+\midrule
+\textbf{Key Improvements} \\
+\midrule
+AC3 $\rightarrow$ CB-HOD & — & $-$6 & +6 & — & — & +24.5pp & $-$85.7pp & +0.141 & +1.0 ms \\
+AC3 $\rightarrow$ PSVR-HLM & — & $-$7 & +7 & — & — & +30.4pp & $-$100.0pp & +0.170 & +1.0 ms \\
+\bottomrule
+\end{tabular}
+\par\smallskip\small
+\textbf{Key Findings:}
+(1) CB-HOD v1.1 reduces false positive rate from 100\% to 14.3\% (85.7pp reduction)
+through pointer-tracking-based binding + interval constraint solving.
+(2) PSVR-HLM v3.0 achieves 0\% FPR by layering source-level safety pattern recognition
+(identical\_expr, loop\_guard\_break, ternary\_guard, etc.) atop CB-HOD's constraint engine.
+(3) All three methods share one FN (CVE-2024-004 off-by-one heap write), representing
+a fundamental limit of regex-based size expression extraction.
+(4) Analysis time remains in the millisecond range — 3--4 orders of magnitude
+faster than symbolic execution (Angr: 45s) or decompilation (Ghidra: 30s).
+\end{table*}

@@ -25,9 +25,7 @@ def _debug_print(*args, **kwargs):
     print(prefix, *args, file=sys.stderr, **kwargs)
 
 
-# ---------------------------------------------------------------------------
 # 魔数辅助函数: 构建以指定魔数为前缀的最小二进制块
-# ---------------------------------------------------------------------------
 
 def _make_magic_blob(magic_bytes: bytes, padding_size: int = 128) -> bytes:
     """构建以给定魔数开头、零值填充的二进制块."""
@@ -36,9 +34,7 @@ def _make_magic_blob(magic_bytes: bytes, padding_size: int = 128) -> bytes:
     return bytes(blob)
 
 
-# ---------------------------------------------------------------------------
 # 固件夹具 (Fixtures)
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def temp_firmware_dir():
@@ -55,9 +51,7 @@ def mock_config():
         yield cfg
 
 
-# ============================================================================
 # 格式检测测试
-# ============================================================================
 
 class TestFirmwareFormatDetection:
     """以已知魔数验证FirmwareExtractor.detect_firmware_format()."""
@@ -162,9 +156,7 @@ class TestFirmwareFormatDetection:
         ext.cleanup()
 
 
-# ============================================================================
 # 魔数字节匹配测试
-# ============================================================================
 
 class TestMagicBytesMatching:
     """验证FIRMWARE_MAGICS包含正确的原始字节序列."""
@@ -214,9 +206,7 @@ class TestMagicBytesMatching:
         assert FIRMWARE_MAGICS['uImage'] == b'\x27\x05\x19\x56'
 
 
-# ============================================================================
 # 解压及临时目录提取测试
-# ============================================================================
 
 class TestExtractionWithTempDirs:
     """使用临时目录验证提取流程."""
@@ -285,9 +275,7 @@ class TestExtractionWithTempDirs:
         assert not os.path.exists(session_dir)
 
 
-# ============================================================================
 # 保留 — 边界用例, 预留扩展
-# ============================================================================
 
 class TestReservedEdgeCases:
     """保留 — 边界用例测试, 预留扩展."""

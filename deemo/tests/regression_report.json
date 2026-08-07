@@ -1,0 +1,207 @@
+{
+  "total": 18,
+  "baseline": {
+    "TP": 0,
+    "FP": 0,
+    "TN": 3,
+    "FN": 15,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "fp_rate": 0.0
+  },
+  "pipeline": {
+    "TP": 5,
+    "FP": 2,
+    "TN": 1,
+    "FN": 10,
+    "precision": 0.7142857142857143,
+    "recall": 0.3333333333333333,
+    "f1": 0.4545454545454545,
+    "fp_rate": 0.6666666666666666
+  },
+  "fp_reduction": -2,
+  "details": [
+    {
+      "sample": "sample_01",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_02",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_03",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_04",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_05",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_06",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_07",
+      "expected": false,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_08",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_09",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_10",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_11",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_12",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_13",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_14",
+      "expected": false,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_15",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_16",
+      "expected": false,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_17",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "cj_solver": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_18",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "cj_solver": 1
+      },
+      "error": ""
+    }
+  ],
+  "generated_at": "2026-08-10 19:25:27"
+}

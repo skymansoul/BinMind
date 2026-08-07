@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 AdaThermoLBF —— 自适应学习型布隆过滤器 + 数据温度加权删除。
 
@@ -20,14 +20,14 @@ AdaThermoLBF —— 自适应学习型布隆过滤器 + 数据温度加权删除
 
 相关文献:
   - Learned LSM-trees: Two Approaches Using Learned Bloom Filters
-    (arXiv:2508.00882): 按热度分配过滤器预算, 热键用更紧凑表示。
+: 按热度分配过滤器预算, 热键用更紧凑表示。
   - DWLBF: a deletable weighted learned Bloom Filter based on data
-    temperature (Journal of King Saud University, 2025): deletable bit
+    temperature: deletable bit
     + 温度加权删除。
-  - Adversary Resilient Learned Bloom Filters (arXiv:2409.06556):
+  - Adversary Resilient Learned Bloom Filters:
     最坏情况误判上界与兜底降级机制。
   - Ensemble Learned Bloom Filters: Two Oracles are Better than One
-    (ICML 2025): 温度信号与稳定哈希特征的双信号集成。
+: 温度信号与稳定哈希特征的双信号集成。
 """
 
 import bisect
@@ -47,10 +47,7 @@ __all__ = [
     "_key_hash",
 ]
 
-
-# ---------------------------------------------------------------------------
 # 底层哈希与误判率公式
-# ---------------------------------------------------------------------------
 
 def _splitmix64(x: int) -> int:
     """splitmix64 混合 —— 为双哈希方案提供第二条独立伪随机序列。"""
@@ -59,13 +56,11 @@ def _splitmix64(x: int) -> int:
     x = ((x ^ (x >> 27)) * 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
     return x ^ (x >> 31)
 
-
 def _key_hash(key) -> int:
     """bytes/str 归一化为 64-bit 键哈希。"""
     if isinstance(key, str):
         key = key.encode("utf-8")
     return _fnv1a_64(key)
-
 
 def _bloom_fpr(k: int, n: int, m: int) -> float:
     """标准布隆误判率 (1 - e^{-kn/m})^k; n 或 m 非正时返回 0。
@@ -77,10 +72,7 @@ def _bloom_fpr(k: int, n: int, m: int) -> float:
         return 0.0
     return (1.0 - math.exp(-k * n / m)) ** k
 
-
-# ---------------------------------------------------------------------------
 # _FreqSketch —— Count-Min Sketch 频率估计 (温度度量来源)
-# ---------------------------------------------------------------------------
 
 class _FreqSketch:
     """Count-Min Sketch 点查询频率估计 —— 上界估计, 不低估。
@@ -130,10 +122,7 @@ class _FreqSketch:
                 row[i:i + 8] = (v >> 1).to_bytes(8, "little")
         self._total >>= 1
 
-
-# ---------------------------------------------------------------------------
-# _CountingBloom —— 可删除计数布隆 (冷桶底层表示)
-# ---------------------------------------------------------------------------
+# CountingBloom —— 可删除计数布隆 (冷桶底层表示)
 
 class _CountingBloom:
     """计数布隆 —— 4-bit 半字节计数器, 支持删除。
@@ -193,17 +182,14 @@ class _CountingBloom:
     def fpr(self) -> float:
         return _bloom_fpr(self.k, self.n, self.m)
 
-
-# ---------------------------------------------------------------------------
-# _BitBloom —— 紧凑位布隆 (热桶底层表示)
-# ---------------------------------------------------------------------------
+# BitBloom —— 紧凑位布隆 (热桶底层表示)
 
 class _BitBloom:
     """紧凑位布隆 —— 每格 1 bit。
 
     热键稳定存在、禁止删除; 每 bit 提供一个格子, 相对计数布隆
     同等内存下多 8 倍格子, 误判率显著更低 —— 体现"热键用更紧凑表示"
-    的内存分配思想 (arXiv:2508.00882)。
+    的内存分配思想 。
     """
 
     def __init__(self, m_bits: int, k: int, seed: int):
@@ -235,10 +221,7 @@ class _BitBloom:
     def fpr(self) -> float:
         return _bloom_fpr(self.k, self.n, self.m)
 
-
-# ---------------------------------------------------------------------------
-# _ThermoBand —— 单一温度桶
-# ---------------------------------------------------------------------------
+# ThermoBand —— 单一温度桶
 
 class _ThermoBand:
     """单一温度桶 —— 一种表示 (位/计数布隆) + 可删除旗标 + 可选精确兜底。
@@ -288,10 +271,7 @@ class _ThermoBand:
             return 0.0
         return self.filter.fpr()
 
-
-# ---------------------------------------------------------------------------
 # LearnedOracle —— 轻量模型 (无第三方 ML 依赖)
-# ---------------------------------------------------------------------------
 
 class LearnedOracle:
     """轻量模型 —— 频率 + 稳定哈希特征双信号集成。
@@ -342,10 +322,7 @@ class LearnedOracle:
         idx = bisect.bisect_right(self._thresholds, v)
         return max(0, self.num_bands - 1 - idx)
 
-
-# ---------------------------------------------------------------------------
 # AdaThermoLBF —— 核心数据结构
-# ---------------------------------------------------------------------------
 
 class AdaThermoLBF:
     """自适应学习型布隆过滤器 + 数据温度加权删除。
@@ -398,7 +375,7 @@ class AdaThermoLBF:
         self._bands: List[_ThermoBand] = []
         self.rebuild()
 
-    # ---- 内存推导与分配 ----
+# 内存推导与分配
 
     @staticmethod
     def _derive_total_mem(capacity: int, fpr: float) -> int:
@@ -443,7 +420,7 @@ class AdaThermoLBF:
                           "deletable": deletable})
         return specs
 
-    # ---- 全量重建 / 重平衡 ----
+# 全量重建 / 重平衡
 
     def rebuild(self):
         """全量重建: 重训 oracle 阈值 → 重路由 → 重分配 → 重插。
@@ -475,7 +452,7 @@ class AdaThermoLBF:
         # 会随插入规模骤降, 导致 k 长期陈旧 (参考 DWLBF 周期刷新策略)。
         self.rebuild()
 
-    # ---- 成员操作接口 ----
+# 成员操作接口
 
     def add(self, key: bytes) -> bool:
         """插入键; 返回 True 表示新成员 (此前不存在)。"""
@@ -554,7 +531,7 @@ class AdaThermoLBF:
     def __len__(self) -> int:
         return self._members
 
-    # ---- 自适应参数调整 ----
+# 自适应参数调整
 
     def adjust_capacity(self, new_total_mem: int):
         """按新总内存预算重分配并重建。"""
@@ -588,7 +565,7 @@ class AdaThermoLBF:
         self._oracle = LearnedOracle(self._num_bands, seed=self._seed)
         self.rebuild()
 
-    # ---- 对抗鲁棒性接口 ----
+# 对抗鲁棒性接口
 
     def worst_case_fpr_estimate(self) -> Dict:
         """最坏情况误判上界估计 (arXiv:2409.06556)。
@@ -642,7 +619,7 @@ class AdaThermoLBF:
         w2 = self.worst_case_fpr_estimate()
         return {"escalated": True, "escalations": self._escalations, **w2}
 
-    # ---- 统计摘要 ----
+# 统计摘要
 
     def estimated_fpr(self) -> float:
         """整体误判率 —— 按各带成员数加权 (计入冷桶精确兜底)。"""

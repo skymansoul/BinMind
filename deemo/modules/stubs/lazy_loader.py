@@ -1,6 +1,6 @@
 # 按需导入：依赖解析、重试、降级策略。
-# DeBinVul (arXiv:2411.04981) 多架构反编译中的惰性加载
-# Implicit Patterns (arXiv:2603.19138) "early pruning" 模式
+# DeBinVul 多架构反编译中的惰性加载
+# Implicit Patterns "early pruning" 模式
 import importlib as _il
 import threading as _thr
 import time as _t

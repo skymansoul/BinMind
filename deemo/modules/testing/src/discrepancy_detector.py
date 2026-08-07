@@ -19,10 +19,8 @@ from ._engine_types import (
 )
 
 
-# ---------------------------------------------------------------------------
 # 引擎可信度追踪: 基于历史运行记录计算每个引擎的加权投票权重。
 # 引擎权重随累积证据动态衰减陈旧记录。
-# ---------------------------------------------------------------------------
 class EngineReliabilityTracker:
     """维护各引擎滑动窗口历史表现，产出加权投票系数"""
 
@@ -77,10 +75,8 @@ class EngineReliabilityTracker:
             }
 
 
-# ---------------------------------------------------------------------------
 # 跨分析关联器: 当某分析维度偏差反复伴随另一维度偏差时标记为关联，
 # 提示可能共享同一根因（如解析器Bug影响多种分析）。
-# ---------------------------------------------------------------------------
 class CrossAnalysisCorrelator:
     """检测不同AnalysisKind间的偏差共现模式"""
 
@@ -114,9 +110,7 @@ class CrossAnalysisCorrelator:
         return results
 
 
-# ---------------------------------------------------------------------------
 # 偏差检测器: 加权投票+二项检验置信度+交叉关联
-# ---------------------------------------------------------------------------
 class DiscrepancyDetector:
 
     FUNCTION_SIMILARITY_THRESHOLD = 0.7
@@ -129,7 +123,7 @@ class DiscrepancyDetector:
         self.reliability = EngineReliabilityTracker()
         self.correlator = CrossAnalysisCorrelator()
 
-    # ---- 加权投票共识: 引擎权重越高，其输出在多数表决中越有分量 ----
+    # 加权投票共识: 引擎权重越高，其输出在多数表决中越有分量
     def _weighted_consensus(self, sets: Dict[EngineKind, Set[str]]) -> Set[str]:
         """加权多数表决产出共识集"""
         if not sets:
@@ -144,7 +138,7 @@ class DiscrepancyDetector:
         threshold = total_weight * 0.4  # 需>=40%加权投票
         return {item for item, sc in item_scores.items() if sc >= threshold}
 
-    # ---- 二项置信度: 检验相似度是否显著低于阈值 ----
+    # 二项置信度: 检验相似度是否显著低于阈值
     @staticmethod
     def _binomial_confidence(similarities: List[float],
                              threshold: float) -> float:
@@ -165,7 +159,7 @@ class DiscrepancyDetector:
         lower = max(0.0, center - margin)
         return round(lower, 3)
 
-    # ---- 各分析维度检测 ----
+    # 各分析维度检测
     def _pairwise_similarities(
             self, sets: Dict[EngineKind, Set[str]]) -> List[float]:
         engines = list(sets.keys())
@@ -285,7 +279,7 @@ class DiscrepancyDetector:
                     confidence=conf))
         return discrepancies
 
-    # ---- 新增分析维度 ----
+    # 新增分析维度
     def detect_imports(self, results: List[EngineResult]) -> List[Discrepancy]:
         discrepancies: list = []
         with self._lock:

@@ -1,5 +1,5 @@
 """
-创建: 2025-08-05
+创建: 2026-07-22
 
 格式化字符串偏移精确计算 — 基于函数栈帧结构的真实偏移推导。
 
@@ -17,7 +17,6 @@
 限制: 需要 r2 反汇编输出; 仅 x86_64; 假设标准 calling convention。
 """
 
-from __future__ import annotations
 
 import re
 import subprocess

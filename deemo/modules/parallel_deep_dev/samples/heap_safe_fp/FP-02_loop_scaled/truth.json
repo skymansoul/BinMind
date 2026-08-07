@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "loop_scaled",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "guard-subst",
+  "cve": "",
+  "func": "safe_loop",
+  "name": "FP-02_loop_scaled"
+}

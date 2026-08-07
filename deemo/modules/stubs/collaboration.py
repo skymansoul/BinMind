@@ -1,3 +1,3 @@
 # compat 重导出 — 协同分析桩
-# 参考: Convergence of Source Code and Binary Vulnerability Discovery (Mantovani et al., 2022, ASIA CCS)
+# Convergence of Source Code and Binary Vulnerability Discovery
 from modules.core.compat.collaboration import *

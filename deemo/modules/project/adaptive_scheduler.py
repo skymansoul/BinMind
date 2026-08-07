@@ -1,7 +1,7 @@
 # 自适应任务调度: 动态优先级学习/GNN特征编码/ET+优先权滚动优化
-# 参考: GATES "Cost-aware Dynamic Workflow Scheduling via GAT + Evolution Strategy" (IJCAI 2025, arXiv:2505.12355 [待验证])
+# GATES "Cost-aware Dynamic Workflow Scheduling via GAT + Evolution Strategy" (IJCAI 2025, [待验证])
 #       NeurIPS 2025 "RL for One-Shot DAG Scheduling with Comparability Identification and Dense Reward"
-#       EGS "Edge Generation Scheduling for DAG Tasks Using DRL" (arXiv:2308.14647, 2024)
+#       EGS "Edge Generation Scheduling for DAG Tasks Using DRL" (, 2024)
 #       GA-DRL "GNN-Augmented DRL for DAG Task Scheduling Over Dynamic Vehicular Clouds" (IEEE TNSM 2024)
 import logging, time, json, math, threading, heapq
 from dataclasses import dataclass, field

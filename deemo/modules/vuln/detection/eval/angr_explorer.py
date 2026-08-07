@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 # Angr exploration-based vulnerability point analysis
 import sys, os, time
 def analyze(binary_path):

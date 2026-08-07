@@ -1,10 +1,11 @@
 # 发现富化引擎: 外部数据源交叉引用/CVSS推断/CWE细化/MITRE ATT&CK映射
-# 参考: Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings with KG Embeddings" (arXiv:2604.22176)
-#       McCoy et al. "A Relevance Model for Threat-Centric Ranking of Cybersecurity Vulnerabilities" (arXiv:2406.05933)
-#       VulnScopper "Unveiling Hidden Links Between Unseen Security Entities" (arXiv:2403.02014)
-#       Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains" (arXiv:2601.20158)
-#       Wu & Feng "Association Analysis of Network Security Vulnerabilities Based on KG" (JCSANDM 2025)
-#       Jacobs et al. "Exploit Prediction Scoring System (EPSS)" (2021)
+# Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings with KG Embeddings"
+#       McCoy et al. "A Relevance Model for Threat-Centric Ranking of Cybersecurity Vulnerabilities"
+#       VulnScopper "Unveiling Hidden Links Between Unseen Security Entities"
+#       Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains"
+#       Wu & Feng "Association Analysis of Network Security Vulnerabilities Based on KG"
+#       Jacobs et al. "Exploit Prediction Scoring System (EPSS)"
+from __future__ import annotations
 import json, logging, os, re, time, hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -19,7 +20,7 @@ class CVSSInferrer:
     """描述文本→CVSS向量推断.
 
     关键词匹配+上下文规则，避免外部依赖.
-    为缺少CVSS的内部发现提供近似评分 [McCoy et al. 2024].
+    为缺少CVSS的内部发现提供近似评分.
 
     关键词按CVSS指标分组:
       - AV: network > adjacent > local > physical
@@ -44,7 +45,7 @@ class CVSSInferrer:
         'L': ['partial', 'limited', 'information disclosure', 'minor', 'low impact'],
     }
 
-    # CWE→默认CVSS基础向量 (NVD统计均值) [FixV2W 2025]
+    # CWE→默认CVSS基础向量 (NVD统计均值)
     _CWE_DEFAULT_CVSS = {
         'CWE-787': (8.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
         'CWE-89':  (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
@@ -116,7 +117,7 @@ class CVSSInferrer:
         return enriched
 
 
-# CWE细化引擎 [FixV2W 2025]
+# CWE细化引擎
 
 class CWERefiner:
     """描述模式匹配→精确CWE分类."""
@@ -163,7 +164,7 @@ class CWERefiner:
         return findings
 
 
-# MITRE ATT&CK映射 [McCoy et al. 2024]
+# MITRE ATT&CK映射
 
 class MITREAttackMapper:
     """漏洞发现→MITRE ATT&CK战术技术."""

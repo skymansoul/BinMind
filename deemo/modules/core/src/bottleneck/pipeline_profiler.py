@@ -18,8 +18,7 @@
 - checkpoint_manager：管道状态的持久化（故障恢复）。
 - 本模块：管道性能的实时监控与优化建议（在线调优）。
 
-参考：
-- Little's Law (1961): 排队系统的守恒定律。
+- Little's Law: 排队系统的守恒定律。
 - Amdahl's Law在分析管道中的应用——识别串行瓶颈。
 """
 
@@ -30,7 +29,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 @dataclass
 class StageMetrics:
@@ -72,7 +70,6 @@ class StageMetrics:
         _elapsed = self.arrival_timestamps[-1] - self.arrival_timestamps[0]
         return len(self.arrival_timestamps) / max(_elapsed, _EPS)
 
-
 @dataclass
 class BottleneckReport:
     """瓶颈检测报告。"""
@@ -82,7 +79,6 @@ class BottleneckReport:
     is_bottleneck: bool
     severity: str  # "critical" / "warning" / "ok"
     recommendation: str
-
 
 class PipelineBottleneckDetector:
     """管道瓶颈检测器——基于排队论的实时性能分析。
@@ -204,8 +200,7 @@ class PipelineBottleneckDetector:
                 _min_rate = min(_min_rate, _rate)
         return _min_rate if _min_rate != float('inf') else 0.0
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -250,7 +245,6 @@ def _smoke_test():
     _vuln = [r for r in _reports if r.stage_name == "vuln_detect"][0]
     assert _vuln.avg_queue > 0, "vuln_detect should have queue"
     print("[OK] PipelineBottleneckDetector smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

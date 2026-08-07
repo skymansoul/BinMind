@@ -86,7 +86,7 @@ class ComposeReport:
         }
 
 
-# ── 补丁操作解析器 ────────────────────────────────────────────────
+# 补丁操作解析器
 
 class PatchOpParser:
     """从汇编/字节级补丁描述提取 PatchOp。"""
@@ -134,7 +134,7 @@ class PatchOpParser:
         return op
 
 
-# ── 补丁组合引擎 ──────────────────────────────────────────────────
+# 补丁组合引擎
 
 class PatchCompositionEngine:
     """补丁组合的形式代数引擎。"""

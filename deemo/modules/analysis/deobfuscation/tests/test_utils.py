@@ -7,9 +7,7 @@ import pytest
 from collections import Counter
 
 
-# ═══════════════════════════════════════════════════════════════
 # Entropy tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestEntropy:
     """Shannon entropy computation tests"""
@@ -71,9 +69,7 @@ class TestEntropy:
         assert e_random > e_repeated
 
 
-# ═══════════════════════════════════════════════════════════════
 # XOR tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestXOR:
     """XOR 解码 tests"""
@@ -116,9 +112,7 @@ class TestXOR:
             assert decrypted == data
 
 
-# ═══════════════════════════════════════════════════════════════
 # Printable ratio tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestPrintableRatio:
     """Printable ratio computation tests"""
@@ -158,9 +152,7 @@ class TestPrintableRatio:
         assert 0.4 < ratio < 0.6
 
 
-# ═══════════════════════════════════════════════════════════════
 # English score tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestEnglishScore:
     """English language likelihood scoring tests"""
@@ -210,9 +202,7 @@ class TestEnglishScore:
             assert 0.0 <= score <= 1.0
 
 
-# ═══════════════════════════════════════════════════════════════
 # CJK detection tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestCJKDetection:
     """CJK character detection tests"""
@@ -278,9 +268,7 @@ class TestCJKDetection:
         assert has_cjk
 
 
-# ═══════════════════════════════════════════════════════════════
 # Error hierarchy tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestErrorHierarchy:
     """异常 class hierarchy tests"""

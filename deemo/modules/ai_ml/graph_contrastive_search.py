@@ -98,7 +98,7 @@ class SimHash:
 
         Args:
             hash_val: original hash code.
-            probe_radius: number of bits to flip (1 = 64 neighbors, 2 = 2016).
+            probe_radius: number of bits to flip.
 
         Returns:
             list of int: hash codes for neighbor buckets (including original).
@@ -522,7 +522,7 @@ class ContrastiveGraphEncoder:
 
         # ∂L/∂raw_j = Σ_i ∂L/∂emb_i * ∂emb_i/∂raw_j
         # ∂emb_i/∂raw_j = (δ_ij * norm - raw_i * raw_j / norm) / norm^2
-        # = (δ_ij / norm) - (raw_i * raw_j / norm^3)
+# (δ_ij / norm) - (raw_i * raw_j / norm^3)
         raw_grad = [0.0] * out_dim
         ri = 0
         while ri < out_dim:
@@ -681,15 +681,15 @@ class GraphContrastiveSearch:
             while pi < len(pairs):
                 ga, gb = pairs[pi]
 
-                # ---- 前向传播 ----
+# 前向传播
                 emb_a = self.m_encoder.encode_graph_cge(ga)
                 emb_b = self.m_encoder.encode_graph_cge(gb)
 
-                # ---- 损失与梯度 ----
+# 损失与梯度
                 loss, grad_a, grad_b = self.m_encoder.contrastive_loss_grad_cge(emb_a, emb_b, labels[pi])
                 total_loss += loss
 
-                # ---- 反向传播（仅当 loss > 0 时才更新） ----
+# 反向传播（仅当 loss > 0 时才更新）
                 if loss > 1e-12:
                     # 获取两图的中间表示用于权重梯度计算
                     ga_vec, ga_agg, ga_gnn_out = self._encode_with_intermediates_cge(ga)
@@ -946,7 +946,6 @@ class GraphContrastiveSearch:
         return self.m_index.query_lsh(query_emb, top_k)
 
 
-def _debug_print(*args, **kwargs): pass
 
 
 def create_graph_contrastive_search(input_dim=128, hidden_dim=256, output_dim=64,

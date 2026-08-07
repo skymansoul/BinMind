@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-29 — GP 回归 + EI 采集 + 参数空间
-# 修改: 2026-08-04 — 增加 max_evaluations 上限 (默认100), Cholesky 数值稳定性
+# coding: utf-8
+# 创建: 2026-06-28 — GP 回归 + EI 采集 + 参数空间
+# 修改: 2026-06-28 — 增加 max_evaluations 上限 (默认100), Cholesky 数值稳定性
 """
 贝叶斯优化钩子参数调优 — GP 代理模型 + EI 采集, 面向管道执行的参数搜索.
 
@@ -38,7 +38,7 @@ class Trial:
 class GaussianProcess:
     """简化高斯过程回归 — RBF kernel + 噪声 + Cholesky 分解.
 
-    参考: Rasmussen & Williams (2006), Algorithm 2.1.
+    参考: Rasmussen & Williams, Algorithm 2.1.
     """
 
     def __init__(self, length_scale: float = 1.0, signal_var: float = 1.0,

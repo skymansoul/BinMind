@@ -1,0 +1,284 @@
+{
+  "summary": [
+    {
+      "Tool": "AC3-v1",
+      "TP": 0,
+      "FP": 0,
+      "TN": 8,
+      "FN": 7,
+      "Recall": 0.0,
+      "Precision": 0.0,
+      "FP_Rate": 0.0,
+      "F1": 0.0
+    },
+    {
+      "Tool": "PSVR-HLM-v2",
+      "TP": 0,
+      "FP": 0,
+      "TN": 8,
+      "FN": 7,
+      "Recall": 0.0,
+      "Precision": 0.0,
+      "FP_Rate": 0.0,
+      "F1": 0.0
+    }
+  ],
+  "details": [
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 39.8,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-001_malloc_memcpy_mismatch",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-001_malloc_memcpy_mismatch",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 41.5,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-002_strcpy_heap",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-002_strcpy_heap",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 40.2,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-003_int_overflow_malloc",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-003_int_overflow_malloc",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 39.6,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-004_off_by_one_heap",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-004_off_by_one_heap",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 39.3,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-005_realloc_misuse",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-005_realloc_misuse",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 43.7,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-006_calloc_read_overflow",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-006_calloc_read_overflow",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 40.2,
+      "tool": "AC3-v1",
+      "status": "FN",
+      "sample": "CVE-2024-007_loop_heap_overflow",
+      "is_vulnerable": true
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "FN",
+      "sample": "CVE-2024-007_loop_heap_overflow",
+      "is_vulnerable": true
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 40.5,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-001_safe_equal_sizes",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-001_safe_equal_sizes",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 38.4,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-002_alloc_larger_than_write",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-002_alloc_larger_than_write",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 41.1,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-003_boundary_guard",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-003_boundary_guard",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 48.5,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-004_calloc_safe",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-004_calloc_safe",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 41.9,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-005_sizeof_pattern",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-005_sizeof_pattern",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 42.6,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-006_realloc_safe_growth",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-006_realloc_safe_growth",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 41.9,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-007_fortify_protected",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-007_fortify_protected",
+      "is_vulnerable": false
+    },
+    {
+      "error": "  File \"C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\info\\tests\\_run_ac3_v1.py\", line 5\n    # \\ufffd\\ufffd\\u0221\\ufffd\\ufffd\\ufffd\\ufffd\n      ^\nSyntaxError: Non-UTF-8 code starting with '\\xcc",
+      "elapsed_ms": 42.6,
+      "tool": "AC3-v1",
+      "status": "TN",
+      "sample": "NEG-008_loop_with_guard",
+      "is_vulnerable": false
+    },
+    {
+      "tool": "PSVR-HLM-v2",
+      "findings": 0,
+      "elapsed_ms": 0,
+      "error": "attempted relative import with no known parent package",
+      "status": "TN",
+      "sample": "NEG-008_loop_with_guard",
+      "is_vulnerable": false
+    }
+  ],
+  "timestamp": "2026-08-06T17:15:50.501989"
+}

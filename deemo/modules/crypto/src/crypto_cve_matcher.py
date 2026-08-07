@@ -17,7 +17,6 @@
     (b) 模糊匹配: 算法+模式→可能的CVE(即使库版本未知)。
     (c) 影响评估: CVSS评分→可操作的修复建议。
 
-参考:
   - NVD (National Vulnerability Database): CVE数据源。
   - OSV (Open Source Vulnerabilities): 开源漏洞数据库。
   - GHSA (GitHub Security Advisories): GitHub安全公告。
@@ -31,7 +30,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
-
 
 @dataclass
 class CVEMatch:
@@ -48,8 +46,7 @@ class CVEMatch:
     exploit_maturity: str = ""     # PROOF_OF_CONCEPT / ACTIVE_EXPLOIT / THEORETICAL
     remediation: str = ""
 
-
-# ── 精选高影响力密码学CVE映射 ──
+# 精选高影响力密码学CVE映射
 # 格式: CVE_ID → (描述, CVSS, 严重度, 库名, 受影响版本, 修复版本, 利用成熟度)
 
 _CVE_DATABASE: Dict[str, Tuple[str, float, str, str, str, str, str]] = {
@@ -111,7 +108,7 @@ _CVE_DATABASE: Dict[str, Tuple[str, float, str, str, str, str, str]] = {
         'ACTIVE_EXPLOIT'),
 }
 
-# ── 算法级CVE模式(当库版本未知时使用) ──
+# 算法级CVE模式(当库版本未知时使用)
 _ALGORITHM_CVE_PATTERNS: Dict[str, List[Tuple[str, float, str]]] = {
     'ECDSA': [
         ('CVE-2022-21449', 0.40, 'Java ECDSA空签名; 若检测到Java JCA'),
@@ -125,7 +122,6 @@ _ALGORITHM_CVE_PATTERNS: Dict[str, List[Tuple[str, float, str]]] = {
         ('CVE-2024-0727', 0.20, 'PKCS12中的NULL解引用; AES加密密钥导入'),
     ],
 }
-
 
 def match_cves(lib_fingerprints: Optional[List] = None,
                crypto_findings: Optional[List] = None,
@@ -208,7 +204,6 @@ def match_cves(lib_fingerprints: Optional[List] = None,
 
     matches.sort(key=lambda m: (-m.cvss_score, -m.match_confidence))
     return matches
-
 
 def summarize_cve_matches(matches: List[CVEMatch]) -> Dict[str, int]:
     """汇总CVE匹配统计——按严重度和利用成熟度。"""

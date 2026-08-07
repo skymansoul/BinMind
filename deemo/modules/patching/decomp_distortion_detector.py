@@ -1,4 +1,4 @@
-"""反编译失真检测 — FidelityGPT [arXiv:2510.19615] 启发的模式匹配引擎。
+"""反编译失真检测 — FidelityGPT 启发的模式匹配引擎。
 
 FidelityGPT 定义六类反编译失真并通过 RAG 修复。本模块将其模式匹配
 部分工程化为独立检测器，不依赖外部调用即可识别 Ghidra/IDA/Hex-Rays
@@ -70,7 +70,7 @@ class DistortionReport:
         }
 
 
-# ── D1: 类型信息丢失 ────────────────────────────────────────────
+# D1: 类型信息丢失
 # 反编译器无法推断类型时填充的占位符模式
 
 _D1_PATTERNS = [
@@ -93,7 +93,7 @@ _D1_PATTERNS = [
     (r'\b__qword\b', '__qword → uint64_t', 0.85),
 ]
 
-# ── D2: 控制流退化 ───────────────────────────────────────────
+# D2: 控制流退化
 
 _D2_PATTERNS = [
     (r'\bgoto\b', 'goto usage', 0.40),  # 单 goto 权重低
@@ -105,7 +105,7 @@ _D2_PATTERNS = [
     (r'// WARNING:.*unreachable', 'unreachable code — CFG error', 0.85),
 ]
 
-# ── D3: 函数内联展开 ─────────────────────────────────────────────
+# D3: 函数内联展开
 # 特征：函数体内嵌大量寄存器操作和直接内存访问
 
 _D3_PATTERNS = [
@@ -118,7 +118,7 @@ _D3_PATTERNS = [
     (r'__emit\s*\(', 'inline byte emission', 0.70),
 ]
 
-# ── D4: 常量/字符串混淆 ──────────────────────────────────────────
+# D4: 常量/字符串混淆
 
 _D4_PATTERNS = [
     (r'0x[0-9a-fA-F]{8,16}', 'large magic constant — unresolved', 0.30),
@@ -128,7 +128,7 @@ _D4_PATTERNS = [
      'shift/or of constants — composite constant not folded', 0.50),
 ]
 
-# ── D5: 变量命名丢失 ─────────────────────────────────────────────────
+# D5: 变量命名丢失
 
 _D5_PATTERNS = [
     (r'\bv\d+\b', 'auto-generated var name (vN)', 0.75),
@@ -140,7 +140,7 @@ _D5_PATTERNS = [
     (r'\bpuVar\d+\b', 'Ghidra pointer variable', 0.80),
 ]
 
-# ── D6: 复合操作拆分 ─────────────────────────────────────────────────
+# D6: 复合操作拆分
 
 _D6_PATTERNS = [
     (r'(\w+)\s*=\s*(\w+)\s*\+\s*(\w+)\s*;\s*\n\s*\2\s*=\s*\1',
@@ -168,9 +168,7 @@ class DistortionDetector:
             DistortionKind.COMPOSITE_SPLIT: _D6_PATTERNS,
         }
 
-    # ============================================================
     # 主分析入口
-    # ============================================================
     def analyze(self, decompiled_code: str,
                 source_path: str = "") -> DistortionReport:
         """分析反编译输出，返回完整失真报告。"""
@@ -223,7 +221,7 @@ class DistortionDetector:
 
         return _rpt
 
-    # ── 自动修复：D1 类型替换 ────────────────────────────────────────
+# 自动修复：D1 类型替换
     # 对可安全替换的类型失真执行替换
 
     def auto_fix(self, decompiled_code: str) -> Tuple[str, int]:
@@ -257,7 +255,7 @@ class DistortionDetector:
 
         return _fixed, _count
 
-    # ── 辅助 ──────────────────────────────────────────────────────
+# 辅助
 
     def _count_functions(self, code: str) -> int:
         """通过函数声明模式估算函数数量。"""
@@ -303,7 +301,7 @@ class DistortionDetector:
         return round(min(max(_q, 0.0), 1.0), 4)
 
 
-# ── 便捷入口 ──────────────────────────────────────────────────────────
+# 便捷入口
 
 def detect_distortions(decompiled_code: str,
                        source_path: str = "") -> Dict:

@@ -40,7 +40,7 @@ class TaintMap:
         # 污点传播历史 — 记录每条传播路径用于审计追踪
         self._propagation_log: List[Dict] = []
 
-    # -- 寄存器 taint --------------------------------------------------------
+# 寄存器 taint
 
     def tag_register(self, reg: str, tag: TaintTag) -> None:
         self._registers[reg] |= tag
@@ -54,7 +54,7 @@ class TaintMap:
     def clear_register(self, reg: str) -> None:
         self._registers.pop(reg, None)
 
-    # -- memory taint ----------------------------------------------------------
+# memory taint
 
     def tag_memory(self, addr: int, size: int, tag: TaintTag) -> None:
         for off in range(size):
@@ -101,13 +101,13 @@ class TaintMap:
     def is_register_tainted(self, reg: str) -> bool:
         return self._registers.get(reg, 0) != 0
 
-    # --- 新增: 污点审计追踪 ---
+# 新增: 污点审计追踪
     # 记录每次传播操作，用于回溯完整的污点传播链
     def audit_trail(self) -> List[Dict]:
         """返回污点传播的审计日志 — 每次propagate/tag_memory操作的时间倒序列表"""
         return list(self._propagation_log)
 
-    # --- 新增: 污点密度统计 ---
+# 新增: 污点密度统计
     # 按标签类型统计污染内存字中的数量分布
     def taint_density(self) -> Dict[str, int]:
         """按TaintTag类别统计被污染内存字节的数量分布

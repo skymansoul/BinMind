@@ -1,5 +1,5 @@
 # 保形预测与分布无关的不确定性量化
-# 参考：Vovk et al. Algorithmic Learning in a Random World. 2005.
+# Vovk et al. Algorithmic Learning in a Random World. 2005.
 #       Angelopoulos & Bates. Conformal Prediction: A Gentle Introduction. 2021.
 #       Barber et al. Predictive Inference with the Jackknife+. AOS 2021.
 # 核心机制：不依赖任何分布假设，仅通过校准集分数分布构造预测区间
@@ -11,11 +11,9 @@ from collections import defaultdict
 import uuid
 
 
-# ============================================================================
 # 标准保形预测 — 基于校准集的非参数预测集构造
 # 给定校准分数 {s_i}，预测集 = {y: score(x_new, y) ≤ q̂}
 # q̂ = (1-α) 分位数（含有限样本修正因子）
-# ============================================================================
 
 @dataclass
 class ConformalPredictionResult:
@@ -68,12 +66,10 @@ def conformal_predict(calibration_scores: List[float],
         threshold=round(_threshold, 4), confidence=round(_conf, 4))
 
 
-# ============================================================================
 # Jackknife+ 预测区间 — 留一法构建分布无关区间
-# 参考：Barber et al. Predictive Inference with the Jackknife+. AOS 2021.
+# Barber et al. Predictive Inference with the Jackknife+. AOS 2021.
 # 相比标准保形预测，Jackknife+ 免除单独校准集的需求，
 # 在样本量 < 100 时数据利用效率更高
-# ============================================================================
 
 def jackknife_plus_intervals(predictions: List[float],
                                residuals: List[float],
@@ -114,12 +110,10 @@ def jackknife_plus_intervals(predictions: List[float],
     return _lo, _hi
 
 
-# ============================================================================
 # 自适应保形预测 — 按特征分区独立设定门限
-# 参考：Romano et al. Classification with Valid and Adaptive Coverage. NeurIPS 2020.
+# Romano et al. Classification with Valid and Adaptive Coverage. NeurIPS 2020.
 # 不同区域使用不同的分数阈值，使预测集大小随输入复杂度自适应变化——
 # 常见/简单模式→紧致集合，罕见/困难模式→保守的宽集合。
-# ============================================================================
 
 class AdaptiveConformalPredictor:
     """自适应保形预测器：基于校准集分区的层次化预测。
@@ -171,10 +165,8 @@ class AdaptiveConformalPredictor:
             confidence=max(0.0, 1.0 - (0 if _in_set else 1.0)))
 
 
-# ============================================================================
 # 平均预测集大小 (MSC) — 校准质量的聚合指标
 # 集合越小 → 校准效果越好 → 不确定性越受控
-# ============================================================================
 
 def mean_prediction_set_size(predictions_sets: List[List[int]]) -> float:
     """多轮预测集的平均大小。越小精度越高。
@@ -201,9 +193,7 @@ def empirical_coverage(prediction_sets: List[List[int]],
     return round(_covered / _n, 4)
 
 
-# ============================================================================
 # 标准非一致性分数 — 两类常用分数函数
-# ============================================================================
 
 def margin_nonconformity_score(probabilities: List[float],
                                  true_label: int) -> float:
@@ -216,9 +206,7 @@ def residual_nonconformity_score(prediction: float, true_value: float) -> float:
     return abs(prediction - true_value)
 
 
-# ============================================================================
 # 保形集成 — 多校准器的预测集交集
-# ============================================================================
 
 def conformal_ensemble(calibrator_scores: List[Tuple[List[float], List[int]]],
                          test_score_fn,

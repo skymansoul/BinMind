@@ -1,5 +1,5 @@
-# 创建: 2025-08-12 09:22
-# 修改: 2025-08-12 — 特征哈希嵌入 + 滑动窗口余弦相似度
+# 创建: 2026-06-28 09:22
+# 修改: 2026-06-28 — 特征哈希嵌入 + 滑动窗口余弦相似度
 """
 语义执行新颖度检测器 — 将运行时行为嵌入低维空间，检测真正的新颖执行。
 
@@ -12,7 +12,7 @@
 算法骨架:
   1. 执行摘要提取: 将关键运行时事件 (函数调用签名、异常类型、堆分配模式、
      内存状态区间哈希) 序列化为 token 列表
-  2. 特征哈希嵌入: 使用带符号的 feature hashing (Weinberger et al. 2009 ICML)
+  2. 特征哈希嵌入: 使用带符号的 feature hashing
      将变长 token 列表映射为固定维度 (d=128) 的稀疏向量，sign bit 消除
      hash collision 引入的偏置
   3. 新颖度评分: 计算嵌入向量与滑动窗口中所有历史嵌入的最大余弦相似度，
@@ -21,11 +21,11 @@
   4. 种子能量分配: 新颖度得分直接作为模糊测试种子的能量乘数，
     高新颖度种子获得更多变异机会
 
-ref: Weinberger et al. "Feature Hashing for Large Scale Multitask Learning" (ICML 2009)
+ref: Weinberger et al. "Feature Hashing for Large Scale Multitask Learning" 
      — 本模块将其从 NLP token hashing 改编为执行事件的在线嵌入
-ref: arXiv:2511.03995 (2025) — LLM-guided semantic fuzzing, 借鉴其语义反馈思路
+ref: — LLM-guided semantic fuzzing, 借鉴其语义反馈思路
      但本模块将 LLM 嵌入替换为确定性特征哈希, 消除外部模型依赖
-ref: Charikar "Similarity Estimation Techniques from Rounding Algorithms" (STOC 2002)
+ref: Charikar "Similarity Estimation Techniques from Rounding Algorithms"
      — SimHash 的原始论文, 本模块的签名哈希借鉴其 sign(random projection) 思路
 """
 
@@ -38,8 +38,7 @@ import struct
 from collections import deque
 from typing import Any, Optional
 
-
-# --- 特征哈希嵌入器 ---
+# 特征哈希嵌入器
 # 维度 128: 平衡碰撞率与内存开销。
 # 128 维下 hash collision probability ≈ 1 - exp(-n²/(2*128)) ≈ 3% for n=10 tokens
 # 对模糊测试场景足够——即使偶有碰撞，sign bit 将偏置减半，且窗口平均进一步平滑。
@@ -48,7 +47,6 @@ EMBED_DIM = 128
 WINDOW_SIZE = 200  # 滑动窗口保留的最近嵌入数
 DECAY_ALPHA = 0.995  # 窗口内旧嵌入的指数衰减因子
 NOVELTY_THRESHOLD = 0.15  # 低于此值视为"真正新颖"的硬阈值
-
 
 def _murmur_hash_bytes(data: bytes, seed: int = 0) -> int:
     """简化的 MurmurHash3 32-bit — 无外部依赖的特征哈希。
@@ -79,7 +77,6 @@ def _murmur_hash_bytes(data: bytes, seed: int = 0) -> int:
     h ^= (h >> 16)
     # 转为有符号范围
     return h if h < 0x80000000 else h - 0x100000000
-
 
 class FeatureHasher:
     """增量特征哈希 — 将变长 token 序列映射为固定维度的稀疏向量。
@@ -122,8 +119,7 @@ class FeatureHasher:
         self._vec = [0.0] * self._dim
         self._n = 0
 
-
-# --- 执行摘要提取 ---
+# 执行摘要提取
 # 将运行时事件转为可哈希的 token 列表。
 # 调用方在每次 fuzz case 执行后填充 ExecutionSummary, 然后传给 detector。
 # token 格式: "前缀:哈希值" — 前缀标识事件类型, 哈希值紧凑表达事件内容。
@@ -182,8 +178,7 @@ class ExecutionSummary:
 
         return tokens
 
-
-# --- 滑动窗口嵌入索引 ---
+# 滑动窗口嵌入索引
 # 存储最近 N 个嵌入向量及其时间戳。
 # 查询时计算与所有窗口内嵌入的余弦相似度, 取最大值。
 # 旧嵌入以指数衰减参与计算, 使最近的执行行为主导新颖度判定。
@@ -228,8 +223,7 @@ class SlidingWindowIndex:
     def clear(self):
         self._window.clear()
 
-
-# --- 新颖度检测器 ---
+# 新颖度检测器
 
 class SemanticNoveltyDetector:
     """主检测器 — 封装特征哈希、滑动窗口索引和新颖度评分。
@@ -311,8 +305,7 @@ class SemanticNoveltyDetector:
         self._novelty_sum = 0.0
         self._novelty_max = 0.0
 
-
-# --- 种子能量分配适配器 ---
+# 种子能量分配适配器
 # 将新颖度得分映射到 fuzzer 的种子能量乘数。
 # 使用分段线性映射: 低新颖度 [0, threshold] → 基础倍率,
 # 高新颖度 (threshold, 1.0] → 线性放大至 max_multiplier。
@@ -326,7 +319,6 @@ def novelty_to_energy(novelty: float,
     # 线性映射: (threshold, 1.0] → (1.0, max_multiplier]
     ratio = (novelty - threshold) / (1.0 - threshold)
     return 1.0 + ratio * (max_multiplier - 1.0)
-
 
 class NoveltyGuidedEnergyPolicy:
     """新颖度感知的种子能量策略 — 替换均匀分配。
@@ -350,7 +342,6 @@ class NoveltyGuidedEnergyPolicy:
 
     def detector(self) -> SemanticNoveltyDetector:
         return self._detector
-
 
 __all__ = [
     'SemanticNoveltyDetector', 'ExecutionSummary',

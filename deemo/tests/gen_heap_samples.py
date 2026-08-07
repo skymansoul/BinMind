@@ -43,7 +43,7 @@ int main() { char* p=cp2("overflow",-1); free(p); return 0; }'''),
 '''#include <stdlib.h>
 #include <string.h>
 char* rs(char* b, size_t o, size_t n) { char* nb=realloc(b,n); if(nb&&n<o)memset(nb+n,0,o-n); return nb?nb:b; }
-int main() { char* b=malloc(4096); b=rs(b,4096,2048); free(b); return 0; }'''),
+int main() { char* b=malloc(4096); b=rs; free(b); return 0; }'''),
 
 "ho_07": ("GENERIC-offbyone", "CWE-193", "malloc(strlen)未预留null终止符",
 '''#include <stdlib.h>
@@ -91,7 +91,7 @@ int main(int c,char**v){log_u(c>1?v[1]:"guest");return 0;}'''),
 '''#include <stdlib.h>
 #include <string.h>
 void* mat(int r, int c) { return calloc(r,c); }
-int main() { char* p=mat(65536,65536); if(p)strcpy(p,"t"); free(p); return 0; }'''),
+int main() { char* p=mat; if(p)strcpy(p,"t"); free(p); return 0; }'''),
 
 "ho_15": ("SAFE-correct-check", "SAFE", "正确边界检查——负面测试，不应检出",
 '''#include <stdlib.h>

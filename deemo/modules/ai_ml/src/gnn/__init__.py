@@ -5,24 +5,24 @@ from .layers import GraphConv, GATConv, SAGPool, LaplacianPE
 
 from .models import GCNBinaryClassifier, GATVulnDetector, SiameseBinaryMatcher
 
-# GraphMoCo 动量对比学习 (2025-08-02)
+# GraphMoCo 动量对比学习
 from .moco import (
     MomentumEncoder, NegativeQueue, moco_contrastive_loss,
     l2_normalize, cosine_similarity,
 )
 
-# 位置/结构编码 — 增强 GNN 拓扑感知 (2025-07-28)
+# 位置/结构编码 — 增强 GNN 拓扑感知
 from .positional_encoding import (
     MultiScaleLPE, RandomWalkSE, CFGPositionalEncoder,
 )
 
-# 异构图元路径编码 (2025-07-18)
+# 异构图元路径编码
 from .hetero_meta_path import (
     HeteroMetaPathEncoder, build_hetero_edges_from_cfg,
     NodeType, EdgeType,
 )
 
-# ---- 对外暴露的核心符号 ----
+# 对外暴露的核心符号
 __all__ = [
     # 层
     "GraphConv", "GATConv", "SAGPool", "LaplacianPE",
@@ -33,7 +33,7 @@ __all__ = [
     "l2_normalize", "cosine_similarity",
     # 位置/结构编码
     "MultiScaleLPE", "RandomWalkSE", "CFGPositionalEncoder",
-    # 异构图元路径编码 (2025-07)
+    # 异构图元路径编码
     "HeteroMetaPathEncoder", "build_hetero_edges_from_cfg",
     "NodeType", "EdgeType",
 ]

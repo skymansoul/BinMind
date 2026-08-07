@@ -17,7 +17,7 @@ class SensitiveOp:
     raw_sample: bytes = b''
 
 
-# ---- 模式库 ----
+# 模式库
 _KEY_PATTERNS = [
     # AES keys: 16/24/32 bytes high entropy
     (rb'(?s)(\x00\x00\x00\x00.{16})', 'aes_key'),

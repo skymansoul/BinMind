@@ -2,10 +2,10 @@
 ANVIL 2.0 —— 基于共形预测的自适应异常评分阈值。
 
 理论基础:
-  1. DeBinVul (arXiv:2411.04981): 150K样本多架构/多优化数据集，
+  1. DeBinVul: 150K样本多架构/多优化数据集，
      CodeLlama+19%/Llama3+24%/CodeGen2+21%漏洞分类准确率提升。
      领域微调可显著增强LLM漏洞检测性能。
-  2. IRBinDiff (arXiv:2410.18561): LLVM-IR + GGNN + MoCo对比学习，
+  2. IRBinDiff: LLVM-IR + GGNN + MoCo对比学习，
      为二进制函数LLM分析提供互补的结构嵌入视角。
   3. FuseBinRepr: 文本-图交叉注意力 + 三任务训练，
      40.8% MRR提升。五模态融合设计参考了其跨模态对齐策略。
@@ -37,9 +37,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 共形预测基础设施
-# ============================================================================
 
 @dataclass
 class CalibrationSample:
@@ -64,7 +62,7 @@ class ConformalThreshold:
       良性样本: nonconf = score      （低分→低非一致性→更可能被排除）
       即: nonconf = min(1 - score if vuln else score)
 
-      定义源自Vovk et al. (2005)归纳共形预测框架Section 2.2。
+      定义源自Vovk et al.归纳共形预测框架Section 2.2。
 
     参数选择:
       alpha=0.10（宽松）: 安全审计场景，容忍一定假阳性以免漏报。
@@ -87,7 +85,7 @@ class ConformalThreshold:
 
     def calibrate(self):
         """
-        计算共形阈值——Vovk et al. (2005)算法。
+        计算共形阈值——Vovk et al.算法。
 
         步骤:
           1. 对每个校准样本计算非一致性分数。
@@ -187,9 +185,7 @@ class ConformalThreshold:
         }
 
 
-# ============================================================================
 # ANVIL 2.0 —— 增强异常检测器
-# ============================================================================
 
 @dataclass
 class ANVILResult:
@@ -299,9 +295,7 @@ class ANVILDetector:
         return self._threshold.get_thresholds()
 
 
-# ============================================================================
 # 便捷函数
-# ============================================================================
 
 def calibrate_from_dataset(
     labeled_samples: List[dict],

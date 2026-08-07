@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "aligned_slack",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "aligned-capacity",
+  "cve": "",
+  "func": "safe_aligned",
+  "name": "FP-04_aligned_slack"
+}

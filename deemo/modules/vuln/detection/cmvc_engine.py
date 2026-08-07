@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-02  |  CMVC编排引擎
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-06-23  |  CMVC编排引擎
+# 修改: 2026-06-23  |  审计后补充文件头与错误处理
 #
 """
 跨模态漏洞关联——编排引擎。
@@ -44,9 +44,7 @@ from .cmvc_correlation import CorrelationResult, CorrelationEngine
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 关联报告
-# ============================================================================
 
 
 @dataclass
@@ -81,9 +79,7 @@ class CorrelationReport:
     method: str = "spatial_semantic_correlation_with_causal_inference"
 
 
-# ============================================================================
 # 编排引擎
-# ============================================================================
 
 
 class CmvcEngine:
@@ -116,7 +112,7 @@ class CmvcEngine:
 
         返回CorrelationReport。
         """
-        # Step 1: 归一化
+        # 归一化
         all_evidence = []
         for modality, findings in findings_by_modality.items():
             for i, f in enumerate(findings):
@@ -127,10 +123,10 @@ class CmvcEngine:
         if not all_evidence:
             return CorrelationReport()
 
-        # Step 2: 按位置分组—降低全对比较的复杂度
+        # 按位置分组—降低全对比较的复杂度
         groups = self._group_by_location(all_evidence)
 
-        # Step 3: 组内全对关联
+        # 组内全对关联
         all_pairs = []
         all_corroborated = []
         all_disputed = []
@@ -157,10 +153,10 @@ class CmvcEngine:
                 p for p in result.pairs
                 if p.relation == CorrelationRelation.DISPUTES)
 
-        # Step 4: 构建确认链
+        # 构建确认链
         chains = self._build_chains(all_corroborated, all_evidence)
 
-        # Step 5: 独立finding
+        # 独立finding
         isolated = [ev for ev in all_evidence
                      if ev.evidence_id in isolated_ids]
 
@@ -248,9 +244,7 @@ class CmvcEngine:
                       key=lambda c: c.modality_count, reverse=True)
 
 
-# ============================================================================
 # 便捷入口
-# ============================================================================
 
 
 def correlate_findings(findings_by_modality: Dict[str, List[Dict]]

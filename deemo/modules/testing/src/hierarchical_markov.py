@@ -19,8 +19,8 @@
 #   2. Level 2 为该消息类型生成字段序列
 #   3. Level 1 为每个字段生成字节内容
 #
-# 参考文献:
-#   ChatFuMe / FUME (arXiv:2508.01750, 2025) — 双Markov模型做协议fuzzing;
+# 文献:
+#   ChatFuMe / FUME — 双Markov模型做协议fuzzing;
 #     本项目取其双层Markov思想但扩展到三层并适配二进制格式
 #   — 分层序列生成在协议fuzzing中是通用设计模式,
 #     本模块以三级Markov实现, 不依赖外部语言模型
@@ -88,7 +88,7 @@ class HierarchicalMarkovModel:
 
         self._samples_learned = 0
 
-    # ---- 学习 ----
+    # 学习
 
     def learn_byte_level(self, data: bytes) -> None:
         """Level 1: 学习逐字节转移概率"""
@@ -123,7 +123,7 @@ class HierarchicalMarkovModel:
 
         self._samples_learned += len(msg_sequences)
 
-    # ---- 生成 ----
+    # 生成
 
     def sample_message_type(self, rng: Optional[random.Random] = None) -> str:
         """Level 3: 采样下一个消息类型"""

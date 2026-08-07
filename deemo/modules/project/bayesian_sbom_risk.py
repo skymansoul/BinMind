@@ -12,16 +12,15 @@
 # 技术效果: 与确定性CVSS排序相比, 校准后的风险区间将高不确定性
 #   组件 (新CVE/少证据) 与低不确定性组件 (成熟CVE/多证据) 区分开来,
 #   高风险+高不确定性组件可优先分配验证资源
-# 参考:
-#   VDGraph (arXiv:2507.20502, 2025) — SBOM知识图谱+路径计数,
+#
+#   VDGraph — SBOM知识图谱+路径计数,
 #     本项目在其路径分析基础上增加贝叶斯不确定性量化
-#   Baird & Moin (arXiv:2601.20158, ICSE 2026) — HGAT级联预测,
+#   Baird & Moin — HGAT级联预测,
 #     本项目借鉴其组件→CVE图结构但使用概率图模型替代GNN
 # 设计边界:
-#   - Dirichlet先验用于Multi-parent聚合, Beta用于单边
-#   - 风险传播限于DAG (SBOM天然无环)
-#   - 每轮证据更新O(|E|), 对10^5边可在秒级完成
-from __future__ import annotations
+# Dirichlet先验用于Multi-parent聚合, Beta用于单边
+# 风险传播限于DAG (SBOM天然无环)
+# 每轮证据更新O(|E|), 对10^5边可在秒级完成
 import hashlib
 import logging
 import math

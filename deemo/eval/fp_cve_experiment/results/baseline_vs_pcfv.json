@@ -1,0 +1,692 @@
+{
+  "exe": "vuln.exe",
+  "rows": [
+    {
+      "id": "cve_2014_0160_heartbleed",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 21.1
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 21.6
+      }
+    },
+    {
+      "id": "cve_2015_0235_ghost",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 3,
+        "confirmed": 2,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 3,
+        "time_ms": 19.7
+      },
+      "pcfv": {
+        "kept": 3,
+        "confirmed": 0,
+        "likely": 3,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 3,
+        "time_ms": 20.0
+      }
+    },
+    {
+      "id": "cve_2016_10190_ffmpeg",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 1,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 3,
+        "raw": 4,
+        "time_ms": 21.3
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 3,
+        "raw": 4,
+        "time_ms": 22.0
+      }
+    },
+    {
+      "id": "cve_2016_2177_openssl",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 24.1
+      },
+      "pcfv": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 1,
+        "filtered": 0,
+        "raw": 2,
+        "time_ms": 21.4
+      }
+    },
+    {
+      "id": "cve_2017_1000253_pie",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 20.9
+      },
+      "pcfv": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 1,
+        "filtered": 0,
+        "raw": 2,
+        "time_ms": 24.9
+      }
+    },
+    {
+      "id": "cve_2018_6789_exim",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 43.4
+      },
+      "pcfv": {
+        "kept": 4,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 3,
+        "filtered": 0,
+        "raw": 4,
+        "time_ms": 24.0
+      }
+    },
+    {
+      "id": "cve_2019_11477_sack",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 21.0
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 20.2
+      }
+    },
+    {
+      "id": "cve_2020_10713_grub2",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 3,
+        "raw": 4,
+        "time_ms": 22.2
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 3,
+        "raw": 4,
+        "time_ms": 21.5
+      }
+    },
+    {
+      "id": "cve_2021_3156_sudo",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 3,
+        "raw": 4,
+        "time_ms": 21.5
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 2,
+        "raw": 3,
+        "time_ms": 21.1
+      }
+    },
+    {
+      "id": "cve_2022_0185_kernel",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 20.6
+      },
+      "pcfv": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 1,
+        "filtered": 0,
+        "raw": 2,
+        "time_ms": 19.9
+      }
+    },
+    {
+      "id": "cve_2022_23222_bpf",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 20.2
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 19.3
+      }
+    },
+    {
+      "id": "cve_2023_0464_openssl",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 1,
+        "time_ms": 20.4
+      },
+      "pcfv": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 1,
+        "filtered": 0,
+        "raw": 1,
+        "time_ms": 19.7
+      }
+    },
+    {
+      "id": "cve_2023_3576_openssl",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 3,
+        "confirmed": 0,
+        "likely": 2,
+        "uncertain": 1,
+        "filtered": 0,
+        "raw": 3,
+        "time_ms": 21.4
+      },
+      "pcfv": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 2,
+        "filtered": 1,
+        "raw": 3,
+        "time_ms": 20.2
+      }
+    },
+    {
+      "id": "cve_2023_4911_looney",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 2,
+        "confirmed": 1,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 2,
+        "time_ms": 22.2
+      },
+      "pcfv": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 2,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 2,
+        "time_ms": 23.6
+      }
+    },
+    {
+      "id": "cve_2024_1086_nftables",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 2,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 1,
+        "filtered": 2,
+        "raw": 4,
+        "time_ms": 24.1
+      },
+      "pcfv": {
+        "kept": 3,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 2,
+        "filtered": 2,
+        "raw": 5,
+        "time_ms": 25.7
+      }
+    },
+    {
+      "id": "safe_01_align_padding",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 79.9
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 56.3
+      }
+    },
+    {
+      "id": "safe_02_path_clamped",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 19.8
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 19.5
+      }
+    },
+    {
+      "id": "safe_03_struct_fields",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 8,
+        "raw": 8,
+        "time_ms": 52.6
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 8,
+        "raw": 8,
+        "time_ms": 56.1
+      }
+    },
+    {
+      "id": "safe_04_realloc_shrink",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 55.0
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 54.4
+      }
+    },
+    {
+      "id": "safe_05_min_cap",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 19.5
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 20.4
+      }
+    },
+    {
+      "id": "safe_06_calloc_loop",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 1,
+        "time_ms": 55.5
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 0,
+        "time_ms": 54.2
+      }
+    },
+    {
+      "id": "safe_07_derived_ptr",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 71.2
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 63.6
+      }
+    },
+    {
+      "id": "safe_08_alias_chain",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 53.8
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 58.5
+      }
+    },
+    {
+      "id": "safe_09_nested_alloc",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 54.7
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 60.3
+      }
+    },
+    {
+      "id": "safe_10_large_alloc_small_write",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 63.7
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 65.1
+      }
+    },
+    {
+      "id": "safe_11_snprintf_bounded",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 1,
+        "time_ms": 60.0
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 0,
+        "raw": 0,
+        "time_ms": 67.5
+      }
+    },
+    {
+      "id": "safe_12_strncpy_bounded",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 23.4
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 2,
+        "raw": 2,
+        "time_ms": 22.7
+      }
+    },
+    {
+      "id": "safe_13_guard_index",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 65.2
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 66.3
+      }
+    },
+    {
+      "id": "safe_14_array_of_structs",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 68.3
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 62.9
+      }
+    },
+    {
+      "id": "safe_15_loop_in_bounds",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 0,
+        "likely": 1,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 2,
+        "time_ms": 65.1
+      },
+      "pcfv": {
+        "kept": 0,
+        "confirmed": 0,
+        "likely": 0,
+        "uncertain": 0,
+        "filtered": 1,
+        "raw": 1,
+        "time_ms": 65.7
+      }
+    }
+  ],
+  "metrics": {
+    "baseline": {
+      "tp": 13,
+      "fn": 2,
+      "fp": 4,
+      "tn": 11,
+      "precision": 0.7647,
+      "recall": 0.8667,
+      "f1": 0.8125,
+      "fp_rate": 0.2667,
+      "total_kept": 23,
+      "total_filtered": 44
+    },
+    "pcfv": {
+      "tp": 15,
+      "fn": 0,
+      "fp": 0,
+      "tn": 15,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "total_kept": 27,
+      "total_filtered": 40
+    },
+    "fp_reduction_pct": 100.0
+  }
+}

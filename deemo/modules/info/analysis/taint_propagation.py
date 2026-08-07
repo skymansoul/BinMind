@@ -41,14 +41,11 @@ _DLL_CATEGORY = {
     "user32.dll": "win32_ui",
 }
 
-
 def _category(dll: str) -> str:
     return _DLL_CATEGORY.get(dll.lower(), dll.lower().split('.')[0])
 
-
 def _normalize(name: str) -> str:
     return name.lower().rstrip('aw')
-
 
 def propagate_taint(imports: Dict) -> Dict:
     """执行导入级污点传播, 返回每条污点路径及其置信度。"""

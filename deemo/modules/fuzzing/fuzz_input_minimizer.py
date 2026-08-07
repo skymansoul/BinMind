@@ -108,7 +108,7 @@ class InputMinimizer:
             size_history=size_hist,
         )
 
-    # ---- 逐字节贪心删除 ----
+# 逐字节贪心删除
     def _minimize_bytewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
@@ -141,7 +141,7 @@ class InputMinimizer:
 
         return bytes(raw)
 
-    # ---- 二分区间压缩 ----
+# 二分区间压缩
     def _minimize_binary(self, data: bytes, ref_cov: Set[int],
                          hist: List[Tuple[int, int]],
                          start_time: float) -> bytes:
@@ -182,7 +182,7 @@ class InputMinimizer:
         _bisect(0, len(raw))
         return bytes(raw)
 
-    # ---- 按行最小化（文本输入） ----
+# 按行最小化（文本输入）
     def _minimize_linewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
@@ -217,7 +217,7 @@ class InputMinimizer:
 
         return '\n'.join(lines).encode('utf-8')
 
-    # ---- 按 token 最小化 ----
+# 按 token 最小化
     def _minimize_tokenwise(self, data: bytes, ref_cov: Set[int],
                             hist: List[Tuple[int, int]],
                             start_time: float) -> bytes:
@@ -252,7 +252,7 @@ class InputMinimizer:
         return ' '.join(tokens).encode('utf-8')
 
 
-# ===== 覆盖保持验证 =====
+# 覆盖保持验证
 
 def verify_coverage_preserved(
     original: bytes, minimized: bytes,
@@ -273,7 +273,7 @@ def verify_coverage_preserved(
     return ratio >= 1.0, ratio
 
 
-# ===== 语料批量最小化 =====
+# 语料批量最小化
 
 def minimize_corpus(
     seed_dir: str,

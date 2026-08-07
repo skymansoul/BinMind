@@ -1,6 +1,0 @@
-pyyaml>=6.0
-pefile>=2023.2.7
-pycryptodome>=3.19.0
-# optional
-# uefi_firmware>=1.9
-# r2pipe>=1.8.0

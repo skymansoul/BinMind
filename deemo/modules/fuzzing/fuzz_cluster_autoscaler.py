@@ -71,7 +71,7 @@ class WorkerNode:
         return d
 
 
-# ── 语料同步协议数据 ────────────────────────────────────────────
+# 语料同步协议数据
 
 @dataclass
 class CorpusSyncMessage:
@@ -129,7 +129,7 @@ class TaskQueue:
         pending.sort(key=lambda t: (t.priority, t.created_at))
         return pending[0]
 
-    # ── 带梯级饥饿退避的任务选取 ────────────────────────────────
+# 带梯级饥饿退避的任务选取
 
     def next_pending_priority_decay(self) -> Optional[FuzzTask]:
         """每次未分配到资源的任务优先级递减(每次减0.5，最低保底0)，
@@ -239,7 +239,7 @@ class NodeRegistry:
                     total += avail
         return total
 
-    # ── 按区域筛选节点 ───────────────────────────────────────────
+# 按区域筛选节点
 
     def nodes_by_region(self, region: str) -> List[WorkerNode]:
         with self._lock:
@@ -325,7 +325,7 @@ class FuzzClusterAutoscaler:
                 logger.warning(f"autoscaler tick failed: {e}")
             self._stop.wait(interval)
 
-    # ── EWMA 预测 ───────────────────────────────────────────────
+# EWMA 预测
 
     def _update_ewma(self, pending: int):
         if not self._ewma_init:
@@ -361,7 +361,7 @@ class FuzzClusterAutoscaler:
         )
         return scale_up, scale_down
 
-    # ── 调度决策周期 ────────────────────────────────────────────
+# 调度决策周期
 
     def tick(self) -> Dict[str, Any]:
         # 执行一次调度决策周期
@@ -416,7 +416,7 @@ class FuzzClusterAutoscaler:
                 'failed_nodes': failed
             }
 
-    # ── 扩缩容 ───────────────────────────────────────────────────
+# 扩缩容
 
     def _scale_up(self):
         increment = min(self.SCALE_UP_INCREMENT,
@@ -472,7 +472,7 @@ class FuzzClusterAutoscaler:
                                       assigned_node=None, started_at=None)
         node.running_tasks.clear()
 
-    # ── 加权负载均衡调度 ─────────────────────────────────────────
+# 加权负载均衡调度
 
     def assign_task(self, task: FuzzTask) -> Optional[str]:
         """为任务选取最优节点: 优先同区域 → 低负载因子 → 最少运行任务。
@@ -518,7 +518,7 @@ class FuzzClusterAutoscaler:
         self.queue.update(task_id, status="completed",
                           finished_at=time.time(), result=result or {})
 
-    # ── 跨节点语料增量同步 ──────────────────────────────────────
+# 跨节点语料增量同步
 
     def _sync_corpus_incremental(self):
         """基于区域分组的指纹集合交换。
@@ -550,7 +550,7 @@ class FuzzClusterAutoscaler:
     def history(self) -> List[Dict[str, Any]]:
         return list(self._scale_history)
 
-    # ── 趋势检测 — 判断是否持续扩容/收缩中 ──────────────────────
+# 趋势检测 — 判断是否持续扩容/收缩中
 
     def scale_trend(self, window: int = 5) -> str:
         """分析最近 N 个周期的扩缩动作，输出趋势方向: 'up', 'down', 'stable'。

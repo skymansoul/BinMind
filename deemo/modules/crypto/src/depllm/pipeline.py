@@ -1,11 +1,10 @@
 """
 DepLLM-Crypto 主流水线 — 依赖引导的 LLM 增强密码学误用检测。
 
-参考:
-  CRYPTBARA (ASE 2025): 依赖上下文引导检测 → 本流水线依赖图/调用链。
-  Beyond Static Pattern Matching? (arXiv:2407.16576): LLM 语义验证消解假阳性。
-  Auto. Gen. of Crypto Misuse Taxonomy (arXiv:2509.10814): 判定缓存控制开销。
-  Evaluating LLMs in Detecting Secrets (arXiv:2510.18601): LLM+启发式互补。
+  CRYPTBARA: 依赖上下文引导检测 → 本流水线依赖图/调用链。
+  Beyond Static Pattern Matching?: LLM 语义验证消解假阳性。
+  Auto. Gen. of Crypto Misuse Taxonomy: 判定缓存控制开销。
+  Evaluating LLMs in Detecting Secrets: LLM+启发式互补。
 
 流程:
   crypto_misuse 命中 → 依赖上下文 → 污点追踪 → 启发式置信度
@@ -45,7 +44,6 @@ _CATEGORY_MAP = {'STATIC_IV': 'iv', 'WEAK_KEY': 'key', 'HARDCODED_SALT': 'salt'}
 
 # 模块级共享符号表 — 跨实例/跨文件共享，支撑跨编译单元常量折叠传播
 _SHARED_SYMBOL_TABLE = ModuleSymbolTable()
-
 
 @dataclass
 class DepFinding:
@@ -87,7 +85,6 @@ class DepFinding:
             'region_entropy': round(self.region_entropy, 3),
             'repetition_count': self.repetition_count,
         }
-
 
 def build_dependency_context(data: bytes,
                              strings: List[Tuple[int, str]],
@@ -153,7 +150,6 @@ def build_dependency_context(data: bytes,
         'aggregate': off <= 0,
     }
 
-
 def _extract_constant_value(data: bytes, misuse: Misuse) -> Optional[bytes]:
     """从命中地址回读常量字节值。
 
@@ -185,12 +181,10 @@ def _extract_constant_value(data: bytes, misuse: Misuse) -> Optional[bytes]:
         return None
     return None
 
-
 def filter_findings(findings: List[DepFinding],
                     min_conf: float = _DEFAULT_MIN_CONFIDENCE) -> List[DepFinding]:
     """按置信度阈值过滤 (默认 0.40)."""
     return [f for f in findings if f.confidence >= min_conf]
-
 
 class DepLLMCryptoAnalyzer:
     """依赖增强密码学误用分析器。
@@ -233,7 +227,7 @@ class DepLLMCryptoAnalyzer:
             'uncertain': 0, 'heuristic_only': 0, 'cached': 0,
         }
 
-    # ── 入口 ──
+# 入口
 
     def analyze(self, binary, misuses: Optional[list] = None,
                 source: str = '') -> List[DepFinding]:
@@ -284,7 +278,7 @@ class DepLLMCryptoAnalyzer:
         src = findings if findings is not None else []
         return [f.to_dict() for f in filter_findings(src, self.min_confidence)]
 
-    # ── 判定 ──
+# 判定
 
     def _judge(self, data: bytes, strings: List[Tuple[int, str]],
                graph: DependencyGraph, mu: Misuse,
@@ -360,12 +354,10 @@ class DepLLMCryptoAnalyzer:
     def symbol_stats(self) -> Dict[str, object]:
         return self.symbol_table.stats()
 
-
 def detect_dep_llm_misuse(binary, misuses: Optional[list] = None,
                           source: str = '') -> List[DepFinding]:
     """便捷入口 — 单次调用完成依赖增强误用判定."""
     return DepLLMCryptoAnalyzer().analyze(binary, misuses=misuses, source=source)
-
 
 __all__ = ['DepLLMCryptoAnalyzer', 'DepFinding', 'build_dependency_context',
            'filter_findings', 'detect_dep_llm_misuse']

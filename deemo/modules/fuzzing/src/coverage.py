@@ -4,7 +4,7 @@ import struct
 from collections import OrderedDict  # 保留
 from fractions import Fraction  # 保留
 
-# ---- 位图桶常量 ----
+# 位图桶常量
 # AFL使用64KB共享内存，我们模拟相同的语义
 _DEFAULT_BITMAP_SIZE = 1 << 16  # 65536
 
@@ -60,7 +60,7 @@ class CoverageBitmap:
         self._buf[idx] = val & 0xFF
 
 
-# ===== 边覆盖率追踪器 =====
+# 边覆盖率追踪器
 class EdgeCoverage:
     """管理全局virgin_bits -- 跟踪哪些边覆盖是首次发现的。
 
@@ -128,7 +128,7 @@ class EdgeCoverage:
         return _total, _undiscovered
 
 
-# ===== 每个种子的覆盖率跟踪器 =====
+# 每个种子的覆盖率跟踪器
 class CoverageTracker:
     """维护每个种子→位图的映射，以及全局边覆盖。"""
 
@@ -228,7 +228,6 @@ def encode_edge_id(src_bb: int, dst_bb: int) -> int:
     return (src_bb >> 1) ^ dst_bb
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

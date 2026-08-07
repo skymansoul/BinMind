@@ -79,7 +79,7 @@ class ASLRRandomizer:
     def get_seed_hash(self) -> str:
         return hashlib.md5(str(self.seed).encode()).hexdigest()[:8]
 
-    # ── ASLR 熵估计 ───────────────────────────────────────────────────────
+# ASLR 熵估计
     # 每段的随机化范围除以页大小 = 可能的基址数量
     # log2(可能基址数) = 该段的熵位数。
 

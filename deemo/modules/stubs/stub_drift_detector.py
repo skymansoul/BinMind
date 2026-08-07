@@ -9,10 +9,10 @@
 #   2. 合约从文档/调用点推断后，实际实现可能有不同的参数默认值或类型。
 #   3. 持续集成中需要检测"实现与合约的一致性漂移"作为质量门禁。
 #
-# 本模块做合约-实现差异检测，与跨实现diff工具（如 ParDiff, OOPSLA 2024）
+# 本模块做合约-实现差异检测，与跨实现diff工具
 # 解决的问题不同:
-#   - 跨实现diff: 同一协议的不同实现间的一致性 (如 ParDiff)
-#   - 合约-实现diff: 同一模块的规格与实际代码的一致性 (本模块)
+# 跨实现diff: 同一协议的不同实现间的一致性 (如 ParDiff)
+# 合约-实现diff: 同一模块的规格与实际代码的一致性 (本模块)
 #   两种diff在桩管理中是互补的: 前者发现"A和B行为不一致"，
 #   后者发现"规格说A但实际不是A"。
 import ast as _ast
@@ -163,7 +163,7 @@ class DriftDetector:
         reports.sort(key=lambda r: -r.drift_score)
         return reports
 
-    # ---- 内部方法 ----
+# 内部方法
     def _parse_impl(self, module_name: str) -> dict[str, dict]:
         """解析模块源码，提取所有顶层函数的基本信息。"""
         path = _os.path.join(self.stubs_dir, f'{module_name}.py')
@@ -304,7 +304,7 @@ class DriftDetector:
         ]
         return len(meaningful) == 0
 
-    # ---- 报告 ----
+# 报告
     def drift_summary(self, reports: list[DriftReport] = None) -> str:
         """生成 Markdown 漂移摘要。"""
         if reports is None:
@@ -330,7 +330,7 @@ class DriftDetector:
         return '\n'.join(lines)
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def detect_drift(module_name: str) -> DriftReport:
     """一行式漂移检测。"""
     return DriftDetector().detect(module_name)

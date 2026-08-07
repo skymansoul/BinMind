@@ -15,7 +15,6 @@
 4. 等价判定：对于所有用户可控输入，补丁后的行为差异仅体现在
    受漏洞影响的路径上——且差异方向一致（都要么更安全，要么不变）。
 
-参考：
 - patch_equivalence_verifier.py：验证两个补丁实现是否等价。
 - 本模块验证"补丁在旧版本上的效果"与"上游补丁效果"是否等价。
 """
@@ -26,13 +25,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class BackportVerdict(Enum):
     EQUIVALENT = "equivalent"
     DIVERGENT = "divergent"
     PARTIAL = "partial"
     INCONCLUSIVE = "inconclusive"
-
 
 @dataclass
 class BackportTestCase:
@@ -42,7 +39,6 @@ class BackportTestCase:
     backport_behavior: str    # 回植补丁后的行为标签
     behavior_match: bool
     is_vuln_relevant: bool
-
 
 @dataclass
 class BackportValidationResult:
@@ -55,7 +51,6 @@ class BackportValidationResult:
     divergent_tests: int
     match_ratio: float
     divergence_analysis: List[str]
-
 
 class BackportSemanticValidator:
     """补丁回植的语义等价验证器。
@@ -134,8 +129,7 @@ class BackportSemanticValidator:
             divergence_analysis=_analysis,
         )
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _validator = BackportSemanticValidator(match_threshold=0.9)
     _cases = []
@@ -159,7 +153,6 @@ def _smoke_test():
 
     assert _result.verdict == BackportVerdict.EQUIVALENT
     print("[OK] BackportSemanticValidator smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

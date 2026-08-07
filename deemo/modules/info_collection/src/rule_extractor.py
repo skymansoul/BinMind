@@ -1,8 +1,8 @@
 """
 神经符号规则提取器 (NSRE)。
 
-MoCQ (arXiv:2504.16057) 用 LLM 自动提取漏洞检测规则,
-QRS (arXiv:2602.09774) 用多智能体验证和修剪规则。
+MoCQ 用 LLM 自动提取漏洞检测规则,
+QRS 用多智能体验证和修剪规则。
 本模块将同一思想应用于意图分类的规则集维护:
 从 LLM 分类器的行为中反向提取关键词→类别的映射规则,
 与现有规则集对比, 识别过时、缺失、冲突的规则。
@@ -58,7 +58,7 @@ class RuleExtractor:
     这种 "行为逆向" 方法避免了提示注入攻击对规则提取过程的影响,
     也比直接询问 LLM "哪些关键词对应哪些类别" 更可靠 ——
     LLM 的自我报告解释 (self-reported explanations) 常与
-    实际分类行为不一致 (LAMP, arXiv:2505.11772)。
+    实际分类行为不一致。
     """
 
     def __init__(self, min_frequency: int = 3, min_discriminative: float = 0.3):

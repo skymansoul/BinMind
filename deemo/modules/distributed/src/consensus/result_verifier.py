@@ -14,8 +14,7 @@
 
 Byzantine容错保证：只要故障Worker < K/2，共识结果正确。
 
-参考：
-- PBFT (Castro & Liskov 1999): 拜占庭容错共识的经典方案。
+- PBFT: 拜占庭容错共识的经典方案。
   本模块将其适配到"分析结果"而非"分布式账本"的共识场景。
 """
 
@@ -26,13 +25,11 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
 
-
 class WorkerStatus(Enum):
     ACTIVE = "active"
     SUSPECT = "suspect"
     FAULTY = "faulty"
     COMPROMISED = "compromised"
-
 
 @dataclass
 class WorkerRecord:
@@ -45,7 +42,6 @@ class WorkerRecord:
     status: WorkerStatus = WorkerStatus.ACTIVE
     consecutive_deviations: int = 0
 
-
 @dataclass
 class ConsensusResult:
     """一次共识判定的输出。"""
@@ -56,7 +52,6 @@ class ConsensusResult:
     confidence: float           # 共识置信度
     consensus_reached: bool
     deviating_workers: List[str]
-
 
 class ConsensusResultVerifier:
     """多Worker分析结果的共识验证器。
@@ -164,8 +159,7 @@ class ConsensusResultVerifier:
             for wid, wr in self._workers.items()
         }
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _verifier = ConsensusResultVerifier(min_workers=3)
     for _i in range(5):
@@ -194,7 +188,6 @@ def _smoke_test():
     assert _r1.consensus_reached, "should reach consensus"
     assert _health["w3"] == WorkerStatus.FAULTY, "persistent deviator should be flagged"
     print("[OK] ConsensusResultVerifier smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

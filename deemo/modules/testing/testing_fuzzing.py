@@ -23,7 +23,7 @@ _STALE_LIMIT = 3600
 logger = logging.getLogger(__name__)
 
 
-# ==================== 工具函数 ====================
+# 工具函数
 def _bkdr_hash(s: str) -> int:
     h = 0
     for ch in s:
@@ -54,7 +54,7 @@ from modules.testing.src.fuzzing.complexity import CodeComplexityGuidedResourceA
 from modules.testing.src.fuzzing.multi_fuzz import MultiModeFuzzingCoordinator
 
 
-# ==================== 崩溃可利用性分类器 ====================
+# 崩溃可利用性分类器
 class CrashExploitabilityClassifier:
     """信号 + 错误消息 + 栈帧信息推断内存破坏类型"""
 
@@ -132,7 +132,7 @@ class CrashExploitabilityClassifier:
         }
 
 
-# ==================== Fuzzer 健康监控 ====================
+# Fuzzer 健康监控
 class FuzzerHealthMonitor:
     """实时监控 fuzzer 运行指标——停滞检测 + 退化检测"""
 
@@ -184,7 +184,7 @@ class FuzzerHealthMonitor:
         }
 
 
-# ==================== Sanitizer Harness 生成器 ====================
+# Sanitizer Harness 生成器
 class SanitizerHarnessGenerator:
     """目标二进制 sanitizer 编译命令与 harness 骨架生成"""
 
@@ -246,7 +246,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
         return recs
 
 
-# ==================== ICS/SCADA 协议模糊测试模板 ====================
+# ICS/SCADA 协议模糊测试模板
 class ICSProtocolFuzzTemplates:
     """工控协议专用变异模板库——Modbus, CAN 等"""
 
@@ -311,7 +311,7 @@ class ICSProtocolFuzzTemplates:
         return mutants
 
 
-# ==================== 诊断引导反馈循环 ====================
+# 诊断引导反馈循环
 class DiagnosisGuidedFeedback:
     """崩溃诊断 -> 变异热点调整——信号类型 x 偏移权重矩阵"""
 
@@ -343,7 +343,7 @@ class DiagnosisGuidedFeedback:
                     del self._signal_hotspots[sig][off]
 
 
-# ==================== 二进制提升等价性验证 ====================
+# 二进制提升等价性验证
 class BinaryLiftingVerifier:
     """二进制提升前后行为一致性验证——原生执行 vs IR 执行结果比较"""
 
@@ -388,7 +388,7 @@ class BinaryLiftingVerifier:
         return passed / total if total > 0 else 0.0
 
 
-# ==================== Patch-Delta 聚焦 Fuzzing ====================
+# Patch-Delta 聚焦 Fuzzing
 class PatchDeltaFuzzer:
     """定向模糊测试调度器——补丁变更函数优先分配 fuzz 预算"""
 
@@ -429,7 +429,7 @@ class PatchDeltaFuzzer:
         return count
 
 
-# ==================== 二进制 -> Fuzz Driver 生成器 ====================
+# 二进制 -> Fuzz Driver 生成器
 class FuzzDriverGenerator:
     """从导出表推断 API 签名——纯静态分析驱动模板填充"""
 
@@ -495,7 +495,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 '''.strip()
 
 
-# ==================== Oracle 构造工具包 ====================
+# Oracle 构造工具包
 class OracleConstructor:
     """历史发现中提取并实例化测试 Oracle——不变量学习 + 违例检测"""
 
@@ -552,7 +552,7 @@ class OracleConstructor:
         return len(self._invariants)
 
 
-# ==================== 关系化执行追踪比较 ====================
+# 关系化执行追踪比较
 class RelationalTraceComparer:
     """两二进制同输入时的基本块轨迹比较——相似度 + 分歧点"""
 
@@ -604,7 +604,7 @@ class RelationalTraceComparer:
         return divs
 
 
-# ==================== 密码学弱点检测器 ====================
+# 密码学弱点检测器
 class CryptoWeaknessDetector:
     """二进制密码学反模式扫描——硬编码密钥/弱PRNG/ECB/弱哈希/固定盐值"""
 
@@ -680,7 +680,7 @@ class CryptoWeaknessDetector:
         return findings
 
 
-# ==================== 反分析/反调试检测器 ====================
+# 反分析/反调试检测器
 class AntiAnalysisDetector:
     """二进制反分析技术特征检测——ptrace/时间反调试/VM检测/代码混淆"""
 
@@ -738,7 +738,7 @@ class AntiAnalysisDetector:
         return report
 
 
-# ==================== 漏洞可达性分析器 ====================
+# 漏洞可达性分析器
 class VulnerabilityReachabilityAnalyzer:
     """调用图遍历判定漏洞函数是否可被攻击面触及——BFS/DFS 双模"""
 
@@ -824,7 +824,7 @@ class VulnerabilityReachabilityAnalyzer:
         }
 
 
-# ==================== PE 熵分析器 ====================
+# PE 熵分析器
 class PEEntropyAnalyzer:
     """PE 二进制节区熵分析与加壳检测——香农熵 + overlay 检测"""
 
@@ -891,7 +891,7 @@ class PEEntropyAnalyzer:
         return len(pe_raw) > section_end + 256
 
 
-# ==================== 漏洞缓解检测器 ====================
+# 漏洞缓解检测器
 class ExploitMitigationDetector:
     """二进制安全缓解措施检测与缺口评估——NX/Canary/PIE/RELRO/CFI/CET/PAC"""
 
@@ -997,7 +997,7 @@ class ExploitMitigationDetector:
         return recs
 
 
-# ==================== MMIO 访问建模器 ====================
+# MMIO 访问建模器
 class MMIOAccessModeler:
     """固件 MMIO 外设寄存器分类与建模——T0-T3 四类分类体系"""
 
@@ -1067,7 +1067,7 @@ class MMIOAccessModeler:
         }
 
 
-# ==================== 依赖图传播器 ====================
+# 依赖图传播器
 class DependencyGraphPropagator:
     """组件依赖图中漏洞影响的传递闭包分析——BFS + DFS 双模"""
 

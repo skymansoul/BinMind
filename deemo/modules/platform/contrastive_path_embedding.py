@@ -7,10 +7,10 @@
 方案：对比学习训练路径嵌入。正样本=同路径的两个增强视图(边dropout/置信度扰动/
 路径截断)，负样本=批次内其他路径。编码器=MLP(12->64->d)->L2归一化。
 
-与已有工作的区分：GraphCL/GRACE做图级/节点级对比学习；CVGAD(2025)做异常检测；
-VGFL-SA(2025)攻击图联邦学习。本模块首次将对比学习应用于漏洞传播路径语义嵌入。
+与已有工作的区分：GraphCL/GRACE做图级/节点级对比学习；CVGAD做异常检测；
+VGFL-SA攻击图联邦学习。本模块首次将对比学习应用于漏洞传播路径语义嵌入。
 
-ref: Oord et al. (2018), Chen et al. (2020).
+ref: Oord et al., Chen et al..
 """
 
 from __future__ import annotations

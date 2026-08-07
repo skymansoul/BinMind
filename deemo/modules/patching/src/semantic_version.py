@@ -1,6 +1,6 @@
-# 创建: 2025-09-09 16:08
-# 修改: 2025-09-10 11:34 — SemVer 兼容性矩阵
-# 修改: 2025-09-18 15:22 — 重构：从启发式规则升级为指令依赖图+结构diff
+# 创建: 2026-06-16 16:08
+# 修改: 2026-06-16 11:34 — SemVer 兼容性矩阵
+# 修改: 2026-06-16 15:22 — 重构：从启发式规则升级为指令依赖图+结构diff
 
 """Patch Semantic Versioning — 基于指令依赖图的语义版本推断。
 
@@ -97,7 +97,7 @@ class SemVerReport:
         }
 
 
-# ── 图构建器 ──────────────────────────────────────────────────────
+# 图构建器
 
 class DepGraphBuilder:
     """从汇编指令列表构建指令依赖图。"""
@@ -177,7 +177,7 @@ class DepGraphBuilder:
         return m.group(1).rstrip(';') if m else ""
 
 
-# ── 图编辑距离 ────────────────────────────────────────────────────
+# 图编辑距离
 
 def graph_edit_distance(g1: DepGraph, g2: DepGraph) -> int:
     """简化图编辑距离: |V1ΔV2| + |E1ΔE2|。
@@ -216,7 +216,7 @@ def graph_edit_distance(g1: DepGraph, g2: DepGraph) -> int:
     return node_dist + edge_dist
 
 
-# ── 变更分析器 ────────────────────────────────────────────────────
+# 变更分析器
 
 class StructuralChangeAnalyzer:
     """基于依赖图的变更范围分类。"""
@@ -259,7 +259,7 @@ class StructuralChangeAnalyzer:
         return api, abi, behavior
 
 
-# ── 推断引擎 ──────────────────────────────────────────────────────
+# 推断引擎
 
 class SemVerInferenceEngine:
     """基于结构变更的语义版本推断。"""

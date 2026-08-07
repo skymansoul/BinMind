@@ -1,6 +1,6 @@
 # 结构化日志配置: 彩色终端输出、JSON 行日志、自动轮转
-# VulBinLLM [2025] 的 CoT 记忆管理依赖日志追踪长上下文窗口的事件序列；
-# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 的 FSS (Function Sensitivity Score)
+# VulBinLLM 的 CoT 记忆管理依赖日志追踪长上下文窗口的事件序列；
+# Binary Diff Summarization] 的 FSS (Function Sensitivity Score)
 # 计算流程也需要可追溯的结构化日志记录。
 import logging
 import sys
@@ -17,7 +17,7 @@ _LEGACY_THRESHOLD = 0.75
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -50,7 +50,7 @@ class ColoredFormatter(logging.Formatter):
                 record.name = f"\033[36m{record.name}{self.RESET}"  # 青色模块名
         return super().format(record)
 
-# ---- JSON 行日志格式化器 -----------------------------------------------
+# JSON 行日志格式化器
 
 class JSONLineFormatter(logging.Formatter):
     """每行一条 JSON 日志: 便于 logstash / jq / ELK 摄入。"""
@@ -67,7 +67,7 @@ class JSONLineFormatter(logging.Formatter):
             entry["extra"] = record.args
         return json.dumps(entry, ensure_ascii=False, default=str)
 
-# ---- 简单配置函数 --------------------------------------------------------
+# 简单配置函数
 
 _LOG_CONFIGURED = False
 
@@ -112,7 +112,7 @@ def get_logger(name: str) -> logging.Logger:
     """获取命名的 logger —— 简写。"""
     return logging.getLogger(name)
 
-# ---- 带上下文的结构化日志记录器 ------------------------------------------
+# 带上下文的结构化日志记录器
 
 class ContextLogger:
     """携带默认上下文字典的日志记录器包装。
@@ -150,7 +150,7 @@ class ContextLogger:
     def set_context(self, **kw):
         self._ctx.update(kw)
 
-# ---- 轮转日志辅助 --------------------------------------------------------
+# 轮转日志辅助
 
 def add_rotating_file_handler(logger_name: str, filepath: str,
                               max_bytes: int = 10 * 1024 * 1024,
@@ -172,7 +172,6 @@ def add_rotating_file_handler(logger_name: str, filepath: str,
     logging.getLogger(logger_name).addHandler(handler)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

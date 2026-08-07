@@ -12,13 +12,10 @@
 两层回退: angr CFGEmulated（精确但慢）→ angr CFGFast（快速但可能
 遗漏间接调用）→ radare2 agfj（始终可用但信息量较少）。
 
-参考:
   - Shoshitaishvili et al., 2016, IEEE S&P, "SOK: (State of) The Art of War"
   - Yakdan et al., 2015, USENIX Security, "No More Gotos: Decompilation Using
     Pattern-Independent Control-Flow Structuring"
 """
-
-from __future__ import annotations
 
 import json
 import logging
@@ -27,9 +24,12 @@ import subprocess
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from config import R2_PATH
+from core.cfg_extractor_r2 import (
+    extract_cfg_r2 as _extract_cfg_r2,
+    cfg_to_dot,
+)
 
 _log = logging.getLogger(__name__)
-
 
 def extract_cfg(
     binary_path: str,
@@ -68,7 +68,6 @@ def extract_cfg(
                                  accurate=method == 'angr_accurate')
 
     return _extract_cfg_r2(binary_path, func_name, max_funcs)
-
 
 def _extract_cfg_angr(
     binary_path: str,
@@ -169,77 +168,6 @@ def _extract_cfg_angr(
         _log.debug("angr CFG extraction failed: %s", e)
         return _extract_cfg_r2(binary_path, func_name, max_funcs)
 
-
-def _extract_cfg_r2(
-    binary_path: str,
-    func_name: Optional[str],
-    max_funcs: int,
-) -> Dict[str, Any]:
-    """通过 radare2 提取 CFG。"""
-    result: Dict[str, Any] = {
-        'binary': binary_path,
-        'method': 'r2',
-        'functions': [],
-        'call_graph': {},
-    }
-
-    try:
-        if func_name:
-            # 单个函数的详细 CFG
-            proc = subprocess.run(
-                [R2_PATH, '-q', '-e', 'io.color=false',
-                 '-c', f's {func_name}', '-c', 'agfj', binary_path],
-                capture_output=True, text=True, timeout=30,
-            )
-            try:
-                data = json.loads(proc.stdout)
-                if isinstance(data, list):
-                    data = data[0] if data else {}
-                blocks = []
-                for block in data.get('blocks', []):
-                    blocks.append({
-                        'addr': block.get('offset', 0),
-                        'size': block.get('size', 0),
-                        'successors': [
-                            j.get('offset', 0) for j in block.get('jump', 0)
-                        ] if isinstance(block.get('jump'), list) else [],
-                    })
-                result['functions'].append({
-                    'name': func_name,
-                    'addr': data.get('offset', 0),
-                    'size': data.get('size', 0),
-                    'blocks': blocks,
-                    'callees': [],
-                })
-            except (json.JSONDecodeError, KeyError):
-                pass
-        else:
-            # 批量提取: 仅获取函数调用关系
-            proc = subprocess.run(
-                [R2_PATH, '-q', '-e', 'io.color=false',
-                 '-c', 'afl', '-c', 'agj', binary_path],
-                capture_output=True, text=True, timeout=30,
-            )
-            try:
-                data = json.loads(proc.stdout)
-                if isinstance(data, list):
-                    for func_node in data[:max_funcs]:
-                        result['functions'].append({
-                            'name': func_node.get('name', ''),
-                            'addr': func_node.get('offset', 0),
-                            'size': func_node.get('size', 0),
-                            'blocks': [],
-                            'callees': [],
-                        })
-            except json.JSONDecodeError:
-                pass
-
-    except Exception as e:
-        _log.debug("r2 CFG extraction failed: %s", e)
-
-    return result
-
-
 def _find_func_addr(proj, func_name: str) -> int:
     """在 angr 项目中查找函数地址。"""
     for f in proj.kb.functions.values():
@@ -250,38 +178,6 @@ def _find_func_addr(proj, func_name: str) -> int:
     if sym:
         return sym.rebased_addr
     return proj.entry
-
-
-def cfg_to_dot(cfg_data: Dict[str, Any], func_name: str = '') -> str:
-    """
-    将 CFG 数据转为 Graphviz DOT 格式。
-
-    Args:
-        cfg_data: extract_cfg() 的返回值
-        func_name: 要渲染的函数名（空字符串 = 渲染调用图）
-
-    Returns:
-        DOT 格式字符串
-    """
-    lines = ['digraph CFG {', '  rankdir=TB;', '  node [shape=box];']
-
-    for func in cfg_data.get('functions', []):
-        if func_name and func['name'] != func_name:
-            continue
-
-        lines.append(f'  // Function: {func["name"]}')
-        for block in func.get('blocks', []):
-            addr = block['addr']
-            label = f'{func["name"]}\\n{addr:#x}'
-            lines.append(
-                f'  n_{addr:x} [label="{label}",fontsize=10];'
-            )
-            for succ in block.get('successors', []):
-                lines.append(f'  n_{addr:x} -> n_{succ:x};')
-
-    lines.append('}')
-    return '\n'.join(lines)
-
 
 def cfg_summary_for_llm(cfg_data: Dict[str, Any], func_name: str) -> str:
     """

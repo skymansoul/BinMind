@@ -18,7 +18,7 @@
     3. syscall 序列（通过 strace 捕获）
     4. 信号（SIGSEGV / SIGABRT / etc.）
 
-// ref: cozy [BAR 2025, arXiv:2504.00151] 使用 comparative symbolic execution
+// ref: cozy 使用 comparative symbolic execution
 //   对比 pre/post-patch binary 的语义差异，但需 angr + SMT solver。
 //   本项目走 concrete execution 路线：不需要符号执行基础设施，
 //   代价是无法保证 complete coverage，收益是可在任意 binary 上即开即用。
@@ -116,7 +116,7 @@ class DiffExecutionReport:
         }
 
 
-# ── 种子输入构造 ────────────────────────────────────────────────
+# 种子输入构造
 
 class SeedGenerator:
     """为 binary 差分执行构造种子输入。
@@ -156,7 +156,7 @@ class SeedGenerator:
         return seeds
 
 
-# ── 输入变异器（遗传算法）───────────────────────────────────────
+# 输入变异器（遗传算法）
 
 class InputMutator:
     """基于覆盖率的输入变异器 — 差分 fuzzing 核心。
@@ -215,7 +215,7 @@ class InputMutator:
         return bytes(data)
 
 
-# ── 差分执行引擎 ────────────────────────────────────────────────
+# 差分执行引擎
 
 class DifferentialExecutor:
     """轻量差分执行 Oracle。
@@ -232,7 +232,7 @@ class DifferentialExecutor:
         self.mutator = InputMutator()
         self._exec_cache: Dict[str, ExecutionSnapshot] = {}  # 按 input_hash 缓存
 
-    # ── 主入口 ──────────────────────────────────────────────────
+# 主入口
 
     def verify(self, original_binary: str, patched_binary: str,
                input_mode: str = "stdin", seed_count: int = 20,
@@ -285,7 +285,7 @@ class DifferentialExecutor:
                   report.total_cases, report.overall_verdict.name, report.execution_time_ms)
         return report
 
-    # ── 单用例执行 ──────────────────────────────────────────────
+# 单用例执行
 
     def _run_case(self, orig_bin: str, patch_bin: str, input_data: bytes,
                   label: str, input_mode: str) -> DiffTestCase:
@@ -376,7 +376,7 @@ class DifferentialExecutor:
                     pass
         return snap
 
-    # ── 比较逻辑 ────────────────────────────────────────────────
+# 比较逻辑
 
     def _compare(self, orig: ExecutionSnapshot,
                  patched: ExecutionSnapshot) -> Tuple[DiffVerdict, str]:
@@ -456,7 +456,7 @@ class DifferentialExecutor:
             return False
 
 
-# ── 便捷函数 ────────────────────────────────────────────────────
+# 便捷函数
 
 def diff_exec_verify(original_binary: str, patched_binary: str,
                      seed_count: int = 20, timeout_ms: int = 5000,

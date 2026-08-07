@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-08-07 13:43:24",
+  "elapsed_seconds": 2.6,
+  "all_success": true,
+  "output_dir": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\eval/results",
+  "modules_verified": [
+    "core.symbolic_range",
+    "core.path_sensitive_vrf",
+    "core.heap_object_tracker",
+    "core.selective_symexec",
+    "core.infeasible_path_pruner"
+  ],
+  "files_generated": [
+    "benchmark_results.json",
+    "benchmark_summary.csv",
+    "benchmark_summary.json",
+    "comparison_bar.png",
+    "comparison_data.csv",
+    "cve_benchmark_results.json",
+    "fp_reduction_chart.png",
+    "fp_reduction_results.json",
+    "paper_artifacts.json",
+    "radar_chart.png",
+    "result_table.tex",
+    "unified_benchmark_results.json"
+  ]
+}

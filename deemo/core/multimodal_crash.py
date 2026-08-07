@@ -96,13 +96,13 @@ def analyze_crash_multimodal(
         from core.crash_analyzer_llm import _fallback_heuristic_analysis
         return _fallback_heuristic_analysis(crash_data)
 
-    # === Channel A: 反编译代码 ===
+# Channel A: 反编译代码
     channel_a = _extract_decompiled_context(binary_path, crash_func_name, crash_data)
 
-    # === Channel B: 汇编 ===
+# Channel B: 汇编
     channel_b = _extract_asm_context(binary_path, crash_data)
 
-    # === Channel C: 执行轨迹 ===
+# Channel C: 执行轨迹
     channel_c = trace_log[:3000] if trace_log else _extract_trace_from_crash(crash_data)
 
     # 若三通道都为空，未获得足够上下文

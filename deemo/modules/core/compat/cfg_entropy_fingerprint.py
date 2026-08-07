@@ -29,15 +29,15 @@
 
 设计权衡:
   - 特征值计算为 O(N³) (N = 基本块数), 对于大型二进制 (>10000 BB)
-    使用随机化 SVD 近似 (Halko et al. 2011) 降至 O(N² log k)
+    使用随机化 SVD 近似 降至 O(N² log k)
   - 当前实现针对 <1000 BB 使用完整特征值分解, ≥1000 BB 使用
     幂迭代近似 (Lanczos) — 损失 <1% 精度, 换取 10-50x 速度提升
-  - ref: Spielman (2007) "Spectral Graph Theory and its Applications"
+  - ref: Spielman "Spectral Graph Theory and its Applications"
     拉普拉斯矩阵的谱性质与图的组合结构之间的对应关系
   - ref: "Bridging Semantics & Structure for Software Vulnerability Detection"
-    (arXiv:2510.10321, 2025) — 使用图拉普拉斯正则化约束 GNN 嵌入的平滑性,
+ — 使用图拉普拉斯正则化约束 GNN 嵌入的平滑性,
     本项目将此思路反向应用: 从拉普拉斯谱导出结构指纹而非正则化项
-  - ref: McCreesh et al. (2017) "Clique and Constraint Models for Maximum
+  - ref: McCreesh et al. "Clique and Constraint Models for Maximum
     Common (Connected) Subgraph Problems" — 图的谱特征用于子图匹配,
     本项目将此推广至加壳检测领域
 
@@ -54,7 +54,7 @@ import struct as _struct
 from collections import defaultdict as _dd
 
 
-# ===== 基本块字节熵 =====
+# 基本块字节熵
 # 比文件级 Shannon 熵更细粒度 — 逐基本块计算。
 # 规避了全局熵被大型数据节稀释的问题。
 
@@ -74,7 +74,7 @@ def block_byte_entropy(block_bytes: bytes) -> float:
     return ent
 
 
-# ===== 熵加权邻接矩阵 =====
+# 熵加权邻接矩阵
 # A[i][j] = |entropy(node_i) - entropy(node_j)|
 # 对角元 A[i][i] = entropy(node_i) (节点自身的信息密度)
 # 此构造使矩阵同时编码: (a) 每个节点的信息密度, (b) 边连接的信息跳跃量
@@ -111,7 +111,7 @@ def build_entropy_adjacency(cfg: dict[int, dict],
     return A, addrs
 
 
-# ===== 拉普拉斯矩阵与谱特征提取 =====
+# 拉普拉斯矩阵与谱特征提取
 # L = D - A, 其中 D 为度矩阵 (各节点出边的权重和)
 # 特征值反映图的全局谱结构 — 对本项目的熵加权图,
 # 大特征值间隙表明图可被干净地分为高熵区和低熵区,
@@ -259,7 +259,7 @@ def _jacobi_eigenvalues(A: list[list[float]], max_iter: int = 100) -> list[float
     return [M[i][i] for i in range(n)]
 
 
-# ===== CFG-熵指纹生成 =====
+# CFG-熵指纹生成
 
 def cfg_entropy_fingerprint(cfg: dict[int, dict],
                             block_bytes_map: dict[int, bytes],
@@ -342,7 +342,7 @@ def _empty_fingerprint() -> dict:
     }
 
 
-# ===== 指纹相似度比较 =====
+# 指纹相似度比较
 # 使用余弦相似度 — 对特征值的量级偏移 (不同优化级别导致的)
 # 比欧氏距离更鲁棒。
 # 对于加壳检测: 同源未加壳/加壳的指纹相似度通常 >0.85
@@ -383,7 +383,7 @@ def _fingerprint_to_vector(fp: dict) -> list[float]:
     return vec
 
 
-# ===== 批量指纹比较 — 用于恶意软件家族聚类 =====
+# 批量指纹比较 — 用于恶意软件家族聚类
 def pairwise_similarity_matrix(fingerprints: dict[str, dict]) -> dict[str, dict[str, float]]:
     """计算指纹集合的成对余弦相似度矩阵。"""
     names = sorted(fingerprints.keys())

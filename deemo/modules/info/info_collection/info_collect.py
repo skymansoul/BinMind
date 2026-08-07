@@ -71,7 +71,7 @@ def compute_section_entropy_profile(raw: bytes) -> dict:
     }
 
 
-# 字节 N-gram 指纹（参照 Zipf-Gramming CIKM 2025）
+# 字节 N-gram 指纹
 # 4-gram：单字节无上下文，2/3-gram 区分度不足，5+ gram 稀疏度过高。
 # top-64 经 Zipf 定律压缩后通常覆盖 40–60% 区分信息。
 _NGRAM_N = 4

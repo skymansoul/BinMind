@@ -3,9 +3,7 @@
 import pytest
 
 
-# =============================================================================
 # SemanticRoleLabeler Tests
-# =============================================================================
 
 class TestSemanticRoleLabeler:
     """Tests for SemanticRoleLabeler"""
@@ -36,9 +34,7 @@ class TestSemanticRoleLabeler:
         assert labeler.label_variable("xyz_foo_bar") == "UNKNOWN"
 
 
-# =============================================================================
 # SemanticDiffAnalyzer Tests
-# =============================================================================
 
 class TestSemanticDiffAnalyzer:
     """Tests for SemanticDiffAnalyzer"""
@@ -76,9 +72,7 @@ class TestSemanticDiffAnalyzer:
         assert len(result["removed"]) == 0
 
 
-# =============================================================================
 # LLVMIRAnalyzer Tests
-# =============================================================================
 
 class TestLLVMIRAnalyzer:
     """Tests for LLVMIRAnalyzer"""
@@ -127,9 +121,7 @@ class TestLLVMIRAnalyzer:
         assert findings["total_findings"] == 0
 
 
-# =============================================================================
 # AbstractInterpreter Tests
-# =============================================================================
 
 class TestAbstractInterpreter:
     """Tests for AbstractInterpreter"""
@@ -160,9 +152,7 @@ class TestAbstractInterpreter:
         assert narrowed == (0.0, 50.0)
 
 
-# =============================================================================
 # 系统调用分类器 Tests
-# =============================================================================
 
 class TestSyscallClassifier:
     """Tests for 系统调用分类器"""
@@ -194,9 +184,7 @@ class TestSyscallClassifier:
         assert abs(score - 0.0) < 1e-6
 
 
-# =============================================================================
 # Branch漏洞利用ability Tests
-# =============================================================================
 
 class TestBranchExploitability:
     """Tests for Branch漏洞利用ability"""

@@ -9,7 +9,7 @@ from modules.platform.smart_contract.src.detectors.reentrancy import ReentrancyD
 from modules.platform.smart_contract.src.core.models import VulnerabilityReport
 
 
-# ---- helpers ----
+# helpers
 
 def _make_parser(hex_str):
   """从hex字节码字符串创建解析器。"""
@@ -25,7 +25,7 @@ def _detect(hex_str):
   return detector.detect()
 
 
-# ---- bytecode fixtures ----
+# bytecode fixtures
 
 # CALL直接后跟SSTORE — 典型重入模式
 # PUSH1 00 (*7) for CALL args, CALL, SSTORE, STOP
@@ -57,7 +57,7 @@ _BC_CALL_JUMPDEST_SSTORE = "6000600060006000600060006000f15b60015500"
 _BC_STATICCALL_SSTORE = "600060006000600060006000fa5500"
 
 
-# ---- tests ----
+# tests
 
 class TestReentrancyDetector:
   """ReentrancyDetector测试: CALL先于SSTORE模式检测。"""

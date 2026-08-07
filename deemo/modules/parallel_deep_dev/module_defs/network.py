@@ -29,7 +29,7 @@ NETWORK = {
         ),
         "papers": [
             {"id": "GETA", "title": "GETA: Generalized Encrypted Traffic Analysis",
-             "venue": "arXiv 2025 (2605.31277)", "key_idea": "元学习+自注意力+多变量时序 → 协议无关加密流量分析，9个数据集SOTA"},
+             "venue": "arXiv 2025 ", "key_idea": "元学习+自注意力+多变量时序 → 协议无关加密流量分析，9个数据集SOTA"},
             {"id": "FG-MCRF", "title": "FG-MCRF: Fine-Grained Message Clustering for Protocol Reverse Engineering",
              "venue": "Computers & Security 2025", "key_idea": "深度消息表示+标识符指纹 → 0.9961聚类纯度，3-10%超越SOTA"},
             {"id": "PathSig-LSTM", "title": "Path Signature + LSTM for Encrypted Traffic Classification",

@@ -1,7 +1,7 @@
 # 异构漏洞知识图谱: HGAT消息传递/级联关系预测/跨CWE语义关联
-# 参考: Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains" (arXiv:2601.20158, ICSE 2026)
-#       Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings" (arXiv:2604.22176, 2025)
-#       Alfasi et al. "VulnScopper: Unveiling Hidden Links Between Unseen Security Entities" (arXiv:2403.02014)
+# Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains" (, ICSE 2026)
+#       Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings" (, 2025)
+#       Alfasi et al. "VulnScopper: Unveiling Hidden Links Between Unseen Security Entities" ()
 #       Wu & Feng "Association Analysis and Prediction of Network Security Vulnerabilities Based on KG" (JCSANDM 2025)
 #       Aksu et al. "Automated Generation of Attack Graphs Using NVD" (2018)
 #       Javed et al. "Binary Code Analysis for Cybersecurity: A Systematic Review" (2025)
@@ -144,7 +144,7 @@ class VulnerabilityGraphBuilder:
 
 
 # 级联漏洞预测 (简化HGAT前向传播)
-# 参考: Baird & Moin (2025) CVE级联异构图链接预测
+# Baird & Moin (2025) CVE级联异构图链接预测
 
 class CascadePredictor:
     """异构图上基于元路径的级联漏洞预测.

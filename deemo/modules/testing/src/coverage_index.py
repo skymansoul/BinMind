@@ -21,11 +21,11 @@
 #   edge_index的value集合超过256个成员后转为采样模式
 #   (只保留最后64个输入ID)。对极热边 (如循环入口) 这避免集合无限膨胀。
 #
-# 参考文献:
+# 文献:
 #   AFL++'s afl-cmin — corpus minimization via edge->input mapping;
 #     本项目在其基础上去除full bitmap比较，改为双向索引查询，
 #     使蒸馏阶段无需O(N^2)成对比较。
-#   LibAFL (Fioraldi et al. CCS 2022) — CorpusScheduler with
+#   LibAFL — CorpusScheduler with
 #     IndexedFeedbacks; 本项目的edge_index追踪类似其
 #     MapIndexedFeedback但增加了LRU淘汰的采样模式。
 import hashlib
@@ -62,7 +62,7 @@ class CoverageIndex:
         self._input_lru: Dict[str, float] = {}
         self._total_edges_seen = 0
 
-    # ---- 记录 ----
+    # 记录
     def record(self, input_id: str, edges: Set[int]) -> int:
         """记录一次执行覆盖。返回新增边数 (全局视角的新边)。"""
         now = time.monotonic()
@@ -134,7 +134,7 @@ class CoverageIndex:
                 del self._edge_index[e]
         self._input_lru.pop(input_id, None)
 
-    # ---- 查询 ----
+    # 查询
     def edges_for(self, input_id: str) -> Set[int]:
         """返回某输入覆盖的边集。"""
         self._input_lru[input_id] = time.monotonic()
@@ -174,7 +174,7 @@ class CoverageIndex:
             result[edge_id] = list(self.inputs_for_edge(edge_id)[:16])
         return result
 
-    # ---- 语料库蒸馏 ----
+    # 语料库蒸馏
     def corpus_distill(self) -> List[str]:
         """贪心蒸馏: 选出覆盖全部已见边的最小输入子集。
 
@@ -216,7 +216,7 @@ class CoverageIndex:
             covered |= self._input_index.get(inp_id, set())
         return len(covered) / max(1, len(self._edge_index))
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             "total_inputs": len(self._input_index),

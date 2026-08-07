@@ -23,7 +23,7 @@ _STALE_PATTERNS = frozenset({
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -36,7 +36,7 @@ class HealthStatus(enum.Enum):
     UNHEALTHY = "unhealthy"
 
 
-# ===== 单项健康检查 =====
+# 单项健康检查
 
 class HealthCheck:
     """单个健康检查项 — 封装名称、检测函数及最近结果。"""
@@ -58,7 +58,7 @@ class HealthCheck:
         return self.last_result
 
 
-# ===== HTTP 服务实现 =====
+# HTTP 服务实现
 
 _VERSION = "0.1.0"
 _START_TIME = time.time()
@@ -212,7 +212,6 @@ class HealthServer:
         return self._httpd is not None and self._thread is not None and self._thread.is_alive()
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩，当前未使用。"""
     pass  # 调试桩，当前未使用
 

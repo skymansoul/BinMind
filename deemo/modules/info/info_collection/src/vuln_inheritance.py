@@ -1,4 +1,4 @@
-# Created: 2025-07-28 17:06:45
+# Created: 2026-06-16 17:06:45
 #
 # vuln_inheritance — 跨二进制漏洞继承检测
 # 已知 binary A 含 CVE-X，binary B 是否可能包含同一漏洞？
@@ -6,9 +6,9 @@
 # 编译器归一化指纹，给出继承概率与风险等级。
 #
 # 应用场景:
-#   - 供应链安全: CVE 在 libfoo.so v1.0 → v1.1 是否继承？
+# 供应链安全: CVE 在 libfoo.so v1.0 → v1.1 是否继承？
 #   - IoT 固件: 同一 SDK 编译的 ARM/MIPS/x86 变体是否共享漏洞？
-#   - 补丁验证: 补丁是否覆盖所有受影响变体？
+# 补丁验证: 补丁是否覆盖所有受影响变体？
 #
 # 继承概率模型:
 #   P(inherited | CVE_in_A) = w1*struct_sim + w2*import_overlap + w3*section_layout_sim + w4*fp_norm_sim

@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2017-0861",
+  "desc": "CVE-2017-0861 (Android audio) UAF 复现 — 音频驱动内核对象",
+  "trigger": "   释放后其回调列表仍被遍历. 简化: free(p) 后经全局指针访问. "
+}

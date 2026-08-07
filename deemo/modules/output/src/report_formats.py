@@ -7,7 +7,6 @@ from typing import Dict, Any, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-def _debug_print(msg): pass  # noqa
 
 _LEGACY_MODE = False  # 旧版模式开关
 
@@ -127,12 +126,12 @@ class ReportFormatMixin:
 </html>
 """
 
-    # --- 旧版暗色主题 (v3 前) ---
+# 旧版暗色主题 (v3 前)
     # DARK_THEME = {
     #     'bg': '#0f172a', 'card': '#1e293b',
     #     'text': '#e2e8f0', 'accent': '#38bdf8'
     # }
-    # --- 旧版结束 ---
+# 旧版结束
 
     def _get_risk_badge_class(self, severity: str) -> str:
         # severity 字符串 → CSS 风险标签类名
@@ -497,7 +496,7 @@ class ReportFormatMixin:
         logger.info(f"HTML 报告已生成: {output_path}")
         return output_path
 
-    # --- 增量差异报告 ---
+# 增量差异报告
     # 2025-07-18 16:05 追加，覆盖补丁前后/多轮 fuzz 差异比对
 
     def generate_diff_report(
@@ -525,7 +524,7 @@ class ReportFormatMixin:
 
         return md_content
 
-    # --- SARIF v2.1.0 输出 ---
+# SARIF v2.1.0 输出
     # 2025-07-21 09:34 追加，对接 GitHub Code Scanning / GitLab SAST
 
     def generate_sarif_report(

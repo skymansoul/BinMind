@@ -1,5 +1,5 @@
 """
-创建: 2025-07-28
+创建: 2026-05-23
 零依赖高斯过程回归 — RBF核 + Cholesky分解 + EI采集函数。
 
 从 hyper_optimizer.py 分离，纯数学实现，不依赖 numpy/scipy。
@@ -51,9 +51,7 @@ def expected_improvement(
     return pred_std * (z * normal_cdf(z) + normal_pdf(z))
 
 
-# ---------------------------------------------------------------------------
 # Cholesky 分解 + 三角求解
-# ---------------------------------------------------------------------------
 
 def cholesky(A: list[list[float]]) -> list[list[float]] | None:
     n = len(A)
@@ -88,9 +86,7 @@ def cholesky_solve(L: list[list[float]], b: list[float]) -> list[float]:
     return x
 
 
-# ---------------------------------------------------------------------------
 # 标准正态分布函数
-# ---------------------------------------------------------------------------
 
 def normal_cdf(x: float) -> float:
     if x < -6.0:

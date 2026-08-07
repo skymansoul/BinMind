@@ -8,8 +8,8 @@
 # 问题:
 #   GradualConfig.safety_mode 是全局二值开关 (strict | permissive)。
 #   但 60+ 模块的关键性差异大:
-#     - 被 10 个模块依赖的核心桩 → 需要最严格的验证
-#     - 仅 1 个调用方、历史100%通过率的桩 → 可适当放宽
+# 被 10 个模块依赖的核心桩 → 需要最严格的验证
+# 仅 1 个调用方、历史100%通过率的桩 → 可适当放宽
 #
 # 方法: 三级门控
 #   1. 计算关键性评分 (0~1):
@@ -138,7 +138,7 @@ class TieredGate:
                           key=lambda kv: -kv[1].criticality)
         return dict(sort_order)
 
-    # ---- 关键性计算 ----
+# 关键性计算
     def _criticality(self, module_name: str) -> float:
         depth = self._get_dependency_depth(module_name)
         closure = self._get_downstream_closure(module_name)
@@ -198,7 +198,7 @@ class TieredGate:
         except ImportError:
             return 0.0
 
-    # ---- 报告 ----
+# 报告
     def gate_report(self, configs: dict[str, GateConfig] = None) -> str:
         """生成 Markdown 门控配置报告。"""
         if configs is None:

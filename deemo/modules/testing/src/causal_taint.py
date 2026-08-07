@@ -2,7 +2,7 @@
 #
 # 核心洞察:
 #   crash_cluster.py 按栈哈希分组崩溃——这是现象聚类, 不回答"哪些输入字节
-#   导致了崩溃"。Sagitta (ACSAC 2025) 以在线插桩做数据流差分定位根因,
+#   导致了崩溃"。Sagitta 以在线插桩做数据流差分定位根因,
 #   但依赖运行时插桩且仅处理单对输入。
 #
 #   本模块的方法:
@@ -11,22 +11,22 @@
 #     3. 归约因果边为 InputOffset→CrashPoint 的最小因果链
 #
 # 关键技术特征:
-#   - 离线污点差分: 不依赖在线插桩, 利用 trace 重放
-#   - 因果归约: 从全量污点图提取仅与崩溃相关的子图
+# 离线污点差分: 不依赖在线插桩, 利用 trace 重放
+# 因果归约: 从全量污点图提取仅与崩溃相关的子图
 #     (类似 Pearl do-calculus——仅保留区分崩溃/非崩溃的变量)
-#   - 根因字节定位: 按 causal_flow 强度对输入字节排序
+# 根因字节定位: 按 causal_flow 强度对输入字节排序
 #
 # 与 subreg_taint.py 的关系:
 #   subreg_taint.py 提供逐指令的位级污点传播 (TaintBits)
 #   本模块在其上构建: 多路径污点聚合、差分对比、因果图归约
 #
-# 参考文献:
-#   Sagitta (Shinagawa et al. ACSAC 2025) — 数据流差分用于崩溃根因分析;
+# 文献:
+#   Sagitta — 数据流差分用于崩溃根因分析;
 #     本项目取其"差分数据流"概念, 但以离线 trace 重放 + 因果归约替代
 #     在线插桩, 并利用 subreg_taint 的寄存器别名精度提升分析粒度
-#   BENZENE (IEEE S&P 2024 Distinguished Paper) — 欠约束状态变异生成
+#   BENZENE — 欠约束状态变异生成
 #     对比执行对; 本项目取其"对比执行"范式, 但以污点图替代全状态变异
-#   RACING (USENIX Security 2024) — 强化学习+互信息做根因关联; 本项目
+#   RACING — 强化学习+互信息做根因关联; 本项目
 #     取其"消偏采样"思想, 以污点差分替代统计相关
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ class CausalTaintAnalyzer:
         crash_graph = self._crash_graph
         parent_graph = self._parent_graph
 
-        # Step 1: 提取仅存在于崩溃路径的边 (差分边集)
+        # 提取仅存在于崩溃路径的边 (差分边集)
         crash_edge_set = self._edge_fingerprint(crash_graph.edges)
         parent_edge_set = (
             self._edge_fingerprint(parent_graph.edges)
@@ -158,13 +158,13 @@ class CausalTaintAnalyzer:
             if self._edge_fingerprint([e]) != parent_edge_set
         ]
 
-        # Step 2: 构建输入偏移 → 指令地址的因果映射
+        # 构建输入偏移 → 指令地址的因果映射
         offset_to_addrs: Dict[int, Set[int]] = defaultdict(set)
         for edge in crash_only_edges:
             for off in edge.input_offsets:
                 offset_to_addrs[off].add(edge.sink_addr)
 
-        # Step 3: 计算每个输入偏移的因果流强度
+        # 计算每个输入偏移的因果流强度
         # 因果流 = 传播路径上的边数 / 传播距离 (归一化)
         offset_flow: Dict[int, float] = {}
         for off, addrs in offset_to_addrs.items():
@@ -176,7 +176,7 @@ class CausalTaintAnalyzer:
             else:
                 offset_flow[off] = float(len(addrs))
 
-        # Step 4: 构建因果链——按因果流强度降序
+        # 构建因果链——按因果流强度降序
         total_flow = sum(offset_flow.values()) or 1.0
         chains: List[CausalChain] = []
         for off, flow in sorted(offset_flow.items(), key=lambda x: -x[1]):
@@ -206,7 +206,7 @@ class CausalTaintAnalyzer:
                 is_direct_cause=(crash_dist <= 5),
             ))
 
-        # Step 5: 确定根因字节范围——最高置信度链的连续区间
+        # 确定根因字节范围——最高置信度链的连续区间
         root_range = (0, 0)
         root_conf = 0.0
         if chains:
@@ -239,7 +239,7 @@ class CausalTaintAnalyzer:
             root_range = (best_start, best_end)
             root_conf = min(1.0, best_sum_conf / max(1.0, len(chains) * 0.5))
 
-        # Step 6: 生成报告
+        # 生成报告
         crash_id = hashlib.sha256(
             crash_input[:256] + str(crash_graph.crash_addr).encode()
         ).hexdigest()[:16]
@@ -261,7 +261,7 @@ class CausalTaintAnalyzer:
         report.summary = self._build_summary(report)
         return report
 
-    # ---- 边指纹: 用于集合差分 ----
+    # 边指纹: 用于集合差分
 
     @staticmethod
     def _edge_fingerprint(edges: List[TaintEdge]) -> Set[Tuple[int, int, str]]:
@@ -271,7 +271,7 @@ class CausalTaintAnalyzer:
             for e in edges
         }
 
-    # ---- 最短路径: 从污染源到崩溃点 ----
+    # 最短路径: 从污染源到崩溃点
 
     @staticmethod
     def _shortest_path_to_crash(graph: TaintGraph,
@@ -337,9 +337,7 @@ class CausalTaintAnalyzer:
         self._parent_graph = None
 
 
-# ============================================================
 # 污点图构建辅助: 从 trace 或 subreg_taint 状态构建 TaintGraph
-# ============================================================
 
 class TaintGraphBuilder:
     """从指令 trace 构建 TaintGraph——桥接 subreg_taint + 崩溃上下文。
@@ -425,9 +423,7 @@ class TaintGraphBuilder:
         )
 
 
-# ============================================================
 # 与 subreg_taint 的接合
-# ============================================================
 
 def build_causal_report_from_tracker(
     crash_tracker_state,           # SubRegTaintTracker (崩溃执行后)

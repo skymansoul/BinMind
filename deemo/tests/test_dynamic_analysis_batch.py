@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import pytest
 
 
-# ── core engine ────────────────────────────────────────────────────────
+# core engine
 
 def test_dynamic_analysis_engine_import():
     from modules.dynamic_analysis.dynamic_analysis_engine import (
@@ -29,7 +29,7 @@ def test_dynamic_analysis_engine_import():
     assert d['trace_id'] == 't1'
 
 
-# ── breakpoint_recovery ────────────────────────────────────────────────
+# breakpoint_recovery
 
 def test_breakpoint_recovery_import():
     from modules.dynamic_analysis.breakpoint_recovery import (
@@ -39,7 +39,7 @@ def test_breakpoint_recovery_import():
     assert mgr is not None
 
 
-# ── memory detectors ───────────────────────────────────────────────────
+# memory detectors
 
 def test_memory_malware_detector_import():
     from modules.dynamic_analysis.memory_malware_detector import (
@@ -62,7 +62,7 @@ def test_memory_primitive_extractor_import():
     assert e is not None
 
 
-# ── shadow stack ───────────────────────────────────────────────────────
+# shadow stack
 
 def test_shadow_stack_detector_import():
     from modules.dynamic_analysis.shadow_stack_detector import (
@@ -71,7 +71,7 @@ def test_shadow_stack_detector_import():
     assert d is not None
 
 
-# ── smc ────────────────────────────────────────────────────────────────
+# smc
 
 def test_smc_dynamic_analyzer_import():
     from modules.dynamic_analysis.smc_dynamic_analyzer import (
@@ -81,7 +81,7 @@ def test_smc_dynamic_analyzer_import():
     assert a is not None
 
 
-# ── auto_input_minimizer ───────────────────────────────────────────────
+# auto_input_minimizer
 
 def test_auto_input_minimizer_import():
     from modules.dynamic_analysis.auto_input_minimizer import (
@@ -91,7 +91,7 @@ def test_auto_input_minimizer_import():
     assert m is not None
 
 
-# ── behavior_tracing ───────────────────────────────────────────────────
+# behavior_tracing
 
 def test_behavior_tracing_import():
     from modules.dynamic_analysis.behavior_tracing import BehaviorTracer
@@ -99,7 +99,7 @@ def test_behavior_tracing_import():
     assert t is not None
 
 
-# ── memory heap & visualizer ───────────────────────────────────────────
+# memory heap & visualizer
 
 def test_memory_heap_import():
     from modules.dynamic_analysis.memory_heap import (
@@ -117,7 +117,7 @@ def test_memory_visualizer_import():
     assert v is not None
 
 
-# ── hw breakpoint & intel pt ───────────────────────────────────────────
+# hw breakpoint & intel pt
 
 def test_hw_breakpoint_detector_import():
     from modules.dynamic_analysis.hw_breakpoint_detector import (
@@ -137,7 +137,7 @@ def test_intel_pt_import():
     assert instr.address == 0x401000
 
 
-# ── forensic timeline & diagnostic ─────────────────────────────────────
+# forensic timeline & diagnostic
 
 def test_forensic_timeline_reconstructor_import():
     from modules.dynamic_analysis.forensic_timeline_reconstructor import (
@@ -154,7 +154,7 @@ def test_diagnostic_trace_mode_import():
     assert t is not None
 
 
-# ── process dumper (new module) ────────────────────────────────────────
+# process dumper (new module)
 
 def test_process_dumper_import():
     from modules.dynamic_analysis.process_dumper import (

@@ -91,7 +91,7 @@ class DegradationPlanner:
             unavailable, dep_graph, cap_clusters)
         return plan
 
-    # ---- 内部 ----
+# 内部
     def _find_unavailable(self) -> set[str]:
         """查找所有不可用模块 (MISSING/PLACEHOLDER/UNPARSEABLE)。"""
         try:
@@ -213,7 +213,7 @@ class DegradationPlanner:
         items.sort(key=lambda r: -r.priority)
         return items
 
-    # ---- 报告 ----
+# 报告
     def degradation_report(self,
                            plan: DegradationPlan = None) -> str:
         if plan is None:

@@ -13,8 +13,8 @@ class PermissionLevel(StrEnum): NORMAL="normal"; DANGEROUS="dangerous"; SIGNATUR
 class URISchemeType(StrEnum): DEEP_LINK="deep_link"; APP_LINK="app_link"; UNIVERSAL_LINK="universal_link"; CUSTOM_SCHEME="custom_scheme"
 class ManifestSeverity(StrEnum): CRITICAL="critical"; HIGH="high"; MEDIUM="medium"; LOW="low"; INFO="info"
 
-# ── GDPR隐私合规评分──
-# 基于Tang & Østvold (2026) 的隐私相关方法排名思想
+# GDPR隐私合规评分
+# 基于Tang & Østvold 的隐私相关方法排名思想
 # 将危险权限映射到GDPR条款，计算合规风险评分
 
 _GDPR_ARTICLE_MAP:Dict[str,Tuple[str,int]]={
@@ -41,7 +41,7 @@ _GDPR_ARTICLE_MAP:Dict[str,Tuple[str,int]]={
     'REQUEST_INSTALL_PACKAGES':('Art.5(1)(f)——应用安装完整性',6),
 }
 
-# PIChecker (ACM 2026) — 第三方SDK常见的数据收集类型与权限的对应关系
+# PIChecker — 第三方SDK常见的数据收集类型与权限的对应关系
 _TPL_DATA_COLLECTION_MAP:Dict[str,List[str]]={
     'com.google.android.gms':['location','device_id','advertising_id'],
     'com.google.firebase':['app_instance_id','device_info','analytics'],
@@ -158,7 +158,7 @@ class AndroidManifestAnalyzer:
                 for act in ifl.get('actions',[]):
                     if 'VIEW' in act and not comp.permission: s.findings.append(ManifestFinding('deep_link_weak',ManifestSeverity.MEDIUM,f'{comp.component_type.value}"{comp.name}"处理VIEW action无权限——Deep Link可被任意应用触发',comp.name,'CWE-927','添加permission保护或使用App Links'))
 
-    # ── GDPR隐私合规评分 ──
+# GDPR隐私合规评分
     def _compute_gdpr_score(s):
         """基于Tang & Østvold (2026) 隐私相关方法排名思想。
 
@@ -274,7 +274,6 @@ def analyze_manifest(fp:str)->Dict[str,Any]: return MobileManifestAnalyzer(fp).a
 # 保留: GDPR合规评分缓存——避免重复解析AndroidManifest
 _GDPR_SCORE_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_manifest_entropy_check(perms: list) -> float:
     """权限组合熵评估——计算声明的权限向量多样性。"""

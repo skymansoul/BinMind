@@ -19,10 +19,9 @@
 
   质量分级基于NIST SP 800-90B和BSI AIS-31标准。
 
-参考:
-  - NIST SP 800-90B (2018): 熵源评估标准 — 独立同分布检验/健康测试/熵估计。
-  - BSI AIS-31 (2022): 物理随机数生成器评估标准 — PTG.2/PTG.3功能等级。
-  - Kicksecure Dev/Entropy (2024): Linux内核熵源信任模型 — RDRAND争议和urandom启动问题。
+  - NIST SP 800-90B: 熵源评估标准 — 独立同分布检验/健康测试/熵估计。
+  - BSI AIS-31: 物理随机数生成器评估标准 — PTG.2/PTG.3功能等级。
+  - Kicksecure Dev/Entropy: Linux内核熵源信任模型 — RDRAND争议和urandom启动问题。
 
 边界条件:
   - 静态熵源分析无法评估运行时的熵质量(无实际输出可统计检验)。
@@ -34,13 +33,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class EntropyGrade(Enum):
     HIGH = 0       # 硬件TRNG或内核CSPRNG(≥128-bit熵)
     MEDIUM = 1     # 软件CSPRNG或内核urandom(有启动期弱熵风险)
     LOW = 2        # 弱种子(pid/time)经哈希 → 可预测空间有限
     CRITICAL = 3   # 无熵源/硬编码种子 → 密钥可被完全预测
-
 
 @dataclass
 class EntropySourceReport:
@@ -54,8 +51,7 @@ class EntropySourceReport:
     has_debiasing: bool = False      # 是否有去偏处理(如Von Neumann矫正)
     flags: List[str] = field(default_factory=list)
 
-
-# ── 熵源分类规则 ──
+# 熵源分类规则
 # 每条规则: (字节模式, 类型, 名称, 等级, 权重)
 _ENTROPY_PATTERNS: List[Tuple[bytes, str, str, EntropyGrade, float]] = [
     # 硬件熵源 — 最高质量
@@ -92,22 +88,19 @@ _ENTROPY_PATTERNS: List[Tuple[bytes, str, str, EntropyGrade, float]] = [
     (b'0xDEADBEEF', 'WEAK', 'magic debug seed', EntropyGrade.CRITICAL, 0.92),
 ]
 
-
-# ── 健康监测检测 ──
+# 健康监测检测
 _HEALTH_CHECK_PATTERNS: List[bytes] = [
     b'FIPS_continuous_test', b'continuous_random', b'health_test',
     b'stuck_test', b'adaptive_proportion', b'repetition_count',
     b'entropy_health', b'drbg_health', b'df_health',
 ]
 
-
-# ── 去偏处理检测 ──
+# 去偏处理检测
 _DEBIASING_PATTERNS: List[bytes] = [
     b'von_neumann', b'debiasing', b'whitening', b'extractor',
     b'HKDF_extract', b'SHA256_', b'blake2b_', b'conditioning',
     b'hash_df', b'block cipher df',
 ]
-
 
 def audit_entropy_sources(data: bytes, strings: Optional[List[str]] = None
                           ) -> List[EntropySourceReport]:
@@ -176,7 +169,6 @@ def audit_entropy_sources(data: bytes, strings: Optional[List[str]] = None
     # 按严重度排序(最差的在前)
     reports.sort(key=lambda r: (-r.grade.value, -r.confidence))
     return reports
-
 
 def classify_overall_entropy_quality(reports: List[EntropySourceReport]) -> Tuple[EntropyGrade, str]:
     """

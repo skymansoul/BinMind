@@ -25,7 +25,7 @@
   例如损坏的二进制导致某节点输出完全错误的类型推断。
   BFT 法定人数容忍 f 个任意错误节点 (N ≥ 3f+1)。
 
-ref: PBFT (Castro & Liskov, OSDI 1999) — practical Byzantine fault tolerance,
+ref: PBFT — practical Byzantine fault tolerance,
      本项目取其法定人数阈值但简化复制状态机为分析结果聚合
 ref: Ensemble methods in ML — weighted majority voting,
      本项目的加权方案借鉴 Bagging/Boosting 的概率融合
@@ -63,7 +63,7 @@ class ConsensusResult:
     status: str = ''  # 'consensus' | 'disputed' | 'insufficient_nodes'
 
 
-# --- 加权法定人数 ---
+# 加权法定人数
 
 def weighted_quorum_vote(results: list[NodeResult],
                          quorum_threshold: float = 2.0 / 3.0) -> ConsensusResult:
@@ -126,7 +126,7 @@ def _value_to_key(value: Any) -> str:
     return str(value)
 
 
-# --- 节点权重管理 ---
+# 节点权重管理
 
 class NodeWeightTracker:
     """追踪每个分析节点的历史准确率——用于加权投票。"""
@@ -162,7 +162,7 @@ class NodeWeightTracker:
         }
 
 
-# --- 冲突分解器 ---
+# 冲突分解器
 
 class QuorumConsensusEngine:
     """完整法定人数共识引擎——收集结果→加权投票→冲突分解。"""

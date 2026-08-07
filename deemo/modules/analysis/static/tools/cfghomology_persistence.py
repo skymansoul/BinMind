@@ -38,9 +38,7 @@ from typing import Dict, List, Tuple, Optional
 from .cfghomology_core import PersistenceInterval, BarcodeFingerprint
 
 
-# ---------------------------------------------------------------------------
 # 0 维持续同调 - 并查集时间戳算法
-# ---------------------------------------------------------------------------
 
 class _UnionFindTimestamp:
     """带时间戳的并查集: 记录每个分量 birth 时间和合并 death 时间"""
@@ -152,9 +150,7 @@ def compute_zerodim_persistence(
     return uf.collect_intervals(0, channel)
 
 
-# ---------------------------------------------------------------------------
 # 1 维持续同调 - 生成树外边的环检测
-# ---------------------------------------------------------------------------
 
 def compute_onedim_persistence(
     sorted_node_ids: List[int],
@@ -221,9 +217,7 @@ def compute_onedim_persistence(
     return intervals
 
 
-# ---------------------------------------------------------------------------
 # 条形码熵编码 - 将持久区间编码为固定维度指纹向量
-# ---------------------------------------------------------------------------
 
 # 对数尺度桶边界: 指数增长的桶宽, 将长 persist 区间分散到多个桶
 # 16 个桶覆盖 [0.001, 1.0] 范围
@@ -281,9 +275,9 @@ def encode_barcode(
         total_intervals=len(intervals_0d) + len(intervals_1d),
     )
 
-    # --- 0 维特征编码 ---
+# 0 维特征编码
     vec_0d = _encode_dimension(intervals_0d, vector_dim)
-    # --- 1 维特征编码 ---
+# 1 维特征编码
     vec_1d = _encode_dimension(intervals_1d, vector_dim)
 
     fp.vector = vec_0d + vec_1d
@@ -310,7 +304,7 @@ def _encode_dimension(intervals: List[PersistenceInterval], dim: int) -> List[fl
     if not intervals:
         return [0.0] * dim
 
-    # Step 1: 持久性对数桶分布 (使用 min(_NUM_BINS, dim//2) 个桶)
+    # 持久性对数桶分布 (使用 min(_NUM_BINS, dim//2) 个桶)
     n_bins = min(_NUM_BINS, max(4, dim // 2))
     bin_counts = [0.0] * n_bins
     for p in intervals:
@@ -327,7 +321,7 @@ def _encode_dimension(intervals: List[PersistenceInterval], dim: int) -> List[fl
     total_count = max(1.0, sum(bin_counts))
     bin_density = [c / total_count for c in bin_counts]
 
-    # Step 2: 确定性哈希填充到 dim 维
+    # 确定性哈希填充到 dim 维
     vec = [0.0] * dim
     for i, dval in enumerate(bin_density):
         vec[i] = dval
@@ -355,9 +349,7 @@ def _encode_dimension(intervals: List[PersistenceInterval], dim: int) -> List[fl
     return vec
 
 
-# ---------------------------------------------------------------------------
 # 指纹距离 - 1D Wasserstein-1 的 CDF 闭式解
-# ---------------------------------------------------------------------------
 
 def fingerprint_distance(
     fp1: BarcodeFingerprint,
@@ -406,9 +398,7 @@ def fingerprint_similarity(fp1: BarcodeFingerprint, fp2: BarcodeFingerprint) -> 
     return 1.0 - fingerprint_distance(fp1, fp2)
 
 
-# ---------------------------------------------------------------------------
 # 便捷接口: 一次调用计算 CFG 的持续同调指纹
-# ---------------------------------------------------------------------------
 
 def compute_cfg_fingerprints(
     sorted_ids: List[int],

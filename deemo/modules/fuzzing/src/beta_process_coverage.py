@@ -6,12 +6,11 @@
 2025-08-20 09:45 - 修正: 标注为启发式分配 (非 MCMC), 区分于完整 Bayesian inference
 2025-08-10 11:17 - 在线 Gibbs 更新: 每次新观测后增量更新特征分配
 
-参考:
-  Griffiths & Ghahramani (2011) "The Indian Buffet Process: An Introduction
+  Griffiths & Ghahramani "The Indian Buffet Process: An Introduction
     and Review" (JMLR) — IBP 的基础教程, Beta 过程的 de Finetti 表示
-  Thibaux & Jordan (2007) "Hierarchical Beta Processes and the Indian Buffet
+  Thibaux & Jordan "Hierarchical Beta Processes and the Indian Buffet
     Process" (AISTATS) — Beta 过程的层次化扩展
-  Paisley & Carin (2009) "Nonparametric Factor Analysis with Beta Process
+  Paisley & Carin "Nonparametric Factor Analysis with Beta Process
     Priors" (ICML) — Beta-Bernoulli 因子模型的 MCMC 推断
 
 在 fuzzing 文献中的位置:
@@ -35,10 +34,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---- BPCF 参数 ----
+# BPCF 参数
 _ALPHA = 1.0                  # Beta 过程浓度参数 (特征发现率)
-
 
 @dataclass
 class CoverageFeature:
@@ -50,7 +47,6 @@ class CoverageFeature:
     seeds_activated: Set[str] = field(default_factory=set)
     # 该特征对应的覆盖边子集 (代表性边)
     representative_edges: Set[int] = field(default_factory=set)
-
 
 class BetaProcessCoverageModel:
     """Beta 过程覆盖特征模型.
@@ -85,7 +81,7 @@ class BetaProcessCoverageModel:
         new_edges = coverage - self._total_edges_seen
         self._total_edges_seen.update(coverage)
 
-        # 步骤1: 分配已有特征 (Gibbs 采样的一步近似)
+        # 分配已有特征 (Gibbs 采样的一步近似)
         assigned = set()
         for fid, feat in self._features.items():
             # P(assign | other_seeds) ∝ activation_count / N
@@ -99,7 +95,7 @@ class BetaProcessCoverageModel:
                 feat.seeds_activated.add(seed_id)
                 self._seed_assignments[seed_id].add(fid)
 
-        # 步骤2: 生成新特征 (基于新边)
+        # 生成新特征 (基于新边)
         if new_edges:
             # IBP: 期望新特征数 ≈ α/N
             expected_new = self.alpha / max(1, self._n_seeds)

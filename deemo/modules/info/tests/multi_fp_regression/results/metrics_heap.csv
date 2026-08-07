@@ -1,0 +1,4 @@
+type,tool,TP,FP,FN,TN,recall_pct,fpr_pct,precision_pct,f1_pct,avg_time_ms
+heap,FC_VRA_v3,15,0,0,15,100.0,0.0,100.0,100.0,0.5
+heap,NAIVE,13,14,2,1,86.7,93.3,48.1,61.9,0.0
+heap,PSVR_HLM_v2,12,5,3,10,80.0,33.3,70.6,75.0,0.5

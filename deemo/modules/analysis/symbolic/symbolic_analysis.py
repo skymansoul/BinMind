@@ -40,9 +40,7 @@ except ImportError:
     pass
 
 
-# ---------------------------------------------------------------------------
 # Abstract domain lattice — sign analysis
-# ---------------------------------------------------------------------------
 
 
 class AbstractDomainLattice:
@@ -167,9 +165,7 @@ class AbstractDomainLattice:
         return AbstractDomainLattice.TOP
 
 
-# ---------------------------------------------------------------------------
 # Symbolic state merging
-# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -255,9 +251,7 @@ class SymbolicMergerWithWidening:
         return states
 
 
-# ---------------------------------------------------------------------------
 # Shadow 栈 simulation
-# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -310,9 +304,7 @@ class ShadowStackSimulator:
         return 0.0
 
 
-# ---------------------------------------------------------------------------
 # Path reachability
-# ---------------------------------------------------------------------------
 
 
 class PathReachabilityQuery:
@@ -383,9 +375,7 @@ class PathReachabilityQuery:
         return reachable
 
 
-# ---------------------------------------------------------------------------
 # 去混淆 pattern library
-# ---------------------------------------------------------------------------
 
 
 _Z3_IMPORT_CACHE = None
@@ -455,9 +445,7 @@ class DeobfuscationScriptLibrary:
                          r'pop\s+\w+', r'useless_sequence'],
             'description': 'Junk code insertion', 'severity': 'low'}
 
-    # ------------------------------------------------------------------
     # Z3-based 不透明谓词 detection
-    # ------------------------------------------------------------------
 
     def detect_opaque_predicates_z3(self, code_snippet: str, z3_solver=None) -> List[Dict[str, Any]]:
         """检测 不透明谓词s using Z3 satisfiability checking
@@ -624,9 +612,7 @@ class DeobfuscationScriptLibrary:
         }
         return jcc_map.get(jmp_type)
 
-    # ------------------------------------------------------------------
     # Original detection + 去混淆 流水线 (preserved)
-    # ------------------------------------------------------------------
 
     def detect_obfuscation(self, code: str) -> List[Dict[str, Any]]:
         detected = []
@@ -709,9 +695,7 @@ class DeobfuscationScriptLibrary:
         return max(0, min(100, 100 - (avg_len / 2) + (cmt_ratio * 50)))
 
 
-# ---------------------------------------------------------------------------
 # 覆盖率-guided scheduling
-# ---------------------------------------------------------------------------
 
 
 class CoverageGuidedSymbolicScheduler:
@@ -797,9 +781,7 @@ class CoverageGuidedSymbolicScheduler:
             'coverage_distribution': dict(self.coverage_map)}
 
 
-# ---------------------------------------------------------------------------
 # Unicorn block缓存
-# ---------------------------------------------------------------------------
 
 
 class UnicornBlockCache:
@@ -877,9 +859,7 @@ class UnicornBlockCache:
         return len(self._cache)
 
 
-# ---------------------------------------------------------------------------
 # Unicorn hybrid execution
-# ---------------------------------------------------------------------------
 
 
 class UnicornHybridSymbolicExecutor:

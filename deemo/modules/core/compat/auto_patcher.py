@@ -23,7 +23,7 @@ _STALE_PATTERNS = frozenset({
 
 
 # 熔断器状态 — 防止连续补丁失败导致系统震荡
-# 参考: pyresilience circuit breaker pattern
+# pyresilience circuit breaker pattern
 # 半开状态 (half_open): 允许一次探测以验证问题是否已恢复
 _PATCH_CB_STATE = {'failures': 0, 'last_failure': 0.0, 'state': 'closed'}
 _CB_THRESHOLD = 5        # 连续失败阈值
@@ -76,7 +76,7 @@ def verify_patch_integrity(original: bytes, patched: bytes, expected_hash: str) 
 
 
 # --- bsdiff 风格二进制差分 ---
-# 参考: Percival (2003) "Naive differences of executable code"
+# Percival (2003) "Naive differences of executable code"
 def generate_binary_delta(original: bytes, patched: bytes,
                            block_size: int = 64) -> dict:
     orig_len = len(original)

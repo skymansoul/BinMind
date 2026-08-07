@@ -1,5 +1,5 @@
 """
-创建: 2025-07-31
+创建: 2026-04-19
 推测性级联修复 — 因果图驱动的下游文件自动修复提示生成。
 
 问题：当 worker A 修改了 core/auth.py 的 create_token 签名后，worker B 的
@@ -14,14 +14,13 @@ api/handler.py（调用了 create_token）在合并后会因签名不匹配而�
   - 修复提示写入黑板，受影响 worker 在下一轮 prompt 中可获取
 
 与现有工作的差异：
-  - Refine (2025) 针对 SWE-bench 单仓库 bug 修复，需完整测试套件
-  - ACE (2026) 优化 prompt 上下文演化，不处理代码级修复
+  - Refine 针对 SWE-bench 单仓库 bug 修复，需完整测试套件
+  - ACE 优化 prompt 上下文演化，不处理代码级修复
   - 本模块在并行生成过程中，利用因果图做影响定位 + AST 差异做修复提示，
     无需额外 LLM 调用（hint 模式），零 API 开销
   - 区别于传统 CI 失败后的人工修复——将修复时机从"合并后"前移到"生成中"
 """
 
-from __future__ import annotations
 
 import ast
 import os
@@ -153,9 +152,7 @@ class CascadingRepair:
         return hints
 
 
-# ---------------------------------------------------------------------------
 # AST 辅助函数
-# ---------------------------------------------------------------------------
 
 def _extract_exports(filepath: str) -> set[str]:
     """提取 Python 文件的导出符号（顶层函数、类、__all__ 声明）。"""
@@ -240,9 +237,7 @@ def _build_repair_action(
         )
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def cascading_check(
     repair: CascadingRepair,

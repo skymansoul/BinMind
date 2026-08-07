@@ -38,9 +38,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 内存熵工具
-# ---------------------------------------------------------------------------
 
 def _byte_entropy(data: bytes) -> float:
     """计算字节序列的 Shannon 熵"""
@@ -77,9 +75,7 @@ def _byte_repetition_rate(data: bytes, chunk_size: int = 8) -> float:
     return max_count / total
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class HeapEntropyProfile:
@@ -109,9 +105,7 @@ class SprayDetectionReport:
     evidence: List[str] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
 # 检测器
-# ---------------------------------------------------------------------------
 
 class HeapSprayDetector:
     """多分辨率堆喷射熵检测器

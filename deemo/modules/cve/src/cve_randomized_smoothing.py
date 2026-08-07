@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 13:16
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-10 13:16
+# 修改: 2026-05-10 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 随机平滑对抗鲁棒认证
 # 随机平滑 — CVE评分模型的对抗鲁棒性认证
 #
@@ -7,7 +7,7 @@
 # (如添加虚假引用、操纵CVSS子分数), 可以使评分发生大幅变化.
 # 传统防御 (对抗训练) 无法提供形式化保证.
 #
-# 解决方案: 随机平滑 (Randomized Smoothing, Cohen et al. 2019).
+# 解决方案: 随机平滑.
 # 给定基础分类器f和噪声分布N(0,σ²I), 构造平滑分类器g:
 #   g(x) = argmax_y P(f(x + ε) = y), ε ~ N(0, σ²I).
 # 关键性质: g在ℓ₂范数下具有认证鲁棒性. 若 g(x)=y,
@@ -15,8 +15,8 @@
 # 其中 p_A = P(f(x+ε)=y) 是基础分类器对类别y的预测概率下界.
 #
 # 本实现适配到CVE评分的二分类 (利用/不利用):
-#   - 对每个CVE特征向量x, 添加N次高斯噪声扰动.
-#   - 统计多数类的比例p_A (利用 vs 不利用).
+# 对每个CVE特征向量x, 添加N次高斯噪声扰动.
+# 统计多数类的比例p_A (利用 vs 不利用).
 #   - 计算认证半径 R = σ·[Φ⁻¹(p_A_lower) - Φ⁻¹(0.5)],
 #     其中p_A_lower使用Clopper-Pearson置信下界.
 #
@@ -25,23 +25,23 @@
 #   才能翻转评分. 这直接量化了评分的对抗鲁棒性.
 #
 # 认证质量评估:
-#   - 认证准确率 (Certified Accuracy): 预测正确且R≥r的比例.
-#   - 平均认证半径 (但注意ICML 2025批评ACR为不良指标).
-#   - 中位认证半径: 更鲁棒的汇总统计.
+# 认证准确率 (Certified Accuracy): 预测正确且R≥r的比例.
+# 平均认证半径 (但注意ICML 2025批评ACR为不良指标).
+# 中位认证半径: 更鲁棒的汇总统计.
 #
 # 非显而易见性:
 #   1. 首次将随机平滑应用于CVE评分模型的对抗鲁棒性认证.
-#      RS用于恶意软件检测 (ACM 2026), VLM安全 (EMNLP 2025),
+#      RS用于恶意软件检测, VLM安全,
 #      但零论文面向CVE漏洞评分.
 #   2. 认证失败分析: 识别"脆弱CVE" — 半径小的CVE
 #      是攻击者最可能操纵的目标, 应优先人工审查.
 #   3. 与ConformalExploitScorer互补: 共形提供统计覆盖保证,
 #      RS提供对抗鲁棒性保证. 两者联合建立多层可信度.
 #
-# 参考:
-#   [Cohen et al. 2019] Certified Adversarial Robustness via RS (ICML)
-#   [ACM 2026] RS for Malware Detection Certification
-#   [ICML 2025] ACR is a Poor Metric for Randomized Smoothing
+#
+# Certified Adversarial Robustness via RS (ICML)
+# RS for Malware Detection Certification
+# ACR is a Poor Metric for Randomized Smoothing
 
 import math
 import random
@@ -198,7 +198,7 @@ class RandomizedSmoothingCertifier:
                 if r["certified_radius"] < threshold and r["certifiable"]]
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def certify_scorer(scoring_fn, X: List[List[float]], y: List[int],
                    sigma: float = 0.1, n_samples: int = 500

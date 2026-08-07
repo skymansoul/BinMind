@@ -5,10 +5,9 @@
 - 协议状态感知的变异策略选择
 - 跨协议模糊测试结果关联分析
 
-参考文献：
 - LibAFL: 构建模块化可复用Fuzzer的框架
 - 协议模糊化调查 —— 协议模糊测试分类法
-- 基于模糊测试与符号执行的IoT协议需求测试: CoAP应用 (Asadian et al., 2024)
+- 基于模糊测试与符号执行的IoT协议需求测试: CoAP应用
 """
 import time, math, uuid, logging
 from collections import defaultdict, Counter
@@ -25,7 +24,6 @@ class FuzzStrategy(IntEnum):
     STATE_GUIDED = 2        # 状态引导（需状态机模型）
     COVERAGE_GUIDED = 3     # 覆盖率引导（需插桩）
     GREYBOX_HYBRID = 4      # 灰盒混合（本实现默认策略）
-
 
 @dataclass
 class FuzzSeed:
@@ -48,7 +46,6 @@ class FuzzSeed:
     # 熵反馈 —— Asadian et al. 2024: 高熵输出暗示深路径
     entropy_score: float = 0.0
 
-
 @dataclass
 class FuzzReport:
     protocol: str = ""
@@ -58,7 +55,6 @@ class FuzzReport:
     strategy_distribution: Dict[str, int] = field(default_factory=dict)
     top_seeds: List[str] = field(default_factory=list)
     entropy_trajectory: List[float] = field(default_factory=list)
-
 
 class PowerScheduler:
     """LibAFL 风格的能量调度器 —— 基于历史反馈分配变异预算
@@ -96,7 +92,6 @@ class PowerScheduler:
         """衰减无产出种子能量 —— 执行多次但无新发现则降权"""
         key = seed.seed_id
         self._seed_scores[key] = self._seed_scores.get(key, 1.0) * 0.8
-
 
 class ProtocolFuzzOrchestrator:
     """协议模糊测试编排器 —— 管理多协议fuzz会话调度与结果聚合。
@@ -281,7 +276,7 @@ class ProtocolFuzzOrchestrator:
             }
         return base
 
-    # ── 差分跨实现测试 ─────────────────────────────────────
+# 差分跨实现测试
     def run_differential_check(self,
                                 protocol: str,
                                 impl_responses: List[Any]
@@ -302,7 +297,6 @@ class ProtocolFuzzOrchestrator:
         self._diff_verdicts.append(verdict)
         return verdict
 
-
 def orchestrate_fuzzing(protocol_seeds: Dict[str, List[bytes]]) -> Dict[str, Any]:
     """便捷入口 —— 传入 {protocol: [seed_bytes, ...]} 启动编排会话"""
     orch = ProtocolFuzzOrchestrator()
@@ -311,7 +305,6 @@ def orchestrate_fuzzing(protocol_seeds: Dict[str, List[bytes]]) -> Dict[str, Any
             orch.register_seed(proto, data)
         orch.generate_report(proto)
     return orch.summary()
-
 
 __all__ = ["ProtocolFuzzOrchestrator", "PowerScheduler", "FuzzSeed",
            "FuzzReport", "FuzzStrategy", "orchestrate_fuzzing"]

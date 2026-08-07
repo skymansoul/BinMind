@@ -18,9 +18,8 @@ D3-目标集聚集度→通信对端IP/域名的香农熵。
 三维得分加权融合→信标概率。与既有IDS(基于已知IOC匹配)不同，
 本方案不需要已知C2签名——纯统计判定。
 
-参考：
-- Lomb (1976): 非均匀采样周期图——处理真实网络中不规则的包到达间隔。
-- "Detecting Malware C2 Channels" (IEEE S&P 2023): 信标检测的统计方法综述。
+- Lomb: 非均匀采样周期图——处理真实网络中不规则的包到达间隔。
+- "Detecting Malware C2 Channels": 信标检测的统计方法综述。
 """
 
 import math
@@ -29,7 +28,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 @dataclass
 class FlowRecord:
@@ -64,7 +62,6 @@ class FlowRecord:
         _var = sum((x - _mean) ** 2 for x in _ints) / len(_ints)
         return math.sqrt(_var) / _mean
 
-
 @dataclass
 class BeaconScore:
     """一条流的信标评分。"""
@@ -75,7 +72,6 @@ class BeaconScore:
     composite_score: float
     is_beacon: bool
     estimated_interval: float = 0.0
-
 
 class C2BeaconDetector:
     """C2信标检测器——三维统计判定。
@@ -170,9 +166,7 @@ class C2BeaconDetector:
 
         return _clusters
 
-    # -----------------------------------------------------------------
     # 三维得分计算
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _score_periodicity(flow: FlowRecord) -> float:
@@ -244,8 +238,7 @@ class C2BeaconDetector:
         _repetition = len(flow.timestamps) / max(total_flows, 1)
         return min(1.0, _rarity + _repetition * 0.5)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -289,7 +282,6 @@ def _smoke_test():
     assert _scores[0].flow_id == "f_beacon", "beacon flow should score highest"
     assert _scores[0].composite_score > _scores[1].composite_score
     print("[OK] C2BeaconDetector smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

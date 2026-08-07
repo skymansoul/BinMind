@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Tuple, Set
 
 logger = logging.getLogger(__name__)
 
-# ---- Data classes ----
+# Data classes
 
 @dataclass
 class TraceEvent:
@@ -45,7 +45,7 @@ class TraceResult:
     smc_detected: bool = False
     smc_regions: List[Tuple[int, int]] = field(default_factory=list)
 
-# ---- Optional imports ----
+# Optional imports
 
 def _try_import_unicorn():
     try:
@@ -61,7 +61,7 @@ def _try_import_capstone():
     except ImportError:
         return None
 
-# ===== Memory model =====
+# Memory model
 
 STACK_BASE = 0x7FFF0000
 STACK_SIZE = 0x10000
@@ -163,7 +163,7 @@ def _map_flat(data: bytes, mu, uc, base: int = 0x100000) -> int:
 # 中检查是否有指令从被写入过的地址执行 —— 该行为是解壳/反混淆的
 # 典型特征（如 UPX 自解压、XOR 代码段解密等）
 #
-# 参考: Unicorn Issue #2041 —— UC_钩子_MEM_WRITE 会自动触发
+# Unicorn Issue #2041 —— UC_钩子_MEM_WRITE 会自动触发
 # TLB dirty 标记，确保自修改代码的缓存一致性
 
 def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]]):
@@ -286,7 +286,7 @@ def _make_mem_unmapped_hook(uc_ref_class):
     return _hook_mem_unmapped
 
 
-# ===== 仿真Tracer =====
+# 仿真Tracer
 
 class EmulationTracer:
     """Unicorn-driven dynamic execution 追踪 (x86/x64)"""
@@ -379,7 +379,7 @@ class EmulationTracer:
         return trace
 
 
-# ===== Post-analysis =====
+# Post-analysis
 
 _ANTI_ANALYSIS_APIS = {
     'IsDebuggerPresent', 'CheckRemoteDebuggerPresent', 'NtQueryInformationProcess',

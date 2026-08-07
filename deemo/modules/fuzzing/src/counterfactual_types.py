@@ -6,7 +6,7 @@ Pearl 因果阶梯:
   rung-2 (intervention):   P(Y|do(X))    —  强制设置字节为X后的效果
   rung-3 (counterfactual): P(Y_{X'}|X,Y) —  已知X→Y, 若做的是X'会怎样?
 
-ref: Pearl (2009) "Causality" 2nd ed. §7 — do-calculus 与反事实的形式化定义
+ref: Pearl "Causality" 2nd ed. §7 — do-calculus 与反事实的形式化定义
 """
 
 from __future__ import annotations

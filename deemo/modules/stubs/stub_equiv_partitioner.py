@@ -16,8 +16,8 @@
 #   传统BVA应用于需求规格的输入域边界。
 #   本模块将BVA应用于类型推导的等价类——边界不是从需求文档来的，
 #   而是从类型结构和MR语义推导的。例如:
-#     - int类的边界{0, 1, -1}来自数值符号变化
-#     - str类的边界{'', 'x'}来自空/非空
+# int类的边界{0, 1, -1}来自数值符号变化
+# str类的边界{'', 'x'}来自空/非空
 #     - idempotence MR额外引入的边界: 使f(x)和f(f(x))输出不同的x值
 import itertools as _it
 import re as _re
@@ -27,7 +27,7 @@ from typing import Optional as _Opt
 from modules.stubs.stub_contract import FuncContract as _FuncContract
 
 
-# ---- 基础等价类 + BVA扩展 ----
+# 基础等价类 + BVA扩展
 _EQUIV_CLASSES = {
     'int': [
         ('zero', 0), ('positive', 42), ('negative', -7),

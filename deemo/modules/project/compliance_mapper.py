@@ -1,9 +1,9 @@
 # 合规自动映射引擎: SBERT语义匹配 / RAG证据检索 / 跨标准对齐
-# 参考: Saha & Shukla "PROPARAG: Automated Cybersecurity Policy Compliance Assessment" (arXiv:2605.07515, 2025)
-#       Chung et al. "GraphCompliance: Aligning Policy and Context Graphs for LLM-Based Regulatory Compliance" (arXiv:2510.26309 [待验证])
+# Saha & Shukla "PROPARAG: Automated Cybersecurity Policy Compliance Assessment" (, 2025)
+#       Chung et al. "GraphCompliance: Aligning Policy and Context Graphs for LLM-Based Regulatory Compliance" ( [待验证])
 #       Sun et al. "A Compliance Checking Framework Based on RAG" (COLING 2025)
-#       Bianchi et al. "Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers" (arXiv:2607.06364)
-#       Baldwin & Ghanavati "Knowledge Graph Representations for LLM-Based Policy Compliance Reasoning" (arXiv:2604.27713)
+#       Bianchi et al. "Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers" ()
+#       Baldwin & Ghanavati "Knowledge Graph Representations for LLM-Based Policy Compliance Reasoning" ()
 import json, logging, os, re, hashlib, time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Set, Any
@@ -12,9 +12,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# ——————————————————————————————————————————————————————————
 # 合规标准知识库 — 扩展版
-# ——————————————————————————————————————————————————————————
 
 @dataclass
 class Control:
@@ -127,9 +125,7 @@ class StandardLibrary:
         return list(self.controls.keys())
 
 
-# ——————————————————————————————————————————————————————————
 # 证据映射引擎 — 分析结果字段匹配到合规控制项
-# ——————————————————————————————————————————————————————————
 
 class EvidenceMapper:
     # 字段名关键词匹配 + 可选 SBERT 语义匹配 (Bianchi 2026 / PROPARAG 2025)
@@ -227,9 +223,7 @@ class EvidenceMapper:
         }
 
 
-# ——————————————————————————————————————————————————————————
 # 跨标准映射 — 单向控制项到另一标准的双向映射
-# ——————————————————————————————————————————————————————————
 
 class CrossStandardMapper:
     """跨标准映射: ISO 27001 / NIST 800-53 / PCI DSS 等双向映射.
@@ -338,9 +332,7 @@ class CrossStandardMapper:
         return None
 
 
-# ——————————————————————————————————————————————————————————
 # 便捷工具
-# ——————————————————————————————————————————————————————————
 
 def assess_compliance(analysis_data: Dict, standards: List[str] = None) -> Dict:
     """合规评估入口: 证据映射 + 差距报告."""

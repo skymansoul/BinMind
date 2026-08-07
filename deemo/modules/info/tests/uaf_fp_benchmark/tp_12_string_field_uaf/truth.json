@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_12_string_field_uaf",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "cve": "CVE-2019-0708 类字符串字段 UAF",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "strlen(s->name) 在 free(s) 后访问"
+}

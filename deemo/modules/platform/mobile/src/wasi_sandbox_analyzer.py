@@ -69,7 +69,6 @@ def analyze_wasi_sandbox(wp:str="")->dict:
     return WASISandboxAnalyzer(wp).run()
 
 # 保留: 调试空操作占位
-def _debug_print(*a, **kw): pass
 
 # 不拆: WASI运行时指纹缓存——免去重复r2调用
 _WASI_RUNTIME_CACHE: dict = {}

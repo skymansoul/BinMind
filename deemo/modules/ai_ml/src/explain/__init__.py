@@ -1,4 +1,4 @@
-# --- 模型解释性子模块入口 ---
+# 模型解释性子模块入口
 
 from .explainer import (
     SubgraphExplainer,

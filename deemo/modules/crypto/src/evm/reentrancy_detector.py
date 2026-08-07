@@ -28,9 +28,9 @@ Solidity 编译器在 0.8.x 后默认不生成 SSTORE 的 reentrancy guard。
     用于审计已部署合约，此时编译器版本未知
   - delegatecall 的 storage 上下文与 call 不同，需单独建模
 
-ref: Ethereum Smart Contract Best Practices (Consensys, 2024)
+ref: Ethereum Smart Contract Best Practices
      "SWC-107: Reentrancy" 的 CEI 模式违反检测。
-ref: arXiv:2205.08537 "Smart Contract Vulnerability Detection" (2022)
+ref: "Smart Contract Vulnerability Detection"
      使用图神经网络检测重入——本模块用更轻量的指令级模式匹配，
      适合对大量合约做批量静态扫描。
 ref: USENIX 2024 "TrojanDAO" 的跨合约重入分析——本模块的跨函数分析借鉴其
@@ -41,7 +41,6 @@ import struct
 from typing import Dict, List, Set, Tuple, Optional
 from dataclasses import dataclass, field
 from enum import IntEnum
-
 
 class Opcode(IntEnum):
     STOP = 0x00
@@ -71,13 +70,11 @@ class Opcode(IntEnum):
     BALANCE = 0x31
     EXTCODESIZE = 0x3b
 
-
 @dataclass
 class EVMInstruction:
     offset: int
     opcode: int
     operand: bytes = b''     # push 的立即数
-
 
 @dataclass
 class ReentrancyFinding:
@@ -87,7 +84,6 @@ class ReentrancyFinding:
     storage_slot: Optional[int]
     function_entry: int
     description: str
-
 
 class EVMDisassembler:
     """EVM 字节码线性反汇编——识别 PUSH 的立即数并跳过。
@@ -114,7 +110,6 @@ class EVMDisassembler:
                 insns.append(EVMInstruction(i, op))
                 i += 1
         return insns
-
 
 class EVMReentrancyDetector:
     """字节码层面重入检测。

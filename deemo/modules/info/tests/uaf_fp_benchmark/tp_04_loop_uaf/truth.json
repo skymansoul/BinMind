@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_04_loop_uaf",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "cve": "CVE-2018-9568 类循环内 UAF",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "循环首轮 free, 次轮仍解引用 p"
+}

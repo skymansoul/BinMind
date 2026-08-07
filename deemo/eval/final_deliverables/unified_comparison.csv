@@ -1,0 +1,13 @@
+benchmark,tool,samples,TP,FP,TN,FN,precision,recall,f1,fp_rate,avg_time_ms
+cross_type_123,BinMind-GAPSBV,123,109,0,14,0,1.0,1.0,1.0,0.0,1
+cross_type_123,Objdump-Naive,123,85,5,9,24,0.944,0.78,0.854,0.046,34
+cross_type_123,Nm-Symbol,123,85,5,9,24,0.944,0.78,0.854,0.046,11
+cross_type_123,Regex-Baseline,123,63,8,6,46,0.887,0.578,0.7,0.073,1
+cve_16,BinMind-Full,16,16,0,0,0,1.0,1.0,1.0,0,0
+cve_16,Regex-Base,16,4,0,0,12,1.0,0.25,0.4,0,0
+cve_16,Heuristic,16,16,0,0,0,1.0,1.0,1.0,0,0
+cve_16,Angr-CFG,16,16,0,0,0,1.0,1.0,1.0,0,0
+gapsbv_cj_17,BinMind-baseline,17,12,3,1,1,0.8,0.923,0.857,0.75,0.5
+gapsbv_cj_17,BinMind-HOSV,17,13,0,4,0,1.0,1.0,1.0,0.0,4.8
+gapsbv_cj_17,BinMind-GAPSBV-CJ,17,13,0,4,0,1.0,1.0,1.0,0.0,0.1
+gapsbv_cj_17,Angr,17,13,4,0,0,0.765,1.0,0.867,1.0,817.3

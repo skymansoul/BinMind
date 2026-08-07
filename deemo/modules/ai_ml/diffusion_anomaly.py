@@ -1,11 +1,11 @@
 # 基于迭代邻居均值传播的图异常检测
-# 依据: DDGAD [arXiv 2605.26446, 2026] 的轨迹动力学扩散异常检测
+# 依据: DDGAD 的轨迹动力学扩散异常检测
 # "Trajectory Dynamics for Diffusion-Based Graph Anomaly Detection"
 # 核心思路: 正常节点在迭代传播过程中表示稳定, 异常节点表现出不稳定/冲突的轨迹动态
 # 实现: 线性意见动力学 x_{t+1}=(1-α)x_t + α·mean(neighbors) + noise,
 #       不采用完整的扩散 PDE / 拉普拉斯谱分解
 # 三个异常信号: 邻居不一致性 / 可靠性权重 / 动态冲突能量
-# 注: 上述arXiv引用ID未通过独立验证，方法本身基于线性意见动力学
+# 注: 方法本身基于线性意见动力学
 # 的扩散模拟是独立的实现，不依赖该论文的具体结果。
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
-# ========== 纯Python矩阵运算 ==========
+# 纯Python矩阵运算
 
 def _da_vec_zeros(n: int) -> List[float]:
     return [0.0] * n
@@ -47,7 +47,7 @@ def _da_cosine(a: List[float], b: List[float]) -> float:
     return max(-1.0, min(1.0, dot / (na * nb)))
 
 
-# ========== 扩散模拟 ==========
+# 扩散模拟
 
 class DiffusionSimulator:
     """图上的扩散过程模拟
@@ -117,7 +117,7 @@ class DiffusionSimulator:
         return trajectories
 
 
-# ========== 异常检测器 ==========
+# 异常检测器
 
 @dataclass
 class DiffusionAnomalyScore:
@@ -295,7 +295,7 @@ class DiffusionAnomalyDetector:
         return [self.detect(features, adj) for features, adj in graphs]
 
 
-# ========== 工厂 ==========
+# 工厂
 
 def create_diffusion_anomaly_detector(diffusion_steps: int = 20,
                                        anomaly_percentile: float = 95.0):

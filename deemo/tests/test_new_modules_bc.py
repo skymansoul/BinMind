@@ -9,7 +9,7 @@ import tempfile
 import pytest
 
 
-# ---- test stack_overflow_analyzer ----
+# test stack_overflow_analyzer
 
 class TestStackOverflowAnalyzer:
     """栈溢出分析器单元测试。"""
@@ -41,7 +41,7 @@ class TestStackOverflowAnalyzer:
         assert 'overflowable' in result
 
 
-# ---- test format_string_detector ----
+# test format_string_detector
 
 class TestFormatStringDetector:
     """格式化字符串检测器单元测试。"""
@@ -88,7 +88,7 @@ class TestFormatStringDetector:
         assert findings[0]['format_arg'] == 'buf'
 
 
-# ---- test exploit_executor ----
+# test exploit_executor
 
 class TestExploitExecutor:
     """exploit 执行器单元测试。"""
@@ -157,7 +157,7 @@ class TestExploitExecutor:
         }) is True
 
 
-# ---- test feedback_loop ----
+# test feedback_loop
 
 class TestFeedbackLoop:
     """反馈迭代环单元测试。"""
@@ -194,7 +194,7 @@ class TestFeedbackLoop:
         assert sig1 == sig2  # 相同错误应产生相同签名
 
 
-# ---- test crash_analyzer_llm ----
+# test crash_analyzer_llm
 
 class TestCrashAnalyzerLLM:
     """LLM 崩溃分析器单元测试。"""

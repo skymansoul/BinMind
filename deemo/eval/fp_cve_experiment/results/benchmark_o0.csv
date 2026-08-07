@@ -1,0 +1,151 @@
+tool,sample_id,expected_vuln,detected_count,fp_count,fn_count,time_ms,peak_mem_mb,variant,error
+pcfv,cve_2014_0160_heartbleed,True,1,0,0,81.6,135.1,vuln.exe,
+baseline,cve_2014_0160_heartbleed,True,0,0,1,86.5,135.1,vuln.exe,
+angr,cve_2014_0160_heartbleed,True,1,0,0,1484.7,215.8,vuln.exe,
+asan,cve_2014_0160_heartbleed,True,1,0,0,237.7,216.2,vuln.exe,shim mode
+ghidra,cve_2014_0160_heartbleed,True,1325,0,0,99.6,218.0,vuln.exe,objdump heuristic fallback (alloc=4 copy=7 store=1314)
+pcfv,cve_2015_0235_ghost,True,3,0,0,32.7,218.3,vuln.exe,
+baseline,cve_2015_0235_ghost,True,3,0,0,26.1,218.3,vuln.exe,
+angr,cve_2015_0235_ghost,True,1,0,0,1076.8,236.6,vuln.exe,
+asan,cve_2015_0235_ghost,True,1,0,0,254.6,236.6,vuln.exe,shim mode
+ghidra,cve_2015_0235_ghost,True,264,0,0,40.9,236.6,vuln.exe,objdump heuristic fallback (alloc=3 copy=5 store=256)
+pcfv,cve_2016_10190_ffmpeg,True,1,0,0,56.0,236.6,vuln.exe,
+baseline,cve_2016_10190_ffmpeg,True,1,0,0,29.4,236.6,vuln.exe,
+angr,cve_2016_10190_ffmpeg,True,1,0,0,826.1,236.6,vuln.exe,
+asan,cve_2016_10190_ffmpeg,True,1,0,0,251.8,236.6,vuln.exe,shim mode
+ghidra,cve_2016_10190_ffmpeg,True,267,0,0,40.3,236.7,vuln.exe,objdump heuristic fallback (alloc=4 copy=4 store=259)
+pcfv,cve_2016_2177_openssl,True,2,0,0,31.7,236.7,vuln.exe,
+baseline,cve_2016_2177_openssl,True,1,0,0,30.2,236.9,vuln.exe,
+angr,cve_2016_2177_openssl,True,1,0,0,922.5,249.3,vuln.exe,
+asan,cve_2016_2177_openssl,True,0,0,1,243.2,249.4,vuln.exe,shim mode
+ghidra,cve_2016_2177_openssl,True,267,0,0,37.5,249.9,vuln.exe,objdump heuristic fallback (alloc=4 copy=3 store=260)
+pcfv,cve_2017_1000253_pie,True,2,0,0,68.8,251.8,vuln.exe,
+baseline,cve_2017_1000253_pie,True,1,0,0,96.7,252.6,vuln.exe,
+angr,cve_2017_1000253_pie,True,1,0,0,1497.2,262.3,vuln.exe,
+asan,cve_2017_1000253_pie,True,1,0,0,209.6,262.3,vuln.exe,shim mode
+ghidra,cve_2017_1000253_pie,True,1331,0,0,66.9,262.3,vuln.exe,objdump heuristic fallback (alloc=4 copy=7 store=1320)
+pcfv,cve_2018_6789_exim,True,4,0,0,31.2,262.3,vuln.exe,
+baseline,cve_2018_6789_exim,True,1,0,0,31.6,262.3,vuln.exe,
+angr,cve_2018_6789_exim,True,1,0,0,915.0,262.3,vuln.exe,
+asan,cve_2018_6789_exim,True,0,0,1,241.0,262.3,vuln.exe,shim mode
+ghidra,cve_2018_6789_exim,True,274,0,0,34.4,262.3,vuln.exe,objdump heuristic fallback (alloc=4 copy=3 store=267)
+pcfv,cve_2019_11477_sack,True,1,0,0,24.8,262.3,vuln.exe,
+baseline,cve_2019_11477_sack,True,1,0,0,30.1,262.3,vuln.exe,
+angr,cve_2019_11477_sack,True,1,0,0,926.8,262.3,vuln.exe,
+asan,cve_2019_11477_sack,True,0,0,1,453.4,262.3,vuln.exe,shim mode
+ghidra,cve_2019_11477_sack,True,267,0,0,28.2,262.6,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=261)
+pcfv,cve_2020_10713_grub2,True,1,0,0,25.2,262.6,vuln.exe,
+baseline,cve_2020_10713_grub2,True,1,0,0,29.1,262.7,vuln.exe,
+angr,cve_2020_10713_grub2,True,1,0,0,868.7,276.1,vuln.exe,
+asan,cve_2020_10713_grub2,True,1,0,0,203.7,276.2,vuln.exe,shim mode
+ghidra,cve_2020_10713_grub2,True,268,0,0,33.2,276.7,vuln.exe,objdump heuristic fallback (alloc=4 copy=4 store=260)
+pcfv,cve_2021_3156_sudo,True,1,0,0,32.7,277.2,vuln.exe,
+baseline,cve_2021_3156_sudo,True,1,0,0,32.7,277.8,vuln.exe,
+angr,cve_2021_3156_sudo,True,1,0,0,1233.9,278.4,vuln.exe,
+asan,cve_2021_3156_sudo,True,0,0,1,231.5,278.4,vuln.exe,shim mode
+ghidra,cve_2021_3156_sudo,True,269,0,0,34.3,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=263)
+pcfv,cve_2022_0185_kernel,True,2,0,0,32.3,278.4,vuln.exe,
+baseline,cve_2022_0185_kernel,True,1,0,0,29.5,278.4,vuln.exe,
+angr,cve_2022_0185_kernel,True,1,0,0,881.5,278.4,vuln.exe,
+asan,cve_2022_0185_kernel,True,1,0,0,196.3,278.4,vuln.exe,shim mode
+ghidra,cve_2022_0185_kernel,True,262,0,0,34.7,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=4 store=255)
+pcfv,cve_2022_23222_bpf,True,1,0,0,28.8,278.4,vuln.exe,
+baseline,cve_2022_23222_bpf,True,0,0,1,34.9,278.4,vuln.exe,
+angr,cve_2022_23222_bpf,True,1,0,0,901.4,278.4,vuln.exe,
+asan,cve_2022_23222_bpf,True,0,0,1,213.3,278.4,vuln.exe,shim mode
+ghidra,cve_2022_23222_bpf,True,261,0,0,38.5,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=255)
+pcfv,cve_2023_0464_openssl,True,1,0,0,30.6,278.4,vuln.exe,
+baseline,cve_2023_0464_openssl,True,1,0,0,29.8,278.4,vuln.exe,
+angr,cve_2023_0464_openssl,True,1,0,0,1110.3,278.4,vuln.exe,
+asan,cve_2023_0464_openssl,True,1,0,0,231.0,278.4,vuln.exe,shim mode
+ghidra,cve_2023_0464_openssl,True,263,0,0,34.6,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=257)
+pcfv,cve_2023_3576_openssl,True,2,0,0,85.4,278.4,vuln.exe,
+baseline,cve_2023_3576_openssl,True,3,0,0,63.7,278.4,vuln.exe,
+angr,cve_2023_3576_openssl,True,1,0,0,1231.7,278.4,vuln.exe,
+asan,cve_2023_3576_openssl,True,0,0,1,211.6,278.4,vuln.exe,shim mode
+ghidra,cve_2023_3576_openssl,True,1333,0,0,74.8,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=6 store=1323)
+pcfv,cve_2023_4911_looney,True,2,0,0,79.1,278.4,vuln.exe,
+baseline,cve_2023_4911_looney,True,2,0,0,72.2,278.4,vuln.exe,
+angr,cve_2023_4911_looney,True,1,0,0,1502.0,278.4,vuln.exe,
+asan,cve_2023_4911_looney,True,1,0,0,214.3,278.4,vuln.exe,shim mode
+ghidra,cve_2023_4911_looney,True,1327,0,0,70.1,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=7 store=1316)
+pcfv,cve_2024_1086_nftables,True,3,0,0,25.9,278.4,vuln.exe,
+baseline,cve_2024_1086_nftables,True,2,0,0,27.2,278.4,vuln.exe,
+angr,cve_2024_1086_nftables,True,1,0,0,997.7,278.4,vuln.exe,
+asan,cve_2024_1086_nftables,True,1,0,0,224.1,278.4,vuln.exe,shim mode
+ghidra,cve_2024_1086_nftables,True,265,0,0,35.5,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=5 store=257)
+pcfv,safe_01_align_padding,False,0,0,0,71.8,278.4,vuln.exe,
+baseline,safe_01_align_padding,False,0,0,0,81.3,278.4,vuln.exe,
+angr,safe_01_align_padding,False,1,1,0,1317.7,278.4,vuln.exe,
+asan,safe_01_align_padding,False,0,0,0,254.6,278.4,vuln.exe,shim mode
+ghidra,safe_01_align_padding,False,1321,1,0,82.4,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=6 store=1311)
+pcfv,safe_02_path_clamped,False,0,0,0,31.0,278.4,vuln.exe,
+baseline,safe_02_path_clamped,False,0,0,0,27.3,278.4,vuln.exe,
+angr,safe_02_path_clamped,False,1,1,0,1172.6,278.4,vuln.exe,
+asan,safe_02_path_clamped,False,0,0,0,241.6,278.4,vuln.exe,shim mode
+ghidra,safe_02_path_clamped,False,259,1,0,39.0,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=253)
+pcfv,safe_03_struct_fields,False,0,0,0,84.2,278.4,vuln.exe,
+baseline,safe_03_struct_fields,False,0,0,0,79.8,278.4,vuln.exe,
+angr,safe_03_struct_fields,False,1,1,0,1294.0,278.4,vuln.exe,
+asan,safe_03_struct_fields,False,0,0,0,205.2,278.4,vuln.exe,shim mode
+ghidra,safe_03_struct_fields,False,1327,1,0,75.1,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=5 store=1318)
+pcfv,safe_04_realloc_shrink,False,0,0,0,76.3,278.4,vuln.exe,
+baseline,safe_04_realloc_shrink,False,0,0,0,84.6,278.4,vuln.exe,
+angr,safe_04_realloc_shrink,False,1,1,0,1530.3,278.4,vuln.exe,
+asan,safe_04_realloc_shrink,False,0,0,0,223.8,278.4,vuln.exe,shim mode
+ghidra,safe_04_realloc_shrink,False,1322,1,0,81.8,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=7 store=1311)
+pcfv,safe_05_min_cap,False,0,0,0,25.6,278.4,vuln.exe,
+baseline,safe_05_min_cap,False,0,0,0,28.8,278.4,vuln.exe,
+angr,safe_05_min_cap,False,1,1,0,903.2,278.4,vuln.exe,
+asan,safe_05_min_cap,False,0,0,0,223.6,278.4,vuln.exe,shim mode
+ghidra,safe_05_min_cap,False,257,1,0,32.9,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=3 store=251)
+pcfv,safe_06_calloc_loop,False,0,0,0,79.8,278.4,vuln.exe,
+baseline,safe_06_calloc_loop,False,1,1,0,89.6,278.4,vuln.exe,
+angr,safe_06_calloc_loop,False,1,1,0,1611.4,278.4,vuln.exe,
+asan,safe_06_calloc_loop,False,0,0,0,208.4,278.4,vuln.exe,shim mode
+ghidra,safe_06_calloc_loop,False,1320,1,0,67.0,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=5 store=1312)
+pcfv,safe_07_derived_ptr,False,0,0,0,69.3,278.4,vuln.exe,
+baseline,safe_07_derived_ptr,False,0,0,0,67.0,278.4,vuln.exe,
+angr,safe_07_derived_ptr,False,1,1,0,1250.7,278.4,vuln.exe,
+asan,safe_07_derived_ptr,False,0,0,0,209.4,278.4,vuln.exe,shim mode
+ghidra,safe_07_derived_ptr,False,1322,1,0,64.8,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=7 store=1311)
+pcfv,safe_08_alias_chain,False,0,0,0,76.5,278.4,vuln.exe,
+baseline,safe_08_alias_chain,False,0,0,0,84.2,278.4,vuln.exe,
+angr,safe_08_alias_chain,False,1,1,0,1581.2,278.4,vuln.exe,
+asan,safe_08_alias_chain,False,0,0,0,214.4,278.4,vuln.exe,shim mode
+ghidra,safe_08_alias_chain,False,1322,1,0,77.1,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=6 store=1312)
+pcfv,safe_09_nested_alloc,False,0,0,0,80.9,278.4,vuln.exe,
+baseline,safe_09_nested_alloc,False,0,0,0,75.8,278.4,vuln.exe,
+angr,safe_09_nested_alloc,False,1,1,0,1242.2,278.4,vuln.exe,
+asan,safe_09_nested_alloc,False,0,0,0,199.8,278.4,vuln.exe,shim mode
+ghidra,safe_09_nested_alloc,False,1323,1,0,72.5,278.4,vuln.exe,objdump heuristic fallback (alloc=5 copy=7 store=1311)
+pcfv,safe_10_large_alloc_small_write,False,0,0,0,71.7,278.4,vuln.exe,
+baseline,safe_10_large_alloc_small_write,False,0,0,0,68.1,278.4,vuln.exe,
+angr,safe_10_large_alloc_small_write,False,1,1,0,1712.7,278.4,vuln.exe,
+asan,safe_10_large_alloc_small_write,False,0,0,0,233.5,278.4,vuln.exe,shim mode
+ghidra,safe_10_large_alloc_small_write,False,1321,1,0,84.5,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=6 store=1311)
+pcfv,safe_11_snprintf_bounded,False,0,0,0,88.3,278.4,vuln.exe,
+baseline,safe_11_snprintf_bounded,False,1,1,0,94.3,278.4,vuln.exe,
+angr,safe_11_snprintf_bounded,False,1,1,0,1311.8,278.4,vuln.exe,
+asan,safe_11_snprintf_bounded,False,0,0,0,213.1,278.4,vuln.exe,shim mode
+ghidra,safe_11_snprintf_bounded,False,1321,1,0,74.1,278.4,vuln.exe,objdump heuristic fallback (alloc=4 copy=5 store=1312)
+pcfv,safe_12_strncpy_bounded,False,0,0,0,25.7,278.4,vuln.exe,
+baseline,safe_12_strncpy_bounded,False,0,0,0,26.5,278.4,vuln.exe,
+angr,safe_12_strncpy_bounded,False,1,1,0,892.4,278.4,vuln.exe,
+asan,safe_12_strncpy_bounded,False,0,0,0,219.7,278.4,vuln.exe,shim mode
+ghidra,safe_12_strncpy_bounded,False,255,1,0,29.5,278.4,vuln.exe,objdump heuristic fallback (alloc=3 copy=2 store=250)
+pcfv,safe_13_guard_index,False,0,0,0,83.3,278.5,vuln.exe,
+baseline,safe_13_guard_index,False,0,0,0,75.5,278.5,vuln.exe,
+angr,safe_13_guard_index,False,1,1,0,1668.4,280.1,vuln.exe,
+asan,safe_13_guard_index,False,0,0,0,201.4,280.1,vuln.exe,shim mode
+ghidra,safe_13_guard_index,False,1321,1,0,70.5,280.1,vuln.exe,objdump heuristic fallback (alloc=4 copy=5 store=1312)
+pcfv,safe_14_array_of_structs,False,0,0,0,87.1,280.1,vuln.exe,
+baseline,safe_14_array_of_structs,False,1,1,0,69.7,280.1,vuln.exe,
+angr,safe_14_array_of_structs,False,1,1,0,1286.9,280.1,vuln.exe,
+asan,safe_14_array_of_structs,False,0,0,0,233.1,280.1,vuln.exe,shim mode
+ghidra,safe_14_array_of_structs,False,1322,1,0,78.8,280.1,vuln.exe,objdump heuristic fallback (alloc=4 copy=5 store=1313)
+pcfv,safe_15_loop_in_bounds,False,0,0,0,70.7,280.1,vuln.exe,
+baseline,safe_15_loop_in_bounds,False,1,1,0,64.3,280.1,vuln.exe,
+angr,safe_15_loop_in_bounds,False,1,1,0,1691.4,280.1,vuln.exe,
+asan,safe_15_loop_in_bounds,False,0,0,0,226.2,280.1,vuln.exe,shim mode
+ghidra,safe_15_loop_in_bounds,False,1321,1,0,72.1,280.1,vuln.exe,objdump heuristic fallback (alloc=4 copy=5 store=1312)

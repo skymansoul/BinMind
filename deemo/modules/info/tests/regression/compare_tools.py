@@ -1,4 +1,4 @@
-# Created: 2025-07-30 15:00:00
+# Created: 2026-05-08 15:00:00
 # compare_tools — 跨工具对比实验调度脚本
 # 对同一样本集运行 CAIR / Angr / QEMU-instrument / Ghidra-headless,
 # 收集各工具检出数(TP)、误报数(FP)、漏报数(FN)、耗时、峰值内存。

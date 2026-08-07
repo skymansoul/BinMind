@@ -33,7 +33,7 @@ for _cn in dir(_m):
             try: setattr(_c, _attr, lambda self, *a, **kw: self)
             except Exception: pass  # 修复: bare except → Exception
 
-# --- DAG 调度器 ---
+# DAG 调度器
 # 多阶段分析的依赖管理：通过拓扑排序确定阶段执行顺序。
 # 采用 Kahn's algorithm — O(V+E) 的确定性拓扑排序，规避 DFS 递归栈溢出。
 
@@ -104,9 +104,9 @@ def parallel_groups(stages: dict[str, list[str]], order: list[str]) -> list[list
     return groups
 
 
-# --- 流水线阶段验证 ---
+# 流水线阶段验证
 # 每个阶段执行后验证中间输出的结构完整性
-# 参考: codebadger (SVM 2026) — CPG 的多阶段分析流水线中的 schema 验证
+# codebadger — CPG 的多阶段分析流水线中的 schema 验证
 # 阶段间类型不匹配是流水线错误的常见来源，早期检测可避免级联失败
 def validate_stage_output(stage_name: str, output: dict,
                            required_fields: list[str]) -> tuple[bool, list[str]]:
@@ -128,7 +128,6 @@ def validate_stage_output(stage_name: str, output: dict,
     return (True, [])
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

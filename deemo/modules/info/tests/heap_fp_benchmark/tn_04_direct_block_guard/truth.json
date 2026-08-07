@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_04_direct_block_guard",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 块内守卫",
+  "expect_overflow": false,
+  "trigger": "任意 n",
+  "why": "写入位于守卫块内, n 被钳制在 64 内"
+}

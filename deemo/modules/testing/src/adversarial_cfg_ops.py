@@ -1,7 +1,6 @@
 # CFG变换操作集——对抗性CFG伪装的具体变换实现
 #
-# 从 adversarial_cfg.py 拆分: 变换操作与评估器独立管理,
-# AdversarialCFGTransformer 通过 dispatch 表调用这些操作。
+# 变换操作与评估器独立管理, AdversarialCFGTransformer 通过 dispatch 表调用。
 # 未来可在不修改主引擎的前提下扩展新的变换操作。
 
 from __future__ import annotations
@@ -22,9 +21,7 @@ if TYPE_CHECKING:
     from .adversarial_cfg import AdversarialCFGTransformer
 
 
-# ============================================================
 # 变换操作 (独立函数, 不依赖 Transformer 实例)
-# ============================================================
 
 def _sim_split_block(cfg: CFGSpec, block: BasicBlock,
                       rng: Optional[random.Random] = None) -> Optional[TransformStep]:
@@ -188,9 +185,7 @@ def _sim_clone_then_guard(cfg: CFGSpec, block: BasicBlock,
     )
 
 
-# ============================================================
 # Dispatch 表 — 操作符 → 函数
-# ============================================================
 
 _SIM_DISPATCH = {
     TransformOp.SPLIT_BLOCK: _sim_split_block,
@@ -226,9 +221,7 @@ def apply_transform(cfg: CFGSpec, step: TransformStep,
         handler(cfg, block, rng)
 
 
-# ============================================================
 # 鲁棒性评估器
-# ============================================================
 
 class CFGRobustnessEvaluator:
     """CFG 相似性检测器的鲁棒性评估器。

@@ -240,10 +240,8 @@ def _find_nested_predicates(predicates: List[OpaquePredicate], gap_threshold: in
     return [c for c in clusters if len(c) > 1]
 
 
-# ---------------------------------------------------------------------------
 # Z3 表达式提取 —— 从 Capstone 反汇编指令序列中提取符号表达式
 # 用于直接验证两条指令序列的等价性。支持常见的 x86 算术/逻辑操作
-# ---------------------------------------------------------------------------
 
 def _try_import_z3():
     try:

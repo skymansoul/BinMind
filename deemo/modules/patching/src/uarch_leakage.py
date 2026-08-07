@@ -9,7 +9,7 @@
 不同大小的内存拷贝路径等）。这些漏洞在功能测试中不可见，
 但在侧信道攻击者可观测。
 
-与 SideBench/SideEval [CCS 2025] 的差异：
+与 SideBench/SideEval 的差异：
   SideBench 操作在源码级——对 C 代码做 taint + symbolic execution。
   本模块操作在二进制补丁级——不需要源码，直接执行并测量。
   代价：不能保证覆盖所有秘密数据路径；收益：适用 closed-source binary。
@@ -30,9 +30,8 @@
   Welch t-test → 对均值差异敏感，不假设方差齐性。
   双检验 AND 逻辑 → 降低误报（两者一致时才告警）。
 
-参考：
-  - SideBench [CCS 2025] 的发现：25 个专家手写的补丁仍存在残余泄漏
-  - dudect (Reparaz et al., 2017): 基于 t-test 的恒定时间验证
+  - SideBench 的发现：25 个专家手写的补丁仍存在残余泄漏
+  - dudect: 基于 t-test 的恒定时间验证
   - 本模块扩展：将恒定时间验证特化到补丁前后的差分场景
 """
 
@@ -51,14 +50,12 @@ from collections import defaultdict
 
 _log = logging.getLogger(__name__)
 
-
 class LeakageVerdict(str, Enum):
     NO_LEAKAGE = "no_leakage"               # 无双分布差异
     NEGLIGIBLE = "negligible"               # 统计显著但效应量极小
     SUSPICIOUS = "suspicious"               # 中等效应量，建议审查
     LIKELY_LEAKAGE = "likely_leakage"       # 大效应量 + 高显著性
     INCONCLUSIVE = "inconclusive"           # 样本不足，无法判定
-
 
 @dataclass
 class TimingSample:
@@ -68,7 +65,6 @@ class TimingSample:
     input_label: str = ""             # 输入类别标签
     input_len: int = 0                # 输入长度
     exit_code: int = 0
-
 
 @dataclass
 class LeakageReport:
@@ -125,8 +121,7 @@ class LeakageReport:
             'details': self.details,
         }
 
-
-# ── 统计引擎 ──────────────────────────────────────────────────────
+# 统计引擎
 
 class TimingStatsEngine:
     """时序统计检验引擎 —— 纯 Python 实现，不依赖 scipy。
@@ -247,8 +242,7 @@ class TimingStatsEngine:
         phi = (1.0 / math.sqrt(2.0 * math.pi)) * math.exp(-x * x / 2.0)
         return 1.0 - phi * poly
 
-
-# ── 时序泄漏检测器 ────────────────────────────────────────────────
+# 时序泄漏检测器
 
 class UArchLeakageDetector:
     """补丁微架构时序泄漏检测器。
@@ -436,8 +430,7 @@ class UArchLeakageDetector:
                   report.ks_pvalue, report.welch_pvalue)
         return report
 
-
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def detect_uarch_leakage(original_binary: str, patched_binary: str,
                          n_runs: int = 100,

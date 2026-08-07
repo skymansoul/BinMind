@@ -38,8 +38,8 @@ class MobileNetworkAnalysisResult:
     def __init__(s,tb,g,nm=None,rs=None,v=None,da=None,ii=None,rs2=0.0): s.target_binary=tb; s.generation=g; s.nas_messages=nm or []; s.rrc_states=rs or []; s.vulnerabilities=v or []; s.downgrade_attempts=da or []; s.ims_issues=ii or []; s.risk_score=rs2; s.suci_privacy_findings=[]; s.sca_findings=[]
     def to_dict(self): return {"target_binary":self.target_binary,"generation":self.generation,"nas_messages":[m.to_dict() for m in self.nas_messages],"rrc_states":[s.to_dict() for s in self.rrc_states],"vulnerabilities":[v.to_dict() for v in self.vulnerabilities],"downgrade_attempts":self.downgrade_attempts,"ims_issues":self.ims_issues,"risk_score":round(self.risk_score,2),"suci_privacy":self.suci_privacy_findings,"sca_findings":self.sca_findings}
 
-# ── CellSecInspector SCA模型 ──
-# 基于CellSecInspector (arXiv:2512.24682 [待验证]) 的State-Condition-Action框架
+# CellSecInspector SCA模型
+# 基于CellSecInspector ( [待验证]) 的State-Condition-Action框架
 # 将3GPP NAS/RRC协议建模为状态→条件→动作链，验证9项安全属性
 
 _SCA_SECURITY_PROPERTIES = {
@@ -176,7 +176,7 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
         if b"SUPI" in d and b"SUCI" not in d: f.append("SUPI但无SUCI——5G身份隐私未启用")
         return f
 
-    # ── CellSecInspector SCA验证 ──
+# CellSecInspector SCA验证
     def _validate_sca_properties(s)->List[Dict[str,Any]]:
         """基于CellSecInspector框架验证NAS协议安全属性。
 

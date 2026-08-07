@@ -4,9 +4,9 @@
 # (3)路径可达性确认。三层过滤后仅保留真正的溢出。
 #
 # 与现有方案的关键区别:
-#   - Mango (USENIX 2024): 做value analysis但面向IoT固件，不做缓冲区尺寸推断
-#   - IntTracer (ICSE 2024): 做区间抽象但仅针对整数溢出，不覆盖堆分配模式
-#   - 本方案: 在二进制层面做三阶段链式过滤，每阶段可独立启用/禁用
+#   - Mango: 做value analysis但面向IoT固件，不做缓冲区尺寸推断
+#   - IntTracer: 做区间抽象但仅针对整数溢出，不覆盖堆分配模式
+# 本方案: 在二进制层面做三阶段链式过滤，每阶段可独立启用/禁用
 
 from __future__ import annotations
 

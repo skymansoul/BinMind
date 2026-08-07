@@ -7,20 +7,19 @@ obfuscation variants. MinHash is better for section-level similarity.
 The chunk-based approach (CDC) splits binaries into content-defined chunks
 before hashing —— resistant to insertions/deletions at file boundaries.
 
-Ref:
-  - "Detecting Near-Duplicates for Web Crawling" (Manku et al., WWW 2007)
+  - "Detecting Near-Duplicates for Web Crawling"
     —— the SimHash paper. Using 128-bit fingerprints with Hamming distance.
   - MinHash: Broder '97, "On the resemblance and containment of documents"
   - FastCDC: Xia et al., USENIX ATC '16 —— gear-based CDC with normalized chunking.
     Gear hash table precomputation and dynamic mask adjustment per §3.2-3.4.
   - HyperLogLog: Flajolet et al., "HyperLogLog: the analysis of a near-optimal
-    cardinality estimation algorithm" (AOFA 2007). 用于去重前的唯一项数估算。
+    cardinality estimation algorithm". 用于去重前的唯一项数估算。
   - CuckooFilter: Fan et al., "Cuckoo Filter: Practically Better Than Bloom"
-    (CoNEXT 2014). 支持删除操作, 同等 FPR 下空间效率优于 Bloom。
+. 支持删除操作, 同等 FPR 下空间效率优于 Bloom。
   - One Permutation Hashing: Li et al., "One Permutation Hashing"
-    (NIPS 2012). 单次置换替代 k 次 MinHash 置换, 流式场景 O(1) 更新。
+. 单次置换替代 k 次 MinHash 置换, 流式场景 O(1) 更新。
   - TDigest: Dunning & Ertl, "Computing Extremely Accurate Quantiles Using
-    t-Digests" (2019). 流式分位数估计, 内存 O(k), 用于 CDC chunk 分布追踪。
+    t-Digests". 流式分位数估计, 内存 O(k), 用于 CDC chunk 分布追踪。
 """
 
 import hashlib
@@ -38,13 +37,10 @@ _log = logging.getLogger(__name__)
 _SEED_MASK = 0x5A5A5A5A
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 
-
-# ---------------------------------------------------------------------------
 # TDigest —— streaming quantile estimation for chunk size distribution
 # delta=100 (默认压缩系数) → ~500 centroids → ~4KB 内存, q-error ≈ 1%
 # 用途: CDC 分块后无需保留全部 chunk 大小即可追踪 p50/p95/p99。
-# 标准 MergingDigest 实现 (Dunning & Ertl, 2019)。
-# ---------------------------------------------------------------------------
+# 标准 MergingDigest 实现。
 
 class TDigest:
     """流式分位数估计 —— O(1) 更新, O(k) 内存, k ≈ delta。
@@ -145,12 +141,9 @@ class TDigest:
     def __len__(self):
         return self._n
 
-
-# ---------------------------------------------------------------------------
 # HyperLogLog —— cardinality estimation for uniqueness check
 # p=14 → 2^14 registers = 16KB, std error ≈ 0.81%, up to ~2^64 items
 # 在启动去重管线前快速估算唯一 chunk 数量, 用于评估 dedup 的必要性
-# ---------------------------------------------------------------------------
 
 def _hll_tau(_p: int) -> float:
     """HLL bias correction constant for given precision."""
@@ -161,7 +154,6 @@ def _hll_tau(_p: int) -> float:
     if _p == 6:
         return 0.709
     return 0.7213 / (1.0 + 1.079 / (1 << _p))
-
 
 class HyperLogLog:
     """标准 HyperLogLog, 寄存器宽度 1 byte, p <= 16。
@@ -221,14 +213,11 @@ class HyperLogLog:
         filled = sum(1 for r in self._regs if r > 0)
         return filled / self.m
 
-
-# ---------------------------------------------------------------------------
 # CuckooFilter —— 可删除的概率性成员过滤器
-# 参考 Fan et al., "Cuckoo Filter: Practically Better Than Bloom" (CoNEXT 2014)
+# Fan et al., "Cuckoo Filter: Practically Better Than Bloom"
 # 主要优势: 支持 delete() 操作; 同等 FPR 下空间比 Bloom 小 ~20%。
 # 桶大小 b=4 (每桶 4 个指纹) 是作者推荐的经验最优。
 # 指纹长度 f=12 bits → 每个条目只需 1.5 bytes (vs Bloom 的 ~1.44 bytes/k)。
-# ---------------------------------------------------------------------------
 
 class CuckooFilter:
     """Cuckoo filter —— 比 Bloom 多了删除能力, 同等 FPR 更省空间。
@@ -334,10 +323,7 @@ class CuckooFilter:
     def load_factor(self) -> float:
         return self._n / (self._nb * self._bs)
 
-
-# ---------------------------------------------------------------------------
 # Bloom filter
-# ---------------------------------------------------------------------------
 
 class BloomFilter:
     """标准 Bloom filter, 用做去重前的快速负向检查。
@@ -354,7 +340,7 @@ class BloomFilter:
         self._bits = bytearray((m_bits + 7) // 8)
         # 用两个基础 hash 做 double-hashing 生成 k 个位置:
         #   h(i) = (h1 + i * h2) % m
-        # 这比 k 个独立 hash 函数快, 且理论性质等价 (Kirsch & Mitzenmacher, 2006)
+        # 这比 k 个独立 hash 函数快, 且理论性质等价
         self._h1_seed = seed
         self._h2_seed = seed ^ 0x9e3779b9
         self._n = 0
@@ -389,26 +375,20 @@ class BloomFilter:
             return 0.0
         return (1.0 - math.exp(-self.k * self._n / self.m)) ** self.k
 
-
-# ---------------------------------------------------------------------------
 # SimHash + LSH banding
-# ---------------------------------------------------------------------------
 
 def _extract_simhash_coeffs(bits: int = 128, seed: int = 42) -> List[int]:
     import random
     rng = random.Random(seed)
     return [rng.randint(0, (1 << 32) - 1) for _ in range(bits)]
 
-
 _SIMHASH_COEFFS_128 = None
-
 
 def _coeffs_128():
     global _SIMHASH_COEFFS_128
     if _SIMHASH_COEFFS_128 is None:
         _SIMHASH_COEFFS_128 = _extract_simhash_coeffs(128)
     return _SIMHASH_COEFFS_128
-
 
 def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
     # inline
@@ -418,12 +398,10 @@ def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
         h = (h * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
     return h
 
-
 def _hamming_dist(a: int, b: int) -> int:
     # inline
     x = a ^ b
     return x.bit_count()
-
 
 class SimHashDedup:
     """SimHash-based fuzzy deduplication for binary data."""
@@ -476,7 +454,6 @@ class SimHashDedup:
         for b in range(bands):
             band_keys.append((fp >> (b * band_bits)) & mask)
         return band_keys
-
 
 class SimHashIndex:
     """LSH banding 索引 —— 按 band 键存储指纹, 支持近似最近邻查询。"""
@@ -533,10 +510,7 @@ class SimHashIndex:
             if len(self._fps) > 0 else 0.0,
         }
 
-
-# ---------------------------------------------------------------------------
 # MinHash + One Permutation Hashing (OPH)
-# ---------------------------------------------------------------------------
 
 class MinHashDedup:
     """MinHash for set-based similarity over binary chunks."""
@@ -571,7 +545,6 @@ class MinHashDedup:
             return 0.0
         matches = sum(1 for a, b in zip(sig1, sig2) if a == b)
         return matches / len(sig1)
-
 
 class OPHMinHash:
     """One Permutation Hashing (Li et al., NIPS 2012) —— 流式 MinHash 替代。
@@ -623,13 +596,9 @@ class OPHMinHash:
     def reset(self):
         self._bins = [0xFFFFFFFFFFFF] * self.k
 
-
-# ---------------------------------------------------------------------------
 # Content-Defined Chunking (CDC) —— gear hash + FastCDC normalization
-# ---------------------------------------------------------------------------
 
 _GEAR_TABLE = None
-
 
 def _gear_table():
     global _GEAR_TABLE
@@ -638,7 +607,6 @@ def _gear_table():
         rng = random.Random(42)
         _GEAR_TABLE = [rng.randint(0, 0xFFFFFFFF) for _ in range(256)]
     return _GEAR_TABLE
-
 
 def cdc_chunk(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
               mask_bits: int = 12, normalize: bool = True) -> List[bytes]:
@@ -699,7 +667,6 @@ def cdc_chunk(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
         chunks.append(data[start:])
     return chunks
 
-
 def cdc_chunk_iter(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
                    mask_bits: int = 12, normalize: bool = True) -> Iterable[Tuple[int, bytes]]:
     """流式 CDC —— yield (offset, chunk) 而非一次返回全部。"""
@@ -750,7 +717,6 @@ def cdc_chunk_iter(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
     if start < len(data):
         yield (start, data[start:])
 
-
 def cdc_chunk_stats(chunks: List[bytes]) -> Dict:
     """Chunk 分布统计 —— 用于评估 CDC 参数效果。"""
     if not chunks:
@@ -768,10 +734,7 @@ def cdc_chunk_stats(chunks: List[bytes]) -> Dict:
         "p95": sizes[int(n * 0.95)],
     }
 
-
-# ---------------------------------------------------------------------------
 # Main dedup orchestrator
-# ---------------------------------------------------------------------------
 
 class DedupEngine:
     """Orchestrates deduplication across exact + fuzzy algorithms.
@@ -878,7 +841,6 @@ class DedupEngine:
             "hll_items_added": len(self._hll),
             "hll_register_density": round(self._hll.density(), 4),
         }
-
 
 def dedup_from_config(db, config=None):
     """Factory: create DedupEngine from config or defaults."""

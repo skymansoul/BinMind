@@ -1,10 +1,9 @@
 """定向模糊测试工具集 -- 目标引导的代码区域聚焦。
 
-参考:
-  Hawkeye  (CCS 2018, Zotero)              -- 期望定向灰盒模糊测试器
+  Hawkeye                -- 期望定向灰盒模糊测试器
   RDFuzz   (Zotero)                          -- 交织调度+优化变异的加速定向模糊测试
-  AFLGo    (CCS 2017, Zotero)                -- 基于模拟退火的定向灰盒模糊测试
-  AFLRun   (USENIX Security 2024)            -- 无偏多目标能量分配+路径多样性
+  AFLGo                    -- 基于模拟退火的定向灰盒模糊测试
+  AFLRun               -- 无偏多目标能量分配+路径多样性
   One Fuzz Doesn't Fit All (Zotero)          -- 目标定制化程序状态限制
   SemFuzz  (Zotero)                          -- 基于语义的 PoC 漏洞利用自动生成
 
@@ -31,7 +30,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class TargetSite:
     """模糊测试的目标代码位置。"""
@@ -42,7 +40,6 @@ class TargetSite:
     line_number: int = 0
     source_file: str = ""
 
-
 @dataclass
 class CFGNode:
     """控制流图节点 (基本块)。"""
@@ -50,7 +47,6 @@ class CFGNode:
     successors: List[int] = field(default_factory=list)
     func_name: str = ""
     distance_to_target: float = float('inf')
-
 
 class DistanceCalculator:
     """CFG 上的距离计算引擎。
@@ -142,7 +138,6 @@ class DistanceCalculator:
 
         return count / harmonic_sum if harmonic_sum > 0 else 0.0
 
-
 class DirectedSeedSelector:
     """定向模糊测试的种子选择器。
 
@@ -194,8 +189,7 @@ class DirectedSeedSelector:
         scored.sort(key=lambda x: x[1], reverse=True)
         return [sid for sid, _ in scored[:top_n]]
 
-
-# ===== 目标提取器: 从补丁/CVE报告自动提取目标地址 =====
+# 目标提取器: 从补丁/CVE报告自动提取目标地址
 
 class TargetExtractor:
     """从多种来源自动提取模糊测试目标。
@@ -260,8 +254,7 @@ class TargetExtractor:
             for cve_id in cve_ids
         ]
 
-
-# ===== 定向模糊测试门面 =====
+# 定向模糊测试门面
 
 class DirectedFuzzer:
     """定向模糊测试协调器。

@@ -11,7 +11,7 @@ from modules.platform.smart_contract.src.detectors.integer_overflow import (
 from modules.platform.smart_contract.src.core.models import VulnerabilityReport
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _make_parser(hex_str):
     """从十六进制创建并解析字节码解析器。"""
@@ -27,7 +27,7 @@ def _detect(hex_str):
     return detector.detect()
 
 
-# ---- 字节码夹具 ----
+# 字节码夹具
 
 # 无安全检查的ADD — 应被标记
 # PUSH1 01, PUSH1 02, ADD, STOP
@@ -62,7 +62,7 @@ _BC_MULTI_UNSAFE = "6001600201600302600460020300"
 _BC_ADD_ISZERO_FAR = "6001600201600160016001600160011500"
 
 
-# ---- 测试 ----
+# 测试
 
 class TestIntegerOverflowDetector:
     """IntegerOverflowDetector测试：检测无守卫运算。"""

@@ -1,10 +1,10 @@
-# 创建: 2025-08-16 08:15
-# 修改: 2025-08-16 — 重编译->I/O concolic->覆盖率匹配三层递进验证
+# 创建: 2026-05-18 08:15
+# 修改: 2026-05-18 — 重编译->I/O concolic->覆盖率匹配三层递进验证
 """
 反编译等价性验证器 — I/O 行为级等价检查, 而非语法相似度。
 
 现有反编译器评估依赖 BLEU/edit distance——与语义正确性相关性近乎零
-(r = −0.127~0.354, ref: arXiv 2026)。本模块替代语法指标:
+。本模块替代语法指标:
 反编译输出是否与原始二进制在 I/O 行为上等价?
 
 验证方法 (三层递进):
@@ -22,11 +22,11 @@
   编译器会消除死代码、重排指令、合并常量。I/O 等价
   (相同的系统调用序列 + 相同的返回值) 是实际可达到的最高标准。
 
-ref: codealign (arXiv:2501.04811, 2025) — instruction-level equivalence
+ref: codealign — instruction-level equivalence
      alignment, 本项目取其逐指令对齐思路但降级为 I/O 级等价
-ref: D-SCORE (arXiv:2506.10125, 2025) — multi-aspect code quality metric,
+ref: D-SCORE — multi-aspect code quality metric,
      本项目实现其三阶段验证中的语义层 (SMT + concolic)
-ref: DEBENCH (arXiv:2605.29490, 2026) — multi-dimensional decompilation
+ref: DEBENCH — multi-dimensional decompilation
      eval, 本项目取其"高重编译率≠功能等价"的发现作为设计前提
 """
 
@@ -58,7 +58,7 @@ class EquivalenceReport:
     issues: list[str] = field(default_factory=list)
 
 
-# --- 第1层: 重编译检查 ---
+# 第1层: 重编译检查
 # 反编译输出能否通过编译器? 语法正确性是最低门槛。
 
 def check_recompilability(decompiled_code: str,
@@ -96,7 +96,7 @@ def check_recompilability(decompiled_code: str,
         return False, 'compiler unavailable or timeout'
 
 
-# --- 第2层: I/O 行为等价 ---
+# 第2层: I/O 行为等价
 # 用 concolic 测试验证反编译代码与二进制的行为一致性。
 # 生成 N 组随机输入→执行→比较输出 (返回值 + 写入内存/文件的字节)。
 
@@ -167,7 +167,7 @@ def check_io_equivalence(
     return passed, len(test_inputs), failures
 
 
-# --- 第3层: 分支覆盖率匹配 ---
+# 第3层: 分支覆盖率匹配
 
 def compute_coverage_signature(branch_hits: dict[int, int]) -> str:
     """分支覆盖的紧凑签名——排序后的命中计数哈希。"""
@@ -186,7 +186,7 @@ def coverage_similarity(bin_cov: dict[int, int],
     return inter / union if union > 0 else 0.0
 
 
-# --- 综合验证器 ---
+# 综合验证器
 
 class DecompEquivalenceVerifier:
     """三层递进反编译等价性验证器。"""

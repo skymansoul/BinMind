@@ -83,7 +83,7 @@ class CVEEmbeddingIndex:
         self._sbert_model: Optional[Any] = None
         self._built = False
 
-    # ---- 构建 ----
+# 构建
 
     def build(self):
         """从所有 KB 条目构建嵌入索引。
@@ -100,7 +100,7 @@ class CVEEmbeddingIndex:
             self._built = True
             return
 
-        # ---- 第一遍: 构建词汇 + 文档频率 ----
+# 第一遍: 构建词汇 + 文档频率
         doc_term_counts: List[Dict[str, int]] = []  # 每文档原始词计数
         df: Dict[str, int] = defaultdict(int)        # 词 → 文档数
 
@@ -119,17 +119,17 @@ class CVEEmbeddingIndex:
 
             self._docs[idx] = entry
 
-        # ---- 构建词汇（过滤稀有词: df >= 2） ----
+# 构建词汇（过滤稀有词: df >= 2）
         vocab_terms = [t for t, d in df.items() if d >= 2]
         self._vocab = {t: i for i, t in enumerate(vocab_terms)}
 
-        # ---- 计算 idf ----
+# 计算 idf
         vocab_size = len(self._vocab)
         self._idf = [0.0] * vocab_size
         for term, idx in self._vocab.items():
             self._idf[idx] = math.log((N + 1) / (1 + df.get(term, 0)))
 
-        # ---- 第二遍: 构建 TF-IDF 向量 ----
+# 第二遍: 构建 TF-IDF 向量
         for idx, tc in enumerate(doc_term_counts):
             vec: Dict[int, float] = {}
             doc_len = sum(tc.values()) or 1
@@ -150,7 +150,7 @@ class CVEEmbeddingIndex:
 
             self._doc_vecs.append(vec)
 
-        # ---- SBERT 路径（可选） ----
+# SBERT 路径（可选）
         if _HAS_SBERT and SentenceTransformer is not None:
             try:
                 self._sbert_model = SentenceTransformer(_SBERT_MODEL)
@@ -165,7 +165,7 @@ class CVEEmbeddingIndex:
 
         self._built = True
 
-    # ---- 搜索 ----
+# 搜索
 
     def search(self, query: str, top_n: int = 10, min_score: float = 0.05) -> List[Tuple[CVEEntry, float]]:
         """语义搜索 — 查找与查询文本相似的 CVE。
@@ -194,7 +194,7 @@ class CVEEmbeddingIndex:
             return []
         return self.search(desc, top_n=top_n)
 
-    # ---- 内部: 稀疏 TF-IDF 搜索 ----
+# 内部: 稀疏 TF-IDF 搜索
 
     def _search_sparse(self, query: str, top_n: int, min_score: float) -> List[Tuple[CVEEntry, float]]:
         """TF-IDF 余弦相似度搜索。"""
@@ -239,7 +239,7 @@ class CVEEmbeddingIndex:
         # 两向量均已 L2 归一化，故 dot = cosine
         return max(0.0, dot)
 
-    # ---- 内部: 密集 SBERT 搜索 ----
+# 内部: 密集 SBERT 搜索
 
     def _search_dense(self, query: str, top_n: int, min_score: float) -> List[Tuple[CVEEntry, float]]:
         """密集嵌入余弦相似度搜索。"""
@@ -278,7 +278,7 @@ class CVEEmbeddingIndex:
             scores.sort(key=lambda x: x[1], reverse=True)
             return [(self._docs[doc_idx], score) for doc_idx, score in scores[:top_n]]
 
-    # ---- 混合: 合并 BM25 + 嵌入分数 ----
+# 混合: 合并 BM25 + 嵌入分数
 
     def search_hybrid(self, query: str, top_n: int = 10, bm25_weight: float = 0.4) -> List[Tuple[CVEEntry, float]]:
         """合并 BM25 和嵌入搜索分数。
@@ -331,7 +331,7 @@ class CVEEmbeddingIndex:
         return len(self._docs)
 
 
-# ---- 便捷: 一次性相似 CVE 搜索 ----
+# 便捷: 一次性相似 CVE 搜索
 
 def find_similar_cves(kb: CVEKnowledgeBase, cve_id: str, top_n: int = 10) -> List[Tuple[CVEEntry, float]]:
     """一次性: 构建索引并查找与给定 CVE ID 相似的 CVE。"""

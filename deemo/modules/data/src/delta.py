@@ -1,10 +1,10 @@
 # Binary delta encoding —— suffix-array diff + zstd compression
-# bsdiff [Percival 2002]: 后缀数组找最长公共子串 → ADD/COPY 指令流 →
+# bsdiff: 后缀数组找最长公共子串 → ADD/COPY 指令流 →
 #   bzip2 压缩。本实现用 zstd 替代 bzip2 (解压快 3-5x)。
-# HDiffPatch [Li et al., TMC 2024]: 大文件场景内存效率优于 bsdiff。
+# HDiffPatch: 大文件场景内存效率优于 bsdiff。
 # Zotero 补充:
 #   "Automatic Patch-Based Exploit Generation is Possible: Techniques and
-#     Implications" [Brumley et al., IEEE S&P 2008] —— 补丁 diff 的
+#     Implications" —— 补丁 diff 的
 #     安全应用: 从补丁中自动生成 exploit (本模块的 delta 可服务于
 #     补丁分析流水线的前端 diff 步骤)。
 #   "Differential program analysis with fuzzing and symbolic execution"
@@ -30,9 +30,7 @@ _BLOCK_SIZE = 256 * 1024 * 1024     # 分块阈值 256 MB
 _OVERLAP = 64 * 1024                # 块间重叠 64 KB
 
 
-# ---------------------------------------------------------------------------
 # FNV-1a slice hash —— 用于快速 hash 表匹配
-# ---------------------------------------------------------------------------
 
 def _fnv1a_slice(data: bytes, start: int, end: int) -> int:
     h = 0xcbf29ce484222325
@@ -42,14 +40,12 @@ def _fnv1a_slice(data: bytes, start: int, end: int) -> int:
     return h
 
 
-# ---------------------------------------------------------------------------
 # 快速 hash 表: old data → {hash(prefix): [offsets,...]}
 # bsdiff 用后缀数组二分搜索找最长匹配, O(n log n)。
 # hash 表方案将搜索降为 O(1) 查表 + O(match_len) 扩展,
 # 对大多数 binary 匹配率 >= 95%。hash_len=16 是经验平衡点:
 #   更短 → 链太长 (hash 碰撞多)
 #   更长 → 短文件或函数尾部匹配丢失。
-# ---------------------------------------------------------------------------
 
 def _build_old_hash_table(old_data: bytes, hash_len: int = 16,
                            max_chain: int = 128) -> dict:
@@ -93,9 +89,7 @@ def _longest_match(old: bytes, new: bytes, scan: int,
     return (best_off, best_len)
 
 
-# ---------------------------------------------------------------------------
 # delta encode (bsdiff-like) / decode
-# ---------------------------------------------------------------------------
 
 def delta_encode(old_data: bytes, new_data: bytes,
                  block_size: int = _BLOCK_SIZE,
@@ -291,9 +285,7 @@ def chunked_delta_decode(old_data: bytes, multi_patch: bytes) -> bytes:
     return bytes(result)
 
 
-# ---------------------------------------------------------------------------
 # delta 质量评估 (不生成完整 patch)
-# ---------------------------------------------------------------------------
 
 def delta_stats(old_data: bytes, new_data: bytes) -> dict:
     """估算 patch 大小而不实际生成。

@@ -77,7 +77,7 @@ class TestSemanticPreservingMutator:
 # NgramMutator, GrammarBasedMutator, HybridMutator were removed
 # from the module. Their tests have been deleted.
 # The removed functionality was consolidated into:
-#   - AIMutator (main entry point)
-#   - InputGrammar (grammar learning)
+# AIMutator (main entry point)
+# InputGrammar (grammar learning)
 #   - SemanticPreservingMutator (mutation logic)
-#   - create_ai_mutator (factory function)
+# create_ai_mutator (factory function)

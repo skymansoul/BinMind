@@ -1,0 +1,567 @@
+{
+  "exe": "vuln_O2.exe",
+  "rows": [
+    {
+      "id": "uaf_fp_01_exclusive_branch",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 64.0
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 59.4
+      }
+    },
+    {
+      "id": "uaf_fp_02_null_after_free",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 21.3
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 33.6
+      }
+    },
+    {
+      "id": "uaf_fp_03_reassign",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 67.2
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 68.9
+      }
+    },
+    {
+      "id": "uaf_fp_04_use_before_free",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 28.9
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 43.9
+      }
+    },
+    {
+      "id": "uaf_fp_05_independent_objs",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 26.9
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 1,
+        "time_ms": 25.8
+      }
+    },
+    {
+      "id": "uaf_fp_06_early_return_use",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 70.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 58.7
+      }
+    },
+    {
+      "id": "uaf_fp_07_guard_free_use_excl",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 54.6
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.7
+      }
+    },
+    {
+      "id": "uaf_fp_08_use_in_loop_before_free",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 56.1
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 62.0
+      }
+    },
+    {
+      "id": "uaf_fp_09_free_in_sibling_fn",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 21.2
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 21.4
+      }
+    },
+    {
+      "id": "uaf_fp_10_value_copy",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 56.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 60.3
+      }
+    },
+    {
+      "id": "uaf_fp_11_conditional_reassign",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 66.9
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.6
+      }
+    },
+    {
+      "id": "uaf_fp_12_freed_then_unused",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.8
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 56.3
+      }
+    },
+    {
+      "id": "uaf_fp_13_stack_array",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 58.7
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.6
+      }
+    },
+    {
+      "id": "uaf_fp_14_free_after_use_in_call",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 21.8
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 22.1
+      }
+    },
+    {
+      "id": "uaf_fp_15_no_free",
+      "expected_vuln": false,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 25.7
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 36.9
+      }
+    },
+    {
+      "id": "uaf_tp_01_direct",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 69.0
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 53.7
+      }
+    },
+    {
+      "id": "uaf_tp_02_alias",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 1,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 21.9
+      },
+      "tovs": {
+        "kept": 2,
+        "confirmed": 2,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 22.5
+      }
+    },
+    {
+      "id": "uaf_tp_03_cross_fn",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.9
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.9
+      }
+    },
+    {
+      "id": "uaf_tp_04_cond_free",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 57.9
+      },
+      "tovs": {
+        "kept": 1,
+        "confirmed": 0,
+        "possible": 1,
+        "filtered": 0,
+        "time_ms": 56.3
+      }
+    },
+    {
+      "id": "uaf_tp_05_struct_field",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 62.3
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 66.9
+      }
+    },
+    {
+      "id": "uaf_tp_06_realloc",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 57.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 74.3
+      }
+    },
+    {
+      "id": "uaf_tp_07_func_ptr",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 22.7
+      },
+      "tovs": {
+        "kept": 1,
+        "confirmed": 1,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 28.0
+      }
+    },
+    {
+      "id": "uaf_tp_08_loop_free",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 64.3
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 65.1
+      }
+    },
+    {
+      "id": "uaf_tp_09_double_free",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 24.9
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 22.4
+      }
+    },
+    {
+      "id": "uaf_tp_10_stack_reload",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 61.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 73.2
+      }
+    },
+    {
+      "id": "uaf_tp_11_global_dangle",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 1,
+        "confirmed": 1,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 78.6
+      },
+      "tovs": {
+        "kept": 1,
+        "confirmed": 1,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 63.0
+      }
+    },
+    {
+      "id": "uaf_tp_12_null_check",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 54.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 56.8
+      }
+    },
+    {
+      "id": "uaf_tp_13_guard_free_use",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 67.5
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 62.7
+      }
+    },
+    {
+      "id": "uaf_tp_14_io_uring_style",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 61.4
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 55.0
+      }
+    },
+    {
+      "id": "uaf_tp_15_thread_sim",
+      "expected_vuln": true,
+      "baseline": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 57.2
+      },
+      "tovs": {
+        "kept": 0,
+        "confirmed": 0,
+        "possible": 0,
+        "filtered": 0,
+        "time_ms": 63.2
+      }
+    }
+  ],
+  "metrics": {
+    "baseline": {
+      "tp": 2,
+      "fn": 13,
+      "fp": 0,
+      "tn": 15,
+      "precision": 1.0,
+      "recall": 0.1333,
+      "f1": 0.2353
+    },
+    "tovs": {
+      "tp": 4,
+      "fn": 11,
+      "fp": 0,
+      "tn": 15,
+      "precision": 1.0,
+      "recall": 0.2667,
+      "f1": 0.4211
+    },
+    "fp_reduction_pct": 0.0,
+    "recall_delta": 0.1334
+  }
+}

@@ -1,8 +1,8 @@
 # 动态污点追踪 — 输入数据在二进制执行中的传播路径分析
 # 标记污点源，沿指令传播，检测注入点和信息泄露。
-# 参考: 语言模型辅助静态污点分析 (2024) 的别名解析策略 &
-#   Dynamic Taint Analysis for Automatic Detection of Exploits (Newsome & Song, 2005) &
-#   Scalable Language Agnostic Taint Tracking (SOAP 2025)
+# 语言模型辅助静态污点分析 的别名解析策略 &
+#   Dynamic Taint Analysis for Automatic Detection of Exploits &
+#   Scalable Language Agnostic Taint Tracking
 import struct as _pack
 from collections import defaultdict as _defdict
 

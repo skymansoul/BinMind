@@ -158,9 +158,7 @@ class TestAnonymizer:
         assert 'AKIA_REDACTED_KEY' in result.anonymized
 
 
-# ---------------------------------------------------------------------------
 # Tests for info_collection/src/anonymizer variant
-# ---------------------------------------------------------------------------
 
 class TestSrcAnonymizer:
     """Tests for info_collection/src/anonymizer.py Anonymizer class."""

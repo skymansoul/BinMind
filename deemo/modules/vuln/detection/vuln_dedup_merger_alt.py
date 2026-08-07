@@ -88,7 +88,7 @@ class VulnDedupMerger:
             nf["address"] = 0
         return nf
 
-    # ---- 三趟匹配 ----
+# 三趟匹配
 
     def _round1_cve_id(self, sources: Dict[str, List[Dict]]) -> Tuple[
             List[List[Tuple[str, int]]], Set[Tuple[str, str, int]]]:
@@ -160,7 +160,7 @@ class VulnDedupMerger:
                 groups.append(cluster)
         return groups
 
-    # ---- 字段合并 ----
+# 字段合并
 
     def _merge_fields(self, entries: List[Tuple[str, Dict]]) -> Tuple[Dict, List[MergeConflict]]:
         result = {}
@@ -198,7 +198,7 @@ class VulnDedupMerger:
             result[field] = resolved
         return result, conflicts
 
-    # ---- 主入口 ----
+# 主入口
 
     def merge_from_sources(self, ghidra_findings: List[Dict] = None,
                            ida_findings: List[Dict] = None,

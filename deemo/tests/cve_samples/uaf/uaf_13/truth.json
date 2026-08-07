@@ -1,0 +1,1 @@
+{"sample": "uaf_13_branch_exclusive", "vuln_type": "none", "expected": "TN", "description": "Branch-exclusive — free and use in mutually exclusive branches, safe"}

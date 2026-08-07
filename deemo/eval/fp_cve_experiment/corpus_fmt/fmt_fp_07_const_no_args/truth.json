@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_07_const_no_args",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "常量格式串无参数"
+}

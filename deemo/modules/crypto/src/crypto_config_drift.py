@@ -22,11 +22,10 @@
     3. 对匹配上的实例对比算法/参数/实现类型。
     4. 标记所有差异并分类(安全升级/降级/中性变更/可疑)。
 
-参考:
-  - Diaphora (2024): 二进制diffing框架 — 通用代码差异比较;
+  - Diaphora: 二进制diffing框架 — 通用代码差异比较;
     本项目补充其缺失的密码学语义理解层。
-  - FirmUp (USENIX 2016): 固件跨版本漏洞检测 — 代码匹配方法论。
-  - BinCrypto (SPLASH 2025): 二进制密码学函数识别 — 提供本模块的检测前端。
+  - FirmUp: 固件跨版本漏洞检测 — 代码匹配方法论。
+  - BinCrypto: 二进制密码学函数识别 — 提供本模块的检测前端。
 
 边界条件:
   - 跨版本指纹匹配容忍编译器和优化级别差异, 但不容忍算法替换本身。
@@ -40,7 +39,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-
 class DriftType(Enum):
     ALGORITHM_CHANGED = 0    # 算法完全替换(AES→SM4)
     PARAMETER_DRIFT = 1      # 算法相同但参数变化(AES-128→AES-256)
@@ -51,7 +49,6 @@ class DriftType(Enum):
     REMOVED = 6              # 删除密码学实现
     UNCHANGED = 7            # 无变化
     UNCERTAIN = 8            # 无法确定
-
 
 @dataclass
 class ConfigDrift:
@@ -65,8 +62,7 @@ class ConfigDrift:
     security_impact: str = ""     # NONE / POSITIVE / NEGATIVE / UNCERTAIN
     recommendation: str = ""
 
-
-# ── 算法安全级别映射 ──
+# 算法安全级别映射
 # 用于自动判定升级/降级
 _ALGO_SECURITY_LEVEL: Dict[str, int] = {
     # 对称 (密钥长度作为级别代理)
@@ -83,7 +79,6 @@ _ALGO_SECURITY_LEVEL: Dict[str, int] = {
     'ML-KEM': 5, 'ML-DSA': 5, 'SLH-DSA': 5,
     'ASCON-128': 4, 'ASCON-128a': 4,
 }
-
 
 def _classify_algorithm_change(algo_before: str, algo_after: str) -> Tuple[DriftType, str]:
     """分类算法变更的语义: 升级/降级/中性替换。"""
@@ -105,7 +100,6 @@ def _classify_algorithm_change(algo_before: str, algo_after: str) -> Tuple[Drift
     else:
         return DriftType.SECURITY_DOWNGRADE, 'NEGATIVE'
 
-
 def _group_by_algorithm(findings: List) -> Dict[str, List]:
     """按算法名分组crypto findings。"""
     groups: Dict[str, List] = defaultdict(list)
@@ -116,7 +110,6 @@ def _group_by_algorithm(findings: List) -> Dict[str, List]:
         except Exception:
             pass
     return dict(groups)
-
 
 def _compare_implementations(algo: str, before_findings: List,
                              after_findings: List) -> List[ConfigDrift]:
@@ -168,7 +161,6 @@ def _compare_implementations(algo: str, before_findings: List,
             security_impact='NONE'))
 
     return drifts
-
 
 def detect_config_drift(findings_before: List,
                         findings_after: List,

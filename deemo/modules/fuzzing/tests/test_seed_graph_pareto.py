@@ -18,7 +18,7 @@ from fuzzing.src.pareto_archive import (
 )
 
 
-# ===== ISRG 测试 =====
+# ISRG 测试
 
 class TestSeedRelationGraph:
     """种子间覆盖关系图单元测试。"""
@@ -126,7 +126,7 @@ class TestSeedRelationGraph:
         assert 0.4 <= new_threshold <= 0.8
 
 
-# ===== Pareto 归档测试 =====
+# Pareto 归档测试
 
 class TestParetoArchive:
     """多目标 Pareto 归档单元测试。"""
@@ -201,7 +201,7 @@ class TestParetoArchive:
         assert ParetoArchive.deserialize(b"") is None
 
 
-# ===== 集成测试: ISRG/Pareto + Scheduler =====
+# 集成测试: ISRG/Pareto + Scheduler
 
 class TestSchedulerIntegration:
     """ISRG 和 Pareto 归档与调度器的协同集成测试。"""
@@ -298,7 +298,7 @@ class TestSchedulerIntegration:
         assert stats["pareto"]["archive_size"] == 0
 
 
-# ===== 边缘情况测试 =====
+# 边缘情况测试
 
 class TestEdgeCases:
     """边界和退化场景测试。"""

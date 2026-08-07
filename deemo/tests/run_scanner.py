@@ -47,6 +47,22 @@ def run_binmind(binary_path: str, timeout_sec: int = 120) -> dict:
                 'elapsed_sec': 0, 'findings': 0, 'error': 'binmind.py not found'}
 
 
+def run_all(builds: list) -> list:
+    """兼容collect_results.py的调用入口: 接收builds列表, 返回扫描结果."""
+    results = []
+    for b in builds:
+        if not isinstance(b, dict) or not b.get('success'):
+            continue
+        binary = b.get('binary', '')
+        if not binary or not os.path.isfile(binary):
+            continue
+        r = run_binmind(binary)
+        r['sample_name'] = b.get('name', '')
+        r['sample'] = b.get('name', '')
+        results.append(r)
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', type=int, default=120)

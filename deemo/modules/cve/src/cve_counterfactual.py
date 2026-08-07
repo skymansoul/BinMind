@@ -1,17 +1,17 @@
-# 创建: 2026-07-30 08:22
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-29 08:22
+# 修改: 2026-06-29 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 反事实解释CVE风险评分
 # 反事实解释 — CVE风险评分的可操作归因
 #
 # 问题: SHAP/LIME给出特征贡献排名, 但不告诉防御者"怎么做才能改变评分".
-# 2025-2026年研究 (Palo Alto Networks ESI, FAccT 2025) 证实:
-#   - SHAP归因在模型重训时高度不稳定 (不同seed导致特征排序完全翻转)
+# 2025-2026年研究 证实:
+# SHAP归因在模型重训时高度不稳定 (不同seed导致特征排序完全翻转)
 #   - 预测鲁棒性 ≠ 解释稳定性 (XGBoost RI≈0.98 但 ESI≈0.06)
-#   - 特征重要性不能区分因果与相关
+# 特征重要性不能区分因果与相关
 # 结论: SHAP对安全运维不可操作 — 知道"EPSS贡献了30%"无助于决策.
 #
 # 解决方案: 反事实解释 (Counterfactual Explanations).
-# 基于Wachter et al. (2018) 的框架, 适配到CVE风险评分:
+# 基于Wachter et al. 的框架, 适配到CVE风险评分:
 #   给定: CVE的特征向量 x, 评分模型 f, 目标类别 y'.
 #   求解: x' = argmin_{x'} λ·|f(x') - y'|² + d(x, x')
 #   其中 d(x, x') 为特征空间距离 (加权L1/L2混合).
@@ -37,17 +37,17 @@
 #      本实现按L0伪范数 (非零变化特征数) 排序, 优先展示单/双特征方案.
 #   3. 与ConformalExploitScorer集成: 反事实目标值使用共形区间边界而非点估计.
 #
-# 参考:
-#   [Wachter et al. 2018] Counterfactual Explanations without Opening the Black Box
-#   [Mothilal et al. 2020] DiCE: Diverse Counterfactual Explanations (FAccT)
-#   [Palo Alto Networks 2026] Explainability Stability Index for Cybersecurity
-#   [FAccT 2025] SHAP vs Counterfactual Stability in Security Applications
+#
+# Counterfactual Explanations without Opening the Black Box
+# DiCE: Diverse Counterfactual Explanations (FAccT)
+# Explainability Stability Index for Cybersecurity
+# SHAP vs Counterfactual Stability in Security Applications
 
 import math
 from typing import Dict, List, Optional, Set, Tuple, Any
 
 
-# ---- 领域约束 ----
+# 领域约束
 # 每个CVE特征的可行性规则: (可降低, 可升高, 步长, 下界, 上界)
 _FEATURE_CONSTRAINTS = {
     "cvss_score":       (False, False, 0.1, 0.0, 1.0),   # CVSS发布后不变
@@ -331,7 +331,7 @@ class CounterfactualExplainer:
             return self._thresholds["CRITICAL"] + 0.01
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def explain_cve_risk(scoring_fn, features: List[float],
                      feature_names: Optional[List[str]] = None,

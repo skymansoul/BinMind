@@ -100,7 +100,7 @@ def write_gate(
         f'[llm_feedback]\n'
         f'summary = """{llm_feedback[:500] if llm_feedback else "(not yet invoked)"}"""\n'
         f'\n'
-        f'# --- stdout (last 2048 chars) ---\n'
+        f'# --- stdout ---\n'
         f'# {stdout_tail}\n'
         f'# --- stderr (last 1024 chars) ---\n'
         f'# {stderr_tail}\n'

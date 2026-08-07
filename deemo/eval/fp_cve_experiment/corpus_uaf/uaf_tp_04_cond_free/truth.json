@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_04_cond_free",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "条件释放后无条件使用"
+}

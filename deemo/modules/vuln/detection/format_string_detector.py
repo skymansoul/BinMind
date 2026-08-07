@@ -12,7 +12,7 @@
   format_string_scorer: 量化已检出漏洞的利用精度 (scoring)
 
 修改记录:
-  创建 2026-08-05
+  创建 2026-06-14
 """
 
 from dataclasses import dataclass

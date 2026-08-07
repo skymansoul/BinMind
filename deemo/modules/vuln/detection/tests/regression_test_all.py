@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """纯Python回归测试——无需objdump，内联测试数据验证全部4类检测器"""
 import sys, os, json, time
 # tests/regression_test_all.py → deemo/ (4 levels up from tests/)
@@ -8,7 +8,7 @@ sys.path.insert(0, _PROJ)
 
 # 内联测试用例: (名称, 漏洞类型, 指令列表, 期望检出)
 TEST_CASES = [
-    # === 堆溢出 ===
+# 堆溢出
     ("heap_tp_simple", "heap_overflow", [
         "mov edi, 64", "call malloc", "mov rdi, rax", "mov edx, 256", "call memcpy"
     ], True),
@@ -27,7 +27,7 @@ TEST_CASES = [
         "mov rsi, r12", "mov edx, 65535", "call memcpy"
     ], True),  # 写入65535远超分配64
 
-    # === UAF ===
+# UAF
     ("uaf_tp_basic", "uaf", [
         "call malloc", "mov rbx, rax", "mov rdi, rbx",
         "call free", "mov rax, [rbx]"
@@ -41,7 +41,7 @@ TEST_CASES = [
         "call free", "mov rdi, rbx", "call free"
     ], True),
 
-    # === 整数溢出 ===
+# 整数溢出
     ("int_tp_add_wrap", "integer_overflow", [
         "mov eax, 0x7FFFFFFF", "mov ecx, 100", "add eax, ecx",
         "mov edi, eax", "call malloc"
@@ -54,7 +54,7 @@ TEST_CASES = [
         "mov eax, 10", "mov ecx, 20", "add eax, ecx",
     ], False),  # 10+20=30, 无溢出
 
-    # === 格式化字符串 ===
+# 格式化字符串
     ("fmt_tp_tainted", "format_string", [
         "call recv", "mov rdi, rax", "call printf"
     ], True),

@@ -3,7 +3,7 @@
 #   分配种子变异时间, 无法适应目标程序的动态行为变化.
 #   例如: 种子A初期高产→分配大量能量→后期不再发现新路径→能量浪费;
 #   种子B初期低产但探索深层代码→能量不足→关键路径未被充分fuzz.
-#   BandFuzz (arXiv:2507.10845, 2025) 解决了fuzzer级协作的bandit分配,
+#   BandFuzz 解决了fuzzer级协作的bandit分配,
 #   但单一fuzzer内部的种子级能量分配仍使用AFLFast的指数衰减公式
 # 解决手段: 对每个种子维护Bayesian后验 (Thompson采样),
 #   种子的"生产力"用Beta(α,β)建模, 每轮选择期望生产力最高×不确定性
@@ -13,12 +13,11 @@
 #   探索 (explore): 选高方差的种子
 # 技术效果: 在FuzzBench标准基准上代码覆盖率比AFLFast高7-12%,
 #   达到相同覆盖率的时间缩短18-25%. 崩溃发现率提升15%
-# 参考:
-#   BandFuzz (Shi et al., arXiv:2507.10845, 2025) — 多臂Bandit协作fuzzing,
+#
+#   BandFuzz — 多臂Bandit协作fuzzing,
 #     本项目借鉴其Thompson采样但应用于单fuzzer种子级而非fuzzer级
-#   EcoFuzz (Yue et al., USENIX 2020) — 对抗性驱动能量分配,
+#   EcoFuzz — 对抗性驱动能量分配,
 #     本项目借鉴其能量分配框架但用bandit替代固定公式
-from __future__ import annotations
 import logging
 import math
 import random

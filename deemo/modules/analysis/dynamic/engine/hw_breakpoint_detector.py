@@ -26,7 +26,6 @@ _IS_WINDOWS = _CURRENT_PLATFORM == "windows"
 _IS_LINUX = _CURRENT_PLATFORM == "linux"
 
 
-# ---------------------------------------------------------------------------
 # Intel CET shadow 栈 instruction opcodes
 #
 # rdsspq = F3 0F 1E /1 (ModRM.reg == 1): read shadow stack pointer
@@ -40,7 +39,6 @@ _IS_LINUX = _CURRENT_PLATFORM == "linux"
 #
 # 检测逻辑：在二进制中搜索这些指令的操作码字节序列
 # 出现 > 0 条即表明二进制使用了 CET 影子栈功能
-# ---------------------------------------------------------------------------
 
 # rdsspq: F3 0F 1E ModRM.reg == 1 (C8-CF)
 _CET_SS_RDSSPQ_RE = re.compile(b'\xF3\x0F\x1E[\xC8-\xCF]', re.DOTALL)
@@ -57,7 +55,6 @@ _CET_SS_WRSSQ_BYTES = bytes([0x0F, 0x38, 0xF6])
 # wrussq: 66 0F 38 F5
 _CET_SS_WRUSSQ_BYTES = bytes([0x66, 0x0F, 0x38, 0xF5])
 
-# ---------------------------------------------------------------------------
 # Trap Flag (TF) manipulation patterns
 #
 # PUSHFQ (9C) + modify [rsp] + POPFQ (9D) 是经典的 TF 设置惯用法。
@@ -65,7 +62,6 @@ _CET_SS_WRUSSQ_BYTES = bytes([0x66, 0x0F, 0x38, 0xF5])
 # 额外的检测模式：
 # OR [rsp], 0x100; 设置 TF (bit 8)
 # [rsp], ~0x100; 清除 TF
-# ---------------------------------------------------------------------------
 
 # PUSHFQ (9C) ... POPFQ (9D) 序列的最大指令跨度
 _TF_SEQUENCE_MAX_SPAN = 64                     # 字节
@@ -222,9 +218,7 @@ class HWBreakpointDetector:
         except (IOError, PermissionError) as exc:
             __log.warning("Failed to load binary for HWBP detection: %s", exc)
 
-    # ------------------------------------------------------------------
     # Direct 寄存器 scan
-    # ------------------------------------------------------------------
 
     def detect_via_register_scan(self) -> HWBPDetectionResult:
         """Directly 读取 DR0-DR7 检测 active 硬件断点s
@@ -284,9 +278,7 @@ class HWBreakpointDetector:
         # 此处返回空字典表示"无法读取"
         return {}
 
-    # ------------------------------------------------------------------
     # Intel CET shadow 栈 detection
-    # ------------------------------------------------------------------
 
     def detect_cet_shadow_stack(self) -> HWBPDetectionResult:
         """Scan binary for Intel CET shadow 栈 instructions
@@ -376,9 +368,7 @@ class HWBreakpointDetector:
         self._detection_results.append(result)
         return result
 
-    # ------------------------------------------------------------------
     # Timing-based 硬件断点 detection
-    # ------------------------------------------------------------------
 
     def detect_via_timing_analysis(self) -> HWBPDetectionResult:
         """检测 硬件断点s via RDTSC-based timing anomaly analysis
@@ -507,9 +497,7 @@ class HWBreakpointDetector:
         # 完整实现：int __rdtsc() 内联汇编，每个样本之间加 mfence/lfence
         return []
 
-    # ------------------------------------------------------------------
     # Trap Flag single-step detection
-    # ------------------------------------------------------------------
 
     def detect_step_debugging(self) -> HWBPDetectionResult:
         """检测 Trap Flag (TF) single-step debugging patterns
@@ -651,9 +639,7 @@ class HWBreakpointDetector:
         self._detection_results.append(result)
         return result
 
-    # ------------------------------------------------------------------
     # Aggregated detection
-    # ------------------------------------------------------------------
 
     def run_all_detections(self) -> List[HWBPDetectionResult]:
         """执行 detection methods 返回 aggregated results
@@ -694,9 +680,7 @@ class HWBreakpointDetector:
             total += r.confidence * w
         return min(1.0, total)
 
-    # ------------------------------------------------------------------
     # Results retrieval
-    # ------------------------------------------------------------------
 
     def get_detection_results(self) -> List[HWBPDetectionResult]:
         """Retrieve detection results"""

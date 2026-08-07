@@ -1,2 +1,0 @@
-Name: HEAP-UAF-02
-Type: use-after-free-realloc

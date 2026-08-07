@@ -13,7 +13,7 @@ from ..src.ebpf_taint_tracker import (
 from ..src.ebpf_common import EBNPF_INSN_SIZE
 
 
-# ── 字节码辅助函数（2空格缩进）──
+# 字节码辅助函数（2空格缩进）
 
 def _pack(opcode, dst, src, off, imm):
   return struct.pack('<BBhi', opcode, dst, src, off, imm)
@@ -26,7 +26,7 @@ def _prog(*insns):
   return b''.join(insns)
 
 
-# ── 样本污点流（缩进不一）──
+# 样本污点流（缩进不一）
 
 MAP_LOOKUP_THEN_TAILCALL = _prog(
     # mov r1, r6 (上下文)

@@ -1,0 +1,1 @@
+{"sample": "uaf_02_alias", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Alias-based UAF — free via alias, use via original pointer"}

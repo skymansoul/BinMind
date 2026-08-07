@@ -23,20 +23,16 @@
   而非completeness，即永远不会因漏符号化而导致漏报，但可能
   因过度符号化而损失部分性能优势。
 
-参考:
-  LeanSym (RAID 2021) — 污点引导的部分符号化, ~1k LOC on Triton+AFL,
+  LeanSym — 污点引导的部分符号化, ~1k LOC on Triton+AFL,
     7.61% coverage gain + 4.79× faster bug finding vs QSYM
-  Driller (NDSS 2016) — selective concolic execution,
+  Driller — selective concolic execution,
     仅在fuzzer停滞时调用符号执行，本模块在其基础上增加了输入字节级选择性
 """
-
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 _log = logging.getLogger(__name__)
-
 
 def identify_tainted_offsets(
     binary_path: str,
@@ -128,7 +124,6 @@ def identify_tainted_offsets(
 
     return tainted
 
-
 def _extract_symbolic_vars(expr) -> Set[str]:
     """从符号表达式中递归提取所有符号变量名。"""
     try:
@@ -139,7 +134,6 @@ def _extract_symbolic_vars(expr) -> Set[str]:
     except Exception:
         pass
     return set()
-
 
 def build_debloated_input(
     input_bytes: bytes,
@@ -163,7 +157,6 @@ def build_debloated_input(
     conc_offs = [i for i in range(total) if i not in tainted_offsets]
     return sym_offs, conc_offs
 
-
 def estimate_debloat_ratio(
     input_len: int,
     tainted_count: int,
@@ -181,7 +174,6 @@ def estimate_debloat_ratio(
     if input_len <= 0 or tainted_count <= 0:
         return 0.0
     return round(1.0 - tainted_count / input_len, 3)
-
 
 def debloat_symbolic_state(
     state,

@@ -11,7 +11,6 @@
 检测这些模式将单纯的\"canary存在→不可利用\"判断提升为
 \"canary存在但有泄露路径→可利用\"的精细分级。
 
-参考:
   - Bittau et al., IEEE S&P 2014, "Hacking Blind" — BROP逐字节爆破技术
   - Fritsch, 2023, "Stack Canary Bypass Techniques Survey"
 """
@@ -92,7 +91,6 @@ def detect_canary_bypass(pseudocode: str, func_name: str = "",
         })
 
     return findings
-
 
 def assess_canary_risk(pseudocode: str, func_name: str = "",
                        has_canary: bool = False) -> Tuple[str, float, List[Dict]]:

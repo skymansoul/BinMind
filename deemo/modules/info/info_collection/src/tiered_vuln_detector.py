@@ -1,4 +1,4 @@
-# Created: 2025-07-28 16:45:00
+# Created: 2026-07-26 16:45:00
 #
 # tiered_vuln_detector — 三层递进约束的漏洞检测器
 # Tier 1: 参数位置感知的模式匹配 (高覆盖, 低精度)
@@ -23,7 +23,7 @@ from .dangerous_arg_annotations import (
 from .safety_witness_searcher import run_full_witness_search
 
 
-# ---- Tier 1: 参数感知模式匹配 ----
+# Tier 1: 参数感知模式匹配
 
 def _tier1_heap_overflow(api_set: Set[str], calling_conv: Dict) -> List[Dict]:
     findings = []
@@ -133,7 +133,7 @@ def _tier1_stack_overflow(api_set: Set[str]) -> List[Dict]:
     return findings
 
 
-# ---- Tier 2: 可达性增强 ----
+# Tier 2: 可达性增强
 
 def _upgrade_to_tier2(tier1_findings: List[Dict],
                        reachability_graph: Dict) -> List[Dict]:
@@ -177,7 +177,7 @@ def _upgrade_to_tier2(tier1_findings: List[Dict],
     return upgraded
 
 
-# ---- Tier 3: 安全性见证过滤 ----
+# Tier 3: 安全性见证过滤
 
 def _upgrade_to_tier3(tier2_findings: List[Dict],
                        safety_witness: Dict) -> List[Dict]:
@@ -233,7 +233,7 @@ def _upgrade_to_tier3(tier2_findings: List[Dict],
     return upgraded
 
 
-# ---- 主入口 ----
+# 主入口
 
 def detect_all_tiers(
     api_set: Set[str] = None,

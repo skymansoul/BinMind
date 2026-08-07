@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
-# ── capstone import──优先capstone，回退到r2 流水线 ─────────────────────
+# capstone import──优先capstone，回退到r2 流水线
 # 2026-08-03: capstone>=5.0 已作为[full] extra声明，但用户可能只装了core
 try:
     import capstone as _cs_mod
@@ -15,7 +15,7 @@ except ImportError:
     _HAS_CAPSTONE = False
     logger.debug("capstone未安装，fallback到radare2 subprocess pipeline")
 
-# ── radare2可用性检测 ────────────────────────────────────────────────────
+# radare2可用性检测
 _R2_PATH = os.environ.get("R2_PATH", "r2")
 try:
     _r2_check = subprocess.run(
@@ -28,7 +28,7 @@ except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
     logger.debug("radare2不可用，降级到纯静态模式")
 
 
-# ── dataclasses ──────────────────────────────────────────────────────────
+# dataclasses
 
 @dataclass
 class BasicBlock:
@@ -71,7 +71,7 @@ class FuzzingResult:
     test_sequences: List[List[str]]
 
 
-# ── 二进制段提取 ────────────────────────────────────────────────────────
+# 二进制段提取
 # 从PE/ELF提取.text段字节——无需完整文件解析，仅取代码段
 # 兼容裸二进制：直接用整个文件作为代码
 
@@ -188,7 +188,7 @@ def _extract_text_section(binary_path: str) -> Tuple[bytearray, int, str]:
     return code, 0x0, 'unknown'
 
 
-# ── capstone反汇编 → 基本块提取 ────────────────────────────────────────
+# capstone反汇编 → 基本块提取
 
 def _disassemble_capstone(code: bytearray, base_addr: int,
                           arch_hint: str) -> List[BasicBlock]:
@@ -390,11 +390,10 @@ def _build_cfg(blocks: List[BasicBlock]) -> Dict[int, List[int]]:
     return cfg
 
 
-# ── 状态机推断内核 ──────────────────────────────────────────────────────
+# 状态机推断内核
 # 从真实控制流推断状态：基本块聚类→状态，条件跳转→迁移，回边→自环
 # 2026-08-03: 从硬编码模板迁移到真实二进制分析
-# 启发式规则来源于 McMillan & Zuck (2024) "协议 状态机 Inference
-# from Stripped Binaries" (NDSS) 的CFG→状态映射算法
+# 启发式规则来源于协议状态机推断的 CFG→状态映射算法
 
 def _blocks_to_state_model(blocks: List[BasicBlock],
                            cfg: Dict[int, List[int]],
@@ -526,7 +525,7 @@ def _blocks_to_state_model(blocks: List[BasicBlock],
     return StateMachineModel(states=states, transitions=transitions, initial_state=init_name)
 
 
-# ── SAEG (ESORICS 2024) 启发的状态ful利用图 ────────────────────────────────
+# SAEG 启发的状态ful利用图
 # 将SAEG的Exploit Graph概念移植到协议状态机fuzzing：
 # 每个状态迁移对应一个"利用步骤"——未认证→认证→提权
 # 异常迁移（绕过认证的提权）标记为高危利用路径

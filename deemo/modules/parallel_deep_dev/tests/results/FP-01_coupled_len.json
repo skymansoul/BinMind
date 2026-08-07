@@ -1,0 +1,32 @@
+{
+  "name": "FP-01_coupled_len",
+  "is_vuln": false,
+  "pattern": "coupled_len",
+  "cve": "",
+  "tools": {
+    "CACBV": {
+      "detected": false,
+      "findings": [],
+      "ms": 0.242
+    },
+    "Baseline": {
+      "detected": true,
+      "findings": [
+        {
+          "func": "safe_copy",
+          "alloc_var": "buf",
+          "alloc_size": "n",
+          "write": "memcpy(buf, ...)",
+          "extent": "n",
+          "verdict": "OVERFLOW",
+          "confidence": 0.55,
+          "fp_reasons": [
+            "dynamic-extent"
+          ],
+          "overflow_bytes": 0
+        }
+      ],
+      "ms": 0.186
+    }
+  }
+}

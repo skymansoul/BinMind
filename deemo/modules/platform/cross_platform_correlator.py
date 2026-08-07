@@ -13,7 +13,7 @@
     避免O(N²)跨层全量匹配。
   - 每条规则输出 (source_node, target_node, confidence, evidence) 元组。
 
-ref: FirmUpdate (Computers & Security 2026) — 固件更新的多阶段图抽象，
+ref: FirmUpdate — 固件更新的多阶段图抽象，
      此处将阶段泛化为平台层，规则引擎替代硬编码的阶段转移。
 """
 

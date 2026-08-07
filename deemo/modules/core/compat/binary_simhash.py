@@ -1,9 +1,9 @@
 # SimHash 二进制相似度 — 指纹生成与大规模近似匹配
-# 参考: Charikar (2002) "Similarity Estimation Techniques from Rounding Algorithms"
+# Charikar (2002) "Similarity Estimation Techniques from Rounding Algorithms"
 #       — SimHash 的原始 STOC 论文，提出基于超平面舍入的 LSH 方案
-# 参考: Manku et al. (2007) "Detecting Near-Duplicates for Web Crawling" (WWW)
+# Manku et al. (2007) "Detecting Near-Duplicates for Web Crawling" (WWW)
 #       — SimHash 指纹在海量网页去重中的工程化应用 (Hamming 距离 + 分块索引)
-# 参考: "SAFE: Self-Attentive Function Embeddings" (Massarelli et al. 2019, ACSAC)
+# "SAFE: Self-Attentive Function Embeddings" (Massarelli et al. 2019, ACSAC)
 #       — 图感知的函数嵌入与 SimHash 的互补使用 (嵌入 → 精确匹配, SimHash → 快速初筛)
 
 import hashlib as _hl
@@ -67,7 +67,7 @@ class SimHash:
 # - 归一化指令 n-gram (权重 1.0)
 # - 基本块大小分布 (权重 0.5)
 # - API 调用名 (权重 1.5 — API 调用在相似度判断中更重要)
-# 参考: SAFE 的特征选择策略 — 调和静态特征与结构特征的权重
+# SAFE 的特征选择策略 — 调和静态特征与结构特征的权重
 
 def extract_function_features(insns: list[tuple[str, str]],
                                 basic_blocks: list[dict] | None = None,
@@ -112,7 +112,7 @@ def extract_function_features(insns: list[tuple[str, str]],
 # ===== 分块索引 (Block-Based Indexing) =====
 # 汉明距离 ≤ k 的搜索 — 将指纹分成 b 块，至少有一块完全匹配
 # 这个性质来自鸽巢原理: 若两指纹距离 ≤ k，则 b > k 时至少一个块完全相同
-# 参考: Manku et al. (2007) 的 Web Crawling 去重系统
+# Manku et al. (2007) 的 Web Crawling 去重系统
 
 class SimHashIndex:
     """多表 SimHash 索引 — 支持近似最近邻查找。
@@ -233,7 +233,7 @@ def binary_level_simhash(pe_data: bytes) -> int | None:
 # --- 函数搜索管道 ---
 # SimHash 初筛 → 精确嵌入匹配 → LLM 验证
 # 三级级联大幅降低搜索延迟 — SimHash 过滤可将候选集缩小 100-1000x
-# 参考: SAFE 的级联匹配策略
+# SAFE 的级联匹配策略
 
 def cascaded_function_search(query_insns: list[tuple[str, str]],
                                index: SimHashIndex,

@@ -1,6 +1,0 @@
-pyyaml>=6.0
-pyelftools>=0.29
-# optional -- uncomment if available
-# numpy>=1.24.0
-# capstone>=5.0.0
-# unicorn>=2.0.1

@@ -1,11 +1,11 @@
 # 数据溯源追踪 — W3C PROV 模型 + lineage DAG
 # 审计二进制签名完整溯源链: 谁、何时、通过何种工具处理数据。
-# W3C PROV-DM [Moreau et al. 2013] 核心三元组:
+# W3C PROV-DM 核心三元组:
 #   Entity → Activity → Agent, 含 attribution/derivation/generation 关系。
 # 补充文献:
 #   Vestige — 二进制代码来源识别系统，与本模块 provenance chain 对应:
 #     从编译工具链/源码库/第三方组件的 provenance 追溯漏洞源头。
-#   CBTracer [Kim et al., ASIA CCS 2018] — 持续数据集构建
+#   CBTracer — 持续数据集构建
 #     中的 data lineage 追踪。
 #   Arbiter — 静态/动态分析的混合 provenance。
 #
@@ -157,9 +157,7 @@ def _prov_edges_to_json(edges: List[ProvEdge], rel: str) -> dict:
     return result
 
 
-# ---------------------------------------------------------------------------
 # ProvenanceTracker — 与 DataDB 集成
-# ---------------------------------------------------------------------------
 
 class ProvenanceTracker:
     """DB-backed provenance 追踪器 —— 数据进出各处理步骤时记录 provenance 关系。

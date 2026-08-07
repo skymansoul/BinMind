@@ -2,9 +2,9 @@
 #
 # 零外部依赖的图神经网络任务调度:
 #   - GNNEncoder:     k 层消息传递/注意力聚合 (纯 Python, 无 torch)
-#   - LinearQPolicy:  线性函数近似 Q 学习 (蒙特卡洛策略改进)
-#   - 降级路径:       无 RL 训练时退化为 HEFT 贪心 / 模拟退火
-#   HEFT 参考: Topcuoglu, Hariri & Wu (2002), IEEE TPDS 13(2)
+# LinearQPolicy:  线性函数近似 Q 学习 (蒙特卡洛策略改进)
+# 降级路径:       无 RL 训练时退化为 HEFT 贪心 / 模拟退火
+#   HEFT 参考: Topcuoglu, Hariri & Wu, IEEE TPDS 13(2)
 #
 # 与既有调度器衔接:
 #   - DependencyAwareScheduler 实现 src.priority.PriorityTaskQueue 的同款
@@ -34,7 +34,7 @@ from .grl_graph import (
 from .grl_partition import GraphPartitioner, Partition
 
 
-# ---- 数值原语 (纯 Python) ----
+# 数值原语 (纯 Python)
 
 def _relu(x: float) -> float:
     return x if x > 0.0 else 0.0
@@ -49,7 +49,7 @@ def _sigmoid(x: float) -> float:
     return z / (1.0 + z)
 
 
-# ===== GNN 编码器 =====
+# GNN 编码器
 
 class GNNEncoder:
     """轻量图编码器 — 自实现消息传递，无 torch 依赖。
@@ -165,7 +165,7 @@ class GNNEncoder:
         return out
 
 
-# ===== 完成时间模拟器 (奖励信号) =====
+# 完成时间模拟器 (奖励信号)
 
 class MakespanSimulator:
     """列表调度 (list scheduling) 在 m 台机器上的完成时间模拟。
@@ -224,7 +224,7 @@ class MakespanSimulator:
         return max((a[3] for a in assigns), default=0.0)
 
 
-# ===== HEFT 贪心启发式 =====
+# HEFT 贪心启发式
 
 def heft_rank(dag: TaskDependencyGraph) -> Dict[str, float]:
     """HEFT 向上排级: rank(v) = exec(v) + max_{u∈succ(v)}(comm(v,u)+rank(u))。
@@ -260,7 +260,7 @@ def heft_order(dag: TaskDependencyGraph) -> List[str]:
     return order
 
 
-# ===== 模拟退火降级调度 =====
+# 模拟退火降级调度
 
 class SimulatedAnnealingScheduler:
     """模拟退火调度 — 无 RL 库时的启发式降级求解器。
@@ -314,7 +314,7 @@ class SimulatedAnnealingScheduler:
         return nxt
 
 
-# ===== 线性函数近似 Q 策略 (轻量 RL) =====
+# 线性函数近似 Q 策略 (轻量 RL)
 
 class LinearQPolicy:
     """Q(s,a) = w·φ(s,a) 线性函数近似。
@@ -339,7 +339,7 @@ class LinearQPolicy:
         return err
 
 
-# ===== GRL-Sched 调度器门面 =====
+# GRL-Sched 调度器门面
 
 class GRLScheduler:
     """GRL-Sched 调度器 — 建图 + 动态划分 + GNN/RL 调度的一体化入口。
@@ -365,7 +365,7 @@ class GRLScheduler:
             "episodes": 0, "last_makespan": 0.0, "avg_makespan": 0.0,
         }
 
-    # ---- 建图与划分 ----
+# 建图与划分
 
     def build_graph(self, tasks: Optional[List[Any]] = None,
                     pipeline: Any = None) -> TaskDependencyGraph:
@@ -384,7 +384,7 @@ class GRLScheduler:
         return self._partitioner.repartition(
             dag, old, n_partitions, node_loads=node_loads, changed_nodes=changed_nodes)
 
-    # ---- 调度入口 ----
+# 调度入口
 
     def schedule(self, dag: TaskDependencyGraph, n_machines: Optional[int] = None,
                  partition: Optional[Partition] = None,
@@ -438,7 +438,7 @@ class GRLScheduler:
         except ValueError:
             return 0.0
 
-    # ---- RL 训练 ----
+# RL 训练
 
     def train(self, dag: TaskDependencyGraph, episodes: int = 60,
               lr: float = 0.05, epsilon: float = 0.2) -> dict:
@@ -527,7 +527,7 @@ class GRLScheduler:
         return order
 
 
-# ===== 与既有调度器兼容的依赖感知队列 =====
+# 与既有调度器兼容的依赖感知队列
 
 class DependencyAwareScheduler:
     """依赖感知调度队列 — 与 src.priority.PriorityTaskQueue 接口兼容。
@@ -547,7 +547,7 @@ class DependencyAwareScheduler:
         self._all: Dict[str, Any] = {}
         self._ranks: Dict[str, float] = {}
 
-    # ---- 入队 ----
+# 入队
 
     def push(self, task: Any, priority: int = 0) -> None:
         tid = _task_id(task)
@@ -565,7 +565,7 @@ class DependencyAwareScheduler:
         self._all[tid] = task
         self._pending[tid] = task
 
-    # ---- 出队 ----
+# 出队
 
     def pop(self) -> Optional[Any]:
         """弹出依赖已满足且 rank 最高的就绪任务。无就绪任务时返回 None。"""
@@ -610,7 +610,7 @@ class DependencyAwareScheduler:
             return True
         return False
 
-    # ---- 内部 ----
+# 内部
 
     def _refresh_ranks(self) -> None:
         try:
@@ -629,7 +629,7 @@ class DependencyAwareScheduler:
         return f"DependencyAwareScheduler(pending={len(self._pending)}, nodes={len(self._graph)})"
 
 
-# ===== 一站式入口 =====
+# 一站式入口
 
 def grl_schedule(tasks: Optional[List[Any]] = None, pipeline: Any = None,
                  n_machines: int = 2, n_partitions: int = 2,

@@ -7,10 +7,10 @@
 import importlib
 
 _submodules: dict[str, str] = {
-    # -- 结构化子包 --
+# 结构化子包
     "src": ".src",
 
-    # -- 常用 flat 模块（按需懒加载，其余由 _FlatFinder 覆盖） --
+# 常用 flat 模块（按需懒加载，其余由 _FlatFinder 覆盖）
     "abstract_interpretation": ".abstract_interpretation",
     "address_mapping": ".address_mapping",
     "address_space_simulation": ".address_space_simulation",

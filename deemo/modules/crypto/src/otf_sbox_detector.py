@@ -15,20 +15,18 @@
   本模块通过扫描二进制中GF(2^8)乘法操作的模式组合来推断动态S-box计算 —
   不走查表, 走数学路径。
 
-参考:
   - Satoh et al., "A Compact Rijndael Hardware Architecture with S-Box Optimization"
-    (ASIACRYPT 2001): 基于复合域GF(((2^2)^2)^2)的紧凑AES S-box → 小面积但多级门。
-  - Wolkerstorfer et al., "An ASIC Implementation of the AES SBoxes" (CT-RSA 2002):
+: 基于复合域GF(((2^2)^2)^2)的紧凑AES S-box → 小面积但多级门。
+  - Wolkerstorfer et al., "An ASIC Implementation of the AES SBoxes":
     复合域反演理论基础: GF(2^8) → GF(((2^2)^2)^2)降次。
-  - US11283621B1 (Bazzi, 2022): 复合域编码的混淆S-box计算 — 白盒场景下的计算型S-box。
+  - US11283621B1: 复合域编码的混淆S-box计算 — 白盒场景下的计算型S-box。
   - Daemen & Rijmen, "The Design of Rijndael" §4.3: S-box = Affine(Inverse(GF(2^8))).
 """
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-
-# ── GF(2^8)乘法/逆元计算的模式库 ──
+# GF(2^8)乘法/逆元计算的模式库
 # 不存储完整256B查表时, GF(2^8)乘法可通过xtime(乘2)和xor组合实现。
 # 求逆(本质: x^{254} = x^{-1}对x≠0)通过重复平方-乘法完成。
 #
@@ -61,14 +59,13 @@ _REDUCE_POLY_PATTERNS: List[Tuple[bytes, str]] = [
 
 # 复合域GF(((2^2)^2)^2)基变换矩阵 — δ变换和δ^{-1}变换
 # 紧凑AES硬件/软件实现中, 基变换矩阵的二进制表示为一组固定8bit常数序列。
-# 例如Canright (2005)的δ矩阵可用8个特定字节表示。
+# 例如Canright的δ矩阵可用8个特定字节表示。
 # 当前检测已知紧凑实现中频率最高的矩阵行。
 
-# ── AES S-box仿射变换 c = 0x63 ──
+# AES S-box仿射变换 c = 0x63
 _AFFINE_CONST_0x63: bytes = bytes([0x63])       # AES S-box仿射常数
-# ── SM4 S-box仿射变换常数 ──
+# SM4 S-box仿射变换常数
 _SM4_AFFINE_CONST: bytes = bytes([0xD3])          # SM4 S-box仿射常数
-
 
 def scan_xtime(data: bytes, start: int = 0) -> List[int]:
     """返回data中疑似xtime操作的所有位置."""
@@ -90,7 +87,6 @@ def scan_xtime(data: bytes, start: int = 0) -> List[int]:
             hits.append(off)
     return hits
 
-
 def scan_poly_reduce(data: bytes, start: int = 0) -> List[int]:
     """检测模约简多项式归约序列 — GF(2^8)乘法后约简标志."""
     hits: List[int] = []
@@ -108,8 +104,7 @@ def scan_poly_reduce(data: bytes, start: int = 0) -> List[int]:
                 hits.append(off)
     return hits
 
-
-# ── 仿射变换检测 ──
+# 仿射变换检测
 # AES S-box = A ⋅ Inv(x) ⊕ 0x63, 其中A是GF(2)上8×8矩阵。
 # 二进制中矩阵乘法A表现为: 取逆元结果y, 做固定序列移位+xor。
 # 特征: 8次连续rotr/xor序列(每行对应矩阵一行), 最后xor 0x63(或0xD3)。
@@ -144,8 +139,7 @@ def scan_affine_transform(data: bytes, start: int = 0) -> List[Tuple[int, str]]:
                 results.append((off, 'unknown_affine'))
     return results
 
-
-# ── 综合判决 ──
+# 综合判决
 
 @dataclass
 class OTFSBoxFinding:
@@ -158,7 +152,6 @@ class OTFSBoxFinding:
     poly_reduce_nearby: int = 0
     affine_nearby: bool = False
     composite_domain_hint: bool = False  # GF(((2^2)^2)^2)降次痕迹
-
 
 def detect_otf_sbox(data: bytes, window_size: int = 512) -> List[OTFSBoxFinding]:
     """扫描二进制中动态S-box计算实现.
@@ -229,7 +222,6 @@ def detect_otf_sbox(data: bytes, window_size: int = 512) -> List[OTFSBoxFinding]
     # 去重: 按位置合并相邻窗口重复发现
     return _dedup_otf(findings)
 
-
 def _dedup_otf(findings: List[OTFSBoxFinding],
                eps: int = 256) -> List[OTFSBoxFinding]:
     if not findings:
@@ -244,7 +236,6 @@ def _dedup_otf(findings: List[OTFSBoxFinding],
         else:
             merged.append(f)
     return merged
-
 
 __all__ = [
     'OTFSBoxFinding',

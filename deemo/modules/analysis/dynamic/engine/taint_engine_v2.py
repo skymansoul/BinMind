@@ -12,7 +12,7 @@ from collections import defaultdict
 _log = logging.getLogger(__name__)
 
 
-# ===== 污点标记位 =====
+# 污点标记位
 
 class TaintTag(IntFlag):
     """污点来源标记 —— 位标志组合"""
@@ -34,7 +34,7 @@ class TaintSource(Enum):
     DERIVED = TaintTag.DERIVED
 
 
-# ===== 寄存器污点映射 =====
+# 寄存器污点映射
 
 class RegTaintMap:
     """每个寄存器的污点状态"""
@@ -74,7 +74,7 @@ class RegTaintMap:
         return f"RegTaintMap({len(self._map)} regs)"
 
 
-# ===== 内存污点映射 =====
+# 内存污点映射
 
 PAGE_SIZE = 4096
 COLLAPSE_THRESHOLD = 0.5  # 超过 50% 同质即折叠
@@ -195,7 +195,7 @@ class MemTaintMap:
                 "ratio": collapsed_pages / max(pages, 1)}
 
 
-# ===== BB 污点规则 =====
+# BB 污点规则
 
 @dataclass
 class BBTaintRule:
@@ -232,7 +232,7 @@ class BBTaintRule:
             ctx.mem_taint.set(off, 8, union_tag)  # 默认 8 字节
 
 
-# ===== 污点上下文 =====
+# 污点上下文
 
 class TaintContext:
     """
@@ -280,7 +280,7 @@ class TaintContext:
         }
 
 
-# ===== 事件类型 =====
+# 事件类型
 
 @dataclass
 class TraceEvent:
@@ -301,7 +301,7 @@ class TaintEvent:
     mem_taint_delta: List[Tuple[int, int, int]] = field(default_factory=list)  # (addr, size, tag_before→tag_after)
 
 
-# ===== 污点引擎 V2 =====
+# 污点引擎 V2
 
 class TaintEngineV2:
     """
@@ -315,7 +315,7 @@ class TaintEngineV2:
         self._unix_policy = self.default_unix_policy()
         self._win32_policy = self.default_win32_policy()
 
-    # ===== 默认策略 =====
+# 默认策略
 
     @staticmethod
     def default_unix_policy() -> Dict[str, BBTaintRule]:
@@ -366,7 +366,7 @@ class TaintEngineV2:
             return True
         return False
 
-    # ===== trace 处理 =====
+# trace 处理
     def process_trace(self, trace: 'List[TraceEvent]') -> List[TaintEvent]:
         """
         核心方法: 逐条处理 trace，计算污点传播

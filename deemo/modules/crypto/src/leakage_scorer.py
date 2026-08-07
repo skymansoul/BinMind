@@ -22,10 +22,9 @@
     D4 (Timing Variance): 操作延时差异 → 最直观的侧信道 — 无需物理接触。
     D5 (Cache Footprint): 缓存行占用稳定性 → Spectre/Meltdown类攻击的前提。
 
-参考:
-  - Adjonyo et al. (NIST PQC Standardization Conf. 2025, arXiv:2509.04010):
+  - Adjonyo et al.:
     NIST PQDSS候选系统性时序泄漏分析 — 展示了评分框架在跨实现比较中的实用性。
-  - SILENT (Dunsche et al., arXiv:2504.19821, 2025):
+  - SILENT:
     非参数时序测量算法 — 本项目的静态近似可作为其预筛选阶段。
 
 边界条件:
@@ -40,9 +39,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-
-# ── 评分常数 ──
-# 各维度权重 — 基于密码学侧信道攻击的实证研究(Bernstein 2005; Yarom 2014; Lipp 2018)
+# 评分常数
+# 各维度权重 — 基于密码学侧信道攻击的实证研究
 # D1(内存访问)和D2(分支)的权重最高, 因缓存时序和分支预测是当前最实用的攻击向量
 _W1 = 0.30   # Memory Access — Prime+Probe/Flush+Reload类攻击的首要观测通道
 _W2 = 0.25   # Branch — 条件分支执行时间差; 对嵌入式设备权重应上调
@@ -51,7 +49,7 @@ _W4 = 0.15   # Timing Variance — 粗粒度时序差; 远程攻击者可观测
 _W5 = 0.15   # Cache Footprint — Spectre类投机执行攻击; 现代CPU的关键维度
 
 # 简单ALU操作码 — 单周期或接近单周期, 无秘密依赖差异
-# 周期参考: Agner Fog instruction tables (2024), Intel Optimization Reference Manual
+# 周期参考: Agner Fog instruction tables, Intel Optimization Reference Manual
 _SIMPLE_ALU = frozenset({0x31, 0x33, 0x35, 0x01, 0x03, 0x05, 0x29, 0x2B, 0x2D,
                           0x21, 0x23, 0x25, 0x09, 0x0B, 0x0D, 0x39, 0x3B, 0x3D,
                           0x85, 0x84, 0xC0, 0xC1, 0xD0, 0xD1, 0xD2, 0xD3})
@@ -63,7 +61,6 @@ _BRANCHES = frozenset({0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x7C,
 # REX前缀集合
 _REX = frozenset({0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
                    0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F})
-
 
 @dataclass
 class LeakageReport:
@@ -87,8 +84,7 @@ class LeakageReport:
     # 各维度异常标记
     flags: List[str] = field(default_factory=list)
 
-
-# ── 维度1: 内存访问模式熵 ──
+# 维度1: 内存访问模式熵
 # 统计包含ModRM+SIB/displacement的指令比例作为秘密相关地址的代理。
 # 高分→大量内存操作数的指令→缓存侧信道观测面大。
 
@@ -154,8 +150,7 @@ def _score_memory_access(data: bytes, start: int, size: int) -> Tuple[float, flo
     conf = min(0.95, 0.4 + total_insns / 200.0)
     return score, conf
 
-
-# ── 维度2: 分支分布 ──
+# 维度2: 分支分布
 # 条件分支是可观测时序差的最直接来源。
 
 def _score_branch(data: bytes, start: int, size: int) -> Tuple[float, float]:
@@ -222,8 +217,7 @@ def _score_branch(data: bytes, start: int, size: int) -> Tuple[float, float]:
     conf = min(0.9, 0.3 + len(branch_positions) / 40.0)
     return score, conf
 
-
-# ── 维度3: 指令混合偏斜 ──
+# 维度3: 指令混合偏斜
 # 均匀的指令混合 → 功率特征平坦 → DPA困难。
 # 偏斜的指令混合 → 操作特征可区分 → DPA可行。
 
@@ -286,8 +280,7 @@ def _score_instruction_mix(data: bytes, start: int, size: int) -> Tuple[float, f
     conf = min(0.9, 0.3 + total / 100.0)
     return score, conf
 
-
-# ── 维度4: 操作时序方差 ──
+# 维度4: 操作时序方差
 # 保守的静态估计 — 指令延时差异的简单统计。
 
 def _score_timing_variance(data: bytes, start: int, size: int) -> Tuple[float, float]:
@@ -350,8 +343,7 @@ def _score_timing_variance(data: bytes, start: int, size: int) -> Tuple[float, f
     conf = min(0.9, 0.3 + len(cycles) / 80.0)
     return score, conf
 
-
-# ── 维度5: 缓存占用稳定性 ──
+# 维度5: 缓存占用稳定性
 # 基于缓存行对齐和访问密度的静态近似。
 
 def _score_cache_footprint(data: bytes, start: int, size: int) -> Tuple[float, float]:
@@ -405,8 +397,7 @@ def _score_cache_footprint(data: bytes, start: int, size: int) -> Tuple[float, f
     conf = min(0.85, 0.3 + len(cache_line_entropies) / 30.0)
     return score, conf
 
-
-# ── 主评分函数 ──
+# 主评分函数
 
 def score_leakage_potential(data: bytes, anchor_offset: int = 0,
                             region_size: int = 512,
@@ -471,14 +462,12 @@ def score_leakage_potential(data: bytes, anchor_offset: int = 0,
         flags=flags,
     )
 
-
 def compare_implementations(reports: List[LeakageReport]) -> List[Tuple[str, float]]:
     """对多个密码学实现的泄漏评分排序 — 返回(算法标识, 复合评分)按风险升序。"""
     labeled = [(r.algorithm or f"@{r.anchor_offset:#x}", r.composite_score)
                for r in reports]
     labeled.sort(key=lambda x: x[1])
     return labeled
-
 
 def batch_score_from_findings(data: bytes,
                               findings: List,  # List[CryptoFinding]

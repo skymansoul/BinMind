@@ -35,9 +35,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 _log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Error hierarchy
-# ---------------------------------------------------------------------------
 
 class SymbolicError(Exception):
     """Base error for 符号执行 operations"""
@@ -54,9 +52,7 @@ class SolverNotFound(SymbolicError):
     pass
 
 
-# ---------------------------------------------------------------------------
 # Z3 可用性 检查
-# ---------------------------------------------------------------------------
 
 _HAS_Z3: Optional[bool] = None
 
@@ -73,9 +69,7 @@ def has_z3() -> bool:
     return _HAS_Z3
 
 
-# ---------------------------------------------------------------------------
 # Z3ExpressionBuilder
-# ---------------------------------------------------------------------------
 
 class Z3ExpressionBuilder:
     """
@@ -123,7 +117,7 @@ class Z3ExpressionBuilder:
             bits = self.default_bits
         return self.z3.BitVecVal(value, bits)
 
-    # ---- Arithmetic ----
+# Arithmetic
 
     def bv_add(self, lhs: Any, rhs: Any) -> Any: return lhs + rhs
     def bv_sub(self, lhs: Any, rhs: Any) -> Any: return lhs - rhs
@@ -145,7 +139,7 @@ class Z3ExpressionBuilder:
         """Signed modulo"""
         return lhs % rhs
 
-    # ---- Bitwise ----
+# Bitwise
 
     def bv_and(self, lhs: Any, rhs: Any) -> Any: return lhs & rhs
     def bv_or(self, lhs: Any, rhs: Any) -> Any: return lhs | rhs
@@ -160,7 +154,7 @@ class Z3ExpressionBuilder:
         """Arithmetic (signed) right shift"""
         return lhs >> rhs
 
-    # ---- Comparisons ----
+# Comparisons
 
     def bv_eq(self, lhs: Any, rhs: Any) -> Any: return lhs == rhs
     def bv_ne(self, lhs: Any, rhs: Any) -> Any: return lhs != rhs
@@ -186,7 +180,7 @@ class Z3ExpressionBuilder:
     def bv_sle(self, lhs: Any, rhs: Any) -> Any: return lhs <= rhs
     def bv_sge(self, lhs: Any, rhs: Any) -> Any: return lhs >= rhs
 
-    # ---- Memory (Array Theory) ----
+# Memory (Array Theory)
 
     def make_memory_array(self, name: str, addr_bits: int = 32, data_bits: int = 8) -> Any:
         """
@@ -210,7 +204,7 @@ class Z3ExpressionBuilder:
         """写入 array: 存储(arr, idx, val). 创建 new SSA array. O(1)"""
         return self.z3.Store(arr, idx, val)
 
-    # ---- Utility ----
+# Utility
 
     def bool_to_bv(self, cond: Any) -> Any:
         """转换 a Bool BitVec(1): (cond, 1, 0). O(1)"""
@@ -229,9 +223,7 @@ class Z3ExpressionBuilder:
         return self.z3.Extract(high, low, bv)
 
 
-# ---------------------------------------------------------------------------
 # ConstraintSolver
-# ---------------------------------------------------------------------------
 
 class ConstraintSolver:
     """
@@ -481,7 +473,7 @@ class ConstraintSolver:
             return None
         return None
 
-    # ---- Concrete- 回退 ----
+# Concrete- 回退
 
     def _solve_concrete_only(self, constraints: List[Any], target_var: str) -> Optional[int]:
         """
@@ -540,9 +532,7 @@ class ConstraintSolver:
         return dict(self._stats)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _symbolic_SimplifyExpression(expr_tree: dict) -> dict:
     """Simplify a symbolic expression AST using local rules. Never

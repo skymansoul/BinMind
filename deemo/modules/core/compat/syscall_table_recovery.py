@@ -14,7 +14,7 @@ _m.SyscallTableRecovery._assess_security_level = _m.SyscallTableRecovery.assess_
 _m.SyscallTableRecovery.syscall_categories = {'file': [], 'network': [], 'process': [], 'memory': []}
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -43,7 +43,7 @@ LINUX_X64_SYSCALLS = {
     18: 'pwrite64', 19: 'readv', 20: 'writev',
 }
 
-# --- 系统调用安全分类 ---
+# 系统调用安全分类
 # 基于 MITRE ATT&CK 和 Microsoft 安全审计策略的系统调用风险分类
 
 # 高风险 — 常被恶意软件滥用的系统调用模式
@@ -94,10 +94,10 @@ def detect_syscall_hooking(syscall_table: dict, expected_addrs: dict) -> list[di
     return hooks
 
 
-# --- 基于指令模式的启发式系统调用检测 ---
+# 基于指令模式的启发式系统调用检测
 # 在无符号表的情况下，通过搜索 syscall/sysenter/int 0x80 指令模式
 # 及其前导的 syscall number 赋值（mov eax/rax, imm）来重建系统调用表
-# 参考: Volatility 3 的 SSDT 恢复模块
+# Volatility 3 的 SSDT 恢复模块
 import re as _re
 
 # 保留
@@ -148,7 +148,6 @@ def detect_direct_syscall(code_section: bytes) -> list[dict]:
     return findings
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

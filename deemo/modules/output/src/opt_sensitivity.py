@@ -17,9 +17,8 @@
 
   输出: 敏感性评分 + 每因子的受影响程度。
 
-参考:
   FSE 2025: "Revisiting Optimization-Resilience Claims in Binary Diffing Tools"
-  PLocator (ACM TOSEM 2025): CFG 常量锚点对抗优化变化的 44-75% 提升
+  PLocator: CFG 常量锚点对抗优化变化的 44-75% 提升
   arXiv 2025.12: 函数内联可武器化以规避 ML 二进制分析模型
 
 修改记录:
@@ -29,7 +28,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 @dataclass
 class OptSensitivity:
@@ -45,11 +43,9 @@ class OptSensitivity:
     likely_persists: bool = True   # 预计在 -O2 中仍然存在?
     recommendation: str = ""
 
-
 # 五因子的归一化权重
 _DEFAULT_WEIGHTS = (0.25, 0.30, 0.20, 0.15, 0.10)
 # 死存储, 内联, 循环展开, 常量传播, TCO
-
 
 def _dead_store_risk(pseudocode: str, block_instructions: List[List[str]]) -> float:
     """
@@ -77,7 +73,6 @@ def _dead_store_risk(pseudocode: str, block_instructions: List[List[str]]) -> fl
 
     return min(risk, 1.0)
 
-
 def _inline_risk(is_static: bool, caller_count: int, func_size_ins: int) -> float:
     """
     函数内联风险 — static + 小型 + 单调用者 = 高内联概率。
@@ -94,7 +89,6 @@ def _inline_risk(is_static: bool, caller_count: int, func_size_ins: int) -> floa
     if caller_count <= 2:
         risk += 0.25
     return min(risk, 1.0)
-
 
 def _loop_unroll_risk(loop_count_estimate: int, has_small_loop: bool) -> float:
     """
@@ -113,7 +107,6 @@ def _loop_unroll_risk(loop_count_estimate: int, has_small_loop: bool) -> float:
         risk += 0.1
     return min(risk, 1.0)
 
-
 def _const_prop_risk(has_const_args: bool, has_const_branches: bool) -> float:
     """
     常量传播风险 — 函数参数或分支条件为编译时常量。
@@ -130,7 +123,6 @@ def _const_prop_risk(has_const_args: bool, has_const_branches: bool) -> float:
         risk += 0.40  # 常量分支消除是整个块消失的主因
     return min(risk, 1.0)
 
-
 def _tco_risk(is_recursive: bool, is_tail_recursive: bool) -> float:
     """
     尾部调用优化风险 — 递归函数在 -O2+ 可能被转为迭代。
@@ -143,7 +135,6 @@ def _tco_risk(is_recursive: bool, is_tail_recursive: bool) -> float:
     if is_tail_recursive:
         return 0.9  # 几乎确定尾递归会被优化
     return 0.3      # 普通递归 — 可能被部分优化
-
 
 def score_optimization_sensitivity(
     function_name: str = '',
@@ -207,7 +198,6 @@ def score_optimization_sensitivity(
         recommendation=rec,
     )
 
-
 def batch_sensitivity(
     vulnerabilities: List[Dict[str, Any]],
 ) -> List[OptSensitivity]:
@@ -232,7 +222,6 @@ def batch_sensitivity(
         results.append(s)
     results.sort(key=lambda s: s.sensitivity_score, reverse=True)
     return results
-
 
 def sensitivity_summary(results: List[OptSensitivity]) -> Dict[str, Any]:
     """优化敏感性统计摘要。"""

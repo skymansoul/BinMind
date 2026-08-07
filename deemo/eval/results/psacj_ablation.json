@@ -1,0 +1,1010 @@
+{
+  "baseline": {
+    "verdicts": [
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "TP",
+      "FP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "FP",
+        "findings": 1
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0
+      }
+    ],
+    "metrics": {
+      "TP": 1,
+      "FP": 1,
+      "TN": 11,
+      "FN": 19,
+      "P": 0.5,
+      "R": 0.05,
+      "F1": 0.0909,
+      "FPR": 0.0833
+    }
+  },
+  "cj_fm": {
+    "verdicts": [
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "TP",
+      "FP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 1,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 1
+        }
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "FP",
+        "findings": 1,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 1
+        }
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "safe": 0,
+          "overflow": 0,
+          "inconclusive": 0
+        }
+      }
+    ],
+    "metrics": {
+      "TP": 1,
+      "FP": 1,
+      "TN": 11,
+      "FN": 19,
+      "P": 0.5,
+      "R": 0.05,
+      "F1": 0.0909,
+      "FPR": 0.0833
+    }
+  },
+  "cj_psacj": {
+    "verdicts": [
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "FN",
+      "TN",
+      "TP",
+      "FP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 1,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 1
+        }
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "FP",
+        "findings": 1,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 1
+        }
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "stats": {
+          "affine_safe": 0,
+          "affine_overflow": 0,
+          "fm_safe": 0,
+          "fm_overflow": 0,
+          "inconclusive": 0
+        }
+      }
+    ],
+    "metrics": {
+      "TP": 1,
+      "FP": 1,
+      "TN": 11,
+      "FN": 19,
+      "P": 0.5,
+      "R": 0.05,
+      "F1": 0.0909,
+      "FPR": 0.0833
+    }
+  }
+}

@@ -27,9 +27,9 @@ CVE = {
             "差异点：现有攻击图仅用共现关系，HGAT 可捕获依赖结构中的传递性漏洞信号。"
         ),
         "papers": [
-            {"id": "arXiv:2604.04977", "title": "Towards Predicting Multi-Vulnerability Attack Chains in Software Supply Chains from SBOM Graphs",
+            {"id": "", "title": "Towards Predicting Multi-Vulnerability Attack Chains in Software Supply Chains from SBOM Graphs",
              "venue": "FSE 2026", "key_idea": "HGAT + SBOM异构图 + CVE对链接预测，91.03%准确率"},
-            {"id": "arXiv:2507.20502", "title": "VDGraph: A Graph-Theoretic Approach to Unlock Insights from SBOM and SCA Data",
+            {"id": "", "title": "VDGraph: A Graph-Theoretic Approach to Unlock Insights from SBOM and SCA Data",
              "venue": "arXiv 2025", "key_idea": "知识图谱方法集成漏洞和依赖数据"},
             {"id": "SOMVE", "title": "SOMVE: SBOM and CVE Integration via Machine Learning",
              "venue": "ICMLC 2025", "key_idea": "Random Forest 97% CVE ID映射准确率"},

@@ -1,0 +1,52 @@
+{
+  "metrics": {
+    "BinMind-Full": {
+      "total": 0,
+      "TP": 0,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "Angr": {
+      "total": 0,
+      "TP": 0,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "Ghidra": {
+      "total": 0,
+      "TP": 0,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "QEMU": {
+      "total": 0,
+      "TP": 0,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  },
+  "n_samples": 0,
+  "results": {
+    "BinMind-Full": [],
+    "Angr": [],
+    "Ghidra": [],
+    "QEMU": []
+  },
+  "generated_at": "2026-08-09 13:19:19"
+}

@@ -24,13 +24,12 @@
     3. DKG协议指纹: Pedersen/VSS承诺轮次 — 多轮广播+验证序列。
     4. 门限密码学API字符串: threshold/sss/share/lagrange/reconstruct等。
 
-参考:
-  - Shamir (CACM 1979): "How to Share a Secret" — SSS原始论文, 定义多项式份额结构。
-  - Pedersen (CRYPTO 1991): "A Threshold Cryptosystem without a Trusted Party" —
+  - Shamir: "How to Share a Secret" — SSS原始论文, 定义多项式份额结构。
+  - Pedersen: "A Threshold Cryptosystem without a Trusted Party" —
     DKG协议, 定义承诺/份额分发/验证轮次。
-  - Gennaro & Goldfeder (CCS 2018): "Fast Multiparty Threshold ECDSA" —
+  - Gennaro & Goldfeder: "Fast Multiparty Threshold ECDSA" —
     现代阈值ECDSA协议, GG18/GG20实现模式。
-  - Canetti et al. (ACM CCS 2020): "UC Non-Interactive, Proactive, Threshold ECDSA" —
+  - Canetti et al.: "UC Non-Interactive, Proactive, Threshold ECDSA" —
     CGGMP21协议, 当前最先进的阈值ECDSA。
 
 边界条件:
@@ -44,7 +43,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 @dataclass
 class ThresholdFinding:
     scheme: str = ""            # SHAMIR_SSS / DKG / TSS_ECDSA / MPC / UNKNOWN
@@ -53,8 +51,7 @@ class ThresholdFinding:
     location: int = 0
     share_count_hint: int = 0   # 推断的门限参数: t-of-n
 
-
-# ── 门限密码学字符串指纹 ──
+# 门限密码学字符串指纹
 _THRESHOLD_STRINGS: List[Tuple[bytes, str, float]] = [
     # Shamir & 份额
     (b'shamir', 'Shamir SSS', 0.88),
@@ -91,7 +88,6 @@ _THRESHOLD_STRINGS: List[Tuple[bytes, str, float]] = [
     (b'share_', 'Secret share', 0.70),
     (b'shards', 'Key sharding', 0.75),
 ]
-
 
 def _detect_lagrange_pattern(data: bytes) -> List[Tuple[int, float]]:
     """
@@ -141,7 +137,6 @@ def _detect_lagrange_pattern(data: bytes) -> List[Tuple[int, float]]:
 
     return findings[:10]
 
-
 def _detect_share_structure(data: bytes) -> List[Tuple[int, int, int]]:
     """
     检测Shamir份额结构: 连续的等长数据块, 每块以索引字节开头。
@@ -170,8 +165,7 @@ def _detect_share_structure(data: bytes) -> List[Tuple[int, int, int]]:
                 findings.append((offset, len(indices), min(2, len(indices) - 1)))
     return findings[:5]
 
-
-# ── 主检测器 ──
+# 主检测器
 
 class ThresholdCryptoDetector:
     """阈值/MPC密码学检测器。"""

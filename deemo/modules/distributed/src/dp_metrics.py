@@ -1,10 +1,10 @@
-# 创建: 2026-07-30
-# 修改: 2026-08-05 — 基础ε-DP升级为Rényi DP + zCDP组合
+# 创建: 2026-06-28
+# 修改: 2026-06-28 — 基础ε-DP升级为Rényi DP + zCDP组合
 #
 # Rényi差分隐私 + zCDP 度量收集 — 紧致组合的隐私保护调度统计
 #
 # 基础 ε-DP 使用简单组合定理 (k 次查询 = k·ε), 导致隐私预算快速耗尽。
-# Rényi DP (Mironov 2017) 和 zero-Concentrated DP (Bun & Steinke 2016)
+# Rényi DP 和 zero-Concentrated DP
 # 提供更紧致的组合界:
 #   Rényi DP: 对 α>1, D_α(M(D)||M(D')) ≤ ε·α·(Δf)²/(2σ²)
 #   zCDP: 高斯机制的 ρ-zCDP = (Δf)²/(2σ²)
@@ -32,7 +32,7 @@ def _gaussian_noise(rng: random.Random, sigma: float) -> float:
 
 
 class MomentsAccountant:
-    """Moments Accountant (Abadi et al. 2016, CCS) — Rényi DP 组合追踪。
+    """Moments Accountant — Rényi DP 组合追踪。
 
     对每次查询记录其 Rényi 散度对 α 的贡献, 组合后转换为 (ε,δ)-DP。
     这是 TensorFlow Privacy 使用的标准方法。
@@ -208,7 +208,7 @@ class DPMetricsCollector:
         }
 
 
-# ---- 兼容层: 基础ε-DP包装 (保持与模块导出兼容) ----
+# 兼容层: 基础ε-DP包装 (保持与模块导出兼容)
 
 class DPCounter:
     """ε-差分隐私计数器 — 拉普拉斯机制。"""

@@ -19,7 +19,6 @@
     L4 (memory_copy): 影响 memcpy/strcpy/snprintf 的长度参数
     L5 (control_flow): 影响分支条件或间接跳转目标
 
-参考:
   CWE-190: Integer Overflow or Wraparound
   CWE-680: Integer Overflow to Buffer Overflow
   无现有分类工具 — 现有扫描器仅报告溢出存在性.
@@ -33,7 +32,6 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Any, Dict, List, Optional, Set
 
-
 class OverflowLevel(IntEnum):
     DEAD = 0            # 溢出值未使用
     ARITHMETIC = 1      # 仅影响计算/比较
@@ -41,7 +39,6 @@ class OverflowLevel(IntEnum):
     BOUNDS = 3          # 影响数组索引/边界检查
     MEMORY_COPY = 4     # 影响内存拷贝长度
     CONTROL_FLOW = 5    # 影响分支/间接跳转
-
 
 # 下游函数 → 影响等级映射
 _DOWNSTREAM_IMPACT: Dict[str, OverflowLevel] = {
@@ -70,7 +67,6 @@ _LEVEL_EXPLOIT: Dict[OverflowLevel, float] = {
     OverflowLevel.CONTROL_FLOW: 9.5,
 }
 
-
 @dataclass
 class OverflowTriage:
     """整数溢出下游影响分类。"""
@@ -81,7 +77,6 @@ class OverflowTriage:
     exploitability: float           # 0-10
     escalation_path: str = ''
     cwe_mapping: List[str] = field(default_factory=list)
-
 
 def _trace_downstream(
     overflowed_variable: str,
@@ -131,7 +126,6 @@ def _trace_downstream(
 
     return max_level, matched_funcs
 
-
 def _cwe_for_level(level: OverflowLevel) -> List[str]:
     return {
         OverflowLevel.DEAD: ['CWE-190'],
@@ -141,7 +135,6 @@ def _cwe_for_level(level: OverflowLevel) -> List[str]:
         OverflowLevel.MEMORY_COPY: ['CWE-190', 'CWE-680', 'CWE-122', 'CWE-787'],
         OverflowLevel.CONTROL_FLOW: ['CWE-190', 'CWE-680', 'CWE-193', 'CWE-822'],
     }.get(level, ['CWE-190'])
-
 
 def triage_overflow(
     overflow_location: str = '',

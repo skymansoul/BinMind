@@ -157,7 +157,6 @@ class WorkerInfo:
         return self.total_task_time_ms / 1000.0 / total
 
 
-# ---------------------------------------------------------------------------
 # WorkerScorecard — 基于多维指标的 worker 质量评分
 #
 # 评分由三个维度加权合成：
@@ -169,7 +168,6 @@ class WorkerInfo:
 # load_score 相近情况下的 tie-breaking
 #
 # 注意：latency 是越小越好，因此取 1/(1+latency) 做正向化
-# ---------------------------------------------------------------------------
 class WorkerScorecard:
     """Per-worker quality score 基于 multi-dimensional metrics
     
@@ -241,7 +239,6 @@ class WorkerScorecard:
         return scored
 
 
-# ---------------------------------------------------------------------------
 # WorkerCapabilityRegistry — worker 能力验证注册表
 #
 # cap_registry 字典将能力字符串映射到验证所需的包名列表
@@ -249,7 +246,6 @@ class WorkerScorecard:
 # 只将验证通过的能力标记为有效，防止 worker 虚报导致运行时
 # ModuleNotFoundError。验证失败的能力记录警告日志但不阻止注册——
 # worker 仍可处理不需要该能力的任务
-# ---------------------------------------------------------------------------
 class WorkerCapabilityRegistry:
     """校验s worker capability claims against actually installed packages
     
@@ -306,7 +302,6 @@ class WorkerCapabilityRegistry:
         return valid, invalid
 
 
-# ---------------------------------------------------------------------------
 # TaskDependencyResolver — 基于 Kahn 算法的拓扑依赖解析
 #
 # 有未满足依赖的任务不进入主调度堆，而是暂存在 _pending_dep 中
@@ -314,8 +309,7 @@ class WorkerCapabilityRegistry:
 # 如果某个等待任务的 dep_dag_in_degree 降为 0，将其释放到主调度器
 #
 # dep_dag_in_degree 记录每个 task_id 的未完成前驱数量
-# _pending_dep 是反向索引：前驱 task_id → 依赖它的任务列表
-# ---------------------------------------------------------------------------
+# pending_dep 是反向索引：前驱 task_id → 依赖它的任务列表
 class TaskDependencyResolver:
     """Topological 排序 via Kahn's algorithm for dependency-aware scheduling
     
@@ -380,7 +374,6 @@ class TaskDependencyResolver:
         self._task_by_id.clear()
 
 
-# ---------------------------------------------------------------------------
 # DeadlineAwareDispatch — 按 deadline 排序的任务调度堆
 #
 # 标准 TaskScheduler 按 (-priority, created_at) 排序堆。DeadlineAwareDispatch
@@ -392,7 +385,6 @@ class TaskDependencyResolver:
 #
 # 这防止了超时级联效应：当一批任务共享截止时间且调度延迟时
 # 最临近 deadline 的任务优先执行，最大化截止时间内完成的任务数
-# ---------------------------------------------------------------------------
 class DeadlineAwareDispatch:
     """排序 task 堆 deadline proximity tasks closest deadline
     dispatched first, preventing timeout cascades
@@ -441,7 +433,6 @@ class DeadlineAwareDispatch:
         return task.deadline_ts - time.time()
 
 
-# ---------------------------------------------------------------------------
 # PartialResultMerger — 超时/失败任务的中间结果回收
 #
 # 设计意图：分布式环境中的任务可能因为瞬态故障（网络分区、worker OOM）
@@ -451,11 +442,10 @@ class DeadlineAwareDispatch:
 # 合并到最终聚合报告中
 #
 # 回收策略：
-# - paths 直接累加
-# - vulnerabilities 去重（按函数名 + 漏洞类型合并）
-# - constraints 去重（按字符串哈希去重）
-# - output 字段浅合并（同名键后面的覆盖前面的）
-# ---------------------------------------------------------------------------
+# paths 直接累加
+# vulnerabilities 去重（按函数名 + 漏洞类型合并）
+# constraints 去重（按字符串哈希去重）
+# output 字段浅合并（同名键后面的覆盖前面的）
 class PartialResultMerger:
     """Salvage intermediate results timed-out or failed tasks 合并
     final aggregate instead discarding
@@ -632,7 +622,6 @@ class TaskScheduler:
         change_ratio = abs(new_count - old_count) / max(old_count, 1)
         return change_ratio >= self.rebalance_threshold
 
-    # ------------------------------------------------------------------
     # rebalance — worker 加入/离开时重新均衡待处理任务
     #
     # 当 worker 拓扑变化超过 rebalance_threshold 时自动调用
@@ -642,7 +631,6 @@ class TaskScheduler:
     #
     # 设计权衡：完全不移动已 ASSIGNED/RUNNING 的任务（避免中断进行中的工作）
     # 只重排尚未分配的任务
-    # ------------------------------------------------------------------
     def _rebalance_locked(self):
         """Internal rebalance under lock. 调用方必须持有 self._lock"""
         if not self._task_heap:
@@ -680,12 +668,10 @@ class TaskScheduler:
         with self._lock:
             self._rebalance_locked()
 
-    # ------------------------------------------------------------------
     # 一致性哈希环：每个 worker 映射到环上的 128 个虚拟节点
     # 按 binary_path hash 查找顺时针方向最近的节点
     # 虚拟节点数选 128 是因为在 worker 数量 < 50 时能将负载偏差
     # 控制在 5% 以内（根据 Karger et al. 的理论分析）
-    # ------------------------------------------------------------------
     _VIRTUAL_NODES = 128
 
     def _rebuild_cons_hash_ring(self):
@@ -706,13 +692,11 @@ class TaskScheduler:
                 return wid
         return self._cons_hash_ring[0][1]
 
-    # ------------------------------------------------------------------
     # 堆键计算：deadline-aware 模式 vs 传统 priority 模式
     #
     # 当 enable_deadline_dispatch=True 时，使用 DeadlineAwareDispatch
     # 计算 5 元组堆键；否则使用传统 3 元组
     # task_id 始终在最后，便于 rebalance 中按 entry[-1] 提取
-    # ------------------------------------------------------------------
     def _heap_key(self, task: SymbolicTask) -> Tuple:
         """计算 堆 ordering key for a task
         
@@ -1124,13 +1108,11 @@ class DistributedSymbolicExecutor:
         if not success and "timeout" not in error.lower():
             self.scheduler.requeue_task(task_id)
 
-    # ------------------------------------------------------------------
     # rebalance — worker 拓扑变化后的任务再分配
     #
     # 委托给 TaskScheduler.rebalance()。典型触发场景：
     # 1. 寄存器_worker / un寄存器_worker 检测到 worker 数变化超过阈值
     # 2. 外部监控发现负载不均时手动触发
-    # ------------------------------------------------------------------
     def rebalance(self):
         """Redistribute pending tasks workers join/leave
         

@@ -56,7 +56,7 @@ class ModeTransition:
     transition_type: str = ""
 
 
-# ── Thumb16指令解码表：基于opcode高位快速分类 ──
+# Thumb16指令解码表：基于opcode高位快速分类
 # 分组查找替代if-elif链，O(1)匹配
 _THUMB16_DECODE = {
     # (掩码, 值) → (助记符, 操作数解析器)
@@ -246,7 +246,6 @@ class ThumbAnalyzer(BaseAnalyzer, ABC):
         )
 
 # 保留: 调试空操作占位
-def _debug_print(*a, **kw): pass
 
 # 不拆: Thumb2指令查找表缓存——批量解码预计算中间表示
 _THUMB2_IR_CACHE: dict = {}

@@ -29,9 +29,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Behavior categories via IntFlag — bitmask for efficient 分类
-# ---------------------------------------------------------------------------
 
 class BehaviorCategory(Flag):
     """IntFlag for behavior 分类. Multiple categories
@@ -101,16 +99,14 @@ _MALICIOUS_CHAINS: List[Tuple[str, ...]] = [
     ("OpenProcess", "VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"),
     # Process hollowing
     ("CreateProcess", "NtUnmapViewOfSection", "VirtualAllocEx", "WriteProcessMemory", "SetThreadContext", "ResumeThread"),
-    # Reflective DLL loading
+    # lective DLL loading
     ("NtCreateFile", "VirtualAlloc", "NtWriteVirtualMemory", "NtCreateThreadEx"),
     # Credential dumping
     ("OpenProcess", "MiniDumpWriteDump", "CreateFile", "WriteFile"),
 ]
 
 
-# ---------------------------------------------------------------------------
 # BehaviorTracer
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TraceEvent:
@@ -257,9 +253,7 @@ class BehaviorTracer:
         self._event_id_counter = 0
 
 
-# ---------------------------------------------------------------------------
 # HWTraceAnalyzer — Intel PT / ARM ETM
-# ---------------------------------------------------------------------------
 
 @dataclass
 class HWTraceConfig:
@@ -392,9 +386,7 @@ class HWTraceAnalyzer:
         }
 
 
-# ---------------------------------------------------------------------------
 # IntelPTDecoder — complete PT 数据包 解码 状态机
-# ---------------------------------------------------------------------------
 
 class PTState(Enum):
     """Intel PT 数据包 decoder FSM states"""

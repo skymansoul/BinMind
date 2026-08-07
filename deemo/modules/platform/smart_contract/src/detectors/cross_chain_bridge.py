@@ -12,16 +12,16 @@
 #       即被传入 SSTORE/CALL, 表明缺乏消息发送方认证
 #
 # 现有工具 (Slither/Mythril/Oyente) 均为单链通用检测器,
-# 不包含跨链特定的攻击模式。SmartAxe (FSE 2024) 和 BridgeGuard (2025)
+# 不包含跨链特定的攻击模式。SmartAxe 和 BridgeGuard
 # 使用 xCFG/xDFG 做全程序分析——本模块采取互补策略:
 # 轻量级操作码模式匹配, 可在完整 CFG 构造之前做快速筛查,
 # 假阳性率高于 SmartAxe 但零假阴性 (宁可多报, 不漏桥特有漏洞)。
 #
-# ref: SmartAxe (FSE 2024, ACM) — xCFG/xDFG 跨链控制流/数据流图,
+# SmartAxe — xCFG/xDFG 跨链控制流/数据流图,
 #      本项目取其漏洞分类框架但实现为轻量级操作码模式匹配
-# ref: BridgeGuard (IEEE TDSC 2025) — 三种外部认证模式的符号数据流分析,
+# BridgeGuard — 三种外部认证模式的符号数据流分析,
 #      本项目的 unverified_origin 检测参考了其 EIV 分类
-# ref: Nomad Bridge Hack (Aug 2022, ~$190M) — 消息验证绕过的典型案例,
+# Nomad Bridge Hack — 消息验证绕过的典型案例,
 #      verifyProof() 返回值未被检查就直接执行消息
 
 from typing import List, Set
@@ -60,10 +60,8 @@ class CrossChainBridgeDetector(BaseDetector):
 
         return findings
 
-    # ------------------------------------------------------------------
     # (a) 消息验证绕过 — CALL 返回后未检查返回值即执行状态变更
     # 模式: STATICCALL/DELEGATECALL → (无 ISZERO/JUMPI 守卫) → SSTORE
-    # ------------------------------------------------------------------
 
     def _detect_message_verification_bypass(self, ops) -> List[VulnerabilityReport]:
         findings = []
@@ -83,11 +81,11 @@ class CrossChainBridgeDetector(BaseDetector):
                 findings.append(VulnerabilityReport(
                     vuln_type="bridge_message_verification_bypass",
                     severity="CRITICAL",
-                    confidence=0.78,  # 非全程序 CFG 分析——置信度有折扣
+# confidence=0.78,  # 非全程序 CFG 分析——置信度有折扣
                     swc_id="SWC-999",  # 非标准 SWC，桥特有
                     description=(
                         "STATICCALL/DELEGATECALL 后无 ISZERO/JUMPI 守卫直接 SSTORE "
-                        "——验证调用返回值未被检查，攻击者可构造假证明绕过消息验证"
+# "——验证调用返回值未被检查，攻击者可构造假证明绕过消息验证"
                     ),
                     location=op.pc if hasattr(op, 'pc') else i,
                     opcode=op.name,
@@ -103,10 +101,8 @@ class CrossChainBridgeDetector(BaseDetector):
                 ))
         return findings
 
-    # ------------------------------------------------------------------
     # (b) 验证者集阈值操纵 — SSTORE 修改签名阈值或验证者映射
     # 模式: 检测对单一存储槽的写入, 该槽被 ≥3 处引用 (暗示它控制多签阈值)
-    # ------------------------------------------------------------------
 
     def _detect_validator_manipulation(self, ops) -> List[VulnerabilityReport]:
         findings = []
@@ -130,10 +126,10 @@ class CrossChainBridgeDetector(BaseDetector):
                 findings.append(VulnerabilityReport(
                     vuln_type="bridge_validator_threshold_manipulation",
                     severity="HIGH",
-                    confidence=0.65,  # 存储槽引用分析需 CFG 确认——此处为快速预检
+# confidence=0.65,  # 存储槽引用分析需 CFG 确认——此处为快速预检
                     swc_id="SWC-999",
                     description=(
-                        f"存储槽 {hex(slot)} 被 {sstore_count} 次 SSTORE 引用——"
+# f"存储槽 {hex(slot)} 被 {sstore_count} 次 SSTORE 引用——"
                         "疑似签名阈值或验证者集管理参数, 需确认写入前有时间锁检查"
                     ),
                     location=positions[0] if positions else 0,
@@ -153,11 +149,9 @@ class CrossChainBridgeDetector(BaseDetector):
                 ))
         return findings
 
-    # ------------------------------------------------------------------
     # (c) 跨链重放 — 缺少 chainID/nonce 绑定
     # 模式: CALLDATALOAD → (无 CHAINID/CODESIZE/SELFBALANCE 上下文绑定)
     #       → SSTORE/CALL
-    # ------------------------------------------------------------------
 
     def _detect_cross_chain_replay(self, ops) -> List[VulnerabilityReport]:
         findings = []
@@ -185,7 +179,7 @@ class CrossChainBridgeDetector(BaseDetector):
                     swc_id="SWC-999",
                     description=(
                         "CALLDATALOAD 读取的数据经 SSTORE/CALL 消费, "
-                        "但未绑定 CHAINID/nonce——消息可在两条链上重放"
+# "但未绑定 CHAINID/nonce——消息可在两条链上重放"
                     ),
                     location=getattr(op, 'pc', i),
                     opcode=op.name,
@@ -199,9 +193,7 @@ class CrossChainBridgeDetector(BaseDetector):
                 ))
         return findings
 
-    # ------------------------------------------------------------------
     # (d) 未验证外部消息来源 — CALLDATALOAD → SSTORE 且中间无 CALLER/Ecrecover
-    # ------------------------------------------------------------------
 
     def _detect_unverified_message_origin(self, ops) -> List[VulnerabilityReport]:
         findings = []
@@ -229,7 +221,7 @@ class CrossChainBridgeDetector(BaseDetector):
                     swc_id="SWC-999",
                     description=(
                         "CALLDATALOAD 数据经 SSTORE 持久化, "
-                        "全程无 CALLER/ECRECOVER 发送方验证——消息来源不可信"
+# "全程无 CALLER/ECRECOVER 发送方验证——消息来源不可信"
                     ),
                     location=getattr(op, 'pc', i),
                     opcode=op.name,

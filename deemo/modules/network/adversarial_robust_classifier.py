@@ -5,10 +5,10 @@
 抵御针对加密流量分类器的对抗性逃逸攻击.
 
 设计依据:
-  PacketPatch (2026) 在 payload 头部边界注入对抗扰动,
-  可绕过 BERT 分类器. RBLJAN (IEEE TDSC 2025) 用联合注意力网络
+  PacketPatch 在 payload 头部边界注入对抗扰动,
+  可绕过 BERT 分类器. RBLJAN 用联合注意力网络
   做对抗训练, 但需离线训练且不监测分布漂移.
-  Header-dominant 框架 (JEIT 2025) 证明仅用头部特征可抗 payload 扰动,
+  Header-dominant 框架 证明仅用头部特征可抗 payload 扰动,
   但未集成在线学习.
 
   ARTC 三重防御:

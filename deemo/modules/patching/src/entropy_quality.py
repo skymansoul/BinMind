@@ -77,7 +77,7 @@ class EntropyReport:
         }
 
 
-# ── 熵源识别 ──────────────────────────────────────────────────────
+# 熵源识别
 
 class EntropySourceIdentifier:
     """从汇编模式推断随机值来源。"""
@@ -126,7 +126,7 @@ class EntropySourceIdentifier:
         return findings
 
 
-# ── NIST 简化测试 ─────────────────────────────────────────────────
+# NIST 简化测试
 
 class NISTSimplifiedTests:
     """NIST SP 800-22 的简化实现（频率/游程/块内频次）。
@@ -206,7 +206,7 @@ class NISTSimplifiedTests:
         return ''.join(format(b, '08b') for b in data)
 
 
-# ── 分析器 ────────────────────────────────────────────────────────
+# 分析器
 
 class EntropyQualityAnalyzer:
     """补丁熵质量分析器。"""

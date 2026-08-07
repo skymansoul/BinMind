@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 16:19
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-24 16:19
+# 修改: 2026-06-24 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: NSGA-II多目标Pareto修复调度
 # 多目标Pareto最优修复调度 — 进化算法驱动的补丁优先级排序
 #
@@ -28,14 +28,14 @@
 # (例如: 季度末偏重合规 → 选择低f3的解; 事件响应偏重风险 → 选择低f1的解).
 #
 # 与cve_remediation.RemediationTracker的关系:
-#   - RemediationTracker 为单体SLA跟踪 (操作层).
+# RemediationTracker 为单体SLA跟踪 (操作层).
 #   - ParetoRemediationScheduler 为多目标优化调度 (战术层).
 #   两者互补: Scheduler输出最优序列, Tracker执行并跟踪.
 #
-# 参考:
-#   [Deb et al. 2002] NSGA-II: A Fast and Elitist Multiobjective Genetic Algorithm
-#   [ADAPT 2026, JNCA] PPO+NSGA-II混合的补丁调度, 89.7%风险降低
-#   [Multi-Optimizer Metaheuristic 2025, IEEE] 8种元启发式算法在补丁调度上的对比
+#
+# NSGA-II: A Fast and Elitist Multiobjective Genetic Algorithm
+# PPO+NSGA-II混合的补丁调度, 89.7%风险降低
+# 8种元启发式算法在补丁调度上的对比
 
 import math
 import random
@@ -366,7 +366,7 @@ class ParetoRemediationScheduler:
 
         return selected
 
-    # ---- 决策接口 ----
+# 决策接口
 
     def pareto_frontier(self) -> List[PatchSchedule]:
         """返回Pareto前沿上的所有非支配解."""
@@ -421,7 +421,7 @@ class ParetoRemediationScheduler:
         return len(self._population)
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_tasks_from_kb(kb: CVEKnowledgeBase,
                         risk_scores: Optional[Dict[str, float]] = None

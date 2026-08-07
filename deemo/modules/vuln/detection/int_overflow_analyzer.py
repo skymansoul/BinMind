@@ -12,7 +12,7 @@
   4. 结合前序约束: 若溢出前有bounds check → 降危
 
 修改记录:
-  创建 2026-08-05
+  创建 2026-05-21
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

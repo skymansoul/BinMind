@@ -5,7 +5,7 @@ import numpy as np
 
 
 def _rank_scores(scores):
-    # ---- 分数转排名：越大排越前（descending）
+# 分数转排名：越大排越前（descending）
     # scores: (N,) 或 (N, C)，返回同shape的rank (1-based)
     _s = np.asarray(scores, dtype=np.float64)
     if _s.ndim == 1:
@@ -30,7 +30,7 @@ def mrr_score(y_true, y_pred_scores):
     _p = np.asarray(y_pred_scores, dtype=np.float64)
 
     if _t.ndim == 1:
-        # ===== 单标签场景 =====
+# 单标签场景
         _ranks = _rank_scores(_p)
         _n = len(_t)
         _rr = np.zeros(_n, dtype=np.float64)
@@ -71,7 +71,7 @@ def recall_at_k(y_true, y_pred_scores, k=10):
     _p = np.asarray(y_pred_scores, dtype=np.float64)
 
     if _t.ndim == 1:
-        # ===== 单标签：每个query一个正确答案 =====
+# 单标签：每个query一个正确答案
         _n = len(_t)
         _hits = 0
         for _i in range(_n):
@@ -107,7 +107,7 @@ def precision_at_k(y_true, y_pred_scores, k=10):
             _prec_sum += float(np.sum(_t[_i] == _topk)) / k if k > 0 else 0.0
         return _prec_sum / _n if _n > 0 else 0.0
 
-    # ---- 多标签 ----
+# 多标签
     _n, _c = _t.shape
     _precs = np.zeros(_n, dtype=np.float64)
     for _i in range(_n):
@@ -183,7 +183,7 @@ def average_precision(y_true, y_pred_scores):
             _ap_sum += _prec_at_k / _hits if _hits > 0 else 0.0
         return _ap_sum / _n if _n > 0 else 0.0
 
-    # ---- 多标签 AP ----
+# 多标签 AP
     _n, _c = _t.shape
     _ap_sum = 0.0
     for _i in range(_n):

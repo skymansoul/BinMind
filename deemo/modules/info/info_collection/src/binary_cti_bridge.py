@@ -1,8 +1,8 @@
-# Created: 2025-07-27 11:19:42
+# Created: 2026-05-02 11:19:42
 #
 # binary_cti_bridge — 二进制→CTI 威胁 actor 多模态匹配
 # TTP重叠(加权) + 结构指纹相似 + 工具链/部门匹配三模态融合
-# 解决: 仅34% APT组有独特TTP签名 (Kitten or Panda? 2025)
+# 解决: 仅34% APT组有独特TTP签名
 # 区别于 IEEE TPS-ISA 2024 (仅TTP) 和 ADAPT (文件聚类)
 
 import math

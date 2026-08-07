@@ -72,7 +72,7 @@ class _PreciseTimer:
         return float(statistics.median(times))
 
 
-# --- 统计辅助函数 ------------------------------------------------------------
+# 统计辅助函数
 
 def _cohens_d(a: List[float], b: List[float]) -> float:
     """Cohen's d 效应量。"""
@@ -308,8 +308,8 @@ class TimingSideChannelDetector:
                         break
         return results
 
-    # -- 指针追踪缓存驻留检测 ---------------------------------------------------
-    # 基于 GoFetch (USENIX 2024) 的 DMP 侧信道思路：
+# 指针追踪缓存驻留检测
+    # 基于 GoFetch 的 DMP 侧信道思路：
     # 通过测量指针追踪延迟探测数据是否驻留缓存。
 
     @staticmethod
@@ -355,7 +355,7 @@ def _incomplete_beta_tail(x: float, a: float, b: float) -> float:
     ) / a
 
 
-# ---- 二进制模式扫描（合并自 timing_channel_detector）----------------------
+# 二进制模式扫描（合并自 timing_channel_detector）
 # 扫描二进制中的计时原语与隐蔽信道模式
 
 _TIMING_PATS = (

@@ -1,4 +1,4 @@
-# Created: 2025-07-27 16:23:50
+# Created: 2026-06-11 16:23:50
 #
 # confidence_calibrator — 跨检测器置信度校准
 # 不同检测器 (injection/lateral/persistence/spoofing/leak) 的置信度评分尺度不一致:
@@ -6,7 +6,7 @@
 # 本模块用 Bradley-Terry 成对排序模型 + Platt 缩放将所有检测器映射到
 # 公共校准尺度 [0, 1]，使跨检测器比较和融合具备数学一致性。
 #
-# 区别于 Jamgharyan (CSIT 2025): 该文献用 isotonic regression 校准单个
+# 区别于 Jamgharyan: 该文献用 isotonic regression 校准单个
 # XGBoost 分类器。本模块校准的是异构多检测器管线，无 ML 模型，
 # 仅基于检测器输出统计特性 (检测率、误报趋势) 做非参数排序校准。
 #

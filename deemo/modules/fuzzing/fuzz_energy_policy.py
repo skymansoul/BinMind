@@ -1,10 +1,9 @@
 """能量调度策略 -- 可插拔的种子能量分配算法集合。
 
-参考:
-  AFLFast (USENIX 2020)    -- explore/coe/quad/lin/fast 五种功率调度
-  EcoFuzz (USENIX 2020)    -- 自适应exploration/exploitation状态切换
-  pAFL    (ICCNS 2024)     -- UCB自适应能量分配
-  TMS-Fuzz (JSS 2026)      -- Thompson Sampling能量分配
+  AFLFast     -- explore/coe/quad/lin/fast 五种功率调度
+  EcoFuzz     -- 自适应exploration/exploitation状态切换
+  pAFL     -- UCB自适应能量分配
+  TMS-Fuzz       -- Thompson Sampling能量分配
 
 能量是 AFL 系模糊测试中的核心概念: 每个种子被分配一个"能量"值,
 高能量表示该种子将被更高频地选取并在每次被选中时执行更多变异轮次。
@@ -21,7 +20,6 @@ import time
 from enum import Enum
 from typing import Dict, List, Optional, Sequence
 
-
 class EnergyPolicy(str, Enum):
     """能量策略枚举。"""
     EXPLORE = "explore"      # AFLFast: 对新发现的种子分配更多能量
@@ -32,8 +30,7 @@ class EnergyPolicy(str, Enum):
     ADAPTIVE = "adaptive"    # EcoFuzz风格: 探索/利用状态自适应切换
     UCB_ENERGY = "ucb_energy"  # pAFL风格: UCB决定能量, 与调度器解耦
 
-
-# ===== 能量计算函数 =====
+# 能量计算函数
 
 def energy_explore(seed_finds: int, total_finds: int,
                    seed_cycles: int, total_cycles: int,
@@ -49,7 +46,6 @@ def energy_explore(seed_finds: int, total_finds: int,
     global_density = total_cycles / total_finds
     return base_energy * seed_eff * global_density
 
-
 def energy_coe(seed_finds: int, seed_cycles: int,
                coef: float = 0.5) -> float:
     """Cut-Off Exponential: 能量随周期指数衰减, 新发现重置。
@@ -63,7 +59,6 @@ def energy_coe(seed_finds: int, seed_cycles: int,
     exp_term = 2.0 ** (-seed_cycles / seed_finds)
     return coef + (1.0 - coef) * exp_term
 
-
 def energy_quad(exec_time_ms: float, edge_count: int,
                 generation: int, base: float = 1.0) -> float:
     """二次型: 快速+高覆盖+低代数 → 高能量。
@@ -75,13 +70,11 @@ def energy_quad(exec_time_ms: float, edge_count: int,
     gen = max(1, generation)
     return base * (edge_count ** 2) / (exec_t * gen)
 
-
 def energy_lin(edge_count: int, exec_time_ms: float,
                base: float = 1.0) -> float:
     """线性: 能量 ∝ edge_count / exec_time_ms。"""
     exec_t = max(1.0, exec_time_ms)
     return base * edge_count / exec_t
-
 
 def energy_fast(pick_count: int, base: float = 100.0) -> float:
     """AFLFast默认: 能量与选中次数成反比。
@@ -93,11 +86,10 @@ def energy_fast(pick_count: int, base: float = 100.0) -> float:
         return base
     return base / (2.0 ** pick_count)
 
-
-# ===== EcoFuzz 风格的自适应策略 =====
+# EcoFuzz 风格的自适应策略
 
 class AdaptiveEnergyPolicy:
-    """EcoFuzz (2020) 风格的自适应能量策略。
+    """EcoFuzz 风格的自适应能量策略。
 
     核心思想:
       - 当整体覆盖率增长快 (exploration 阶段), 偏向给新种子多能量
@@ -160,8 +152,7 @@ class AdaptiveEnergyPolicy:
     def mode(self) -> str:
         return self._current_mode
 
-
-# ===== UCB 能量分配 (pAFL 2024 风格) =====
+# UCB 能量分配
 
 class UCBEnergyAllocator:
     """基于 UCB 的能量分配器 [pAFL 2024]。
@@ -204,8 +195,7 @@ class UCBEnergyAllocator:
             self._success_counts[seed_id] = self._success_counts.get(seed_id, 0) + 1
         self._total_rounds += 1
 
-
-# ===== 统一的能量计算门面 =====
+# 统一的能量计算门面
 
 class EnergyComputer:
     """能量计算器 -- 委托到具体策略函数。"""
@@ -277,8 +267,7 @@ class EnergyComputer:
             return self._adaptive.mode
         return None
 
-
-# ===== 便捷函数 =====
+# 便捷函数
 
 def compute_energy(seed_meta: dict, policy: str = "fast",
                    base_energy: float = 10.0) -> float:

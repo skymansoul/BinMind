@@ -9,9 +9,7 @@ from typing import Dict, Any, List, Optional, Tuple
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Analysis Modality
-# ---------------------------------------------------------------------------
 
 class AnalysisModality:
     """Labels for distinct analysis modalities."""
@@ -53,9 +51,7 @@ class AnalysisModality:
         return weights.get(modality, 0.5)
 
 
-# ---------------------------------------------------------------------------
 # Modal Result
-# ---------------------------------------------------------------------------
 
 class ModalResult:
     """A single finding from one analysis modality."""
@@ -97,9 +93,7 @@ class ModalResult:
                 f"conf={self.m_confidence:.2f} sev={self.m_severity}>")
 
 
-# ---------------------------------------------------------------------------
 # Fused Vulnerability
-# ---------------------------------------------------------------------------
 
 class FusedVuln:
     """Result of fusing multiple ModalResult instances."""
@@ -152,9 +146,7 @@ class FusedVuln:
                 f"conf={self.m_fused_confidence:.2f} consensus={self.m_is_consensus}>")
 
 
-# ---------------------------------------------------------------------------
 # Evidence Fusion Engine
-# ---------------------------------------------------------------------------
 
 class EvidenceFusion:
     """Fuses multiple modal results into a single confidence score using
@@ -252,9 +244,7 @@ class EvidenceFusion:
         return fused_list
 
 
-# ---------------------------------------------------------------------------
 # Multimodal Vulnerability Analyzer
-# ---------------------------------------------------------------------------
 
 class MultimodalVulnAnalyzer:
     """Orchestrates multimodal vulnerability analysis with evidence fusion.
@@ -406,9 +396,7 @@ def _import_time():
     return time.time()
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def analyze_multimodal(modal_results: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
     analyzer = MultimodalVulnAnalyzer()

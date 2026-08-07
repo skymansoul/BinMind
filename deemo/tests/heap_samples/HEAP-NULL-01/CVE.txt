@@ -1,2 +1,0 @@
-Name: HEAP-NULL-01
-Type: null-deref-after-malloc

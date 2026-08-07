@@ -20,10 +20,9 @@
 3. 通过比较完整融合与干预后融合的差异，估计每个模态的 ACE。
 4. ACE 驱动的动态路由替代固定权重，实现因果感知的模态选择。
 
-参考：
-- Pearl, J. "Causal diagrams for empirical research." Biometrika (1995)
+- Pearl, J. "Causal diagrams for empirical research." Biometrika
 - Zhou et al. "Mitigating Modality Prior-Induced Hallucinations via
-  Deciphering Attention Causality." arXiv:2410.04780 (2024).
+  Deciphering Attention Causality.".
   该方法使用后门调整和反事实推理消除模态先验偏差。
 """
 
@@ -31,9 +30,7 @@ import math
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
 _EPS: float = 1e-9
-
 
 class CausalModalityRouter:
     """因果感知的模态路由决策器。
@@ -77,9 +74,7 @@ class CausalModalityRouter:
         # 历史路由决策 count，用于审计
         self._route_count: int = 0
 
-    # ------------------------------------------------------------------
     # 公开 API
-    # ------------------------------------------------------------------
 
     def route(
         self,
@@ -155,7 +150,7 @@ class CausalModalityRouter:
         if modal_name not in modal_features:
             return 0.0
 
-        # 步骤1: do(modal=present) vs do(modal=absent) 对中介的影响
+        # do(modal=present) vs do(modal=absent) 对中介的影响
         _full_mediator = mediator_fn(modal_features)
         _ablated = {k: v for k, v in modal_features.items() if k != modal_name}
         _ablated_mediator = mediator_fn(_ablated) if _ablated else _full_mediator
@@ -164,7 +159,7 @@ class CausalModalityRouter:
             _full_mediator, _ablated_mediator
         )
 
-        # 步骤2: do(mediator=full) vs do(mediator=ablated) 对输出的影响
+        # do(mediator=full) vs do(mediator=ablated) 对输出的影响
         _full_output = output_fn(_full_mediator)
         _ablated_output = output_fn(_ablated_mediator)
 
@@ -193,9 +188,7 @@ class CausalModalityRouter:
 
         return _causal, _correl
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _smooth_ace(self, ace_raw: Dict[str, float]) -> Dict[str, float]:
         """指数平滑 ACE 估计以减少单次测量噪声。"""
@@ -397,7 +390,6 @@ class CausalModalityRouter:
 
         return _strata if _strata else [(modals, 1.0)]
 
-
 def causal_weighted_fusion(
     modal_features: Dict[str, List[List[float]]],
     dim: int = 64,
@@ -450,8 +442,7 @@ def causal_weighted_fusion(
 
     return _fused, _weights, _ace
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -505,7 +496,6 @@ def _smoke_test():
     print(f"[causal_router] causal split: {_causal}")
     print(f"[causal_router] correl split: {_correl}")
     print("[OK] CausalModalityRouter smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

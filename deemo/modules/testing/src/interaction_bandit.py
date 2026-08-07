@@ -4,9 +4,9 @@
 #   adaptive_mutator.py 用 EWMA 独立追踪每个操作符的覆盖奖励,
 #   thompson_test_selector.py 用独立 Beta 后验做策略选择。
 #   两者均假设操作符/策略之间独立——但变异操作符之间存在强交互:
-#     - bitflip_1 之后接 arith_8 的效果 ≠ 两者独立效果之和
-#     - havoc 之后接 dict_insert 可能因格式破坏而抵消前者收益
-#     - 某些操作符组合 (如 splice + bitflip) 有超加性收益
+# bitflip_1 之后接 arith_8 的效果 ≠ 两者独立效果之和
+# havoc 之后接 dict_insert 可能因格式破坏而抵消前者收益
+# 某些操作符组合 (如 splice + bitflip) 有超加性收益
 #
 #   忽略交互效应导致:
 #     a) 重复选择相互抵消的操作符组合, 浪费 fuzzing 预算
@@ -27,16 +27,16 @@
 #
 # 为什么用 LinUCB 而非 Thompson 采样:
 #   - Thompson 采样假设 Beta-Bernoulli 共轭, 但覆盖奖励是连续的
-#   - LinUCB 天然支持连续奖励和上下文特征
-#   - 交互特征可直接加入上下文向量, 无需修改算法结构
+# LinUCB 天然支持连续奖励和上下文特征
+# 交互特征可直接加入上下文向量, 无需修改算法结构
 #
-# 参考文献:
+# 文献:
 #   Li et al. 2010, "A Contextual-Bandit Approach to Personalized News Article
 #     Recommendation", WWW 2010 — LinUCB 原始论文
 #   "Balancing Exploration and Exploitation: Fuzzing Based on
-#     Adaptive Scheduling" (IEEE, Nov 2025) — DDPG+MAB做fuzz调度;
+#     Adaptive Scheduling" — DDPG+MAB做fuzz调度;
 #     本项目取MAB思想但以LinUCB替代DDPG (线性模型, 训练开销低)
-#   "Efficient Directed Fuzz Testing Based on Exp3" (NaNA 2025)
+#   "Efficient Directed Fuzz Testing Based on Exp3"
 #     — 对抗bandit做定向fuzzing; 本项目以LinUCB替代Exp3 (连续奖励)
 
 from __future__ import annotations
@@ -312,7 +312,7 @@ class InteractionBanditScheduler:
         # 提取右半部分
         return [[aug[i][n + j] for j in range(n)] for i in range(n)]
 
-    # ---- 诊断 ----
+    # 诊断
 
     def interaction_report(self) -> Dict[Tuple[str, str], float]:
         """返回所有操作符对的交互 EWMA, 用于诊断和可视化"""

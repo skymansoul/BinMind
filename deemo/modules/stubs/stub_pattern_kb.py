@@ -14,7 +14,7 @@
 #   3. 存储为 (fingerprint_vector, source_template, metrics)
 #   4. 新合约到来时: 计算指纹 → 检索 top-k 最相似模式 → 适配为模板
 #
-# 区别于 SLICE (NeurIPS 2025) 和 xKG (arXiv:2510.17795):
+# 区别于 SLICE 和 xKG:
 #   两者使用外部知识图谱或 AST 语义索引做跨项目检索。
 #   本模块是项目内闭环学习 — 知识库随每次成功实现自动增长，
 #   且检索对象是"同项目内相似桩的实现模式"，不是外部代码。
@@ -167,7 +167,7 @@ class PatternKB:
     def size(self) -> int:
         return len(self._patterns)
 
-    # ---- 内部 ----
+# 内部
     @staticmethod
     def _name_ngrams(name: str, n: int = 3) -> list[str]:
         """函数名 → 字符级 n-gram。"""

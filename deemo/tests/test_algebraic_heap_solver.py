@@ -154,7 +154,7 @@ class TestConvenienceFunctions(unittest.TestCase):
 # AllocatorType, PtmallocModel, MallocNgModel, HeapChunk, HeapChunkState,
 # solve_heap_layout(), generate_heap_fengshui_code() were removed.
 # The module was refactored into:
-#   - AlgebraicHeapSolver (main solver)
+# AlgebraicHeapSolver (main solver)
 #   - Z3Solver / HeuristicSolver (solve strategies)
 #   - LayoutConstraint / AllocationSequence / SolveResult (data types)
 #   - create_algebraic_heap_solver (factory function)

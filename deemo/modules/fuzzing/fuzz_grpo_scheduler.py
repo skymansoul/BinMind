@@ -1,9 +1,9 @@
 """
 GRPO 策略梯度变异调度器 — 将变异算子选择建模为强化学习问题，组相对策略优化直接最大化期望奖励。
 
-方法溯源: R1-Fuzz (arXiv:2509.20384) GRPO 后训练框架、
-BandFuzz (arXiv:2507.10845) 协同选择策略、
-FuzzingBrain V2 (arXiv:2605.21779) 可疑点抽象。
+方法溯源: R1-Fuzz  GRPO 后训练框架、
+BandFuzz  协同选择策略、
+FuzzingBrain V2  可疑点抽象。
 
 核心机制: 策略梯度 + 组内相对优势计算，消除绝对奖励尺度的偏移。
 """
@@ -20,10 +20,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-
-# ============================================================================
 # 变异算子枚举
-# ============================================================================
 
 class MutationOp(Enum):
     """模糊测试变异算子枚举，保持与 StructMutOp 的向后兼容。"""
@@ -41,10 +38,7 @@ class MutationOp(Enum):
     TAINT_GUIDED = auto()     # 污点传播引导的精确变异
     SUSPICIOUS_GUIDED = auto()  # 可疑点定向变异 (FuzzingBrain V2)
 
-
-# ============================================================================
 # GRPO 策略梯度调度器 — R1-Fuzz Section 3.2
-# ============================================================================
 
 @dataclass
 class OpRecord:
@@ -56,7 +50,6 @@ class OpRecord:
     total_reward: float = 0.0     # 累计奖励值
     avg_reward: float = 0.0       # 历史平均奖励
     last_rewards: List[float] = field(default_factory=list)  # 最近 N 次奖励，供 GRPO 组内计算
-
 
 class GRPOScheduler:
     """
@@ -107,13 +100,13 @@ class GRPOScheduler:
         if seed is not None:
             random.seed(seed)
 
-    # ---- 算子采样接口 ----
+# 算子采样接口
 
     def select_operators(self, count: Optional[int] = None) -> List[MutationOp]:
         """
         按概率分布无放回采样指定数量的变异算子。
 
-        实现: A-ES 加权采样 (Efraimidis-Spirakis 2006)，权重为各算子当前概率。
+        实现: A-ES 加权采样，权重为各算子当前概率。
         无放回保证组内算子不重复，维持搜索方向多样性。
         count 默认取 group_size。
         """
@@ -130,7 +123,7 @@ class GRPOScheduler:
         """选取当前概率最高的单一算子。"""
         return self.select_operators(1)[0]
 
-    # ---- GRPO 策略梯度核心 ----
+# GRPO 策略梯度核心
 
     def update(
         self,
@@ -239,7 +232,7 @@ class GRPOScheduler:
                 self._beta * rec.avg_reward + (1.0 - self._beta) * rec.baseline
             )
 
-    # ---- 状态查询与导出 ----
+# 状态查询与导出
 
     def get_probabilities(self) -> Dict[MutationOp, float]:
         """导出各算子当前选择概率的字典映射。"""
@@ -275,10 +268,7 @@ class GRPOScheduler:
             rec.last_rewards.clear()
         self._total_selections = 0
 
-
-# ============================================================================
-# Efraimidis-Spirakis A-ES 加权无放回采样 (2006)
-# ============================================================================
+# Efraimidis-Spirakis A-ES 加权无放回采样
 
 def _weighted_sample_without_replacement(
     items: list, weights: list, k: int
@@ -304,10 +294,7 @@ def _weighted_sample_without_replacement(
     keys.sort(key=lambda x: x[1], reverse=True)
     return [item for item, _ in keys[:k]]
 
-
-# ============================================================================
 # 变异奖励函数 — R1-Fuzz Section 4.3 设计
-# ============================================================================
 
 def compute_mutation_reward(
     new_edges: int,
@@ -347,7 +334,6 @@ def compute_mutation_reward(
     reward += 0.1 * speed_score
 
     return reward
-
 
 __all__ = [
     "MutationOp",

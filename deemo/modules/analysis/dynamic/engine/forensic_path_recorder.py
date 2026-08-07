@@ -291,7 +291,7 @@ class ForensicPathRecorder(BaseAnalyzer):
             "timestamp": datetime.now().isoformat()
         }
 
-    # --- 新增: Delta压缩快照存储 ---
+# 新增: Delta压缩快照存储
     # 连续快照通常只有寄存器和少量内存区域变化，全量存储浪费严重
     # Delta编码仅存储变化部分，压缩比通常可达5:1以上（实测符号执行轨迹）
     def _compute_snapshot_delta(self, prev: ForensicSnapshot, curr: ForensicSnapshot) -> Dict[str, Any]:
@@ -326,7 +326,7 @@ class ForensicPathRecorder(BaseAnalyzer):
 
         return delta
 
-    # --- 新增: 可重现性验证 ---
+# 新增: 可重现性验证
     # CVE提交要求漏洞可被独立复现。此方法重新执行记录的输入数据
     # 对比输出确认崩溃类型和地址一致
     def verify_reproducibility(self, record: Optional[ForensicRecord] = None) -> Dict[str, Any]:
@@ -374,7 +374,7 @@ class ForensicPathRecorder(BaseAnalyzer):
             'details': results,
         }
 
-    # --- 新增: 时间线可视化 ---
+# 新增: 时间线可视化
     # 将快照序列按时间排序，输出state transition图，供CVE审核者快速理解漏洞发现过程
     def generate_timeline_visualization(self, record: Optional[ForensicRecord] = None) -> str:
         """生成快照时间线的ASCII可视化，显示状态转换和关键事件"""

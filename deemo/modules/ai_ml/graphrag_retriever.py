@@ -1,7 +1,7 @@
 # GraphRAG知识检索 — 基于知识图谱的检索增强生成 (适用于威胁情报)
-# 依据: KGV [Wu et al. arXiv 2408.08088, 2024] 的LLM+KG CTI可信度评估
-# GraphRAG Under Fire [arXiv 2501.14050] 的图谱检索安全分析
-# Cyber Knowledge Completion [Webb et al. arXiv 2409.16176, 2024]
+# 依据: KGV 的LLM+KG CTI可信度评估
+# GraphRAG Under Fire 的图谱检索安全分析
+# Cyber Knowledge Completion
 # 核心: 构建CTI知识图谱 → 多跳关系检索 → 上下文增强LLM分析
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
-# ========== 数据结构 ==========
+# 数据结构
 
 @dataclass
 class KGEntity:
@@ -42,7 +42,7 @@ class RetrievalResult:
     source_count: int
 
 
-# ========== 图索引 ==========
+# 图索引
 
 class GraphRAGIndex:
     """面向RAG的知识图谱索引
@@ -61,7 +61,7 @@ class GraphRAGIndex:
         self._outgoing: Dict[str, List[int]] = defaultdict(list)  # entity_id -> [relation_idx]
         self._incoming: Dict[str, List[int]] = defaultdict(list)
 
-    # ---- CRUD ----
+# CRUD
 
     def add_entity(self, entity: KGEntity):
         self.entities[entity.entity_id] = entity
@@ -80,7 +80,7 @@ class GraphRAGIndex:
         for r in relations:
             self.add_relation(r)
 
-    # ---- 检索 ----
+# 检索
 
     def search_entities(self, query_text: str, top_k: int = 10,
                         entity_type: Optional[str] = None) -> List[Tuple[KGEntity, float]]:
@@ -213,7 +213,7 @@ class GraphRAGIndex:
           3. 提取子图上下文
           4. 构建上下文文本
         """
-        # Step 1: 实体搜索
+        # 实体搜索
         matched = self.search_entities(query, top_k=top_k)
 
         if not matched:
@@ -225,18 +225,18 @@ class GraphRAGIndex:
         entities = [e for e, _ in matched]
         top_scores = [s for _, s in matched]
 
-        # Step 2: 多跳遍历
+        # 多跳遍历
         all_paths = []
         for entity in entities[:3]:  # 从top-3出发
             paths = self.traverse_paths(entity.entity_id, max_hops=max_hops,
                                         max_paths=max_paths // 3)
             all_paths.extend(paths)
 
-        # Step 3: 子图上下文
+        # 子图上下文
         top_ids = [e.entity_id for e in entities[:5]]
         sub_entities, sub_relations = self.extract_subgraph_context(top_ids)
 
-        # Step 4: 构建上下文文本
+        # 构建上下文文本
         context = self._build_context_text(entities, all_paths, sub_entities, sub_relations)
 
         # 置信度评估
@@ -279,7 +279,7 @@ class GraphRAGIndex:
         return '\n'.join(parts)
 
 
-# ========== CTI知识图谱种子 ==========
+# CTI知识图谱种子
 
 def seed_cti_knowledge_graph(index: GraphRAGIndex) -> GraphRAGIndex:
     """预置CTI知识图谱的种子数据 (常见CVE/CWE/攻击模式)"""

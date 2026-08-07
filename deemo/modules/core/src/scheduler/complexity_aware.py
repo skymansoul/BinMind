@@ -19,7 +19,7 @@
 - 本模块：任务调度顺序自适应（Which task next）。
 - 两者正交——分别优化并发度和优先级。
 
-参考：SPT调度理论 (Smith 1956)，应用于二进制分析的新场景。
+参考：SPT调度理论，应用于二进制分析的新场景。
 """
 
 import math
@@ -162,9 +162,7 @@ class ComplexityAwareScheduler:
                 _total += _p.estimated_seconds
         return _total
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _extract_features(
@@ -200,7 +198,7 @@ class ComplexityAwareScheduler:
             self._feedback = self._feedback[-200:]
 
 
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _scheduler = ComplexityAwareScheduler()
     _profiles = [

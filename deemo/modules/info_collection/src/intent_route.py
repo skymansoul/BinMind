@@ -25,9 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 意图类别与动作参数
-# ---------------------------------------------------------------------------
 
 
 class IntentCategory(Enum):
@@ -98,9 +96,7 @@ class RoutePlan:
     valid: bool = False
 
 
-# ---------------------------------------------------------------------------
 # 规则分类器 (降级路径)
-# ---------------------------------------------------------------------------
 
 _CATEGORY_KEYWORDS: Dict[IntentCategory, Tuple[str, ...]] = {
     IntentCategory.STATIC_COLLECTION: (
@@ -238,9 +234,7 @@ class RuleIntentClassifier:
         return result
 
 
-# ---------------------------------------------------------------------------
 # 远端语义分类器
-# ---------------------------------------------------------------------------
 
 _LLM_CLASSIFY_SYSTEM = (
     "你是网络威胁情报采集路由的意图分类器。"
@@ -340,9 +334,7 @@ class LLMIntentClassifier:
         )
 
 
-# ---------------------------------------------------------------------------
 # 采集器注册表与动作路由
-# ---------------------------------------------------------------------------
 
 DEFAULT_COLLECTORS: List[CollectorSpec] = [
     CollectorSpec("host_enum", "主机信息采集 (systeminfo/ipconfig/whoami)", IntentCategory.STATIC_COLLECTION, ("target",)),
@@ -468,7 +460,6 @@ def create_default_route(config: Optional[Dict[str, str]] = None) -> IntentRoute
     )
 
 
-# ---------------------------------------------------------------------------
 # 增强版意图路由 (AugustmentedIntentRoute)
 #
 # 将 EGACD / AICV / CC-RCR / MSIGC / SIFT-D 五项创新集成到统一入口。
@@ -479,7 +470,6 @@ def create_default_route(config: Optional[Dict[str, str]] = None) -> IntentRoute
 #   3. 多阶段信息增益级联调度
 #   4. 多轮上下文歧义解析
 #   5. 熵引导自适应深度
-# ---------------------------------------------------------------------------
 
 
 class AugmentedIntentRoute(IntentRoute):
@@ -593,7 +583,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._arg_extractor = _ap.ArgumentPhaseExtractor()
         self._param_calibrator = _pc.ParameterCalibrator()
 
-    # --- 分类法精化 ---
+# 分类法精化
 
     def feed_taxonomy(self, category: IntentCategory, confidence: float) -> None:
         self._ensure_batch5c()
@@ -604,7 +594,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch5c()
         return self._taxonomy_refiner.analyze()
 
-    # --- 杀伤链阶段推断增强 ---
+# 杀伤链阶段推断增强
 
     def infer_phase_by_sequence(self, api_calls: List[str]) -> "SequencePhaseReport":
         self._ensure_batch5c()
@@ -616,7 +606,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch5c()
         return self._arg_extractor.extract(api_args)
 
-    # --- 参数自校准 ---
+# 参数自校准
 
     def calibrate_gain(self, action_id: str, intent: IntentCategory, utility: float) -> None:
         self._ensure_batch5c()
@@ -647,7 +637,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch5c()
         self._param_calibrator.save(path)
 
-    # --- Bandit 采集器选择 ---
+# Bandit 采集器选择
 
     def bandit_select(self, candidates: List[str], intent: IntentCategory) -> "BanditSelection":
         self._ensure_batch5b()
@@ -661,7 +651,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch5b()
         return self._bandit_router.get_arm_stats()
 
-    # --- 嵌入缓存 ---
+# 嵌入缓存
 
     def cache_lookup(self, text: str) -> "CacheLookupResult":
         self._ensure_batch5()
@@ -681,7 +671,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._embed_cache.insert(text, result)
         return result
 
-    # --- 边界加固 ---
+# 边界加固
 
     def generate_boundary_queries(self) -> List["BoundaryQuery"]:
         self._ensure_batch5()
@@ -706,7 +696,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch5()
         return self._boundary_hardener.analyze()
 
-    # --- 自愈监控 ---
+# 自愈监控
 
     def record_classifier_health(
         self, llm_conf: float, rule_conf: float,
@@ -724,7 +714,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch4()
         self._health_monitor.reset_baseline()
 
-    # --- 规则提取 ---
+# 规则提取
 
     def feed_rule_history(self, text: str, llm_category: IntentCategory, llm_confidence: float) -> None:
         self._ensure_batch4()
@@ -743,7 +733,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch4()
         return self._rule_extractor.suggest_rule_update(existing)
 
-    # --- 决策溯源 ---
+# 决策溯源
 
     def open_provenance_chain(self, input_text: str) -> str:
         self._ensure_batch3()
@@ -765,7 +755,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch3()
         return self._provenance_engine.get_chain(chain_id)
 
-    # --- 探测检测 ---
+# 探测检测
 
     def check_probing(
         self, category: IntentCategory, confidence: float,
@@ -774,7 +764,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch3()
         return self._probing_detector.feed(category, confidence, target, method, text)
 
-    # --- 策略守卫 ---
+# 策略守卫
 
     def check_policy(self, result: IntentResult) -> "PolicyVerdict":
         self._ensure_batch3()
@@ -784,7 +774,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch3()
         return self._policy_guard.check_collector(result, spec)
 
-    # --- 提示注入防御 ---
+# 提示注入防御
 
     def assess_injection_risk(self, text: str) -> "InjectionReport":
         """评估请求文本的注入风险, 返回 InjectionReport。"""
@@ -796,7 +786,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch2()
         return self._prompt_defender.quick_scan(text)
 
-    # --- 在线校准 ---
+# 在线校准
 
     def record_collection_outcome(
         self, action_id: str, intent: IntentCategory,
@@ -816,7 +806,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch2()
         return self._online_calibrator.sample_gain(action_id, intent, base)
 
-    # --- 因果链重建 ---
+# 因果链重建
 
     def reconstruct_chain(
         self,
@@ -826,7 +816,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch2()
         return self._causal_reconstructor.reconstruct(intent_sequence)
 
-    # --- 证据融合 ---
+# 证据融合
 
     def fuse_collector_results(
         self, bodies: List["EvidenceBody"],
@@ -835,7 +825,7 @@ class AugmentedIntentRoute(IntentRoute):
         self._ensure_batch2()
         return self._evidence_fuser.fuse(bodies)
 
-    # --- 增强分类与路由 ---
+# 增强分类与路由
 
     def classify_calibrated(self, text: str) -> "CalibratedResult":
         """分类 + 置信度校准, 返回校准后的结果。"""
@@ -914,7 +904,7 @@ class AugmentedIntentRoute(IntentRoute):
             valid=not resolved.ambiguous,
         )
 
-    # --- 增强歧义处理 ---
+# 增强歧义处理
 
     def clarify(self, text: str) -> List[str]:
         """增强歧义处理: 利用多轮会话历史生成上下文感知的澄清问题。"""
@@ -935,7 +925,7 @@ class AugmentedIntentRoute(IntentRoute):
 
         return super().clarify(text)
 
-    # --- 对抗性意图一致性校验 ---
+# 对抗性意图一致性校验
 
     def verify_consistency(
         self,
@@ -950,7 +940,7 @@ class AugmentedIntentRoute(IntentRoute):
             api_calls, cfg_features, code_patterns, strings,
         )
 
-    # --- 级联计划 ---
+# 级联计划
 
     def route_with_cascade(self, text: str, budget: Optional[float] = None) -> "CascadePlan":
         """直接返回信息增益级联执行计划 (而非 RoutePlan)。"""
@@ -964,7 +954,7 @@ class AugmentedIntentRoute(IntentRoute):
         ]
         return self._scheduler.plan(resolved.category, action_ids, budget)
 
-    # --- 会话管理 ---
+# 会话管理
 
     def commit_to_session(self, result: IntentResult, source: str = "") -> None:
         """将当前分类结果提交到会话上下文。"""
@@ -977,7 +967,7 @@ class AugmentedIntentRoute(IntentRoute):
             self._session_ctx.clear()
             self._fingerprint_tracker.clear()
 
-    # --- 增强 infer_malice: 追加一致性校验 ---
+# 增强 infer_malice: 追加一致性校验
 
     def infer_malice(
         self, func_name: str, pseudocode: str, api_calls: List[str]

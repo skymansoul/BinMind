@@ -79,14 +79,12 @@ class CollectionState:
         return self.error_results / self.total_attempts
 
 
-# ---------------------------------------------------------------------------
 # 类别条件熵的基准参数
 # 不同意图类别的信息密度差异显著:
-#   - FILE_ANALYSIS: 文件结构层次分明, 浅层即可获取大量结构化信息
+# FILE_ANALYSIS: 文件结构层次分明, 浅层即可获取大量结构化信息
 #   - INTEL_CORRELATION: 情报关联具有长尾分布, 深层展开收益递减更慢
 #   - STATIC_COLLECTION: 主机信息采集通常在 standard 深度触及饱和
 # 以下参数通过经验数据估计, 可按需校准。
-# ---------------------------------------------------------------------------
 
 _CATEGORY_ENTROPY_PROFILES: Dict[IntentCategory, Dict[str, float]] = {
     IntentCategory.STATIC_COLLECTION: {

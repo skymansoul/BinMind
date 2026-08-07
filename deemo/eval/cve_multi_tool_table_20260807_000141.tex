@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{CVE Heap Overflow: Multi-Tool Detection Comparison}
+\label{tab:cve-multi-tool}
+\begin{tabular}{lrrrrr}
+\toprule
+Tool & TP & FN & Recall & Precision & F1 \\
+\midrule
+BinMind-CSA & 1 & 15 & 6.2% & 100.0% & 0.1176 \\
+Regex-Base & 4 & 12 & 25.0% & 100.0% & 0.4000 \\
+Heuristic & 15 & 1 & 93.8% & 100.0% & 0.9677 \\
+Angr-CFG & 0 & 16 & 0.0% & 0.0% & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

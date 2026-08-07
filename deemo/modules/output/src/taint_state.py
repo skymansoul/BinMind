@@ -8,7 +8,7 @@ x86 寄存器重叠模型:
 
 修改记录:
   2025-07-30 16:03 - 增加 SIMD 寄存器 (XMM0-15) 的 16 字节状态支持
-  2025-08-01 08:45 - 从 subreg_taint.py 拆分独立模块
+2025-08-01 08:45 - 独立模块
 """
 
 from typing import Tuple
@@ -71,7 +71,7 @@ class TaintState:
         return f"TaintState(mask=0x{self.mask:0{self.byte_count*2}x})"
 
 
-# --- x86/x64 寄存器名 → 父寄存器 + 字节偏移映射 ---
+# x86/x64 寄存器名 → 父寄存器 + 字节偏移映射
 
 _GP64_NAMES = frozenset({
     'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',

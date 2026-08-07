@@ -1,6 +1,6 @@
 # Markov链模糊测试生成器 — 从种子语料学习字节转移概率矩阵
-# 参考 "Seed Scheduling in Fuzz Testing as a Markov Decision Process"
-# (Cunha et al. 2025)的MDP形式化思想，降级为轻量Markov链:
+# "Seed Scheduling in Fuzz Testing as a Markov Decision Process"
+#的MDP形式化思想，降级为轻量Markov链:
 # 对每个偏移位置学习P(next_byte | prev_byte)，生成保留统计结构的输入。
 # 复杂度: O(N*256^2)内存 / O(N*C)生成，N=最大长度 C=生成数
 import random
@@ -9,13 +9,12 @@ import math
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict, Counter
 
-
 class MarkovByteModel:
     """单偏移位置的马尔可夫转移矩阵 — 对输入第i个字节，学习
     P(byte_i = b | byte_{i-1} = prev)的经验分布。相邻位置间无耦合
     (naive Bayes假设)，以控制O(N*256^2)内存。
 
-    参考LinFuzz (Su et al. 2024)的上下文向量思路: 若缺乏
+    参考LinFuzz的上下文向量思路: 若缺乏
     足够转移样本，回退到该位置的全局边际分布。
     """
 
@@ -61,7 +60,6 @@ class MarkovByteModel:
                 ent -= p * math.log2(p) * (subtotal / total_trans)
         return ent
 
-
 class MarkovFuzzGenerator:
     """Markov链驱动的模糊测试输入生成器。
 
@@ -72,10 +70,9 @@ class MarkovFuzzGenerator:
 
     生成时若超出训练数据最大长度，用前一字节在边界位置的转移分布做自举。
 
-    参考文献:
     - Cunha et al. 2025, "Seed Scheduling as MDP"
     - Su et al. 2024, "LinFuzz: Program-Sensitive Seed Scheduling via LinUCB"
-    - Bohme et al. 2017, "AFLFast: Coverage-based Greybox Fuzzing as MDP" (CCS 2017)
+    - Bohme et al. 2017, "AFLFast: Coverage-based Greybox Fuzzing as MDP"
     """
 
     def __init__(self, order: int = 1, seed: int = None):
@@ -90,7 +87,7 @@ class MarkovFuzzGenerator:
         self._global_freqs: Counter = Counter()
         self._trained = False
 
-    # ---- 训练 ----
+    # 训练
     def fit(self, corpus: List[bytes]) -> None:
         """从语料库学习Markov转移矩阵。空输入自动过滤。"""
         self._models.clear()
@@ -133,7 +130,7 @@ class MarkovFuzzGenerator:
             self._global_freqs[byte_val] += 1
         self._trained = True
 
-    # ---- 生成 ----
+    # 生成
     def generate(self, count: int = 64,
                  length: Optional[int] = None) -> List[bytes]:
         """生成count个保留统计分布的输入。
@@ -169,7 +166,7 @@ class MarkovFuzzGenerator:
             prev = buf[i]
         return bytes(buf)
 
-    # ---- 进化变异 (Markov-guided mutation) ----
+    # 进化变异 (Markov-guided mutation)
     def evolve(self, seed: bytes, rounds: int = 5) -> bytes:
         """对高产种子做Markov导向局部变异:
 
@@ -218,7 +215,7 @@ class MarkovFuzzGenerator:
             prev = buf[i]
         return bytes(buf)
 
-    # ---- 分析 ----
+    # 分析
     def position_entropy_report(self) -> Dict[int, float]:
         """返回每个偏移位置的平均转移熵，用于识别固定/可变字段边界。"""
         return {offset: model.entropy
@@ -238,11 +235,8 @@ class MarkovFuzzGenerator:
     def max_length(self) -> int:
         return self._max_len
 
-
-# ---------------------------------------------------------------------------
 # 高阶扩展: n-gram Markov，当语料足够大时启用 (order >= 2)
 # 存储: prev_bytes (tuple) -> next_byte Counter
-# ---------------------------------------------------------------------------
 # N-gram Markov (高阶，用于实验场景)
 class NGramMarkovModel:
     def __init__(self, n: int = 3):
@@ -263,8 +257,7 @@ class NGramMarkovModel:
             ctx = ctx[1:]  # Katz回退: 截断上下文前缀
         return rng.randint(0, 255)
 
-
-# ================ 辅助函数 ================
+# 辅助函数
 def _weighted_choice(counter: Counter, rng: random.Random) -> int:
     """从Counter中按权重随机抽取一个key"""
     total = sum(counter.values())
@@ -278,7 +271,6 @@ def _weighted_choice(counter: Counter, rng: random.Random) -> int:
             return k
     # 浮点舍入保护
     return next(iter(counter))
-
 
 def build_markov_from_corpus(corpus_dir: str,
                               order: int = 1) -> MarkovFuzzGenerator:

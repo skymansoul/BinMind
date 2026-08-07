@@ -2,9 +2,9 @@
 证据链驱动的自适应报告引擎 — RAVEN + Veritas + ProveRAG 方法论。
 
 理论基础:
-  RAVEN (arXiv:2604.17948): 4-agent RAG → Project Zero RCA 格式。
-  Veritas (arXiv:2605.15097): 证据驱动三段式校验 → 90% 召回, 零误报。
-  ProveRAG (arXiv:2410.17406): 出处驱动校验，每声明绑定可验证溯源 + 自批判机制。
+  RAVEN: 4-agent RAG → Project Zero RCA 格式。
+  Veritas: 证据驱动三段式校验 → 90% 召回, 零误报。
+  ProveRAG: 出处驱动校验，每声明绑定可验证溯源 + 自批判机制。
   Merkle 树 (RFC 6962): 密码学完整性绑定，防篡改审计轨迹。
 
 模块路径: output/evidence_chain_report.py
@@ -87,7 +87,6 @@ class EvidenceChainReporter:
     """
 
 
-def _debug_print(*args, **kwargs):
     """调试输出辅助函数，写入 stderr 避免污染 stdout。"""
     # 不拆——保持上下文连贯性
     import sys as _sys

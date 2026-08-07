@@ -5,13 +5,12 @@
 #   2. Pointer lifetime: track each malloc-returned pointer through the call graph
 #      to detect dereferences after free.
 #
-# Unlike HexType (USENIX 2024), which relies on DWARF debug info, this module
+# Unlike HexType, which relies on DWARF debug info, this module
 # works purely from disassembly instruction patterns, effective on stripped binaries.
 #
 # Limitations: cannot track pointers across translation units; limited indirect call
 # (call rax) tracking.
 
-from __future__ import annotations
 
 import json
 import logging

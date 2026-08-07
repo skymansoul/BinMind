@@ -1,6 +1,6 @@
 # 训练型 Bloom Filter (PLBF) + SplineSketch 分位数估计
 #
-# Partitioned Learned Bloom Filter [Sato & Matsui, arXiv:2410.13278, 2024]:
+# Partitioned Learned Bloom Filter:
 #   PLBF 将 key 空间按模型推断的"存在概率"划分为多个区间，
 #   各区间分配独立尺寸的 Bloom filter —— 高概率区间用更多 bits/entry，
 #   低概率区间用更少或不用 filter。总内存低于标准 Bloom filter，
@@ -12,7 +12,7 @@
 #     3. 每组 Bloom filter 参数独立最优化
 #     4. 查询: 模型推断概率 → 路由至对应组 Bloom filter → 查询
 #
-# SplineSketch (Łukasiewicz et al., 2025/2026 preprint):
+# SplineSketch:
 #   流式分位数 sketch，替代 TDigest。O(k) 空间下有界最坏误差
 #   （TDigest 误差可无界）。核心机制: 动态细分值域为 bucket，
 #   单调三次样条插值拟合 CDF。合成/真实数据上误差比 TDigest 低 2-20x。
@@ -25,9 +25,7 @@ import math
 import bisect
 from typing import List, Tuple, Optional, Dict, Any
 
-# ---------------------------------------------------------------------------
 # SplineSketch — 有界误差流式分位数估计
-# ---------------------------------------------------------------------------
 
 class SplineSketch:
     """有界秩误差流式分位数 sketch。
@@ -199,9 +197,7 @@ class SplineSketch:
         return self._n
 
 
-# ---------------------------------------------------------------------------
 # LearnedBloomFilter — 分区训练型 Bloom filter
-# ---------------------------------------------------------------------------
 
 class LearnedBloomFilter:
     """分区训练型 Bloom filter (Fast PLBF, Sato & Matsui 2024)。
@@ -295,9 +291,7 @@ class LearnedBloomFilter:
         return [f._n for f in self._filters]
 
 
-# ---------------------------------------------------------------------------
 # 辅助: MiniBloom + bit 分配
-# ---------------------------------------------------------------------------
 
 class _MiniBloom:
     """微型单 bit-array Bloom filter —— PLBF 内部组件。"""

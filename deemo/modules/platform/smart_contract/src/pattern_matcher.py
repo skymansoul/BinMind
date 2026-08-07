@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set, Dict  # 不拆: Dict 以后 cache 用
 from .parser import EVMOp
 
-# ----
 @dataclass
 class OpcodePattern:
     """漏洞指纹：一序列操作码 + 语义描述。sequence 是 mnemonic 列表。"""
@@ -16,7 +15,6 @@ class OpcodePattern:
     swc_id: str = ""
     tags: List[str] = field(default_factory=list)
 
-# ----
 @dataclass
 class PatternMatch:
     pattern: OpcodePattern
@@ -24,9 +22,7 @@ class PatternMatch:
     confidence: float              # 0-1
     matched_instructions: List[EVMOp] = field(default_factory=list)
 
-# ===========================================================================
 # 20+ 已知漏洞模式
-# ===========================================================================
 
 KNOWN_PATTERNS: List[OpcodePattern] = []
 
@@ -156,9 +152,7 @@ _register("forced_ether_selfdestruct",
     "SELFDESTRUCT with no withdrawal mechanism for locked ETH",
     "MEDIUM", "SWC-106")
 
-# ===========================================================================
 # PatternMatcher — 核心匹配引擎
-# ===========================================================================
 
 class PatternMatcher:
     """操作码序列匹配器 —— 滑动窗口 + 贪婪跳跃 + 上下文评分。
@@ -298,12 +292,10 @@ class PatternMatcher:
     def get_pattern_names(self) -> List[str]:
         return [_p.name for _p in KNOWN_PATTERNS]
 
-# ----
 def patterns_by_severity(severity: str) -> List[OpcodePattern]:
     """过滤指定 severity 级别的所有 pattern。"""
     return [_p for _p in KNOWN_PATTERNS if _p.severity == severity]
 
-# ----
 def swc_index() -> dict:
     """构建 SWC ID -> pattern 的索引。"""
     _idx = {}

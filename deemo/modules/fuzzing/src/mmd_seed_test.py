@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---- MMD 参数 ----
+# MMD 参数
 _WINDOW_SIZE = 50             # 滑动窗口大小
 _N_PERMUTATIONS = 200         # 置换检验重采样次数
 _MMD_ALPHA = 0.01             # 显著性水平

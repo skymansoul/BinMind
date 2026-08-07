@@ -21,10 +21,9 @@
     R3 (PROTOCOL_ANOMALY): Suricata规则 → 检测协议状态机偏离。
     R4 (BEHAVIORAL): 文字描述的行为规则 → 供SIEM/SOAR使用。
 
-参考:
-  - YARA (VirusTotal, 2024): 恶意软件分类和检测的事实标准。
-  - Suricata (OISF, 2024): 开源IDS/IPS, 支持TLS/JA3指纹。
-  - Sigma Rules (2024): 通用SIEM检测规则格式。
+  - YARA: 恶意软件分类和检测的事实标准。
+  - Suricata: 开源IDS/IPS, 支持TLS/JA3指纹。
+  - Sigma Rules: 通用SIEM检测规则格式。
 
 边界条件:
   - 生成的规则是模板—需根据实际部署环境调整阈值和上下文。
@@ -34,7 +33,6 @@
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class DetectionRule:
@@ -47,14 +45,12 @@ class DetectionRule:
     triggered_by: str = ""         # 触发此规则需满足的静态条件
     false_positive_risk: str = ""  # LOW / MEDIUM / HIGH
 
-
 def _make_yara_identifier(name: str) -> str:
     """生成合法的YARA标识符(字母数字+下划线, 不能以数字开头)。"""
     clean = ''.join(c if c.isalnum() else '_' for c in name)
     if clean and clean[0].isdigit():
         clean = 'crypto_' + clean
     return clean[:64]  # YARA标识符长度限制
-
 
 def generate_yara_rules(crypto_findings: Optional[List] = None,
                         algo_names: Optional[List[str]] = None
@@ -124,7 +120,6 @@ def generate_yara_rules(crypto_findings: Optional[List] = None,
 
     return rules
 
-
 def generate_suricata_rules(
         protocol_findings: Optional[List] = None
 ) -> List[DetectionRule]:
@@ -160,7 +155,6 @@ def generate_suricata_rules(
                     false_positive_risk='LOW'))
 
     return rules
-
 
 def generate_behavioral_rules(
         crypto_findings: Optional[List] = None,
@@ -210,7 +204,6 @@ def generate_behavioral_rules(
             false_positive_risk='MEDIUM (遗留验证/兼容性调用可能触发)'))
 
     return rules
-
 
 def generate_all_rules(
         crypto_findings: Optional[List] = None,

@@ -19,9 +19,7 @@ from pathlib import Path as _Path
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Enums
-# ---------------------------------------------------------------------------
 
 class SummaryLevel(Enum):
     MINIMAL = "minimal"
@@ -40,9 +38,7 @@ class SummaryType(Enum):
     CUSTOM = "custom"
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class SymbolicSummary:
@@ -168,9 +164,7 @@ class RequestContext:
     extra_params: Dict[str, Any] = field(default_factory=dict)
 
 
-# ---------------------------------------------------------------------------
 # Summary Cache (LRU)
-# ---------------------------------------------------------------------------
 
 class SummaryCache:
     """LRU cache for symbolic summaries with TTL-based expiration.
@@ -264,9 +258,7 @@ class SummaryCache:
             return valid
 
 
-# ---------------------------------------------------------------------------
 # 异步请求合并 — 避免同一key的并发重复生成
-# ---------------------------------------------------------------------------
 
 class _PendingCoalesced:
     """一个pending槽位: 记录所有等待同一key的callback + 最终结果."""
@@ -295,9 +287,7 @@ class _PendingCoalesced:
                 __dbg.warning("Pending callback raised: %s", exc)
 
 
-# ---------------------------------------------------------------------------
 # Symbolic Executor Proxy
-# ---------------------------------------------------------------------------
 
 class SymbolicExecutorProxy:
     """Abstract proxy for a symbolic execution engine (e.g., angr, KLEE)."""
@@ -429,9 +419,7 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
         return True
 
 
-# ---------------------------------------------------------------------------
 # On-Demand Summary 构造器
-# ---------------------------------------------------------------------------
 
 class OnDemandSummaryGenerator:
     """Generates symbolic summaries on demand with caching and async options.
@@ -510,7 +498,7 @@ class OnDemandSummaryGenerator:
                     callback(cached)
                 return
 
-        # --- 合并检查: 是否有正在进行中的同key请求? ---
+# 合并检查: 是否有正在进行中的同key请求?
         with self.m_coalesce_lock:
             existing = self.m_coalesce_map.get(cache_key)
             if existing is not None:
@@ -601,9 +589,7 @@ class OnDemandSummaryGenerator:
         with self.m_coalesce_lock:
             self.m_coalesce_map.clear()
 
-    # -----------------------------------------------------------------------
     # 缓存序列化 — 导出/导入，支持跨会话复用
-    # -----------------------------------------------------------------------
 
     def export_cache(self, file_path: str) -> int:
         """将当前缓存导出为JSON文件 — 持久化热点摘要，下次启动时可import_cache恢复."""
@@ -665,9 +651,7 @@ class OnDemandSummaryGenerator:
         return imported
 
 
-# ---------------------------------------------------------------------------
 # Summary Incremental Updater
-# ---------------------------------------------------------------------------
 
 class SummaryIncrementalUpdater:
     """Incrementally updates cached summaries when code changes.
@@ -737,9 +721,7 @@ class SummaryIncrementalUpdater:
         return self.m_change_log[-limit:]
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def generate_summary(target_name: str, target_address: int = 0,
                      target_type: SummaryType = SummaryType.FUNCTION,

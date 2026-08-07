@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 18:21
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-04-25 18:21
+# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: PAVA保序回归分数校准
 # 分数校准 — CVE评分的非参数保序回归校准
 #
@@ -21,8 +21,8 @@
 #
 # 可靠性图 (Reliability Diagram):
 #   将[0,1]等分为B个区间, 每区间计算:
-#     - 平均预测分数 (x轴)
-#     - 实际正例比例 (y轴)
+# 平均预测分数 (x轴)
+# 实际正例比例 (y轴)
 #   理想: y=x对角线. 偏差 > 阈值 → 需要校准.
 #
 # 多模型校准对比:
@@ -31,14 +31,14 @@
 #
 # 非显而易见性:
 #   1. 首次将保序回归作为CVE评分的专用校准模块.
-#      Platt缩放 (1999) 是通用方法, 但在CVE数据上的
+#      Platt缩放 是通用方法, 但在CVE数据上的
 #      非单调性使保序回归更合适.
 #   2. 多模型校准竞技: 自动选择最佳校准模型.
 #   3. 可靠性图驱动决策: 量化评分模型的系统性偏.
 #
-# 参考:
-#   [Barlow & Brunk 1972] Isotonic Regression
-#   [Niculescu-Mizil & Caruana 2005] Predicting Good Probabilities
+#
+# Isotonic Regression
+# Predicting Good Probabilities
 
 import math
 from typing import Dict, List, Optional, Tuple

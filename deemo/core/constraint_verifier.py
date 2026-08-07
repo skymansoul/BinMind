@@ -19,10 +19,9 @@
   ISSTA 2025 (Shimizu et al.) 验证了"静态trace种子→动态执行验证"
   的降误报有效性, 本模块将该思路适配至二进制符号执行场景。
 
-参考:
   - Shimizu et al., 2025, ISSTA, "Revisiting the Combination of Static Analysis
     Error Traces and Dynamic Symbolic Execution"
-  - FSVDTG (NUDT 2024) -- 符号性检测+安全检查策略+可满足性验证的范式
+  - FSVDTG -- 符号性检测+安全检查策略+可满足性验证的范式
 """
 
 from __future__ import annotations
@@ -37,7 +36,6 @@ _log = logging.getLogger(__name__)
 _TIMEOUT_PER_POINT = 30
 # 最大探索步数(angr active states上限)
 _MAX_ACTIVE_STATES = 30
-
 
 def verify_call_reachability(
     binary_path: str,
@@ -131,7 +129,6 @@ def verify_call_reachability(
 
     return result
 
-
 def verify_arg_symbolicity(
     binary_path: str,
     func_name: str,
@@ -198,7 +195,6 @@ def verify_arg_symbolicity(
 
     return result
 
-
 def verify_finding(
     binary_path: str,
     func_name: str,
@@ -224,7 +220,7 @@ def verify_finding(
         'adjustment': 'unchanged',
     }
 
-    # Step 1: 可达性
+    # 可达性
     reach = verify_call_reachability(binary_path, func_name, call_address)
     details['reachability'] = reach
 
@@ -236,7 +232,7 @@ def verify_finding(
         details['verified'] = True
         return details, confidence * 0.3
 
-    # Step 2: 参数符号性
+    # 参数符号性
     sym = verify_arg_symbolicity(binary_path, func_name, call_address, arg_index)
     details['arg_symbolicity'] = sym
 
@@ -258,7 +254,6 @@ def verify_finding(
     details['adjustment'] = 'not-symbolic'
     details['verified'] = True
     return details, confidence * 0.6
-
 
 def batch_verify(
     binary_path: str,

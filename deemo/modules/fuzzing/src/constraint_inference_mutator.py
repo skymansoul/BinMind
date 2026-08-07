@@ -26,11 +26,11 @@ PNG chunk）时极度低效：绝大多数变异在格式校验阶段即被拒�
   Phase 2 (infer):  对标记为约束字段的字节进行精细探测——改变附近字节观察
     该字段的变化，推断约束类型和参数。
 
-ref: AFLSmart (Pham et al., CCS 2016) — 结构化输入的语法感知变异，
+ref: AFLSmart — 结构化输入的语法感知变异，
      本项目将离线 grammar 替换为在线推断，消除格式依赖。
-ref: ProFuzzer (You et al., S&P 2019) — 基于执行反馈的字节级"探针"分析，
+ref: ProFuzzer — 基于执行反馈的字节级"探针"分析，
      本项目借鉴其 probe 思想，扩展到约束类型推断和自动策略切换。
-ref: WEIZZ (Fioraldi et al., CCS 2020) — 覆盖率引导的约束推断，
+ref: WEIZZ — 覆盖率引导的约束推断，
      本项目在线性推断速度上做了简化（O(n) per probe vs O(n²)），
      代价是复杂约束（多字节 CRC）检出率降低——后续可引入符号辅助推断。
 """
@@ -121,7 +121,7 @@ class ConstraintInferenceMutator:
         self._phase = _InferencePhase.SCAN
         self._break_counter = 0           # 用于 constraint_break_ratio 比例控制
 
-    # ---- 反馈观测 ----
+# 反馈观测
     def observe(self, input_data: bytes, is_parse_success: bool,
                 mutated_offsets: Optional[List[Tuple[int, int]]] = None,
                 new_edges_after_parse: int = 0):
@@ -157,7 +157,7 @@ class ConstraintInferenceMutator:
             if _enough >= _threshold and self._total_probes > 50:
                 self._phase = _InferencePhase.PROBE
 
-    # ---- 约束推断 ----
+# 约束推断
     def infer_constraints(self, input_data: bytes) -> Dict[int, ByteConstraint]:
         """在所有已观测字节上运行约束推断。
 
@@ -255,7 +255,7 @@ class ConstraintInferenceMutator:
         _bc.confidence = 0.20
         return _bc
 
-    # ---- 约束感知变异 ----
+# 约束感知变异
     def constraint_aware_mutate(self, seed_data: bytes,
                                 max_mutants: int = 12) -> List[bytes]:
         """生成约束感知的变异体。
@@ -327,7 +327,7 @@ class ConstraintInferenceMutator:
 
         return _results
 
-    # ---- 策略控制 ----
+# 策略控制
     def should_preserve_constraints(self) -> bool:
         """当前是否应遵守约束（而非打破）。
         基于最近 N 次执行的反馈：若打破约束极少带来新覆盖 → 切换到 exploit 模式。
@@ -340,7 +340,7 @@ class ConstraintInferenceMutator:
                 return False
         return self._break_counter % int(1.0 / self.CONSTRAINT_BREAK_RATIO) != 0
 
-    # ---- 状态查询 ----
+# 状态查询
     def stats(self) -> Dict:
         return {
             "phase": self._phase.value,

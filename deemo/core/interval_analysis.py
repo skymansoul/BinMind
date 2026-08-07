@@ -2,12 +2,11 @@
 #
 # For each candidate vulnerability, tracks variable ranges via interval abstraction.
 # If overflow conditions are provably unsatisfiable within the interval, the
-# candidate is ruled out. Reference: Crab (SRI 2024).
+# candidate is ruled out. Reference: Crab.
 #
 # This module implements the simplest subset: intraprocedural interval analysis
 # with O(n*k) complexity.
 
-from __future__ import annotations
 from typing import Dict, Tuple, Optional
 
 class Interval:

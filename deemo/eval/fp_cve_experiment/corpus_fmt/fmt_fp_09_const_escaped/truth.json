@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_09_const_escaped",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "转义序列 %d%% 常量"
+}

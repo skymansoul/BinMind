@@ -15,9 +15,7 @@ from typing import Any, Optional, Union
 _log = logging.getLogger(__name__)
 
 
-# =============================================================================
 # 1. SemanticRoleLabeler
-# =============================================================================
 
 class SemanticRoleLabeler:
     """Pattern-matching variable semantic labeling
@@ -135,9 +133,7 @@ class SemanticRoleLabeler:
         return variables
 
 
-# =============================================================================
 # 2. SemanticDiffAnalyzer
-# =============================================================================
 
 class SemanticDiffAnalyzer:
     """Binary semantic difference analysis
@@ -231,9 +227,7 @@ class SemanticDiffAnalyzer:
         }
 
 
-# =============================================================================
 # 3. LLVMIRAnalyzer
-# =============================================================================
 
 class LLVMIRAnalyzer:
     """LLVM IR pattern scanner for unsafe patterns
@@ -262,7 +256,7 @@ class LLVMIRAnalyzer:
     )
 
     # FIXME: 2025-11-03 - phi节点处理需要特殊逻辑，当前会被当作普通指令处理
-    # _PHI_PATTERN = re.compile(r"phi\s+")
+# PHI_PATTERN = re.compile(r"phi\s+")
 
     def scan_unsafe_casts(self, ir_text: str) -> list[dict[str, Any]]:
         """检测 unsafe bitcast operations LLVM IR
@@ -376,9 +370,7 @@ class LLVMIRAnalyzer:
         }
 
 
-# =============================================================================
 # 4. AbstractInterpreter
-# =============================================================================
 
 class AbstractInterpreter:
     """Abstract interpretation interval domain
@@ -524,9 +516,7 @@ class AbstractInterpreter:
             _log.debug("  %s: [%s, %s]", var, lo_str, hi_str)
 
 
-# =============================================================================
 # 5. StateGuided模糊测试器
-# =============================================================================
 
 class StateGuidedFuzzer:
     """状态机 inference execution traces, fuzz sequence generation
@@ -633,9 +623,7 @@ class StateGuidedFuzzer:
         return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
 
 
-# =============================================================================
 # 6. Differential模糊测试器
-# =============================================================================
 
 class DifferentialFuzzer:
     """Cross-编译器/version/architecture differential 模糊测试
@@ -742,9 +730,7 @@ class DifferentialFuzzer:
         return divergences
 
 
-# =============================================================================
 # 7. 系统调用分类器
-# =============================================================================
 
 class SyscallClassifier:
     """Malware family 分类 系统调用 sequences
@@ -852,9 +838,7 @@ class SyscallClassifier:
         return best_family if best_score > 0.1 else "unknown"
 
 
-# =============================================================================
 # 8. Branch漏洞利用ability
-# =============================================================================
 
 class BranchExploitability:
     """CFG extraction -> controllability analysis -> 漏洞利用 path search

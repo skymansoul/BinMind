@@ -24,13 +24,13 @@
     后处理截断不消耗额外隐私预算（后处理不变性）。
 
 与已有工作的区分：
-  TADI (arXiv:2506.19260): DP-SGD在联邦学习中的拓扑泄漏，处理模型训练隐私，
+  TADI: DP-SGD在联邦学习中的拓扑泄漏，处理模型训练隐私，
     不涉及图结构共享。
-  CTI隐私框架 (IEEE 2025): PIR+FL+DP保护威胁情报查询，不保护传播图结构。
+  CTI隐私框架: PIR+FL+DP保护威胁情报查询，不保护传播图结构。
   本模块：首次将Laplace机制应用于漏洞传播图的边和节点隐私保护。
 
-ref: Dwork & Roth (2014) "The Algorithmic Foundations of Differential Privacy".
-ref: CTI Privacy Framework (IEEE 2025) -- 威胁情报共享隐私，最接近的已有工作。
+ref: Dwork & Roth "The Algorithmic Foundations of Differential Privacy".
+ref: CTI Privacy Framework -- 威胁情报共享隐私，最接近的已有工作。
 """
 
 from __future__ import annotations

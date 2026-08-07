@@ -23,9 +23,8 @@ IoT固件和大型应用中常见场景：同一二进制链接了多个密码�
 3. 通过轻量级模拟执行对比输出。
 4. 分歧案例分析→标记潜在bug或故意后门。
 
-参考：
-- CryptoFuzz (Mozilla, 2019-2025): 多库差异测试的工业标杆。
-- CLFuzz (TOSEM 2025): Oracle回收池——自洽性+跨库差分验证。
+- CryptoFuzz: 多库差异测试的工业标杆。
+- CLFuzz: Oracle回收池——自洽性+跨库差分验证。
 """
 
 import hashlib
@@ -36,7 +35,6 @@ from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 class CryptoPrimitive(Enum):
     AES_128 = "aes_128"
@@ -49,7 +47,6 @@ class CryptoPrimitive(Enum):
     RSA_2048 = "rsa_2048"
     CHACHA20 = "chacha20"
 
-
 @dataclass
 class LibInstance:
     """二进制中一个密码学原语实现的实例。"""
@@ -61,7 +58,6 @@ class LibInstance:
     confidence: float          # 库识别的置信度
     extra_functions: List[int] = field(default_factory=list)  # 相关联的辅助函数地址
 
-
 @dataclass
 class TestVector:
     """一个测试向量——输入+期望输出（若已知）或仅输入。"""
@@ -70,7 +66,6 @@ class TestVector:
     iv_bytes: Optional[bytes] = None
     expected_output: Optional[bytes] = None  # 来自标准文档的已知答案
     vector_type: str = "random"  # known_answer / boundary / random / attack
-
 
 @dataclass
 class DiffResult:
@@ -83,7 +78,6 @@ class DiffResult:
     output_b: Optional[bytes]
     match: bool
     divergence_type: str = ""  # "consistent" / "occasional_divergence" / "consistent_divergence"
-
 
 class CrossLibDifferentialAnalyzer:
     """跨库差分密码分析器。
@@ -104,9 +98,7 @@ class CrossLibDifferentialAnalyzer:
         # 差分结果历史
         self._results: List[DiffResult] = []
 
-    # -----------------------------------------------------------------
     # 公开 API
-    # -----------------------------------------------------------------
 
     def identify_instances(
         self, lib_instances: List[LibInstance]
@@ -257,9 +249,7 @@ class CrossLibDifferentialAnalyzer:
             },
         }
 
-    # -----------------------------------------------------------------
     # 测试向量生成
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _init_kat_vectors() -> Dict[CryptoPrimitive, List[TestVector]]:
@@ -355,7 +345,6 @@ class CrossLibDifferentialAnalyzer:
 
         return _vecs
 
-
 def _primitive_block_size(primitive: CryptoPrimitive) -> Dict[str, int]:
     _map = {
         CryptoPrimitive.AES_128: {"block": 16, "key": 16},
@@ -366,8 +355,7 @@ def _primitive_block_size(primitive: CryptoPrimitive) -> Dict[str, int]:
     }
     return _map.get(primitive, {"block": 0, "key": 0})
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _analyzer = CrossLibDifferentialAnalyzer()
 
@@ -401,7 +389,6 @@ def _smoke_test():
     assert len(_results) > 0, "should have results"
 
     print("[OK] CrossLibDifferentialAnalyzer smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

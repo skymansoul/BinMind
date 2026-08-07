@@ -228,7 +228,7 @@ class PIIScanner:
     def __init__(self, include_low_confidence: bool = False):
         self._include_low = include_low_confidence
 
-    # -- 公开扫描入口 ----------------------------------------------------------
+# 公开扫描入口
 
     def scan(self, data: Any, source: str = "") -> PIIScanResult:
         """按输入类型分发：文件路径、字符串或字节。"""
@@ -247,7 +247,7 @@ class PIIScanner:
 
         return PIIScanResult(source=str(source), findings=[])
 
-    # -- 文本扫描 --------------------------------------------------------
+# 文本扫描
 
     def _scan_text(self, text: str, source: str) -> PIIScanResult:
         findings = self._match_patterns(text, 0)
@@ -257,7 +257,7 @@ class PIIScanner:
                              total_bytes_scanned=len(text.encode("utf-8")),
                              redacted_output=redacted)
 
-    # -- 二进制扫描：先提取可打印字符串 ---------------------------------
+# 二进制扫描：先提取可打印字符串
 
     def _scan_bytes(self, raw: bytes, source: str) -> PIIScanResult:
         """从二进制数据中提取 ASCII 及 UTF-16 字符串，应用 PII 模式匹配。"""
@@ -406,7 +406,7 @@ class PIIScanner:
             return None
 
 
-# -- 模块级便捷函数 ----------------------------------------------------------
+# 模块级便捷函数
 
 def scan_text(text: str) -> List[PIIScanFinding]:
     return PIIScanner()._scan_text(text, "").findings

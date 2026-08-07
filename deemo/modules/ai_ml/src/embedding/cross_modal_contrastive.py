@@ -16,7 +16,7 @@
 3. 训练后，任一单模态即可检索其他模态——
    例如用 CFG 图嵌入找到语义相似的文本描述或执行行为。
 
-与 MSIVD (2024) 的区别：
+与 MSIVD 的区别：
 - MSIVD: 直接拼接 LLM hidden state + GNN embedding，无跨模态对比目标。
 - 本方案: InfoNCE 对比损失联合训练，嵌入空间具有跨模态对齐性。
   效果：模态缺失时可以"从图推测文本特征"——这对缺失调试符号的二进制尤为重要。
@@ -27,9 +27,8 @@
 - Trace 编码：函数调用序列的 n-gram 哈希 + SimHash → d 维向量。
 - 损失：对称 InfoNCE: L = L(graph→text) + L(text→graph) + 对应 trace 项。
 
-参考：
-- Radford et al. (CLIP, 2021) — 跨模态对比学习的范式确立。
-- MSIVD (arXiv 2406.05892, 2024) — LLM+GNN 联合嵌入的可行性依据。
+- CLIP — 跨模态对比学习的范式确立。
+- MSIVD — LLM+GNN 联合嵌入的可行性依据。
 """
 
 import math
@@ -41,7 +40,6 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 _EPS: float = 1e-9
 _DEFAULT_DIM = 128
 
-
 @dataclass
 class GraphEmbedding:
     """CFG 图的嵌入向量。"""
@@ -50,14 +48,12 @@ class GraphEmbedding:
     node_count: int = 0
     edge_count: int = 0
 
-
 @dataclass
 class TextEmbedding:
     """反汇编文本的嵌入向量。"""
     vector: List[float]
     function_name: str
     instruction_count: int = 0
-
 
 @dataclass
 class TraceEmbedding:
@@ -66,7 +62,6 @@ class TraceEmbedding:
     function_name: str
     trace_length: int = 0
     unique_calls: int = 0
-
 
 class CrossModalContrastiveEncoder:
     """三模态跨模态对比编码器。
@@ -119,9 +114,7 @@ class CrossModalContrastiveEncoder:
         # 训练统计
         self._steps: int = 0
 
-    # -----------------------------------------------------------------
     # 编码 API
-    # -----------------------------------------------------------------
 
     def encode_graph(
         self, node_features: List[List[float]], edges: List[Tuple[int, int]]
@@ -186,9 +179,7 @@ class CrossModalContrastiveEncoder:
                               trace_length=len(call_sequence),
                               unique_calls=len(set(call_sequence)))
 
-    # -----------------------------------------------------------------
     # 对比损失
-    # -----------------------------------------------------------------
 
     def compute_infonce_loss(
         self,
@@ -231,9 +222,7 @@ class CrossModalContrastiveEncoder:
         """计算图-文本嵌入的余弦相似度——用于模态对齐质量评估。"""
         return _cosine_similarity(graph.vector, text.vector)
 
-    # -----------------------------------------------------------------
     # 内部方法
-    # -----------------------------------------------------------------
 
     def _gcn_layer(
         self,
@@ -340,10 +329,8 @@ class CrossModalContrastiveEncoder:
             _loss += -(_pos - _mx - math.log(_sum_exp + _EPS))
         return _loss / _n
 
-
 def _sin_init(i: int, j: int, dim: int) -> float:
     return math.sin(i * 0.73 + j * 1.17 + dim * 0.37)
-
 
 def _cosine_similarity(a: List[float], b: List[float]) -> float:
     _n = min(len(a), len(b))
@@ -352,8 +339,7 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
     _nb = math.sqrt(sum(v * v for v in b))
     return _dot / max(_na * _nb, _EPS)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     random.seed(42)
 
@@ -396,7 +382,6 @@ def _smoke_test():
     # 没有显式训练，正负相似度接近；但损失函数应能计算
 
     print("[OK] CrossModalContrastiveEncoder smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

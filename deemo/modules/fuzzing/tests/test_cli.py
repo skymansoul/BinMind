@@ -13,7 +13,7 @@ import sys
 import pytest
 
 
-# ── 导入 CLI main 函数 ────────────────────────────────────
+# 导入 CLI main 函数
 
 try:
     from fuzzing.src.cli import main, _setup_logging, _load_config
@@ -122,7 +122,7 @@ class TestConfigurationIntegration:
         assert config == {} or isinstance(config, dict)
 
 
-# ── 独立测试 (无需模块导入) ────────────────────────────────
+# 独立测试 (无需模块导入)
 
 def test_argparse_no_crash_inline():
     """argparse 基本用例 — 不会崩溃."""

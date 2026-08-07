@@ -5,7 +5,7 @@
 import numpy as np
 
 
-# ===== EarlyStopping: 验证损失不下降时提前终止 =====
+# EarlyStopping: 验证损失不下降时提前终止
 # min_delta 防止数值噪音导致误触发
 # mode='min' 监控最小值，mode='max' 监控最大值（如准确率）
 
@@ -50,7 +50,7 @@ class EarlyStopping:
         self._stop = False
 
 
-# ===== CosineAnnealingLR: 余弦退火学习率调度 =====
+# CosineAnnealingLR: 余弦退火学习率调度
 # 从初始 lr 平滑衰减到 min_lr，T_max 周期后完成一个退火循环
 # 适合在训练后期精细调整权重
 
@@ -69,7 +69,7 @@ class CosineAnnealingLR:
         return _lr
 
 
-# ===== SupervisedTrainer: 纯 numpy 监督训练器 =====
+# SupervisedTrainer: 纯 numpy 监督训练器
 # 设计原则：最小依赖，最大可读性
 # 支持自定义 loss、早停、学习率调度、验证集
 
@@ -85,7 +85,6 @@ class SupervisedTrainer:
         self._scheduler = lr_scheduler
         self._history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
 
-    # ----
 
     @staticmethod
     def _default_loss(y_pred, y_true):
@@ -172,7 +171,6 @@ class SupervisedTrainer:
         _acc = self.score(_X, _y)
         return float(_loss), _acc
 
-    # ----
 
     def predict(self, X):
         """Forward inference on X. Returns predicted class indices."""
@@ -180,7 +178,6 @@ class SupervisedTrainer:
         _out = self._model(_X)
         return np.argmax(_out, axis=1)
 
-    # ----
 
     def score(self, X, y):
         """Accuracy score."""

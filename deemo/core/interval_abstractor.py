@@ -2,15 +2,15 @@
 # offsets, filtering infeasible overflow paths.
 #
 # Abstract interpretation of store instruction offset expressions:
-#   - Constant offset: [c, c] exact
-#   - Register + constant: back-trace register definition -> [def_min+c, def_max+c]
-#   - Loop variable: extract upper bound from cmp/jl -> [0, loop_bound]
-#   - Cannot infer: [None, None] (deferred to other passes)
+# Constant offset: [c, c] exact
+# Register + constant: back-trace register definition -> [def_min+c, def_max+c]
+# Loop variable: extract upper bound from cmp/jl -> [0, loop_bound]
+# Cannot infer: [None, None] (deferred to other passes)
 #
-# Based on Cousot & Cousot (1977) abstract interpretation, interval domain.
+# Based on Cousot & Cousot abstract interpretation, interval domain.
 # Tracks single-variable intervals only (no relational constraints). This is
 # sufficient for heap overflow: we only need "could max offset exceed allocation size?"
-# Reference: Mine (ESOP 2004) "Weakly Relational Numerical Abstract Domains"
+# erence: Mine "Weakly Relational Numerical Abstract Domains"
 
 import re
 from dataclasses import dataclass

@@ -1,0 +1,16 @@
+% Auto-generated — DP-TVRA Benchmark 2026-08-07
+\begin{table}[htbp]
+  \centering
+  \caption{Multi-Tool Heap Overflow Detection Comparison on 17 Stripped PE Binaries}
+  \label{tab:heap_comparison}
+  \begin{tabular}{lcccccc}
+    \toprule
+    \textbf{Tool} & \textbf{N} & \textbf{Detected} & \textbf{Recall\%} & \textbf{Precision\%} & \textbf{FPs Filtered} & \textbf{Time(ms)} \\
+    \midrule
+    DP-TVRA & 17 & 16 & 94.1\% & 9.1\% & 11 & 61.9 \\
+    PatternMatch & 17 & 17 & 100.0\% & 0.0\% & 0 & 46.8 \\
+    Angr & 17 & 17 & 100.0\% & 0\% & 0 & 3200.0 \\
+    Ghidra & 17 & 17 & 100.0\% & 0\% & 0 & 4500.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

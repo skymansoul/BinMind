@@ -3,8 +3,8 @@
 #   2. 时间内存安全: use-after-free（访问已释放区域的地址）
 #   3. 分配异常: 异常大的分配请求、整数溢出导致过小分配
 #   4. 内存泄漏模式: 持续增长的内存占用、无对应释放的分配
-# 参考:
-#   MemLock (ICSE 2020) — memory consumption guided fuzzing
+#
+#   MemLock — memory consumption guided fuzzing
 #   Cheng et al. 2023, "MemAIFuzz" — memory access pattern aware fuzzing
 #   ASan (AddressSanitizer) — shadow memory instrumentation model
 #   valgrind/memcheck — memory error detection heuristics
@@ -79,7 +79,7 @@ class MemoryAccessPatternAnalyzer:
         # 内存泄漏追踪: 每1000次分配记录一次水位
         self._watermark_history: List[Tuple[float, int]] = []
 
-    # ---- 记录API ----
+    # 记录API
     def record_alloc(self, address: int, size: int,
                      alloc_site: str = "") -> int:
         """记录一次内存分配。返回alloc_id。"""
@@ -180,7 +180,7 @@ class MemoryAccessPatternAnalyzer:
                     alloc_record=alloc, access_record=access))
                 break
 
-    # ---- 分析 ----
+    # 分析
     def analyze(self) -> List[MemoryViolation]:
         """产出当前检测到的所有违规（不移除历史违规）。"""
         self._check_memory_leaks()
@@ -259,7 +259,7 @@ class MemoryAccessPatternAnalyzer:
             self._active_allocs.discard(victim)
             del self._allocations[victim]
 
-    # ---- 报告 ----
+    # 报告
     def stats(self) -> Dict[str, Any]:
         return {
             'total_allocations': len(self._allocations),
@@ -295,7 +295,7 @@ class AllocationPatternProfiler:
 
     喂入fuzzer种子调度决策: 对触发异常分配模式的种子施加更多变异压力。
 
-    参考MemLock (Wen et al. ICSE 2020)的内存消耗建模。
+    参考MemLock的内存消耗建模。
     """
 
     def __init__(self):

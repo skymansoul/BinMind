@@ -83,7 +83,7 @@ class PatchResult:
     warnings: list = field(default_factory=list)
     analysis_success: bool = False
 
-# ── 补丁冲突消解 ──────────────────────────────────────────────────────────
+# 补丁冲突消解
 # 两个补丁地址区间重叠时，保留 patched_bytes 更长者（更实质性）。
 
 class PatchConflictResolver:
@@ -138,7 +138,7 @@ class AutoPatcher:
 
         logger.info("AutoPatcher init OK")
 
-    # -- public API -------------------------------------------------------
+# public API
 
     def analyze_and_patch(self, vulnerability_list=None):
         """分析二进制并应用补丁。"""
@@ -237,7 +237,7 @@ class AutoPatcher:
         self._binary = bytes(working)
         logger.info("All patches rolled back")
 
-    # -- internals --------------------------------------------------------
+# internals
 
     def _load_binary(self):
         """将目标文件读入内存。"""

@@ -3,9 +3,9 @@
 # 核心问题: 模块现有 7+ 种概率数据结构 (Bloom, Cuckoo, HLL, MR-HLL,
 #   CMS, TDigest, SplineSketch), 各有不同的空间/精度/操作权衡.
 #   开发者在不同场景下需要回答:
-#     - 去重预过滤: Bloom 还是 Cuckoo? m 和 k 取多少?
-#     - 基数估计: HLL 还是 MR-HLL? p 取多少?
-#     - 频率估计: CMS 还是 SplineSketch? d×w 取多少?
+# 去重预过滤: Bloom 还是 Cuckoo? m 和 k 取多少?
+# 基数估计: HLL 还是 MR-HLL? p 取多少?
+# 频率估计: CMS 还是 SplineSketch? d×w 取多少?
 #   手动选择依赖经验, 且往往偏离最优.
 #
 # 创新点:
@@ -203,7 +203,7 @@ class ProbStructOptimizer:
             )
         return None
 
-    # ---- 内部优化器 ----
+# 内部优化器
 
     def _optimize_bloom(self, fpr: float, budget: int, n: int) -> List[StructConfig]:
         m_optimal = int(-n * math.log(fpr) / (math.log(2)**2))

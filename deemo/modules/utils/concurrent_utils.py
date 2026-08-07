@@ -1,7 +1,7 @@
 # 并发与并行工具: 线程池、批处理、速率限制、异步辅助
-# FuzzWise [arXiv:2512.21440 [待验证]] 的多 agent LLM 框架在种子生成和覆盖率预测模块
+# FuzzWise] 的多 agent LLM 框架在种子生成和覆盖率预测模块
 # 之间并行调度 —— 此处实现通用并发基元以减少竞态条件和资源竞争。
-# 同时参考 VulBinLLM [2025] 中分析管线对多二进制并行处理的需求。
+# 同时参考 VulBinLLM 中分析管线对多二进制并行处理的需求。
 import threading
 import concurrent.futures
 import time
@@ -17,7 +17,7 @@ _LEGACY_THRESHOLD = 0.75
 T = TypeVar("T")
 U = TypeVar("U")
 
-# ---- 简单线程池包装 ------------------------------------------------------
+# 简单线程池包装
 
 
 # 保留——后面可能用
@@ -70,7 +70,7 @@ class ThreadPool:
         self.shutdown()
 
 
-# ---- 批处理 --------------------------------------------------------------
+# 批处理
 
 def batched(iterable: List[T], batch_size: int) -> Iterator[List[T]]:
     """将列表切分为等大小的批次（最后一批可能不足）。
@@ -88,7 +88,7 @@ def parallel_batch(fn: Callable[[T], U], items: List[T],
             all_results.extend(pool.map(fn, batch))
     return all_results
 
-# ---- 速率限制器 (Token Bucket) ------------------------------------------
+# 速率限制器 (Token Bucket)
 
 class RateLimiter:
     """Token Bucket 速率限制。初始满桶，每 acquire() 消耗 1 token，
@@ -126,7 +126,7 @@ class RateLimiter:
             if time.monotonic() + wait_sec > deadline: return False
             time.sleep(wait_sec)
 
-# ---- 并发安全的数据结构 --------------------------------------------------
+# 并发安全的数据结构
 
 class AtomicCounter:
     """线程安全的原子计数器。"""
@@ -190,7 +190,7 @@ class ConcurrentDict:
         with self._lk:
             return len(self._d)
 
-# ---- 异步辅助 ------------------------------------------------------------
+# 异步辅助
 
 def run_in_thread(fn: Callable[..., T], *args, **kwargs) -> concurrent.futures.Future:
     """在守护线程中执行函数，返回 Future。适用同步→异步桥接。"""
@@ -212,7 +212,6 @@ def wait_all(futures: List[concurrent.futures.Future],
     return results
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

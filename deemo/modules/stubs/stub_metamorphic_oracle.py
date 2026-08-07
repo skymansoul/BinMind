@@ -8,16 +8,16 @@
 #   的跨调用约束"提供无真值 oracle 的语义校验。
 #
 # 新颖性:
-#   1. 不从文档/需求文本生成 MR（如 Shin et al., 2024），
+#   1. 不从文档/需求文本生成 MR，
 #      而是从类型结构与参数模式直接推导代数性质类 MR。
 #   2. MR 合成不依赖 LLM，纯规则驱动，保证确定性、可审计。
 #   3. 蜕变关系按类型代数结构分层：等式类（idempotence/involution）、
 #      单调类（order preservation）、结构类（list/dict 容器性质）。
 #
 # 支撑:
-#   - 蜕变测试理论 (Chen et al., 1998/2018)
+# 蜕变测试理论
 #   - Shin et al. 2024 (LLM-based MR generation) — 本模块为其确定性替代路径
-#   - 非 LLM 路径在合规场景（不允许外传代码到远端模型）中具有实用优势
+# 非 LLM 路径在合规场景（不允许外传代码到远端模型）中具有实用优势
 import ast as _ast
 import itertools as _it
 from collections import defaultdict as _dd
@@ -27,7 +27,7 @@ from typing import Optional as _Opt, Callable
 from modules.stubs.stub_contract import FuncContract as _FuncContract
 
 
-# ---- 蜕变关系类型枚举 ----
+# 蜕变关系类型枚举
 class MRCategory:
     """蜕变关系分类体系。
 
@@ -63,7 +63,7 @@ class MetamorphicRelation:
             self.confidence = 0.0
 
 
-# ---- MR 合成引擎 ----
+# MR 合成引擎
 class MetamorphicSynthesizer:
     """从 FuncContract 推导蜕变关系集合。
 
@@ -95,7 +95,7 @@ class MetamorphicSynthesizer:
         # 去重: 同 category 只保留最高置信度
         return self._deduplicate(mrs)
 
-    # ---- 各检查规则 ----
+# 各检查规则
 
     def _idempotence_check(self, fc: _FuncContract, params: list) -> list[MetamorphicRelation]:
         """幂等性: 若返回类型与唯一参数类型一致 → f(f(x)) == f(x)。"""
@@ -422,7 +422,7 @@ class MetamorphicSynthesizer:
         )
         return [mr]
 
-    # ---- 工具方法 ----
+# 工具方法
     @staticmethod
     def _simple_base(ann: str) -> str:
         """取类型注解的最外层基础类型名。"""

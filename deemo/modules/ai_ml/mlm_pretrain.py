@@ -16,9 +16,7 @@ from collections import defaultdict as _defaultdict
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Enums
-# ---------------------------------------------------------------------------
 
 class MaskType(Enum):
     TOKEN = "token"
@@ -35,9 +33,7 @@ class MLMTaskType(Enum):
     MIXED = "mixed"
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class Token:
@@ -115,9 +111,7 @@ class MLMModelConfig:
     unk_token_id: int = 4
 
 
-# ---------------------------------------------------------------------------
 # Vocabulary
-# ---------------------------------------------------------------------------
 
 class Vocabulary:
     """Token vocabulary with special token handling."""
@@ -270,9 +264,7 @@ class Vocabulary:
         return vocab
 
 
-# ---------------------------------------------------------------------------
 # MLM Dataset
-# ---------------------------------------------------------------------------
 
 class MLMDataset:
     """Dataset for MLM pretraining with configurable masking."""
@@ -400,9 +392,7 @@ class MLMDataset:
         self.m_cache.clear()
 
 
-# ---------------------------------------------------------------------------
 # MLM Trainer
-# ---------------------------------------------------------------------------
 
 class MLMTrainer:
     """Abstract MLM trainer."""
@@ -420,9 +410,7 @@ class MLMTrainer:
         raise NotImplementedError
 
 
-# ---------------------------------------------------------------------------
 # Simple MLM Trainer (self-contained, no deep learning framework dependency)
-# ---------------------------------------------------------------------------
 
 class SimpleMLMTrainer(MLMTrainer):
     """Simple MLM trainer using heuristic/statistical approach without deep learning.
@@ -570,9 +558,7 @@ class SimpleMLMTrainer(MLMTrainer):
         self.m_training_stats = data.get("training_stats", {})
 
 
-# ---------------------------------------------------------------------------
 # MLM Pretrain Analyzer (BaseAnalyzer interface)
-# ---------------------------------------------------------------------------
 
 class MLMPretrainAnalyzer:
     """High-level analyzer for MLM pretraining on binary/code data."""
@@ -634,9 +620,7 @@ class MLMPretrainAnalyzer:
         return [(self.m_vocab.get_token(tid), score) for tid, score in predictions]
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def create_mlm_pretrainer(vocab_size=10000, hidden_size=256) -> MLMPretrainAnalyzer:
     return MLMPretrainAnalyzer()

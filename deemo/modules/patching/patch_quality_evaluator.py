@@ -4,7 +4,7 @@ from typing import List, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---- PatchStatus: 纯字符串常量，下游 JSON 序列化，不用 Enum ----
+# PatchStatus: 纯字符串常量，下游 JSON 序列化，不用 Enum
 class PatchStatus:
     OK: str = "ok"
     WARNING: str = "warning"
@@ -12,7 +12,7 @@ class PatchStatus:
     CRITICAL: str = "critical"
 
 
-# ---- BypassRisk: 绕过风险等级，直接映射修复优先级 ----
+# BypassRisk: 绕过风险等级，直接映射修复优先级
 class BypassRisk:
     NONE: str = "none"
     LOW: str = "low"
@@ -35,7 +35,7 @@ class PatchQualityReport:
     verification_results: Dict[str, bool] = field(default_factory=dict)
 
 
-# ===== 绕过检测模式：(regex, 风险描述) =====
+# 绕过检测模式：(regex, 风险描述)
 # 用普通正则而非 AST，因为补丁代码可能是片段非完整编译单元。
 # 折衷：漏检可控 > 误报可控，模式宁保守。
 _BYPASS_PATTERNS: List[Tuple[str, str]] = [
@@ -63,10 +63,8 @@ class PatchQualityEvaluator:
         self._bypass_patterns = [(re.compile(p, re.IGNORECASE), desc) for p, desc in _BYPASS_PATTERNS]
         self._hash_cache: Dict[str, str] = {}
 
-    # ============================================================
     # 主编排 —— 各维度聚合为 PatchQualityReport
     # 串行而非并行：补丁评估是 CPU-bound，并行收益低
-    # ============================================================
     def evaluate(self, patch_id: str, original_code: str, patched_code: str,
                  test_results: Optional[List[Dict]] = None) -> PatchQualityReport:
         _r = PatchQualityReport(patch_id=patch_id)
@@ -150,7 +148,7 @@ class PatchQualityEvaluator:
                 _regressions.append("UNRESOLVED: " + _desc)
         return _regressions
 
-    # **** Monte Carlo 模拟：正弦/余弦扰动模拟边界输入 ****
+# Monte Carlo 模拟：正弦/余弦扰动模拟边界输入
     def _monte_carlo_sim(self, n_iterations: int = 1000) -> float:
         _success = 0
         _seed = int(hashlib.sha256(str(n_iterations).encode()).hexdigest()[:8], 16)
@@ -163,7 +161,7 @@ class PatchQualityEvaluator:
     def _code_size_delta(self, original: str, patched: str) -> int:
         return len(patched) - len(original)
 
-    # ---- 复杂度检查：McCabe-like，归一化 [0, 1] ----
+# 复杂度检查：McCabe-like，归一化 [0, 1]
     def _complexity_check(self, code: str) -> float:
         _branches = 0
         _branch_kw = [r'\bif\b', r'\belse\b', r'\belif\b', r'\bfor\b', r'\bwhile\b',
@@ -191,7 +189,7 @@ class PatchQualityEvaluator:
         return self._hash_cache[text]
 
 
-# **** 便捷入口：静态调用 ****
+# 便捷入口：静态调用
 def evaluate_patch(patch_id: str, original_code: str, patched_code: str,
                    test_results: Optional[List[Dict]] = None) -> PatchQualityReport:
     _evaluator = PatchQualityEvaluator()

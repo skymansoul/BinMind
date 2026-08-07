@@ -81,7 +81,7 @@ class SpectralAnomalyReport:
         }
 
 
-# ── 参考分布管理 ─────────────────────────────────────────────────
+# 分布管理
 
 @dataclass
 class ReferenceDistribution:
@@ -190,7 +190,7 @@ class ReferenceDistributionBuilder:
         _log.info("加载 %d 个参考特征向量", len(self._feature_vectors))
 
 
-# ── 异常检测器 ────────────────────────────────────────────────────
+# 异常检测器
 
 class SpectralAnomalyDetector:
     """基于参考分布的补丁频谱异常检测。
@@ -318,7 +318,7 @@ class SpectralAnomalyDetector:
             reports.append(self.detect(orig, patched, pid))
         return reports
 
-    # ── 距离计算 ──────────────────────────────────────────────────
+# 距离计算
 
     def _mahalanobis_distance(self, vector: List[float]) -> float:
         """计算 Mahalanobis 距离: sqrt((x-μ)ᵀ Σ⁻¹ (x-μ))。"""
@@ -379,7 +379,7 @@ class SpectralAnomalyDetector:
         return scores
 
 
-# ── 矩阵运算（纯 Python）───────────────────────────────────────────
+# 矩阵运算（纯 Python）
 
 def _matrix_inverse_regularized(matrix: List[List[float]],
                                 reg: float = 1e-6) -> List[List[float]]:
@@ -427,7 +427,7 @@ def _matrix_inverse_regularized(matrix: List[List[float]],
     return inv
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def build_reference_from_patches(
     benign_patches: List[Tuple[bytes, bytes, str]]

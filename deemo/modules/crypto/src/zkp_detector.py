@@ -1,12 +1,12 @@
-# ==== 零知识证明系统检测 ====
+# 零知识证明系统检测
 # 覆盖: Groth16, Plonk, Bulletproofs, Marlin, Spartan, Halo2, Nova, STIR, Ligero, Aurora.
 # 检测策略: (1) BLS12-381/BN254/BW6-761 配对曲线参数, (2) zk-crate/toolkit字符串,
 # (3) 算术电路编译产物 (R1CS/QAP/Plonkish), (4) Fiat-Shamir transcript结构。
-# 参考: Groth (EUROCRYPT 2016), Gabizon-Williamson-Ciobotaru (Plonk, 2019),
-# Bunz et al. (Bulletproofs, S&P 2018), Chiesa et al. (Spartan, CRYPTO 2020),
-# Setty (Nova, CRYPTO 2023), Arnon et al. (STIR, CRYPTO 2024).
+Groth, Gabizon-Williamson-Ciobotaru,
+# Bunz et al., Chiesa et al.,
+# Setty, Arnon et al..
 # 扩展: Binius (二进制域ZKP), Lasso/Jolt lookup argument,
-# Circle STARK (Haböck-Lev-Papini, 2024) M31域检测, Ligero/Brakedown多项式承诺指纹。
+# Circle STARK M31域检测, Ligero/Brakedown多项式承诺指纹。
 
 import struct
 import logging
@@ -28,13 +28,13 @@ class ZKPDetectionResult:
     detected_in: str = ""
 
 
-# ==== 配对友好椭圆曲线参数数据库 ====
+# 配对友好椭圆曲线参数数据库
 # 配对曲线的基域模数q和子群阶r为唯一标识符。
 # BLS12-381 q = 0x1a0111ea397fe69a... (381-bit)
 # BN254 q = 21888242871839275222246405745257275088696311157297823662689037894645226208583
 # BW6-761 q ≈ 2^761 - 2^378 + ... (761-bit, 外层证明组合)
 # MNT4/MNT6对: 4-6 cycle pairing-friendly curves.
-# 参考: Bowe (Zcash, 2017), Aranha et al. (pairing-friendly survey, 2024).
+# Bowe, Aranha et al..
 
 _PAIRING_CURVE_PARAMS = {
     # (q_bytes[:8], r_bytes[:8], curve_name, description)
@@ -55,7 +55,7 @@ _PAIRING_CURVE_PARAMS = {
 }
 
 
-# ==== ZKP 字符串指纹库 ====
+# ZKP 字符串指纹库
 # 每条目: (byte_pattern, system_name, variant, confidence)
 _ZKP_STRING_PATTERNS: List[Tuple[bytes, str, str, float]] = [
     # Groth16 — 各语言证明系统命名
@@ -126,7 +126,7 @@ _ZKP_STRING_PATTERNS: List[Tuple[bytes, str, str, float]] = [
 ]
 
 
-# ==== Fiat-Shamir transcript 检测 ====
+# Fiat-Shamir transcript 检测
 # Fiat-Shamir变换: 用哈希(SHA-256/Keccak)对transcript做随机预言机, 产生challenge。
 # 常见transcript标签作为域分隔符出现在哈希调用前。
 
@@ -229,7 +229,7 @@ class ZKPDetector:
         return results
 
 
-# ==== 便捷入口 ====
+# 便捷入口
 
 def detect_zkp(path: str) -> List[ZKPDetectionResult]:
     return ZKPDetector().scan_file(path)

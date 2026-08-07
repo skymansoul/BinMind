@@ -98,13 +98,13 @@ class ForensicCausalGraph:
         # 按时序排序
         sorted_events = sorted(events, key=lambda e: e.timestamp)
 
-        # 步骤1: 构建因果边
+        # 构建因果边
         edges, adj = self._build_causal_edges(sorted_events)
 
-        # 步骤2: 计算因果中心性(eigenvector-like)
+        # 计算因果中心性(eigenvector-like)
         centrality = self._causal_centrality(sorted_events, adj)
 
-        # 步骤3: 抽取最大权重证据链
+        # 抽取最大权重证据链
         chains = self._extract_chains(sorted_events, adj, centrality)
 
         # 根因排序

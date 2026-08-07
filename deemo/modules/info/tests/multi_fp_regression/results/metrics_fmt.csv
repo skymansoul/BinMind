@@ -1,0 +1,4 @@
+type,tool,TP,FP,FN,TN,recall_pct,fpr_pct,precision_pct,f1_pct,avg_time_ms
+fmt,FMT_FC_v3,15,0,0,15,100.0,0.0,100.0,100.0,0.4
+fmt,FMT_v3,12,3,3,12,80.0,20.0,80.0,80.0,0.5
+fmt,NAIVE,15,9,0,6,100.0,60.0,62.5,76.9,0.0

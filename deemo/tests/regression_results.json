@@ -1,0 +1,400 @@
+{
+  "config": {
+    "mode": "enhanced",
+    "type": "heap_overflow"
+  },
+  "metrics": {
+    "baseline": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 1,
+      "fn": 13,
+      "precision": 1.0,
+      "recall": 0.1875,
+      "f1": 0.3158,
+      "fp_rate": 0.0
+    },
+    "gapsbv": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 1,
+      "fn": 13,
+      "precision": 1.0,
+      "recall": 0.1875,
+      "f1": 0.3158,
+      "fp_rate": 0.0
+    },
+    "fp_reduction": 0
+  },
+  "expectations": [
+    {
+      "name": "cve_2014_0160_heartbleed",
+      "is_tp": true,
+      "cve_id": "CVE-2014-0160"
+    },
+    {
+      "name": "cve_2015_3864_stagefright",
+      "is_tp": true,
+      "cve_id": "CVE-2015-3864"
+    },
+    {
+      "name": "cve_2016_10190_ffmpeg",
+      "is_tp": true,
+      "cve_id": "CVE-2016-10190"
+    },
+    {
+      "name": "cve_2017_5638_struts",
+      "is_tp": true,
+      "cve_id": "CVE-2017-5638"
+    },
+    {
+      "name": "cve_2018_1000001_glibc",
+      "is_tp": true,
+      "cve_id": "CVE-2018-1000001"
+    },
+    {
+      "name": "cve_2019_13139_docker",
+      "is_tp": true,
+      "cve_id": "CVE-2019-13139"
+    },
+    {
+      "name": "cve_2020_0796_smbghost",
+      "is_tp": true,
+      "cve_id": "CVE-2020-0796"
+    },
+    {
+      "name": "cve_2021_3156_sudo",
+      "is_tp": true,
+      "cve_id": "CVE-2021-3156"
+    },
+    {
+      "name": "cve_2022_0185_kernel",
+      "is_tp": true,
+      "cve_id": "CVE-2022-0185"
+    },
+    {
+      "name": "cve_2022_22620_webkit",
+      "is_tp": true,
+      "cve_id": "CVE-2022-22620"
+    },
+    {
+      "name": "cve_2023_0669_gitlab",
+      "is_tp": true,
+      "cve_id": "CVE-2023-0669"
+    },
+    {
+      "name": "heap_overflow_basic_01",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "heap_overflow_calloc_04",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "heap_overflow_guard_05",
+      "is_tp": false,
+      "cve_id": ""
+    },
+    {
+      "name": "heap_overflow_loop_02",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "heap_overflow_multibuf_06",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "heap_overflow_realloc_03",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_01",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_02",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_03",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_04",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_05",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_06",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_07",
+      "is_tp": false,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_08",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_09",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_10",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_11",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_12",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_13",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_14",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_15",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_16",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_17",
+      "is_tp": true,
+      "cve_id": ""
+    },
+    {
+      "name": "sample_18",
+      "is_tp": true,
+      "cve_id": ""
+    }
+  ],
+  "results": [
+    {
+      "count": 0,
+      "elapsed_ms": 7.19,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2014_0160_heartbleed"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.17,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2015_3864_stagefright"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.15,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2016_10190_ffmpeg"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.51,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2017_5638_struts"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.15,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2018_1000001_glibc"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.13,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2019_13139_docker"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.21,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2020_0796_smbghost"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.21,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2021_3156_sudo"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.21,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2022_0185_kernel"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.18,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2022_22620_webkit"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.52,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "cve_2023_0669_gitlab"
+    },
+    {
+      "count": 1,
+      "elapsed_ms": 25.75,
+      "success": true,
+      "verdict": "KEEP",
+      "fp_likelihood": 0.0,
+      "findings": [
+        {
+          "alloc_size": 16,
+          "alloc_func": "malloc",
+          "write_offset": 32,
+          "write_size": 4,
+          "overflow_bytes": 20,
+          "confidence": 0.85,
+          "description": "malloc(16) -> store at offset 32 (overflow by 20B)"
+        }
+      ],
+      "sample": "heap_overflow_basic_01"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.16,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "heap_overflow_calloc_04"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.16,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "heap_overflow_guard_05"
+    },
+    {
+      "count": 0,
+      "elapsed_ms": 0.12,
+      "success": true,
+      "verdict": "FILTER",
+      "fp_likelihood": 0.95,
+      "findings": [],
+      "sample": "heap_overflow_loop_02"
+    },
+    {
+      "count": 1,
+      "elapsed_ms": 0.44,
+      "success": true,
+      "verdict": "KEEP",
+      "fp_likelihood": 0.0,
+      "findings": [
+        {
+          "alloc_size": 32,
+          "alloc_func": "malloc",
+          "write_offset": 48,
+          "write_size": 4,
+          "overflow_bytes": 20,
+          "confidence": 0.85,
+          "description": "malloc(32) -> store at offset 48 (overflow by 20B)"
+        }
+      ],
+      "sample": "heap_overflow_multibuf_06"
+    },
+    {
+      "count": 2,
+      "elapsed_ms": 0.31,
+      "success": true,
+      "verdict": "KEEP",
+      "fp_likelihood": 0.0,
+      "findings": [
+        {
+          "alloc_size": 256,
+          "alloc_func": "malloc",
+          "write_offset": 256,
+          "write_size": 4,
+          "overflow_bytes": 4,
+          "confidence": 0.6,
+          "description": "malloc(256) -> store at offset 256 (overflow by 4B)"
+        },
+        {
+          "alloc_size": 256,
+          "alloc_func": "malloc",
+          "write_offset": 256,
+          "write_size": 4,
+          "overflow_bytes": 4,
+          "confidence": 0.6,
+          "description": "malloc(256) -> store at offset 256 (overflow by 4B)"
+        }
+      ],
+      "sample": "heap_overflow_realloc_03"
+    }
+  ]
+}

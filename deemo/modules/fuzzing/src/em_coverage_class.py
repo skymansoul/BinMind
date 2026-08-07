@@ -2,7 +2,7 @@
 
 修改记录:
 2025-08-18 14:22 - EM GMM + BIC 模型选择 + soft clustering
-参考: Dempster, Laird & Rubin (1977) JRSS-B; Fraley & Raftery (2002) JASA.
+参考: Dempster, Laird & Rubin JRSS-B; Fraley & Raftery JASA.
 在 fuzzing 中零先验。EM 自动发现种子覆盖的潜在聚类结构。"""
 
 import math

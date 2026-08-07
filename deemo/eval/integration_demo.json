@@ -1,0 +1,206 @@
+{
+  "pipeline_review": {
+    "TP": 7,
+    "FP": 3,
+    "TN": 6,
+    "FN": 4,
+    "precision": 0.7,
+    "recall": 0.6364,
+    "f1": 0.6667,
+    "fp_rate": 0.3333
+  },
+  "ensemble_filtered": {
+    "TP": 6,
+    "FP": 0,
+    "TN": 9,
+    "FN": 5,
+    "precision": 1.0,
+    "recall": 0.5455,
+    "f1": 0.7059,
+    "fp_rate": 0.0
+  },
+  "fp_reduction_pct": 100.0,
+  "per_sample": [
+    {
+      "sample": "heap_overflow_01_malloc_memcpy",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_02_loop_overflow",
+      "is_real_bug": true,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 0,
+      "review": 0
+    },
+    {
+      "sample": "heap_overflow_03_alias_ptr",
+      "is_real_bug": true,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_overflow_04_calloc",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_05_realloc",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_06_strcpy",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_07_sprintf",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_08_user_input",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": true,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_overflow_09_offset_write",
+      "is_real_bug": true,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 0,
+      "review": 0
+    },
+    {
+      "sample": "heap_overflow_10_nested_loop",
+      "is_real_bug": true,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 0,
+      "review": 0
+    },
+    {
+      "sample": "heap_safe_01_alignment_absorbed",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_safe_02_same_size",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_safe_03_smaller_write",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_safe_04_guarded",
+      "is_real_bug": false,
+      "pipeline_detected": true,
+      "ensemble_detected": false,
+      "suppressed": 1,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_safe_05_realloc_expand",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_fp_01_early_return",
+      "is_real_bug": false,
+      "pipeline_detected": true,
+      "ensemble_detected": false,
+      "suppressed": 1,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_fp_02_const_guarded",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 1,
+      "review": 0
+    },
+    {
+      "sample": "heap_fp_03_tainted_double_guard",
+      "is_real_bug": false,
+      "pipeline_detected": true,
+      "ensemble_detected": false,
+      "suppressed": 1,
+      "candidates": 1,
+      "review": 1
+    },
+    {
+      "sample": "heap_fp_04_alias_diff_buf",
+      "is_real_bug": false,
+      "pipeline_detected": false,
+      "ensemble_detected": false,
+      "suppressed": 0,
+      "candidates": 0,
+      "review": 0
+    },
+    {
+      "sample": "heap_fp_05_multi_path_overflow",
+      "is_real_bug": true,
+      "pipeline_detected": true,
+      "ensemble_detected": false,
+      "suppressed": 2,
+      "candidates": 2,
+      "review": 2
+    }
+  ],
+  "elapsed_sec": 0.01
+}

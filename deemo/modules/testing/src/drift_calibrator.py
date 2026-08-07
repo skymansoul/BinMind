@@ -7,9 +7,9 @@
 #
 # 设计动机:
 #   长期 fuzzing (数小时→数天) 的覆盖增长非单调:
-#     - 初期: 快速增长, 新边频繁
-#     - 中期: 增长放缓, 发现新边需要更深度变异
-#     - 后期: 饱和/漂移——在低价值区域反复变异, 覆盖几乎不变
+# 初期: 快速增长, 新边频繁
+# 中期: 增长放缓, 发现新边需要更深度变异
+# 后期: 饱和/漂移——在低价值区域反复变异, 覆盖几乎不变
 #
 #   现有 power_schedule.py 单次调度种子能量, seed_selector.py 选种子,
 #   但两者均无全局视角: 当前整体 fuzzing 策略是否仍然有效?
@@ -18,7 +18,7 @@
 # 核心方法:
 #   1. 维护新边发现率的时间序列 (指数加权窗口, 半衰期 = 300s)
 #   2. CUSUM (累积和) 变点检测: 检测发现率是否发生了系统性下降
-#      (非临时波动, 而是结构性变化——参 Page 1954, Biometrika)
+#
 #   3. 当变点检测触发时, 从策略建议列表中选取历史上未被证伪的建议
 #   4. 追踪每条建议的历史有效性 (是否在采纳后 N 轮内打破了停滞)
 #
@@ -26,14 +26,14 @@
 #   DriftCalibrator 只诊断 + 建议; 调用方负责执行建议内容。
 #   建议是结构化数据, 调用方可按自有逻辑取舍。
 #
-# 参考文献:
+# 文献:
 #   Page 1954, "Continuous Inspection Schemes", Biometrika 41(1/2):100-115
 #     — CUSUM 变点检测的奠基性工作。本项目使用其单侧均值上升/下降
 #       检测公式: S_t = max(0, S_{t-1} + (x_t - μ_0 - k))
-#   UNIFUZZ (Li et al. USENIX 2020) — 系统性评估多种 fuzzer 发现:
+#   UNIFUZZ — 系统性评估多种 fuzzer 发现:
 #       不同阶段切换策略可显著提升长期覆盖率; 本项目取其阶段性策略
 #       切换思想但以数据驱动替代预设时间表。
-#   CollAFL (Gan et al. S&P 2020) — 覆盖冲突解决; 本项目借鉴其
+#   CollAFL — 覆盖冲突解决; 本项目借鉴其
 #       "覆盖质量退化"检测概念, 扩展为漂移校准器。
 import math
 import time
@@ -142,7 +142,7 @@ class DriftCalibrator:
         # 轮次
         self._round = 0
 
-    # ---- 输入 ----
+    # 输入
     def record_window(self, new_edges: int, total_edges: int,
                       execs: int, new_crashes: int = 0) -> None:
         """记录一个时间窗口的覆盖统计。调用间隔通常为 30-60s。"""
@@ -238,7 +238,7 @@ class DriftCalibrator:
         if old_phase != self._phase:
             self._phase_entered_at = now
 
-    # ---- 诊断 ----
+    # 诊断
     def check(self) -> List[CalibrationAdvice]:
         """检查并返回当前阶段下的策略建议。无建议时返回空列表。"""
         now = time.monotonic()
@@ -332,7 +332,7 @@ class DriftCalibrator:
             total_weight += w
         return weighted_success / max(0.01, total_weight)
 
-    # ---- 反馈 ----
+    # 反馈
     def mark_advice_applied(self, advice: CalibrationAdvice) -> None:
         """标记一条建议已被采纳。设置冷却期防抖——同策略在 5min 内不再推荐。"""
         self._strategy_cooldown[advice.strategy.value] = (
@@ -349,7 +349,7 @@ class DriftCalibrator:
             self._strategy_history[advice.strategy.value] = (
                 self._strategy_history[advice.strategy.value][-32:])
 
-    # ---- 统计 ----
+    # 统计
     @property
     def phase(self) -> DriftPhase:
         return self._phase

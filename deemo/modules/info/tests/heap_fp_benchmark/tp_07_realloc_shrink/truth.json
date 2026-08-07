@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_07_realloc_shrink",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "cve": "CVE-2016-6301 类 (realloc 缩容后大写入)",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "realloc 缩小到 16 字节后仍写入 128 字节, 静态可见尺寸不匹配"
+}

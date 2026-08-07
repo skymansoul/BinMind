@@ -12,15 +12,15 @@
   ConcolicTestGenerator 提供符号推导的精确输入 → 覆盖补丁新增的边界路径。
   两者互补：随机测试广撒网，concolic 测试精确命中。
 
-// ref: BASICS [arXiv:2511.19670] concolic execution 结合 formal verification
+// ref: BASICS concolic execution 结合 formal verification
 //   对二进制补丁做验证。本实现借鉴其符号状态追踪 + 路径条件收集机制，
 //   但不依赖 KLEE/libFuzzer 等外部工具。
 //   关键区别：BASICS 在编译后 binary 上做 concolic execution，
 //   本项目在反汇编文本上追踪符号状态，更轻量但精度受反编译器质量影响。
-// ref: CrashRepair [ACM TOSEM 2025] sanitizer-guided concolic execution，
+// ref: CrashRepair sanitizer-guided concolic execution，
 //   其"从 crashing input 出发，收集路径条件 → 推导修复约束"的思路
 //   反转后用于本模块：从 patch 代码出发，收集路径条件 → 推导测试输入。
-// ref: ColorGo [arXiv:2505.21130] directed concolic execution，
+// ref: ColorGo directed concolic execution，
 //   其"增量可达性染色"策略指导本模块的路径优先级排序。
 """
 
@@ -159,7 +159,7 @@ class ConcolicTestGenerator:
                   len(seen_paths), len(test_cases), function_name)
         return test_cases
 
-    # ── 基本块解析 ──────────────────────────────────────────────
+# 基本块解析
 
     def _parse_basic_blocks(self, asm_lines: List[str]) -> Dict[int, List[str]]:
         """解析反汇编 → {地址: [汇编行]} 的基本块映射。"""
@@ -225,7 +225,7 @@ class ConcolicTestGenerator:
             cfg[addr] = targets
         return cfg
 
-    # ── 块执行 ──────────────────────────────────────────────────
+# 块执行
 
     def _execute_block(self, block: List[str], block_addr: int,
                        state: SymbolicState) -> Tuple[SymbolicState, List[int], bool]:
@@ -261,7 +261,7 @@ class ConcolicTestGenerator:
         is_terminal = False
         cond_taken = None
 
-        # ── 条件跳转: 不修改状态，仅记录路径条件 ──
+# 条件跳转: 不修改状态，仅记录路径条件
         if mnemonic in self._COND_JUMPS:
             tgt = self._parse_jump_target(norm)
             if tgt is not None:
@@ -270,16 +270,16 @@ class ConcolicTestGenerator:
             # 简化处理：在调用处（_execute_block）fork state 分别加约束
             return state, jump_tgt, False, None  # fork 在 _execute_block 完成
 
-        # ── 无条件跳转 ──
+# 无条件跳转
         if mnemonic in ('jmp', 'b', 'br'):
             tgt = self._parse_jump_target(norm)
             return state, tgt, False, None
 
-        # ── 返回 ──
+# 返回
         if mnemonic in ('ret', 'b.ret'):
             return state, None, True, None
 
-        # ── 数据移动 ──
+# 数据移动
         if mnemonic in ('mov', 'movq', 'movl', 'movw', 'movb', 'lea',
                         'movz', 'movk', 'adr', 'adrp', 'ldr'):
             dst, src = self._parse_dst_src(parts, mnemonic)
@@ -288,7 +288,7 @@ class ConcolicTestGenerator:
                 if src_expr is not None:
                     state.regs[dst] = src_expr
 
-        # ── 算术 ──
+# 算术
         elif mnemonic in ('add', 'sub', 'mul', 'imul', 'and', 'or', 'xor',
                           'shl', 'shr', 'sar', 'adds', 'subs'):
             dst, src = self._parse_dst_src(parts, mnemonic)
@@ -305,14 +305,14 @@ class ConcolicTestGenerator:
                 except TypeError:
                     pass  # 不支持的运算组合，跳过
 
-        # ── 比较 ──
+# 比较
         elif mnemonic in ('cmp', 'test', 'tst', 'subs'):
             # 比较操作设置条件标志 — 简化：不追踪 flags 寄存器
             pass
 
         return state, jump_tgt, is_terminal, cond_taken
 
-    # ── 操作数解析 ──────────────────────────────────────────────
+# 操作数解析
 
     def _parse_jump_target(self, text: str) -> Optional[int]:
         m = re.search(r'(?:0x)?([0-9a-f]{4,})', text, re.I)
@@ -355,7 +355,7 @@ class ConcolicTestGenerator:
 
         return None
 
-    # ── 状态初始化 ──────────────────────────────────────────────
+# 状态初始化
 
     def _make_initial_state(self) -> SymbolicState:
         state = SymbolicState()
@@ -375,7 +375,7 @@ class ConcolicTestGenerator:
             state.memory[0x100 + i] = SymExpr.symbol(label, 8)
         return state
 
-    # ── 测试用例产出 ────────────────────────────────────────────
+# 测试用例产出
 
     def _state_to_test_case(self, state: SymbolicState, function_name: str,
                             path_idx: int) -> Optional[ConcolicTestCase]:

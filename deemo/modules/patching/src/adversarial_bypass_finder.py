@@ -108,7 +108,7 @@ class BypassDiscoveryReport:
         }
 
 
-# ── 执行迹收集 ────────────────────────────────────────────────────
+# 执行迹收集
 
 class TraceCollector:
     """从 patched binary 执行中收集轻量 ExecutionTrace。
@@ -160,7 +160,7 @@ class TraceCollector:
         return trace
 
 
-# ── AFGS 搜索引擎 ─────────────────────────────────────────────────
+# AFGS 搜索引擎
 
 class AdversarialBypassFinder:
     """Adaptive Fitness-Guided Search — 补丁绕过发现。
@@ -196,7 +196,7 @@ class AdversarialBypassFinder:
         self._generation = 0
         self._restarts = 0
 
-    # ── 主搜索循环 ────────────────────────────────────────────────
+# 主搜索循环
 
     def search(self, max_iterations: int = 100,
                population_size: int = 20,
@@ -359,7 +359,7 @@ class AdversarialBypassFinder:
             verdict="bypass_found" if high_risk else "inconclusive",
         )
 
-    # ── 内部方法 ──────────────────────────────────────────────────
+# 内部方法
 
     def _select_parents(self, elite_size: int = 4,
                         extra_count: int = 8) -> List[BypassCandidate]:
@@ -417,7 +417,7 @@ class AdversarialBypassFinder:
         return (variance ** 0.5) / mu
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def find_patch_bypasses(binary_path: str,
                         patch_sites: List[PatchSite],

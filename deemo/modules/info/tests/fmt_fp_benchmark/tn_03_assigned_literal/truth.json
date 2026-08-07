@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_03_assigned_literal",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 变量赋字面量",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "f 指向常量字符串"
+}

@@ -5,7 +5,7 @@
 2025-08-04 15:22 - 不变性谱向量 + MCD 稳健协方差离群检测
 2025-08-06 10:38 - 自适应阈值随样本量增长收紧
 
-参考: Ernst et al. (2001) Daikon, INVSCOV (USENIX 2024), FuzzSight (2025)
+参考: Ernst et al. Daikon, INVSCOV , FuzzSight
 
 与 INVSCOV/FuzzSight 的区分:
 前两者将不变式作为中继信号 (反馈/差分), 目标仍是覆盖率或版本比较。
@@ -18,12 +18,10 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from .invariant_types import InvariantType, Invariant, InputSpectrum
 
-
 _MAX_INVARIANTS = 200
 _MIN_CONFIDENCE = 0.85
 _SPECTRUM_DIM = 32
 _MIN_SAMPLES_FOR_DETECT = 30
-
 
 class InvariantSpectrumAnalyzer:
     """跨输入不变性谱分析器 — 在线检测行为异常输入.

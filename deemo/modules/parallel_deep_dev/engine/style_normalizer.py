@@ -1,5 +1,5 @@
 """
-创建: 2025-08-01
+创建: 2026-05-15
 修改:
   2025-08-01 - 检测器/加权统计/自动修正委托给 style_detectors.py
 共识驱动的跨模块代码风格归一化。
@@ -91,9 +91,7 @@ class StyleNormalizer:
     def __init__(self, deviation_threshold: float = 0.3):
         self.deviation_threshold = deviation_threshold
 
-    # ------------------------------------------------------------------
     # 阶段 1: 风格提取
-    # ------------------------------------------------------------------
 
     def extract_profiles(self, filepaths: list[str]) -> list[StyleProfile]:
         """从文件列表中提取风格画像。非 Python 文件自动跳过。"""
@@ -136,9 +134,7 @@ class StyleNormalizer:
 
         return profile
 
-    # ------------------------------------------------------------------
     # 阶段 2: 共识计算
-    # ------------------------------------------------------------------
 
     def compute_consensus(self, profiles: list[StyleProfile]) -> ConsensusStyle:
         """从风格画像列表计算共识风格。
@@ -194,9 +190,7 @@ class StyleNormalizer:
 
         return cs
 
-    # ------------------------------------------------------------------
     # 阶段 3: 偏差检测
-    # ------------------------------------------------------------------
 
     def find_deviations(
         self,
@@ -238,9 +232,7 @@ class StyleNormalizer:
                 ))
         return sorted(deviations, key=lambda d: d.deviation_score, reverse=True)
 
-    # ------------------------------------------------------------------
     # 阶段 4: 自动修正
-    # ------------------------------------------------------------------
 
     def auto_correct(
         self,

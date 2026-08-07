@@ -42,7 +42,7 @@ def detect_int_heap_causal(
         if not stripped or stripped.startswith(';'):
             continue
 
-        # 步骤1: 找到溢出操作 (mul/imul/add其中至少一个操作数非零)
+        # 找到溢出操作 (mul/imul/add其中至少一个操作数非零)
         op_type = ""
         m = re.search(r'(?:imul|mul)\s+(\w+)(?:\s*,\s*(\w+))?', stripped)
         if m:
@@ -54,7 +54,7 @@ def detect_int_heap_causal(
         if not op_type:
             continue
 
-        # 步骤2: 搜索后续malloc(在max_distance内)
+        # 搜索后续malloc(在max_distance内)
         malloc_addr = -1
         for j in range(i + 1, min(len(disasm_lines), i + 20)):
             dl = disasm_lines[j].strip().lower()
@@ -64,7 +64,7 @@ def detect_int_heap_causal(
         if malloc_addr < 0:
             continue
 
-        # 步骤3: 搜索malloc后的堆写入
+        # 搜索malloc后的堆写入
         heap_write_addr = -1
         for k in range(malloc_addr + 1, min(len(disasm_lines), malloc_addr + 15)):
             dl = disasm_lines[k].strip().lower()

@@ -5,7 +5,7 @@
 # 输出: ConcurrencyReport（死锁 + 数据竞争 + 同步误用）
 #
 # 设计约束：
-#   - 纯静态，不执行目标程序
+# 纯静态，不执行目标程序
 #   - 所有依赖为 Python 标准库（不引入 z3/claripy/angr 等重量依赖）
 # - 可集成到 CI 流水线：报告.has_critical_issues → exit 1
 
@@ -76,7 +76,7 @@ def analyze_binary_concurrency(
     if global_vars is None:
         global_vars = {}
 
-    # --- 阶段 1: 同步原语提取 ---
+# 阶段 1: 同步原语提取
     sync_primitives = extract_sync_primitives(imports)
     logger.info("识别到 %d 个同步原语导入", len(sync_primitives))
 
@@ -116,7 +116,7 @@ def analyze_binary_concurrency(
 
     logger.info("提取到 %d 个同步操作位点", len(all_sites))
 
-    # --- 阶段 2: 锁配对 ---
+# 阶段 2: 锁配对
     lock_pairs = build_lock_pairs(all_sites)
     # 未配对的锁
     paired_locks = {p[0].lock_identifier for p in lock_pairs} | \
@@ -126,11 +126,11 @@ def analyze_binary_concurrency(
                  and s.sync_type in (SyncType.MUTEX_LOCK, SyncType.MUTEX_UNLOCK,
                                      SyncType.RWLOCK_WRLOCK, SyncType.RWLOCK_RDLOCK)]
 
-    # --- 阶段 3: 锁图构建 + 死锁检测 ---
+# 阶段 3: 锁图构建 + 死锁检测
     lock_graph = build_lock_graph(all_sites)
     deadlock_cycles = detect_deadlock_cycles(lock_graph)
 
-    # --- 阶段 4: 线程入口推断 ---
+# 阶段 4: 线程入口推断
     # 将 func_insns 转为简易格式
     simple_func_insns = {name: insns for name, (_, insns) in func_insns.items()}
     thread_entries = collect_thread_entries(simple_func_insns, func_addr_map)
@@ -142,14 +142,14 @@ def analyze_binary_concurrency(
             if site.sync_type in (SyncType.MUTEX_LOCK, SyncType.MUTEX_UNLOCK):
                 thread_entries[site.func_name] = {'<inferred_from_locks>'}
 
-    # --- 阶段 5: 共享访问收集 ---
+# 阶段 5: 共享访问收集
     all_shared: Dict[str, List[SharedAccess]] = {}
     for func_name, (func_addr, insns) in func_insns.items():
         accesses = find_shared_accesses(func_name, func_addr, insns, global_vars)
         if accesses:
             all_shared[func_name] = accesses
 
-    # --- 阶段 6: 数据竞争检测 ---
+# 阶段 6: 数据竞争检测
     # 每个函数的锁集合
     func_locks: Dict[str, Set[str]] = defaultdict(set)
     for site in all_sites:
@@ -157,7 +157,7 @@ def analyze_binary_concurrency(
 
     races = detect_potential_races(thread_entries, all_shared, func_locks)
 
-    # --- 阶段 7: 汇总 ---
+# 阶段 7: 汇总
     has_critical = bool(deadlock_cycles) or \
                    any(r.severity == 'HIGH' for r in races) or \
                    len(unpaired) > 5  # 超过 5 个未配对的锁视为严重

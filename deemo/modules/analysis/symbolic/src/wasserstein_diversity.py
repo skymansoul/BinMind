@@ -20,11 +20,11 @@ PathDiversityTracker (path_diversity_core.py, ~1800 行) 使用 SimHash +
 SimHash: O(D) per path, 汉明距离 ∈ [0,64], 余弦相似度近似, 无三角不等式
 SWD: O(K·N·记录 N) per set comparison, 真实度量, 对特征分布变化不敏感
 
-ref: Rabin et al. (2012) "Wasserstein Barycenter Applica Texture Mixing"
+ref: Rabin et al. "Wasserstein Barycenter Applica Texture Mixing"
 — 提出切片 Wasserstein 距离以规避高维 Wasserstein 的计算瓶颈
-ref: Kolouri et al. (2019) "Sliced Wasserstein Dist for Learning Gaussian Mixture Models"
+ref: Kolouri et al. "Sliced Wasserstein Dist for Learning Gaussian Mixture Models"
 — SWD 在 1D 上的闭式解即排序后 L1 距离, O(N log N) per slice
-ref: Bonneel et al. (2015) "Sliced Partial Optimal Transport" (ACM TOG)
+ref: Bonneel et al. "Sliced Partial Optimal Transport" (ACM TOG)
 — 首次将 SWD 应用于离散分布比较
 
 本实现不替代 PathDiversityTracker — 作为独立模块提供可替换的多样性度量
@@ -221,12 +221,12 @@ class SlicedWassersteinDiversity:
         return selected
 
 
-# ---- 自适应切片数: 在 N 大时增加 K 以控制方差 ----
+# 自适应切片数: 在 N 大时增加 K 以控制方差
 # SWD 的估计方差 ∝ 1/K, 对于 N=5000 的路径集合, K=30 可使
 # 标准差控制在均值的 3% 以内 (Monte Carlo 经验值, N=200-5000)
 
 
-# ---- Quota 兼容适配 ----
+# Quota 兼容适配
 # PathDiversityTracker.DiversityBudget 的接口与本模块的桥接:
 #   enforce(paths, budget) → (selected_indices, diversity_score)
 #   替换为 SWD 的 max-min 选择, 输出相同格式

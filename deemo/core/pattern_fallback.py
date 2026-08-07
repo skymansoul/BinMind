@@ -11,7 +11,6 @@ Patterns sourced from GCC 8-14 and Clang 15-19 at -O0/-O2 for
 printf(buf) / strcpy(dst, src) / free(ptr) instruction sequences.
 """
 
-from __future__ import annotations
 
 import logging
 import re
@@ -32,11 +31,9 @@ class PatternMatch:
     vuln_type: str = ""         # format_string / stack_overflow / uaf
 
 
-# ---------------------------------------------------------------------------
 # 汇编模式库
 # 每个模式: (字节模式, 汇编助记模式, 描述, 置信度, 漏洞类型)
 # 字节模式用 '.' 匹配任意半字节, 助记模式用 \s+ 匹配空白
-# ---------------------------------------------------------------------------
 
 _FORMAT_STRING_PATTERNS: List[Tuple[str, str, str, float]] = [
     # printf(buf) 的危险模式 —— 第一个参数来自栈加载而非 .rodata

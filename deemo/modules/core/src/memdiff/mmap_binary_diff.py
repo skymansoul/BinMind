@@ -17,8 +17,7 @@ Layer3-语义化: 对被标记为"changed"的函数做简单的汇编级变化�
 复杂度: O(N)字节级扫描+O(K·logK)变化段分析（K=变化段数<<N）。
 与diaphora/Bindiff的O(N²)函数匹配完全不同。
 
-参考:
-- rsync算法 (Tridgell 1999): 滚动哈希+CDC的基础理论。
+- rsync算法: 滚动哈希+CDC的基础理论。
 - ssdeep/ppdeep: 模糊哈希在二进制相似度中的应用。
   本模块扩展到结构化变化分类，而非仅输出相似度分数。
 """
@@ -30,7 +29,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class ChangeType(Enum):
     UNCHANGED = "unchanged"
     INSTRUCTION_MODIFIED = "instruction_modified"
@@ -39,7 +37,6 @@ class ChangeType(Enum):
     CODE_REORDERED = "code_reordered"
     INSERTED = "inserted"
     DELETED = "deleted"
-
 
 @dataclass
 class ChangedRegion:
@@ -50,7 +47,6 @@ class ChangedRegion:
     old_bytes_hash: str = ""
     new_bytes_hash: str = ""
     function_name_hint: str = ""
-
 
 @dataclass
 class BinaryDiffResult:
@@ -67,7 +63,6 @@ class BinaryDiffResult:
     # 风险评估
     is_security_patch: bool = False  # 启发式：是否是安全补丁
     risk_score: float = 0.0
-
 
 class MMapBinaryDiffer:
     """基于mmap+CDC的快速二进制差分分析器。
@@ -154,9 +149,7 @@ class MMapBinaryDiffer:
         _union = _set_old | _set_new
         return len(_set_old & _set_new) / max(len(_union), 1)
 
-    # -----------------------------------------------------------------
     # 变化检测
-    # -----------------------------------------------------------------
 
     def _find_changed_regions(
         self, old: bytes, new: bytes,
@@ -190,9 +183,7 @@ class MMapBinaryDiffer:
 
         return _regions
 
-    # -----------------------------------------------------------------
     # 变化分类
-    # -----------------------------------------------------------------
 
     def _classify_changes(
         self, old: bytes, new: bytes,
@@ -247,9 +238,7 @@ class MMapBinaryDiffer:
             return ChangeType.CODE_REORDERED
         return ChangeType.INSTRUCTION_MODIFIED
 
-    # -----------------------------------------------------------------
     # 安全补丁评估
-    # -----------------------------------------------------------------
 
     def _assess_security_patch(
         self, regions: List[ChangedRegion],
@@ -277,9 +266,7 @@ class MMapBinaryDiffer:
 
         return _is_security, round(_risk, 3)
 
-    # -----------------------------------------------------------------
     # CDC分块
-    # -----------------------------------------------------------------
 
     def _cdc_chunk_hashes(self, data: bytes) -> List[str]:
         """内容定义分块——基于滚动哈希的边界识别。
@@ -306,8 +293,7 @@ class MMapBinaryDiffer:
 
         return _chunks
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _differ = MMapBinaryDiffer()
 
@@ -342,7 +328,6 @@ def _smoke_test():
     assert _result.total_regions > 0, "should detect changes"
     assert 0.0 <= _result.unchanged_ratio <= 1.0
     print("[OK] MMapBinaryDiffer smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

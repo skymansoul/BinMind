@@ -14,7 +14,6 @@ def-use链。若参数最终追溯到recv/read/fgets等输入函数的返回值,
 追踪深度更深(跨3层调用)且只关心size参数, 不做全寄存器追踪。
 """
 
-from __future__ import annotations
 
 import re
 from dataclasses import dataclass

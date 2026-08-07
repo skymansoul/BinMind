@@ -2,14 +2,14 @@
 # 异构图卷积网络用于 CVE 可利用性传播预测
 #
 # 核心参考文献:
-#   [Mahbub et al. 2025] Relational Vulnerability-Vendor Network with RGCN
-#     -- 异构关系图在可利用性预测上超越 EPSS
-#   [Hashimoto & Shimizu 2025] KEV+EPSS+CVSS 链式决策优化
+# Relational Vulnerability-Vendor Network with RGCN
+# 异构关系图在可利用性预测上超越 EPSS
+# KEV+EPSS+CVSS 链式决策优化
 #     -- 已验证通过 IEEE Access 2025 发表, DOI 10.1109/ACCESS.2025.3556543
-#   [Baird & Moin 2026, FSE 2026, arXiv:2604.04977] HGAT + SBOM异构图
-#     -- CVE对链接预测, 91.03% 准确率, 经Web搜索确认真实
-#   [Parla 2024, arXiv:2411.02618] Efficacy of EPSS in KEV
-#     -- EPSS 在预妥协预测中存在盲区, 需要结构化补充信号
+# HGAT + SBOM异构图
+# CVE对链接预测, 91.03% 准确率, 经Web搜索确认真实
+# Efficacy of EPSS in KEV
+# EPSS 在预妥协预测中存在盲区, 需要结构化补充信号
 #
 # 方法: 从本地 KB 构建异构关系图 G = (V, E, R), 包含 5 种节点类型
 # (CVE, CWE, Product, Vendor, CPE) 和 4 种关系类型 (hasWeakness,
@@ -38,7 +38,7 @@ except ImportError:
     _HAS_NUMPY = False
     np = None  # type: ignore
 
-# ---- 图模式定义 ----
+# 图模式定义
 # 节点类型索引
 _NTYPE_CVE = 0
 _NTYPE_CWE = 1
@@ -93,7 +93,7 @@ class CVEExploitGraph:
         self._W: Dict[int, List[List[float]]] = {}
         self._built = False
 
-    # ---- 图构建 ----
+# 图构建
 
     def build(self):
         """从 KB 中所有 CVE 条目构建异构图.
@@ -176,7 +176,7 @@ class CVEExploitGraph:
                 "entry": entry,
             }
 
-        # ---- 节点注册 ----
+# 节点注册
         self._node_ids.clear()
         self._node_types.clear()
         self._node_idx.clear()
@@ -232,7 +232,7 @@ class CVEExploitGraph:
         for cpe_str in all_cpes:
             self._add_node(cpe_str, _NTYPE_CPE, _build_cpe_features(cpe_str))
 
-        # ---- 构建边 ----
+# 构建边
         # rel=0: CVE → CWE
         for cid, cwes in cve_cwe_map.items():
             src = self._node_idx.get(cid)
@@ -304,7 +304,7 @@ class CVEExploitGraph:
 
         self._built = True
 
-    # ---- 消息传递 ----
+# 消息传递
 
     def propagate(self) -> Dict[str, Dict[str, Any]]:
         """执行 L 层关系图卷积, 返回每个 CVE 节点的可利用性分数.
@@ -357,7 +357,7 @@ class CVEExploitGraph:
         # 从最终隐藏状态提取 CVE 可利用性分数
         return self._extract_scores(H)
 
-    # ---- 内部方法 ----
+# 内部方法
 
     def _add_node(self, nid: str, ntype: int, features: List[float]):
         if nid in self._node_idx:
@@ -463,7 +463,7 @@ class CVEExploitGraph:
 
         return results
 
-    # ---- 统计 ----
+# 统计
 
     def stats(self) -> Dict[str, Any]:
         """图统计信息."""
@@ -486,7 +486,7 @@ class CVEExploitGraph:
         }
 
 
-# ---- 特征构建函数 ----
+# 特征构建函数
 # 每个节点类型的初始特征向量维度 = _FEAT_DIM = 8
 # 未使用的维度以 0 填充, 供图卷积学习
 
@@ -560,7 +560,7 @@ def _build_cpe_features(cpe_str: str) -> List[float]:
     return [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _matvec(W: List[List[float]], x: List[float]) -> List[float]:
     """矩阵-向量乘法 W @ x. 纯 Python 实现, 无 numpy 依赖."""
@@ -659,7 +659,7 @@ def _get_bool(entry, field: str) -> bool:
     return False
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def score_cves_with_gnn(kb: CVEKnowledgeBase) -> Dict[str, Dict[str, Any]]:
     """一站式: 构建图, 传播, 返回所有 CVE 的 GNN 可利用性分数.

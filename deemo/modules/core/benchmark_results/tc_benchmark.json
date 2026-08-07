@@ -1,0 +1,74 @@
+{
+  "results": [
+    {
+      "id": "tc_cve_01",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_02",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_03",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_04",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_05",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_06",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_07",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_08",
+      "gt": true,
+      "detected": true,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_09",
+      "gt": false,
+      "detected": false,
+      "correct": true
+    },
+    {
+      "id": "tc_cve_10",
+      "gt": false,
+      "detected": false,
+      "correct": true
+    }
+  ],
+  "stats": {
+    "total": 10,
+    "tp": 8,
+    "tn": 2,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  }
+}

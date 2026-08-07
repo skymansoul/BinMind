@@ -1,6 +1,6 @@
-# 创建: 2025-08-13 08:10
-# 修改: 2025-08-13 — LLM 草图生成 + SMT 验证 + 结构哈希模板缓存
-# 修改: 2025-08-16 — 移除装饰性引用, 替换为 Z3 (de Moura & Bjorner, TACAS 2008)
+# 创建: 2026-07-02 08:10
+# 修改: 2026-07-02 — LLM 草图生成 + SMT 验证 + 结构哈希模板缓存
+# 修改: 2026-07-02 — 移除装饰性引用, 替换为 Z3
 """
 LLM-SMT 混合约束求解器 — 神经符号约束求解管线。
 
@@ -22,9 +22,9 @@ LLM-SMT 混合约束求解器 — 神经符号约束求解管线。
 
 LLM 不可用时的降级路径: 直接调用 Z3, 行为等价于现有求解器。
 
-ref: arXiv:2511.18288 (2025) — LLM 求解路径约束的实证研究,
+ref: — LLM 求解路径约束的实证研究,
      本项目将 LLM 候选解生成 + SMT 验证的两阶段架构首次应用于二进制符号执行
-ref: Z3 (de Moura & Bjørner, TACAS 2008) — SMT 求解器,
+ref: Z3 — SMT 求解器,
      本项目的验证层基于 Z3 的 BitVec 模型检查
 """
 
@@ -37,8 +37,7 @@ import time
 from collections import OrderedDict
 from typing import Any, Optional, Callable
 
-
-# --- 约束分解 ---
+# 约束分解
 # 将 Z3 风格的复合约束字符串拆分为独立子句。
 # 启发式: 按 'And(' 边界、'=='、'!=' 关系、独立变量集分组。
 
@@ -56,7 +55,6 @@ def _decompose_constraint(constraint_str: str) -> list[str]:
             out.extend(_decompose_constraint(c))
         return out
     return [s]
-
 
 def _split_top_level(text: str, sep: str) -> list[str]:
     """在顶层 (不计入嵌套括号) 按分隔符切分。"""
@@ -77,8 +75,7 @@ def _split_top_level(text: str, sep: str) -> list[str]:
         parts.append(current.strip())
     return parts
 
-
-# --- LLM 草图生成 ---
+# LLM 草图生成
 # 将约束子句转为自然语言 prompt, 调用 LLM 获取候选赋值。
 # 返回结构化 dict: {var_name: concrete_value} 或 None。
 
@@ -89,7 +86,6 @@ Constraint: {constraint}
 
 Example response format: {{"x": 42, "y": 255}}
 """
-
 
 def _parse_llm_sketch(response: str) -> dict[str, int] | None:
     """从 LLM 响应中提取 JSON 赋值。容错: 允许尾部逗号、单引号。"""
@@ -110,8 +106,7 @@ def _parse_llm_sketch(response: str) -> dict[str, int] | None:
     except (json.JSONDecodeError, ValueError, TypeError):
         return None
 
-
-# --- SMT 验证 ---
+# SMT 验证
 # 将 LLM 候选解作为 Z3 的额外断言, 用 solver.check() 验证。
 # 通过 → 解有效; 不通过 → 回退完整求解。
 
@@ -181,8 +176,7 @@ def _validate_sketch_z3(
     except Exception:
         return None
 
-
-# --- 模板缓存 ---
+# 模板缓存
 # LRU 缓存: 约束模式哈希 → 候选解模板。
 # 对于相似约束 (同一循环展开), 直接复用上次成功的草图结构。
 
@@ -231,8 +225,7 @@ class ConstraintTemplateCache:
             'misses': self._misses,
         }
 
-
-# --- 主求解器 ---
+# 主求解器
 
 class LLMSMTHybridSolver:
     """LLM-SMT 混合约束求解器。
@@ -362,7 +355,6 @@ class LLMSMTHybridSolver:
         self._cache = ConstraintTemplateCache()
         self._stats = {k: 0 if k != 'total_time_ms' else 0.0
                        for k in self._stats}
-
 
 __all__ = [
     'LLMSMTHybridSolver', 'ConstraintTemplateCache',

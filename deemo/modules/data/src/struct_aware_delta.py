@@ -48,7 +48,7 @@ class StructAwareDeltaEncoder:
         """仅执行结构分析, 不生成 patch."""
         return self._analyzer.analyze(data)
 
-    # ---- 内部 ----
+# 内部
 
     def _build_mapping(self, old_segs: List[BinarySegment],
                         new_segs: List[BinarySegment]

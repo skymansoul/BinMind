@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 22:08
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-08 22:08
+# 修改: 2026-06-08 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 条件神经过程CVE评分
 # 条件神经过程 — CVE评分函数分布的学习与推理
 #
@@ -27,12 +27,12 @@
 #
 # 与现有模块的差异:
 #   - MAMLCVEModel (cve_meta_learning): 基于梯度的元学习, 需要内循环.
-#   - CNP: 基于前向的元学习, 上下文通过编码器直接调制预测.
+# CNP: 基于前向的元学习, 上下文通过编码器直接调制预测.
 #   - ConformalExploitScorer: 频率学派区间, CNP提供贝叶斯风格的后验方差.
 #
 # 非显而易见性:
 #   1. 首次将神经过程应用于CVE评分.
-#      2025-2026年检索: BayesMAML用于恶意软件检测 (Nature 2026),
+#      2025-2026年检索: BayesMAML用于恶意软件检测,
 #      但零论文使用Neural Processes于漏洞评分.
 #   2. 上下文设计: 编码器融合了特征+标签的联合表示,
 #      而非仅特征 (标准CNP for regression).
@@ -41,10 +41,10 @@
 #      CNP提供认知不确定性 (模型知识不足),
 #      共形提供偶然不确定性 (个体预测波动).
 #
-# 参考:
-#   [Garnelo et al. 2018] Conditional Neural Processes (ICML)
-#   [Garnelo et al. 2018] Neural Processes (ICML Workshop)
-#   [Nature 2026] BayesMAML for zero-day malware (related but different)
+#
+# Conditional Neural Processes (ICML)
+# Neural Processes (ICML Workshop)
+# BayesMAML for zero-day malware (related but different)
 
 import math
 import random
@@ -243,7 +243,7 @@ class ConditionalNeuralProcess:
         return self._trained
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_cnp_from_kb(kb, min_cwe_samples: int = 8,
                       epochs: int = 60) -> ConditionalNeuralProcess:

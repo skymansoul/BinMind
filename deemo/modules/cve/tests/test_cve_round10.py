@@ -14,7 +14,7 @@ def kb():
     db.close()
 
 
-# ===== OSV integration (7 tests) =====
+# OSV integration (7 tests)
 
 class TestOSVIntegration:
     def test_normalize_ecosystem_pip(self):
@@ -75,7 +75,7 @@ class TestOSVIntegration:
         client.close()
 
 
-# ===== Watchlist (7 tests) =====
+# Watchlist (7 tests)
 
 class TestWatchlist:
     def test_add_and_list(self):
@@ -144,7 +144,7 @@ class TestWatchlist:
         wl.close()
 
 
-# ===== Exploit strategy (7 tests) =====
+# Exploit strategy (7 tests)
 
 class TestExploitStrategy:
     def test_get_strategy_known(self):

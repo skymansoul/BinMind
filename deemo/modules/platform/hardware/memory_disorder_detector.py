@@ -1,7 +1,7 @@
 # Memory DisOrder: 内存重排序侧信道检测器
-# 参考:
+#
 #   "Memory DisOrder: Memory Re-orderings as a Timerless Side-channel"
-#     (arXiv 2601.08770, Jan 2026) — Siddens et al.
+# — Siddens et al.
 #     发现跨 6 种架构 (x86, ARM, Apple; NVIDIA/AMD/Apple GPU) 的内存重排序侧信道,
 #     在不使用 timer 或 PMU 的情况下实现 covert channel (16 bps M3 GPU, ~30Kbps x86)
 #     并实现 DNN 架构指纹识别
@@ -18,7 +18,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── 已知受影响的架构及其模型特征 ──
+# 已知受影响的架构及其模型特征
 # 每个架构定义了重排序的可观测程度 (reorder_depth) 和典型重排窗口
 _AFFECTED_ARCHITECTURES: dict[str, dict] = {
     "x86_64": {"reorder_depth": 4, "window_ns": 50, "mitigation": "mfence/lfence",

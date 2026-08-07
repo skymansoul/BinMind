@@ -1,7 +1,7 @@
 """
 WASI沙箱逃逸综合分析器——多层次逃逸风险评估。
 
-检测维度（基于SeeWasm ISSTA'24 + WBSan WWW'25 + Wemby ISSTA'25）:
+检测维度:
   1. 导入函数审计——危险WASI API识别
   2. 线性内存分析——guard page突破与OOB（WBSan shadow memory模型）
   3. Table操作——间接调用劫持
@@ -501,7 +501,6 @@ def generate_escape_poc(vt,**kw):
 # WBSan shadow memory模型状态缓存
 _SHADOW_MEM_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_seewasm_path_ranker(paths: list) -> list:
     """SeeWasm逃逸路径复杂度排序——按涉及的import数量降序。"""

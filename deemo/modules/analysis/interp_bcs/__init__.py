@@ -1,9 +1,9 @@
 # interp_bcs/ — 可解释特征二进制相似性 + 神经反编译等价校验
 #
 # 概览:
-# features.py：— 可解释特征提取（Beyond Embeddings, arXiv:2509.23449 [待验证]）
-# equivalence.py：— 细粒度等价校验（Fast Equiv Checking, arXiv:2501.04811 [待验证]）
-# 签名.py：— 组合约束签名恢复（CCS 2025 / Binary2vec Array 2025）
+# features.py：— 可解释特征提取
+# equivalence.py：— 细粒度等价校验
+# 签名.py：— 组合约束签名恢复
 #
 # 设计意图:
 #   现有反编译/相似性依赖端到端嵌入，是黑盒。本包在其上叠加三层

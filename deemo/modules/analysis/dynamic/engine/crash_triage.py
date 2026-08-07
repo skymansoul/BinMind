@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Tuple, Any
 _log = logging.getLogger(__name__)
 
 
-# ===== 枚举 =====
+# 枚举
 
 class CrashType(Enum):
     ACCESS_VIOLATION = auto()
@@ -33,7 +33,7 @@ class Exploitability(Enum):
     UNKNOWN = auto()
 
 
-# ===== 数据类 =====
+# 数据类
 
 @dataclass
 class CrashInfo:
@@ -49,7 +49,7 @@ class CrashInfo:
     process_name: str = ""
 
 
-# ===== 崩溃分类器 =====
+# 崩溃分类器
 
 class CrashClassifier:
     """
@@ -57,7 +57,7 @@ class CrashClassifier:
     每种崩溃类型对应一个可利用性评分和置信度
     """
 
-    # ---- 主分类入口 ----
+# 主分类入口
     def classify(self, crash_info: CrashInfo) -> Tuple[CrashType, Exploitability, float, str]:
         ct = crash_info.crash_type
         reasoning_parts: List[str] = []
@@ -82,7 +82,7 @@ class CrashClassifier:
         else:
             return (ct, Exploitability.UNKNOWN, 0.50, "无法确定的崩溃类型")
 
-    # ---- 访问违规分类 ----
+# 访问违规分类
     def _classify_av(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
         # 规则 1: crash_address == fault_address → 高度可疑
         if ci.crash_address and ci.fault_address and ci.crash_address == ci.fault_address:
@@ -118,7 +118,7 @@ class CrashClassifier:
         parts.append("通用访问违规，需要更多上下文")
         return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.50, "; ".join(parts))
 
-    # ---- 非法指令分类 ----
+# 非法指令分类
     def _classify_illegal(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
         # UD2 / INT3 / 0xCC → 可能是断言或反调试
         if ci.instruction_bytes:
@@ -137,12 +137,12 @@ class CrashClassifier:
         parts.append("非法指令，可能由内存损坏导致")
         return (ci.crash_type, Exploitability.PROBABLY_NOT_EXPLOITABLE, 0.25, "; ".join(parts))
 
-    # ---- 栈溢出分类 ----
+# 栈溢出分类
     def _classify_stack_overflow(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
         parts.append("栈溢出通常用于拒绝服务，直接利用难度高")
         return (ci.crash_type, Exploitability.PROBABLY_NOT_EXPLOITABLE, 0.30, "; ".join(parts))
 
-    # ---- 堆损坏分类 ----
+# 堆损坏分类
     def _classify_heap_corruption(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
         if self._check_controlled_eip(ci.register_context, ci.stack_trace):
             parts.append("堆损坏 + 控制流劫持 = 高度可利用")
@@ -150,7 +150,7 @@ class CrashClassifier:
         parts.append("堆损坏，需进一步分析")
         return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.50, "; ".join(parts))
 
-    # ===== 辅助检测方法 =====
+# 辅助检测方法
 
     @staticmethod
     def _check_controlled_eip(registers: Dict[str, int],
@@ -222,7 +222,7 @@ class CrashClassifier:
         return codes.get(code, f"UNKNOWN(0x{code:08X})")
 
 
-# ===== 崩溃分析器 =====
+# 崩溃分析器
 
 class CrashAnalyzer:
     """
@@ -235,7 +235,7 @@ class CrashAnalyzer:
         self.binary_path = binary_path
         self._classifier = CrashClassifier()
 
-    # ---- 评估可利用性 ----
+# 评估可利用性
     def assess_exploitability(self) -> Dict[str, Any]:
         ct, expl, conf, reason = self._classifier.classify(self.crash_info)
         mitigations = self.suggest_mitigations(ct, expl)
@@ -250,7 +250,7 @@ class CrashAnalyzer:
             "mitigations": mitigations,
         }
 
-    # ---- 缓解 ----
+# 缓解
     def suggest_mitigations(self, ct: CrashType = None,
                             expl: Exploitability = None) -> List[str]:
         mitigs: List[str] = []
@@ -275,7 +275,7 @@ class CrashAnalyzer:
 
         return mitigs
 
-    # ---- 生成可读报告 ----
+# 生成可读报告
     def generate_report(self) -> str:
         """
         生成人类可读的崩溃分析报告
@@ -319,7 +319,7 @@ class CrashAnalyzer:
         return "\n".join(lines)
 
 
-# ===== 崩溃解析器 =====
+# 崩溃解析器
 
 class CrashParser:
     """
@@ -327,7 +327,7 @@ class CrashParser:
     支持 WinDbg!分析 -v、GDB backtrace、minidump/core 转存
     """
 
-    # ---- 解析 WinDbg!分析 -v 输出 ----
+# 解析 WinDbg!分析 -v 输出
     @staticmethod
     def parse_windbg_output(text: str) -> CrashInfo:
         ci = CrashInfo()
@@ -372,7 +372,7 @@ class CrashParser:
 
         return ci
 
-    # ---- 解析 GDB backtrace ----
+# 解析 GDB backtrace
     @staticmethod
     def parse_gdb_output(text: str) -> CrashInfo:
         ci = CrashInfo()
@@ -409,7 +409,7 @@ class CrashParser:
 
         return ci
 
-    # ---- 解析崩溃转储文件 ----
+# 解析崩溃转储文件
     @staticmethod
     def parse_crash_dump(path: str) -> CrashInfo:
         """
@@ -460,7 +460,7 @@ class CrashParser:
 
 
 # Round 3: FrameShift式碰撞去重 —— 基于堆栈哈希的崩溃分组
-# 参考LibAFL的crash dedup策略：将调用栈的前N帧做页对齐哈希
+# LibAFL的crash dedup策略：将调用栈的前N帧做页对齐哈希
 # 编辑距离<阈值(0.3)的崩溃视为同类，仅对代表性崩溃做深入分析
 # 这避免了单个bug产生数百个变体时分析资源的浪费
 

@@ -2,7 +2,7 @@
 """
 横向对比实验启动器 — 同一批样本喂给 BinMind / Angr / QEMU+插桩 / Ghidra 脚本。
 
-创建: 2025-10-07 14:20
+创建: 2026-06-27 14:20
 修改:
   2025-10-07 14:20 — 初始实现: 多工具调度/计时/内存/结果归一化/LaTeX表格生成
 
@@ -60,7 +60,7 @@ class ComparisonReport:
     summary: Dict[str, Dict[str, float]] = field(default_factory=dict)
 
 
-# ── 各工具调用适配器 ──
+# 各工具调用适配器
 
 def _run_binmind(binary_path: str, timeout: int = 120) -> Dict:
     """调用BinMind扫描器。"""
@@ -154,7 +154,7 @@ def _run_ghidra_headless(binary_path: str, timeout: int = 180) -> Dict:
         return {'success': False, 'error': 'ghidra not found', 'findings': []}
 
 
-# ── 主实验逻辑 ──
+# 主实验逻辑
 
 def run_comparison(samples_dir: str, tools: List[str], runs: int = 3,
                     output_dir: str = 'results/comparison/'

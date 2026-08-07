@@ -5,17 +5,17 @@
 # 租户诚实——这在竞争环境中不成立。
 #
 # 本模块将多租户调度建模为非合作博弈:
-#   - 参与者: K 个租户，各提交任务队列
-#   - 策略: 租户 k 报告其任务权重向量 w_k (可虚报)
-#   - 收益: u_k = 分配到的资源份额 - α·penalty(虚报程度)
-#   - 目标: 找到纳什均衡——无人可通过单方面虚报改善收益
+# 参与者: K 个租户，各提交任务队列
+# 策略: 租户 k 报告其任务权重向量 w_k (可虚报)
+# 收益: u_k = 分配到的资源份额 - α·penalty(虚报程度)
+# 目标: 找到纳什均衡——无人可通过单方面虚报改善收益
 #
 # 策略证明 (strategy-proofness): 若 α 足够大，诚实报告是占优策略。
 #   阈值 α* 由价格-无政府比率 (price of anarchy) 的上界推导:
 #   α* = (s_max/s_min) · (K / (K-1))
 #   其中 s_max/s_min 是最大/最小任务执行时间比。
 #
-# 与 Fair Coordination (arXiv:2512.13244) 的区别:
+# 与 Fair Coordination 的区别:
 #   该文研究同权重 job 的 envy-freeness + Nash 均衡。
 #   本模块处理异质任务 + DAG 依赖 + 策略证明机制。
 
@@ -175,7 +175,7 @@ class NashFairScheduler:
                 max_gain = gain
         return max_gain
 
-    # ---- 推荐动作 ----
+# 推荐动作
 
     def strategy_proof_alpha(self) -> float:
         """计算使诚实报告成为占优策略的最小惩罚系数 α*。

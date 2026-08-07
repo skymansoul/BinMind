@@ -2,7 +2,7 @@
 #
 # 核心问题:
 #   concolic_bridge.py 收集路径约束但按FIFO顺序求解——所有分支被同等对待。
-#   MCP³ (DigFuzz, NDSS 2019) 证明: 仅将"最难fuzz的路径"(最低概率路径)
+#   MCP³ 证明: 仅将"最难fuzz的路径"(最低概率路径)
 #   发送给concolic求解器, 可将concolic贡献的覆盖率从3.8%提升到18.9%。
 #
 #   "需求启动"(Driller风格): fuzzer卡住→启动concolic——太被动,
@@ -18,14 +18,14 @@
 #   5. 概率阈值: 仅当 P(path) < threshold 时才调度concolic
 #
 # 为什么用分支覆盖率估计难度:
-#   - 零先验: 不需要符号执行即可估计
-#   - 在线更新: 随fuzzing进行持续精炼
-#   - 直观: fuzzer经常覆盖的分支→容易; 很少覆盖的→难
+# 零先验: 不需要符号执行即可估计
+# 在线更新: 随fuzzing进行持续精炼
+# 直观: fuzzer经常覆盖的分支→容易; 很少覆盖的→难
 #
-# 参考文献:
-#   MCP³ / DigFuzz (Zhao et al. NDSS 2019) — 概率路径优先级;
+# 文献:
+#   MCP³ / DigFuzz — 概率路径优先级;
 #     本项目取其分支概率计算方法但适配到本模块的concolic调度
-#   MultiGo (Lin et al. ACM TOSEM 2025) — 多路径优化 + 概率距离;
+#   MultiGo — 多路径优化 + 概率距离;
 #     本项目取其概率+距离融合思想
 
 from __future__ import annotations
@@ -182,7 +182,7 @@ class ProbConcolicDispatcher:
                      f"调度{len(selected)}条 (阈值={self._threshold})"),
         )
 
-    # ---- 诊断 ----
+    # 诊断
 
     def branch_difficulty(self, branch_addr: int) -> Optional[float]:
         """返回某分支的难度估计 [0, 1]——1=最难"""

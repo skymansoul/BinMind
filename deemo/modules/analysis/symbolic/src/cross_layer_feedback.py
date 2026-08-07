@@ -23,8 +23,8 @@ Solver → Path direc:
 - 求解超时/UNSAT 的路径 → 降低评分，减少后续资源投入
 - warm_start 命中的路径 → 评分因复用效率而获得轻微提升
 
-ref: DiversePath (ASE 2022) 仅做路径选择不做求解器资源联动
-ref: BandFuzz (arXiv:2507.10845) 使用 Thompson 采样分配 模糊测试 能量
+ref: DiversePath 仅做路径选择不做求解器资源联动
+ref: BandFuzz 使用 Thompson 采样分配 模糊测试 能量
 但未反馈到符号执行路径选择——本模块的 bidirectional 设计弥补此缺口
 """
 

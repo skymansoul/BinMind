@@ -1,5 +1,5 @@
 # RSA 弱密钥攻击 -- Wiener (连分数), Fermat (因子分解), Batch GCD, ROCA检测。
-# 参考: Boneh & Durfee (1999), Wiener (1990), Heninger et al. (2012),
+# Boneh & Durfee (1999), Wiener (1990), Heninger et al. (2012),
 # Nemec et al. (2017, ROCA: CVE-2017-15361)。
 
 import math
@@ -96,7 +96,7 @@ def batch_gcd(moduli: List[int]) -> List[Tuple[int, int, int]]:
 # 检测: N 的指纹可用离散傅里叶变换验证: N 对一组小素数取模,
 # 余数分布落在 RSALib 的已知枚举范围内 (共 ~71M 可能余数)。
 #
-# 参考: Nemec et al. "The Return of Coppersmith's Attack: Practical
+# Nemec et al. "The Return of Coppersmith's Attack: Practical
 # Factorization of Widely Used RSA Moduli" (CCS 2017)
 
 # ROCA 检测用小素数集 (前39个奇素数, 3..167)

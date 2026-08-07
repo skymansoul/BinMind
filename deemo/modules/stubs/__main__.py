@@ -1,4 +1,4 @@
-# __main__.py — 桩管理系统统一CLI入口
+# main__.py — 桩管理系统统一CLI入口
 # python -m modules.stubs <command> [options]
 #
 # 命令:

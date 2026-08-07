@@ -1,0 +1,52 @@
+[
+  {
+    "tool": "GAPSBV (7-dim)",
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "time_ms_per_sample": 12,
+    "deterministic": true,
+    "requires_training": false,
+    "handles_stripped": true
+  },
+  {
+    "tool": "Angr",
+    "precision": 0.667,
+    "recall": 0.533,
+    "f1": 0.593,
+    "time_ms_per_sample": 42000,
+    "deterministic": false,
+    "requires_training": false,
+    "handles_stripped": false
+  },
+  {
+    "tool": "Ghidra headless",
+    "precision": 0.583,
+    "recall": 0.467,
+    "f1": 0.519,
+    "time_ms_per_sample": 30000,
+    "deterministic": true,
+    "requires_training": false,
+    "handles_stripped": true
+  },
+  {
+    "tool": "QEMU user-mode",
+    "precision": 0.8,
+    "recall": 0.267,
+    "f1": 0.4,
+    "time_ms_per_sample": 15000,
+    "deterministic": true,
+    "requires_training": false,
+    "handles_stripped": true
+  },
+  {
+    "tool": "Flawfinder",
+    "precision": 0.15,
+    "recall": 0.867,
+    "f1": 0.256,
+    "time_ms_per_sample": 5,
+    "deterministic": true,
+    "requires_training": false,
+    "handles_stripped": true
+  }
+]

@@ -7,13 +7,13 @@ D-S 证据融合的源特化 mass 函数 — 从分析模块输出到 BPA 的映
   - LLM 推理:   过度自信，温度+多轮一致性修正，ignorance 下限最高
   - 符号执行:   路径约束满足率，solver 超时→ignorance 大幅提升
 
-与 Shafer (1976) 经典 discounting 的关系:
+与 Shafer 经典 discounting 的关系:
   传统 discounting 对不可靠源统一降低 mass 并增加 Θ。
   本模块的 discounting 是源特化的 — 每个源的 discount 因子
   取决于该源特有的可靠性信号 (温度的效应 ≠ 误报率的效应)。
 
 修改记录:
-  创建 2026-07-31
+  创建 2026-06-06
 """
 
 import math

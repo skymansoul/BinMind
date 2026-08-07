@@ -24,9 +24,8 @@
 本方案利用二进制分析管道中各阶段的天然延迟差异，
 在不影响业务SLA的前提下将flexible负载时移至低碳窗口。
 
-参考：
-- "Carbon-Aware Computing" (Google 2022): 数据中心碳感知负载转移。
-- Lyapunov优化在排队系统中的应用 (Neely 2010)。
+- "Carbon-Aware Computing": 数据中心碳感知负载转移。
+- Lyapunov优化在排队系统中的应用。
 """
 
 import math
@@ -38,12 +37,10 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
 
-
 class DelayTolerance(Enum):
     STRICT = "strict"        # ≤5min，不可推迟
     MODERATE = "moderate"    # ≤2h，可推迟到低碳窗口
     FLEXIBLE = "flexible"    # ≤24h，高度可推迟
-
 
 @dataclass
 class CarbonTask:
@@ -60,7 +57,6 @@ class CarbonTask:
         """剩余可推迟时间。"""
         return max(0.0, self.deadline - self.arrival_time)
 
-
 @dataclass
 class CarbonSignal:
     """电网碳强度信号。"""
@@ -68,7 +64,6 @@ class CarbonSignal:
     carbon_intensity: float       # gCO₂/kWh
     rolling_24h_mean: float
     is_low_carbon: bool
-
 
 class CarbonAwareScheduler:
     """碳感知分布式任务调度器。
@@ -210,8 +205,7 @@ class CarbonAwareScheduler:
         _slack_used = _now - task.arrival_time
         return min(1.0, _slack_used / _slack_total * self.urgency_factor + 0.1)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import time
     _scheduler = CarbonAwareScheduler(max_queue=20)
@@ -238,7 +232,6 @@ def _smoke_test():
     # 低碳窗口应释放推迟的flexible任务
     assert len(_d2) >= 1, "low-carbon window should dispatch deferred tasks"
     print("[OK] CarbonAwareScheduler smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

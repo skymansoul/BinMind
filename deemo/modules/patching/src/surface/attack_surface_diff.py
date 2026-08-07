@@ -17,8 +17,7 @@ D4-可达性: 新增函数是否可从外部输入路径到达。
 输出攻击面增量评分 ΔAS ∈ [-1, 1]：
 负值=攻击面缩小（好），正值=攻击面扩大（需审查），0=不变。
 
-参考：
-- Manadhata & Wing (2011): 攻击面度量的形式化定义。
+- Manadhata & Wing: 攻击面度量的形式化定义。
 - patch_impact_analyzer.py: 补丁对运行时行为的影响。本模块聚焦编译后攻击面。
 """
 
@@ -26,7 +25,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 @dataclass
 class FunctionChange:
@@ -39,7 +37,6 @@ class FunctionChange:
     has_privilege_ops: bool
     reachable_from_input: bool
 
-
 @dataclass
 class AttackSurfaceDiff:
     """补丁前后的攻击面对比。"""
@@ -49,7 +46,6 @@ class AttackSurfaceDiff:
     new_privilege_ops: List[FunctionChange]
     attack_surface_delta: float
     risk_assessment: str
-
 
 class AttackSurfaceDiffer:
     """补丁攻击面差分分析器。"""
@@ -183,8 +179,7 @@ class AttackSurfaceDiffer:
                 return True
         return func.get("is_exported", False)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _differ = AttackSurfaceDiffer()
 
@@ -217,7 +212,6 @@ def _smoke_test():
     assert _diff.attack_surface_delta > 0, "should detect expanded attack surface"
     assert len(_diff.functions_added) == 2
     print("[OK] AttackSurfaceDiffer smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

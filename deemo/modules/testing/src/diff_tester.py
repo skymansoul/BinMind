@@ -30,7 +30,6 @@ class DiffResult:
     duration_ms: float = 0.0
 
 
-# ================================================
 class OracleComparator:
     """多引擎输出比对，多数票决定oracle。
 
@@ -106,7 +105,6 @@ class OracleComparator:
         return hashlib.sha256(str(output).encode()).hexdigest()
 
 
-# ================================================
 def _compare_results(engine_results: Dict[str, Any]) -> str:
     """内部比较: 先快检崩溃，再比对输出内容。
 
@@ -130,7 +128,6 @@ def _compare_results(engine_results: Dict[str, Any]) -> str:
         return "ENGINE_MISMATCH"
 
 
-# ================================================
 class DifferentialTester:
     """差分测试器 — 注册多个引擎，对比输出差异。
 
@@ -148,7 +145,7 @@ class DifferentialTester:
         self._results: List[DiffResult] = []
         self._stats: Dict[str, Dict] = defaultdict(lambda: {"pass": 0, "fail": 0, "crash": 0, "timeout": 0})
 
-    # **** 引擎管理 ****
+# 引擎管理
     def add_engine(self, name: str, run_func: Callable[[bytes], Any],
                    meta: Dict = None):
         self._engines[name] = run_func
@@ -161,7 +158,7 @@ class DifferentialTester:
     def list_engines(self) -> List[str]:
         return list(self._engines.keys())
 
-    # **** 测试执行 ****
+# 测试执行
     def run_tests(self, test_cases: List[TestCase]) -> List[DiffResult]:
         self._results = []
         for _tc in test_cases:
@@ -208,7 +205,7 @@ class DifferentialTester:
             duration_ms=_dt * 1000,
         )
 
-    # **** 结果 ****
+# 结果
     def results_summary(self) -> Dict[str, Any]:
         _pass = sum(1 for _r in self._results if _r.diff_type == "NONE")
         return {
@@ -222,7 +219,6 @@ class DifferentialTester:
         return dict(self._stats)
 
 
-# ================================================
 def generate_report(results: List[DiffResult]) -> str:
     """差分测试结果文本摘要。"""
     _lines = ["=" * 60, "Differential Testing Report", "=" * 60]

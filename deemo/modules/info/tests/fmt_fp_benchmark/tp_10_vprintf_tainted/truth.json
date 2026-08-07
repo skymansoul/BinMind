@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_10_vprintf_tainted",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2021-3156 类 vprintf 格式串",
+  "expect_overflow": true,
+  "trigger": "argv 注入 %s",
+  "why": "fmt 由攻击者控制传入 vprintf"
+}

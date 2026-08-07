@@ -28,7 +28,7 @@ class ParamType(str, Enum):
     UNKNOWN = "unknown"
 
 
-# ── 结构级解析类型定义 ──────────────────────────────────────────────
+# 结构级解析类型定义
 
 @dataclass
 class StructField:
@@ -51,7 +51,7 @@ class FuncParam:
     nullable: bool = False
 
 
-# ── 注入模式枚举 ────────────────────────────────────────────────────
+# 注入模式枚举
 
 class HarnessMode(str, Enum):
     STANDARD = "standard"      # 单次 LLVMFuzzerTestOneInput 调用
@@ -79,7 +79,7 @@ class HarnessSpec:
     checksum_info: Dict[str, Any] = field(default_factory=dict)
 
 
-# ── 校验和函数签名匹配模式 ──────────────────────────────────────────
+# 校验和函数签名匹配模式
 
 _CHECKSUM_FUNC_PATTERNS = [
     (r'\b(crc|CRC)\w*', 'CRC variant'),
@@ -163,7 +163,7 @@ class ParamTypeInferencer:
                 return (name, pt)
         return (name, ParamType.INT32)
 
-    # ── 符号表扫描: 校验和函数发现 ──────────────────────────────────
+# 符号表扫描: 校验和函数发现
 
     def detect_checksum_funcs(self, binary_path: str) -> List[str]:
         """遍历二进制符号表，匹配已知校验和函数名正则模式。"""
@@ -284,7 +284,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── AFL++ 持久模式骨架 ──────────────────────────────────────────
+# AFL++ 持久模式骨架
 
     PERSISTENT_TEMPLATE = r"""// Persistent harness for {func_name}
 // 编译: afl-clang-fast -o harness harness.c
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {{
 }}
 """
 
-    # ── 多目标函数组合骨架 ──────────────────────────────────────────
+# 多目标函数组合骨架
 
     MULTI_FUNC_TEMPLATE = r"""// Multi-function fuzz harness
 // 由 {target_funcs} 构造
@@ -334,7 +334,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── 校验和感知骨架 — 运行时重算校验字段以绕过完整性检查 ────────────────
+# 校验和感知骨架 — 运行时重算校验字段以绕过完整性检查
 
     CHECKSUM_AWARE_TEMPLATE = r"""// Checksum-aware harness for {func_name}
 // 自动重算 {checksum_field} 字段使输入通过完整性检查
@@ -371,7 +371,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── 模式分发渲染 ────────────────────────────────────────────────
+# 模式分发渲染
 
     def render(self, spec: HarnessSpec) -> str:
         if spec.mode == HarnessMode.PERSISTENT:
@@ -576,7 +576,7 @@ class FuzzHarnessOptimizer:
 
         return spec
 
-    # ── 多函数共享 harness 批量构造 ────────────────────────────────
+# 多函数共享 harness 批量构造
 
     def optimize_multi(
         self, binary_path: str, func_names: List[str],

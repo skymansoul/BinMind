@@ -1,5 +1,5 @@
 # 统一漏洞扫描编排器 — 整合全部5种检测引擎, 单次扫描产出综合报告.
-# 创建: 2026-08-06
+# 创建: 2026-04-19
 
 from typing import Dict, List, Optional
 from .heap_overflow_detect import HeapOverflowDetector

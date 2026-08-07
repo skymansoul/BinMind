@@ -1,4 +1,4 @@
-"""Config 测试 (2026-08-02 重构)。
+"""Config 测试。
 
 覆盖：ConfigDict 属性访问、YAML 解析、load_config 合并、
 reset_config、PatchConfig 数据类、环境变量覆盖。

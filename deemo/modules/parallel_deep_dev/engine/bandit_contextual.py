@@ -1,5 +1,5 @@
 """
-创建: 2025-08-05
+创建: 2026-07-10
 
 上下文Bandit路由器扩展 — LinUCB + 自适应策略切换。
 
@@ -28,7 +28,6 @@ bandit_router.py 使用非上下文 Thompson Sampling（25个arm），每个模�
     将跨模块知识迁移引入并行代码生成的配置选择
 """
 
-from __future__ import annotations
 
 import json
 import math

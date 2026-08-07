@@ -222,7 +222,7 @@ class VectorIndex:
         except ImportError:
             self._use_faiss = False
 
-    # ---- 序列化 / 反序列化 ----
+# 序列化 / 反序列化
     # 让 VectorIndex 可以独立 pickle 持久化，不再依赖外层 SemanticSearcher 转 JSON
 
     def save(self, filepath: str) -> None:

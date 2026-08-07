@@ -1,0 +1,531 @@
+{
+  "timestamp": "2026-08-07 00:26:13",
+  "engine": "PTASM (Pointer Temporal Automaton State Machine)",
+  "sample_count": 15,
+  "positive_samples": 9,
+  "negative_samples": 6,
+  "baseline": {
+    "TP": 5,
+    "FP": 3,
+    "FN": 4,
+    "TN": 3,
+    "precision": 0.625,
+    "recall": 0.5556,
+    "f1": 0.5882,
+    "fp_rate": 0.5,
+    "total": 15
+  },
+  "ptasm": {
+    "TP": 9,
+    "FP": 0,
+    "FN": 0,
+    "TN": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fp_rate": 0.0,
+    "total": 15
+  },
+  "fp_reduction_percent": 100.0,
+  "fn_reduction_percent": 100.0,
+  "f1_improvement": 0.4118,
+  "details": {
+    "baseline": [
+      {
+        "name": "uaf_01",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "count": 1,
+        "reason": "1 finding(s): buf free@L10 use@L12"
+      },
+      {
+        "name": "uaf_02",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_03",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "count": 1,
+        "reason": "1 finding(s): g_buf free@L12 use@L19"
+      },
+      {
+        "name": "uaf_04",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_05",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_06",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "count": 1,
+        "reason": "1 finding(s): buf free@L12 use@L17"
+      },
+      {
+        "name": "uaf_07",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "count": 1,
+        "reason": "1 finding(s): items free@L12 use@L16"
+      },
+      {
+        "name": "uaf_08",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "count": 1,
+        "reason": "1 finding(s): p free@L16 use@L18"
+      },
+      {
+        "name": "uaf_15",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_09",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_10",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "count": 2,
+        "reason": "2 finding(s): buf free@L10 use@L13; buf free@L10 use@L14"
+      },
+      {
+        "name": "uaf_11",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_12",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "count": 0,
+        "reason": "no UAF detected by baseline"
+      },
+      {
+        "name": "uaf_13",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "count": 1,
+        "reason": "1 finding(s): buf free@L12 use@L16"
+      },
+      {
+        "name": "uaf_14",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "count": 1,
+        "reason": "1 finding(s): buf free@L16 use@L20"
+      }
+    ],
+    "ptasm": [
+      {
+        "name": "uaf_01",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "buf",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 11,
+            "use_line": 13,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: buf used after free on 1/18 explored paths (free@L11, use@L13)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: buf used after free on 1/18 explored paths (free@L11, use@L13)"
+      },
+      {
+        "name": "uaf_02",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "buf",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 12,
+            "use_line": 14,
+            "guarded": false,
+            "aliases": [
+              "alias"
+            ],
+            "reason": "UAF confirmed: buf used after free on 1/19 explored paths (free@L12, use@L14), aliases: {'alias'}"
+          },
+          {
+            "ptr_name": "alias",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 12,
+            "use_line": 14,
+            "guarded": false,
+            "aliases": [
+              "buf"
+            ],
+            "reason": "UAF confirmed: alias used after free on 1/19 explored paths (free@L12, use@L14), aliases: {'buf'}"
+          }
+        ],
+        "stats": {
+          "allocs_found": 2,
+          "frees_found": 2,
+          "uses_found": 0,
+          "aliases_tracked": 1,
+          "uaf_confirmed": 2,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: buf used after free on 1/19 explored paths (free@L12, use@L14), aliases: {'alias'}; UAF confirmed: alias used after free on 1/19 explored paths (free@L12, use@L14), aliases: {'buf'}"
+      },
+      {
+        "name": "uaf_03",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "g_buf",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 12,
+            "use_line": 19,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: g_buf used after free on 1/26 explored paths (free@L12, use@L19)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: g_buf used after free on 1/26 explored paths (free@L12, use@L19)"
+      },
+      {
+        "name": "uaf_04",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "data",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 11,
+            "use_line": 15,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: data used after free on 2/23 explored paths (free@L11, use@L15)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 0,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 1,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: data used after free on 2/23 explored paths (free@L11, use@L15)"
+      },
+      {
+        "name": "uaf_05",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "a",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 4,
+            "use_line": 7,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: a used after free on 2/13 explored paths (free@L4, use@L7)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 0,
+          "frees_found": 2,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 1,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: a used after free on 2/13 explored paths (free@L4, use@L7)"
+      },
+      {
+        "name": "uaf_06",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "buf",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 13,
+            "use_line": 18,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: buf used after free on 1/21 explored paths (free@L13, use@L18)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: buf used after free on 1/21 explored paths (free@L13, use@L18)"
+      },
+      {
+        "name": "uaf_07",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "items",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 6,
+            "use_line": 17,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: items used after free on 4/18 explored paths (free@L6, use@L17)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 0,
+          "frees_found": 2,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 1,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: items used after free on 4/18 explored paths (free@L6, use@L17)"
+      },
+      {
+        "name": "uaf_08",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "p",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 17,
+            "use_line": 19,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: p used after free on 1/24 explored paths (free@L17, use@L19)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: p used after free on 1/24 explored paths (free@L17, use@L19)"
+      },
+      {
+        "name": "uaf_15",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "findings": [
+          {
+            "ptr_name": "r",
+            "verdict": "USE_AFTER_FREE",
+            "free_line": 31,
+            "use_line": 33,
+            "guarded": false,
+            "aliases": [],
+            "reason": "UAF confirmed: r used after free on 1/35 explored paths (free@L31, use@L33)"
+          }
+        ],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 4,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 1,
+          "safe_filtered": 0,
+          "uncertain": 3,
+          "paths_explored": 0
+        },
+        "reason": "UAF confirmed: r used after free on 1/35 explored paths (free@L31, use@L33)"
+      },
+      {
+        "name": "uaf_09",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 0,
+          "safe_filtered": 1,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "SAFE: buf SAFE: buf nullified/reassigned on 2/19 paths, 0 UAF paths"
+      },
+      {
+        "name": "uaf_10",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 0,
+          "safe_filtered": 1,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "SAFE: buf SAFE: buf nullified/reassigned on 3/21 paths, 0 UAF paths"
+      },
+      {
+        "name": "uaf_11",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 0,
+          "safe_filtered": 1,
+          "uncertain": 0,
+          "paths_explored": 0
+        },
+        "reason": "SAFE: buf SAFE: buf nullified/reassigned on 2/23 paths, 0 UAF paths"
+      },
+      {
+        "name": "uaf_12",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 2,
+          "frees_found": 2,
+          "uses_found": 0,
+          "aliases_tracked": 1,
+          "uaf_confirmed": 0,
+          "safe_filtered": 0,
+          "uncertain": 2,
+          "paths_explored": 0
+        },
+        "reason": "UNCERTAIN: newbuf UNCERTAIN: newbuf freed@L18, 0u/0s/21t paths, aliases: {'buf'}; buf UNCERTAIN: buf freed@L18, 0u/0s/21t paths, aliases: {'newbuf'}"
+      },
+      {
+        "name": "uaf_13",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 0,
+          "safe_filtered": 0,
+          "uncertain": 1,
+          "paths_explored": 0
+        },
+        "reason": "UNCERTAIN: buf UNCERTAIN: buf freed@L13, 0u/0s/22t paths"
+      },
+      {
+        "name": "uaf_14",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "findings": [],
+        "stats": {
+          "allocs_found": 1,
+          "frees_found": 1,
+          "uses_found": 0,
+          "aliases_tracked": 0,
+          "uaf_confirmed": 0,
+          "safe_filtered": 0,
+          "uncertain": 1,
+          "paths_explored": 0
+        },
+        "reason": "UNCERTAIN: buf UNCERTAIN: buf freed@L17, 0u/0s/25t paths"
+      }
+    ]
+  }
+}

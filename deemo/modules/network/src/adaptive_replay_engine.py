@@ -16,9 +16,9 @@
 #      在保持压力与避免超时误报间平衡。
 #
 # 与现有工作差异:
-#   - tcpreplay: 纯字节重放, 无状态感知
-#   - 现有traffic_replayer: 字节级diff, 固定速率
-#   - 未见2024-2025文献涉及自适应协议感知+语义分歧的流量重放方向
+# tcpreplay: 纯字节重放, 无状态感知
+# 现有traffic_replayer: 字节级diff, 固定速率
+# 未见2024-2025文献涉及自适应协议感知+语义分歧的流量重放方向
 
 from __future__ import annotations
 

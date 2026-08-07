@@ -1,11 +1,11 @@
-# ---- 字节级变异策略集：AFL式浩劫、拼接杂交、字典注入、魔数/有趣值替换 ----
-# 参考AFL++ havoc stage & custom 变异器，每条策略独立可组合
+# 字节级变异策略集：AFL式浩劫、拼接杂交、字典注入、魔数/有趣值替换
+# AFL++ havoc stage & custom 变异器，每条策略独立可组合
 # 全部操作在bytes上原地或copy进行，不做文件IO
 
 import random
 import struct
 
-# ===== 内部工具 =====
+# 内部工具
 
 def _xor_bytes(data: bytearray, key: int) -> None:
     """原地XOR每个字节"""
@@ -14,7 +14,7 @@ def _xor_bytes(data: bytearray, key: int) -> None:
         data[i] ^= kb
 
 
-# ===== Havoc: AFL风格随机多轮变异 =====
+# Havoc: AFL风格随机多轮变异
 
 class HavocMutator:
     """多策略随机组合变异，模拟AFL havoc stage"""
@@ -22,24 +22,24 @@ class HavocMutator:
     def __init__(self, seed=None):
         self.rng = random.Random(seed)
 
-    # ---- 位翻转 ----
+# 位翻转
     @staticmethod
     def _flip_bit(b: int) -> int:
         pos = random.randint(0, 7)
         return b ^ (1 << pos)
 
-    # ---- 字节翻转 ----
+# 字节翻转
     @staticmethod
     def _flip_byte(b: int) -> int:
         return b ^ random.randint(1, 255)
 
-    # ---- 算术变换 ----
+# 算术变换
     @staticmethod
     def _arith(b: int, delta: int) -> int:
         v = b + delta
         return v & 0xFF
 
-    # ---- 主变异循环 ----
+# 主变异循环
 
     def mutate(self, data: bytes, iterations: int = 1) -> bytes:
         """浩劫入口：每一轮随机选操作 → 修改随机位置 → 返回新bytes"""
@@ -83,7 +83,7 @@ class HavocMutator:
         return bytes(buf)
 
 
-# ===== Splice: 二体杂交 =====
+# Splice: 二体杂交
 
 class SpliceStrategy:
     """两样本交叉拼接"""
@@ -105,7 +105,7 @@ class SpliceStrategy:
         return a[:cut_a] + b[cut_b:]
 
 
-# ===== DictInsert: 字典token注入 =====
+# DictInsert: 字典token注入
 
 class DictInsertMutator:
     """在随机位置插入字典条目（如常见magic bytes/协议token）"""
@@ -132,7 +132,7 @@ class DictInsertMutator:
         return bytes(buf)
 
 
-# ===== MagicNumberFlip: 魔数替换 =====
+# MagicNumberFlip: 魔数替换
 
 _MAGIC_NUMBERS = {
     0x7F454C46: b"\x7F\x45\x4C\x46",  # ELF
@@ -183,7 +183,7 @@ class MagicNumberFlip:
         return bytes(buf)
 
 
-# ===== InterestingValue: AFL式有趣值注入 =====
+# InterestingValue: AFL式有趣值注入
 
 _INTERESTING_8 = [
     0, 1,

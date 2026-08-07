@@ -60,8 +60,8 @@ class AnalysisRecord:
     severity_distribution: Dict[str, int] = field(default_factory=dict)
 
 
-# ── GHP 启发的趋势预测 (Leiden Univ. 2025) ──────────────────────────────────
-# 参考: "GitHub PoC Activity an Early Warning System for 漏洞 Risk"
+# GHP 启发的趋势预测
+# "GitHub PoC Activity an Early Warning System for 漏洞 Risk"
 # 核心发现: 前 5-7 天的交互模式足以预测 90 天内的关注度 (Spearman >0.91)
 # 将这一方法论应用到漏洞趋势追踪：使用短期窗口（最近 N 个周期）
 # 的特征预测未来趋势方向，识别"front-loaded burst"等异常模式
@@ -159,7 +159,7 @@ class ShortWindowPredictor:
         return "stable", 1.0 - min(abs(norm_slope) / 0.15, 1.0)
 
 
-# ── 主类 ─────────────────────────────────────────────────────────────────────
+# 主类
 
 class TrendTracker(BaseAnalyzer):
     """

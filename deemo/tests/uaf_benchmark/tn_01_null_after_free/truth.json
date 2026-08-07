@@ -1,0 +1,8 @@
+{
+  "sample_id": "TN-01",
+  "label": "tn",
+  "cwe": "NONE",
+  "description": "Safe: free(p); p=NULL; if(p) use(p) \u2014 NULL guard",
+  "expect_uaf": false,
+  "tarps_expected": "DEF_FP"
+}

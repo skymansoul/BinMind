@@ -7,7 +7,7 @@ material and for use by any remaining code paths that reference them.
 
 from typing import Dict, Optional
 
-# -- core analysis prompts (active) --
+# core analysis prompts (active)
 
 VULN_ANALYSIS_SYSTEM = """You are a binary reverse-engineering expert.
 Analyze the provided decompiled C code for security vulnerabilities.
@@ -99,7 +99,7 @@ SHELLCODE_TRANSPILE = """
 提供目标架构的shellcode（十六进制）和对应汇编代码。
 """
 
-# -- exploit chain analysis (preserved) --
+# exploit chain analysis (preserved)
 
 EXPLOIT_CHAIN = """
 你是一名漏洞利用开发专家，请分析以下漏洞集合，评估它们能否组合成攻击链。

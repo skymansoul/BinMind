@@ -28,7 +28,7 @@ from typing import List, Tuple
 def _project_simplex(v: List[float]) -> List[float]:
     """投影到概率单纯形: {x | x_i ≥ 0, Σx_i = 1}。
 
-    O(d log d) 算法 (Duchi et al. 2008)。
+    O(d log d) 算法。
     """
     n = len(v)
     u = sorted(v, reverse=True)

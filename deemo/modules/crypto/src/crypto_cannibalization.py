@@ -23,10 +23,9 @@
        - 共享来源(SHARED_ORIGIN, 二者均来自同一上游库)
     4. 检测许可证冲突(GPL→闭源 / MIT不兼容等)。
 
-参考:
-  - Jang et al. (S&P 2012): ReDeBug跨二进制漏洞检测 — 代码复用检测方法论。
-  - Pewny et al. (S&P 2015): 跨架构二进制代码搜索。
-  - German et al. (2010): 许可证兼容性分析 — 开源许可证冲突检测。
+  - Jang et al.: ReDeBug跨二进制漏洞检测 — 代码复用检测方法论。
+  - Pewny et al.: 跨架构二进制代码搜索。
+  - German et al.: 许可证兼容性分析 — 开源许可证冲突检测。
 
 边界条件:
   - 跨二进制匹配需要多个二进制作为输入 — 至少2个。
@@ -36,7 +35,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class CannibalizationMatch:
@@ -52,8 +50,7 @@ class CannibalizationMatch:
     license_risk: str = ""           # LICENSE_CONFLICT / COMPATIBLE / UNKNOWN
     evidence: List[str] = field(default_factory=list)
 
-
-# ── 许可证信息(简化) ──
+# 许可证信息(简化)
 _LICENSE_MAP: Dict[str, str] = {
     'GPL-2.0': 'COPYLEFT_STRONG',
     'GPL-3.0': 'COPYLEFT_STRONG',
@@ -77,8 +74,7 @@ _LICENSE_COMPAT: Dict[Tuple[str, str], str] = {
     ('PROPRIETARY', 'ANY'): 'LICENSE_CONFLICT (未授权复用)',
 }
 
-
-# ── 跨二进制指纹匹配 ──
+# 跨二进制指纹匹配
 
 def _compute_cross_binary_similarity(
         fingerprints_a: List,
@@ -131,7 +127,6 @@ def _compute_cross_binary_similarity(
     matches.sort(key=lambda m: m.hamming_distance)
     return matches
 
-
 def _check_license_conflict(source_license: str, target_license: str) -> str:
     """检测许可证冲突。"""
     src_type = _LICENSE_MAP.get(source_license, 'UNKNOWN')
@@ -142,7 +137,6 @@ def _check_license_conflict(source_license: str, target_license: str) -> str:
     if compat:
         return compat
     return 'COMPATIBLE'
-
 
 def detect_cannibalization(
         binary_fingerprints: Dict[str, List],
@@ -181,7 +175,6 @@ def detect_cannibalization(
 
     all_matches.sort(key=lambda m: (m.hamming_distance, -m.confidence))
     return all_matches[:50]
-
 
 def summarize_cannibalization(matches: List[CannibalizationMatch]
                               ) -> Dict[str, int]:

@@ -72,12 +72,10 @@ class CachedConstraint:
         return entry_to_dict(self)
 
 
-# ---------------------------------------------------------------------------
 # CacheTelemetry: 类 Span 的操作延迟追踪器
 # 按操作类型 (/put/evict/vacuum) 分开记录耗时到环形缓冲区
 # 容量上限 TELEMETRY_RING_CAPACITY，自动丢弃最旧样本
 # 对 /put 的写路径要求 O(1) 追加，不分配新内存（pre-alloc buffer）
-# ---------------------------------------------------------------------------
 class CacheTelemetry:
     """Span-style operation 延迟 tracker for 缓存operations
     
@@ -189,11 +187,9 @@ class CacheStatistics:
         return self.hit_count / total
 
 
-# ---------------------------------------------------------------------------
 # 分段内存缓存：16 个 shard，按 hash 首字节分片
 # 读路径无全局锁，写路径使用 shard 锁 + 全局 LRU 锁的两阶段协议
 # 设计取舍 — shard 数量为 2 的幂，用位运算取模，避免除法的 CPU 开销
-# ---------------------------------------------------------------------------
 _NR_SHARDS = 16
 
 
@@ -239,12 +235,10 @@ class _Shard:
             return False
 
 
-# ---------------------------------------------------------------------------
 # CacheWarmingPolicy: 启动时按历史命中频率预加载热点条目
 # 设计取舍 — 用独立的小表（cache_frequencies）追踪频率，而非在主表上
 # 加字段，避免每次 hit 更新整行的写入放大。小表只存 hash + hits + ts
 # 写入开销 O(1) 且与主表解耦，vacuum/预热都对主表无锁竞争
-# ---------------------------------------------------------------------------
 class CacheWarmingPolicy:
     """Pre-加载 frequently-hit entries disk memory startup
     
@@ -346,12 +340,10 @@ class CacheWarmingPolicy:
         return loaded
 
 
-# ---------------------------------------------------------------------------
 # TTL lazy eviction daemon: 后台线程每 60 秒扫描所有 shard 和 SQLite表
 # 剔除已过期的条目。 与 eager eviction (per- 检查 ttl) 相比
 # 懒驱逐在命中路径上无额外开销，适合高 QPS 场景
 # 设计取舍 — daemon 持有 shard 锁的时间极短（逐条 pop），不会阻塞读路径
-# ---------------------------------------------------------------------------
 class _TTLEvictionDaemon:
     """Background thread scans for evicts expired 缓存entries
     
@@ -484,10 +476,8 @@ class ConstraintCachePersistence:
         # TTL 懒驱逐守护线程
         self._ttl_daemon = _TTLEvictionDaemon(self)
 
-    # ------------------------------------------------------------------
     # shard 索引：用 struct.脱壳("H", bytes[:2]) 替代 int(hash[:2],16)
     # 避免 hex 字符串切片和解析开销 — 热路径上省掉一次 int(.,16) 调用
-    # ------------------------------------------------------------------
     @staticmethod
     def _shard_of(hash_bytes: bytes) -> int:
         return struct.unpack("H", hash_bytes[:2])[0] & 0xF
@@ -547,10 +537,8 @@ class ConstraintCachePersistence:
         """
         return normalize_constraint(constraint)
 
-    # ------------------------------------------------------------------
     # 先算 raw bytes（digest），需要 hex 字符串时再.hex()
     # 热路径（lookup/cache）直接从 bytes 取 slot_idx，省掉一次 hex 分配
-    # ------------------------------------------------------------------
     @staticmethod
     def _compute_hash_bytes(normalized_constraint: str) -> bytes:
         """SHA256 digest raw bytes (delegates serializer module)"""
@@ -846,11 +834,9 @@ class ConstraintCachePersistence:
         logger.info(f"Imported {count} constraint caches from JSON")
         return count
 
-    # ------------------------------------------------------------------
     # vacuum_stale: 清理零命中且过期超过 ttl_seconds 的条目
     # 设计取舍 — 用 SQLite 的 julianday 函数做时间比对，避免将所有
     # timestamp 读到 Python 侧再过滤，减少跨语言边界的传输量
-    # ------------------------------------------------------------------
     def vacuum_stale(self, ttl_seconds: float) -> int:
         """删除 stale entries zero hits past TTL, VACUUM
         

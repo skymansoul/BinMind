@@ -4,7 +4,7 @@
 import os as _os
 from setuptools import setup, find_packages
 
-# ---- 元信息 ----
+# 元信息
 # 硬编码，CI需要时可通过环境变量覆盖
 # 版本号规则: MAJOR.MINOR.PATCH
 _NAME_STR       = 'binmind'
@@ -13,7 +13,7 @@ _VERSION_STR    = '1.3.1'
 # 全面迁移到22.04后将下限提升至3.10
 # 20.04 EOL为2025-04，客户侧迁移尚未完成
 
-# ---- README load ----
+# README load
 # 防御README.md缺失——不存在时为空，避免安装中断
 # 之前使用try-open-except FileNotFoundError，但IOError在py3.8下偶发
 _readme_path = _os.path.join(_os.path.dirname(__file__), 'README.md')
@@ -27,7 +27,7 @@ if _os.path.exists(_readme_path):
         # 2026-06-22: 遇到过GB2312编码的README.md
         _long_desc = ''
 
-# ---- setup kwargs拼装 ----
+# setup kwargs拼装
 # 逐步构建，比一次性传给setup()更易调试
 # 异常时print(kw)定位问题
 # classifiers原写在同一行，pip check报告格式warning
@@ -58,7 +58,7 @@ kw['package_data'] = {
 # Python版本约束
 kw['python_requires'] = '>=3.8'
 
-# ---- 核心依赖 ----
+# 核心依赖
 # 版本号使用>=不设上限——上限约束会长时间累积成依赖冲突
 # 遇到特定版本问题时，使用!=排除
 # openai升级1.0后，0.28的ChatCompletion.create全部失效
@@ -91,7 +91,7 @@ kw['extras_require'] = {
     ],
 }
 
-# ---- requirements.txt检查 ----
+# requirements.txt检查
 # 部分用户使用pip install -r requirements.txt而非pip install .[full]
 # 检查文件存在性，避免误导
 _req_path = _os.path.join(_os.path.dirname(__file__), 'requirements.txt')
@@ -133,6 +133,6 @@ kw['project_urls'] = {
     'Source': 'https://github.com/binmind/binmind',
 }
 
-# ---- 最后一步: setup ----
+# 最后一步: setup
 # 此处不添加额外逻辑，历史上有在setup()前修改sys.path导致打包路径混乱的案例
 setup(**kw)

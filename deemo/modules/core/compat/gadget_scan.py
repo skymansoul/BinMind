@@ -1,15 +1,15 @@
 # ROP/JOP/SYS 指令片段扫描器 — 自动发现可利用的代码片段
-# 参考: "War on JITs" (Ducasse et al. ACM Computing Surveys 2025) —
+# "War on JITs" —
 #       JIT-ROP 的 gadget 发现与分类框架
-# 参考: "Jump-oriented programming: a new class of code-reuse attack"
-#       (Bletsch et al. AsiaCCS 2011) — JOP dispatcher gadget 的识别模式
-# 参考: "Control-Flow Bending" (Carlini et al. USENIX 2015) —
+# "Jump-oriented programming: a new class of code-reuse attack"
+# — JOP dispatcher gadget 的识别模式
+# "Control-Flow Bending" —
 #       非控制数据攻击的 gadget 利用
 
 import re as _re, struct as _struct
 from collections import defaultdict
 
-# ===== ROP gadget 匹配 =====
+# ROP gadget 匹配
 # x86-64 ROP gadget 以 ret (0xC3) 或间接跳转 (0xFF 0xE0-0xE7) 结尾
 # gadget 最长 32 字节 — 覆盖典型 ROP 链的单个片段（实际利用中通常 < 20B）
 
@@ -88,7 +88,7 @@ def scan_rop_gadgets(code_bytes: bytes, base_addr: int = 0) -> list[dict]:
     return gadgets
 
 
-# ===== Gadget 分类 =====
+# Gadget 分类
 def _classify_gadget(gbytes: bytes) -> tuple[str, str]:
     # 操作码模式分类 → 自动化 ROP 链合成
     hex_str = gbytes.hex()
@@ -123,7 +123,7 @@ def _classify_gadget(gbytes: bytes) -> tuple[str, str]:
     return ('other', 'low')
 
 
-# ===== Gadget 去重 =====
+# Gadget 去重
 # 同一 gadget 可能被多个 ret 找到（共享字节前缀）— 去重保留地址最低/最短的版本
 def deduplicate_gadgets(gadgets: list[dict]) -> list[dict]:
     # 去重: 相同(bytes, category)仅保留地址最小者
@@ -135,10 +135,10 @@ def deduplicate_gadgets(gadgets: list[dict]) -> list[dict]:
     return sorted(seen.values(), key=lambda g: g['address'])
 
 
-# ===== SYS gadget 扫描 =====
+# SYS gadget 扫描
 # syscall (0F 05) 和 sysenter (0F 34) 在 x64 上为特权指令
 # 在 gadget 上下文中，syscall 前的指令决定系统调用号和参数
-# 参考: "Sigreturn-Oriented Programming" (Bosman & Bos 2014) —
+# "Sigreturn-Oriented Programming" —
 #       SROP 利用信号帧构造任意系统调用序列
 
 def scan_syscall_gadgets(code_bytes: bytes, base_addr: int = 0) -> list[dict]:
@@ -181,9 +181,9 @@ def scan_syscall_gadgets(code_bytes: bytes, base_addr: int = 0) -> list[dict]:
     return gadgets
 
 
-# ===== 按用途索引 Gadgets =====
+# 按用途索引 Gadgets
 # 构建分类索引 — 加速 ROP 链自动合成
-# 参考: ROPgadget / ropper 的 gadget 分类体系
+# ROPgadget / ropper 的 gadget 分类体系
 
 def build_gadget_index(gadgets: list[dict]) -> dict[str, list[dict]]:
     """按操作类型对 gadget 建索引。
@@ -209,7 +209,7 @@ def build_gadget_index(gadgets: list[dict]) -> dict[str, list[dict]]:
     return dict(idx)
 
 
-# --- Headless 批量 Gadget 扫描 ---
+# Headless 批量 Gadget 扫描
 def headless_scan_gadgets(binary_paths: list[str], output_json: str = '') -> dict:
     """批量扫描多个二进制文件的 ROP/JOP/SYS gadget。
     对每个文件输出 gadget 统计和分类分布。"""

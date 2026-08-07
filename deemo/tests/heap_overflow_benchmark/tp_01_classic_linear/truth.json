@@ -1,0 +1,16 @@
+{
+  "sample_id": "TP-01",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "description": "Classic linear heap overflow: malloc(64) -> write at buf[96]",
+  "alloc_size": 64,
+  "write_offset": 96,
+  "write_size": 1,
+  "expect_overflow": true,
+  "lpvra_expected_verdict": "OVERFLOW",
+  "verdict_reason": "write_end=97 > any possible chunk boundary for 64B alloc",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "OVERFLOW"
+  }
+}

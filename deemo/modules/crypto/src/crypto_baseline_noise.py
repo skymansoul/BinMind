@@ -20,9 +20,8 @@
     D3 (库异常): 出现不应在此类设备中的密码学库。
     D4 (规模异常): 密码学代码占比异常高/低。
 
-参考:
-  - NIST SP 800-53 Rev.5 (2020): CM-8 信息系统组件清单 — 基线配置管理。
-  - MITRE ATT&CK T1587.001 (2023): 开发能力获取 — 恶意软件植入密码学。
+  - NIST SP 800-53 Rev.5: CM-8 信息系统组件清单 — 基线配置管理。
+  - MITRE ATT&CK T1587.001: 开发能力获取 — 恶意软件植入密码学。
   - Statistical Process Control (SPC): 工业统计过程控制 — 3σ异常检测。
 
 边界条件:
@@ -35,7 +34,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class DomainBaseline:
     domain: str = ""               # 设备类别 (iot_lightbulb / router / plc / smartphone)
@@ -46,8 +44,7 @@ class DomainBaseline:
     typical_libraries: List[str] = field(default_factory=list)
     crypto_code_ratio_range: Tuple[float, float] = (0.001, 0.15)
 
-
-# ── 域默认基线 ──
+# 域默认基线
 
 _DOMAIN_BASELINES: Dict[str, DomainBaseline] = {
     'iot_lightbulb': DomainBaseline(
@@ -87,7 +84,6 @@ _DOMAIN_BASELINES: Dict[str, DomainBaseline] = {
         crypto_code_ratio_range=(0.03, 0.30)),
 }
 
-
 @dataclass
 class AnomalyFinding:
     anomaly_type: str = ""         # ALGO_ANOMALY / COMPLEXITY / LIBRARY / SIZE
@@ -97,14 +93,12 @@ class AnomalyFinding:
     detected_value: str = ""
     deviation_sigma: float = 0.0   # 偏离均值多少σ
 
-
 @dataclass
 class BaselineReport:
     domain: str = ""
     anomaly_count: int = 0
     anomalies: List[AnomalyFinding] = field(default_factory=list)
     within_baseline: bool = True
-
 
 def _get_domain_baseline(algo_names: List[str]) -> DomainBaseline:
     """根据检测到的算法推断最可能的设备域。"""
@@ -121,7 +115,6 @@ def _get_domain_baseline(algo_names: List[str]) -> DomainBaseline:
             best_match = domain
     return _DOMAIN_BASELINES.get(best_match or 'router',
                                   _DOMAIN_BASELINES['router'])
-
 
 def check_baseline(algo_names: Optional[List[str]] = None,
                    crypto_findings: Optional[List] = None,

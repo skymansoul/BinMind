@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-08-07",
+  "benchmark": "244-sample unified",
+  "ablation": {
+    "phase1_ptr_identity": {
+      "filtered": 14,
+      "share": 13.9,
+      "samples": 10
+    },
+    "phase2_buffer_disjoint": {
+      "filtered": 20,
+      "share": 19.8,
+      "samples": 13
+    },
+    "phase3_guard": {
+      "filtered": 0,
+      "share": 0.0,
+      "samples": 0
+    },
+    "phase4_allocator": {
+      "filtered": 8,
+      "share": 7.9,
+      "samples": 6
+    },
+    "total_pairs": 101,
+    "total_filtered": 42,
+    "total_share": 41.6
+  },
+  "improvements": {
+    "heap_fp_reduction": {
+      "before": "77.8% cross-FP",
+      "after": "14.8%",
+      "reduction": "81.0%"
+    },
+    "uaf_recall": {
+      "before": "50.9%",
+      "after": "61.8%",
+      "improvement": "+10.9pp"
+    },
+    "int_overflow_recall": {
+      "before": "96.8%",
+      "after": "100.0%",
+      "improvement": "+3.2pp"
+    }
+  },
+  "saturation": {
+    "heap_fp": "SATURATED (81.0% reduction, 14.8% absolute < 20%)",
+    "int_overflow": "SATURATED (100% recall)",
+    "format_string": "NEAR-SATURATED (97.1% recall)",
+    "uaf": "IMPROVED (61.8%, +10.9pp, room for inter-proc gains)"
+  }
+}

@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_22_struct_field_alias","description":"Struct field alias — free struct field, use via separate alias pointer","cwe":"CWE-416","vuln_type":"use-after-free"}

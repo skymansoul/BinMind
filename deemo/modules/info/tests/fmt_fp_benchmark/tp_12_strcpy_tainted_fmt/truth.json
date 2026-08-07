@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_12_strcpy_tainted_fmt",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2016-6301 类复制后格式串",
+  "expect_overflow": true,
+  "trigger": "argv 注入 %n",
+  "why": "fmt 被拷贝进栈缓冲后仍当格式串"
+}

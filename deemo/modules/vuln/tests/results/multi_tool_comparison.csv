@@ -1,0 +1,139 @@
+tool,sample_id,detected,confirmed,likely,false_positives,elapsed_ms,notes
+DP-TVRA,heap-11,True,1,0,0,28.6,"TP=1,FP=0"
+PatternMatch,heap-11,True,0,1,1,18.7,"alloc=True,write=True"
+DP-TVRA,heap-12,False,0,0,0,22.1,"TP=0,FP=0"
+PatternMatch,heap-12,True,0,1,1,18.5,"alloc=True,write=True"
+DP-TVRA,heap-13,True,1,0,0,25.4,"TP=1,FP=0"
+PatternMatch,heap-13,True,0,1,1,29.8,"alloc=True,write=True"
+DP-TVRA,heap-14,True,1,0,0,20.8,"TP=1,FP=0"
+PatternMatch,heap-14,True,0,1,1,19.3,"alloc=True,write=True"
+DP-TVRA,heap-15,False,0,0,0,21.9,"TP=0,FP=0"
+PatternMatch,heap-15,True,0,1,1,18.0,"alloc=True,write=True"
+DP-TVRA,heap-cve-01,True,1,0,0,21.7,"TP=1,FP=0"
+PatternMatch,heap-cve-01,True,0,1,1,17.8,"alloc=True,write=True"
+DP-TVRA,heap-cve-02,True,1,0,0,20.6,"TP=1,FP=0"
+PatternMatch,heap-cve-02,True,0,1,1,17.9,"alloc=True,write=True"
+DP-TVRA,heap-cve-03,True,12,0,0,22.5,"TP=12,FP=0"
+PatternMatch,heap-cve-03,True,0,1,1,17.9,"alloc=True,write=True"
+DP-TVRA,heap-cve-04,True,1,0,0,21.2,"TP=1,FP=0"
+PatternMatch,heap-cve-04,True,0,1,1,18.5,"alloc=True,write=True"
+DP-TVRA,heap-cve-05,True,1,0,0,20.2,"TP=1,FP=0"
+PatternMatch,heap-cve-05,True,0,1,1,18.1,"alloc=True,write=True"
+DP-TVRA,heap-cve-06,True,1,0,0,22.2,"TP=1,FP=0"
+PatternMatch,heap-cve-06,True,0,1,1,17.5,"alloc=True,write=True"
+DP-TVRA,heap-cve-07,True,1,0,0,20.1,"TP=1,FP=0"
+PatternMatch,heap-cve-07,True,0,1,1,18.2,"alloc=True,write=True"
+DP-TVRA,heap-cve-08,False,0,0,0,21.3,"TP=0,FP=0"
+PatternMatch,heap-cve-08,True,0,1,1,17.2,"alloc=True,write=True"
+DP-TVRA,heap-cve-09,True,1,0,0,20.3,"TP=1,FP=0"
+PatternMatch,heap-cve-09,True,0,1,1,18.8,"alloc=True,write=True"
+DP-TVRA,heap-cve-10,True,1,0,0,20.5,"TP=1,FP=0"
+PatternMatch,heap-cve-10,True,0,1,1,17.6,"alloc=True,write=True"
+DP-TVRA,heap-cve-11,True,1,0,0,23.0,"TP=1,FP=0"
+PatternMatch,heap-cve-11,True,0,1,1,18.3,"alloc=True,write=True"
+DP-TVRA,heap-cve-12,True,1,0,0,52.5,"TP=1,FP=0"
+PatternMatch,heap-cve-12,True,0,1,1,43.6,"alloc=True,write=True"
+DP-TVRA,heap-cve-13,True,1,0,0,21.5,"TP=1,FP=0"
+PatternMatch,heap-cve-13,True,0,1,1,17.5,"alloc=True,write=True"
+DP-TVRA,heap-cve-14,True,1,0,0,20.4,"TP=1,FP=0"
+PatternMatch,heap-cve-14,True,0,1,1,17.7,"alloc=True,write=True"
+DP-TVRA,heap-cve-15,False,0,0,0,21.1,"TP=0,FP=0"
+PatternMatch,heap-cve-15,True,0,1,1,17.6,"alloc=True,write=True"
+DP-TVRA,heap-overflow-01,True,1,0,0,53.2,"TP=1,FP=0"
+PatternMatch,heap-overflow-01,True,0,1,1,41.3,"alloc=True,write=True"
+DP-TVRA,heap-overflow-09,False,0,0,0,21.7,"TP=0,FP=0"
+PatternMatch,heap-overflow-09,True,0,1,1,18.1,"alloc=True,write=True"
+DP-TVRA,heap-overflow-10,True,1,0,0,21.5,"TP=1,FP=0"
+PatternMatch,heap-overflow-10,True,0,1,1,18.8,"alloc=True,write=True"
+Angr,heap-11,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-12,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-13,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-14,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-15,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-01,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-02,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-03,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-04,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-05,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-06,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-07,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-08,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-09,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-10,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-11,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-12,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-13,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-14,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-cve-15,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-overflow-01,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-overflow-09,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Angr,heap-overflow-10,True,0,1,0,3200,ESTIMATED — Linux/Angr required; path explosion
+Ghidra,heap-11,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-12,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-13,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-14,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-15,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-01,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-02,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-03,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-04,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-05,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-06,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-07,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-08,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-09,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-10,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-11,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-12,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-13,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-14,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-cve-15,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-overflow-01,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-overflow-09,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+Ghidra,heap-overflow-10,True,0,1,0,4500,ESTIMATED — Linux/Ghidra headless; decompilation loss
+QEMU,heap-11,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-12,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-13,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-14,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-15,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-01,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-02,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-03,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-04,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-05,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-06,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-07,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-08,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-09,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-10,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-11,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-12,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-13,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-14,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-cve-15,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-overflow-01,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-overflow-09,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+QEMU,heap-overflow-10,True,0,1,0,800,ESTIMATED — dynamic tracing; coverage-limited
+CodeQL,heap-11,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-12,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-13,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-14,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-15,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-01,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-02,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-03,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-04,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-05,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-06,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-07,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-08,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-09,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-10,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-11,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-12,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-13,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-14,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-cve-15,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-overflow-01,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-overflow-09,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing
+CodeQL,heap-overflow-10,True,0,1,0,5500,ESTIMATED — query-dependent; manual rule writing

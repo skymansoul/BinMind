@@ -23,10 +23,7 @@ _V2_TOKEN = b'\xde\xad'  # 保留
 
 from modules.testing.src.diff_models import TestCase, ExecutionResult, Difference, DifferentialTestResult, TestMode, DifferenceType
 
-
-# ---------------------------------------------------------------------------
 # 崩溃去重: 基于伪栈哈希将同类崩溃折叠，避免差异报告充斥重复噪音
-# ---------------------------------------------------------------------------
 class CrashDeduplicator:
     """相同信号+相近栈帧指纹的崩溃归并为一组"""
 
@@ -56,11 +53,8 @@ class CrashDeduplicator:
     def group_report(self) -> Dict[str, int]:
         return {k: len(v) for k, v in self._groups.items()}
 
-
-# ---------------------------------------------------------------------------
 # 种子裁减: 将崩溃样本逐步消去不相关字节，保留崩溃所需最小输入
-# 参考AFL的afl-tmin思路，每轮裁1/16，递归二分
-# ---------------------------------------------------------------------------
+# AFL的afl-tmin思路，每轮裁1/16，递归二分
 class SeedTrimmer:
     """最小化崩溃种子，提升可读性与后续分析效率"""
 
@@ -115,11 +109,8 @@ class SeedTrimmer:
             iteration += 1
         return bytes(current)
 
-
-# ---------------------------------------------------------------------------
 # 语料最小化: 选取能覆盖相同基本块集的最小子集
 # 贪心集合覆盖近似 -> 选取每次覆盖最多新块的种子，直到全覆盖
-# ---------------------------------------------------------------------------
 class CorpusMinimizer:
     """从语料库中选出能保持覆盖率的最小子集"""
 
@@ -148,9 +139,7 @@ class CorpusMinimizer:
             del remaining[best_id]
         return selected
 
-# ---------------------------------------------------------------------------
 # 污点感知输入生成: 追踪输入字节对输出的影响力，偏重变异高影响力区域
-# ---------------------------------------------------------------------------
 class TaintAwareMutator:
     """基于覆盖率反馈标记热点字节区间，对高信息增益区集中变异"""
 
@@ -190,11 +179,8 @@ class TaintAwareMutator:
             if self._hot_blocks[k] < 0.01:
                 del self._hot_blocks[k]
 
-
-# ---------------------------------------------------------------------------
 # UCB1多臂老虎机: 自动在变异策略间分配试验次数，收益=新覆盖路径数
 # 冷启动时每臂至少试一次，之后按UCB1公式选择上置信界最高的臂
-# ---------------------------------------------------------------------------
 class BanditMutationSelector:
     """UCB1自适应选择变异策略，最大化覆盖率收益"""
 
@@ -249,10 +235,8 @@ class BanditMutationSelector:
 #             return random.choice(arms)
 #         return max(arms, key=lambda a: self._rewards.get(a, 0))
 
-# ---------------------------------------------------------------------------
 # 输入相似度哈希: 基于SimHash去重，避免高度相似测试用例重复执行
 # 对字节流分块计算加权指纹，海明距离<=3视为重复
-# ---------------------------------------------------------------------------
 class InputSimHasher:
     """加权SimHash，快速判断两个输入的近似程度"""
 
@@ -291,11 +275,8 @@ class InputSimHasher:
         self._seen.add(fp)
         return True
 
-
-# ---------------------------------------------------------------------------
 # 漏洞可利用性评分: 根据信号类型、故障地址、寄存器状态做启发式分级
 # 不替代CVSS，仅用于崩溃样本快速triage
-# ---------------------------------------------------------------------------
 class ExploitabilityScorer:
     """基于崩溃上下文的快速可利用性评估"""
 
@@ -356,7 +337,6 @@ class ExploitabilityScorer:
             else "low",
         }
 
-
 class DifferentialTester:
     """差分测试引擎。
 
@@ -404,7 +384,7 @@ class DifferentialTester:
 
         return os.path.abspath(path)
 
-    # ---- 持久化模式: 复用进程避免重复加载开销 ----
+    # 持久化模式: 复用进程避免重复加载开销
     def start_persistent(self, binary_path: str) -> None:
         """启动持久化进程，通过stdin/stdout与harness通信"""
         with self._persistent_lock:
@@ -756,7 +736,7 @@ class DifferentialTester:
 
         return count
 
-    # ---- 语料最小化API ----
+    # 语料最小化API
     def minimize_corpus(self, coverage_callback: Callable[[bytes], Set[int]],
                         output_dir: str) -> int:
         """对现有测试用例执行最小化并写出"""
@@ -774,12 +754,12 @@ class DifferentialTester:
                     break
         return len(selected)
 
-    # ---- 崩溃种子裁减 ----
+    # 崩溃种子裁减
     def trim_crash_seed(self, seed: bytes, timeout: float = 5.0) -> bytes:
         trimmer = SeedTrimmer(self.binary_a, timeout)
         return trimmer.trim(seed)
 
-    # ---- 污点反馈 ----
+    # 污点反馈
     def report_new_coverage(self, seed: bytes, byte_offset: int) -> None:
         """外部覆盖率追踪器报告某偏移修改触发了新覆盖"""
         self._taint_mutator.mark_hot(seed, byte_offset)
@@ -787,7 +767,7 @@ class DifferentialTester:
     def age_hotspots(self) -> None:
         self._taint_mutator.decay()
 
-    # ---- Round-trip测试: A产出数据经B处理后应保持语义不变 ----
+    # Round-trip测试: A产出数据经B处理后应保持语义不变
     def run_round_trip_test(self, generator_func: Callable[[], bytes],
                             processor_a: Callable[[bytes], bytes],
                             processor_b: Callable[[bytes], bytes],
@@ -842,7 +822,7 @@ class DifferentialTester:
         self._generate_summary(result)
         return result
 
-    # ---- 可利用性审计: 对全部崩溃做批量评分 ----
+    # 可利用性审计: 对全部崩溃做批量评分
     def score_exploitability(self) -> List[Dict[str, Any]]:
         """返回所有崩溃的可利用性评估，按score降序"""
         reports = []
@@ -856,7 +836,7 @@ class DifferentialTester:
         reports.sort(key=lambda r: -r['score'])
         return reports
 
-    # ---- Bandit反馈: 外部覆盖率追踪向bandit报告收益 ----
+    # Bandit反馈: 外部覆盖率追踪向bandit报告收益
     def reward_mutation_strategy(self, strategy_name: str,
                                   new_paths: int) -> None:
         self._bandit.reward(strategy_name, new_paths)
@@ -864,7 +844,7 @@ class DifferentialTester:
     def bandit_stats(self) -> Dict[str, Any]:
         return self._bandit.stats()
 
-    # ---- 行为指纹比较: 在两二进制间对比执行轨迹 ----
+    # 行为指纹比较: 在两二进制间对比执行轨迹
     def compare_behavioral_traces(
             self, input_data: bytes,
             binary_b: Optional[str] = None) -> Dict[str, Any]:
@@ -881,7 +861,6 @@ class DifferentialTester:
             result['diff'] = self._behavior_fp.diff(calls_a, calls_b)
         return result
 
-
 def _signal_name(code: int) -> str:
     """信号号 -> 可读名称"""
     sigs = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 4: "SIGILL",
@@ -891,12 +870,9 @@ def _signal_name(code: int) -> str:
             17: "SIGCHLD", 18: "SIGCONT", 19: "SIGSTOP"}
     return sigs.get(code, f"SIG({code})")
 
-
-# ---------------------------------------------------------------------------
 # 蜕变Oracle适配器: 将MetamorphicRelation集成到差分测试流程
 # 核心场景: 对同一输入经MR变换后，两二进制应产生一致的行为差异
 # 若A对变换后输入行为异常而B正常 -> 高价值差异
-# ---------------------------------------------------------------------------
 class MetamorphicDiffOracle:
     """蜕变关系驱动的差分Oracle"""
 
@@ -962,12 +938,9 @@ class MetamorphicDiffOracle:
                 findings.append({"mr_name": name, "error": str(exc)})
         return findings
 
-
-# ---------------------------------------------------------------------------
-# 后门触发器检测: 基于ROSA (arXiv:2505.08544 [待验证])的蜕变Oracle思想
+# 后门触发器检测: 基于ROSA的蜕变Oracle思想
 # 检测隐蔽运行时后门: 对输入中嵌入魔术字节/特殊命令序列，
 # 比较行为是否一致。若仅一个二进制对特殊输入产生异常反应 -> 可疑
-# ---------------------------------------------------------------------------
 class BackdoorTriggerProber:
     """嵌入后门触发序列并观察行为偏差"""
 
@@ -1008,11 +981,8 @@ class BackdoorTriggerProber:
                     "suspicious": True})
         return results
 
-
-# ---------------------------------------------------------------------------
 # 自动崩溃分类流水线: minimize -> symbolize -> dedup -> root cause
 # 参照ClusterFuzz的四阶段管道，将原始崩溃转化为可操作安全报告
-# ---------------------------------------------------------------------------
 class CrashTriagePipeline:
     """自动化崩溃triage: 裁减->符号化->去重->根因提取"""
 
@@ -1088,12 +1058,9 @@ class CrashTriagePipeline:
             'most_frequent_count': max(groups.values()) if groups else 0,
         }
 
-
-# ---------------------------------------------------------------------------
 # 加壳二进制差分器: 比较加壳前/后或不同解包层的执行行为
 # 检测项: 解包后入口OEP偏差/IAT解析差异/动态代码生成差异/反分析触发点
 # 思路来自Gunpack的PTE非同步与GoaTracer的wave追踪
-# ---------------------------------------------------------------------------
 class PackedBinaryDiffer:
     """加壳/解包二进制行为差异比较"""
 
@@ -1140,11 +1107,9 @@ class PackedBinaryDiffer:
             'packing_confidence': wave_tracker.packing_confidence(),
         }
 
-
 # 思路: 攻击面入口参数 -> 污点传播 -> 敏感syscall参数
 # 若存在从入口到syscall的可控路径 -> 标记为CFI可绕过的高危路径
-# 参考Syscall Reachability under CFI分析框架
-# ---------------------------------------------------------------------------
+# Syscall Reachability under CFI分析框架
 class SyscallReachabilityAnalyzer:
     """静态污点可达性: 攻击面->敏感syscall"""
 
@@ -1200,11 +1165,9 @@ class SyscallReachabilityAnalyzer:
                 else 'low'),
         }
 
-
 # 对每个(producer_block, consumer_block)边对追踪覆盖状态，
 # 新def-use覆盖 -> 种子能量x2，驱动fuzzer探索数据流多样性
-# 参考FuzzRDUCC (arXiv 2509.04967)的def-use链反馈机制
-# ---------------------------------------------------------------------------
+# FuzzRDUCC (arXiv 2509.04967)的def-use链反馈机制
 class DefUseFeedbackIntegrator:
     """def-use对粒度的覆盖率反馈"""
 
@@ -1241,11 +1204,9 @@ class DefUseFeedbackIntegrator:
     def unique_pairs(self) -> int:
         return len(self._du_pairs)
 
-
 # 检测项: malloc/free参数可控、fastbin损坏、tcache poisoning迹象、
 # unsorted bin信息泄露、堆元数据覆写
-# 参考BloodFang和PwnPasi的自动化利用检测思路
-# ---------------------------------------------------------------------------
+# BloodFang和PwnPasi的自动化利用检测思路
 class HeapExploitPrimitiveDetector:
     """检测崩溃是否展示可利用的堆操纵能力"""
 
@@ -1311,12 +1272,9 @@ class HeapExploitPrimitiveDetector:
             'highest_confidence': primitives[0]['confidence'] if primitives else 0.0,
         }
 
-
-# ---------------------------------------------------------------------------
 # 行为指纹: 基于strace/ftrace的轻量执行轮廓捕获
 # 对同一输入在不同二进制上的行为做向量化比较，捕获输出之外的语义差异
-# 参考Hybrid Fuzzing (arXiv 2511.03995)的语义反馈思想
-# ---------------------------------------------------------------------------
+# Hybrid Fuzzing 的语义反馈思想
 class BehavioralFingerprint:
     """捕获执行时的syscall序列作为行为指纹"""
 
@@ -1375,7 +1333,6 @@ class BehavioralFingerprint:
             'count_a': len(calls_a), 'count_b': len(calls_b),
         }
 
-
 def _lcs_length(a: List[str], b: List[str]) -> int:
     """LCS长度，O(n*m)空间优化到O(min(n,m))"""
     if len(a) < len(b):
@@ -1391,12 +1348,9 @@ def _lcs_length(a: List[str], b: List[str]) -> int:
         prev = curr
     return prev[-1]
 
-
-# ---------------------------------------------------------------------------
 # 执行轨迹异常检测: 对同一输入在A和B上的行为差异做分层分析
 # 第一层: syscall集合差异; 第二层: 执行时间异常; 第三层: 输出差异
 # 综合三层评分标记为行为异常
-# ---------------------------------------------------------------------------
 class TraceAnomalyDetector:
     """执行轨迹分层差异检测器"""
 
@@ -1433,7 +1387,6 @@ class TraceAnomalyDetector:
         layers['flagged'] = score >= 0.4
         return layers
 
-
 def run_differential_test(binary_a: str, binary_b: Optional[str] = None,
                           max_tests: int = 1000, input_type: str = "random",
                           output_dir: Optional[str] = None) -> DifferentialTestResult:
@@ -1449,10 +1402,8 @@ def run_differential_test(binary_a: str, binary_b: Optional[str] = None,
 
     return result
 
-
 def format_differential_report(result: DifferentialTestResult) -> str:
     return result.summary
-
 
 def export_differential_json(result: DifferentialTestResult,
                              output_path: str) -> bool:

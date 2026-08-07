@@ -68,7 +68,7 @@ class DigitalTwinRiskAnalyzer:
         report.bayesian_risk = self._bayesian_propagation()
         return report
 
-    # ── 贝叶斯风险传播 ─────────────────────────────────────────────────────
+# 贝叶斯风险传播
     # 将风险建模为条件概率沿 DAG 传播：每个节点的 P(compromise) 是其
     # 所有前驱的 P(compromise) 的条件概率加权和
     # P(target | source) = (1 - auth_factor) * (0.5 + max_vuln_severity/20)

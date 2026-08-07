@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{ASIP源码级消融实验: 五引擎增量贡献 (55样本)}
+\label{tab:asip_ablation}
+\begin{tabular}{lrrrrrr}
+\toprule
+配置 & TP & FP & FN & TN & F1 & FPR \\
+\midrule
+B0_NoEngine & 20 & 17 & 0 & 18 & 0.7018 & 0.4857 \\
+B1_PlusE1Guard & 20 & 7 & 0 & 28 & 0.8511 & 0.2000 \\
+B2_PlusE2Clamp & 20 & 3 & 0 & 32 & 0.9302 & 0.0857 \\
+B3_PlusE3Path & 20 & 2 & 0 & 33 & 0.9524 & 0.0571 \\
+B4_PlusE4AllocWrite & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
+B5_PlusE5Modulo & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
+B6_FullAllEngines & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

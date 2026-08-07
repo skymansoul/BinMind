@@ -5,9 +5,9 @@ DAG 驱动的并行 Hook 管道 — 将线性执行升级为有向无环图分�
 可并发执行; 支持条件触发链与执行遥测记录.
 
 理论依据:
-  CVE-GENIE (arXiv:2509.01835): EAGER 多智能体框架, 验证 DAG 分层并行
+  CVE-GENIE: EAGER 多智能体框架, 验证 DAG 分层并行
   对多阶段分析管道的加速效果.
-  Slyp (arXiv:2605.05000): ReAct 代理管道 + MCP 工具服务器架构参考.
+  Slyp: ReAct 代理管道 + MCP 工具服务器架构参考.
 """
 
 from collections import defaultdict, deque

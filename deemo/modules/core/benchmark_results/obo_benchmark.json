@@ -1,0 +1,94 @@
+{
+  "results": [
+    {
+      "id": "obo_cve_01",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_02",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_03",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_04",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_05",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "CRITICAL",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_06",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "CRITICAL",
+      "obo": false
+    },
+    {
+      "id": "obo_cve_07",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_08",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "risk": "MEDIUM",
+      "obo": true
+    },
+    {
+      "id": "obo_cve_09",
+      "gt": false,
+      "detected": false,
+      "correct": true,
+      "risk": "SAFE",
+      "obo": false
+    },
+    {
+      "id": "obo_cve_10",
+      "gt": false,
+      "detected": false,
+      "correct": true,
+      "risk": "SAFE",
+      "obo": false
+    }
+  ],
+  "stats": {
+    "total": 10,
+    "tp": 8,
+    "tn": 2,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  }
+}

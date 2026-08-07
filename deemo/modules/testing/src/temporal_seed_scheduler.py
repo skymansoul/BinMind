@@ -4,7 +4,7 @@
 #   power_schedule.py 和 seed_selector.py 忽略覆盖发现的时效性,
 #   且将所有发现事件等同对待——但新函数块的发现价值远高于新边。
 #
-#   现有方案 HScheduler (2025) 优先高覆盖种子但无时间衰减;
+#   现有方案 HScheduler 优先高覆盖种子但无时间衰减;
 #   AFLFast 的power schedule基于执行频率但不区分事件类型。
 #
 # 本模块的方法 — 多时间尺度衰减:
@@ -197,7 +197,7 @@ class TemporalSeedScheduler:
                 ent -= p * math.log2(p)
         return min(1.0, ent / 8.0)
 
-    # ---- 诊断 ----
+    # 诊断
 
     def active_count(self) -> int:
         return sum(1 for r in self._seeds.values() if not r.retired)

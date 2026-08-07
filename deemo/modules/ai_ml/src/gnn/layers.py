@@ -3,7 +3,7 @@
 
 import numpy as np
 
-# ===== 辅助函数 =====
+# 辅助函数
 
 
 def add_self_loops(_a):
@@ -44,7 +44,7 @@ class GraphConv:
         self._act = activation if callable(activation) else activation
 
     def forward(self, _x, _a):
-        # _x: (N, in_dim), _a: (N, N)
+# x: (N, in_dim), _a: (N, N)
         _norm_a = normalize_adj(_a)
         _h = _norm_a @ _x @ self._w + self._b
         return self._apply_activation(_h)
@@ -111,7 +111,7 @@ class GATConv:
             # LeakyReLU (alpha=0.2)
             _e = np.where(_e > 0, _e, 0.2 * _e)
 
-            # ---- 掩码: 非边置为极小值 ----
+# 掩码: 非边置为极小值
             _e = np.where(_a > 0, _e, -1e9)
 
             # softmax行归一化（数值稳定版）
@@ -186,7 +186,7 @@ class LaplacianPE:
         return _vecs[:, 1:1 + _k_actual]        # (N, k)
 
 
-# ===== 调试工具（可选） =====
+# 调试工具（可选）
 
 
 def _check_symmetric(_m, tol=1e-8):

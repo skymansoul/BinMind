@@ -21,9 +21,8 @@
 - 本模块: 基于马尔可夫模型的what-if投影（向前看）。
 - 两者互补：因果图解释过去，数字孪生预演未来。
 
-参考：
-- "Network Digital Twin for Security" (IEEE ComMag 2024): 网络孪生的概念框架。
-- Markov状态模型在网络安全中的应用（Bilar 2007）。
+- "Network Digital Twin for Security": 网络孪生的概念框架。
+- Markov状态模型在网络安全中的应用。
 """
 
 import math
@@ -33,7 +32,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 @dataclass
 class NetworkState:
@@ -60,7 +58,6 @@ class NetworkState:
         ]
         return sum(_dims) / len(_dims)
 
-
 @dataclass
 class AttackScenario:
     """一个攻击场景的投影结果。"""
@@ -71,7 +68,6 @@ class AttackScenario:
     impact_radius: int
     max_deviation: float
     containment_effectiveness: Dict[str, float]  # 策略→效果
-
 
 class NetworkDigitalTwin:
     """网络数字孪生——马尔可夫行为模型 + what-if攻击投影。
@@ -219,9 +215,7 @@ class NetworkDigitalTwin:
         _ranked = sorted(_scores.items(), key=lambda x: x[1], reverse=True)
         return _ranked[:top_k]
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _project_state(
         self, current: NetworkState, infected_count: int,
@@ -238,8 +232,7 @@ class NetworkDigitalTwin:
             anomaly_flows=int(current.anomaly_flows * _anomaly_factor),
         )
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     # 学习历史状态序列
     _history = [
@@ -285,7 +278,6 @@ def _smoke_test():
     assert _scenario.impact_radius >= 2, "attack should spread"
     assert len(_scenario.containment_effectiveness) == 3
     print("[OK] NetworkDigitalTwin smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

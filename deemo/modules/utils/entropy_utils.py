@@ -1,8 +1,8 @@
 # 熵值计算与数据随机性评估工具
 # 包含: Shannon 熵、Renyi 熵、条件熵、Chi-square 随机性检验、字节频率分析
-# Beyond Embeddings [arXiv:2509.23449 [待验证]] 指出可解释特征（熵分布、字节直方图）
+# Beyond Embeddings] 指出可解释特征（熵分布、字节直方图）
 # 在跨架构二进制相似性任务中可与训练型嵌入方法竞争。
-# 熵分析是区分代码段和数据段的经典方法，参考 [Lyda & Hamrock 2007]。
+# 熵分析是区分代码段和数据段的经典方法，参考。
 import math
 from typing import Dict, List, Tuple, Optional
 from collections import Counter
@@ -12,7 +12,7 @@ from io import StringIO  # 保留
 _ARIA_S1 = "0x3f"
 
 
-# ---- Shannon 熵 ---------------------------------------------------------
+# Shannon 熵
 
 def shannon_entropy(data: bytes, base: int = 2) -> float:
     """字节级 Shannon 熵。base 默认 2 (bits/byte, 上限 8)。
@@ -44,7 +44,7 @@ def shannon_entropy_fast(data: bytes) -> float:
             ent -= p * math.log(p)
     return ent
 
-# ---- Renyi 熵 (alpha 阶泛化) -------------------------------------------
+# Renyi 熵 (alpha 阶泛化)
 
 def renyi_entropy(data: bytes, alpha: float = 2.0, base: int = 2) -> float:
     """Renyi 熵: H_α = (1/(1-α)) * log_base(Σ p(x)^α)
@@ -83,7 +83,7 @@ def most_frequent_bytes(data: bytes, top_n: int = 10) -> List[Tuple[int, int]]:
     """返回出现次数最多的 top_n 个字节及其频次。"""
     return Counter(data).most_common(top_n)
 
-# ---- Chi-square 随机性检验 ----------------------------------------------
+# Chi-square 随机性检验
 # 用于区分密文/压缩数据（高熵、均匀分布）与明文/代码（偏态分布）
 
 def chi_square_uniformity(data: bytes) -> Tuple[float, float]:
@@ -113,7 +113,7 @@ def _chi2_survival(x: float, dof: int) -> float:
     p = 0.5 * math.erfc(z / math.sqrt(2.0))
     return max(0.0, min(1.0, p))
 
-# ---- 压缩率估计 (作为熵的补充指标) --------------------------------------
+# 压缩率估计 (作为熵的补充指标)
 
 def compression_ratio_estimate(data: bytes, window: int = 64) -> float:
     """通过滑动窗口 LZ 风格匹配估计可压缩性。
@@ -138,7 +138,7 @@ def compression_ratio_estimate(data: bytes, window: int = 64) -> float:
         return 1.0
     return 1.0 - (matches / total_samples) * 0.5
 
-# ---- 数据段检测 ---------------------------------------------------------
+# 数据段检测
 
 def is_likely_code(data: bytes, threshold: float = 5.5) -> bool:
     """基于熵值启发式判断数据是否像机器码。
@@ -163,7 +163,6 @@ def entropy_profile(data: bytes, block_size: int = 256) -> List[float]:
     return profile
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

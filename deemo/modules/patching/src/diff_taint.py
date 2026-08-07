@@ -4,7 +4,7 @@
 
 """Patch Differential Taint Tracker — 补丁前后的污点流差分分析。
 
-MileSan [CCS 2025] 做硬件-软件差分污点追踪（RTL 级），检测微架构泄漏。
+MileSan 做硬件-软件差分污点追踪（RTL 级），检测微架构泄漏。
 本模块的差异：
   - MileSan 操作在 RTL/硬件级别
   - 本模块操作在二进制补丁的汇编级别
@@ -94,7 +94,7 @@ class DiffTaintReport:
         }
 
 
-# ── Taint 源/汇/净化模式库 ────────────────────────────────────────
+# Taint 源/汇/净化模式库
 
 # Taint source: 用户/外部输入入口
 _TAINT_SOURCES = re.compile(
@@ -120,7 +120,7 @@ _TAINT_SANITIZE = re.compile(
     r'isalnum|isdigit|isprint|isascii)\b)', re.I)
 
 
-# ── 污点追踪引擎 ──────────────────────────────────────────────────
+# 污点追踪引擎
 
 class TaintTracker:
     """汇编级轻量污点追踪。
@@ -243,7 +243,7 @@ class TaintTracker:
         return regs
 
 
-# ── 差分分析器 ────────────────────────────────────────────────────
+# 差分分析器
 
 class DiffTaintAnalyzer:
     """补丁前后的污点流差分分析。

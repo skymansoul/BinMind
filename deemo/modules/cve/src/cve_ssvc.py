@@ -2,7 +2,7 @@
 # SSVC v2供应商树决策引擎
 # 实现CISA利益相关者特定漏洞分类（SSVC）v2供应商树，以手工转录的决策表形式。
 # CISA将其作为JSON决策树发布，但我们静态嵌入以避免评分时的网络依赖——
-# 该表罕有变更（上次更新：2023），批量分析时需要亚毫秒级查找。
+# 该表罕有变更，批量分析时需要亚毫秒级查找。
 #
 # _DECISION_TABLE为36条目（3 exploitation x 2 automatable x 2 tech_impact
 # x 3 mission_wellbeing）。原始供应商树仅使用4个决策点，
@@ -10,11 +10,11 @@
 # 若CISA新增exploitation状态需重新生成。
 #
 # 审计备忘:
-# - _to_val()规范化输入因CVSS向量和KEV源使用不一致的大小写
+# _to_val()规范化输入因CVSS向量和KEV源使用不一致的大小写
 #   （PoC vs POC vs poc）。规范化是低成本保障。
 # - _infer_automatable()是启发式而非事实。从CVSS向量字符串推测。
 #   无完整automatable评估因那需要exploit代码分析（由cve_exploitdb处理）。
-# - evaluate_cve()在不同分支使用不同字符串格式化
+# evaluate_cve()在不同分支使用不同字符串格式化
 #   （EPSS路径用f-string, maturity路径用.format()）——有意如此，
 #   审计捕获后标注为"自然差异"。
 # - _check_kev_flag()复制了_extract_maturity()的逻辑（hasattr/
@@ -27,8 +27,7 @@ from typing import Dict, List, Optional, Union, Any
 
 from .cve_models import CVEEntry
 
-
-# ---- SSVC v2决策结果 ----
+# SSVC v2决策结果
 # CISA定义供应商树的4种结果
 class Decision(str, Enum):
     Track = "Track"        # 监控，暂无需行动
@@ -36,8 +35,7 @@ class Decision(str, Enum):
     Attend = "Attend"      # 需安排行动
     Act = "Act"            # 需立即行动
 
-
-# ---- 36条手工转录决策表 ----
+# 36条手工转录决策表
 # key: (exploitation, automatable, tech_impact, mission_wellbeing)
 # exploitation: none / poc / active
 # automatable: no / yes
@@ -47,7 +45,7 @@ class Decision(str, Enum):
 # 从CISA供应商树手工转录，非机器生成。
 # CISA更新树时需手动同步。
 _DECISION_TABLE: Dict[tuple, Decision] = {
-    # === exploitation = active → 始终Act（无需讨论） ===
+# exploitation = active → 始终Act（无需讨论）
     ("active", "no",  "partial", "low"):    Decision.Act,
     ("active", "no",  "partial", "medium"): Decision.Act,
     ("active", "no",  "partial", "high"):   Decision.Act,
@@ -61,7 +59,7 @@ _DECISION_TABLE: Dict[tuple, Decision] = {
     ("active", "yes", "total",   "medium"): Decision.Act,
     ("active", "yes", "total",   "high"):   Decision.Act,
 
-    # === exploitation = poc, automatable = yes ===
+# exploitation = poc, automatable = yes
     ("poc", "yes", "partial", "low"):    Decision.Attend,
     ("poc", "yes", "partial", "medium"): Decision.Attend,
     ("poc", "yes", "partial", "high"):   Decision.Act,      # 使命升级
@@ -69,7 +67,7 @@ _DECISION_TABLE: Dict[tuple, Decision] = {
     ("poc", "yes", "total",   "medium"): Decision.Act,
     ("poc", "yes", "total",   "high"):   Decision.Act,
 
-    # === exploitation = poc, automatable = no ===
+# exploitation = poc, automatable = no
     ("poc", "no",  "partial", "low"):    Decision.TrackStar,
     ("poc", "no",  "partial", "medium"): Decision.TrackStar,
     ("poc", "no",  "partial", "high"):   Decision.Attend,   # 使命升级
@@ -77,7 +75,7 @@ _DECISION_TABLE: Dict[tuple, Decision] = {
     ("poc", "no",  "total",   "medium"): Decision.Attend,
     ("poc", "no",  "total",   "high"):   Decision.Act,      # 使命升级
 
-    # === exploitation = none, automatable = yes ===
+# exploitation = none, automatable = yes
     ("none", "yes", "partial", "low"):    Decision.Track,
     ("none", "yes", "partial", "medium"): Decision.Track,
     ("none", "yes", "partial", "high"):   Decision.TrackStar,  # 升级
@@ -85,7 +83,7 @@ _DECISION_TABLE: Dict[tuple, Decision] = {
     ("none", "yes", "total",   "medium"): Decision.TrackStar,
     ("none", "yes", "total",   "high"):   Decision.Attend,     # 升级
 
-    # === exploitation = none, automatable = no ===
+# exploitation = none, automatable = no
     ("none", "no",  "partial", "low"):    Decision.Track,
     ("none", "no",  "partial", "medium"): Decision.Track,
     ("none", "no",  "partial", "high"):   Decision.Track,      # 无升级，无exploit
@@ -93,7 +91,6 @@ _DECISION_TABLE: Dict[tuple, Decision] = {
     ("none", "no",  "total",   "medium"): Decision.Track,
     ("none", "no",  "total",   "high"):   Decision.TrackStar,  # 升级
 }
-
 
 def _to_val(raw: str, field: str) -> str:
     """将输入字符串规范化为决策表值之一。
@@ -122,7 +119,6 @@ def _to_val(raw: str, field: str) -> str:
             return "medium"
         return "low"
     return s
-
 
 def _infer_automatable(cvss_vector: Optional[str]) -> str:
     """从CVSS向量字符串推断自动化可利用性。
@@ -156,7 +152,6 @@ def _infer_automatable(cvss_vector: Optional[str]) -> str:
         return "yes"
     return "no"
 
-
 def _infer_exploit_from_epss(epss_score: Optional[float],
                               epss_percentile: Optional[float]) -> str:
     """从EPSS评分统计推测exploit状态。
@@ -180,7 +175,6 @@ def _infer_exploit_from_epss(epss_score: Optional[float],
         return "poc"
     return "none"
 
-
 def _extract_maturity(entry: Union[CVEEntry, Dict]) -> str:
     """从CVEEntry或dict提取exploit_maturity。
 
@@ -201,7 +195,6 @@ def _extract_maturity(entry: Union[CVEEntry, Dict]) -> str:
         if val and val != 'unknown':
             return val
     return 'unknown'
-
 
 def _maturity_to_exploit(maturity_str: str) -> str:
     """将exploit成熟度字符串映射到SSVC exploitation值。
@@ -229,7 +222,6 @@ def _maturity_to_exploit(maturity_str: str) -> str:
     # unknown或未识别 → 调用方回退至EPSS
     return 'unknown'
 
-
 def _check_kev_flag(entry: Union[CVEEntry, Dict]) -> bool:
     """检查CVE条目是否在CISA KEV目录中标记。
 
@@ -244,7 +236,6 @@ def _check_kev_flag(entry: Union[CVEEntry, Dict]) -> bool:
     if hasattr(entry, 'get'):
         return bool(entry.get('cisa_kev', False))
     return False
-
 
 def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
     """SSVC v2评估主入口。
@@ -269,12 +260,12 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
     """
     reasoning: List[str] = []
 
-    # ---- 步骤1: KEV标志（优先于其他所有信号） ----
+# KEV标志（优先于其他所有信号）
     if _check_kev_flag(entry):
         exploit_status = 'active'
         reasoning.append('CISA KEV catalog: confirmed exploitation in the wild')
     else:
-        # ---- 步骤2: exploit maturity ----
+# exploit maturity
         maturity_str = _extract_maturity(entry)
         exploit_status = _maturity_to_exploit(maturity_str)
 
@@ -283,7 +274,7 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
                 'exploit maturity: {} → exploitation {}'.format(maturity_str, exploit_status)
             )
         else:
-            # ---- 步骤3: EPSS回退 ----
+# EPSS回退
             epss_score = None
             epss_pct = None
             if hasattr(entry, 'epss_score'):
@@ -300,7 +291,7 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
                 f"EPSS heuristic: score={epss_score}, percentile={epss_pct} → {exploit_status}"
             )
 
-    # ---- 步骤4: automatable ----
+# automatable
     cvss_vector = None
     if hasattr(entry, 'cvss_vector'):
         cvss_vector = getattr(entry, 'cvss_vector', None)
@@ -312,7 +303,7 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
         automatable, cvss_vector or 'N/A'
     ))
 
-    # ---- 步骤5: 技术影响 ----
+# 技术影响
     impact_score = None
     severity = None
     if hasattr(entry, 'impact_score'):
@@ -334,12 +325,12 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
         tech_impact, impact_score, severity
     ))
 
-    # ---- 步骤6: 使命与福祉（保守估计为medium） ----
+# 使命与福祉（保守估计为medium）
     # 无部署上下文，默认'medium'
     # 生产环境中应从资产分类获取
     mission_wellbeing = 'medium'
 
-    # ---- 步骤7: 表查找 ----
+# 表查找
     key = (exploit_status, automatable, tech_impact, mission_wellbeing)
     decision = _DECISION_TABLE.get(key)
     if decision is None:
@@ -359,14 +350,12 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
         'reasoning': reasoning,
     }
 
-
-# ---- 便捷包装（供其他模块使用） ----
+# 便捷包装（供其他模块使用）
 
 def ssvc_decision(entry: Union[CVEEntry, Dict]) -> str:
     """返回SSVC决策字符串。evaluate_cve的薄包装。"""
     result = evaluate_cve(entry)
     return result['decision'].value
-
 
 def ssvc_is_critical(entry: Union[CVEEntry, Dict]) -> bool:
     """检查SSVC决策是否要求立即行动（Act）。"""

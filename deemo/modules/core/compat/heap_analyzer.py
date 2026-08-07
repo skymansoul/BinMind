@@ -1,18 +1,18 @@
 """堆利用原语检测 — 从分配模式推断可利用状态"""
-# 参考: Gollum (CCS 2019) — 模块化灰盒堆溢出利用生成，将堆交互建模为搜索问题
-# 参考: HeapMD (ASPLOS 2022) — 基于异常检测的堆 bug 识别:
+# Gollum — 模块化灰盒堆溢出利用生成，将堆交互建模为搜索问题
+# HeapMD — 基于异常检测的堆 bug 识别:
 #       performance allocator / security allocator 双轨架构
-# 参考: FUZE (USENIX 2018) — 内核 UAF 利用生成: 通过系统调用模糊测试探索
+# FUZE — 内核 UAF 利用生成: 通过系统调用模糊测试探索
 #       slab 状态空间寻找可利用的 dangling pointer 上下文
-# 参考: HEAPSTER (IEEE S&P 2022) — 嵌入式固件动态内存分配器安全分析
-# 参考: "Automated Exploitable Heap Layout Generation for Heap Overflows
+# HEAPSTER — 嵌入式固件动态内存分配器安全分析
+# "Automated Exploitable Heap Layout Generation for Heap Overflows
 #       Through Manipulation Distance-Guided Fuzzing" (Zhang et al.) —
 #       操纵距离引导的堆布局自动化生成
 
 import re as _re, struct as _struct
 from collections import defaultdict as _dd
 
-# ===== 堆分配模式识别 =====
+# 堆分配模式识别
 # 通过静态/动态 trace 中的分配序列推断程序使用的分配模式
 # 识别: slab allocator (大小类)、buddy allocator、arena-based、custom pool
 
@@ -63,8 +63,8 @@ def identify_allocator(calls: list[str]) -> dict:
     }
 
 
-# ===== 堆溢出利用可行性评估 =====
-# 参考: Gollum 的堆交互模型 — 将堆操作序列编码为状态图
+# 堆溢出利用可行性评估
+# Gollum 的堆交互模型 — 将堆操作序列编码为状态图
 # 相邻对象类型决定溢出影响的语义:
 #   overflow → adjacent object with function pointer → control flow hijack
 #   overflow → adjacent object with length field → further OOB read/write
@@ -138,8 +138,8 @@ def assess_heap_overflow_exploitability(overflow_size: int,
     }
 
 
-# ===== 堆风水 (Heap Feng Shui) 基元检测 =====
-# 参考: "Heap Feng Shui in JavaScript" (Sotirov, BlackHat 2007)
+# 堆风水 (Heap Feng Shui) 基元检测
+"Heap Feng Shui in JavaScript"
 # 以及 Gollum 的堆布局搜索 — 将布局操作编码为 (alloc, free, fill) 三元组
 # 检测目标: 在 trace 中识别 create_hole → fill_hole → trigger_overflow 模式
 
@@ -193,11 +193,11 @@ def detect_heap_fengshui(trace_events: list[dict]) -> list[dict]:
     return findings
 
 
-# ===== 堆喷射 (Heap Spray) 检测 =====
-# 参考: NOZZLE (USENIX 2012) — 堆喷射代码注入的运行时检测
+# 堆喷射 (Heap Spray) 检测
+# NOZZLE — 堆喷射代码注入的运行时检测
 # 检测指标:
-#   - 大量相同大小的连续分配 (> 100 次)
-#   - 分配内容高熵 (> 6.0) — 表明包含 shellcode/payload
+# 大量相同大小的连续分配 (> 100 次)
+# 分配内容高熵 (> 6.0) — 表明包含 shellcode/payload
 #   - 分配大小的典型 spray 值: 1MB (IE), 0x100000, 0x10000
 
 _SPRAY_SIZE_INDICATORS = [0x100000, 0x80000, 0x40000, 0x20000, 0x10000, 0x1000]
@@ -263,7 +263,7 @@ def detect_heap_spray(alloc_records: list[dict]) -> dict:
     }
 
 
-# ===== 堆布局可视化 (文本模式) =====
+# 堆布局可视化 (文本模式)
 # 将堆对象映射生成为 ASCII 布局图 — 便于审计
 def render_heap_layout(heap_objects: list[dict], chunk_size: int = 16) -> str:
     """生成堆对象的文本布局表示。

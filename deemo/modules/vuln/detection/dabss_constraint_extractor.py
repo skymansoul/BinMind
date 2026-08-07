@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-31  |  约束提取器
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-07-14  |  约束提取器
+# 修改: 2026-07-14  |  审计后补充文件头与错误处理
 #
 """
 数据流感知的二进制种子合成——约束提取器。
@@ -38,9 +38,7 @@ from .dabss_flow_slicer import BufferSlice, DataFlowNode
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 约束系统
-# ============================================================================
 
 
 class ConstraintType:
@@ -82,9 +80,7 @@ class SeedConstraint:
     # 例: [0, 1, capacity-1, capacity, capacity+1]
 
 
-# ============================================================================
 # 约束提取器
-# ============================================================================
 
 
 class ConstraintExtractor:
@@ -185,9 +181,7 @@ class ConstraintExtractor:
         return mapping.get(op, ConstraintType.BOUND_LE)
 
 
-# ============================================================================
 # 轻量约束求解——回溯法(O(k^n), k≤10, n≤256)
-# ============================================================================
 
 
 def solve_seed_constraints(seed_constraint: SeedConstraint) -> Dict[str, int]:
@@ -250,9 +244,7 @@ def solve_seed_constraints(seed_constraint: SeedConstraint) -> Dict[str, int]:
     return solution
 
 
-# ============================================================================
 # 辅助
-# ============================================================================
 
 
 def _alignment_from_cast(cast_str: str) -> int:

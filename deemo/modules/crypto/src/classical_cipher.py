@@ -1,4 +1,4 @@
-# ==== 经典密码破解工具集 ====
+# 经典密码破解工具集
 # CTF和逆向分析专用。覆盖xor/vigenere/substitution/caesar/rot系列。
 # 评分策略: English字母频率 + bigram + trigram + 常见单词, 四维加权求和。
 # Kasiski检验 + Friedman重合指数用于Vigenere密钥长度推断。
@@ -43,7 +43,7 @@ _COMMON_WORDS = {'the', 'and', 'that', 'have', 'for', 'not', 'with',
                  'because', 'any', 'these', 'give', 'day', 'most', 'us'}
 
 
-# ---- 英语评分 ----
+# 英语评分
 def _score_english(data: bytes) -> float:
     """四维English评分: unigram+bigram+trigram+common_words"""
     _s = 0.0
@@ -76,7 +76,7 @@ def _score_english(data: bytes) -> float:
     return _s / len(data) * 100
 
 
-# ---- 单字节XOR破解 ----
+# 单字节XOR破解
 def single_byte_xor_crack(data: bytes) -> List[Tuple[int, float, bytes]]:
     """暴力256密钥, 按English评分排序返回top 5"""
     _res = []
@@ -88,7 +88,7 @@ def single_byte_xor_crack(data: bytes) -> List[Tuple[int, float, bytes]]:
     return _res[:5]
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 def _byte_entropy(data: bytes) -> float:
     _n = len(data)
     _freq = [0] * 256
@@ -115,7 +115,7 @@ def _is_hex(data: bytes) -> bool:
         return False
 
 
-# ---- 密码类型检测 ----
+# 密码类型检测
 def detect_cipher_type(data: bytes) -> str:
     """IC + entropy + charset分析 -> 密码类型"""
     _ic = friedman_ic(data)
@@ -152,7 +152,7 @@ def _single_byte_check(data: bytes) -> bool:
     return _best_e < _byte_entropy(data[:256]) * 0.7
 
 
-# ---- Kasiski检验 ----
+# Kasiski检验
 def kasiski_examination(data: bytes) -> int:
     """重复trigram间距的GCD -> 推测密钥长度"""
     _tri = {}
@@ -173,7 +173,7 @@ def kasiski_examination(data: bytes) -> int:
     return _g if _g > 1 else 1
 
 
-# ---- Friedman重合指数 ----
+# Friedman重合指数
 def friedman_ic(data: bytes) -> float:
     """重合指数 (Index of Coincidence): English~0.067, Random~0.038"""
     _n = len(data)
@@ -185,7 +185,7 @@ def friedman_ic(data: bytes) -> float:
     return sum(_c * (_c - 1) for _c in _freq) / (_n * (_n - 1))
 
 
-# ---- Vigenere破解 ----
+# Vigenere破解
 def solve_vigenere(data: bytes, key_length: int) -> str:
     """按列频率分析破解Vigenere(key_length>0)"""
     if key_length < 1:
@@ -207,7 +207,7 @@ def solve_vigenere(data: bytes, key_length: int) -> str:
         return _plain.hex()
 
 
-# ---- 替换密码破解(爬山+模拟退火) ----
+# 替换密码破解(爬山+模拟退火)
 def substitution_solve(data: bytes) -> str:
     """爬山+模拟退火破解monoalphabetic substitution"""
     _alpha = list('abcdefghijklmnopqrstuvwxyz')
@@ -233,7 +233,7 @@ def _sub_score(text: str, mapping: dict) -> float:
     return _score_english(_mapped.encode('latin-1'))
 
 
-# ---- ROT-N ----
+# ROT-N
 def rot_n(data: bytes, n: int) -> bytes:
     """字母移位, n可为负"""
     _out = bytearray(len(data))
@@ -247,7 +247,7 @@ def rot_n(data: bytes, n: int) -> bytes:
     return bytes(_out)
 
 
-# ---- Rail Fence密码检测 (2026-07-28) ----
+# Rail Fence密码检测
 # 栅栏密码将明文按"之"字形写入k行, 按行读出。
 # 检测策略: brute-force k in [2,12], 每种k做之字形展开,
 # 英语n-gram评分 — 最高分对应的k为候选密钥。
@@ -302,7 +302,7 @@ def detect_rail_fence(ciphertext: str) -> List[Tuple[int, float, str]]:
     return results[:5]
 
 
-# ---- Beaufort密码 (Vigenere变体) ----
+# Beaufort密码 (Vigenere变体)
 # Beaufort: C_i = (K_i - P_i) mod 26 (对称: 加密=解密)
 # 与Vigenere的区别: 密钥字母减明文而非加
 

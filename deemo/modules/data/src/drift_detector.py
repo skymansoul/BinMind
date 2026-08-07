@@ -20,10 +20,10 @@
 #      (均值↑/↓)和幅度 (标准差变化倍数), 辅助分析师定位根因.
 #
 # 与现有工作的区别:
-#   - Domino Drift Effect (2025): 依赖 Pearson 相关矩阵 + 多检测器,
+#   - Domino Drift Effect: 依赖 Pearson 相关矩阵 + 多检测器,
 #     对 binary 特征不适用 (Pearson 不适用于 Bernoulli).
-#   - MCD-DD (KDD 2024): 需要对比学习嵌入, 计算成本高.
-#   - ADWIN: 单维度滑动窗口, 无联合判定.
+# MCD-DD: 需要对比学习嵌入, 计算成本高.
+# ADWIN: 单维度滑动窗口, 无联合判定.
 #   本方案专为 binary analysis 的多维 Bernoulli+连续混合特征设计,
 #   无需训练, O(d) 每观测更新, 内存 O(d).
 

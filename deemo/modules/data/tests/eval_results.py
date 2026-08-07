@@ -1,7 +1,7 @@
 # 回归测试结果评估 — 批量统计检出/漏报/误报
 # 输入: scan_results.json + ground_truth.json
 # 输出: evaluation_summary.json
-# 创建: 2026-08-06
+# 创建: 2026-06-06
 
 import os, sys, json
 

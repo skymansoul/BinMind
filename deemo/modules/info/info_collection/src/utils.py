@@ -7,7 +7,7 @@ import re
 from collections import Counter
 from typing import List, Tuple, Optional
 
-# ---- 预编译正则：编译一次，避免重复解析 ----
+# 预编译正则：编译一次，避免重复解析
 _URL_PAT = re.compile(
     r'^https?://[^\s/$.?#].[^\s]*$|^ftp://[^\s]+$|^[a-zA-Z][a-zA-Z0-9+\-.]*://[^\s]+$'
 )
@@ -94,7 +94,7 @@ def shannon_entropy(data: bytes) -> float:
     return _h
 
 
-# ===== 可打印字符集 =====
+# 可打印字符集
 _ASCII_PRINTABLE = set(range(0x20, 0x7F))  # space (0x20) 至 ~ (0x7E)
 _ASCII_PRINTABLE_WITH_TAB_NL = set(range(0x09, 0x0B)) | set(range(0x20, 0x7F))
 _ASCII_PRINTABLE_WITH_TAB_NL.discard(0x0A)  # 保留 \n

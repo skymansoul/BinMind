@@ -2,12 +2,12 @@
 # 解压 fallback 链: 先试已知 codec → gzip(wbits=31) → zlib → raw deflate
 #
 # compress_auto 内部取舍:
-#   - < 1KB: 不压缩（压缩头开销 > 收益）
-#   - 1KB-64KB: zstd level 1（侧重速度）
-#   - > 64KB: zstd level 3（速度/比率平衡点）
-#   - > 1MB: zstd level 6（值得多投入 CPU 换比率）
+# < 1KB: 不压缩（压缩头开销 > 收益）
+# 1KB-64KB: zstd level 1（侧重速度）
+# > 64KB: zstd level 3（速度/比率平衡点）
+# > 1MB: zstd level 6（值得多投入 CPU 换比率）
 #
-# Snappy (Google, 2011): 解压速度 ~500 MB/s（比 zstd 快 2-3x），压缩率低于 zstd
+# Snappy: 解压速度 ~500 MB/s（比 zstd 快 2-3x），压缩率低于 zstd
 # 但 CPU 开销极低。适合热路径上频繁解压的场景（如 DB 缓存预热、chunk 索引查询）。
 
 import struct
@@ -200,8 +200,4 @@ class Compressor:
     def batch_compress(self, items: List[bytes]) -> List[Tuple[bytes, str]]:
         return batch_compress(items, self.algo, self.level, self.min_size)
 
-
-def _debug_print(*args, **kwargs):
-    # 调试桩: 内部调试输出接口，当前闲置
-    pass
 

@@ -1,0 +1,5 @@
+detector,vuln_type,tp,fp,fn,tn,precision,recall,f1,fp_rate
+heap_ops,heap_overflow,14,0,0,3,1.0,1.0,1.0,0.0
+heap_ops,uaf,2,5,0,10,0.2857,1.0,0.4444,0.3333
+heap_ops,format_string,1,0,0,16,1.0,1.0,1.0,0.0
+heap_ops,integer_overflow,2,1,0,14,0.6667,1.0,0.8,0.0667

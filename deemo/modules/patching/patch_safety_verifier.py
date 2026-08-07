@@ -1,6 +1,6 @@
-"""补丁安全性验证 —— 借鉴 VeriBin (NDSS 2025) 符号检测。
+"""补丁安全性验证 —— 借鉴 VeriBin 符号检测。
 
-VeriBin [Wu et al. 2025] 对二进制补丁自适应验证，无需源码判定
+VeriBin 对二进制补丁自适应验证，无需源码判定
 补丁是否 "Safe to Apply"。本模块将思路工程化：比较原始与修补
 二进制的字节级差异，启发式规则 + 轻量约束求解判定安全性。
 
@@ -17,7 +17,6 @@ from enum import IntEnum
 
 _log = logging.getLogger(__name__)
 
-
 class SafetyVerdict(IntEnum):
     """VeriBin 风格补丁安全性判定 —— 四位而非简单 pass/fail。
 
@@ -28,7 +27,6 @@ class SafetyVerdict(IntEnum):
     UNCERTAIN = 2        # 无法判定：差异区域含非标准指令序列
     UNSAFE_LIKELY = 3    # 可疑：差异区域破坏原有数据流或控制流
     UNSAFE_STRONG = 4    # 明确不安全：检测到已知恶意模式或功能破坏
-
 
 @dataclass
 class DiffRegion:
@@ -46,7 +44,6 @@ class DiffRegion:
         self.size = max(len(self.orig_bytes), len(self.patch_bytes))
         self.is_pure_insertion = len(self.orig_bytes) == 0 and len(self.patch_bytes) > 0
         self.is_pure_deletion = len(self.orig_bytes) > 0 and len(self.patch_bytes) == 0
-
 
 @dataclass
 class SafetyReport:
@@ -74,10 +71,9 @@ class SafetyReport:
             'notes': self.notes,
         }
 
-
-# ── 安全指令模式表 ────────────────────────────────────────────────
+# 安全指令模式表
 # 补丁中出现这些指令序列通常表示安全检查而非功能修改。
-# 参考 VeriBin "safe patch pattern" 分类，增加 inline 汇编和 ARM64 模式。
+# VeriBin "safe patch pattern" 分类，增加 inline 汇编和 ARM64 模式。
 
 _SAFE_PATTERNS_X86 = [
     # null check: test + jz/je + ret/call exit
@@ -107,7 +103,7 @@ _SAFE_PATTERNS_ARM64 = [
     (rb'\xff\x23\x03\xd5', 0.90, 'pac-ret'),
 ]
 
-# ── 可疑指令模式 ───────────────────────────────────────────────────
+# 可疑指令模式
 # 补丁中出现这些模式大概率不是单纯安全修复
 
 _SUSPICIOUS_PATTERNS = [
@@ -124,7 +120,6 @@ _SUSPICIOUS_PATTERNS = [
     # push + ret 序列 (等效 jmp)
     (rb'[\x50\x51\x52\x53\x55\x56\x57\x68]\xc3', 'push-ret-gadget'),
 ]
-
 
 class PatchSafetyVerifier:
     """二进制补丁安全性校验器 —— VeriBin 启发式实现。
@@ -146,9 +141,7 @@ class PatchSafetyVerifier:
         except ImportError:
             self._has_z3 = False
 
-    # ============================================================
     # 主入口 —— 返回 SafetyReport
-    # ============================================================
     def verify(self, original_path: str, patched_path: str,
                base_address: int = 0) -> SafetyReport:
         """加载双 binary，提取差异区域，逐区域评分。"""
@@ -230,7 +223,7 @@ class PatchSafetyVerifier:
         rpt.confidence = round(min(max(rpt.confidence, 0.0), 1.0), 4)
         return rpt
 
-    # ── 文件加载 ────────────────────────────────────────────────────
+# 文件加载
 
     def _load_file(self, path: str) -> Optional[bytes]:
         try:
@@ -240,7 +233,7 @@ class PatchSafetyVerifier:
             _log.error("_load_file(%s): %s", path, e)
             return None
 
-    # ── 差异区域提取 ────────────────────────────────────────────────
+# 差异区域提取
     # 策略：遍历双文件，找到所有不一致的连续字节区间。
     # 长度不同的文件，超长部分视为差异。
 
@@ -299,7 +292,7 @@ class PatchSafetyVerifier:
         _out.append(_cur)
         return _out
 
-    # ── 安全模式匹配 ────────────────────────────────────────────────
+# 安全模式匹配
 
     def _count_safe_patterns(self, data: bytes) -> int:
         _cnt = 0
@@ -315,7 +308,7 @@ class PatchSafetyVerifier:
                 _found.append(_label)
         return _found
 
-    # ── 指令边界分析 ────────────────────────────────────────────────
+# 指令边界分析
     # 补丁不得跨指令边界：若 original 侧以 0x90 (NOP) 结尾且
     # patch 侧插入不同长度指令，可能破坏后续指令对齐。
 
@@ -337,7 +330,7 @@ class PatchSafetyVerifier:
         # 其余标记为可能越界 — 不做硬拒绝，上层判定
         return False
 
-    # ── Z3 约束验证 ────────────────────────────────────────────────
+# Z3 约束验证
     # 将差异区域每个字节映射为 BitVec(8)，检查是否存在输入令
     # original[offset+i] != patch[offset+i] —— 若无≠赋值，
     # 则差异区域为 dead code（不可执行路径），标记低风险。
@@ -376,7 +369,7 @@ class PatchSafetyVerifier:
 
         return True  # Z3 路径不 fail，仅提供额外信息
 
-    # ── 风险评分 ────────────────────────────────────────────────────
+# 风险评分
 
     def _compute_risk_score(self, report: SafetyReport) -> int:
         _score = 0
@@ -391,15 +384,13 @@ class PatchSafetyVerifier:
         _score -= _pure_insert * 5
         return min(max(_score, 0), 100)
 
-
-# ── 便捷入口 ──────────────────────────────────────────────────────
+# 便捷入口
 
 def verify_patch_safety(original_path: str, patched_path: str,
                         arch: str = "x86_64") -> Dict:
     _verifier = PatchSafetyVerifier(arch=arch)
     _report = _verifier.verify(original_path, patched_path)
     return {'success': True, 'result': _report.to_dict()}
-
 
 def batch_safety_check(patch_pairs: List[Tuple[str, str]],
                        arch: str = "x86_64") -> List[Dict]:
@@ -418,8 +409,7 @@ def batch_safety_check(patch_pairs: List[Tuple[str, str]],
         })
     return _results
 
-
-# ── 混合验证：静态 VeriBin + 动态差分执行 ─────────────────────────
+# 混合验证：静态 VeriBin + 动态差分执行
 # 动静融合加权逻辑与动态验证超时降级策略
 
 def verify_hybrid(original_path: str, patched_path: str,
@@ -435,7 +425,7 @@ def verify_hybrid(original_path: str, patched_path: str,
       通过 concrete execution 捕获实际行为差异。
       权衡精确度与开销：SAFE_STRONG 的 case 不需要动态。
 
-    参考 cozy [BAR 2025/arXiv:2504.00151] 符号执行验证补丁等价性。
+    参考 cozy [BAR 2025/] 符号执行验证补丁等价性。
     本项目混合方案与 cozy 的核心差异：cozy 依赖 angr + SMT，
     这里用 concrete execution + 模式匹配替代，降低依赖与计算成本。
     当只有静态可做时（binary 不可执行/无运行时），退化为纯静态。
@@ -485,7 +475,6 @@ def verify_hybrid(original_path: str, patched_path: str,
         _result['dynamic_report'] = {'error': str(e)}
 
     return _result
-
 
 def _fuse_verdicts(static_rpt: SafetyReport,
                    dyn_rpt) -> Dict[str, any]:

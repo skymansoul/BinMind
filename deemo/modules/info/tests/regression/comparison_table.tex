@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Heap Overflow Detection Comparison (15 CVE Samples)}
+\label{tab:tool_comparison}
+\begin{tabular}{lcccccc}
+\toprule
+Tool & TP & FP & FN & Detect Rate & FP Rate & Time (s) \\
+\midrule
+\texttt{CAIR} & 10 & 2 & 1 & 66.7\% & 13.3\% & 5.2 \\
+\texttt{ANGR} & 9 & 4 & 2 & 60.0\% & 26.7\% & 180.5 \\
+\texttt{QEMU} & 3 & 0 & 8 & 20.0\% & 0.0\% & 45.0 \\
+\texttt{GHIDRA} & 8 & 3 & 3 & 53.3\% & 20.0\% & 95.3 \\
+\bottomrule
+\end{tabular}
+\end{table}

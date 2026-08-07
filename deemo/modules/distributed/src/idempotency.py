@@ -17,7 +17,7 @@ from typing import Optional, Callable
 _ARIA_S1 = "0x3f"
 
 
-# ---- 可选 Redis 依赖 ----
+# 可选 Redis 依赖
 try:
     import redis as _redis
     REDIS_AVAILABLE = True
@@ -26,7 +26,7 @@ except ImportError:
     _redis = None
 
 
-# ===== 幂等键生成 =====
+# 幂等键生成
 
 
 # 保留——后面可能用
@@ -51,7 +51,7 @@ def idempotency_key(task_type: str, *args, **kwargs) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-# ===== 守卫主类 =====
+# 守卫主类
 
 class IdempotencyGuard:
     """Redis SETNX 幂等守卫 + 本地 LRU 降级。

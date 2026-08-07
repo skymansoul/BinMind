@@ -1,0 +1,211 @@
+{
+  "tools": {
+    "BinMind-DDSSC": {
+      "TP": 13,
+      "FP": 0,
+      "FN": 0,
+      "TN": 2,
+      "Recall": 100.0,
+      "Precision": 100.0,
+      "FPR": 0.0,
+      "F1": 1.0,
+      "avg_time_ms": 110.92,
+      "per_sample": [
+        {
+          "sample": "CVE_01",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 780.01
+        },
+        {
+          "sample": "CVE_02",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 47.35
+        },
+        {
+          "sample": "CVE_03",
+          "verdict": "TN",
+          "findings": 0,
+          "time_ms": 46.32
+        },
+        {
+          "sample": "CVE_04",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 58.33
+        },
+        {
+          "sample": "CVE_05",
+          "verdict": "TN",
+          "findings": 0,
+          "time_ms": 54.21
+        },
+        {
+          "sample": "CVE_06",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 45.09
+        },
+        {
+          "sample": "CVE_07",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 45.15
+        },
+        {
+          "sample": "CVE_08",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 53.23
+        },
+        {
+          "sample": "CVE_09",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 45.72
+        },
+        {
+          "sample": "CVE_10",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 54.17
+        },
+        {
+          "sample": "CVE_11",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 54.84
+        },
+        {
+          "sample": "CVE_12",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 54.94
+        },
+        {
+          "sample": "CVE_13",
+          "verdict": "TP",
+          "findings": 3,
+          "time_ms": 227.91
+        },
+        {
+          "sample": "CVE_14",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 50.95
+        },
+        {
+          "sample": "CVE_15",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 45.63
+        }
+      ]
+    },
+    "BinMind-Baseline": {
+      "TP": 13,
+      "FP": 2,
+      "FN": 0,
+      "TN": 0,
+      "Recall": 100.0,
+      "Precision": 86.67,
+      "FPR": 100.0,
+      "F1": 0.9286,
+      "avg_time_ms": 47.0,
+      "per_sample": [
+        {
+          "sample": "CVE_01",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 37.93
+        },
+        {
+          "sample": "CVE_02",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 42.12
+        },
+        {
+          "sample": "CVE_03",
+          "verdict": "FP",
+          "findings": 1,
+          "time_ms": 38.84
+        },
+        {
+          "sample": "CVE_04",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 36.82
+        },
+        {
+          "sample": "CVE_05",
+          "verdict": "FP",
+          "findings": 1,
+          "time_ms": 37.07
+        },
+        {
+          "sample": "CVE_06",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 37.04
+        },
+        {
+          "sample": "CVE_07",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 39.95
+        },
+        {
+          "sample": "CVE_08",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 61.32
+        },
+        {
+          "sample": "CVE_09",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 40.96
+        },
+        {
+          "sample": "CVE_10",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 41.23
+        },
+        {
+          "sample": "CVE_11",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 38.74
+        },
+        {
+          "sample": "CVE_12",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 38.88
+        },
+        {
+          "sample": "CVE_13",
+          "verdict": "TP",
+          "findings": 5,
+          "time_ms": 138.97
+        },
+        {
+          "sample": "CVE_14",
+          "verdict": "TP",
+          "findings": 1,
+          "time_ms": 37.71
+        },
+        {
+          "sample": "CVE_15",
+          "verdict": "TP",
+          "findings": 2,
+          "time_ms": 37.35
+        }
+      ]
+    }
+  },
+  "samples": []
+}

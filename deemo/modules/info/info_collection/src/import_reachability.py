@@ -1,4 +1,4 @@
-# Created: 2025-07-31 17:22:10
+# Created: 2026-06-26 17:22:10
 #
 # import_reachability — 导入可达性图 (Import Reachability Graph)
 # 仅使用导入表构建从用户输入函数到危险汇聚点的有向图，
@@ -15,7 +15,7 @@
 # 危险汇聚点 (sinks): 可能执行任意代码或写入任意内存的 API
 #   - 代码执行: system, execve, popen, CreateProcess, WinExec, ShellExecute
 #   - 内存损坏: strcpy, strcat, sprintf, memcpy, gets
-#   - 权限修改: mprotect, VirtualProtect, chmod
+# 权限修改: mprotect, VirtualProtect, chmod
 #
 # 图构建规则:
 #   1. 同一 DLL 内的函数两两相连 (DLL 内聚假设)

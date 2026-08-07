@@ -1,20 +1,20 @@
 # 多预言机共识融合引擎 — 加权投票降低差分测试的误报率
 #
 # 核心问题:
-#   AccuOracle (2025) 证明: 差分测试中 >90% 的差异报告是误报。
+#   AccuOracle 证明: 差分测试中 >90% 的差异报告是误报。
 #   本模块已有五种独立的预言机:
-#     - diff_oracle.py: 语义规范断言 (规则+LLM)
+# diff_oracle.py: 语义规范断言 (规则+LLM)
 #     - statistical_oracle.py: 非参数统计检验 (Mann-Whitney U + Cliff's Delta)
-#     - metamorphic_oracle.py: 蜕变关系检查
-#     - exploit_primitive.py: 利用原语分类
-#     - trace_invariant_miner.py: 执行不变量违反检测
+# metamorphic_oracle.py: 蜕变关系检查
+# exploit_primitive.py: 利用原语分类
+# trace_invariant_miner.py: 执行不变量违反检测
 #   每种预言机从不同维度评估程序行为, 但各自独立运行——无机制综合它们的判断。
 #
 #   单预言机的问题:
-#     - diff_oracle 高召回但低精度 (LLM幻觉→误报)
-#     - statistical_oracle 对样本量敏感 (小样本→假阴性)
+# diff_oracle 高召回但低精度 (LLM幻觉→误报)
+# statistical_oracle 对样本量敏感 (小样本→假阴性)
 #     - metamorphic_oracle 依赖关系设计的完备性 (遗漏的关系→假阴性)
-#     - 任一单独使用都有盲区
+# 任一单独使用都有盲区
 #
 # 本模块的方法 — 加权多预言机共识融合:
 #   1. 收集所有预言机的输出, 归一化为统一格式 (OracleVerdict)
@@ -25,12 +25,12 @@
 #   5. 在线反馈更新: 当人工确认某差异为真/假后, 更新相关预言机的精度
 #
 # 为什么用精度加权而非等权:
-#   - 不同预言机对不同类别的差异效果不同
-#   - diff_oracle 对崩溃类差异精度高, 对输出差异精度低
-#   - 精度自适应的权重使融合引擎自动学习"该信谁"
+# 不同预言机对不同类别的差异效果不同
+# diff_oracle 对崩溃类差异精度高, 对输出差异精度低
+# 精度自适应的权重使融合引擎自动学习"该信谁"
 #
-# 参考文献:
-#   AccuOracle (Li et al. 2025, Computers & Security) — 四层过滤消除JIT fuzzing误报;
+# 文献:
+#   AccuOracle — 四层过滤消除JIT fuzzing误报;
 #     本项目取其"多层过滤"思想但以多预言机加权替代固定过滤管道
 #   — 多源证据合成为AI/安全领域的通用设计模式,
 #     本模块以统计方法实现而非LLM pipeline, 降低延迟与成本
@@ -215,7 +215,7 @@ class OracleFusionEngine:
             oracle_correct = (v.is_violation == was_true_positive)
             self._tracker.record(v.oracle, oracle_correct)
 
-    # ---- 诊断 ----
+    # 诊断
 
     def oracle_weights(self) -> Dict[str, float]:
         return {

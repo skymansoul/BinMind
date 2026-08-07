@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_06_use_before_free",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 使用在释放之前",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "解引用发生在 free 之前"
+}

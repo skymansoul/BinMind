@@ -10,7 +10,7 @@ import logging as _logging
 _log = _logging.getLogger(__name__)
 
 
-# ── map old module paths to new locations ────────────────────────────
+# map old module paths to new locations
 
 _COMPAT_MAP = {
     'modules.info_collect':          'core.binary_info',

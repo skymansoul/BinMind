@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 17:40
-# 修改: 2025-08-16 — 多表 SimHash LSH + 动态质心查询修改
+# 创建: 2026-07-03 17:40
+# 修改: 2026-07-03 — 多表 SimHash LSH + 动态质心查询修改
 """
 SimHash LSH 二进制函数搜索索引 — 多表哈希 + 动态查询修改.
 
@@ -8,7 +8,7 @@ SimHash LSH 二进制函数搜索索引 — 多表哈希 + 动态查询修改.
   K = 每表检索的候选数 (默认 10)
   总查询: O(80) 次汉明距离计算, 与 N 无关
 
-LSH 原理 (Charikar, STOC 2002):
+LSH 原理:
   随机超平面投影 -> 汉明距离保持余弦相似度.
   SimHash(x) = sign(W @ x) 其中 W 的每一行是随机超平面的法向量.
   汉明距离(simhash(a), simhash(b)) ∝ arccos(cosine_similarity(a,b)).
@@ -17,15 +17,15 @@ LSH 原理 (Charikar, STOC 2002):
   单表召回率 = P(h(q)=h(nn)) ≈ 1 - (1-p^k)^L
   p = 1 - arccos(sim)/pi (两个相似点碰撞的概率)
   k = 每表哈希位数, L = 表数
-  调整 k 和 L 以平衡召回率与查询速度 (Datar et al., SoCG 2004).
+  调整 k 和 L 以平衡召回率与查询速度.
 
 动态查询修改:
   原始查询 q -> centroid(kNN(q)) -> 更高碰撞概率.
   centroid 在几何上更接近多个近邻的平均位置,
   用第一轮检索到的候选向量的几何质心替代原始查询做第二轮检索.
 
-创建: 2026-08-06  初始版本, 多表 LSH + centroid 动态查询
-修改: 2026-08-10  移除未验证的外部引用, 替换为算法原理自述
+创建: 2026-07-03  初始版本, 多表 LSH + centroid 动态查询
+修改: 2026-07-03  移除未验证的外部引用, 替换为算法原理自述
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from collections import defaultdict
 from typing import Optional
 
 
-# --- SimHash 投影矩阵 ---
+# SimHash 投影矩阵
 # 每个表使用独立的随机投影矩阵, 保证表间独立性。
 
 class SimHashTable:
@@ -87,7 +87,7 @@ class SimHashTable:
         return [(fid, 1.0 - d / self._k) for fid, d in scored[:max_candidates]]
 
 
-# --- 多表 LSH 索引 ---
+# 多表 LSH 索引
 
 class LSHFunctionIndex:
     """多表 SimHash LSH 二进制函数相似搜索索引。
@@ -183,7 +183,7 @@ class LSHFunctionIndex:
         }
 
 
-# --- 汉明距离 + 辅助 ---
+# 汉明距离 + 辅助
 
 def _hamming_distance_simhash(a: int, b: int) -> int:
     return (a ^ b).bit_count()
@@ -197,7 +197,7 @@ def _pad_or_trunc(vec: list[float], target_dim: int) -> list[float]:
     return vec[:target_dim]
 
 
-# --- 嵌入构建适配器 ---
+# 嵌入构建适配器
 # 从二进制函数的特征向量构建 SimHash 兼容的 64 维嵌入。
 # 特征: 指令直方图 (前 32 维) + CFG 统计 (后 32 维)。
 

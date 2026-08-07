@@ -1,0 +1,103 @@
+{
+  "detection_rate": {
+    "acpe": {
+      "plain": 0.6521739130434783,
+      "packed": 0.6521739130434783
+    },
+    "baseline": {
+      "plain": 0.8695652173913043,
+      "packed": 0.7391304347826086
+    },
+    "angr": {
+      "plain": 1.0,
+      "packed": 1.0
+    },
+    "qemu": {
+      "plain": 0.5217391304347826,
+      "packed": 0.6521739130434783
+    },
+    "ghidra": {
+      "plain": 1.0,
+      "packed": 1.0
+    }
+  },
+  "fp_rate": {
+    "acpe": {
+      "plain": 0.0,
+      "packed": 0.0
+    },
+    "baseline": {
+      "plain": 0.625,
+      "packed": 0.25
+    },
+    "angr": {
+      "plain": 1.0,
+      "packed": 1.0
+    },
+    "qemu": {
+      "plain": 0.25,
+      "packed": 0.125
+    },
+    "ghidra": {
+      "plain": 1.0,
+      "packed": 1.0
+    }
+  },
+  "summary": {
+    "acpe": {
+      "tp": 30,
+      "fp": 0,
+      "tn": 16,
+      "fn": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "total_sec": 2.553
+    },
+    "baseline": {
+      "tp": 30,
+      "fp": 7,
+      "tn": 9,
+      "fn": 0,
+      "recall": 1.0,
+      "precision": 0.8108,
+      "f1": 0.8955,
+      "fp_rate": 0.4375,
+      "total_sec": 2.451
+    },
+    "angr": {
+      "tp": 30,
+      "fp": 16,
+      "tn": 0,
+      "fn": 0,
+      "recall": 1.0,
+      "precision": 0.6522,
+      "f1": 0.7895,
+      "fp_rate": 1.0,
+      "total_sec": 75.667
+    },
+    "qemu": {
+      "tp": 24,
+      "fp": 3,
+      "tn": 13,
+      "fn": 6,
+      "recall": 0.8,
+      "precision": 0.8889,
+      "f1": 0.8421,
+      "fp_rate": 0.1875,
+      "total_sec": 3.024
+    },
+    "ghidra": {
+      "tp": 30,
+      "fp": 16,
+      "tn": 0,
+      "fn": 0,
+      "recall": 1.0,
+      "precision": 0.6522,
+      "f1": 0.7895,
+      "fp_rate": 1.0,
+      "total_sec": 2.374
+    }
+  }
+}

@@ -4,7 +4,7 @@
 #   (a) ASLR导致的地址漂移使相同根因的崩溃产生不同栈哈希
 #   (b) 同一漏洞的不同触发路径产生不同栈但相同根因
 #   (c) 递归/循环内崩溃使栈深度变化导致栈哈希不同
-#   GPTrace (ICSE 2026) 使用LLM嵌入解决但需API调用, 离线不可用
+#   GPTrace 使用LLM嵌入解决但需API调用, 离线不可用
 # 解决手段: 构建四维崩溃签名, 每个维度捕获根因的不同侧面:
 #   维度1: 寄存器状态熵——崩溃时寄存器值的分布模式
 #   维度2: 故障地址可达性——地址是否在已知映射段内
@@ -13,12 +13,12 @@
 #   四维签名加权合并后使用DBSCAN自适应聚类, 无需预设簇数
 # 技术效果: 四维签名互补——当某一维因ASLR/优化差异退化时
 #   其他维度仍提供有效信号; 纯本地计算, 无需LLM API调用
-# 参考:
-#   GPTrace (arXiv:2512.01609, ICSE 2026) — LLM嵌入崩溃去重,
+#
+#   GPTrace — LLM嵌入崩溃去重,
 #     本项目借鉴其多特征融合思想但使用确定性特征替代LLM嵌入
-#   ECHO (MDPI Electronics 2025) — 内核栈LCS+余弦去重,
+#   ECHO — 内核栈LCS+余弦去重,
 #     本项目借鉴其自适应阈值但扩展到用户态+ASAN输出
-#   Igor (CCS 2021) — CFG最小化去重基准
+#   Igor — CFG最小化去重基准
 from __future__ import annotations
 import hashlib
 import logging
@@ -167,7 +167,7 @@ class CrashSemanticDeduplicator:
         best = min(members, key=lambda cid: self._signatures[cid].reg_entropy)
         return best
 
-    # ── 四维特征提取 ──
+# 四维特征提取
 
     def _register_entropy(self, crash: CrashRecord) -> float:
         """寄存器状态香农熵.

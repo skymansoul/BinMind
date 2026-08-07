@@ -13,7 +13,6 @@
     区间分析是over-approximation(上界超类型最大值即告警→误报源头)
     约束验证是精确求解(只有SMT确认可满足才保留→降误报)
 
-参考:
   - 与core/heap_overflow_verifier.py同样的Shimizu et al. ISSTA 2025范式
 """
 import time
@@ -96,7 +95,6 @@ def verify_overflow_reachable(
         result['solver_time'] = time.time() - t0
 
     return result
-
 
 def filter_iof_findings(
     binary_path: str,

@@ -1,19 +1,19 @@
 # 攻击/漏洞签名自主提取 —— 从二进制分析结果中挖掘 IOC 与检测规则
 # 文献依据:
-#   "Fast and automated generation of attack signatures..." [Liang & Sekar, CCS 2005]
+#   "Fast and automated generation of attack signatures..."
 #     — 最早的自动化签名构造框架，从网络/主机入侵事件中提取 token-based 签名。
-#   "Dynamic Taint Analysis for Automatic Detection..." [Newsome & Song, NDSS 2005]
+#   "Dynamic Taint Analysis for Automatic Detection..."
 #     — 动态污点分析 + 自动化签名构造，签名存为语义骨架。
 #   "Towards automated exploit signature generation using honeypots"
-#     [Almohri et al., ACSAC 2018] — 蜜罐驱动的漏洞签名提取流水线。
+# — 蜜罐驱动的漏洞签名提取流水线。
 #   "Automatic Patch-Based Exploit Generation is Possible..."
-#     [Brumley et al., IEEE S&P 2008] — 基于补丁 diff 的
+# — 基于补丁 diff 的
 #     自主 exploit 构造，其签名提取部分直接启发本模块。
 #
 # 签名类型:
 #   - IOC (Indicator of Compromise): 文件 hash、IP、域名、mutex 名等
-#   - Semantic: 污点传播路径、控制流特征、API 调用序列
-#   - Structural: 字节码 n-gram、CFG 拓扑模式、基本块计数
+# Semantic: 污点传播路径、控制流特征、API 调用序列
+# Structural: 字节码 n-gram、CFG 拓扑模式、基本块计数
 #   - Behavioral: syscall trace 模式、文件系统/注册表操作序列
 #
 # 输出格式: YARA 规则、Sigma 规则、JSON IOC 列表、STIX 2.1 bundle。
@@ -26,9 +26,7 @@ from typing import List, Dict, Optional, Any, Set, Tuple
 from collections import Counter
 
 
-# ---------------------------------------------------------------------------
 # IOC 提取 —— 从 findings 中自主识别可操作的威胁指标
-# ---------------------------------------------------------------------------
 
 class IOCExtractor:
     """从分析结果中提取 Indicators of Compromise。
@@ -36,7 +34,7 @@ class IOCExtractor:
     支持类型: file_hash (MD5/SHA1/SHA256), ipv4, ipv6, domain, url, mutex,
     registry_key, file_path, email, cve_id。
 
-    [Liang & Sekar 2005] 将签名定义为 token 序列的最长子串；
+ 将签名定义为 token 序列的最长子串；
     本实现泛化至任意 IOC 类型的提取 + 去重 + 置信度排序。
     """
 
@@ -174,10 +172,8 @@ class IOCExtractor:
         return {"total": self.total, "by_type": dict(by_type)}
 
 
-# ---------------------------------------------------------------------------
 # SignaturePatternMiner — 从 findings 中挖掘检测模式
-# 参考 [Newsome & Song 2005] 的语义骨架构造策略
-# ---------------------------------------------------------------------------
+# 的语义骨架构造策略
 
 class SignaturePatternMiner:
     """从分析结果中提取可复用的检测模式。

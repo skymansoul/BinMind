@@ -1,4 +1,4 @@
-"""ROP/JOP gadget 链分析 —— 借鉴 ARCANIST [USENIX Security 2025]。
+"""ROP/JOP gadget 链分析 —— 借鉴 ARCANIST。
 
 ARCANIST 实现跨栈/堆/寄存器的多样化 gadget 链合成。
 本模块沿用其 gadget 分类与可达性分析思路，对二进制中的
@@ -91,7 +91,7 @@ class GadgetChainAnalysis:
         }
 
 
-# ── Gadget 终结束码查找表 ──────────────────────────────────────────
+# Gadget 终结束码查找表
 # 每个 opcode 序列 → (类型, 有用寄存器集合, 是否栈 pivot)
 
 _GADGET_TERMINATORS_X86 = {
@@ -140,9 +140,7 @@ class GadgetChainAnalyzer:
         if 'arm' in self._arch or 'aarch' in self._arch:
             self._terminators = _GADGET_TERMINATORS_ARM64
 
-    # ============================================================
     # 主入口
-    # ============================================================
     def analyze(self, binary_path: str,
                 code_sections: Optional[List[Tuple[int, int]]] = None) -> GadgetChainAnalysis:
         """扫描二进制 gadget 并进行链式分析。"""
@@ -205,7 +203,7 @@ class GadgetChainAnalyzer:
 
         return _rpt
 
-    # ── 二进制加载与段定位 ──────────────────────────────────────────
+# 二进制加载与段定位
 
     def _load_binary(self, path: str) -> Optional[bytes]:
         try:
@@ -238,7 +236,7 @@ class GadgetChainAnalyzer:
                 pass
         return [(0, len(data))]
 
-    # ── gadget 逆向扫描 ─────────────────────────────────────────────
+# gadget 逆向扫描
 
     def _scan_gadgets(self, data: bytes, base_offset: int) -> List[Gadget]:
         """逆向扫描：从终结束码向前回溯，收集所有可能 gadget。"""
@@ -377,7 +375,7 @@ class GadgetChainAnalyzer:
             _s *= 0.30
         return round(min(_s, 1.0), 4)
 
-    # ── 链式分析 ────────────────────────────────────────────────────
+# 链式分析
 
     def _find_chainable_pairs(self, gadgets: List[Gadget]) -> List[Tuple[int, int]]:
         """检测可串联 gadget 对：A 的 useful_regs 与 B 的 clobber_regs 不冲突。"""
@@ -454,7 +452,7 @@ class GadgetChainAnalyzer:
         return round(min(max(_s, 0.0), 1.0), 4)
 
 
-# ── 便捷入口 ────────────────────────────────────────────────────────
+# 便捷入口
 
 def analyze_gadget_chains(binary_path: str, arch: str = "x86_64") -> Dict:
     _analyzer = GadgetChainAnalyzer(arch=arch)

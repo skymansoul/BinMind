@@ -14,7 +14,6 @@
   - 规则层: 根据保护机制硬约束决定部分方法选择（如无源码→跳过编译时分析）
   - MAB层:   对满足硬约束的方法组合进行在线学习调度
 
-参考:
   - Li et al., 2010, NIPS, "A Contextual-Bandit Approach to Personalized News Article Recommendation"
   - Böhme et al., 2021, ACM CSUR, "Fuzzing: On the Exponential Cost of Vulnerability Discovery"
 
@@ -23,8 +22,6 @@
 边际效用，动态分配分析预算。
 """
 
-from __future__ import annotations
-
 import logging
 import math
 import random
@@ -32,7 +29,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
-
 
 class AnalysisMethod(Enum):
     """可调度的分析方法。"""
@@ -44,7 +40,6 @@ class AnalysisMethod(Enum):
     ROP_CHAIN = 'rop_chain'             # ROP 链构造
     FORMAT_STRING = 'format_string'     # 格式化字符串专项分析
 
-
 # 方法臂的默认预算分配（秒）
 _DEFAULT_BUDGETS = {
     AnalysisMethod.STATIC_RULES: 30,
@@ -55,7 +50,6 @@ _DEFAULT_BUDGETS = {
     AnalysisMethod.ROP_CHAIN: 60,
     AnalysisMethod.FORMAT_STRING: 120,
 }
-
 
 class AdaptiveScheduler:
     """
@@ -225,7 +219,6 @@ class AdaptiveScheduler:
             eligible.append(AnalysisMethod.STATIC_RULES)
 
         return eligible
-
 
 def compute_reward(
     vulns_found: int,

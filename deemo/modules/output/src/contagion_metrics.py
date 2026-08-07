@@ -1,7 +1,7 @@
 """
 传染图度量函数 — 导入重叠、符号亲密度、加固比。
 
-从 vuln_contagion.py 拆分以控制单文件行数。包含:
+以控制单文件行数。包含
   - _normalize_import_name: 导入名归一化
   - _find_family / _family_set: 敏感函数族分类
   - compute_import_overlap: Jaccard 导入重叠度
@@ -10,7 +10,7 @@
   - DEFAULT_WEIGHTS / _SENSITIVE_FAMILIES: 常量和配置
 
 修改记录:
-  创建 2026-07-29 — 从 vuln_contagion.py 拆分
+创建 2026-07-17
 """
 
 import math

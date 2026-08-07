@@ -19,7 +19,7 @@
 #      c) 异常声明模式
 #   4. 对给定函数检查是否违反已知不变量
 #
-# 区别于 MINES (arXiv:2512.06906, ICSE 2026):
+# 区别于 MINES:
 #   MINES 从 API 运行时日志推断数据库级不变量用于异常检测。
 #   本模块从静态合约中挖掘命名+类型级不变量用于实现验证。
 import re as _re
@@ -181,7 +181,7 @@ class InvariantMiner:
 
         return violations
 
-    # ---- 分组 ----
+# 分组
     def _group_by_prefix(self) -> dict[str, list[_FuncContract]]:
         """按函数名前缀分组。"""
         contracts = self.contractor.scan_all()
@@ -197,7 +197,7 @@ class InvariantMiner:
 
         return dict(groups)
 
-    # ---- 报告 ----
+# 报告
     def invariant_report(self,
                          invariants: list[MinedInvariant] = None) -> str:
         if invariants is None:

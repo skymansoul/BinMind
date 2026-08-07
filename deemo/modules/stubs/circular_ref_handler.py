@@ -1,7 +1,7 @@
 # circular_ref_handler.py — 循环引用检测与解除
 # 桩模块多路径指向同一 compat 模块时易触发 import 循环依赖。
-# 参考: ADFEmu (2025) DSE 协同框架依赖图分析 &
-#   Call Graphlets (arXiv:2406.02606) 图结构分析
+# ADFEmu DSE 协同框架依赖图分析 &
+#   Call Graphlets 图结构分析
 from collections import defaultdict as _defdict
 import sys as _sys
 

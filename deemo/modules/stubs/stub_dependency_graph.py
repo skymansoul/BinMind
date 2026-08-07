@@ -7,7 +7,7 @@
 #      而非无视依赖硬排全局序。
 #   3. 增量更新：仅重算受变更影响节点的下游传递闭包。
 # 区别于已有工作:
-#   SYNFlx (ACL 2025) 的 RelationGraph 面向跨文件协同修复，
+#   SYNFlx 的 RelationGraph 面向跨文件协同修复，
 #   本模块的图结构额外编码 stub→compat 的"已转发/待实现"语义，
 #   调度目标非修复完成度而是实现可行集的逐层扩展。
 import ast as _ast
@@ -64,7 +64,7 @@ class ModuleDependencyGraph:
         # 已失效标记 — 节点被移除或源码变更时置位
         self._dirty: set[str] = set()
 
-    # ---- 图构造 ----
+# 图构造
     def build(self) -> 'ModuleDependencyGraph':
         """扫描 stubs/ 下全部 .py 文件，构造完整依赖图。"""
         self.nodes.clear()
@@ -123,7 +123,7 @@ class ModuleDependencyGraph:
         # 非框架内 import，不纳入依赖图
         return None
 
-    # ---- 拓扑深度 ----
+# 拓扑深度
     def _compute_topo_depths(self) -> None:
         """BFS 计算各节点的拓扑深度（最长依赖链长度）。
 
@@ -182,7 +182,7 @@ class ModuleDependencyGraph:
             else:
                 self.nodes[name].downstream_closure_size = memo[name]
 
-    # ---- 增量更新 ----
+# 增量更新
     def mark_dirty(self, module_name: str) -> None:
         """标记节点为脏（源码变更后调用）。下次查询时惰性重算。"""
         self._dirty.add(module_name)
@@ -210,7 +210,7 @@ class ModuleDependencyGraph:
         self._compute_downstream_closures()
         self._dirty.clear()
 
-    # ---- 查询接口 ----
+# 查询接口
     def dependency_chain(self, module_name: str) -> list[str]:
         """返回该模块的完整依赖链（按拓扑序，最底层依赖在前）。"""
         if module_name not in self.nodes:
@@ -263,7 +263,7 @@ class ModuleDependencyGraph:
         }
 
 
-# ---- 拓扑约束调度器 ----
+# 拓扑约束调度器
 # 核心思想:
 #   在任意时刻，只有"全部依赖均已实现（或可直接转发 compat）"的模块
 #   才进入可行集。调度器在可行集内按优先级权重排序，选出下一批实现目标。
@@ -325,7 +325,7 @@ class TopologicalScheduler:
         return self.scheduled_order(priorities)[:n]
 
 
-# ---- 依赖感知优先级包装 ----
+# 依赖感知优先级包装
 class DependencyAwarePrioritizer:
     """包装 ImplementationPrioritizer，在其优先级评分上叠加依赖约束。
 

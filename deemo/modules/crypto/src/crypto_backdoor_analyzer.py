@@ -22,10 +22,9 @@
     D3: 可预测性 — 常数生成过程是否可被外部重现?
     D4: 陷门证据 — 是否存在可被陷门持有者利用的数学关系?
 
-参考:
-  - Bernstein et al., "Dual EC: A Standardized Back Door" (2015):
+  - Bernstein et al., "Dual EC: A Standardized Back Door":
     对NIST SP 800-90A Dual_EC_DRBG后门的系统分析 — 后门嵌入在推荐参数中。
-  - Wong, "How to Backdoor Diffie-Hellman" (Cryptology ePrint 2016/644):
+  - Wong, "How to Backdoor Diffie-Hellman":
     DH参数后门的构造方法 — 使用小素数因子的模数。
 
 边界条件:
@@ -39,7 +38,6 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
 @dataclass
 class BackdoorSusceptibility:
     algorithm: str = ""
@@ -49,8 +47,7 @@ class BackdoorSusceptibility:
     detail: str = ""
     location: int = 0
 
-
-# ── D1: 异常常数检测 ──
+# D1: 异常常数检测
 # 密码学常量应来自nothing-up-my-sleeve值(π/e/sqrt(2)的小数部分等)。
 # 异常的熵分布暗示人为选择→可能嵌入了数学关系。
 
@@ -103,8 +100,7 @@ def _check_nothing_up_my_sleeve(data: bytes, offset: int, size: int) -> Optional
             location=offset)
     return None
 
-
-# ── D2: 弱椭圆曲线参数检测 ──
+# D2: 弱椭圆曲线参数检测
 
 # 已知安全曲线的参数 — 偏离这些暗示自定义/弱曲线
 _SAFE_CURVE_PARAMS: Dict[str, bytes] = {
@@ -122,7 +118,6 @@ _SUSPICIOUS_CURVE_FLAGS = [
     (b'\xFF' * 16, 'all-ones parameter block'),   # 全一参数 — 同上
     (b'\x01' + b'\x00' * 15, 'minimal parameter'), # 极小参数 → 可能易受攻击
 ]
-
 
 def _check_curve_params(data: bytes, offset: int) -> Optional[BackdoorSusceptibility]:
     """检查椭圆曲线参数块是否有已知的不安全信号。"""
@@ -146,8 +141,7 @@ def _check_curve_params(data: bytes, offset: int) -> Optional[BackdoorSusceptibi
 
     return None
 
-
-# ── D3: 可预测常数生成 ──
+# D3: 可预测常数生成
 
 def _check_predictable_constants(data: bytes, offset: int) -> Optional[BackdoorSusceptibility]:
     """
@@ -178,8 +172,7 @@ def _check_predictable_constants(data: bytes, offset: int) -> Optional[BackdoorS
 
     return None
 
-
-# ── D4: 陷门证据 — Dual_EC_DRBG模式 ──
+# D4: 陷门证据 — Dual_EC_DRBG模式
 
 def _check_dual_ec_pattern(data: bytes, offset: int) -> Optional[BackdoorSusceptibility]:
     """
@@ -220,8 +213,7 @@ def _check_dual_ec_pattern(data: bytes, offset: int) -> Optional[BackdoorSuscept
                     location=offset)
     return None
 
-
-# ── 主分析器 ──
+# 主分析器
 
 class BackdoorAnalyzer:
     """密码学后门易感性分析器 — 组合四维检测。"""
@@ -259,7 +251,6 @@ class BackdoorAnalyzer:
             findings.sort(key=lambda f: severity_order.get(f.severity, 5))
             findings = findings[:1]
         return findings
-
 
 def audit_backdoor_risk(data: bytes, findings: Optional[List] = None) -> List[BackdoorSusceptibility]:
     """

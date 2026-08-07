@@ -6,7 +6,7 @@ from modules.cve.src.cve_kb import CVEKnowledgeBase
 from modules.cve.src.cve_models import _make_test_entry
 
 
-# ===== Attack graph (7 tests) =====
+# Attack graph (7 tests)
 
 class TestAttackGraph:
     def test_build_empty(self):
@@ -82,7 +82,7 @@ class TestAttackGraph:
         assert "CVE-2024-0001" in content
 
 
-# ===== Risk scoring (8 tests) =====
+# Risk scoring (8 tests)
 
 class TestRiskScorer:
     def test_compute_basic(self):
@@ -150,7 +150,7 @@ class TestRiskScorer:
         assert results[0]["score"] >= results[1]["score"]
 
 
-# ===== ATT&CK mapping (7 tests) =====
+# ATT&CK mapping (7 tests)
 
 class TestAttackMITRE:
     def test_map_cwe_xss(self):

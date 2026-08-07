@@ -23,14 +23,13 @@
   (b) 固件更新前后密码学行为的回归验证。
   (c) 第三方库检测为"已知库X"后的行为符合性验证。
 
-参考:
-  - CLFuzz (TOSEM 2025): oracle回收池概念 — 加密-解密/签名-验证/密钥生成-验证
+  - CLFuzz: oracle回收池概念 — 加密-解密/签名-验证/密钥生成-验证
     循环自动检测12个未知crypto bug。本模块将oracle构造推广到二进制场景。
-  - Chen et al. (Metamorphic Testing, ACM CSUR 2018): 蜕变测试系统综述 —
+  - Chen et al.: 蜕变测试系统综述 —
     蜕变关系的构造方法论, 本项目采纳其MR分类框架。
-  - Cryptoscope (arXiv:2503.19531): 现代软件中密码学使用的系统化分析,
+  - Cryptoscope: 现代软件中密码学使用的系统化分析,
     其API使用模式提供了oracle触发点的分类依据。
-  - Arnaud & Bousquet (2007): 随机测试中基于属性的oracle — "property-based
+  - Arnaud & Bousquet: 随机测试中基于属性的oracle — "property-based
     testing"的密码学应用, QuickCheck风格oracle设计。
 
 边界条件:
@@ -45,8 +44,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Dict, List, Optional, Tuple
 
-
-# ── Oracle类型枚举 ──
+# Oracle类型枚举
 
 class OracleType(Enum):
     SYMMETRIC = auto()          # Enc(K,M)→C; Dec(K,C)→M' 验证 M'==M
@@ -57,8 +55,7 @@ class OracleType(Enum):
     PRNG_DETERMINISTIC = auto() # PRNG(seed)→序列; 同seed→同序列
     PRNG_BIAS = auto()          # PRNG输出的统计偏差检验
 
-
-# ── 蜕变关系数据结构 ──
+# 蜕变关系数据结构
 
 @dataclass
 class MetamorphicRelation:
@@ -75,7 +72,6 @@ class MetamorphicRelation:
     verify_fn_name: str = ""                  # 对应验证函数名
     params: Dict[str, object] = field(default_factory=dict)
 
-
 @dataclass
 class OracleResult:
     """单个oracle的验证结果."""
@@ -85,7 +81,6 @@ class OracleResult:
     iterations: int = 0              # 已执行测试迭代数
     failures: int = 0                # 失败次数
     confidence: float = 0.0          # 基于迭代数的置信度
-
 
 @dataclass
 class OracleSuiteReport:
@@ -101,8 +96,7 @@ class OracleSuiteReport:
         return (f"[{self.algorithm}] {self.passed}/{self.total_oracles} passed"
                 f" ({self.failed} failed) — {self.overall_verdict}")
 
-
-# ── Oracle构造器 ──
+# Oracle构造器
 
 class OracleConstructor:
     """
@@ -211,8 +205,7 @@ class OracleConstructor:
         """批量为多个算法生成oracle。返回{算法名: [oracle列表]}。"""
         return {algo: self.construct_for_algorithm(algo) for algo in algorithms}
 
-
-# ── Oracle验证逻辑 ──
+# Oracle验证逻辑
 
 def _verify_symmetric(encrypt_fn, decrypt_fn,
                       key: bytes, block_size: int = 16,
@@ -259,7 +252,6 @@ def _verify_symmetric(encrypt_fn, decrypt_fn,
                         iterations=iterations, failures=failures,
                         confidence=min(0.99, 0.5 + iterations / 64.0))
 
-
 def _verify_hash_deterministic(hash_fn, data: bytes,
                                iterations: int = 64) -> OracleResult:
     """
@@ -285,7 +277,6 @@ def _verify_hash_deterministic(hash_fn, data: bytes,
     return OracleResult(relation=rel, passed=passed, detail=detail,
                         iterations=iterations, failures=failures,
                         confidence=min(0.99, 0.5 + iterations / 128.0))
-
 
 def _verify_hash_avalanche(hash_fn,
                            iterations: int = 32) -> OracleResult:
@@ -338,7 +329,6 @@ def _verify_hash_avalanche(hash_fn,
                         iterations=iterations, failures=0 if passed else 1,
                         confidence=min(0.95, 0.4 + iterations / 60.0))
 
-
 def _verify_kdf_deterministic(kdf_fn, password: bytes, salt: bytes,
                               params: Dict, iterations: int = 16) -> OracleResult:
     """
@@ -376,8 +366,7 @@ def _verify_kdf_deterministic(kdf_fn, password: bytes, salt: bytes,
                         iterations=iterations, failures=failures,
                         confidence=min(0.95, 0.5 + iterations / 32.0))
 
-
-# ── Oracle套件运行器 ──
+# Oracle套件运行器
 
 class OracleRunner:
     """
@@ -539,22 +528,18 @@ class OracleRunner:
                             iterations=1, failures=0 if passed else 1,
                             confidence=0.85 if n >= 2048 else 0.4)
 
-
-# ── 便捷API ──
+# 便捷API
 
 _default_constructor = OracleConstructor()
 _default_runner = OracleRunner()
-
 
 def generate_oracles(algorithm: str, **params) -> List[MetamorphicRelation]:
     """便捷函数 — 为给定算法生成oracle套件。"""
     return _default_constructor.construct_for_algorithm(algorithm, params or None)
 
-
 def generate_oracles_batch(algorithms: List[str]) -> Dict[str, List[MetamorphicRelation]]:
     """便捷函数 — 批量生成。"""
     return _default_constructor.construct_batch(algorithms)
-
 
 def run_oracles(relations: List[MetamorphicRelation],
                 algorithm: str = "",

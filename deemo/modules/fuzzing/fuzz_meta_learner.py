@@ -10,7 +10,7 @@
   现有模糊测试框架每次新战役从零调参——即使目标二进制与历史战役高度相似.
   通过 k-NN 检索最相似的历史战役并按相似度加权融合策略参数,
   可显著降低冷启动开销.
-  LLAMAFUZZ (arXiv:2406.07714) 的LLM语料感知和ISC4DGF (JCST 2025)
+  LLAMAFUZZ  的LLM语料感知和ISC4DGF
   的LLM种子生成均限于单次战役, 不涉及跨战役知识复用.
 
 算法:
@@ -25,7 +25,6 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-
 
 @dataclass
 class CampaignFingerprint:
@@ -63,7 +62,6 @@ class CampaignFingerprint:
             min(1.0, bf.get('import_dangerous', 0) / 50.0),
             bf.get('is_cpp', 0.0),
         ]
-
 
 class CrossCampaignMetaLearner:
     """跨战役元学习器 — k-NN 检索 + 策略加权融合.
@@ -188,13 +186,11 @@ class CrossCampaignMetaLearner:
     def __len__(self) -> int:
         return len(self._campaigns)
 
-
 def _cosine_sim(a: List[float], b: List[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(y * y for y in b))
     return dot / (na * nb) if na > 0 and nb > 0 else 0.0
-
 
 class GPSurrogateOptimizer:
     """GP代理模型 —— 在k-NN检索之上叠加高斯过程回归.
@@ -282,7 +278,6 @@ class GPSurrogateOptimizer:
         Phi = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
         return std * (z * Phi + phi)
 
-
 def _cholesky_decompose(K: List[List[float]]) -> Optional[List[List[float]]]:
     """Cholesky 分解 K = L L^T. 数值不稳定时加 jitter."""
     n = len(K)
@@ -301,7 +296,6 @@ def _cholesky_decompose(K: List[List[float]]) -> Optional[List[List[float]]]:
                 L[i][j] = (K[i][j] - s) / L[j][j]
     return L
 
-
 def _cholesky_solve(L: List[List[float]],
                     b: List[float]) -> List[float]:
     """用 Cholesky 分解 L 解 K x = b → L L^T x = b."""
@@ -313,7 +307,6 @@ def _cholesky_solve(L: List[List[float]],
     for i in range(n - 1, -1, -1):
         x[i] = (y[i] - sum(L[j][i] * x[j] for j in range(i + 1, n))) / L[i][i]
     return x
-
 
 def make_campaign_fingerprint(
     campaign_id: str,

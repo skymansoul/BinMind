@@ -15,7 +15,7 @@ _CHUNK_ALIGNMENT = 0x1000
 
 
 
-# ===== BatchCollector =====
+# BatchCollector
 
 
 # 旧版实现，v1.x后废弃
@@ -46,7 +46,7 @@ class BatchCollector:
         self._started = False
         self._last_flush = 0.0
 
-    # ---- 定时刷新 ----
+# 定时刷新
 
     def _schedule_timer(self):
         if self._started and self._buffer:
@@ -70,7 +70,7 @@ class BatchCollector:
             self._timer = None
         self.flush()
 
-    # ---- 核心操作 ----
+# 核心操作
 
     def add(self, item) -> None:
         with self._lock:
@@ -105,7 +105,7 @@ class BatchCollector:
         return self.size
 
 
-# ===== BatchPipeline =====
+# BatchPipeline
 
 class BatchPipeline:
     """链式处理管线的轻量实现。
@@ -142,7 +142,6 @@ class BatchPipeline:
         return pipe.process_batch(items)
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未启用。"""
     pass  # 调试桩，当前未使用
 

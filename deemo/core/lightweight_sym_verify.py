@@ -4,7 +4,7 @@
 #   vuln_analyzer.py 用规则引擎匹配反编译文本——规则是基于文本模式的,
 #   不验证路径可行性。一个规则命中的候选点可能在运行时永远不可达
 #   (前序条件永远为false, 或输入被上游sanitization截断)。
-#   TaintPolygraph (2025) 证明静态污点+符号执行混合可降低83%误报。
+#   TaintPolygraph 证明静态污点+符号执行混合可降低83%误报。
 #
 # 方法:
 #   对每个候选点提取周围CFG片段(前后各5个基本块),
@@ -14,14 +14,13 @@
 #   不可达→标记为误报; 可达→保留。
 #
 # 与完整符号执行的区别:
-#   - 不探索整个程序, 只探索候选点周围的局部CFG
-#   - 30s超时(完整符号执行可能需要数小时)
-#   - 不可达判定是"未证明可达"(conservative)——只过滤确定不可达的
+# 不探索整个程序, 只探索候选点周围的局部CFG
+# 30s超时(完整符号执行可能需要数小时)
+# 不可达判定是"未证明可达"(conservative)——只过滤确定不可达的
 #
-# 参考文献:
-#   TaintPolygraph (Qasem, Concordia 2025) — 静态+符号混合
+# 文献:
+#   TaintPolygraph — 静态+符号混合
 
-from __future__ import annotations
 
 import logging
 import time

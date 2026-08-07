@@ -1,4 +1,4 @@
-# Created: 2025-07-27 13:00:00
+# Created: 2026-08-07 13:00:00
 # Modified: 2025-08-01 09:30:00 — replaced linear superposition with pairwise
 #   interaction model + greedy marginal-benefit optimization. Interaction effects
 #   between hardening measures (e.g., PIE+RELRO are more effective together than

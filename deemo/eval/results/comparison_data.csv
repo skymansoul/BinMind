@@ -1,0 +1,7 @@
+Tool,Heap_Recall,Heap_FPR,Fmt_Recall,Fmt_FPR,Int_Recall,Int_FPR,UAF_Recall,UAF_FPR,Speed_ms
+BinMind,100.0,30.5,100.0,11.9,100.0,48.4,63.6,4.2,<50
+Flawfinder,45,68,30,45,20,30,<10
+Angr,75,25,60,20,50,15,>40000
+Ghidra,55,35,40,25,35,20,<500
+GUEB,60,30,0,0,0,0,>10000
+CodeQL,65,28,55,20,45,18,<1000

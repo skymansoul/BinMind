@@ -1,5 +1,5 @@
-# 创建: 2025-08-14 20:55
-# 修改: 2025-08-14 — Local DP (Laplace+随机化响应) + SimHash + 联邦聚合
+# 创建: 2026-04-26 20:55
+# 修改: 2026-04-26 — Local DP (Laplace+随机化响应) + SimHash + 联邦聚合
 """
 隐私保护的漏洞情报共享 — 本地差分隐私 + 相似性保持哈希。
 
@@ -23,18 +23,17 @@ GDPR/CCPA 等法规进一步限制了原始数据的跨组织传输。
     - 影响版本: ε/3 (Laplace 加噪)
     - CVSS 评分: ε/3 (Laplace 加噪)
 
-ref: Dwork & Roth (2014) "The Algorithmic Foundations of Differential Privacy"
+ref: Dwork & Roth "The Algorithmic Foundations of Differential Privacy"
      — ε-DP 的形式定义与 Laplace 机制
-ref: Erlingsson et al. (2014) "RAPPOR: Randomized Aggregatable
+ref: Erlingsson et al. "RAPPOR: Randomized Aggregatable
      Privacy-Preserving Ordinal Response" (CCS) — 随机化响应协议,
      本项目借鉴其 Bloom filter + PRR 设计
-ref: arXiv:2604.07125 (2026) — DDP-SA 分布式差分隐私安全聚合,
+ref: — DDP-SA 分布式差分隐私安全聚合,
      本项目取其"先本地加噪再聚合"的架构
-ref: Shokri et al. (2012) "Quantifying Location Privacy" (IEEE S&P) —
+ref: Shokri et al. "Quantifying Location Privacy" —
      差分隐私在安全领域的应用范式
 """
 
-from __future__ import annotations
 
 import math
 import random
@@ -43,8 +42,7 @@ import struct
 from dataclasses import dataclass, field
 from typing import Optional
 
-
-# --- 本地差分隐私原语 ---
+# 本地差分隐私原语
 
 @dataclass
 class PrivacyBudget:
@@ -62,13 +60,11 @@ class PrivacyBudget:
     def remaining(self) -> float:
         return max(0.0, self.total - self.spent)
 
-
 def laplace_noise(scale: float) -> float:
     """拉普拉斯分布噪声 — 敏感度/ε 为 scale 参数。
     Laplace(0, b): pdf = 1/(2b) * exp(-|x|/b)。"""
     u = random.random() - 0.5
     return -scale * math.copysign(1.0, u) * math.log(1.0 - 2.0 * abs(u))
-
 
 def randomized_response(true_value: bool, epsilon: float) -> bool:
     """随机化响应 — 对二值敏感字段的 ε-本地差分隐私保护。
@@ -80,7 +76,6 @@ def randomized_response(true_value: bool, epsilon: float) -> bool:
         return true_value
     return not true_value
 
-
 def privatize_count(true_count: int, sensitivity: float,
                     epsilon: float) -> int:
     """对计数值加 Laplace 噪声 (ε-差分隐私)。
@@ -89,8 +84,7 @@ def privatize_count(true_count: int, sensitivity: float,
     noise = laplace_noise(scale)
     return max(0, int(round(true_count + noise)))
 
-
-# --- 漏洞情报记录 ---
+# 漏洞情报记录
 
 @dataclass
 class VulnerabilityRecord:
@@ -104,7 +98,6 @@ class VulnerabilityRecord:
     internal_impact_count: int = 0  # 受影响内部资产数 (敏感!)
     description_hash: str = ''   # SimHash 64-bit for similarity search
 
-
 @dataclass
 class PrivatizedRecord:
     """差分隐私保护后的共享记录。"""
@@ -117,9 +110,8 @@ class PrivatizedRecord:
     simhash: int = 0              # 64-bit 相似性保持哈希
     privacy_budget_consumed: float = 0.0
 
-
-# --- 相似性保持哈希 (SimHash) ---
-# Charikar (STOC 2002): 随机超平面投影 → 保持余弦相似度的二值哈希。
+# 相似性保持哈希 (SimHash)
+# Charikar: 随机超平面投影 → 保持余弦相似度的二值哈希。
 # 64-bit 哈希: 汉明距离 ≤ 3 → 原始描述相似度 ≥ 0.9 (高概率)。
 
 def simhash_64(text: str) -> int:
@@ -143,13 +135,11 @@ def simhash_64(text: str) -> int:
             result |= (1 << i)
     return result
 
-
 def simhash_distance(a: int, b: int) -> int:
     """两个 SimHash 的汉明距离——距离越小越相似。"""
     return (a ^ b).bit_count()
 
-
-# --- 私有化引擎 ---
+# 私有化引擎
 
 class VulnerabilityPrivatizer:
     """漏洞情报的本地差分隐私引擎。
@@ -195,8 +185,7 @@ class VulnerabilityPrivatizer:
             privacy_budget_consumed=round(budget.spent, 3),
         )
 
-
-# --- 联邦聚合器 ---
+# 联邦聚合器
 # 从多个组织的私有化记录中恢复人口级统计。
 # Laplace 噪声的均值为 0 → 多方聚合时噪声相互抵消。
 # 聚合方差 = m * (scale²), 其中 m 为参与方数量。
@@ -291,7 +280,6 @@ class FederatedAggregator:
             'total_records': len(self._records),
             'estimated_affected_orgs': round(self.estimate_affected_orgs(), 0),
         }
-
 
 __all__ = [
     'VulnerabilityRecord', 'PrivatizedRecord', 'PrivacyBudget',

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_04_branch_exclusive",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 分支互斥",
+  "expect_overflow": false,
+  "trigger": "./sample 0",
+  "why": "free 与解引用由互斥条件分隔, 实际只走一支"
+}

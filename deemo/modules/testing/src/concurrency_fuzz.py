@@ -1,11 +1,11 @@
 # 并发模糊测试引擎 — 多线程程序的竞态条件/死锁/原子性违反测试
 # 核心思路: 对每个fuzz输入生成N种线程调度变体，通过控制锁获取顺序、
 # 线程创建/销毁时序、共享变量访问交错来暴露并发漏洞。
-# 参考文献:
-#   DDRace (Yuan et al. USENIX 2024): Finding Concurrency UAF in Linux Drivers
-#   Razzer (Jeong et al. CCS 2019): Finding Kernel Race Bugs through Fuzzing
-#   ConcurrencyFuzzer (Jung et al. PLDI 2021)
-#   SKI (Fonseca et al. OSDI 2011): Systematic Interleaving Enumeration
+# 文献:
+#   DDRace: Finding Concurrency UAF in Linux Drivers
+#   Razzer: Finding Kernel Race Bugs through Fuzzing
+#   ConcurrencyFuzzer
+#   SKI: Systematic Interleaving Enumeration
 import random
 import time
 from typing import List, Dict, Set, Tuple, Optional, Any
@@ -67,7 +67,7 @@ class ConcurrencyFuzzer:
         self._findings: List[ConcurrencyFinding] = []
         self._rng = random.Random()
 
-    # ---- 锁图构建 ----
+    # 锁图构建
     def register_lock(self, lock_id: int) -> None:
         self._lock_graph.setdefault(lock_id, set())
 
@@ -81,7 +81,7 @@ class ConcurrencyFuzzer:
     def register_shared_var(self, var_addr: int, size: int = 4) -> None:
         self._shared_vars[var_addr] = size
 
-    # ---- 调度生成 ----
+    # 调度生成
     def generate_schedules(self, count: int = 32,
                            base_seed_id: str = "") -> List[ThreadSchedule]:
         """生成count个随机线程调度方案。"""
@@ -130,7 +130,7 @@ class ConcurrencyFuzzer:
 
         return self._schedules
 
-    # ---- 静态检测（无需实际执行） ----
+    # 静态检测（无需实际执行）
     def detect_deadlock_cycles(self) -> List[ConcurrencyFinding]:
         """Floyd-Warshall传递闭包检测环形锁依赖。"""
         findings = []
@@ -215,7 +215,7 @@ class ConcurrencyFuzzer:
 
         return findings
 
-    # ---- 测试输入生成 ----
+    # 测试输入生成
     def generate_harness_input(self, schedule: ThreadSchedule) -> bytes:
         """将调度方案编码为二进制格式供harness解析。
 
@@ -237,7 +237,7 @@ class ConcurrencyFuzzer:
                 buf.extend(b'\x00\x00\x00\x00')
         return bytes(buf)
 
-    # ---- 报告 ----
+    # 报告
     def all_findings(self) -> List[ConcurrencyFinding]:
         return (self.detect_deadlock_cycles()
                 + self.detect_lock_inversion()

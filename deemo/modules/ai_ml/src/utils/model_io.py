@@ -7,7 +7,7 @@ import json
 import os
 import numpy as np
 
-# ===== MODEL_REGISTRY =====
+# MODEL_REGISTRY
 # 模型名 -> 类映射，供load时类型安全重建
 # 新增模型需在此注册
 
@@ -21,7 +21,7 @@ MODEL_REGISTRY = {
     'lstm_trace': None,           # LSTMTracePredictor
 }
 
-# ---- 注册占位类，运行时由实际模型替换 ----
+# 注册占位类，运行时由实际模型替换
 class _PlaceholderModel:
     """运行时替换为实际模型类"""
     def __init__(self, **kwargs):
@@ -32,9 +32,9 @@ def register_model(name, cls):
     """在MODEL_REGISTRY中注册模型类"""
     MODEL_REGISTRY[name] = cls
 
-# ===== save_model =====
+# save_model
 # 存储格式: path.npz (权重) + path.json (架构头)
-# _extract_params递归遍历嵌套module，展平所有numpy数组
+# extract_params递归遍历嵌套module，展平所有numpy数组
 
 def _extract_params(_obj, prefix=''):
     """递归从模型对象提取所有numpy参数 -> dict{key: array}"""
@@ -67,7 +67,6 @@ def _infer_architecture(_obj):
         _arch[f"{_k}_shape"] = list(_v.shape)
     return _arch
 
-# ----
 def save_model(model, path):
     """模型保存为NPZ+JSON双文件, 返回成功与否"""
     try:
@@ -97,7 +96,7 @@ def save_model(model, path):
     except Exception:
         return False
 
-# ===== load_model =====
+# load_model
 # 加载NPZ权重和JSON头部，从MODEL_REGISTRY重建
 
 def load_model(path):
@@ -158,7 +157,7 @@ def _load_flat(_m, _weights):
             _cur = getattr(_cur, _part)
         setattr(_cur, _parts[-1], _v)
 
-# ===== validate_dimensions =====
+# validate_dimensions
 # 检查加载后的模型权重维度是否与保存时一致
 
 def validate_dimensions(model, expected_dims):

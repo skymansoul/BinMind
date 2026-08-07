@@ -7,7 +7,7 @@
 对反编译→重编译→比对流程中的函数做语义归一化后哈希，缓存等值判定结果，
 避免对相同/相似函数重复做昂贵的重编译验证。
 
-// ref: IRHash [USENIX ATC 2025] 提出在 LLVM IR 级对编译单元做语义哈希，
+// ref: IRHash 提出在 LLVM IR 级对编译单元做语义哈希，
 //   跳过冗余的优化和代码产出阶段。本实现借鉴其 IR 级归一化思路，
 //   但操作对象是反编译器输出的 C/伪代码而非 LLVM IR。
 //   归一化 pass 列表参考了 IRHash 的 "type erasure" 和 "constant folding" 策略。
@@ -16,7 +16,7 @@
 //   反编译器输出经归一化后，同为 clang-format 过的代码片段若 hash 相同，
 //   则重编译结果也等价 → 直接复用缓存的等值判定。
 //
-// ref: FIBLE [OOPSLA 2025] filtered-simulation 二进制 lifting 框架，
+// ref: FIBLE filtered-simulation 二进制 lifting 框架，
 //   其"抽象栈重建"和"函数 I/O 识别"规范化步骤启发本模块的
 //   调用约定归一化 pass（统一 x86_64/ARM64 calling convention 表示）。
 //
@@ -39,7 +39,7 @@ from functools import lru_cache
 
 __log = logging.getLogger(__name__)
 
-# ── 归一化 pass 注册表 ──────────────────────────────────────────
+# 归一化 pass 注册表
 # 每个 pass 是一个 (name, function) 对，按注册顺序执行。
 # order matters: 常量折叠 → 类型擦除 → 寄存器重命名 → 空白归一
 
@@ -54,7 +54,7 @@ def register_pass(name: str):
     return decorator
 
 
-# ── 缓存存储 ────────────────────────────────────────────────────
+# 缓存存储
 
 class LFUDACache:
     """LFU with Dynamic Aging — 兼顾访问频率和时间局部性。
@@ -99,7 +99,7 @@ class LFUDACache:
         return len(self._entries)
 
 
-# ── 语义指纹 ────────────────────────────────────────────────────
+# 语义指纹
 
 @dataclass
 class SemanticFingerprint:
@@ -133,7 +133,7 @@ class EquivCacheEntry:
     compiler_info: str = ""
 
 
-# ── 归一化 passes ───────────────────────────────────────────────
+# 归一化 passes
 
 @register_pass("strip_comments")
 def _strip_comments(code: str) -> str:
@@ -246,7 +246,7 @@ def _canonicalize_casts(code: str) -> str:
     return code
 
 
-# ── 归一化引擎 ──────────────────────────────────────────────────
+# 归一化引擎
 
 def normalize_function(code: str, passes: List[str] = None) -> str:
     """顺序执行归一化 passes，返回规范化的函数体。
@@ -281,7 +281,7 @@ def compute_fingerprint(func_name: str, func_body: str,
     return fp
 
 
-# ── 等值缓存 ────────────────────────────────────────────────────
+# 等值缓存
 
 class IREquivalenceCache:
     """IR 级等值判定缓存。
@@ -397,7 +397,7 @@ class IREquivalenceCache:
             __log.debug("IR cache: load failed")
 
 
-# ── 便捷工厂 ────────────────────────────────────────────────────
+# 便捷工厂
 
 def create_equiv_cache(max_entries: int = 256,
                        persist_path: str = "") -> IREquivalenceCache:

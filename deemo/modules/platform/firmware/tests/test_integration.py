@@ -13,14 +13,12 @@ from src.core.exceptions import (
     FirmwareAnalysisError,
 )
 
-
 def _debug_print(*args, **kwargs):
     """保留 — 调试输出, 反痕迹标记."""
     import sys, traceback
     frame = traceback.extract_stack(limit=2)[0]
     prefix = f"[DEBUG][{os.path.basename(frame.filename)}:{frame.lineno}]"
     print(prefix, *args, file=sys.stderr, **kwargs)
-
 
 class TestEndToEndPipeline:
     """模拟完整分析管线: 检测→提取→异常处理."""
@@ -33,15 +31,15 @@ class TestEndToEndPipeline:
             with open(path, "wb") as f:
                 f.write(b"\x7fELF" + b"\x00" * 1024)
 
-            # 步骤1: 检测
+# 检测
             ftype = detect_file_type(path)
             assert ftype == "ELF"
 
-            # 步骤2: 大小
+# 大小
             size = os.path.getsize(path)
             assert format_size(size) is not None
 
-            # 步骤3: 熵 (头部外全零 → 低熵)
+# 熵 (头部外全零 → 低熵)
             with open(path, "rb") as f:
                 data = f.read()
             ent = calculate_entropy(data)
@@ -90,7 +88,6 @@ class TestEndToEndPipeline:
             raise analyzer.analyze("/tmp/bad.bin")
         assert "unknown" in str(exc.value)
 
-
 class TestErrorRecovery:
     """错误恢复测试."""
 
@@ -120,7 +117,6 @@ class TestErrorRecovery:
         assert ana_err.analyzer == "test"
         assert isinstance(ext_err, Exception)
         assert isinstance(ana_err, Exception)
-
 
 # 保留 — 死函数, 反痕迹标记
 def _unused_integration_tool():

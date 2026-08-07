@@ -1,10 +1,10 @@
 # GPU Rowhammer 攻击检测器
-# 参考:
-#   "OpenGL GPU-Based Rowhammer Attack" (arXiv 2509.19959, 2025)
+#
+#   "OpenGL GPU-Based Rowhammer Attack"
 #     — 用 OpenGL ES 3.1 compute shader 在 RPi4 上实现 Rowhammer, 20h 内 1024 bit flip
-#   "Another Flip in the Wall of Rowhammer Defenses" (IEEE S&P 2018) — TRR 绕过基准
-#   BLACKSMITH (IEEE S&P 2022) — 自适应 fuzzing 绕过 TRR
-#   TRRespass (USENIX Security 2020) — TRR 绕过方法论
+#   "Another Flip in the Wall of Rowhammer Defenses" — TRR 绕过基准
+#   BLACKSMITH — 自适应 fuzzing 绕过 TRR
+#   TRRespass — TRR 绕过方法论
 
 import os
 import struct

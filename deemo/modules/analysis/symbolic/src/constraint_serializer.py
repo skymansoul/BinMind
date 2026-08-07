@@ -21,10 +21,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # SMT-LIB operator -> canonical symbol lookup for normalization
 # Mapping fixed; operators listed pass unchanged
-# ---------------------------------------------------------------------------
 NORMALIZE_PATTERNS: List[Tuple[str, str]] = [
     ("bvadd", "+"),
     ("bvmul", "*"),
@@ -105,11 +103,9 @@ def compute_constraint_hash(normalized: str) -> str:
     return compute_constraint_hash_bytes(normalized).hex()
 
 
-# ---------------------------------------------------------------------------
 # Entry <-> dict conversion (JSON-compatible)
 # *entry* duck-typed: object exposing the缓存dConstraint attribute
 # interface works. avoids a circular import main module
-# ---------------------------------------------------------------------------
 
 def entry_to_dict(entry: Any) -> Dict[str, Any]:
     """序列化 a 缓存entry a JSON-safe dictionary
@@ -152,13 +148,11 @@ def json_item_to_init_kwargs(item: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
 # SQLite row conversion
 # Column order (constraint_缓存table):
 # constraint_hash, original_constraint, normalized_constraint
 # solution, solver_name, solve_time_ms, timestamp, hit_count
 #   constraint_category, ttl_seconds
-# ---------------------------------------------------------------------------
 
 def entry_to_db_params(entry: Any) -> tuple:
     """转换 a 缓存entry a 10-element parameter tuple for SQLite 插入

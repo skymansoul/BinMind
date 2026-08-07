@@ -112,10 +112,8 @@ class StateCheckpoint:
     compiler_tag: str = ""
 
 
-# ---------------------------------------------------------------------------
 # 简易 Bloom Filter：用于 solver cache 的快速负向过滤
 # 在访问磁盘前用 3 个哈希探测 BF，若全为 0 则可确定 key 不在磁盘上
-# ---------------------------------------------------------------------------
 class _BloomFilter:
     def __init__(self, size_bits: int = 65536):
         self._bits = bytearray(size_bits // 8)
@@ -139,10 +137,8 @@ class _BloomFilter:
         return True
 
 
-# ---------------------------------------------------------------------------
 # precompute_call_fanout — 构建反向调用图，BFS 计数每个函数的传递性调用者
 # 结果存入 fanout_cache（Dict[str, int]），供 DifferentialImpactAnalysis 使用
-# ---------------------------------------------------------------------------
 def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
     """BFS-count unique transitive callers for function
     
@@ -175,7 +171,6 @@ def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
     return fanout_cache
 
 
-# ---------------------------------------------------------------------------
 # DeltaSerializer — 将 FuncChange 列表序列化为紧凑二进制格式
 #
 # 文件格式：
@@ -189,7 +184,6 @@ def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
 #   bit1 (0x02) — new_hash 存在
 #
 # func_name_hash = sha256(func_name) 的前 8 字节，用于快速索引。
-# ---------------------------------------------------------------------------
 class DeltaSerializer:
     """序列化 FuncChange lists a compact 二进制格式 using struct packing
     
@@ -376,7 +370,6 @@ class DeltaSerializer:
         return changes
 
 
-# ---------------------------------------------------------------------------
 # IncrementalReport — 生成 Markdown 摘要报告
 #
 # 报告内容：
@@ -385,7 +378,6 @@ class DeltaSerializer:
 #   3. 复用列表
 #   4. 时间节省估计（reused_count * avg_time_per_func）
 # 5. 编译器_tag 信息
-# ---------------------------------------------------------------------------
 class IncrementalReport:
     """构造 a markdown 报告 summarizing changed, re-executed
     reused, estimated time saved vs full re-运行
@@ -434,7 +426,7 @@ class IncrementalReport:
         lines.append(f"**Generated:** {now}")
         lines.append("")
 
-        # ---- 二进制信息 ----
+# 二进制信息
         if binary_old or binary_new:
             lines.append("## Binary Information")
             if binary_old:
@@ -449,7 +441,7 @@ class IncrementalReport:
                 )
             lines.append("")
 
-        # ---- 概览 ----
+# 概览
         status_counts: Dict[str, int] = defaultdict(int)
         for c in changes:
             status_counts[c.status] += 1
@@ -467,7 +459,7 @@ class IncrementalReport:
         lines.append(f"| Affected (transitive callers) | {len(affected)} |")
         lines.append("")
 
-        # ---- 时间节省估计 ----
+# 时间节省估计
         full_rerun_time = total_funcs * self._avg_exec_per_func
         incremental_time = executed * self._avg_exec_per_func + reused * self.DEFAULT_AVG_HASH_SECONDS
         time_saved = max(0.0, full_rerun_time - incremental_time)
@@ -481,7 +473,7 @@ class IncrementalReport:
         lines.append(f"| **Time saved** | **{time_saved:.1f}s ({pct_saved:.1f}%)** |")
         lines.append("")
 
-        # ---- 变更明细（按 blast_radius 排序） ----
+# 变更明细（按 blast_radius 排序）
         lines.append("## Change Details (by blast radius)")
         lines.append("")
         sorted_changes = sorted(changes, key=lambda x: x.blast_radius, reverse=True)
@@ -494,7 +486,7 @@ class IncrementalReport:
             )
         lines.append("")
 
-        # ---- 受影响函数 ----
+# 受影响函数
         lines.append("## Affected Functions (transitive callers)")
         lines.append("")
         if affected:
@@ -506,7 +498,7 @@ class IncrementalReport:
             lines.append("*(none)*")
         lines.append("")
 
-        # ---- 复用列表 ----
+# 复用列表
         reused_changes = [c for c in changes if c.status == ChangeStatus.UNCHANGED]
         lines.append(f"## Reused Functions ({len(reused_changes)})")
         lines.append("")
@@ -519,7 +511,7 @@ class IncrementalReport:
             lines.append("*(none)*")
         lines.append("")
 
-        # ---- 编译器信息 ----
+# 编译器信息
         if checkpoints_invalidated:
             lines.append("## Compiler Tag Mismatch")
             lines.append("")
@@ -567,13 +559,11 @@ class IncrementalReport:
         return output_path
 
 
-# ---------------------------------------------------------------------------
 # WatchdogRebuild — mtime 轮询检测二进制重编译，自动触发增量重分析
 #
 # 后台线程周期性地 os.path.getmtime(binary_path)，当 mtime 变化时
 # 调用注册的回调函数（通常是 IncrementalSymbEx.run_incremental）
 # polling_interval 控制轮询频率（默认 5 秒）
-# ---------------------------------------------------------------------------
 class WatchdogRebuild:
     """使用 file mtime polling 检测 binary under analysis
     recompiled, auto-triggering incremental re-analysis

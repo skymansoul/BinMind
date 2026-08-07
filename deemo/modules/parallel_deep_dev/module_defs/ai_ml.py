@@ -28,7 +28,7 @@ AI_ML = {
         "papers": [
             {"id": "GraphMoCo", "title": "GraphMoCo: a Graph Momentum Contrast Model for Large-Scale Binary Function Representation Learning",
              "venue": "Neurocomputing 2024", "key_idea": "动量对比学习 + CNN块编码器 + 预洗牌机制防止信息泄露"},
-            {"id": "arXiv:2410.18561", "title": "IRBinDiff: Binary Code Similarity Detection via Graph Contrastive Learning on Intermediate Representations",
+            {"id": "", "title": "IRBinDiff: Binary Code Similarity Detection via Graph Contrastive Learning on Intermediate Representations",
              "venue": "arXiv 2024", "key_idea": "LLVM-IR 提升 + BERT + GGNN + MoCo 对比学习"},
             {"id": "BEGA", "title": "BEGA: Binary Code Embedding Based on Gravity-Model Augmentation Graph Contrastive Learning",
              "venue": "IEEE 2025", "key_idea": "重力模型图增强策略，模拟编译器优化扰动"},

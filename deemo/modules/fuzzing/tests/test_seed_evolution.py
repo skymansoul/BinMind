@@ -134,7 +134,7 @@ class TestEvolveSeeds:
         assert len(result) > 0
 
 
-# ── 独立测试（无需模块导入） ──
+# 独立测试（无需模块导入）
 
 class TestTournamentInline:
     """内联锦标赛选择逻辑验证"""

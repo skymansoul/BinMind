@@ -5,8 +5,8 @@ with open(_r, 'r', encoding='utf-8') as _f:
     _code = _f.read()
 exec(compile(_code, _r, 'exec'), globals())
 
-# --- 内核对象重建 — 池标签扫描与 EPROCESS 遍历 ---
-# 参考: The Reversing Machine (Karvandi et al. 2024) — 基于 EPT 的 hypervisor 级内存内省
+# 内核对象重建 — 池标签扫描与 EPROCESS 遍历
+# The Reversing Machine — 基于 EPT 的 hypervisor 级内存内省
 # 以及 Volatility 3 的池扫描器设计 (Microsoft kernel pool tag 识别)
 
 import struct as _struct
@@ -98,8 +98,8 @@ def resolve_eprocess_fields(raw_memory: bytes, eprocess_base: int) -> dict:
     return fields
 
 
-# --- 地址空间冲突解决 (HALF-inspired) ---
-# 参考: HALF (arXiv:2512.22043 [待验证]) — 内核辅助 process hollowing 的地址空间透明分析
+# 地址空间冲突解决 (HALF-inspired)
+# HALF — 内核辅助 process hollowing 的地址空间透明分析
 # 在用户态分析中，目标进程的地址空间可能与分析工具冲突
 # 此函数检测潜在冲突区域并建议重定位策略
 def detect_address_space_conflicts(target_maps: list[tuple[int, int]],
@@ -128,7 +128,6 @@ def detect_address_space_conflicts(target_maps: list[tuple[int, int]],
     return sorted(conflicts, key=lambda c: -c['overlap_size'])
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

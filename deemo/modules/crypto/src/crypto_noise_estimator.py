@@ -15,12 +15,11 @@
     (c) 计算理论噪声预算和安全级别。
     (d) 标记参数不足的实现。
 
-参考:
-  - ILA (CCS 2025): FHE类型系统与噪声估计 — 无需密钥的静态噪声跟踪。
+  - ILA: FHE类型系统与噪声估计 — 无需密钥的静态噪声跟踪。
     本项目将ILA的思路从IR层级移植到二进制常量层级。
-  - Biasioli (arXiv 2025): BGV平均噪声估计 — 密钥依赖的噪声模型。
-  - HEIR project (2024-2025): MLIR编译器噪声分析框架。
-  - Homomorphic Encryption Standard (2018, updated 2024): 参数选择指南。
+  - Biasioli: BGV平均噪声估计 — 密钥依赖的噪声模型。
+  - HEIR project: MLIR编译器噪声分析框架。
+  - Homomorphic Encryption Standard: 参数选择指南。
 
 边界条件:
   - 噪声估计是理论近似 — 不执行代码, 不模拟同态运算。
@@ -31,7 +30,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
-
 
 @dataclass
 class FHENoiseReport:
@@ -45,8 +43,7 @@ class FHENoiseReport:
     is_secure: bool = False
     warnings: List[str] = field(default_factory=list)
 
-
-# ── FHE方案识别 — 基于参数特征 ──
+# FHE方案识别 — 基于参数特征
 
 _FHE_SCHEME_SIGNATURES: Dict[str, List[bytes]] = {
     'SEAL (BFV/BGV/CKKS)': [b'seal', b'SEAL', b'Microsoft SEAL'],
@@ -57,7 +54,6 @@ _FHE_SCHEME_SIGNATURES: Dict[str, List[bytes]] = {
     'PALISADE': [b'palisade', b'PALISADE'],
     'Lattigo': [b'lattigo', b'LATTIGO'],
 }
-
 
 def _identify_fhe_scheme(data: bytes, strings: List[str]) -> Tuple[str, float]:
     """通过字符串指纹识别FHE库和推断方案类型。"""
@@ -85,8 +81,7 @@ def _identify_fhe_scheme(data: bytes, strings: List[str]) -> Tuple[str, float]:
 
     return 'UNKNOWN', 0.10
 
-
-# ── 参数提取 ──
+# 参数提取
 
 def _extract_poly_degree(data: bytes) -> Tuple[int, float]:
     """
@@ -110,7 +105,6 @@ def _extract_poly_degree(data: bytes) -> Tuple[int, float]:
     best_n = max(candidates, key=candidates.get)
     conf = min(0.80, 0.40 + candidates[best_n] / 10.0)
     return best_n, conf
-
 
 def _extract_modulus_bits(data: bytes, poly_n: int) -> Tuple[int, float]:
     """
@@ -148,8 +142,7 @@ def _extract_modulus_bits(data: bytes, poly_n: int) -> Tuple[int, float]:
     mid = (expected_range[0] + expected_range[1]) // 2
     return mid, 0.25
 
-
-# ── 噪声预算估算 ──
+# 噪声预算估算
 
 def _estimate_noise_budget(scheme: str, poly_n: int,
                            q_bits: int) -> Tuple[int, List[str]]:
@@ -195,7 +188,6 @@ def _estimate_noise_budget(scheme: str, poly_n: int,
     budget = q_bits // 2
     return budget, warnings
 
-
 def _estimate_security_level(poly_n: int, q_bits: int) -> Tuple[int, bool]:
     """
     基于LWE估计器公式估算安全级别。
@@ -213,8 +205,7 @@ def _estimate_security_level(poly_n: int, q_bits: int) -> Tuple[int, bool]:
     is_secure = lambda_est >= 128
     return lambda_est, is_secure
 
-
-# ── 主分析器 ──
+# 主分析器
 
 class FHENoiseEstimator:
     """FHE实现噪声预算静态估计器。"""
@@ -247,7 +238,6 @@ class FHENoiseEstimator:
             security_level_bits=sec_level,
             is_secure=is_secure,
             warnings=warnings)
-
 
 def estimate_noise(data: bytes, strings: Optional[List[str]] = None) -> FHENoiseReport:
     """便捷函数。"""

@@ -1,0 +1,4 @@
+{
+  "cwe": "CWE-190",
+  "description": "Integer overflow leading to heap overflow"
+}

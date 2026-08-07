@@ -15,7 +15,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# ── 标准 Enum 封装 ────────────────────────────────────────────────
+# 标准 Enum 封装
 # 原类常量风格的状态/等级改为标准 Enum，同时保留旧构造兼容路径
 
 class CompilationStatus(_StdEnum):
@@ -78,7 +78,7 @@ class RecompilationResult:
     compilation_time: float = 0.0
     notes: list = field(default_factory=list)
 
-# ── UB 模式目录 ───────────────────────────────────────────────────
+# UB 模式目录
 # 常见 undefined behavior 正则，检测重编译代码中可能引入的问题
 
 _UB_PATTERNS = [
@@ -507,7 +507,7 @@ class RecompilerVerifier:
 
         return "\n".join(lines)
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def verify_decompilation(functions: Dict[str, str]) -> RecompilationResult:
     """批量验证反编译函数。"""

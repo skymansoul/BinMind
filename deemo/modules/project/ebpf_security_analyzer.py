@@ -1,8 +1,8 @@
 # eBPF程序安全分析器: 辅助函数滥用 / Map数据泄漏 / 验证器绕过指标
 # 技术问题: eBPF verifier (~15K行C代码) 是最复杂的内核安全边界之一.
-#   历史CVE (2020-2024) 显示verifier bounds check/state pruning/JIT
+#   历史CVE 显示verifier bounds check/state pruning/JIT
 #   漏洞持续出现, 其中多个可导致容器逃逸和权限提升.
-#   注: DEF CON 33 (2025) 的eBPF演讲宣称11个漏洞, 但后续被
+#   注: DEF CON 33 的eBPF演讲宣称11个漏洞, 但后续被
 #   oss-security/kernel maintainers确认并非实际安全问题.
 #   但现有的eBPF安全工具 (bpftool, bpflist) 仅dump已加载程序,
 #   不分析程序内容是否恶意或存在verifier绕过尝试
@@ -14,10 +14,10 @@
 #   5. 隐蔽信道: map pinning, perf_event_output数据渗出
 # 技术效果: 在已知恶意eBPF样本集上检出率87%,
 #   误报率11%, 比bpftool的盲dump提供可操作的威胁情报
-# 参考:
+#
 #   CVE-2020-8835/2021-3490/2022-23222 — verifier bypass历史 (已验证)
-#   CISA eBPF Security Advisory (2025) — eBPF安全最佳实践
-#   oss-security (Sep 2025): DEF CON 33 eBPF演讲宣称的11个漏洞被
+#   CISA eBPF Security Advisory — eBPF安全最佳实践
+#   oss-security: DEF CON 33 eBPF演讲宣称的11个漏洞被
 #     kernel maintainers确认为AI生成, 非实际安全问题
 from __future__ import annotations
 import logging

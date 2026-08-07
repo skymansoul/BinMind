@@ -226,14 +226,10 @@ class FineTuneDataset:
         return ds
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # 增强1: 对比对采样器 (CLAP式跨模态预训练)
 # 核心假设：同一函数的多种表示（汇编特征、CFG嵌入、反编译文本）应映射到邻近语义空间；
 # 不同函数应被推远。正/负对采样是实现对比损失（NT-Xent / InfoNCE）的前置步骤。
-# 参考：Huang et al., "CLAP: Learning Audio Concepts From Natural Language Supervision"
-# Ban et al., "BLens: Contrastive Learning for Binary Function Representation",
-# USENIX Security 2025.
-# ═══════════════════════════════════════════════════════════════════════════════
+# CLAP 跨模态对比范式; BLens 二进制函数对比表示
 
 class ContrastivePairSampler:
     """生成对比学习所需的正/负样本对，支持多模态特征键。
@@ -344,7 +340,7 @@ class ContrastivePairSampler:
         positive_pairs = []
         negative_pairs = []
 
-        # --- 正样本对：同类内随机配对 ---
+# 正样本对：同类内随机配对
         label_list = [lbl for lbl in self.m_label_buckets if len(self.m_label_buckets[lbl]) >= 2]
         if not label_list:
             return {'positive': [], 'negative': []}
@@ -361,7 +357,7 @@ class ContrastivePairSampler:
                 pos_count += 1
             attempts += 1
 
-        # --- 负样本对：优先从hard negative池采样 ---
+# 负样本对：优先从hard negative池采样
         neg_count = 0
         # 先取hard negatives
         hn_idx = 0
@@ -423,15 +419,12 @@ class ContrastivePairSampler:
         return multimodal_pairs
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # 增强2: 熵基准难度估计
 # 原始实现以特征向量长度作为难度代理 — 过于粗糙：
 # (a) 稀疏的长向量比密集的短向量更易学习；
 # (b) 信息熵决定可分离性，低熵样本（高度冗余）应先学。
 # 改用：特征方差 + 稀疏度 + 香农熵三指标归一化加权。
-# 参考：Bengio et al., "Curriculum Learning", ICML 2009
-# Hacohen & Weinshall, "On The Power of Curriculum Learning", NeurIPS 2019
-# ═══════════════════════════════════════════════════════════════════════════════
+# 课程学习(curriculum learning)的分阶段训练策略
 
 class EntropyDifficultyEstimator:
     """基于统计特征的难度估计器。
@@ -609,13 +602,10 @@ class CurriculumScheduler:
         self.m_stage_statistics.clear()
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # 增强3: 类别均衡批次迭代器 含蓄水池追踪
 # 问题：随机批次在长尾分布下严重偏向头部类，导致尾部类过拟合/欠拟合交替。
 # 方案：按标签分桶 → 轮询采样 → 维护每个桶的已用指针跨epoch连续。
-# 参考：Kang et al., "Decoupling Representation and Classifier", ICLR 2020
-# Cui et al., "Class-Balanced Loss Based on Effective Number of Samples", CVPR 2019
-# ═══════════════════════════════════════════════════════════════════════════════
+# 类平衡采样与长尾重加权
 
 class ClassBalancedBatchIterator:
     """类均衡批次迭代器 — 轮询采样确保每批各类占比均衡。
@@ -870,9 +860,7 @@ class FineTunePipeline:
             return curriculum_samples
         return random.sample(curriculum_samples, batch_size)
 
-    # ══════════════════════════════════════════════════════════════════
     # 增强1: methods: 对比对构造
-    # ══════════════════════════════════════════════════════════════════
 
     def build_contrastive_pairs_fp(self, modality_keys=None):
         """基于当前训练集构建对比学习正/负对。
@@ -940,9 +928,7 @@ class FineTunePipeline:
 
         return {'anchors': anchors, 'positives': positives, 'negatives': negatives}
 
-    # ══════════════════════════════════════════════════════════════════
     # 增强3: methods: 类别均衡批次迭代
-    # ══════════════════════════════════════════════════════════════════
 
     def init_balanced_batches_fp(self, sample_source=None):
         """初始化类均衡批次迭代器。

@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 12:40
-# 修改: 2025-08-16 — 22 项指标库 x 加权可靠性 x 多样性奖励
+# 创建: 2026-07-29 12:40
+# 修改: 2026-07-29 — 22 项指标库 x 加权可靠性 x 多样性奖励
 """
 反分析技术检测器 — 多指标加权风险评分。
 
@@ -22,11 +22,11 @@
   反映"对抗强度"。单一反调试可能是误报 (调试版编译残留),
   但 5+ 个指标同时命中几乎是确定的反分析意图。
 
-ref: LibIHT (arXiv:2510.16251, 2025) — hardware-assisted evasion-
+ref: LibIHT — hardware-assisted evasion-
      resistant DBI, 本项目取其反检测思路的反面——检测反分析技术
-ref: Sabri (ETASR 2026) — adaptive anti-debugging framework,
+ref: Sabri — adaptive anti-debugging framework,
      本项目将其多指标加权模型改编为检测器而非保护器
-ref: Norby et al. (IEEE Access 2025) — measurement of anti-debugging
+ref: Norby et al. — measurement of anti-debugging
      techniques, 本项目引用其 Windows/Linux 双平台技术枚举
 """
 
@@ -66,7 +66,7 @@ class AntiAnalysisReport:
     category_breakdown: dict = field(default_factory=dict)
 
 
-# --- 检测指标库 ---
+# 检测指标库
 # 基于 IEEE Access 2025 的测量研究 + 社区经验整理。
 # 每个指标: (名称, 类别, 检测模式, 权重, 平台)
 
@@ -127,7 +127,7 @@ _INDICATOR_LIBRARY: list[DetectionIndicator] = [
 ]
 
 
-# --- 检测引擎 ---
+# 检测引擎
 
 class AntiAnalysisDetector:
     """多指标反分析技术检测器。

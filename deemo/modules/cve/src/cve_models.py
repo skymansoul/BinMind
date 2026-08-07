@@ -16,7 +16,7 @@ from typing import List, Dict, Optional, Any, Union
 from enum import Enum
 
 
-# ---- severity levels ----
+# severity levels
 class Severity(str, Enum):
     NONE = "NONE"
     LOW = "LOW"
@@ -96,7 +96,7 @@ def parse_cvss40_vector(vector_str: str) -> Optional[Dict[str, str]]:
     return result if result else None
 
 
-# ---- CVSS 4.0基础分计算 ----
+# CVSS 4.0基础分计算
 # CVSS v4.0规范（FIRST, 2023年11月）: 等价类 + MacroVector方法。
 # 与3.x的本质差异: 非线性加权求和，而是将指标离散分类到EQ组（EQ1-EQ4），
 # 每组有预计算最高分。最终基础分 = max(所有EQ最高分)，含类内调整。
@@ -107,7 +107,7 @@ def parse_cvss40_vector(vector_str: str) -> Optional[Dict[str, str]]:
 # EQ3 (VC+VI+VA): 受影响系统影响——3级。
 # EQ4 (SC+SI+SA): 后续系统影响——3级（全为N时忽略）。
 #
-# ref: FIRST CVSS v4.0 Specification, Rev 1.0, Nov 2023, Tables 15-19.
+# FIRST CVSS v4.0 Specification, Rev 1.0, Nov 2023, Tables 15-19.
 #      Cross-validated against Red Hat cvss library (PyPI cvss v3.6, BSD-2-Clause)
 #      first 50 test vectors. Typical deviation < 0.5 from reference.
 
@@ -215,7 +215,7 @@ def compute_cvss40_base_score(vector_dict: Dict[str, str]) -> Optional[float]:
     return round(max(0.0, min(10.0, score)), 1)
 
 
-# ---- CPE parsing (12 capture groups) ----
+# CPE parsing (12 capture groups)
 # matcher.py has its own 11-group regex — this one is slightly stricter
 # format: cpe:2.3:part:vendor:product:version:update:edition:lang:sw_edition:target_sw:target_hw:other
 _CPE_FULL_RE = re.compile(
@@ -254,7 +254,7 @@ class CPEPart:
         return f"cpe:2.3:{self.part}:{self.vendor}:{self.product}:{self.version}:{self.update}:{self.edition}:{self.language}:{self.sw_edition}:{self.target_sw}:{self.target_hw}:{self.other}"
 
 
-# ---- main CVE entry ----
+# main CVE entry
 @dataclass
 class CVEEntry:
     cve_id: str
@@ -451,7 +451,7 @@ class CVEEntry:
                             if parsed.vendor != "*" and parsed.vendor not in vendors:
                                 vendors.append(parsed.vendor)
 
-        # references
+        # erences
         refs = []
         for r in cve.get("references", []):
             url = r.get("url", "")

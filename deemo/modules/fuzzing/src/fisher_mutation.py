@@ -6,7 +6,7 @@
 2025-08-05 09:17 - 分层: 字节级 + 块级双尺度信息度量
 2025-08-20 09:22 - 修正: 标注为信息散度而非黎曼自然梯度, 区分于 Amari 框架
 
-参考: Amari & Nagaoka (2000) 信息几何 (理论背景)
+参考: Amari & Nagaoka 信息几何 (理论背景)
       本模块用标量对角信息散度做变异优先级排序,
       是信息几何概念在离散 fuzzing 空间的简化适配。"""
 
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ---- Fisher 估计参数 ----
+# Fisher 估计参数
 _CHUNK_SIZE = 8           # 块级 Fisher 的字节窗口
 _MIN_OBSERVATIONS = 5     # Fisher 估计的最少观测数
 _JEFFREYS_ALPHA = 0.5     # Jeffreys 先验的伪计数

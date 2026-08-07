@@ -135,10 +135,8 @@ def _parse_pe_imports(data: bytes) -> List[str]:
     return results
 
 
-# ---------------------------------------------------------------------------
 # ELF 结构解析 —— 用于 elf_section / elf_phdr / elf_segment_gap 规则模式
-# 参考 ELF ABI: e_shoff / e_shnum / e_phoff / e_phnum
-# ---------------------------------------------------------------------------
+# ELF ABI: e_shoff / e_shnum / e_phoff / e_phnum
 
 def _parse_elf_sections(data: bytes) -> List[str]:
     """解析 ELF section header，返回 section 名称列表"""
@@ -270,14 +268,14 @@ def _extract_strings(data: bytes, min_len: int = 4) -> Dict[int, str]:
     return strings
 
 
-# ===== Matcher dispatch =====
+# Matcher dispatch
 
 def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                    strings: Dict[int, str]) -> List[Tuple[int, str]]:
     matches: List[Tuple[int, str]] = []
     ptype, pval = pattern.type, pattern.value
 
-    # ---- ELF section name match ----
+# ELF section name match
     if ptype == 'elf_section':
         sections = _parse_elf_sections(data)
         for sec_name in sections:
@@ -286,7 +284,7 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                 break
         return matches
 
-    # ---- ELF program header type match ----
+# ELF program header type match
     if ptype == 'elf_phdr':
         phdrs = _parse_elf_phdrs(data)
         for phdr_name in phdrs:
@@ -295,14 +293,14 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                 break
         return matches
 
-    # ---- ELF segment gap detection ----
+# ELF segment gap detection
     if ptype == 'elf_segment_gap':
         gaps = _find_elf_segment_gaps(data)
         for gap_start, gap_size in gaps:
             matches.append((gap_start, f'elf_segment_gap: {gap_size} bytes @ {gap_start:#x}'))
         return matches
 
-    # ---- Standard pattern types ----
+# Standard pattern types
     if ptype == 'bytes':
         try:
             if isinstance(pval, bytes):
@@ -381,7 +379,7 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
     return matches
 
 
-# ===== RuleEngine =====
+# RuleEngine
 
 class RuleEngine:
     """YARA-like rule engine ELF structure analysis 支持"""

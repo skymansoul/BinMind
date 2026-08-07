@@ -1,0 +1,48 @@
+{
+  "vuln": {
+    "cve_unbounded_strcpy_003": [
+      "heap-corruption",
+      "heap-corruption"
+    ],
+    "cve_size_mismatch_memcpy_002": [
+      "heap-corruption"
+    ],
+    "cve_loop_bound_error_006": [
+      "heap-corruption",
+      "heap-corruption"
+    ],
+    "cve_2018_1121_procps": [
+      "heap-corruption",
+      "heap-corruption"
+    ],
+    "cve_2018_10732_libmobi": [
+      "heap-corruption",
+      "heap-corruption"
+    ],
+    "cve_2021_35942_elfutils": [
+      "access-violation",
+      "access-violation",
+      "access-violation",
+      "access-violation",
+      "access-violation"
+    ],
+    "cve_2019_18604_gnuplot": [
+      "heap-corruption",
+      "heap-corruption",
+      "heap-corruption",
+      "heap-corruption"
+    ],
+    "cve_2017_17506_gdkpixbuf": [
+      "heap-corruption",
+      "heap-corruption"
+    ]
+  },
+  "benign": {
+    "tn_01_memcpy_exact": [],
+    "tn_03_loop_bounded": [],
+    "tn_05_strcpy_literal": [],
+    "tn_06_multialloc_provenance": [],
+    "tn_12_realloc_grow": [],
+    "tn_04_nested_loop_bounded": []
+  }
+}

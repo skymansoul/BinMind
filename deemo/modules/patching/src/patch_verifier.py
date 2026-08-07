@@ -20,7 +20,7 @@ class VerificationLevel:
     SEMANTIC: int = 3
 
 
-# ===== L1: 字节级比对 — O(n) 直接比对 =====
+# L1: 字节级比对 — O(n) 直接比对
 def verify_bytes(filepath: str, offset: int, expected: bytes) -> Tuple[bool, str]:
     """在偏移处读取文件，比对字节。返回 (通过, 消息)。"""
     try:
@@ -45,7 +45,7 @@ def verify_bytes(filepath: str, offset: int, expected: bytes) -> Tuple[bool, str
         _actual[_pos] if _pos < len(_actual) else -1)
 
 
-# ---- ELF 头解析 ----
+# ELF 头解析
 def _read_elf_header(filepath: str) -> Optional[Dict]:
     """解析 ELF 头：ident/type/machine/entry/phoff/shoff 等标准字段。"""
     try:
@@ -82,11 +82,9 @@ def _read_elf_header(filepath: str) -> Optional[Dict]:
         return None
 
 
-# ============================================================
 # L2: ELF 结构完整性校验
 # 验证 patch 区域的跳转/调用目标是否仍指向合法段，
 # 防止相对偏移被破坏后 branch 落入非代码区。
-# ============================================================
 def verify_structure(filepath: str, patches: List[Dict]) -> Tuple[bool, str]:
     """补丁后 ELF 结构完整性检查。返回 (通过, 消息)。"""
     _hdr = _read_elf_header(filepath)
@@ -195,10 +193,8 @@ def verify_semantic(filepath: str, patches: List[Dict]) -> Tuple[bool, str]:
     return _all_ok, "; ".join(_messages)
 
 
-# ============================================================
 # PatchVerifier: 统一入口
 # 三级递进 — L1 日常够用，复杂补丁需 L2/L3
-# ============================================================
 class PatchVerifier:
     """三级验证：字节码 → 结构 → 语义。"""
 

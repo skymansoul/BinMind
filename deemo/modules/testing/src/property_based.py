@@ -39,7 +39,6 @@ class FieldAnalysis:
     confidence: float
 
 
-# ================================================
 class PropertyTester:
     """Property-based测试引擎。
 
@@ -54,7 +53,7 @@ class PropertyTester:
         import random
         self._rng = random.Random(seed)
 
-    # ---- forall ----
+    # forall
     def forall(self, generator: Callable[[], bytes],
                property_func: Callable[[bytes], bool],
                count: int = 1000) -> Optional[Counterexample]:
@@ -80,7 +79,7 @@ class PropertyTester:
                 return _ce
         return None
 
-    # ---- shrink ----
+    # shrink
     def shrink(self, data: bytes,
                property_func: Callable[[bytes], bool],
                max_iterations: int = 500) -> bytes:
@@ -123,7 +122,7 @@ class PropertyTester:
 
         return bytes(_current)
 
-    # ---- 字段类型推断 ----
+    # 字段类型推断
     def infer_field_types(self, data_samples: List[bytes],
                           field_width: int = 4) -> Dict[int, FieldAnalysis]:
         """分析多个样本中的字节序列，推断字段类型。
@@ -197,7 +196,7 @@ class PropertyTester:
         if all(32 <= _c[0] < 127 for _c in chunks if _c):
             return FieldType.STRING
 
-        # 时间戳范围 (粗略: 1.3e9到2.5e9 = 2011-2050)
+        # 时间戳范围
         if len(chunks[0]) >= 4:
             _vals = [int.from_bytes(_c, 'big') for _c in chunks]
             _in_range = [1_300_000_000 < _v < 2_500_000_000 for _v in _vals]
@@ -210,7 +209,7 @@ class PropertyTester:
 
         return FieldType.UNKNOWN
 
-    # ---- 属性测试套件 ----
+    # 属性测试套件
     def run_property_suite(self, test_name: str,
                            generators: Dict[str, Callable],
                            properties: Dict[str, Callable]) -> Dict[str, Any]:

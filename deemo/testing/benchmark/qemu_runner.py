@@ -1,6 +1,6 @@
 # QEMU user mode + 自定义插桩 —— 动态执行追踪危险函数调用。
 # 需要: qemu-x86_64 和自定义plugin, 当前为框架级实现。
-# 创建: 2026-08-14
+# 创建: 2026-07-31
 # 注: 完整QEMU plugin需编译C共享库(.so), 本模块提供Python侧调度逻辑;
 #     plugin源码应放在 testing/benchmark/qemu_plugin/ 下单独编译。
 

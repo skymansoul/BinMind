@@ -1,9 +1,8 @@
 """差分模糊测试框架 -- 比较多个目标实现的输出一致性。
 
-参考:
   Differential Fuzzing (general)  -- 跨实现的一致性 oracle
-  NEZHA (IEEE S&P 2020)          -- 语义差异检测 + δ多样性指标
-  FuzzDiff (USENIX 2024)         -- 二进制补丁前后覆盖率差分分析
+  NEZHA           -- 语义差异检测 + δ多样性指标
+  FuzzDiff          -- 二进制补丁前后覆盖率差分分析
 
 在两个版本的二进制上并发执行相同的种子, 对比:
   1. 覆盖率差异 -- 哪个版本的哪个函数被更多/更少地覆盖
@@ -28,7 +27,6 @@ from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
-
 class DiffCategory(str, Enum):
     # 差异分类。
     COVERAGE_GAINED = "coverage_gained"       # V2覆盖更多
@@ -39,7 +37,6 @@ class DiffCategory(str, Enum):
     PERF_REGRESSION = "perf_regression"       # 执行时间显著增加
     CRASH_INTRODUCED = "crash_introduced"     # V2引入新的崩溃
     CRASH_FIXED = "crash_fixed"               # V1崩溃但V2不崩溃
-
 
 @dataclass
 class DiffResult:
@@ -65,7 +62,6 @@ class DiffResult:
     severity: str = "info"   # info / warning / critical
     description: str = ""
     signature: str = ""      # 差异指纹, 用于去重
-
 
 class DiffFuzzer:
     """差分模糊测试引擎。
@@ -333,7 +329,6 @@ class DiffFuzzer:
         }
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-
 
 def diff_test_binaries(
     v1_exec: Callable,

@@ -49,7 +49,7 @@ __all__ = [
 ]
 
 
-# ---- 带补丁的purl解析 ----
+# 带补丁的purl解析
 
 # npm作用域包模式: @scope/name
 _NPM_SCOPED_RE = re.compile(r"^@([^/]+)/(.+)$")
@@ -102,7 +102,7 @@ def parse_purl(purl_str: str) -> Optional[Dict]:
     return result
 
 
-# ---- SBOM文件导入 ----
+# SBOM文件导入
 
 def import_sbom(path: str) -> Dict:
     """加载SBOM JSON文件并返回规范化字典。

@@ -14,7 +14,7 @@ def kb():
     db.close()
 
 
-# ===== GHSA pagination + dedup (8 tests) =====
+# GHSA pagination + dedup (8 tests)
 
 class TestGHSAPagination:
     def test_parse_next_link_valid(self):
@@ -104,7 +104,7 @@ class TestGHSASearchAndDedup:
             ghsa_mod.search_ghsa = saved
 
 
-# ===== EPSS bulk import (3 tests) =====
+# EPSS bulk import (3 tests)
 # note: network tests skipped — the bulk_import test verifies the method
 # exists and handles the no-network case gracefully
 
@@ -149,7 +149,7 @@ class TestEPSSBulk:
         client.close()
 
 
-# ===== CWE enrichment (12 tests) =====
+# CWE enrichment (12 tests)
 
 class TestCWEClient:
     def test_init_and_seed(self):

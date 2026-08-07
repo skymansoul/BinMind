@@ -113,7 +113,6 @@ class AuditTrail:
         except Exception: pass
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未使用."""
     pass
 

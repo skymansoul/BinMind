@@ -65,7 +65,7 @@ class AgentState:
         return sum(o.confidence for o in self.observations) / len(self.observations)
 
 
-# ========== Agent基类 ==========
+# Agent基类
 
 class BaseAgent:
     """LLM Agent基类 — 每个Agent有独立的角色、提示模板和后端"""
@@ -242,7 +242,7 @@ class ReportCompilerAgent(BaseAgent):
         )
 
 
-# ========== 编排器 ==========
+# 编排器
 
 class BinaryAnalysisOrchestrator:
     """多Agent协调器 — ClearAgent风格的任务编排

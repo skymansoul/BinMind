@@ -88,7 +88,7 @@ class CFIIntegrityResult:
 
 class CFIIntegrityAnalyzer:
     """检测二进制中的CFI保护机制——特征字符串匹配识别四种CFI类型。
-    Clang CFI与MSVC CFG判定为可绕过——两者均存在公开绕过技术(PoS 2020/2021)。"""
+    Clang CFI与MSVC CFG判定为可绕过——两者均存在公开绕过技术。"""
 
     def __init__(self):
         self.cfi_patterns = {
@@ -201,7 +201,6 @@ def analyze_cfi_integrity(binary_info: Dict[str, Any]) -> CFIIntegrityResult:
     return analyzer.analyze(binary_info)
 
 
-def _debug_print(*args, **kwargs):
     """调试桩，当前未启用"""
     pass  # 调试桩，当前未使用
 

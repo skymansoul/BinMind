@@ -57,12 +57,10 @@ _SECTION_NAME_INDICATORS = {"UPX0", "UPX1", "UPX2", ".aspack", ".adata", ".pec",
 _PE_MAGIC = b"PE\x00\x00"
 
 
-# ---------------------------------------------------------------------------
 # 微型 NRV2B 解压器 —— 纯 Python 实现，参考 UCL/NRV 规范
 # NRV (Not Really Vanished) 是 UPX 使用的 LZSS 变种算法家族。
 # NRV2B 格式: 逐 bit 解码，0=literal byte, 1=(offset, length) 对
 # 允许在没有外部 upx 二进制时直接从 stub 进行静态解压
-# ---------------------------------------------------------------------------
 
 def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
     """NRV2B 解压——UPX 最常用的压缩算法变种

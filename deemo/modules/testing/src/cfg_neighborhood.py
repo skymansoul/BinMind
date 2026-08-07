@@ -1,8 +1,8 @@
 # CFG邻域子图提取与结构签名计算
 #
-# 从 vuln_pattern_extractor.py 拆分的底层工具模块:
-#   - CFGNeighborhoodExtractor: BFS邻域提取
-#   - NeighborhoodSignatureBuilder: 12维结构签名计算
+# 底层工具模块, 无外部依赖, 可独立用于其他CFG分析任务:
+# CFGNeighborhoodExtractor: BFS邻域提取
+# NeighborhoodSignatureBuilder: 12维结构签名计算
 # 两者均无外部依赖, 可独立用于其他CFG分析任务。
 
 from __future__ import annotations

@@ -2,7 +2,7 @@
 """
 堆布局约束求解器
 
-基于 [HEXP 2025, IEEE TIFS] 的堆布局约束模型
+基于 的堆布局约束模型
 将堆内存分配/释放序列建模为线性 Diophantine 方程
 求解满足漏洞利用前提的堆布局
 
@@ -12,8 +12,8 @@
 - 布局约束 ILP 求解
 - 多策略布局（按 ptmalloc 版本）
 
-参考 [AutoPwn 2024, IEEE TIFS] 的 artifact-assisted 策略
-与 [CtxFuzz 2025] 的上下文堆操作序列分析
+参考 的 artifact-assisted 策略
+与 的上下文堆操作序列分析
 """
 
 import logging

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 from itertools import accumulate
 
-# ===== 危险函数库：语言 → {函数名: 基础严重度} =====
+# 危险函数库：语言 → {函数名: 基础严重度}
 DANGEROUS_FUNCTIONS: Dict[str, Dict[str, int]] = {
     "c": {
         "system": 9, "popen": 8, "execve": 9, "execvp": 9, "execl": 9,

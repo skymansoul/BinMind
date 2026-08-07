@@ -1,7 +1,7 @@
 """
 密码学攻击树构建 — 从检测到的弱点自动构建攻击树并计算复合攻击成本。
 
-创建: 2025-09-27 08:31
+创建: 2026-05-08 08:31
 修改:
   2025-09-27 08:31 — 初始实现: AND/OR门/叶节点/成本传播/最优攻击路径
 
@@ -20,10 +20,9 @@
 
   输出: 最优攻击路径 + 攻击总成本 + 可行性等级。
 
-参考:
-  - Schneier (Dr. Dobb's 1999): 攻击树方法论 — AND/OR门形式化。
-  - Buldas et al. (2006): 多参数攻击树 — 序贯AND门和成本折扣。
-  - NIST SP 800-30 Rev.1 (2012): 风险评估指南 — 攻击树用于威胁建模。
+  - Schneier: 攻击树方法论 — AND/OR门形式化。
+  - Buldas et al.: 多参数攻击树 — 序贯AND门和成本折扣。
+  - NIST SP 800-30 Rev.1: 风险评估指南 — 攻击树用于威胁建模。
 
 边界条件:
   - 攻击树中的成本假设各步骤独立 — 实际中步骤间可能有依赖(降低或增加总成本)。
@@ -36,13 +35,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class GateType(Enum):
     LEAF = 0
     OR = 1
     AND = 2
     SEQ_AND = 3   # 序贯AND: 子节点必须按顺序执行
-
 
 @dataclass
 class AttackNode:
@@ -55,7 +52,6 @@ class AttackNode:
     evidence: str = ""            # 叶节点: 二进制中的检测证据
     mitigation: str = ""          # 叶节点: 如何消除此弱点
 
-
 @dataclass
 class AttackTreeResult:
     root: AttackNode
@@ -65,8 +61,7 @@ class AttackTreeResult:
     estimated_cost_usd: str = ""
     estimated_time: str = ""
 
-
-# ── 成本传播 ──
+# 成本传播
 
 def _propagate_cost(node: AttackNode) -> float:
     """
@@ -104,7 +99,6 @@ def _propagate_cost(node: AttackNode) -> float:
     node.cost_bits = max(0.0, cost)
     return node.cost_bits
 
-
 def _extract_optimal_path(node: AttackNode, path: List[str]) -> None:
     """从根节点回溯最优攻击路径。"""
     path.append(f'{node.label} [{node.gate.name}]')
@@ -122,8 +116,7 @@ def _extract_optimal_path(node: AttackNode, path: List[str]) -> None:
         for c in sorted(feasible, key=lambda x: -x.cost_bits):
             _extract_optimal_path(c, path)
 
-
-# ── 预定义攻击树模板 ──
+# 预定义攻击树模板
 
 def build_tls_interception_tree() -> AttackNode:
     """
@@ -165,7 +158,6 @@ def build_tls_interception_tree() -> AttackNode:
                 ]),
         ])
 
-
 def build_aes_key_recovery_tree(entropy_bits: int = 128,
                                  has_side_channel: bool = False,
                                  has_weak_entropy: bool = False) -> AttackNode:
@@ -196,8 +188,7 @@ def build_aes_key_recovery_tree(entropy_bits: int = 128,
         node_id='AES_ROOT', label='AES密钥恢复', gate=GateType.OR,
         children=children)
 
-
-# ── 主评估函数 ──
+# 主评估函数
 
 def evaluate_attack_tree(root: AttackNode) -> AttackTreeResult:
     """评估攻击树: 传播成本 → 提取最优路径 → 判定可行性。"""

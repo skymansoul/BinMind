@@ -1,9 +1,9 @@
-# 创建: 2025-09-25 14:40
+# 创建: 2026-06-19 14:40
 # Sink-to-source 反向路径分析 — 从危险调用点回溯到外部输入
 
 """Path Analyzer — Sink-to-source 反向可达性分析。
 
-借鉴 Mango [USENIX Security 2024] 的 Sink-to-Source 回溯策略：
+借鉴 Mango 的 Sink-to-Source 回溯策略：
   从每个 sink 出发，沿数据依赖边和控制流边反向追踪。
   若在限制步数内追溯到外部输入(source) → 标记为危险路径。
   若路径上遇到净化操作(sanitization) → 路径终止（去污）。
@@ -79,7 +79,7 @@ class PathReport:
         }
 
 
-# ── Def-Use 提取 ──────────────────────────────────────────────────
+# Def-Use 提取
 
 class DefUseExtractor:
     """逐指令提取 def-use 关系。"""
@@ -124,7 +124,7 @@ class DefUseExtractor:
         return d, u, is_call
 
 
-# ── 路径回溯器 ────────────────────────────────────────────────────
+# 路径回溯器
 
 class PathBacktracer:
     """Sink → Source 反向追踪。
@@ -276,7 +276,7 @@ class PathBacktracer:
         return m.group(1).rstrip(';') if m else inst.strip()[:30]
 
 
-# ── 路径分析器 ────────────────────────────────────────────────────
+# 路径分析器
 
 class PathAnalyzer:
     """Sink-to-source 路径分析协调器。"""

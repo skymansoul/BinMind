@@ -10,19 +10,19 @@ from core.value_range_analyzer import HeapFalsePositiveFilter
 # 测试用例: (名称, 伪代码, 是堆漏洞, 是真阳性还是FP)
 # 伪代码模拟Ghidra/IDA对编译后二进制的反编译输出
 CASES = [
-    # === 真阳性 (真漏洞, 不应过滤) ===
+# 真阳性 (真漏洞, 不应过滤)
     ("CVE-001", "char *buf = malloc(64);\nmemcpy(buf, data, 256);", True, True),
     ("CVE-006", "size_t len = strlen(s);\nchar *buf = malloc(len);\nmemcpy(buf, s, len);\nbuf[len] = 0;", True, True),
     ("CVE-012", "char *p = realloc(old, 32);\nmemcpy(p, old, 64);", True, True),
     ("CVE-013", "char *buf = malloc(100);\nmemcpy(buf, src, 200);", True, True),
     ("CVE-014", "char *buf = malloc(64);\nmemmove(buf + 32, buf, 64);", True, True),
 
-    # === 假阳性 (安全代码, 应被过滤) ===
+# 假阳性 (安全代码, 应被过滤)
     ("SAFE-001", "char *buf = malloc(256);\nmemcpy(buf, \"fixed_data\", 11);", True, False),
     ("SAFE-002", "char *buf = malloc(128);\nmemcpy(buf, src, 64);", True, False),
     ("SAFE-003", "char *a = malloc(64);\nmemcpy(a, \"x\", 2);\nchar *b = malloc(256);\nmemcpy(b, \"y\", 2);", True, False),
 
-    # === 非堆漏洞 (不受FP过滤器影响) ===
+# 非堆漏洞 (不受FP过滤器影响)
     ("CVE-002", "char *ptr = malloc(128);\nfree(ptr);\nprintf(\"%s\", ptr);", False, True),
     ("CVE-003", "char *msg = recv(0, buf, 256, 0);\nprintf(msg);", False, True),
     ("CVE-004", "char name[32];\nstrcpy(name, input);", False, True),

@@ -7,7 +7,7 @@
 """反编译语义忠实度评分 - 无需 ground truth 的反编译质量度量
 
 现有反编译质量评估方法的局限:
-  - 重编译验证 (CoDe-R, 2024): 需要完整的重编译工具链, 对嵌入式/非标准 ABI 不适用
+  - 重编译验证: 需要完整的重编译工具链, 对嵌入式/非标准 ABI 不适用
   - 重执行测试 (LLM4Decompile): 需要可执行环境 + 测试用例, 覆盖不完整
   - 人工审查: 不可扩展, 主观
 
@@ -38,9 +38,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 抽象状态定义
-# ---------------------------------------------------------------------------
 
 @dataclass
 class AbstractBlockState:
@@ -57,9 +55,7 @@ class AbstractBlockState:
     call_targets: Set[str] = field(default_factory=set)
 
 
-# ---------------------------------------------------------------------------
 # Binary IR -> 抽象状态提取
-# ---------------------------------------------------------------------------
 
 def _extract_binary_abstract_states(
     blocks_ir: Dict[int, List[str]],
@@ -114,9 +110,7 @@ def _extract_binary_abstract_states(
     return states
 
 
-# ---------------------------------------------------------------------------
 # Pseudocode -> 抽象状态提取
-# ---------------------------------------------------------------------------
 
 def _extract_pseudocode_abstract_states(
     pseudocode_lines: List[str],
@@ -181,9 +175,7 @@ def _extract_pseudocode_abstract_states(
     return states
 
 
-# ---------------------------------------------------------------------------
 # 忠实度评分的维度比较
-# ---------------------------------------------------------------------------
 
 def _jaccard(a: Set, b: Set) -> float:
     if not a and not b:

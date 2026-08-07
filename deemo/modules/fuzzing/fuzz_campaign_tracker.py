@@ -1,9 +1,8 @@
 """模糊测试活动追踪与报告器。
 
-参考:
-  EcoFuzz (USENIX Security 2020)  -- exploration-vs-exploitation 状态追踪
-  MicroFuzz (arXiv:2401.05529)    -- 生态/覆盖基的停止准则
-  FuzzBench 指标体系 (Google 2024) -- 标准化的模糊测试评测基准
+  EcoFuzz   -- exploration-vs-exploitation 状态追踪
+  MicroFuzz     -- 生态/覆盖基的停止准则
+  FuzzBench 指标体系 -- 标准化的模糊测试评测基准
 
 提供跨天/周级别的模糊测试活动追踪, 包括:
   - 探索状态自动检测 (探索期 vs 利用期)
@@ -25,7 +24,6 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 class CampaignPhase(str, Enum):
     """活动的宏观状态, 借鉴 EcoFuzz 的 state 切换思想。"""
     RAMP_UP = "ramp_up"          # 初始阶段, 覆盖率快速增长
@@ -33,7 +31,6 @@ class CampaignPhase(str, Enum):
     EXPLOITATION = "exploitation"  # 利用阶段, 在已知区域深挖
     STAGNATION = "stagnation"    # 停滞, 罕见新覆盖
     TERMINATED = "terminated"    # 已停止
-
 
 @dataclass
 class CampaignSnapshot:
@@ -49,7 +46,6 @@ class CampaignSnapshot:
     queue_size: int
     avg_seed_energy: float = 0.0
 
-
 @dataclass
 class StopCriteria:
     """停止准则参数。
@@ -64,7 +60,6 @@ class StopCriteria:
     # 覆盖率增长阈值: 过去N分钟内新增边数必须 ≥ 此值, 否则计为停滞
     edge_growth_threshold: int = 2
     edge_growth_window_minutes: float = 30.0
-
 
 class CampaignTracker:
     """模糊测试活动时间序列追踪器。
@@ -337,16 +332,14 @@ class CampaignTracker:
 
         return data
 
-
-# ===== 便捷入口 =====
+# 便捷入口
 
 def create_tracker(name: str, output_dir: str = "./campaign_data") -> CampaignTracker:
     tracker = CampaignTracker(campaign_name=name, output_dir=output_dir)
     tracker.start()
     return tracker
 
-
-# ===== 简单的线性预测器 =====
+# 简单的线性预测器
 
 def estimate_remaining_time(
     current_edges: int,

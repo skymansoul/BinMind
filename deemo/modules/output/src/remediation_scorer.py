@@ -2,7 +2,7 @@
 二进制特化修复难度评分 — CFG复杂度 + 调用面影响 + 加固交互。
 
 问题定义:
-  IBM VRC 专利 (2024-08) 提供了软件层面的修复复杂度评分，
+  IBM VRC 专利 提供了软件层面的修复复杂度评分，
   但未考虑二进制特有因素:
     1. stripped binary → 无符号表 → 定位修复点的额外成本
     2. PLT/GOT 影响 — 修复影响了多少外部调用点
@@ -16,7 +16,7 @@
              + w_stripped × strip_penalty + w_plt × PLT_factor
              + w_hardening × hardening_interaction
 
-与 IBM VRC (US 2024/xxxxxx) 的区别:
+与 IBM VRC 的区别:
   IBM VRC 使用 CVE 元数据 + 组织成熟度 + 资产价值。
   本模块使用二进制逆向分析数据 (CFG/调用图/导入表/加固状态)。
   IBM 面向企业 IT 资产管理，本模块面向逆向工程师和安全研究员。
@@ -73,7 +73,7 @@ def _cc_factor(cyclomatic_complexity: int) -> float:
     """
     if cyclomatic_complexity <= 5:
         return 0.0
-    # 平方根压缩: √(CC-5) / √45, ceil at 50
+    # 平方根压缩: √ / √45, ceil at 50
     clamped = min(cyclomatic_complexity, 50)
     return round(math.sqrt(clamped - 5) / math.sqrt(45), 4)
 

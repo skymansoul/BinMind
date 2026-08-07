@@ -5,12 +5,11 @@
 2025-08-09 15:07 - 在线增量: 新观测 O(1) 更新双中心距离矩阵
 2025-08-11 08:41 - 多变量 dCor: 突变类型×字节位置×覆盖结果的联合依赖
 
-参考:
-  Székely, Rizzo & Bakirov (2007) "Measuring and Testing Dependence by
+  Székely, Rizzo & Bakirov "Measuring and Testing Dependence by
     Correlation of Distances" (Annals of Statistics) — dCor 的原始提出
-  Székely & Rizzo (2014) "Partial Distance Correlation with Methods for
+  Székely & Rizzo "Partial Distance Correlation with Methods for
     Dissimilarities" (Annals of Statistics) — U-centering 无偏估计
-  Székely & Rizzo (2023) "The Energy of Data and Distance Correlation"
+  Székely & Rizzo "The Energy of Data and Distance Correlation"
     (CRC Press) — 专著, 包含所有理论性质
 
 在 fuzzing 文献中的位置:
@@ -32,11 +31,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ---- dCor 参数 ----
+# dCor 参数
 _MAX_OBS = 200                # 最大观测数
 _N_PERMUTATIONS = 199         # 置换检验次数
-
 
 @dataclass
 class DCorResult:
@@ -48,7 +45,6 @@ class DCorResult:
     n_observations: int
     # 效应量解释
     effect_size: str           # "negligible"|"small"|"medium"|"large"
-
 
 class DistanceCorrelationAnalyzer:
     """距离相关分析器 — 非参数依赖检测.

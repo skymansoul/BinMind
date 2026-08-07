@@ -150,7 +150,7 @@ class FastHasher:
             HashAlgorithm.BLAKE3: 32,
         }.get(self._algorithm, 32)
 
-    # ── 增量状态序列化 (2026-07) ──
+# 增量状态序列化
 
     def serialize_state(self) -> Optional[bytes]:
         """
@@ -315,7 +315,7 @@ class HashManager:
             available.append(HashAlgorithm.BLAKE3)
         return available
 
-    # ── 并行mmap文件哈希 (2026-07) ──
+# 并行mmap文件哈希
     # 使用mmap避免GIL争用读取, ProcessPoolExecutor用于计算并行。
     # 每个worker映射文件的一个非重叠段, 返回(offset, digest)。
     # 摘要串联后重新哈希产生最终结果 — 等价于深度为1的Merkle树,
@@ -360,7 +360,7 @@ class HashManager:
             digest_bytes=digest, hex_digest=digest.hex(),
             file_size=file_size, elapsed_ms=elapsed_ms)
 
-    # ── Merkle树构造 (2026-07) ──
+# Merkle树构造
     # 在文件块上构建二叉树, 产生根哈希和任意叶子的包含证明。
     # 文件完整性证明中, 单个块需可验证而不重新哈希整个文件。
 
@@ -433,7 +433,7 @@ class HashManager:
             current = h.digest()
         return current == expected_root
 
-    # ── GEAR哈希内容定义分块(CDC) (2026-07) ──
+# GEAR哈希内容定义分块(CDC)
     # 按内容哈希确定的边界而非固定偏移分割数据。
     # 相同内容产生相同块边界, 无论出现位置 — 支持增量感知去重。
     # 48-bit掩码GEAR哈希, 平均块大小≈8KB。
@@ -523,7 +523,7 @@ def get_hash_manager() -> HashManager:
     return _global_manager
 
 
-# ── 并行哈希辅助 ──
+# 并行哈希辅助
 
 def _mmap_hash_segment(file_path: str, offset: int, size: int, algo_name: str) -> Optional[Tuple[int, bytes]]:
     """并行 mmap 哈希工作函数，子进程中执行。"""
@@ -544,7 +544,7 @@ def _hash_chunk(data: bytes, offset: int, size: int, algo: HashAlgorithm) -> str
     return hasher.hexdigest()
 
 
-# ── 顶层便捷函数 ──
+# 顶层便捷函数
 
 def compute_file_hash(file_path: str, algorithm: str = "xxhash64") -> HashResult:
     manager = get_hash_manager()
@@ -573,7 +573,7 @@ def generate_hash_signature(data: bytes, length: int = 16) -> str:
     return result.hex_digest[:length]
 
 
-# ── BLAKE3 密钥哈希模式 (2026-07-27) ──
+# BLAKE3 密钥哈希模式
 # BLAKE3 内置 KDF 模式, 比 HMAC 快 ~10× 且在支持 SIMD 的平台上利用 AVX-512。
 # keyed_hash 返回 32B 密钥化摘要, derive_key 从主密钥+上下文字符串派生子密钥。
 # 降级路径: BLAKE3 不可用时用 HMAC-SHA256 (慢 ~3× 但等价安全)。
@@ -595,7 +595,7 @@ def blake3_derive_key(context: str, master_key: bytes, length: int = 32) -> byte
     return _hmac.new(master_key, tagged, 'sha256').digest()[:length]
 
 
-# ── BLAKE3 哈希树深度检测 (2026-07-27) ──
+# BLAKE3 哈希树深度检测
 # BLAKE3 内部二叉树深度影响并行度。chunk count = ceil(data_size / 1024)。
 # 返回 (max_simd_lanes, tree_depth, parallelism_estimate) 用于调优建议。
 

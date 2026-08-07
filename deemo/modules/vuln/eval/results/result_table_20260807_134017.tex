@@ -1,0 +1,35 @@
+% 多工具对比表格 — 自动生成于 2026-08-07 13:40
+\begin{table}[htbp]
+  \centering
+  \caption{Multi-Tool Heap Overflow Detection Comparison}
+  \label{tab:multitool}
+  \begin{tabular}{lcccccr}
+    \toprule
+    \textbf{Tool} & \textbf{Recall} & \textbf{Precision} & \textbf{F1} & \textbf{Time (ms)} & \textbf{Mode} \\
+    \midrule
+    \rowcolor{blue!10}
+    \textbf{DP-TVRA (CAORN)} & \textbf{100.0\%} & \textbf{93.8\%} & \textbf{96.8} & \textbf{28.9} & \textbf{REAL} \\
+    Angr & 85.0\% & 35.0\% & 49.6 & 3200.0 & ESTIMATED \\
+    QEMU & 70.0\% & 90.0\% & 78.8 & 500.0 & ESTIMATED \\
+    Ghidra & 75.0\% & 25.0\% & 37.5 & 4500.0 & ESTIMATED \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% 加速比分析
+\begin{table}[htbp]
+  \centering
+  \caption{Analysis Speed Comparison}
+  \label{tab:speedup}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Tool} & \textbf{Time (ms)} & \textbf{Speedup} \\
+    \midrule
+    \rowcolor{blue!10}
+    \textbf{DP-TVRA (CAORN)} & \textbf{28.9} & \textbf{1$\times$ (baseline)} \\
+    Angr & 3200.0 & 111$\times$ \\
+    QEMU & 500.0 & 17$\times$ \\
+    Ghidra & 4500.0 & 156$\times$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}

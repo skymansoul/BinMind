@@ -18,7 +18,7 @@ TaintHop 自动推断器——从子模块分析结果自动推导跨层污点�
   自动推断从现有分析器的结构化输出中提取这些信息，将专家知识编码为
   推断规则，降低使用门槛。
 
-ref: STAFF (arXiv:2509.18039) 的污点源自动发现——从固件输入点自动标记
+ref: STAFF 的污点源自动发现——从固件输入点自动标记
      污点源，本项目将类似思路扩展到 MMIO→内核→侧信道三层。
 """
 
@@ -50,7 +50,7 @@ class TaintHopInferrer:
     def __init__(self, mmio_mapper: Optional[MMIOToRegisterMapper] = None):
         self._mapper = mmio_mapper or MMIOToRegisterMapper()
 
-    # ---- Flash Layout → MMIO 源 ----
+# Flash Layout → MMIO 源
 
     def infer_from_flash_layout(self,
                                 partitions: List[Dict]) -> List[TaintHop]:
@@ -102,7 +102,7 @@ class TaintHopInferrer:
 
         return hops
 
-    # ---- eBPF 分析 → 内核钩子 ----
+# eBPF 分析 → 内核钩子
 
     def infer_from_ebpf_analysis(self,
                                  bypasses: List[Any]) -> List[TaintHop]:
@@ -153,7 +153,7 @@ class TaintHopInferrer:
 
         return hops
 
-    # ---- 侧信道分析 → 泄漏点 ----
+# 侧信道分析 → 泄漏点
 
     def infer_from_sidechannel(self,
                                sc_results: List[Any],
@@ -200,7 +200,7 @@ class TaintHopInferrer:
 
         return hops
 
-    # ---- 辅助 ----
+# 辅助
 
     @staticmethod
     def _extract_regs_from_description(desc: str) -> List[str]:

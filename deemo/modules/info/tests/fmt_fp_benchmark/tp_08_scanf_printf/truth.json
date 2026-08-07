@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_08_scanf_printf",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2015-0235 类 scanf 格式串",
+  "expect_overflow": true,
+  "trigger": "stdin 输入 %n",
+  "why": "scanf %s 读入后当格式串"
+}

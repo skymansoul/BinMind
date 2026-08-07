@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 19:25
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-09 19:25
+# 修改: 2026-07-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: GW最优传输跨厂商对齐
 # 最优传输 — CVE漏洞画像的跨厂商/跨生态系统分布对齐
 #
@@ -25,10 +25,10 @@
 #   3. 使用传输计划将源领域标签/分数传输到目标领域.
 #
 # 应用场景:
-#   - 域适应: 将高资源厂商 (Microsoft, Apache) 的评分模型
+# 域适应: 将高资源厂商 (Microsoft, Apache) 的评分模型
 #     迁移到低资源厂商 (新兴开源项目).
-#   - 跨生态系统迁移: npm → PyPI → Maven.
-#   - 异常检测: 厂商的CVE分布显著偏离其历史分布 → 告警.
+# 跨生态系统迁移: npm → PyPI → Maven.
+# 异常检测: 厂商的CVE分布显著偏离其历史分布 → 告警.
 #
 # 非显而易见性:
 #   1. 首次将Gromov-Wasserstein最优传输应用于CVE漏洞分布.
@@ -36,10 +36,10 @@
 #   2. 无需共享特征空间: 源和目标领域的特征维度可不同.
 #   3. 熵正则化Sinkhorn: 可微, GPU友好, O(n²) 收敛.
 #
-# 参考:
-#   [Peyré et al. 2016] Gromov-Wasserstein (ICML)
-#   [FUGW 2026] Fused Unbalanced GW for Infrastructure
-#   [Flamary et al. 2021] POT Python Optimal Transport library
+#
+# Gromov-Wasserstein (ICML)
+# Fused Unbalanced GW for Infrastructure
+# POT Python Optimal Transport library
 
 import math
 import random
@@ -217,7 +217,7 @@ class GromovWassersteinAligner:
         return self._transport_plan
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def align_vendor_profiles(source_features: List[List[float]],
                           target_features: List[List[float]],

@@ -23,7 +23,7 @@ IS_WINDOWS = sys.platform == "win32"
 IS_LINUX = sys.platform.startswith("linux")
 
 
-# ===== 枚举与数据类 =====
+# 枚举与数据类
 
 class DumpMethod(Enum):
     GCORE = auto()        # Linux gcore
@@ -55,12 +55,12 @@ class MemoryRegion:
         return "x" in self.permissions
 
 
-# ===== 进程扫描器 =====
+# 进程扫描器
 
 class ProcessScanner:
     """跨平台进程枚举与信息获取"""
 
-    # ---- 获取单个进程详细信息 ----
+# 获取单个进程详细信息
     def get_process_info(self, pid: int) -> Dict[str, Any]:
         if IS_LINUX:
             return self._info_linux(pid)
@@ -172,7 +172,7 @@ class ProcessScanner:
             pass
         return info
 
-    # ---- 按名称查找进程 ----
+# 按名称查找进程
     def find_process(self, name: str) -> List[Tuple[int, Dict[str, Any]]]:
         results: List[Tuple[int, Dict[str, Any]]] = []
         for proc in self.list_processes():
@@ -181,7 +181,7 @@ class ProcessScanner:
                 results.append((proc["pid"], proc))
         return results
 
-    # ---- 枚举所有进程 ----
+# 枚举所有进程
     def list_processes(self) -> List[Dict[str, Any]]:
         procs: List[Dict[str, Any]] = []
         if IS_LINUX:
@@ -231,7 +231,7 @@ class ProcessScanner:
         return procs
 
 
-# ===== 进程转储器 =====
+# 进程转储器
 
 class ProcessDumper:
     """
@@ -248,7 +248,7 @@ class ProcessDumper:
             if found:
                 self.pid = found[0][0]
 
-    # ===== Linux 技术 =====
+# Linux 技术
 
     def _dump_via_gcore(self, output_path: str) -> bool:
         if not IS_LINUX or not self.pid:
@@ -292,7 +292,7 @@ class ProcessDumper:
             _log.exception("/proc/mem 读取失败")
             return False
 
-    # ===== Windows 技术 =====
+# Windows 技术
 
     def _dump_via_procdump(self, output_path: str) -> bool:
         if not IS_WINDOWS:
@@ -365,7 +365,7 @@ class ProcessDumper:
             _log.exception("MiniDumpWriteDump 失败")
             return False
 
-    # ===== 公开 API =====
+# 公开 API
 
     def dump_full(self, output_path: str) -> Optional[str]:
         """

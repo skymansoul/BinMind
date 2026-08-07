@@ -1,7 +1,7 @@
 """
 椭圆曲线安全性审计 — 从检测到的曲线参数验证数学安全性。
 
-创建: 2025-09-22 11:08
+创建: 2026-05-10 11:08
 修改:
   2025-09-22 11:08 — 初始实现: 曲线阶分解/嵌入度/辅因子/MOV安全性/异常曲线检测
 
@@ -24,11 +24,10 @@
     - 辅因子h ≤ 8 (最佳h=1为素数阶曲线)
     - CM判别式|D| ≥ 2^100 (非CM构造)
 
-参考:
-  - Silverman (2009): "The Arithmetic of Elliptic Curves" — ECC数学基础。
-  - Menezes-Okamoto-Vanstone (1993): MOV攻击 — 嵌入度与配对。
-  - Smart (1999): 异常曲线攻击 — #E(Fp)=p时ECDLP可归约到Fp加法群。
-  - Lim & Lee (CRYPTO 1997): 小子群攻击 — 辅因子利用。
+  - Silverman: "The Arithmetic of Elliptic Curves" — ECC数学基础。
+  - Menezes-Okamoto-Vanstone: MOV攻击 — 嵌入度与配对。
+  - Smart: 异常曲线攻击 — #E(Fp)=p时ECDLP可归约到Fp加法群。
+  - Lim & Lee: 小子群攻击 — 辅因子利用。
 
 边界条件:
   - 曲线参数提取依赖crypto_detector识别EC参数块 → 误识别导致无效分析。
@@ -40,7 +39,6 @@ import math
 import random
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class CurveAuditResult:
@@ -56,8 +54,7 @@ class CurveAuditResult:
     warnings: List[str] = field(default_factory=list)
     verdict: str = "UNKNOWN"       # SAFE / SUSPICIOUS / WEAK / DANGEROUS
 
-
-# ── Miller-Rabin素性测试 ──
+# Miller-Rabin素性测试
 
 def _miller_rabin(n: int, k: int = 40) -> bool:
     """Miller-Rabin概率素性测试。k=40 → 错误概率<2^-80。"""
@@ -87,8 +84,7 @@ def _miller_rabin(n: int, k: int = 40) -> bool:
             return False
     return True
 
-
-# ── V1: 阶的素因子分解 (试除+Pollard's rho) ──
+# V1: 阶的素因子分解 (试除+Pollard's rho)
 
 def _trial_division(n: int, bound: int = 1000000) -> Tuple[int, int]:
     """试除法提取小因子。返回(剩余部分, 提取的小因子乘积)。"""
@@ -106,7 +102,6 @@ def _trial_division(n: int, bound: int = 1000000) -> Tuple[int, int]:
             remaining //= d
         d += 2
     return remaining, small_part
-
 
 def _pollard_rho_factor(n: int, max_iter: int = 50000) -> Optional[int]:
     """Pollard's rho分解 — 寻找n的一个非平凡因子。"""
@@ -131,7 +126,6 @@ def _pollard_rho_factor(n: int, max_iter: int = 50000) -> Optional[int]:
         if d != 1 and d != n:
             return d
     return None
-
 
 def _factor_order(order: int) -> Tuple[int, int, int]:
     """
@@ -163,8 +157,7 @@ def _factor_order(order: int) -> Tuple[int, int, int]:
 
     return h, q, q_bits
 
-
-# ── V2: 嵌入度估计 ──
+# V2: 嵌入度估计
 
 def _estimate_embedding_degree(p: int, q: int, max_k: int = 24) -> int:
     """
@@ -180,15 +173,13 @@ def _estimate_embedding_degree(p: int, q: int, max_k: int = 24) -> int:
         pk = (pk * p) % q
     return max_k + 1  # k > max_k → 安全
 
-
-# ── V3: 异常曲线检测 ──
+# V3: 异常曲线检测
 
 def _check_anomalous(p: int, n: int) -> bool:
     """检查#E(Fp)==p (异常曲线, SSSA攻击可破解ECDLP)。"""
     return n == p
 
-
-# ── V4: 辅因子安全性 ──
+# V4: 辅因子安全性
 
 def _check_cofactor_safety(h: int, q_bits: int) -> List[str]:
     """检查辅因子h是否引入小子群攻击面。"""
@@ -203,8 +194,7 @@ def _check_cofactor_safety(h: int, q_bits: int) -> List[str]:
         pass  # 素数阶曲线 → 理想
     return warnings
 
-
-# ── 主审计函数 ──
+# 主审计函数
 
 def audit_curve_parameters(p: int, n: Optional[int] = None,
                             a: Optional[int] = None,

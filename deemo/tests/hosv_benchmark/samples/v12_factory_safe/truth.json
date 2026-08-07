@@ -1,0 +1,8 @@
+{
+  "sample": "v12_factory_safe",
+  "cve": "SAFE-fac",
+  "mode": "factory_bind",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "make_buf(128) + strncpy 63 字节 → 安全"
+}

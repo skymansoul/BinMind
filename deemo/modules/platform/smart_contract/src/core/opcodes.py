@@ -1,5 +1,5 @@
 """EVM操作码表 — 每条操作码：字节值、名称、栈输入数、栈输出数"""
-# 参考: 以太坊黄皮书 + EIP更新
+# 以太坊黄皮书 + EIP更新
 from enum import IntEnum
 
 class OpcodeFamily(IntEnum):

@@ -42,7 +42,7 @@ except ImportError:
     _HAS_URLLIB = False
 
 
-# ---- 常量 ----
+# 常量
 _KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 _DEFAULT_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".binmind", "cache")
 
@@ -133,7 +133,7 @@ class KEVClient:
         )
         conn.commit()
 
-    # ---- 获取 + 解析 ----
+# 获取 + 解析
     def fetch_catalog(self, force: bool = False) -> List[Dict[str, Any]]:
         """从 CISA 网站获取 KEV 目录。
 
@@ -245,7 +245,7 @@ class KEVClient:
             result.append(entry)
         return result
 
-    # ---- 存储 ----
+# 存储
     def _store_entries(self, entries: List[Dict[str, Any]]):
         """在本地 sqlite 缓存中写入 (或更新) KEV 条目。"""
         conn = self._get_conn()
@@ -295,7 +295,7 @@ class KEVClient:
             })
         return entries
 
-    # ---- 查询 ----
+# 查询
     def is_kev(self, cve_id: str) -> bool:
         """检查 CVE 是否在 KEV 目录中。"""
         cid = cve_id.upper().strip()
@@ -339,7 +339,7 @@ class KEVClient:
         row = conn.execute("SELECT COUNT(*) as cnt FROM kev_entries").fetchone()
         return row["cnt"] if row else 0
 
-    # ---- 同步到主 KB ----
+# 同步到主 KB
     def sync_to_kb(self, kb: Any) -> int:
         """更新主 CVE 知识库中的 cisa_kev 标志。
 
@@ -380,7 +380,7 @@ class KEVClient:
             conn.commit()
         return updated
 
-    # ---- 优先级排序 ----
+# 优先级排序
     def kev_priority(self,
                      entries: List[Union[CVEEntry, Dict]],
                      kev_client: Optional["KEVClient"] = None) -> List[Union[CVEEntry, Dict]]:
@@ -419,7 +419,7 @@ class KEVClient:
             pass
 
 
-# ---- 模块级单例 ----
+# 模块级单例
 # 与 get_kb() 和 get_exploitdb() 模式一致
 # 全局单例 — 惰性初始化, 线程安全由调用者保证
 _kev_instance: Optional[KEVClient] = None

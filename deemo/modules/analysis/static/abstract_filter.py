@@ -15,7 +15,7 @@
 #      保证在所有具体执行中都是安全的 (sound under-approximation
 #      of danger). 反之, 标记为 "maybe_unsafe" 的路径仍需精确分析.
 #
-# 创建: 2026-08-04  初始版本
+# 创建: 2026-05-07  初始版本
 
 from typing import Dict, List, Optional, Tuple
 
@@ -40,7 +40,7 @@ class Interval:
     def contains(self, val: int) -> bool:
         return self.lo <= val <= self.hi
 
-    def add(self, delta: Interval) -> "Interval":
+    def add(self, delta: "Interval") -> "Interval":
         return Interval(self.lo + delta.lo, self.hi + delta.hi)
 
     @property

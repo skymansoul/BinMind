@@ -1,4 +1,4 @@
-"""补丁正确性有界模型检查 — ESBMC-AI [AST 2025] 范式。
+"""补丁正确性有界模型检查 — ESBMC-AI 范式。
 
 ESBMC 风格轻量 BMC 框架：为 patch 构造 assertion-based
 验证条件，符号枚举执行属性检查。
@@ -64,7 +64,7 @@ class ModelCheckingReport:
         }
 
 
-# ── 验证规则集 ────────────────────────────────────────────────────────
+# 验证规则集
 # 每条规则: (property_name, 检测 regex, 约束描述, bound)
 # 对应四大属性类
 
@@ -122,9 +122,7 @@ class BoundedModelChecker:
         self._bound = bound
         self._rules = _VERIFICATION_RULES
 
-    # ============================================================
     # check: 执行 BMC 并返回报告
-    # ============================================================
     def check(self, patch_id: str, patch_code: str,
               original_code: str = "") -> ModelCheckingReport:
         """对补丁代码执行 bounded model checking。"""
@@ -174,7 +172,7 @@ class BoundedModelChecker:
         _rpt.verification_time_ms = round((_t.time() - _start) * 1000, 2)
         return _rpt
 
-    # ── 规范化 ────────────────────────────────────────────────────────
+# 规范化
 
     def _normalize_code(self, code: str) -> str:
         """代码规范化 — 剥离注释，折叠空白。"""
@@ -185,7 +183,7 @@ class BoundedModelChecker:
         _code = re.sub(r'\s+', ' ', _code)
         return _code.strip()
 
-    # ── 属性检查 ──────────────────────────────────────────────────────
+# 属性检查
 
     def _check_property(self, patch_code: str, original_code: str,
                         prop_name: str,
@@ -284,7 +282,7 @@ class BoundedModelChecker:
         return PropertyStatus.PASS, ""
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# 便捷函数
 
 def bounded_model_check(patch_id: str, patch_code: str,
                         original_code: str = "",

@@ -216,11 +216,9 @@ class RecoveryScorer:
         return -sum((c / n) * math.log2(c / n) for c in cnt.values())
 
 
-# ---------------------------------------------------------------------------
 # 持久化策略有效性存储 —— 跨会话学习
 # 将每次运行的策略效果存入 JSON，下次运行时用历史数据调整
 # 预期恢复率。使用指数衰减权重（最近 10 次会话权重更高）
-# ---------------------------------------------------------------------------
 
 class _PersistentEffectiveness:
     """JSON-backed persistent storage for strategy effectiveness across sessions"""

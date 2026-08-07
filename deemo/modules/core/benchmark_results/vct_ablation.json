@@ -1,0 +1,71 @@
+{
+  "scenario": "VCT ablation: same-variable FP pattern",
+  "baseline": {
+    "l1_only_can_prove": 0,
+    "description": "L1 (interval analysis) proves 0/10 \u2014 all variables non-constant"
+  },
+  "vct_results": {
+    "total_candidates": 10,
+    "fp_before": 7,
+    "fp_after": 1,
+    "fp_filtered": 6,
+    "fp_reduction_pct": 85.7,
+    "tp_retained": 3,
+    "tp_killed": 0,
+    "recall": 1.0,
+    "filtered_details": [
+      {
+        "desc": "A1: malloc(sz) + memcpy(..., sz) \u540c\u6e90",
+        "reason": "\u540c\u6e90\u53d8\u91cf",
+        "correct": true
+      },
+      {
+        "desc": "A2: malloc(n) + memcpy(..., n) \u540c\u6e90",
+        "reason": "\u540c\u6e90\u53d8\u91cf",
+        "correct": true
+      },
+      {
+        "desc": "A3: malloc(len) + memcpy(..., len) \u540c\u6e90",
+        "reason": "\u540c\u6e90\u53d8\u91cf",
+        "correct": true
+      },
+      {
+        "desc": "A4: malloc(count) + memcpy(..., count) \u540c\u6e90",
+        "reason": "\u540c\u6e90\u53d8\u91cf",
+        "correct": true
+      },
+      {
+        "desc": "B1: malloc(sz+16) + memcpy(..., sz)",
+        "reason": "alloc == write + 16",
+        "correct": true
+      },
+      {
+        "desc": "B2: malloc(n+32) + memcpy(..., n)",
+        "reason": "alloc == write + 32",
+        "correct": true
+      }
+    ],
+    "missed_details": [
+      {
+        "desc": "B3: sub dst,src,k \u2192 src=dst+k",
+        "reason": "\u65e0\u6cd5\u8bc1\u660e",
+        "correct": false
+      },
+      {
+        "desc": "C1: malloc(64) + memcpy(..., 256) \u4e0d\u540c\u6e90",
+        "reason": "\u65e0\u6cd5\u8bc1\u660e",
+        "correct": true
+      },
+      {
+        "desc": "C2: malloc(a) + memcpy(..., b) \u4e0d\u76f8\u5173",
+        "reason": "\u65e0\u6cd5\u8bc1\u660e",
+        "correct": true
+      },
+      {
+        "desc": "C3: malloc(buf) + memcpy(..., user_input)",
+        "reason": "\u65e0\u6cd5\u8bc1\u660e",
+        "correct": true
+      }
+    ]
+  }
+}

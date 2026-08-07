@@ -10,7 +10,7 @@ from enum import IntEnum
 from typing import Any, Callable, Optional
 from concurrent.futures import ThreadPoolExecutor, Future
 
-# ===== 基础数据结构 =====
+# 基础数据结构
 class TaskPriority(IntEnum):
     CRITICAL = 0
     HIGH = 1
@@ -43,7 +43,7 @@ class TaskRetryConfig:
     max_delay: float = 60.0
     backoff_factor: float = 2.0
 
-# ===== 优先级任务队列（含老化机制防饥饿） =====
+# 优先级任务队列（含老化机制防饥饿）
 class PriorityTaskQueue:
     """最小堆优先级队列 + 插入计数器保证 FIFO 同优先级 + 老化提升"""
     def __init__(self, aging_threshold: int = 50):
@@ -114,7 +114,7 @@ class PriorityTaskQueue:
         heapq.heapify(new_heap)
         self._heap = new_heap
 
-# ===== 节点注册表 =====
+# 节点注册表
 @dataclass
 class NodeInfo:
     node_id: str
@@ -175,7 +175,7 @@ class NodeRegistry:
                           else "unhealthy")
                     for nid, n in self._nodes.items()}
 
-# ===== 工作线程池 =====
+# 工作线程池
 class WorkerThreadPool:
     def __init__(self, num_workers: int = 4):
         self._num_workers = num_workers
@@ -234,7 +234,7 @@ class WorkerThreadPool:
                     if not fut.done():
                         fut.set_result(tr)
 
-# ===== Redis 后端（可选，内存降级） =====
+# Redis 后端（可选，内存降级）
 class RedisBackend:
     def __init__(self, redis_url: Optional[str] = None):
         self._redis_url = redis_url
@@ -298,7 +298,7 @@ class RedisBackend:
         with self._lock:
             return self._metadata.get(key)
 
-# ===== 重试装饰器（指数退避） =====
+# 重试装饰器（指数退避）
 def retry_task(config: Optional[TaskRetryConfig] = None):
     """指数退避装饰器，用于任务执行函数"""
     cfg = config or TaskRetryConfig()
@@ -317,7 +317,7 @@ def retry_task(config: Optional[TaskRetryConfig] = None):
         return wrapper
     return decorator
 
-# ===== 集群协调器 =====
+# 集群协调器
 class ClusterCoordinator:
     """调度中心：选节点、派发任务、后台监控"""
     def __init__(self, backend: Optional[RedisBackend] = None):
@@ -370,8 +370,8 @@ class ClusterCoordinator:
             "monitoring": self._monitoring,
         }
 
-# --- 一致性哈希环 (Consistent Hashing) ---
-# 参考: Karger et al. (1997) — Amazon Dynamo / Cassandra / Riak 的核心路由算法
+# 一致性哈希环 (Consistent Hashing)
+# Karger et al. — Amazon Dynamo / Cassandra / Riak 的核心路由算法
 # 虚拟节点数 150 平衡迁移成本与负载均衡度 (实测 CV < 5%)
 _VNODES_PER_NODE = 150
 
@@ -422,7 +422,7 @@ class ConsistentHashRing:
             return self._ring[keys[idx]]
 
 
-# ---- 模块级便捷入口 ----
+# 模块级便捷入口
 def create_cluster(num_workers: int = 4) -> dict:
     coordinator = ClusterCoordinator()
     pool = WorkerThreadPool(num_workers=num_workers)

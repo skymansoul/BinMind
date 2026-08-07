@@ -71,9 +71,9 @@ _m.CryptoTrafficAnalyzer.decryptor = property(lambda self: _m.TrafficDecryptor()
 for _n, _v in [('MEMORY_DUMP', 'memory_dump'), ('EXTERNAL', 'external')]:
     setattr(_m.KeySourceType, _n, _FakeEncMember(_v))
 
-# --- 流量解密增强 ---
-# 参考: Bock et al. (2018) "Nonce-Disrespecting Adversaries" 的 nonce 复用检测
-# 以及 Böck et al. (2016) 对 TLS 非标准扩展的中间件解密研究
+# 流量解密增强
+# Bock et al. "Nonce-Disrespecting Adversaries" 的 nonce 复用检测
+# 以及 Böck et al. 对 TLS 非标准扩展的中间件解密研究
 
 import struct as _struct
 
@@ -162,7 +162,6 @@ def align_by_protocol(data: bytes, protocol: str = 'TLS') -> list[tuple[int, int
     return records
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

@@ -1,5 +1,5 @@
-# 创建: 2025-08-30 13:28
-# 修改: 2025-09-21 16:45 — 重构：从独立启发式升级为统一编译器pass模拟
+# 创建: 2026-07-22 13:28
+# 修改: 2026-07-22 16:45 — 重构：从独立启发式升级为统一编译器pass模拟
 
 """Optimization Compatibility Analyzer — 编译器优化pass模拟器。
 
@@ -75,7 +75,7 @@ class OptimCompatReport:
         }
 
 
-# ── Pass 1: 内联预算检查 ─────────────────────────────────────────
+# Pass 1: 内联预算检查
 
 def simulate_inline_expansion(orig_asm: List[str], patched_asm: List[str],
                               caller_stack_hint: int = 128) -> Tuple[float, List[str]]:
@@ -107,7 +107,7 @@ def simulate_inline_expansion(orig_asm: List[str], patched_asm: List[str],
     return min(score, 1.0), details
 
 
-# ── Pass 2: 循环展开检查 ─────────────────────────────────────────
+# Pass 2: 循环展开检查
 
 def simulate_loop_unrolling(orig_asm: List[str], patched_asm: List[str]) -> Tuple[float, List[str]]:
     """模拟循环展开：检查补丁是否改变了编译器展开假设的trip count。
@@ -132,7 +132,7 @@ def simulate_loop_unrolling(orig_asm: List[str], patched_asm: List[str]) -> Tupl
     return score, details
 
 
-# ── Pass 3: 常量传播检查 ─────────────────────────────────────────
+# Pass 3: 常量传播检查
 
 def simulate_constant_propagation(orig_asm: List[str], patched_asm: List[str]) -> Tuple[float, List[str]]:
     """模拟常量传播：检测补丁是否新增了编译器已传播并消除的常量。
@@ -161,7 +161,7 @@ def simulate_constant_propagation(orig_asm: List[str], patched_asm: List[str]) -
     return min(score, 1.0), details
 
 
-# ── Pass 4: DCE 风险检查 ─────────────────────────────────────────
+# Pass 4: DCE 风险检查
 
 def simulate_dce_risk(patched_asm: List[str]) -> Tuple[float, List[str]]:
     """模拟死代码消除：检查补丁新增的指令是否可能被DCE误杀。
@@ -198,7 +198,7 @@ def simulate_dce_risk(patched_asm: List[str]) -> Tuple[float, List[str]]:
     return min(score, 0.6), details
 
 
-# ── Pass 5: 分支概率检查 ─────────────────────────────────────────
+# Pass 5: 分支概率检查
 
 def simulate_branch_probability(orig_asm: List[str], patched_asm: List[str]) -> Tuple[float, List[str]]:
     """模拟分支概率预测：检查补丁新增分支的静态预测结果。
@@ -223,7 +223,7 @@ def simulate_branch_probability(orig_asm: List[str], patched_asm: List[str]) -> 
     return min(score, 1.0), details
 
 
-# ── 辅助函数 ──────────────────────────────────────────────────────
+# 辅助函数
 
 def _extract_frame(asm: List[str]) -> Optional[int]:
     for line in asm:
@@ -258,7 +258,7 @@ def _count_jumps(asm: List[str]) -> Dict[str, int]:
     return counts
 
 
-# ── 统一分析器 ────────────────────────────────────────────────────
+# 统一分析器
 
 class OptimCompatAnalyzer:
     """编译器优化pass模拟分析器。

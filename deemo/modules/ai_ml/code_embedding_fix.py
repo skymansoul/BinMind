@@ -201,7 +201,7 @@ class LLMReranker:
         return reranked
 
 
-# ========== 修复语义搜索 ==========
+# 修复语义搜索
 
 def patch_semantic_search(semantic_search_module):
     """注入RealCodeEmbedder替代CodeBERTEmbedder"""

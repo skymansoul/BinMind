@@ -6,7 +6,7 @@
 #   exploit_primitive.py 评估可利用性但不生成报告。
 #   各模块独立运行——缺少将它们串联为端到端管道的编排层。
 #
-#   工业界最佳实践 (Beefed.ai 2025) 定义7阶段管道:
+#   工业界最佳实践 定义7阶段管道:
 #     Fuzzer→存储→符号化→归一化→去重→最小化→验证→报告
 #   本模块实现的是"分析层"管道: 去重→分类→可利用性→报告,
 #   假设符号化和存储已由外部工具完成。
@@ -17,10 +17,10 @@
 #   Stage 3: 评分 — ESA + 严重度 + 频率的综合优先级
 #   Stage 4: 报告 — 生成结构化Markdown/JSON报告
 #
-# 参考文献:
-#   ECHO (Tao et al. 2025) — 在线去重反馈到fuzzing循环;
+# 文献:
+#   ECHO — 在线去重反馈到fuzzing循环;
 #     本项目取其管道集成的思想
-#   Beefed.ai Fuzzing-as-a-Service (2025) — 7阶段自动化管道
+#   Beefed.ai Fuzzing-as-a-Service — 7阶段自动化管道
 
 from __future__ import annotations
 

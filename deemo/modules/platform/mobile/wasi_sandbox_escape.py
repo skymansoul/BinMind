@@ -1,7 +1,7 @@
 """
 WASI 沙箱逃逸综合分析——多层次风险评估。
 
-检测维度 (SeeWasm ISSTA'24 + WBSan WWW'25 + Wemby ISSTA'25):
+检测维度:
   1. 导入函数审计——危险 WASI API 识别
   2. 线性内存分析——guard page 突破与 OOB (WBSan shadow memory)
   3. Table 操作——间接调用劫持

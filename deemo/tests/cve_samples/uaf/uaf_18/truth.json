@@ -1,0 +1,1 @@
+﻿{"expected":"TN","sample":"uaf_18_cond_free_guard_use","description":"Conditional free with guard-protected use — error path returns before use","cwe":"CWE-416","vuln_type":"use-after-free"}

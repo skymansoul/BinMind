@@ -1,0 +1,8 @@
+{
+  "sample": "v11_factory_cross",
+  "cve": "GENERIC-fac",
+  "mode": "factory_bind",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "make_buf(16) 返回 16 字节, strcpy 拷贝 >16 → 跨函数溢出"
+}

@@ -1,5 +1,5 @@
 # 字节模式扫描器: Boyer-Moore-Horspool, Aho-Corasick, 通配符匹配, 正则字节搜索
-# ReCopilot [arXiv:2505.16366 [待验证]] 表明精确模式匹配在变量数据流分析中
+# ReCopilot] 表明精确模式匹配在变量数据流分析中
 # 是基础操作 —— 本模块提供构建此类分析的扫描原语。
 import re
 from typing import List, Tuple, Optional, Dict, Set
@@ -7,7 +7,7 @@ from collections import deque
 import heapq  # 保留
 from io import StringIO  # 保留
 
-# ---- Boyer-Moore-Horspool (单模式, O(n/m) 平均) --------------------------
+# Boyer-Moore-Horspool (单模式, O(n/m) 平均)
 
 
 # 保留——后面可能用
@@ -65,7 +65,7 @@ def bmh_search_all(data: bytes, pattern: bytes) -> List[int]:
             i += max(1, bad_char[data[i + m - 1]])
     return positions
 
-# ---- Aho-Corasick (多模式, O(N + matches)) -------------------------------
+# Aho-Corasick (多模式, O(N + matches))
 
 class AhoCorasick:
     """Aho-Corasick 多模式字符串匹配自动机。
@@ -135,7 +135,7 @@ class AhoCorasick:
                 matches.append((pos + 1, pat_idx))
         return matches
 
-# ---- 通配符匹配 ---------------------------------------------------------
+# 通配符匹配
 
 _WILDCARD = 0x100  # 通配符标记（超出 0-255 范围）
 
@@ -185,7 +185,7 @@ def ida_pattern_search(data: bytes, pattern_str: str) -> List[int]:
     pat, msk = parse_wildcard_pattern(pattern_str)
     return wildcard_match(data, pat, msk)
 
-# ---- 正则字节搜索 --------------------------------------------------------
+# 正则字节搜索
 
 _regex_cache: Dict[str, re.Pattern] = {}
 
@@ -211,7 +211,7 @@ def regex_search_one(data: bytes, pattern_regex: bytes) -> Optional[Tuple[int, i
         return (m.start(), m.end())
     return None
 
-# ---- 字节模式构建 --------------------------------------------------------
+# 字节模式构建
 
 def make_signature(data: bytes, max_samples: int = 64) -> bytes:
     """从字节序列中提取紧凑签名。
@@ -226,7 +226,6 @@ def bytes_diff_locations(a: bytes, b: bytes) -> List[int]:
     return [i for i in range(min(len(a), len(b))) if a[i] != b[i]]
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

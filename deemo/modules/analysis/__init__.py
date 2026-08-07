@@ -1,7 +1,7 @@
 # analysis/ — 分析引擎层
 # 静态分析 → 动态分析 → 符号执行 → 反编译 → 去混淆
 
-# 跨分析融合 / 冗余检测 / 调度优化 (2026 Q3 专利补齐)
+# 跨分析融合 / 冗余检测 / 调度优化
 def get_cross_analysis_fusion():
     from modules.analysis.cross_analysis_fusion import CrossAnalysisFusion, AnalysisItem, FusedFinding
     return CrossAnalysisFusion, AnalysisItem, FusedFinding

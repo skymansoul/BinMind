@@ -1,6 +1,6 @@
 # 异构资源感知的 DAG 图分区 + 调度 (GraphEdge DAG-DRL 扩展)
-# 参考: GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
-#       Computing in Edge Network" (arXiv:2504.15905 [待验证])
+# GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
+#       Computing in Edge Network" ( [待验证])
 # 对应关系:
 #   - 异构 worker 模型 (速度因子 + 多维容量)         -> §2 边缘节点异构资源
 #   - 关键路径优先 + 最小增量装载的图分区             -> §3 图分区策略
@@ -13,7 +13,6 @@
 #     未训练时贪心 + 模拟退火降级;
 #   - 与 AdaptiveScheduler 接口兼容 (register_task / prioritize / feedback /
 #     estimate_makespan / suggest_batch_order), 可替换或叠加使用.
-from __future__ import annotations
 import logging
 import math
 import random
@@ -53,9 +52,7 @@ def _bottom_level_rank(dag: TaskDAG) -> Dict[str, float]:
     return bl
 
 
-# ============================================================
 # 异构 worker 模型
-# ============================================================
 
 @dataclass
 class WorkerProfile:
@@ -76,9 +73,7 @@ class WorkerProfile:
                 self.cpu_cap, self.mem_cap, self.io_cap]
 
 
-# ============================================================
 # 异构分区 makespan 仿真
-# ============================================================
 
 def hetero_makespan(dag: TaskDAG, partition: Dict[str, List[str]],
                     workers: List[WorkerProfile],
@@ -161,9 +156,7 @@ def hetero_makespan(dag: TaskDAG, partition: Dict[str, List[str]],
     return makespan, dict(avail), violations
 
 
-# ============================================================
 # 图分区器 — 关键路径优先 + 最小增量装载
-# ============================================================
 
 class DAGPartitioner:
     """图分区器: 将 DAG 节点分配到异构 worker.
@@ -286,9 +279,7 @@ class DAGPartitioner:
         return partition, mk, viol
 
 
-# ============================================================
 # 贪心 + 模拟退火分区 (无 RL 框架时降级路径) [Kirkpatrick 1983]
-# ============================================================
 
 class SimulatedAnnealingPartition:
     """模拟退火分区细化.
@@ -358,9 +349,7 @@ class SimulatedAnnealingPartition:
         return best_part, best_mk, best_viol
 
 
-# ============================================================
 # 分区策略梯度 (RL 路径) [Williams 1992]
-# ============================================================
 
 class PartitionPolicyGradient:
     """分区策略梯度.
@@ -481,9 +470,7 @@ class PartitionPolicyGradient:
         return partition, mk, viol
 
 
-# ============================================================
 # 主调度器 — 异构分区调度 + 兼容 AdaptiveScheduler 接口
-# ============================================================
 
 class DAGPartitionScheduler:
     """异构资源感知的 DAG 分区调度器.
@@ -516,7 +503,7 @@ class DAGPartitionScheduler:
         self._last_schedule: Dict[str, Any] = {'partition': {}, 'makespan': 0.0,
                                                'mode': 'none'}
 
-    # ---- DAG 管理 (增量) ----
+# DAG 管理 (增量)
 
     def register_task(self, task_id: str, deps: Optional[List[str]] = None,
                       est_duration: float = 60.0, resource_intensity: float = 0.5
@@ -563,7 +550,7 @@ class DAGPartitionScheduler:
         for t in tids:
             self._emb_cache.pop(t, None)
 
-    # ---- 图编码 (增量) ----
+# 图编码 (增量)
 
     def _ensure_embeddings(self, changed: Optional[Set[str]] = None,
                            full: bool = False) -> Dict[str, List[float]]:
@@ -580,7 +567,7 @@ class DAGPartitionScheduler:
             self._emb_cache.update(self._encoder.encode(self._dag))
         return dict(self._emb_cache)
 
-    # ---- 调度 ----
+# 调度
 
     def _order(self) -> List[str]:
         """全局调度顺序: bottom-level rank 降序 (拓扑有效)."""
@@ -674,7 +661,7 @@ class DAGPartitionScheduler:
                                'changed': sorted(changed)}
         return self._last_schedule
 
-    # ---- 训练 ----
+# 训练
 
     def train(self, episodes: int = 50,
               workers: Optional[List[WorkerProfile]] = None) -> Dict[str, Any]:
@@ -690,7 +677,7 @@ class DAGPartitionScheduler:
         return {'episodes': self._rl.episodes, 'best_makespan': best_mk,
                 'trained': self._rl.trained}
 
-    # ---- 兼容接口 / 反馈 ----
+# 兼容接口 / 反馈
 
     def prioritize(self, ready_tasks: List[str]) -> List[str]:
         """按 HEFT bottom-level rank 对就绪任务排序 (降序).
@@ -759,9 +746,7 @@ def time_now() -> float:
     return time.time()
 
 
-# ============================================================
 # TaskScheduler 叠加插件 (与 AdaptiveSchedulerPlugin 用法对齐)
-# ============================================================
 
 @dataclass(order=True)
 class _QItemPart:
@@ -817,9 +802,7 @@ class DAGPartitionSchedulerPlugin:
         self._enabled = v
 
 
-# ============================================================
 # 便捷工厂
-# ============================================================
 
 def create_dag_partition_scheduler(workers: Optional[List[WorkerProfile]] = None,
                                    comm_cost: float = 0.0, seed: int = 20260803,

@@ -21,9 +21,8 @@
   - CWE-940: 通信信道来源校验不当
   - CWE-925: Broadcast Receiver对Intent的验证不当
 
-参考文献:
   - Android Binder安全: /dev/binder ioctl追踪基通信分析
-  - One Byte to Rule Them All (CVE-2020-0041): Binder引用计数UAF
+  - One Byte to Rule Them All: Binder引用计数UAF
   - XPC Service Abuse: launchd plist注入
 """
 
@@ -36,12 +35,10 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-
 class IPCType(StrEnum):
     BINDER = "binder"; INTENT = "intent"; BROADCAST = "broadcast"; XPC = "xpc"
     MACH = "mach_port"; SHARED_MEMORY = "shared_memory"; CONTENT_PROVIDER = "content_provider"
     SOCKET = "socket"; PIPE = "pipe"; APP_GROUP = "app_group"
-
 
 class IPCVulnerabilityType(StrEnum):
     INTENT_INJECTION = "intent_injection"; BROADCAST_HIJACK = "broadcast_hijack"
@@ -53,10 +50,8 @@ class IPCVulnerabilityType(StrEnum):
     XPC_DICTIONARY_INJECTION = "xpc_dictionary_injection"
     BINDER_REPLAY = "binder_replay"
 
-
 class IPCSeverity(StrEnum):
     CRITICAL = "critical"; HIGH = "high"; MEDIUM = "medium"; LOW = "low"; INFO = "info"
-
 
 class BinderTransactionCode(IntEnum):
     FIRST_CALL_TRANSACTION = 0x00000001; LAST_CALL_TRANSACTION = 0x00ffffff
@@ -64,10 +59,8 @@ class BinderTransactionCode(IntEnum):
     SHELL_COMMAND_TRANSACTION = 0x5f534d50; INTERFACE_TRANSACTION = 0x5f4e5446
     TWEET_TRANSACTION = 0x5f545754; LIKE_TRANSACTION = 0x5f4c494b
 
-
 BINDER_WRITE_READ = 0xc0306201; BINDER_SET_CONTEXT_MGR = 0xc0046207
 BINDER_THREAD_EXIT = 0xc0046208; BINDER_VERSION = 0xc0046209
-
 
 @dataclass
 class BinderInterface:
@@ -79,19 +72,16 @@ class BinderInterface:
     # Binder重放检测：每事务码签名hash，用于碰撞检测
     transaction_signatures: Dict[int, bytes] = field(default_factory=dict)
 
-
 @dataclass
 class IntentEntry:
     action: str; is_implicit: bool = True; target_package: str = ""; target_class: str = ""
     extras_keys: List[str] = field(default_factory=list); flags: int = 0
     is_ordered_broadcast: bool = False; offset: int = 0
 
-
 @dataclass
 class BroadcastReceiver:
     receiver_name: str; actions: List[str] = field(default_factory=list)
     exported: bool = False; permission: str = ""; is_ordered: bool = False; priority: int = 0
-
 
 @dataclass
 class XPCService:
@@ -100,12 +90,10 @@ class XPCService:
     required_entitlements: List[str] = field(default_factory=list)
     exposed_protocols: List[str] = field(default_factory=list); is_bundled: bool = True
 
-
 @dataclass
 class MachPortInfo:
     port_name: str = ""; right_type: str = ""; is_task_port: bool = False
     is_thread_port: bool = False; is_bootstrap: bool = False; reference_count: int = 0
-
 
 @dataclass
 class IPCFinding:
@@ -113,14 +101,12 @@ class IPCFinding:
     severity: IPCSeverity = IPCSeverity.MEDIUM; description: str = ""
     evidence: str = ""; component: str = ""; recommendation: str = ""
 
-
-# ── Binder事务重放检测——事务码+参数签名碰撞分析 ──
+# Binder事务重放检测——事务码+参数签名碰撞分析
 
 def _compute_transaction_signature(code: int, param_count: int, data_size: int) -> bytes:
     """计算Binder事务的轻量级签名。以code+参数计数+数据大小构成指纹。"""
     import hashlib as _hl
     return _hl.sha256(f"{code}:{param_count}:{data_size}".encode()).digest()[:8]
-
 
 class BinderIPCAnalyzer:
     """Android Binder & IPC 安全分析器。
@@ -313,7 +299,6 @@ class BinderIPCAnalyzer:
                 for f in self.findings],
         }
 
-
 class XPCIPCAnalyzer:
     _XPC_C_API_PATTERNS: Dict[bytes, str] = {
         b'_xpc_connection_create$': 'xpc_connection_create', b'_xpc_connection_create_mach_service$': 'Mach XPC服务',
@@ -412,7 +397,6 @@ class XPCIPCAnalyzer:
                 'recommendation': f.recommendation} for f in self.findings],
         }
 
-
 class MobileIPCAnalyzer:
     _MACHO_MAGICS = [b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xce\xfa\xed\xfe', b'\xfe\xed\xfa\xce']
 
@@ -437,10 +421,8 @@ class MobileIPCAnalyzer:
             analyzer = XPCIPCAnalyzer(self.data); result.update(analyzer.analyze())
         return result
 
-
 def analyze_ipc(binary_path: str) -> Dict[str, Any]:
     return MobileIPCAnalyzer(binary_path=binary_path).analyze()
-
 
 class MobileIPCResult:
     def __init__(self):

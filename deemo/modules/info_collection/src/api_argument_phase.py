@@ -1,7 +1,7 @@
 """
 API 参数感知的杀伤链阶段推断。
 
-PeerJ CS (2025) 的 "Function Parameters Encoding for Malware Detection"
+PeerJ CS 的 "Function Parameters Encoding for Malware Detection"
 表明 API 参数 (文件路径、注册表键、IP 地址、URL) 携带的安全语义
 比 API 名称本身更丰富 —— 同一个 WriteFile 写入临时目录和写入
 系统目录的杀伤链含义完全不同。
@@ -26,9 +26,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 参数特征 → 阶段信号映射
-# ---------------------------------------------------------------------------
 
 _PATH_SIGNALS: Dict[str, Tuple[str, float]] = {
     r"(?i)\\(?:system32|syswow64)\\": ("安装", 0.7),

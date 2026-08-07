@@ -1,6 +1,6 @@
 """ROP gadget 检测器 — 栈溢出利用可行性评估.
 
-创建: 2025-08-07
+创建: 2026-07-13
 目的: stack_bound_infer.py 检测溢出风险, canary_bypass_analyzer.py 评估保护绕过,
       本模块完成利用链的最后一步: 检测二进制中是否存在可用的 ROP gadget,
       评估栈溢出被实际利用的可行性。
@@ -11,7 +11,7 @@
   3. ret — 裸返回 (用于栈 pivot)
   4. syscall; ret — 直接系统调用
 
-方法依据: ROP 是栈溢出利用的最常见手段 (Shacham, CCS 2007).
+方法依据: ROP 是栈溢出利用的最常见手段.
           本模块从 .text 段搜索字节序列匹配已知的 gadget 模式。
 """
 

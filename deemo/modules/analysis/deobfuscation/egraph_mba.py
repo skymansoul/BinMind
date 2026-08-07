@@ -2,7 +2,7 @@
 """
 E-graph MBA 表达式简化器
 
-基于 [Lee et al. 2024, arXiv:2404.05431] 的 e-graph 框架
+基于 的 e-graph 框架
 使用等价类（e-class）和 e-node 数据结构对 MBA 混淆表达式进行
 重写和简化。与传统规则匹配不同，e-graph 支持同时探索多条重写路径
 通过提取最优重写结果
@@ -12,7 +12,7 @@ E-graph MBA 表达式简化器
 - EClass: 等价节点集合 + 共享分析数据
 - EGraph: 全局等价关系图
 
-融合 [Skees 2024, arXiv:2406.10016] 的半线性 MBA 处理：
+融合 的半线性 MBA 处理：
 对含常量的位运算操作数进行部分求值后再入图
 """
 
@@ -428,7 +428,7 @@ class MBASimplifier:
         """
         egraph = EGraph()
 
-        # Step 1: 解析 → AST → EGraph
+        # 解析 → AST → EGraph
         tokens = self._tokenize(expr_str)
         root_cid = self._build_egraph(egraph, tokens)
 
@@ -443,13 +443,13 @@ class MBASimplifier:
 
         original_rep = egraph.extract(root_cid)
 
-        # Step 2: Apply rewrite rules
+        # Apply rewrite rules
         steps = MBARewriteRules.apply_rules(egraph, max_iterations=5)
 
-        # Step 3: 提取
+        # 提取
         simplified = egraph.extract(root_cid)
 
-        # Step 4: Verify
+        # Verify
         verified = False
         if self.verify_z3 and simplified != original_rep:
             verified = self._z3_verify(original_rep, simplified)

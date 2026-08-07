@@ -20,9 +20,7 @@ __all__ = [
 _log = logging.getLogger(__name__)
 
 
-# =============================================================================
 # Error classes
-# =============================================================================
 
 class ToolsError(Exception):
     """Base 异常 for tools errors"""
@@ -39,9 +37,7 @@ class FuzzError(ToolsError):
     pass
 
 
-# =============================================================================
 # Entropy computation
-# =============================================================================
 
 def compute_entropy(data: bytes) -> float:
     """计算 Shannon entropy LaPlace smoothing (add-1 counts)
@@ -89,9 +85,7 @@ def _legacy_entropy_calc(data: bytes) -> float:
     return entropy
 
 
-# =============================================================================
 # Sliding window
-# =============================================================================
 
 def sliding_window(items: list[Any], n: int) -> Iterator[tuple[Any, ...]]:
     """构造 n-grams via sliding window over a list
@@ -114,9 +108,7 @@ def sliding_window(items: list[Any], n: int) -> Iterator[tuple[Any, ...]]:
         yield tuple(items[i : i + n])
 
 
-# =============================================================================
 # YAML 配置 loading env var substitution
-# =============================================================================
 
 _ENV_VAR_PATTERN: re.Pattern[str] = re.compile(r"\$\{(\w+)\}")
 
@@ -159,9 +151,7 @@ def load_yaml_config(path: str) -> dict[str, Any]:
     return config
 
 
-# =============================================================================
 # 日志 setup
-# =============================================================================
 
 def setup_logging(config: dict[str, Any]) -> logging.Logger:
     """Set up a unified 日志器 a 配置 dict

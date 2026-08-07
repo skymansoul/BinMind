@@ -20,8 +20,7 @@
 传统方法等任务超时→标记为straggler→启动backup。
 本方案在超时前10-30秒预测→预路由→零延迟损失。
 
-参考：
-- "GRASS: Straggler-resilient Distributed ML" (EuroSys 2024): 梯度编码应对straggler。
+- "GRASS: Straggler-resilient Distributed ML": 梯度编码应对straggler。
   本方案在上游预防straggler的产生，而非在下游用编码容忍。
 """
 
@@ -30,7 +29,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
-
 
 @dataclass
 class WorkerMetrics:
@@ -44,7 +42,6 @@ class WorkerMetrics:
     avg_service_time: float  # 最近N个任务的平均服务时间
     service_time_variance: float
 
-
 @dataclass
 class StragglerAlert:
     """一次拖后腿预测告警。"""
@@ -53,7 +50,6 @@ class StragglerAlert:
     predicted_stall_seconds: float  # 预计多少秒后变慢
     triggering_features: List[str]
     recommendation: str  # "route_away" / "reduce_load" / "restart_worker"
-
 
 class StragglerPredictor:
     """基于多维特征的拖后腿Worker预测器。
@@ -157,9 +153,7 @@ class StragglerPredictor:
                 _healthy.append(_wid)
         return _healthy
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _linear_trend(values: List[float]) -> float:
@@ -173,8 +167,7 @@ class StragglerPredictor:
         _den = sum((i - _mean_x) ** 2 for i in range(_n))
         return _num / max(_den, _EPS)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _predictor = StragglerPredictor(window_size=10)
 
@@ -207,7 +200,6 @@ def _smoke_test():
     print(f"[straggler] healthy workers: {_healthy}")
 
     print("[OK] StragglerPredictor smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

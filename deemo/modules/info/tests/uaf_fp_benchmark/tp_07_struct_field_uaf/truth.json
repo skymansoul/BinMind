@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_07_struct_field_uaf",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "cve": "CVE-2021-34556 类结构体内指针 UAF",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "free(c) 后 c->data 访问已释放内存"
+}

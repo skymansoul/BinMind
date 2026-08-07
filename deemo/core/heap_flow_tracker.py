@@ -12,8 +12,7 @@ buf=malloc(size); 如果只看 malloc(size) 而不追踪 size 的来源和约束
 3. 正向检查 size_var 在 malloc 前是否经过约束 (if/ternary/min/max)
 4. 输出 TraceResult: {size_var, source_type, is_constrained, upper_bound}
 
-参考:
-  CAFD (arXiv:2509.22530) — 自定义分配函数的 value-flow 检测
+  CAFD — 自定义分配函数的 value-flow 检测
   本模块不做指针分析, 不做完整到达-定值, 仅追踪分配大小的 2 跳数据流
 """
 
@@ -22,13 +21,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Tuple
 
-
 class SizeSource(Enum):
     CONSTANT = "constant"        # malloc(1024)
     USER_INPUT = "user_input"    # malloc(atoi(argv[1]))
     ARITHMETIC = "arithmetic"    # malloc(len * 2 + 1)
     UNKNOWN = "unknown"
-
 
 @dataclass
 class TraceResult:
@@ -39,7 +36,6 @@ class TraceResult:
     upper_bound: Optional[int]   # 若 constrained=True, 记录上界
     constraint_desc: str = ""    # 约束描述, 如 "if(size > 1024) size=1024;"
     line: str = ""               # 伪代码中对应的行
-
 
 class HeapFlowTracker:
     """
@@ -168,7 +164,6 @@ class HeapFlowTracker:
 
         return None
 
-
 def trace_heap_allocations(pseudocode: str) -> List[dict]:
     """便捷函数: 返回字典格式的追踪结果。"""
     tracker = HeapFlowTracker()
@@ -178,6 +173,5 @@ def trace_heap_allocations(pseudocode: str) -> List[dict]:
          'upper_bound': r.upper_bound, 'constraint': r.constraint_desc}
         for r in tracker.trace(pseudocode)
     ]
-
 
 __all__ = ['SizeSource', 'TraceResult', 'HeapFlowTracker', 'trace_heap_allocations']

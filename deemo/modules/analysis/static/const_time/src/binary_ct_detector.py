@@ -5,7 +5,7 @@
 """二进制级常量时间违规检测 - 编译器感知的侧信道分析
 
 现有 CT 验证工具 (CtChecker, CT-Prover, CT-LLVM) 在源码级工作
-但编译器优化可能引入源码级不存在的时序侧信道 (Breaking Bad, 2024)
+但编译器优化可能引入源码级不存在的时序侧信道
 
 例如:
   GCC -O2 的 if-conversion: if (secret) x = a; else x = b;
@@ -25,9 +25,9 @@
   C. 编译器模式假阳性抑制: 识别编译器特有的 CT 保护措施 (cmov, setcc, 等)
 
 与现有工作的关系:
-- CtChecker (ECOOP 2024): 源码级, 域/上下文/流敏感 -> 本模块: 二进制级
-- Breaking Bad (2024): 识别编译器引入的 CT 破坏 -> 本模块: 检测+抑制假阳性
-- CT-LLVM (2025): LLVM IR 级 -> 本模块: x86/ARM 汇编级, 不依赖 IR
+- CtChecker: 源码级, 域/上下文/流敏感 -> 本模块: 二进制级
+- Breaking Bad: 识别编译器引入的 CT 破坏 -> 本模块: 检测+抑制假阳性
+- CT-LLVM: LLVM IR 级 -> 本模块: x86/ARM 汇编级, 不依赖 IR
 """
 
 from __future__ import annotations
@@ -39,9 +39,7 @@ from enum import Enum, auto
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 编译器模式--用于假阳性抑制
-# ---------------------------------------------------------------------------
 
 # 编译器生成的"伪 CT 违规"模式--这些是编译器优化产生的
 # 非秘密依赖的分支/访存, 不应标记为侧信道
@@ -65,7 +63,7 @@ _COMPILER_CT_SAFE_PATTERNS = {
     # MSVC
     'MSVC': [
         (r'cmov(?:ne|e|a|ae|b|be|g|ge|l|le)\s', 'cmov'),
-        # __security_check_cookie -- 栈保护, 非秘密依赖
+# security_check_cookie -- 栈保护, 非秘密依赖
         (r'__security_check_cookie', 'stack_guard'),
         (r'int\s*3', 'debug_break'),
     ],
@@ -93,9 +91,7 @@ _COMPILER_CT_RISK_PATTERNS = {
 }
 
 
-# ---------------------------------------------------------------------------
 # 侧信道违规数据结构
-# ---------------------------------------------------------------------------
 
 class CTViolationType(Enum):
     SECRET_DEPENDENT_BRANCH = auto()    # 秘密值影响分支方向
@@ -138,9 +134,7 @@ class CTDetectionReport:
     worst_leakage: float                # 最大泄漏 bit 数
 
 
-# ---------------------------------------------------------------------------
 # 检测器
-# ---------------------------------------------------------------------------
 
 class BinaryCTDetector:
     """二进制级常量时间违规检测器

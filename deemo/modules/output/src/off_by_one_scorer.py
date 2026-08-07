@@ -13,9 +13,8 @@ Off-by-One 漏洞精度评分 — 边界类型×相邻数据敏感度×页对齐
 
   本模块是第一个 off-by-one 精度评分模型。
 
-参考:
   Poisoned NUL byte (glibc): chunk overlapping via PREV_INUSE clear
-  CTF off-by-one writeups (2024): LSB overwrite → stack pivot
+  CTF off-by-one writeups: LSB overwrite → stack pivot
   无现有评分工具.
 
 修改记录:
@@ -26,13 +25,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class BoundaryType(Enum):
     NULL_BYTE = "null_byte"          # 0x00 — 经典堆利用
     CONTROLLED_BYTE = "controlled"   # 攻击者可控的任意字节
     FIXED_NONZERO = "fixed_nonzero"  # 固定非零值
     UNKNOWN = "unknown"
-
 
 class AdjacentType(Enum):
     CHUNK_METADATA = "chunk_metadata"   # 相邻堆块的元数据 (size/prev_size)
@@ -42,7 +39,6 @@ class AdjacentType(Enum):
     INTEGER = "integer"                 # 整数/计数器
     PADDING = "padding"                 # 对齐填充 (无害)
     UNKNOWN = "unknown"
-
 
 # 边界类型 × 相邻类型 → 利用难度分 (0-10)
 _EXPLOIT_MATRIX: Dict[BoundaryType, Dict[AdjacentType, float]] = {
@@ -71,7 +67,6 @@ _EXPLOIT_MATRIX: Dict[BoundaryType, Dict[AdjacentType, float]] = {
 }
 _DEFAULT_EXPLOIT = {a: 1.0 for a in AdjacentType}
 
-
 @dataclass
 class OffByOneScore:
     """Off-by-one 漏洞精度评分。"""
@@ -82,7 +77,6 @@ class OffByOneScore:
     exploitability: float          # 0-10
     primitives: List[str] = field(default_factory=list)
     technique: str = ''
-
 
 def _guess_adjacent(
     context: str,
@@ -109,7 +103,6 @@ def _guess_adjacent(
            'unused', 'padding')):
         return AdjacentType.PADDING
     return AdjacentType.UNKNOWN
-
 
 def score_off_by_one(
     byte_value: int = 0,

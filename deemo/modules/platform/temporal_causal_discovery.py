@@ -4,16 +4,16 @@
 问题:CrossPlatformCorrelator基于符号共现等关联信号建边,但关联≠因果.
 伪相关边导致风险评分虚高,补丁优先级错配.
 
-方案:PC算法 (Spirtes & Glymour 1991) -- 偏相关系数条件独立性检验,
+方案:PC算法 -- 偏相关系数条件独立性检验,
 骨架学习->v-结构定向->Meek规则传播.首次应用于漏洞传播图快照序列.
 
 前提:因果充分性,马尔可夫条件,忠实性.
 
-与已有工作的区分:INCADET (2025) 做CPS攻击检测,不涉及漏洞传播的跨层依赖.
-                 Kaushik et al. (2025) 仅提出愿景,未实现.
+与已有工作的区分:INCADET 做CPS攻击检测,不涉及漏洞传播的跨层依赖.
+                 Kaushik et al. 仅提出愿景,未实现.
 
-ref: Spirtes et al. (2000) "Causation, Prediction, and Search".
-ref: INCADET (arXiv:2507.14387) -- 增量因果图学习在安全检测中的应用.
+ref: Spirtes et al. "Causation, Prediction, and Search".
+ref: INCADET -- 增量因果图学习在安全检测中的应用.
 """
 from __future__ import annotations
 

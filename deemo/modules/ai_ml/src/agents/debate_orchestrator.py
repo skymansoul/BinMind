@@ -4,7 +4,7 @@
 """对抗辩论编排器 — 多 Agent 对抗辩论 + 证据锚定 + 共识合成。
 
 现有的 llm_agent_binary.py 使用流水线式 Agent 协作（反汇编→漏洞发现→利用→报告），
-各 Agent 顺序执行，无对抗性审查。VulTrial (2025) 引入了法庭式辩论但发现关键缺陷：
+各 Agent 顺序执行，无对抗性审查。VulTrial 引入了法庭式辩论但发现关键缺陷：
 无证据锚定的辩论在第一轮后即退化——Agent 通过"相互让步"而非"事实推理"收敛。
 
 本模块的核心机制——证据锚定的对抗辩论 (Evidence-Anchored Adversarial Debate, EAAD)：
@@ -21,12 +21,11 @@
 - VulTrial: 源码级、无证据约束、多轮退化。
 - Aegis: CPG 切片证据但用于事后审计而非辩论约束。
 - 本方案: 证据基底在辩论前锁定、辩论中强制引用、违规论点自动降权。
-  与 Aegis (arXiv:2603.20637) 的 CPG 切片证据基底思路相近——
+  与 Aegis 的 CPG 切片证据基底思路相近——
   本方案将证据引用作为论点权重的显式因子，而非仅用于事后审计。
 
-参考：
-- VulTrial (2025) — 法庭式多 Agent 辩论的框架设计。
-- Aegis (2025/2026) — 证据锚定审计的"closed factual substrate"概念。
+- VulTrial — 法庭式多 Agent 辩论的框架设计。
+- Aegis — 证据锚定审计的"closed factual substrate"概念。
 """
 
 import hashlib
@@ -36,15 +35,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 _EPS: float = 1e-9
-
 
 class Verdict(Enum):
     VULNERABLE = "vulnerable"
     NOT_VULNERABLE = "not_vulnerable"
     UNCERTAIN = "uncertain"
-
 
 @dataclass
 class EvidenceItem:
@@ -60,7 +56,6 @@ class EvidenceItem:
     description: str
     confidence: float = 1.0  # 证据自身的置信度（反汇编不确定性等）
 
-
 @dataclass
 class Argument:
     """辩论中一条论点——必须引用证据。"""
@@ -70,7 +65,6 @@ class Argument:
     evidence_support: float = 0.0  # 自动计算：引用证据的平均 confidence
     weight: float = 1.0       # 裁判调整后的权重（未引用证据→0.2）
 
-
 @dataclass
 class DebateRound:
     """一轮辩论的记录。"""
@@ -78,7 +72,6 @@ class DebateRound:
     prosecutor_args: List[Argument]
     defender_args: List[Argument]
     new_evidence_cited: Set[str]  # 本轮首次引用的证据
-
 
 @dataclass
 class VerdictResult:
@@ -91,7 +84,6 @@ class VerdictResult:
     debate_rounds: int
     prosecutor_score: float  # 主张方论证质量
     defender_score: float    # 反驳方论证质量
-
 
 class EvidenceAnchoredDebate:
     """证据锚定的对抗辩论编排器。
@@ -169,9 +161,7 @@ class EvidenceAnchoredDebate:
             evidence_base, _debate_log, target_function,
         )
 
-    # -----------------------------------------------------------------
     # 论点锚定
-    # -----------------------------------------------------------------
 
     def _anchor_arguments(
         self,
@@ -203,9 +193,7 @@ class EvidenceAnchoredDebate:
 
         return _anchored
 
-    # -----------------------------------------------------------------
     # 论点生成（启发式——生产环境替换为 LLM 生成）
-    # -----------------------------------------------------------------
 
     def _generate_prosecutor_args(
         self, evidence: List[EvidenceItem],
@@ -264,9 +252,7 @@ class EvidenceAnchoredDebate:
 
         return _args
 
-    # -----------------------------------------------------------------
     # 裁决合成
-    # -----------------------------------------------------------------
 
     def _synthesize_verdict(
         self,
@@ -342,8 +328,7 @@ class EvidenceAnchoredDebate:
             defender_score=round(_d_score, 4),
         )
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _evidence = [
         EvidenceItem("e1", "dangerous_call", "user_input", "strcpy@0x401200",
@@ -386,7 +371,6 @@ def _smoke_test():
     assert _empty_verdict.verdict == Verdict.UNCERTAIN
 
     print("[OK] EvidenceAnchoredDebate smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

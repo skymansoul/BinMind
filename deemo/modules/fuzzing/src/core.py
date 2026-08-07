@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass, field
 from uuid import uuid4
 
-# ---- 种子对象 ----
+# 种子对象
 # 代表一次模糊测试的输入，携带覆盖率、适应度、能量等元信息
 @dataclass
 class Seed:
@@ -26,7 +26,7 @@ class Seed:
     def __hash__(self) -> int:
         return hash(self.id)
 
-# ---- 模糊测试配置 ----
+# 模糊测试配置
 @dataclass
 class FuzzConfig:
     target_path: str = ""
@@ -43,7 +43,7 @@ class FuzzConfig:
     use_cmplog: bool = False            # CmpLog插桩开关
 
 
-# ---- 模糊测试结果 ----
+# 模糊测试结果
 @dataclass
 class FuzzResult:
     seed_id: str = ""
@@ -59,7 +59,7 @@ class FuzzResult:
     crash_hash: str | None = None
 
 
-# ---- 语料库统计 ----
+# 语料库统计
 @dataclass
 class CorpusStats:
     total_seeds: int = 0
@@ -74,7 +74,7 @@ class CorpusStats:
     last_new_find: float = field(default_factory=time.time)
 
 
-# ===== 辅助函数 =====
+# 辅助函数
 
 def compute_crash_hash(seed_data: bytes, crash_signal: int, crash_addr: int | None) -> str:
     """基于SHA256的崩溃去重哈希 -- 种子数据+信号+地址 """
@@ -176,20 +176,20 @@ def deterministic_stage(seed: Seed, config: FuzzConfig) -> list[bytes]:
     if _l == 0:
         return _results
 
-    # ---- bitflip 1/1 ----
+# bitflip 1/1
     for _pos in range(min(_l, 2048)):
         for _bit in range(8):
             _cpy = bytearray(_orig)
             _flip_bit(_cpy, _pos, _bit)
             _results.append(bytes(_cpy))
 
-    # ---- byteflip 1/1 ----
+# byteflip 1/1
     for _pos in range(min(_l, 2048)):
         _cpy = bytearray(_orig)
         _flip_byte(_cpy, _pos)
         _results.append(bytes(_cpy))
 
-    # ---- arithmetic inc/dec ----
+# arithmetic inc/dec
     for _pos in range(min(_l, 1024)):
         for _delta in (1, 35):
             _cpy_inc = bytearray(_orig)
@@ -199,7 +199,7 @@ def deterministic_stage(seed: Seed, config: FuzzConfig) -> list[bytes]:
             _arith_dec(_cpy_dec, _pos, _delta)
             _results.append(bytes(_cpy_dec))
 
-    # ---- interesting values 8-bit ----
+# interesting values 8-bit
     for _pos in range(min(_l, 1024)):
         _interesting = _interesting_bytes(_orig, _pos)
         for _v in _interesting:
@@ -237,7 +237,7 @@ def havoc_stage(seed: Seed, config: FuzzConfig, rounds: int = 32) -> list[bytes]
             _action(_cpy, _rng)
         _results.append(bytes(_cpy))
 
-    # ---- 偶尔做splice ----
+# 偶尔做splice
     if len(_results) > 1 and random.random() < 0.05:
         _a = random.choice(_results)
         _b = random.choice(_results)

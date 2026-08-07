@@ -3,7 +3,7 @@
 # 2025-07-31 15:09 - 寄存器重命名表从 hardcoded 改为平台描述字典，x86/ARM/MIPS 可配
 # 2025-08-03 09:41 - NOP 消除增加边界检查，跨页 padding 不能简单移除 (影响 ELF segment 对齐)
 # — 编译优化不变的二进制规范化: NOP消除 / 寄存器正则化 / 数据流拓扑重排
-# 参考: KHAos (Cai et al., ACM TACO 2025) — 利用编译器优化混淆对抗二进制 diff,
+# KHAos (Cai et al., ACM TACO 2025) — 利用编译器优化混淆对抗二进制 diff,
 #       本项目反向操作: 使用规范化消除编译器 artifacts 以提高跨优化级 diff 精度.
 #       QBinDiff (Quarkslab 2024) — 信念传播做函数匹配, 但不对基本块做归一化.
 #       本模块填补的函数级归一化在信念传播上游作为特征增强.
@@ -15,7 +15,6 @@
 #   - 不执行任何反汇编——操作对象为字节级 pattern 匹配和简单的操作码 mask
 #   - 平台描述字典仅覆盖 x86_64 和 ARM64 Thumb 的常用 opcodes
 #   - 对混淆代码 (OLLVM/flatten) 无效——规范化不能消除控制流平坦化
-from __future__ import annotations
 import re
 import struct
 from dataclasses import dataclass, field

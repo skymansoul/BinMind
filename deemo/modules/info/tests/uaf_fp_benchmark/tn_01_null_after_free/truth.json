@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_01_null_after_free",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: free 后置 NULL",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "p 置 NULL 后经 if(p) 守卫, 不会解引用已释放对象"
+}

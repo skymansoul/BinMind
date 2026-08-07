@@ -69,7 +69,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "ConformalAnomalyDetector": ("fuzzing.src.conformal_anomaly", "ConformalAnomalyDetector"),
     "MartingaleFuzzingAssessor": ("fuzzing.src.martingale_fuzz_assess", "MartingaleFuzzingAssessor"),
     "SurvivalFuzzModel": ("fuzzing.src.survival_fuzz_model", "SurvivalFuzzModel"),
-    # 跨战役元学习 / 对抗覆盖突破 / 平台期因果分析 (2026 Q3 专利补齐)
+    # 跨战役元学习 / 对抗覆盖突破 / 平台期因果分析
     "CrossCampaignMetaLearner": ("fuzzing.fuzz_meta_learner", "CrossCampaignMetaLearner"),
     "CampaignFingerprint": ("fuzzing.fuzz_meta_learner", "CampaignFingerprint"),
     "AdversarialCoverageBreaker": ("fuzzing.fuzz_adversarial_breaker", "AdversarialCoverageBreaker"),

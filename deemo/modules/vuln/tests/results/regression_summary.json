@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-06 17:38:50",
+  "n_samples_compiled": 0,
+  "n_samples_failed_compile": 0,
+  "n_scanned": 45,
+  "n_detected": 20,
+  "n_clean": 25,
+  "precision": 100.0,
+  "recall": 44.4,
+  "f1_score": 61.5,
+  "fp_rate": 36.2,
+  "fp_reduction_pct": 55.3,
+  "total_time_s": 2.3689999999999998,
+  "avg_time_per_sample_s": 0.053,
+  "comparison_csv": ""
+}

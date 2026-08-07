@@ -102,10 +102,8 @@ except ImportError:
     _redis = None
 
 
-# ---------------------------------------------------------------------------
 # 指数退避 — Google SRE 第23章 "应对过载" 的背压策略 + Celery retry_backoff
 # 添加 ±25% 均匀抖动，避免批量重试导致的惊群效应
-# ---------------------------------------------------------------------------
 def _backoff_delay(attempt: int, base: float = 2.0, cap: float = 600.0) -> float:
     """第 attempt 次重试的等待秒数，含随机抖动。"""
     import random
@@ -113,10 +111,8 @@ def _backoff_delay(attempt: int, base: float = 2.0, cap: float = 600.0) -> float
     return raw * (0.75 + random.random() * 0.5)
 
 
-# ---------------------------------------------------------------------------
 # Lua 脚本 — ZPOPMIN 取出 score ≤ now 的到期重试任务，原子搬迁到工作队列
 # 在一个往返中完成「取出 + 推入」，避免竞态窗口
-# ---------------------------------------------------------------------------
 _RETRY_POP_LUA = """
 local items = redis.call('ZPOPMIN', KEYS[1], ARGV[1])
 if not items or #items == 0 then return 0 end
@@ -129,12 +125,10 @@ return moved
 """
 
 
-# ---------------------------------------------------------------------------
 # 令牌桶限流器 — 惰性填充策略
 # 不在后台线程中定时补充令牌，而是在每次 acquire() 时根据时间差计算应补数量
 # 优势：零后台开销；代价：长时间空闲后的首次请求可能获得 burst 个令牌
-# 参考：Stripe timed rate limiter, Envoy token bucket filter
-# ---------------------------------------------------------------------------
+# Stripe timed rate limiter, Envoy token bucket filter
 class _TokenBucket:
     """惰性填充令牌桶。rate=每秒生成数, burst=桶容量（最大突发）。"""
 
@@ -166,7 +160,7 @@ class WorkerConfig:
         self.result_queue = result_queue
         self.poll_timeout = poll_timeout
         self.max_retries = max_retries
-        # —— 扩展配置，均设保守默认值以保证向后兼容 ——
+# 扩展配置，均设保守默认值以保证向后兼容
         self.dead_letter_queue = f"{queue}:dlq"
         self.retry_sorted_set = f"{queue}:retry"        # score = 下次执行时间戳
         self.heartbeat_key = "binmind:workers:heartbeat"
@@ -217,11 +211,9 @@ class JobResult:
                 "worker_id": self.worker_id}
 
 
-# ---------------------------------------------------------------------------
 # 熔断器 — Michael Nygard "Release It!" 三态断路器
 # 按 handler 类型独立维护故障计数，避免一个异常 handler 拖垮整个 worker
 # 半开状态允许一次探测：成功 → 关闭，失败 → 重新熔断
-# ---------------------------------------------------------------------------
 class _CircuitBreaker:
     """Per-handler circuit breaker with half-open probe."""
 
@@ -285,7 +277,7 @@ class Worker:
         # 优先级轮询计数器：记录当前循环号，用于决定本轮轮询哪个队列
         self._poll_counter = 0
 
-    # —— 连接管理：指数退避重连 ——
+# 连接管理：指数退避重连
     def _connect(self):
         if not REDIS_AVAILABLE:
             _log.warning("redis not available")
@@ -318,7 +310,7 @@ class Worker:
                 self._client = None
         self._connect()
 
-    # —— 心跳：后台 daemon 线程，周期性 SET with PX ——
+# 心跳：后台 daemon 线程，周期性 SET with PX
     def _heartbeat_loop(self):
         ttl_ms = self.cfg.heartbeat_interval * 3 * 1000
         while not self._stop.is_set():
@@ -332,7 +324,7 @@ class Worker:
                     pass
             self._stop.wait(self.cfg.heartbeat_interval)
 
-    # —— 限流器懒初始化 ——
+# 限流器懒初始化
     def _get_bucket(self, handler_name: str):
         if handler_name in self._buckets:
             return self._buckets[handler_name]
@@ -344,7 +336,7 @@ class Worker:
         self._buckets[handler_name] = _TokenBucket(rate, burst)
         return self._buckets[handler_name]
 
-    # —— 公开 API（向后兼容） ——
+# 公开 API（向后兼容）
     def register_handler(self, analysis_type, func):
         self._handlers[analysis_type] = func
 
@@ -364,7 +356,7 @@ class Worker:
         self._running = False
         self._stop.set()
 
-    # —— 主循环 ——
+# 主循环
     def _worker_loop(self):
         while self._running:
             try:
@@ -380,7 +372,7 @@ class Worker:
         self._drain_inflight()
         self._pool.shutdown(wait=True)
 
-    # —— 优先级轮询 ——
+# 优先级轮询
     def _poll_priority(self):
         """若未配置 priority_tiers，退化为原始单队列 BLPOP。
         若配置了优先级，基于加权轮询决定本轮从哪个队列拉取。
@@ -445,7 +437,7 @@ class Worker:
         fut = self._pool.submit(self._execute_with_timeout, job, retries)
         self._inflight[fut] = job
 
-    # —— 原有的 _poll 保留为内部方法，由 _poll_priority 委派 ——
+# 原有的 _poll 保留为内部方法，由 _poll_priority 委派
     def _poll(self):
         """单队列轮询 — 保留以支持外部代码直接调用的兼容场景。"""
         if self._client is None:
@@ -453,7 +445,7 @@ class Worker:
             return
         self._poll_queue(self.cfg.queue)
 
-    # —— 双层超时: 外层对整体加硬超时，内层为实际执行 ——
+# 双层超时: 外层对整体加硬超时，内层为实际执行
     def _execute_with_timeout(self, job: AnalysisJob, retries: int = 0) -> JobResult:
         fut_inner = self._pool.submit(self._execute, job, retries)
         try:
@@ -494,7 +486,7 @@ class Worker:
             self._send_to_dlq(job, str(e), retries)
             return JobResult(job.job_id, ok=False, error=str(e))
 
-    # —— 重试调度：sorted set 按时间戳索引延迟任务 ——
+# 重试调度：sorted set 按时间戳索引延迟任务
     def _schedule_retry(self, job: AnalysisJob, retry_count: int, delay: float):
         """写入 sorted set，score = 预定执行时间。
         _drain_retry_set 周期原子搬迁到期任务。
@@ -509,7 +501,7 @@ class Worker:
             _log.exception("retry schedule failed for %s → dlq", job.job_id)
             self._send_to_dlq(job, "retry schedule failed", retry_count)
 
-    # —— 死信队列 ——
+# 死信队列
     def _send_to_dlq(self, job: AnalysisJob, reason: str, retries: int):
         """永久失败任务入 DLQ，保留完整现场供运维排查和手动重放。"""
         dlq_entry = {"job": job.to_dict(), "reason": reason,
@@ -535,7 +527,7 @@ class Worker:
         except Exception:
             pass
 
-    # —— 结果收集：非阻塞轮询已完成 future ——
+# 结果收集：非阻塞轮询已完成 future
     def _collect_completed(self):
         done = [f for f in self._inflight if f.done()]
         for fut in done:
@@ -556,7 +548,7 @@ class Worker:
         except Exception:
             _log.exception("failed to publish result for %s", result.job_id)
 
-    # —— 优雅停机：排空在途任务 ——
+# 优雅停机：排空在途任务
     def _drain_inflight(self):
         if not self._inflight:
             return
@@ -602,7 +594,7 @@ class Worker:
     def connected(self):
         return self._client is not None
 
-    # —— 运维接口 ——
+# 运维接口
     @property
     def metrics(self):
         return dict(self._metrics)

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_02_tainted_size_write",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "cve": "CVE-2021-3156 类 (sudo_heap) 输入尺寸驱动溢出",
+  "expect_overflow": true,
+  "trigger": "./sample 4096 (n>64 即溢出)",
+  "why": "写入量 n 来自攻击者输入而分配量为固定 64, 无任何边界守卫"
+}

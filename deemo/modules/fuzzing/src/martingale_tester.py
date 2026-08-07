@@ -1,7 +1,7 @@
 """测试鞅与 e-value — 随时有效统计推断基础设施.
 
 从 martingale_fuzz_assess.py 分离, 提供纯数学层。
-参考: Shafer & Vovk (2019) "Game-Theoretic Foundations", Ramdas et al. (2023)
+参考: Shafer & Vovk "Game-Theoretic Foundations", Ramdas et al.
 """
 
 import math

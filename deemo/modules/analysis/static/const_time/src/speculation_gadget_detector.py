@@ -1,6 +1,6 @@
-# 创建: 2025-08-15 10:12
-# 修改: 2025-08-15 — 多污点 + 控制流标记 -> Spectre v1/v2/v4 检测
-# 修改: 2025-08-16 — 移除装饰性引用, 替换为 Schwartz et al. (S&P 2010)
+# 创建: 2026-07-07 10:12
+# 修改: 2026-07-07 — 多污点 + 控制流标记 -> Spectre v1/v2/v4 检测
+# 修改: 2026-07-07 — 移除装饰性引用, 替换为 Schwartz et al.
 """
 二进制级推测执行小工具检测器 — Spectre 类漏洞的静态发现。
 
@@ -20,13 +20,13 @@
   - 不确定性跟踪: 区分 confirmed gadget (必然可利用) vs potential (条件触发)
   - 缓存效应建模: 仅标记会改变缓存状态 (非寄存器) 的推测访存
 
-ref: SCOUT-CT (ePrint 2026/776) — multi-taint + uncertainty tracking for
+ref: SCOUT-CT — multi-taint + uncertainty tracking for
      binary-level CT analysis, 本项目将其 uncertainty tracking 扩展到推测执行场景
-ref: ExfilState (CCS 2025) — timer-free cache side channel discovery
-ref: Spectre (Kocher et al., IEEE S&P 2019) — Spectre v1/v2/v4 的原始论文,
+ref: ExfilState — timer-free cache side channel discovery
+ref: Spectre — Spectre v1/v2/v4 的原始论文,
      本模块的 gadget 分类 (bounds-check-bypass/branch-target-injection/store-bypass)
      直接对应其三类 Spectre 变体
-ref: 多污点追踪 (Schwartz et al., IEEE S&P 2010) — 二进制级污点分析基础,
+ref: 多污点追踪 — 二进制级污点分析基础,
      本项目将其适配到推测执行场景 (控制流标记+条件分支标记)
 """
 
@@ -73,7 +73,7 @@ class SpecGadget:
     description: str = ''
 
 
-# --- 多污点追踪 ---
+# 多污点追踪
 
 class SpeculationTaintTracker:
     """多污点追踪——同时追踪秘密标记和控制流标记。
@@ -179,7 +179,7 @@ class SpeculationTaintTracker:
         }
 
 
-# --- 小工具验证器 ---
+# 小工具验证器
 # 对检测到的 potential gadget 进行约束求解验证——确认推测执行是否真的
 # 会导致可观测的缓存状态变化。
 

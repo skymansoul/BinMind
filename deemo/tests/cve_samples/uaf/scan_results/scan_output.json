@@ -1,0 +1,604 @@
+{
+  "benchmark": "UAF-15 (TARP-E cascade)",
+  "total_samples": 15,
+  "tp": 9,
+  "tn": 6,
+  "fp": 0,
+  "fn": 0,
+  "precision_pct": 100.0,
+  "recall_pct": 100.0,
+  "f1_score": 100.0,
+  "fp_rate_pct": 0.0,
+  "candidates_confirmed": 4,
+  "candidates_filtered": 7,
+  "results": [
+    {
+      "sample": "uaf_01",
+      "files_scanned": [
+        "uaf_01_direct.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "buf",
+          "func": "uaf_01_direct",
+          "alloc_lineno": 7,
+          "free_lineno": 10,
+          "use_lineno": 12,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for buf, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 87.99576759338379,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_01_direct",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Direct free-then-use without NULL assignment — genuine UAF"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_02",
+      "files_scanned": [
+        "uaf_02_alias.c"
+      ],
+      "candidates": [
+        {
+          "ptr_name": "alias",
+          "func": "uaf_02_alias",
+          "alloc_lineno": 7,
+          "free_lineno": 11,
+          "use_lineno": 13,
+          "confidence": 0.55,
+          "verdict": "LIKELY_TP",
+          "reason": "Phase2: free block 1 reaches use block 1 — UAF path confirmed; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(reachable)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.997875213623047,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_02_alias",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Alias-based UAF — free via alias, use via original pointer"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_03",
+      "files_scanned": [
+        "uaf_03_cross_func.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "g_buf",
+          "func": "uaf_03_cross_func",
+          "alloc_lineno": 8,
+          "free_lineno": 12,
+          "use_lineno": 17,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for g_buf, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "g_buf",
+          "func": "uaf_03_cross_func",
+          "alloc_lineno": 8,
+          "free_lineno": 12,
+          "use_lineno": 19,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for g_buf, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 3.8094520568847656,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_03_cross_func",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Cross-function UAF via global pointer — free in one function, use in another"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_04",
+      "files_scanned": [
+        "uaf_04_callback.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "data",
+          "func": "uaf_04_callback",
+          "alloc_lineno": 0,
+          "free_lineno": 12,
+          "use_lineno": 14,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for data, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 4.205942153930664,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_04_callback",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Callback UAF — freed pointer passed to callback function"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_05",
+      "files_scanned": [
+        "uaf_05_double_free.c"
+      ],
+      "candidates": [
+        {
+          "ptr_name": "a",
+          "func": "uaf_05_double_free",
+          "alloc_lineno": 0,
+          "free_lineno": 7,
+          "use_lineno": 7,
+          "confidence": 0.9,
+          "verdict": "LIKELY_TP",
+          "reason": "Phase2: free block 0 reaches use block 0 — UAF path confirmed; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(reachable)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 3.3729076385498047,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_05_double_free",
+        "vuln_type": "double-free",
+        "expected": "TP",
+        "cwe": "CWE-415",
+        "description": "Double free — same pointer freed twice in cleanup path"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_06",
+      "files_scanned": [
+        "uaf_06_conditional_no_null.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "buf",
+          "func": "uaf_06_conditional_no_null",
+          "alloc_lineno": 7,
+          "free_lineno": 12,
+          "use_lineno": 17,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for buf, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 2.2351741790771484,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_06_conditional_no_null",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Conditional free without NULL — UAF on the free-taken path"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_07",
+      "files_scanned": [
+        "uaf_07_loop.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "items",
+          "func": "uaf_07_loop",
+          "alloc_lineno": 8,
+          "free_lineno": 12,
+          "use_lineno": 12,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for items, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "items",
+          "func": "uaf_07_loop",
+          "alloc_lineno": 8,
+          "free_lineno": 12,
+          "use_lineno": 14,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for items, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "items",
+          "func": "uaf_07_loop",
+          "alloc_lineno": 8,
+          "free_lineno": 12,
+          "use_lineno": 16,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for items, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 3.2634735107421875,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_07_loop",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Loop-based UAF — bulk free in loop, then use after loop"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_08",
+      "files_scanned": [
+        "uaf_08_struct_field.c"
+      ],
+      "candidates": [
+        {
+          "ptr_name": "p",
+          "func": "uaf_08_struct_field",
+          "alloc_lineno": 12,
+          "free_lineno": 16,
+          "use_lineno": 17,
+          "confidence": 0.55,
+          "verdict": "LIKELY_TP",
+          "reason": "Phase2: free block 2 reaches use block 2 — UAF path confirmed; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(reachable)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "p",
+          "func": "uaf_08_struct_field",
+          "alloc_lineno": 12,
+          "free_lineno": 16,
+          "use_lineno": 18,
+          "confidence": 0.55,
+          "verdict": "LIKELY_TP",
+          "reason": "Phase2: free block 2 reaches use block 2 — UAF path confirmed; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(reachable)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.0203590393066406,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_08_struct_field",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Struct field UAF — free struct, then access struct field via dangling pointer"
+      },
+      "classification": "TP"
+    },
+    {
+      "sample": "uaf_09",
+      "files_scanned": [
+        "uaf_09_null_after_free.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 0.99945068359375,
+      "error": null,
+      "phase0_filtered": 1,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_09_null_after_free",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "NULL-after-free — pointer nullified, not a dangling pointer use"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_10",
+      "files_scanned": [
+        "uaf_10_immediate_reuse.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 0.9989738464355469,
+      "error": null,
+      "phase0_filtered": 2,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_10_immediate_reuse",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "Immediate reuse — reallocated after free, pointer points to new valid memory"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_11",
+      "files_scanned": [
+        "uaf_11_conditional_null.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.9959678649902344,
+      "error": null,
+      "phase0_filtered": 2,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_11_conditional_null",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "Conditional free with NULL — nullified on free path, valid on non-free path"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_12",
+      "files_scanned": [
+        "uaf_12_realloc_reuse.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.7005672454833984,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_12_realloc_reuse",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "Realloc reuse — realloc properly transfers ownership, not a UAF"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_13",
+      "files_scanned": [
+        "uaf_13_branch_exclusive.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.079486846923828,
+      "error": null,
+      "phase0_filtered": 1,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_13_branch_exclusive",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "Branch-exclusive — free and use in mutually exclusive branches, safe"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_14",
+      "files_scanned": [
+        "uaf_14_guarded_reassign.c"
+      ],
+      "candidates": [],
+      "uncertain": [],
+      "filtered": [],
+      "scan_time_ms": 2.044677734375,
+      "error": null,
+      "phase0_filtered": 1,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_14_guarded_reassign",
+        "vuln_type": "none",
+        "expected": "TN",
+        "description": "Guarded free with reassign — pointer always reassigned before use, safe"
+      },
+      "classification": "TN"
+    },
+    {
+      "sample": "uaf_15",
+      "files_scanned": [
+        "uaf_15_struct_ptr_reuse.c"
+      ],
+      "candidates": [],
+      "uncertain": [
+        {
+          "ptr_name": "r",
+          "func": "uaf_15_struct_ptr_reuse",
+          "alloc_lineno": 0,
+          "free_lineno": 29,
+          "use_lineno": 29,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for r, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "r",
+          "func": "uaf_15_struct_ptr_reuse",
+          "alloc_lineno": 0,
+          "free_lineno": 29,
+          "use_lineno": 30,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for r, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        },
+        {
+          "ptr_name": "r",
+          "func": "uaf_15_struct_ptr_reuse",
+          "alloc_lineno": 0,
+          "free_lineno": 29,
+          "use_lineno": 31,
+          "confidence": 0.45,
+          "verdict": "UNCERTAIN",
+          "reason": "Phase1: no alias info for r, keep as UNCERTAIN; Phase3: STACK-only escape → limited exploitability",
+          "escape": "STACK",
+          "phases": [
+            "P0(pass)",
+            "P1(alias_checked)",
+            "P2(no_cfg_match)",
+            "P3(stack)"
+          ]
+        }
+      ],
+      "filtered": [],
+      "scan_time_ms": 7.729768753051758,
+      "error": null,
+      "phase0_filtered": 0,
+      "phase1_filtered": 0,
+      "phase2_filtered": 0,
+      "truth": {
+        "sample": "uaf_15_struct_ptr_reuse",
+        "vuln_type": "use-after-free",
+        "expected": "TP",
+        "cwe": "CWE-416",
+        "description": "Cross-function struct field UAF — struct freed in helper, field accessed in caller"
+      },
+      "classification": "TP"
+    }
+  ]
+}

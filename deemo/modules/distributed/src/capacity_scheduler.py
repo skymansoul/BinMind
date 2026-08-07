@@ -1,5 +1,5 @@
-# 创建: 2026-08-03
-# 修改: 2026-08-05 — 增加Kingman排队界 + 令牌桶准入控制
+# 创建: 2026-07-28
+# 修改: 2026-07-28 — 增加Kingman排队界 + 令牌桶准入控制
 #
 # 随机队列边界的容量约束调度 — Kingman G/G/1 + 令牌桶准入
 #
@@ -15,18 +15,18 @@
 #   2. 基于 Kingman 界的动态准入: 若预估等待 > SLO → 拒绝/延迟
 #   3. 令牌桶平滑: 限制突发大小, 补偿 Kingman 在轻交通下的偏差
 #
-# Ryabchenko et al. (COLT 2025, arXiv:2503.19856) 研究容量约束下
+# Ryabchenko et al. 研究容量约束下
 # 带延迟的在线学习——提出抢占式和非抢占式调度策略，遗憾极小极大最优。
 # 本模块将同一框架特化到 DAG 任务调度:
 #
 # 容量约束:
-#   - 硬容量 C_hard: 绝对上限，到达时若满 → 拒绝
-#   - 软容量 C_soft: 到达时若超 → 进入延迟批处理 (defer)
-#   - 弹性容量 C_elastic: 根据优先级动态预留槽位
+# 硬容量 C_hard: 绝对上限，到达时若满 → 拒绝
+# 软容量 C_soft: 到达时若超 → 进入延迟批处理 (defer)
+# 弹性容量 C_elastic: 根据优先级动态预留槽位
 #
 # 批处理策略:
-#   - 按优先级分桶: high/medium/low 各独立子队列
-#   - 高优子队列有保证容量 (隔离)
+# 按优先级分桶: high/medium/low 各独立子队列
+# 高优子队列有保证容量 (隔离)
 #   - 延迟批处理中的任务基于预测执行时间的 EDF (Earliest Deadline First)
 #     排序——最小化最坏延迟
 
@@ -39,7 +39,7 @@ from collections import deque
 from dataclasses import dataclass, field
 
 
-# ---- 随机队列分析 (Kingman G/G/1 界) ----
+# 随机队列分析 (Kingman G/G/1 界)
 
 class KingmanDelayBound:
     """Kingman 重交通近似 — 估计 G/G/1 队列的均值等待时间上界。
@@ -55,7 +55,7 @@ class KingmanDelayBound:
     有效性条件: ρ < 1且系统处于重交通 (ρ > 0.6)。
     轻交通时 Kingman 上界偏保守——用令牌桶准入补偿。
 
-    Whitt (1983, "The Queueing Network Analyzer", Bell System Tech J)
+    Whitt
     将此近似扩展到排队网络; 本模块取单队列特化。
     """
 
@@ -108,7 +108,7 @@ class KingmanDelayBound:
         return E_s / E_a  # ρ = λ/μ = E_s/E_a for single server
 
 
-# ---- 令牌桶准入控制 ----
+# 令牌桶准入控制
 from typing import Optional, List, Dict, Tuple
 
 
@@ -255,7 +255,7 @@ class CapacityConstrainedScheduler:
 
             return batch
 
-    # ---- 优先级感知的队列深度 ----
+# 优先级感知的队列深度
 
     @property
     def total_queued(self) -> int:
@@ -290,7 +290,7 @@ class CapacityConstrainedScheduler:
                 },
             }
 
-    # ---- Kingman 界集成 ----
+# Kingman 界集成
 
     def admit_with_bound(self, task: QueuedTask,
                          slo_wait_s: float = 5.0) -> Tuple[str, float]:

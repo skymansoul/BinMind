@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 15:39
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-12 15:39
+# 修改: 2026-05-12 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 持久同调CVE景观分析
 # 拓扑数据分析 — CVE漏洞景观的持久同调特征
 #
@@ -36,9 +36,9 @@
 #      无需领域知识即可量化CVE景观的"信息丰富度".
 #   3. 拓扑变化检测: 持久图的Wasserstein距离跟踪分布漂移.
 #
-# 参考:
-#   [Xie & Ding 2026] TDA for Higher-Order Network Vulnerabilities
-#   [Ferrara 2025] Topological Vulnerability Index (TVI)
+#
+# TDA for Higher-Order Network Vulnerabilities
+# Topological Vulnerability Index (TVI)
 #   [检索确认] 零论文将持久同调应用于CVE特征空间
 
 import math
@@ -232,7 +232,7 @@ class VietorisRipsFiltration:
         }
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def analyze_cve_topology(features: List[List[float]]
                          ) -> Dict[str, Any]:

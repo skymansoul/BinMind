@@ -1,6 +1,6 @@
 # 计时代码块/函数的上下文管理器和装饰器
-# VMPredator [arXiv:2605.30902] 的 DBI 追踪阶段依赖精确的指令级计时；
-# ISC4DGF [arXiv:2409.14329 [待验证]] 评估种子生成管线的加速比 ——
+# VMPredator 的 DBI 追踪阶段依赖精确的指令级计时；
+# ISC4DGF] 评估种子生成管线的加速比 ——
 # 此处提供支持累计统计和百分位数的时间测量工具。
 import time
 import functools
@@ -220,7 +220,7 @@ class TimingStats:
         self._sorted = False
 
 
-# ---- 全局命名计时器池 ----------------------------------------------------
+# 全局命名计时器池
 
 _timers: Dict[str, CumulativeTimer] = defaultdict(CumulativeTimer)
 
@@ -237,7 +237,6 @@ def reset_all_timers():
     _timers.clear()
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

@@ -16,12 +16,12 @@
   每条 x86-64 指令分配一个"微架构成本"（Agner Fog 数据），
   按补丁的预期执行频率加权求和得到总分。
 
-与 PerfScope [ICSE 2014] 的差异：
+与 PerfScope 的差异：
   PerfScope 操作在 commit/patch 文件层面，用 AST 映射到代价函数。
   本模块操作在汇编指令层面，用微架构延迟表直接计算代价。
   不需要 profile database 作为先验——纯静态分析。
 
-与 Cheng et al. [2024 TD Commons] 的差异：
+与 Cheng et al. 的差异：
   那个方案是两阶段：静态 AST diff → 动态 profiling。
   本模块完全静态——不需要执行环境，适用于 closed-source binary。
 
@@ -274,7 +274,7 @@ class InstructionCostEstimator:
         return count
 
 
-# ── 性能影响预测器 ────────────────────────────────────────────────
+# 性能影响预测器
 
 class PerfImpactPredictor:
     """补丁性能影响静态预测。

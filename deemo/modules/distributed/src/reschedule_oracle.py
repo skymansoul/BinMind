@@ -7,7 +7,7 @@
 # 输入: FaultPropagationGraph 的根因分析结果 + 当前调度计划 + TaskDependencyGraph
 # 输出: 修改后的调度方案 (受影响的子集)，最小化 makespan 退化 + 迁移代价
 #
-# 与 EFTR-HGNet (IEEE IoT-J 2025) 的区别:
+# 与 EFTR-HGNet 的区别:
 #   EFTR-HGNet 使用 Heterogeneous GNN + A2C 做端到端故障恢复，
 #   本模块采用更轻量但可解释的两阶段方法:
 #     1. 受影响任务识别 (基于 FaultPropagationGraph 的影响域)
@@ -16,8 +16,8 @@
 #
 # 论文对照:
 #   - EFTR-HGNet: 自动将受影响任务放入 rescheduling queue → 此处等价实现
-#   - MADRL-FJSP (RCIM 2024): 多目标 (稳定性 + makespan) → 此处用加权目标
-#   - 故障影响域识别由 fault_propagation 模块提供
+#   - MADRL-FJSP: 多目标 (稳定性 + makespan) → 此处用加权目标
+# 故障影响域识别由 fault_propagation 模块提供
 
 from __future__ import annotations
 
@@ -137,7 +137,7 @@ class RescheduleOracle:
             "affected_nodes": len(affected_ids),
         }
 
-    # ---- 内部 ----
+# 内部
 
     def _no_change_result(self, dag, order):
         sim = MakespanSimulator(self._m_count)
@@ -238,7 +238,7 @@ class RescheduleOracle:
         return best
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 
 def reschedule_after_fault(
     dag: TaskDependencyGraph,

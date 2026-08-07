@@ -12,11 +12,11 @@
 #      返回值的污点状态反馈到调用点
 #   层3 — 净化检测: 识别边界检查/编码/加密操作→
 #      区分"污点到达sink"和"污点被净化后到达sink"
-# 参考 (已验证真实):
+# (已验证真实):
 #   Schwartz et al. "All You Ever Wanted to Know About Dynamic Taint
-#     Analysis" (IEEE S&P 2010) — 污点传播规则的形式化定义
+#     Analysis" — 污点传播规则的形式化定义
 #   Shoshitaishvili et al. "SOK: (State of) The Art of War: Offensive
-#     Techniques in Binary Analysis" (IEEE S&P 2016) — 二进制分析技术综述
+#     Techniques in Binary Analysis" — 二进制分析技术综述
 from __future__ import annotations
 import logging, re
 from collections import defaultdict

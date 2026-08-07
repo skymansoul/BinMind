@@ -107,7 +107,7 @@ class DebtReport:
         }
 
 
-# ── Gadget 扫描器 ─────────────────────────────────────────────────
+# Gadget 扫描器
 
 class GadgetScanner:
     """在二进制字节流中扫描 ROP gadget。
@@ -179,7 +179,7 @@ class GadgetScanner:
         return False
 
 
-# ── 熵计算器 ──────────────────────────────────────────────────────
+# 熵计算器
 
 class EntropyCalculator:
     """字节级 Shannon 熵计算。"""
@@ -206,7 +206,7 @@ class EntropyCalculator:
         return abs(h - ref) / ref
 
 
-# ── 优化偏离度检测器 ──────────────────────────────────────────────
+# 优化偏离度检测器
 
 class OptimizationDivergenceDetector:
     """检测补丁代码与编译器优化输出的偏离程度。
@@ -265,7 +265,7 @@ class OptimizationDivergenceDetector:
         return min(divergence, 1.0)
 
 
-# ── 债务量化器 ────────────────────────────────────────────────────
+# 债务量化器
 
 class PatchDebtQuantifier:
     """补丁技术债务主量化器。

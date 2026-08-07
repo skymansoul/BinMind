@@ -1,5 +1,5 @@
 # compat/ 子模块代理 — 信息泄露检测，importlib 规格方式加载上游模块。
-# 参考: FirmRec (ACM CCS 2024) 漏洞签名提取; CO3/SHACO (USENIX 2024) 混合执行。
+# FirmRec (ACM CCS 2024) 漏洞签名提取; CO3/SHACO (USENIX 2024) 混合执行。
 from importlib.util import spec_from_file_location as _spec_from, module_from_spec as _mod_from
 import os as _os
 

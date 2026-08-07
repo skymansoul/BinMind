@@ -1,0 +1,4 @@
+Tool,TP,FP,TN,FN,Precision,Recall,F1,FPR
+BinMind-Full,22,6,18,16,0.7857,0.5789,0.6667,0.2500
+Regex-Baseline,10,2,22,28,0.8333,0.2632,0.4000,0.0833
+Angr-Source,32,20,4,6,0.6154,0.8421,0.7111,0.8333

@@ -1,7 +1,7 @@
-# Created: 2025-07-29 13:00:00
+# Created: 2026-06-10 13:00:00
 # run_regression — 回归测试主入口
 # 编排完整流程: 编译 → 扫描 → 解析 → 报告
-# 用法: python run_regression.py [--tier 3] [--sample CVE-2014-0160_heartbleed]
+# 用法: python run_regression.py [--tier 3]
 
 import sys, argparse
 from pathlib import Path

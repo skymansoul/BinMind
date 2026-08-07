@@ -18,10 +18,9 @@
 
   每项输出 PRESENT / ABSENT / UNCERTAIN 三级判定, 附带二进制证据。
 
-参考:
-  - Balasch et al. (TCHES 2025): 掩码实现的编译器优化破坏 — DSE消除掩码。
-  - Hu et al. (Entropy 2025): SM4白盒4阶非线性编码+表访问重排。
-  - GnuZero (DSN 2025): 编译器级零化验证 — 对策的编译器幸存性。
+  - Balasch et al.: 掩码实现的编译器优化破坏 — DSE消除掩码。
+  - Hu et al.: SM4白盒4阶非线性编码+表访问重排。
+  - GnuZero: 编译器级零化验证 — 对策的编译器幸存性。
 
 边界条件:
   - 静态验证只能确认对策代码"存在" — 不能验证运行时正确性。
@@ -32,7 +31,6 @@
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
-
 
 @dataclass
 class CountermeasureCheck:
@@ -45,8 +43,7 @@ class CountermeasureCheck:
     risk_if_absent: str = ""       # 若对策不存在 → 面临什么攻击?
     standard_reference: str = ""   # FIPS 140-3 IG / 通用准则 / etc.
 
-
-# ── C1: 布尔掩码检测 ──
+# C1: 布尔掩码检测
 _MASKING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'random_mask', 'random mask generation', 0.85),
     (b'generate_mask', 'mask generation function', 0.80),
@@ -56,7 +53,7 @@ _MASKING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'xor_mask', 'XOR masking pattern', 0.75),
 ]
 
-# ── C2: 表重排检测 ──
+# C2: 表重排检测
 _SHUFFLING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'shuffle_table', 'table shuffling', 0.85),
     (b'permute_table', 'table permutation', 0.82),
@@ -66,7 +63,7 @@ _SHUFFLING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'TableR', 'TableR (shuffle index table)', 0.88),
 ]
 
-# ── C3: 盲化检测 ──
+# C3: 盲化检测
 _BLINDING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'blinding', 'blinding factor reference', 0.82),
     (b'blinding_factor', 'blinding factor', 0.88),
@@ -75,7 +72,7 @@ _BLINDING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'scalar_blinding', 'scalar blinding (ECC)', 0.85),
 ]
 
-# ── C4: 常量时间屏障检测 ──
+# C4: 常量时间屏障检测
 _BARRIER_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'asm volatile', 'volatile asm barrier (GCC/Clang)', 0.85),
     (b'__asm__ __volatile__', 'volatile asm barrier', 0.88),
@@ -87,7 +84,7 @@ _BARRIER_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'lfence', 'x86 load fence (Spectre mitigation)', 0.80),
 ]
 
-# ── C5: 故障检测检测 ──
+# C5: 故障检测检测
 _FAULT_DETECT_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'fault_detect', 'fault detection', 0.85),
     (b'fault_attack', 'fault attack countermeasure', 0.85),
@@ -99,7 +96,7 @@ _FAULT_DETECT_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'diffusion_countermeasure', 'diffusion countermeasure', 0.85),
 ]
 
-# ── C6: 随机延迟检测 ──
+# C6: 随机延迟检测
 _DELAY_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'random_delay', 'random delay', 0.82),
     (b'random_wait', 'random wait', 0.80),
@@ -107,7 +104,6 @@ _DELAY_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'dummy_operation', 'dummy operation insertion', 0.78),
     (b'random_nop', 'random NOP insertion', 0.82),
 ]
-
 
 def _check_patterns(data: bytes, patterns: List[Tuple[bytes, str, float]]
                     ) -> Tuple[bool, float, List[str]]:
@@ -121,7 +117,6 @@ def _check_patterns(data: bytes, patterns: List[Tuple[bytes, str, float]]
     present = len(found) >= 1
     avg_conf = (best_conf + min(1.0, len(found) * 0.15)) / 2.0 if present else 0.0
     return present, avg_conf, found
-
 
 def verify_countermeasures(data: bytes, algo_hint: str = ""
                            ) -> List[CountermeasureCheck]:
@@ -165,7 +160,7 @@ def verify_countermeasures(data: bytes, algo_hint: str = ""
         status='PRESENT' if present else 'ABSENT',
         confidence=conf, evidence=evidence,
         risk_if_absent='无屏障→编译器优化可能破坏常量时间代码(Schneider 2024)',
-        standard_reference='DOCC (USENIX 2024) / GnuZero (DSN 2025)'))
+        standard_reference='DOCC  / GnuZero (DSN 2025)'))
 
     # C5: 故障检测
     present, conf, evidence = _check_patterns(data, _FAULT_DETECT_PATTERNS)
@@ -186,7 +181,6 @@ def verify_countermeasures(data: bytes, algo_hint: str = ""
         standard_reference='ISO 17825 Annex C'))
 
     return checks
-
 
 def countermeasure_coverage(checks: List[CountermeasureCheck]) -> Tuple[int, int, str]:
     """统计对策覆盖率: (已部署数, 总数, 评估)。"""

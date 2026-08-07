@@ -10,10 +10,9 @@ x86/x64 子寄存器级污点追踪器 — 字节粒度状态机。
   propagate('rax', 'rbx')  → 将 RBX 的全部污点传播到 RAX
   untaint('eax', zero_extend_32=True) → 清除 EAX 并 zero-extend
 
-参考:
   angr sub-register taint fixes (github.com/borzacchiello/angr, c4f6892)
     — 使用完整寄存器偏移量检查子寄存器污点
-  TaintInduce (NDSS 2019) — 学习 x86/ARM64/MIPS 的污点传播规则
+  TaintInduce — 学习 x86/ARM64/MIPS 的污点传播规则
   Clang Static Analyzer Taint.cpp — TaintedSubRegions 模式
 
 修改记录:
@@ -29,7 +28,6 @@ _GP64_NAMES = frozenset({
     'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
     'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15'
 })
-
 
 class SubRegTaintTracker:
     """
@@ -62,7 +60,7 @@ class SubRegTaintTracker:
             self._gp[parent] = TaintState(8)
         return self._gp[parent]
 
-    # --- 基本操作 ---
+# 基本操作
 
     def taint(self, reg: str, byte_offset: int = 0, byte_count: int = -1):
         """
@@ -110,7 +108,7 @@ class SubRegTaintTracker:
         if zero_extend_32 and dst_p_size == 4:
             dst_state.clear_range(4, 4)
 
-    # --- 查询 ---
+# 查询
 
     def query(self, reg: str) -> TaintState:
         """返回寄存器的 TaintState 引用 (修改会影响内部状态)。"""

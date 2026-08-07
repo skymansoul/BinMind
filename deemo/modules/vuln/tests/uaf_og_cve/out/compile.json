@@ -1,0 +1,127 @@
+{
+  "compiler": "x86_64-w64-mingw32-gcc",
+  "samples": [
+    {
+      "sample": "tn-og-01_reassign",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "tn-og-02_null_after_free",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "tn-og-03_loop_reinit",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "tn-og-04_callee_param",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "tn-og-05_use_before_free",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-01_cve2021-26708_vsock",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-02_cve2023-32233_nft",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-03_cve2022-32250_nft",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-04_cve2024-1086_nft",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-05_cve2019-2215_binder",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-06_cve2018-9568_binder",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-07_cve2020-10713_grub2",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-08_cve2016-6187_perf",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-09_cve2017-0861_audio",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-10_cve2022-1011_aio",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-11_cve2023-0461_iouring",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-12_cve2020-14351_perf",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-13_cve2021-34556_wifi",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-14_cve2019-15239_iwlwifi",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf-og-15_cve2021-22600_netfilter",
+      "ok": true,
+      "binary": "existing",
+      "time_s": 0.0
+    }
+  ],
+  "ok_count": 20,
+  "total": 20
+}

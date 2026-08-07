@@ -13,7 +13,7 @@ per-byte 变异. Fitness = 覆盖率_gain * 0.7 + risk_score * 0.3
 
 epsilon-greedy 策略的意义：纯贪心策略容易陷入局部最优——总是选最高分的路径
 会导致探索集中在程序的一个子区域。epsilon 参数以固定概率引入随机探索
-在 漏洞利用ation 与 exploration 之间取得平衡，参考 Sutton & Barto (2018)
+在 漏洞利用ation 与 exploration 之间取得平衡，参考 Sutton & Barto
 
 AdaptiveEpsilon 用指数衰减替代硬编码 epsilon，使探索前期更激进、后期更精耕
 CoverageDeltaTracker 用环形缓冲区追踪每步增量，检测覆盖衰退并自动触发变异增强
@@ -111,11 +111,9 @@ class GeneticSeed:
         return hashlib.sha256(self.input_bytes).hexdigest()[:16]
 
 
-# ---------------------------------------------------------------------------
 # 字节熵计算：作为种子多样性的代理指标
 # 在遗传算法 fitness 中加入熵奖励项，避免种群过早收敛到单一字节模式
 # 权重 0.05，仅起轻微引导作用，不主导选择
-# ---------------------------------------------------------------------------
 def _entropy_of_bytes(buf: bytes) -> float:
     if not buf:
         return 0.0
@@ -200,7 +198,6 @@ class CoverageTracker:
             return (last - first) / max(1, len(recent))
 
 
-# ---------------------------------------------------------------------------
 # CoverageDeltaTracker — 环形缓冲区追踪每步增量，自动检测覆盖衰退
 #
 # 设计意图：当覆盖增长进入平台期（最近10步均值 < 历史峰值的10%）
@@ -208,7 +205,6 @@ class CoverageTracker:
 # cov_ring 用 deque(maxlen=50) 实现，O(1) 追加和滑动窗口查询
 # peak_delta 记录单步最大增益，all_time_peak 记录整个探索周期的峰值
 # 两者区分用于不同粒度的衰退判断
-# ---------------------------------------------------------------------------
 class CoverageDeltaTracker:
     """Ring-缓冲区 tracker per-step 覆盖率 deltas
     
@@ -260,7 +256,6 @@ class CoverageDeltaTracker:
         self.peak_delta = 0.0
 
 
-# ---------------------------------------------------------------------------
 # AdaptiveEpsilon — 指数衰减 epsilon，替代硬编码常量
 #
 # 公式：eps = min_eps + (max_eps - min_eps) * exp(-step / decay_rate)
@@ -269,7 +264,6 @@ class CoverageDeltaTracker:
 # 早期（step 小）epsilon 接近 0.15，偏向随机探索，快速覆盖程序空间；
 # 后期（step 大）epsilon 衰减到 0.02，几乎纯贪心，精耕高收益路径
 # 30.0 的衰减常数意味着大约 90 步后 epsilon 降至 0.02 附近
-# ---------------------------------------------------------------------------
 class AdaptiveEpsilon:
     """Exponential decay epsilon for epsilon-greedy exploration
     
@@ -559,11 +553,9 @@ class CoverageGuidedSymbolicExecutor:
         self._binary_path = binary_path
         self._coverage_tracker.set_total(total_blocks, total_edges)
 
-    # ------------------------------------------------------------------
     # 停滞自适应：覆盖率不动 → mutation boost + 随机探索 burst
     # 两路触发源：覆盖率Tracker 的 stagnant_steps 计数器
     # 以及 CoverageDeltaTracker 的环形缓冲区衰退检测
-    # ------------------------------------------------------------------
     def _check_stagnation(self):
         """Evaluate stagnation two independent signals react
         
@@ -764,7 +756,6 @@ class CoverageGuidedSymbolicExecutor:
         }
 
 
-# ---------------------------------------------------------------------------
 # Streaming覆盖率Reporter — 异步生成器产出覆盖快照
 #
 # 设计意图：实时监控面板或 webhook 消费者可以逐帧迭代覆盖快照
@@ -777,7 +768,6 @@ class CoverageGuidedSymbolicExecutor:
 #
 # stop_checker 回调允许外部在每次 yield 后检查是否应终止流
 # 返回 None 表示正常退出，否则返回哨兵值
-# ---------------------------------------------------------------------------
 class StreamingCoverageReporter:
     """Yield 覆盖率 快照s an async generator for real-time 消费者s
     
@@ -879,7 +869,6 @@ class StreamingCoverageReporter:
                 return
 
 
-# ---------------------------------------------------------------------------
 # DictionaryGenerator — 从高适应度遗传种子中提取 magic byte 序列
 #
 # 从遗传优化器的种群中选取 fitness 前 N 的个体（默认 top_k=20）
@@ -892,7 +881,6 @@ class StreamingCoverageReporter:
 #
 # min_occurrences 控制子序列在单一种子内至少出现多少次才被收录
 # 默认为 2，避免收录偶然的单次匹配
-# ---------------------------------------------------------------------------
 class DictionaryGenerator:
     """提取 magic byte sequences high-fitness genetic seeds
     输出 an AFL-compatible dictionary file
@@ -997,7 +985,6 @@ class DictionaryGenerator:
         return len(tokens)
 
 
-# ---------------------------------------------------------------------------
 # Crash签名Builder — 构建 crash 去重签名
 #
 # crash 签名由三个字段组成：(crash_address, crash_type, top_3_栈_frames_hash)
@@ -1006,7 +993,6 @@ class DictionaryGenerator:
 #
 # 相同签名的 crash 视为同源，用于分组去重——避免同一 root cause 的不同
 # 输入变体淹没 triage 队列
-# ---------------------------------------------------------------------------
 @dataclass
 class CrashSignature:
     """Deduplication 签名 for grouping similar crashes
@@ -1146,7 +1132,6 @@ def run_coverage_guided_symbex(
     return result
 
 
-# ---------------------------------------------------------------------------
 # 检查点序列化/反序列化 — 遗传优化器种群的持久化
 #
 # 保存内容：population 列表（每个 GeneticSeed 的完整字段）、generation
@@ -1155,7 +1140,6 @@ def run_coverage_guided_symbex(
 #
 # 恢复时调用方负责将 population 赋值回 优化器.population
 # generation 赋值回 优化器.generation，并将 delta 值恢复到 tracker
-# ---------------------------------------------------------------------------
 def serialize_checkpoint(optimizer: GeneticPathOptimizer,
                          delta_tracker: CoverageDeltaTracker,
                          filepath: str):

@@ -29,7 +29,7 @@ except ImportError:
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -124,7 +124,7 @@ class RedisPool:
         self.close()
 
 
-# ===== Sentinel 支持 =====
+# Sentinel 支持
 
 def create_sentinel_pool(
     sentinels: List[tuple],  # [(host, port), ...]

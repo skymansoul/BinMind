@@ -98,7 +98,7 @@ class LineageTree:
         }
 
 
-# ── 特征提取 ──────────────────────────────────────────────────────
+# 特征提取
 
 class PatchFeatureExtractor:
     """从补丁记录中提取用于谱系分析的特征向量。
@@ -143,7 +143,7 @@ class PatchFeatureExtractor:
         return -sum((c/n) * math.log2(c/n) for c in freq.values())
 
 
-# ── 距离矩阵 ──────────────────────────────────────────────────────
+# 距离矩阵
 
 class PatchDistanceMatrix:
     """计算补丁记录间的成对距离。"""
@@ -225,7 +225,7 @@ class PatchDistanceMatrix:
             return 0.5
 
 
-# ── UPGMA 树构建 ──────────────────────────────────────────────────
+# UPGMA 树构建
 
 class UPGMATreeBuilder:
     """UPGMA 算法构建补丁演化树。
@@ -345,7 +345,7 @@ class UPGMATreeBuilder:
         return tree
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def reconstruct_lineage(records: List[PatchRecord]) -> LineageTree:
     """一键重建补丁演化谱系。"""

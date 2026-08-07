@@ -24,14 +24,14 @@
 # 这在计算上不可行（NP-hard）。本模块的规范化是"尽力而为"的——
 # 覆盖符号执行中最常见的约束模式（占缓存查询的 ~85%）
 # 对不认识的模式保持原样，不引入假等价
-# 
-# ref: arXiv:2105.08924 (Niemetz et al., 2021) — Bitwuzla 的约束简化 pass
+#
+# — Bitwuzla 的约束简化 pass
 # 其 rewrite engine 的设计影响了本模块的规则优先级排序
-# ref: "Term Rewriting " (Baader & Nipkow, 1998) —
+# "Term Rewriting " —
 # 重写系统的合流性 (conflu) 理论: 本模块的规则集不保证合流
 # 但规范化结果对缓存用途已足够一致（在 500 条 QF_BV benchmark 上
 # 规范形式相同的约束对，语义等价率为 99.7%——误归一化率 0.3%）
-# ref: USENIX Securi 2023 "Cached Confused" (Xiao et al.) —
+# USENIX Securi 2023 "Cached Confused" (Xiao et al.) —
 # 缓存键碰撞导致的误报分析，本模块的保守策略（不认识的模式保持原样）
 # 直接受其第 4.2 节的影响
 
@@ -41,12 +41,10 @@ import re
 from typing import Dict, List, Optional, Tuple, Set
 
 
-# ============================================================================
 # 词法分析 — 将 SMT-LIB 约束字符串切分为 token 序列
 # 不使用正则一次性匹配整个 S-exp —— 因为约束可能跨越多行且嵌套深度可变
 # 有限状态自动机逐个字符扫描，状态转换基于括号和空白符
 # 时间复杂度: O(n)，n = 约束字符串长度
-# ============================================================================
 
 class _SmtLexer:
     """SMT-LIB 字符串的轻量词法分析器——逐个字符扫描产生 token 流
@@ -140,11 +138,9 @@ class _SmtLexer:
         return tokens
 
 
-# ============================================================================
 # S-表达式解析 → AST
 # 从 token 序列构建嵌套列表 AST
 # SMT-LIB 的语法极其简单——每个括号组 = 一个列表，首元素是操作符
-# ============================================================================
 
 def _parse_tokens(tokens: List[Tuple[str, str]], start: int = 0
                   ) -> Tuple[Optional[List], int]:
@@ -178,9 +174,7 @@ def _parse_tokens(tokens: List[Tuple[str, str]], start: int = 0
     return tval, start + 1
 
 
-# ============================================================================
 # 规范化重写规则
-# ============================================================================
 
 # 交换律操作符集合——这些操作符的操作数可任意重排
 _COMMUTATIVE_OPS = {'bvadd', 'bvmul', 'bvand', 'bvor', 'bvxor', '+', '*',
@@ -246,11 +240,11 @@ def _canonicalize_ast(node) -> Optional[str]:
     op = node[0]
     operands = node[1:]
 
-    # ---- 第 1 层: 递归规范化所有操作数 ----
+# 第 1 层: 递归规范化所有操作数
     canon_ops = [_canonicalize_ast(op) for op in operands]
     canon_ops = [o for o in canon_ops if o is not None]
 
-    # ---- 第 2 层: 规则匹配 ----
+# 第 2 层: 规则匹配
 
     # (R1) 双重取反消除: (bvnot (bvnot x)) → x
     if op == 'bvnot' and len(canon_ops) == 1:
@@ -331,9 +325,7 @@ def _split_top_level(text: str) -> List[str]:
     return parts
 
 
-# ============================================================================
 # 公共接口
-# ============================================================================
 
 def canonicalize_constraint(smt_string: str) -> str:
     """将 SMT-LIB 约束字符串转换为规范形式
@@ -391,9 +383,9 @@ def equivalent(constraint_a: str, constraint_b: str) -> bool:
     return canonicalize_constraint(constraint_a) == canonicalize_constraint(constraint_b)
 
 
-# ---- 此段为模块初始版本，后续可补充:
+# 此段为模块初始版本，后续可补充:
 #   - 分配律展开: (bvmul x (bvadd a b)) → (bvadd (bvmul x a) (bvmul x b))
 #     在精确位宽已知时展开——当前跳过的原因是无法从 #xHEX 常量推断位宽
 # - 提取/concat 简化: (concat (提取 hi mid x) (提取 mid-1 lo x))
 #     → (extract hi lo x) —— 需要可靠位宽信息，待符号执行引擎提供后启用
-#   - TODO: 考虑适配 CVC5/Bitwuzla 的 SMT-LIB 方言差异
+# TODO: 考虑适配 CVC5/Bitwuzla 的 SMT-LIB 方言差异

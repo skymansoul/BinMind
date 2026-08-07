@@ -1,0 +1,1052 @@
+{
+  "timestamp": "2026-08-06 23:30:16",
+  "engine": "DP-TVRA",
+  "n_total": 35,
+  "n_detected": 30,
+  "n_clean": 5,
+  "recall_pct": 85.7,
+  "precision_pct": 100.0,
+  "f1_pct": 92.3,
+  "fp_reduction_pct": 16.4,
+  "total_time_s": 1.53,
+  "avg_time_ms": 43.7,
+  "per_sample": [
+    {
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "raw_findings": 4,
+      "confirmed": 0,
+      "likely": 3,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 25.0,
+      "elapsed_sec": 0.024,
+      "n_functions": 22,
+      "findings": [
+        {
+          "function": "handle_heartbeat",
+          "insn_addr": "0x1400017d2",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "handle_heartbeat",
+          "insn_addr": "0x1400017e7",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "handle_heartbeat",
+          "insn_addr": "0x140001803",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x14000184a",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 14B \u2264 alloc_size 128B \u2014 provably safe",
+          "alloc_size": 128,
+          "write_size": 14,
+          "fp_probability": 0.95
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.024,
+      "n_functions": 22,
+      "findings": [
+        {
+          "function": "parse_tx3g_chunk",
+          "insn_addr": "0x140001804",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.022,
+      "n_functions": 22,
+      "findings": [
+        {
+          "function": "process_rtmp_packet",
+          "insn_addr": "0x1400017b2",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017f5",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 512B > alloc_size 128B \u2014 confirmed overflow of 384B",
+          "alloc_size": 128,
+          "write_size": 512,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.059,
+      "n_functions": 29,
+      "findings": [
+        {
+          "function": "parse_content_type",
+          "insn_addr": "0x1400017aa",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 64,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.025,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "build_path",
+          "insn_addr": "0x1400017d3",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "build_path",
+          "insn_addr": "0x140001804",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.023,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "join_path",
+          "insn_addr": "0x1400017d3",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "join_path",
+          "insn_addr": "0x140001804",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.024,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "decompress_smb_data",
+          "insn_addr": "0x1400017cb",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x14000180e",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.025,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "escape_and_copy",
+          "insn_addr": "0x1400017fa",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.033,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "parse_param",
+          "insn_addr": "0x1400017ef",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "parse_param",
+          "insn_addr": "0x140001820",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.022,
+      "n_functions": 22,
+      "findings": [
+        {
+          "function": "process_buffer",
+          "insn_addr": "0x14000179d",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "process_buffer",
+          "insn_addr": "0x1400017e7",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.023,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "buf_append",
+          "insn_addr": "0x140001843",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.022,
+      "n_functions": 22,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017a4",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 32B > alloc_size 16B \u2014 confirmed overflow of 16B",
+          "alloc_size": 16,
+          "write_size": 32,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.023,
+      "n_functions": 21,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017be",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 5120B > alloc_size 128B \u2014 confirmed overflow of 4992B",
+          "alloc_size": 128,
+          "write_size": 5120,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.059,
+      "n_functions": 30,
+      "findings": [
+        {
+          "function": "process_input",
+          "insn_addr": "0x1400017d3",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "heap_overflow_loop_02",
+      "detected": false,
+      "raw_findings": 0,
+      "confirmed": 0,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.024,
+      "n_functions": 22,
+      "findings": []
+    },
+    {
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.022,
+      "n_functions": 23,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017c7",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 32,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017dd",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 48B > alloc_size 32B \u2014 confirmed overflow of 16B",
+          "alloc_size": 32,
+          "write_size": 48,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 50.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179b",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B \u2264 alloc_size 256B \u2014 provably safe",
+          "alloc_size": 256,
+          "write_size": 256,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017d5",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_01",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.06,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179b",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 64B \u2014 confirmed overflow of 192B",
+          "alloc_size": 64,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_02",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.06,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017a2",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 64,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_03",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.057,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017a9",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_04",
+      "detected": false,
+      "raw_findings": 0,
+      "confirmed": 0,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.059,
+      "n_functions": 29,
+      "findings": []
+    },
+    {
+      "sample_id": "sample_05",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 50.0,
+      "elapsed_sec": 0.059,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179e",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B \u2264 alloc_size 256B \u2014 provably safe",
+          "alloc_size": 256,
+          "write_size": 256,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017ec",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_06",
+      "detected": false,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 100.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017b0",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 8B \u2264 alloc_size 256B \u2014 provably safe",
+          "alloc_size": 256,
+          "write_size": 8,
+          "fp_probability": 0.95
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_07",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.06,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179f",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 5,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_08",
+      "detected": true,
+      "raw_findings": 3,
+      "confirmed": 1,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179a",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 48,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017a2",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 48B \u2014 confirmed overflow of 208B",
+          "alloc_size": 48,
+          "write_size": 256,
+          "fp_probability": 0.05
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017c6",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 48,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_09",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.022,
+      "n_functions": 24,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017d0",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 40,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017e6",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 64B > alloc_size 40B \u2014 confirmed overflow of 24B",
+          "alloc_size": 40,
+          "write_size": 64,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_10",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 29,
+      "findings": [
+        {
+          "function": "process_data",
+          "insn_addr": "0x1400017a7",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017fb",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_11",
+      "detected": false,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 2,
+      "fp_reduction_pct": 100.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 29,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017d0",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 32B \u2264 alloc_size 64B \u2014 provably safe",
+          "alloc_size": 64,
+          "write_size": 32,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017fd",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 32B \u2264 alloc_size 64B \u2014 provably safe",
+          "alloc_size": 64,
+          "write_size": 32,
+          "fp_probability": 0.95
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_12",
+      "detected": true,
+      "raw_findings": 3,
+      "confirmed": 1,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017ac",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 32,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017b9",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 32,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017cf",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 64B > alloc_size 32B \u2014 confirmed overflow of 32B",
+          "alloc_size": 32,
+          "write_size": 64,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_13",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 0,
+      "likely": 2,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.056,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017d5",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 5,
+          "write_size": 0,
+          "fp_probability": 0.3
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x14000182c",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 5,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_14",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 50.0,
+      "elapsed_sec": 0.063,
+      "n_functions": 29,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x14000179c",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 88B \u2264 alloc_size 128B \u2014 provably safe",
+          "alloc_size": 128,
+          "write_size": 88,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017c9",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_15",
+      "detected": false,
+      "raw_findings": 0,
+      "confirmed": 0,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.055,
+      "n_functions": 29,
+      "findings": []
+    },
+    {
+      "sample_id": "sample_16",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 50.0,
+      "elapsed_sec": 0.058,
+      "n_functions": 29,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017cb",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 64B \u2264 alloc_size 64B \u2014 provably safe",
+          "alloc_size": 64,
+          "write_size": 64,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017ec",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 128B \u2014 confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_17",
+      "detected": true,
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "fp_reduction_pct": 0.0,
+      "elapsed_sec": 0.057,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x140001797",
+          "decision": "likely_vuln",
+          "phase": "NONE",
+          "reasoning": "write size unknown \u2014 unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 16,
+          "write_size": 0,
+          "fp_probability": 0.3
+        }
+      ]
+    },
+    {
+      "sample_id": "sample_18",
+      "detected": true,
+      "raw_findings": 2,
+      "confirmed": 1,
+      "likely": 0,
+      "uncertain": 0,
+      "filtered_fp": 1,
+      "fp_reduction_pct": 50.0,
+      "elapsed_sec": 0.057,
+      "n_functions": 28,
+      "findings": [
+        {
+          "function": "main",
+          "insn_addr": "0x1400017b0",
+          "decision": "safe_filtered",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B \u2264 alloc_size 256B \u2014 provably safe",
+          "alloc_size": 256,
+          "write_size": 256,
+          "fp_probability": 0.95
+        },
+        {
+          "function": "main",
+          "insn_addr": "0x1400017c6",
+          "decision": "confirmed_vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "write_size 256B > alloc_size 64B \u2014 confirmed overflow of 192B",
+          "alloc_size": 64,
+          "write_size": 256,
+          "fp_probability": 0.05
+        }
+      ]
+    }
+  ]
+}

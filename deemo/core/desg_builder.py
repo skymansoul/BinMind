@@ -13,14 +13,13 @@
 图的节点属性嵌入字节级熵值 (0-255 的字节频率分布)，使得:
   - 语义等价但指令不同的基本块有相近的熵特征
   - 编译器优化 (O0/O2/O3) 造成的指令重排不改变块的字节熵分布
-  - ref: ORCAS (arXiv:2506.06161) 的 DESG 概念; Speilman (2007) 的拉普拉斯谱理论
+  - ref: ORCAS 的 DESG 概念; Speilman 的拉普拉斯谱理论
          本项目在 ORCAS 基础上增加字节熵节点嵌入和可配置的支配深度阈值
 
 算法: Cooper-Harvey-Kennedy 迭代支配树 (O(N²) worst, O(N log N) typical)
       后支配树通过 CFG 逆图 + 添加虚拟出口节点 (vex) 后运行同一算法得到
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple

@@ -16,7 +16,7 @@
 #
 #   这些模式在加密实现、协议解析器中频繁出现。若 taint 模型未考虑
 #   寄存器别名, 会导致:
-#     - 假阴性: 输入字节实际影响了某条敏感指令, 但因 taint 路径断裂未被标记
+# 假阴性: 输入字节实际影响了某条敏感指令, 但因 taint 路径断裂未被标记
 #     - 假阳性: 将未受污染的寄存器高位误判为受控 (mov al 后读 eax 的高位)
 #
 # 核心数据结构:
@@ -28,15 +28,15 @@
 #   MOV r,r / MOVZX / MOVSX / AND / OR / XOR / SHL / SHR / SAR / BEXTR
 #   跨域: VMOVQ (GPR↔XMM low 64)
 #
-# 参考文献:
-#   Bit-level Taint Analysis (Yadegari & Debray, NDSS 2015)
+# 文献:
+#   Bit-level Taint Analysis
 #     — 比特级污点分析用于反混淆。本项目取其 bitmask 表示思想,
 #       但限制为字节对齐 (8-bit 粒度 bitmap, 不做到 bit 级, 以控制
 #       状态空间大小), 并在该粒度上追踪寄存器别名。
-#   DECAF++ (Davanian et al. NDSS 2019) — 全系统动态污点分析框架,
+#   DECAF++ — 全系统动态污点分析框架,
 #     支持 x86-64 寄存器别名。本项目取其别名建模的完备性要求,
 #     但实现在 Python 层, 面向离线 trace 而非在线插桩。
-#   BitBlaze (Song et al. USENIX 2008) — 二进制分析平台, 中间语言
+#   BitBlaze — 二进制分析平台, 中间语言
 #     Vine 中的细粒度 taint 传播。本项目取其"每个临时值携带 taint 标签"
 #     的理念, 以 TaintBits 结构实现。
 # TODO：考虑适配 ARM 平台的 SIMD 别名 (Vn/Qn/Dn/Sn/Hn/Bn 重叠)
@@ -222,7 +222,7 @@ class SubRegTaintTracker:
         """内部: 在伪寄存器 -1 (input) 上标记污染。"""
         pass  # 污染源由 execute 中引用 [input+N] 时注入
 
-    # ---- 指令执行 ----
+    # 指令执行
     def execute(self, instr_text: str) -> bool:
         """解析并执行单条 x86-64 指令的 taint 语义。
 
@@ -263,7 +263,7 @@ class SubRegTaintTracker:
             return False
         return True
 
-    # ---- 内部操作 ----
+    # 内部操作
     def _resolve_operand(self, op_str: str) -> Optional[TaintBits]:
         """解析操作数到对应的 TaintBits 引用。
 
@@ -333,7 +333,7 @@ class SubRegTaintTracker:
 
         return False
 
-    # ---- 指令语义实现 ----
+    # 指令语义实现
     def _exec_mov(self, _mnemonic: str, operands: List[str]) -> None:
         dst, src = operands[0], operands[1]
         src_tb = self._resolve_operand(src)
@@ -417,7 +417,7 @@ class SubRegTaintTracker:
             return
         self._write_operand(dst, src_tb)
 
-    # ---- 查询 ----
+    # 查询
     def read_taint(self, reg_name: str) -> TaintBits:
         """查询当前寄存器的完整 taint 状态。"""
         ret = _reg_bit_range(reg_name.lower())

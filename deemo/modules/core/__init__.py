@@ -9,7 +9,7 @@ _LAZY_EXPORTS = {
     'WeightImportanceTracker': ('modules.core.compat.drift_calibrator', 'WeightImportanceTracker'),
     'cfg_entropy_fingerprint': ('modules.core.compat.cfg_entropy_fingerprint', 'cfg_entropy_fingerprint'),
     'fingerprint_similarity': ('modules.core.compat.cfg_entropy_fingerprint', 'fingerprint_similarity'),
-    # 溯源与预测增强 (2026 Q3)
+    # 溯源与预测增强
     'ContextVersionStore': ('modules.core.context_versioning', 'ContextVersionStore'),
     'ContextVersion': ('modules.core.context_versioning', 'ContextVersion'),
     'ProvenanceGraph': ('modules.core.provenance_tracker', 'ProvenanceGraph'),
@@ -20,7 +20,7 @@ _LAZY_EXPORTS = {
     'ProbCondition': ('modules.core.prob_condition', 'ProbCondition'),
     'ProbConditionModel': ('modules.core.prob_condition', 'ProbConditionModel'),
     'RewardEstimator': ('modules.core.prob_condition', 'RewardEstimator'),
-    # 漂移检测与优雅降级 (2026 Q3)
+    # 漂移检测与优雅降级
     'StreamingSketch': ('modules.core.execution_sketch', 'StreamingSketch'),
     'MetricSketchGroup': ('modules.core.execution_sketch', 'MetricSketchGroup'),
     'DriftDetector': ('modules.core.drift_detector', 'DriftDetector'),
@@ -29,7 +29,7 @@ _LAZY_EXPORTS = {
     'CriticalPathAnalyzer': ('modules.core.critical_path', 'CriticalPathAnalyzer'),
     'BackpressureSensor': ('modules.core.critical_path', 'BackpressureSensor'),
     'GracefulDegradationExecutor': ('modules.core.critical_path', 'GracefulDegradationExecutor'),
-    # 异常检测 / 双模预测 / 层级收缩 (2026 Q3 专利补齐)
+    # 异常检测 / 双模预测 / 层级收缩
     'PipelineAnomalyMonitor': ('modules.core.pipe_anomaly', 'PipelineAnomalyMonitor'),
     'HookAnomalyDetector': ('modules.core.pipe_anomaly', 'HookAnomalyDetector'),
     'BimodalPredictor': ('modules.core.bimodal_predictor', 'BimodalPredictor'),
@@ -37,55 +37,55 @@ _LAZY_EXPORTS = {
     'ShrinkageEstimator': ('modules.core.hierarchical_belief', 'ShrinkageEstimator'),
     'HierarchicalProbCondition': ('modules.core.hierarchical_belief', 'HierarchicalProbCondition'),
     'ShrunkBelief': ('modules.core.hierarchical_belief', 'ShrunkBelief'),
-    # 增量执行与断点续传 (2026 Q3)
+    # 增量执行与断点续传
     'DiffExecutor': ('modules.core.diff_executor', 'DiffExecutor'),
     'IncrementalCacheStore': ('modules.core.diff_executor', 'IncrementalCacheStore'),
     'CheckpointManager': ('modules.core.checkpoint_manager', 'CheckpointManager'),
     'CheckpointManifest': ('modules.core.checkpoint_manager', 'CheckpointManifest'),
-    # 模式推断与 DAG 验证 (2026 Q3)
+    # 模式推断与 DAG 验证
     'SchemaModel': ('modules.core.schema_inference', 'SchemaModel'),
     'DAGVerifier': ('modules.core.schema_inference', 'DAGVerifier'),
     'HookSignature': ('modules.core.schema_inference', 'HookSignature'),
-    # 键生命周期管理 (2026 Q3)
+    # 键生命周期管理
     'KeyLifetimeAnalyzer': ('modules.core.key_lifetime', 'KeyLifetimeAnalyzer'),
     'KeyEvictionManager': ('modules.core.key_lifetime', 'KeyEvictionManager'),
     'KeyLifetime': ('modules.core.key_lifetime', 'KeyLifetime'),
-    # 时间预算执行 (2026 Q3)
+    # 时间预算执行
     'BudgetSelector': ('modules.core.time_budget', 'BudgetSelector'),
     'TimeBudgetExecutor': ('modules.core.time_budget', 'TimeBudgetExecutor'),
     'BudgetPlan': ('modules.core.time_budget', 'BudgetPlan'),
-    # 多管道 DAG 融合 (2026 Q3)
+    # 多管道 DAG 融合
     'DAGFusionDetector': ('modules.core.dag_fusion', 'DAGFusionDetector'),
     'FusedExecutor': ('modules.core.dag_fusion', 'FusedExecutor'),
     'FusionPlan': ('modules.core.dag_fusion', 'FusionPlan'),
-    # 管道自动合成 (2026 Q3)
+    # 管道自动合成
     'PipelineSynthesizer': ('modules.core.pipeline_synth', 'PipelineSynthesizer'),
     'SynthesizedPipeline': ('modules.core.pipeline_synth', 'SynthesizedPipeline'),
-    # 钩子自适应重试 (2026 Q3)
+    # 钩子自适应重试
     'RetryPolicy': ('modules.core.hook_retry', 'RetryPolicy'),
     'HookRetryWrapper': ('modules.core.hook_retry', 'HookRetryWrapper'),
     'RetryScheduler': ('modules.core.hook_retry', 'RetryScheduler'),
     'FailurePatternDB': ('modules.core.hook_retry', 'FailurePatternDB'),
     'degrade_reduce_depth': ('modules.core.hook_retry', 'degrade_reduce_depth'),
-    # 推测性分叉-汇合执行 (2026 Q3)
+    # 推测性分叉-汇合执行
     'SpecExecutor': ('modules.core.spec_exec', 'SpecExecutor'),
     'SpecPath': ('modules.core.spec_exec', 'SpecPath'),
     'QualityScorer': ('modules.core.spec_exec', 'QualityScorer'),
-    # 贝叶斯优化参数调优 (2026 Q3)
+    # 贝叶斯优化参数调优
     'BayesOptimizer': ('modules.core.bayes_opt', 'BayesOptimizer'),
     'ParamDef': ('modules.core.bayes_opt', 'ParamDef'),
     'Trial': ('modules.core.bayes_opt', 'Trial'),
-    # 智能管道入口 (2026 Q3)
+    # 智能管道入口
     'SmartPipeline': ('modules.core.smart_pipeline', 'SmartPipeline'),
     'BinaryProfile': ('modules.core.smart_pipeline', 'BinaryProfile'),
     'PipelineResult': ('modules.core.smart_pipeline', 'PipelineResult'),
-    # 管道产出语义比对 (2026 Q3)
+    # 管道产出语义比对
     'PipelineDiffer': ('modules.core.output_diff', 'PipelineDiffer'),
     'BatchDiffer': ('modules.core.output_diff', 'BatchDiffer'),
     'DiffReport': ('modules.core.output_diff', 'DiffReport'),
-    # Compat 模块自动发现与钩子注册 (2026 Q3)
+    # Compat 模块自动发现与钩子注册
     'HookRegistry': ('modules.core.hook_registry', 'HookRegistry'),
-    # 堆溢出误报压制 (2026 Q3 核心创新)
+    # 堆溢出误报压制
     'Interval': ('modules.core.compat.value_range', 'Interval'),
     'FalsePositiveFilter': ('modules.core.compat.fp_filter', 'FalsePositiveFilter'),
     'batch_filter_and_report': ('modules.core.compat.fp_filter', 'batch_filter_and_report'),

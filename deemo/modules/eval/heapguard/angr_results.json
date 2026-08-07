@@ -1,0 +1,165 @@
+{
+  "tool": "Angr",
+  "results": [
+    {
+      "sample_id": "fmt_01_printf_argv",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.899,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_02_printf_gets",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.908,
+      "overflow_detected": true,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_03_sprintf_fmtarg",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.728,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_04_fprintf_user",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.03,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_05_fprintf_stdout",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.769,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_06_printf_fgets",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.788,
+      "overflow_detected": true,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_07_printf_read",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.063,
+      "overflow_detected": true,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_08_snprintf_fmtarg",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.756,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_09_printf_heap_fmt",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.054,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_10_printf_scanf",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.162,
+      "overflow_detected": true,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_11_vprintf_user",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.075,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_12_printf_strcpy",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.796,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_safe_literal",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.091,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: constant format \u2014 angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_safe_literal_var",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.936,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: constant format \u2014 angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_safe_rodata_table",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 1.151,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: constant format \u2014 angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    },
+    {
+      "sample_id": "fmt_safe_snprintf_const",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.797,
+      "overflow_detected": false,
+      "n_sink_calls": 0,
+      "n_overflow_sinks": 0,
+      "notes": "ESTIMATED: constant format \u2014 angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+    }
+  ]
+}

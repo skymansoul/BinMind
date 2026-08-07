@@ -1,6 +1,6 @@
 # 混淆韧性模块 — 检测/归一化/绕过常见代码混淆技术
 # 依据: "Identifying Obfuscated Code through Graph-Based Semantic Analysis"
-# [Applied Network Science 2025] 对比了GCN/GAT/GIN/SAGE/UNet在混淆检测上的表现
+# 对比了GCN/GAT/GIN/SAGE/UNet在混淆检测上的表现
 # 核心: 结合语义特征(Pcode IR风格的特征提取)和图结构特征来抵抗混淆
 
 from __future__ import annotations
@@ -16,9 +16,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 混淆技术枚举 (11类, 与Applied Network Science 2025一致)
-# ---------------------------------------------------------------------------
 
 class ObfuscationKind(IntEnum):
     NONE = 0
@@ -39,9 +37,7 @@ class ObfuscationKind(IntEnum):
         return [k.name for k in cls]
 
 
-# ---------------------------------------------------------------------------
 # 检测结果
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ObfuscationReport:
@@ -92,9 +88,7 @@ class ObfuscationReport:
         }
 
 
-# ---------------------------------------------------------------------------
 # 混淆特征检测器
-# ---------------------------------------------------------------------------
 
 class ObfuscationDetector:
     """多策略混淆检测器
@@ -405,9 +399,7 @@ class ObfuscationDetector:
         return factor
 
 
-# ---------------------------------------------------------------------------
 # 混淆归一化器
-# ---------------------------------------------------------------------------
 
 class ObfuscationNormalizer:
     """混淆归一化 — 尝试将混淆代码还原为可分析形式
@@ -478,9 +470,7 @@ class ObfuscationNormalizer:
         return ' '.join(skeleton)
 
 
-# ---------------------------------------------------------------------------
 # 工厂函数
-# ---------------------------------------------------------------------------
 
 def create_obfuscation_detector(min_confidence: float = 0.3) -> ObfuscationDetector:
     return ObfuscationDetector(min_confidence=min_confidence)

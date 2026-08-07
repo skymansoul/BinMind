@@ -14,17 +14,17 @@
 # 特征选取: 约束数量、最大嵌套深度、平均位宽、算术操作比例、
 # 循环深度（CFG 中的循环嵌套层数）、控制流分叉数——
 # 这 6 个特征均可在线性时间内从路径中提取，不需要 Z3 AST 构建
-# 
+#
 # 为什么不用深度学习:
 # 在线场景中数据分布随探索进程漂移（早期浅层路径 → 后期深层路径）
 # 深度学习模型需要较大训练集才能收敛——在线性回归的 6×1 参数
 # 在 20-50 次观测后即可给出有意义的估计。对符号执行这一特定场景
 # 样本效率比模型容量更重要
-# 
-# ref: arXiv:1810.11800 (Wen et al., 2018) — 符号执行中路径优先级的
+#
+# — 符号执行中路径优先级的
 # 在线学习框架，使用上下文 Bandit 选择最有希望的路径
 # 本模块的代价加权 scheduling 是此框架在"求解时间"维度的单维特化
-# ref: ISSTA 2022 "Sifter" (Zhang et al.) — 使用约束特征预测 Z3 求解
+# ISSTA 2022 "Sifter" (Zhang et al.) — 使用约束特征预测 Z3 求解
 # 时间的在线模型，其 5 维特征被本模块扩展为 6 维（增加循环深度）
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ class PathCostOracle:
     _DEFAULT_WEIGHTS = {
         'constraint_count': 2.5,    # 每个约束 ~2.5ms (线性项)
         'max_depth': 8.0,           # 深度每增加 1 → 时间 ~8ms 增长
-        'avg_bv_width': 0.02,       # 位宽因子弱——Z3 bit-blasts 对位宽不敏感
+# 'avg_bv_width': 0.02,       # 位宽因子弱——Z3 bit-blasts 对位宽不敏感
         'arithmetic_ratio': 15.0,   # 算术操作比布尔操作贵 ~15x
         'loop_depth': 12.0,         # 循环内的约束更复杂（数据依赖多）
         'branch_count': 1.5,        # 更多分支 → 更多控制流约束
@@ -103,14 +103,14 @@ class PathCostOracle:
 
         # 模型参数
         self._weights: Dict[str, float] = dict(self._DEFAULT_WEIGHTS)
-        self._bias: float = 5.0  # 基础开销（ms）——Z3 初始化等固定成本
+# self._bias: float = 5.0  # 基础开销（ms）——Z3 初始化等固定成本
         self._observations: deque = deque(maxlen=decay_halflife * 2)
         self._total_samples: int = 0
         self._error_mae: float = 0.0  # 指数移动平均绝对误差
         self._error_ema_alpha: float = 0.1  # MAE 的 EMA 系数
 
         # 不确定性估计
-        self._prediction_variance: float = 100.0  # 初始方差大——表示高不确定性
+# self._prediction_variance: float = 100.0  # 初始方差大——表示高不确定性
 
     def extract_features(self, constraint_texts: List[str],
                          constraint_depths: Optional[List[int]] = None,
@@ -204,7 +204,7 @@ class PathCostOracle:
             weighted_sum += contrib
             contributions[name] = round(contrib, 2)
 
-        predicted = max(0.5, weighted_sum)  # 前向保护——不预测负时间
+# predicted = max(0.5, weighted_sum)  # 前向保护——不预测负时间
 
         # 置信度: 样本越多，回归模型越可靠
         if self._total_samples < self._min_samples:

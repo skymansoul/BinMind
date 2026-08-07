@@ -1,4 +1,4 @@
-# 创建: 2025-08-03 -- CVE样本编译模块
+# 创建: 2026-05-10 -- CVE样本编译模块
 import subprocess, sys, os
 from pathlib import Path
 

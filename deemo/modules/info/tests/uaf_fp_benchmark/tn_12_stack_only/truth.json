@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_12_stack_only",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 栈对象 (非堆)",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "无堆分配, 无 free 调用, 不存在 UAF"
+}

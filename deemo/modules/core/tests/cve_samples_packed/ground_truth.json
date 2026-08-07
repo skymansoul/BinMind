@@ -1,0 +1,6 @@
+{
+  "CVE-2020-29370_packed": {"heap_overflow": true, "cve": "CVE-2020-29370", "desc": "加壳(stripped)变体: 与未加壳同代码, 验证不依赖符号表"},
+  "CVE-2021-3156_packed": {"heap_overflow": true, "cve": "CVE-2021-3156", "desc": "加壳(stripped)变体: sudoedit 堆溢出"},
+  "safe_01_packed": {"heap_overflow": false, "cve": "SAFE-01-PACKED", "desc": "加壳安全样本: malloc(256)≥memcpy(128)"},
+  "fp_internal_copy_packed": {"heap_overflow": false, "cve": "SAFE-INTERNAL-PACKED", "desc": "加壳安全样本: 双侧内部常量, 不可控"}
+}

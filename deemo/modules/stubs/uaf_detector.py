@@ -1,9 +1,9 @@
 # Use-After-Free 检测 — 静态启发式匹配 + 动态类型状态追踪
-# 参考: FreeSentry (NDSS 2015) 悬垂指针保护 &
-#   UAFSan (ISSTA 2021) 对象标识符动态检测 &
-#   Undangle (ISSTA 2012) 早期悬垂指针识别 &
-#   UFO (ICSE 2018) 预测性并发 UAF &
-#   Typestate-guided fuzzer for UAF (ICSE 2020) 类型状态引导模糊测试
+# FreeSentry 悬垂指针保护 &
+#   UAFSan 对象标识符动态检测 &
+#   Undangle 早期悬垂指针识别 &
+#   UFO 预测性并发 UAF &
+#   Typestate-guided fuzzer for UAF 类型状态引导模糊测试
 import re as _re
 from collections import defaultdict as _defdict
 
@@ -31,7 +31,7 @@ def scan_uaf_patterns(source_or_asm: str) -> list[dict]:
     return findings
 
 
-# 类型状态模型 — 来自 Typestate-guided fuzzer (ICSE 2020)
+# 类型状态模型 — 来自 Typestate-guided fuzzer
 # 对象状态机: ALLOC → INIT → USE → FREE → [USE_AFTER_FREE | SAFE]
 _OBJ_STATES = {'allocated', 'initialized', 'in_use', 'freed'}
 _TRANSITIONS = {

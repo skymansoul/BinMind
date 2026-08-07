@@ -22,9 +22,9 @@
 从崩溃点到攻击者输入的路径就是利用的因果链
 
 与现有工作的差异:
-- GenDFIR (2024): LLM 驱动的 timeline 语义富化 -> 依赖 LLM, 不可形式化验证
-- SPECTRE (2025): 异常检测 -> 找异常但不建立因果关系
-- Hyper Timeline (2024): 部分序 timeline -> 时间序而非因果序
+- GenDFIR: LLM 驱动的 timeline 语义富化 -> 依赖 LLM, 不可形式化验证
+- SPECTRE: 异常检测 -> 找异常但不建立因果关系
+- Hyper Timeline: 部分序 timeline -> 时间序而非因果序
 - 本模块: 形式化数据流因果图, 可验证, 从汇编 trace 自动构建
 """
 
@@ -36,9 +36,7 @@ from enum import Enum, auto
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 因果节点类型
-# ---------------------------------------------------------------------------
 
 class CausalityNodeType(Enum):
     REG_WRITE = auto()        # 寄存器被写入
@@ -72,9 +70,7 @@ class CausalityNode:
     causal_children: List[int] = field(default_factory=list)  # 出边--本节点导致的节点
 
 
-# ---------------------------------------------------------------------------
 # 因果边
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CausalityEdge:
@@ -86,9 +82,7 @@ class CausalityEdge:
     evidence: str = ''             # 支持此因果关系的证据
 
 
-# ---------------------------------------------------------------------------
 # 因果图
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CausalityGraph:
@@ -102,9 +96,7 @@ class CausalityGraph:
     exploit_causality_chain: List[int] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
 # 因果图构建器
-# ---------------------------------------------------------------------------
 
 class ForensicCausalityBuilder:
     """从指令 trace 逆向构建法医因果图
@@ -370,7 +362,7 @@ class ForensicCausalityBuilder:
         chain.append(target)
         return chain
 
-    # ---- 寄存器提取 ----
+# 寄存器提取
     _REG_RE = __import__('re').compile(
         r'\b(r(?:ax|bx|cx|dx|si|di|bp|sp|8|9|1[0-5])'
         r'|e(?:ax|bx|cx|dx|si|di|bp|sp)|[abcd]x|[abcd][lh]'

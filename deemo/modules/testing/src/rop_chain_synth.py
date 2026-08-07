@@ -2,7 +2,7 @@
 #
 # 核心问题:
 #   rop_analyzer.py 扫描gadget并分类 (pop/mov/syscall等), 但不会合成链。
-#   现有方案 crackers (USENIX Security 2025) 用p-code+SMT做形式化合成,
+#   现有方案 crackers 用p-code+SMT做形式化合成,
 #   但需要完整的二进制分析和Z3求解器——对快速安全评估太重。
 #
 #   本模块填补 rop_analyzer→exploit 之间的空白:
@@ -18,14 +18,14 @@
 #
 # 与 subreg_taint.py 的接合:
 #   攻击者在崩溃点的寄存器控制状态来自 subreg_taint:
-#   - 若rip受控→可直接跳转到gadget
-#   - 若rdi受控→可跳过设置rdi的gadget, 缩短链长
-#   - 若rsp受控→可直接做栈迁移
+# 若rip受控→可直接跳转到gadget
+# 若rdi受控→可跳过设置rdi的gadget, 缩短链长
+# 若rsp受控→可直接做栈迁移
 #
-# 参考文献:
-#   crackers (DenHoed & Melham, USENIX Security 2025) — p-code+SMT链合成;
+# 文献:
+#   crackers — p-code+SMT链合成;
 #     本项目取其约束建模思想但以贪心搜索替代SMT, 降低计算开销
-#   ROPBlock (2025) — 链化gadget分组降低复杂度从O(2^n)到O(n);
+#   ROPBlock — 链化gadget分组降低复杂度从O(2^n)到O(n);
 #     本项目取其链化思想但以寄存器保存约束替代分组
 
 from __future__ import annotations

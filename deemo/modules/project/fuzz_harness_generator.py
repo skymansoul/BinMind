@@ -12,11 +12,10 @@
 #   生成libFuzzer (LLVMFuzzerTestOneInput) 或 AFL (main+while) 格式
 # 技术效果: 从手工2-4小时/harness减少到30秒自动生成,
 #   生成harness的语法正确率95%
-# 参考:
-#   FuzzGen (USENIX 2020) — 基于源码的harness生成,
+#
+#   FuzzGen — 基于源码的harness生成,
 #     本项目互补: 面向二进制/头文件的签名级harness生成
-#   libFuzzer tutorial (LLVM 2025) — Fuzzer harness规范
-from __future__ import annotations
+#   libFuzzer tutorial — Fuzzer harness规范
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

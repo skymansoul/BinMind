@@ -13,7 +13,7 @@
 看起来是变量；但若沿调用链回溯，可以发现其实际是常数
 本模块提供这种跨边界证据追溯能力
 
-与 Chisel (OOPSLA 2024) 的区别:
+与 Chisel 的区别:
 Chisel使用动态trace反推CFG骨架，依赖运行时信息。本模块是纯静态
 分析——通过函数接口（参数/返回值/全局变量）的抽象解释来传递
 常量证据，无需执行二进制。代价是精度低于动态方法，但不需要
@@ -86,7 +86,7 @@ class EvidencePropagator:
         # 函数→其参数默认值/常量推断结果
         self._func_params: Dict[str, Dict[str, Any]] = {}
 
-    #---- 调用图构建 ----
+# 调用图构建
 
     def build_call_graph(
         self,
@@ -110,7 +110,7 @@ class EvidencePropagator:
                         callees.append(target)
             self._call_graph[func_name] = callees
 
-    #---- 证据注册 ----
+# 证据注册
 
     def register_param_constant(
         self, func_name: str, param_name: str, value: Any, confidence: float
@@ -120,7 +120,7 @@ class EvidencePropagator:
             "value": value, "confidence": confidence,
         }
 
-    #---- 证据回溯 ----
+# 证据回溯
 
     def trace_evidence(
         self,
@@ -175,7 +175,7 @@ class EvidencePropagator:
         results.sort(key=lambda r: r.confidence, reverse=True)
         return results
 
-    #---- 证据前向传播 ----
+# 证据前向传播
 
     def propagate_forward(
         self,
@@ -219,7 +219,7 @@ class EvidencePropagator:
 
         return propagated
 
-    #---- 循环边界常量检测 ----
+# 循环边界常量检测
 
     def detect_loop_invariant(
         self,

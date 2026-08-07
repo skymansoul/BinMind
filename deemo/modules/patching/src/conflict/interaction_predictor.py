@@ -3,7 +3,7 @@
 
 """补丁冲突预测 — 多补丁并行应用的寄存器/内存效应冲突预检测。
 
-安全维护中常见场景：同一二进制需要同时应用多个补丁（CVE-2024-A/B/C）。
+安全维护中常见场景：同一二进制需要同时应用多个补丁。
 独立测试每个补丁都通过，但合并后出现三种冲突：
 1. 寄存器效应冲突：补丁A保存rbx到栈但补丁B期望rbx不变。
 2. 内存布局冲突：补丁A插入NOP padding改变了补丁B的跳转目标偏移。
@@ -15,7 +15,6 @@
 - 检测内存偏移冲突：两补丁修改的字节范围有交叠→冲突。
 - 输出冲突矩阵+合并建议（谁先谁后或不可合并）。
 
-参考：
 - patch_interaction_graph.py：补丁间语义依赖关系图。本模块聚焦低层级效应冲突。
 """
 
@@ -26,13 +25,11 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS = 1e-9
 
-
 class ConflictType(Enum):
     REG_EFFECT = "register_effect"
     MEMORY_OVERLAP = "memory_overlap"
     SEMANTIC = "semantic"
     NONE = "none"
-
 
 @dataclass
 class PatchEffect:
@@ -48,7 +45,6 @@ class PatchEffect:
     # 语义依赖
     assumes_condition: str = ""     # 补丁假设的前提条件
 
-
 @dataclass
 class ConflictPrediction:
     """一对补丁的冲突预测。"""
@@ -58,7 +54,6 @@ class ConflictPrediction:
     severity: float       # [0,1]
     description: str
     suggested_order: str  # "A_first" / "B_first" / "incompatible" / "order_independent"
-
 
 class PatchConflictPredictor:
     """多补丁并行应用的冲突预测器。"""
@@ -187,8 +182,7 @@ class PatchConflictPredictor:
                 return True
         return False
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _predictor = PatchConflictPredictor()
 
@@ -220,7 +214,6 @@ def _smoke_test():
     assert len(_conflicts) >= 3, "should detect reg+memory+semantic conflicts"
     assert not _plan["safe_to_merge"]
     print("[OK] PatchConflictPredictor smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

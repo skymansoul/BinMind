@@ -18,9 +18,7 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 
-# ---------------------------------------------------------------------------
 # Error hierarchy
-# ---------------------------------------------------------------------------
 
 class DynamicError(Exception):
     """Base error for 动态分析 failures"""
@@ -52,9 +50,7 @@ class TraceError(DynamicError):
     pass
 
 
-# ---------------------------------------------------------------------------
 # Entropy computation
-# ---------------------------------------------------------------------------
 
 def compute_entropy(data: bytes, base: int = 2) -> float:
     """计算 Shannon entropy a byte sequence
@@ -136,9 +132,7 @@ def find_high_entropy_regions(
     return regions
 
 
-# ---------------------------------------------------------------------------
 # 日志 setup
-# ---------------------------------------------------------------------------
 
 def setup_logging(
     level: str = "INFO",
@@ -193,9 +187,7 @@ def setup_logging(
     return root_logger  # type: ignore[return-value]
 
 
-# ---------------------------------------------------------------------------
 # YAML 配置 loading
-# ---------------------------------------------------------------------------
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
     """加载 a YAML 配置 file
@@ -286,9 +278,7 @@ def _parse_simple_yaml(content: str) -> Dict[str, Any]:
     return result
 
 
-# ---------------------------------------------------------------------------
 # API trace formatting
-# ---------------------------------------------------------------------------
 
 def format_api_trace(
     api_name: str,
@@ -359,9 +349,7 @@ def format_api_trace_compact(
     return "".join(parts)
 
 
-# ---------------------------------------------------------------------------
 # Misc 工具集
-# ---------------------------------------------------------------------------
 
 def hash_file(filepath: str, algorithm: str = "sha256") -> str:
     """计算 hash a file"""

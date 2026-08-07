@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """整数溢出检测 — 识别算术运算中的上溢/下溢, 判定是否被用于内存分配.
 
 CWE-190 (Integer Overflow/Wraparound) 在二进制层面的检测:

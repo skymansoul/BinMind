@@ -4,7 +4,7 @@
 #
 # 核心问题: mlm_pretrain.py和span_corruption_pretrain.py都使用掩码语言模型——
 # 仅对15%被掩码的token计算损失，每个样本仅15%的token提供训练信号。
-# ELECTRA (Clark et al. ICLR 2020)证明: 训练一个判别器检测被替换的token
+# ELECTRA思路: 训练一个判别器检测被替换的token
 # 比训练生成器预测被掩码的token更高效——所有输入token都参与损失计算。
 #
 # 技术方案:

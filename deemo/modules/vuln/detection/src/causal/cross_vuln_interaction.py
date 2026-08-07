@@ -18,7 +18,7 @@ B的利用前提恰好被A的副作用提供。反之，两个本应独立的漏
 
 技术依据：
 - 漏洞能力签名(VCS)概念来自 ExploitPrimitive 的组合理论。
-- Granger因果的统计框架(Granger 1969)用于时间序列因果推断，
+- Granger因果的统计框架用于时间序列因果推断，
   此处被改编为静态能力匹配——检测"B的可利用性是否在A出现后
   显著变化"的静态等价形式。
 
@@ -84,9 +84,7 @@ class CrossVulnInteractionAnalyzer:
         self._signatures: Dict[str, CapabilitySignature] = {}
         self._interactions: List[CrossVulnInteraction] = []
 
-    # -----------------------------------------------------------------
     # 公开 API
-    # -----------------------------------------------------------------
 
     def load_vulnerabilities(
         self, signatures: List[CapabilitySignature],
@@ -178,9 +176,7 @@ class CrossVulnInteractionAnalyzer:
 
         return list(_reachable)
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     def _analyze_pair(
         self, a: CapabilitySignature, b: CapabilitySignature,
@@ -237,7 +233,7 @@ class CrossVulnInteractionAnalyzer:
         return _results
 
 
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _sigs = [
         CapabilitySignature("VULN-1", frozenset({"pc_control", "stack_leak"}),

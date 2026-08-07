@@ -12,10 +12,10 @@
 #   (6) Android dm-crypt / Adiantum / 文件级加密(FBE) metadata
 #   (7) Apple APFS加密 (effaceable storage, 硬件密钥封装)
 #
-# 参考: Fruhwirth (LUKS, 2004), Broz et al. (LUKS2, 2018), NIST SP 800-111,
-# Ferguson (AES-CBC+Elephant diffuser, BitLocker, 2006), Apple FileVault2 doc (2013),
-# VeraCrypt specification (2017), Android CDD §9 Encryption (2023),
-# Crowley (Adiantum, IACR TCHES 2019).
+# Fruhwirth, Broz et al., NIST SP 800-111,
+# Ferguson, Apple FileVault2 doc,
+# VeraCrypt specification, Android CDD §9 Encryption,
+# Crowley.
 # 新增TCG Opal 2.0 SSC自加密硬盘特征, IEEE 1667 silo检测,
 # Clevis/Tang JSON JWE格式识别。
 
@@ -40,7 +40,7 @@ class FirmwareCryptoResult:
     detected_in: str = ""
 
 
-# ==== LUKS魔数 ====
+# LUKS魔数
 # LUKS1: 6字节 "LUKS\xba\xbe" (hex: 4C 55 4B 53 BA BE)
 # LUKS2: 6字节 "LUKS\xba\xbe" + JSON元数据区域(4096B对齐)
 # 头部大小: LUKS1 = 1MB, LUKS2元数据在4096-16384B可配置
@@ -89,12 +89,12 @@ def _detect_luks(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== BitLocker FVE检测 ====
+# BitLocker FVE检测
 # BitLocker的FVE metadata block以"-FVE-FS-"魔数开始(hex: 2D 46 56 45 2D 46 53 2D)
 # 位于卷末尾(512B对齐), 包含:
-#   - FVE metadata block (卷末尾3份副本)
-#   - VMK (Volume Master Key)由保护器加密
-#   - FVEK (Full Volume Encryption Key)由VMK加密
+# FVE metadata block (卷末尾3份副本)
+# VMK (Volume Master Key)由保护器加密
+# FVEK (Full Volume Encryption Key)由VMK加密
 #   - 算法: AES-CBC/AES-XTS + Elephant diffuser (Win7) 或仅AES-XTS (Win8+)
 
 FVE_MAGIC = b'-FVE-FS-'
@@ -123,10 +123,10 @@ def _detect_bitlocker(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== FileVault 2检测 ====
+# FileVault 2检测
 # FileVault 2使用CoreStorage卷格式:
-#   - 逻辑卷族(LVF) UUID + 加密上下文
-#   - EncryptedRoot.plist (XML plist)含密钥封装信息
+# 逻辑卷族(LVF) UUID + 加密上下文
+# EncryptedRoot.plist (XML plist)含密钥封装信息
 #   - APFS加密卷: 使用卷角色(Volume Role)标记和effaceable storage
 
 FILEVAULT_UUID_PATTERN = re.compile(
@@ -158,7 +158,7 @@ def _detect_filevault(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== VeraCrypt / TrueCrypt检测 ====
+# VeraCrypt / TrueCrypt检测
 # VeraCrypt/TrueCrypt卷头部完全加密(无魔数) — 故意设计成与随机数据不可区分。
 # 间接检测指标:
 #   (1) 512B完全随机数据块(高熵, π误差<0.05)位于特定偏移(0, 65536, 131072)
@@ -208,7 +208,7 @@ def _detect_veracrypt(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== Clevis/Tang NBDE检测 ====
+# Clevis/Tang NBDE检测
 # Clevis是自动化解密的可插拔框架(NBDE)。
 # Tang服务器通过JSON JWE提供网络绑定磁盘加密密钥。
 # 客户端使用Clevis pins: "tang", "tpm2", "sss"。
@@ -239,7 +239,7 @@ def _detect_clevis_tang(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== Android文件级加密(FBE)检测 ====
+# Android文件级加密(FBE)检测
 # Android FBE使用内核fscrypt(v1/v2)或ext4/f2fs原生加密。
 # 密钥派生: 用户凭据→密钥库(keystore2)→每文件密钥。
 # Adiantum (ChaCha12 + NH + Poly1305): Android Go设备的轻量级FBE, 无AES硬件加速。
@@ -270,7 +270,7 @@ def _detect_android_fbe(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== TCG Opal 2.0 SSC (自加密硬盘) ====
+# TCG Opal 2.0 SSC (自加密硬盘)
 # TCG Opal SSC规范定义了SED (Self-Encrypting Drive)的TPer协议。
 # 检测: Opal密钥层次(Admin1 SP, Locking SP), K_AES_256密钥引用,
 # TPer COM栈(IF-SEND/IF-RECV), Shadow MBR table痕迹。
@@ -299,7 +299,7 @@ def _detect_opal_sed(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== 主检测器 ====
+# 主检测器
 
 class FirmwareCryptoDetector:
     """固件和磁盘加密方案指纹检测器。"""
@@ -327,7 +327,7 @@ class FirmwareCryptoDetector:
         return sorted(results, key=lambda r: -r.confidence)
 
 
-# ==== 便捷函数 ====
+# 便捷函数
 
 def detect_firmware_crypto(path: str) -> List[FirmwareCryptoResult]:
     return FirmwareCryptoDetector().scan_file(path)

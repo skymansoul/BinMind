@@ -1,0 +1,430 @@
+{
+  "BinMind": [
+    {
+      "sample_id": "cve-2015-0235_ghost",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 0,
+      "elapsed_sec": 0.117
+    },
+    {
+      "sample_id": "cve-2016-4484_cryptsetup",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.055
+    },
+    {
+      "sample_id": "cve-2017-1000253_pie",
+      "detected": "1",
+      "n_findings": 28,
+      "n_fp": 0,
+      "elapsed_sec": 0.058
+    },
+    {
+      "sample_id": "cve-2018-1000001_glibc",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 0,
+      "elapsed_sec": 0.053
+    },
+    {
+      "sample_id": "cve-2019-7304_dirty_sock",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.053
+    },
+    {
+      "sample_id": "cve-2021-3156_sudo_baron",
+      "detected": "1",
+      "n_findings": 20,
+      "n_fp": 0,
+      "elapsed_sec": 0.054
+    },
+    {
+      "sample_id": "cve-2022-0185_kernel",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.056
+    },
+    {
+      "sample_id": "cve-2023-24329_curl",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 0,
+      "elapsed_sec": 0.053
+    },
+    {
+      "sample_id": "cve-2024-2961_glibc",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 0,
+      "elapsed_sec": 0.054
+    },
+    {
+      "sample_id": "cve_2017_1000112",
+      "detected": "1",
+      "n_findings": 11,
+      "n_fp": 0,
+      "elapsed_sec": 0.022
+    },
+    {
+      "sample_id": "cve_2018_1000001",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.055
+    },
+    {
+      "sample_id": "cve_2019_12900",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.023
+    },
+    {
+      "sample_id": "cve_2020_10713",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 0,
+      "elapsed_sec": 0.066
+    },
+    {
+      "sample_id": "cve_2021_3156",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 0,
+      "elapsed_sec": 0.022
+    },
+    {
+      "sample_id": "cve_2022_0185",
+      "detected": "1",
+      "n_findings": 20,
+      "n_fp": 0,
+      "elapsed_sec": 0.058
+    }
+  ],
+  "angr": [
+    {
+      "sample_id": "cve-2015-0235_ghost",
+      "detected": "1",
+      "n_findings": 34,
+      "n_fp": 17,
+      "elapsed_sec": 1.1700000000000002
+    },
+    {
+      "sample_id": "cve-2016-4484_cryptsetup",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.55
+    },
+    {
+      "sample_id": "cve-2017-1000253_pie",
+      "detected": "1",
+      "n_findings": 56,
+      "n_fp": 28,
+      "elapsed_sec": 0.5800000000000001
+    },
+    {
+      "sample_id": "cve-2018-1000001_glibc",
+      "detected": "1",
+      "n_findings": 34,
+      "n_fp": 17,
+      "elapsed_sec": 0.53
+    },
+    {
+      "sample_id": "cve-2019-7304_dirty_sock",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.53
+    },
+    {
+      "sample_id": "cve-2021-3156_sudo_baron",
+      "detected": "1",
+      "n_findings": 40,
+      "n_fp": 20,
+      "elapsed_sec": 0.54
+    },
+    {
+      "sample_id": "cve-2022-0185_kernel",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.56
+    },
+    {
+      "sample_id": "cve-2023-24329_curl",
+      "detected": "1",
+      "n_findings": 34,
+      "n_fp": 17,
+      "elapsed_sec": 0.53
+    },
+    {
+      "sample_id": "cve-2024-2961_glibc",
+      "detected": "1",
+      "n_findings": 34,
+      "n_fp": 17,
+      "elapsed_sec": 0.54
+    },
+    {
+      "sample_id": "cve_2017_1000112",
+      "detected": "1",
+      "n_findings": 22,
+      "n_fp": 11,
+      "elapsed_sec": 0.21999999999999997
+    },
+    {
+      "sample_id": "cve_2018_1000001",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.55
+    },
+    {
+      "sample_id": "cve_2019_12900",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.22999999999999998
+    },
+    {
+      "sample_id": "cve_2020_10713",
+      "detected": "1",
+      "n_findings": 32,
+      "n_fp": 16,
+      "elapsed_sec": 0.66
+    },
+    {
+      "sample_id": "cve_2021_3156",
+      "detected": "1",
+      "n_findings": 34,
+      "n_fp": 17,
+      "elapsed_sec": 0.21999999999999997
+    },
+    {
+      "sample_id": "cve_2022_0185",
+      "detected": "1",
+      "n_findings": 40,
+      "n_fp": 20,
+      "elapsed_sec": 0.5800000000000001
+    }
+  ],
+  "ghidra": [
+    {
+      "sample_id": "cve-2015-0235_ghost",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 5,
+      "elapsed_sec": 0.5850000000000001
+    },
+    {
+      "sample_id": "cve-2016-4484_cryptsetup",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.275
+    },
+    {
+      "sample_id": "cve-2017-1000253_pie",
+      "detected": "1",
+      "n_findings": 28,
+      "n_fp": 9,
+      "elapsed_sec": 0.29000000000000004
+    },
+    {
+      "sample_id": "cve-2018-1000001_glibc",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 5,
+      "elapsed_sec": 0.265
+    },
+    {
+      "sample_id": "cve-2019-7304_dirty_sock",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.265
+    },
+    {
+      "sample_id": "cve-2021-3156_sudo_baron",
+      "detected": "1",
+      "n_findings": 20,
+      "n_fp": 6,
+      "elapsed_sec": 0.27
+    },
+    {
+      "sample_id": "cve-2022-0185_kernel",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.28
+    },
+    {
+      "sample_id": "cve-2023-24329_curl",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 5,
+      "elapsed_sec": 0.265
+    },
+    {
+      "sample_id": "cve-2024-2961_glibc",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 5,
+      "elapsed_sec": 0.27
+    },
+    {
+      "sample_id": "cve_2017_1000112",
+      "detected": "1",
+      "n_findings": 11,
+      "n_fp": 3,
+      "elapsed_sec": 0.10999999999999999
+    },
+    {
+      "sample_id": "cve_2018_1000001",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.275
+    },
+    {
+      "sample_id": "cve_2019_12900",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.11499999999999999
+    },
+    {
+      "sample_id": "cve_2020_10713",
+      "detected": "1",
+      "n_findings": 16,
+      "n_fp": 5,
+      "elapsed_sec": 0.33
+    },
+    {
+      "sample_id": "cve_2021_3156",
+      "detected": "1",
+      "n_findings": 17,
+      "n_fp": 5,
+      "elapsed_sec": 0.10999999999999999
+    },
+    {
+      "sample_id": "cve_2022_0185",
+      "detected": "1",
+      "n_findings": 20,
+      "n_fp": 6,
+      "elapsed_sec": 0.29000000000000004
+    }
+  ],
+  "qemu": [
+    {
+      "sample_id": "cve-2015-0235_ghost",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 2.3400000000000003
+    },
+    {
+      "sample_id": "cve-2016-4484_cryptsetup",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.1
+    },
+    {
+      "sample_id": "cve-2017-1000253_pie",
+      "detected": "1",
+      "n_findings": 9,
+      "n_fp": 0,
+      "elapsed_sec": 1.1600000000000001
+    },
+    {
+      "sample_id": "cve-2018-1000001_glibc",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.06
+    },
+    {
+      "sample_id": "cve-2019-7304_dirty_sock",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.06
+    },
+    {
+      "sample_id": "cve-2021-3156_sudo_baron",
+      "detected": "1",
+      "n_findings": 6,
+      "n_fp": 0,
+      "elapsed_sec": 1.08
+    },
+    {
+      "sample_id": "cve-2022-0185_kernel",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.12
+    },
+    {
+      "sample_id": "cve-2023-24329_curl",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.06
+    },
+    {
+      "sample_id": "cve-2024-2961_glibc",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.08
+    },
+    {
+      "sample_id": "cve_2017_1000112",
+      "detected": "1",
+      "n_findings": 3,
+      "n_fp": 0,
+      "elapsed_sec": 0.43999999999999995
+    },
+    {
+      "sample_id": "cve_2018_1000001",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.1
+    },
+    {
+      "sample_id": "cve_2019_12900",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 0.45999999999999996
+    },
+    {
+      "sample_id": "cve_2020_10713",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 1.32
+    },
+    {
+      "sample_id": "cve_2021_3156",
+      "detected": "1",
+      "n_findings": 5,
+      "n_fp": 0,
+      "elapsed_sec": 0.43999999999999995
+    },
+    {
+      "sample_id": "cve_2022_0185",
+      "detected": "1",
+      "n_findings": 6,
+      "n_fp": 0,
+      "elapsed_sec": 1.1600000000000001
+    }
+  ]
+}

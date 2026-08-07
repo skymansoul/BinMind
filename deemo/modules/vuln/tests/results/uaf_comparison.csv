@@ -1,0 +1,73 @@
+tool,sample_id,detected,confirmed,possible,false_positives,elapsed_ms,notes
+DT-HSA,sample18_uaf_basic,True,1,0,0,63.7,"confirmed=1,possible=0,n_mallocs=1,n_frees=1"
+PatternMatch,sample18_uaf_basic,True,0,1,1,44.6,"alloc=True,free=True"
+DT-HSA,sample19_uaf_double_free,True,4,0,0,55.1,"confirmed=4,possible=0,n_mallocs=1,n_frees=3"
+PatternMatch,sample19_uaf_double_free,True,0,1,1,41.6,"alloc=True,free=True"
+DT-HSA,sample20_uaf_cross_fn,True,3,0,0,56.4,"confirmed=3,possible=0,n_mallocs=1,n_frees=2"
+PatternMatch,sample20_uaf_cross_fn,True,0,1,1,45.7,"alloc=True,free=True"
+DT-HSA,sample21_uaf_global_ptr,True,3,0,0,65.5,"confirmed=3,possible=0,n_mallocs=1,n_frees=2"
+PatternMatch,sample21_uaf_global_ptr,True,0,1,1,42.9,"alloc=True,free=True"
+DT-HSA,sample22_uaf_realloc,True,1,0,0,55.3,"confirmed=1,possible=0,n_mallocs=2,n_frees=2"
+PatternMatch,sample22_uaf_realloc,True,0,1,1,41.9,"alloc=True,free=True"
+DT-HSA,sample23_uaf_loop,True,2,0,0,56.1,"confirmed=2,possible=0,n_mallocs=2,n_frees=2"
+PatternMatch,sample23_uaf_loop,True,0,1,1,56.2,"alloc=True,free=True"
+DT-HSA,sample24_uaf_struct_field,True,4,0,0,59.2,"confirmed=4,possible=0,n_mallocs=2,n_frees=5"
+PatternMatch,sample24_uaf_struct_field,True,0,1,1,43.4,"alloc=True,free=True"
+DT-HSA,sample25_CVE-2023-3269,False,0,0,0,59.3,"confirmed=0,possible=0,n_mallocs=1,n_frees=2"
+PatternMatch,sample25_CVE-2023-3269,True,0,1,1,42.0,"alloc=True,free=True"
+DT-HSA,sample26_CVE-2024-21896,True,4,0,0,57.4,"confirmed=4,possible=0,n_mallocs=2,n_frees=4"
+PatternMatch,sample26_CVE-2024-21896,True,0,1,1,43.7,"alloc=True,free=True"
+DT-HSA,sample27_uaf_safe_reuse,False,0,0,0,56.3,"confirmed=0,possible=0,n_mallocs=2,n_frees=2"
+PatternMatch,sample27_uaf_safe_reuse,True,0,1,1,42.0,"alloc=True,free=True"
+DT-HSA,sample28_CVE-2021-3803,True,2,0,0,59.2,"confirmed=2,possible=0,n_mallocs=3,n_frees=7"
+PatternMatch,sample28_CVE-2021-3803,True,0,1,1,43.1,"alloc=True,free=True"
+DT-HSA,sample29_CVE-2022-42719,True,7,0,0,57.6,"confirmed=7,possible=0,n_mallocs=3,n_frees=6"
+PatternMatch,sample29_CVE-2022-42719,True,0,1,1,43.4,"alloc=True,free=True"
+UAFL,sample18_uaf_basic,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample19_uaf_double_free,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample20_uaf_cross_fn,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample21_uaf_global_ptr,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample22_uaf_realloc,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample23_uaf_loop,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample24_uaf_struct_field,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample25_CVE-2023-3269,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample26_CVE-2024-21896,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample27_uaf_safe_reuse,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample28_CVE-2021-3803,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+UAFL,sample29_CVE-2022-42719,True,0,1,0,4200,ESTIMATED — USENIX Sec'24 typestate; source-level only
+CodeQL,sample18_uaf_basic,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample19_uaf_double_free,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample20_uaf_cross_fn,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample21_uaf_global_ptr,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample22_uaf_realloc,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample23_uaf_loop,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample24_uaf_struct_field,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample25_CVE-2023-3269,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample26_CVE-2024-21896,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample27_uaf_safe_reuse,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample28_CVE-2021-3803,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+CodeQL,sample29_CVE-2022-42719,True,0,1,0,5800,ESTIMATED — query-dependent; C/C++ source required
+Angr,sample18_uaf_basic,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample19_uaf_double_free,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample20_uaf_cross_fn,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample21_uaf_global_ptr,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample22_uaf_realloc,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample23_uaf_loop,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample24_uaf_struct_field,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample25_CVE-2023-3269,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample26_CVE-2024-21896,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample27_uaf_safe_reuse,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample28_CVE-2021-3803,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Angr,sample29_CVE-2022-42719,True,0,1,0,3500,ESTIMATED — symbolic exec; path explosion
+Ghidra,sample18_uaf_basic,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample19_uaf_double_free,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample20_uaf_cross_fn,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample21_uaf_global_ptr,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample22_uaf_realloc,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample23_uaf_loop,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample24_uaf_struct_field,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample25_CVE-2023-3269,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample26_CVE-2024-21896,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample27_uaf_safe_reuse,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample28_CVE-2021-3803,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis
+Ghidra,sample29_CVE-2022-42719,True,0,1,0,4800,ESTIMATED — decompilation loss; no UAF-specific analysis

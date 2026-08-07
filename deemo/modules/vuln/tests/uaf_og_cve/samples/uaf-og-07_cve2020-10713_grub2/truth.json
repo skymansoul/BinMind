@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2020-10713",
+  "desc": "CVE-2020-10713 (GRUB2) UAF 复现 — 脚本变量缓冲区释放后仍被",
+  "trigger": "   引用: free(buf) 后 memcpy 读 buf. 简化: free(p) 后 strlen(p). "
+}

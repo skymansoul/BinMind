@@ -1,4 +1,4 @@
-# 创建: 2025-08-21
+# 创建: 2026-06-15
 """批量编译测试样本 — 遍历 cve_samples 目录, 调用 gcc/clang 生成 ELF。
 
 输出: build_results.json — 每个样本的编译状态和路径。

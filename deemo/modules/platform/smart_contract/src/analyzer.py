@@ -64,7 +64,7 @@ class SmartContractAnalyzer:
             self.logger = logging.getLogger(__name__)
         self.logger.info("SmartContractAnalyzer initialized")
 
-    # ---- Public API ----
+# Public API
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
         """合约安全分析 — 输入字节码(bytes)、合约类型(evm/wasm)、输出格式(json/text)。"""
@@ -133,7 +133,7 @@ class SmartContractAnalyzer:
             "supported_platforms": ["any"],
         }
 
-    # ---- EVM analysis pipeline ----
+# EVM analysis pipeline
 
     def _analyze_evm(self, bytecode: bytes) -> Dict[str, Any]:
         """执行EVM分析流程：解析→检测→过滤→报告。"""
@@ -200,7 +200,7 @@ class SmartContractAnalyzer:
             "tags": hints,
         }
 
-    # ---- WASM analysis ----
+# WASM analysis
 
     def _analyze_wasm(self, bytecode: bytes) -> Dict[str, Any]:
         """执行WASM分析：检查敏感导入。"""
@@ -250,7 +250,7 @@ class SmartContractAnalyzer:
             ],
         }
 
-    # ---- Helpers ----
+# Helpers
 
     def _compute_fingerprint(self, bytecode: bytes) -> str:
         """字节码SHA-256哈希，用作缓存键。"""
@@ -329,7 +329,6 @@ class SmartContractAnalyzer:
 
 
 # 不拆: debug 打印和备用入口 — 当前未使用
-def _debug_print(*args, **kwargs):
     """条件调试输出 — BINMIND_DEBUG时打印。"""
     import os
     if os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes"):

@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_24_double_free_alias","description":"Double free via alias — same object freed twice through different names","cwe":"CWE-416","vuln_type":"use-after-free"}

@@ -1,0 +1,67 @@
+{
+  "prov": {
+    "n": 16,
+    "tp": 12,
+    "tn": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0,
+    "per_sample": {
+      "fmt_01_printf_argv": "TP",
+      "fmt_02_printf_gets": "TP",
+      "fmt_03_sprintf_fmtarg": "TP",
+      "fmt_04_fprintf_user": "TP",
+      "fmt_05_fprintf_stdout": "TP",
+      "fmt_06_printf_fgets": "TP",
+      "fmt_07_printf_read": "TP",
+      "fmt_08_snprintf_fmtarg": "TP",
+      "fmt_09_printf_heap_fmt": "TP",
+      "fmt_10_printf_scanf": "TP",
+      "fmt_11_vprintf_user": "TP",
+      "fmt_12_printf_strcpy": "TP",
+      "fmt_safe_literal": "TN",
+      "fmt_safe_literal_var": "TN",
+      "fmt_safe_rodata_table": "TN",
+      "fmt_safe_snprintf_const": "TN"
+    }
+  },
+  "naive": {
+    "n": 16,
+    "tp": 12,
+    "tn": 0,
+    "fp": 4,
+    "fn": 0,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.8571,
+    "fpr": 1.0,
+    "per_sample": {
+      "fmt_01_printf_argv": "TP",
+      "fmt_02_printf_gets": "TP",
+      "fmt_03_sprintf_fmtarg": "TP",
+      "fmt_04_fprintf_user": "TP",
+      "fmt_05_fprintf_stdout": "TP",
+      "fmt_06_printf_fgets": "TP",
+      "fmt_07_printf_read": "TP",
+      "fmt_08_snprintf_fmtarg": "TP",
+      "fmt_09_printf_heap_fmt": "TP",
+      "fmt_10_printf_scanf": "TP",
+      "fmt_11_vprintf_user": "TP",
+      "fmt_12_printf_strcpy": "TP",
+      "fmt_safe_literal": "FP",
+      "fmt_safe_literal_var": "FP",
+      "fmt_safe_rodata_table": "FP",
+      "fmt_safe_snprintf_const": "FP"
+    }
+  },
+  "fp_reduction_pct": 100.0,
+  "n_samples": 16,
+  "class_stats": {
+    "TAINT": 9,
+    "UNKNOWN": 4,
+    "CONST": 4
+  }
+}

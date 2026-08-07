@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 16:25
-# 修改: 2025-08-16 — cmp_imm/call_target/struct 三类语义常量锚点
+# 创建: 2026-04-19 16:25
+# 修改: 2026-04-19 — cmp_imm/call_target/struct 三类语义常量锚点
 """
 稳定锚点二进制补丁定位器 — 跨编译器/优化级别的补丁代码精确匹配。
 
@@ -25,12 +25,12 @@
   锚点基于语义常量——编译器的自由度在此处最低, 跨平台最稳定。
   匹配失败直接指示"此处的语义发生了变化"→ 这就是补丁。
 
-ref: PLocator (arXiv:2501.17413, 2025) — stable anchor values from
+ref: PLocator — stable anchor values from
      condition comparison and function call instructions for patch
      localization, 本项目将其 anchor 概念从函数级扩展到 BB 级
 ref: BinDiff (zynamics/Google) — 图同构匹配的工业标准,
      本项目用锚点替代图同构——降低复杂度从 NP-hard 到 O(N log N)
-ref: 1dFuzz (ISSTA 2023) — Trailing Call Sequence 作为 patch 特征,
+ref: 1dFuzz — Trailing Call Sequence 作为 patch 特征,
      本项目推广 TCS 为更通用的"稳定锚点"概念
 """
 
@@ -72,7 +72,7 @@ class PatchCandidate:
     description: str = ''
 
 
-# --- 锚点提取 ---
+# 锚点提取
 
 def extract_anchors(cfg: dict[int, dict],
                     instructions: list[dict],
@@ -152,7 +152,7 @@ def extract_anchors(cfg: dict[int, dict],
     return anchors
 
 
-# --- 锚点匹配 ---
+# 锚点匹配
 # 贪心最大权重匹配: 对每个 pre-patch 锚点, 找 post-patch 中最佳匹配。
 
 def match_anchors(pre_anchors: list[StableAnchor],
@@ -217,7 +217,7 @@ def _anchor_similarity(a: StableAnchor, b: StableAnchor) -> float:
     return 0.0
 
 
-# --- 补丁定位 ---
+# 补丁定位
 
 def locate_patch_regions(pre_anchors: list[StableAnchor],
                          post_anchors: list[StableAnchor],

@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "strncpy_terminated",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "interval",
+  "cve": "",
+  "func": "safe_strncpy",
+  "name": "FP-08_strncpy_terminated"
+}

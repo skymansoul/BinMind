@@ -1,0 +1,32 @@
+{
+  "generated": "2026-08-07T13:38:56.153310",
+  "n_samples": 1,
+  "metrics": {
+    "tp": 1,
+    "tn": 0,
+    "fp": 0,
+    "fn": 0,
+    "recall": 100.0,
+    "precision": 100.0,
+    "f1": 100.0
+  },
+  "results": [
+    {
+      "sample_id": "sample01_heap_overflow_basic",
+      "cve_id": "",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\sample_bins\\sample01_heap_overflow_basic\\vuln_heap_basic.exe",
+      "compiled": false,
+      "compile_error": "",
+      "raw_findings": 1,
+      "confirmed": 0,
+      "likely": 1,
+      "uncertain": 0,
+      "filtered_fp": 0,
+      "elapsed_sec": 0.066,
+      "expected_vuln": true,
+      "detected": true,
+      "status": "TP",
+      "notes": ""
+    }
+  ]
+}

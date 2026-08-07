@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_14_array_no_deref",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 数组仅作缓冲不解引用",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "free 后仅比较指针非空, 无解引用"
+}

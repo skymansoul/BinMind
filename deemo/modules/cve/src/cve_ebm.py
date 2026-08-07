@@ -1,21 +1,21 @@
-# 创建: 2026-07-30 15:52
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-04-25 15:52
+# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: EBM玻璃盒CVE评分
 # 可解释增强机 — CVE评分的玻璃盒模型
 #
 # 问题: XGBoost/LightGBM在CVE评分中表现优异 (82.3-82.9%准确率,
 # IEEE Access 2025), 但属于黑盒. 黑盒模型在安全运维中面临信任障碍:
-#   - 审计要求: 无法解释"为什么这个CVE被标记为CRITICAL".
-#   - 合规风险: GDPR/EO 14028要求自动化决策可解释.
-#   - 调试困难: 无法定位模型偏的来源.
+# 审计要求: 无法解释"为什么这个CVE被标记为CRITICAL".
+# 合规风险: GDPR/EO 14028要求自动化决策可解释.
+# 调试困难: 无法定位模型偏的来源.
 # 现有XAI方法 (SHAP/LIME) 是事后解释, 仅近似模型行为.
 #
-# 解决方案: 可解释增强机 (EBM, Nori et al. 2019).
+# 解决方案: 可解释增强机.
 # EBM是广义加性模型 (GAM) 的增强版本:
 #   g(E[y]) = β_0 + Σ f_i(x_i) + Σ f_{ij}(x_i, x_j).
 # 其中:
-#   - f_i: 单特征形状函数 (用bagged浅树学习).
-#   - f_{ij}: 成对交互形状函数 (GA²M扩展).
+# f_i: 单特征形状函数 (用bagged浅树学习).
+# f_{ij}: 成对交互形状函数 (GA²M扩展).
 # 性质:
 #   1. 玻璃盒: 每个f_i可直接可视化为图表.
 #   2. 准确性: 在表格数据上匹配XGBoost (驾驶风险: 99.65%).
@@ -27,15 +27,15 @@
 #
 # 非显而易见性:
 #   1. 首次将EBM应用于CVE漏洞评分.
-#      EBM用于保险/信贷/滑坡 (2025-2026), 零安全应用.
+#      EBM用于保险/信贷/滑坡, 零安全应用.
 #   2. 形状函数直接可视化: 安全分析师可看到"EPSS从0.2→0.8
 #      使分数线性增长0.3", 完全透明.
 #   3. 与SHAP的互补: SHAP解释任意模型, EBM自身就是解释.
 #
-# 参考:
-#   [Nori et al. 2019] EBM: Interpretable ML (KDD)
-#   [2026] EBM for driving risk: 99.65% accuracy
-#   [IEEE Access 2025] XGBoost for CVE: 82.3% (baseline)
+#
+# EBM: Interpretable ML (KDD)
+# EBM for driving risk: 99.65% accuracy
+# XGBoost for CVE: 82.3% (baseline)
 
 import math, random
 from collections import defaultdict

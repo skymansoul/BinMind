@@ -1,7 +1,7 @@
 # 安全发现因果推断图: 约束因果发现+根因识别+修复优先级
-# 参考: Pearl "Causal Inference in Statistics: A Primer" (Wiley 2016)
+# Pearl "Causal Inference in Statistics: A Primer" (Wiley 2016)
 #       CausalVulGNN (Zhang & Chen, 2025): GNN+因果子图漏洞解释
-#       Caro et al. "Causal Digital Twins for Cyber-Physical Security" (arXiv:2510.09616 [待验证], 2025)
+#       Caro et al. "Causal Digital Twins for Cyber-Physical Security" ( [待验证], 2025)
 # 设计边界:
 #   - 基于观测数据, 无干预数据→仅推断至Markov等价类
 #   - 方向消歧: (a)时间顺序 (b)CWE层级关系 (c)MITRE ATT&CK技术链
@@ -25,7 +25,6 @@ _MIN_SAMPLES_FOR_TEST = 20
 # Fisher z-transform atanh截断, 防止|r|≈1时数值不稳定
 _FISHER_CLAMP = 0.9999
 
-
 @dataclass
 class CausalEdge:
     """因果边: source→target, 方向+置信度."""
@@ -35,7 +34,6 @@ class CausalEdge:
     confidence: float       # [0, 1]
     basis: str = ""         # 证据来源
     partial_corr: float = 0.0
-
 
 @dataclass
 class CausalGraph:
@@ -59,7 +57,6 @@ class CausalGraph:
     def out_degree(self, node_id: str) -> int:
         return sum(1 for e in self.edges if e.source == node_id
                    and e.edge_type in ('causal', 'structural'))
-
 
 class FindingCausalDiscoverer:
     """简化PC算法安全发现因果发现器.
@@ -103,7 +100,7 @@ class FindingCausalDiscoverer:
             graph.root_causes = list(fids)
             return graph
 
-        # 步骤1: 全连接骨架 (基于共现)
+# 全连接骨架 (基于共现)
         co_occur: Dict[Tuple[str, str], int] = Counter()
         marginal: Dict[str, int] = Counter()
         for fset in comp_sets.values():
@@ -117,7 +114,7 @@ class FindingCausalDiscoverer:
             if count >= 2:
                 skeleton.add((a, b))
 
-        # 步骤2: 条件独立性检验
+# 条件独立性检验
         if n_comps >= self._min_samples:
             skeleton = self._prune_by_conditional_independence(
                 skeleton, fids, comp_sets, n_comps, marginal, co_occur)
@@ -125,11 +122,11 @@ class FindingCausalDiscoverer:
             log.info("样本量 %d < %d, 跳过条件独立性检验",
                      n_comps, self._min_samples)
 
-        # 步骤3: 方向推断
+# 方向推断
         graph.edges = self._orient_edges(skeleton, fids, meta, ts, co_occur,
                                          n_comps)
 
-        # 步骤4: 根因识别
+# 根因识别
         in_edges = Counter(e.target for e in graph.edges
                            if e.edge_type in ('causal', 'structural'))
         graph.root_causes = [fid for fid in fids
@@ -257,7 +254,6 @@ class FindingCausalDiscoverer:
 
         return edges
 
-
 class RootCauseRanker:
     """根因排序: 下游因果边数×严重度权重."""
 
@@ -313,7 +309,6 @@ class RootCauseRanker:
 
         return impact
 
-
 # 统计辅助函数
 
 def _pearson_r(x: List[int], y: List[int]) -> float:
@@ -330,7 +325,6 @@ def _pearson_r(x: List[int], y: List[int]) -> float:
     cov = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y)) / (n - 1)
     return max(-1.0, min(1.0, cov / (sx * sy)))
 
-
 def _norm_cdf(z: float) -> float:
     """标准正态CDF近似 (Abramowitz & Stegun 7.1.26)."""
     if z < -8.0:
@@ -343,7 +337,6 @@ def _norm_cdf(z: float) -> float:
     pdf = math.exp(-z * z / 2.0) / math.sqrt(2.0 * math.pi)
     cdf = 1.0 - pdf * poly
     return cdf if z >= 0 else 1.0 - cdf
-
 
 def _cwe_hierarchy_direction(cwe_a: str, cwe_b: str) -> Optional[str]:
     """CWE层级因果方向推断.
@@ -370,7 +363,6 @@ def _cwe_hierarchy_direction(cwe_a: str, cwe_b: str) -> Optional[str]:
         if cwe_a in children and cwe_b in children:
             return None  # 兄弟节点
     return None
-
 
 __all__ = [
     'CausalEdge', 'CausalGraph', 'FindingCausalDiscoverer',

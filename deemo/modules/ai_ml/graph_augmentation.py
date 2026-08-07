@@ -1,7 +1,7 @@
 # 图数据增强策略集 — 用于对比学习的图结构/节点特征扰动
-# 参考: GraphCL (You et al. NeurIPS, 2020) 的四种增强 +
-# GeoMix [Zhao et al. KDD 2024] 的几何感知Mixup
-# BEGA [Rong et al. ICLR 2020] 的重力感知边丢弃
+# GraphCL 的四种增强 +
+# GeoMix 的几何感知Mixup
+# BEGA 的重力感知边丢弃
 # 核心: 保留语义不变性的前提下生成同一图的不同视图
 
 from __future__ import annotations
@@ -52,9 +52,7 @@ class GraphView:
             self.augmented_by = []
 
 
-# ---------------------------------------------------------------------------
 # 增强策略实现
-# ---------------------------------------------------------------------------
 
 class GraphAugmenter:
 

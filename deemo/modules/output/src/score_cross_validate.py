@@ -20,7 +20,6 @@
     4. heap_exploitability vs sandbox_escape 冗余利用链检查
     5. 单模块极端值 (任一模块 >9.0 且无其他模块 >6.0)
 
-参考:
   无现有工具 — 2026-08 检索确认.
   Meta-analysis in ML: ensemble disagreement as quality signal.
   本模块首次将元分析应用于二进制漏洞评分管线.
@@ -33,7 +32,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class ContradictionType(Enum):
     EXPLOIT_VS_RISK = "exploit_vs_risk"        # 利用性≠风险面
     DENSITY_VS_RELIABILITY = "density_vs_reliability"  # 密度≠可靠度
@@ -41,7 +39,6 @@ class ContradictionType(Enum):
     HEAP_VS_SANDBOX = "heap_vs_sandbox"        # 堆利用≠沙箱强度
     SINGLE_EXTREME = "single_extreme"           # 孤立极端值
     CONSISTENT = "consistent"                   # 无矛盾
-
 
 @dataclass
 class Contradiction:
@@ -54,7 +51,6 @@ class Contradiction:
     severity: float              # 0-10, 矛盾严重度
     interpretation: str
 
-
 @dataclass
 class CrossValidation:
     """评分交叉验证结果。"""
@@ -62,7 +58,6 @@ class CrossValidation:
     meta_quality_score: float = 10.0    # 0-10, 越高越可信
     analysis_blind_spot: str = ''       # 建议的盲区标签
     human_review_recommended: bool = False
-
 
 def _detect_exploit_vs_risk(
     exploitability: float, risk_composite: float,
@@ -82,7 +77,6 @@ def _detect_exploit_vs_risk(
         )
     return None
 
-
 def _detect_density_vs_reliability(
     vuln_density_z: float, reliability: float,
 ) -> Optional[Contradiction]:
@@ -96,7 +90,6 @@ def _detect_density_vs_reliability(
                           '高概率为加壳/混淆导致的误报集群')
         )
     return None
-
 
 def _detect_remediation_vs_urgency(
     remediation_diff: float, urgency_hours: float,
@@ -112,7 +105,6 @@ def _detect_remediation_vs_urgency(
         )
     return None
 
-
 def _detect_heap_vs_sandbox(
     heap_exploit: float, sandbox_diff: float,
 ) -> Optional[Contradiction]:
@@ -126,7 +118,6 @@ def _detect_heap_vs_sandbox(
                           '检查: 沙箱是否允许必要的 syscall?')
         )
     return None
-
 
 def _detect_single_extreme(
     scores: Dict[str, float],
@@ -147,7 +138,6 @@ def _detect_single_extreme(
                               '可能为孤立极端值或误报')
             )]
     return []
-
 
 def cross_validate(
     exploitability: float = 5.0,

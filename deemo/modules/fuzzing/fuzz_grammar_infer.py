@@ -1,9 +1,8 @@
 """从种子语料库推断输入语法 -- 有限状态机/正则近似的自动学习。
 
-参考:
-  STALAGMITE   (FSE 2024, arXiv:2503.08486) -- 从递归下降解析器代码静态挖掘文法
-  GrammarForge (SEFM 2024)                   -- 轻量源码分析+成员查询, 无输入样本
-  SyzSpec       (ASE 2022, Zotero)           -- 欠约束符号执行生成内核模糊测试规范
+  STALAGMITE -- 从递归下降解析器代码静态挖掘文法
+  GrammarForge                   -- 轻量源码分析+成员查询, 无输入样本
+  SyzSpec           -- 欠约束符号执行生成内核模糊测试规范
   Grammar-based whitebox fuzzing (Zotero)    -- 白盒文法推断
   Parser-directed fuzzing (Zotero)           -- 解析器定向模糊测试
 
@@ -29,7 +28,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 class GrammarNodeType(str, Enum):
     LITERAL = "literal"         # 固定字节序列
     CHOICE = "choice"           # 多选一
@@ -39,7 +37,6 @@ class GrammarNodeType(str, Enum):
     LENGTH_FIELD = "length_field"  # 长度字段
     CHECKSUM_FIELD = "checksum_field"  # 校验和字段
     UNKNOWN = "unknown"         # 自由字节区域
-
 
 @dataclass
 class GrammarNode:
@@ -54,7 +51,6 @@ class GrammarNode:
     weight: float = 1.0       # 生成时被选中的权重
     label: str = ""            # 人类可读的字段标签
 
-
 @dataclass
 class InferredGrammar:
     """推断出的文法结构。"""
@@ -63,7 +59,6 @@ class InferredGrammar:
     total_seeds_analyzed: int = 0
     entropy_profile: List[float] = field(default_factory=list)
     protocol_hint: str = "unknown"  # http/json/elf/png/...
-
 
 class GrammarInferrer:
     """从语料库统计推断输入近似文法 -- 多阶段流水线。"""
@@ -274,8 +269,7 @@ class GrammarInferrer:
             seq.children.append(child)
         return seq
 
-
-# ===== 从文法生成测试输入 =====
+# 从文法生成测试输入
 
 def generate_from_grammar(root: GrammarNode, max_length: int = 4096) -> bytes:
     """从推断的文法树采样生成一个新的输入。
@@ -286,7 +280,6 @@ def generate_from_grammar(root: GrammarNode, max_length: int = 4096) -> bytes:
     output = bytearray()
     _generate_rec(root, output, max_length)
     return bytes(output)
-
 
 def _generate_rec(node: GrammarNode, buf: bytearray, max_len: int) -> None:
     if len(buf) >= max_len:
@@ -317,8 +310,7 @@ def _generate_rec(node: GrammarNode, buf: bytearray, max_len: int) -> None:
         # 暂时写入占位符, 实际长度由外部调用者后续修正
         buf.extend(b'\x00\x00')
 
-
-# ===== 语法导出 =====
+# 语法导出
 
 def export_grammar_json(inferred: InferredGrammar, output_path: Optional[str] = None) -> Dict:
     """将推断的文法导出为 JSON (可被其他工具消费)。"""
@@ -347,7 +339,6 @@ def export_grammar_json(inferred: InferredGrammar, output_path: Optional[str] = 
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
     return data
-
 
 def infer_grammar(seeds: List[bytes]) -> InferredGrammar:
     """模块级便捷入口。"""

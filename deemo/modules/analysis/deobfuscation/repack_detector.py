@@ -45,11 +45,9 @@ def _list_dex_classes(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
     return classes
 
 
-# ---------------------------------------------------------------------------
 # DEX 字符串表比较 —— 比类名比较更细粒度
 # DEX 格式: string_ids 段包含所有字符串引用。重打包工具（如 apktool）
 # 重建 DEX 时会改变字符串的顺序、对齐和填充
-# ---------------------------------------------------------------------------
 
 def _list_dex_strings(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
     """提取 DEX 文件中所有非空字符串。扫描 MUTF-8 编码的字符串表"""
@@ -88,11 +86,9 @@ def _dex_opcode_histogram(zf: _zipfile.ZipFile, dex_name: str) -> Dict[int, int]
     return hist
 
 
-# ---------------------------------------------------------------------------
 # 原生. ELF dynsym 导出符号比较
 # 从 APK 内的. 文件中提取.dynsym 中的导出符号名，比较两个
 # APK 之间的差异。新增的 JNI 导出（Java_* 前缀）是代码注入的强信号
-# ---------------------------------------------------------------------------
 
 _DT_SYMTAB = 6
 _DT_STRTAB = 5

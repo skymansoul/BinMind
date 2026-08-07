@@ -437,7 +437,7 @@ class ContrastivePreTrainer:
 
     核心思想：漏洞检测可建模为"代码特征 vs. 漏洞语义"的跨模态匹配问题。
     在嵌入空间拉近同类样本、推远异类样本，预训练后的表征迁移到蒸馏阶段
-    能显著加速收敛（BLens 在 USENIX Security '25 验证了类似策略）。
+    能显著加速收敛。
     """
 
     __slots__ = ('m_temperature', 'm_embedding_dim')

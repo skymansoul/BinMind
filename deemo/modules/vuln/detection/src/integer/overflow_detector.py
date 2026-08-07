@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | 整数溢出检测——运算结果→分配大小的传播链分析
+# 创建: 2026-05-07 | 整数溢出检测——运算结果→分配大小的传播链分析
 #
 """整数溢出检测——追踪算术运算结果如何影响后续内存操作的大小参数。
 
@@ -19,16 +19,14 @@
 size_constraint_inferrer检测"malloc和memcpy的size关系",
 本模块检测"size本身是否因溢出而错误"。
 
-参考:
 - CWE-190 Integer Overflow (MITRE)
-- Dietz et al. "Understanding Integer Overflow in C/C++" (ICSE 2015)
-- IOC (Integer Overflow Checker for C/C++, LLVM 2019) — 源码级, 本模块在二进制级
+- Dietz et al. "Understanding Integer Overflow in C/C++"
+- IOC — 源码级, 本模块在二进制级
 """
 
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 class OverflowPattern(Enum):
     MUL_TO_MALLOC = "mul_to_malloc"       # mul/imul → 结果流向malloc size
@@ -36,7 +34,6 @@ class OverflowPattern(Enum):
     SHL_TO_INDEX = "shl_to_index"         # shl → 结果用作数组索引
     SUB_UNDERFLOW = "sub_underflow"       # sub → 可能下溢(无符号)
     CAST_TRUNCATION = "cast_truncation"   # 大类型→小类型截断
-
 
 @dataclass
 class ArithmeticOp:
@@ -48,7 +45,6 @@ class ArithmeticOp:
     result_bits: int = 32   # 结果所需最小位宽
     has_overflow_risk: bool = False
 
-
 @dataclass
 class OverflowFinding:
     """一次整数溢出发现。"""
@@ -58,7 +54,6 @@ class OverflowFinding:
     sink_func: str       # 汇函数名
     confidence: float
     severity: str = "HIGH"
-
 
 class IntegerOverflowDetector:
     """整数溢出检测器——基于运算语义的污点增强。
@@ -181,8 +176,7 @@ class IntegerOverflowDetector:
             _base += 0.15
         return min(0.95, _base)
 
-
-# ---- smoke ----
+# smoke
 def _check():
     _d = IntegerOverflowDetector()
 
@@ -204,7 +198,6 @@ def _check():
     print(f"[int_overflow] findings={_report['total_findings']} "
           f"by_pattern={_report['by_pattern']}")
     print("[OK] integer_overflow_detector passed")
-
 
 if __name__ == "__main__":
     _check()

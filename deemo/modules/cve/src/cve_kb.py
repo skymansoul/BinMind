@@ -5,7 +5,7 @@
 # 块 — 承认重复，但仅为 5 次使用而抽象化尚不值得引入间接层。
 # 若再加一次，重构为 _ensure_columns。
 #
-# _dict_to_entry 是一团字段映射 — 刻意丑陋，真实的兼容层总是这样。
+# dict_to_entry 是一团字段映射 — 刻意丑陋，真实的兼容层总是这样。
 # severity→score 映射硬编码 dict 在 CVSS 4.0 普及后需重新审视。
 #
 # delete_cve 曾使用 total_changes (跨连接累积) — 改为 rowcount。
@@ -134,7 +134,7 @@ class CVEKnowledgeBase:
                         pass  # 列已存在
             self._conn.commit()
 
-    # ---- 兼容方法 (测试代码使用) ----
+# 兼容方法 (测试代码使用)
     def add(self, entry: Union[CVEEntry, Dict]) -> str:
         """添加 CVE 条目。接受 CVEEntry 或 dict。返回 cve_id。"""
         return self.insert(entry)
@@ -180,7 +180,7 @@ class CVEKnowledgeBase:
             self._conn.execute("DELETE FROM cves")
             self._conn.commit()
 
-    # ---- 核心操作 ----
+# 核心操作
     def insert(self, entry: Union[CVEEntry, Dict]) -> str:
         """插入或替换 CVE 条目。返回 cve_id。"""
         if isinstance(entry, dict):
@@ -268,7 +268,7 @@ class CVEKnowledgeBase:
             "cisa_kev_count": kev_count,
         }
 
-    # ---- 搜索 ----
+# 搜索
     def search(
         self,
         query: Optional[str] = None,
@@ -327,7 +327,7 @@ class CVEKnowledgeBase:
         entries = [self._row_to_entry(r) for r in rows]
         return entries, total
 
-    # ---- CJK 搜索 (基于 fts5, 2026年8月) ----
+# CJK 搜索 (基于 fts5, 2026年8月)
     def search_cjk(
         self,
         query: str,
@@ -373,7 +373,7 @@ class CVEKnowledgeBase:
             ).fetchall()
             return [self._row_to_entry(r) for r in rows]
 
-    # ---- 内部辅助 ----
+# 内部辅助
     def _row_to_entry(self, row: sqlite3.Row) -> CVEEntry:
         """将 sqlite3.Row 转换为 CVEEntry。"""
         return CVEEntry(

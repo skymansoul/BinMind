@@ -11,17 +11,17 @@
 #
 # MinHash 的选择理由（vs SimHash）：
 #   - SimHash 对输入顺序敏感（SHA-256 的 bit 扰动 → 汉明距离变化不均）
-#   - 崩溃上下文的"特征集"是调用帧的集合——天然是集合数据
-#   - MinHash 估计的 Jaccard 相似度对集合数据有理论保证
-# - 我们不需要 SimHash 的 bitw 汉明距离——需要的是集合交并比
+# 崩溃上下文的"特征集"是调用帧的集合——天然是集合数据
+# MinHash 估计的 Jaccard 相似度对集合数据有理论保证
+# 我们不需要 SimHash 的 bitw 汉明距离——需要的是集合交并比
 #
 # 特征工程：
 #   每条崩溃提取以下"shingle"（特征片段）：
-#     - stack_N_frame_M: 栈帧地址的前 12 bit 掩码（函数级粒度）
-#     - reg_X_val_Y: 寄存器 X 的值非零时取高 8 bit（值域粗粒化）
-# - fault_type_Z: 故障类型（ACCESS_VIOLA 等）
-#     - crash_addr_page_P: 崩溃地址的页号（4KB 页粒度）
-#     - module_M_offset_O: 崩溃地址所在模块 + 偏移（粗粒度）
+# stack_N_frame_M: 栈帧地址的前 12 bit 掩码（函数级粒度）
+# reg_X_val_Y: 寄存器 X 的值非零时取高 8 bit（值域粗粒化）
+# fault_type_Z: 故障类型（ACCESS_VIOLA 等）
+# crash_addr_page_P: 崩溃地址的页号（4KB 页粒度）
+# module_M_offset_O: 崩溃地址所在模块 + 偏移（粗粒度）
 # 将以上 shingle 集合输入 MinHash → 256-bit 签名
 #   两个崩溃的 MinHash 签名汉明距离 < 32（即估计 Jaccard ≥ 0.875）
 # 视为同一根因
@@ -31,9 +31,9 @@
 # 视为等价——因为我们关心的是"哪个函数在栈上"而非"精确到字节的偏移"
 # 实现：调用帧地址按 0x1000 对齐后哈希——函数级粒度
 #
-# ref: Broder, " resembl 包含 documents."
+# Broder, " resembl 包含 documents."
 #      SEQUENCES 1997. — MinHash 原始论文，Jaccard 估计的理论基础
-# ref: Klee, "Crash deduplica via 栈 哈希" — Mozilla Socorro
+# Klee, "Crash deduplica via 栈 哈希" — Mozilla Socorro
 #      项目使用栈帧签名进行崩溃去重，本项目在此基础上增加了寄存器状态
 #      维度以区分"同一函数的不同崩溃模式"（如同一 memcpy 中的
 # 缓冲区溢出 vs 释放后使用——栈相同但寄存器状态不同）

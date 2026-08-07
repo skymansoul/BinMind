@@ -26,9 +26,9 @@
 综合精度分数: precision = 1 - (over_taint_rate + under_taint_rate) / 2
 
 与现有工作的关系:
-- 污点传播策略综述 (ACM 2025): 分类方法 -> 本模块: 精度量化
-- DMC Tool (CMU 2025): 辅助信息减少误报 -> 本模块: 估计误报率
-- PDIFT (2024): 路径感知降低漏报 -> 本模块: 估计漏报率
+- 污点传播策略综述: 分类方法 -> 本模块: 精度量化
+- DMC Tool: 辅助信息减少误报 -> 本模块: 估计误报率
+- PDIFT: 路径感知降低漏报 -> 本模块: 估计漏报率
 """
 
 from __future__ import annotations
@@ -40,9 +40,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class PropagationStep:
@@ -70,9 +68,7 @@ class TaintPrecisionReport:
     reliability_grade: str = 'F'    # A/B/C/D/F
 
 
-# ---------------------------------------------------------------------------
 # 保守传播模式识别
-# ---------------------------------------------------------------------------
 
 # 保守传播的操作符--无条件将源污点传播到目标
 _CONSERVATIVE_OPS = {

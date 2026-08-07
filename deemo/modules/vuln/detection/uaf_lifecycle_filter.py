@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 import re, logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
@@ -23,7 +23,7 @@ class UafLifecycleFilter:
     - 若free和deref之间存在新的malloc调用且返回值存入同一寄存器→ 滤除
     - 仅保留free后、下次alloc前、无重新赋值的deref → 确认UAF
 
-    方法依据: Lancet (USENIX 2025) 所有权语义——指针在free后失去cell owner,
+    方法依据: Lancet 所有权语义——指针在free后失去cell owner,
     新的alloc创建新的cell owner, 旧指针变为dangling。
     """
     _ALLOC_FUNCS = {"malloc", "calloc", "realloc"}

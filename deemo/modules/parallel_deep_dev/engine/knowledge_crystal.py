@@ -1,12 +1,12 @@
 """
-创建: 2025-07-29
+创建: 2026-06-13
 修改:
   2025-08-03 - 持久化路径统一到 _data_dir()
 跨会话知识结晶 — 三层知识模型 (L1事件/L2模式/L3规则)，持久化到磁盘。
 
 与 TiMem/DeltaMem 对话记忆不同，本模块提取代码生成模式并跨会话复用。
 L2→L3 晋升条件：>=3 次会话观察且成功率 >80%。
-填补 Experience Compression Spectrum (2026) 指出的 L1/L2/L3 "缺失对角线"
+填补 Experience Compression Spectrum 指出的 L1/L2/L3 "缺失对角线"
 在代码生成领域的空白。
 """
 
@@ -20,6 +20,8 @@ import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+from parallel_deep_dev.engine._io import safe_read
 
 
 # 持久化路径: 统一使用 .parallel_deep_data/ 目录
@@ -76,9 +78,7 @@ class KnowledgeCrystal:
         self._dirty = False
         self._load_from_disk()
 
-    # ------------------------------------------------------------------
     # 写入
-    # ------------------------------------------------------------------
 
     def record_observation(
         self, category: str, content: str,
@@ -133,9 +133,7 @@ class KnowledgeCrystal:
             self._dirty = True
         return entry_id
 
-    # ------------------------------------------------------------------
     # 读取
-    # ------------------------------------------------------------------
 
     def query(
         self,
@@ -172,9 +170,7 @@ class KnowledgeCrystal:
             )
         return "\n".join(parts)
 
-    # ------------------------------------------------------------------
     # 会话生命周期
-    # ------------------------------------------------------------------
 
     def extract_patterns_from_files(
         self, filepaths: list[str], quality_reports: dict | None = None,
@@ -186,10 +182,8 @@ class KnowledgeCrystal:
         for fpath in filepaths:
             if not fpath.endswith(".py") or not os.path.isfile(fpath):
                 continue
-            try:
-                with open(fpath, "r", encoding="utf-8", errors="replace") as f:
-                    source = f.read()
-            except OSError:
+            source = safe_read(fpath)
+            if source is None:
                 continue
 
             try:
@@ -233,9 +227,7 @@ class KnowledgeCrystal:
         self._save_to_disk()
         return promoted
 
-    # ------------------------------------------------------------------
     # 持久化
-    # ------------------------------------------------------------------
 
     def _save_to_disk(self) -> None:
         with self._lock:

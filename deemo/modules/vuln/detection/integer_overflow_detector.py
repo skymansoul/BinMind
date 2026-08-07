@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 import re, logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

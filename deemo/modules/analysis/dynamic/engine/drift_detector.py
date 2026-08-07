@@ -20,8 +20,7 @@
 - 持续异常 (K=3 次) -> 触发对应级别的校准动作
 - 校准后冷却期: min(10min, 3xcollect_interval) 内不再次触发
 
-参考:
-- Hotelling's T² 控制图 (1947) 的多维推广--本模块使用协方差
+- Hotelling's T² 控制图 的多维推广--本模块使用协方差
   估计替代 Hotelling 的假设已知 Σ, 更符合实际工程
 - 滞后机制受制于 CUSUM 控制图的 "累积和" 思想--小偏差累积
   达到阈值后才告警, 但本模块使用连续计数替代累积和, 减少参数
@@ -38,10 +37,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .drift_metrics import DriftMetricCollector, MetricSnapshot
 
-
-# ---------------------------------------------------------------------------
 # 漂移严重度与校准级别
-# ---------------------------------------------------------------------------
 
 class DriftSeverity(Enum):
     NORMAL = auto()         # 所有度量在正常范围
@@ -49,7 +45,6 @@ class DriftSeverity(Enum):
     MODERATE = auto()       # 2-3 个度量中度偏离 -> 轻量级校准
     SEVERE = auto()         # >=3 个度量显著偏离 -> 深度校准
     CRITICAL = auto()       # 核心路径全部退化 -> 重置管道
-
 
 class CalibrationAction(Enum):
     NONE = "none"
@@ -59,7 +54,6 @@ class CalibrationAction(Enum):
     RESET_TAINT_MODEL = "reset_taint_model"             # 重置污点传播模型
     PRUNE_STALE_STATES = "prune_stale_states"           # 剪枝过期的符号状态
     RESTART_PIPELINE = "restart_pipeline"               # 重启分析管线
-
 
 @dataclass
 class DriftReport:
@@ -73,10 +67,7 @@ class DriftReport:
     recommended_actions: List[CalibrationAction]
     is_calibrating: bool                  # 是否已触发校准
 
-
-# ---------------------------------------------------------------------------
 # 多维联合漂移检测器
-# ---------------------------------------------------------------------------
 
 class DriftDetector:
     """多维联合漂移检测--Mahalanobis 距离 + 滞后触发

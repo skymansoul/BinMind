@@ -98,7 +98,7 @@ class RemediationTracker:
             """)
             conn.commit()
 
-    # ---- 导入匹配的CVE ----
+# 导入匹配的CVE
 
     def import_matches(
         self,
@@ -145,7 +145,7 @@ class RemediationTracker:
             conn.commit()
         return count
 
-    # ---- 状态管理 ----
+# 状态管理
 
     def update_status(
         self,
@@ -176,7 +176,7 @@ class RemediationTracker:
         """接受某CVE的风险（标记为accepted_risk并附理由）。"""
         return self.update_status(cve_id, STATUS_ACCEPTED_RISK, deployment, justification)
 
-    # ---- 查询 ----
+# 查询
 
     def get_overdue(self) -> List[Dict[str, Any]]:
         """获取所有超过截止日期且未修复/未接受的CVE。"""
@@ -222,7 +222,7 @@ class RemediationTracker:
             ).fetchone()
         return dict(row) if row else None
 
-    # ---- 摘要 ----
+# 摘要
 
     def summary(self) -> Dict[str, Any]:
         """仪表盘友好的修复摘要。"""
@@ -273,7 +273,7 @@ class RemediationTracker:
             pass
 
 
-# ---- SLA计算 ----
+# SLA计算
 
 def _compute_deadline_days(severity: str, epss_score: Optional[float] = None) -> int:
     """按严重度与EPSS评分计算SLA截止天数。"""

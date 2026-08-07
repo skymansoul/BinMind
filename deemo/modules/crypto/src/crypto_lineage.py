@@ -8,19 +8,18 @@
 设计意图:
   crypto_lib_fingerprint通过版本字符串识别静态链接的密码库, 但无法回答:
     (a) 两个固件是否复用了同一段密码学代码(即使库不同)?
-    (b) 某个密码学漏洞(如CVE-2023-xxx在OpenSSL的AES-GCM中)影响了多少二进制?
+    (b) 某个密码学漏洞影响了多少二进制?
     (c) 代码片段在库间是否发生拷贝传播(copy-paste lineage)?
 
   本模块对检测到的密码学结构(S-box区域/轮常量/API代码片段)提取区域指纹,
   跨二进制比对构建复用关系图。指纹使用simhash降维后做LSH预筛选,
   再以完整哈希精确匹配。
 
-参考:
   - Jang et al., "ReDeBug: Finding Unpatched Code Clones in Entire OS Distributions"
-    (IEEE S&P 2012): 基于代码哈希的跨二进制复用检测思路, 本项目推广到密码学区域。
-  - Pewny et al., "Cross-Architecture Bug Search in Binary Executables" (IEEE S&P 2015):
+: 基于代码哈希的跨二进制复用检测思路, 本项目推广到密码学区域。
+  - Pewny et al., "Cross-Architecture Bug Search in Binary Executables":
     跨架构二进制代码搜索, 使用IR级别特征 — 本项目在raw byte层面工作, 避免IR依赖。
-  - David & Yahav, "Tracelet-based code search in executables" (PLDI 2014):
+  - David & Yahav, "Tracelet-based code search in executables":
     tracelet概念 — 短代码片段作为搜索单元, 本项目将S-box/常数表作为特殊tracelet。
 
 边界条件:
@@ -35,12 +34,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ── 指纹提取参数 ──
+# 指纹提取参数
 _DEFAULT_CONTEXT_WINDOW = 256     # 锚点两侧各取窗口尺寸
 _SIMHASH_BIT = 64                 # Simhash位数
 _SIMHASH_THRESHOLD = 3            # 汉明距离≤3视为候选匹配
-
 
 @dataclass
 class CryptoRegion:
@@ -54,7 +51,6 @@ class CryptoRegion:
     simhash: int = 0               # 64-bit simhash — LSH预筛选用
     file_path: str = ""
 
-
 @dataclass
 class LineageMatch:
     """两个CryptoRegion间的匹配."""
@@ -62,7 +58,6 @@ class LineageMatch:
     region_b: CryptoRegion
     match_type: str                # 'exact_sbox' | 'exact_code' | 'fuzzy_simhash'
     confidence: float
-
 
 @dataclass
 class LineageGraph:
@@ -96,8 +91,7 @@ class LineageGraph:
                         chain.append(fpath)
         return chain
 
-
-# ── Simhash实现 ──
+# Simhash实现
 # 64-bit simhash: 对输入字节流的每个字节, 按位值更新64个累加器。
 # 最终每个累加器≥0→对应位为1。用于概率性近似去重和LSH预筛选。
 
@@ -120,13 +114,11 @@ def compute_simhash(data: bytes) -> int:
             result |= (1 << bit)
     return result
 
-
 def simhash_distance(a: int, b: int) -> int:
     """两个simhash间的汉明距离."""
     return (a ^ b).bit_count()
 
-
-# ── 指纹提取 ──
+# 指纹提取
 
 def extract_region_fingerprint(data: bytes,
                                anchor: int,
@@ -163,8 +155,7 @@ def extract_region_fingerprint(data: bytes,
 
     return region
 
-
-# ── 跨二进制匹配 ──
+# 跨二进制匹配
 
 def match_regions(regions_a: List[CryptoRegion],
                   regions_b: List[CryptoRegion],
@@ -209,8 +200,7 @@ def match_regions(regions_a: List[CryptoRegion],
 
     return matches
 
-
-# ── 批量区域提取 — 从crypto_detector的findings批量生成 ──
+# 批量区域提取 — 从crypto_detector的findings批量生成
 
 def regions_from_findings(data: bytes,
                           findings: List,
@@ -240,8 +230,7 @@ def regions_from_findings(data: bytes,
         regions.append(region)
     return regions
 
-
-# ── 谱系图构建 ──
+# 谱系图构建
 
 def build_lineage(file_regions: Dict[str, List[CryptoRegion]],
                   simhash_threshold: int = _SIMHASH_THRESHOLD) -> LineageGraph:
@@ -265,7 +254,6 @@ def build_lineage(file_regions: Dict[str, List[CryptoRegion]],
             graph.matches.extend(matches)
 
     return graph
-
 
 __all__ = [
     'CryptoRegion', 'LineageMatch', 'LineageGraph',

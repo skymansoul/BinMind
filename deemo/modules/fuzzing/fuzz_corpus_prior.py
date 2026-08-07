@@ -1,7 +1,7 @@
 """语料感知语义先验 (RL-SeedFuzz 核心组件 3 / LLAMAFUZZ)。
 
 设计意图:
-  LLAMAFUZZ (arXiv:2406.07714) 强调 LLM 生成的测试输入具有"语料感知"
+  LLAMAFUZZ  强调 LLM 生成的测试输入具有"语料感知"
   性质: 输入贴近已有语料分布, 从而提升结构变异与字典注入的命中率。
   本模块在无 LLM 场景下提供等价的语料感知先验, 全部来自种子文本统计:
 
@@ -29,10 +29,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-
-# ============================================================================
 # 令牌提取
-# ============================================================================
 
 class TokenExtractor:
     """从单条种子字节流中提取结构化令牌。
@@ -80,10 +77,7 @@ class TokenExtractor:
             out.append((m.group(0).decode("ascii", errors="replace"), m.start()))
         return out
 
-
-# ============================================================================
 # 语料令牌模型
-# ============================================================================
 
 class CorpusTokenModel:
     """种子语料的统计模型: token 频率 / 分隔符 / 前后缀 / 格式分布。
@@ -148,7 +142,7 @@ class CorpusTokenModel:
                 pass
             return "unknown"
 
-    # ---- 查询 ----
+# 查询
 
     def token_prior(self, token: str) -> float:
         """Laplace 平滑后的 token 频率先验 (∈ (0,1])。"""
@@ -197,10 +191,7 @@ class CorpusTokenModel:
         mx = max(density) or 1.0
         return [d / mx for d in density]
 
-
-# ============================================================================
 # 语义先验 (变异可用视图)
-# ============================================================================
 
 class SemanticPrior:
     """语料语义先验 --- 面向字典与结构感知变异的查询接口。
@@ -286,7 +277,6 @@ class SemanticPrior:
                             "CHUNK_REVERSE": 0.6, "LENGTH_UPDATE": 0.7})
         return default
 
-
 # 结构算子集合 (与 fuzz_structure_mutator.StructMutOp.value 对齐)
 _STRUCT_OPS = (
     "FIELD_SWAP", "FIELD_DUPLICATE", "FIELD_DELETE", "FIELD_SHUFFLE",
@@ -294,10 +284,7 @@ _STRUCT_OPS = (
     "CHUNK_CROSSOVER", "CHUNK_REVERSE", "DICT_GUIDED_FIELD",
 )
 
-
-# ============================================================================
 # 语料感知的结构变异器 (继承既有实现, 覆写算子选择与字典引导)
-# ============================================================================
 
 class CorpusAwareStructureMutator:
     """语料感知的结构变异器 --- 包装 StructureAwareMutator。
@@ -355,16 +342,12 @@ class CorpusAwareStructureMutator:
             return self._inner.get_operator_stats()
         return {}
 
-
-# ============================================================================
 # 模块级便捷函数
-# ============================================================================
 
 def build_corpus_prior(corpus_seeds: Sequence[bytes]) -> SemanticPrior:
     """从种子语料构建语义先验 (便捷入口)。"""
     model = CorpusTokenModel(corpus_seeds)
     return SemanticPrior(model)
-
 
 def prior_aware_dictionary(entries: Sequence[Tuple[bytes, float]],
                            prior: Optional[SemanticPrior] = None,
@@ -383,7 +366,6 @@ def prior_aware_dictionary(entries: Sequence[Tuple[bytes, float]],
             scored.append((b, 0.6 * p + 0.4 * prior_p))
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored[:top_k]
-
 
 def apply_token_prior_mutation(data: bytes, prior: SemanticPrior,
                                rounds: int = 1) -> bytes:
@@ -415,7 +397,6 @@ def apply_token_prior_mutation(data: bytes, prior: SemanticPrior,
             pos = random.randrange(len(raw))
             raw[pos] = random.randint(0, 255)
     return bytes(raw)
-
 
 __all__ = [
     "TokenExtractor", "CorpusTokenModel", "SemanticPrior",

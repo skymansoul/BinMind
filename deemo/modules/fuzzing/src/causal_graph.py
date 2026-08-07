@@ -5,7 +5,7 @@
 2025-07-29 09:41 - do-calculus: 后门/前门准则可识别性判定
 2025-07-31 16:08 - twin network 构造 (Abduction-Action-Prediction)
 
-参考: Pearl (2009) "Causality", Spirtes et al. (2000) "Causation, Prediction, and Search"
+参考: Pearl "Causality", Spirtes et al. "Causation, Prediction, and Search"
 
 与 constraint_inference_mutator 的区分:
 前者做启发式约束推断 (关联层), 本模块实现 do-calculus 图手术 (干预层)。

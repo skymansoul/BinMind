@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | 路径敏感性检查
+# 创建: 2026-05-16 | 路径敏感性检查
 #
 """路径敏感污点检查 — 对BIFT到达汇的路径做反向切片+条件提取以降误报。
 
@@ -17,7 +17,7 @@ motivation: BIFT保守过近似——所有可能到达汇的路径被合并。
 3. 对每条汇聚合所有到达路径的约束——
    若至少一条路径无保护→汇最终标记为VULNERABLE。
 
-CITA (IEEE 2024): 使用 Path Behavior Vectors 编码路径特征,
+CITA: 使用 Path Behavior Vectors 编码路径特征,
 证明路径感知可降低 38.6% FP。本实现取其核心思想——
 "不是所有到达汇的路径同等危险"——用轻量反向切片实现,
 不构建完整的符号执行引擎。
@@ -190,7 +190,7 @@ class PathSensitiveChecker:
 import re  # 用于_is_size_constraint; 放在文件末尾以避免干扰类定义
 
 
-# ---- smoke ----
+# smoke
 def _check():
     _checker = PathSensitiveChecker(backward_slice_depth=10)
 

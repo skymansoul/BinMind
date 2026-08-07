@@ -1,0 +1,287 @@
+{
+  "summary": {
+    "vuln_detected_with_awsc": 15,
+    "vuln_total": 15,
+    "safe_clean_with_awsc": 15,
+    "safe_total": 15,
+    "fp_without_awsc": 5,
+    "fp_with_awsc": 0,
+    "awsc_total_filtered": 5,
+    "recall_with_awsc": 1.0,
+    "fpr_with_awsc": 0.0,
+    "fpr_without_awsc": 0.3333
+  },
+  "rows": [
+    {
+      "name": "awsc_same_var_vuln",
+      "pattern": "awsc_same_var",
+      "opt": "O0",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_same_var_vuln",
+      "pattern": "awsc_same_var",
+      "opt": "O2",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_same_var_vuln",
+      "pattern": "awsc_same_var",
+      "opt": "Os",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_same_var_safe",
+      "pattern": "awsc_same_var",
+      "opt": "O0",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_same_var_safe",
+      "pattern": "awsc_same_var",
+      "opt": "O2",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_same_var_safe",
+      "pattern": "awsc_same_var",
+      "opt": "Os",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_param_flow_vuln",
+      "pattern": "awsc_param_flow",
+      "opt": "O0",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_param_flow_vuln",
+      "pattern": "awsc_param_flow",
+      "opt": "O2",
+      "is_vuln": true,
+      "findings_with_awsc": 2,
+      "findings_without_awsc": 2,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_param_flow_vuln",
+      "pattern": "awsc_param_flow",
+      "opt": "Os",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_param_flow_safe",
+      "pattern": "awsc_param_flow",
+      "opt": "O0",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_param_flow_safe",
+      "pattern": "awsc_param_flow",
+      "opt": "O2",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 1
+    },
+    {
+      "name": "awsc_param_flow_safe",
+      "pattern": "awsc_param_flow",
+      "opt": "Os",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 1
+    },
+    {
+      "name": "awsc_calc_same_vuln",
+      "pattern": "awsc_calc_same",
+      "opt": "O0",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_calc_same_vuln",
+      "pattern": "awsc_calc_same",
+      "opt": "O2",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_calc_same_vuln",
+      "pattern": "awsc_calc_same",
+      "opt": "Os",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_calc_same_safe",
+      "pattern": "awsc_calc_same",
+      "opt": "O0",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 1
+    },
+    {
+      "name": "awsc_calc_same_safe",
+      "pattern": "awsc_calc_same",
+      "opt": "O2",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 1
+    },
+    {
+      "name": "awsc_calc_same_safe",
+      "pattern": "awsc_calc_same",
+      "opt": "Os",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 1
+    },
+    {
+      "name": "awsc_off_by_k_vuln",
+      "pattern": "awsc_off_by_k",
+      "opt": "O0",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_off_by_k_vuln",
+      "pattern": "awsc_off_by_k",
+      "opt": "O2",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_off_by_k_vuln",
+      "pattern": "awsc_off_by_k",
+      "opt": "Os",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 1,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_off_by_k_safe",
+      "pattern": "awsc_off_by_k",
+      "opt": "O0",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_off_by_k_safe",
+      "pattern": "awsc_off_by_k",
+      "opt": "O2",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_off_by_k_safe",
+      "pattern": "awsc_off_by_k",
+      "opt": "Os",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_vuln",
+      "pattern": "awsc_loop_fill",
+      "opt": "O0",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_vuln",
+      "pattern": "awsc_loop_fill",
+      "opt": "O2",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_vuln",
+      "pattern": "awsc_loop_fill",
+      "opt": "Os",
+      "is_vuln": true,
+      "findings_with_awsc": 1,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_safe",
+      "pattern": "awsc_loop_fill",
+      "opt": "O0",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_safe",
+      "pattern": "awsc_loop_fill",
+      "opt": "O2",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    },
+    {
+      "name": "awsc_loop_fill_safe",
+      "pattern": "awsc_loop_fill",
+      "opt": "Os",
+      "is_vuln": false,
+      "findings_with_awsc": 0,
+      "findings_without_awsc": 0,
+      "awsc_filtered": 0
+    }
+  ],
+  "timestamp": "2026-08-11 02:05:08"
+}

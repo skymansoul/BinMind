@@ -21,12 +21,11 @@ NIST轻量密码学检测 — 识别IoT固件中的LWC标准化算法和竞赛�
     3. 字符串指纹(ascon_*, lwc_*, crypto_aead_*)
     4. 置换结构检测(紧凑的64-bit/128-bit置换, 无大型查表)
 
-参考:
-  - NIST SP 800-232 (2024): ASCON AEAD and Hash — 正式LWC标准。
-  - NIST LWC Finalists (2023): ASCON(winner), GIFT-COFB, Grain-128AEADv2,
+  - NIST SP 800-232: ASCON AEAD and Hash — 正式LWC标准。
+  - NIST LWC Finalists: ASCON(winner), GIFT-COFB, Grain-128AEADv2,
     Photon-Beetle, Romulus, SPARKLE, TinyJambu, Xoodyak, ISAP, Elephant.
-  - Dobraunig et al., "ASCON v1.2" (2021): ASCON算法规范, 包括IV和轮常量定义。
-  - Banik et al., "GIFT: A Small Present" (CHES 2017): GIFT-128 S-box和置换规范。
+  - Dobraunig et al., "ASCON v1.2": ASCON算法规范, 包括IV和轮常量定义。
+  - Banik et al., "GIFT: A Small Present": GIFT-128 S-box和置换规范。
 
 边界条件:
   - LWC检测置信度通常低于传统密码学(0.65-0.85 vs 0.95+), 因LWC特征信号更弱。
@@ -39,7 +38,7 @@ NIST轻量密码学检测 — 识别IoT固件中的LWC标准化算法和竞赛�
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-# ── 与既有crypto_detector兼容的数据结构 ──
+# 与既有crypto_detector兼容的数据结构
 # 不显式导入CryptoFinding以避免循环依赖; 使用duck typing
 
 @dataclass
@@ -50,8 +49,7 @@ class LWCFinding:
     location: int
     lwc_category: str = ""  # AEAD / HASH / PERMUTATION
 
-
-# ── ASCON 轮常量 ──
+# ASCON 轮常量
 # ASCON使用12轮(初始化)/6轮(数据处理)的320-bit置换。
 # 每轮XOR一个8-bit轮常量到状态字的特定字节。
 # 轮常量 = 0xF0 - 轮号*0x10 + 轮号 (以4-bit分段应用)
@@ -67,8 +65,7 @@ _ASCON_IV_128 = bytes.fromhex('00400c0600000000')[::-1]  # little-endian
 _ASCON_IV_128A = bytes.fromhex('80800c0800000000')[::-1]
 _ASCON_HASH_IV = bytes.fromhex('00400c0600000000')[::-1]  # ASCON-HASH初始值不同
 
-
-# ── GIFT-128 S-box (4-bit, 16元素) ──
+# GIFT-128 S-box (4-bit, 16元素)
 # GIFT使用PRESENT的超类 — 4-bit S-box, 非AES的8-bit S-box。
 # bit-sliced形式常嵌入为立即数序列, 但ROM表形式可能以16字节紧凑存储。
 _GIFT_SBOX = bytes([0x1, 0xA, 0x4, 0xC, 0x6, 0xF, 0x3, 0x9,
@@ -83,29 +80,25 @@ _GIFT_RCON = [0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3E, 0x3D, 0x3B,
               0x21, 0x02, 0x05, 0x0B, 0x17, 0x2E, 0x1C, 0x38,
               0x31, 0x23, 0x06, 0x0D, 0x1B, 0x36, 0x2D, 0x1A]
 
-
-# ── Photon-Beetle S-box (4-bit) ──
+# Photon-Beetle S-box (4-bit)
 # PHOTON使用AES S-box的4-bit变体 — PRESENT S-box
 _PHOTON_SBOX = bytes([0xC, 0x5, 0x6, 0xB, 0x9, 0x0, 0xA, 0xD,
                        0x3, 0xE, 0xF, 0x8, 0x4, 0x7, 0x1, 0x2])
 
-
-# ── SPARKLE (Sparkle384) 轮常量 ──
+# SPARKLE (Sparkle384) 轮常量
 # SPARKLE使用ARX结构 — Alzette S-box + 线性扩散层
 # 轮常量由模加引入; 32-bit常量序列
 _SPARKLE_RCON = [0xB7E15162, 0xBF715880, 0x38B4DA56, 0x324E7738,
                  0xBB1185EB, 0x4F7C7B57, 0xCFBFA1C8, 0xC2B3293D]
 
-
-# ── Xoodyak 轮常量 (基于Xoodoo置换) ──
+# Xoodyak 轮常量 (基于Xoodoo置换)
 # Xoodoo = 384-bit置换, 与Keccak-f[1600]共享设计DNA
 # 轮常量序列: 12轮, 每轮384-bit状态中特定lane的固定值
 _XOODYAK_RCON = [0x00000058, 0x00000038, 0x000003C0, 0x000000D0,
                  0x00000120, 0x00000014, 0x00000060, 0x0000002C,
                  0x00000380, 0x000000F0, 0x000001A0, 0x00000012]
 
-
-# ── LWC字符串指纹 ──
+# LWC字符串指纹
 _LWC_STRING_PATTERNS: List[Tuple[bytes, str, float]] = [
     # ASCON 家族
     (b'ascon-128', 'ASCON-128', 0.88),
@@ -137,8 +130,7 @@ _LWC_STRING_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'lwc_', 'LWC API', 0.55),
 ]
 
-
-# ── 检测函数 ──
+# 检测函数
 
 def _scan_bytes(data: bytes, pattern: bytes, start: int = 0) -> List[int]:
     """在data中搜索pattern的所有出现位置。返回偏移列表。"""
@@ -152,7 +144,6 @@ def _scan_bytes(data: bytes, pattern: bytes, start: int = 0) -> List[int]:
         positions.append(pos)
         pos += plen
     return positions
-
 
 def detect_lwc_by_constants(data: bytes) -> List[LWCFinding]:
     findings: List[LWCFinding] = []
@@ -216,7 +207,6 @@ def detect_lwc_by_constants(data: bytes) -> List[LWCFinding]:
 
     return findings
 
-
 def detect_lwc_by_strings(strings: List[str]) -> List[LWCFinding]:
     findings = []
     for s in strings:
@@ -230,7 +220,6 @@ def detect_lwc_by_strings(strings: List[str]) -> List[LWCFinding]:
                     location=0, lwc_category='AEAD'))
                 break
     return findings
-
 
 def _dedup_lwc(findings: List[LWCFinding], eps: int = 8) -> List[LWCFinding]:
     """去重: 同偏移+同算法→保留高置信度。"""
@@ -247,7 +236,6 @@ def _dedup_lwc(findings: List[LWCFinding], eps: int = 8) -> List[LWCFinding]:
         else:
             merged.append(f)
     return sorted(merged, key=lambda f: -f.confidence)
-
 
 class LWCDetector:
     """NIST轻量密码学检测器 — 兼容CryptoDetector接口。"""
@@ -288,7 +276,6 @@ class LWCDetector:
             "location": f.location,
             "lwc_category": f.lwc_category,
         }
-
 
 def _extract_strings(data: bytes, min_len: int = 4) -> List[str]:
     import re as _re

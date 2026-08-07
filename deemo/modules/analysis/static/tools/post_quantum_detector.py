@@ -9,7 +9,7 @@
 - NIST SP 800-208 (Stateful Hash-Based 签名s)
 - NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)
 - BSI TR-02102-1 (Cryptographic Mechanisms: Recommendations Key Lengths)
-- [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的密码学审计框架
+- 的密码学审计框架
 """
 
 import logging

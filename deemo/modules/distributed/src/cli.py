@@ -24,7 +24,7 @@ __date__    = "2026-08-02"
 _log = logging.getLogger("binmind.distributed.cli")
 
 
-# ── Config helper ──────────────────────────────────────────────────────────
+# Config helper
 # YAML config is optional; all subcommands work with defaults.
 # Environment variable BINMIND_DIST_CONFIG overrides --config.
 def _load_config(path: Optional[str] = None) -> dict:
@@ -44,7 +44,7 @@ def _load_config(path: Optional[str] = None) -> dict:
     return {}
 
 
-# ── Worker subcommand ─────────────────────────────────────────────────────
+# Worker subcommand
 # Uses the worker.py Worker class (Redis-backed, no Celery), not the Celery one.
 # rationale: keep it simple; Celery worker is started with `celery -A ... worker`.
 def _cmd_worker(args: argparse.Namespace) -> int:
@@ -95,7 +95,7 @@ def _cmd_worker(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Health subcommand ─────────────────────────────────────────────────────
+# Health subcommand
 def _cmd_health(args: argparse.Namespace) -> int:
     """Start the health-check HTTP server."""
     from ..src.health import HealthServer
@@ -132,7 +132,7 @@ def _cmd_health(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Status subcommand ────────────────────────────────────────────────────
+# Status subcommand
 def _cmd_status(args: argparse.Namespace) -> int:
     """Query cluster status via Redis."""
     try:
@@ -193,7 +193,7 @@ def _cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Circuit subcommand ────────────────────────────────────────────────────
+# Circuit subcommand
 def _cmd_circuit(args: argparse.Namespace) -> int:
     """Inspect or reset circuit breaker state."""
     from ..src.circuit_breaker import CircuitBreaker, CircuitState, MultiBreaker
@@ -219,7 +219,7 @@ def _cmd_circuit(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── DLQ subcommand ────────────────────────────────────────────────────────
+# DLQ subcommand
 def _cmd_dlq(args: argparse.Namespace) -> int:
     """Dead-letter queue management."""
     try:
@@ -280,7 +280,7 @@ def _cmd_dlq(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Pool subcommand ───────────────────────────────────────────────────────
+# Pool subcommand
 def _cmd_pool(args: argparse.Namespace) -> int:
     """Elastic pool control."""
     from ..src.elastic_pool import ElasticPool, ThresholdScalePolicy
@@ -318,7 +318,7 @@ def _cmd_pool(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Benchmark subcommand ──────────────────────────────────────────────────
+# Benchmark subcommand
 def _cmd_benchmark(args: argparse.Namespace) -> int:
     """Micro-benchmarks for distributed components."""
     from ..src.rate_limiter import TokenBucket
@@ -376,7 +376,7 @@ def _cmd_benchmark(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Main entry ────────────────────────────────────────────────────────────
+# Main entry
 def main(argv: Optional[list] = None) -> int:
     """Primary CLI entry point. Returns exit code."""
     p = argparse.ArgumentParser(
@@ -398,7 +398,7 @@ def main(argv: Optional[list] = None) -> int:
     p.add_argument("--format", choices=["text", "json"], default="text",
                    help="Output format (default: text)")
 
-    # --- subcommands ---
+# subcommands
     sp = p.add_subparsers(dest="command", help="Available subcommands")
     sp.required = False  # argparse 3.8+ required; let manual check handle older versions
 
@@ -461,7 +461,7 @@ def main(argv: Optional[list] = None) -> int:
     bp.add_argument("--iterations", type=int, default=None,
                     help="Iteration count (default: 1000)")
 
-    # --- parse and dispatch ---
+# parse and dispatch
     a = p.parse_args(argv)
 
     # Logging

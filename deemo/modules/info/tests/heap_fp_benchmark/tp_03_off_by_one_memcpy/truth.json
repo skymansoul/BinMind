@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_03_off_by_one_memcpy",
+  "label": "tp",
+  "cwe": "CWE-193",
+  "cve": "CVE-2017-1000371 类 (off-by-one 堆溢出)",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "malloc(64) 对齐后可用 64 字节, 写入 65 字节必然越界"
+}

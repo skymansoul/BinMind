@@ -4,13 +4,12 @@
 2025-08-07 16:28 - 增加双分位数 (P50/P95) 预测, 支持乐观/悲观调度模式
 2025-08-09 08:56 - 集成特征预计算缓存, 减少重复特征提取开销
 
-参考:
-  Koenker & Bassett (1978) "Regression Quantiles" — 分位数回归理论基础
-  Cramér (1946) "Mathematical Methods of Statistics"
+  Koenker & Bassett "Regression Quantiles" — 分位数回归理论基础
+  Cramér "Mathematical Methods of Statistics"
     — 渐近理论: 分位数估计的 Bahadur 表示
-  Entropic (Böhme et al., ESEC/FSE 2020)
+  Entropic
     — 执行速度是能量调度的关键输入, 但使用原始测量值而非预测值
-  Honeycomb (Google, 2022) 的 adaptive timeout 机制
+  Honeycomb 的 adaptive timeout 机制
     — 基于历史执行时间的动态超时调整, 本项目借鉴其分位数思想
 
 核心假设:
@@ -37,14 +36,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 # 特征维度
 _N_FEATURES = 5
 
 # 学习率配置
 _DEFAULT_LR_P50 = 0.05
 _DEFAULT_LR_P95 = 0.02  # P95 更新更保守, 因为尾部样本稀疏
-
 
 @dataclass
 class CostEstimate:
@@ -56,7 +53,6 @@ class CostEstimate:
     num_observations: int  # 该种子的历史执行次数
     features: List[float] = field(default_factory=lambda: [0.0] * _N_FEATURES)
     updated_at: float = field(default_factory=time.time)
-
 
 class ExecutionCostForecaster:
     """在线分位数回归器 — 预测种子执行时间的 P50 和 P95。

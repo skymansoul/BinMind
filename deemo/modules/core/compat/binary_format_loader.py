@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from enum import Enum, auto
 
 
-# ===== 枚举 =====
+# 枚举
 class BinaryFormat(Enum):
     ELF = "elf"
     PE = "pe"
@@ -29,7 +29,7 @@ class Arch(Enum):
     UNKNOWN = "unknown"
 
 
-# ===== 数据结构 =====
+# 数据结构
 @dataclass
 class ImportEntry:
     dll_name: str = ""
@@ -149,7 +149,7 @@ class ParsedBinary:
     exports: List[ExportEntry] = field(default_factory=list)
 
 
-# ---- Magic 签名表 ----
+# Magic 签名表
 _MAGIC_DB = {
     b'\x7fELF': ('ELF', None),
     b'MZ': ('PE', None),
@@ -245,7 +245,7 @@ def detect_format_from_magic(filepath: str) -> BinaryFormat:
     return BinaryFormat.RAW
 
 
-# ===== PE 解析器 =====
+# PE 解析器
 class PEParser:
     def parse(self, filepath: str) -> PEParsedInfo:
         info = PEParsedInfo()
@@ -288,7 +288,6 @@ class PEParser:
         info.exports = self._parse_exports(data, info.sections)
         return info
 
-    # ----
     def _parse_sections(self, data: bytes, start: int, count: int) -> List[PESection]:
         sections: List[PESection] = []
         for i in range(count):
@@ -317,7 +316,6 @@ class PEParser:
             ))
         return sections
 
-    # ----
     def _parse_imports(self, data: bytes, sections: List[PESection]) -> List[ImportEntry]:
         imports: List[ImportEntry] = []
         # 在 .idata / .rdata 段中查找导入表
@@ -343,7 +341,6 @@ class PEParser:
                     i += 1
         return imports
 
-    # ----
     def _parse_exports(self, data: bytes, sections: List[PESection]) -> List[ExportEntry]:
         exports: List[ExportEntry] = []
         for sec in sections:
@@ -389,7 +386,7 @@ class PEParser:
         return result if result else (Arch.UNKNOWN, 32)
 
 
-# ===== ELF 解析器 =====
+# ELF 解析器
 class ELFParser:
     def parse(self, filepath: str) -> ELFParsedInfo:
         info = ELFParsedInfo()
@@ -436,7 +433,6 @@ class ELFParser:
         info.dyn_symbols = self._parse_symbols(data, info.sections, endian, is_64bit, '.dynsym')
         return info
 
-    # ----
     def _parse_sections(self, data, shoff, shnum, shentsize, shstrndx, endian, is_64bit):
         sections: List[ELFSection] = []
         if shnum == 0 or shentsize == 0:
@@ -479,7 +475,6 @@ class ELFParser:
             ))
         return sections
 
-    # ----
     def _parse_segments(self, data, phoff, phnum, phentsize, endian, is_64bit):
         segments: List[SegmentInfo] = []
         word = 'Q' if is_64bit else 'I'
@@ -512,7 +507,6 @@ class ELFParser:
             ))
         return segments
 
-    # ----
     def _parse_symbols(self, data, sections, endian, is_64bit, sec_name):
         symbols: List[SymbolEntry] = []
         target_sec = None
@@ -560,7 +554,7 @@ class ELFParser:
         return symbols
 
 
-# ===== Mach-O 解析器 =====
+# Mach-O 解析器
 class MachOParser:
     _MAGICS = {0xFEEDFACE: (32, True), 0xCEFAEDFE: (32, False),
                0xFEEDFACF: (64, True), 0xCFFAEDFE: (64, False)}
@@ -632,7 +626,6 @@ class MachOParser:
 
         return info
 
-    # ----
     def _parse_fat(self, data) -> MachOParsedInfo:
         info = MachOParsedInfo(is_fat=True)
         narch = struct.unpack_from('>I', data, 4)[0]
@@ -650,7 +643,6 @@ class MachOParser:
             })
         return info
 
-    # ----
     def _parse_macho_symbols(self, data, symoff, nsyms, stroff, endian, bits):
         symbols: List[SymbolEntry] = []
         entry_size = 16 if bits == 32 else 16
@@ -669,7 +661,7 @@ class MachOParser:
         return symbols
 
 
-# ---- LIEF 可选回退 ----
+# LIEF 可选回退
 def _try_lief_parse(filepath: str) -> Optional[ParsedBinary]:
     try:
         import lief
@@ -701,7 +693,7 @@ def _try_lief_parse(filepath: str) -> Optional[ParsedBinary]:
         return None
 
 
-# ===== 统一接口 =====
+# 统一接口
 def load_binary(filepath: str) -> ParsedBinary:
     """主入口 — 统一的二进制加载接口"""
     fmt = detect_format_from_magic(filepath)
@@ -757,7 +749,7 @@ def validate_binary(filepath: str) -> bool:
     return bool(filepath and os.path.isfile(filepath) and _quick_sniff(filepath) is not None)
 
 
-# ---- BinaryFormatLoader 兼容 ----
+# BinaryFormatLoader 兼容
 class BinaryFormatLoader:
     def __init__(self, path: str = ''):
         self.path = path

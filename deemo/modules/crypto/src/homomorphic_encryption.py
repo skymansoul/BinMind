@@ -5,9 +5,9 @@
 # (3) TFHE 的 blind rotate / CMux gate 汇编特征,
 # (4) OpenFHE/Lattigo/SEAL/HElib 库字符串特征。
 #
-# 参考: Cheon-Kim-Kim-Song (CKKS, ASIACRYPT 2017), Brakerski-Gentry-Vaikuntanathan
-# (BGV, ITCS 2012), Fan-Vercauteren (BFV, 2012), Chillotti et al. (TFHE, JoC 2020),
-# Badawi et al. (OpenFHE, 2023), Albrecht et al. (Homomorphic Encryption Security Standard, 2018).
+Cheon-Kim-Kim-Song, Brakerski-Gentry-Vaikuntanathan
+#, Fan-Vercauteren, Chillotti et al.,
+# Badawi et al., Albrecht et al..
 
 import struct
 import logging
@@ -29,7 +29,7 @@ class HEDetectionResult:
     detected_in: str = ""
 
 
-# ==== RLWE 参数指纹 ====
+# RLWE 参数指纹
 # 同态加密的特征性参数组合 (ring degree N, max modulus bits)。
 # CKKS: N=2^15..2^17, logQ≈800-1700, scale Δ≈2^40→双精度逼近。
 # BGV: N=2^12..2^15, 多个小模数 (每个约50-60 bit)。
@@ -60,7 +60,7 @@ _HE_PARAM_SIGNATURES: Dict[str, dict] = {
 }
 
 
-# ==== 库指纹库 ====
+# 库指纹库
 _HE_LIB_DB: List[Tuple[bytes, str, float]] = [
     # Microsoft SEAL
     (b'Microsoft SEAL', 'SEAL', 0.95),
@@ -108,7 +108,7 @@ _HE_LIB_DB: List[Tuple[bytes, str, float]] = [
 ]
 
 
-# ==== CKKS/BGV 模数链检测 ====
+# CKKS/BGV 模数链检测
 # HElib/OpenFHE/SEAL 的模数链是多个 ~50-60bit 质数的乘积,
 # 在二进制中以连续数组存储。链长度 -> 乘法深度。
 # CKKS/BGV 同态乘法需 rescale -> 每次乘法丢弃底层 modulus。
@@ -175,7 +175,7 @@ def _is_likely_prime(n: int) -> bool:
     return True
 
 
-# ==== TFHE bootstrapping key 检测 ====
+# TFHE bootstrapping key 检测
 # 单个 TFHE bootstrapping key 由多个 GGSW 样本组成 (~46MB, N=1024 标准参数).
 # 每个 GGSW 样本 ≈ 2*(k+1)*l*N*8 bytes, 其中 k=1, l=3, N=1024 -> ~196KB/样本。
 # 完整 bootstrapping key (含 256 个 samples) ≈ 46-62 MB。
@@ -219,7 +219,7 @@ def detect_tfhe_bootstrapping_key(data: bytes) -> Optional[dict]:
     }
 
 
-# ==== 检测器 ====
+# 检测器
 
 class HESchemeDetector:
     """同态加密方案检测器 -- scheme/库/参数综合指纹."""
@@ -353,7 +353,7 @@ def _infer_scheme(lib_name: str) -> str:
     return 'FHE (generic)'
 
 
-# ==== 便捷入口 ====
+# 便捷入口
 
 def detect_homomorphic_encryption(path: str) -> List[HEDetectionResult]:
     return HESchemeDetector().scan_file(path)

@@ -1,12 +1,12 @@
 # Walma: WASM 内存损坏视觉检测
 # 文献:
 #   "Walma: Learning to See Memory Corruption in WebAssembly"
-#    (arXiv 2603.24167, 2026.03)
+#
 #    途径: WASM 线性内存 → 2D heatmap → CNN 四类损坏分类
 #    类型: (1) 线性溢出 (2) UAF (3) 类型混淆 (4) 未初始化读取
 #    F1=0.91 (相较 ASan 在 WASM 上的 0.74)
 #   "Wemby's Web: Hunting for Memory Corruption in WebAssembly"
-#    (ISSTA 2025) — 互补模糊测试方案, 语法感知变异
+# — 互补模糊测试方案, 语法感知变异
 
 import os
 import struct

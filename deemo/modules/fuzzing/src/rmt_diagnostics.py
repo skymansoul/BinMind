@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---- RMT 参数 ----
+# RMT 参数
 _MAX_SEEDS_FOR_MATRIX = 150    # 相关矩阵的最大维数 (控制 O(n²) 计算)
 _MIN_SEEDS_FOR_RMT = 20        # 启动 RMT 分析的最小种子数
 _DEFAULT_Q = 2.0              # 行列比 γ = d/n, 默认种子:特征 ≈ 2:1

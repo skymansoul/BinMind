@@ -1,5 +1,5 @@
-# 创建: 2026-08-01 11:08
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-04-28 11:08
+# 修改: 2026-04-28 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: MI/SU/CMI信息论特征归因
 # 信息论特征归因 — 基于MI/SU/CMI的漏洞可解释性评分
 #
@@ -30,9 +30,9 @@
 #   这与mRMR等价但计算更高效: O(F²)而非O(F·2^F).
 #
 # 输出:
-#   - 特征归因向量: 每个特征对"利用"标签的归一化信息贡献
-#   - 冗余特征列表: 建议在评分模型中降权或移除的特征
-#   - 特征交互图: 有向无环图表示特征间的信息流
+# 特征归因向量: 每个特征对"利用"标签的归一化信息贡献
+# 冗余特征列表: 建议在评分模型中降权或移除的特征
+# 特征交互图: 有向无环图表示特征间的信息流
 #
 # 非显而易见性:
 #   1. 自适应分箱+CMI冗余消除的管线在漏洞评分中无先例.
@@ -42,11 +42,11 @@
 #      "含信息但非因果" (虚假相关特征).
 #   3. 信息归因向量可直接嵌入ConformalExploitScorer的sigma估计中.
 #
-# 参考:
-#   [Cover & Thomas 2006] Elements of Information Theory
-#   [Peng et al. 2005] mRMR feature selection (IEEE TPAMI)
-#   [Iovino et al. 2026] kCMI-FS: conditional MI with kNN for mixed data
-#   [2P-FSID 2025] Two-phase MI+SHAP framework for intrusion detection
+#
+# Elements of Information Theory
+# mRMR feature selection (IEEE TPAMI)
+# kCMI-FS: conditional MI with kNN for mixed data
+# Two-phase MI+SHAP framework for intrusion detection
 
 import math
 from collections import defaultdict, Counter
@@ -211,7 +211,7 @@ class InfoTheoryAnalyzer:
         return self._analyzed
 
 
-# ---- 信息论核心函数 ----
+# 信息论核心函数
 
 def _adaptive_binning(values: List[float], n_bins: int = 0) -> List[int]:
     """自适应分箱: 连续→FD法则, 离散(<20唯一值)→直接使用."""
@@ -309,7 +309,7 @@ def _conditional_mi(x_i: List[int], x_j: List[int], y: List[int]) -> float:
     return cmi
 
 
-# ---- CVE适配 ----
+# CVE适配
 
 def analyze_cve_features(kb, max_samples: int = 2000) -> Dict:
     """从KB提取特征并运行信息论分析 — 一站式接口.

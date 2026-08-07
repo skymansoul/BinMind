@@ -28,7 +28,7 @@ _RISK_PATTERNS = [
     (_re.compile(r'\b(CreateMutex|WaitForSingleObject|EnterCriticalSection)\s*\('), 0.2, "sync"),
 ]
 
-# ── 增强常量 ──
+# 增强常量
 # 邻接窗口：两个危险操作在此距离内触发耦合乘数
 _ADJACENCY_WINDOW = 3  # 节点跨度
 # sigmoid陡峭度：值越大，衰减越急剧（尾部风险集中在前半段）
@@ -40,7 +40,7 @@ _DIVERSITY_PENALTY_STRENGTH = 0.18
 # 邻接乘数上限
 _ADJACENCY_MULTIPLIER_CAP = 2.5
 
-# ── 已知危险操作链：前驱操作 + 后继操作 → 乘数 ──
+# 已知危险操作链：前驱操作 + 后继操作 → 乘数
 # 策略意图：特定操作对在短距离内共现时，单独评分低估了耦合风险
 _CHAIN_PATTERNS = [
     ({"external_input", "unbounded_copy"}, 1.8),

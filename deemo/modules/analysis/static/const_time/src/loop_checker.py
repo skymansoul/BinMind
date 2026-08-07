@@ -10,7 +10,7 @@
 # 使用简化的循环检测：后向跳转（jcc 目标地址 < jcc 自身地址）即为循环尾
 # 这不是结构化的循环分析（那需要 CFG + 支配树），但作为快速扫描足够
 #
-# ref: "ROBOV: Robust Binary Code Against Speculat Execu" (2024);
+"ROBOV: Robust Binary Code Against Speculat Execu";
 # 侧信道中的循环泄密（loop leakage）可在几秒内推断 RSA 密钥长度
 
 import logging

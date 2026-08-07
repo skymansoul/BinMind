@@ -18,7 +18,7 @@
 在 LLVM 和 GCC 编译的二进制上测试--跨越 5-50 个函数的链
 
 技术基础:
-- 抽象解释的 chaotic iteration (Bourdoncle, 1993)
+- 抽象解释的 chaotic iteration
 - 类型格的 widening: int->ptr 是合法的, ptr->int 也是合法的
   (union 类型允许两者)--但需要记录置信度差异
 - 收敛保证: 类型格有限高度 (int/ptr/struct/float/unknown, 5 层)
@@ -38,9 +38,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 类型格定义
-# ---------------------------------------------------------------------------
 
 # 格的偏序关系: UNKNOWN < everything, INT/PTR/FLOAT 不可比较, STRUCT 是复合
 _TYPE_LATTICE_HEIGHT = 5  # 格高度--保证迭代终止
@@ -113,9 +111,7 @@ class FunctionTypeSignature:
     iteration_fixed: int = -1
 
 
-# ---------------------------------------------------------------------------
 # 跨函数传播器
-# ---------------------------------------------------------------------------
 
 class InterprocTypePropagator:
     """跨函数类型约束传播引擎
@@ -245,7 +241,7 @@ class InterprocTypePropagator:
 
         return False
 
-    # ---- 从指令 trace 推断局部类型 ----
+# 从指令 trace 推断局部类型
     def infer_local_types(
         self,
         func_name: str,

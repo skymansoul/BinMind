@@ -1,4 +1,5 @@
 """报告模板引擎 with 合规条款映射和数据提取."""
+from __future__ import annotations
 import logging, os, re, json, time, hashlib, threading
 from typing import Dict, Any, List, Optional, Callable, Set, Union
 from dataclasses import dataclass, field

@@ -23,8 +23,8 @@
 #   4. wide-vector 约束（位宽 > 128 bits）排在最后——
 #      这些约束的 BV 运算极为耗内存，延迟到 solver 已建立核心子句后处理
 #
-# 参考：
-#   - FFD bin-packing (Johnson, 1974): "Fast algorithms for bin packing"
+#
+#   - FFD bin-packing: "Fast algorithms for bin packing"
 # FFD 的渐近最坏比为 11/9 OPT + 6/9，本项目将其改造为一维排序启发式
 # 不保证最优解——仅保证比随机排列好
 #   - Z3 memory profiling: 本项目通过实测 100 组典型约束集（覆盖

@@ -1,0 +1,727 @@
+{
+  "total_samples": 90,
+  "successful_scans": 90,
+  "detected_count": 34,
+  "results": [
+    {
+      "sample": "CVE-2012-0809_format_string",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.17,
+      "error": null
+    },
+    {
+      "sample": "CVE-2014-0160_heartbleed",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2015-0235_ghost_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2016-10191_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2016-4971_wget",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2017-18017_tcp_mss",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2018-1000001_glibc_realpath_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2019-10149_uaf_exim",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.11,
+      "error": null
+    },
+    {
+      "sample": "CVE-2019-11477_tcp_sack",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2019-15947_uaf",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.11,
+      "error": null
+    },
+    {
+      "sample": "CVE-2020-10713_uaf_grub2",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2020-10757_stack_overflow",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.11,
+      "error": null
+    },
+    {
+      "sample": "CVE-2021-3156_sudo_heap_overflow",
+      "detected": true,
+      "tp_count": 2,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2022-0185_uaf_filesystem",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2022-0847_dirty_pipe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2023-0597_uaf_netfilter",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2023-27997_fortigate_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2024-1086_uaf_nf_tables",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2024-21626_runc_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2024-21887_cmd_inject",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-FP001_safe_printf",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-FP02_printf_const_fmt",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-FP03_fprintf_const_fmt",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-FP04_snprintf_const_fmt",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-FP05_sprintf_named",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP001_syslog",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP002_fprintf",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP04_printf_direct",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP05_snprintf_stack",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP06_vsprintf_variadic",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP07_fprintf_file",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP08_sprintf_stack_overflow",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP09_printf_heap_sink",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP10_log_wrapper_chain",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP11_error_report",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP12_syslog_variadic",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP13_double_format",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FMT-TP14_gethostname_format",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP001_constant_malloc_safe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP002_guarded_malloc_safe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 2,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP003_alignment_safe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP004_and_mask_guard",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP005_loop_bound_safe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP006_minsize_guard",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP007_cross_call_valid",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-FP008_cmova_capped",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.14,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP001_mul_overflow",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP002_io2bo_chain",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP003_add_wrap_size",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP004_mul_wrap_alloc",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP005_shift_wrap_size",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP006_neg_size_alloc",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP007_truncation_alloc",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP008_array_index_wrap",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP009_loop_counter_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP010_offset_wrap",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP011_sign_mismatch",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP012_narrow_cast",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP013_mixed_type_mul",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.05,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP014_widen_cast",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-IO-TP015_ternary_size",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-RACE-FP001_atomic_safe",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-RACE-TP001_shared_global",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-RACE-TP002_signal_handler",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.04,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP001_tainted_heap_overflow",
+      "detected": true,
+      "tp_count": 2,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP002_unbounded_heap_overflow",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP003_loop_bound",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP004_off_by_one",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP005_calc_error",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP006_direct_taint",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP007_cross_func_alloc",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP008_mul_size",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP009_indirect_taint",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.12,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP010_loop_write",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP011_call_ret_size",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP012_realloc_expand",
+      "detected": true,
+      "tp_count": 2,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP013_struct_field",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.19,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP014_array_idx",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.18,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP015_chained_arith",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.17,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-TP016_strlen_offby",
+      "detected": true,
+      "tp_count": 1,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-FP001_safe_realloc",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-FP002_null_guard",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-FP003_diff_object",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP001_intra_stack",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 2,
+      "time_secs": 0.17,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP002_double_free",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.13,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP003_callback",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP004_cond_free",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP005_alias_chain",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.15,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP006_stack_slot",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 0,
+      "time_secs": 0.16,
+      "error": null
+    },
+    {
+      "sample": "CVE-2025-UAF-TP007_cross_func",
+      "detected": false,
+      "tp_count": 0,
+      "fp_count": 1,
+      "time_secs": 0.14,
+      "error": null
+    }
+  ]
+}

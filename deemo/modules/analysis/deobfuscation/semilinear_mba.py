@@ -2,7 +2,7 @@
 """
 半线性 MBA 去混淆器
 
-基于 [Skees 2024, arXiv:2406.10016] 的半线性 MBA 扩展框架
+基于 的半线性 MBA 扩展框架
 将含常量的位运算操作数（如 x&1, (x&0xF)+(y&0xF)）纳入
 简化范围，突破了传统线性 MBA 方法仅处理纯变量操作数的局限
 
@@ -30,12 +30,11 @@ try:
 except ImportError:
     _HAS_Z3 = False
 
-
 class BitExpr:
     """
     位级别布尔表达式 AST
     
-    参考 [Skees 2024] 的位级别建模方法
+    参考 的位级别建模方法
     支持的节点类型：
     -, OR, XOR, （布尔运算）
     - VAR()（第 位的变量值）
@@ -43,7 +42,6 @@ class BitExpr:
     """
 
     pass
-
 
 class BitConst:
     """位常量：0 或 1"""
@@ -65,7 +63,6 @@ class BitConst:
     def __hash__(self):
         return hash(('const', self.value))
 
-
 class BitVar:
     """位变量：某变量的第 bit_index 位"""
     __slots__ = ('name', 'bit_index')
@@ -85,7 +82,6 @@ class BitVar:
     def __hash__(self):
         return hash(('var', self.name, self.bit_index))
 
-
 class BitOp:
     """位操作：, OR, XOR"""
     __slots__ = ('op', 'left', 'right')
@@ -100,7 +96,6 @@ class BitOp:
     def __repr__(self):
         return f"({self.left} {self.op} {self.right})"
 
-
 class BitNot:
     """位非："""
     __slots__ = ('operand',)
@@ -111,16 +106,14 @@ class BitNot:
     def __repr__(self):
         return f"~{self.operand}"
 
-
 BitExprType = BitConst | BitVar | BitOp | BitNot
-
 
 class BitLevelSimplifier:
     """
     位级别布尔表达式简化器
     
     应用布尔代数恒等式在位级别进行简化
-    [Skees 2024, arXiv:2406.10016]
+    [Skees 2024,]
     """
 
     # 布尔代数重写规则（bottom-up 应用）
@@ -232,7 +225,6 @@ class BitLevelSimplifier:
 
         return expr
 
-
 class SemiLinearParser:
     """
     半线性 MBA 表达式解析器
@@ -325,7 +317,6 @@ class SemiLinearParser:
                 i += 1
         return tokens
 
-
 class SemiLinearMBASimplifier:
 
     def __init__(self, bit_width: int = 32):
@@ -407,7 +398,6 @@ class SemiLinearMBASimplifier:
             return nibble_pattern[0]
 
         return joined
-
 
 def simplify_semilinear_mba(expr: str, bit_width: int = 32) -> Dict[str, Any]:
     simplifier = SemiLinearMBASimplifier(bit_width=bit_width)

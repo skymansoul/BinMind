@@ -14,8 +14,8 @@
 # 与传统分布式追踪 (Jaeger/Zipkin) 的区别:
 #   两者做通用追踪。本模块专为调度器组件设计:
 #   - 自动提取调度相关的调用模式 (worker→queue, scheduler→worker, ...)
-#   - 集成到 FaultPropagationGraph: 调用链 → 因果边
-#   - 零外部依赖, 内存开销 < 2MB (最近 1000 spans)
+# 集成到 FaultPropagationGraph: 调用链 → 因果边
+# 零外部依赖, 内存开销 < 2MB (最近 1000 spans)
 
 from __future__ import annotations
 

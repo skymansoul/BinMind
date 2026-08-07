@@ -2,7 +2,7 @@
 #
 # 核心问题:
 #   concolic_bridge.py 收集路径约束 (PathConstraint) 但不做优先级排序——
-#   所有分支被同等对待, 按收集顺序求解。Cottontail (2025) 证明:
+#   所有分支被同等对待, 按收集顺序求解。Cottontail 证明:
 #   忽略输入结构的分支选择导致 30-40% 的覆盖损失, 因为求解器将
 #   资源浪费在"低价值"约束上 (如数据字段的边界检查), 而忽略了
 #   "高价值"约束 (如type字段的switch分发, magic字段的验证绕过)。
@@ -22,13 +22,13 @@
 # 与现有模块的接合:
 #   - taint_field_segmenter.py: 提供 InputField 列表 (字段边界+角色)
 #   - concolic_bridge.py: 提供 PathConstraint 列表 (分支约束)
-#   - 本模块在两者之间: 接收字段+约束 → 输出排序后的求解队列
+# 本模块在两者之间: 接收字段+约束 → 输出排序后的求解队列
 #
-# 参考文献:
-#   Cottontail (Trabish et al. 2025, to appear IEEE S&P 2026)
+# 文献:
+#   Cottontail
 #     — ESCT结构感知路径约束选择; 本项目取其"结构感知"思想但以
 #       污点字段角色替代语法树结构, 适配二进制场景
-#   OptSE (Zhu et al. 2025, IEEE TSE) — knapsack归约的最优策略;
+#   OptSE — knapsack归约的最优策略;
 #     本项目取其"约束价值"概念但以字段角色权重替代路径概率
 
 from __future__ import annotations

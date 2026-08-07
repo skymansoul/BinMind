@@ -1,16 +1,16 @@
 # 多模态漏洞评分融合器——将静态分析、LLM判断、历史CVE匹配、二进制特征
 # 等异构信号加权聚合为单一可利用性评分。
-# 参考AMMF (Cybersecurity 2025) 注意力增强多特征融合和Cascaded Vulnerability
-# Attacks (arXiv:2601.20158) HGAT节点-边联合建模。
+# AMMF 注意力增强多特征融合和Cascaded Vulnerability
+# Attacks HGAT节点-边联合建模。
 #
 # 融合的模态维度:
-#   - static_score: 传统静态分析危险函数评分 (0-100)
-#   - llm_score: LLM语义漏洞判断 (0-1)
-#   - cve_match_score: CVE数据库匹配置信度 (0-1)
+# static_score: 传统静态分析危险函数评分 (0-100)
+# llm_score: LLM语义漏洞判断 (0-1)
+# cve_match_score: CVE数据库匹配置信度 (0-1)
 #   - graph_embedding_similarity: 与已知漏洞函数的图相似度 (0-1)
 #   - exploitability_score: CWE+checksec利用性评估 (0-10)
 #   - age_factor: 漏洞存活时间因子 (log(1+days)/log(1+max_days))
-#   - cvss_normalized: CVSS评分归一化 (0-1)
+# cvss_normalized: CVSS评分归一化 (0-1)
 #   - sandbox_verification: 沙箱验证结果 (0/1 或 0-1置信度)
 #
 # —— 初版仅加权平均
@@ -202,7 +202,7 @@ class MultiModalVulnFuser:
         return "低风险——可能为误报或利用难度极高的理论漏洞。"
 
 
-# ---- 便捷构造函数 ----
+# 便捷构造函数
 
 def make_evidence(source: str, score: float, confidence: float = 0.5,
                    **meta) -> ModalEvidence:
@@ -257,7 +257,7 @@ def fuse_vulnerability_scores(
     return fuser.fuse(evidences)
 
 
-# ---- 证据可信度衰减 ----
+# 证据可信度衰减
 # 多来源证据若一致性低，整体置信度应衰减。
 # Cascaded Vulnerability Attacks论文中HGAT聚合前的可信度校验步骤。
 

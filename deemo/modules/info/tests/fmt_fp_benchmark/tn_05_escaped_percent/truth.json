@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_05_escaped_percent",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 转义百分号",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "%% 是转义, 不构成控制符"
+}

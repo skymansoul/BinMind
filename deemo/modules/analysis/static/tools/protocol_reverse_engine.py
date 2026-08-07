@@ -32,7 +32,7 @@ class StateMachine:
 
 
 class ProtocolReverseEngine:
-    # ---- 初始化，内置常见协议magic byte ----
+# 初始化，内置常见协议magic byte
 
     def __init__(self, messages=None):
         self._msgs = messages or []
@@ -52,7 +52,7 @@ class ProtocolReverseEngine:
             b'GIOP': 'CORBA GIOP',
         }
 
-    # ---- magic byte检测: 已知签名 + 统计高频前缀 ----
+# magic byte检测: 已知签名 + 统计高频前缀
 
     def detect_magic_bytes(self, messages=None) -> List[dict]:
         if messages is None:
@@ -241,7 +241,7 @@ class ProtocolReverseEngine:
 
         return _r
 
-    # ===== 状态机提取: 从send/recv序列聚类消息类型，构建转移矩阵 =====
+# 状态机提取: 从send/recv序列聚类消息类型，构建转移矩阵
 
     def extract_state_machine(self, messages=None) -> StateMachine:
         if messages is None:
@@ -275,7 +275,7 @@ class ProtocolReverseEngine:
 
         return StateMachine(states=_states, transitions=_transitions)
 
-    # ---- 编码检测: JSON/Protobuf/XML/binary ----
+# 编码检测: JSON/Protobuf/XML/binary
 
     def detect_encoding(self, data: bytes) -> str:
         if len(data) == 0:
@@ -364,7 +364,7 @@ class ProtocolReverseEngine:
 
         return _fields
 
-    # ===== 全流程流水线 =====
+# 全流程流水线
 
     def analyze(self, messages=None) -> dict:
         if messages is not None:
@@ -390,7 +390,7 @@ class ProtocolReverseEngine:
             'state_machine': _sm,
         }
 
-    # ---- 校验和算法实现 ----
+# 校验和算法实现
 
     def _crc32(self, data: bytes) -> int:
         _table = self._crc32_table()

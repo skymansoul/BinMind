@@ -1,0 +1,10 @@
+# BinMind GAPSBV Final Benchmark,Generated: 2026-08-07 01:28,123 samples,5 vulnerability types
+
+Category,Samples,TP,FP,TN,FN,Precision,Recall,F1
+heap-overflow,33,32,0,1,0,1.0000,1.0000,1.0000
+heap-fp-reduction,15,6,0,9,0,1.0000,1.0000,1.0000
+uaf,15,15,0,0,0,1.0000,1.0000,1.0000
+int-overflow,30,30,0,0,0,1.0000,1.0000,1.0000
+format-string,30,26,0,4,0,1.0000,1.0000,1.0000
+
+AGGREGATE,123,109,0,14,0,1.0000,1.0000,1.0000

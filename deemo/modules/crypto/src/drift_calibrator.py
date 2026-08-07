@@ -15,14 +15,13 @@
   本模块提取检测到的密码区域的6维结构特征向量, 与参考基线库比对,
   输出偏移评分和分类(无偏移/编译偏移/轻度修改/重度修改/未知变种)。
 
-参考:
-  - Jang et al., "ReDeBug" (IEEE S&P 2012): 代码克隆检测的N-gram方法 —
+  - Jang et al., "ReDeBug": 代码克隆检测的N-gram方法 —
     指令级N-gram频率向量在跨编译器场景下保持稳定, 本项目基于此思想建立指令混合比特征。
-  - Pewny et al., "Cross-Architecture Bug Search" (IEEE S&P 2015):
+  - Pewny et al., "Cross-Architecture Bug Search":
     结构特征(基本块数/边数/调用数)跨编译器具有稳健性 → 落入"编译偏移"类。
-  - David et al., "FirmUp" (USENIX 2016): 固件漏洞检测中跨版本代码匹配的方法,
+  - David et al., "FirmUp": 固件漏洞检测中跨版本代码匹配的方法,
     本项目将版本偏移概念从漏洞匹配推广到完整性验证。
-  - US10445502B2 (2019): 通过指令直方图检测恶意代码注入 — 单指令频率变化是注入信号。
+  - US10445502B2: 通过指令直方图检测恶意代码注入 — 单指令频率变化是注入信号。
 
 边界条件:
   - 参考基线需预建(已知库版本→特征向量), 当前交付重建和比对框架, 基线数据按需填充。
@@ -34,8 +33,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ── 核心数据结构 ──
+# 核心数据结构
 
 @dataclass
 class DriftProfile:
@@ -57,7 +55,6 @@ class DriftProfile:
                 self.shift_ratio, float(self.bb_count) / 100.0,
                 float(self.const_offset) / 4096.0)
 
-
 @dataclass
 class DriftReport:
     """偏移分析报告."""
@@ -67,8 +64,7 @@ class DriftReport:
     classification: str = ""       # none/compiler_drift/minor_patch/major_mod/unknown
     anomaly_flags: List[str] = field(default_factory=list)
 
-
-# ── 特征提取 ──
+# 特征提取
 # 统计区域内的指令分布。不去做完整反汇编 — 仅用单字节操作码前缀做粗略分类。
 # 精确度足够区分编译器产出的特征差异; 无需Capstone依赖。
 
@@ -83,13 +79,11 @@ _OPCODE_CLASS = {
     'shift': frozenset({0xC0, 0xC1, 0xD0, 0xD1, 0xD2, 0xD3}),  # SHL/SHR/ROL/ROR
 }
 
-
 def _classify_opcode(byte_val: int) -> Optional[str]:
     for cls_name, opcodes in _OPCODE_CLASS.items():
         if byte_val in opcodes:
             return cls_name
     return None
-
 
 def extract_drift_profile(data: bytes, anchor: int,
                           algorithm: str = "",
@@ -137,24 +131,20 @@ def extract_drift_profile(data: bytes, anchor: int,
     )
     return profile
 
-
-# ── 参考基线库 ──
+# 基线库
 # 键: "算法/库/版本" 描述字符串
 # 值: DriftProfile预计算向量
 
 _REFERENCE_BASELINES: Dict[str, DriftProfile] = {}
 
-
 def register_baseline(name: str, profile: DriftProfile) -> None:
     """注册一个已知参考基线."""
     _REFERENCE_BASELINES[name] = profile
 
-
 def list_baselines() -> List[str]:
     return list(_REFERENCE_BASELINES.keys())
 
-
-# ── 偏移计算 ──
+# 偏移计算
 
 def _cosine_similarity(v1: Tuple[float, ...],
                        v2: Tuple[float, ...]) -> float:
@@ -165,7 +155,6 @@ def _cosine_similarity(v1: Tuple[float, ...],
     if norm1 < 1e-9 or norm2 < 1e-9:
         return 0.0
     return dot / (norm1 * norm2)
-
 
 def calibrate(profile: DriftProfile) -> DriftReport:
     """将目标DriftProfile与所有参考基线比对, 返回分类报告."""
@@ -217,7 +206,6 @@ def calibrate(profile: DriftProfile) -> DriftReport:
             "可能的代码注入或JIT痕迹")
 
     return report
-
 
 __all__ = [
     'DriftProfile', 'DriftReport',

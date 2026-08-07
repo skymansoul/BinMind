@@ -15,12 +15,9 @@
   5. ROP gadget 库存统计
   6. 潜在利用路径建议
 
-参考:
-  - pwnpasi (GitHub, 2023), "PWN PASI: Automated Exploit Generation Pipeline"
+  - pwnpasi, "PWN PASI: Automated Exploit Generation Pipeline"
   - Xu et al., 2024, USENIX Security, "MOBE: Multi-Objective Binary Exploitation"
 """
-
-from __future__ import annotations
 
 import logging
 import os
@@ -29,7 +26,6 @@ from typing import Any, Dict, List, Optional
 from config import R2_PATH
 
 _log = logging.getLogger(__name__)
-
 
 def build_binary_profile(
     binary_path: str,
@@ -138,7 +134,6 @@ def build_binary_profile(
 
     return profile
 
-
 def _summarize_gadget_types(gadgets: List[Dict[str, Any]]) -> Dict[str, int]:
     """统计各类 ROP gadget 的数量分布。"""
     counts: Dict[str, int] = {}
@@ -146,7 +141,6 @@ def _summarize_gadget_types(gadgets: List[Dict[str, Any]]) -> Dict[str, int]:
         t = g.get('type', 'unknown')
         counts[t] = counts.get(t, 0) + 1
     return counts
-
 
 def _assess_exploit_difficulty(profile: Dict[str, Any]) -> str:
     """
@@ -178,7 +172,6 @@ def _assess_exploit_difficulty(profile: Dict[str, Any]) -> str:
     if score <= 3:
         return 'hard'
     return 'very_hard'
-
 
 def _recommend_approach(profile: Dict[str, Any]) -> List[str]:
     """基于画像推荐利用策略。"""
@@ -216,7 +209,6 @@ def _recommend_approach(profile: Dict[str, Any]) -> List[str]:
         approaches.append('GOT overwrite (partial RELRO)')
 
     return approaches
-
 
 def profile_summary_for_report(profile: Dict[str, Any]) -> str:
     """

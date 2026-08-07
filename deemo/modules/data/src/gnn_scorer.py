@@ -1,8 +1,8 @@
 # 图结构二进制相似度评分 — 基于函数调用图的图核匹配
 # 文献依据:
-#   Collyer et al., "Know Your Neighborhood..." (arXiv:2406.02606, 2024)
-#   HermesSim [He et al., USENIX Security 2024]: SOG + GNN + multi-head softmax, x64 跨架构召回比 Trex 高 184%
-#   GBsim [Du & Wei, Entropy 2025]: GCN + BERT, MRR=0.901, Recall@1=0.831
+#   Collyer et al., "Know Your Neighborhood..."
+#   HermesSim: SOG + GNN + multi-head softmax, x64 跨架构召回比 Trex 高 184%
+#   GBsim: GCN + BERT, MRR=0.901, Recall@1=0.831
 #   补充参考:
 #     Bin2vec — 二进制函数嵌入 baseline 方案
 #     VulANalyzeR — GCN+attention 结构, 多任务联合训练
@@ -14,9 +14,7 @@ import math
 from typing import Dict, List, Tuple, Set, Optional, Any
 from collections import Counter, defaultdict
 
-# ---------------------------------------------------------------------------
 # CallGraphBuilder — 从分析结果构造调用图
-# ---------------------------------------------------------------------------
 
 class CallGraph:
     """有向调用图。
@@ -88,14 +86,12 @@ class CallGraph:
         }
 
 
-# ---------------------------------------------------------------------------
 # GraphletCounter — 3-node / 4-node 子图模式计数
-# 参考 Collyer et al. (2024) 的 call graphlets 方案。
+# Collyer et al. 的 call graphlets 方案。
 # 3-node graphlet: 3 个连通节点有 2 种非同构模式
-#   - triangle (3 条边: A-B, B-C, C-A)
-#   - path (2 条边: A-B-C)
+# triangle (3 条边: A-B, B-C, C-A)
+# path (2 条边: A-B-C)
 # 4-node graphlet: 6 种非同构连通模式
-# ---------------------------------------------------------------------------
 
 def count_graphlets(cg: CallGraph, node: str, size: int = 3) -> Counter:
     """单节点 graphlet 分布统计。
@@ -160,12 +156,10 @@ def graphlet_spectrum(cg: CallGraph, sample_size: int = 100) -> List[float]:
     return vec[:16]
 
 
-# ---------------------------------------------------------------------------
 # Weisfeiler-Lehman Subtree Kernel — 经典图核方法
 # Shervashidze et al., "Weisfeiler-Lehman Graph Kernels", JMLR 2011.
 # 通过迭代标签压缩捕获子树模式，对调用图局部结构敏感，
 # 计算复杂度 O(h·m) (h 轮迭代, m 边数)。
-# ---------------------------------------------------------------------------
 
 def wl_subtree_features(cg: CallGraph, iterations: int = 3) -> Dict[str, Counter]:
     """WL 子树核特征提取 —— 每轮迭代返回压缩标签的计数分布。
@@ -200,9 +194,7 @@ def wl_subtree_features(cg: CallGraph, iterations: int = 3) -> Dict[str, Counter
     return features
 
 
-# ---------------------------------------------------------------------------
 # GraphScorer — 多信号融合评分
-# ---------------------------------------------------------------------------
 
 class GraphScorer:
     """基于图结构的二进制签名相似度评分。
@@ -306,9 +298,7 @@ class GraphScorer:
         self._cache.clear()
 
 
-# ---------------------------------------------------------------------------
 # 辅助函数
-# ---------------------------------------------------------------------------
 
 def _flatten_findings(analysis_rows: List[dict]) -> List[dict]:
     """将多行 analysis_results 展平为单层 findings 列表。"""

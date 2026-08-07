@@ -1,0 +1,198 @@
+[
+  {
+    "sample": "CVE-2015-0235_ghost_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2015-0235_ghost_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2015-0235_ghost_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2016-10191_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2016-10191_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2016-10191_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2021-3156_sudo_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2021-3156_sudo_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2021-3156_sudo_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2023-27997_fortigate_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2023-27997_fortigate_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2023-27997_fortigate_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP001_constant_malloc_safe",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP001_constant_malloc_safe\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP001_constant_malloc_safe_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP002_guarded_malloc_safe",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP002_guarded_malloc_safe\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP002_guarded_malloc_safe_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP003_alignment_safe",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP003_alignment_safe\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP003_alignment_safe_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP004_and_mask_guard",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP004_and_mask_guard\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP004_and_mask_guard_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP005_loop_bound_safe",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP005_loop_bound_safe\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP005_loop_bound_safe_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP006_minsize_guard",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP006_minsize_guard\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP006_minsize_guard_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP007_cross_call_valid",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP007_cross_call_valid\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP007_cross_call_valid_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-FP008_cmova_capped",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-FP008_cmova_capped\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-FP008_cmova_capped_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP001_tainted_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP001_tainted_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP001_tainted_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP002_unbounded_heap_overflow",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP002_unbounded_heap_overflow\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP002_unbounded_heap_overflow_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP003_loop_bound",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP003_loop_bound\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP003_loop_bound_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP004_off_by_one",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP004_off_by_one\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP004_off_by_one_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP005_calc_error",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP005_calc_error\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP005_calc_error_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP006_direct_taint",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP006_direct_taint\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP006_direct_taint_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP007_cross_func_alloc",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP007_cross_func_alloc\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP007_cross_func_alloc_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP008_mul_size",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP008_mul_size\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP008_mul_size_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP009_indirect_taint",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP009_indirect_taint\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP009_indirect_taint_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP010_loop_write",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP010_loop_write\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP010_loop_write_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP011_call_ret_size",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP011_call_ret_size\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP011_call_ret_size_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP012_realloc_expand",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP012_realloc_expand\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP012_realloc_expand_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP013_struct_field",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP013_struct_field\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP013_struct_field_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP014_array_idx",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP014_array_idx\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP014_array_idx_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP015_chained_arith",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP015_chained_arith\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP015_chained_arith_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  },
+  {
+    "sample": "CVE-2025-TP016_strlen_offby",
+    "orig": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\..\\tests\\cve_samples\\CVE-2025-TP016_strlen_offby\\vuln_debug.exe",
+    "packed": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\patching\\eval\\packed\\CVE-2025-TP016_strlen_offby_packed",
+    "method": "simulated",
+    "size_ratio": 1.0
+  }
+]

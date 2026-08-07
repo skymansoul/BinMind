@@ -1,5 +1,5 @@
-# 创建: 2025-08-14 17:37
-# 修改: 2025-08-14 — FTRL+Entropy 在线凸优化 + surprise bonus
+# 创建: 2026-06-28 17:37
+# 修改: 2026-06-28 — FTRL+Entropy 在线凸优化 + surprise bonus
 """在线遗憾最小化变异集成 (Regret-Minimizing Ensemble, ARME).
 
 修改记录:
@@ -8,7 +8,7 @@
 2025-08-05 11:07 - regret monitor: 追踪 best-in-hindsight 遗憾
 2025-08-20 09:28 - 修正: 遗憾界为理论参照, 非平稳环境中实际遗憾可能更高
 
-参考: Shalev-Shwartz (2012), Hazan (2016), Cesa-Bianchi & Lugosi (2006)
+参考: Shalev-Shwartz, Hazan, Cesa-Bianchi & Lugosi
 
 与 mutation_ensemble.py (EG/Hedge) 的区分:
   EG 隐式假设平稳奖励。实测 fuzzing 中程序行为随探索推进而变化,

@@ -22,8 +22,7 @@
   安全债务 = w1×complexity + w2×recurrence + w3×criticality
             - w4×age_attenuation
 
-参考:
-  无现有工作 (2026-08 检索确认).
+  无现有工作.
   SonarQube Technical Debt: 可维护性，非安全性.
   CWE-1126: 安全债务概念 (非定量).
 
@@ -35,10 +34,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-
 DEFAULT_DEBT_WEIGHTS = (0.30, 0.35, 0.25, 0.10)
 # complexity, recurrence, criticality, age_attenuation
-
 
 @dataclass
 class SecurityDebt:
@@ -52,7 +49,6 @@ class SecurityDebt:
     debt_trend: str = 'stable'     # rising / stable / declining
     recommendation: str = ''
 
-
 def _complexity_debt(cyclomatic_complexity: int) -> float:
     """圈复杂度→安全债务映射。CC>20→高债务。"""
     if cyclomatic_complexity <= 5:
@@ -61,7 +57,6 @@ def _complexity_debt(cyclomatic_complexity: int) -> float:
         return 10.0
     # 平方根映射使中等复杂度区分度更高
     return round(0.5 + (cyclomatic_complexity - 5) / 45 * 9.5, 1)
-
 
 def _recurrence_risk(
     past_vuln_count: int,
@@ -94,7 +89,6 @@ def _recurrence_risk(
 
     return round(min(raw, 10.0), 1)
 
-
 def _criticality_debt(fan_in: int, fan_out: int, is_exported: bool) -> float:
     """
     调用关键度 — hub 函数的安全债务影响更大。
@@ -122,7 +116,6 @@ def _criticality_debt(fan_in: int, fan_out: int, is_exported: bool) -> float:
 
     return round(min(raw, 10.0), 1)
 
-
 def _age_credit(months_since_last_fix: float) -> float:
     """
     修复年龄信用 — 基于 Ebbinghaus 遗忘曲线变体。
@@ -140,7 +133,6 @@ def _age_credit(months_since_last_fix: float) -> float:
         return 2.0 + (m - 6) / 18 * 2.0  # → 最多 4.0
     # > 36 月 — 信用缓慢下降
     return max(1.5, 4.0 - (m - 36) / 24 * 2.5)
-
 
 def score_security_debt(
     function_name: str = '',
@@ -195,7 +187,6 @@ def score_security_debt(
         debt_trend=trend,
         recommendation=rec,
     )
-
 
 def debt_summary(scores: List[SecurityDebt]) -> Dict[str, Any]:
     """安全债务统计摘要。"""

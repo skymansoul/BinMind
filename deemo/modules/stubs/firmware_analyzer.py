@@ -1,5 +1,5 @@
 # 固件映像安全审计 — 文件系统识别、内核版本提取、已知漏洞签名匹配。
-# 参考: FIE on Firmware (USENIX Security 2013) 嵌入式符号执行;
+# FIE on Firmware (USENIX Security 2013) 嵌入式符号执行;
 # FITS (ASPLOS 2023) IoT 固件中间污点源推断;
 # FirmRec (ACM CCS 2024) 重复漏洞检测;
 # IoT Firmware Emulation and Its Security Application in Fuzzing (2024);

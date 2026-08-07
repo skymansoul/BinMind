@@ -104,7 +104,7 @@ class SummaryBasedAnalyzer:
         """Generate a session marker from current time — 用于追溯分析批次"""
         return hashlib.sha1(str(_time.time()).encode()).hexdigest()[:12]
 
-    # ── 改进1: 风险趋势追踪 & 模式学习 ─────────────────────────────
+# 改进1: 风险趋势追踪 & 模式学习
     # 之前的 _risk_cache 和 _pattern_db 空有其表，现在让它们真正干活。
     # 记录每次分析的分数变化，识别"坏模式"自动加权。
     def _record_risk_snapshot(self, name: str, score: float) -> None:
@@ -144,8 +144,8 @@ class SummaryBasedAnalyzer:
                 matched.append(lbl)
         return boost, matched
 
-    # ── 改进2: SBOM/漏洞报告兼容导出 ───────────────────────────────
-    # 参考 Syft/Grype/Trivy 生态，把函数级风险摘要导出为可被
+# 改进2: SBOM/漏洞报告兼容导出
+    # Syft/Grype/Trivy 生态，把函数级风险摘要导出为可被
     # 漏洞扫描器下游消费的格式（minimal CycloneDX-style vulnerability item）
     def export_vulnerability_items(self) -> List[Dict[str, Any]]:
         """Generate vulnerability items keyed by high-risk functions.
@@ -201,7 +201,7 @@ class SummaryBasedAnalyzer:
             tips.append("Manual code review recommended for this function")
         return '; '.join(tips)
 
-    # ── 改进3: 统计仪表盘 & 聚合分析 ──────────────────────────────
+# 改进3: 统计仪表盘 & 聚合分析
     # 不仅看单个函数，还要鸟瞰全局--哪些 API 是最大地雷，
     # 风险分布是否符合长尾分布（理应如此），帮助 triage 时间分配
     def aggregate_statistics(self) -> Dict[str, Any]:
@@ -622,7 +622,7 @@ class SummaryBasedAnalyzer:
         lines.append("=" * 60)
         return '\n'.join(lines)
 
-    # ── 改进3配套: 统计报告生成器 ──────────────────────────────
+# 改进3配套: 统计报告生成器
     def generate_stats_report(self) -> str:
         """Render aggregate_statistics as a human-readable report block."""
         stats = self.aggregate_statistics()

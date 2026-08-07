@@ -1,0 +1,19 @@
+% 多工具堆溢出检测对比表 (ACPE benchmark, 46 binaries)
+% 样本: 15 CVE 复现 + 8 良性对照 × 2 编译档 (O0/O2)
+\begin{table}[t]
+\centering
+\caption{Heap-Overflow Detection: ACPE vs. Baseline and General-Purpose Tools. Recall/P/F1 at sample level.}
+\label{tab:acpe-comparison}
+\small
+\begin{tabular}{lrrrrrrrr}
+\hline
+Tool & TP & FP & FN & Recall & Precision & F1 & FP rate & Time(s) \\
+\hline
+  \textbf{ACPE (ours)} & 30 & 0 & 0 & 1.000 & 1.000 & 1.000 & 0.000 & 2.55 \\
+  Baseline (DP-TVRA) & 30 & 7 & 0 & 1.000 & 0.811 & 0.895 & 0.438 & 2.45 \\
+  Angr (CFG) & 30 & 16 & 0 & 1.000 & 0.652 & 0.789 & 1.000 & 75.67 \\
+  QEMU runtime trace & 24 & 3 & 6 & 0.800 & 0.889 & 0.842 & 0.188 & 3.02 \\
+  Ghidra headless (sim.) & 30 & 16 & 0 & 1.000 & 0.652 & 0.789 & 1.000 & 2.37 \\
+\hline
+\end{tabular}
+\end{table}

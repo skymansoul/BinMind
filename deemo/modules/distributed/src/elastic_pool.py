@@ -19,7 +19,7 @@ from typing import Callable, Optional, List
 _log = logging.getLogger(__name__)
 
 
-# ===== 策略接口层 =====
+# 策略接口层
 
 class ScalePolicy(ABC):
     """扩缩策略抽象基类 — evaluate 返回目标 worker 数量。子类实现须为纯函数，不得包含副作用。"""
@@ -29,7 +29,7 @@ class ScalePolicy(ABC):
         ...
 
 
-# ===== 阈值策略实现 =====
+# 阈值策略实现
 
 class ThresholdScalePolicy(ScalePolicy):
     """基于队列深度的三段阈值扩缩。
@@ -72,7 +72,7 @@ class ThresholdScalePolicy(ScalePolicy):
         return aw
 
 
-# ===== 预测策略 — 最小二乘线性外推 =====
+# 预测策略 — 最小二乘线性外推
 
 class PredictiveScalePolicy(ScalePolicy):
     """基于近期队列深度序列的线性外推预扩容。
@@ -122,7 +122,7 @@ class PredictiveScalePolicy(ScalePolicy):
         return max(self.min_workers, min(target, self.max_workers))
 
 
-# ===== 冷却期护卫 =====
+# 冷却期护卫
 
 class CooldownGuard:
     """扩缩操作间的强制冷却间隔。
@@ -151,7 +151,7 @@ class CooldownGuard:
         self._last_scale_down = time.monotonic()
 
 
-# ===== 池控制器主类 =====
+# 池控制器主类
 
 class ElasticPool:
     """Worker 池弹性控制器。
@@ -189,7 +189,7 @@ class ElasticPool:
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
 
-    # ---- 启停控制 ----
+# 启停控制
 
     def start(self):
         if self._thread is not None:
@@ -205,7 +205,7 @@ class ElasticPool:
             self._thread.join(timeout=10)
             self._thread = None
 
-    # ---- 主循环逻辑 ----
+# 主循环逻辑
 
     def _loop(self):
         while not self._stop.is_set():
@@ -238,7 +238,7 @@ class ElasticPool:
             self._guard.record_scale_down()
             self._on_scale_down(delta)
 
-    # ---- 手动干预接口 ----
+# 手动干预接口
 
     def set_worker_count(self, n: int):
         old = self._active_workers

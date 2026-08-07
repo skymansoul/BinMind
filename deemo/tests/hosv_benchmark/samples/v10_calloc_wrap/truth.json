@@ -1,0 +1,8 @@
+{
+  "sample": "v10_calloc_wrap",
+  "cve": "CVE-2016-10165",
+  "mode": "factory_bind",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "65536*65536 溢出 32-bit size_t → 返回 0 或过小对象"
+}

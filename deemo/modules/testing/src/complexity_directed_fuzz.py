@@ -2,10 +2,10 @@
 #
 # 核心问题:
 #   directed_fuzz.py 用调和平均距离 (AFLGo风格) 引导种子向目标靠近。
-#   SEZZ (2025) 证明: 距离短≠容易到达——短路径可能经过复杂的基本块
+#   SEZZ 证明: 距离短≠容易到达——短路径可能经过复杂的基本块
 #   (多次比较/循环/间接调用), 实际到达难度更高。
 #
-#   PathFuzz (2025) 进一步指出: 固定值(10)做函数间距离无法区分
+#   PathFuzz 进一步指出: 固定值(10)做函数间距离无法区分
 #   长种子和短种子, 导致距离计算精度不足。
 #
 # 本模块的方法 — 复杂度×距离的加权融合:
@@ -19,10 +19,10 @@
 #   directed_fuzz: 距离计算 + 能量分配
 #   本模块: 在距离之上叠加复杂度修正, 可以包装 directed_fuzz 的接口
 #
-# 参考文献:
-#   SEZZ (MDPI Applied Sciences, July 2025) — 函数调用序列复杂度估计;
+# 文献:
+#   SEZZ — 函数调用序列复杂度估计;
 #     本项目取其复杂度思想但适配到基本块粒度
-#   PathFuzz (IST 2025) — 路径约束+偏差修正;
+#   PathFuzz — 路径约束+偏差修正;
 #     本项目取其精确距离思想但以复杂度替代路径约束
 
 from __future__ import annotations
@@ -131,10 +131,10 @@ class ComplexityWeightedDirectedFuzzer:
 
     def compute(self) -> None:
         """主计算: 复杂的CG距离 + BB距离 + 路径复杂度"""
-        # Step 1: CG距离 (从每个函数到目标函数的调用图最短路径)
+        # CG距离 (从每个函数到目标函数的调用图最短路径)
         self._cg_dist = self._compute_cg_distances()
 
-        # Step 2: BB距离 + 路径复杂度 (函数内CFG)
+        # BB距离 + 路径复杂度 (函数内CFG)
         self._bb_dist = {}
         self._bb_complexity_path = {}
         for func_name, cfg in self._intra_cfg.items():
@@ -164,7 +164,7 @@ class ComplexityWeightedDirectedFuzzer:
         if not covered_blocks:
             return result
 
-        # Step 1: 每个被覆盖块的BB距离 (取最小)
+        # 每个被覆盖块的BB距离 (取最小)
         bb_dists = []
         for addr in covered_blocks:
             d = self._bb_dist.get(addr, float('inf'))
@@ -172,7 +172,7 @@ class ComplexityWeightedDirectedFuzzer:
                 bb_dists.append(d)
         result.bb_distance = min(bb_dists) if bb_dists else float('inf')
 
-        # Step 2: 最短路径上的累积复杂度
+        # 最短路径上的累积复杂度
         path_comps = []
         for addr in covered_blocks:
             c = self._bb_complexity_path.get(addr, 0.0)
@@ -180,7 +180,7 @@ class ComplexityWeightedDirectedFuzzer:
                 path_comps.append(c)
         result.path_complexity = min(path_comps) if path_comps else 0.0
 
-        # Step 3: 融合分数
+        # 融合分数
         if result.bb_distance < float('inf'):
             # 归一化: 假设最大距离=100, 最大复杂度=50
             dist_norm = min(1.0, result.bb_distance / 100.0)

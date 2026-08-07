@@ -1,0 +1,183 @@
+{
+  "title": "BinMind Heap Overflow VFG Benchmark",
+  "timestamp": "2026-08-06 17:48:32",
+  "elapsed_ms": 631.9,
+  "summary": {
+    "total": 15,
+    "TP": 0,
+    "FP": 0,
+    "TN": 0,
+    "FN": 15,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "fp_rate": 0.0
+  },
+  "samples": [
+    {
+      "sample": "heap_overflow_01",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_01\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_02",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_02\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_03",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_03\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_04",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_04\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_05",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_05\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_06",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_06\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_07",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_07\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_08",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_08\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_09",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_09\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_10",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_10\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_11",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_11\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_12",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_12\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_13",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_13\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_14",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_14\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    },
+    {
+      "sample": "heap_overflow_15",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow_15\\vuln",
+      "type": "heap_overflow",
+      "ground_truth": "TP",
+      "predicted": "FP",
+      "confidence": 0.0,
+      "malloc_sizes": [],
+      "has_danger_call": true,
+      "stages": {}
+    }
+  ]
+}

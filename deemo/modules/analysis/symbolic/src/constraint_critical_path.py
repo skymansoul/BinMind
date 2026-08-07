@@ -41,9 +41,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 带权重的约束节点
-# ---------------------------------------------------------------------------
 
 @dataclass
 class WeightedConstraintNode:
@@ -61,9 +59,7 @@ class WeightedConstraintNode:
     in_loop: bool = False
 
 
-# ---------------------------------------------------------------------------
 # 关键路径求解排序器
-# ---------------------------------------------------------------------------
 
 class ConstraintCriticalPathSorter:
     """关键路径约束排序器
@@ -138,7 +134,7 @@ class ConstraintCriticalPathSorter:
             batches.append(order[i:i + batch_size])
         return batches
 
-    # ---- 内部方法 ----
+# 内部方法
 
     def _build_nodes(
         self,

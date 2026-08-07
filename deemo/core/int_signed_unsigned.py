@@ -44,7 +44,7 @@ def detect_sign_confusion(
         if not stripped or stripped.startswith(';'):
             continue
 
-        # 步骤1: 找到符号扩展指令
+        # 找到符号扩展指令
         convert_type = ""
         to_reg = ""
         for pattern, ctype in _CONVERT_PATTERNS:
@@ -56,7 +56,7 @@ def detect_sign_confusion(
         if not convert_type or 's' not in convert_type:
             continue  # 仅追踪符号扩展(有符号→大寄存器的转换)
 
-        # 步骤2: 搜索后续cmp/test + jcc(使用同一寄存器)
+        # 搜索后续cmp/test + jcc(使用同一寄存器)
         for j in range(i + 1, min(len(disasm_lines), i + 10)):
             dl = disasm_lines[j].strip().lower()
             if not dl:
@@ -69,7 +69,7 @@ def detect_sign_confusion(
             if not m:
                 continue
 
-            # 步骤3: 搜索后续条件跳转(jg/jge/jbe——可能是无符号比较)
+            # 搜索后续条件跳转(jg/jge/jbe——可能是无符号比较)
             for k in range(j + 1, min(len(disasm_lines), j + 5)):
                 el = disasm_lines[k].strip().lower()
                 m = re.search(r'(j[abgl]|j[ln]?[abege])', el)

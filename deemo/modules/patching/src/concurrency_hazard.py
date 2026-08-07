@@ -15,7 +15,7 @@
   4. 共享变量访问：补丁是否新增了对共享内存的写入
   5. 调用约定变更：补丁是否将线程安全的函数替换为非线程安全的版本
 
-与 Linux kernel Clang thread-safety annotations [2025 RFC] 的差异：
+与 Linux kernel Clang thread-safety annotations 的差异：
   那些是源码级编译时检查。本模块在二进制补丁级操作，
   不依赖源码注解——直接分析汇编指令模式。
 
@@ -92,7 +92,7 @@ class HazardReport:
         }
 
 
-# ── 汇编级并发模式数据库 ─────────────────────────────────────────
+# 汇编级并发模式数据库
 
 # 锁获取指令模式
 _LOCK_ACQUIRE_PATTERNS = [
@@ -140,7 +140,7 @@ _UNSAFE_FUNCTIONS = {
 }
 
 
-# ── 并发风险检测器 ────────────────────────────────────────────────
+# 并发风险检测器
 
 class ConcurrencyHazardDetector:
     """补丁级并发风险静态检测。
@@ -212,7 +212,7 @@ class ConcurrencyHazardDetector:
 
         return report
 
-    # ── 锁序检查 ──────────────────────────────────────────────────
+# 锁序检查
 
     def _check_lock_ordering(self, orig: List[str], patched: List[str],
                              added: Set[str], removed: Set[str]
@@ -261,7 +261,7 @@ class ConcurrencyHazardDetector:
 
         return hazards
 
-    # ── 原子性检查 ────────────────────────────────────────────────
+# 原子性检查
 
     def _check_atomicity(self, added: Set[str], removed: Set[str]
                          ) -> List[ConcurrencyHazard]:
@@ -300,7 +300,7 @@ class ConcurrencyHazardDetector:
 
         return hazards
 
-    # ── 屏障检查 ──────────────────────────────────────────────────
+# 屏障检查
 
     def _check_barriers(self, added: Set[str], removed: Set[str]
                         ) -> List[ConcurrencyHazard]:
@@ -322,7 +322,7 @@ class ConcurrencyHazardDetector:
 
         return hazards
 
-    # ── 共享变量访问检查 ──────────────────────────────────────────
+# 共享变量访问检查
 
     def _check_shared_access(self, added: Set[str],
                              orig_asm: List[str]) -> List[ConcurrencyHazard]:
@@ -367,7 +367,7 @@ class ConcurrencyHazardDetector:
                 return True
         return False
 
-    # ── 调用约定检查 ──────────────────────────────────────────────
+# 调用约定检查
 
     def _check_call_convention(self, added: Set[str], removed: Set[str]
                                ) -> List[ConcurrencyHazard]:

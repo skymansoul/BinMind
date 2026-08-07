@@ -2,7 +2,7 @@
 
 修改记录:
 2025-08-18 08:33 - Graphical Lasso + 坐标下降 + L1 正则化
-参考: Friedman, Hastie & Tibshirani (2008) Biostatistics.
+参考: Friedman, Hastie & Tibshirani Biostatistics.
 在 fuzzing 中零先例。学习覆盖维度间的稀疏条件依赖图,
 Σ_{ij}^{-1}=0 ⟺ 维度 i 和 j 在给定其他维度时条件独立。"""
 

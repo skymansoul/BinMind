@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_14_io_uring_style",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "异步风格: 释放后经结构体回调使用"
+}

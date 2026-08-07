@@ -1,4 +1,4 @@
-# created: 2026-08-23
+# created: 2026-07-20
 # modified: 2026-08-25 — expanded abstract value lattice to 5-level (top/const/addr_range/set/bottom)
 # 间接调用目标解析——通过抽象值集分析推断函数指针和虚表调用的目标
 #
@@ -288,7 +288,7 @@ class IndirectCallResolver:
         return None
 
 
-# ---- demo entry ----
+# demo entry
 if __name__ == '__main__':
     # 演示: 解析简单的间接调用
     resolver = IndirectCallResolver()

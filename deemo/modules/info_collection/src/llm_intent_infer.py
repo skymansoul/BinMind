@@ -1,8 +1,8 @@
 """
 恶意意图推断器 — API 调用序列行为链分析与杀伤链阶段标注。
 
-方法参照 ReCopilot (arXiv:2505.16366) 的领域特化语义分析,
-及 DeBinVul (arXiv:2411.04981) 的多架构样本分类策略。
+方法参照 ReCopilot 的领域特化语义分析,
+及 DeBinVul 的多架构样本分类策略。
 
 模块位置: info_collection/src/llm_intent_infer.py
 """

@@ -20,7 +20,7 @@ MAE_nonlinear / MAE_baseline，当 ratio > 0.8 时发出退化警告
 
 ref: FSE 2024 "Partial Solu Based 约束求解缓存" 证明了求解时间
 预测对缓存策略的关键性——本模块将此预测从线性提升为非线性
-ref: arXiv:1907.04871 — DeepSolver 使用 GNN 预测 SMT 求解时间，但依赖 GPU 推理；
+ref: — DeepSolver 使用 GNN 预测 SMT 求解时间，但依赖 GPU 推理；
 本方法使用多项式特征展开 + SGD，纯 CPU 且在线更新，适用于符号执行场景
 """
 
@@ -30,7 +30,6 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
 from collections import deque
 
-
 @dataclass
 class PredictionResult:
     predicted_seconds: float
@@ -38,7 +37,6 @@ class PredictionResult:
     nonlinear_correction: float   # 非线性修正量（log 空间）
     phase: str                    # 当前判定阶段
     confidence: float             # [0,1]，基于近期 MAE 的置信度
-
 
 class ConstraintPhaseDetector:
     """基于约束内容的求解阶段检测
@@ -72,7 +70,6 @@ class ConstraintPhaseDetector:
         else:
             return 'numeric'
 
-
 class NaiveBaselinePredictor:
     """历史均值预测器——用于对比评估非线性模型的改进幅度"""
 
@@ -94,7 +91,6 @@ class NaiveBaselinePredictor:
             return float('inf')
         mean = self.predict()
         return sum(abs(x - mean) for x in self._history) / len(self._history)
-
 
 class NonlinearConstraintPredictor:
     """多项式特征展开 + log 目标变换的求解时间预测器

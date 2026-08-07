@@ -16,7 +16,7 @@
 #       Prime Factors EncryptRIGHT, comforte SecurDPS, Thales CipherTrust
 #   (4) FPE特有的AES子密钥派生(CBC-MAC变体 + 整数除法和取模运算组合)
 #
-# 参考: Bellare-Rogaway-Spies (FFX mode, 2010), Dworkin (NIST SP 800-38G Rev.1, 2024),
+# Bellare-Rogaway-Spies (FFX mode, 2010), Dworkin (NIST SP 800-38G Rev.1, 2024),
 # Durak-Vaudenay (FF3 attack at CRYPTO 2017), Hoang-Miller-Trieu (FF3-1 fix, 2019).
 # 新增BPS (Brier-Peyrin-Stern, 2010)格式保留模式检测,
 # Thales/Vormetric令牌化产品指纹, comforte/HPE SecureData字符串。

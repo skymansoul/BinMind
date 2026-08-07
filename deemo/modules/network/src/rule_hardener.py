@@ -1,11 +1,11 @@
 # 规则硬化器 —— 基于约束间隙分析生成最小修改硬化建议。
 #
 # 硬化策略:
-#   - offset_unbounded → 追加 offset:0;
+# offset_unbounded → 追加 offset:0;
 #   - depth_unbounded → 追加 depth:<content_len+64>;
-#   - case_sensitive → 追加 nocase;
-#   - pcre_no_anchor → 在pcre前后追加 ^ 和 $
-#   - dsize_boundary → 微调dsize阈值包含边界
+# case_sensitive → 追加 nocase;
+# pcre_no_anchor → 在pcre前后追加 ^ 和 $
+# dsize_boundary → 微调dsize阈值包含边界
 #
 # 每个策略附安全性评估: 过度硬化(如offset过严)可能增加假阴性。
 

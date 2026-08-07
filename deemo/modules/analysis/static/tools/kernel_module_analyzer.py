@@ -19,7 +19,7 @@ class IOCTLHandler:
 class KernelModuleAnalyzer:
     """Linux LKM + Windows 驱动 + macOS kext analysis: IOCTL, dangerous API, tainted kernel"""
 
-    # ---- 初始化: 三平台特征 ----
+# 初始化: 三平台特征
 
     def __init__(self):
         # Windows 驱动危险API
@@ -124,7 +124,7 @@ class KernelModuleAnalyzer:
             3: 'FILE_READ_ACCESS | FILE_WRITE_ACCESS',
         }
 
-    # ---- 平台检测 ----
+# 平台检测
 
     def detect_platform(self, data: bytes, strings: List[str]) -> str:
         _strs_text = ' '.join(strings)
@@ -203,7 +203,7 @@ class KernelModuleAnalyzer:
 
         return _handlers
 
-    # ===== 危险API扫描 =====
+# 危险API扫描
 
     def scan_dangerous_apis(self, imports: Dict[str, List[str]],
                             strings: List[str],
@@ -255,7 +255,7 @@ class KernelModuleAnalyzer:
 
         return _findings
 
-    # ---- Tainted/Unsigned module检测 ----
+# Tainted/Unsigned module检测
 
     def detect_tainted_module(self, data: bytes, strings: List[str],
                                filepath: str = None) -> Dict:
@@ -368,7 +368,7 @@ class KernelModuleAnalyzer:
             },
         }
 
-    # ---- 辅助 ----
+# 辅助
 
     def _extract_strings(self, data: bytes, min_len=4) -> List[str]:
         _strings = []

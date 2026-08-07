@@ -28,7 +28,7 @@ from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt
 
 
-# ---- 能力标签体系 ----
+# 能力标签体系
 _CAPABILITY_LEXICON = {
     'fuzzing': ['fuzz', 'mutate', 'generate_input', 'coverage', 'afl',
                 'libfuzzer', 'format_fuzzer'],
@@ -100,7 +100,7 @@ class CapabilityAnalyzer:
         clusters.sort(key=lambda c: -c.priority)
         return clusters
 
-    # ---- 标签推断 ----
+# 标签推断
     def _infer_tags(self) -> dict[str, set[str]]:
         """从模块名+函数名+文档推断每个模块的能力标签集。"""
         try:
@@ -168,7 +168,7 @@ class CapabilityAnalyzer:
 
         return propagated
 
-    # ---- 聚类 ----
+# 聚类
     @staticmethod
     def _form_clusters(module_tags: dict[str, set[str]],
                        tag_graph: dict[str, set[str]]) -> list[CapabilityCluster]:
@@ -204,7 +204,7 @@ class CapabilityAnalyzer:
             return sorted(propagated)[0]
         return None
 
-    # ---- 评分 ----
+# 评分
     def _score_clusters(self, clusters: list[CapabilityCluster]) -> None:
         """计算每个簇的就绪度、重要性、优先级。"""
         try:
@@ -259,7 +259,7 @@ class CapabilityAnalyzer:
 
         return (depth * 0.3 + min(closure, 10) * 0.5 + min(call_vol, 100) * 0.2) / 10.0
 
-    # ---- 报告 ----
+# 报告
     def capability_report(self,
                           clusters: list[CapabilityCluster] = None) -> str:
         """生成 Markdown 能力图报告。"""

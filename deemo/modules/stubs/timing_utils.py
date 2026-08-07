@@ -1,5 +1,5 @@
 # 计时与基准测试 — stub 重导出链路的性能测量工具
-# 参考: HD-FUZZ (2024) 混合 MMIO 基准方法 & CO3/SHACO (USENIX 2024) 加速比框架
+# HD-FUZZ 混合 MMIO 基准方法 & CO3/SHACO 加速比框架
 import time as _t, functools as _ft
 from contextlib import contextmanager as _ctxmgr
 from typing import Any, Callable, Optional as _Opt

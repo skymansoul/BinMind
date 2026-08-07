@@ -27,9 +27,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 安全注解类型
-# ---------------------------------------------------------------------------
 
 @dataclass
 class SecurityAnnotation:
@@ -53,9 +51,7 @@ class AnnotationReport:
     ir_metadata_lines: List[str]
 
 
-# ---------------------------------------------------------------------------
 # 桥接器
-# ---------------------------------------------------------------------------
 
 class LLVMIRSecurityBridge:
     """将二进制分析结果桥接到 LLVM IR 安全注解

@@ -16,8 +16,8 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 __log = logging.getLogger(__name__)
 
-# ── 形式化验证框架 —— 抽象域可证明正确性 ────────────────────────────────────
-# 参考 Verbeek et al. (ICSE 2025): “Formally Verified Binary-Level 指针 Analysis”
+# 形式化验证框架 —— 抽象域可证明正确性
+# Verbeek et al.: “Formally Verified Binary-Level 指针 Analysis”
 # 核心思想：定义抽象域需满足的 proof obligations（Galois 连接条件）
 # 任何满足这些 obligation 的域实例化都是可靠的——允许精度可调而正确性不变
 
@@ -34,7 +34,7 @@ class GaloisConnection:
     """具体域 C 与抽象域 A 之间的 Galois 连接 ⟨C, ⊑⟩ ⇄ᵧᵅ ⟨A, ⊑⟩
     用于可调精度抽象解释——通过改变 γ 的粒度（如扩大区间宽度）
     在不破坏正确性（soundness）的前提下换取性能
-    参考: Cousot & Cousot (1977) + Verbeek et al. (2025) 的可证明实例化
+    参考: 抽象解释框架的可证明实例化
     """
     __slots__ = ('_concretize', '_abstract', '_precision_tier')
 
@@ -83,7 +83,7 @@ class CongruenceDomain:
     """同余域抽象——用于建模形如 x ≡ a (mod 2^k) 的模式
     配合区间域做降维：将位操作（/OR/XOR）的符号执行复杂度
     从 O(2^k) 降至 O(k)，利用模算术传递律避免状态分裂
-    参考: Miné (2006), " octagon abstract domain" 中对位域扩展的讨论
+    参考: Miné, " octagon abstract domain" 中对位域扩展的讨论
     """
     __slots__ = ('_modulus', '_remainder', '_is_top')
 
@@ -114,8 +114,8 @@ class CongruenceDomain:
         return CongruenceDomain(modulus, value & (modulus - 1) if modulus else 0)
 
 
-# ── SFA 导数引导分支裁剪 (POPL 2025) ───────────────────────────────────────
-# 参考: "Derivative-Guided 符号执行 Symbolic Finite Automata"
+# SFA 导数引导分支裁剪
+# "Derivative-Guided 符号执行 Symbolic Finite Automata"
 # 使用 Brzozowski 导数的思想——对每个输入字节取"导数"得到剩余自动机
 # 当剩余自动机拒绝所有可能输入时，整个后继符号路径可以被安全剪枝
 # 本实现将 SFA 简化为区间+同余的组合约束进行导数计算

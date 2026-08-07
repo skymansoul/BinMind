@@ -19,9 +19,7 @@ public names symexec_opt_passes for backward 兼容性
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-# ---------------------------------------------------------------------------
 # Import 优化 passes extracted sub-module
-# ---------------------------------------------------------------------------
 from .src.symexec_opt_passes import (
     ANGR_AVAILABLE,
     Z3_AVAILABLE,
@@ -46,9 +44,7 @@ from .src.symexec_opt_passes import (
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Default 配置 for 优化器
-# ---------------------------------------------------------------------------
 
 DEFAULT_CONFIG = {
     'cache_enabled': True,
@@ -76,9 +72,7 @@ DEFAULT_CONFIG = {
 }
 
 
-# =============================================================================
 # SymExec优化器 — top-level control-plane 调度器
-# =============================================================================
 
 class SymExecOptimizer:
     """Composite 优化器: wires缓存, pruner, simplifier, 并行
@@ -233,10 +227,8 @@ def create_optimizer(config: Optional[Dict[str, Any]] = None) -> SymExecOptimize
     return SymExecOptimizer(config)
 
 
-# ---------------------------------------------------------------------------
 # Backward-compatible re-exports: name old __all__
 # importable symexec_优化器 exactly
-# ---------------------------------------------------------------------------
 
 __all__ = [
     # Control plane

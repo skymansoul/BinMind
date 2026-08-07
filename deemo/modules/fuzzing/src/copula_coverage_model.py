@@ -4,7 +4,7 @@
 2025-08-14 10:33 - 经验 copula + Kendall τ + Spearman ρ + 尾部依赖系数
 2025-08-15 15:47 - 条件 copula: 给定执行时间下覆盖增益的依赖结构
 
-参考: Nelsen (2006) "An Introduction to Copulas" 2nd ed.
+参考: Nelsen "An Introduction to Copulas" 2nd ed.
 在 fuzzing 中零先例。Copula 分离边缘分布和依赖结构,
 比 Pearson 相关更全面地刻画覆盖维度间的非线性依赖。"""
 

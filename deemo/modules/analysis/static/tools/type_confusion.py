@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 入口: TypeConfusionAnalyzer. Dependencies: os, re
 #
-# 2025 升级: HEXP (IEEE 2025) 启发的虚表完整性验证
+# 2025 升级: HEXP 启发的虚表完整性验证
 # HEXP 通过提取堆操作迹推断目标布局——将此方法论应用于虚表验证：
 # 比较静态分析得到的虚表条目与实际.rodata 中的函数指针
 # 不一致之处标记为可能的虚表劫持（vtable hijack）或类型混淆
@@ -145,7 +145,7 @@ class TypeConfusionAnalyzer:
         except Exception as e:
             logger.warning(f"Vtable hijack detection failed: {e}")
 
-    # ── HEXP 启发的虚表完整性验证 (IEEE 2025) ──────────────────────────────
+# HEXP 启发的虚表完整性验证
     # 核心: HEXP通过堆操作迹推断目标布局→验证实际布局是否符合预期
     # 将此方法论应用于虚表: 静态提取的虚表条目(函数指针)应与.rodata
     # 中的实际数据一致。不一致=虚表被篡改或类型混淆

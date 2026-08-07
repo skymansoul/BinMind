@@ -1,0 +1,16 @@
+{
+  "sample_id": "TN-06",
+  "label": "tn",
+  "cwe": "NONE",
+  "description": "Two paths both safe: sz=128/256, offset=64 always within",
+  "alloc_size": 128,
+  "write_offset": 64,
+  "write_size": 1,
+  "expect_overflow": false,
+  "lpvra_expected_verdict": "SAFE",
+  "verdict_reason": "on all paths offset=64 <= min(128,256)=128, safe",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "SAFE"
+  }
+}

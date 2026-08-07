@@ -9,7 +9,7 @@ from collections import Counter
 class CryptoAuditor:
     """Hardcoded secret + weak crypto + PEM detection + crypto lib fingerprinting"""
 
-    # ---- 初始化: 定义风险模式库 ----
+# 初始化: 定义风险模式库
 
     def __init__(self):
         # 弱加密算法模式
@@ -79,7 +79,7 @@ class CryptoAuditor:
             'Rust_crypto': [r'rust-crypto', r'ring::', r'aes-ni', r'aes_gcm'],
         }
 
-    # ---- 硬编码密钥检测 ----
+# 硬编码密钥检测
 
     def detect_hardcoded_secrets(self, strings: List[str]) -> List[Dict]:
         _findings = []
@@ -161,7 +161,7 @@ class CryptoAuditor:
 
         return _findings
 
-    # ===== PEM私钥检测 =====
+# PEM私钥检测
 
     def detect_pem_keys(self, data: bytes, strings: List[str]) -> List[Dict]:
         _findings = []
@@ -209,7 +209,7 @@ class CryptoAuditor:
 
         return _findings
 
-    # ---- 自定义/自制加密检测 ----
+# 自定义/自制加密检测
 
     def detect_custom_crypto(self, strings: List[str], imports: dict) -> List[Dict]:
         """
@@ -289,7 +289,7 @@ class CryptoAuditor:
 
         return _found
 
-    # ===== 综合审计入口 =====
+# 综合审计入口
 
     def audit(self, data: bytes, strings: List[str] = None,
               imports: Dict[str, List[str]] = None) -> Dict:
@@ -328,7 +328,7 @@ class CryptoAuditor:
             },
         }
 
-    # ---- 辅助函数 ----
+# 辅助函数
 
     def _extract_strings(self, data: bytes, min_len=4) -> List[str]:
         _strings = []

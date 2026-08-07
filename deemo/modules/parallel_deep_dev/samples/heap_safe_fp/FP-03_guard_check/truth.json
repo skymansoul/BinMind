@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "guard_check",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "guard-subst",
+  "cve": "",
+  "func": "safe_guarded",
+  "name": "FP-03_guard_check"
+}

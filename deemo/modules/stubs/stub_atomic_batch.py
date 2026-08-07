@@ -270,7 +270,7 @@ class AtomicBatchEngine:
         return '\n'.join(lines)
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def atomic_implement(top_n: int = 10, dry_run: bool = False) -> list[BatchResult]:
     """一行式原子批量实现。"""
     engine = AtomicBatchEngine()

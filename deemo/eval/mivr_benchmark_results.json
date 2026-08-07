@@ -1,0 +1,1279 @@
+{
+  "timestamp": "2026-08-07 13:29:52",
+  "sample_count": 369,
+  "evaluated_samples": 72,
+  "mivr_standalone": {
+    "TP": 4,
+    "FP": 1,
+    "FN": 50,
+    "TN": 17,
+    "precision": 0.8,
+    "recall": 0.0741,
+    "f1": 0.1356,
+    "fp_rate": 0.0556,
+    "total": 72
+  },
+  "mivr_combined": {
+    "TP": 23,
+    "FP": 5,
+    "FN": 31,
+    "TN": 13,
+    "precision": 0.8214,
+    "recall": 0.4259,
+    "f1": 0.561,
+    "fp_rate": 0.2778,
+    "total": 72
+  },
+  "previous_baseline": {
+    "TP": 18,
+    "FP": 8,
+    "FN": 32,
+    "TN": 10,
+    "precision": 0.6923,
+    "recall": 0.36,
+    "f1": 0.4737,
+    "fp_rate": 0.4444,
+    "total": 68
+  },
+  "previous_enhanced": {
+    "TP": 31,
+    "FP": 12,
+    "FN": 19,
+    "TN": 6,
+    "precision": 0.7209,
+    "recall": 0.62,
+    "f1": 0.6667,
+    "fp_rate": 0.6667,
+    "total": 68
+  },
+  "details": {
+    "mivr": [
+      {
+        "name": "CVE-2014-0160_heartbleed",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2014-9112_cpio_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2015-0235_ghost_gethostbyname",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2015-3202_fuse_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2016-10158_php_exif_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2016-5094_php_gd_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2016-6301_ntpd_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2017-9438_imagemagick_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2018-1000001_glibc_realpath_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2018-16864_stack",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.8
+      },
+      {
+        "name": "CVE-2019-1010200_audiofile_wav_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2019-11477_tcp_sack",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2019-14287_sudo_bypass_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2020-10713_grub2",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2020-10713_grub_boot_hole",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2021-3156_sudo_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2021-3156_sudo_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2021-4034_pwnkit",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2022-0185_kernel_uaf",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.7
+      },
+      {
+        "name": "CVE-2022-23222_bpf_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2023-3269_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2023-4010_usb_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2024-21762_fortios",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "SAFE",
+        "confidence": 0.85
+      },
+      {
+        "name": "CVE-2024-21894_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "FP_array_index_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "FP_no_guard_memcpy",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "FP_safe_bound_guard_heap",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.75
+      },
+      {
+        "name": "heap_overflow_01_malloc_memcpy",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9
+      },
+      {
+        "name": "heap_overflow_02_loop_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_04_calloc_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_06_strcpy_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_07_sprintf_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_08_user_input_size",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "safe_calloc_then_strcpy",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "safe_malloc256_memcpy64",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.85
+      },
+      {
+        "name": "safe_malloc64_memcpy64",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.85
+      },
+      {
+        "name": "safe_malloc_variable_within_bounds",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "safe_realloc_then_memcpy",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9
+      },
+      {
+        "name": "TP_guarded_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "TP_loop_checked_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "TP_min_constrained",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "TP_path_condition_guard",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "TP_realloc_expand",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_01",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_02",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_03",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_04",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_05",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_06",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_07",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_08",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9
+      },
+      {
+        "name": "heap_overflow_09",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_10",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "uaf_01",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "uaf_02",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "uaf_03",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "uaf_04",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "uaf_05",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "CVE-2023-3269_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_03_alias_ptr",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_04_calloc",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_05_realloc",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_06_strcpy",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_07_sprintf",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_08_user_input",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_09_offset_write",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_overflow_10_nested_loop",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_safe_01_alignment_absorbed",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_safe_02_same_size",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_safe_03_smaller_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_safe_04_guarded",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      },
+      {
+        "name": "heap_safe_05_realloc_expand",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "UNCERTAIN",
+        "confidence": 0.0
+      }
+    ],
+    "combined": [
+      {
+        "name": "CVE-2014-0160_heartbleed",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2014-9112_cpio_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2015-0235_ghost_gethostbyname",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2015-3202_fuse_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2016-10158_php_exif_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2016-5094_php_gd_heap_overflow",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2016-6301_ntpd_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2017-9438_imagemagick_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2018-1000001_glibc_realpath_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.7,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2018-16864_stack",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.8,
+        "source": "MIVR"
+      },
+      {
+        "name": "CVE-2019-1010200_audiofile_wav_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2019-11477_tcp_sack",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2019-14287_sudo_bypass_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2020-10713_grub2",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2020-10713_grub_boot_hole",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2021-3156_sudo_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2021-3156_sudo_heap_overflow",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2021-4034_pwnkit",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2022-0185_kernel_uaf",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.7,
+        "source": "MIVR"
+      },
+      {
+        "name": "CVE-2022-23222_bpf_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2023-3269_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2023-4010_usb_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2024-21762_fortios",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "SAFE",
+        "confidence": 0.85,
+        "source": "MIVR"
+      },
+      {
+        "name": "CVE-2024-21894_heap_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "FP_array_index_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "FP_no_guard_memcpy",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "FP_safe_bound_guard_heap",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.75,
+        "source": "MIVR"
+      },
+      {
+        "name": "heap_overflow_01_malloc_memcpy",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9,
+        "source": "MIVR"
+      },
+      {
+        "name": "heap_overflow_02_loop_overflow",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_04_calloc_overflow",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_06_strcpy_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.7,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_07_sprintf_heap",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.7,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_08_user_input_size",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "safe_calloc_then_strcpy",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "safe_malloc256_memcpy64",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.85,
+        "source": "MIVR"
+      },
+      {
+        "name": "safe_malloc64_memcpy64",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "SAFE",
+        "confidence": 0.85,
+        "source": "MIVR"
+      },
+      {
+        "name": "safe_malloc_variable_within_bounds",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "safe_realloc_then_memcpy",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9,
+        "source": "MIVR"
+      },
+      {
+        "name": "TP_guarded_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "TP_loop_checked_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "TP_min_constrained",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "TP_path_condition_guard",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "TP_realloc_expand",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_01",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_02",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_03",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_04",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_05",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_06",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_07",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_08",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "OVERFLOW",
+        "confidence": 0.9,
+        "source": "MIVR"
+      },
+      {
+        "name": "heap_overflow_09",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_10",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.7,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "uaf_01",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "uaf_02",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "uaf_03",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.7,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "uaf_04",
+        "class": "FP",
+        "detected": true,
+        "expected": false,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "uaf_05",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "CVE-2023-3269_heap",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_03_alias_ptr",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_04_calloc",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_05_realloc",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_06_strcpy",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_07_sprintf",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_08_user_input",
+        "class": "TP",
+        "detected": true,
+        "expected": true,
+        "verdict": "POSSIBLE",
+        "confidence": 0.5,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_09_offset_write",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_overflow_10_nested_loop",
+        "class": "FN",
+        "detected": false,
+        "expected": true,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_safe_01_alignment_absorbed",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_safe_02_same_size",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_safe_03_smaller_write",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_safe_04_guarded",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      },
+      {
+        "name": "heap_safe_05_realloc_expand",
+        "class": "TN",
+        "detected": false,
+        "expected": false,
+        "verdict": "FILTERED",
+        "confidence": 0.0,
+        "source": "GAPSBV"
+      }
+    ]
+  }
+}

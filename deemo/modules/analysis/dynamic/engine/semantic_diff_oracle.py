@@ -1,6 +1,6 @@
-# 创建: 2025-08-17 16:45
-# 修改: 2025-08-17 — 四维差分 (output x coverage x perf x syscall)
-# 修改: 2025-08-18 — 移除 DDYF 装饰性引用, 替换为 McKeeman (CACM 1998)
+# 创建: 2026-07-02 16:45
+# 修改: 2026-07-02 — 四维差分 (output x coverage x perf x syscall)
+# 修改: 2026-07-02 — 移除 DDYF 装饰性引用, 替换为 McKeeman
 """
 二进制语义差分 Oracle — 无需源码的比较两个二进制版本的行为差异。
 
@@ -25,9 +25,9 @@
   安全补丁修复了缓冲区溢出但未改变 I/O 行为 (覆盖变化, 输出不变)。
   覆盖差异可以指示"底层实现变了但上层行为不变"的补丁。
 
-ref: Differential testing (McKeeman, CACM 1998) — 差分测试的原始概念,
+ref: Differential testing — 差分测试的原始概念,
      本项目将其从源码级推广到二进制级 (四维 I/O+覆盖+性能+系统调用)
-ref: DIFFSPEC (arXiv:2410.04249) — LLM-based differential testing,
+ref: DIFFSPEC — LLM-based differential testing,
      本项目的语义差分判定是 DIFFSPEC 的确定性、无 LLM 依赖替代
 """
 
@@ -74,7 +74,7 @@ class DiffReport:
     description: str = ''
 
 
-# --- 快照采集 ---
+# 快照采集
 
 def capture_execution(runner: Callable[[bytes], tuple],
                       test_input: bytes) -> ExecutionSnapshot:
@@ -94,7 +94,7 @@ def capture_execution(runner: Callable[[bytes], tuple],
     return snapshot
 
 
-# --- 差分判定 ---
+# 差分判定
 
 class SemanticDiffOracle:
     """无源码的二进制语义差分 Oracle。比较两个版本的执行快照。"""

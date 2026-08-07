@@ -24,7 +24,7 @@ import subprocess
 _log = logging.getLogger(__name__)
 
 
-# ===== 配置与结果数据类 =====
+# 配置与结果数据类
 
 @dataclass
 class SandboxConfig:
@@ -75,7 +75,7 @@ class SandboxResult:
     backend_used: str = ""
 
 
-# ===== 抽象驱动器 =====
+# 抽象驱动器
 
 class SandboxDriver(ABC):
     @abstractmethod
@@ -94,7 +94,7 @@ class SandboxDriver(ABC):
     def cleanup(self) -> None: ...
 
 
-# ===== Docker 沙箱 =====
+# Docker 沙箱
 
 class DockerSandbox(SandboxDriver):
     """
@@ -107,7 +107,7 @@ class DockerSandbox(SandboxDriver):
         self._image_pulled: bool = False
         self._active_config: Optional[SandboxConfig] = None
 
-    # ---- 检查 docker 是否可用 ----
+# 检查 docker 是否可用
     @staticmethod
     def _docker_available() -> bool:
         """检查 docker CLI 是否可调用"""
@@ -118,7 +118,7 @@ class DockerSandbox(SandboxDriver):
         except Exception:
             return False
 
-    # ---- 拉取镜像（若本地不存在） ----
+# 拉取镜像（若本地不存在）
     def _ensure_image(self, image: str) -> bool:
         # inspect 本地 image
         r = subprocess.run(["docker", "image", "inspect", image],
@@ -228,7 +228,7 @@ class DockerSandbox(SandboxDriver):
         return "sandbox-" + "".join(random.choices(string.ascii_lowercase, k=8))
 
 
-# ===== QEMU 沙箱 =====
+# QEMU 沙箱
 
 class QemuSandbox(SandboxDriver):
     """
@@ -334,7 +334,7 @@ class QemuSandbox(SandboxDriver):
         self._disk_path = None
 
 
-# ===== Windows 沙箱 =====
+# Windows 沙箱
 
 class WindowsSandbox(SandboxDriver):
     """
@@ -355,7 +355,7 @@ class WindowsSandbox(SandboxDriver):
                                "System32", "WindowsSandbox.exe")
         return os.path.isfile(wsb_exe)
 
-    # ---- 生成 WSB 配置 XML ----
+# 生成 WSB 配置 XML
     def _write_wsb_config(self, config: SandboxConfig) -> str:
         self._shared_folder = tempfile.mkdtemp(prefix="wsb_share_")
         # 组装映射目录: 把 volume_mounts 转换为 MappedFolder
@@ -433,7 +433,7 @@ class WindowsSandbox(SandboxDriver):
         self._wsb_path = None
 
 
-# ===== 进程沙箱 =====
+# 进程沙箱
 
 class ProcessSandbox(SandboxDriver):
     # 最轻量后端 —— 直接子进程执行，带超时和资源限制
@@ -531,7 +531,7 @@ class ProcessSandbox(SandboxDriver):
         self._validated_binary = None
 
 
-# ===== 编排器 =====
+# 编排器
 
 class SandboxOrchestrator:
     """
@@ -586,7 +586,7 @@ class SandboxOrchestrator:
     def available_backends(self) -> List[str]:
         return [n for n, ok in self._AVAILABILITY_CACHE.items() if ok]
 
-    # ---- 完整执行生命周期 ----
+# 完整执行生命周期
     def execute(self, config: SandboxConfig, command: str,
                 backend: Optional[str] = None) -> SandboxResult:
         """
@@ -596,18 +596,18 @@ class SandboxOrchestrator:
         backend_name = backend or self.auto_select()
         driver = self.get_backend(backend_name)
         t0 = time.perf_counter()
-        # -- setup --
+# setup
         if not driver.setup(config):
             return SandboxResult(stderr="backend setup failed", returncode=-1,
                                 duration=time.perf_counter()-t0, backend_used=backend_name)
-        # -- 运行 --
+# 运行
         result = driver.run(command, config)
-        # -- collect --
+# collect
         if config.artifact_paths:
             result.artifacts = driver.collect_artifacts(config)
         result.backend_used = backend_name
         result.duration = time.perf_counter() - t0
-        # -- cleanup --
+# cleanup
         try:
             driver.cleanup()
         except Exception:
@@ -615,7 +615,7 @@ class SandboxOrchestrator:
         return result
 
 
-# ---- 命令行快速测试 ----
+# 命令行快速测试
 import shlex as _shlex_mod
 shlex = _shlex_mod
 

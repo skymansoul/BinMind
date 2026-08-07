@@ -1,5 +1,5 @@
-# 创建: 2026-07-31 10:47
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-10 10:47
+# 修改: 2026-07-10 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 深度核学习NN+GP联合
 # 深度核学习 — 神经网络特征提取+高斯过程不确定性联合优化
 #
@@ -7,21 +7,21 @@
 # 高维CVE特征 (~8维) 中, 手工核难以捕获复杂的非线性交互.
 # 深度神经网络可学习优质表示但缺乏原生不确定性.
 # 深度核学习 (DKL) 结合两者优势:
-#   - 神经网络将原始特征映射到低维潜在空间.
-#   - GP在潜在空间中进行回归, 提供校准不确定性.
-#   - 两者通过边际似然端到端联合训练.
+# 神经网络将原始特征映射到低维潜在空间.
+# GP在潜在空间中进行回归, 提供校准不确定性.
+# 两者通过边际似然端到端联合训练.
 #
 # 架构: NN(x) → z ∈ R^d_latent → GP(z) → (μ, σ).
 # NN: 2层MLP (d_in → 16 → d_latent).
 # GP: 稀疏变分GP, Matern-3/2核, M个归纳点.
 #
 # 相对于分离方案的改进:
-#   - vs 纯NN: DKL提供原生预测不确定性.
+# vs 纯NN: DKL提供原生预测不确定性.
 #   - vs 纯GP (cve_gaussian_process): DKL学习自适应核,
 #     在复杂CVE特征交互上表现更好.
 #   - vs MC Dropout (cve_bayesian_scorer): DKL的不确定性
-#     更校准 (DGKL 2026: ENCE 0.06-0.10 vs MC Dropout更高).
-#   - vs 深度集成: DKL单模型提供相似校准质量.
+#     更校准.
+# vs 深度集成: DKL单模型提供相似校准质量.
 #
 # 非显而易见性:
 #   1. 首次将DKL应用于CVE漏洞评分.
@@ -31,10 +31,10 @@
 #   2. 联合训练NN+GP: 通过GP边际似然反向传播到NN参数.
 #   3. 稀疏变分推断: O(NM²)训练, M≪N.
 #
-# 参考:
-#   [Wilson et al. 2016] Deep Kernel Learning (AISTATS)
-#   [DGKL 2026] Deep Graph Kernel Learning (Digital Discovery)
-#   [DKL-KAN 2026] DKL with Kolmogorov-Arnold Networks
+#
+# Deep Kernel Learning (AISTATS)
+# Deep Graph Kernel Learning (Digital Discovery)
+# DKL with Kolmogorov-Arnold Networks
 
 import math, random
 from typing import Dict, List, Optional, Tuple

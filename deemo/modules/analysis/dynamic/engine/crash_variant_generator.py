@@ -1,5 +1,5 @@
-# 创建: 2025-08-17 21:32
-# 修改: 2025-08-17 — 长度字段变异 + 覆盖引导 + LCA 三角化
+# 创建: 2026-07-23 21:32
+# 修改: 2026-07-23 — 长度字段变异 + 覆盖引导 + LCA 三角化
 """
 崩溃变体生成器 — 从单个 PoC 输入变异出多个相关崩溃以三角化根因。
 
@@ -23,12 +23,12 @@
   那么任何触发此下溢的输入都会崩溃——变体生成探索了"其他触发方式"。
   多个变体共享同一最近公共祖先 → 祖先即根因。
 
-ref: Kumushi (CCS 2026) — AFL++ crash exploration generating variant
+ref: Kumushi — AFL++ crash exploration generating variant
      crash traces for fault localization, 本项目简化 AFL++ 为
      受控变异 + 覆盖引导
 ref: Crash exploration mode (AFL++) — 探索同一崩溃的不同路径,
      本项目取其理念但使用确定性变异 (非随机 havoc)
-ref: Veritas (arXiv:2605.15097) — crash variant triangulation
+ref: Veritas — crash variant triangulation
      用于根因验证, 本项目的变体生成器即其 triangulation 输入
 """
 
@@ -63,7 +63,7 @@ class TriangulationResult:
     confidence: float = 0.0       # 三角化置信度
 
 
-# --- 受控变异策略 ---
+# 受控变异策略
 
 def mutate_length_field(input_bytes: bytes,
                         offset: int, size: int,
@@ -108,7 +108,7 @@ def mutate_environment_context(input_bytes: bytes,
     return input_bytes, perturbed
 
 
-# --- 覆盖引导变异 ---
+# 覆盖引导变异
 
 def coverage_guided_variants(
     input_bytes: bytes,
@@ -154,7 +154,7 @@ def coverage_guided_variants(
     return variants
 
 
-# --- 根因三角化 ---
+# 根因三角化
 
 def triangulate_root_cause(variants: list[CrashVariant]) -> TriangulationResult:
     """从崩溃变体集合中三角化根因。
@@ -191,7 +191,7 @@ def triangulate_root_cause(variants: list[CrashVariant]) -> TriangulationResult:
     return result
 
 
-# --- 变体驱动机 ---
+# 变体驱动机
 
 class CrashVariantGenerator:
     """崩溃变体生成器——组合多种变异策略 + 三角化。"""

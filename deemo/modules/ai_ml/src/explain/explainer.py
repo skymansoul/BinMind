@@ -1,12 +1,10 @@
-# ==== 图模型解释：GNNExplainer风格边掩码 + 遮挡归因 + 反事实解释 ====
+# 图模型解释：GNNExplainer风格边掩码 + 遮挡归因 + 反事实解释
 
 import numpy as np
 from math import log as _log
 
 
-# ############################################################
 # SubgraphExplainer — 边掩码 + 坐标下降
-# ############################################################
 
 class SubgraphExplainer:
     """GNNExplainer启发: 学习稀疏边掩码使预测保持，提取关键子图"""
@@ -26,7 +24,7 @@ class SubgraphExplainer:
         _mask = self._sigmoid(mask_param)
         return adj * _mask
 
-    # ==== 解释主入口 ====
+# 解释主入口
     def explain(self, x, adj, node_idx, target_class=None):
         x = np.asarray(x, dtype=np.float64)
         adj = np.asarray(adj, dtype=np.float64)
@@ -48,7 +46,7 @@ class SubgraphExplainer:
         _best_loss = float("inf")
         _best_mask = None
 
-        # ---- 坐标下降：逐边优化 ----
+# 坐标下降：逐边优化
         for _ep in range(self._epochs):
             _lr_t = self._lr / (1.0 + _ep * 0.005)
             _edges = list(zip(_edge_idx[0], _edge_idx[1]))
@@ -96,7 +94,7 @@ class SubgraphExplainer:
             "target_class": target_class,
         }
 
-    # ---- 损失: 预测保真度 + 掩码稀疏正则 ----
+# 损失: 预测保真度 + 掩码稀疏正则
     def _compute_loss(self, x, adj_masked, node_idx, target_class, mask_param):
         _out = self._m(x, adj_masked)
         if _out.ndim > 1:
@@ -115,9 +113,7 @@ class SubgraphExplainer:
         return _pred_loss + self._ent_coeff * _entropy
 
 
-# ############################################################
 # FeatureAttributor — 遮挡归因
-# ############################################################
 
 class FeatureAttributor:
     """逐特征 + 逐节点遮挡分析：零化后测量预测变化量"""
@@ -125,7 +121,7 @@ class FeatureAttributor:
     def __init__(self, model):
         self._m = model  # callable: model(x, adj) -> output
 
-    # ==== 归因入口 ====
+# 归因入口
     def attribute(self, x, adj, node_idx=None):
         x = np.asarray(x, dtype=np.float64)
         adj = np.asarray(adj, dtype=np.float64)
@@ -133,7 +129,7 @@ class FeatureAttributor:
 
         _base = self._m(x, adj)
 
-        # ---- 节点级别归因 ----
+# 节点级别归因
         _node_imp = np.zeros(_n)
         if node_idx is not None:
             # 目标节点归因: 逐个零化其他节点特征
@@ -156,7 +152,7 @@ class FeatureAttributor:
                 _out = self._m(_x_occ, adj)
                 _node_imp[_i] = abs(_base_sum - np.sum(_out))
 
-        # ---- 特征级别归因 ----
+# 特征级别归因
         _feat_imp = np.zeros(_d)
         for _j in range(_d):
             _x_occ = self._occlude_feature(x, _j)
@@ -175,9 +171,7 @@ class FeatureAttributor:
         return _r
 
 
-# ############################################################
 # CounterfactualExplainer — 最小扰动翻转预测
-# ############################################################
 
 class CounterfactualExplainer:
     """找最小边增/删集使预测翻转 — 二分搜索扰动规模"""
@@ -185,7 +179,7 @@ class CounterfactualExplainer:
     def __init__(self, model):
         self._m = model
 
-    # ==== 反事实搜索 ====
+# 反事实搜索
     def explain(self, x, adj, node_idx, target_class=None):
         x = np.asarray(x, dtype=np.float64)
         adj = np.asarray(adj, dtype=np.float64).copy()
@@ -207,7 +201,7 @@ class CounterfactualExplainer:
             else:
                 target_class = 1 - _orig_pred
 
-        # ---- 枚举候选边操作 ----
+# 枚举候选边操作
         # 可删边 (当前邻接矩阵中为1的)
         _del_candidates = [(int(i), int(j)) for i in range(_n) for j in range(i + 1, _n) if adj[i, j] > 0]
         # 可增边 (0的，排除自环)
@@ -316,9 +310,7 @@ class CounterfactualExplainer:
         return _adj_new
 
 
-# ############################################################
 # explain_prediction — 快速调度器
-# ############################################################
 
 def explain_prediction(model, x, adj, method="subgraph", **kwargs):
     """统一入口：method in {'subgraph', 'feature', 'counterfactual'}"""

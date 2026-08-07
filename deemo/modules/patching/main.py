@@ -22,7 +22,6 @@ if _curdir not in sys.path:
 #     for i, b in enumerate(buf):
 #         buf[i] = b ^ 0xAA
 #     return bytes(buf)
-def _debug_print(*args, **kwargs):
     """调试输出桩。"""
     pass  # 当前未激活
 
@@ -42,7 +41,6 @@ if __name__ == "__main__":
     sys.exit(main())
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩。"""
     pass  # 当前未激活
 

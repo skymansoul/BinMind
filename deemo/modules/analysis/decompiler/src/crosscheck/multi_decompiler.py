@@ -18,7 +18,6 @@
    三个各自不同→低置信→标记为"需人工审查"。
 4. 为每个引擎维护历史准确率(EMA)，用于加权多数表决。
 
-参考：
 - decompiler_validator.py: 单反编译器输出与真实源码的比较验证。
 - 本模块: 多反编译器之间的交叉验证——不依赖源码ground truth。
 """
@@ -28,12 +27,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class ConsensusLevel(Enum):
     FULL = "full"           # 三引擎一致
     MAJORITY = "majority"   # 二对一
     DIVERGENT = "divergent" # 三个全不同
-
 
 @dataclass
 class DecompOutput:
@@ -50,7 +47,6 @@ class DecompOutput:
     # 引擎特定置信度
     engine_confidence: float = 0.5
 
-
 @dataclass
 class CrossCheckResult:
     """多引擎交叉验证的输出。"""
@@ -60,7 +56,6 @@ class CrossCheckResult:
     best_engine: str
     divergent_engine: str = ""
     recommendation: str = ""
-
 
 class MultiDecompilerCrossCheck:
     """多反编译器交叉验证器。"""
@@ -184,8 +179,7 @@ class MultiDecompilerCrossCheck:
 
         return min(1.0, _score / _total_weight)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _checker = MultiDecompilerCrossCheck()
 
@@ -206,7 +200,6 @@ def _smoke_test():
 
     assert _result.consensus in (ConsensusLevel.MAJORITY, ConsensusLevel.FULL)
     print("[OK] MultiDecompilerCrossCheck smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

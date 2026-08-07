@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from itertools import islice
 
-# ===== PE 常量表 =====
+# PE 常量表
 _IMAGE_DOS_SIGNATURE = 0x5A4D
 _IMAGE_NT_SIGNATURE = 0x00004550
 _IMAGE_FILE_MACHINE_I386 = 0x014C
@@ -46,7 +46,7 @@ _SECTION_CHAR_MAP = {
     0x40000000: "MEM_READ", 0x80000000: "MEM_WRITE",
 }
 
-# ===== ELF 常量表 =====
+# ELF 常量表
 _ELF_MAGIC = b'\x7fELF'
 _ELF_CLASS_32 = 1
 _ELF_CLASS_64 = 2
@@ -76,7 +76,7 @@ _PT_NOTE = 4
 _PT_GNU_RELRO = 0x6474E552
 _PT_GNU_STACK = 0x6474E551
 
-# ===== Mach-O 常量表 =====
+# Mach-O 常量表
 _MACHO_MAGIC_32 = 0xFEEDFACE
 _MACHO_MAGIC_64 = 0xFEEDFACF
 _MACHO_CIGAM_32 = 0xCEFAEDFE

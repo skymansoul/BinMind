@@ -41,10 +41,10 @@ class SideChannelVulnerability:
     evidence: List[TimingAnalysisResult] = field(default_factory=list)
 
 
-# --- 统计工具：互信息与 Cliff's Delta -----------------------------------------
+# 统计工具：互信息与 Cliff's Delta
 # 使用直方图估计互信息（MI），比单纯的 t-test 更善于捕捉非线性依赖。
 # Cliff's delta 是无分布假设的 effect size，适合非正态时序样本。
-# 参考: Mainali & Ghimire (2025) "Statistical Side-Channel Risk Model"
+# Mainali & Ghimire (2025) "Statistical Side-Channel Risk Model"
 
 def _mutual_information_hist(samples_a: List[float], samples_b: List[float],
                              bins: int = 20) -> float:
@@ -116,7 +116,7 @@ class LatticeSideChannelAnalyzer:
     def __init__(self):
         pass
 
-    # -- 公开 API -----------------------------------------------------------
+# 公开 API
 
     def analyze(self, impl: Any, n: int = 256, q: int = 3329,
                 trials: int = 500, **kwargs) -> List[SideChannelVulnerability]:
@@ -139,7 +139,7 @@ class LatticeSideChannelAnalyzer:
         """对可调用对象进行插桩，跨随机系数集检测时序泄漏。"""
         vulns: List[SideChannelVulnerability] = []
 
-        # ---- 时序追踪采集 ---------------------------------------------------------
+# 时序追踪采集
         all_samples: List[float] = []
         coeff_timings: Dict[int, List[float]] = defaultdict(list)
 
@@ -159,7 +159,7 @@ class LatticeSideChannelAnalyzer:
                 op(single)
                 coeff_timings[idx].append(time.perf_counter_ns() - t0)
 
-        # ---- 统计分析 --------------------------------------------------
+# 统计分析
         mean_t = statistics.mean(all_samples)
         std_t = statistics.stdev(all_samples) if len(all_samples) > 1 else 0.0
 
@@ -183,7 +183,7 @@ class LatticeSideChannelAnalyzer:
         # 若系数选择导致时序变化 > 5%，标记为非恒定时间。
         is_const = max_dev < 0.05 and std_t / max(mean_t, 1) < 0.1
 
-        # -- 互信息与效应量 -----------------------------------------------------
+# 互信息与效应量
         # 比较零系数 vs 饱和系数的分布差异
         zero_times = coeff_timings.get(0, all_samples[:min(50, len(all_samples))])
         sat_idx = min(n - 1, 1)
@@ -216,7 +216,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[result],
             ))
 
-        # ---- NTT 专项检测 ---------------------------------------------------
+# NTT 专项检测
         ntt_result = self._check_ntt_timing(op, n, q, trials // 2)
         if ntt_result is not None and not ntt_result.is_constant_time:
             vulns.append(SideChannelVulnerability(
@@ -227,7 +227,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[ntt_result],
             ))
 
-        # ---- 频率侧信道（Hertzbleed 风格）检测 -----------------------------------
+# 频率侧信道（Hertzbleed 风格）检测
         # 启发式：大的时间方差 + 小样本时也较稳定 → DVFS 相关的频率泄漏
         freq_result = self._check_frequency_side_channel(op, n, q, min(trials, 200))
         if freq_result and freq_result.freq_variation_hz > 5.0:

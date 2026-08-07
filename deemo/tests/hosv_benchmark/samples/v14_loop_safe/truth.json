@@ -1,0 +1,8 @@
+{
+  "sample": "v14_loop_safe",
+  "cve": "SAFE-lop",
+  "mode": "walk_write",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "4 次 × 16 字节 = 64 = 分配 → 安全"
+}

@@ -1,4 +1,4 @@
-# 创建: 2025-09-25 09:30
+# 创建: 2026-07-16 09:30
 # 轻量静态污点传播引擎 — 值域抽象替代纯正则检测
 
 """轻量污点传播引擎。
@@ -6,7 +6,7 @@
 传统污点追踪（如 libdft, Triton）维护每字节的污点标签，开销大、
 对间接调用和内存别名处理复杂。
 
-本引擎采用 Mango [USENIX Security 2024] 的值分析思路：
+本引擎采用 Mango 的值分析思路：
   不追踪"此字节是否被用户控制"，而是追踪"此寄存器的值域是什么"。
   污点被建模为"值域包含外部输入"。
   当值域退化为常量（如经过 cmp/and 净化后），自动去污。
@@ -90,7 +90,7 @@ class TaintState:
         return TaintState(regs=dict(self.regs), memory=dict(self.memory))
 
 
-# ── 污点传播核心 ──────────────────────────────────────────────────
+# 污点传播核心
 
 class TaintEngine:
     """基于值域的轻量污点传播引擎。
@@ -196,7 +196,7 @@ class TaintEngine:
     def get_state(self) -> TaintState:
         return self._state.copy()
 
-    # ── 辅助 ──────────────────────────────────────────────────────
+# 辅助
 
     def _parse_dst_src(self, parts: List[str]) -> Tuple[Optional[str], Optional[str]]:
         if len(parts) >= 3:

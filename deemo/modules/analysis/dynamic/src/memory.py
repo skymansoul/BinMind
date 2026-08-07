@@ -38,9 +38,7 @@ class MemoryImageFormat(str, Enum):
     QEMU = "qemu"
 
 
-# ---------------------------------------------------------------------------
 # MemoryForensics — live + 转存 analysis
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ProcessInfo:
@@ -98,7 +96,7 @@ class MemoryForensics:
         except ImportError:
             log.info("volatility3 not installed; using heuristic fallback")
 
-    # ---- Live process analysis ----
+# Live process analysis
 
     def analyze_live_process(self, pid: int) -> Optional[ProcessInfo]:
         """分析 a live process PID
@@ -165,7 +163,7 @@ class MemoryForensics:
 
         return info
 
-    # ---- 转存 file analysis ----
+# 转存 file analysis
 
     def analyze_dump(self, dump_path: str) -> Dict[str, Any]:
         """分析 a memory 转存 file
@@ -255,7 +253,7 @@ class MemoryForensics:
             log.error("Heuristic scan failed: %s", e)
         return results
 
-    # ---- Sensitive data extraction ----
+# Sensitive data extraction
 
     def extract_sensitive_data(self, dump_data: bytes) -> List[SensitiveData]:
         """提取 sensitive data (keys, tokens, passwords) raw memory bytes
@@ -286,9 +284,7 @@ class MemoryForensics:
         return findings
 
 
-# ---------------------------------------------------------------------------
 # MemoryVisualizer — ASCII/SVG memory layout
-# ---------------------------------------------------------------------------
 
 class MemoryVisualizer:
     """构造 ASCII art SVG memory layout visualizations
@@ -372,9 +368,7 @@ class MemoryVisualizer:
         return "\n".join(svg_parts)
 
 
-# ---------------------------------------------------------------------------
 # 堆Analyzer — allocator state analysis, 堆 feng shui
-# ---------------------------------------------------------------------------
 
 @dataclass
 class HeapChunk:

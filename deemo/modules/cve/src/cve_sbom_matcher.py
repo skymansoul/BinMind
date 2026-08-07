@@ -45,7 +45,7 @@ except (ImportError, ModuleNotFoundError):
     _has_ssvc = False
 
 
-# ---- 名称规范化（三阶段，次序敏感） ----
+# 名称规范化（三阶段，次序敏感）
 
 # 待剥离后缀（阶段1）
 _SUFFIX_PATTERNS = [
@@ -169,7 +169,7 @@ def _char_trigram_sim(s1: str, s2: str) -> float:
     return len(t1 & t2) / len(t1 | t2)
 
 
-# ---- KB查找辅助 ----
+# KB查找辅助
 
 def _kb_lookup(kb, component_name: str, limit: int = 50) -> Tuple[List[Any], int]:
     """搜索知识库中匹配组件名的条目。
@@ -178,7 +178,7 @@ def _kb_lookup(kb, component_name: str, limit: int = 50) -> Tuple[List[Any], int
     return _kb_search(kb, component_name, limit=limit)
 
 
-# ---- 版本检查辅助 ----
+# 版本检查辅助
 
 def _check_version_affected(version: str, cve_entry: Any) -> bool:
     """检查组件的版本是否落入CVE条目的受影响范围。
@@ -208,7 +208,7 @@ def _check_version_affected(version: str, cve_entry: Any) -> bool:
     return _version_in_range(version, ranges)
 
 
-# ---- 修复版本提取 ----
+# 修复版本提取
 
 def _extract_fix(entry: Any) -> Optional[str]:
     """从CVE条目提取修复版本。
@@ -267,7 +267,7 @@ def _extract_fix(entry: Any) -> Optional[str]:
     return None
 
 
-# ---- 匹配阶段 ----
+# 匹配阶段
 # 每个阶段接受(kb, component)并返回匹配字典列表。
 # 有意不使用基类或模板——各阶段行为不同（不同搜索策略、不同置信度评分）。
 
@@ -525,7 +525,7 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
     return matches
 
 
-# ---- 主匹配函数 ----
+# 主匹配函数
 
 def match_component(kb, component: Dict) -> Dict[str, Dict]:
     """对单个组件运行所有匹配阶段。
@@ -560,7 +560,7 @@ def match_component(kb, component: Dict) -> Dict[str, Dict]:
     return all_matches
 
 
-# ---- SBOM报告构建（单片式约130行——有意为之） ----
+# SBOM报告构建（单片式约130行——有意为之）
 
 def build_sbom_report(kb, components: List[Dict]) -> Dict:
     """构建综合SBOM漏洞报告。
@@ -680,7 +680,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
     }
 
 
-# ---- 一次性便捷函数 ----
+# 一次性便捷函数
 
 def match_sbom(kb, sbom_path: str) -> Dict:
     """一次性: 加载SBOM JSON文件并匹配所有组件。

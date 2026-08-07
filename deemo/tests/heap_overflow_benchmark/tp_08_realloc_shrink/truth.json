@@ -1,0 +1,16 @@
+{
+  "sample_id": "TP-08",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "description": "realloc(4096->64) then memset 4096",
+  "alloc_size": 64,
+  "write_offset": 0,
+  "write_size": 4096,
+  "expect_overflow": true,
+  "lpvra_expected_verdict": "OVERFLOW",
+  "verdict_reason": "realloc shrunk but write uses old size 4096B",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "OVERFLOW"
+  }
+}

@@ -79,9 +79,9 @@ if not hasattr(_m.VulnCategory.RACE_CONDITION, 'value'):
             _sv = getattr(_m.VulnCategory, _attr)
             pass
 
-# --- GPU warp/thread 发散分析 ---
-# 参考: NVIDIA CUDA Programming Guide §5.4.1 "Warp Divergence"
-# 以及 Diwan & Tarditi (2021) 关于 GPU 控制流平展的性能影响
+# GPU warp/thread 发散分析
+# NVIDIA CUDA Programming Guide §5.4.1 "Warp Divergence"
+# 以及 Diwan & Tarditi 关于 GPU 控制流平展的性能影响
 
 _WARP_SIZE = 32  # NVIDIA CUDA warp size; AMD wavefront = 64
 
@@ -126,10 +126,10 @@ def detect_shared_memory_bank_conflict(access_pattern: list[int], num_banks: int
     return conflicts / len(access_pattern)
 
 
-# --- 全局内存合并访问分析 ---
+# 全局内存合并访问分析
 # NVIDIA CUDA 最佳实践: 同一 warp 内线程访问的全局内存地址应在 128B 对齐段内
 # 合并访问将 32 次内存事务合并为 1-4 次，吞吐量提升可达 10x
-# 参考: NVIDIA CUDA C Programming Guide §5.3 "Global Memory" / "Coalesced Access"
+# NVIDIA CUDA C Programming Guide §5.3 "Global Memory" / "Coalesced Access"
 def analyze_memory_coalescing(access_addrs: list[int], warp_size: int = 32,
                                cache_line: int = 128) -> dict:
     """分析 warp 内全局内存访问的合并效率。
@@ -160,7 +160,7 @@ def analyze_memory_coalescing(access_addrs: list[int], warp_size: int = 32,
     }
 
 
-# --- Headless 批量 GPU 内核扫描 ---
+# Headless 批量 GPU 内核扫描
 def headless_scan_kernels(source_dir: str, arch: str = 'sm_80',
                            output_json: str = '') -> dict:
     import json as _json, os as _os, glob as _glob

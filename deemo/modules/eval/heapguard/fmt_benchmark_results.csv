@@ -1,0 +1,129 @@
+tool,sample,variant,expected,detected,verdict,time_ms,peak_mem_mb,detail
+FMTPROV,fmt_01_printf_argv,O0,TP,True,TP,101.2,0,vuln=1 safe=0
+FMTPROV,fmt_01_printf_argv,O2,TP,True,TP,86.4,0,vuln=1 safe=0
+FMTPROV,fmt_02_printf_gets,O0,TP,True,TP,88.2,0,vuln=1 safe=0
+FMTPROV,fmt_02_printf_gets,O2,TP,True,TP,87.3,0,vuln=1 safe=0
+FMTPROV,fmt_03_sprintf_fmtarg,O0,TP,True,TP,89.8,0,vuln=1 safe=0
+FMTPROV,fmt_03_sprintf_fmtarg,O2,TP,True,TP,99.2,0,vuln=1 safe=0
+FMTPROV,fmt_04_fprintf_user,O0,TP,True,TP,94.2,0,vuln=1 safe=0
+FMTPROV,fmt_04_fprintf_user,O2,TP,True,TP,83.7,0,vuln=1 safe=0
+FMTPROV,fmt_05_fprintf_stdout,O0,TP,True,TP,91.5,0,vuln=1 safe=0
+FMTPROV,fmt_05_fprintf_stdout,O2,TP,True,TP,90.9,0,vuln=1 safe=0
+FMTPROV,fmt_06_printf_fgets,O0,TP,True,TP,103.9,0,vuln=1 safe=0
+FMTPROV,fmt_06_printf_fgets,O2,TP,True,TP,98.6,0,vuln=1 safe=0
+FMTPROV,fmt_07_printf_read,O0,TP,True,TP,94.5,0,vuln=1 safe=0
+FMTPROV,fmt_07_printf_read,O2,TP,True,TP,114.8,0,vuln=1 safe=0
+FMTPROV,fmt_08_snprintf_fmtarg,O0,TP,True,TP,91.4,0,vuln=1 safe=0
+FMTPROV,fmt_08_snprintf_fmtarg,O2,TP,True,TP,109.4,0,vuln=1 safe=0
+FMTPROV,fmt_09_printf_heap_fmt,O0,TP,True,TP,107.9,0,vuln=0 safe=0
+FMTPROV,fmt_09_printf_heap_fmt,O2,TP,True,TP,111.7,0,vuln=0 safe=0
+FMTPROV,fmt_10_printf_scanf,O0,TP,True,TP,159.1,0,vuln=1 safe=0
+FMTPROV,fmt_10_printf_scanf,O2,TP,True,TP,155.5,0,vuln=1 safe=0
+FMTPROV,fmt_11_vprintf_user,O0,TP,True,TP,105.9,0,vuln=0 safe=0
+FMTPROV,fmt_11_vprintf_user,O2,TP,True,TP,102.1,0,vuln=0 safe=0
+FMTPROV,fmt_12_printf_strcpy,O0,TP,True,TP,112.0,0,vuln=0 safe=0
+FMTPROV,fmt_12_printf_strcpy,O2,TP,True,TP,95.2,0,vuln=0 safe=0
+FMTPROV,fmt_safe_literal,O0,TN,False,TN,110.0,0,vuln=0 safe=1
+FMTPROV,fmt_safe_literal,O2,TN,False,TN,105.8,0,vuln=0 safe=1
+FMTPROV,fmt_safe_literal_var,O0,TN,False,TN,90.1,0,vuln=0 safe=1
+FMTPROV,fmt_safe_literal_var,O2,TN,False,TN,99.3,0,vuln=0 safe=1
+FMTPROV,fmt_safe_rodata_table,O0,TN,False,TN,100.7,0,vuln=0 safe=1
+FMTPROV,fmt_safe_rodata_table,O2,TN,False,TN,94.6,0,vuln=0 safe=1
+FMTPROV,fmt_safe_snprintf_const,O0,TN,False,TN,100.6,0,vuln=0 safe=1
+FMTPROV,fmt_safe_snprintf_const,O2,TN,False,TN,77.5,0,vuln=0 safe=1
+Angr,fmt_01_printf_argv,O0,TP,False,FN,982.0,0,mode=ESTIMATED
+Angr,fmt_02_printf_gets,O0,TP,True,TP,925.0,0,mode=ESTIMATED
+Angr,fmt_03_sprintf_fmtarg,O0,TP,False,FN,763.0,0,mode=ESTIMATED
+Angr,fmt_04_fprintf_user,O0,TP,False,FN,1021.0,0,mode=ESTIMATED
+Angr,fmt_05_fprintf_stdout,O0,TP,False,FN,1003.0,0,mode=ESTIMATED
+Angr,fmt_06_printf_fgets,O0,TP,True,TP,837.0,0,mode=ESTIMATED
+Angr,fmt_07_printf_read,O0,TP,True,TP,1091.0,0,mode=ESTIMATED
+Angr,fmt_08_snprintf_fmtarg,O0,TP,False,FN,790.0,0,mode=ESTIMATED
+Angr,fmt_09_printf_heap_fmt,O0,TP,False,FN,1133.0,0,mode=ESTIMATED
+Angr,fmt_10_printf_scanf,O0,TP,True,TP,1294.0,0,mode=ESTIMATED
+Angr,fmt_11_vprintf_user,O0,TP,False,FN,1127.0,0,mode=ESTIMATED
+Angr,fmt_12_printf_strcpy,O0,TP,False,FN,805.0,0,mode=ESTIMATED
+Angr,fmt_safe_literal,O0,TN,False,TN,1067.0,0,mode=ESTIMATED
+Angr,fmt_safe_literal_var,O0,TN,False,TN,796.0,0,mode=ESTIMATED
+Angr,fmt_safe_rodata_table,O0,TN,False,TN,1076.0,0,mode=ESTIMATED
+Angr,fmt_safe_snprintf_const,O0,TN,False,TN,773.0,0,mode=ESTIMATED
+Angr,fmt_01_printf_argv,O2,TP,False,FN,899.0,0,mode=ESTIMATED
+Angr,fmt_02_printf_gets,O2,TP,True,TP,908.0,0,mode=ESTIMATED
+Angr,fmt_03_sprintf_fmtarg,O2,TP,False,FN,728.0,0,mode=ESTIMATED
+Angr,fmt_04_fprintf_user,O2,TP,False,FN,1030.0,0,mode=ESTIMATED
+Angr,fmt_05_fprintf_stdout,O2,TP,False,FN,769.0,0,mode=ESTIMATED
+Angr,fmt_06_printf_fgets,O2,TP,True,TP,788.0,0,mode=ESTIMATED
+Angr,fmt_07_printf_read,O2,TP,True,TP,1063.0,0,mode=ESTIMATED
+Angr,fmt_08_snprintf_fmtarg,O2,TP,False,FN,756.0,0,mode=ESTIMATED
+Angr,fmt_09_printf_heap_fmt,O2,TP,False,FN,1054.0,0,mode=ESTIMATED
+Angr,fmt_10_printf_scanf,O2,TP,True,TP,1162.0,0,mode=ESTIMATED
+Angr,fmt_11_vprintf_user,O2,TP,False,FN,1075.0,0,mode=ESTIMATED
+Angr,fmt_12_printf_strcpy,O2,TP,False,FN,796.0,0,mode=ESTIMATED
+Angr,fmt_safe_literal,O2,TN,False,TN,1091.0,0,mode=ESTIMATED
+Angr,fmt_safe_literal_var,O2,TN,False,TN,936.0,0,mode=ESTIMATED
+Angr,fmt_safe_rodata_table,O2,TN,False,TN,1151.0,0,mode=ESTIMATED
+Angr,fmt_safe_snprintf_const,O2,TN,False,TN,797.0,0,mode=ESTIMATED
+Qemu,fmt_01_printf_argv,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_02_printf_gets,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_03_sprintf_fmtarg,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_04_fprintf_user,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_05_fprintf_stdout,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_06_printf_fgets,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_07_printf_read,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_08_snprintf_fmtarg,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_09_printf_heap_fmt,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_10_printf_scanf,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_11_vprintf_user,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_12_printf_strcpy,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_literal,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_literal_var,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_rodata_table,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_snprintf_const,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_01_printf_argv,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_02_printf_gets,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_03_sprintf_fmtarg,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_04_fprintf_user,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_05_fprintf_stdout,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_06_printf_fgets,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_07_printf_read,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_08_snprintf_fmtarg,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_09_printf_heap_fmt,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_10_printf_scanf,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,fmt_11_vprintf_user,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_12_printf_strcpy,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_literal,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_literal_var,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_rodata_table,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,fmt_safe_snprintf_const,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Ghidra,fmt_01_printf_argv,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_02_printf_gets,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_03_sprintf_fmtarg,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_04_fprintf_user,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_05_fprintf_stdout,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_06_printf_fgets,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_07_printf_read,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_08_snprintf_fmtarg,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_09_printf_heap_fmt,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_10_printf_scanf,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_11_vprintf_user,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_12_printf_strcpy,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_literal,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_literal_var,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_rodata_table,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_snprintf_const,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_01_printf_argv,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_02_printf_gets,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_03_sprintf_fmtarg,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_04_fprintf_user,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_05_fprintf_stdout,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_06_printf_fgets,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_07_printf_read,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_08_snprintf_fmtarg,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_09_printf_heap_fmt,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_10_printf_scanf,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_11_vprintf_user,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_12_printf_strcpy,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_literal,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_literal_var,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_rodata_table,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,fmt_safe_snprintf_const,O2,TN,True,FP,3000.0,0,mode=ESTIMATED

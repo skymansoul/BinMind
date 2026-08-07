@@ -10,26 +10,26 @@
 # 本模块的方法 — 执行反馈闭环:
 #   1. 从初始语法生成一批输入
 #   2. 执行每个输入, 观察程序的拒绝信号:
-#      - 退出码非零
-#      - stderr 含特定错误消息
-#      - 程序在特定偏移处崩溃
-#      - 覆盖边数显著少于其他输入 (提前退出)
+# 退出码非零
+# stderr 含特定错误消息
+# 程序在特定偏移处崩溃
+# 覆盖边数显著少于其他输入 (提前退出)
 #   3. 从拒绝信号中提取约束信息:
-#      - "输入在偏移4处被拒绝, 期望值=0x7F" → 字节[4]必须为0x7F
-#      - "输入长度<8时被拒绝" → min_length = 8
+# "输入在偏移4处被拒绝, 期望值=0x7F" → 字节[4]必须为0x7F
+# "输入长度<8时被拒绝" → min_length = 8
 #   4. 将约束反馈回语法——精炼产生式规则
 #   5. 迭代直到语法收敛 (生成输入的接受率 > 阈值)
 #
 # 精炼操作集:
-#   - NARROW_RANGE: 缩小某字段的合法值范围
-#   - ADD_CONSTRAINT: 添加新字段约束 (如 magic bytes)
-#   - SPLIT_RULE: 将过于宽泛的规则拆分为多个具体规则
-#   - SET_MIN_LENGTH: 设置最小长度约束
+# NARROW_RANGE: 缩小某字段的合法值范围
+# ADD_CONSTRAINT: 添加新字段约束 (如 magic bytes)
+# SPLIT_RULE: 将过于宽泛的规则拆分为多个具体规则
+# SET_MIN_LENGTH: 设置最小长度约束
 #
-# 参考文献:
-#   AFLSmart (Pham et al. CCS 2018) — grammar-based fuzzing with Peach;
+# 文献:
+#   AFLSmart — grammar-based fuzzing with Peach;
 #     本项目取其语法驱动生成思想但以执行反馈替代手动编写语法
-#   Nautilus (Aschermann et al. NDSS 2019) — grammar feedback via
+#   Nautilus — grammar feedback via
 #     parse tree mutations; 本项目取其反馈思想但以约束精炼替代树变异
 
 from __future__ import annotations

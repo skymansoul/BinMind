@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{DFC-PV Ablation Study (31 samples)}
+\label{tab:dfc_pv_ablation}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Config & TP & FP & TN & FN & P & R & F1 & FPR \\
+\midrule
+  A0_Baseline & 24 & 4 & 2 & 1 & 0.8571 & 0.9600 & 0.9057 & 0.6667 \\
+  A1_AOI & 16 & 2 & 4 & 9 & 0.8889 & 0.6400 & 0.7442 & 0.3333 \\
+  A2_PathSafety & 15 & 0 & 6 & 10 & 1.0000 & 0.6000 & 0.7500 & 0.0000 \\
+  A3_Full & 25 & 0 & 6 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

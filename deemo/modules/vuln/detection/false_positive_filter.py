@@ -1,6 +1,6 @@
 # 误报过滤器——基于良性/恶意汇编模式的对数似然比评分。
 # BenignPatternLearner从标注语料学习统计偏差，FalsePositiveFilter以阈值门控筛除低分finding。
-# 参考Semgrep的误报抑制策略：先验模式匹配+连续分值输出+阈值截断。
+# Semgrep的误报抑制策略：先验模式匹配+连续分值输出+阈值截断。
 # 评分偏置：恶意模式权重0.25 > 良性模式0.15，体现安全工具对漏报的零容忍倾向。
 
 import logging as _logging
@@ -19,7 +19,7 @@ logger = _logging.getLogger(__name__)
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -128,6 +128,5 @@ def create_false_positive_filter(threshold=0.3):
     return FalsePositiveFilter(threshold)
 
 
-def _debug_print(*args, **kwargs):
     pass  # 内部调试输出桩
 

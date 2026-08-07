@@ -1,13 +1,13 @@
-# 创建: 2026-07-30 06:19
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-12 06:19
+# 修改: 2026-07-12 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 时序GAT CVE依赖图
 # 时序图注意力网络 — CVE依赖图上的时间感知表示学习
 #
 # 问题: 现有CVE图模块 (cve_graph_gnn, cve_hgat_attention) 将图视为
 # 静态快照. 但CVE依赖图是动态演化的:
-#   - 新CVE每天发布, 与已有节点建立边.
-#   - 旧CVE的影响随时间衰减 (修补后不再活跃).
-#   - 边权重应反映CVE的"新鲜度" — 2026年的边比2020年更重要.
+# 新CVE每天发布, 与已有节点建立边.
+# 旧CVE的影响随时间衰减 (修补后不再活跃).
+# 边权重应反映CVE的"新鲜度" — 2026年的边比2020年更重要.
 # 静态GNN平等对待所有节点/边, 无法捕获这种时间动态.
 #
 # 解决方案: 时序图注意力网络 (TGAT).
@@ -19,9 +19,9 @@
 #      其中TE(Δ_t)是边两端节点时间差的正弦编码.
 #
 # 相对于静态GAT的改进:
-#   - 新发布的CVE自动获得更高的结构重要性.
-#   - 历史CVE的信息不会淹没当前威胁.
-#   - 时间差分编码使模型学习"CVE间典型时间间隔".
+# 新发布的CVE自动获得更高的结构重要性.
+# 历史CVE的信息不会淹没当前威胁.
+# 时间差分编码使模型学习"CVE间典型时间间隔".
 #
 # 非显而易见性:
 #   1. 首次将时序图注意力应用于CVE依赖图.
@@ -30,10 +30,10 @@
 #   2. 双时间信号: 绝对时间 (节点年龄) + 相对时间 (边时间差).
 #   3. 与现有CVEExploitGraph兼容: 使用相同的节点/边结构.
 #
-# 参考:
-#   [Xu et al. 2020] TGAT: Inductive Temporal Graph Attention (ICLR)
-#   [DYNAMO 2026] Adaptive Spatio-Temporal Attention for APT
-#   [PEGraphSec-Net 2026] TGAT for Cloud-Native Privilege Escalation
+#
+# TGAT: Inductive Temporal Graph Attention (ICLR)
+# Adaptive Spatio-Temporal Attention for APT
+# TGAT for Cloud-Native Privilege Escalation
 
 import math, random
 from typing import Dict, List, Optional, Tuple

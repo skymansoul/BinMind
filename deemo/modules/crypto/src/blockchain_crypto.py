@@ -1,4 +1,4 @@
-# ==== 区块链密码学组件检测 ====
+# 区块链密码学组件检测
 # 检测区块链钱包/交易签名/智能合约中的密码学原语。
 # 覆盖: Bitcoin (secp256k1 ECDSA, P2PKH/P2SH/P2WPKH地址格式),
 # Ethereum (ECDSA secp256k1, Keccak-256地址, EIP-1559签名),
@@ -14,10 +14,10 @@
 #   (5) 硬件钱包 USB VID/PID + HID 帧结构
 #   (6) ZK-Rollup: Groth16/Plonk验证器合约字节码模式 (见zkp_detector)
 #
-# 参考: Nakamoto (Bitcoin, 2008), Wood (Ethereum Yellow Paper, 2014),
+Nakamoto, Wood,
 # BIP32/39/44 (HD wallet standards), EIP-1559 (London),
 # "Large Language Models for Blockchain Security: A Systematic Literature Review" (Zotero),
-# "Towards a Formal Foundation for Blockchain ZK Rollups" (CCS 2025, Zotero).
+# "Towards a Formal Foundation for Blockchain ZK Rollups".
 
 import re
 import struct
@@ -40,7 +40,7 @@ class BlockchainCryptoResult:
     detected_in: str = ""
 
 
-# ==== Bitcoin地址格式 ====
+# Bitcoin地址格式
 # Base58Check: 1... (P2PKH), 3... (P2SH)
 # Bech32: bc1q... (P2WPKH/P2WSH, SegWit v0)
 # Bech32m: bc1p... (P2TR, Taproot/SegWit v1)
@@ -87,7 +87,7 @@ def _detect_bitcoin_addresses(data: bytes, source: str) -> List[BlockchainCrypto
     return results
 
 
-# ==== Ethereum地址 & 签名 ====
+# Ethereum地址 & 签名
 # Ethereum地址: 0x + 40 hex chars (20 byte Keccak-256(public_key)[-20:])
 # 交易签名: r/s/v字段 (EIP-1559: 链ID + legacy replay protection)
 # 函数选择器: Keccak-256("transfer(address,uint256)")[0:4] -> 4 bytes
@@ -137,7 +137,7 @@ def _detect_ethereum(data: bytes, source: str) -> List[BlockchainCryptoResult]:
     return results
 
 
-# ==== BIP39助记词检测 ====
+# BIP39助记词检测
 # BIP39词表: 2048词, 每词由11-bit索引表示
 # 12词 -> 132 bits = 128-bit熵 + 4-bit校验
 # 24词 -> 264 bits = 256-bit熵 + 8-bit校验
@@ -402,7 +402,7 @@ _BIP39_WORDS = set([
     'zebra', 'zero', 'zone', 'zoo',
 ])
 
-# 仅保留前2048个词 (BIP39标准词表大小=2048)
+# 仅保留前2048个词
 _BIP39_WORD_LIST = sorted(_BIP39_WORDS)[:2048]
 
 
@@ -440,7 +440,7 @@ def _detect_bip39_mnemonic(data: bytes, source: str) -> List[BlockchainCryptoRes
     return results
 
 
-# ==== 区块链曲线检测 ====
+# 区块链曲线检测
 # secp256k1 (Bitcoin, Ethereum, Cosmos): a=0, b=7, p=2^256-2^32-977
 # Ed25519 (Solana, Polkadot, Cosmos): Curve25519 EdDSA
 # sr25519 (Polkadot): Schnorrkel/Ristretto over Curve25519

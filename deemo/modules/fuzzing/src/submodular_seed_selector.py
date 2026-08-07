@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---- S4G 参数 ----
+# S4G 参数
 _DEFAULT_QUEUE_SIZE = 200     # 种子队列最大大小 k
 _RANDOM_GREEDY_M = 50         # 随机贪心每轮的候选数
 

@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-# ===== 二进制分析状态 =====
+# 二进制分析状态
 @dataclass
 class BinaryState:
     current_path: Optional[str] = None
@@ -18,7 +18,7 @@ class BinaryState:
 shell_context = threading.local()
 shell_context.state = BinaryState()
 
-# ---- ANSI 颜色输出混入 ----
+# ANSI 颜色输出混入
 class ColorOutput:
     """终端着色，ANSI escape 方式"""
     RED = '\033[91m'
@@ -47,7 +47,7 @@ class ColorOutput:
     @classmethod
     def bold(cls, text: str) -> str: return f'{cls.BOLD}{text}{cls.RESET}'
 
-# ===== 路径/十六进制 自动补全 =====
+# 路径/十六进制 自动补全
 def _complete_path(text: str, line: str, begidx: int, endidx: int) -> list[str]:
     """文件路径 tab 补全"""
     if not text:
@@ -79,13 +79,13 @@ def _complete_hex(text: str) -> list[str]:
     # 返回0x开头、对齐的候选
     return [f'0x{base + offset:x}' for offset in [0, 4, 8, 16, 32, 64, 128]]
 
-# ===== cmd 交互式 Shell =====
+# cmd 交互式 Shell
 class InteractiveShell(cmd.Cmd, ColorOutput):
     intro = ColorOutput.bold('BinMind Interactive Shell v2.1') + '\n'
     intro += 'Type "help" for available commands, "quit" to exit.\n'
     prompt = ColorOutput.cyan('binmind> ')
 
-    # ---- 别名映射 ----
+# 别名映射
     _ALIASES = {
         'a': 'analyze', 's': 'scan', 'x': 'export',
         'i': 'info', 'd': 'disasm', 'str': 'strings',
@@ -129,7 +129,7 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
         except IndexError:
             return None
 
-    # ---- 空行不重复上次命令 ----
+# 空行不重复上次命令
     def emptyline(self):
         pass
 
@@ -161,7 +161,7 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
             self._command_history.append(line.strip())
         return stop
 
-    # ---- 命令处理 ----
+# 命令处理
     def do_analyze(self, arg: str):
         """analyze <binary_path> — 启动二进制分析"""
         path = arg.strip()
@@ -189,9 +189,9 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
             return
         scan_type = arg.strip() or 'basic'
         print(ColorOutput.blue(f'Scanning {path} [{scan_type}]...'))
-        print('  [1/3] Static analysis...')
-        print('  [2/3] Pattern matching...')
-        print('  [3/3] Vulnerability correlation...')
+        print('  Static analysis...')
+        print('  Pattern matching...')
+        print('  Vulnerability correlation...')
         print(ColorOutput.green('Scan complete. 0 critical, 3 medium findings.'))
 
     def do_export(self, arg: str):
@@ -290,7 +290,7 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
         """exit — 退出 Shell（同 quit）"""
         return self.do_quit(arg)
 
-    # ---- 键盘中断处理 ----
+# 键盘中断处理
     def cmdloop(self, intro=None):
         try:
             super().cmdloop(intro)
@@ -299,7 +299,7 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
             print(ColorOutput.yellow('Interrupted. Type "quit" to exit.'))
             self.cmdloop()
 
-# ===== 便捷入口 =====
+# 便捷入口
 def start_shell(binary_path: Optional[str] = None):
     """启动交互式 Shell，可选预加载 binary_path"""
     shell = InteractiveShell()
@@ -307,9 +307,9 @@ def start_shell(binary_path: Optional[str] = None):
         shell.do_analyze(binary_path)
     shell.cmdloop()
 
-# --- 脚本/插件系统 ---
+# 脚本/插件系统
 # 支持在 Shell 中执行 Python 表达式和加载外部插件脚本
-# 参考: IDA Pro 的 IDC/IDAPython 脚本模型和 radare2 的 r2pipe 设计
+# IDA Pro 的 IDC/IDAPython 脚本模型和 radare2 的 r2pipe 设计
 
 import importlib.util as _iu
 

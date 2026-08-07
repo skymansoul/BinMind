@@ -9,15 +9,15 @@
 #      独立的检测视角(数据流+控制流+类型)得出相同结论,
 #      误报概率乘积级下降.
 #   2. 误报模式扣分: 识别已知误报模式并扣分.
-#      - 编译器生成的栈保护代码 (__stack_chk_fail附近)
-#      - 单元测试/benchmark中的故意溢出
-#      - 递归调用中的重复报告 (去重)
+# 编译器生成的栈保护代码 (__stack_chk_fail附近)
+# 单元测试/benchmark中的故意溢出
+# 递归调用中的重复报告 (去重)
 #   3. 上下文加权: 从用户输入可直接到达的漏洞 (taint_reach=True)
 #      比理论可达的漏洞权重大.
 #   4. 可解释输出: 每个评分附带 decomposition (分项得分明细),
 #      供分析师复核.
 #
-# 创建: 2026-08-04  初始版本
+# 创建: 2026-06-07  初始版本
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -48,7 +48,7 @@ class VulnScore:
 class VulnScoreCalibrator:
     """漏洞评分校准器: 多引擎交叉验证 + 误报过滤."""
 
-    # 引擎报告的基线权重 (基于各引擎在Juliet Test Suite上的F1分数)
+    # 引擎报告的基线权重
     ENGINE_WEIGHTS = {
         "taint_engine": 0.30,
         "stack_overflow": 0.25,

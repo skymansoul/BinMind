@@ -7,7 +7,7 @@
 MBA 混淆利用位运算和算术运算的交互来隐藏简单表达式
 例如 x+y 可能被混淆为 (x^y)+2*(x&y) 或 (x|y)+(x&y) 等多种等价形式
 
-传统 e-graph 方法 (Lee et al. 2024) 对所有重写规则一视同仁地应用
+传统 e-graph 方法 对所有重写规则一视同仁地应用
 直到饱和--这在 MBA 场景下导致严重冗余: 大量中间等价类对最终化简无贡献
 却消耗了 e-graph 的内存和 CPU
 
@@ -27,8 +27,8 @@ MBA 混淆利用位运算和算术运算的交互来隐藏简单表达式
 在 e-graph 中提前合并, 避免冗余的重写探索
 
 技术对比:
-- Lee et al. (2024) 纯 e-graph: 无抽象引导, O(2^R) 最坏重写次数
-- gMBA (Noh et al., ACL 2025): transformer 预测重写序列, 需训练数据
+- Lee et al. 纯 e-graph: 无抽象引导, O(2^R) 最坏重写次数
+- gMBA: transformer 预测重写序列, 需训练数据
 - 本模块: 抽象解释引导, 无需训练, 理论保证不丢失可行解
 """
 
@@ -40,9 +40,7 @@ from enum import IntEnum
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 
-# ---------------------------------------------------------------------------
 # 三位抽象格定义
-# ---------------------------------------------------------------------------
 
 class AbstractBit(IntEnum):
     """三位抽象格: ZERO < TOP, ONE < TOP, ZERO 和 ONE 不可比较"""
@@ -70,9 +68,7 @@ def _abstract_meet(a: AbstractBit, b: AbstractBit) -> AbstractBit:
     return AbstractBit.TOP
 
 
-# ---------------------------------------------------------------------------
 # 抽象算术/位运算 - 在 3 值格上的传递函数
-# ---------------------------------------------------------------------------
 
 def abstract_not(a: AbstractBit) -> AbstractBit:
     if a == AbstractBit.ZERO:
@@ -126,9 +122,7 @@ def abstract_add(a: AbstractBit, b: AbstractBit) -> Tuple[AbstractBit, AbstractB
     return (AbstractBit.ZERO, AbstractBit.ONE)
 
 
-# ---------------------------------------------------------------------------
 # MBA 表达式的抽象解释器
-# ---------------------------------------------------------------------------
 
 # MBA 操作符到格运算的映射
 _MBA_ABSTRACT_SEMANTICS = {
@@ -350,7 +344,7 @@ class MBAInvariantLifter:
         """查询已计算的节点抽象值 (必须先调用 lift)"""
         return self._abstract_values.get(id(node), AbstractValue.top())
 
-    # ---- 便利方法: 直接简化常见模式 ----
+# 便利方法: 直接简化常见模式
     @staticmethod
     def detect_constant_fold(
         expr: Dict,

@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_19_cross_cond_free","description":"Cross-function conditional free — callee frees conditionally, caller uses unconditionally","cwe":"CWE-416","vuln_type":"use-after-free"}

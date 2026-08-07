@@ -1,6 +1,6 @@
-# 创建: 2026-07-25
-# 修改: 2026-07-30 — 自适应 epsilon 加入 resource_pressure 因子
-# 修改: 2026-08-03 — 在线分位数估计改用 reservoir + CKMS
+# 创建: 2026-05-12
+# 修改: 2026-05-12 — 自适应 epsilon 加入 resource_pressure 因子
+# 修改: 2026-05-12 — 在线分位数估计改用 reservoir + CKMS
 #
 # 共形滞后检测 — 投机决策的统计门控
 #
@@ -10,7 +10,7 @@
 #   (a) 投机预算可能在低风险任务上浪费
 #   (b) 高风险任务可能因历史数据不足而被跳过
 #
-# 共形预测 (Vovk et al. 2005) 在可交换假设下提供分布无关的校准保证:
+# 共形预测 在可交换假设下提供分布无关的校准保证:
 #   P(actual ≤ predicted_bound) ≥ 1-ε
 # 无需参数模型，无需知道分布。标定集更新后保证自动维持。
 #
@@ -39,7 +39,7 @@ class ConformalPrediction:
     is_calibrated: bool             # 是否有足够的标定数据
 
 
-# ---- 在线分位数估计器 (增量, O(1) 更新) ----
+# 在线分位数估计器 (增量, O(1) 更新)
 
 class OnlineQuantileEstimator:
     """基于 reservoir + Dunning-Knoght 风格的在线分位数估计。
@@ -99,7 +99,7 @@ class OnlineQuantileEstimator:
         return len(self._samples) >= 20
 
 
-# ---- 共形预测器 ----
+# 共形预测器
 
 class ConformalStragglerPredictor:
     """共形预测驱动的滞后任务检测器。
@@ -137,7 +137,7 @@ class ConformalStragglerPredictor:
 
         self._lock = threading.Lock()
 
-    # ---- 核心 API ----
+# 核心 API
 
     def predict_bound(
         self, task_id: str, base_prediction: float,
@@ -225,7 +225,7 @@ class ConformalStragglerPredictor:
             p_val = larger / len(self._calibration_scores)
         return is_strag, round(p_val, 4)
 
-    # ---- 自适应 ε ----
+# 自适应 ε
 
     def adjust_epsilon(self, system_load: float, resource_pressure: float):
         """基于系统状态动态调整误报容忍度。
@@ -239,7 +239,7 @@ class ConformalStragglerPredictor:
             self._adaptive_epsilon = max(0.02, min(0.30,
                 self._base_epsilon + adjustment))
 
-    # ---- 查询 ----
+# 查询
 
     @property
     def current_threshold(self) -> float:
@@ -268,7 +268,7 @@ class ConformalStragglerPredictor:
             }
 
 
-# ---- 与 SpeculativeExecutor 的集成适配器 ----
+# 与 SpeculativeExecutor 的集成适配器
 
 class ConformalSpeculationGate:
     """共形投机门控 — 在 SpeculativeExecutor 决策前过滤。

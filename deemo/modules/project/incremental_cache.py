@@ -1,7 +1,7 @@
 # 增量分析缓存: 代码相似度分析结果重用/三级粒度(文件/函数/基本块)
-# 参考: Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity" (ISSRE 2025)
-#       Orion "Fuzzing Workflow Automation" (arXiv:2509.15195 [待验证], 2025)
-#       Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970 [待验证])
+# Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity" (ISSRE 2025)
+#       Orion "Fuzzing Workflow Automation" ( [待验证], 2025)
+#       Khorrami et al. "Binary Diff Summarization using LLMs" ( [待验证])
 import hashlib, json, logging, os, struct, time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any

@@ -1,0 +1,8 @@
+{
+  "id": "safe_11_snprintf_bounded",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "cve": "",
+  "component": "",
+  "mode": "snprintf 长度受限写入"
+}

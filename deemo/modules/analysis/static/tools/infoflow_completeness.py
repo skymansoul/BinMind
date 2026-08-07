@@ -25,7 +25,7 @@ information_flow_verifier.py 验证信息流是否违反策略 (如 secret->publ
 
 与现有工作的关系:
 - information_flow_verifier.py: 验证->本模块: 完备性量化
-- 静态污点分析 (2025 综述): 精度评估趋势->本模块: 完备性维度
+- 静态污点分析: 精度评估趋势->本模块: 完备性维度
 """
 
 from __future__ import annotations
@@ -36,9 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class FlowEdge:
@@ -106,7 +104,7 @@ class InfoflowCompletenessAnalyzer:
             call_graph or {}
         )
         # 隐式流: 每条件分支创建 1 条额外的潜在隐式流
-        # (条件依赖秘密值, 分支方向影响公共输出 -- Denning 1976)
+#
         implicit = self._count_implicit_flows(data_deps or {}, call_graph or {})
         total_potential = potential_data + potential_control + implicit
 

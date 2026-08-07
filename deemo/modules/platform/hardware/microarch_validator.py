@@ -5,7 +5,7 @@ import random
 import statistics
 import time
 
-# ===== 独立微架构工具函数 =====
+# 独立微架构工具函数
 
 
 def rdtsc() -> int:
@@ -28,7 +28,7 @@ def clflush_emulate(address: int):
         _ = _eviction_buf[_i]
 
 
-# ===== MicroarchValidator =====
+# MicroarchValidator
 # 微架构侧信道检测: Flush+Reload, Prime+Probe, 跨核泄漏
 
 
@@ -53,7 +53,7 @@ class MicroarchValidator:
         _t1 = time.perf_counter_ns()
         return _t1 - _t0
 
-    # ---- 阈值校准 ----
+# 阈值校准
     def _calibrate_threshold(self, iterations: int = 5000) -> int:
         """中位数 * 2作为命中/缺失阈值"""
         _times: list[int] = []
@@ -69,7 +69,7 @@ class MicroarchValidator:
         _median = statistics.median(_times)
         return max(int(_median * 2), 5)  # 最小5ns避免假阳性
 
-    # ---- 缓存集驱逐 ----
+# 缓存集驱逐
     def _evict_cache_set(self, set_index: int):
         """访问一个set的所有way以强制驱逐"""
         if self._probe_array is None:
@@ -80,14 +80,14 @@ class MicroarchValidator:
             if _offset < len(self._probe_array) * 8:
                 _ = self._probe_array[_offset // 8]
 
-    # ---- 哈希集索引 ----
+# 哈希集索引
     def _compute_set_index(self, address: int) -> int:
         """基于地址计算缓存集索引 — 简单bit-slice"""
         _addr = address >> 6  # 跳过行内偏移
         _set = _addr & (self._cache_sets - 1)
         return _set
 
-    # ===== 驱逐集构建 ==========================================================
+# 驱逐集构建
     # Prime+Probe 攻击的关键预备步骤：找到映射到同一缓存组的地址集合。
     # 原理：分配大数组，对每组逐一测试——访问候选地址后测量探针延迟，
     # 延迟升高说明候选地址与探针属于同一组。
@@ -125,7 +125,7 @@ class MicroarchValidator:
 
         return eviction_addrs
 
-    # ===== Flush+Reload近似 =====
+# Flush+Reload近似
     # 基于容量驱逐而非clflush指令
     def flush_reload_approx(
         self, target_address: int, probe_array_size: int = 256 * 4096
@@ -135,16 +135,16 @@ class MicroarchValidator:
         self._probe_array = array.array("Q", [0]) * _elem_count
         _threshold = self._calibrate_threshold()
 
-        # 步骤1: 访问目标 → 装入缓存
+        # 访问目标 → 装入缓存
         _target_idx = (target_address // self._cache_line_size) % _elem_count
         _ = self._probe_array[_target_idx]
 
-        # 步骤2: 容量驱逐 → 模拟flush
+        # 容量驱逐 → 模拟flush
         memory_barrier()
         clflush_emulate(target_address)
         memory_barrier()
 
-        # 步骤3: 重新加载并计时
+        # 重新加载并计时
         _times: list[int] = []
         for _ in range(100):
             _t0 = time.perf_counter_ns()
@@ -161,7 +161,7 @@ class MicroarchValidator:
             "confidence": 0.85 if _hit else 0.3,
         }
 
-    # ===== Prime+Probe =====
+# Prime+Probe
     # 填充→等待→探测模式
     def prime_probe_detect(
         self, cache_sets: int = 64, ways: int = 8
@@ -212,7 +212,7 @@ class MicroarchValidator:
             "is_suspicious": _is_suspicious,
         }
 
-    # ===== 缓存行计时 =====
+# 缓存行计时
     def cache_line_timing(self, iterations: int = 10000) -> dict:
         _hit_times: list[int] = []
         _miss_times: list[int] = []
@@ -249,7 +249,7 @@ class MicroarchValidator:
             "resolution": _resolution,
         }
 
-    # ===== 跨核泄漏测试 =====
+# 跨核泄漏测试
     # 检测共享L3缓存中的状态变化
     def cross_core_leakage_test(self, iterations: int = 5000) -> dict:
         _probe_size = 16 * 1024 * 1024  # 16MB — 覆盖L3

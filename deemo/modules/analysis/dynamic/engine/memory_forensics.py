@@ -47,7 +47,7 @@ class SensitiveDataType(Enum):
     IP_ADDRESS = "ip_address"; URL_WITH_Creds = "url_with_creds"; EMAIL = "email"
     PHONE = "phone_number"; OTHER = "other"
 
-# ── 舍入 5: Cryptographic weakness 签名s ──────────────────────────
+# 舍入 5: Cryptographic weakness 签名s
 # 检测二进制中使用的弱密码学原语。参照NIST SP 800-131A和BSI TR-02102-1标准
 # RC4/DES/MD5/SHA1/ECB模式的使用应标记为不符合当前安全基线
 
@@ -99,7 +99,7 @@ CRYPTO_WEAK_SIGNATURES = {
     },
 }
 
-# ── 舍入 5: Binary 漏洞利用 mitigation 签名s ───────────────────────
+# 舍入 5: Binary 漏洞利用 mitigation 签名s
 # 检测二进制启用的编译器和OS级安全缓解措施。参照微软/Google/Apple的安全要求
 
 HARDENING_SIGNATURES = {
@@ -132,7 +132,7 @@ HARDENING_SIGNATURES = {
     },
 }
 
-# ── Data containers ───────────────────────────────────────────────────────────
+# Data containers
 
 @dataclass
 class ProcessInfo:
@@ -322,7 +322,7 @@ class MemoryForensicsAnalyzer:
         result.total_sensitive_items = len(result.sensitive_data)
         return result
 
-    # ── 舍入 5: Cryptographic weakness scanner ────────────────────────
+# 舍入 5: Cryptographic weakness scanner
     def _scan_crypto_weaknesses(self, source: Union[str, int],
                                  result: ForensicsResult) -> None:
         """扫描二进制/内存中的弱密码学原语。基于导入符号、内联常量和
@@ -348,7 +348,7 @@ class MemoryForensicsAnalyzer:
                     confidence=min(0.95, 0.5 + len(matches) * 0.1),
                 ))
 
-    # ── 舍入 5: Binary 漏洞利用 mitigation auditor ──────────────────────
+# 舍入 5: Binary 漏洞利用 mitigation auditor
     def _audit_binary_hardening(self, source: Union[str, int],
                                   result: ForensicsResult) -> None:
         """审计二进制启用的安全缓解措施。检查ASLR/DEP/StackGuard/SafeSEH/

@@ -1,0 +1,445 @@
+{
+  "sample_count": 23,
+  "baseline": {
+    "tp": 15,
+    "fp": 2,
+    "tn": 6,
+    "fn": 0,
+    "recall": 1.0,
+    "precision": 0.8824,
+    "f1": 0.9375,
+    "fp_rate": 0.25,
+    "per_sample": [
+      {
+        "id": "CVE-2021-3156",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2014-0160",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2015-0235",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2018-1000001",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-2177",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2019-11477",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2022-0185",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2020-10713",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2014-9112",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2015-3202",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-10158",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-5094",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2017-9438",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2019-1010200",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2024-21894",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "FP01",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP02",
+        "expected": "clean",
+        "detected": true
+      },
+      {
+        "id": "FP03",
+        "expected": "clean",
+        "detected": true
+      },
+      {
+        "id": "FP04",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP05",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP06",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP07",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP08",
+        "expected": "clean",
+        "detected": false
+      }
+    ]
+  },
+  "acpe": {
+    "tp": 15,
+    "fp": 0,
+    "tn": 8,
+    "fn": 0,
+    "recall": 1.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "fp_rate": 0.0,
+    "per_sample": [
+      {
+        "id": "CVE-2021-3156",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2014-0160",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2015-0235",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2018-1000001",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-2177",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2019-11477",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2022-0185",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2020-10713",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2014-9112",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2015-3202",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-10158",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2016-5094",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2017-9438",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2019-1010200",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "CVE-2024-21894",
+        "expected": "vuln",
+        "detected": true
+      },
+      {
+        "id": "FP01",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP02",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP03",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP04",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP05",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP06",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP07",
+        "expected": "clean",
+        "detected": false
+      },
+      {
+        "id": "FP08",
+        "expected": "clean",
+        "detected": false
+      }
+    ]
+  },
+  "fp_reduction_pct": 100.0,
+  "alert_reduction_pct": 44.83,
+  "per_sample": [
+    {
+      "id": "CVE-2021-3156",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 1
+    },
+    {
+      "id": "CVE-2014-0160",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2015-0235",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2018-1000001",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 2,
+      "baseline_kept": 1
+    },
+    {
+      "id": "CVE-2016-2177",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 1
+    },
+    {
+      "id": "CVE-2019-11477",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2022-0185",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2020-10713",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 3
+    },
+    {
+      "id": "CVE-2014-9112",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2015-3202",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2016-10158",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2016-5094",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2017-9438",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2019-1010200",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 2
+    },
+    {
+      "id": "CVE-2024-21894",
+      "expected": "vuln",
+      "acpe_detected": true,
+      "baseline_detected": true,
+      "acpe_kept": 1,
+      "baseline_kept": 1
+    },
+    {
+      "id": "FP01",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    },
+    {
+      "id": "FP02",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": true,
+      "acpe_kept": 0,
+      "baseline_kept": 1
+    },
+    {
+      "id": "FP03",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": true,
+      "acpe_kept": 0,
+      "baseline_kept": 1
+    },
+    {
+      "id": "FP04",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    },
+    {
+      "id": "FP05",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    },
+    {
+      "id": "FP06",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    },
+    {
+      "id": "FP07",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    },
+    {
+      "id": "FP08",
+      "expected": "clean",
+      "acpe_detected": false,
+      "baseline_detected": false,
+      "acpe_kept": 0,
+      "baseline_kept": 0
+    }
+  ]
+}

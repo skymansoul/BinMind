@@ -1,13 +1,13 @@
-# 创建: 2026-08-01 20:54
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-08 20:54
+# 修改: 2026-07-08 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 多任务联合利用+修补+影响
 # 多任务学习 — CVE利用性/修补时机/影响严重度的联合预测
 #
 # 问题: 现有CVE评分模型独立预测单一目标 (利用概率).
 # 但CVE的多个输出维度高度相关:
-#   - 高利用概率的CVE往往修补窗口更短.
-#   - 影响严重度 (CVSS impact) 与利用概率存在非线性关系.
-#   - 修补时机受利用概率和厂商响应速度共同影响.
+# 高利用概率的CVE往往修补窗口更短.
+# 影响严重度 (CVSS impact) 与利用概率存在非线性关系.
+# 修补时机受利用概率和厂商响应速度共同影响.
 # 独立模型忽略这些依赖 → 预测不一致 (高利用+长修补),
 # 且浪费了任务间的共享表示.
 #
@@ -24,7 +24,7 @@
 #   Task 3 — 影响严重度 (Impact): 回归 (CVSS impact子分数).
 #     损失: MSE.
 #
-# 动态任务权重 (Uncertainty Weighting, Kendall et al. 2018):
+# 动态任务权重:
 #   L = Σ_t L_t/(2·σ_t²) + log(σ_t),
 #   其中σ_t是可学习的任务相关噪声参数.
 #   高噪声任务自动获得低权重 — 无需手动调λ.
@@ -36,14 +36,14 @@
 #
 # 非显而易见性:
 #   1. 首次将多任务学习应用于CVE元数据联合预测.
-#      VulLLM (2026) 用于代码漏洞检测+定位+解释,
+#      VulLLM 用于代码漏洞检测+定位+解释,
 #      但面向源代码而非CVE元数据.
 #   2. 不确定性加权: 自动平衡三类损失, 无需手动调参.
 #   3. 预测一致性: 联合预测避免"高利用+长修补"的逻辑矛盾.
 #
-# 参考:
-#   [Kendall et al. 2018] Multi-Task Learning Using Uncertainty (CVPR)
-#   [VulLLM 2026] Multi-Task LLM for Code Vulnerability
+#
+# Multi-Task Learning Using Uncertainty (CVPR)
+# Multi-Task LLM for Code Vulnerability
 
 import math, random
 from typing import Dict, List, Optional, Tuple

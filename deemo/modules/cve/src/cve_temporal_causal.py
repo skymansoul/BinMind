@@ -7,10 +7,10 @@
 # TCE: Temporal Causal Exploitability — 时滞因果发现用于漏洞利用预测
 #
 # 核心参考文献:
-#   [Runge et al. 2019, Science Advances, doi:10.1126/sciadv.aau4996]
+#
 #     PCMCI: 结合 PC1 条件选择与 MCI 瞬时条件独立性检验, 在高维时间序列中
 #     控制误报率. 本文将其简化适配到 CVE 特征空间 (特征维度 ~10, 时间点 ~100).
-#   [Assaad et al. 2022, ACM CSUR] 时序因果发现综述
+# 时序因果发现综述
 #     系统总结了 PCMCI, Granger, 传递熵等方法的适用条件.
 #     本文的时滞窗口 (30/90/180/365 天) 设计参考其推荐的
 #     安全领域事件时间尺度.
@@ -388,7 +388,7 @@ class TemporalCausalDiscovery:
         return self._fitted
 
 
-# ---- 集成: C3E + 时滞因果 ----
+# 集成: C3E + 时滞因果
 
 class TemporalC3EPipeline:
     """时滞增强 C3E 流水线: 将时间维度注入因果发现与对比学习.
@@ -529,7 +529,7 @@ class TemporalC3EPipeline:
         return self._fitted
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _normal_cdf(x: float) -> float:
     """标准正态分布 CDF 的数值近似 (Abramowitz & Stegun 7.1.26)."""
@@ -638,7 +638,7 @@ def _days_since(date_str: str, now: datetime) -> float:
         return 365.0
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def run_temporal_c3e(kb: CVEKnowledgeBase) -> Dict[str, Any]:
     """一站式时滞增强 C3E 流水线."""

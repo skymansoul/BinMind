@@ -1,7 +1,7 @@
 # 二进制函数嵌入 — 多策略嵌入生成器，支持指令序列/CFG/调用图三种模态
-# 参考: BLens (Benoit et al. 2024, arXiv:2409.07889) 的集成嵌入方法 —
+# BLens 的集成嵌入方法 —
 #       将多模态嵌入拼接并通过对比学习与函数名语义空间对齐
-# 参考: AGNOMIN (arXiv:2509.25514 [待验证], 2025) 的特征增强层级图 (FEHG) —
+# AGNOMIN 的特征增强层级图 (FEHG) —
 #       在 CFG + CallGraph 基础上引入 PCode 特征作为第三模态
 
 import hashlib as _hl
@@ -10,9 +10,9 @@ import math as _math
 from collections import Counter as _Counter
 from typing import Any
 
-# ===== 指令序列嵌入 (Instruction Sequence Embedding) =====
+# 指令序列嵌入 (Instruction Sequence Embedding)
 # 基于 n-gram 的轻量级嵌入 — 不依赖外部模型
-# 参考: BLens 的 N-gram TF-IDF 基线；质量虽低于 transformer 但推理速度提升 100x+
+# BLens 的 N-gram TF-IDF 基线；质量虽低于 transformer 但推理速度提升 100x+
 # n_gram sizes 2-4 覆盖 short-range patterns (mov-push-call 等)
 
 _MNEMONIC_VOCAB: dict[str, int] = {}
@@ -57,8 +57,8 @@ def ngram_embedding(insn_list: list[tuple[str, str]], n_range: tuple[int, int] =
     return ngram_vec
 
 
-# ===== CFG 结构嵌入 (Control Flow Graph Embedding) =====
-# 参考: AGNOMIN 的 FEHG — 将 CFG 表示为邻接矩阵的特征向量
+# CFG 结构嵌入 (Control Flow Graph Embedding)
+# AGNOMIN 的 FEHG — 将 CFG 表示为邻接矩阵的特征向量
 # Structure2Vec 的简化版: 对每个基本块聚合邻居信息
 # 迭代轮数 s=3, 聚合函数取 mean (vs sum in AGNOMIN — 使嵌入对图大小不敏感)
 
@@ -108,9 +108,9 @@ def cfg_structure_embedding(cfg: dict[str, Any], iterations: int = 3) -> dict[st
     return node_feats
 
 
-# ===== 调用图拓扑嵌入 (Call Graph Topology Embedding) =====
+# 调用图拓扑嵌入 (Call Graph Topology Embedding)
 # PageRank + 度统计量 + 社区 ID → 低维拓扑签名
-# 参考: AGNOMIN 的 FCG (Function Call Graph) 编码 — 将全局拓扑作为节点特征
+# AGNOMIN 的 FCG (Function Call Graph) 编码 — 将全局拓扑作为节点特征
 
 def callgraph_topology_embedding(callgraph: dict[str, list[str]]) -> dict[str, list[float]]:
     """为调用图中的每个函数生成拓扑嵌入。
@@ -172,8 +172,8 @@ def callgraph_topology_embedding(callgraph: dict[str, list[str]]) -> dict[str, l
     return embeddings
 
 
-# ===== 多模态融合 (Multi-Modal Fusion) =====
-# 参考: BLens 的集成嵌入策略 — 加权拼接而非简单拼接
+# 多模态融合 (Multi-Modal Fusion)
+# BLens 的集成嵌入策略 — 加权拼接而非简单拼接
 # 模态权重基于消融实验: 指令序列 0.45, CFG 结构 0.30, 调用图 0.25
 # 对齐方式: 各模态独立 L2 归一化后按权重缩放，再拼接
 
@@ -205,10 +205,10 @@ def fuse_multimodal_embedding(insn_emb: list[float] | None,
     return parts
 
 
-# ===== 批量嵌入缓存 =====
+# 批量嵌入缓存
 # 大项目可能有数万函数，嵌入计算成本不可忽略
 # 基于 (binary_hash, function_addr) 的 LRU 缓存避免重复计算
-# 参考: firmware analysis 场景 — FirmNamer (2025) 在 6 个固件样本上的分析
+# firmware analysis 场景 — FirmNamer 在 6 个固件样本上的分析
 
 _EMBEDDING_CACHE: dict[tuple[str, int], dict[str, list[float]]] = {}
 _CACHE_MAX_SIZE = 4096
@@ -260,10 +260,10 @@ def embedding_cache_stats() -> dict:
     }
 
 
-# --- SIMD 加速的批量余弦相似度 ---
+# SIMD 加速的批量余弦相似度
 # 对大批量函数匹配 (>10K 对)，Python 循环计算余弦相似度过慢
 # 使用矩阵运算加速: pairwise cosine similarity = normalize → AB^T
-# 参考: BLens 的对比学习批次 — 每批次 4096 对，要求高效相似度计算
+# BLens 的对比学习批次 — 每批次 4096 对，要求高效相似度计算
 
 def batch_cosine_similarity(query_vecs: list[list[float]],
                              target_vecs: list[list[float]]) -> list[list[float]]:
@@ -302,7 +302,7 @@ def batch_cosine_similarity(query_vecs: list[list[float]],
     return sim_matrix
 
 
-# --- Headless 批量嵌入导出 ---
+# Headless 批量嵌入导出
 # Ghidra AnalyzeHeadless 风格: 接受项目路径，输出 JSON
 def headless_export_embeddings(binary_paths: list[str], output_json: str = '',
                                 dim: int = 128) -> dict:

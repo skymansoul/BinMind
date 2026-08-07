@@ -268,7 +268,7 @@ class BareMetalEmulator:
             pass
         return True
 
-    # --- 舍入 2: 快照/恢复 — 参考Qiling的ql.保存()/ql.恢复()机制 ---
+# 舍入 2: 快照/恢复 — 参考Qiling的ql.保存()/ql.恢复()机制
     # 配合fuzzing循环使用：崩溃后回滚到初始状态，而非重新创建Unicorn实例
     def snapshot(self) -> dict:
         """保存当前仿真状态到可序列化的快照
@@ -316,7 +316,7 @@ class BareMetalEmulator:
             _log.warning(f"Snapshot restore failed: {e}")
             return False
 
-    # --- Round 2: 执行路径去重 — LibIHT论文中LBR数据的CFG重建思路 ---
+# Round 2: 执行路径去重 — LibIHT论文中LBR数据的CFG重建思路
     # 硬件分支记录捕获每个taken/-taken分支；我们通过追踪PC序列去重
     # 只保留首次观察到的基本块转移边，构建最小化CFG
     def deduplicate_trace(self) -> list:

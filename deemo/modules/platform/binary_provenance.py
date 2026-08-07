@@ -20,7 +20,7 @@ SBOM依赖图嵌入VersionLattice时间维。每个二进制实体同时持有
 
 ref: CVE-2024-3094 (XZ backdoor) — 恶意代码经构建依赖注入，仅SBOM不足，
      需版本格追踪依赖演化。
-ref: arXiv:2501.02097 (Cascaded CVE prediction via heterogeneous SBOM graphs) —
+ref: (Cascaded CVE prediction via heterogeneous SBOM graphs) —
      将HGAT图结构简化为可增量维护的邻接表，偏重可操作性。
 """
 
@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from .version_lattice import VersionLattice, VersionNode
-
 
 @dataclass
 class ProvenanceNode:
@@ -51,7 +50,6 @@ class ProvenanceNode:
     def __hash__(self) -> int:
         return hash(self.purl)
 
-
 @dataclass
 class DependencyEdge:
     """依赖方→被依赖方的有向边。"""
@@ -59,7 +57,6 @@ class DependencyEdge:
     target_purl: str
     dependency_type: str = "runtime"  # runtime / build / test / optional
     version_constraint: str = ""      # >=1.0,<2.0
-
 
 class ProvenanceGraph:
     """SBOM依赖图——组件间依赖关系的有向图。
@@ -192,7 +189,6 @@ class ProvenanceGraph:
             "scc_count": scc_count,
             "has_transitive_closure": self._scc_dag is not None,
         }
-
 
 class ProvenanceLatticeIntegrator:
     """桥接ProvenanceGraph（空间依赖）与VersionLattice（时间演化）。

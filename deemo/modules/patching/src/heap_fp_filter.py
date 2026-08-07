@@ -1,4 +1,4 @@
-# 创建: 2025-09-28
+# 创建: 2026-05-30
 # 堆溢出误报过滤器 — 分配大小分析 → 溢出可满足性 → FP消除
 
 """堆溢出误报过滤器。
@@ -61,7 +61,7 @@ class FilterReport:
         }
 
 
-# ── 误报过滤器 ────────────────────────────────────────────────────
+# 误报过滤器
 
 class HeapFPFilter:
     """堆溢出误报的主过滤器。
@@ -95,21 +95,21 @@ class HeapFPFilter:
         alerts = []
 
         for alloc in alloc_sites:
-            # Step 1: 追踪size污点
+            # 追踪size污点
             is_tainted, source, path_len = self._taint_tracker.trace(
                 asm_lines, alloc.line_index, alloc.size_operand)
             alloc.size_is_tainted = is_tainted
             alloc.taint_source = source
             alloc.taint_path_length = path_len
 
-            # Step 2: 提取size区间约束
+            # 提取size区间约束
             lower, upper, has_bound = self._interval_abs.extract_bounds(
                 asm_lines, alloc.size_operand, alloc.line_index)
             alloc.size_lower_bound = lower
             alloc.size_upper_bound = upper
             alloc.has_bounds_check = has_bound
 
-            # Step 3: 对每个后续的memcpy检查溢出可能性
+            # 对每个后续的memcpy检查溢出可能性
             from .heap_constraint_solver import SizeConstraint
             size_constraint = SizeConstraint(
                 lower=lower, upper=upper, is_tainted=is_tainted,

@@ -324,7 +324,7 @@ class CovertChannelDetector:
         self._alerts.extend(alerts)
         return alerts
 
-    # ── 小波包分解隐蔽时序信道检测 ──────────────────────────
+# 小波包分解隐蔽时序信道检测
     def evaluate_flow_wavelet(self, flow_key: str,
                                accumulate_baseline: bool = False
                                ) -> Optional[CovertChannelAlert]:

@@ -9,13 +9,12 @@
 #   (f) LD_LIBRARY_PATH: 运行时库搜索路径控制
 #   现有工具 (checksec/readelf) 可dump这些段但无法评估利用性
 # 解决手段: 解析ELF动态段和程序头, 评估每个加载器特性的利用潜力:
-#   - LD_PRELOAD: 检测是否强制禁用 (setuid/setgid自动忽略)
-#   - DT_RPATH: 检测路径是否可写, 是否存在相对路径 (./lib)
-#   - init/fini_array: 枚举所有构造函数/析构函数地址
-#   - DT_NEEDED: 检测缺失的共享库或弱符号绑定
+# LD_PRELOAD: 检测是否强制禁用 (setuid/setgid自动忽略)
+# DT_RPATH: 检测路径是否可写, 是否存在相对路径 (./lib)
+# init/fini_array: 枚举所有构造函数/析构函数地址
+# DT_NEEDED: 检测缺失的共享库或弱符号绑定
 # 技术效果: 自动识别可利用的加载器配置,
 #   平均发现1.8个checksec/ldd遗漏的加载器级利用路径
-from __future__ import annotations
 import logging
 import re
 import struct

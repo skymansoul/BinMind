@@ -5,11 +5,10 @@
 2025-07-27 09:15 - 关系图增量更新逻辑，避免每次重建全图
 2025-07-30 11:08 - 集成稀疏覆盖指纹，阈值自适应调节
 
-参考:
-  SEAFuzz (IEEE 2025)               -- 基于稀有度加权的结构相似性, 种子调度
-  HF-DGF (arXiv:2506.23063, 2025)   -- 值流图(VFG)用于依赖关系建模
+  SEAFuzz                -- 基于稀有度加权的结构相似性, 种子调度
+  HF-DGF    -- 值流图(VFG)用于依赖关系建模
   AFLRun "Toward Unbiased Multiple-Target Fuzzing" — 路径多样性度量用于多目标公平性
-  AMOS2 (The Computer Journal, 2026) -- 状态依赖 vs 状态无关种子度量分类
+  AMOS2 -- 状态依赖 vs 状态无关种子度量分类
 
 核心假设:
   种子A的覆盖集合⊆种子B的覆盖集合 → B在覆盖意义上"包含"A。
@@ -29,12 +28,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-# ---- Jaccard 相似度阈值: 高于此值认为两个种子存在覆盖包含关系 ----
+# Jaccard 相似度阈值: 高于此值认为两个种子存在覆盖包含关系
 # 根据 SEAFuzz 的经验设定为 0.6; 在二进制目标上该阈值偏保守,
 # 可通过 calibrate_threshold() 自适应校准。
 _DEFAULT_INCLUSION_THRESHOLD = 0.6
 _MIN_FINGERPRINT_SIZE = 4
-
 
 @dataclass
 class SeedNode:
@@ -50,7 +48,6 @@ class SeedNode:
     diversity_contribution: float = 0.0
     # 最后更新时间戳
     last_updated: float = field(default_factory=time.time)
-
 
 class SeedRelationGraph:
     """种子间覆盖关系有向图。

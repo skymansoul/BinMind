@@ -121,7 +121,7 @@ class InputGrammar:
             dwIdx += 1
         sorted_items = _insert_sort(freq.items(), key_fn=lambda x: x[1], reverse=True)
         self._tokens = [t for t, _ in sorted_items[:self._max_n]]
-        # --— 字节位置熵图：统计每个偏移位置的字节分布 --—
+# — 字节位置熵图：统计每个偏移位置的字节分布 --—
         byte_positions = _defaultdict(lambda: _defaultdict(int))
         dwIdx = 0
         while dwIdx < n_corpus and dwIdx < 200:
@@ -213,7 +213,7 @@ class InputGrammar:
         return best_pos
 
 
-# --— UCB1 多臂老虎机策略选择 --—
+# — UCB1 多臂老虎机策略选择 --—
 _STRAT_W = {
     'bit_flip':  0.25,
     'multi_bit': 0.15,
@@ -307,7 +307,7 @@ def _adapt_weights_mt(success_counts: dict):
     _mlog.debug(f"adapted weights: {dict(_STRAT_W)}")
 
 
-# --— MinHash 种子去重：避免重复变异相似输入 --—
+# — MinHash 种子去重：避免重复变异相似输入 --—
 _MINHASH_SEEDS = 256           # 哈希函数数量
 _MINHASH_MOD = (1 << 61) - 1   # Mersenne 素数
 _MINHASH_SIG_CACHE = []        # (signature_tuple, seed_hash)
@@ -515,7 +515,7 @@ class AIMutator:
             sh = _hashlib.md5(raw).hexdigest()[:8]
         except Exception:
             pass
-        # --— MinHash 去重检查 --—
+# — MinHash 去重检查 --—
         if sh in self._mutation_fingerprints:
             _mlog.debug(f"MinHash: duplicate seed {sh} skipped")
             return MutationResult(ok=False, muts=[], seed=sh)

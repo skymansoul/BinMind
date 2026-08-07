@@ -19,7 +19,7 @@
 #   5. RE-IMPLEMENT: 验证失败 → 尝试重新实现 (TemplateGenerator)
 #   6. RECORD: 事件链记录到 ProvenanceChain
 #
-# 区别于 DynaFix (arXiv:2512.24635) 和 SEED-APR:
+# 区别于 DynaFix 和 SEED-APR:
 #   两者修复通用程序的单函数 bug。
 #   本模块在桩管理层面闭合反馈环，触发粒度为模块级，
 #   重新实现而非修补 — 因为桩实现"重新生成"的成本低于"精确修补"。
@@ -227,7 +227,7 @@ class FeedbackLoop:
         except ImportError:
             return {'generated': False, 'error': 'implementation engine unavailable'}
 
-    # ---- 辅助 ----
+# 辅助
     @staticmethod
     def _get_type_observations() -> dict:
         try:
@@ -256,7 +256,7 @@ class FeedbackLoop:
                     mismatches += 1
         return mismatches / total if total > 0 else 0.0
 
-    # ---- 报告与指标 ----
+# 报告与指标
     def metrics(self) -> dict:
         """闭环反馈指标。"""
         resolved = sum(1 for e in self._events if e.resolved)

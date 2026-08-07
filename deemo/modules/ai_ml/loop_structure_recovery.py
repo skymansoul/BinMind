@@ -1,4 +1,4 @@
-# created: 2026-08-23
+# created: 2026-07-09
 # 循环结构恢复——从CFG的SCC分析中重建高级循环(while/for/do-while)
 #
 # 核心问题: 二进制分析中得到的CFG是扁平的——所有基本块只有
@@ -87,13 +87,13 @@ class LoopStructureRecovery:
         for src, dst in cfg_edges:
             adj[src].append(dst)
 
-        # 步骤1: SCC检测
+        # SCC检测
         tarjan = TarjanSCC(dict(adj))
         sccs = tarjan.find_sccs()
         if not sccs:
             return []
 
-        # 步骤2: 循环类型分类
+        # 循环类型分类
         block_instrs = {bid: instrs for bid, instrs in basic_blocks}
         loops = []
         for loop_id, scc in enumerate(sccs):

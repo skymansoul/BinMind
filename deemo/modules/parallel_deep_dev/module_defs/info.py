@@ -28,9 +28,9 @@ INFO = {
             "差异点：现有检测是基于规则的模式匹配，LLM 可提供语义级意图理解。"
         ),
         "papers": [
-            {"id": "arXiv:2505.16366", "title": "ReCopilot: Reverse Engineering Copilot in Binary Analysis",
+            {"id": "", "title": "ReCopilot: Reverse Engineering Copilot in Binary Analysis",
              "venue": "arXiv 2025", "key_idea": "领域特化LLM + 数据流上下文增强"},
-            {"id": "arXiv:2411.04981", "title": "DeBinVul: Enhancing Reverse Engineering — Benchmarking LLMs for Vulnerability Analysis in Decompiled Binaries",
+            {"id": "", "title": "DeBinVul: Enhancing Reverse Engineering — Benchmarking LLMs for Vulnerability Analysis in Decompiled Binaries",
              "venue": "arXiv 2024", "key_idea": "150K样本多架构数据集，80-90%分类准确率"},
         ],
     },

@@ -55,7 +55,7 @@ except ImportError:
     bAnthropicOk = False
 
 
-# ── 响应缓存 ──────────────────────────────────────────────────────
+# 响应缓存
 # 按 (vuln_type, function_name) 缓存远程响应，避免重复调用。
 # LRU 上限 128。命中时 confidence 打 0.9 折（保守策略）。
 # 缓存不跨进程。

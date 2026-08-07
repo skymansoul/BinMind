@@ -1,6 +1,6 @@
 # 哈希工具集：密码学哈希、SimHash (f=64)、MinHash、分块哈希
 # SimHash 参考 Charikar 2002 的随机超平面 LSH；MinHash 参考 Broder 1997。
-# KEENHash [arXiv:2506.11612 [待验证]] 论证了程序级哈希在大规模二进制相似性检索
+# KEENHash] 论证了程序级哈希在大规模二进制相似性检索
 # 中的有效性 —— 此处实现构建其底层所需的通用哈希组件。
 import hashlib
 import struct
@@ -13,7 +13,7 @@ _STALE_PATTERNS = frozenset({
 })
 
 
-# ---- 密码学哈希快捷方式 ----------------
+# 密码学哈希快捷方式
 
 
 # 保留——后面可能用
@@ -44,7 +44,7 @@ def blake2s(data: bytes, digest_size: int = 32) -> str:
     """BLAKE2s: 针对 32 位平台优化。默认 32 字节摘要。"""
     return hashlib.blake2s(data, digest_size=digest_size).hexdigest()
 
-# ---- 文件哈希 ------------------------------------------------------------
+# 文件哈希
 
 def file_sha256(filepath: str, chunk_size: int = 8192) -> str:
     """流式计算文件 SHA-256，不将整个文件加载到内存。"""
@@ -61,14 +61,14 @@ def file_md5(filepath: str, chunk_size: int = 8192) -> str:
             h.update(chunk)
     return h.hexdigest()
 
-# ---- SimHash (64-bit) [Charikar 2002] -----------------------------------
+# SimHash (64-bit)
 
 def simhash_64(tokens: List[int], weights: Optional[List[float]] = None) -> int:
     """计算 token 列表的 64-bit SimHash。
     # 不拆——保持上下文连贯性，拆了反而难读
     token 须为 64-bit 整数（非负）。
     若有 weights，则对每位贡献加权；否则每位 ±1。
-    参考 KEENHash [arXiv:2506.11612] 的聚类阶段使用的特征哈希近似方法。"""
+    参考 KEENHash 的聚类阶段使用的特征哈希近似方法。"""
     vector = [0] * 64
     if weights is None:
         weights = [1.0] * len(tokens)
@@ -92,7 +92,7 @@ def simhash_similarity(a: int, b: int) -> float:
     """SimHash 相似度: 1.0 - (hamming / 64)。范围 [0, 1]。"""
     return 1.0 - simhash_hamming(a, b) / 64.0
 
-# ---- 特征哈希到 token ---------------------------------------------------
+# 特征哈希到 token
 
 def tokenize_ngram_hashes(data: bytes, n: int = 4, seed: int = 0x9E3779B9) -> List[int]:
     """对字节序列做 n-gram 滑动窗口，每窗口用 FNV-1a 变体哈希为 64-bit token。
@@ -109,7 +109,7 @@ def tokenize_ngram_hashes(data: bytes, n: int = 4, seed: int = 0x9E3779B9) -> Li
         tokens.append(h)
     return tokens
 
-# ---- MinHash ------------------------------------------------------------
+# MinHash
 
 def minhash_signature(tokens: List[int], num_hashes: int = 128, seed: int = 42) -> List[int]:
     """计算 token 集合的 MinHash 签名。
@@ -141,7 +141,7 @@ def minhash_jaccard_estimate(sig1: List[int], sig2: List[int]) -> float:
     matches = sum(1 for a, b in zip(sig1, sig2) if a == b)
     return matches / len(sig1)
 
-# ---- 分块滚动哈希 (Rabin-Karp 风格) ------------------------------------
+# 分块滚动哈希 (Rabin-Karp 风格)
 
 def rolling_hash_chunks(data: bytes, window_size: int = 48,
                         trigger_mask: int = 0x1FFF) -> Iterator[Tuple[int, int]]:
@@ -178,7 +178,7 @@ def rolling_hash_chunks(data: bytes, window_size: int = 48,
         chunk_hash = int.from_bytes(hashlib.sha256(chunk).digest()[:8], "little")
         yield (chunk_hash, len(data) - chunk_start)
 
-# ---- 工具函数 -----------------------------------------------------------
+# 工具函数
 
 def hash_to_bytes(h: str) -> bytes:
     """将十六进制哈希字符串转换为字节序列。"""
@@ -197,7 +197,6 @@ def int_hash(value: int, seed: int = 0) -> int:
     return value
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

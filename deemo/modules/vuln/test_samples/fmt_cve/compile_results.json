@@ -1,0 +1,66 @@
+{
+  "fmt_01_printf_argv": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_02_printf_gets": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_03_sprintf_fmtarg": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_04_fprintf_user": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_05_fprintf_stdout": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_06_printf_fgets": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_07_printf_read": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_08_snprintf_fmtarg": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_09_printf_heap_fmt": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_10_printf_scanf": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_11_vprintf_user": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_12_printf_strcpy": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_safe_literal": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_safe_literal_var": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_safe_rodata_table": {
+    "success": true,
+    "error": ""
+  },
+  "fmt_safe_snprintf_const": {
+    "success": true,
+    "error": ""
+  }
+}

@@ -6,12 +6,11 @@
 2025-08-20 09:41 - 修正: 标注 score≡0 假设 (均匀目标), 此时 KSD 为核 Hessian 期望
 2025-08-10 08:51 - 自适应带宽: score function 的局部 Lipschitz 估计
 
-参考:
-  Liu, Lee & Jordan (2016) "A Kernelized Stein Discrepancy for Goodness-of-fit
+  Liu, Lee & Jordan "A Kernelized Stein Discrepancy for Goodness-of-fit
     Tests" (ICML) — KSD 的原始提出: 使用 Stein 恒等式构造核化差异度量
-  Chwialkowski, Strathmann & Gretton (2016) "A Kernel Test of Goodness of Fit"
+  Chwialkowski, Strathmann & Gretton "A Kernel Test of Goodness of Fit"
     (ICML) — 独立提出的 KSD 框架
-  Gorham & Mackey (2017) "Measuring Sample Quality with Kernels" (ICML)
+  Gorham & Mackey "Measuring Sample Quality with Kernels" (ICML)
     — 证明 IMQ 核的 KSD 能检测非收敛
 
 在 fuzzing 文献中的位置:
@@ -37,11 +36,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---- KSD 参数 ----
+# KSD 参数
 _N_NYSTROM = 30              # Nyström 诱导点数量
 _MIN_SEEDS_FOR_KSD = 15      # 启动 KSD 的最小种子数
-
 
 @dataclass
 class KSDResult:
@@ -53,7 +50,6 @@ class KSDResult:
     bandwidth: float
     is_converged: bool         # KSD < threshold → 覆盖分布已均匀
     trend: str                 # "decreasing"|"stable"|"increasing"
-
 
 class SteinSeedAssessor:
     """KSD 种子分布评估器.

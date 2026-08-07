@@ -2,7 +2,7 @@
 
 意图:
   定向模糊测试冷启动阶段，初始语料质量直接决定目标命中概率。
-  ISC4DGF (arXiv:2409.14329) 提出用 LLM 为目标位置构建初始种子，
+  ISC4DGF  提出用 LLM 为目标位置构建初始种子，
   大幅提升冷启动命中率。本模块界定可插拔的 LLM 种子构造器接口:
 
     LLMSeedConfig         -- base_url / model / api_key 等配置
@@ -17,8 +17,8 @@
   程序照常运行。
 
 文献:
-  ISC4DGF (arXiv:2409.14329) -- LLM 驱动的定向模糊测试初始种子构建
-  LLAMAFUZZ (arXiv:2406.07714) -- LLM 产出的贴近语料分布的测试输入
+  ISC4DGF  -- LLM 驱动的定向模糊测试初始种子构建
+  LLAMAFUZZ  -- LLM 产出的贴近语料分布的测试输入
 """
 
 import base64
@@ -35,10 +35,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-
-# ============================================================================
 # 参数配置
-# ============================================================================
 
 @dataclass
 class LLMSeedConfig:
@@ -63,10 +60,7 @@ class LLMSeedConfig:
     max_seed_bytes: int = 4096
     retry_attempts: int = 2
 
-
-# ============================================================================
 # 构造器抽象
-# ============================================================================
 
 class SeedGenerator(ABC):
     """种子构造器基类。
@@ -86,10 +80,7 @@ class SeedGenerator(ABC):
     def available(self) -> bool:
         return True
 
-
-# ============================================================================
 # 内置语法结构构造器 (LLM 不可用时的回退)
-# ============================================================================
 
 class TemplateSeedGenerator(SeedGenerator):
     """内置结构化种子构造器。
@@ -164,7 +155,7 @@ class TemplateSeedGenerator(SeedGenerator):
                 break
         return seeds[:n]
 
-    # ---- 格式族构造子程序 ----
+# 格式族构造子程序
     # 均通过随机填充或长度注入制造样本差异
 
     def _rand_fill(self, lo: int = 1, hi: int = 8) -> bytes:
@@ -229,10 +220,7 @@ class TemplateSeedGenerator(SeedGenerator):
         patterns = [b"/etc/passwd", b"%s%n%s", b"../../..", b"AAAA", b"\x00" * 8]
         return random.choice(patterns) + self._rand_fill(1, 16)
 
-
-# ============================================================================
 # LLM 构造器 (可选依赖，未配置时不可用)
-# ============================================================================
 
 class LLMSeedGenerator(SeedGenerator):
     """OpenAI 兼容 LLM 种子构造器。
@@ -334,7 +322,6 @@ class LLMSeedGenerator(SeedGenerator):
         _log.warning("LLM 种子构造最终失败: %s", last_err)
         return []
 
-
 def _parse_llm_seeds(text: str, max_seed_bytes: int) -> List[bytes]:
     """将 LLM 的 JSON 响应解译为字节种子列表。
 
@@ -374,10 +361,7 @@ def _parse_llm_seeds(text: str, max_seed_bytes: int) -> List[bytes]:
             seeds.append(b)
     return seeds
 
-
-# ============================================================================
 # 混合构造器 (LLM + 结构化种子)
-# ============================================================================
 
 class HybridSeedGenerator(SeedGenerator):
     """LLM 与结构化种子构造器的混合门面。
@@ -424,10 +408,7 @@ class HybridSeedGenerator(SeedGenerator):
                 break
         return out[:n]
 
-
-# ============================================================================
 # 工厂与便捷函数
-# ============================================================================
 
 def build_seed_generator(config: Optional[LLMSeedConfig] = None,
                          env_overrides: Optional[Dict[str, str]] = None) -> HybridSeedGenerator:
@@ -455,7 +436,6 @@ def build_seed_generator(config: Optional[LLMSeedConfig] = None,
     return HybridSeedGenerator(llm=llm, template=template,
                                fallback_templates=cfg.fallback_templates)
 
-
 def generate_initial_seed_corpus(target_sites: List[Any],
                                  generator: Optional[SeedGenerator] = None,
                                  per_target: int = 8) -> List[bytes]:
@@ -478,7 +458,6 @@ def generate_initial_seed_corpus(target_sites: List[Any],
     out = [b for b in seeds if not (hash(b) in seen or seen.add(hash(b)))]
     return out
 
-
 class _LabelTarget:
     """字符串标签目标的轻量包装，使 generate_initial_seed_corpus 可接受裸标签。"""
 
@@ -487,7 +466,6 @@ class _LabelTarget:
         self.function_name = ""
         self.address = 0
         self.description = label
-
 
 __all__ = [
     "LLMSeedConfig", "SeedGenerator", "TemplateSeedGenerator",

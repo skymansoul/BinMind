@@ -20,11 +20,10 @@
     - FIPS 140-3 IG (密钥管理)
     - 自定义策略(JSON式规则)
 
-参考:
-  - CNSA 2.0 (2024): 美国国家安全系统算法要求。
-  - PCI DSS 4.0.1 (2024): 支付卡行业数据安全标准 — 要求3.6-3.7涉及密钥管理。
-  - BSI TR-03161 (2023): 受限环境密码学要求。
-  - OWASP ASVS V9 (2024): 密码学验证标准。
+  - CNSA 2.0: 美国国家安全系统算法要求。
+  - PCI DSS 4.0.1: 支付卡行业数据安全标准 — 要求3.6-3.7涉及密钥管理。
+  - BSI TR-03161: 受限环境密码学要求。
+  - OWASP ASVS V9: 密码学验证标准。
 
 边界条件:
   - 策略检查精度取决于crypto_detector的算法名精度 — "AES"vs"AES-128-GCM"区别显著。
@@ -36,7 +35,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
-
 class RuleSeverity(Enum):
     BLOCKER = 0     # 阻止部署
     CRITICAL = 1
@@ -44,7 +42,6 @@ class RuleSeverity(Enum):
     MEDIUM = 3
     LOW = 4
     INFO = 5
-
 
 @dataclass
 class PolicyRule:
@@ -61,14 +58,12 @@ class PolicyRule:
     require_zeroization: bool = False
     require_constant_time: bool = False
 
-
 @dataclass
 class PolicyViolation:
     rule: PolicyRule
     algorithm: str = ""
     detail: str = ""
     recommendation: str = ""
-
 
 @dataclass
 class PolicyReport:
@@ -80,8 +75,7 @@ class PolicyReport:
     compliance_score: float = 0.0   # 0-100
     passed: bool = False            # 无BLOCKER→通过
 
-
-# ── 算法分类辅助 ──
+# 算法分类辅助
 _SYM_ALGO_KW = {'AES', 'DES', '3DES', 'ChaCha', 'SM4', 'RC4'}
 _HASH_ALGO_KW = {'SHA', 'MD5', 'SM3', 'BLAKE', 'Keccak'}
 _KEX_ALGO_KW = {'ECDH', 'DH', 'X25519', 'Curve25519', 'ML-KEM', 'Kyber', 'RSA'}
@@ -107,7 +101,7 @@ def _algo_matches_category(algo: str, rule: PolicyRule) -> bool:
                 (algo_is_kex and rule_is_kex) or (algo_is_sig and rule_is_sig))
     return True
 
-# ── 预定义策略模板 ──
+# 预定义策略模板
 
 def _build_cnsa_policy() -> List[PolicyRule]:
     """CNSA 2.0 (2024) — 国家安全系统最高安全级别。"""
@@ -133,7 +127,6 @@ def _build_cnsa_policy() -> List[PolicyRule]:
                    severity=RuleSeverity.HIGH, require_zeroization=True),
     ]
 
-
 def _build_pci_policy() -> List[PolicyRule]:
     """PCI DSS 4.0.1 — 支付卡行业。"""
     return [
@@ -153,7 +146,6 @@ def _build_pci_policy() -> List[PolicyRule]:
                    severity=RuleSeverity.LOW, require_zeroization=True),
     ]
 
-
 def _build_bsi_policy() -> List[PolicyRule]:
     """BSI TR-03161 — 德国受限环境。"""
     return [
@@ -171,15 +163,13 @@ def _build_bsi_policy() -> List[PolicyRule]:
                    severity=RuleSeverity.HIGH, require_hardware_entropy=True),
     ]
 
-
 _POLICY_TEMPLATES: Dict[str, Callable[[], List[PolicyRule]]] = {
     'CNSA_2.0': _build_cnsa_policy,
     'PCI_DSS_4.0': _build_pci_policy,
     'BSI_TR_03161': _build_bsi_policy,
 }
 
-
-# ── 策略检查引擎 ──
+# 策略检查引擎
 
 class PolicyChecker:
     """对照策略规则检查检测结果和审计报告。"""

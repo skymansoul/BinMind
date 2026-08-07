@@ -3,9 +3,9 @@
 # 核心问题: 多种去重/相似度方法常对同一二进制对给出矛盾判定:
 #   SimHash=0.92 (高度相似), MinHash=0.45 (中等), 图评分=0.15 (不相似).
 #   争议根源: 各方法对不同二进制类型敏感度不同.
-#     - stripped binary: 图评分噪声大, SimHash 更可靠
+# stripped binary: 图评分噪声大, SimHash 更可靠
 #     - 大文件 (>100MB): MinHash CDC 粒度粗, SimHash 更可靠
-#     - 有丰富 CFG: 图评分精度最高
+# 有丰富 CFG: 图评分精度最高
 #   现有方法 (bandit_router, adversarial_consistency) 仅选择或检测,
 #   不解决"信哪个"的问题.
 #
@@ -29,7 +29,7 @@
 #   - bandit_router: 选择方法子集 (二元: 执行/跳过). 本方案加权融合所有方法.
 #   - adversarial_consistency: 检测不一致. 本方案解决不一致.
 #   - Bradley-Terry: 面向体育/游戏排名. 本方案首次应用于去重方法可信度排序.
-#   - 无已知论文将上下文相关的 Bradley-Terry 模型用于多方法争议裁决.
+# 无已知论文将上下文相关的 Bradley-Terry 模型用于多方法争议裁决.
 
 import math
 from collections import defaultdict
@@ -80,7 +80,7 @@ class DisputeResolver:
         self._alpha = shrinkage_alpha
 
         # 全局 Bradley-Terry: 方法对比较计数
-        # _wins[i][j] = method_i 被选为优于 method_j 的次数
+# wins[i][j] = method_i 被选为优于 method_j 的次数
         self._global_wins: List[List[int]] = [
             [0]*self.K for _ in range(self.K)]
         self._global_theta = [0.0] * self.K

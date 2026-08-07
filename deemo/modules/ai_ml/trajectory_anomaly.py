@@ -255,7 +255,7 @@ class GPTStyleModel:
             _log.info("PyTorch not available, using n-gram fallback model")
             self._pytorch_model = None
 
-    # ── 模型持久化：避免每次重启都重新训练 ──────────────────────────
+# 模型持久化：避免每次重启都重新训练
     def save_model(self, directory: str) -> None:
         """保存模型权重到目录 — 支持 PyTorch 和 n-gram 双路径。
 
@@ -426,7 +426,7 @@ class GPTStyleModel:
             return self._score_ngram(sequence)
         return 0.0
 
-    # ── 逐位置打分：返回每个位置的 surprise 值，用于精确定位异常指令 ──
+# 逐位置打分：返回每个位置的 surprise 值，用于精确定位异常指令
     def score_per_position(
         self,
         sequence: List[int],
@@ -888,7 +888,7 @@ class TrajectoryAnomalyAnalyzer:
         self.results_history.append(result)
         return result
 
-    # ── 异常报告：汇总分析结果，输出可用于 SIEM/仪表盘的摘要 ──────────
+# 异常报告：汇总分析结果，输出可用于 SIEM/仪表盘的摘要
     def get_summary_report(self) -> Dict[str, Any]:
         """生成完整异常分析报告 — 包含逐trace明细与全局统计。
 
@@ -975,4 +975,3 @@ class TrajectoryAnomalyAnalyzer:
         }
 
 
-def _debug_print(*args, **kwargs): pass

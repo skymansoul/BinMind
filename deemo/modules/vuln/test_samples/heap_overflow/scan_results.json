@@ -1,0 +1,211 @@
+{
+  "tp": 14,
+  "tn": 4,
+  "fp": 0,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "total_time_ms": 446.0,
+  "avg_time_ms": 25.0,
+  "per_sample": {
+    "sample01_direct_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 2,
+      "n_real_findings": 1,
+      "n_filtered_fp": 1,
+      "top_confidence": 0.95,
+      "time_ms": 38.8,
+      "findings": []
+    },
+    "sample02_int_overflow_to_heap": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 24.5,
+      "findings": []
+    },
+    "sample03_insufficient_guard": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.8,
+      "time_ms": 20.5,
+      "findings": []
+    },
+    "sample04_cross_function_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.8,
+      "time_ms": 20.3,
+      "findings": []
+    },
+    "sample05_loop_cumulative_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 2,
+      "n_real_findings": 2,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 21.2,
+      "findings": []
+    },
+    "sample06_sprintf_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.8,
+      "time_ms": 58.5,
+      "findings": []
+    },
+    "sample07_memcpy_computed_size": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.6,
+      "time_ms": 20.5,
+      "findings": []
+    },
+    "sample08_alignment_padding_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 1,
+      "n_real_findings": 0,
+      "n_filtered_fp": 1,
+      "top_confidence": 0,
+      "time_ms": 20.1,
+      "findings": []
+    },
+    "sample09_strncpy_truncation_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.8,
+      "time_ms": 21.6,
+      "findings": []
+    },
+    "sample10_realloc_shrink_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 2,
+      "n_real_findings": 1,
+      "n_filtered_fp": 1,
+      "top_confidence": 0.95,
+      "time_ms": 25.0,
+      "findings": []
+    },
+    "sample11_calloc_wraparound": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 22.1,
+      "findings": []
+    },
+    "sample12_conditional_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 2,
+      "n_real_findings": 1,
+      "n_filtered_fp": 1,
+      "top_confidence": 0.95,
+      "time_ms": 21.5,
+      "findings": []
+    },
+    "sample13_multi_alloc_pointer_confusion": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 21.2,
+      "findings": []
+    },
+    "sample14_nested_struct_overflow": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 21.3,
+      "findings": []
+    },
+    "sample15_properly_guarded_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 1,
+      "n_real_findings": 0,
+      "n_filtered_fp": 1,
+      "top_confidence": 0,
+      "time_ms": 20.2,
+      "findings": []
+    },
+    "sample16_exact_boundary_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 1,
+      "n_real_findings": 0,
+      "n_filtered_fp": 1,
+      "top_confidence": 0,
+      "time_ms": 25.5,
+      "findings": []
+    },
+    "sample17_large_offset_small_write": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 1,
+      "n_real_findings": 0,
+      "n_filtered_fp": 1,
+      "top_confidence": 0,
+      "time_ms": 23.0,
+      "findings": []
+    },
+    "sample18_16bit_overflow_to_heap": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 1,
+      "n_real_findings": 1,
+      "n_filtered_fp": 0,
+      "top_confidence": 0.95,
+      "time_ms": 19.9,
+      "findings": []
+    }
+  }
+}

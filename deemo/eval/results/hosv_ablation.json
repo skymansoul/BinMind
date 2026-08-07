@@ -1,0 +1,3110 @@
+{
+  "A_PatternOnly": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "FN",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "FP",
+      "TP",
+      "FP",
+      "TN",
+      "TP",
+      "FN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "FP",
+      "FP",
+      "FN",
+      "FN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": false,
+      "enable_guard": false,
+      "enable_constraint_graph": false,
+      "enable_interproc": false,
+      "enable_accumulation": false,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 19,
+      "FP": 4,
+      "TN": 23,
+      "FN": 14,
+      "P": 0.8261,
+      "R": 0.5758,
+      "F1": 0.6786,
+      "FPR": 0.1481
+    }
+  },
+  "B_PlusAllocator": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "FN",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "FP",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "FN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "FP",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "FP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": false,
+      "enable_constraint_graph": false,
+      "enable_interproc": false,
+      "enable_accumulation": false,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 19,
+      "FP": 2,
+      "TN": 25,
+      "FN": 14,
+      "P": 0.9048,
+      "R": 0.5758,
+      "F1": 0.7037,
+      "FPR": 0.0741
+    }
+  },
+  "C_PlusGuard": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "FN",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": true,
+      "enable_constraint_graph": false,
+      "enable_interproc": false,
+      "enable_accumulation": false,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 21,
+      "FP": 0,
+      "TN": 27,
+      "FN": 12,
+      "P": 1.0,
+      "R": 0.6364,
+      "F1": 0.7778,
+      "FPR": 0.0
+    }
+  },
+  "D_PlusConstraintGraph": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "FN",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": true,
+      "enable_constraint_graph": true,
+      "enable_interproc": false,
+      "enable_accumulation": false,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 21,
+      "FP": 0,
+      "TN": 27,
+      "FN": 12,
+      "P": 1.0,
+      "R": 0.6364,
+      "F1": 0.7778,
+      "FPR": 0.0
+    }
+  },
+  "E_PlusInterproc": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "FN",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "FN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": true,
+      "enable_constraint_graph": true,
+      "enable_interproc": true,
+      "enable_accumulation": false,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 26,
+      "FP": 0,
+      "TN": 27,
+      "FN": 7,
+      "P": 1.0,
+      "R": 0.7879,
+      "F1": 0.8814,
+      "FPR": 0.0
+    }
+  },
+  "F_PlusAccumulation": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "FN",
+      "TN",
+      "FN",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "FN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "FN",
+        "findings": 0,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": true,
+      "enable_constraint_graph": true,
+      "enable_interproc": true,
+      "enable_accumulation": true,
+      "enable_apas": false
+    },
+    "metrics": {
+      "TP": 27,
+      "FP": 0,
+      "TN": 27,
+      "FN": 6,
+      "P": 1.0,
+      "R": 0.8182,
+      "F1": 0.9,
+      "FPR": 0.0
+    }
+  },
+  "G_FullHOSV_PlusAPAS": {
+    "verdicts": [
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TN",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TP",
+      "TN",
+      "TP",
+      "TN",
+      "TP",
+      "TN"
+    ],
+    "details": [
+      {
+        "sample": "cve_01_simple_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_02_off_by_one",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_03_int_overflow_calc",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_04_strcpy_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_05_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_06_user_controlled_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_07_realloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_08_calloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_09_safe_but_triggers_fp",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_10_input_constrained_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_11_memcpy_arith_size",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_12_alignment_edge",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_13_struct_field_pattern",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_14_multi_chunk",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_15_constrained_input",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_16_real_world_pattern",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_17_multi_field_struct",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_18_loop_accumulate",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_19_same_offset_accumulate",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_20_cross_func_guard",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_21_cross_func_write",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_22_fm_boundary_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_23_fm_boundary_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_24_multiple_constraints",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_25_nested_loop_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_26_realloc_grow_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_27_struct_array_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_28_guarded_loop_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_29_alignment_slack_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_30_cross_func_alloc_only",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_31_copy_size_external",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_32_deeply_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_33_cross_path_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_34_cross_path_guard_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_35_early_return_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_36_early_return_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_37_nested_branch_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_38_nested_branch_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_39_loop_guard_cross_path",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_40_multi_guard_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_41_switch_path_safe",
+        "verdict": "TN",
+        "findings": 3,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_42_switch_path_overflow",
+        "verdict": "TP",
+        "findings": 4,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_43_alias_chain_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_44_alias_chain_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_45_cast_alias_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_46_cast_alias_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_47_cond_alloc_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_48_cond_alloc_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_49_compound_offset_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_50_compound_offset_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_51_struct_field_offset_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_52_struct_field_offset_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_53_factory_cross_guard_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_54_factory_cross_write_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_55_returned_ptr_overflow",
+        "verdict": "TP",
+        "findings": 2,
+        "vuln_count": 2
+      },
+      {
+        "sample": "cve_56_sfod_field_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_57_sfod_field_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_58_sfod_cast_safe",
+        "verdict": "TN",
+        "findings": 1,
+        "vuln_count": 0
+      },
+      {
+        "sample": "cve_59_sfod_cast_overflow",
+        "verdict": "TP",
+        "findings": 1,
+        "vuln_count": 1
+      },
+      {
+        "sample": "cve_60_sfod_nested_safe",
+        "verdict": "TN",
+        "findings": 2,
+        "vuln_count": 0
+      }
+    ],
+    "flags": {
+      "enable_allocator": true,
+      "enable_guard": true,
+      "enable_constraint_graph": true,
+      "enable_interproc": true,
+      "enable_accumulation": true,
+      "enable_apas": true
+    },
+    "metrics": {
+      "TP": 33,
+      "FP": 0,
+      "TN": 27,
+      "FN": 0,
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "FPR": 0.0
+    }
+  }
+}

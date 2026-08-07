@@ -18,8 +18,8 @@
   2. 传播图是小型加权有向图（通常 <500 节点），自定义 O(N²) 算法可接受
   3. 需要对有向边做非对称处理——标准 Rips 复形假设对称距离
 
-ref: Edelsbrunner & Harer (2010) "Computational Topology" — 持续同调理论。
-ref: Snopov & Golubinskiy (arXiv:2410.03470) — 持续同调用于漏洞检测，
+ref: Edelsbrunner & Harer "Computational Topology" — 持续同调理论。
+ref: Snopov & Golubinskiy — 持续同调用于漏洞检测，
      但仅处理代码BERT注意力矩阵，不涉及传播图拓扑指纹。
 """
 
@@ -156,7 +156,7 @@ class PropagationHomologyAnalyzer:
         idx_map = {nid: i for i, nid in enumerate(nodes)}
         points: List[PersistencePoint] = []
 
-        # --- 0维：Union-Find ---
+# 0维：Union-Find
         parent = list(range(n))
         birth_time = [0.0] * n  # 分量诞生时的置信度（最高边）
         active = [True] * n
@@ -194,7 +194,7 @@ class PropagationHomologyAnalyzer:
             points.append(PersistencePoint(birth=birth_time[r], death=float('inf'),
                                            dimension=0))
 
-        # --- 1维：生成树 + 非树边 ---
+# 1维：生成树 + 非树边
         # 重新做一次 Union-Find，标记生成树边
         parent2 = list(range(n))
         tree_edges: Set[Tuple[int, int]] = set()

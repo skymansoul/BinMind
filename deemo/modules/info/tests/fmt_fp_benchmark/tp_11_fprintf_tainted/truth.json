@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_11_fprintf_tainted",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2020-10757 类 fprintf 格式串",
+  "expect_overflow": true,
+  "trigger": "argv 注入",
+  "why": "用户输入直接作为 fprintf 格式"
+}

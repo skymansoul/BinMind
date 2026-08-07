@@ -17,9 +17,9 @@ ARM64e增强安全分析——Apple Silicon PAC/BTI深度审计 + 微架构侧�
 技术基础:
   - ARMv8.3-A/ARMv8.6-A指令集静态反汇编模式匹配
   - MTE (ARMv8.5-A) 指令编码参考 ARM Architecture Reference Manual
-  - TikTag (IEEE S&P 2025): 通过推测执行泄露MTE标签的gadget模式
-  - NanoTag (IEEE S&P 2026): 字节级粒度溢出检测在Pixel 8上的特征
-  - Folded-Tag (C&S 2026): XOR-based指针掩码加固
+  - TikTag: 通过推测执行泄露MTE标签的gadget模式
+  - NanoTag: 字节级粒度溢出检测在Pixel 8上的特征
+  - Folded-Tag: XOR-based指针掩码加固
 
 MTE核心指令编码：
   IRG  Xd, Xn{, Xm}     — Insert Random Tag (将随机tag插入指针)
@@ -40,7 +40,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger(__name__)
-
 
 class PACKey(str, Enum): IA="IA"; IB="IB"; DA="DA"; DB="DB"; GA="GA"; UNKNOWN="UNKNOWN"
 
@@ -77,7 +76,7 @@ class SideChannelGadgetType(str, Enum):
     PSTATE_TIMING="pstate_timing"; LDAR_STLR_PAIR="ldar_stlr_pair"
     DMB_DSB_FENCE="dmb_dsb_fence"; SYSREG_ACCESS="sysreg_access"
 
-# ── MTE标签操作类型 ──
+# MTE标签操作类型
 class MTEOperationType(str, Enum):
     IRG="irg"           # 插入随机tag
     ADDG="addg"         # tag感知地址加法
@@ -152,7 +151,7 @@ _MTE_PATTERNS = [
     (re.compile(rb'\x20\x0c\x9b\xd7'), MTEOperationType.GMI, "GMI——插入tag(不含随机性)"),
 ]
 
-# ── TikTag (IEEE S&P 2025) 推测执行MTE标签泄露gadget模式 ──
+# TikTag 推测执行MTE标签泄露gadget模式
 # LDG/LDGV后的条件分支暗示标签验证结果可被推测执行泄露
 _TIKTAG_PATTERNS = [
     (re.compile(rb'(?:ldg|ldgv)\s.{0,32}(?:cbz|cbnz|tbz|tbnz)',re.DOTALL),
@@ -170,7 +169,6 @@ _EXFIL_PATTERNS = [
     (re.compile(rb'mrs\s+x\d+,\s*(?:s3_\d+_c\d+_c\d+_\d+|ctr_el0|dcache).{0,32}(?:cbz|cbnz)',re.DOTALL),SideChannelGadgetType.SYSREG_ACCESS,"系统寄存器读+条件分支",True),
 ]
 
-
 def _compute_post_dominators(gs:Dict[int,JOPGadget],bts:Set[int])->Dict[int,Set[int]]:
     pd=defaultdict(set); sa=sorted(gs.keys()); n=len(sa)
     if n==0: return pd
@@ -181,7 +179,6 @@ def _compute_post_dominators(gs:Dict[int,JOPGadget],bts:Set[int])->Dict[int,Set[
         for j in range(i+1,min(i+5,n)):
             if sa[j] in bts: pd[a].add(sa[j])
     return dict(pd)
-
 
 class Arm64eEnhancedAnalyzer:
     ALL_PAC=set(t.value for t in PACInstructionType if t!=PACInstructionType.UNKNOWN)
@@ -403,11 +400,11 @@ class Arm64eEnhancedAnalyzer:
                 gadgets.append(SideChannelGadget(m.start(),gtype,mnems[:8],regs_found,gtype in (SideChannelGadgetType.CSDB_COND_BRANCH,SideChannelGadgetType.DC_CVAU_EXCEPTION,SideChannelGadgetType.SYSREG_ACCESS),gtype==SideChannelGadgetType.DC_CVAU_EXCEPTION,tf,sev,s._func_for(m.start())))
         return gadgets
 
-    # ── ARM MTE指令检测 + TikTag旁路gadget扫描 ──
+# ARM MTE指令检测 + TikTag旁路gadget扫描
     def _detect_mte_operations(s)->List[MTEGadget]:
         """检测ARM MTE标签操作指令，审计内存标签使用模式。
 
-        基于NanoTag (IEEE S&P 2026) 对Pixel 8上MTE实现的特性描述：
+        基于NanoTag  对Pixel 8上MTE实现的特性描述：
         - IRG数量反映标签随机化的覆盖范围
         - STG/LDG配对密度反映内存分配/释放的标签管理
         - STZG出现意味着清零+标签删除——内存复用安全关键操作
@@ -429,7 +426,7 @@ class Arm64eEnhancedAnalyzer:
     def _detect_tiktag_gadgets(s,mte_gadgets:List[MTEGadget])->List[Dict[str,Any]]:
         """扫描TikTag推测执行MTE标签泄露的gadget模式。
 
-        TikTag (IEEE S&P 2025) 展示了通过推测执行泄露4-bit MTE标签的攻击。
+        TikTag  展示了通过推测执行泄露4-bit MTE标签的攻击。
         关键模式：LDG/LDGV指令后紧跟条件分支——标签验证结果（tag匹配/不匹配）
         通过分支预测器的推测执行被泄露到架构状态。
         """
@@ -494,13 +491,12 @@ class Arm64eEnhancedAnalyzer:
 def analyze_arm64e_enhanced(binary_path:str)->Dict[str,Any]: return Arm64eEnhancedAnalyzer(binary_path).analyze()
 
 # 保留: 调试空操作
-def _debug_print(*a, **kw): pass
 
 # 不拆: PAC gadget片段缓存——避免重复disasm导致的r2 OOM
 _PAC_FRAGMENT_CACHE: dict = {}
 
 def _dead_pointer_mask(ptr: int, ctx: int) -> int:
     """Folded-Tag风格的指针掩码——实验性PAC加固，当前未启用。"""
-    # 不拆: XOR指针掩码方案，参考Folded-Tag (C&S 2026)
+    # 不拆: XOR指针掩码方案，参考Folded-Tag
     tag = (ctx >> 4) & 0xFF
     return ptr ^ (tag << 56)

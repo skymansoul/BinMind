@@ -1,0 +1,238 @@
+{
+  "heap": [
+    {
+      "name": "safe_large",
+      "alloc": 256,
+      "write": 128,
+      "expected_safe": true,
+      "safe": true,
+      "reasons": [
+        "\u6240\u6709\u7ea6\u675f\u53ef\u540c\u65f6\u6ee1\u8db3, \u4f46\u65e0\u6cd5\u627e\u5230\u5177\u4f53\u8d4b\u503c (\u53ef\u80fd\u4e3a\u4f2a\u9633)",
+        "[\u540c\u4f59\u7cbe\u5316] \u540c\u4f59\u7cbe\u5316: eff\u2208[272,272] \u2227 eff\u22610(mod 16), usable=256 \u2265 write(128)"
+      ]
+    },
+    {
+      "name": "vuln_small",
+      "alloc": 32,
+      "write": 64,
+      "expected_safe": false,
+      "safe": false,
+      "reasons": [
+        "\u53ef\u80fd\u5b58\u5728\u6ea2\u51fa: {'alloc_sz': 32, 'write_sz': 64}",
+        "\u53ef\u80fd\u5b58\u5728\u6ea2\u51fa: write(64) > usable(32)"
+      ]
+    },
+    {
+      "name": "fp_glibc_align",
+      "alloc": 5,
+      "write": 16,
+      "expected_safe": true,
+      "safe": true,
+      "reasons": [
+        "\u6240\u6709\u7ea6\u675f\u53ef\u540c\u65f6\u6ee1\u8db3, \u4f46\u65e0\u6cd5\u627e\u5230\u5177\u4f53\u8d4b\u503c (\u53ef\u80fd\u4e3a\u4f2a\u9633)",
+        "[\u540c\u4f59\u7cbe\u5316] \u540c\u4f59\u7cbe\u5316: eff\u2208[32,32] \u2227 eff\u22610(mod 16), usable=16 \u2265 write(16)"
+      ]
+    },
+    {
+      "name": "vuln_critical",
+      "alloc": 64,
+      "write": 256,
+      "expected_safe": false,
+      "safe": false,
+      "reasons": [
+        "\u53ef\u80fd\u5b58\u5728\u6ea2\u51fa: {'alloc_sz': 64, 'write_sz': 256}",
+        "\u53ef\u80fd\u5b58\u5728\u6ea2\u51fa: write(256) > usable(64)"
+      ]
+    }
+  ],
+  "uaf": {
+    "uaf_candidates": 2,
+    "has_free_use_free": true
+  },
+  "uaf_enhanced": {
+    "L5_branch_narrowed": 0,
+    "L6_calibrated": 1,
+    "final_conf": 0.7165,
+    "stats": {
+      "L0_input": 1,
+      "L5_branch_narrowed": 0,
+      "L6_calibrated": 1,
+      "final": 1
+    }
+  },
+  "fmt": [
+    {
+      "name": "critical",
+      "risk": "CRITICAL",
+      "score": 0.8,
+      "safe": false,
+      "reasons": [
+        "2 \u4e2a\u5199\u539f\u8bed (%n/%hn)",
+        "\u53c2\u6570\u4e0d\u8db3: \u683c\u5f0f\u4e32\u8981\u6c42 4 \u4e2a\u53c2\u6570, \u5b9e\u9645\u4f20\u5165 2 \u4e2a \u2192 \u6808\u8d8a\u754c\u8bfb\u53d6\u53ef\u80fd"
+      ],
+      "arg_mismatch": true
+    },
+    {
+      "name": "high",
+      "risk": "MEDIUM",
+      "score": 0.4,
+      "safe": false,
+      "reasons": [
+        "1 \u4e2a\u5199\u539f\u8bed (%n/%hn)"
+      ],
+      "arg_mismatch": false
+    },
+    {
+      "name": "info_leak",
+      "risk": "MEDIUM",
+      "score": 0.25,
+      "safe": true,
+      "reasons": [
+        "\u53c2\u6570\u4e0d\u8db3: \u683c\u5f0f\u4e32\u8981\u6c42 9 \u4e2a\u53c2\u6570, \u5b9e\u9645\u4f20\u5165 2 \u4e2a \u2192 \u6808\u8d8a\u754c\u8bfb\u53d6\u53ef\u80fd"
+      ],
+      "arg_mismatch": true
+    },
+    {
+      "name": "safe_const",
+      "risk": "SAFE",
+      "score": 0.01,
+      "safe": true,
+      "reasons": [
+        "\u683c\u5f0f\u4e32\u975e\u7528\u6237\u53ef\u63a7"
+      ],
+      "arg_mismatch": false
+    },
+    {
+      "name": "safe_no_n",
+      "risk": "SAFE",
+      "score": 0.01,
+      "safe": true,
+      "reasons": [],
+      "arg_mismatch": false
+    }
+  ],
+  "int_overflow": {
+    "congruence_narrowed": true,
+    "congruence_step": 65536,
+    "pipeline_stats": {
+      "L1_input": 1,
+      "L4_congruence": 0,
+      "L5_sign": 0,
+      "L6_alloc_chain": 0,
+      "final": 0
+    }
+  },
+  "obo": [
+    {
+      "label": "NULL-byte poison",
+      "alloc": 5,
+      "write": 17,
+      "is_obo": true,
+      "risk": "CRITICAL",
+      "usable_size": 16
+    },
+    {
+      "label": "size MSB overwrite",
+      "alloc": 24,
+      "write": 33,
+      "is_obo": true,
+      "risk": "CRITICAL",
+      "usable_size": 32
+    },
+    {
+      "label": "regular overflow",
+      "alloc": 64,
+      "write": 256,
+      "is_obo": false,
+      "risk": "CRITICAL",
+      "usable_size": 64
+    },
+    {
+      "label": "safe",
+      "alloc": 64,
+      "write": 32,
+      "is_obo": false,
+      "risk": "SAFE",
+      "usable_size": 64
+    }
+  ],
+  "df": {
+    "total_events": 3,
+    "detections": 1,
+    "patterns": [
+      "BRIDGED"
+    ],
+    "severities": [
+      "CRITICAL (\u7ed5\u8fc7 tcache)"
+    ]
+  },
+  "uninit": {
+    "uninit_detected": true,
+    "partial_detected": true,
+    "cases": [
+      {
+        "alloc": 64,
+        "init": 0,
+        "use": 8,
+        "danger": true
+      },
+      {
+        "alloc": 128,
+        "init": 64,
+        "use": 128,
+        "danger": true
+      }
+    ]
+  },
+  "buf_under": [
+    {
+      "label": "safe \u2014 minimal neg",
+      "offset": -4,
+      "risk": "LOW",
+      "confidence": 0.4,
+      "field": "prev_size"
+    },
+    {
+      "label": "prev_size hit",
+      "offset": -16,
+      "risk": "LOW",
+      "confidence": 0.4,
+      "field": "size_flags"
+    },
+    {
+      "label": "critical \u2014 into prev chunk metadata",
+      "offset": -32,
+      "risk": "HIGH",
+      "confidence": 0.85,
+      "field": "user_data"
+    }
+  ],
+  "correlate": {
+    "total_findings": 3,
+    "filtered_likely": 2,
+    "details": [
+      {
+        "type": "HEAP_OVERFLOW",
+        "verdict": "LIKELY",
+        "confidence": 0.8322,
+        "supporting": [
+          "INTEGER_OVERFLOW"
+        ]
+      },
+      {
+        "type": "INTEGER_OVERFLOW",
+        "verdict": "LIKELY",
+        "confidence": 0.7466,
+        "supporting": [
+          "HEAP_OVERFLOW"
+        ]
+      },
+      {
+        "type": "FORMAT_STRING",
+        "verdict": "FILTERED",
+        "confidence": 0.25,
+        "supporting": []
+      }
+    ]
+  }
+}

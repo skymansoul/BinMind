@@ -22,8 +22,8 @@ c. Dead zone: 速度在 [target_low, target_high] 内时不做任何调整
 d. Converg detector: 连续 N 次无需调整后冻结阈值，节省计算
 e. Sigmoid 压缩: 将阈值调整量映射到 [-0.04, +0.04]，比固定步长 ±0.02 更精细
 
-ref: KLEE (OSDI 2008) 的启发式搜索策略无阈值自适应
-ref: DiversePath (ASE 2022) 使用固定阈值，未涉及自适应调整
+ref: KLEE 的启发式搜索策略无阈值自适应
+ref: DiversePath 使用固定阈值，未涉及自适应调整
 本模块的比例-积分结构受工业 PID 控制器的积分项启发，但应用于符号执行的
 路径多样性管理场景是新的——离散阈值空间中的滞环控制
 """

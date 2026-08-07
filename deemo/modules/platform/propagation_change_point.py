@@ -4,13 +4,13 @@
 问题：单CVE轨迹分析无法检测跨多CVE的协调利用活动。当攻击者同时利用
 固件/内核/硬件层漏洞时，传播图全局结构发生可检测突变。
 
-方案：Adams & MacKay (2007) BOCD算法。对传播图结构指标建立Normal-Gamma
+方案：Adams & MacKay BOCD算法。对传播图结构指标建立Normal-Gamma
 共轭先验高斯观测模型，每时间步更新游程后验 P(r_t|x_{1:t})。
 
-与已有工作区分：Xinzhe thesis (2024-25) 做单CVE趋势分类，不涉及图结构全局
+与已有工作区分：Xinzhe thesis 做单CVE趋势分类，不涉及图结构全局
 变化检测。本模块从微观(单CVE)提升至宏观(传播生态系统的相变)。
 
-ref: Adams & MacKay (arXiv:0710.3742) — Bayesian Online Changepoint Detection.
+ref: Adams & MacKay — Bayesian Online Changepoint Detection.
 """
 
 from __future__ import annotations

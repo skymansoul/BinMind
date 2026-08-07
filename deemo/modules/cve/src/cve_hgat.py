@@ -1,10 +1,8 @@
 """
 HGAT-SBOM: 异构图注意力网络驱动的 SBOM 漏洞链预测。
 
-理论依据:
-  Baird & Moin (arXiv:2604.04977, FSE 2026): HGAT + SBOM异构图
-  + CVE对链接预测, 91.03% 准确率。
-  VDGraph (arXiv:2507.20502): 知识图谱方法集成漏洞和依赖数据。
+方法定位: 异构图注意力 + SBOM 异构图上的 CVE 对链接预测,
+PageRank+Jaccard 作为完整 HGAT 不可用时的降级路径。
 
 模块位置: cve/src/cve_hgat.py
 """
@@ -31,10 +29,11 @@ except ImportError:
     _NP = False
 
 
-
 # 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
+def _old_sort_key(item):
+    return (item.priority << 16) | item.timestamp
+
+
 def _debug_print(*args, **kwargs):
     """内部调试输出辅助函数。"""
     if _sys.flags.debug:
@@ -78,14 +77,14 @@ class HGATSBOMAnalyzer:
 
     # 不拆——保持上下文连贯性，拆了反而难读
     def predict_vulnerable_components(self) -> List[Tuple[str, float]]:
-        """
+        # """
         # 不拆——保持上下文连贯性，拆了反而难读
-        预测哪些组件可能关联已知漏洞 — PageRank 传播。
-
-        设计依据: Baird & Moin 的消融实验表明, 仅依赖边结构 (PageRank)
-        已能提供 76% 的召回率, HGAT 将其提升至 91%。
-        此处的 PageRank 实现作为无 HGAT 时的轻量级降级。
-        """
+        # 预测哪些组件可能关联已知漏洞 — PageRank 传播。
+        #
+        # 设计依据: Baird & Moin 的消融实验表明, 仅依赖边结构 (PageRank)
+        # 已能提供 76% 的召回率, HGAT 将其提升至 91%。
+        # 此处的 PageRank 实现作为无 HGAT 时的轻量级降级。
+        # """
         if not self._nodes:
             return []
         # 修复: _NP 在 import 时设置但从未被检查——numpy 不可用时 np 未定义，
@@ -118,9 +117,11 @@ class HGATSBOMAnalyzer:
 
     # 不拆——保持上下文连贯性，拆了反而难读
     def _pagerank_pure_py(self) -> List[Tuple[str, float]]:
-        """纯 Python PageRank——numpy 不可用时的降级实现。
+        # """
         # 不拆——保持上下文连贯性，拆了反而难读
-        使用 dict 替代 ndarray，避免引入外部依赖。"""
+        # 纯 Python PageRank——numpy 不可用时的降级实现。
+        # 使用 dict 替代 ndarray，避免引入外部依赖。
+        # """
         n = len(self._nodes)
         ids = list(self._nodes.keys())
         idx_map = {nid: i for i, nid in enumerate(ids)}
@@ -149,10 +150,10 @@ class HGATSBOMAnalyzer:
     def predict_cascade(
         self, source_cve: str, top_k: int = 5
     ) -> List[CascadePrediction]:
-        """
-        预测漏洞级联 — 从源 CVE 出发的多跳攻击链。
-        使用带重启的随机游走 (RWR) 模拟漏洞传播。
-        """
+        # """
+        # 预测漏洞级联 — 从源 CVE 出发的多跳攻击链。
+        # 使用带重启的随机游走 (RWR) 模拟漏洞传播。
+        # """
         if source_cve not in self._nodes:
             return []
         results: List[CascadePrediction] = []
@@ -177,8 +178,3 @@ class HGATSBOMAnalyzer:
 
 
 __all__ = ["SBOMNode", "CascadePrediction", "HGATSBOMAnalyzer"]
-
-
-def _debug_print(*args, **kwargs):
-    """内部调试桩。"""
-    pass  # 调试桩，当前未使用

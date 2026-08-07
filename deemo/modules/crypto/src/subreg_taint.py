@@ -18,13 +18,12 @@
   - 零扩展检测: movzx清空高位污染
   - 与ConstantTimeVerifier兼容: 可降级输出全寄存器级污染集合
 
-参考:
-  - angr subregister taint fix (borzacchiello/angr#2420, 2024):
+  - angr subregister taint fix:
     通过get_full_register_offset解析部分寄存器到完整寄存器的字节偏移,
     本项目将其思想从VEX IR层级移植到原生x86指令级。
   - Intel SDM Vol.1 §3.4.1.1: General-Purpose Registers in 64-Bit Mode —
     寄存器重叠关系和零扩展规则(32bit操作隐式零扩展高32bit)。
-  - BINSEC/REL (ACM TOPS 2023): 在二进制级验证常量时间, 其污点引擎
+  - BINSEC/REL: 在二进制级验证常量时间, 其污点引擎
     的精度依赖对部分寄存器写入/读取的正确建模。
 
 边界条件:
@@ -36,8 +35,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ── x86/x64 通用寄存器字节级别名映射 ──
+# x86/x64 通用寄存器字节级别名映射
 # key: 寄存器名 (小写). value: (父寄存器名, 字节起始偏移, 字节长度)
 # 偏移0 = 最低有效字节 (little-endian)
 # 例: AL → (RAX, 0, 1); AX → (RAX, 0, 2); EAX → (RAX, 0, 4)
@@ -85,7 +83,6 @@ _ZERO_EXTEND_32BIT = frozenset({
     'r8d', 'r9d', 'r10d', 'r11d', 'r12d', 'r13d', 'r14d', 'r15d',
 })
 
-
 @dataclass
 class TaintByteVector:
     """寄存器的逐字节污染状态 — 8字节位图, 每字节1bit标记污染."""
@@ -110,7 +107,6 @@ class TaintByteVector:
 
     def tainted_byte_offsets(self) -> List[int]:
         return [i for i in range(8) if (self.bits >> i) & 1]
-
 
 class SubregTaintTracker:
     """子寄存器级污点追踪器 — 为ConstantTimeVerifier提供精确污染传播.
@@ -217,7 +213,6 @@ class SubregTaintTracker:
                 out[parent] = bytes_list
         mem_count = len(self._mem_taint)
         return {'gprs': out, 'memory_locations': mem_count}
-
 
 __all__ = [
     'TaintByteVector', 'SubregTaintTracker',

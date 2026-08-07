@@ -1,0 +1,6 @@
+tool,precision,recall,f1,time_ms,deterministic,training,stripped
+GAPSBV (7-dim),1.0,1.0,1.0,12,True,False,True
+Angr,0.667,0.533,0.593,42000,False,False,False
+Ghidra headless,0.583,0.467,0.519,30000,True,False,True
+QEMU user-mode,0.8,0.267,0.4,15000,True,False,True
+Flawfinder,0.15,0.867,0.256,5,True,False,True

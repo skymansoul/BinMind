@@ -1,0 +1,262 @@
+{
+  "verifier": "DFSV",
+  "version": "v7",
+  "total_samples": 15,
+  "tp": 14,
+  "tn": 1,
+  "fp": 0,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "results": [
+    {
+      "sample": "double_free_01",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 11,
+          "var": "data",
+          "paired": 9,
+          "reason": "'data' free@L9 and 'data' free@L11 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_02",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 10,
+          "var": "p",
+          "paired": 9,
+          "reason": "'p' free@L9 and 'p' free@L10 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_03",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 9,
+          "var": "g_alias",
+          "paired": 0,
+          "reason": "'teardown' wraps free('g_alias') called \u22652x"
+        },
+        {
+          "line": 8,
+          "var": "p",
+          "paired": 0,
+          "reason": "'setup' wraps free('p') called \u22652x"
+        },
+        {
+          "line": 9,
+          "var": "g_alias",
+          "paired": 8,
+          "reason": "'p' free@L8 and 'g_alias' free@L9 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_04",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 9,
+          "var": "p",
+          "paired": 0,
+          "reason": "'p' free@L9 inside loop body"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_05",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 10,
+          "var": "buf",
+          "paired": 9,
+          "reason": "'buf' free@L9 and 'buf' free@L10 (cross)"
+        },
+        {
+          "line": 12,
+          "var": "buf",
+          "paired": 9,
+          "reason": "'buf' free@L9 and 'buf' free@L12 (cross)"
+        },
+        {
+          "line": 12,
+          "var": "buf",
+          "paired": 10,
+          "reason": "'buf' free@L10 and 'buf' free@L12 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_06",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 9,
+          "var": "g_buf",
+          "paired": 0,
+          "reason": "'handler' wraps free('g_buf') called \u22652x"
+        },
+        {
+          "line": 12,
+          "var": "g_buf",
+          "paired": 9,
+          "reason": "'g_buf' free@L9 and 'g_buf' free@L12 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_07",
+      "ground_truth": "SAFE",
+      "found": false,
+      "detections": []
+    },
+    {
+      "sample": "double_free_08",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 12,
+          "var": "a->next",
+          "paired": 11,
+          "reason": "'a->next' free@L12 after 'a' freed@L11"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_09",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 6,
+          "var": "gp",
+          "paired": 5,
+          "reason": "'gp' free@L5 and 'gp' free@L6 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_10",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 4,
+          "var": "shared",
+          "paired": 0,
+          "reason": "'do_free' wraps free('shared') called \u22652x"
+        },
+        {
+          "line": 5,
+          "var": "shared",
+          "paired": 4,
+          "reason": "'shared' free@L4 and 'shared' free@L5 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_11",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 5,
+          "var": "c->d1",
+          "paired": 0,
+          "reason": "'destroy' wraps free('c->d1') called \u22652x"
+        },
+        {
+          "line": 5,
+          "var": "c->d2",
+          "paired": 0,
+          "reason": "'destroy' wraps free('c->d2') called \u22652x"
+        },
+        {
+          "line": 5,
+          "var": "c",
+          "paired": 0,
+          "reason": "'destroy' wraps free('c') called \u22652x"
+        },
+        {
+          "line": 5,
+          "var": "c->d2",
+          "paired": 5,
+          "reason": "'c->d1' free@L5 and 'c->d2' free@L5"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_12",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 5,
+          "var": "e->val",
+          "paired": 5,
+          "reason": "'e->key' free@L5 and 'e->val' free@L5"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_13",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 6,
+          "var": "resource",
+          "paired": 0,
+          "reason": "'release' wraps free('resource') called \u22652x"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_14",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 5,
+          "var": "ptr",
+          "paired": 0,
+          "reason": "'process' wraps free('ptr') called \u22652x"
+        },
+        {
+          "line": 6,
+          "var": "p",
+          "paired": 5,
+          "reason": "'ptr' free@L5 and 'p' free@L6 (cross)"
+        }
+      ]
+    },
+    {
+      "sample": "double_free_15",
+      "ground_truth": "VULN",
+      "found": true,
+      "detections": [
+        {
+          "line": 6,
+          "var": "b.data",
+          "paired": 6,
+          "reason": "'a.data' free@L6 and 'b.data' free@L6 (cross)"
+        }
+      ]
+    }
+  ]
+}

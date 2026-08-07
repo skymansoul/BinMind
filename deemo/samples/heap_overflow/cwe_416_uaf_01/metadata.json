@@ -1,0 +1,4 @@
+{
+  "cwe": "CWE-416",
+  "description": "Use-after-free (not heap overflow)"
+}

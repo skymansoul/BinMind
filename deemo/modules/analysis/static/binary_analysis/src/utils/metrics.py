@@ -13,7 +13,7 @@ class MetricsRecorder:
         self._timers: dict[str, float] = {}
         self._durations: dict[str, float] = {}
 
-    # ---- 阶段计时
+# 阶段计时
 
     def start(self, label: str) -> None:
         self._timers[label] = time.perf_counter()
@@ -37,7 +37,7 @@ class MetricsRecorder:
         """返回所有已完成阶段的 {label: d} 拷贝"""
         return dict(self._durations)
 
-    # ---- 通用 record/ 接口 (2026-08-01) ----
+# 通用 record/ 接口
     # INTJ策略: 除了 start/stop 的耗时模式，保留 record/ 作为通用 kv 存储
     # 方便非耗时类指标（如函数计数、错误数）也能用同一个 recorder
 
@@ -58,7 +58,7 @@ class MetricsRecorder:
         return f"Metrics({', '.join(parts)})" if parts else "Metrics(empty)"
 
 
-# ===== ScopedTimer -- 上下文管理器 =====
+# ScopedTimer -- 上下文管理器
 
 class ScopedTimer:
     """进入 块开始计时，退出时停止并记录"""
@@ -80,7 +80,7 @@ class ScopedTimer:
         return self._elapsed
 
 
-# ---- measure_time 装饰器 ----
+# measure_time 装饰器
 
 def measure_time(recorder: MetricsRecorder | None = None, label: str | None = None):
     """将函数调用自动计时。recorder 为 None 时创建局部 MetricsRecorder"""

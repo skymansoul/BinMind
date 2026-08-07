@@ -58,7 +58,6 @@ class MCTSNode:
         return max(self.children, key=uct)
 
 
-# ---------------------------------------------------------------------------
 # MCTS搜索引擎
 class CounterfactualSearchEngine:
     """MCTS反事实搜索: 最小编辑代价使GNN预测翻转。"""

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-05  |  三检测器统一调度——堆溢出/UAF/格式化字符串联合分析
+# coding: utf-8
+# 创建: 2026-04-30  |  三检测器统一调度——堆溢出/UAF/格式化字符串联合分析
 #
 """
 统一检测管线——串联堆生命周期分析→三检测器→约束过滤→聚合输出。
@@ -69,7 +69,7 @@ class VulnDetectionPipeline:
             if not insns:
                 continue
 
-            # Step 1: 生命周期分析
+            # 生命周期分析
             try:
                 from .heap_lifecycle import HeapLifecycleAnalyzer
                 lifecycle = HeapLifecycleAnalyzer().analyze(
@@ -78,7 +78,7 @@ class VulnDetectionPipeline:
             except ImportError:
                 alloc_sizes = {}
 
-            # Step 2: 堆溢出检测（提取alloc+write size参数）
+            # 堆溢出检测（提取alloc+write size参数）
             try:
                 from .heap_overflow_detector import detect_heap_overflow
                 consts = {}
@@ -107,7 +107,7 @@ class VulnDetectionPipeline:
             except ImportError:
                 pass
 
-            # Step 3: UAF检测（注入时序过滤）
+            # UAF检测（注入时序过滤）
             try:
                 from .uaf_detector import detect_uaf
                 uaf_findings = detect_uaf(insns)
@@ -129,7 +129,7 @@ class VulnDetectionPipeline:
             except ImportError:
                 pass
 
-            # Step 4: 格式化字符串检测 + FP过滤
+            # 格式化字符串检测 + FP过滤
             try:
                 from .path_taint_simplified import SimplifiedTaintTracker
                 taint = SimplifiedTaintTracker().track(insns, func_name)
@@ -161,7 +161,7 @@ class VulnDetectionPipeline:
                         confidence=conf, evidence=fc.evidence))
             except ImportError: pass
 
-            # Step 5: 约束过滤
+            # 约束过滤
             if enable_constraint_filter and all_candidates:
                 try:
                     from .constraint_filter import ConstraintFilter

@@ -1,5 +1,5 @@
 # 对抗鲁棒性测试 : 对抗扰动→测量性能退化
-# 依据: GraphRAG Under Fire [arXiv 2501.14050]
+# 依据: GraphRAG Under Fire
 # GragPoison三策略: 关系注入/增强/叙述构造
 # 对抗样本→敏感性测量→鲁棒性报告
 
@@ -20,7 +20,7 @@ class AttackMethod(Enum):
     PGD = 'pgd'                      # 投影梯度下降(PGD)(PGD)(PGD)(PGD)
     EDGE_FLIP = 'edge_flip'          # 图结构扰动: 随机边翻转
     FEATURE_NOISE = 'feature_noise'   # 特征加噪
-    GRAGPOISON_INJECT = 'gragpoison'  # GragPoison关系注入 [arXiv 2501.14050]
+    GRAGPOISON_INJECT = 'gragpoison'  # GragPoison关系注入
     LABEL_FLIP = 'label_flip'        # 标签翻转
     NODE_INJECTION = 'node_injection' # 虚假节点注入
 
@@ -60,7 +60,7 @@ class RobustnessReport:
         }
 
 
-# ========== 辅助 ==========
+# 辅助
 
 def _at_clip(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
@@ -69,7 +69,7 @@ def _at_vec_diff(a: List[float], b: List[float]) -> float:
     return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(len(a))))
 
 
-# ========== 对抗攻击 ==========
+# 对抗攻击
 
 class AdversarialTester:
     """对抗鲁棒性测试器
@@ -281,7 +281,7 @@ class AdversarialTester:
         )
 
     def _attack_gragpoison(self, idx, X, predict_fn, adjacency, target):
-        """GragPoison [arXiv 2501.14050] 关系注入攻击近似
+        """GragPoison 关系注入攻击近似
 
         原始GragPoison攻击GraphRAG的三策略:
           1. relation_injection: 注入虚假关系
@@ -315,7 +315,7 @@ class AdversarialTester:
             was_successful=change > 0.1,
         )
 
-    # ========== 报告 ==========
+# 报告
 
     def test_robustness(self, X, predict_fn,
                         adjacency=None,

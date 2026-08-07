@@ -7,7 +7,7 @@ from typing import List, Dict, Optional, Tuple
 class GoBinaryAnalyzer:
     """binary detection, version extraction, pclntab recovery, -specific vuln patterns"""
 
-    # ---- 初始化: Go特征签名 ----
+# 初始化: Go特征签名
 
     def __init__(self):
         # Go版本字符串模式
@@ -116,7 +116,7 @@ class GoBinaryAnalyzer:
             },
         }
 
-    # ---- Go二进制检测 ----
+# Go二进制检测
 
     def is_go_binary(self, data: bytes, strings: List[str] = None) -> Dict:
         if strings is None:
@@ -198,7 +198,7 @@ class GoBinaryAnalyzer:
 
         return None
 
-    # ===== pclntab函数恢复 (模拟r2 pcln) =====
+# pclntab函数恢复 (模拟r2 pcln)
 
     def recover_functions_from_pclntab(self, data: bytes) -> List[Dict]:
         _funcs = []
@@ -257,7 +257,7 @@ class GoBinaryAnalyzer:
 
         return _funcs
 
-    # ---- Go特异性漏洞检测 ----
+# Go特异性漏洞检测
 
     def detect_go_vulns(self, strings: List[str], imports: dict = None) -> List[Dict]:
         _findings = []
@@ -308,7 +308,7 @@ class GoBinaryAnalyzer:
 
         return _deps
 
-    # ===== 综合分析入口 =====
+# 综合分析入口
 
     def analyze(self, data: bytes = None, filepath: str = None,
                 strings: List[str] = None, imports: dict = None) -> Dict:
@@ -347,7 +347,7 @@ class GoBinaryAnalyzer:
             },
         }
 
-    # ---- 辅助 ----
+# 辅助
 
     def _read_cstr(self, data: bytes, offset: int, max_len=256) -> str:
         _end = offset

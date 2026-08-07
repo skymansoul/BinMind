@@ -43,7 +43,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         self.__grad_clip = 5.0  # 梯度裁剪阈值，防止三元组损失梯度爆炸
         self.__fusion_alpha = self.kFusionAlpha
 
-    # ── 特征提取（不变） ──────────────────────────────────────────────
+# 特征提取（不变）
     def extract_features(self, functions, dim=128):
         if functions is None: return {}
         self.__dim = dim; out = {}
@@ -85,8 +85,8 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         while len(out) < vdim: out.append(0.0)
         return out[:vdim]
 
-    # ── 跨模态投影：结构通路 vs. 操作码通路 ─────────────────────────────
-    # 思路来自 CLAP (arXiv 2402.16928) — 不同模态各自编码后在对比空间对齐，
+# 跨模态投影：结构通路 vs. 操作码通路
+    # 思路来自 CLAP — 不同模态各自编码后在对比空间对齐，
     # 而非简单拼接。此处将结构向量和 ngram 分别投影为 d 维后再做凸组合。
 
     def _project_structural(self, feat):
@@ -153,7 +153,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             cross_emb[fname] = self._fuse_modalities(struct_p, opcode_p)
         return cross_emb
 
-    # ── 训练主循环 ────────────────────────────────────────────────────
+# 训练主循环
     def train(self, functions, labels=None, margin=0.5, iterations=200, learning_rate=0.01,
               early_stop_patience=30, momentum=0.9):
         """训练嵌入。
@@ -170,7 +170,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         names = list(fmap.keys())
         triplets = self._gen_triplets(fmap, labels)
 
-        # ── 跨模态初始化：替代纯随机，让初始嵌入携带结构/操作码先验 ──
+# 跨模态初始化：替代纯随机，让初始嵌入携带结构/操作码先验
         cross_init = self._cross_modal_embedding(fmap)
         emb = {}
         for n in names:
@@ -205,7 +205,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                     eps = 1e-8
                     dap_s = max(eps, d_ap)
                     dan_s = max(eps, d_an)
-                    # ── 梯度计算与裁剪 ──
+# 梯度计算与裁剪
                     for dk in range(self.__dim):
                         ga = (2 * (av[dk] - nv[dk]) / dan_s +
                               2 * (pv[dk] - av[dk]) / dap_s)
@@ -220,7 +220,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                         grads[t.negative][dk] += gn
                 t_idx += 1
 
-            # ── 动量 SGD 更新 ──
+# 动量 SGD 更新
             n_trip = max(1, len(triplets))
             for name, vec in emb.items():
                 upd = grads[name]
@@ -250,7 +250,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             if ni % 50 == 0:
                 logger.debug(f'iter {ni}: loss={avg_loss:.6f}')
 
-            # ── 早停检测 ──
+# 早停检测
             if early_stop_patience > 0:
                 if avg_loss < best_loss - 1e-6:
                     best_loss = avg_loss
@@ -274,7 +274,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             stopped_early=(converged_epoch < iterations),
         )
 
-    # ── 三元组生成（不变） ──────────────────────────────────────────────
+# 三元组生成（不变）
     def _gen_triplets(self, fmap, labels):
         if fmap is None: return []
         names = list(fmap.keys()); n = len(names)
@@ -361,7 +361,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         dap = self._euclidean(anchor, positive); dan = self._euclidean(anchor, negative)
         return max(0.0, dap - dan + margin)
 
-    # ── 持久化与查询（不变） ───────────────────────────────────────────
+# 持久化与查询（不变）
     def save(self, filepath):
         if filepath is None: return False
         try:

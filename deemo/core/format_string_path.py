@@ -2,7 +2,7 @@
 # 核心误报源: 静态模式匹配将printf(fmt_param)标记为漏洞, 但fmt_param可能来自
 # 上层调用者的常数字符串(如log_wrapper("error: %s", msg))。
 # 本模块沿调用图反向追踪格式参数来源, 判定是否来自用户输入。
-# 方法论: 基于静态污点传播(Foster et al., PLDI 2002)的单变量简化。
+# 方法论: 基于静态污点传播的单变量简化。
 
 from __future__ import annotations
 

@@ -13,7 +13,6 @@ Complementary to static_analysis.DANGEROUS_FUNCTIONS:
 Falls back to JSON parsing when PyYAML is not available.
 """
 
-from __future__ import annotations
 
 import json
 import logging

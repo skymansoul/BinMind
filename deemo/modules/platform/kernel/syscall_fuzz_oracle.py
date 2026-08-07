@@ -1,10 +1,10 @@
 # 系统调用Fuzz预言机：基于差分测试的syscall行为判定
-# 参考:
+#
 #   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
-#    (arXiv 2605.25411, May 2026) — 形式化方法验证迁移等价性
+# — 形式化方法验证迁移等价性
 #   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
 #    (arXiv 2607.02748) — Syscall参数约束建模
-#   SyzGen (USENIX Security 2024) — 自动化syscall依赖推理
+#   SyzGen — 自动化syscall依赖推理
 
 import os
 import struct
@@ -15,7 +15,7 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-# ── 系统调用参数类型建模 ──
+# 系统调用参数类型建模
 # 每个syscall的参数携带类型约束；有效fuzz输入须满足这些约束
 # 类型: fd(文件描述符), ptr(用户空间指针), buf(缓冲区+长度),
 #       flags(位标志), path(文件系统路径), signal(信号编号),

@@ -1,8 +1,8 @@
 # rop_gadget_scanner.py — ROP 指令片段扫描与利用链评估
 # 在代码段中定位以 ret 结尾的指令序列，分类并量化其在 ROP 链中的可用性。
-# 参考: ropbot (2024) — 自动化 gadget 发现与链组装 &
-#   ARG: Automatic ROP Chains Generation (CODASPY 2017) &
-#   Stitching the Gadgets (2014) — 粗粒度 CFI 绕过分析
+# ropbot — 自动化 gadget 发现与链组装 &
+#   ARG: Automatic ROP Chains Generation &
+#   Stitching the Gadgets — 粗粒度 CFI 绕过分析
 import os as _os, struct as _pack, re as _re
 from collections import defaultdict as _defdict
 

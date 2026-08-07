@@ -12,9 +12,9 @@
 #   层1 — 结构保持缩减: 仅删除完整的语法单元
 #     (JSON: 键值对/数组元素, XML: 完整元素)
 #   层2 — 字段级对齐: 确保缩减后仍有完整的字段边界
-# 参考 (已验证真实):
+# (已验证真实):
 #   Zeller & Hildebrandt "Simplifying and Isolating Failure-Inducing
-#     Input" (IEEE TSE 2002) — delta debugging原始论文
+#     Input" — delta debugging原始论文
 #   AFL++ afl-tmin documentation — 输入最小化最佳实践
 from __future__ import annotations
 import hashlib, logging, math, re, struct, time

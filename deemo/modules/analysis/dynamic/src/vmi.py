@@ -87,7 +87,7 @@ class VMIAnalyzer:
         self._current_domain_id: int = 0
         self._current_domain_name: str = ""
 
-    # ---- Connection management ----
+# Connection management
 
     def connect(self, domain_name: str) -> bool:
         """Connect a VM/domain for introspection
@@ -144,7 +144,7 @@ class VMIAnalyzer:
         self._connected = False
         self._current_domain_name = ""
 
-    # ---- VM discovery ----
+# VM discovery
 
     def list_domains(self) -> List[VMINode]:
         """List available VM domains"""
@@ -162,7 +162,7 @@ class VMIAnalyzer:
             )
         ]
 
-    # ---- Memory reading ----
+# Memory reading
 
     def read_physical_memory(self, paddr: int, size: int) -> bytes:
         """读取 physical memory VM
@@ -217,7 +217,7 @@ class VMIAnalyzer:
             data = data[:null_byte]
         return data.decode("utf-8", errors="replace")
 
-    # ---- Process enumeration ----
+# Process enumeration
 
     def list_processes(self) -> List[VMIProcess]:
         """Enumerate 处理 VM via kernel struct walking
@@ -260,7 +260,7 @@ class VMIAnalyzer:
                 return proc
         return None
 
-    # ---- Process memory ----
+# Process memory
 
     def read_process_memory(self, pid: int, vaddr: int, size: int) -> bytes:
         """读取 memory a specific process's 虚拟地址 space
@@ -275,7 +275,7 @@ class VMIAnalyzer:
 
         return self.read_virtual_memory(vaddr, size, pid)
 
-    # ---- Kernel inspection ----
+# Kernel inspection
 
     def get_kernel_base(self) -> int:
         """kernel 基址 (ntoskrnl.exe Windows)"""
@@ -297,7 +297,7 @@ class VMIAnalyzer:
             return self.read_virtual_memory(addr, size)
         return b"\x00" * size
 
-    # ---- VM control ----
+# VM control
 
     def pause_vm(self) -> bool:
         """Pause VM for consistent memory reading"""
@@ -309,7 +309,7 @@ class VMIAnalyzer:
         log.info("Resuming VM %s", self._current_domain_name)
         return True
 
-    # ---- Status ----
+# Status
 
     @property
     def is_connected(self) -> bool:

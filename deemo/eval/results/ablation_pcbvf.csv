@@ -1,0 +1,13 @@
+sample,expected,n_candidates,Baseline,CJ,CJ+BVF,CJ+BVF+PC-BVF
+pcbvf_01,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_02,True,1,VULN,SAFE,SAFE,VULN
+pcbvf_03,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_04,True,1,VULN,SAFE,SAFE,VULN
+pcbvf_05,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_06,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_07,True,1,VULN,SAFE,SAFE,VULN
+pcbvf_08,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_09,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_10,True,1,VULN,SAFE,SAFE,VULN
+pcbvf_11,False,1,VULN,SAFE,SAFE,SAFE
+pcbvf_12,False,1,VULN,SAFE,SAFE,SAFE

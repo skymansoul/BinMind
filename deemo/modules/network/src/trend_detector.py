@@ -1,4 +1,4 @@
-# 创建: 2026-08-13  修改: 2026-08-13 (增加Pettitt变点检测+Theil-Sen鲁棒斜率, 从简单趋势判定升级为变点定位+退化速率量化)
+# 创建: 2026-07-03  修改: 2026-08-13 (增加Pettitt变点检测+Theil-Sen鲁棒斜率, 从简单趋势判定升级为变点定位+退化速率量化)
 # MK趋势检测+Pettitt变点定位 —— 协议响应时间渐进退化检测与根因定位。
 #
 # 协议响应时间的渐进退化(内存泄漏→响应变慢, Slowloris→逐渐占用
@@ -13,9 +13,9 @@
 #   对n>10, S近似正态→计算Z统计量→双侧p值
 #
 # 与EWMA/阈值检测的互补:
-#   - EWMA: 检测均值平移(突变)
-#   - MK: 检测渐进趋势(渐变)
-#   - 组合: MK检测到递增趋势后, EWMA阈值可适当收紧→提前告警
+# EWMA: 检测均值平移(突变)
+# MK: 检测渐进趋势(渐变)
+# 组合: MK检测到递增趋势后, EWMA阈值可适当收紧→提前告警
 #
 # 未见2024-2025文献涉及MK检验用于网络协议响应时间安全分析。
 
@@ -154,7 +154,7 @@ def _pettitt_test(values: List[float]) -> Tuple[int, float, float, float]:
     k_stat = max(abs_u)
     cp = abs_u.index(k_stat)
 
-    # 近似p值 (Pettitt 1979)
+    # 近似p值
     denom = n ** 3 + n ** 2
     if denom > 0:
         p_val = 2.0 * math.exp(-6.0 * k_stat * k_stat / denom)

@@ -1,10 +1,9 @@
-# LLM辅助污点源/汇自动推断 — 基于 LATTE (Ant Group, 2025) 思路
-# 论文: "Harnessing the Power of LLM to Support Binary Taint Analysis", arXiv:2401.01625
+# LLM辅助污点源/汇自动推断 — 基于 LATTE 思路
+# 论文: "Harnessing the Power of LLM to Support Binary Taint Analysis",
 # 核心改进: 用LLM分析反编译伪代码, 自动识别非标准库的输入源和危险汇聚点,
 # 解决纯正则匹配对定制化API/间接输入路径的漏检问题。
 # LLM不可用时降级为纯正则推断, 不阻塞主流程。
 
-from __future__ import annotations
 
 import json
 import logging

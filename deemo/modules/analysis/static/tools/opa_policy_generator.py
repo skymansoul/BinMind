@@ -107,7 +107,7 @@ class OPAPolicyGenerator:
                          annotations={'title': 'Secret Access Policy',
                                       'description': 'Block mounting exposed secrets'})
 
-    # ── 运行时安全策略 ──────────────────────────────────────────────────────
+# 运行时安全策略
     # 基于二进制分析发现（如检测到的危险系统调用）生成运行时策略
 
     def generate_runtime_policy(self, dangerous_calls: List[str]) -> OPAPolicy:

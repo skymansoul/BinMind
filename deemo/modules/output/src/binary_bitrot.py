@@ -18,8 +18,7 @@
 
   所有因子归一化至 [0, 1]，加权求和 → [0, 10]。
 
-参考:
-  无现有工作 (2026-08 检索确认).
+  无现有工作.
   CWE-1104: Use of Unmaintained Third-Party Components.
 
 修改记录:
@@ -31,7 +30,6 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # 编译器版本 → 安全缓解代际分 (越高越现代)
 # GCC 6+ 引入 -fstack-clash-protection; GCC 8+ 引入 CET 支持
@@ -69,7 +67,6 @@ _FORMAT_RISK: Dict[str, float] = {
     'a.out': 1.0, 'coff': 0.9, 'srec': 0.8,
 }
 
-
 @dataclass
 class BitrotScore:
     """二进制比特腐烂评分。"""
@@ -93,13 +90,11 @@ class BitrotScore:
         else:
             self.risk_level = 'low'
 
-
 def _age_factor(compilation_year: int, current_year: Optional[int] = None) -> float:
     """编译年龄因子 — 每年 +0.08，10年封顶。"""
     cy = current_year or time.localtime().tm_year
     age = max(0, cy - compilation_year)
     return round(min(age * 0.08, 1.0), 2)
-
 
 def _compiler_factor(compiler_version: str) -> float:
     """编译器代际差距因子 — 1.0 - generation_score。"""
@@ -117,7 +112,6 @@ def _compiler_factor(compiler_version: str) -> float:
             continue
     return round(1.0 - _COMPILER_GENERATION['unknown'], 2)
 
-
 def _format_factor(binary_format: str) -> float:
     """二进制格式过时因子。"""
     fmt_lower = binary_format.lower()
@@ -125,7 +119,6 @@ def _format_factor(binary_format: str) -> float:
         if key in fmt_lower:
             return risk
     return 0.3  # 未知格式 — 中等风险
-
 
 def _dependency_eol_factor(
     linked_libraries: List[str],
@@ -153,7 +146,6 @@ def _dependency_eol_factor(
 
     return round(min((1.0 - eol_risk_product), 1.0), 2)
 
-
 def _cve_debt_factor(unfixed_cve_count: int, cvss_sum: float) -> float:
     """
     CVE 债务因子 — 未修复 CVE 数量 + 累计 CVSS 分数。
@@ -167,11 +159,9 @@ def _cve_debt_factor(unfixed_cve_count: int, cvss_sum: float) -> float:
     raw = 0.5 * count_norm + 0.5 * cvss_norm
     return round(raw, 2)
 
-
 def _tech_debt_days(score: float) -> int:
     """bitrot 分数 → 估算修复人天。"""
     return int(score * 12)  # 每分 ≈ 12 人天
-
 
 def assess_bitrot(
     binary_name: str = '',
@@ -211,7 +201,6 @@ def assess_bitrot(
         cve_debt_factor=round(cvf * 10, 1),
         estimated_tech_debt_days=_tech_debt_days(score),
     )
-
 
 def bitrot_summary(score: BitrotScore) -> Dict[str, Any]:
     """bitrot 评估摘要。"""

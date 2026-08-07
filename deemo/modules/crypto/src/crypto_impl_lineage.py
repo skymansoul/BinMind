@@ -1,7 +1,7 @@
 """
 密码学实现谱系推断 — 通过层次聚类和距离度量推断多个实现的演化关系。
 
-创建: 2025-09-23 16:52
+创建: 2026-07-09 16:52
 修改:
   2025-09-23 16:52 — 初始实现: UPGMA层次聚类/Silhouette评分/树形图序列/谱系根推断
 
@@ -20,10 +20,9 @@
   与crypto_lineage的区别: lineage追踪代码复用(同架构), 本模块做跨实现的
   演化关系推断(可跨架构, 使用crypto_semantic_hash的距离)。
 
-参考:
-  - Sokal & Michener (1958): UPGMA聚类方法。
-  - Rousseeuw (1987): Silhouette系数 — 聚类质量度量。
-  - Jain & Dubes (1988): 聚类分析算法综述。
+  - Sokal & Michener: UPGMA聚类方法。
+  - Rousseeuw: Silhouette系数 — 聚类质量度量。
+  - Jain & Dubes: 聚类分析算法综述。
 
 边界条件:
   - 层次聚类在样本量>100时O(n²)内存压力显著 — 预筛选指纹到top-50。
@@ -35,7 +34,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
 @dataclass
 class LineageNode:
     """谱系树中的节点 — 可以是单个实现或一个聚类。"""
@@ -45,7 +43,6 @@ class LineageNode:
     height: float = 0.0            # 合并高度(=组间距离/2)
     member_count: int = 1          # 该节点下的实现数量
 
-
 @dataclass
 class LineageTree:
     algorithm: str = ""
@@ -54,8 +51,7 @@ class LineageTree:
     best_k: int = 1                # 最佳聚类数
     inferred_root_impl: str = ""   # 推断的根实现(最像标准参考的)
 
-
-# ── UPGMA层次聚类 ──
+# UPGMA层次聚类
 
 def _upgma_cluster(dist_matrix: List[List[float]],
                     labels: List[str]) -> LineageNode:
@@ -136,8 +132,7 @@ def _upgma_cluster(dist_matrix: List[List[float]],
 
     return nodes[0] if nodes else LineageNode(node_id=0, label='empty')
 
-
-# ── Silhouette评分 ──
+# Silhouette评分
 
 def _silhouette_score(dist_matrix: List[List[float]],
                        cluster_assignments: List[int]) -> float:
@@ -172,7 +167,6 @@ def _silhouette_score(dist_matrix: List[List[float]],
         scores.append((b - a) / denom if denom > 0 else 0.0)
 
     return sum(scores) / len(scores)
-
 
 def _compute_cluster_assignments(root: LineageNode, n: int,
                                   k: int) -> List[int]:
@@ -226,8 +220,7 @@ def _compute_cluster_assignments(root: LineageNode, n: int,
             assignments[i] = 0
     return assignments
 
-
-# ── 主推断函数 ──
+# 主推断函数
 
 def infer_lineage(fingerprints: List,
                   labels: Optional[List[str]] = None,
@@ -285,7 +278,6 @@ def infer_lineage(fingerprints: List,
         algorithm=algorithm, root=root,
         silhouette_scores=sil_scores, best_k=best_k,
         inferred_root_impl=inferred_root)
-
 
 def export_lineage_json(tree: LineageTree) -> str:
     """将谱系树导出为JSON(用于可视化)。"""

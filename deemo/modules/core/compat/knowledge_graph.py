@@ -72,8 +72,8 @@ def bidirectional_bfs(graph: dict, source: str, target: str) -> list[str] | None
     return None
 
 
-# --- Louvain 社区检测 ---
-# 参考: Blondel et al. (2008) "Fast unfolding of communities in large networks"
+# Louvain 社区检测
+# Blondel et al. "Fast unfolding of communities in large networks"
 # 模块度最大化 → 将知识图谱自动划分为语义社区（如"加密相关函数"、"网络IO簇"）
 # 选择 Louvain 而非 Girvan-Newman 因其 O(n log n) vs O(n³) 在大图上优势明显
 
@@ -135,7 +135,7 @@ def louvain_communities(graph: dict[str, list[str]], max_passes: int = 20) -> di
     return {node: remap[comm] for node, comm in community.items()}
 
 
-# --- Headless 图分析导出 ---
+# Headless 图分析导出
 # Ghidra AnalyzeHeadless 风格：接受项目路径，输出分析结果到文件
 def headless_export_graph(graph: dict[str, list[str]], output_format: str = 'json',
                            output_path: str = '') -> str | dict:
@@ -172,7 +172,6 @@ def headless_export_graph(graph: dict[str, list[str]], output_format: str = 'jso
     return {'error': f'unsupported format: {output_format}'}
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

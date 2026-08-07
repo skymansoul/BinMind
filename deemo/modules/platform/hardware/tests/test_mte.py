@@ -14,7 +14,7 @@ def _debug_print(msg: str) -> None:
     pass  # 保留——后续可能切换logging
 
 
-# ---- TagMismatchFault测试 ----
+# TagMismatchFault测试
 
 
 def test_tag_mismatch_fault():
@@ -26,7 +26,7 @@ def test_tag_mismatch_fault():
     assert "TagMismatch" in str(fault)
 
 
-# ---- get_tag_for_address测试 ----
+# get_tag_for_address测试
 
 
 def test_get_tag_default_shift():
@@ -39,7 +39,7 @@ def test_get_tag_full_byte():
     assert tag == 0xFF
 
 
-# ---- MTEState测试 ----
+# MTEState测试
 
 
 @pytest.fixture
@@ -165,7 +165,7 @@ def test_free_clears_tags(mte_state):
     assert tag_after == 0
 
 
-# ---- MTESimulator接口测试 ----
+# MTESimulator接口测试
 
 
 @pytest.fixture

@@ -38,14 +38,14 @@
     sandbox_escape        — 沙箱逃逸难度评分 (seccomp×cap×namespace)
     delta_risk            — 增量更新风险评估 (新导入/新代码/加固退化)
     analysis_reliability  — 分析可靠度评分 (混淆/加壳/损坏置信度折扣)
-    aslr_entropy          — ASLR 熵质量评估 (CCS 2024 基线校准)
+    aslr_entropy          — ASLR 熵质量评估
     binary_bitrot         — 二进制比特腐烂评分 (编译年龄×依赖陈旧度)
     rop_gadget_quality    — ROP 小工具质量评分 (寄存器效应×语义分类)
     func_security_debt    — 函数级安全债务评分 (复杂度×复发×关键度)
     vuln_density_scaling  — 漏洞密度幂律标度 (期望值+离群检测)
     heap_exploitability   — 堆分配器特化可利用性 (ptmalloc/jemalloc/tcmalloc)
     stack_pivot           — 栈迁移难度评估 (小工具×寄存器约束×CFI惩罚)
-    info_leak_quantify    — 信息泄露比特量化 (CCS 2024 关联熵+暴力破解)
+    info_leak_quantify    — 信息泄露比特量化
     dead_code_audit       — 死代码攻击面审计 (未使用导入×段膨胀×符号膨胀)
     signal_attack_surface — 信号处理器攻击面映射 (sigaction×异步不安全)
     format_string_scorer  — 格式串漏洞精度评分 (偏移×%n×输出可见性)
@@ -359,7 +359,7 @@ def get_unified_dashboard():
     return generate_dashboard, RiskDashboard
 
 
-# 差分报告 / 多受众摘要 / 置信度校准 (2026 Q3 专利补齐)
+# 差分报告 / 多受众摘要 / 置信度校准
 def get_differential_report_generator():
     from modules.output.differential_report import DifferentialReportGenerator, Finding
     return DifferentialReportGenerator, Finding

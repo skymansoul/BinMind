@@ -18,7 +18,7 @@ Returns the *minimum possible* value, not the exact value. Chunk boundary
 comparison only fires when store offset exceeds this minimum — guaranteeing
 zero false negatives (conservative: report only when overflow is certain).
 
-ref: GUEB (Feist et al., BAR 2014) — abstract interpretation for heap sizes.
+ref: GUEB — abstract interpretation for heap sizes.
      Simplified here to heuristic constant propagation (O(n) vs. full AI).
 """
 

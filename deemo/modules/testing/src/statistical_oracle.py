@@ -10,20 +10,20 @@
 #     a) 输出是否逐字节相等
 #     b) 输出是否匹配自然语言或正则断言
 #   此两种模式均无法捕获:
-#     - 输出字节不同但语义等价 (如合法指令重排、不同编码的等效字符串)
-#     - 行为在统计分布上显著偏离但单次比较不可见
-#     - 对同一输入集合的整体行为分布存在系统性偏差
+# 输出字节不同但语义等价 (如合法指令重排、不同编码的等效字符串)
+# 行为在统计分布上显著偏离但单次比较不可见
+# 对同一输入集合的整体行为分布存在系统性偏差
 #
 # 核心方法:
 #   对两实现的输出序列/执行指标构建经验分布，使用:
 #     - Mann-Whitney U检验 (Wilcoxon rank-sum)检测分布位置差异
-#     - Cliff's Delta (delta)测量效应量大小
-#     - Bootstrap置信区间 (BCa)提供delta的不确定性估计
+# Cliff's Delta (delta)测量效应量大小
+# Bootstrap置信区间 (BCa)提供delta的不确定性估计
 #   非参数方法不假设正态性，适用于二进制分析工具输出的典型偏态分布。
 #
 #   多个实现(>2)时使用Kruskal-Wallis H检验+pairwise Cliff's Delta。
 #
-# 参考文献:
+# 文献:
 #   Cliff 1993, "Dominance statistics: Ordinal analyses to answer ordinal questions"
 #   Vargha & Delaney 2000, "CL common language effect size statistics"
 #   McNemar 1947, paired comparison significance test
@@ -35,7 +35,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 
-# ---- 统计工具: 纯函数，无状态 ----
+# 统计工具: 纯函数，无状态
 
 def _rankdata(values: List[float]) -> List[float]:
     """计算秩 (处理并列值用平均秩)。"""
@@ -100,7 +100,7 @@ def cliffs_delta(a: List[float], b: List[float]) -> Tuple[float, float]:
       |delta| < 0.147  — negligible
       |delta| < 0.33   — small
       |delta| < 0.474  — medium
-      |delta| >= 0.474 — large   (Vargha & Delaney 2000)
+      |delta| >= 0.474 — large
     """
     n1, n2 = len(a), len(b)
     if n1 < 2 or n2 < 2:
@@ -116,7 +116,7 @@ def cliffs_delta(a: List[float], b: List[float]) -> Tuple[float, float]:
                 equal += 1
     delta = (greater - (n1 * n2 - greater - equal)) / (n1 * n2)
 
-    # 无偏方差估计 (Cliff 1993)
+    # 无偏方差估计
     var_delta = (n1 + n2 + 1) / (3.0 * n1 * n2)
     return delta, math.sqrt(max(var_delta, 1e-12))
 
@@ -147,7 +147,7 @@ def bootstrap_ci(a: List[float], b: List[float],
     return deltas[max(0, lo)], deltas[min(len(deltas) - 1, hi)]
 
 
-# ---- 度量提取器 ----
+# 度量提取器
 
 # 默认度量集: 对单次执行结果提取数值特征向量
 # 每个提取器签名: (result: Any) -> float
@@ -203,7 +203,7 @@ DEFAULT_METRICS = {
 }
 
 
-# ---- 统计预言机 ----
+# 统计预言机
 
 @dataclass
 class MetricDivergence:
@@ -268,7 +268,7 @@ class StatisticalOracle:
     def __init__(self, metrics: Optional[Dict[str, Callable[[Any], float]]] = None):
         self._metrics = metrics or DEFAULT_METRICS
 
-    # ---- 主入口 ----
+    # 主入口
     def compare(self,
                 impl_a_name: str,
                 impl_b_name: str,
@@ -333,7 +333,7 @@ class StatisticalOracle:
             summary=self._build_summary(divergences),
         )
 
-    # ---- 多方比较 (>2个实现) ----
+    # 多方比较 (>2个实现)
     def compare_multi(self,
                       impl_results: Dict[str, List[Any]],
                       reference_impl: Optional[str] = None
@@ -373,7 +373,7 @@ class StatisticalOracle:
             lines.append(f"  - {d.summary}")
         return "\n".join(lines)
 
-    # ---- 结构指纹: 输出非可直接比较为字节时使用 ----
+    # 结构指纹: 输出非可直接比较为字节时使用
     @staticmethod
     def structural_fingerprint(text_output: str) -> Dict[str, float]:
         """从反编译/反汇编文本提取结构特征向量，用于统计比较。
@@ -426,7 +426,7 @@ class StatisticalOracle:
         return fp
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def quick_compare(results_a: List[Any],
                   results_b: List[Any],
                   names: Tuple[str, str] = ("A", "B")

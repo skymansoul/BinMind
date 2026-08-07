@@ -1,7 +1,7 @@
 # LLM驱动漏洞检测模块。通过远程/本地LLM推理补充静态分析的语义盲区。
-# 参考ANVIL (arXiv:2408.16028) 异常评分范式：以LLM预测困惑度
+# ANVIL 异常评分范式：以LLM预测困惑度
 # 作为漏洞信号——漏洞代码的重构损失高于正常代码。
-# 借鉴Multi-LLM IoT (arXiv:2512.19945 [待验证]) 三模块融合架构：结构分析
+# 借鉴Multi-LLM IoT 三模块融合架构：结构分析
 # + 语义推理 + 证据合成，各维度贡献独立证据。
 #
 # 初版仅支持OpenAI兼容API + 本地Ollama fallback。
@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
-
 class VulnSignalType(str, Enum):
     """LLM漏洞信号类型枚举——与ANVIL异常维度对应。"""
     ANOMALY_SCORE = "anomaly_score"       # 困惑度/重构损失
@@ -24,7 +23,6 @@ class VulnSignalType(str, Enum):
     SEMANTIC_RISK = "semantic_risk"        # 语义层面漏洞指示
     PATTERN_MATCH = "pattern_match"        # 已知漏洞模式匹配
     LLM_JUDGMENT = "llm_judgment"          # LLM直接判断
-
 
 @dataclass
 class VulnSignal:
@@ -37,7 +35,6 @@ class VulnSignal:
     cwe_hint: str = ""                   # 推测CWE类别
     raw_response: str = ""
 
-
 @dataclass
 class LLMVulnReport:
     """LLM漏洞检测综合报告——多信号聚合结果。"""
@@ -48,7 +45,6 @@ class LLMVulnReport:
     false_positive_risk: float = 0.5
     analysis_time_ms: float = 0.0
     model_used: str = ""
-
 
 # LLM后端抽象层——支持OpenAI兼容API与本地Ollama，工厂函数自动选择。
 # 温度0.1——代码分析需确定性输出，保留微小随机性用于self-consistency。
@@ -65,7 +61,6 @@ class LLMBackend:
 
     def is_available(self) -> bool:
         return False
-
 
 class OpenAICompatBackend(LLMBackend):
     """OpenAI兼容API后端——覆盖OpenAI/Ollama/vLLM/LiteLLM。"""
@@ -98,7 +93,6 @@ class OpenAICompatBackend(LLMBackend):
         except Exception as e:
             logger.warning(f"LLM API调用失败: {e}")
             return ""
-
 
 class OllamaFallbackBackend(LLMBackend):
     """Ollama本地后端——远程API不可用时的降级方案。"""
@@ -135,7 +129,6 @@ class OllamaFallbackBackend(LLMBackend):
             logger.debug(f"Ollama调用失败: {e}")
             return ""
 
-
 def _make_backend(prefer_local: bool = False) -> LLMBackend:
     """后端工厂函数——按优先级顺序探测可用后端。返回不可用实例由调用方处理。"""
     if not prefer_local:
@@ -146,7 +139,6 @@ def _make_backend(prefer_local: bool = False) -> LLMBackend:
     if fb.is_available():
         return fb
     return OpenAICompatBackend()  # 返回一个不可用的，由调用方处理
-
 
 # 提示词模板——参考ANVIL设计：LLM扮演代码安全审计员，输出结构化JSON供解析。
 
@@ -194,7 +186,6 @@ Function: {function_name}
 Dangerous calls: {danger_funcs}
 
 Answer (YES/NO):"""
-
 
 class LLMVulnerabilityDetector:
     """LLM驱动漏洞检测器。
@@ -549,7 +540,6 @@ class LLMVulnerabilityDetector:
     def available(self) -> bool:
         return self.backend.is_available()
 
-
 def _levenshtein(s1: str, s2: str) -> int:
     """编辑距离——DP实现。O(mn)时间，O(min(m,n))空间。"""
     if len(s1) < len(s2):
@@ -565,7 +555,6 @@ def _levenshtein(s1: str, s2: str) -> int:
         prev = curr
     return prev[-1]
 
-
 # 模块级便捷函数
 
 def detect_vulnerability_llm(pseudocode: str, function_name: str = "",
@@ -577,11 +566,9 @@ def detect_vulnerability_llm(pseudocode: str, function_name: str = "",
                            pseudocode=pseudocode, arch=arch,
                            danger_funcs=danger_funcs)
 
-
 def batch_detect_llm(functions: List[Dict]) -> List[LLMVulnReport]:
     """便捷函数——批量LLM漏洞检测。"""
     return LLMVulnerabilityDetector().batch_detect(functions)
-
 
 # 混合检测器：LLM + 静态分析联合
 
@@ -590,7 +577,7 @@ class HybridVulnDetector:
 
     传统危险函数评分与LLM语义判断融合——LLM发现逻辑漏洞与
     非显式边界条件错误，静态分析捕捉确定性模式。
-    参考ANVIL (arXiv:2408.16028) 监督-无监督混合范式。
+    参考ANVIL  监督-无监督混合范式。
     """
 
     def __init__(self, static_scorer=None, llm_detector=None):

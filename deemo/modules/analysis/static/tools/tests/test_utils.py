@@ -9,9 +9,7 @@ import tempfile
 import pytest
 
 
-# =============================================================================
 # Entropy Tests
-# =============================================================================
 
 class TestEntropy:
     """Tests for compute_entropy"""
@@ -41,9 +39,7 @@ class TestEntropy:
         assert entropy_fn(b"") == 0.0
 
 
-# =============================================================================
 # Sliding Window Tests
-# =============================================================================
 
 class TestSlidingWindow:
     """Tests for sliding_window generator"""
@@ -76,9 +72,7 @@ class TestSlidingWindow:
         assert windows[0] == (1, 2, 3)
 
 
-# =============================================================================
 # YAML 配置 Tests
-# =============================================================================
 
 class TestYamlConfig:
     """Tests for load_yaml_配置"""
@@ -119,9 +113,7 @@ class TestYamlConfig:
             del os.environ["DB_NAME"]
 
 
-# =============================================================================
 # 日志 Setup Tests
-# =============================================================================
 
 class TestLoggingSetup:
     """Tests for setup_日志"""
@@ -141,9 +133,7 @@ class TestLoggingSetup:
         assert logger.level == logging.WARNING
 
 
-# =============================================================================
 # Error Hierarchy Tests
-# =============================================================================
 
 class TestErrorHierarchy:
     """Tests for 异常 class hierarchy"""

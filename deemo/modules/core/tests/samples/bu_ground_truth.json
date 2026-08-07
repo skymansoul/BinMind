@@ -1,0 +1,109 @@
+{
+  "samples": {
+    "bu_cve_01": {
+      "cve": "CVE-2014-0160",
+      "title": "Heartbleed: negative offset read",
+      "category": "negative_offset",
+      "is_vuln": true,
+      "buf_sz": 64,
+      "offset": -16,
+      "access_sz": 8,
+      "prev_chunk_sz": 64
+    },
+    "bu_cve_02": {
+      "cve": "CVE-2015-0204",
+      "title": "FREAK: RSA key underflow read",
+      "category": "crypto_underflow",
+      "is_vuln": true,
+      "buf_sz": 128,
+      "offset": -32,
+      "access_sz": 16,
+      "prev_chunk_sz": 256
+    },
+    "bu_cve_03": {
+      "cve": "CVE-2016-6304",
+      "title": "TLS: oversized OCSP underflow",
+      "category": "metadata_overlap",
+      "is_vuln": true,
+      "buf_sz": 256,
+      "offset": -8,
+      "access_sz": 32,
+      "prev_chunk_sz": 64
+    },
+    "bu_cve_04": {
+      "cve": "CVE-2017-3732",
+      "title": "BN_mod_exp underflow in OpenSSL",
+      "category": "bignum_underflow",
+      "is_vuln": true,
+      "buf_sz": 96,
+      "offset": -64,
+      "access_sz": 16,
+      "prev_chunk_sz": 128
+    },
+    "bu_cve_05": {
+      "cve": "CVE-2018-0732",
+      "title": "DH keygen underflow index",
+      "category": "index_underflow",
+      "is_vuln": true,
+      "buf_sz": 48,
+      "offset": -4,
+      "access_sz": 4,
+      "prev_chunk_sz": 32
+    },
+    "bu_cve_06": {
+      "cve": "CVE-2019-1551",
+      "title": "RSA padding underflow",
+      "category": "padding_underflow",
+      "is_vuln": true,
+      "buf_sz": 72,
+      "offset": -24,
+      "access_sz": 12,
+      "prev_chunk_sz": 96
+    },
+    "bu_cve_07": {
+      "cve": "CVE-2020-1968",
+      "title": "Raccoon: DH secret underflow",
+      "category": "dh_underflow",
+      "is_vuln": true,
+      "buf_sz": 80,
+      "offset": -48,
+      "access_sz": 8,
+      "prev_chunk_sz": 256
+    },
+    "bu_cve_08": {
+      "cve": "CVE-2021-23840",
+      "title": "EVP_PKEY underflow read",
+      "category": "evp_underflow",
+      "is_vuln": true,
+      "buf_sz": 56,
+      "offset": -12,
+      "access_sz": 24,
+      "prev_chunk_sz": 48
+    },
+    "bu_cve_09": {
+      "cve": "SAFE-BU-001",
+      "title": "Safe: valid offset within bounds",
+      "category": "safe_in_bounds",
+      "is_vuln": false,
+      "buf_sz": 64,
+      "offset": 0,
+      "access_sz": 16,
+      "prev_chunk_sz": 0
+    },
+    "bu_cve_10": {
+      "cve": "SAFE-BU-002",
+      "title": "Safe: positive offset, normal access",
+      "category": "safe_positive",
+      "is_vuln": false,
+      "buf_sz": 128,
+      "offset": 16,
+      "access_sz": 8,
+      "prev_chunk_sz": 0
+    }
+  },
+  "summary": {
+    "total": 10,
+    "bu_vuln": 8,
+    "bu_safe": 2
+  }
+}

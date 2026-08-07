@@ -8,7 +8,7 @@ from collections import OrderedDict
 import numpy as np
 
 
-# ==================== 特征提取辅助 ====================
+# 特征提取辅助
 
 def _extract_features_from_bytes(data):
     """从二进制字节中提取轻量特征：byte直方图 + 可打印字符串统计"""
@@ -43,7 +43,7 @@ def _extract_features_from_bytes(data):
     }
 
 
-# ==================== LRU 嵌入缓存 ====================
+# LRU 嵌入缓存
 
 class LRUEmbeddingCache:
     """LRU缓存 + TTL过期，用于embedding结果缓存。
@@ -56,7 +56,7 @@ class LRUEmbeddingCache:
         self._store = OrderedDict()   # key -> (value, timestamp)
 
     def _evict_lru(self):
-        # ---- 驱逐最久未访问的条目（OrderedDict头部） ----
+# 驱逐最久未访问的条目（OrderedDict头部）
         if self._store:
             self._store.popitem(last=False)
 
@@ -72,7 +72,7 @@ class LRUEmbeddingCache:
         if _k not in self._store:
             return None
         _val, _ts = self._store[_k]
-        # ===== TTL 检查 =====
+# TTL 检查
         if time.time() - _ts > self._ttl:
             del self._store[_k]
             return None
@@ -91,7 +91,7 @@ class LRUEmbeddingCache:
         self._store[_k] = (value, time.time())
 
 
-# ==================== Platt / Temperature 校准 ====================
+# Platt / Temperature 校准
 
 def platt_scaling(scores, labels, num_bins=10):
     """Platt Scaling: 用sigmoid calibrate scores -> probabilities.
@@ -139,7 +139,7 @@ def platt_scaling(scores, labels, num_bins=10):
     _sc = _bin_centers[_valid]
     _pr = np.clip(_bin_prior[_valid], 1e-9, 1.0 - 1e-9)
 
-    # ---- 对数几率线性回归: log(p/(1-p)) = -(A*s + B) ----
+# 对数几率线性回归: log(p/(1-p)) = -(A*s + B)
     _y = -np.log(_pr / (1.0 - _pr))
     # fit y = A * _sc + B via least squares
     _X = np.column_stack([_sc, np.ones(len(_sc))])
@@ -166,7 +166,7 @@ def temperature_scaling(logits, labels):
     if _n == 0:
         return 1.0
 
-    # ===== 网格搜索：log-spaced 50点 =====
+# 网格搜索：log-spaced 50点
     _Ts = np.logspace(-2, 1, 50)  # 0.01 .. 10.0
     _best_T = 1.0
     _best_nll = float("inf")
@@ -190,7 +190,7 @@ def temperature_scaling(logits, labels):
     return float(_best_T)
 
 
-# ==================== 推理引擎 ====================
+# 推理引擎
 
 class InferenceEngine:
     """多任务推理引擎。model_registry = {"classifier": ..., "detector": ..., "matcher": ...}
@@ -208,7 +208,7 @@ class InferenceEngine:
     def _preprocess(self, binary_data):
         """特征提取流水线：byte直方图 + 字符串统计 -> 特征dict"""
         _feat = _extract_features_from_bytes(binary_data)
-        # ---- 追加熵估计 ----
+# 追加熵估计
         _h = _feat["byte_hist"]
         _entropy = 0.0
         for _v in _h:
@@ -266,7 +266,7 @@ class InferenceEngine:
 
         _feat = self._preprocess(binary_data)
 
-        # ===== 任务路由 =====
+# 任务路由
         if task == "classifier":
             _x, _adj = self._build_graph(_feat)
             try:

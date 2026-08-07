@@ -6,18 +6,18 @@
 # 用 MR 违反数作为适应度函数，启发式搜索失效率更高的输入区域。
 #
 # 搜索策略: 爬山 + 随机重启 + MR类别引导的变异算子选择
-#   - 基础变异: 按参数类型的领域感知算子
-#   - 引导变异: 根据当前违反的MR类别选择针对性算子
+# 基础变异: 按参数类型的领域感知算子
+# 引导变异: 根据当前违反的MR类别选择针对性算子
 #     (e.g., 违反 idempotence → 强化数值幂跳和重复操作)
-#   - 适应度: 违反的 MR 数量
-#   - 收敛: plateau_limit 轮无改善 → 重启
+# 适应度: 违反的 MR 数量
+# 收敛: plateau_limit 轮无改善 → 重启
 #
 # 注意: 这是启发式搜索，非形式化对抗攻击。
-#   真正对抗性样本生成 (如 Madry et al. 2018 的 PGD) 需要
+#   真正对抗性样本生成 需要
 #   可微分的输入-输出映射。桩函数的黑盒特性使得梯度不可用，
 #   因此使用零阶启发式搜索作为替代。
 #
-# 区别于 CPS 测试 (arXiv:2412.03330) 的遗传规划:
+# 区别于 CPS 测试 的遗传规划:
 #   该论文用 GP 搜索 CPS 输入空间。
 #   本模块用更轻量的爬山+重启，适应度绑定到 stub_metamorphic_oracle
 #   推导的 MR 集合。
@@ -54,7 +54,7 @@ class AdversarialFuzzResult:
     best_fitness: int = 0
 
 
-# ---- 领域感知变异算子 ----
+# 领域感知变异算子
 def _mutate_int(v: int) -> int:
     r = _random.random()
     if r < 0.25:
@@ -167,7 +167,7 @@ def _mutate_tuple(args: tuple) -> tuple:
     return tuple(mutated)
 
 
-# ---- MR导向的变异算子 ----
+# MR导向的变异算子
 # 根据当前违反的MR类别选择针对性变异
 _MR_GUIDED_MUTATORS = {
     'idempotence': lambda v: v * 2 if isinstance(v, int) else
@@ -198,7 +198,7 @@ def _mutate_tuple_guided(args: tuple, mr_categories: list[str]) -> tuple:
     return tuple(mutated)
 
 
-# ---- 启发式模糊测试引擎 ----
+# 启发式模糊测试引擎
 class AdversarialFuzzer:
     """以 MR 违反数为适应度的启发式模糊测试器。
 
@@ -367,7 +367,7 @@ class AdversarialFuzzer:
             except Exception:
                 pass
 
-    # ---- 辅助 ----
+# 辅助
     @staticmethod
     def _load_relations(fc: _FuncContract) -> list:
         try:
@@ -435,7 +435,7 @@ class AdversarialFuzzer:
         return unique
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def fuzz_contract(fn: Callable, fc: _FuncContract,
                   max_iter: int = 200) -> AdversarialFuzzResult:
     """一行式对抗性模糊测试。"""

@@ -20,10 +20,10 @@
   本模块为三者的组合门面，提供冷启动 + 变异调度的一体化入口。
 
 与论文的对应关系:
-  R1-Fuzz  (arXiv:2509.20384) -- 组件 1 的 GRPO 组相对优势奖励建模
-  ISC4DGF  (arXiv:2409.14329) -- 组件 2 的 LLM 定向初始种子语料构建
-  LLAMAFUZZ(arXiv:2406.07714) -- 组件 3 的语料感知变异先验
-  DeepGo   (arXiv:2507.21952) -- 定向灰盒模糊测试的预测性目标引导 (选读)
+  R1-Fuzz   -- 组件 1 的 GRPO 组相对优势奖励建模
+  ISC4DGF   -- 组件 2 的 LLM 定向初始种子语料构建
+  LLAMAFUZZ -- 组件 3 的语料感知变异先验
+  DeepGo    -- 定向灰盒模糊测试的预测性目标引导 (选读)
 
 使用示例 (见函数 rl_seedfuzz_example):
   from modules.fuzzing.fuzz_rl_seedfuzz import RLSeedFuzz
@@ -38,7 +38,6 @@ from typing import Any, Dict, List, Optional, Sequence
 import logging
 
 _log = logging.getLogger(__name__)
-
 
 class RLSeedFuzz:
     """RL-SeedFuzz 一体化门面。
@@ -89,7 +88,7 @@ class RLSeedFuzz:
         self._cold_start_count = 0
         self._corpus = []
 
-    # ---- 冷启动与语料 ----
+# 冷启动与语料
 
     def run_cold_start(self, target_sites: Sequence[Any],
                        per_target: Optional[int] = None) -> List[bytes]:
@@ -122,7 +121,7 @@ class RLSeedFuzz:
         """返回累计语料的只读副本。"""
         return list(self._corpus)
 
-    # ---- 调度 (种子 + 变异序列) ----
+# 调度 (种子 + 变异序列)
 
     def select_seed(self, seed_queue: list,
                     contexts: Optional[List[List[float]]] = None):
@@ -148,7 +147,7 @@ class RLSeedFuzz:
                 edge_count=seed_meta.get("edge_count", 0))
         return self._hybrid.select_mutation_sequence(ctx)
 
-    # ---- 反馈 ----
+# 反馈
 
     def notify_seed_reward(self, seed_id: str, is_new_find: bool,
                            crash_found: bool = False,
@@ -180,7 +179,7 @@ class RLSeedFuzz:
             reward = float(new_edges)
         return self._hybrid.notify_mutation_reward(reward, seq, context)
 
-    # ---- 统计 ----
+# 统计
 
     def get_stats(self) -> dict:
         stats = {
@@ -202,15 +201,11 @@ class RLSeedFuzz:
             self._hybrid.reset()
         self._cold_start_count = 0
 
-
-# ____________________________________________________________________________
 # 快捷构造入口
-# ____________________________________________________________________________
 
 def create_rl_seedfuzz(llm_config=None, **kw) -> RLSeedFuzz:
     """构造 RL-SeedFuzz 门面实例。"""
     return RLSeedFuzz(llm_config=llm_config, **kw)
-
 
 def rl_seedfuzz_example() -> dict:
     """RL-SeedFuzz 标准使用流程示例 (含全部三组件)。
@@ -233,6 +228,5 @@ def rl_seedfuzz_example() -> dict:
         "group_update": summary,
         "stats": fz.get_stats(),
     }
-
 
 __all__ = ["RLSeedFuzz", "create_rl_seedfuzz", "rl_seedfuzz_example"]

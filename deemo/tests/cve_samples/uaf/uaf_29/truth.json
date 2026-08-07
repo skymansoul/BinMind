@@ -1,0 +1,1 @@
+﻿{"expected":"TN","sample":"uaf_29_dead_branch_safe","description":"Free in dead branch (always false) — use in live path is safe","cwe":"CWE-416","vuln_type":"use-after-free"}

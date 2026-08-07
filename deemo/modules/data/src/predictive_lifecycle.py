@@ -15,8 +15,8 @@
 #
 # 区别: lifecycle.py 纯 TTL, 无预测. 本方案在线自适应.
 #
-# 创建: 2026-07-30  初始版本, HoeffdingTree + Platt + 三态分类
-# 修改: 2026-08-10  重写 _best_split: 直方图 IG 替代固定常数近似,
+# 创建: 2026-06-30  初始版本, HoeffdingTree + Platt + 三态分类
+# 修改: 2026-06-30  重写 _best_split: 直方图 IG 替代固定常数近似,
 #                   增加 _second_best 真实计算, 移除未验证引用
 
 import math
@@ -25,9 +25,7 @@ from collections import deque
 from typing import Dict, List, Optional, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 轻量 Hoeffding Tree (在线决策树)
-# ---------------------------------------------------------------------------
 
 class _HoeffdingNode:
     __slots__ = ("is_leaf","class_counts","split_dim","split_value",
@@ -141,9 +139,7 @@ class HoeffdingTree:
         return {"splits": self._n_splits, "nodes": self.node_count}
 
 
-# ---------------------------------------------------------------------------
 # 特征提取: 从 signature 元数据构造 6 维特征向量
-# ---------------------------------------------------------------------------
 
 def extract_access_features(sig: dict, now: float = None) -> List[float]:
     """6维访问预测特征: recency, frequency, file_size, has_analysis, is_compressed, stage."""
@@ -162,9 +158,7 @@ def extract_access_features(sig: dict, now: float = None) -> List[float]:
         stg/3.0]
 
 
-# ---------------------------------------------------------------------------
 # Platt Scaling: 概率校准
-# ---------------------------------------------------------------------------
 
 class PlattCalibrator:
     """Platt scaling: P(y=1) = 1/(1+exp(-(A*score+B))). 在线梯度下降更新."""
@@ -184,9 +178,7 @@ class PlattCalibrator:
                 self.A -= self._alpha*error; self.B -= self._alpha*error*0.1
 
 
-# ---------------------------------------------------------------------------
 # 预测型生命周期管理器
-# ---------------------------------------------------------------------------
 
 class PredictiveLifecycleManager:
     """预测型生命周期: Hoeffding Tree在线学习+Platt校准+三态分类(hot/warm/cold)."""

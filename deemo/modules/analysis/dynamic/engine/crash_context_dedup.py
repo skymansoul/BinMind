@@ -1,5 +1,5 @@
-# 创建: 2025-08-15 18:38
-# 修改: 2025-08-15 — BB 序列指数衰减嵌入 + 三级级联去重 + LCA 验证
+# 创建: 2026-06-08 18:38
+# 修改: 2026-06-08 — BB 序列指数衰减嵌入 + 三级级联去重 + LCA 验证
 """
 执行上下文感知的崩溃去重引擎 — 超越 crash hash 的智能去重。
 
@@ -72,7 +72,7 @@ class CrashBucket:
     merged_count: int = 0
 
 
-# --- 崩溃签名生成 ---
+# 崩溃签名生成
 
 def make_crash_signature(crash_addr: int, exception_type: str,
                          stack_trace: list[int]) -> str:
@@ -85,7 +85,7 @@ def make_crash_signature(crash_addr: int, exception_type: str,
     return h.hexdigest()[:16]
 
 
-# --- 执行上下文嵌入 ---
+# 执行上下文嵌入
 # 从崩溃前 BB 序列生成固定维度嵌入——用于上下文相似度比较。
 
 def bb_sequence_embedding(bb_seq: list[int],
@@ -124,7 +124,7 @@ def context_cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (na * nb)
 
 
-# --- 最近公共祖先 (LCA) 检测 ---
+# 最近公共祖先 (LCA) 检测
 # 如果两个崩溃的 BB 序列共享最近公共祖先, 它们很可能来自同一根因。
 
 def find_lca_bb(seq_a: list[int], seq_b: list[int]) -> int:
@@ -136,7 +136,7 @@ def find_lca_bb(seq_a: list[int], seq_b: list[int]) -> int:
     return 0
 
 
-# --- 去重引擎 ---
+# 去重引擎
 
 class CrashContextDeduplicator:
     """三级去重: 精确签名 + 上下文嵌入 + LCA 根因判定。"""

@@ -5,13 +5,12 @@
 2025-07-30 09:47 - 修复 MinHash 签名在空 trace 上的除零
 2025-08-02 14:03 - 路径多样性指标集成到调度器偏置
 
-参考:
-  Broder (1997) "On the resemblance and containment of documents"
+  Broder "On the resemblance and containment of documents"
     — MinHash 用于估计 Jaccard 相似度的理论基础
-  Gionis et al. (VLDB 1999) "Similarity Search in High Dimensions via Hashing"
+  Gionis et al. "Similarity Search in High Dimensions via Hashing"
     — LSH 分桶理论, b 个 band 各 r 行, 碰撞概率 = 1-(1-s^r)^b
-  SimFuzz (ISSRE 2025)    — 执行路径聚类用于并行 fuzzing 冲突消解
-  HuntFUZZ (JCS 2025)     — 基于路径共性的错误点聚类
+  SimFuzz    — 执行路径聚类用于并行 fuzzing 冲突消解
+  HuntFUZZ     — 基于路径共性的错误点聚类
 
 核心假设:
   边覆盖率丢失了边的执行顺序信息。两条完全不同的执行路径可能碰巧
@@ -33,12 +32,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---- MinHash 参数 ----
+# MinHash 参数
 _NUM_HASHES = 128          # 签名中的哈希函数个数
 _LSH_BANDS = 16            # LSH band 数
 _LSH_ROWS = _NUM_HASHES // _LSH_BANDS  # 每个 band 的行数 (=8)
-
 
 @dataclass
 class PathSignature:
@@ -47,7 +44,6 @@ class PathSignature:
     minhash_sig: List[int]           # 128 个 uint32, 每个是某哈希函数的最小值
     trace_length: int                # 原始 trace 长度
     created_at: float = field(default_factory=time.time)
-
 
 class PathCluster:
     """基于 MinHash LSH 的执行路径聚类器。
@@ -291,8 +287,7 @@ class PathCluster:
         self._edge_doc_freq.clear()
         self._total_traces = 0
 
-
-# ===== 加权 MinHash (IDF 加权) =====
+# 加权 MinHash (IDF 加权)
 
 def weighted_minhash_signature(edge_set: Set[int],
                                idf_weights: Dict[int, float],
@@ -326,7 +321,6 @@ def weighted_minhash_signature(edge_set: Set[int],
                     sig[i] = h
 
     return sig
-
 
 def _hash_coeffs_static(n: int) -> List[Tuple[int, int]]:
     """与 PathCluster._hash_coefficients 相同的确定性系数生成, 独立函数。"""

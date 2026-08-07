@@ -1,7 +1,7 @@
 """
 现代语言运行时解析——Rust协程/Go协程/Swift ARC及Ruby式unsafe Rust识别。
 
-Ruby论文 (arXiv 2211.00111v3, 2026.07) 核心结论：
+Ruby论文 核心结论：
   unsafe Rust编译后，safe/unsafe边界于二进制中不可复原，
   然编译器优化差异可产生互异的指令模式。
   unsafe代码标识：bound check缺失、裸指针运算、volatile访存。
@@ -39,7 +39,7 @@ def _demangle_rust_name(mangled:str)->Optional[str]:
         return '::'.join(parts) if parts else mangled
     except (IndexError, ValueError): return mangled  # 修正：裸except收窄→IndexError/ValueError
 
-# ── Ruby式unsafe Rust启发规则 ──
+# Ruby式unsafe Rust启发规则
 # unsafe代码于ARM64二进制中的指纹指令模式
 _UNSAFE_RUST_PATTERNS = [
     # volatile访存——unsafe裸指针操作的标志（addr_of!或*ptr）

@@ -154,7 +154,7 @@ class SemanticVariantGenerator:
         return "|".join(sorted(set(_assignments))[:20])
 
 
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _gen = SemanticVariantGenerator()
     _code = """int x = *p;

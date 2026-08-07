@@ -20,11 +20,10 @@
 
   敏捷性评分 0-1: 0=完全僵化(固定算法, 需重写), 1=完全敏捷(配置驱动替换)。
 
-参考:
-  - Comcast CARAF (2025): 密码学敏捷性测量框架 — 11项yes/no评分。本模块将其
+  - Comcast CARAF: 密码学敏捷性测量框架 — 11项yes/no评分。本模块将其
     概念从组织级别移植到二进制级别。
-  - CAMM Maturity Model (2025): 5级敏捷性成熟度 — 本模块的输出可映射到CAMM级别。
-  - QED (IEEE Access 2025): 量子脆弱可执行文件检测 — 检测哪些二进制需要PQC迁移。
+  - CAMM Maturity Model: 5级敏捷性成熟度 — 本模块的输出可映射到CAMM级别。
+  - QED: 量子脆弱可执行文件检测 — 检测哪些二进制需要PQC迁移。
     本模块补充QED: QED告诉你"要改", 本模块告诉你"改起来多难"。
   - OMB M-23-02 / NSM-10 / CNSA 2.0: 联邦PQC迁移政策要求。
 
@@ -39,13 +38,12 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-# ── 评分权重 ──
+# 评分权重
 _W1 = 0.30  # 算法耦合度: 占比最高 — 这是迁移的主障碍
 _W2 = 0.20  # 密钥尺寸柔性: PQC密钥更大, 硬编码尺寸是最常见的迁移阻断
 _W3 = 0.20  # 库抽象层: 抽象层存在性决定迁移工作量级
 _W4 = 0.15  # 配置外置化: 无需重编译即可替换 → 运维成本大幅降低
 _W5 = 0.15  # 更新表面: 需改动的代码位置数量
-
 
 @dataclass
 class AgilityReport:
@@ -61,8 +59,7 @@ class AgilityReport:
     flags: List[str] = field(default_factory=list)
     estimated_change_points: int = 0
 
-
-# ── 算法名硬编码模式 ──
+# 算法名硬编码模式
 # 字符串中出现以下模式 → 算法耦合信号
 _ALGO_NAME_PATTERNS: List[Tuple[bytes, float]] = [
     # 明确的算法名引用 (权重较高)
@@ -96,7 +93,6 @@ _KEY_SIZE_PATTERNS: List[Tuple[bytes, float]] = [
     (b'const int key_size', 0.70), (b'static const int ksize', 0.70),
 ]
 
-
 def _count_patterns(data: bytes, patterns: List[Tuple[bytes, float]],
                     strings: Optional[List[str]] = None) -> Tuple[int, float]:
     """统计区域内模式匹配。返回(命中数, 加权得分)"""
@@ -117,7 +113,6 @@ def _count_patterns(data: bytes, patterns: List[Tuple[bytes, float]],
                     weighted += weight * 0.5
     return hits, min(1.0, weighted / max(len(patterns), 1))
 
-
 def _score_coupling(data: bytes, strings: Optional[List[str]] = None) -> Tuple[float, int]:
     """D1: 算法耦合度 — 硬编码算法名越多, 耦合越紧。"""
     algo_hits, algo_score = _count_patterns(data, _ALGO_NAME_PATTERNS, strings)
@@ -126,12 +121,10 @@ def _score_coupling(data: bytes, strings: Optional[List[str]] = None) -> Tuple[f
     raw = algo_score - abstract_score * 0.6
     return max(0.0, min(1.0, raw)), algo_hits
 
-
 def _score_key_flexibility(data: bytes, strings: Optional[List[str]] = None) -> Tuple[float, int]:
     """D2: 密钥尺寸柔性 — 硬编码的密钥尺寸限制PQC大密钥。"""
     hits, score = _count_patterns(data, _KEY_SIZE_PATTERNS, strings)
     return score, hits
-
 
 def _score_abstraction(strings: Optional[List[str]] = None) -> Tuple[float, int]:
     """D3: 库抽象层 — 统计抽象API vs 直接调用底层函数的比例。"""
@@ -164,7 +157,6 @@ def _score_abstraction(strings: Optional[List[str]] = None) -> Tuple[float, int]
     score = 1.0 - abstract_ratio  # 0=全抽象(好), 1=全直接(差)
     return score, total
 
-
 def _score_config_externalization(data: bytes) -> Tuple[float, int]:
     """D4: 配置外置化 — 统计配置路径/env var引用。"""
     config_patterns = [
@@ -185,7 +177,6 @@ def _score_config_externalization(data: bytes) -> Tuple[float, int]:
     else:
         score = 0.90
     return score, hits
-
 
 def _score_update_surface(data: bytes, findings_count: int = 0) -> Tuple[float, int]:
     """D5: 更新表面 — 估计需要修改的位置数。"""
@@ -209,7 +200,6 @@ def _score_update_surface(data: bytes, findings_count: int = 0) -> Tuple[float, 
     else:
         score = 0.95
     return score, estimated_points
-
 
 def audit_agility(data: bytes, strings: Optional[List[str]] = None,
                   findings: Optional[List] = None,

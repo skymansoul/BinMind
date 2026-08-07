@@ -1,0 +1,13 @@
+sample,expect_uaf,verdict,count,types,time_ms
+tn_01_null_after_free,False,TN,0,,984.76
+tn_02_reassign_after_free,False,TN,0,,112.09
+tn_03_guarded_use,False,FP,1,double_free,102.45
+tn_04_realloc_self,False,TN,0,,97.62
+tn_05_branch_exclusive,False,TN,0,,97.82
+tn_06_different_scope,False,FP,1,use_after_free,88.72
+tp_01_direct_uaf,True,TP,1,use_after_free,910.32
+tp_02_alias_uaf,True,TP,1,use_after_free,93.08
+tp_03_cross_func_uaf,True,TP,1,use_after_free,967.93
+tp_04_realloc_alias_uaf,True,TP,1,use_after_free,89.89
+tp_05_loop_uaf,True,FN,0,,910.25
+tp_06_conditional_uaf,True,TP,1,use_after_free,83.49

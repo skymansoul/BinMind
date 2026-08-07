@@ -28,10 +28,10 @@
 #     互补: CUSUM 发现分布整体变化, EVT 发现个别极端样本.
 #   - 3σ anomaly detection: 假设正态, 重尾数据下 FPR 失控.
 #     EVT 不做分布假设, 从数据中学习尾部形状.
-#   - 无已知论文将 EVT 应用于二进制相似度的异常检测.
+# 无已知论文将 EVT 应用于二进制相似度的异常检测.
 #
-# 创建: 2026-07-31  初始版本, POT + GPD MLE
-# 修改: 2026-08-10  增加 streaming GPD: reservoir尾采样 + 在线梯度更新
+# 创建: 2026-08-06  初始版本, POT + GPD MLE
+# 修改: 2026-08-06  增加 streaming GPD: reservoir尾采样 + 在线梯度更新
 
 import math
 import random
@@ -197,7 +197,7 @@ class EVTAnomalyDetector:
             "streaming_mode": True,
         }
 
-    # ---- 内部 ----
+# 内部
 
     def _fit(self):
         """GPD 拟合: 选择 u → MLE 估计 ξ, σ."""

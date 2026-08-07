@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_11_array_index_uaf",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "cve": "CVE-2020-27786 类数组下标 UAF",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "p[0] 在 free 后写入"
+}

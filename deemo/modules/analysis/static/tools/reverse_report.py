@@ -4,7 +4,7 @@
 # Time O(n), space O(1)
 #
 # 2025 增强: 集成 LLM4Decompile + ReF Decompile 的 Relabeling 策略
-# 参考: LLM4Decompile v2 (https://github.com/albertan017/LLM4Decompile)
+# LLM4Decompile v2 (https://github.com/albertan017/LLM4Decompile)
 #       ReF Decompile (arXiv 2502.12221)
 # Relabeling 保留跳转目标语义——在反编译的伪代码中保留原始二进制中的跳转地址
 # 作为标签前缀，使 LLM 能区分"同签名不同行为"的函数。本模块在报告生成时

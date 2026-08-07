@@ -3,7 +3,7 @@
 
 问题定义:
   信号处理器在异步上下文中执行，打破了正常的控制流假设。
-  Trail of Bits (2024) 在 regreSSHion (CVE-2024-6387) 分析中
+  Trail of Bits 在 regreSSHion 分析中
   用 Multiplier 手工追踪信号处理器可达路径。本模块提供第一个
   自动化的信号攻击面评分模型。
 
@@ -12,10 +12,9 @@
     2. 可达的异步不安全函数 — free/malloc/printf 在信号上下文中危险
     3. 信号类型 — SIGALRM/SIGIO 高频触发 > SIGUSR1 手动触发
 
-  特殊风险: SIGALRM + 堆操作 → 经典竞争条件 (CVE-2024-6387)。
+  特殊风险: SIGALRM + 堆操作 → 经典竞争条件。
   SIGSEGV/SIGBUS 处理器尤其危险 — 它们在最坏的时机被调用。
 
-参考:
   Trail of Bits CVE-2024-6387 analysis: 手工路径追踪
   CERT C SIG30-C: 信号处理器中仅调用异步安全函数
   POSIX async-signal-safe 函数列表
@@ -27,7 +26,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 # 信号 → 风险权重 (触发频率 + 上下文危险度)
 _SIGNAL_RISK: Dict[str, float] = {
@@ -77,7 +75,6 @@ _SIGNAL_REGISTER_FUNCS = frozenset({
     'ssh_signal', 'ssh_signal_register',
 })
 
-
 @dataclass
 class SignalRisk:
     """单个信号处理器的风险评估。"""
@@ -90,7 +87,6 @@ class SignalRisk:
     composite_risk: float          # 综合风险 0-10
     escalation_potential: str = ''
 
-
 def _detect_signal_usage(imports: List[str]) -> Dict[str, List[str]]:
     """
     从导入表检测信号注册 → 返回 {signal_func: [matching_imports]}。
@@ -102,7 +98,6 @@ def _detect_signal_usage(imports: List[str]) -> Dict[str, List[str]]:
             if sig_func in norm:
                 found.setdefault(sig_func, []).append(imp)
     return found
-
 
 def _detect_unsafe_reachables(
     handler_name: str,
@@ -135,7 +130,6 @@ def _detect_unsafe_reachables(
         return [i for i in imports if i.lower().lstrip('_') in _ASYNC_UNSAFE]
 
     return []
-
 
 def score_signal_risk(
     signal_name: str,
@@ -184,7 +178,6 @@ def score_signal_risk(
         composite_risk=composite,
         escalation_potential=esc,
     )
-
 
 def signal_surface_summary(
     risks: List[SignalRisk],

@@ -1,0 +1,377 @@
+{
+  "total": 30,
+  "detected": 4,
+  "results": [
+    {
+      "sample": "intof_add_overflow",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_add_overflow",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_alloc_size",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_alloc_size",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_api_return",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_api_return",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_array_index",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_array_index",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_basic_mul",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_basic_mul",
+      "category": "integer-overflow",
+      "detected": true,
+      "confidence": 0.7,
+      "stage": "E",
+      "reason": "potential integer overflow in allocation: malloc(n * sizeof",
+      "patterns": [
+        "mul_overflow"
+      ],
+      "alloc_count": 1,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_bitfield_extract",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_bitfield_extract",
+      "category": "integer-overflow",
+      "detected": true,
+      "confidence": 0.7,
+      "stage": "E",
+      "reason": "potential integer overflow in allocation: malloc(len + 1",
+      "patterns": [
+        "add_overflow"
+      ],
+      "alloc_count": 1,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_cond_narrow",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_cond_narrow",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_loop_counter",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_loop_counter",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [
+        "narrow_loop"
+      ],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_memcpy_len",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_memcpy_len",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_recursive_call",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_recursive_call",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_shift_op",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_shift_op",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_signed_cast",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_signed_cast",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_struct_field",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_struct_field",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_ternary_size",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_ternary_size",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "intof_widen_cast",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_widen_cast",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2014-9428_batadv",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2014-9428_batadv",
+      "category": "integer-overflow",
+      "detected": true,
+      "confidence": 0.7,
+      "stage": "E",
+      "reason": "potential integer overflow in allocation: malloc(total+extra",
+      "patterns": [
+        "add_overflow"
+      ],
+      "alloc_count": 1,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2016-7117_recvmmsg",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2016-7117_recvmmsg",
+      "category": "integer-overflow",
+      "detected": true,
+      "confidence": 0.7,
+      "stage": "E",
+      "reason": "potential integer overflow in allocation: malloc(n*sizeof",
+      "patterns": [
+        "mul_overflow"
+      ],
+      "alloc_count": 1,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2018-1000200_linux_mmap",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2018-1000200_linux_mmap",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2019-11477_tcp_sack",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2019-11477_tcp_sack",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2020-14386_af_packet",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2020-14386_af_packet",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2021-33909_ext4_iov",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2021-33909_ext4_iov",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2022-0185_kernel_iov",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2022-0185_kernel_iov",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2022-42703_mm_uaf",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2022-42703_mm_uaf",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2023-2598_io_uring",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2023-2598_io_uring",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "CVE-2024-0582_io_uring",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\CVE-2024-0582_io_uring",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "int_ovf_nested_expr",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\int_ovf_nested_expr",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "safe_checked_mul",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\safe_checked_mul",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "safe_constant_small",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\safe_constant_small",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "safe_small_constants",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\safe_small_constants",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    },
+    {
+      "sample": "safe_within_range",
+      "directory": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples_int_overflow\\safe_within_range",
+      "category": "integer-overflow",
+      "detected": false,
+      "confidence": 0.0,
+      "stage": "",
+      "reason": "",
+      "patterns": [],
+      "alloc_count": 0,
+      "duration_ms": 0
+    }
+  ],
+  "timestamp": "2026-08-06 23:03:31"
+}

@@ -1,0 +1,1 @@
+{"sample": "uaf_05_double_free", "vuln_type": "double-free", "expected": "TP", "cwe": "CWE-415", "description": "Double free — same pointer freed twice in cleanup path"}

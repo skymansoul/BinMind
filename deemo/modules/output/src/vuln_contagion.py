@@ -9,14 +9,13 @@
   checksec 加固状态和 CVSS 基础评分。
 
 与现有工作的区别:
-  - MIRAGE (IEEE TDSC 2025): 攻击图建模—需运行时交互信息
+  - MIRAGE: 攻击图建模—需运行时交互信息
   - Binarly US 12,287,885: 跨二进制 ICFG—需完整反汇编
-  - VPSS (arXiv:2506.01342v2): Java/Maven 生态—不适用于原生二进制
+  - VPSS: Java/Maven 生态—不适用于原生二进制
 
 传染评分: contagion = sigmoid(w1×overlap + w2×(1-hw_ratio) + w3×cvss_norm + w4×proximity)
 
-参考:
-  MIRAGE (IEEE TDSC 2025), Binarly US 12,287,885, VPSS (arXiv:2506.01342v2)
+  MIRAGE, Binarly US 12,287,885, VPSS
 
 修改记录:
   创建 2026-07-29 — 传染图核心 (assess_contagion, build_contagion_graph, contagion_summary)
@@ -32,7 +31,6 @@ from modules.output.src.contagion_metrics import (
     DEFAULT_WEIGHTS, compute_import_overlap, compute_symbol_proximity,
     compute_hardening_ratio, _family_set, _normalize_import_name,
 )
-
 
 @dataclass
 class ContagionEdge:
@@ -50,7 +48,6 @@ class ContagionEdge:
         if self.contagion_score >= 0.5: return 'high'
         if self.contagion_score >= 0.3: return 'medium'
         return 'low'
-
 
 def assess_contagion(
     source_imports: List[str], source_cvss_score: float,
@@ -82,7 +79,6 @@ def assess_contagion(
             'symbol_proximity': round(sp_score, 4),
         })
 
-
 def build_contagion_graph(
     source_binary: Dict[str, Any],
     candidate_binaries: List[Dict[str, Any]],
@@ -103,7 +99,6 @@ def build_contagion_graph(
             edges.append(edge)
     edges.sort(key=lambda e: e.contagion_score, reverse=True)
     return edges
-
 
 def contagion_summary(edges: List[ContagionEdge]) -> Dict[str, Any]:
     if not edges:

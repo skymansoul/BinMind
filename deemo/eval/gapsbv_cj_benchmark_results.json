@@ -1,0 +1,162 @@
+{
+  "timestamp": "2026-08-10 19:42:13",
+  "sample_count": 20,
+  "baseline": {
+    "TP": 4,
+    "FP": 8,
+    "FN": 1,
+    "TN": 2,
+    "precision": 0.3333,
+    "recall": 0.8,
+    "f1": 0.4706,
+    "fp_rate": 0.8
+  },
+  "enhanced": {
+    "TP": 5,
+    "FP": 0,
+    "FN": 0,
+    "TN": 10,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fp_rate": 0.0
+  },
+  "fp_reduction_percent": 100.0,
+  "details": [
+    {
+      "name": "cve_2014_0160_heartbleed",
+      "class": "TP",
+      "detected": true,
+      "verdict": "overflow",
+      "reason": "DD-BVF: overflow: equal coefficients but write_const(16.0) > alloc_const(0.0)",
+      "candidates": 1,
+      "cve": "CVE-2014-0160"
+    },
+    {
+      "name": "cve_2015_0235_ghost",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 2,
+      "cve": "CVE-2015-0235"
+    },
+    {
+      "name": "cve_2016_2177_openssl",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 2,
+      "cve": "CVE-2016-2177"
+    },
+    {
+      "name": "cve_2018_6552_kernel",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 2,
+      "cve": "CVE-2018-6552"
+    },
+    {
+      "name": "cve_2019_1010298_libssh2",
+      "class": "TP",
+      "detected": true,
+      "verdict": "overflow",
+      "reason": "DD-BVF(call-site): constant: write_end(16384.0) > alloc(4096.0)",
+      "candidates": 2,
+      "cve": "CVE-2019-1010298"
+    },
+    {
+      "name": "cve_2020_10711_kernel",
+      "class": "TP",
+      "detected": true,
+      "verdict": "overflow",
+      "reason": "PC-BVF: PC-BVF OVERFLOW: constrained min_write(32.0) > max_alloc(0.0); bounds={}",
+      "candidates": 2,
+      "cve": "CVE-2020-10711"
+    },
+    {
+      "name": "cve_2020_10713_grub2",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 3,
+      "cve": "CVE-2020-10713"
+    },
+    {
+      "name": "cve_2021_3156_sudo",
+      "class": "TP",
+      "detected": true,
+      "verdict": "overflow",
+      "reason": "DD-BVF: constant: write_end(255.0) > alloc(1.0)",
+      "candidates": 2,
+      "cve": "CVE-2021-3156"
+    },
+    {
+      "name": "cve_2022_0185_kernel",
+      "class": "TP",
+      "detected": true,
+      "verdict": "overflow",
+      "reason": "DD-BVF: overflow: write_coef[PAGE_SIZE]=2.0 > alloc_coef[PAGE_SIZE]=1.0, variable PAGE_SIZE at any positive value causes",
+      "candidates": 2,
+      "cve": "CVE-2022-0185"
+    },
+    {
+      "name": "cve_2024_21894_openssl",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 4,
+      "cve": "CVE-2024-21894"
+    },
+    {
+      "name": "fp_test_01_guard_protected",
+      "class": "TN",
+      "detected": false,
+      "verdict": "safe",
+      "reason": "FM boundary derivation: write_end max <= 72 (bounds: user_size=[-inf,-0])",
+      "candidates": 1,
+      "cve": "FP-TEST-01"
+    },
+    {
+      "name": "fp_test_02_affine_provable_safe",
+      "class": "TN",
+      "detected": false,
+      "verdict": "safe",
+      "reason": "PC-BVF: PC-BVF SAFE: param write bounded by path constraint; max_write=0.0 <= alloc=0.0",
+      "candidates": 1,
+      "cve": "FP-TEST-02"
+    },
+    {
+      "name": "fp_test_03_constant_bound_safe",
+      "class": "TN",
+      "detected": false,
+      "verdict": "safe",
+      "reason": "copy_size(128)+off(0)=128 <= 264 (usabile_size)",
+      "candidates": 1,
+      "cve": "FP-TEST-03"
+    },
+    {
+      "name": "fp_test_04_interprocedural_alloc",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 1,
+      "cve": "FP-TEST-04"
+    },
+    {
+      "name": "fp_test_05_loop_bound_guarded",
+      "class": "TN",
+      "detected": false,
+      "verdict": "inconclusive",
+      "reason": "",
+      "candidates": 1,
+      "cve": "FP-TEST-05"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 """蒙特卡洛可靠性预测 —— 估计补丁在不同运行时条件下的生存概率。
 
-v2 新增 exploitability 感知评分，借鉴 VeriBin (NDSS 2025) 补丁验证框架。
+v2 新增 exploitability 感知评分，借鉴 VeriBin 补丁验证框架。
 
 不算快，但对二进制补丁给出合理边界估计。
 """
@@ -13,7 +13,7 @@ from typing import List, Optional, Dict
 
 _log = logging.getLogger(__name__)
 
-# ── 数据类 ─────────────────────────────────────────────────────────
+# 数据类
 
 @dataclass
 class RandomnessFactor:
@@ -67,7 +67,7 @@ class ReliabilityReport:
             'recommendation': self.recommendation,
         }
 
-# ── 熵估计 ─────────────────────────────────────────────────────────
+# 熵估计
 
 class EntropyEstimator:
     """各缓解技术的熵估计。
@@ -149,7 +149,7 @@ class EntropyEstimator:
             success_probability=0.9995,
             description="ARM64 Pointer Authentication Code")
 
-# ── 蒙特卡洛模拟器 ────────────────────────────────────────────────
+# 蒙特卡洛模拟器
 
 class MonteCarloSimulator:
     """N 次迭代，统计生存次数。
@@ -220,7 +220,7 @@ class MonteCarloSimulator:
         margin = z * math.sqrt((rate*(1-rate) + z*z/(4*n)) / n) / denominator
         return margin
 
-# ── exploitability 评分 ────────────────────────────────────────────
+# exploitability 评分
 
 class ExploitabilityScorer:
     """基于评分的 exploitability 评估。
@@ -242,7 +242,7 @@ class ExploitabilityScorer:
         "seccomp_bypassable":      ExploitabilityWeight("seccomp_bypassable", 0.10, True),
     }
 
-    # CWE exploitability 先验概率 —— 数据来自 CISA KEV + NVD (2020-2025)
+    # CWE exploitability 先验概率 —— 数据来自 CISA KEV + NVD
     _CWE_PRIORS = {
         'CWE-121': 0.55,  # Stack overflow —— 中等武器化率
         'CWE-122': 0.65,  # Heap overflow —— 因堆风水进展而偏高
@@ -313,7 +313,7 @@ class ExploitabilityScorer:
         else:
             return "trivial"
 
-# ── 生存分析 ───────────────────────────────────────────────────────
+# 生存分析
 
 class SurvivalAnalyzer:
     """Kaplan-Meier 风格生存分析 —— 按 exploit 尝试次数估计 survival rate。
@@ -353,7 +353,7 @@ class SurvivalAnalyzer:
                 return t
         return self._horizon  # 全程存活
 
-# ── 主预测器 ───────────────────────────────────────────────────────
+# 主预测器
 
 class ReliabilityPredictor:
     """顶层可靠性预测。
@@ -465,7 +465,7 @@ class ReliabilityPredictor:
 
         return result, report
 
-# ── 便捷接口 ───────────────────────────────────────────────────────
+# 便捷接口
 
 def create_reliability_predictor(arch="x86_64") -> ReliabilityPredictor:
     return ReliabilityPredictor(arch=arch)

@@ -13,9 +13,7 @@ from contextlib import contextmanager
 _EPS: float = 1e-9
 
 
-# ---------------------------------------------------------------------------
 # 日志配置
-# ---------------------------------------------------------------------------
 
 def setup_logging(level: str = "INFO", log_file: Optional[str] = None,
                   fmt: Optional[str] = None, max_bytes: int = 10_485_760,
@@ -61,9 +59,7 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None,
     return root
 
 
-# ---------------------------------------------------------------------------
 # 指数退避重试
-# ---------------------------------------------------------------------------
 
 def retry_with_backoff(
     max_attempts: int = 3,
@@ -107,9 +103,7 @@ def retry_with_backoff(
     return decorator
 
 
-# ---------------------------------------------------------------------------
 # TTL缓存 — 源自multi_dimension_stats_api中_TTLCache的通用化
-# ---------------------------------------------------------------------------
 
 class TTLCache:
     """键值缓存，每项独立TTL过期。
@@ -149,9 +143,7 @@ class TTLCache:
             return len(self._store)
 
 
-# ---------------------------------------------------------------------------
 # 计时上下文管理器
-# ---------------------------------------------------------------------------
 
 @contextmanager
 def elapsed_timer(name: str = "operation", logger: Optional[logging.Logger] = None):
@@ -170,9 +162,7 @@ def elapsed_timer(name: str = "operation", logger: Optional[logging.Logger] = No
         _log.debug("%s took %.3fs", name, elapsed)
 
 
-# ---------------------------------------------------------------------------
 # JSON序列化辅助
-# ---------------------------------------------------------------------------
 
 def safe_json_dumps(obj: Any, indent: int = 2) -> str:
     """JSON序列化，自动处理dataclass/Enum/set/bytes。"""
@@ -196,9 +186,7 @@ def safe_json_dumps(obj: Any, indent: int = 2) -> str:
     return _json.dumps(obj, cls=_Encoder, indent=indent, ensure_ascii=False)
 
 
-# ---------------------------------------------------------------------------
 # 数值统计助手
-# ---------------------------------------------------------------------------
 
 def percentile(sorted_vals: List[float], p: float) -> float:
     """计算百分位数。sorted_vals必须已排序。"""
@@ -220,9 +208,7 @@ def ewma(current: float, previous: float, alpha: float = 0.3) -> float:
     return alpha * current + (1.0 - alpha) * previous
 
 
-# ---------------------------------------------------------------------------
 # 离散统计分析 — 输入为分类计数时的快速摘要
-# ---------------------------------------------------------------------------
 
 def categorical_summary(counter: Dict[str, int]) -> Dict[str, Any]:
     """从分类计数字典生成速览统计。
@@ -252,10 +238,8 @@ def categorical_summary(counter: Dict[str, int]) -> Dict[str, Any]:
     }
 
 
-# ============================================================================
 # 模块完整性自检
 # 用途：CI预检阶段快速发现缺失依赖，避免运行时才报ImportError。
-# ============================================================================
 
 def check_dependencies() -> Dict[str, bool]:
     """检查可选依赖的安装状态。

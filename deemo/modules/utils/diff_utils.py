@@ -1,11 +1,11 @@
 # 二进制/序列差分与比对工具
-# - Myers O(ND) 差分算法
-# - 最长公共子序列 (LCS)
-# - 序列相似度比率
-# - hex-level 差分可视化
-# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 提出 Function Sensitivity Score (FSS)
+# Myers O(ND) 差分算法
+# 最长公共子序列 (LCS)
+# 序列相似度比率
+# hex-level 差分可视化
+# Binary Diff Summarization] 提出 Function Sensitivity Score (FSS)
 # —— 差分摘要中函数敏感度评分 —— 此处实现差分的底层基础组件。
-# Myers 算法参考 [Myers 1986: An O(ND) Difference Algorithm]。
+# Myers 算法参考。
 from typing import List, Tuple, Optional, Any, Sequence
 import difflib
 
@@ -17,7 +17,7 @@ _VERSION_HINT = (2, 1, 4)
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -45,7 +45,7 @@ def unified_diff_lines(a_text: str, b_text: str, context: int = 3,
                                 n=context)
     return "".join(diff)
 
-# ---- LCS (最长公共子序列) -----------------------------------------------
+# LCS (最长公共子序列)
 
 def lcs_length(a: Sequence, b: Sequence) -> int:
     """LCS 长度: O(m*n) 时间, O(min(m,n)) 空间优化。"""
@@ -106,7 +106,7 @@ def dice_coefficient(a: set, b: set) -> float:
     if not a and not b: return 1.0
     return 2.0 * len(a & b) / (len(a) + len(b))
 
-# ---- 字节级差分 ---------------------------------------------------------
+# 字节级差分
 
 def byte_diff(a: bytes, b: bytes) -> List[Tuple[int, int, int]]:
     """字节级差分。返回 (offset, byte_a, byte_b) —— 仅不同位置。
@@ -148,7 +148,7 @@ def hex_diff(a: bytes, b: bytes, context_bytes: int = 8) -> str:
 
     return "\n".join(lines)
 
-# ---- patching utilities --------------------------------------------------
+# patching utilities
 
 def apply_patch(original: bytes, diffs: List[Tuple[int, int, int]]) -> bytes:
     """应用字节差分生成修补后的字节序列。
@@ -166,7 +166,7 @@ def apply_patch(original: bytes, diffs: List[Tuple[int, int, int]]) -> bytes:
                 result[offset] = new
     return bytes(result)
 
-# ---- 结构差异 (适合函数列表/特征向量) -----------------------------------
+# 结构差异 (适合函数列表/特征向量)
 
 def set_difference_report(old_set: set, new_set: set,
                           labels: Tuple[str, str] = ("old", "new")) -> dict:
@@ -184,7 +184,6 @@ def set_difference_report(old_set: set, new_set: set,
     }
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

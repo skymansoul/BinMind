@@ -372,11 +372,9 @@ def function_arg_taint_matrix(binary: str, func_addr: int,
     }
 
 
-# =============================================================================
 # 三轮增强 — 符号内存模型
 # 封装 angr memory.加载 / memory.存储，内建 BVS 依赖追踪解析 taint 来源
 # 命名约定: taint_arg{N}_{offset}_{width} → N 是输入字节/参数索引
-# =============================================================================
 
 class SymbolicMemoryModel:
     """Wraps angr memory 提供 high-level symbolic 读取/写入 taint
@@ -518,12 +516,10 @@ class SymbolicMemoryModel:
             pass
 
 
-# =============================================================================
 # 三轮增强 — 路径剪枝钩子
 # 作为 angr SimStatePlugin 注入，分支解析后丢弃到达不安全终止函数的路径
 # 权衡：可能在少数场景下误剪（legit call abort via atexit 处理器）
 # 但收益远大于成本 — 大多数情况下 abort/__fortify_fail 意味着路径结束
-# =============================================================================
 
 # 若 angr 不可用，PathPruning钩子 退化为普通 object（丧失 SimStatePlugin
 # 的 copy/merge 接口，但 should_prune 逻辑仍可独立使用）
@@ -561,7 +557,7 @@ class PathPruningHook(_PRUNING_BASE):
         self.pruned_count = 0
         self.pruned_reasons: List[str] = []
 
-    # ---- SimStatePlugin 标准接口 ----
+# SimStatePlugin 标准接口
 
     def copy(self, _memo=None):
         """SimStatePlugin.copy — 深拷贝剪枝钩子的计数器与原因列表
@@ -588,7 +584,7 @@ class PathPruningHook(_PRUNING_BASE):
         """angr 在 state.寄存器_plugin() 后自动调用，绑定宿主 state"""
         self.state = state
 
-    # ---- 剪枝判定逻辑 ----
+# 剪枝判定逻辑
 
     def should_prune(self, state=None) -> bool:
         """判断当前 IP 是否指向不安全的终止函数
@@ -649,11 +645,9 @@ class PathPruningHook(_PRUNING_BASE):
         self.pruned_reasons.append(reason)
 
 
-# =============================================================================
 # 三轮增强 — SMT-LIB2 约束序列化
 # 将 angr state 的约束集转为标准 SMT-LIB2 QF_BV 脚本
 # 适用场景：跨工具验证 / 约束持久化 / 结果复现
-# =============================================================================
 
 def extract_path_constraints_smt2(path_state) -> Optional[str]:
     """序列化 constraint set an angr state SMT-LIB2 格式化

@@ -1,0 +1,6 @@
+{
+  "id": "uaf_fp_04_use_before_free",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "use 先于 free (地址序: free 在前才构成候选)"
+}

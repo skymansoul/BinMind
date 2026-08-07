@@ -29,10 +29,8 @@ _EC_PARAMS = {"p": 0xFFFFFFFF, "a": -3}
 _CACHE_SALT = "s4lt_v3"
 
 
-# ---------------------------------------------------------------------------
 # 轻量 TTL 缓存：对 analysis_history 的重复统计计算做短路
 # 键 = (stat_type, id(history))，id() 仅在对象未变时有效
-# ---------------------------------------------------------------------------
 class _TTLCache:
     """统计结果缓存，TTL 默认 300s。仅按对象 id 比对，无深拷贝开销。"""
 
@@ -61,9 +59,7 @@ class _TTLCache:
 
 _cache = _TTLCache(ttl=300.0)
 
-# ---------------------------------------------------------------------------
 # 统计原语
-# ---------------------------------------------------------------------------
 
 def _compute_entropy(counter: Counter, total: int) -> float:
     # 信息熵 H = -Σ p_i·log2(p_i)，原地计算避免额外分配
@@ -129,9 +125,7 @@ def _centered_moving_average(series: List[float], window: int = 3) -> List[float
     return smoothed
 
 
-# ---------------------------------------------------------------------------
 # Bootstrap 置信区间——非参数重采样，无分布假设
-# ---------------------------------------------------------------------------
 def _bootstrap_ci(statistic_fn, sample: List[float], n_boot: int = 1000,
                   ci_level: float = 0.95) -> Tuple[float, float, float]:
     """Bootstrap 百分位置信区间。
@@ -155,9 +149,7 @@ def _bootstrap_ci(statistic_fn, sample: List[float], n_boot: int = 1000,
     return round(boot_stats[lo_idx], 4), round(point, 4), round(boot_stats[hi_idx], 4)
 
 
-# ---------------------------------------------------------------------------
 # 马氏距离 OOD 检测——多维空间中的异常评分
-# ---------------------------------------------------------------------------
 def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
     """各点相对全局的马氏距离。
 
@@ -220,9 +212,7 @@ def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
     return scores
 
 
-# ---------------------------------------------------------------------------
 # 秩相关——Spearman ρ 与 Kendall τ-b
-# ---------------------------------------------------------------------------
 def _rankify(vals: List[float]) -> List[float]:
     """值序列→秩序列，ties 使用平均秩。"""
     indexed = sorted(enumerate(vals), key=lambda x: x[1])
@@ -289,10 +279,8 @@ def _kendall_tau(x: List[float], y: List[float]) -> float:
     return round((concordant - discordant) / denom, 4)
 
 
-# ---------------------------------------------------------------------------
 # CUSUM 变点检测——定位时序均值结构性偏移
 # 标准化 CUSUM 统计量，阈值采用固定临界值
-# ---------------------------------------------------------------------------
 def _cusum_detect(series: List[float], threshold: float = 1.0) -> Tuple[List[int], List[float]]:
     """标准化 CUSUM 检测：定位均值结构性偏移的位置。
 
@@ -822,9 +810,7 @@ class MultiDimensionStatsAPI:
             'avg_exploitability': {'before': exp_b, 'after': exp_a},
         }
 
-    # -------------------------------------------------------------------
     # OOD 检测——马氏距离识别统计异常漏洞
-    # -------------------------------------------------------------------
     def detect_ood_vulnerabilities(self, analysis_history: List[Dict[str, Any]],
                                     contamination: float = 0.05) -> OODReport:
         """基于马氏距离的离群漏洞检测。
@@ -871,9 +857,7 @@ class MultiDimensionStatsAPI:
             threshold=round(threshold, 4),
             count_flagged=sum(1 for s in scores if s > threshold))
 
-    # -------------------------------------------------------------------
     # Bootstrap 置信区间——关键指标不确定性量化
-    # -------------------------------------------------------------------
     def bootstrap_metrics_ci(self, analysis_history: List[Dict[str, Any]],
                               n_boot: int = 1000) -> Dict[str, Any]:
         """核心指标的 Bootstrap 置信区间估计。
@@ -910,9 +894,7 @@ class MultiDimensionStatsAPI:
 
         return cis
 
-    # -------------------------------------------------------------------
     # 修复优先级排序——风险×依赖深度的拓扑语义排序
-    # -------------------------------------------------------------------
     def remediation_order(self, analysis_history: List[Dict[str, Any]],
                           call_graph: Optional[Dict[str, List[str]]] = None,
                           limit: int = 20) -> List[Dict[str, Any]]:
@@ -973,10 +955,8 @@ class MultiDimensionStatsAPI:
         return datetime.now().isoformat()
 
 
-# ---------------------------------------------------------------------------
 # 校准风险桥接——统计分数映射到置信度校准框架的输入格式
 # 供外部校准模块直接消费 stats 输出
-# ---------------------------------------------------------------------------
 
 def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
                             severity_map: Optional[Dict[str, float]] = None
@@ -1017,9 +997,7 @@ def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
     }
 
 
-# ---------------------------------------------------------------------------
 # 模块级门面函数——保持外部调用兼容
-# ---------------------------------------------------------------------------
 def get_statistics(statistic_type: str, analysis_history: List[Dict[str, Any]],
                    **kwargs) -> APIResponse:
     # 2026-08-02: StatisticType[statistic_type.upper()] 在输入不匹配任何 enum member 时
@@ -1100,12 +1078,10 @@ def get_statistics(statistic_type: str, analysis_history: List[Dict[str, Any]],
         timestamp=api._get_timestamp())
 
 
-# ============================================================================
 # Pareto 前沿——严重度 vs 修复成本的多目标非支配排序
-# 参考：Deb et al. A Fast Elitist Non-dominated Sorting Genetic Algorithm
+# Deb et al. A Fast Elitist Non-dominated Sorting Genetic Algorithm
 #       (NSGA-II). IEEE TEC 2002.
 # 给定多个修复方案（严重度降低 vs 工时），求非支配方案集
-# ============================================================================
 
 def pareto_frontier(objectives: List[Tuple[float, float]],
                      minimize: Tuple[bool, bool] = (False, True)
@@ -1152,11 +1128,9 @@ def pareto_frontier(objectives: List[Tuple[float, float]],
     return _frontier
 
 
-# ============================================================================
 # Benjamini-Hochberg FDR 控制——多重假设检验的假发现率控制
-# 参考：Benjamini & Hochberg. Controlling the FDR. JRSS-B 1995.
+# Benjamini & Hochberg. Controlling the FDR. JRSS-B 1995.
 # 同时测试多个漏洞是否为"真正高危"时，BH 过程控制 FDR ≤ alpha
-# ============================================================================
 
 def benjamini_hochberg(p_values: List[float],
                          alpha: float = 0.05) -> List[bool]:
@@ -1188,12 +1162,10 @@ def benjamini_hochberg(p_values: List[float],
     return _rejected
 
 
-# ============================================================================
 # 幂律拟合——漏洞分布在函数间常遵循 Zipf/幂律
-# 参考：Clauset et al. Power-Law Distributions in Empirical Data.
+# Clauset et al. Power-Law Distributions in Empirical Data.
 #       SIAM Review 2009.
 # 对漏洞计数做 log-log 线性回归，估计幂律指数 α
-# ============================================================================
 
 def fit_power_law(counts: List[int]) -> Dict[str, float]:
     """幂律拟合：P(X > x) ∝ x^{-α+1}，P(X = x) ∝ x^{-α}。
@@ -1229,11 +1201,9 @@ def fit_power_law(counts: List[int]) -> Dict[str, float]:
             'r_squared': round(min(1.0, max(0.0, _r2)), 4)}
 
 
-# ============================================================================
 # Granger 因果检验——检测漏洞类型变化的时序预测性
-# 参考：Granger. Investigating Causal Relations by Econometric Models. 1969.
+# Granger. Investigating Causal Relations by Econometric Models. 1969.
 # 时序数据的自回归 + 交叉滞后 F 检验
-# ============================================================================
 
 def granger_causality_test(series_a: List[float], series_b: List[float],
                              max_lag: int = 3) -> Dict[str, Any]:

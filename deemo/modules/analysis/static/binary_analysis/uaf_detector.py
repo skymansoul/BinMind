@@ -16,8 +16,8 @@ uaf_candidate_scorer.py 做三因素评分——这是预筛选, 不确认漏洞
   uaf_detector: 对候选做精确的别名追踪→确认/否定/不确定
 
 理论依据:
-  UAFSan (USENIX 2024): 别名分析+路径条件→本方案简化为函数内扫描
-  CREDAL (CCS 2023): 静态UAF检测的误报率控制→本方案采用三级置信度
+  UAFSan: 别名分析+路径条件→本方案简化为函数内扫描
+  CREDAL: 静态UAF检测的误报率控制→本方案采用三级置信度
 """
 
 from __future__ import annotations

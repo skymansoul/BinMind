@@ -1,0 +1,22 @@
+{
+  "generated": "2026-08-08T05:02:27.027473",
+  "n_samples": 18,
+  "ground_truth_pos": 15,
+  "ground_truth_neg": 3,
+  "tools": [
+    {
+      "tool": "AVHO-G",
+      "recall": 100.0,
+      "precision": 100.0,
+      "f1": 100.0,
+      "avg_time_ms": 26.2,
+      "tp": 14,
+      "tn": 4,
+      "fp": 0,
+      "fn": 0,
+      "n_samples": 18,
+      "mode": "REAL",
+      "raw_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\eval\\results\\avho_20260808_050227.json"
+    }
+  ]
+}

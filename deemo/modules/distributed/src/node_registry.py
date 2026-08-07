@@ -1,10 +1,10 @@
 # 分布式节点注册与发现 — 无中心化架构的集群成员管理
-# 参考 Falcon [BDAIA 2025]: master-worker 分级 + worker 自注册机制
-# 参考 SERIN [USask 2025]: actor 模型的元监控，心跳 + Raft 日志复制
+# Falcon: master-worker 分级 + worker 自注册机制
+# SERIN: actor 模型的元监控，心跳 + Raft 日志复制
 #
 # 三种发现机制：
 #   1. Redis 集中注册: 每节点 HSET + TTL，周期性刷新
-#   2. Gossip 协议:    基于 SWIM [Gupta+ 2002] 的弱一致性传播
+#   2. Gossip 协议:    基于 SWIM 的弱一致性传播
 #   3. Static 静态列表: 配置文件/硬编码，适配固定规模集群
 #
 # 健康判定：通过心跳 TTL 推断节点存活，超时自动剔除
@@ -32,7 +32,7 @@ except ImportError:
     _redis = None
 
 
-# ===== 集群节点记录 =====
+# 集群节点记录
 
 @dataclass
 class NodeRecord:
@@ -58,7 +58,7 @@ class NodeRecord:
         return time.time() - self.last_seen > timeout
 
 
-# ===== 发现后端抽象接口 =====
+# 发现后端抽象接口
 
 class DiscoveryBackend(ABC):
     """节点发现后端抽象接口 — 子类必须实现全部 4 个方法。"""
@@ -80,7 +80,7 @@ class DiscoveryBackend(ABC):
         ...
 
 
-# ===== Redis 集中式注册 =====
+# Redis 集中式注册
 
 class RedisDiscovery(DiscoveryBackend):
     """基于 Redis 的集中式节点注册。
@@ -176,7 +176,7 @@ def _record_from_dict(data: dict) -> NodeRecord:
     )
 
 
-# ===== Gossip 协议（SWIM 简化实现） =====
+# Gossip 协议（SWIM 简化实现）
 
 class _GossipMessage:
     __slots__ = ('node', 'members', 'round')
@@ -282,7 +282,7 @@ class GossipDiscovery(DiscoveryBackend):
                 return True
             return False
 
-    # ---- Gossip 后台循环 ----
+# Gossip 后台循环
 
     def start(self):
         if self._thread is not None:
@@ -377,7 +377,7 @@ class GossipDiscovery(DiscoveryBackend):
             return len(self._members)
 
 
-# ===== 静态节点列表 =====
+# 静态节点列表
 
 class StaticDiscovery(DiscoveryBackend):
     """静态节点列表 — 小集群/测试环境专用。
@@ -407,7 +407,7 @@ class StaticDiscovery(DiscoveryBackend):
         return False
 
 
-# ===== 注册中心门面 =====
+# 注册中心门面
 
 class NodeRegistry:
     """节点注册中心 — 按配置自动选择发现后端。

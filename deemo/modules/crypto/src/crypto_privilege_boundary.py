@@ -22,9 +22,8 @@
     B3 (隔离保证): 基于硬件特性的隔离强度评估。
     B4 (已知攻击面): 映射到已知CVE/攻击类别。
 
-参考:
   - ARM TrustZone (ARMv8-M/v9): 安全扩展 — S/NS状态切换的密码学影响。
-  - Intel SGX (2024): 飞地加密 — AEX处理和侧信道缓解。
+  - Intel SGX: 飞地加密 — AEX处理和侧信道缓解。
   - Linux Crypto API (kernel 6.x): 用户态访问接口 — crypto_user socket。
   - Spectre/Meltdown类: 推测执行跨边界攻击。
 
@@ -38,7 +37,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class BoundaryType(Enum):
     USER_KERNEL = 0     # 用户态↔内核态
     TRUSTZONE = 1       # Normal World↔Secure World (ARM)
@@ -46,7 +44,6 @@ class BoundaryType(Enum):
     COPROCESSOR = 3     # 主CPU↔加密协处理器 (MMIO/DMA)
     HYPERVISOR = 4      # VM↔Hypervisor
     UNKNOWN = 5
-
 
 @dataclass
 class PrivilegeBoundary:
@@ -58,8 +55,7 @@ class PrivilegeBoundary:
     evidence: List[str] = field(default_factory=list)
     location: int = 0
 
-
-# ── 边界检测模式 ──
+# 边界检测模式
 
 _TRUSTZONE_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'SMC', 'SMC调用 (Secure Monitor Call)', 0.88),
@@ -103,7 +99,6 @@ _COPROCESSOR_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'DMA', '直接内存访问', 0.60),
     (b'dma_', 'DMA操作', 0.65),
 ]
-
 
 def detect_privilege_boundaries(data: bytes,
                                 strings: Optional[List[str]] = None,
@@ -170,7 +165,6 @@ def detect_privilege_boundaries(data: bytes,
                 evidence=[f'{len(detected)} crypto peripheral(s)']))
 
     return boundaries
-
 
 def boundary_risk_assessment(boundaries: List[PrivilegeBoundary]) -> str:
     if not boundaries:

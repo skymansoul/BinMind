@@ -1,15 +1,15 @@
-# Created: 2025-07-24 17:21:12
+# Created: 2026-04-27 17:21:12
 #
 # mrem_entropy_map — 多分辨率熵图 (Multi-Resolution Entropy Map)
 # 沿两个维度同时计算 Shannon 熵: 字节偏移 (x轴) 和窗口尺度 (y轴, 指数增长)
 # 输出 2D 熵矩阵，每个 cell[i][j] = offset_i 处 window_j 尺度的熵值
 #
-# 与 GView (ACM womENcourage 2025, 单尺度热力图) 的本质差异:
+# 与 GView 的本质差异:
 #   1. GView 仅在单一窗口尺度可视化熵；本模块在 8+ 个尺度同时采样
 #   2. 多尺度联合分析可区分: 细粒度模式(短指令序列)、中粒度模式(函数/段边界)、
 #      粗粒度模式(打包层/加密区域)
 #   3. 二维梯度 (∂ent/∂offset, ∂ent/∂scale) 揭示 GView 看不到的结构特征:
-#      - 尺度不变区域 (∂/∂scale ≈ 0) → 均匀分布的随机数据 (加密载荷)
+# 尺度不变区域 (∂/∂scale ≈ 0) → 均匀分布的随机数据 (加密载荷)
 #      - 尺度敏感区域 (∂/∂scale 大) → 分层结构 (打包器 stub + payload)
 
 import math

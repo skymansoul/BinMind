@@ -51,7 +51,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-# ── Sanitizer 崩溃输出的正则捕获 ──────────────────────────────────
+# Sanitizer 崩溃输出的正则捕获
 
 _ASAN_CRASH_RE = re.compile(
     r'(ERROR: AddressSanitizer):\s*(\S.*?)\n'
@@ -86,7 +86,7 @@ def _guess_func_info(signature: str) -> dict[str, str]:
             "struct_type": "uint8_t", "min_size": "1"}
 
 
-# ── 崩溃识别与消重签名 ──────────────────────────────────────────
+# 崩溃识别与消重签名
 
 def _classify_crash(stderr_output: str) -> dict[str, Any]:
     """从 sanitizer/stderr 文本中提取崩溃类型、栈帧与唯一签名。
@@ -169,7 +169,7 @@ class FuzzManager:
             return FUZZER_STATUS_RUNNING
         return self._status
 
-    # ── 单实例启动 ────────────────────────────────────────────────
+# 单实例启动
 
     def start(self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,
               timeout: int = 3600) -> bool:
@@ -200,7 +200,7 @@ class FuzzManager:
             _log.error("Failed to start fuzzing: %s", e)
             return False
 
-    # ── 多worker并行调度 ─────────────────────────────────────────
+# 多worker并行调度
 
     def start_parallel(
         self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,
@@ -264,7 +264,7 @@ class FuzzManager:
         self._status = FUZZER_STATUS_RUNNING
         return True
 
-    # ── 终止所有子进程 ───────────────────────────────────────────
+# 终止所有子进程
 
     def stop(self) -> None:
         if self._process and self._process.poll() is None:
@@ -283,7 +283,7 @@ class FuzzManager:
         self._parallel_processes.clear()
         self._status = FUZZER_STATUS_COMPLETED
 
-    # ── 产物回收 ──────────────────────────────────────────────────
+# 产物回收
 
     def collect_crashes(self) -> list[str]:
         crashes_dir = self._output_dir / "crashes"
@@ -297,7 +297,7 @@ class FuzzManager:
             return [str(p) for p in self._corpus_dir.iterdir() if p.is_file()]
         return [str(p) for p in queue_dir.iterdir() if p.is_file()]
 
-    # ── 崩溃重放与分类 ────────────────────────────────────────────
+# 崩溃重放与分类
 
     def triage_crashes(
         self, target_binary: str, max_crashes: int = 50
@@ -340,7 +340,7 @@ class FuzzManager:
         self._triaged_crashes = triaged
         return triaged
 
-    # ── 语料精简 ─────────────────────────────────────────────────
+# 语料精简
 
     def minimize_corpus(
         self, target_binary: str, strategy: str = "greedy_setcover"
@@ -419,7 +419,7 @@ class FuzzManager:
 
         return selected
 
-    # ── 运行时自适应调节 ─────────────────────────────────────────
+# 运行时自适应调节
 
     def adaptive_timeout(
         self, base_timeout: int = 600, history_window: int = 5
@@ -446,7 +446,7 @@ class FuzzManager:
 
         return max(60, min(86400, adjusted))
 
-    # ── 容器沙箱执行 ──────────────────────────────────────────────
+# 容器沙箱执行
 
     def start_in_container(
         self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,

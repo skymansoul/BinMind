@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_11_const_wrapper",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "包装函数透传常量格式串"
+}

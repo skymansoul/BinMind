@@ -34,9 +34,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class HeapOperation:
@@ -74,9 +72,7 @@ class UAFScoringReport:
     medium_risk_count: int       # score 0.3-0.6
 
 
-# ---------------------------------------------------------------------------
 # 评分器
-# ---------------------------------------------------------------------------
 
 class UseAfterFreeScorer:
     """二进制级 UAF 概率评分器

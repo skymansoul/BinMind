@@ -11,7 +11,7 @@ from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
-# ── 舍入 4: Error taxonomy ──
+# 舍入 4: Error taxonomy
 # Ghidra headless scripting emphasizes domain-specific error types
 # over generic 异常s, enabling precise error recovery strategies
 
@@ -58,7 +58,7 @@ class TaintInfo:
     src_line: int = 0
     src_file: str = ""
 
-# ── BitSet ────────────────────────────────────────────────────────────────────
+# BitSet
 
 class BitSet:
     __slots__ = ('_size', '_words', '_data')
@@ -136,7 +136,7 @@ class BitSet:
                 if word & (1 << bit):
                     yield base + bit
 
-# ── TaintMap ──────────────────────────────────────────────────────────────────
+# TaintMap
 
 class TaintMap:
     def __init__(self):

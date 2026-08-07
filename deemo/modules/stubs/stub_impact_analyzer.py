@@ -5,22 +5,22 @@
 # 问题:
 #   桩模块的接口变更（参数增删、类型窄化、异常语义改变）
 #   在传统工作流中需人工逐调用方审查。自动化变更影响分析
-#   通常事后检测（Roseau, ICSME 2025; PCART, 2025），
+#   通常事后检测，
 #   缺乏事前反事实推演。
 #
 # 方法:
 #   1. 定义变更场景（参数删除/新增/改类型/改默认值/改返回类型）
 #   2. 在依赖图中沿 depended_by 边传播，收集全部下游模块
 #   3. 对每个下游模块的调用点做假设性兼容检查:
-#      - 参数删除 → 检查是否传递了将被删除的参数
-#      - 参数类型变更 → 检查传参类型是否为新类型的子类型
-#      - 返回类型变更 → 检查调用方是否依赖旧返回类型的方法/属性
+# 参数删除 → 检查是否传递了将被删除的参数
+# 参数类型变更 → 检查传参类型是否为新类型的子类型
+# 返回类型变更 → 检查调用方是否依赖旧返回类型的方法/属性
 #   4. 输出风险矩阵: {模块, 风险等级, 影响函数, 阻断性变更}
 #
 # 区别于已有工作:
 #   - Roseau: Java source-level BC detection (事后, F1=0.99)
 #   - PCART: Python API parameter repair (事后, F1=0.97)
-#   - 本模块: 事前反事实推演 (what-if simulation)
+# 本模块: 事前反事实推演 (what-if simulation)
 #   - 本模块与 stub_dependency_graph 和 stub_contract_merkle 协同:
 #     依赖图提供调用链，Merkle树提供精确的变更指纹锚点
 import os as _os
@@ -168,7 +168,7 @@ class ImpactAnalyzer:
             reports[f'{s.module_name}:{s.change_type.value}:{s.func_name}'] = self.analyze(s)
         return reports
 
-    # ---- 内部 ----
+# 内部
     def _find_dependents(self, module_name: str) -> set[str]:
         """查找直接依赖目标模块的全部下游模块。"""
         if self.dep_graph is not None:
@@ -311,7 +311,7 @@ class ImpactAnalyzer:
 
         return None
 
-    # ---- 辅助 ----
+# 辅助
     @staticmethod
     def _resolve_call_target(node: _ast.Call) -> str:
         """解析调用目标为 module.func_name 或 func_name 字符串。"""
@@ -351,7 +351,7 @@ class ImpactAnalyzer:
                         return i
         return None
 
-    # ---- 报告生成 ----
+# 报告生成
     def risk_matrix(self, reports: dict[str, ImpactReport]) -> str:
         """生成 Markdown 风险矩阵。"""
         lines = ['# 合约变更影响风险矩阵', '']
@@ -369,7 +369,7 @@ class ImpactAnalyzer:
         return '\n'.join(lines)
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 def quick_impact_check(module_name: str, func_name: str,
                        change: ChangeType, param: str = '',
                        old_val: str = '', new_val: str = '') -> ImpactReport:

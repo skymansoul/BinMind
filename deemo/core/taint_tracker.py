@@ -13,12 +13,11 @@
 复杂度: O(N·V), N=变量数(通常 <50/函数), V=代码行数(<500)。
 
 设计依据:
-  - NVScope (2025): 输入源验证降低 56.8% FPR——本模块做函数内版本
-  - CodeGrafter (2025): 跨域 CPG 图传播——本模块退一步只做行级线性传播,
+  - NVScope: 输入源验证降低 56.8% FPR——本模块做函数内版本
+  - CodeGrafter: 跨域 CPG 图传播——本模块退一步只做行级线性传播,
     换取零外部依赖和亚毫秒级延迟
 """
 
-from __future__ import annotations
 
 import re
 from typing import Dict, List, Set

@@ -1,0 +1,8 @@
+{
+  "sample": "v05_scanf_oob",
+  "cve": "CVE-2019-7304",
+  "mode": "unbounded_io",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "%s 无宽度, 输入可超 32 字节"
+}

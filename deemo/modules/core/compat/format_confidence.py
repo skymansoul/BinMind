@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """格式化字符串漏洞的量化置信度评分 — 替代二值判定, 输出连续风险分数.
 
 原 format_string_detector 做二元 exploitable/not 判断.

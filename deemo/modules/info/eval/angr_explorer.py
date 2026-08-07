@@ -13,7 +13,8 @@ def analyze(target: str, timeout: int = 120) -> dict:
 
     t0 = time.time()
     dangerous = {"memcpy", "strcpy", "sprintf", "gets", "system",
-                 "execve", "popen", "malloc", "free", "realloc"}
+                 "execve", "popen", "malloc", "free", "realloc",
+                 "strncpy", "memmove", "read", "recv", "calloc"}
     try:
         p = angr.Project(target, auto_load_libs=False)
         cfg = p.analyses.CFGFast()
@@ -21,11 +22,27 @@ def analyze(target: str, timeout: int = 120) -> dict:
         return {"error": f"CFG failed: {e}", "tool": "angr"}
 
     found = []
+    # 1) 导入表符号 (MinGW PE: CFGFast 不解析导入函数名)
+    import_names = set()
+    try:
+        mo = p.loader.main_object
+        for k in mo.imports.keys():
+            import_names.add(str(k).lower().rstrip('aw'))
+    except Exception:
+        pass
+
+    for imp in sorted(import_names & dangerous):
+        found.append({"function": imp, "address": "import",
+                      "reachable_from_entry": True, "call_sites": -1,
+                      "source": "import_table"})
+
+    # 2) CFG 内可解析的危险函数
     for func_name in dangerous:
+        if func_name in found:
+            continue
         try:
             func = cfg.functions.get(func_name)
             if func is None:
-                # try case-insensitive
                 for fn, fobj in cfg.functions.items():
                     if func_name in fn.lower():
                         func = fobj
@@ -40,6 +57,7 @@ def analyze(target: str, timeout: int = 120) -> dict:
                 "address": hex(func.addr),
                 "reachable_from_entry": reachable,
                 "call_sites": len(edges),
+                "source": "cfg",
             })
         except Exception:
             continue
@@ -52,6 +70,7 @@ def analyze(target: str, timeout: int = 120) -> dict:
         "dangerous_functions_found": found,
         "total_found": len(found),
         "cfg_functions_total": len(list(cfg.functions.keys())),
+        "import_functions_total": len(import_names),
     }
 
 

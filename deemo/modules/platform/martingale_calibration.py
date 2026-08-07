@@ -21,8 +21,8 @@
   概率预测的校准评估。从未应用于漏洞传播图贝叶斯更新的校准验证。
   本模块填补了传播模型的形式化统计校准评估空白。
 
-ref: Lo & MacKinlay (1988) "Stock Market Prices do not Follow Random Walks".
-ref: Dawid (1984) "Statistical Theory: The Prequential Approach" -- 概率预测校准。
+ref: Lo & MacKinlay "Stock Market Prices do not Follow Random Walks".
+ref: Dawid "Statistical Theory: The Prequential Approach" -- 概率预测校准。
 """
 
 from __future__ import annotations
@@ -218,7 +218,7 @@ class MartingaleCalibrationTester:
 
         return d_max, pval
 
-    # ---- 统计辅助函数 ----
+# 统计辅助函数
 
     @staticmethod
     def _normal_cdf(x: float) -> float:

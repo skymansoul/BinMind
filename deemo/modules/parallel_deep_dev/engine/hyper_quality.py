@@ -1,9 +1,8 @@
 """
-创建: 2025-07-29
+创建: 2026-05-24
 超参优化质量评分 — 从多维度验证结果计算综合分数。
 """
 
-from __future__ import annotations
 
 
 def compute_quality_score(

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-05  |  绘图脚本——从comparison_results.json生成论文级柱状图
+# coding: utf-8
+# 创建: 2026-07-13  |  绘图脚本——从comparison_results.json生成论文级柱状图
 #
 """
 生成对比实验柱状图——检出率对比 + 耗时对比。

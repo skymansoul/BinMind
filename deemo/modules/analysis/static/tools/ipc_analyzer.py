@@ -2,7 +2,7 @@
 # Dependency: os (文件系统), 日志, typing, dataclasses
 # Computational bound: O(n*m) per scan pass; memory: O(n) for raw binary 缓冲区s
 #
-# 2025 升级: GUARD (ACM SAC 2025) 启发的通用 API 反混淆
+# 2025 升级: GUARD 启发的通用 API 反混淆
 # GUARD 使用模拟执行 + 栈布局分析 + sIAT 恢复被混淆的导入函数
 # 本模块集成简化版栈布局分析——通过解析 push/call 序列推断
 # 被混淆 API 的参数数量，辅助 sIAT 重构
@@ -68,8 +68,8 @@ class IPCAnalysisResult:
         self.cross_binary_taints = cross_binary_taints
 
 
-# ── GUARD 启发的 sIAT 栈布局分析 (ACM SAC 2025) ────────────────────────────
-# 参考: Hwang et al., "GUARD: Generic API De-混淆 被混淆
+# GUARD 启发的 sIAT 栈布局分析
+# Hwang et al., "GUARD: Generic API De-混淆 被混淆
 # Malware 脱壳 sIAT"
 # 核心方法: Theida/VMProtect 等加壳器将 API 调用混淆为 push/call 序列
 # 通过分析 call 前的 push 指令数量推断参数个数，重建 Scattered IAT

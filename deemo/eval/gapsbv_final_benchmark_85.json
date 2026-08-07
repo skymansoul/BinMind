@@ -1,0 +1,696 @@
+{
+  "timestamp": "2026-08-07",
+  "pipeline": "GAPSBV 5-dimension",
+  "total_samples": 85,
+  "verdicts": {
+    "SAFE": 27,
+    "OVERFLOW": 24,
+    "CONDITIONAL": 1,
+    "UNCERTAIN": 33
+  },
+  "dimension_stats": {
+    "AffineRelation": {
+      "SAFE": 25,
+      "OVERFLOW": 8
+    },
+    "CompletenessCheck": {
+      "SAFE": 0,
+      "OVERFLOW": 26
+    },
+    "AllocatorSemantics": {
+      "SAFE": 7,
+      "OVERFLOW": 0
+    },
+    "GuardAnalysis": {
+      "SAFE": 1,
+      "OVERFLOW": 0
+    },
+    "StridedInterval": {
+      "SAFE": 4,
+      "OVERFLOW": 3
+    }
+  },
+  "avg_latency_ms": 1.519,
+  "total_latency_ms": 129.1,
+  "results": [
+    {
+      "sample": "cve_2014_0160_heartbleed",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 4.078
+    },
+    {
+      "sample": "cve_2015_3864_stagefright",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.049
+    },
+    {
+      "sample": "cve_2016_10190_ffmpeg",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.191
+    },
+    {
+      "sample": "cve_2017_5638_struts",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 1.128
+    },
+    {
+      "sample": "cve_2018_1000001_glibc",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 0.898
+    },
+    {
+      "sample": "cve_2019_13139_docker",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 0.684
+    },
+    {
+      "sample": "cve_2020_0796_smbghost",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 1.214
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.981
+    },
+    {
+      "sample": "cve_2022_0185_kernel",
+      "verdict": "CONDITIONAL",
+      "confidence": 0.255,
+      "filters": [],
+      "latency_ms": 1.087
+    },
+    {
+      "sample": "cve_2022_22620_webkit",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 0.563
+    },
+    {
+      "sample": "cve_2023_0669_gitlab",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 0.971
+    },
+    {
+      "sample": "heap_overflow_basic_01",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.584
+    },
+    {
+      "sample": "heap_overflow_calloc_04",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 0.934
+    },
+    {
+      "sample": "heap_overflow_guard_05",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.155
+    },
+    {
+      "sample": "heap_overflow_loop_02",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.592
+    },
+    {
+      "sample": "heap_overflow_multibuf_06",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 0.87
+    },
+    {
+      "sample": "heap_overflow_realloc_03",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 0.778
+    },
+    {
+      "sample": "CVE-2014-0160",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 2.999
+    },
+    {
+      "sample": "CVE-2016-6301",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 2.344
+    },
+    {
+      "sample": "CVE-2017-11176",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 3.718
+    },
+    {
+      "sample": "CVE-2018-6552",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 4.092
+    },
+    {
+      "sample": "CVE-2019-1010298",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 1.988
+    },
+    {
+      "sample": "CVE-2020-10711",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 3.395
+    },
+    {
+      "sample": "CVE-2021-3156",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 2.828
+    },
+    {
+      "sample": "CVE-2022-0185",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 3.71
+    },
+    {
+      "sample": "CVE-2022-23222",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 2.025
+    },
+    {
+      "sample": "CVE-2023-0461",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 3.216
+    },
+    {
+      "sample": "CVE-2024-21894",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.12,
+      "filters": [],
+      "latency_ms": 2.031
+    },
+    {
+      "sample": "cve_2021_3156_sudoedit",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 2.806
+    },
+    {
+      "sample": "cve_2022_0185_kernel_heap",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 3.89
+    },
+    {
+      "sample": "cve_2023_23001_custom",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 2.926
+    },
+    {
+      "sample": "HEAP-OVERFLOW-ALIGN-05",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 2.042
+    },
+    {
+      "sample": "HEAP-OVERFLOW-BASIC-01",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 3.577
+    },
+    {
+      "sample": "HEAP-OVERFLOW-COND-03",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 0.905
+    },
+    {
+      "sample": "HEAP-OVERFLOW-FP-04",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 1.708
+    },
+    {
+      "sample": "HEAP-OVERFLOW-LOOP-02",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.95
+    },
+    {
+      "sample": "HEAP-OVERFLOW-MULTI-06",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 2.13
+    },
+    {
+      "sample": "HEAP-OVERFLOW-REALLOC-07",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 3.118
+    },
+    {
+      "sample": "heap_aliased_ptr",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 3.191
+    },
+    {
+      "sample": "heap_dynamic_index",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 2.762
+    },
+    {
+      "sample": "heap_guard_protected",
+      "verdict": "SAFE",
+      "confidence": 0.85,
+      "filters": [
+        "GuardAnalysis"
+      ],
+      "latency_ms": 2.582
+    },
+    {
+      "sample": "heap_int_overflow_to_heap",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 5.716
+    },
+    {
+      "sample": "heap_loop_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 1.094
+    },
+    {
+      "sample": "heap_no_guard_check",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.492
+    },
+    {
+      "sample": "heap_off_by_one",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.12,
+      "filters": [],
+      "latency_ms": 1.111
+    },
+    {
+      "sample": "heap_realloc_misuse",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 1.103
+    },
+    {
+      "sample": "heap_simple_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 1.336
+    },
+    {
+      "sample": "heap_slack_space",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 2.571
+    },
+    {
+      "sample": "heap_strcpy_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 1.272
+    },
+    {
+      "sample": "heap_struct_write",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.12,
+      "filters": [],
+      "latency_ms": 1.969
+    },
+    {
+      "sample": "CVE-2014-0160_heartbleed",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.828
+    },
+    {
+      "sample": "CVE-2021-3156_sudo_heap",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 1.253
+    },
+    {
+      "sample": "CVE-2022-23222_bpf_heap",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.097
+    },
+    {
+      "sample": "CVE-2023-3269_heap",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 1.406
+    },
+    {
+      "sample": "CVE-2024-21762_fortios",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.361
+    },
+    {
+      "sample": "heap_fp_01_early_return",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 0.548
+    },
+    {
+      "sample": "heap_fp_02_const_guarded",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.48
+    },
+    {
+      "sample": "heap_fp_03_tainted_double_guard",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 0.751
+    },
+    {
+      "sample": "heap_fp_04_alias_diff_buf",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.689
+    },
+    {
+      "sample": "heap_fp_05_multi_path_overflow",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "filters": [],
+      "latency_ms": 0.834
+    },
+    {
+      "sample": "heap_overflow_01_malloc_memcpy",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.766
+    },
+    {
+      "sample": "heap_overflow_02_loop_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.65
+    },
+    {
+      "sample": "heap_overflow_03_alias_ptr",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.734
+    },
+    {
+      "sample": "heap_overflow_04_calloc",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.646
+    },
+    {
+      "sample": "heap_overflow_05_realloc",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.708
+    },
+    {
+      "sample": "heap_overflow_06_strcpy",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.587
+    },
+    {
+      "sample": "heap_overflow_07_sprintf",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 1.299
+    },
+    {
+      "sample": "heap_overflow_08_user_input",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.657
+    },
+    {
+      "sample": "heap_overflow_09_offset_write",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 2.659
+    },
+    {
+      "sample": "heap_overflow_10_nested_loop",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.0675,
+      "filters": [],
+      "latency_ms": 0.839
+    },
+    {
+      "sample": "heap_safe_01_alignment_absorbed",
+      "verdict": "SAFE",
+      "confidence": 0.7,
+      "filters": [
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.696
+    },
+    {
+      "sample": "heap_safe_02_same_size",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 0.58
+    },
+    {
+      "sample": "heap_safe_03_smaller_write",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ],
+      "latency_ms": 0.488
+    },
+    {
+      "sample": "heap_safe_04_guarded",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 1.183
+    },
+    {
+      "sample": "heap_safe_05_realloc_expand",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.761
+    },
+    {
+      "sample": "heap_edge_01_offset_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.312
+    },
+    {
+      "sample": "heap_edge_02_realloc_shrink",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 0.385
+    },
+    {
+      "sample": "heap_edge_03_loop_increment",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.277
+    },
+    {
+      "sample": "heap_edge_04_nested_allocation",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "filters": [],
+      "latency_ms": 0.447
+    },
+    {
+      "sample": "heap_edge_05_strcat_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.357
+    },
+    {
+      "sample": "heap_edge_06_multi_realloc_chain",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "filters": [
+        "AffineRelation"
+      ],
+      "latency_ms": 0.369
+    },
+    {
+      "sample": "heap_edge_07_sprintf_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "filters": [],
+      "latency_ms": 0.265
+    },
+    {
+      "sample": "heap_edge_08_callocation_mismatch",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.292
+    },
+    {
+      "sample": "heap_edge_09_guard_partial",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.1275,
+      "filters": [],
+      "latency_ms": 0.279
+    },
+    {
+      "sample": "heap_edge_10_double_alloc_aliasing",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "filters": [],
+      "latency_ms": 0.263
+    }
+  ]
+}

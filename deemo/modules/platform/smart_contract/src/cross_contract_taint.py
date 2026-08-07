@@ -10,11 +10,11 @@
   - SmartReco: 跨DApp只读重入检测, 边界识别+细粒度静态分析。
     本模块取其"边界识别"思路, 用静态调用图替代fuzzing——降低部署
     复杂度, 以精度换速度。
-    注: doi:10.1109/ICSE55347.2025.00057 经验证为无效 DOI (ICSE 使用 ACM 前缀 10.1145),
+    注: doi:10.1109/ICSE55347.2025.00057 经验证为无效 DOI,
     此处保留为概念引用。
-  - CrossMiner (TrustCom 2025): 异构GNN+两级注意力建模跨合约依赖。
+  - CrossMiner: 异构GNN+两级注意力建模跨合约依赖。
     本模块采用更轻量的调用图BFS+污点传播，避免深度学习训练成本。
-  - EquivGuard (ISSTA 2025): 跨链EVM不等价代码异味检测。
+  - EquivGuard: 跨链EVM不等价代码异味检测。
     本模块借鉴其"跨边界分析"的核心理念，聚焦于同一链上的合约间分析。
 
 与现有 taint_tracker.py 的关系:
@@ -137,7 +137,7 @@ class CrossContractTaintAnalyzer:
     def __init__(self) -> None:
         self._call_graph = CrossContractCallGraph()
 
-    # ---- 调用图构建 ----
+# 调用图构建
 
     def load_call_graph(self, edges: List[ContractCallEdge]) -> None:
         for edge in edges:
@@ -146,7 +146,7 @@ class CrossContractTaintAnalyzer:
     def register_proxy(self, proxy_id: str, impl_ids: List[str]) -> None:
         self._call_graph.register_proxy(proxy_id, impl_ids)
 
-    # ---- 跨合约污点追踪 ----
+# 跨合约污点追踪
 
     def trace_cross_contract(
         self,
@@ -228,7 +228,7 @@ class CrossContractTaintAnalyzer:
         results.sort(key=lambda r: r.confidence, reverse=True)
         return results
 
-    # ---- 跨合约重入检测 ----
+# 跨合约重入检测
 
     def detect_cross_reentrancy(
         self,
@@ -273,7 +273,7 @@ class CrossContractTaintAnalyzer:
 
         return results
 
-    # ---- 辅助分类 ----
+# 辅助分类
 
     def _classify_path_type(
         self, path: List[ContractCallEdge], source_desc: str
@@ -297,7 +297,7 @@ class CrossContractTaintAnalyzer:
 
         return "cross_contract_flow"
 
-    # ---- 统计 ----
+# 统计
 
     def stats(self) -> Dict[str, Any]:
         total_edges = sum(

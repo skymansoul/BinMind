@@ -1,0 +1,8 @@
+{
+  "sample": "v06_scanf_bounded",
+  "cve": "SAFE-scf",
+  "mode": "unbounded_io",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "%31s 限制输入 ≤31 字节 < 32 分配"
+}

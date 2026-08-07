@@ -25,7 +25,7 @@ def classification_report(y_true, y_pred, labels=None):
     _f1 = np.zeros(_n_labels, dtype=np.float64)
     _supp = np.zeros(_n_labels, dtype=np.int64)
 
-    # ===== 逐类别统计 =====
+# 逐类别统计
     for _j, _l in enumerate(_lbls):
         _tp = int(np.sum((_t == _l) & (_p == _l)))
         _fp = int(np.sum((_t != _l) & (_p == _l)))
@@ -38,12 +38,12 @@ def classification_report(y_true, y_pred, labels=None):
 
     _acc = float(np.sum(_t == _p)) / len(_t) if len(_t) > 0 else 0.0
 
-    # ---- 宏平均 ----
+# 宏平均
     _macro_p = float(np.mean(_prec))
     _macro_r = float(np.mean(_rec))
     _macro_f1 = 2 * _macro_p * _macro_r / (_macro_p + _macro_r) if (_macro_p + _macro_r) > 0 else 0.0
 
-    # ---- 加权平均 ----
+# 加权平均
     _total_supp = float(np.sum(_supp))
     if _total_supp > 0:
         _w = _supp.astype(np.float64) / _total_supp
@@ -92,7 +92,7 @@ def ascii_confusion_matrix(y_true, y_pred, labels=None, normalize=False):
         if _a in _lbl_to_idx and _b in _lbl_to_idx:
             _mat[_lbl_to_idx[_a], _lbl_to_idx[_b]] += 1.0
 
-    # ===== 归一化选项 =====
+# 归一化选项
     if normalize:
         _row_sums = _mat.sum(axis=1, keepdims=True)
         _row_sums[_row_sums == 0] = 1.0  # 防御除零
@@ -133,7 +133,7 @@ class EvalReporter:
     """
 
     def __init__(self):
-        # ---- 存储结构 ----
+# 存储结构
         self._kfold_results = []       # list of dicts: [{"准确度": 0.9, "f1": 0.87, ...}, ...]
         self._epoch_log = []           # list of (轮次, train_loss, val_loss)
         self._fold_metrics_order = []  # 记录指标名顺序，保证表格输出一致
@@ -157,7 +157,7 @@ class EvalReporter:
             return {}
 
         _summary = {}
-        # ===== 提取所有metric名 =====
+# 提取所有metric名
         _metric_names = self._fold_metrics_order
         if not _metric_names:
             _metric_names = [k for k in self._kfold_results[0].keys() if k != "fold"]

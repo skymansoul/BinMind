@@ -1,14 +1,14 @@
 # 漏洞知识图谱时间感知扩展: 时变边权重/对抗鲁棒消息传递/CVE时效排序
-# 参考: Liao et al. "ATPF: An Adaptive Temporal Perturbation Framework for
-#       Adversarial Attacks on Temporal Knowledge Graph" (IEEE TKDE 2025, doi:10.1109/TKDE.2024.3510689)
+# Liao et al. "ATPF: An Adaptive Temporal Perturbation Framework for
+#       Adversarial Attacks on Temporal Knowledge Graph"
 #       APT-ST-AN: Enhanced Small-Scale APT Knowledge Graph Embedding via
-#       Spatio-Temporal Attribute Reasoning (ScienceDirect 2025)
+#       Spatio-Temporal Attribute Reasoning
 #       Dai et al. "MemFreezing: A Novel Adversarial Attack on Temporal
-#       Graph Neural Networks" (ICML 2025)
+#       Graph Neural Networks"
 # 设计边界:
-#   - 时间衰减仅作用于DEPENDS_ON和CORRELATED边
-#   - AFFECTS/BELONGS_TO边不受时间衰减 (事实关系)
-#   - 对抗扰动仅在消息聚合阶段生效 (训练时注入，推理时关闭)
+# 时间衰减仅作用于DEPENDS_ON和CORRELATED边
+# AFFECTS/BELONGS_TO边不受时间衰减 (事实关系)
+# 对抗扰动仅在消息聚合阶段生效 (训练时注入，推理时关闭)
 from __future__ import annotations
 import logging
 import math

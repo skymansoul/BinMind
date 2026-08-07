@@ -2,7 +2,7 @@
 # delegates to root-level modules until migration is complete
 
 # 旧代码: from .deep_search import ...
-# _LAZY_SEARCH = {
+# LAZY_SEARCH = {
 # "deep_search": lambda: __import__("deep_search"),
 # }
 

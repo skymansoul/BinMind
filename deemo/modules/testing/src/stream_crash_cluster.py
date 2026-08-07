@@ -5,9 +5,9 @@
 #   (内联/中断/抢占) 产生不同哈希, 导致同一bug被计为多个独立崩溃。
 #   crash_cluster.py 做离线聚类——需要等fuzzing结束, 无法实时反馈。
 #
-#   ECHO (Tao et al. 2025) 用LCS做在线栈相似度 + 集成到fuzzing循环,
-#   但仅适用于有完整栈回溯的内核fuzzing。Igor (2025) 用CFG相似度聚类,
-#   但为离线分析。GPTrace (2025) 用LLM嵌入——延迟高、成本高。
+#   ECHO 用LCS做在线栈相似度 + 集成到fuzzing循环,
+#   但仅适用于有完整栈回溯的内核fuzzing。Igor 用CFG相似度聚类,
+#   但为离线分析。GPTrace 用LLM嵌入——延迟高、成本高。
 #
 # 本模块的方法 — 在线CFG邻域流式聚类:
 #   1. 对每个新崩溃, 最小化其输入并采集执行trace
@@ -17,16 +17,16 @@
 #   5. 实时反馈: 新簇 → 提升该种子的fuzzing能量
 #
 # 技术优势:
-#   - 在线: 崩溃到达即聚类, 无需等fuzzing结束
-#   - 语义: CFG邻域比栈哈希更鲁棒 (对调用路径扰动不敏感)
-#   - 轻量: 12维签名比对 O(d·k), d=12, k=簇数
+# 在线: 崩溃到达即聚类, 无需等fuzzing结束
+# 语义: CFG邻域比栈哈希更鲁棒 (对调用路径扰动不敏感)
+# 轻量: 12维签名比对 O(d·k), d=12, k=簇数
 #
-# 参考文献:
-#   ECHO (Tao et al. 2025, Electronics) — LCS栈聚类+在线fuzzing集成;
+# 文献:
+#   ECHO — LCS栈聚类+在线fuzzing集成;
 #     本项目取其在线思想但以CFG邻域替代LCS栈比较
-#   Igor (HexHive 2025) — CFG相似度崩溃聚类;
+#   Igor — CFG相似度崩溃聚类;
 #     本项目取其CFG相似度但适配到流式在线场景
-#   GPTrace (Herter et al. 2025) — LLM嵌入聚类;
+#   GPTrace — LLM嵌入聚类;
 #     本项目取其语义聚类目标但以轻量签名替代LLM嵌入
 
 from __future__ import annotations
@@ -256,7 +256,7 @@ class StreamCrashClusterer:
             return 0.0
         return max(-1.0, min(1.0, dot / (na * nb)))
 
-    # ---- 查询 ----
+    # 查询
 
     def top_priority_clusters(self, k: int = 5) -> List[CrashCluster]:
         return sorted(self._clusters, key=lambda c: -c.priority_score)[:k]

@@ -1,4 +1,4 @@
-# --- 异常检测子模块入口 ---
+# 异常检测子模块入口
 
 from .detector import (
     BinaryFuncVAE,

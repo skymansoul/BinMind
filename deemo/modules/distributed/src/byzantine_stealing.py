@@ -2,9 +2,9 @@
 #
 # WorkStealingCoordinator + DiversityAwareWorkStealingCoordinator 假设
 # 所有节点诚实。若某节点被入侵:
-#   - 恶意广播虚假负载 (声称空闲以吸引任务，实际丢弃/篡改)
-#   - 选择性处理: 仅执行简单任务，丢弃困难任务 (谎报完成)
-#   - 串谋: 两个恶意节点互相窃取+报告完成，消解队列而不执行
+# 恶意广播虚假负载 (声称空闲以吸引任务，实际丢弃/篡改)
+# 选择性处理: 仅执行简单任务，丢弃困难任务 (谎报完成)
+# 串谋: 两个恶意节点互相窃取+报告完成，消解队列而不执行
 #
 # 本模块引入见证人委员会 (witness committee) 机制:
 #   1. 每次窃取交易关联一个随机选取的见证人集合 (3-5 个节点)
@@ -14,7 +14,7 @@
 #   5. 恶意节点被举报 → 见证人降权 → 达到阈值后从集群驱逐
 #
 # 关键: 无密码学签名 — 见证人仅做哈希验证 + 计数，
-# 与 Schneider (arXiv:2501.05377) 的 near-constant work BFT 同源。
+# 与 Schneider 的 near-constant work BFT 同源。
 # 通信复杂度 O(W·log N) 其中 W = 见证人数 (常数)，N = 集群节点数。
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ class ByzantineResilientStealing:
         self._blacklist: Set[str] = set()
         self._lock = threading.Lock()
 
-    # ---- 节点管理 ----
+# 节点管理
 
     def register_node(self, node_id: str):
         with self._lock:
@@ -97,7 +97,7 @@ class ByzantineResilientStealing:
             self._nodes.pop(node_id, None)
             self._blacklist.discard(node_id)
 
-    # ---- 窃取交易 ----
+# 窃取交易
 
     def propose_steal(self, thief_id: str, victim_id: str,
                       task_id: str, task_content: str) -> Optional[StealTransaction]:
@@ -141,7 +141,7 @@ class ByzantineResilientStealing:
             self._nodes[thief_id].last_active = time.monotonic()
             return tx
 
-    # ---- 见证人审批 ----
+# 见证人审批
 
     def witness_approve(self, tx_id: str, witness_id: str,
                         verdict: bool) -> bool:
@@ -181,7 +181,7 @@ class ByzantineResilientStealing:
             tx.execution_proof = result_hash
             return True
 
-    # ---- 声誉更新 ----
+# 声誉更新
 
     def report_outcome(self, node_id: str, success: bool, was_timeout: bool):
         """更新节点声誉 — 基于任务执行结果。"""
@@ -211,7 +211,7 @@ class ByzantineResilientStealing:
                 if idle > 300:  # 5 分钟不活跃 → 衰减
                     rep.score = max(0.1, rep.score * 0.95)
 
-    # ---- 查询 ----
+# 查询
 
     @property
     def blacklist(self) -> Set[str]:

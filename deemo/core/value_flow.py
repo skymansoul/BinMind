@@ -12,10 +12,9 @@
 # 方法: 对每个函数遍历其 VEX IR 基本块, 追踪临时变量
 # (tN) 和内存操作 (STle/LDle) 之间的数据依赖。
 #
-# UAFSan (NDSS 2024) 在 LLVM IR 上验证了值流分析的误报率 < 5%。
+# UAFSan 在 LLVM IR 上验证了值流分析的误报率 < 5%。
 # 本模块将其下推到 VEX IR 层——angr 产生的 VEX IR 是编译器无关的。
 
-from __future__ import annotations
 
 from collections import defaultdict
 from typing import List, Dict, Tuple, Optional, Set

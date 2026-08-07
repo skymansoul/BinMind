@@ -1,4 +1,4 @@
-# ---- 经典特征提取管线：从原始字节到结构化特征向量 ----
+# 经典特征提取管线：从原始字节到结构化特征向量
 # 策略：轻量级统计特征先行，必要时再上复杂模型
 # 编译器检测用启发式字符串匹配，避免训练成本
 
@@ -9,7 +9,7 @@ from collections import Counter
 import numpy as np
 
 
-# ===== 内部工具 =====
+# 内部工具
 
 def _rolling_hash(data, window: int) -> int:
     """滑动窗口哈希，用于快速n-gram索引"""
@@ -19,7 +19,7 @@ def _rolling_hash(data, window: int) -> int:
     return h & 0xFFFFFFFFFFFFFFFF
 
 
-# ===== 字节直方图 =====
+# 字节直方图
 
 def extract_byte_histogram(data: bytes, bins: int = 256) -> np.ndarray:
     """归一化字节频率分布: (bins,)"""
@@ -38,7 +38,7 @@ def extract_byte_histogram(data: bytes, bins: int = 256) -> np.ndarray:
     return hist
 
 
-# ===== 香农熵 =====
+# 香农熵
 
 def compute_entropy(data: bytes) -> float:
     """字节级香农熵，衡量随机性/压缩率"""
@@ -56,7 +56,7 @@ def compute_entropy(data: bytes) -> float:
     return round(entropy, 6)
 
 
-# ===== N-gram特征 =====
+# N-gram特征
 
 def extract_ngram_features(data: bytes, n: int = 4, top_k: int = 20) -> np.ndarray:
     """
@@ -80,7 +80,7 @@ def extract_ngram_features(data: bytes, n: int = 4, top_k: int = 20) -> np.ndarr
     return feats
 
 
-# ===== 编译器探测 =====
+# 编译器探测
 
 _GCC_SIGS = [".GCC:", "GCC:", "_GLOBAL__", "__gnu_", "mingw", "DW.ref.__gcc_", "gcc_compiled"]
 _MSVC_SIGS = [".rdata", ".pdata", "__security_cookie", "GSHandlerCheck", "__RTC_", "_RTC_"]
@@ -96,7 +96,7 @@ def detect_compiler_from_strings(strings_list: list) -> dict:
     text = " ".join(strings_list)
     tlower = text.lower()
 
-    # ---- 各编译器特征计数 ----
+# 各编译器特征计数
     gcc_hits = [sig for sig in _GCC_SIGS if sig.lower() in tlower or sig in text]
     msvc_hits = [sig for sig in _MSVC_SIGS if sig.lower() in tlower or sig in text]
     clang_hits = [sig for sig in _CLANG_SIGS if sig.lower() in tlower or sig in text]
@@ -125,7 +125,7 @@ def detect_compiler_from_strings(strings_list: list) -> dict:
     }
 
 
-# ===== 特征提取器 =====
+# 特征提取器
 
 class FeatureExtractor:
     """

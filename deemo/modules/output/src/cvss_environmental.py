@@ -13,7 +13,6 @@ CVSS 3.1 环境评分计算 — 公式引擎。
 
 本模块仅包含评分公式 — 将推断结果代入 CVSS 3.1 规范计算。
 
-参考:
   - CVSS v3.1 User Guide §6 (Environmental Score)
   - FIRST CVSS v3.1 Specification Document, §2.4
 
@@ -33,7 +32,6 @@ from modules.output.src.checksec_to_cvss import (
 )
 
 _log = logging.getLogger(__name__)
-
 
 def compute_environmental_score(
     base_score: float,
@@ -72,7 +70,7 @@ def compute_environmental_score(
     modified = infer_modified_metrics(checksec, base_metrics)
     reqs = infer_security_requirements(checksec, imports, binary_type)
 
-    # --- Modified Exploitability ---
+# Modified Exploitability
     _av_w = {'N': 0.85, 'A': 0.62, 'L': 0.55, 'P': 0.20}
     _ac_w = {'L': 0.77, 'H': 0.44}
     _pr_w_u = {'N': 0.85, 'L': 0.62, 'H': 0.27}
@@ -88,7 +86,7 @@ def compute_environmental_score(
     mpr = (_pr_w_c if ms == 'C' else _pr_w_u).get(mpr_k, 0.85)
     modified_expl = 8.22 * mav * mac * mpr * mui
 
-    # --- Modified Impact ---
+# Modified Impact
     _cia = {'N': 0.0, 'L': 0.22, 'H': 0.56}
     _req_w = {'N': 1.0, 'L': 0.5, 'M': 1.0, 'H': 1.5}
 
@@ -107,7 +105,7 @@ def compute_environmental_score(
     else:
         mod_impact = 7.52 * (isc_mod - 0.029) - 3.25 * ((isc_mod - 0.02) ** 15)
 
-    # --- Environmental Score ---
+# Environmental Score
     if mod_impact <= 0:
         env_score = 0.0
     elif ms == 'U':
@@ -118,7 +116,7 @@ def compute_environmental_score(
     if env_score > 0:
         env_score = ceil(env_score * 10) / 10.0
 
-    # --- Modified 向量后缀 ---
+# Modified 向量后缀
     parts = []
     for key in ('MAV', 'MAC', 'MPR', 'MUI', 'MS', 'MC', 'MI', 'MA'):
         if key in modified:

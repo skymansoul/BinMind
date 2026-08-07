@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 09:45
-# 修改: 2025-08-16 — Sharpe/Calmar/Martin 量化金融指标->fuzzer 能量分配
+# 创建: 2026-07-25 09:45
+# 修改: 2026-07-25 — Sharpe/Calmar/Martin 量化金融指标->fuzzer 能量分配
 """
 量化金融风险调整的模糊测试能量调度 — Sharpe/Calmar 替代均匀分配。
 
@@ -28,11 +28,11 @@
   Sharpe 比率同时考虑收益均值和波动性, 避免将能量浪费在
   "偶尔爆发但大部分时间无产出" 的种子上。
 
-ref: Kummita & Bodden (SSRN 2026) — risk-adjusted power schedules,
+ref: Kummita & Bodden — risk-adjusted power schedules,
      本项目实现其 Sharpe/Calmar/Martin 三项指标并增加自适应 α
-ref: Truzz (2026) — byte-level validation check protection,
+ref: Truzz — byte-level validation check protection,
      本项目的"回撤惩罚"概念与其"验证检查字节保护"互补
-ref: Sharpe (1966) "Mutual Fund Performance" (Journal of Business) —
+ref: Sharpe "Mutual Fund Performance" (Journal of Business) —
      Sharpe 比率的原始论文——(R_p - R_f) / σ_p
 """
 
@@ -103,7 +103,7 @@ class SeedPerformanceHistory:
         return (self.cumulative_gain - initial_cov) / math.sqrt(avg_sq_dd)
 
 
-# --- 风险调整调度器 ---
+# 风险调整调度器
 
 class RiskAdjustedScheduler:
     """基于量化金融指标的能量调度器。

@@ -16,7 +16,7 @@ from fuzzing.src.core import Seed
 from fuzzing.src.scheduler import Scheduler
 
 
-# ===== PathCluster 测试 =====
+# PathCluster 测试
 
 class TestPathCluster:
     """MinHash LSH 路径聚类单元测试。"""
@@ -116,7 +116,7 @@ class TestPathCluster:
         assert pc.stats()["total_signatures"] == 1
 
 
-# ===== MutationEnsemble 测试 =====
+# MutationEnsemble 测试
 
 class TestMutationEnsemble:
     """突变策略 EG 集成单元测试。"""
@@ -223,7 +223,7 @@ class TestMutationEnsemble:
             assert isinstance(result, bytes)
 
 
-# ===== 集成测试 =====
+# 集成测试
 
 class TestFullIntegration:
     """PathCluster + MutationEnsemble + Scheduler 全链路集成。"""

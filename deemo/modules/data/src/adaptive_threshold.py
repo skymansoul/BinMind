@@ -61,9 +61,7 @@ class _ThompsonBandit:
         }
 
 
-# ---------------------------------------------------------------------------
 # 自适应阈值校准器
-# ---------------------------------------------------------------------------
 
 class AdaptiveThresholdCalibrator:
     """在线自适应去重阈值校准器.
@@ -226,9 +224,7 @@ class AdaptiveThresholdCalibrator:
         return self.export_state()
 
 
-# ---------------------------------------------------------------------------
 # 去重阈值优化器 —— 封装 AdaptiveThresholdCalibrator + 去重引擎交互
-# ---------------------------------------------------------------------------
 
 class DedupThresholdOptimizer:
     """去重阈值优化包装器: 将 AdaptiveThresholdCalibrator 与现有去重引擎

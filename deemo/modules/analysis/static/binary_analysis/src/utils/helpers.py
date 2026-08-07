@@ -11,7 +11,7 @@ import hashlib
 from contextlib import contextmanager
 from typing import Any, Iterator, Optional, Callable
 
-# ---- radare2 接口封装 ----
+# radare2 接口封装
 
 _R2_BIN = os.environ.get("R2_PATH", "r2")
 
@@ -33,7 +33,7 @@ def r2_cmd(path: str, cmd: str) -> str:
     return proc.stdout
 
 
-# ===== TTLCache -- 带过期时间的简单缓存 =====
+# TTLCache -- 带过期时间的简单缓存
 
 class TTLCache:
     """基于 time.time() 的轻量 TTL 缓存，不引入第三方依赖"""
@@ -72,7 +72,7 @@ class TTLCache:
         return self.get(key) is not None
 
 
-# ---- 原子写入 ----
+# 原子写入
 
 @contextmanager
 def atomic_write(path: str, mode: str = "w", encoding: str = "utf-8"):
@@ -108,7 +108,7 @@ def dig(d: dict, keypath: str, default: Any = None) -> Any:
     return node
 
 
-# ===== retry -- 指数退避重试装饰器 =====
+# retry -- 指数退避重试装饰器
 
 def retry(
     max_retries: int = 3,
@@ -141,7 +141,7 @@ def retry(
     return _decorator
 
 
-# ---- 十六进制校验 ----
+# 十六进制校验
 
 _HEX_RE = re.compile(r"^[0-9A-Fa-f]+$")
 
@@ -161,7 +161,7 @@ def chunk_list(lst: list, n: int):
         i += n
 
 
-# ===== 文件名消毒 =====
+# 文件名消毒
 
 _UNSAFE_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
@@ -170,7 +170,7 @@ def sanitize_filename(s: str, placeholder: str = "_") -> str:
     return _UNSAFE_CHARS.sub(placeholder, s).strip()[:255]
 
 
-# ---- 小工具：快速哈希 ----
+# 小工具：快速哈希
 
 def _quick_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:16]

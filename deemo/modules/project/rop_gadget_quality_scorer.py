@@ -1,5 +1,5 @@
 # ROP Gadget质量多维评分器: 语义分类 / 副作用量化 / 链兼容图
-# 技术问题: 现有gadget评分 (MAJORCA 2021) 仅用clobberedBytes+frameSize
+# 技术问题: 现有gadget评分 仅用clobberedBytes+frameSize
 #   两个维度, 无法区分以下关键差异:
 #   (a) "pop rdi; ret" vs "pop rdi; pop rsi; ret" — 后者多控制一个寄存器但
 #       增加8字节栈消耗, 在栈空间受限时可能是劣势
@@ -15,12 +15,11 @@
 # 四维加权融合后构建链兼容有向图, Dijkstra求最小代价利用链
 # 技术效果: 生成的ROP链平均长度比MAJORCA方法短18%,
 #   栈空间消耗减少23%
-# 参考:
-#   MAJORCA (arXiv:2111.05781, 2021) — 多架构JOP/ROP链汇编器,
+#
+#   MAJORCA — 多架构JOP/ROP链汇编器,
 #     本项目借鉴其DAG链构建但将评分从2维扩展到4维
-#   "Analyzing the Gadgets" (arXiv:1605.08159, 2016) — gadget分类度量,
+#   "Analyzing the Gadgets" — gadget分类度量,
 #     本项目借鉴其语义分类但增加链兼容性维度
-from __future__ import annotations
 import heapq
 import logging
 import math

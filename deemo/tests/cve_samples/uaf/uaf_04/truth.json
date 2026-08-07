@@ -1,0 +1,1 @@
+{"sample": "uaf_04_callback", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Callback UAF — freed pointer passed to callback function"}

@@ -8,16 +8,16 @@
 #   中心聚合器对噪声统计量进行去偏估计, 恢复群体级别的漏洞态势
 # 技术效果: ε=2.0时CWE分布估计误差<8%, 组织级原始数据不可重建
 #   (LDP保证), 比直接共享降低敏感信息泄露风险约94%
-# 参考:
-#   IEEE CTI Privacy Framework (2025) — PIR+FL+DP三位一体威胁情报共享
-#   Noor "Privacy-Preserving CTI" (UTU 2025) — LDP用于CTI的理论分析
-#   ADPF (ScienceDirect 2025) — Stackelberg博弈自适应隐私预算分配
-#   Scholten et al. "Provably Reliable CP Sets Under Poisoning" (ICLR 2025)
+#
+#   IEEE CTI Privacy Framework — PIR+FL+DP三位一体威胁情报共享
+#   Noor "Privacy-Preserving CTI" — LDP用于CTI的理论分析
+#   ADPF — Stackelberg博弈自适应隐私预算分配
+#   Scholten et al. "Provably Reliable CP Sets Under Poisoning"
 # 设计边界:
 #   - ε ∈ [0.5, 10]: 低于0.5噪声过大无实用价值, 高于10隐私保护无效
-#   - 随机化响应基于k-ary机制, 每个CWE类别独立扰动
-#   - 隐私预算采用(ε, δ)-DP会计, δ=1e-5固定
-#   - 聚合器不维护原始数据, 仅存储去偏后的计数估计
+# 随机化响应基于k-ary机制, 每个CWE类别独立扰动
+# 隐私预算采用(ε, δ)-DP会计, δ=1e-5固定
+# 聚合器不维护原始数据, 仅存储去偏后的计数估计
 from __future__ import annotations
 import hashlib
 import json

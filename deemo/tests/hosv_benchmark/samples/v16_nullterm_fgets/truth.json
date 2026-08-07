@@ -1,0 +1,8 @@
+{
+  "sample": "v16_nullterm_fgets",
+  "cve": "GENERIC-nt2",
+  "mode": "null_terminator",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "fgets 读满 buf[15]=0 时 l-1=15 写越界 (边界情形)"
+}

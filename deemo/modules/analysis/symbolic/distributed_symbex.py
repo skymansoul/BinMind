@@ -53,7 +53,6 @@ class ExecutionStateStatus:
     SUSPENDED = "suspended"
 
 
-# ---------------------------------------------------------------------------
 # 分布式追踪 — OpenTelemetry 兼容的 trace context 生成器
 #
 # trace_id 为 32 字符 hex（128 bit），span_id 为 16 字符 hex（64 bit）
@@ -63,7 +62,6 @@ class ExecutionStateStatus:
 #
 # trace_flags 最低位为采样标志：0x01 表示 sampled
 # W3C TraceContext 标准：traceparent = 00-{trace_id}-{span_id}-{trace_flags}
-# ---------------------------------------------------------------------------
 class DistributedTracing:
     """构造 OpenTelemetry-compatible trace context for 分布式 tasks
     
@@ -311,7 +309,6 @@ class TaskResult:
     error_message: Optional[str] = None
 
 
-# ---------------------------------------------------------------------------
 # 网络FailureSimulator — 可配置故障注入包装器
 #
 # 设计意图：分布式系统的重试/退避逻辑在正常运行时几乎不会触发
@@ -321,7 +318,6 @@ class TaskResult:
 # failure_injection_rate=0.0 时完全透明（零开销旁路），
 # 生产环境保持默认值即可
 # 故障类型按 7:3 权重分配 timeout:connection_refused，模拟真实网络特征
-# ---------------------------------------------------------------------------
 class NetworkFailureSimulator:
     """配置urable 封装 injects artificial failures for resilience testing
     
@@ -357,7 +353,6 @@ class NetworkFailureSimulator:
                     f"{' during ' + operation_name if operation_name else ''}")
 
 
-# ---------------------------------------------------------------------------
 # StateShardingStrategy — 基于路径条件哈希的状态分区
 #
 # 替代轮询（round-robin）分发。同一 path_condition 的哈希始终映射到
@@ -365,7 +360,6 @@ class NetworkFailureSimulator:
 # 并利用路径摘要缓存提升吞吐
 #
 # shard_key_mod 动态跟随 num_workers 变化，worker 增减时分区边界调整
-# ---------------------------------------------------------------------------
 class StateShardingStrategy:
     """Partition states path-condition hash instead 舍入-robin
     
@@ -392,7 +386,6 @@ class StateShardingStrategy:
         return hash(str(path_condition)) % self.shard_key_mod
 
 
-# ---------------------------------------------------------------------------
 # BackpressureController — 队列超水位时的指数退避节流
 #
 # 当 pending_states 队列长度超过 high_watermark 时启用节流模式：
@@ -401,7 +394,6 @@ class StateShardingStrategy:
 # 时恢复正常流速，backoff 重置为 0
 #
 # 这防止上游生产者无限堆积导致 worker 端 OOM 或调度器过载
-# ---------------------------------------------------------------------------
 class BackpressureController:
     """Throttle task submission pending_states 队列 exceeds
     配置urable thresholds, using exponential backoff
@@ -470,13 +462,11 @@ class BackpressureController:
             time.sleep(sleep_time)
 
 
-# ---------------------------------------------------------------------------
 # BloomFilter — 轻量级布隆过滤器，用于 CrossWorkerDeduplication
 #
 # 使用两个独立的非加密哈希函数（FNV-1a + Murmur3 简化版）
 # 以双哈希技术生成 k 个哈希位置，避免需要 k 个独立哈希函数
 # bit_array 用 bytearray 实现，O(1) 位操作
-# ---------------------------------------------------------------------------
 class BloomFilter:
     """Lightweight Bloom 过滤 for 分布式 state deduplication
     
@@ -589,7 +579,6 @@ class BloomFilter:
         return new_bits
 
 
-# ---------------------------------------------------------------------------
 # CrossWorkerDeduplication — worker 间布隆过滤器交换去重
 #
 # 每个 worker 维护一个本地 BloomFilter，记录已处理状态的 path_condition
@@ -601,7 +590,6 @@ class BloomFilter:
 # 可能误判未见过的新状态为重复——但每个 worker 的本地 exact set
 # 作为第二层检查可以消除大部分误判。不跨 worker 传输完整状态
 # 只交换 compact 的位数组
-# ---------------------------------------------------------------------------
 class CrossWorkerDeduplication:
     """Periodically exchange state hash Bloom 过滤 workers
     检测 eliminate globally duplicate states full state transfer
@@ -909,10 +897,8 @@ class DistributedSymbolicExecutionEngine:
         self._start_heartbeat_monitor()
         self._cross_worker_dedup.start_exchange_loop(self._workers)
 
-    # ------------------------------------------------------------------
     # 心跳监控：后台线程每 HEARTBEAT_TIMEOUT_SEC 扫描一次
     # 超过阈值的 worker 标记为 stale，其未完成任务重新入队
-    # ------------------------------------------------------------------
     def _start_heartbeat_monitor(self):
         if self._heartbeat_running:
             return
@@ -1182,13 +1168,11 @@ class DistributedSymbolicExecutionEngine:
             "dedup_last_exchange": self._cross_worker_dedup.last_exchange_time,
         }
 
-    # ------------------------------------------------------------------
     # broadcast_config — 一次调用向所有在线 worker 推送配置更新
     #
     # 典型用法：运行时调整 timeout 或 max_depth，无需逐个通知 worker
     # cfg_version 随每次广播单调递增，worker 可通过版本号检测
     # 自己是否持有最新配置
-    # ------------------------------------------------------------------
     def broadcast_config(self, config: Dict[str, Any]) -> Dict[str, bool]:
         """Push 配置 更新 (timeout, max_depth, etc.) workers one call
         

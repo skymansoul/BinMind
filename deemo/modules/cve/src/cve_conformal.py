@@ -1,5 +1,5 @@
-# 创建: 2026-07-31 11:42
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-27 11:42
+# 修改: 2026-06-27 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 共形预测CVE不确定性量化
 # 共形预测 — CVE利用评分的分布无关不确定性量化
 #
@@ -21,19 +21,19 @@
 #   Level 3 — 自适应共形: 在线更新校准集, 检测分布偏移, 调整区间.
 #
 # 非显而易见性:
-#   - 将conformal prediction首次引入CVE漏洞评分领域
-#   - 三层自适应架构: 静态→分位数→在线, 逐级增加复杂度但提升精度
-#   - 预测区间宽度本身作为元特征: 宽区间 → 高不确定性 → 需要更多情报收集
+# 将conformal prediction首次引入CVE漏洞评分领域
+# 三层自适应架构: 静态→分位数→在线, 逐级增加复杂度但提升精度
+# 预测区间宽度本身作为元特征: 宽区间 → 高不确定性 → 需要更多情报收集
 #
 # 保证: 在exchangeability假设下, 预测区间具有有限样本覆盖保证.
 #   即 P(Y_te ∈ C(X_te)) ≥ 1 - α, 对任何分布和任何样本量.
 #   此保证是分布无关的, 不依赖正态性或大样本假设.
 #
-# 参考:
-#   [Vovk, Gammerman & Shafer 2005] Algorithmic Learning in a Random World
-#   [Angelopoulos & Bates 2023] A Gentle Introduction to Conformal Prediction
-#   [NIST CSWP 41, May 2025] LEV metric — 明确承认误差范围未知
-#   [2025-2026检索] 未发现conformal prediction在CVE评分中的现有应用
+#
+# Algorithmic Learning in a Random World
+# A Gentle Introduction to Conformal Prediction
+# LEV metric — 明确承认误差范围未知
+# 未发现conformal prediction在CVE评分中的现有应用
 
 import math
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -289,7 +289,7 @@ class QuantileConformalScorer:
         }
 
 
-# ---- 便捷集成接口 ----
+# 便捷集成接口
 
 class ConformalCVEAnalyzer:
     """一站式共形CVE分析器 — 组合点预测与预测区间.
@@ -410,7 +410,7 @@ class ConformalCVEAnalyzer:
         }
 
 
-# ---- 内部辅助 ----
+# 内部辅助
 
 def _get_str(entry, field: str, default: str = ""):
     if hasattr(entry, field):

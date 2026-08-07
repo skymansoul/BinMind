@@ -8,11 +8,11 @@
 #   (d) setcc —— 字节级条件设置（不视为违规——原因同 cmovcc）
 #
 # 假阳性管理：
-#   - 区分"秘密数据直接作为分支条件"（真违规）vs "秘密数据偶然在分支指令附近的
+# 区分"秘密数据直接作为分支条件"（真违规）vs "秘密数据偶然在分支指令附近的
 # 非条件寄存器中"（假阳性）。当前的启发式偏保守——宁可多报
-# - 排除编译器插入的栈检查（__chkstk）和 CFI 指令
+# 排除编译器插入的栈检查（__chkstk）和 CFI 指令
 #
-# ref: "Towards Verified Constant-Time Implementa" (Protzenko et al., 2020);
+"Towards Verified Constant-Time Implementa";
 # Jasmin language semantics — 常量时间作为类型系统属性
 
 import logging

@@ -8,7 +8,7 @@ import tempfile
 import os
 
 
-# ---- binary_formats (5 tests) ----
+# binary_formats (5 tests)
 
 class TestBinaryFormats:
     def test_import(self):
@@ -40,7 +40,7 @@ class TestBinaryFormats:
         assert result is None or result == "unknown"
 
 
-# ---- memory_堆 (4 tests) ----
+# memory_堆 (4 tests)
 
 class TestMemoryHeap:
     def test_import(self):
@@ -63,7 +63,7 @@ class TestMemoryHeap:
         assert detect_double_free is not None
 
 
-# ---- 漏洞利用_primitives (5 tests) ----
+# 漏洞利用_primitives (5 tests)
 
 class TestExploitPrimitives:
     def test_import(self):
@@ -94,7 +94,7 @@ class TestExploitPrimitives:
         assert len(results) >= 2  # %x %n 格式化 specifiers
 
 
-# ---- symbolic_analysis (4 tests) ----
+# symbolic_analysis (4 tests)
 
 class TestSymbolicAnalysisNew:
     def test_import(self):
@@ -115,7 +115,7 @@ class TestSymbolicAnalysisNew:
         assert isinstance(_has_angr(), bool)
 
 
-# ---- ml_features (5 tests) ----
+# ml_features (5 tests)
 
 class TestMLFeaturesNew:
     def test_import(self):
@@ -150,7 +150,7 @@ class TestMLFeaturesNew:
         assert abs(sim2 - 0.0) < 0.001
 
 
-# ---- vuln_management (4 tests) ----
+# vuln_management (4 tests)
 
 class TestVulnManagement:
     def test_import(self):
@@ -175,7 +175,7 @@ class TestVulnManagement:
         assert hasattr(kb, "sync_nvd") or hasattr(kb, "import_json")
 
 
-# ---- 流水线_infra (4 tests) ----
+# 流水线_infra (4 tests)
 
 class TestPipelineInfra:
     def test_import(self):
@@ -206,7 +206,7 @@ class TestPipelineInfra:
         assert pool is not None
 
 
-# ---- kernel_驱动 (4 tests) ----
+# kernel_驱动 (4 tests)
 
 class TestKernelDriver:
     def test_import(self):
@@ -231,7 +231,7 @@ class TestKernelDriver:
         assert hasattr(da, "check_capabilities") or hasattr(da, "analyze")
 
 
-# ---- testing_模糊测试 (4 tests) ----
+# testing_模糊测试 (4 tests)
 
 class TestTestingFuzzing:
     def test_import(self):
@@ -261,7 +261,7 @@ class TestTestingFuzzing:
         assert config.max_len == 4096
 
 
-# ---- CLI (3 tests) ----
+# CLI (3 tests)
 
 class TestCLI:
     def test_import(self):
@@ -281,7 +281,7 @@ class TestCLI:
         assert parser is not None
 
 
-# ---- r2-dependent test (marked skip) ----
+# r2-dependent test (marked skip)
 
 @pytest.mark.skip(reason="requires radare2 on PATH")
 def test_r2_json_real_elf():

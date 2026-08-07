@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 16:55
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-05 16:55
+# 修改: 2026-06-05 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: GRACE图对比学习CVE异构图
 # 图对比学习 — CVE异构图上的自监督节点表示学习
 #
@@ -10,7 +10,7 @@
 # 2025-2026年图对比学习 (GCL) 在代码漏洞检测中成为主流 (Vul-CGBT, AGCL, MVF-GCL),
 # 但所有现有工作均应用于源代码图 (AST/CFG/DFG), 零论文应用于CVE元数据异构图.
 #
-# 解决方案: GRACE风格的图对比学习 (Zhu et al. 2020, ICML).
+# 解决方案: GRACE风格的图对比学习.
 # 在CVE异构图 G=(V,E,R) 上:
 #   1. 生成两个增强视图 G1, G2 (边丢弃 + 特征掩码).
 #   2. 通过共享GCN编码器 f_θ 获得节点表示 H1, H2.
@@ -29,19 +29,19 @@
 #     高方差维度 (如epss_score连续) 使用p=0.4.
 #
 # 相对于现有cve_causal_contrastive的差异:
-#   - C3E在特征空间做对比学习 (tabular InfoNCE).
-#   - 本模块在图结构空间做对比学习 (graph InfoNCE).
-#   - 两者互补: 特征级捕获语义相似性, 图级捕获结构相似性.
+# C3E在特征空间做对比学习 (tabular InfoNCE).
+# 本模块在图结构空间做对比学习 (graph InfoNCE).
+# 两者互补: 特征级捕获语义相似性, 图级捕获结构相似性.
 #
 # 非显而易见性:
 #   1. 首次将图对比学习应用于CVE元数据异构图 (非源代码图).
 #   2. 类型感知增强策略: 不同关系类型的边/特征使用不同增强强度.
 #   3. 与现有CVEExploitGraph共享图结构, 零额外数据需求.
 #
-# 参考:
-#   [Zhu et al. 2020] GRACE: Graph Contrastive Learning (ICML)
-#   [You et al. 2020] GraphCL: Graph Contrastive Learning with Augmentations (NeurIPS)
-#   [Vul-CGBT 2026] 代码漏洞检测的对比语义学习+图嵌入
+#
+# GRACE: Graph Contrastive Learning (ICML)
+# GraphCL: Graph Contrastive Learning with Augmentations (NeurIPS)
+# 代码漏洞检测的对比语义学习+图嵌入
 #   [检索确认] 2025-2026年零论文将GCL应用于CVE元数据图
 
 import math

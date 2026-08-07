@@ -10,18 +10,18 @@
   3. 控制流干扰：补丁A插入的跳转目标被补丁B覆盖
   4. 语义矛盾：两补丁对同一安全检查做互斥假设
 
-// ref: VeriBin [NDSS 2025] StA 属性 (P1-P4)，本模块从单补丁
+// ref: VeriBin StA 属性 (P1-P4)，本模块从单补丁
 //   验证扩展到多补丁交互。VeriBin 检查每个 patch 是否 safe-to-apply，
 //   但不检查两 safe patch 同时应用后是否仍 safe。
 //   核心：相交区域属性传递分析——若补丁A改区域R，
 //   补丁B依赖R中寄存器值，则B必须在A之后应用。
 //
-// ref: Multi-Fault Interaction-Aware Validation Oracles [SSE 2025]，
+// ref: Multi-Fault Interaction-Aware Validation Oracles，
 //   interaction relation modeling 思路启发本模块边类型定义。
 //   但本实现针对 binary patch 层级（非 source fault 层级），
 //   检测维度从 fault interaction 改为 address/register/CF/semantic。
 //
-// ref: RePatch [2025] 冲突矩阵与重放约束，借鉴 ordering constraints，
+// ref: RePatch 冲突矩阵与重放约束，借鉴 ordering constraints，
 //   但操作在 binary 字节级而非 source AST 级。
 """
 
@@ -100,7 +100,7 @@ class InteractionReport:
         }
 
 
-# ── 交互图构建器 ────────────────────────────────────────────────
+# 交互图构建器
 
 class PatchInteractionGraph:
     """多补丁交互图 — 检测冲突/依赖，计算安全应用序。
@@ -246,7 +246,7 @@ class PatchInteractionGraph:
             return True
         return False
 
-    # ── 拓扑排序 ────────────────────────────────────────────────
+# 拓扑排序
 
     def _topological_sort(self) -> Tuple[List[str], List[List[str]]]:
         """DEPENDS_ON 边拓扑排序 + 环检测。
@@ -308,7 +308,7 @@ class PatchInteractionGraph:
         return order, cycles
 
 
-# ── PatchNode 工厂 ──────────────────────────────────────────────
+# PatchNode 工厂
 
 def patch_node_from_spec(patch_id: str, spec: Dict) -> PatchNode:
     """从补丁规格字典构造 PatchNode。

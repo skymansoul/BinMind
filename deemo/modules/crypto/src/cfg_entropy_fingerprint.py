@@ -15,13 +15,12 @@
   核心理据: 密码学轮函数具有高度规则的CFG (固定迭代次数/低分支熵/
   密集XOR算术), 与通用代码的CFG熵分布差异显著 — 这构成统计可检测信号。
 
-参考:
-  - Mondon & de Lemos (IEEE CSR 2024): "Detecting Cryptographic Functions
+  - Mondon & de Lemos: "Detecting Cryptographic Functions
     for String Obfuscation" — 结合CFG特征+指令级特征+有向图特征实现
     密码学函数检测, 跨评估指标>90%。本项目聚焦于CFG熵维度。
   - Rosenblum et al., "Recovering C++ Objects From Binaries Using Inter-Procedural
-    Data-Flow Analysis" (PASTE 2010): 基于CFG结构的二进制代码分类思路。
-  - Caliskan-Islam et al., "When Coding Style Survives Compilation" (USENIX 2016):
+    Data-Flow Analysis": 基于CFG结构的二进制代码分类思路。
+  - Caliskan-Islam et al., "When Coding Style Survives Compilation":
     反汇编层面的编码风格指纹跨编译器可保持 → 支撑CFG指纹的跨编译器稳定性。
 
 边界条件:
@@ -36,8 +35,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ── 核心数据结构 ──
+# 核心数据结构
 
 @dataclass
 class CFGEntropyProfile:
@@ -57,7 +55,6 @@ class CFGEntropyProfile:
                 self.loop_depth_mean, self.loop_depth_entropy,
                 self.branch_density)
 
-
 @dataclass
 class CFGFingerprintMatch:
     """CFG指纹匹配结果."""
@@ -66,8 +63,7 @@ class CFGFingerprintMatch:
     evidence: str
     location: int
 
-
-# ── 密码学函数的CFG参考模式库 ──
+# 密码学函数的CFG参考模式库
 # 每个条目: (算法名, (bb_size_ent, outdeg_ent, loop_mean, loop_ent, branch_dens))
 # 这些参考值由已知编译产物的CFG特征统计得出, 作为分类基线的"典型密码学CFG"。
 # 值取自OpenSSL 3.2 x86-64 -O2编译产物的实测均值。
@@ -90,8 +86,7 @@ _CRYPTO_CFG_REFERENCES: Dict[str, Tuple[float, float, float, float, float]] = {
     'MT19937':      (0.38, 0.12, 0.30, 0.18, 0.05),
 }
 
-
-# ── CFG提取 (轻量级, 无Capstone依赖) ──
+# CFG提取 (轻量级, 无Capstone依赖)
 # 基本块边界判据 (三条件, 启发式):
 #   (a) 显式控制转移: RET(0xC3), JMP(0xE9,0xEB), Jcc(0x7x), CALL(0xE8)
 #   (b) 控制转移目标: 作为JMP/Jcc/CALL的目标地址 → 开新块
@@ -193,8 +188,7 @@ def _extract_cfg(data: bytes, start: int, max_blocks: int = 512) -> Tuple[
 
     return blocks, edges
 
-
-# ── CFG熵特征提取 ──
+# CFG熵特征提取
 
 def compute_cfg_entropy(data: bytes, start: int = 0) -> CFGEntropyProfile:
     """从二进制数据区域提取CFG熵指纹."""
@@ -234,7 +228,6 @@ def compute_cfg_entropy(data: bytes, start: int = 0) -> CFGEntropyProfile:
 
     return profile
 
-
 def _normalized_entropy(values: List[int]) -> float:
     """香农熵 / log2(N) → [0,1] 归一化."""
     n = len(values)
@@ -250,7 +243,6 @@ def _normalized_entropy(values: List[int]) -> float:
     if max_ent < 1e-9:
         return 0.0
     return ent / max_ent
-
 
 def _estimate_loop_depths(blocks: List[Tuple[int, int]],
                           edges: List[Tuple[int, int]]) -> Tuple[List[int], int]:
@@ -272,8 +264,7 @@ def _estimate_loop_depths(blocks: List[Tuple[int, int]],
     max_d = max(depths) if depths else 0
     return depths, max_d
 
-
-# ── 密码学CFG匹配 ──
+# 密码学CFG匹配
 
 def match_cfg_fingerprint(profile: CFGEntropyProfile,
                           location: int = 0) -> List[CFGFingerprintMatch]:
@@ -301,11 +292,9 @@ def match_cfg_fingerprint(profile: CFGEntropyProfile,
     results.sort(key=lambda r: -r.confidence)
     return results[:5]  # top-5
 
-
 def _euclidean_distance(v1: Tuple[float, ...],
                         v2: Tuple[float, ...]) -> float:
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(v1, v2)))
-
 
 def scan_for_crypto_by_cfg(data: bytes,
                            window_size: int = 2048,
@@ -323,7 +312,6 @@ def scan_for_crypto_by_cfg(data: bytes,
     # 去重: 按位置合并
     return _dedup_cfg(all_matches)
 
-
 def _dedup_cfg(matches: List[CFGFingerprintMatch],
                eps: int = 512) -> List[CFGFingerprintMatch]:
     if not matches:
@@ -338,7 +326,6 @@ def _dedup_cfg(matches: List[CFGFingerprintMatch],
         else:
             merged.append(m)
     return merged
-
 
 __all__ = [
     'CFGEntropyProfile', 'CFGFingerprintMatch',

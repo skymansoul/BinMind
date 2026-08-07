@@ -37,7 +37,7 @@ _COVERT_PATTERNS = (
 
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -157,7 +157,6 @@ def detect_timing_channel() -> dict:
     }
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未使用。"""
     pass  # 调试桩，当前未使用
 

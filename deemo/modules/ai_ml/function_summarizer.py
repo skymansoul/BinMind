@@ -754,7 +754,6 @@ class FunctionSummarizer:
         return {'grade': 'unchecked', 'issues_count': 0}
 
 
-def _debug_print(*args, **kwargs): pass
 
 
 def create_function_summarizer(max_sentences=5, enable_cache=True):

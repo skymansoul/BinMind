@@ -16,11 +16,10 @@
 
   输出格式: JSON种子文件 + 变异策略描述 → 可直接导入fuzzing框架。
 
-参考:
-  - AFLNet (ICST 2020): 有状态网络协议的灰盒Fuzzer — 使用协议状态机指导变异。
-  - Boofuzz (2024): Python协议fuzzing框架 — 基于语法描述的Fuzzing。
-  - ProtocolGPT (arXiv:2405.00393): LLM推断协议状态机用于Fuzzing。
-  - CLFuzz (TOSEM 2025): 密码学库的差异Fuzzing。
+  - AFLNet: 有状态网络协议的灰盒Fuzzer — 使用协议状态机指导变异。
+  - Boofuzz: Python协议fuzzing框架 — 基于语法描述的Fuzzing。
+  - ProtocolGPT: LLM推断协议状态机用于Fuzzing。
+  - CLFuzz: 密码学库的差异Fuzzing。
 
 边界条件:
   - 生成的种子基于静态推断 — 运行时状态转移可能与静态分析不同。
@@ -33,12 +32,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class SeedType(Enum):
     HANDSHAKE = 0
     BOUNDARY = 1
     ANOMALY = 2
-
 
 @dataclass
 class FuzzSeed:
@@ -52,7 +49,6 @@ class FuzzSeed:
     mutation_strategy: str = ""
     priority: str = "MEDIUM"       # HIGH / MEDIUM / LOW
 
-
 @dataclass
 class FuzzSeedSuite:
     protocol_name: str = ""
@@ -60,8 +56,7 @@ class FuzzSeedSuite:
     seeds: List[FuzzSeed] = field(default_factory=list)
     mutation_strategies: List[str] = field(default_factory=list)
 
-
-# ── TLS 1.2/1.3 握手种子模板 ──
+# TLS 1.2/1.3 握手种子模板
 
 _TLS_HANDSHAKE_TEMPLATES: Dict[str, List[FuzzSeed]] = {
     'TLS': [
@@ -122,7 +117,6 @@ _TLS_HANDSHAKE_TEMPLATES: Dict[str, List[FuzzSeed]] = {
                  priority='HIGH'),
     ],
 }
-
 
 def generate_fuzz_seeds(protocol_findings: Optional[List] = None,
                         crypto_findings: Optional[List] = None
@@ -193,7 +187,6 @@ def generate_fuzz_seeds(protocol_findings: Optional[List] = None,
         total_seeds=len(all_seeds),
         seeds=all_seeds,
         mutation_strategies=strategies)
-
 
 def export_seeds_json(suite: FuzzSeedSuite) -> str:
     """导出种子为JSON格式。"""

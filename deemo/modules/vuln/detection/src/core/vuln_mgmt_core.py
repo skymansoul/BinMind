@@ -1,5 +1,4 @@
 # vuln_mgmt_core：CVE数据类、报告器、推理器、暴露分析、威胁情报、SBOM
-# 架构决策：从vuln_management.py拆出核心数据模型及报告/情报/供应链分析子系统
 # 依赖vuln_mgmt_slicer（VulnerabilitySlicer）提取报告上下文
 #
 # modularized 2026-08-02
@@ -31,7 +30,6 @@ _logger = logging.getLogger(__name__)
 logger = _logger
 json = _json
 
-
 class VulnerabilityContext:
     __slots__ = ("basic_blocks", "constraints", "memory_accesses")
     def __init__(self, basic_blocks: List[int], constraints: List[str],
@@ -40,7 +38,6 @@ class VulnerabilityContext:
         self.constraints = constraints or []
         self.memory_accesses = memory_accesses or []
 
-
 @dataclass
 class DataFlowPath:
     source: int
@@ -48,14 +45,12 @@ class DataFlowPath:
     source_label: str = ""
     intermediate_addrs: List[int] = field(default_factory=list)
 
-
 @dataclass
 class CVEFootprint:
     cve_id: str
     matched_functions: List[int] = field(default_factory=list)
     matched_strings: List[str] = field(default_factory=list)
     confidence: float = 0.0
-
 
 class DataTag:
     SECRET_KEY = "secret_key"
@@ -66,20 +61,17 @@ class DataTag:
     PII = "pii"
     CREDENTIAL = "credential"
 
-
 @dataclass
 class VulnerabilityKnowledgeNode:
     vuln_id: str
     vuln_type: str
     properties: Dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class InferenceRule:
     antecedent: str
     consequent: str
     confidence: float = 0.5
-
 
 # VulnerabilityReporter：漏洞报告生成器
 # 委托VulnerabilitySlicer（来自vuln_mgmt_slicer）提取最小上下文，
@@ -238,7 +230,6 @@ class VulnerabilityReporter:
                 for m in context.memory_accesses
             ],
         }
-
 
 class VulnerabilityReasoner:
     """
@@ -441,7 +432,6 @@ class VulnerabilityReasoner:
     def stats(self) -> Dict[str, int]:
         return {"nodes": len(self.nodes), "rules": len(self.rules)}
 
-
 class ExposureAnalyzer:
     """
     追踪敏感数据流，检测日志、网络传输、文件写等暴露路径。
@@ -633,7 +623,6 @@ class ExposureAnalyzer:
             ],
         }
 
-
 class CodeLocator:
     """
     在二进制文件（及提取的字符串/符号）中搜索与CVE、库或漏洞类别关联的代码模式。
@@ -824,7 +813,6 @@ class CodeLocator:
         lines.append("")
         return "\n".join(lines)
 
-
 class _RateLimiter:
     """令牌桶限速器：线程安全，防止对外部API的突发请求被429封禁。"""
     def __init__(self, tokens_per_sec: float = 10.0, burst: int = 10):
@@ -847,7 +835,6 @@ class _RateLimiter:
                     return True
             time.sleep(0.1)
         return False
-
 
 class ThreatIntelClient:
     """
@@ -1170,7 +1157,6 @@ class ThreatIntelClient:
             "misp_configured": bool(self._misp_url),
         }
 
-
 class VersionExtractor:
     """
     通过strings输出和符号表分析的启发式模式匹配，从二进制中提取库及组件版本信息。
@@ -1281,7 +1267,6 @@ class VersionExtractor:
             explicit = any(lib == p[0] for p in self._LIB_PATTERNS + self._custom_patterns)
             result[lib] = (ver, 0.9 if explicit else 0.5)
         return result
-
 
 class VersionedVulnChecker:
     """
@@ -1427,7 +1412,6 @@ class VersionedVulnChecker:
 
     def stats(self) -> Dict[str, int]:
         return {"cached_queries": len(self._cache)}
-
 
 class SBOMGenerator:
     """
@@ -1578,9 +1562,8 @@ class SBOMGenerator:
             "formats_available": ["spdx", "cyclonedx"],
         }
 
-
 # analyze_supply_chain：端到端供应链安全分析
-# 步骤: 1.提取链接库 2.提取版本 3.OSV.dev查询 4.可选NVD富化 5.SBOM生成
+# 1.提取链接库 2.提取版本 3.OSV.dev查询 4.可选NVD富化 5.SBOM生成
 # nm前缀提取可能遗漏动态加载的库
 def analyze_supply_chain(
     binary_path: str, enable_osv_check: bool = True,

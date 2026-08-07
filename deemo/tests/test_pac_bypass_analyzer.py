@@ -143,16 +143,16 @@ class TestLegacyAPI:
     """旧版API测试（已移除的功能）"""
 
     def test_analyze(self):
-        pytest.skip("analyze_pac_bypass removed — use PACBypassAnalyzer(binary_path).run()")
+# pytest.skip("analyze_pac_bypass removed — use PACBypassAnalyzer(binary_path).run()")
 
     def test_evaluate_strength(self):
-        pytest.skip("evaluate_pac_strength removed — use _evaluate_bypass_feasibility internally")
+# pytest.skip("evaluate_pac_strength removed — use _evaluate_bypass_feasibility internally")
 
     def test_pac_bypass_types(self):
-        pytest.skip("PACBypassType enum removed — leak_type is a plain string")
+# pytest.skip("PACBypassType enum removed — leak_type is a plain string")
 
     def test_bypass_difficulty(self):
-        pytest.skip("BypassDifficulty enum removed — feasibility is a plain string in evaluation results")
+# pytest.skip("BypassDifficulty enum removed — feasibility is a plain string in evaluation results")
 
 
 

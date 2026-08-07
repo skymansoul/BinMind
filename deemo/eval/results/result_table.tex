@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+  \centering
+  \caption{Heap Overflow Detection: Multi-Tool Comparison (17 CVE Samples)}
+  \label{tab:heap_overflow_comparison}
+  \begin{tabular}{lrrrrrrr}
+    \toprule
+    Tool & P & R & F1 & FPR & TP & FP & Time(ms) \\
+    \midrule
+    BinMind-baseline & 0.8000 & 0.9231 & 0.8571 & 0.7500 & 12 & 3 & 0.5 \\
+    BinMind-HOSV & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 4.8 \\
+    BinMind-GAPSBV-CJ & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 0.1 \\
+    Angr & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 817.3 \\
+    Ghidra & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 124.7 \\
+    QEMU & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 3212.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

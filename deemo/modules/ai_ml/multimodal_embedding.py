@@ -17,9 +17,7 @@ from typing import Dict, List, Optional, Any, Tuple
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class GraphEmbedding:
@@ -205,9 +203,7 @@ class FusionResult:
         )
 
 
-# ---------------------------------------------------------------------------
 # CFG Graph Embedder
-# ---------------------------------------------------------------------------
 
 class CFGGraphEmbedder:
     """Embeds a function's control-flow graph into a fixed-size vector."""
@@ -361,9 +357,7 @@ class CFGGraphEmbedder:
         )
 
 
-# ---------------------------------------------------------------------------
 # Instruction Text Embedder
-# ---------------------------------------------------------------------------
 
 class InstructionTextEmbedder:
     """Embeds assembly instruction sequences into vector space."""
@@ -582,9 +576,7 @@ class InstructionTextEmbedder:
         return pairs
 
 
-# ---------------------------------------------------------------------------
 # Structural Feature Extractor
-# ---------------------------------------------------------------------------
 
 class StructuralFeatureExtractor:
     """Extracts hand-crafted structural features from a function."""
@@ -622,9 +614,7 @@ class StructuralFeatureExtractor:
         return sf
 
 
-# ---------------------------------------------------------------------------
 # Multi-Modal Embedder
-# ---------------------------------------------------------------------------
 
 class MultiModalEmbedder:
     """Fuses graph, text, and structural embeddings using confidence-weighted fusion.
@@ -762,9 +752,7 @@ class MultiModalEmbedder:
         return dot / (_math.sqrt(na) * _math.sqrt(nb))
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def create_multimodal_embedder(graph_dim=128, text_dim=256, output_dim=512) -> MultiModalEmbedder:
     return MultiModalEmbedder(graph_dim=graph_dim, text_dim=text_dim, output_dim=output_dim)

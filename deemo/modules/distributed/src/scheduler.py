@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional, Set
 
-# ---- 可选 Redis ----
+# 可选 Redis
 try:
     import redis as _redis_lib
     REDIS_AVAILABLE = True
@@ -21,7 +21,7 @@ except ImportError:
     _redis_lib = None
 
 
-# ===== CronExpr =====
+# CronExpr
 
 WEEKDAY_NAMES = {
     "sun": 0, "mon": 1, "tue": 2, "wed": 3,
@@ -220,7 +220,7 @@ def every(spec: str) -> CronExpr:
     return parse_cron(f"{step_str} * * * *")
 
 
-# ===== CronScheduler =====
+# CronScheduler
 
 @dataclass
 class ScheduleEntry:

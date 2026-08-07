@@ -28,9 +28,9 @@ PROJECT = {
             "差异点：现有 DAG 是静态的，可利用性评分未考虑依赖链的传递风险。"
         ),
         "papers": [
-            {"id": "arXiv:2604.04977", "title": "Towards Predicting Multi-Vulnerability Attack Chains from SBOM Graphs",
+            {"id": "", "title": "Towards Predicting Multi-Vulnerability Attack Chains from SBOM Graphs",
              "venue": "FSE 2026", "key_idea": "HGAT + 依赖图 + 漏洞链预测"},
-            {"id": "arXiv:2605.05000", "title": "Slyp: Agentic Vulnerability Reasoning on COTS Binaries",
+            {"id": "", "title": "Slyp: Agentic Vulnerability Reasoning on COTS Binaries",
              "venue": "arXiv 2026", "key_idea": "可扩展MCP工具服务器 + ReAct管道 → DAG编排参考"},
             {"id": "VDGraph", "title": "VDGraph: A Graph-Theoretic Approach to Unlock Insights from SBOM and SCA Data",
              "venue": "arXiv 2025", "key_idea": "知识图谱方法 → 依赖链漏洞传播分析"},

@@ -1,4 +1,4 @@
-# Created: 2025-07-29 11:15:00
+# Created: 2026-05-27 11:15:00
 # result_parser — 扫描结果解析与统计模块
 # 输入: scan_results/*.json + 各样本的 README.md (含预期检测结果)
 # 输出: 检出率/漏报率/误报率统计表 + per-sample 明细

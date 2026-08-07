@@ -17,7 +17,7 @@
 #
 # 与现有工作的区别:
 #   TraceCausalNet 做微服务 RCA (根因定位)，不做依赖发现用于调度
-#   Apophenia (arXiv:2406.18111) 做代码级 trace 发现，不做时序因果
+#   Apophenia 做代码级 trace 发现，不做时序因果
 #   本模块是首个将 Granger + TE 联合用于调度依赖推断的方案
 
 from __future__ import annotations

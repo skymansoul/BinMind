@@ -13,12 +13,12 @@
 #     该分支的两个方向有不同的执行时间→可被侧信道观测
 #   层3 — 缓存行冲突: 对标记为秘密索引的数组访问,
 #     计算访问步幅→判断是否在同缓存行 (64B) → prime+probe目标
-# 参考 (已验证真实):
+# (已验证真实):
 #   Yarom & Falkner "FLUSH+RELOAD: a High Resolution, Low Noise, L3
-#     Cache Side-Channel Attack" (USENIX Security 2014) —
+#     Cache Side-Channel Attack" —
 #     缓存行冲突是侧信道攻击的基础
 #   Kocher "Timing Attacks on Implementations of Diffie-Hellman, RSA,
-#     DSS, and Other Systems" (CRYPTO 1996) — 时序攻击原型
+#     DSS, and Other Systems" — 时序攻击原型
 from __future__ import annotations
 import logging, math, re
 from collections import defaultdict

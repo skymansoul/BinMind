@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2019-2215",
+  "desc": "CVE-2019-2215 (Android binder) UAF 复现 — proc 释放后文件描述符",
+  "trigger": "   的 refcount 操作仍经 release 回调访问对象. 简化: free(p) 后"
+}

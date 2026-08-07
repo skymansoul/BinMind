@@ -255,9 +255,7 @@ class AutoPipeline:
         return "any"
 
 
-# ---------------------------------------------------------------------------
 # 快捷: 从模块的 _LAZY_MAP 自动注册
-# ---------------------------------------------------------------------------
 
 def discover_and_register(pipeline: AutoPipeline,
                            lazy_map: Dict[str, str],

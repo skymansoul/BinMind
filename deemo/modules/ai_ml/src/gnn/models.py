@@ -11,7 +11,7 @@
 import numpy as np
 from .layers import GraphConv, GATConv, normalize_adj
 
-# ---- 初始化工具 ----
+# 初始化工具
 
 def _xavier(fi, fo):
     _l = np.sqrt(6.0 / (fi + fo))
@@ -23,7 +23,7 @@ def _sigmoid(_h):
     return 1.0 / (1.0 + np.exp(-_h))
 
 
-# ===== GCNBinaryClassifier =====
+# GCNBinaryClassifier
 
 
 class GCNBinaryClassifier:
@@ -51,7 +51,7 @@ class GCNBinaryClassifier:
         return (_p > threshold).astype(np.int32)
 
 
-# ===== GATVulnDetector =====
+# GATVulnDetector
 
 
 class GATVulnDetector:
@@ -92,7 +92,7 @@ class GATVulnDetector:
         return self.forward(_x, _a, pe=pe) >= threshold
 
 
-# ===== SiameseBinaryMatcher =====
+# SiameseBinaryMatcher
 
 
 class SiameseBinaryMatcher:
@@ -138,7 +138,7 @@ class SiameseBinaryMatcher:
         return self.forward(_x1, _a1, _x2, _a2, pe1=pe1, pe2=pe2) >= threshold
 
 
-# ===== Batch 推理 convenience =====
+# Batch 推理 convenience
 
 
 def batch_predict_matches(_matcher, _pairs):

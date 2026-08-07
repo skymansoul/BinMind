@@ -24,10 +24,9 @@
     S3 (代码结构异常): 密码学代码被拆散+填充NOP/垃圾指令→混淆伪装。
     S4 (假阳性排除): 高频字节值+低熵→字体表; 重复数据→校验和表。
 
-参考:
   - otf_sbox_detector (本模块): 在线S-box生成检测 — 本模块扩展为更广义的伪装检测。
-  - Collberg et al. (1997): 代码混淆分类 — 控制流/数据/布局混淆。
-  - Obfuscator-LLVM (2024): 常见混淆pass — 指令替换/虚假控制流/控制流平坦化。
+  - Collberg et al.: 代码混淆分类 — 控制流/数据/布局混淆。
+  - Obfuscator-LLVM: 常见混淆pass — 指令替换/虚假控制流/控制流平坦化。
 
 边界条件:
   - 伪装检测是高假阳性率任务 — 需要多信号共存才能做出可靠判定。
@@ -40,7 +39,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
 @dataclass
 class CamouflageSignal:
     signal_type: str = ""          # HIDDEN_CRYPTO / FALSE_POSITIVE / OBFUSCATION
@@ -48,7 +46,6 @@ class CamouflageSignal:
     location: int = 0
     confidence: float = 0.0
     evidence: str = ""
-
 
 @dataclass
 class CamouflageReport:
@@ -59,8 +56,7 @@ class CamouflageReport:
     obfuscation_count: int = 0
     overall_assessment: str = ""
 
-
-# ── S1: OTF S-box检测(动态生成) ──
+# S1: OTF S-box检测(动态生成)
 
 def _detect_otf_sbox_generation(data: bytes) -> List[CamouflageSignal]:
     """
@@ -86,8 +82,7 @@ def _detect_otf_sbox_generation(data: bytes) -> List[CamouflageSignal]:
 
     return signals[:5]
 
-
-# ── S2: 常量导出检测 ──
+# S2: 常量导出检测
 
 _CONSTANT_DERIVATION_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'3.1415926535', 'π literal → possible NUMS constant derivation', 0.60),
@@ -97,7 +92,6 @@ _CONSTANT_DERIVATION_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'nothing_up_my_sleeve', 'NUMS keyword → explicit intent', 0.85),
     (b'nothing-up-my-sleeve', 'NUMS keyword → explicit intent', 0.85),
 ]
-
 
 def _detect_constant_derivation(data: bytes) -> List[CamouflageSignal]:
     signals: List[CamouflageSignal] = []
@@ -111,8 +105,7 @@ def _detect_constant_derivation(data: bytes) -> List[CamouflageSignal]:
                 evidence=f'字符串 @0x{pos:x}: {pat.decode("ascii", errors="replace")}'))
     return signals
 
-
-# ── S3: 混淆检测 ──
+# S3: 混淆检测
 
 def _detect_code_obfuscation(data: bytes) -> List[CamouflageSignal]:
     """
@@ -156,8 +149,7 @@ def _detect_code_obfuscation(data: bytes) -> List[CamouflageSignal]:
 
     return signals[:5]
 
-
-# ── S4: 假阳性排除 ──
+# S4: 假阳性排除
 
 def _detect_false_positive_tables(data: bytes) -> List[CamouflageSignal]:
     """
@@ -195,8 +187,7 @@ def _detect_false_positive_tables(data: bytes) -> List[CamouflageSignal]:
 
     return signals[:3]
 
-
-# ── 主检测器 ──
+# 主检测器
 
 class CamouflageDetector:
     """密码学伪装检测器 — 组合四类信号。"""

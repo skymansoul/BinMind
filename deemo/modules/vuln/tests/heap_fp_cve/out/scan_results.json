@@ -1,0 +1,751 @@
+{
+  "samples": [
+    {
+      "sample": "heap-acfpc-01_cve2021-3156_sudo",
+      "base": 1,
+      "kept": 1,
+      "suppressed": 34,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 21,
+      "suppress_rate": 3400.0,
+      "elapsed_ms": 477.2,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715146,
+          "alloc_size": 128,
+          "real_alloc_size": 128,
+          "offset": 0,
+          "access_size": 1152,
+          "size_bounded": false,
+          "size_unknown": true,
+          "decision": "likely",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Unbounded copy into buffer of 128B",
+          "fp_probability": 0.2
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-02_cve2016-0728_keyring",
+      "base": 2,
+      "kept": 2,
+      "suppressed": 34,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 24,
+      "suppress_rate": 1700.0,
+      "elapsed_ms": 402.3,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715143,
+          "alloc_size": 128,
+          "real_alloc_size": 128,
+          "offset": 0,
+          "access_size": 256,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 256 > usable 128 (alloc 128)",
+          "fp_probability": 0.05
+        },
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715236,
+          "alloc_size": 128,
+          "real_alloc_size": 128,
+          "offset": 0,
+          "access_size": 1152,
+          "size_bounded": false,
+          "size_unknown": true,
+          "decision": "likely",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Unbounded copy into buffer of 128B",
+          "fp_probability": 0.2
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-03_cve2022-0185_fsctx",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 195.3,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 256,
+          "real_alloc_size": 256,
+          "offset": 0,
+          "access_size": 4096,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 4096 > usable 256 (alloc 256)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(4096) 可用 4096B ≥ 写 4096B",
+          "evidence": [
+            "usable_size(4096)=4096",
+            "write=4096 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-04_cve2021-22555_netfilter",
+      "base": 1,
+      "kept": 1,
+      "suppressed": 4,
+      "confirmed": 0,
+      "contracts": 4,
+      "writes": 8,
+      "suppress_rate": 400.0,
+      "elapsed_ms": 175.0,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715190,
+          "alloc_size": 64,
+          "real_alloc_size": 64,
+          "offset": 0,
+          "access_size": 64,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "safe",
+          "phase": "BOUND_CHECK",
+          "reasoning": "offset+access_size within allocation bounds",
+          "fp_probability": 0.95
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-05_cve2022-0995_watchq",
+      "base": 1,
+      "kept": 1,
+      "suppressed": 4,
+      "confirmed": 2,
+      "contracts": 4,
+      "writes": 8,
+      "suppress_rate": 400.0,
+      "elapsed_ms": 148.8,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715175,
+          "alloc_size": 64,
+          "real_alloc_size": 64,
+          "offset": 0,
+          "access_size": 512,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 512 > usable 64 (alloc 64)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-06_cve2020-14386_afpacket",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 103.8,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 1024,
+          "real_alloc_size": 1024,
+          "offset": 0,
+          "access_size": 4096,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 4096 > usable 1024 (alloc 1024)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(4096) 可用 4096B ≥ 写 4096B",
+          "evidence": [
+            "usable_size(4096)=4096",
+            "write=4096 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-07_cve2015-0235_ghost",
+      "base": 0,
+      "kept": 1,
+      "suppressed": 34,
+      "confirmed": 1,
+      "contracts": 5,
+      "writes": 22,
+      "suppress_rate": 3400.0,
+      "elapsed_ms": 501.9,
+      "findings": [
+        {
+          "insn_addr": 5368715215,
+          "semantic_score": 0.85,
+          "confidence": 0.85,
+          "acfpc_verdict": "CONFIRM",
+          "description": "strncpy(dst, src, 0) 写入含终止符 1B > 分配 0B",
+          "evidence": [
+            "strncpy_nul_overflow"
+          ]
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-08_cve2023-0286_openssl",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 237.8,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 32,
+          "real_alloc_size": 32,
+          "offset": 0,
+          "access_size": 34,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 34 > usable 32 (alloc 32)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(34) 可用 34B ≥ 写 34B",
+          "evidence": [
+            "usable_size(34)=34",
+            "write=34 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-09_cve2021-43267_tipc",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 184.9,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 16,
+          "real_alloc_size": 16,
+          "offset": 0,
+          "access_size": 64,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 64 > usable 16 (alloc 16)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(64) 可用 64B ≥ 写 64B",
+          "evidence": [
+            "usable_size(64)=64",
+            "write=64 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-10_cve2017-1000253_dlopen",
+      "base": 1,
+      "kept": 1,
+      "suppressed": 35,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 19,
+      "suppress_rate": 3500.0,
+      "elapsed_ms": 428.1,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715183,
+          "alloc_size": 128,
+          "real_alloc_size": 128,
+          "offset": 0,
+          "access_size": 1152,
+          "size_bounded": false,
+          "size_unknown": true,
+          "decision": "likely",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Unbounded copy into buffer of 128B",
+          "fp_probability": 0.2
+        }
+      ],
+      "suppressed_sites": []
+    },
+    {
+      "sample": "heap-acfpc-11_cve2023-24329_curl",
+      "base": 3,
+      "kept": 2,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 166.7,
+      "elapsed_ms": 132.7,
+      "findings": [
+        {
+          "type": "direct_write",
+          "function": "main",
+          "insn_addr": 5368715226,
+          "alloc_size": 128,
+          "offset": 0,
+          "access_size": 1,
+          "decision": "safe",
+          "phase": "BOUND_CHECK",
+          "reasoning": "offset+access_size within allocation bounds",
+          "fp_probability": 0.95
+        },
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715246,
+          "alloc_size": 64,
+          "real_alloc_size": 64,
+          "offset": 0,
+          "access_size": 128,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 128 > usable 64 (alloc 64)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 502,
+          "addr": 5368715213,
+          "reason": "malloc(128) 可用 128B ≥ 写 127B",
+          "evidence": [
+            "usable_size(128)=128",
+            "write=127 fits"
+          ],
+          "contract_idx": 485
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-12_cve2024-2961_iconv",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 140.5,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 256,
+          "real_alloc_size": 256,
+          "offset": 0,
+          "access_size": 512,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 512 > usable 256 (alloc 256)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(512) 可用 512B ≥ 写 512B",
+          "evidence": [
+            "usable_size(512)=512",
+            "write=512 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-13_cve2022-27666_esp6",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 263.1,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 512,
+          "real_alloc_size": 512,
+          "offset": 0,
+          "access_size": 1024,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 1024 > usable 512 (alloc 512)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(1024) 可用 1024B ≥ 写 1024B",
+          "evidence": [
+            "usable_size(1024)=1024",
+            "write=1024 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-14_cve2021-3711_sm2",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 252.3,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715206,
+          "alloc_size": 64,
+          "real_alloc_size": 64,
+          "offset": 0,
+          "access_size": 96,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 0 + size 96 > usable 64 (alloc 64)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(96) 可用 96B ≥ 写 96B",
+          "evidence": [
+            "usable_size(96)=96",
+            "write=96 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "heap-acfpc-15_cve2017-1000112_udp",
+      "base": 2,
+      "kept": 1,
+      "suppressed": 5,
+      "confirmed": 2,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 250.0,
+      "elapsed_ms": 215.1,
+      "findings": [
+        {
+          "type": "memcpy",
+          "function": "",
+          "insn_addr": 5368715213,
+          "alloc_size": 1024,
+          "real_alloc_size": 1024,
+          "offset": 896,
+          "access_size": 512,
+          "size_bounded": true,
+          "size_unknown": false,
+          "decision": "vuln",
+          "phase": "BOUND_CHECK",
+          "reasoning": "Overflow: offset 896 + size 512 > usable 1024 (alloc 1024)",
+          "fp_probability": 0.05,
+          "confidence": 0.5,
+          "acfpc_verdict": "CONFIRM"
+        }
+      ],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(512) 可用 512B ≥ 写 512B",
+          "evidence": [
+            "usable_size(512)=512",
+            "write=512 fits"
+          ],
+          "contract_idx": 482
+        }
+      ]
+    },
+    {
+      "sample": "tn-acfpc-01_same_source",
+      "base": 2,
+      "kept": 0,
+      "suppressed": 36,
+      "confirmed": 0,
+      "contracts": 6,
+      "writes": 31,
+      "suppress_rate": 1800.0,
+      "elapsed_ms": 405.3,
+      "findings": [],
+      "suppressed_sites": [
+        {
+          "idx": 511,
+          "addr": 5368715241,
+          "reason": "参数耦合: 同源 slot:rbp-8: 分配与写入共享同一数据源, 共变无越界",
+          "evidence": [
+            "write_alloc_coupling"
+          ],
+          "contract_idx": 496
+        },
+        {
+          "idx": 517,
+          "addr": 5368715264,
+          "reason": "参数耦合: 同源 slot:rbp-8: 分配与写入共享同一数据源, 共变无越界",
+          "evidence": [
+            "write_alloc_coupling"
+          ],
+          "contract_idx": 492
+        }
+      ]
+    },
+    {
+      "sample": "tn-acfpc-02_guard_bounded",
+      "base": 2,
+      "kept": 0,
+      "suppressed": 6,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 300.0,
+      "elapsed_ms": 157.6,
+      "findings": [],
+      "suppressed_sites": [
+        {
+          "idx": 512,
+          "addr": 5368715249,
+          "reason": "参数耦合: 同源 slot:rbp-8: 分配与写入共享同一数据源, 共变无越界",
+          "evidence": [
+            "write_alloc_coupling"
+          ],
+          "contract_idx": 495
+        },
+        {
+          "idx": 518,
+          "addr": 5368715272,
+          "reason": "守卫支配: 守卫上界 256 ≤ 可用 256",
+          "evidence": [
+            "guard_dominance"
+          ],
+          "contract_idx": 491
+        }
+      ]
+    },
+    {
+      "sample": "tn-acfpc-03_alignment_slack",
+      "base": 1,
+      "kept": 0,
+      "suppressed": 5,
+      "confirmed": 0,
+      "contracts": 4,
+      "writes": 8,
+      "suppress_rate": 500.0,
+      "elapsed_ms": 169.1,
+      "findings": [],
+      "suppressed_sites": [
+        {
+          "idx": 489,
+          "addr": 5368715163,
+          "reason": "malloc(40) 可用 40B ≥ 写 40B",
+          "evidence": [
+            "usable_size(40)=40",
+            "write=40 fits"
+          ],
+          "contract_idx": 479
+        }
+      ]
+    },
+    {
+      "sample": "tn-acfpc-04_struct_fields",
+      "base": 3,
+      "kept": 0,
+      "suppressed": 38,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 22,
+      "suppress_rate": 1266.7,
+      "elapsed_ms": 431.5,
+      "findings": [],
+      "suppressed_sites": [
+        {
+          "idx": 491,
+          "addr": 5368715172,
+          "reason": "显式写 [rax+32] 宽 4B ≤ 可用 64B (malloc(64))",
+          "evidence": [
+            "explicit_store_geometry"
+          ],
+          "contract_idx": -1
+        },
+        {
+          "idx": 493,
+          "addr": 5368715183,
+          "reason": "显式写 [rax+36] 宽 4B ≤ 可用 64B (malloc(64))",
+          "evidence": [
+            "explicit_store_geometry"
+          ],
+          "contract_idx": -1
+        },
+        {
+          "idx": 489,
+          "addr": 5368715163,
+          "reason": "malloc(64) 可用 64B ≥ 写 32B",
+          "evidence": [
+            "usable_size(64)=64",
+            "write=32 fits"
+          ],
+          "contract_idx": 479
+        }
+      ]
+    },
+    {
+      "sample": "tn-acfpc-05_exact_fit",
+      "base": 2,
+      "kept": 0,
+      "suppressed": 6,
+      "confirmed": 0,
+      "contracts": 5,
+      "writes": 14,
+      "suppress_rate": 300.0,
+      "elapsed_ms": 222.5,
+      "findings": [],
+      "suppressed_sites": [
+        {
+          "idx": 494,
+          "addr": 5368715184,
+          "reason": "malloc(64) 可用 64B ≥ 写 64B",
+          "evidence": [
+            "usable_size(64)=64",
+            "write=64 fits"
+          ],
+          "contract_idx": 482
+        },
+        {
+          "idx": 499,
+          "addr": 5368715206,
+          "reason": "malloc(64) 可用 64B ≥ 写 64B",
+          "evidence": [
+            "usable_size(64)=64",
+            "write=64 fits"
+          ],
+          "contract_idx": 479
+        }
+      ]
+    }
+  ],
+  "n_samples": 20,
+  "n_ok": 20,
+  "total_base": 35,
+  "total_kept": 17,
+  "total_suppressed": 281,
+  "total_confirmed": 21,
+  "avg_ms": 262.2
+}

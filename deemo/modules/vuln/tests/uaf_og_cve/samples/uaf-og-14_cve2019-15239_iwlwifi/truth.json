@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2019-15239",
+  "desc": "CVE-2019-15239 (iwlwifi) UAF 复现 — 固件命令响应释放后其",
+  "trigger": "   callback 上下文仍被访问. 简化: free(p); use(p->resp). "
+}

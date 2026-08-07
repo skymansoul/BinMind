@@ -9,7 +9,7 @@
 
 from typing import Dict, List, Tuple
 
-# ---- 指令 dyad 频率签名 ----
+# 指令 dyad 频率签名
 # (instruction_a, instruction_b) → 该编译器下的期望频率比
 # 选取区分度最高的 5-8 对指令对，作为判别特征
 # GCC: cmp→jmp (jump-threading残余), mov→lea (地址计算习惯)
@@ -42,7 +42,7 @@ DYAD_DISCRIMINANTS: Dict[str, Dict[str, float]] = {
     },
 }
 
-# ---- 寄存器压力特征 ----
+# 寄存器压力特征
 # (编译器, opt_level) → (mean_reg_pressure, std_dev)
 # reg_pressure = Σ(live_ranges) / function_count / max_pressure_capacity
 REG_PRESSURE_PROFILES: Dict[Tuple[str, str], Tuple[float, float]] = {
@@ -57,7 +57,7 @@ REG_PRESSURE_PROFILES: Dict[Tuple[str, str], Tuple[float, float]] = {
     ("MSVC", "Ox"): (0.56, 0.10),
 }
 
-# ---- 循环结构残差 ----
+# 循环结构残差
 # (编译器, opt_level) → (avg_loop_body_s, avg_unroll_factor)
 LOOP_RESIDUE_PROFILES: Dict[Tuple[str, str], Tuple[float, float]] = {
     ("GCC", "O0"): (12.4, 1.0),

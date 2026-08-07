@@ -1,0 +1,470 @@
+{
+  "source_level": {
+    "baseline": {
+      "TP": 23,
+      "FP": 2,
+      "TN": 5,
+      "FN": 1,
+      "precision": 0.92,
+      "recall": 0.9583,
+      "f1": 0.9388,
+      "fpr": 0.2857
+    },
+    "fscs": {
+      "TP": 9,
+      "FP": 0,
+      "TN": 7,
+      "FN": 15,
+      "precision": 1.0,
+      "recall": 0.375,
+      "f1": 0.5455,
+      "fpr": 0.0
+    },
+    "fcpv": {
+      "TP": 24,
+      "FP": 0,
+      "TN": 7,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fpr": 0.0
+    },
+    "per_sample": [
+      {
+        "sample": "sample_fmt_01",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"fgets\"@11 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 77.1,
+          "fcpv": 1.5
+        }
+      },
+      {
+        "sample": "sample_fmt_02",
+        "expected": "TN",
+        "baseline": "TN",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.5
+        }
+      },
+      {
+        "sample": "sample_fmt_03",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"fgets\"@11 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.5,
+          "fcpv": 0.5
+        }
+      },
+      {
+        "sample": "sample_fmt_04",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"fgets\"@10 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.1
+        }
+      },
+      {
+        "sample": "sample_fmt_05",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"fgets\"@11 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample_fmt_06",
+        "expected": "TN",
+        "baseline": "TN",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample_fmt_07",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@2 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.3,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample_fmt_08",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"fgets\"@10 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample_fmt_09",
+        "expected": "TN",
+        "baseline": "TN",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample_fmt_10",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.75,
+        "fcpv_reason": "snprintf \"%s\" passes through user input to \"dst\"",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.1,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample_fmt_11",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"getenv\"@10 via lang",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample_fmt_12",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"recv\"@3 via buf",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample_fmt_13",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@3 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.3
+        }
+      },
+      {
+        "sample": "sample_fmt_14",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.85,
+        "fcpv_reason": "cross-func taint: buffer→log_error(param 0)→user_msg",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 2.0,
+          "fcpv": 2.0
+        }
+      },
+      {
+        "sample": "sample_fmt_15",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"recv_data\"@35 via buffer",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 2.0,
+          "fcpv": 2.0
+        }
+      },
+      {
+        "sample": "sample01_direct_fmt_vuln",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@7 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample02_fmt_str_write_pct_n",
+        "expected": "TP",
+        "baseline": "FN",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "variable \"fmt\" = \"AAAA%n\" contains %n write primitive",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample03_indirect_fmt_leak",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.75,
+        "fcpv_reason": "snprintf \"%s\" passes through user input to \"fmt_buf\"",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample04_sprintf_fmt_vuln",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@8 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample05_fprintf_fmt_vuln",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@6 via argv[1]",
+        "time_ms": {
+          "baseline": 1.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample06_syslog_fmt_vuln",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.85,
+        "fcpv_reason": "cross-func taint: argv→fake_syslog(param 1)→fmt",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample07_info_leak_stack_read",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@7 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample08_wrapper_fmt_vuln",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.85,
+        "fcpv_reason": "cross-func taint: argv→log_message(param 0)→fmt",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample09_fmt_str_const_safe",
+        "expected": "TN",
+        "baseline": "TN",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample10_debug_log_safe",
+        "expected": "TN",
+        "baseline": "TN",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample11_fmt_str_in_rodata_safe",
+        "expected": "TN",
+        "baseline": "FP",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample12_snprintf_bounded_safe",
+        "expected": "TN",
+        "baseline": "FP",
+        "fscs": "TN",
+        "fcpv": "TN",
+        "fcpv_conf": 0.0,
+        "fcpv_reason": "",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 1.0
+        }
+      },
+      {
+        "sample": "sample13_dynamic_fmt_controlled",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.75,
+        "fcpv_reason": "snprintf \"%s\" passes through user input to \"fmt\"",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      },
+      {
+        "sample": "sample14_wide_char_fmt",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "FN",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"mbstowcs\"@11 via msg",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 1.0,
+          "fcpv": 0.5
+        }
+      },
+      {
+        "sample": "sample15_pct_n_write_primitive",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@7 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.5
+        }
+      },
+      {
+        "sample": "sample16_buffered_fmt_leak",
+        "expected": "TP",
+        "baseline": "TP",
+        "fscs": "TP",
+        "fcpv": "TP",
+        "fcpv_conf": 0.9,
+        "fcpv_reason": "tainted: \"argv\"@7 via argv[1]",
+        "time_ms": {
+          "baseline": 0.0,
+          "fscs": 0.0,
+          "fcpv": 0.0
+        }
+      }
+    ]
+  }
+}

@@ -1320,4 +1320,3 @@ def infer_byte_structure(samples: List[bytes]) -> List[Dict[str, Any]]:
     return inferer.infer(samples)
 
 
-def _debug_print(*args, **kwargs): pass

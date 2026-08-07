@@ -1,0 +1,287 @@
+{
+  "total": 40,
+  "success": 0,
+  "failed": 40,
+  "results": [
+    {
+      "sample": "cve_01_simple_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_02_off_by_one",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_03_int_overflow_calc",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_04_strcpy_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_05_loop_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_06_user_controlled_size",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_07_realloc_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_08_calloc_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_09_safe_but_triggers_fp",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_10_input_constrained_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_11_memcpy_arith_size",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_12_alignment_edge",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_13_struct_field_pattern",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_14_multi_chunk",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_15_constrained_input",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_16_real_world_pattern",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_17_multi_field_struct",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_18_loop_accumulate",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_19_same_offset_accumulate",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_20_cross_func_guard",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_21_cross_func_write",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_22_fm_boundary_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_23_fm_boundary_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_24_multiple_constraints",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_25_nested_loop_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_26_realloc_grow_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_27_struct_array_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_28_guarded_loop_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_29_alignment_slack_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_30_cross_func_alloc_only",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_31_copy_size_external",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_32_deeply_nested_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_33_cross_path_guard_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_34_cross_path_guard_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_35_early_return_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_36_early_return_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_37_nested_branch_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_38_nested_branch_overflow",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_39_loop_guard_cross_path",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    },
+    {
+      "sample": "cve_40_multi_guard_safe",
+      "success": false,
+      "binary": "",
+      "error": "[WinError 2] \u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002",
+      "compile_time_ms": 0
+    }
+  ]
+}

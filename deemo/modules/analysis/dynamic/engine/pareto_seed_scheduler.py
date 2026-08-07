@@ -16,18 +16,18 @@
 #   3. exec_speed：执行速度 executions_per_second（越高越好）
 #   4. mutation_potential：种子字节的熵 + 长度适中时变异潜力（越高越好）
 #
-# 参考：
-# - NSGA-II (Deb et al., IEEE TEC 2002): Fast Elitist Multiobject
+#
+# - NSGA-II: Fast Elitist Multiobject
 #     Genetic Algorithm。本项目将 NSGA-II 的非支配排序和拥挤度距离
 # 应用于模糊测试种子调度（而非遗传算法的种群选择）
 # 核心差异：NSGA-II 用于选择"下一代种群"（遗传算法代际）
 # 本项目用于选择"下一个被 fuzz 的种子批次"——无 crossover/muta
 # 仅借用其排序机制
-#   - T-Scheduler (ASIACCS 2024, arXiv:2312.04749): Thompson sampling
+#   - T-Scheduler: Thompson sampling
 # 对 rari 度量的 bandit 建模。本项目取其 rari 定义（1/hit_count）
 #     但将其仅作为四个目标之一纳入多目标优化框架——解决 T-Scheduler
 # 无法同时兼顾 覆盖率 densi 和 变异 potential 的问题
-# - FOX (CCS 2024): 将 frontier branch dist 作为目标
+# - FOX: 将 frontier branch dist 作为目标
 # 本项目的 coverage_densi 目标借鉴其"未探索区域密度"概念
 # 但使用指数衰减密度估计（而非分支距离）以支持大规模 bitmap
 #
@@ -169,9 +169,7 @@ class ParetoSeedScheduler:
 
         return weights
 
-    #------------------------------------------------------------------
     # 目标函数计算
-    #------------------------------------------------------------------
 
     def _compute_objectives(self, seed_id: str,
                             exec_time: float,
@@ -218,9 +216,7 @@ class ParetoSeedScheduler:
 
         return obj
 
-    #------------------------------------------------------------------
     # 非支配排序 —— NSGA-II 核心算法
-    #------------------------------------------------------------------
 
     def _non_dominated_sort(self,
                             objectives: Dict[str, SeedObjectives]) -> List[List[str]]:
@@ -292,9 +288,7 @@ class ParetoSeedScheduler:
         )
         return a_better_or_equal and a_strictly_better
 
-    #------------------------------------------------------------------
     # 拥挤度距离 —— 同层内的多样性度量
-    #------------------------------------------------------------------
 
     def _compute_crowding_distance(self,
                                     front: List[str],
@@ -341,9 +335,7 @@ class ParetoSeedScheduler:
                     abs(next_val - prev_val) / val_range
                 )
 
-    #------------------------------------------------------------------
     # 自适应精英保留
-    #------------------------------------------------------------------
 
     def _adaptive_elite_count(self, n_candidates: int,
                                objectives: Dict[str, SeedObjectives]) -> int:
@@ -390,9 +382,7 @@ class ParetoSeedScheduler:
                 break
         return elites
 
-    #------------------------------------------------------------------
     # 能量权重分配
-    #------------------------------------------------------------------
 
     def _compute_energy_weights(self,
                                  selected: List[str],
@@ -422,9 +412,7 @@ class ParetoSeedScheduler:
 
         return [(sid, w / total_w) for sid, w in raw_weights]
 
-    #------------------------------------------------------------------
     # 状态查询
-    #------------------------------------------------------------------
 
     def get_front_distribution(self) -> Dict[int, int]:
         """返回当前各非支配前沿的种子分布"""

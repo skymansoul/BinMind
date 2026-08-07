@@ -688,7 +688,7 @@ if FASTAPI_AVAILABLE:
                 logger.error(f"[WebAPI] 获取漏洞详情失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        # --- 增量报告与内容寻址缓存 ---
+# 增量报告与内容寻址缓存
         # 2025-07-19 10:11 追加
 
         class DiffRequest(BaseModel):
@@ -769,7 +769,7 @@ if FASTAPI_AVAILABLE:
                 data=stats
             )
 
-        # --- CVSS 环境评分 (从二进制加固自动推断) ---
+# CVSS 环境评分 (从二进制加固自动推断)
         # 2025-07-24 09:53 新增
 
         class EnvironmentalScoreRequest(BaseModel):

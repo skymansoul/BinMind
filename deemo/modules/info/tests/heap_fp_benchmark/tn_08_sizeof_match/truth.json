@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_08_sizeof_match",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: sizeof 尺寸匹配",
+  "expect_overflow": false,
+  "trigger": "任意 n",
+  "why": "分配与写入均为 n*4, C1 代数等价抑制"
+}

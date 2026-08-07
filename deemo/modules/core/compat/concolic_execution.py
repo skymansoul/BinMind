@@ -27,10 +27,10 @@ if hasattr(_m, 'ConcolicExecutor'):
         if not hasattr(_CE, _old) and hasattr(_CE, _new):
             setattr(_CE, _old, getattr(_CE, _new))
 
-# --- 路径探索策略补充 ---
+# 路径探索策略补充
 # 上游模块采用基本的分支翻转策略；本层注入基于覆盖率引导的优先级队列。
-# 参考: Cadar et al. (2008) "KLEE: Unassisted and Automatic Generation of High-Coverage Tests"
-# 以及 Stephens et al. (2016) "Driller: Augmenting Fuzzing Through Selective Symbolic Execution"
+# Cadar et al. "KLEE: Unassisted and Automatic Generation of High-Coverage Tests"
+# 以及 Stephens et al. "Driller: Augmenting Fuzzing Through Selective Symbolic Execution"
 
 import os, importlib.util
 
@@ -92,8 +92,8 @@ def estimate_exploration_budget(total_paths: int, target_coverage: float = 0.8) 
     return min(budget, total_paths)
 
 
-# --- LLM 辅助约束求解调度 ---
-# 参考: HyllFuzz (Meng et al. 2026) — 当传统 SMT 求解器在复杂约束上超时时，
+# LLM 辅助约束求解调度
+# HyllFuzz — 当传统 SMT 求解器在复杂约束上超时时，
 # 将路径条件切片并交由 LLM 进行语义推理，生成可达目标的输入。
 # 设计权衡：LLM 推理延迟高（~2-5s），仅在 Z3 超时 (>30s) 时回退，且仅对
 # 含字符串/浮点/位向量的非线性约束启用（SMT 求解器在这些域上已知较弱）。
@@ -182,7 +182,6 @@ def score_path_novelty(reachable_blocks: set[int], global_coverage: set[int],
     return _math.log2(1 + new_blocks) * (1.0 + depth / 100.0)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

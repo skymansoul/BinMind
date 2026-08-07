@@ -12,7 +12,7 @@ from ..src.ebpf_common import EBNPF_INSN_SIZE, insn_unpack
 from ..src.ebpf_analyzer import EBPFAnalyzer, analyze_ebpf, disassemble_ebpf
 
 
-# ── eBPF字节码辅助构造 ──
+# eBPF字节码辅助构造
 
 # 保留——手写eBPF指令构造器，后续用于指令fuzzing
 # def _gen_alu64_insn(dst, src, op, imm=0):
@@ -30,7 +30,7 @@ def _make_simple_prog(insns):
         buf += _pack_insn(op, d, s, o, i)
     return buf
 
-# ─── 字节码测试夹具 ───
+# 字节码测试夹具
 
 SIMPLE_XDP_PROG = _make_simple_prog([
     # mov r6, r1 (保存上下文)
@@ -63,7 +63,7 @@ LOOP_PROG = _make_simple_prog([
 ARSH_OR_PROG = _make_simple_prog([
     # mov r0, r1
     (0xbf, 0, 1, 0, 0),
-    # arsh r0, 4 (CVE-2026-31413特征模式)
+    # arsh r0, 4
     (0xcf, 0, 0, 0, 4),
     # or r0, r2 (ARSH后污染OR)
     (0x4f, 0, 2, 0, 0),

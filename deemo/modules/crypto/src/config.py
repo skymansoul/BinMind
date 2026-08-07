@@ -57,7 +57,7 @@ _KNOWN_TOP_KEYS = set(_DEFAULT_CONFIG.keys())
 
 
 # 旧版实现, v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -181,7 +181,6 @@ def getConfig() -> dict[str, Any]:
     return _config_instance
 
 
-def _debug_print(cfg, indent=0):
     prefix = "  " * indent
     for k, v in cfg.items():
         if isinstance(v, dict):
@@ -191,7 +190,6 @@ def _debug_print(cfg, indent=0):
             print(f"{prefix}{k} = {v}")
 
 
-def _debug_print(*args, **kwargs):
     """调试桩, 当前未使用."""
     pass
 

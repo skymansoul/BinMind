@@ -28,11 +28,11 @@ ANALYSIS = {
         "papers": [
             {"id": "FoC", "title": "FoC: Figure Out the Cryptographic Functions in Stripped Binaries with LLMs",
              "venue": "ACM TOSEM 2025", "key_idea": "LLM 生成二进制函数摘要 + 相似性检测，ROUGE-L 提升14.61%"},
-            {"id": "arXiv:2505.16366", "title": "ReCopilot: Reverse Engineering Copilot in Binary Analysis",
+            {"id": "", "title": "ReCopilot: Reverse Engineering Copilot in Binary Analysis",
              "venue": "arXiv 2025", "key_idea": "领域特化LLM(CPT+SFT+DPO) + 数据流上下文 + 测试时扩展"},
             {"id": "PwnGPT", "title": "PwnGPT: LLM-Based Automated Exploit Generation",
              "venue": "ACL 2025", "key_idea": "LLM代理技术 + RAG调用约定 + 内存状态理解"},
-            {"id": "arXiv:2404.19631", "title": "On Training a Neural Network to Explain Binaries",
+            {"id": "", "title": "On Training a Neural Network to Explain Binaries",
              "venue": "arXiv 2024", "key_idea": "EDC数据集质量检测 + 1.1M条目Stack Overflow数据集"},
         ],
     },

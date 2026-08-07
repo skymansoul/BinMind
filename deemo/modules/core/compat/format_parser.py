@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """printf 格式符严格状态机解析器 — 替代子串匹配, 逐字符解析格式说明符.
 
 printf 格式: %[flags][width][.precision][length]conversion

@@ -7,7 +7,7 @@ from collections import Counter
 class VulnSignatureScanner:
     """15+ built- 漏洞 签名s CVE/CWE 引用s, multi-method detection"""
 
-    # ---- 初始化: 15+ CVE级漏洞签名库 ----
+# 初始化: 15+ CVE级漏洞签名库
 
     def __init__(self):
         self._signatures = [
@@ -203,7 +203,7 @@ class VulnSignatureScanner:
             },
         ]
 
-    # ---- 检测方法1: API序列匹配 ----
+# 检测方法1: API序列匹配
 
     def _scan_api_sequence(self, imports: Dict[str, List[str]], signatures: List[Dict]) -> List[Dict]:
         _found = []
@@ -289,7 +289,7 @@ class VulnSignatureScanner:
 
         return _found
 
-    # ===== 检测方法3: 字符串模式匹配 =====
+# 检测方法3: 字符串模式匹配
 
     def _scan_string_patterns(self, strings: List[str], signatures: List[Dict]) -> List[Dict]:
         _found = []
@@ -332,7 +332,7 @@ class VulnSignatureScanner:
 
         return _found
 
-    # ---- 检测方法4: import+string组合 ----
+# 检测方法4: import+string组合
 
     def _scan_import_string_combo(self, imports: dict, strings: List[str],
                                    signatures: List[Dict]) -> List[Dict]:

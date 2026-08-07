@@ -80,7 +80,7 @@ class MemoryForensicsToolkit:
         else:
             self._kernel_base = 0
 
-    # ---- platform detection ----
+# platform detection
 
     @staticmethod
     def detect_platform(data: bytes) -> str:
@@ -97,7 +97,7 @@ class MemoryForensicsToolkit:
             return "linux"
         return "unknown"
 
-    # ---- Windows process enumeration ----
+# Windows process enumeration
 
     def parse_windows_processes(self, data: Optional[bytes] = None) -> List[Process]:
         """EPROCESS chain walk: PsActiveProcessHead -> ActiveProcessLinks"""
@@ -192,7 +192,7 @@ class MemoryForensicsToolkit:
                 or name in ("System", "Idle")
                 or any(name.startswith(p) for p in ("svchost", "csrss", "winlogon", "lsass")))
 
-    # ---- Linux (LiME) process enumeration ----
+# Linux (LiME) process enumeration
 
     def parse_linux_processes(self, data: Optional[bytes] = None) -> List[Process]:
         """Walk task_struct list via LiME header"""
@@ -236,7 +236,7 @@ class MemoryForensicsToolkit:
             i += (0x400 if found else 1)
         return procs
 
-    # ---- Injection detection ----
+# Injection detection
 
     def detect_injection(self, data: Optional[bytes] = None,
                          processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
@@ -298,7 +298,7 @@ class MemoryForensicsToolkit:
                 continue
         return sections
 
-    # ---- Rootkit detection ----
+# Rootkit detection
 
     def hunt_rootkits(self, data: Optional[bytes] = None,
                       processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
@@ -400,7 +400,7 @@ class MemoryForensicsToolkit:
                 })
         return findings
 
-    # ---- Hidden module scanning ----
+# Hidden module scanning
 
     def scan_hidden_modules(self, data: Optional[bytes] = None) -> List[Dict[str, Any]]:
         """比较 驱动 strings against PE export names 查找 unlinked modules"""
@@ -439,7 +439,7 @@ class MemoryForensicsToolkit:
             })
         return findings
 
-    # ---- Primitive 辅助函数 ----
+# Primitive 辅助函数
 
     def _read_ptr(self, data: bytes, addr: int) -> int:
         if addr < 0 or addr + 8 > len(data):
@@ -495,7 +495,7 @@ class MemoryForensicsToolkit:
         counts = Counter(data_section)
         return -sum((c / n) * math.log2(c / n) for c in counts.values())
 
-    # ---- Unified analysis ----
+# Unified analysis
 
     def analyze(self) -> Dict[str, Any]:
         processes = (

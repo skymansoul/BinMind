@@ -111,10 +111,10 @@ def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
         except yaml.YAMLError as exc:
             raise ValueError(f"Failed to parse YAML config: {exc}") from exc
 
-    # Step 1: env var substitution
+    # env var substitution
     config = _substitute_recursive(config)
 
-    # Step 2: DEOBF_* overrides
+    # DEOBF_* overrides
     for env_key, env_val in os.environ.items():
         if not env_key.startswith(env_prefix):
             continue

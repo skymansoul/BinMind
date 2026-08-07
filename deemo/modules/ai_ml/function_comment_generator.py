@@ -80,7 +80,5 @@ def generate_function_comments(binary_path: str) -> Dict[str, Any]:
     return {'success': True, 'comments': [{'func': c.func_name, 'addr': hex(c.address), 'summary': c.summary, 'risk_tags': c.risk_tags} for c in gen.generate()]}
 
 
-def _debug_print(*args, **kwargs):
-    # Internal debug output 桩
     pass  # 调试桩，当前未使用
 

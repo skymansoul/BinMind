@@ -5,7 +5,7 @@
 #   对非文本二进制格式 (protobuf, ASN.1, 自定义协议) 几乎无效。
 #   dictionary_builder.py 提取的是孤立 token, 不含字段边界或角色信息。
 #
-#   现有执行驱动方案 (ProRE 2025, Mimid 2019) 需要:
+#   现有执行驱动方案 需要:
 #     a) 完整的执行切片嵌入 (ProRE) — 依赖大型语言模型
 #     b) 递归下降解析器的控制流假设 (Mimid) — 对非递归解析器失效
 #   本模块不需要以上任一前提。
@@ -19,16 +19,16 @@
 #      type(影响switch分发) | checksum(影响多种比较) | data(仅传播不比较)
 #
 # 为什么用污点而非嵌入:
-#   - 污点给出精确的因果关系 (哪一字节触发哪一分支), 而非概率性相似
-#   - 与 subreg_taint.py 无缝集成, 复用其寄存器别名建模
-#   - 字段边界检测的 F1 在自定义协议上可达 0.82 (无需任何先验格式知识)
+# 污点给出精确的因果关系 (哪一字节触发哪一分支), 而非概率性相似
+# 与 subreg_taint.py 无缝集成, 复用其寄存器别名建模
+# 字段边界检测的 F1 在自定义协议上可达 0.82 (无需任何先验格式知识)
 #
-# 参考文献:
-#   ProRE (Huang et al. 2025) — 执行切片嵌入做协议字段恢复;
+# 文献:
+#   ProRE — 执行切片嵌入做协议字段恢复;
 #     本项目取其"执行驱动"思想, 以污点替代嵌入
-#   Mimid (Gopinath et al. 2019) — 控制流驱动的语法推断;
+#   Mimid — 控制流驱动的语法推断;
 #     本项目取其"输入字节→控制流位置"映射, 但以污点替代控制流追踪
-#   Tupni (Cui et al. CCS 2007) — 基于污点的协议逆向;
+#   Tupni — 基于污点的协议逆向;
 #     本项目取其字段角色分类, 但扩展到任意二进制格式
 
 from __future__ import annotations
@@ -158,7 +158,7 @@ class TaintFieldSegmenter:
         """主入口: 从分支影响追踪器分割输入结构"""
         consumers = tracker.all_consumers
 
-        # Step 1: 构建逐字节的控制流影响向量
+        # 构建逐字节的控制流影响向量
         byte_vectors: Dict[int, Set[int]] = {}
         for off in range(input_size):
             # 收集该字节偏移影响的所有分支地址
@@ -168,18 +168,18 @@ class TaintFieldSegmenter:
                     affected_branches.add(addr)
             byte_vectors[off] = affected_branches
 
-        # Step 2: 基于影响向量的 Jaccard 相似度做层次聚类
+        # 基于影响向量的 Jaccard 相似度做层次聚类
         clusters = self._hierarchical_cluster(byte_vectors, input_size)
 
-        # Step 3: 将连续字节的聚类结果合并为字段
+        # 将连续字节的聚类结果合并为字段
         fields = self._clusters_to_fields(clusters, byte_vectors, input_size)
 
-        # Step 4: 推断每个字段的角色
+        # 推断每个字段的角色
         for field in fields:
             field.role, field.confidence = self._infer_role(
                 field, byte_vectors, tracker)
 
-        # Step 5: 处理未分配的间隙 → PADDING
+        # 处理未分配的间隙 → PADDING
         fields = self._fill_gaps(fields, input_size)
 
         confidence = self._overall_confidence(fields, input_size)

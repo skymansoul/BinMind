@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-# ── AntiAnalysis ──
+# AntiAnalysis
 
 
 class AntiAnalysis:
@@ -272,7 +272,7 @@ class AntiAnalysis:
         return False
 
 
-# ── AntiVMBypass ──
+# AntiVMBypass
 
 
 class AntiVMBypass:

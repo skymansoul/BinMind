@@ -17,11 +17,11 @@
 #   3. 增量重分配: 任务到达/完成时仅更新受影响的行列，不完全重算
 #   4. 与 LyapunovCarbonGate 联动: 碳成本权重由虚拟队列动态调节
 #
-# 与 Federated Sinkhorn (arXiv:2502.07021) 的区别:
+# 与 Federated Sinkhorn 的区别:
 #   该文处理隐私保护的联邦 OT。本模块将 OT 应用于调度分配，
 #   且增加稀疏加速和碳感知权重，问题域不同。
 #
-# 与 Temporally Flexible Transport (arXiv:2602.14652) 的区别:
+# 与 Temporally Flexible Transport 的区别:
 #   该文处理带时间窗的网络流调度。本模块面向离散任务→机器的
 #   一次性分配问题，使用标准 Sinkhorn 而非图结构 Schrödinger-Fortet。
 

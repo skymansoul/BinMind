@@ -1,0 +1,8 @@
+{
+  "sample": "v03_struct_ob1",
+  "cve": "GENERIC-ob1",
+  "mode": "struct_idx",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "i<=n 写入 n+1 个元素, 分配 n 个 → 结构越界"
+}

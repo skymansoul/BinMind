@@ -20,7 +20,6 @@ __tr = logging.getLogger(__name__)
 from ai_ml.src.ml.clap_scorer import _get_contrastive_scorer
 
 
-# ===========================================================================
 class ModelType:
     LIGHT = "light"
     STANDARD = "standard"
@@ -86,13 +85,11 @@ class ModelSelectionResult:
         self.fallback_chain = fallback_chain if fallback_chain is not None else []
 
 
-# ===========================================================================
 # 复杂度估算器
-# ===========================================================================
 class ComplexityEstimator:
     """抽象复杂度估算 — 子类须实现estimate()。"""
     def estimate(self, **kwargs):
-        pass
+        raise NotImplementedError
 
 
 class FunctionComplexityEstimator(ComplexityEstimator):
@@ -120,9 +117,7 @@ class AnalysisComplexityEstimator(ComplexityEstimator):
         return min(max(score, 0), 1.0)
 
 
-# ===========================================================================
 # 性能追踪：EMA 平滑历史得分--权重更偏向近期观测，抗 concept drift
-# ===========================================================================
 
 # LEGACY: 旧版SimpleTracker--2023年使用的滑动窗口实现，2024Q2被EMA替代
 # class SimplePerformanceTracker:
@@ -190,16 +185,13 @@ class EMAPerformanceTracker:
                 self._ema_counts.pop(model_name, None)
 
 
-# ===========================================================================
 # 模型选择器接口
-# ===========================================================================
 class ModelSelector:
     """模型选择策略接口 — 重写select_model()。"""
     def select_model(self, task_features):
-        pass
+        raise NotImplementedError
 
 
-# ===========================================================================
 class CostBasedModelSelector(ModelSelector):
     # 三轴加权评分：CLAP 对比对齐 0.45 + 延迟 0.30 + 成本 0.25
     # 2026-07-30: 用 CLAP contrastive alignment 替代原有的基于 model_type 的离散能力评分，
@@ -353,7 +345,6 @@ class CostBasedModelSelector(ModelSelector):
             ci += 1
 
 
-# ===========================================================================
 class PerformanceBasedModelSelector(ModelSelector):
     # 2026-07-18: Thompson采样替代argmax — Beta posterior per model reduces regret.
     # 2026-07-30: EMA替代滑动窗口更新Beta先验；
@@ -471,7 +462,6 @@ class PerformanceBasedModelSelector(ModelSelector):
             fallback_chain=fallback_chain or [])
 
 
-# ===========================================================================
 class UCBModelSelector(ModelSelector):
     """Upper Confidence Bound 探索策略——在历史平均分上加探索奖励。
     适用场景：模型池频繁变动（新模型上线/旧模型退役），需要快速评估未知模型。
@@ -563,12 +553,10 @@ class UCBModelSelector(ModelSelector):
             reason="Selected via UCB exploration with EMA + CLAP alignment")
 
 
-# ===========================================================================
 # 自适应 ε‑greedy 探索策略
 # 前期高ε鼓励探索；随试验数增多，ε 沿 sigmoid 曲线退火到
 # 最低值 0.02，探索→利用平滑过渡。与UCB/Thompson互补
 # --ε‑greedy 实现简单、算力开销极低，适合作为 baseline 探测新部署模型。
-# ===========================================================================
 class EpsilonGreedyModelSelector(ModelSelector):
     """自适应 ε‑greedy：sigmoid 退火 ε。
 
@@ -676,7 +664,6 @@ class EpsilonGreedyModelSelector(ModelSelector):
             reason=f"Selected via ε‑greedy (ε={self._annealed_epsilon(max(len(self.m_models),1)):.4f})")
 
 
-# ===========================================================================
 class AdaptiveModelSelector:
     """
     Adaptive model selection orchestrator.
@@ -802,7 +789,6 @@ class AdaptiveModelSelector:
         return self.m_models
 
 
-# ===========================================================================
 class CostManager:
     """Per-session API cost ledger — daily budget cap, per-model breakdown, sliding-window history."""
     def __init__(self, daily_budget=100.0):

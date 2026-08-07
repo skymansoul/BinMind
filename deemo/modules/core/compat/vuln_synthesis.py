@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 多检测器结果融合与去重 — 将 heap/uaf/format_string/stack_overflow 四个
 检测器的独立输出合并为统一的漏洞报告, 去除跨检测器重复, 按置信度排序.

@@ -7,17 +7,17 @@
 #   多个候选补丁, 按最小性 (代码改动量) 和语义保持度排序
 # 技术效果: 对CWE-787/125/416三类漏洞的Top-3候选包含正确补丁
 #   的比例为61% (Juliet测试套件), 虚假补丁率比纯LLM方法低37%
-# 参考:
-#   ESBMC-AI (AST 2025) — LLM+BMC循环补丁生成与验证,
+#
+#   ESBMC-AI — LLM+BMC循环补丁生成与验证,
 #     本项目借鉴其detect-fix-verify循环但使用模板替代LLM
-#   Unified AI+Formal Reasoning (ICMNWC 2025) — 96.2%检测准确率,
+#   Unified AI+Formal Reasoning — 96.2%检测准确率,
 #     本项目借鉴其语义约束提取但针对安全漏洞特化
-#   Zemín et al. (ACM TOSEM 2025) — 测试驱动补丁接受的虚假修复问题
-#   SYMRADAR (ICSE 2026) — PoC中心化的有界验证
+#   Zemín et al. — 测试驱动补丁接受的虚假修复问题
+#   SYMRADAR — PoC中心化的有界验证
 # 设计边界:
 #   - 仅覆盖C/C++内存安全类漏洞 (CWE-787/125/416/476/190)
-#   - 不执行实际编译——生成源码级补丁, 由外部BMC工具验证
-#   - 约束提取基于正则+简单AST解析, 不依赖完整编译器前端
+# 不执行实际编译——生成源码级补丁, 由外部BMC工具验证
+# 约束提取基于正则+简单AST解析, 不依赖完整编译器前端
 from __future__ import annotations
 import hashlib
 import logging

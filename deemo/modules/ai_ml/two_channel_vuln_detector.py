@@ -17,7 +17,7 @@ _TRACE_FLAGS = 0b1101_0010
 
 _log = logging.getLogger(__name__)
 
-# ---- 纯python向量运算 ----
+# 纯python向量运算
 
 # 保留--后面可能用
 # def _legacy_handler(data):
@@ -203,7 +203,5 @@ def create_two_channel_detector(semantic_dim: int = 128,
     return TwoChannelVulnDetector(semantic_dim=semantic_dim, structural_dim=structural_dim)
 
 
-def _debug_print(*args, **kwargs):
-    # Internal debug output 桩
     pass  # 调试桩，当前未使用
 

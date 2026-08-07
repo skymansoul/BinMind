@@ -76,9 +76,7 @@ class ParameterCalibrator:
     def __init__(self, state: Optional[CalibrationState] = None):
         self._state = state or CalibrationState()
 
-    # ------------------------------------------------------------------
     # Gain Matrix 校准
-    # ------------------------------------------------------------------
 
     def observe_gain(
         self, action_id: str, intent: IntentCategory,
@@ -110,9 +108,7 @@ class ParameterCalibrator:
             return 0.0
         return round(1.0 - min(0.95, est.std), 4)
 
-    # ------------------------------------------------------------------
     # Entropy Profile 校准
-    # ------------------------------------------------------------------
 
     def observe_entropy(
         self, intent: IntentCategory,
@@ -161,9 +157,7 @@ class ParameterCalibrator:
         lam = min(0.7, est.n_updates / 25.0)
         return round((1 - lam) * static_decay + lam * est.mean, 4)
 
-    # ------------------------------------------------------------------
     # 持久化
-    # ------------------------------------------------------------------
 
     def save(self, filepath: str) -> None:
         """将校准状态导出为 JSON。"""
@@ -218,9 +212,7 @@ class ParameterCalibrator:
         self._state.last_persist_time = time.time()
         return True
 
-    # ------------------------------------------------------------------
     # 查询
-    # ------------------------------------------------------------------
 
     def convergence_report(self) -> Dict[str, Any]:
         """返回当前校准的收敛状态报告。"""

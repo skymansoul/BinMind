@@ -64,12 +64,12 @@ class ConstantTimeVerifier:
         """
         mnem = mnemonic.lower()
 
-        # === 违规检测 ===
+# 违规检测
         violation = self._check_for_violation(addr, mnem, operands)
         if violation:
             self._violations.append(violation)
 
-        # === 污点传播 ===
+# 污点传播
         self._propagate_taint(addr, mnem, operands)
 
         return violation

@@ -14,12 +14,11 @@
     G2 (canary检测): 4种编译器插入canary的模式 → 通用canary识别
     G3 (栈帧重建): 从序言+函数体引用推断局部变量布局 → 通用缓冲区定位
 
-参考:
-  - Schneider et al. (USENIX Security 2024): "Breaking Bad: How Compilers Break
+  - Schneider et al.: "Breaking Bad: How Compilers Break
     Constant-Time Implementations" — 不同编译器对安全代码的破坏模式。
-  - Di Federico et al. (NDSS 2017): "How the ELF Ruined Christmas" —
+  - Di Federico et al.: "How the ELF Ruined Christmas" —
     二进制分析中栈帧重建的挑战和启发式方法。
-  - Geimer & Maurice (2025): "Fun with Flags" — GCC/Clang优化pass的CT破坏。
+  - Geimer & Maurice: "Fun with Flags" — GCC/Clang优化pass的CT破坏。
 
 边界条件:
   - 无法处理手写汇编(无标准序言) → 标记为UNKNOWN_BY_CUSTOM_ASM。
@@ -27,19 +26,15 @@
   - 异常处理栈帧(Windows SEH)的结构与标准帧不同 → 单独处理。
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple
-
 
 class CompilerFamily(Enum):
     GCC = auto()
     CLANG = auto()
     MSVC = auto()
     UNKNOWN = auto()
-
 
 class OptLevel(Enum):
     O0 = auto()
@@ -48,7 +43,6 @@ class OptLevel(Enum):
     O3 = auto()
     Os = auto()     # 尺寸优化
     UNKNOWN = auto()
-
 
 @dataclass
 class StackFrameInfo:
@@ -64,8 +58,7 @@ class StackFrameInfo:
     buffer_candidates: List[Dict[str, Any]] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
 
-
-# ── 7种常见序言模式(字节级匹配) ──
+# 7种常见序言模式(字节级匹配)
 
 _PROLOGUE_SIGNATURES: List[Tuple[bytes, CompilerFamily, OptLevel, str]] = [
     # (序言字节序列, 编译器, 优化级别, 描述)
@@ -92,8 +85,7 @@ _PROLOGUE_SIGNATURES: List[Tuple[bytes, CompilerFamily, OptLevel, str]] = [
      'GCC/Clang -Os callee-saved push chain'),
 ]
 
-
-# ── 4种Canary插入模式 ──
+# 4种Canary插入模式
 
 _CANARY_PATTERNS: List[Tuple[bytes, str, int]] = [
     # (特征字节序列, 描述, canary距离rbp的偏移估计)
@@ -105,8 +97,7 @@ _CANARY_PATTERNS: List[Tuple[bytes, str, int]] = [
     # (当前仅x86-64, ARM模式预留)
 ]
 
-
-# ── 序言解析 ──
+# 序言解析
 
 def classify_stack_frame(func_bytes: bytes, func_offset: int = 0
                           ) -> StackFrameInfo:
@@ -158,7 +149,6 @@ def classify_stack_frame(func_bytes: bytes, func_offset: int = 0
 
     return info
 
-
 def _infer_frame_size(prologue: bytes, compiler: CompilerFamily) -> int:
     """
     从序言推断栈帧大小。
@@ -184,7 +174,6 @@ def _infer_frame_size(prologue: bytes, compiler: CompilerFamily) -> int:
 
     return 0
 
-
 def _count_saved_regs(prologue: bytes, compiler: CompilerFamily) -> int:
     """统计序言中保存的寄存器数量。"""
     count = 0
@@ -201,8 +190,7 @@ def _count_saved_regs(prologue: bytes, compiler: CompilerFamily) -> int:
             count += 1
     return count
 
-
-# ── 通用缓冲区偏移估计 ──
+# 通用缓冲区偏移估计
 
 def estimate_buffer_offset(frame_info: StackFrameInfo,
                             target_func: str = "",

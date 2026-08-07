@@ -1,8 +1,8 @@
 """
 Bandit 采集器路由器 (BCR) —— 基于 Thompson 采样的动态采集器选择。
 
-LLM Bandit (arXiv:2502.02743) 将 LLM 模型选择建模为多目标 MAB,
-MixLLM (arXiv:2502.18482) 使用上下文 Bandit 联合优化质量/成本/延迟。
+LLM Bandit 将 LLM 模型选择建模为多目标 MAB,
+MixLLM 使用上下文 Bandit 联合优化质量/成本/延迟。
 本模块将同一框架适配到安全采集器选择: 每个采集器是一个 arm,
 奖励 = 采集结果质量, 成本 = 执行延迟 + 资源消耗。
 

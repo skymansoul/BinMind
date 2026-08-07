@@ -9,7 +9,7 @@ from modules.platform.smart_contract.src.parser.evm_parser import (
     EVMOp,
 )
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 # 十六进制: PUSH1 0x01, PUSH1 0x02, ADD, SSTORE, PUSH1 0x03, SSTORE, STOP
 _SIMPLE_BYTECODE = "60016002015560035500"
@@ -30,7 +30,7 @@ _CALLDATALOAD_BYTECODE = "60016002355500"
 class TestEVMBytecodeParser:
     """EVMBytecodeParser测试套件：解析、基本块构建、选择器提取。"""
 
-    # ---- 十六进制解析 ----
+# 十六进制解析
 
     def test_parse_hex_without_prefix(self):
         """解析无0x前缀的十六进制字符串，返回操作码列表。"""
@@ -59,7 +59,7 @@ class TestEVMBytecodeParser:
         assert len(parser.bytecode) > 0
         assert parser.bytecode[2] == 0x01  # ADD操作码位于位置2
 
-    # ---- 操作码识别 ----
+# 操作码识别
 
     def test_push_data_extraction(self):
         """PUSH1应正确提取1字节立即数。"""
@@ -109,7 +109,7 @@ class TestEVMBytecodeParser:
         assert add_op is not None
         assert add_op.name == "ADD"
 
-    # ---- 基本块构建 ----
+# 基本块构建
 
     def test_build_basic_blocks(self):
         """构建基本块应在JUMPDEST和终止指令处分割。"""
@@ -140,7 +140,7 @@ class TestEVMBytecodeParser:
         for i in range(1, len(sorted_blocks)):
             assert sorted_blocks[i][0] >= sorted_blocks[i - 1][0]
 
-    # ---- 函数选择器 ----
+# 函数选择器
 
     def test_find_function_selectors(self):
         """find_function_selectors应从分发逻辑中提取4字节选择器。"""
@@ -157,7 +157,7 @@ class TestEVMBytecodeParser:
         offset = parser.find_dispatch_offset()
         assert offset is not None
 
-    # ---- 边界情况 ----
+# 边界情况
 
     def test_empty_bytecode(self):
         """空字节码应产生空操作码列表。"""
@@ -182,7 +182,7 @@ class TestEVMBytecodeParser:
         parser.parse_hex(_BLOCK_BYTECODE)  # 以JUMPDEST（0x5b）开头
         assert len(parser.jumpdest_positions) > 0
 
-    # ---- CFG边 ----
+# CFG边
 
     def test_build_cfg_edges_with_simple_blocks(self):
         """简单字节码上构建CFG边不应崩溃。"""
@@ -199,7 +199,7 @@ class TestEVMBytecodeParser:
         r2 = parser.build_cfg_edges()
         assert r1 is r2
 
-    # ---- 支配节点与循环头 ----
+# 支配节点与循环头
 
     def test_compute_dominators(self):
         """compute_dominators应返回以块起始为键的字典。"""

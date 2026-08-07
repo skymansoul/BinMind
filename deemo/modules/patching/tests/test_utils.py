@@ -1,4 +1,4 @@
-"""Utils 测试 (2026-08-02 重构)。
+"""Utils 测试。
 
 覆盖：bubble_sort、hex_to_bytes、find_pattern、safe_subprocess、
 jaccard_similarity、entropy_of、compute_checksum、detect_binary_format、
@@ -26,9 +26,7 @@ from src.utils import (
 )
 
 
-# ============================================================
 # bubble_sort —— 三份重复合并为统一 utils.bubble_sort
-# ============================================================
 class TestBubbleSort:
     """冒泡排序 —— O(n^2) 但小数组可行。保留以减少外部依赖。"""
 
@@ -56,9 +54,7 @@ class TestBubbleSort:
         assert r == [1, 2, 3, 4, 5]
 
 
-# ============================================================
 # hex 操作
-# ============================================================
 class TestHexOperations:
     """hex_to_bytes / bytes_to_hex —— 二进制补丁常用序列化格式。"""
 
@@ -83,9 +79,7 @@ class TestHexOperations:
         assert hex_to_bytes(bytes_to_hex(data)) == data
 
 
-# ============================================================
 # parse_hex —— 与 auto_root_cause._parse_hex 共享
-# ============================================================
 class TestParseHex:
     def test_hex_string(self):
         assert parse_hex("0x41") == 0x41
@@ -100,9 +94,7 @@ class TestParseHex:
         assert parse_hex("not_a_number") is None
 
 
-# ============================================================
 # find_pattern —— 字节级搜索，支持通配 mask
-# ============================================================
 class TestFindPattern:
     """find_pattern —— 二进制补丁定位核心。"""
 
@@ -129,9 +121,7 @@ class TestFindPattern:
         assert find_pattern(b'\x90', b'\x90\x90') == -1
 
 
-# ============================================================
 # compute_checksum —— 32-bit XOR 折叠
-# ============================================================
 class TestChecksum:
     def test_known_value(self):
         cs = compute_checksum(b'\x00\x00\x00\x01')
@@ -155,9 +145,7 @@ class TestChecksum:
         assert a != b2
 
 
-# ============================================================
 # detect_binary_format
-# ============================================================
 class TestBinaryFormat:
     def test_elf_via_temp_file(self):
         # 创建最小 ELF header (4 字节魔数 + 填充)
@@ -194,9 +182,7 @@ class TestBinaryFormat:
         assert detect_binary_format("/nonexistent/file.bin") == "unknown"
 
 
-# ============================================================
 # jaccard_similarity
-# ============================================================
 class TestJaccard:
     def test_identical(self):
         assert jaccard_similarity([1, 2, 3], [1, 2, 3]) == 1.0
@@ -215,9 +201,7 @@ class TestJaccard:
         assert jaccard_similarity(None, [1, 2]) == 0.0
 
 
-# ============================================================
 # entropy_of
-# ============================================================
 class TestEntropy:
     def test_all_same(self):
         # 全相同字节 → 熵 ~0
@@ -238,9 +222,7 @@ class TestEntropy:
         assert entropy_of("hello world") > 0.0
 
 
-# ============================================================
 # safe_subprocess
-# ============================================================
 class TestSafeSubprocess:
     def test_echo(self):
         rc, out, err = safe_subprocess(["echo", "hello_test"], timeout=5)
@@ -259,9 +241,7 @@ class TestSafeSubprocess:
         assert rc == 42
 
 
-# ============================================================
 # generate_nop_slide
-# ============================================================
 class TestNopSlide:
     def test_x86_64(self):
         nops = generate_nop_slide(5, "x86_64")
@@ -282,9 +262,7 @@ class TestNopSlide:
         assert nops == b'\x00\x00\xa0\xe1\x90\x90'
 
 
-# ============================================================
 # align_address
-# ============================================================
 class TestAlignAddress:
     def test_already_aligned(self):
         assert align_address(0x1000, 16) == 0x1000
@@ -296,9 +274,7 @@ class TestAlignAddress:
         assert align_address(0x1003, 4) == 0x1000
 
 
-# ============================================================
 # retry_on_failure 装饰器
-# ============================================================
 class TestRetry:
     def test_success_first_try(self):
         call_count = [0]
@@ -340,9 +316,7 @@ class TestRetry:
         assert call_count[0] == 2
 
 
-# ============================================================
 # short_hash
-# ============================================================
 class TestShortHash:
     def test_string(self):
         h = short_hash("hello")
@@ -357,9 +331,7 @@ class TestShortHash:
         assert short_hash("hello") == short_hash("hello")
 
 
-# ============================================================
 # recieve (拼写错误包装)
-# ============================================================
 class TestRecieve:
     def test_match(self):
         m = recieve(r'\d+', "abc123def")

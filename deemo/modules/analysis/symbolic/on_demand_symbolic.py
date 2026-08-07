@@ -77,10 +77,8 @@ class AnalysisLevel:
     EXHAUSTIVE = "exhaustive"
 
 
-# ---------------------------------------------------------------------------
 # CWE → 漏洞Type 映射 + 修复
 # 用于 VulnReportFormatter 生成带的报告
-# ---------------------------------------------------------------------------
 _VULN_CWE_MAP: Dict[VulnerabilityType, Dict[str, Any]] = {
     VulnerabilityType.BUFFER_OVERFLOW: {
         "cwe_id": "CWE-120",
@@ -203,13 +201,11 @@ class SymbolicResult:
     constraints: List
 
 
-# ===========================================================================
 # TriageQueue — 基于分数的优先级队列
 #
 # 内部使用 堆q，存储 (negated_score, insert_counter, candidate)
 # negated_score 使最大堆行为得以实现（heapq 默认最小堆）
 # insert_counter 作为 tie-breaker，保证插入顺序确定
-# ===========================================================================
 class TriageQueue:
     """Priority-ordered 队列 漏洞Candidates
     
@@ -320,12 +316,10 @@ class TriageQueue:
         return results
 
 
-# ===========================================================================
 # BatchAnalysis — 低置信候选批量符号执行
 #
 # 将 confidence 在 [0.3, 0.5] 区间的候选以 5 个一批分组
 # 所有路径汇总后进行单轮符号执行，摊销 angr 项目 setup 开销
-# ===========================================================================
 class BatchAnalysis:
     """Group low-confidence candidates (0.3-0.5) batches 5 运行
     a single 符号执行 covering code paths collectively
@@ -489,13 +483,11 @@ class BatchAnalysis:
         return all_results
 
 
-# ===========================================================================
 # VulnReportFormatter — 多格式漏洞报告生成
 #
 # 支持 JSON / Markdown / HTML 三种格式
 # 严重性着色和 CWE 映射来自 _VULN_CWE_MAP
 # HTML 报告内含嵌入式 CSS 用于独立渲染
-# ===========================================================================
 class VulnReportFormatter:
     """构造 JSON/Markdown/HTML 漏洞 报告 severity coloring
     code snippets, remediation suggestions per CWE mapping
@@ -510,9 +502,7 @@ class VulnReportFormatter:
     def __init__(self):
         self._cwe_map = _VULN_CWE_MAP
 
-    # ------------------------------------------------------------------
     # 公共 API
-    # ------------------------------------------------------------------
 
     def to_json(
         self,
@@ -602,9 +592,7 @@ class VulnReportFormatter:
         logger.info("VulnReportFormatter: wrote %s report to %s", fmt_lower, output_path)
         return output_path
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _build_report_dict(
         self,

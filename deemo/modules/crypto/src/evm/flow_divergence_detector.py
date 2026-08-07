@@ -1,5 +1,5 @@
-# 创建: 2025-08-15 08:22
-# 修改: 2025-08-15 — 存储变量流追踪 + CALL 前后分叉检测
+# 创建: 2026-06-18 08:22
+# 修改: 2026-06-18 — 存储变量流追踪 + CALL 前后分叉检测
 """
 流分叉分析重入检测器 — 多路径符号执行追踪存储变量流。
 
@@ -19,11 +19,11 @@
   后者做快速模式匹配 (高召回、低精度), 本模块做精确流分叉分析 (高精度),
   两者串联: 模式匹配初筛 → 流分叉确认 → 报告 exploitable reentrancy。
 
-ref: DivertScan (FSE 2025) — flow divergence + multiplex symbolic execution
+ref: DivertScan — flow divergence + multiplex symbolic execution
      for state-inconsistency bugs, 本项目简化为两阶段: 共享变量识别→分叉检测
-ref: Securify (CCS 2018) — Datalog-based compliance/ violation patterns,
+ref: Securify — Datalog-based compliance/ violation patterns,
      本项目取其"存储变量依赖图"概念但使用符号执行替代 Datalog
-ref: Oyente (Luu et al., CCS 2016) — 首个 EVM 符号执行重入检测器,
+ref: Oyente — 首个 EVM 符号执行重入检测器,
      本项目的流分叉分析补全了 Oyente 缺少的"exploitability 判定"
 """
 
@@ -71,7 +71,7 @@ class ReentrancyReport:
     constraint_summary: str = ''  # 可满足性约束的文本摘要
 
 
-# --- 存储变量流追踪 ---
+# 存储变量流追踪
 
 class StorageFlowTracer:
     """在 EVM 字节码执行 trace 上追踪存储变量的数据流。
@@ -136,7 +136,7 @@ class StorageFlowTracer:
         return self._accesses.get(slot, [])
 
 
-# --- 流分叉检测器 ---
+# 流分叉检测器
 
 class FlowDivergenceDetector:
     """检测存储变量流分叉——判定重入是否 exploitable。
@@ -244,7 +244,7 @@ class FlowDivergenceDetector:
         }
 
 
-# --- EVM trace 重放适配器 ---
+# EVM trace 重放适配器
 # 从 EVM 执行 trace (JSON 格式) 重放并填充 StorageFlowTracer。
 
 def replay_evm_trace(trace: list[dict],

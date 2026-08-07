@@ -9,24 +9,21 @@
 单线程吞吐约 2.7 GB/s。归一化分块将块大小变异系数从 1.0 压至 ~0.6。
 
 ref: "FastCDC: a Fast and Efficient Content-Defined Chunking Approach for
-     Data Deduplication" (USENIX ATC 2016) — Gear hash + 归一化分块策略
+     Data Deduplication" — Gear hash + 归一化分块策略
 ref: restic (github.com/restic/restic) — CDC 在备份系统中的工程实践，
      本项目借鉴其 chunker 接口设计，但替换为纯 Python 实现以消除 C 扩展依赖
 ref: "Content-Defined Merkle Trees for Efficient Container Image Storage"
      — CDC+Merkle 混合索引，本项目在 engine/merkle.py 中复现该思路
 """
 
-from __future__ import annotations
 
 import os
 import struct
 from typing import Iterator
 
 
-# ---------------------------------------------------------------------------
 # Gear 哈希查找表 — 256 个 64-bit 常量，由 SHA-256("parallel_deep_dev_cdc")
 # 的前 2048 字节派生。固定种子保证跨平台确定性。
-# ---------------------------------------------------------------------------
 _GEAR_TABLE: list[int] = [
     0xB0885E5C47E5D73F, 0x63B6D7F69C7A7D5B, 0xF4E855C4F3E91A2C, 0x2D8F3B1E6A4C5D79,
     0xA1C3E5F708192B4D, 0x5E6F7A8B9C0D1E2F, 0x3A4B5C6D7E8F9012, 0x1A2B3C4D5E6F7081,
@@ -73,10 +70,8 @@ def _gear_rolling_hash(hash_val: int, byte_val: int) -> int:
     return ((hash_val << 1) & 0xFFFFFFFFFFFFFFFF) + _GEAR_TABLE[byte_val & 0xFF]
 
 
-# ---------------------------------------------------------------------------
 # 归一化分块参数 — FastCDC 三段式：不切区 / 放松区 / 标准区 / 强制切
 # 源码文件通常 1KB~100KB，8KB 均值给出每文件 2-15 个块，粒度量适中。
-# ---------------------------------------------------------------------------
 CDC_MIN_CHUNK = 2048       # 2KB  — 低于此不切，避免碎片块
 CDC_AVG_CHUNK = 8192       # 8KB  — 期望块大小 = 2^13
 CDC_MAX_CHUNK = 32768      # 32KB — 超过此强制切，防止巨型块

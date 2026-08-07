@@ -1,5 +1,5 @@
-# 创建: 2025-08-17 15:08
-# 修改: 2025-08-17 — 贝叶斯融合: 字符串+代码惯用法+尾声模式
+# 创建: 2026-06-06 15:08
+# 修改: 2026-06-06 — 贝叶斯融合: 字符串+代码惯用法+尾声模式
 """
 编译器/工具链元数据指纹识别 — 从二进制 artifacts 推断编译器/版本/O级别。
 
@@ -23,9 +23,9 @@
   可利用性: 不同 O 级别的 gadget 可用性完全不同
   供应链: 确定二进制是否由声明的编译器版本构建
 
-ref: Rosenblum et al. (PLDI 2010) "Compiler Provenance" — 编译器指纹
+ref: Rosenblum et al. "Compiler Provenance" — 编译器指纹
      的原始框架, 本项目扩展到版本级 + O级别
-ref: Caliskan et al. (USENIX 2018) "When Coding Style Survives Compilation"
+ref: Caliskan et al. "When Coding Style Survives Compilation"
      — 代码风格→二进制残留, 本项目取其风格残留检测思路
 """
 
@@ -48,7 +48,7 @@ class CompilerFingerprint:
     evidence: list[str] = field(default_factory=list)
 
 
-# --- 字符串模式匹配 ---
+# 字符串模式匹配
 
 def detect_from_strings(strings: list[str]) -> dict:
     """从二进制字符串中检测编译器/版本。"""
@@ -92,7 +92,7 @@ def detect_from_strings(strings: list[str]) -> dict:
     return result
 
 
-# --- 代码惯用法检测 ---
+# 代码惯用法检测
 
 def detect_from_code_idioms(instructions: list[dict]) -> dict:
     """从代码惯用法推断编译器+优化级别。"""
@@ -133,7 +133,7 @@ def detect_from_code_idioms(instructions: list[dict]) -> dict:
     return result
 
 
-# --- 函数序言/尾声模式 ---
+# 函数序言/尾声模式
 
 def detect_from_epilogue_patterns(instructions: list[dict]) -> dict:
     """从函数尾声模式推断编译器。"""
@@ -162,7 +162,7 @@ def detect_from_epilogue_patterns(instructions: list[dict]) -> dict:
     return result
 
 
-# --- 综合判定 ---
+# 综合判定
 
 class CompilerFingerprinter:
     """贝叶斯融合多维特征→编译器身份+版本+O级别综合判定。"""

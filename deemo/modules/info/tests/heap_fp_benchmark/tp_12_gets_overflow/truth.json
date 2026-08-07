@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_12_gets_overflow",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "cve": "CVE-2008-1616 类 (gets 堆溢出)",
+  "expect_overflow": true,
+  "trigger": "stdin 输入超长串即溢出",
+  "why": "scanf %s 不限制读入长度, 堆缓冲仅 16 字节"
+}

@@ -6,7 +6,7 @@ import sys
 import pytest
 
 
-# ── 辅助：导入 CLI 模块 ─────────────────────────────────────────────
+# 辅助：导入 CLI 模块
 # cli.main() 接受 argv 列表参数，无需子进程即可测试。
 @pytest.fixture
 def cli_module():

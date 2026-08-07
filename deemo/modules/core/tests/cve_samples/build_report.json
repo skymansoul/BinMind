@@ -1,0 +1,110 @@
+{
+  "cc": "gcc",
+  "ok": 17,
+  "fail": 0,
+  "total": 17,
+  "results": [
+    {
+      "name": "CVE-2014-0160_heartbleed",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2014-0160_heartbleed\\CVE-2014-0160_heartbleed.exe"
+    },
+    {
+      "name": "CVE-2015-0235_ghost",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2015-0235_ghost\\CVE-2015-0235_ghost.exe"
+    },
+    {
+      "name": "CVE-2016-10190",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2016-10190\\CVE-2016-10190.exe"
+    },
+    {
+      "name": "CVE-2019-9213",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2019-9213\\CVE-2019-9213.exe"
+    },
+    {
+      "name": "CVE-2020-29370",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2020-29370\\CVE-2020-29370.exe"
+    },
+    {
+      "name": "CVE-2021-3156",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2021-3156\\CVE-2021-3156.exe"
+    },
+    {
+      "name": "CVE-2022-0185",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2022-0185\\CVE-2022-0185.exe"
+    },
+    {
+      "name": "CVE-2023-0461",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\CVE-2023-0461\\CVE-2023-0461.exe"
+    },
+    {
+      "name": "fp_alloc_align",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\fp_alloc_align\\fp_alloc_align.exe"
+    },
+    {
+      "name": "fp_internal_copy",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\fp_internal_copy\\fp_internal_copy.exe"
+    },
+    {
+      "name": "safe_01",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\safe_01\\safe_01.exe"
+    },
+    {
+      "name": "safe_02",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\safe_02\\safe_02.exe"
+    },
+    {
+      "name": "safe_heap",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\safe_heap\\safe_heap.exe"
+    },
+    {
+      "name": "vuln_int_overflow_heap",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\vuln_int_overflow_heap\\vuln_int_overflow_heap.exe"
+    },
+    {
+      "name": "vuln_multipath",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\vuln_multipath\\vuln_multipath.exe"
+    },
+    {
+      "name": "vuln_recursive",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\vuln_recursive\\vuln_recursive.exe"
+    },
+    {
+      "name": "vuln_strcat_chain",
+      "success": true,
+      "stderr": "",
+      "output": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\core\\tests\\cve_samples\\vuln_strcat_chain\\vuln_strcat_chain.exe"
+    }
+  ]
+}

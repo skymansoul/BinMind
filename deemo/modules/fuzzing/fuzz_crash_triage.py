@@ -1,10 +1,9 @@
 """崩溃分类去重与分析 -- 基于堆栈指纹/嵌入聚类/CASR 风格崩溃簇。
 
-参考:
-  GPTrace   (arXiv:2512.01609, ICSE 2026) -- LLM 嵌入 + HDBSCAN 聚类
-  dedupT    (arXiv:2508.19449)             -- Transformer 堆栈轨迹去重
-  ECHO      (Electronics 2025)             -- 调用栈 LCS 相似度 + Syzkaller集成
-  CASR      (2021, 持续更新至 2025)        -- 崩溃聚类与报告生成
+  GPTrace    -- LLM 嵌入 + HDBSCAN 聚类
+  dedupT                 -- Transformer 堆栈轨迹去重
+  ECHO             -- 调用栈 LCS 相似度 + Syzkaller集成
+  CASR              -- 崩溃聚类与报告生成
 
 本模块提供三个层次的去重策略:
   1. 轻量级: SHA-256 短哈希(已在内核 src/core.py 中实现)
@@ -24,7 +23,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class CrashReport:
     """单个崩溃的完整描述。
@@ -43,7 +41,6 @@ class CrashReport:
     classification: str = "unclassified"  # unclassified / exploitable / benign / double_free / ...
     exploitability_score: float = 0.0     # 0-1 可利用率估计
 
-
 @dataclass
 class CrashCluster:
     """一组被判定为同一根本原因的崩溃集合。"""
@@ -55,8 +52,7 @@ class CrashCluster:
     first_seen: float = 0.0
     last_seen: float = 0.0
 
-
-# ===== 调用栈规范化 =====
+# 调用栈规范化
 
 def normalize_stack_trace(raw_trace: str, max_depth: int = 16) -> List[str]:
     """从原始文本提取规范化调用栈帧。
@@ -65,7 +61,7 @@ def normalize_stack_trace(raw_trace: str, max_depth: int = 16) -> List[str]:
     - 移除非确定性部分 (ASLR偏移基址)
     - 截断至 max_depth 层
 
-    ECHO (2025) 指出调用栈前 8-12 帧通常足以区分不同根因,
+    ECHO 指出调用栈前 8-12 帧通常足以区分不同根因,
     过深的帧反而引入噪声。
     """
     if not raw_trace:
@@ -95,8 +91,7 @@ def normalize_stack_trace(raw_trace: str, max_depth: int = 16) -> List[str]:
 
     return frames[:max_depth]
 
-
-# ===== 调用栈指纹生成 =====
+# 调用栈指纹生成
 
 def stack_fingerprint(frames: List[str], top_n: int = 5) -> str:
     if not frames:
@@ -104,14 +99,13 @@ def stack_fingerprint(frames: List[str], top_n: int = 5) -> str:
     raw = "|".join(frames[:top_n])
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
-
-# ===== 调用栈相似度 (LCS + Jaccard) =====
+# 调用栈相似度 (LCS + Jaccard)
 
 def stack_similarity_lcs(frames_a: List[str], frames_b: List[str]) -> float:
     """两个调用栈的归一化 LCS 相似度。
 
     LCS 对帧顺序敏感, 比纯集合 Jaccard 更准确地反映执行路径相似性。
-    ECHO (2025) 使用类似方法, 配合调用栈深度权重取得+15.2%覆盖率提升。
+    ECHO 使用类似方法, 配合调用栈深度权重取得+15.2%覆盖率提升。
     """
     if not frames_a or not frames_b:
         return 0.0
@@ -131,7 +125,6 @@ def stack_similarity_lcs(frames_a: List[str], frames_b: List[str]) -> float:
     max_len = max(m, n)
     return lcs_len / max_len if max_len > 0 else 0.0
 
-
 def stack_similarity_jaccard(frames_a: List[str], frames_b: List[str]) -> float:
     """基于集合的 Jaccard 相似度 -- 忽略帧顺序, 关注函数名集合重叠。
 
@@ -144,8 +137,7 @@ def stack_similarity_jaccard(frames_a: List[str], frames_b: List[str]) -> float:
     intersection = set_a & set_b
     return len(intersection) / len(union) if union else 0.0
 
-
-# ===== 嵌入向量相似度 (GPTrace 风格) =====
+# 嵌入向量相似度 (GPTrace 风格)
 
 _EMBEDDING_MODEL_AVAILABLE = False
 try:
@@ -153,7 +145,6 @@ try:
     _EMBEDDING_MODEL_AVAILABLE = True
 except ImportError:
     pass
-
 
 class EmbeddingSimilarity:
     """基于文本嵌入的崩溃语义相似度 [GPTrace 2025]。
@@ -225,13 +216,11 @@ class EmbeddingSimilarity:
             parts.append("ASAN: " + c.asan_report[:256])
         return "\n".join(parts)
 
-
 def math_sqrt(x: float) -> float:
     import math as _m
     return _m.sqrt(x)
 
-
-# ===== 崩溃簇聚类引擎 =====
+# 崩溃簇聚类引擎
 
 class CrashClusteringEngine:
     """崩溃聚类主引擎。
@@ -359,8 +348,7 @@ class CrashClusteringEngine:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
 
-
-# ===== 可利用性启发式评分 =====
+# 可利用性启发式评分
 
 def estimate_exploitability(report: CrashReport) -> float:
     """基于崩溃特征的简单可利用率评分 (0.0-1.0)。
@@ -412,8 +400,7 @@ def estimate_exploitability(report: CrashReport) -> float:
 
     return min(1.0, max(0.0, score))
 
-
-# ===== 批处理工具 =====
+# 批处理工具
 
 def deduplicate_crashes(
     crash_dir: str,

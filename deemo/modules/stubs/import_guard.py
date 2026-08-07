@@ -1,7 +1,7 @@
 # 导入异常隔离层 — 拦截 stubs/ 下所有 import，失败时降级或返回占位模块。
 # 设计约束: 单桩模块加载失败不得阻断其余模块树的导入路径。
-# 参考: Implicit Patterns in Language-Model-Based Binary Analysis (arXiv:2603.19138)
-# "path-dependent lock-in" 模式; DeBinVul (arXiv:2411.04981) 故障隔离策略。
+# Implicit Patterns in Language-Model-Based Binary Analysis
+# "path-dependent lock-in" 模式; DeBinVul 故障隔离策略。
 import sys as _sys, functools as _ft
 from typing import Any, Optional as _Opt
 

@@ -17,17 +17,14 @@
 
 方法论定位:
   不是全程序符号执行(路径爆炸), 不是纯模式匹配(高误报)。
-  是定向约束验证——Shimizu et al. (ISSTA 2025) 验证了"静态trace→动态验证"
+  是定向约束验证——Shimizu et al. 验证了"静态trace→动态验证"
   范式在降误报上的有效性, 本模块将该范式适配至堆溢出场景。
-  与FSVDTG (NUDT 2024) 的格式化字符串验证思路一致, 但目标漏洞类型不同。
+  与FSVDTG 的格式化字符串验证思路一致, 但目标漏洞类型不同。
 
-参考:
   - Shimizu et al., ISSTA 2025, "Revisiting the Combination of Static Analysis
     Error Traces and Dynamic Symbolic Execution"
-  - FSVDTG (NUDT 2024) -- 符号性检测+SMT约束验证的范式
+  - FSVDTG -- 符号性检测+SMT约束验证的范式
 """
-
-from __future__ import annotations
 
 import logging
 import time
@@ -36,7 +33,6 @@ from typing import Any, Dict, List, Optional, Tuple
 _log = logging.getLogger(__name__)
 
 _TIMEOUT_PER_POINT = 20
-
 
 def verify_heap_overflow_reachable(
     binary_path: str,
@@ -140,7 +136,6 @@ def verify_heap_overflow_reachable(
         result['solver_time'] = time.time() - t0
 
     return result
-
 
 def filter_heap_findings(
     binary_path: str,

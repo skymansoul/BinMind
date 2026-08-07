@@ -21,9 +21,7 @@ _CACHE_SALT = "0x1a"  # 保留
 __dbg = _logging.getLogger(__name__)
 
 
-# ===========================================================================
 # 1. Register Allocation Pattern & Compiler Identification
-# ===========================================================================
 
 @dataclass
 class RegisterAllocationPattern:
@@ -219,9 +217,7 @@ class RegisterAllocationClassifier:
         return pattern
 
 
-# ===========================================================================
 # 2. Password Bypass Simulator
-# ===========================================================================
 
 class PasswordBypassSimulator:
     """Discovers password verification routines and simulates bypass strategies.
@@ -472,9 +468,7 @@ class PasswordBypassSimulator:
         return report
 
 
-# ===========================================================================
 # 3. Micro-Benchmark Framework
-# ===========================================================================
 
 @dataclass
 class BenchmarkResult:
@@ -704,9 +698,7 @@ class MicroBenchmarkFramework:
         return "\n".join(lines)
 
 
-# ===========================================================================
 # 4. Function Heatmap 构造器
-# ===========================================================================
 
 class FunctionHeatmapGenerator:
     """Generates execution heatmaps from strace/ltrace/objdump-style traces.
@@ -829,9 +821,7 @@ class FunctionHeatmapGenerator:
         return _json.dumps(self.m_heatmap_data, indent=2)
 
 
-# ===========================================================================
 # 5. CVE Pattern Learner
-# ===========================================================================
 
 class CVEPatternLearner:
     """Learns vulnerability patterns from CVE database entries and generates
@@ -1057,9 +1047,7 @@ class CVEPatternLearner:
         return results
 
 
-# ===========================================================================
 # 6. 智能 Stack Variable Analyzer
-# ===========================================================================
 
 class AIStackVariableAnalyzer:
     """Infers variable purpose and annotates pseudocode using pattern recognition."""
@@ -1238,9 +1226,7 @@ class AIStackVariableAnalyzer:
         return dict(self.m_var_types)
 
 
-# ===========================================================================
 # 7. LLM Function Guess Engine
-# ===========================================================================
 
 class LLMFunctionGuessEngine:
     """Guesses function purpose based on name, signature, and decompiled body
@@ -1378,9 +1364,7 @@ Respond with JSON: {{"category": "...", "confidence": 0.0, "reasoning": "..."}}"
         return results
 
 
-# ===========================================================================
 # 8. 智能 Decompiler Optimization Advisor
-# ===========================================================================
 
 class AIDecompilerOptimizationAdvisor:
     """Advises on decompiler settings and strategies for optimal output quality.

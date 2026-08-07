@@ -17,9 +17,9 @@ ARM64e增强安全分析。Apple Silicon PAC/BTI深度审计、微架构侧信�
 基础：
   - ARMv8.3-A/ARMv8.6-A指令集反汇编模式匹配
   - MTE（ARMv8.5-A）指令编码见ARM架构参考手册
-  - TikTag（IEEE S&P 2025）：推测执行泄露MTE标签的gadget
-  - NanoTag（IEEE S&P 2026）：Pixel 8字节级溢出检测特征
-  - Folded-Tag（C&S 2026）：XOR指针掩码加固
+  - TikTag：推测执行泄露MTE标签的gadget
+  - NanoTag：Pixel 8字节级溢出检测特征
+  - Folded-Tag：XOR指针掩码加固
 
 MTE指令编码：
   IRG  Xd, Xn{, Xm}     — 插入随机tag到指针
@@ -77,7 +77,7 @@ class SideChannelGadgetType(str, Enum):
     PSTATE_TIMING="pstate_timing"; LDAR_STLR_PAIR="ldar_stlr_pair"
     DMB_DSB_FENCE="dmb_dsb_fence"; SYSREG_ACCESS="sysreg_access"
 
-# ── MTE标签操作类型 ──
+# MTE标签操作类型
 class MTEOperationType(str, Enum):
     IRG="irg"           # 插入随机tag
     ADDG="addg"         # tag感知地址加法
@@ -152,7 +152,7 @@ _MTE_PATTERNS = [
     (re.compile(rb'\x20\x0c\x9b\xd7'), MTEOperationType.GMI, "GMI——插入tag(不含随机性)"),
 ]
 
-# ── TikTag（IEEE S&P 2025）推测执行MTE标签泄露gadget ──
+# TikTag推测执行MTE标签泄露gadget
 # LDG/LDGV后的条件分支暗示标签验证结果可通过推测执行泄露
 _TIKTAG_PATTERNS = [
     (re.compile(rb'(?:ldg|ldgv)\s.{0,32}(?:cbz|cbnz|tbz|tbnz)',re.DOTALL),
@@ -403,7 +403,7 @@ class Arm64eEnhancedAnalyzer:
                 gadgets.append(SideChannelGadget(m.start(),gtype,mnems[:8],regs_found,gtype in (SideChannelGadgetType.CSDB_COND_BRANCH,SideChannelGadgetType.DC_CVAU_EXCEPTION,SideChannelGadgetType.SYSREG_ACCESS),gtype==SideChannelGadgetType.DC_CVAU_EXCEPTION,tf,sev,s._func_for(m.start())))
         return gadgets
 
-    # ── ARM MTE指令检测与TikTag旁路gadget扫描 ──
+# ARM MTE指令检测与TikTag旁路gadget扫描
     def _detect_mte_operations(s)->List[MTEGadget]:
         """检测ARM MTE标签操作指令，审计内存标签使用模式。
 

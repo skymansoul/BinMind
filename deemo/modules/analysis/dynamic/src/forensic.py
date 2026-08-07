@@ -24,9 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # PE/ELF header parsing
-# ---------------------------------------------------------------------------
 
 @dataclass
 class BinaryHeaderInfo:
@@ -122,9 +120,7 @@ def _parse_elf_header(filepath: str) -> Optional[BinaryHeaderInfo]:
         return None
 
 
-# ---------------------------------------------------------------------------
 # File operation record
-# ---------------------------------------------------------------------------
 
 @dataclass
 class FileOperation:
@@ -138,9 +134,7 @@ class FileOperation:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-# ---------------------------------------------------------------------------
 # TimelineReconstructor
-# ---------------------------------------------------------------------------
 
 class TimelineReconstructor:
     """重建 timeline binary activity PE/ELF headers
@@ -167,7 +161,7 @@ class TimelineReconstructor:
         self._binary_headers: Dict[str, BinaryHeaderInfo] = {}
         self._op_counter: int = 0
 
-    # ---- Binary header analysis ----
+# Binary header analysis
 
     def extract_binary_info(self, filepath: str) -> Optional[BinaryHeaderInfo]:
         """提取 PE/ELF header information a file
@@ -187,7 +181,7 @@ class TimelineReconstructor:
             )
         return info
 
-    # ---- File operation recording ----
+# File operation recording
 
     def record_file_op(
         self,
@@ -212,7 +206,7 @@ class TimelineReconstructor:
         self._operations.append(op)
         return op
 
-    # ---- Timeline construction ----
+# Timeline construction
 
     def build_timeline(self) -> List[Dict[str, Any]]:
         """构建 a chronological timeline operations
@@ -256,7 +250,7 @@ class TimelineReconstructor:
         timeline.sort(key=lambda e: e["timestamp"])
         return timeline
 
-    # ---- Anomaly detection ----
+# Anomaly detection
 
     def detect_anomalies(self) -> List[Dict[str, Any]]:
         """检测 temporal anomalies timeline
@@ -326,7 +320,7 @@ class TimelineReconstructor:
 
         return anomalies
 
-    # ---- 报告 generation ----
+# 报告 generation
 
     def generate_report(self) -> Dict[str, Any]:
         """构造 a comprehensive forensic timeline 报告"""

@@ -7,13 +7,13 @@
 # HGAT Attention: 异构图注意力网络的注意力层实现
 #
 # 核心参考文献:
-#   [Baird & Moin 2026, FSE 2026, arXiv:2604.04977]
+#
 #     HGAT + SBOM异构图 + CVE对链接预测, 91.03% 准确率.
 #     本文直接实现其提出的异构图注意力机制: 对每种边类型 (r),
 #     使用独立的线性变换 W_r 将源/目标节点映射到注意力空间,
 #     然后计算注意力系数 α_{ij}^r = softmax(LeakyReLU(a_r^T [W_r h_i || W_r h_j])).
 #     最终聚合: h_i' = ||_{k=1}^K σ( Σ_{r} Σ_{j∈N_r(i)} α_{ij}^{r,k} W_r^k h_j ).
-#   [Wang et al. 2019, WWW, "Heterogeneous Graph Attention Network"]
+#
 #     HAN 原始论文: 节点级注意力 + 语义级注意力的双层架构.
 #     本文采用其关系特定的消息变换思想, 但省略元路径层以适配
 #     CVE 图的有限关系类型数 (5 种).
@@ -342,7 +342,7 @@ class HGATEnhancedAnalyzer:
         return dict(self._attention_scores)
 
 
-# ---- 辅助 ----
+# 辅助
 
 def _edge_type_index(edge_type: str) -> int:
     """边类型字符串 → 整数索引 (与 cve_graph_gnn 的关系类型对齐)."""

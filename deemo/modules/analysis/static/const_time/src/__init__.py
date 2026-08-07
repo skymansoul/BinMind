@@ -16,12 +16,12 @@
 #   3. 违规检测——当秘密数据到达分支/访存/循环控制指令时报警
 #
 # 局限（在注释中显式声明，不做夸大）：
-#   - 数据流追踪是过程内的（不跨函数边界）——调用点处截断
-#   - 间接跳转/间接调用的目标解析不完备
-#   - 假阳性率偏高：标记所有"可能"的违规，需人工审查确认
+# 数据流追踪是过程内的（不跨函数边界）——调用点处截断
+# 间接跳转/间接调用的目标解析不完备
+# 假阳性率偏高：标记所有"可能"的违规，需人工审查确认
 #
-# ref: ctverif (Almeida et al., PLDI 2016) — LLVM 层的常量时间验证框架；
-#      "Verifying Constant-Time Implementations" (Almeida et al., USENIX 2016);
+# ctverif — LLVM 层的常量时间验证框架；
+#      "Verifying Constant-Time Implementations";
 # 本项目将其概念推广到二进制分析层面
 
 from .secret_tracker import (

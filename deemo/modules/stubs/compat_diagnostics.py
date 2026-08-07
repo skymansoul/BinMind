@@ -1,6 +1,6 @@
 # compat_diagnostics.py — 兼容层诊断工具
 # 检测 stubs/ 与 compat/ 之间的 API 缺失、符号差异、函数签名漂移。
-# 参考: FirmRec (ACM CCS 2024) 漏洞签名匹配 & BinEGA (SANER 2025) 图对齐过滤
+# FirmRec 漏洞签名匹配 & BinEGA 图对齐过滤
 import inspect as _inspect, os as _os
 from typing import Any, Optional as _Opt
 

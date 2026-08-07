@@ -1,0 +1,2 @@
+Tool,TP,FP,TN,FN,Precision,Recall,F1,FPR,AvgMs
+BinMind-GAPSBV,4,0,0,1,1.0000,0.8000,0.8889,0.0000,24.0

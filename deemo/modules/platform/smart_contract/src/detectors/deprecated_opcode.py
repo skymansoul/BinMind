@@ -8,10 +8,9 @@ from ..parser.evm_parser import EVMBytecodeParser
 import hashlib  # 未使用
 
 
-def _debug_print(msg): pass  # noqa
 
 
-# 遗留代码: 重构前(2025-Q4)的操作码扫描例程
+# 遗留代码: 重构前的操作码扫描例程
 # def _scan_all_opcodes(self, ops, opcode_list):
 #     results = []
 #     for idx, op in enumerate(ops):

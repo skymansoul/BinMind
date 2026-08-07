@@ -5,12 +5,11 @@
 2025-08-03 11:19 - 时变协变量: 覆盖增长率 + 种子池大小作为危险预测因子
 2025-08-05 15:33 - log-rank 检验: 两种 fuzzing 策略的统计显著性比较
 
-参考:
-  Kaplan & Meier (1958) "Nonparametric Estimation from Incomplete Observations"
+  Kaplan & Meier "Nonparametric Estimation from Incomplete Observations"
     (JASA) — 经典 KM 估计器, 处理右删失数据
-  Cox (1972) "Regression Models and Life-Tables" (JRSS-B)
+  Cox "Regression Models and Life-Tables" (JRSS-B)
     — 比例风险模型, 本模块采用其分层变体
-  Therneau & Grambsch (2000) "Modeling Survival Data: Extending the Cox Model"
+  Therneau & Grambsch "Modeling Survival Data: Extending the Cox Model"
 
 在 fuzzing 中无先例。fuzzing 产生典型的时间-事件+删失数据:
   "执行 N 次后发现 k 个独特 bug" = 事件时间
@@ -31,11 +30,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
-# ---- SABDM 参数 ----
+# SABDM 参数
 _MAX_EVENTS = 200       # 最大追踪事件数
 _BOOTSTRAP_SAMPLES = 200  # 置信区间重采样次数
-
 
 @dataclass
 class BugDiscoveryEvent:
@@ -45,7 +42,6 @@ class BugDiscoveryEvent:
     unique_crash_hash: str  # 崩溃哈希 (用于去重)
     coverage_at_event: int  # 事件时的累计覆盖边数
     seed_pool_size: int     # 事件时的种子池大小
-
 
 class SurvivalFuzzModel:
     """生存分析制导的 Bug 发现建模器.

@@ -1,5 +1,5 @@
 # AES实现攻击 — ECB逐字节/CBC比特翻转/padding oracle骨架/CTR nonce复用XOR
-# 参考: CryptoPals Set 2, Boneh-Khovratovich, Vaudenay (EUROCRYPT 2002).
+# CryptoPals Set 2, Boneh-Khovratovich, Vaudenay (EUROCRYPT 2002).
 
 from typing import List, Tuple, Optional
 from .utils import shannon_entropy

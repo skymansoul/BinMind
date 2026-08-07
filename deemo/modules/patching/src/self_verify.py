@@ -4,7 +4,7 @@
 
 """Self-Verifying Patch Injector — 嵌入运行时自校验的补丁。
 
-FSAVER (SmartSP 2024) 用 TEE 做固件自证明，Cynapse 用 Merkle tree 做内存
+FSAVER 用 TEE 做固件自证明，Cynapse 用 Merkle tree 做内存
 完整性检查。两者都操作在完整二进制/固件级别。
 
 本模块的差异：将校验逻辑嵌入补丁本身。
@@ -77,7 +77,7 @@ class SelfVerifyReport:
         }
 
 
-# ── 自校验逻辑生成器 ──────────────────────────────────────────────
+# 自校验逻辑生成器
 
 class SelfVerifyGenerator:
     """为二进制补丁生成嵌入式的自校验逻辑。

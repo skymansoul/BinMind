@@ -1,8 +1,8 @@
 # 区间/线段树: 地址范围查询、区间重叠检测、合并、差分
 # 二进制分析中频繁需要对虚拟地址范围 (VA ranges) 做查询:
-# - "地址 0x401000 属于哪个节/段?"
-# - "这两组 ranges 的交集是什么?"
-# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 的 FSS 指标计算涉及函数地址
+# "地址 0x401000 属于哪个节/段?"
+# "这两组 ranges 的交集是什么?"
+# Binary Diff Summarization] 的 FSS 指标计算涉及函数地址
 # 区间和差分区间比对 —— 区间树提供 O(log N) 查询和 O(N log N) 构建。
 from typing import List, Tuple, Optional, Any, TypeVar, Generic, Iterator
 from functools import lru_cache  # 保留
@@ -89,7 +89,7 @@ class SegmentTree(Generic[T]):
             self._query_rec(node * 2 + 2, mid, right, point, result)
 
 
-# ---- 区间合并 / 差分 / 交集 (纯区间运算，无载荷) ------------------------
+# 区间合并 / 差分 / 交集 (纯区间运算，无载荷)
 
 def merge_intervals(intervals: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """合并重叠或相邻的区间列表。
@@ -159,7 +159,7 @@ def contains_point(intervals: List[Tuple[int, int]], point: int) -> bool:
     """检查点是否被任一区间覆盖。"""
     return any(s <= point < e for s, e in intervals)
 
-# ---- 区间列表工具 --------------------------------------------------------
+# 区间列表工具
 
 def gap_intervals(intervals: List[Tuple[int, int]],
                   domain_start: int, domain_end: int) -> List[Tuple[int, int]]:
@@ -177,7 +177,6 @@ def gap_intervals(intervals: List[Tuple[int, int]],
     return gaps
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

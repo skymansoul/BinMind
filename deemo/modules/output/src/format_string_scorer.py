@@ -15,9 +15,8 @@
     4. 输出可见性 — 攻击者能否看到格式化输出 (信息泄露)
     5. 栈布局 — 栈上是否存在可利用的指针链
 
-参考:
-  scut / team teso (2000): 经典格式串利用技术
-  CTF 格式串挑战: 现代利用链模式 (2024-2025)
+  scut / team teso: 经典格式串利用技术
+  CTF 格式串挑战: 现代利用链模式
   无现有评分工具 — 现有扫描器仅做二值检测.
 
 修改记录:
@@ -28,7 +27,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class FormatStringContext(Enum):
     PRINTF_DIRECT = "printf_direct"      # printf(user_input)
     SPRINTF_BUFFER = "sprintf_buffer"    # sprintf(buf, fmt, ...) where fmt controlled
@@ -36,7 +34,6 @@ class FormatStringContext(Enum):
     SNPRINTF = "snprintf"               # snprintf with controlled format
     SYSLOG = "syslog"                   # syslog(LOG_ERR, user_input)
     UNKNOWN = "unknown"
-
 
 @dataclass
 class FormatStringScore:
@@ -50,7 +47,6 @@ class FormatStringScore:
     exploitability: float          # 0-10
     primitives: List[str] = field(default_factory=list)
     technique: str = ''
-
 
 def _context_from_call(
     function_name: str,
@@ -71,7 +67,6 @@ def _context_from_call(
     if 'printf' in fn:
         return FormatStringContext.PRINTF_DIRECT
     return FormatStringContext.UNKNOWN
-
 
 def score_format_string(
     function_name: str = 'printf',
@@ -104,7 +99,7 @@ def score_format_string(
     if output_visible is None:
         output_visible = ctx != FormatStringContext.FPRINTF_STDERR
 
-    # --- 评分 ---
+# 评分
     # 偏移惩罚: offset 1→满分, offset 6+→减半
     offset_penalty = max(0.3, 1.0 - stack_offset * 0.12)
 

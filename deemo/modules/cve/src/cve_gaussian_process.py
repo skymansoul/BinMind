@@ -1,5 +1,5 @@
-# 创建: 2026-07-30 17:15
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-07 17:15
+# 修改: 2026-05-07 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 稀疏GP Matern核预测
 # 高斯过程回归 — CVE利用概率的核方法预测与不确定性量化
 #
@@ -26,16 +26,16 @@
 #
 # 非显而易见性:
 #   1. 首次将GP回归应用于CVE利用概率预测.
-#      SAGP (2026) 使用LLM+GP但面向通用关键系统风险,
-#      Portfolio GP (2026) 用于CVE分类但依赖主动学习管线.
+#      SAGP 使用LLM+GP但面向通用关键系统风险,
+#      Portfolio GP 用于CVE分类但依赖主动学习管线.
 #      本实现提供独立的轻量GP回归器.
 #   2. 归纳点方法: O(NM²)使GP在>10K CVE上可行.
 #   3. 核函数自适应: 通过边际似然梯度优化核超参数.
 #
-# 参考:
-#   [Rasmussen & Williams 2006] Gaussian Processes for Machine Learning
-#   [SAGP 2026] LLM+GP for Critical Systems Risk (R²=0.955)
-#   [Portfolio GP 2026] Active Learning GPs for CVE Classification
+#
+# Gaussian Processes for Machine Learning
+# LLM+GP for Critical Systems Risk (R²=0.955)
+# Active Learning GPs for CVE Classification
 
 import math
 import random
@@ -224,7 +224,7 @@ class SparseGaussianProcess:
         return self._trained
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_gp_from_kb(kb, n_inducing: int = 50, max_samples: int = 1000
                      ) -> SparseGaussianProcess:

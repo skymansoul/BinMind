@@ -5,12 +5,11 @@
 2025-08-09 08:57 - Pearson 散度作为策略差异度量: PE(P_A||P_B)
 2025-08-10 13:22 - 在线更新: 新观测的增量核矩阵秩-1 更新
 
-参考:
-  Kanamori, Hido & Sugiyama (2009) "A Least-squares Approach to Direct
+  Kanamori, Hido & Sugiyama "A Least-squares Approach to Direct
     Importance Estimation" (JMLR) — uLSIF 的原始论文
-  Sugiyama, Suzuki & Kanamori (2012) "Density Ratio Estimation in Machine
+  Sugiyama, Suzuki & Kanamori "Density Ratio Estimation in Machine
     Learning" — 专著, 第 6 章: uLSIF/RuLSIF 的理论性质
-  Yamada et al. (2013) "Relative Density-Ratio Estimation for Robust
+  Yamada et al. "Relative Density-Ratio Estimation for Robust
     Distribution Comparison" (NeurIPS) — RuLSIF: α-relative Pearson
 
 在 fuzzing 文献中的位置:
@@ -33,12 +32,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---- uLSIF 参数 ----
+# uLSIF 参数
 _N_BASIS = 50                 # 基函数数量 (核中心数)
 _LAMBDA_REG = 0.01            # L2 正则化
 _SIGMA_FACTOR = 1.0           # 高斯核带宽缩放
-
 
 @dataclass
 class DRSCResult:
@@ -51,7 +48,6 @@ class DRSCResult:
     # 策略优势区域比例
     frac_a_preferred: float     # w(x)>1 的 B 样本比例
     frac_b_preferred: float     # w(x)<1 的 B 样本比例
-
 
 class DensityRatioComparator:
     """密度比策略比较器 — uLSIF.

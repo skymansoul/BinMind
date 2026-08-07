@@ -46,8 +46,8 @@ for _cn in ['FunctionSignature', 'FunctionNamePrediction', 'NamingResult', 'Func
         try: _c.__init__ = _mk(_oi)
         except Exception: pass  # 修复: bare except → Exception
 
-# --- 启发式命名增强 ---
-# 基于 callee API 语义推断函数名，参考 VarBERT (IEEE S&P 2024) 的 API 上下文特征工程方法。
+# 启发式命名增强
+# 基于 callee API 语义推断函数名，参考 VarBERT 的 API 上下文特征工程方法。
 # 设计考量：优先使用调用模式（caller-callee 关系）而非指令序列，因前者跨编译器版本更稳定。
 import re as _re
 
@@ -83,8 +83,8 @@ def guess_function_role(callees: list[str]) -> str | None:
     return max(scores, key=scores.get)
 
 
-# --- 基于 CFG 拓扑的函数命名增强 ---
-# 参考: 函数在调用图中的拓扑位置提供强语义信号
+# 基于 CFG 拓扑的函数命名增强
+# 函数在调用图中的拓扑位置提供强语义信号
 # 叶子节点 → 工具函数 (helper/util); 根节点 → 入口点; 中心节点 → 核心调度逻辑
 def name_by_callgraph_topology(function: str, callers: list[str],
                                 callees: list[str]) -> str | None:
@@ -103,8 +103,8 @@ def name_by_callgraph_topology(function: str, callers: list[str],
     return None
 
 
-# --- Headless 批处理入口 ---
-# 参考: Ghidra AnalyzeHeadless — 无 GUI 批量分析模式
+# Headless 批处理入口
+# Ghidra AnalyzeHeadless — 无 GUI 批量分析模式
 def headless_name_functions(binary_paths: list[str], output_json: str = '') -> dict:
     import json as _json
     results = {}
@@ -122,7 +122,6 @@ def headless_name_functions(binary_paths: list[str], output_json: str = '') -> d
     return results
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

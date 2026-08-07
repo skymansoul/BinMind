@@ -13,7 +13,7 @@ size_bytes, has_loop, cyclomatic_contrib, is_entry) 的设计原理未文档化,
   1. Integrated Gradients (IG) 特征归因 — 以零向量为基线,
      沿直线路径积分梯度, 得到每个特征对模型输出的贡献。
      IG 满足 Sensitivity 和 Implementation Invariance 公理,
-     是特征归因的事实标准 (Sundararajan et al. 2017, ICML)。
+     是特征归因的事实标准。
 
   2. 消融分析 (Ablation) — 逐个将特征置为均值/零, 测量预测变化量。
      变化越大 → 该特征越重要。同时检测互补特征对 (joint ablation
@@ -22,11 +22,11 @@ size_bytes, has_loop, cyclomatic_contrib, is_entry) 的设计原理未文档化,
   3. 特征重要性排序 — 综合 IG 和消融结果, 输出稳定排序,
      供特征选择和模型简化决策。
 
-ref: Sundararajan et al. (2017) "Axiomatic Attribution for Deep Networks"
+ref: Sundararajan et al. "Axiomatic Attribution for Deep Networks"
      (ICML) — Integrated Gradients 的原始论文, 公理化了特征归因问题。
-ref: Samek et al. (2021) "Explaining Deep Neural Networks and Beyond"
+ref: Samek et al. "Explaining Deep Neural Networks and Beyond"
      (Neural Networks) — 综述了 post-hoc 解释方法的评估标准。
-ref: Yuan et al. (2022) "Ablation-based Explanations for Graph Neural
+ref: Yuan et al. "Ablation-based Explanations for Graph Neural
      Networks" (AAAI) — 图神经网络的消融解释方法。
 
 本模块不依赖 torch/tf — 有限差分近似 IG 的梯度, 纯 NumPy 实现,
@@ -65,7 +65,7 @@ class GNNFeatureAttribution:
         self._ig_steps = ig_steps
         self._eps = finite_diff_eps
 
-    # ---- Integrated Gradients ----
+# Integrated Gradients
 
     def integrated_gradients(
         self,
@@ -123,7 +123,7 @@ class GNNFeatureAttribution:
             for i in range(len(_FEATURE_NAMES)) if i < abs_ig.shape[0]
         }
 
-    # ---- 消融分析 ----
+# 消融分析
 
     def ablation_analysis(
         self, model, x: np.ndarray, adj: np.ndarray,
@@ -189,7 +189,7 @@ class GNNFeatureAttribution:
 
         return sorted(results, key=lambda r: r['abs_delta'], reverse=True)
 
-    # ---- 稳定重要性排序 ----
+# 稳定重要性排序
 
     def stable_ranking(
         self, model, x: np.ndarray, adj: np.ndarray,
@@ -232,7 +232,7 @@ class GNNFeatureAttribution:
             }
         return dict(sorted(result.items(), key=lambda kv: kv[1]['median_rank']))
 
-    # ---- 内部 ----
+# 内部
 
     def _scalar_output(
         self, model, x: np.ndarray, adj: np.ndarray,
@@ -249,7 +249,7 @@ class GNNFeatureAttribution:
             return 0.0
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def quick_feature_report(model, x: np.ndarray, adj: np.ndarray) -> dict:
     """一站式 GNN 特征分析报告 — IG + 消融 + 稳定排序。

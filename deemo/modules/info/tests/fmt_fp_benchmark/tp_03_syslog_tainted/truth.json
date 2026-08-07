@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_03_syslog_tainted",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2016-10158 类 syslog 格式串",
+  "expect_overflow": true,
+  "trigger": "输入含 %n",
+  "why": "syslog 首个非固定参数被当格式串"
+}

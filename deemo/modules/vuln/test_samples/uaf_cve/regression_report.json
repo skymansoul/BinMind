@@ -1,0 +1,66 @@
+{
+  "provenance": {
+    "n": 16,
+    "tp": 12,
+    "tn": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0,
+    "per_sample": {
+      "uaf_01_simple_read": "TP",
+      "uaf_02_simple_write": "TP",
+      "uaf_03_indirect_call": "TP",
+      "uaf_04_alias_reg": "TP",
+      "uaf_05_via_second_slot": "TP",
+      "uaf_06_conditional": "TP",
+      "uaf_07_loop": "TP",
+      "uaf_08_struct_field": "TP",
+      "uaf_09_after_call": "TP",
+      "uaf_10_realloc_old": "TP",
+      "uaf_11_member_read": "TP",
+      "uaf_12_store_through": "TP",
+      "uaf_safe_no_use": "TN",
+      "uaf_safe_other_object": "TN",
+      "uaf_safe_realloc_reuse": "TN",
+      "uaf_safe_use_before_free": "TN"
+    }
+  },
+  "naive": {
+    "n": 16,
+    "tp": 11,
+    "tn": 2,
+    "fp": 2,
+    "fn": 1,
+    "precision": 0.8462,
+    "recall": 0.9167,
+    "f1": 0.88,
+    "fpr": 0.5,
+    "per_sample": {
+      "uaf_01_simple_read": "TP",
+      "uaf_02_simple_write": "TP",
+      "uaf_03_indirect_call": "TP",
+      "uaf_04_alias_reg": "TP",
+      "uaf_05_via_second_slot": "FN",
+      "uaf_06_conditional": "TP",
+      "uaf_07_loop": "TP",
+      "uaf_08_struct_field": "TP",
+      "uaf_09_after_call": "TP",
+      "uaf_10_realloc_old": "TP",
+      "uaf_11_member_read": "TP",
+      "uaf_12_store_through": "TP",
+      "uaf_safe_no_use": "TN",
+      "uaf_safe_other_object": "FP",
+      "uaf_safe_realloc_reuse": "FP",
+      "uaf_safe_use_before_free": "TN"
+    }
+  },
+  "fp_reduction_pct": 100.0,
+  "n_samples": 16,
+  "rule_stats": {
+    "R4_same_obj": 13,
+    "R2_diff_obj": 2
+  }
+}

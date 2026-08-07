@@ -1,0 +1,186 @@
+{
+  "cross": [
+    {
+      "tool": "Angr",
+      "tp": 12,
+      "fp": 6,
+      "fn": 0,
+      "tn": 0,
+      "precision": 0.6667,
+      "recall": 1.0,
+      "f1": 0.8,
+      "total_time_s": 9.323,
+      "peak_mb": 0.0
+    },
+    {
+      "tool": "BinMind_HOSV+Ext",
+      "tp": 12,
+      "fp": 0,
+      "fn": 0,
+      "tn": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "total_time_s": 0.046,
+      "peak_mb": 0.04
+    },
+    {
+      "tool": "Regex_Baseline",
+      "tp": 9,
+      "fp": 3,
+      "fn": 3,
+      "tn": 3,
+      "precision": 0.75,
+      "recall": 0.75,
+      "f1": 0.75,
+      "total_time_s": 0.0,
+      "peak_mb": 0.0
+    }
+  ],
+  "per_sample": [
+    {
+      "sample": "v01_walk_escape",
+      "cve": "CVE-2021-3156",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 11.1
+    },
+    {
+      "sample": "v02_walk_safe",
+      "cve": "SAFE-ctr",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 3.2
+    },
+    {
+      "sample": "v03_struct_ob1",
+      "cve": "GENERIC-ob1",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 2.7
+    },
+    {
+      "sample": "v04_struct_safe",
+      "cve": "SAFE-str",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 2.0
+    },
+    {
+      "sample": "v05_scanf_oob",
+      "cve": "CVE-2019-7304",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 1.6
+    },
+    {
+      "sample": "v06_scanf_bounded",
+      "cve": "SAFE-scf",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 0.8
+    },
+    {
+      "sample": "v07_gets_oob",
+      "cve": "GENERIC-gets",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 0.7
+    },
+    {
+      "sample": "v08_nullterm",
+      "cve": "CVE-2017-1000405",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 6.4
+    },
+    {
+      "sample": "v09_nullterm_safe",
+      "cve": "SAFE-nt",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.4
+    },
+    {
+      "sample": "v10_calloc_wrap",
+      "cve": "CVE-2016-10165",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 0.4
+    },
+    {
+      "sample": "v11_factory_cross",
+      "cve": "GENERIC-fac",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 0.9
+    },
+    {
+      "sample": "v12_factory_safe",
+      "cve": "SAFE-fac",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 0.5
+    },
+    {
+      "sample": "v13_loop_memcpy",
+      "cve": "CVE-2019-13143",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.2
+    },
+    {
+      "sample": "v14_loop_safe",
+      "cve": "SAFE-lop",
+      "expected": "SAFE",
+      "BinMind_detected": 0,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.7
+    },
+    {
+      "sample": "v15_ptr_arith",
+      "cve": "CVE-2021-3609",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 0,
+      "BinMind_time_ms": 1.2
+    },
+    {
+      "sample": "v16_nullterm_fgets",
+      "cve": "GENERIC-nt2",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.5
+    },
+    {
+      "sample": "v17_memcpy_oob",
+      "cve": "CVE-2014-0160",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.3
+    },
+    {
+      "sample": "v18_guard_miss",
+      "cve": "GENERIC-grd",
+      "expected": "VULN",
+      "BinMind_detected": 1,
+      "Regex_detected": 1,
+      "BinMind_time_ms": 2.1
+    }
+  ]
+}

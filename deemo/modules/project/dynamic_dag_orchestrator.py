@@ -2,12 +2,13 @@
 动态DAG编排器，运行时自适应扫描管道+BMA多源评分融合.
 
 理论依据:
-  Baird & Moin (arXiv:2604.04977, FSE 2026): HGAT+依赖图+漏洞链预测.
-  Slyp (arXiv:2605.05000): 可扩展MCP工具服务器+ReAct管道→DAG编排参考.
+  Baird & Moin: HGAT+依赖图+漏洞链预测.
+  Slyp: 可扩展MCP工具服务器+ReAct管道→DAG编排参考.
 
 模块位置: project/dynamic_dag_orchestrator.py
 """
 
+from __future__ import annotations
 import math
 from collections import defaultdict, deque
 from dataclasses import dataclass, field

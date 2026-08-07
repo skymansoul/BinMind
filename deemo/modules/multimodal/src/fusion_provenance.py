@@ -183,7 +183,7 @@ class FusionProvenanceTracker:
                 _contrib[_name] /= _total
         return _contrib
 
-    # ---- 内部方法 ----
+# 内部方法
 
     def _make_trace_id(self) -> str:
         _seed = (

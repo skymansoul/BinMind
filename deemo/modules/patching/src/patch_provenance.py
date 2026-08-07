@@ -38,7 +38,7 @@ from collections import OrderedDict
 from enum import Enum
 
 
-# ── 内容寻址哈希 ──────────────────────────────────────────────────
+# 内容寻址哈希
 # SHAKE256 可变长度输出，默认 256-bit。
 # 长度可配：256/384/512 bit，应对不同安全级别的场景。
 # 盐值绑定到补丁创建者身份，防预计算碰撞。
@@ -57,7 +57,7 @@ def content_id_file(path: str, salt: bytes = b"", out_bytes: int = 32) -> str:
         return content_id(f.read(), salt, out_bytes)
 
 
-# ── 边类型 ────────────────────────────────────────────────────────
+# 边类型
 
 class EdgeKind(str, Enum):
     DERIVED_FROM = "derived_from"     # B 衍生自 A（如补丁迭代）
@@ -67,7 +67,7 @@ class EdgeKind(str, Enum):
     MERGED_FROM = "merged_from"       # 合并自多个前驱
 
 
-# ── 证明负载 ──────────────────────────────────────────────────────
+# 证明负载
 
 @dataclass
 class AttestationPayload:
@@ -107,7 +107,7 @@ class AttestationPayload:
         )
 
 
-# ── Merkle-DAG 节点 ───────────────────────────────────────────────
+# Merkle-DAG 节点
 
 @dataclass
 class ProvenanceNode:
@@ -184,7 +184,7 @@ class ProvenanceNode:
         return node
 
 
-# ── Merkle-DAG 存储层 ─────────────────────────────────────────────
+# Merkle-DAG 存储层
 
 class ProvenanceStore:
     """内容寻址的节点存储。

@@ -1,0 +1,25 @@
+{
+  "total_samples": 117,
+  "expected_tp": 75,
+  "expected_fp": 42,
+  "baseline": {
+    "TP": 75,
+    "FP": 42,
+    "TN": 0,
+    "FN": 0,
+    "recall": 1.0,
+    "precision": 0.6410256410256411,
+    "fpr": 1.0
+  },
+  "gapsbv": {
+    "TP": 73,
+    "FP": 7,
+    "TN": 35,
+    "FN": 2,
+    "recall": 0.9733,
+    "precision": 0.9125,
+    "f1": 0.9419,
+    "fpr": 0.1667
+  },
+  "fp_reduction_pct": 83.3
+}

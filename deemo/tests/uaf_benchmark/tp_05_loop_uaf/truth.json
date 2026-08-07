@@ -1,0 +1,8 @@
+{
+  "sample_id": "TP-05",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "description": "Loop UAF: free inside loop, use after loop",
+  "expect_uaf": true,
+  "tarps_expected": "DEF_TP"
+}

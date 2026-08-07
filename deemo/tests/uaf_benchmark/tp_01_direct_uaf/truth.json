@@ -1,0 +1,8 @@
+{
+  "sample_id": "TP-01",
+  "label": "tp",
+  "cwe": "CWE-416",
+  "description": "Direct UAF: free(buf) then printf(buf) \u2014 no NULL assignment",
+  "expect_uaf": true,
+  "tarps_expected": "DEF_TP"
+}

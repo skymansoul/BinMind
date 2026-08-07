@@ -26,7 +26,7 @@ class NodeType(str, Enum):
     SINK = 'sink'            # 加密初始化/更新调用API (EVP_EncryptInit...)
 
 
-# ── API目录 ──
+# API目录
 # 依据CRYPTBARA的依赖上下文分类: 密钥生成点(source)/变换(transform)/
 # 加密调用点(sink)。字符串匹配一律小写前缀/子串, 兼容大小写混淆与符号修饰。
 

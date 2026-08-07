@@ -1,0 +1,281 @@
+{
+  "generated_at": "2026-08-06 23:17:10",
+  "title": "BinMind Heap Overflow Detection — 18-Sample Regression",
+  "metrics": {
+    "baseline": {
+      "TP": 6,
+      "FP": 3,
+      "TN": 0,
+      "FN": 9,
+      "precision": 0.6666666666666666,
+      "recall": 0.4,
+      "f1": 0.5,
+      "fp_rate": 1.0
+    },
+    "pipeline": {
+      "TP": 6,
+      "FP": 2,
+      "TN": 1,
+      "FN": 9,
+      "precision": 0.75,
+      "recall": 0.4,
+      "f1": 0.5217391304347827,
+      "fp_rate": 0.6666666666666666
+    },
+    "fp_reduction_count": 1,
+    "tp_preserved": true,
+    "fp_rate_reduction_pct": 33.3
+  },
+  "tier_contributions": {
+    "Tier0_AllocatorSemantics": 1,
+    "Tier1_AffineInterval": 0,
+    "Tier2_SelectiveSymExec": 0,
+    "Tier3_InfeasiblePathPruner": 0
+  },
+  "known_limitations": {
+    "fn_count": 9,
+    "fn_cause": "C-to-IR简化: 循环写入/变量size/sprintf需要真实反编译(Ghidra/IDA)",
+    "fp_remaining": 2,
+    "fp_samples": [
+      "sample_14: malloc(0)边界",
+      "sample_16: realloc边界"
+    ],
+    "tier1_3_note": "Tier 1-3需汇编级指令(+地址), C-to-IR输出不含此类模式"
+  },
+  "per_sample_detail": [
+    {
+      "sample": "sample_01",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_02",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_03",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_04",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_05",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_06",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_07",
+      "expected": false,
+      "baseline_detected": true,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 1,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_08",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_09",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_10",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_11",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_12",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_13",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_14",
+      "expected": false,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_15",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_16",
+      "expected": false,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_17",
+      "expected": true,
+      "baseline_detected": false,
+      "pipeline_detected": false,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    },
+    {
+      "sample": "sample_18",
+      "expected": true,
+      "baseline_detected": true,
+      "pipeline_detected": true,
+      "pipeline_tiers": {
+        "Tier0_AllocatorSemantics": 0,
+        "Tier1_AffineInterval": 0,
+        "Tier2_SelectiveSymExec": 0,
+        "Tier3_InfeasiblePathPruner": 0
+      },
+      "error": ""
+    }
+  ]
+}

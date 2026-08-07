@@ -6,7 +6,7 @@
 import numpy as np
 from scipy.sparse import coo_matrix, eye, issparse
 
-# ===== node_drop =====
+# node_drop
 # 随机丢弃节点并重建邻接矩阵
 # 度>5的桥接节点不可丢弃 -- 保证图结构不过度破碎
 
@@ -39,7 +39,7 @@ def node_drop(x, adj, drop_prob=0.1):
 
     return _x_new, _adj_new
 
-# ===== edge_perturb =====
+# edge_perturb
 # 引力加权边删除：边权重weight = 1/max(deg(u), deg(v))
 # 高权重边（两端都是低度节点）更易被删 — 类似引力模型中质量小的物体引力弱
 # 同时随机添加少量边作为噪声注入
@@ -49,7 +49,7 @@ def edge_perturb(adj, add_prob=0.05, del_prob=0.05):
     _n = adj.shape[0]
     _adj_dense = adj.toarray() if issparse(adj) else np.asarray(adj, dtype=np.float64)
 
-    # ---- 计算每条边的引力权重 ----
+# 计算每条边的引力权重
     _deg = np.sum(_adj_dense > 0, axis=1).astype(np.float64)
     _deg[_deg == 0] = 1  # 避免除零
 
@@ -69,7 +69,7 @@ def edge_perturb(adj, add_prob=0.05, del_prob=0.05):
             _adj_dense[_u, _v] = 0
             _adj_dense[_v, _u] = 0
 
-    # ---- 随机添加边 ----
+# 随机添加边
     _n_possible = _n * (_n - 1) // 2 - _n_edges
     _n_add = min(int(_n_possible * add_prob), _n_possible)
     if _n_add > 0:
@@ -86,7 +86,7 @@ def edge_perturb(adj, add_prob=0.05, del_prob=0.05):
 
     return _adj_dense
 
-# ===== feature_mask =====
+# feature_mask
 # 随机清零特征维度 — 类似dropout但作用在输入空间
 # 强制模型不全依赖某几个特征
 
@@ -97,7 +97,7 @@ def feature_mask(x, mask_prob=0.1):
     _x[_mask] = 0.0
     return _x
 
-# ===== subgraph_sample =====
+# subgraph_sample
 # 随机游走采样子图：从seed节点出发，走walk_length步，提取诱导子图
 # 比固定窗口更有概率含义，适合大规模图
 
@@ -137,7 +137,7 @@ def subgraph_sample(adj, num_seeds=3, walk_length=2):
 
     return _indices, _sub
 
-# ===== AugmentationPipeline =====
+# AugmentationPipeline
 # 流水线组合多种增强：依次以独立概率应用
 # node_drop -> edge_perturb -> feature_mask -> subgraph
 # subgraph放在最后是因为它改变节点数量，前面的操作需要完整的图
@@ -154,7 +154,6 @@ class AugmentationPipeline:
         if probs is not None:
             self._probs.update(probs)
 
-    # ----
     def __call__(self, x, adj):
         """x: (n, f), adj: (n, n), 返回增强后的(x, adj)"""
         _x, _adj = np.copy(np.asarray(x, dtype=np.float64)), adj

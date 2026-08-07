@@ -1,0 +1,14 @@
+sample_id,vuln_type,is_vuln,detected,verdict,confidence,time_ms,correct,desc
+HEAP-01,buffer_overflow,True,True,confirmed,0.9,1.8,True,malloc(64)+memcpy(0x50=80)→definite overflow
+HEAP-02,buffer_overflow,True,True,confirmed,0.9,1.0,True,malloc(user_size)+strcpy——user_size可能小于strlen(src)
+HEAP-03,buffer_overflow,True,True,confirmed,0.9,1.4,True,"calloc(1,32)+sprintf——对齐后usable=40<64"
+HEAP-04,buffer_overflow,True,True,confirmed,0.9,0.3,True,malloc(16)+memcpy(256)→极小分配+大copy
+HEAP-FP-01,buffer_overflow,False,False,filtered,0.2,0.3,True,"malloc(256)+memcpy(64)→alloc>copy, should be FILTERED"
+HEAP-FP-02,buffer_overflow,False,False,uncertain,0.0,0.1,True,"strcpy栈缓冲区——无堆alloc, 非堆溢出"
+UAF-01,use_after_free,True,True,uaf_confirmed,0.9,2.2,True,malloc→rbx→free(rbx)→printf(rbx): classic UAF
+UAF-02,use_after_free,True,True,uaf_confirmed,0.9,0.8,True,"别名传播: alloc→r12→rbx, free(rbx), use(r12)"
+UAF-FP-01,use_after_free,False,False,no_matching_type,0.0,0.5,True,malloc→free→realloc(rbx复用但非UAF)
+FMT-01,format_string,True,True,fmt_likely,0.55,0.1,True,"printf(user_buf)——用户控制格式串,无参数验证"
+FMT-02,format_string,False,False,no_sinks,0.0,0.1,True,"printf("".rodata"")——常量格式串,安全"
+INTOVF-01,integer_overflow,True,True,intovf_likely,0.65,0.3,True,"add rax,0x10→malloc——加法溢出→分配不足"
+INTOVF-02,integer_overflow,True,True,intovf_confirmed,0.9,0.1,True,"sub rax,0x10→malloc——减法下溢→极大值"

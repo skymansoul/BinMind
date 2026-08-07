@@ -42,7 +42,7 @@ class PatchDiffResult:
     section_hashes: Dict[str, Tuple[str, str]]
 
 
-# ---- 安全敏感函数关键字 ----
+# 安全敏感函数关键字
 _SECURITY_KEYWORDS = [
     'crypt', 'encrypt', 'decrypt', 'cipher', 'aes', 'rsa', 'hash',
     'auth', 'login', 'password', 'credential', 'token', 'session',
@@ -76,7 +76,7 @@ def extract_mnemonics(asm_lines: List[str]) -> List[str]:
     return _result
 
 
-# ===== mnemonic哈希 =====
+# mnemonic哈希
 def compute_mnemonic_hash(mnemonics: List[str]) -> str:
     """助记符序列的SHA256 — 严格匹配用，不抗指令重排"""
     _joined = '|'.join(mnemonics)
@@ -98,7 +98,7 @@ def build_mnemonic_profile(mnemonics: List[str]) -> Dict[str, float]:
     return {_k: _v / _mag for _k, _v in _counter.items()}
 
 
-# ===== 余弦相似度 =====
+# 余弦相似度
 def cosine_similarity(vec1: Dict[str, float], vec2: Dict[str, float]) -> float:
     """归一化词频向量的余弦相似度 — 1.0=完全相同, 0.0=正交"""
     if not vec1 or not vec2:
@@ -211,7 +211,7 @@ def match_by_profile(unmatched_a: List[FuncProfile], unmatched_b: List[FuncProfi
     return _matched, _still_a, _still_b
 
 
-# ===== 变更检测 =====
+# 变更检测
 def detect_changes_between(fa: FuncProfile, fb: FuncProfile) -> List[str]:
     """比较两个匹配的函数，列出所有观察到的差异"""
     _changes = []
@@ -264,7 +264,7 @@ def detect_changes(matched: List[FunctionDiff]) -> List[FunctionDiff]:
     return matched
 
 
-# ---- 安全相关性标记 ----
+# 安全相关性标记
 _SR_PATTERN = re.compile(
     r'|'.join(_SECURITY_KEYWORDS),
     re.IGNORECASE
@@ -284,7 +284,7 @@ def section_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-# ===== 完整diff 流水线 =====
+# 完整diff 流水线
 def diff_binaries(bin_a_data: bytes, bin_b_data: bytes,
                   funcs_a: List[FuncProfile], funcs_b: List[FuncProfile]) -> PatchDiffResult:
     """四阶段渐进式匹配pipeline → 最终diff结果"""

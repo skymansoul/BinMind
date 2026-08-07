@@ -1,4 +1,4 @@
-# Created: 2025-07-28 09:15:00
+# Created: 2026-07-18 09:15:00
 #
 # dangerous_arg_annotations — 危险函数参数位置标注与调用约定推断
 # 为每个危险函数标注哪个参数是攻击者可控的攻击面（如 memcpy 的 size 参数、
@@ -27,7 +27,7 @@ class ParamRole(Enum):
 # 危险函数参数注解: (函数名归一化形式, [(参数位置0-based, 角色, 危险度0-1), ...])
 # 参数位置基于常见调用约定中的参数顺序
 _DANGEROUS_ARG_MAP: Dict[str, List[Tuple[int, ParamRole, float]]] = {
-    # ---- 内存操作 (溢出/越界) ----
+# 内存操作 (溢出/越界)
     "memcpy":  [(2, ParamRole.PARAM_SIZE, 0.80), (0, ParamRole.PARAM_TARGET, 0.60)],
     "memmove": [(2, ParamRole.PARAM_SIZE, 0.75), (0, ParamRole.PARAM_TARGET, 0.55)],
     "memset":  [(2, ParamRole.PARAM_SIZE, 0.70), (0, ParamRole.PARAM_TARGET, 0.50)],
@@ -45,26 +45,26 @@ _DANGEROUS_ARG_MAP: Dict[str, List[Tuple[int, ParamRole, float]]] = {
     "recv":    [(1, ParamRole.PARAM_SIZE, 0.50), (0, ParamRole.PARAM_TARGET, 0.45)],
     "recvfrom":[(1, ParamRole.PARAM_SIZE, 0.45), (0, ParamRole.PARAM_TARGET, 0.40)],
 
-    # ---- 格式字符串 ----
+# 格式字符串
     "printf":  [(0, ParamRole.PARAM_FORMAT, 0.85)],
     "fprintf": [(1, ParamRole.PARAM_FORMAT, 0.85)],
     "dprintf": [(1, ParamRole.PARAM_FORMAT, 0.80)],
     "vprintf": [(0, ParamRole.PARAM_FORMAT, 0.80)],
     "syslog":  [(1, ParamRole.PARAM_FORMAT, 0.70)],
 
-    # ---- 代码执行 ----
+# 代码执行
     "system":  [(0, ParamRole.PARAM_CODE, 0.90)],
     "popen":   [(0, ParamRole.PARAM_CODE, 0.85)],
     "execve":  [(0, ParamRole.PARAM_CODE, 0.90), (1, ParamRole.PARAM_SOURCE, 0.60)],
     "execvp":  [(0, ParamRole.PARAM_CODE, 0.85), (1, ParamRole.PARAM_SOURCE, 0.55)],
     "dlopen":  [(0, ParamRole.PARAM_CODE, 0.70)],
 
-    # ---- 内存保护修改 ----
+# 内存保护修改
     "mprotect":       [(2, ParamRole.PARAM_FLAGS, 0.80), (0, ParamRole.PARAM_TARGET, 0.50)],
     "virtualprotect": [(1, ParamRole.PARAM_SIZE, 0.50), (3, ParamRole.PARAM_FLAGS, 0.80)],
     "mmap":           [(3, ParamRole.PARAM_FLAGS, 0.55)],
 
-    # ---- 堆操作 (UAF/double-free 相关) ----
+# 堆操作 (UAF/double-free 相关)
     "malloc":  [(0, ParamRole.PARAM_SIZE, 0.30)],
     "free":    [(0, ParamRole.PARAM_TARGET, 0.70)],
     "realloc": [(0, ParamRole.PARAM_TARGET, 0.65), (1, ParamRole.PARAM_SIZE, 0.35)],

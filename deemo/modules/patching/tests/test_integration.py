@@ -1,4 +1,4 @@
-"""集成测试 (2026-08-02 重构)。
+"""集成测试。
 
 端到端工作流测试，串联多个模块：
   crash 分析 -> spec -> 补丁 -> 质量评估 -> 验证。
@@ -303,7 +303,7 @@ class TestFullPipelineStub:
         from auto_root_cause import AutoRootCauseAnalyzer
         from patch_quality_evaluator import PatchQualityEvaluator
 
-        # Step 1: 分析 crash
+        # 分析 crash
         crash = "ERROR: AddressSanitizer: stack-buffer-overflow\nWRITE of size 8 at 0x7fff1234"
         analyzer = AutoRootCauseAnalyzer()
         report = analyzer.analyze(crash)
@@ -312,7 +312,7 @@ class TestFullPipelineStub:
         assert report.summary['cwe'] == 'CWE-121'
         assert report.summary['confidence'] > 0.5
 
-        # Step 2: 评估修复
+        # 评估修复
         original_code = "char buf[10]; strcpy(buf, user_input);"  # 有漏洞
         patched_code = "char buf[10]; strncpy(buf, user_input, sizeof(buf) - 1);"  # 已修复
 
@@ -323,4 +323,4 @@ class TestFullPipelineStub:
         assert isinstance(quality.monte_carlo_reliability, float)
         assert quality.monte_carlo_reliability > 0  # 应估算出值
         # print for debugging
-        # _debug_print(quality, "QualityReport")
+# debug_print(quality, "QualityReport")

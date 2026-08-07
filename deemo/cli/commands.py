@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = p.add_subparsers(dest='command', help='subcommands')
 
-    # ---- analyze ----
+# analyze
     ap = sub.add_parser('analyze', help='analyze a binary file')
     ap.add_argument('binary', help='path to ELF/PE/Mach-O file')
     ap.add_argument('-o', '--output', default='./results',
@@ -43,14 +43,14 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument('-v', '--verbose', action='store_true',
                     help='debug logging')
 
-    # ---- batch ----
+# batch
     bp = sub.add_parser('batch', help='analyze multiple binaries')
     bp.add_argument('directory', help='directory containing binaries')
     bp.add_argument('-o', '--output', default='./results', help='output dir')
     bp.add_argument('-f', '--format', choices=['markdown', 'json'],
                     default='markdown')
 
-    # ---- version ----
+# version
     sub.add_parser('version', help='show version info')
 
     return p

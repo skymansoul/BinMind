@@ -1,14 +1,14 @@
 # 代码属性图（Code Property Graph）构造器 —— 从源码/反编译伪代码提取
 # AST / 控制流(CFG) / 数据流(DFG) / 调用图(CallGraph) 并统一为一张属性图。
 #
-# 对应论文: LLMxCPG (arXiv:2507.16585 [待验证]) 将 CPG 作为 LLM 漏洞检测的结构上下文,
-# CodeSAGE (J. Inf. Secur. Appl. 2025) 以 CPG 作为多特征融合的图输入。
+# 对应论文: LLMxCPG 将 CPG 作为 LLM 漏洞检测的结构上下文,
+# CodeSAGE 以 CPG 作为多特征融合的图输入。
 # 本模块不依赖 tree-sitter / libclang —— 对反编译伪代码(IDA/Ghidra 风格 C)与
 # Python 源码采用轻量启发式解析, 精度足以支撑下游的路径序列化与结构特征打分。
 #
 # 边界条件:
-#   - 反编译伪代码可能缺少类型信息, 变量提取退化为标识符级 def/use 统计。
-#   - 控制流仅按文本顺序与括号嵌套近似, 不保证与真实执行路径一致。
+# 反编译伪代码可能缺少类型信息, 变量提取退化为标识符级 def/use 统计。
+# 控制流仅按文本顺序与括号嵌套近似, 不保证与真实执行路径一致。
 #   - 跨函数调用仅在同一源码片段内解析, 未命中函数名的调用保留为孤立 callee 节点。
 
 import json
@@ -94,7 +94,7 @@ class CodePropertyGraph:
             lambda: ([], []))
         self._order: Dict[int, int] = {}          # 节点文本出现顺序, 供 DFG 排序
 
-    # ---- 图构造 ----
+# 图构造
 
     def add_node(self, kind: CPGNodeKind, label: str, line_no: int = 0,
                  **attrs) -> int:
@@ -123,7 +123,7 @@ class CodePropertyGraph:
             return self._adj_in.get(nid, [])
         return [e for e in self._adj_in.get(nid, []) if e.kind == kind]
 
-    # ---- 基于文本的启发式构建 ----
+# 基于文本的启发式构建
 
     @classmethod
     def from_source(cls, source: str, source_name: str = "") -> "CodePropertyGraph":
@@ -151,7 +151,7 @@ class CodePropertyGraph:
                 brace_depth += 1
                 continue
 
-            # ---- 函数签名识别(预扫描结果) ----
+# 函数签名识别(预扫描结果)
             if idx in func_starts:
                 fname = func_starts[idx]
                 fn_id = cpg.add_node(CPGNodeKind.FUNCTION, fname, line_no)
@@ -164,7 +164,7 @@ class CodePropertyGraph:
                 pending_func_sig = fn_id
                 continue
 
-            # ---- 分支/循环 ----
+# 分支/循环
             mcond = cls._try_condition(stripped)
             if mcond is not None and current_func is not None:
                 br_id = cpg.add_node(CPGNodeKind.BRANCH, mcond, line_no)
@@ -177,7 +177,7 @@ class CodePropertyGraph:
                 prev_stmt = br_id
                 continue
 
-            # ---- return / break / goto ----
+# return / break / goto
             if stripped.startswith(("return", "break", "goto", "continue")):
                 cid = cpg.add_node(CPGNodeKind.CONTROL, stripped.rstrip(";"), line_no)
                 parent = block_stack[-1] if block_stack else current_func
@@ -190,7 +190,7 @@ class CodePropertyGraph:
                 prev_stmt = cid
                 continue
 
-            # ---- 闭合块 ----
+# 闭合块
             if stripped == "}":
                 # 仅当回退到最外层(函数体)时才闭合函数 —— 内层块 `}` 不触发
                 if pending_func_sig is not None and len(block_stack) == 1:
@@ -214,7 +214,7 @@ class CodePropertyGraph:
                         current_func, block_stack, prev_stmt, rest, line_no)
                 continue
 
-            # ---- 普通语句(赋值/调用/声明) ----
+# 普通语句(赋值/调用/声明)
             if current_func is not None:
                 stmt_id = cpg._handle_statement(
                     current_func, block_stack, prev_stmt, stripped, line_no)
@@ -224,11 +224,11 @@ class CodePropertyGraph:
                 sid = cpg.add_node(CPGNodeKind.STMT, stripped, line_no)
                 prev_stmt = sid
 
-        # ---- 数据流边: def -> use (按文本顺序约束) ----
+# 数据流边: def -> use (按文本顺序约束)
         cpg._finalize_dfg()
         return cpg
 
-    # ---- 语句解析 ----
+# 语句解析
 
     def _handle_statement(self, func_id: Optional[int], block_stack: List[int],
                           prev_stmt: Optional[int], text: str, line_no: int) -> Optional[int]:
@@ -296,7 +296,7 @@ class CodePropertyGraph:
             self.add_edge(prev_stmt, sid, CPGEdgeKind.CFG)
         return sid
 
-    # ---- 静态辅助 ----
+# 静态辅助
 
     @staticmethod
     def _match_function_signature(text: str) -> Optional[Tuple[str, str]]:
@@ -405,7 +405,7 @@ class CodePropertyGraph:
                         self.add_edge(d, u, CPGEdgeKind.DFG, var=var)
                         break      # 保守: 每 def 只连最早可及 use
 
-    # ---- 查询与裁剪 ----
+# 查询与裁剪
 
     def function_ids(self) -> List[int]:
         return list(self.functions.values())

@@ -15,7 +15,7 @@ from typing import Optional, Iterator
 _TRACE_FLAGS = 0b1101_0010
 
 
-# ---- 可选依赖 ----
+# 可选依赖
 try:
     import msgpack
     MSGPACK_AVAILABLE = True
@@ -38,7 +38,7 @@ except ImportError:
     _pb_json_format = None
     _pb_descriptor_pool = None
 
-# ---- 魔术字节 ----
+# 魔术字节
 MAGIC_GZIP = b'\x1f\x8b'
 MAGIC_LZ4 = b'\x04\x22\x4d\x18'
 
@@ -72,7 +72,7 @@ def _detect_compression(data: bytes) -> Optional[str]:  # 通过魔术字节识�
     return None
 
 
-# ===== 序列化 =====
+# 序列化
 
 def serialize(obj, fmt: str = "json", compress: Optional[str] = None) -> bytes:
     """obj -> bytes，可选压缩。
@@ -97,7 +97,7 @@ def serialize(obj, fmt: str = "json", compress: Optional[str] = None) -> bytes:
     return raw
 
 
-# ===== 反序列化 =====
+# 反序列化
 
 def deserialize(
     data: bytes,
@@ -129,7 +129,7 @@ def deserialize(
         return json.loads(data.decode("utf-8"))
 
 
-# ===== 流式 =====
+# 流式
 
 def serialize_stream(objects: Iterator, fmt: str = "json") -> Iterator[bytes]:
     """逐条序列化迭代器。每条之间用换行分隔（JSONL 格式）。
@@ -156,7 +156,7 @@ def deserialize_stream(data_iter: Iterator[bytes], fmt: str = "json") -> Iterato
                 yield json.loads(stripped.decode("utf-8"))
 
 
-# ===== Protobuf 序列化 — 离线/跨语言场景首选紧凑格式 =====
+# Protobuf 序列化 — 离线/跨语言场景首选紧凑格式
 # protobuf 比 JSON 体积小 ~60-80%，比 msgpack 更紧凑但需预定义 .proto schema
 # 此处提供 message ↔ JSON dict 的双向转换，方便与现有 JSON 生态互操作
 

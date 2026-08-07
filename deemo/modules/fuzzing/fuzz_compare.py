@@ -1,17 +1,16 @@
 """模糊测试器对比与统计评估框架。
 
-参考:
-  SoK: Prudent Evaluation Practices for Fuzzing (IEEE S&P 2024) -- 150篇论文的系统评估方法审查
-  Lee (arXiv:2409.14987, 2024)  -- 逻辑状态覆盖, Bloom filter 实现
-  Ognev & Zegzhda (2025)         -- 归一化积分指标, 无需重跑的事后对比
-  FuzzBench (Google 2024)        -- 标准化 Docker 基准测评平台
+  SoK: Prudent Evaluation Practices for Fuzzing  -- 150篇论文的系统评估方法审查
+  Lee   -- 逻辑状态覆盖, Bloom filter 实现
+  Ognev & Zegzhda          -- 归一化积分指标, 无需重跑的事后对比
+  FuzzBench        -- 标准化 Docker 基准测评平台
   Vargha-Delaney A12 效应量      -- fuzzer 统计比较的非参数方法
 
 提供:
   - Mann-Whitney U + Vargha-Delaney Â₁₂ 双样本比较
   - 多个 fuzzer 的 ANOVA/Bootstrap 比较
-  - 逻辑状态覆盖度量 (Lee 2024)
-  - 归一化积分指标 (Ognev 2025)
+  - 逻辑状态覆盖度量
+  - 归一化积分指标
   - FuzzBench 兼容的 JSON 报告输出
 """
 
@@ -28,7 +27,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 _logger = logging.getLogger(__name__)
 
-
 @dataclass
 class FuzzerRun:
     """一次 fuzzer 运行的完整结果。"""
@@ -43,11 +41,10 @@ class FuzzerRun:
     logic_states: Set[int] = field(default_factory=set)
     metadata: Dict = field(default_factory=dict)
 
-
 class FuzzerComparator:
     """模糊测试器统计比较器。
 
-    SoK (S&P 2024) 建议: 对 150 篇论文的审查发现, 绝大多数 fuzzer 评估
+    SoK 建议: 对 150 篇论文的审查发现, 绝大多数 fuzzer 评估
     缺乏严格的统计检验。本框架实现 S&P 2024 推荐的完整统计流程。
     """
 
@@ -57,7 +54,7 @@ class FuzzerComparator:
     def add_run(self, fuzzer_name: str, run: FuzzerRun) -> None:
         self._runs[fuzzer_name].append(run)
 
-    # ===== 效应量 =====
+# 效应量
 
     @staticmethod
     def vargha_delaney_a12(sample_a: List[float], sample_b: List[float]) -> float:
@@ -66,7 +63,7 @@ class FuzzerComparator:
         Â₁₂ = (R₁/m - (m+1)/2) / n
         其中 R₁ 是 A 样本在合并排序中的秩和。
 
-        解释 (S&P 2024):
+        解释:
           Â₁₂ > 0.5 → A 优于 B
           < 0.56 → negligible
           < 0.64 → small
@@ -153,7 +150,7 @@ class FuzzerComparator:
                 results.append(result)
         return results
 
-    # ===== 归一化积分指标 (Ognev 2025) =====
+# 归一化积分指标
 
     def normalized_integral_index(self, fuzzer_name: str) -> Dict:
         """Ognev & Zegzhda (2025) 的归一化积分指标。
@@ -222,8 +219,7 @@ class FuzzerComparator:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
 
-
-# ===== 逻辑状态覆盖 (Lee 2024) =====
+# 逻辑状态覆盖
 
 class LogicStateCoverage:
     """Bloom filter 基的逻辑状态覆盖 [Lee 2024, arXiv:2409.14987]。

@@ -1,5 +1,5 @@
-# 创建: 2025-08-17 09:30
-# 修改: 2025-08-17 — 后向 use-def BFS 切片 + 拓扑序副作用组合
+# 创建: 2026-06-23 09:30
+# 修改: 2026-06-23 — 后向 use-def BFS 切片 + 拓扑序副作用组合
 """
 分治符号执行切片器 — 程序分解为独立切片, 逐片执行, 组合副作用。
 
@@ -18,14 +18,14 @@
 为什么后向切片有效:
   前向符号执行从程序入口开始——路径数随程序长度指数增长。
   后向切片从漏洞点开始回溯——仅关注能到达 sink 的数据流路径,
-  自动裁剪 90%+ 的无关代码。参考: BinSleuth (2026) 的
+  自动裁剪 90%+ 的无关代码。参考: BinSleuth 的
   backward slicing strategy 实现了 42× 加速。
 
-ref: BinSleuth (JSS 2026) — backward slicing + under-constrained SE,
+ref: BinSleuth — backward slicing + under-constrained SE,
      本项目取其切片策略但用于完整符号执行而非 UCSE
-ref: Divide, Conquer and Verify (arXiv:2310.03598) — program splitting
+ref: Divide, Conquer and Verify — program splitting
      into slices for independent SE, 本项目增加摘要提取 + 副作用组合
-ref: Symerge (SecureComm 2024/2026) — state merging + function summaries,
+ref: Symerge — state merging + function summaries,
      本项目的切片摘要借鉴其多级合并思想
 """
 
@@ -60,7 +60,7 @@ class ProgramSlice:
     depends_on: list[int] = field(default_factory=list)  # 依赖的其他 slice_id
 
 
-# --- 数据流图构建 ---
+# 数据流图构建
 
 def build_dataflow_graph(instructions: list[dict],
                          sink_addrs: set[int]) -> list[DataFlowNode]:
@@ -90,7 +90,7 @@ def build_dataflow_graph(instructions: list[dict],
     return nodes
 
 
-# --- 后向切片 ---
+# 后向切片
 
 def backward_slice(nodes: list[DataFlowNode],
                    sink_addr: int,
@@ -131,7 +131,7 @@ def backward_slice(nodes: list[DataFlowNode],
     )
 
 
-# --- 切片摘要提取 ---
+# 切片摘要提取
 # 将切片的符号执行结果压缩为输入→输出的映射。
 
 def extract_slice_summary(symbolic_executor: Callable,
@@ -149,7 +149,7 @@ def extract_slice_summary(symbolic_executor: Callable,
     # 此处提取—实际实现调用 angr/z3, 此处提供接口骨架
 
 
-# --- 副作用组合 ---
+# 副作用组合
 # 按依赖拓扑序组合各切片的副作用。
 
 def compose_slices(slices: list[ProgramSlice]) -> dict:
@@ -194,7 +194,7 @@ def _topological_sort(slices: list[ProgramSlice]) -> list[ProgramSlice]:
     return result
 
 
-# --- 端到端分治管线 ---
+# 端到端分治管线
 
 class DivideConquerSymExec:
     """分治符号执行管线——切片→执行→摘要→组合。"""

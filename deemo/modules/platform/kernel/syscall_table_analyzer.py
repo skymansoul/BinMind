@@ -6,9 +6,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-# ================================================================
 # Linux x86_64 syscall table (from /usr/include/asm/unistd_64.h)
-# ================================================================
 SYSCALL_TABLE_X64: Dict[int, str] = {
     0: "read",           1: "write",          2: "open",
     3: "close",          4: "stat",           5: "fstat",
@@ -166,7 +164,7 @@ class SyscallEntry:
         }
 
 
-# ===== Linux syscall hook 检测 =====
+# Linux syscall hook 检测
 
 # x86_64 syscall handler典型函数序言 — 用于inline hook识别
 # 正常handler: endbr64; push rbp; mov rbp, rsp; ...
@@ -269,7 +267,7 @@ def detect_linux_hooks(syscall_table_entries: Dict[int, int],
     return _results
 
 
-# ===== Windows SSDT hook 检测 =====
+# Windows SSDT hook 检测
 
 # 常用Windows SSDT索引 -> 函数名 (展开至Win11 24H2)
 WINDOWS_SSDT_INDICES: Dict[int, str] = {
@@ -411,7 +409,7 @@ def detect_windows_hooks(ntoskrnl_path: str,
     return _results
 
 
-# ─── KiServiceTable边界验证 ───
+# KiServiceTable边界验证
 # rootkit可能通过修改KiServiceLimit隐藏高编号hook
 
 def validate_service_limit(ssdt_entries: Dict[int, int],
@@ -438,7 +436,7 @@ def validate_service_limit(ssdt_entries: Dict[int, int],
     return _findings
 
 
-# ─── WOW64 syscall表交叉验证 ───
+# WOW64 syscall表交叉验证
 # Windows x64维护两份syscall表：一份用于native x64调用，
 # 另一份用于WOW64 (32位进程在x64内核上的系统调用)。
 # rootkit有时仅hook native表而忽略WOW64表 — 提供检测窗口。
@@ -471,7 +469,7 @@ def detect_wow64_hook_gap(native_ssdt: Dict[int, int],
     return _findings
 
 
-# ─── Hell's Hollow探测 ───
+# Hell's Hollow探测
 
 def detect_hells_hollow(syscall_entries: List[SyscallEntry]) -> List[Dict]:
     """
@@ -516,7 +514,7 @@ def detect_hells_hollow(syscall_entries: List[SyscallEntry]) -> List[Dict]:
     return _findings
 
 
-# ─── 系统调用序列异常检测 ───
+# 系统调用序列异常检测
 # rootkit常hook特定syscall并在其中注入额外行为。
 # 通过分析被hook的syscall之间的功能分组，推测rootkit意图。
 

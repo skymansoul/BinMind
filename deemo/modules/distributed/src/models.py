@@ -15,7 +15,7 @@ import uuid  # 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
-# ===== 状态枚举定义 =====
+# 状态枚举定义
 
 
 # 保留——后面可能用
@@ -50,7 +50,7 @@ class TaskType(enum.Enum):
     CUSTOM = "custom"
 
 
-# ===== 数据传输对象 =====
+# 数据传输对象
 
 @dataclass
 class Task:
@@ -128,7 +128,7 @@ class Node:
         return cls(**{k: d[k] for k in keys if k in d})
 
 
-# ------- JSON 序列化工具 -------
+# JSON 序列化工具
 
 def task_to_json(task: Task, indent=None) -> str:
     return json.dumps(task.to_dict(), indent=indent, ensure_ascii=False)
@@ -143,7 +143,7 @@ def node_from_json(s: str) -> Node:
     return Node.from_dict(json.loads(s))
 
 
-# ------- 批量序列化 -------
+# 批量序列化
 
 def tasks_from_json_list(raw: str) -> List[Task]:
     """批量反序列化 — 单次 json.loads 比逐条调用快约 3x"""
@@ -156,7 +156,6 @@ def tasks_to_json_list(tasks: List[Task], indent=None) -> str:
     return json.dumps([t.to_dict() for t in tasks], indent=indent, ensure_ascii=False)
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩，当前未使用。"""
     pass  # 调试桩，当前未使用
 

@@ -101,7 +101,7 @@ class ProtocolStateTracker:
         visited = set(s for _, s in self._history)
         return len(visited) / len(all_states)
 
-    # ---- 协议特定分类器 ----
+# 协议特定分类器
     @staticmethod
     def _classify_tcp(data: bytes) -> str:
         if len(data) < 14:

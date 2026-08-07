@@ -18,23 +18,23 @@
 # 最可能触发其他告警的原始事件。
 #
 # 方法优势：
-#   - 无监督：不需要带标签的攻击数据
-#   - 在线更新：新告警到达时增量维护图，无需全量重算
+# 无监督：不需要带标签的攻击数据
+# 在线更新：新告警到达时增量维护图，无需全量重算
 #   - 跨层：OSI L2(BLE/802.11)~L7(DNS/HTTP/Modbus)告警统一到一个分析空间
 #
-# ref: Osamor et al. "Real-time detection of malicious IP addresses
+# Osamor et al. "Real-time detection of malicious IP addresses
 #      using GNNs: A cross-protocol ML approach."
 #      ICECCME 2025, IEEE.
 #      — 提出跨协议特征提取+GNN检测框架 (准确率98.2%)。
 #      本项目取其"跨协议关联"设计动机，采用无监督异构图模型
 #      替代其半监督GNN，消除对标注攻击数据的依赖。
 #
-# ref: Haveliwala, T. "Topic-sensitive PageRank."
+# Haveliwala, T. "Topic-sensitive PageRank."
 #      WWW 2002. — 个性化PageRank理论基础。
 #      本项目将"主题向量"替换为告警严重度向量，得分偏置向高危告警。
 #
-# ref: Kleinberg, J. "Authoritative sources in a hyperlinked environment."
-#      JACM 46.5 (1999): 604-632. — HITS算法启发式。
+# Kleinberg, J. "Authoritative sources in a hyperlinked environment."
+#      JACM 46.5: 604-632. — HITS算法启发式。
 #      本项目不显式使用hub/authority区分，但时间衰减边权重
 #      设计参考了HITS的迭代精化思想。
 

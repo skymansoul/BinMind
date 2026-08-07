@@ -28,7 +28,6 @@ class ValueRange:
         if self.is_top: return 'TOP'
         return f'[{self.lo},{self.hi}]'
 
-
 def _extract_ranges(code: str) -> Dict[str, ValueRange]:
     """从代码中提取变量值范围."""
     r = {}
@@ -63,7 +62,6 @@ def _extract_ranges(code: str) -> Dict[str, ValueRange]:
         b = r.get(m.group(3), ValueRange.top())
         r[m.group(1)] = a.add(b)
     return r
-
 
 def detect_int_overflow(code: str, func: str = '') -> List[Dict]:
     """检测整数溢出."""

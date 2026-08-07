@@ -1,0 +1,18 @@
+{
+  "vuln_cve_2020_29370": {"heap_overflow": true},
+  "vuln_cve_2019_9213": {"heap_overflow": true},
+  "vuln_cve_2021_3156": {"heap_overflow": true},
+  "safe_heap": {"heap_overflow": false},
+  "vuln_cve_2016_10190": {"heap_overflow": true},
+  "vuln_int_overflow_heap": {"heap_overflow": true},
+  "vuln_cve_2015_0235": {"heap_overflow": true},
+  "safe_equal_size": {"heap_overflow": false},
+  "vuln_cve_2014_0160": {"heap_overflow": true},
+  "vuln_multipath": {"heap_overflow": true},
+  "fp_internal_data": {"heap_overflow": false},
+  "vuln_recursive": {"heap_overflow": true},
+  "fp_alloc_constraint": {"heap_overflow": false},
+  "vuln_cve_2022_0185": {"heap_overflow": true},
+  "vuln_cve_2023_0461": {"heap_overflow": true},
+  "vuln_strcat_chain": {"heap_overflow": true}
+}

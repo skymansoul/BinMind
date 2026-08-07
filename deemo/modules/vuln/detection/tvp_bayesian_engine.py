@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-29  |  贝叶斯推断引擎
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-04-24  |  贝叶斯推断引擎
+# 修改: 2026-04-24  |  审计后补充文件头与错误处理
 #
 """
 贝叶斯时态溯源推断引擎——综合先验与因果似然，产出提交级后验概率分布。
@@ -44,8 +44,8 @@ class VulnerabilityCausalModel:
       P(child | parents) ~ N(Σ coeff_i × parent_i, sigma²)
 
     参数先验来源:
-      Mockus et al. (2002): 开发者经验与变更风险负相关
-      Nagappan & Ball (2005): 代码搅动与缺陷密度正相关
+      Mockus et al.: 开发者经验与变更风险负相关
+      Nagappan & Ball: 代码搅动与缺陷密度正相关
     """
 
     def __init__(self):

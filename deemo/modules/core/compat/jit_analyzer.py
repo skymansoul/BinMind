@@ -43,7 +43,7 @@ def _ajd_lua(self, dump_data=None):
 _m.LuaJITAnalyzer.analyze_jit_dump = _ajd_lua
 
 # --- JIT Spray 检测增强 ---
-# 参考: Blazakis (2010) "Interpreter Exploitation: Pointer Inference and JIT Spraying"
+# Blazakis (2010) "Interpreter Exploitation: Pointer Inference and JIT Spraying"
 # 以及 Dionysus (2023) 对 JIT编译器加固的综述
 
 import re as _re
@@ -110,7 +110,7 @@ def estimate_rwx_risk(engine_type: str, jit_flags: dict) -> str:
 
 
 # --- CFI (Control Flow Integrity) 绕过检测 ---
-# 参考: Abadi et al. (2005) "Control Flow Integrity" 及 Carlini et al. (2015)
+# Abadi et al. (2005) "Control Flow Integrity" 及 Carlini et al. (2015)
 # "Control-Flow Bending" — JIT 编译器生成的代码天然绕过 CFI，因 JIT 代码页
 # 在运行时动态分配且标记为 RWX，CFI 无法静态验证其控制流转移
 # 检测指标: JIT 代码页的间接跳转密度、gadget 密度、ROP 链可用性

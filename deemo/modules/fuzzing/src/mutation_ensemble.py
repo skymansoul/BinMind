@@ -5,12 +5,11 @@
 2025-08-01 08:37 - 修复 EG 权重在零奖励序列上的退化 (强制最小权重≥0.01)
 2025-08-03 13:10 - 集成到 Scheduler, 与 ISRG/PathCluster/Pareto 协同
 
-参考:
-  Kivinen & Warmuth (1997) "Exponentiated Gradient Versus Gradient Descent
+  Kivinen & Warmuth "Exponentiated Gradient Versus Gradient Descent
     for Linear Predictors" — EG 算法的 regret bound: R_T ≤ sqrt(2T ln N)
-  PAMSSAFL (JEIT 2024)   — 分层 MAB 用于突变位置+算子选择 (离散臂)
-  CLUTCH (arXiv:2510.12732, 2025) — 深度组合 bandit + 注意力机制用于 JS 引擎突变
-  Cesa-Bianchi & Lugosi (2006) "Prediction, Learning, and Games"
+  PAMSSAFL   — 分层 MAB 用于突变位置+算子选择 (离散臂)
+  CLUTCH  — 深度组合 bandit + 注意力机制用于 JS 引擎突变
+  Cesa-Bianchi & Lugosi "Prediction, Learning, and Games"
     — 连续专家集成中的 Hedge 算法族, 本项目使用其 EG 变体
 
 核心创新 (与 PAMSSAFL 的区分):
@@ -30,8 +29,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
-
-# ---- 突变策略类型 ----
+# 突变策略类型
 # 每个策略是一个 (名称, 权重) 对, 权重随反馈动态调整
 @dataclass
 class MutationStrategy:
@@ -46,11 +44,9 @@ class MutationStrategy:
     # 记录: 哪些前置策略产生了输入, 本策略在此基础上变异后获得奖励
     precursor_rewards: Dict[str, float] = field(default_factory=lambda: defaultdict(float))
 
-
-# ---- 策略定义 ----
+# 策略定义
 # 返回变异后的 bytes 和变更位置列表
 MutatorFn = Callable[[bytes], Tuple[bytes, List[int]]]
-
 
 def _build_default_strategies() -> Dict[str, MutatorFn]:
     """构建默认的 8 种突变策略。
@@ -60,7 +56,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
     """
     strategies: Dict[str, MutatorFn] = {}
 
-    # ---- 确定性变异族 ----
+# 确定性变异族
     def bitflip_1_1(data: bytes) -> Tuple[bytes, List[int]]:
         if not data:
             return data, []
@@ -98,7 +94,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
             raw[pos] = random.choice(candidates)
         return bytes(raw), [pos]
 
-    # ---- 随机变异族 (havoc) ----
+# 随机变异族 (havoc)
     def havoc_random(data: bytes) -> Tuple[bytes, List[int]]:
         if not data:
             return data, []
@@ -120,7 +116,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
             positions.append(pos)
         return bytes(raw), positions
 
-    # ---- 结构操作族 ----
+# 结构操作族
     def splice_block(data: bytes) -> Tuple[bytes, List[int]]:
         if len(data) < 4:
             return data, []
@@ -162,7 +158,6 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
     strategies["insert"] = insert_cloned
 
     return strategies
-
 
 class MutationEnsemble:
     """在线突变策略集成 — 指数梯度 (EG) 自适应加权。

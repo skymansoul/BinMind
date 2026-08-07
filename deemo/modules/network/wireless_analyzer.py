@@ -61,7 +61,6 @@ class WirelessAnomaly:
     severity: str = "medium"
 
 
-# =========================================================================
 class EwmaAnomalyScorer:
     """EWMA自适应去认证洪水检测。指数加权移动平均异常评分。
 
@@ -107,7 +106,6 @@ class EwmaAnomalyScorer:
         return instant_rate > new_ewma + self._threshold_sigma * sigma
 
 
-# =========================================================================
 class WirelessProtocolAnalyzer:
     """无线协议帧分类器+协议层异常检测引擎。"""
 

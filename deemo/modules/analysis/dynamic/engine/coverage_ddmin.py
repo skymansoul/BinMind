@@ -17,9 +17,9 @@
 # 3. Byte-import ranking：在每次成功缩减后，按"字节位置是否在
 # 被移除区间内"标记热度，指导后续缩减优先尝试冷区
 #
-# ref: Zeller & Hildebrandt, "Simplifying Isolating Failure-Inducing
-#      Input." IEEE TSE 28.2 (2002): 183-200. — ddmin 原始算法
-# ref: Rebert et al., "Optimizing Seed Selec for 模糊测试."
+# Zeller & Hildebrandt, "Simplifying Isolating Failure-Inducing
+#      Input." IEEE TSE 28.2: 183-200. — ddmin 原始算法
+# Rebert et al., "Optimizing Seed Selec for 模糊测试."
 # USENIX Securi 2014. — 覆盖率引导的种子选择，本项目将其思想
 #      反转用于种子最小化（保留覆盖率而非寻找新覆盖率）
 
@@ -88,7 +88,7 @@ class CoverageGuidedMinimizer:
         import time
         t0 = time.time()
 
-        # Step 1: 基线覆盖率 + 目标边集
+        # 基线覆盖率 + 目标边集
         original_edges = self._exec(data)
         if not original_edges:
             return CoverageMinimizationResult(
@@ -100,7 +100,7 @@ class CoverageGuidedMinimizer:
 
         pinned_edges = frozenset(original_edges)
 
-        # Step 2: 自适应阈值——覆盖率密度低时放宽要求
+        # 自适应阈值——覆盖率密度低时放宽要求
         # 密度 = 命中边数 / 预期最大边数（粗略估计为 len(data) * 2）
         density = len(pinned_edges) / max(1, len(data) * 2)
         if density < 0.05:
@@ -110,7 +110,7 @@ class CoverageGuidedMinimizer:
         else:
             threshold = self._threshold
 
-        # Step 3: ddmin 主循环
+        # ddmin 主循环
         current = bytearray(data)
         n = len(current)
         gran = self._granularity
@@ -186,13 +186,11 @@ class CoverageGuidedMinimizer:
         return intersection / union if union > 0 else 0.0
 
 
-# ---------------------------------------------------------------------------
 # Byte-import ranker —— 辅助覆盖率引导最小化的启发式模块
 #
 # 与 覆盖率GuidedMinimizer 分离以保持单一职责
 # 在多次独立执行中统计"被删除后未影响目标边集"的字节区间——
 # 这些区间在后续缩减中应被优先尝试
-# ---------------------------------------------------------------------------
 
 class ByteImportanceRanker:
     """基于覆盖率反馈的字节重要性排序器

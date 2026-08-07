@@ -92,7 +92,7 @@ class DecompilerConfidenceEnsemble:
         """
         import re
 
-        # 提取所有栈偏移写操作: *(rbp - N) = 
+        # 提取所有栈偏移写操作: *(rbp - N) =
         writes = set(re.findall(r'\*\s*\(\s*rbp\s*-\s*(0x[0-9a-fA-F]+)\s*\)\s*=', output.pseudocode))
         reads = set(re.findall(r'\*\s*\(\s*rbp\s*-\s*(0x[0-9a-fA-F]+)\s*\)', output.pseudocode))
 

@@ -1,11 +1,11 @@
-# Created: 2025-07-25 19:34:44
+# Created: 2026-05-22 19:34:44
 #
 # capability_inference — 静态二进制能力推断引擎
 # 从导入 API + 字符串 + 段特征推断二进制的高层功能能力，
 # 无需执行、无需反汇编、无需 ML 训练。
 #
-# 区别于 SymGen (NDSS): 该文献用领域自适应 LLM 预测 stripped binary 的
-# 单个函数名 (409% precision gain over SOTA)。本模块做的是整个二进制的
+# 区别于领域自适应 LLM 预测 stripped binary 单个函数名的方案,
+# 本模块做的是整个二进制的
 # 能力画像 (capability profile) — "它能做什么" 而非 "函数叫什么"。
 # 粒度更粗但覆盖更全，且零外部依赖。
 #

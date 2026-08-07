@@ -1,0 +1,24 @@
+{
+  "id": "FP01",
+  "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP01\\bin\\packed\\self_consistent_copy.exe",
+  "acpe": {
+    "detected": false,
+    "kept": 0,
+    "error": "",
+    "findings": [
+      {
+        "func": "copy_sized.constprop.0",
+        "addr": 5368715138,
+        "write_func": "call",
+        "relation": "CONST_LE",
+        "verdict": "safe",
+        "reasoning": "write 128B <= usable 128B"
+      }
+    ]
+  },
+  "baseline": {
+    "detected": false,
+    "kept": 0,
+    "findings": []
+  }
+}

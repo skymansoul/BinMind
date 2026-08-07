@@ -1,10 +1,10 @@
 """
-创建: 2025-08-01
+创建: 2026-04-22
 修改:
   2025-08-01 - 约束库提取到 divergent_constraints.py
 对抗性提示多样化注入器 — 在 worker 调度前主动注入差异化约束，预防语义收敛。
 
-问题：Algorithmic Groupthink (2026) 证实多 agent 系统存在"多样性坍塌"——
+问题：Algorithmic Groupthink 证实多 agent 系统存在"多样性坍塌"——
 不同 prompt 的 agent 仍产出高度相似的输出，共享中间结果使多样性降低 5.9%，
 而隔离可提升 10.3%。本系统的 semantic_dedup 是事后检测，发现收敛时
 代码已生成完毕，修复成本高。
@@ -18,8 +18,8 @@
 而非表面措辞差异）。同一 worker 不会被重复分配同一约束。
 
 与现有工作的差异：
-  - Algorithmic Groupthink (2026): 观测性研究，未提供自动化缓解系统
-  - ToxiPrompt (2026): 关注对抗性毒性生成，非代码生成场景
+  - Algorithmic Groupthink: 观测性研究，未提供自动化缓解系统
+  - ToxiPrompt: 关注对抗性毒性生成，非代码生成场景
   - semantic_dedup: 事后检测（已构建），本模块是其事前预防的闭环搭档
   - 基于 token 重叠度的约束强度自适应选择在文献中未见
 """
@@ -171,9 +171,7 @@ class PromptDiversifier:
         }
 
 
-# ---------------------------------------------------------------------------
 # 相似度计算
-# ---------------------------------------------------------------------------
 
 def _tokenize(text: str) -> set[str]:
     """将文本分词。中英文混合：中文按字符级 bigram，英文按单词。"""
@@ -219,9 +217,7 @@ def _inject_constraint(prompt: str, constraint: str) -> str:
     return prompt + injection
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def diversify_module_prompts(
     diversifier: PromptDiversifier,

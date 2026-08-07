@@ -36,9 +36,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Enums & Data Classes
-# ---------------------------------------------------------------------------
 
 class ExecutionStrategy(Enum):
     """
@@ -177,9 +175,7 @@ class SymbolicExplorationResult:
         }
 
 
-# ---------------------------------------------------------------------------
 # Symbolic Expression
-# ---------------------------------------------------------------------------
 
 class SymExpr:
     """
@@ -213,9 +209,7 @@ class SymExpr:
         return cls(value=0, is_symbolic=True, name=name, size_bits=size_bits)
 
 
-# ---------------------------------------------------------------------------
 # SymbolicExecutor
-# ---------------------------------------------------------------------------
 
 class SymbolicExecutor:
     """
@@ -270,14 +264,14 @@ class SymbolicExecutor:
         # Optional LLM ranker (lazy init)
         self._llm_ranker: Any = None
 
-    # ---- fresh variable generation ----
+# fresh variable generation
 
     def _fresh_sym_var(self, prefix: str = "v", size_bits: int = 32) -> SymExpr:
         """构造 a fresh symbolic variable name. O(1)"""
         self._symbolic_var_counter += 1
         return SymExpr.symbolic(f"{prefix}_{self._symbolic_var_counter}", size_bits)
 
-    # ---- state management ----
+# state management
 
     def _new_state_id(self) -> int:
         self._state_counter += 1
@@ -370,7 +364,7 @@ class SymbolicExecutor:
                 worst_idx = i
         self._worklist.pop(worst_idx)
 
-    # ---- instruction execution ----
+# instruction execution
 
     def _read_register(self, state: SymbolicState, reg: str) -> SymExpr:
         """
@@ -633,7 +627,7 @@ class SymbolicExecutor:
         self._stats["forks"] += 1
         return results
 
-    # ---- main exploration loop ----
+# main exploration loop
 
     def explore(
         self,
@@ -732,7 +726,7 @@ class SymbolicExecutor:
         )
         return self.explore(initial, ir_fetcher, max_steps=max_steps)
 
-    # ---- constraint extraction ----
+# constraint extraction
 
     def get_path_constraints(self, state: SymbolicState) -> List[Any]:
         """返回 accumulated path constraints for a state. O(1)"""
@@ -742,9 +736,7 @@ class SymbolicExecutor:
         return dict(self._stats)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _flatten_constraints_for_serialization(constraints: List[Any]) -> List[Dict[str, Any]]:
     """Flatten symbolic constraints JSON-serializable dicts. currently used"""

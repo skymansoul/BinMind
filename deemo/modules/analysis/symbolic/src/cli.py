@@ -33,7 +33,7 @@ def _load_config(config_path: Optional[str] = None) -> Any:
         return None
 
 
-# ---- Subcommand: 执行 ----
+# Subcommand: 执行
 
 def _cmd_execute(args: argparse.Namespace) -> int:
     """
@@ -129,7 +129,7 @@ def _cmd_execute(args: argparse.Namespace) -> int:
     return 0
 
 
-# ---- Subcommand: 优化 ----
+# Subcommand: 优化
 
 def _cmd_optimize(args: argparse.Namespace) -> int:
     """
@@ -188,7 +188,7 @@ def _cmd_optimize(args: argparse.Namespace) -> int:
     return 0
 
 
-# ---- Subcommand: solve ----
+# Subcommand: solve
 
 def _cmd_solve(args: argparse.Namespace) -> int:
     """
@@ -254,7 +254,7 @@ def _cmd_solve(args: argparse.Namespace) -> int:
         return 0 if satisfiable else 1
 
 
-# ---- 辅助: IR file loading ----
+# 辅助: IR file loading
 
 def _load_ir_file(path: str) -> List[Any]:
     """
@@ -302,7 +302,7 @@ def _save_json_result(path: str, data: Dict[str, Any]) -> None:
         print("Error saving result: {}".format(e), file=sys.stderr)
 
 
-# ---- Main CLI ----
+# Main CLI
 
 def main(argv: Optional[List[str]] = None) -> int:
     """

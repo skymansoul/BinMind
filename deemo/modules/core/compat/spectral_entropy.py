@@ -1,9 +1,9 @@
 # 多分辨率熵分析 — 从字节级到段级的层级化熵剖面
-# 参考: "HAWKEYE" (Leander et al., CRYPTO 2024) — 基于图论的门级加密原语检测
+# "HAWKEYE" — 基于图论的门级加密原语检测
 #       中的分块熵分析方法，将网表划分为局部/全局两个尺度
-# 参考: "DeepMem" (Song et al., CCS 2018) — 图神经网络用于内存对象检测
+# "DeepMem" — 图神经网络用于内存对象检测
 #       中的全内存图熵特征 — 不同内核对象类型显示不同的熵指纹
-# 参考: "Wavelet-Based Entropy for Malware Detection" (Wojnowicz et al., 2016)
+"Wavelet-Based Entropy for Malware Detection"
 #       — 小波多分辨率熵用于区分加壳与正常代码
 
 import math as _math
@@ -11,7 +11,7 @@ import struct as _struct
 import hashlib as _hl
 from collections import Counter as _Counter, defaultdict
 
-# ===== 字节级熵 (Byte-Level Shannon Entropy) =====
+# 字节级熵 (Byte-Level Shannon Entropy)
 # 最基础且计算量最大的层级 — 256 维频率向量
 # 仅从 Python 层面实现，性能敏感场景应使用 C 扩展或 numpy
 
@@ -41,7 +41,7 @@ def byte_entropy(data: bytes, wsize: int = 0) -> float | list[float]:
     return entropies
 
 
-# ===== 结构熵 (Structural Entropy) =====
+# 结构熵 (Structural Entropy)
 # 基于 n-gram 马尔可夫链的字节转移熵
 # 压缩/加密代码的字节转移常接近均匀；正常代码显示结构化转移
 
@@ -74,7 +74,7 @@ def markov_entropy(data: bytes, order: int = 2) -> float:
     return round(total_ent, 3)
 
 
-# ===== 分块熵剖面 (Chunked Entropy Profile) =====
+# 分块熵剖面 (Chunked Entropy Profile)
 # 将二进制按 256B/512B/1KB/4KB 四个尺度分块，每个尺度计算一维熵向量
 # 多分辨率方法可以同时捕获细粒度异常（如嵌入的 shellcode）和
 # 粗粒度区域（如整个加密段）
@@ -186,7 +186,7 @@ def detect_entropy_anomalies(data: bytes, chunk_size: int = 1024,
     return anomalies
 
 
-# ===== 熵热力图生成 =====
+# 熵热力图生成
 # 将二进制文件的熵剖面转换为 ASCII 热力图字符串
 # 用于终端快速可视化 — 一行 = 一个分块，颜色用字符密度编码
 
@@ -217,7 +217,7 @@ def entropy_heatmap(data: bytes, chunk_size: int = 512,
     return '\n'.join(lines)
 
 
-# ===== 字节分布偏度 =====
+# 字节分布偏度
 # 正常编译器生成的代码中，x86 操作码的分布高度不规则
 # (mov ≈ 30%, call ≈ 5%, nop ≈ 0.1%)。
 # 加壳或加密的代码接近均匀分布 — 偏度接近 0
@@ -244,10 +244,10 @@ def byte_distribution_skewness(data: bytes) -> float:
     return round(m3 / (m2 ** 1.5), 2)
 
 
-# ===== 全局熵-大小比率 =====
+# 全局熵-大小比率
 # 一个综合指标: 总体文件大小与加密/压缩比例的比值
 # 低比率 (< 0.3) → 大部分数据为高熵 → 高度压缩或加密
-# 参考: GUARD 的壳严重度评分体系
+# GUARD 的壳严重度评分体系
 
 def assess_compression_ratio(data: bytes, entropy_threshold: float = 7.0,
                                chunk_size: int = 4096) -> dict:
@@ -289,7 +289,7 @@ def assess_compression_ratio(data: bytes, entropy_threshold: float = 7.0,
     }
 
 
-# --- Headless 批量熵分析 ---
+# Headless 批量熵分析
 def headless_entropy_scan(binary_paths: list[str], output_json: str = '',
                            chunk_size: int = 1024) -> dict:
     """批量熵分析入口 — 对多个文件输出熵摘要。"""

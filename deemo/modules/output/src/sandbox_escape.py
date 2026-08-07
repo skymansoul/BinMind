@@ -14,10 +14,9 @@
   逃逸难度 = 1 - min(seccomp_bypass, cap_abuse, ns_escape)
   取 min 而非 product — 攻击者只需找到最弱的环节。
 
-参考:
-  No formal scoring system exists (2026-08检索确认).
+  No formal scoring system exists.
   CTF techniques documented at book.jorianwoltjer.com.
-  Google Project Zero sandbox escape writeups (2019-2024).
+  Google Project Zero sandbox escape writeups.
 
 修改记录:
   2026-08-01 13:40 - 初始版本，三元约束模型
@@ -27,7 +26,6 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 # 关键逃逸 syscall — 这些调用被阻止时，逃逸难度显著提升
 _ESCAPE_SYSCALLS: Dict[str, float] = {
@@ -94,7 +92,6 @@ _NS_ESCAPE_FACTORS: Dict[str, float] = {
     'user_ns_enabled':      0.10,  # 用户命名空间 → 可能用于提权
 }
 
-
 @dataclass
 class SandboxEscapeScore:
     """沙箱逃逸难度评估。"""
@@ -116,7 +113,6 @@ class SandboxEscapeScore:
             self.tier = 'easy'
         else:
             self.tier = 'trivial'
-
 
 def _seccomp_score(
     blocked_syscalls: List[str],
@@ -146,7 +142,6 @@ def _seccomp_score(
 
     return round(min(bypass_potential, 1.0) * 10, 1)
 
-
 def _capability_score(capabilities: List[str]) -> float:
     """capability 滥用潜力 — 保留的危险权能。"""
     caps_lower = set(c.lower() for c in capabilities)
@@ -154,7 +149,6 @@ def _capability_score(capabilities: List[str]) -> float:
     retained = sum(w for c, w in _DANGEROUS_CAPS.items() if c.lower() in caps_lower)
     # retained / total → 越多的危险权能保留 → 越容易逃逸
     return round((retained / total) * 10, 1) if total > 0 else 0.0
-
 
 def _namespace_score(factors: Dict[str, bool]) -> float:
     """namespace 逃逸潜力 — 暴露面加权。"""
@@ -165,7 +159,6 @@ def _namespace_score(factors: Dict[str, bool]) -> float:
     # Clamp 到 [0, 1]
     score = max(0.0, min(1.0, score))
     return round(score * 10, 1)
-
 
 def score_sandbox_escape(
     blocked_syscalls: Optional[List[str]] = None,
@@ -207,7 +200,6 @@ def score_sandbox_escape(
         overall_escape_difficulty=difficulty,
         weakest_link=link,
     )
-
 
 def escape_summary(score: SandboxEscapeScore) -> Dict[str, Any]:
     """沙箱逃逸评估摘要 — 可直接嵌入报告。"""

@@ -1,0 +1,6 @@
+{
+  "id": "fmt_tp_10_nested_call",
+  "expected_vuln": true,
+  "vuln_type": "format_string",
+  "mode": "嵌套调用: strlen(user) 后 format 拼接"
+}

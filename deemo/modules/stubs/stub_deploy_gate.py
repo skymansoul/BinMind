@@ -16,7 +16,7 @@
 #      — 这是简单的乘法分解，非SHAP/LIME等博弈论解释方法。
 #      其作用是让运维人员看到各信号对最终决策的贡献量级。
 #
-# 区别于 arXiv:2603.15676 的 LLM 应用自测试门控:
+# 区别于 的 LLM 应用自测试门控:
 #   该论文针对 LLM 应用的非确定性输出设计门控维度。
 #   本模块针对桩实现的确定性质量信号设计门控维度。
 import os as _os
@@ -134,7 +134,7 @@ class DeployGate:
         result.explanation = self._explain(result)
         return result
 
-    # ---- 信号采集 ----
+# 信号采集
     def _signal_irl(self, module_name: str) -> GateSignal:
         sig = GateSignal(name='irl', weight=self.WEIGHTS['irl'],
                         source='QualityScorer')
@@ -259,7 +259,7 @@ class DeployGate:
             base += f'Warnings: {len(result.warnings)} items.'
         return base
 
-    # ---- 序贯决策优化 ----
+# 序贯决策优化
     # 按信号采集成本排序，逐阶段评估。若剩余信号无论取何值都无法改变决策，
     # 则提前退出，节省后续信号的计算开销。
     #
@@ -347,7 +347,7 @@ class DeployGate:
         result.explanation = self._explain(result)
         return result
 
-    # ---- CI/CD 集成 ----
+# CI/CD 集成
     def ci_check(self, module_name: str, sequential: bool = False) -> tuple[int, dict]:
         """CI/CD gate check. sequential=True uses early-exit optimization."""
         result = self.evaluate_sequential(module_name) if sequential else self.evaluate(module_name)

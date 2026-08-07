@@ -14,7 +14,6 @@
 # 为什么不用神经网络:
 #   特征维度低 (~8维), 样本量少 (<1000), 逻辑回归可解释且不易过拟合。
 
-from __future__ import annotations
 
 import math
 import time

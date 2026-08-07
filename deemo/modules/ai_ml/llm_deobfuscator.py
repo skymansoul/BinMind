@@ -15,9 +15,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Enums
-# ---------------------------------------------------------------------------
 
 class LLMProvider(Enum):
     OPENAI = "openai"
@@ -26,9 +24,7 @@ class LLMProvider(Enum):
     CUSTOM = "custom"
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class DeobfContext:
@@ -83,9 +79,7 @@ class LLMDeobfResult:
         )
 
 
-# ---------------------------------------------------------------------------
 # 指数退避重试辅助 — 瞬时故障不应阻断去混淆流水线
-# ---------------------------------------------------------------------------
 
 def _retry_http_call(request_fn, max_retries: int = 3, backoff_base: float = 2.0):
     """
@@ -129,9 +123,7 @@ def _retry_http_call(request_fn, max_retries: int = 3, backoff_base: float = 2.0
     return None
 
 
-# ---------------------------------------------------------------------------
 # LLM Client Base & Implementations
-# ---------------------------------------------------------------------------
 
 class LLMClientBase:
     """Abstract base for LLM API communication."""
@@ -331,9 +323,7 @@ class MockDeobfClient(LLMClientBase):
         return f"```c\n// Deobfuscated code (mock)\n{code}\n```"
 
 
-# ---------------------------------------------------------------------------
 # Prompt Templates
-# ---------------------------------------------------------------------------
 
 class PromptTemplates:
     """Collection of deobfuscation prompt templates."""
@@ -440,9 +430,7 @@ Code:
 Output code with natural control flow restored."""
 
 
-# ---------------------------------------------------------------------------
 # Readability Enhancer
-# ---------------------------------------------------------------------------
 
 class ReadabilityEnhancer:
     """Post-processing to improve code readability after LLM deobfuscation."""
@@ -512,9 +500,7 @@ class ReadabilityEnhancer:
         return max(0.0, min(1.0, score))
 
 
-# ---------------------------------------------------------------------------
 # LLM Deobfuscator
-# ---------------------------------------------------------------------------
 
 class LLMDeobfuscator:
     """Main LLM-driven deobfuscator with configurable strategies.
@@ -753,9 +739,7 @@ class LLMDeobfuscator:
         self.m_history.clear()
 
 
-# ---------------------------------------------------------------------------
 # Convenience function
-# ---------------------------------------------------------------------------
 
 def llm_deobfuscate(obfuscated_code: str,
                     llm_client: Optional[LLMClientBase] = None,

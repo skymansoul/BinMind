@@ -2,7 +2,7 @@
 #
 # 设计动机:
 #   现有二进制相似性检测 (BinDiff, Diaphora, 以及本项目的 cfg_entropy_fingerprint.py)
-#   基于 CFG 结构特征做函数匹配。Kelpie (Sauger et al. 2025) 证明:
+#   基于 CFG 结构特征做函数匹配。Kelpie 证明:
 #   通过对代码做语义保持变换, 可系统性规避此类检测器的嵌入空间分类。
 #
 #   本模块提供面向防御的CFG鲁棒性评估: 生成对抗性变换后的CFG,
@@ -21,10 +21,10 @@
 #   具体的变换操作 (split/merge/nop/reorder等) 在 adversarial_cfg_ops.py,
 #   CFGRobustnessEvaluator 也在 ops 文件中, 通过本文件的便捷入口访问。
 #
-# 参考文献:
-#   Kelpie (Sauger et al. 2025) — 零查询目标模仿攻击, 语义保持变换规避
+# 文献:
+#   Kelpie — 零查询目标模仿攻击, 语义保持变换规避
 #     六种二进制函数分类器; 本项目取其变换思想但用于防御评估而非攻击
-#   Capozzi et al. (IEEE Access 2024) — 黑盒攻击可达 93.81% 成功率;
+#   Capozzi et al. — 黑盒攻击可达 93.81% 成功率;
 #     本项目参考其贪心搜索策略, 以熵预算约束替代无界变异
 
 from __future__ import annotations
@@ -270,7 +270,7 @@ class AdversarialCFGTransformer:
         if handler:
             handler(cfg, block, self._rng)
 
-    # ---- CFG → 9维熵特征向量 ----
+    # CFG → 9维熵特征向量
 
     def _cfg_to_features(self, cfg: CFGSpec) -> List[float]:
         """将CFG转化为9维熵特征——与cfg_entropy_fingerprint.py对齐。

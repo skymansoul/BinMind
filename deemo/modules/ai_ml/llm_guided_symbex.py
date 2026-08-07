@@ -16,9 +16,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class BranchPriority:
@@ -121,9 +119,7 @@ class LLMBranchScore:
                 f"patterns={self.interesting_patterns})")
 
 
-# ---------------------------------------------------------------------------
 # LLM Client interface (mockable)
-# ---------------------------------------------------------------------------
 
 class LLMBranchScorerBase:
     """Abstract base for LLM-based branch scoring."""
@@ -139,9 +135,7 @@ class LLMBranchScorerBase:
         raise NotImplementedError
 
 
-# ---------------------------------------------------------------------------
 # Default Scorer (heuristic + regex-based, no API required)
-# ---------------------------------------------------------------------------
 
 class DefaultLLMBranchScorer(LLMBranchScorerBase):
     """Heuristic branch scorer using pattern matching on conditions and context."""
@@ -239,9 +233,7 @@ class DefaultLLMBranchScorer(LLMBranchScorerBase):
         return scores
 
 
-# ---------------------------------------------------------------------------
 # BaseAnalyzer interface (matching project convention)
-# ---------------------------------------------------------------------------
 
 class BaseAnalyzer:
     """Abstract analyzer interface for integration with the framework."""
@@ -256,9 +248,7 @@ class BaseAnalyzer:
         return "1.0.0"
 
 
-# ---------------------------------------------------------------------------
 # Simulated branch 构造
-# ---------------------------------------------------------------------------
 
 def _simulate_branches(function_address=0x400000, count=10) -> List[BranchInfo]:
     """Generate simulated branch information for testing/demonstration."""
@@ -294,9 +284,7 @@ def _simulate_branches(function_address=0x400000, count=10) -> List[BranchInfo]:
     return branches
 
 
-# ---------------------------------------------------------------------------
 # LLM-Guided Symbolic Executor
-# ---------------------------------------------------------------------------
 
 class LLMGuidedSymbolicExecutor(BaseAnalyzer):
     """Symbolic execution engine guided by LLM branch scoring.
@@ -568,6 +556,4 @@ def _debug_print(*args, **kwargs):  # 调试残余--未删除
         print(*args, **kwargs)
 
 
-# ---------------------------------------------------------------------------
 # End of llm_guided_symbex.py
-# ---------------------------------------------------------------------------

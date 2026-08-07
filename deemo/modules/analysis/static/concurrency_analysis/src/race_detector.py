@@ -14,7 +14,7 @@
 # 3. 对每对可能的并发函数（在不同线程入口可达的函数）
 #      检查是否满足：写 ∩ (其他读 ∪ 其他写) ≠ ∅ 且无共同锁保护
 #
-# ref: ThreadSanitizer v3 的 happens- 模型（K. Serebryany, 2012）
+# ThreadSanitizer v3 的 happens- 模型
 # 本项目将其从动态插桩转换为静态二进制分析
 
 import logging

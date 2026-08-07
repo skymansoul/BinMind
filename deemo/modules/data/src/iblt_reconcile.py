@@ -1,6 +1,6 @@
 # IBLT 键值集合对账: 计数Bloom估算差异→IBLT或KeyList自适应选择
 # 扩展标准IBLT为KV对账(keySum⊕valueSum⊕count), 解码失败自动1.5x重试.
-# 区别于 Rateless IBLT(SIGCOMM 2024), CertainSync(2025): 面向签名库KV对账.
+# 区别于 Rateless IBLT, CertainSync: 面向签名库KV对账.
 import hashlib, math, random, struct, time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -104,9 +104,7 @@ class KVIBLT:
             vs[j] ^= value[j]
 
 
-# ---------------------------------------------------------------------------
 # 混合自适应对账协调器
-# ---------------------------------------------------------------------------
 
 class HybridReconciler:
     """混合对账: 计数Bloom估差异→IBLT/KeyList自适应. hr.reconcile(local_kv, remote_kv)."""
@@ -131,14 +129,14 @@ class HybridReconciler:
         local_keys = set(local_kv.keys())
         remote_keys = set(remote_kv.keys())
 
-        # Step 1: 计数 Bloom 估算差异大小
+        # 计数 Bloom 估算差异大小
         d_est = self._estimate_diff(local_keys, remote_keys)
 
-        # Step 2: 根据 d_est 选择策略
+        # 根据 d_est 选择策略
         if d_est <= self.KEYLIST_THRESHOLD:
             return self._keylist_reconcile(local_kv, remote_kv, t0)
 
-        # Step 3: IBLT 对账 (含重试)
+        # IBLT 对账 (含重试)
         return self._iblt_reconcile(local_kv, remote_kv, d_est, t0)
 
     def _estimate_diff(self, set_a: Set[int],

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_04_strcpy_unbounded",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "cve": "CVE-2015-0235 (GHOST) 类 无界字符串拷贝到堆",
+  "expect_overflow": true,
+  "trigger": "直接执行 main",
+  "why": "strcpy 以 NUL 终止为界, 源长于目标缓冲区即溢出, 写入量无上界"
+}

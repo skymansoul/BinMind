@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_21_goto_cleanup","description":"Goto-based cleanup — free in error label, use after goto","cwe":"CWE-416","vuln_type":"use-after-free"}

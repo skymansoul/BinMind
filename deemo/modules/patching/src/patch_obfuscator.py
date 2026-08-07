@@ -32,7 +32,7 @@ from typing import List, Dict, Optional, Tuple, Set, FrozenSet
 from enum import Enum
 
 
-# ── 等价指令映射表 ────────────────────────────────────────────────
+# 等价指令映射表
 
 # 每个条目: (原始指令模式, 替换指令模板, 适用条件)
 # 模式中 {} 为占位符
@@ -80,7 +80,7 @@ _EQUIVALENT_INSTRUCTIONS = [
      "always"),
 ]
 
-# ── x86-64 寄存器分配池 ──────────────────────────────────────────
+# x86-64 寄存器分配池
 
 # 按安全性分级：必须保留（栈/基址）、可安全替换、调用者保存、被调用者保存
 _REG_CATEGORIES = {
@@ -118,7 +118,7 @@ class PatchObfuscationResult:
     semantic_equivalence_verified: bool = False
 
 
-# ── 存活寄存器分析（轻量）─────────────────────────────────────────
+# 存活寄存器分析（轻量）
 
 class LivenessAnalyzer:
     """补丁区域内的存活寄存器分析。
@@ -182,7 +182,7 @@ class LivenessAnalyzer:
         return set()
 
 
-# ── 混淆引擎 ──────────────────────────────────────────────────────
+# 混淆引擎
 
 class PatchObfuscator:
     """补丁级混淆器 —— 生成语义等价的混淆变体。

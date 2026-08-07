@@ -12,7 +12,7 @@ from modules.cve.src.cve_models import (
 from modules.cve.src.cve_kb import CVEKnowledgeBase, get_kb
 
 
-# ---- 夹具: 临时DB隔离 ----
+# 夹具: 临时DB隔离
 
 @pytest.fixture
 def kb():
@@ -28,7 +28,7 @@ def temp_dir():
         yield d
 
 
-# ---- Severity / CPE / 模型 (20项测试) ----
+# Severity / CPE / 模型 (20项测试)
 
 class TestSeverity:
     def test_enum_values(self):
@@ -174,7 +174,7 @@ class TestFromNVDItem:
         assert "CWE-89" in e.cwes
 
 
-# ---- KB CRUD (35 tests) ----
+# KB CRUD (35 tests)
 
 class TestKBInsert:
     def test_insert_entry(self, kb):
@@ -336,7 +336,7 @@ class TestKBSchemaMigration:
         assert e.fix_version is None
 
 
-# ---- Severity mapping edge cases ----
+# Severity mapping edge cases
 
 class TestSeverityEdgeCases:
     def test_dict_severity_respected(self, kb):
@@ -353,7 +353,7 @@ class TestSeverityEdgeCases:
         assert e.severity == "HIGH"
 
 
-# ---- Delete behavior ----
+# Delete behavior
 
 class TestKBDelete:
     def test_delete_uses_rowcount(self, kb):

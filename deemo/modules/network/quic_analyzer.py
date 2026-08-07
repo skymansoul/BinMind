@@ -1,7 +1,7 @@
 """QUIC/HTTP3 流量分析 —— 连接ID追踪、版本指纹、0-RTT安全评估。
 
 QUIC连接标识符(CID)在握手后保持不变，可通过DCID/SCID关联追踪用户跨网迁移。
-参考：QUIC安全与隐私调查 (arXiv:2401.06657)、RFC 9000/9001/9002 传输层安全规范。
+参考：QUIC安全与隐私调查、RFC 9000/9001/9002 传输层安全规范。
 """
 import logging, struct, hashlib
 from collections import defaultdict, Counter
@@ -78,7 +78,7 @@ class QuicConnectionInfo:
 class QuicFingerprint:
     """QUIC 客户端指纹 —— ClientHello特征组合
 
-    QUIC客户端指纹可通过版本+TP组合唯一识别 (arXiv:2401.06657)，
+    QUIC客户端指纹可通过版本+TP组合唯一识别，
     即使ECH启用，初始包中的明文QUIC版本和传输参数仍泄漏客户端身份。
     """
     quic_versions: List[int] = field(default_factory=list)

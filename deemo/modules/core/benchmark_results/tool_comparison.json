@@ -1,0 +1,74 @@
+{
+  "all": {
+    "binmind": {
+      "tp": 14,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "samples": 21
+    },
+    "angr": {
+      "tp": 14,
+      "fp": 6,
+      "tn": 1,
+      "fn": 0,
+      "precision": 0.7,
+      "recall": 1.0,
+      "f1": 0.8235,
+      "fp_rate": 0.8571,
+      "samples": 21
+    }
+  },
+  "unpacked": {
+    "binmind": {
+      "tp": 12,
+      "fp": 0,
+      "tn": 5,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "samples": 17
+    },
+    "angr": {
+      "tp": 12,
+      "fp": 4,
+      "tn": 1,
+      "fn": 0,
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571,
+      "fp_rate": 0.8,
+      "samples": 17
+    }
+  },
+  "packed": {
+    "binmind": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 2,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "samples": 4
+    },
+    "angr": {
+      "tp": 2,
+      "fp": 2,
+      "tn": 0,
+      "fn": 0,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667,
+      "fp_rate": 1.0,
+      "samples": 4
+    }
+  }
+}

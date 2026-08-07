@@ -13,7 +13,7 @@ from typing import Optional, List, Tuple, Dict, Callable, Any
 _log = logging.getLogger(__name__)
 
 
-# ===== 枚举与数据结构 =====
+# 枚举与数据结构
 
 class HookAction(Enum):
     CONTINUE = auto()        # 继续传递给下一个 hook
@@ -32,7 +32,7 @@ class HookEntry:
     hook_id: str = ""
 
 
-# ===== 钩子 注册表 =====
+# 钩子 注册表
 
 class HookRegistry:
     """
@@ -103,7 +103,7 @@ class HookRegistry:
         return self.count
 
 
-# ===== 钩子 引擎 =====
+# 钩子 引擎
 
 class HookEngine:
     """
@@ -115,7 +115,7 @@ class HookEngine:
         self.registry = HookRegistry()
         self._install_builtins()
 
-    # ---- 分发器: 核心分发逻辑 ----
+# 分发器: 核心分发逻辑
     def dispatch(self, api_name: str, args: Any,
                  module_name: str = "") -> Tuple[bool, Any]:
         """
@@ -147,7 +147,7 @@ class HookEngine:
         # 所有 hook 都未截获 → 执行原始调用
         return (False, current_args)
 
-    # ---- decorator 风格注册 ----
+# decorator 风格注册
     def hook(self, pattern: str, priority: int = 100,
              module_filter: Optional[str] = None):
         """@engine.钩子('IsDebuggerPresent') 装饰器"""
@@ -156,7 +156,7 @@ class HookEngine:
             return fn
         return decorator
 
-    # ---- 启用/禁用 ----
+# 启用/禁用
     def enable_hook(self, hook_id: str) -> bool:
         for h in self.registry._hooks:
             if h.hook_id == hook_id:
@@ -173,13 +173,13 @@ class HookEngine:
                 return True
         return False
 
-    # ===== 内置反调试 钩子s =====
+# 内置反调试 钩子s
     def _install_builtins(self):
         self._register_anti_debug()
         self._register_anti_vm()
         self._register_timing()
 
-    # ---- 反调试 ----
+# 反调试
     def _register_anti_debug(self):
 
         def _block_is_debugger(api_name, args, module):
@@ -224,7 +224,7 @@ class HookEngine:
             else:
                 self.registry.register(spec[0], spec[1], spec[2], spec[3])
 
-    # ---- 反虚拟机 ----
+# 反虚拟机
     def _register_anti_vm(self):
 
         def _fake_registry_vm(api_name, args, module):
@@ -257,7 +257,7 @@ class HookEngine:
         for pat, handler, pri in anti_vm_specs:
             self.registry.register(pat, handler, pri)
 
-    # ---- timing anti-anti ----
+# timing anti-anti
     def _register_timing(self):
 
         import time as _tmod
@@ -292,7 +292,7 @@ class HookEngine:
                 self.registry.register(spec[0], spec[1], spec[2], spec[3])
 
 
-# ---- 便捷工厂 ----
+# 便捷工厂
 def create_default_engine() -> HookEngine:
     """创建预装全部内置 hook 的引擎"""
     return HookEngine()

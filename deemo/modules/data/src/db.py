@@ -1,6 +1,6 @@
 # DataDB —— signature storage backed by SQLite
 # 设计原则: 所有写操作走单线程锁, 读操作利用 WAL 模式并发
-# 参考了 sqlite-utils 的 schema migration 思路, 但去掉了 ORM 层
+# 了 sqlite-utils 的 schema migration 思路, 但去掉了 ORM 层
 #
 # PRAGMA 优化:
 #   mmap_size: 将 DB 文件映射到进程地址空间, 大 DB 下可将只读查询
@@ -82,7 +82,7 @@ class DataDB:
     def get_connection(self) -> sqlite3.Connection:
         return self._conn
 
-    # ---- signatures ----
+# signatures
 
     def add_signature(self, file_path: str, sha256: str, file_size: int = 0,
                       mtime: float = 0.0, tags: List[str] = None,
@@ -231,7 +231,7 @@ class DataDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    # ---- analysis results ----
+# analysis results
 
     def save_analysis(self, sig_id: int, tool_name: str, tool_version: str = "",
                       duration_ms: float = 0.0, findings: List[Dict] = None,
@@ -265,7 +265,7 @@ class DataDB:
             results.append(d)
         return results
 
-    # ---- chunk storage ----
+# chunk storage
 
     def store_chunk(self, chunk_hash: str, data: bytes) -> int:
         """存一个 chunk 并返回内部 id。chunk_hash 用于去重查找。"""
@@ -297,7 +297,7 @@ class DataDB:
         ).fetchall()
         return {r["chunk_hash"]: r["rowid"] for r in rows}
 
-    # ---- dedup map ----
+# dedup map
 
     def mark_duplicate(self, canonical_sha: str, dup_sha: str, algorithm: str = "sha256"):
         with self._lock:
@@ -322,7 +322,7 @@ class DataDB:
         ).fetchall()
         return [r["dup_sha"] for r in rows]
 
-    # ---- lifecycle ----
+# lifecycle
 
     def update_stage(self, sid: int, new_stage: str, reason: str = "") -> bool:
         with self._lock:
@@ -338,7 +338,7 @@ class DataDB:
             self._conn.commit()
             return True
 
-    # ---- simhash index ----
+# simhash index
 
     def store_simhash_fingerprint(self, sig_id: int, fingerprint: int,
                                    band_keys: List[int]):
@@ -366,7 +366,7 @@ class DataDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    # ---- stats ----
+# stats
 
     def db_stats(self) -> Dict[str, Any]:
         total = self._conn.execute("SELECT COUNT(*) FROM signatures").fetchone()[0]
@@ -498,7 +498,7 @@ class DataDB:
         self._conn.close()
 
 
-# ---- schema ----
+# schema
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS signatures (

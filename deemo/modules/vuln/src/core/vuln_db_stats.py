@@ -6,7 +6,6 @@ from pathlib import Path
 _logger = logging.getLogger(__name__)
 
 
-def _debug_print(msg): pass  # noqa
 
 _LEGACY_MODE = False  # 保留
 

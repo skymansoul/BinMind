@@ -1,6 +1,6 @@
-# 创建: 2025-08-12 上午
-# 修改: 2025-08-12 — use-def BFS 后向切片 + evidence-weighted blame
-# 修改: 2025-08-16 — 修复 _enclosing_function 未初始化变量
+# 创建: 2026-05-14 上午
+# 修改: 2026-05-14 — use-def BFS 后向切片 + evidence-weighted blame
+# 修改: 2026-05-14 — 修复 _enclosing_function 未初始化变量
 """
 见证支持的崩溃根因定位器 — 从崩溃点沿 lifted IR 后向溯源。
 
@@ -26,11 +26,11 @@
   栈回溯仅告诉你"函数 A 调用了函数 B 调用了函数 C"——但不告诉你
   "函数 C 的错误输入来自函数 A 的哪一行"。见证路径补全了数据流信息。
 
-ref: Veritas (arXiv:2605.15097, 2026) — witness-backed source-to-sink
+ref: Veritas — witness-backed source-to-sink
      flow recovery from lifted LLVM IR, 本项目将 IR 层扩展到二进制层
-ref: Kumushi (CCS 2026) — evidence-weighted minimum blame set ranking,
+ref: Kumushi — evidence-weighted minimum blame set ranking,
      本项目取其 OWA aggregation + diversity reranking 思路
-ref: AutoCrashFL (arXiv:2510.22530, 2025) — crash-only RCA without
+ref: AutoCrashFL — crash-only RCA without
      coverage profiling, 本项目取其 top-K 定位 + 置信度评分
 """
 
@@ -72,7 +72,7 @@ class BlameCandidate:
     description: str = ''
 
 
-# --- 后向数据流切片 ---
+# 后向数据流切片
 
 def backward_crash_slice(instructions: list[dict],
                          crash_pc: int,
@@ -144,7 +144,7 @@ def backward_crash_slice(instructions: list[dict],
     return path
 
 
-# --- 证据加权最小 blame 集 ---
+# 证据加权最小 blame 集
 
 def rank_blame_candidates(witness: WitnessPath,
                           functions: dict[int, str],

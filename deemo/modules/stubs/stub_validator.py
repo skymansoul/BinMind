@@ -1,7 +1,7 @@
 # stub_validator.py — 桩模块完整性校验
 # 验证目标 compat 模块是否可加载、核心符号是否缺失。
-# 参考: Neural Decompilation (arXiv:2412.07538) 管道验证 &
-#   DeBinVul (arXiv:2411.04981) 多架构完整性校验
+# Neural Decompilation 管道验证 &
+#   DeBinVul 多架构完整性校验
 import os as _os
 import sys as _sys
 import importlib.util as _iu

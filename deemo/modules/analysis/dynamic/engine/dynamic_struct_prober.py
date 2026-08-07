@@ -143,7 +143,7 @@ class LayoutInferencer:
         total_size = max((f.offset + f.size for f in fields), default=0)
         return StructLayout(name="probed_struct", total_size=total_size, fields=fields)
 
-    # --- 新增: 多输入交叉验证布局推断 ---
+# 新增: 多输入交叉验证布局推断
     # 单个输入可能无法触发所有字段访问，多输入的访问模式交集可以提高推断准确性
     @staticmethod
     def infer_from_multiple(all_accesses: List[List[Tuple[int, int, str]]]) -> StructLayout:
@@ -204,7 +204,7 @@ class DynamicStructProber:
             logger.error("Struct probing failed: %s", e)
             return ProbingResult(success=False, layouts=[])
 
-    # --- 新增: 对齐填充检测 ---
+# 新增: 对齐填充检测
     # 对推断的字段布局进行对齐分析，检测编译器可能插入的填充字节
     def detect_padding(self, layout: StructLayout) -> List[Dict[str, int]]:
         """在推断的结构体布局中检测对齐填充

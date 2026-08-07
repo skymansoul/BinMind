@@ -1,0 +1,1 @@
+﻿{"expected":"TN","sample":"uaf_27_same_name_diff_obj","description":"Different object — same variable name reused after free","cwe":"CWE-416","vuln_type":"use-after-free"}

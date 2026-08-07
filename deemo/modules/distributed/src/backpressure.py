@@ -3,11 +3,11 @@
 # 背压控制 — 分区队列深度驱动的反压信号传播
 #
 # 五种背压策略：
-#   - drop_head:  丢弃队列头部（旧任务），适合实时场景
-#   - drop_tail:  丢弃队列尾部（新任务），适合批处理场景
-#   - block:      阻塞调用方直到队列有空位
-#   - throttle:   降低入队速率（自适应令牌桶）
-#   - degrade:    降级执行（跳过非关键步骤）
+# drop_head:  丢弃队列头部（旧任务），适合实时场景
+# drop_tail:  丢弃队列尾部（新任务），适合批处理场景
+# block:      阻塞调用方直到队列有空位
+# throttle:   降低入队速率（自适应令牌桶）
+# degrade:    降级执行（跳过非关键步骤）
 #
 # 背压信号来源：队列深度 / 延迟 / 错误率 三个维度
 
@@ -66,7 +66,7 @@ class BackpressureSignal:
         )
 
 
-# ===== 背压策略接口 =====
+# 背压策略接口
 
 class _BackpressurePolicy(ABC):
     @abstractmethod
@@ -75,7 +75,7 @@ class _BackpressurePolicy(ABC):
         ...
 
 
-# ===== Drop Head =====
+# Drop Head
 
 class _DropHeadPolicy(_BackpressurePolicy):
     """丢弃最旧任务 — 适合实时性要求高的场景。
@@ -92,7 +92,7 @@ class _DropHeadPolicy(_BackpressurePolicy):
         return item
 
 
-# ===== Drop Tail =====
+# Drop Tail
 
 class _DropTailPolicy(_BackpressurePolicy):
     """丢弃最新任务 — 适合批处理/离线场景。
@@ -109,7 +109,7 @@ class _DropTailPolicy(_BackpressurePolicy):
         return item
 
 
-# ===== Block =====
+# Block
 
 class _BlockPolicy(_BackpressurePolicy):
     """阻塞调用方 — 不能丢任务的强一致性系统用。需调用方设超时。"""
@@ -122,7 +122,7 @@ class _BlockPolicy(_BackpressurePolicy):
         return item
 
 
-# ===== Throttle =====
+# Throttle
 
 class _ThrottlePolicy(_BackpressurePolicy):
     """自适应降速 — 压力越大放行概率越低。
@@ -138,7 +138,7 @@ class _ThrottlePolicy(_BackpressurePolicy):
         return None
 
 
-# ===== Degrade =====
+# Degrade
 
 class _DegradePolicy(_BackpressurePolicy):
     """降级执行 — 高压力时跳过非关键步骤。
@@ -156,7 +156,7 @@ class _DegradePolicy(_BackpressurePolicy):
         return item
 
 
-# ===== 背压异常 =====
+# 背压异常
 
 class BackpressureBlocked(Exception):
     """背压阻塞异常 — 队列满且策略为 block 时抛出"""
@@ -164,7 +164,7 @@ class BackpressureBlocked(Exception):
         super().__init__(message)
 
 
-# ===== 背压控制器 =====
+# 背压控制器
 
 class BackpressureController:
     """统一背压控制入口。
@@ -227,7 +227,6 @@ class BackpressureController:
         )
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未启用。"""
     pass  # 调试桩，当前未使用
 

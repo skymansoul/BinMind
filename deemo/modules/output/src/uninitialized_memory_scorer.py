@@ -12,10 +12,9 @@
 
   本模块提供第一个未初始化内存影响的量化评分模型。
 
-参考:
   CWE-457: Use of Uninitialized Variable
   CWE-908: Use of Uninitialized Resource
-  Lu et al. (2016): UniSan — 未初始化内存检测, 不评分影响.
+  Lu et al.: UniSan — 未初始化内存检测, 不评分影响.
   无现有量化工具.
 
 修改记录:
@@ -26,13 +25,11 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class MemoryRegion(Enum):
     STACK = "stack"          # 栈上未初始化局部变量
     HEAP = "heap"            # malloc 返回后未初始化
     BSS = "bss"              # .bss 段 (静态未初始化)
     MMAP = "mmap"            # mmap 映射区域
-
 
 class ResidualType(Enum):
     POINTER = "pointer"          # 残存地址值 — 最高危
@@ -43,7 +40,6 @@ class ResidualType(Enum):
     ZERO = "zero"                # 残存零值 — 不可利用 (某些 OS 零初始化)
     UNKNOWN = "unknown"
 
-
 class DownstreamUse(IntEnum):
     COMPARISON = 1     # 仅用于比较/分支
     ARITHMETIC = 2     # 用于算术运算
@@ -51,7 +47,6 @@ class DownstreamUse(IntEnum):
     SIZE = 4           # 用作大小参数 (malloc/memcpy)
     POINTER_DEREF = 5  # 用作指针解引用
     BRANCH = 6         # 影响控制流分支
-
 
 # 残存类型 × 下游使用 → 影响分 (0-10)
 _IMPACT_MATRIX: Dict[ResidualType, Dict[DownstreamUse, float]] = {
@@ -84,7 +79,6 @@ _IMPACT_MATRIX: Dict[ResidualType, Dict[DownstreamUse, float]] = {
 }
 _DEFAULT_IMPACT = {d: 1.5 for d in DownstreamUse}
 
-
 @dataclass
 class UninitMemoryScore:
     """未初始化内存影响评分。"""
@@ -96,7 +90,6 @@ class UninitMemoryScore:
     integrity_impact: bool         # 内存破坏
     availability_impact: bool      # DoS
     primitives: List[str] = field(default_factory=list)
-
 
 def _infer_residual(
     region: MemoryRegion,
@@ -131,7 +124,6 @@ def _infer_residual(
 
     return ResidualType.UNKNOWN
 
-
 def _infer_downstream(
     function_callees: Optional[List[str]] = None,
     context: str = '',
@@ -154,7 +146,6 @@ def _infer_downstream(
         return DownstreamUse.COMPARISON
 
     return DownstreamUse.ARITHMETIC  # 默认假设
-
 
 def score_uninitialized_memory(
     memory_region: str = 'stack',

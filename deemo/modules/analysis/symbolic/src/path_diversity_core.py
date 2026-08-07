@@ -68,7 +68,6 @@ logger = logging.getLogger(__name__)
 _LEGACY_MODE = False  # 保留
 
 
-def _debug_print(msg: str): pass  # noqa
 
 
 class DiversityStrategy:
@@ -89,11 +88,9 @@ class PathFeatureType:
     COVERAGE = "coverage"
 
 
-# ---------------------------------------------------------------------------
 # SimHash: 将特征向量投影为 64-bit 指纹
 # 两个 SimHash 的汉明距离 ≤ 3 时，原始向量的余弦相似度 ≥ 0.95（高概率）
 # 用作快速去重预检——SimHash 差异大的路径无需精确比较
-# ---------------------------------------------------------------------------
 def _simhash(feature_dict: Dict, bits: int = 64) -> int:
     counts = [0] * bits
     for key, val in feature_dict.items():
@@ -120,12 +117,10 @@ def _hamming_distance(a: int, b: int) -> int:
     return dist
 
 
-# ---------------------------------------------------------------------------
 # _feature_to_vector: 将 PathFeature 的特征字典展平为固定长度的浮点向量
 # 用于随机投影树的构建和查询
 # 策略：对每个 feature_type 按 key 排序取 val 的 hash 值，归一化到 [0,1]
 # 维度固定为 64，确保所有特征向量的长度一致
-# ---------------------------------------------------------------------------
 def _feature_to_vector(feature: "PathFeature", dim: int = 64) -> List[float]:
     # Flatten a PathFeature a fixed-dimension float vector
     vec = [0.0] * dim
@@ -154,10 +149,8 @@ def _feature_to_vector(feature: "PathFeature", dim: int = 64) -> List[float]:
     return vec
 
 
-# ---------------------------------------------------------------------------
-# _RandomProjectionTree — 单棵随机投影树
+# RandomProjectionTree — 单棵随机投影树
 # 节点在随机方向上分割，递归构造直到叶子节点 ≤ leaf_size
-# ---------------------------------------------------------------------------
 class _RandomProjectionNode:
     """Internal node a random projection tree"""
     __slots__ = ('random_dir', 'split_val', 'left', 'right', 'leaf_ids')
@@ -284,11 +277,9 @@ class _RandomProjectionTree:
 #     return sorted(results, key=lambda x: -x[1])[:10]
 
 
-# ---------------------------------------------------------------------------
 # ANNIndex — 随机投影森林，替代 O(n²) pairwise 相似度搜索
 # ann_forest 包含多棵 _RandomProjectionTree
 # 查询时汇总所有树的候选并按余弦相似度合并排序
-# ---------------------------------------------------------------------------
 class ANNIndex:
     """Approximate nearest neighbor index via random projection forest
     
@@ -364,10 +355,8 @@ class ANNIndex:
         return [pid for pid, sim in candidates if sim >= threshold]
 
 
-# ---------------------------------------------------------------------------
 # DiversityBudget — 簇配额管理：集群_quota = max_paths / num_集群s
 # 超配额的簇逐出与 centroid_simhash 汉明距离最大的路径
-# ---------------------------------------------------------------------------
 class DiversityBudget:
     """Enforce per-集群 path quotas prevent resource monopolization
     
@@ -449,14 +438,12 @@ class DiversityBudget:
         return evicted
 
 
-# ===========================================================================
 # PathHeatmap — 2D 直方图，按 (depth_bucket, constraint_count_bucket) 统计
 #
 # depth_bucket 的桶宽为 DEPTH_BUCKET_WIDTH（默认 2）
 # constraint_count_bucket 的桶宽为 CONSTRAINT_BUCKET_WIDTH（默认 5）
 #
 # 冷点识别：histogram 值低于全局平均密度 * COLD_SPOT_RATIO 的单元格
-# ===========================================================================
 class PathHeatmap:
     """维护 a 2D histogram explored paths (depth_bucket
     constraint_count_bucket). Identify cold spots (regions low
@@ -671,13 +658,11 @@ class PathHeatmap:
             self._total_paths = 0
 
 
-# ===========================================================================
 # StreamingDiversityMonitor — 定时回调发射多样性指标
 #
 # 在后台线程中以可配置间隔运行，每次触发时调用注册的回调函数
 # 传递 (timestamp, diversity_score, exploration_velocity, 集群_count)
 # 用于实时仪表板、时间序列日志或外部可视化集成
-# ===========================================================================
 class StreamingDiversityMonitor:
     """A 回调-based 监控 emits (timestamp, diversity_score
     exploration_velocity, 集群_count) tuples 配置urable intervals
@@ -873,20 +858,18 @@ class StreamingDiversityMonitor:
         return data
 
 
-# ===========================================================================
 # 快照Diff — 比较两个 PathDiversityTracker 快照
 #
 # 快照格式：{'集群s': Dict[str, List[str]], 'features': Dict[str, PathFeature]
 #            'metrics': DiversityMetrics}
 #
 # 快照Diff 计算：
-#   - new_clusters: 仅在新快照中存在的簇 ID
-#   - removed_clusters: 仅在旧快照中存在的簇 ID
-#   - merged_clusters: 旧快照中的多个簇在新快照中合并为一个
-#   - split_clusters: 旧快照中的一个簇在新快照中分裂为多个
-#   - moved_paths: 在两个快照中都存在但簇归属不同的路径
-#   - diversity_delta: 多样性评分的变化量
-# ===========================================================================
+# new_clusters: 仅在新快照中存在的簇 ID
+# removed_clusters: 仅在旧快照中存在的簇 ID
+# merged_clusters: 旧快照中的多个簇在新快照中合并为一个
+# split_clusters: 旧快照中的一个簇在新快照中分裂为多个
+# moved_paths: 在两个快照中都存在但簇归属不同的路径
+# diversity_delta: 多样性评分的变化量
 @dataclass
 class SnapshotDiffResult:
     """Result comparing two PathDiversityTracker 快照s"""
@@ -980,11 +963,11 @@ class SnapshotDiff:
         old_cluster_ids = set(old_clusters.keys())
         new_cluster_ids = set(new_clusters.keys())
 
-        # ---- 新建 / 删除的簇 ----
+# 新建 / 删除的簇
         result.new_clusters = sorted(new_cluster_ids - old_cluster_ids)
         result.removed_clusters = sorted(old_cluster_ids - new_cluster_ids)
 
-        # ---- 构建 path→集群 映射 ----
+# 构建 path→集群 映射
         old_path_to_cluster: Dict[str, str] = {}
         for cid, members in old_clusters.items():
             for pid in members:
@@ -998,11 +981,11 @@ class SnapshotDiff:
         old_paths = set(old_path_to_cluster.keys())
         new_paths = set(new_path_to_cluster.keys())
 
-        # ---- 新增 / 删除的路径 ----
+# 新增 / 删除的路径
         result.new_paths = sorted(new_paths - old_paths)
         result.removed_paths = sorted(old_paths - new_paths)
 
-        # ---- 移动路径（在两个快照中都存在但簇归属改变） ----
+# 移动路径（在两个快照中都存在但簇归属改变）
         common_paths = old_paths & new_paths
         for pid in sorted(common_paths):
             old_cid = old_path_to_cluster.get(pid, "")
@@ -1014,19 +997,19 @@ class SnapshotDiff:
                     "new_cluster": new_cid,
                 })
 
-        # ---- 合并检测 ----
+# 合并检测
         # 如果旧快照中的 N 个簇（N > 1）的所有成员都出现在新快照的同一个簇中
         # 则认为发生了合并
         merged = self._detect_merges(old_clusters, new_clusters)
         result.merged_clusters = merged
 
-        # ---- 分裂检测 ----
+# 分裂检测
         # 如果旧快照中的一个簇的成员分散到新快照的多个簇中（每个目标簇都包含
         # 该旧簇的部分成员），则认为发生了分裂
         split = self._detect_splits(old_clusters, new_clusters)
         result.split_clusters = split
 
-        # ---- 数量变化 ----
+# 数量变化
         old_metrics = snapshot_old.get("metrics")
         new_metrics = snapshot_new.get("metrics")
 
@@ -1617,9 +1600,7 @@ class PathDiversityTracker:
         """Capture current tracker state for 快照Diff comparison"""
         return SnapshotDiff.capture(self)
 
-    # -------------------------------------------------------------------
     # export_集群_visualization — 导出簇状态 JSON 用于外部可视化
-    # -------------------------------------------------------------------
     def export_cluster_visualization(self, output_path: Optional[str] = None) -> Dict[str, Any]:
         """Export 集群 state JSON for external visualization tools
         

@@ -1,6 +1,6 @@
 """可疑点引导的模糊测试种子加权与检测模块。
 
-实现FuzzingBrain V2 (arXiv:2605.21779)的SP抽象: 从二进制字节流检测
+实现FuzzingBrain V2 的SP抽象: 从二进制字节流检测
 危险函数调用、循环边界、格式字符串、整数溢出等可疑位置, 计算严重性加权分数,
 引导种子能量分配。轻量级字节近似, 不依赖外部反汇编器。
 """
@@ -15,8 +15,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-
-# **** 可疑点类型与严重性 ****
+# 可疑点类型与严重性
 
 class SPDangerType(Enum):
     """可疑点类型 -- FuzzingBrain V2 Table 1分类。"""
@@ -29,7 +28,6 @@ class SPDangerType(Enum):
     TAINT_SINK = "taint_sink"            # 污点汇聚点
     ARRAY_INDEX = "array_index"          # 数组索引
     CAST_RISK = "cast_risk"              # 类型转换风险
-
 
 # 危险函数严重性评分 [1,10], 综合CWE出现频率与可利用性
 _DANGER_FUNC_SCORES: dict = {
@@ -75,7 +73,6 @@ _DANGER_FUNC_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-
 @dataclass
 class SuspiciousPoint:
     """FuzzingBrain V2的SP节点: 二进制中一个潜在漏洞位置。
@@ -97,8 +94,7 @@ class SuspiciousPoint:
         reach_factor = self.reachability_score ** 0.5
         self.weight = (self.severity / 10.0) * type_w * reach_factor
 
-
-# **** 可疑点检测器 ****
+# 可疑点检测器
 
 class SuspiciousPointDetector:
     """FuzzingBrain V2风格的可疑点检测器, 字节级近似实现。
@@ -338,8 +334,7 @@ class SuspiciousPointDetector:
 
         return points
 
-
-# **** 种子加权 ****
+# 种子加权
 
 def compute_suspicious_weight(
     seed_data: bytes,
@@ -367,7 +362,6 @@ def compute_suspicious_weight(
 
     return min(1.0, base_weight + total_sp_weight)
 
-
 def prioritize_seeds_by_suspicious_points(
     seeds: list,
     suspicious_points: List[SuspiciousPoint],
@@ -383,15 +377,13 @@ def prioritize_seeds_by_suspicious_points(
     scored.sort(key=lambda x: x[1], reverse=True)
     return [seed for seed, _ in scored]
 
-
-# **** 便捷入口 ****
+# 便捷入口
 
 def detect_suspicious_points(
     data: bytes, base_address: int = 0
 ) -> List[SuspiciousPoint]:
     """一行入口: 从二进制数据检测全部可疑点。"""
     return SuspiciousPointDetector().detect(data, base_address)
-
 
 __all__ = [
     "SPDangerType",

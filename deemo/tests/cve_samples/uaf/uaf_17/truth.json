@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_17_deep_alias_chain","description":"Deep alias chain (3 hops) — free via intermediate, use via chain end","cwe":"CWE-416","vuln_type":"use-after-free"}

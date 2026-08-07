@@ -6,7 +6,7 @@ import os
 import warnings
 import numpy as np
 
-# ---- 内部哈希单元 ----
+# 内部哈希单元
 
 def _hash_token(tok: str, seed: int) -> int:
     """确定性整型哈希，seed控制分桶偏置"""
@@ -17,7 +17,7 @@ def _hash_token(tok: str, seed: int) -> int:
     return h
 
 
-# ---- Bow-of-Hashing (Weinberger trick) ----
+# Bow-of-Hashing (Weinberger trick)
 
 def hbow_hash(tokens: list, dim: int = 1024, seed: int = 42) -> np.ndarray:
     """
@@ -41,7 +41,7 @@ def hbow_hash(tokens: list, dim: int = 1024, seed: int = 42) -> np.ndarray:
     return vec
 
 
-# ---- N-gram字符级哈希嵌入 ----
+# N-gram字符级哈希嵌入
 
 def ngram_hash(text: str, n: int = 3, dim: int = 1024, seed: int = 42) -> np.ndarray:
     """
@@ -67,7 +67,7 @@ def ngram_hash(text: str, n: int = 3, dim: int = 1024, seed: int = 42) -> np.nda
     return hbow_hash(grams, dim=dim, seed=seed)
 
 
-# ---- Sentence Transformer Bridge ----
+# Sentence Transformer Bridge
 
 class SentenceTransformerBridge:
     """
@@ -84,7 +84,7 @@ class SentenceTransformerBridge:
         # 初始化探测阶段
         self._probe()
 
-    # ===== 探测与懒加载 =====
+# 探测与懒加载
 
     def _probe(self):
         """试探性导入，不崩溃"""
@@ -125,7 +125,7 @@ class SentenceTransformerBridge:
     def available(self) -> bool:
         return self._available
 
-    # ===== 编码入口 =====
+# 编码入口
 
     def encode(self, texts: list) -> np.ndarray:
         """

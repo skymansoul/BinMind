@@ -1,2 +1,0 @@
-Name: HEAP-OVF-04
-Type: heap-size-mismatch

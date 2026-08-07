@@ -87,7 +87,7 @@ def _make_wasm_with_imports(imports):
 	return bytes(parts)
 
 
-# ---- 测试 ----
+# 测试
 
 class TestWASMContractParser:
 	"""WASM二进制解析器测试: 魔术字节、sections、imports、偏移修复。"""

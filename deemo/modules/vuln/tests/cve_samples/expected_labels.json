@@ -1,0 +1,12 @@
+{
+  "CVE-2014-0160_heartbleed":   {"vuln_type": "heap_overflow",  "expected_vulnerable": true},
+  "CVE-2016-6309_uaf":          {"vuln_type": "uaf",            "expected_vulnerable": true},
+  "CVE-2001-0865_format":       {"vuln_type": "format_string",  "expected_vulnerable": true},
+  "CVE-2016-4484_shell":        {"vuln_type": "heap_overflow",  "expected_vulnerable": true},
+  "CVE-2015-0235_ghost":        {"vuln_type": "heap_overflow",  "expected_vulnerable": true},
+  "CVE-2021-3156_sudo":         {"vuln_type": "heap_overflow",  "expected_vulnerable": true},
+  "CVE-2012-0809_sudo_fmt":     {"vuln_type": "format_string",  "expected_vulnerable": true},
+  "CVE-2019-15921_kernel":      {"vuln_type": "uaf",            "expected_vulnerable": true},
+  "CVE-2021-38003_v8":          {"vuln_type": "uaf",            "expected_vulnerable": true},
+  "CVE-2022-0185_kernel_heap":  {"vuln_type": "heap_overflow",  "expected_vulnerable": true}
+}

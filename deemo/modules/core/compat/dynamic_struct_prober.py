@@ -59,7 +59,7 @@ def probe_alignment_padding(struct_fields: list[tuple[str, str, int]]) -> list[i
     return paddings
 
 
-# --- 基于调用约定推断的结构体大小 ---
+# 基于调用约定推断的结构体大小
 import math as _math
 
 # 保留
@@ -83,7 +83,6 @@ def infer_struct_from_stack_frame(frame_size: int, arg_offsets: list[int],
     return field_sizes
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

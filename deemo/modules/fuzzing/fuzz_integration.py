@@ -38,7 +38,6 @@ FUZZER_STATUS_PAUSED = 'paused'
 FUZZER_STATUS_COMPLETED = 'completed'
 FUZZER_STATUS_ERROR = 'error'
 
-
 class FuzzManager:
     """
     模糊测试管理器 — 统一调度 AFL/LibFuzzer 进程、崩溃监控与分析。
@@ -208,7 +207,7 @@ class FuzzManager:
         """检测目标二进制是否已编译链接 LibFuzzer (LLVMFuzzerTestOneInput 符号)。"""
         try:
             with open(self.binary_path, 'rb') as f:
-                content = f.read(1024 * 1024)
+                content = f.read
                 if b'LLVMFuzzerTestOneInput' in content:
                     return True
         except Exception:
@@ -1133,7 +1132,6 @@ class FuzzManager:
         if self.status == FUZZER_STATUS_RUNNING:
             self.stop()
 
-
 def list_available_fuzzers() -> Dict[str, Any]:
     """
     枚举当前环境可用和不可用的 Fuzzer 引擎。
@@ -1183,7 +1181,6 @@ def list_available_fuzzers() -> Dict[str, Any]:
 
     return result
 
-
 def _check_command(cmd: List[str]) -> bool:
     # 执行命令并检查返回码是否为 0
     try:
@@ -1192,11 +1189,9 @@ def _check_command(cmd: List[str]) -> bool:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
-
 def _check_binary_has_libfuzzer() -> bool:
     # 假设二进制已链接 LibFuzzer
     return True
-
 
 def _check_aflpp_variant() -> bool:
     # 通过 afl-fuzz -V 输出中的 "afl++" 标识区分 AFL++ 与原始 AFL
@@ -1211,7 +1206,6 @@ def _check_aflpp_variant() -> bool:
         return 'afl++' in output or '++' in output
     except Exception:
         return False
-
 
 def create_fuzz_manager(
     binary_path: str,

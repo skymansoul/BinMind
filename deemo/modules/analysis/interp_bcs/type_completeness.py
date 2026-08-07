@@ -16,7 +16,7 @@
    更精确分析 (如符号执行) 的候选
 
 技术基础:
-- 抽象解释的完备性理论 (Giacobazzi, Ranzato, Scozzari, 2000)
+- 抽象解释的完备性理论
 - 三域乘积抽象 (product domain): interval x congruence x pointer
 - 每域独立追踪完备性--不同域的完备性退化独立发生
 
@@ -45,9 +45,7 @@ from .type_abstract_domain import (
 )
 
 
-# ---------------------------------------------------------------------------
 # IR 指令归一化
-# ---------------------------------------------------------------------------
 
 # 跨架构操作符归一化表: (arch_prefix, opcode) -> unified_op
 # ARM 大写、x86 小写、MIPS 小写但不同助记符 -> 统一
@@ -103,9 +101,7 @@ def _extract_offset(operands: str) -> Optional[Tuple[int, int]]:
     return (min(parsed), max(parsed))
 
 
-# ---------------------------------------------------------------------------
 # IR 级抽象解释器
-# ---------------------------------------------------------------------------
 
 @dataclass
 class IRInstruction:
@@ -154,7 +150,7 @@ class IRAbsInterp:
 
         src_states = [self._get_state(s) for s in insn.srcs]
 
-        # --- 根据操作符更新三域 ---
+# 根据操作符更新三域
         if op in ('add', 'sub'):
             self._step_arith(dest, op, src_states, insn.operands)
         elif op in ('and', 'or', 'xor', 'shl', 'shr'):
@@ -315,9 +311,7 @@ class IRAbsInterp:
         return self._states.get(var, TypeAbstractState(var_name=var))
 
 
-# ---------------------------------------------------------------------------
 # 完备性检查器顶层接口
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CompletenessReport:

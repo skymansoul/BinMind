@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\caption{GAPSBV Per-Stage Ablation Study (17 CVE Heap Overflow Samples)}
+\label{tab:ablation}
+\begin{tabular}{lccccccc}
+\toprule
+Stage & TP & FP & TN & FN & Prec. & Recall & F1 \\
+\midrule
+    S0_Baseline & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S1_AllocatorSemantics & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S2_GuardAwareWrites & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S3_SizeConstraints & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S4_ProofObligations & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S5_SlackSpace & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S6_ValueRange & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+    S7_NonHeapFilter & 11 & 0 & 4 & 2 & 1.000 & 0.846 & 0.917 \\
+\bottomrule
+\end{tabular}
+\end{table}

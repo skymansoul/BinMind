@@ -63,7 +63,7 @@ def main():
         "overall": "unknown",
     }
 
-    # === Stage 1: checksec ===
+# Stage 1: checksec
     t0 = time.time()
     from core.checksec import detect_checksec, checksec_summary
     checksec = detect_checksec(binary_path)
@@ -74,7 +74,7 @@ def main():
     }
     print(f"  [checksec] {checksec_summary(checksec)}")
 
-    # === Stage 2: PLT + libc ===
+# Stage 2: PLT + libc
     t0 = time.time()
     from core.plt_scanner import scan_plt, find_exploitable_functions
     plt_entries = scan_plt(binary_path)
@@ -93,7 +93,7 @@ def main():
     }
     print(f"  [plt] {len(plt_entries)} imports, {len(exploitable)} exploitable")
 
-    # === Stage 3: binary profile ===
+# Stage 3: binary profile
     t0 = time.time()
     from core.binary_profile import build_binary_profile
     profile = build_binary_profile(
@@ -106,7 +106,7 @@ def main():
     }
     print(f"  [profile] difficulty={profile.get('exploit_difficulty')}")
 
-    # === Stage 4: stack overflow analysis ===
+# Stage 4: stack overflow analysis
     t0 = time.time()
     from core.stack_overflow_analyzer import analyze_stack_overflow
     target_func = _find_vuln_function(binary_path)
@@ -140,7 +140,7 @@ def main():
             args.output_dir, results, args.enable_review_gate,
         )
 
-    # === Summary ===
+# Summary
     _print_summary(results, padding_ok)
     results_path = os.path.join(args.output_dir, "verify_stack_overflow.json")
     with open(results_path, "w", encoding="utf-8") as f:

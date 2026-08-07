@@ -4,7 +4,7 @@
 
 """Patch-to-PoC Generator — 从二进制补丁反向生成漏洞验证代码。
 
-TransferFuzz [ICSE 2025] 从历史执行迹移植 fuzzing 种子到新 binary。
+TransferFuzz 从历史执行迹移植 fuzzing 种子到新 binary。
 AI-SSD 用 LLM 生成 PoC。本模块的差异：
   不依赖 LLM，不依赖历史执行迹——直接从补丁的汇编变更推导漏洞触发条件。
 
@@ -85,7 +85,7 @@ class PoCReport:
         }
 
 
-# ── 漏洞触发推导器 ────────────────────────────────────────────────
+# 漏洞触发推导器
 
 class VulnTriggerDeriver:
     """从补丁汇编变更推导漏洞触发条件。"""
@@ -222,7 +222,7 @@ class VulnTriggerDeriver:
                 for l in lines if l.strip()]
 
 
-# ── PoC 合成器 ────────────────────────────────────────────────────
+# PoC 合成器
 
 class PoCGenerator:
     """从触发条件合成可执行的 PoC 输入。

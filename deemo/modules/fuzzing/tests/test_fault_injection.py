@@ -12,7 +12,7 @@ except Exception:
     _inject_available = False
 
 
-# ── 位翻转测试数据 ──
+# 位翻转测试数据
 
 @pytest.fixture
 def sample_x86_binary():

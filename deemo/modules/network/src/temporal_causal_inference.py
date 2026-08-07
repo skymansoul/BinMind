@@ -20,14 +20,14 @@
 # 仅依赖网络层抓包。与protocol_state_inference.py的静态分析方法
 # 互补：静态方法推断"可能的状态变量"，本模块推断"实际发生的状态转移"。
 #
-# ref: Wibral et al. "Measuring information-transfer delays."
-#      PLOS ONE 8.2 (2013): e55809.
+# Wibral et al. "Measuring information-transfer delays."
+#      PLOS ONE 8.2: e55809.
 #      — 提出SPO归一化转移熵估计器，消除自预测偏差。
 #      本项目将SPO估计器从神经科学领域适配到协议报文序列：
 #      使用自适应分箱替代等宽离散化以处理重尾的报文到达间隔分布。
 #
-# ref: Schreiber, T. "Measuring information transfer."
-#      Physical Review Letters 85.2 (2000): 461.
+# Schreiber, T. "Measuring information transfer."
+#      Physical Review Letters 85.2: 461.
 #      — 首次定义转移熵。本项目增加置换检验步骤
 #      以过滤有限样本引起的虚假因果边。
 

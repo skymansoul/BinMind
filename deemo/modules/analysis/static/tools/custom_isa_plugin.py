@@ -114,7 +114,7 @@ class UART16550Emulator(CustomPeripheral):
     def tick(self, cycles): return []
 
 
-# ── SPI 外设仿真器 ─────────────────────────────────────────────────────────
+# SPI 外设仿真器
 # 用于 fuzzing 固件中与 SPI Flash/SD 卡交互的代码路径
 class SPIFlashEmulator(CustomPeripheral):
     """SPI Flash 仿真器——模拟 Winbond W25Q 系列闪存的命令集
@@ -155,7 +155,7 @@ class SPIFlashEmulator(CustomPeripheral):
         self.__regs[off] = val & ((1 << (size * 8)) - 1)
 
 
-# ── SysTick 定时器仿真器 ───────────────────────────────────────────────────
+# SysTick 定时器仿真器
 class SysTickEmulator(CustomPeripheral):
     """ARM Cortex-M SysTick 定时器仿真器——固件中普遍用于 RTOS 节拍
     每次 tick 递减当前值，归零时触发中断并重载

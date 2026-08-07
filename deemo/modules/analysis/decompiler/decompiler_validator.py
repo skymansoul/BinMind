@@ -41,9 +41,7 @@ logger = logging.getLogger(__name__)
 _LEGACY_MODE = False  # 保留
 
 
-# ---------------------------------------------------------------------------
 # 反痕迹 — 留着没事干的helper
-# ---------------------------------------------------------------------------
 
 def _debug_print(msg: str, level: int = 0) -> None:
 	"""Leftover debug helper. 不删，说不定哪天又用上了"""
@@ -53,9 +51,7 @@ def _debug_print(msg: str, level: int = 0) -> None:
 
 
 
-# ---------------------------------------------------------------------------
 # 数据模型
-# ---------------------------------------------------------------------------
 
 class ValidationSeverity(str, Enum):
 	"""严重级别 — 直接影响 confidence score 的扣分权重"""
@@ -150,9 +146,7 @@ class ValidationReport:
 	warnings: List[str] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
 # 规则引擎 — 内置的校验规则
-# ---------------------------------------------------------------------------
 
 # 遗留 pre-v1 pattern matcher (kept for 引用)
 # def _legacy_match_patterns(pseudocode):
@@ -194,9 +188,7 @@ _OBFUSCATION_INDICATORS: List[Tuple[str, re.Pattern, str]] = [
 ]
 
 
-# ---------------------------------------------------------------------------
 # 主校验器
-# ---------------------------------------------------------------------------
 
 class DecompilerValidator:
     """
@@ -243,9 +235,7 @@ class DecompilerValidator:
             logger.warning(f"无法加载 ground truth: {e}")
             self.ground_truth_lines = []
 
-    # ------------------------------------------------------------------
     # 公开 API
-    # ------------------------------------------------------------------
 
     def validate(self, function_name: str = "main") -> ValidationReport:
         """
@@ -271,7 +261,7 @@ class DecompilerValidator:
 
         logger.info(f"Starting validation of '{function_name}'")
 
-        # Step 1 — 反编译
+        # — 反编译
         pseudocode = self.decompiler_ai.decompile(function_name)
         if not pseudocode:
             report.warnings.append(f"无法反编译函数 {function_name}")
@@ -281,19 +271,19 @@ class DecompilerValidator:
 
         pseudocode_lines = pseudocode.split('\n')
 
-        # Step 2 — 各维度分析
+        # — 各维度分析
         report.var_stats = self._validate_variable_recovery(pseudocode, pseudocode_lines)
         report.cfg_stats = self._validate_control_flow(pseudocode, pseudocode_lines)
         report.boundary_stats = self._validate_function_boundaries(pseudocode, pseudocode_lines)
 
-        # Step 3 — 跨反编译器交叉校验（如果有多个可用）
+        # — 跨反编译器交叉校验（如果有多个可用）
         if sum(1 for v in self.available_decompilers.values() if v) >= 2:
             report.cross_stats = self._cross_validate(function_name)
 
-        # Step 4 — 模式匹配规则
+        # — 模式匹配规则
         self._run_pattern_rules(pseudocode, pseudocode_lines)
 
-        # Step 5 — 与 ground truth 对比
+        # — 与 ground truth 对比
         if self.ground_truth_lines:
             self._compare_with_ground_truth(pseudocode_lines)
 
@@ -330,9 +320,7 @@ class DecompilerValidator:
                 reports.append(error_report)
         return reports
 
-    # ------------------------------------------------------------------
     # 变量恢复校验
-    # ------------------------------------------------------------------
 
     def _validate_variable_recovery(
         self, pseudocode: str, lines: List[str]
@@ -400,9 +388,7 @@ class DecompilerValidator:
 
         return stats
 
-    # ------------------------------------------------------------------
     # 控制流校验
-    # ------------------------------------------------------------------
 
     def _validate_control_flow(
         self, pseudocode: str, lines: List[str]
@@ -479,9 +465,7 @@ class DecompilerValidator:
 
         return stats
 
-    # ------------------------------------------------------------------
     # 函数边界校验
-    # ------------------------------------------------------------------
 
     def _validate_function_boundaries(
         self, pseudocode: str, lines: List[str]
@@ -536,9 +520,7 @@ class DecompilerValidator:
 
         return stats
 
-    # ------------------------------------------------------------------
     # 跨编译器交叉校验
-    # ------------------------------------------------------------------
 
     def _cross_validate(self, function_name: str) -> CrossDecompilerStats:
         """
@@ -593,9 +575,7 @@ class DecompilerValidator:
 
         return stats
 
-    # ------------------------------------------------------------------
     # 模式规则
-    # ------------------------------------------------------------------
 
     def _run_pattern_rules(self, pseudocode: str, lines: List[str],
                            source: str = "unknown") -> None:
@@ -635,9 +615,7 @@ class DecompilerValidator:
                     source_decompiler=decomp_name,
                 ))
 
-    # ------------------------------------------------------------------
     # Ground truth 对比
-    # ------------------------------------------------------------------
 
     def _compare_with_ground_truth(self, decompiled_lines: List[str]) -> None:
         """
@@ -682,9 +660,7 @@ class DecompilerValidator:
                         actual=str(decompiled_lines[j1:j2])[:200],
                     ))
 
-    # ------------------------------------------------------------------
     # 评分 & 报告
-    # ------------------------------------------------------------------
 
     def _compute_confidence(self, report: ValidationReport) -> float:
         """
@@ -870,9 +846,7 @@ class DecompilerValidator:
         return '\n'.join(lines)
 
 
-# ---------------------------------------------------------------------------
 # 便捷函数 — 给不想构造完整对象的懒人用
-# ---------------------------------------------------------------------------
 
 def validate_decompiled_output(
     binary_path: str,
@@ -944,7 +918,7 @@ def _ast_similarity(tree_a: Any, tree_b: Any) -> float:
     # TODO(hermit1016): wire up to actual AST extraction from decompiled C
     return 0.0
 
-# ---- 遗留 v1 校验 流水线 (已废弃) ----
+# 遗留 v1 校验 流水线 (已废弃)
 # def _run_full_validation_pipeline(binary_path, functions):
 #     reports = []
 #     for fn in functions:

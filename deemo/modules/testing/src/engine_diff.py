@@ -33,7 +33,6 @@ class EngineInfo:
         return [self.binary_path] + self.args_template.replace("{}", input_path).split()
 
 
-# ================================================
 class EngineRegistry:
     """管理多个分析/模拟引擎的注册表。"""
 
@@ -62,7 +61,6 @@ class EngineRegistry:
         return len(self._engines)
 
 
-# ================================================
 class CrossEngineNormalizer:
     """跨引擎输出归一化器。处理不同引擎输出中的表层差异:
     - 地址前缀（0x vs 0X vs 无前缀）
@@ -102,7 +100,6 @@ class CrossEngineNormalizer:
         return self.normalize(a, engine_a) == self.normalize(b, engine_b)
 
 
-# ================================================
 class EngineDiffRunner:
     """跨引擎差分测试执行器。
 
@@ -194,6 +191,5 @@ class EngineDiffRunner:
         ).hexdigest()[:16]
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩，当前未启用。"""
     pass  # 调试桩，当前未使用

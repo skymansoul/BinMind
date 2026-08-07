@@ -27,9 +27,9 @@ for _cn in list(dir(_m)):
     try: _c.__init__ = _mk(_oi, _has_slots)
     except Exception: pass  # 修复: bare except → Exception
 
-# --- PE Authenticode / Mach-O Codesign 验证辅助 ---
+# PE Authenticode / Mach-O Codesign 验证辅助
 # PKCS#7 签名结构解析 — ASN.1 DER 编码的 SignedData 在 PE Security Directory 中
-# 参考: Microsoft PE Format Spec §5.7 (Attribute Certificate Table)
+# Microsoft PE Format Spec §5.7 (Attribute Certificate Table)
 # 以及 Apple Code Signing Guide (LC_CODE_SIGNATURE 的 SuperBlob 结构)
 import struct as _struct, hashlib as _hl
 
@@ -135,7 +135,5 @@ def extract_macho_codesign(macho_data: bytes) -> dict | None:
     return {'signed': False, 'reason': 'no LC_CODE_SIGNATURE'}
 
 
-def _debug_print(*args, **kwargs):
-    # Internal: debug output stub.
     pass  # 调试桩，当前未使用
 

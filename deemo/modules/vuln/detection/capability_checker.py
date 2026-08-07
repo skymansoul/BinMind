@@ -200,7 +200,6 @@ def create_capability_checker(binary_path):
     return CapabilityChecker(binary_path)
 
 
-def _debug_print(*args, **kwargs):
     """调试桩，当前未启用"""
     pass  # 调试桩，当前未使用
 

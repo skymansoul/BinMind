@@ -1,12 +1,12 @@
 # 运行时漏洞验证器——通过动态执行确认静态分析发现的漏洞。
-# 参考VulDebugger (arXiv:2504.07634 [待验证]) GDB驱动运行时状态比较和CogniCrypt
-# (arXiv:2603.09044 [待验证]) 混合执行+LLM路径优先。
+# VulDebugger GDB驱动运行时状态比较和CogniCrypt
+# 混合执行+LLM路径优先。
 #
 # 核心机制:
-#   - 崩溃复现——PoC输入运行目标，验证崩溃发生在预期漏洞点
+# 崩溃复现——PoC输入运行目标，验证崩溃发生在预期漏洞点
 #   - ASAN/UBSAN/MSAN集成——收集sanitizer报告与静态finding做差异比对
-#   - 可达性追踪——从污点源到漏洞点的实际执行路径覆盖验证
-#   - 内存状态诊断——在崩溃点检查寄存器值与栈帧布局
+# 可达性追踪——从污点源到漏洞点的实际执行路径覆盖验证
+# 内存状态诊断——在崩溃点检查寄存器值与栈帧布局
 #
 # —— 初版，GDB崩溃复现
 # —— 新增ASAN集成和可达性验证
@@ -19,14 +19,12 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-
 class VerificationStatus(str, Enum):
     CONFIRMED = "confirmed"           # 漏洞确认可利用
     REPRODUCIBLE = "reproducible"     # 崩溃可复现但利用性待定
     PARTIALLY_REPRODUCIBLE = "partial"
     NOT_REPRODUCIBLE = "not_reproducible"
     INCONCLUSIVE = "inconclusive"
-
 
 @dataclass
 class RuntimeState:
@@ -37,7 +35,6 @@ class RuntimeState:
     memory_maps: List[Dict[str, Any]] = field(default_factory=list)
     crash_instruction: str = ""
     crash_address: int = 0
-
 
 @dataclass
 class VerificationResult:
@@ -54,8 +51,7 @@ class VerificationResult:
     error_message: str = ""
     elapsed_seconds: float = 0.0
 
-
-# ---- GDB集成 ----
+# GDB集成
 
 class GDBRunner:
     """GDB子进程管理——脚本模式驱动调试器执行预设命令。
@@ -163,8 +159,7 @@ class GDBRunner:
 
         return state if state.signal_info else None
 
-
-# ---- ASAN集成 ----
+# ASAN集成
 
 class ASANRunner:
     """AddressSanitizer运行器——在ASAN环境下执行目标程序。"""
@@ -241,8 +236,7 @@ class ASANRunner:
 
         return report
 
-
-# ---- 主编排器 ----
+# 主编排器
 
 class RuntimeVulnVerifier:
     """运行时漏洞验证器——编排GDB和ASAN执行，验证静态分析发现。
@@ -254,9 +248,8 @@ class RuntimeVulnVerifier:
         4. ASAN运行确认内存错误类型
         5. 综合评分输出VerificationResult
 
-    参考:
         - VulDebugger (arXiv:2504.07634): GDB驱动漏洞自修复
-        - CogniCrypt (arXiv:2603.09044): 符号执行+LLM路径优先
+        - CogniCrypt : 符号执行+LLM路径优先
     """
 
     def __init__(self, gdb_path: str = "gdb",
@@ -411,8 +404,7 @@ class RuntimeVulnVerifier:
             logger.info(f"验证完成: {finding.get('function_name')} -> {result.status.value}")
         return results
 
-
-# ---- 便捷函数 ----
+# 便捷函数
 
 def verify_finding(binary_path: str, function_name: str = "",
                     predicted_address: int = 0,
@@ -423,7 +415,6 @@ def verify_finding(binary_path: str, function_name: str = "",
     return verifier.verify(binary_path, function_name=function_name,
                            predicted_vuln_addr=predicted_address,
                            overflow_size=overflow_size, vuln_type=vuln_type)
-
 
 def batch_verify_findings(findings: List[Dict],
                             binary_path: str) -> List[VerificationResult]:

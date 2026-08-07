@@ -1,0 +1,284 @@
+{
+  "name": "IOSV v3",
+  "date": "2026-08-07",
+  "TP": 12,
+  "TN": 3,
+  "FP": 0,
+  "FN": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "total": 15,
+  "results": [
+    {
+      "sample": "INT-OVF-01",
+      "id": "01",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "n*s",
+          "verdict": "VULN",
+          "reason": "malloc(n*s): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-02",
+      "id": "02",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "n*sizeof(int",
+          "verdict": "VULN",
+          "reason": "malloc(n*sizeof(int): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-03",
+      "id": "03",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "a*b+16",
+          "verdict": "VULN",
+          "reason": "malloc(a*b+16): mixed overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mixed"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-04",
+      "id": "04",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "n*8",
+          "verdict": "VULN",
+          "reason": "malloc(n*8): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-05",
+      "id": "05",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "VULN",
+          "reason": "malloc(sz): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-06",
+      "id": "06",
+      "truth": "SAFE",
+      "alarm": false,
+      "tag": "TN",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "SAFE",
+          "reason": "overflow guard at line 2",
+          "guarded": true,
+          "guard_line": 2,
+          "value_range": "UNKNOWN",
+          "overflow_kind": ""
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-07",
+      "id": "07",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "a",
+          "verdict": "VULN",
+          "reason": "malloc(a): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-08",
+      "id": "08",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "VULN",
+          "reason": "malloc(sz): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-09",
+      "id": "09",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "a+b",
+          "verdict": "VULN",
+          "reason": "malloc(a+b): add overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "add"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-10",
+      "id": "10",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "n+0xFFFFFFFF",
+          "verdict": "VULN",
+          "reason": "malloc(n+0xFFFFFFFF): add overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "add"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-11",
+      "id": "11",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "VULN",
+          "reason": "malloc(sz): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-12",
+      "id": "12",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "n*m",
+          "verdict": "VULN",
+          "reason": "malloc(n*m): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-13",
+      "id": "13",
+      "truth": "SAFE",
+      "alarm": false,
+      "tag": "TN",
+      "details": [
+        {
+          "size_expr": "z",
+          "verdict": "SAFE",
+          "reason": "overflow guard at line 2",
+          "guarded": true,
+          "guard_line": 2,
+          "value_range": "UNKNOWN",
+          "overflow_kind": ""
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-14",
+      "id": "14",
+      "truth": "VULN",
+      "alarm": true,
+      "tag": "TP",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "VULN",
+          "reason": "malloc(sz): mul overflow risk",
+          "guarded": false,
+          "guard_line": 0,
+          "value_range": "",
+          "overflow_kind": "mul"
+        }
+      ]
+    },
+    {
+      "sample": "INT-OVF-15",
+      "id": "15",
+      "truth": "SAFE",
+      "alarm": false,
+      "tag": "TN",
+      "details": [
+        {
+          "size_expr": "sz",
+          "verdict": "SAFE",
+          "reason": "overflow guard at line 2",
+          "guarded": true,
+          "guard_line": 2,
+          "value_range": "UNKNOWN",
+          "overflow_kind": ""
+        }
+      ]
+    }
+  ]
+}

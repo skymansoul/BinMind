@@ -17,10 +17,10 @@
 #      若原注解为 Any → 替换为精化注解；
 #      若原注解为 Optional[X] → 仅在 X 兼容时保留 Optional 包装。
 #
-# 区别于 RunTyper (ACM TOSEM 2025):
-#   - 不做深度学习推断，纯概率更新。
-#   - 在线运行（每次调用即更新），无需离线 trace 收集阶段。
-#   - 与 StubGradual 的渐进实现闭环紧耦合 —— 精化后的合约
+# 区别于 RunTyper:
+# 不做深度学习推断，纯概率更新。
+# 在线运行（每次调用即更新），无需离线 trace 收集阶段。
+# 与 StubGradual 的渐进实现闭环紧耦合 —— 精化后的合约
 #     直接改善下轮 TemplateGenerator 的代码生成质量。
 import math as _math
 from collections import defaultdict as _dd
@@ -34,7 +34,7 @@ from modules.stubs.stub_contract import (
 )
 
 
-# ---- 类型观测类别 ----
+# 类型观测类别
 # 可观测的 11 类基础类型，覆盖 Python 桩模块中 >95% 的实际类型使用。
 _TYPE_CATEGORIES = [
     'int', 'str', 'bytes', 'float', 'bool',
@@ -54,7 +54,7 @@ def _classify(value: object) -> str:
     return _TYPE_TO_CAT.get(type(value), 'other')
 
 
-# ---- 贝叶斯类型模型 ----
+# 贝叶斯类型模型
 @_dc
 class BayesianTypeBelief:
     """单个参数位置（或返回位置）的 Dirichlet-分类信念。
@@ -181,7 +181,7 @@ class BayesianTypeBelief:
         return belief
 
 
-# ---- 契约精化器 ----
+# 契约精化器
 class ContractRefiner:
     """观测驱动的合约精化管道。
 
@@ -343,7 +343,7 @@ class ContractRefiner:
                 self._beliefs[(mod, func, pos)] = BayesianTypeBelief.from_snapshot(snap)
 
 
-# ---- 观测装饰器 ----
+# 观测装饰器
 # 轻量观测钩子，可直接装饰桩模块中的函数。
 class ObserveAndRefine:
     """透明的调用观测包装器。

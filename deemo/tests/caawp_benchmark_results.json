@@ -1,0 +1,154 @@
+{
+  "results": [
+    {
+      "name": "caawp_01_ctx_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "CAAWP safe (cross-ctx): const: write(128.0) <= alloc(264.0)"
+    },
+    {
+      "name": "caawp_02_ctx_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "CAAWP overflow (cross-ctx): overflow: const write(256.0) > alloc(64.0)"
+    },
+    {
+      "name": "caawp_03_ctx_dual_safe_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "CAAWP overflow (cross-ctx): overflow: const write(256.0) > alloc(64.0)"
+    },
+    {
+      "name": "caawp_04_callchain_deep_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "CAAWP safe (cross-ctx): const: write(128.0) <= alloc(264.0)"
+    },
+    {
+      "name": "caawp_05_callchain_deep_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "CAAWP overflow (cross-ctx): overflow: const write(256.0) > alloc(64.0)"
+    },
+    {
+      "name": "caawp_06_calloc_product_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(192)+off(0)=192 = 192.0 > 136 (usable_size)"
+    },
+    {
+      "name": "caawp_07_calloc_product_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(128)+off(0)=128 <= 264 (usabile_size)"
+    },
+    {
+      "name": "caawp_08_const_diff_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n + 16, write=1*n, offset=0.0; shared=['n']; wr"
+    },
+    {
+      "name": "caawp_09_const_diff_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: overflow: equal coefficients but write_const(8.0) > alloc_const(0.0)"
+    },
+    {
+      "name": "caawp_10_taint_fixed_alloc_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: tainted write into fixed alloc: alloc=64.0, offset=0.0, write=tainted(un"
+    },
+    {
+      "name": "caawp_11_taint_var_alloc_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "CAAWP safe (cross-ctx): subset: shared=['n'], write_const(0.0) <= alloc_const+sl"
+    },
+    {
+      "name": "caawp_12_offset_const_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(128)+off(64)=192 <= 264 (usabile_size)"
+    },
+    {
+      "name": "caawp_13_offset_const_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(128)+off(200)=328 = 328.0 > 264 (usable_size)"
+    },
+    {
+      "name": "caawp_14_coefficient_ratio_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=4*n, write=1*n, offset=0.0; shared=['n']; write_c"
+    },
+    {
+      "name": "caawp_15_coefficient_ratio_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: overflow: write_coef[n]=2.0 > alloc_coef[n]=1.0, variable n at any posit"
+    },
+    {
+      "name": "caawp_16_multivar_subset_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n + 1*m, write=1*n, offset=0.0; shared=['n']; w"
+    },
+    {
+      "name": "caawp_17_multivar_independent_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: tainted write into variable alloc (unrelated source): alloc=1*n, offset="
+    },
+    {
+      "name": "caawp_18_realloc_shrink_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(128)+off(0)=128 = 128.0 > 72 (usable_size)"
+    },
+    {
+      "name": "caawp_19_wrapper_indirect_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "CAAWP overflow (cross-ctx): overflow: const write(64.0) > alloc(32.0)"
+    },
+    {
+      "name": "caawp_20_wrapper_indirect_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "CAAWP safe (cross-ctx): const: write(64.0) <= alloc(264.0)"
+    }
+  ],
+  "metrics": {
+    "tp": 11,
+    "fp": 0,
+    "fn": 0,
+    "tn": 9,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0
+  }
+}

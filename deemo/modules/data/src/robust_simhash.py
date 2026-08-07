@@ -11,9 +11,7 @@ import struct
 from typing import Dict, List, Optional, Set, Tuple, Iterable
 
 
-# ---------------------------------------------------------------------------
 # 熵加权分片器
-# ---------------------------------------------------------------------------
 
 def _local_entropy(data: bytes, window: int = 16) -> List[float]:
     """滑动窗口字节熵, window=16 覆盖 1-2 条 x86/x64 指令."""
@@ -56,9 +54,7 @@ def _entropy_weighted_shingles(data: bytes, shingle_size: int = 8,
     return shingles
 
 
-# ---------------------------------------------------------------------------
 # 鲁棒 SimHash 核心
-# ---------------------------------------------------------------------------
 
 class RobustSimHash:
     """抗对抗扰动 SimHash: 随机平滑(N投影多数投票)+熵加权+多哈希共识.
@@ -176,7 +172,7 @@ class RobustSimHash:
             "consensus_threshold": self.T,
         }
 
-    # ---- 内部 ----
+# 内部
 
     def _single_projection(self, shingles: List[Tuple[bytes, float]],
                            coeffs: List[int], noise_seed: int) -> int:
@@ -254,9 +250,7 @@ class RobustSimHash:
         return h
 
 
-# ---------------------------------------------------------------------------
 # 便捷函数: 批量指纹生成 + 相似度矩阵
-# ---------------------------------------------------------------------------
 
 def batch_fingerprint(data_items: List[bytes], bits: int = 128,
                       num_projections: int = 5,

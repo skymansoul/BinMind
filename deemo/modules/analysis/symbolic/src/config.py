@@ -246,7 +246,7 @@ class Config:
             else:
                 base[key] = value
 
-    # ---- Accessors ----
+# Accessors
 
     def get(self, key_path: str, default: Any = None) -> Any:
         """
@@ -319,9 +319,7 @@ def get_default_config() -> Dict[str, Any]:
     return copy.deepcopy(Config._DEFAULTS)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _ValidateConfigSchema(config_dict: Dict[str, Any]) -> List[str]:
     """

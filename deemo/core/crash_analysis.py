@@ -118,13 +118,11 @@ def analyze_crash_for_exploit(crash: Dict) -> Dict:
     return analysis
 
 
-# =============================================================================
 # Multi-dimensional primitive fingerprinting.
 # Finer-grained exploitability assessment than analyze_crash_for_exploit():
 # register controllability analysis, heap op sequence extraction, multi-axis
 # scoring, and strategy recommendation.
-# References: Lancet (USENIX Security 2025), HEXP (IEEE 2025), AutoPwn (2024)
-# =============================================================================
+# erences: Lancet, HEXP, AutoPwn
 
 def fingerprint_crash_detailed(
     crash_data: dict,

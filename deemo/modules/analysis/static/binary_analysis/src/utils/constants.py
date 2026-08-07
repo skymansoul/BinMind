@@ -3,7 +3,7 @@
 from enum import Enum, IntEnum
 
 
-# ===== 指令集架构 =====
+# 指令集架构
 
 class Arch(Enum):
     X86 = "x86"
@@ -56,7 +56,7 @@ class Arch(Enum):
         return _em_map.get(e_machine, cls.UNKNOWN)
 
 
-# ---- 中间表示类型 ----
+# 中间表示类型
 
 class IRType(Enum):
     VEX = "vex"
@@ -88,7 +88,7 @@ class Severity(IntEnum):
         return cls.CRITICAL
 
 
-# ===== 二进制文件格式 =====
+# 二进制文件格式
 
 class BinaryFormat(Enum):
     ELF = "elf"
@@ -129,7 +129,7 @@ class BinaryFormat(Enum):
         return _ext_map.get(ext, cls.UNKNOWN)
 
 
-# ---- 常见壳/加壳特征节区名 ----
+# 常见壳/加壳特征节区名
 
 PACKER_SECTIONS: frozenset[str] = frozenset([
     "upx0", "upx1", "UPX0", "UPX1",

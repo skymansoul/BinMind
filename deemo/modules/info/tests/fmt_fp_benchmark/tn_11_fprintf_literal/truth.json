@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_11_fprintf_literal",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: fprintf 常量格式",
+  "expect_overflow": false,
+  "trigger": "任意 argv",
+  "why": "fprintf 格式串常量"
+}

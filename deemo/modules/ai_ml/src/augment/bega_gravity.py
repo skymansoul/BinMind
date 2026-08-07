@@ -30,9 +30,7 @@ except ImportError:
     np = None
 
 
-# ============================================================================
 # 节点质量计算 — BEGA 论文 Section 3.2 实现
-# ============================================================================
 
 def compute_node_mass(
     adj: "np.ndarray",
@@ -50,8 +48,8 @@ def compute_node_mass(
 
     其中:
       deg_norm: 归一化度数 (出度+入度) / max_degree
-      cc_norm:   归一化局部聚类系数 [Watts-Strogatz 1998]
-      pr_norm:   归一化 PageRank 值 [Brin-Page 1998], 使用幂迭代法
+      cc_norm:   归一化局部聚类系数
+      pr_norm:   归一化 PageRank 值, 使用幂迭代法
 
     参数选择依据:
       alpha=0.4, beta=0.35, gamma=0.25: 度数和聚类系数的权重略高于 PageRank,
@@ -82,12 +80,12 @@ def compute_node_mass(
     if n_nodes == 1:
         return np.array([1.0], dtype=np.float64)
 
-    # ---- 度数归一化 ----
+# 度数归一化
     degrees = np.array(adj.sum(axis=0) + adj.sum(axis=1)).flatten()
     max_deg = degrees.max()
     deg_norm = degrees / max_deg if max_deg > 0 else np.ones(n_nodes) / n_nodes
 
-    # ---- 局部聚类系数 ----
+# 局部聚类系数
     cc = np.zeros(n_nodes, dtype=np.float64)
     for i in range(n_nodes):
         neighbors = np.where((adj[i, :] > 0) | (adj[:, i] > 0))[0]
@@ -102,7 +100,7 @@ def compute_node_mass(
     max_cc = cc.max()
     cc_norm = cc / max_cc if max_cc > 0 else np.ones(n_nodes) / n_nodes
 
-    # ---- PageRank (幂迭代法) ----
+# PageRank (幂迭代法)
     pr = np.ones(n_nodes, dtype=np.float64) / n_nodes
     out_deg = adj.sum(axis=1)
     out_deg_safe = np.where(out_deg > 0, out_deg, 1)
@@ -117,14 +115,12 @@ def compute_node_mass(
     max_pr = pr.max()
     pr_norm = pr / max_pr if max_pr > 0 else np.ones(n_nodes) / n_nodes
 
-    # ---- 加权组合 ----
+# 加权组合
     mass = alpha * deg_norm + beta * cc_norm + gamma * pr_norm
     return np.clip(mass, 0.0, 1.0)
 
 
-# ============================================================================
 # 引力场模拟 — BEGA 论文 Section 3.3 实现
-# ============================================================================
 
 def compute_gravity_forces(
     adj: "np.ndarray",
@@ -213,13 +209,13 @@ def bega_edge_augment(
 
     augmented = adj.copy()
 
-    # 步骤 1: 质量计算
+    # 质量计算
     masses = compute_node_mass(adj)
 
-    # 步骤 2: 引力计算
+    # 引力计算
     force_matrix = compute_gravity_forces(adj, masses, grav_constant)
 
-    # 步骤 3: 边删除 — 引力低于阈值的边
+    # 边删除 — 引力低于阈值的边
     existing_edges = np.argwhere(augmented > 0)
     if len(existing_edges) > 0:
         edge_forces = np.array(
@@ -235,7 +231,7 @@ def bega_edge_augment(
                 if temp.sum(axis=0)[j] > 0 and temp.sum(axis=1)[i] > 0:
                     augmented[i, j] = 0
 
-    # 步骤 4: 边添加 — 随机选择引力高但无边的位置
+    # 边添加 — 随机选择引力高但无边的位置
     n_existing = int((adj > 0).sum())
     n_add = max(1, int(n_existing * add_ratio))
     non_edges = np.argwhere(adj == 0)
@@ -256,9 +252,7 @@ def bega_edge_augment(
     return augmented
 
 
-# ============================================================================
 # 双视图生成 — 对比学习应用
-# ============================================================================
 
 class BEGAGravityAugmenter:
     """

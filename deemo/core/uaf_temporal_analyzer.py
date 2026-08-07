@@ -12,7 +12,7 @@
 #   (b) Alias inference (pointers from same malloc or via mov -> same object)
 #   (c) Path feasibility (conditional branch constraints between free and use)
 #
-# Based on Undangle (Caballero et al., USENIX Security 2012), using
+# Based on Undangle, using
 # disassembly-level analysis instead of IR-level. Added alias inference
 # (Undangle relies on type info, ineffective for stripped binaries).
 
@@ -120,7 +120,7 @@ class UafTemporalAnalyzer:
                     address=i, line=stripped, func_name=func))
                 continue
 
-            # *p / p->field / p[index] -> USE event
+# p / p->field / p[index] -> USE event
             m = re.search(r'[*\[]\s*(\w+)\s*[\]\s]|(\w+)\s*->', lower)
             if m:
                 ptr = m.group(1) or m.group(2)

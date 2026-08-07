@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-01 — BudgetSelector 贪婪 + 2-opt
-# 修改: 2026-08-02 — 替换前依赖合法性验证, explicit 集追踪
+# coding: utf-8
+# 创建: 2026-07-27 — BudgetSelector 贪婪 + 2-opt
+# 修改: 2026-07-27 — 替换前依赖合法性验证, explicit 集追踪
 """
 时间预算约束下的最大信息量执行 — 给定时间上限 T, 选择性跳过钩子以最大化
 Σ(influence × expected_gain), 满足 DAG 依赖约束.
 
-KaCoSTA (Informatica 2024) 用背包算法分配任务到处理器 (最小化 makespan),
+KaCoSTA 用背包算法分配任务到处理器 (最小化 makespan),
 本模块做 DAG 偏序约束下的 0/1 子集选择 (最大化信息收益). 本质不同.
 
 贪婪近似: 按 (influence×gain)/duration 性价比降序, 若当前钩子及其缺失的

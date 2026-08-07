@@ -6,7 +6,6 @@ import random
 import struct
 from typing import Optional, Set, List, Tuple
 
-
 class InputGenerator:
     """差分测试输入生成器。
 
@@ -63,7 +62,7 @@ class InputGenerator:
             if header == 'Content-Type':
                 value = self.rng.choice(['application/json', 'text/plain', 'application/x-www-form-urlencoded'])
             else:
-                value = f"Test{random.randint(1000, 9999)}"
+                value = f"Test{random.randint}"
             request += f"{header}: {value}\r\n"
 
         request += "\r\n"
@@ -143,7 +142,7 @@ class InputGenerator:
         packet.extend(bytes(self.rng.randint(0, 255) for _ in range(payload_size)))
         return bytes(packet)
 
-    # ---- 能量调度 ----
+    # 能量调度
     def feed_seed(self, seed: bytes, reward: float = 1.0) -> None:
         """存入种子池。reward>1表示该种子触发了新路径。"""
         self._seed_pool.append((seed, reward))
@@ -170,7 +169,7 @@ class InputGenerator:
                 return s
         return seeds[-1]
 
-    # ---- 变异操作 ----
+    # 变异操作
     def mutate(self, data: bytes, mutations: int = 3) -> bytes:
         mutation_types = [
             self._mutate_bitflip,

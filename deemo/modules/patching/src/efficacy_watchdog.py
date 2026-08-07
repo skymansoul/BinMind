@@ -24,7 +24,7 @@ Bayesian 更新机制：
 //   - 现有 patch presence 工具可检测补丁是否被应用（binary presence），
 //     但不能检测补丁是否仍有效（runtime efficacy）。
 //   - 本模块填补这一空白：从 "patch present" 到 "patch effective"。
-//   - CUSUM 漂移检测借鉴工业过程控制（Page, 1954），
+//   - CUSUM 漂移检测借鉴工业过程控制，
 //     本模块对三个独立信号各自运行 CUSUM，多数投票触发告警。
 """
 
@@ -100,7 +100,7 @@ class EfficacyReport:
         }
 
 
-# ── CUSUM 漂移检测器（三通道）─────────────────────────────────────
+# CUSUM 漂移检测器（三通道）
 
 class CUSUMDetector:
     """单信号 CUSUM 累积和漂移检测。
@@ -136,7 +136,7 @@ class CUSUMDetector:
         return max(self._cusum_pos, self._cusum_neg)
 
 
-# ── Bayesian 效力更新器 ────────────────────────────────────────────
+# Bayesian 效力更新器
 
 class BayesianEfficacyUpdater:
     """使用观测信号对静态效力估计做 Bayesian 更新。
@@ -194,7 +194,7 @@ class BayesianEfficacyUpdater:
         return self._alpha_0 / (self._alpha_0 + self._beta_0) if (self._alpha_0 + self._beta_0) > 0 else 0.5
 
 
-# ── 效力监控主引擎 ────────────────────────────────────────────────
+# 效力监控主引擎
 
 class EfficacyWatchdog:
     """补丁效力运行时监控。

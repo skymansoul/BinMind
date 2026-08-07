@@ -13,7 +13,6 @@ interval tracking on decompiled pseudocode:
 Complexity: O(N*V), N=lines, V=variables. <1ms per function.
 """
 
-from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field

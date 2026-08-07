@@ -1,0 +1,48 @@
+{
+  "pcol_benchmark": {
+    "hoig": {
+      "tp": 12,
+      "fp": 23,
+      "tn": 5,
+      "fn": 0,
+      "P": 0.3429,
+      "R": 1.0,
+      "F1": 0.5106,
+      "FPR": 0.8214
+    },
+    "pcol": {
+      "tp": 12,
+      "fp": 0,
+      "tn": 28,
+      "fn": 0,
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "FPR": 0.0
+    }
+  },
+  "challenge": {
+    "correct": 15,
+    "total": 15,
+    "TP": 11,
+    "FP": 0,
+    "TN": 4,
+    "FN": 0,
+    "P": 1.0,
+    "R": 1.0,
+    "F1": 1.0,
+    "FPR": 0.0
+  },
+  "ablation": {
+    "A0_baseline": {
+      "correct": 14,
+      "total": 15,
+      "acc": 0.9333
+    },
+    "A4_full": {
+      "correct": 15,
+      "total": 15,
+      "acc": 1.0
+    }
+  }
+}

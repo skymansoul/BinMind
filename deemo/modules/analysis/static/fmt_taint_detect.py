@@ -12,11 +12,11 @@
 #      若5条内追溯到 read/recv/argv → 高危.
 #      若5条内追溯到常量加载 → 安全.
 #   3. 加固的误报抑制: 以下模式不应报告:
-#      - printf("%s", user_str) → 安全的格式字符串使用
+# printf("%s", user_str) → 安全的格式字符串使用
 #      - fprintf(stderr, "error: %d", code) → 字面量格式字符串
 #      - snprintf(buf, sizeof(buf), "%s", src) → 长度受限 + 字面量
 #
-# 创建: 2026-08-06
+# 创建: 2026-05-22
 
 import re
 from typing import Dict, List, Optional, Tuple

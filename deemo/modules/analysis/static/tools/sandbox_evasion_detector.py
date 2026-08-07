@@ -8,7 +8,7 @@ from collections import Counter
 class SandboxEvasionDetector:
     """5-pass detection: strings -> imports -> opcodes -> timing -> hardware fingerprint"""
 
-    # ---- 初始化: 构建各维度的特征pattern库 ----
+# 初始化: 构建各维度的特征pattern库
 
     def __init__(self):
         # Pass 1: string patterns
@@ -124,7 +124,7 @@ class SandboxEvasionDetector:
             r'GetTokenInformation',
         ]
 
-    # ---- Pass 1: 字符串分析 ----
+# Pass 1: 字符串分析
 
     def _pass_strings(self, strings: List[str]) -> Dict:
         _hits = []
@@ -182,7 +182,7 @@ class SandboxEvasionDetector:
 
         return {'hits': _hits, 'scores': _scores}
 
-    # ===== Pass 3: 操作码序列扫描 =====
+# Pass 3: 操作码序列扫描
 
     def _pass_opcodes(self, data: bytes) -> Dict:
         _hits = []
@@ -205,7 +205,7 @@ class SandboxEvasionDetector:
 
         return {'hits': _hits, 'code_score': _code_score}
 
-    # ---- Pass 4: 时序检测模式 ----
+# Pass 4: 时序检测模式
 
     def _pass_timing(self, data: bytes, strings: List[str]) -> Dict:
         _hits = []
@@ -247,7 +247,7 @@ class SandboxEvasionDetector:
 
         return {'hits': _hits, 'hw_score': _hw_score}
 
-    # ===== 综合评分: 加权5-pass结果 -> 0-100 evasiveness score =====
+    # 综合评分: 加权5-pass结果 -> 0-100 evasiveness score
 
     def analyze(self, data: bytes, strings: List[str] = None,
                 imports: Dict[str, List[str]] = None) -> Dict:
@@ -313,7 +313,7 @@ class SandboxEvasionDetector:
             'risk_level': 'HIGH' if _total >= 70 else ('MEDIUM' if _total >= 30 else 'LOW'),
         }
 
-    # ---- 辅助: 字符串提取 ----
+# 辅助: 字符串提取
 
     def _extract_strings(self, data: bytes, min_len=4) -> List[str]:
         _strings = []

@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 
 from .cve_models import CVEEntry, Severity
 
-# ---- CWE前置→后置条件链 ----
+# CWE前置→后置条件链
 # 格式: (source_cwe, target_cwe, relationship, confidence)
 # confidence: 0.0–1.0，源使能目标的可信度
 # 人工整理自CWE研究文献及真实利用链案例。
@@ -87,7 +87,7 @@ def _cwe_chain_lookup(source_cwe: str, target_cwe: str) -> Optional[Tuple[str, f
     return None
 
 
-# ---- 主图构建器 ----
+# 主图构建器
 
 def build_attack_graph(
     cve_matches: List[Dict],
@@ -265,7 +265,7 @@ def build_attack_graph(
     }
 
 
-# ---- 导出 ----
+# 导出
 
 def export_graph_json(graph: Dict, output_path: Optional[str] = None) -> str:
     """攻击图导出为JSON。给定output_path则写入文件。
@@ -317,7 +317,7 @@ def export_graph_graphml(graph: Dict, output_path: str) -> str:
     return output_path
 
 
-# ---- 路径分析 ----
+# 路径分析
 
 def find_attack_paths(
     graph: Dict,
@@ -389,7 +389,7 @@ def highest_risk_paths(graph: Dict, top_n: int = 5) -> List[Dict]:
     return scored_paths[:top_n]
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _product_overlap(prods_a: Set[str], prods_b: Set[str]) -> bool:
     """按子串模糊匹配检查产品名重叠。"""

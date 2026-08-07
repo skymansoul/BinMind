@@ -3,7 +3,7 @@
 # src/priority.py 的 PriorityTaskQueue 基于堆实现——push O(log N),
 # pop O(log N)。当 N=10^6 且高频操作时，对数开销不可忽略。
 #
-# 学习型索引 (Kraska et al. 2018, P-MOSS arXiv:2411.02933) 用
+# 学习型索引 用
 # 小型模型替代传统数据结构。对于优先队列，任务的相对排名可
 # 用累积分布函数 (CDF) 近似:
 #   rank(task) ≈ CDF(priority) · N

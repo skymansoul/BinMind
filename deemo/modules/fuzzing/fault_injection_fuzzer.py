@@ -77,7 +77,7 @@ class FaultInjectionFuzzer:
         self._crash_dedup: Set[str] = set()
         self._instructions: List[Tuple[int, int]] = []
 
-    # ── 二进制加载 ──────────────────────────────────────────────
+# 二进制加载
 
     def _load_binary(self) -> bytes:
         try:
@@ -97,7 +97,7 @@ class FaultInjectionFuzzer:
             logger.warning(f"loadbinaryfailed: {e}")
             return b""
 
-    # ── 指令发现 ────────────────────────────────────────────────
+# 指令发现
 
     def _discover_instructions(self) -> List[Tuple[int, int]]:
         if self._instructions:
@@ -133,7 +133,7 @@ class FaultInjectionFuzzer:
         self._instructions = instructions
         return instructions
 
-    # ── 覆盖热力引导的注入点排优 ────────────────────────────────
+# 覆盖热力引导的注入点排优
 
     def _rank_injection_candidates(
         self, instructions: List[Tuple[int, int]], top_n: int = 100
@@ -169,7 +169,7 @@ class FaultInjectionFuzzer:
             )
         return top
 
-    # ── 比特翻转模拟 ────────────────────────────────────────────
+# 比特翻转模拟
 
     def simulate_bit_flips(self):
         logger.info("执行比特翻转模拟")
@@ -209,7 +209,7 @@ class FaultInjectionFuzzer:
                 self._bump_heat(addr)
                 self.points.append(pt)
 
-    # ── 指令跳过注入 ────────────────────────────────────────────
+# 指令跳过注入
 
     def inject_faults(self):
         logger.info("注入指令跳过故障")
@@ -237,7 +237,7 @@ class FaultInjectionFuzzer:
             self._bump_heat(addr)
             self.points.append(pt)
 
-    # ── NOP‑sled 替换策略 ───────────────────────────────────────
+# NOP‑sled 替换策略
 
     def inject_nop_sled(self, max_injections: int = 60):
         """将目标指令替换为 NOP‑sled (0x90) 序列，模拟主控流劫持后
@@ -279,7 +279,7 @@ class FaultInjectionFuzzer:
             self.points.append(pt)
             taken += 1
 
-    # ── 寄存器翻转 ──────────────────────────────────────────────
+# 寄存器翻转
 
     def inject_register_corruption(self, max_injections: int = 50):
         """在模拟执行中临时翻转控制寄存器的值，模拟寄存器级的硬件故障。
@@ -337,7 +337,7 @@ class FaultInjectionFuzzer:
                 self.points.append(pt)
                 taken += 1
 
-    # ── 核心模拟引擎 ────────────────────────────────────────────
+# 核心模拟引擎
 
     def _simulate_fault(self, at_addr: int,
                          inject_fn: Callable) -> bool:
@@ -384,7 +384,7 @@ class FaultInjectionFuzzer:
             logger.debug("Unicorn 故障模拟异常: %s", e)
             return False
 
-    # ── 崩溃签名去重 ────────────────────────────────────────────
+# 崩溃签名去重
 
     def _record_crash_sig(self, pt: FaultInjectionPoint, addr: int):
         """基于 (injection_addr, fault_type, stack_top) 构造 SHA-256
@@ -402,7 +402,7 @@ class FaultInjectionFuzzer:
     def _bump_heat(self, addr: int):
         self._coverage_heat[addr] += 1
 
-    # ── 执行入口 ────────────────────────────────────────────────
+# 执行入口
 
     def run(self, max_injections: int = 300) -> FaultResult:
         """执行完整故障注入分析流程"""
@@ -426,7 +426,7 @@ class FaultInjectionFuzzer:
             unique_crash_sigs=list(self._crash_dedup),
         )
 
-    # ── 快速入口: 仅做指令跳过 ──────────────────────────────────
+# 快速入口: 仅做指令跳过
 
     def run_quick_skip(self) -> FaultResult:
         """轻量模式: 跳过比特翻转和寄存器翻转，仅执行指令跳过+少量 NOP sled。

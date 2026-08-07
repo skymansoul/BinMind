@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 # 修改记录:
 # 2025-08-11 10:08 - Go runtime 调用签名: 识别 channel/sync/goroutine 操作
 # 2025-08-11 16:25 - 通信图构建: 节点=goroutine函数, 边=channel send->recv配对
@@ -25,7 +25,7 @@ Go 1.18+ 的调用约定 (ABIInternal): 参数通过寄存器传递
 并发图: 节点=包含 goroutine 操作的函数, 边=channel 通信对
 
 与现有工具的关系:
-- GoResolver (Volexity 2025): CFG 匹配恢复函数名 -> 本模块: 恢复并发结构
+- GoResolver: CFG 匹配恢复函数名 -> 本模块: 恢复并发结构
 - Ghostrings (Fox-IT): P-Code 字符串恢复 -> 本模块: runtime 调用识别
 - gspy: eBPF 动态追踪 -> 本模块: 静态分析, 不需执行
 """
@@ -38,9 +38,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # Go runtime 函数签名--用于识别 stripped binary 中的 runtime 调用
-# ---------------------------------------------------------------------------
 
 # Go runtime 内部函数名及其并发语义
 _GO_RUNTIME_OPS: Dict[str, Tuple[str, float]] = {

@@ -362,10 +362,10 @@ class VTableDumper:
 
 
 # --- 推测去虚拟化 (Speculative Devirtualization) ---
-# 参考: GCC -fdevirtualize-speculatively / LLVM SimplifyCFG 的间接调用折叠 pass
+# GCC -fdevirtualize-speculatively / LLVM SimplifyCFG 的间接调用折叠 pass
 # 当 vtable 分析确定某虚函数仅有一个可能的实现时，可将间接 call 折叠为直接 call。
 # 这在 LTO (Link-Time Optimization) 中尤为有效 — 跨编译单元的类层次全貌可见。
-# 参考: Padlewski (2018) "Devirtualization in LLVM" (LLVM Dev Meeting)
+# Padlewski (2018) "Devirtualization in LLVM" (LLVM Dev Meeting)
 
 def speculative_devirtualize(call_site: int, possible_targets: list[int],
                               profile_counts: dict[int, int] | None = None) -> dict:

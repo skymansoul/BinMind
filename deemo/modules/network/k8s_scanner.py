@@ -14,7 +14,7 @@ ScanScope = None
 BinaryRisk = None
 ClusterScanResult = None
 
-# ---- capability 黑名单 ----
+# capability 黑名单
 # 任一在受侵Pod中即大幅扩大攻击面——"容器逃逸入门包"
 _DANGEROUS_CAPS = frozenset({
     "SYS_ADMIN", "SYS_PTRACE", "NET_ADMIN", "SYS_MODULE",
@@ -23,7 +23,7 @@ _DANGEROUS_CAPS = frozenset({
     "SYS_BOOT", "SYS_TIME", "PERFMON",
 })
 
-# ---- RBAC 危险组合 ----
+# RBAC 危险组合
 # 每元组为 (verbs, resources, apiGroups) —— 三项均匹配即
 # 构成提权路径，即使无字面"cluster-admin" ClusterRole名
 _RBAC_ESCALATION_PATHS = [
@@ -133,7 +133,7 @@ class K8sClusterScanner:
 
         return self._findings
 
-    # -- 文档分发 --
+# 文档分发
 
     def _scan_document(self, doc: Dict[str, Any]) -> None:
         kind = (doc.get("kind") or "").lower()
@@ -204,7 +204,7 @@ class K8sClusterScanner:
                         f"SAs: {names} — grants full cluster control",
                     )
 
-    # -- pod 与容器扫描 --
+# pod 与容器扫描
 
     def _scan_pod(self, pod_spec: Dict[str, Any], owner: str) -> None:
         pod = pod_spec.get("spec", pod_spec)

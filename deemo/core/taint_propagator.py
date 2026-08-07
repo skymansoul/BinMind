@@ -3,8 +3,8 @@
 # 复杂度O(n), 可扩展到大型二进制。
 #
 # 设计依据:
-#   FSVDTG (2024) 在S2E上做符号化参数检测, 但需要全系统仿真。
-#   Pandora (S&P 2024) 在angr上做attacker taint, 但仅限SGX。
+#   FSVDTG 在S2E上做符号化参数检测, 但需要全系统仿真。
+#   Pandora 在angr上做attacker taint, 但仅限SGX。
 #   本模块在反编译伪代码级别实现: 不需要IR翻译, 不需要符号执行引擎,
 #   直接解析r2/rizin的pdc输出文本做变量传播。
 #

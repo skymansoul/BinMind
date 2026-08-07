@@ -1,4 +1,4 @@
-# created: 2026-08-06
+# created: 2026-05-27
 # 增强检测调度器——整合4个新检测模块到现有管线中
 # 不改动任何现有文件，通过封装+增强实现检测精度提升
 #
@@ -92,7 +92,7 @@ class EnhancedScanner:
             vtype = alert.get('vuln_type', alert.get('type', ''))
             alert_map[vtype] = alert
 
-        # ---- 堆/栈溢出增强 ----
+# 堆/栈溢出增强
         if 'buffer_overflow' in alert_map or not original_alerts:
             overflow_report = self._check_buffer_overflow(
                 instructions, func_name,
@@ -100,7 +100,7 @@ class EnhancedScanner:
             if overflow_report:
                 reports.append(overflow_report)
 
-        # ---- UAF增强 ----
+# UAF增强
         if 'use_after_free' in alert_map or not original_alerts:
             uaf_report = self._check_uaf(
                 instructions, bb_boundaries, cfg_edges, func_args,
@@ -108,7 +108,7 @@ class EnhancedScanner:
             if uaf_report:
                 reports.append(uaf_report)
 
-        # ---- 格式化字符串增强 ----
+# 格式化字符串增强
         if 'format_string' in alert_map or not original_alerts:
             fmt_report = self._check_format_string(
                 instructions, func_name,
@@ -129,12 +129,12 @@ class EnhancedScanner:
         overflow_verdict = None
         is_verified = False
 
-        # 步骤1: 找所有危险拷贝函数调用
+        # 找所有危险拷贝函数调用
         copy_funcs = {'memcpy', 'strcpy', 'strncpy', 'sprintf', 'memmove'}
         for i, instr in enumerate(instructions):
             for cf in copy_funcs:
                 if cf in instr.lower() and 'call' in instr.lower():
-                    # 步骤1a: 污点追踪——检查dst参数是否TAINTED
+                    # a: 污点追踪——检查dst参数是否TAINTED
                     taint_result = self._taint_engine.trace_param(
                         i, 'rdi', instructions)
                     if self._taint_engine.is_vulnerable_sink(taint_result):
@@ -142,7 +142,7 @@ class EnhancedScanner:
                             f"copy dst tainted: {taint_result.source_origin}")
                         is_verified = True
 
-                    # 步骤1b: 缓冲区大小验证——比较分配大小和拷贝大小
+                    # b: 缓冲区大小验证——比较分配大小和拷贝大小
                     # 向前查找最近的malloc调用
                     alloc_idx = self._find_nearest_alloc(instructions, i)
                     if alloc_idx >= 0:

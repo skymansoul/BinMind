@@ -1,0 +1,1 @@
+{"sample": "uaf_12_realloc_reuse", "vuln_type": "none", "expected": "TN", "description": "Realloc reuse — realloc properly transfers ownership, not a UAF"}

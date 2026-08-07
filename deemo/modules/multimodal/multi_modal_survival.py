@@ -9,10 +9,8 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 
 
-# ============================================================================
 # Kaplan-Meier 生存函数：非参数估计
 # S(t) = ∏_{t_i ≤ t} (1 - d_i / n_i)，d_i = t_i 时刻事件数，n_i = 该时刻风险集
-# ============================================================================
 
 @dataclass
 class SurvivalCurve:
@@ -112,10 +110,8 @@ def kaplan_meier(survival_times: List[float],
         restricted_mean=round(_rmst, 1))
 
 
-# ============================================================================
 # 对数秩检验 — 比较两组漏洞生存曲线是否存在显著差异
 # 典型用途：补丁发布前后、严重/非严重漏洞的修复速度对比
-# ============================================================================
 
 def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
                   group_b_times: List[float], group_b_events: List[bool]
@@ -195,9 +191,7 @@ def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
     }
 
 
-# ============================================================================
 # 半衰期估计 — 漏洞修复的中位时间
-# ============================================================================
 
 def median_time_to_fix(times: List[float], events: List[bool]) -> float:
     """漏洞修复半衰期：KM估计的中位生存时间。
@@ -209,10 +203,8 @@ def median_time_to_fix(times: List[float], events: List[bool]) -> float:
     return _curve.median_survival_time
 
 
-# ============================================================================
 # 综合风险评分 — 严重度 × 可利用性 × (1 - 修复概率)
 # 高严重度且低修复概率的漏洞获得最高优先处理等级
-# ============================================================================
 
 def vulnerability_risk_score(severity_score: float,
                               survival_prob_at_t: float,
@@ -225,9 +217,7 @@ def vulnerability_risk_score(severity_score: float,
     return round(severity_score * exploitability_score * (1.0 - survival_prob_at_t + 0.01), 2)
 
 
-# ============================================================================
 # 条件生存概率 — 已存续 t₀ 天后，继续存续 t₁ 天的概率
-# ============================================================================
 
 def conditional_survival(km_curve: SurvivalCurve,
                           survived_days: float,
@@ -255,10 +245,8 @@ def conditional_survival(km_curve: SurvivalCurve,
     return round(_s_t1 / _s_t0, 4)
 
 
-# ============================================================================
 # Nelson-Aalen 累积风险 — 小样本下优于 KM 的替代估计量
 # H(t) = Σ_{t_i ≤ t} d_i / n_i
-# ============================================================================
 
 def nelson_aalen_cumulative_hazard(times: List[float],
                                      events: List[bool]) -> List[Tuple[float, float]]:
@@ -294,10 +282,8 @@ def nelson_aalen_cumulative_hazard(times: List[float],
     return list(zip(_unique_t, _cumhaz))
 
 
-# ============================================================================
 # 脆弱性生命周期阶段检测 — 四阶段划分
 # acute (<30天)、chronic (30-180天)、endemic (180-365天)、resolved (已修复/超365天)
-# ============================================================================
 
 def vulnerability_lifecycle_stage(days_since_disclosure: float,
                                     patched: bool = False) -> str:
@@ -320,9 +306,7 @@ def vulnerability_lifecycle_stage(days_since_disclosure: float,
     return 'resolved'
 
 
-# ============================================================================
 # 分层生存分析 — 按标签（严重度/类型）分别估计各子群的生存曲线
-# ============================================================================
 
 def stratified_survival(times: List[float], events: List[bool],
                          strata_labels: List[str]) -> Dict[str, SurvivalCurve]:

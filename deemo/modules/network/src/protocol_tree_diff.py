@@ -13,9 +13,9 @@
 # 编辑脚本→分歧子树→结构差异评分。
 #
 # 与现有工作的差异:
-#   - ChangeDistiller (IEEE TSE 2025)/GumTree (ICSE 2024):
+#   - ChangeDistiller/GumTree:
 #     树编辑距离应用于源代码AST, 非协议响应树
-#   - 本模块: 轻量通用树(非语言特定AST)+协议响应感知权重
+# 本模块: 轻量通用树(非语言特定AST)+协议响应感知权重
 
 from __future__ import annotations
 

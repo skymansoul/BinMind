@@ -22,10 +22,9 @@
 
   安全态势变化综合: 升级/降级/中性/不确定。
 
-参考:
-  - Diaphora (2024): 二进制diffing — 通用差异比较; 本项目加密码学语义层。
-  - BinCrypto (SPLASH 2025): 二进制密码函数识别 — 提供差异分析的检测前端。
-  - FirmUp (USENIX 2016): 固件跨版本漏洞检测 — 版本间代码匹配方法论。
+  - Diaphora: 二进制diffing — 通用差异比较; 本项目加密码学语义层。
+  - BinCrypto: 二进制密码函数识别 — 提供差异分析的检测前端。
+  - FirmUp: 固件跨版本漏洞检测 — 版本间代码匹配方法论。
 
 边界条件:
   - 精确的指令级别diffing需要完整的反汇编 — 当前使用语义哈希近似。
@@ -37,7 +36,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class DiffType(Enum):
     ALGO_SWAP = 0
     PARAM_DRIFT = 1
@@ -48,13 +46,11 @@ class DiffType(Enum):
     COMPILER_DRIFT = 6
     UNCHANGED = 7
 
-
 class SecurityImpact(Enum):
     UPGRADE = 0
     DOWNGRADE = 1
     NEUTRAL = 2
     UNCERTAIN = 3
-
 
 @dataclass
 class CryptoDiff:
@@ -67,7 +63,7 @@ class CryptoDiff:
     evidence: List[str] = field(default_factory=list)
     recommendation: str = ""
 
-# ── 安全级别参考 ──
+# 安全级别参考
 _ALGO_STRENGTH: Dict[str, int] = {
     'AES-256': 9, 'AES-128': 7, 'DES': 1, '3DES': 3, 'ChaCha20': 8,
     'SHA-512': 9, 'SHA-256': 7, 'SHA-1': 1, 'MD5': 0,
@@ -80,7 +76,6 @@ _IMPL_STRENGTH: Dict[str, int] = {
     'hardware-PKE': 8, 'software-generic': 5,
 }
 
-
 def _classify_algo_change(algo_before: str, algo_after: str) -> SecurityImpact:
     sb = _ALGO_STRENGTH.get(algo_before, 5)
     sa = _ALGO_STRENGTH.get(algo_after, 5)
@@ -91,7 +86,6 @@ def _classify_algo_change(algo_before: str, algo_after: str) -> SecurityImpact:
     elif sa == sb:
         return SecurityImpact.NEUTRAL
     return SecurityImpact.UNCERTAIN
-
 
 def analyze_crypto_diff(findings_before: Optional[List] = None,
                         findings_after: Optional[List] = None,
@@ -175,7 +169,6 @@ def analyze_crypto_diff(findings_before: Optional[List] = None,
 
     diffs.sort(key=lambda d: (d.diff_type.value, d.algorithm))
     return diffs
-
 
 def diff_summary(diffs: List[CryptoDiff]) -> Dict[str, int]:
     s = {'UPGRADE': 0, 'DOWNGRADE': 0, 'NEUTRAL': 0, 'UNCERTAIN': 0,

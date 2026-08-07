@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── Bell-LaPadula 格模型 ───────────────────────────────────────────────────
-# 参考: Bell & LaPadula (1973) "Secure Computer Systems"
+# Bell & LaPadula (1973) "Secure Computer Systems"
 # 核心规则: (1) 读取 up (简单安全属性) (2) 写入 down (*属性)
 # 本实现将安全标签建模为完全偏序格——Unclassified < Confidential < Secret < TopSecret
 # 格的 join 操作用来确定两个标签合并后的最低允许级别

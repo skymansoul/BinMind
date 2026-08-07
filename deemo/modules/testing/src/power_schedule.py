@@ -1,10 +1,6 @@
 # 种子能量决定其在下一轮被选中的概率和变异次数。
 # 核心思想: 对"有前途"的种子（触发新覆盖、罕见路径）赋予更高能量。
-# 参考文献:
-#   Bohme et al. CCS 2017 "AFLFast: Coverage-based Greybox Fuzzing as MDP"
-#   Lemieux & Sen. ASE 2018 "FairFuzz: A Targeted Mutation Strategy"
-#   Yue et al. USENIX 2020 "EcoFuzz: Adaptive Energy-Saving Greybox Fuzzing"
-#   Zhang et al. 2024 "MobFuzz: Adaptive Multi-objective Optimization" (arXiv:2401.15956)
+# 文献:
 import math
 import time
 from typing import Dict, List, Tuple, Optional, Set
@@ -185,7 +181,7 @@ class MobFuzzStyleSchedule(PowerSchedule):
     使用简单加权和而非完整多目标进化算法 (NSGA-II复杂度不适用于
     每种子实时调度)。覆盖率权重w_cov + 崩溃权重w_crash = 1.0。
 
-    参考Zhang et al. 2024, "MobFuzz" (arXiv:2401.15956), Section IV.
+    参考Zhang et al. 2024, "MobFuzz", Section IV.
     """
 
     def __init__(self, cov_weight: float = 0.6):

@@ -1,0 +1,197 @@
+{
+  "total": 47,
+  "success": 0,
+  "failed": 47,
+  "success_rate": 0.0,
+  "binaries": [],
+  "failures": [
+    {
+      "sample": "cve-2015-0235_ghost",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2016-4484_cryptsetup",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2017-1000253_pie",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2018-1000001_glibc",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2019-7304_dirty_sock",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2021-3156_sudo_baron",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2022-0185_kernel",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2023-24329_curl",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve-2024-2961_glibc",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2017_1000112",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2018_1000001",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2019_12900",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2020_10713",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2021_3156",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2022_0185",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2022_23222",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "cve_2023_0179",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_cond_overflow",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_loop_overflow",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_nested_alloc",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_off_by_one",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_01_basic",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_02_off_by_one",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_03_calloc",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_04_loop",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_05_realloc",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_overflow_06_struct",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_size_constrained",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_struct_padding",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "heap_unbounded_copy",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample01_heap_overflow_basic",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample02_off_by_one",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample03_memcpy_no_check",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample04_loop_overflow",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample05_fmt_string_heap",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample06_CVE-2022-24834",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample07_CVE-2023-25139",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample08_int_overflow_to_heap",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample09_CVE-2015-0235_ghost",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample10_CVE-2020-10713",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample11_realloc_misuse",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample12_multi_free_heap",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample13_struct_field_overflow",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample14_nested_loop_heap",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample15_CVE-2017-1000112",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample16_safe_guarded",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    },
+    {
+      "sample": "sample17_false_positive_test",
+      "error": "gcc not found \u2014 install mingw-w64 or gcc"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # ICS/SCADA 协议分析器 — Modbus, DNP3, IEC 60870-5-104, BACnet, S7comm
 # 从网络流量中识别工业协议并提取关键操作
-# 参考：Wireshark ICS dissectors, NIST SP 800-82 r3, MITRE ATT&CK ICS matrix
+# Wireshark ICS dissectors, NIST SP 800-82 r3, MITRE ATT&CK ICS matrix
 import struct, math
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
@@ -22,7 +22,7 @@ class ICSFrame:
     timestamp: float = 0.0
 
 
-# ---- MITRE ATT&CK for ICS 技术映射 ----
+# MITRE ATT&CK for ICS 技术映射
 # 映射 (protocol, function_code_range) → technique ID
 _MITRE_ICS_MAP = {
     ("modbus", (5,6,15,16)):   "T0836",  # Modify Parameter
@@ -40,7 +40,7 @@ def _map_mitre(proto: str, fc: int) -> str:
     return ""
 
 
-# ---- Modbus ----
+# Modbus
 _MODBUS_WRITE_FC = {5, 6, 15, 16}   # write single/multiple coils/registers
 _MODBUS_CRITICAL_FC = {5, 6, 8, 15, 16}  # + diagnostics (8)
 
@@ -82,7 +82,7 @@ def _parse_modbus(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- DNP3 ----
+# DNP3
 _DNP3_START_BYTES = b'\x05\x64'
 _DNP3_CONFIRM = 0x00; _DNP3_READ = 0x01; _DNP3_WRITE = 0x02
 _DNP3_SELECT = 0x03; _DNP3_OPERATE = 0x04
@@ -122,7 +122,7 @@ def _parse_dnp3(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- IEC 60870-5-104 ----
+# IEC 60870-5-104
 _IEC104_START = 0x68
 
 def _parse_iec104(data: bytes) -> Optional[ICSFrame]:
@@ -154,7 +154,7 @@ def _parse_iec104(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- BACnet/IP ----
+# BACnet/IP
 _BACNET_BVLC = 0x81
 
 def _parse_bacnet(data: bytes) -> Optional[ICSFrame]:
@@ -189,7 +189,7 @@ def _parse_bacnet(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- S7comm (Siemens) ----
+# S7comm (Siemens)
 # TPKT header(4) + COTP header(3) + S7 header(4) 至少
 _S7COMM_MIN_LEN = 4 + 3 + 4  # 11 bytes minimum
 _S7COMM_WRITE_CODES = frozenset({0x05, 0x0F, 0x10})
@@ -239,7 +239,7 @@ def _parse_s7comm(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- 统一分析器 ----
+# 统一分析器
 
 class ICSProtocolAnalyzer:
     """工业协议分析器 — 自动检测协议类型并提取关键操作。"""

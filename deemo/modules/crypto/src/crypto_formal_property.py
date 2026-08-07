@@ -26,12 +26,11 @@
     P5 (抗原像性): 给定H(x)找x在计算上不可行 — 安全哈希
     P6 (抗碰撞性): 找x≠y使H(x)=H(y)在计算上不可行 — 安全哈希
 
-参考:
-  - Tamarin Prover (Basin et al., IEEE CSF 2012; maintained to 2024):
+  - Tamarin Prover:
     符号协议验证器, 使用multiset rewriting规则建模协议。
-  - ProVerif (Blanchet, IEEE S&P 2001; maintained to 2024):
+  - ProVerif:
     密码协议自动验证器, 基于Horn子句逻辑。
-  - CryptoVerif (Blanchet, CCS 2006): 计算模型下的协议验证器。
+  - CryptoVerif: 计算模型下的协议验证器。
 
 边界条件:
   - 形式化性质提取基于算法分类知识库—不验证性质是否实际成立。
@@ -42,7 +41,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
-
 
 class FormalProperty(Enum):
     DETERMINISTIC = 0
@@ -56,7 +54,6 @@ class FormalProperty(Enum):
     NON_MALLEABLE = 8
     IND_CIA = 9  # IND-CIA (不可区分性)
 
-
 @dataclass
 class FormalPropertyAssertion:
     algorithm: str = ""
@@ -66,8 +63,7 @@ class FormalPropertyAssertion:
     rationale: str = ""
     tamarin_syntax: str = ""      # Tamarin规则语法
 
-
-# ── 算法→性质知识库 ──
+# 算法→性质知识库
 # 基于每个算法的数学定义, 不是启发式推断
 
 _ALGORITHM_PROPERTIES: Dict[str, List[Tuple[FormalProperty, bool, str]]] = {
@@ -126,7 +122,6 @@ _ALGORITHM_PROPERTIES: Dict[str, List[Tuple[FormalProperty, bool, str]]] = {
     ],
 }
 
-
 def _build_tamarin_rule(algo: str, prop: FormalProperty, holds: bool) -> str:
     """为Tamarin Prover生成规则语法。"""
     algo_clean = algo.replace('-', '_').replace(' ', '_')
@@ -145,7 +140,6 @@ def _build_tamarin_rule(algo: str, prop: FormalProperty, holds: bool) -> str:
         return (f'equation Comm_{algo_clean}:\n'
                 f'  dh_{algo_clean}(skA, pk(skB)) = dh_{algo_clean}(skB, pk(skA))')
     return f'(* {algo}: {prop.name}={holds} *)'
-
 
 def extract_formal_properties(
         crypto_findings: Optional[List] = None,
@@ -185,7 +179,6 @@ def extract_formal_properties(
                 rationale=rationale, tamarin_syntax=tamarin))
 
     return assertions
-
 
 def export_tamarin_skeleton(assertions: List[FormalPropertyAssertion],
                             protocol_name: str = "ExtractedProtocol"

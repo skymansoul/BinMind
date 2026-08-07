@@ -134,7 +134,7 @@ class SideChannelEvaluator:
     def __init__(self):
         self._measurer = TimingMeasurer()
 
-    # -- 主入口 -----------------------------------------------------------------
+# 主入口
 
     def evaluate(self, impl: Any, **kwargs) -> List[EvaluationResult]:
         """对给定实现运行所有相关测试。
@@ -173,7 +173,7 @@ class SideChannelEvaluator:
 
         return results
 
-    # -- Welch t-test（TVLA）-------------------------------------------------
+# Welch t-test（TVLA）
 
     def _welch_ttest(self, op: Callable, trials: int = 500) -> EvaluationResult:
         """非特定（fixed vs. random）t-test。
@@ -234,7 +234,7 @@ class SideChannelEvaluator:
             },
         )
 
-    # -- CPA --------------------------------------------------------------------
+# CPA
 
     def _cpa(self, traces: np.ndarray, plaintexts: List[int],
              keys: Optional[List[int]] = None) -> EvaluationResult:
@@ -300,7 +300,7 @@ class SideChannelEvaluator:
             },
         )
 
-    # -- 带宽估算 ---------------------------------------------------------------
+# 带宽估算
 
     def _estimate_bandwidth(self, op: Callable, trials: int = 200) -> ChannelBandwidth:
         try:
@@ -319,7 +319,7 @@ class SideChannelEvaluator:
         except Exception:
             return ChannelBandwidth()
 
-    # -- 逐时点 SNR 估计 --------------------------------------------------------
+# 逐时点 SNR 估计
     # 对每条 trace 的每个采样点估计信噪比，用于定位泄漏点。
 
     @staticmethod

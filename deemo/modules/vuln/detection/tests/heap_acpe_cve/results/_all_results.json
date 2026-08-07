@@ -1,0 +1,895 @@
+[
+  {
+    "id": "CVE-2014-0160",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2014-0160\\bin\\plain\\heartbleed.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "process_heartbeat",
+          "addr": 5368715162,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:2+16 unrelated to alloc C:16"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "process_heartbeat",
+          "addr": 5368715162,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 16,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715218,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 64B > alloc_size 16B — confirmed overflow of 48B",
+          "alloc_size": 16,
+          "write_size": 64
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2014-9112",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2014-9112\\bin\\plain\\cpio_heap.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "copy_name",
+          "addr": 5368715171,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+4, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "copy_name",
+          "addr": 5368715171,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715251,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 8192B > alloc_size 128B — confirmed overflow of 8064B",
+          "alloc_size": 128,
+          "write_size": 8192
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2015-0235",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2015-0235\\bin\\plain\\ghost.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "resolve_host",
+          "addr": 5368715165,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:2 unrelated to alloc A:2&65535"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "resolve_host",
+          "addr": 5368715165,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715219,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 512B > alloc_size 128B — confirmed overflow of 384B",
+          "alloc_size": 128,
+          "write_size": 512
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2015-3202",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2015-3202\\bin\\plain\\fuse_heap.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "handle_req",
+          "addr": 5368715156,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:1 unrelated to alloc C:128"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "handle_req",
+          "addr": 5368715156,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715221,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 256B > alloc_size 128B — confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2016-10158",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2016-10158\\bin\\plain\\php_exif.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "parse_exif",
+          "addr": 5368715152,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:1 unrelated to alloc C:256"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "parse_exif",
+          "addr": 5368715152,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 256,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715206,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 512B > alloc_size 256B — confirmed overflow of 256B",
+          "alloc_size": 256,
+          "write_size": 512
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2016-2177",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2016-2177\\bin\\plain\\openssl_bignum.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "bn2bin",
+          "addr": 5368715177,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+12, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "bn2bin",
+          "addr": 5368715177,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2016-5094",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2016-5094\\bin\\plain\\php_gd.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "read_lines",
+          "addr": 5368715177,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+1, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "read_lines",
+          "addr": 5368715177,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715231,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 1024B > alloc_size 128B — confirmed overflow of 896B",
+          "alloc_size": 128,
+          "write_size": 1024
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2017-9438",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2017-9438\\bin\\plain\\imagemagick_png.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "decode_chunk",
+          "addr": 5368715156,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+12, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "decode_chunk",
+          "addr": 5368715156,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715210,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 512B > alloc_size 128B — confirmed overflow of 384B",
+          "alloc_size": 128,
+          "write_size": 512
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2018-1000001",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2018-1000001\\bin\\plain\\glibc_realpath.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 2,
+      "error": "",
+      "findings": [
+        {
+          "func": "do_realpath",
+          "addr": 5368715174,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size ? unrelated to alloc ?"
+        },
+        {
+          "func": "do_realpath",
+          "addr": 5368715206,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "constant write 26B vs non-constant capacity"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "do_realpath",
+          "addr": 5368715174,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2019-1010200",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2019-1010200\\bin\\plain\\audiofile_wav.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "read_wav",
+          "addr": 5368715156,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+8, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "read_wav",
+          "addr": 5368715156,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715210,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 1024B > alloc_size 128B — confirmed overflow of 896B",
+          "alloc_size": 128,
+          "write_size": 1024
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2019-11477",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2019-11477\\bin\\plain\\tcp_sack.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "process_packet",
+          "addr": 5368715180,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:1+4096 unrelated to alloc A:1+4096&65535"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "process_packet",
+          "addr": 5368715180,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715249,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 8192B > alloc_size 128B — confirmed overflow of 8064B",
+          "alloc_size": 128,
+          "write_size": 8192
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2020-10713",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2020-10713\\bin\\plain\\grub_boot_heap.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "read_block",
+          "addr": 5368715154,
+          "write_func": "call",
+          "relation": "EQUIV",
+          "verdict": "safe",
+          "reasoning": "write size == alloc size (A:1) — capacity self-consistent"
+        },
+        {
+          "func": "read_block",
+          "addr": 5368715195,
+          "write_func": "call",
+          "relation": "ARITH_SLACK",
+          "verdict": "uncertain",
+          "reasoning": "write is alloc+8, within allocator slack [0,15]"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 3,
+      "findings": [
+        {
+          "func": "read_block",
+          "addr": 5368715154,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "read_block",
+          "addr": 5368715195,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715249,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 256B > alloc_size 128B — confirmed overflow of 128B",
+          "alloc_size": 128,
+          "write_size": 256
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2021-3156",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2021-3156\\bin\\plain\\sudo_baron_sedit.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "sudoedit_parse",
+          "addr": 5368715302,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size ? unrelated to alloc A:1"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "sudoedit_parse",
+          "addr": 5368715302,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2022-0185",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2022-0185\\bin\\plain\\kernel_legacy_parse_param.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "parse_param",
+          "addr": 5368715157,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "vuln_likely",
+          "reasoning": "write size A:1 unrelated to alloc ?"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "parse_param",
+          "addr": 5368715157,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715211,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 512B > alloc_size 128B — confirmed overflow of 384B",
+          "alloc_size": 128,
+          "write_size": 512
+        }
+      ]
+    }
+  },
+  {
+    "id": "CVE-2024-21894",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\CVE-2024-21894\\bin\\plain\\heap_msg_len.exe",
+    "acpe": {
+      "detected": true,
+      "kept": 1,
+      "error": "",
+      "findings": [
+        {
+          "func": "process_msg",
+          "addr": 5368715151,
+          "write_func": "call",
+          "relation": "EQUIV",
+          "verdict": "safe",
+          "reasoning": "write size == alloc size (A:1) — capacity self-consistent"
+        },
+        {
+          "func": "process_msg",
+          "addr": 5368715180,
+          "write_func": "call",
+          "relation": "UNRELATED",
+          "verdict": "uncertain",
+          "reasoning": "constant write 32B vs non-constant capacity; dst offset symbolic — endpoint cannot be proven safe"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 2,
+      "findings": [
+        {
+          "func": "process_msg",
+          "addr": 5368715151,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        },
+        {
+          "func": "main",
+          "addr": 5368715234,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 512B > alloc_size 128B — confirmed overflow of 384B",
+          "alloc_size": 128,
+          "write_size": 512
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP01",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP01\\bin\\plain\\self_consistent_copy.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "copy_sized",
+          "addr": 5368715154,
+          "write_func": "call",
+          "relation": "EQUIV",
+          "verdict": "safe",
+          "reasoning": "write size == alloc size (A:1) — capacity self-consistent"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "copy_sized",
+          "addr": 5368715154,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP02",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP02\\bin\\plain\\clamp_guard_copy.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "guarded_copy",
+          "addr": 5368715167,
+          "write_func": "call",
+          "relation": "CONST_LE",
+          "verdict": "safe",
+          "reasoning": "write 64B <= usable 64B"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "main",
+          "addr": 5368715230,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 256B > alloc_size 64B — confirmed overflow of 192B",
+          "alloc_size": 64,
+          "write_size": 256
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP03",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP03\\bin\\plain\\slack_constant_copy.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "slack_copy",
+          "addr": 5368715146,
+          "write_func": "call",
+          "relation": "CONST_LE",
+          "verdict": "safe",
+          "reasoning": "write 112B <= usable 112B"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "slack_copy",
+          "addr": 5368715146,
+          "decision": "confirmed_vuln",
+          "phase": "bound_check",
+          "reasoning": "write_size 112B > alloc_size 100B — confirmed overflow of 12B",
+          "alloc_size": 100,
+          "write_size": 112
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP04",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP04\\bin\\plain\\small_const_copy.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "small_copy",
+          "addr": 5368715146,
+          "write_func": "call",
+          "relation": "CONST_LE",
+          "verdict": "safe",
+          "reasoning": "write 6B <= usable 256B"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": false,
+      "kept": 0,
+      "findings": []
+    }
+  },
+  {
+    "id": "FP05",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP05\\bin\\plain\\early_exit_guard.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "early_exit",
+          "addr": 5368715162,
+          "write_func": "call",
+          "relation": "GUARDED",
+          "verdict": "safe",
+          "reasoning": "guard proves size <= 256B <= usable 256B (early-exit ja@14000177e)"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "early_exit",
+          "addr": 5368715162,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 256,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP06",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP06\\bin\\plain\\alloc_derived_copy.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "derived_copy",
+          "addr": 5368715157,
+          "write_func": "call",
+          "relation": "EQUIV",
+          "verdict": "safe",
+          "reasoning": "write size == alloc size (A:1) — capacity self-consistent"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": true,
+      "kept": 1,
+      "findings": [
+        {
+          "func": "derived_copy",
+          "addr": 5368715157,
+          "decision": "likely_vuln",
+          "phase": "none",
+          "reasoning": "write size unknown — unbounded copy into fixed buffer, conservative flag",
+          "alloc_size": 128,
+          "write_size": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "FP07",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP07\\bin\\plain\\smaller_memmove.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "move_small",
+          "addr": 5368715166,
+          "write_func": "call",
+          "relation": "CONST_LE",
+          "verdict": "safe",
+          "reasoning": "write 32B <= usable 512B"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": false,
+      "kept": 0,
+      "findings": []
+    }
+  },
+  {
+    "id": "FP08",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP08\\bin\\plain\\guarded_read.exe",
+    "acpe": {
+      "detected": false,
+      "kept": 0,
+      "error": "",
+      "findings": [
+        {
+          "func": "read_guarded",
+          "addr": 5368715164,
+          "write_func": "call",
+          "relation": "CONST_LE",
+          "verdict": "safe",
+          "reasoning": "write 64B <= usable 64B"
+        }
+      ]
+    },
+    "baseline": {
+      "detected": false,
+      "kept": 0,
+      "findings": []
+    }
+  }
+]

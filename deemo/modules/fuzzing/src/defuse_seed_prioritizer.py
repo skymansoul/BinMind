@@ -1,4 +1,4 @@
-# Def-Use链引导的Fuzzing种子调度 — 基于 FuzzRDUCC (arXiv:2509.04967, Sep 2025)
+# Def-Use链引导的Fuzzing种子调度 — 基于 FuzzRDUCC
 # 论文: "FuzzRDUCC: Fuzzing with Reconstructed Def-Use Chain Coverage"
 # 核心改进: 从反编译代码重建def-use链, 追踪哪些def-use边已被覆盖,
 # 优先调度能命中未覆盖def-use边的种子。对体积大、分支深的二进制

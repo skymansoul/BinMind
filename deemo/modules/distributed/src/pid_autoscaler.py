@@ -92,7 +92,7 @@ class PIDAutoscaler:
             current_qpw = queue_depth / w
             error = self._target - current_qpw  # 正值=需要更多worker
 
-            # ---- 前馈分支 ----
+# 前馈分支
             ff_increment = 0.0
             if arrival_rate is not None and self._prev_arrival_rate > 0:
                 ratio = arrival_rate / max(self._prev_arrival_rate, 0.01)
@@ -103,7 +103,7 @@ class PIDAutoscaler:
             if arrival_rate is not None:
                 self._prev_arrival_rate = arrival_rate
 
-            # ---- PID 计算 ----
+# PID 计算
             # 比例项
             P = self._Kp * error
 
@@ -141,7 +141,7 @@ class PIDAutoscaler:
             self._last_time = time.monotonic()
             self._prev_arrival_rate = 0.0
 
-    # ---- 与 ScalePolicy 接口兼容 ----
+# 与 ScalePolicy 接口兼容
 
     def evaluate_from_metrics(self, metrics: dict) -> int:
         """与 ThresholdScalePolicy.evaluate(metrics) 兼容的接口。

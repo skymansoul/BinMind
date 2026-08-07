@@ -65,12 +65,10 @@ class WorkerStats:
         self.last_heartbeat = time.monotonic()
 
 
-# ---------------------------------------------------------------------------
 # 工作窃取队列——线程安全双端任务队列
 # 空闲 worker 从队尾窃取任务，降低全局锁争用。
 # 权衡：Python GIL 限制下窃取加速有限，但减少了 executor.submit
 # 的调度延迟，适用于任务耗时方差大的场景。
-# ---------------------------------------------------------------------------
 
 class WorkStealingQueue:
     """工作窃取双端队列：owner 从队头 pop，thief 从队尾 steal。
@@ -622,10 +620,8 @@ def execute_with_progress(tasks: List[Dict[str, Any]],
     return analyzer.execute_parallel(worker_func, on_result=on_result)
 
 
-# ---------------------------------------------------------------------------
 # 流式执行——Python generator 逐任务 yield 结果
 # 调用方在任务完成时立即处理，无需等待全部完成
-# ---------------------------------------------------------------------------
 
 def stream_results(tasks: List[Dict[str, Any]],
                    worker_func: Callable[[AnalysisTask], Dict[str, Any]],
@@ -691,14 +687,12 @@ __all__ = ["MulticoreParallelAnalyzer", "TaskPartitioner", "AnalysisTask",
            "execute_with_progress", "ensemble_vote", "stream_results"]
 
 
-# ============================================================================
 # 推测执行——预测慢任务并提前在多个 worker 上冗余执行
-# 参考：Dean & Barroso. The Tail at Scale. CACM 2013.
+# Dean & Barroso. The Tail at Scale. CACM 2013.
 #       Ananthanarayanan et al. GRASS: Trimming Stragglers. NSDI 2014.
 # 长尾延迟的本质：一个慢任务阻塞整个 batch。
 # 对策：任务运行超过 p95 耗时阈值时，在另一 worker 启动克隆。
 # 先完成者的结果被采用——推测执行的核心机制。
-# ============================================================================
 
 class SpeculativeScheduler:
     """推测执行调度器：检测 straggler 并启动克隆任务。
@@ -753,13 +747,11 @@ class SpeculativeScheduler:
         return round(_count / len(self._task_times), 3)
 
 
-# ============================================================================
 # 内存感知调度——基于当前可用内存动态调整 worker 数
-# 参考：Hindman et al. Mesos: A Platform for Fine-Grained Resource Sharing.
+# Hindman et al. Mesos: A Platform for Fine-Grained Resource Sharing.
 #       NSDI 2011.
 # 可用内存低于阈值时减少并行度以避免 OOM/swap 抖动；
 # 内存充裕时增加 worker 以最大化吞吐。
-# ============================================================================
 
 class MemoryAwareScheduler:
     """内存感知调度器：基于系统内存压力自适应调整并发度。
@@ -822,12 +814,10 @@ class MemoryAwareScheduler:
         return _is_low and _is_volatile
 
 
-# ============================================================================
 # 管道并行——将任务拆分为阶段并在流水线中执行
-# 参考：Huang et al. GPipe: Efficient Training of Giant Neural Networks. 2019.
+# Huang et al. GPipe: Efficient Training of Giant Neural Networks. 2019.
 # 各阶段并行处理不同 micro-batch，提高整体吞吐。
 # 适用于"扫描→分析→报告"的链式流程。
-# ============================================================================
 
 class PipelineExecutor:
     """管道执行器：任务划分为串行阶段，流水线式处理。

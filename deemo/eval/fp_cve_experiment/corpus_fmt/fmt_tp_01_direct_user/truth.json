@@ -1,0 +1,6 @@
+{
+  "id": "fmt_tp_01_direct_user",
+  "expected_vuln": true,
+  "vuln_type": "format_string",
+  "mode": "printf(user_input) 直接用户输入格式串"
+}

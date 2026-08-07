@@ -5,10 +5,10 @@
 #   T_total = T_serialize + T_network + T_deserialize
 # 对大状态任务 (符号执行约束集、内存快照), 序列化可达总时间的 50%+。
 #
-# μSer (CoNEXT '24) 和 Apache Fury (2024) 展示了零拷贝序列化的可行性:
+# μSer (CoNEXT '24) 和 Apache Fury 展示了零拷贝序列化的可行性:
 #   - scatter-gather: 用 I/O vector 引用分散的内存块，OS 内核聚合
-#   - out-of-band: 将二进制 buffer 与对象图分离传输
-#   - lazy deserialization: 接收端仅重建对象壳，字段按需读取
+# out-of-band: 将二进制 buffer 与对象图分离传输
+# lazy deserialization: 接收端仅重建对象壳，字段按需读取
 #
 # 本模块适配这些技术到调度任务状态传输:
 #   1. 状态分解: 将任务状态分解为 (header, buffers[]) 格式

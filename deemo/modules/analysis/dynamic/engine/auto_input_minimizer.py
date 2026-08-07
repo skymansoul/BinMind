@@ -20,14 +20,12 @@ DEFAULT_TIMEOUT_SEC = 300.0
 TOKEN_ALIGN = 4
 BIT_COUNT = 8
 
-
 class MinimizationStrategy(StrEnum):
     DDMIN = "ddmin"             # Classic Delta Debugging
     HIERARCHY = "hierarchy"     # Hierarchical
     LEXICAL = "lexical"         # Lexical (token boundary based)
     BITS = "bits"               # Bit-level
     FRAME_SHIFT = "frame_shift" # FrameShift: structure-preserving (舍入 3)
-
 
 @dataclass
 class MinimizationResult:
@@ -41,14 +39,13 @@ class MinimizationResult:
     success: bool
     history: list = field(default_factory=list)
 
-
 class DeltaDebugger:
     """
     Delta Debugging minimizer
     
     舍入 3: Added FrameShift strategy — 检测 relation fields
     (size fields, 校验和s, length prefixes) preserves
-    integrity reduction. FrameShift (arXiv 2507.05421) 显示
+    integrity reduction. FrameShift  显示
     avoids generating malformed inputs rejected
     reaching actual crash site, improving effective reduction
     ratio 20-50% structured 格式化
@@ -263,7 +260,6 @@ class DeltaDebugger:
     def _record(self, op: str, size: int):
         self.history.append({'op': op, 'size': size, 'ts': time.time()})
 
-
 class CrashInputMinimizer:
     """Crash input minimizer"""
 
@@ -334,7 +330,6 @@ class CrashInputMinimizer:
             success=len(cur) < len(crash_input),
             history=all_history,
         )
-
 
 def minimize_crash_input(
     binary_path: str,

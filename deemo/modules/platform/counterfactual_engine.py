@@ -9,10 +9,10 @@
 核心创新：反事实路径的置信度衰减遵循与正向传播相同的贝叶斯更新规则，
 而非简单"删除X→重算"。多路径场景下，仅阻断经X的路径，其他路径仍贡献。
 
-与已有工作的区分：VulRG (2025) 仅事后归因，不支持反事实干预。
+与已有工作的区分：VulRG 仅事后归因，不支持反事实干预。
                       SHAP/LIME 做局部线性近似，不适用于图结构非独立干预。
 
-ref: Pearl (2009) "Causality" — do-calculus 理论基础。
+ref: Pearl "Causality" — do-calculus 理论基础。
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ class StructuralCausalPropagator:
             intervention_paths_blocked=blocked,
         )
 
-    # ---- 内部 ----
+# 内部
 
     def _predict_risk_from_structure(self, node_id: str) -> float:
         """仅用结构信息预测风险（不含噪声）——结构方程的确定性部分。"""

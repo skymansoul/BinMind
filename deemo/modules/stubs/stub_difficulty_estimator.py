@@ -153,7 +153,7 @@ class DifficultyEstimator:
         est.recommended_strategy = self._recommend_strategy(est)
         return est
 
-    # ---- 先验因子 ----
+# 先验因子
     @staticmethod
     def _complexity_factor(contract: _StubContract) -> float:
         if not contract.functions:
@@ -201,7 +201,7 @@ class DifficultyEstimator:
         except ImportError:
             return 0.5
 
-    # ---- 贝叶斯更新（似然） ----
+# 贝叶斯更新（似然）
     @staticmethod
     def _load_history(module_name: str) -> tuple[int, int]:
         """从ProvenanceChain加载该模块的历史实现结果。"""

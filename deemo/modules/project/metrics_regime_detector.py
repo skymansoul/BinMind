@@ -1,7 +1,7 @@
 # 安全工具指标状态切换检测: BOCPD+按状态统计+状态切换误报抑制
-# 参考: Adams & MacKay "Bayesian Online Changepoint Detection" (arXiv:0710.3742, 2007)
+# Adams & MacKay "Bayesian Online Changepoint Detection" (, 2007)
 #       Youssef "Risk-Calibrated Bayesian Streaming Intrusion Detection with
-#       SRE-Aligned Decisions" (arXiv:2510.09619 [待验证], 2025)
+#       SRE-Aligned Decisions" ( [待验证], 2025)
 # 设计边界:
 #   - BOCPD递推O(TW), W为截断窗宽(200), 每步O(W)
 #   - Student-t似然 (nu=3..5): 对突发尖峰鲁棒

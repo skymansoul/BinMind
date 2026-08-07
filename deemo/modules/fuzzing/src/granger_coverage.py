@@ -4,7 +4,7 @@
 2025-08-15 09:53 - VAR(1) Granger 因果 + F 检验 + 预测误差比
 2025-08-16 14:17 - 多变量 Granger: 多指标→覆盖的联合因果检验
 
-参考: Granger (1969) "Investigating Causal Relations by Econometric Models"
+参考: Granger "Investigating Causal Relations by Econometric Models"
 在 fuzzing 中零先例。测试 X 的历史是否有助于预测 Y 的未来,
 超越 Y 自身历史。揭示 fuzzing 动态中的因果方向。"""
 

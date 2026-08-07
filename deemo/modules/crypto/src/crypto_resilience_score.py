@@ -22,12 +22,11 @@
   各维度输入通过duck typing兼容 — 不强制导入所有依赖模块,
   未提供的维度使用保守默认值(0.5), 并在报告中标记为ESTIMATED。
 
-参考:
-  - NIST CSF 2.0 (2024): 网络安全框架 — 治理/识别/保护/检测/响应/恢复六功能,
+  - NIST CSF 2.0: 网络安全框架 — 治理/识别/保护/检测/响应/恢复六功能,
     本评分映射到"保护"功能中的密码学子域。
-  - OWASP Application Security Verification Standard (ASVS) V9 (2024):
+  - OWASP Application Security Verification Standard (ASVS) V9:
     密码学验证要求 — 本评分为ASVS V9的自动化量化实现。
-  - CVSS v4.0 (2023): 漏洞评分方法论 — 本评分借鉴其多维度加权融合结构。
+  - CVSS v4.0: 漏洞评分方法论 — 本评分借鉴其多维度加权融合结构。
 
 边界条件:
   - 评分融合的精度取决于输入质量 — 各子模块的静态分析置信度会传播到综合评分。
@@ -36,7 +35,6 @@
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
-
 
 @dataclass
 class ResilienceInput:
@@ -47,7 +45,6 @@ class ResilienceInput:
     inverted: bool = False      # True=高分表示差(如leakage_scorer), 需反转
     source: str = ""            # 来源模块名
 
-
 _DEFAULT_WEIGHTS: Dict[str, float] = {
     'side_channel': 0.20,
     'agility': 0.18,
@@ -57,7 +54,6 @@ _DEFAULT_WEIGHTS: Dict[str, float] = {
     'compiler_security': 0.08,
     'implementation_purity': 0.08,
 }
-
 
 @dataclass
 class ResilienceReport:
@@ -71,14 +67,12 @@ class ResilienceReport:
     estimated_dimensions: List[str] = field(default_factory=list)
     narrative: str = ""
 
-
 def _normalize_input(dim: str, raw: float, inverted: bool, conf: float) -> Tuple[float, float]:
     """将子模块原始输出归一化到0-1弹性空间(1=最优)。"""
     clamped = max(0.0, min(1.0, raw))
     normalized = 1.0 - clamped if inverted else clamped
     weighted_conf = conf * 0.9 + 0.1
     return normalized, weighted_conf
-
 
 def _extract_from_leakage_report(report) -> ResilienceInput:
     """从leakage_scorer的LeakageReport提取弹性输入。"""
@@ -93,7 +87,6 @@ def _extract_from_leakage_report(report) -> ResilienceInput:
         return ResilienceInput(dimension='side_channel', raw_score=0.5,
                                confidence=0.3, inverted=True, source='estimated')
 
-
 def _extract_from_agility_report(report) -> ResilienceInput:
     """从crypto_agility的AgilityReport提取弹性输入。"""
     try:
@@ -106,7 +99,6 @@ def _extract_from_agility_report(report) -> ResilienceInput:
     except Exception:
         return ResilienceInput(dimension='agility', raw_score=0.5,
                                confidence=0.3, inverted=True, source='estimated')
-
 
 def _extract_from_aging_report(report_or_list) -> ResilienceInput:
     """从crypto_aging的AgingReport列表提取弹性输入 — 取平均老化评分。"""
@@ -122,7 +114,6 @@ def _extract_from_aging_report(report_or_list) -> ResilienceInput:
     except Exception:
         return ResilienceInput(dimension='algorithm_age', raw_score=0.3,
                                confidence=0.3, inverted=True, source='estimated')
-
 
 def _extract_from_key_lifecycle(report_or_list) -> ResilienceInput:
     """从crypto_key_lifecycle的KeyLifecycleReport提取弹性输入。"""
@@ -142,7 +133,6 @@ def _extract_from_key_lifecycle(report_or_list) -> ResilienceInput:
         return ResilienceInput(dimension='key_lifecycle', raw_score=0.6,
                                confidence=0.3, inverted=False, source='estimated')
 
-
 def _extract_from_entropy_report(report_or_list) -> ResilienceInput:
     """从entropy_source_auditor的EntropySourceReport提取弹性输入。"""
     try:
@@ -161,7 +151,6 @@ def _extract_from_entropy_report(report_or_list) -> ResilienceInput:
         return ResilienceInput(dimension='entropy_source', raw_score=0.6,
                                confidence=0.3, inverted=False, source='estimated')
 
-
 def _extract_from_compiler_prov(report) -> ResilienceInput:
     """从crypto_compiler_prov的CompilerProvenance提取弹性输入。"""
     try:
@@ -179,7 +168,6 @@ def _extract_from_compiler_prov(report) -> ResilienceInput:
         return ResilienceInput(dimension='compiler_security', raw_score=0.6,
                                confidence=0.3, inverted=False, source='estimated')
 
-
 def _extract_from_diversity(report_or_list) -> ResilienceInput:
     """从crypto_diversity的DiversityReport提取弹性输入 — 低多样性=高分。"""
     try:
@@ -195,8 +183,7 @@ def _extract_from_diversity(report_or_list) -> ResilienceInput:
         return ResilienceInput(dimension='implementation_purity', raw_score=0.3,
                                confidence=0.3, inverted=True, source='estimated')
 
-
-# ── 主评分函数 ──
+# 主评分函数
 
 def compute_resilience(
         leakage_report=None,

@@ -20,7 +20,6 @@ Cohen's h:
   效应量 = 2 * |arcsin(sqrt(p1)) - arcsin(sqrt(p2))|
   小效应: 0.2, 中效应: 0.5, 大效应: 0.8
 
-参考:
   - Dietterich, 1998, Neural Computation, "Approximate Statistical Tests for
     Comparing Supervised Classification Learning Algorithms"
   - McNemar, 1947, Psychometrika, "Note on the sampling error of the difference"
@@ -30,12 +29,10 @@ import json, math, random, sys
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
-
 def load_results(path: str) -> List[Dict[str, Any]]:
     with open(path) as f:
         data = json.load(f)
     return data.get('results', data if isinstance(data, list) else [])
-
 
 def mcnemar_test(pairs: List[Tuple[bool, bool]]) -> Dict[str, float]:
     """McNemar配对检验。
@@ -59,7 +56,6 @@ def mcnemar_test(pairs: List[Tuple[bool, bool]]) -> Dict[str, float]:
 
     return {'statistic': round(stat, 4), 'p_value': round(p_val, 4),
             'b': b, 'c': c, 'n': n}
-
 
 def bootstrap_ci(detections_a: List[bool], detections_b: List[bool],
                  n_bootstrap: int = 2000, alpha: float = 0.05
@@ -92,7 +88,6 @@ def bootstrap_ci(detections_a: List[bool], detections_b: List[bool],
         'p_b': round(sum(detections_b) / n, 3),
     }
 
-
 def cohens_h(p1: float, p2: float) -> float:
     """Cohen's h效应量——两个比例的差异度量。
 
@@ -100,7 +95,6 @@ def cohens_h(p1: float, p2: float) -> float:
     """
     return round(2 * abs(math.asin(math.sqrt(max(1e-9, p1)))
                         - math.asin(math.sqrt(max(1e-9, p2)))), 4)
-
 
 def compare_tools_statistically(results_path: str,
                                 tool_a: str = 'binmind',
@@ -159,14 +153,12 @@ def compare_tools_statistically(results_path: str,
         'interpretation': interp,
     }
 
-
 def _chi2_survival(x: float, df: int) -> float:
     """χ²分布的尾部概率(Wilson-Hilferty近似)。"""
     if x <= 0:
         return 1.0
     z = ((x / df) ** (1.0 / 3.0) - 1.0 + 2.0 / (9.0 * df)) / math.sqrt(2.0 / (9.0 * df))
     return 1.0 - _normal_cdf(z)
-
 
 def _normal_cdf(x: float) -> float:
     if x < -8: return 0.0
@@ -176,7 +168,6 @@ def _normal_cdf(x: float) -> float:
              - 0.356563782)*t + 0.319381530)*t
     phi = poly * math.exp(-x*x/2) / math.sqrt(2*math.pi)
     return 1.0 - phi if x >= 0 else phi
-
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

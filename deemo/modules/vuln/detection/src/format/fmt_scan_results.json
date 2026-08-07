@@ -1,0 +1,140 @@
+{
+  "tp": 12,
+  "tn": 4,
+  "fp": 0,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "avg_time_ms": 64.0,
+  "per_sample": {
+    "sample01_direct_fmt_vuln": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 63.3
+    },
+    "sample02_fmt_str_write_pct_n": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 62.3
+    },
+    "sample03_indirect_fmt_leak": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 4,
+      "top_confidence": 0.92,
+      "time_ms": 62.4
+    },
+    "sample04_sprintf_fmt_vuln": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 63.1
+    },
+    "sample05_fprintf_fmt_vuln": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 61.4
+    },
+    "sample06_syslog_fmt_vuln": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 4,
+      "top_confidence": 0.92,
+      "time_ms": 67.1
+    },
+    "sample07_info_leak_stack_read": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 63.1
+    },
+    "sample08_wrapper_fmt_vuln": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 62.5
+    },
+    "sample09_fmt_str_const_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 2,
+      "top_confidence": 0.92,
+      "time_ms": 61.6
+    },
+    "sample10_debug_log_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 2,
+      "top_confidence": 0.92,
+      "time_ms": 62.2
+    },
+    "sample11_fmt_str_in_rodata_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 2,
+      "top_confidence": 0.92,
+      "time_ms": 61.6
+    },
+    "sample12_snprintf_bounded_safe": {
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 65.5
+    },
+    "sample13_dynamic_fmt_controlled": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 4,
+      "top_confidence": 0.92,
+      "time_ms": 63.6
+    },
+    "sample14_wide_char_fmt": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 9,
+      "top_confidence": 0.92,
+      "time_ms": 64.8
+    },
+    "sample15_pct_n_write_primitive": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 78.1
+    },
+    "sample16_buffered_fmt_leak": {
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "n_findings": 3,
+      "top_confidence": 0.92,
+      "time_ms": 61.8
+    }
+  }
+}

@@ -4,9 +4,7 @@ import numpy as np
 from math import log as _log, sqrt as _sqrt
 
 
-# ############################################################
 # BinaryFuncVAE — Beta-VAE for binary function embeddings
-# ############################################################
 
 class BinaryFuncVAE:
     """Beta-VAE: 3层encoder/decoder，均纯numpy前向 + Xavier初始化"""
@@ -19,7 +17,7 @@ class BinaryFuncVAE:
         self._z = latent_dim
         self._b = beta
 
-        # ---- 构建层维度链 ----
+# 构建层维度链
         _enc_dims = [self._d] + self._h + [self._z]
         _dec_dims = [self._z] + list(reversed(self._h)) + [self._d]
 
@@ -67,7 +65,7 @@ class BinaryFuncVAE:
         # clip防溢出
         return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
-    # ==== Encoder: x -> mu, logvar ====
+# Encoder: x -> mu, logvar
     def encode(self, x):
         _h = x  # (N, input_dim)
         _enc_layers = len(self._h) + 1  # hidden + output layer
@@ -78,7 +76,7 @@ class BinaryFuncVAE:
         _logvar = np.dot(_h, self._enc_w_lv) + self._enc_b_lv
         return _mu, _logvar
 
-    # ==== Decoder: z -> x_recon ====
+# Decoder: z -> x_recon
     def decode(self, z):
         _h = z
         _n_layers = len(self._dec_w)
@@ -88,20 +86,20 @@ class BinaryFuncVAE:
         _h = self._sigmoid(np.dot(_h, self._dec_w[_n_layers - 1]) + self._dec_b[_n_layers - 1])
         return _h
 
-    # ==== Reparameterization trick ====
+# Reparameterization trick
     @staticmethod
     def _reparam(mu, logvar):
         _eps = np.random.randn(*mu.shape)
         return mu + _eps * np.exp(0.5 * logvar)
 
-    # ==== 完整前向 ====
+# 完整前向
     def forward(self, x):
         _mu, _logvar = self.encode(x)
         _z = self._reparam(_mu, _logvar)
         _x_recon = self.decode(_z)
         return _x_recon, _mu, _logvar
 
-    # ==== Beta-VAE损失 ====
+# Beta-VAE损失
     def loss(self, x):
         _x_recon, _mu, _logvar = self.forward(x)
         # MSE重建损失
@@ -111,7 +109,7 @@ class BinaryFuncVAE:
         _kl = np.mean(_kl)
         return _mse + self._b * _kl
 
-    # ==== 简易SGD训练一步 ====
+# 简易SGD训练一步
     def train_step(self, x, lr=0.001):
         """单步梯度下降（数值梯度近似，兼容numpy-only）"""
         # 用有限差分做梯度估计 — 生产环境可替换为autograd
@@ -201,9 +199,7 @@ class BinaryFuncVAE:
         return _loss0
 
 
-# ############################################################
 # VAEScorer — 基于重建误差的异常打分
-# ############################################################
 
 class VAEScorer:
     """重构误差做异常得分，percentile阈值切分inlier/outlier"""
@@ -240,9 +236,7 @@ class VAEScorer:
         return float(np.percentile(errors, pct))
 
 
-# ############################################################
 # FunctionEmbeddingIForest — 手写Isolation Forest
-# ############################################################
 
 class FunctionEmbeddingIForest:
     """纯二叉树递归分区，不依赖sklearn — 经典iForest算法"""
@@ -253,7 +247,7 @@ class FunctionEmbeddingIForest:
         self._md = max_depth  # None则自动: ceil(log2(sample_size))
         self._trees = []  # [{feature, split_value, left, right, size}...]
 
-    # ---- 构建森林 ----
+# 构建森林
     def fit(self, X):
         X = np.asarray(X, dtype=np.float64)
         _n_samples = X.shape[0]
@@ -319,11 +313,11 @@ class FunctionEmbeddingIForest:
         _h = _log(n - 1) + 0.5772156649  # Euler-Mascheroni
         return 2.0 * _h - 2.0 * (n - 1) / n
 
-    # ==== 异常分数（原始论文公式）====
+# 异常分数（原始论文公式）
     def _anomaly_score(self, path_len, n_samples):
         return 2.0 ** (-path_len / self._c_factor(n_samples))
 
-    # ==== 评分接口 ====
+# 评分接口
     def score(self, X):
         X = np.asarray(X, dtype=np.float64)
         _n = X.shape[0]
@@ -338,7 +332,7 @@ class FunctionEmbeddingIForest:
             _scores[_i] = 2.0 ** (-_avg_pl / _c)
         return _scores
 
-    # ==== 预测（contamination-based cutoff）====
+# 预测（contamination-based cutoff）
     def predict(self, X, threshold=None):
         _s = self.score(X)
         if threshold is not None:
@@ -349,9 +343,7 @@ class FunctionEmbeddingIForest:
         return (_s > _cut).astype(np.int32)
 
 
-# ############################################################
 # OneClassSVMDetector — RFF核近似 + SGD
-# ############################################################
 
 class OneClassSVMDetector:
     """RFF近似RBF核 + SGD hinge OC-SVM — 零sklearn依赖"""
@@ -385,7 +377,7 @@ class OneClassSVMDetector:
             _b_grad = 0.0
         return _w_grad, _b_grad
 
-    # ==== 训练 ====
+# 训练
     def fit(self, X):
         X = np.asarray(X, dtype=np.float64)
         _d = X.shape[1]
@@ -415,13 +407,13 @@ class OneClassSVMDetector:
         self._b = _b
         return self
 
-    # ==== 决策函数 ====
+# 决策函数
     def decision_function(self, X):
         X = np.asarray(X, dtype=np.float64)
         _phi = self._rff_transform(X)
         return np.dot(_phi, self._w) + self._b
 
-    # ==== 预测: 1=inlier, -1=离群点 ====
+# 预测: 1=inlier, -1=离群点
     def predict(self, X):
         _scores = self.decision_function(X)
         # 0为分界线: >=0 -> inlier(1), <0 -> 离群点(-1)

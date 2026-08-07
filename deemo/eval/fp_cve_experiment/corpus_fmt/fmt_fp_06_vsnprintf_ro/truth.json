@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_06_vsnprintf_ro",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "vsnprintf 常量格式串写入限长缓冲"
+}

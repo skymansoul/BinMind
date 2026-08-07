@@ -16,7 +16,7 @@ GNN 特征重要性消融分析框架 —— 对 graph_builder 的 12 维特征�
 输出: FeatureImportanceReport，按importance降序排列，含消融方法、方差估计和冗余标记
 
 ref: Fisher et al. " Models Wrong, but 使用 — Assessing
-Feature Import Graph Neural 网络s" (JMLR 2023) 的消融框架设计
+Feature Import Graph Neural 网络s" 的消融框架设计
 本模块将其适配到二进制 CFG 的特定特征空间
 
 设计假设: graph_builder._compute_block_features 定义的 12 维特征为:
@@ -94,9 +94,7 @@ class FeatureAblationAnalyzer:
         self._base_seed = random_seed
         self._baseline: Optional[float] = None
 
-    # -------------------------------------------------------------------
     # 基线计算
-    # -------------------------------------------------------------------
 
     def compute_baseline(self) -> float:
         """全特征基线性能"""
@@ -104,9 +102,7 @@ class FeatureAblationAnalyzer:
             self._baseline = self._model(self._features, self._adj)
         return self._baseline
 
-    # -------------------------------------------------------------------
     # Individual Abla —— 逐维消融
-    # -------------------------------------------------------------------
 
     def individual_ablation(self) -> List[FeatureImportanceEntry]:
         """逐维消融: 每次将一维特征归零，测量性能下降
@@ -136,9 +132,7 @@ class FeatureAblationAnalyzer:
         entries.sort(key=lambda e: e.individual_ablation_drop, reverse=True)
         return entries
 
-    # -------------------------------------------------------------------
     # Permuta Import —— 破坏信息但保持边际分布
-    # -------------------------------------------------------------------
 
     def permutation_importance(self) -> List[FeatureImportanceEntry]:
         """排列重要性: 对每个维度独立重排（破坏与其他维度的关联+自身信息）
@@ -168,9 +162,7 @@ class FeatureAblationAnalyzer:
         entries.sort(key=lambda e: e.permutation_drop, reverse=True)
         return entries
 
-    # -------------------------------------------------------------------
     # 相关矩阵 —— 识别冗余特征
-    # -------------------------------------------------------------------
 
     def correlation_matrix(self) -> Tuple[np.ndarray, List[Tuple[str, str, float]]]:
         """计算 12×12 Pearson 相关矩阵，标记高度冗余的特征对
@@ -190,9 +182,7 @@ class FeatureAblationAnalyzer:
         redundant_pairs.sort(key=lambda x: abs(x[2]), reverse=True)
         return corr, redundant_pairs
 
-    # -------------------------------------------------------------------
     # 综合报告
-    # -------------------------------------------------------------------
 
     def full_report(self) -> FeatureImportanceReport:
         """生成完整的特征重要性报告

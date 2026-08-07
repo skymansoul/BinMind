@@ -13,7 +13,7 @@ Core methods:
 - 引用 graph construction
 - Risk scoring: dangling 指针s / type mismatches
 
-2025 升级: Transformer-based memory forensics (MDPI Computers, Dec 2025)
+2025 升级: Transformer-based memory forensics
 参考: "Transformer-Based Memory Reverse Engineering for Malware
 Behavior Reconstruction"
 核心方法: 将原始内存字节视为"语言 token"，使用地址感知位置编码
@@ -104,7 +104,7 @@ class ObjectPointerGraph:
         }
 
 
-# ── Transformer启发的内存注意力 (MDPI Computers, 2025) ─────────────────────
+# Transformer启发的内存注意力
 # 将QWORD视为token，对每个地址计算其与周围内存的注意力权重
 # 高注意力区域往往对应活跃的数据结构——对象边界、vtable指针等
 # 这与Transformer Memory RE论文的核心思想一致：字节级注意力热图

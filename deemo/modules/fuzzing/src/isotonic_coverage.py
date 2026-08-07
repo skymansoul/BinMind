@@ -5,15 +5,14 @@
 2025-08-11 09:52 - 置信带: 保序回归的自助法 (bootstrap) 置信区间
 2025-08-12 15:17 - 预测: 线性外推 + 单调约束 → 未来覆盖下界
 
-参考:
-  Ayer, Brunk, Ewing, Reid & Silverman (1955) "An Empirical Distribution
+  Ayer, Brunk, Ewing, Reid & Silverman "An Empirical Distribution
     Function for Sampling with Incomplete Information" (Annals of Math
     Statistics) — PAVA 的起源
-  Barlow, Bartholomew, Bremner & Brunk (1972) "Statistical Inference Under
+  Barlow, Bartholomew, Bremner & Brunk "Statistical Inference Under
     Order Restrictions" — 保序推断的经典专著
-  Robertson, Wright & Dykstra (1988) "Order Restricted Statistical Inference"
+  Robertson, Wright & Dykstra "Order Restricted Statistical Inference"
     — 第1章: PAVA, 第2章: 保序回归的渐近性质
-  Stout (2008) "Isotonic Regression via Partitioning" (preprint)
+  Stout "Isotonic Regression via Partitioning" (preprint)
     — PAVA 的 O(n) 实现和性质
 
 在 fuzzing 文献中的位置:
@@ -37,10 +36,8 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
-# ---- PAVA 参数 ----
+# PAVA 参数
 _BOOTSTRAP_SAMPLES = 200
-
 
 @dataclass
 class IsotonicFit:
@@ -53,7 +50,6 @@ class IsotonicFit:
     predicted_next: float    # 预测的下一个值
     predicted_upper: float   # 预测上界
     predicted_lower: float   # 预测下界
-
 
 class IsotonicCoverageModel:
     """保序覆盖增长建模器 — PAVA 单调回归.

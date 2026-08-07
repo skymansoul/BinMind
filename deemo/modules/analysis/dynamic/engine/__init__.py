@@ -10,7 +10,7 @@ __version__ = "0.3.0"
 
 _MODULE_MAP: dict[str, str] = {}
 
-# ---- 现有模块 ----
+# 现有模块
 _existing = [
     "anti_analysis", "auto_input_minimizer", "baremetal_emulator",
     "behavior_tracer", "behavior_tracing", "breakpoint_recovery",
@@ -25,7 +25,7 @@ _existing = [
     "smc_dynamic_analyzer", "taint_propagation", "unicorn_hybrid", "vmi_analyzer",
 ]
 
-# ---- 新增模块 ----
+# 新增模块
 _new = [
     "sandbox_orchestrator", "api_hook_engine", "taint_engine_v2",
     "concolic_assist", "process_dumper", "crash_triage",
@@ -36,7 +36,7 @@ for m in _existing + _new:
 
 _CACHED: dict[str, Any] = {}
 
-# ---- 懒加载函数 ----
+# 懒加载函数
 def __getattr__(name: str) -> Any:
     if name in _CACHED:
         return _CACHED[name]

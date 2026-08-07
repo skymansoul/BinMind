@@ -1,0 +1,3286 @@
+{
+  "scan_time": "2026-08-06 23:45:16",
+  "total_samples": 17,
+  "results": [
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 46.8,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400018b6",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002b02",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c85",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000481c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400048c7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a83",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140006032",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000657b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007131",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007437",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400078a8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400078cc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400078d8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000790d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f24",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140008079",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000843b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000865e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 128.2,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x14000180a",
+          "reason": "memcpy write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 1.0,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "size_mismatch",
+          "reason": "malloc size differs from memcpy size",
+          "confidence": 0.85
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.2,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x14000180a",
+          "reason": "memcpy write(0) vs alloc(128) usable(128)",
+          "confidence": 0.5,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_2019_13142_mongoose",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 46.9,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x140001871",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002ac2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c45",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047dc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004887",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a43",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005ff2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000653b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400070f1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400073f7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007868",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000788c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007898",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400078cd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007ee4",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140008039",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400083fb",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000861e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.5,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x1400017b8",
+          "reason": "memcpy write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "size_mismatch",
+          "reason": "malloc size differs from memcpy size",
+          "confidence": 0.85
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "BUG-tagged heap array write detected",
+          "confidence": 0.65
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "absint",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 95.1,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017b8",
+          "reason": "memcpy write(0) vs alloc(128) usable(128)",
+          "confidence": 0.5,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017c8",
+          "reason": "direct_write unknown offset; alloc(128) usable(128)",
+          "confidence": 0.4,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 97.0,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.5,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "heap_ops",
+      "n_findings": 19,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 45.3,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x140001853",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000185f",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002aa2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c25",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047cc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004877",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a33",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f62",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400064ab",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007061",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007367",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077d8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077fc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007808",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000783d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e54",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007fa9",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000836b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000858e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.6,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.5,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "BUG-tagged heap array write detected",
+          "confidence": 0.65
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "variable_index_write",
+          "reason": "malloc(32) + a[o] without proper bounds check",
+          "confidence": 0.7
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 90.7,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x140001831",
+          "reason": "direct_write offset(40)+size(1) > alloc(32) / usable(32)",
+          "confidence": 0.85,
+          "alloc_size": 32,
+          "write_size": 41,
+          "usable_size": 32,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "uaf_binary",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 1,
+      "n_format_string": 0,
+      "elapsed_ms": 93.9,
+      "findings": [
+        {
+          "insn_addr": 5368715359,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715347,
+          "reason": "double free of rcx (first free@0x140001853)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_alignment_aware_014",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 47.5,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x140001819",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a62",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002be5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000478c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004837",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049f3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f22",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000646b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007021",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007327",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007798",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077bc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077c8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077fd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e14",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f69",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000832b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000854e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "calloc_type_mismatch",
+          "reason": "memset uses larger element size than calloc",
+          "confidence": 0.75
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "calloc_type_mismatch",
+          "reason": "calloc(n,4) but memset uses different element size",
+          "confidence": 0.75
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.1,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017d9",
+          "reason": "memset write(400) vs alloc(128) usable(128)",
+          "confidence": 0.85,
+          "alloc_size": 128,
+          "write_size": 400,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_calloc_type_confusion_010",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.0,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "heap_ops",
+      "n_findings": 20,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 50.8,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x14000186e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000187a",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140001886",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002ad2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c55",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047fc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400048a7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a63",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f92",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400064db",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007091",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007397",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007808",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000782c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007838",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000786d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e84",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007fd9",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000839b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400085be",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "ppahav_src",
+      "n_findings": 3,
+      "n_heap_overflow": 3,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "BUG-tagged heap array write detected",
+          "confidence": 0.65
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "variable_index_write",
+          "reason": "malloc(128) + a[off] without proper bounds check",
+          "confidence": 0.7
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "insufficient_bounds_check",
+          "reason": "malloc(128) + if (off < 512) \u2014 check uses 512 vs alloc 128",
+          "confidence": 0.75
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 93.8,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x140001840",
+          "reason": "direct_write offset(200)+size(1) > alloc(128) / usable(128)",
+          "confidence": 0.85,
+          "alloc_size": 128,
+          "write_size": 201,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "uaf_binary",
+      "n_findings": 2,
+      "n_heap_overflow": 0,
+      "n_uaf": 2,
+      "n_format_string": 0,
+      "elapsed_ms": 94.6,
+      "findings": [
+        {
+          "insn_addr": 5368715386,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715374,
+          "reason": "double free of rcx (first free@0x14000186e)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        },
+        {
+          "insn_addr": 5368715398,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715374,
+          "reason": "double free of rcx (first free@0x14000186e)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_chunk_metadata_corrupt_009",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.6,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "heap_ops",
+      "n_findings": 4,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 18.6,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017a7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017b3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a12",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002b95",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 29.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 1,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "double_free",
+          "reason": "'buf' freed 2 times",
+          "confidence": 0.9
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 28.1,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "uaf_binary",
+      "n_findings": 2,
+      "n_heap_overflow": 0,
+      "n_uaf": 2,
+      "n_format_string": 0,
+      "elapsed_ms": 30.8,
+      "findings": [
+        {
+          "insn_addr": 5368715187,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715175,
+          "reason": "double free of rcx (first free@0x1400017a7)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        },
+        {
+          "insn_addr": 5368715202,
+          "type": "use_after_free",
+          "subtype": "pass_as_arg",
+          "freed_at": 5368715175,
+          "reason": "freed ptr in rcx passed to puts() (freed@0x1400017a7)",
+          "confidence": 0.65,
+          "source": "binary_uaf"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_double_free_015",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 31.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 46.3,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017dd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a22",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002ba5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000474c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047f7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049b3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005ee2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000642b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140006fe1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400072e7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007758",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000777c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007788",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077bd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007dd4",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f29",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400082eb",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000850e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 1,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "format_string",
+          "reason": "user input passed to printf without format specifier",
+          "confidence": 0.85
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.0,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_format_string_heap_012",
+      "detector": "fmt_binary",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 1,
+      "elapsed_ms": 92.2,
+      "findings": [
+        {
+          "insn_addr": 5368715207,
+          "callee": "__mingw_printf",
+          "reason": "__mingw_printf format string from stack variable (rcx loaded from [rbp/rsp])",
+          "confidence": 0.45,
+          "type": "format_string",
+          "source": "binary_fmt"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 45.0,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x14000180f",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a52",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002bd5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000477c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004827",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049e3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f12",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000645b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007011",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007317",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007788",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077ac",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077b8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077ed",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e04",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f59",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000831b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000853e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 97.7,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "ppahav_src",
+      "n_findings": 3,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "integer_overflow_alloc",
+          "reason": "integer overflow risk in allocation size computation",
+          "confidence": 0.7
+        },
+        {
+          "type": "integer_overflow",
+          "reason": "multiplication or type-cast overflow in allocation",
+          "confidence": 0.6
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "loop writes to heap array with potentially incorrect bound",
+          "confidence": 0.75
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.3,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.5,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_integer_overflow_alloc_004",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.2,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 48.0,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x14000181f",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a62",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002be5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000478c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004837",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049f3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f22",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000646b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007021",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007327",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007798",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077bc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077c8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077fd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e14",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f69",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000832b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000854e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 93.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "loop writes to heap array with potentially incorrect bound",
+          "confidence": 0.75
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 90.9,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 90.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_loop_bound_error_006",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 88.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "heap_ops",
+      "n_findings": 5,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 18.1,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x140001877",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140001899",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400018a5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002af2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c75",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 30.3,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "loop writes to heap array with potentially incorrect bound",
+          "confidence": 0.75
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 29.6,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "uaf_binary",
+      "n_findings": 2,
+      "n_heap_overflow": 0,
+      "n_uaf": 2,
+      "n_format_string": 0,
+      "elapsed_ms": 29.3,
+      "findings": [
+        {
+          "insn_addr": 5368715417,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715383,
+          "reason": "double free of rcx (first free@0x140001877)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        },
+        {
+          "insn_addr": 5368715429,
+          "type": "use_after_free",
+          "subtype": "double_free",
+          "freed_at": 5368715383,
+          "reason": "double free of rcx (first free@0x140001877)",
+          "confidence": 0.9,
+          "source": "binary_uaf"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_nested_alloc_confusion_005",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 30.2,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 43.8,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x140001859",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002aa2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c25",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047bc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004867",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a23",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005fd2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000651b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400070d1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400073d7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007848",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000786c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007878",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400078ad",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007ec4",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140008019",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400083db",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400085fe",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 93.0,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x1400017a0",
+          "reason": "memcpy write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "size_mismatch",
+          "reason": "malloc size differs from memcpy size",
+          "confidence": 0.85
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "BUG-tagged heap array write detected",
+          "confidence": 0.65
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "absint",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 99.5,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017a0",
+          "reason": "memcpy write(0) vs alloc(128) usable(128)",
+          "confidence": 0.5,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017b0",
+          "reason": "direct_write unknown offset; alloc(128) usable(128)",
+          "confidence": 0.4,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 90.6,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_off_by_one_malloc_001",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 90.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 46.7,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x14000182d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a72",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002bf5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000479c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004847",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a03",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f32",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000647b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007031",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007337",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077a8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077cc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077d8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000780d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e24",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f79",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000833b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000855e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.2,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x140001809",
+          "reason": "memmove write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "loop_bound_error",
+          "reason": "BUG-tagged heap array write detected",
+          "confidence": 0.65
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "realloc_size_mismatch",
+          "reason": "realloc shrinks buffer, memmove uses old size",
+          "confidence": 0.8
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "absint",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.8,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017d6",
+          "reason": "memset write(256) vs alloc(128) usable(128)",
+          "confidence": 0.85,
+          "alloc_size": 128,
+          "write_size": 256,
+          "usable_size": 128,
+          "source": "absint"
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x140001809",
+          "reason": "memmove write(246) vs alloc(128) usable(128)",
+          "confidence": 0.85,
+          "alloc_size": 128,
+          "write_size": 246,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.5,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_realloc_use_old_size_011",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.7,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "heap_ops",
+      "n_findings": 3,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 18.5,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017d1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a72",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002bf5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 28.9,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x1400017c5",
+          "reason": "memcpy write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "ppahav_src",
+      "n_findings": 3,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.2,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "integer_overflow_alloc",
+          "reason": "integer overflow risk in allocation size computation",
+          "confidence": 0.7
+        },
+        {
+          "type": "integer_overflow",
+          "reason": "multiplication or type-cast overflow in allocation",
+          "confidence": 0.6
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "signed_unsigned_mismatch",
+          "reason": "negative size bypasses bounds check",
+          "confidence": 0.65
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 31.7,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017c5",
+          "reason": "memcpy write(0) vs alloc(128) usable(128)",
+          "confidence": 0.5,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 32.0,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_signed_unsigned_mismatch_007",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 30.3,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 45.2,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017ef",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a32",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002bb5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000475c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004807",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049c3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005ef2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000643b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140006ff1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400072f7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007768",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000778c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007798",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077cd",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007de4",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f39",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400082fb",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000851e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 94.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x1400017d0",
+          "reason": "memcpy write(0) vs alloc(1024)",
+          "confidence": 0.5,
+          "alloc_size": 1024,
+          "write_size": 0,
+          "usable_size": 1024,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "size_mismatch",
+          "reason": "malloc size differs from memcpy size",
+          "confidence": 0.85
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 97.6,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017d0",
+          "reason": "memcpy write(0) vs alloc(1024) usable(1024)",
+          "confidence": 0.5,
+          "alloc_size": 1024,
+          "write_size": 0,
+          "usable_size": 1024,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.3,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_size_mismatch_memcpy_002",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 89.1,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 46.5,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x14000183a",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a82",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002c05",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047ac",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004857",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a13",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f42",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000648b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007041",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007347",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077b8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077dc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077e8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000781d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e34",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f89",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000834b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000856e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 95.5,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x140001801",
+          "reason": "memcpy write(0) vs alloc(0)",
+          "confidence": 0.5,
+          "alloc_size": 0,
+          "write_size": 0,
+          "usable_size": 16,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "ppahav_src",
+      "n_findings": 2,
+      "n_heap_overflow": 2,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "size_mismatch",
+          "reason": "malloc size differs from memcpy size",
+          "confidence": 0.85
+        },
+        {
+          "type": "heap_overflow",
+          "subtype": "tlv_length_mismatch",
+          "reason": "alloc per declared length, copy per actual",
+          "confidence": 0.85
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 93.9,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x140001801",
+          "reason": "memcpy write(0) vs alloc(128) usable(128)",
+          "confidence": 0.5,
+          "alloc_size": 128,
+          "write_size": 0,
+          "usable_size": 128,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 97.8,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_tlv_length_override_008",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 95.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "heap_ops",
+      "n_findings": 18,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 45.2,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017c7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a12",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002b95",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000473c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400047e7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400049a3",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005ed2",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000641b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140006fd1",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400072d7",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007748",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000776c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007778",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077ad",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007dc4",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f19",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400082db",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400084fe",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "ppahav",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.9,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "binary_ppahav",
+          "address": "0x1400017a8",
+          "reason": "strcpy write(0) vs alloc(64)",
+          "confidence": 0.5,
+          "alloc_size": 64,
+          "write_size": 0,
+          "usable_size": 64,
+          "source": "binary_ppahav"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "unbounded_strcpy",
+          "reason": "strcpy into heap buffer with user-controlled source",
+          "confidence": 0.8
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "absint",
+      "n_findings": 1,
+      "n_heap_overflow": 1,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 92.4,
+      "findings": [
+        {
+          "type": "heap_overflow",
+          "subtype": "absint",
+          "address": "0x1400017a8",
+          "reason": "strcpy write(0) vs alloc(64) usable(64)",
+          "confidence": 0.5,
+          "alloc_size": 64,
+          "write_size": 0,
+          "usable_size": 64,
+          "source": "absint"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "uaf_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 96.4,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_unbounded_strcpy_003",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 98.5,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "heap_ops",
+      "n_findings": 19,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 59.2,
+      "findings": [
+        {
+          "type": "potential_uaf",
+          "address": "0x1400017b6",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140001824",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002a72",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140002bf5",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000479c",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004847",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140004a03",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140005f32",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000647b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007031",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007337",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077a8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077cc",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x1400077d8",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000780d",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007e24",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x140007f79",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000833b",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        },
+        {
+          "type": "potential_uaf",
+          "address": "0x14000855e",
+          "reason": "pointer freed \u2014 check for subsequent use",
+          "confidence": 0.3
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "ppahav",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 93.0,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "ppahav_src",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 1,
+      "n_format_string": 0,
+      "elapsed_ms": 0.3,
+      "findings": [
+        {
+          "type": "use_after_free",
+          "reason": "dangling pointer after free",
+          "confidence": 0.7
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "absint",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.7,
+      "findings": [],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "uaf_binary",
+      "n_findings": 1,
+      "n_heap_overflow": 0,
+      "n_uaf": 1,
+      "n_format_string": 0,
+      "elapsed_ms": 93.4,
+      "findings": [
+        {
+          "insn_addr": 5368715200,
+          "type": "use_after_free",
+          "subtype": "pass_as_arg",
+          "freed_at": 5368715190,
+          "reason": "freed ptr in rcx passed to malloc() (freed@0x1400017b6)",
+          "confidence": 0.65,
+          "source": "binary_uaf"
+        }
+      ],
+      "error": ""
+    },
+    {
+      "sample": "cve_use_after_free_013",
+      "detector": "fmt_binary",
+      "n_findings": 0,
+      "n_heap_overflow": 0,
+      "n_uaf": 0,
+      "n_format_string": 0,
+      "elapsed_ms": 91.5,
+      "findings": [],
+      "error": ""
+    }
+  ]
+}

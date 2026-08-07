@@ -1,5 +1,5 @@
 # 椭圆曲线攻击 — ECDSA nonce重用/偏置, invalid curve, twist攻击, small-subgroup。
-# 参考: SEC 1/2, Bernstein "How to Design an ECDSA System", Bitcoin nonce-reuse corpus,
+# SEC 1/2, Bernstein "How to Design an ECDSA System", Bitcoin nonce-reuse corpus,
 # Biehl-Meyer-Muller "Differential Fault Attacks on ECC" (2000), Bos-Halderman et al. (2014).
 
 import hashlib
@@ -81,7 +81,7 @@ def ecdsa_partial_nonce_recover(
 # ---- Invalid Curve攻击 ----
 # 实现不检查点是否在curve上时, 攻击者可提供不在curve上的点(低阶点)
 # 通过中国剩余定理(CRT)恢复私钥d。每次交互泄露d mod small_order。
-# 参考: Biehl-Meyer-Muller (2000), Antipa et al. (2002).
+# Biehl-Meyer-Muller (2000), Antipa et al. (2002).
 
 def invalid_curve_attack_crt(partial_keys: List[Tuple[int, int]]) -> Optional[int]:
     """

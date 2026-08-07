@@ -1,13 +1,12 @@
 """
 三层区间误报抑制 — confirmed / partial / suppressed 三级分类。
 
-Cod (ISSTA 2024) 用二元 报告/抑制 模型。本模块用三级置信度校准:
+Cod 用二元 报告/抑制 模型。本模块用三级置信度校准:
   CONFIRMED:  写入明确超出分配 → CRITICAL
   PARTIAL:    部分超出(<16B) → WARNING, 置信度×0.6
   SUPPRESSED: 安全(写入<=分配) → 排除
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum

@@ -7,7 +7,7 @@
 #   (3) 库字符串 (libsignal, matrix-olm, mls-rs, openmls)
 #   (4) Double Ratchet特征: 交替DH密钥对+对称棘轮, KDF链密钥派生
 #   (5) MLS TreeKEM树哈希与parent_hash扩展
-# 参考: Cohn-Gordon et al. (Signal, 2017), Barnes et al. (MLS RFC 9420, 2023),
+# Cohn-Gordon et al. (Signal, 2017), Barnes et al. (MLS RFC 9420, 2023),
 # Borisov-Goldberg-Brewer (OTR, WPES 2004), Alwen et al. (TreeKEM, 2019).
 # 扩展: Matrix Megolm ratchet会话导出, OMEMO XML stanza, Snikket SCE, Tox DHT+lossy复合检测.
 

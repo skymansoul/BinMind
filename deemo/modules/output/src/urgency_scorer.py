@@ -15,7 +15,6 @@
     3. 暴露面 (从 risk_surface 获取)
     4. 组织影响 (资产重要性 + 合规压力)
 
-参考:
   CISA KEV: Known Exploited Vulnerabilities → 紧迫度基线
   CVSS 4.0: 新增 "Urgency" 字段 (Supplemental Metric Group)
   ITIL Incident Response: P1-P4 优先级框架
@@ -28,7 +27,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class UrgencyLevel(Enum):
     IMMEDIATE = "immediate"      # 0-4 小时
     CRITICAL = "critical"        # 4-24 小时
@@ -36,7 +34,6 @@ class UrgencyLevel(Enum):
     MEDIUM = "medium"            # 7-30 天
     LOW = "low"                  # 30+ 天
     NONE = "none"                # 无紧迫度
-
 
 @dataclass
 class UrgencyScore:
@@ -48,7 +45,6 @@ class UrgencyScore:
     exposure_factor: float       # 暴露面贡献
     compliance_factor: float     # 合规压力贡献
     sla_recommendation: str = ''
-
 
 def _exploit_urgency(
     exploit_public: bool = False,
@@ -64,7 +60,6 @@ def _exploit_urgency(
     if poc_published:
         return 5.5
     return 2.0  # 理论利用 → 低紧迫
-
 
 def _patch_urgency(
     patch_available: bool = False,
@@ -82,7 +77,6 @@ def _patch_urgency(
         return 3.0
     return 5.0  # 旧补丁未应用 → 债务累积
 
-
 def _exposure_urgency(
     internet_facing: bool = False,
     internal_critical: bool = False,
@@ -99,7 +93,6 @@ def _exposure_urgency(
     if internal_critical:
         return 4.0
     return 2.0
-
 
 def _compliance_urgency(
     is_pii: bool = False,
@@ -119,7 +112,6 @@ def _compliance_urgency(
         return 4.0
     return 0.0
 
-
 def _hours_from_score(raw: float) -> float:
     """紧迫度分→建议行动时间 (小时)。"""
     if raw >= 8.0:
@@ -134,7 +126,6 @@ def _hours_from_score(raw: float) -> float:
         return 720.0   # 30 天
     return 2160.0      # 90 天
 
-
 def _level_from_hours(hours: float) -> UrgencyLevel:
     if hours <= 4:
         return UrgencyLevel.IMMEDIATE
@@ -145,7 +136,6 @@ def _level_from_hours(hours: float) -> UrgencyLevel:
     if hours <= 720:
         return UrgencyLevel.MEDIUM
     return UrgencyLevel.LOW
-
 
 def score_urgency(
     exploit_public: bool = False,

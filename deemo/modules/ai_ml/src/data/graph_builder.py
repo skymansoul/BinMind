@@ -8,7 +8,7 @@ import re
 import numpy as np
 from collections import defaultdict
 
-# ===== x86跳转指令识别 =====
+# x86跳转指令识别
 _UNCOND_JUMPS = {'jmp', 'ret', 'retn', 'iret', 'iretd', 'iretq'}
 _COND_JUMPS = {
     'je', 'jz', 'jne', 'jnz', 'jg', 'jnle', 'jge', 'jnl',
@@ -132,7 +132,7 @@ def get_register_set(insn: str) -> tuple:
     return (_all_regs, set())
 
 
-# ===== 指令分类计数器 =====
+# 指令分类计数器
 def _classify_insn(mnem: str) -> str:
     _m = mnem.lower()
     if _m in _CALL_INSTRS:
@@ -202,7 +202,7 @@ def _compute_block_features(block: dict, idx: int, total_blocks: int,
     return _feat
 
 
-# ----- 环检测：DFS找后向边 -----
+# 环检测：DFS找后向边
 def _find_loop_blocks(edges: list, num_nodes: int) -> set:
     """简易DFS环检测 -- 后向边指向的节点标记为循环头"""
     _adj = defaultdict(list)
@@ -353,7 +353,7 @@ def build_cfg_graph(basic_blocks: list) -> dict:
     }
 
 
-# ===== 数据依赖边构建 =====
+# 数据依赖边构建
 def _build_data_edges(basic_blocks: list) -> list:
     """Conservative inter-block data dependency edges.
 
@@ -385,7 +385,7 @@ def _build_data_edges(basic_blocks: list) -> list:
             if _i == _j:
                 continue
             _rj, _wj = _block_regs[_j]
-            # _i写 -> _j读 且 存在重叠
+# i写 -> _j读 且 存在重叠
             if _wi and _rj and (_wi & _rj):
                 _edge_set.add((_i, _j))
             # 如果_i写 -> _j也写同一个寄存器（WAR依赖，保守添加）

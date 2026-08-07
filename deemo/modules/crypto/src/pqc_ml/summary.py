@@ -1,7 +1,7 @@
 """
 FoC 二进制函数摘要 — Tier 3 语义理解。
 
-依据: FoC (ACM TOSEM 2025), ROUGE-L 提升 14.61%。
+依据: FoC, ROUGE-L 提升 14.61%。
 导出: generate_pqc_function_summary
 """
 
@@ -22,7 +22,7 @@ def generate_pqc_function_summary(
     model: str = "claude-sonnet-5-20251001",
 ) -> str:
     # FoC 二进制函数摘要 — Tier 3。
-    # 依据: FoC (ACM TOSEM 2025)
+    # 依据: FoC
     if not function_code.strip():
         return ""
 

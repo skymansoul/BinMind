@@ -81,7 +81,7 @@ class CVEWatchlist:
             """)
             conn.commit()
 
-    # ---- 管理监视列表 ----
+# 管理监视列表
 
     def add(
         self, name: str, ecosystem: str = "", version: str = ""
@@ -124,7 +124,7 @@ class CVEWatchlist:
             ).fetchone()
         return dict(row) if row else None
 
-    # ---- 检查新匹配 ----
+# 检查新匹配
 
     def check_all(self, kb, min_severity: str = "LOW") -> Dict[str, Any]:
         """对照知识库检查所有监视条目。
@@ -246,7 +246,7 @@ class CVEWatchlist:
             "severity_changes": severity_changes,
         }
 
-    # ---- 从SBOM组件导入监视列表 ----
+# 从SBOM组件导入监视列表
 
     def import_from_sbom(self, components: List[Dict]) -> int:
         """将SBOM组件导入监视列表。
@@ -263,7 +263,7 @@ class CVEWatchlist:
             count += 1
         return count
 
-    # ---- 告警管理 ----
+# 告警管理
 
     def get_alerts(
         self, acknowledged: Optional[bool] = None, limit: int = 100

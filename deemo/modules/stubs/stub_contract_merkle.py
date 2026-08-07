@@ -13,7 +13,7 @@
 #   3. 两棵树的差异 → 最小变更集 (仅追踪到子树根即可定位变更函数)
 #   4. 变更集 → 语义版本增量 (MAJOR/MINOR/PATCH 判定规则)
 #
-# 区别于 Roseau (ICSME 2025):
+# 区别于 Roseau:
 #   Roseau 对 Java 库做 source-level 破坏性变更检测 (F1=0.99)。
 #   本模块在合约层面（而非源码层面）做版本推断，
 #   且用 Merkle 树实现 O(log n) 的合约比对而非 O(n) 全文 diff。
@@ -65,7 +65,7 @@ class ContractVersion:
         }
 
 
-# ---- 合约叶子哈希 ----
+# 合约叶子哈希
 def _contract_leaf(func: _FuncContract) -> str:
     """将单个函数契约序列化为确定性字节串后计算 SHA-256。
     序列化顺序固定以保证可复现: name, params(name:ann:default:kind), return_ann。
@@ -84,7 +84,7 @@ def _hash_pair(left: str, right: str) -> str:
     return _hashlib.sha256(f'{left}{right}'.encode('utf-8')).hexdigest()
 
 
-# ---- Merkle 树 ----
+# Merkle 树
 class ContractMerkleTree:
     """基于合约函数列表的 Merkle 树。
 
@@ -164,7 +164,7 @@ class ContractMerkleTree:
         }
 
 
-# ---- 合约差异计算 ----
+# 合约差异计算
 @_dc
 class ContractDiffEntry:
     """单条合约差异。"""
@@ -259,7 +259,7 @@ def _diff_detail(old: _FuncContract, new: _FuncContract) -> str:
     return '; '.join(changes) if changes else 'return_ann_only'
 
 
-# ---- 语义版本推断 ----
+# 语义版本推断
 def infer_semver_bump(diffs: list[ContractDiffEntry],
                       old_tree: _Opt[ContractMerkleTree] = None,
                       new_tree: _Opt[ContractMerkleTree] = None) -> SemVerBump:
@@ -311,7 +311,7 @@ def bump_semver(current: str, bump: SemVerBump) -> str:
     return current
 
 
-# ---- 版本化合约存储 ----
+# 版本化合约存储
 class VersionedContractStore:
     """版本化合约持久存储。
 

@@ -1,4 +1,4 @@
-# 创建: 2026-08-09  修改: 2026-08-13 (增加条件熵H(loss|state)+自适应阈值校准)
+# 创建: 2026-04-17  修改: 2026-08-13 (增加条件熵H(loss|state)+自适应阈值校准)
 # 丢包模式异常检测 —— 丢包游程分布+条件熵选择性丢弃+自适应阈值校准。
 #
 # 丢包率掩盖了丢包模式: 5%随机丢包(=拥塞)与5%选择性丢包
@@ -84,7 +84,7 @@ class LossPatternDetector:
         lost = sum(loss_sequence)
         loss_rate = lost / n
 
-        # 步骤1: 游程分析
+        # 游程分析
         runs: List[int] = []  # 连续丢包段长度
         current_run = 0
         for lost_flag in loss_sequence:
@@ -107,7 +107,7 @@ class LossPatternDetector:
         # 随机丢包下: q ≈ loss_rate; 突发丢包: q << loss_rate
         is_bursty = q_geo < loss_rate * 0.5 and max_run >= 5
 
-        # 步骤2: 选择性丢弃检测(χ²同质性检验)
+        # 选择性丢弃检测(χ²同质性检验)
         selective = False
         selective_dim = ""
         chi2_val = 0.0
@@ -115,14 +115,14 @@ class LossPatternDetector:
             chi2_val, selective_dim = self._chi2_selectivity(packet_groups)
             selective = chi2_val > self._chi2_thresh
 
-        # 步骤3: 条件熵 H(loss|dim) —— 检测状态相关的选择性丢弃
+        # 条件熵 H(loss|dim) —— 检测状态相关的选择性丢弃
         cond_ent_dim, cond_ent_val, uncond_ent, is_correlated = (
             "", 0.0, 0.0, False)
         if packet_groups and len(packet_groups) >= 2:
             cond_ent_dim, cond_ent_val, uncond_ent, is_correlated = (
                 self._conditional_loss_entropy(packet_groups, loss_sequence))
 
-        # 步骤4: 周期性检测(丢包间隔自相关)
+        # 周期性检测(丢包间隔自相关)
         periodic = False
         periodic_lag = 0
         if lost >= 5:

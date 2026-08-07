@@ -12,19 +12,18 @@
 #   校准集由CISA KEV历史利用数据构建, 保证有限样本有效性
 # 技术效果: 在CISA KEV 2024测试集上, 90%置信区间覆盖率达
 #   89.7% (接近名义覆盖率90%), 区间宽度中位数0.18
-# 参考:
+#
 #   Carlevaro et al. "Conformal Predictions for Probabilistically Robust
-#     Scalable ML Classification" (2024) — 保形安全集概念
+#     Scalable ML Classification" — 保形安全集概念
 #   Scholten et al. "Provably Reliable Conformal Prediction Sets in
-#     the Presence of Data Poisoning" (ICLR 2025 Spotlight) — 鲁棒CP
-#   Jacobs et al. "EPSS" (FIRST 2021/2023) — 基础评分模型
+#     the Presence of Data Poisoning" — 鲁棒CP
+#   Jacobs et al. "EPSS" — 基础评分模型
 # 设计边界:
-#   - 归纳式CP: 校准集分离于训练集, 避免过拟合偏差
-#   - 使用分位数回归作为底层nonconformity函数
-#   - 滑动窗口校准集: 随时间推移自动淘汰过期样本
+# 归纳式CP: 校准集分离于训练集, 避免过拟合偏差
+# 使用分位数回归作为底层nonconformity函数
+# 滑动窗口校准集: 随时间推移自动淘汰过期样本
 #   - 与exploitability_scorer.py中的EPSSEstimator兼容,
 #     可作为其wrapper使用
-from __future__ import annotations
 import bisect
 import json
 import logging

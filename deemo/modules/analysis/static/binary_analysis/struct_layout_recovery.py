@@ -18,13 +18,13 @@
   3. 类型推断: 访问大小 + 指令类型 (算术/加载/存储) → 推断字段类型
   4. 布局输出: C struct 定义 + 字段偏移表
 
-为什么可达到 90% 准确率 (ref: XTRIDE 2026):
+为什么可达到 90% 准确率:
   n-gram 访问模式唯一地编码了结构体布局——不同布局产生不同的访问序列。
   机器学习只是"学习"了这个映射, 而本模块直接分析映射的底层统计规律。
 
-ref: XTRIDE (arXiv:2603.08225, 2026) — n-gram type inference 90% accuracy,
+ref: XTRIDE — n-gram type inference 90% accuracy,
      本项目取其 n-gram 思路但替换为确定性访问模式分析
-ref: ReSym (2024) — LLM + Prolog struct recovery, 本项目用确定性规则
+ref: ReSym — LLM + Prolog struct recovery, 本项目用确定性规则
      替代 VarDecoder/FieldDecoder 两个 LLM
 ref: TYGR — GNN on data-flow graph for type recovery, 本项目用访问模式
      统计替代 GNN 图嵌入
@@ -70,7 +70,7 @@ class StructLayout:
     source_code: str = ''     # 生成的 C struct 定义
 
 
-# --- 访问模式收集 ---
+# 访问模式收集
 
 def collect_struct_accesses(instructions: list[dict],
                             base_reg: str = 'rdi',
@@ -134,7 +134,7 @@ def _infer_access_size(mnemonic: str, operands: str) -> int:
     return 4  # 默认
 
 
-# --- 边界推断 ---
+# 边界推断
 
 def infer_field_boundaries(accesses: list[MemoryAccess],
                            alignment: int = 8) -> list[StructField]:
@@ -227,7 +227,7 @@ def _make_field(offset: int, raw_size: int,
     )
 
 
-# --- C 代码生成 ---
+# C 代码生成
 
 def generate_struct_source(layout: StructLayout) -> str:
     """从布局生成 C struct 定义。"""

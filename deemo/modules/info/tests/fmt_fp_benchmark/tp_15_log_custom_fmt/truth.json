@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_15_log_custom_fmt",
+  "label": "tp",
+  "cwe": "CWE-134",
+  "cve": "CVE-2022-1015 类自定义日志格式串",
+  "expect_overflow": true,
+  "trigger": "输入 %p",
+  "why": "log_msg 直接 printf 用户串"
+}

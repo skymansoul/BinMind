@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple
 
 
-# --- 架构定义 ---
+# 架构定义
 class GPUArchitecture:
     SM_70 = "sm_70"; SM_75 = "sm_75"; SM_80 = "sm_80"
     SM_86 = "sm_86"; SM_90 = "sm_90"
@@ -33,7 +33,7 @@ class GPUArchitecture:
         return 32  # NVIDIA 所有现代架构均使用 32 bank（4 字节）
 
 
-# --- SASS 操作码模式：内存操作 ---
+# SASS 操作码模式：内存操作
 _SASS_LD_PATTERNS = re.compile(
     rb'(?:LD|LDG|LDL|LDS|LDC)\s', re.IGNORECASE)
 _SASS_ST_PATTERNS = re.compile(
@@ -43,13 +43,13 @@ _SASS_ATOM_PATTERNS = re.compile(
 _SASS_BAR_PATTERNS = re.compile(
     rb'(?:BAR|BAR\.SYNC|MEMBAR|FENCE)\s', re.IGNORECASE)
 
-# --- PTX 操作码正则 ---
+# PTX 操作码正则
 _PTX_LD = re.compile(r'\bld\.(?:global|shared|local|const)\b')
 _PTX_ST = re.compile(r'\bst\.(?:global|shared|local)\b')
 _PTX_ATOM = re.compile(r'\batom\.(?:add|cas|exch|inc|dec|min|max|and|or|xor)\b')
 _PTX_BAR = re.compile(r'\bbar(?:\.sync|\.arrive)?\b')
 
-# --- Warp 分支发散检测模式 ---
+# Warp 分支发散检测模式
 _PTX_BRANCH = re.compile(r'\bbra\b|\bbrx\b|\b@%p\d+\s+bra\b')
 _SASS_BRANCH = re.compile(rb'(?:BRA|BRX|JMP|JCAL|JCALL)\s', re.IGNORECASE)
 # 条件执行谓词：SASS 中 @!P0 形式保护执行

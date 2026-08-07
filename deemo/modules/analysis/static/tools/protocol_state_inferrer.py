@@ -2,7 +2,7 @@
 """
 协议状态机推断引擎
 
-基于 [Yang et al. 2024, arXiv:2412.02540] 的自动状态机推断框架
+基于 的自动状态机推断框架
 结合概率状态机（P-SM）和 Needleman-Wunsch 序列比对进行协议状态推断
 
 核心方法：
@@ -11,7 +11,7 @@
 3. 状态推断：概率协议状态机（P-SM）
 4. 转移矩阵：从会话序列构建状态转移图
 
-扩展支持 [BinPRE 2024, 2409.01994] 的字段语义辅助标注
+扩展支持 的字段语义辅助标注
 """
 
 import logging
@@ -388,21 +388,21 @@ class ProtocolStateInferrer:
         if not messages:
             return ProtocolStateMachine()
 
-        # Step 1: 消息类型聚类
+        # 消息类型聚类
         clusters = self.dbscan.fit(messages)
         self._assign_type_labels(clusters, messages)
 
-        # Step 2: 会话分类（如果有多个会话）
+        # 会话分类（如果有多个会话）
         if sessions is None:
             sessions = self._auto_sessionize(messages)
 
-        # Step 3: 构建消息类型序列
+        # 构建消息类型序列
         session_sequences = self._build_type_sequences(sessions, messages)
 
-        # Step 4: 推断状态和转移
+        # 推断状态和转移
         psm = self._infer_states_and_transitions(session_sequences)
 
-        # Step 5: 标注已知协议
+        # 标注已知协议
         self._annotate_known_protocols(psm, messages)
 
         logger.info(

@@ -1,0 +1,78 @@
+{
+  "overall": {
+    "n": 13,
+    "tp": 9,
+    "fp": 0,
+    "fn": 0,
+    "tn": 4,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "avg_time_ms": 0.7024153847641383
+  },
+  "ablation": {
+    "L0_baseline": {
+      "desc": "\u65e0\u8fc7\u6ee4\u2014\u2014\u4ec5\u51fd\u6570\u540d\u5339\u914d(\u6a21\u62dfGhidra/Angr\u6a21\u5f0f)",
+      "tp": 3,
+      "fp": 1,
+      "fn": 1,
+      "tn": 1,
+      "recall": 0.75,
+      "fpr": 0.5,
+      "precision": 0.75,
+      "f1": 0.75,
+      "n": 6
+    },
+    "L1_pairing": {
+      "desc": "+ \u7ea6\u675f\u914d\u5bf9(register liveness alloc-copy matching)",
+      "tp": 4,
+      "fp": 1,
+      "fn": 0,
+      "tn": 1,
+      "recall": 1.0,
+      "fpr": 0.5,
+      "precision": 0.8,
+      "f1": 0.8889,
+      "n": 6
+    },
+    "L2_heap_model": {
+      "desc": "+ \u5806\u5206\u914d\u5668\u8bed\u4e49\u6a21\u578b(ptmalloc2 usable_size)",
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "tn": 2,
+      "recall": 0.5,
+      "fpr": 0.0,
+      "precision": 1.0,
+      "f1": 0.6667,
+      "n": 6
+    },
+    "L3_value_range": {
+      "desc": "+ \u503c\u8303\u56f4\u4f20\u64ad(def-use chain\u533a\u95f4\u5206\u6790)",
+      "tp": 4,
+      "fp": 1,
+      "fn": 0,
+      "tn": 1,
+      "recall": 1.0,
+      "fpr": 0.5,
+      "precision": 0.8,
+      "f1": 0.8889,
+      "n": 6
+    },
+    "L4_path_full": {
+      "desc": "+ CFG\u8def\u5f84\u53ef\u8fbe\u6027\u9a8c\u8bc1(\u5b8c\u65744\u7ea7\u7ba1\u7ebf)",
+      "tp": 3,
+      "fp": 1,
+      "fn": 1,
+      "tn": 1,
+      "recall": 0.75,
+      "fpr": 0.5,
+      "precision": 0.75,
+      "f1": 0.75,
+      "n": 6
+    }
+  },
+  "data_quality": "MEASURED \u2014 real pipeline execution on synthetic objdump"
+}

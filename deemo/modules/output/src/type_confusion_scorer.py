@@ -11,7 +11,6 @@ C++ 类型混淆利用性评分 — 类层次深度×虚方法数×vtable 可替
 
   本模块是第一个 C++ 类型混淆利用性量化模型。
 
-参考:
   CWE-843: Access of Resource Using Incompatible Type ('Type Confusion')
   CVE-2021-30632 (V8): JIT 类型混淆 → 代码执行
   CVE-2023-4069 (V8): 类型混淆 → 任意读写
@@ -25,13 +24,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class InheritanceType(Enum):
     SINGLE = "single"            # 单继承
     MULTIPLE = "multiple"        # 多重继承 — vtable 有偏移调整
     VIRTUAL = "virtual"          # 虚继承 — 共享基类 (钻石问题)
     UNKNOWN = "unknown"
-
 
 class ConfusionKind(Enum):
     UPTR_CAST = "uptr_cast"          # 基类→派生类 (向上转换失败)
@@ -40,7 +37,6 @@ class ConfusionKind(Enum):
     UNION_MISUSE = "union_misuse"    # union 活跃成员误判
     MEMCPY_OBJECT = "memcpy_object"  # 对象级 memcpy (非平凡类型)
     UNKNOWN = "unknown"
-
 
 @dataclass
 class TypeConfusionScore:
@@ -54,7 +50,6 @@ class TypeConfusionScore:
     primitives: List[str] = field(default_factory=list)
     technique: str = ''
 
-
 def _base_for_kind(kind: ConfusionKind) -> float:
     return {
         ConfusionKind.UPTR_CAST:    7.0,  # 最危险 — 调用错误的虚方法
@@ -64,7 +59,6 @@ def _base_for_kind(kind: ConfusionKind) -> float:
         ConfusionKind.UNION_MISUSE: 4.5,
         ConfusionKind.UNKNOWN:      3.0,
     }.get(kind, 3.0)
-
 
 def _hierarchy_amplification(depth: int) -> float:
     """
@@ -82,7 +76,6 @@ def _hierarchy_amplification(depth: int) -> float:
         return 2.0 - (depth - 5) * 0.2  # 缓慢下降
     return 1.0  # 极限
 
-
 def _vtable_penalty(virtual_count: int, replaceable: bool) -> float:
     """
     虚方法数→惩罚/奖励。
@@ -98,7 +91,6 @@ def _vtable_penalty(virtual_count: int, replaceable: bool) -> float:
         return -0.3
     return 0.0
 
-
 def _inheritance_complexity(inh_type: InheritanceType) -> float:
     """继承类型→复杂度惩罚。"""
     return {
@@ -107,7 +99,6 @@ def _inheritance_complexity(inh_type: InheritanceType) -> float:
         InheritanceType.VIRTUAL: -1.5,
         InheritanceType.UNKNOWN: -0.5,
     }.get(inh_type, -0.5)
-
 
 def score_type_confusion(
     confusion_kind: str = 'uptr_cast',

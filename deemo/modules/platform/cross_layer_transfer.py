@@ -15,15 +15,15 @@
   → 特征嵌入在保留风险预测能力的同时混淆层判别器
 
 与已有工作区分：
-  DAM2P (TOSEM 2024): 跨项目代码漏洞检测的域适应，处理的是AST/CFG特征
+  DAM2P: 跨项目代码漏洞检测的域适应，处理的是AST/CFG特征
                       而非传播图跨层风险迁移。不涉及平台层的硬件/固件差异。
   本模块: 首次将对抗域适应引入跨平台层风险传播建模。
          层特定的语义差距（固件MMIO vs 内核系统调用 vs 硬件缓存时序）
          通过学习层不变的风险拓扑表征来桥接。
 
-ref: Ganin et al. (JMLR 2016) "Domain-Adversarial Training of Neural Networks" —
+ref: Ganin et al. "Domain-Adversarial Training of Neural Networks" —
      对抗域适应的理论基础。
-ref: DAM2P (ACM TOSEM 2024) — 跨项目代码漏洞检测的域适应，最接近的已有工作。
+ref: DAM2P — 跨项目代码漏洞检测的域适应，最接近的已有工作。
 """
 
 from __future__ import annotations

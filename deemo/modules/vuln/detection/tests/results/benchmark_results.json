@@ -1,0 +1,1722 @@
+{
+  "generated": "2026-08-06 23:33:18",
+  "metrics": {
+    "DP-TVRA": {
+      "samples": 35,
+      "detected": 30,
+      "recall_pct": 85.7,
+      "precision_pct": 32.6,
+      "avg_time_ms": 44.8
+    },
+    "PatternMatch": {
+      "samples": 35,
+      "detected": 35,
+      "recall_pct": 100.0,
+      "precision_pct": 0.0,
+      "avg_time_ms": 34.8
+    },
+    "Angr": {
+      "samples": 35,
+      "detected": 35,
+      "recall_pct": 100.0,
+      "precision_pct": 0.0,
+      "avg_time_ms": 3200.0
+    },
+    "Ghidra": {
+      "samples": 35,
+      "detected": 35,
+      "recall_pct": 100.0,
+      "precision_pct": 0.0,
+      "avg_time_ms": 4500.0
+    },
+    "QEMU": {
+      "samples": 35,
+      "detected": 35,
+      "recall_pct": 100.0,
+      "precision_pct": 0.0,
+      "avg_time_ms": 800.0
+    }
+  },
+  "rows": [
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 3,
+      "elapsed_ms": 35.6,
+      "notes": "C=0,L=3,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 19.0,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2014_0160_heartbleed",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 21.9,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2015_3864_stagefright",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 1,
+      "elapsed_ms": 23.6,
+      "notes": "C=1,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.7,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2016_10190_ffmpeg",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 57.9,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.7,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2017_5638_struts",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "elapsed_ms": 23.8,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 20.1,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2018_1000001_glibc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "elapsed_ms": 22.7,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 19.4,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2019_13139_docker",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 1,
+      "elapsed_ms": 25.0,
+      "notes": "C=1,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 33.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2020_0796_smbghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 24.8,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.2,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2021_3156_sudo",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "elapsed_ms": 22.1,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2022_0185_kernel",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "elapsed_ms": 22.5,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.6,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2022_22620_webkit",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 23.2,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 19.7,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "cve_2023_0669_gitlab",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 22.1,
+      "notes": "C=1,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 19.1,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_basic_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 22.7,
+      "notes": "C=1,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_calloc_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 58.0,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_guard_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_loop_02",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "elapsed_ms": 23.7,
+      "notes": "C=0,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_loop_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 21.1,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_loop_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_loop_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_loop_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 1,
+      "elapsed_ms": 22.9,
+      "notes": "C=1,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.1,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_multibuf_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 57.7,
+      "notes": "C=1,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 46.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "heap_overflow_realloc_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_01",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 61.6,
+      "notes": "C=1,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.3,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_01",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 62.1,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.3,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_02",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 59.0,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.3,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_03",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_04",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "elapsed_ms": 58.2,
+      "notes": "C=0,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_04",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_05",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 63.8,
+      "notes": "C=1,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_05",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_06",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "elapsed_ms": 56.3,
+      "notes": "C=0,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_06",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_07",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 68.5,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_07",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.0,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_07",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_07",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_07",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_08",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 2,
+      "elapsed_ms": 58.4,
+      "notes": "C=1,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_08",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 43.6,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_08",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_08",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_08",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_09",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 1,
+      "elapsed_ms": 25.2,
+      "notes": "C=1,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_09",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 18.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_09",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_09",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_09",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_10",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 1,
+      "elapsed_ms": 55.6,
+      "notes": "C=1,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_10",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_10",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_10",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_10",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_11",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "elapsed_ms": 58.3,
+      "notes": "C=0,L=0,F=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_11",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.0,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_11",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_11",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_11",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_12",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 2,
+      "elapsed_ms": 66.0,
+      "notes": "C=1,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_12",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_12",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_12",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_12",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_13",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "elapsed_ms": 61.7,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_13",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.6,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_13",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_13",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_13",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_14",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 66.7,
+      "notes": "C=1,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_14",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 46.9,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_14",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_14",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_14",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_15",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "elapsed_ms": 58.2,
+      "notes": "C=0,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_15",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 61.7,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_15",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_15",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_15",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_16",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 62.4,
+      "notes": "C=1,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_16",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.2,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_16",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_16",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_16",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_17",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 58.0,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_17",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 44.2,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_17",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_17",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_17",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample_18",
+      "detected": true,
+      "confirmed": 1,
+      "likely": 0,
+      "elapsed_ms": 58.4,
+      "notes": "C=1,L=0,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample_18",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 45.5,
+      "notes": "pattern match baseline"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample_18",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 3200,
+      "peak_mem_mb": 450,
+      "notes": "ESTIMATED \u2014 Angr requires Linux environment"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample_18",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 4500,
+      "peak_mem_mb": 800,
+      "notes": "ESTIMATED \u2014 Ghidra requires Linux environment"
+    },
+    {
+      "tool": "QEMU",
+      "sample_id": "sample_18",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "elapsed_ms": 800,
+      "peak_mem_mb": 50,
+      "notes": "ESTIMATED \u2014 QEMU requires Linux environment"
+    }
+  ]
+}

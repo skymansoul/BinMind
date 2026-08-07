@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_10_syslog_const",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: syslog 常量格式",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "syslog 格式串为常量, 数据经 %s 传入"
+}

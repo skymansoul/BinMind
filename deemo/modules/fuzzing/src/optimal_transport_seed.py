@@ -5,7 +5,7 @@
 2025-08-03 16:08 - Wasserstein 重心: 多实例种子池几何中位数
 2025-08-05 13:42 - 稀疏正则化截断低概率传输边
 
-参考: Cuturi (2013) Sinkhorn distances, Peyré & Cuturi (2019) Computational OT
+参考: Cuturi Sinkhorn distances, Peyré & Cuturi Computational OT
 
 在 fuzzing 中无先例。将种子分发建模为分布匹配: 最小化覆盖空间
 Wasserstein 距离的传输计划。熵正则化防止退化解。"""

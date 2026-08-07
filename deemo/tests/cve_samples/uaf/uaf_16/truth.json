@@ -1,0 +1,1 @@
+﻿{"expected":"TP","sample":"uaf_16_factory_return_freed","description":"Factory returns freed pointer — callee frees and returns dangling ptr","cwe":"CWE-416","vuln_type":"use-after-free"}

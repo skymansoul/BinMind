@@ -4,7 +4,7 @@
 #   仅在访问时淘汰最不常用的条目. 但二进制分析中的访问模式具有
 #   可预测的序列特征:
 #     - 导入文件 → 计算 SHA256 → 查 Bloom → 查 SimHash → 查数据库
-#     - 同一项目的多个二进制倾向于在相近时间被访问
+# 同一项目的多个二进制倾向于在相近时间被访问
 #   被动缓存在首次访问时必然 cache miss.
 #
 # 创新点:
@@ -19,9 +19,9 @@
 #      在一次 I/O 中批量加载预测的 N 个后续条目 → 摊还预热成本.
 #
 # 与现有工作:
-#   - MarkovPrefetch (Rust crate): 面向内存地址预取.
+# MarkovPrefetch (Rust crate): 面向内存地址预取.
 #     本方案面向数据库签名的语义级访问序列.
-#   - Tetrahedrangel (ISCA 2024): 硬件 L3 cache 预取.
+#   - Tetrahedrangel: 硬件 L3 cache 预取.
 #     本方案面向软件级签名数据库缓存.
 #   - 区别于 predictive_lifecycle.py: 后者预测长期生命周期阶段,
 #     本方案预测下一次访问的时机和对象.

@@ -4,14 +4,13 @@
 2025-08-06 09:14 - 增加 splice 有效性验证, 过滤产生退化覆盖的后代
 2025-08-08 11:52 - 集成到 ISRG, 利用关系图做互补种子对预筛选
 
-参考:
   AFL 的 splice 阶段 (random crossover at midpoint)
     — 纯随机拼接, 不考虑覆盖语义, 约 5% 概率产生有意义的子代
-  SEAFuzz (IEEE 2025) 的结构稀有度建模
+  SEAFuzz  的结构稀有度建模
     — 表明种子内部不同区域对覆盖的贡献是不均匀的
-  Entropic (Böhme et al., ESEC/FSE 2020, CACM 2023)
+  Entropic
     — 信息论视角: 最大化每次变异的信息增益
-  ZTaint-Havoc (ISSTA 2025) 的字节重要性热图
+  ZTaint-Havoc  的字节重要性热图
     — 证明可以通过反馈推断每个字节位置对覆盖的因果影响
 
 核心假设:
@@ -36,7 +35,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 @dataclass
 class CoverageRegion:
     """种子数据的一个区域, 关联到特定的覆盖边子集。"""
@@ -45,7 +43,6 @@ class CoverageRegion:
     edge_ids: Set[int] = field(default_factory=set)
     # 该区域对覆盖的贡献置信度 [0,1], 基于多次变异反馈累积
     confidence: float = 0.3
-
 
 @dataclass
 class SpliceCandidate:
@@ -56,7 +53,6 @@ class SpliceCandidate:
     complementarity: float         # A和B的覆盖互补度 (1 - Jaccard)
     transition_score: float        # 该切点处的覆盖转移强度
     total_score: float = 0.0       # complementarity * transition_score
-
 
 class CoverageAwareSplicer:
     """覆盖感知种子拼接引擎。

@@ -28,8 +28,8 @@ class FuzzingResult:
     semantic_scores: Optional[List[float]] = None  # 语义多样性评分
 
 
-# ── LLM 驱动的协议语法提取 (ChatAFL, NDSS 2024) ────────────────────────────
-# 参考: Meng et al., "ChatAFL: Large Language Model guided 协议 模糊测试"
+# LLM 驱动的协议语法提取
+# Meng et al., "ChatAFL: Large Language Model guided 协议 模糊测试"
 # 核心方法: 将协议消息序列输入 LLM, 让 LLM 提取结构化的文法规则（字段名/类型/约束）
 # 本实现提供语法提取的骨架——在实际部署中，LLM prompt 由外部调用者注入
 
@@ -107,8 +107,8 @@ class ProtocolGrammarExtractor:
         return "\n".join(lines)
 
 
-# ── 语义反馈驱动的种子排序 ──────────────────────────────────────────────────
-# 参考: arXiv 2511.03995 (2025), "Hybrid 模糊测试 LLM-Guided Input
+# 语义反馈驱动的种子排序
+# arXiv 2511.03995, "Hybrid 模糊测试 LLM-Guided Input
 # 变异 Semantic Feedback"
 # 使用嵌入向量的余弦相似度评估输入的"行为新颖性"——覆盖路径之外的语义信号
 

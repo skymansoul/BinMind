@@ -1,4 +1,4 @@
-# ---- JWT 分析器 ----
+# JWT 分析器
 # 核心威胁模型: alg混淆 (RS256->HS256 以公钥为HMAC secret), alg=none绕过,
 # kid注入 (路径遍历/SQL注入), jku/jwk头密钥劫持。
 # 扫描范围: ASCII + UTF-16LE (PE/Windows二进制常见编码).
@@ -208,7 +208,6 @@ def crack_weak_secret(token: bytes, wordlist: Optional[List[bytes]] = None) -> O
     return None
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩, 暂未启用."""
     pass
 

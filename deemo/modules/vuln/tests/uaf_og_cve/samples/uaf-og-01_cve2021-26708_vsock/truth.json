@@ -1,0 +1,6 @@
+{
+  "class": "TP",
+  "cve": "CVE-2021-26708",
+  "desc": "CVE-2021-26708 (Linux vsock) UAF 复现 — transport 指针在释放后仍被",
+  "trigger": "   使用: free(t) 后经容器访问 t->ops. 简化: free(p) 后解引用 p->field. "
+}

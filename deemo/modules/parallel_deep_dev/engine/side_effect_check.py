@@ -1,5 +1,5 @@
 """
-创建: 2025-08-02
+创建: 2026-06-13
 跨模块全局副作用碰撞检测 — 检测并行生成的模块是否修改了相同的全局资源。
 
 问题：Worker A 的模块注册了 `signal.signal(signal.SIGTERM, handler_a)`，
@@ -219,9 +219,7 @@ class SideEffectChecker:
         collisions.sort(key=lambda c: (0 if c.severity == "CRITICAL" else 1, c.resource_key))
         return collisions
 
-    # ------------------------------------------------------------------
     # 辅助
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _read(filepath: str) -> str | None:
@@ -278,9 +276,7 @@ class SideEffectChecker:
         return "?"
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def check_side_effects(
     filepaths: list[str],

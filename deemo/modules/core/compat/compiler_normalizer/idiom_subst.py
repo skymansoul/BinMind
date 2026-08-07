@@ -24,10 +24,10 @@
 规则来源:
   - LLVM InstCombine (llvm/lib/Transforms/InstCombine/) 的代数化简规则集
   - GCC match.pd (GIMPLE pattern matching) 的等价变换
-  - ref: Regehr et al. (2012) "Test-Case Reduction for C Compiler Bugs" (PLDI)
+  - ref: Regehr et al. "Test-Case Reduction for C Compiler Bugs"
     提出的编译器输出差异最小化方法 — 本项目反向使用: 将差异最大化形式
     (不同编译器的惯用法) 归一化为同一形式
-  - ref: "STOKE: Stochastic Superoptimizer" (Schkufza et al., ASPLOS 2013)
+  - ref: "STOKE: Stochastic Superoptimizer"
     的随机搜索验证 — 每条惯用法替换需要验证等价性, 本项目未实现随机验证,
     替代方案是对关键规则做 Z3 等价性检查
 """
@@ -35,14 +35,14 @@
 import re as _re
 
 
-# ===== 惯用法规则表 =====
+# 惯用法规则表
 # 格式: (compiled_pattern, canonical_form, description, compile_flag_hint)
 # compiled_pattern 是正则表达式, 匹配编译器产生的指令序列
 # canonical_form 是归一化后的对应形式
 # TODO: Z3 验证关键规则的等价性 (当前依赖编译器手册的保证)
 
 IDIOM_RULES = [
-    # --- 零寄存器 ---
+# 零寄存器
     # xor reg, reg → mov reg, 0
     # sub reg, reg 同样 (GCC 偏好 xor, 某些版本 Clang 用 sub 对特定寄存器)
     (_re.compile(r'^(xor|sub)\s+(\w+),\s*\2$'),
@@ -50,7 +50,7 @@ IDIOM_RULES = [
      'zero_register',
      'GCC/Clang/MSVC all -O1+'),
 
-    # --- 乘常数 → LEA (x86-64) ---
+# 乘常数 → LEA (x86-64)
     # lea reg, [base + base*scale] 其中 scale ∈ {2,4,8}
     # 等价于 reg = base * (1+scale) 或 reg = base * scale + offset
     (_re.compile(r'^lea\s+(\w+),\s*\[(\w+)\s*\+\s*\2\s*\*\s*([248])\]$'),
@@ -65,7 +65,7 @@ IDIOM_RULES = [
      'complex_lea_to_mul_add',
      'rare, Clang -O2 for *N+offset with large N'),
 
-    # --- 除常数 → 乘法逆元 ---
+# 除常数 → 乘法逆元
     # Signed division by constant: movabs + imul + sar + add + sar 序列
     # 逆元公式: magic = 2^(n+k) / divisor (详见 Hacker's Delight §10)
     # 替换: 将 5 条指令的序列折叠为单条 idiv 语义标记
@@ -79,14 +79,14 @@ IDIOM_RULES = [
      'signed_division_by_constant',
      'GCC -O1+, MSVC /O1+'),
 
-    # --- test/cmp 规范化 ---
+# test/cmp 规范化
     # test reg, reg → cmp reg, 0 (功能等价, test 更短但语义相同)
     (_re.compile(r'^test\s+(\w+),\s*\1$'),
      r'cmp \1, 0',
      'test_self_to_cmp_zero',
      'ubiquitous at any optimization level'),
 
-    # --- NOP 填充归一化 ---
+# NOP 填充归一化
     # 不同编译器用不同的 NOP 序列:
     # GCC:  0x90 (单字节) 或 0x66 0x90 (2 字节)
     # MSVC: 0x8D 0x40 0x00 (lea eax, [eax+0], 3 字节)
@@ -97,7 +97,7 @@ IDIOM_RULES = [
      'nop_normalization',
      'cross-compiler'),
 
-    # --- 条件移动规范化 ---
+# 条件移动规范化
     # cmovcc → 显式分支 (在某些比较场景中更有用)
     # 反向: 不替换 cmov, 而是将等价的 cmp+jcc+mov 合并为 cmov
     # 这是 CMOV 的逆惯用法 — 低优化级别使用分支, 高优化级别使用条件移动

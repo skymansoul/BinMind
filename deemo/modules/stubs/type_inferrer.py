@@ -1,6 +1,6 @@
 # compat/ 代理导出 — 类型推断桩
 # 通过行过滤→compile→exec 方式加载上游模块，与同目录代理策略一致
-# 参考: VulCatch (arXiv:2408.07181) CodeT5 伪代码提升 & Neural Decompilation (arXiv:2412.07538)
+# VulCatch CodeT5 伪代码提升 & Neural Decompilation
 import os as _os
 
 _src_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'type_inferrer.py')

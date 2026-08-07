@@ -5,7 +5,7 @@
 
 import re
 
-# ===== 正则模式 -- 编译一次复用 =====
+# 正则模式 -- 编译一次复用
 _HEX_IMM_RE = re.compile(r'\b0x[0-9a-fA-F]+\b')
 _DEC_IMM_RE = re.compile(r'(?<![a-zA-Z_])(\d+)(?![a-zA-Z_0-9])')
 _OFFSET_RE = re.compile(r'\[(?:[a-z]{3,6}:)?0x[0-9a-fA-F]+\]', re.IGNORECASE)
@@ -58,7 +58,7 @@ def normalize_instruction(insn: str) -> str:
 
     operands = parts[1]
 
-    # ---- 替换顺序：先标签地址(loc_/sub_)后立即数 ----
+# 替换顺序：先标签地址(loc_/sub_)后立即数
     operands = _ADDR_LABEL_RE.sub('<ADDR>', operands)
     # 段前缀移除
     operands = _SEGMENT_RE.sub('', operands)

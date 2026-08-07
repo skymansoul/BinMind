@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """对比实验——BinMind vs Angr vs Ghidra vs QEMU, 统计检出率/误报率/耗时"""
 import os, sys, json, time, subprocess
 from dataclasses import dataclass, field

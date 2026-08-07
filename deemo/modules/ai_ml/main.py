@@ -32,7 +32,7 @@ def _setup(args):
         _logging.getLogger(__name__).warning(f"config/logging import failed: {e}")
 
 
-# ---- mutation subcommand ----
+# mutation subcommand
 def _cmd_mutate(args):
     _setup(args)
     _log = _logging.getLogger("ai_ml.cli.mutate")
@@ -78,7 +78,7 @@ def _cmd_mutate(args):
         _sys.exit(1)
 
 
-# ---- search subcommand ----
+# search subcommand
 _CMD_SEARCH = None
 def _cmd_search(args):
     _setup(args)
@@ -112,7 +112,7 @@ def _cmd_search(args):
         _sys.exit(1)
 
 
-# ---- vuln subcommand ----
+# vuln subcommand
 _CMD_VULN = None
 def _cmd_vuln(args):
     _setup(args)
@@ -158,7 +158,7 @@ def _cmd_vuln(args):
         _sys.exit(1)
 
 
-# ---- config subcommand ----
+# config subcommand
 def _cmd_config(args):
     try:
         from src.config import load_config, get
@@ -174,7 +174,7 @@ def _cmd_config(args):
         _sys.exit(1)
 
 
-# ---- main CLI builder ----
+# main CLI builder
 def build_parser():
     parser = _argparse.ArgumentParser(
         prog='ai_ml',

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_09_free_other_var",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 释放另一对象",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "free 的是 q, 解引用的是未释放的 p"
+}

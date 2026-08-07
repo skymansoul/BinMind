@@ -1,5 +1,5 @@
-# 创建: 2025-08-12 15:40
-# 修改: 2025-08-12 — union-find e-graph + 等式饱和 + cost-guided 提取
+# 创建: 2026-05-19 15:40
+# 修改: 2026-05-19 — union-find e-graph + 等式饱和 + cost-guided 提取
 """
 E-Graph 等式饱和 MBA 简化器 — 用 e-graph + 等式饱和替代传统代数重写。
 
@@ -26,14 +26,14 @@ e-graph 解决此问题: 将表达式的所有等价形式压缩为单个数据�
   LLM 的幻觉问题在 MBA 去混淆中尤为严重——一个错误常数推导可能导致
   语义不等价的"简化", 而 e-graph 由重写规则保证语义正确性。
 
-ref: ProMBA (ACM TOSEM 2026) — 程序合成 + 等式饱和, 84% 成功率
+ref: ProMBA — 程序合成 + 等式饱和, 84% 成功率
      on 4000+ MBA 表达式。本项目将其从"学习规则"扩展到"cost-guided
      提取 + 局部规则动态排序"。
-ref: SaMBA (AsiaCCS 2026) — 等式饱和用于 MBA 混淆生成, 本项目将其
+ref: SaMBA — 等式饱和用于 MBA 混淆生成, 本项目将其
      反转为去混淆方向——cost model 最小化而非最大化。
-ref: egg (Willsey et al., POPL 2021) — Rust e-graph 库, 本项目
+ref: egg — Rust e-graph 库, 本项目
      在 Python 中实现其核心 (union-find + e-class + pattern match)
-ref: GAMBA (arXiv:2305.06763) — 非线性 MBA 的代数重写, 本项目的
+ref: GAMBA — 非线性 MBA 的代数重写, 本项目的
      规则集参考其位向量代数恒等式
 """
 
@@ -88,7 +88,7 @@ class EClass:
         return True
 
 
-# --- Union-Find (e-class 合并) ---
+# Union-Find (e-class 合并)
 
 class EGraph:
     """e-graph: union-find + e-class 池 + 重写规则引擎。"""
@@ -328,11 +328,11 @@ def _default_cost(node: ENode) -> float:
     return 2.0
 
 
-# --- MBA 规则集 ---
+# MBA 规则集
 # bitvector 代数恒等式, 参考:
-#   GAMBA (arXiv:2305.06763) — 非线性 MBA 的代数重写规则
-#   Hacker's Delight (Warren, 2nd ed. 2012) — bit-twiddling 恒等式大全
-#   SiMBA (2022) — 线性 MBA 的代数简化
+#   GAMBA — 非线性 MBA 的代数重写规则
+#   Hacker's Delight — bit-twiddling 恒等式大全
+#   SiMBA — 线性 MBA 的代数简化
 # 每条规则 (rule_name, method_name_in_class), 在 simplify() 循环中逐条应用
 
 
@@ -360,7 +360,7 @@ def _build_mba_rules() -> list[tuple[str, str]]:
     ]
 
 
-# --- 主简化器 ---
+# 主简化器
 
 class EGraphMBASimplifier:
     """基于 e-graph 等式饱和的 MBA 表达式简化器。"""
@@ -417,7 +417,7 @@ class EGraphMBASimplifier:
             return eg.add_node(n)
         return eg.new_const(0)
 
-    # ---- 恒等律规则 ----
+# 恒等律规则
 
     def _apply_id_xor_zero(self, eg: EGraph) -> int:
         """x ^ 0 = x"""

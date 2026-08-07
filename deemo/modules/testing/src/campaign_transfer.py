@@ -18,9 +18,9 @@
 #   5. 先验权重与默认权重的混合: w_init = λ*w_transfer + (1-λ)*w_default
 #
 # 为什么指纹匹配有效:
-#   - 同一领域的二进制有相似的导入函数画像 (如加密库都用AES/md5 API)
-#   - CFG结构熵反映代码复杂度类别 (简单解析器 vs 复杂编译器)
-#   - 这些特征与"哪种变异策略有效"有因果关系
+# 同一领域的二进制有相似的导入函数画像 (如加密库都用AES/md5 API)
+# CFG结构熵反映代码复杂度类别 (简单解析器 vs 复杂编译器)
+# 这些特征与"哪种变异策略有效"有因果关系
 
 from __future__ import annotations
 
@@ -271,7 +271,7 @@ class CampaignTransferEngine:
             return 0.0
         return max(-1.0, min(1.0, dot / (na * nb)))
 
-    # ---- 诊断 ----
+    # 诊断
 
     def stats(self) -> Dict[str, Any]:
         return {

@@ -1,0 +1,572 @@
+{
+  "timestamp": "2026-08-07",
+  "pipeline": "GAPSBV 5-dimension",
+  "total_samples": 37,
+  "total_ms": 26.2,
+  "avg_ms": 0.63,
+  "throughput_per_sec": 1413,
+  "verdicts": {
+    "SAFE": 11,
+    "UNCERTAIN": 13,
+    "OVERFLOW": 12,
+    "CONDITIONAL": 1
+  },
+  "dimension_contributions": {
+    "SAFE": {
+      "AffineRelation": 11,
+      "StridedInterval": 2,
+      "AllocatorSemantics": 2
+    },
+    "OVERFLOW": {
+      "CompletenessCheck": 11,
+      "AffineRelation": 5,
+      "StridedInterval": 2
+    }
+  },
+  "details": [
+    {
+      "sample": "cve_2014_0160_heartbleed",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 2.56,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "cve_2015_3864_stagefright",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 1.44,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "cve_2016_10190_ffmpeg",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 1.18,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "cve_2017_5638_struts",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 1.02,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2018_1000001_glibc",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.87,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "cve_2019_13139_docker",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 0.65,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2020_0796_smbghost",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 1.06,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2021_3156_sudo",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.92,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2022_0185_kernel",
+      "verdict": "CONDITIONAL",
+      "confidence": 0.26,
+      "ms": 1.04,
+      "dim_verdicts": [
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2022_22620_webkit",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.07,
+      "ms": 0.56,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cve_2023_0669_gitlab",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 0.97,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_122_heap_bof_01_linear",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.07,
+      "ms": 0.25,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_122_heap_bof_02_memcpy",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.14,
+      "ms": 0.34,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_122_heap_bof_03_strcpy",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.24,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_122_heap_bof_04_offset",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 0.26,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_122_heap_bof_05_loop",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.24,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_126_heap_overread_01",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.33,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "cwe_190_int_overflow_01",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "ms": 0.35,
+      "dim_verdicts": [
+        "OVERFLOW",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "cwe_415_double_free_01",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.25,
+      "dim_verdicts": [
+        "SAFE",
+        "SAFE",
+        "UNCERTAIN",
+        "SAFE",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ]
+    },
+    {
+      "sample": "cwe_416_uaf_01",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.22,
+      "dim_verdicts": [
+        "SAFE",
+        "SAFE",
+        "UNCERTAIN",
+        "SAFE",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation",
+        "StridedInterval",
+        "AllocatorSemantics"
+      ]
+    },
+    {
+      "sample": "cwe_680_int_overflow_02",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.34,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "heap_edge_01_offset_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "ms": 0.32,
+      "dim_verdicts": [
+        "OVERFLOW",
+        "OVERFLOW",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_02_realloc_shrink",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.49,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "heap_edge_03_loop_increment",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.28,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_04_nested_allocation",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.08,
+      "ms": 0.44,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_05_strcat_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.59,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_06_multi_realloc_chain",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 0.54,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "heap_edge_07_sprintf_overflow",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.27,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_08_callocation_mismatch",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "ms": 0.3,
+      "dim_verdicts": [
+        "OVERFLOW",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_09_guard_partial",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.13,
+      "ms": 0.29,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_edge_10_double_alloc_aliasing",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "ms": 0.27,
+      "dim_verdicts": [
+        "OVERFLOW",
+        "OVERFLOW",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_overflow_basic_01",
+      "verdict": "OVERFLOW",
+      "confidence": 0.85,
+      "ms": 0.56,
+      "dim_verdicts": [
+        "OVERFLOW",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_overflow_calloc_04",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.07,
+      "ms": 0.68,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_overflow_guard_05",
+      "verdict": "SAFE",
+      "confidence": 0.9,
+      "ms": 1.14,
+      "dim_verdicts": [
+        "SAFE",
+        "UNCERTAIN",
+        "CONDITIONAL",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": [
+        "AffineRelation"
+      ]
+    },
+    {
+      "sample": "heap_overflow_loop_02",
+      "verdict": "OVERFLOW",
+      "confidence": 0.6,
+      "ms": 0.59,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "OVERFLOW"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_overflow_multibuf_06",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.07,
+      "ms": 0.79,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    },
+    {
+      "sample": "heap_overflow_realloc_03",
+      "verdict": "UNCERTAIN",
+      "confidence": 0.07,
+      "ms": 0.66,
+      "dim_verdicts": [
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN",
+        "UNCERTAIN"
+      ],
+      "filters": []
+    }
+  ]
+}

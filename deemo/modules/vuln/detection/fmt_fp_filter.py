@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 # 格式字符串误报过滤——验证污点路径的实际可达性
 import re, logging
 from dataclasses import dataclass, field

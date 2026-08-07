@@ -12,7 +12,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
-# ==================== Harness 生成 ====================
+# Harness 生成
 
 class HarnessGenerator:
     """目标二进制 fuzzing harness 生成——支持 stdin/file/socket 三种接口"""
@@ -122,7 +122,7 @@ class FuzzHarness:
         return output_path
 
 
-# ==================== 漏洞数据库 ====================
+# 漏洞数据库
 
 class VulnerabilityDB:
     """SQLite + FTS5 漏洞签名数据库——全文搜索"""
@@ -210,7 +210,6 @@ def search_vuln_db(query: str, db_path: str = None) -> List[Dict[str, Any]]:
     _db.close()
     return _results
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)
 
 

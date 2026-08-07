@@ -1,5 +1,5 @@
-# 创建: 2026-07-28
-# 修改: 2026-08-02 — PAVA 保序回归替换为块合并实现
+# 创建: 2026-05-17
+# 修改: 2026-05-17 — PAVA 保序回归替换为块合并实现
 #
 # 死锁自由调度验证 — 资源分配图约简 + 环检测
 #
@@ -19,7 +19,7 @@
 #   4. 约简规则: 若某资源仅被一个未完成任务持有 → 删除其出边
 #      (无竞争 → 无等待 → 不参与死锁)
 #
-# 与 Event-B (ICECCS 2024) / SAG 框架的区别:
+# 与 Event-B / SAG 框架的区别:
 #   两者用重型形式化方法验证调度性。本模块是轻量工程工具——
 #   无需定理证明器，纯图算法，在提交调度前做最终检查。
 
@@ -143,7 +143,7 @@ class DeadlockVerifier:
                 critical_resources=[],
             )
 
-        # Step 1: 构造 RAG — 二部图 (任务 ∪ 资源)
+        # 构造 RAG — 二部图 (任务 ∪ 资源)
         # 边: task → resource (等待) / resource → task (持有)
         rag: Dict[str, List[str]] = {}
         for tid in ids:
@@ -173,7 +173,7 @@ class DeadlockVerifier:
             for spec in specs:
                 rag[tid].append(spec.resource_id)
 
-        # Step 2: 约简 — 无竞争的持有边按规则消去
+        # 约简 — 无竞争的持有边按规则消去
         reduction_steps = 0
         changed = True
         while changed:
@@ -209,7 +209,7 @@ class DeadlockVerifier:
                         changed = True
                         reduction_steps += 1
 
-        # Step 3: 在约简后的 RAG 上检测环
+        # 在约简后的 RAG 上检测环
         raw_cycles = _tarjan_scc(rag)
         unreachable_eliminated = 0
         real_cycles: List[List[str]] = []

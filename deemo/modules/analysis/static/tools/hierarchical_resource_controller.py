@@ -3,7 +3,7 @@
 Multi-level resource constraints (module/function/path)
 automatic enforcement timeout, memory, path-count limits
 
-2025 升级: LLM 驱动的 IR 优化代价模型 (arXiv 2025)
+2025 升级: LLM 驱动的 IR 优化代价模型
 参考: "LIFT: LLM-Driven IR 优化 for 符号执行"
 核心方法: 使用符号代价模型识别高开销 IR 语句，优先将资源
 分配给这些语句的符号执行。在有限时间/内存约束下，最大化
@@ -78,7 +78,7 @@ class ResourceRule:
         return self.pattern.match(name) is not None
 
 
-# ── IR 优化代价模型 (arXiv 2025, LIFT) ──────────────────────────────────────
+# IR 优化代价模型
 # 将符号执行资源视作投资组合——按每条IR语句的"求解器负担"分配资源
 # 包含除法/取模/浮点运算的语句消耗更多求解器时间，应获得更大的
 # 资源配额（timeout/memory）。代价模型按指令类型特征计算权重

@@ -146,7 +146,7 @@ class CompatMatrix:
 
         return risk
 
-    # ---- 内部 ----
+# 内部
     @staticmethod
     def _latest_version(module: str) -> str:
         try:

@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_02_internal_const_copy",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 内部常量拷贝",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "fmt 被解析为常量字面量, 无 %n"
+}

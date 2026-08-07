@@ -29,9 +29,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # IR types enums
-# ---------------------------------------------------------------------------
 
 class IROperation(str, Enum):
     """Unified IR operation types"""
@@ -108,9 +106,7 @@ class IRFunction:
     return_type: str = "void"
 
 
-# ---------------------------------------------------------------------------
 # 反编译引擎Engine — main 反编译 流水线
-# ---------------------------------------------------------------------------
 
 class DecompilerEngine:
     """二进制反编译 engine
@@ -140,7 +136,7 @@ class DecompilerEngine:
         )
         self._functions: Dict[int, IRFunction] = {}
 
-    # ---- Binary -> IR Lifting ----
+# Binary -> IR Lifting
 
     def lift_function(
         self,
@@ -301,7 +297,7 @@ class DecompilerEngine:
         }
         return _R2_MAP.get(op_type, IROperation.UNKNOWN)
 
-    # ---- Basic block construction ----
+# Basic block construction
 
     def _build_basic_blocks(
         self, instructions: List[IRInstruction]
@@ -390,7 +386,7 @@ class DecompilerEngine:
                 continue
         return None
 
-    # ---- IR 优化 ----
+# IR 优化
 
     def optimize_ir(self, func: IRFunction) -> IRFunction:
         """运行 IR 优化 passes
@@ -478,7 +474,7 @@ class DecompilerEngine:
                 insn.op = IROperation.MOV  # type: ignore
         return instructions
 
-    # ---- 控制流 structuring ----
+# 控制流 structuring
 
     def structure_control_flow(self, func: IRFunction) -> Dict[str, Any]:
         """Structure 控制流 CFG high-level constructs
@@ -573,7 +569,7 @@ class DecompilerEngine:
 
         return structure
 
-    # ---- 伪代码 generation ----
+# 伪代码 generation
 
     def generate_pseudocode(
         self, func: IRFunction, indent_size: int = 4
@@ -647,7 +643,7 @@ class DecompilerEngine:
         handler = pseudo_map.get(insn.op, lambda o: f"// {insn.op.value} {' '.join(o)}")
         return handler(insn.operands)
 
-    # ---- Convenience ----
+# Convenience
 
     def decompile(
         self, binary_path: str, start_address: int
@@ -681,9 +677,7 @@ class DecompilerEngine:
         }
 
 
-# ---------------------------------------------------------------------------
 # 反编译引擎Validator — 舍入-trip 校验
-# ---------------------------------------------------------------------------
 
 class ValidationError(Exception):
     """Raised 校验 fails"""
@@ -797,9 +791,7 @@ class DecompilerValidator:
             return {"equivalent": None, "note": "Z3 not available"}
 
 
-# ---------------------------------------------------------------------------
 # 反编译引擎Enhancer — 智能辅助 enhancement
-# ---------------------------------------------------------------------------
 
 class DecompilerEnhancer:
     """智能辅助 (LLM) 反编译 enhancement
@@ -930,9 +922,7 @@ class DecompilerEnhancer:
         return func
 
 
-# ---------------------------------------------------------------------------
 # 伪代码Generator — IR -> structured C-like
-# ---------------------------------------------------------------------------
 
 class PseudocodeGenerator:
     """构造 structured C-like 伪代码 IR
@@ -1024,9 +1014,7 @@ class PseudocodeGenerator:
                 self._generate_node(output, child, indent)
 
 
-# ---------------------------------------------------------------------------
 # TypingInferrer — SSA-based 类型推断
-# ---------------------------------------------------------------------------
 
 class TypingInferrer:
     """SSA-based 类型推断 constraint propagation

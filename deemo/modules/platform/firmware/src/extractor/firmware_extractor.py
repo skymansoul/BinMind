@@ -20,7 +20,6 @@ from src.core import ResourceNode
 
 logger = logging.getLogger(__name__)
 
-
 # 固件魔数库：魔术字节 → 格式名映射
 # 支持 20+ 种嵌入式固件格式识别，部分格式含多变体
 FIRMWARE_MAGICS = {
@@ -85,7 +84,6 @@ _VALUABLE_PATTERNS = {
     'embedded_elf_hdr': _re.compile(rb'\x7fELF', _re.IGNORECASE),
 }
 
-
 @dataclass
 class FirmwareFormat:
     name: str; offset: int = 0; size: int = 0
@@ -93,7 +91,6 @@ class FirmwareFormat:
 
     def __repr__(self):
         return f"FirmwareFormat(name={self.name}, offset={self.offset}, size={self.size})"
-
 
 class FirmwareExtractor:
     """
@@ -249,7 +246,7 @@ class FirmwareExtractor:
     def _calculate_entropy(self):
         try:
             with open(self.firmware_path, 'rb') as f:
-                data = f.read(1024 * 1024)
+                data = f.read
             return self._shannon_entropy(data) if data else 0.0
         except Exception as e:
             logger.debug(f"Entropy calculation failed: {e}"); return 0.0
@@ -730,10 +727,7 @@ class FirmwareExtractor:
             except Exception as e:
                 logger.warning(f"Failed to clean up temp directory: {e}")
 
-
 def create_firmware_extractor(firmware_path, output_base_dir=None, use_binwalk=True, use_jefferson=True):
     return FirmwareExtractor(firmware_path=firmware_path, output_base_dir=output_base_dir,
                              use_binwalk=use_binwalk, use_jefferson=use_jefferson)
-
-
 

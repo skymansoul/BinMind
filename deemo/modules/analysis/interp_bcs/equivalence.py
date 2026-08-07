@@ -2,7 +2,7 @@
 #
 # 对应论文:
 # Fast, Fine-Grained Equivalence Checking for Neural 反编译引擎s —
-#   arXiv:2501.04811 [待验证]
+# [待验证]
 #
 # 设计意图:
 #   反编译产物是对真实语义的近似，不能凭文本相似断言等价。本模块对
@@ -67,9 +67,7 @@ class EquivResult:
         }
 
 
-# ===========================================================================
 # 词法分析：把受限 C 子集切成 token 流
-# ===========================================================================
 
 _TOKEN_PAT = re.compile(r'''
     (?P<WS>\s+)
@@ -97,9 +95,7 @@ def _tokenize(code: str) -> List[Tuple[str, str]]:
     return tokens
 
 
-# ===========================================================================
 # 表达式 AST 与递归下降解析器
-# ===========================================================================
 # AST 形式:
 #   ('num', int) | ('id', name) | ('call', name, [args])
 #   ('unop', op, operand) | ('binop', op, l, r) | ('tern', c, t, f)
@@ -278,9 +274,7 @@ class _ExprParser:
         return ('num', 0)
 
 
-# ===========================================================================
 # 语句解析：把函数体解析为语句树
-# ===========================================================================
 # 语句形式:
 # block / (cond,, else) / / for / 返回 / decl / assign /
 #   expr / break / continue
@@ -514,9 +508,7 @@ def _extract_param_names(code: str) -> List[str]:
     return names
 
 
-# ===========================================================================
 # 受限 C 解释器：具体求值（采样对拍用）
-# ===========================================================================
 
 
 class _MiniCInterp:
@@ -703,9 +695,7 @@ class _MiniCInterp:
             self._eval(update, env)
 
 
-# ===========================================================================
 # 符号执行：把函数体翻译为 (guard, out) 路径集合
-# ===========================================================================
 
 
 class _SymbolicPathBuilder:
@@ -730,7 +720,7 @@ class _SymbolicPathBuilder:
         for i, p in enumerate(params):
             self.param_vars[p] = shared_params[i] if i < len(shared_params) else 0
 
-    # ---- 符号表达式翻译 ----
+# 符号表达式翻译
     def _sym_expr(self, ast: Any, env: Dict[str, Any]) -> Any:
         import z3
         tag = ast[0]
@@ -831,7 +821,7 @@ class _SymbolicPathBuilder:
                 parts.append(repr(a))
         return ','.join(parts)
 
-    # ---- 语句执行：返回继续状态 (env, guard) 列表 ----
+# 语句执行：返回继续状态 (env, guard) 列表
     def build(self, stmts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         import z3
         state = {'count': 0}
@@ -955,9 +945,7 @@ class _SymbolicPathBuilder:
         return dict(env)
 
 
-# ===========================================================================
 # 求解后端：优先接入 SymExec优化器.optimize_solve，失败回退裸 z3
-# ===========================================================================
 
 _optimizer_lock = threading.Lock()
 _optimizer_instance = None
@@ -1086,9 +1074,7 @@ def _z3_available() -> bool:
         return False
 
 
-# ===========================================================================
 # 顶层等价性检查器
-# ===========================================================================
 
 
 class EquivalenceChecker:
@@ -1107,9 +1093,7 @@ class EquivalenceChecker:
         self.max_loop_iters = max_loop_iters
         self._call_env: Dict[Tuple[str, str], Any] = {}
 
-    # ------------------------------------------------------------------
     # 主入口
-    # ------------------------------------------------------------------
     def check(self, decompiled: str, reference: str,
               param_names: Optional[List[str]] = None,
               input_ranges: Optional[List[Tuple[int, int]]] = None,
@@ -1145,7 +1129,7 @@ class EquivalenceChecker:
 
         ranges = input_ranges or [(0, 15)] * len(params)
 
-        # ---- 阶段 1: 输入采样对拍 ----
+# 阶段 1: 输入采样对拍
         sampling_verdict = self._sampling_check(
             stmts_a, stmts_b, params_a or params, params_b or params,
             ranges, evidence)
@@ -1154,7 +1138,7 @@ class EquivalenceChecker:
                                self._last_counterexample, 'sampling',
                                samples_run=self.samples)
 
-        # ---- 阶段 2: 符号路径比较 ----
+# 阶段 2: 符号路径比较
         if use_symbolic and _z3_available():
             sym_verdict = self._symbolic_check(stmts_a, stmts_b,
                                                params_a or params,
@@ -1178,9 +1162,7 @@ class EquivalenceChecker:
                            samples_run=self.samples,
                            paths_a=self._paths_a, paths_b=self._paths_b)
 
-    # ------------------------------------------------------------------
     # 采样对拍
-    # ------------------------------------------------------------------
     def _sampling_check(self, stmts_a: List[Dict[str, Any]],
                         stmts_b: List[Dict[str, Any]],
                         params_a: List[str], params_b: List[str],
@@ -1207,9 +1189,7 @@ class EquivalenceChecker:
         evidence.append(f'{self.samples} 组采样输出一致')
         return EquivVerdict.UNKNOWN
 
-    # ------------------------------------------------------------------
     # 符号路径比较
-    # ------------------------------------------------------------------
     _paths_a = 0
     _paths_b = 0
     _last_counterexample: Optional[Dict[str, Any]] = None

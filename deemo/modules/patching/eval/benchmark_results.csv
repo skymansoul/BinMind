@@ -1,21 +1,225 @@
-sample,vulns_found,patches,time_secs
-CVE-2012-0809_format_string,42,29,0.0
-CVE-2014-0160_heartbleed,36,23,0.0
-CVE-2015-0235_ghost_heap_overflow,38,24,0.0
-CVE-2016-10191_heap_overflow,38,24,0.0
-CVE-2016-4971_wget,42,29,0.0
-CVE-2017-18017_tcp_mss,36,23,0.0
-CVE-2018-1000001_glibc_realpath_heap_overflow,38,24,0.0
-CVE-2019-10149_uaf_exim,30,20,0.0
-CVE-2019-11477_tcp_sack,36,23,0.0
-CVE-2019-15947_uaf,32,22,0.0
-CVE-2020-10713_uaf_grub2,30,20,0.0
-CVE-2020-10757_stack_overflow,36,23,0.0
-CVE-2021-3156_sudo_heap_overflow,38,24,0.0
-CVE-2022-0185_uaf_filesystem,32,22,0.0
-CVE-2022-0847_dirty_pipe,36,23,0.0
-CVE-2023-0597_uaf_netfilter,30,20,0.0
-CVE-2023-27997_fortigate_heap_overflow,38,24,0.0
-CVE-2024-1086_uaf_nf_tables,30,20,0.0
-CVE-2024-21626_runc_heap_overflow,38,24,0.0
-CVE-2024-21887_cmd_inject,42,29,0.0
+sample,variant,tool,detected,tp,fp,fn,time_secs,peak_mem_mb,error
+CVE-2015-0235_ghost_heap_overflow,plain,BinMind,True,1,0,0,0.21,0.0,
+CVE-2015-0235_ghost_heap_overflow,plain,Angr,True,1,0,0,1.94,0.0,
+CVE-2015-0235_ghost_heap_overflow,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2015-0235_ghost_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2015-0235_ghost_heap_overflow,packed,BinMind,True,1,0,0,0.12,0.0,
+CVE-2015-0235_ghost_heap_overflow,packed,Angr,True,1,0,0,2.17,0.0,
+CVE-2015-0235_ghost_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2015-0235_ghost_heap_overflow,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2016-10191_heap_overflow,plain,BinMind,True,1,0,0,0.12,0.0,
+CVE-2016-10191_heap_overflow,plain,Angr,True,1,0,0,2.03,0.0,
+CVE-2016-10191_heap_overflow,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2016-10191_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2016-10191_heap_overflow,packed,BinMind,True,1,0,0,0.14,0.0,
+CVE-2016-10191_heap_overflow,packed,Angr,True,1,0,0,2.14,0.0,
+CVE-2016-10191_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2016-10191_heap_overflow,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2021-3156_sudo_heap_overflow,plain,BinMind,True,2,0,0,0.14,0.0,
+CVE-2021-3156_sudo_heap_overflow,plain,Angr,True,1,0,0,2.22,0.0,
+CVE-2021-3156_sudo_heap_overflow,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2021-3156_sudo_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2021-3156_sudo_heap_overflow,packed,BinMind,True,2,0,0,0.14,0.0,
+CVE-2021-3156_sudo_heap_overflow,packed,Angr,True,1,0,0,2.26,0.0,
+CVE-2021-3156_sudo_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2021-3156_sudo_heap_overflow,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2023-27997_fortigate_heap_overflow,plain,BinMind,True,1,0,0,0.15,0.0,
+CVE-2023-27997_fortigate_heap_overflow,plain,Angr,True,1,0,0,2.33,0.0,
+CVE-2023-27997_fortigate_heap_overflow,plain,QEMU+Trace,True,1,0,0,0.05,0.0,
+CVE-2023-27997_fortigate_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2023-27997_fortigate_heap_overflow,packed,BinMind,True,1,0,0,0.16,0.0,
+CVE-2023-27997_fortigate_heap_overflow,packed,Angr,True,1,0,0,2.05,0.0,
+CVE-2023-27997_fortigate_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2023-27997_fortigate_heap_overflow,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP001_constant_malloc_safe,plain,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP001_constant_malloc_safe,plain,Angr,True,0,1,0,2.03,0.0,
+CVE-2025-FP001_constant_malloc_safe,plain,QEMU+Trace,False,0,0,0,0.04,0.0,
+CVE-2025-FP001_constant_malloc_safe,plain,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP001_constant_malloc_safe,packed,BinMind,False,0,0,0,0.14,0.0,
+CVE-2025-FP001_constant_malloc_safe,packed,Angr,True,0,1,0,2.35,0.0,
+CVE-2025-FP001_constant_malloc_safe,packed,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP001_constant_malloc_safe,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP002_guarded_malloc_safe,plain,BinMind,False,0,0,0,0.16,0.0,
+CVE-2025-FP002_guarded_malloc_safe,plain,Angr,True,0,1,0,2.28,0.0,
+CVE-2025-FP002_guarded_malloc_safe,plain,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP002_guarded_malloc_safe,plain,Ghidra,False,0,0,0,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP002_guarded_malloc_safe,packed,BinMind,False,0,0,0,0.2,0.0,
+CVE-2025-FP002_guarded_malloc_safe,packed,Angr,True,0,1,0,2.26,0.0,
+CVE-2025-FP002_guarded_malloc_safe,packed,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP002_guarded_malloc_safe,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP003_alignment_safe,plain,BinMind,False,0,0,0,0.16,0.0,
+CVE-2025-FP003_alignment_safe,plain,Angr,True,0,1,0,2.02,0.0,
+CVE-2025-FP003_alignment_safe,plain,QEMU+Trace,False,0,0,0,0.04,0.0,
+CVE-2025-FP003_alignment_safe,plain,Ghidra,False,0,0,0,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP003_alignment_safe,packed,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP003_alignment_safe,packed,Angr,True,0,1,0,2.03,0.0,
+CVE-2025-FP003_alignment_safe,packed,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP003_alignment_safe,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP004_and_mask_guard,plain,BinMind,False,0,0,0,0.12,0.0,
+CVE-2025-FP004_and_mask_guard,plain,Angr,True,0,1,0,2.15,0.0,
+CVE-2025-FP004_and_mask_guard,plain,QEMU+Trace,False,0,0,0,0.04,0.0,
+CVE-2025-FP004_and_mask_guard,plain,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP004_and_mask_guard,packed,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP004_and_mask_guard,packed,Angr,True,0,1,0,2.17,0.0,
+CVE-2025-FP004_and_mask_guard,packed,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP004_and_mask_guard,packed,Ghidra,False,0,0,0,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP005_loop_bound_safe,plain,BinMind,False,0,0,0,0.16,0.0,
+CVE-2025-FP005_loop_bound_safe,plain,Angr,True,0,1,0,2.25,0.0,
+CVE-2025-FP005_loop_bound_safe,plain,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP005_loop_bound_safe,plain,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP005_loop_bound_safe,packed,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP005_loop_bound_safe,packed,Angr,True,0,1,0,2.07,0.0,
+CVE-2025-FP005_loop_bound_safe,packed,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP005_loop_bound_safe,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP006_minsize_guard,plain,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP006_minsize_guard,plain,Angr,True,0,1,0,2.21,0.0,
+CVE-2025-FP006_minsize_guard,plain,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP006_minsize_guard,plain,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP006_minsize_guard,packed,BinMind,False,0,0,0,0.14,0.0,
+CVE-2025-FP006_minsize_guard,packed,Angr,True,0,1,0,2.25,0.0,
+CVE-2025-FP006_minsize_guard,packed,QEMU+Trace,False,0,0,0,0.06,0.0,
+CVE-2025-FP006_minsize_guard,packed,Ghidra,False,0,0,0,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP007_cross_call_valid,plain,BinMind,False,0,0,0,0.16,0.0,
+CVE-2025-FP007_cross_call_valid,plain,Angr,True,0,1,0,1.89,0.0,
+CVE-2025-FP007_cross_call_valid,plain,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP007_cross_call_valid,plain,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP007_cross_call_valid,packed,BinMind,False,0,0,0,0.2,0.0,
+CVE-2025-FP007_cross_call_valid,packed,Angr,True,0,1,0,2.21,0.0,
+CVE-2025-FP007_cross_call_valid,packed,QEMU+Trace,False,0,0,0,0.04,0.0,
+CVE-2025-FP007_cross_call_valid,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP008_cmova_capped,plain,BinMind,False,0,0,0,0.15,0.0,
+CVE-2025-FP008_cmova_capped,plain,Angr,True,0,1,0,2.21,0.0,
+CVE-2025-FP008_cmova_capped,plain,QEMU+Trace,False,0,0,0,0.05,0.0,
+CVE-2025-FP008_cmova_capped,plain,Ghidra,False,0,0,0,0.06,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-FP008_cmova_capped,packed,BinMind,False,0,0,0,0.16,0.0,
+CVE-2025-FP008_cmova_capped,packed,Angr,True,0,1,0,1.87,0.0,
+CVE-2025-FP008_cmova_capped,packed,QEMU+Trace,False,0,0,0,0.04,0.0,
+CVE-2025-FP008_cmova_capped,packed,Ghidra,False,0,0,0,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP001_tainted_heap_overflow,plain,BinMind,True,2,0,0,0.19,0.0,
+CVE-2025-TP001_tainted_heap_overflow,plain,Angr,True,1,0,0,2.14,0.0,
+CVE-2025-TP001_tainted_heap_overflow,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP001_tainted_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP001_tainted_heap_overflow,packed,BinMind,True,2,0,0,0.18,0.0,
+CVE-2025-TP001_tainted_heap_overflow,packed,Angr,True,1,0,0,2.11,0.0,
+CVE-2025-TP001_tainted_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP001_tainted_heap_overflow,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP002_unbounded_heap_overflow,plain,BinMind,True,1,0,0,0.17,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,plain,Angr,True,1,0,0,2.25,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP002_unbounded_heap_overflow,packed,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,packed,Angr,True,1,0,0,2.06,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP002_unbounded_heap_overflow,packed,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP003_loop_bound,plain,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP003_loop_bound,plain,Angr,True,1,0,0,2.32,0.0,
+CVE-2025-TP003_loop_bound,plain,QEMU+Trace,True,1,0,0,0.05,0.0,
+CVE-2025-TP003_loop_bound,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP003_loop_bound,packed,BinMind,True,1,0,0,0.17,0.0,
+CVE-2025-TP003_loop_bound,packed,Angr,True,1,0,0,2.24,0.0,
+CVE-2025-TP003_loop_bound,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP003_loop_bound,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP004_off_by_one,plain,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP004_off_by_one,plain,Angr,True,1,0,0,2.17,0.0,
+CVE-2025-TP004_off_by_one,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP004_off_by_one,plain,Ghidra,False,0,0,1,0.06,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP004_off_by_one,packed,BinMind,True,1,0,0,0.13,0.0,
+CVE-2025-TP004_off_by_one,packed,Angr,True,1,0,0,2.14,0.0,
+CVE-2025-TP004_off_by_one,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP004_off_by_one,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP005_calc_error,plain,BinMind,True,1,0,0,0.13,0.0,
+CVE-2025-TP005_calc_error,plain,Angr,True,1,0,0,2.21,0.0,
+CVE-2025-TP005_calc_error,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP005_calc_error,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP005_calc_error,packed,BinMind,True,1,0,0,0.13,0.0,
+CVE-2025-TP005_calc_error,packed,Angr,True,1,0,0,2.31,0.0,
+CVE-2025-TP005_calc_error,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP005_calc_error,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP006_direct_taint,plain,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP006_direct_taint,plain,Angr,True,1,0,0,2.29,0.0,
+CVE-2025-TP006_direct_taint,plain,QEMU+Trace,True,1,0,0,0.05,0.0,
+CVE-2025-TP006_direct_taint,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP006_direct_taint,packed,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP006_direct_taint,packed,Angr,True,1,0,0,2.32,0.0,
+CVE-2025-TP006_direct_taint,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP006_direct_taint,packed,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP007_cross_func_alloc,plain,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP007_cross_func_alloc,plain,Angr,True,1,0,0,2.28,0.0,
+CVE-2025-TP007_cross_func_alloc,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP007_cross_func_alloc,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP007_cross_func_alloc,packed,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP007_cross_func_alloc,packed,Angr,True,1,0,0,2.35,0.0,
+CVE-2025-TP007_cross_func_alloc,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP007_cross_func_alloc,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP008_mul_size,plain,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP008_mul_size,plain,Angr,True,1,0,0,2.31,0.0,
+CVE-2025-TP008_mul_size,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP008_mul_size,plain,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP008_mul_size,packed,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP008_mul_size,packed,Angr,True,1,0,0,2.03,0.0,
+CVE-2025-TP008_mul_size,packed,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP008_mul_size,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP009_indirect_taint,plain,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP009_indirect_taint,plain,Angr,True,1,0,0,2.17,0.0,
+CVE-2025-TP009_indirect_taint,plain,QEMU+Trace,True,1,0,0,0.05,0.0,
+CVE-2025-TP009_indirect_taint,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP009_indirect_taint,packed,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP009_indirect_taint,packed,Angr,True,1,0,0,2.06,0.0,
+CVE-2025-TP009_indirect_taint,packed,QEMU+Trace,False,0,0,1,0.06,0.0,
+CVE-2025-TP009_indirect_taint,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP010_loop_write,plain,BinMind,True,1,0,0,0.13,0.0,
+CVE-2025-TP010_loop_write,plain,Angr,True,1,0,0,2.16,0.0,
+CVE-2025-TP010_loop_write,plain,QEMU+Trace,True,1,0,0,0.05,0.0,
+CVE-2025-TP010_loop_write,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP010_loop_write,packed,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP010_loop_write,packed,Angr,True,1,0,0,2.18,0.0,
+CVE-2025-TP010_loop_write,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP010_loop_write,packed,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP011_call_ret_size,plain,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP011_call_ret_size,plain,Angr,True,1,0,0,2.27,0.0,
+CVE-2025-TP011_call_ret_size,plain,QEMU+Trace,True,1,0,0,0.04,0.0,
+CVE-2025-TP011_call_ret_size,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP011_call_ret_size,packed,BinMind,True,1,0,0,0.17,0.0,
+CVE-2025-TP011_call_ret_size,packed,Angr,True,1,0,0,1.89,0.0,
+CVE-2025-TP011_call_ret_size,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP011_call_ret_size,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP012_realloc_expand,plain,BinMind,True,2,0,0,0.14,0.0,
+CVE-2025-TP012_realloc_expand,plain,Angr,True,1,0,0,2.24,0.0,
+CVE-2025-TP012_realloc_expand,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP012_realloc_expand,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP012_realloc_expand,packed,BinMind,True,2,0,0,0.16,0.0,
+CVE-2025-TP012_realloc_expand,packed,Angr,True,1,0,0,2.16,0.0,
+CVE-2025-TP012_realloc_expand,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP012_realloc_expand,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP013_struct_field,plain,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP013_struct_field,plain,Angr,True,1,0,0,2.26,0.0,
+CVE-2025-TP013_struct_field,plain,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP013_struct_field,plain,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP013_struct_field,packed,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP013_struct_field,packed,Angr,True,1,0,0,2.3,0.0,
+CVE-2025-TP013_struct_field,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP013_struct_field,packed,Ghidra,False,0,0,1,0.05,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP014_array_idx,plain,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP014_array_idx,plain,Angr,True,1,0,0,1.94,0.0,
+CVE-2025-TP014_array_idx,plain,QEMU+Trace,True,1,0,0,0.04,0.0,
+CVE-2025-TP014_array_idx,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP014_array_idx,packed,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP014_array_idx,packed,Angr,True,1,0,0,2.22,0.0,
+CVE-2025-TP014_array_idx,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP014_array_idx,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP015_chained_arith,plain,BinMind,True,1,0,0,0.17,0.0,
+CVE-2025-TP015_chained_arith,plain,Angr,True,1,0,0,2.15,0.0,
+CVE-2025-TP015_chained_arith,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP015_chained_arith,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP015_chained_arith,packed,BinMind,True,1,0,0,0.15,0.0,
+CVE-2025-TP015_chained_arith,packed,Angr,True,1,0,0,2.21,0.0,
+CVE-2025-TP015_chained_arith,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP015_chained_arith,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP016_strlen_offby,plain,BinMind,True,1,0,0,0.16,0.0,
+CVE-2025-TP016_strlen_offby,plain,Angr,True,1,0,0,1.98,0.0,
+CVE-2025-TP016_strlen_offby,plain,QEMU+Trace,False,0,0,1,0.04,0.0,
+CVE-2025-TP016_strlen_offby,plain,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found
+CVE-2025-TP016_strlen_offby,packed,BinMind,True,1,0,0,0.14,0.0,
+CVE-2025-TP016_strlen_offby,packed,Angr,True,1,0,0,2.27,0.0,
+CVE-2025-TP016_strlen_offby,packed,QEMU+Trace,False,0,0,1,0.05,0.0,
+CVE-2025-TP016_strlen_offby,packed,Ghidra,False,0,0,1,0.04,0.0,GHIDRA_HOME not set / Ghidra not found

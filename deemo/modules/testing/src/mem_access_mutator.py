@@ -15,9 +15,9 @@
 #   4. 生成"边界+1"变异——精确攻击推断的chunk边界
 #   5. 对偏移敏感字节做越界访问变异
 #
-# 参考文献:
-#   CtxFuzz (TASE 2024) — 上下文堆操作序列引导fuzzing;
-#   malloc maleficarum (Phrack 2009) — 堆布局利用的经典参考
+# 文献:
+#   CtxFuzz — 上下文堆操作序列引导fuzzing;
+#   malloc maleficarum — 堆布局利用的经典参考
 
 from __future__ import annotations
 

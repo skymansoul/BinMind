@@ -17,23 +17,18 @@
 局限: 不处理自定义分配器(如内核的kmalloc/slab)。检测到非标准分配器时
       保守处理——使用原始requested size做比较, 宁可误报不漏报。
 
-参考:
   - glibc malloc.c (source): chunk_size = (request + 8 + 0xF) & ~0xF, min 0x20
   - jemalloc size_classes.sh: 预定义的size class查找表
 """
 
-from __future__ import annotations
-
 from enum import Enum
 from typing import Dict, Optional, Tuple
-
 
 class AllocatorType(Enum):
     GLIBC_PTMALLOC2 = 'glibc-ptmalloc2'
     JEMALLOC = 'jemalloc'
     TCMALLOC = 'tcmalloc'
     UNKNOWN = 'unknown'
-
 
 # jemalloc size classes (x86_64, 4KB pages) —— 近似值, 取自jemalloc 5.3
 _JEMALLOC_SIZE_CLASSES = [
@@ -49,7 +44,6 @@ _TCMALLOC_SIZE_CLASSES = [
     208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512,
     576, 640, 704, 768, 832, 896, 960, 1024,
 ]
-
 
 def detect_allocator(binary_path: str) -> AllocatorType:
     """检测二进制使用的内存分配器类型。"""
@@ -68,7 +62,6 @@ def detect_allocator(binary_path: str) -> AllocatorType:
     except Exception:
         pass
     return AllocatorType.UNKNOWN
-
 
 def effective_chunk_size(requested_bytes: int,
                          allocator: AllocatorType = AllocatorType.GLIBC_PTMALLOC2,
@@ -107,7 +100,6 @@ def effective_chunk_size(requested_bytes: int,
     else:  # UNKNOWN
         return requested_bytes  # 保守: 使用原始请求大小
 
-
 def is_write_safe(requested_bytes: int, write_bytes: int,
                   allocator: AllocatorType = AllocatorType.GLIBC_PTMALLOC2,
                   arch_bits: int = 64) -> Tuple[bool, str]:
@@ -130,7 +122,6 @@ def is_write_safe(requested_bytes: int, write_bytes: int,
             f'write({write_bytes}B) > effective_chunk({effective}B) '
             f'[requested={requested_bytes}B, overflow={write_bytes - effective}B]'
         )
-
 
 def apply_allocator_filter(
     findings: list,

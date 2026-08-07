@@ -15,7 +15,7 @@ from .trainer import (
     CosineAnnealingLR,
 )
 
-# 困难负样本挖掘 — CFG结构感知 + 课程学习 (2025-08-02)
+# 困难负样本挖掘 — CFG结构感知 + 课程学习
 from .hard_negative_mining import (
     cfg_structure_distance,
     StructureAwareNegativeSampler,

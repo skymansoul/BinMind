@@ -6,7 +6,7 @@
 # d=1 → 纯随机 (高方差), d→∞ → JSQ (join-shortest-queue, 最优但开销大)
 # d=2 → 指数级改善尾部延迟而仅 2× 探测开销
 #
-# Varma et al. (Stochastic Systems, 2025) 给出了 d 与队列长度的精确关系:
+# Varma et al. 给出了 d 与队列长度的精确关系:
 #   在 sub-Halfin-Whitt 区域 (λ = n - n^{1-γ}) 中:
 #     d = Θ((n^γ log n)^{1/m}) → 队列集中分布在长度 m
 #   这个结果依赖稳态 λ。实际系统的 λ 是时变的。
@@ -126,7 +126,7 @@ class AdaptivePowerOfD:
         mean_l = sum(loads) / max(len(loads), 1)
         if mean_l <= 0:
             return 0.0
-        # d 的效应: 相当于将服务率提升了 ≈ log(d) 倍 (Mitzenmacher 2001)
+        # d 的效应: 相当于将服务率提升了 ≈ log(d) 倍
         effective_rate = 1.0 + math.log(max(1, self._d))
         theta = effective_rate / max(mean_l, 0.01)
         return min(1.0, math.exp(-theta * x))

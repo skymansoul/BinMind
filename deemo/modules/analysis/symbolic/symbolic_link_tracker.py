@@ -278,12 +278,10 @@ def detect_toctou_race(operations: List[Dict[str, str]]) -> List[TOCTOUVulnerabi
     return vulnerabilities
 
 
-# =============================================================================
 # 三轮增强 — 文件系统事件监控 (FilesystemEventMonitor)
 # 使用 os.scandir 高效轮询目录，通过 (inode, mtime) 三元组对比检测链接变更
 # 权衡：轮询频率由 fs_poll_interval 控制 — 太短则 CPU 开销大，太长可能
 # 错过短时窗口。默认 2 秒是 empirical sweet spot
-# =============================================================================
 
 # 文件系统快照条目类型: (inode: int, mtime: float)
 _FsSnapshotEntry = Tuple[int, float]
@@ -476,10 +474,8 @@ class FilesystemEventMonitor:
         return events
 
 
-# =============================================================================
 # 三轮增强 — 竞争窗口估算 (RaceWindowEstimator)
 # 当 TOCTOU 被检出后，精确计算操作间的时间窗口并评估可利用性
-# =============================================================================
 
 class RaceWindowEstimator:
     """估算 TOCTOU race window size 漏洞利用ability
@@ -575,10 +571,8 @@ class RaceWindowEstimator:
             return None
 
 
-# =============================================================================
 # 三轮增强 — 漏洞利用模板生成
 # 产出 bash symlink-swap 循环脚本骨架，用于验证 TOCTOU 窗口
-# =============================================================================
 
 def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
     """构造 a bash shell script skeleton for testing a detected TOCTOU window
@@ -605,7 +599,6 @@ def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
     _sleep_interval = "0.001" if risk == "critical" else "0.01"
 
     exploit_skeleton = f'''#!/bin/bash
-# =============================================================================
 # TOCTOU 漏洞利用 Template — BinMind Auto-Generated
 # Target path: {path}
 # Risk level: {risk}
@@ -619,18 +612,17 @@ def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
 # 2. 调整 SLEEP_INTERVAL 以匹配竞争窗口大小（越小越快翻转）
 # 3. 在另一个终端中运行易受攻击的程序
 # 4. Ctrl+C 停止翻转循环
-# =============================================================================
 
 set -euo pipefail
 
-# ---- 配置 ----
+# 配置
 TARGET_LINK="{path}"
 LEGIT_TARGET="/tmp/toctou_legit_target"
 MALICIOUS_TARGET="/tmp/toctou_malicious_target"
 SLEEP_INTERVAL={_sleep_interval}  # 翻转间隔（秒）
 MAX_ITERATIONS=50000
 
-# ---- 环境准备 ----
+# 环境准备
 setup_targets() {{
     echo "[*] Creating target files..."
     echo "legit_data" > "$LEGIT_TARGET"
@@ -646,7 +638,7 @@ cleanup() {{
 
 trap cleanup SIGINT SIGTERM
 
-# ---- 符号链接翻转循环 ----
+# 符号链接翻转循环
 race_swap() {{
     local count=0
     while [[ $count -lt $MAX_ITERATIONS ]]; do
@@ -663,7 +655,7 @@ race_swap() {{
     echo "[!] Max iterations reached — race window may be too narrow"
 }}
 
-# ---- 主入口 ----
+# 主入口
 echo "============================================"
 echo " TOCTOU Exploit Verifier"
 echo " Target: $TARGET_LINK"

@@ -1,7 +1,7 @@
 # ShadowScope: GPU 侧信道监控与内核完整性验证
-# 参考:
+#
 #   "ShadowScope: GPU Monitoring and Validation via Composable Side Channel Signals"
-#     (arXiv 2509.00300, Sep 2025) — Almusaddar et al.
+# — Almusaddar et al.
 #     NVIDIA V100/RTX4060 上实现 GPU 内核完整性监控, 开销 4.6%
 #     检测: 缓冲区溢出, Rowhammer, mind-control 攻击, DoS
 #     方法: 从性能计数器 + 时序信号构建 golden model, 运行时比对偏差

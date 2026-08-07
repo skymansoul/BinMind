@@ -12,11 +12,10 @@
 #   对依赖图进行拓扑排序→保证写入顺序正确
 #   多阶段间接写: 若不能直接写目标T, 搜索可写地址空间中
 #   是否存在指向T或T附近地址的指针→先写该指针→再通过它写T
-# 参考 (已验证真实):
-#   Shacham et al. "Return-Oriented Programming" (CCS 2007) —
+# (已验证真实):
+#   Shacham et al. "Return-Oriented Programming" —
 #     write-what-where原语的形式化
 #   pwntools fmtstr module — 部分覆写和多地址写入的实践总结
-from __future__ import annotations
 import logging, math, re
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -138,12 +137,12 @@ class MemoryWritePlanner:
                 # 检查ptr_addr是否在已规划的写入冲突中
                 if ptr_addr in plans:
                     continue
-                # 步骤1: 将target地址写入ptr_addr
+                # 将target地址写入ptr_addr
                 step1 = WriteStep(ptr_addr, target, 8, "indirect_ptr",
                                   f"在0x{ptr_addr:x}放置指向0x{target:x}的指针")
                 if not self._is_legal_value(target, c):
                     continue
-                # 步骤2: 通过ptr_addr写入target的新值
+                # 通过ptr_addr写入target的新值
                 step2 = WriteStep(ptr_addr, 0, 8, "indirect_deref",
                                   f"通过[0x{ptr_addr:x}]覆写0x{target:x}",
                                   depends_on=0)
@@ -163,7 +162,7 @@ class MemoryWritePlanner:
         return (affected_start <= addr < affected_end or
                 plan.target_address <= addr < plan.target_address + 8)
 
-    # ── 单目标写入方法 (保持原有接口) ──
+# 单目标写入方法 (保持原有接口)
 
     def _plan_partial(self, addr: int, old: int, new: int,
                       known_high: int, c: WriteConstraint) -> WritePlan:

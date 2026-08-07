@@ -20,7 +20,7 @@ vinserti128 只影响向量寄存器的特定 lane
 ref: Intel SDM Vol.1 §3.4.1.1 (General-Purpose 寄存器s 64-Bit Mode);
 ARM ARM §C1.2.5 (NEON scalar operations arrange specifiers);
 Schwartz et al. " Ever Wanted Dynamic 污点分析."
-(IEEE S&P 2010) — 全寄存器模型的局限性在第 4.2 节讨论
+ — 全寄存器模型的局限性在第 4.2 节讨论
 """
 
 from __future__ import annotations
@@ -32,9 +32,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 寄存器架构定义
-# ---------------------------------------------------------------------------
 
 # x86_64 通用寄存器及其重叠关系
 # 格式: canonical_name → [(offset_from_base, size_in_bytes, alias_name),.]
@@ -75,9 +73,7 @@ class Arch(IntEnum):
     ARM64 = 1
 
 
-# ---------------------------------------------------------------------------
 # 寄存器污点状态的内部表示
-# ---------------------------------------------------------------------------
 
 @dataclass
 class _RegTaint:
@@ -128,9 +124,7 @@ class SubregTaintTracker:
         else:
             self._init_arm64_regs()
 
-    # -------------------------------------------------------------------
     # 初始化
-    # -------------------------------------------------------------------
 
     def _init_x86_regs(self) -> None:
         for canon in _X86_64_GPR_ALIASES:
@@ -150,9 +144,7 @@ class SubregTaintTracker:
             self.regs[f"V{i}"] = _RegTaint(size=16)  # 128-bit NEON
         self.regs["SP"] = _RegTaint(size=8)
 
-    # -------------------------------------------------------------------
     # 污点标签分配
-    # -------------------------------------------------------------------
 
     def new_label(self, name: str = "") -> int:
         """分配一个新的污点标签位。调用方用此标记每个独立的污染源"""
@@ -167,9 +159,7 @@ class SubregTaintTracker:
             self.label_names[lb] = name
         return lb
 
-    # -------------------------------------------------------------------
     # 寄存器别名解析
-    # -------------------------------------------------------------------
 
     def _resolve_x86(self, reg_name: str) -> Tuple[str, int, int]:
         """将 x86 寄存器名解析为 (canonical_name, byte_offset, byte_s)
@@ -209,9 +199,7 @@ class SubregTaintTracker:
             return (base, 0, lane_count * el_size, None)
         return (upper, 0, self.regs.get(upper, _RegTaint(size=8)).size, None)
 
-    # -------------------------------------------------------------------
     # 读写操作
-    # -------------------------------------------------------------------
 
     def read(self, reg_name: str, offset: int = 0, size: int = 0) -> int:
         """读取寄存器指定字节范围的污点掩码
@@ -272,9 +260,7 @@ class SubregTaintTracker:
                 for i in range(min(16, end)):
                     self.regs[ymm_name].taint_bytes[i] = rt.taint_bytes[i]
 
-    # -------------------------------------------------------------------
     # SIMD lane 操作
-    # -------------------------------------------------------------------
 
     def read_lane(self, reg_name: str, lane: int, el_size: int) -> int:
         """读取 SIMD 寄存器的特定 lane
@@ -293,9 +279,7 @@ class SubregTaintTracker:
         byte_offset = lane * el_size
         self.write(reg_name, taint_mask, offset=byte_offset, size=el_size)
 
-    # -------------------------------------------------------------------
     # 污点传播 —— 按常见指令语义
-    # -------------------------------------------------------------------
 
     def propagate_mov(self, dst: str, src: str) -> None:
         """MOV 语义：dst 完全继承 src 的污点"""
@@ -357,9 +341,7 @@ class SubregTaintTracker:
                 for i in range(4, rt.size):
                     rt.taint_bytes[i] = 0
 
-    # -------------------------------------------------------------------
     # 查询与序列化
-    # -------------------------------------------------------------------
 
     def is_tainted(self, reg_name: str, labels: Optional[Set[int]] = None) -> bool:
         """检查寄存器是否有污点（可选过滤特定标签）"""

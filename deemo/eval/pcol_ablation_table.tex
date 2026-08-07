@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{PCOL Ablation Study --- Incremental Contribution of Path-Condition Filtering Submodules}
+\label{tab:pcol_ablation}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Config & TP & FP & TN & FN & P & R & F1 & FPR \\
+\midrule
+  B0_HOIG_Only & 7 & 13 & 1 & 0 & 0.3500 & 1.0000 & 0.5185 & 0.9286 \\
+  B1_Mutex & 7 & 5 & 9 & 0 & 0.5833 & 1.0000 & 0.7368 & 0.3571 \\
+  B2_Mutex_EarlyRet & 7 & 1 & 13 & 0 & 0.8750 & 1.0000 & 0.9333 & 0.0714 \\
+  B3_Full_PCOL & 7 & 0 & 14 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

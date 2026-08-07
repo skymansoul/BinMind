@@ -1,6 +1,6 @@
 # 扫描调度模块 —— 对编译产物调用检测引擎, 收集原始输出。
 # 独立于编译和结果解析, 支持超时控制和并发。
-# 创建: 2026-08-14
+# 创建: 2026-07-13
 
 import json, os, subprocess, sys, time
 from dataclasses import dataclass, field

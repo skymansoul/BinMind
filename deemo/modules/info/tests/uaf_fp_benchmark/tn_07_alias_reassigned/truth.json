@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_07_alias_reassigned",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 别名重指向新对象",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "q 在 p 释放后重新 malloc, 解引用新对象"
+}

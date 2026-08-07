@@ -50,7 +50,7 @@ class CircuitBreaker:
         self._last_change = time.monotonic()
         self._lock = threading.Lock()
 
-    # ---- 属性 ----
+# 属性
 
     @property
     def state(self) -> CircuitState:
@@ -66,7 +66,7 @@ class CircuitBreaker:
     def last_state_change(self) -> float:
         return self._last_change
 
-    # ---- 核心逻辑 ----
+# 核心逻辑
 
     def before_call(self) -> bool:
         """调用前检测：是否允许执行。"""
@@ -106,7 +106,7 @@ class CircuitBreaker:
         self._state = new_state
         self._last_change = time.monotonic()
 
-    # ---- 序列化 ----
+# 序列化
 
     def to_dict(self) -> dict:
         return {
@@ -133,7 +133,7 @@ class CircuitBreaker:
         )
 
 
-# ===== 滑动窗口熔断器 — 基于时间衰减的故障计数 =====
+# 滑动窗口熔断器 — 基于时间衰减的故障计数
 
 class SlidingWindowBreaker:
     """基于滑动窗口的熔断器。与计数型不同：故障按时间自然衰减，
@@ -197,7 +197,7 @@ class SlidingWindowBreaker:
         return f"SlidingWindowBreaker({self.name!r}, state={self._state.value})"
 
 
-# ===== MultiBreaker =====
+# MultiBreaker
 
 class MultiBreaker:
     """多服务熔断管理器 — dict 接口 + 懒创建"""

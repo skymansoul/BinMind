@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+\centering
+\caption{Comprehensive Comparison (62 samples: 38 VULN + 24 SAFE)}
+\label{tab:comprehensive-comparison}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Tool & TP & FP & TN & FN & Prec. & Rec. & F1 & FPR \\
+\midrule
+BinMind-Full & 22 & 6 & 18 & 16 & 0.79 & 0.58 & 0.67 & 0.25 \\
+Regex-Baseline & 10 & 2 & 22 & 28 & 0.83 & 0.26 & 0.40 & 0.08 \\
+Angr-Source & 32 & 20 & 4 & 6 & 0.62 & 0.84 & 0.71 & 0.83 \\
+\bottomrule
+\end{tabular}
+\end{table}

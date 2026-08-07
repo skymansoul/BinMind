@@ -5,12 +5,11 @@
 2025-08-06 08:45 - 分支比临界性评估: n<1 subcritical, n≥1 supercritical
 2025-08-07 16:22 - 崩溃簇预测: λ(t) 峰值→追加资源→更快发现关联崩溃
 
-参考:
-  Hawkes (1971) "Spectra of Some Self-Exciting and Mutually Exciting Point
+  Hawkes "Spectra of Some Self-Exciting and Mutually Exciting Point
     Processes" (Biometrika) — 原始 Hawkes 过程定义
-  Ogata (1988) "Statistical Models for Earthquake Occurrences and Residual
+  Ogata "Statistical Models for Earthquake Occurrences and Residual
     Analysis" (JASA) — 用于地震预测的 Hawkes 过程 ETAS 模型
-  Laub, Taimre & Pollett (2015) "Hawkes Processes" (arXiv:1507.02822)
+  Laub, Taimre & Pollett "Hawkes Processes"
     — Hawkes 过程综述, 强度函数的参数估计
 
 在 fuzzing 文献中的位置:
@@ -35,13 +34,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-
-# ---- SECD 参数 ----
+# SECD 参数
 _DEFAULT_LAMBDA_0 = 0.001     # 基线强度 (每次执行的平均崩溃率)
 _DEFAULT_ALPHA = 0.05         # 激励强度
 _DEFAULT_BETA = 0.1           # 指数衰减速率
 _MAX_CRASHES_TRACKED = 100    # 最大追踪崩溃数
-
 
 @dataclass
 class CrashEvent:
@@ -49,7 +46,6 @@ class CrashEvent:
     exec_index: int              # 发现时的执行序号
     crash_hash: str              # 去重哈希
     timestamp: float = field(default_factory=time.time)
-
 
 class HawkesCrashModel:
     """Hawkes 过程崩溃发现模型.

@@ -3,18 +3,18 @@
 # CBOM是SBOM的密码学扩展, 记录软件中所有密码学组件的类型/参数/合规状态。
 #
 # 此模块聚合所有检测器输出, 构建标准CBOM JSON:
-#   - 检测到的加密算法 (含NIST/FIPS合规标记)
-#   - 密钥材质发现 (类型/大小/存储/保护机制)
-#   - 证书资产 (X.509, SCT, 有效期)
-#   - 随机数生成器 (PRNG/TRNG)及熵源
+# 检测到的加密算法 (含NIST/FIPS合规标记)
+# 密钥材质发现 (类型/大小/存储/保护机制)
+# 证书资产 (X.509, SCT, 有效期)
+# 随机数生成器 (PRNG/TRNG)及熵源
 #   - 密码协议 (TLS/SSH/QUIC/WireGuard/MLS/Signal)及密码套件
-#   - PQC迁移就绪状态评估
-#   - 密码学库及依赖版本
+# PQC迁移就绪状态评估
+# 密码学库及依赖版本
 #
-# 参考: OWASP CBOM specification (CycloneDX v1.6+), NIST IR 8472 (CBOM usage),
+# OWASP CBOM specification (CycloneDX v1.6+), NIST IR 8472 (CBOM usage),
 # Executive Order 14028 §4 (联邦软件SBOM要求),
 # CycloneDX Cryptography Taxonomy,
-# QED-Lite (Kim et al., 2026, IACR ePrint 2026/660) PQC风险分类数据库。
+# QED-Lite PQC风险分类数据库。
 #
 # 新增: PQC量子威胁评分 (基于QED-Lite分类数据库),
 # NIST SP 800-57 Part 1 Rev.5密钥强度映射, EUCRA (EU Cyber Resilience Act)合规标记,
@@ -30,7 +30,7 @@ from datetime import datetime
 _log = logging.getLogger(__name__)
 
 
-# ==== NIST SP 800-57 Part 1 Rev.5 安全强度映射 ====
+# NIST SP 800-57 Part 1 Rev.5 安全强度映射
 # 算法->bits of security, 判断给定密钥长度是否达到特定安全强度
 _NIST_SECURITY_STRENGTH = {
     # 对称密钥
@@ -54,7 +54,7 @@ _NIST_SECURITY_STRENGTH = {
     'Falcon-512': 128, 'Falcon-1024': 256,
 }
 
-# ==== QED-Lite PQC风险分类数据库 (Kim et al., 2026) ====
+# QED-Lite PQC风险分类数据库
 # 密码库版本->PQC支持状态映射
 _PQC_LIBRARY_RISK = {
     'OpenSSL': {
@@ -310,7 +310,7 @@ class CBOMGenerator:
         return json.dumps(asdict(doc), indent=indent, ensure_ascii=False, default=str)
 
 
-# ==== 便捷函数 ====
+# 便捷函数
 
 def generate_cbom(component_name: str = "", component_version: str = "",
                    **kwargs) -> CBOMDocument:

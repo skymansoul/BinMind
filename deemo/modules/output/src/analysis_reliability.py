@@ -16,8 +16,7 @@
   可靠度 = 1 - max(各维度的不确定性贡献)
   R=1.0 → 分析结果完全可信；R<0.3 → 结果大概率不可靠。
 
-参考:
-  无现有量化模型 (2026-08 检索确认).
+  无现有量化模型.
   Detect It Easy, PEiD, Exeinfo PE: 检测但不量化.
   arXiv 2025.12: 编译器优化可故意削弱 ML 分析.
 
@@ -29,7 +28,6 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # 已知壳的标准节名模式
 _KNOWN_PACKER_SECTIONS = frozenset({
@@ -50,7 +48,6 @@ _STANDARD_SECTIONS = frozenset({
     'CODE', 'DATA', 'BSS', '.itext', '.itext0',
 })
 
-
 @dataclass
 class ReliabilityScore:
     """二进制分析可靠度。"""
@@ -62,7 +59,6 @@ class ReliabilityScore:
     overall_reliability: float     # 0-1, 综合可靠度
     packer_suspected: str = ''     # 推测的壳类型
     recommendation: str = ''
-
 
 def _section_entropy_anomaly(
     section_entropies: Dict[str, float],
@@ -91,7 +87,6 @@ def _section_entropy_anomaly(
 
     return round(min(anomaly, 1.0), 2)
 
-
 def _import_sparsity(import_count: int, total_functions: int) -> float:
     """
     导入表稀疏度 — 导入过少暗示 IAT 混淆或运行时动态解析。
@@ -108,7 +103,6 @@ def _import_sparsity(import_count: int, total_functions: int) -> float:
     if ratio < 0.02:
         return round(0.6 - ratio * 20, 2)  # 越稀疏越可疑
     return 0.0
-
 
 def _section_name_anomaly(section_names: List[str]) -> float:
     """
@@ -129,7 +123,6 @@ def _section_name_anomaly(section_names: List[str]) -> float:
     if has_packer_section:
         return 0.9
     return round(min(unknown_count * 0.4, 0.8), 2)
-
 
 def _entry_point_anomaly(
     entry_section: str,
@@ -156,7 +149,6 @@ def _entry_point_anomaly(
             return 0.75
     return 0.3
 
-
 def _detect_packer(section_names: List[str]) -> str:
     """从节名推测壳类型。"""
     sn_set = {s.lower() for s in section_names}
@@ -173,7 +165,6 @@ def _detect_packer(section_names: List[str]) -> str:
     if any('mpress' in s for s in sn_set):
         return 'MPRESS'
     return 'unknown'
-
 
 def assess_reliability(
     binary_name: str = '',

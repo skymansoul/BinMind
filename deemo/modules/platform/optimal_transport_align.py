@@ -24,12 +24,12 @@
   适用于固件版本演化中的漏洞传播模式漂移检测。
 
 与已有工作的区分：
-  GW鲁棒性工作 (Chakrabarty et al. Dec 2024): 关注GW距离对异常值的脆弱性，
+  GW鲁棒性工作: 关注GW距离对异常值的脆弱性，
     不涉及漏洞传播图的语义特征对齐。
   本模块：将OT的成本函数设计为传播特定的特征空间，而非通用的GW框架。
 
-ref: Cuturi (NeurIPS 2013) "Sinkhorn Distances: Lightspeed Computation of Optimal Transport".
-ref: Peyre & Cuturi (2019) "Computational Optimal Transport" -- 综合参考。
+ref: Cuturi "Sinkhorn Distances: Lightspeed Computation of Optimal Transport".
+ref: Peyre & Cuturi "Computational Optimal Transport" -- 综合参考。
 """
 
 from __future__ import annotations

@@ -1,0 +1,159 @@
+{
+  "n_samples": 18,
+  "metrics": {
+    "recall": 1.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "tp": 14,
+    "tn": 4,
+    "fp": 0,
+    "fn": 0,
+    "avg_time_ms": 26.0
+  },
+  "results": [
+    {
+      "sample_id": "sample01_direct_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0329,
+      "n_findings": 2
+    },
+    {
+      "sample_id": "sample02_int_overflow_to_heap",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0209,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample03_insufficient_guard",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0221,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample04_cross_function_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.022,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample05_loop_cumulative_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.022699999999999998,
+      "n_findings": 2
+    },
+    {
+      "sample_id": "sample06_sprintf_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.06,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample07_memcpy_computed_size",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0225,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample08_alignment_padding_safe",
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "elapsed_sec": 0.022,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample09_strncpy_truncation_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0215,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample10_realloc_shrink_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0212,
+      "n_findings": 2
+    },
+    {
+      "sample_id": "sample11_calloc_wraparound",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0222,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample12_conditional_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0208,
+      "n_findings": 2
+    },
+    {
+      "sample_id": "sample13_multi_alloc_pointer_confusion",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0254,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample14_nested_struct_overflow",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.0237,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample15_properly_guarded_safe",
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "elapsed_sec": 0.025,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample16_exact_boundary_safe",
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "elapsed_sec": 0.024,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample17_large_offset_small_write",
+      "expected": "TN",
+      "verdict": "TN",
+      "detected": false,
+      "elapsed_sec": 0.0287,
+      "n_findings": 1
+    },
+    {
+      "sample_id": "sample18_16bit_overflow_to_heap",
+      "expected": "TP",
+      "verdict": "TP",
+      "detected": true,
+      "elapsed_sec": 0.023,
+      "n_findings": 1
+    }
+  ]
+}

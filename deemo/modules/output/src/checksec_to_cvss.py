@@ -24,7 +24,7 @@ checksec → CVSS 环境度量推断规则。
   socket/bind → AR=H (网络服务在关键路径)
 
 修改记录:
-  2025-07-24 15:22 - 从 cvss_environmental.py 拆分，独立维护推断规则
+2025-07-24 15:22 - 独立维护推断规则
 """
 
 import logging

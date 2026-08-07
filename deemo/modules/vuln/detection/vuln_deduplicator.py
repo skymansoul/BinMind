@@ -1,7 +1,7 @@
 # 漏洞去重引擎——数据流哈希+语法哈希+语义特征加权混合聚类。
 # 数据流哈希精确匹配权重0.4，语法与语义各0.3——数据流拓扑为漏洞指纹最强判别特征。
-# 参考VUDDY(function-level fingerprint dedup, S&P'17)与
-# CENTRIS(vuln clone detection, USENIX Security'21)混合哈希策略。
+# VUDDY与
+# CENTRIS混合哈希策略。
 
 import logging, hashlib
 from typing import Dict, List, Any

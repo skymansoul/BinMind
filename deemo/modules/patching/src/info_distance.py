@@ -4,8 +4,8 @@
 
 """Information-Theoretic Patch Distance — 基于信息论的补丁相似度。
 
-UniASM [Neurocomputing 2025] 使用 UniLM Transformer 做二进制代码相似度检测。
-BinGAT [IEEE 2024] 使用图注意力网络。这些方法依赖深度学习嵌入。
+UniASM 使用 UniLM Transformer 做二进制代码相似度检测。
+BinGAT 使用图注意力网络。这些方法依赖深度学习嵌入。
 
 本模块提供不依赖 ML 的信息论替代方案——纯统计方法，可审计，可解释：
   1. Jensen-Shannon 散度 (JSD): 两补丁的字节分布差异
@@ -70,7 +70,7 @@ class InfoDistReport:
         }
 
 
-# ── Jensen-Shannon 散度 ──────────────────────────────────────────
+# Jensen-Shannon 散度
 
 def jensen_shannon_divergence(data_a: bytes, data_b: bytes) -> float:
     """两字节序列间的 Jensen-Shannon 散度。
@@ -105,7 +105,7 @@ def jensen_shannon_divergence(data_a: bytes, data_b: bytes) -> float:
     return jsd / math.log(2) if math.log(2) > 0 else 0.0
 
 
-# ── 归一化压缩距离 ──────────────────────────────────────────────
+# 归一化压缩距离
 
 def normalized_compression_distance(data_a: bytes, data_b: bytes) -> float:
     """归一化压缩距离 (NCD)。
@@ -132,7 +132,7 @@ def normalized_compression_distance(data_a: bytes, data_b: bytes) -> float:
     return max(0.0, ncd)
 
 
-# ── 互信息 ───────────────────────────────────────────────────────
+# 互信息
 
 def mutual_information(data_a: bytes, data_b: bytes) -> float:
     """两字节序列的互信息。
@@ -171,7 +171,7 @@ def mutual_information(data_a: bytes, data_b: bytes) -> float:
     return 0.0
 
 
-# ── Permutation Test ─────────────────────────────────────────────
+# Permutation Test
 
 def permutation_test(data_a: bytes, data_b: bytes,
                      metric_fn, n_permutations: int = 500,
@@ -205,7 +205,7 @@ def permutation_test(data_a: bytes, data_b: bytes,
     return (count_extreme + 1) / (n_permutations + 1)
 
 
-# ── 信息距离计算器 ──────────────────────────────────────────────
+# 信息距离计算器
 
 class InfoDistanceCalculator:
     """补丁间信息论距离计算器。

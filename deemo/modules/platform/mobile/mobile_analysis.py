@@ -22,7 +22,7 @@ ART_MAGIC=b'art\n'; OAT_MAGIC=b'oat\n'; DEX_MAGIC_035=b'dex\n035'; DEX_MAGIC_037
 
 _OAT_HEADER_OFFSETS={'magic':(0,4),'version':(4,8),'data_begin':(16,24),'exec_offset':(24,32),'image_base':(32,40),'dex_count':(48,52)}
 
-# ── WOOTdroid/LEMON eBPF追踪模式 ──
+# WOOTdroid/LEMON eBPF追踪模式
 # 检测二进制中eBPF内核追踪相关模式，加壳应用常见反追踪特征
 _ANTI_TRACING_PATTERNS:Dict[bytes,str]={
     b'/sys/kernel/debug/tracing':'debugfs tracing检测——反eBPF/内核追踪',
@@ -92,11 +92,11 @@ class AndroidRTAnalyzer:
             nms.append({'java_class':m.group(1).replace('_','/'),'method_name':m.group(2),'full_signature':m.group(0)})
         return nms
 
-    # ── WOOTdroid/LEMON eBPF反追踪检测 ──
+# WOOTdroid/LEMON eBPF反追踪检测
     def detect_anti_tracing(self)->List[Dict[str,Any]]:
         """检测反eBPF/内核追踪代码模式。
 
-        基于WOOTdroid（arXiv:2604.27830）与LEMON（DFRWS 2026）的结论：
+        基于WOOTdroid的结论：
         商业加固器已开始检测eBPF tracing基础设施的存在，对抗内核级动态分析。
         检测这些模式可推断：(1) 应用使用了高级反分析技术；
         (2) 完整分析可能需要LEMON式内存获取。

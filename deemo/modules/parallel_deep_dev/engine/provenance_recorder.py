@@ -1,15 +1,15 @@
 """
-创建: 2025-07-29
+创建: 2026-06-17
 溯源图便捷记录器 — 批量记录 worker 产出、自动检测跨文件依赖。
 
-本模块从 engine/provenance.py 分离，提供面向 executor 的高层接口，
+本模块提供面向 executor 的高层接口，
 处理文件 I/O、批量记录、黑板集成等编排逻辑。
 """
 
-from __future__ import annotations
 
 import ast
 import os
+from parallel_deep_dev.engine._io import safe_read
 from parallel_deep_dev.engine.provenance import ProvenanceGraph
 
 
@@ -26,10 +26,8 @@ def record_worker_output(
     for fpath in filepaths:
         if not fpath.endswith(".py") or not os.path.isfile(fpath):
             continue
-        try:
-            with open(fpath, "r", encoding="utf-8", errors="replace") as f:
-                source = f.read()
-        except OSError:
+        source = safe_read(fpath)
+        if source is None:
             continue
         nid = pg.record_contribution(worker_id, module_key, fpath, source)
         node_ids.append(nid)
@@ -62,10 +60,8 @@ def detect_and_record_dependencies(
     for fpath in filepaths:
         if not fpath.endswith(".py") or not os.path.isfile(fpath):
             continue
-        try:
-            with open(fpath, "r", encoding="utf-8", errors="replace") as f:
-                source = f.read()
-        except OSError:
+        source = safe_read(fpath)
+        if source is None:
             continue
         try:
             tree = ast.parse(source)

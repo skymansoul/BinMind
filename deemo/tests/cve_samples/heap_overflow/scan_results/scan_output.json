@@ -1,0 +1,291 @@
+{
+  "total_binaries": 17,
+  "scanned": 17,
+  "results": [
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_01_simple_overflow\\heap_overflow_basic.exe",
+      "findings": [
+        {
+          "function": "heap_overflow_basic",
+          "alloc_func": "malloc",
+          "alloc_size": 64,
+          "store_offset": 72,
+          "store_size": 8,
+          "overflow_bytes": 16,
+          "confidence": 0.6,
+          "description": "malloc(64)\u2192usable=64 \u2192 store offset=72 overflow=16B",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 60.3945255279541,
+      "error": null,
+      "sample": "cve_01_simple_overflow"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_02_off_by_one\\off_by_one.exe",
+      "findings": [
+        {
+          "function": "off_by_one",
+          "alloc_func": "malloc",
+          "alloc_size": 128,
+          "store_offset": 129,
+          "store_size": 1,
+          "overflow_bytes": 1,
+          "confidence": 0.55,
+          "description": "malloc(128)\u2192usable=128 \u2192 loop 129*1B=129B > usable (by 1B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 4.602909088134766,
+      "error": null,
+      "sample": "cve_02_off_by_one"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_03_int_overflow_calc\\int_overflow_calc.exe",
+      "findings": [],
+      "scan_time_ms": 4.092693328857422,
+      "error": null,
+      "sample": "cve_03_int_overflow_calc"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_04_strcpy_overflow\\strcpy_overflow.exe",
+      "findings": [
+        {
+          "function": "strcpy_overflow",
+          "alloc_func": "malloc",
+          "alloc_size": 16,
+          "store_offset": 0,
+          "store_size": 1024,
+          "overflow_bytes": 1008,
+          "confidence": 0.65,
+          "description": "malloc(16)\u2192usable=16 \u2192 store [0:1024] crosses boundary (1008B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.5800933837890625,
+      "error": null,
+      "sample": "cve_04_strcpy_overflow"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_05_loop_overflow\\loop_overflow.exe",
+      "findings": [
+        {
+          "function": "loop_overflow",
+          "alloc_func": "malloc",
+          "alloc_size": 32,
+          "store_offset": 64,
+          "store_size": 1,
+          "overflow_bytes": 32,
+          "confidence": 0.55,
+          "description": "malloc(32)\u2192usable=32 \u2192 loop 64*1B=64B > usable (by 32B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.354310989379883,
+      "error": null,
+      "sample": "cve_05_loop_overflow"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_06_user_controlled_size\\user_ctrl_size.exe",
+      "findings": [
+        {
+          "function": "user_ctrl_size",
+          "alloc_func": "malloc",
+          "alloc_size": 0,
+          "store_offset": 0,
+          "store_size": -1,
+          "overflow_bytes": 0,
+          "confidence": 0.4,
+          "description": "malloc(dynamic) user-controlled size",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.7353038787841797,
+      "error": null,
+      "sample": "cve_06_user_controlled_size"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_07_realloc_overflow\\realloc_overflow.exe",
+      "findings": [
+        {
+          "function": "realloc_overflow",
+          "alloc_func": "realloc",
+          "alloc_size": 16,
+          "store_offset": 0,
+          "store_size": 64,
+          "overflow_bytes": 48,
+          "confidence": 0.65,
+          "description": "realloc(16)\u2192usable=16 \u2192 store [0:64] crosses boundary (48B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.731966018676758,
+      "error": null,
+      "sample": "cve_07_realloc_overflow"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_08_calloc_overflow\\calloc_overflow.exe",
+      "findings": [
+        {
+          "function": "calloc_overflow",
+          "alloc_func": "calloc",
+          "alloc_size": 64,
+          "store_offset": 128,
+          "store_size": 1,
+          "overflow_bytes": 64,
+          "confidence": 0.55,
+          "description": "calloc(64)\u2192usable=64 \u2192 loop 32*4B=128B > usable (by 64B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.442525863647461,
+      "error": null,
+      "sample": "cve_08_calloc_overflow"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_09_safe_but_triggers_fp\\safe_pattern_fp.exe",
+      "findings": [],
+      "scan_time_ms": 3.3948421478271484,
+      "error": null,
+      "sample": "cve_09_safe_but_triggers_fp"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_10_input_constrained_safe\\constrained_safe.exe",
+      "findings": [
+        {
+          "function": "constrained_safe",
+          "alloc_func": "malloc",
+          "alloc_size": 0,
+          "store_offset": 0,
+          "store_size": -1,
+          "overflow_bytes": 0,
+          "confidence": 0.4,
+          "description": "malloc(dynamic) user-controlled size",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.8068294525146484,
+      "error": null,
+      "sample": "cve_10_input_constrained_safe"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_11_memcpy_arith_size\\memcpy_arith.exe",
+      "findings": [
+        {
+          "function": "memcpy_arith",
+          "alloc_func": "malloc",
+          "alloc_size": 64,
+          "store_offset": 0,
+          "store_size": 80,
+          "overflow_bytes": 16,
+          "confidence": 0.65,
+          "description": "malloc(64)\u2192usable=64 \u2192 store [0:80] crosses boundary (16B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.4961700439453125,
+      "error": null,
+      "sample": "cve_11_memcpy_arith_size"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_12_alignment_edge\\alignment_edge.exe",
+      "findings": [
+        {
+          "function": "alignment_edge",
+          "alloc_func": "malloc",
+          "alloc_size": 16,
+          "store_offset": 14,
+          "store_size": 8,
+          "overflow_bytes": 6,
+          "confidence": 0.65,
+          "description": "malloc(16)\u2192usable=16 \u2192 store [14:22] crosses boundary (6B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.2792091369628906,
+      "error": null,
+      "sample": "cve_12_alignment_edge"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_13_struct_field_pattern\\struct_field.exe",
+      "findings": [],
+      "scan_time_ms": 4.043340682983398,
+      "error": null,
+      "sample": "cve_13_struct_field_pattern"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_14_multi_chunk\\multi_chunk.exe",
+      "findings": [
+        {
+          "function": "multi_chunk",
+          "alloc_func": "malloc",
+          "alloc_size": 32,
+          "store_offset": 0,
+          "store_size": 48,
+          "overflow_bytes": 16,
+          "confidence": 0.65,
+          "description": "malloc(32)\u2192usable=32 \u2192 store [0:48] crosses boundary (16B)",
+          "source": "c_source_analyzer"
+        },
+        {
+          "function": "multi_chunk",
+          "alloc_func": "malloc",
+          "alloc_size": 32,
+          "store_offset": 0,
+          "store_size": 1024,
+          "overflow_bytes": 992,
+          "confidence": 0.65,
+          "description": "malloc(32)\u2192usable=32 \u2192 store [0:1024] crosses boundary (992B)",
+          "source": "c_source_analyzer"
+        },
+        {
+          "function": "multi_chunk",
+          "alloc_func": "malloc",
+          "alloc_size": 32,
+          "store_offset": 0,
+          "store_size": 48,
+          "overflow_bytes": 16,
+          "confidence": 0.65,
+          "description": "malloc(32)\u2192usable=32 \u2192 store [0:48] crosses boundary (16B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.6199092864990234,
+      "error": null,
+      "sample": "cve_14_multi_chunk"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_15_constrained_input\\constrained_tp.exe",
+      "findings": [
+        {
+          "function": "constrained_tp",
+          "alloc_func": "malloc",
+          "alloc_size": 256,
+          "store_offset": 0,
+          "store_size": 512,
+          "overflow_bytes": 256,
+          "confidence": 0.65,
+          "description": "malloc(256)\u2192usable=256 \u2192 store [0:512] crosses boundary (256B)",
+          "source": "c_source_analyzer"
+        }
+      ],
+      "scan_time_ms": 3.4096240997314453,
+      "error": null,
+      "sample": "cve_15_constrained_input"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_16_real_world_pattern\\real_world.exe",
+      "findings": [],
+      "scan_time_ms": 3.7293434143066406,
+      "error": null,
+      "sample": "cve_16_real_world_pattern"
+    },
+    {
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\cve_samples\\heap_overflow\\cve_17_multi_field_struct\\multi_field.exe",
+      "findings": [],
+      "scan_time_ms": 3.553152084350586,
+      "error": null,
+      "sample": "cve_17_multi_field_struct"
+    }
+  ]
+}

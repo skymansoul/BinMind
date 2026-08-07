@@ -59,7 +59,7 @@ class FmtReport:
         }
 
 
-# ── 格式化函数调用点扫描器 ────────────────────────────────────────
+# 格式化函数调用点扫描器
 
 class FmtSiteScanner:
     """扫描所有 printf 族函数调用。"""
@@ -96,31 +96,38 @@ class FmtSiteScanner:
 
     def _trace_fmt_source(self, asm: List[str], call_idx: int
                           ) -> Tuple[str, str, str]:
-        """回溯 printf 的 fmt 参数(rdi)来源。"""
+        """回溯 printf 的 fmt 参数来源。
+        ABI兼容: SysV第一参数=rdi, MS x64第一参数=rcx。
+        """
+        fmt_regs = ('rdi', 'rcx')
         for j in range(call_idx - 1, max(call_idx - 10, -1), -1):
             line = asm[j].strip().lower().replace(',', ' ')
 
-            # lea rdi, [rip+.Lconst] → compile-time string constant → SAFE
-            m = re.search(r'\blea\s+rdi,?\s*\[rip\s*[+\-]\s*\w+\]', line)
-            if m:
-                return 'rdi', 'constant', 'lea rip-relative (compile-time string)'
+            for fr in fmt_regs:
+                # lea fr, [rip+.Lconst] → compile-time constant → SAFE
+                m = re.search(r'\blea\s+' + fr + r',?\s*\[rip\s*[+\-]\s*\w+\]',
+                              line)
+                if m:
+                    return fr, 'constant', 'lea rip-relative (compile-time string)'
 
-            # lea rdi, [rbp-N] → stack-local format → possibly safe
-            m = re.search(r'\blea\s+rdi,?\s*\[rbp\s*[+\-]\s*\w+\]', line)
-            if m:
-                return 'rdi', 'constant', 'lea rbp-relative (stack variable)'
+                # lea fr, [rbp-N] → stack-local format → possibly safe
+                m = re.search(r'\blea\s+' + fr + r',?\s*\[rbp\s*[+\-]\s*\w+\]',
+                              line)
+                if m:
+                    return fr, 'constant', 'lea rbp-relative (stack variable)'
 
-            # mov rdi, reg (where reg is tainted)
-            m = re.search(r'\bmov\s+rdi,?\s*(\w+)', line)
-            if m:
-                reg = m.group(1)
-                if self._is_reg_tainted(asm, j, reg):
-                    return reg, 'user_input', ''
-                return reg, 'memory', ''
+                # mov fr, reg (where reg is tainted)
+                m = re.search(r'\bmov\s+' + fr + r',?\s*(\w+)', line)
+                if m:
+                    reg = m.group(1)
+                    if reg not in ('qword', 'dword', 'ptr'):
+                        if self._is_reg_tainted(asm, j, reg):
+                            return reg, 'user_input', ''
+                        return reg, 'memory', ''
 
-            # mov rdi, [mem] → loaded from memory
-            if re.search(r'\bmov\s+rdi,?\s*\[', line):
-                return 'rdi', 'memory', 'loaded from memory'
+                # mov fr, [mem] → loaded from memory
+                if re.search(r'\bmov\s+' + fr + r',?\s*\[', line):
+                    return fr, 'memory', 'loaded from memory'
 
         return 'rdi', 'unknown', ''
 

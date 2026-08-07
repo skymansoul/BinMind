@@ -1,0 +1,6121 @@
+{
+  "timestamp": "2026-08-08 21:58:28",
+  "total_samples": 374,
+  "vuln_samples": 208,
+  "safe_samples": 166,
+  "stages": [
+    {
+      "stage": "S0_Baseline",
+      "input_count": 0,
+      "output_count": 175,
+      "hard_filtered": 0,
+      "soft_adjusted": 0,
+      "TP": 118,
+      "FP": 57,
+      "TN": 109,
+      "FN": 90,
+      "precision": 0.6743,
+      "recall": 0.5673,
+      "f1": 0.6162,
+      "fp_removed": 0
+    },
+    {
+      "stage": "S1_AllocatorSemantics",
+      "input_count": 175,
+      "output_count": 144,
+      "hard_filtered": 31,
+      "soft_adjusted": 0,
+      "TP": 107,
+      "FP": 37,
+      "TN": 129,
+      "FN": 101,
+      "precision": 0.7431,
+      "recall": 0.5144,
+      "f1": 0.608,
+      "fp_removed": 12
+    },
+    {
+      "stage": "S2_GuardAwareWrites",
+      "input_count": 144,
+      "output_count": 140,
+      "hard_filtered": 4,
+      "soft_adjusted": 0,
+      "TP": 107,
+      "FP": 33,
+      "TN": 133,
+      "FN": 101,
+      "precision": 0.7643,
+      "recall": 0.5144,
+      "f1": 0.6149,
+      "fp_removed": 4
+    },
+    {
+      "stage": "S3_SizeConstraints",
+      "input_count": 140,
+      "output_count": 140,
+      "hard_filtered": 0,
+      "soft_adjusted": 2,
+      "TP": 107,
+      "FP": 33,
+      "TN": 133,
+      "FN": 101,
+      "precision": 0.7643,
+      "recall": 0.5144,
+      "f1": 0.6149,
+      "fp_removed": 0
+    },
+    {
+      "stage": "S4_ProofObligations",
+      "input_count": 140,
+      "output_count": 131,
+      "hard_filtered": 9,
+      "soft_adjusted": 31,
+      "TP": 106,
+      "FP": 25,
+      "TN": 141,
+      "FN": 102,
+      "precision": 0.8092,
+      "recall": 0.5096,
+      "f1": 0.6254,
+      "fp_removed": 6
+    },
+    {
+      "stage": "S5_SlackSpace",
+      "input_count": 131,
+      "output_count": 131,
+      "hard_filtered": 0,
+      "soft_adjusted": 1,
+      "TP": 106,
+      "FP": 25,
+      "TN": 141,
+      "FN": 102,
+      "precision": 0.8092,
+      "recall": 0.5096,
+      "f1": 0.6254,
+      "fp_removed": 0
+    },
+    {
+      "stage": "S6_ValueRange",
+      "input_count": 131,
+      "output_count": 131,
+      "hard_filtered": 0,
+      "soft_adjusted": 12,
+      "TP": 106,
+      "FP": 25,
+      "TN": 141,
+      "FN": 102,
+      "precision": 0.8092,
+      "recall": 0.5096,
+      "f1": 0.6254,
+      "fp_removed": 0
+    },
+    {
+      "stage": "S7_NonHeapFilter",
+      "input_count": 131,
+      "output_count": 131,
+      "hard_filtered": 0,
+      "soft_adjusted": 0,
+      "TP": 106,
+      "FP": 25,
+      "TN": 141,
+      "FN": 102,
+      "precision": 0.8092,
+      "recall": 0.5096,
+      "f1": 0.6254,
+      "fp_removed": 0
+    }
+  ],
+  "cross_fp_analysis": {
+    "heap_overflow": {
+      "total_samples": 208,
+      "samples_with_heap_alerts": 118,
+      "cross_fp_rate_pct": 56.7
+    }
+  },
+  "per_sample": [
+    {
+      "name": "CVE-2014-0160_heartbleed",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-3156_sudo_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-23222_bpf_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-3269_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-21762_fortios",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_11_multilevel_ptr",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_12_struct_field",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_13_ternary_alloc",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_14_dynamic_loop",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_15_realloc_shrink",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_01_early_return",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_02_const_guarded",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_03_tainted_double_guard",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_04_alias_diff_buf",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_05_multi_path_overflow",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_01_malloc_memcpy",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_02_loop_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_03_alias_ptr",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_04_calloc",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_05_realloc",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_06_strcpy",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_07_sprintf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_08_user_input",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_09_offset_write",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_10_nested_loop",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_01_alignment_absorbed",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_02_same_size",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_03_smaller_write",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 2,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_04_guarded",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_05_realloc_expand",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 2,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2014_0160_heartbleed",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 3,
+      "stage_counts": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_3864_stagefright",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2016_10190_ffmpeg",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2017_5638_struts",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2018_1000001_glibc",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 4,
+      "stage_counts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_13139_docker",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2020_0796_smbghost",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2021_3156_sudo",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2022_0185_kernel",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 3,
+      "stage_counts": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2022_22620_webkit",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2023_0669_gitlab",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_122_heap_bof_01_linear",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_122_heap_bof_02_memcpy",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_122_heap_bof_03_strcpy",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_122_heap_bof_04_offset",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_122_heap_bof_05_loop",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_126_heap_overread_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_190_int_overflow_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_415_double_free_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_416_uaf_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cwe_680_int_overflow_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_01_offset_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_02_realloc_shrink",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_03_loop_increment",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_04_nested_allocation",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_05_strcat_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_06_multi_realloc_chain",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_07_sprintf_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_08_callocation_mismatch",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_09_guard_partial",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_edge_10_double_alloc_aliasing",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_basic_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_calloc_04",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_guard_05",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_loop_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_multibuf_06",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_realloc_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2014-9112_cpio_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-0235_ghost_gethostbyname",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-3202_fuse_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-10158_php_exif_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-5094_php_gd_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-6301_ntpd_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-6301_ntp_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-9438_imagemagick_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-1000001_glibc_realpath_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-16864_stack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-1010200_audiofile_wav_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-11477_tcp_sack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-14287_sudo_bypass_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-10713_grub2",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-10713_grub_boot_hole",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-3156_sudo_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-4034_pwnkit",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-0185_kernel_uaf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-3269_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-4010_usb_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-21894_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "FP_array_index_overflow",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "FP_guarded_dynamic",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "FP_no_guard_memcpy",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 2,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "FP_proof_bounded",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "FP_safe_bound_guard_heap",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_01_stack_write",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_fp_02_unrelated_alloc",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_03_realloc_misuse",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_04_calloc_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_05_offset_write",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_06_strcpy_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_07_sprintf_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_08_user_input_size",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_09_tainted_size",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_10_multi_alloc",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_01_guarded_size",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_02_size_check",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_03_alignment_ok",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_04_smaller_write",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_safe_05_const_safe",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "safe_calloc_then_strcpy",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "safe_malloc256_memcpy64",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "safe_malloc64_memcpy64",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "safe_malloc_variable_within_bounds",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "safe_realloc_then_memcpy",
+      "is_vuln": false,
+      "vuln_type": "safe",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "TP_guarded_write",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "TP_loop_checked_write",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "TP_min_constrained",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "TP_path_condition_guard",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "TP_realloc_expand",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2001-0017_format_string",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2008-5077_openssl_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2010-2959_kernel_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2010-4221_libc_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2012-0809_format_string",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2012-2133_kernel_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2012-3569_vmware_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2013-0156_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2013-4312_mq_notify_alias_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2013-6376_kvm_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2014-0130_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2014-6271_shellshock_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2014-9914_kernel_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-1840_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-7547_getaddrinfo_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-8612_blueman_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2015-8812_kernel_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-0728_keyring_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-10033_phpmailer_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-2098_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-4971_wget",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-6187_kernel_alias_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-6301_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2016-9802_bind_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-1000112_udp_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-1000371_linux_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-1000407_kernel_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-15129_kernel_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-16995_kernel_ebpf_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017-5638_struts_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2017_stkovf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-1000802_curl_ftp",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 6,
+      "stage_counts": [
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        3
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-1002105_k8s_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-10940_cdrom_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-14665_xorg_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-6923_freebsd_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018-7600_drupal_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2018_heapovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-0708_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-15768_nftables_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-19332_kernel_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-2181_adreno_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-3396_confluence_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-5418_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019-9213_kernel_nullptr_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2019_uaf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-10204_nexus_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-10757_mremap_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-14386_ebpf_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-7460_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-8163_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020-8644_printf_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2020_doublefree",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-20226_kernel_uaf_alias",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-22555_netfilter_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-22880_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-3489_ebpf_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-41773_apache_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021-44228_log4j_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2021_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-1015_nft_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-22623_ios_heap_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 2,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-22965_spring4shell_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-2588_double_free",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-29582_io_uring_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-32224_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022-36946_netfilter_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2022_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-0179_stack_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-20198_iosxe_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-2166_kernel_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-28120_rails_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-44487_use_after_scope",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-4863_libwebp",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023-52707_kallsyms_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2023_uaf2",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-21762_fortinet_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-21762_off_by_one",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-26590_erofs_intovf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-26602_linux_fmtstr",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-27198_jetbrains_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024-3094_xz_cmdinj",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "CVE-2024_nullptr",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_01",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_02",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_03",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_04",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_05",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_06",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_07",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_08",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_09",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_10",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_11",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_12",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_13",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_14",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_16",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_17",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_18",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_19",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_20",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2004_0077-linux-do_brk",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2010_0230_linux_stack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2011_1473-openssl-dtls",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2012_0809_format",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2013_2094-perf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2014_0160-heartbleed",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2014_0160_stack_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2014_3153_futex_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2014_6271-shellshock",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_0235-ghost",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_0235_ghost_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_3628_ld_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_7547_getaddrinfo_stack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2015_8612_bluetooth_fmt",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2016_0728_keyring_stack",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2016_10190-libevent",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2016_7411_php_fmt",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2017_1000112-ipv6",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2017_1000364_kernel_stack",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2017_11176_mq_notify_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2018_14634-tmpfs",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2018_14634_mutagen_stack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2018_6789_exim_uaf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_11477-tcp-sack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_13134_imagemagick_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_15291_usb_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_15947_bitcoin_fmt",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_6974_kvm_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2019_9213_kernel_stack",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2020_10713-boothole",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2020_10757_kernel_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2020_14386_afpacket_stack",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2020_27821_qemu_fmt",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2021_22555_netfilter_stack",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2021_3156-baron",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2021_34866_linux_uaf",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2021_4034-polkit",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2022_0185-fscontext",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2022_1015_nftables_stack",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2022_2639_pipe_uaf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2023_0179_stack_overflow",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2023_2002_bluetooth_uaf",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2023_44487-http2-rapid",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_2023_45871_libwebp_heap",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_21",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_22",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_23",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "cve_24",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_01",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_02",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_03",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_04",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_05",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_06",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_07",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_08",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_09",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_10",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_11",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_12",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_13",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_14",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "double_free_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_01",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_02",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_03",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_04",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_05",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_06",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_07",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_08",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_09",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_10",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_11",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_12",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_13",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_14",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "format_string_15",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_04",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_05",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_06",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_07",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_08",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_09",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_10",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_11",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_12",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_13",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_14",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "heap_overflow_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_04",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_05",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_06",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_07",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_08",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_09",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_10",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_11",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_12",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_13",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_14",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "integer_overflow_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_04",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_05",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_06",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_07",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_08",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_09",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_10",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_11",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_12",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_13",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_14",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "stack_overflow_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_01",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_02",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 1,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_04",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_05",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_06",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_07",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_08",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_09",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_10",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_11",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_12",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_13",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_14",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "uaf_15",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_01",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_02",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_03",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_04",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_05",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_06",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_07",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_08",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_09",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_10",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_11",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_12",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_13",
+      "is_vuln": false,
+      "vuln_type": "unknown",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_14",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    },
+    {
+      "name": "ho_15",
+      "is_vuln": true,
+      "vuln_type": "heap_overflow",
+      "baseline_count": 0,
+      "stage_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "final_count": 0
+    }
+  ]
+}

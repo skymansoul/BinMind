@@ -16,9 +16,8 @@
 3. 区间传递: ∈ [0, b] ∧ b ∈ [0, c] → ∈ [0, c] 替代两条单条
 4. 若 Z3 可用，对候选冗余对进行 entail check 精确验证
 
-参考:
 - "Integrating Path Selec for 符号执行 Vari Selec
-for 约束求解" (Zhu et al., ACM TOSEM 2025):
+for 约束求解":
 提出路径与变量选择联合优化，本文在此基础上将冗余检测前移至约束层
 - Duck, Jaffar & Koh, "约束求解器 for 堆s Separa":
 首次在符号执行中引入基于内插 (interpola) 的约束包含——
@@ -41,7 +40,6 @@ try:
 except ImportError:
     _HAS_Z3 = False
 
-
 class ConstraintKind(Enum):
     EQ = auto()          # == b
     NEQ = auto()         # != b
@@ -50,7 +48,6 @@ class ConstraintKind(Enum):
     AND_MASK = auto()    # & mask == val
     RANGE = auto()       # lo <= <= hi
     MEMBER = auto()      # ∈ {v1, v2,.}
-
 
 @dataclass
 class ConstraintAtom:
@@ -72,7 +69,6 @@ class ConstraintAtom:
                 self.operands == other.operands and
                 self.values == other.values)
 
-
 @dataclass
 class SubsumptionResult:
     """约束包含分析结果"""
@@ -83,7 +79,6 @@ class SubsumptionResult:
     equivalence_classes: List[Set[str]] = field(default_factory=list)
     z3_verified: int = 0           # 经 Z3 entail 检查 验证的包含数
     detection_time_ms: float = 0.0
-
 
 class ConstraintSubsumptionDetector:
     """约束包含检测器: 构建蕴涵图并进行传递闭包消除
@@ -141,7 +136,7 @@ class ConstraintSubsumptionDetector:
             detection_time_ms=round(dt_ms, 2),
         )
 
-    # ── 图构建 ───────────────────────────────────────────────
+# 图构建
     def _build_graphs(self, atoms: List[ConstraintAtom]):
         self._eq_parent.clear()
         self._le_graph.clear()
@@ -171,7 +166,7 @@ class ConstraintSubsumptionDetector:
                 if ra in targets:
                     targets.add(rb)
 
-    # ── 等式消除 ─────────────────────────────────────────────
+# 等式消除
     def _eliminate_eq_closure(self, atoms: List[ConstraintAtom]
                                ) -> Tuple[List[ConstraintAtom],
                                           List[ConstraintAtom],
@@ -200,7 +195,7 @@ class ConstraintSubsumptionDetector:
 
         return removed, retained, eq_classes
 
-    # ── 不等式消除 ───────────────────────────────────────────
+# 不等式消除
     def _eliminate_le_closure(self, atoms: List[ConstraintAtom]
                                ) -> Tuple[List[ConstraintAtom],
                                           List[ConstraintAtom]]:
@@ -248,7 +243,7 @@ class ConstraintSubsumptionDetector:
 
         return removed, retained
 
-    # ── Z3 精确验证 ──────────────────────────────────────────
+# Z3 精确验证
     def _z3_verify_subsume(self, all_atoms: List[ConstraintAtom],
                             candidates: List[ConstraintAtom]) -> int:
         """使用 Z3 entail check 验证候选冗余约束确实被保留集蕴含
@@ -280,7 +275,6 @@ class ConstraintSubsumptionDetector:
             except Exception:
                 pass
         return verified
-
 
 def normalize_atom(kind: ConstraintKind,
                     operands: Tuple[str, ...],

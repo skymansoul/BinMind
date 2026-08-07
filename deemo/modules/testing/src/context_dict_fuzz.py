@@ -14,9 +14,9 @@
 # 字典条目结构:
 #   {token, source_field_role, source_offset, frequency, is_universal}
 #
-# 参考文献:
+# 文献:
 #   AFL/AFL++ dictionary — 全局字典, 无位置感知;
-#   ChatAFL (NDSS 2024) — LLM提取语法token; 本项目取其结构化思想
+#   ChatAFL — LLM提取语法token; 本项目取其结构化思想
 
 from __future__ import annotations
 

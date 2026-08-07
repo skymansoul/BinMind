@@ -30,9 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # ConstraintSimplifier
-# ---------------------------------------------------------------------------
 
 class ConstraintSimplifier:
     """
@@ -165,9 +163,7 @@ class ConstraintSimplifier:
         return repr(c)
 
 
-# ---------------------------------------------------------------------------
 # Path优化器
-# ---------------------------------------------------------------------------
 
 class PathOptimizer:
     """
@@ -469,9 +465,7 @@ class PathOptimizer:
         return dict(self._stats)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _compute_StateFingerprint(state: Any) -> int:
     """

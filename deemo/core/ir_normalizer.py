@@ -3,8 +3,7 @@
 # decompilers (Ghidra's type* vs. Radare2's var_xx cannot be unified).
 # Row-level IR loses some semantics but is sufficient for def-use analysis;
 # the TaintEngine runs regex matches on IR line text.
-# ref: JTrans (S&P 2024) — binary similarity improves 30-50% after IR normalization.
-from __future__ import annotations
+# JTrans — binary similarity improves 30-50% after IR normalization.
 import re, logging
 from collections import defaultdict
 from typing import Optional
@@ -12,9 +11,7 @@ from typing import Optional
 _log = logging.getLogger(__name__)
 
 
-# ============================================================
 # 反编译器归一化 (Ghidra/Radare2/Generic)
-# ============================================================
 
 def normalize_ir(decompiled_text: str, source: str = 'auto') -> list[str]:
     """自动检测反编译器类型并归一化为IR行列表."""
@@ -117,10 +114,8 @@ def _simplify_asm(ins: str) -> Optional[str]:
     return None
 
 
-# ============================================================
-# VEX IR 归一化 (2025-07-30追加)
+# VEX IR 归一化
 # 将angr VEX IR基本块规范化为编译器无关形式
-# ============================================================
 
 class VEXNormalizer:
     """VEX IR基本块归一化器: 寄存器虚拟化+常量折叠+死代码消除."""

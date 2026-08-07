@@ -43,7 +43,7 @@ class ComplianceReport:
         self.spdx_document = spdx; self.summary = summary; self.sbom_json = sbom
 
 
-# ── SPDX SBOM 导出 ──────────────────────────────────────────────────────────
+# SPDX SBOM 导出
 # 生成符合 SPDX 2.3 标准的软件物料清单 (SBOM)
 # NTIA 要求在联邦采购中提供 SBOM——本模块使合规检查输出可直接
 # 用于采购审计和供应链安全评估

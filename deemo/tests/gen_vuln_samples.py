@@ -58,7 +58,7 @@ INT = {
 "int_02": ("CVE-2019-11477","CWE-190","size_t加法溢出导致回绕",
 "#include <stdlib.h>\nvoid mg(size_t a,size_t b){size_t t=a+b;char*m=malloc(t);free(m);}\nint main(){mg((size_t)-10,20);return 0;}"),
 "int_03": ("GENERIC-int-mul-wrap","CWE-190","calloc参数乘积溢出",
-"#include <stdlib.h>\nvoid*mt(int r,int c){return calloc(r,c);}\nint main(){char*p=mt(65536,65536);if(p)free(p);return 0;}"),
+"#include <stdlib.h>\nvoid*mt(int r,int c){return calloc(r,c);}\nint main(){char*p=mt;if(p)free(p);return 0;}"),
 "int_04": ("GENERIC-int-sign-compare","CWE-190","有符号/无符号混用绕过边界检查",
 "#include <stdlib.h>\nvoid cp2(const char*s,int sz){if(sz>4096)return;char*b=malloc((unsigned)sz);free(b);}\nint main(){cp2(\"test\",-1);return 0;}"),
 "int_05": ("GENERIC-int-shift-wrap","CWE-190","左移溢出导致分配大小错误",

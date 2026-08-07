@@ -1,4 +1,4 @@
-# created: 2026-08-19
+# created: 2026-07-16
 # modified: 2026-08-26 — added fit() for MLE-based Weibull parameter estimation from event data
 # 竞争风险漏洞生命周期模型——建模漏洞从发现到修补的多路径演化
 #

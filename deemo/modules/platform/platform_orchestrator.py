@@ -198,7 +198,7 @@ class PlatformOrchestrator:
             },
         )
 
-    # ---- 内部分发 ----
+# 内部分发
 
     def _dispatch_analysis(self, layer: PlatformLayer,
                            path: str) -> List[Dict[str, Any]]:
@@ -319,7 +319,7 @@ class PlatformOrchestrator:
                     'type': 'smart_contract_stub',
                     'note': 'smart contract module unavailable'}]
 
-    # ---- 辅助 ----
+# 辅助
 
     def _findings_to_nodes(self, layer: PlatformLayer, findings: List[Dict],
                            entity_ref: str) -> List[VulnNode]:

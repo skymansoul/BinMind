@@ -20,13 +20,12 @@
     3. 双证书检测: 经典证书链 + PQC证书链共存。
     4. 库版本指纹: BoringSSL/OpenSSL 3.x/liboqs中混合方案的特有API序列。
 
-参考:
-  - Chrome/Google (2024): "A new path for Kyber on the web" —
+  - Chrome/Google: "A new path for Kyber on the web" —
     Chrome 131+使用X25519MLKEM768, 迁移路径从KyberDraft00到ML-KEM。
-  - IETF TLS WG Hybrid Key Exchange (draft-ietf-tls-hybrid-design, 2024):
+  - IETF TLS WG Hybrid Key Exchange:
     混合密钥交换的设计规范和串联KDF构造。
-  - rustls (2024): "prefer-post-quantum"特性支持混合KEX。
-  - OpenSSL 3.5+ (2025): 原生ML-KEM支持及混合模式。
+  - rustls: "prefer-post-quantum"特性支持混合KEX。
+  - OpenSSL 3.5+: 原生ML-KEM支持及混合模式。
 
 边界条件:
   - 混合方案检测需要识别两种不同算法的API调用在相近代码区域共存。
@@ -37,7 +36,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class HybridDetection:
@@ -50,8 +48,7 @@ class HybridDetection:
     downgrade_risk: str = ""       # 是否存在纯经典回退路径
     kdf_combiner: str = ""         # 密钥材料组合方式(串联/异或/独立)
 
-
-# ── 经典+PQC算法配对模式 ──
+# 经典+PQC算法配对模式
 # 混合方案要求在相近代码区域内同时检测到经典和PQC算法
 _HYBRID_PAIRS: List[Tuple[str, str, str, float]] = [
     # (经典算法名片段, PQC算法名片段, 方案描述, 置信度)
@@ -66,7 +63,7 @@ _HYBRID_PAIRS: List[Tuple[str, str, str, float]] = [
     ('RSA', 'ML-DSA', 'RSA+ML-DSA hybrid signature (dual cert)', 0.78),
 ]
 
-# ── 串联KDF模式 ──
+# 串联KDF模式
 _CONCAT_KDF_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'HKDF_extract', 'HKDF-Extract串联(标准)', 0.82),
     (b'concat_kdf', 'concatenation KDF', 0.85),
@@ -77,7 +74,7 @@ _CONCAT_KDF_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'concatenated_key', 'concatenated key material', 0.78),
 ]
 
-# ── 混合方案库指纹 ──
+# 混合方案库指纹
 _HYBRID_LIB_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'X25519Kyber768', 'Chrome legacy hybrid (KyberDraft00)', 0.90),
     (b'X25519MLKEM768', 'Chrome/Cloudflare hybrid (ML-KEM)', 0.95),
@@ -92,7 +89,6 @@ _HYBRID_LIB_PATTERNS: List[Tuple[bytes, str, float]] = [
     (b'hybrid_certificate', 'dual/hybrid certificate chain', 0.82),
 ]
 
-
 def _find_algo_in_findings(findings: List, name_fragment: str) -> List[int]:
     """在crypto findings中搜索匹配算法的位置。"""
     locations = []
@@ -104,7 +100,6 @@ def _find_algo_in_findings(findings: List, name_fragment: str) -> List[int]:
         except Exception:
             pass
     return locations
-
 
 def _co_location_score(locs_a: List[int], locs_b: List[int],
                         window: int = 4096) -> float:
@@ -118,7 +113,6 @@ def _co_location_score(locs_a: List[int], locs_b: List[int],
                 close_pairs += 1
     max_pairs = max(len(locs_a), len(locs_b))
     return min(1.0, close_pairs / max_pairs) if max_pairs > 0 else 0.0
-
 
 def detect_hybrid_schemes(data: bytes,
                           strings: Optional[List[str]] = None,

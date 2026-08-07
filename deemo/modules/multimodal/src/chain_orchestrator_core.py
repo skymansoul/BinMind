@@ -43,9 +43,7 @@ from ..multi_stage_orchestrator import (  # noqa: E402
 )
 
 
-# ===========================================================================
 # ChainOrchestrator -- exploit 链生命周期管理器
-# ===========================================================================
 class ChainOrchestrator:
     """多阶段 exploit 链编排器。
 
@@ -70,9 +68,7 @@ class ChainOrchestrator:
         self._step_outputs: List[StepOutput] = []
         self._history: List[Dict[str, Any]] = []
 
-    # ------------------------------------------------------------------
     # 注册 API
-    # ------------------------------------------------------------------
     def register_capability(self, stage: ExploitStage, cap: StageCapability) -> None:
         """注册阶段能力以供执行前校验。"""
         self._capabilities[stage] = cap
@@ -90,9 +86,7 @@ class ChainOrchestrator:
         """
         self._hooks[event] = callback
 
-    # ------------------------------------------------------------------
     # 策略选择 —— 基于链特征的启发式
-    # ------------------------------------------------------------------
     def _auto_select_strategy(self, chain: AttackChain) -> ExecutionStrategy:
         """从链复杂度和历史成功率推导最优策略。
 
@@ -112,9 +106,7 @@ class ChainOrchestrator:
             return ExecutionStrategy.PARALLEL_LAYER
         return ExecutionStrategy.SEQUENTIAL
 
-    # ------------------------------------------------------------------
     # 子进程执行 —— 沙箱化，超时保护
-    # ------------------------------------------------------------------
     def _run_step_command(self, step: ChainStep,
                           target_info: Dict[str, Any]) -> StepOutput:
         """在隔离的临时目录中执行 step.shell_command。
@@ -164,9 +156,7 @@ class ChainOrchestrator:
             except Exception:
                 pass
 
-    # ------------------------------------------------------------------
     # 模糊链 —— 为标记步骤生成变体
-    # ------------------------------------------------------------------
     def fuzz_chain(self, target_info: Optional[Dict[str, Any]] = None,
                    variants_per_step: int = 5) -> List[OrchestrationResult]:
         """为每个 fuzzable=True 的步骤执行模糊变体链。
@@ -214,9 +204,7 @@ class ChainOrchestrator:
 
         return results
 
-    # ------------------------------------------------------------------
     # 执行 —— 主管线入口
-    # ------------------------------------------------------------------
     def execute(self, target_info: Optional[Dict[str, Any]] = None,
                 strategy: ExecutionStrategy = ExecutionStrategy.SEQUENTIAL,
                 deadline_seconds: Optional[float] = None,
@@ -279,12 +267,12 @@ class ChainOrchestrator:
                     if strategy != ExecutionStrategy.BEST_EFFORT:
                         continue
 
-                # --- pre-exec 钩子 ---
+# pre-exec 钩子
                 hook = self._hooks.get('pre_exec')
                 if hook:
                     hook(step, ctx)
 
-                # --- 调度 ---
+# 调度
                 try:
                     if step.shell_command:
                         output_lines.append(
@@ -356,7 +344,7 @@ class ChainOrchestrator:
                         checkpoints=self._checkpoints,
                         step_outputs=self._step_outputs)
 
-                # --- post-exec 钩子 ---
+# post-exec 钩子
                 post_hook = self._hooks.get('post_exec')
                 if post_hook:
                     post_hook(step, ctx)
@@ -378,9 +366,7 @@ class ChainOrchestrator:
                               'steps': executed, 'duration': result.duration_seconds})
         return result
 
-    # ------------------------------------------------------------------
     # 空跑 —— 无副作用的依赖校验
-    # ------------------------------------------------------------------
     def dry_run(self, target_info: Optional[Dict[str, Any]] = None,
                 target_type: Optional[TargetType] = None) -> OrchestrationResult:
         """模拟链执行：解析依赖，检查前置条件。
@@ -437,9 +423,7 @@ class ChainOrchestrator:
                 'suggested_strategy': self._auto_select_strategy(chain).value,
             })
 
-    # ------------------------------------------------------------------
     # 检查点恢复 —— 跳过已执行步骤
-    # ------------------------------------------------------------------
     def resume_from_checkpoint(self, target_info: Optional[Dict[str, Any]] = None
                                 ) -> OrchestrationResult:
         """从最近检查点恢复执行。
@@ -466,9 +450,7 @@ class ChainOrchestrator:
 
         return self.execute(target_info=target_info)
 
-    # ------------------------------------------------------------------
     # 报告 —— 人类可读的链摘要
-    # ------------------------------------------------------------------
     def generate_report(self) -> str:
         """生成待执行链的 markdown 报告。
 
@@ -504,9 +486,7 @@ class ChainOrchestrator:
                 f" (pre: {s.pre_conditions}, post: {s.post_conditions}){suffix}")
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------
     # 回滚 —— 通过钩子逆序撤销已执行步骤
-    # ------------------------------------------------------------------
     def rollback(self) -> OrchestrationResult:
         """调用回滚钩子，传入已执行动作列表。
 

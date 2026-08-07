@@ -8,7 +8,7 @@ import hashlib
 import time
 import tempfile
 
-# ===== read_json =====
+# read_json
 def read_json(path):
     _encodings = ['utf-8', 'utf-8-sig', 'gbk', 'latin-1']
     for _enc in _encodings:
@@ -19,7 +19,7 @@ def read_json(path):
             continue
     raise ValueError(f"Cannot decode: {path}")
 
-# ===== write_json =====
+# write_json
 # 原子写入：先写临时文件再rename，防止写一半崩溃
 def write_json(data, path):
     _dir = os.path.dirname(path) or '.'
@@ -33,7 +33,7 @@ def write_json(data, path):
         os.unlink(_tmp)
         return False
 
-# ===== file_fingerprint =====
+# file_fingerprint
 def file_fingerprint(path, algorithm='sha256'):
     _h = hashlib.new(algorithm)
     with open(path, 'rb') as _f:
@@ -44,7 +44,7 @@ def file_fingerprint(path, algorithm='sha256'):
             _h.update(_chunk)
     return _h.hexdigest()
 
-# ===== rate_limiter =====
+# rate_limiter
 # 滑动窗口限流装饰器：每次调用检查时间窗口内的调用次数
 def rate_limiter(max_calls, period_seconds):
     _calls = []  # 闭包持有，记录调用时间戳
@@ -81,7 +81,6 @@ def chunked_iterator(iterable, chunk_size):
     if _chunk:
         yield _chunk
 
-# ----
 def batch_generator(data, batch_size):
     _n = len(data)
     _indices = list(range(_n))

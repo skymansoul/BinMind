@@ -128,8 +128,6 @@ class ReportAggregator:
         return path
 
 
-def _debug_print(*args):
-    # 保留 — 调试辅助函数
     print("[report debug]", *args)
 
 

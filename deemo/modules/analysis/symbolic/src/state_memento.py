@@ -9,7 +9,7 @@
 # z3.Solver 实例的 push/pop 累积内部状态（从 ~10MB 增长到 >500MB）
 # 这是路径爆炸之外的另一个资源爆炸维度
 #
-# 现有方案：状态合并（st merging, KLEE 2024 ICSE workshop）将多条
+# 现有方案：状态合并将多条
 # 路径的状态合并为一条，减少状态数量但损失路径特异性。本方案不同：
 # 不合并状态，而是压缩存储——保留所有状态的特异性，但用增量编码减少
 # 冗余。类比：git 的 object store 不存储每个版本的完整快照，而是存储
@@ -32,9 +32,9 @@
 # 本模块管理"冷"状态——已探索路径的序列化快照，可按需恢复到 solver
 # 两者互补：热状态快速求解，冷状态持久化+内存控制
 #
-# 参考文献：
+# 文献：
 # 状态合并: "St Merging Quantifiers 符号执行"
-# KLEE 2024 Workshop (ICSE 2024). 该工作用量化编码合并状态约束
+# KLEE 2024 Workshop. 该工作用量化编码合并状态约束
 # 但合并后的状态丢失了单条路径的可区分性
 #   Memento 模式: Gamma et al., "Design Patterns", 1995. 原始模式
 # 用于 GUI 撤销/重做，本模块将其迁移到符号执行状态管理
@@ -48,9 +48,7 @@ from typing import Dict, List, Optional, Tuple, NamedTuple
 from dataclasses import dataclass, field
 
 
-#---------------------------------------------------------------------------
 # 数据结构
-#---------------------------------------------------------------------------
 
 @dataclass
 class MementoEntry:
@@ -80,9 +78,7 @@ class MementoStats:
     budget_remaining_bytes: int = 0
 
 
-#---------------------------------------------------------------------------
 # 核心类
-#---------------------------------------------------------------------------
 
 class StateMemento:
     """符号执行状态的 Memento 管理器
@@ -104,9 +100,7 @@ class StateMemento:
         self._eviction_count: int = 0
         self._lock = threading.Lock()
 
-    #------------------------------------------------------------------
     # 核心操作
-    #------------------------------------------------------------------
 
     def save(self, path_id: str, constraints: List[str],
              depth: int = 0, base_state_id: Optional[str] = None) -> str:
@@ -170,9 +164,7 @@ class StateMemento:
         with self._lock:
             return self._remove_memento(memento_id)
 
-    #------------------------------------------------------------------
     # 内部方法
-    #------------------------------------------------------------------
 
     def _remove_memento(self, memento_id: str) -> bool:
         entry = self._mementos.pop(memento_id, None)
@@ -230,9 +222,7 @@ class StateMemento:
                 result |= (1 << i)
         return result
 
-    #------------------------------------------------------------------
     # 统计与诊断
-    #------------------------------------------------------------------
 
     def get_stats(self) -> MementoStats:
         with self._lock:

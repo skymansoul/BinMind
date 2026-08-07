@@ -58,7 +58,7 @@ class EPSSClient:
         self._conn: Optional[sqlite3.Connection] = None
         self._init_cache()
 
-    # ---- 缓存管理（与 cve_kb 模式一致但更简单） ----
+# 缓存管理（与 cve_kb 模式一致但更简单）
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
             if self._cache_path != ":memory:":
@@ -113,7 +113,7 @@ class EPSSClient:
             )
             conn.commit()
 
-    # ---- API ----
+# API
     def fetch_scores(self, cve_ids: List[str]) -> Dict[str, Dict[str, Any]]:
         """从 FIRST.org API 批量获取 EPSS 分数。
         返回 cve_id -> {epss_score, epss_percentile} dict。
@@ -218,7 +218,7 @@ class EPSSClient:
 
         return results
 
-    # ---- 从每日 CSV 转储批量导入 ----
+# 从每日 CSV 转储批量导入
     # first.org 发布 https://epss.first.org/epss_scores-current.csv.gz
     # 包含所有 CVE 的分数。批量扩充远快于 API。
     # 文件约 15MB 压缩，~100MB 解压。
@@ -326,7 +326,7 @@ class EPSSClient:
         stats["elapsed_secs"] = round(time.time() - start, 2)
         return stats
 
-    # ---- 便捷方法 ----
+# 便捷方法
     def fetch_score(self, cve_id: str) -> Dict[str, Any]:
         """获取单个 CVE 的 EPSS 分数。便捷包装。"""
         return self.fetch_scores([cve_id]).get(cve_id, {

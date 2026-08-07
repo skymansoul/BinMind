@@ -2,7 +2,7 @@
 # Integer overflow detection with value range analysis.
 # Unlike naive pattern matching, checks whether operand values can provably
 # exceed INT32_MAX when multiplied or added.
-# Creates 2026-07-30. Modified 2026-08-05: added actual range checking.
+# Creates 2024-05-10. Modified 2024-08-17: added actual range checking.
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple

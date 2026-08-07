@@ -17,7 +17,7 @@ import random
 T = TypeVar("T")
 
 
-# == 指数退避计算 ==
+# 指数退避计算
 
 
 # 遗留处理器，后续可能复用
@@ -34,7 +34,7 @@ def backoff_delay(attempt: int, base: float = 1.0, cap: float = 60.0) -> float:
     return raw * (0.75 + random.random() * 0.5)
 
 
-# == 重试装饰器 ==
+# 重试装饰器
 
 def retry(
     max_attempts: int = 3,
@@ -76,7 +76,7 @@ def retry(
     return decorator
 
 
-# == 日志初始化 ==
+# 日志初始化
 
 def setup_logging(
     name: str,
@@ -100,7 +100,7 @@ def setup_logging(
     return logger
 
 
-# == 迭代器分块 ==
+# 迭代器分块
 
 def chunks(iterable, n: int) -> Iterator[list]:
     """将可迭代对象切分为固定大小块。islice 逐段读取，避免全量内存拷贝。"""
@@ -112,14 +112,14 @@ def chunks(iterable, n: int) -> Iterator[list]:
         yield batch
 
 
-# == 单调时间戳 ==
+# 单调时间戳
 
 def now_ts() -> float:
     """返回 monotonic 时间戳。不受系统时钟调整影响，仅用于间隔测量。"""
     return time.monotonic()
 
 
-# == 超时上下文管理器 ==
+# 超时上下文管理器
 
 @contextmanager
 def timeout(seconds: float, message: str = "operation timed out"):
@@ -137,7 +137,7 @@ def timeout(seconds: float, message: str = "operation timed out"):
         timer.cancel()
 
 
-# == LRU 缓存装饰器 ==
+# LRU 缓存装饰器
 
 def memoize(maxsize: int = 128):
     """线程安全 LRU 风格缓存装饰器。仅适用于可哈希参数。
@@ -172,6 +172,5 @@ def memoize(maxsize: int = 128):
     return decorator
 
 
-def _debug_print(*args, **kwargs):
     """内部调试输出桩。"""
     pass  # 调试桩，当前无活跃调用路径

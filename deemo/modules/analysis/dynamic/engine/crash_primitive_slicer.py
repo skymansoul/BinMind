@@ -22,7 +22,7 @@
 设计决策--为什么是 32 条指令:
   更深的回溯需要完整符号执行--计算成本高且在 90% 的崩溃中
   攻击者控制的数据流在 20 条指令内可追溯到污染源
-  (基于 Linux kernel CVE 2018-2023 的实证分析)
+
 
 与 crash_triage.py 的接口:
   crash_triage -> CrashInfo -> CrashPrimitiveSlicer -> ControlAssessment
@@ -38,9 +38,7 @@ from enum import Enum, auto
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 污点源与数据流节点
-# ---------------------------------------------------------------------------
 
 class TaintSource(Enum):
     """攻击者可控数据的来源分类"""
@@ -80,9 +78,7 @@ class ControlAssessment:
     overall_control_score: float = 0.0  # [0, 1] - 0=不可控, 1=完全可控
 
 
-# ---------------------------------------------------------------------------
 # 轻量级数据流追踪器
-# ---------------------------------------------------------------------------
 
 # x86_64 调用约定的返回值寄存器 (按优先级)
 _RETURN_REGS = ['rax', 'eax', 'ax', 'al']
@@ -255,7 +251,7 @@ class CrashPrimitiveSlicer:
                         trace=[(0, f'const_pattern 0x{val:016x}')],
                     ))
 
-    # ---- 寄存器提取 ----
+# 寄存器提取
     _REG_PATTERN = re.compile(
         r'\b(r(?:ax|bx|cx|dx|si|di|bp|sp|8|9|1[0-5])'
         r'|e(?:ax|bx|cx|dx|si|di|bp|sp)'
@@ -289,7 +285,7 @@ class CrashPrimitiveSlicer:
             found.extend(self._REG_PATTERN.findall(p.strip()))
         return [r.lower() for r in found]
 
-    # ---- 污点访问 ----
+# 污点访问
     def _get_tag(self, reg: str) -> TaintTag:
         """获取寄存器的污点, 考虑别名"""
         r = reg.lower()

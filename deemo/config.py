@@ -542,12 +542,10 @@ def test_api_connection(client) -> bool:
         return False
 
 
-# =============================================================================
 # 模块级导出常量 — from config import X 需要模块级名称。
 # Config 类属性通过 os.environ.get 动态读取，以下为其模块级别名，
 # 供 core/pipeline.py、core/decompiler.py 等直接导入。
 # 注：这些不是独立的配置项，仅桥接 Config 类属性到模块命名空间。
-# =============================================================================
 
 # 反编译器与工具路径 — 默认值仅作为回退，生产环境通过环境变量注入
 R2_PATH = os.environ.get('R2_PATH', 'radare2')
@@ -596,13 +594,11 @@ DB_PATH = Config.DB_PATH
 CORPUS_DIR = Config.CORPUS_DIR
 
 
-# =============================================================================
 # 以下配置项对应各模块的可调参数。
 # 集中定义而非在各模块内硬编码——便于跨模块调参和基准测试。
 # 默认值基于开发环境的初步调试，生产部署前需在各目标 workload 上校准。
-# =============================================================================
 
-# --- 路径多样性管理 (PathDiversityTracker) ---
+# 路径多样性管理 (PathDiversityTracker)
 # SimHash 排斥阈值——汉明距离超过此值的路径对直接判定为不相似
 SIMHASH_REJECTION_THRESHOLD = 3  # [1, 5]，越低越保守（更少排斥，更多精确计算）
 # 自适应阈值的速度窗口和步长
@@ -616,7 +612,7 @@ DIVERSITY_VELOCITY_HIGH = 5.0  # 高于此值→提高阈值（减少冗余）
 DIVERSITY_MAX_PATHS = 1000
 DIVERSITY_BUDGET_REFRESH_INTERVAL = 60  # 配额重算间隔（秒）
 
-# --- 求解器资源自适应管理 ---
+# 求解器资源自适应管理
 # ConstraintComplexityEstimator
 COMPLEXITY_ESTIMATOR_LEARNING_RATE = 0.01
 COMPLEXITY_ESTIMATOR_HISTORY_SIZE = 500
@@ -630,127 +626,127 @@ SOLVER_BUDGET_INTERVAL = 60.0       # 刷新周期（秒）
 ENTROPY_BUDGET_MAX_RATIO = 3.0      # 高熵路径可获得的最大预算倍率
 ENTROPY_BUDGET_MIN_RATIO = 0.3      # 低熵路径可被削减的最小预算倍率
 
-# --- 时态路径缓存 (TemporalPathCache) ---
+# 时态路径缓存 (TemporalPathCache)
 # SimHash 分桶 + 指数时间衰减 + 自适应半衰期
 # 探索速度骤降时临时缩短半衰期以加速遗忘旧路径
 TEMPORAL_CACHE_HALFLIFE_SEC = 120.0      # 权重衰减半衰期（基准值）
 TEMPORAL_CACHE_MAX_PER_BUCKET = 50       # 触发子桶分裂的阈值
 TEMPORAL_CACHE_EVICT_MAX_AGE = 600.0     # 批量逐出阈值（秒）
-TEMPORAL_CACHE_MIN_RETENTION_SEC = 5.0   # 最小保留时间——防刚添加的路径被逐出
+# TEMPORAL_CACHE_MIN_RETENTION_SEC = 5.0   # 最小保留时间——防刚添加的路径被逐出
 TEMPORAL_CACHE_ADAPTIVE_HALFLIFE = True  # 自适应半衰期开关
 
-# --- GNN 图增强与粗化 ---
+# GNN 图增强与粗化
 # 度感知边丢弃
 GRAVITY_DROPOUT_RATE = 0.15
 # CFG 粗化
-CFG_COARSENING_MAX_CHAIN_LENGTH = 4  # 收缩链长度上限——防止 O0 代码过度合并
+# CFG_COARSENING_MAX_CHAIN_LENGTH = 4  # 收缩链长度上限——防止 O0 代码过度合并
 
-# --- 跨架构归一化 ---
+# 跨架构归一化
 CROSS_ARCH_NORMALIZE_ARM_COND = True  # ARM 条件执行后缀归一化开关
 
-# --- 模糊测试 ---
+# 模糊测试
 # 覆盖密度感知变异
 COVERAGE_DENSITY_BUCKET_SHIFT = 6    # 64 条边/bucket
 COVERAGE_DENSITY_HALFLIFE_EXECS = 500
 # 稀有度加权调度
 RARITY_SCHEDULER_RECALC_INTERVAL = 1000
 
-# --- 反编译器集成 ---
+# 反编译器集成
 DECOMPILER_ENSEMBLE_TEMPERATURE = 0.5
 DECOMPILER_ENSEMBLE_EMA_ALPHA = 0.1
 
-# --- 状态备忘录 (StateMemento) ---
-# ref: KLEE 2024 ICSE Workshop "State Merging with Quantifiers"
+# 状态备忘录 (StateMemento)
+# KLEE 2024 ICSE Workshop "State Merging with Quantifiers"
 # 本模块采用 Memento 模式而非状态合并，保留路径特异性的同时压缩存储
 STATE_MEMENTO_MEMORY_BUDGET_MB = 256.0   # 全局内存预算（MB）
 STATE_MEMENTO_MAX_PER_PATH = 10          # 单路径最大快照数
 STATE_MEMENTO_BUDGET_EVICT_TARGET = 0.8  # 逐出目标（预算的 80%）
 
-# --- 冷点引导探索器 (ColdSpotGuidedExplorer) ---
-# ref: Sun et al. ICSE 2024 — 基于约束编辑距离的冷点引导符号执行
+# 冷点引导探索器 (ColdSpotGuidedExplorer)
+# Sun et al. ICSE 2024 — 基于约束编辑距离的冷点引导符号执行
 # 在符号执行框架内计算约束编辑距离——不依赖 LLM
 COLDSPOT_MAX_EDIT_DISTANCE = 15.0        # 超过此编辑距离的方案丢弃
 COLDSPOT_MIN_REACHABILITY = 0.1          # 最低可达性估计阈值
 COLDSPOT_TOP_K_NEAREST = 3               # 每个冷点的最近邻路径数
 
-# --- 度保持边丢弃 (DegreePreservingDropout) ---
-# ref: DropEdge (Rong et al., ICLR 2020); BEGA gravity model
+# 度保持边丢弃 (DegreePreservingDropout)
+# DropEdge; BEGA gravity model
 # 在 DropEdge 的 O(|V|) 复杂度上加入度数感知保护
 DEGREE_DROPOUT_GLOBAL_PROB = 0.15        # 全局基准丢弃概率
-DEGREE_DROPOUT_PROTECTION_BETA = 2.0     # 度数保护阈值——度数 <= beta 的边受保护
+# DEGREE_DROPOUT_PROTECTION_BETA = 2.0     # 度数保护阈值——度数 <= beta 的边受保护
 DEGREE_DROPOUT_SPARSE_ADAPTIVE = True    # 稀疏度自适应因子开关
 
-# --- 子寄存器污点追踪 (SubRegTaintState) ---
-# ref: Intel SDM Vol.1 §3.4.1.1; Brumley et al. BAP (CMU)
+# 子寄存器污点追踪 (SubRegTaintState)
+# Intel SDM Vol.1 §3.4.1.1; Brumley et al. BAP (CMU)
 # 字节级寄存器污点——将 RAX 拆分为 8 个独立槽位
 SUBREG_TAINT_MERGE_MODE = 'union'       # 'union' | 'max_conf' | 'last_writer'
 
-# --- 漂移校准器 (DriftCalibrator) ---
-# ref: Gama et al. (2014) ACM CSUR; Page (1954) Biometrika
+# 漂移校准器 (DriftCalibrator)
+# Gama et al. ACM CSUR; Page Biometrika
 # CUSUM 漂移检测 + 自动 SGD 重校准
 DRIFT_CUSUM_DECAY = 0.95                # 指数衰减因子
 DRIFT_CUSUM_OMEGA_AUTO = True           # 自动 ω 校准开关
 DRIFT_MIN_SAMPLES = 30                  # 漂移检测启动的最小样本数
 DRIFT_COOLDOWN_PERIOD = 50              # 重校准后的冷却样本数
 
-# --- CFG 熵指纹 (cfg_entropy_fingerprint) ---
-# ref: Spielman (2007) "Spectral Graph Theory" — 图拉普拉斯正则化的数学基础
+# CFG 熵指纹 (cfg_entropy_fingerprint)
+# Spielman "Spectral Graph Theory" — 图拉普拉斯正则化的数学基础
 # 将字节熵嵌入 CFG 结构，提取拉普拉斯谱特征
 CFG_ENTROPY_FINGERPRINT_K = 5           # 保留的特征值数量
 CFG_ENTROPY_POWER_ITER_THRESHOLD = 1000 # 超过此节点数使用幂迭代近似
 CFG_ENTROPY_SIMILARITY_METHOD = 'cosine'  # 'cosine' | 'euclidean'
 
-# --- 编译器产物归一化器 (CompilerArtifactNormalizer) ---
+# 编译器产物归一化器 (CompilerArtifactNormalizer)
 COMPILER_NORMALIZE_UNROLL = True        # 循环展开折叠开关
 COMPILER_NORMALIZE_IDIOM = True         # 惯用法替换开关
 
-# --- 跨层污点路由器 (CrossLayerTaintRouter) ---
-# ref: Caballero et al. USENIX Security 2009
+# 跨层污点路由器 (CrossLayerTaintRouter)
+# Caballero et al. USENIX Security 2009
 CROSS_LAYER_TAINT_BINDING_PATH = ''     # ProtocolFieldBinding JSON 路径 (空=内置默认)
 
-# --- 堆原语链搜索 (primitive_chain) ---
+# 堆原语链搜索 (primitive_chain)
 # A* 堆原语链搜索，补全 exploit 管线的"需要什么布局"阶段
 HEAP_CHAIN_MAX_DEPTH = 15               # 最大搜索深度（原语步数）
 HEAP_CHAIN_MAX_STATES = 5000            # 最大探索状态数
 HEAP_CHAIN_GOAL_CAPABILITY = 'arb_write'  # 目标能力
 HEAP_CHAIN_DEFAULT_ALLOCATOR = 'ptmalloc2'
 
-# --- 二进制级常量时间验证 (const_time) ---
+# 二进制级常量时间验证 (const_time)
 # 无源码二进制文件的秘密依赖分支/访存/循环检测
 CONST_TIME_MIN_CONFIDENCE = 0.6         # 秘密源的最低置信度
 CONST_TIME_TAINT_MAX_ITER = 50          # 污点传播的最大迭代轮数
 CONST_TIME_CI_FAIL_ON = 'HIGH'          # CI 中断的最低严重度 (CRITICAL|HIGH|MEDIUM|LOW|NONE)
 
-# --- 污点约束符号探索器 (TaintConstrainedExplorer) ---
+# 污点约束符号探索器 (TaintConstrainedExplorer)
 # 字节级污点 -> 符号执行路径优先级的跨层桥接
 TAINT_EXPLORER_DECAY_FACTOR = 0.85      # 间接污点置信度衰减因子
 TAINT_EXPLORER_DIVERSITY_WEIGHT = 0.6   # 多样性评分在融合优先级中的权重
 
-# --- ptmalloc2 堆状态机 (Ptmalloc2StateMachine) ---
+# ptmalloc2 堆状态机 (Ptmalloc2StateMachine)
 # 确定性 DFA 预测 malloc/free 序列的堆布局
-# ref: glibc malloc/malloc.c; He et al. IEEE S&P 2023
+# glibc malloc/malloc.c; He et al. IEEE S&P 2023
 PTMALLOC2_START_ADDRESS = 0x100000      # 模拟堆的起始地址
 
-# --- 分布式工作窃取 ---
+# 分布式工作窃取
 WORK_STEALING_IDLE_THRESHOLD = 5
 WORK_STEALING_HEARTBEAT_INTERVAL = 5.0
 WORK_STEALING_STATE_TTL = 15.0
 
-# --- 二进制语义差异分析 (binary_diff) ---
+# 二进制语义差异分析 (binary_diff)
 # 指令语义哈希
-BINDIFF_HASH_FLAGS_GRANULARITY = 'class'   # 'class' | 'detailed' —— 标志位等价类的聚合级别
-BINDIFF_IMM_TRUNCATE_THRESHOLD = 256       # 立即数折叠粒度——小于此值的立即数视为等价
+# BINDIFF_HASH_FLAGS_GRANULARITY = 'class'   # 'class' | 'detailed' —— 标志位等价类的聚合级别
+# BINDIFF_IMM_TRUNCATE_THRESHOLD = 256       # 立即数折叠粒度——小于此值的立即数视为等价
 # 基本块匹配
-BINDIFF_BLOCK_MATCH_THRESHOLD = 0.45       # 块级最小匹配分数——O2 vs O0 场景下校准
+# BINDIFF_BLOCK_MATCH_THRESHOLD = 0.45       # 块级最小匹配分数——O2 vs O0 场景下校准
 BINDIFF_KGRAM_SIZE = 3                     # k-gram 预过滤的 k 值
-BINDIFF_MAX_MATCHES_PER_BLOCK = 3          # 每条块的最大匹配对数量——防止大块垄断
+# BINDIFF_MAX_MATCHES_PER_BLOCK = 3          # 每条块的最大匹配对数量——防止大块垄断
 # Patch 分类
 BINDIFF_EXPLOITABILITY_MIN_SCORE = 30.0    # exploitability 报告的最低分数阈值
 BINDIFF_PATCH_AGE_WEIGHT_DECAY = 0.001     # 补丁年龄的指数衰减因子
 
-# --- 静态并发缺陷检测 (concurrency_analysis) ---
+# 静态并发缺陷检测 (concurrency_analysis)
 # 锁图分析
-CONCURRENCY_MAX_LOCK_NESTING = 8           # 锁嵌套深度上限——超过视为潜在设计缺陷
+# CONCURRENCY_MAX_LOCK_NESTING = 8           # 锁嵌套深度上限——超过视为潜在设计缺陷
 CONCURRENCY_MIN_SCC_SIZE = 2               # 死锁检测的最小 SCC 大小
 # 数据竞争检测
 CONCURRENCY_MIN_ACCESSORS_FOR_RACE = 2     # 至少 N 个访问者才触发竞争检查
@@ -758,7 +754,7 @@ CONCURRENCY_RACE_SEVERITY_THRESHOLD = 'MEDIUM'  # CI 中断的最小严重度
 # 线程入口推断
 CONCURRENCY_INFER_THREADS_FROM_LOCKS = True  # 无显式线程创建时从锁使用推断并发性
 
-# --- 语义执行新颖度检测 (semantic_novelty_detector) ---
+# 语义执行新颖度检测 (semantic_novelty_detector)
 # 运行时行为嵌入 + 特征哈希 + 滑动窗口余弦相似度
 SEND_EMBED_DIM = 128                     # 嵌入向量维度
 SEND_WINDOW_SIZE = 200                   # 滑动窗口保留的嵌入数
@@ -772,7 +768,7 @@ THOMPSON_REBALANCE_INTERVAL = 300.0      # 重新分配周期（秒）
 THOMPSON_MIN_ALLOCATION_RATIO = 0.05     # 每个 arm 的最少 CPU 份额
 THOMPSON_PRIOR_SUCCESS = 1.0             # Beta 先验 α（均匀先验 → 1.0）
 THOMPSON_PRIOR_FAILURE = 1.0             # Beta 先验 β
-THOMPSON_STAGNATION_THRESHOLD = 3        # 停滞阈值——超过此轮数无产出则标记
+# THOMPSON_STAGNATION_THRESHOLD = 3        # 停滞阈值——超过此轮数无产出则标记
 THOMPSON_DRIFT_DEGRADATION = 0.3         # 后验均值低于历史峰值 30% 触发重启
 
 # --- 约束感知 def-use 链引导变异 (defuse_mutation_guide) ---
@@ -781,5 +777,5 @@ DEFUSE_CLUSTER_MERGE_THRESHOLD = 0.5     # Jaccard 合并阈值
 DEFUSE_MAX_MUTANTS_PER_SEED = 5          # 每个种子最多生成的变异数
 DEFUSE_MAX_CLUSTER_NEIGHBOR_GAP = 3      # 聚类合并的最大字节间隔
 DEFUSE_MUTATION_HISTORY_SIZE = 100       # 变异效果历史记录长度
-DEFUSE_RECENT_SUCCESS_CAP = 3            # 聚类短期内成功的次数上限——超限后降权
+# DEFUSE_RECENT_SUCCESS_CAP = 3            # 聚类短期内成功的次数上限——超限后降权
 DEFUSE_SUGGEST_MAX_VALUES = 10           # 翻转建议的最大候选值数

@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-31  |  溯源编排引擎
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-05-27  |  溯源编排引擎
+# 修改: 2026-05-27  |  审计后补充文件头与错误处理
 #
 """
 时态漏洞溯源引擎——编排git追溯、程序切片、贝叶斯推断的完整管线。
@@ -115,7 +115,7 @@ class TemporalProvenanceEngine:
         steps = []
         full_path = os.path.join(self._repo, file_path)
 
-        # Step 1: 程序切片
+        # 程序切片
         steps.append("程序切片")
         region = self._slicer.locate_function(full_path, function_name)
         if region is None:
@@ -128,7 +128,7 @@ class TemporalProvenanceEngine:
         if dangerous:
             steps.append(f"危险行: {len(dangerous)}行")
 
-        # Step 2: Git追溯
+        # Git追溯
         steps.append(f"blame: {file_path}:{region.start_line}-{region.end_line}")
         hypotheses = self._extractor.extract_commits_for_lines(
             file_path, region.start_line, region.end_line)
@@ -143,7 +143,7 @@ class TemporalProvenanceEngine:
 
         steps.append(f"候选提交: {len(hypotheses)}")
 
-        # Step 3: 注入仓库级特征
+        # 注入仓库级特征
         file_age = self._repo_analyzer.get_file_age_days(file_path)
         freq = self._repo_analyzer.get_commit_freq_weekly(file_path)
         sec_sensitive = self._repo_analyzer.is_security_sensitive(file_path)
@@ -153,12 +153,12 @@ class TemporalProvenanceEngine:
         eff_conf.setdefault('commit_frequency', freq)
         eff_conf.setdefault('security_sensitive', 1.0 if sec_sensitive else 0.0)
 
-        # Step 4: 贝叶斯推断
+        # 贝叶斯推断
         steps.append("贝叶斯因果推断")
         report_ts = _parse_date(vuln_report_date)
         result = self._estimator.estimate(hypotheses, report_ts, confounders=eff_conf)
 
-        # Step 5: 多信号BMA融合
+        # 多信号BMA融合
         ranked = []
         agg = {}
         if static_hints or llm_signals:

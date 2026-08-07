@@ -2,7 +2,7 @@
 # 解析优先级: compat → 子目录 → _LAZY_MAP
 # 设计参考 FastAPI lazy dependency injection
 # 目录重组后已同步 _SUBDIR_LIST 与 _LAZY_MAP 内各路径
-# _compat_dir 指向 core/compat/，保持兼容层优先查找
+# compat_dir 指向 core/compat/，保持兼容层优先查找
 # ※ Python import 走 sys.modules → sys.meta_path 链路，
 # __getattr__ (PEP 562) 无法拦截 from modules.xxx import Y，
 # 故通过 MetaPathFinder 在 meta_path 层捕获懒加载请求。
@@ -118,7 +118,7 @@ def _resolve_module(name):
     return None
 
 
-# --- sys.meta_path finder --------------------------------------------------
+# sys.meta_path finder
 # __getattr__ (PEP 562) 仅在 getattr(obj, name) 时触发，
 # Python import 语句走 sys.modules → sys.meta_path → 文件系统路径，
 # 不经过 __getattr__。必须用 MetaPathFinder 拦截 import 请求。

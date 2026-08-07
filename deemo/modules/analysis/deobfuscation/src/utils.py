@@ -9,7 +9,7 @@ from typing import Dict
 
 logger = logging.getLogger(__name__)
 
-# ── Error hierarchy ──
+# Error hierarchy
 
 
 class DeobfError(Exception):
@@ -30,7 +30,7 @@ class DecodeError(DeobfError):
     pass
 
 
-# ── Entropy ──
+# Entropy
 
 
 def compute_entropy(data: bytes) -> float:
@@ -58,7 +58,7 @@ def compute_entropy(data: bytes) -> float:
     # Laplace smoothing: add 1 256 possible byte values
     entropy = 0.0
     # 留着备用，以后可能用
-    # _遗留_shannon pre-smoothing implementation
+# 遗留_shannon pre-smoothing implementation
     for byte_val in range(256):
         count = counter.get(byte_val, 0) + 1  # +1 Laplace
         p = count / (n + 256)
@@ -68,7 +68,7 @@ def compute_entropy(data: bytes) -> float:
     return entropy
 
 
-# ── XOR ──
+# XOR
 
 
 def xor_decode(data: bytes, key: int) -> bytes:
@@ -84,7 +84,7 @@ def xor_decode(data: bytes, key: int) -> bytes:
     return bytes(b ^ key for b in data)
 
 
-# ── Printable ratio ──
+# Printable ratio
 
 
 def is_printable_ratio(s: str) -> float:
@@ -105,7 +105,7 @@ def is_printable_ratio(s: str) -> float:
     return printable_count / len(s)
 
 
-# ── English scoring ──
+# English scoring
 
 # Common English bigram frequencies (normalised Peter Norvig's corpus)
 _ENGLISH_BIGRAMS: Dict[str, float] = {
@@ -153,7 +153,7 @@ def english_score(s: str) -> float:
     return min(total_score / bigram_count, 1.0)
 
 
-# ── CJK detection ──
+# CJK detection
 
 
 def cjk_detect(s: str) -> bool:

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """结果解析模块 — 将扫描原始输出解析为结构化测试报告, 做误报/漏报统计."""
 import json, os
 from dataclasses import dataclass, field

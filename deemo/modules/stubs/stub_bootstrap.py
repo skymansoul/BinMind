@@ -185,7 +185,7 @@ def _phase_report(report: BootstrapReport, verbose: bool) -> None:
                     f'health={report.health_score:.2f} exit={report.exit_code}')
 
 
-# ---- CLI入口 ----
+# CLI入口
 def main(argv: list = None) -> int:
     """python -m modules.stubs.stub_bootstrap [--verbose] [--json]"""
     if argv is None:

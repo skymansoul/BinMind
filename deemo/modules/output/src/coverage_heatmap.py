@@ -1,5 +1,5 @@
-# 创建: 2025-08-17 18:33
-# 修改: 2025-08-17 — 边->地址反向映射 + 256B bucket 密度聚合
+# 创建: 2026-05-01 18:33
+# 修改: 2026-05-01 — 边->地址反向映射 + 256B bucket 密度聚合
 """
 空间覆盖热力图生成器 — 边覆盖位图→地址空间热力图→热点/冷点识别。
 
@@ -61,7 +61,7 @@ class CoverageHeatmap:
     overall_density: float = 0.0
 
 
-# --- 边→地址映射 ---
+# 边→地址映射
 
 def decode_edge_hash(edge_hash: int) -> tuple[int, int]:
     """从 AFL 风格的边哈希反推 src 和 dst 地址的近似值。
@@ -72,7 +72,7 @@ def decode_edge_hash(edge_hash: int) -> tuple[int, int]:
     return prev_approx, curr_approx
 
 
-# --- 热度聚合 ---
+# 热度聚合
 
 def aggregate_heatmap(edge_bitmap: bytearray,
                       edge_to_addr: dict[int, tuple[int, int]],
@@ -177,7 +177,7 @@ def _categorize(density: float) -> str:
     return 'dead'
 
 
-# --- 冷点引导建议 ---
+# 冷点引导建议
 
 def suggest_coldspot_targets(heatmap: CoverageHeatmap,
                              top_k: int = 5) -> list[dict]:

@@ -3,10 +3,10 @@
 # 工作流感知调度: 联合优化数据移动与任务调度
 #
 # 模式支持：
-#   - sequential: stage0 → stage1 → ... 串行
-#   - fan_out:    单输入 → N 并行子任务
-#   - fan_in:     N 并行 → 汇聚（等待全部 / 首个 / 任 N-1）
-#   - dag:        有向无环图（拓扑顺序执行）
+# sequential: stage0 → stage1 → ... 串行
+# fan_out:    单输入 → N 并行子任务
+# fan_in:     N 并行 → 汇聚（等待全部 / 首个 / 任 N-1）
+# dag:        有向无环图（拓扑顺序执行）
 # 每种模式可在 worker 池上执行，也可单机多线程执行。
 #
 # 设计原则：管线不关心执行者是谁（本地线程 / Celery / K8s Job），
@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 _log = logging.getLogger(__name__)
 
 
-# ===== 阶段与任务 =====
+# 阶段与任务
 
 @dataclass
 class Stage:
@@ -56,7 +56,7 @@ class PipelineResult:
         return self.error is None
 
 
-# ===== 管线定义 =====
+# 管线定义
 
 class Pipeline:
     """有向无环图 (DAG) 管线定义。
@@ -99,7 +99,7 @@ class Pipeline:
         return len(self._stages)
 
 
-# ===== 执行器接口 =====
+# 执行器接口
 
 class PipelineExecutor:
     """管线执行器 — 默认用 ThreadPoolExecutor 本地执行。
@@ -143,7 +143,7 @@ def _split_into_chunks(items: list, n: int) -> list:
     return [items[i:i + size] for i in range(0, len(items), size)]
 
 
-# ===== 管线运行器 =====
+# 管线运行器
 
 class PipelineRunner:
     """串行执行管线各阶段（遵循 DAG 拓扑序）。
@@ -250,7 +250,7 @@ class PipelineRunner:
         return dict(self._results)
 
 
-# ===== Fan-In 辅助 =====
+# Fan-In 辅助
 
 class FanInCollector:
     """Fan-in 收集器 — 聚合 N 个并行结果。

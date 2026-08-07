@@ -5,14 +5,13 @@
 2025-08-09 16:33 - SPSA 梯度估计 (无需解析梯度) + 多个超参数联合调优
 2025-08-10 08:47 - 收敛诊断: 步长衰减满足 Ση=∞, Ση²<∞ 条件监控
 
-参考:
-  Robbins & Monro (1951) "A Stochastic Approximation Method" (Annals of Math
+  Robbins & Monro "A Stochastic Approximation Method" (Annals of Math
     Statistics) — 经典 RM 算法, 随机逼近的奠基工作
-  Spall (1992) "Multivariate Stochastic Approximation Using a Simultaneous
+  Spall "Multivariate Stochastic Approximation Using a Simultaneous
     Perturbation Gradient Approximation" (IEEE TAC) — SPSA, 仅需两次函数评估
-  Polyak & Juditsky (1992) "Acceleration of Stochastic Approximation by
+  Polyak & Juditsky "Acceleration of Stochastic Approximation by
     Averaging" (SIAM JCO) — 参数平均化改进收敛速度
-  Kushner & Yin (2003) "Stochastic Approximation and Recursive Algorithms
+  Kushner & Yin "Stochastic Approximation and Recursive Algorithms
     and Applications" — 专著, ODE 方法证明收敛
 
 在 fuzzing 文献中的位置:
@@ -38,13 +37,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
-
-# ---- RM 参数 ----
+# RM 参数
 _DEFAULT_ETA_A = 1.0          # 步长缩放因子
 _DEFAULT_ETA_B = 10.0         # 步长稳定项
 _DEFAULT_ETA_ALPHA = 0.602    # 步长衰减指数 (SPSA 推荐值)
 _DEFAULT_SPSA_C = 0.1          # SPSA 扰动大小
-
 
 @dataclass
 class ParameterState:
@@ -59,7 +56,6 @@ class ParameterState:
     # 统计
     n_updates: int = 0
     recent_gradient: float = 0.0
-
 
 class RobbinsMonroTuner:
     """Robbins-Monro 在线参数调优器.

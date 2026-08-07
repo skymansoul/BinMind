@@ -16,9 +16,9 @@
 3. 循环结构残差 —— 优化级别在循环体大小和展开因子上的留存痕迹
 
 ref: MulCPI — 多模态特征融合的编译器来源识别
-ref: BinAlign (Ismail et al., ACISP 2023) — 对齐填充特征的注意力机制方法
+ref: BinAlign — 对齐填充特征的注意力机制方法
 本项目的 instruc dyad 特征受其"编译器特有指令序列模式"思想启发
-ref: Benoit et al. (SANER 2021) — CFG site-based GNN 在编译器来源上的 F1=0.995
+ref: Benoit et al. — CFG site-based GNN 在编译器来源上的 F1=0.995
 """
 
 import math
@@ -65,7 +65,7 @@ class CompilerFingerprinter:
         self._dyad_counter: Counter = Counter()
         self._insn_count = 0
 
-    # ---- 指令 dyad 提取 ----
+# 指令 dyad 提取
     @staticmethod
     def _normalize_mnemonic(mnemonic: str) -> str:
         """将变体归一化到标准助记符——忽略操作数宽度后缀（b/w/l/q）"""
@@ -114,7 +114,7 @@ class CompilerFingerprinter:
 
         return _dyad_freq
 
-    # ---- 评分计算 ----
+# 评分计算
     def _score_dyad_dimension(self, dyad_freq: Dict[str, float]) -> Dict[str, float]:
         """基于指令对频率分布，为每种编译器计算匹配得分"""
         _scores = {}
@@ -158,7 +158,7 @@ class CompilerFingerprinter:
             _scores[f"{comp}_{opt}"] = 0.6 * _body_score + 0.4 * _unroll_score
         return _scores
 
-    # ---- 集成 ----
+# 集成
     def _ensemble(self, dyad_scores: Dict[str, float],
                   reg_scores: Dict[str, float],
                   loop_scores: Dict[str, float]) -> CompilerFingerprint:
@@ -236,7 +236,7 @@ class CompilerFingerprinter:
 
         return _best
 
-    # ---- 对外主入口 ----
+# 对外主入口
     def fingerprint(self, instructions: List[str],
                     reg_pressure: Optional[float] = None,
                     loop_body_sizes: Optional[List[float]] = None,

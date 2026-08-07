@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-03  补齐 compat 模块自动发现与钩子注册桥接
+# coding: utf-8
+# 创建: 2026-05-06  补齐 compat 模块自动发现与钩子注册桥接
 """
 Compat 模块自动发现与钩子注册 — 扫描 compat/ 目录, 将分析模块包装为标准钩子,
 推断读写键签名, 注册到 SchemaModel, 使 SmartPipeline 可使用真实分析模块.

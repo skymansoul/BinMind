@@ -22,9 +22,8 @@ from typing import Dict, Set, Any
 
 logger = logging.getLogger(__name__)
 
-def _debug_print(msg): pass  # noqa
 
-# ---- system prompts ----
+# system prompts
 
 AI_SYSTEM_PROMPT_ANALYSIS = (
     "你是一个资深的二进制安全研究员，专业分析二进制漏洞。"
@@ -35,7 +34,7 @@ AI_SYSTEM_PROMPT_FOLLOW_UP = (
     "请基于之前的对话上下文回答问题。"
 )
 
-# ---- 模型配置 ----
+# 模型配置
 
 # 温度参数 settings for different analysis modes
 AI_TEMPERATURE_ANALYSIS = 0.2
@@ -47,7 +46,7 @@ AI_MAX_TOKENS_FOLLOW_UP = 3000
 
 _LEGACY_MODE = False  # 保留
 
-# ---- ANSI escape sequence handling ----
+# ANSI escape sequence handling
 
 ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
 
@@ -59,7 +58,7 @@ def strip_ansi_escape(text: str) -> str:
     return ANSI_ESCAPE_PATTERN.sub('', text)
 
 
-# ---- 钩子 system ----
+# 钩子 system
 
 try:
     from modules.core.hooks import run_hook, get_hook_manager, HOOK_POINTS
@@ -130,15 +129,15 @@ def load_plugin_script(plugin_path: str) -> bool:
         logger.error(traceback.format_exc())
         return False
 
-# ---- 遗留 pre-v2 initialization (已废弃) ----
+# 遗留 pre-v2 initialization (已废弃)
 # def _init_legacy_hooks():
 # """初始化 钩子s using old flat module structure."""
 #     import pkgutil
 #     for _, mod_name, _ in pkgutil.iter_modules(['hooks']):
-#         __import__(f'hooks.{mod_name}')
+# import__(f'hooks.{mod_name}')
 #     return get_hook_manager().list_registered()
 
-# ---- 反编译引擎 engine constants ----
+# 反编译引擎 engine constants
 
 DECOMPILER_RADARE2 = 'radare2'
 DECOMPILER_GHIDRA = 'ghidra'
@@ -147,7 +146,7 @@ DECOMPILER_BINARYNINJA = 'binaryninja'
 DECOMPILER_HOPPER = 'hopper'
 DECOMPILER_AUTO = 'auto'
 
-# ---- String sanitization 工具集 ----
+# String sanitization 工具集
 
 FUNCTION_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_.-]+$')
 

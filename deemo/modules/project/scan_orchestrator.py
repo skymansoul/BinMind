@@ -1,4 +1,5 @@
 # 多工具扫描流水线: DAG拓扑+层并行+SHA-256/Jaccard双重去重
+from __future__ import annotations
 import logging, time, hashlib, json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Callable, Any, Set

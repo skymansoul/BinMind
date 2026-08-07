@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Union
 from enum import Enum
 
-# ===== 严重等级 =====
+# 严重等级
 class Severity(Enum):
     CRITICAL = 5
     HIGH = 4
@@ -24,12 +24,12 @@ HARDENING_CATEGORY_MAP = {
     "container": "容器/运行时", "cbl": "CBL-Mariner/KernelCTF",
 }
 
-# ===== KSPP 基准检查清单 =====
+# KSPP 基准检查清单
 # 每项结构: (key, expected, weight, severity, description, category)
 # category 取 HARDENING_CATEGORY_MAP 的键
 
 KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
-    # ---- 内存安全 ----
+# 内存安全
     ("SLAB_FREELIST_RANDOM",      "y",  4, Severity.HIGH,     "slab freelist随机化防heap预测", "mem"),
     ("SLAB_FREELIST_HARDENED",    "y",  4, Severity.HIGH,     "slab freelist加固防metadata损坏", "mem"),
     ("SHUFFLE_PAGE_ALLOCATOR",    "y",  3, Severity.MEDIUM,   "页分配器随机化", "mem"),
@@ -39,12 +39,12 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("INIT_STACK_ALL_PATTERN",    "n",  2, Severity.LOW,      "不应启用栈pattern填充", "mem"),
     ("ZERO_CALL_USED_REGS",       "y",  5, Severity.CRITICAL, "函数调用后清零寄存器", "mem"),
 
-    # ---- CFI / 控制流完整性 ----
+# CFI / 控制流完整性
     ("CFI_CLANG",                 "y",  5, Severity.CRITICAL, "Clang CFI前向边保护", "cfi"),
     ("CFI_PERMISSIVE",            "n",  4, Severity.HIGH,     "CFI宽松模式应关闭", "cfi"),
     ("LTO_CLANG",                 "y",  3, Severity.MEDIUM,   "LTO是CFI的前置条件", "cfi"),
 
-    # ---- 推测执行缓解 ----
+# 推测执行缓解
     ("RETPOLINE",                 "y",  5, Severity.CRITICAL, "retpoline防Spectre v2", "spec"),
     ("SPEC_STORE_BYPASS_DISABLE", "y",  4, Severity.HIGH,     "禁用存储绕过推测", "spec"),
     ("SPECTRE_V2",                "y",  5, Severity.CRITICAL, "Spectre V2缓解", "spec"),
@@ -52,12 +52,12 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("UNRET",                     "y",  4, Severity.HIGH,     "unret gadget缓解", "spec"),
     ("MITIGATION_RETPOLINE",      "y",  4, Severity.HIGH,     "retpoline缓解标志", "spec"),
 
-    # ---- ASLR ----
+# ASLR
     ("RANDOMIZE_BASE",            "y",  5, Severity.CRITICAL, "KASLR 基地址随机化", "aslr"),
     ("RANDOMIZE_MEMORY",          "y",  5, Severity.CRITICAL, "内存布局随机化", "aslr"),
     ("RANDOMIZE_KSTACK_OFFSET_DEFAULT", "y", 3, Severity.MEDIUM, "内核栈随机偏移", "aslr"),
 
-    # ---- 攻击面缩减 ----
+# 攻击面缩减
     ("MODULE_SIG",                "y",  4, Severity.HIGH,     "内核模块签名", "surface"),
     ("MODULE_SIG_FORCE",          "y",  4, Severity.HIGH,     "强制模块签名验证", "surface"),
     ("MODULE_SIG_ALL",            "y",  3, Severity.MEDIUM,   "签名所有模块", "surface"),
@@ -72,14 +72,14 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("KEXEC",                     "n",  2, Severity.LOW,      "非必需应禁用kexec", "surface"),
     ("HIBERNATION",               "n",  2, Severity.LOW,      "非必需应禁用休眠", "surface"),
 
-    # ---- LSM / 安全模块 ----
+# LSM / 安全模块
     ("SECURITY",                  "y",  5, Severity.CRITICAL, "启用LSM框架", "lsm"),
     ("SECURITY_SELINUX",          "y",  3, Severity.MEDIUM,   "SELinux", "lsm"),
     ("SECURITY_SELINUX_BOOTPARAM","n",  2, Severity.LOW,      "不应允许启动参数禁用SELinux", "lsm"),
     ("SECURITY_LOCKDOWN_LSM",     "y",  4, Severity.HIGH,     "内核锁定LSM", "lsm"),
     ("SECURITY_LOCKDOWN_LSM_EARLY","y", 4, Severity.HIGH,     "尽早启用锁定LSM", "lsm"),
 
-    # ---- 内核自保护 ----
+# 内核自保护
     ("STACKPROTECTOR",            "y",  5, Severity.CRITICAL, "栈canary", "kern"),
     ("STACKPROTECTOR_STRONG",     "y",  5, Severity.CRITICAL, "强栈保护", "kern"),
     ("SCHED_STACK_END_CHECK",     "y",  4, Severity.HIGH,     "栈结束边界检查", "kern"),
@@ -87,15 +87,15 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("THREAD_INFO_IN_TASK",       "y",  4, Severity.HIGH,     "thread_info内嵌task_struct", "kern"),
     ("FORTIFY_SOURCE",            "y",  4, Severity.HIGH,     "编译期fortify强化", "kern"),
 
-    # ---- Usercopy 加固 ----
+# Usercopy 加固
     ("HARDENED_USERCOPY",         "y",  4, Severity.HIGH,     "用户态拷贝加固", "copy"),
     ("HARDENED_USERCOPY_FALLBACK", "n", 2, Severity.LOW,      "不应允许usercopy回退", "copy"),
 
-    # ---- Misc / 架构相关 ----
+# Misc / 架构相关
     ("ARCH_MMAP_RND_BITS",        ">=28", 3, Severity.MEDIUM, "mmap随机位数≥28", "misc"),
     ("PGTABLE_LEVELS",            ">=4",  3, Severity.MEDIUM, "页表层级检查", "misc"),
 
-    # ---- 容器/运行时特化 (KernelCTF / CBL-Mariner 配置基准) ----
+# 容器/运行时特化 (KernelCTF / CBL-Mariner 配置基准)
     ("BPF_JIT",                   "y",  4, Severity.HIGH,     "BPF JIT——容器运行时基础设施", "container"),
     ("BPF_JIT_ALWAYS_ON",         "y",  3, Severity.MEDIUM,   "JIT始终可用——避免解释器回退的攻击面", "container"),
     ("CGROUP_BPF",                "y",  3, Severity.MEDIUM,   "cgroup BPF——容器安全策略挂载点", "container"),
@@ -104,13 +104,13 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("KALLSYMS",                  "n",  3, Severity.MEDIUM,   "kallsyms——非调试场景不应导出", "container"),
     ("KALLSYMS_ALL",              "n",  4, Severity.HIGH,     "/proc/kallsyms 全量导出——KASLR 无效化", "container"),
 
-    # ---- CBL-Mariner / KernelCTF 特定 ----
+# CBL-Mariner / KernelCTF 特定
     ("PAX_REFCOUNT",              "y",  4, Severity.HIGH,     "引用计数溢出保护 (grsec/PaX)", "cbl"),
     ("BUG_ON_DATA_CORRUPTION",    "y",  4, Severity.HIGH,     "数据损坏立刻panic——防静默利用", "cbl"),
     ("SLAB_MERGE_DEFAULT",        "n",  3, Severity.MEDIUM,   "跨缓存合并——增加heap exploit难度", "cbl"),
     ("RANDOM_TRUST_CPU",          "n",  4, Severity.HIGH,     "不信任CPU RNG——防微码后门", "cbl"),
     ("RANDOM_TRUST_BOOTLOADER",   "n",  3, Severity.MEDIUM,   "不信任bootloader RNG种子", "cbl"),
-    # ---- IOMMU/DMA 保护 (2026 PCIe MITM 攻击面) ----
+# IOMMU/DMA 保护
     ("IOMMU_SUPPORT",             "y",  5, Severity.CRITICAL, "IOMMU 基础支持——DMA 攻击的首道防线", "misc"),
     ("INTEL_IOMMU",               "y",  5, Severity.CRITICAL, "Intel VT-d——外设 DMA 隔离", "misc"),
     ("INTEL_IOMMU_DEFAULT_ON",    "y",  5, Severity.CRITICAL, "IOMMU 默认启用——关闭启动期 DMA 窗口", "misc"),
@@ -123,7 +123,7 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("HOTPLUG_PCI",               "n",  2, Severity.LOW,      "PCI 热插拔——运行时外设注入风险", "misc"),
 ]
 
-# ─── CVE 到配置的映射 ───
+# CVE 到配置的映射
 # 各 KSPP 配置项所防御的已知 CVE（仅列内核提权级别的高价值条目）
 
 _CONFIG_CVE_MAP: Dict[str, list[str]] = {
@@ -153,7 +153,7 @@ def get_cve_coverage(config: Dict[str, str]) -> Dict[str, list[str]]:
     return _covered
 
 
-# ===== 审计结果数据类 =====
+# 审计结果数据类
 @dataclass
 class AuditResult:
     """KSPP 审计结果汇总。"""
@@ -180,7 +180,7 @@ class AuditResult:
         }
 
 
-# ===== 配置解析 =====
+# 配置解析
 def parse_config(filepath: str) -> Dict[str, str]:
     """
     解析 Linux 内核 .config 文件。
@@ -233,7 +233,7 @@ def _evaluate_check(key: str, expected: str, actual_value: Optional[str]) -> Tup
     return False, f"无法评估(期望={expected})"
 
 
-# ===== 审计入口 =====
+# 审计入口
 def audit(config_path_or_dict: Union[str, Dict[str, str]]) -> AuditResult:
     """执行 KSPP 基准审计，返回 AuditResult。
 
@@ -296,7 +296,7 @@ def audit(config_path_or_dict: Union[str, Dict[str, str]]) -> AuditResult:
     return _result
 
 
-# ─── 运行时内核加固验证 ───
+# 运行时内核加固验证
 # .config 仅反映编译时选项；运行时 sysctl 可能已修改行为。
 # 此项检查验证运行时配置是否与编译时一致，检测常见的"覆盖型"配置偏差。
 
@@ -344,8 +344,8 @@ def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
     return findings
 
 
-# ===== 修复建议产出 =====
-# ─── 编译器加固标志审计 ───
+# 修复建议产出
+# 编译器加固标志审计
 # .config 选项是必要条件而非充分条件——编译器标志决定运行时行为。
 # 例如 CONFIG_FORTIFY_SOURCE=y 仅在 CFLAGS 包含 -D_FORTIFY_SOURCE=2 时实际生效。
 
@@ -432,7 +432,7 @@ def generate_remediation_plan(audit_result: AuditResult) -> str:
     return "\n".join(_lines)
 
 
-# ─── 配置差异比对 ───
+# 配置差异比对
 
 def diff_configs(old: Union[str, Dict[str, str]],
                  new: Union[str, Dict[str, str]]) -> Dict:

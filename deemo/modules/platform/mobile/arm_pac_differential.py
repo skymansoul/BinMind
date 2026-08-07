@@ -1,15 +1,15 @@
 # ARM PAC差分密码分析器。FEAT_PACQARMA3安全边界评估。
-# 参考：
+#
 #   "Differential Cryptanalysis of the Reduced Pointer Authentication Code
 #    Function used in Arm's FEAT_PACQARMA3 Feature"
-#    (IACR FSE 2025, ePrint 2025/321) — Avanzi, Dunkelman, Ghosh
+# — Avanzi, Dunkelman, Ghosh
 #    ARM后期将QARMA-64从12轮缩减至8轮，部分PAC配置不再满足
 #    原始安全目标；不同PAC长度与轮数组合的安全性存在差异。
 #   "PACMAN: Attacking ARM Pointer Authentication with Speculative Execution"
-#    (ISCA 2022) — Ravichandran et al. (MIT)
+# — Ravichandran et al. (MIT)
 #    推测执行暴力破解PAC：16位PAC < 3分钟，单次猜测约2.69ms。
 #   "Limitations and Opportunities of Modern Hardware Isolation Mechanisms"
-#    (USENIX ATC 2024) — PAC/MTE/CHERI的局限与机遇。
+# — PAC/MTE/CHERI的局限与机遇。
 
 import struct
 import hashlib

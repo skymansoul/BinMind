@@ -31,9 +31,9 @@ Level 3: 惰性收敛检测
   提前终止最后 1-2 轮--节省 15-25% 时间
 
 与现有工作的差异:
-- 纯 e-graph (Lee 2024): 所有规则一律应用 -> O(2^R) 最坏
-- gMBA (Noh 2025): transformer 预测重写序列 -> 需 GPU + 训练数据
-- ProMBA (Lee 2025): on-the-fly 规则学习 -> 额外学习开销
+- 纯 e-graph: 所有规则一律应用 -> O(2^R) 最坏
+- gMBA: transformer 预测重写序列 -> 需 GPU + 训练数据
+- ProMBA: on-the-fly 规则学习 -> 额外学习开销
 - 本模块: 抽象解释引导 -> 无训练、无 GPU、理论复杂度 O(R·log N)
 """
 
@@ -53,9 +53,7 @@ from .mba_invariant_lifter import (
 )
 
 
-# ---------------------------------------------------------------------------
 # 规则定义
-# ---------------------------------------------------------------------------
 
 @dataclass
 class RewriteRule:
@@ -71,9 +69,7 @@ class RewriteRule:
     priority: int = 1
 
 
-# ---------------------------------------------------------------------------
 # 标准 MBA 重写规则集
-# ---------------------------------------------------------------------------
 
 def _build_mba_rules() -> List[RewriteRule]:
     """构建 MBA 化简的标准重写规则集
@@ -87,7 +83,7 @@ def _build_mba_rules() -> List[RewriteRule]:
     """
     rules: List[RewriteRule] = []
 
-    # ---- 高优先级: 常量折叠和恒等元 ----
+# 高优先级: 常量折叠和恒等元
     rules.append(RewriteRule(
         name="and_zero", pattern_op="&", pattern_arity=2, priority=2,
         condition=lambda n: (
@@ -120,7 +116,7 @@ def _build_mba_rules() -> List[RewriteRule]:
         transform=lambda n: n['children'][0],  # x | x -> x
     ))
 
-    # ---- 中优先级: 互补和分配 ----
+# 中优先级: 互补和分配
     rules.append(RewriteRule(
         name="and_not_self", pattern_op="&", pattern_arity=2, priority=1,
         condition=lambda n: (
@@ -143,7 +139,7 @@ def _build_mba_rules() -> List[RewriteRule]:
         ),
         transform=lambda n: {'op': 'const', 'value': 1, 'children': [], 'var': None},
     ))
-    # ---- 低优先级: 交换律 / 结合律 ----
+# 低优先级: 交换律 / 结合律
     # 这些变换不直接化简但为其他规则创造匹配机会
     rules.append(RewriteRule(
         name="add_commute", pattern_op="+", pattern_arity=2, priority=0,
@@ -195,9 +191,7 @@ def _nodes_equal(a: Dict, b: Dict) -> bool:
     return all(ca[i] is cb[i] for i in range(len(ca)))
 
 
-# ---------------------------------------------------------------------------
 # 不变量引导的 e-graph 化简器
-# ---------------------------------------------------------------------------
 
 @dataclass
 class SimplifyStats:
@@ -353,9 +347,7 @@ class InvariantGuidedEGraph:
         return count
 
 
-# ---------------------------------------------------------------------------
 # 便捷接口
-# ---------------------------------------------------------------------------
 
 def simplify_mba_expr(expr: Dict) -> Tuple[Dict, SimplifyStats]:
     """一行式 MBA 表达式化简"""

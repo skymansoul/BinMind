@@ -1,0 +1,479 @@
+{
+  "description": "60 heap overflow CVE samples with ground truth labels",
+  "version": "3.0",
+  "date": "2026-08-10",
+  "samples": {
+    "cve_01_simple_overflow": {
+      "cve": "CVE-2019-13135 (analog)",
+      "pattern": "malloc(64) write offset 72",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Classic fixed-size overflow. write(72+8=80) > alloc(64). Allocator model: usable=80 for 64B request? No, ptmalloc2 usable(64) ≈ 64. Overflow is real."
+    },
+    "cve_02_off_by_one": {
+      "cve": "CVE-2014-0160 analog (off-by-one)",
+      "pattern": "malloc(32) write up to offset 33",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Off-by-one: 33 byte write into 32 byte buffer. Chunk metadata corruption feasible."
+    },
+    "cve_03_int_overflow_calc": {
+      "cve": "CVE-2016-4484 analog (calc overflow)",
+      "pattern": "malloc(n*sizeof(T)) with oversized n",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Integer overflow in size calculation leads to undersized allocation."
+    },
+    "cve_04_strcpy_overflow": {
+      "cve": "CVE-2019-14287 analog",
+      "pattern": "malloc(32) + strcpy unbounded",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Unbounded strcpy into fixed-size heap buffer."
+    },
+    "cve_05_loop_overflow": {
+      "cve": "CVE-2020-25656 analog",
+      "pattern": "malloc(N) + loop write N+M times",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Loop counter exceeds allocation size. Cross-function detection needed."
+    },
+    "cve_06_user_controlled_size": {
+      "cve": "CVE-2021-3156 analog (user ctrl size)",
+      "pattern": "malloc(user_input) + memcpy with same user_input",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "User controls both allocation and write size. Attacker can make write > alloc."
+    },
+    "cve_07_realloc_overflow": {
+      "cve": "CVE-2016-10158 analog",
+      "pattern": "realloc(ptr, smaller_size) + write original_size",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Realloc shrinks buffer but code still uses old size assumption."
+    },
+    "cve_08_calloc_overflow": {
+      "cve": "CVE-2015-0235 analog (GHOST - calloc)",
+      "pattern": "calloc(nmemb, size) with overflow in nmemb*size",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "calloc(nmemb, size) integer overflow in internal multiplication."
+    },
+    "cve_09_safe_but_triggers_fp": {
+      "cve": "N/A (FP test)",
+      "pattern": "malloc(20) write offset 24",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "malloc(20) usable=24B (ptmalloc2, prev_size reuse). write offset 24 + 8B = 32 > 24 → overflow. Original FP test assumed usable=32 but glibc prev_size reuse gives 24."
+    },
+    "cve_10_input_constrained_safe": {
+      "cve": "N/A (FP test)",
+      "pattern": "malloc(n) with if(n>100) exit() guard",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Guard condition bounds the size. Constraint tracker should filter."
+    },
+    "cve_11_memcpy_arith_size": {
+      "cve": "CVE-2022-0185 analog",
+      "pattern": "malloc(K) + memcpy(dst, src, n*sizeof(X)) where n*sizeof > K",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Arithmetic expression in memcpy size. Expression evaluator needed."
+    },
+    "cve_12_alignment_edge": {
+      "cve": "N/A (edge case)",
+      "pattern": "malloc(16) write offset 14 (4 bytes) → within usable",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "malloc(16) usable=24 (ptmalloc2, prev_size reuse). write offset 14 + 4B = 18 <= 24 → safe. Tests alignment boundary awareness."
+    },
+    "cve_13_struct_field_pattern": {
+      "cve": "CVE-2022-27666 analog",
+      "pattern": "struct with field offset > alloc size",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "sizeof(MyStruct)=80, tail at offset 72 + 8B = 80 <= 80 → safe. Tests struct sizeof detection."
+    },
+    "cve_14_multi_chunk": {
+      "cve": "CVE-2023-3269 analog (multi-chunk)",
+      "pattern": "Multiple adjacent malloc + overflow crosses chunk boundary",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Multi-chunk scenario. Overflow in chunk A corrupts chunk B metadata."
+    },
+    "cve_15_constrained_input": {
+      "cve": "N/A (TP with guard)",
+      "pattern": "malloc(n) with if(n<16) guard BUT write > 16",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Guard exists but insufficient. n<16 → malloc can be 1-15, write is 32B. Real overflow."
+    },
+    "cve_16_real_world_pattern": {
+      "cve": "CVE-2021-4034 analog (real world)",
+      "pattern": "Complex real-world: nested alloc + indirect write",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Real-world code pattern. Multi-function, indirect pointer manipulation."
+    },
+    "cve_17_multi_field_struct": {
+      "cve": "CVE-2022-22942 analog",
+      "pattern": "Struct with multiple pointer fields, field confusion",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "sizeof(LargeStruct)=96, checksum at offset 88 + 8B = 96 <= 96 → safe. Tests multi-field struct access."
+    },
+    "cve_18_loop_accumulate": {
+      "cve": "CVE-2023-XXXXX analog (loop accumulate)",
+      "pattern": "malloc(256) + 5x memcpy(64) accumulating to 320",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Loop accumulation: each individual write safe but total exceeds alloc."
+    },
+    "cve_19_same_offset_accumulate": {
+      "cve": "CVE-2025-same-offset analog",
+      "pattern": "malloc(256) + 5x memcpy(64) at same offset 0",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Same-offset write: all writes to buf[0..63] within 256B. consumed grows but destination unchanged. SAFE."
+    },
+    "cve_20_cross_func_guard": {
+      "cve": "CVE-2019-17666 analog (cross-func guard)",
+      "pattern": "alloc in funcA with guard n<=128, write in funcB",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Cross-function guard constraint: n<=128, write=n<=128 < usable(128). Tests interproc CJ."
+    },
+    "cve_21_cross_func_write": {
+      "cve": "CVE-2021-3801 analog (cross-func write)",
+      "pattern": "malloc(32) in main, memcpy 128B in callee",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Cross-function write: alloc 32B, callee copies 128B. Tests interproc constraint propagation."
+    },
+    "cve_22_fm_boundary_safe": {
+      "cve": "CVE-2022-24834 analog (FM boundary safe)",
+      "pattern": "malloc(64) offset=m guard m<=56, write 4B",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "FM boundary derivation: m<=56, write_end=m+4<=60 < usable(64)=72. Tests FM boundary refine."
+    },
+    "cve_23_fm_boundary_overflow": {
+      "cve": "CVE-2020-10713 analog (FM boundary overflow)",
+      "pattern": "malloc(32) offset=m guard m>=40, write 4B",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "FM boundary derivation: m>=40, write_end=m+4>=44 > usable(32)=40. Tests FM boundary overflow detection."
+    },
+    "cve_24_multiple_constraints": {
+      "cve": "CVE-2023-6246 analog (multi-constraint)",
+      "pattern": "malloc(n) n<=256, off<=200, sz<=56, memcpy(buf+off, src, sz)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Multiple constraints joined: write_end=off+sz<=256 < usable(256)=264. Tests multi-constraint CJ."
+    },
+    "cve_25_nested_loop_overflow": {
+      "cve": "CVE-2018-16864 analog (nested loop)",
+      "pattern": "malloc(128) + nested loop 16x10=160 writes",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Nested loop: 16*10=160 > usable(128)=136. Tests nested loop bound analysis."
+    },
+    "cve_26_realloc_grow_safe": {
+      "cve": "CVE-2020-28052 analog (realloc grow)",
+      "pattern": "malloc(32) realloc(256) memcpy at offset 200 size 56",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Realloc grows buffer: write_end=200+56=256 < usable(256)=264. Tests realloc size tracking."
+    },
+    "cve_27_struct_array_overflow": {
+      "cve": "CVE-2016-6187 analog (struct array)",
+      "pattern": "malloc(sizeof(Item)*4=64) access arr[8] at offset 128",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Struct array OOB: arr[8] at offset 128 > usable(64)=72. Tests sizeof*count multiplication."
+    },
+    "cve_28_guarded_loop_safe": {
+      "cve": "CVE-2015-7547 analog (guarded loop)",
+      "pattern": "malloc(256) for(i<n) buf[i]=x, guard n<=200",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Guarded loop: n<=200, write_end=n<=200 < usable(256)=264. Tests loop+guard interaction."
+    },
+    "cve_29_alignment_slack_safe": {
+      "cve": "CVE-2022-3602 analog (alignment slack)",
+      "pattern": "malloc(48) write offset 44 + 8B = 52 <= usable(48)=56",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Alignment slack: write_end=52 <= usable(48)=56. Tests glibc request2size precision."
+    },
+    "cve_30_cross_func_alloc_only": {
+      "cve": "CVE-2017-17052 analog (cross-func alloc)",
+      "pattern": "make_buf(64) in funcA, write offset 72 in main",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Cross-function alloc: factory function malloc(64), caller writes at 72. Tests interproc alloc tracking."
+    },
+    "cve_31_copy_size_external": {
+      "cve": "CVE-2018-1000001 analog (external copy size)",
+      "pattern": "malloc(64) memcpy(buf, src, len) len from argv",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "External copy size: len unconstrained. Conservatively INCONCLUSIVE (kept as candidate). Ground truth: vulnerable because attacker controls len."
+    },
+    "cve_32_deeply_nested_safe": {
+      "cve": "CVE-2020-27820 analog (deeply nested)",
+      "pattern": "3-layer call chain: layer3(malloc+guard) layer2(memcpy+guard) layer1(write)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Deeply nested: n<=100 off<=40, write_end=off+56<=96 < usable(128)=136. Tests deep interproc."
+    },
+    "cve_33_cross_path_guard_safe": {
+      "cve": "CVE-2019-16995 analog (cross-path guard)",
+      "pattern": "if(n>64)memcpy(64) else return; guard in else path",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Guard in else branch, write in if branch. memcpy 64 <= usable(64)=72. PS-CJ: write path has no guard, 64<=72 → SAFE."
+    },
+    "cve_34_cross_path_guard_overflow": {
+      "cve": "CVE-2020-9496 analog (cross-path guard overflow)",
+      "pattern": "if(n>32)memcpy(80) else return; 80 > usable(64)=72",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Guard in else branch. Write path: memcpy 80 > usable(64)=72 → OVERFLOW. PS-CJ should catch this."
+    },
+    "cve_35_early_return_safe": {
+      "cve": "CVE-2018-6789 analog (early return safe)",
+      "pattern": "if(n>100)return; memcpy(96); malloc(128)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Early return on guard path. Write path: n<=100, memcpy 96 <= usable(128)=136 → SAFE."
+    },
+    "cve_36_early_return_overflow": {
+      "cve": "CVE-2019-2215 analog (early return overflow)",
+      "pattern": "if(n>200)return; memcpy(64); malloc(32)",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Early return but write path still overflows: memcpy 64 > usable(32)=40 → OVERFLOW."
+    },
+    "cve_37_nested_branch_safe": {
+      "cve": "CVE-2021-3156 analog (nested branch safe)",
+      "pattern": "if(n>200)return; if(n>128)memcpy(128) else memcpy(64); malloc(256)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Two write paths: path1 memcpy 128 <= usable(256)=264; path2 memcpy 64 <= 264. Both SAFE."
+    },
+    "cve_38_nested_branch_overflow": {
+      "cve": "CVE-2020-6096 analog (nested branch overflow)",
+      "pattern": "if(n>200)return; if(n>32)memcpy(80) else memcpy(32); malloc(64)",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Two write paths: path1 memcpy 80 > usable(64)=72 → OVERFLOW; path2 memcpy 32 <= 72 → SAFE. PS-CJ catches overflow path."
+    },
+    "cve_39_loop_guard_cross_path": {
+      "cve": "CVE-2017-7269 analog (loop guard cross-path)",
+      "pattern": "alloc_guard(n<=100) + write_loop(n=80); malloc(80)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Guard in alloc function, loop write in write function. n=80, loop_write=80 <= usable(80)=88 → SAFE."
+    },
+    "cve_40_multi_guard_safe": {
+      "cve": "CVE-2014-0160 analog (multi-guard offset+size)",
+      "pattern": "guard size<=200 + guard offset<=64; memcpy(offset, size); malloc(256)",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Two independent guards. worst case offset=64+size=200=264 <= usable(256)=264 → SAFE (exactly at boundary)."
+    },
+    "cve_41_switch_path_safe": {
+      "cve": "CVE-2024-0041 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: switch_path_safe"
+    },
+    "cve_42_switch_path_overflow": {
+      "cve": "CVE-2024-0042 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: switch_path_overflow"
+    },
+    "cve_43_alias_chain_safe": {
+      "cve": "CVE-2024-0043 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: alias_chain_safe"
+    },
+    "cve_44_alias_chain_overflow": {
+      "cve": "CVE-2024-0044 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: alias_chain_overflow"
+    },
+    "cve_45_cast_alias_safe": {
+      "cve": "CVE-2024-0045 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: cast_alias_safe"
+    },
+    "cve_46_cast_alias_overflow": {
+      "cve": "CVE-2024-0046 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: cast_alias_overflow"
+    },
+    "cve_47_cond_alloc_safe": {
+      "cve": "CVE-2024-0047 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: cond_alloc_safe"
+    },
+    "cve_48_cond_alloc_overflow": {
+      "cve": "CVE-2024-0048 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: cond_alloc_overflow"
+    },
+    "cve_49_compound_offset_safe": {
+      "cve": "CVE-2024-0049 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: compound_offset_safe"
+    },
+    "cve_50_compound_offset_overflow": {
+      "cve": "CVE-2024-0050 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: compound_offset_overflow"
+    },
+    "cve_51_struct_field_offset_safe": {
+      "cve": "CVE-2024-0051 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: struct_field_offset_safe"
+    },
+    "cve_52_struct_field_offset_overflow": {
+      "cve": "CVE-2024-0052 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: struct_field_offset_overflow"
+    },
+    "cve_53_factory_cross_guard_safe": {
+      "cve": "CVE-2024-0053 analog",
+      "pattern": "",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "Safe: factory_cross_guard_safe"
+    },
+    "cve_54_factory_cross_write_overflow": {
+      "cve": "CVE-2024-0054 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: factory_cross_write_overflow"
+    },
+    "cve_55_returned_ptr_overflow": {
+      "cve": "CVE-2024-0055 analog",
+      "pattern": "",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "Overflow: returned_ptr_overflow"
+    },
+    "cve_56_sfod_field_safe": {
+      "cve": "CVE-2024-0056 analog (SFOD field safe)",
+      "pattern": "sizeof(Msg) alloc, buf->b at offset 16 size 16",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "SFOD: struct field offset domain, buf->b offset=16+16=32 <= usable(36)=40 → SAFE. Tests SFOD field offset injection into CJ."
+    },
+    "cve_57_sfod_field_overflow": {
+      "cve": "CVE-2024-0057 analog (SFOD field overflow)",
+      "pattern": "malloc(16) LargeHeader*, buf->b at offset 32 size 32",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "SFOD: buf->b offset=32+32=64 > usable(16)=24 → OVERFLOW. Tests SFOD detecting struct field overflow."
+    },
+    "cve_58_sfod_cast_safe": {
+      "cve": "CVE-2024-0058 analog (SFOD cast safe)",
+      "pattern": "(Small*)malloc(sizeof(Small)), buf->data offset 8 size 24",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "SFOD: cast type inference, buf->data offset=8+24=32 <= usable(32)=40 → SAFE. Tests SFOD cast-based type inference."
+    },
+    "cve_59_sfod_cast_overflow": {
+      "cve": "CVE-2024-0059 analog (SFOD cast overflow)",
+      "pattern": "(Tiny*)malloc(sizeof(Tiny)), memcpy buf->body 32 at offset 4",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "notes": "SFOD: buf->body offset=4+32=36 > usable(16)=24 → OVERFLOW. Tests SFOD cast+memcpy overflow."
+    },
+    "cve_60_sfod_nested_safe": {
+      "cve": "CVE-2024-0060 analog (SFOD nested safe)",
+      "pattern": "sizeof(Wide) alloc, buf->magic at offset 128 size 8",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "notes": "SFOD: nested struct last field, buf->magic offset=128+8=136 <= usable(136)=144 → SAFE. Tests SFOD multi-field offset."
+    }
+  },
+  "summary": {
+    "total": 60,
+    "vulnerable": 33,
+    "safe": 27,
+    "safe_samples": [
+      "cve_10_input_constrained_safe",
+      "cve_12_alignment_edge",
+      "cve_13_struct_field_pattern",
+      "cve_17_multi_field_struct",
+      "cve_19_same_offset_accumulate",
+      "cve_20_cross_func_guard",
+      "cve_22_fm_boundary_safe",
+      "cve_24_multiple_constraints",
+      "cve_26_realloc_grow_safe",
+      "cve_28_guarded_loop_safe",
+      "cve_29_alignment_slack_safe",
+      "cve_32_deeply_nested_safe",
+      "cve_33_cross_path_guard_safe",
+      "cve_35_early_return_safe",
+      "cve_37_nested_branch_safe",
+      "cve_39_loop_guard_cross_path",
+      "cve_40_multi_guard_safe",
+      "cve_41_switch_path_safe",
+      "cve_43_alias_chain_safe",
+      "cve_45_cast_alias_safe",
+      "cve_47_cond_alloc_safe",
+      "cve_49_compound_offset_safe",
+      "cve_51_struct_field_offset_safe",
+      "cve_53_factory_cross_guard_safe",
+      "cve_56_sfod_field_safe",
+      "cve_58_sfod_cast_safe",
+      "cve_60_sfod_nested_safe"
+    ],
+    "key_fp_challenges": [
+      "cve_10: guard-constrained input (if n>100 exit)",
+      "cve_12: alignment boundary (malloc(16) usable=24, offset 14+4=18<=24)",
+      "cve_13: struct sizeof detection (tail@72 < sizeof=80)",
+      "cve_17: multi-field struct (checksum@88 < sizeof=96)",
+      "cve_20: cross-function guard constraint (interproc CJ)",
+      "cve_22: FM boundary derivation (guard m<=56, write_end<=60)",
+      "cve_24: multiple constraints joined (n<=256, off<=200, sz<=56)",
+      "cve_26: realloc grow tracking (realloc 32→256)",
+      "cve_28: guarded loop (n<=200, write_end<=200)",
+      "cve_29: alignment slack precision (usable(48)=56)",
+      "cve_32: deeply nested interproc (3-layer call chain)",
+      "cve_33: cross-path guard (guard in else, write in if)",
+      "cve_35: early return safe (guard path returns, write path safe)",
+      "cve_37: nested branch dual paths (both safe)",
+      "cve_39: loop guard cross-path (guard in funcA, loop in funcB)",
+      "cve_40: multi-guard intersection (offset<=64 + size<=200)"
+    ]
+  }
+}

@@ -1,9 +1,22 @@
+% 自动生成: Heap Overflow Detection Benchmark
 \begin{table}[t]
 \centering
-\caption{Detection Results on 20 CVE Samples (8 classes)}
+\caption{Heap Overflow Detection on 28 CVE Samples (20 vulnerable, 8 safe)}
+\label{tab:heap-benchmark}
 \begin{tabular}{lccccc}
 \toprule
-Tool & Samples & TP & FP & FN & TN \midrule
-BinMind (AutoPatcher) & 20 & 8 & 12 & 0 & 0 Angr (CFG analysis) & 20 & N/A & N/A & N/A & N/A QEMU (user-mode) & 20 & N/A & N/A & N/A & N/A Ghidra (headless) & 20 & N/A & N/A & N/A & N/A \bottomrule
+Tool & Variant & Recall & FP Rate & Precision & Time (s) \\
+\midrule
+BinMind & plain & 100.0\% & 0.0\% & 100.0\% & 0.15 \\
+BinMind & packed & 100.0\% & 0.0\% & 100.0\% & 0.15 \\
+Angr & plain & 100.0\% & 100.0\% & 71.4\% & 2.17 \\
+Angr & packed & 100.0\% & 100.0\% & 71.4\% & 2.17 \\
+QEMU+Trace & plain & 35.0\% & 0.0\% & 100.0\% & 0.05 \\
+QEMU+Trace & packed & 0.0\% & 0.0\% & 0.0\% & 0.05 \\
+Ghidra & plain & 0.0\% & 0.0\% & 0.0\% & 0.04 \\
+Ghidra & packed & 0.0\% & 0.0\% & 0.0\% & 0.04 \\
+\midrule
+\multicolumn{6}{l}{\emph{Recall: TP detected / vulnerable samples; FP Rate: false alarms on safe samples}} \\
+\bottomrule
 \end{tabular}
 \end{table}

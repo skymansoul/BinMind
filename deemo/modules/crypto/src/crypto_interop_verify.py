@@ -22,11 +22,10 @@
     C4: 协议版本 — TLS 1.2 vs 1.3; SSHv1 vs SSHv2。
     C5: PQC混合兼容性 — X25519+ML-KEM-768 vs X25519+ML-KEM-1024不兼容。
 
-参考:
-  - NIST SP 800-56Ar3 (2018): 密钥协商方案的兼容性要求。
+  - NIST SP 800-56Ar3: 密钥协商方案的兼容性要求。
   - IETF TLS 1.3 (RFC 8446): 密码套件协商和互操作性。
   - NIST SP 800-38A-D: 分组密码工作模式定义。
-  - GSMA IoT SAFE (2022): IoT设备的密码学互操作性规范。
+  - GSMA IoT SAFE: IoT设备的密码学互操作性规范。
 
 边界条件:
   - 互操作性是"必要条件"而非"充分条件"验证 — 实现可以满足所有检查
@@ -38,13 +37,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-
 class CompatStatus(Enum):
     COMPATIBLE = 0
     PARTIALLY_COMPATIBLE = 1
     INCOMPATIBLE = 2
     UNKNOWN = 3
-
 
 @dataclass
 class InteropCheck:
@@ -56,8 +53,7 @@ class InteropCheck:
     entity_b: str = ""             # 二进制B中的相关值
     recommendation: str = ""
 
-
-# ── 兼容性规则库 ──
+# 兼容性规则库
 
 _MODE_COMPAT: Dict[str, Set[str]] = {
     # 哪些模式对可以互操作(对称: 加密方模式→解密方模式)
@@ -79,10 +75,8 @@ _ALGO_EQUIVALENCE: Dict[str, str] = {
     'Kyber768': 'ML-KEM-768',
 }
 
-
 def _normalize_algorithm(algo: str) -> str:
     return _ALGO_EQUIVALENCE.get(algo, algo)
-
 
 def _extract_mode(algo: str) -> str:
     for mode in _MODE_COMPAT:
@@ -90,12 +84,10 @@ def _extract_mode(algo: str) -> str:
             return mode
     return ''
 
-
 def _extract_key_bits(algo: str) -> int:
     import re
     m = re.search(r'(\d+)', algo)
     return int(m.group(1)) if m else 0
-
 
 def verify_interoperability(
         findings_a: Optional[List] = None,
@@ -206,7 +198,6 @@ def verify_interoperability(
                 entity_a=algo, entity_b=algo))
 
     return checks
-
 
 def compatibility_summary(checks: List[InteropCheck]) -> Tuple[bool, int, int, int]:
     """汇总兼容性: (总体兼容, 兼容数, 部分兼容数, 不兼容数)。"""

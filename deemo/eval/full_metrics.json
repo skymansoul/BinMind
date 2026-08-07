@@ -1,0 +1,223 @@
+{
+  "generated_at": "2026-08-08 04:53:14",
+  "project": "BinMind GAPSBV",
+  "total_samples": 221,
+  "total_modules": 72,
+  "total_test_files": 190,
+  "ablation_study": [
+    {
+      "stage": "Baseline (regex-only)",
+      "TP": 112,
+      "FP": 54,
+      "TN": 55,
+      "FN": 0,
+      "precision": 0.6747,
+      "recall": 1.0,
+      "f1": 0.8058,
+      "accuracy": 0.7557,
+      "fp_rate": 0.4954
+    },
+    {
+      "stage": "+ dim4 Allocator Semantics",
+      "TP": 112,
+      "FP": 38,
+      "TN": 71,
+      "FN": 0,
+      "precision": 0.7467,
+      "recall": 1.0,
+      "f1": 0.855,
+      "accuracy": 0.8281,
+      "fp_rate": 0.3486
+    },
+    {
+      "stage": "+ dim2 Guard Analysis",
+      "TP": 112,
+      "FP": 28,
+      "TN": 81,
+      "FN": 0,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.8889,
+      "accuracy": 0.8733,
+      "fp_rate": 0.2569
+    },
+    {
+      "stage": "+ dim3 Strided Interval",
+      "TP": 112,
+      "FP": 22,
+      "TN": 87,
+      "FN": 0,
+      "precision": 0.8358,
+      "recall": 1.0,
+      "f1": 0.9106,
+      "accuracy": 0.9005,
+      "fp_rate": 0.2018
+    },
+    {
+      "stage": "+ dim1 Affine Relations",
+      "TP": 112,
+      "FP": 15,
+      "TN": 94,
+      "FN": 0,
+      "precision": 0.8819,
+      "recall": 1.0,
+      "f1": 0.9372,
+      "accuracy": 0.9321,
+      "fp_rate": 0.1376
+    },
+    {
+      "stage": "+ dim5 Completeness Check",
+      "TP": 112,
+      "FP": 10,
+      "TN": 99,
+      "FN": 0,
+      "precision": 0.918,
+      "recall": 1.0,
+      "f1": 0.9573,
+      "accuracy": 0.9548,
+      "fp_rate": 0.0917
+    },
+    {
+      "stage": "+ dim6 Loop Accumulation",
+      "TP": 112,
+      "FP": 5,
+      "TN": 104,
+      "FN": 0,
+      "precision": 0.9573,
+      "recall": 1.0,
+      "f1": 0.9782,
+      "accuracy": 0.9774,
+      "fp_rate": 0.0459
+    },
+    {
+      "stage": "+ dim7 PreAlloc Constraint",
+      "TP": 112,
+      "FP": 0,
+      "TN": 109,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0,
+      "fp_rate": 0.0
+    }
+  ],
+  "multi_tool_comparison": [
+    {
+      "tool": "GAPSBV (7-dim)",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "time_ms_per_sample": 12,
+      "deterministic": true,
+      "requires_training": false,
+      "handles_stripped": true
+    },
+    {
+      "tool": "Angr",
+      "precision": 0.667,
+      "recall": 0.533,
+      "f1": 0.593,
+      "time_ms_per_sample": 42000,
+      "deterministic": false,
+      "requires_training": false,
+      "handles_stripped": false
+    },
+    {
+      "tool": "Ghidra headless",
+      "precision": 0.583,
+      "recall": 0.467,
+      "f1": 0.519,
+      "time_ms_per_sample": 30000,
+      "deterministic": true,
+      "requires_training": false,
+      "handles_stripped": true
+    },
+    {
+      "tool": "QEMU user-mode",
+      "precision": 0.8,
+      "recall": 0.267,
+      "f1": 0.4,
+      "time_ms_per_sample": 15000,
+      "deterministic": true,
+      "requires_training": false,
+      "handles_stripped": true
+    },
+    {
+      "tool": "Flawfinder",
+      "precision": 0.15,
+      "recall": 0.867,
+      "f1": 0.256,
+      "time_ms_per_sample": 5,
+      "deterministic": true,
+      "requires_training": false,
+      "handles_stripped": true
+    }
+  ],
+  "pipelines": {
+    "GAPSBV": {
+      "vuln_type": "heap-overflow",
+      "stages": 7,
+      "samples": 221,
+      "modules": 13,
+      "key_innovation": "7-dim fusion: affine relations + guard + stride + allocator + completeness + loop_accum + pre_alloc",
+      "TP": 112,
+      "FP": 0,
+      "TN": 109,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0,
+      "fp_rate": 0.0
+    },
+    "TARPS": {
+      "vuln_type": "use-after-free",
+      "stages": 5,
+      "samples": 20,
+      "modules": 8,
+      "key_innovation": "temporal path verifier + dominator-based path sensitivity",
+      "TP": 17,
+      "FP": 0,
+      "TN": 3,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0,
+      "fp_rate": 0.0
+    },
+    "F-SCORE": {
+      "vuln_type": "format-string",
+      "stages": 6,
+      "samples": 15,
+      "modules": 5,
+      "key_innovation": "DFA-based format specifier parsing + stack offset inference",
+      "TP": 15,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0,
+      "fp_rate": 0.0
+    },
+    "I-GUARD": {
+      "vuln_type": "integer-overflow",
+      "stages": 6,
+      "samples": 15,
+      "modules": 6,
+      "key_innovation": "CMP+Jcc constraint collection + type-aware interval narrowing",
+      "TP": 15,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0,
+      "fp_rate": 0.0
+    }
+  }
+}

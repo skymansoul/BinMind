@@ -127,7 +127,7 @@ class StatisticalTypeInferrer:
 
         return p
 
-    # ---- 各类型得分函数 ----
+# 各类型得分函数
     @staticmethod
     def _score_constant(vals: List[int]) -> float:
         """同值率→常数字段得分"""

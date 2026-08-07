@@ -5,11 +5,11 @@
 检测多协议协同的 APT/C2 行为模式.
 
 设计依据:
-  SmartNIC 方案 (BlackSeaCom 2025) 和 P4 交换机方案 (GLOBECOM 2025)
+  SmartNIC 方案 和 P4 交换机方案
   均针对单一 TLS 流做 ML 分类 — 无法捕获跨协议协同.
-  ZetaSwitch 案例 (2024) 展示真实 C2 使用 DNS (心跳/信令) + HTTP (数据外传),
+  ZetaSwitch 案例 展示真实 C2 使用 DNS (心跳/信令) + HTTP (数据外传),
   但需人工分析关联.
-  Murakami et al. (IEICE 2025) 关联 sinkhole + ISP 流数据,
+  Murakami et al. 关联 sinkhole + ISP 流数据,
   但依赖已知恶意服务器列表而非行为模式.
 
   CPCE 自动发现协议间的 Granger 因果关系:

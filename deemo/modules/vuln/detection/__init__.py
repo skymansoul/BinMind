@@ -112,10 +112,10 @@ __all__ = [
     # binary_entropy_analyzer
     "PackingStatus", "SectionType", "SectionEntropy", "EntropyReport",
     "BinaryEntropyAnalyzer", "analyze_entropy", "quick_entropy_check",
-    # anvil_v2 (2026-08-02)
+    # anvil_v2
     "CalibrationSample", "ConformalThreshold", "ANVILResult", "ANVILDetector",
     "calibrate_from_dataset",
-    # five_modal_fusion (2026-08-02)
+    # five_modal_fusion
     "FiveModalFuser", "make_evidence", "fuse_five_modals",
     # tvp temporal provenance
     "CausalNode", "ProvenanceHypothesis", "TemporalProvenanceResult",
@@ -131,25 +131,25 @@ __all__ = [
     "GraphView", "MultiViewDecomposer", "AdversarialDetectionResult",
     "GraphAdversarialDetector", "jensen_shannon_divergence",
     "energy_distance", "RobustPrediction", "robust_predict",
-    # spcv semantic patch completeness (2026-07-28)
+    # spcv semantic patch completeness
     "FunctionContract", "ContractViolation", "ContractInferrer",
     "infer_param_bounds", "AbstractValue", "AbstractState",
     "AbstractInterpreter", "SemanticDiffResult", "check_patch_completeness",
     "CompletenessGrade", "CompletenessReport", "CompletenessEngine",
     "verify_patch_completeness",
-    # ccav cross-arch contrastive (2026-07-28)
+    # ccav cross-arch contrastive
     "TripletSample", "TripletBatch", "CrossArchTripletSampler",
     "ContrastiveLoss", "compute_contrastive_loss", "ArchitectureProjector",
     "CrossArchMatch", "CrossArchDetectionResult", "CrossArchVulnDetector",
     "detect_cross_arch_vuln",
-    # dabss data-flow seed synthesis (2026-07-29)
+    # dabss data-flow seed synthesis
     "DataFlowNode", "BufferSlice", "DataFlowSlicer",
     "parse_insn", "extract_reg", "get_def_regs",
     "ConstraintType", "VariableConstraint", "SeedConstraint",
     "ConstraintExtractor", "solve_seed_constraints",
     "SynthesizedSeed", "SeedCorpus", "SeedSynthesizer",
     "export_to_fuzzer_dir", "synthesize_seeds_from_slices",
-    # tvp-tsa transitive propagation (2026-07-30)
+    # tvp-tsa transitive propagation
     "DepNode", "TransitivePath", "DepGraphAnalysis", "FunctionLevelDepGraph",
     "PathRiskScore", "PropagationRiskReport", "TemporalPropagationEngine",
     "analyze_propagation_risk",
@@ -394,18 +394,18 @@ _LAZY_MAP: dict = {
     "BinaryEntropyAnalyzer": "vuln.detection.binary_entropy_analyzer",
     "analyze_entropy": "vuln.detection.binary_entropy_analyzer",
     "quick_entropy_check": "vuln.detection.binary_entropy_analyzer",
-    # anvil_v2 (2026-08-02)
+    # anvil_v2
     "CalibrationSample": "vuln.detection.anvil_v2",
     "ConformalThreshold": "vuln.detection.anvil_v2",
     "ANVILResult": "vuln.detection.anvil_v2",
     "ANVILDetector": "vuln.detection.anvil_v2",
     "calibrate_from_dataset": "vuln.detection.anvil_v2",
-    # five_modal_fusion (2026-08-02)
+    # five_modal_fusion
     "FiveModalFuser": "vuln.detection.five_modal_fusion",
     "make_evidence": "vuln.detection.five_modal_fusion",
     "fuse_five_modals": "vuln.detection.five_modal_fusion",
     "_FIVE_MODAL_WEIGHTS": "vuln.detection.five_modal_fusion",
-    # tvp (temporal vulnerability provenance) (2026-08-01)
+    # tvp (temporal vulnerability provenance)
     "CausalNode": "vuln.detection.tvp_causal_types",
     "ProvenanceHypothesis": "vuln.detection.tvp_causal_types",
     "TemporalProvenanceResult": "vuln.detection.tvp_causal_types",
@@ -419,7 +419,7 @@ _LAZY_MAP: dict = {
     "ProvenanceReport": "vuln.detection.tvp_provenance_engine",
     "TemporalProvenanceEngine": "vuln.detection.tvp_provenance_engine",
     "trace_vulnerability_provenance": "vuln.detection.tvp_provenance_engine",
-    # graph_certifier (2026-08-01)
+    # graph_certifier
     "GraphNoiseConfig": "vuln.detection.graph_noise",
     "perturb_edges": "vuln.detection.graph_noise",
     "clopper_pearson_lower": "vuln.detection.graph_noise",
@@ -427,7 +427,7 @@ _LAZY_MAP: dict = {
     "compute_certified_radius": "vuln.detection.graph_certifier",
     "GraphEmbeddingCertifier": "vuln.detection.graph_certifier",
     "certify_embedding": "vuln.detection.graph_certifier",
-    # graph_multiview adversarial detector (2026-08-01)
+    # graph_multiview adversarial detector
     "GraphView": "vuln.detection.graph_multiview",
     "MultiViewDecomposer": "vuln.detection.graph_multiview",
     "AdversarialDetectionResult": "vuln.detection.graph_multiview",
@@ -436,7 +436,7 @@ _LAZY_MAP: dict = {
     "energy_distance": "vuln.detection.graph_multiview",
     "RobustPrediction": "vuln.detection.graph_multiview",
     "robust_predict": "vuln.detection.graph_multiview",
-    # spcv semantic patch completeness (2026-07-28)
+    # spcv semantic patch completeness
     "FunctionContract": "vuln.detection.spcv_contract_inferrer",
     "ContractViolation": "vuln.detection.spcv_contract_inferrer",
     "ContractInferrer": "vuln.detection.spcv_contract_inferrer",
@@ -450,7 +450,7 @@ _LAZY_MAP: dict = {
     "CompletenessReport": "vuln.detection.spcv_completeness_engine",
     "CompletenessEngine": "vuln.detection.spcv_completeness_engine",
     "verify_patch_completeness": "vuln.detection.spcv_completeness_engine",
-    # ccav cross-arch contrastive (2026-07-28)
+    # ccav cross-arch contrastive
     "TripletSample": "vuln.detection.ccav_triplet_sampler",
     "TripletBatch": "vuln.detection.ccav_triplet_sampler",
     "CrossArchTripletSampler": "vuln.detection.ccav_triplet_sampler",
@@ -461,7 +461,7 @@ _LAZY_MAP: dict = {
     "CrossArchDetectionResult": "vuln.detection.ccav_cross_arch_detector",
     "CrossArchVulnDetector": "vuln.detection.ccav_cross_arch_detector",
     "detect_cross_arch_vuln": "vuln.detection.ccav_cross_arch_detector",
-    # dabss data-flow seed synthesis (2026-07-29)
+    # dabss data-flow seed synthesis
     "DataFlowNode": "vuln.detection.dabss_flow_slicer",
     "BufferSlice": "vuln.detection.dabss_flow_slicer",
     "DataFlowSlicer": "vuln.detection.dabss_flow_slicer",
@@ -478,7 +478,7 @@ _LAZY_MAP: dict = {
     "SeedSynthesizer": "vuln.detection.dabss_seed_synthesizer",
     "export_to_fuzzer_dir": "vuln.detection.dabss_seed_synthesizer",
     "synthesize_seeds_from_slices": "vuln.detection.dabss_seed_synthesizer",
-    # tvp-tsa transitive propagation (2026-07-30)
+    # tvp-tsa transitive propagation
     "DepNode": "vuln.detection.tvp_tsa_depgraph",
     "TransitivePath": "vuln.detection.tvp_tsa_depgraph",
     "DepGraphAnalysis": "vuln.detection.tvp_tsa_depgraph",
@@ -487,7 +487,7 @@ _LAZY_MAP: dict = {
     "PropagationRiskReport": "vuln.detection.tvp_tsa_propagator",
     "TemporalPropagationEngine": "vuln.detection.tvp_tsa_propagator",
     "analyze_propagation_risk": "vuln.detection.tvp_tsa_propagator",
-    # mewf weaponization forecaster (2026-08-02)
+    # mewf weaponization forecaster
     "OverflowType": "vuln.detection.mewf_complexity",
     "WritePrimitive": "vuln.detection.mewf_complexity",
     "ExploitComplexity": "vuln.detection.mewf_complexity",
@@ -498,7 +498,7 @@ _LAZY_MAP: dict = {
     "WeaponizationForecast": "vuln.detection.mewf_forecaster",
     "WeaponizationForecaster": "vuln.detection.mewf_forecaster",
     "forecast_weaponization": "vuln.detection.mewf_forecaster",
-    # vags attack graph synthesis (2026-08-02)
+    # vags attack graph synthesis
     "NodeType": "vuln.detection.vags_graph",
     "EdgeType": "vuln.detection.vags_graph",
     "AttackNode": "vuln.detection.vags_graph",
@@ -510,7 +510,7 @@ _LAZY_MAP: dict = {
     "AttackPathFinder": "vuln.detection.vags_pathfinder",
     "find_attack_paths": "vuln.detection.vags_pathfinder",
     "build_and_analyze": "vuln.detection.vags_pathfinder",
-    # cssa crash state semantic analysis (2026-07-29)
+    # cssa crash state semantic analysis
     "CorruptionType": "vuln.detection.cssa_corruption_classifier",
     "CrashState": "vuln.detection.cssa_corruption_classifier",
     "CorruptionClassification": "vuln.detection.cssa_corruption_classifier",
@@ -522,7 +522,7 @@ _LAZY_MAP: dict = {
     "CssaDedupEngine": "vuln.detection.cssa_dedup_engine",
     "deduplicate_crashes": "vuln.detection.cssa_dedup_engine",
     "classify_crash": "vuln.detection.cssa_dedup_engine",
-    # byrs binary YARA rule synthesis (2026-07-29)
+    # byrs binary YARA rule synthesis
     "BytePattern": "vuln.detection.byrs_pattern_miner",
     "FunctionPatterns": "vuln.detection.byrs_pattern_miner",
     "PatternMiner": "vuln.detection.byrs_pattern_miner",
@@ -530,23 +530,23 @@ _LAZY_MAP: dict = {
     "YARARuleSet": "vuln.detection.byrs_rule_synthesizer",
     "YARARuleSynthesizer": "vuln.detection.byrs_rule_synthesizer",
     "synthesize_yara_from_function": "vuln.detection.byrs_rule_synthesizer",
-    # integer overflow detection + FP filter (2026-08-05)
+    # integer overflow detection + FP filter
     "IntegerOverflowDetector": "vuln.detection.integer_overflow_detector",
     "IntOverflowCandidate": "vuln.detection.integer_overflow_detector",
     "IntOverflowFpFilter": "vuln.detection.int_overflow_fp_filter",
     "IntOverflowFpResult": "vuln.detection.int_overflow_fp_filter",
-    # format string FP filter (2026-08-05)
+    # format string FP filter
     "FormatStringFpFilter": "vuln.detection.fmt_fp_filter",
     "FmtFilterResult": "vuln.detection.fmt_fp_filter",
-    # UAF lifecycle FP filter (2026-08-05)
+    # UAF lifecycle FP filter
     "UafLifecycleFilter": "vuln.detection.uaf_lifecycle_filter",
     "UafLifecycleResult": "vuln.detection.uaf_lifecycle_filter",
-    # heap disjointness FP reduction (core patent innovation, 2026-08-05)
+    # heap disjointness FP reduction
     "HeapDisjointAnalyzer": "vuln.detection.heap_disjoint",
     "DisjointReport": "vuln.detection.heap_disjoint",
     "HoFpFilter": "vuln.detection.ho_fp_filter",
     "HoFpStats": "vuln.detection.ho_fp_filter",
-    # core detection pipeline improvements (2026-08-05)
+    # core detection pipeline improvements
     "HeapLifecycleAnalyzer": "vuln.detection.heap_lifecycle",
     "LifecycleReport": "vuln.detection.heap_lifecycle",
     "SimplifiedTaintTracker": "vuln.detection.path_taint_simplified",
@@ -556,20 +556,20 @@ _LAZY_MAP: dict = {
     "VulnCandidate": "vuln.detection.vuln_detection_pipeline",
     "VulnReport": "vuln.detection.vuln_detection_pipeline",
     "run_full_detection": "vuln.detection.vuln_detection_pipeline",
-    # core detection: heap overflow / UAF / format string (2026-08-05)
+    # core detection: heap overflow / UAF / format string
     "HeapOverflowFinding": "vuln.detection.heap_overflow_detector",
     "detect_heap_overflow": "vuln.detection.heap_overflow_detector",
     "UafFinding": "vuln.detection.uaf_detector",
     "detect_uaf": "vuln.detection.uaf_detector",
     "FormatStringDetector": "vuln.detection.format_string_detector",
     "FormatStringCandidate": "vuln.detection.format_string_detector",
-    # bift inter-procedural taint tracking (2026-08-05)
+    # bift inter-procedural taint tracking
     "InterProcTaintTracker": "vuln.detection.bift_interproc",
-    # byrs multi-variant consensus extraction (2026-08-05)
+    # byrs multi-variant consensus extraction
     "VariantSample": "vuln.detection.byrs_multi_variant",
     "ConsensusPattern": "vuln.detection.byrs_multi_variant",
     "MultiVariantConsensus": "vuln.detection.byrs_multi_variant",
-    # bift binary forward taint (2026-08-03)
+    # bift binary forward taint
     "TaintSource": "vuln.detection.bift_taint",
     "TaintSink": "vuln.detection.bift_taint",
     "TaintPath": "vuln.detection.bift_taint",
@@ -578,7 +578,7 @@ _LAZY_MAP: dict = {
     "BiftReport": "vuln.detection.bift_engine",
     "BiftEngine": "vuln.detection.bift_engine",
     "analyze_taint_flow": "vuln.detection.bift_engine",
-    # phs pointer hazard scoring (2026-08-03)
+    # phs pointer hazard scoring
     "PointerOperation": "vuln.detection.phs_analyzer",
     "HazardScore": "vuln.detection.phs_analyzer",
     "PointerHazardAnalyzer": "vuln.detection.phs_analyzer",
@@ -586,7 +586,7 @@ _LAZY_MAP: dict = {
     "PhsReport": "vuln.detection.phs_engine",
     "PhsEngine": "vuln.detection.phs_engine",
     "analyze_pointer_hazards": "vuln.detection.phs_engine",
-    # cade codebase-adaptive deviation engine (2026-08-02)
+    # cade codebase-adaptive deviation engine
     "FunctionProfile": "vuln.detection.cade_norm_model",
     "CodebaseNorm": "vuln.detection.cade_norm_model",
     "NormModelBuilder": "vuln.detection.cade_norm_model",
@@ -596,7 +596,7 @@ _LAZY_MAP: dict = {
     "CadeEngine": "vuln.detection.cade_engine",
     "scan_for_anomalies": "vuln.detection.cade_engine",
     "profile_from_graph": "vuln.detection.cade_engine",
-    # ravo risk-aware vulnerability optimization (2026-08-02)
+    # ravo risk-aware vulnerability optimization
     "FixItem": "vuln.detection.ravo_optimizer",
     "FixSchedule": "vuln.detection.ravo_optimizer",
     "RavoOptimizer": "vuln.detection.ravo_optimizer",
@@ -605,7 +605,7 @@ _LAZY_MAP: dict = {
     "RavoReport": "vuln.detection.ravo_engine",
     "RavoEngine": "vuln.detection.ravo_engine",
     "optimize_fix_order": "vuln.detection.ravo_engine",
-    # vdda vulnerability discovery delta analysis (2026-08-03)
+    # vdda vulnerability discovery delta analysis
     "DeltaType": "vuln.detection.vdda_delta",
     "FindingSnapshot": "vuln.detection.vdda_delta",
     "DeltaReport": "vuln.detection.vdda_delta",
@@ -615,7 +615,7 @@ _LAZY_MAP: dict = {
     "VddaReport": "vuln.detection.vdda_engine",
     "VddaEngine": "vuln.detection.vdda_engine",
     "analyze_delta": "vuln.detection.vdda_engine",
-    # ichra indirect call hijack risk (2026-08-02)
+    # ichra indirect call hijack risk
     "CallSiteRisk": "vuln.detection.ichra_call_analyzer",
     "IndirectCallSite": "vuln.detection.ichra_call_analyzer",
     "CallSiteRiskAssessment": "vuln.detection.ichra_call_analyzer",
@@ -624,7 +624,7 @@ _LAZY_MAP: dict = {
     "IchraReport": "vuln.detection.ichra_engine",
     "IchraEngine": "vuln.detection.ichra_engine",
     "assess_indirect_call_risk": "vuln.detection.ichra_engine",
-    # epass exploit-aware sandbox policy (2026-08-02)
+    # epass exploit-aware sandbox policy
     "ExploitPrimitive": "vuln.detection.epass_exploit_mapper",
     "SyscallBlocklist": "vuln.detection.epass_exploit_mapper",
     "ExploitPrimitiveMapper": "vuln.detection.epass_exploit_mapper",
@@ -635,7 +635,7 @@ _LAZY_MAP: dict = {
     "EpassReport": "vuln.detection.epass_engine",
     "EpassEngine": "vuln.detection.epass_engine",
     "generate_epass_policy": "vuln.detection.epass_engine",
-    # cmvc cross-modal vulnerability correlation (2026-08-01)
+    # cmvc cross-modal vulnerability correlation
     "AnalysisModality": "vuln.detection.cmvc_evidence",
     "CorrelationRelation": "vuln.detection.cmvc_evidence",
     "NormalizedEvidence": "vuln.detection.cmvc_evidence",

@@ -3,7 +3,6 @@
 # 输入: angr CFG + value_flow.py 的def-use链
 # 输出: 标准化漏洞发现列表
 
-from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import re
 

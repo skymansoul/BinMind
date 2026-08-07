@@ -1,6 +1,6 @@
 # 跨架构迁移学习 — 将一种指令集上训练的模型适配到另一种架构
-# 依据: GBsim [Entropy 2025] 的GCN-BERT跨架构二进制相似度方法
-# ProTST [arXiv 2412.11177, 2024] 的渐进式师生跨任务知识迁移
+# 依据: GBsim 的GCN-BERT跨架构二进制相似度方法
+# ProTST 的渐进式师生跨任务知识迁移
 # 核心: 通过共享语义空间对齐不同架构的嵌入, 使用对比域适配
 
 from __future__ import annotations
@@ -16,9 +16,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 架构定义
-# ---------------------------------------------------------------------------
 
 class ArchKind(Enum):
     X86_32 = 'x86'
@@ -60,9 +58,7 @@ class ArchKind(Enum):
         return mapping.get(machine.lower(), cls.UNKNOWN)
 
 
-# ---------------------------------------------------------------------------
 # 架构特征分析器
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ArchProfile:
@@ -102,9 +98,7 @@ ARCH_PROFILES: Dict[ArchKind, ArchProfile] = {
 }
 
 
-# ---------------------------------------------------------------------------
 # 纯Python向量运算
-# ---------------------------------------------------------------------------
 
 def _xa_vec_dot(a: List[float], b: List[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
@@ -127,9 +121,7 @@ def _xa_xavier(r: int, c: int) -> List[List[float]]:
     return [[rng.uniform(-lim, lim) for _ in range(c)] for _ in range(r)]
 
 
-# ---------------------------------------------------------------------------
 # 架构对齐投影器
-# ---------------------------------------------------------------------------
 
 class CrossArchAligner:
     """跨架构语义对齐器
@@ -276,9 +268,7 @@ class CrossArchAligner:
         return _xa_vec_dot(_xa_l2_norm(projected), _xa_l2_norm(emb_b))
 
 
-# ---------------------------------------------------------------------------
 # 跨架构函数匹配器
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CrossArchMatch:

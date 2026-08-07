@@ -1,0 +1,6 @@
+{
+  "id": "uaf_fp_02_null_after_free",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "释放后置 NULL, 后续 if(p) 防护"
+}

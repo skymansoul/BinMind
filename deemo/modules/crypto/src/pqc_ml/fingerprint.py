@@ -1,7 +1,7 @@
 """
 ML-QED-Lite 库版本指纹检测 — QED-Lite 轻量级静态二进制分析。
 
-参考: QED-Lite (ePrint 2026/660): 855x 加速，100% 真阳性率。
+参考: QED-Lite: 855x 加速，100% 真阳性率。
 三阶段: 文件级 → API 级 → 调用图级。
 简化实现以字节级模式匹配 + 调用约定推断近似 Phase 1/2。
 """
@@ -18,7 +18,7 @@ def _simulate_qed_lite_fingerprint(data: bytes) -> List[dict]:
     """
     QED-Lite 库版本指纹检测。
 
-    QED-Lite (ePrint 2026/660) 三阶段:
+    QED-Lite 三阶段:
       Phase 1: 文件级 — 二进制格式 + 导入表
       Phase 2: API 级 — 已知 PQC API 函数名匹配
       Phase 3: 调用图级 — PQC API 调用序列合法性验证

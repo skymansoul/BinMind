@@ -1,4 +1,4 @@
-# 创建: 2026-08-05 | 污点感知格式化字符串检测
+# 创建: 2026-08-04 | 污点感知格式化字符串检测
 #
 """污点感知格式化字符串检测 — 区分"真正的格式化字符串漏洞"与printf的误报。
 
@@ -182,7 +182,7 @@ class TaintFormatChecker:
         return 1.0 - _true_vulns / _total
 
 
-# ---- smoke ----
+# smoke
 def _check():
     _c = TaintFormatChecker()
 

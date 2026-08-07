@@ -40,7 +40,7 @@ _MAX_PAGES = 50
 _PAGE_DELAY = 1.0 if _GHSA_TOKEN is None else 0.8
 
 
-# ---- GHSA 特定严重程度映射 ----
+# GHSA 特定严重程度映射
 # GitHub 使用自己的等级 — 映射到我们的 Severity 枚举
 _GHSA_SEVERITY_MAP = {
     "LOW": "LOW",
@@ -159,7 +159,7 @@ class GHSAEntry:
         )
 
 
-# ---- 内部: 解析 github link header (RFC 5988) ----
+# 内部: 解析 github link header (RFC 5988)
 # github 返回: <url>; rel="next", <url>; rel="last"
 # 需提取 "next" url 以遍历页面
 _LINK_RE = re.compile(r'<([^>]+)>\s*;\s*rel="([^"]+)"')
@@ -197,7 +197,7 @@ def _ghsa_request(url: str) -> Tuple[List[Dict], Optional[str]]:
     return items, next_url
 
 
-# ---- 搜索 ----
+# 搜索
 def search_ghsa(
     query: str,
     ecosystem: Optional[str] = None,
@@ -252,7 +252,7 @@ def search_ghsa(
     return results[:limit]
 
 
-# ---- search_advisories: 搜索 + 可选 NVD 去重 ----
+# search_advisories: 搜索 + 可选 NVD 去重
 # 主要入口: "查找生态系统 X 的所有公告并与 KB 已有数据合并"
 
 def search_and_dedup(
@@ -359,7 +359,7 @@ def search_and_dedup(
     }
 
 
-# ---- 跨源去重的描述相似度 ----
+# 跨源去重的描述相似度
 # 简单的 token 重叠 — 不如 SBOM 匹配器的 _norm_name 精细
 # 但无需那么精细。正在比较漏洞描述而非包名。
 
@@ -386,7 +386,7 @@ def _desc_overlap(desc1: str, desc2: str) -> float:
 fetch_ghsa_paginated = search_ghsa
 
 
-# ---- 合并逻辑 ----
+# 合并逻辑
 def merge_entries(ghsa_entry: GHSAEntry, nvd_entry: CVEEntry) -> CVEEntry:
     """将 GHSA 和 NVD 数据合并为单个 CVEEntry。
     选取最佳描述（最长非空），合并参考链接。

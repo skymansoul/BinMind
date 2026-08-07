@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 流式分位数草图 — 为钩子执行指标提供固定内存的在线分布估计.
 
@@ -154,7 +154,7 @@ class StreamingSketch:
         sk._centroids = [Centroid(mean=m, weight=w) for m, w in data.get('centroids', [])]
         return sk
 
-    # ---- 内部 ----
+# 内部
     def _find_insert_idx(self, value: float) -> int:
         lo, hi = 0, len(self._centroids)
         while lo < hi:

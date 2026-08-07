@@ -27,9 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # PathRanker适配器
-# ---------------------------------------------------------------------------
 
 class PathRankerAdapter:
     """
@@ -114,9 +112,7 @@ class PathRankerAdapter:
         return 0.0
 
 
-# ---------------------------------------------------------------------------
 # StrategySwitcher适配器
-# ---------------------------------------------------------------------------
 
 class StrategySwitcherAdapter:
     """
@@ -170,9 +166,7 @@ class StrategySwitcherAdapter:
         self._switcher = AdaptiveStrategySwitcher()
 
 
-# ---------------------------------------------------------------------------
 # LLMGuidedExplorer
-# ---------------------------------------------------------------------------
 
 class LLMGuidedExplorer:
     """
@@ -324,9 +318,7 @@ class LLMGuidedExplorer:
         return dict(self._stats)
 
 
-# ---------------------------------------------------------------------------
 # Dead code — 留着备用，后面可能用
-# ---------------------------------------------------------------------------
 
 def _generate_ExplorationSummaryReport(results: Dict[str, Any]) -> str:
     """构造 a markdown summary exploration results. Never

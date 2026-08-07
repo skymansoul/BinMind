@@ -2,7 +2,7 @@
 # 用于: UAF候选生成 (追踪free后的use), double-free检测。
 #
 # 设计依据:
-#   TypeArmor (CCS 2024) 从二进制恢复C类型信息用于UAF检测。
+#   TypeArmor 从二进制恢复C类型信息用于UAF检测。
 #   本模块不恢复类型 — 而是追踪指针变量在函数间的传递。
 #   通过栈帧偏移模式匹配malloc/free调用点, 不依赖调试信息。
 #

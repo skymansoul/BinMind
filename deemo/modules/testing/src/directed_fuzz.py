@@ -3,16 +3,16 @@
 # 种子距离=该种子执行路径上所有基本块的平均目标距离。
 # 距离越近->能量越高->变异次数越多->更快到达目标区域。
 #
-# 参考文献:
-#   BEACON (Huang et al. USENIX 2022): Directed Grey-Box Fuzzing with
+# 文献:
+#   BEACON: Directed Grey-Box Fuzzing with
 #     Provable Path Pruning — 基于层级的距离近似
-#   Hawkeye (Chen et al. CCS 2018): Towards a Desired Directed Grey-box
+#   Hawkeye: Towards a Desired Directed Grey-box
 #     Fuzzer — 邻域函数距离+调用链距离
-#   MC2 (Shahriar et al. CCS 2022): Rigorous and Efficient Directed
+#   MC2: Rigorous and Efficient Directed
 #     Greybox Fuzzing — 调用图级+基本块级双重距离
-#   RDFuzz (Ye et al. ESEC/FSE 2023): Accelerating Directed Fuzzing with
+#   RDFuzz: Accelerating Directed Fuzzing with
 #     Intertwined Schedule and Optimized Mutation
-#   SoK: Where to Fuzz? (Luo et al. CSF 2024) — 定向Fuzzing目标选择综述
+#   SoK: Where to Fuzz? — 定向Fuzzing目标选择综述
 import math
 import time
 import heapq
@@ -62,7 +62,7 @@ class DirectedFuzzer:
         self._seed_energy: Dict[str, float] = {}
         self._round = 0
 
-    # ---- 目标设定 ----
+    # 目标设定
     def set_targets(self, target_funcs: List[str] = None,
                     target_blocks: List[int] = None) -> None:
         if target_funcs:
@@ -75,7 +75,7 @@ class DirectedFuzzer:
         self._target_blocks.add(bb_addr)
         self._computed = False
 
-    # ---- 图加载 ----
+    # 图加载
     def load_call_graph(self,
                         edges: List[Tuple[str, str]]) -> None:
         """edges: [(caller, callee), ...]"""
@@ -93,7 +93,7 @@ class DirectedFuzzer:
             self._intra_cfg[func_name][bb] = list(succs)
         self._computed = False
 
-    # ---- 距离计算 ----
+    # 距离计算
     def compute_distances(self) -> None:
         """两级距离: 先计算调用图距离，再合并函数内BB距离。
 
@@ -200,7 +200,7 @@ class DirectedFuzzer:
             else:
                 self._combined[bb] = self.INF
 
-    # ---- 种子评分 ----
+    # 种子评分
     def seed_distance(self,
                       covered_blocks: List[int]) -> float:
         """计算种子到目标区域的平均距离。
@@ -254,7 +254,7 @@ class DirectedFuzzer:
                 best_id = sid
         return best_id
 
-    # ---- 路径引导变异 ----
+    # 路径引导变异
     def guide_mutation(self, seed: bytearray,
                        uncovered_target_blocks: Set[int]) -> bytes:
         """定向变异: 偏向修改可能影响未到达目标的字节偏移。
@@ -270,7 +270,7 @@ class DirectedFuzzer:
             seed[idx] ^= (1 << random.randint(0, 7))
         return bytes(seed)
 
-    # ---- 距离热力图 ----
+    # 距离热力图
     def distance_report(self, top_k: int = 20) -> Dict[str, Any]:
         """返回距离最近的前K个BB和当前调度统计。"""
         sorted_bbs = sorted(
@@ -301,12 +301,10 @@ class DirectedFuzzer:
         return any(bb in self._target_blocks for bb in covered_blocks)
 
 
-# ---------------------------------------------------------------------------
 # 调用图距离的路径剪枝: BEACON风格层级近似
 # 当调用图过大或无法完全加载时，使用层级编号近似CG距离。
 # 对调用图中每个函数赋予(layer, index)坐标 ->
 # 距离 ≈ |layer_a - layer_b| * layer_weight + |index_a - index_b|
-# ---------------------------------------------------------------------------
 def approximate_cg_distance(func_positions: Dict[str, Tuple[int, int]],
                            target: str) -> Dict[str, float]:
     if target not in func_positions:

@@ -20,9 +20,9 @@
 # SimHash 聚合为 O(k) 的 bitwise OR, 指纹比较为 O(1) 汉明距离。
 # 总增量开销 < 1ms/窃取——在毫秒级的网络 RTT 面前可忽略。
 #
-# ref: work_stealing_coordinator.py — 本项目的基础窃取框架
-# ref: Blumofe, R. & Leiserson, C. "Scheduling multithreaded computations
-#      by work stealing." JACM 46.5 (1999): 720-748.
+# work_stealing_coordinator.py — 本项目的基础窃取框架
+# Blumofe, R. & Leiserson, C. "Scheduling multithreaded computations
+#      by work stealing." JACM 46.5: 720-748.
 #      — 工作窃取的理论基础。本项目在其随机窃取策略上增加多样性度量,
 #      将"任意任务"替换为"最不相似于 thief 已有路径集合的任务"
 

@@ -1,0 +1,10 @@
+{
+  "is_vuln": false,
+  "pattern": "struct_fields",
+  "overflow_kind": "none",
+  "cwe": "",
+  "filter": "struct-layout",
+  "cve": "",
+  "func": "safe_struct",
+  "name": "FP-07_struct_fields"
+}

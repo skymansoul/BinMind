@@ -28,10 +28,8 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Architecture constants — normalized engine/unicorn_hybrid.py
 # Fixes UC_ARCH_X86_64 = None repetition bug (合并 conflict residue)
-# ---------------------------------------------------------------------------
 
 class Arch(str, Enum):
     X86 = "x86"
@@ -59,9 +57,7 @@ _UC_MODE_MAP: Dict[str, int] = {
 }
 
 
-# ---------------------------------------------------------------------------
 # Data types
-# ---------------------------------------------------------------------------
 
 class EmulationState(str, Enum):
     IDLE = "idle"
@@ -120,9 +116,7 @@ class CodeBlock:
     branch_target: Optional[int] = None
 
 
-# ---------------------------------------------------------------------------
 # UnicornHybrid — main 仿真 engine
-# ---------------------------------------------------------------------------
 
 class UnicornHybrid:
     """Unicorn引擎 hybrid 符号执行 engine
@@ -174,7 +168,7 @@ class UnicornHybrid:
         except ImportError:
             log.warning("Unicorn Engine not installed; emulation will use simulation mode")
 
-    # ---- 内存管理 ----
+# 内存管理
 
     def map_memory(self, address: int, size: int, permissions: str = "rwx") -> None:
         """Map a memory region"""
@@ -204,7 +198,7 @@ class UnicornHybrid:
         """a 寄存器 value"""
         return getattr(self._registers, reg_name, 0)
 
-    # ---- 仿真 control ----
+# 仿真 control
 
     def emulate(
         self,
@@ -328,7 +322,7 @@ class UnicornHybrid:
             instructions_executed=max_insns,
         )
 
-    # ---- 钩子s ----
+# 钩子s
 
     def add_code_hook(
         self, callback: Callable[[int, int, bytes], None], begin: int = 0, end: int = 0
@@ -350,7 +344,7 @@ class UnicornHybrid:
         """Remove a breakpoint"""
         self._breakpoints.discard(address)
 
-    # ---- Code lifting ----
+# Code lifting
 
     def lift_code_block(
         self, address: int, max_bytes: int = 64
@@ -378,7 +372,7 @@ class UnicornHybrid:
             log.debug("Capstone not available for code lifting")
         return CodeBlock(address=address, raw_bytes=data[:max_bytes], size=max_bytes)
 
-    # ---- State management ----
+# State management
 
     def get_state(self) -> EmulationState:
         """current 仿真 state"""

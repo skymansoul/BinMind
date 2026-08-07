@@ -6,9 +6,9 @@ NIST 标准 (2024年8月):
   FIPS 203 -- ML-KEM   (Kyber)
   FIPS 204 -- ML-DSA   (Dilithium)
   FIPS 205 -- SLH-DSA  (SPHINCS+)
-  FIPS 206 -- FN-DSA   (Falcon, 预计 2026 年底)
+  FIPS 206 -- FN-DSA
 
-NIST 第4轮 KEM (遴选预计 2026-2027):
+NIST 第4轮 KEM:
   BIKE, Classic McEliece, HQC
 
 2026-07: 新增 BIKE (QC-MDPC) 参数检测, HQC tensor code 常量,
@@ -325,7 +325,7 @@ class PQCDetector:
         return results
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 
 def detect_pqc(path: str) -> List[PQCDetectionResult]:
     return PQCDetector().scan_file(path)

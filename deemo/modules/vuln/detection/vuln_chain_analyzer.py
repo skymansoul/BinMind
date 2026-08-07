@@ -1,5 +1,5 @@
 # 漏洞链分析器——程序依赖图中多步利用路径发现。
-# 基于HGAT图建模（Cascaded Vulnerability Attacks, arXiv:2601.20158）。
+# 基于HGAT图建模。
 #
 # 核心逻辑:
 #   单点低危漏洞危害有限，但经由调用图与数据流图组合多个漏洞
@@ -364,7 +364,7 @@ class VulnChainAnalyzer:
         return unique
 
 
-# ---- 便捷入口 ----
+# 便捷入口
 
 def analyze_vulnerability_chains(vulnerabilities: List[VulnNode],
                                   call_graph: Dict[str, List[str]] = None,

@@ -93,7 +93,7 @@ def _serialize_val(field: str, val: Any) -> str:
     return str(val)
 
 
-# ---- 变更日志存储 ----
+# 变更日志存储
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS cve_changelog (
@@ -142,7 +142,7 @@ class CVEChangelog:
         except sqlite3.OperationalError:
             pass
 
-    # ---- 记录 ----
+# 记录
 
     def record_update(self, old_entry, new_entry, change_type: str = "update"):
         """记录新旧条目间的所有字段级变更。
@@ -229,7 +229,7 @@ class CVEChangelog:
 
         return len(rows)
 
-    # ---- 查询 ----
+# 查询
 
     def get_changelog(self, cve_id: str, limit: int = 50) -> List[Dict[str, Any]]:
         """获取特定 CVE 的变更历史。"""
@@ -333,7 +333,7 @@ class CVEChangelog:
         }
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _get_cve_id(entry) -> str:
     """从任意条目类型获取 cve_id。"""
@@ -352,5 +352,4 @@ def _get_field(entry, field: str) -> Any:
         return entry.get(field)
     return None
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

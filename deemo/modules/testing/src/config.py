@@ -45,7 +45,6 @@ class TestingConfig:
         return cls()
 
 
-# ================================================
 def load_config(filepath: Optional[str] = None) -> TestingConfig:
     """从文件加载配置，环境变量覆盖。
 
@@ -160,6 +159,5 @@ def config_from_env() -> TestingConfig:
     return _apply_override(_cfg, _env)
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩。"""
     pass  # 调试桩，当前未使用

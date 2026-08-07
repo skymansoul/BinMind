@@ -57,7 +57,7 @@ class BackupError(PatchError):
         self.backup_id = backup_id
 
 
-# ===== 分类异常：上层 dispatch 根据类型决定重试/回滚/跳过 =====
+# 分类异常：上层 dispatch 根据类型决定重试/回滚/跳过
 
 class AnalysisError(PatchError):
     """静态分析失败 —— 二进制无法理解，非补丁之过。"""
@@ -81,7 +81,6 @@ class ConfigError(PatchError):
     pass
 
 
-def _debug_print(*args, **kwargs):
     """调试输出桩。"""
     pass  # 当前未激活
 

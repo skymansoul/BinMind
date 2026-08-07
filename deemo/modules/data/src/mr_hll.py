@@ -12,18 +12,18 @@
 #      自动升级以保持估计精度.
 #
 # 与现有工作的区别:
-#   - HyperBitT (AofA 2024): 固定单精度 1-2bits/寄存器, 需预知基数范围.
+#   - HyperBitT: 固定单精度 1-2bits/寄存器, 需预知基数范围.
 #     本实现无需预知, 在线自适应.
 #   - Google HLL++: 对小基数用 sparse representation, 大基数切 dense.
 #     本实现提供中间精度阶梯 (4 级), 而非仅 sparse/dense 两态.
 #
 # 理论依据:
 #   - Flajolet et al., "HyperLogLog: the analysis of a near-optimal
-#     cardinality estimation algorithm" (AOFA 2007).
+#     cardinality estimation algorithm".
 #   - Heule et al., "HyperLogLog in Practice: Algorithmic Engineering of
-#     a State of The Art Cardinality Estimation Algorithm" (EDBT 2013).
+#     a State of The Art Cardinality Estimation Algorithm".
 #   - Janson, Lumbroso & Sedgewick, "Smaller Cardinality Estimators"
-#     (AofA 2024) — 1-2 bit per register variants.
+# — 1-2 bit per register variants.
 
 import math
 import struct
@@ -72,7 +72,7 @@ class MultiResolutionHLL:
         self._regs = bytearray(self._m)
         self._n_added = 0
 
-    # ---- 公共接口 ----
+# 公共接口
 
     def add(self, data: bytes):
         h = self._hash64(data)
@@ -142,7 +142,7 @@ class MultiResolutionHLL:
         """寄存器利用率 (已填充比例)."""
         return self._saturation()
 
-    # ---- 内部: 精度升级/降级 ----
+# 内部: 精度升级/降级
 
     def _promote(self):
         """精度升级: 每旧寄存器→ratio个新寄存器, 引入±1抖动防系统性高估."""
@@ -206,7 +206,7 @@ class MultiResolutionHLL:
                 result[i] = mx
             return result
 
-    # ---- 内部: 估计与修正 ----
+# 内部: 估计与修正
 
     def _raw_estimate(self) -> float:
         """标准 HLL 原始估计."""
@@ -238,7 +238,7 @@ class MultiResolutionHLL:
         correction = -2 ** 32 * math.log(1 - raw / (2 ** 32))
         return int(correction)
 
-    # ---- 内部: 辅助 ----
+# 内部: 辅助
 
     def _saturation(self) -> float:
         """已填充的非零寄存器比例."""

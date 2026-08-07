@@ -87,9 +87,7 @@ class LogSpaceComplexityEstimator:
         self._prediction_count = 0
         self._skip_count = 0
 
-    #-------------------------------------------------------------------
     # 特征提取 —— 与现有 ConstraintComplexityEstimator 对齐
-    #-------------------------------------------------------------------
 
     @staticmethod
     def extract_features(constraints: List[str]) -> List[float]:
@@ -144,9 +142,7 @@ class LogSpaceComplexityEstimator:
 
         return [f_count, f_depth, f_width, f_arith, f_bool]
 
-    #-------------------------------------------------------------------
     # 预测
-    #-------------------------------------------------------------------
 
     def predict(self, constraints: List[str]) -> float:
         """预测 Z3 求解时间（秒）
@@ -174,9 +170,7 @@ class LogSpaceComplexityEstimator:
         # 线性预测不经过 exp，直接 clamp
         return max(0.001, min(val, 3600.0))
 
-    #-------------------------------------------------------------------
     # 在线学习
-    #-------------------------------------------------------------------
 
     def update(self, constraints: List[str], actual_time: float) -> None:
         """用一次求解结果更新模型权重
@@ -240,9 +234,7 @@ class LogSpaceComplexityEstimator:
                 f"drift_count={self._drift_counter}/{self._drift_window}"
             )
 
-    #-------------------------------------------------------------------
     # 模型诊断
-    #-------------------------------------------------------------------
 
     def needs_recalibration(self) -> bool:
         return self._needs_recalibration

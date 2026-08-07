@@ -1,5 +1,5 @@
 """
-创建: 2025-07-30
+创建: 2026-05-17
 令牌预算 Pareto 优化 — 基于模块复杂度和优先级的智能 token 分配。
 
 问题：当前令牌预算（TokenBudget）对所有 worker 一视同仁——
@@ -25,17 +25,18 @@
 
 与现有工作的差异：
   - throttle-net (Rust): 多维成本感知速率限制，不做 per-task 分配优化
-  - ACE (2026): prompt 演化，不优化 token 分配
+  - ACE: prompt 演化，不优化 token 分配
   - 本模块在并行代码生成场景中首次引入 per-module token 分配优化,
     结合模块复杂度和历史质量数据做 Pareto 前沿搜索
 """
 
-from __future__ import annotations
 
 import ast
 import math
 import os
 from dataclasses import dataclass, field
+
+from parallel_deep_dev.engine._io import safe_read
 
 
 @dataclass
@@ -90,10 +91,8 @@ class BudgetOptimizer:
         for fpath in filepaths:
             if not fpath.endswith(".py") or not os.path.isfile(fpath):
                 continue
-            try:
-                with open(fpath, "r", encoding="utf-8", errors="replace") as f:
-                    source = f.read()
-            except OSError:
+            source = safe_read(fpath)
+            if source is None:
                 continue
             try:
                 tree = ast.parse(source)
@@ -208,9 +207,7 @@ class BudgetOptimizer:
         }
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def build_profiles_from_module_defs(
     optimizer: BudgetOptimizer,

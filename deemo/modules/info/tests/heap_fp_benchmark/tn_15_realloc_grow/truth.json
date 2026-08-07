@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_15_realloc_grow",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: realloc 扩容安全",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "realloc 扩容后分配 256, 写入恰好 256; 旧分配点被 C0 去重丢弃"
+}

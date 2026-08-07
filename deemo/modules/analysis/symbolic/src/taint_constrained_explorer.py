@@ -23,25 +23,25 @@
 #       (默认 0.85) —— 间接污点的分支更可能是良性而非可利用路径
 #
 # 与现有模块的关系:
-#   - subreg_taint: 提供字节级污点状态 (数据源)
-#   - PathDiversityTracker: 提供路径空间多样性评分 (竞争者)
-#   - 本模块: 提供基于污点的优先级修正因子 (与多样性评分正交)
+# subreg_taint: 提供字节级污点状态 (数据源)
+# PathDiversityTracker: 提供路径空间多样性评分 (竞争者)
+# 本模块: 提供基于污点的优先级修正因子 (与多样性评分正交)
 #     最终优先级 = diversity_score * 0.6 + taint_score * 0.4
 #     权重可调——当前 0.6/0.4 基于 CTF pwn 题的初步调试
 #
-# 参考文献:
+# 文献:
 # Caballero et al. "Binary Code Extrac via 污点追踪."
 # USENIX Securi 2009. -- 奠基性动态污点工作, 但仅追踪到二进制层
-#   FIE (Davidson et al., USENIX 2013) -- 固件符号执行,
+#   FIE -- 固件符号执行,
 #     提出基于外设访问的路径优先级, 但未使用字节级污点
 #   本模块首次将字节级寄存器污点与符号执行路径优先级关联:
 # taint granulari (1 byte) -> constraint relev -> path priori
 #
 # 边界条件与风险:
-#   - 污点状态快照的内存开销: 每条路径 ~64B (16个通用寄存器 * 8槽位)
+# 污点状态快照的内存开销: 每条路径 ~64B (16个通用寄存器 * 8槽位)
 #     对 1000 路径约 64KB, 可忽略
 #   - 若 subreg_taint 未激活, 本模块降级为均匀优先级 (所有路径 score=0)
-#   - 间接污点链的跳数计算是保守近似: 真实跳数可能需要
+# 间接污点链的跳数计算是保守近似: 真实跳数可能需要
 #     指令级数据依赖分析, 当前用寄存器写-读链的 BFS 估计
 
 from typing import Dict, List, Optional, Tuple, Set
@@ -49,9 +49,7 @@ from dataclasses import dataclass, field
 from collections import deque
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TaintSnapshot:
@@ -75,9 +73,7 @@ class TaintPriorityScore:
     constraint_overlap_count: int  # 约束中引用被污染寄存器的次数
 
 
-# ---------------------------------------------------------------------------
 # 核心类
-# ---------------------------------------------------------------------------
 
 class TaintConstrainedExplorer:
     """基于污点信息的符号执行路径优先级调整器
@@ -127,9 +123,7 @@ class TaintConstrainedExplorer:
         self._direct_weight = direct_taint_weight
         self._indirect_weight = indirect_taint_weight
 
-    # ------------------------------------------------------------------
     # 污点快照捕获
-    # ------------------------------------------------------------------
 
     def capture_taint(self, path_id: str,
                       subreg_state) -> TaintSnapshot:
@@ -186,9 +180,7 @@ class TaintConstrainedExplorer:
                 slots[i] = max_conf
         return slots
 
-    # ------------------------------------------------------------------
     # 污点优先级评分
-    # ------------------------------------------------------------------
 
     def score_path(self, snapshot: TaintSnapshot,
                    constraints: List[str]) -> TaintPriorityScore:
@@ -208,7 +200,7 @@ class TaintConstrainedExplorer:
                 constraint_overlap_count=0,
             )
 
-        # 步骤 1: 从约束中提取寄存器引用
+        # 从约束中提取寄存器引用
         constraint_regs: Set[str] = set()
         for c in constraints:
             c_upper = c.upper()
@@ -226,7 +218,7 @@ class TaintConstrainedExplorer:
                 constraint_overlap_count=0,
             )
 
-        # 步骤 2-3: 检查重合并加权
+        # 3: 检查重合并加权
         tainted_regs: List[str] = []
         total_score = 0.0
         overlap_count = 0
@@ -245,7 +237,7 @@ class TaintConstrainedExplorer:
                              else self._indirect_weight * decay)
                     total_score += avg_taint * weight
 
-        # 步骤 4: 归一化
+        # 归一化
         max_possible = len(constraint_regs) * self._direct_weight
         norm_score = min(1.0, total_score / max(max_possible, 1e-9))
 
@@ -257,9 +249,7 @@ class TaintConstrainedExplorer:
             constraint_overlap_count=overlap_count,
         )
 
-    # ------------------------------------------------------------------
     # 路径优先级融合
-    # ------------------------------------------------------------------
 
     @staticmethod
     def fuse_priority(diversity_score: float, taint_score: float,
@@ -274,9 +264,7 @@ class TaintConstrainedExplorer:
         """
         return diversity_score * diversity_weight + taint_score * (1.0 - diversity_weight)
 
-    # ------------------------------------------------------------------
     # 批量评分 -- 用于路径调度器
-    # ------------------------------------------------------------------
 
     def rank_paths(self,
                    snapshots: Dict[str, TaintSnapshot],

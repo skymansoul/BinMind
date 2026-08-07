@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_10_unrelated_alloc",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 无关分配不关联",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "malloc(32) 与写入目标 buf 无别名关系, C0 值流绑定排除跨缓冲误报"
+}

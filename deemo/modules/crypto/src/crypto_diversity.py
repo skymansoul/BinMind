@@ -24,8 +24,7 @@
     4. 推断实现来源(硬件加速/软件查表/bit-sliced)。
     5. 输出多样性评分和风险等级。
 
-参考:
-  - Nadi et al. (ICSE 2016): "Where Do Cryptographic Libraries Come From?" —
+  - Nadi et al.: "Where Do Cryptographic Libraries Come From?" —
     开源项目中密码学实现的来源多样性研究。本项目将同一分析推广到二进制。
   - Synopsys 2024 OSSRA Report: 78%的代码库包含开源组件, 其中密码学库
     是最常被重复引入的类别。
@@ -56,7 +55,6 @@ _IMPL_TYPE_PATTERNS: Dict[str, List[bytes]] = {
     'hardware-PKE': [b'PKCS11', b'pkcs11', b'C_Encrypt', b'C_Decrypt'],
 }
 
-
 @dataclass
 class ImplementationVariant:
     algorithm: str = ""
@@ -64,7 +62,6 @@ class ImplementationVariant:
     anchor_offset: int = 0
     confidence: float = 0.0
     lib_hint: str = ""            # 推断的库来源
-
 
 @dataclass
 class DiversityReport:
@@ -75,7 +72,6 @@ class DiversityReport:
     risk_level: str = "LOW"         # LOW / MEDIUM / HIGH / CRITICAL
     supply_chain_risk: str = ""     # 人类可读的风险描述
     recommendations: List[str] = field(default_factory=list)
-
 
 def _infer_impl_type(data: bytes, anchor: int, window: int = 512) -> Tuple[str, float]:
     """推断密码学实现的类型(硬件加速/软件查表/bit-sliced)。"""
@@ -101,7 +97,6 @@ def _infer_impl_type(data: bytes, anchor: int, window: int = 512) -> Tuple[str, 
     conf = min(0.90, 0.45 + max_score * 0.15)
     return best, conf
 
-
 def _infer_lib_source(strings: List[str], anchor_strings: List[str]) -> str:
     """从字符串上下文推断库来源。"""
     lib_hints = {
@@ -126,7 +121,6 @@ def _infer_lib_source(strings: List[str], anchor_strings: List[str]) -> str:
     if not scores:
         return 'unknown'
     return max(scores, key=scores.get)
-
 
 def analyze_diversity(data: bytes,
                       crypto_findings: Optional[List] = None,

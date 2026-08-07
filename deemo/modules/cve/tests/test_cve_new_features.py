@@ -12,7 +12,7 @@ def kb():
     db.close()
 
 
-# ---- SSVC测试 (11项) ----
+# SSVC测试 (11项)
 
 class TestSSVC:
     def test_import(self):
@@ -107,7 +107,7 @@ class TestSSVC:
         assert _check_kev_flag(d) is False
 
 
-# ---- PURL/CPE tests (6 tests) ----
+# PURL/CPE tests (6 tests)
 
 class TestPurlCPE:
     def test_purl_to_cpe_pypi(self):
@@ -147,7 +147,7 @@ class TestPurlCPE:
         assert "angular" in cpe
 
 
-# ---- Transitive risk (3 tests) ----
+# Transitive risk (3 tests)
 
 class TestTransitiveRisk:
     def test_propagate_risk_import(self):
@@ -176,7 +176,7 @@ class TestTransitiveRisk:
         assert report is not None
 
 
-# ---- GHSA coverage (3 tests) ----
+# GHSA coverage (3 tests)
 
 class TestGHSACoverage:
     def test_cross_source_coverage_import(self):
@@ -200,7 +200,7 @@ class TestGHSACoverage:
         assert result is not None
 
 
-# ---- Version edge cases (3 tests) ----
+# Version edge cases (3 tests)
 
 class TestVersionEdgeCases:
     def test_prerelease_detection(self):

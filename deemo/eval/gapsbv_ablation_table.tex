@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{GAPSBV Seven-Stage Ablation Study — per-stage hard/soft filtering, TP/FP/Precision/Recall/F1.}
+\label{tab:gapsbv_ablation}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Stage & In & Out & Hard & Soft & TP & FP & TN & FN & Prec & Recall & F1 \\
+\midrule
+  S0_Baseline & 0 & 175 & 0 & 0 & 118 & 57 & 109 & 90 & 0.6743 & 0.5673 & 0.6162 \\
+  S1_AllocatorSemantics & 175 & 144 & 31 & 0 & 107 & 37 & 129 & 101 & 0.7431 & 0.5144 & 0.6080 \\
+  S2_GuardAwareWrites & 144 & 140 & 4 & 0 & 107 & 33 & 133 & 101 & 0.7643 & 0.5144 & 0.6149 \\
+  S3_SizeConstraints & 140 & 140 & 0 & 2 & 107 & 33 & 133 & 101 & 0.7643 & 0.5144 & 0.6149 \\
+  S4_ProofObligations & 140 & 131 & 9 & 31 & 106 & 25 & 141 & 102 & 0.8092 & 0.5096 & 0.6254 \\
+  S5_SlackSpace & 131 & 131 & 0 & 1 & 106 & 25 & 141 & 102 & 0.8092 & 0.5096 & 0.6254 \\
+  S6_ValueRange & 131 & 131 & 0 & 12 & 106 & 25 & 141 & 102 & 0.8092 & 0.5096 & 0.6254 \\
+  S7_NonHeapFilter & 131 & 131 & 0 & 0 & 106 & 25 & 141 & 102 & 0.8092 & 0.5096 & 0.6254 \\
+\bottomrule
+\end{tabular}
+\end{table}

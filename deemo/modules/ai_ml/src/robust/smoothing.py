@@ -7,8 +7,8 @@
 #   4. 拓扑自适应噪声: 噪声水平与图局部复杂度成比例
 #
 # 标准引用:
-#   Cohen et al. "Certified Adversarial Robustness via Randomized Smoothing" (ICML 2019)
-#   Bojchevski et al. "Certifiable Robustness to Graph Perturbations" (NeurIPS 2019)
+#   随机平滑的认证鲁棒性方法
+#   图扰动下的可证鲁棒性
 
 from __future__ import annotations
 

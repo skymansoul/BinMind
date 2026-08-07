@@ -1,0 +1,8 @@
+{
+  "sample": "v07_gets_oob",
+  "cve": "GENERIC-gets",
+  "mode": "unbounded_io",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "gets 无边界, 输入可超 48 字节"
+}

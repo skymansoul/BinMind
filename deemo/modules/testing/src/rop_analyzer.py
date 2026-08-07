@@ -6,13 +6,13 @@
 #   4. 缓解评估: 估计在CFI/CET/PAC下gadget可用性
 #   5. 消除验证: 比较补丁前后gadget数量验证缓解是否有效
 #
-# 参考:
+#
 #   ROP Gadget Prevalence and Survival under Compiler-based Binary
-#     Diversification Schemes (Coppens et al.)
-#   Static Binary Rewriting for ROP Gadget Removal (Larsen et al.)
-#   Fill your Boots (CHES 2021): bootloader fault injection + binary analysis
-#   Return-Oriented Programming (Shacham CCS 2007) — 奠基性工作
-#   Jump-Oriented Programming (Bletsch et al. ACSAC 2011)
+#     Diversification Schemes
+#   Static Binary Rewriting for ROP Gadget Removal
+#   Fill your Boots: bootloader fault injection + binary analysis
+#   Return-Oriented Programming — 奠基性工作
+#   Jump-Oriented Programming
 import struct
 import re
 from typing import List, Dict, Set, Tuple, Optional, Any
@@ -157,7 +157,7 @@ class ROPGadgetScanner:
         if g.useful:
             g.confidence = 0.7
 
-    # ---- 查询 ----
+    # 查询
     def get_by_register(self, reg: str) -> List[Gadget]:
         """获取写入指定寄存器的所有gadget。"""
         return [g for g in self._gadgets if reg in g.regs_written]
@@ -175,7 +175,7 @@ class ROPGadgetScanner:
                         result[reg].append(g)
         return dict(result)
 
-    # ---- ROP链构造 ----
+    # ROP链构造
     def search_chain(self, goal: str = "execve",
                      max_len: int = 8) -> List[ROPChain]:
         """搜索可用于构造特定目标ROP链的gadget组合。
@@ -213,7 +213,7 @@ class ROPGadgetScanner:
 
         return [chain] if chain.constraints_satisfied else []
 
-    # ---- 缓解检测 ----
+    # 缓解检测
     def estimate_cfi_resistance(self) -> Dict[str, Any]:
         """评估在启用CFI情况下gadget可用性。
 
@@ -236,7 +236,7 @@ class ROPGadgetScanner:
             else 'medium' if ret_type > 20 else 'low',
         }
 
-    # ---- 报告 ----
+    # 报告
     def stats(self) -> Dict[str, Any]:
         sem_counts = {k: len(v) for k, v in self._by_semantics.items()}
         ret_type_counts = Counter(g.ret_type for g in self._gadgets)
@@ -257,9 +257,7 @@ class ROPGadgetScanner:
                 if len(g.raw_bytes) == length]
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口
-# ---------------------------------------------------------------------------
 def scan_rop_gadgets(filepath: str, base_addr: int = 0) -> ROPGadgetScanner:
     """从文件扫描ROP gadget。返回已扫描的scanner对象。"""
     try:

@@ -1,4 +1,4 @@
-# Created: 2025-07-30 10:30:00
+# Created: 2026-07-17 10:30:00
 #
 # heap_overflow_detector — AC3 (Allocation-Copy Consistency Check)
 # 堆溢出检测的核心创新: 不依赖完整污点分析或符号执行,
@@ -6,10 +6,10 @@
 # 在保留高召回的同时将误报率压低。
 #
 # 与现有方案的区别:
-#   - BUDAlloc (USENIX 2024): 运行时检测, 需要实际执行
-#   - EmTaint: 需要 VEX-IR 提升和全量别名分析
-#   - LATTE: LLM 驱动, 需要大模型推理
-#   - 本模块: 仅导入表+字符串+checksec, 零额外依赖, 三层过滤
+# BUDAlloc: 运行时检测, 需要实际执行
+# EmTaint: 需要 VEX-IR 提升和全量别名分析
+# LATTE: LLM 驱动, 需要大模型推理
+# 本模块: 仅导入表+字符串+checksec, 零额外依赖, 三层过滤
 #
 # 三层过滤:
 #   L1 (召回层): 分配-写配对识别 → 高召回, 低精度

@@ -27,11 +27,11 @@ gravity_edge_dropout (graph_builder.py) 的丢弃概率 p ∝ 1/max(deg(u), deg(
   3. Adaptive temperature: 图密度越高 → temperature 越低 → 丢弃越激进
   4. Low-degree anchor: 度数 ≤1 的节点的所有边 p = 0（永不丢弃）
 
-ref: DropEdge (ICLR 2020) 提出固定概率随机边丢弃作为 GNN 正则化——
+ref: DropEdge 提出固定概率随机边丢弃作为 GNN 正则化——
      但 CFG 不是社交网络，其稀疏性和方向性使固定概率方案不适用。
-ref: BEGA (2022) 提出度数感知的边增强——本模块在此基础上增加
+ref: BEGA 提出度数感知的边增强——本模块在此基础上增加
      谱保持约束和自适应温度，将增强策略从"度数感知"推进到"谱感知"。
-ref: arXiv:1907.04871 在 GNN 验证场景中观察到了图稀疏性对模型性能的影响。
+ref: 图稀疏性在 GNN 验证场景中对模型性能的影响。
 """
 
 import math

@@ -25,9 +25,7 @@ from modules.analysis.decompiler.decompiler_validator import (
 class TestDecompilerValidator:
     """DecompilerValidator 的单元测试"""
 
-    # ==================================================================
     # 伪代码片段 — 用来模拟各种质量的输出
-    # ==================================================================
 
     GOOD_PSEUDOCODE = """\
 int add_numbers(int a, int b) {
@@ -93,9 +91,7 @@ int dispatch(int cmd) {
     return result;
 }"""
 
-    # ==================================================================
     # Tests
-    # ==================================================================
 
     def test_validation_report_creation(self):
         """基本报告创建 — 所有字段应有默认值"""

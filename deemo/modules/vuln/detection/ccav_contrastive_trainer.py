@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-28  |  对比训练器与投影器
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-06-29  |  对比训练器与投影器
+# 修改: 2026-06-29  |  审计后补充文件头与错误处理
 #
 """
 对比跨架构漏洞嵌入——对比训练器。
@@ -41,9 +41,7 @@ from .ccav_triplet_sampler import TripletSample, TripletBatch, CrossArchTripletS
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 损失函数
-# ============================================================================
 
 
 @dataclass
@@ -74,8 +72,8 @@ def compute_contrastive_loss(batch: TripletBatch,
       temperature: softmax温度——越小惩罚越集中
 
     温度选择依据:
-      τ=0.07 (Wang et al. 2021): 在小批次(<256)对比学习中表现最优
-      τ=0.1 (Chen et al. 2020 SimCLR): 大批次(≥4096)推荐值
+      τ=0.07: 在小批次(<256)对比学习中表现最优
+      τ=0.1: 大批次(≥4096)推荐值
 
     返回ContrastiveLoss——含各分量值与监控指标。
     """
@@ -162,9 +160,7 @@ def compute_contrastive_loss(batch: TripletBatch,
         active_triplets_ratio=round(active_count / max(n, 1), 3))
 
 
-# ============================================================================
 # 嵌入投影器——架构解耦
-# ============================================================================
 
 
 class ArchitectureProjector:
@@ -236,9 +232,7 @@ class ArchitectureProjector:
         return result
 
 
-# ============================================================================
 # 辅助
-# ============================================================================
 
 
 def _euclidean(a: List[float], b: List[float]) -> float:

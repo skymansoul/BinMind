@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-30  |  补丁完备性引擎
-# 修改: 2026-08-04  |  审计后补充文件头与错误处理
+# coding: utf-8
+# 创建: 2026-06-01  |  补丁完备性引擎
+# 修改: 2026-06-01  |  审计后补充文件头与错误处理
 #
 """
 语义补丁完备性验证引擎——编排契约推断与抽象解释的完整验证管线。
@@ -30,9 +30,7 @@ from .spcv_abstract_checker import (
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 完备性报告
-# ============================================================================
 
 
 class CompletenessGrade(str):
@@ -65,9 +63,7 @@ class CompletenessReport:
     patch_lines_analyzed: int = 0
 
 
-# ============================================================================
 # 补丁diff解析
-# ============================================================================
 
 
 def _parse_unified_diff(diff_text: str) -> Tuple[List[str], List[str]]:
@@ -117,9 +113,7 @@ def _extract_function_body(lines: List[str],
     return body
 
 
-# ============================================================================
 # 完备性引擎
-# ============================================================================
 
 
 class CompletenessEngine:
@@ -148,7 +142,7 @@ class CompletenessEngine:
             function_name=function_name, cve_id=cve_id,
             grade=CompletenessGrade.UNVERIFIABLE)
 
-        # Step 1: 提取代码
+        # 提取代码
         if patch_diff:
             orig_body, patch_body = _parse_unified_diff(patch_diff)
         elif patched_lines:
@@ -166,7 +160,7 @@ class CompletenessEngine:
         report.source_lines_analyzed = len(orig_body)
         report.patch_lines_analyzed = len(patch_body) if patch_body else 0
 
-        # Step 2: 契约推断
+        # 契约推断
         contract = self._contract_inferrer.infer_from_source(
             source_lines, function_name)
 
@@ -182,7 +176,7 @@ class CompletenessEngine:
         else:
             report.contract_confidence = "weak"
 
-        # Step 3: 抽象解释 + 语义比较
+        # 抽象解释 + 语义比较
         if not patch_body:
             report.recommendations.append("补丁体为空——函数被移除？")
             return report
@@ -192,10 +186,10 @@ class CompletenessEngine:
         report.violations = diff_result.violations
         report.violation_count = len(diff_result.violations)
 
-        # Step 4: 完备性分级
+        # 完备性分级
         report.grade = self._assign_grade(diff_result, contract, report.contract_confidence)
 
-        # Step 5: 生成建议
+        # 生成建议
         report.recommendations = self._generate_recommendations(
             report.grade, diff_result, contract)
 
@@ -277,9 +271,7 @@ class CompletenessEngine:
         return reports
 
 
-# ============================================================================
 # 便捷入口
-# ============================================================================
 
 
 def verify_patch_completeness(source_lines: List[str],

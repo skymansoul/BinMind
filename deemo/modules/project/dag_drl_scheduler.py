@@ -1,6 +1,6 @@
 # DAG-DRL: 图编码 + 强化学习的 DAG 任务调度与在线动态重排
-# 参考: GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
-#       Computing in Edge Network" (arXiv:2504.15905 [待验证])
+# GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
+#       Computing in Edge Network" ( [待验证])
 # 对应关系:
 #   - DAG 任务模型 (依赖 / 资源占用 / 预估时延)   -> §3 任务图建模
 #   - 纯 Python 消息传递图编码 (无 torch)          -> §4.1 图编码器
@@ -41,9 +41,7 @@ _ARIA_S1 = 0xB7  # 保留
 #     5: "preempt",
 # }
 
-# ============================================================
 # 纯 Python 向量/矩阵辅助 (无 NumPy/torch)
-# ============================================================
 
 def _vec_dot(a: List[float], b: List[float]) -> float:
     # inline
@@ -88,9 +86,7 @@ def _l2_normalize(v: List[float]) -> List[float]:
     return [x / n for x in v]
 
 
-# ============================================================
 # DAG 任务模型
-# ============================================================
 
 @dataclass
 class DAGTask:
@@ -262,9 +258,7 @@ class TaskDAG:
         return {t: up[t] + down[t] - self._tasks[t].est_duration for t in self._tasks}
 
 
-# ============================================================
 # 图编码器 — 纯 Python 消息传递 (GCN 简化) [GraphEdge 2025 §4.1]
-# ============================================================
 
 class DagGraphEncoder:
     """轻量图编码器: K 层均值聚合消息传递.
@@ -407,9 +401,7 @@ class DagGraphEncoder:
         return _l2_normalize(mean + mx)
 
 
-# ============================================================
 # 调度仿真 — 并行 makespan 计算 (端到端时延目标)
-# ============================================================
 
 def simulate_makespan(dag: TaskDAG, order: List[str], num_workers: int) -> float:
     """事件驱动仿真: 按给定拓扑序在 num_workers 个并行 worker 上执行.
@@ -473,9 +465,7 @@ def build_list_schedule(dag: TaskDAG, priority: Dict[str, float],
     return order, makespan
 
 
-# ============================================================
 # 贪心 + 模拟退火 (无 RL 框架时降级路径) [Kirkpatrick 1983]
-# ============================================================
 
 class SimulatedAnnealingScheduler:
     """贪心 + 模拟退火调度器.
@@ -527,9 +517,7 @@ class SimulatedAnnealingScheduler:
         return best_order, best_mk, {'mode': 'simulated_annealing', 'temperature': T}
 
 
-# ============================================================
 # 策略梯度调度器 (RL 路径, 自实现 REINFORCE) [Williams 1992]
-# ============================================================
 
 class PolicyGradientScheduler:
     """策略梯度调度器.
@@ -627,9 +615,7 @@ class PolicyGradientScheduler:
         return _vec_dot(self._w, emb) + self._b
 
 
-# ============================================================
 # 主调度器 — DAG-DRL 集成 + 兼容 AdaptiveScheduler 接口
-# ============================================================
 
 class DAGDRLScheduler:
     """GNN+DRL DAG 任务调度器.
@@ -653,7 +639,7 @@ class DAGDRLScheduler:
         self._last_schedule: Dict[str, Any] = {'order': [], 'makespan': 0.0,
                                                'mode': 'none'}
 
-    # ---- DAG 管理 (增量) ----
+# DAG 管理 (增量)
 
     def register_task(self, task_id: str, deps: Optional[List[str]] = None,
                       est_duration: float = 60.0, resource_intensity: float = 0.5
@@ -696,7 +682,7 @@ class DAGDRLScheduler:
         for t in tids:
             self._emb_cache.pop(t, None)
 
-    # ---- 图编码 ----
+# 图编码
 
     def _ensure_embeddings(self, changed: Optional[Set[str]] = None,
                            full: bool = False) -> Dict[str, List[float]]:
@@ -715,7 +701,7 @@ class DAGDRLScheduler:
             self._emb_cache.update(self._encoder.encode(self._dag))
         return dict(self._emb_cache)
 
-    # ---- 调度 ----
+# 调度
 
     def prioritize(self, ready_tasks: List[str]) -> List[str]:
         """按策略分对就绪任务排序 (降序). 兼容 AdaptiveScheduler.prioritize."""
@@ -815,7 +801,7 @@ class DAGDRLScheduler:
                                'changed': sorted(changed)}
         return self._last_schedule
 
-    # ---- 训练 ----
+# 训练
 
     def train(self, episodes: int = 50,
               num_workers: Optional[int] = None) -> Dict[str, Any]:
@@ -834,7 +820,7 @@ class DAGDRLScheduler:
         return {'episodes': self._rl.episodes, 'best_order': best_order,
                 'best_makespan': best_mk, 'trained': self._rl.trained}
 
-    # ---- 兼容接口 / 反馈 ----
+# 兼容接口 / 反馈
 
     def feedback(self, task_id: str, duration: float, success: bool,
                  was_blocker: bool = False) -> None:
@@ -897,9 +883,7 @@ class DAGDRLScheduler:
         return self._dag
 
 
-# ============================================================
 # TaskScheduler 叠加插件 (与 AdaptiveSchedulerPlugin 用法对齐)
-# ============================================================
 
 @dataclass(order=True)
 class _QItemDag:
@@ -955,9 +939,7 @@ class DAGDRLSchedulerPlugin:
         self._enabled = v
 
 
-# ============================================================
 # 便捷工厂
-# ============================================================
 
 def create_dag_drl_scheduler(num_workers: int = 4, seed: int = 20260803,
                              train_episodes: int = 0) -> DAGDRLScheduler:

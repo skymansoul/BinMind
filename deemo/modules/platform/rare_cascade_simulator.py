@@ -28,10 +28,10 @@
   传播图的DAG性质使分裂法特别高效——无环结构避免了重复访问。
   层重要性函数利用了跨平台层的自然层级结构。
 
-ref: Bucklew (2004) "Introduction to Rare Event Simulation".
-ref: Villen-Altamirano & Villen-Altamirano (1994) "RESTART: a straightforward
+ref: Bucklew "Introduction to Rare Event Simulation".
+ref: Villen-Altamirano & Villen-Altamirano "RESTART: a straightforward
      method for fast simulation of rare events".
-ref: Rubino & Tuffin (2009) "Rare Event Simulation using Monte Carlo Methods".
+ref: Rubino & Tuffin "Rare Event Simulation using Monte Carlo Methods".
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ class RareCascadeSimulator:
         # 重要性采样：估计跨越>=5层的级联概率
         est = sim.importance_sampling(n_samples=5000, bias_factor=2.0)
         # 分裂法：更高效的极端稀有事件估计
-        est2 = sim.splitting(target_layers=5, n_trials=2000, split_factor=4)
+        est2 = sim.splitting
     """
 
     def __init__(self, graph: PropagationGraph):

@@ -11,20 +11,17 @@
 from enum import Enum
 from typing import Dict, List, Set, Optional
 
-
 class ConstraintType(Enum):
     ALLOC_GT_COPY = 1
     ALLOC_EQ_COPY = 2
     ALLOC_LT_COPY = 3
     ALLOC_UNKNOWN = 4
 
-
 # 常见常量分配大小 (推测为编译期固定值)
 _COMMON_ALLOC_SIZES: Set[int] = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536}
 
 # malloc参数恒为 sizeof(type) 的模式 → 安全
 _SAFE_ALLOC_PATTERNS: Set[str] = {"sizeof", "offsetof", "alignof"}
-
 
 def classify_constraint(
     alloc_func: str,
@@ -67,7 +64,6 @@ def classify_constraint(
         return ConstraintType.ALLOC_LT_COPY
 
     return ConstraintType.ALLOC_UNKNOWN
-
 
 def compute_overflow_score(constraint: ConstraintType,
                            taint_confidence: float = 0.0) -> float:

@@ -5,12 +5,11 @@
 2025-08-10 09:47 - Jaccard 度量适配: 覆盖指纹空间的能量距离
 2025-08-11 15:08 - 在线更新: 流式 E 统计量 O(1) per new seed
 
-参考:
-  Székely & Rizzo (2013) "Energy Statistics: A Class of Statistics Based on
+  Székely & Rizzo "Energy Statistics: A Class of Statistics Based on
     Distances" (JSPI) — E 统计量的理论基础
-  Baringhaus & Franz (2004) "On a New Multivariate Two-Sample Test" (JMA)
+  Baringhaus & Franz "On a New Multivariate Two-Sample Test" (JMA)
     — 能量距离作为双样本检验
-  Székely & Rizzo (2023) "The Energy of Data and Distance Correlation"
+  Székely & Rizzo "The Energy of Data and Distance Correlation"
 
 在 fuzzing 文献中的位置:
   能量距离在 fuzzing 中完全无先例。与 MMD 的比较:
@@ -30,11 +29,9 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---- EDSD 参数 ----
+# EDSD 参数
 _WINDOW_SIZE = 50
 _N_PERMUTATIONS = 150
-
 
 @dataclass
 class EnergyDistanceResult:
@@ -45,7 +42,6 @@ class EnergyDistanceResult:
     is_significant: bool       # p < 0.05
     n_samples_x: int
     n_samples_y: int
-
 
 class EnergyDistanceSeedTest:
     """能量距离种子分布检验器.

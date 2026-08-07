@@ -1,0 +1,109 @@
+{
+  "samples": {
+    "obo_cve_01": {
+      "cve": "CVE-2014-3470",
+      "title": "Null-byte poisoning classic",
+      "category": "null_byte_poison",
+      "is_vuln": true,
+      "alloc": 24,
+      "write": 25,
+      "adj_alloc": 248,
+      "overwrite_byte": 0
+    },
+    "obo_cve_02": {
+      "cve": "CVE-2016-6306",
+      "title": "Size LSB overwrite",
+      "category": "size_lsb",
+      "is_vuln": true,
+      "alloc": 120,
+      "write": 121,
+      "adj_alloc": 256,
+      "overwrite_byte": 0
+    },
+    "obo_cve_03": {
+      "cve": "CVE-2015-1788",
+      "title": "Prev-size field overwrite",
+      "category": "prev_size",
+      "is_vuln": true,
+      "alloc": 24,
+      "write": 25,
+      "adj_alloc": 128,
+      "overwrite_byte": 65
+    },
+    "obo_cve_04": {
+      "cve": "CVE-2019-1547",
+      "title": "Size MSB overwrite → chunk extension",
+      "category": "size_msb",
+      "is_vuln": true,
+      "alloc": 56,
+      "write": 57,
+      "adj_alloc": 64,
+      "overwrite_byte": 128
+    },
+    "obo_cve_05": {
+      "cve": "CVE-2020-1971",
+      "title": "ASN.1 parser off-by-one",
+      "category": "user_data",
+      "is_vuln": true,
+      "alloc": 248,
+      "write": 249,
+      "adj_alloc": 0,
+      "overwrite_byte": 0
+    },
+    "obo_cve_06": {
+      "cve": "CVE-2018-0739",
+      "title": "ASN1_get_object off-by-one",
+      "category": "regular_overflow",
+      "is_vuln": true,
+      "alloc": 120,
+      "write": 144,
+      "adj_alloc": 0,
+      "overwrite_byte": 0
+    },
+    "obo_cve_07": {
+      "cve": "CVE-2017-3735",
+      "title": "Multi-byte OBO near boundary",
+      "category": "boundary_obo",
+      "is_vuln": true,
+      "alloc": 504,
+      "write": 505,
+      "adj_alloc": 32,
+      "overwrite_byte": 0
+    },
+    "obo_cve_08": {
+      "cve": "CVE-2021-3449",
+      "title": "Zero-alloc off-by-one (min chunk)",
+      "category": "zero_alloc_obo",
+      "is_vuln": true,
+      "alloc": 0,
+      "write": 25,
+      "adj_alloc": 32,
+      "overwrite_byte": 0
+    },
+    "obo_cve_09": {
+      "cve": "SAFE-OBO-001",
+      "title": "Safe: write == usable (no overflow)",
+      "category": "safe_exact",
+      "is_vuln": false,
+      "alloc": 64,
+      "write": 64,
+      "adj_alloc": 128,
+      "overwrite_byte": 0
+    },
+    "obo_cve_10": {
+      "cve": "SAFE-OBO-002",
+      "title": "Safe: write < usable (underfit)",
+      "category": "safe_under",
+      "is_vuln": false,
+      "alloc": 256,
+      "write": 128,
+      "adj_alloc": 64,
+      "overwrite_byte": 0
+    }
+  },
+  "summary": {
+    "total": 10,
+    "obo_vuln": 8,
+    "obo_safe": 2
+  }
+}

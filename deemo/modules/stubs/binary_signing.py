@@ -1,6 +1,6 @@
 # compat 重导出 — 二进制签名验证桩
 # sys.path 注入使上游模块在 compat 命名空间内可被 import 解析
-# 参考: BinEGA (SANER 2025) 轻量图对齐过滤 & 代码签名在供应链安全中的角色
+# BinEGA 轻量图对齐过滤 & 代码签名在供应链安全中的角色
 import os as _os, sys as _sys
 
 _pkg_dir = _os.path.dirname(_os.path.dirname(__file__))

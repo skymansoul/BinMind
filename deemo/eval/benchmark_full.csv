@@ -1,65 +1,355 @@
-sample,cve,vuln_type,compiled,source_size,BinMind_detections,BinMind_elapsed,Angr_detections,Angr_elapsed,QEMU_detections,QEMU_elapsed,Ghidra_detections,Ghidra_elapsed
-cve_01,CVE-2001-0017,format_string,False,384,1,3.31,0,67.51,0,0,1,38.44
-cve_02,CVE-2012-0809,format_string,False,244,1,3.76,0,54.37,0,0,0,18.13
-cve_03,CVE-2014-0160,buffer_overflow,False,483,2,0.67,0,51.83,0,0,5,83.24
-cve_04,CVE-2016-6301,heap_overflow,False,309,2,1.43,1,42.08,0,0,2,99.99
-cve_05,CVE-2019-0708,uaf,False,430,1,0.13,1,63.74,0,0,2,44.18
-cve_06,CVE-2020-7460,uaf,False,471,1,0.52,2,11.89,0,0,3,25.16
-cve_07,CVE-2022-2588,double_free,False,454,1,1.71,2,73.22,0,0,5,63.24
-cve_08,CVE-2023-0179,stack_overflow,False,519,1,0.89,0,120,0,0,3,23.27
-cve_09,CVE-2023-44487,use_after_scope,False,455,1,0.67,2,53.23,0,0,5,22.3
-cve_10,CVE-2024-21762,off_by_one,False,372,1,3.41,2,88.71,0,0,1,105.98
-cve_11,CVE-2015-0235,heap_overflow,False,548,2,1.04,0,120,0,0,3,81.75
-cve_12,CVE-2016-4484,heap_overflow,False,483,2,1.0,2,33.91,0,0,5,43.03
-cve_13,CVE-2018-11235,heap_overflow,False,538,2,2.35,0,120,0,0,5,22.5
-cve_14,CVE-2019-14287,heap_overflow,False,594,2,1.64,0,120,0,0,4,91.56
-cve_15,CVE-2020-10713,heap_overflow,False,626,2,0.54,0,120,0,0,3,43.34
-cve_16,CVE-2021-3156,heap_overflow,False,558,2,2.33,0,120,0,0,5,73.48
-cve_17,CVE-2022-3602,heap_overflow,False,569,2,1.76,0,120,0,0,0,39.05
-cve_18,CVE-2023-38545,heap_overflow,False,410,2,0.23,2,37.9,0,0,0,37.15
-cve_19,CVE-2023-44487,heap_overflow,False,226,2,2.37,2,21.5,0,0,3,56.54
-cve_20,CVE-2024-1111,heap_overflow,False,241,2,2.3,3,15.43,0,0,1,40.9
-cve_21,CVE-2024-2222,heap_overflow,False,252,2,1.47,2,67.99,0,0,3,109.27
-cve_22,CVE-2024-3333,heap_overflow,False,244,2,1.09,1,89.77,0,0,1,68.5
-cve_23,CVE-2024-4444,heap_overflow,False,242,2,0.36,0,77.92,0,0,1,80.88
-cve_24,CVE-2024-5555,heap_overflow,False,248,2,2.01,3,54.89,0,0,3,55.07
-fmt_01,CVE-2023-1234,format_string,False,220,1,4.98,2,87.48,0,0,0,86.43
-fmt_02,CVE-2023-5678,format_string,False,198,1,0.84,2,69.87,0,0,2,26.71
-fmt_03,CVE-2023-9876,format_string,False,146,1,2.34,3,3.28,0,0,5,106.96
-fmt_04,CVE-2024-3333,format_string,False,142,1,1.54,1,47.17,0,0,0,106.4
-fmt_05,CVE-2024-4444,format_string,False,144,1,1.7,1,16.3,0,0,1,71.63
-fmt_06,CVE-2024-5555,format_string,False,150,1,3.96,0,55.11,0,0,3,17.05
-fmt_07,CVE-2024-6666,format_string,False,142,1,4.67,2,23.83,0,0,1,107.19
-fmt_08,CVE-2024-7777,format_string,False,140,1,4.75,0,66.68,0,0,0,117.69
-fmt_09,CVE-2024-8888,format_string,False,136,1,2.8,1,14.17,0,0,3,114.42
-fmt_10,CVE-2024-9999,format_string,False,144,1,1.08,3,86.9,0,0,4,94.3
-fmt_11,CVE-2025-1111,format_string,False,136,1,3.54,2,37.71,0,0,5,83.24
-fmt_12,CVE-2025-2222,format_string,False,148,1,2.36,3,13.53,0,0,1,21.72
-fmt_13,CVE-2025-3333,format_string,False,142,1,0.4,1,54.19,0,0,0,22.45
-stk_01,CVE-2024-1111,stack_overflow,False,194,1,3.27,1,8.86,0,0,0,105.26
-stk_02,CVE-2024-2222,stack_overflow,False,193,1,0.63,1,27.23,0,0,3,37.49
-stk_03,CVE-2010-1205,stack_overflow,False,232,1,0.92,3,24.14,0,0,3,99.79
-stk_04,CVE-2011-1234,stack_overflow,False,251,1,1.19,0,60.33,0,0,2,59.48
-stk_05,CVE-2013-2028,stack_overflow,False,484,1,2.5,0,61.58,0,0,5,25.33
-stk_06,CVE-2014-0160,stack_overflow,False,241,1,2.19,2,72.65,0,0,0,41.11
-stk_07,CVE-2015-0235,stack_overflow,False,245,1,1.19,3,15.2,0,0,1,44.25
-stk_08,CVE-2016-1234,stack_overflow,False,201,1,1.47,0,41.55,0,0,4,25.28
-stk_09,CVE-2017-1000253,stack_overflow,False,220,1,3.37,0,87.3,0,0,1,32.46
-stk_10,CVE-2018-11235,stack_overflow,False,200,1,2.58,1,78.22,0,0,0,32.29
-stk_11,CVE-2019-11477,stack_overflow,False,207,1,0.31,3,26.07,0,0,3,44.95
-stk_12,CVE-2020-10713,stack_overflow,False,196,1,3.57,3,16.47,0,0,2,37.86
-stk_13,CVE-2021-3156,stack_overflow,False,220,1,0.57,0,68.07,0,0,0,20.26
-stk_14,CVE-2022-1234,stack_overflow,False,205,1,2.54,1,7.95,0,0,4,23.41
-uaf_01,CVE-2022-0185,uaf,False,381,1,0.47,0,61.74,0,0,1,57.4
-uaf_02,CVE-2022-23222,uaf,False,411,1,1.89,1,53.37,0,0,0,80.04
-uaf_03,CVE-2023-3269,uaf,False,450,1,0.91,2,84.32,0,0,1,85.32
-uaf_04,CVE-2023-4911,uaf,False,415,1,0.71,2,37.43,0,0,5,82.78
-uaf_05,CVE-2022-0847,uaf,False,436,1,0.98,0,3.81,0,0,4,119.84
-uaf_06,CVE-2024-6666,uaf,False,380,1,1.99,0,49.77,0,0,4,42.85
-uaf_07,CVE-2024-7777,uaf,False,372,1,1.88,0,79.5,0,0,2,44.92
-uaf_08,CVE-2024-8888,uaf,False,368,1,0.94,2,56.22,0,0,5,70.54
-uaf_09,CVE-2024-9999,uaf,False,403,1,1.38,2,84.06,0,0,0,113.59
-uaf_10,CVE-2025-1111,uaf,False,370,1,0.37,0,80.41,0,0,5,73.09
-uaf_11,CVE-2025-2222,uaf,False,423,1,0.63,1,65.43,0,0,1,87.19
-uaf_12,CVE-2025-3333,uaf,False,414,1,1.72,3,24.85,0,0,0,24.69
-uaf_13,CVE-2025-4444,uaf,False,372,1,0.92,2,6.84,0,0,2,95.97
+sample,category,cve_id,ground_truth,tool,verdict,detections,elapsed_ms,success,error
+cve_01_simple_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_01_simple_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,83.1,True,
+cve_01_simple_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,1.3,True,
+cve_02_off_by_one,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_02_off_by_one,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,1.1,True,
+cve_02_off_by_one,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_03_int_overflow_calc,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_03_int_overflow_calc,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,1.6,True,
+cve_03_int_overflow_calc,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_04_strcpy_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_04_strcpy_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.9,True,
+cve_04_strcpy_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_05_loop_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_05_loop_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_05_loop_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_06_user_controlled_size,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_06_user_controlled_size,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,1.2,True,
+cve_06_user_controlled_size,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_07_realloc_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_07_realloc_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_07_realloc_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_08_calloc_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_08_calloc_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_08_calloc_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_09_safe_but_triggers_fp,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_09_safe_but_triggers_fp,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,1.1,True,
+cve_09_safe_but_triggers_fp,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_10_input_constrained_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_10_input_constrained_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.8,True,
+cve_10_input_constrained_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_11_memcpy_arith_size,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_11_memcpy_arith_size,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_11_memcpy_arith_size,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_12_alignment_edge,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_12_alignment_edge,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.8,True,
+cve_12_alignment_edge,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_13_struct_field_pattern,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_13_struct_field_pattern,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.0,True,
+cve_13_struct_field_pattern,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_14_multi_chunk,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_14_multi_chunk,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,0.7,True,
+cve_14_multi_chunk,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_15_constrained_input,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_15_constrained_input,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+cve_15_constrained_input,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_16_real_world_pattern,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_16_real_world_pattern,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,1.5,True,
+cve_16_real_world_pattern,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_17_multi_field_struct,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_17_multi_field_struct,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.0,True,
+cve_17_multi_field_struct,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_18_loop_accumulate,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_18_loop_accumulate,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,1.6,True,
+cve_18_loop_accumulate,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_19_same_offset_accumulate,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_19_same_offset_accumulate,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.9,True,
+cve_19_same_offset_accumulate,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_20_cross_func_guard,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_20_cross_func_guard,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.1,True,
+cve_20_cross_func_guard,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_21_cross_func_write,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_21_cross_func_write,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.9,True,
+cve_21_cross_func_write,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_22_fm_boundary_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_22_fm_boundary_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.0,True,
+cve_22_fm_boundary_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_23_fm_boundary_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_23_fm_boundary_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_23_fm_boundary_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_24_multiple_constraints,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_24_multiple_constraints,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.1,True,
+cve_24_multiple_constraints,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_25_nested_loop_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_25_nested_loop_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_25_nested_loop_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_26_realloc_grow_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_26_realloc_grow_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.6,True,
+cve_26_realloc_grow_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_27_struct_array_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_27_struct_array_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+cve_27_struct_array_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_28_guarded_loop_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_28_guarded_loop_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.7,True,
+cve_28_guarded_loop_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_29_alignment_slack_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_29_alignment_slack_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.0,True,
+cve_29_alignment_slack_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_30_cross_func_alloc_only,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_30_cross_func_alloc_only,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_30_cross_func_alloc_only,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_31_copy_size_external,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_31_copy_size_external,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.9,True,
+cve_31_copy_size_external,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_32_deeply_nested_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_32_deeply_nested_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.2,True,
+cve_32_deeply_nested_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.2,True,
+cve_33_cross_path_guard_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_33_cross_path_guard_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.7,True,
+cve_33_cross_path_guard_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_34_cross_path_guard_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_34_cross_path_guard_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_34_cross_path_guard_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_35_early_return_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_35_early_return_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.1,True,
+cve_35_early_return_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.2,True,
+cve_36_early_return_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_36_early_return_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,0.9,True,
+cve_36_early_return_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_37_nested_branch_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_37_nested_branch_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.7,True,
+cve_37_nested_branch_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_38_nested_branch_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_38_nested_branch_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.8,True,
+cve_38_nested_branch_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_39_loop_guard_cross_path,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_39_loop_guard_cross_path,heap_overflow,,False,BinMind-HOSV,SAFE,0,1.2,True,
+cve_39_loop_guard_cross_path,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.2,True,
+cve_40_multi_guard_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_40_multi_guard_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.8,True,
+cve_40_multi_guard_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.2,True,
+cve_41_switch_path_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_41_switch_path_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.7,True,
+cve_41_switch_path_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_42_switch_path_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_42_switch_path_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_42_switch_path_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_43_alias_chain_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_43_alias_chain_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.5,True,
+cve_43_alias_chain_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.4,True,
+cve_44_alias_chain_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_44_alias_chain_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+cve_44_alias_chain_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_45_cast_alias_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_45_cast_alias_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.6,True,
+cve_45_cast_alias_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.4,True,
+cve_46_cast_alias_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_46_cast_alias_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_46_cast_alias_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_47_cond_alloc_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_47_cond_alloc_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.5,True,
+cve_47_cond_alloc_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_48_cond_alloc_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_48_cond_alloc_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.5,True,
+cve_48_cond_alloc_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_49_compound_offset_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_49_compound_offset_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,2.3,True,
+cve_49_compound_offset_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.2,True,
+cve_50_compound_offset_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_50_compound_offset_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.9,True,
+cve_50_compound_offset_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_51_struct_field_offset_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_51_struct_field_offset_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.7,True,
+cve_51_struct_field_offset_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_52_struct_field_offset_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_52_struct_field_offset_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+cve_52_struct_field_offset_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_53_factory_cross_guard_safe,heap_overflow,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_53_factory_cross_guard_safe,heap_overflow,,False,BinMind-HOSV,SAFE,0,0.9,True,
+cve_53_factory_cross_guard_safe,heap_overflow,,False,BinMind-Baseline,SAFE,0,0.1,True,
+cve_54_factory_cross_write_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_54_factory_cross_write_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,0.9,True,
+cve_54_factory_cross_write_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_55_returned_ptr_overflow,heap_overflow,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_55_returned_ptr_overflow,heap_overflow,,True,BinMind-HOSV,OVERFLOW,2,0.6,True,
+cve_55_returned_ptr_overflow,heap_overflow,,True,BinMind-Baseline,SAFE,0,0.1,True,
+cve_2014_0160_heartbleed,cve_heap,CVE-2014-0160,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2014_0160_heartbleed,cve_heap,CVE-2014-0160,True,BinMind-HOSV,SAFE,0,2.4,True,
+cve_2014_0160_heartbleed,cve_heap,CVE-2014-0160,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2015_0235_ghost,cve_heap,CVE-2015-0235,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2015_0235_ghost,cve_heap,CVE-2015-0235,True,BinMind-HOSV,SAFE,0,2.7,True,
+cve_2015_0235_ghost,cve_heap,CVE-2015-0235,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2016_10165_lcms,cve_heap,CVE-2016-10165,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2016_10165_lcms,cve_heap,CVE-2016-10165,True,BinMind-HOSV,SAFE,0,2.8,True,
+cve_2016_10165_lcms,cve_heap,CVE-2016-10165,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_2017_18017_netfilter,cve_heap,CVE-2017-18017,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2017_18017_netfilter,cve_heap,CVE-2017-18017,True,BinMind-HOSV,SAFE,0,3.9,True,
+cve_2017_18017_netfilter,cve_heap,CVE-2017-18017,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2017_9431_grpc,cve_heap,CVE-2017-9431,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2017_9431_grpc,cve_heap,CVE-2017-9431,True,BinMind-HOSV,SAFE,0,2.9,True,
+cve_2017_9431_grpc,cve_heap,CVE-2017-9431,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2018_1000001_realpath,cve_heap,CVE-2018-1000001,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2018_1000001_realpath,cve_heap,CVE-2018-1000001,True,BinMind-HOSV,SAFE,0,3.9,True,
+cve_2018_1000001_realpath,cve_heap,CVE-2018-1000001,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2019_13143_minixml,cve_heap,CVE-2019-13143,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2019_13143_minixml,cve_heap,CVE-2019-13143,True,BinMind-HOSV,SAFE,0,3.0,True,
+cve_2019_13143_minixml,cve_heap,CVE-2019-13143,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2020_14386_afpacket,cve_heap,CVE-2020-14386,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2020_14386_afpacket,cve_heap,CVE-2020-14386,True,BinMind-HOSV,SAFE,0,2.3,True,
+cve_2020_14386_afpacket,cve_heap,CVE-2020-14386,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2020_28030_wireshark,cve_heap,CVE-2020-28030,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2020_28030_wireshark,cve_heap,CVE-2020-28030,True,BinMind-HOSV,SAFE,0,3.6,True,
+cve_2020_28030_wireshark,cve_heap,CVE-2020-28030,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2021_3156_sudo,cve_heap,CVE-2021-3156,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2021_3156_sudo,cve_heap,CVE-2021-3156,True,BinMind-HOSV,SAFE,0,3.7,True,
+cve_2021_3156_sudo,cve_heap,CVE-2021-3156,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2021_3609_canbcm,cve_heap,CVE-2021-3609,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2021_3609_canbcm,cve_heap,CVE-2021-3609,True,BinMind-HOSV,OVERFLOW,1,1.9,True,
+cve_2021_3609_canbcm,cve_heap,CVE-2021-3609,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2021_44733_uaf,cve_heap,CVE-2021-44733,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2021_44733_uaf,cve_heap,CVE-2021-44733,True,BinMind-HOSV,SAFE,0,2.0,True,
+cve_2021_44733_uaf,cve_heap,CVE-2021-44733,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_2022_0185_fscontext,cve_heap,CVE-2022-0185,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2022_0185_fscontext,cve_heap,CVE-2022-0185,True,BinMind-HOSV,SAFE,0,3.1,True,
+cve_2022_0185_fscontext,cve_heap,CVE-2022-0185,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2022_1015_netfilter,cve_heap,CVE-2022-1015,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2022_1015_netfilter,cve_heap,CVE-2022-1015,True,BinMind-HOSV,SAFE,0,3.1,True,
+cve_2022_1015_netfilter,cve_heap,CVE-2022-1015,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_2022_25636_netfilter,cve_heap,CVE-2022-25636,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2022_25636_netfilter,cve_heap,CVE-2022-25636,True,BinMind-HOSV,SAFE,0,2.1,True,
+cve_2022_25636_netfilter,cve_heap,CVE-2022-25636,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2024_21849_snapdragon,cve_heap,CVE-2024-21849,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2024_21849_snapdragon,cve_heap,CVE-2024-21849,True,BinMind-HOSV,SAFE,0,3.4,True,
+cve_2024_21849_snapdragon,cve_heap,CVE-2024-21849,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2016_2177_openssl,cve_gapsbv,CVE-2016-2177,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2016_2177_openssl,cve_gapsbv,CVE-2016-2177,True,BinMind-HOSV,SAFE,0,0.2,True,
+cve_2016_2177_openssl,cve_gapsbv,CVE-2016-2177,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2017_1000252_kvm,cve_gapsbv,CVE-2017-1000252,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2017_1000252_kvm,cve_gapsbv,CVE-2017-1000252,True,BinMind-HOSV,SAFE,0,0.3,True,
+cve_2017_1000252_kvm,cve_gapsbv,CVE-2017-1000252,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2017_11176_mq_notify,cve_gapsbv,CVE-2017-11176,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2017_11176_mq_notify,cve_gapsbv,CVE-2017-11176,True,BinMind-HOSV,SAFE,0,1.8,True,
+cve_2017_11176_mq_notify,cve_gapsbv,CVE-2017-11176,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2018_6552_kernel,cve_gapsbv,CVE-2018-6552,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2018_6552_kernel,cve_gapsbv,CVE-2018-6552,True,BinMind-HOSV,SAFE,0,4.1,True,
+cve_2018_6552_kernel,cve_gapsbv,CVE-2018-6552,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2019_1010298_libssh2,cve_gapsbv,CVE-2019-1010298,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2019_1010298_libssh2,cve_gapsbv,CVE-2019-1010298,True,BinMind-HOSV,SAFE,0,1.6,True,
+cve_2019_1010298_libssh2,cve_gapsbv,CVE-2019-1010298,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2020_10711_kernel,cve_gapsbv,CVE-2020-10711,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2020_10711_kernel,cve_gapsbv,CVE-2020-10711,True,BinMind-HOSV,SAFE,0,2.5,True,
+cve_2020_10711_kernel,cve_gapsbv,CVE-2020-10711,True,BinMind-Baseline,SAFE,0,0.3,True,
+cve_2020_10713_grub2,cve_gapsbv,CVE-2020-10713,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2020_10713_grub2,cve_gapsbv,CVE-2020-10713,True,BinMind-HOSV,SAFE,0,1.7,True,
+cve_2020_10713_grub2,cve_gapsbv,CVE-2020-10713,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2022_0185_kernel,cve_gapsbv,CVE-2022-0185,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2022_0185_kernel,cve_gapsbv,CVE-2022-0185,True,BinMind-HOSV,SAFE,0,2.1,True,
+cve_2022_0185_kernel,cve_gapsbv,CVE-2022-0185,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2022_23222_kernel,cve_gapsbv,CVE-2022-23222,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2022_23222_kernel,cve_gapsbv,CVE-2022-23222,True,BinMind-HOSV,SAFE,0,1.5,True,
+cve_2022_23222_kernel,cve_gapsbv,CVE-2022-23222,True,BinMind-Baseline,SAFE,0,0.2,True,
+cve_2023_0461_kernel,cve_gapsbv,CVE-2023-0461,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2023_0461_kernel,cve_gapsbv,CVE-2023-0461,True,BinMind-HOSV,OVERFLOW,1,3.2,True,
+cve_2023_0461_kernel,cve_gapsbv,CVE-2023-0461,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_2023_2235_kernel,cve_gapsbv,CVE-2023-2235,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2023_2235_kernel,cve_gapsbv,CVE-2023-2235,True,BinMind-HOSV,SAFE,0,3.7,True,
+cve_2023_2235_kernel,cve_gapsbv,CVE-2023-2235,True,BinMind-Baseline,SAFE,0,0.4,True,
+cve_2024_21894_openssl,cve_gapsbv,CVE-2024-21894,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+cve_2024_21894_openssl,cve_gapsbv,CVE-2024-21894,True,BinMind-HOSV,SAFE,0,5.9,True,
+cve_2024_21894_openssl,cve_gapsbv,CVE-2024-21894,True,BinMind-Baseline,SAFE,0,0.7,True,
+fp_test_01_guard_protected,cve_gapsbv,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+fp_test_01_guard_protected,cve_gapsbv,,True,BinMind-HOSV,OVERFLOW,1,1.4,True,
+fp_test_01_guard_protected,cve_gapsbv,,True,BinMind-Baseline,SAFE,0,0.2,True,
+fp_test_02_affine_provable_safe,cve_gapsbv,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+fp_test_02_affine_provable_safe,cve_gapsbv,,False,BinMind-HOSV,SAFE,0,1.7,True,
+fp_test_02_affine_provable_safe,cve_gapsbv,,False,BinMind-Baseline,SAFE,0,0.2,True,
+fp_test_03_constant_bound_safe,cve_gapsbv,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+fp_test_03_constant_bound_safe,cve_gapsbv,,False,BinMind-HOSV,SAFE,0,0.6,True,
+fp_test_03_constant_bound_safe,cve_gapsbv,,False,BinMind-Baseline,SAFE,0,0.2,True,
+fp_test_04_interprocedural_alloc,cve_gapsbv,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+fp_test_04_interprocedural_alloc,cve_gapsbv,,True,BinMind-HOSV,SAFE,0,0.3,True,
+fp_test_04_interprocedural_alloc,cve_gapsbv,,True,BinMind-Baseline,SAFE,0,0.2,True,
+fp_test_05_loop_bound_guarded,cve_gapsbv,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+fp_test_05_loop_bound_guarded,cve_gapsbv,,True,BinMind-HOSV,OVERFLOW,1,1.4,True,
+fp_test_05_loop_bound_guarded,cve_gapsbv,,True,BinMind-Baseline,SAFE,0,0.1,True,
+CVE-2014-0160_heartbleed,cve_general,CVE-2014-0160,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+CVE-2014-0160_heartbleed,cve_general,CVE-2014-0160,True,BinMind-HOSV,SAFE,0,2.8,True,
+CVE-2014-0160_heartbleed,cve_general,CVE-2014-0160,True,BinMind-Baseline,SAFE,0,0.4,True,
+CVE-2021-3156_sudo_heap,cve_general,CVE-2021-3156,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+CVE-2021-3156_sudo_heap,cve_general,CVE-2021-3156,True,BinMind-HOSV,SAFE,0,1.9,True,
+CVE-2021-3156_sudo_heap,cve_general,CVE-2021-3156,True,BinMind-Baseline,SAFE,0,0.4,True,
+CVE-2022-23222_bpf_heap,cve_general,CVE-2022-23222,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+CVE-2022-23222_bpf_heap,cve_general,CVE-2022-23222,True,BinMind-HOSV,SAFE,0,3.3,True,
+CVE-2022-23222_bpf_heap,cve_general,CVE-2022-23222,True,BinMind-Baseline,SAFE,0,0.3,True,
+CVE-2023-3269_heap,cve_general,CVE-2023-3269,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+CVE-2023-3269_heap,cve_general,CVE-2023-3269,True,BinMind-HOSV,OVERFLOW,1,2.7,True,
+CVE-2023-3269_heap,cve_general,CVE-2023-3269,True,BinMind-Baseline,SAFE,0,0.7,True,
+CVE-2024-21762_fortios,cve_general,CVE-2024-21762,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+CVE-2024-21762_fortios,cve_general,CVE-2024-21762,True,BinMind-HOSV,SAFE,0,0.3,True,
+CVE-2024-21762_fortios,cve_general,CVE-2024-21762,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_edge_11_multilevel_ptr,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_edge_11_multilevel_ptr,cve_general,,True,BinMind-HOSV,SAFE,0,1.3,True,
+heap_edge_11_multilevel_ptr,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_edge_12_struct_field,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_edge_12_struct_field,cve_general,,True,BinMind-HOSV,SAFE,0,1.3,True,
+heap_edge_12_struct_field,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_edge_13_ternary_alloc,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_edge_13_ternary_alloc,cve_general,,True,BinMind-HOSV,SAFE,0,1.0,True,
+heap_edge_13_ternary_alloc,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_edge_14_dynamic_loop,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_edge_14_dynamic_loop,cve_general,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+heap_edge_14_dynamic_loop,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_edge_15_realloc_shrink,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_edge_15_realloc_shrink,cve_general,,True,BinMind-HOSV,OVERFLOW,2,0.8,True,
+heap_edge_15_realloc_shrink,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_fp_01_early_return,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_fp_01_early_return,cve_general,,True,BinMind-HOSV,SAFE,0,0.3,True,
+heap_fp_01_early_return,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_fp_02_const_guarded,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_fp_02_const_guarded,cve_general,,True,BinMind-HOSV,SAFE,0,0.3,True,
+heap_fp_02_const_guarded,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_fp_03_tainted_double_guard,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_fp_03_tainted_double_guard,cve_general,,True,BinMind-HOSV,SAFE,0,0.1,True,
+heap_fp_03_tainted_double_guard,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_fp_04_alias_diff_buf,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_fp_04_alias_diff_buf,cve_general,,True,BinMind-HOSV,SAFE,0,0.4,True,
+heap_fp_04_alias_diff_buf,cve_general,,True,BinMind-Baseline,SAFE,0,0.4,True,
+heap_fp_05_multi_path_overflow,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_fp_05_multi_path_overflow,cve_general,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+heap_fp_05_multi_path_overflow,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_overflow_01_malloc_memcpy,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_01_malloc_memcpy,cve_general,,True,BinMind-HOSV,OVERFLOW,2,0.9,True,
+heap_overflow_01_malloc_memcpy,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_overflow_02_loop_overflow,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_02_loop_overflow,cve_general,,True,BinMind-HOSV,OVERFLOW,2,1.1,True,
+heap_overflow_02_loop_overflow,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_03_alias_ptr,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_03_alias_ptr,cve_general,,True,BinMind-HOSV,SAFE,0,0.9,True,
+heap_overflow_03_alias_ptr,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_04_calloc,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_04_calloc,cve_general,,True,BinMind-HOSV,OVERFLOW,2,0.7,True,
+heap_overflow_04_calloc,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_05_realloc,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_05_realloc,cve_general,,True,BinMind-HOSV,OVERFLOW,2,0.8,True,
+heap_overflow_05_realloc,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_06_strcpy,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_06_strcpy,cve_general,,True,BinMind-HOSV,OVERFLOW,1,0.7,True,
+heap_overflow_06_strcpy,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_07_sprintf,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_07_sprintf,cve_general,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+heap_overflow_07_sprintf,cve_general,,True,BinMind-Baseline,SAFE,0,0.2,True,
+heap_overflow_08_user_input,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_08_user_input,cve_general,,True,BinMind-HOSV,OVERFLOW,3,1.5,True,
+heap_overflow_08_user_input,cve_general,,True,BinMind-Baseline,SAFE,0,0.1,True,
+heap_overflow_09_offset_write,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_09_offset_write,cve_general,,True,BinMind-HOSV,OVERFLOW,1,0.6,True,
+heap_overflow_09_offset_write,cve_general,,True,BinMind-Baseline,OVERFLOW,1,0.2,True,
+heap_overflow_10_nested_loop,cve_general,,True,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_overflow_10_nested_loop,cve_general,,True,BinMind-HOSV,OVERFLOW,1,1.1,True,
+heap_overflow_10_nested_loop,cve_general,,True,BinMind-Baseline,OVERFLOW,1,0.2,True,
+heap_safe_01_alignment_absorbed,cve_general,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_safe_01_alignment_absorbed,cve_general,,False,BinMind-HOSV,OVERFLOW,2,0.9,True,
+heap_safe_01_alignment_absorbed,cve_general,,False,BinMind-Baseline,SAFE,0,0.1,True,
+heap_safe_02_same_size,cve_general,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_safe_02_same_size,cve_general,,False,BinMind-HOSV,OVERFLOW,2,0.8,True,
+heap_safe_02_same_size,cve_general,,False,BinMind-Baseline,SAFE,0,0.1,True,
+heap_safe_03_smaller_write,cve_general,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_safe_03_smaller_write,cve_general,,False,BinMind-HOSV,OVERFLOW,1,0.7,True,
+heap_safe_03_smaller_write,cve_general,,False,BinMind-Baseline,SAFE,0,0.1,True,
+heap_safe_04_guarded,cve_general,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_safe_04_guarded,cve_general,,False,BinMind-HOSV,OVERFLOW,2,1.1,True,
+heap_safe_04_guarded,cve_general,,False,BinMind-Baseline,SAFE,0,0.1,True,
+heap_safe_05_realloc_expand,cve_general,,False,BinMind-Full,ERROR,0,0,False,cannot import name 'get_usable_size' from 'core.allocator_model' (C:\Users\Administrator\Desktop\BinMind\deemo\core\allo
+heap_safe_05_realloc_expand,cve_general,,False,BinMind-HOSV,OVERFLOW,2,1.0,True,
+heap_safe_05_realloc_expand,cve_general,,False,BinMind-Baseline,OVERFLOW,1,0.2,True,

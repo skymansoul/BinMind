@@ -13,7 +13,7 @@
 #   4. 误报抑制: 仅当写入大小 > 栈帧剩余空间 且 写入地址连续超出边界
 #      至少16字节时, 才报告为潜在溢出. 单一字节超界常由结构体对齐引起.
 #
-# 创建: 2026-08-04  初始版本
+# 创建: 2026-07-06  初始版本
 
 import re
 import struct
@@ -160,7 +160,7 @@ class StackOverflowDetector:
     def findings(self) -> List[dict]:
         return list(self._findings)
 
-    # ---- 内部 ----
+# 内部
 
     @staticmethod
     def _decode_frame_size(match, size_bytes: int, fmt: str) -> int:

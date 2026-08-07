@@ -14,7 +14,7 @@ except Exception:
     _pqc_available = False
 
 
-# ── 已知PQC常数值 ──
+# 已知PQC常数值
 KYBER_Q = 3329
 DILITHIUM_Q = 8380417
 FALCON_Q = 12289
@@ -111,7 +111,7 @@ class TestPQCDetectionResult:
         assert result.security_level == "128"
 
 
-# ── 独立测试（无需模块导入） ──
+# 独立测试（无需模块导入）
 
 def test_kyber_q_known_value():
     """Kyber模数3329为正确值"""

@@ -18,9 +18,9 @@
 #   Stage 5 REPORT:  Markdown → JSON → 摘要输出
 #
 # 设计原则:
-#   - 每个阶段有默认模块, 但可替换
-#   - 模块间通过共享的 Blackboard 传递数据 (不直接耦合)
-#   - 管道可部分运行: 仅fuzz / 仅分析 / 仅报告
+# 每个阶段有默认模块, 但可替换
+# 模块间通过共享的 Blackboard 传递数据 (不直接耦合)
+# 管道可部分运行: 仅fuzz / 仅分析 / 仅报告
 
 from __future__ import annotations
 

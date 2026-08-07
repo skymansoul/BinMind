@@ -14,7 +14,7 @@
   9. ORCAS语义图评分——支配树基混淆韧性评估
   10. KEENHash函数指纹——SimHash基轻量级函数签名，面向大规模二进制相似性比对
 
-KEENHash (ISSTA 2025) 核心思路：
+KEENHash 核心思路：
   借助LLM函数嵌入+K-Means+Feature Hashing压缩为紧凑程序级签名。
   本实现更轻量：SimHash对函数字节码产出64-bit指纹，
   达成O(1)级函数去重与O(n)级相似函数检索，215×加速比。
@@ -98,7 +98,7 @@ _CROSS_PLATFORM_SIGNATURES:Dict[bytes,ObfuscatorTool]={b'libflutter.so':Obfuscat
 
 _OBFUSCATION_RESILIENCE={ObfuscationType.IDENTIFIER_RENAMING:0.2,ObfuscationType.STRING_ENCRYPTION:0.4,ObfuscationType.CONTROL_FLOW_FLATTENING:0.7,ObfuscationType.BOGUS_CONTROL_FLOW:0.5,ObfuscationType.INSTRUCTION_SUBSTITUTION:0.3,ObfuscationType.CODE_VIRTUALIZATION:0.9,ObfuscationType.PACKING:0.6,ObfuscationType.ANTI_DEBUG:0.3,ObfuscationType.ANTI_TAMPER:0.4,ObfuscationType.RESOURCE_OBFUSCATION:0.1,ObfuscationType.API_HIDING:0.5,ObfuscationType.REFLECTION_OBFUSCATION:0.5}
 
-# ── KEENHash SimHash轻量实现 ──
+# KEENHash SimHash轻量实现
 def _simhash_64(data:bytes)->int:
     """64-bit SimHash——KEENHash核心算法的轻量实现。
 
@@ -207,7 +207,7 @@ class DEXObfuscationDetector:
         if rc>10: s.indicators.append(ObfuscationIndicator('reflection_obfuscation',technique=ObfuscationType.REFLECTION_OBFUSCATION,confidence=min(rc/50.0,1.0),evidence=f'{rc}反射调用点',location='code')); return True
         return False
 
-    # ── KEENHash函数指纹抽取 ──
+# KEENHash函数指纹抽取
     def compute_function_fingerprints(s)->Dict[str,int]:
         """对DEX中各函数产出SimHash指纹。
 

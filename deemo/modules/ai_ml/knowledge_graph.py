@@ -69,7 +69,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                 degree_scores[eid] = (out_d + in_d) / (n - 1) if n > 1 else 0.0
                 ei += 1
 
-        # ---- Betweenness centrality: Brandes算法每节点BFS ----
+# Betweenness centrality: Brandes算法每节点BFS
         if centrality in ("betweenness", "all"):
             # O(V*(V+E)) — warn on large graphs
             betweenness: Dict[str, float] = {e.m_id: 0.0 for e in entities}
@@ -141,7 +141,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                     betweenness[bkeys[bi]] /= norm_factor
                     bi += 1
 
-        # ---- Assemble results ----
+# Assemble results
         result: List[Dict[str, Any]] = []
         ei = 0
         while ei < len(entities):
@@ -189,7 +189,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
             "modified_relations": [],
         }
 
-        # ---- Entity comparison ----
+# Entity comparison
         my_eids = set(self.m_entities.keys())
         other_eids = set(other.m_entities.keys())
 
@@ -249,7 +249,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                 changes["modified_entities"].append(mod_entry)
             ei += 1
 
-        # ---- Relation comparison ----
+# Relation comparison
         my_rids = set(self.m_relations.keys())
         other_rids = set(other.m_relations.keys())
 
@@ -327,7 +327,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
         )
         return changes
 
-    # ---- Visualization helpers ----
+# Visualization helpers
 
     def _type_color_map(self):
         """Color mapping for entity types (D3-friendly palette)."""
@@ -369,7 +369,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
         }
         return smap
 
-    # ---- D3.js export ----
+# D3.js export
 
     def to_d3_json(self, output_path=None) -> str:
         """Export graph to D3.js force-directed layout JSON format."""
@@ -527,7 +527,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         return html
 
-    # ---- Graphviz export ----
+# Graphviz export
 
     def to_dot(self, output_path=None) -> str:
         """Export graph to Graphviz DOT format."""
@@ -574,7 +574,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         return dot_content
 
-    # ---- GEXF export ----
+# GEXF export
 
     def save_gexf(self, filepath: str):
         """Export to GEXF (Graph Exchange XML Format), compatible with Gephi."""
@@ -626,7 +626,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
         tree.write(filepath, encoding="utf-8", xml_declaration=True)
         _dbg.info("GEXF exported to %s", filepath)
 
-    # ---- Merge ----
+# Merge
 
     def merge(self, other: 'VulnKnowledgeGraph', conflict_strategy="keep_first"):
         """Merge another knowledge graph into this one.
@@ -664,9 +664,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
         _dbg.info("Merged %d entities and %d relations", len(other_ents), len(other_rels))
 
 
-# ---------------------------------------------------------------------------
 # Convenience factories
-# ---------------------------------------------------------------------------
 
 def create_knowledge_graph(name="vuln_kg") -> VulnKnowledgeGraph:
     return VulnKnowledgeGraph(name)

@@ -1,11 +1,11 @@
 """异构因果效应估计 — CATE + 因果森林启发式 + 交互效应检测.
 
-创建: 2025-08-23 10:18
-修改: 2025-08-25 14:42 — 添加交互效应显著性检验
+创建: 2026-06-07 10:18
+修改: 2026-06-07 14:42 — 添加交互效应显著性检验
 
-参考: Athey & Imbens (2016) "Recursive Partitioning for Heterogeneous Causal Effects"
+参考: Athey & Imbens "Recursive Partitioning for Heterogeneous Causal Effects"
        (PNAS) — 因果树的 Honest 估计方法
-       Wager & Athey (2018) "Estimation and Inference of Heterogeneous Treatment
+       Wager & Athey "Estimation and Inference of Heterogeneous Treatment
        Effects using Random Forests" (JASA) — 因果森林
 
 与 counterfactual_mutator.py 的关系:

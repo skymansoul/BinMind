@@ -25,10 +25,9 @@
   - Scheduler: 作为替代的 pick_seed 策略（通过 strategy="temporal_novelty" 激活）
   - CorpusManager: 裁剪时参考 novelty_age 保留高潜力但当前低分种子
 
-参考:
-  - Graphuzz (ACM TOSEM 2024, doi:10.1145/3664603): 自注意力机制识别
+  - Graphuzz: 自注意力机制识别
     被忽略的特征分布——本模块的时间衰减可视为其注意力机制的显式替代。
-  - SEAFuzz (IEEE QRS-C 2025): 稀有度加权结构相似性——本模块将其
+  - SEAFuzz : 稀有度加权结构相似性——本模块将其
     静态稀有度推广为动态时变稀有度。
   - Ebbinghaus 遗忘曲线 (1885): H = C - k log(t) —— 本模块的
     novelty(t) 衰减函数借鉴了该曲线的指数形式作为近似。
@@ -55,7 +54,6 @@ _REVISIT_QUEUE_MAX = 200
 _COLD_START_RANDOM_PICKS = 50
 _COLD_START_RANDOM_PROB = 0.25
 
-
 @dataclass
 class NoveltyRecord:
     """单个种子的时态新颖度追踪记录。"""
@@ -69,7 +67,6 @@ class NoveltyRecord:
     in_revisit_queue: bool = False     # 是否在重访队列中
     resurrection_count: int = 0        # 复活次数——限制以防止振荡
     max_resurrections: int = 3         # 单种子最大复活次数
-
 
 class DecayingNoveltyScheduler:
     """基于时态衰减的新颖度种子调度器。
@@ -108,7 +105,7 @@ class DecayingNoveltyScheduler:
         self._decay_lambda = math.log(2) / halflife_sec
         self._pick_count: int = 0
 
-    # ---- 注册与管理 ----
+# 注册与管理
 
     def register_seed(
         self, seed_id: str, coverage_mask: Optional[Set[int]] = None
@@ -131,7 +128,7 @@ class DecayingNoveltyScheduler:
     def seed_count(self) -> int:
         return len(self._records)
 
-    # ---- 新颖度衰减计算 ----
+# 新颖度衰减计算
 
     def _compute_current_novelty(self, record: NoveltyRecord) -> float:
         """基于指数衰减模型计算当前新颖度。
@@ -164,7 +161,7 @@ class DecayingNoveltyScheduler:
                     rec.novelty = rec.novelty * math.exp(-self._decay_lambda * elapsed)
                     rec.last_scheduled = now
 
-    # ---- 种子选择 ----
+# 种子选择
 
     def pick_seed(self) -> Optional[str]:
         """选择下一个种子——双队列策略。
@@ -256,7 +253,7 @@ class DecayingNoveltyScheduler:
 
         return best_id
 
-    # ---- 复活机制 ----
+# 复活机制
 
     def _try_resurrect(self) -> Optional[str]:
         """检查重访队列中是否有冷却期满的候选种子。"""
@@ -287,7 +284,7 @@ class DecayingNoveltyScheduler:
         )
         return chosen
 
-    # ---- 统计与诊断 ----
+# 统计与诊断
 
     def novelty_distribution(self) -> Dict[str, float]:
         """返回所有种子当前新颖度分布的快照。"""

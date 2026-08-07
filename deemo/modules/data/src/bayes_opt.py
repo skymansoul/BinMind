@@ -19,9 +19,9 @@
 #      加入 GP 训练集, 持续优化. 不需要离线调参阶段.
 #
 # 与现有工作:
-#   - Optuna/Hyperopt: 通用框架, 不感知管线约束.
-#   - BOHB (ICML 2018): 多保真度 + HyperBand, 面向 ML 训练.
-#   - 本方案: 约束 EI + 多保真度 + 管线原生集成.
+# Optuna/Hyperopt: 通用框架, 不感知管线约束.
+#   - BOHB: 多保真度 + HyperBand, 面向 ML 训练.
+# 本方案: 约束 EI + 多保真度 + 管线原生集成.
 
 import math
 import random
@@ -192,9 +192,7 @@ class ConstrainedBayesianOptimizer:
         return math.exp(-0.5*x*x) / math.sqrt(2.0*math.pi)
 
 
-# ---------------------------------------------------------------------------
 # 管线参数适配器: 将符号参数名映射到连续优化空间
-# ---------------------------------------------------------------------------
 
 class PipelineParamAdapter:
     """管线参数→连续优化变量的双向映射.

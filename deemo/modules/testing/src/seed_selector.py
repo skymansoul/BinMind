@@ -1,10 +1,10 @@
 # 将模糊测试的种子调度建模为bandit问题:
 #   臂 = 种子, 奖励 = 新覆盖边数 / 触发崩溃 / 执行时间效率
 # 在探索（试用新种子）与利用（反复变异高产种子）之间自适应平衡。
-# 参考:
-#   MobFuzz (arXiv:2401.15956) — Multi-Player MAB for multi-objective fuzzing
-#   LinFuzz (Su et al. 2024) — LinUCB contextual bandit for seed scheduling
-#   EcoFuzz (USENIX 2020) — Adversarial MAB for power scheduling
+#
+#   MobFuzz — Multi-Player MAB for multi-objective fuzzing
+#   LinFuzz — LinUCB contextual bandit for seed scheduling
+#   EcoFuzz — Adversarial MAB for power scheduling
 #   Auer et al. 2002 "The Nonstochastic Multiarmed Bandit Problem" — EXP3
 import math
 import random
@@ -149,7 +149,7 @@ class EXP3Selector:
     收到奖励后做重要性加权更新: w_i *= exp(gamma * reward_i / (N * p_i))。
 
     参考Auer et al. 2002, "The Nonstochastic Multiarmed Bandit Problem"
-    及EcoFuzz (Yue et al. USENIX 2020)的对抗性MAB应用。
+    及EcoFuzz的对抗性MAB应用。
     """
 
     def __init__(self, exploration_rate: float = 0.1):

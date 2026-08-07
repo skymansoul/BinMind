@@ -7,12 +7,12 @@
 # Exploit成熟度告知PoC是否存在但不包含武器化级别。
 #
 # 本模块将其统一为时态评分:
-#   - 基础: CVSS评分 (0-10 → 0-50)
-#   - EPSS乘数: EPSS越高 → 评分提升 (0-30)
+# 基础: CVSS评分 (0-10 → 0-50)
+# EPSS乘数: EPSS越高 → 评分提升 (0-30)
 #   - SSVC决策加权: Act=+20, Attend=+10, Track*=+5, Track=+0
-#   - KEV加成: 若在CISA KEV目录中 +15
+# KEV加成: 若在CISA KEV目录中 +15
 #   - Exploit成熟度加成: weaponized=+15, metasploit=+12, functional=+8, poc=+5
-#   - 时态衰减: 若有可用修复，评分随时间衰减
+# 时态衰减: 若有可用修复，评分随时间衰减
 #
 # 最终评分截断至0-100。
 
@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 
 from .cve_models import CVEEntry, Severity
 
-# ---- 评分权重 ----
+# 评分权重
 # 基于观察约1000个真实CVE的经验调参。
 # 若有更好校准数据可调整。
 
@@ -66,7 +66,7 @@ def compute_risk_score(
 
     返回含score, breakdown, label（LOW/MEDIUM/HIGH/CRITICAL）的字典。
     """
-    # ---- 提取字段 ----
+# 提取字段
     cvss = _get_num(entry, "cvss_score") or 0.0
     epss = _get_num(entry, "epss_score") or 0.0
     epss_pct = _get_num(entry, "epss_percentile") or 0.0
@@ -79,38 +79,38 @@ def compute_risk_score(
     breakdown = {}
     total = 0.0
 
-    # ---- 1. CVSS基础 ----
+# 1. CVSS基础
     # 线性映射: 0 → 0, 10 → _CVSS_MAX_CONTRIBUTION
     cvss_contrib = (cvss / 10.0) * _CVSS_MAX_CONTRIBUTION
     breakdown["cvss_contribution"] = round(cvss_contrib, 1)
     total += cvss_contrib
 
-    # ---- 2. EPSS ----
+# 2. EPSS
     # 取原始EPSS评分与百分位归一化值中的较高者
     epss_effective = max(epss, epss_pct)
     epss_contrib = epss_effective * _EPSS_MAX_CONTRIBUTION
     breakdown["epss_contribution"] = round(epss_contrib, 1)
     total += epss_contrib
 
-    # ---- 3. SSVC决策 ----
+# 3. SSVC决策
     ssvc_contrib = 0.0
     if ssvc_decision is not None:
         ssvc_contrib = _SSVC_WEIGHTS.get(ssvc_decision, 0)
     breakdown["ssvc_contribution"] = ssvc_contrib
     total += ssvc_contrib
 
-    # ---- 4. KEV加成 ----
+# 4. KEV加成
     kev_contrib = _KEV_BONUS if cisa_kev else 0.0
     breakdown["kev_contribution"] = kev_contrib
     total += kev_contrib
 
-    # ---- 5. Exploit成熟度 ----
+# 5. Exploit成熟度
     mat_key = maturity.lower().strip().replace(" ", "_")
     maturity_contrib = _EXPLOIT_MATURITY_BONUS.get(mat_key, 0)
     breakdown["maturity_contribution"] = maturity_contrib
     total += maturity_contrib
 
-    # ---- 6. 时态衰减 ----
+# 6. 时态衰减
     decay_factor = 1.0
     if days_since_fix is not None and days_since_fix > 0 and has_fix:
         decay_factor = max(
@@ -201,7 +201,7 @@ def risk_summary(scores: List[Dict]) -> Dict[str, Any]:
     }
 
 
-# ---- 辅助: 估算修复以来的天数 ----
+# 辅助: 估算修复以来的天数
 
 def estimate_days_since_fix(entry) -> Optional[float]:
     """启发式估算修复可用以来的天数。
@@ -219,7 +219,7 @@ def estimate_days_since_fix(entry) -> Optional[float]:
         return None
 
 
-# ---- 字段访问辅助 ----
+# 字段访问辅助
 
 def _get_num(entry, field: str) -> Optional[float]:
     if hasattr(entry, field):

@@ -1,8 +1,8 @@
 # 跨层污点路由器 — 将网络协议字段级污点传播至 CPU 寄存器/内存字节级。
 #
 # 现有污点分析系统在两个孤立层运作:
-#   - 网络层: 标记"此 IP 字段来自不可信输入"——粒度是整个字段
-#   - 二进制层: subreg_taint 追踪 RAX[3] 的污点——粒度是单字节
+# 网络层: 标记"此 IP 字段来自不可信输入"——粒度是整个字段
+# 二进制层: subreg_taint 追踪 RAX[3] 的污点——粒度是单字节
 # 两个层之间没有信息桥梁。攻击面恰在此处:
 #   协议解析器将报文字段读入寄存器, 寄存器参与后续内存操作——
 #   若解析器未正确验证字段长度, 则字段值可溢出到相邻内存。
@@ -21,9 +21,9 @@
 # 此方法的核心创新: 将网络协议的字段语义与 CPU 寄存器的字节槽关联,
 # 使跨层攻击面（如协议解析器中的整数溢出→堆溢出链）成为可追踪对象。
 #
-# ref: Caballero et al. "Binary Code Extraction via Taint Tracking."
+# Caballero et al. "Binary Code Extraction via Taint Tracking."
 #      USENIX Security 2009. — 动态污点的奠基工作, 但仅追踪二进制层
-# ref: Newsome & Song. "Dynamic Taint Analysis for Automatic Detection..."
+# Newsome & Song. "Dynamic Taint Analysis for Automatic Detection..."
 #      NDSS 2005. — 网络→二进制的最早尝试, 但仅标记整个报文为污点源,
 #      无协议字段级分解
 
@@ -233,11 +233,9 @@ class CrossLayerTaintRouter:
                 'protocols': list(set(b['protocol'] for b in data))}
 
 
-# ---------------------------------------------------------------------------
 # 预置绑定: 常见协议中已知的字段→寄存器映射
 # 这些映射来自对常用网络库 (libcurl, libmodbus, OpenSSL) 的逆向分析
 # ——映射在库更新时可能需要调整, 因此使用 JSON 驱动而非硬编码
-# ---------------------------------------------------------------------------
 
 _PRESET_BINDINGS: List[Dict[str, Any]] = [
     # DNS 查询解析 (glibc getaddrinfo → __res_nquery)

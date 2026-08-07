@@ -53,7 +53,7 @@ class PeachPitElement:
         self.data_model_name = data_model_name; self.fields = fields
         self.mutators = mutators; self.state_model = state_model
 
-# ---- AFL++ 风格种子优先级调度 ----
+# AFL++ 风格种子优先级调度
 # 记录 (protocol, field, mutation) 三元组命中，为历史上高产出组合
 # 分配更多迭代预算，使用 EWMA 平滑 (alpha=0.3)
 class _PowerScheduler:

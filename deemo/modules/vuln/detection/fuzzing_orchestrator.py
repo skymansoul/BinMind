@@ -1,13 +1,13 @@
 # 模糊测试编排引擎——管理AFL++/libFuzzer/自定义fuzzer完整生命周期。
-# 参考HyllFuzz (arXiv:2412.15931) LLM辅助seed构造、VPGFuzz (IEEE TIFS 2025)
-# 路径引导策略、IDFuzz (USENIX Security 2025) 神经网络驱动变异。
+# HyllFuzz LLM辅助seed构造、VPGFuzz
+# 路径引导策略、IDFuzz 神经网络驱动变异。
 #
 # 功能边界:
 #   - 多fuzzer并发编排——AFL++(coverage-guided) + libFuzzer(in-process) + 自定义变异器
-#   - 崩溃去重与严重度分诊——信号类型、调用栈哈希、可复现性三分法
-#   - Seed进化——低覆盖率seed剔除、高收益seed变异增强
-#   - Fuzzer间结果共享——AFL++路径转换为libFuzzer语料
-#   - 资源感知调度——CPU核心/内存/时间预算约束下最优分配
+# 崩溃去重与严重度分诊——信号类型、调用栈哈希、可复现性三分法
+# Seed进化——低覆盖率seed剔除、高收益seed变异增强
+# Fuzzer间结果共享——AFL++路径转换为libFuzzer语料
+# 资源感知调度——CPU核心/内存/时间预算约束下最优分配
 #
 # 当前实现——AFL++ wrapper基础上扩展
 # 增强——崩溃分诊与多fuzzer编排

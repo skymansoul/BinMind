@@ -74,7 +74,7 @@ class PatchImpactReport:
         }
 
 
-# ===== 危险函数集合：内存操作 + 命令执行 =====
+# 危险函数集合：内存操作 + 命令执行
 _DANGEROUS_CALLS: Set[str] = {
     "strcpy", "strcat", "sprintf", "gets", "scanf", "vsprintf",
     "system", "execve", "popen", "execl", "execlp",
@@ -88,7 +88,7 @@ _SECURITY_CHECKS: Set[str] = {
 }
 
 
-# **** 指令级风险权重 —— call system 远重于 call memcpy ****
+# 指令级风险权重 —— call system 远重于 call memcpy
 _INSTRUCTION_RISK: Dict[str, int] = {
     'system': 10, 'execve': 10, 'popen': 9, 'execl': 9, 'execlp': 9,
     'strcpy': 7, 'strcat': 7, 'sprintf': 7, 'gets': 8, 'scanf': 6,
@@ -105,9 +105,7 @@ class PatchImpactAnalyzer:
     def __init__(self):
         self._call_graph: Dict[str, List[str]] = defaultdict(list)
 
-    # ============================================================
     # 主入口 —— diff 指纹 + 构建依赖图 + 风险计算
-    # ============================================================
     def analyze_binary(self, binary_path: str,
                        before_fingerprints: Dict[str, FunctionFingerprint],
                        after_fingerprints: Dict[str, FunctionFingerprint]) -> PatchImpactReport:
@@ -268,7 +266,7 @@ class PatchImpactAnalyzer:
             self._call_graph[_fn] = list(_fp.calls)
 
 
-# **** 便捷入口 ****
+# 便捷入口
 def analyze_patch_impact(binary_path: str,
                          before_fingerprints: Dict[str, FunctionFingerprint],
                          after_fingerprints: Dict[str, FunctionFingerprint]) -> Dict:

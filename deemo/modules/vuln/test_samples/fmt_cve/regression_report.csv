@@ -1,0 +1,17 @@
+sample_id,expected,prov,naive,n_calls,n_safe,n_vuln,fp_reduction_pct
+fmt_01_printf_argv,TP,TP,TP,1,0,1,0.0
+fmt_02_printf_gets,TP,TP,TP,1,0,1,0.0
+fmt_03_sprintf_fmtarg,TP,TP,TP,1,0,1,0.0
+fmt_04_fprintf_user,TP,TP,TP,1,0,1,0.0
+fmt_05_fprintf_stdout,TP,TP,TP,1,0,1,0.0
+fmt_06_printf_fgets,TP,TP,TP,1,0,1,0.0
+fmt_07_printf_read,TP,TP,TP,1,0,1,0.0
+fmt_08_snprintf_fmtarg,TP,TP,TP,1,0,1,0.0
+fmt_09_printf_heap_fmt,TP,TP,TP,1,0,0,0.0
+fmt_10_printf_scanf,TP,TP,TP,2,0,1,0.0
+fmt_11_vprintf_user,TP,TP,TP,1,0,0,0.0
+fmt_12_printf_strcpy,TP,TP,TP,1,0,0,0.0
+fmt_safe_literal,TN,TN,FP,1,1,0,100.0
+fmt_safe_literal_var,TN,TN,FP,1,1,0,100.0
+fmt_safe_rodata_table,TN,TN,FP,1,1,0,100.0
+fmt_safe_snprintf_const,TN,TN,FP,1,1,0,100.0

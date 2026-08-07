@@ -1,7 +1,7 @@
 """
 判定缓存 — 相同依赖上下文复用判定。
 
-参考 arXiv:2509.10814 低开销要求:
+参考 低开销要求:
   LLM 调用昂贵；同 (误用类型, API, 上下文, 调用链) 组合反复出现时
   缓存直接复用，削减开销。键 = 上下文规范化 SHA-256 摘要。
 
@@ -18,7 +18,6 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-
 @dataclass
 class Verdict:
     """单次判定."""
@@ -26,7 +25,6 @@ class Verdict:
     reason: str = ""
     from_cache: bool = False
     source: str = "llm"     # llm / heuristic
-
 
 class VerdictCache:
     """LRU 判定缓存 — 上下文哈希 → Verdict."""

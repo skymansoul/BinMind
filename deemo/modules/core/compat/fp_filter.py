@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """堆溢出误报过滤器 — 三阶段裁剪管线.
 
 阶段 1: 值区间分析 — alloc_size 与 write_size 的区间比较, 可证明安全则过滤
@@ -164,11 +164,14 @@ class FalsePositiveFilter:
 
 
 def batch_filter_and_report(
-    candidates: List[Dict], **kw,
+    candidates: List[Dict],
+    def_use: Optional[Dict[int, List[int]]] = None,
+    ir: Optional[Dict[int, Dict]] = None,
+    **kw,
 ) -> Tuple[List[Dict], Dict[str, Any]]:
     """便捷函数: 过滤并产出报告."""
     fpf = FalsePositiveFilter(**kw)
-    results = fpf.filter_candidates(candidates)
+    results = fpf.filter_candidates(candidates, def_use, ir)
     retained = [r.candidate for r in results if r.passed]
     filtered_out = [r for r in results if not r.passed]
     report = {

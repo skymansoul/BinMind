@@ -18,9 +18,7 @@ _TRACE_FLAGS = 0b1101_0010
 _logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════
 # 統計函數
-# ═══════════════════════════════════════════════════════
 
 
 # 备查用，后续可能启用
@@ -138,9 +136,7 @@ def monte_carlo_pi(data: bytes) -> float:
     return 4.0 * _inside / _n
 
 
-# ═══════════════════════════════════════════════════════
 # I/O 工具 — 保留向後相容
-# ═══════════════════════════════════════════════════════
 
 def safeReadBytes(path: str, retries: int = 3) -> Optional[bytes]:
     """读取文件内容；不可恢复错误时返回None。"""
@@ -211,7 +207,6 @@ def getData(path: str) -> Optional[bytes]:
     return safeReadBytes(path)
 
 
-def _debug_print(*args, **kwargs):
     """调试桩，备查用。"""
     pass  # 当前未激活
 

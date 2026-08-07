@@ -1,0 +1,134 @@
+{
+  "module": "FSTP (Format Semantic Taint Propagation)",
+  "total_samples": 15,
+  "tp": 7,
+  "fp": 0,
+  "tn": 8,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "avg_time_ms": 0.517,
+  "details": {
+    "const_fmt": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_CONST_FMT",
+      "confidence": 0.98,
+      "time_ms": 2.094
+    },
+    "const_pure": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_CLEAN",
+      "confidence": 0.99,
+      "time_ms": 0.193
+    },
+    "const_formatted": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_CONST_FMT",
+      "confidence": 0.98,
+      "time_ms": 0.2
+    },
+    "user_scanf": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_WRITE",
+      "confidence": 0.9,
+      "time_ms": 0.559
+    },
+    "user_fgets": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_READ",
+      "confidence": 0.78,
+      "time_ms": 0.454
+    },
+    "user_recv": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_WRITE",
+      "confidence": 0.9,
+      "time_ms": 0.54
+    },
+    "user_argv": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_WRITE",
+      "confidence": 0.9,
+      "time_ms": 0.249
+    },
+    "san_strreplace": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_USER_SAFE",
+      "confidence": 0.85,
+      "time_ms": 0.256
+    },
+    "san_sanitize": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_USER_SAFE",
+      "confidence": 0.85,
+      "time_ms": 0.356
+    },
+    "san_g_strdup_printf": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_USER_SAFE",
+      "confidence": 0.85,
+      "time_ms": 0.488
+    },
+    "san_escape_format": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_USER_SAFE",
+      "confidence": 0.85,
+      "time_ms": 0.218
+    },
+    "edge_snprintf_chain": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_READ",
+      "confidence": 0.78,
+      "time_ms": 1.094
+    },
+    "edge_assign_chain": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_WRITE",
+      "confidence": 0.9,
+      "time_ms": 0.517
+    },
+    "edge_no_format": {
+      "is_cwe134": false,
+      "expected_cwe134": false,
+      "correct": true,
+      "sem_class": "SEM_CLEAN",
+      "confidence": 0.4,
+      "time_ms": 0.154
+    },
+    "edge_sem_class": {
+      "is_cwe134": true,
+      "expected_cwe134": true,
+      "correct": true,
+      "sem_class": "SEM_USER_WRITE",
+      "confidence": 0.9,
+      "time_ms": 0.39
+    }
+  }
+}

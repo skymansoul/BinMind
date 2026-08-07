@@ -19,14 +19,13 @@
     3. 构建状态转移图并匹配已知协议指纹。
 
   与既有研究的本质区别:
-    - arXiv:2412.02540 (2024): 从网络流量推断协议状态机 — 需要抓包, 有网络依赖。
-    - ProtocolGPT (arXiv:2405.00393): 从源码用LLM推断状态机 — 需要源码访问。
+    -: 从网络流量推断协议状态机 — 需要抓包, 有网络依赖。
+    - ProtocolGPT: 从源码用LLM推断状态机 — 需要源码访问。
     本模块直接从二进制推断 — 无需流量/源码/运行时, 纯静态。
 
-参考:
-  - Beurdouche et al. (IEEE S&P 2015): "A Messy State of the Union" — TLS实现
+  - Beurdouche et al.: "A Messy State of the Union" — TLS实现
     状态机缺陷的系统分析, 本项目将其概念从源码审查移植到二进制静态分析。
-  - de Ruiter & Poll (ESORICS 2015): "Protocol State Fuzzing of TLS" —
+  - de Ruiter & Poll: "Protocol State Fuzzing of TLS" —
     状态机推断用于协议Fuzzing, 本项目以API序列分类替代主动探测。
   - ESORICS 2022: TLS栈指纹识别 — 通过状态机行为差异区分实现。
 
@@ -42,7 +41,6 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class ProtoPhase(Enum):
     INIT = auto()           # 库初始化 / 上下文创建
     HELLO = auto()          # ClientHello / ServerHello / 参数协商
@@ -53,8 +51,7 @@ class ProtoPhase(Enum):
     CLOSE = auto()          # 会话关闭 / 告警 / 清理
     UNKNOWN = auto()        # 未分类
 
-
-# ── API调用→协议阶段分类规则 ──
+# API调用→协议阶段分类规则
 _PHASE_PATTERNS: List[Tuple[bytes, ProtoPhase, float]] = [
     (b'SSL_CTX_new', ProtoPhase.INIT, 0.95),
     (b'SSL_new', ProtoPhase.INIT, 0.90),
@@ -104,8 +101,7 @@ _PHASE_PATTERNS: List[Tuple[bytes, ProtoPhase, float]] = [
     (b'gnutls_bye', ProtoPhase.CLOSE, 0.90),
 ]
 
-
-# ── 已知协议指纹 — 标准状态转移序列 ──
+# 已知协议指纹 — 标准状态转移序列
 # 用于匹配重建的状态机到已知协议
 _PROTOCOL_FINGERPRINTS: Dict[str, List[ProtoPhase]] = {
     'TLS 1.2 (full handshake)': [
@@ -138,14 +134,12 @@ _PROTOCOL_FINGERPRINTS: Dict[str, List[ProtoPhase]] = {
     ],
 }
 
-
 @dataclass
 class ProtoStateTransition:
     from_phase: ProtoPhase
     to_phase: ProtoPhase
     evidence: str = ""
     location: int = 0
-
 
 @dataclass
 class ProtocolStateMachine:
@@ -157,7 +151,6 @@ class ProtocolStateMachine:
     missing_phases: List[str] = field(default_factory=list)
     extra_phases: List[str] = field(default_factory=list)
     anomaly_flags: List[str] = field(default_factory=list)
-
 
 def _classify_api_call(api_string: str) -> Tuple[ProtoPhase, float]:
     """将API字符串分类到协议阶段。返回(阶段, 置信度)。"""
@@ -173,7 +166,6 @@ def _classify_api_call(api_string: str) -> Tuple[ProtoPhase, float]:
 
     return best_phase, best_weight
 
-
 def _extract_api_calls(data: bytes, anchor: int, window: int = 256) -> List[Tuple[str, int]]:
     """在锚点附近提取可打印的API调用字符串。返回(字符串, 相对偏移)列表。"""
     region = data[max(0, anchor - window):anchor + window]
@@ -183,7 +175,6 @@ def _extract_api_calls(data: bytes, anchor: int, window: int = 256) -> List[Tupl
         if any(c.isupper() for c in s) or '_' in s:
             calls.append((s, m.start()))
     return calls
-
 
 def reconstruct_state_machine(data: bytes,
                               crypto_findings: Optional[List] = None,

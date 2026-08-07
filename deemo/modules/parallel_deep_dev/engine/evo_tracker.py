@@ -1,5 +1,5 @@
 """
-创建: 2025-08-03
+创建: 2026-05-05
 修改:
   2025-08-03 - 持久化路径统一到 _data_dir()
 跨会话代码稳定性演化追踪 — 函数级 AST 指纹跨会话演化链。
@@ -61,9 +61,7 @@ class EvoTracker:
         self._history: dict[str, list[FuncFingerprint]] = defaultdict(list)
         self._load()
 
-    # ------------------------------------------------------------------
     # 指纹记录
-    # ------------------------------------------------------------------
 
     def fingerprint_file(self, filepath: str) -> list[FuncFingerprint]:
         """为文件中所有顶层函数计算演化指纹。返回指纹列表。"""
@@ -97,9 +95,7 @@ class EvoTracker:
         self._save()
         return count
 
-    # ------------------------------------------------------------------
     # 稳定性查询
-    # ------------------------------------------------------------------
 
     def stability_report(self, filepath: str, func_name: str) -> StabilityReport | None:
         """查询单个函数的稳定性报告。"""
@@ -180,9 +176,7 @@ class EvoTracker:
                     seen.add(uid)
         return reports
 
-    # ------------------------------------------------------------------
     # 持久化
-    # ------------------------------------------------------------------
 
     def _save(self) -> None:
         payload: dict = {}
@@ -221,9 +215,7 @@ class EvoTracker:
                     arg_count=d.get("arg_count", 0),
                 ))
 
-    # ------------------------------------------------------------------
     # 内部
-    # ------------------------------------------------------------------
 
     def _fingerprint_func(
         self, node: ast.FunctionDef | ast.AsyncFunctionDef,

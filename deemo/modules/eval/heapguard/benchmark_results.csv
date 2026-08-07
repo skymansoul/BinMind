@@ -1,0 +1,129 @@
+tool,sample,variant,expected,detected,verdict,time_ms,peak_mem_mb,detail
+GASRI,cve_2014_0038_recvfrom,O0,TP,True,TP,33.0,0,pairs=1 safe=0
+GASRI,cve_2014_0038_recvfrom,O2,TP,True,TP,25.8,0,pairs=1 safe=0
+GASRI,cve_2015_0240_samba,O0,TP,True,TP,31.4,0,pairs=1 safe=0
+GASRI,cve_2015_0240_samba,O2,TP,True,TP,26.6,0,pairs=1 safe=0
+GASRI,cve_2017_1000253_pie,O0,TP,True,TP,30.6,0,pairs=1 safe=0
+GASRI,cve_2017_1000253_pie,O2,TP,True,TP,30.4,0,pairs=1 safe=0
+GASRI,cve_2018_1000001_glibc,O0,TP,True,TP,25.4,0,pairs=1 safe=0
+GASRI,cve_2018_1000001_glibc,O2,TP,True,TP,26.8,0,pairs=1 safe=0
+GASRI,cve_2019_15846_rsync,O0,TP,True,TP,39.1,0,pairs=1 safe=0
+GASRI,cve_2019_15846_rsync,O2,TP,True,TP,31.5,0,pairs=1 safe=0
+GASRI,cve_2020_10713_grub,O0,TP,True,TP,24.6,0,pairs=1 safe=0
+GASRI,cve_2020_10713_grub,O2,TP,True,TP,30.4,0,pairs=1 safe=0
+GASRI,cve_2021_3156_sudo,O0,TP,True,TP,27.3,0,pairs=1 safe=0
+GASRI,cve_2021_3156_sudo,O2,TP,True,TP,26.0,0,pairs=1 safe=0
+GASRI,cve_2022_0185_kernel,O0,TP,True,TP,25.4,0,pairs=1 safe=0
+GASRI,cve_2022_0185_kernel,O2,TP,True,TP,44.7,0,pairs=1 safe=0
+GASRI,cve_2022_3602_openssl,O0,TP,True,TP,27.9,0,pairs=1 safe=0
+GASRI,cve_2022_3602_openssl,O2,TP,True,TP,25.1,0,pairs=1 safe=0
+GASRI,cve_2023_2513_bpf,O0,TP,True,TP,26.0,0,pairs=1 safe=0
+GASRI,cve_2023_2513_bpf,O2,TP,True,TP,33.0,0,pairs=1 safe=0
+GASRI,cve_2023_38545_curl,O0,TP,True,TP,28.1,0,pairs=1 safe=0
+GASRI,cve_2023_38545_curl,O2,TP,True,TP,27.3,0,pairs=1 safe=0
+GASRI,cve_2024_2961_glibc,O0,TP,True,TP,27.5,0,pairs=1 safe=0
+GASRI,cve_2024_2961_glibc,O2,TP,True,TP,27.8,0,pairs=1 safe=0
+GASRI,safe_alignment_padding,O0,TN,False,TN,28.4,0,pairs=1 safe=1
+GASRI,safe_alignment_padding,O2,TN,False,TN,27.4,0,pairs=1 safe=1
+GASRI,safe_alloc_controllable,O0,TN,False,TN,24.9,0,pairs=1 safe=1
+GASRI,safe_alloc_controllable,O2,TN,False,TN,27.2,0,pairs=1 safe=1
+GASRI,safe_disjoint_allocs,O0,TN,False,TN,26.6,0,pairs=2 safe=2
+GASRI,safe_disjoint_allocs,O2,TN,False,TN,37.0,0,pairs=2 safe=2
+GASRI,safe_guard_bounded,O0,TN,False,TN,38.0,0,pairs=1 safe=1
+GASRI,safe_guard_bounded,O2,TN,False,TN,32.9,0,pairs=1 safe=1
+Angr,cve_2014_0038_recvfrom,O0,TP,False,FN,385.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2015_0240_samba,O0,TP,False,FN,302.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2017_1000253_pie,O0,TP,True,TP,323.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2018_1000001_glibc,O0,TP,True,TP,457.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2019_15846_rsync,O0,TP,True,TP,380.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2020_10713_grub,O0,TP,True,TP,451.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2021_3156_sudo,O0,TP,False,FN,354.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2022_0185_kernel,O0,TP,False,FN,518.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2022_3602_openssl,O0,TP,True,TP,329.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2023_2513_bpf,O0,TP,True,TP,323.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2023_38545_curl,O0,TP,False,FN,391.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2024_2961_glibc,O0,TP,True,TP,504.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,safe_alignment_padding,O0,TN,False,TN,329.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_alloc_controllable,O0,TN,False,TN,343.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_disjoint_allocs,O0,TN,False,TN,300.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_guard_bounded,O0,TN,False,TN,505.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,cve_2014_0038_recvfrom,O2,TP,False,FN,399.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2015_0240_samba,O2,TP,False,FN,339.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2017_1000253_pie,O2,TP,True,TP,315.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2018_1000001_glibc,O2,TP,True,TP,508.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2019_15846_rsync,O2,TP,True,TP,323.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2020_10713_grub,O2,TP,True,TP,318.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2021_3156_sudo,O2,TP,False,FN,314.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2022_0185_kernel,O2,TP,False,FN,499.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2022_3602_openssl,O2,TP,True,TP,326.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2023_2513_bpf,O2,TP,True,TP,337.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2023_38545_curl,O2,TP,False,FN,287.0,0,mode=ESTIMATED ESTIMATED: needs specific input/path — angr FN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,cve_2024_2961_glibc,O2,TP,True,TP,455.0,0,mode=ESTIMATED ESTIMATED: constant overflow reachable — angr TP; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'
+Angr,safe_alignment_padding,O2,TN,False,TN,335.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_alloc_controllable,O2,TN,False,TN,323.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_disjoint_allocs,O2,TN,False,TN,372.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Angr,safe_guard_bounded,O2,TN,False,TN,512.0,0,"mode=ESTIMATED ESTIMATED: safe sample, angr TN; REAL degraded: cfg walk failed: 'CFGFast' object has no attribute 'nodes'"
+Qemu,cve_2014_0038_recvfrom,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2015_0240_samba,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2017_1000253_pie,O0,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2018_1000001_glibc,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2019_15846_rsync,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2020_10713_grub,O0,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2021_3156_sudo,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2022_0185_kernel,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2022_3602_openssl,O0,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2023_2513_bpf,O0,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2023_38545_curl,O0,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2024_2961_glibc,O0,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,safe_alignment_padding,O0,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_alloc_controllable,O0,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_disjoint_allocs,O0,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_guard_bounded,O0,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,cve_2014_0038_recvfrom,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2015_0240_samba,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2017_1000253_pie,O2,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2018_1000001_glibc,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2019_15846_rsync,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2020_10713_grub,O2,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2021_3156_sudo,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2022_0185_kernel,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2022_3602_openssl,O2,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2023_2513_bpf,O2,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,cve_2023_38545_curl,O2,TP,False,FN,600.0,0,mode=ESTIMATED ESTIMATED: needs specific input — QEMU FN
+Qemu,cve_2024_2961_glibc,O2,TP,True,TP,600.0,0,mode=ESTIMATED ESTIMATED: overflow triggers — QEMU TP
+Qemu,safe_alignment_padding,O2,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_alloc_controllable,O2,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_disjoint_allocs,O2,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Qemu,safe_guard_bounded,O2,TN,False,TN,600.0,0,mode=ESTIMATED ESTIMATED: safe sample — QEMU TN
+Ghidra,cve_2014_0038_recvfrom,O0,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2015_0240_samba,O0,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2017_1000253_pie,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2018_1000001_glibc,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2019_15846_rsync,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2020_10713_grub,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2021_3156_sudo,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2022_0185_kernel,O0,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2022_3602_openssl,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2023_2513_bpf,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2023_38545_curl,O0,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2024_2961_glibc,O0,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,safe_alignment_padding,O0,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_alloc_controllable,O0,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_disjoint_allocs,O0,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_guard_bounded,O0,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,cve_2014_0038_recvfrom,O2,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2015_0240_samba,O2,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2017_1000253_pie,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2018_1000001_glibc,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2019_15846_rsync,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2020_10713_grub,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2021_3156_sudo,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2022_0185_kernel,O2,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2022_3602_openssl,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2023_2513_bpf,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,cve_2023_38545_curl,O2,TP,False,FN,3000.0,0,mode=ESTIMATED ESTIMATED: computed-size overflow missed (FN)
+Ghidra,cve_2024_2961_glibc,O2,TP,True,TP,3000.0,0,mode=ESTIMATED ESTIMATED: constant overflow found (TP)
+Ghidra,safe_alignment_padding,O2,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_alloc_controllable,O2,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_disjoint_allocs,O2,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)
+Ghidra,safe_guard_bounded,O2,TN,True,FP,3000.0,0,mode=ESTIMATED ESTIMATED: safe sample flagged (FP)

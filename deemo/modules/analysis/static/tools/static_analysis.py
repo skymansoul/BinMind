@@ -1,10 +1,10 @@
 """Thin redirection layer core.static_analysis — preserves 遗留 import paths
 
-2025 增强: 集成 ISA 形式语义的符号执行概念 (BinSym, DATE 2025)
+2025 增强: 集成 ISA 形式语义的符号执行概念
 本模块作为适配层——当 BinSym 风格的直接二进制执行可用时，绕过 IR 提升步骤
 将架构原生指令直接送入符号引擎。这消除了 VEX/LLVM IR 提升中的语义失真
 参考: Tempel et al., "BinSym: Binary-Level 符号执行 using
-Formal Descriptions Instruction Semantics" (arXiv 2404.04132)
+Formal Descriptions Instruction Semantics" 
 """
 from core.static_analysis import *  # noqa: F401, F403
 

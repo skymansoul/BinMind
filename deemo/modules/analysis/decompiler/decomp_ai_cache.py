@@ -20,9 +20,8 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-def _debug_print(msg): pass  # noqa
 
-# ---- 缓存模块级 variables ----
+# 缓存模块级 variables
 
 DECOMP_CACHE: Dict[str, Dict[str, Any]] = {}
 DECOMP_CACHE_DIR = os.path.join(os.getcwd(), '.deemo_cache')
@@ -34,7 +33,7 @@ _api_call_count = 0
 _LEGACY_MODE = False  # 保留
 
 
-# ---- Utility ----
+# Utility
 
 def compute_binary_hash(binary_path: str) -> Optional[str]:
     # 计算二进制文件的SHA256哈希值，失败返回None
@@ -52,7 +51,7 @@ def compute_binary_hash(binary_path: str) -> Optional[str]:
         return None
 
 
-# ---- Internal 辅助函数 ----
+# Internal 辅助函数
 
 def _ensure_cache_dir() -> None:
     """
@@ -71,7 +70,7 @@ def _format_size(size: int) -> str:
     return f"{size:.2f} TB"
 
 
-# ---- 遗留 disk-缓存CRC 校验 (已废弃 v2) ----
+# 遗留 disk-缓存CRC 校验 (已废弃 v2)
 # def _validate_cache_integrity(cache_file):
 #     with open(cache_file, 'rb') as f:
 #         raw = f.read()
@@ -79,7 +78,7 @@ def _format_size(size: int) -> str:
 #         actual_crc = zlib.crc32(raw[:-4]) & 0xFFFFFFFF
 #         return expected_crc == actual_crc
 
-# ---- 反编译 缓存----
+# 反编译 缓存
 
 def get_cached_decompilation(binary_hash: str, func_name: str) -> Optional[Dict[str, Any]]:
     """
@@ -174,7 +173,7 @@ def cache_decompilation(
         return False
 
 
-# ---- API 缓存----
+# API 缓存
 
 def get_cached_api_response(api_key: str, ttl: int = None) -> Optional[Any]:
     """
@@ -251,7 +250,7 @@ def cache_api_response(api_key: str, response: Any) -> bool:
         return False
 
 
-# ---- 速率限制 ----
+# 速率限制
 
 def check_api_rate_limit() -> bool:
     """
@@ -303,7 +302,7 @@ def wait_for_api_rate_limit(timeout: float = 10.0) -> bool:
     return False
 
 
-# ---- 缓存cleanup ----
+# 缓存cleanup
 
 def clear_decomp_cache() -> int:
     """

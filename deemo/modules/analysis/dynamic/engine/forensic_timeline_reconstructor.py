@@ -382,7 +382,7 @@ class AnomalyDetector:
 
         return anomalous
 
-    # --- 新增: 时间戳篡改检测 ---
+# 新增: 时间戳篡改检测
     # 使用统计异常评分识别回溯/前向篡改的时间戳
     @staticmethod
     def detect_timestamp_tampering(events: List[TimelineEvent]) -> List[Dict[str, Any]]:
@@ -571,7 +571,7 @@ class ForensicTimelineReconstructor(BaseAnalyzer):
             "events": [e.to_dict() for e in timeline.events[:50]],
         }
 
-    # --- 新增: MACB时间线支持 ---
+# 新增: MACB时间线支持
     # NTFS的MACB (Modified, Accessed, Created, Birth) 时间戳提供更丰富的取证信息
     def reconstruct_file_operations(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
         """从事件序列重建文件生命周期：create → modify → delete 的完整路径

@@ -24,9 +24,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Frida插桩 — 钩子 script generation
-# ---------------------------------------------------------------------------
 
 class HookCategory(str, Enum):
     ANTI_DEBUG = "anti_debug"
@@ -67,7 +65,7 @@ class FridaInstrumentation:
         self._device = device
         self._hooks: List[HookSpec] = []
 
-    # ---- 钩子 工厂 methods ----
+# 钩子 工厂 methods
 
     def anti_debug_hook(self, function_name: str) -> HookSpec:
         """创建 a 钩子 spec bypass 反调试 检查"""
@@ -144,7 +142,7 @@ class FridaInstrumentation:
             arguments={"start": start, "end": end, "access": access_type},
         )
 
-    # ---- Script generation ----
+# Script generation
 
     def generate_hook_script(
         self,
@@ -241,7 +239,7 @@ class FridaInstrumentation:
         ])
         return "\n".join(lines)
 
-    # ---- 钩子 management ----
+# 钩子 management
 
     def add_hook(self, hook: HookSpec) -> None:
         """Add a 钩子 specification"""
@@ -256,9 +254,7 @@ class FridaInstrumentation:
         return list(self._hooks)
 
 
-# ---------------------------------------------------------------------------
 # 检查点Manager — 快照 持久化
-# ---------------------------------------------------------------------------
 
 class CheckpointState(str, Enum):
     INITIAL = "initial"
@@ -378,9 +374,7 @@ class CheckpointManager:
             self._current = None
 
 
-# ---------------------------------------------------------------------------
 # RecoveryStrategy — auto-重试, skip, rollback
-# ---------------------------------------------------------------------------
 
 class RecoveryAction(str, Enum):
     RETRY = "retry"

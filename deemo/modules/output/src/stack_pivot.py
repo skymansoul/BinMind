@@ -15,10 +15,9 @@
   本模块提供第一个栈迁移难度评估模型: 基于可用小工具类型、
   寄存器控制程度、缓冲区和 CFI 惩罚的综合评分。
 
-参考:
-  Linux kernel ENTER pivot: 0x100ff byte max displacement (2024 patchew)
-  ebpf-stack-pivot-detection: 运行时检测 (2024-2025)
-  ARCANIST (USENIX 2025): gadget chain synthesis 但无迁移评分
+  Linux kernel ENTER pivot: 0x100ff byte max displacement
+  ebpf-stack-pivot-detection: 运行时检测
+  ARCANIST: gadget chain synthesis 但无迁移评分
 
 修改记录:
   2026-08-01 14:23 - 初始版本，四类迁移小工具 + CFI 惩罚模型
@@ -29,7 +28,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class PivotGadgetType(Enum):
     POP_RSP = "pop_rsp"          # pop rsp; ret — 最优
     LEAVE_RET = "leave_ret"      # leave; ret — 需要 rbp 控制
@@ -37,7 +35,6 @@ class PivotGadgetType(Enum):
     ENTER = "enter"              # ENTER imm16, imm8 — 内核特化
     JMP_REG = "jmp_reg"          # jmp reg — 间接跳转
     NONE = "none"                # 未找到可用的迁移小工具
-
 
 # 小工具类型 → 基础难度 (0-10, 越低越难/越高越容易)
 _PIVOT_BASE_DIFFICULTY: Dict[PivotGadgetType, float] = {
@@ -48,7 +45,6 @@ _PIVOT_BASE_DIFFICULTY: Dict[PivotGadgetType, float] = {
     PivotGadgetType.JMP_REG:   2.5,  # 高难度 — 间接跳转
     PivotGadgetType.NONE:      0.5,  # 无可用小工具 — 几乎不可能
 }
-
 
 @dataclass
 class PivotDifficulty:
@@ -61,7 +57,6 @@ class PivotDifficulty:
     overall_difficulty: float          # 0-10, 越高越难
     mitigation_bypass_required: List[str] = field(default_factory=list)
     estimated_gadget_chain_length: int = 3
-
 
 def _detect_pivot_gadgets(
     available_gadgets: Optional[List[Dict[str, str]]] = None,
@@ -92,7 +87,6 @@ def _detect_pivot_gadgets(
 
     return PivotGadgetType.NONE
 
-
 def _register_constraints(gtype: PivotGadgetType) -> List[str]:
     return {
         PivotGadgetType.POP_RSP: ['rsp (via overflow)'],
@@ -102,7 +96,6 @@ def _register_constraints(gtype: PivotGadgetType) -> List[str]:
         PivotGadgetType.JMP_REG: ['rax|rbx|rcx|rdx', 'rsp (via overflow)'],
         PivotGadgetType.NONE: [],
     }.get(gtype, [])
-
 
 def _cfi_penalty(
     has_cfg: bool = False,
@@ -128,7 +121,6 @@ def _cfi_penalty(
         if has_cfg:
             penalty += 0.5  # 内核 CFI 额外惩罚
     return min(penalty, 6.0)
-
 
 def assess_stack_pivot(
     available_gadgets: Optional[List[Dict[str, str]]] = None,
@@ -191,7 +183,6 @@ def assess_stack_pivot(
         mitigation_bypass_required=bypasses,
         estimated_gadget_chain_length=chain_len,
     )
-
 
 def pivot_summary(pd: PivotDifficulty) -> Dict[str, Any]:
     """栈迁移评估摘要。"""

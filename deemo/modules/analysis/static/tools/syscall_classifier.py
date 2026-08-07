@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Exports 5 primary types: ThreatCategory, 系统调用Sequence, 分类Result, 系统调用Pattern, 系统调用分类器
 #
-# 2025 升级: 集成 sys2vec→BERT 嵌入管道 (HICSS 2025)
-# 参考: "sysBERT: Improved Behavioral Malware Detection using BERT Trained
+# 2025 升级: 集成 sys2vec→BERT 嵌入管道
+# "sysBERT: Improved Behavioral Malware Detection using BERT Trained
 # sys2vec Embeddings"
 # 核心方法: 将 N-gram 系统调用序列转换为稠密嵌入向量，使用滑动窗口
 # 捕获局部时序模式，再用余弦相似度对已知恶意行为签名进行检索
@@ -63,8 +63,8 @@ class SyscallPattern:
             self.pattern = []
 
 
-# ── sys2vec 嵌入引擎 (HICSS 2025) ───────────────────────────────────────────
-# 参考: sysBERT paper。将系统调用 n-gram 转换为低维稠密向量
+# sys2vec 嵌入引擎
+# sysBERT paper。将系统调用 n-gram 转换为低维稠密向量
 # 使用滑动窗口捕获时序上下文，通过余弦相似度匹配已知恶意模式
 # 这比传统 bag--ngrams 对调用序列重排（混淆）更鲁棒
 

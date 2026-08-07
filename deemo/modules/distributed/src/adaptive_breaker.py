@@ -2,9 +2,9 @@
 # 自适应熔断器 — 基于失败率的分段线性限流策略
 # 此处不引入 DRL 框架，改用更轻量的 EMA 反馈回路实现阈值自适应
 #
-# 传统熔断器 [Nygard 2007] 的 failure_threshold 需人工调参：
-#   - 过低 → 误熔断，降低吞吐
-#   - 过高 → 反应迟钝，下游可能已崩溃
+# 传统熔断器 的 failure_threshold 需人工调参：
+# 过低 → 误熔断，降低吞吐
+# 过高 → 反应迟钝，下游可能已崩溃
 # 自适应方法：根据最近窗口的成功率动态调整阈值，
 #   使得正常波动时容忍度更高，异常收敛时触发更快
 #
@@ -23,7 +23,7 @@ from collections import deque
 from typing import Optional
 
 
-# ===== EMA 计算器 =====
+# EMA 计算器
 
 class _EMA:
     """指数加权移动平均 — 权重 alpha ∈ (0, 1)，越大越敏感。"""
@@ -48,7 +48,7 @@ class _EMA:
         return self._value if self._init else 0.0
 
 
-# ===== 自适应熔断器 =====
+# 自适应熔断器
 
 class AdaptiveCircuitBreaker:
     """基于 EMA 故障率的自适应熔断器。
@@ -99,14 +99,14 @@ class AdaptiveCircuitBreaker:
 
         self._lock = threading.Lock()
 
-    # ---- 窗口内故障率 ----
+# 窗口内故障率
 
     @property
     def failure_rate(self) -> float:
         t = self._failures + self._successes
         return self._failures / t if t else 0.0
 
-    # ---- 自适应阈值 ----
+# 自适应阈值
 
     def _adapt_threshold(self):
         """基于故障率 EMA 调整阈值。
@@ -142,7 +142,7 @@ class AdaptiveCircuitBreaker:
                 self._max_cd,
             )
 
-    # ---- 核心接口 ----
+# 核心接口
 
     def before_call(self) -> bool:
         with self._lock:
@@ -225,7 +225,7 @@ class AdaptiveCircuitBreaker:
                     self._total_calls = self._failures + self._successes
                 self._adapt_threshold()
 
-    # ---- 状态 ----
+# 状态
 
     state = property(lambda self: self._state)
 
@@ -258,7 +258,7 @@ class AdaptiveCircuitBreaker:
         )
 
 
-# ===== 分数熔断 — 部分拒绝替代全有全无 =====
+# 分数熔断 — 部分拒绝替代全有全无
 
 class FractionalCircuitBreaker(AdaptiveCircuitBreaker):
     """分数熔断器 — 不在 open 时完全拒绝，而是按概率拒绝。

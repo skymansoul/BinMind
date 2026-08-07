@@ -1,0 +1,1914 @@
+{
+  "results": [
+    {
+      "sample": "cve_01_simple_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 25,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, ptr_write writes 8B@offset 72@L25"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memset 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 103.46722602844238,
+      "binary_time_ms": 6.408452987670898,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_02_off_by_one",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 22,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 129,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(128), loop_bound(129)*stride(1)=129 > 128"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.819610595703125,
+      "binary_time_ms": 0.2162456512451172,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_03_int_overflow_calc",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.65,
+          "reason": "'buf': malloc(count * sizeof(int))@L19 + loop bound=count@L24 \u2014 integer overflow in size calc"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 33,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.65,
+          "reason": "'buf': malloc(count * sizeof(int))@L19 + loop bound=count@L33 \u2014 integer overflow in size calc"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 0,
+      "source_time_ms": 2.682209014892578,
+      "binary_time_ms": 0.22673606872558594,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_04_strcpy_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 16,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 16,
+          "write_size": -1,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(16)@L16 + unbounded strcpy@L21"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.8585453033447266,
+      "binary_time_ms": 0.3559589385986328,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_05_loop_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 16,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 64,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(32), loop_bound(64)*stride(1)=64 > 32"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.41294097900390625,
+      "binary_time_ms": 0.16164779663085938,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_06_user_controlled_size",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 25,
+          "write_line": 29,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.75,
+          "reason": "'buf': malloc(alloc_sz)@L25 + memset@29 \u2014 both sizes tainted, unbounded"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 1.0764598846435547,
+      "binary_time_ms": 0.2841949462890625,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_07_realloc_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 20,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 16,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(16) usable=24, memset writes 64B@offset 0@L24"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        },
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 2,
+      "source_time_ms": 0.4470348358154297,
+      "binary_time_ms": 0.24747848510742188,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_08_calloc_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 22,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 128,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(64), loop_bound(32)*stride(4)=128 > 64"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.42819976806640625,
+      "binary_time_ms": 0.1621246337890625,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_09_safe_but_triggers_fp",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 24,
+          "write_line": 28,
+          "var_name": "buf",
+          "alloc_size": 20,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(20) usable=24, ptr_write writes 8B@offset 24@L28"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 1.0747909545898438,
+      "binary_time_ms": 0.2396106719970703,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_10_input_constrained_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "UNCERTAIN",
+          "alloc_line": 32,
+          "write_line": 38,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.4,
+          "reason": "'buf': guarded\u22641024 + memset@L38 \u2014 needs further analysis"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.8594989776611328,
+      "binary_time_ms": 0.2849102020263672,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_11_memcpy_arith_size",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 80,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, memcpy writes 80B@offset 0@L24"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 1.0,
+          "reason": "exploit=0.35",
+          "fp_likelihood": 0.0
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.7259845733642578,
+      "binary_time_ms": 0.24247169494628906,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_12_alignment_edge",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "UNCERTAIN",
+          "alloc_line": 20,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 16,
+          "write_size": -1,
+          "confidence": 0.5,
+          "reason": "'buf': ptr+14(var offset)@L24 \u2014 needs further analysis"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.8249282836914062,
+      "binary_time_ms": 0.2224445343017578,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_13_struct_field_pattern",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 25,
+          "write_line": 29,
+          "var_name": "s",
+          "alloc_size": 80,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'s': malloc(80) + field 'tail'@72 sizeof=80 \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.9844303131103516,
+      "binary_time_ms": 0.3666877746582031,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_14_multi_chunk",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 20,
+          "write_line": 27,
+          "var_name": "p",
+          "alloc_size": 32,
+          "write_size": 48,
+          "confidence": 0.9,
+          "reason": "'p': malloc(32) usable=40, memset writes 48B@offset 0@L27"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 21,
+          "write_line": 24,
+          "var_name": "q",
+          "alloc_size": 32,
+          "write_size": -1,
+          "confidence": 0.85,
+          "reason": "'q': malloc(32)@L21 + unbounded strcpy@L24"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 20,
+          "write_line": 29,
+          "var_name": "p",
+          "alloc_size": 32,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'p': malloc(32) + ptr_write 8B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 29,
+          "var_name": "q",
+          "alloc_size": 32,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'q': malloc(32) + ptr_write 8B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        },
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 2,
+      "source_time_ms": 0.6792545318603516,
+      "binary_time_ms": 0.40030479431152344,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_15_constrained_input",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 27,
+          "write_line": 31,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": 512,
+          "confidence": 0.8,
+          "reason": "'buf': malloc(size) guarded\u2264256 + memset(512B)@L31 \u2014 write exceeds guard bound"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.5364418029785156,
+      "binary_time_ms": 0.43487548828125,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_16_real_world_pattern",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 22,
+          "write_line": 38,
+          "var_name": "body",
+          "alloc_size": 256,
+          "write_size": 320,
+          "confidence": 0.9,
+          "reason": "'body': malloc(256) usable=264, memcpy writes 320B@offset 0@L38"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 22,
+          "write_line": 27,
+          "var_name": "body",
+          "alloc_size": 256,
+          "write_size": -1,
+          "confidence": 0.7,
+          "reason": "'body': malloc(256)@L22 + memcpy(unknown size)@L27 \u2014 unbounded copy into fixed buffer"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.8010139465332031,
+      "binary_time_ms": 0.26488304138183594,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_17_multi_field_struct",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 27,
+          "write_line": 30,
+          "var_name": "s",
+          "alloc_size": 96,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'s': malloc(96) + field 'id'@0 sizeof=96 \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 27,
+          "write_line": 31,
+          "var_name": "s",
+          "alloc_size": 96,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'s': malloc(96) + field 'version'@4 sizeof=96 \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 27,
+          "write_line": 34,
+          "var_name": "s",
+          "alloc_size": 96,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'s': malloc(96) + field 'checksum'@88 sizeof=96 \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.9713172912597656,
+      "binary_time_ms": 0.3509521484375,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_18_loop_accumulate",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 14,
+          "write_line": 23,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": -1,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(256)@L14 + unbounded loop_write@L23"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 14,
+          "write_line": 19,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.4450550079345703,
+      "binary_time_ms": 0.3046989440917969,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_19_same_offset_accumulate",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 14,
+          "write_line": 19,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.7488727569580078,
+      "binary_time_ms": 0.27680397033691406,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_20_cross_func_guard",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 29,
+          "write_line": 31,
+          "var_name": "buf",
+          "alloc_size": 100,
+          "write_size": 100,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(100) + loop_bound(100)*stride(1) \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.0311603546142578,
+      "binary_time_ms": 0.2129077911376953,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_21_cross_func_write",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 23,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(32) usable=40, memcpy writes 128B@offset 0@L23"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.8800029754638672,
+      "binary_time_ms": 0.2422332763671875,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_22_fm_boundary_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 16,
+          "write_line": 23,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + ptr+m(<=56) write 8B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.9334087371826172,
+      "binary_time_ms": 0.2608299255371094,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_23_fm_boundary_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 8,
+          "confidence": 0.8,
+          "reason": "'buf': ptr+m(>=40) write 8B@L24 \u2014 guard proves overflow"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.6341934204101562,
+      "binary_time_ms": 0.26226043701171875,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_24_multiple_constraints",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 25,
+          "write_line": 30,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 56B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 1.0,
+          "reason": "exploit=0.35",
+          "fp_likelihood": 0.0
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 1.1317729949951172,
+      "binary_time_ms": 0.339508056640625,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_25_nested_loop_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 15,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 160,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(128), loop_bound(160)*stride(1)=160 > 128"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.4973411560058594,
+      "binary_time_ms": 0.24247169494628906,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_26_realloc_grow_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 16,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 56B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 56B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 1.0,
+          "reason": "exploit=0.50",
+          "fp_likelihood": 0.0
+        },
+        {
+          "verdict": "VULN",
+          "confidence": 1.0,
+          "reason": "exploit=0.50",
+          "fp_likelihood": 0.0
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 2,
+      "source_time_ms": 0.5793571472167969,
+      "binary_time_ms": 0.2841949462890625,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_27_struct_array_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 21,
+          "write_line": 25,
+          "var_name": "arr",
+          "alloc_size": 24,
+          "write_size": 24,
+          "confidence": 0.85,
+          "reason": "'arr': malloc(24) usable=24, arr[8] offset=192 + 24B@L25 \u2014 OOB"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.5576610565185547,
+      "binary_time_ms": 0.36144256591796875,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_28_guarded_loop_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 26,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 200,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + loop_bound(200)*stride(1) \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6325244903564453,
+      "binary_time_ms": 0.1800060272216797,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_29_alignment_slack_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "UNCERTAIN",
+          "alloc_line": 17,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 48,
+          "write_size": -1,
+          "confidence": 0.5,
+          "reason": "'buf': ptr+44(var offset)@L21 \u2014 needs further analysis"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.911712646484375,
+      "binary_time_ms": 0.24390220642089844,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_30_cross_func_alloc_only",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 18,
+          "write_line": 22,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, ptr_write writes 8B@offset 72@L22"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6737709045410156,
+      "binary_time_ms": 0.19979476928710938,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_31_copy_size_external",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 20,
+          "write_line": 29,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": -1,
+          "confidence": 0.7,
+          "reason": "'buf': malloc(64)@L20 + memcpy(unknown size)@L29 \u2014 unbounded copy into fixed buffer"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.8356571197509766,
+      "binary_time_ms": 0.28395652770996094,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_32_deeply_nested_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 27,
+          "write_line": 23,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 56B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 27,
+          "write_line": 31,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 56B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.1234283447265625,
+      "binary_time_ms": 0.27251243591308594,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_33_cross_path_guard_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 20,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6299018859863281,
+      "binary_time_ms": 0.20432472229003906,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_34_cross_path_guard_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 23,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 80,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, memcpy writes 80B@offset 0@L23"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.7102489471435547,
+      "binary_time_ms": 0.2608299255371094,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_35_early_return_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 24,
+          "write_line": 19,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 96,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 96B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 24,
+          "write_line": 27,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 96,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 96B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.7429122924804688,
+      "binary_time_ms": 0.23245811462402344,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_36_early_return_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 24,
+          "write_line": 19,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(32) usable=40, memcpy writes 64B@offset 0@L19"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 24,
+          "write_line": 27,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(32) usable=40, memcpy writes 64B@offset 0@L27"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.7669925689697266,
+      "binary_time_ms": 0.23174285888671875,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_37_nested_branch_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 25,
+          "write_line": 34,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 128B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 25,
+          "write_line": 36,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6763935089111328,
+      "binary_time_ms": 0.20241737365722656,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_38_nested_branch_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 26,
+          "write_line": 35,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 80,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, memcpy writes 80B@offset 0@L35"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 26,
+          "write_line": 37,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 32,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 32B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.8020401000976562,
+      "binary_time_ms": 0.21576881408691406,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_39_loop_guard_cross_path",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "UNCERTAIN",
+          "alloc_line": 7,
+          "write_line": 29,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.4,
+          "reason": "'buf': guarded\u2264100 + loop_write@L29 \u2014 needs further analysis"
+        },
+        {
+          "verdict": "UNCERTAIN",
+          "alloc_line": 7,
+          "write_line": 38,
+          "var_name": "buf",
+          "alloc_size": -1,
+          "write_size": -1,
+          "confidence": 0.4,
+          "reason": "'buf': guarded\u2264100 + loop_write@L38 \u2014 needs further analysis"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 35,
+          "write_line": 38,
+          "var_name": "buf",
+          "alloc_size": 80,
+          "write_size": 80,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(80) + loop_bound(80)*stride(1) \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.1565685272216797,
+      "binary_time_ms": 0.23245811462402344,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_40_multi_guard_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 23,
+          "write_line": 28,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 200,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 200B \u2014 safe"
+        }
+      ],
+      "binary_findings": [
+        {
+          "verdict": "VULN",
+          "confidence": 0.65,
+          "reason": "path_safe=100.0%; exploit=0.00",
+          "fp_likelihood": 0.35
+        }
+      ],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 1,
+      "source_time_ms": 0.7677078247070312,
+      "binary_time_ms": 0.2675056457519531,
+      "verdict": "VULN",
+      "match": false
+    },
+    {
+      "sample": "cve_41_switch_path_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 27,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 32,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 32B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 30,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 64B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 33,
+          "var_name": "buf",
+          "alloc_size": 128,
+          "write_size": 96,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(128) + memcpy 96B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6105899810791016,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_42_switch_path_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 17,
+          "write_line": 34,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, memcpy writes 128B@offset 0@L34"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 28,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 32,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 32B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 31,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 64B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 17,
+          "write_line": 37,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 48,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 48B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.6983280181884766,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_43_alias_chain_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 13,
+          "write_line": 21,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 56,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 56B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5109310150146484,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_44_alias_chain_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 12,
+          "write_line": 20,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(32) usable=40, memcpy writes 128B@offset 0@L20"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5128383636474609,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_45_cast_alias_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 13,
+          "write_line": 21,
+          "var_name": "raw",
+          "alloc_size": 64,
+          "write_size": 48,
+          "confidence": 0.9,
+          "reason": "'raw': malloc(64) + memcpy 48B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5018711090087891,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_46_cast_alias_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 12,
+          "write_line": 19,
+          "var_name": "raw",
+          "alloc_size": 16,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'raw': malloc(16) usable=24, memcpy writes 64B@offset 0@L19"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.4718303680419922,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_47_cond_alloc_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 256,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 256B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.4627704620361328,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_48_cond_alloc_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 300,
+          "confidence": 0.55,
+          "reason": "'buf': malloc(256) usable=264, memcpy writes 300B@offset 0@L24 (guarded but oversized)"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.49042701721191406,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_49_compound_offset_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 29,
+          "write_line": 35,
+          "var_name": "buf",
+          "alloc_size": 256,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(256) + memcpy 8B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 2.2971630096435547,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_50_compound_offset_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 22,
+          "write_line": 28,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 8,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) usable=72, memcpy writes 8B@offset 128@L28"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.9357929229736328,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_51_struct_field_offset_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 27,
+          "var_name": "buf",
+          "alloc_size": 72,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(72) + field 'len'@64 sizeof=72 \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 26,
+          "var_name": "buf",
+          "alloc_size": 72,
+          "write_size": 32,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(72) + field 'b'@32 + 32B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.0762214660644531,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_52_struct_field_offset_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 32,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(32) usable=40, field 'b' at offset 32 + 32B@L24 \u2014 struct field OOB"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.8206367492675781,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_53_factory_cross_guard_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 11,
+          "write_line": 32,
+          "var_name": "buf",
+          "alloc_size": 64,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(64) + memcpy 64B \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 30,
+          "write_line": 32,
+          "var_name": "buf",
+          "alloc_size": 200,
+          "write_size": 64,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(200) + memcpy 64B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.8358955383300781,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_54_factory_cross_write_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 11,
+          "write_line": 30,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": -1,
+          "confidence": 0.7,
+          "reason": "'buf': malloc(32)@L11 + memcpy(unknown size)@L30 \u2014 unbounded copy into fixed buffer"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 28,
+          "write_line": 30,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": -1,
+          "confidence": 0.7,
+          "reason": "'buf': malloc(32)@L28 + memcpy(unknown size)@L30 \u2014 unbounded copy into fixed buffer"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 0,
+      "source_time_ms": 1.222848892211914,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_55_returned_ptr_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 10,
+          "write_line": 24,
+          "var_name": "p",
+          "alloc_size": 16,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'p': malloc(16) usable=24, memcpy writes 128B@offset 0@L24"
+        },
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "p",
+          "alloc_size": 16,
+          "write_size": 128,
+          "confidence": 0.9,
+          "reason": "'p': malloc(16) usable=24, memcpy writes 128B@offset 0@L24"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 2,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5512237548828125,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_56_sfod_field_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 27,
+          "var_name": "buf",
+          "alloc_size": 40,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(40) + field 'len'@32 sizeof=40 \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 26,
+          "var_name": "buf",
+          "alloc_size": 40,
+          "write_size": 16,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(40) + field 'b'@16 + 16B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5898475646972656,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_57_sfod_field_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 16,
+          "write_size": 32,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(16) usable=24, field 'b' at offset 32 + 32B@L24 \u2014 struct field OOB"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.537872314453125,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_58_sfod_cast_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 32,
+          "write_size": 24,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(32) + field 'data'@8 + 24B \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.52642822265625,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    },
+    {
+      "sample": "cve_59_sfod_cast_overflow",
+      "expected_vuln": true,
+      "expected_type": "heap_overflow",
+      "source_findings": [
+        {
+          "verdict": "VULN",
+          "alloc_line": 19,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 16,
+          "write_size": 32,
+          "confidence": 0.85,
+          "reason": "'buf': malloc(16) usable=24, memcpy to field 'body'@4 size 32B@L24 \u2014 OOB"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 1,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5323886871337891,
+      "binary_time_ms": 0.0,
+      "verdict": "VULN",
+      "match": true
+    },
+    {
+      "sample": "cve_60_sfod_nested_safe",
+      "expected_vuln": false,
+      "expected_type": "safe",
+      "source_findings": [
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 24,
+          "var_name": "buf",
+          "alloc_size": 144,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(144) + field 'count'@128 sizeof=144 \u2014 safe"
+        },
+        {
+          "verdict": "SAFE",
+          "alloc_line": 21,
+          "write_line": 25,
+          "var_name": "buf",
+          "alloc_size": 144,
+          "write_size": -1,
+          "confidence": 0.9,
+          "reason": "'buf': malloc(144) + field 'magic'@132 sizeof=144 \u2014 safe"
+        }
+      ],
+      "binary_findings": [],
+      "source_vuln_count": 0,
+      "binary_vuln_count": 0,
+      "source_time_ms": 0.5793571472167969,
+      "binary_time_ms": 0.0,
+      "verdict": "SAFE",
+      "match": true
+    }
+  ],
+  "metrics": {
+    "TP": 33,
+    "FP": 10,
+    "TN": 17,
+    "FN": 0,
+    "total": 60,
+    "precision": 0.7674,
+    "recall": 1.0,
+    "f1": 0.8684,
+    "fp_rate": 0.3704
+  }
+}

@@ -13,10 +13,10 @@ int→{0,1,-1,MAX_INT}、str→{空串,单字符,长串}、list→{空列表,单
 差异执行：将同一函数的多个实现版本（如来自不同 worker 的替代方案）
 在同一组输入上执行，比较输出一致性——若输出不一致，必有一个实现有语义错误。
 
-ref: PGS (He et al. 2024, arXiv:2506.18315) — PBT 用于 LLM 代码验证，
+ref: PGS — PBT 用于 LLM 代码验证，
      本项目将属性生成从 LLM 驱动改为类型引导规则引擎
 ref: Hypothesis (github.com/HypothesisWorks/hypothesis) — PBT 策略组合器模式
-ref: DiffSpec (Rao et al. 2024, arXiv:2410.04249) — 差分测试框架，
+ref: DiffSpec — 差分测试框架，
      本项目借鉴多实现对比思想用于跨 worker 一致性检查
 """
 
@@ -31,9 +31,7 @@ import traceback
 from typing import Any
 
 
-# ---------------------------------------------------------------------------
 # 类型 → 边界值映射 — 覆盖常见坑：空容器、None、极值、负值
-# ---------------------------------------------------------------------------
 _TYPE_BOUNDARY_VALUES: dict[str, list[Any]] = {
     "int": [0, 1, -1, 2**31 - 1, -(2**31)],
     "float": [0.0, 1.0, -1.0, float("inf"), float("-inf")],
@@ -128,9 +126,7 @@ def _cartesian_product(
     return result
 
 
-# ---------------------------------------------------------------------------
 # 差异执行 — 多版本输出比较
-# ---------------------------------------------------------------------------
 
 def differential_execution(
     filepath: str,

@@ -16,7 +16,7 @@
 #      若 memcpy 的 len ∈ [0, 32] 且分配大小 ≥ 32 → 安全.
 #      区间用 widening 处理循环, 保证有限步收敛.
 #
-# 创建: 2026-08-06
+# 创建: 2026-05-05
 
 from typing import Dict, List, Optional, Tuple
 
@@ -129,31 +129,53 @@ class HeapConstraintTracker:
         }
 
     def check_correlation(self, alloc_addr: int,
-                           write_size_reg: str) -> bool:
+                           write_size_reg: str,
+                           instructions: Optional[List[dict]] = None,
+                           write_addr: int = 0,
+                           alloc_size_reg: Optional[str] = None,
+                           use_win64_abi: bool = False) -> bool:
         """检查分配大小与写入大小是否来自同一变量 (allocation-site correlation).
 
-        若 malloc(X) 和 memcpy(ptr, src, X) 的 X 是同一个变量或寄存器,
-        返回 True 表示安全 (分配与写入等大).
+        malloc(X) 和 memcpy(ptr, src, X) 的 X 为同一数据流根来源
+        (同栈槽/同参数/同返回值) → 返回 True 表示安全.
+
+        实现: 委托 AWSC 引擎做寄存器级后向 def-use 根来源追踪.
+        instructions 缺失时返回 False (保守, 不冒险过滤).
         """
-        # 简化: 若在追踪过程中发现 write_size_reg == alloc_size_reg → 安全
-        # 实际需要寄存器级的数据流分析, 当前返回 False (保守)
-        _ = alloc_addr, write_size_reg
-        return False  # 保守: 不跳过, 需要更精确的分析
+        if not instructions or not write_size_reg:
+            return False
+        from .co_source_engine import AWSCEngine
+        engine = AWSCEngine(use_win64_abi=use_win64_abi)
+        alloc_root = engine.trace_size_root(
+            instructions, alloc_addr, alloc_size_reg or "rdi")
+        write_root = engine.trace_size_root(
+            instructions, write_addr, write_size_reg)
+        verdict, _, _ = engine.correlate(alloc_root, write_root)
+        return verdict == "safe"
 
     def get_or_create_size_interval(self, operand: str,
                                      known_constants: Dict[str, int]
                                      ) -> Interval:
         """从操作数推导区间.
 
-        立即数 → 精确值. 寄存器 → 查已知常量表, 否则返回 [0, 2^31-1].
+        立即数 → 精确值 (按32/64位宽度符号扩展).
+        寄存器 → 查已知常量表, 否则返回 [0, 2^31-1].
         """
+        from .disasm_util import is_32bit_reg
         op = operand.strip().lower().lstrip("%").replace("$", "")
         if op.startswith("0x"):
-            v = int(op, 16); return Interval(v, v)
+            v = int(op, 16)
+            if is_32bit_reg(operand) and v >= 0x80000000:
+                v -= 0x100000000
+            return Interval(v, v)
         if op.isdigit():
-            v = int(op); return Interval(v, v)
+            v = int(op)
+            if is_32bit_reg(operand) and v >= 0x80000000:
+                v -= 0x100000000
+            return Interval(v, v)
         if op in known_constants:
-            v = known_constants[op]; return Interval(v, v)
+            v = known_constants[op]
+            return Interval(v, v)
         return Interval(0, 2**31 - 1)  # 未知: 最宽区间
 
     @property

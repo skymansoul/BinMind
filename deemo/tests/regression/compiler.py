@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """编译模块 — 检测编译器, 批量编译 CVE 样本, 产出编译清单."""
 import os, subprocess, sys
 from dataclasses import dataclass, field

@@ -6,7 +6,7 @@
 #   大量调度产生等价的内存访问模式 (不同交织顺序但相同的reads-from关系),
 #   导致在冗余调度上浪费fuzzing预算。
 #
-#   RFF (ASPLOS 2024) 证明: reads-from关系是并发程序行为的有效抽象——
+#   RFF 证明: reads-from关系是并发程序行为的有效抽象——
 #   两个调度若产生相同的reads-from图, 则属于同一行为等价类。
 #   但RFF依赖二进制改写做主动调度控制, 对用户态fuzzing太重。
 #
@@ -22,12 +22,12 @@
 #   本模块: 调度方案的探索策略和反馈评估
 #   两者正交: concurrency_fuzz生成候选, 本模块选择+评估
 #
-# 参考文献:
-#   RFF (Kim et al. ASPLOS 2024) — reads-from guided concurrency fuzzing;
+# 文献:
+#   RFF — reads-from guided concurrency fuzzing;
 #     本项目取其reads-from反馈思想但以图编辑距离替代覆盖率反馈
-#   POP (Aronsson et al. 2024) — parsimonious optimal DPOR;
+#   POP — parsimonious optimal DPOR;
 #     本项目取其"仅当产生新执行时才反转race"的parsimony原则
-#   ESBMC v7.7 (2025) — reverse priority scheduling加速bug检测;
+#   ESBMC v7.7 — reverse priority scheduling加速bug检测;
 #     本项目取其调度策略多样性思想
 
 from __future__ import annotations
@@ -268,7 +268,7 @@ class ReadsFromExplorer:
                 result[i], result[i + 1] = b, a
         return result
 
-    # ---- 诊断 ----
+    # 诊断
 
     def diversity_score(self) -> float:
         """最近N轮的图多样性 [0, 1]"""
@@ -293,7 +293,7 @@ class ReadsFromExplorer:
         self._tracker.reset()
         self._history.clear()
 
-    # ---- 内部 ----
+    # 内部
 
     @staticmethod
     def _hash_edge(edge: ReadsFromEdge) -> int:

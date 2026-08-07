@@ -58,7 +58,7 @@ def annotate_indirect_calls(pseudocode: str, vtable_info: dict | None = None) ->
     return pseudocode
 
 
-# --- 表达式折叠与常量传播 ---
+# 表达式折叠与常量传播
 _CONST_FOLD_PATTERNS = [
     (_re.compile(r'(\w+)\s*=\s*(\d+|0x[0-9a-fA-F]+);\s*\n\s*\1\s*\+=', _re.MULTILINE),
      'init_then_increment'),
@@ -86,7 +86,5 @@ def propagate_calling_convention(pseudocode: str, arch: str = 'x64') -> str:
     return pseudocode
 
 
-def _debug_print(*args, **kwargs):
-    # Internal: debug output stub.
     pass  # 调试桩，当前未使用
 

@@ -109,7 +109,7 @@ class MetamorphicVerifier:
                 })
         return anomalies
 
-    # ---- 测试输入生成 ----
+# 测试输入生成
     def _gen_test_inputs(self, fc: _FuncContract,
                          custom_gen: Callable = None) -> list[tuple]:
         """为蜕变测试构造输入组合。

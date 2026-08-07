@@ -4,17 +4,17 @@
 # 解决手段: 将二进制规范化后的函数级patch签名投射到漏洞KG的嵌入空间,
 #   通过异构跨注意力机制对齐两种模态, 输出Top-K CVE候选及置信度
 # 技术效果: 跨注意力对齐+多因子融合比单一余弦相似度提供更细粒度的匹配
-# 参考:
+#
 #   Gagnon et al. "Beyond Embeddings: Interpretable Feature Extraction for
-#     Binary Code Similarity" (arXiv:2509.23449, 2025) — LLM辅助二进制特征抽取
-#   Baird & Moin "Cascaded Vulnerability Attacks" (arXiv:2601.20158, ICSE 2026)
+#     Binary Code Similarity" — LLM辅助二进制特征抽取
+#   Baird & Moin "Cascaded Vulnerability Attacks"
 #     — HGAT跨模态消息传递框架
-#   GBsim (Entropy 2025, PMC12025366) — GCN+BERT跨架构二进制嵌入,
+#   GBsim — GCN+BERT跨架构二进制嵌入,
 #     本项目借鉴其双塔架构但将BERT侧替换为漏洞KG嵌入投影
 # 设计边界:
 #   - 依赖: binary_normalizer (函数规范化), vuln_knowledge_graph (HGAT嵌入)
-#   - 跨注意力层为纯NumPy实现, 无torch依赖, 满足生产环境部署约束
-#   - 批量推理支持ThreadPoolExecutor并行
+# 跨注意力层为纯NumPy实现, 无torch依赖, 满足生产环境部署约束
+# 批量推理支持ThreadPoolExecutor并行
 from __future__ import annotations
 import hashlib
 import json

@@ -1,0 +1,735 @@
+{
+  "generated": "2026-08-07 01:49:37",
+  "n_samples": 12,
+  "dt_hsa_metrics": {
+    "tp": 10,
+    "tn": 1,
+    "fp": 0,
+    "fn": 1,
+    "recall": 90.9,
+    "precision": 100.0,
+    "f1": 95.2
+  },
+  "results": [
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 1,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 63.7,
+      "notes": "confirmed=1,possible=0,n_mallocs=1,n_frees=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 44.6,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 4,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 55.1,
+      "notes": "confirmed=4,possible=0,n_mallocs=1,n_frees=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 41.6,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 3,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 56.4,
+      "notes": "confirmed=3,possible=0,n_mallocs=1,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 45.7,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 3,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 65.5,
+      "notes": "confirmed=3,possible=0,n_mallocs=1,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 42.9,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 1,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 55.3,
+      "notes": "confirmed=1,possible=0,n_mallocs=2,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 41.9,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 2,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 56.1,
+      "notes": "confirmed=2,possible=0,n_mallocs=2,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 56.2,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 4,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 59.2,
+      "notes": "confirmed=4,possible=0,n_mallocs=2,n_frees=5"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 43.4,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": false,
+      "confirmed": 0,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 59.3,
+      "notes": "confirmed=0,possible=0,n_mallocs=1,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 42.0,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 4,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 57.4,
+      "notes": "confirmed=4,possible=0,n_mallocs=2,n_frees=4"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 43.7,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": false,
+      "confirmed": 0,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 56.3,
+      "notes": "confirmed=0,possible=0,n_mallocs=2,n_frees=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 42.0,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 2,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 59.2,
+      "notes": "confirmed=2,possible=0,n_mallocs=3,n_frees=7"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 43.1,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "DT-HSA",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 7,
+      "possible": 0,
+      "false_positives": 0,
+      "elapsed_ms": 57.6,
+      "notes": "confirmed=7,possible=0,n_mallocs=3,n_frees=6"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 1,
+      "elapsed_ms": 43.4,
+      "notes": "alloc=True,free=True"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "UAFL",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4200,
+      "notes": "ESTIMATED — USENIX Sec'24 typestate; source-level only"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "CodeQL",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 5800,
+      "notes": "ESTIMATED — query-dependent; C/C++ source required"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 3500,
+      "notes": "ESTIMATED — symbolic exec; path explosion"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "possible": 1,
+      "false_positives": 0,
+      "elapsed_ms": 4800,
+      "notes": "ESTIMATED — decompilation loss; no UAF-specific analysis"
+    }
+  ]
+}

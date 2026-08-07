@@ -170,7 +170,6 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
 # 不拆: vtable地址哈希缓存——免去selector偏移的重复hash计算
 _VTABLE_HASH_CACHE: dict = {}
 
-def _debug_print(*a, **kw): pass
 
 def _dead_selector_normalizer(sel: str) -> str:
     """ObjC选择器规范化——剥离参数标签，未接入主解析器。"""

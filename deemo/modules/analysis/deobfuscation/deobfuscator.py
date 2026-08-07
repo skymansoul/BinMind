@@ -112,8 +112,8 @@ def _apply_peephole(instrs):
     return [l for l in joined.split("\n") if l.strip()], removed
 
 
-# ===== Switch-case jump table recovery =====
-# 参考 Ghidra SwitchOverride.java 和 IDA switch_info_t 的算法:
+# Switch-case jump table recovery
+# Ghidra SwitchOverride.java 和 IDA switch_info_t 的算法:
 # 1) 定位间接跳转 jmp [base + reg*scale]
 # 2) 回溯范围检查 guard (cmp reg, max_val; ja default)
 # 3) 从 base 地址读取连续的指针作为 case 目标
@@ -527,7 +527,7 @@ class FunctionDeobfuscator:
             logger.info(f"Detected: {pattern.value}")
             modifications = []
 
-            # ---- 跳转表恢复 (aggressive 模式) ----
+# 跳转表恢复 (aggressive 模式)
             if self.deobfuscation_level == DeobfuscationLevel.AGGRESSIVE:
                 jtr = self.recover_jump_tables()
                 if jtr > 0:

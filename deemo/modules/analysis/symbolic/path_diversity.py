@@ -17,33 +17,33 @@ from typing import Dict, Any, List, Optional
 
 # Re-export real library code 核心模块 for backward 兼容性
 from modules.analysis.symbolic.src.path_diversity_core import (
-    # ---- constants / enums ----
+# constants / enums
     DiversityStrategy,
     PathFeatureType,
 
-    # ---- dataclasses ----
+# dataclasses
     PathFeature,
     PathNode,
     DiversityMetrics,
     SnapshotDiffResult,
 
-    # ---- core engine ----
+# core engine
     PathSimilarityCalculator,
     PathDiversityTracker,
     DiversityAwarePathSelector,
 
-    # ---- ANN / indexing ----
+# ANN / indexing
     ANNIndex,
     _RandomProjectionNode,
     _RandomProjectionTree,
 
-    # ---- budget / monitoring / analytics ----
+# budget / monitoring / analytics
     DiversityBudget,
     PathHeatmap,
     StreamingDiversityMonitor,
     SnapshotDiff,
 
-    # ---- 工具函数 ----
+# 工具函数
     _simhash,
     _hamming_distance,
     _feature_to_vector,

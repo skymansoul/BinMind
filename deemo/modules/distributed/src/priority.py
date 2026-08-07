@@ -19,7 +19,7 @@ from fractions import Fraction  # 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
-# ---- 可选 Redis ----
+# 可选 Redis
 try:
     import redis as _redis
     REDIS_AVAILABLE = True
@@ -28,7 +28,7 @@ except ImportError:
     _redis = None
 
 
-# ===== 堆优先级队列 =====
+# 堆优先级队列
 
 @dataclass(order=True)
 class _PrioritizedTask:
@@ -96,7 +96,7 @@ class PriorityTaskQueue:
         return task_id in self._by_id
 
 
-# ===== Redis 优先级队列 =====
+# Redis 优先级队列
 
 class RedisPriorityQueue:
     """基于 Redis Sorted Set 的分布式优先级队列。
@@ -161,7 +161,7 @@ class RedisPriorityQueue:
         return False
 
 
-# ===== 死信队列 =====
+# 死信队列
 
 class DeadLetterQueue:
     """有界死信队列 — 超过 max_size 从头部淘汰最老的条目。
@@ -209,7 +209,6 @@ class DeadLetterQueue:
         return f"DeadLetterQueue(size={len(self._items)}, max={self._max_size})"
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未启用。"""
     pass  # 调试桩，当前未使用
 

@@ -245,7 +245,5 @@ class StreamingExporter:
         return self._total
 
 
-def _debug_print(*args, **kwargs):
-    # Internal debug output stub
     pass  # 调试桩, 当前未使用
 

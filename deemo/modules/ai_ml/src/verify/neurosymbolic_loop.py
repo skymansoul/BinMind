@@ -17,14 +17,13 @@
    - 超时 → 不确定性标记，抑制该区域过度自信
 4. 对比损失函数确保：嵌入空间中"被验证可 exploit"和"被排除"的样本分离。
 
-与 MoCQ (arXiv 2504.16057) 的区别：
+与 MoCQ 的区别：
 - MoCQ: LLM↔CodeQL 闭环，针对源码的查询生成。
 - 本方案: GNN↔符号执行闭环，针对二进制漏洞的可 exploit 性验证。
 - 本方案产生的是"被验证的"而非"被预测的"漏洞标签——训练数据质量更高。
 
-参考：
-- MoCQ "Holistic Neuro-Symbolic Approach" (2025) — 验证器反馈的架构灵感。
-- MSIVD (2024) — LLM+GNN 联合嵌入的可行性依据。
+- MoCQ "Holistic Neuro-Symbolic Approach" — 验证器反馈的架构灵感。
+- MSIVD — LLM+GNN 联合嵌入的可行性依据。
 """
 
 import math
@@ -33,14 +32,12 @@ from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 _EPS: float = 1e-9
 
 # 验证结果枚举
 _VERIFIED_EXPLOITABLE = 1    # 符号执行找到了 exploit 路径
 _VERIFIED_BENIGN = 0         # 符号执行证明不可达
 _VERIFICATION_TIMEOUT = -1   # 超时，不确定
-
 
 @dataclass
 class GNNPrediction:
@@ -50,7 +47,6 @@ class GNNPrediction:
     suspicious_blocks: List[int]  # 最可疑的基本块地址
     embedding: List[float] = field(default_factory=list)
     confidence: float = 0.5
-
 
 @dataclass
 class SymbolicVerification:
@@ -62,7 +58,6 @@ class SymbolicVerification:
     time_spent_ms: float = 0.0
     solver_iterations: int = 0
 
-
 @dataclass
 class FeedbackSample:
     """闭环反馈的一次训练样本。"""
@@ -70,7 +65,6 @@ class FeedbackSample:
     label: int             # 1=exploitable, 0=benign, -1=uncertain (no gradient)
     weight: float          # 样本权重——已验证的样本权重更高
     function_name: str = ""
-
 
 class NeuroSymbolicLoop:
     """神经符号验证闭环——GNN ↔ 符号执行的互增强回路。
@@ -113,9 +107,7 @@ class NeuroSymbolicLoop:
         # 每函数验证状态缓存
         self._function_status: Dict[str, int] = {}
 
-    # -----------------------------------------------------------------
     # 核心闭环 API
-    # -----------------------------------------------------------------
 
     def ingest_verification(
         self,
@@ -233,9 +225,7 @@ class NeuroSymbolicLoop:
         _total_decided = self._verified_exploitable + self._verified_benign
         return self._verified_exploitable / max(_total_decided, 1)
 
-    # -----------------------------------------------------------------
     # 损失函数
-    # -----------------------------------------------------------------
 
     def _verified_pairwise_loss(self) -> float:
         """已验证样本对之间的对比损失。
@@ -283,13 +273,11 @@ class NeuroSymbolicLoop:
 
         return _penalty / max(_count, 1) if _count > 0 else 0.0
 
-
 def _euclidean_distance(a: List[float], b: List[float]) -> float:
     _n = min(len(a), len(b))
     return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(_n)))
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -333,7 +321,6 @@ def _smoke_test():
     assert _loop._total_verifications == 5
     assert _components['total'] >= 0
     print("[OK] NeuroSymbolicLoop smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

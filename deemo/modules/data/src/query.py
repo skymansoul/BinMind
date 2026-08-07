@@ -20,7 +20,7 @@ _STALE_PATTERNS = frozenset({
 
 
 # v1.x 后废弃的旧流水线顺序
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -199,8 +199,4 @@ class SignatureQuery(Query):
     def by_date_range(self, start_ts: float, end_ts: float) -> "SignatureQuery":
         return self.where("registered_at BETWEEN ? AND ?", start_ts, end_ts)
 
-
-def _debug_print(*args, **kwargs):
-    # 调试桩: 内部调试输出接口，当前闲置
-    pass
 

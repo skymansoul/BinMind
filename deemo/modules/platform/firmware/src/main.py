@@ -216,7 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
     help="可用操作",
   )
 
-  # ---- extract ----
+# extract
   extract_parser = subparsers.add_parser(
     "extract",
     help="提取固件文件系统",
@@ -239,7 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
     help="禁用 jefferson 辅助提取",
   )
 
-  # ---- analyze ----
+# analyze
   analyze_parser = subparsers.add_parser(
     "analyze",
     help="分析固件安全特征",
@@ -263,7 +263,7 @@ def build_parser() -> argparse.ArgumentParser:
     help="禁用 jefferson 辅助提取",
   )
 
-  # ---- report ----
+# report
   report_parser = subparsers.add_parser(
     "report",
     help="生成分析报告",

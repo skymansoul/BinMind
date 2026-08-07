@@ -1,5 +1,5 @@
-# 创建: 2025-08-16 10:30
-# 修改: 2025-08-16 — 原子指令模式锁识别 + lockset must-race 分类
+# 创建: 2026-06-26 10:30
+# 修改: 2026-06-26 — 原子指令模式锁识别 + lockset must-race 分类
 """
 二进制级锁图数据竞争检测 — 无需符号/调试信息的锁函数识别 + 线程模块化分析。
 
@@ -19,12 +19,12 @@
   must-race 需要额外证明: (a) 两个访问必然并发, (b) 无其他同步机制保护,
   (c) 访问的地址范围确定重叠。过滤掉仅可能并发的假阳性。
 
-ref: RacerF (ECOOP 2025) — thread-modular abstract interpretation,
+ref: RacerF — thread-modular abstract interpretation,
      本项目取其 digest/must-race 区分思路但适配到二进制层
 ref: RAProducer — lock function identification in stripped binaries
      via atomic instruction pattern + cross-reference pairing
-ref: Eraser (Savage et al., TOCS 1997) — lockset 算法的原始论文
-ref: FastTrack (Flanagan & Freund, PLDI 2009) — happens-before
+ref: Eraser — lockset 算法的原始论文
+ref: FastTrack — happens-before
      与 lockset 的混合检测, 本项目的 must-race 分类借鉴其思路
 """
 
@@ -77,7 +77,7 @@ class RaceReport:
     description: str = ''
 
 
-# --- 锁函数识别 ---
+# 锁函数识别
 # 二进制中的原子指令模式——x86/ARM 统一处理。
 
 def identify_lock_functions(instructions: list[dict]) -> list[LockFunction]:
@@ -145,7 +145,7 @@ def _pair_lock_unlock(locks: list[LockFunction],
                 break
 
 
-# --- 锁图构建 + Lockset 分析 ---
+# 锁图构建 + Lockset 分析
 
 class LockGraphRaceDetector:
     """二进制级锁图 + lockset must-race 检测器。"""
@@ -243,7 +243,7 @@ class LockGraphRaceDetector:
         }
 
 
-# --- 助手 ---
+# 助手
 
 def _addresses_overlap(a1: int, s1: int, a2: int, s2: int) -> bool:
     return a1 < a2 + s2 and a2 < a1 + s1

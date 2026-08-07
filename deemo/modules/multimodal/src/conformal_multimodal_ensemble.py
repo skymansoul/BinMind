@@ -3,19 +3,19 @@
 
 """多模态保形集成 — 模态缺失感知的分布式保形预测。
 
-将标准保形预测 (Vovk et al. 2005) 扩展到模态可缺失的多模态场景。
+将标准保形预测 扩展到模态可缺失的多模态场景。
 核心是双层校准 + Bonferroni 交集策略：
 
 模态层校准：每模态独立维护校准分数分位数门限。
 交叉层：追踪各模态子集的历史经验覆盖率，缺失模态回退至全集。
 门限修正：α_mod = α / M（Bonferroni），保证联合覆盖 ≥ 1-α 对任意模态子集成立。
 
-与 Bos et al. (arXiv 2410.19653) 的区别：
+与 Bos et al.  的区别：
 他们的方法假设至少两视图可用且均质；本方案处理任意 1..M 模态子集，
 缺失模态产生最大预测集（无区分力但不引入风险），
 有效模态的 Bonferroni 门限自动收紧以补偿。
 
-参考：Angelopoulos & Bates (2021), Barber et al. AOS (2021),
+参考：Angelopoulos & Bates, Barber et al. AOS,
       Bose et al. arXiv 2410.19653.
 """
 
@@ -26,7 +26,6 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _EPS: float = 1e-9
 
-
 @dataclass
 class ModalConformalResult:
     """单个模态的保形预测结果。"""
@@ -35,7 +34,6 @@ class ModalConformalResult:
     threshold: float = 0.0
     modal_name: str = ""
     is_missing: bool = False  # 模态在预测时是否缺失
-
 
 @dataclass
 class MultimodalConformalResult:
@@ -54,7 +52,6 @@ class MultimodalConformalResult:
     guaranteed_coverage: float = 0.0
     # 有效模态数
     active_modalities: int = 0
-
 
 class MultimodalConformalPredictor:
     """模态感知的分布式保形预测器。
@@ -322,9 +319,7 @@ class MultimodalConformalPredictor:
 
         self._custom_modality_alphas = _new_alphas
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _per_modal_alpha(self) -> float:
         """单模态的错误率预算。
@@ -373,7 +368,6 @@ class MultimodalConformalPredictor:
         _threshold = max(1, _active_count // 2 + 1)
         return {y for y, c in _vote_counts.items() if c >= _threshold}
 
-
 def multimodal_conformal_predict(
     test_scores: Dict[str, List[float]],
     calibrators: Dict[str, Tuple[List[float], List[int]]],
@@ -393,8 +387,7 @@ def multimodal_conformal_predict(
         _mcp.calibrate_modal(_name, _scores, _labels)
     return _mcp.predict(test_scores, available_modalities)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -434,7 +427,6 @@ def _smoke_test():
         _tag = " [MISSING]" if _r.is_missing else ""
         print(f"  {_nm}{_tag}: pred_set_size={len(_r.prediction_set)}")
 
-
     # 验证缺失模态产生全集
     _sym_result = _result_partial.per_modal_results.get("symbolic")
     assert _sym_result is not None and _sym_result.is_missing, (
@@ -448,7 +440,6 @@ def _smoke_test():
     )
 
     print("[OK] MultimodalConformalPredictor smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

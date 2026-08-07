@@ -76,7 +76,7 @@ class TrustReport:
         }
 
 
-# ── 信任传播引擎 ──────────────────────────────────────────────────
+# 信任传播引擎
 
 class TrustPropagator:
     """信任沿依赖图传播。
@@ -234,7 +234,7 @@ class TrustPropagator:
         return dict(betweenness)
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def build_trust_network(dependencies: List[Tuple[str, List[str]]],
                         patched_ids: List[str],

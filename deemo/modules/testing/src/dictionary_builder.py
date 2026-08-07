@@ -4,10 +4,10 @@
 #   2. 常量扫描: 识别LE/BE编码的常见整数边界值
 #   3. 语料token: 对多份样本做n-gram频率分析 -> 高频token -> 字典条目
 #   4. 结构token: 基于已知协议/格式模板注入分隔符、length前缀等
-# 参考:
-#   - AFL/AFL++字典文件格式
-#   - LibFuzzer -dict参数的字典驱动变异
-#   - ChatAFL (NDSS 2024)的语法提取、AIFORE的字段分类
+#
+# AFL/AFL++字典文件格式
+# LibFuzzer -dict参数的字典驱动变异
+# ChatAFL的语法提取、AIFORE的字段分类
 import re
 import struct
 import os

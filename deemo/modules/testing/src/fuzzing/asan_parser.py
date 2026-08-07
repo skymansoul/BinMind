@@ -20,7 +20,7 @@ class SanitizerFinding:
     reproducible: bool = False
 
 
-# ==================== ASan 解析 ====================
+# ASan 解析
 
 def parse_asan_output(output: str) -> Optional[SanitizerFinding]:
     """AddressSanitizer 输出解析"""
@@ -67,7 +67,7 @@ def parse_asan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ==================== UBSan 解析 ====================
+# UBSan 解析
 
 def parse_ubsan_output(output: str) -> Optional[SanitizerFinding]:
     """UndefinedBehaviorSanitizer 输出解析"""
@@ -103,7 +103,7 @@ def parse_ubsan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ==================== MSan 解析 ====================
+# MSan 解析
 
 def parse_msan_output(output: str) -> Optional[SanitizerFinding]:
     """MemorySanitizer 输出解析——未初始化内存读取"""
@@ -121,7 +121,7 @@ def parse_msan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ==================== TSan 解析 ====================
+# TSan 解析
 
 def parse_tsan_output(output: str) -> Optional[SanitizerFinding]:
     """ThreadSanitizer 输出解析——数据竞争"""
@@ -143,7 +143,7 @@ def parse_tsan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ==================== 辅助函数 ====================
+# 辅助函数
 
 def _extract_stack_trace(output: str) -> List[str]:
     """提取 #0, #1, ... 栈帧行"""
@@ -176,7 +176,7 @@ def _extract_trace_section(output: str, marker: str) -> List[str]:
     return _frames
 
 
-# ==================== 可复现性与分类 ====================
+# 可复现性与分类
 
 def is_reproducible(crash_output: str, target_binary: str,
                     test_input: bytes, timeout: float = 5.0) -> bool:

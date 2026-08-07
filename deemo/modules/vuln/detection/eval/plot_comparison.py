@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 import json, sys, os
 def plot(json_path, out_dir):
     try:

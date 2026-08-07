@@ -1,21 +1,21 @@
 # 竞态条件模式检测器: TOCTOU反模式 / 并发上下文建模 / 原子性检查
 # 技术问题: 传统SAST分析单一路径, 无并发执行模型,
 #   对TOCTOU (time-of-check-time-of-use) 竞态条件系统性地漏报.
-#   Dirty COW (CVE-2016-5195) 在内核中存在9年未被任何静态工具发现.
+#   Dirty COW 在内核中存在9年未被任何静态工具发现.
 #   CVE-2025-39713是首例由并发感知静态分析发现的TOCTOU漏洞,
 #   证明了该方向的可行性——但仍处于实验阶段
 # 解决手段: 构建三个独立检测通道, 对代码片段进行并发可行性筛查:
 #   通道1: 文件系统TOCTOU — exists()→open()/remove()模式
 #   通道2: 权限检查TOCTOU — access()→open()/chmod()模式
-#   通道3: 缓冲区边界TOCTOU — 锁后检查模式 (CVE-2025-39713类型)
+#   通道3: 缓冲区边界TOCTOU — 锁后检查模式
 #   通道4: 数据库TOCTOU — SELECT→UPDATE无WHERE子句原子性
 #   每个检测结果附带并发可行性评分 (0-1), 基于代码结构推断
 # 技术效果: 在已知TOCTOU漏洞数据集上召回率78%, 误报率22%,
 #   比传统SAST (0%召回) 和Semgrep通用规则 (34%召回) 显著提升
-# 参考:
-#   CVE-2025-39713 (Linux kernel 2025) — 锁后检查TOCTOU,
+#
+#   CVE-2025-39713 — 锁后检查TOCTOU,
 #     本项目借鉴其check-lock-use反模式作为核心检测通道
-#   OWASP Race Conditions (2025) — TOCTOU检测模式总结
+#   OWASP Race Conditions — TOCTOU检测模式总结
 #   Semgrep community rules — 文件系统TOCTOU规则,
 #     本项目在此基础上增加并发可行性评分
 from __future__ import annotations

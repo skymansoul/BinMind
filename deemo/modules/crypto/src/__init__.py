@@ -78,55 +78,55 @@ __all__ = [
     # signature_tampering_detector
     'SignatureTamperingDetector', 'PESignatureParser',
     'SignatureInfo', 'SignatureStatus', 'detect_signature_tampering',
-    # zkp_detector (2026-07-31)
+    # zkp_detector
     'ZKPDetector', 'ZKPDetectionResult', 'detect_zkp', 'detect_zkp_bytes',
-    # homomorphic_encryption (2026-07-31)
+    # homomorphic_encryption
     'HESchemeDetector', 'HEDetectionResult',
     'detect_homomorphic_encryption', 'detect_he_bytes',
-    # signal_protocol (2026-07-31)
+    # signal_protocol
     'E2EEProtocolDetector', 'E2EEProtocolResult',
     'detect_e2ee_protocols', 'detect_e2ee_bytes',
-    # firmware_crypto (2026-08-01)
+    # firmware_crypto
     'FirmwareCryptoDetector', 'FirmwareCryptoResult',
     'detect_firmware_crypto', 'detect_firmware_crypto_bytes',
-    # fpe_detector (2026-08-01)
+    # fpe_detector
     'FPEDetector', 'FPEResult', 'detect_fpe', 'detect_fpe_bytes',
-    # cbom_generator (2026-08-01)
+    # cbom_generator
     'CBOMGenerator', 'CBOMDocument', 'CBOMCryptoAsset',
     'generate_cbom', 'new_cbom_generator',
-    # blockchain_crypto (2026-08-01)
+    # blockchain_crypto
     'BlockchainCryptoDetector', 'BlockchainCryptoResult',
     'detect_blockchain_crypto', 'detect_blockchain_crypto_bytes',
-    # crypto_taint (2026-08-01)
+    # crypto_taint
     'KeyTaintDetector', 'KeyTaintResult',
     'detect_key_taint', 'detect_key_taint_bytes',
-    # pqc_ml_detector (2026-08-02)
+    # pqc_ml_detector
     'PQCMLResult', 'PQCMLPipeline', 'PQCLibraryClassifier',
     'detect_pqc_ml', 'detect_pqc_ml_bytes', 'generate_pqc_function_summary',
-    # crypto_invariants (2025-08-02)
+    # crypto_invariants
     'InvariantReport', 'FeistelEvidence', 'AffineEquivalence',
     'check_bijection', 'check_involution', 'differential_uniformity',
     'measure_diffusion', 'ddt_signature', 'group_by_affine_equivalence',
     'detect_feistel_structure', 'analyze_sbox', 'scan_region',
-    # otf_sbox_detector (2025-08-01)
+    # otf_sbox_detector
     'OTFSBoxFinding',
     'scan_xtime', 'scan_poly_reduce', 'scan_affine_transform',
     'detect_otf_sbox',
-    # key_schedule (2025-08-04)
+    # key_schedule
     'KeyScheduleMatch', 'KSReconstructionReport',
     'search_round_constants', 'score_key_schedule', 'reconstruct',
-    # crypto_lineage (2025-08-04)
+    # crypto_lineage
     'CryptoRegion', 'LineageMatch', 'LineageGraph',
     'compute_simhash', 'simhash_distance',
     'extract_region_fingerprint', 'match_regions',
     'regions_from_findings', 'build_lineage',
-    # subreg_taint (2025-08-05)
+    # subreg_taint
     'TaintByteVector', 'SubregTaintTracker',
-    # drift_calibrator (2025-08-06)
+    # drift_calibrator
     'DriftProfile', 'DriftReport',
     'extract_drift_profile', 'calibrate',
     'register_baseline', 'list_baselines',
-    # cfg_entropy_fingerprint (2025-08-06)
+    # cfg_entropy_fingerprint
     'CFGEntropyProfile', 'CFGFingerprintMatch',
     'compute_cfg_entropy', 'match_cfg_fingerprint',
     'scan_for_crypto_by_cfg',
@@ -254,49 +254,49 @@ _INSTANCE_IMPORTS = {
     'SignatureInfo':              ('signature_tampering_detector', 'SignatureInfo'),
     'SignatureStatus':            ('signature_tampering_detector', 'SignatureStatus'),
     'detect_signature_tampering': ('signature_tampering_detector', 'detect_signature_tampering'),
-    # zkp_detector (2026-07-31)
+    # zkp_detector
     'ZKPDetector':                ('zkp_detector', 'ZKPDetector'),
     'ZKPDetectionResult':         ('zkp_detector', 'ZKPDetectionResult'),
     'detect_zkp':                 ('zkp_detector', 'detect_zkp'),
     'detect_zkp_bytes':           ('zkp_detector', 'detect_zkp_bytes'),
-    # homomorphic_encryption (2026-07-31)
+    # homomorphic_encryption
     'HESchemeDetector':            ('homomorphic_encryption', 'HESchemeDetector'),
     'HEDetectionResult':            ('homomorphic_encryption', 'HEDetectionResult'),
     'detect_homomorphic_encryption':('homomorphic_encryption', 'detect_homomorphic_encryption'),
     'detect_he_bytes':              ('homomorphic_encryption', 'detect_he_bytes'),
-    # signal_protocol (2026-07-31)
+    # signal_protocol
     'E2EEProtocolDetector':        ('signal_protocol', 'E2EEProtocolDetector'),
     'E2EEProtocolResult':           ('signal_protocol', 'E2EEProtocolResult'),
     'detect_e2ee_protocols':        ('signal_protocol', 'detect_e2ee_protocols'),
     'detect_e2ee_bytes':            ('signal_protocol', 'detect_e2ee_bytes'),
-    # firmware_crypto (2026-08-01)
+    # firmware_crypto
     'FirmwareCryptoDetector':       ('firmware_crypto', 'FirmwareCryptoDetector'),
     'FirmwareCryptoResult':         ('firmware_crypto', 'FirmwareCryptoResult'),
     'detect_firmware_crypto':       ('firmware_crypto', 'detect_firmware_crypto'),
     'detect_firmware_crypto_bytes': ('firmware_crypto', 'detect_firmware_crypto_bytes'),
-    # fpe_detector (2026-08-01)
+    # fpe_detector
     'FPEDetector':                ('fpe_detector', 'FPEDetector'),
     'FPEResult':                    ('fpe_detector', 'FPEResult'),
     'detect_fpe':                 ('fpe_detector', 'detect_fpe'),
     'detect_fpe_bytes':           ('fpe_detector', 'detect_fpe_bytes'),
-    # cbom_generator (2026-08-01)
+    # cbom_generator
     'CBOMGenerator':              ('cbom_generator', 'CBOMGenerator'),
     'CBOMDocument':               ('cbom_generator', 'CBOMDocument'),
     'CBOMCryptoAsset':            ('cbom_generator', 'CBOMCryptoAsset'),
     'generate_cbom':              ('cbom_generator', 'generate_cbom'),
     'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
-    # blockchain_crypto (2026-08-01)
+    # blockchain_crypto
     'BlockchainCryptoDetector':       ('blockchain_crypto', 'BlockchainCryptoDetector'),
     'BlockchainCryptoResult':         ('blockchain_crypto', 'BlockchainCryptoResult'),
     'detect_blockchain_crypto':       ('blockchain_crypto', 'detect_blockchain_crypto'),
     'detect_blockchain_crypto_bytes': ('blockchain_crypto', 'detect_blockchain_crypto_bytes'),
-    # crypto_taint (2026-08-01)
+    # crypto_taint
     'KeyTaintDetector':             ('crypto_taint', 'KeyTaintDetector'),
     'KeyTaintResult':               ('crypto_taint', 'KeyTaintResult'),
     'detect_key_taint':             ('crypto_taint', 'detect_key_taint'),
     'detect_key_taint_bytes':       ('crypto_taint', 'detect_key_taint_bytes'),
     'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
-    # pqc_ml_detector (2026-08-02)
+    # pqc_ml_detector
     'PQCMLResult':                   ('pqc_ml_detector', 'PQCMLResult'),
     'PQCMLPipeline':                 ('pqc_ml_detector', 'PQCMLPipeline'),
     'PQCLibraryClassifier':          ('pqc_ml_detector', 'PQCLibraryClassifier'),
@@ -305,7 +305,7 @@ _INSTANCE_IMPORTS = {
     '_extract_features':             ('pqc_ml_detector', '_extract_features'),
     '_simulate_qed_lite_fingerprint':('pqc_ml_detector', '_simulate_qed_lite_fingerprint'),
     'generate_pqc_function_summary': ('pqc_ml_detector', 'generate_pqc_function_summary'),
-    # crypto_invariants (2025-08-02)
+    # crypto_invariants
     'InvariantReport':               ('crypto_invariants', 'InvariantReport'),
     'FeistelEvidence':               ('crypto_invariants', 'FeistelEvidence'),
     'AffineEquivalence':             ('crypto_invariants', 'AffineEquivalence'),
@@ -318,19 +318,19 @@ _INSTANCE_IMPORTS = {
     'detect_feistel_structure':      ('crypto_invariants', 'detect_feistel_structure'),
     'analyze_sbox':                  ('crypto_invariants', 'analyze_sbox'),
     'scan_region':                   ('crypto_invariants', 'scan_region'),
-    # otf_sbox_detector (2025-08-01)
+    # otf_sbox_detector
     'OTFSBoxFinding':                ('otf_sbox_detector', 'OTFSBoxFinding'),
     'scan_xtime':                    ('otf_sbox_detector', 'scan_xtime'),
     'scan_poly_reduce':             ('otf_sbox_detector', 'scan_poly_reduce'),
     'scan_affine_transform':         ('otf_sbox_detector', 'scan_affine_transform'),
     'detect_otf_sbox':               ('otf_sbox_detector', 'detect_otf_sbox'),
-    # key_schedule (2025-08-04)
+    # key_schedule
     'KeyScheduleMatch':              ('key_schedule', 'KeyScheduleMatch'),
     'KSReconstructionReport':        ('key_schedule', 'KSReconstructionReport'),
     'search_round_constants':        ('key_schedule', 'search_round_constants'),
     'score_key_schedule':            ('key_schedule', 'score_key_schedule'),
     'reconstruct':                   ('key_schedule', 'reconstruct'),
-    # crypto_lineage (2025-08-04)
+    # crypto_lineage
     'CryptoRegion':                  ('crypto_lineage', 'CryptoRegion'),
     'LineageMatch':                  ('crypto_lineage', 'LineageMatch'),
     'LineageGraph':                  ('crypto_lineage', 'LineageGraph'),
@@ -340,17 +340,17 @@ _INSTANCE_IMPORTS = {
     'match_regions':                 ('crypto_lineage', 'match_regions'),
     'regions_from_findings':         ('crypto_lineage', 'regions_from_findings'),
     'build_lineage':                 ('crypto_lineage', 'build_lineage'),
-    # subreg_taint (2025-08-05)
+    # subreg_taint
     'TaintByteVector':               ('subreg_taint', 'TaintByteVector'),
     'SubregTaintTracker':            ('subreg_taint', 'SubregTaintTracker'),
-    # drift_calibrator (2025-08-06)
+    # drift_calibrator
     'DriftProfile':                  ('drift_calibrator', 'DriftProfile'),
     'DriftReport':                   ('drift_calibrator', 'DriftReport'),
     'extract_drift_profile':         ('drift_calibrator', 'extract_drift_profile'),
     'calibrate':                     ('drift_calibrator', 'calibrate'),
     'register_baseline':             ('drift_calibrator', 'register_baseline'),
     'list_baselines':                ('drift_calibrator', 'list_baselines'),
-    # cfg_entropy_fingerprint (2025-08-06)
+    # cfg_entropy_fingerprint
     'CFGEntropyProfile':             ('cfg_entropy_fingerprint', 'CFGEntropyProfile'),
     'CFGFingerprintMatch':           ('cfg_entropy_fingerprint', 'CFGFingerprintMatch'),
     'compute_cfg_entropy':           ('cfg_entropy_fingerprint', 'compute_cfg_entropy'),
@@ -411,11 +411,11 @@ def __getattr__(name: str):
     return _val
 
 
-# ── DepLLM-Crypto 依赖引导 LLM 增强误用检测注册 (2026-08-03) ──
+# DepLLM-Crypto 依赖引导 LLM 增强误用检测注册
 # 追加导出注册: 使 crypto.src.DepLLMCryptoAnalyzer / build_dependency_context 等
 # 可经上方 __getattr__ 懒加载获取 (与 crypto_misuse 等既有模块同机制)。
 # 实现见 depllm/ 子包: dependency_graph(CRYPTBARA 依赖上下文) / heuristic(降级) /
-# llm_validator(arXiv:2407.16576) / verdict_cache(arXiv:2509.10814 [待验证]) /
+# llm_validator / verdict_cache /
 # symbol_table(跨编译单元常量折叠传播) / pipeline(编排)。
 _DEPLLM_EXPORTS = {
     'DepLLMCryptoAnalyzer':      ('depllm.pipeline', 'DepLLMCryptoAnalyzer'),

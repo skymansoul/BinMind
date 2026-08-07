@@ -2,12 +2,12 @@
 DepLLM-Crypto — 依赖引导的LLM增强密码学误用检测子包。
 
 研究基础:
-  - CRYPTBARA (ASE 2025): 依赖上下文引导检测密码学API误用。
-  - Beyond Static Pattern Matching? (arXiv:2407.16576): LLM时代重新审视
+  - CRYPTBARA: 依赖上下文引导检测密码学API误用。
+  - Beyond Static Pattern Matching?: LLM时代重新审视
     模式匹配误用检测, 论证语义验证层可消解静态规则假阳性, 并给出无LLM基线。
   - Automatic Generation of a Cryptography Misuse Taxonomy Using LLMs
-    (arXiv:2509.10814): LLM误用分类的低开销要求 → 判定缓存。
-  - Evaluating LLMs in Detecting Secrets in Android Apps (arXiv:2510.18601):
+: LLM误用分类的低开销要求 → 判定缓存。
+  - Evaluating LLMs in Detecting Secrets in Android Apps:
     LLM与启发式在密钥/秘密检测中的互补经验。
 
 子包组成:

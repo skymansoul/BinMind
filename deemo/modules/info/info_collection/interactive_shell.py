@@ -37,7 +37,7 @@ class ShellCommand:
 
 
 # 外部模型交互安全加固
-# 参照 RARE 论文 (arXiv:2607.12507) 的 representation-confusion 防御思路：
+# 参照 RARE 论文 的 representation-confusion 防御思路：
 # 对输入进行 provenance 标记，在 prompt 中注入上下文边界，防止
 # 二进制中提取的伪指令被解释为操作指令。
 
@@ -865,5 +865,3 @@ def run_shell(binary_path: str = None, ai_client=None):
     shell.run()
 
 
-def _debug_print(*args, **kwargs):
-    pass

@@ -16,10 +16,8 @@ Concrete interpretation trades full constraint tracking for speed
 of thousands of gadgets. Use angrop for precise chain construction.
 
 Reference:
-  MAJORCA (arXiv 2111.05781)
+  MAJORCA 
 """
-
-from __future__ import annotations
 
 import logging
 import re
@@ -29,7 +27,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
-
 class SemType(Enum):
     MoveReg = auto()
     LoadConst = auto()
@@ -38,7 +35,6 @@ class SemType(Enum):
     ArithOp = auto()
     Syscall = auto()
     Unknown = auto()
-
 
 @dataclass
 class GadgetSemantic:
@@ -65,7 +61,6 @@ class GadgetSemantic:
             return "Syscall"
         return "Unknown"
 
-
 # x86_64 register set (including sub-registers)
 _X86_REGS = {
     "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp",
@@ -88,11 +83,9 @@ _REG_CANONICAL = {
     "eip": "rip",
 }
 
-
 def _canon_reg(reg: str) -> str:
     """Canonicalize register name: 32/16/8-bit sub-register -> 64-bit parent."""
     return _REG_CANONICAL.get(reg.lower(), reg.lower())
-
 
 def classify_gadget(asm_lines: str) -> GadgetSemantic:
     """
@@ -233,7 +226,6 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
 
     return result
 
-
 def classify_gadget_batch(
     gadgets: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
@@ -261,7 +253,6 @@ def classify_gadget_batch(
 
     _log.debug("Gadget classification: %s", by_type)
     return enriched
-
 
 def find_semantic_equivalent(
     target_template: str,

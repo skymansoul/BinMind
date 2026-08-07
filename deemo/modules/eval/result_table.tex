@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{Heap Overflow Static Detection: 20-sample CVE Benchmark}
+\label{tab:cve_comparison}
+\begin{tabular}{lccccccc}
+\toprule
+Tool & TP & FP & FN & Recall(\%) & Precision(\%) & FPR(\%) & F1 \\
+\midrule
+BinMind-DDSSC & 15 & 0 & 0 & 100.0 & 100.0 & 0.0 & 1.0000 \\
+BinMind-Baseline & 13 & 0 & 2 & 86.7 & 100.0 & 0.0 & 0.9286 \\
+angr & 15 & 5 & 0 & 100.0 & 75.0 & 100.0 & 0.8571 \\
+Ghidra & 15 & 5 & 0 & 100.0 & 75.0 & 100.0 & 0.8571 \\
+QEMU/Unicorn & 0 & 0 & 15 & 0.0 & 0.0 & 0.0 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}

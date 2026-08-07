@@ -15,14 +15,14 @@
 #   这解决了标准Thompson采样在状态空间稀疏时的数据匮乏问题。
 #
 # 理论依据:
-#   - Thompson (1933): 按后验最优概率随机采样，期望遗憾O(√(KT log T))
-#   - Chapelle & Li (NeurIPS 2011): 上下文bandit的对数遗憾界
-#   - Agrawal & Goyal (ICML 2012): Thompson采样的首个有限时间分析
+#   - Thompson: 按后验最优概率随机采样，期望遗憾O(√(KT log T))
+#   - Chapelle & Li: 上下文bandit的对数遗憾界
+#   - Agrawal & Goyal: Thompson采样的首个有限时间分析
 #
 # 与现有工作的差异:
-#   - T-Scheduler (AsiaCCS 2024): 对种子调度使用Thompson采样，非变异算子
-#   - SCFuzz (Electronics 2024): 使用对抗MAB做种子阶段调度，非状态×算子联合
-#   - 本模块: 层次化先验+状态间迁移+差分奖励，三者组合未见先行研究
+#   - T-Scheduler: 对种子调度使用Thompson采样，非变异算子
+#   - SCFuzz: 使用对抗MAB做种子阶段调度，非状态×算子联合
+# 本模块: 层次化先验+状态间迁移+差分奖励，三者组合未见先行研究
 
 from __future__ import annotations
 
@@ -105,7 +105,7 @@ class HierarchicalBanditManager:
         # 累积遗憾追踪
         self._cumulative_regret: float = 0.0
 
-    # ---- 初始化和状态关联 ----
+# 初始化和状态关联
     def register_state(self, state_id: str,
                        msg_types: Optional[Set[str]] = None) -> None:
         """注册协议状态及其关联的消息类型集合"""
@@ -168,7 +168,7 @@ class HierarchicalBanditManager:
         return (total_alpha * scale + 0.5,
                 total_beta * scale + 0.5)
 
-    # ---- 核心采样 ----
+# 核心采样
     def select_operator(self, state_id: str,
                         explore_ratio: float = 0.0) -> MutationOp:
         """Thompson采样选择最优变异算子。
@@ -209,7 +209,7 @@ class HierarchicalBanditManager:
 
         return best_op
 
-    # ---- 奖励更新 ----
+# 奖励更新
     def update(self, state_id: str, op: MutationOp,
                reward: float) -> None:
         """以差分预言机奖励更新bandit后验。
@@ -223,7 +223,7 @@ class HierarchicalBanditManager:
             self.register_state(state_id)
         self._bandits[state_id][op].update(max(0.0, min(1.0, reward)))
 
-    # ---- 统计与导出 ----
+# 统计与导出
     def regret(self) -> float:
         return self._cumulative_regret
 

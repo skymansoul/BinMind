@@ -21,9 +21,9 @@
   - auto_discover(region): 扫描内存区域, 自动发现结构体实例
 
 与现有工作的关系:
-- VMI 语义间隙 (Fellicious et al. 2025): ML 方法需要训练 -> 本模块: 无训练
-- TRM (2024): 超visor hook -> 本模块: 静态二进制分析驱动的类型映射
-- 00SEVen (USENIX 2024): 需要 VMPL -> 本模块: 无特殊硬件要求
+- VMI 语义间隙: ML 方法需要训练 -> 本模块: 无训练
+- TRM: 超visor hook -> 本模块: 静态二进制分析驱动的类型映射
+- 00SEVen: 需要 VMPL -> 本模块: 无特殊硬件要求
 """
 
 from __future__ import annotations
@@ -34,9 +34,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 结构体字段描述
-# ---------------------------------------------------------------------------
 
 @dataclass
 class StructFieldDescriptor:
@@ -77,9 +75,7 @@ class ResolvedField:
     field_type: str = 'unknown'
 
 
-# ---------------------------------------------------------------------------
 # 桥接器
-# ---------------------------------------------------------------------------
 
 class VMISemanticBridge:
     """VMI 语义间隙桥接器--用推断的结构体布局映射原始内存

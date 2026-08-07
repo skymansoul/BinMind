@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 
 _EPS: float = 1e-9
 
-# ---------------------------------------------------------------------------
 # 枚举定义
-# ---------------------------------------------------------------------------
 class ExploitStage(Enum):
     RECON = "recon"
     EXPLOIT = "exploit"
@@ -68,9 +66,7 @@ class TargetType(Enum):
     EMBEDDED = "embedded"
 
 
-# ---------------------------------------------------------------------------
 # 步骤执行输出 — 捕获单步骤的完整执行轨迹
-# ---------------------------------------------------------------------------
 @dataclass
 class StepOutput:
     action: str
@@ -81,9 +77,7 @@ class StepOutput:
     elapsed_seconds: float = 0.0
 
 
-# ---------------------------------------------------------------------------
 # 阶段能力注册 — 每个阶段声明的能力用于前置校验
-# ---------------------------------------------------------------------------
 @dataclass
 class StageCapability:
     name: str
@@ -93,9 +87,7 @@ class StageCapability:
     retry_count: int = 1
 
 
-# ---------------------------------------------------------------------------
 # 链步骤定义
-# ---------------------------------------------------------------------------
 @dataclass
 class ChainStep:
     stage: ExploitStage
@@ -156,9 +148,7 @@ class ChainStep:
         return [v for v in variants if not (v in seen or seen.add(v))]
 
 
-# ---------------------------------------------------------------------------
 # 攻击链
-# ---------------------------------------------------------------------------
 class AttackChain:
     def __init__(self, name: str = ""):
         self.name = name
@@ -209,9 +199,7 @@ class AttackChain:
                      * math.exp(-0.05 * comp['nodes']), 3)
 
 
-# ---------------------------------------------------------------------------
 # 依赖解析器 — Kahn 算法处理阶段间依赖，检测环路
-# ---------------------------------------------------------------------------
 class DependencyResolver:
     """对有向无环依赖图做拓扑排序，输出可并行执行的阶段批次。
 
@@ -260,9 +248,7 @@ class DependencyResolver:
         return layers
 
 
-# ---------------------------------------------------------------------------
 # 脚本生成器 — 占位符插值 + payload 嵌入
-# ---------------------------------------------------------------------------
 class ScriptGenerator:
     """将 ChainStep 列表转换为可执行脚本。
 
@@ -307,9 +293,7 @@ class ScriptGenerator:
         return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
 # 检查点 — 长链执行中断后恢复
-# ---------------------------------------------------------------------------
 @dataclass
 class Checkpoint:
     chain_name: str
@@ -336,9 +320,7 @@ class Checkpoint:
                        'executed_actions', 'context_snapshot', 'timestamp', 'checksum']})
 
 
-# ---------------------------------------------------------------------------
 # 编排结果与编排器
-# ---------------------------------------------------------------------------
 @dataclass
 class OrchestrationResult:
     success: bool = False
@@ -357,10 +339,8 @@ class OrchestrationResult:
 from .src.chain_orchestrator_core import ChainOrchestrator  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
 # 链差异对比 — 计算两条攻击链的最小变更集
 # 基于 action 集合的对称差 + 依赖图编辑距离
-# ---------------------------------------------------------------------------
 
 def chain_diff(chain_a: AttackChain, chain_b: AttackChain) -> Dict[str, Any]:
     """对比两条链的差异，返回最小变更操作。
@@ -400,9 +380,7 @@ def chain_diff(chain_a: AttackChain, chain_b: AttackChain) -> Dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
 # 链策略注释 — 基于链特征预测最优策略及可能失败模式
-# ---------------------------------------------------------------------------
 
 def annotate_chain(chain: AttackChain) -> Dict[str, Any]:
     """分析攻击链特征，输出策略建议与风险标注。
@@ -451,9 +429,7 @@ def annotate_chain(chain: AttackChain) -> Dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
 # 向后兼容别名
-# ---------------------------------------------------------------------------
 MultiStageOrchestrator = ChainOrchestrator
 
 
@@ -471,13 +447,11 @@ ChainAnalysisResult = None
 orchestrate_exploit_chain = None
 
 
-# ============================================================================
 # MCTS链规划 — 蒙特卡洛树搜索选择最优步骤序列
-# 参考: Silver et al. Mastering Chess and Shogi by Self-Play... AlphaZero.
+# Silver et al. Mastering Chess and Shogi by Self-Play... AlphaZero.
 #       Science 2018. + Browne et al. A Survey of MCTS Methods. 2012.
 # exploit chain 视为决策树：每个节点=一个步骤，边=执行结果。
 # MCTS 在步骤序列空间中探索，通过 UCB 权衡探索 vs 利用。
-# ============================================================================
 
 class MCTSChainPlanner:
     """蒙特卡洛树搜索链规划器。
@@ -615,12 +589,10 @@ class MCTSChainPlanner:
         return _path
 
 
-# ============================================================================
 # 贝叶斯优化 — fuzzing payload参数自动调优
-# 参考: Snoek et al. Practical Bayesian Optimization of ML Algorithms. NIPS 2012.
+# Snoek et al. Practical Bayesian Optimization of ML Algorithms. NIPS 2012.
 # 高斯过程代理模型 + Expected Improvement (EI) 采集函数。
 # 在连续参数空间（payload大小、超时、变异强度）中搜索最优配置。
-# ============================================================================
 
 class BayesianPayloadOptimizer:
     """贝叶斯优化器: 在高维 payload 参数空间中高效搜索。

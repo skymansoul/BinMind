@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_14_inbounds_offset",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: 界内偏移写",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "偏移 32 小于分配 64, 无越界"
+}

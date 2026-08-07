@@ -3,8 +3,8 @@
 通过记录 havoc 变异前后的覆盖边变化, 反向推导各字节位置对覆盖率的影响力,
 构建热字节映射以指导后续变异集中在高价值位置。
 
-参考: ZTaint-Havoc (ISSTA 2025) 反馈反向推断热字节, STAFF (arXiv:2509.18039) 全系统污点固件,
-TAIFuzz (SPIE 2024) 污点插桩固件测试。
+参考: ZTaint-Havoc  反馈反向推断热字节, STAFF  全系统污点固件,
+TAIFuzz 污点插桩固件测试。
 
 与 StructureAwareMutator 协同: 结构层先划字段边界, 字节层再用污点权重精调。
 """
@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class ByteTaintRecord:
@@ -39,12 +38,11 @@ class ByteTaintRecord:
     last_seen: float = 0.0         # 最近一次变异的时间戳 (epoch)
     importance_score: float = 0.0   # 归一化重要性, 区间 [0, 1]
 
-
 class TaintGuidedMutator:
     """运行时覆盖反馈驱动的字节重要性评估与变异引导。
 
     无插桩开销: 仅依赖 fuzzer 已有的覆盖边集合差异。
-    核心算法源自 ZTaint-Havoc (ISSTA 2025) 的 Python 等价实现。
+    核心算法源自 ZTaint-Havoc  的 Python 等价实现。
     """
 
     def __init__(self, history_window: int = 500,
@@ -235,7 +233,6 @@ class TaintGuidedMutator:
         self._total_mutations = 0
         self._epoch = 0
 
-
 # 结构感知 + 污点引导双层叠加变异
 
 class HybridMutator:
@@ -286,5 +283,4 @@ class HybridMutator:
     def stats(self) -> Dict:
         return self._taint_mutator.get_stats()
 
-def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

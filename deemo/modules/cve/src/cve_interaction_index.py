@@ -1,5 +1,5 @@
-# 创建: 2026-07-31 17:27
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-22 17:27
+# 修改: 2026-05-22 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: Shapley-Taylor交互指数
 # 交互指数 — 多源CVE情报融合的合作博弈归因
 #
@@ -10,7 +10,7 @@
 #   NVD+KEV联合使用时的增益 > NVD单独+KEV单独的增益之和.
 #   这是源间交互效应 (synergy/ redundancy).
 #
-# 解决方案: Shapley-Taylor交互指数 (Sundararajan et al. 2020).
+# 解决方案: Shapley-Taylor交互指数.
 # 将模型输出分解为:
 #   f(x) = Σ_i φ_i + Σ_{i<j} φ_{ij} + Σ_{i<j<k} φ_{ijk} + ...
 # 其中:
@@ -30,22 +30,22 @@
 #      替代cve_ds_fusion中的静态 _SOURCE_PRIOR_ACCURACY.
 #
 # 与现有模块的关系:
-#   - cve_ds_fusion: DS理论融合 (证据组合).
-#   - cve_info_theory: 信息论特征归因 (MI/SU/CMI).
-#   - 本模块: 合作博弈归因 (Shapley+交互), 补充前两者.
+# cve_ds_fusion: DS理论融合 (证据组合).
+# cve_info_theory: 信息论特征归因 (MI/SU/CMI).
+# 本模块: 合作博弈归因 (Shapley+交互), 补充前两者.
 #
 # 非显而易见性:
 #   1. 首次将Shapley-Taylor交互指数应用于多源CVE情报归因.
-#      Waffo Kemgne (2025) 使用标准Shapley于攻击图, 未涉及交互项.
-#      Il Idrissi (IJCAI 2025) 建议超越Shapley, 但未在安全领域实现.
+#      Waffo Kemgne 使用标准Shapley于攻击图, 未涉及交互项.
+#      Il Idrissi 建议超越Shapley, 但未在安全领域实现.
 #   2. 截断二阶交互 (O(2^n)→O(n²)), 使计算在6源时可行.
 #   3. 交互符号解释: φ_{ij}>0 → 源互补 (协同增益),
 #      φ_{ij}<0 → 源重叠 (冗余信息). 直接指导情报源采购决策.
 #
-# 参考:
-#   [Sundararajan et al. 2020] Shapley-Taylor Interaction Index (ICML)
-#   [Waffo Kemgne et al. 2025] Shapley for Vulnerability Ranking (JDG)
-#   [Il Idrissi et al. 2025] Beyond Shapley: Weber & Harsanyi Sets (IJCAI XAI)
+#
+# Shapley-Taylor Interaction Index (ICML)
+# Shapley for Vulnerability Ranking (JDG)
+# Beyond Shapley: Weber & Harsanyi Sets (IJCAI XAI)
 
 import math
 import itertools
@@ -251,7 +251,7 @@ class InteractionIndex:
         return self._computed
 
 
-# ---- CVE适配 ----
+# CVE适配
 
 def build_cve_source_utility(scores_per_source: Dict[str, List[Tuple[float, bool]]]
                              ) -> Callable[[Set[str]], float]:

@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-07-29  |  武器化预测编排
-# 修改: 2026-08-04  |  审计后补充; 2026-08-05  |  二次审计修复——跨模块数据流+BYRS跳过+批量预测参数过滤
+# coding: utf-8
+# 创建: 2026-05-30  |  武器化预测编排
+# 修改: 2026-05-30  |  审计后补充; 2026-08-05  |  二次审计修复——跨模块数据流+BYRS跳过+批量预测参数过滤
 #
 """
 多因子漏洞武器化预测——时态预测编排器。
@@ -33,9 +33,7 @@ from .mewf_temporal import TemporalForecast, WeibullAFT
 _log = logging.getLogger(__name__)
 
 
-# ============================================================================
 # 武器化预测
-# ============================================================================
 
 
 class WeaponizationTier(str):
@@ -67,9 +65,7 @@ class WeaponizationForecast:
     recommended_action: str = ""
 
 
-# ============================================================================
 # 武器化预测引擎
-# ============================================================================
 
 
 class WeaponizationForecaster:
@@ -114,7 +110,7 @@ class WeaponizationForecaster:
 
         返回WeaponizationForecast含所有中间产物与最终判定。
         """
-        # Step 1: 复杂度量化
+        # 复杂度量化
         complexity = self._complexity_estimator.estimate(
             vuln_type=vuln_type,
             overflow_size=overflow_size,
@@ -123,7 +119,7 @@ class WeaponizationForecaster:
             stack_addr_leak=stack_addr_leak,
             libc_base_leak=libc_base_leak)
 
-        # Step 2: 时态生存分析
+        # 时态生存分析
         temporal = self._temporal_model.forecast(
             complexity=complexity,
             cvss_score=cvss_score,
@@ -131,22 +127,22 @@ class WeaponizationForecaster:
             kev_listed=kev_listed,
             disclosure_days=disclosure_days)
 
-        # Step 3: 武器化分级
+        # 武器化分级
         tier = self._assign_tier(temporal, kev_listed, poc_activity,
                                   disclosure_days)
 
-        # Step 4: 30天武器化概率——1 - S(30)
+        # 30天武器化概率——1 - S(30)
         prob_30d = 1.0 - temporal.survival_30d
         if kev_listed:
             prob_30d = max(prob_30d, 0.85)
         if exploitdb_ref:
             prob_30d = max(prob_30d, 0.65)
 
-        # Step 5: 优先级评分——多维加权
+        # 优先级评分——多维加权
         priority = self._compute_priority(complexity, temporal, prob_30d,
                                            kev_listed, cvss_score)
 
-        # Step 6: 建议
+        # 建议
         action = self._recommend(tier, prob_30d, temporal)
 
         return WeaponizationForecast(
@@ -227,9 +223,7 @@ class WeaponizationForecaster:
         return results
 
 
-# ============================================================================
 # 便捷入口
-# ============================================================================
 
 
 def forecast_weaponization(vuln_type: str, cvss_score: float = 5.0,

@@ -1,0 +1,1 @@
+{"sample": "uaf_06_conditional_no_null", "vuln_type": "use-after-free", "expected": "TP", "cwe": "CWE-416", "description": "Conditional free without NULL — UAF on the free-taken path"}

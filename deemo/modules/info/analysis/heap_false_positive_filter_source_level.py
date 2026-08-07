@@ -1,8 +1,8 @@
 # Heap false positive filter — integrates taint + constraint analysis
 from __future__ import annotations
 from typing import List, Dict, Any
-from analysis.taint_propagation import detect_heap_overflow, propagate_sizes
-from analysis.constraint_simplifier import filter_false_positives, extract_constants
+from modules.info.analysis.taint_propagation_source_level import detect_heap_overflow, propagate_sizes
+from modules.info.analysis.constraint_simplifier_source_level import filter_false_positives, extract_constants
 
 def filter_heap_findings(findings, code, func=""):
     if not findings: return findings

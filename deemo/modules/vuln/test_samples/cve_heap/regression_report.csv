@@ -1,0 +1,17 @@
+sample_id,expected,gasri,naive,n_pairs,n_safe,n_overflow,n_suspicious,fp_reduction_pct
+cve_2014_0038_recvfrom,TP,TP,TP,1,0,0,1,0.0
+cve_2015_0240_samba,TP,TP,TP,1,0,1,0,0.0
+cve_2017_1000253_pie,TP,TP,TP,1,0,1,0,0.0
+cve_2018_1000001_glibc,TP,TP,TP,1,0,1,0,0.0
+cve_2019_15846_rsync,TP,TP,TP,1,0,0,1,0.0
+cve_2020_10713_grub,TP,TP,TP,1,0,1,0,0.0
+cve_2021_3156_sudo,TP,TP,TP,1,0,1,0,0.0
+cve_2022_0185_kernel,TP,TP,TP,1,0,0,1,0.0
+cve_2022_3602_openssl,TP,TP,TP,1,0,1,0,0.0
+cve_2023_2513_bpf,TP,TP,TP,1,0,1,0,0.0
+cve_2023_38545_curl,TP,TP,TP,1,0,1,0,0.0
+cve_2024_2961_glibc,TP,TP,TP,1,0,1,0,0.0
+safe_alignment_padding,TN,TN,FP,1,1,0,0,20.0
+safe_alloc_controllable,TN,TN,FP,1,1,0,0,25.0
+safe_disjoint_allocs,TN,TN,FP,2,2,0,0,40.0
+safe_guard_bounded,TN,TN,FP,1,1,0,0,25.0

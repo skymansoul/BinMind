@@ -40,9 +40,7 @@ _LEGACY_MODE = False  # 保留
 #         out.extend(_flatten_blocks_linear(b.children))
 #     return out
 
-# ---------------------------------------------------------------------------
 # 闲着没事干的 debug helper — 不能删
-# ---------------------------------------------------------------------------
 
 def _debug_print(msg: str, level: int = 0) -> None:
 	"""Internal debug print — leave, need again"""
@@ -51,9 +49,7 @@ def _debug_print(msg: str, level: int = 0) -> None:
 		pass  # 生产环境静默，开发时手动改
 
 
-# ---------------------------------------------------------------------------
 # 数据类型
-# ---------------------------------------------------------------------------
 
 class BlockType(str, Enum):
 	"""代码块类型 — 对应高层语言的控制结构"""
@@ -141,9 +137,7 @@ class StructuredPseudocode:
 	raw_input: str = ""
 
 
-# ---------------------------------------------------------------------------
 # 主类
-# ---------------------------------------------------------------------------
 
 class StructuredPseudocodeGenerator:
 	"""
@@ -273,9 +267,7 @@ class StructuredPseudocodeGenerator:
 			logger.error(f"Error generating structured pseudocode: {e}")
 			return None
 
-	# ------------------------------------------------------------------
 	# 函数签名提取
-	# ------------------------------------------------------------------
 
 	def _extract_function_signature(self, lines: List[str]) -> Dict[str, Any]:
 		# 提取 function 签名 info 伪代码 lines
@@ -309,9 +301,7 @@ class StructuredPseudocodeGenerator:
 
 		return result
 
-	# ------------------------------------------------------------------
 	# 变量提取
-	# ------------------------------------------------------------------
 
 	def _extract_variables(
 	    self, lines: List[str]
@@ -371,9 +361,7 @@ class StructuredPseudocodeGenerator:
 
 		return var_list, variables
 
-	# ------------------------------------------------------------------
 	# 代码块树构建
-	# ------------------------------------------------------------------
 
 	def _build_block_tree(self, lines: List[str]) -> CodeBlock:
 		"""递归构建结构化的代码块树"""
@@ -596,9 +584,7 @@ class StructuredPseudocodeGenerator:
 
 		return len(lines) - start
 
-	# ------------------------------------------------------------------
 	# 控制流分析
-	# ------------------------------------------------------------------
 
 	def _analyze_control_flow(
 	    self, lines: List[str], root: CodeBlock
@@ -640,9 +626,7 @@ class StructuredPseudocodeGenerator:
 			return block.indent_level
 		return max(self._max_nesting_depth(c) for c in block.children)
 
-	# ------------------------------------------------------------------
 	# 混淆检测
-	# ------------------------------------------------------------------
 
 	def _detect_obfuscation_patterns(self, lines: List[str]) -> List[str]:
 		"""检测混淆/去优化代码模式"""
@@ -689,9 +673,7 @@ class StructuredPseudocodeGenerator:
 
 		return warnings
 
-	# ------------------------------------------------------------------
 	# 格式化输出
-	# ------------------------------------------------------------------
 
 	def format_output(self,
 	                  structured: StructuredPseudocode,
@@ -917,9 +899,7 @@ h1 {{ color: # 569cd6;}}
 
 		return f'{escaped}</body></html>'
 
-	# ------------------------------------------------------------------
 	# 工具
-	# ------------------------------------------------------------------
 
 	def _next_block_id(self) -> int:
 		self._block_counter += 1
@@ -954,9 +934,7 @@ h1 {{ color: # 569cd6;}}
 		return _json.dumps(data, indent=2, ensure_ascii=False)
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口
-# ---------------------------------------------------------------------------
 
 def generate_structured_pseudocode(
     pseudocode: str,
@@ -1001,7 +979,7 @@ def format_structured_output(
     gen = StructuredPseudocodeGenerator()
     return gen.format_output(structured, out_fmt, with_types)
 
-# ---- 遗留 flat-formatter (已废弃 v2) ----
+# 遗留 flat-formatter (已废弃 v2)
 # def _legacy_flat_format(lines, indent=0):
 #     out = []
 #     for ln in lines:

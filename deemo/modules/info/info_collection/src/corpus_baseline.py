@@ -1,4 +1,4 @@
-# Created: 2025-07-24 11:30:00
+# Created: 2026-05-09 11:30:00
 # Modified: 2025-07-29 15:10:00 — replaced univariate z-score with Mahalanobis
 #   distance + bootstrap confidence intervals. Covariance structure captures
 #   inter-feature correlations that simple per-dimension z-scores miss.

@@ -13,7 +13,7 @@ except Exception:
     _decoder_available = False
 
 
-# ── 辅助函数 ──
+# 辅助函数
 
 def _shannon_entropy(s: str) -> float:
     """计算字符串香农熵"""
@@ -234,7 +234,7 @@ class TestStringDecoderModule:
         assert isinstance(result, dict)
 
 
-# ── 独立测试 ──
+# 独立测试
 
 def test_rot13_inline():
     """ROT13内联验证"""

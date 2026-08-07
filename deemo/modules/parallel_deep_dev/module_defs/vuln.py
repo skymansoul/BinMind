@@ -30,9 +30,9 @@ VULN = {
             "差异点：当前单模态 LLM 检测受限于通用模型的零样本能力，领域微调可大幅提升。"
         ),
         "papers": [
-            {"id": "arXiv:2411.04981", "title": "DeBinVul: Benchmarking LLMs for Vulnerability Analysis in Decompiled Binaries",
+            {"id": "", "title": "DeBinVul: Benchmarking LLMs for Vulnerability Analysis in Decompiled Binaries",
              "venue": "arXiv 2024", "key_idea": "150K样本→CodeLlama+19%/Llama3+24%/CodeGen2+21%"},
-            {"id": "arXiv:2410.18561", "title": "IRBinDiff: Binary Code Similarity Detection via Graph Contrastive Learning on IR",
+            {"id": "", "title": "IRBinDiff: Binary Code Similarity Detection via Graph Contrastive Learning on IR",
              "venue": "arXiv 2024", "key_idea": "LLVM-IR+GGNN+MoCo对比学习"},
             {"id": "FuseBinRepr", "title": "Fusing Multimodal Binary Code Representations for Enhanced Similarity Detection",
              "venue": "IEEE 2025", "key_idea": "文本-图交叉注意力 + 三任务训练"},

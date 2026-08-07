@@ -1,5 +1,5 @@
 """
-创建: 2025-08-01
+创建: 2026-04-23
 修改:
   2025-08-02 - 持久化路径统一到 _data_dir()
 Thompson Sampling 模块-配置路由 — 为每个模块学习最优生成配置。
@@ -9,7 +9,7 @@ Thompson Sampling 模块-配置路由 — 为每个模块学习最优生成配�
 模块使用统一的全局参数（CONFIG.API_TEMPERATURE / API_MAX_TOKENS），
 无法适配模块间的差异性需求。
 
-现有 MAB 路由器（rl-router, SmartBandit, Conduit 2026）将 LLM provider
+现有 MAB 路由器将 LLM provider
 作为 arm 做成本优化路由，不处理同模型内 per-module 的配置选择。
 
 方案：Thompson Sampling with Beta-Bernoulli conjugate model。
@@ -31,9 +31,9 @@ Thompson Sampling 模块-配置路由 — 为每个模块学习最优生成配�
   - Beta-Bernoulli 共轭模型更新 O(1)，决策 O(K)，K=每个模块的arm数
 
 与现有工作的差异：
-  - rl-router (2026): provider 间路由，同模型内配置选择文献中未见
-  - SmartBandit (2026): 成本优化，本模块优化代码生成质量
-  - KernelBand (2025): MAB 用于 kernel 优化，非代码生成管线参数
+  - rl-router: provider 间路由，同模型内配置选择文献中未见
+  - SmartBandit: 成本优化，本模块优化代码生成质量
+  - KernelBand: MAB 用于 kernel 优化，非代码生成管线参数
 """
 
 from __future__ import annotations
@@ -171,9 +171,7 @@ class BanditRouter:
         exploring = sum(1 for a in arms.values() if a.pulls <= 2)
         return exploring / len(arms)
 
-    # ------------------------------------------------------------------
     # 持久化
-    # ------------------------------------------------------------------
 
     def save(self) -> None:
         payload: dict = {}
@@ -208,9 +206,7 @@ class BanditRouter:
                 )
         return True
 
-    # ------------------------------------------------------------------
     # 内部
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _config_to_key(config: dict[str, float]) -> str:
@@ -234,9 +230,7 @@ class BanditRouter:
         }
 
 
-# ---------------------------------------------------------------------------
 # 便捷集成入口
-# ---------------------------------------------------------------------------
 
 def route_and_record(
     router: BanditRouter,

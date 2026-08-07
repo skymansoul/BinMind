@@ -72,7 +72,6 @@ logger = logging.getLogger(__name__)
 _LEGACY_MODE = False  # 保留
 
 
-def _debug_print(msg: str): pass  # noqa
 
 ANGR_AVAILABLE = False
 try:
@@ -118,10 +117,8 @@ class CachePolicy:
     HYBRID = 'hybrid'
 
 
-# ---------------------------------------------------------------------------
 # Bloom prefilter: 256KiB (2M bits), 误报率 ~1% 100k entries 3 哈希
 # 快速判断 key 是否可能存在于磁盘缓存中，避免磁盘 IO 的 miss 开销
-# ---------------------------------------------------------------------------
 _BLOOM_SIZE_BITS = 2_097_152  # 256 KiB
 
 # def _legacy_bloom_lookup(key, bitset, k=3):
@@ -200,7 +197,6 @@ class OptimizationStats:
     pruning_by_strategy: Dict = field(default_factory=dict)
 
 
-# =============================================================================
 # 四轮增强 — ConstraintComplexityEstimator：求解前预测 z3 求解时间
 #
 # 特征工程 — 从约束列表中提取 5 个可计算特征：
@@ -212,7 +208,6 @@ class OptimizationStats:
 #
 # 模型 — 简单线性回归，系数从历史 solve_time 记录中拟合
 # 每次求解成功后更新模型，在线学习本工作负载的特征分布
-# =============================================================================
 
 
 @dataclass
@@ -426,13 +421,11 @@ class ConstraintComplexityEstimator:
             }
 
 
-# =============================================================================
 # 四轮增强 — OptimizationPipeline：可配置 DAG 的优化通道
 #
 # 将 Simplifier → CSE →缓存Lookup → Solve 串联为管道
 # 每个 pass 是独立的、可启停的处理阶段
 # 管道在执行后自省各阶段的耗时贡献度
-# =============================================================================
 
 
 class OptimizationPass(Enum):
@@ -505,7 +498,7 @@ class OptimizationPipeline:
         pass_results: List[PassResult] = []
         current_constraints = list(constraints)
 
-        # --- Pass 1: Simplify ---
+# Pass 1: Simplify
         if OptimizationPass.SIMPLIFY.value in self.enabled_passes:
             t0 = time.monotonic()
             current_constraints = self.simplifier.simplify(current_constraints)
@@ -537,7 +530,7 @@ class OptimizationPipeline:
             pass_results.append(pr)
             self._record_pass(OptimizationPass.CSE.value, duration)
 
-        # --- Pass 3: 缓存Lookup ---
+# Pass 3: 缓存Lookup
         cache_hit = False
         if OptimizationPass.CACHE_LOOKUP.value in self.enabled_passes:
             t0 = time.monotonic()
@@ -572,7 +565,7 @@ class OptimizationPipeline:
                 pass_results.append(pr)
                 self._record_pass(OptimizationPass.CACHE_LOOKUP.value, duration)
 
-        # --- Pass 4: Solve ---
+# Pass 4: Solve
         if OptimizationPass.SOLVE.value in self.enabled_passes:
             t0 = time.monotonic()
             result = self.parallel_solver._solve_with_cache(current_constraints)
@@ -623,7 +616,6 @@ class OptimizationPipeline:
         }
 
 
-# =============================================================================
 # 四轮增强 — SolverBudgetManager：全局求解时间预算
 #
 # 符号执行中并行求解器可能同时被多个任务调用，总和求解时间不受控
@@ -632,12 +624,11 @@ class OptimizationPipeline:
 # 机制：
 #   - 每个 interval（默认 60s），budget 刷新为 per_interval 秒
 #   - 每次求解前，从 budget 中扣除 predicted_time（由 ComplexityEstimator 提供）
-#   - 预算耗尽 → is_budget_exhausted() 返回 True
+# 预算耗尽 → is_budget_exhausted() 返回 True
 #   - 低优先级（非 critical）任务在预算耗尽时被抑制（skip/requeue）
-#   - critical 任务始终不受预算限制
+# critical 任务始终不受预算限制
 #
 # 后台线程周期性刷新预算
-# =============================================================================
 
 
 class SolverBudgetManager:

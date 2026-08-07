@@ -1,0 +1,201 @@
+sample,cve_id,ground_truth,tool,verdict,detections,elapsed_ms,success,error
+tn_01_null_after_free,,False,UAF-Existing,SAFE,0,13.5,True,
+tn_01_null_after_free,,False,UOVF,SAFE,0,16.1,True,
+tn_01_null_after_free,,False,Angr,ERROR,0,0,False,binary missing
+tn_01_null_after_free,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_01_null_after_free,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tn_02_reassign_after_free,,False,UAF-Existing,SAFE,0,0.2,True,
+tn_02_reassign_after_free,,False,UOVF,SAFE,0,0.2,True,
+tn_02_reassign_after_free,,False,Angr,ERROR,0,0,False,binary missing
+tn_02_reassign_after_free,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_02_reassign_after_free,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tn_03_guarded_use,,False,UAF-Existing,OVERFLOW,1,0.4,True,
+tn_03_guarded_use,,False,UOVF,SAFE,0,0.4,True,
+tn_03_guarded_use,,False,Angr,ERROR,0,0,False,binary missing
+tn_03_guarded_use,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_03_guarded_use,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tn_04_realloc_self,,False,UAF-Existing,SAFE,0,0.2,True,
+tn_04_realloc_self,,False,UOVF,SAFE,0,0.2,True,
+tn_04_realloc_self,,False,Angr,ERROR,0,0,False,binary missing
+tn_04_realloc_self,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_04_realloc_self,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tn_05_branch_exclusive,,False,UAF-Existing,OVERFLOW,1,0.2,True,
+tn_05_branch_exclusive,,False,UOVF,SAFE,0,0.2,True,
+tn_05_branch_exclusive,,False,Angr,ERROR,0,0,False,binary missing
+tn_05_branch_exclusive,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_05_branch_exclusive,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tn_06_different_scope,,False,UAF-Existing,SAFE,0,0.2,True,
+tn_06_different_scope,,False,UOVF,SAFE,0,0.1,True,
+tn_06_different_scope,,False,Angr,ERROR,0,0,False,binary missing
+tn_06_different_scope,,False,Ghidra,ERROR,0,0,False,binary missing
+tn_06_different_scope,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_01_direct_uaf,,True,UAF-Existing,OVERFLOW,1,0.2,True,
+tp_01_direct_uaf,,True,UOVF,OVERFLOW,1,0.2,True,
+tp_01_direct_uaf,,True,Angr,ERROR,0,0,False,binary missing
+tp_01_direct_uaf,,True,Ghidra,ERROR,0,0,False,binary missing
+tp_01_direct_uaf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_02_alias_uaf,,True,UAF-Existing,SAFE,0,0.2,True,
+tp_02_alias_uaf,,True,UOVF,OVERFLOW,1,0.3,True,
+tp_02_alias_uaf,,True,Angr,ERROR,0,0,False,binary missing
+tp_02_alias_uaf,,True,Ghidra,ERROR,0,0,False,binary missing
+tp_02_alias_uaf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_03_cross_func_uaf,,True,UAF-Existing,OVERFLOW,1,0.2,True,
+tp_03_cross_func_uaf,,True,UOVF,OVERFLOW,1,0.2,True,
+tp_03_cross_func_uaf,,True,Angr,ERROR,0,0,False,binary missing
+tp_03_cross_func_uaf,,True,Ghidra,ERROR,0,0,False,binary missing
+tp_03_cross_func_uaf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_04_realloc_alias_uaf,CVE-2023-28328,True,UAF-Existing,SAFE,0,0.2,True,
+tp_04_realloc_alias_uaf,CVE-2023-28328,True,UOVF,OVERFLOW,1,0.3,True,
+tp_04_realloc_alias_uaf,CVE-2023-28328,True,Angr,ERROR,0,0,False,binary missing
+tp_04_realloc_alias_uaf,CVE-2023-28328,True,Ghidra,ERROR,0,0,False,binary missing
+tp_04_realloc_alias_uaf,CVE-2023-28328,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_05_loop_uaf,,True,UAF-Existing,SAFE,0,0.3,True,
+tp_05_loop_uaf,,True,UOVF,OVERFLOW,1,0.3,True,
+tp_05_loop_uaf,,True,Angr,ERROR,0,0,False,binary missing
+tp_05_loop_uaf,,True,Ghidra,ERROR,0,0,False,binary missing
+tp_05_loop_uaf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+tp_06_conditional_uaf,,True,UAF-Existing,OVERFLOW,1,0.2,True,
+tp_06_conditional_uaf,,True,UOVF,OVERFLOW,1,0.2,True,
+tp_06_conditional_uaf,,True,Angr,ERROR,0,0,False,binary missing
+tp_06_conditional_uaf,,True,Ghidra,ERROR,0,0,False,binary missing
+tp_06_conditional_uaf,,True,QEMU-Tracer,ERROR,0,0,False,binary missing
+uaf_conditional_free,,True,UAF-Existing,SAFE,0,0.1,True,
+uaf_conditional_free,,True,UOVF,SAFE,0,0.2,True,
+uaf_conditional_free,,True,Angr,OVERFLOW,9,910.0,True,
+uaf_conditional_free,,True,Ghidra,OVERFLOW,3,20.0,True,
+uaf_conditional_free,,True,QEMU-Tracer,OVERFLOW,14,22.0,True,
+uaf_dangling_global,,True,UAF-Existing,OVERFLOW,1,0.3,True,
+uaf_dangling_global,,True,UOVF,SAFE,0,0.3,True,
+uaf_dangling_global,,True,Angr,OVERFLOW,9,870.0,True,
+uaf_dangling_global,,True,Ghidra,OVERFLOW,3,28.0,True,
+uaf_dangling_global,,True,QEMU-Tracer,OVERFLOW,14,24.0,True,
+uaf_double_free,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_double_free,,True,UOVF,SAFE,0,0.1,True,
+uaf_double_free,,True,Angr,OVERFLOW,10,990.0,True,
+uaf_double_free,,True,Ghidra,OVERFLOW,3,22.0,True,
+uaf_double_free,,True,QEMU-Tracer,OVERFLOW,15,21.0,True,
+uaf_func_ptr,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_func_ptr,,True,UOVF,SAFE,0,0.2,True,
+uaf_func_ptr,,True,Angr,OVERFLOW,9,820.0,True,
+uaf_func_ptr,,True,Ghidra,OVERFLOW,3,23.0,True,
+uaf_func_ptr,,True,QEMU-Tracer,OVERFLOW,14,24.0,True,
+uaf_io_uring,,True,UAF-Existing,SAFE,0,0.3,True,
+uaf_io_uring,,True,UOVF,SAFE,0,0.4,True,
+uaf_io_uring,,True,Angr,OVERFLOW,10,840.0,True,
+uaf_io_uring,,True,Ghidra,OVERFLOW,3,20.0,True,
+uaf_io_uring,,True,QEMU-Tracer,OVERFLOW,15,21.0,True,
+uaf_list_remove,,True,UAF-Existing,SAFE,0,0.3,True,
+uaf_list_remove,,True,UOVF,SAFE,0,0.3,True,
+uaf_list_remove,,True,Angr,OVERFLOW,10,860.0,True,
+uaf_list_remove,,True,Ghidra,OVERFLOW,3,25.0,True,
+uaf_list_remove,,True,QEMU-Tracer,OVERFLOW,14,23.0,True,
+uaf_multi_path,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_multi_path,,True,UOVF,SAFE,0,0.1,True,
+uaf_multi_path,,True,Angr,OVERFLOW,9,1170.0,True,
+uaf_multi_path,,True,Ghidra,OVERFLOW,3,25.0,True,
+uaf_multi_path,,True,QEMU-Tracer,OVERFLOW,14,26.0,True,
+uaf_realloc_null,,True,UAF-Existing,SAFE,0,0.1,True,
+uaf_realloc_null,,True,UOVF,SAFE,0,0.2,True,
+uaf_realloc_null,,True,Angr,OVERFLOW,8,910.0,True,
+uaf_realloc_null,,True,Ghidra,OVERFLOW,3,21.0,True,
+uaf_realloc_null,,True,QEMU-Tracer,OVERFLOW,14,20.0,True,
+uaf_realloc_race,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_realloc_race,,True,UOVF,SAFE,0,0.2,True,
+uaf_realloc_race,,True,Angr,OVERFLOW,9,920.0,True,
+uaf_realloc_race,,True,Ghidra,OVERFLOW,3,22.0,True,
+uaf_realloc_race,,True,QEMU-Tracer,OVERFLOW,15,23.0,True,
+uaf_signal_handler,,True,UAF-Existing,SAFE,0,0.1,True,
+uaf_signal_handler,,True,UOVF,SAFE,0,0.2,True,
+uaf_signal_handler,,True,Angr,OVERFLOW,9,1120.0,True,
+uaf_signal_handler,,True,Ghidra,OVERFLOW,3,21.0,True,
+uaf_signal_handler,,True,QEMU-Tracer,OVERFLOW,14,25.0,True,
+uaf_simple_deref,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_simple_deref,,True,UOVF,SAFE,0,0.2,True,
+uaf_simple_deref,,True,Angr,OVERFLOW,14,1330.0,True,
+uaf_simple_deref,,True,Ghidra,OVERFLOW,6,54.0,True,
+uaf_simple_deref,,True,QEMU-Tracer,OVERFLOW,34,62.0,True,
+uaf_stale_callback,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_stale_callback,,True,UOVF,SAFE,0,0.4,True,
+uaf_stale_callback,,True,Angr,OVERFLOW,9,850.0,True,
+uaf_stale_callback,,True,Ghidra,OVERFLOW,3,24.0,True,
+uaf_stale_callback,,True,QEMU-Tracer,OVERFLOW,14,25.0,True,
+uaf_thread_pool,,True,UAF-Existing,SAFE,0,0.2,True,
+uaf_thread_pool,,True,UOVF,SAFE,0,0.3,True,
+uaf_thread_pool,,True,Angr,OVERFLOW,9,1200.0,True,
+uaf_thread_pool,,True,Ghidra,OVERFLOW,3,24.0,True,
+uaf_thread_pool,,True,QEMU-Tracer,OVERFLOW,14,26.0,True,
+uaf_vector_grow,,True,UAF-Existing,SAFE,0,0.3,True,
+uaf_vector_grow,,True,UOVF,SAFE,0,0.3,True,
+uaf_vector_grow,,True,Angr,OVERFLOW,9,900.0,True,
+uaf_vector_grow,,True,Ghidra,OVERFLOW,3,20.0,True,
+uaf_vector_grow,,True,QEMU-Tracer,OVERFLOW,15,24.0,True,
+uaf_vtable_override,,True,UAF-Existing,SAFE,0,0.1,True,
+uaf_vtable_override,,True,UOVF,SAFE,0,0.1,True,
+uaf_vtable_override,,True,Angr,OVERFLOW,9,900.0,True,
+uaf_vtable_override,,True,Ghidra,OVERFLOW,3,22.0,True,
+uaf_vtable_override,,True,QEMU-Tracer,OVERFLOW,14,19.0,True,
+FP_uaf_alias_safe,,False,UAF-Existing,SAFE,0,0.4,True,
+FP_uaf_alias_safe,,False,UOVF,SAFE,0,0.5,True,
+FP_uaf_alias_safe,,False,Angr,OVERFLOW,14,1630.0,True,
+FP_uaf_alias_safe,,False,Ghidra,OVERFLOW,6,62.0,True,
+FP_uaf_alias_safe,,False,QEMU-Tracer,OVERFLOW,35,65.0,True,
+FP_uaf_guarded_path,,False,UAF-Existing,OVERFLOW,1,0.6,True,
+FP_uaf_guarded_path,,False,UOVF,SAFE,0,0.4,True,
+FP_uaf_guarded_path,,False,Angr,OVERFLOW,11,930.0,True,
+FP_uaf_guarded_path,,False,Ghidra,OVERFLOW,3,25.0,True,
+FP_uaf_guarded_path,,False,QEMU-Tracer,OVERFLOW,16,23.0,True,
+FP_uaf_null_after_free,,False,UAF-Existing,SAFE,0,0.5,True,
+FP_uaf_null_after_free,,False,UOVF,SAFE,0,0.5,True,
+FP_uaf_null_after_free,,False,Angr,OVERFLOW,14,1390.0,True,
+FP_uaf_null_after_free,,False,Ghidra,OVERFLOW,6,59.0,True,
+FP_uaf_null_after_free,,False,QEMU-Tracer,OVERFLOW,35,71.0,True,
+FP_uaf_refcount_protected,,False,UAF-Existing,SAFE,0,0.7,True,
+FP_uaf_refcount_protected,,False,UOVF,SAFE,0,0.7,True,
+FP_uaf_refcount_protected,,False,Angr,OVERFLOW,14,1710.0,True,
+FP_uaf_refcount_protected,,False,Ghidra,OVERFLOW,6,60.0,True,
+FP_uaf_refcount_protected,,False,QEMU-Tracer,OVERFLOW,35,70.0,True,
+FP_uaf_reuse_after_free,,False,UAF-Existing,SAFE,0,0.4,True,
+FP_uaf_reuse_after_free,,False,UOVF,SAFE,0,0.3,True,
+FP_uaf_reuse_after_free,,False,Angr,OVERFLOW,16,1390.0,True,
+FP_uaf_reuse_after_free,,False,Ghidra,OVERFLOW,6,62.0,True,
+FP_uaf_reuse_after_free,,False,QEMU-Tracer,OVERFLOW,37,77.0,True,
+safe_free_then_null,,False,UAF-Existing,OVERFLOW,1,0.3,True,
+safe_free_then_null,,False,UOVF,SAFE,0,0.2,True,
+safe_free_then_null,,False,Angr,OVERFLOW,9,1200.0,True,
+safe_free_then_null,,False,Ghidra,OVERFLOW,3,21.0,True,
+safe_free_then_null,,False,QEMU-Tracer,OVERFLOW,14,23.0,True,
+safe_realloc_then_use,,False,UAF-Existing,SAFE,0,0.2,True,
+safe_realloc_then_use,,False,UOVF,SAFE,0,0.2,True,
+safe_realloc_then_use,,False,Angr,ERROR,0,0,False,binary missing
+safe_realloc_then_use,,False,Ghidra,ERROR,0,0,False,binary missing
+safe_realloc_then_use,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+safe_refcount_free,,False,UAF-Existing,SAFE,0,0.2,True,
+safe_refcount_free,,False,UOVF,SAFE,0,0.1,True,
+safe_refcount_free,,False,Angr,ERROR,0,0,False,binary missing
+safe_refcount_free,,False,Ghidra,ERROR,0,0,False,binary missing
+safe_refcount_free,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+safe_scope_guard,,False,UAF-Existing,SAFE,0,0.2,True,
+safe_scope_guard,,False,UOVF,SAFE,0,0.1,True,
+safe_scope_guard,,False,Angr,ERROR,0,0,False,binary missing
+safe_scope_guard,,False,Ghidra,ERROR,0,0,False,binary missing
+safe_scope_guard,,False,QEMU-Tracer,ERROR,0,0,False,binary missing
+TP_uaf_alias_use,,True,UAF-Existing,SAFE,0,0.3,True,
+TP_uaf_alias_use,,True,UOVF,OVERFLOW,1,0.2,True,
+TP_uaf_alias_use,,True,Angr,OVERFLOW,14,1440.0,True,
+TP_uaf_alias_use,,True,Ghidra,OVERFLOW,6,54.0,True,
+TP_uaf_alias_use,,True,QEMU-Tracer,OVERFLOW,35,52.0,True,
+TP_uaf_callback_use,CVE-2021-38003,True,UAF-Existing,OVERFLOW,1,1.4,True,
+TP_uaf_callback_use,CVE-2021-38003,True,UOVF,OVERFLOW,2,1.0,True,
+TP_uaf_callback_use,CVE-2021-38003,True,Angr,OVERFLOW,14,1620.0,True,
+TP_uaf_callback_use,CVE-2021-38003,True,Ghidra,OVERFLOW,6,51.0,True,
+TP_uaf_callback_use,CVE-2021-38003,True,QEMU-Tracer,OVERFLOW,34,62.0,True,
+TP_uaf_clear_violation,,True,UAF-Existing,OVERFLOW,1,0.5,True,
+TP_uaf_clear_violation,,True,UOVF,OVERFLOW,1,0.5,True,
+TP_uaf_clear_violation,,True,Angr,OVERFLOW,14,1350.0,True,
+TP_uaf_clear_violation,,True,Ghidra,OVERFLOW,6,59.0,True,
+TP_uaf_clear_violation,,True,QEMU-Tracer,OVERFLOW,35,53.0,True,
+TP_uaf_loop_use,,True,UAF-Existing,OVERFLOW,1,0.3,True,
+TP_uaf_loop_use,,True,UOVF,OVERFLOW,1,0.4,True,
+TP_uaf_loop_use,,True,Angr,OVERFLOW,14,1570.0,True,
+TP_uaf_loop_use,,True,Ghidra,OVERFLOW,6,52.0,True,
+TP_uaf_loop_use,,True,QEMU-Tracer,OVERFLOW,34,57.0,True,

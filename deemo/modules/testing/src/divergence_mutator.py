@@ -8,8 +8,8 @@
 #     c) 各引擎的覆盖差异 (同一输入不同引擎覆盖了不同代码路径)
 #        未被利用为变异信号
 #
-#   GraphFuzz (2025) 证明: 领域特定的反馈信号可达4000×加速。
-#   AccuOracle (2025) 用解释器-JIT分叉做差分oracle。
+#   GraphFuzz 证明: 领域特定的反馈信号可达4000×加速。
+#   AccuOracle 用解释器-JIT分叉做差分oracle。
 #
 # 本模块的方法 — 覆盖分叉驱动的变异:
 #   1. 对同一输入在多个引擎上执行, 收集各引擎的覆盖边集
@@ -20,9 +20,9 @@
 #   5. 定向变异: 对高分叉字节做精确变异 (arith/bitflip) 而非随机 havoc
 #
 # 技术依据:
-#   GraphFuzz (Yan & Rigger 2025) — 算法特定反馈替代覆盖;
+#   GraphFuzz — 算法特定反馈替代覆盖;
 #     本项目取其"特定反馈信号"概念但以跨引擎分叉作为反馈
-#   AccuOracle (Li et al. 2025) — 分叉仲裁层消除误报;
+#   AccuOracle — 分叉仲裁层消除误报;
 #     本项目取其分叉检测思想但用于变异引导而非oracle判定
 
 from __future__ import annotations

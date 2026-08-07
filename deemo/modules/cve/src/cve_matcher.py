@@ -74,7 +74,7 @@ def _parse_cpe(cpe_str: str) -> Optional[Dict[str, str]]:
     return result
 
 
-# ---- 版本比较 ----
+# 版本比较
 # 预发布后缀顺序: alpha < beta < milestone < nightly < canary < rc < release
 # milestone/nightly/canary 在初始实现后添加 (被测试捕获)
 _PRERELEASE_ORDER = {
@@ -181,7 +181,7 @@ def _compare_versions(v1: str, v2: str) -> int:
     return 0
 
 
-# ---- npm 风格 semver 范围匹配 ----
+# npm 风格 semver 范围匹配
 # ^1.2.3 → >=1.2.3 <2.0.0, ~1.2.3 → >=1.2.3 <1.3.0, 等。
 # npm 范围现已成为许多生态系统的实际标准 (npm, yarn, pnpm)，
 # 因此实现它们值得代码行数。非完整 semver 范围解析器 —
@@ -305,7 +305,7 @@ def satisfies_npm_range(version: str, range_str: str) -> bool:
     return True
 
 
-# ---- maven 版本比较 ----
+# maven 版本比较
 # Maven 有自己的版本顺序: 1.0 < 1.0-rc1 < 1.0-beta < 1.0-SNAPSHOT
 # 限定符优先级: alpha < beta < milestone < rc < snapshot < sp < release
 # 这与 semver 预发布顺序不同。
@@ -410,7 +410,7 @@ def _fallback_string_compare(v1: str, v2: str) -> int:
     return 0
 
 
-# ---- calver 检测 ----
+# calver 检测
 # 日历版本: YYYY.MM.DD, YYYY.MM, YY.MM, 等。
 # ubuntu 使用 YY.MM, 部分 python 库使用 YYYY.M.D
 
@@ -476,7 +476,7 @@ def coerce_version(version: str, ecosystem: Optional[str] = None) -> str:
     return v if v else "0"
 
 
-# ---- 公共 API — 为外部消费者重新导出 ----
+# 公共 API — 为外部消费者重新导出
 # 这些是选择正确比较函数的薄包装，
 # 基于调用方提示。不优雅但实用。
 
@@ -558,7 +558,7 @@ for _mq, _mw in _MAVEN_QUALIFIER_WEIGHTS.items():
         _PRERELEASE_ORDER[_mq] = _mw // 100
 
 
-# ---- 版本范围检查 ----
+# 版本范围检查
 
 def _check_single_range(version: str, range_dict: Dict) -> bool:
     """检查版本是否在单个影响范围内。
@@ -630,7 +630,7 @@ def _version_in_range(version: str, ranges: List[Dict]) -> bool:
     return False
 
 
-# ---- KB 搜索归一化 ----
+# KB 搜索归一化
 
 def _kb_search(kb, query: str, limit: int = 50) -> Tuple[List[Any], int]:
     """归一化 KB 搜索结果。部分 KB 实现返回 (entries, total)
@@ -653,7 +653,7 @@ def _kb_search(kb, query: str, limit: int = 50) -> Tuple[List[Any], int]:
     return [result], 1
 
 
-# ---- 公共匹配函数 ----
+# 公共匹配函数
 
 def match_by_cpe(
     kb,
@@ -738,7 +738,7 @@ def match_by_cpe(
     return deduped
 
 
-# ---- 条目访问辅助函数 (模块级，有意未统一) ----
+# 条目访问辅助函数 (模块级，有意未统一)
 # 这些归一化 dict vs dataclass vs sqlite.Row 访问。
 # 保持分离的真正原因: 单个 _normalize_entry() 需在每次调用时
 # 复制所有字段 — 大批量匹配时更慢。

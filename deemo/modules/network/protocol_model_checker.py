@@ -1,20 +1,9 @@
-"""协议状态机模型检测——死锁/活锁检测、不变式验证
-
-CTL 风格时态属性检测 —— 支持路径存在性 (EF/EG) 与
-全称量化 (AG/AF) 的有限前缀近似，深度上界由状态数平方控制，防止
-无限展开。借鉴 SPIN 的 bitstate hashing 思路，对大规模状态图使用
-Bloom filter 压缩访问集，内存常数级。
-"""
-
-import itertools
+"""协议状态机模型检测——死锁/活锁/不变式验证; CTL时态属性(AG/AF/EF/EG)有限前缀近似; Bloom filter压缩访问集"""
 import logging
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
-
-_log = logging.getLogger(__name__)
-
 
 class StateType(Enum):
     NORMAL = auto()
@@ -22,23 +11,13 @@ class StateType(Enum):
     TERMINAL = auto()
     ERROR = auto()
 
-
-class TransitionTrigger(Enum):
-    MESSAGE_RECEIVED = "message_received"
-    MESSAGE_SENT = "message_sent"
-    TIMER_EXPIRED = "timer_expired"
-    INTERNAL = "internal"
-
-
 @dataclass
 class ProtocolState:
     name: str
     state_type: StateType = StateType.NORMAL
     data: Dict[str, Any] = field(default_factory=dict)
-
     def __hash__(self):
         return hash(self.name)
-
 
 @dataclass
 class ProtocolTransition:
@@ -49,7 +28,6 @@ class ProtocolTransition:
     guard: Optional[Callable[[Dict], bool]] = None
     action: Optional[Callable[[Dict], Dict]] = None
 
-
 @dataclass
 class Invariant:
     """所有可达状态中必须恒真的属性"""
@@ -57,50 +35,29 @@ class Invariant:
     check: Callable[[Dict[str, ProtocolState], List[ProtocolTransition]], bool]
     description: str = ""
 
-
 @dataclass
 class TemporalProperty:
-    """CTL 风格时态属性 —— 有限前缀近似
-
-    property_type:
-      - 'AG'  (所有可达状态满足)  → 所有路径所有节点满足
-      - 'AF'  (所有路径最终满足)  → 所有路径有满足节点
-      - 'EF'  (存在可达状态满足)  → 搜索可达状态空间
-      - 'EG_ABSENT': 不存在无限循环不满足  → 近似为活锁检查
-    """
+    """CTL时态属性——有限前缀近似: AG/AF/EF/EG_ABSENT"""
     name: str
-    property_type: str  # 'AG' | 'AF' | 'EF' | 'EG_ABSENT'
+    property_type: str  # 'AG'|'AF'|'EF'|'EG_ABSENT'
     predicate: Callable[[ProtocolState], bool]
     description: str = ""
 
-
 @dataclass
 class CheckResult:
-    violation_type: str   # deadlock | livelock | invariant_broken | unreachable_state
+    violation_type: str  # deadlock|livelock|invariant_broken|unreachable_state
     description: str
     states_involved: List[str] = field(default_factory=list)
     counterexample: List[str] = field(default_factory=list)
 
-
 class ProtocolModelChecker:
-    """定义协议状态与迁移，执行可达性分析与属性检测
-
-    Usage::
-
-        checker = ProtocolModelChecker()
-        checker.add_state(ProtocolState("IDLE", StateType.INITIAL))
-        checker.add_transition(ProtocolTransition("IDLE", "CONNECTING", ...))
-        results = checker.check()
-    """
-
+    """定义协议状态与迁移，执行可达性分析与属性检测"""
     def __init__(self):
         self._states: Dict[str, ProtocolState] = {}
         self._transitions: List[ProtocolTransition] = []
         self._invariants: List[Invariant] = []
         self._temporal_properties: List[TemporalProperty] = []
         self._outgoing: Dict[str, List[ProtocolTransition]] = defaultdict(list)
-
-    # -- 构建 --
 
     def add_state(self, state: ProtocolState) -> None:
         self._states[state.name] = state
@@ -113,16 +70,12 @@ class ProtocolModelChecker:
         self._invariants.append(inv)
 
     def add_temporal_property(self, prop: TemporalProperty) -> None:
-        """注册 CTL 时态属性 —— 在 check() 时一并验证"""
         self._temporal_properties.append(prop)
 
-    # -- 主检测 --
-
     def check(self, model=None) -> List[CheckResult]:
-        """执行全部检测。model 可为字典：{"states": [...], "transitions": [...]}。"""
+        """执行全部检测; model可为字典{"states":[...],"transitions":[...]}"""
         if model is not None:
             self._load(model)
-
         results: List[CheckResult] = []
         results.extend(self._check_deadlocks())
         results.extend(self._check_unreachable())
@@ -137,7 +90,6 @@ class ProtocolModelChecker:
         if not initial:
             initial = list(self._states.values())
         reachable = self._reachable_states(initial[0].name if initial else list(self._states.keys())[0])
-
         for name, state in self._states.items():
             if name not in reachable:
                 continue
@@ -168,7 +120,7 @@ class ProtocolModelChecker:
         return unreachable
 
     def _check_livelocks(self, max_depth: int = 64) -> List[CheckResult]:
-        """DFS 环检测：若同一状态访问次数超状态总数2倍，标记活锁。"""
+        """DFS环检测：同一状态访问次数超状态总数2倍则标记活锁"""
         livelocks = []
         threshold = max(len(self._states) * 2, 8)
         for start_name in self._states:
@@ -209,14 +161,7 @@ class ProtocolModelChecker:
         return results
 
     def _check_temporal_properties(self) -> List[CheckResult]:
-        """CTL 有限前缀时态属性验证
-
-        对每个 TemporalProperty：
-        - AG: BFS 遍历可达状态，检查所有节点满足谓词
-        - EF: BFS 搜索任一满足谓词的可达状态
-        - AF: 对每条最长路径检查是否存在满足节点
-        - EG_ABSENT: 检查是否所有循环都有满足节点（活锁反模式）
-        """
+        """CTL有限前缀时态属性验证: AG/EF/AF/EG_ABSENT"""
         results: List[CheckResult] = []
         initial = [s for s in self._states.values() if s.state_type == StateType.INITIAL]
         if not initial and self._states:
@@ -225,7 +170,6 @@ class ProtocolModelChecker:
             return results
         start = initial[0].name
         reachable = self._reachable_states(start)
-
         for prop in self._temporal_properties:
             if prop.property_type == 'AG':
                 violated: List[str] = []
@@ -239,7 +183,6 @@ class ProtocolModelChecker:
                         description=f"AG({prop.name}) violated at: {violated[:5]} — {prop.description}",
                         states_involved=violated[:5],
                     ))
-
             elif prop.property_type == 'EF':
                 found = any(
                     prop.predicate(self._states[n])
@@ -250,9 +193,7 @@ class ProtocolModelChecker:
                         violation_type="temporal_ef_absent",
                         description=f"EF({prop.name}) — no reachable state satisfies: {prop.description}",
                     ))
-
             elif prop.property_type == 'AF':
-                # 对所有最长路径检查 —— 有限深度近似
                 non_terminal = [n for n in reachable
                                if self._states.get(n, ProtocolState("")).state_type != StateType.TERMINAL]
                 for n in non_terminal:
@@ -264,7 +205,6 @@ class ProtocolModelChecker:
                                 description=f"AF({prop.name}) — path from '{n}' never satisfies: {prop.description}",
                                 counterexample=path,
                             ))
-
             elif prop.property_type == 'EG_ABSENT':
                 for n in reachable:
                     if not prop.predicate(self._states.get(n, ProtocolState(""))):
@@ -275,11 +215,10 @@ class ProtocolModelChecker:
                                 description=f"EG(¬{prop.name}) — loop exists where property absent: {prop.description}",
                                 counterexample=loops[0],
                             ))
-
         return results
 
     def _all_paths_from(self, start: str, max_depth: int) -> List[List[str]]:
-        """从 start 出发的最长简单路径集合 —— 有限深度"""
+        """从start出发的最长简单路径集合——有限深度"""
         paths: List[List[str]] = []
         stack: List[Tuple[str, List[str], int]] = [(start, [start], 0)]
         while stack:
@@ -301,7 +240,7 @@ class ProtocolModelChecker:
         return paths
 
     def _find_loops_from(self, start: str, max_depth: int) -> List[List[str]]:
-        """从 start 出发检测环路"""
+        """从start出发检测环路"""
         loops: List[List[str]] = []
         visited_on_path: Set[str] = set()
         stack: List[Tuple[str, List[str]]] = [(start, [start])]
@@ -343,9 +282,7 @@ class ProtocolModelChecker:
                 except KeyError:
                     pass
                 self.add_state(ProtocolState(
-                    name=sd["name"],
-                    state_type=st,
-                    data=sd.get("data", {}),
+                    name=sd["name"], state_type=st, data=sd.get("data", {}),
                 ))
         for td in model.get("transitions", []):
             if isinstance(td, ProtocolTransition):
@@ -357,8 +294,6 @@ class ProtocolModelChecker:
                 except ValueError:
                     pass
                 self.add_transition(ProtocolTransition(
-                    source=td["source"],
-                    target=td["target"],
-                    trigger=trigger,
-                    message_type=td.get("message_type", ""),
+                    source=td["source"], target=td["target"],
+                    trigger=trigger, message_type=td.get("message_type", ""),
                 ))

@@ -12,7 +12,7 @@
 - Chisel 两阶段综合法思想: 先判定混淆类型再选择恢复策略，证实了分类优先的收益
 本模块将其思想压缩为纯静态特征分类，不需要动态trace
 注：doi:10.1145/3689789 文献经检索未确认，此处保留为概念引用
-- Tkachenko et al. (arXiv:2505.19887): LLM评估框架中提出的
+- Tkachenko et al.: LLM评估框架中提出的
 三维阻力模型（Bogus CF/CFF/指令替换）为特征选择提供了理论依据
 本模块据此设计了块形状变异系数、分支密度方差、指令熵三个主维度
 - 去除了原论文中的LLM依赖——用统计特征+轻量投票替代，避免API调用延迟
@@ -91,7 +91,7 @@ class VoteTally:
             self._weights[dimension] = new_weight
 
 
-#---- 特征提取 ----
+# 特征提取
 
 def _instruction_entropy(instructions: List[Dict[str, Any]]) -> float:
     """计算指令助记符的Shannon熵——归一化到[0,1]
@@ -224,7 +224,7 @@ def _string_section_entropy(data: bytes) -> float:
     return entropy / 8.0
 
 
-#---- 主分类器 ----
+# 主分类器
 
 class ObfuscationClassifier:
     """多特征融合的混淆类型预分类器

@@ -1,23 +1,23 @@
-# 创建: 2026-08-01 19:41
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-06-26 19:41
+# 修改: 2026-06-26 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 上下文Thompson采样Bandit
 # 上下文Bandit — 自适应修复策略的在线策略学习
 #
 # 问题: 现有修复调度 (cve_remediation, cve_pareto_remediation) 使用
 # 静态规则 (SLA天数) 或离线优化 (NSGA-II). 这两种范式在2026年的
 # 威胁环境中均不充分:
-#   - 静态SLA: CVE→Exploit中位时间从56天 (2024) 降至~10小时 (2026).
+#   - 静态SLA: CVE→Exploit中位时间从56天 降至~10小时.
 #     固定的"CRITICAL=7天"截止日期已落后于实际利用速度两个数量级.
-#   - 离线优化: 需要完整的任务集作为输入, 无法应对流式到达的新CVE.
+# 离线优化: 需要完整的任务集作为输入, 无法应对流式到达的新CVE.
 #     2025年发布了48,185个CVE (日均132个), 离线重优化成本过高.
 #
 # 解决方案: 上下文Bandit (Contextual Multi-Armed Bandit).
 # 将修复动作建模为arm选择问题:
-#   - Arm 0: 立即修复 (patch_now) — 高成本, 高确定性
-#   - Arm 1: 24小时内修复 (patch_today)
-#   - Arm 2: 本周末前修复 (patch_this_week)
-#   - Arm 3: 下个维护窗口修复 (patch_next_window)
-#   - Arm 4: 监测不修复 (monitor_only)
+# Arm 0: 立即修复 (patch_now) — 高成本, 高确定性
+# Arm 1: 24小时内修复 (patch_today)
+# Arm 2: 本周末前修复 (patch_this_week)
+# Arm 3: 下个维护窗口修复 (patch_next_window)
+# Arm 4: 监测不修复 (monitor_only)
 #
 # 每个arm的奖励 = f(风险降低, 运维成本, SLA满足度).
 # 上下文特征 = [severity编码, EPSS分层, KEV标记, 资产关键度, 补丁复杂度].
@@ -27,7 +27,7 @@
 #   每步: 1) 从后验采样 β̃_k, 2) 选择 argmax_k x^T β̃_k,
 #         3) 观察奖励 r, 4) 更新后验 (Bayesian linear regression).
 #
-# 相对于ADAPT (PPO, 2026) 和 M-VP2 (MARL, 2025) 的优势:
+# 相对于ADAPT 和 M-VP2 的优势:
 #   1. 无需离线训练 — 在线学习, 从零开始 (冷启动).
 #   2. 样本效率高 — Thompson采样在有限数据下优于ε-greedy和UCB.
 #   3. 不确定性量化 — 后验方差自然给出探索-利用权衡.
@@ -41,10 +41,10 @@
 #   3. 与ParetoRemediationScheduler互补: bandit做流式在线决策,
 #      NSGA-II做批量离线优化. 两者可级联.
 #
-# 参考:
-#   [Agrawal & Goyal 2013] Thompson Sampling for Contextual Bandits (ICML)
-#   [Chapelle & Li 2011] An Empirical Evaluation of Thompson Sampling (NIPS)
-#   [2025-2026检索] 零结果 — 确认该方向在漏洞修复领域未被探索
+#
+# Thompson Sampling for Contextual Bandits (ICML)
+# An Empirical Evaluation of Thompson Sampling (NIPS)
+# 零结果 — 确认该方向在漏洞修复领域未被探索
 
 import math
 import random
@@ -305,8 +305,8 @@ class BanditRemediationEngine:
 
         # 奖励构造: 高奖励 = 好结果
         #   +1.0 基础 (采取了行动)
-        #   -0.5 若CVE被利用 (惩罚延迟修复)
-        #   -0.3 × 运维成本 (惩罚高成本动作)
+# 0.5 若CVE被利用 (惩罚延迟修复)
+# 0.3 × 运维成本 (惩罚高成本动作)
         #   +0.2 若SLA满足
         reward = 1.0
         if was_exploited:
@@ -355,7 +355,7 @@ class BanditRemediationEngine:
         return self._bandit.total_steps
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def build_context_from_cve(entry) -> List[float]:
     """从CVEEntry构建bandit上下文向量."""

@@ -185,9 +185,7 @@ class TaxonomyRefiner:
             overall_quality=round(overall, 4),
         )
 
-    # ------------------------------------------------------------------
     # Gaussian KDE + Silverman 带宽 + 峰值检测
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _silverman_bandwidth(data: List[float]) -> float:

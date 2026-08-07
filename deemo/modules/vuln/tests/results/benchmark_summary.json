@@ -1,0 +1,15 @@
+{
+  "tool": "BinMind_DP-TVRA",
+  "n_samples": 45,
+  "detected": 20,
+  "recall": 44.4,
+  "precision": 100.0,
+  "f1_score": 61.5,
+  "fp_rate": 0.0,
+  "fp_reduction": 55.3,
+  "raw_findings": 47,
+  "confirmed": 4,
+  "likely": 17,
+  "uncertain": 0,
+  "filtered_fp": 26
+}

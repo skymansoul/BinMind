@@ -1,9 +1,9 @@
-# Created: 2025-07-23 09:27:32
+# Created: 2026-05-07 09:27:32
 #
 # evidence_fusion — Dempster-Shafer 证据融合引擎
 # 将异构静态分析信号（API匹配/字符串/熵/段特征）作为独立证据体，
 # 用 DST 组合规则融合为统一威胁置信度，量化冲突与不确定性。
-# 区别于 Galdames et al. (MDPI 2025): 该文献融合 ML 分类器输出，本模块直接融合原始分析信号。
+# 区别于 Galdames et al.: 该文献融合 ML 分类器输出，本模块直接融合原始分析信号。
 
 import math
 from typing import Dict, List, Tuple, Optional

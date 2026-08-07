@@ -9,12 +9,18 @@ from pathlib import Path
 
 def trace_execution(target: str, timeout: int = 30) -> dict:
     """运行目标并抓取 QEMU 执行日志。"""
+    # PE/COFF 无法在 qemu-user (仅 ELF) 下运行 → 明确标记
+    if str(target).lower().endswith((".exe", ".dll", ".sys")):
+        return {"tool": "qemu", "error": "PE binary not runnable under "
+                "qemu-user (ELF only)", "available": False, "skip": True}
+
     qemu_bin = "qemu-x86_64"
     # 检查 QEMU 是否可用
     try:
         subprocess.run([qemu_bin, "--version"], capture_output=True, timeout=5)
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        return {"tool": "qemu", "error": "qemu-x86_64 not installed", "available": False}
+        return {"tool": "qemu", "error": "qemu-x86_64 not installed",
+                "available": False, "skip": True}
 
     try:
         proc = subprocess.run(

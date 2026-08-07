@@ -79,7 +79,7 @@ class ABIReport:
         }
 
 
-# ── x86-64 ABI 规范 (System V AMD64 ABI) ─────────────────────────
+# x86-64 ABI 规范 (System V AMD64 ABI)
 
 # callee-saved 寄存器：被调函数必须保存和恢复
 CALLEE_SAVED_REGS = {
@@ -108,7 +108,7 @@ EPILOGUE_PATTERN = re.compile(
     r'(leave|pop\s+rbp|add\s+rsp,\s*(0x[0-9a-f]+|\d+)).*ret', re.I | re.DOTALL)
 
 
-# ── ABI 检查器 ────────────────────────────────────────────────────
+# ABI 检查器
 
 class ABIIntegrityChecker:
     """二进制补丁 ABI 完整性检查器。
@@ -174,7 +174,7 @@ class ABIIntegrityChecker:
 
         return report
 
-    # ── 栈帧检查 ──────────────────────────────────────────────────
+# 栈帧检查
 
     def _check_stack_frame(self, orig: List[str], patched: List[str]
                            ) -> Optional[ABIViolation]:
@@ -208,7 +208,7 @@ class ABIIntegrityChecker:
                 return int(val, 16) if val.startswith('0x') else int(val)
         return None
 
-    # ── callee-saved 寄存器检查 ───────────────────────────────────
+# callee-saved 寄存器检查
 
     def _check_callee_saved_regs(self, orig: List[str], patched: List[str]
                                  ) -> List[ABIViolation]:
@@ -269,7 +269,7 @@ class ABIIntegrityChecker:
                         writes.add(dst.lower())
         return writes
 
-    # ── 返回约定检查 ──────────────────────────────────────────────
+# 返回约定检查
 
     def _check_return_convention(self, orig: List[str], patched: List[str]
                                  ) -> Optional[ABIViolation]:
@@ -296,7 +296,7 @@ class ABIIntegrityChecker:
             )
         return None
 
-    # ── 参数传递检查 ──────────────────────────────────────────────
+# 参数传递检查
 
     def _check_parameter_passing(self, orig: List[str], patched: List[str]
                                  ) -> Optional[ABIViolation]:
@@ -323,7 +323,7 @@ class ABIIntegrityChecker:
             )
         return None
 
-    # ── 栈对齐检查 ────────────────────────────────────────────────
+# 栈对齐检查
 
     def _check_stack_alignment(self, orig: List[str], patched: List[str]
                                ) -> Optional[ABIViolation]:

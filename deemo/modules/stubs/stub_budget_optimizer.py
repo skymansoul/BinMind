@@ -173,7 +173,7 @@ class BudgetOptimizer:
             {contract.module_name: dep_depth},
         )
 
-    # ---- 成本估算 ----
+# 成本估算
     def _estimate_cost(self, fc: _FuncContract) -> int:
         params = [p for p in fc.params if p.kind not in ('varargs', 'varkw')]
         cost = self.COST_BASE
@@ -185,7 +185,7 @@ class BudgetOptimizer:
             cost += len(fc.raises) * 15
         return cost
 
-    # ---- 价值估算 ----
+# 价值估算
     @staticmethod
     def _estimate_value(fc: _FuncContract, module_name: str,
                         call_volumes: dict, dep_depths: dict) -> float:
@@ -212,7 +212,7 @@ class BudgetOptimizer:
         annotated = sum(1 for p in params if p.annotation and p.annotation.strip())
         return annotated / len(params)
 
-    # ---- 报告 ----
+# 报告
     def plan_report(self, plan: BudgetPlan) -> str:
         """生成 Markdown 预算分配报告。"""
         lines = [

@@ -3,8 +3,8 @@
 # 2025-07-27 16:18 - 校准窗口从固定改为自适应, 按分布漂移检测触发收缩
 # 2025-07-30 11:05 - 增加 risk_aware_priority, 调度器可按分位数选择保守/激进策略
 # DAG 任务时延共形预测层: 保序分位数回归 + 滑动窗口校准 + 风险感知优先级
-# 参考: Angelopoulos & Bates "A Gentle Introduction to Conformal Prediction
-#       and Distribution-Free Uncertainty Quantification" (arXiv:2107.07511, 2021)
+# Angelopoulos & Bates "A Gentle Introduction to Conformal Prediction
+#       and Distribution-Free Uncertainty Quantification"
 #       — 提出 split conformal prediction 框架. 本实现扩展为在线滑动窗口校准,
 #         处理任务时延分布的非平稳性 (二进制分析任务时延分布随
 #         二进制类型/大小/优化级别显著偏移).
@@ -13,10 +13,10 @@
 #       — 将 CP 预测区间嵌入调度决策. 本项目借鉴 risk-aware 思想,
 #         面向 DAG 任务依赖图. 注：10.1109/xxx 为占位符，非正式出版物标识.
 # 设计边界:
-#   - 仅提供区间预测与风险评分, 不修改底层调度策略 (正交于 RL 策略梯度)
-#   - 非一致性度量: 归一化绝对误差 |y-ŷ|/ŷ, 对持续时间量纲不敏感
-#   - 校准集: 定长滑动窗口 (默认 200), 过期样本按 FIFO 逐出
-#   - α: 用户指定容错率 (默认 0.1 → 90% 覆盖率保证)
+# 仅提供区间预测与风险评分, 不修改底层调度策略 (正交于 RL 策略梯度)
+# 非一致性度量: 归一化绝对误差 |y-ŷ|/ŷ, 对持续时间量纲不敏感
+# 校准集: 定长滑动窗口 (默认 200), 过期样本按 FIFO 逐出
+# α: 用户指定容错率 (默认 0.1 → 90% 覆盖率保证)
 #   - 与 dag_drl_scheduler.py DAGDRLScheduler 接口兼容 (register_task→
 #     calibrate→predict_interval→risk_aware_priority)
 from __future__ import annotations

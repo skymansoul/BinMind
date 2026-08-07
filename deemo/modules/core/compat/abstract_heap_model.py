@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 堆分配器轻量抽象解释 — 用抽象域模拟堆操作, 检测不变式违反.
 
-HeapMD (ASPLOS 2022) 用双轨运行时架构做异常检测, 但需要执行二进制.
+HeapMD 用双轨运行时架构做异常检测, 但需要执行二进制.
 本模块在静态分析阶段构建抽象堆模型: 将 malloc/free 序列解释为对
 抽象域的操作, 在不执行代码的前提下检测 double-free/invalid-free/UAF.
 
@@ -67,7 +67,7 @@ class AbstractHeapModel:
         self._violations: List[Violation] = []
         self._event_count = 0
 
-    # ---- 公开 API ----
+# 公开 API
     def on_alloc(self, ptr_id: str, size: int,
                  call_addr: int = 0, **meta) -> Optional[Violation]:
         """注册一次分配操作."""
@@ -152,7 +152,7 @@ class AbstractHeapModel:
                 {'ptr_id': ptr_id, 'size_class': sc}, confidence=0.5))
         return result
 
-    # ---- 查询 ----
+# 查询
     def size_class_stats(self) -> Dict[int, Dict[str, int]]:
         return {
             sc: {'active': c.active, 'total_alloc': c.alloc_count,

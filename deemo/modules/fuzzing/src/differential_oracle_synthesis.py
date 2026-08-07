@@ -22,13 +22,12 @@ fuzzing 的核心瓶颈不是输入生成，而是 oracle 问题——"如何判
 则此行为可视为参考正确性基线。单版本偏离基线→自动标记为异常。
 这一假设在编译器非 buggy 且优化不改变语义的前提下成立。
 
-与 Centaur (NCSU 2025) 的区别：
+与 Centaur 的区别：
 Centaur 用 LLM 推断 DL API 的不变式，依赖于 LLM 质量。
 DOS 用多版本统计一致性替代 LLM，消除外部依赖和幻觉风险。
 
-参考：
-- "Differential Testing for Software" (McKeeman, 1998) — 差分测试的理论基础。
-- Centaur (2025) — LLM 辅助的不变式推断。本方案用多版本一致性替代 LLM。
+- "Differential Testing for Software" — 差分测试的理论基础。
+- Centaur — LLM 辅助的不变式推断。本方案用多版本一致性替代 LLM。
 """
 
 import hashlib
@@ -38,9 +37,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 _EPS: float = 1e-9
-
 
 @dataclass
 class ExecutionTrace:
@@ -96,7 +93,6 @@ class ExecutionTrace:
                 _dist += 1.0
 
         return _dist / 4.0  # 四个维度等权平均
-
 
 class DifferentialOracleSynthesizer:
     """差分 Oracle 合成器——从多版本执行轨迹中推导隐式正确性约束。
@@ -263,11 +259,8 @@ class DifferentialOracleSynthesizer:
 
         return _dist_sum / max(_count, 1) if _count > 0 else 0.0
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
     pass
-
 
 def _lcs_length(a: Tuple[int, ...], b: Tuple[int, ...]) -> int:
     """最长公共子序列长度——O(min(|a|,|b|)·max(|a|,|b|))。"""
@@ -289,8 +282,7 @@ def _lcs_length(a: Tuple[int, ...], b: Tuple[int, ...]) -> int:
         _prev = _curr
     return _prev[_n]
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _dos = DifferentialOracleSynthesizer(min_versions=3)
 
@@ -347,7 +339,6 @@ def _smoke_test():
     assert len(_rules) >= 1, "should synthesize at least one rule"
 
     print("[OK] DifferentialOracleSynthesizer smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

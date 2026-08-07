@@ -1,7 +1,7 @@
 """
 密码学掩码结构分析 — 从二进制代码结构检测掩码对策的完整性，非字符串匹配。
 
-创建: 2025-09-25 09:42
+创建: 2026-08-05 09:42
 修改:
   2025-09-25 09:42 — 初始实现: 掩码生成-应用-清除三联体检测/掩码传播深度/刷新检测
 
@@ -19,10 +19,9 @@
 
   每个信号输出0-1完整性评分, 组合为掩码质量评分。
 
-参考:
-  - Balasch et al. (TCHES 2025): 编译器对掩码实现的破坏 — 掩码被DSE清除的模式。
-  - Barthe et al. (EUROCRYPT 2017): 掩码编译 — 形式化验证掩码变换的正确性。
-  - Schneider et al. (USENIX 2024): DOCC — 编译器破坏CT的检测; 类似分析适用于掩码。
+  - Balasch et al.: 编译器对掩码实现的破坏 — 掩码被DSE清除的模式。
+  - Barthe et al.: 掩码编译 — 形式化验证掩码变换的正确性。
+  - Schneider et al.: DOCC — 编译器破坏CT的检测; 类似分析适用于掩码。
 
 边界条件:
   - 掩码结构分析基于x86操作码序列 — 精确的依赖链分析需完整反汇编。
@@ -33,7 +32,6 @@
 import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
-
 
 @dataclass
 class MaskStructureReport:
@@ -47,8 +45,7 @@ class MaskStructureReport:
     dse_risk: str = ""                    # 掩码被DSE优化的风险
     warnings: List[str] = field(default_factory=list)
 
-
-# ── 操作码分类 ──
+# 操作码分类
 _RNG_OPS = frozenset({
     0x0F, 0xC7,  # RDRAND (0F C7 /6)
     0x0F, 0xC9,  # RDSEED (部分)
@@ -58,7 +55,6 @@ _MOV_OPS = frozenset({0x88, 0x89, 0x8A, 0x8B, 0x8D, 0xB0, 0xB8, 0xC6, 0xC7})
 _BRANCH_OPS = frozenset({0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
                           0x7C, 0x7D, 0x7E, 0x7F, 0xEB, 0xE3, 0xE8, 0xE9, 0xC3})
 _REX = frozenset(range(0x40, 0x50))
-
 
 def _find_mask_generation(data: bytes, anchor: int, window: int = 4096
                            ) -> Tuple[bool, int, int]:
@@ -104,7 +100,6 @@ def _find_mask_generation(data: bytes, anchor: int, window: int = 4096
 
     return bool(rng_positions), rng_positions[0] if rng_positions else 0, 0
 
-
 def _measure_propagation_depth(data: bytes, gen_offset: int, xor_offset: int
                                 ) -> int:
     """
@@ -141,7 +136,6 @@ def _measure_propagation_depth(data: bytes, gen_offset: int, xor_offset: int
         i += 1
     return depth
 
-
 def _detect_refresh_pattern(data: bytes, anchor: int, window: int = 2048
                              ) -> bool:
     """
@@ -163,7 +157,6 @@ def _detect_refresh_pattern(data: bytes, anchor: int, window: int = 2048
                         return True
     return False
 
-
 def _check_unmask_presence(data: bytes, anchor: int, window: int = 4096
                             ) -> Tuple[bool, int]:
     """
@@ -182,8 +175,7 @@ def _check_unmask_presence(data: bytes, anchor: int, window: int = 4096
             last_xor = start + i
     return last_xor > 0, last_xor
 
-
-# ── 主分析函数 ──
+# 主分析函数
 
 def analyze_mask_structure(data: bytes,
                            crypto_findings: Optional[List] = None,

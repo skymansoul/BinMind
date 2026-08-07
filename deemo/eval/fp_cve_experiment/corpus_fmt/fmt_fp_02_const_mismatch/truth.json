@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_02_const_mismatch",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "常量格式串但参数不匹配 (参数错误非格式化漏洞)"
+}

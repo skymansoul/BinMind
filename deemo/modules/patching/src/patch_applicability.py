@@ -114,7 +114,7 @@ class ApplicabilityMatrix:
         }
 
 
-# ── 兼容性计算器 ──────────────────────────────────────────────────
+# 兼容性计算器
 
 class ApplicabilityCalculator:
     """计算补丁与目标 binary 的兼容性评分。
@@ -240,7 +240,7 @@ class ApplicabilityCalculator:
         return len(values) / inv_sum if inv_sum > 0 else 0.0
 
 
-# ── 二分图最优匹配 ────────────────────────────────────────────────
+# 二分图最优匹配
 
 class HungarianSolver:
     """Hungarian 算法（Kuhn-Munkres）求解最大权重二分图匹配。
@@ -351,7 +351,7 @@ class HungarianSolver:
         return result
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────
+# 便捷函数
 
 def resolve_applicability(patches: List[PatchCandidate],
                           binaries: List[FleetBinary]) -> ApplicabilityMatrix:

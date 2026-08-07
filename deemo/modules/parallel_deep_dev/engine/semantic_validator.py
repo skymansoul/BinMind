@@ -8,21 +8,20 @@
 阶段 1（本模块）：接口一致性 — 跨文件的 import/export 签名匹配。
 阶段 2+3（property_tester.py）：类型引导的属性测试 + 差异执行。
 
-ref: DiffSpec (Rao et al. 2024, arXiv:2410.04249) — 差分测试框架，
+ref: DiffSpec — 差分测试框架，
      本项目借鉴其多实现对比思想但适配到跨 worker 场景
-ref: PGS (He et al. 2024, arXiv:2506.18315) — PBT 用于 LLM 代码验证
+ref: PGS — PBT 用于 LLM 代码验证
 """
 
-from __future__ import annotations
 
 import ast
 import os
 from dataclasses import dataclass
 
+from parallel_deep_dev.engine._io import safe_read
 
-# ---------------------------------------------------------------------------
+
 # 阶段 1: 接口一致性 — 提取签名 + 交叉校验
-# ---------------------------------------------------------------------------
 
 @dataclass
 class FuncSig:
@@ -36,10 +35,8 @@ class FuncSig:
 def extract_signatures(filepath: str) -> list[FuncSig]:
     """从 Python 文件中提取顶层函数和类方法签名。"""
     sigs: list[FuncSig] = []
-    try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-            source = f.read()
-    except OSError:
+    source = safe_read(filepath)
+    if source is None:
         return sigs
     try:
         tree = ast.parse(source)
@@ -80,10 +77,8 @@ def check_cross_module_consistency(
     for fpath in changed_files:
         if not fpath.endswith(".py"):
             continue
-        try:
-            with open(fpath, "r", encoding="utf-8", errors="replace") as f:
-                source = f.read()
-        except OSError:
+        source = safe_read(fpath)
+        if source is None:
             continue
         try:
             tree = ast.parse(source)
@@ -109,9 +104,7 @@ def check_cross_module_consistency(
     return issues
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口 — 整合属性测试 + 差异执行（委托给 property_tester）
-# ---------------------------------------------------------------------------
 
 def run_semantic_validation(
     changed_files: list[str],

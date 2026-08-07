@@ -9,11 +9,10 @@
 # 解决手段: 实现扩展欧几里得算法求解二元Diophantine方程,
 #   n元情况降维为逐对求解. 将bin容量约束(tcache≤7, fastbin≤10)
 #   编码为不等式约束, 过滤不可行解
-# 参考 (已验证真实):
-#   MAZE (Wang et al., USENIX Security 2021) — Dig&Fill框架,
+# (已验证真实):
+#   MAZE — Dig&Fill框架,
 #     本项目实现其核心Diophantine求解的轻量级版本
 #   glibc malloc source (ptmalloc2) — bin容量和chunk大小约束
-from __future__ import annotations
 import logging, math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

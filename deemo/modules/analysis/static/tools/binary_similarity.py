@@ -3,7 +3,7 @@
 二进制函数语义相似度分析
 
 基于 LLM 嵌入和结构特征的多层次二进制函数相似度比较
-融合 [BLens 2025] 的对比学习框架与 [BinMetric 2025] 的基准评估策略
+融合 的对比学习框架与 的基准评估策略
 
 支持：
 - 指令序列 n-gram 哈希（快速初筛）
@@ -78,7 +78,7 @@ class NgramHasher:
     n-gram 指令序列哈希器
     
     对归一化后的指令序列计算滑动窗口 MinHash
-    用于 O(n) 级别的快速相似函数对筛选 [BinMetric 2025] Sec 3.2
+    用于 O(n) 级别的快速相似函数对筛选 Sec 3.2
     """
 
     def __init__(self, n: int = 3, n_hashes: int = 128):
@@ -130,7 +130,7 @@ class NgramHasher:
 
 
 class CFGSimilarity:
-    # WL 子树核近似：比较 BB 邻接拓扑和分支条件 [BLens 2025]
+    # WL 子树核近似：比较 BB 邻接拓扑和分支条件
 
     def __init__(self, iters: int = 2):
         self.iters = iters
@@ -205,7 +205,7 @@ class CFGSimilarity:
 
 class LLMEmbeddingSimilarity:
     # 将伪代码编码为固定维度向量，余弦相似度衡量语义等价
-    # 架构参考 [Probe--Recover 2024] 零样本策略
+    # 架构参考 零样本策略
 
     def __init__(self, dim: int = 768):
         self.dim = dim

@@ -1,0 +1,201 @@
+tool,sample_id,opt,group,ground_truth,detected,confirmed_count,fp,fn,time_ms,peak_mem_mb,error
+BinMind-PcWBI,cve_2013_4788_android_media,O0,unpacked,vulnerable,Y,1,0,0,586.47,24.43,
+BinMind-Baseline,cve_2013_4788_android_media,O0,unpacked,vulnerable,Y,1,0,0,470.96,0.0,
+angr,cve_2013_4788_android_media,O0,unpacked,vulnerable,Y,2,0,0,917.99,0.0,
+qemu-user,cve_2013_4788_android_media,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2013_4788_android_media,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2013_4788_android_media,O2,unpacked,vulnerable,Y,8,0,0,594.87,7.42,
+BinMind-Baseline,cve_2013_4788_android_media,O2,unpacked,vulnerable,Y,8,0,0,482.98,0.0,
+angr,cve_2013_4788_android_media,O2,unpacked,vulnerable,Y,1,0,0,775.48,0.0,
+qemu-user,cve_2013_4788_android_media,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2013_4788_android_media,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2015_0235_ghost,O0,unpacked,vulnerable,Y,1,0,0,452.71,5.34,
+BinMind-Baseline,cve_2015_0235_ghost,O0,unpacked,vulnerable,Y,1,0,0,365.44,0.0,
+angr,cve_2015_0235_ghost,O0,unpacked,vulnerable,Y,2,0,0,898.37,0.0,
+qemu-user,cve_2015_0235_ghost,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2015_0235_ghost,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2015_0235_ghost,O2,unpacked,vulnerable,Y,1,0,0,554.62,1.52,
+BinMind-Baseline,cve_2015_0235_ghost,O2,unpacked,vulnerable,Y,1,0,0,492.11,0.0,
+angr,cve_2015_0235_ghost,O2,unpacked,vulnerable,Y,2,0,0,853.28,0.0,
+qemu-user,cve_2015_0235_ghost,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2015_0235_ghost,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2016_10158_php_exif,O0,unpacked,vulnerable,Y,1,0,0,665.54,7.1,
+BinMind-Baseline,cve_2016_10158_php_exif,O0,unpacked,vulnerable,Y,1,0,0,439.22,0.0,
+angr,cve_2016_10158_php_exif,O0,unpacked,vulnerable,Y,2,0,0,865.6,0.0,
+qemu-user,cve_2016_10158_php_exif,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2016_10158_php_exif,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2016_10158_php_exif,O2,unpacked,vulnerable,Y,28,0,0,631.94,0.0,
+BinMind-Baseline,cve_2016_10158_php_exif,O2,unpacked,vulnerable,Y,28,0,0,551.65,0.0,
+angr,cve_2016_10158_php_exif,O2,unpacked,vulnerable,Y,2,0,0,884.56,0.0,
+qemu-user,cve_2016_10158_php_exif,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2016_10158_php_exif,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2016_6301_ntpd,O0,unpacked,vulnerable,Y,1,0,0,512.14,0.0,
+BinMind-Baseline,cve_2016_6301_ntpd,O0,unpacked,vulnerable,Y,1,0,0,597.2,0.0,
+angr,cve_2016_6301_ntpd,O0,unpacked,vulnerable,Y,2,0,0,822.78,0.0,
+qemu-user,cve_2016_6301_ntpd,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2016_6301_ntpd,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2016_6301_ntpd,O2,unpacked,vulnerable,Y,2,0,0,775.85,1.51,
+BinMind-Baseline,cve_2016_6301_ntpd,O2,unpacked,vulnerable,Y,2,0,0,528.31,0.0,
+angr,cve_2016_6301_ntpd,O2,unpacked,vulnerable,Y,3,0,0,872.7,0.0,
+qemu-user,cve_2016_6301_ntpd,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2016_6301_ntpd,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2017_1000112_linux_udp,O0,unpacked,vulnerable,Y,1,0,0,489.04,0.0,
+BinMind-Baseline,cve_2017_1000112_linux_udp,O0,unpacked,vulnerable,Y,1,0,0,431.32,0.0,
+angr,cve_2017_1000112_linux_udp,O0,unpacked,vulnerable,Y,2,0,0,1082.23,0.0,
+qemu-user,cve_2017_1000112_linux_udp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2017_1000112_linux_udp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2017_1000112_linux_udp,O2,unpacked,vulnerable,Y,2,0,0,517.35,0.0,
+BinMind-Baseline,cve_2017_1000112_linux_udp,O2,unpacked,vulnerable,Y,2,0,0,469.75,0.0,
+angr,cve_2017_1000112_linux_udp,O2,unpacked,vulnerable,Y,3,0,0,833.74,0.0,
+qemu-user,cve_2017_1000112_linux_udp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2017_1000112_linux_udp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2017_7269_iis_scstorage,O0,unpacked,vulnerable,Y,1,0,0,733.93,2.36,
+BinMind-Baseline,cve_2017_7269_iis_scstorage,O0,unpacked,vulnerable,Y,1,0,0,490.09,0.0,
+angr,cve_2017_7269_iis_scstorage,O0,unpacked,vulnerable,Y,2,0,0,880.26,0.0,
+qemu-user,cve_2017_7269_iis_scstorage,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2017_7269_iis_scstorage,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2017_7269_iis_scstorage,O2,unpacked,vulnerable,Y,2,0,0,511.94,0.0,
+BinMind-Baseline,cve_2017_7269_iis_scstorage,O2,unpacked,vulnerable,Y,2,0,0,451.96,0.0,
+angr,cve_2017_7269_iis_scstorage,O2,unpacked,vulnerable,Y,3,0,0,1097.18,0.0,
+qemu-user,cve_2017_7269_iis_scstorage,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2017_7269_iis_scstorage,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2018_1000001_curl_tftp,O0,unpacked,vulnerable,Y,1,0,0,564.83,0.0,
+BinMind-Baseline,cve_2018_1000001_curl_tftp,O0,unpacked,vulnerable,Y,1,0,0,483.04,0.0,
+angr,cve_2018_1000001_curl_tftp,O0,unpacked,vulnerable,Y,2,0,0,971.77,0.0,
+qemu-user,cve_2018_1000001_curl_tftp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2018_1000001_curl_tftp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2018_1000001_curl_tftp,O2,unpacked,vulnerable,Y,1,0,0,542.42,0.94,
+BinMind-Baseline,cve_2018_1000001_curl_tftp,O2,unpacked,vulnerable,Y,1,0,0,711.73,0.0,
+angr,cve_2018_1000001_curl_tftp,O2,unpacked,vulnerable,Y,2,0,0,881.78,0.0,
+qemu-user,cve_2018_1000001_curl_tftp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2018_1000001_curl_tftp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2018_14634_kernel_create_elf,O0,unpacked,vulnerable,Y,1,0,0,523.96,0.0,
+BinMind-Baseline,cve_2018_14634_kernel_create_elf,O0,unpacked,vulnerable,Y,1,0,0,501.64,0.0,
+angr,cve_2018_14634_kernel_create_elf,O0,unpacked,vulnerable,Y,2,0,0,984.93,0.0,
+qemu-user,cve_2018_14634_kernel_create_elf,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2018_14634_kernel_create_elf,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2018_14634_kernel_create_elf,O2,unpacked,vulnerable,Y,1,0,0,530.35,0.0,
+BinMind-Baseline,cve_2018_14634_kernel_create_elf,O2,unpacked,vulnerable,Y,1,0,0,508.71,0.0,
+angr,cve_2018_14634_kernel_create_elf,O2,unpacked,vulnerable,Y,2,0,0,902.69,0.0,
+qemu-user,cve_2018_14634_kernel_create_elf,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2018_14634_kernel_create_elf,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_1579_paloalto_gp,O0,unpacked,vulnerable,Y,1,0,0,506.39,0.0,
+BinMind-Baseline,cve_2019_1579_paloalto_gp,O0,unpacked,vulnerable,Y,1,0,0,721.89,0.0,
+angr,cve_2019_1579_paloalto_gp,O0,unpacked,vulnerable,Y,2,0,0,815.52,0.0,
+qemu-user,cve_2019_1579_paloalto_gp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_1579_paloalto_gp,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_1579_paloalto_gp,O2,unpacked,vulnerable,Y,28,0,0,620.18,0.0,
+BinMind-Baseline,cve_2019_1579_paloalto_gp,O2,unpacked,vulnerable,Y,28,0,0,704.78,0.0,
+angr,cve_2019_1579_paloalto_gp,O2,unpacked,vulnerable,Y,2,0,0,1079.7,0.0,
+qemu-user,cve_2019_1579_paloalto_gp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_1579_paloalto_gp,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_2215_binder_trans,O0,unpacked,vulnerable,Y,1,0,0,567.79,0.0,
+BinMind-Baseline,cve_2019_2215_binder_trans,O0,unpacked,vulnerable,Y,1,0,0,546.63,0.0,
+angr,cve_2019_2215_binder_trans,O0,unpacked,vulnerable,Y,2,0,0,905.56,0.0,
+qemu-user,cve_2019_2215_binder_trans,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_2215_binder_trans,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_2215_binder_trans,O2,unpacked,vulnerable,Y,2,0,0,585.23,0.33,
+BinMind-Baseline,cve_2019_2215_binder_trans,O2,unpacked,vulnerable,Y,2,0,0,909.6,0.0,
+angr,cve_2019_2215_binder_trans,O2,unpacked,vulnerable,Y,3,0,0,859.18,0.0,
+qemu-user,cve_2019_2215_binder_trans,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_2215_binder_trans,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_3462_debian_apt,O0,unpacked,vulnerable,Y,1,0,0,555.18,0.0,
+BinMind-Baseline,cve_2019_3462_debian_apt,O0,unpacked,vulnerable,Y,1,0,0,494.06,0.0,
+angr,cve_2019_3462_debian_apt,O0,unpacked,vulnerable,Y,2,0,0,1170.11,0.0,
+qemu-user,cve_2019_3462_debian_apt,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_3462_debian_apt,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2019_3462_debian_apt,O2,unpacked,vulnerable,Y,1,0,0,582.95,0.0,
+BinMind-Baseline,cve_2019_3462_debian_apt,O2,unpacked,vulnerable,Y,1,0,0,556.05,0.0,
+angr,cve_2019_3462_debian_apt,O2,unpacked,vulnerable,Y,2,0,0,838.75,0.0,
+qemu-user,cve_2019_3462_debian_apt,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2019_3462_debian_apt,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2020_0022_bt_l2cap,O0,unpacked,vulnerable,Y,1,0,0,514.67,0.0,
+BinMind-Baseline,cve_2020_0022_bt_l2cap,O0,unpacked,vulnerable,Y,1,0,0,698.53,0.0,
+angr,cve_2020_0022_bt_l2cap,O0,unpacked,vulnerable,Y,2,0,0,910.43,0.0,
+qemu-user,cve_2020_0022_bt_l2cap,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2020_0022_bt_l2cap,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2020_0022_bt_l2cap,O2,unpacked,vulnerable,Y,12,0,0,584.92,0.0,
+BinMind-Baseline,cve_2020_0022_bt_l2cap,O2,unpacked,vulnerable,Y,12,0,0,566.77,0.0,
+angr,cve_2020_0022_bt_l2cap,O2,unpacked,vulnerable,Y,1,0,0,1066.51,0.0,
+qemu-user,cve_2020_0022_bt_l2cap,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2020_0022_bt_l2cap,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2021_3156_sudo_baron,O0,unpacked,vulnerable,Y,1,0,0,567.46,0.0,
+BinMind-Baseline,cve_2021_3156_sudo_baron,O0,unpacked,vulnerable,Y,1,0,0,501.39,0.0,
+angr,cve_2021_3156_sudo_baron,O0,unpacked,vulnerable,Y,2,0,0,841.44,0.0,
+qemu-user,cve_2021_3156_sudo_baron,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2021_3156_sudo_baron,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2021_3156_sudo_baron,O2,unpacked,vulnerable,Y,1,0,0,523.51,0.0,
+BinMind-Baseline,cve_2021_3156_sudo_baron,O2,unpacked,vulnerable,Y,1,0,0,485.49,0.0,
+angr,cve_2021_3156_sudo_baron,O2,unpacked,vulnerable,Y,2,0,0,1144.34,0.0,
+qemu-user,cve_2021_3156_sudo_baron,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2021_3156_sudo_baron,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2021_4034_polkit_pkexec,O0,unpacked,vulnerable,Y,1,0,0,546.99,0.0,
+BinMind-Baseline,cve_2021_4034_polkit_pkexec,O0,unpacked,vulnerable,Y,1,0,0,526.51,0.0,
+angr,cve_2021_4034_polkit_pkexec,O0,unpacked,vulnerable,Y,2,0,0,1014.85,0.0,
+qemu-user,cve_2021_4034_polkit_pkexec,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2021_4034_polkit_pkexec,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2021_4034_polkit_pkexec,O2,unpacked,vulnerable,Y,1,0,0,606.94,0.0,
+BinMind-Baseline,cve_2021_4034_polkit_pkexec,O2,unpacked,vulnerable,Y,1,0,0,528.06,0.0,
+angr,cve_2021_4034_polkit_pkexec,O2,unpacked,vulnerable,Y,2,0,0,831.36,0.0,
+qemu-user,cve_2021_4034_polkit_pkexec,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2021_4034_polkit_pkexec,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2022_0185_fs_context,O0,unpacked,vulnerable,Y,1,0,0,500.84,0.0,
+BinMind-Baseline,cve_2022_0185_fs_context,O0,unpacked,vulnerable,Y,1,0,0,478.84,0.0,
+angr,cve_2022_0185_fs_context,O0,unpacked,vulnerable,Y,2,0,0,1163.02,0.0,
+qemu-user,cve_2022_0185_fs_context,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2022_0185_fs_context,O0,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,cve_2022_0185_fs_context,O2,unpacked,vulnerable,Y,1,0,0,609.64,0.0,
+BinMind-Baseline,cve_2022_0185_fs_context,O2,unpacked,vulnerable,Y,1,0,0,591.12,0.0,
+angr,cve_2022_0185_fs_context,O2,unpacked,vulnerable,Y,2,0,0,1128.78,0.0,
+qemu-user,cve_2022_0185_fs_context,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,cve_2022_0185_fs_context,O2,unpacked,vulnerable,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_01_correlated,O0,unpacked,safe,N,0,0,0,587.06,0.0,
+BinMind-Baseline,safe_01_correlated,O0,unpacked,safe,N,0,0,0,495.41,0.0,
+angr,safe_01_correlated,O0,unpacked,safe,Y,2,1,0,822.2,0.0,
+qemu-user,safe_01_correlated,O0,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_01_correlated,O0,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_01_correlated,O2,unpacked,safe,N,0,0,0,549.17,0.07,
+BinMind-Baseline,safe_01_correlated,O2,unpacked,safe,N,0,0,0,483.67,0.0,
+angr,safe_01_correlated,O2,unpacked,safe,Y,2,1,0,1070.93,0.0,
+qemu-user,safe_01_correlated,O2,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_01_correlated,O2,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_02_guarded,O0,unpacked,safe,N,0,0,0,516.62,0.0,
+BinMind-Baseline,safe_02_guarded,O0,unpacked,safe,Y,1,1,0,500.95,0.0,
+angr,safe_02_guarded,O0,unpacked,safe,Y,2,1,0,1011.7,0.0,
+qemu-user,safe_02_guarded,O0,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_02_guarded,O0,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_02_guarded,O2,unpacked,safe,N,0,0,0,632.83,0.0,
+BinMind-Baseline,safe_02_guarded,O2,unpacked,safe,Y,1,1,0,579.86,0.0,
+angr,safe_02_guarded,O2,unpacked,safe,Y,1,1,0,894.47,0.0,
+qemu-user,safe_02_guarded,O2,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_02_guarded,O2,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_03_padding,O0,unpacked,safe,N,0,0,0,508.53,0.05,
+BinMind-Baseline,safe_03_padding,O0,unpacked,safe,N,0,0,0,462.95,0.0,
+angr,safe_03_padding,O0,unpacked,safe,Y,2,1,0,1204.06,0.0,
+qemu-user,safe_03_padding,O0,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_03_padding,O0,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_03_padding,O2,unpacked,safe,N,0,0,0,499.5,0.0,
+BinMind-Baseline,safe_03_padding,O2,unpacked,safe,N,0,0,0,464.74,0.0,
+angr,safe_03_padding,O2,unpacked,safe,Y,1,1,0,1076.95,0.0,
+qemu-user,safe_03_padding,O2,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_03_padding,O2,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_04_alloc_plus_one,O0,unpacked,safe,N,0,0,0,563.66,0.0,
+BinMind-Baseline,safe_04_alloc_plus_one,O0,unpacked,safe,N,0,0,0,461.04,0.0,
+angr,safe_04_alloc_plus_one,O0,unpacked,safe,Y,2,1,0,795.43,0.0,
+qemu-user,safe_04_alloc_plus_one,O0,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_04_alloc_plus_one,O0,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_04_alloc_plus_one,O2,unpacked,safe,N,0,0,0,613.36,0.0,
+BinMind-Baseline,safe_04_alloc_plus_one,O2,unpacked,safe,N,0,0,0,489.64,0.0,
+angr,safe_04_alloc_plus_one,O2,unpacked,safe,Y,2,1,0,1129.03,0.0,
+qemu-user,safe_04_alloc_plus_one,O2,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_04_alloc_plus_one,O2,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_05_exact_constant,O0,unpacked,safe,N,0,0,0,553.39,0.0,
+BinMind-Baseline,safe_05_exact_constant,O0,unpacked,safe,N,0,0,0,512.77,0.0,
+angr,safe_05_exact_constant,O0,unpacked,safe,Y,2,1,0,981.64,0.0,
+qemu-user,safe_05_exact_constant,O0,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_05_exact_constant,O0,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured
+BinMind-PcWBI,safe_05_exact_constant,O2,unpacked,safe,N,0,0,0,528.43,0.0,
+BinMind-Baseline,safe_05_exact_constant,O2,unpacked,safe,N,0,0,0,533.62,0.0,
+angr,safe_05_exact_constant,O2,unpacked,safe,Y,1,1,0,1003.36,0.0,
+qemu-user,safe_05_exact_constant,O2,unpacked,safe,N,0,0,0,0.0,0.0,qemu not installed
+ghidra-headless,safe_05_exact_constant,O2,unpacked,safe,N,0,0,0,0.0,0.0,GHIDRA_HOME not configured

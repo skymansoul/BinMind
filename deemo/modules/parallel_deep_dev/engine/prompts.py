@@ -18,12 +18,12 @@ def generate_sub_prompt(module_key: str, module_def: dict) -> str:
         papers_text = "  (此创新点基于内部架构分析与工程最佳实践，无需外部论文支撑)\n"
 
     return f"""
-## 子模块: {module_key} — {module_def['name']}
+# 子模块: {module_key} — {module_def['name']}
 
-### 当前功能描述
+# 当前功能描述
 {module_def['description']}
 
-### 深度创新点: {innovation['title']}
+# 深度创新点: {innovation['title']}
 
 **动机与理论依据:**
 {innovation['rationale']}
@@ -31,7 +31,7 @@ def generate_sub_prompt(module_key: str, module_def: dict) -> str:
 **支撑论文:**
 {papers_text}
 
-### 开发要求 (必须严格遵守)
+# 开发要求 (必须严格遵守)
 
 1. **保留所有原有功能**: 不得删除、精简或修改任何现有的功能、接口和注释。
    所有新增代码必须作为增量添加(新函数/新类/新模块)，现有代码行一个字都不能少。
@@ -41,7 +41,7 @@ def generate_sub_prompt(module_key: str, module_def: dict) -> str:
    - 禁止任何情感词(如"优秀""完美""惊人""显然")、口号或无关事实。
    - 禁止添加与代码功能无关的注释。
    - 示例正确: "此处使用 Beta(2,2) 先验而非均匀先验，原因是在低样本量下提供向 0.5 的收缩，
-     避免极端置信度估计。——Beta分布参数选择依据：Kruschke (2015) 推荐"
+     避免极端置信度估计。——Beta分布参数选择依据：Kruschke 推荐"
    - 示例错误: "这个算法特别好用！" 或 "众所周知，..."
 
 3. **自我痕迹审计**:
@@ -54,7 +54,7 @@ def generate_sub_prompt(module_key: str, module_def: dict) -> str:
 
 4. **时间戳**: 不要修改任何文件的时间戳(由主控脚本事后统一处理)。
 
-### 输出格式要求
+# 输出格式要求
 
 请输出所有需要新增或修改的文件的完整内容。每个文件使用以下分隔符:
 

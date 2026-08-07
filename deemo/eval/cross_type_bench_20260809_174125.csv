@@ -1,0 +1,5 @@
+Tool,TP,FP,TN,FN,Precision,Recall,F1,FPR
+BinMind-GAPSBV,116,0,14,0,1.0,1.0,1.0,0.0
+Objdump-Naive,90,5,9,26,0.9474,0.7759,0.8531,0.3571
+Nm-Symbol,90,5,9,26,0.9474,0.7759,0.8531,0.3571
+Regex-Baseline,69,8,6,47,0.8961,0.5948,0.715,0.5714

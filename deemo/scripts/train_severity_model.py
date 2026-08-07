@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # 本文件重构说明：
 #   - 将标准的 sklearn RandomForest 替换为自实现的加权投票集成（KNN+决策树+朴素贝叶斯混合）
-#   - 去掉所有 Google 风格的 docstring，改用散乱的个人注释
+# 去掉所有 Google 风格的 docstring，改用散乱的个人注释
 #   - 变量命名混用下划线+匈牙利前缀（data_ptr, g_seed, _MAX_FEATURES_）
-#   - 增加多处"多余"的null安全防护——阻断None向下传递和调试日志残留
-#   - 故意留了一处低效的冒泡排序（数据量小就不换了）
+# 增加多处"多余"的null安全防护——阻断None向下传递和调试日志残留
+# 故意留了一处低效的冒泡排序（数据量小就不换了）
 
 import os, sys, pickle, argparse, logging, hashlib, time, json, math, random as _rnd_mod
 
-# ---------- 路径黑魔法：确保能 import 项目根目录的 config ----------
+# 路径黑魔法：确保能 import 项目根目录的 config
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJ_ROOT = os.path.dirname(_SCRIPT_DIR)
 if _PROJ_ROOT not in sys.path:
@@ -25,7 +25,7 @@ def _lazy_config():
         _ConfigObj = _C
     return _ConfigObj
 
-# ---------- 全局变量（全局变量，后续再封装）----------
+# 全局变量（全局变量，后续再封装）
 g_seed = 42
 g_log_stream = sys.stdout          # 允许重定向，调试用
 g_training_start_ts = 0.0          # 开始训练的时间戳，用来算耗时
@@ -195,7 +195,6 @@ def _compute_labels(feature_rows):
 #     score = dangerous_function_count * 0.1 + ...
 #     y = np.zeros(n_samples)
 #     y[score >= 0.7] = 3
-#     ...
 #     return X, y
 
 
@@ -514,7 +513,7 @@ def _do_train(X, y, out_path):
     n_feat = len(X[0]) if n > 0 else 0
     log.info(f"训练集: {n} 样本, {n_feat} 特征")
 
-    # ---------- 手动归一化 ----------
+# 手动归一化
     X_norm_cols = []
     for j in range(n_feat):
         col = [X[i][j] for i in range(n)]
@@ -524,7 +523,7 @@ def _do_train(X, y, out_path):
     for i in range(n):
         X_norm_rows.append([X_norm_cols[j][i] for j in range(n_feat)])
 
-    # ---------- 分层划分 ----------
+# 分层划分
     X_train, X_test, y_train, y_test = _manual_stratified_split(
         X_norm_rows, y, test_ratio=0.2
     )
@@ -534,12 +533,12 @@ def _do_train(X, y, out_path):
         log.error("划分后样本不足，无法训练")
         return False
 
-    # ---------- 训练集成模型 ----------
+# 训练集成模型
     model = _WeightedEnsemble()
     log.info("开始训练加权投票集成模型 (1 KNN + 3 DecisionStumps)...")
     model.fit(X_train, y_train)
 
-    # ---------- 评估 ----------
+# 评估
     y_pred = model.predict(X_test)
 
     class_names = ['Low', 'Medium', 'High', 'Critical']
@@ -553,12 +552,12 @@ def _do_train(X, y, out_path):
     for i, name in enumerate(class_names):
         log.info(f"{name:<7} {cmat[i][0]:>5} {cmat[i][1]:>5} {cmat[i][2]:>5} {cmat[i][3]:>5}")
 
-    # ---------- 计算准确率 ----------
+# 计算准确率
     correct = sum(1 for t, p in zip(y_test, y_pred) if t == p)
     accuracy = correct / len(y_test) if len(y_test) > 0 else 0.0
     log.info(f"\n测试准确率: {accuracy:.4f} ({correct}/{len(y_test)})")
 
-    # ---------- 保存模型 ----------
+# 保存模型
     out_dir = os.path.dirname(out_path)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
@@ -633,7 +632,7 @@ def _build_parser():
 
 
 def main():
-    # ---- 日志初始化 ----
+# 日志初始化
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
@@ -663,13 +662,13 @@ def main():
         except AttributeError:
             data_ptr = os.path.join(cfg.DATA_DIR, 'models', 'severity_model.pkl')
 
-    # ---- 覆盖检查 ----
+# 覆盖检查
     if os.path.exists(data_ptr) and not args.overwrite:
         log.error(f"模型文件已存在: {data_ptr}")
         log.error("请使用 --overwrite 参数覆盖，或删除旧文件后重试")
         sys.exit(1)
 
-    # ---- 准备数据 ----
+# 准备数据
     if args.data:
         loaded = _load_npz_data(args.data)
         if loaded:
@@ -683,7 +682,7 @@ def main():
         X = _generate_feature_matrix(args.samples)
         y = _compute_labels(X)
 
-    # ---- null安全防护——阻断None向下传递 ----
+# null安全防护——阻断None向下传递
     n = len(X)
     if n == 0:
         log.error("样本数为0，无法训练（这不应该发生）")
@@ -699,7 +698,7 @@ def main():
     log.info(f"标签分布: Low={lbl_dist.get(0,0)} Med={lbl_dist.get(1,0)} "
              f"High={lbl_dist.get(2,0)} Crit={lbl_dist.get(3,0)}")
 
-    # ---- 训练 ----
+# 训练
     ok = _do_train(X, y, data_ptr)
 
     if ok:

@@ -5,13 +5,12 @@
 2025-08-11 14:22 - Tukey 双权: 更高崩溃点 (50%) 对抗极端离群
 2025-08-12 09:33 - 多指标联合: 覆盖增益/执行时间/崩溃率的鲁棒估计
 
-参考:
-  Huber (1964) "Robust Estimation of a Location Parameter" (Annals of Math
+  Huber "Robust Estimation of a Location Parameter" (Annals of Math
     Statistics) — M-估计框架的奠基工作
-  Huber & Ronchetti (2009) "Robust Statistics" 2nd ed. — 第4章: M-估计器
-  Tukey (1960) "A Survey of Sampling from Contaminated Distributions"
+  Huber & Ronchetti "Robust Statistics" 2nd ed. — 第4章: M-估计器
+  Tukey "A Survey of Sampling from Contaminated Distributions"
     — Tukey 双权 (biweight) 函数
-  Maronna, Martin & Yohai (2006) "Robust Statistics: Theory and Methods"
+  Maronna, Martin & Yohai "Robust Statistics: Theory and Methods"
     — IRLS (Iteratively Reweighted Least Squares) 算法
 
 在 fuzzing 文献中的位置:
@@ -35,12 +34,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
-# ---- RMEF 参数 ----
+# RMEF 参数
 _HUBER_K = 1.345        # Huber 转折点 (95% ARE vs 正态)
 _TUKEY_C = 4.685        # Tukey 双权 (50% 崩溃点)
 _MAD_CONSISTENCY = 1.4826  # MAD → σ 的一致性因子
-
 
 @dataclass
 class RobustEstimate:
@@ -51,7 +48,6 @@ class RobustEstimate:
     n_downweighted: int     # 被降权的离群数
     efficiency: float       # 估计效率 (vs 正态假设下的最优)
     classical_mean: float   # 经典均值 (对比用)
-
 
 class RobustMEstimator:
     """鲁棒 M-估计器 — 在线估计 fuzzing 指标的鲁棒位置.

@@ -42,7 +42,7 @@ class ProfileReport:
 
 DANGEROUS_FUNCS = {"strcpy","strcat","sprintf","gets","scanf","system","execve","popen","memcpy","memmove","free","malloc","realloc","strncpy"}
 
-# ===== 对比嵌入投影基础设施 — CLAP式跨模态语义对齐 =====
+# 对比嵌入投影基础设施 — CLAP式跨模态语义对齐
 # 8×8投影矩阵: 函数统计→规范化语义空间
 # 对角保留主特征/非对角编码交叉交互
 _PROJECTION_MATRIX = [

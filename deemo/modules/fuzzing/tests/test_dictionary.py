@@ -160,7 +160,7 @@ class TestDictEntry:
         assert entry.source == "extract"
 
 
-# ── 独立测试（无需模块导入） ──
+# 独立测试（无需模块导入）
 
 def test_afl_format_inline():
     """AFL字典格式：每个条目一行"""

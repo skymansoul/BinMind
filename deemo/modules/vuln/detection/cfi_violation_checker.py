@@ -185,6 +185,5 @@ def create_cfi_checker(binary_path: str) -> CFIChecker:
     return CFIChecker(binary_path)
 
 
-def _debug_print(*args, **kwargs):
     pass  # Internal: debug output stub
 

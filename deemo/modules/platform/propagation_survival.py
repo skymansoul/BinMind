@@ -17,7 +17,7 @@
   2. 可解释性要求 — 保险/合规场景需逐因子归因，黑盒模型不可接受
   3. Cox PH 的半参数性质恰好匹配 — 基准风险函数非参数估计，协变量效应参数化
 
-ref: arXiv:2502.11143 (VulRG) — 多层级漏洞评分，但未引入时间维度的生存建模。
+ref: (VulRG) — 多层级漏洞评分，但未引入时间维度的生存建模。
 ref: IEEE TDSC 2025 (MIRAGE) — 静态攻击图，生存分析将静态图转为动态风险曲面。
 """
 
@@ -30,7 +30,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .propagation_graph import PlatformLayer, PropagationGraph, VulnNode
 
-
 @dataclass
 class SurvivalEvent:
     """漏洞生存事件 — 一条观测记录。"""
@@ -41,7 +40,6 @@ class SurvivalEvent:
     observation_end: float         # 观测窗口结束时刻
     covariates: Dict[str, float] = field(default_factory=dict)
     # 协变量：severity, layer_distance_max, indegree, cross_layer_edge_count
-
 
 class KaplanMeierEstimator:
     """Kaplan-Meier 生存函数估计器 — 按平台层分层。
@@ -142,7 +140,6 @@ class KaplanMeierEstimator:
         if Hb < 1e-10:
             return float('inf') if Ha > 0 else 1.0
         return Ha / Hb
-
 
 class PropagationSurvivalAnalyzer:
     """传播图生存分析 — 桥接 PropagationGraph 与生存分析模型。

@@ -4,12 +4,12 @@
 
 不依赖外部 SMT solver。在 Python 整数语义内实现线性约束简化。
 
-参考 BASICS [arXiv:2511.19670] concolic execution 框架，
+参考 BASICS concolic execution 框架，
 借鉴其符号状态追踪思路，但不引入 KLEE 级符号执行引擎。
 约束求解限制在线性算术和 bitwise 等式，NP-hard 部分回退到具体值。
 代价是路径覆盖不完整，收益是零外部依赖和确定性运行时间。
 
-参考 ColorGo [arXiv:2505.21130] directed concolic execution，
+参考 ColorGo directed concolic execution，
 其"增量可达性染色"思路用于路径优先级排序。
 """
 
@@ -89,7 +89,7 @@ class SymExpr:
                        bits=hi - lo + 1)
 
 
-# ── 约束 ────────────────────────────────────────────────────────
+# 约束
 
 class ConstraintKind(Enum):
     EQ = "eq"
@@ -220,7 +220,7 @@ class PathCondition:
         raise NotImplementedError(f"eval: {expr.kind}")
 
 
-# ── 符号状态 ────────────────────────────────────────────────────
+# 符号状态
 
 @dataclass
 class SymbolicState:

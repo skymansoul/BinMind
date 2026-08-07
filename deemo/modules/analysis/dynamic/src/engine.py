@@ -31,11 +31,9 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Dynamically import underlying engine implementation
 # engine/ directory 包含 real logic; module re-exports
 # extends additional pass 基础设施
-# ---------------------------------------------------------------------------
 
 try:
     from ..engine.dynamic_analysis_engine import (
@@ -105,9 +103,7 @@ except ImportError:
         pass
 
 
-# ---------------------------------------------------------------------------
 # MITRE ATT&CK behavioral 签名 数据库
-# ---------------------------------------------------------------------------
 
 _MITRE_SIGNATURES: Dict[str, List[str]] = {
     "T1055": ["VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"],
@@ -130,9 +126,7 @@ _MITRE_TACTIC_MAP: Dict[str, str] = {
 }
 
 
-# ---------------------------------------------------------------------------
 # Analysis pass 基础设施
-# ---------------------------------------------------------------------------
 
 @dataclass
 class AnalysisContext:
@@ -356,9 +350,7 @@ class ImportAnalysisPass(AnalysisPass):
         return ctx
 
 
-# ---------------------------------------------------------------------------
 # Main engine facade
-# ---------------------------------------------------------------------------
 
 _DEFAULT_TIMEOUT = 300  # seconds — used throughout 动态分析
 
@@ -543,9 +535,7 @@ class DynamicAnalysisEngine:
         return traces
 
 
-# ---------------------------------------------------------------------------
 # Easy-access function
-# ---------------------------------------------------------------------------
 
 def quick_scan(binary_path: str) -> Dict[str, Any]:
     """One-shot 动态分析 a default pass 流水线"""

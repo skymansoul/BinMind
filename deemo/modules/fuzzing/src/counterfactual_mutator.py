@@ -6,9 +6,8 @@
 2025-08-01 14:08 - bootstrap 置信区间过滤低信度推断
 2025-08-20 09:13 - 修正: 标注线性近似假设, 区分于 Pearl formal counterfactual
 
-参考:
-  Pearl (2009) "Causality" §7 — 反事实的形式化基础
-  Peters, Janzing & Schölkopf (2017) "Elements of Causal Inference" §6
+  Pearl "Causality" §7 — 反事实的形式化基础
+  Peters, Janzing & Schölkopf "Elements of Causal Inference" §6
 
 技术路线:
   在线性 SCM 假设下, 反事实期望简化为 E[Y_{x'}|x,y] = y + β·(x'-x),
@@ -29,7 +28,6 @@ from .counterfactual_types import (
     _MAX_HISTORY, _MIN_SAMPLES_FOR_CAUSAL, _CF_CONFIDENCE_THRESHOLD,
     _BOOTSTRAP_SAMPLES,
 )
-
 
 class CounterfactualMutator:
     """反事实变异优化器 — 基于因果推断的字节级变异决策.

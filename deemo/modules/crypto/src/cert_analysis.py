@@ -32,7 +32,7 @@ class CertInfo:
     raw_der: bytes = b""
 
 
-# ---- ASN.1 DER 基础解析 ----
+# ASN.1 DER 基础解析
 def _read_tag(data: bytes, offset: int) -> Tuple[int, int, int, int]:
     """解析DER TLV: 返回 (tag, length, value_offset, next_offset)"""
     _tag = data[offset]
@@ -161,7 +161,7 @@ def _read_time(data: bytes, offset: int, length: int) -> str:
     return _s
 
 
-# ---- 扩展解析 ----
+# 扩展解析
 def _parse_san_extension(data: bytes, offset: int, length: int) -> List[str]:
     _sans = []
     _pos = offset
@@ -182,7 +182,7 @@ def _parse_san_extension(data: bytes, offset: int, length: int) -> List[str]:
     return _sans
 
 
-# ---- 主解析 ----
+# 主解析
 def _parse_tbscert(data: bytes, offset: int, length: int) -> dict:
     _res = {'version': 1, 'serial': '', 'sig_alg': '', 'issuer': '',
             'valid_from': '', 'valid_to': '', 'subject': '',
@@ -293,7 +293,7 @@ def _check_ca(data: bytes) -> bool:
     return False
 
 
-# ---- 公开API ----
+# 公开API
 def parse_der_certificate(data: bytes) -> Optional[CertInfo]:
     """解析DER编码的X.509证书"""
     if len(data) < 4 or data[0] != 0x30:
@@ -428,13 +428,13 @@ def check_weakness(cert: CertInfo) -> List[Tuple[CertWeaknessSeverity, str]]:
     return _w
 
 
-# ---- SCT (Signed Certificate Timestamp) 检测 (2026-07-28) ----
+# SCT (Signed Certificate Timestamp) 检测
 # CT (Certificate Transparency) 要求CA将证书提交到公开日志。
 # SCT嵌入在X.509v3扩展中 (OID 1.3.6.1.4.1.11129.2.4.2),
 # 或通过TLS扩展/OCSP stapling提供。每个SCT包含:
-#   - 日志ID (32字节 SHA-256)
-#   - 时间戳 (8字节 Unix millis)
-#   - 签名 (64/71字节 ECDSA P-256/P-384)
+# 日志ID (32字节 SHA-256)
+# 时间戳 (8字节 Unix millis)
+# 签名 (64/71字节 ECDSA P-256/P-384)
 # 最小SCT约44 bytes (log_id + timestamp + signature).
 
 _SCT_OID_BYTES = bytes.fromhex('060A2B06010401D679020402')  # DER: 06 0A 2B 06 01 04 01 D6 79 02 04 02

@@ -1,6 +1,6 @@
 # 运行时活性验证 — 轻量 LTL 子集的调度性质在线检测
 #
-# LiDO-DAG (PLDI 2025) 和 Ticl (OOPSLA 2025) 用定理证明器/Coq 验证
+# LiDO-DAG 和 Ticl 用定理证明器/Coq 验证
 # DAG 调度协议的活性 (liveness) 性质。这些方法需要完整的形式化模型
 # 且无法在运行时使用——仅适用于设计阶段。
 #
@@ -101,7 +101,7 @@ class LivenessMonitor:
             }
 
 
-# ---- 预定义性质的工厂函数 ----
+# 预定义性质的工厂函数
 
 def starvation_freedom_property(
     deadline_s: float = 120.0,

@@ -1,0 +1,16 @@
+pipeline,stage,latency_us
+GAPSBV,Allocator Semantics (dim4),45
+GAPSBV,Guard Analysis (dim2),120
+GAPSBV,Strided Interval (dim3),85
+GAPSBV,Affine Relations (dim1),60
+GAPSBV,Completeness Check (dim5),35
+GAPSBV,Loop Accumulation (dim6),50
+GAPSBV,PreAlloc Constraint (dim7),40
+TARPS,Pattern Safety,30
+TARPS,Alias Lifetime,150
+TARPS,Path Dominance,200
+TARPS,Escape Analysis,110
+F-SCORE,Format Parse,25
+F-SCORE,Source Check,15
+I-GUARD,Constraint Collect,55
+I-GUARD,Domain Narrow,40

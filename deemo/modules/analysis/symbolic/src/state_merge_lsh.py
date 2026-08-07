@@ -19,7 +19,7 @@ symbolic_path_merge.py 的合并候选选择需要 O(N²) 逐对比较:
   4. 仅比较桶内状态 - 期望比较次数 O(N·B) B=桶大小常数
 
 与现有方法的差异:
-- Trabish et al. (KLEE 2024) 使用 pattern-based hashing 检测正则模式
+- Trabish et al. 使用 pattern-based hashing 检测正则模式
   -> 需要预定义模式模板, 对非常规约束无效
 - 本模块的 MinHash 基于 Jaccard 相似度的无偏估计
   -> 不需要预定义模式, 对任意约束集合通用
@@ -45,9 +45,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 状态指纹提取
-# ---------------------------------------------------------------------------
 
 # 约束操作符的类型分类--不追踪具体操作数, 仅追踪约束的"形状"
 _CONSTRAINT_TYPE_CLASSES = {
@@ -145,9 +143,7 @@ class StateFingerprinter:
         return fp
 
 
-# ---------------------------------------------------------------------------
 # MinHash 签名计算
-# ---------------------------------------------------------------------------
 
 class MinHasher:
     """MinHash 签名计算器--使用确定性置换 (SHA-256 based)
@@ -216,9 +212,7 @@ class MinHasher:
         return val % self._M
 
 
-# ---------------------------------------------------------------------------
 # LSH 索引 - 将 MinHash 签名散列到桶
-# ---------------------------------------------------------------------------
 
 class MergeCandidateLSH:
     """LSH 索引用于快速发现合并候选状态

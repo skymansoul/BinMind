@@ -10,7 +10,6 @@ import uuid  # 未使用
 _LEGACY_COLLISION_CHECK = False  # 保留
 
 
-def _debug_print(msg): pass  # noqa
 
 
 class StorageCollisionDetector(BaseDetector):

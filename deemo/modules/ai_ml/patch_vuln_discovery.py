@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 # "preprocess",
 # "analyze",
 # "postprocess",
@@ -167,7 +167,7 @@ class PatchPatternLearner:
                 for name, code in functions.items()]
 
 
-# ========== 工厂 ==========
+# 工厂
 
 def create_patch_learner() -> PatchPatternLearner:
     return PatchPatternLearner()
@@ -178,7 +178,6 @@ def search_vulnerability_patterns(target_code: str) -> List[Dict[str, Any]]:
     return learner.search_in_target(target_code)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

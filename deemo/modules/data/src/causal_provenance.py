@@ -87,7 +87,7 @@ class CausalProvenanceAnalyzer:
             },
         )
 
-    # ---- Katz 中心性: 加权路径计数, 远程依赖衰减更慢 ----
+# Katz 中心性: 加权路径计数, 远程依赖衰减更慢
 
     def _katz_centrality(self, adj_out: Dict[int, List[int]],
                           adj_in: Dict[int, List[int]], n: int) -> List[float]:
@@ -118,7 +118,7 @@ class CausalProvenanceAnalyzer:
                 break
         return katz
 
-    # ---- 反事实影响: 移除节点后下游受影响节点数 ----
+# 反事实影响: 移除节点后下游受影响节点数
 
     def _counterfactual_impact(self, adj_out: Dict[int, List[int]],
                                 adj_in: Dict[int, List[int]],
@@ -162,7 +162,7 @@ class CausalProvenanceAnalyzer:
 
         return impact
 
-    # ---- 攻击链重构 ----
+# 攻击链重构
 
     def _reconstruct_chain(self, nodes: List[ProvNode],
                             katz: List[float], impact: List[int],
@@ -244,7 +244,7 @@ class CausalProvenanceAnalyzer:
 
         return chain
 
-    # ---- 混淆因子检测 ----
+# 混淆因子检测
 
     def _detect_confounders(self, adj_out: Dict[int, List[int]],
                              adj_in: Dict[int, List[int]], n: int,

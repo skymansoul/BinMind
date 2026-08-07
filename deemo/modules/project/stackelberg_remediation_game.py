@@ -9,17 +9,17 @@
 #   混合策略剥夺了攻击者的确定性信息优势, 降低最坏情况损失
 # 技术效果: 与CVSS确定性排序相比, 最坏情况预期损失降低22-31%
 #   (模拟1000次攻防博弈), 策略计算时间复杂度O(|V|²·|A|)
-# 参考:
+#
 #   Bai et al. "On the computation of mixed strategies for security games
-#     with general defending requirements" (AIJ 2025) — Patching算法
-#   CyGATE (Semantic Scholar 2025) — LLM增强博弈论补丁策略
+#     with general defending requirements" — Patching算法
+#   CyGATE — LLM增强博弈论补丁策略
 #   Zhang et al. "Optimal defense resource deployment: cascading effect
-#     and contest intensity" (RESS 2025) — 级联效应博弈分析
+#     and contest intensity" — 级联效应博弈分析
 # 设计边界:
-#   - 漏洞数量|V|≤200 (Bai算法在更大规模上收敛缓慢)
+# 漏洞数量|V|≤200 (Bai算法在更大规模上收敛缓慢)
 #   - 攻击动作空间|A|由ExploitChainPredictor提供, 不超过50条链
-#   - 资源约束为单维: 每轮可修复的漏洞数量上限
-#   - 不建模多轮博弈 (单次Stackelberg, 适用于短修复窗口)
+# 资源约束为单维: 每轮可修复的漏洞数量上限
+# 不建模多轮博弈 (单次Stackelberg, 适用于短修复窗口)
 from __future__ import annotations
 import logging
 import math
@@ -70,7 +70,7 @@ class StackelbergGame:
     其中 L(p, a) = Σ_{v∈a} (1-p_v)·impact(v)·exploitability(v) + Σ_v p_v·patch_cost(v)
     约束: Σ_v p_v ≤ B (修复预算)
 
-    求解: 使用Bai et al. (2025)的Patching思想——
+    求解: 使用Bai et al.的Patching思想——
     1. 贪心生成候选纯策略集 (边际收益排序)
     2. 在小策略集上求解minimax LP
     3. 输出混合策略
@@ -88,12 +88,12 @@ class StackelbergGame:
 
         返回防御者的混合策略 (每个漏洞的边际修复概率).
         """
-        # 步骤1: 贪心生成候选纯策略集
+        # 贪心生成候选纯策略集
         pure_strategies = self._generate_pure_strategies()
         if not pure_strategies:
             return DefenseStrategy(
                 patch_probs={}, expected_cost=0.0, worst_case_loss=0.0, is_pure=True)
-        # 步骤2: 在小策略集上求解minimax
+        # 在小策略集上求解minimax
         # 使用multiplicative weights更新近似解
         weights = [1.0 / len(pure_strategies)] * len(pure_strategies)
         learning_rate = 0.1

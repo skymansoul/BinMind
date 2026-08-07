@@ -58,7 +58,7 @@ class AddressMapper:
         self.__entries = []  # AddressEntry container — lazily populated first 加载
         self.__name_idx: dict = {}  # name→entry reverse lookup，O(1)符号查询
 
-    # --- Public API ---
+# Public API
 
     def extract_symbols_(self) -> list:
         """调用 r2 isj 提取 符号表; 返回 entry list"""

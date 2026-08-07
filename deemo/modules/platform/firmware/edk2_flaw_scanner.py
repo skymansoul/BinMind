@@ -1,7 +1,7 @@
 # EDK2/Tianocore固件缺陷扫描
 # 自动检测UEFI固件EDK2源码/产物中的已知缺陷
-# 参考：
-#   "Uncovering EDK2 Firmware Flaws" (arXiv 2409.14416, 2024.09)
+#
+#   "Uncovering EDK2 Firmware Flaws"
 #     — Coverity/SonarQube/CodeQL审计EDK2仓库，200+缺陷
 #     分类：内存安全(35%)、并发缺陷(18%)、整数问题(15%)、资源泄漏(12%)、逻辑错误(10%)、其他(10%)
 #   UEFI Forum "EDK II Secure Coding Guide" (Rev 2.1)

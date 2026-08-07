@@ -2,7 +2,7 @@
 """
 通用 Gadget 链合成器 v2
 
-基于 [ARCANIST 2025, USENIX Security] 的多原语 漏洞利用 链合成框架
+基于 的多原语 漏洞利用 链合成框架
 支持任意 exploit 原语（栈、堆、任意位置）的自动化 gadget 链构建
 
 相比 v1 (rop_chain_synthesizer.py) 的改进：
@@ -11,7 +11,7 @@
 - 多原语组合（堆溢出 + 栈溢出 → 单条利用链）
 - 坏字节感知的 ROP 载荷编码
 
-参考 [PBAEG 2025] 的多漏洞组合利用策略
+参考 的多漏洞组合利用策略
 """
 
 import logging
@@ -87,7 +87,7 @@ class GadgetFinder:
     """
     增强型 gadget 查找器
     
-    支持 [ARCANIST 2025] 的多原语 构件 分类
+    支持 的多原语 构件 分类
     """
 
     # 用于 gadget 分类的操作码签名

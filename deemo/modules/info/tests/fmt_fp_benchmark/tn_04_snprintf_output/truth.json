@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_04_snprintf_output",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: snprintf 输出再打印",
+  "expect_overflow": false,
+  "trigger": "直接执行 main",
+  "why": "buf 内容为常量格式的输出, 不含用户控制格式串"
+}

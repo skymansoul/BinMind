@@ -1,5 +1,5 @@
 # 攻击面枚举器: 入口点→外部输入→危险sink链 / 利用可达性评分
-# 技术问题: Binarly (US Patent 12,287,885, 2025) 的二进制可达性分析
+# 技术问题: Binarly 的二进制可达性分析
 #   聚焦CVE影响评估, 如需修补的漏洞是否被实际代码路径使用.
 #   但漏洞利用需要不同的视角: 不仅要可达, 还要评估外部输入对
 #   代码路径的控制程度——有些"可达"路径完全不可控 (仅常量参数),
@@ -13,7 +13,6 @@
 #   每维度输出可控性评分 (0-10) 和可利用性评级
 # 技术效果: 自动化识别二进制中被忽视的攻击面,
 #   平均发现3.2个传统code review遗漏的可利用路径
-from __future__ import annotations
 import logging
 import re
 from collections import defaultdict

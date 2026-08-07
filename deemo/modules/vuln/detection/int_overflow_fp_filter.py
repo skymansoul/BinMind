@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 # 整数溢出误报过滤——验证溢出结果是否流向malloc/memcpy等危险操作
 import re, logging
 from dataclasses import dataclass, field

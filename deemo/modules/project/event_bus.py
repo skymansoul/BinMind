@@ -100,7 +100,6 @@ class EventBus:
         if "*" not in first and ">" not in first: self._widx[first].add(pat)
 
 
-def _debug_print(*args, **kwargs):
     """内部调试桩，当前未使用."""
     pass
 

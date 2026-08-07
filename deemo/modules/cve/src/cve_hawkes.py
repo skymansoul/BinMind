@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 09:15
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-04-24 09:15
+# 修改: 2026-04-24 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 多维标记Hawkes过程CVE级联建模
 # 多维标记Hawkes过程 — CVE利用级联的随机点过程建模
 #
@@ -7,15 +7,13 @@
 # 同类/同厂商CVE的利用概率在数周内显著上升.
 #
 # 本模块实现多维标记Hawkes过程:
-#   λ_i(t) = μ_i + Σ_j Σ_{t_k^j<t} m_k^j · φ_{ij}(t - t_k^j)
+# λ_i(t) = μ_i + Σ_j Σ_{t_k^j<t} m_k^j · φ_{ij}(t - t_k^j)
 # μ_i由EPSS+KEV估计, m_k^j为严重度×利用可能性, φ_{ij}为激励核.
 # 自激励(φ_{ii}>0)捕获重复利用, 互激励(φ_{ij}>0, i≠j)捕获级联传播.
 #
 # 参数估计: 对数似然梯度下降+L2正则化.
 # 核函数积分有闭式解, 无需数值积分.
 # ~500事件×20维度的拟合 < 5s (纯Python).
-#
-# 参考: [Cherkaoui Tangi 2025], [Bacry et al. 2015], [Chen et al. KDD 2019]
 
 import math
 import time
@@ -65,7 +63,7 @@ class MarkedHawkesEngine:
       engine = MarkedHawkesEngine(n_dimensions=10, kernel="erlang", k=2)
       engine.fit(events)  # events: List[HawkesEvent]
       forecast = engine.forecast(horizon_days=30)
-      # forecast = {dim: {intensity, expected_events, risk_level}}
+      forecast = {dim: {intensity, expected_events, risk_level}}
     """
 
     def __init__(self, n_dimensions: int = 10,
@@ -93,8 +91,7 @@ class MarkedHawkesEngine:
         self._fitted = False
         self._fit_result: Optional[HawkesFitResult] = None
 
-    # ---- 从KB构建事件 ----
-
+    # 从KB构建事件
     def build_events(self, kb: CVEKnowledgeBase,
                      dim_grouping: str = "vendor") -> List[HawkesEvent]:
         """从KB提取CVE事件序列, 按dim_grouping分维度.
@@ -157,8 +154,7 @@ class MarkedHawkesEngine:
 
         return events
 
-    # ---- 对数似然 ----
-
+    # 对数似然
     def _log_likelihood(self) -> float:
         """log L = Σ_i[ Σ_k log λ_i(t_k) - ∫_0^T λ_i(t)dt ] + L2 reg."""
         D = self._D
@@ -238,8 +234,7 @@ class MarkedHawkesEngine:
             by_dim[e.dimension].append(e)
         return by_dim
 
-    # ---- 梯度下降拟合 ----
-
+    # 梯度下降拟合
     def fit(self, events: Optional[List[HawkesEvent]] = None) -> HawkesFitResult:
         """梯度下降拟合. 参数exp-参数化保证μ≥0, α≥0, β>0. L2正则化."""
         if events is not None:
@@ -331,13 +326,12 @@ class MarkedHawkesEngine:
         )
         return self._fit_result
 
-    # ---- 预测 ----
-
+    # 预测
     def forecast(self, horizon_days: float = 30.0,
                  n_simulations: int = 100) -> Dict[int, Dict[str, Any]]:
         """对未来horizon_days天的利用强度进行点过程预测.
-        使用Ogata变尺度细化算法的期望近似, 非随机模拟 (稳定+快速).
-        Returns: {dim: {intensity, expected_events, risk_level}}."""
+        # 使用Ogata变尺度细化算法的期望近似, 非随机模拟 (稳定+快速).
+        # Returns: {dim: {intensity, expected_events, risk_level}}."""
         if not self._fitted or not self._events:
             return {}
 
@@ -421,8 +415,7 @@ class MarkedHawkesEngine:
         return self._fitted
 
 
-# ---- 便捷接口 ----
-
+# 便捷接口
 def build_hawkes_from_kb(kb: CVEKnowledgeBase,
                          dim_grouping: str = "vendor",
                          kernel: str = "erlang") -> "MarkedHawkesEngine":
@@ -440,8 +433,7 @@ def build_hawkes_from_kb(kb: CVEKnowledgeBase,
     return engine
 
 
-# ---- 内部辅助 ----
-
+# 内部辅助
 def _get_id(entry) -> str:
     if hasattr(entry, 'cve_id'):
         return entry.cve_id or ""

@@ -37,7 +37,7 @@ from .patch_provenance import (
 
 _log = logging.getLogger(__name__)
 
-# ── 签名原语 ──────────────────────────────────────────────────────
+# 签名原语
 # 优先使用原生 hashlib/hmac，OpenSSL 不可用时回退到纯 Python Ed25519。
 # 纯 Python 实现仅用于测试环境，生产环境应配置 libsodium。
 
@@ -112,7 +112,7 @@ class Ed25519Signer:
         )
 
 
-# ── 证明策略 ──────────────────────────────────────────────────────
+# 证明策略
 
 @dataclass
 class AttestationPolicy:
@@ -169,7 +169,7 @@ class AttestationPolicy:
         return True, "策略满足"
 
 
-# ── 证明生成器 ────────────────────────────────────────────────────
+# 证明生成器
 
 class ProvenanceAttestor:
     """补丁来源证明引擎。
@@ -204,7 +204,7 @@ class ProvenanceAttestor:
             return hashlib.sha256(self._signer.public_key_bytes).hexdigest()[:12]
         return "anonymous"
 
-    # ── 节点创建 ──────────────────────────────────────────────────
+# 节点创建
 
     def create_node(self, patch_bytes: bytes, metadata: Dict = None,
                     creator_id: str = "", patch_id: str = "",
@@ -233,7 +233,7 @@ class ProvenanceAttestor:
 
         return node
 
-    # ── 证明添加 ──────────────────────────────────────────────────
+# 证明添加
 
     def attest(self, node: ProvenanceNode,
                claims: Dict[str, str] = None) -> AttestationPayload:
@@ -263,7 +263,7 @@ class ProvenanceAttestor:
         att = self.attest(node, claims)
         node.add_attestation(att)
 
-    # ── 节点链接 ──────────────────────────────────────────────────
+# 节点链接
 
     def link(self, parent: ProvenanceNode, child: ProvenanceNode,
              kind: EdgeKind = EdgeKind.DERIVED_FROM):
@@ -275,7 +275,7 @@ class ProvenanceAttestor:
         old_node.add_edge(new_node.node_id, EdgeKind.REPLACES)
         new_node.add_edge(old_node.node_id, EdgeKind.DERIVED_FROM)
 
-    # ── 验证 ──────────────────────────────────────────────────────
+# 验证
 
     def verify_node(self, node: ProvenanceNode,
                     policy: AttestationPolicy = None,
@@ -362,7 +362,7 @@ class ProvenanceAttestor:
 
         return results
 
-    # ── 密钥管理 ──────────────────────────────────────────────────
+# 密钥管理
 
     def register_trusted_key(self, signer_id: str, public_key_pem: bytes):
         """注册可信证明者的公钥。"""

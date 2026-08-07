@@ -14,7 +14,7 @@
   - 经过cmp约束: [0, bound]
   - 算术结果: [a.low+b.low, a.high+b.high] (加法)
 
-参考: IntTracer [ICSE 2024] 的区间域建模方法。
+参考: IntTracer 的区间域建模方法。
 """
 
 import re
@@ -72,7 +72,7 @@ class IntOverflowReport:
         }
 
 
-# ── 值范围传播器 ──────────────────────────────────────────────────
+# 值范围传播器
 
 class ValueRangePropagator:
     """在基本指令块内传播操作数的值范围。
@@ -166,7 +166,7 @@ class ValueRangePropagator:
         return False
 
 
-# ── 溢出检测器 ────────────────────────────────────────────────────
+# 溢出检测器
 
 class IntOverflowDetector:
     """基于值范围的整数溢出检测。"""

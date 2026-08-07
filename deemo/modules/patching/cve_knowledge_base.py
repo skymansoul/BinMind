@@ -1,4 +1,4 @@
-"""CVE 知识库 — CVE-Genie [arXiv:2509.01835] 启发的结构化存储。
+"""CVE 知识库 — CVE-Genie 启发的结构化存储。
 
 CVE-Genie 通过多代理流水线将 CVE 描述、补丁 diff 和安全公告转化为
 结构化知识。本模块实现其 Processor 阶段的核心数据结构：
@@ -74,7 +74,7 @@ class CVEQueryResult:
         }
 
 
-# ── NVD JSON 解析 ──────────────────────────────────────────────────────
+# NVD JSON 解析
 # NVD API 2.0: https://services.nvd.nist.gov/rest/json/cves/2.0
 
 class NVDParser:
@@ -184,7 +184,7 @@ class NVDParser:
         return _refs[:20]
 
 
-# ── 本地简化 JSON 解析 ─────────────────────────────────────────────────
+# 本地简化 JSON 解析
 # 格式: [{"id": "CVE-...", "desc": "...", ...}]
 
 class SimpleCVEParser:
@@ -212,7 +212,7 @@ class SimpleCVEParser:
         return _entries
 
 
-# ── CVE 知识库 ─────────────────────────────────────────────────────────
+# CVE 知识库
 
 class CVEKnowledgeBase:
     """CVE-Genie 风格知识库 — 导入、查询、因果分析。
@@ -266,9 +266,7 @@ class CVEKnowledgeBase:
             "CREATE INDEX IF NOT EXISTS idx_causal_src ON causal_links(source_cve)")
         self._conn.commit()
 
-    # ============================================================
     # 批量导入
-    # ============================================================
     def import_entries(self, entries: List[CVEEntry]) -> int:
         _count = 0
         for _e in entries:
@@ -317,7 +315,7 @@ class CVEKnowledgeBase:
         _entries = SimpleCVEParser.parse(_data)
         return self.import_entries(_entries)
 
-    # ── 查询 ──────────────────────────────────────────────────────────
+# 查询
 
     def query_by_cwe(self, cwe_id: str) -> CVEQueryResult:
         """按 CWE ID 检索相关 CVE，按 CVSS 降序。"""
@@ -365,7 +363,7 @@ class CVEKnowledgeBase:
         _result.severity_distribution = self._compute_severity_dist(_rows)
         return _result
 
-    # ── CVE-Genie 风格因果图 ──────────────────────────────────────────
+# CVE-Genie 风格因果图
 
     def _build_causal_links(self):
         """构建 CVE 间因果边：同 CWE → same_cwe，同产品 → same_product。"""
@@ -412,7 +410,7 @@ class CVEKnowledgeBase:
             (cve_id, cve_id)).fetchall()
         return [dict(_r) for _r in _rows]
 
-    # ── 统计 ──────────────────────────────────────────────────────────
+# 统计
 
     def statistics(self) -> Dict:
         _total = self._conn.execute("SELECT COUNT(*) FROM cve_entries").fetchone()[0]
@@ -437,7 +435,7 @@ class CVEKnowledgeBase:
                 "SELECT COUNT(*) FROM causal_links").fetchone()[0],
         }
 
-    # ── 辅助 ──────────────────────────────────────────────────────────
+# 辅助
 
     def _row_to_entry(self, row: sqlite3.Row) -> CVEEntry:
         try:
@@ -497,7 +495,7 @@ class CVEKnowledgeBase:
         self._conn.close()
 
 
-# ── 快捷入口 ──────────────────────────────────────────────────────────
+# 快捷入口
 
 def create_cve_kb(db_path: str = ".cve_kb/cve_kb.db") -> CVEKnowledgeBase:
     return CVEKnowledgeBase(db_path)

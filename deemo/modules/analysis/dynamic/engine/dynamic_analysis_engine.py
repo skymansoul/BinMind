@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 _LEGACY_MODE = False  # 保留
 
-# ── Execution-engine constants ─────────────────────────────────────────────
+# Execution-engine constants
 _HARD_TIMEOUT_CAP = 300         # seconds — never let a binary 运行 longer
 _STRACE_LINE_LIMIT = 50000      # max strace lines 解析 (avoid OOM noisy binaries)
 _DEFAULT_TIMEOUT = 30           # seconds — caller's default nothing specified
@@ -66,7 +66,7 @@ _WIN_CRASH_CODES: Dict[int, str] = {
     0xC0000142: "DLL_INIT_FAILED",
     0xC0000409: "STACK_BUFFER_OVERRUN",
 }
-# ── Type taxonomy ─────────────────────────────────────────────────────────────
+# Type taxonomy
 
 class RuntimeBehaviorType(str, Enum):
     FILE_CREATE = "file_create"
@@ -154,7 +154,7 @@ _SYSCALL_MAP: Dict[str, Tuple[str, str]] = {
     "getrandom": (RuntimeBehaviorType.UNKNOWN, BehaviorSeverity.INFO),
 }
 
-# ── Data containers ───────────────────────────────────────────────────────────
+# Data containers
 
 @dataclass
 class RuntimeTrace:
@@ -368,7 +368,7 @@ class PatternDetectionPass(AnalysisPass):
 
 
 # class LegacyRiskScorer:
-# """Pre-v2 linear risk aggregator — replaced RiskScoringPass (2024-09)."""
+# """Pre-v2 linear risk aggregator — replaced RiskScoringPass."""
 #     sev_map = {BehaviorSeverity.CRITICAL: 50, BehaviorSeverity.HIGH: 30,
 #                BehaviorSeverity.MEDIUM: 10, BehaviorSeverity.LOW: 1}
 #     @staticmethod
@@ -437,7 +437,7 @@ class FingerprintPass(AnalysisPass):
         api_seq = "|".join(t.api_name for t in result.traces[:200])
         result.behavior_fingerprint = hashlib.sha256(api_seq.encode()).hexdigest()
 
-# ── Main engine ───────────────────────────────────────────────────────────────
+# Main engine
 
 class DynamicAnalysisEngine(BaseAnalyzer):
 
@@ -586,9 +586,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         self._active_analysis = None
         return result
 
-    # ═══════════════════════════════════════════════════════════════════════════
     # 舍入 5: Real binary execution engine
-    # ═══════════════════════════════════════════════════════════════════════════
 
     # ── 导入表 parsing (replaces _simulate_binary_load) ────────────────
 
@@ -881,7 +879,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 return sec_raw + (rva - sec_va)
         return None
 
-    # ── Real execution dispatch ──────────────────────────────────────────────
+# Real execution dispatch
 
     def _execute_binary(
         self,
@@ -903,7 +901,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         execution structurally impossible (arch mismatch, missing file)
         fall back honest 静态分析
         """
-        # ── Pre-flight: existence ─────────────────────────────────────────
+# Pre-flight: existence
         if not os.path.isfile(binary_path):
             log.warning("Binary not found, falling back to static analysis: %s", binary_path)
             self._static_fallback(result, binary_path, "file_not_found")
@@ -914,7 +912,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             self._static_fallback(result, binary_path, "not_readable")
             return
 
-        # ── Pre-flight: architecture match ─────────────────────────────────
+# Pre-flight: architecture match
         host_arch = platform.machine().lower()
         binary_arch = self._detect_binary_arch(binary_path)
         if binary_arch is not None and binary_arch != host_arch:
@@ -928,7 +926,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             )
             return
 
-        # ── Pre-flight: executability ──────────────────────────────────────
+# Pre-flight: executability
         if sys.platform == 'win32':
             if not binary_path.lower().endswith(('.exe', '.dll', '.com', '.scr')):
                 log.warning("Non-executable extension on Windows, falling back: %s", binary_path)
@@ -940,7 +938,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 self._static_fallback(result, binary_path, "not_executable")
                 return
 
-        # ── Execution ──────────────────────────────────────────────────────
+# Execution
         timeout = min(timeout_seconds, _HARD_TIMEOUT_CAP)
         args = arguments or []
 
@@ -957,7 +955,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             log.error("Execution raised exception: %s", exc, exc_info=True)
             self._static_fallback(result, binary_path, f"execution_exception:{exc}")
 
-    # ── strace-based execution (Linux) ─────────────────────────────────
+# strace-based execution (Linux)
 
     def _execute_with_strace(
         self,
@@ -1022,7 +1020,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         except OSError:
             pass
 
-    # ── Direct subprocess execution (跨平台) ────────────────────────
+# Direct subprocess execution (跨平台)
 
     def _execute_direct(
         self,
@@ -1063,7 +1061,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         self._interpret_exit_status(result, proc.returncode)
 
         # Emit a high-level execution trace analysis 流水线
-        # *something* work even 系统调用 granularity
+# something* work even 系统调用 granularity
         if proc.returncode == 0:
             self._add_trace(result, start,
                           RuntimeBehaviorType.UNKNOWN,
@@ -1091,7 +1089,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             f"direct execution: exit={proc.returncode}, elapsed={elapsed:.2f}s"
         )
 
-    # ── Honest static-analysis 回退 ─────────────────────────────────────
+# Honest static-analysis 回退
 
     def _static_fallback(
         self,
@@ -1120,7 +1118,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             f"reason={reason}. Analysis based on static features only."
         )
 
-    # ── Architecture detection ──────────────────────────────────────────────
+# Architecture detection
 
     @staticmethod
     def _detect_binary_arch(binary_path: str) -> Optional[str]:
@@ -1196,7 +1194,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
         return None
 
-    # ── Exit status interpretation ──────────────────────────────────────────
+# Exit status interpretation
 
     @staticmethod
     def _interpret_exit_status(result: DynamicAnalysisResult, exit_code: int) -> None:
@@ -1230,7 +1228,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 f"Binary crashed (signal): {sig_name} (signal {sig})"
             )
 
-    # ── strace 输出 解析器 ────────────────────────────────────────────────
+# strace 输出 解析器
 
     def _parse_strace_output(
         self,
@@ -1380,7 +1378,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             return m.group(1)
         return None
 
-    # ── Utility 辅助函数 ─────────────────────────────────────────────────────
+# Utility 辅助函数
 
     @staticmethod
     def _has_tool(name: str) -> bool:
@@ -1403,7 +1401,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             return text
         return text[:max_len - 1] + '…'
 
-    # ── Trace 工厂 ───────────────────────────────────────────────────────
+# Trace 工厂
 
     def _add_trace(
         self, result: DynamicAnalysisResult, timestamp: float,
@@ -1430,7 +1428,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         self._trace_counter += 1
         return f"trace_{self._trace_counter:05d}"
 
-    # ── Public API (unchanged) ──────────────────────────────────────────────
+# Public API (unchanged)
 
     def collect_runtime_traces(
         self, trace_filter: Optional[List[str]] = None

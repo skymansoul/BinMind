@@ -17,7 +17,7 @@ def _debug_print(msg: str) -> None:
 	pass  # 保留——后续可用logging替代
 
 
-# ---- 统计辅助测试 ----
+# 统计辅助测试
 
 def test_cohens_d_equal():
 	a = [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -73,7 +73,7 @@ def test_js_divergence_empty():
 	assert _js_divergence([], []) == 0.0
 
 
-# ---- 熵测试 ----
+# 熵测试
 
 def test_shannon_entropy_uniform():
 	data = bytes(range(256)) * 4
@@ -91,7 +91,7 @@ def test_shannon_entropy_short():
 	assert _shannon_entropy(b'\x00' * 32) == 0.0
 
 
-# ---- 时序侧信道检测器测试 ----
+# 时序侧信道检测器测试
 
 def test_detector_init():
 	detector = TimingSideChannelDetector()
@@ -144,7 +144,7 @@ def test_cache_residency_detection():
 	assert isinstance(results, list)
 
 
-# ---- 二进制模式扫描测试 ----
+# 二进制模式扫描测试
 
 def test_detect_timing_channel_in_binary(tmp_path):
 	import os
@@ -167,7 +167,7 @@ def test_detect_timing_channel_nonexistent():
 	assert result["success"] is False
 
 
-# ---- 时序问题严重度/类型测试 ----
+# 时序问题严重度/类型测试
 
 def test_severity_values():
 	assert TimingIssueSeverity.LOW == "low"

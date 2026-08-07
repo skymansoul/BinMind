@@ -204,7 +204,7 @@ class VMIAnalyzer:
     def _detect_suspicious_patterns(self,data:bytes)->List[str]:
         return [f'API: {s}' for s in ['CreateRemoteThread','VirtualAllocEx','WriteProcessMemory','mprotect'] if s.encode() in data] + (['shellcode_loop'] if b'\xEB\xFE' in data else [])
 
-    # --- Round 2: 进程树重建 + 内核驱动交叉视图检测 ---
+# Round 2: 进程树重建 + 内核驱动交叉视图检测
     def build_process_tree(self) -> Dict[int, List[int]]:
         """根据parent_pid重建进程树邻接表 {ppid: [child_pids]}"""
         tree: Dict[int, List[int]] = {}

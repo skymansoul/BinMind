@@ -1,7 +1,7 @@
 # compat/ 重导出 — 知识图谱分析桩
 # 最小侵入代理策略，零全局副作用。
-# Call Graphlets (arXiv:2406.02606) GNN + 深度度量学习
-# Binary2vec (2025) 跨架构嵌入 + contrastive learning
+# Call Graphlets GNN + 深度度量学习
+# Binary2vec 跨架构嵌入 + contrastive learning
 import os as _os
 import importlib.util as _iu
 
@@ -16,13 +16,13 @@ for _sym in dir(_mod):
 
 # 图增强：Call Graphlet 特征提取
 # Graphlets 将函数调用图局部邻域编码为子图统计，
-# 作为 GNN 相似性检索的输入签名（arXiv:2406.02606）。
+# 作为 GNN 相似性检索的输入签名。
 from collections import Counter as _Ctr
 from itertools import combinations as _combos
 
 def count_3_node_graphlets(adj_list: dict[str, set[str]]) -> dict[str, int]:
     """函数调用图中3节点graphlet类型统计。
-    3节点有向图共16种同构类（Milo et al., 2002）；
+    3节点有向图共16种同构类；
     简化区分: triangle, in_star, out_star, two_path, disconnected。
     O(|V|^3)，上限≤1000节点。"""
     nodes = list(adj_list.keys())

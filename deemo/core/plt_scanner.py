@@ -15,7 +15,6 @@ References:
   - Di Federico et al., 2015, BAR '15, "How the ELF Ruined Christmas"
 """
 
-from __future__ import annotations
 
 import logging
 import os

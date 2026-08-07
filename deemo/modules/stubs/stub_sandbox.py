@@ -4,8 +4,8 @@
 #
 # 问题:
 #   现有验证管线全部在宿进程中运行:
-#     - ContractVerifier 直接 exec() 源码
-#     - AdversarialFuzzer 直接调用函数
+# ContractVerifier 直接 exec() 源码
+# AdversarialFuzzer 直接调用函数
 #   这种"信任执行"无法检测:
 #     a) 无限循环/递归导致进程卡死
 #     b) 内存泄漏（大输入下分配失控）
@@ -121,7 +121,7 @@ class SandboxExecutor:
                 source, module_name, func_name, payload))
         return results
 
-    # ---- 代码审查 ----
+# 代码审查
     @classmethod
     def _scan_dangerous(cls, source: str) -> list[str]:
         """AST 扫描检测危险调用。"""
@@ -149,7 +149,7 @@ class SandboxExecutor:
             return func.attr
         return ''
 
-    # ---- 载荷生成 ----
+# 载荷生成
     @staticmethod
     def _generate_payloads(param_types: list[str]) -> list[tuple]:
         """为参数类型列表生成安全载荷组合。"""

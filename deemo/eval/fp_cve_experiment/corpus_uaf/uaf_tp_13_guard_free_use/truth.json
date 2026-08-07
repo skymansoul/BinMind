@@ -1,0 +1,6 @@
+{
+  "id": "uaf_tp_13_guard_free_use",
+  "expected_vuln": true,
+  "vuln_type": "use_after_free",
+  "mode": "守卫分支中 free, 守卫外使用"
+}

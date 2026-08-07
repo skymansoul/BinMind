@@ -1,0 +1,8 @@
+{
+  "id": "safe_06_calloc_loop",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "cve": "",
+  "component": "",
+  "mode": "calloc 后按元素个数循环写入"
+}

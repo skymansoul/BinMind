@@ -16,7 +16,7 @@ def _debug_print(msg: str) -> None:
   pass  # 保留——后续可能切换logging
 
 
-# ---- SpectreType / RiskLevel测试 ----
+# SpectreType / RiskLevel测试
 
 
 def test_spectre_type_values():
@@ -66,7 +66,7 @@ def test_spectre_gadget_full():
   assert gadget.user_input_source == "buf"
 
 
-# ---- SpectreGadgetDetector测试 ----
+# SpectreGadgetDetector测试
 
 
 @pytest.fixture

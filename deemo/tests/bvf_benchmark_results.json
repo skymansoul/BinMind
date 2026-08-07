@@ -1,0 +1,140 @@
+{
+  "results": [
+    {
+      "name": "bvf_01_shared_var_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n, write=1*n, offset=0.0; shared=['n']; write_c"
+    },
+    {
+      "name": "bvf_02_shared_var_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: overflow: write_coef[n]=2.0 > alloc_coef[n]=1.0, variable n at any posit"
+    },
+    {
+      "name": "bvf_03_arith_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n + 8, write=1*n, offset=0.0; shared=['n']; wri"
+    },
+    {
+      "name": "bvf_04_arith_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: overflow: equal coefficients but write_const(128.0) > alloc_const(0.0)"
+    },
+    {
+      "name": "bvf_05_multihop_chain",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n, write=1*n, offset=0.0; shared=['n']; write_c"
+    },
+    {
+      "name": "bvf_06_no_shared_unrelated",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "inconclusive"
+    },
+    {
+      "name": "bvf_07_offset_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(64)+off(64)=128 <= 136 (usabile_size)"
+    },
+    {
+      "name": "bvf_08_offset_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(32)+off(48)=80 = 80.0 > 72 (usable_size)"
+    },
+    {
+      "name": "bvf_09_taint_unbounded",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: tainted write into fixed alloc: alloc=64.0, offset=0.0, write=tainted(un"
+    },
+    {
+      "name": "bvf_10_guard_capped_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=1*n, write=1*n, offset=0.0; shared=['n']; write_c"
+    },
+    {
+      "name": "bvf_11_calloc_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "DD-BVF: subset relation: alloc=4*n, write=4*n, offset=0.0; shared=['n']; write_c"
+    },
+    {
+      "name": "bvf_12_calloc_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF: overflow: write_coef[n]=8.0 > alloc_coef[n]=4.0, variable n at any posit"
+    },
+    {
+      "name": "bvf_13_realloc_expand_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(64)+off(0)=64 <= 136 (usabile_size)"
+    },
+    {
+      "name": "bvf_14_realloc_noexpand_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(64)+off(0)=64 = 64.0 > 40 (usable_size)"
+    },
+    {
+      "name": "bvf_15_loop_accum_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "DD-BVF-loop: loop overflow: i_max=9, stride=64, max_offset=576, write_end=640 > "
+    },
+    {
+      "name": "bvf_16_loop_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(64)+off(0)=64 <= 648 (usabile_size)"
+    },
+    {
+      "name": "bvf_17_struct_field_safe",
+      "expected": false,
+      "detected": false,
+      "class": "TN",
+      "verdict": "copy_size(56)+off(8)=64 <= 72 (usabile_size)"
+    },
+    {
+      "name": "bvf_18_struct_field_overflow",
+      "expected": true,
+      "detected": true,
+      "class": "TP",
+      "verdict": "copy_size(128)+off(8)=136 = 136.0 > 72 (usable_size)"
+    }
+  ],
+  "metrics": {
+    "TP": 8,
+    "FP": 0,
+    "FN": 0,
+    "TN": 10,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fp_rate": 0.0
+  }
+}

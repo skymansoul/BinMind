@@ -4,9 +4,9 @@
 # 这些差异对 GNN 漏洞检测是噪声——模型应关注代码语义而非编译器偏好。
 # 本模块在 CFG 层面做归一化: 循环展开折叠 + 惯用法替换 + 寄存器类映射。
 #
-# 与 VexIR2Vec (FSE 2025) 互补: VEX 消除架构差异, 本模块消除编译器差异。
-# ref: VexIR2Vec (VenkataKeerthy et al., FSE 2025) — VEX-IR 归一化
-# ref: MulCPI (Gao et al., Electronics 2024) — GNN 编译器识别 99.3%
+# 与 VexIR2Vec 互补: VEX 消除架构差异, 本模块消除编译器差异。
+# VexIR2Vec — VEX-IR 归一化
+# MulCPI — GNN 编译器识别 99.3%
 
 import re
 from typing import Dict, List, Tuple, Optional
@@ -36,10 +36,8 @@ class NormalizationReport:
     blocks_after: int = 0
 
 
-# ---------------------------------------------------------------------------
 # 循环展开检测 — GCC -O3 / Clang -O2 常见模式
 # 立即数递增检测基于: 展开循环中每次迭代的立即数偏移以固定步长增加
-# ---------------------------------------------------------------------------
 
 _IMM_RE = re.compile(r'(?:0x[0-9a-fA-F]+|\b\d+\b)')
 
@@ -106,9 +104,7 @@ def _detect_unrolled_loop(blocks, min_repetitions=3, max_insn_variance=1):
     return groups
 
 
-# ---------------------------------------------------------------------------
 # 编译器惯用法归一化 — MSVC lea+test+je 和 GCC cmov 链
-# ---------------------------------------------------------------------------
 
 def _normalize_msvc_zero_check(insns):
     """归一化 MSVC /O2 的 lea reg,[reg+0]; test reg,reg; je target。
@@ -138,10 +134,8 @@ def _normalize_cmov_chain(insns):
     return insns, count
 
 
-# ---------------------------------------------------------------------------
 # 寄存器分配归一化 — 将具体寄存器映射至抽象类别, 消除编译器寄存器偏好差异
 # x86-64 的 R8-R15 和 R8D-R15D 在 GCC 和 MSVC 中的使用偏好不同
-# ---------------------------------------------------------------------------
 
 _REG_CLASS = {
     'eax': 'GPR32', 'ebx': 'GPR32', 'ecx': 'GPR32', 'edx': 'GPR32',
@@ -174,9 +168,7 @@ def _normalize_registers(insns):
     return result, count
 
 
-# ---------------------------------------------------------------------------
 # 主归一化流程 — 三阶段流水线: 展开折叠 → 惯用法替换 → 寄存器归一化
-# ---------------------------------------------------------------------------
 
 def normalize_cfg(blocks, enable_unroll_detection=True,
                   enable_idiom_normalization=True,

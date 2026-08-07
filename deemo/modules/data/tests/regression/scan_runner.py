@@ -1,5 +1,5 @@
 # 扫描调度器 — 批量调用扫描引擎, 收集原始结果.
-# 创建: 2026-08-05
+# 创建: 2026-06-22
 
 import os, sys, json, time, subprocess
 from dataclasses import dataclass, field

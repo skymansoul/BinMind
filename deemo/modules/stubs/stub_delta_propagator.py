@@ -17,9 +17,9 @@
 #   4. 建议以结构化 diff 输出，可直接供 GradualEngine 消费
 #
 # 区别于已有工作:
-#   - SEAM (arXiv:2412.00680): 智能合约升级，非通用 stub 系统
-#   - CMU API Refactoring: 从文档/PR 学习迁移规则，非图传播
-#   - 本模块: 图传播 + Merkle 锚定 + 合约级 patch 生成
+#   - SEAM: 智能合约升级，非通用 stub 系统
+# CMU API Refactoring: 从文档/PR 学习迁移规则，非图传播
+# 本模块: 图传播 + Merkle 锚定 + 合约级 patch 生成
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt
@@ -152,7 +152,7 @@ class DeltaPropagator:
         ), reverse=True)
         return plans
 
-    # ---- 影响分析 ----
+# 影响分析
     def _analyze_impact(self, delta: ContractDelta,
                         target_module: str) -> _Opt[PropagationPatch]:
         """分析目标模块如何受源变更影响，生成一条适配建议。"""
@@ -276,7 +276,7 @@ class DeltaPropagator:
 
         return patch
 
-    # ---- 适配自动化判定 ----
+# 适配自动化判定
     @staticmethod
     def _has_default_in_contract(delta: ContractDelta) -> bool:
         """新增参数是否有默认值（从而调用方无需立即修改）。"""
@@ -312,7 +312,7 @@ class DeltaPropagator:
 
         return old_base == new_base
 
-    # ---- 报告 ----
+# 报告
     def propagation_report(self, plans: list[PropagationPlan]) -> str:
         """生成 Markdown 传播分析报告。"""
         lines = ['# 合约变更传播分析报告', '']
@@ -333,7 +333,7 @@ class DeltaPropagator:
         return '\n'.join(lines)
 
 
-# ---- 与 Merkle 树的集成入口 ----
+# 与 Merkle 树的集成入口
 def propagate_from_merkle_diff(module_name: str,
                                old_contract: _StubContract,
                                new_contract: _StubContract) -> list[PropagationPlan]:

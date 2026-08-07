@@ -15,7 +15,7 @@
 #   3. 对前沿上的种子分配更高能量 (它们是"非支配的", 代表最佳权衡)
 #   4. 用户可通过权重向量表达偏好: [w_cov, w_crash, w_speed]
 #
-# 参考文献:
+# 文献:
 #   Deb et al. 2002, "A Fast and Elitist Multiobjective Genetic Algorithm:
 #     NSGA-II", IEEE Trans. Evolutionary Computation 6(2):182-197
 #     — 非支配排序+拥挤距离的经典算法, 本模块的Pareto层计算基于此
@@ -94,17 +94,17 @@ class ParetoPowerScheduler:
         if not seeds:
             return ParetoSchedule([], 0, 0, "无种子")
 
-        # Step 1: 非支配排序 (Pareto ranking)
+        # 非支配排序 (Pareto ranking)
         ranks = self._non_dominated_sort(seeds)
         for seed, rank in zip(seeds, ranks):
             seed.pareto_rank = rank
 
-        # Step 2: 计算每个Pareto层内的拥挤距离
+        # 计算每个Pareto层内的拥挤距离
         fronts = self._group_by_rank(seeds)
         for rank, front in fronts.items():
             self._compute_crowding_distance(front)
 
-        # Step 3: 分配能量——前沿种子高能量, 深层种子低能量
+        # 分配能量——前沿种子高能量, 深层种子低能量
         max_rank = max(ranks) if ranks else 1
         for seed in seeds:
             rank_factor = 1.0 / (1.0 + seed.pareto_rank)

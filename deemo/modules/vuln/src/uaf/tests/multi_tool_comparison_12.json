@@ -1,0 +1,4395 @@
+{
+  "drift": {
+    "tp": 8,
+    "fp": 0,
+    "tn": 4,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "time_ms": 1861.4048957824707
+  },
+  "samereg": {
+    "tp": 8,
+    "fp": 4,
+    "tn": 0,
+    "fn": 0,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "f1": 0.8,
+    "time_ms": 276.1237621307373
+  },
+  "pattern": {
+    "tp": 8,
+    "fp": 4,
+    "tn": 0,
+    "fn": 0,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "f1": 0.8,
+    "time_ms": 242.4912452697754
+  },
+  "per_sample": {
+    "sample_uaf_01_simple": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 561,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 567,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 581,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 592,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 600,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 649,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 672,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 676,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 742,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 792,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 861,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 872,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 881,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 882,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 923,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 943,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 959,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 961,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1054,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1065,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1074,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1083,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1144,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1148,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1152,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1157,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1161,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1168,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1174,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1176,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1190,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1194,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1204,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1210,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1216,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1219,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1259,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1273,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1279,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1291,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1303,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1337,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1510,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1517,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1522,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1529,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1646,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1647,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1652,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1653,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1660,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1661,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1845,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1851,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1855,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1865,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1893,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1905,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1910,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1961,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2021,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2027,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2053,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2068,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2073,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2075,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2116,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2190,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2217,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2232,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2298,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2321,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2327,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2351,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2355,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2361,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2419,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2423,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2452,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2460,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1965,
+            "use_line": 2468,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 561,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1860,
+            "use_line": 1865,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_02_reg_overwrite": {
+      "drift": {
+        "uaf_count": 0,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 582,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 588,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 602,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 613,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 621,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 670,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 693,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 697,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 763,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 813,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 882,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 893,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 902,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 903,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 944,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 964,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 980,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 982,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1075,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1086,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1095,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1104,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1165,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1169,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1173,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1178,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1182,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1189,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1195,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1197,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1211,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1215,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1225,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1231,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1237,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1240,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1280,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1294,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1300,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1312,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1324,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1358,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1531,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1538,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1543,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1550,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1667,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1668,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1673,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1674,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1681,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1682,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1866,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1872,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1876,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1886,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1914,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1926,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1931,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1982,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2042,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2048,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2074,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2089,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2094,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2096,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2137,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2211,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2238,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2253,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2319,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2342,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2348,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2372,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2376,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2382,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2440,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2444,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2473,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2481,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2489,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 582,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1886,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_03_conditional": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 539,
+            "use_line": 573,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 579,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 593,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 604,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 612,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 661,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 684,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 688,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 754,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 804,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 873,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 884,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 893,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 894,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 935,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 955,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 971,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 973,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1066,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1077,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1086,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1095,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1156,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1160,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1164,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1169,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1173,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1180,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1186,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1188,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1202,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1206,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1216,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1222,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1228,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1231,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1271,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1285,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1291,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1303,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1315,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1349,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1522,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1529,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1534,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1541,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1658,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1659,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1664,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1665,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1672,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1673,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1857,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1863,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1867,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1877,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1905,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1917,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1922,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1973,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2033,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2039,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2065,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2080,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2085,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2087,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2128,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2202,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2229,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2244,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2310,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2333,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2339,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2363,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2367,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2373,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2431,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2435,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2464,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2472,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2480,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 539,
+            "use_line": 573,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1877,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_04_alias": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 538,
+            "use_line": 571,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 577,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 591,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 602,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 610,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 659,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 682,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 686,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 752,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 802,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 871,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 882,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 891,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 892,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 933,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 953,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 969,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 971,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1064,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1075,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1084,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1093,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1154,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1158,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1162,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1167,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1171,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1178,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1184,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1186,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1200,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1204,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1214,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1220,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1226,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1229,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1269,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1283,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1289,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1301,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1313,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1347,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1520,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1527,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1532,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1539,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1656,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1657,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1662,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1663,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1670,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1671,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1855,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1861,
+            "reg": "rax"
+          },
+          {
+            "free_line": 538,
+            "use_line": 1865,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1875,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1903,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1915,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1920,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1971,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2031,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2037,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2063,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2078,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2083,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2085,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2126,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2200,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2227,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2242,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2308,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2331,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2337,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2361,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2365,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2371,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2429,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2433,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2462,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2470,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1975,
+            "use_line": 2478,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 538,
+            "use_line": 571,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1870,
+            "use_line": 1875,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_05_multi_obj": {
+      "drift": {
+        "uaf_count": 0,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 541,
+            "use_line": 574,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 580,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 594,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 605,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 613,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 662,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 685,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 689,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 755,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 805,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 874,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 885,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 894,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 895,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 936,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 956,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 972,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 974,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1067,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1078,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1087,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1096,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1157,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1161,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1165,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1170,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1174,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1181,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1187,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1189,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1203,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1207,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1217,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1223,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1229,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1232,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1272,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1286,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1292,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1304,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1316,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1350,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1523,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1530,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1535,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1542,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1659,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1660,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1665,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1666,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1673,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1674,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1858,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1864,
+            "reg": "rax"
+          },
+          {
+            "free_line": 541,
+            "use_line": 1868,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1878,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1906,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1918,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1923,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1974,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2034,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2040,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2066,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2081,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2086,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2088,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2129,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2203,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2230,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2245,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2311,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2334,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2340,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2364,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2368,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2374,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2432,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2436,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2465,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2473,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1978,
+            "use_line": 2481,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 541,
+            "use_line": 574,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1873,
+            "use_line": 1878,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_06_cross_fn": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 549,
+            "use_line": 582,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 588,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 602,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 613,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 621,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 670,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 693,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 697,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 763,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 813,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 882,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 893,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 902,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 903,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 944,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 964,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 980,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 982,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1075,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1086,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1095,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1104,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1165,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1169,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1173,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1178,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1182,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1189,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1195,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1197,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1211,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1215,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1225,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1231,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1237,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1240,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1280,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1294,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1300,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1312,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1324,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1358,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1531,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1538,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1543,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1550,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1667,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1668,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1673,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1674,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1681,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1682,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1866,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1872,
+            "reg": "rax"
+          },
+          {
+            "free_line": 549,
+            "use_line": 1876,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1886,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1914,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1926,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1931,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1982,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2042,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2048,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2074,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2089,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2094,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2096,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2137,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2211,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2238,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2253,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2319,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2342,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2348,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2372,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2376,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2382,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2440,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2444,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2473,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2481,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1986,
+            "use_line": 2489,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 549,
+            "use_line": 582,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1881,
+            "use_line": 1886,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_07_double_free": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 1
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 539,
+            "use_line": 566,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 572,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 586,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 597,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 605,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 654,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 677,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 681,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 747,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 797,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 866,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 877,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 886,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 887,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 928,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 948,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 964,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 966,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1059,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1070,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1079,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1088,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1149,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1153,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1157,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1162,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1166,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1173,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1179,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1181,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1195,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1199,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1209,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1215,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1221,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1224,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1264,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1278,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1284,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1296,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1308,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1342,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1515,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1522,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1527,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1534,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1651,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1652,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1657,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1658,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1665,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1666,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1850,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1856,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 1860,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1870,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1898,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1910,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1915,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1966,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2026,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2032,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2058,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2073,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2078,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2080,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2121,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2195,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2222,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2237,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2303,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2326,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2332,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2356,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2360,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2366,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2424,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2428,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2457,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2465,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1970,
+            "use_line": 2473,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 3,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 536,
+            "use_line": 566,
+            "reg": "rax"
+          },
+          {
+            "free_line": 539,
+            "use_line": 566,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1865,
+            "use_line": 1870,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_08_realloc": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 26,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1878,
+            "use_line": 1883,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1878,
+            "use_line": 1911,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1878,
+            "use_line": 1923,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1878,
+            "use_line": 1928,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1878,
+            "use_line": 1979,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2039,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2045,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2071,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2086,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2091,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2093,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2134,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2208,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2235,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2250,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2316,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2339,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2345,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2369,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2373,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2379,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2437,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2441,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2470,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2478,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1983,
+            "use_line": 2486,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 1,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1878,
+            "use_line": 1883,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_09_safe_stack": {
+      "drift": {
+        "uaf_count": 0,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 26,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1858,
+            "use_line": 1863,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1858,
+            "use_line": 1891,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1858,
+            "use_line": 1903,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1858,
+            "use_line": 1908,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1858,
+            "use_line": 1959,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2019,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2025,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2051,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2066,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2071,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2073,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2114,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2188,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2215,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2230,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2296,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2319,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2325,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2349,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2353,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2359,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2417,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2421,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2450,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2458,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1963,
+            "use_line": 2466,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 1,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1858,
+            "use_line": 1863,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_10_safe_no_free": {
+      "drift": {
+        "uaf_count": 0,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 26,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1872,
+            "use_line": 1877,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1905,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1917,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1922,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1872,
+            "use_line": 1973,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2033,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2039,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2065,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2080,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2085,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2087,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2128,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2202,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2229,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2244,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2310,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2333,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2339,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2363,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2367,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2373,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2431,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2435,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2464,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2472,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1977,
+            "use_line": 2480,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 1,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 1872,
+            "use_line": 1877,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_11_struct_field": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 577,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 583,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 597,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 608,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 616,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 665,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 688,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 692,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 758,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 808,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 877,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 888,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 897,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 898,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 939,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 959,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 975,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 977,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1070,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1081,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1090,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1099,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1160,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1164,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1168,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1173,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1177,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1184,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1190,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1192,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1206,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1210,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1220,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1226,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1232,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1235,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1275,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1289,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1295,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1307,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1319,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1353,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1526,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1533,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1538,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1545,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1662,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1663,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1668,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1669,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1676,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1677,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1861,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1867,
+            "reg": "rax"
+          },
+          {
+            "free_line": 537,
+            "use_line": 1871,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1881,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1909,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1921,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1926,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1977,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2037,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2043,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2069,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2084,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2089,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2091,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2132,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2206,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2233,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2248,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2314,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2337,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2343,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2367,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2371,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2377,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2435,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2439,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2468,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2476,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1981,
+            "use_line": 2484,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 537,
+            "use_line": 577,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1876,
+            "use_line": 1881,
+            "reg": "rax"
+          }
+        ]
+      }
+    },
+    "sample_uaf_12_loop": {
+      "drift": {
+        "uaf_count": 1,
+        "df_count": 0
+      },
+      "samereg": {
+        "uaf_count": 81,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 547,
+            "use_line": 583,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 589,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 603,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 614,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 622,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 671,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 694,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 698,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 764,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 814,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 883,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 894,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 903,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 904,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 945,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 965,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 981,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 983,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1076,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1087,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1096,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1105,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1166,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1170,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1174,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1179,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1183,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1190,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1196,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1198,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1212,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1216,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1226,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1232,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1238,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1241,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1281,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1295,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1301,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1313,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1325,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1359,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1532,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1539,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1544,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1551,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1668,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1669,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1674,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1675,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1682,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1683,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1867,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1873,
+            "reg": "rax"
+          },
+          {
+            "free_line": 547,
+            "use_line": 1877,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1887,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1915,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1927,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1932,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1983,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2043,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2049,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2075,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2090,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2095,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2097,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2138,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2212,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2239,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2254,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2320,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2343,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2349,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2373,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2377,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2383,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2441,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2445,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2474,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2482,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1987,
+            "use_line": 2490,
+            "reg": "rax"
+          }
+        ]
+      },
+      "pattern": {
+        "uaf_count": 2,
+        "df_count": 0,
+        "findings": [
+          {
+            "free_line": 547,
+            "use_line": 583,
+            "reg": "rax"
+          },
+          {
+            "free_line": 1882,
+            "use_line": 1887,
+            "reg": "rax"
+          }
+        ]
+      }
+    }
+  }
+}

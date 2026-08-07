@@ -13,12 +13,11 @@
     (b) 轮数异常 — 低于标准轮数(如AES-256实际只做8轮);
     (c) 轮常量缺失 — 代码存在但数据被strip或不完整。
 
-参考:
   - NIST FIPS 197 (AES): §5.2 Key Expansion, Rcon[i] = {02}^{i-1} in GF(2^8)
   - GB/T 32907-2016 (SM4): §7.2 密钥扩展算法, FK/CK常量定义
-  - Biham & Shamir, "Differential Fault Analysis of Secret Key Cryptosystems" (CRYPTO 1997):
+  - Biham & Shamir, "Differential Fault Analysis of Secret Key Cryptosystems":
     密钥扩展中微小修改可导致灾难性降级
-  - US11431484B2 (2022): 检测修改过的密码实现的方法 — 轮常量比对是最直接判据
+  - US11431484B2: 检测修改过的密码实现的方法 — 轮常量比对是最直接判据
 """
 
 from dataclasses import dataclass, field
@@ -26,8 +25,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from .constants import AES_RCON
 
-
-# ── 参考轮常量数据库 ──
+# 轮常量数据库
 # 每个条目: (算法名, 轮数, 密钥长度(bit), 轮常量序列(bytes))
 # 轮常量序列为连续字节串 — 如AES-128的Rcon为10字节。
 
@@ -73,7 +71,7 @@ _CAMELLIA_SIGMA: bytes = bytes([
     0xB0, 0x56, 0x88, 0xC2, 0xB3, 0xE6, 0xC1, 0xFD,
 ])
 
-# 参考实现数据库
+# 实现数据库
 _KS_REFERENCE: Dict[str, List[Tuple[str, bytes]]] = {
     'AES': [
         ('AES-128 Rcon', _AES_RCON_128),
@@ -89,8 +87,7 @@ _KS_REFERENCE: Dict[str, List[Tuple[str, bytes]]] = {
     ],
 }
 
-
-# ── 核心数据结构 ──
+# 核心数据结构
 
 @dataclass
 class KeyScheduleMatch:
@@ -101,7 +98,6 @@ class KeyScheduleMatch:
     match_length: int                          # 匹配字节数
     is_exact: bool                             # 是否精确匹配
     modifications: List[Tuple[int, int, int]]  # (偏移, 期望值, 实际值)差异列表
-
 
 @dataclass
 class KSReconstructionReport:
@@ -117,8 +113,7 @@ class KSReconstructionReport:
     def is_suspicious(self) -> bool:
         return len(self.anomaly_flags) > 0
 
-
-# ── 轮常量搜索 ──
+# 轮常量搜索
 # Boyer-Moore-Horspool搜索已知轮常量序列; 允许部分匹配以捕获被strip或混淆的变体。
 
 def _bmh_find_all(data: bytes, pattern: bytes) -> List[int]:
@@ -140,7 +135,6 @@ def _bmh_find_all(data: bytes, pattern: bytes) -> List[int]:
             bc = data[pos + pl - 1]
             pos += skip.get(bc, pl)
     return positions
-
 
 def search_round_constants(data: bytes,
                            algo: str,
@@ -194,8 +188,7 @@ def search_round_constants(data: bytes,
             ))
     return results
 
-
-# ── 轮常量变异分析 ──
+# 轮常量变异分析
 # 精确匹配≠安全; 微小偏离(1-2字节)可能为编译优化或端序问题。
 # >2字节偏离且排除端序 → 标记为可疑。
 
@@ -205,7 +198,6 @@ def _is_endian_swap(orig: bytes, found: bytes) -> bool:
         return False
     swapped = b''.join(orig[i:i + 4][::-1] for i in range(0, len(orig), 4))
     return swapped == found
-
 
 def score_key_schedule(matches: List[KeyScheduleMatch]) -> KSReconstructionReport:
     """对密钥扩展匹配结果综合评价.
@@ -273,8 +265,7 @@ def score_key_schedule(matches: List[KeyScheduleMatch]) -> KSReconstructionRepor
 
     return report
 
-
-# ── 便捷函数 ──
+# 便捷函数
 
 def reconstruct(data: bytes, algo: str,
                 anchor: int = 0,
@@ -282,7 +273,6 @@ def reconstruct(data: bytes, algo: str,
     """一站式密钥扩展重构 — 搜索+评估."""
     matches = search_round_constants(data, algo, radius, anchor)
     return score_key_schedule(matches)
-
 
 __all__ = [
     'KeyScheduleMatch', 'KSReconstructionReport',

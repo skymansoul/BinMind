@@ -26,7 +26,6 @@ _IS_WINDOWS = _CURRENT_PLATFORM == "windows"
 _IS_LINUX = _CURRENT_PLATFORM == "linux"
 
 
-# ---------------------------------------------------------------------------
 # DR7 编码 constants
 #
 # DR7 寄存器布局（x86-64）：
@@ -40,7 +39,6 @@ _IS_LINUX = _CURRENT_PLATFORM == "linux"
 #
 # 设计权衡：RW 和 LEN 字段的 bit 偏移不是规律的 4*slot
 # 而是 16+4*slot(RW) 和 18+4*slot(LEN)
-# ---------------------------------------------------------------------------
 
 DR7_L0 = 1 << 0
 DR7_G0 = 1 << 1
@@ -185,9 +183,7 @@ class HWBreakpointMonitor:
         # 断点命中日志
         self._hit_log: List[Tuple[int, DR6Status, float]] = []
 
-    # ------------------------------------------------------------------
     # Thread enumeration
-    # ------------------------------------------------------------------
 
     def enumerate_threads(self) -> List[int]:
         """Enumerate thread IDs target process
@@ -228,9 +224,7 @@ class HWBreakpointMonitor:
             pass
         return []
 
-    # ------------------------------------------------------------------
     # Breakpoint CRUD
-    # ------------------------------------------------------------------
 
     def add_breakpoint(
         self,
@@ -296,13 +290,11 @@ class HWBreakpointMonitor:
                 return slot
         return None
 
-    # ------------------------------------------------------------------
     # DR7 computation
     #
     # 修复说明：_compute_dr7 不再引用模块级 dwIdx 变量
     # 每个槽位的 enable/condition/length 位由局部变量 idx 直接计算
     # 避免了全局变量泄露导致的位掩码错误
-    # ------------------------------------------------------------------
 
     def _compute_dr7_for_slot(self, idx: int) -> int:
         """计算 DR7 contribution for a single breakpoint slot
@@ -369,9 +361,7 @@ class HWBreakpointMonitor:
         mask |= (DR7_LE | DR7_GE)
         return mask
 
-    # ------------------------------------------------------------------
     # DR6 status 解码
-    # ------------------------------------------------------------------
 
     def decode_dr6(self, dr6_raw: int) -> DR6Status:
         """解码 DR6 debug status 寄存器 a breakpoint hit
@@ -427,9 +417,7 @@ class HWBreakpointMonitor:
                 clear_mask |= (1 << slot)
         return clear_mask
 
-    # ------------------------------------------------------------------
     # Thread context manipulation
-    # ------------------------------------------------------------------
 
     def attach_to_thread(self, thread_id: int) -> bool:
         """Attach capture debug 寄存器 state a thread"""
@@ -494,9 +482,7 @@ class HWBreakpointMonitor:
         )
         return True
 
-    # ------------------------------------------------------------------
     # Multi-thread breakpoint attachment
-    # ------------------------------------------------------------------
 
     def monitor_all_threads(self) -> Dict[int, bool]:
         """Attach 硬件断点s thread target process
@@ -532,9 +518,7 @@ class HWBreakpointMonitor:
         """Retrieve the缓存d thread context 快照"""
         return self._thread_contexts.get(thread_id)
 
-    # ------------------------------------------------------------------
     # Breakpoint hit 记录
-    # ------------------------------------------------------------------
 
     def log_breakpoint_hit(
         self, slot: int, dr6_status: DR6Status
@@ -554,9 +538,7 @@ class HWBreakpointMonitor:
         """清除 hit 记录"""
         self._hit_log.clear()
 
-    # ------------------------------------------------------------------
     # Utility: summary
-    # ------------------------------------------------------------------
 
     def get_status_summary(self) -> Dict[str, Any]:
         """返回 a diagnostic summary 监控 state"""

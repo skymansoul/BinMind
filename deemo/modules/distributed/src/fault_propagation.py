@@ -2,7 +2,7 @@
 #
 # 目标：分布式系统中单节点故障会级联触发下游熔断器和背压，
 # 仅凭告警无法区分根因与受害节点。本模块构建轻量因果传播图，
-# 基于干预主义因果推断进行根因评分。参考: IDI (ICLR 2025, arXiv:2505.00930)
+# 基于干预主义因果推断进行根因评分。参考: IDI
 #
 # IDI 加性噪声模型假设:
 #   故障沿因果边（任务依赖边）传播。若父节点正常而子节点异常，
@@ -129,7 +129,7 @@ class FaultPropagationGraph:
             "propagation_paths": paths,
         }
 
-    # ---- 子图提取 ----
+# 子图提取
 
     def _extract_anomaly_subgraph(
         self, dag: TaskDependencyGraph, anomalous: Set[str]
@@ -238,7 +238,7 @@ class FaultPropagationGraph:
         return impact
 
 
-# ---- 批量构造工具 ----
+# 批量构造工具
 
 def fault_signals_from_breakers(
     breakers: Dict[str, dict],

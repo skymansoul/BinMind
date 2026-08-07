@@ -86,7 +86,7 @@ class SurvivalReport:
         }
 
 
-# ── Kaplan-Meier 估计器 ──────────────────────────────────────────
+# Kaplan-Meier 估计器
 
 class KaplanMeierEstimator:
     """Kaplan-Meier 乘积限估计。
@@ -255,7 +255,7 @@ class KaplanMeierEstimator:
         return chi2, p
 
 
-# ── 生存分析器 ────────────────────────────────────────────────────
+# 生存分析器
 
 class PatchSurvivalAnalyzer:
     """补丁生存分析引擎。

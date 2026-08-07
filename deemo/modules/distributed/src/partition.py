@@ -1,12 +1,12 @@
 # 数据分区 — 一致性哈希 + 虚拟节点 + 动态再均衡
 # 分区管理: partition 作为独立执行单元，支持并行处理和故障隔离
 # 数据局部性: 分区内任务共享缓存亲和性，减少跨NUMA节点数据移动
-# 引用 Falcon [BDAIA 2025]: worker 按 tier 分组，利用数据亲和性路由
+# 引用 Falcon: worker 按 tier 分组，利用数据亲和性路由
 #
 # 三种分区策略：
 #   - hash:   一致性哈希环（复用 load_balancer.ConsistentHashRing）
-#   - range:  按 key 字典序均分至 N 个分区
-#   - round_robin: 轮询均分，无局部性，适合无状态任务
+# range:  按 key 字典序均分至 N 个分区
+# round_robin: 轮询均分，无局部性，适合无状态任务
 #
 # 自动再均衡：节点增删时仅迁移受影响分区的数据
 # 再均衡粒度：虚拟节点级别，单次迁移量 = 总数据 / 虚拟节点数
@@ -22,7 +22,7 @@ from typing import Optional, List, Any, Dict, Callable
 from collections import defaultdict
 
 
-# ===== 分区策略接口 =====
+# 分区策略接口
 
 class Partitioner(ABC):
     """分区决策器抽象基类 — 给定 key 返回所属分区索引 [0, n_partitions)。"""
@@ -37,7 +37,7 @@ class Partitioner(ABC):
         return [(p + i) % n_partitions for i in range(replicas)]
 
 
-# ===== MD5 哈希取模分区 =====
+# MD5 哈希取模分区
 
 class HashPartitioner(Partitioner):
     """MD5 哈希取模分区 — 确定性路由，碰撞率低。
@@ -49,7 +49,7 @@ class HashPartitioner(Partitioner):
         return int(h, 16) % n_partitions
 
 
-# ===== 字典序范围分区 =====
+# 字典序范围分区
 
 class RangePartitioner(Partitioner):
     """按 key 的字典序等距分区。
@@ -82,7 +82,7 @@ class RangePartitioner(Partitioner):
         return min(idx, n_partitions - 1)
 
 
-# ===== 轮询分区 =====
+# 轮询分区
 
 class RoundRobinPartitioner(Partitioner):
     """轮询分区 — 全局无状态计数器递增。
@@ -101,7 +101,7 @@ class RoundRobinPartitioner(Partitioner):
         return p
 
 
-# ===== 分区管理器 =====
+# 分区管理器
 
 class PartitionManager:
     """分区管理器 — 统一路由 + 再均衡协调。
@@ -124,7 +124,7 @@ class PartitionManager:
         self._on_rebalance: Optional[Callable[[int, str, str], None]] = None
         # 回调签名: (partition_index, old_node_id, new_node_id)
 
-    # ---- 节点增删管理 ----
+# 节点增删管理
 
     def add_node(self, node_id: str) -> List[int]:
         """添加节点 → 从现有节点匀出分区分配给新节点。返回分配的分区列表。"""
@@ -177,7 +177,7 @@ class PartitionManager:
 
             return orphaned
 
-    # ---- 路由查询 ----
+# 路由查询
 
     def route(self, key: str) -> Optional[str]:
         """由 key 路由到负责的节点。"""
@@ -197,13 +197,13 @@ class PartitionManager:
         """查询某个节点持有的分区索引列表。"""
         return list(self._node_partitions.get(node_id, []))
 
-    # ---- 再均衡回调 ----
+# 再均衡回调
 
     def on_rebalance(self, callback: Callable[[int, str, str], None]):
         """设置再均衡回调 — 分区迁移时通知外部执行数据搬迁。"""
         self._on_rebalance = callback
 
-    # ---- 状态快照 ----
+# 状态快照
 
     @property
     def state(self) -> dict:

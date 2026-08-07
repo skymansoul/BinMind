@@ -2,16 +2,16 @@
 #
 # 创新点相对现有 LLMVulnerabilityDetector(纯文本输入):
 #   1. CPG 结构上下文: 将伪代码构建为代码属性图, 序列化关键数据流/控制流路径
-#      拼接进 LLM prompt —— 提升跨函数数据流理解 (LLMxCPG, arXiv:2507.16585 [待验证])。
+#      拼接进 LLM prompt —— 提升跨函数数据流理解。
 #   2. 多特征融合注意力: 文本嵌入 + CPG 结构特征经 softmax 注意力加权融合打分
-#      (CodeSAGE, J. Inf. Secur. Appl. 2025)。
+#。
 #   3. 反事实增强鲁棒性: 对样本做最小扰动(边界偏移/重命名/去注释等)评估检测器
-#      一致性, 无 LLM 时退化为启发式变换 (VISION, arXiv:2508.18933 [待验证];
-#      NatGVD, arXiv:2510.04987 [待验证])。
+#      一致性, 无 LLM 时退化为启发式变换 (VISION, [待验证];
+#      NatGVD, [待验证])。
 #
 # 边界条件:
 #   - LLM 后端不可用时, 检测降级为 结构+文本 融合打分(纯统计路径), 仍可用。
-#   - 鲁棒性评估默认使用快速打分器(结构+文本), 避免对每个变体重复调用 LLM。
+# 鲁棒性评估默认使用快速打分器(结构+文本), 避免对每个变体重复调用 LLM。
 
 import logging
 import time
@@ -184,7 +184,7 @@ class CPGLLMVulnDetector:
         return self._build_ctx(cpg, pseudocode, function_names,
                                self._SINKS, max_chars=max_chars)
 
-    # ---- 快速打分器(供鲁棒性评估与纯统计降级) ----
+# 快速打分器(供鲁棒性评估与纯统计降级)
 
     def fast_score(self, pseudocode: str,
                    function_names: Optional[Sequence[str]] = None) -> Tuple[float, Dict]:
@@ -205,7 +205,7 @@ class CPGLLMVulnDetector:
             "text": res.text_score, "structure": res.structure_score,
             "attention": res.attention_weights, "cpg_stats": cpg.stats()}
 
-    # ---- 主检测入口 ----
+# 主检测入口
 
     def detect(self, function_name: str = "", pseudocode: str = "",
                arch: str = "x86_64", fmt: str = "ELF",

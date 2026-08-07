@@ -1,0 +1,497 @@
+{
+  "n_samples": 18,
+  "metrics": {
+    "BinMind-SSBCP": {
+      "TP": 14,
+      "FP": 0,
+      "TN": 4,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "fp_rate": 0.0,
+      "avg_time_ms": 23.9
+    },
+    "Angr": {
+      "TP": 14,
+      "FP": 4,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.7778,
+      "recall": 1.0,
+      "f1": 0.875,
+      "fp_rate": 1.0,
+      "avg_time_ms": 366.2
+    }
+  },
+  "results": [
+    {
+      "sample": "sample01_direct_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 2,
+          "n_real": 1,
+          "n_filtered": 1,
+          "duration_ms": 20.7,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 968.1,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample02_int_overflow_to_heap",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 21.6,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 320.8,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample03_insufficient_guard",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 20.8,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 187,
+          "duration_ms": 333.8,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample04_cross_function_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 20.6,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 191,
+          "duration_ms": 252.3,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample05_loop_cumulative_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 2,
+          "n_real": 2,
+          "n_filtered": 0,
+          "duration_ms": 20.2,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 309.5,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample06_sprintf_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 52.7,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 10,
+          "n_real": 10,
+          "n_functions": 297,
+          "duration_ms": 608.5,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample07_memcpy_computed_size",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 19.8,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 308.3,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample08_alignment_padding_safe",
+      "expected": "TN",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": false,
+          "n_findings": 1,
+          "n_real": 0,
+          "n_filtered": 1,
+          "duration_ms": 20.1,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 348.6,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample09_strncpy_truncation_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 37.8,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 8,
+          "n_real": 8,
+          "n_functions": 193,
+          "duration_ms": 301.8,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample10_realloc_shrink_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 2,
+          "n_real": 1,
+          "n_filtered": 1,
+          "duration_ms": 21.3,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 7,
+          "n_real": 7,
+          "n_functions": 193,
+          "duration_ms": 392.4,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample11_calloc_wraparound",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 27.0,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 313.5,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample12_conditional_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 2,
+          "n_real": 1,
+          "n_filtered": 1,
+          "duration_ms": 20.3,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 304.2,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample13_multi_alloc_pointer_confusion",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 20.1,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 7,
+          "n_real": 7,
+          "n_functions": 190,
+          "duration_ms": 255.6,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample14_nested_struct_overflow",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 19.7,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 316.7,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample15_properly_guarded_safe",
+      "expected": "TN",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": false,
+          "n_findings": 1,
+          "n_real": 0,
+          "n_filtered": 1,
+          "duration_ms": 24.8,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 187,
+          "duration_ms": 331.6,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample16_exact_boundary_safe",
+      "expected": "TN",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": false,
+          "n_findings": 1,
+          "n_real": 0,
+          "n_filtered": 1,
+          "duration_ms": 21.7,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 272.3,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample17_large_offset_small_write",
+      "expected": "TN",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": false,
+          "n_findings": 1,
+          "n_real": 0,
+          "n_filtered": 1,
+          "duration_ms": 21.1,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 6,
+          "n_real": 6,
+          "n_functions": 190,
+          "duration_ms": 338.4,
+          "error": ""
+        }
+      }
+    },
+    {
+      "sample": "sample18_16bit_overflow_to_heap",
+      "expected": "TP",
+      "tools": {
+        "BinMind-SSBCP": {
+          "tool": "BinMind-SSBCP",
+          "success": true,
+          "detected": true,
+          "n_findings": 1,
+          "n_real": 1,
+          "n_filtered": 0,
+          "duration_ms": 20.3,
+          "error": ""
+        },
+        "Angr": {
+          "tool": "Angr",
+          "success": true,
+          "detected": true,
+          "n_findings": 7,
+          "n_real": 7,
+          "n_functions": 189,
+          "duration_ms": 315.1,
+          "error": ""
+        }
+      }
+    }
+  ]
+}

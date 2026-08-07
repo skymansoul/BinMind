@@ -1,0 +1,9 @@
+{
+  "sample_id": "tn_06_argv_as_data",
+  "label": "tn",
+  "cwe": "CWE-0",
+  "cve": "安全模式: argv 仅作数据参数",
+  "expect_overflow": false,
+  "trigger": "任意 argv",
+  "why": "格式串为常量, argv 只是 %s 的数据"
+}

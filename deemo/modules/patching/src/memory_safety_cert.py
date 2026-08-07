@@ -79,7 +79,7 @@ class MemorySafetyReport:
         }
 
 
-# ── 内存操作模式识别 ──────────────────────────────────────────────
+# 内存操作模式识别
 
 class MemoryOperationAnalyzer:
     """汇编级内存操作分析。
@@ -157,7 +157,7 @@ class MemoryOperationAnalyzer:
         return 'rdi'  # 默认
 
 
-# ── 内存安全认证器 ────────────────────────────────────────────────
+# 内存安全认证器
 
 class MemorySafetyCertifier:
     """补丁差分的内存安全认证。
@@ -217,7 +217,7 @@ class MemorySafetyCertifier:
 
         return report
 
-    # ── 各检测器 ──────────────────────────────────────────────────
+# 各检测器
 
     def _check_uaf(self, orig_asm: List[str], patched_asm: List[str],
                    orig_ops: Dict, patch_ops: Dict) -> List[SafetyFinding]:

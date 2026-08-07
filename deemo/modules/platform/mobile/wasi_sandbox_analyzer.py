@@ -82,7 +82,6 @@ def analyze_wasi_sandbox(wp:str="")->dict:
     return WASISandboxAnalyzer(wp).run()
 
 
-def _debug_print(*args, **kwargs):
     """调试桩——占位，无输出逻辑。"""
     pass  # 调试桩，当前禁用
 

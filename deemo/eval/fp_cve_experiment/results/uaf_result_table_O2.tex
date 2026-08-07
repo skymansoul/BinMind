@@ -1,0 +1,15 @@
+% Auto-generated (UAF corpus, O2 variant)
+\begin{table}[htbp]
+\centering
+\caption{UAF detection comparison (O2; 15 TP + 15 safe). TOVS verifies temporal ordering via post-dominance and pointer identity, eliminating exclusive-branch and redefinition false positives.}
+\label{tab:uaf-o2}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Tool & TP & FP & FN & Precision & Recall & F1 \\
+\midrule
+UAF baseline (DT-HSA) & 2 & 0 & 13 & 1.000 & 0.133 & 0.235 \\
+\textbf{TOVS (Ours)} & 4 & 0 & 11 & 1.000 & 0.267 & 0.421 \\
+\bottomrule
+\end{tabular}
+\end{table}

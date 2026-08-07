@@ -113,7 +113,7 @@ class DistillationReport:
         }
 
 
-# ── Fix Essence 提取器 ─────────────────────────────────────────────
+# Fix Essence 提取器
 
 class FixEssenceExtractor:
     """从已知补丁中提取跨二进制可移植的修复本质。
@@ -201,7 +201,7 @@ class FixEssenceExtractor:
         return None
 
 
-# ── 跨 Binary 匹配器 ──────────────────────────────────────────────
+# 跨 Binary 匹配器
 
 class CrossBinaryFixMatcher:
     """在目标 binary 中搜索匹配 Fix Essence 的代码位置。
@@ -281,7 +281,7 @@ class CrossBinaryFixMatcher:
             return "参考模板: %s" % essence.fixed_pattern
 
 
-# ── 蒸馏引擎 ──────────────────────────────────────────────────────
+# 蒸馏引擎
 
 class FixDistiller:
     """修复模式蒸馏引擎。
@@ -307,7 +307,7 @@ class FixDistiller:
             source_patch_id=source_patch_id,
             target_binary_id=target_binary_id)
 
-        # 步骤 1: 提取修复本质
+        # 提取修复本质
         essence = self._extractor.extract(
             source_original_asm, source_patched_asm, source_patch_id)
         if not essence:
@@ -316,14 +316,14 @@ class FixDistiller:
             return report
         report.essence = essence
 
-        # 步骤 2: 在目标 binary 中匹配
+        # 在目标 binary 中匹配
         candidates = self._matcher.match(essence, target_functions)
         report.candidates = candidates
         report.total_matches = len(candidates)
         report.high_confidence_matches = sum(
             1 for c in candidates if c.match_confidence >= 0.75)
 
-        # 步骤 3: 生成建议
+        # 生成建议
         if report.high_confidence_matches > 0:
             report.recommended_actions.append(
                 "发现 %d 个高置信度匹配——建议优先审查并按模板应用修复" % (

@@ -25,7 +25,7 @@ class TaintSink(Enum):
     SPRINTF_DST = auto()
     WRITE = auto()
 
-# ---- 敏感函数名映射到sink类型 ----
+# 敏感函数名映射到sink类型
 _SINK_MAP = {
     'system': TaintSink.SYSTEM,
     'execve': TaintSink.EXECVE,
@@ -65,7 +65,7 @@ class TaintPropagator:
         self._propagate_count = 0
         self._sink_hits = 0
 
-    # ===== 污点标记 =====
+# 污点标记
     def mark_source(self, reg_or_addr: str, source: TaintSource):
         """在寄存器或内存地址上设置污点源"""
         if reg_or_addr.startswith('0x') or reg_or_addr.startswith('$'):
@@ -93,7 +93,7 @@ class TaintPropagator:
 
         _dst_taint: Set[TaintSource] = set()
 
-        # ---- MOV / MOVZX / MOVSX ----
+# MOV / MOVZX / MOVSX
         if _opc in ('mov', 'movzx', 'movsx', 'movsxd'):
             for _s in _srcs:
                 if _s in self._reg_taint:
@@ -102,7 +102,7 @@ class TaintPropagator:
                 if _sa is not None and _sa in self._mem_taint:
                     _dst_taint |= self._mem_taint[_sa]
 
-        # ---- 算术/逻辑: ADD, SUB,, OR, XOR(dst!=src), SHL, SHR ----
+        # 算术/逻辑: ADD, SUB, OR, XOR(dst!=src), SHL, SHR
         elif _opc in ('add', 'sub', 'and', 'or', 'xor', 'shl', 'shr', 'sar',
                       'imul', 'mul', 'div', 'idiv', 'neg', 'not', 'inc', 'dec'):
             if _dst and _dst in self._reg_taint:
@@ -114,7 +114,7 @@ class TaintPropagator:
                 if _sa is not None and _sa in self._mem_taint:
                     _dst_taint |= self._mem_taint[_sa]
 
-        # ---- PUSH: 寄存器→栈 ----
+# PUSH: 寄存器→栈
         elif _opc == 'push':
             for _s in _srcs:
                 if _s in self._reg_taint:
@@ -126,21 +126,21 @@ class TaintPropagator:
                     self._mem_taint[_stack_a] = set(self._mem_taint[_sa])
             self._rsp -= self._get_op_size(instruction)
 
-        # ---- POP: 栈→寄存器 ----
+# POP: 栈→寄存器
         elif _opc == 'pop':
             _stack_a = self._rsp
             if _dst and _stack_a in self._mem_taint:
                 _dst_taint |= self._mem_taint[_stack_a]
             self._rsp += self._get_op_size(instruction)
 
-        # ---- LEA: 仅当基址寄存器有污点时传播 ----
+# LEA: 仅当基址寄存器有污点时传播
         elif _opc == 'lea':
             for _s in _srcs:
                 _base = self._extract_base_reg(_s)
                 if _base and _base in self._reg_taint:
                     _dst_taint |= self._reg_taint[_base]
 
-        # ---- CALL: 检查前6个参数(rdi/rsi/rdx/rcx/r8/r9)是否有污点流入sink ----
+        # CALL: 检查前6个参数(rdi/rsi/rdx/rcx/r8/r9)是否有污点流入sink
         elif _opc == 'call':
             _call_target = _dst or (_srcs[0] if _srcs else '')
             # 如果call目标本身是一个寄存器且该寄存器被污点标记
@@ -156,7 +156,7 @@ class TaintPropagator:
             else:
                 self._reg_taint.setdefault(_dst, set()).update(_dst_taint)
 
-    # ===== sink检查 =====
+# sink检查
     def check_sink(self, instruction: str, sink: TaintSink) -> bool:
         """检查污点数据是否到达危险sink — 返回值True表示发现注入点"""
         _opc, _dst, _srcs = self._parse_operands(instruction)
@@ -206,7 +206,7 @@ class TaintPropagator:
                         self._sanitizers.append((_i, f'null_check: test+jz at insn {_i}'))
                         break
 
-    # ===== 污点清除 =====
+# 污点清除
     def clear_taint(self, reg_or_addr: str):
         """移除指定寄存器或地址的污点标记"""
         if reg_or_addr.startswith('0x') or reg_or_addr.startswith('$'):
@@ -228,7 +228,7 @@ class TaintPropagator:
                 return set()
         return self._reg_taint.get(reg_or_addr, set())
 
-    # ---- 指令解析 ----
+# 指令解析
     def _parse_operands(self, insn: str) -> Tuple[Optional[str], Optional[str], List[str]]:
         """粗糙指令解析: 返回(opcode, dest, [src1, src2,.])"""
         _s = insn.strip()
@@ -340,7 +340,7 @@ class TaintPropagator:
             return 4
         return 8  # 默认64位操作
 
-    # ===== 汇总 =====
+# 汇总
     def taint_summary(self) -> Dict:
         """返回当前完整污点状态快照"""
         # 按source类型分组统计

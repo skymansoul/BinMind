@@ -1,9 +1,9 @@
 # 二进制语义差异引擎: 函数嵌入跨版本比较/Jaccard+MinHash两阶段聚类/patch可达性分析
-# 参考: Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970 [待验证], 2025)
-#       Haara "Enhancing Function Matching in Binary Code with ML Models" (Lund Univ. 2025)
-#       Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity" (ISSRE 2025)
+# Khorrami et al. "Binary Diff Summarization using LLMs"
+#       Haara "Enhancing Function Matching in Binary Code with ML Models"
+#       Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity"
 #       Ahmad & Luo "Unsupervised Binary Code Translation with Application to Code Similarity Detection"
-#       Yang et al. "Towards Practical Binary Code Similarity Detection: Vuln Verification via Patch Semantic Analysis" (2023)
+#       Yang et al. "Towards Practical Binary Code Similarity Detection: Vuln Verification via Patch Semantic Analysis"
 #       Zhou "Vulnerability Detection Through Binary Function Matching based on Lifting and Re-optimization"
 import hashlib, json, logging, os, struct, time, re
 from dataclasses import dataclass, field
@@ -76,7 +76,7 @@ def _instruction_density_heuristic(data: bytes) -> float:
     hits = sum(1 for b in data if b in x86_prefixes or b in arm_prefixes)
     return min(hits / len(data), 1.0)
 
-# MinHash实现, 大段快速聚类, 避免pairwise O(n^2)比较 [Broder 1997]
+# MinHash实现, 大段快速聚类, 避免pairwise O(n^2)比较
 
 def _minhash_signature(tokens: Set[int], n_seeds: int = _MINHASH_SEEDS) -> List[int]:
     """token集合→MinHash签名. 种子固定保证可重现."""
@@ -103,7 +103,7 @@ class BinaryDiffEngine:
     def __init__(self, mw: int = 4, jaccard_threshold: float = 0.75):
         # 两阶段匹配: SHA-256精确→MinHash聚类
         # 复杂度O(n*k + m*log n), k=MinHash维度
-        # 参考Khorrami et al. (2025) FSS结果排序，粗聚类用MinHash [Broder 1997]
+        # Khorrami et al. FSS结果排序，粗聚类用MinHash
         self._pool = ThreadPoolExecutor(max_workers=mw)
         self._jaccard_threshold = jaccard_threshold
 
@@ -292,7 +292,7 @@ class BinaryDiffEngine:
         return report
 
     def export_patch_summary(self, report: DiffReport) -> Dict:
-        # FSS启发式 [Khorrami 2025]: size_delta权重0.4+(1-similarity)权重0.6
+        # FSS启发式: size_delta权重0.4+(1-similarity)权重0.6
         def _fss(r: DiffResult) -> float:
             size_factor = min(abs(r.size_delta) / max(r.size_delta if r.size_delta else 1, 1.0), 1.0)
             sim_inv = 1.0 - r.similarity

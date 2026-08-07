@@ -1,7 +1,7 @@
 """Sinkhorn 算法 — 熵正则化最优传输的迭代求解器.
 
 从 optimal_transport_seed.py 分离, 减少单文件体积。
-参考: Cuturi (2013) "Sinkhorn Distances" (NeurIPS)
+参考: Cuturi "Sinkhorn Distances" (NeurIPS)
 """
 
 import math

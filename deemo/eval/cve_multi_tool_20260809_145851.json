@@ -1,0 +1,583 @@
+{
+  "metrics": {
+    "BinMind-Full": {
+      "total": 16,
+      "TP": 16,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "Regex-Base": {
+      "total": 16,
+      "TP": 4,
+      "FP": 0,
+      "TN": 0,
+      "FN": 12,
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4
+    },
+    "Heuristic": {
+      "total": 16,
+      "TP": 16,
+      "FP": 0,
+      "TN": 0,
+      "FN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "Angr-CFG": {
+      "total": 16,
+      "TP": 0,
+      "FP": 0,
+      "TN": 0,
+      "FN": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  },
+  "results": {
+    "BinMind-Full": [
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2014_0160_heartbleed",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "duration_ms": 14.907121658325195
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2015_0235_ghost",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 2,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 3.4618377685546875
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2016_10165_lcms",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "duration_ms": 4.085779190063477
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2017_18017_netfilter",
+        "detected": true,
+        "candidates": 6,
+        "overflow": 3,
+        "uncertain": 0,
+        "safe": 3,
+        "duration_ms": 3.1325817108154297
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2017_9431_grpc",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 3.8688182830810547
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2018_1000001_realpath",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 1,
+        "uncertain": 1,
+        "safe": 0,
+        "duration_ms": 2.8688907623291016
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2019_13143_minixml",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 3.377199172973633
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2020_14386_afpacket",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "duration_ms": 3.141641616821289
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2020_28030_wireshark",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 5.4931640625
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2021_3156_sudo",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 3.4918785095214844
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2021_3609_canbcm",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 0,
+        "duration_ms": 3.2656192779541016
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2021_44733_uaf",
+        "detected": true,
+        "candidates": 4,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 3,
+        "duration_ms": 3.045320510864258
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2022_0185_fscontext",
+        "detected": true,
+        "candidates": 4,
+        "overflow": 2,
+        "uncertain": 2,
+        "safe": 0,
+        "duration_ms": 3.806591033935547
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2022_1015_netfilter",
+        "detected": true,
+        "candidates": 3,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 2,
+        "duration_ms": 4.430294036865234
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2022_25636_netfilter",
+        "detected": true,
+        "candidates": 2,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "duration_ms": 2.8421878814697266
+      },
+      {
+        "tool": "BinMind-Full",
+        "sample": "cve_2024_21849_snapdragon",
+        "detected": true,
+        "candidates": 1,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 0,
+        "duration_ms": 3.6547183990478516
+      }
+    ],
+    "Regex-Base": [
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2014_0160_heartbleed",
+        "detected": true,
+        "findings": 1,
+        "duration_ms": 0.12230873107910156
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2015_0235_ghost",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.12087821960449219
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2016_10165_lcms",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.16069412231445312
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2017_18017_netfilter",
+        "detected": true,
+        "findings": 1,
+        "duration_ms": 0.1666545867919922
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2017_9431_grpc",
+        "detected": true,
+        "findings": 1,
+        "duration_ms": 0.15401840209960938
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2018_1000001_realpath",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.1785755157470703
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2019_13143_minixml",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.1323223114013672
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2020_14386_afpacket",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.12183189392089844
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2020_28030_wireshark",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.1442432403564453
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2021_3156_sudo",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.1285076141357422
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2021_3609_canbcm",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.12159347534179688
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2021_44733_uaf",
+        "detected": true,
+        "findings": 4,
+        "duration_ms": 0.10728836059570312
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2022_0185_fscontext",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.14066696166992188
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2022_1015_netfilter",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.1761913299560547
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2022_25636_netfilter",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.11420249938964844
+      },
+      {
+        "tool": "Regex-Base",
+        "sample": "cve_2024_21849_snapdragon",
+        "detected": false,
+        "findings": 0,
+        "duration_ms": 0.17213821411132812
+      }
+    ],
+    "Heuristic": [
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2014_0160_heartbleed",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 2,
+        "write_count": 2,
+        "duration_ms": 0.13065338134765625
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2015_0235_ghost",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 1,
+        "write_count": 2,
+        "duration_ms": 0.13685226440429688
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2016_10165_lcms",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 7,
+        "write_count": 2,
+        "duration_ms": 0.16760826110839844
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2017_18017_netfilter",
+        "detected": true,
+        "score": 36,
+        "alloc_count": 2,
+        "write_count": 3,
+        "duration_ms": 0.15306472778320312
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2017_9431_grpc",
+        "detected": true,
+        "score": 48,
+        "alloc_count": 1,
+        "write_count": 4,
+        "duration_ms": 0.16808509826660156
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2018_1000001_realpath",
+        "detected": true,
+        "score": 12,
+        "alloc_count": 1,
+        "write_count": 1,
+        "duration_ms": 0.2048015594482422
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2019_13143_minixml",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 1,
+        "write_count": 2,
+        "duration_ms": 0.14328956604003906
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2020_14386_afpacket",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 1,
+        "write_count": 2,
+        "duration_ms": 0.13375282287597656
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2020_28030_wireshark",
+        "detected": true,
+        "score": 48,
+        "alloc_count": 1,
+        "write_count": 4,
+        "duration_ms": 0.15592575073242188
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2021_3156_sudo",
+        "detected": true,
+        "score": 12,
+        "alloc_count": 1,
+        "write_count": 1,
+        "duration_ms": 0.13756752014160156
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2021_3609_canbcm",
+        "detected": true,
+        "score": 12,
+        "alloc_count": 1,
+        "write_count": 1,
+        "duration_ms": 0.13017654418945312
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2021_44733_uaf",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 3,
+        "write_count": 2,
+        "duration_ms": 0.11467933654785156
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2022_0185_fscontext",
+        "detected": true,
+        "score": 48,
+        "alloc_count": 3,
+        "write_count": 4,
+        "duration_ms": 0.15091896057128906
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2022_1015_netfilter",
+        "detected": true,
+        "score": 26,
+        "alloc_count": 1,
+        "write_count": 3,
+        "duration_ms": 0.17881393432617188
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2022_25636_netfilter",
+        "detected": true,
+        "score": 24,
+        "alloc_count": 1,
+        "write_count": 2,
+        "duration_ms": 0.1251697540283203
+      },
+      {
+        "tool": "Heuristic",
+        "sample": "cve_2024_21849_snapdragon",
+        "detected": true,
+        "score": 36,
+        "alloc_count": 2,
+        "write_count": 3,
+        "duration_ms": 0.19311904907226562
+      }
+    ],
+    "Angr-CFG": [
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2014_0160_heartbleed",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.018596649169921875
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2015_0235_ghost",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.018358230590820312
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2016_10165_lcms",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.014781951904296875
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2017_18017_netfilter",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.015735626220703125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2017_9431_grpc",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.021219253540039062
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2018_1000001_realpath",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.01811981201171875
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2019_13143_minixml",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.019788742065429688
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2020_14386_afpacket",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.02002716064453125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2020_28030_wireshark",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.018358230590820312
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2021_3156_sudo",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.0209808349609375
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2021_3609_canbcm",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.02002716064453125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2021_44733_uaf",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.019550323486328125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2022_0185_fscontext",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.019073486328125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2022_1015_netfilter",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.02002716064453125
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2022_25636_netfilter",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.018596649169921875
+      },
+      {
+        "tool": "Angr-CFG",
+        "sample": "cve_2024_21849_snapdragon",
+        "detected": false,
+        "error": "binary not found",
+        "duration_ms": 0.020265579223632812
+      }
+    ]
+  },
+  "generated_at": "2026-08-09 14:58:51"
+}

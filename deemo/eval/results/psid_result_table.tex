@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{PSID Micro-Benchmark: Interval Domain Precision Enhancement}
+\label{tab:psid-micro}
+\begin{tabular}{llccccc}
+\toprule
+Test & Scenario & CJ Const & IV Const & $\Delta$ & CJ Verdict & IV Verdict \\
+\midrule
+M1 & path-condition & 0 & 1 & +1 & INCONCL. & \textbf{SAFE} \checkmark \\
+M2 & multivar-constraint & 2 & 3 & +1 & INCONCL. & \textbf{SAFE} \checkmark \\
+M3 & assignment-propagation & 1 & 3 & +2 & INCONCL. & \textbf{SAFE} \checkmark \\
+M4 & cmp-jcc-condition & 0 & 1 & +1 & INCONCL. & \textbf{SAFE} \checkmark \\
+M5 & loop-bound-propagation & 0 & 1 & +1 & SAFE & \textbf{SAFE} \\
+\midrule
+\multicolumn{7}{c}{Improved: 4/5, New constraints: 6} \\
+\bottomrule
+\end{tabular}
+\end{table}

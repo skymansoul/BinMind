@@ -5,7 +5,7 @@
 import numpy as np
 from collections import Counter
 
-# ===== UncertaintySampler =====
+# UncertaintySampler
 # 基于单个模型的预测不确定性选样
 # entropy适合类别多且分布均匀的场景，margin适合二分类边界模糊的情况
 # least_confidence最简单但可能忽略次要类别的信息
@@ -17,7 +17,6 @@ class UncertaintySampler:
             raise ValueError(f"无效策略: {strategy}, 支持: {_valid}")
         self._s = strategy
 
-    # ----
     def query(self, probs, n=10):
         """probs: (n_samples, n_classes), 返回不确定度最高的n个样本索引"""
         if self._s == 'entropy':
@@ -41,7 +40,6 @@ class UncertaintySampler:
         _p = np.clip(probs, _eps, 1.0 - _eps)
         return -np.sum(_p * np.log(_p), axis=1)
 
-    # ----
     def query_class_balanced(self, probs, labels, n=10):
         """按类别比例平衡采样，每类选最不确定的，避免偏移"""
         _n_classes = probs.shape[1]
@@ -72,7 +70,7 @@ class UncertaintySampler:
         return np.asarray(_selected[:n])
 
 
-# ===== CommitteeSampler =====
+# CommitteeSampler
 # 多模型委员会投票，用模型间分歧衡量不确定度
 # vote_entropy：直接计算投票分布的熵，计算量小
 # kl_divergence：衡量每个成员与共识的KL散度，对方向性分歧敏感
@@ -87,7 +85,6 @@ class CommitteeSampler:
         self._models = models
         self._s = strategy
 
-    # ----
     def _committee_probas(self, X):
         """(n_models, n_samples, n_classes)"""
         _all = [m.predict_proba(X) if hasattr(m, 'predict_proba') else m(X)
@@ -103,7 +100,6 @@ class CommitteeSampler:
         _avg = np.clip(_avg, _eps, 1 - _eps)
         return -np.sum(_avg * np.log(_avg), axis=1)
 
-    # ----
     def query(self, X, n=10):
         """X: 特征矩阵, 返回分歧最大的n个样本索引"""
         _v = self._committee_probas(X)
@@ -123,7 +119,7 @@ class CommitteeSampler:
         return np.asarray(_idx)
 
 
-# ===== DiversitySampler =====
+# DiversitySampler
 # 多样性采样：避免选到信息冗余的相近样本
 # kmeans_pp：概率正比于到已选集合的最小距离平方，理论保证O(log k)近似
 # farthest_first：贪心选最远点，确定性更强但可能被离群点劫持
@@ -135,7 +131,6 @@ class DiversitySampler:
             raise ValueError(f"无效策略: {strategy}, 支持: {_valid}")
         self._s = strategy
 
-    # ----
     def query(self, X, n=10, seed_indices=None):
         """X_emb: 嵌入/特征矩阵, 返回n个最具多样性的索引"""
         _x = np.asarray(X, dtype=np.float64)
@@ -178,7 +173,6 @@ class DiversitySampler:
             _selected.append(_new)
         return _selected
 
-    # ----
     def _farthest_first(self, _x, n, _selected):
         _n_samples = len(_x)
         _selected = list(_selected)
@@ -196,7 +190,7 @@ class DiversitySampler:
         return _selected
 
 
-# ===== combined_query =====
+# combined_query
 # alpha混合：不确定性 + 多样性线性加权
 # alpha=0.5 两者等权，alpha>0.5偏向不确定度，alpha<0.5偏向多样性
 # 用z-score标准化后合并，避免量纲差异

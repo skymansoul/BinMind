@@ -1,5 +1,5 @@
 # 负载均衡策略集 — 覆盖六大经典算法 + 一致性哈希环
-# 参考 Falcon 框架 [ACM BDAIA 2025] 的三层优先级 + 加权公平队列思路
+# Falcon 框架 的三层优先级 + 加权公平队列思路
 # pull-based 调度对负载分布的改进: worker 空闲时主动拉取
 # 每种策略封装为独立类，暴露统一的 select 接口
 #
@@ -32,7 +32,7 @@ class SelectorNode:
         return min(self.current_load / self.capacity, 1.0)
 
 
-# ===== 基本轮询 =====
+# 基本轮询
 
 class RoundRobinBalancer:
     """简单轮询 — 每次选择后指针后移一位。O(1) 选择，使用无锁原子计数器。
@@ -54,7 +54,7 @@ class RoundRobinBalancer:
         return healthy[idx]
 
 
-# ===== 加权轮询 — Nginx upstream 平滑算法 =====
+# 加权轮询 — Nginx upstream 平滑算法
 
 class WeightedRoundRobinBalancer:
     """平滑加权轮询 (SWRR)。Nginx upstream 同款实现。
@@ -95,17 +95,17 @@ class WeightedRoundRobinBalancer:
             return best
 
 
-# ===== 最少连接数 =====
+# 最少连接数
 
 class LeastConnectionsBalancer:
     """最少连接数优先 — 异构节点集群的默认策略。
-    Falcon [BDAIA 2025] 采用类似逻辑进行 worker 分级调度。"""
+    Falcon 采用类似逻辑进行 worker 分级调度。"""
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
         alive = [n for n in nodes if n.healthy]
         return min(alive, key=lambda n: (n.current_load, -n.capacity)) if alive else None
 
 
-# ===== 加权最少连接数 =====
+# 加权最少连接数
 
 class WeightedLeastConnectionsBalancer:
     """加权最少连接 — 负载感知选择，纳入容量差异。
@@ -121,7 +121,7 @@ class WeightedLeastConnectionsBalancer:
         return min(healthy, key=lambda n: (n.load_ratio, -n.capacity))
 
 
-# ===== 随机选择 =====
+# 随机选择
 
 class RandomBalancer:
     """均匀随机选择。pull-based + random 策略优于纯 hash-based。"""
@@ -150,7 +150,7 @@ class WeightedRandomBalancer:
         return healthy[-1]
 
 
-# ===== 一致性哈希环 =====
+# 一致性哈希环
 
 _VNODE_COUNT = 160  # 单物理节点对应的虚拟节点数量
 
@@ -231,7 +231,7 @@ class ConsistentHashRing:
         return len(set(self._ring.values()))
 
 
-# ===== 策略门面 =====
+# 策略门面
 
 class LoadBalancer:
     """策略模式的负载均衡门面。初始化时选定策略，后续透明调用。

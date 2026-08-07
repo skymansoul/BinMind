@@ -53,7 +53,7 @@ def valid_file_path(value: Any) -> Optional[str]:
 def time_range_validator(field: str, min_ts: float = 0, max_ts: float = None) -> Callable:
     """工厂: 创建时间戳范围校验函数 —— 检查 Unix epoch 处于合理区间。
 
-    min_ts 默认 0 (1970)，max_ts 默认当前时间 + 1 天（容忍微小偏差）。
+    min_ts 默认 0，max_ts 默认当前时间 + 1 天（容忍微小偏差）。
     """
     import time
     _max = max_ts if max_ts is not None else time.time() + 86400

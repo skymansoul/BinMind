@@ -14,7 +14,6 @@
 
   本模块是第一个缓冲区下溢利用性量化模型。
 
-参考:
   CWE-124: Buffer Underwrite ('Buffer Underflow')
   CWE-786: Access of Memory Location Before Start of Buffer
   glibc向后合并: unlink_chunk → prev_size 检查
@@ -28,7 +27,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 class UnderflowLocation(Enum):
     HEAP_METADATA = "heap_metadata"      # 写前一个chunk的size/prev_size
     HEAP_USERDATA = "heap_userdata"      # 写前一个chunk的用户数据
@@ -37,7 +35,6 @@ class UnderflowLocation(Enum):
     GLOBAL_DATA = "global_data"          # 写相邻全局/BSS变量
     HEAP_FREELIST = "heap_freelist"      # 写tcache/fastbin链表 (最危险)
     UNKNOWN = "unknown"
-
 
 # 位置→基准利用性
 _LOCATION_BASE: Dict[UnderflowLocation, float] = {
@@ -50,7 +47,6 @@ _LOCATION_BASE: Dict[UnderflowLocation, float] = {
     UnderflowLocation.UNKNOWN:         2.0,
 }
 
-
 @dataclass
 class UnderflowScore:
     """缓冲区下溢利用性评分。"""
@@ -61,7 +57,6 @@ class UnderflowScore:
     exploitability: float          # 0-10
     primitives: List[str] = field(default_factory=list)
     technique: str = ''
-
 
 def _classify_location(
     is_heap: bool = False,
@@ -87,7 +82,6 @@ def _classify_location(
         return UnderflowLocation.GLOBAL_DATA
 
     return UnderflowLocation.UNKNOWN
-
 
 def score_buffer_underflow(
     is_heap: bool = False,

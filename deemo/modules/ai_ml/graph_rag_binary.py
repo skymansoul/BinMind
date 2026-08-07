@@ -98,7 +98,7 @@ class BinaryFunctionIndex:
         if q_norm < 1e-8:
             return []
 
-        # 步骤1: 嵌入相似度
+        # 嵌入相似度
         candidates = []
         for fid, emb in self._embeddings.items():
             if fid == target_func_id:
@@ -113,7 +113,7 @@ class BinaryFunctionIndex:
         candidates.sort(key=lambda x: -x[1])
         candidates = candidates[:top_k * 2]
 
-        # 步骤2: 调用图距离
+        # 调用图距离
         call_distances = self._compute_call_distances(target_func_id)
         filtered = []
         for fid, sim in candidates:
@@ -123,7 +123,7 @@ class BinaryFunctionIndex:
                 proximity_bonus = 1.0 / (1.0 + dist)
                 filtered.append((fid, sim + 0.1 * proximity_bonus, dist))
 
-        # 步骤3: 数据引用重叠
+        # 数据引用重叠
         target_refs = self._data_refs.get(target_func_id, set())
         scored = []
         for fid, combined_sim, dist in filtered:

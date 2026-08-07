@@ -1,4 +1,4 @@
-# ==== 污点感知密钥追踪 ====
+# 污点感知密钥追踪
 # 基于数据流分析的加密密钥生命周期追踪。
 # 识别二进制中密钥从加载→使用→销毁的完整路径。
 # 受NDSS 2024文献启发, 提供轻量级模式级污点追踪, 无需完整符号执行。
@@ -14,9 +14,9 @@
 #   (4) 密钥清零 (explicit_bzero/memset_s/SecureZeroMemory)的存在性/缺失性
 #   (5) 密钥在内存中的驻留 (从加载到最后使用再到清零的窗口)
 #
-# 参考: "LLM-Powered Static Binary Taint Analysis" (NDSS 2024),
+"LLM-Powered Static Binary Taint Analysis",
 # "Bin2vec: learning representations of binary executable programs for security tasks",
-# Chow et al. (Differential Privacy, CCS 2007) — 污点传播形式化框架.
+# Chow et al. — 污点传播形式化框架.
 
 import re
 import struct
@@ -39,7 +39,7 @@ class KeyTaintResult:
     detected_in: str = ""
 
 
-# ==== AES密钥编排检测 ====
+# AES密钥编排检测
 # AES-128密钥编排: 11轮密钥 × 16字节 = 176字节
 # 每轮密钥: RotWord → SubWord → Rcon[i] XOR
 # 二进制特征: 176B连续数据 + 附近AES S-box + Rcon表
@@ -99,7 +99,7 @@ def _detect_aes_key_schedule(data: bytes, source: str) -> List[KeyTaintResult]:
     return results
 
 
-# ==== 密钥清零检测 ====
+# 密钥清零检测
 # 安全密钥管理要求使用后立即清零内存。
 # 清零函数: explicit_bzero, memset_s (C11 Annex K), SecureZeroMemory (Win32),
 # sodium_memzero, OPENSSL_cleanse, memzero_explicit, burn。
@@ -151,7 +151,7 @@ def _detect_key_clear(data: bytes, source: str) -> List[KeyTaintResult]:
     return results
 
 
-# ==== ChaCha20/Salsa20初始状态检测 ====
+# ChaCha20/Salsa20初始状态检测
 # ChaCha20初始状态: 16 × 32-bit words
 #   [0..3]   = "expand 32-byte k" 常数
 #   [4..11]  = 256-bit 密钥
@@ -188,11 +188,11 @@ def _detect_chacha_state(data: bytes, source: str) -> List[KeyTaintResult]:
     return results
 
 
-# ==== HMAC ipad/opad模式检测 ====
+# HMAC ipad/opad模式检测
 # HMAC计算: K0 = key XOR 0x36 (ipad), K0 = key XOR 0x5C (opad)
 # 二进制中密钥与固定字节0x36/0x5C的异或操作通常表现为:
-#   - 立即数0x36/0x5C出现在XOR/AND指令中
-#   - 附近存在密钥长度(≤128 bytes for SHA-512 block)
+# 立即数0x36/0x5C出现在XOR/AND指令中
+# 附近存在密钥长度(≤128 bytes for SHA-512 block)
 # 检测策略: 搜索0x36和0x5C立即数, 附近查找block_size常量(64/128)
 
 def _detect_hmac_ipad_opad(data: bytes, source: str) -> List[KeyTaintResult]:

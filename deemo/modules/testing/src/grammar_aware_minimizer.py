@@ -3,7 +3,7 @@
 # 核心问题:
 #   input_minimizer.py 做ddmin——逐字节/块删除, 盲目且常破坏格式有效性。
 #   对解析器类程序, 无效的中间输入被直接拒绝, ddmin退化到O(n²)。
-#   GReduce (ACM TOSEM 2025) 用生成器trace保持语义有效性——但需要源码。
+#   GReduce 用生成器trace保持语义有效性——但需要源码。
 #
 # 本模块的方法 — 语法树引导的子树替换:
 #   1. 从 grammar_infer.py 获取推断的BNF语法 (或 exec_grammar_refiner 精炼后的)
@@ -17,10 +17,10 @@
 #   exec_grammar_refiner.py: 提供精炼后的语法 (可选)
 #   input_minimizer.py: 结构保持模式下的ddmin退化路径
 #
-# 参考文献:
-#   GReduce (Ren et al. ACM TOSEM 2025) — 生成器trace缩减;
+# 文献:
+#   GReduce — 生成器trace缩减;
 #     本项目取其结构保持思想但以语法树替代生成器trace
-#   Perses (2018) — 语法驱动的程序缩减;
+#   Perses — 语法驱动的程序缩减;
 #     本项目取其子树替换思想但适配到二进制格式
 
 from __future__ import annotations

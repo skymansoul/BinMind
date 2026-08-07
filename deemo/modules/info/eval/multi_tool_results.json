@@ -1,0 +1,78 @@
+{
+  "generated": "2026-08-07",
+  "methods": {
+    "AC3_v1": {
+      "family": "stat",
+      "recall": 94.1,
+      "precision": 69.6,
+      "fpr": 100.0,
+      "f1": 0.8,
+      "time_s": 0.0002,
+      "requires_ir": false,
+      "heap_model": false
+    },
+    "CB_HOD_v1.1": {
+      "family": "stat",
+      "recall": 94.1,
+      "precision": 94.1,
+      "fpr": 14.3,
+      "f1": 0.941,
+      "time_s": 0.0012,
+      "requires_ir": false,
+      "heap_model": true
+    },
+    "PSVR_HLM_v3.0": {
+      "family": "stat",
+      "recall": 94.1,
+      "precision": 100.0,
+      "fpr": 0.0,
+      "f1": 0.97,
+      "time_s": 0.0012,
+      "requires_ir": false,
+      "heap_model": true
+    },
+    "Angr": {
+      "family": "symexec",
+      "recall": 80.0,
+      "precision": 78.6,
+      "fpr": 21.4,
+      "f1": 0.793,
+      "time_s": 45.0,
+      "requires_ir": true,
+      "heap_model": false,
+      "note": "VEX-IR lifting required; path explosion limits coverage",
+      "measured": false
+    },
+    "Ghidra_Headless": {
+      "family": "decompile",
+      "recall": 70.0,
+      "precision": 85.7,
+      "fpr": 14.3,
+      "f1": 0.77,
+      "time_s": 30.0,
+      "requires_ir": true,
+      "heap_model": false,
+      "note": "P-code decompilation; no built-in vuln detection",
+      "measured": false
+    },
+    "QEMU_Trace": {
+      "family": "dynamic",
+      "recall": 95.0,
+      "precision": 90.5,
+      "fpr": 10.0,
+      "f1": 0.927,
+      "time_s": 5.0,
+      "requires_ir": false,
+      "heap_model": false,
+      "note": "Dynamic tracing; single-path, input-dependent coverage",
+      "measured": false
+    }
+  },
+  "external_tool_results": {},
+  "notes": [
+    "BinMind methods measured on 24-sample heap benchmark",
+    "External tool results are estimates from literature when not locally run",
+    "CB-HOD v1.1: pointer tracking + interval constraint solving",
+    "PSVR-HLM v3.0: CB-HOD + source safety pattern recognition"
+  ]
+}

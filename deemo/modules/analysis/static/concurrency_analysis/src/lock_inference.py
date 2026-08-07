@@ -8,7 +8,7 @@
   源码级分析知道 mutex_lock()/spin_lock() 的位置
   二进制级分析不知道--符号被剥离, 只剩下原始指令序列
 
-传统方法 (RAProducer, 2021) 使用模式匹配: 找 xchg + loop -> spinlock
+传统方法 使用模式匹配: 找 xchg + loop -> spinlock
 但此方法在以下场景失效:
   - 编译器将 lock cmpxchg 替换为 lock inc (GCC -O2 的优化)
   - 自定义同步原语不使用标准原子指令模式
@@ -24,9 +24,9 @@
   unlock 由 lock 函数在调用图中的"配对"关系推断
 
 与现有工作的差异:
-- Laurin (2024): Ghidra 上的 lockset 分析, 手动标注锁函数
-- Xegmap (2025): 有向符号执行, 需要执行目标
-- RAProducer (2021): 模式匹配, 仅匹配已知模式
+- Laurin: Ghidra 上的 lockset 分析, 手动标注锁函数
+- Xegmap: 有向符号执行, 需要执行目标
+- RAProducer: 模式匹配, 仅匹配已知模式
 - 本模块: 概率评分, 无需手动标注, 无需执行, 覆盖自定义原语
 """
 
@@ -39,9 +39,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 原子指令与屏障检测
-# ---------------------------------------------------------------------------
 
 # x86_64 原子指令前缀和操作
 _X86_ATOMIC_INSNS = {
@@ -85,9 +83,7 @@ def _classify_fence(mnemonic: str, arch: str = 'x86_64') -> bool:
     return m in _X86_FENCE_INSNS
 
 
-# ---------------------------------------------------------------------------
 # 自旋循环检测
-# ---------------------------------------------------------------------------
 
 def _has_spin_loop(
     instructions: List[str],
@@ -143,9 +139,7 @@ def _has_spin_loop(
     return True, min(1.0, confidence)
 
 
-# ---------------------------------------------------------------------------
 # 锁函数特征模型
-# ---------------------------------------------------------------------------
 
 @dataclass
 class LockFunctionScore:

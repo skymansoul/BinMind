@@ -1,5 +1,5 @@
 # SBOM导出。SPDX 2.3 / CycloneDX 1.4双格式输出，含格式校验与摘要。
-# 参考SPDX规范v2.3附录H及CycloneDX规范v1.4必填字段约束。
+# SPDX规范v2.3附录H及CycloneDX规范v1.4必填字段约束。
 # 许可证归一化经SPDX_LICENSE_MAP模糊匹配，未识别回退至NOASSERTION。
 
 import typing, os, json, logging, hashlib, uuid, re

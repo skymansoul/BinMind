@@ -37,7 +37,7 @@ def atomic_write_text(filepath: str, text: str, encoding: str = "utf-8",
     """原子写入文本文件。kwargs 传递到 atomic_write。"""
     return atomic_write(filepath, text.encode(encoding), **kwargs)
 
-# ---- 安全的文件名 --------------------------------------------------------
+# 安全的文件名
 
 # Windows/Linux 通用不安全的文件名字符
 _UNSAFE_FILENAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
@@ -61,7 +61,7 @@ def sanitize_filename(name: str, replacement: str = "_",
         name = "unnamed"
     return name
 
-# ---- 路径安全验证 --------------------------------------------------------
+# 路径安全验证
 
 def is_safe_path(base_dir: str, target_path: str) -> bool:
     """验证 target_path 是否在 base_dir 子树内（防目录遍历）。
@@ -80,7 +80,7 @@ def safe_join(base_dir: str, *components: str) -> Optional[str]:
         return joined
     return None
 
-# ---- 临时文件/目录 上下文管理器 -----------------------------------------
+# 临时文件/目录 上下文管理器
 
 @contextmanager
 def temp_file(suffix: str = "", prefix: str = "binmind_",
@@ -109,7 +109,7 @@ def temp_dir(suffix: str = "", prefix: str = "binmind_",
         if delete and os.path.exists(path):
             shutil.rmtree(path, ignore_errors=True)
 
-# ---- 目录遍历 ------------------------------------------------------------
+# 目录遍历
 
 def walk_files(root_dir: str, extensions: Optional[List[str]] = None,
                max_size: Optional[int] = None) -> Iterator[str]:
@@ -135,7 +135,7 @@ def walk_files(root_dir: str, extensions: Optional[List[str]] = None,
                     continue
             yield full
 
-# ---- 文件校验辅助 --------------------------------------------------------
+# 文件校验辅助
 
 def file_checksum_sha256(filepath: str, chunk_size: int = 8192) -> str:
     """流式计算文件 SHA-256，适用于大文件。"""
@@ -154,7 +154,6 @@ def ensure_dir(filepath: str) -> str:
     return filepath
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

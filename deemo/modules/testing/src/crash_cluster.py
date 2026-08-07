@@ -10,12 +10,12 @@
 #   F5: 输入结构相似度 (MinHash / SimHash)
 #   F6: 执行时间轮廓 (快/中/慢/超时)
 #
-# 参考文献:
-#   CrashTalk (Endres et al. ICSE 2022): automated generation of
+# 文献:
+#   CrashTalk: automated generation of
 #     precise descriptions of software security bugs
-#   ClusterFuzz (Google 2019-): crash deduplication pipeline
-#   crashwalk (zyantific 2017-): AFL crash analysis toolkit
-#   LibAFL (Fioraldi et al. CCS 2022): modular fuzzer framework with
+#   ClusterFuzz: crash deduplication pipeline
+#   crashwalk: AFL crash analysis toolkit
+#   LibAFL: modular fuzzer framework with
 #     built-in crash triage
 import hashlib
 import math
@@ -85,7 +85,7 @@ class CrashClusterer:
     def add_crashes(self, features: List[CrashFeature]) -> None:
         self._features.extend(features)
 
-    # ---- 特征提取 ----
+    # 特征提取
     @staticmethod
     def _stack_signature(frames: List[str]) -> str:
         """top-3帧的稳定签名: 函数名+偏移模糊哈希。"""
@@ -139,7 +139,7 @@ class CrashClusterer:
             result = ((result << 16) ^ mv) & 0xFFFFFFFFFFFFFFFF
         return result
 
-    # ---- 距离计算 ----
+    # 距离计算
     def distance(self, a: CrashFeature, b: CrashFeature) -> float:
         """计算两个崩溃之间的加权距离 [0, 1]。0=完全相同, 1=完全不同。"""
         cache_key = (hash(a.crash_id), hash(b.crash_id))
@@ -187,7 +187,7 @@ class CrashClusterer:
     def similarity(self, a: CrashFeature, b: CrashFeature) -> float:
         return 1.0 - self.distance(a, b)
 
-    # ---- 层次聚类 ----
+    # 层次聚类
     def cluster_upgma(self, threshold: float = 0.35) -> List[CrashCluster]:
         """UPGMA (Unweighted Pair Group Method with Arithmetic Mean):
         自底向上合并最相似的簇，直到所有簇间距离 > threshold。
@@ -278,7 +278,7 @@ class CrashClusterer:
                 best = a
         return best
 
-    # ---- 报告 ----
+    # 报告
     def cluster_report(self) -> Dict[str, Any]:
         return {
             'total_crashes': len(self._features),
@@ -311,9 +311,7 @@ class CrashClusterer:
         self._distance_cache.clear()
 
 
-# ---------------------------------------------------------------------------
 # 便捷入口
-# ---------------------------------------------------------------------------
 import struct as _struct
 
 

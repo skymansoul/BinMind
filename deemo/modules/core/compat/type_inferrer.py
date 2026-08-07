@@ -61,7 +61,7 @@ def resolve_pointer_arithmetic(base_type: str, offset_expr: str) -> str:
     return base_type
 
 
-# --- 约束传播型类型窄化 ---
+# 约束传播型类型窄化
 def narrow_by_comparison(var_name: str, cmp_operand: str,
                           cmp_type: str) -> str | None:
     magic_hints = {
@@ -94,7 +94,6 @@ def _type_size(hint: str) -> int:
     return sz_map.get(hint, 8)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

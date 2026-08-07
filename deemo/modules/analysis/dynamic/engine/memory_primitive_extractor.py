@@ -1,7 +1,7 @@
 # 2026-07-25
 # memory primitive extractor — 从内存 转存 中识别利用原语
 # 覆盖三类：任意读、任意写、control-flow hijack
-# 参考 Volatility3 的 malfind 插件逻辑，但避免完整的对象模型
+# Volatility3 的 malfind 插件逻辑，但避免完整的对象模型
 import struct
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field

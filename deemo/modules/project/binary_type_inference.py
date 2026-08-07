@@ -1,5 +1,5 @@
 # 二进制类型推断器: 内存访问模式→结构体布局 / 虚表检测 / 偏移聚类
-# 技术问题: TypeForge (IEEE S&P 2025) 和 BinSub (HotSoS 2025) 实现了
+# 技术问题: TypeForge 和 BinSub 实现了
 #   通用类型恢复但目标为改善反编译可读性. 漏洞利用场景需要的信息
 #   不同: 不需要完整类型名, 需要结构体大小、字段偏移、虚表地址、
 #   相邻对象的偏移关系——这些信息直接决定利用策略的可行性
@@ -9,13 +9,12 @@
 #   模式3: 步幅分析 — 指针算术的增量模式→区分数组vs链表vs树
 # 技术效果: 从二进制指令trace中识别结构体布局和虚表,
 #   补充反编译器在复合类型恢复上的不足
-# 参考:
-#   TypeForge (IEEE S&P 2025) — TFG+LLM类型合成,
+#
+#   TypeForge — TFG+LLM类型合成,
 #     本项目借鉴其偏移聚类思想但聚焦利用场景而非反编译可读性
-#   BinSub (HotSoS 2025) — 代数子类型推断,
+#   BinSub — 代数子类型推断,
 #     本项目借鉴其约束传播但简化为启发式偏移分组
-#   Ghidra/Hex-Rays benchmarking (SURE 2025) — 反编译器6%复合类型恢复率
-from __future__ import annotations
+#   Ghidra/Hex-Rays benchmarking — 反编译器6%复合类型恢复率
 import logging
 import re
 from collections import Counter, defaultdict

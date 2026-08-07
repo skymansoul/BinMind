@@ -444,7 +444,7 @@ class HWTraceAnalyzer:
 
         return calls
 
-    # --- 新增: 热点函数分析 ---
+# 新增: 热点函数分析
     # 统计函数执行次数和执行时间，识别性能瓶颈和关键逻辑
     def analyze_hot_functions(self, functions: List[TraceFunction]) -> Dict[str, Any]:
         """分析函数的执行热点 — 执行次数和指令密度最高的函数

@@ -1,0 +1,493 @@
+tool,sample_id,group,expected,detected,true_positive,false_positive,false_negative,true_negative,elapsed_ms,peak_mem_kb,error
+binmind_absint,cve_2017_14492_dnsmasq,plain,1,1,1,0,0,0,1049.0,142220.0,
+binmind_giva,cve_2017_14492_dnsmasq,plain,1,1,1,0,0,0,204.6,146788.0,
+angr,cve_2017_14492_dnsmasq,plain,1,0,0,0,1,0,748.1,203592.0,
+qemu,cve_2017_14492_dnsmasq,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2017_14492_dnsmasq,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2017_14492_dnsmasq,plain,1,1,1,0,0,0,100.8,206284.0,
+cppcheck,cve_2017_14492_dnsmasq,plain,1,0,0,0,1,0,50.7,206244.0,
+binmind_absint,cve_2017_17506_gdkpixbuf,plain,1,1,1,0,0,0,60.6,206252.0,
+binmind_giva,cve_2017_17506_gdkpixbuf,plain,1,1,1,0,0,0,115.4,208388.0,
+angr,cve_2017_17506_gdkpixbuf,plain,1,0,0,0,1,0,520.5,210724.0,
+qemu,cve_2017_17506_gdkpixbuf,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2017_17506_gdkpixbuf,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2017_17506_gdkpixbuf,plain,1,1,1,0,0,0,101.7,210772.0,
+cppcheck,cve_2017_17506_gdkpixbuf,plain,1,0,0,0,1,0,50.9,210724.0,
+binmind_absint,cve_2018_10732_libmobi,plain,1,1,1,0,0,0,229.8,213184.0,
+binmind_giva,cve_2018_10732_libmobi,plain,1,1,1,0,0,0,214.7,213148.0,
+angr,cve_2018_10732_libmobi,plain,1,0,0,0,1,0,681.4,215092.0,
+qemu,cve_2018_10732_libmobi,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_10732_libmobi,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2018_10732_libmobi,plain,1,1,1,0,0,0,101.0,215184.0,
+cppcheck,cve_2018_10732_libmobi,plain,1,0,0,0,1,0,50.5,215140.0,
+binmind_absint,cve_2018_1121_procps,plain,1,1,1,0,0,0,277.1,218592.0,
+binmind_giva,cve_2018_1121_procps,plain,1,1,1,0,0,0,235.5,222192.0,
+angr,cve_2018_1121_procps,plain,1,0,0,0,1,0,832.5,223020.0,
+qemu,cve_2018_1121_procps,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_1121_procps,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2018_1121_procps,plain,1,1,1,0,0,0,102.3,222108.0,
+cppcheck,cve_2018_1121_procps,plain,1,0,0,0,1,0,54.0,222060.0,
+binmind_absint,cve_2018_18557_jasper,plain,1,1,1,0,0,0,247.6,223940.0,
+binmind_giva,cve_2018_18557_jasper,plain,1,1,1,0,0,0,224.2,224564.0,
+angr,cve_2018_18557_jasper,plain,1,0,0,0,1,0,729.5,227252.0,
+qemu,cve_2018_18557_jasper,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_18557_jasper,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2018_18557_jasper,plain,1,1,1,0,0,0,101.0,227336.0,
+cppcheck,cve_2018_18557_jasper,plain,1,0,0,0,1,0,50.7,227288.0,
+binmind_absint,cve_2018_20735_libsass,plain,1,1,1,0,0,0,341.9,231840.0,
+binmind_giva,cve_2018_20735_libsass,plain,1,1,1,0,0,0,216.1,225700.0,
+angr,cve_2018_20735_libsass,plain,1,0,0,0,1,0,680.1,226612.0,
+qemu,cve_2018_20735_libsass,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_20735_libsass,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2018_20735_libsass,plain,1,1,1,0,0,0,101.3,226660.0,
+cppcheck,cve_2018_20735_libsass,plain,1,0,0,0,1,0,51.3,226612.0,
+binmind_absint,cve_2019_13142_mongoose,plain,1,1,1,0,0,0,222.9,227440.0,
+binmind_giva,cve_2019_13142_mongoose,plain,1,1,1,0,0,0,221.2,227516.0,
+angr,cve_2019_13142_mongoose,plain,1,0,0,0,1,0,804.4,226960.0,
+qemu,cve_2019_13142_mongoose,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2019_13142_mongoose,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2019_13142_mongoose,plain,1,1,1,0,0,0,100.9,226448.0,
+cppcheck,cve_2019_13142_mongoose,plain,1,0,0,0,1,0,50.9,226400.0,
+binmind_absint,cve_2019_18604_gnuplot,plain,1,1,1,0,0,0,246.2,227076.0,
+binmind_giva,cve_2019_18604_gnuplot,plain,1,1,1,0,0,0,209.3,227104.0,
+angr,cve_2019_18604_gnuplot,plain,1,0,0,0,1,0,775.8,226768.0,
+qemu,cve_2019_18604_gnuplot,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2019_18604_gnuplot,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2019_18604_gnuplot,plain,1,1,1,0,0,0,101.1,226816.0,
+cppcheck,cve_2019_18604_gnuplot,plain,1,0,0,0,1,0,50.8,226768.0,
+binmind_absint,cve_2021_3156_sudo,plain,1,1,1,0,0,0,243.8,232044.0,
+binmind_giva,cve_2021_3156_sudo,plain,1,1,1,0,0,0,236.0,233688.0,
+angr,cve_2021_3156_sudo,plain,1,0,0,0,1,0,847.2,233748.0,
+qemu,cve_2021_3156_sudo,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2021_3156_sudo,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2021_3156_sudo,plain,1,1,1,0,0,0,100.9,229748.0,
+cppcheck,cve_2021_3156_sudo,plain,1,0,0,0,1,0,50.5,229700.0,
+binmind_absint,cve_2021_35942_elfutils,plain,1,1,1,0,0,0,51.6,229700.0,
+binmind_giva,cve_2021_35942_elfutils,plain,1,1,1,0,0,0,63.8,230204.0,
+angr,cve_2021_35942_elfutils,plain,1,0,0,0,1,0,336.8,230272.0,
+qemu,cve_2021_35942_elfutils,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2021_35942_elfutils,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_2021_35942_elfutils,plain,1,1,1,0,0,0,100.8,230320.0,
+cppcheck,cve_2021_35942_elfutils,plain,1,0,0,0,1,0,50.5,230272.0,
+binmind_absint,cve_alignment_aware_014,plain,1,1,1,0,0,0,264.4,232856.0,
+binmind_giva,cve_alignment_aware_014,plain,1,1,1,0,0,0,309.9,232292.0,
+angr,cve_alignment_aware_014,plain,1,0,0,0,1,0,895.0,232304.0,
+qemu,cve_alignment_aware_014,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_alignment_aware_014,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_alignment_aware_014,plain,1,0,0,0,1,0,101.5,231312.0,
+cppcheck,cve_alignment_aware_014,plain,1,0,0,0,1,0,50.9,231264.0,
+binmind_absint,cve_calloc_type_confusion_010,plain,1,1,1,0,0,0,245.9,232480.0,
+binmind_giva,cve_calloc_type_confusion_010,plain,1,1,1,0,0,0,231.5,231912.0,
+angr,cve_calloc_type_confusion_010,plain,1,0,0,0,1,0,732.2,231260.0,
+qemu,cve_calloc_type_confusion_010,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_calloc_type_confusion_010,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_calloc_type_confusion_010,plain,1,0,0,0,1,0,101.8,231304.0,
+cppcheck,cve_calloc_type_confusion_010,plain,1,0,0,0,1,0,51.0,231256.0,
+binmind_absint,cve_chunk_metadata_corrupt_009,plain,1,1,1,0,0,0,211.1,233832.0,
+binmind_giva,cve_chunk_metadata_corrupt_009,plain,1,1,1,0,0,0,397.5,234552.0,
+angr,cve_chunk_metadata_corrupt_009,plain,1,0,0,0,1,0,735.4,228744.0,
+qemu,cve_chunk_metadata_corrupt_009,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_chunk_metadata_corrupt_009,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_chunk_metadata_corrupt_009,plain,1,0,0,0,1,0,101.2,228804.0,
+cppcheck,cve_chunk_metadata_corrupt_009,plain,1,0,0,0,1,0,50.9,228756.0,
+binmind_absint,cve_double_free_015,plain,0,0,0,0,0,1,64.7,228756.0,
+binmind_giva,cve_double_free_015,plain,0,0,0,0,0,1,59.1,229380.0,
+angr,cve_double_free_015,plain,0,0,0,0,0,1,424.2,229800.0,
+qemu,cve_double_free_015,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_double_free_015,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_double_free_015,plain,0,1,0,1,0,0,101.5,229856.0,
+cppcheck,cve_double_free_015,plain,0,0,0,0,0,1,50.8,229808.0,
+binmind_absint,cve_format_string_heap_012,plain,0,0,0,0,0,1,243.1,232788.0,
+binmind_giva,cve_format_string_heap_012,plain,0,0,0,0,0,1,244.9,232840.0,
+angr,cve_format_string_heap_012,plain,0,0,0,0,0,1,831.7,232888.0,
+qemu,cve_format_string_heap_012,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_format_string_heap_012,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_format_string_heap_012,plain,0,1,0,1,0,0,101.5,229956.0,
+cppcheck,cve_format_string_heap_012,plain,0,0,0,0,0,1,50.9,229908.0,
+binmind_absint,cve_integer_overflow_alloc_004,plain,1,1,1,0,0,0,262.4,232896.0,
+binmind_giva,cve_integer_overflow_alloc_004,plain,1,1,1,0,0,0,232.3,232948.0,
+angr,cve_integer_overflow_alloc_004,plain,1,0,0,0,1,0,773.1,233152.0,
+qemu,cve_integer_overflow_alloc_004,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_integer_overflow_alloc_004,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_integer_overflow_alloc_004,plain,1,0,0,0,1,0,101.3,233200.0,
+cppcheck,cve_integer_overflow_alloc_004,plain,1,0,0,0,1,0,51.0,233152.0,
+binmind_absint,cve_loop_bound_error_006,plain,1,0,0,0,1,0,435.2,234032.0,
+binmind_giva,cve_loop_bound_error_006,plain,1,1,1,0,0,0,270.0,233224.0,
+angr,cve_loop_bound_error_006,plain,1,0,0,0,1,0,694.0,233224.0,
+qemu,cve_loop_bound_error_006,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_loop_bound_error_006,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_loop_bound_error_006,plain,1,0,0,0,1,0,101.2,232588.0,
+cppcheck,cve_loop_bound_error_006,plain,1,0,0,0,1,0,50.4,232540.0,
+binmind_absint,cve_nested_alloc_confusion_005,plain,1,1,1,0,0,0,55.6,232540.0,
+binmind_giva,cve_nested_alloc_confusion_005,plain,1,1,1,0,0,0,101.8,232592.0,
+angr,cve_nested_alloc_confusion_005,plain,1,0,0,0,1,0,311.8,232552.0,
+qemu,cve_nested_alloc_confusion_005,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_nested_alloc_confusion_005,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_nested_alloc_confusion_005,plain,1,1,1,0,0,0,100.8,232600.0,
+cppcheck,cve_nested_alloc_confusion_005,plain,1,0,0,0,1,0,50.7,232552.0,
+binmind_absint,cve_off_by_one_malloc_001,plain,1,1,1,0,0,0,236.5,232608.0,
+binmind_giva,cve_off_by_one_malloc_001,plain,1,1,1,0,0,0,178.5,232608.0,
+angr,cve_off_by_one_malloc_001,plain,1,0,0,0,1,0,857.4,232560.0,
+qemu,cve_off_by_one_malloc_001,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_off_by_one_malloc_001,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_off_by_one_malloc_001,plain,1,1,1,0,0,0,104.4,228820.0,
+cppcheck,cve_off_by_one_malloc_001,plain,1,0,0,0,1,0,58.6,228772.0,
+binmind_absint,cve_realloc_use_old_size_011,plain,1,1,1,0,0,0,227.2,231252.0,
+binmind_giva,cve_realloc_use_old_size_011,plain,1,1,1,0,0,0,223.6,231316.0,
+angr,cve_realloc_use_old_size_011,plain,1,0,0,0,1,0,843.0,231332.0,
+qemu,cve_realloc_use_old_size_011,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_realloc_use_old_size_011,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_realloc_use_old_size_011,plain,1,0,0,0,1,0,106.9,231328.0,
+cppcheck,cve_realloc_use_old_size_011,plain,1,0,0,0,1,0,66.4,231280.0,
+binmind_absint,cve_signed_unsigned_mismatch_007,plain,1,1,1,0,0,0,55.7,231280.0,
+binmind_giva,cve_signed_unsigned_mismatch_007,plain,1,1,1,0,0,0,57.5,231284.0,
+angr,cve_signed_unsigned_mismatch_007,plain,1,0,0,0,1,0,317.0,231320.0,
+qemu,cve_signed_unsigned_mismatch_007,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_signed_unsigned_mismatch_007,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_signed_unsigned_mismatch_007,plain,1,1,1,0,0,0,101.1,231340.0,
+cppcheck,cve_signed_unsigned_mismatch_007,plain,1,0,0,0,1,0,50.5,231292.0,
+binmind_absint,cve_size_mismatch_memcpy_002,plain,1,1,1,0,0,0,217.6,232584.0,
+binmind_giva,cve_size_mismatch_memcpy_002,plain,1,1,1,0,0,0,261.1,232636.0,
+angr,cve_size_mismatch_memcpy_002,plain,1,0,0,0,1,0,636.9,233200.0,
+qemu,cve_size_mismatch_memcpy_002,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_size_mismatch_memcpy_002,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_size_mismatch_memcpy_002,plain,1,1,1,0,0,0,101.5,233276.0,
+cppcheck,cve_size_mismatch_memcpy_002,plain,1,0,0,0,1,0,59.3,233236.0,
+binmind_absint,cve_tlv_length_override_008,plain,1,1,1,0,0,0,485.3,238100.0,
+binmind_giva,cve_tlv_length_override_008,plain,1,1,1,0,0,0,233.0,235412.0,
+angr,cve_tlv_length_override_008,plain,1,0,0,0,1,0,702.0,235764.0,
+qemu,cve_tlv_length_override_008,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_tlv_length_override_008,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_tlv_length_override_008,plain,1,1,1,0,0,0,101.0,235816.0,
+cppcheck,cve_tlv_length_override_008,plain,1,0,0,0,1,0,50.9,235768.0,
+binmind_absint,cve_unbounded_strcpy_003,plain,1,1,1,0,0,0,213.4,236436.0,
+binmind_giva,cve_unbounded_strcpy_003,plain,1,1,1,0,0,0,237.6,237380.0,
+angr,cve_unbounded_strcpy_003,plain,1,0,0,0,1,0,961.9,236676.0,
+qemu,cve_unbounded_strcpy_003,plain,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_unbounded_strcpy_003,plain,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_unbounded_strcpy_003,plain,1,1,1,0,0,0,101.3,236724.0,
+cppcheck,cve_unbounded_strcpy_003,plain,1,0,0,0,1,0,50.6,236676.0,
+binmind_absint,cve_use_after_free_013,plain,0,0,0,0,0,1,207.6,237740.0,
+binmind_giva,cve_use_after_free_013,plain,0,0,0,0,0,1,221.7,237744.0,
+angr,cve_use_after_free_013,plain,0,0,0,0,0,1,770.9,237232.0,
+qemu,cve_use_after_free_013,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_use_after_free_013,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,cve_use_after_free_013,plain,0,1,0,1,0,0,101.3,237412.0,
+cppcheck,cve_use_after_free_013,plain,0,0,0,0,0,1,50.7,237364.0,
+binmind_absint,tn_01_memcpy_exact,plain,0,0,0,0,0,1,212.4,238048.0,
+binmind_giva,tn_01_memcpy_exact,plain,0,0,0,0,0,1,224.3,238056.0,
+angr,tn_01_memcpy_exact,plain,0,0,0,0,0,1,941.9,237440.0,
+qemu,tn_01_memcpy_exact,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_01_memcpy_exact,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_01_memcpy_exact,plain,0,1,0,1,0,0,109.4,234020.0,
+cppcheck,tn_01_memcpy_exact,plain,0,0,0,0,0,1,50.7,233972.0,
+binmind_absint,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,264.5,238336.0,
+binmind_giva,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,256.3,239008.0,
+angr,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,653.0,237876.0,
+qemu,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_02_guarded_memcpy,plain,0,1,0,1,0,0,101.5,237928.0,
+cppcheck,tn_02_guarded_memcpy,plain,0,0,0,0,0,1,50.5,237880.0,
+binmind_absint,tn_03_loop_bounded,plain,0,0,0,0,0,1,380.1,238552.0,
+binmind_giva,tn_03_loop_bounded,plain,0,0,0,0,0,1,194.5,234380.0,
+angr,tn_03_loop_bounded,plain,0,0,0,0,0,1,642.3,235624.0,
+qemu,tn_03_loop_bounded,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_03_loop_bounded,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_03_loop_bounded,plain,0,0,0,0,0,1,100.8,235676.0,
+cppcheck,tn_03_loop_bounded,plain,0,0,0,0,0,1,50.9,235628.0,
+binmind_absint,tn_04_nested_loop_bounded,plain,0,1,0,1,0,0,196.7,235704.0,
+binmind_giva,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,197.4,235716.0,
+angr,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,703.9,235740.0,
+qemu,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,101.6,235796.0,
+cppcheck,tn_04_nested_loop_bounded,plain,0,0,0,0,0,1,50.9,235748.0,
+binmind_absint,tn_05_strcpy_literal,plain,0,0,0,0,0,1,225.6,235796.0,
+binmind_giva,tn_05_strcpy_literal,plain,0,0,0,0,0,1,197.1,235800.0,
+angr,tn_05_strcpy_literal,plain,0,0,0,0,0,1,587.0,235812.0,
+qemu,tn_05_strcpy_literal,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_05_strcpy_literal,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_05_strcpy_literal,plain,0,1,0,1,0,0,100.9,235860.0,
+cppcheck,tn_05_strcpy_literal,plain,0,0,0,0,0,1,50.4,235812.0,
+binmind_absint,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,204.5,237268.0,
+binmind_giva,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,224.7,237320.0,
+angr,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,700.0,237340.0,
+qemu,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_06_multialloc_provenance,plain,0,1,0,1,0,0,101.2,233412.0,
+cppcheck,tn_06_multialloc_provenance,plain,0,0,0,0,0,1,50.3,233364.0,
+binmind_absint,tn_07_stack_src_copy,plain,0,1,0,1,0,0,199.1,236384.0,
+binmind_giva,tn_07_stack_src_copy,plain,0,0,0,0,0,1,201.1,236436.0,
+angr,tn_07_stack_src_copy,plain,0,0,0,0,0,1,714.7,236848.0,
+qemu,tn_07_stack_src_copy,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_07_stack_src_copy,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_07_stack_src_copy,plain,0,1,0,1,0,0,101.2,236896.0,
+cppcheck,tn_07_stack_src_copy,plain,0,0,0,0,0,1,50.9,236848.0,
+binmind_absint,tn_08_struct_fields,plain,0,0,0,0,0,1,381.4,237704.0,
+binmind_giva,tn_08_struct_fields,plain,0,0,0,0,0,1,206.3,233784.0,
+angr,tn_08_struct_fields,plain,0,0,0,0,0,1,680.0,235032.0,
+qemu,tn_08_struct_fields,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_08_struct_fields,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_08_struct_fields,plain,0,1,0,1,0,0,101.0,235208.0,
+cppcheck,tn_08_struct_fields,plain,0,0,0,0,0,1,50.4,235160.0,
+binmind_absint,tn_09_field_offset_write,plain,0,0,0,0,0,1,193.6,235396.0,
+binmind_giva,tn_09_field_offset_write,plain,0,0,0,0,0,1,245.3,235416.0,
+angr,tn_09_field_offset_write,plain,0,0,0,0,0,1,735.1,235548.0,
+qemu,tn_09_field_offset_write,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_09_field_offset_write,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_09_field_offset_write,plain,0,1,0,1,0,0,101.1,235592.0,
+cppcheck,tn_09_field_offset_write,plain,0,0,0,0,0,1,50.3,235544.0,
+binmind_absint,tn_10_strncpy_checked,plain,0,0,0,0,0,1,205.6,236404.0,
+binmind_giva,tn_10_strncpy_checked,plain,0,0,0,0,0,1,225.8,236452.0,
+angr,tn_10_strncpy_checked,plain,0,0,0,0,0,1,646.3,236540.0,
+qemu,tn_10_strncpy_checked,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_10_strncpy_checked,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_10_strncpy_checked,plain,0,1,0,1,0,0,110.3,236588.0,
+cppcheck,tn_10_strncpy_checked,plain,0,0,0,0,0,1,51.0,236540.0,
+binmind_absint,tn_11_memmove_inplace,plain,0,0,0,0,0,1,196.2,237260.0,
+binmind_giva,tn_11_memmove_inplace,plain,0,0,0,0,0,1,194.7,237308.0,
+angr,tn_11_memmove_inplace,plain,0,0,0,0,0,1,744.3,237316.0,
+qemu,tn_11_memmove_inplace,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_11_memmove_inplace,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_11_memmove_inplace,plain,0,0,0,0,0,1,101.0,233188.0,
+cppcheck,tn_11_memmove_inplace,plain,0,0,0,0,0,1,50.3,233140.0,
+binmind_absint,tn_12_realloc_grow,plain,0,1,0,1,0,0,222.7,236704.0,
+binmind_giva,tn_12_realloc_grow,plain,0,0,0,0,0,1,214.2,236752.0,
+angr,tn_12_realloc_grow,plain,0,0,0,0,0,1,634.0,236812.0,
+qemu,tn_12_realloc_grow,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_12_realloc_grow,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_12_realloc_grow,plain,0,0,0,0,0,1,101.3,236880.0,
+cppcheck,tn_12_realloc_grow,plain,0,0,0,0,0,1,50.7,236832.0,
+binmind_absint,tn_13_memset_exact,plain,0,0,0,0,0,1,438.4,236884.0,
+binmind_giva,tn_13_memset_exact,plain,0,0,0,0,0,1,270.1,235856.0,
+angr,tn_13_memset_exact,plain,0,0,0,0,0,1,669.8,236676.0,
+qemu,tn_13_memset_exact,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_13_memset_exact,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_13_memset_exact,plain,0,0,0,0,0,1,100.7,236740.0,
+cppcheck,tn_13_memset_exact,plain,0,0,0,0,0,1,50.5,236692.0,
+binmind_absint,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,192.7,236712.0,
+binmind_giva,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,202.3,236760.0,
+angr,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,732.5,236768.0,
+qemu,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,101.2,236800.0,
+cppcheck,tn_14_snprintf_bounded,plain,0,0,0,0,0,1,50.7,236752.0,
+binmind_absint,tn_15_free_no_reuse,plain,0,0,0,0,0,1,196.8,236804.0,
+binmind_giva,tn_15_free_no_reuse,plain,0,0,0,0,0,1,203.1,236816.0,
+angr,tn_15_free_no_reuse,plain,0,0,0,0,0,1,660.6,236764.0,
+qemu,tn_15_free_no_reuse,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_15_free_no_reuse,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_15_free_no_reuse,plain,0,0,0,0,0,1,101.3,236916.0,
+cppcheck,tn_15_free_no_reuse,plain,0,0,0,0,0,1,50.5,236868.0,
+binmind_absint,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,204.9,236932.0,
+binmind_giva,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,199.5,236984.0,
+angr,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,839.8,237028.0,
+qemu,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+flawfinder,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,101.1,233300.0,
+cppcheck,tn_16_printf_literal_fmt,plain,0,0,0,0,0,1,50.6,233252.0,
+binmind_absint,cve_2017_14492_dnsmasq,stripped,1,1,1,0,0,0,161.4,236324.0,
+binmind_giva,cve_2017_14492_dnsmasq,stripped,1,1,1,0,0,0,187.8,236376.0,
+angr,cve_2017_14492_dnsmasq,stripped,1,0,0,0,1,0,786.9,236380.0,
+qemu,cve_2017_14492_dnsmasq,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2017_14492_dnsmasq,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2017_17506_gdkpixbuf,stripped,1,1,1,0,0,0,50.8,236308.0,
+binmind_giva,cve_2017_17506_gdkpixbuf,stripped,1,1,1,0,0,0,50.4,236308.0,
+angr,cve_2017_17506_gdkpixbuf,stripped,1,0,0,0,1,0,333.0,236364.0,
+qemu,cve_2017_17506_gdkpixbuf,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2017_17506_gdkpixbuf,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2018_10732_libmobi,stripped,1,1,1,0,0,0,161.8,236360.0,
+binmind_giva,cve_2018_10732_libmobi,stripped,1,1,1,0,0,0,159.4,236360.0,
+angr,cve_2018_10732_libmobi,stripped,1,0,0,0,1,0,686.0,236360.0,
+qemu,cve_2018_10732_libmobi,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_10732_libmobi,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2018_1121_procps,stripped,1,1,1,0,0,0,185.9,239388.0,
+binmind_giva,cve_2018_1121_procps,stripped,1,1,1,0,0,0,348.1,239388.0,
+angr,cve_2018_1121_procps,stripped,1,0,0,0,1,0,775.5,233468.0,
+qemu,cve_2018_1121_procps,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_1121_procps,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2018_18557_jasper,stripped,1,1,1,0,0,0,160.4,236660.0,
+binmind_giva,cve_2018_18557_jasper,stripped,1,1,1,0,0,0,188.1,236724.0,
+angr,cve_2018_18557_jasper,stripped,1,0,0,0,1,0,890.0,237352.0,
+qemu,cve_2018_18557_jasper,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_18557_jasper,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2018_20735_libsass,stripped,1,1,1,0,0,0,173.5,237904.0,
+binmind_giva,cve_2018_20735_libsass,stripped,1,1,1,0,0,0,179.2,237956.0,
+angr,cve_2018_20735_libsass,stripped,1,0,0,0,1,0,658.3,237952.0,
+qemu,cve_2018_20735_libsass,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2018_20735_libsass,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2019_13142_mongoose,stripped,1,1,1,0,0,0,177.1,237968.0,
+binmind_giva,cve_2019_13142_mongoose,stripped,1,1,1,0,0,0,154.8,237968.0,
+angr,cve_2019_13142_mongoose,stripped,1,0,0,0,1,0,979.1,238016.0,
+qemu,cve_2019_13142_mongoose,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2019_13142_mongoose,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2019_18604_gnuplot,stripped,1,1,1,0,0,0,167.3,238408.0,
+binmind_giva,cve_2019_18604_gnuplot,stripped,1,1,1,0,0,0,136.0,238412.0,
+angr,cve_2019_18604_gnuplot,stripped,1,0,0,0,1,0,724.5,237852.0,
+qemu,cve_2019_18604_gnuplot,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2019_18604_gnuplot,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2021_3156_sudo,stripped,1,1,1,0,0,0,165.1,239140.0,
+binmind_giva,cve_2021_3156_sudo,stripped,1,1,1,0,0,0,398.5,237972.0,
+angr,cve_2021_3156_sudo,stripped,1,0,0,0,1,0,713.8,233556.0,
+qemu,cve_2021_3156_sudo,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2021_3156_sudo,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_2021_35942_elfutils,stripped,1,1,1,0,0,0,50.5,233864.0,
+binmind_giva,cve_2021_35942_elfutils,stripped,1,1,1,0,0,0,51.0,233880.0,
+angr,cve_2021_35942_elfutils,stripped,1,0,0,0,1,0,317.0,234236.0,
+qemu,cve_2021_35942_elfutils,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_2021_35942_elfutils,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_alignment_aware_014,stripped,1,1,1,0,0,0,139.3,236000.0,
+binmind_giva,cve_alignment_aware_014,stripped,1,1,1,0,0,0,172.1,236112.0,
+angr,cve_alignment_aware_014,stripped,1,0,0,0,1,0,856.6,236160.0,
+qemu,cve_alignment_aware_014,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_alignment_aware_014,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_calloc_type_confusion_010,stripped,1,1,1,0,0,0,168.0,236208.0,
+binmind_giva,cve_calloc_type_confusion_010,stripped,1,1,1,0,0,0,172.4,236224.0,
+angr,cve_calloc_type_confusion_010,stripped,1,0,0,0,1,0,725.4,236660.0,
+qemu,cve_calloc_type_confusion_010,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_calloc_type_confusion_010,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_chunk_metadata_corrupt_009,stripped,1,1,1,0,0,0,306.9,237688.0,
+binmind_giva,cve_chunk_metadata_corrupt_009,stripped,1,1,1,0,0,0,184.4,235684.0,
+angr,cve_chunk_metadata_corrupt_009,stripped,1,0,0,0,1,0,665.2,236148.0,
+qemu,cve_chunk_metadata_corrupt_009,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_chunk_metadata_corrupt_009,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_double_free_015,stripped,0,1,0,1,0,0,50.7,236176.0,
+binmind_giva,cve_double_free_015,stripped,0,1,0,1,0,0,63.0,236176.0,
+angr,cve_double_free_015,stripped,0,0,0,0,0,1,431.0,236544.0,
+qemu,cve_double_free_015,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_double_free_015,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_format_string_heap_012,stripped,0,1,0,1,0,0,201.2,236632.0,
+binmind_giva,cve_format_string_heap_012,stripped,0,1,0,1,0,0,157.3,236632.0,
+angr,cve_format_string_heap_012,stripped,0,0,0,0,0,1,871.0,236632.0,
+qemu,cve_format_string_heap_012,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_format_string_heap_012,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_integer_overflow_alloc_004,stripped,1,1,1,0,0,0,162.5,235964.0,
+binmind_giva,cve_integer_overflow_alloc_004,stripped,1,1,1,0,0,0,149.6,235964.0,
+angr,cve_integer_overflow_alloc_004,stripped,1,0,0,0,1,0,882.4,236560.0,
+qemu,cve_integer_overflow_alloc_004,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_integer_overflow_alloc_004,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_loop_bound_error_006,stripped,1,1,1,0,0,0,207.2,237844.0,
+binmind_giva,cve_loop_bound_error_006,stripped,1,1,1,0,0,0,149.4,237848.0,
+angr,cve_loop_bound_error_006,stripped,1,0,0,0,1,0,696.1,236760.0,
+qemu,cve_loop_bound_error_006,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_loop_bound_error_006,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_nested_alloc_confusion_005,stripped,1,1,1,0,0,0,50.5,236760.0,
+binmind_giva,cve_nested_alloc_confusion_005,stripped,1,1,1,0,0,0,50.9,236760.0,
+angr,cve_nested_alloc_confusion_005,stripped,1,0,0,0,1,0,317.0,236776.0,
+qemu,cve_nested_alloc_confusion_005,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_nested_alloc_confusion_005,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_off_by_one_malloc_001,stripped,1,1,1,0,0,0,160.8,240896.0,
+binmind_giva,cve_off_by_one_malloc_001,stripped,1,1,1,0,0,0,406.5,242068.0,
+angr,cve_off_by_one_malloc_001,stripped,1,0,0,0,1,0,697.9,234792.0,
+qemu,cve_off_by_one_malloc_001,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_off_by_one_malloc_001,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_realloc_use_old_size_011,stripped,1,1,1,0,0,0,169.6,238676.0,
+binmind_giva,cve_realloc_use_old_size_011,stripped,1,1,1,0,0,0,164.3,238700.0,
+angr,cve_realloc_use_old_size_011,stripped,1,0,0,0,1,0,847.8,239128.0,
+qemu,cve_realloc_use_old_size_011,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_realloc_use_old_size_011,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_signed_unsigned_mismatch_007,stripped,1,1,1,0,0,0,50.5,239152.0,
+binmind_giva,cve_signed_unsigned_mismatch_007,stripped,1,1,1,0,0,0,50.7,239444.0,
+angr,cve_signed_unsigned_mismatch_007,stripped,1,0,0,0,1,0,370.6,239464.0,
+qemu,cve_signed_unsigned_mismatch_007,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_signed_unsigned_mismatch_007,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_size_mismatch_memcpy_002,stripped,1,1,1,0,0,0,191.2,239552.0,
+binmind_giva,cve_size_mismatch_memcpy_002,stripped,1,1,1,0,0,0,161.8,239504.0,
+angr,cve_size_mismatch_memcpy_002,stripped,1,0,0,0,1,0,632.1,239528.0,
+qemu,cve_size_mismatch_memcpy_002,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_size_mismatch_memcpy_002,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_tlv_length_override_008,stripped,1,1,1,0,0,0,460.4,242204.0,
+binmind_giva,cve_tlv_length_override_008,stripped,1,1,1,0,0,0,154.3,237536.0,
+angr,cve_tlv_length_override_008,stripped,1,0,0,0,1,0,782.2,238680.0,
+qemu,cve_tlv_length_override_008,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_tlv_length_override_008,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_unbounded_strcpy_003,stripped,1,1,1,0,0,0,148.1,239092.0,
+binmind_giva,cve_unbounded_strcpy_003,stripped,1,1,1,0,0,0,122.7,239100.0,
+angr,cve_unbounded_strcpy_003,stripped,1,0,0,0,1,0,885.2,239616.0,
+qemu,cve_unbounded_strcpy_003,stripped,1,0,0,0,1,0,0.0,0.0,qemu-user not found
+ghidra,cve_unbounded_strcpy_003,stripped,1,0,0,0,1,0,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,cve_use_after_free_013,stripped,0,1,0,1,0,0,172.0,239544.0,
+binmind_giva,cve_use_after_free_013,stripped,0,1,0,1,0,0,169.5,239544.0,
+angr,cve_use_after_free_013,stripped,0,0,0,0,0,1,653.9,239592.0,
+qemu,cve_use_after_free_013,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,cve_use_after_free_013,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_01_memcpy_exact,stripped,0,0,0,0,0,1,157.4,240144.0,
+binmind_giva,tn_01_memcpy_exact,stripped,0,0,0,0,0,1,182.2,240144.0,
+angr,tn_01_memcpy_exact,stripped,0,0,0,0,0,1,766.5,240192.0,
+qemu,tn_01_memcpy_exact,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_01_memcpy_exact,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_02_guarded_memcpy,stripped,0,0,0,0,0,1,184.3,239720.0,
+binmind_giva,tn_02_guarded_memcpy,stripped,0,0,0,0,0,1,154.9,239720.0,
+angr,tn_02_guarded_memcpy,stripped,0,0,0,0,0,1,592.5,239892.0,
+qemu,tn_02_guarded_memcpy,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_02_guarded_memcpy,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_03_loop_bounded,stripped,0,0,0,0,0,1,273.2,240012.0,
+binmind_giva,tn_03_loop_bounded,stripped,0,0,0,0,0,1,133.3,238420.0,
+angr,tn_03_loop_bounded,stripped,0,0,0,0,0,1,638.1,239052.0,
+qemu,tn_03_loop_bounded,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_03_loop_bounded,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_04_nested_loop_bounded,stripped,0,0,0,0,0,1,155.9,239276.0,
+binmind_giva,tn_04_nested_loop_bounded,stripped,0,0,0,0,0,1,143.4,239276.0,
+angr,tn_04_nested_loop_bounded,stripped,0,0,0,0,0,1,731.8,239392.0,
+qemu,tn_04_nested_loop_bounded,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_04_nested_loop_bounded,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_05_strcpy_literal,stripped,0,0,0,0,0,1,191.8,239468.0,
+binmind_giva,tn_05_strcpy_literal,stripped,0,0,0,0,0,1,161.0,239424.0,
+angr,tn_05_strcpy_literal,stripped,0,0,0,0,0,1,731.0,239472.0,
+qemu,tn_05_strcpy_literal,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_05_strcpy_literal,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_06_multialloc_provenance,stripped,0,0,0,0,0,1,162.7,240060.0,
+binmind_giva,tn_06_multialloc_provenance,stripped,0,0,0,0,0,1,165.8,240060.0,
+angr,tn_06_multialloc_provenance,stripped,0,0,0,0,0,1,798.6,240108.0,
+qemu,tn_06_multialloc_provenance,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_06_multialloc_provenance,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_07_stack_src_copy,stripped,0,0,0,0,0,1,166.2,238992.0,
+binmind_giva,tn_07_stack_src_copy,stripped,0,0,0,0,0,1,158.0,238992.0,
+angr,tn_07_stack_src_copy,stripped,0,0,0,0,0,1,653.0,239784.0,
+qemu,tn_07_stack_src_copy,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_07_stack_src_copy,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_08_struct_fields,stripped,0,0,0,0,0,1,287.9,240280.0,
+binmind_giva,tn_08_struct_fields,stripped,0,0,0,0,0,1,213.9,237992.0,
+angr,tn_08_struct_fields,stripped,0,0,0,0,0,1,613.7,238272.0,
+qemu,tn_08_struct_fields,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_08_struct_fields,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_09_field_offset_write,stripped,0,0,0,0,0,1,164.7,238324.0,
+binmind_giva,tn_09_field_offset_write,stripped,0,0,0,0,0,1,145.4,238324.0,
+angr,tn_09_field_offset_write,stripped,0,0,0,0,0,1,779.6,238556.0,
+qemu,tn_09_field_offset_write,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_09_field_offset_write,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_10_strncpy_checked,stripped,0,0,0,0,0,1,168.7,238776.0,
+binmind_giva,tn_10_strncpy_checked,stripped,0,0,0,0,0,1,181.2,238776.0,
+angr,tn_10_strncpy_checked,stripped,0,0,0,0,0,1,648.8,238824.0,
+qemu,tn_10_strncpy_checked,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_10_strncpy_checked,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_11_memmove_inplace,stripped,0,0,0,0,0,1,166.0,239984.0,
+binmind_giva,tn_11_memmove_inplace,stripped,0,0,0,0,0,1,162.8,239984.0,
+angr,tn_11_memmove_inplace,stripped,0,0,0,0,0,1,1057.6,240036.0,
+qemu,tn_11_memmove_inplace,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_11_memmove_inplace,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_12_realloc_grow,stripped,0,0,0,0,0,1,160.3,239956.0,
+binmind_giva,tn_12_realloc_grow,stripped,0,0,0,0,0,1,158.2,239956.0,
+angr,tn_12_realloc_grow,stripped,0,0,0,0,0,1,676.6,240404.0,
+qemu,tn_12_realloc_grow,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_12_realloc_grow,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_13_memset_exact,stripped,0,0,0,0,0,1,360.5,240516.0,
+binmind_giva,tn_13_memset_exact,stripped,0,0,0,0,0,1,185.9,239060.0,
+angr,tn_13_memset_exact,stripped,0,0,0,0,0,1,727.6,239656.0,
+qemu,tn_13_memset_exact,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_13_memset_exact,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_14_snprintf_bounded,stripped,0,0,0,0,0,1,191.5,239720.0,
+binmind_giva,tn_14_snprintf_bounded,stripped,0,0,0,0,0,1,157.3,239672.0,
+angr,tn_14_snprintf_bounded,stripped,0,0,0,0,0,1,886.2,239728.0,
+qemu,tn_14_snprintf_bounded,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_14_snprintf_bounded,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_15_free_no_reuse,stripped,0,0,0,0,0,1,159.0,239736.0,
+binmind_giva,tn_15_free_no_reuse,stripped,0,0,0,0,0,1,158.1,239740.0,
+angr,tn_15_free_no_reuse,stripped,0,0,0,0,0,1,710.7,239760.0,
+qemu,tn_15_free_no_reuse,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_15_free_no_reuse,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)
+binmind_absint,tn_16_printf_literal_fmt,stripped,0,0,0,0,0,1,170.3,240584.0,
+binmind_giva,tn_16_printf_literal_fmt,stripped,0,0,0,0,0,1,169.8,240584.0,
+angr,tn_16_printf_literal_fmt,stripped,0,0,0,0,0,1,892.8,240632.0,
+qemu,tn_16_printf_literal_fmt,stripped,0,0,0,0,0,1,0.0,0.0,qemu-user not found
+ghidra,tn_16_printf_literal_fmt,stripped,0,0,0,0,0,1,0.0,0.0,ghidra not found (set GHIDRA_INSTALL_DIR)

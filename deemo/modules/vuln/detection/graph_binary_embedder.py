@@ -1,12 +1,12 @@
 # 图驱动的二进制函数嵌入器——从CFG+数据流图提取函数级向量表征。
-# 参考GBsim (Entropy 2025) GCN+Transformer混合架构、AMMF (Cybersecurity 2025)
-# 多特征融合策略、Call Graphlets (arXiv:2406.02606) 局部/全局图统计特征。
+# GBsim GCN+Transformer混合架构、AMMF
+# 多特征融合策略、Call Graphlets 局部/全局图统计特征。
 #
 # 核心设计:
 #   - 基础图统计特征（度分布、集聚系数、中心性）→ Call Graphlets统计视角
 #   - 节点级语义特征（指令类别直方图+操作数类型分布）→ AMMF basic-block特征
-#   - 图拓扑嵌入（匿名随机游走签名）→ GBsim图结构编码
-#   - 跨架构归一化——特征提取与架构解耦，同函数不同架构产物距离可控
+# 图拓扑嵌入（匿名随机游走签名）→ GBsim图结构编码
+# 跨架构归一化——特征提取与架构解耦，同函数不同架构产物距离可控
 #
 # 当前实现——x86/x86_64/ARM/MIPS四架构
 # 增强——随机游走嵌入与跨架构对齐投影
@@ -306,7 +306,7 @@ class RandomWalkEmbeddingExtractor(FeatureExtractor):
 # 跨架构对齐投影
 # 不同架构编译同一函数时图形状因指令集差异而变化。
 # 使用轻量线性投影将架构相关特征映射至共享子空间。
-# 参考GBsim跨架构语言模型思路，采用更轻量的PCA启发方法。
+# GBsim跨架构语言模型思路，采用更轻量的PCA启发方法。
 
 class CrossArchAligner:
     """跨架构特征对齐器——将不同架构特征映射至可比空间。

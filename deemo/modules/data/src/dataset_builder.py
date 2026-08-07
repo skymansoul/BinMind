@@ -1,7 +1,7 @@
 # 持续数据集构建流水线 —— 面向二进制漏洞研究的增量数据管理
-# 参考 Zotero 文献:
+# Zotero 文献:
 #   "CBTracer: Continuously Building Datasets for Binary Vulnerability and
-#     Exploit Research" [Kim et al., ASIA CCS 2018] —— 通过持续抓取开源
+#     Exploit Research" —— 通过持续抓取开源
 #     repository + 编译 + 静态分析构建二进制漏洞数据集的核心思想。
 #   "Recent Advances in Large Language Model Benchmarks against Data
 #     Contamination: From Static to Dynamic Evaluation" —— 数据污染检测
@@ -24,9 +24,7 @@ from typing import List, Dict, Optional, Any, Set, Tuple, Iterator
 from collections import defaultdict
 
 
-# ---------------------------------------------------------------------------
 # DatasetBuild —— 数据集核心管理
-# ---------------------------------------------------------------------------
 
 class DatasetBuild:
     """二进制签名数据集 —— 增量构建 + schema 约束 + 标注追踪。
@@ -185,9 +183,7 @@ class DatasetBuild:
                 "label_coverage": round(label_count / max(total, 1), 3)}
 
 
-# ---------------------------------------------------------------------------
 # DatasetSplit —— 按策略切分 train/val/test
-# ---------------------------------------------------------------------------
 
 class DatasetSplit:
     """数据集切分 —— 支持按比例随机、按 stage 分层、按时间顺序。"""
@@ -255,11 +251,9 @@ class DatasetSplit:
         return {"train": train_ids, "test": test_ids}
 
 
-# ---------------------------------------------------------------------------
 # ContaminationCheck —— 数据集交叉污染检测
-# 参考 "Recent Advances in LLM Benchmarks against Data Contamination"
+# "Recent Advances in LLM Benchmarks against Data Contamination"
 # 的去污评估方法, 适配到二进制签名领域。
-# ---------------------------------------------------------------------------
 
 class ContaminationCheck:
     """检测两个数据集或数据集与外部集合之间的样本重叠。
@@ -332,9 +326,7 @@ class ContaminationCheck:
                 ) else "clean"}
 
 
-# ---------------------------------------------------------------------------
 # LabelAnnotator —— 半自动标注
-# ---------------------------------------------------------------------------
 
 class LabelAnnotator:
     """基于规则的半自动标注 + LLM 辅助 (可选)。

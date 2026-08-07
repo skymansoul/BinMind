@@ -8,11 +8,11 @@
 #   (d) xlatb 指令 —— x86 的 S-box 查表指令，AL = 索引
 #
 # 排除规则：
-#   - 栈访问 [rsp+N] / [rbp-N] 不视为违规——栈偏移不携带秘密信息
-#   - 立即数偏移量不视为秘密依赖（[array+0x10] 中的 0x10 不是秘密）
+# 栈访问 [rsp+N] / [rbp-N] 不视为违规——栈偏移不携带秘密信息
+# 立即数偏移量不视为秘密依赖（[array+0x10] 中的 0x10 不是秘密）
 #
-# ref: "Cache-timing attacks AES" (Bernstein, 2005) — T-t 访问模式泄露密钥；
-# "Spectre Attacks: 漏洞利用ing Speculat Execu" (Kocher et al., 2019)
+# "Cache-timing attacks AES" — T-t 访问模式泄露密钥；
+# "Spectre Attacks: 漏洞利用ing Speculat Execu"
 
 import logging
 import re

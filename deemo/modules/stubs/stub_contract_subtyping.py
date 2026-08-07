@@ -15,7 +15,7 @@
 #
 # 局限（明确声明，非空壳）:
 #   本模块验证的是接口签名级兼容性，非行为子类型。
-#   行为子类型 (Liskov & Wing 1994) 需要前置条件弱化+后置条件强化的形式验证。
+#   行为子类型 需要前置条件弱化+后置条件强化的形式验证。
 #   本模块不实现行为子类型 — 仅做签名级结构兼容。
 import re as _re
 from collections import defaultdict as _dd
@@ -175,7 +175,7 @@ class ContractSubtypingChecker:
                            result.arity_compatible)
         return result
 
-    # ---- 四维检查 ----
+# 四维检查
     @classmethod
     def _check_param_contravariance(cls, super_f: _FuncContract,
                                     sub_f: _FuncContract,
@@ -254,7 +254,7 @@ class ContractSubtypingChecker:
         m = _re.match(r'([a-z_][a-z0-9_]*)', a)
         return m.group(1) if m else ''
 
-    # ---- 批量发现 ----
+# 批量发现
     def find_substitutable_pairs(self) -> list[ModuleSubtypingReport]:
         """扫描所有模块对，发现可替换关系。"""
         contracts = self.contractor.scan_all()

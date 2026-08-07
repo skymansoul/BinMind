@@ -1,6 +1,6 @@
-# created: 2026-08-06
+# created: 2026-06-25
 # 轻量级后向污点传播——从sink出发沿def-use链反向追踪参数来源
-# 理论依据: Mango (USENIX Security 2024) 证明sink-to-source分析比前向传播
+# 理论依据: sink-to-source分析比前向传播
 # 大幅减少误报——发现路径不可达或值被净化时立即放弃
 #
 # 核心设计决策:

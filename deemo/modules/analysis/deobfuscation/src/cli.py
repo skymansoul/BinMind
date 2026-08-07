@@ -49,7 +49,7 @@ def _load_module_config(config_path: str | None) -> Dict[str, Any]:
     }
 
 
-# ── Subcommand 处理器s ──
+# Subcommand 处理器s
 
 
 def _handle_deobfuscate(args: argparse.Namespace) -> int:

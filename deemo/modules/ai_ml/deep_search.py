@@ -102,7 +102,7 @@ class TripletMiner:
 
     每锚点-正样本对找最近非匹配负样本构成(锚点,正样本,负样本)三元组。
     半硬负样本策略 — d(a,n)>d(a,p)且d(a,n)<d(a,p)+margin,
-    避免过难样本致训练崩溃 (参考FaceNet, Schroff et al. 2015)。
+    避免过难样本致训练崩溃。
     """
 
     __slots__ = ('m_margin', 'm_max_negatives_per_anchor', 'm_semi_hard')
@@ -294,7 +294,7 @@ class CrossModalContrastiveLoss:
     L = -0.5 * [ 1/N Σ_i log(exp(sim(x_i,y_i)/τ) / Σ_j exp(sim(x_i,y_j)/τ))
                + 1/N Σ_i log(exp(sim(y_i,x_i)/τ) / Σ_j exp(sim(y_j,x_i)/τ)) ]
 
-    参考：CLAP (arXiv 2402.16928), BLens (USENIX Security '25)
+    参考：CLAP, BLens
     """
 
     __slots__ = ('m_temperature', 'm_epsilon')

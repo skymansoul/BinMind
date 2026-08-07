@@ -75,11 +75,11 @@ class HardwareSecurityFeature:
     details: Any = None
 
 
-# --- 动态二进制加固特征提取 -------------------------------------------------
+# 动态二进制加固特征提取
 # 不依赖pyelftools即可检测编译期加固：
-#   - Stack canary: __stack_chk_fail导入符号
+# Stack canary: __stack_chk_fail导入符号
 #   - Full RELRO: .rela.plt + GNU_RELRO段或DYNAMIC段标志
-#   - NX (W^X): GNU_STACK header缺少PF_X标志
+# NX (W^X): GNU_STACK header缺少PF_X标志
 # 编译期确认防护，与运行时硬件特性互补。
 
 
@@ -875,16 +875,16 @@ def get_hw_security_eval_prompt(vuln_info: Dict[str, Any], hw_features: List[Dic
     prompt = """
 Please analyze the following漏洞在硬件安全特性影响下的exploitability。
 
-## 漏洞info
+# 漏洞info
 - type: {vuln_type}
 - description: {description}
 - 位置: {location}
 - originalexploitability: {original_exploitability}
 
-## 硬件安全特性
+# 硬件安全特性
 {features_list}
 
-## 分析要求
+# 分析要求
 1. evaluate每个硬件特性对该exploit的具体影响
 2. 确定exploit difficulty是否因硬件防护而增加
 3. 提出可能的绕过路线（如需要information disclosure）

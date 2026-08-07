@@ -1,0 +1,16 @@
+sample,expected,Baseline,+FCPV,+FCPV+PCFC,+FCPV+PCFC+Rule9,Baseline_v,+FCPV_v,+FCPV+PCFC_v,+FCPV+PCFC+Rule9_v
+sample_fmt_01,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_02,False,False,False,False,False,SAFE,SAFE,SAFE,SAFE
+sample_fmt_03,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_04,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_05,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_06,False,False,False,False,False,SAFE,SAFE,SAFE,SAFE
+sample_fmt_07,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_08,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_09,False,False,False,False,False,SAFE,SAFE,SAFE,SAFE
+sample_fmt_10,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_11,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_12,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_13,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_14,True,True,True,True,True,VULN,VULN,VULN,VULN
+sample_fmt_15,True,True,True,True,True,VULN,VULN,VULN,VULN

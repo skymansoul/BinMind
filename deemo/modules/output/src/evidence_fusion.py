@@ -16,12 +16,11 @@ mass 函数按分析源特化 (见 evidence_mass_functions.py):
   - LLM 推理 → 温度+多轮一致性, ignorance 下限最高
   - 符号执行 → 路径约束满足率, solver 超时显著提升 ignorance
 
-参考:
-  Shafer (1976) A Mathematical Theory of Evidence — D-S 理论基础
-  Sentz & Ferson (2002) Combination of Evidence in D-S Theory — 组合规则
+  Shafer A Mathematical Theory of Evidence — D-S 理论基础
+  Sentz & Ferson Combination of Evidence in D-S Theory — 组合规则
 
 修改记录:
-  创建 2026-07-31 — D-S 核心 (组合规则, 融合入口, 冲突矩阵)
+  创建 2026-08-01 — D-S 核心 (组合规则, 融合入口, 冲突矩阵)
   2026-08-03 — mass 函数拆分至 evidence_mass_functions.py
 """
 
@@ -30,9 +29,7 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import Any, Dict, List, Optional, Tuple
 
-
 _EPSILON = 1e-6
-
 
 @dataclass
 class EvidenceSource:
@@ -53,7 +50,6 @@ class EvidenceSource:
     def is_valid(self) -> bool:
         total = self.mass_v + self.mass_not_v + self.mass_theta
         return abs(total - 1.0) < 0.01
-
 
 def _dempster_combine(m1: Dict[str, float], m2: Dict[str, float]) -> Dict[str, float]:
     """
@@ -77,14 +73,12 @@ def _dempster_combine(m1: Dict[str, float], m2: Dict[str, float]) -> Dict[str, f
     norm = 1.0 - K
     return {k: v / norm for k, v in combined.items()}
 
-
 def _source_to_bpa(src: EvidenceSource) -> Dict[str, float]:
     bpa = {}
     if src.mass_v > _EPSILON: bpa['V'] = src.mass_v
     if src.mass_not_v > _EPSILON: bpa['¬V'] = src.mass_not_v
     if src.mass_theta > _EPSILON: bpa['Θ'] = src.mass_theta
     return bpa
-
 
 def fuse_evidence(sources: List[EvidenceSource]) -> Dict[str, Any]:
     """
@@ -133,7 +127,6 @@ def fuse_evidence(sources: List[EvidenceSource]) -> Dict[str, Any]:
         'combined_mass': {k: round(v, 6) for k, v in current.items()},
         'fusion_count': len(sources), 'warning': warning,
     }
-
 
 def conflict_matrix(sources: List[EvidenceSource]) -> List[List[float]]:
     """两两冲突矩阵 K_ij。高K的行→与其他源分歧最大的模块。"""

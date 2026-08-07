@@ -2,7 +2,7 @@
 安全修复验证器
 
 多轮修复闭环中的验证组件，对应 Agentic Program Repair from
-Test Failures at Scale [arXiv:2507.18755] 的 test-execution 反馈环节。
+Test Failures at Scale 的 test-execution 反馈环节。
 以静态测试预言机替代真实执行，绝不运行被测漏洞程序。
 
 安全边界：
@@ -104,7 +104,7 @@ class SafeRepairValidator:
             logger.warning("allow_exec=True requested but target execution is "
                            "forbidden by design; falling back to static oracles")
 
-    # -- public ---------------------------------------------------------
+# public
 
     def validate(self, patch_diff="", code="", lang="c", required_positive=None):
         """验证候选补丁。
@@ -167,7 +167,7 @@ class SafeRepairValidator:
             error_lines=error_lines, compile_status=compile_status, safe=True,
         )
 
-    # -- 检查实现 ------------------------------------------------------
+# 检查实现
 
     def _syntax_check(self, code, lang):
         """语法检查：python=compile()；C=括号平衡启发式。"""
@@ -261,7 +261,7 @@ class SafeRepairValidator:
                                '缺少必需安全模式: ' + ','.join(missing)), False
         return CheckResult('static', True, '静态检查通过'), False
 
-    # -- 辅助方法 ------------------------------------------------------
+# 辅助方法
 
     def _check_compiler(self):
         """探测编译器可用性 —— 不可用时编译检查自动跳过。"""

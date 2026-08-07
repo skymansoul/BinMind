@@ -4,7 +4,6 @@ NTP monlist (MODE_CONTROL+opcode=42)是历史上放大系数最高的反射攻�
 （单请求可达556.9x放大率）。ntp.conf 4.2.7p26+默认禁用monlist，
 但全球仍有大量未升级的NTP服务器存在此漏洞。
 
-参考：
 - SoK Digital Clock Trustworthiness
 - CVE-2013-5211 — NTP monlist 反射DDoS
 - RFC 8915 (Network Time Security for NTP)
@@ -82,7 +81,6 @@ class NtpPacket:
     xmit_ts: float = 0.0
     raw: bytes = b""
 
-
 @dataclass
 class NtpAnomaly:
     anomaly_type: str
@@ -90,7 +88,6 @@ class NtpAnomaly:
     description: str = ""
     severity: str = "medium"
     amplification_factor: float = 0.0
-
 
 class NtpPacketParser:
     """NTP 二进制包解析器 —— 支持标准48字节和带扩展字段的NTP包。
@@ -119,7 +116,7 @@ class NtpPacketParser:
         pkt.root_delay = NtpPacketParser._ntp_short_to_float(data[_NTP_ROOT_DELAY:_NTP_ROOT_DELAY+4])
         pkt.root_dispersion = NtpPacketParser._ntp_short_to_float(data[_NTP_ROOT_DISP:_NTP_ROOT_DISP+4])
 
-        # ref_id: stratum 1 → ASCII时钟源标识，其他 → IPv4地址
+        # _id: stratum 1 → ASCII时钟源标识，其他 → IPv4地址
         rid = data[_NTP_REF_ID:_NTP_REF_ID+4]
         if pkt.stratum <= 1:
             pkt.ref_id = rid.decode("ascii", errors="replace").rstrip("\x00")
@@ -153,7 +150,7 @@ class NtpPacketParser:
         secs = struct.unpack(">I", data[:4])[0]
         frac = struct.unpack(">I", data[4:8])[0]
         ts = float(secs) + frac / 4294967296.0
-        # NTP纪元→Unix纪元 (1900 → 1970 = 2208988800秒)
+        # NTP纪元→Unix纪元
         if ts > 2208988800:
             ts -= 2208988800
         return ts
@@ -163,7 +160,6 @@ class NtpPacketParser:
         if val & 0x80:
             return val - 256
         return val
-
 
 class NtpAmplificationDetector:
     """NTP 放大攻击检测器 —— 检测monlist和其他高放大率NTP控制消息。
@@ -246,7 +242,6 @@ class NtpAmplificationDetector:
                 ))
         return alerts
 
-
 class NtpAnalyzer:
     """NTP 协议安全分析器 —— 整合包解析+放大检测+扫描检测。
 
@@ -301,7 +296,6 @@ class NtpAnalyzer:
             ],
         }
 
-
 def analyze_ntp_traffic(packets: List[Dict]) -> Dict[str, Any]:
     """便捷入口 —— 从UDP包字典列表分析NTP流量"""
     analyzer = NtpAnalyzer()
@@ -312,7 +306,6 @@ def analyze_ntp_traffic(packets: List[Dict]) -> Dict[str, Any]:
             pkt.get("payload", b""), pkt.get("timestamp", 0.0),
         )
     return analyzer.summary()
-
 
 __all__ = ["NtpAnalyzer", "NtpPacketParser", "NtpAmplificationDetector",
            "NtpPacket", "NtpAnomaly", "analyze_ntp_traffic"]

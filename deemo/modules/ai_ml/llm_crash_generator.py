@@ -24,9 +24,7 @@ _STALE_LIMIT = 256  # 保留
 __dbg = _logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 变异策略枚举 — 给每种子代生成路径打标签，方便事后审计
-# ---------------------------------------------------------------------------
 
 class MutationStrategy(_enum.IntEnum):
     BIT_FLIP = 1        # 单比特翻转 — 最容易触发边界条件解析错误
@@ -60,9 +58,7 @@ class MutationStrategy(_enum.IntEnum):
         return pool
 
 
-# ---------------------------------------------------------------------------
 # 有趣的边界值 — 专门用来替换长度字段/偏移/指针
-# ---------------------------------------------------------------------------
 
 _INTERESTING_32 = [
     0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256,
@@ -75,9 +71,7 @@ _INTERESTING_16 = [
 _INTERESTING_8 = [0, 1, 2, 4, 8, 16, 32, 64, 127, 128, 255]
 
 
-# ---------------------------------------------------------------------------
 # 覆盖率位图 — 轻量级bloom-filter风格的edge coverage追踪
-# ---------------------------------------------------------------------------
 
 class CoverageBitmap:
     """轻量覆盖率位图 — 判断某个mutation是否命中了新代码路径"""
@@ -128,9 +122,7 @@ class CoverageBitmap:
         return c
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CrashContext:
@@ -294,9 +286,7 @@ class GenerationResult:
     strategy_stats: Dict[str, int] = field(default_factory=dict)
 
 
-# ---------------------------------------------------------------------------
 # LLM Client Interface (mockable)
-# ---------------------------------------------------------------------------
 
 class LLMClientBase:
     """Abstract base for LLM API calls."""
@@ -361,9 +351,7 @@ class MockLLMClient(LLMClientBase):
         return _json.dumps({"analysis": "completed", "confidence": 0.5})
 
 
-# ---------------------------------------------------------------------------
 # LLM Crash 构造器
-# ---------------------------------------------------------------------------
 
 class LLMCrashGenerator:
     """LLM-guided crash test case generation with iterative refinement.
@@ -383,7 +371,7 @@ class LLMCrashGenerator:
         self.m_grammar: Optional[LearnedGrammar] = None
         self.m_history: List[Dict[str, Any]] = []
 
-        # ---- 2026-07-28 新增字段 ----
+# 2026-07-28 新增字段
         # 变异策略加权池
         self.m_mutation_pool: List[MutationStrategy] = MutationStrategy.weighted_pool()
         # 输入去重缓存 — 存sha256 hash前8字节避免碰撞
@@ -400,7 +388,7 @@ class LLMCrashGenerator:
         # 预计算interesting values的4字节编码列表
         self.m_interesting_values: List[bytes] = self._build_interesting_bytes()
 
-    # ---- 构建interesting值字节表 ----
+# 构建interesting值字节表
 
     def _build_interesting_bytes(self) -> List[bytes]:
         """预构建所有interesting值的little-endian字节表示"""
@@ -412,7 +400,7 @@ class LLMCrashGenerator:
             ni += 1
         return vals
 
-    # ---- 输入去重 ----
+# 输入去重
 
     # 快速哈希去重
     def _is_duplicate(self, data: bytes) -> bool:
@@ -425,7 +413,7 @@ class LLMCrashGenerator:
     def _dedup_size(self) -> int:
         return len(self.m_input_dedup)
 
-    # ---- 自适应温度调度 ----
+# 自适应温度调度
 
     # 自适应温度调度
     def _adapt_temperature(self, found_crash: bool):
@@ -445,7 +433,7 @@ class LLMCrashGenerator:
                     self.m_temperature * self.m_cooling_rate,
                 )
 
-    # ---- 变异管线 ----
+# 变异管线
 
     def _apply_mutation(self, base: bytes, strategy: MutationStrategy, corpus: Optional[List[bytes]] = None) -> bytes:
         """根据策略对base做变异 — 返回新bytes"""
@@ -454,7 +442,7 @@ class LLMCrashGenerator:
         if dlen < 1:
             return bytes(data)
 
-        # ---- BIT_FLIP: 翻转单个比特 — 最小扰动 ----
+# BIT_FLIP: 翻转单个比特 — 最小扰动
         if strategy == MutationStrategy.BIT_FLIP:
             # 同时翻1~3个比特 — 经验表明单个bit的复合效果更好
             flips = _rnd.randint(1, min(3, dlen * 8))
@@ -465,7 +453,7 @@ class LLMCrashGenerator:
                 data[byte_pos] ^= (1 << bit_pos)
                 fi += 1
 
-        # ---- BYTE_FLIP: 翻转整字节 — 对magic byte/长度字段有效 ----
+# BYTE_FLIP: 翻转整字节 — 对magic byte/长度字段有效
         elif strategy == MutationStrategy.BYTE_FLIP:
             count = _rnd.randint(1, max(1, dlen // 32))
             ci = 0
@@ -474,7 +462,7 @@ class LLMCrashGenerator:
                 data[pos] ^= _rnd.randint(1, 255)
                 ci += 1
 
-        # ---- ARITHMETIC: 对多字节整数做±运算 — 瞄准长度/偏移字段 ----
+# ARITHMETIC: 对多字节整数做±运算 — 瞄准长度/偏移字段
         elif strategy == MutationStrategy.ARITHMETIC:
             for width in [1, 2, 4, 8]:
                 if dlen >= width:
@@ -489,7 +477,7 @@ class LLMCrashGenerator:
                     # 只做一次arithmetic — 太多会完全破坏结构
                     break
 
-        # ---- SPLICE: 从corpus取片段拼接到当前输入 ----
+# SPLICE: 从corpus取片段拼接到当前输入
         elif strategy == MutationStrategy.SPLICE:
             if corpus and len(corpus) > 0:
                 other = _rnd.choice(corpus)
@@ -503,7 +491,7 @@ class LLMCrashGenerator:
                     replace_len = end_pos - insert_pos
                     data[insert_pos:end_pos] = chunk[:replace_len]
 
-        # ---- HAVOC: AFL风格的随机摧毁 — 多层叠加 ----
+# HAVOC: AFL风格的随机摧毁 — 多层叠加
         elif strategy == MutationStrategy.HAVOC:
             rounds = _rnd.randint(1, 16)
             ri = 0
@@ -542,7 +530,7 @@ class LLMCrashGenerator:
                         data[len(block_b):len(block_b)+len(block_a)] = block_a
                 ri += 1
 
-        # ---- INTERESTING: 注入boundary values到固定偏移 ----
+# INTERESTING: 注入boundary values到固定偏移
         elif strategy == MutationStrategy.INTERESTING:
             width = _rnd.choice([1, 2, 4])
             if dlen >= width:
@@ -562,7 +550,7 @@ class LLMCrashGenerator:
                     except Exception:
                         pass
 
-        # ---- REPEAT: 重复某片段N次触发膨胀/溢出 ----
+# REPEAT: 重复某片段N次触发膨胀/溢出
         elif strategy == MutationStrategy.REPEAT:
             if dlen > 0:
                 chunk_start = _rnd.randint(0, dlen - 1)
@@ -579,7 +567,7 @@ class LLMCrashGenerator:
         """从加权池选策略 — 未来可根据历史命中率动态调整权重"""
         return _rnd.choice(self.m_mutation_pool)
 
-    # ---- Step 1: Extract crash context ----
+# Extract crash context
 
     def extract_crash_context(self, crash_output: str, input_bytes: bytes = b"") -> CrashContext:
         ctx = CrashContext()
@@ -620,7 +608,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "extract_crash_context", "context": ctx})
         return ctx
 
-    # ---- Step 2: Infer input structure ----
+# Infer input structure
 
     def infer_input_structure(self, seed_inputs: List[bytes],
                               crash_contexts: List[CrashContext]) -> InferredInputStructure:
@@ -799,7 +787,7 @@ Respond with ONLY valid JSON."""
         })
         return generated
 
-    # ---- Step 4: Learn grammar ----
+# Learn grammar
 
     def learn_grammar(self, corpus: List[bytes], max_tokens=1000) -> LearnedGrammar:
         grammar = LearnedGrammar()
@@ -899,7 +887,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "learn_grammar", "corpus_size": len(corpus)})
         return grammar
 
-    # ---- Step 5: Differential analysis ----
+# Differential analysis
 
     def differential_analysis(self, target_a_name: str, target_b_name: str,
                               shared_inputs: List[bytes],
@@ -965,7 +953,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "differential_analysis", "trace": trace})
         return trace
 
-    # ---- Step 6: Minimize input (delta-调试) ----
+# Minimize input (delta-调试)
 
     def minimize_input(self, crash_input: bytes,
                        crash_tester: Callable[[bytes], bool],
@@ -1025,7 +1013,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "minimize_input", "result": result})
         return result
 
-    # ---- Step 7: Assess exploitability ----
+# Assess exploitability
 
     def assess_exploitability(self, crash_context: CrashContext) -> ExploitabilityReport:
         report = ExploitabilityReport()
@@ -1112,7 +1100,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "assess_exploitability", "report": report})
         return report
 
-    # ---- Step 8: 构造 seed 批次 ----
+# 构造 seed 批次
 
     def generate_seed_batch(self, count: int = 10, min_size: int = 1, max_size: int = 4096) -> List[bytes]:
         seeds: List[bytes] = []
@@ -1147,13 +1135,13 @@ Respond with ONLY valid JSON."""
 
         return seeds
 
-    # ---- Get strategy hit statistics ----
+# Get strategy hit statistics
 
     def get_strategy_stats(self) -> Dict[str, int]:
         """返回变异策略命中统计 — 用于事后分析哪种策略最有效"""
         return dict(self.m_strategy_stats)
 
-    # ---- Full pipeline ----
+# Full pipeline
 
     def analyze(self, target_executor: Callable[[bytes], Optional[CrashContext]],
                 seed_inputs: Optional[List[bytes]] = None,
@@ -1250,9 +1238,7 @@ Respond with ONLY valid JSON."""
         self.m_strategy_stats.clear()
 
 
-# ---------------------------------------------------------------------------
 # Convenience
-# ---------------------------------------------------------------------------
 
 def create_crash_generator(target_binary="", llm_client=None, max_iterations=20) -> LLMCrashGenerator:
     return LLMCrashGenerator(

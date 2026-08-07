@@ -11,11 +11,10 @@
   S-box双射性、差分均匀度、扩散度量、仿射等价类、Feistel网络结构判据。
   这些性质独立于具体常数表, 可发现被微调过但结构上可识别的变种。
 
-参考:
-  - Daemen & Rijmen, "The Design of Rijndael" (2002): S-box设计准则(差分均匀度/非线性度)
-  - Biryukov et al., "Cryptanalysis of SASI" (2015): S-box仿射等价判定
-  - Nyberg, "Differentially uniform mappings for cryptography" (Eurocrypt 1993): 差分均匀度上界
-  - CRYPTLINE (arXiv:1907.05580): 源码级加密集不变量验证的思路, 本项目移植到二进制层面
+  - Daemen & Rijmen, "The Design of Rijndael": S-box设计准则(差分均匀度/非线性度)
+  - Biryukov et al., "Cryptanalysis of SASI": S-box仿射等价判定
+  - Nyberg, "Differentially uniform mappings for cryptography": 差分均匀度上界
+  - CRYPTLINE: 源码级加密集不变量验证的思路, 本项目移植到二进制层面
 """
 
 import math
@@ -27,9 +26,7 @@ from .constants import (AES_SBOX, AES_INV_SBOX, SM4_SBOX, GOST_SBOX,
                          CAMELLIA_SBOX, ARIA_S1, ARIA_S2, SEED_SBOX0, SEED_SBOX1)
 from .utils import shannon_entropy
 
-
-# ── 核心数据结构 ──
-
+# 核心数据结构
 
 @dataclass
 class InvariantReport:
@@ -51,7 +48,6 @@ class InvariantReport:
         """任一性质偏离密码学工程最佳实践→标记为可疑."""
         return bool(self.findings)
 
-
 @dataclass
 class FeistelEvidence:
     """Feistel网络结构证据 — 从字节模式推断."""
@@ -61,7 +57,6 @@ class FeistelEvidence:
     swap_pattern_detected: bool = False    # 半块交换模式
     confidence: float = 0.0
 
-
 @dataclass
 class AffineEquivalence:
     """S-box间的仿射等价关系: S_a = A ∘ S_b ∘ B + c."""
@@ -69,8 +64,7 @@ class AffineEquivalence:
     sbox_b: str
     confidence: float                       # 等价置信度
 
-
-# ── 已知S-box注册表 (仿射等价消歧用) ──
+# 已知S-box注册表 (仿射等价消歧用)
 
 _KNOWN_SBOXES: Dict[str, bytes] = {
     'AES_SBOX': AES_SBOX,
@@ -84,8 +78,7 @@ _KNOWN_SBOXES: Dict[str, bytes] = {
     'SEED_SBOX1': SEED_SBOX1,
 }
 
-
-# ── S-box双射性校验 ──
+# S-box双射性校验
 # 256字节序列每个值(0-255)恰好出现一次→置换。密码学S-box须为置换,
 # 否则解密不可逆。嵌入式/IoT固件中偶见非双射压缩表(9bit→8bit编码), 需消歧。
 
@@ -107,8 +100,7 @@ def check_bijection(sbox: bytes) -> Tuple[bool, int]:
             seen += 1
     return (seen == 256 and dup == 0), dup
 
-
-# ── 对合性校验 (involution) ──
+# 对合性校验 (involution)
 # S(S(x)) = x对所有x成立→对合。对合S-box加密=解密, 节省电路面积,
 # 常用于轻量级密码(GOST Kuznyechik π′层)。AES S-box和逆S-box均非对合。
 
@@ -123,11 +115,10 @@ def check_involution(sbox: bytes) -> bool:
             return False
     return True
 
-
-# ── 差分均匀度 ──
+# 差分均匀度
 # δ = max_{a≠0, b} |{x: S(x⊕a) ⊕ S(x) = b}|
 # AES S-box δ=4 (最优, LN映射x→x^{-1}在GF(2^8)上δ=4).
-# Nyberg(1993): GF(2^n)上n偶时δ_min=4.
+# Nyberg: GF(2^n)上n偶时δ_min=4.
 # δ>8 → 差分密码分析脆弱性上升。
 
 def differential_uniformity(sbox: bytes) -> int:
@@ -148,8 +139,7 @@ def differential_uniformity(sbox: bytes) -> int:
                 return max_count
     return max_count
 
-
-# ── 扩散度量 ──
+# 扩散度量
 # 输入变化1bit → 输出变化bit数分布。
 # 理想: 每次输入bit翻转平均翻转4.0/8 bits (严格雪崩准则SAC)。
 # 对每个输入bit位置b, 计算256个输入值在b翻转后输出Hamming距离的均值。
@@ -176,8 +166,7 @@ def measure_diffusion(sbox: bytes) -> Tuple[float, float]:
     worst = min(mins)
     return avg, worst
 
-
-# ── 仿射等价类分组 ──
+# 仿射等价类分组
 # S_a与S_b仿射等价 ⇔ 存在可逆线性映射A,B和常数c使 S_a(x)=A(S_b(B(x)))+c.
 # 完整判定O(2^{3n})不可行, 用简化判据:
 #   两S-box的DDT行特征(每行最大值)和拉美谱分布高度相似→极大概率仿射等价,
@@ -196,7 +185,6 @@ def ddt_signature(sbox: bytes) -> Tuple[int, int, float]:
             col_sums[sb[x] ^ sb[x ^ a]] += 1
     ent = shannon_entropy(bytes([min(c, 255) for c in col_sums])) if any(col_sums) else 0.0
     return du, fp, ent
-
 
 def group_by_affine_equivalence(candidates: Dict[str, bytes],
                                 threshold: float = 0.95) -> List[AffineEquivalence]:
@@ -217,8 +205,7 @@ def group_by_affine_equivalence(candidates: Dict[str, bytes],
                         sbox_a=cand_name, sbox_b=kname, confidence=round(score, 3)))
     return results
 
-
-# ── Feistel网络结构检测 ──
+# Feistel网络结构检测
 # 轻量级密码(DES/Blowfish/SIMON/SPECK等)多采用Feistel结构。
 # 二进制中Feistel结构特征:
 #   (a) 等长重复变换块 (每8/16字节出现相同非线性层模式)
@@ -232,7 +219,7 @@ def detect_feistel_structure(data: bytes, start: int = 0,
 
     策略: 搜索等间距重复的操作码窗口 — 每轮相同的F函数体在二进制中表现为
     等距的重复字节片段。以窗口长度作为候选半块大小, 在此假设下检验其他判据。
-    参考: HAMRAZ et al. (2024), "Code is Not Natural Language" (arXiv:2402.03932),
+    参考: HAMRAZ et al. (2024), "Code is Not Natural Language" ,
     利用代码段的几何重复结构检测密码学轮函数。
     """
     max_scan = min(len(data) - start, 16384)
@@ -271,7 +258,6 @@ def detect_feistel_structure(data: bytes, start: int = 0,
 
     return best_evidence
 
-
 def _byte_similarity(a: bytes, b: bytes) -> float:
     """两等长字节序列逐字节相等比例."""
     n = min(len(a), len(b))
@@ -279,7 +265,6 @@ def _byte_similarity(a: bytes, b: bytes) -> float:
         return 0.0
     same = sum(1 for i in range(n) if a[i] == b[i])
     return same / n
-
 
 def _extract_round_constants(data: bytes, stride: int,
                               max_r: int) -> List[int]:
@@ -303,7 +288,6 @@ def _extract_round_constants(data: bytes, stride: int,
         return rcs
     return []
 
-
 def _detect_half_block_swap(data: bytes, width: int) -> bool:
     """检测半块交换模式 — xor+ror序列为Feistel标志."""
     # 搜索xor指令(0x31/0x33)+ror/rol(0xC1/0xD3)在相邻轮边界
@@ -317,8 +301,7 @@ def _detect_half_block_swap(data: bytes, width: int) -> bool:
             ror_count += 1
     return xor_count >= 3 and ror_count >= 1
 
-
-# ── 完整S-box不变量报告 ──
+# 完整S-box不变量报告
 
 def analyze_sbox(entry: bytes, label: str = "unknown",
                  offset: int = 0) -> InvariantReport:
@@ -359,7 +342,6 @@ def analyze_sbox(entry: bytes, label: str = "unknown",
 
     return rpt
 
-
 def scan_region(data: bytes, offset: int,
                 label_hint: str = "") -> Optional[InvariantReport]:
     """检查指定偏移256字节是否为合法密码学S-box, 执行不变量验证."""
@@ -371,7 +353,6 @@ def scan_region(data: bytes, offset: int,
         return None
     label = label_hint or f"candidate_at_0x{offset:x}"
     return analyze_sbox(chunk, label=label, offset=offset)
-
 
 __all__ = [
     'InvariantReport', 'FeistelEvidence', 'AffineEquivalence',

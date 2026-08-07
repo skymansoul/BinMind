@@ -16,9 +16,7 @@ _DEPR_SIG = "0xc0"  # 保留
 
 _dbg = _logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Entity and relation type enums (string-based for extensibility)
-# ---------------------------------------------------------------------------
 
 ENTITY_TYPES = [
     "BINARY",
@@ -328,7 +326,7 @@ class BaseGraphOps:
         self.m_adj_out: Dict[str, List[str]] = _defaultdict(list)
         self.m_adj_in: Dict[str, List[str]] = _defaultdict(list)
 
-    # ---- Entity CRUD ----
+# Entity CRUD
 
     def add_entity(self, entity: KnowledgeGraphEntity) -> str:
         eid = entity.m_id
@@ -405,7 +403,7 @@ class BaseGraphOps:
     def entity_count(self) -> int:
         return len(self.m_entities)
 
-    # ---- Relation CRUD ----
+# Relation CRUD
 
     def add_relation(self, relation: KnowledgeGraphRelation) -> str:
         rid = relation.m_id
@@ -484,7 +482,7 @@ class BaseGraphOps:
     def relation_count(self) -> int:
         return len(self.m_relations)
 
-    # ---- Query ----
+# Query
 
     def query(self, cypher: Union[str, CypherQuery]) -> List[Dict[str, Any]]:
         if isinstance(cypher, str):
@@ -606,7 +604,7 @@ class BaseGraphOps:
 
         return results
 
-    # ---- Path queries ----
+# Path queries
 
     def find_paths(self, src_id, dst_id, max_depth=5) -> List[List[str]]:
         """BFS to find all paths between two entities (returns lists of relation IDs)."""
@@ -649,7 +647,7 @@ class BaseGraphOps:
             pi += 1
         return shortest
 
-    # ---- Subgraph extraction ----
+# Subgraph extraction
 
     def subgraph(self, entity_ids: List[str], depth: int = 1) -> 'BaseGraphOps':
         """Extract a subgraph centered on the given entity IDs.
@@ -705,7 +703,7 @@ class BaseGraphOps:
 
         return sg
 
-    # ---- Statistics ----
+# Statistics
 
     def statistics(self) -> Dict[str, Any]:
         stats: Dict[str, Any] = {
@@ -765,7 +763,7 @@ class BaseGraphOps:
 
         return stats
 
-    # ---- Orphan cleanup ----
+# Orphan cleanup
     # Validates and repairs stale references in adjacency indices and relation/entity
     # indexes after deletions. Ensures 图 consistency.
 
@@ -881,7 +879,7 @@ class BaseGraphOps:
                        total_cleaned, sum(1 for v in clean_counts.values() if v > 0))
         return clean_counts
 
-    # ---- Serialization ----
+# Serialization
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -928,7 +926,7 @@ class BaseGraphOps:
         with open(filepath, 'rb') as fh:
             return _pickle.load(fh)
 
-    # ---- Maintenance ----
+# Maintenance
 
     def clear(self):
         self.m_entities.clear()

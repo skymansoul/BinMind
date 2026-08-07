@@ -1,8 +1,8 @@
 import os,sys,time,json
 sys.path.insert(0,".")
 try:
-    from analysis.taint_propagation import detect_heap_overflow
-    from analysis.int_overflow_detector import detect_int_overflow
+    from modules.info.analysis.taint_propagation_source_level import detect_heap_overflow
+    from analysis.int_overflow_check import detect_int_overflow
     from analysis.double_free_analyzer import detect_double_free
     from analysis.uaf_alias_analyzer import detect_uaf_with_aliases
 except ImportError:

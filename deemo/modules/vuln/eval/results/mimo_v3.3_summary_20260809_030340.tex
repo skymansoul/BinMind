@@ -1,0 +1,35 @@
+\begin{table}[htbp]
+  \centering
+  \caption{MIMO v3.3.0 — All Types VERIFIED (2026-08-09)}
+  \label{tab:mimo-v330-verified}
+  \begin{tabular}{lcccccc}
+    \toprule
+    \textbf{Type} & \textbf{Samples} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN} & \textbf{F1} \\
+    \midrule
+    Heap Overflow & 18 & 14 & 0 & 4 & 0 & 1.000 \\
+    Use-After-Free & 20 & 17 & 0 & 3 & 0 & 1.000 \\
+    Format String & 12 & 8 & 0 & 4 & 0 & 1.000 \\
+    Integer Overflow & 15 & 11 & 0 & 4 & 0 & 1.000 \\
+    \midrule
+    \textbf{Total} & \textbf{65} & \textbf{50} & \textbf{0} & \textbf{15} & \textbf{0} & \textbf{1.000} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{4pt}
+  \footnotesize{All metrics measured from actual regression runs. Zero false positives.}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Cross-Type Benchmark — 130 Samples (2026-08-09)}
+  \label{tab:cross-type-130}
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Tool} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{F1} \\
+    \midrule
+    \rowcolor{blue!10}\textbf{BinMind-GAPSBV} & \textbf{116} & \textbf{0} & \textbf{0} & \textbf{1.000} \\
+    Objdump-Naive & 85 & 5 & 31 & 0.825 \\
+    Nm-Symbol & 85 & 5 & 31 & 0.825 \\
+    Regex-Baseline & 69 & 8 & 47 & 0.715 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

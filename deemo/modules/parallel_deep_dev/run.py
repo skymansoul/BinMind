@@ -62,7 +62,7 @@ def main(
     print(f"  模式:      {mode}")
     print("=" * 60)
 
-    # ---- 自检 ----
+# 自检
     this_file = os.path.abspath(__file__)
     engine_file = os.path.join(os.path.dirname(__file__), "engine.py")
     if not self_check(this_file):
@@ -70,7 +70,7 @@ def main(
     if os.path.exists(engine_file):
         self_check(engine_file)
 
-    # ---- 仅验证模式 ----
+# 仅验证模式
     if validate_only:
         print("\n[验证] 检查 API 密钥...")
         if not CONFIG.API_KEY:
@@ -83,7 +83,7 @@ def main(
             print("[FAIL] API 密钥无效或网络不可达")
             return 1
 
-    # ---- 显示创新点概览 ----
+# 显示创新点概览
     print(f"\n待处理子模块及创新点:")
     print("-" * 60)
     for key, defn in MODULE_DEFINITIONS.items():
@@ -93,7 +93,7 @@ def main(
     print(f"  论文总计: {total_papers}")
     print("-" * 60)
 
-    # ---- DRY-RUN 分支 ----
+# DRY-RUN 分支
     if CONFIG.DRY_RUN:
         print("\n[DRY-RUN 模式] 仅生成每个模块的 prompt 文件\n")
         for key, defn in MODULE_DEFINITIONS.items():
@@ -111,14 +111,14 @@ def main(
         print("\n[DRY-RUN] 完成。确认后设置 DRY_RUN=False 并设置 ANTHROPIC_API_KEY。")
         return 0
 
-    # ---- 检查 API 密钥 ----
+# 检查 API 密钥
     if not CONFIG.API_KEY:
         print("\n[错误] ANTHROPIC_API_KEY 环境变量未设置。")
         print("  export ANTHROPIC_API_KEY='sk-ant-...'")
         print("  或使用 --dry-run 模式仅生成 prompt。")
         return 1
 
-    # ---- API 密钥预检 ----
+# API 密钥预检
     print("\n[预检] 验证 API 密钥...")
     if not validate_api_key():
         print("[错误] API 密钥验证失败，终止执行。")
@@ -126,29 +126,29 @@ def main(
         return 1
     print("[预检] API 密钥验证通过")
 
-    # ---- 哈希快照（用于精确变更检测） ----
+# 哈希快照（用于精确变更检测）
     print("\n[快照] 记录文件哈希...")
     snapshot_before = snapshot_tree_hashes(CONFIG.ROOT_DIR)
     print(f"[快照] 已记录 {len(snapshot_before)} 个文件")
 
-    # ---- 执行并行开发 ----
+# 执行并行开发
     start_time = time.time()
     results = execute_parallel_development(MODULE_DEFINITIONS, resume=resume)
 
-    # ---- 收集变更文件 ----
+# 收集变更文件
     hash_changed = set(results.pop("__hash_changed__", []))
     api_written = collect_changed_files(results)
     all_changed = hash_changed | api_written
     print(f"[变更] 哈希检测: {len(hash_changed)} 个, API写入: {len(api_written)} 个")
     print(f"[变更] 合并后: {len(all_changed)} 个唯一文件")
 
-    # ---- 时间戳伪造 ----
+# 时间戳伪造
     if not no_forge and all_changed:
         forge_timestamps(all_changed)
     elif no_forge:
         print("[时间戳] 跳过 (--no-forge)")
 
-    # ---- 输出摘要 ----
+# 输出摘要
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
     print(f"  执行完成")
@@ -163,7 +163,7 @@ def main(
     print(f"  时间戳伪造文件数: {len(all_changed) if not no_forge else 0}")
     print(f"{'='*60}")
 
-    # ---- 韧性层统计 ----
+# 韧性层统计
     if CONFIG.RESILIENCE_ENABLED:
         try:
             from parallel_deep_dev.engine.api import get_resilience_stats
@@ -181,7 +181,7 @@ def main(
         except Exception:
             pass
 
-    # ---- Merkle 树根哈希（若启用） ----
+# Merkle 树根哈希（若启用）
     if CONFIG.MERKLE_ENABLED:
         try:
             from parallel_deep_dev.engine.merkle import build_merkle_tree, get_root_hash
@@ -191,7 +191,7 @@ def main(
         except Exception:
             pass
 
-    # ---- 成果摘要 ----
+# 成果摘要
     print(f"\n{'='*60}")
     print(f"  创新成果摘要")
     print(f"{'='*60}")

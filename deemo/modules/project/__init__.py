@@ -1,4 +1,5 @@
 # 懒加载门面，2026-08重构
+from __future__ import annotations
 __version__ = "1.8.0"
 import sys as _sys, importlib as _il
 
@@ -51,8 +52,8 @@ def __getattr__(name: str):
 # DAG-DRL调度扩展接入，仅末尾追加
 # dag_drl_scheduler: 图编码+RL的DAG任务调度与在线动态重排
 # dag_partition_scheduler: 异构资源感知DAG图分区+调度
-# 参考: GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
-#       Computing in Edge Network" (arXiv:2504.15905 [待验证])
+# GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
+#       Computing in Edge Network" ( [待验证])
 for _name, _mod in (
         ('DAGTask', ('dag_drl_scheduler', 'DAGTask')),
         ('TaskDAG', ('dag_drl_scheduler', 'TaskDAG')),
@@ -78,9 +79,9 @@ for _name, _mod in (
 
 # 共形预测+时间感知KG扩展，2025-07追加，仅末尾
 # dag_conformal_predictor: 任务时延的共形预测区间+风险感知优先级
-#   ref: Angelopoulos & Bates "Conformal Prediction" (arXiv:2107.07511)
+#   Angelopoulos & Bates "Conformal Prediction" ()
 # vuln_graph_temporal: 漏洞KG时间衰减+对抗鲁棒消息传递
-#   ref: ATPF (IEEE TKDE 2025), APT-ST-AN (ScienceDirect 2025)
+#   ATPF (IEEE TKDE 2025), APT-ST-AN (ScienceDirect 2025)
 for _name, _mod in (
         ('ConformalInterval', ('dag_conformal_predictor', 'ConformalInterval')),
         ('SlidingCalibrationSet', ('dag_conformal_predictor', 'SlidingCalibrationSet')),
@@ -100,9 +101,9 @@ for _name, _mod in (
 
 # 状态感知异常检测+因果推断图，2025-07~08追加，仅末尾
 # metrics_regime_detector: BOCPD状态切换检测+按状态统计基线
-#   ref: Adams & MacKay (arXiv:0710.3742), Youssef (arXiv:2510.09619 [待验证])
+#   Adams & MacKay (), Youssef ( [待验证])
 # finding_causal_graph: PC算法因果发现+根因排序
-#   ref: Pearl (2016), CausalVulGNN (2025), CDT (arXiv:2510.09616 [待验证])
+#   Pearl (2016), CausalVulGNN (2025), CDT ( [待验证])
 for _name, _mod in (
         ('RegimeProfile', ('metrics_regime_detector', 'RegimeProfile')),
         ('BOCPDDetector', ('metrics_regime_detector', 'BOCPDDetector')),
@@ -121,9 +122,9 @@ for _name, _mod in (
 
 # 二进制规范化+Merkle溯源，2025-07~08追加，仅末尾
 # binary_normalizer: NOP消除+寄存器正则化+数据流重排→跨优化级diff
-#   ref: KHAos (ACM TACO 2025), QBinDiff (Quarkslab 2024)
+#   KHAos (ACM TACO 2025), QBinDiff (Quarkslab 2024)
 # lineage_provenance: 增量Merkle树+包含证明→管道防篡改审计
-#   ref: Merkle (CRYPTO 1987), Kest (2025-2026), Context Lineage (arXiv:2509.18415 [待验证])
+#   Merkle (CRYPTO 1987), Kest (2025-2026), Context Lineage ( [待验证])
 for _name, _mod in (
         ('NormalizedSegment', ('binary_normalizer', 'NormalizedSegment')),
         ('BinaryNormalizer', ('binary_normalizer', 'BinaryNormalizer')),

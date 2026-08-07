@@ -1,7 +1,7 @@
-# Created: 2025-07-26 08:06:15
+# Created: 2026-06-01 08:06:15
 #
 # pe_elf_analysis — PE/ELF 深度结构解析
-# 从 binary_profiling.py 拆分出的 PE/ELF 特定分析函数
+# 出的 PE/ELF 特定分析函数
 # binary_scanner.py 原从 ..info_collect 导入但函数未定义
 # 提供: analyze_pe_sections, parse_pe_rich_header, check_pe_signature,
 #       detect_pe_overlay, enumerate_pe_resources, analyze_pe_exports,

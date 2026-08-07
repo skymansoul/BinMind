@@ -13,7 +13,7 @@ from enum import IntEnum
 module = "compiler_opt_analyzer"
 name = "CompilerOptAnalyzer"
 
-# ── 编译器 fingerprint 数据库 ──────────────────────────────────────────
+# 编译器 fingerprint 数据库
 _GCC_PROLOGUE = re.compile(
     rb'\x55\x48\x89\xe5' rb'|' rb'\xf3\x0f\x1e\xfa')
 _GCC_STRING = re.compile(rb'GCC:\s*\(.*?\)\s*[\d.]+', re.DOTALL)
@@ -42,8 +42,8 @@ _GCC_LTO_MAGIC = re.compile(rb'\.gnu\.lto_')
 _CLANG_LTO_SIG = re.compile(rb'\xde\xc0\x17\x0b')
 _RUSTC_SIGNATURE = re.compile(rb'rustc\s+\d+\.\d+|rust_panic|_ZN3std')
 
-# ── Remill/Anvill 启发的 liftability 指标 ──────────────────────────────────
-# 参考: Trail Bits lifting-bits ecosystem (Remill + Anvill + Rellic)
+# Remill/Anvill 启发的 liftability 指标
+# Trail Bits lifting-bits ecosystem (Remill + Anvill + Rellic)
 # "可提升性"衡量二进制代码能被准确翻译为 LLVM IR 的程度
 # 某些编译器模式（如跳板、间接跳转表、自修改代码）使提升困难
 

@@ -8,11 +8,10 @@ AI 置信度校准 + 模型漂移检测 — Platt 标度 + 滑动窗口 KL 散�
   更隐蔽的问题是模型漂移: 随着新的漏洞模式出现 (如新 CWE 类别)，
   旧校准参数逐渐失效，导致系统性能静默退化。
 
-参考:
-  - Fine-grained calibration for code revision (arXiv:2604.06723, 2024):
+  - Fine-grained calibration for code revision:
     全局 Platt 标度对代码修复任务效果有限，但局部校准计算成本高。
     本项目采用全局 Platt + 周期性重校准 的折中方案。
-  - On Calibration of LLM Guard Models (arXiv:2410.10414, 2024):
+  - On Calibration of LLM Guard Models:
     LLM 倾向于过度自信，temperature scaling 和 contextual calibration
     作为后处理校准有效。本项目取 temperature scaling 的简化版
     (即 Platt 标度的变体)。
@@ -30,7 +29,6 @@ AI 置信度校准 + 模型漂移检测 — Platt 标度 + 滑动窗口 KL 散�
 import math
 from collections import deque
 from typing import Any, Dict, List, Optional, Tuple
-
 
 class PlattCalibrator:
     """
@@ -110,7 +108,6 @@ class PlattCalibrator:
     def fitted(self) -> bool:
         return self._fitted
 
-
 class DriftDetector:
     """
     滑动窗口 KL 散度漂移检测器。
@@ -180,7 +177,6 @@ class DriftDetector:
         if self._total_checks == 0:
             return 0.0
         return self._drift_count / self._total_checks
-
 
 class ConfidenceCalibrator:
     """

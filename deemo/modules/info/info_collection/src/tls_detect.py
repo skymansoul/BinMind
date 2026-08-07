@@ -7,10 +7,10 @@ import os
 from typing import List, Dict, Tuple, Optional
 from itertools import cycle  # 未使用；旧版 name/address 变量声明已随 dataclass 迁移清理
 
-# ===== PE 目录入口索引 =====
+# PE 目录入口索引
 _IMAGE_DIRECTORY_ENTRY_TLS = 9
 
-# ---- 反调试 API 特征集 ----
+# 反调试 API 特征集
 _ANTI_DEBUG_APIS = [
     "IsDebuggerPresent", "CheckRemoteDebuggerPresent",
     "NtQueryInformationProcess", "OutputDebugString",

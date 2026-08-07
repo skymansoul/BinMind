@@ -18,10 +18,9 @@
 
   每个维度输出0-10风险评分, 5维聚合生成供应链风险热图。
 
-参考:
-  - NIST SP 800-161r1 (2022): 供应链风险管理框架(C-SCRM)。
-  - OWASP SCVS (2024): 软件组件验证标准。
-  - MITRE ATT&CK for Supply Chain (2023): 供应链攻击分类。
+  - NIST SP 800-161r1: 供应链风险管理框架(C-SCRM)。
+  - OWASP SCVS: 软件组件验证标准。
+  - MITRE ATT&CK for Supply Chain: 供应链攻击分类。
 
 边界条件:
   - 风险评分基于可用模块的输出 — 若某维度无输入, 使用保守估计。
@@ -32,7 +31,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
 @dataclass
 class SupplyChainRisk:
     dimension: str = ""
@@ -40,7 +38,6 @@ class SupplyChainRisk:
     factors: List[str] = field(default_factory=list)
     evidence: List[str] = field(default_factory=list)
     risk_level: str = "LOW"        # LOW / MEDIUM / HIGH / CRITICAL
-
 
 @dataclass
 class SupplyChainHeatmap:
@@ -51,8 +48,7 @@ class SupplyChainHeatmap:
     top_threats: List[str] = field(default_factory=list)
     mitigation_priority: List[str] = field(default_factory=list)
 
-
-# ── R1: 代码来源风险 ──
+# R1: 代码来源风险
 def _score_provenance_risk(lib_fingerprints=None, watermark_findings=None,
                            cannibalization_matches=None) -> SupplyChainRisk:
     score = 0.0
@@ -90,8 +86,7 @@ def _score_provenance_risk(lib_fingerprints=None, watermark_findings=None,
     return SupplyChainRisk(dimension='R1_PROVENANCE', score=round(score, 1),
                            factors=factors, evidence=evidence, risk_level=level)
 
-
-# ── R2: 时效性风险 ──
+# R2: 时效性风险
 def _score_currency_risk(aging_reports=None, cve_matches=None) -> SupplyChainRisk:
     score = 0.0
     factors: List[str] = []
@@ -125,8 +120,7 @@ def _score_currency_risk(aging_reports=None, cve_matches=None) -> SupplyChainRis
     return SupplyChainRisk(dimension='R2_CURRENCY', score=round(score, 1),
                            factors=factors, risk_level=level)
 
-
-# ── R3: 复杂性风险 ──
+# R3: 复杂性风险
 def _score_complexity_risk(diversity_reports=None, algo_names=None,
                            hardware_peripherals=None) -> SupplyChainRisk:
     score = 0.0
@@ -160,8 +154,7 @@ def _score_complexity_risk(diversity_reports=None, algo_names=None,
     return SupplyChainRisk(dimension='R3_COMPLEXITY', score=round(score, 1),
                            factors=factors, risk_level=level)
 
-
-# ── R4: 合规性风险 ──
+# R4: 合规性风险
 def _score_compliance_risk(policy_report=None) -> SupplyChainRisk:
     score = 0.0
     factors: List[str] = []
@@ -178,8 +171,7 @@ def _score_compliance_risk(policy_report=None) -> SupplyChainRisk:
     return SupplyChainRisk(dimension='R4_COMPLIANCE', score=round(score, 1),
                            factors=factors, risk_level=level)
 
-
-# ── R5: 操作风险 ──
+# R5: 操作风险
 def _score_operational_risk(key_lifecycle_reports=None,
                             entropy_reports=None,
                             countermeasure_checks=None,
@@ -223,8 +215,7 @@ def _score_operational_risk(key_lifecycle_reports=None,
     return SupplyChainRisk(dimension='R5_OPERATIONAL', score=round(score, 1),
                            factors=factors, risk_level=level)
 
-
-# ── 热图生成 ──
+# 热图生成
 
 def generate_heatmap(target: str = "",
                      **kwargs) -> SupplyChainHeatmap:

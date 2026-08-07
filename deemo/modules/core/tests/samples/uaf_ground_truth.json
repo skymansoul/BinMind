@@ -1,0 +1,105 @@
+{
+  "samples": {
+    "uaf_cve_01": {
+      "cve": "CVE-2021-38000",
+      "title": "Direct UAF — free then use (no NULL assignment)",
+      "category": "direct_free_use",
+      "is_uaf": true,
+      "pattern": "free(ptr); /* missing ptr=NULL */ use(ptr);",
+      "confidence": 0.95
+    },
+    "uaf_cve_02": {
+      "cve": "CVE-2020-15999",
+      "title": "Double free — second free on dangling pointer",
+      "category": "double_free",
+      "is_uaf": true,
+      "pattern": "free(ptr); free(ptr);",
+      "confidence": 0.9
+    },
+    "uaf_cve_03": {
+      "cve": "CVE-2019-13720",
+      "title": "UAF via alias — free original, use alias",
+      "category": "alias_uaf",
+      "is_uaf": true,
+      "pattern": "q = p; free(p); use(q);",
+      "confidence": 0.9
+    },
+    "uaf_cve_04": {
+      "cve": "CVE-2018-8174",
+      "title": "UAF in loop — object freed, reused in next iteration",
+      "category": "loop_uaf",
+      "is_uaf": true,
+      "pattern": "for(...) { free(obj); use(obj->next); }",
+      "confidence": 0.85
+    },
+    "uaf_cve_05": {
+      "cve": "CVE-2017-0674",
+      "title": "Cross-function UAF — caller frees, callee uses",
+      "category": "cross_func_uaf",
+      "is_uaf": true,
+      "pattern": "caller: free(buf); callee: process(buf);",
+      "confidence": 0.8
+    },
+    "uaf_cve_06": {
+      "cve": "CVE-2016-0189",
+      "title": "Realloc UAF — use old pointer after realloc",
+      "category": "realloc_uaf",
+      "is_uaf": true,
+      "pattern": "new = realloc(old, sz); use(old); // old dangling if moved",
+      "confidence": 0.9
+    },
+    "uaf_cve_07": {
+      "cve": "CVE-2022-22620",
+      "title": "Conditional free UAF — free on one path, use on another",
+      "category": "conditional_uaf",
+      "is_uaf": true,
+      "pattern": "if(err) free(ptr); /* else path */ use(ptr);",
+      "confidence": 0.85
+    },
+    "uaf_cve_08": {
+      "cve": "CVE-2021-30551",
+      "title": "C++ delete UAF — vtable access after delete",
+      "category": "cpp_delete_uaf",
+      "is_uaf": true,
+      "pattern": "delete obj; obj->vfunc(); // virtual call on freed",
+      "confidence": 0.95
+    },
+    "uaf_cve_09": {
+      "cve": "CVE-2020-6418",
+      "title": "Global pointer UAF — global ptr freed, still referenced",
+      "category": "global_uaf",
+      "is_uaf": true,
+      "pattern": "free(g_ctx); /* g_ctx still used elsewhere */",
+      "confidence": 0.85
+    },
+    "uaf_cve_10": {
+      "cve": "CVE-2023-2033",
+      "title": "Error path UAF — cleanup frees, error handler uses",
+      "category": "error_path_uaf",
+      "is_uaf": true,
+      "pattern": "cleanup: free(data); error_handler: log(data);",
+      "confidence": 0.8
+    },
+    "uaf_cve_11": {
+      "cve": "SAFE-001",
+      "title": "Safe pattern — NULL assignment after free",
+      "category": "safe_null",
+      "is_uaf": false,
+      "pattern": "free(ptr); ptr = NULL; /* use after check */ if(ptr) use(ptr);",
+      "confidence": 0.95
+    },
+    "uaf_cve_12": {
+      "cve": "SAFE-002",
+      "title": "Safe pattern — use before free (correct order)",
+      "category": "safe_order",
+      "is_uaf": false,
+      "pattern": "use(ptr); free(ptr); // correct temporal order",
+      "confidence": 0.95
+    }
+  },
+  "summary": {
+    "total": 12,
+    "uaf_true": 10,
+    "uaf_false": 2
+  }
+}

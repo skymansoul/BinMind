@@ -1,0 +1,8 @@
+{
+  "id": "cve_2016_2177_openssl",
+  "expected_vuln": true,
+  "vuln_type": "heap_overflow",
+  "cve": "CVE-2016-2177",
+  "component": "OpenSSL EVP_EncodeUpdate",
+  "mode": "base64编码时 outl 计算溢出导致堆写越界"
+}

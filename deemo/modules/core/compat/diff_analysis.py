@@ -67,7 +67,7 @@ def structural_similarity(cfg_a: dict, cfg_b: dict) -> float:
     return max(0.0, min(1.0, raw))
 
 
-# --- 指令级编辑距离 ---
+# 指令级编辑距离
 # Wagner-Fischer DP, O(mn) time O(mn) space
 def instruction_edit_distance(seq_a: list[str], seq_b: list[str]) -> tuple[int, list]:
     # 不拆——保持上下文连贯性，拆了反而难读
@@ -111,7 +111,6 @@ def instruction_edit_distance(seq_a: list[str], seq_b: list[str]) -> tuple[int, 
     return (dp[m][n], ops)
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

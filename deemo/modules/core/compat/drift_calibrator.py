@@ -16,10 +16,10 @@
   自动触发 SGD 重校准, 将权重拉回目标域的局部最优。
 
 设计依据:
-  - ref: Gama et al. (2014) "A Survey on Concept Drift Adaptation" (ACM CSUR)
+  - ref: Gama et al. "A Survey on Concept Drift Adaptation" (ACM CSUR)
     将漂移检测器分为: 基于错误率、基于数据分布、基于多假设检验三类。
     CUSUM 属于第一类, 对渐变和突变漂移均敏感。
-  - ref: Page (1954) "Continuous Inspection Schemes" (Biometrika)
+  - ref: Page "Continuous Inspection Schemes" (Biometrika)
     CUSUM 的原始论文 — S_n = max(0, S_{n-1} + x_n - ω), 其中 ω 为容许偏差。
   - 本项目在标准 CUSUM 上增加:
     (a) 指数衰减权重 → 近期样本对 CUSUM 累积量的贡献更大, 减少旧数据
@@ -230,7 +230,7 @@ class DriftCalibrator:
         return list(self._drift_history)
 
 
-# ===== 特征权重重要性追踪 =====
+# 特征权重重要性追踪
 # SGD 回归的 5 个特征: constraint_count, max_depth, bv_width,
 # arithmetic_ratio, boolean_ratio。
 # 在漂移发生时, 追踪哪些特征的权重变化最大 — 帮助诊断域偏移的性质。

@@ -1,0 +1,6 @@
+{
+  "id": "fmt_tp_02_stack_concat",
+  "expected_vuln": true,
+  "vuln_type": "format_string",
+  "mode": "栈上拼接后再作为格式串"
+}

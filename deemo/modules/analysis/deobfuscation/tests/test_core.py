@@ -7,9 +7,7 @@ import binascii
 import pytest
 
 
-# ═══════════════════════════════════════════════════════════════
 # FunctionDeobfuscator tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestDeadCodeElimination:
     """Dead code elimination tests"""
@@ -153,9 +151,7 @@ class TestDeobfuscatePipeline:
         assert len(instructions) == 2
 
 
-# ═══════════════════════════════════════════════════════════════
 # Deobf调度器 tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestDeobfOrchestrator:
     """调度器 strategy selection tests"""
@@ -205,9 +201,7 @@ class TestDeobfOrchestrator:
         assert "status" in result
 
 
-# ═══════════════════════════════════════════════════════════════
 # StringDecoder tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestStringDecoder:
     """字符串解码 tests"""
@@ -278,9 +272,7 @@ class TestStringDecoder:
         assert rot13(rot13("Hello")) == "Hello"
 
 
-# ═══════════════════════════════════════════════════════════════
 # 自然语言处理String分类器 tests
-# ═══════════════════════════════════════════════════════════════
 
 class TestNLPClassifier:
     """String 分类 tests"""

@@ -110,7 +110,7 @@ class VerificationSummary:
         }
 
 
-# ── 独立验证器 ────────────────────────────────────────────────────
+# 独立验证器
 
 class ProvenanceVerifier:
     """补丁来源独立验证器 —— 不依赖私钥，纯消费侧。
@@ -140,7 +140,7 @@ class ProvenanceVerifier:
             self._trusted_pubkeys[sid] = bytes.fromhex(hex_key)
         _log.info("加载 %d 个可信公钥", len(data))
 
-    # ── 核心验证流程 ──────────────────────────────────────────────
+# 核心验证流程
 
     def verify_store(self, store: ProvenanceStore,
                      policy: AttestationPolicy = None,
@@ -284,7 +284,7 @@ class ProvenanceVerifier:
 
         return entry
 
-    # ── 工具方法 ──────────────────────────────────────────────────
+# 工具方法
 
     @staticmethod
     def _check_self_consistency(node: ProvenanceNode) -> bool:
@@ -345,7 +345,7 @@ class ProvenanceVerifier:
             json.dump(self._last_summary.to_dict(), f, indent=2)
 
 
-# ── 纯 Python Ed25519 验证实现 ────────────────────────────────────
+# 纯 Python Ed25519 验证实现
 # RFC 8032 §5.1.7。仅验证功能，不签名。
 # 在生产环境中替换为 libsodium 调用。此处实现提供可审计的纯 Python 验证能力。
 
@@ -446,7 +446,7 @@ def _scalar_mult_base(k: int) -> Optional[bytes]:
         return None
 
 
-# ── 透明度日志摘要 ─────────────────────────────────────────────────
+# 透明度日志摘要
 
 def produce_transparency_log_entry(summary: VerificationSummary,
                                    signer: Ed25519Signer = None) -> Dict:

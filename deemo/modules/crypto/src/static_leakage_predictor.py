@@ -24,9 +24,8 @@
 - 聚合为函数级和模块级的泄漏风险评分。
 - 不要求运行——仅需反汇编+控制流分析。
 
-参考：
 - dudect/ctgrind: 运行时常数时间验证。本方案是其静态近似。
-- “Rossi et al. (USENIX 2024): Model-Driven Side Channel Discovery” —
+- “Rossi et al.: Model-Driven Side Channel Discovery” —
   从HDL模型预测硬件泄漏。本方案上移一层：从汇编代码预测。
 """
 
@@ -35,7 +34,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
 class LeakageCategory(Enum):
     SECRET_DEPENDENT_BRANCH = "secret_branch"
     SECRET_DEPENDENT_INDEX = "secret_index"
@@ -43,7 +41,6 @@ class LeakageCategory(Enum):
     CACHE_ADDRESS_LEAK = "cache_addr_leak"
     TIMING_DIVERGENT_OP = "timing_divergent_op"
     UNSAFE_LOOKUP = "unsafe_lookup"
-
 
 @dataclass
 class LeakageSite:
@@ -60,7 +57,6 @@ class LeakageSite:
     in_loop: bool = False
     loop_depth: int = 0
 
-
 @dataclass
 class FunctionLeakageProfile:
     """一个函数的侧信道泄漏画像。"""
@@ -70,7 +66,6 @@ class FunctionLeakageProfile:
     total_score: float = 0.0
     worst_category: Optional[LeakageCategory] = None
     is_crypto_critical: bool = False  # 是否涉及密码学操作
-
 
 class StaticLeakagePredictor:
     """静态侧信道泄漏预测器。
@@ -239,9 +234,7 @@ class StaticLeakagePredictor:
             _recs.append("no specific mitigation needed")
         return _recs
 
-    # -----------------------------------------------------------------
     # 内部
-    # -----------------------------------------------------------------
 
     @staticmethod
     def _compute_score(
@@ -330,8 +323,7 @@ class StaticLeakagePredictor:
         # XOR+移位密集 → 可能是密码学函数
         return _xor_count >= 3 and _shift_count >= 2
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     _predictor = StaticLeakagePredictor()
     _secret = {"rdi", "rsi", "rax"}
@@ -384,7 +376,6 @@ def _smoke_test():
     )
 
     print("[OK] StaticLeakagePredictor smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

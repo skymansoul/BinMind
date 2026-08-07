@@ -1,0 +1,8 @@
+CC=gcc
+CFLAGS=-O0 -g -w
+all: vuln_elf
+vuln_elf: vuln.c
+	$(CC) $(CFLAGS) -o vuln_elf vuln.c
+clean:
+	rm -f vuln_elf
+# CVE-2025-uaf-objcache CWE-416: 对象缓存free后未移除

@@ -1,5 +1,5 @@
 # data 模块运行时配置：读取 YAML + 环境变量覆写
-# 参考 cve/src/config.py 模式实现，参数集合不完全一致
+# cve/src/config.py 模式实现，参数集合不完全一致
 
 import os
 import json

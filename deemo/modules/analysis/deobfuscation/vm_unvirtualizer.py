@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Tuple, Set
 
 logger = logging.getLogger(__name__)
 
-# ---- Dataclasses ----
+# Dataclasses
 
 @dataclass
 class VMInstruction:
@@ -53,7 +53,7 @@ class DevirtualizationResult:
     bytecode_size_estimate: int = 0
     handlers: List[VMHandler] = field(default_factory=list)
 
-# ---- Semantic lookup ----
+# Semantic lookup
 
 _HANDLER_SEMANTICS = {
     "add": "arithmetic", "sub": "arithmetic", "imul": "arithmetic", "idiv": "arithmetic",
@@ -110,7 +110,7 @@ def _disasm_chunk(data: bytes, base_addr: int) -> List[Tuple[int, int, str, str]
     return results
 
 
-# ===== 处理器 集群ing size =====
+# 处理器 集群ing size
 
 def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     if not handlers:
@@ -128,7 +128,7 @@ def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     }
 
 
-# ===== 字节码 pattern detection =====
+# 字节码 pattern detection
 
 _BYTECODE_PATTERNS = {
     "vmprotect": {"alignment": 4, "sigs": [rb"\x00{4,}", rb"\xff{2,}"]},
@@ -202,7 +202,7 @@ class VMDetector:
         return None, 0
 
 
-# ===== Dispatch loop search =====
+# Dispatch loop search
 
 def _is_indirect_jump(mnem: str, op_str: str) -> bool:
     """检测间接跳转: jmp reg, jmp [reg], jmp [reg+disp]"""
@@ -254,7 +254,7 @@ def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Option
     return candidates[0] if candidates else None
 
 
-# ===== 处理器 extraction via capstone =====
+# 处理器 extraction via capstone
 
 def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
                                 max_handlers: int = 64) -> List[VMHandler]:
@@ -443,7 +443,7 @@ def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
     return "\n".join(lines)
 
 
-# ===== VMUnvirtualizer (main) =====
+# VMUnvirtualizer (main)
 
 class VMUnvirtualizer:
     """VM protection 去混淆 engine real capstone-based 处理器 extraction"""
@@ -599,7 +599,7 @@ def _generate_fallback_handlers(dispatch_addr: int, count: int) -> List[VMHandle
     return handlers
 
 
-# ---- Convenience ----
+# Convenience
 
 def create_vm_unvirtualizer(binary_path: str) -> VMUnvirtualizer:
     return VMUnvirtualizer(binary_path)

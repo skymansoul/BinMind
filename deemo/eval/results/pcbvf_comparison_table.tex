@@ -1,0 +1,31 @@
+\begin{table}[htbp]
+\centering
+\caption{PC-BVF Ablation Study (12 samples: 4 VULN + 8 SAFE)}
+\label{tab:pcbvf-ablation}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Config & TP & FP & TN & FN & Prec. & Rec. & F1 \\
+\midrule
+Baseline & 4 & 8 & 0 & 0 & 0.33 & 1.00 & 0.50 \\
+CJ & 0 & 0 & 8 & 4 & 0.00 & 0.00 & 0.00 \\
+CJ+BVF & 0 & 0 & 8 & 4 & 0.00 & 0.00 & 0.00 \\
+CJ+BVF+PC-BVF & 4 & 0 & 8 & 0 & 1.00 & 1.00 & 1.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Multi-Tool Comparison (123 samples)}
+\label{tab:multi-tool-123}
+\begin{tabular}{lrrrrrr}
+\toprule
+Tool & TP & FP & TN & FN & F1 & Avg ms \\
+\midrule
+BinMind-GAPSBV & 109 & 0 & 14 & 0 & 1.000 & 1 \\
+Objdump-Naive & 85 & 5 & 9 & 24 & 0.854 & 34 \\
+Nm-Symbol & 85 & 5 & 9 & 24 & 0.854 & 11 \\
+Regex-Baseline & 63 & 8 & 6 & 46 & 0.700 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}

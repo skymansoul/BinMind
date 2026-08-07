@@ -40,7 +40,7 @@ class InstrumentationManager:
 
     def is_frida_available(self)->bool: return _FRIDA_AVAILABLE
 
-    # --- 舍入 2: 预编译钩子缓存 ---
+# 舍入 2: 预编译钩子缓存
     # 将常用的Frida脚本模板预编译为JavaScript字符串并缓存
     # 避免重复的字符串拼接开销，在高频hook场景下减少GC压力
     def preload_templates(self):
@@ -57,7 +57,7 @@ class InstrumentationManager:
                 self._preloaded_hooks[name] = code
         logger.info(f"Preloaded {len(self._preloaded_hooks)} hook templates")
 
-    # --- 舍入 2: Stalker快速追踪集成 ---
+# 舍入 2: Stalker快速追踪集成
     # Frida Stalker是代码级追踪引擎，在每条指令执行时触发回调
     # 相比Interceptor（仅函数级），Stalker可捕获所有间接跳转和ROP gadget
     def _generate_stalker_script(self) -> str:
@@ -106,7 +106,7 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
     def _generate_function_trace_script(self)->str:
         return """const ft={td:0,run:function(){try{const lc=Process.findModuleByName('libc.so.6')||Process.findModuleByName('libSystem.B.dylib')||Process.findModuleByName('msvcrt.dll');if(lc){['malloc','free','calloc','realloc'].forEach((n)=>{const fp=lc.getExportByName(n);if(fp)Interceptor.attach(fp,{onEnter(args){ft.td++;send({type:'trace',fn:n,sz:args[0].toInt32(),depth:ft.td})},onLeave(rv){ft.td--}})});}}}}};ft.run();"""
 
-    # --- Round 2: 网络监控模板 ---
+# Round 2: 网络监控模板
     def _generate_network_monitor_script(self)->str:
         """跨平台网络套接字 API监控。Linux/macOS/Windows自动适配"""
         return """
@@ -204,7 +204,7 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
             return result
         except Exception as e: logger.error(f"Instrumentation execution failed: {e}"); result['errors'].append(str(e)); return result
 
-    # --- Round 2: 超时自动分离 ---
+# Round 2: 超时自动分离
     def run_with_timeout(self, target_path: str = None, pid: int = None,
                          timeout_sec: int = 30, **kwargs) -> Dict[str, Any]:
         """在指定超时后自动detach，防止长时间挂起

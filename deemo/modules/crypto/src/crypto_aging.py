@@ -18,15 +18,14 @@
 
   多标准覆盖确保评估适用于不同监管域(美国联邦/国家安全系统/欧盟/通用)。
 
-参考:
-  - NIST SP 800-131Ar2 (2019, updated 2024): 密码学算法和密钥长度的过渡计划。
-  - CNSA 2.0 (2024): 国家安全系统密码学算法要求, 含PQC迁移时间线。
-  - BSI TR-02102-1 (2024): 德国BSI密码学算法推荐和使用期限。
-  - ANSSI RGS v2.0 (2021, updated 2024): 法国密码学安全指南。
-  - NIST FIPS 203/204/205 (2024): PQC标准, 定义正式退役前的最短过渡期。
+  - NIST SP 800-131Ar2: 密码学算法和密钥长度的过渡计划。
+  - CNSA 2.0: 国家安全系统密码学算法要求, 含PQC迁移时间线。
+  - BSI TR-02102-1: 德国BSI密码学算法推荐和使用期限。
+  - ANSSI RGS v2.0: 法国密码学安全指南。
+  - NIST FIPS 203/204/205: PQC标准, 定义正式退役前的最短过渡期。
 
 边界条件:
-  - 评估基于算法名匹配 → 不检测同一算法的不同参数(如RSA-2048 vs RSA-1024)。
+  - 评估基于算法名匹配 → 不检测同一算法的不同参数。
     需要额外的参数推断(来自key_schedule或密钥大小模式)以细化评估。
   - 标准状态矩阵需要定期更新(各标准机构每1-2年更新) → 矩阵硬编码, 需维护。
   - 自定义/私有算法不在标准覆盖范围内 → 标记为UNASSESSED, 提示审计。
@@ -36,7 +35,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class ComplianceStatus(Enum):
     COMPLIANT = 0       # 符合所有主要标准, 推荐使用
     ACCEPTABLE = 1      # 标准允许但非首选(如AES-128在CNSA中仍可接受)
@@ -44,7 +42,6 @@ class ComplianceStatus(Enum):
     DEPRECATED = 3      # 已正式弃用, 仅遗留系统可用
     PROHIBITED = 4      # 明确禁止使用
     UNASSESSED = 5      # 不在已知标准覆盖范围内
-
 
 @dataclass
 class AgingReport:
@@ -58,13 +55,12 @@ class AgingReport:
     recommended_replacement: str = ""
     migration_priority: str = ""       # IMMEDIATE / PLANNED / OPTIONAL / NONE
 
-
-# ── 密码学算法老化矩阵 ──
+# 密码学算法老化矩阵
 # 格式: (状态, 截止日期, 适用标准, 评分, 理由, 替换建议)
 # 评分: 0.0=现代安全, 0.3=可接受, 0.5=过渡期, 0.8=已弃用, 1.0=禁止
 
 _AGING_MATRIX: Dict[str, Tuple[ComplianceStatus, str, str, float, str, str]] = {
-    # === 对称加密 ===
+# 对称加密
     'AES-256': (ComplianceStatus.COMPLIANT, '', 'CNSA 2.0/NIST/BSI', 0.0,
                 '量子安全级别≥128-bit; CNSA 2.0批准用于所有分类级别', ''),
     'AES-128': (ComplianceStatus.ACCEPTABLE, '2030-12-31', 'NIST SP 800-131Ar2', 0.20,
@@ -80,7 +76,7 @@ _AGING_MATRIX: Dict[str, Tuple[ComplianceStatus, str, str, float, str, str]] = {
                  '256-bit密钥, 量子安全级别~128-bit, 无已知实际攻击', ''),
     'SM4': (ComplianceStatus.UNASSESSED, '', '', 0.30,
             '中国国家标准; 128-bit分组+密钥; 国际标准未评估', 'AES-256 (国际兼容)'),
-    # === 哈希 ===
+# 哈希
     'SHA-256': (ComplianceStatus.COMPLIANT, '', 'CNSA 2.0/NIST', 0.05,
                 '≥128-bit量子抗碰撞; CNSA批准用于所有分类', ''),
     'SHA-512': (ComplianceStatus.COMPLIANT, '', 'CNSA 2.0/NIST', 0.0,
@@ -92,7 +88,7 @@ _AGING_MATRIX: Dict[str, Tuple[ComplianceStatus, str, str, float, str, str]] = {
             '选择前缀碰撞; 完全破解; 禁止所有密码学用途', 'SHA-256/SHA-512'),
     'SM3': (ComplianceStatus.UNASSESSED, '', '', 0.25,
             '中国国家标准哈希; 国际标准未评估', 'SHA-256 (国际兼容)'),
-    # === 非对称/签名 ===
+# 非对称/签名
     'RSA': (ComplianceStatus.TRANSITIONING, '2030-12-31', 'CNSA 2.0/NIST', 0.55,
             'Shor算法破解; <2048-bit已禁止; ≥2048-bit在2030前可接受',
             'ML-DSA-65 (FIPS 204)'),
@@ -106,7 +102,7 @@ _AGING_MATRIX: Dict[str, Tuple[ComplianceStatus, str, str, float, str, str]] = {
               '与Ed25519同族; 2035前迁移', 'ML-DSA'),
     'DSA': (ComplianceStatus.PROHIBITED, '2014-01-01', 'NIST SP 800-131Ar2', 1.0,
             '自2014年NIST禁止; 仅遗留验证', 'ML-DSA-65'),
-    # === 密钥协商 ===
+# 密钥协商
     'ECDH': (ComplianceStatus.TRANSITIONING, '2030-12-31', 'CNSA 2.0/NIST', 0.55,
              'Shor算法破解; 2030前迁移到ML-KEM', 'ML-KEM-768 (FIPS 203)'),
     'DH': (ComplianceStatus.DEPRECATED, '2025-12-31', 'CNSA 2.0/NIST', 0.75,
@@ -115,18 +111,17 @@ _AGING_MATRIX: Dict[str, Tuple[ComplianceStatus, str, str, float, str, str]] = {
                'Curve25519安全但Shor-vulnerable; CNSA允许到2035', 'ML-KEM-1024'),
     'Curve25519': (ComplianceStatus.TRANSITIONING, '2035-12-31', 'CNSA 2.0', 0.35,
                    '与X25519同族', 'ML-KEM-768/1024'),
-    # === 后量子(现代) ===
+# 后量子(现代)
     'ML-KEM': (ComplianceStatus.COMPLIANT, '', 'FIPS 203/CNSA 2.0', 0.0,
                'NIST PQC标准; CNSA批准; 量子安全', ''),
     'ML-DSA': (ComplianceStatus.COMPLIANT, '', 'FIPS 204/CNSA 2.0', 0.0, '', ''),
     'SLH-DSA': (ComplianceStatus.COMPLIANT, '', 'FIPS 205/CNSA 2.0', 0.0, '', ''),
-    # === LWC ===
+# LWC
     'ASCON': (ComplianceStatus.COMPLIANT, '', 'NIST SP 800-232', 0.0,
               'NIST LWC标准(2024); 物联网轻量级首选', ''),
     'ASCON-128': (ComplianceStatus.COMPLIANT, '', 'NIST SP 800-232', 0.0, '', ''),
     'ASCON-128a': (ComplianceStatus.COMPLIANT, '', 'NIST SP 800-232', 0.0, '', ''),
 }
-
 
 def assess_aging(algorithm: str, location: int = 0) -> AgingReport:
     """评估单个密码学算法的老化状态。"""
@@ -163,7 +158,6 @@ def assess_aging(algorithm: str, location: int = 0) -> AgingReport:
             rationale='不在已知标准覆盖范围内 — 需人工审计',
             recommended_replacement='', migration_priority='OPTIONAL')
 
-
 def assess_batch(findings: List) -> List[AgingReport]:
     """批量评估 — 输入crypto_detector的CryptoFinding列表。"""
     reports = []
@@ -176,7 +170,6 @@ def assess_batch(findings: List) -> List[AgingReport]:
             pass
     reports.sort(key=lambda r: (-r.aging_score, r.algorithm))
     return reports
-
 
 def compute_aging_summary(reports: List[AgingReport]) -> Dict[str, int]:
     """汇总老化状态统计。"""

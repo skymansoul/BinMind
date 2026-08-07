@@ -1,0 +1,16 @@
+{
+  "sample_id": "TP-06",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "description": "malloc(sz) -> for i<sz+10 write beyond alloc",
+  "alloc_size": 4096,
+  "write_offset": 0,
+  "write_size": 4106,
+  "expect_overflow": true,
+  "lpvra_expected_verdict": "OVERFLOW",
+  "verdict_reason": "loop bound sz+10 > alloc sz, at least 10B overflow",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "OVERFLOW"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "cve_2021_3156_sudo",
+  "expected_vuln": true,
+  "vuln_type": "heap_overflow",
+  "cve": "CVE-2021-3156",
+  "component": "sudo sudoedit",
+  "mode": "argv拼接时 heap-buffer-overflow, 反斜杠转义逻辑缺陷"
+}

@@ -29,7 +29,6 @@
   M（模态数）通常 ≤ 5，d ≥ 64，N ≥ 100 时本方案更快。
 - 无需核函数选择、无需训练，在线执行。
 
-参考：
 - Gretton et al. "Measuring Statistical Dependence with HSIC." JMLR 2005.
 - Lu et al. "Orthogonal Decomposition for Cross-Modal Re-ID." IEEE TNNLS 2025.
   本实现区别于上述方法：
@@ -42,7 +41,6 @@ import math
 from typing import Dict, List, Optional, Tuple
 
 _EPS: float = 1e-9
-
 
 class OrthogonalDecompositionFusion:
     """正交分解融合器——迭代Gram-Schmidt分离共享/私有信息。
@@ -82,9 +80,7 @@ class OrthogonalDecompositionFusion:
         # 累积冗余度统计
         self._cumulative_redundancy: Dict[str, float] = {}
 
-    # ------------------------------------------------------------------
     # 公开 API
-    # ------------------------------------------------------------------
 
     def fuse(
         self,
@@ -199,9 +195,7 @@ class OrthogonalDecompositionFusion:
         _den = sum((i - _mean_x) ** 2 for i in range(_n))
         return _num / max(_den, _EPS) if abs(_den) > _EPS else 0.0
 
-    # ------------------------------------------------------------------
     # 内部方法
-    # ------------------------------------------------------------------
 
     def _decompose(
         self, features: List[List[float]]
@@ -354,7 +348,6 @@ class OrthogonalDecompositionFusion:
             return 0.0
         return sum(sum(v * v for v in row) for row in features)
 
-
 def orthogonal_decompose_fuse(
     modal_features: Dict[str, List[List[float]]],
     dim: int = 64,
@@ -364,8 +357,7 @@ def orthogonal_decompose_fuse(
     _odf = OrthogonalDecompositionFusion(dim=dim)
     return _odf.fuse(modal_features, priority_order=priority_order)
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -407,7 +399,6 @@ def _smoke_test():
     print(f"[ortho_fuse] novelty trend (dynamic): {_trend}")
 
     print("[OK] OrthogonalDecompositionFusion smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

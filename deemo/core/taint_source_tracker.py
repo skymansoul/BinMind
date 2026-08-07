@@ -17,9 +17,8 @@
   - 不处理间接调用/jump table (保守地标记为tainted -- 宁可误报不漏报)
   - 不跨函数追踪(仅函数内分析) -- 调用者上下文由上层模块提供
 
-参考:
   - Yamaguchi et al., 2014, ACSAC, "Generalized Vulnerability Extrapolation using Abstract Syntax Trees"
-  - SVF (Sui et al., 2021, ICSE), "Value-Flow-Based Program Analysis" -- 值流分析简化为def-use链
+  - SVF, "Value-Flow-Based Program Analysis" -- 值流分析简化为def-use链
 """
 
 from __future__ import annotations
@@ -52,7 +51,6 @@ _SAFE_WRAPPERS = {
     'strncpy', 'strncat', 'memcpy', 'memmove',
 }
 
-
 def _extract_var_defs(pseudocode: str) -> Dict[str, str]:
     """从伪代码中提取变量定义映射 {var_name: definition_expression}。
 
@@ -81,7 +79,6 @@ def _extract_var_defs(pseudocode: str) -> Dict[str, str]:
             defs[var] = expr
 
     return defs
-
 
 def _is_tainted_expr(expr: str, var_defs: Dict[str, str],
                      depth: int = 0, visited: Optional[Set[str]] = None,
@@ -144,7 +141,6 @@ def _is_tainted_expr(expr: str, var_defs: Dict[str, str],
         return True, 'complex expr with function call'
     return False, f'unresolved pattern: {expr[:60]}'
 
-
 def trace_taint_source(
     pseudocode: str,
     func_name: str = "",
@@ -189,7 +185,6 @@ def trace_taint_source(
 
     return result
 
-
 def is_arg_tainted(
     pseudocode: str,
     arg_var: str,
@@ -202,7 +197,6 @@ def is_arg_tainted(
     """
     var_defs = _extract_var_defs(pseudocode)
     return _is_tainted_expr(arg_var, var_defs, max_depth=max_depth)
-
 
 def list_taint_sources(pseudocode: str) -> List[Dict[str, str]]:
     """列出函数内所有用户输入引入点。

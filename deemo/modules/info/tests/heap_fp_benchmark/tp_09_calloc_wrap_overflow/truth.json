@@ -1,0 +1,9 @@
+{
+  "sample_id": "tp_09_calloc_wrap_overflow",
+  "label": "tp",
+  "cwe": "CWE-190",
+  "cve": "CVE-2016-5094 类 (calloc 乘法回绕)",
+  "expect_overflow": true,
+  "trigger": "./sample 0x20000000",
+  "why": "n*8 无符号回绕得到小分配, 写入 2048 字节越界"
+}

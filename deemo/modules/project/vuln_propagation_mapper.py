@@ -14,13 +14,12 @@
 #   对每条路径计算传播概率, 输出受影响组件的风险排序
 # 技术效果: 在已知vendored漏洞数据集上, 比纯SBOM方法多发现
 #   34%的受影响组件 (主要是vendored/静态链接代码)
-# 参考:
-#   Baird & Moin (ICSE 2026) — HGAT依赖图CVE分类,
+#
+#   Baird & Moin — HGAT依赖图CVE分类,
 #     本项目借鉴其图传播但增加代码克隆路径
-#   Konala et al. (IWSEC 2025) — Ansible代码克隆安全传播,
+#   Konala et al. — Ansible代码克隆安全传播,
 #     本项目借鉴其克隆检测但扩展为通用二进制/源码克隆
-#   ISGraphVD (IEEE 2025) — 同源IoT漏洞检测
-from __future__ import annotations
+#   ISGraphVD — 同源IoT漏洞检测
 import hashlib
 import logging
 import math

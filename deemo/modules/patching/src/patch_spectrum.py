@@ -23,8 +23,7 @@
   - 编译器填充的模式（nop sled, int3, 对齐零字节）在频域有
     明确的印记
 
-参考：
-  - 频域分析在恶意软件检测中使用（Spectrum-based Malware Analysis, 2023）
+  - 频域分析在恶意软件检测中使用
   - 本模块将此技术首次应用于补丁差分而非全量二进制
   - 补丁的增量性质使得频谱分析的计算量大幅降低（O(n log n) on diff, not binary）
 """
@@ -37,8 +36,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
 
-
-# ── 离散傅里叶变换（纯 Python，无 numpy 依赖）─────────────────────
+# 离散傅里叶变换（纯 Python，无 numpy 依赖）
 
 def _dft_real(data: List[float]) -> List[complex]:
     """实输入的 1D DFT —— O(n²)，对补丁差分（< 100KB）可接受。
@@ -60,7 +58,6 @@ def _dft_real(data: List[float]) -> List[complex]:
         result.append(complex(real, imag))
     return result
 
-
 def _power_spectrum(fft: List[complex]) -> List[float]:
     """功率谱：|F(k)|²，归一化。"""
     if not fft:
@@ -71,8 +68,7 @@ def _power_spectrum(fft: List[complex]) -> List[float]:
         ps = [v / total for v in ps]
     return ps
 
-
-# ── 补丁差分提取 ──────────────────────────────────────────────────
+# 补丁差分提取
 
 @dataclass
 class PatchDiffVector:
@@ -84,7 +80,6 @@ class PatchDiffVector:
     patch_id: str = ""
     original_hash: str = ""
     patched_hash: str = ""
-
 
 class PatchDiffExtractor:
     """从原始和修补二进制提取差分向量。"""
@@ -159,8 +154,7 @@ class PatchDiffExtractor:
                 regions.append((start, window_diff))
         return regions
 
-
-# ── 频谱特征提取 ──────────────────────────────────────────────────
+# 频谱特征提取
 
 @dataclass
 class SpectralFeatures:
@@ -201,7 +195,6 @@ class SpectralFeatures:
     @property
     def feature_count(self) -> int:
         return len(self.to_vector())
-
 
 class SpectrumFeatureExtractor:
     """从补丁差分提取频域特征。
@@ -280,7 +273,7 @@ class SpectrumFeatureExtractor:
 
         return feats
 
-    # ── 频带能量 ──────────────────────────────────────────────────
+# 频带能量
 
     def _compute_band_energies(self, power: List[float]) -> List[float]:
         """将功率谱均分为 n_bands 个频带。"""
@@ -328,8 +321,7 @@ class SpectrumFeatureExtractor:
         gm = math.exp(log_sum / len(non_zero))
         return min(gm / am, 1.0)
 
-
-# ── 多分辨率频谱 ──────────────────────────────────────────────────
+# 多分辨率频谱
 
 @dataclass
 class MultiResolutionSpectrum:
@@ -360,7 +352,6 @@ class MultiResolutionSpectrum:
             mu = sum(dim_vals) / n
             variance_sum += sum((x - mu) ** 2 for x in dim_vals) / n
         return variance_sum / d
-
 
 class MultiResolutionAnalyzer:
     """多分辨率频谱分析器 — 多窗口大小，分尺度提取特征。"""

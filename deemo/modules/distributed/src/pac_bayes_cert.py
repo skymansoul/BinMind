@@ -3,7 +3,7 @@
 # RL 调度策略 (GRLScheduler) 在有限训练 DAG 上优化 makespan 后，
 # 对新 DAG 的泛化性能缺乏可量化的保证。
 #
-# PAC-贝叶斯界 (McAllester 1999; Catoni 2007 紧化):
+# PAC-贝叶斯界:
 #   E_{h~Q}[R(h)] ≤ E_{h~Q}[R̂_N(h)] + √(KL(Q||P) + log(2√N/δ)) / (2N)
 #   其中 R̂_N = 经验风险, KL = 后验 Q 对先验 P 的散度。
 #

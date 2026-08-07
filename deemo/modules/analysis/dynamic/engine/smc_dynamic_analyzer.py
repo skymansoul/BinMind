@@ -55,7 +55,7 @@ class SMCDynamicAnalyzer:
         if any(k in al for k in ('flush','cache')): return SMCCategory.OBFUSCATION
         return SMCCategory.UNKNOWN
 
-    # --- Round 2: SHA-256页面完整性基线 + 差异可视化 ---
+# Round 2: SHA-256页面完整性基线 + 差异可视化
     def compute_page_integrity_baseline(self, binary_path: str) -> Dict[int, str]:
         """计算所有可执行页面的SHA-256完整性基线
         在二进制加载后立即调用，后续每次detect_modification与此基线比对"""

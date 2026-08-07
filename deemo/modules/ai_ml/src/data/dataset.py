@@ -8,7 +8,7 @@ import os
 import random
 import numpy as np
 
-# ===== 尝试导入torch，失败则回退到纯numpy模式 =====
+# 尝试导入torch，失败则回退到纯numpy模式
 try:
     import torch
     from torch.utils.data import Dataset as _TorchDataset
@@ -29,7 +29,6 @@ class BinaryFuncDataset(_TorchDataset):
         self._path = json_path
         self._load()
 
-    # ----
     def _load(self):
         """Parse JSON or JSONL file into internal samples list."""
         if not os.path.exists(self._path):
@@ -93,7 +92,7 @@ class BinaryFuncDataset(_TorchDataset):
         return len(self._samples)
 
 
-# ===== TripletMiningDataset =====
+# TripletMiningDataset
 class TripletMiningDataset(_TorchDataset):
     """Semi-hard triplet mining for binary function similarity.
 
@@ -165,7 +164,6 @@ class TripletMiningDataset(_TorchDataset):
                 self._label_to_idx[_lbl_key] = []
             self._label_to_idx[_lbl_key].append(_idx)
 
-    # ----
     def _compute_similarity(self, a, b) -> float:
         """Cosine similarity between two feature vectors."""
         if _HAS_TORCH:
@@ -200,7 +198,7 @@ class TripletMiningDataset(_TorchDataset):
         if not _pos_candidates:
             return (anchor_idx, anchor_idx)
 
-        # ---- 最难正样本：相似度最低的同标签样本 ----
+# 最难正样本：相似度最低的同标签样本
         _hardest_pos = _pos_candidates[0]
         _hardest_pos_sim = self._compute_similarity(_a_feat, self._samples[_hardest_pos][0])
         for _pi in _pos_candidates[1:]:
@@ -209,7 +207,7 @@ class TripletMiningDataset(_TorchDataset):
                 _hardest_pos_sim = _sim
                 _hardest_pos = _pi
 
-        # ---- 半困难负样本 ----
+# 半困难负样本
         # 条件：sim(anchor, neg) > sim(anchor, pos) 且 < sim(anchor, pos) + margin
         _neg_candidates = []
         for _lbl, _indices in self._label_to_idx.items():
@@ -261,7 +259,7 @@ class TripletMiningDataset(_TorchDataset):
         return len(self._samples)
 
 
-# ===== collate_fn =====
+# collate_fn
 def collate_fn(batch: list):
     """Batch collation for DataLoader.
 

@@ -21,7 +21,7 @@ _LEGACY_RNG_TRACE = True  # 保留
 class WeakRandomnessDetector(BaseDetector):
     # 检测基于区块环境变量的弱随机数。模式: BLOCKHASH/TIMESTAMP/
     # DIFFICULTY/NUMBER → 算术/哈希 → 条件跳转/外部调用/SSTORE。
-    # 矿工可在单区块内预测操控。CrossInspector(arXiv 2024)报告97%精度。
+    # 矿工可在单区块内预测操控。CrossInspector报告97%精度。
     # 修复方案: Chainlink VRF 或 commit-reveal。
 
     _RANDOMNESS_SOURCES: FrozenSet[str] = frozenset({

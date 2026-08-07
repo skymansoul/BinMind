@@ -127,7 +127,7 @@ class SchedulePerturbator:
 
         return permutations
 
-    # --- 新增: 基于CHESS边界扰动策略 ---
+# 新增: 基于CHESS边界扰动策略
     # Microsoft CHESS论文中的PCT (Preemption Context Tags) 策略：
     # 仅在线程间同步点插入上下文切换，而非随机点，大幅减少排列数
     @staticmethod
@@ -179,7 +179,7 @@ class DeterministicReplayer:
             logger.error("Replay failed: %s", e)
             return ReplayResult(success=False, trace=None, permutations=[])
 
-    # --- 新增: 非确定性事件序列指纹 ---
+# 新增: 非确定性事件序列指纹
     # 对事件序列做SHA256哈希生成指纹，用于跨运行比对
     def fingerprint_trace(self, trace: ReplayTrace) -> str:
         """计算事件序列的SHA256指纹 — 跨运行比对非确定性差异

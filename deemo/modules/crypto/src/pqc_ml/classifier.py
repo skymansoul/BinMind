@@ -65,7 +65,7 @@ class PQCLibraryClassifier:
 
     @staticmethod
     def _default_model_path() -> str:
-        # __file__ → crypto/src/pqc_ml/classifier.py
+# file__ → crypto/src/pqc_ml/classifier.py
         # 模型 → crypto/src/models/pqc_xgb_v1.json
         return os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "pqc_xgb_v1.json")
 

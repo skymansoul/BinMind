@@ -10,8 +10,8 @@
 设计依据:
   传统模糊测试在覆盖平台期依赖随机变异——无向随机游走到达
   未覆盖边的概率随距离指数衰减.
-  AtGAN (Du et al. 2024) 用离线GAN但无法在线适应.
-  Lin (2025) 用LLM做语义变异但推理延迟限制吞吐.
+  AtGAN 用离线GAN但无法在线适应.
+  Lin 用LLM做语义变异但推理延迟限制吞吐.
 
   简化CMA-ES (对角协方差 + rank-μ更新):
     1. 从当前最佳种子出发, 维护对角高斯搜索分布
@@ -26,14 +26,12 @@ import struct
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-
 @dataclass
 class SearchPoint:
     """CMA-ES 搜索点 — 一个候选种子及其适应度."""
     data: bytes
     fitness: float = 0.0  # 覆盖率增益 (越高越好)
     edges_found: int = 0
-
 
 class AdversarialCoverageBreaker:
     """对抗性种子优化器 — 简化 CMA-ES.
@@ -177,7 +175,6 @@ class AdversarialCoverageBreaker:
         self._best_fitness = -float('inf')
         self._stagnation_count = 0
 
-
 class CoverageFrontierTracker:
     """覆盖边界追踪器 — 识别距离当前覆盖最近的未覆盖边.
     用于为 ACB 选择下一组优化目标.
@@ -217,7 +214,6 @@ class CoverageFrontierTracker:
     def frontier_size(self) -> int:
         return len(self._frontier)
 
-
 class FullCMAES:
     """完整 CMA-ES — 带进化路径 + 累积步长自适应 + 重启策略.
 
@@ -228,7 +224,7 @@ class FullCMAES:
       - 适用于 ≤ 512 字节的种子 (O(d²) 内存可接受)
 
     参考: Hansen (2016) "The CMA Evolution Strategy: A Tutorial"
-    arXiv:1604.00772 — 实现 (μ/μ_w, λ)-CMA-ES 的核心机制.
+ — 实现 (μ/μ_w, λ)-CMA-ES 的核心机制.
     """
 
     def __init__(self, initial_mean: bytes, sigma0: float = 2.0,

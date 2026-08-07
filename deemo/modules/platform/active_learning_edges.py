@@ -20,13 +20,13 @@
                    验证以建立准确模型(主动学习)
 
 与已有工作的区分:
-  Smart Cuts (2025): 主动学习用于代码漏洞检测(CodeBERT+Big-Vul数据集)，
+  Smart Cuts: 主动学习用于代码漏洞检测(CodeBERT+Big-Vul数据集)，
     非传播图边选择。将dataset map引入样本选择，不涉及图边查询。
   本模块: 首次将不确定性采样+委员会查询+预期模型变化三种策略
           应用于漏洞传播图的边调查优先级排序。
 
-ref: Settles (2010) "Active Learning Literature Survey".
-ref: Smart Cuts (arXiv:2506.20444) -- 主动学习在漏洞检测中的最新应用。
+ref: Settles "Active Learning Literature Survey".
+ref: Smart Cuts -- 主动学习在漏洞检测中的最新应用。
 """
 
 from __future__ import annotations

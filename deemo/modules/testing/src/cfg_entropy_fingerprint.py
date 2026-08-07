@@ -11,9 +11,9 @@
 #     a) 精确图同构 — O(n^3), 对编译器/优化级别变化敏感
 #     b) 指令级特征 (助记符直方图、立即数模式) — 跨编译器时脆弱
 #   本模块提供第三种路径: CFG的结构熵特征向量。该向量:
-#     - 对指令级变化不敏感 (不同寄存器分配不影响分支结构)
-#     - 计算 O(n), n=基本块数, 远低于图同构
-#     - 可作为GNN匹配 (Peng et al. 2024) 的快速预筛选器,
+# 对指令级变化不敏感 (不同寄存器分配不影响分支结构)
+# 计算 O(n), n=基本块数, 远低于图同构
+# 可作为GNN匹配 的快速预筛选器,
 #       先过滤掉90%+不匹配对, 再对候选做精确图匹配
 #
 # 熵特征维度 (共9维):
@@ -35,7 +35,7 @@
 #   签名汉明距离 < threshold的函数对进入精确比较，其余直接排除。
 #   参数b=64时预筛选率约92% (经验值)。
 #
-# 参考文献:
+# 文献:
 #   Peng et al. 2024, "Fast Cross-Platform Binary Code Similarity Detection
 #     Framework Based on CFGs Taking Advantage of NLP and Inductive GNN",
 #     Chinese Journal of Electronics 33(1):128-138.
@@ -43,7 +43,7 @@
 #       本项目取其CFG作为匹配基础的思路, 但以熵特征替代GNN嵌入,
 #       作为更轻量的预筛选层 (熵计算O(n) vs GNN推理若干forward passes),
 #       并在全量精确比较中直接使用余弦距离而无需GPU。
-#   BinDiff (zynamics/Google, 2004-) — 商用二进制差分, 图同构+调用图指纹。
+#   BinDiff — 商用二进制差分, 图同构+调用图指纹。
 #     其多级匹配策略与本项目的LSH预筛选+熵精确比较同构。
 import hashlib
 import math
@@ -89,7 +89,7 @@ class CFGFeatures:
         return [x / norm for x in v]
 
 
-# ---- CFG结构解析 ----
+# CFG结构解析
 
 class CFGStructureParser:
     """从反汇编的反向边列表解析CFG结构, 提取熵特征。
@@ -231,7 +231,7 @@ class CFGStructureParser:
         return sum(path_lens) / len(path_lens)
 
 
-# ---- 距离与匹配 ----
+# 距离与匹配
 
 def _shannon(probabilities: List[float]) -> float:
     """香农熵, 输入为概率列表 (和应为1)。"""
@@ -336,7 +336,7 @@ class CFGEntropyMatcher:
         scored.sort(key=lambda x: x[1])
         return scored[:top_k]
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             "references": len(self._references),

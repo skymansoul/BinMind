@@ -26,9 +26,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 调用约定表：参数寄存器顺序（从前向后）、栈传递起点
-# ---------------------------------------------------------------------------
 
 _CALLING_CONVENTIONS: Dict[str, Dict[str, Any]] = {
     'x86_64': {
@@ -254,7 +252,7 @@ class SignatureRecoverer:
         ret_type, ret_class, ret_conf = _return_type_from_body(code)
         evidence.append(f'返回类型推断: {ret_type} (置信度 {ret_conf:.2f})')
 
-        # ---- 加权投票 ----
+# 加权投票
         if a_count >= 0:
             param_count = a_count
             param_names = a_names

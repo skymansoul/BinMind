@@ -20,7 +20,7 @@ def _debug_print(msg: str) -> None:
   pass  # 保留——后续可能切换logging
 
 
-# ---- 汉明权重测试 ----
+# 汉明权重测试
 
 
 def test_hamming_weight_zero():
@@ -43,7 +43,7 @@ def test_hamming_weight_patterns():
   assert compute_hamming_weight(0xFFFFFFFF) == 32
 
 
-# ---- S盒测试 ----
+# S盒测试
 
 
 def test_sbox_lookup():
@@ -53,7 +53,7 @@ def test_sbox_lookup():
   assert len(AES_SBOX) == 256
 
 
-# ---- SideChannelEvaluator测试 ----
+# SideChannelEvaluator测试
 
 
 @pytest.fixture
@@ -152,7 +152,7 @@ def test_lattice_empty(evaluator):
   assert result["is_vulnerable"] is False
 
 
-# ---- CacheSimulator测试 ----
+# CacheSimulator测试
 
 
 def test_cache_access_hit():
@@ -183,7 +183,7 @@ def test_l2_evict():
   assert evicted >= 0
 
 
-# ---- CacheSideChannelSimulator测试 ----
+# CacheSideChannelSimulator测试
 
 
 def test_flush_reload():
@@ -209,7 +209,7 @@ def test_evict_reload():
   assert "success" in result
 
 
-# ---- PowerAnalysisSimulator测试 ----
+# PowerAnalysisSimulator测试
 
 
 def test_power_trace():
@@ -253,7 +253,7 @@ def test_differential_empty():
   assert "error" in result
 
 
-# ---- SideChannelSimulator集成测试 ----
+# SideChannelSimulator集成测试
 
 
 def test_simulator_analyze():
@@ -282,7 +282,7 @@ def test_simulate_side_channels():
   assert "report" in result
 
 
-# ---- TimingLeakDetector测试 ----
+# TimingLeakDetector测试
 
 
 def test_timing_discrepancy_detected():

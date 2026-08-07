@@ -4,14 +4,13 @@
 # 标记为漏洞——包括安全的 printf("hello")。
 # 常量传播可确定格式化参数是否为编译期常量字符串，从而过滤误报。
 #
-# 算法: 稀疏条件常量传播 (SCC, Wegman & Zadeck 1991 的简化版)
+# 算法: 稀疏条件常量传播
 #   1. 在反编译代码的 SSA 形式上做格(lattice)传播
 #   2. 格值: top(未知) / const(常量) / bottom(非常量)
 #   3. 对每个变量, 追踪其所有赋值路径上的常量值
 #   4. 若 printf 的第一个参数在 meet 操作后的格值为 const →
 #      该调用点是安全的 (格式化字符串是编译期常量)
 
-from __future__ import annotations
 from typing import Dict, Optional, Set, Tuple
 from enum import Enum
 

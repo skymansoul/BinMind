@@ -7,9 +7,9 @@
 """加密算法常量熵指纹 - 通过常量池熵剖面识别加密函数
 
 现有加密识别方法:
-  - BinCrypto (OOPSLA 2025): 区间域仿真+相似度分析, 83.2% 准确率, 需仿真
-  - Mnemocrypt (BAR 2025): 随机森林在助记符上, ~6s/样本, 需训练
-  - CipherTrace (2024): 动态 VMI trace 分析, 需执行环境
+  - BinCrypto: 区间域仿真+相似度分析, 83.2% 准确率, 需仿真
+  - Mnemocrypt: 随机森林在助记符上, ~6s/样本, 需训练
+  - CipherTrace: 动态 VMI trace 分析, 需执行环境
 
 本模块的方法: 加密算法需要常量表 (S-box, 轮常量, 初始向量)
 这些常量表在字节级熵剖面上产生独特的签名
@@ -48,9 +48,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 已知加密算法的常量熵签名--(均值, 标准差, 块大小)
-# ---------------------------------------------------------------------------
 
 _CRYPTO_SIGNATURES: Dict[str, Tuple[float, float, int]] = {
     # AES: 256 字节全排列 S-box, 全窗熵 8.0 (理论最大)

@@ -1,5 +1,5 @@
 # 少样本主动学习采样器 — 联合不确定性/多样性/难度感知的采样策略
-# 参考: Smart Cuts (Lan et al. arXiv 2506.20444,, 2025) 的数据集图剪枝主动学习
+# Smart Cuts 的数据集图剪枝主动学习
 # "Enhance Active Learning for Vulnerability Detection by Pruning Hard-to-Learn Data"
 # 核心: Dataset Map概念 — 通过置信度/正确性/可变性三维度识别hard-to-learn样本并剪枝
 #
@@ -19,9 +19,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class SampleMetadata:
@@ -55,9 +53,7 @@ class SamplingStrategy(Enum):
     RANDOM = 'random'                    # 随机基准
 
 
-# ---------------------------------------------------------------------------
 # Few-Shot主动学习采样器
-# ---------------------------------------------------------------------------
 
 class FewShotActiveSampler:
     """少样本主动学习采样器

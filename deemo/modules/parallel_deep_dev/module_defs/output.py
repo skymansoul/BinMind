@@ -21,9 +21,9 @@ OUTPUT = {
             "差异点：当前报告是线性的模板填充，缺乏受众自适应和证据溯源。"
         ),
         "papers": [
-            {"id": "arXiv:2604.17948", "title": "RAVEN: Retrieval-Augmented Vulnerability Exploration Network",
+            {"id": "", "title": "RAVEN: Retrieval-Augmented Vulnerability Exploration Network",
              "venue": "arXiv 2026", "key_idea": "4-agent RAG框架 → Google Project Zero RCA模板报告，15种CWE评估"},
-            {"id": "arXiv:2605.15097", "title": "Veritas: Grounding LLM Agents for Reliable Vulnerability Reasoning over Stripped Binaries",
+            {"id": "", "title": "Veritas: Grounding LLM Agents for Reliable Vulnerability Reasoning over Stripped Binaries",
              "venue": "arXiv 2026", "key_idea": "证据驱动三段式验证: 静态切片+LLM发现+多代理验证 → 90%召回,零误报"},
         ],
     },

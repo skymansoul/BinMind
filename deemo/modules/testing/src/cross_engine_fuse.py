@@ -22,12 +22,12 @@
 #     (假设函数在二进制中的相对偏移与引擎地址线性相关——对主流
 #     反编译器成立，因其通常保持Section内地址单调性)。
 #
-# 参考文献:
-#   BinDiff (zynamics/Google, 2004-) — 结构化二进制差分，函数匹配的
+# 文献:
+#   BinDiff — 结构化二进制差分，函数匹配的
 #     图同构+调用图指纹方法。本项目取其多级匹配策略但简化了图同构。
-#   Diaphora (Joxean Koret, 2015-) — IDA二进制差分插件，多级启发式
+#   Diaphora — IDA二进制差分插件，多级启发式
 #     函数匹配。本项目参考其"从强匹配外推到弱匹配"的渐进式映射思想。
-#   FirmUp (David et al. PLDI 2016) — 跨编译器变体的二进制代码精确匹配，
+#   FirmUp — 跨编译器变体的二进制代码精确匹配，
 #     基于stranded-ness图同构。本项目取其规范化地址空间概念但面向
 #     工具链对比而非编译器变体对比。
 import hashlib
@@ -96,7 +96,7 @@ class CrossEngineFuser:
         self._profiles: Dict[str, EngineCoverageProfile] = {}
         self._mapping_built = False
 
-    # ---- 锚点注册 ----
+    # 锚点注册
     def add_anchors(self, engine_name: str,
                     functions: List[Dict[str, Any]]) -> int:
         """注册一个引擎的函数列表作为地址映射锚点。
@@ -137,7 +137,7 @@ class CrossEngineFuser:
         self._mapping_built = False
         return count
 
-    # ---- 地址映射构建 ----
+    # 地址映射构建
     def build_mapping(self) -> int:
         """构建跨引擎地址映射。对每个规范偏移聚合各引擎对应地址。
 
@@ -162,7 +162,7 @@ class CrossEngineFuser:
         self._mapping_built = True
         return len(self._canon_to_engine)
 
-    # ---- 规范化 ----
+    # 规范化
     def normalize_address(self, engine_name: str,
                           engine_address: int) -> Optional[int]:
         """将引擎地址映射到规范偏移。使用最近锚点插值。
@@ -209,7 +209,7 @@ class CrossEngineFuser:
                 canon_edges.add((c_src, c_dst))
         return canon_edges
 
-    # ---- 覆盖摄入 ----
+    # 覆盖摄入
     def ingest_coverage(self, engine_name: str,
                         canon_edges: Set[Tuple[int, int]],
                         canon_blocks: Optional[Set[int]] = None) -> None:
@@ -228,7 +228,7 @@ class CrossEngineFuser:
         profile.total_blocks = len(profile.covered_canonical_offsets)
         profile.timestamp = time.time()
 
-    # ---- 差异分析 ----
+    # 差异分析
     def coverage_gap(self, engine_a: str,
                      engine_b: str) -> CoverageGap:
         """计算两个引擎的覆盖差异。"""
@@ -293,7 +293,7 @@ class CrossEngineFuser:
             }
         return report
 
-    # ---- 统计 ----
+    # 统计
     def stats(self) -> Dict[str, Any]:
         return {
             "engines": list(self._profiles.keys()),

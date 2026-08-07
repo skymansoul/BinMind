@@ -1,5 +1,5 @@
-# 创建: 2025-08-12 21:35
-# 修改: 2025-08-12 — 基元分解 + 行为签名匹配 + trampoline 微补丁
+# 创建: 2026-04-20 21:35
+# 修改: 2026-04-20 — 基元分解 + 行为签名匹配 + trampoline 微补丁
 """
 表达式基元对齐器 — 源码补丁到二进制微补丁的精确映射。
 
@@ -26,11 +26,11 @@
 
 ref: Dilipa (NDSS) — AST-based lifted C micropatching,
      本项目将 Dilipa 的源码 AST 对齐替换为基元行为签名对齐
-ref: BASICS (arXiv:2511.19670, 2025) — 二进制层 buffer overflow
+ref: BASICS — 二进制层 buffer overflow
      修复, 本项目将其 trampoline 插入策略推广到任意补丁类型
-ref: SCRIBE (2026) — binary-aware recompilation, 本项目将
+ref: SCRIBE — binary-aware recompilation, 本项目将
      recompilation 路径替换为直接二进制重写 + 关系验证
-ref: PatchBin (AEiC 2026) — fuzzing+static analysis 二进制修复,
+ref: PatchBin — fuzzing+static analysis 二进制修复,
      本项目聚焦于补丁映射的语义保持而非漏洞发现
 """
 
@@ -80,7 +80,7 @@ class PatchTransform:
     trampoline_target: int = 0       # trampoline 跳转目标 (新代码地址)
 
 
-# --- 基元提取 ---
+# 基元提取
 # 从编译器 AST/IR 或反编译输出中分解出表达式基元。
 
 class PrimitiveDecomposer:
@@ -144,7 +144,7 @@ class PrimitiveDecomposer:
         return ExprPrimitive(kind=kind, op_signature=op)
 
 
-# --- 行为签名匹配 ---
+# 行为签名匹配
 # 在二进制中搜索与源码基元对应的指令序列。
 # 不使用精确指令匹配——用行为签名 (I/O 效果) 做模糊匹配。
 
@@ -235,7 +235,7 @@ class BehavioralSignatureMatcher:
         return primitives
 
 
-# --- 二进制微补丁生成 ---
+# 二进制微补丁生成
 # 将对齐后的基元变换编译为二进制重写指令。
 
 class MicroPatchGenerator:
@@ -308,7 +308,7 @@ class MicroPatchGenerator:
         return b'\xE9' + struct.pack('<i', offset)
 
 
-# --- 后补丁关系验证 ---
+# 后补丁关系验证
 # 确保补丁后的二进制行为等价于补丁前的二进制 + 源码修改。
 
 class RelationalEquivalenceVerifier:

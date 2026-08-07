@@ -17,7 +17,6 @@ References:
   - Gennissen & O'Keeffe, 2023, "HeapHop"
 """
 
-from __future__ import annotations
 
 import logging
 import re

@@ -1,0 +1,111 @@
+{
+  "summary": {
+    "TP": 5,
+    "FP": 2,
+    "FN": 1,
+    "TN": 4,
+    "time_ms": 4538.42,
+    "recall": 83.33,
+    "precision": 71.43,
+    "fpr": 33.33,
+    "f1": 0.7692
+  },
+  "rows": [
+    {
+      "sample": "tn_01_null_after_free",
+      "expect_uaf": false,
+      "verdict": "TN",
+      "count": 0,
+      "types": "",
+      "time_ms": 984.76
+    },
+    {
+      "sample": "tn_02_reassign_after_free",
+      "expect_uaf": false,
+      "verdict": "TN",
+      "count": 0,
+      "types": "",
+      "time_ms": 112.09
+    },
+    {
+      "sample": "tn_03_guarded_use",
+      "expect_uaf": false,
+      "verdict": "FP",
+      "count": 1,
+      "types": "double_free",
+      "time_ms": 102.45
+    },
+    {
+      "sample": "tn_04_realloc_self",
+      "expect_uaf": false,
+      "verdict": "TN",
+      "count": 0,
+      "types": "",
+      "time_ms": 97.62
+    },
+    {
+      "sample": "tn_05_branch_exclusive",
+      "expect_uaf": false,
+      "verdict": "TN",
+      "count": 0,
+      "types": "",
+      "time_ms": 97.82
+    },
+    {
+      "sample": "tn_06_different_scope",
+      "expect_uaf": false,
+      "verdict": "FP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 88.72
+    },
+    {
+      "sample": "tp_01_direct_uaf",
+      "expect_uaf": true,
+      "verdict": "TP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 910.32
+    },
+    {
+      "sample": "tp_02_alias_uaf",
+      "expect_uaf": true,
+      "verdict": "TP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 93.08
+    },
+    {
+      "sample": "tp_03_cross_func_uaf",
+      "expect_uaf": true,
+      "verdict": "TP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 967.93
+    },
+    {
+      "sample": "tp_04_realloc_alias_uaf",
+      "expect_uaf": true,
+      "verdict": "TP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 89.89
+    },
+    {
+      "sample": "tp_05_loop_uaf",
+      "expect_uaf": true,
+      "verdict": "FN",
+      "count": 0,
+      "types": "",
+      "time_ms": 910.25
+    },
+    {
+      "sample": "tp_06_conditional_uaf",
+      "expect_uaf": true,
+      "verdict": "TP",
+      "count": 1,
+      "types": "use_after_free",
+      "time_ms": 83.49
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # LRU / TTL / LFU 缓存实现
 # 二进制分析管线中缓存中间结果（反汇编、特征向量、GNN 嵌入）可消除重复计算。
-# Hybrid Fuzzing with LLM [arXiv:2511.03995 [待验证]] 中语义反馈模块使用嵌入相似性缓存
+# Hybrid Fuzzing with LLM] 中语义反馈模块使用嵌入相似性缓存
 # 来判定行为新颖性 —— 此处提供通用的时间感知型淘汰策略。
 import threading
 import time
@@ -8,7 +8,7 @@ import functools
 from typing import Dict, Any, Optional, Callable, Tuple, OrderedDict as OD
 from collections import OrderedDict
 
-# ---- LRU Cache (基于 OrderedDict) ---------------------------------------
+# LRU Cache (基于 OrderedDict)
 
 class LRUCache:
     """线程安全的 LRU 缓存。基于 OrderedDict 的移动-到-末尾策略。
@@ -58,7 +58,7 @@ class LRUCache:
         with self._lock:
             return key in self._store
 
-# ---- TTL Cache (带过期时间的 LRU) ---------------------------------------
+# TTL Cache (带过期时间的 LRU)
 
 class TTLCache:
     """LRU + TTL 缓存。每个条目在 TTL 秒后自动失效。
@@ -117,7 +117,7 @@ class TTLCache:
             self._evict_expired()
             return len(self._store)
 
-# ---- LFU Cache (最不频繁使用) -------------------------------------------
+# LFU Cache (最不频繁使用)
 
 class LFUCache:
     """LFU (Least Frequently Used)。频率相同时回退 LRU。
@@ -193,7 +193,7 @@ class LFUCache:
         with self._lock:
             return len(self._kv)
 
-# ---- memoize 装饰器 ------------------------------------------------------
+# memoize 装饰器
 
 def memoize(maxsize: int = 128):
     """函数结果缓存装饰器。使用 LRU 策略。"""
@@ -213,7 +213,7 @@ def memoize(maxsize: int = 128):
         return wrapper
     return decorator
 
-# ---- TTL memoize ---------------------------------------------------------
+# TTL memoize
 
 def ttl_memoize(ttl_seconds: float = 60.0, maxsize: int = 256):
     """带 TTL 过期的 memoize 装饰器。"""

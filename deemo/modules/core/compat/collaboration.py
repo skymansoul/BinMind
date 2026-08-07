@@ -79,7 +79,7 @@ class CollaborationManager:
                         self._users.append(u)
             except Exception: pass  # 修复: bare except → Exception
 
-    # --- User management ---
+# User management
     def register_user(self, username, password, role=None):
         if not username or not username.strip(): return (False, 'username cannot be empty')
         if len(password) < 6: return (False, 'password too short')
@@ -125,7 +125,7 @@ class CollaborationManager:
 
     def list_users(self): return list(self._users)
 
-    # --- ACL management ---
+# ACL management
     def set_project_acl(self, project_id: str, user_id: str, permission_mask: int) -> bool:
         """设置项目级 ACL。permission_mask: bit0=read, bit1=write, bit2=admin。"""
         self._acl.setdefault(project_id, {})[user_id] = permission_mask
@@ -145,7 +145,7 @@ class CollaborationManager:
             return bool(perms & 0x02)
         return False
 
-    # --- Git-style binary version management ---
+# Git-style binary version management
     def init_binary_repo(self, project_id, user_id=None):
         if project_id in self._projects:
             return (False, 'project already exists')
@@ -211,7 +211,7 @@ class CollaborationManager:
         with open(out, 'wb') as f: f.write(ver.get('data', b''))
         return (True, out)
 
-    # --- Comments and vulnerability status ---
+# Comments and vulnerability status
     def add_comment(self, user_id, target_id, target_type, content):
         cid = str(_uuid.uuid4())[:8]
         self._comments.append({'comment_id': cid, 'user_id': user_id,
@@ -239,8 +239,8 @@ class CollaborationManager:
     def add_project_member(self, pn, uid, role):
         return True
 
-    # --- 多审查者共识机制 ---
-    # 参考: Jamshidi et al. (2025) "Multi-LLM Reasoning" — tri-agent 投票架构
+# 多审查者共识机制
+# Jamshidi et al. "Multi-LLM Reasoning" — tri-agent 投票架构
     # 将漏洞确认变为多审查者投票，减少单人误判
     # 阈值: ≥2/3 同意 → confirmed; 1/3 → disputed; 0 → dismissed
 

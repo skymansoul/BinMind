@@ -16,7 +16,7 @@
 # 过滤 soundness: 所有过滤判定均为 under-approximation of danger,
 #   即: 被过滤的告警在所有具体执行中确实不会溢出.
 #
-# 创建: 2026-08-06
+# 创建: 2026-06-25
 
 from typing import Dict, List, Optional, Tuple
 from .heap_slice_trace import BackwardSliceTracer, SourceKind, TaintSource
@@ -116,9 +116,17 @@ class HeapFPFilter:
         """Stage 3: Allocation-Site Correlation.
 
         若此写入的指针与之前跟踪的分配一致, 且大小也一致 → 过滤.
+        write_size 缺失时跳过, 因为未知大小不应被当作安全.
         """
-        ptr_reg = finding.get("ptr_operand", "")
-        alloc_addr = alloc_tracker._ptr_to_alloc.get(ptr_reg)
+        write_sz = finding.get("write_size")
+        if write_sz is None:
+            return False
+
+        # 优先使用 finding 记录的快照地址, 避免 ptr_map 状态飘移
+        alloc_addr = finding.get("_snapshot_alloc_addr")
+        if alloc_addr is None:
+            ptr_reg = finding.get("ptr_operand", "")
+            alloc_addr = alloc_tracker._ptr_to_alloc.get(ptr_reg)
         if alloc_addr is None:
             return False
 
@@ -126,7 +134,6 @@ class HeapFPFilter:
         if alloc is None:
             return False
 
-        write_sz = finding.get("write_size", 0)
         if alloc.alloc_size.is_singleton and write_sz <= alloc.alloc_size.lo:
             finding["fp_stage"] = "stage3_alloc_correlation"
             return True

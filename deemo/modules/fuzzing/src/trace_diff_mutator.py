@@ -20,11 +20,10 @@ Phase 2 (Mutate): 对分叉点附近的基本块所依赖的输入字节进行�
 - trace_diff (本模块): 从"两条轨迹在哪里分叉"中定位决策点，指导变异方向
 前者回答"这是什么字段"，后者回答"我应该变异哪里来发现新行为"。
 
-参考:
-- ChainFuzz (Deng et al., USENIX Security 2025): 跨层差分定向 fuzz，
+- ChainFuzz: 跨层差分定向 fuzz，
   使用 LCS 对齐 + 分叉点识别来 guide mutation。
   本项目将 USENIX 论文的 idea 从"供应链跨层"适配到"单层格式校验变异的决策定位"。
-- ProFuzzer (You et al., S&P 2019): 基于执行反馈的敏感字节定位，
+- ProFuzzer: 基于执行反馈的敏感字节定位，
   本项目用 trace diff 替代其 probe-based 方法，在格式校验路径较⻓时更高效。
 """
 
@@ -36,13 +35,11 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
 class TraceNode(str, Enum):
     """Trace 节点的类型标记。"""
     BASIC_BLOCK = "bb"
     FUNCTION_CALL = "call"
     EDGE = "edge"
-
 
 @dataclass
 class TraceEntry:
@@ -51,7 +48,6 @@ class TraceEntry:
     node_type: TraceNode = TraceNode.BASIC_BLOCK
     input_bytes_touched: List[int] = field(default_factory=list)  # 输入字节偏移列表
     depth: int = 0
-
 
 @dataclass
 class BifurcationPoint:
@@ -63,7 +59,6 @@ class BifurcationPoint:
     divergence_distance: int = 0      # 分叉后多少步内保持不同
     confidence: float = 0.5           # 多次采样后该分叉点保持稳定的比例
 
-
 @dataclass
 class TraceDiffResult:
     """一次差分分析的结果。"""
@@ -73,7 +68,6 @@ class TraceDiffResult:
     bifurcation_points: List[BifurcationPoint] = field(default_factory=list)
     # 每个输入字节的"决策影响力"分数 (越高表示该字节越可能导致分叉)
     byte_influence: Dict[int, float] = field(default_factory=dict)
-
 
 class TraceDiffMutator:
     """差分跟踪制导变异器。
@@ -109,7 +103,7 @@ class TraceDiffMutator:
             fail_node = trace_fail[bif_idx].node_id if bif_idx < len(trace_fail) else "end"
             self._bifurcation_histogram[(succ_node, fail_node)] += 1
 
-    # ── LCS 对齐 ─────────────────────────────────────────────
+# LCS 对齐
     @staticmethod
     def _lcs_align(a: List[TraceEntry], b: List[TraceEntry]
                     ) -> List[Tuple[int, int]]:
@@ -140,7 +134,7 @@ class TraceDiffMutator:
         pairs.reverse()
         return pairs
 
-    # ── 分叉点检测 ───────────────────────────────────────────
+# 分叉点检测
     @staticmethod
     def _find_first_bifurcation(a: List[TraceEntry], b: List[TraceEntry],
                                  lcs: List[Tuple[int, int]]) -> Optional[int]:
@@ -156,7 +150,7 @@ class TraceDiffMutator:
             return max_len
         return None
 
-    # ── 分析 ─────────────────────────────────────────────────
+# 分析
     def analyze(self) -> TraceDiffResult:
         """基于累积的采样数据输出稳定的分叉点与字节影响力评分。"""
         result = TraceDiffResult(
@@ -198,7 +192,7 @@ class TraceDiffMutator:
         self._last_diff = result
         return result
 
-    # ── 分叉手术 ─────────────────────────────────────────────
+# 分叉手术
     def bifurcation_surgery(self, data: bytes,
                              diff: Optional[TraceDiffResult] = None,
                              perturbation_range: int = 4

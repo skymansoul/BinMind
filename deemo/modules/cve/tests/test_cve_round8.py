@@ -7,13 +7,11 @@ import time
 from modules.cve.src.cve_kb import CVEKnowledgeBase
 from modules.cve.src.cve_models import CVEEntry, _make_test_entry
 
-
 @pytest.fixture
 def kb():
     db = CVEKnowledgeBase(":memory:")
     yield db
     db.close()
-
 
 @pytest.fixture
 def seeded_kb():
@@ -31,8 +29,7 @@ def seeded_kb():
     yield db
     db.close()
 
-
-# ===== Embedding index (8 tests) =====
+# Embedding index (8 tests)
 
 class TestEmbeddingIndex:
     def test_build_empty(self, kb):
@@ -55,7 +52,7 @@ class TestEmbeddingIndex:
         # use min_score=0 to see all matches in a tiny corpus
         results = idx.search("remote code execution", min_score=0.0)
         assert len(results) > 0
-        # top result should be one of the RCE entries (0001 or 0004)
+        # top result should be one of the RCE entries
         top_cve = results[0][0].cve_id
         assert top_cve in ("CVE-2024-0001", "CVE-2024-0004")
 
@@ -100,8 +97,7 @@ class TestEmbeddingIndex:
         idx.build()  # rebuild
         assert idx.vocab_size == first_vocab  # same data, same vocab
 
-
-# ===== VEX generation (7 tests) =====
+# VEX generation (7 tests)
 
 class TestVEXGeneration:
     def test_make_basic_vex(self):
@@ -180,8 +176,7 @@ class TestVEXGeneration:
             doc = json.load(f)
         assert doc["bomFormat"] == "CycloneDX"
 
-
-# ===== Changelog (8 tests) =====
+# Changelog (8 tests)
 
 class TestChangelog:
     def test_diff_entries_no_change(self):

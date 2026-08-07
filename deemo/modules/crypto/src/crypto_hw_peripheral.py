@@ -7,11 +7,11 @@
 设计意图:
   嵌入式固件通常使用SoC内置的硬件加密加速器(AES/SHA/TRNG/PKA引擎),
   通过MMIO寄存器映射进行访问。识别固件使用了哪些加密外设对安全审计至关重要:
-    (a) 硬件加速器的已知漏洞(如CVE-2022-xxxx影响某型号AES引擎)。
+    (a) 硬件加速器的已知漏洞。
     (b) 固件是否回退到软件实现(安全问题 — 软件实现可能有侧信道泄漏)。
     (c) 供应链: 芯片型号声称包含加密引擎, 但固件是否实际使用了它?
 
-  既有MMIO检测工具(XtractIO 2025)识别通用MMIO访问模式, 不做加密特化。
+  既有MMIO检测工具识别通用MMIO访问模式, 不做加密特化。
   本模块内置常见加密外设的寄存器地址指纹库, 通过MMIO访问模式匹配识别。
 
   检测策略:
@@ -20,8 +20,7 @@
     3. DMA descriptor模式(AES-GCM的scatter-gather DMA链)。
     4. 字符串指纹(crypto/trng/aes/hash引擎名称)。
 
-参考:
-  - XtractIO (2025): 通用MMIO地址静态提取 — 本模块在XtractIO的通用检测基础上
+  - XtractIO: 通用MMIO地址静态提取 — 本模块在XtractIO的通用检测基础上
     增加加密特化的外设指纹库。
   - ARM Cortex-M CRYP1 hardware accelerator reference.
   - NXP CAAM (i.MX series) reference manual.
@@ -36,7 +35,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class PeripheralType(Enum):
     AES_ACCEL = 0
     SHA_ACCEL = 1
@@ -44,7 +42,6 @@ class PeripheralType(Enum):
     PKA = 3           # Public Key Accelerator (RSA/ECC)
     COMBO = 4         # 组合加密引擎
     DMA_CRYPTO = 5    # DMA辅助加密
-
 
 @dataclass
 class PeripheralFingerprint:
@@ -62,8 +59,7 @@ class PeripheralFingerprint:
     # 操作序列模式(如AES: 写KEY→写IV→写CTRL→读STATUS)
     op_sequence: List[bytes] = field(default_factory=list)
 
-
-# ── 已知加密外设指纹库 ──
+# 已知加密外设指纹库
 
 _KNOWN_PERIPHERALS: List[PeripheralFingerprint] = [
     # ARM Cortex-M CRYP1 (STM32F4/F7/H7系列)
@@ -134,7 +130,6 @@ _KNOWN_PERIPHERALS: List[PeripheralFingerprint] = [
     ),
 ]
 
-
 @dataclass
 class HwPeripheralReport:
     peripheral: PeripheralFingerprint
@@ -142,7 +137,6 @@ class HwPeripheralReport:
     confidence: float = 0.0
     evidence: List[str] = field(default_factory=list)
     base_address_found: int = 0
-
 
 def fingerprint_peripherals(data: bytes, strings: Optional[List[str]] = None
                             ) -> List[HwPeripheralReport]:
@@ -215,7 +209,6 @@ def fingerprint_peripherals(data: bytes, strings: Optional[List[str]] = None
     # 按置信度降序排列
     reports.sort(key=lambda r: -r.confidence)
     return reports
-
 
 def summarize_peripherals(reports: List[HwPeripheralReport]) -> Dict[str, int]:
     """统计各类型加密外设的检测数量。"""

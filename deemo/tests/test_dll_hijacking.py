@@ -28,7 +28,7 @@ class TestDLLHijacking(unittest.TestCase):
         analyzer = DLLHijackAnalyzer()
 
         # 测试已知可劫持DLL的风险评估
-lass字段完整性$/d
+# lass字段完整性$/d
         self.assertEqual(
             analyzer._evaluate_risk("version.dll", False, False, True, ImportType.BY_NAME),
             HijackRiskLevel.HIGH

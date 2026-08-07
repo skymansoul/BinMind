@@ -1,8 +1,7 @@
 """补丁测试用例生成器 —— 输入合成，验证补丁有效性。
 
-参考：
-- BASICS [Fang+, arXiv:2511.19670] concolic 执行测试生成
-- PoC-Adapt [arXiv:2604.06618] 语义感知 PoC 合成
+- BASICS concolic 执行测试生成
+- PoC-Adapt 语义感知 PoC 合成
 - LearnFrom CFG 节点对齐测试生成
 
 混合策略：快速路径用签名驱动的规则生成，慢速路径构建符号约束
@@ -18,7 +17,6 @@ from enum import Enum
 
 __log = logging.getLogger(__name__)
 
-
 class TestKind:
     """测试用例类型 —— 覆盖不同验证维度。"""
     BOUNDARY = "boundary"           # 边界值
@@ -29,7 +27,6 @@ class TestKind:
     RANDOM = "random"               # 随机 fuzz
     CORPUS = "corpus"               # 语料库派生
     CONSTRAINT = "constraint"        # 约束求解
-
 
 @dataclass
 class TestCase:
@@ -42,7 +39,6 @@ class TestCase:
     severity: float = 0.5
     description: str = ""
     generated_at: str = ""
-
 
 @dataclass
 class TestSuite:
@@ -72,8 +68,7 @@ class TestSuite:
             'recommendations': self.recommendations,
         }
 
-
-# ── 测试输入生成器注册表 ──────────────────────────────────────────
+# 测试输入生成器注册表
 # 每种漏洞类型对应一组输入，模拟攻击载荷验证补丁
 
 _TEST_GENERATORS: Dict[str, Callable[[], bytes]] = {
@@ -106,7 +101,6 @@ _TEST_GENERATORS: Dict[str, Callable[[], bytes]] = {
         random.randint(0, 255) for _ in range(random.randint(1, 1024))),
 }
 
-
 # CWE 特定测试策略
 _CWE_SPECIFIC_TESTS = {
     'CWE-121': [
@@ -138,7 +132,6 @@ _CWE_SPECIFIC_TESTS = {
     ],
 }
 
-
 class PatchTestGenerator:
     """补丁测试用例生成器 —— 混合策略。
 
@@ -153,9 +146,7 @@ class PatchTestGenerator:
         self._rng = random.Random(seed)
         self._seed = seed
 
-    # ============================================================
     # 主入口 —— 按漏洞类型生成综合测试套件
-    # ============================================================
     def generate(self, vuln_type: str, cwe_id: str = "",
                  target_function: str = "",
                  num_cases: int = 20) -> TestSuite:
@@ -196,7 +187,7 @@ class PatchTestGenerator:
 
         return _suite
 
-    # ── 测试类型选择 ──────────────────────────────────────────────
+# 测试类型选择
 
     def _select_test_types(self, vuln_type: str, cwe_id: str) -> List[Tuple[str, float]]:
         """按漏洞类型选择测试策略。"""
@@ -270,7 +261,7 @@ class PatchTestGenerator:
         }
         return _map.get(kind, "continue")
 
-    # ── 变异增强 ──────────────────────────────────────────────────
+# 变异增强
 
     def _mutate_existing(self, cases: List[TestCase],
                          num_output: int) -> List[TestCase]:
@@ -329,7 +320,7 @@ class PatchTestGenerator:
 
         return _mutated
 
-    # ── 统计 ──────────────────────────────────────────────────────
+# 统计
 
     def _estimate_coverage(self, suite: TestSuite) -> float:
         """估算测试套件对补丁行为的覆盖率。
@@ -358,8 +349,7 @@ class PatchTestGenerator:
             _recs.append("建议执行 fuzz 变异增强以探索未覆盖路径")
         return _recs
 
-
-# ── 便捷入口 ──────────────────────────────────────────────────────
+# 便捷入口
 
 def generate_patch_tests(vuln_type: str, cwe_id: str = "",
                          target_function: str = "",

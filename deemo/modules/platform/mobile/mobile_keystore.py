@@ -14,15 +14,14 @@
   9. WithSecureLabs审计模式——密钥用途组合安全性及导入密钥溯源
   10. QED式PQC就绪度评估——检测量子脆弱算法并量化评分
 
-QED (IEEE Access 2025) 核心思路：
+QED 核心思路：
   三阶段静态分析：(1) 文件级量子脆弱库依赖检测,
   (2) API级量子脆弱API识别, (3) 静态调用图追踪。
   本模块将PQC就绪度评分应用于移动端二进制，识别RSA/ECDSA/SHA-1等
   量子脆弱算法的使用情况，评估Kyber/Dilithium等PQC标准的采纳进度。
 
-参考：
   - Rattanavipanon et al., QED Toolchain, IEEE Access 2025
-  - Strauss et al., arXiv:2506.00790, IEEE S&P 2025
+  - Strauss et al.,, IEEE S&P 2025
   - ML-QED-Lite, ePrint 2026/1419
 """
 
@@ -35,15 +34,14 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-
 class KeymasterVersion(StrEnum): V1_0="1.0"; V2_0="2.0"; V3_0="3.0"; V4_0="4.0"; V4_1="4.1"; UNKNOWN="unknown"
 class KeyPurpose(IntEnum): ENCRYPT=0x01; DECRYPT=0x02; SIGN=0x04; VERIFY=0x08; WRAP_KEY=0x10; AGREE_KEY=0x20; ATTEST_KEY=0x40
 class KeyAuthenticationType(StrEnum): NONE="none"; PASSWORD="password"; FINGERPRINT="fingerprint"; FACE="face"; IRIS="iris"; STRONGBOX="strongbox"; BIOMETRIC_WEAK="biometric_weak"; BIOMETRIC_STRONG="biometric_strong"
 class KeyOrigin(StrEnum): GENERATED="generated"; DERIVED="derived"; IMPORTED="imported"; SECURELY_IMPORTED="securely_imported"; UNKNOWN="unknown"
 class SecurityLevel(StrEnum): SOFTWARE="software"; TRUSTED_ENVIRONMENT="tee"; STRONGBOX="strongbox"; UNKNOWN="unknown"
 
-# ── PQC就绪度——量子脆弱算法及PQC标准签名数据库 ──
-# 基于QED Toolchain (IEEE Access 2025) + Strauss et al. (arXiv:2506.00790 [待验证]) 算法分类
+# PQC就绪度——量子脆弱算法及PQC标准签名数据库
+# 基于QED Toolchain + Strauss et al. 算法分类
 
 _QUANTUM_VULNERABLE_ALGORITHMS = {
     # 非对称加密 (Shor算法可破)
@@ -65,7 +63,7 @@ _QUANTUM_VULNERABLE_ALGORITHMS = {
 }
 
 _PQC_STANDARDS = {
-    # NIST PQC标准化算法 (FIPS 203-205, 2024.08)
+    # NIST PQC标准化算法
     "Kyber": ("CRYSTALS-Kyber", "kem", "NIST FIPS 203——基于格的后量子密钥封装"),
     "ML-KEM": ("ML-KEM", "kem", "NIST FIPS 203——Kyber的正式标准名称"),
     "Dilithium": ("CRYSTALS-Dilithium", "signature", "NIST FIPS 204——基于格的后量子签名"),
@@ -236,7 +234,7 @@ class AndroidKeystoreAnalyzer:
         if ver==KeymasterVersion.UNKNOWN: ver=s.detect_keymaster_version()
         return [v for v in _KEYMASTER_VULNS if ver in v.affected_versions]
 
-    # ── QED式PQC就绪度评估 ──
+# QED式PQC就绪度评估
     def assess_pqc_readiness(s)->Dict[str,Any]:
         """基于QED Toolchain的三阶段PQC就绪度评估。
 
@@ -297,7 +295,6 @@ class AndroidKeystoreAnalyzer:
 
     def run_full(s)->Dict[str,Any]: s.extract_key_aliases(); s.analyze_key_configs(); s.scan_hardcoded_keys(); return s.analyze()
 
-
 class IOSKeychainAnalyzer:
     _SEC_ITEM_ADD=re.compile(rb'_SecItemAdd\b'); _SEC_ITEM_COPY=re.compile(rb'_SecItemCopyMatching\b')
     _SEC_ITEM_UPDATE=re.compile(rb'_SecItemUpdate\b'); _SEC_ITEM_DELETE=re.compile(rb'_SecItemDelete\b')
@@ -348,7 +345,6 @@ class IOSKeychainAnalyzer:
         item=s.analyze_keychain_config(); au=s.detect_keychain_api_usage()
         return {'platform':'ios','keychain_accessibility':item.accessibility.value,'access_control_flags':item.acm_flags,'has_biometric_protection':item.has_biometric_protection,'access_groups':item.access_group.split(',') if item.access_group else [],'keychain_api_usage':{k:len(v) for k,v in au.items()},'weakness_findings':s.assess_weakness()}
     def run_full(s)->Dict[str,Any]: s.detect_keychain_api_usage(); return s.analyze()
-
 
 _MACHO_MAGICS=[b'\xcf\xfa\xed\xfe',b'\xfe\xed\xfa\xcf',b'\xce\xfa\xed\xfe',b'\xfe\xed\xfa\xce']
 

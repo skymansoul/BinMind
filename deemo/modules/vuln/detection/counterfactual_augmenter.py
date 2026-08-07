@@ -1,7 +1,7 @@
 # 反事实增强器 —— 对漏洞样本施加最小扰动以构造对抗变体，评估检测器鲁棒性分数。
 #
-# 对应论文: VISION (arXiv:2508.18933 [待验证]) 用反事实增强提升漏洞检测的鲁棒性与可解释性
-# (最小扰动下保持语义等价, 但改变攻击面语法); NatGVD (arXiv:2510.04987 [待验证]) 论证
+# 对应论文: VISION 用反事实增强提升漏洞检测的鲁棒性与可解释性
+# (最小扰动下保持语义等价, 但改变攻击面语法); NatGVD 论证
 # 基于图结构的漏洞检测对自然对抗样本的脆弱性 —— 名称重命名、边界偏移等攻击。
 #
 # 设计意图:
@@ -107,7 +107,7 @@ class CounterfactualAugmenter:
         self.max_variants = max_variants
         self.backend = backend                  # 可选LLM后端，缺省回退至启发式
 
-    # ---- 启发式变换 ----
+# 启发式变换
 
     def augment(self, code: str) -> List[CounterfactualSample]:
         """对样本施加最小扰动, 输出反事实变体列表。
@@ -193,7 +193,7 @@ class CounterfactualAugmenter:
         cleaned = re.sub(r'```', '', cleaned)
         return [cleaned] if len(cleaned) > 10 else []
 
-    # ---- 具体启发式变换实现 ----
+# 具体启发式变换实现
 
     @staticmethod
     def _shift_boundary(code: str) -> Optional[str]:
@@ -280,7 +280,7 @@ class CounterfactualAugmenter:
                 return "\n".join(lines)
         return None
 
-    # ---- 鲁棒性评估 ----
+# 鲁棒性评估
 
     def evaluate_robustness(self, code: str, scorer: Callable[[str], float],
                             threshold: float = 0.5,

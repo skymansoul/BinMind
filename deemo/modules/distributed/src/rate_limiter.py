@@ -15,7 +15,7 @@ from typing import Optional
 _CHUNK_ALIGNMENT = 0x1000
 
 
-# ---- 可选 Redis ----
+# 可选 Redis
 try:
     import redis as _redis
     REDIS_AVAILABLE = True
@@ -39,7 +39,7 @@ class RateLimitExceeded(Exception):
         super().__init__(message)
 
 
-# ===== 本地令牌桶 =====
+# 本地令牌桶
 
 class TokenBucket:
     """惰性填充令牌桶 — 参考 Stripe rate limiter 设计。
@@ -85,7 +85,7 @@ class TokenBucket:
             self._refill()
 
 
-# ===== 并发限制器 =====
+# 并发限制器
 
 class ConcurrencyLimiter:
     """限制同时执行的操作数。与令牌桶互补：令牌桶控速率，此控并发度。
@@ -124,7 +124,7 @@ class ConcurrencyLimiter:
         self.release()
 
 
-# ===== 分布式令牌桶 (Redis Lua) =====
+# 分布式令牌桶 (Redis Lua)
 
 _LUA_REFILL_CONSUME = """
 local key = KEYS[1]
@@ -208,7 +208,7 @@ class DistributedTokenBucket:
         self._fallback.refill()
 
 
-# ===== 装饰器 =====
+# 装饰器
 
 _RATE_LIMITERS: dict[str, TokenBucket] = {}
 _RATE_LIMIT_LOCK = threading.Lock()

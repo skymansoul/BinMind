@@ -13,7 +13,7 @@ except Exception:
     _crypto_available = False
 
 
-# ── 已知密码常量 ──
+# 已知密码常量
 AES_SBOX = bytes([
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -133,7 +133,7 @@ class TestCryptoFindingDedup:
         assert len(result) == 2
 
 
-# ── 独立测试（无需模块导入） ──
+# 独立测试（无需模块导入）
 
 def test_sha256_iv_known_value():
     """验证SHA256 IV前4字节为已知常数值"""

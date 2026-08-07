@@ -347,7 +347,7 @@ class MemoryVisualizer:
         ascii_art=self._ascii.render_memory_map(self._memory_map,width)
         return {"success":True,"format":"ascii","ascii_art":ascii_art,"total_regions":self._memory_map.total_regions}
 
-    # --- 新增: 内存保护统计 ---
+# 新增: 内存保护统计
     def protection_stats(self,maps_content:str="")->Dict[str,Any]:
         """统计内存映射中各保护属性的分布。RWX占比高是严重安全问题的标志"""
         if maps_content: self._memory_map=self._parser.parse(maps_content)

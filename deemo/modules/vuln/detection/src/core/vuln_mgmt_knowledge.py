@@ -725,5 +725,3 @@ class DynamicAnalysisEnvironmentManager:
         return self.snapshots.get(env_name, [])
 
 
-def _debug_print(*args, **kwargs):
-    pass

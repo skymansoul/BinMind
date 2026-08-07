@@ -1,15 +1,15 @@
 # 值集分析 (Value-Set Analysis) — 基于抽象解释的间接跳转目标解析
-# 参考: BAP (Binary Analysis Platform, Brumley et al. CMU) 的 VSA 实现 —
+# BAP (Binary Analysis Platform, Brumley et al. CMU) 的 VSA 实现 —
 #       strided intervals 抽象域在二进制分析中的应用
-# 参考: "Sound and Precise Cross-Layer Jump Target Resolution"
-#       (Pasquier et al. 2025) — 跨层间接跳转解析的 soundness 保证
-# 参考: angr VSA (Shoshitaishvili et al. IEEE S&P 2016) —
+# "Sound and Precise Cross-Layer Jump Target Resolution"
+# — 跨层间接跳转解析的 soundness 保证
+# angr VSA —
 #       Value-set analysis 在二进制框架中的工程化实现
 
 import struct as _struct
 from typing import Tuple, Optional
 
-# ===== Strided Interval (跨度区间) =====
+# Strided Interval (跨度区间)
 # VSA 的核心数据抽象: 一个整数值集合表示为 stride(步长) + lower/upper(范围)
 # 例如: {0, 4, 8, ..., 100} 表示为 SI(4, 0, 100)
 # 这是抽象解释理论在数值域上的标准应用 — 牺牲精度换取有限分析时间
@@ -111,7 +111,7 @@ class StridedInterval:
         return StridedInterval(1, 0, new_upper)
 
 
-# ===== 抽象寄存器状态 =====
+# 抽象寄存器状态
 # VSA 的寄存器文件 — 每个寄存器映射到一个 StridedInterval
 # 支持 x86-64 所有通用寄存器 + 栈内存 (以全局变量建模)
 
@@ -149,9 +149,9 @@ class VSARegisterState:
         return StridedInterval.top(self._bits)
 
 
-# ===== VSA 传播引擎 =====
+# VSA 传播引擎
 # 指令语义的抽象传递函数 — 从具体指令映射到 SI 运算
-# 参考: BAP 的 VSA 转移函数表 (Brumley et al. 2007)
+# BAP 的 VSA 转移函数表
 
 def vsa_transfer(mnemonic: str, operands: list[str],
                  state: VSARegisterState) -> None:
@@ -210,7 +210,7 @@ def vsa_transfer(mnemonic: str, operands: list[str],
         pass  # 无效应, 无需处理
 
 
-# ---- 操作数求值 ----
+# 操作数求值
 def _vsa_eval_operand(op_str: str, state: VSARegisterState):
     """解析操作数字符串为整数常量或 StridedInterval。"""
     import re
@@ -272,10 +272,10 @@ def _vsa_eval_lea(operand: str, state: VSARegisterState) -> StridedInterval:
     return result
 
 
-# ===== 间接跳转目标解析 =====
+# 间接跳转目标解析
 # VSA 的主要应用: 解析 jmp rax / call [rbx+8] 等间接转移的目标
 # 这是静态反汇编中最大的精度瓶颈 — 间接跳转可达的地址集合决定 CFG 完整性
-# 参考: Pasquier et al. (2025) 的跨层解析策略
+# Pasquier et al. 的跨层解析策略
 
 def resolve_indirect_jump(jump_type: str, target_expr: str,
                            state: VSARegisterState) -> list[int]:
@@ -303,9 +303,9 @@ def resolve_indirect_jump(jump_type: str, target_expr: str,
     return []
 
 
-# ===== 全局变量初始化状态推断 =====
+# 全局变量初始化状态推断
 # 静态分析中，全局变量的初始值可能来自 .data/.rdata 段
-# 参考: angr 的 SimMemory 和 CLE 加载器 — 将段内容映射到 VSA 状态
+# angr 的 SimMemory 和 CLE 加载器 — 将段内容映射到 VSA 状态
 
 def infer_global_initial_values(data_section: bytes, base_addr: int,
                                   target_vars: list[tuple[int, int]]) -> dict[int, StridedInterval]:

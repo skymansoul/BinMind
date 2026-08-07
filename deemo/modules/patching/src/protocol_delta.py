@@ -75,7 +75,7 @@ class ProtoDeltaReport:
         }
 
 
-# ── 网络操作模式库 ────────────────────────────────────────────────
+# 网络操作模式库
 
 # 发送操作
 _SEND_PATTERNS = re.compile(
@@ -103,7 +103,7 @@ _STATE_PATTERNS = re.compile(
     r'nanosleep|alarm|setitimer)\b', re.I)
 
 
-# ── 协议 Delta 提取器 ─────────────────────────────────────────────
+# 协议 Delta 提取器
 
 class ProtoDeltaExtractor:
     """从补丁汇编中提取协议级别的变更。"""
@@ -210,7 +210,7 @@ class ProtoDeltaExtractor:
                   or re.search(r'\bcall\s+(abort|exit|err|__assert)\b', line, re.I))
 
 
-# ── 协议分析器 ────────────────────────────────────────────────────
+# 协议分析器
 
 class ProtocolDeltaAnalyzer:
     """补丁协议变更分析引擎。"""

@@ -7,18 +7,18 @@
 # RobustGNN: 对抗鲁棒的图神经网络用于漏洞可利用性预测
 #
 # 核心参考文献:
-#   [GNNCert, ICLR 2024 Oral, arXiv:2310.01455]
+#
 #     首个确定性 GNN 认证防御, 对图结构和节点特征扰动均提供形式化保证.
 #     本文将其随机平滑框架适配到异构 CVE 关系图: 对 CVE 节点的特征注入
 #     各向同性高斯噪声, 对拓扑扰动采用边缘级随机丢弃.
-#   [AGNNCert, USENIX Security 2025]
+#
 #     扩展到任意扰动 (边/节点/特征) 的统一认证框架, 涵盖节点分类和图分类.
 #     本文参考其对节点特征的 L2 范数认证半径计算方法.
-#   [DSGNN, 2025, Neurocomputing]
+#
 #     双通道解耦防御: 分别处理结构扰动和特征扰动, 自适应注意力融合.
 #     本文将其双通道思想简化为单图上的两阶段传播: 先原始图传播, 再在
 #     扰动副本上传播, 取两者的一致性分数作为可靠性指标.
-#   [ADGAT, 2025, Neural Networks]
+#
 #     异常检测驱动的图注意力防御, 用预训练的边异常分数动态调整消息权重.
 #     本文在 RobustnessCertifier 中实现了简化版边异常过滤:
 #     若边权重 (Jaccard 相似度) 低于自适应阈值, 降低其在聚合中的贡献.
@@ -261,11 +261,11 @@ class AdversarialTrainer:
                     cve_label_map[i] = labels[cid]
 
         for epoch in range(self._epochs):
-            # ---- 阶段 1: 原始传播 + 损失 ----
+# 阶段 1: 原始传播 + 损失
             clean_scores = graph.propagate()
             clean_loss = self._compute_loss(clean_scores, cve_label_map, graph)
 
-            # ---- 阶段 2: PGD 拓扑攻击 ----
+# 阶段 2: PGD 拓扑攻击
             # 简化: 随机选择 K 条边删除 + K 条边添加 (在同类型约束下)
             perturbed_adj = self._pgd_perturb(graph, k_edges)
 
@@ -277,7 +277,7 @@ class AdversarialTrainer:
 
             adv_loss = self._compute_loss(adv_scores, cve_label_map, graph)
 
-            # ---- 阶段 3: 组合损失并更新 ----
+# 阶段 3: 组合损失并更新
             total_loss = (1.0 - self._adv_weight) * clean_loss + self._adv_weight * adv_loss
             self._train_losses.append(round(clean_loss, 6))
             self._adv_losses.append(round(adv_loss, 6))
@@ -502,7 +502,7 @@ class RobustExploitGraph:
         }
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _norm_quantile(p: float) -> float:
     """标准正态分位数函数 Φ⁻¹(p) — Wichura (1988) AS241 算法.
@@ -589,7 +589,7 @@ def _deterministic_sample(n: int, k: int) -> List[int]:
     return result
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def robust_score_cves(kb: CVEKnowledgeBase,
                       sigma: float = _DEFAULT_SIGMA,

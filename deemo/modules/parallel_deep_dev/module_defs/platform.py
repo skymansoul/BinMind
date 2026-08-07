@@ -30,7 +30,7 @@ PLATFORM = {
             "差异点：CrossInspector 仅覆盖 3 种漏洞，Spectre 检测不考虑微架构具体参数。"
         ),
         "papers": [
-            {"id": "arXiv:2408.15292", "title": "CrossInspector: Cross-Contract Vulnerability Detection via State Dependency Graph",
+            {"id": "", "title": "CrossInspector: Cross-Contract Vulnerability Detection via State Dependency Graph",
              "venue": "arXiv 2024", "key_idea": "SDG跨合约数据流分析，97%精度"},
             {"id": "NEUROSCOPE", "title": "NEUROSCOPE: Reverse Engineering Deep Neural Network Binaries",
              "venue": "USENIX Security 2025", "key_idea": "编译器无关+动态分析+灰盒对抗攻击"},

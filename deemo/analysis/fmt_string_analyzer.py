@@ -1,5 +1,4 @@
 # Format string analyzer -- proper arg parsing
-from __future__ import annotations
 from typing import List
 
 _FMT_FUNCS = ["printf","fprintf","sprintf","snprintf","dprintf","syslog"]

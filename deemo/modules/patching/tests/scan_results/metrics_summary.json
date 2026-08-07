@@ -1,0 +1,31 @@
+{
+  "total_samples": 94,
+  "by_vuln_type": {
+    "heap_overflow": {
+      "total": 90,
+      "detected": 34,
+      "missed": 56,
+      "avg_tp": 0.41,
+      "avg_fp": 0.11,
+      "avg_time": 0.12
+    },
+    "unknown": {
+      "total": 4,
+      "detected": 1,
+      "missed": 3,
+      "avg_tp": 0.0,
+      "avg_fp": 0.0,
+      "avg_time": 0.0
+    }
+  },
+  "overall": {
+    "tp_samples": 23,
+    "fn_samples": 4,
+    "fp_alerts": 10,
+    "tp_alerts": 37,
+    "total_alerts": 47,
+    "avg_time": 0.11,
+    "fp_rate": 21.3,
+    "recall": 85.2
+  }
+}

@@ -1,8 +1,8 @@
-# Created: 2025-07-26 09:29:15
+# Created: 2026-05-26 09:29:15
 #
 # obfuscation_classifier — 多信号混淆技术精确分类器
 # 从纯静态特征 (熵 + 段布局 + 导入模式 + 结构异常) 识别具体混淆技术，
-# 无需反汇编或 CFG 提取。区别于 Creach Labs (2025, 需要函数级 CFG)。
+# 无需反汇编或 CFG 提取。区别于 Creach Labs。
 #
 # 分类的混淆技术 (8 类):
 #   upx              UPX/ASPack 等标准运行时可解压打包器
@@ -15,9 +15,9 @@
 #   virtualization    代码虚拟化 (极高函数密度 + 特定 VM stub 模式)
 #
 # 每类提供:
-#   - 检测信号组合 (多维度阈值)
-#   - 置信度 (0-1)
-#   - 针对性的解混淆策略建议
+# 检测信号组合 (多维度阈值)
+# 置信度 (0-1)
+# 针对性的解混淆策略建议
 
 import math
 from typing import Dict, List, Tuple, Optional

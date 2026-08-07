@@ -1,0 +1,978 @@
+[
+  {
+    "sample_id": "cve_2013_4788_android_media",
+    "cve": "CVE-2013-4788",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2013_4788_android_media_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 1623.98,
+    "error": "",
+    "reasons": [
+      "const write 128 > usable 72"
+    ]
+  },
+  {
+    "sample_id": "cve_2013_4788_android_media",
+    "cve": "CVE-2013-4788",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2013_4788_android_media_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 8,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 8,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 482.73,
+    "error": "",
+    "reasons": [
+      "write 80 > usable 72",
+      "write 96 > usable 72",
+      "write 112 > usable 72",
+      "write 128 > usable 72",
+      "write 80 > usable 72",
+      "write 96 > usable 72",
+      "write 112 > usable 72",
+      "write 128 > usable 72"
+    ]
+  },
+  {
+    "sample_id": "cve_2015_0235_ghost",
+    "cve": "CVE-2015-0235",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2015_0235_ghost_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 388.75,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2015_0235_ghost",
+    "cve": "CVE-2015-0235",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2015_0235_ghost_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 473.05,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2016_10158_php_exif",
+    "cve": "CVE-2016-10158",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2016_10158_php_exif_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 533.7,
+    "error": "",
+    "reasons": [
+      "const write 256 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2016_10158_php_exif",
+    "cve": "CVE-2016-10158",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2016_10158_php_exif_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 28,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 28,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 637.54,
+    "error": "",
+    "reasons": [
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40",
+      "write 144 > usable 40",
+      "write 160 > usable 40",
+      "write 176 > usable 40",
+      "write 192 > usable 40",
+      "write 208 > usable 40",
+      "write 224 > usable 40",
+      "write 240 > usable 40",
+      "write 256 > usable 40",
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40",
+      "write 144 > usable 40",
+      "write 160 > usable 40",
+      "write 176 > usable 40",
+      "write 192 > usable 40",
+      "write 208 > usable 40",
+      "write 224 > usable 40",
+      "write 240 > usable 40",
+      "write 256 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2016_6301_ntpd",
+    "cve": "CVE-2016-6301",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2016_6301_ntpd_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 517.87,
+    "error": "",
+    "reasons": [
+      "const write 1024 > usable 56"
+    ]
+  },
+  {
+    "sample_id": "cve_2016_6301_ntpd",
+    "cve": "CVE-2016-6301",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2016_6301_ntpd_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 2,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 2,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 457.39,
+    "error": "",
+    "reasons": [
+      "const write 1024 > usable 56",
+      "const write 1024 > usable 56"
+    ]
+  },
+  {
+    "sample_id": "cve_2017_1000112_linux_udp",
+    "cve": "CVE-2017-1000112",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2017_1000112_linux_udp_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 485.32,
+    "error": "",
+    "reasons": [
+      "const write 4096 > usable 136"
+    ]
+  },
+  {
+    "sample_id": "cve_2017_1000112_linux_udp",
+    "cve": "CVE-2017-1000112",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2017_1000112_linux_udp_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 2,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 2,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 529.93,
+    "error": "",
+    "reasons": [
+      "const write 4096 > usable 136",
+      "const write 4096 > usable 136"
+    ]
+  },
+  {
+    "sample_id": "cve_2017_7269_iis_scstorage",
+    "cve": "CVE-2017-7269",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2017_7269_iis_scstorage_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 524.93,
+    "error": "",
+    "reasons": [
+      "const write 512 > usable 88"
+    ]
+  },
+  {
+    "sample_id": "cve_2017_7269_iis_scstorage",
+    "cve": "CVE-2017-7269",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2017_7269_iis_scstorage_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 2,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 2,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 557.42,
+    "error": "",
+    "reasons": [
+      "const write 512 > usable 88",
+      "const write 512 > usable 88"
+    ]
+  },
+  {
+    "sample_id": "cve_2018_1000001_curl_tftp",
+    "cve": "CVE-2018-1000001",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2018_1000001_curl_tftp_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 520.55,
+    "error": "",
+    "reasons": [
+      "write grows beyond alloc (+0B)"
+    ]
+  },
+  {
+    "sample_id": "cve_2018_1000001_curl_tftp",
+    "cve": "CVE-2018-1000001",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2018_1000001_curl_tftp_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 576.1,
+    "error": "",
+    "reasons": [
+      "write grows beyond alloc (+0B)"
+    ]
+  },
+  {
+    "sample_id": "cve_2018_14634_kernel_create_elf",
+    "cve": "CVE-2018-14634",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2018_14634_kernel_create_elf_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 613.14,
+    "error": "",
+    "reasons": [
+      "write grows beyond alloc (+0B)"
+    ]
+  },
+  {
+    "sample_id": "cve_2018_14634_kernel_create_elf",
+    "cve": "CVE-2018-14634",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2018_14634_kernel_create_elf_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 519.7,
+    "error": "",
+    "reasons": [
+      "write grows beyond alloc (+0B)"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_1579_paloalto_gp",
+    "cve": "CVE-2019-1579",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_1579_paloalto_gp_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 473.82,
+    "error": "",
+    "reasons": [
+      "const write 256 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_1579_paloalto_gp",
+    "cve": "CVE-2019-1579",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_1579_paloalto_gp_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 28,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 28,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 667.5,
+    "error": "",
+    "reasons": [
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40",
+      "write 144 > usable 40",
+      "write 160 > usable 40",
+      "write 176 > usable 40",
+      "write 192 > usable 40",
+      "write 208 > usable 40",
+      "write 224 > usable 40",
+      "write 240 > usable 40",
+      "write 256 > usable 40",
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40",
+      "write 144 > usable 40",
+      "write 160 > usable 40",
+      "write 176 > usable 40",
+      "write 192 > usable 40",
+      "write 208 > usable 40",
+      "write 224 > usable 40",
+      "write 240 > usable 40",
+      "write 256 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_2215_binder_trans",
+    "cve": "CVE-2019-2215",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_2215_binder_trans_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 540.94,
+    "error": "",
+    "reasons": [
+      "const write 512 > usable 72"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_2215_binder_trans",
+    "cve": "CVE-2019-2215",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_2215_binder_trans_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 2,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 2,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 538.66,
+    "error": "",
+    "reasons": [
+      "const write 512 > usable 72",
+      "const write 512 > usable 72"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_3462_debian_apt",
+    "cve": "CVE-2019-3462",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_3462_debian_apt_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 534.63,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2019_3462_debian_apt",
+    "cve": "CVE-2019-3462",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2019_3462_debian_apt_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 494.24,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2020_0022_bt_l2cap",
+    "cve": "CVE-2020-0022",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2020_0022_bt_l2cap_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 560.48,
+    "error": "",
+    "reasons": [
+      "const write 128 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2020_0022_bt_l2cap",
+    "cve": "CVE-2020-0022",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2020_0022_bt_l2cap_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 12,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 12,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 549.16,
+    "error": "",
+    "reasons": [
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40",
+      "write 48 > usable 40",
+      "write 64 > usable 40",
+      "write 80 > usable 40",
+      "write 96 > usable 40",
+      "write 112 > usable 40",
+      "write 128 > usable 40"
+    ]
+  },
+  {
+    "sample_id": "cve_2021_3156_sudo_baron",
+    "cve": "CVE-2021-3156",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2021_3156_sudo_baron_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 512.73,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2021_3156_sudo_baron",
+    "cve": "CVE-2021-3156",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2021_3156_sudo_baron_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 516.39,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2021_4034_polkit_pkexec",
+    "cve": "CVE-2021-4034",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2021_4034_polkit_pkexec_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 515.79,
+    "error": "",
+    "reasons": [
+      "fixed alloc 16 + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2021_4034_polkit_pkexec",
+    "cve": "CVE-2021-4034",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2021_4034_polkit_pkexec_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 539.64,
+    "error": "",
+    "reasons": [
+      "fixed alloc 16 + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2022_0185_fs_context",
+    "cve": "CVE-2022-0185",
+    "opt": "O0",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2022_0185_fs_context_O0.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 507.35,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "cve_2022_0185_fs_context",
+    "cve": "CVE-2022-0185",
+    "opt": "O2",
+    "ground_truth": "vulnerable",
+    "expected": "confirmed",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\cve_2022_0185_fs_context_O2.exe",
+    "detected": true,
+    "verdict": "TP",
+    "confirmed_count": 1,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 1,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 497.93,
+    "error": "",
+    "reasons": [
+      "unbounded alloc + tainted write"
+    ]
+  },
+  {
+    "sample_id": "safe_01_correlated",
+    "cve": "N/A",
+    "opt": "O0",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_01_correlated_O0.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 573.33,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_01_correlated",
+    "cve": "N/A",
+    "opt": "O2",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_01_correlated_O2.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 526.75,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_02_guarded",
+    "cve": "N/A",
+    "opt": "O0",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_02_guarded_O0.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 1,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 1,
+      "suspected": 0
+    },
+    "elapsed_ms": 486.45,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_02_guarded",
+    "cve": "N/A",
+    "opt": "O2",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_02_guarded_O2.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 1,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 1,
+      "suspected": 0
+    },
+    "elapsed_ms": 531.28,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_03_padding",
+    "cve": "N/A",
+    "opt": "O0",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_03_padding_O0.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 506.9,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_03_padding",
+    "cve": "N/A",
+    "opt": "O2",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_03_padding_O2.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 445.18,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_04_alloc_plus_one",
+    "cve": "N/A",
+    "opt": "O0",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_04_alloc_plus_one_O0.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 528.88,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_04_alloc_plus_one",
+    "cve": "N/A",
+    "opt": "O2",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_04_alloc_plus_one_O2.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 573.88,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_05_exact_constant",
+    "cve": "N/A",
+    "opt": "O0",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_05_exact_constant_O0.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 588.59,
+    "error": "",
+    "reasons": []
+  },
+  {
+    "sample_id": "safe_05_exact_constant",
+    "cve": "N/A",
+    "opt": "O2",
+    "ground_truth": "safe",
+    "expected": "benign",
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\cve\\regression\\build\\safe_05_exact_constant_O2.exe",
+    "detected": false,
+    "verdict": "TN",
+    "confirmed_count": 0,
+    "suspected_count": 0,
+    "benign_count": 0,
+    "wb_stats": {
+      "confirmed": 0,
+      "benign": 0,
+      "suspected": 0
+    },
+    "elapsed_ms": 533.08,
+    "error": "",
+    "reasons": []
+  }
+]

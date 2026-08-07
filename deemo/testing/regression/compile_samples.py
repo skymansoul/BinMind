@@ -1,6 +1,6 @@
 # 编译模块 —— 遍历samples目录, 对每个CVE样本执行make。
 # 独立于扫描逻辑, 可单独运行做批量编译验证。
-# 创建: 2026-08-14
+# 创建: 2026-05-04
 
 import os, subprocess, sys, json
 

@@ -1,5 +1,5 @@
-from __future__ import annotations
 """Git协作层: repo init/stage/commit/diff生成/porcelain状态解析."""
+from __future__ import annotations
 from typing import Dict, List, Optional, Any
 import subprocess as sp, os, time, logging, shutil
 from pathlib import Path

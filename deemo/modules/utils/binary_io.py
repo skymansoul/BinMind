@@ -1,5 +1,5 @@
 # 跨架构二进制 I/O 基元：端序无关读写、对齐、hex dump
-# 参考 SoK: AI-Augmented Binary Reversing [arXiv:2606.17398] 中提出的
+# SoK: AI-Augmented Binary Reversing 中提出的
 # 统一输入管线 —— 字节级操作是 22 个逆向子领域的基础层。
 # 支持 little/big/network 端序、位宽 8/16/32/64，以及变长整数 (LEB128)。
 import struct
@@ -30,7 +30,7 @@ class EndianError(ValueError):
     """端序标识符无效。"""
     pass
 
-# ---- 基础读写 -----------------------------------------------------------
+# 基础读写
 
 def read_bytes(buf: bytes, offset: int, size: int) -> bytes:
     """从字节缓冲区偏移处读取指定长度。不检查越界。"""
@@ -68,7 +68,7 @@ def read_i64(buf: bytes, offset: int, byteorder: str = "le") -> int:
         raise EndianError(f"unsupported byte order: {byteorder}")
     return struct.unpack_from(f"{fmt}q", buf, offset)[0]
 
-# ---- 变长整数 (LEB128 / ULEB128) ----------------------------------------
+# 变长整数 (LEB128 / ULEB128)
 # DWARF 和 Wasm 均使用此编码。最大支持 64 位值。
 
 def read_uleb128(buf: bytes, offset: int = 0) -> Tuple[int, int]:
@@ -133,7 +133,7 @@ def encode_sleb128(value: int) -> bytes:
         parts.append(byte)
     return bytes(parts)
 
-# ---- 对齐工具 -----------------------------------------------------------
+# 对齐工具
 
 def align_up(value: int, alignment: int) -> int:
     """向上对齐到 alignment 的整数倍。alignment 须为 2 的幂。"""
@@ -147,7 +147,7 @@ def is_aligned(value: int, alignment: int) -> bool:
     """检查 value 是否已按 alignment 对齐。"""
     return (value & (alignment - 1)) == 0
 
-# ---- hex dump -----------------------------------------------------------
+# hex dump
 
 # 经典 hexdump 格式: 偏移 + 十六进制 + ASCII 预览
 def hexdump(data: bytes, offset: int = 0, width: int = 16, *, upper: bool = True) -> str:
@@ -167,7 +167,7 @@ def hexdump_bytes(data: bytes, *, width: int = 16) -> str:
     """hexdump 简写，从偏移 0 开始，小写字母。"""
     return hexdump(data, 0, width, upper=False)
 
-# ---- 文件读写辅助 --------------------------------------------------------
+# 文件读写辅助
 
 def read_file_bytes(filepath: str, max_size: Optional[int] = None) -> bytes:
     """安全读取文件全部字节。max_size 限制最大读取量（防 OOM）。"""
@@ -203,7 +203,7 @@ def write_file_bytes(filepath: str, data: bytes, *, atomic: bool = False) -> int
             fh.write(data)
     return len(data)
 
-# ---- 字节搜索 ------------------------------------------------------------
+# 字节搜索
 
 def find_bytes(data: bytes, pattern: bytes, start: int = 0) -> int:
     """在 data 中搜索 pattern 字节序列，返回首次出现的偏移。未找到返回 -1。"""
@@ -226,7 +226,6 @@ def extract_range(data: bytes, start: int, end: int) -> bytes:
     return data[max(0, start):min(len(data), end)]
 
 
-def _debug_print(*args, **kwargs):
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 

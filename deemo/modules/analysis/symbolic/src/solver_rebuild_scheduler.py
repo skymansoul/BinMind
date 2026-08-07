@@ -21,7 +21,7 @@ d. 双阈值策略——硬阈值（强制重建）和软阈值（触发评估�
 权衡：重建丢失所有已学习引理，首次求解可能更慢；
 但减少内存占用和求解器内部遍历开销，长期更稳定
 
-ref: Z3 GitHub #7203 (2024) 讨论了 incremental solver 的状态累积问题——
+ref: Z3 GitHub #7203 讨论了 incremental solver 的状态累积问题——
 solver2 的 push/pop 比 solver1 快但内部状态随 push 次数线性增长
 本模块直接解决此权衡——通过成本预估决定何时丢弃累积状态
 ref: FSE 2024 "Partial Solu Based 约束求解缓存" 的

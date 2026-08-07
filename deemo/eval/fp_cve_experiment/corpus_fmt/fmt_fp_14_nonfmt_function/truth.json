@@ -1,0 +1,6 @@
+{
+  "id": "fmt_fp_14_nonfmt_function",
+  "expected_vuln": false,
+  "vuln_type": "safe",
+  "mode": "非格式化函数误配 (puts/strlen)"
+}

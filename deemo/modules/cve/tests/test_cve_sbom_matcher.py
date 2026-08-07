@@ -62,7 +62,7 @@ def seeded_kb(kb):
     return kb
 
 
-# ---- Name normalization (5 tests) ----
+# Name normalization (5 tests)
 
 class TestNormName:
     def test_lowercase(self):
@@ -91,7 +91,7 @@ class TestNormName:
         assert "log4j" in result
 
 
-# ---- Token overlap (3 tests) ----
+# Token overlap (3 tests)
 
 class TestTokenOverlap:
     def test_identical(self):
@@ -105,7 +105,7 @@ class TestTokenOverlap:
         assert _token_overlap("django", "log4j") == 0.0
 
 
-# ---- Entry helpers (3 tests) ----
+# Entry helpers (3 tests)
 
 class TestEntryHelpers:
     def test_entry_cve_id(self):
@@ -125,7 +125,7 @@ class TestEntryHelpers:
         assert "log4j" in _entry_products(entry)
 
 
-# ---- Version range checking (4 tests) ----
+# Version range checking (4 tests)
 
 class TestVersionRange:
     def test_version_affected(self):
@@ -145,7 +145,7 @@ class TestVersionRange:
         assert _check_version_affected("1.0.0", ranges) is False
 
 
-# ---- Fix extraction (2 tests) ----
+# Fix extraction (2 tests)
 
 class TestExtractFix:
     def test_from_patched_version(self):
@@ -161,7 +161,7 @@ class TestExtractFix:
         assert _extract_fix(entry) == "2.17.0"
 
 
-# ---- Pipeline stages (3 tests) ----
+# Pipeline stages (3 tests)
 
 class TestPipelineStages:
     def test_matcher_creation(self, kb):
@@ -184,7 +184,7 @@ class TestPipelineStages:
         assert matches == []
 
 
-# ---- Report (3 tests) ----
+# Report (3 tests)
 
 class TestSBOMReport:
     def test_build_report(self, seeded_kb):

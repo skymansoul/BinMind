@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-# 创建: 2026-08-01 — HookSignature + SchemaModel + DAGVerifier
-# 修改: 2026-08-02 — 四维检查完善, 传递依赖边建议
+# coding: utf-8
+# 创建: 2026-05-26 — HookSignature + SchemaModel + DAGVerifier
+# 修改: 2026-05-26 — 四维检查完善, 传递依赖边建议
 """
 钩子模式推断与 DAG 完备性验证 — 从执行轨迹学习钩子的 I/O 键签名, 静态检查 DAG 正确性.
 
-APEX-DAG (VLDB 2025) 从 AST 提取数据管道模式, 依赖 GNN; SLiCE (arXiv:2508.07179) 用 LLM.
+APEX-DAG 从 AST 提取数据管道模式, 依赖 GNN; SLiCE 用 LLM.
 本模块的不同: 模式从运行时执行轨迹学习 (适用任意可调用对象), 检查对象是钩子 DAG
 的结构完备性而非列级谱系, 产出可操作的修复建议.
 

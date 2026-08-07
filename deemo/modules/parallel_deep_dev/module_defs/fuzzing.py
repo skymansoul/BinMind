@@ -27,13 +27,13 @@ FUZZING = {
             "差异点：现有 BanditScheduler 的 MAB 是无状态的，GRPO 可学习变异序列的长期依赖。"
         ),
         "papers": [
-            {"id": "arXiv:2507.10845", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
+            {"id": "", "title": "BandFuzz: An ML-powered Collaborative Fuzzing Framework",
              "venue": "arXiv 2025", "key_idea": "ML驱动协同模糊测试，Cupid自动模糊器选择"},
-            {"id": "arXiv:2509.20384", "title": "R1-Fuzz: Reinforcement Learning for Fuzzing Input Generation",
+            {"id": "", "title": "R1-Fuzz: Reinforcement Learning for Fuzzing Input Generation",
              "venue": "arXiv 2025", "key_idea": "GRPO后训练7B模型 → 75%覆盖率提升，29个新漏洞"},
-            {"id": "arXiv:2605.21779", "title": "FuzzingBrain V2: A Multi-Agent LLM System for Automated Vulnerability Discovery",
+            {"id": "", "title": "FuzzingBrain V2: A Multi-Agent LLM System for Automated Vulnerability Discovery",
              "venue": "arXiv 2026", "key_idea": "可疑点抽象+两层模糊测试，90%检测率，41个0day"},
-            {"id": "arXiv:2602.11209", "title": "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code",
+            {"id": "", "title": "SAFuzz: Semantic-Guided Adaptive Fuzzing for LLM-Generated Code",
              "venue": "arXiv 2026", "key_idea": "语义预言机+LLM引导自适应变异，85.7%精确率"},
         ],
     },

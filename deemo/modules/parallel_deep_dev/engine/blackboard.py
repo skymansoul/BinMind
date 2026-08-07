@@ -11,9 +11,9 @@
 黑板条目的有效期（TTL）防止过期知识污染新决策。去重基于内容的 SHA-256，
 同一发现被多个 worker 存入时仅保留首次。
 
-ref: bMAS/LbMAS (Han & Zhang, arXiv:2507.01701, 2025) — LLM 多智能体系统的
+ref: bMAS/LbMAS — LLM 多智能体系统的
      黑板架构，本项目将其适配到并行代码生成场景而非自然语言推理
-ref: D³MAS (Zhang et al. 2024) — 分层协调减少 46% 知识重复，本项目借鉴其
+ref: D³MAS — 分层协调减少 46% 知识重复，本项目借鉴其
      去重策略并简化为内容哈希比对
 ref: flock (github.com/whiteducksoftware/flock) — 事件驱动黑板编排框架，
      本项目借鉴其 typed artifact 设计但改为线程安全的过程式接口
@@ -58,9 +58,7 @@ class Blackboard:
         self._lock = threading.Lock()
         self._default_ttl = default_ttl
 
-    # ------------------------------------------------------------------
     # 写入
-    # ------------------------------------------------------------------
 
     def deposit(
         self,
@@ -95,9 +93,7 @@ class Blackboard:
             self._entries.append(entry)
             return dedup_key
 
-    # ------------------------------------------------------------------
     # 查询
-    # ------------------------------------------------------------------
 
     def query(
         self,
@@ -142,9 +138,7 @@ class Blackboard:
             scored.sort(key=lambda x: x[0], reverse=True)
             return [e for _, e in scored[:max_results]]
 
-    # ------------------------------------------------------------------
     # 统计
-    # ------------------------------------------------------------------
 
     def stats(self) -> dict:
         """返回黑板统计信息。"""
@@ -166,9 +160,7 @@ class Blackboard:
         with self._lock:
             self._entries.clear()
 
-    # ------------------------------------------------------------------
     # 内部
-    # ------------------------------------------------------------------
 
     def _expire_stale(self) -> None:
         now = time.time()
@@ -179,9 +171,7 @@ class Blackboard:
         return hashlib.sha256(content.encode("utf-8", errors="replace")).hexdigest()[:16]
 
 
-# -------------------------------------------------------------------
 # 全局单例 — 跨所有 worker 共享
-# -------------------------------------------------------------------
 
 _blackboard_instance: Blackboard | None = None
 _bb_lock = threading.Lock()

@@ -3,7 +3,6 @@
 SNMP v1/v2c 以明文团体字符串作为认证手段，默认值public/private在现网设备中普遍存在。
 SNMPv3引入USM安全模型（User-based Security Model），但配置不当可被降级攻击至v1/v2c。
 
-参考：
 - RFC 3411-3418 (SNMPv3 architecture)
 - CVE-2002-0013 (SNMPv1 团体字符串暴力破解)
 """
@@ -41,7 +40,6 @@ _SNMPV3_NOAUTH_NOPRIV = 0x00
 _SNMPV3_AUTH_NOPRIV = 0x01
 _SNMPV3_AUTH_PRIV = 0x03
 
-
 @dataclass
 class SnmpPacket:
     """解析后的SNMP报文结构体"""
@@ -58,7 +56,6 @@ class SnmpPacket:
     security_model: int = 0   # USM=3
     snmpv3_user: str = ""
 
-
 @dataclass
 class SnmpAlert:
     alert_type: str
@@ -66,7 +63,6 @@ class SnmpAlert:
     severity: str = "medium"
     src_ip: str = ""
     evidence: Dict[str, Any] = field(default_factory=dict)
-
 
 class SnmpPduParser:
     """SNMP BER/DER 编码解析——轻量级实现，支持v1/v2c/v3版本识别。
@@ -145,7 +141,6 @@ class SnmpPduParser:
             length = int.from_bytes(data[pos:pos + nbytes], "big")
             pos += nbytes
         return pos + length
-
 
 class SnmpAnalyzer:
     """SNMP 安全分析引擎——弱团体字符串+ MIB遍历+版本降级并行检测。
@@ -256,7 +251,6 @@ class SnmpAnalyzer:
             ) if weak_comms else "",
         }
 
-
 def analyze_snmp_traffic(packets: List[Dict]) -> Dict[str, Any]:
     """从UDP包字典列表批量分析SNMP流量——便捷入口函数"""
     analyzer = SnmpAnalyzer()
@@ -268,7 +262,6 @@ def analyze_snmp_traffic(packets: List[Dict]) -> Dict[str, Any]:
             timestamp=pkt.get("timestamp", 0.0),
         )
     return analyzer.summary()
-
 
 __all__ = ["SnmpAnalyzer", "SnmpPduParser", "SnmpPacket",
            "SnmpAlert", "analyze_snmp_traffic"]

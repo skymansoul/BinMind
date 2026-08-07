@@ -28,7 +28,7 @@
   平滑变化(RBF核)。提供闭式不确定性量化——与共形预测和Bootstrap
   互补(分布假设 vs 分布无关 vs 频率重抽样)。
 
-ref: Rasmussen & Williams (2006) "Gaussian Processes for Machine Learning".
+ref: Rasmussen & Williams "Gaussian Processes for Machine Learning".
 """
 
 from __future__ import annotations

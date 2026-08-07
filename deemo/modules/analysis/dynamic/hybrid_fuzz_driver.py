@@ -2,7 +2,7 @@
 """
 混合模糊测试驱动引擎
 
-基于 [HyllFuzz 2026] 的 LLM 辅助混合模糊测试框架
+基于 的 LLM 辅助混合模糊测试框架
 结合符号执行和 LLM 约束求解，突破传统 concolic 执行
 在非线性约束（hash、crypto、复杂数学）上的瓶颈
 
@@ -11,7 +11,7 @@
 - TraceSlicer: 执行轨迹切片，提取与分支相关的指令序列
 - HybridFuzzLoop: 混合循环（模糊测试 → concolic → LLM → 模糊测试）
 
-参考 [FuzzRDUCC 2025, 2509.04967] 的 def-使用 链反馈
+参考 的 def-使用 链反馈
 """
 
 import logging
@@ -54,7 +54,7 @@ class LLMConstraintSolver:
     
     对传统 SMT 求解器难以处理的非线性约束
     （如哈希、加密、CRC），使用 LLM 进行推理或生成输入
-    参考 [HyllFuzz 2026] 的 LLM-solver 设计
+    参考 的 LLM-solver 设计
     
     注意：LLM 求解器不保证正确性
     生成的解需要通过具体执行验证

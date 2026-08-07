@@ -36,9 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# ---------------------------------------------------------------------------
 # 数据结构
-# ---------------------------------------------------------------------------
 
 @dataclass
 class VarDefUse:
@@ -60,9 +58,7 @@ class SemanticConfidenceReport:
     evidence: List[str] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
 # 维度 A: 跨反编译器语义一致性
-# ---------------------------------------------------------------------------
 
 class CrossDecompilerSemanticChecker:
     """比较两个反编译器对同一函数的输出--在语义层面而非文本层面
@@ -182,9 +178,7 @@ class CrossDecompilerSemanticChecker:
         return len(a & b) / union
 
 
-# ---------------------------------------------------------------------------
 # 维度 B: 类型流一致性
-# ---------------------------------------------------------------------------
 
 class TypeFlowConsistencyChecker:
     """通过抽象解释追踪变量类型在跨块传播时的一致性
@@ -253,9 +247,7 @@ class TypeFlowConsistencyChecker:
         return math.exp(-3.0 * conflict_ratio)
 
 
-# ---------------------------------------------------------------------------
 # 维度 C: 路径条件可满足性
-# ---------------------------------------------------------------------------
 
 class PathConditionChecker:
     """快速检查反编译器生成的条件分支是否逻辑可能
@@ -356,9 +348,7 @@ class PathConditionChecker:
         return True
 
 
-# ---------------------------------------------------------------------------
 # 语义置信度聚合器
-# ---------------------------------------------------------------------------
 
 class SemanticConfidenceAggregator:
     """聚合三个语义验证维度 -> 产生置信度调整

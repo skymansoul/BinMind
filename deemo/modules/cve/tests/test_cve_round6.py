@@ -14,7 +14,7 @@ def kb():
     db.close()
 
 
-# ===== CVSS 4.0 parsing (8 tests) =====
+# CVSS 4.0 parsing (8 tests)
 
 class TestCVSS40:
     def test_parse_full_vector(self):
@@ -127,7 +127,7 @@ class TestCVSS40:
         assert entry.cvss_score is None
 
 
-# ===== FTS5 CJK tokenizer (7 tests) =====
+# FTS5 CJK tokenizer (7 tests)
 
 class TestCJKTokenizer:
     def test_import(self):
@@ -174,7 +174,7 @@ class TestCJKTokenizer:
         assert tokenize_cjk(None) == ""
 
 
-# ===== KB CJK search (3 tests) =====
+# KB CJK search (3 tests)
 
 class TestKBCJKSearch:
     def test_search_cjk_finds_cjk_desc(self, kb):
@@ -210,7 +210,7 @@ class TestKBCJKSearch:
         assert len(results) >= 1
 
 
-# ===== npm semver ranges (6 tests) =====
+# npm semver ranges (6 tests)
 
 class TestNpmSemverRanges:
     def test_import(self):
@@ -252,7 +252,7 @@ class TestNpmSemverRanges:
         assert satisfies_npm_range("0.0.1", "") is True
 
 
-# ===== Maven version comparison (5 tests) =====
+# Maven version comparison (5 tests)
 
 class TestMavenVersions:
     def test_import(self):

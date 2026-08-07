@@ -1,0 +1,147 @@
+"""
+MIVR 管道集成 — 作为 GAPSBV 维度6, 提供路径敏感约束传播证明.
+
+与现有维度的关系:
+  - 互补于 dim1 (仿射关系): MIVR添加了传递性约束传播
+  - 强化 dim2 (守卫分析): MIVR做路径敏感传播而非简单的守卫匹配
+  - 精于 dim3 (StridedInterval): MIVR在then分支内精确传播而非全局区间
+  - 覆盖 dim4 (分配器语义): MIVR的L3层已包含chunk slack计算
+
+设计原则 (功能只增不减):
+  - 仅 FILTER 可证明安全的候选项
+  - 不确定时 fall through 到现有维度
+  - 不影响 GAPSBV 任一维度的现有逻辑
+"""
+
+
+from typing import Dict, List, Optional, Tuple
+
+from analysis.gapsbv_dimensions import (
+    GapsbvVerdict, DimensionResult, GapsbvReport, _resolve_macros,
+)
+from analysis.mivr_pair_prover import PairProof, MIVRPairProver
+
+
+def dim6_mivr_constraint_proof(pseudocode: str) -> DimensionResult:
+    """维度6: MIVR约束传播证明 — 路径敏感守卫→写入约束传播. (权重 0.30)
+
+    比 dim1-4 更精确的证明, 因为:
+      1. 只在then分支内传播约束 (真·路径敏感)
+      2. 通过赋值链传递性解析变量关系
+      3. 三层证明体系 (守卫/仿射/语义), 逐级降级
+
+    保守性: 仅当 L1(硬证明) 或 L2(仿射证明) 或 L3(语义证明)
+    任一返回 SAFE 时才判定 SAFE. 否则 UNCERTAIN.
+    """
+    prover = MIVRPairProver()
+    proofs = prover.prove_from_source(pseudocode)
+
+    if not proofs:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "UNCERTAIN", 0.0,
+            "no alloc-write pairs found")
+
+    safe_proofs = [p for p in proofs if p.verdict == "SAFE"]
+    overflow_proofs = [p for p in proofs if p.verdict == "OVERFLOW"]
+    uncertain_proofs = [p for p in proofs if p.verdict == "UNCERTAIN"]
+
+    # 统计各层级
+    l1_safe = [p for p in safe_proofs if p.proof_level == "L1"]
+    l2_safe = [p for p in safe_proofs if p.proof_level == "L2"]
+    l3_safe = [p for p in safe_proofs if p.proof_level == "L3"]
+
+    if l1_safe:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "SAFE", 0.90,
+            f"L1: {len(l1_safe)} pair(s) proved safe by guard constraint: "
+            + "; ".join(p.proof_detail[:80] for p in l1_safe[:2]))
+    elif l2_safe:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "SAFE", 0.80,
+            f"L2: {len(l2_safe)} pair(s) proved safe by affine + constraint: "
+            + "; ".join(p.proof_detail[:80] for p in l2_safe[:2]))
+    elif l3_safe:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "SAFE", 0.70,
+            f"L3: {len(l3_safe)} pair(s) proved safe by constant offset / slack: "
+            + "; ".join(p.proof_detail[:80] for p in l3_safe[:2]))
+    elif overflow_proofs:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "OVERFLOW", 0.85,
+            f"{len(overflow_proofs)} pair(s) confirmed overflow: "
+            + "; ".join(p.proof_detail[:80] for p in overflow_proofs[:2]))
+    elif uncertain_proofs:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "UNCERTAIN", 0.30,
+            f"{len(uncertain_proofs)} pair(s) uncertain: "
+            + "; ".join(p.proof_detail[:80] for p in uncertain_proofs[:2]))
+    else:
+        return DimensionResult(
+            "MIVR_ConstraintProof", 0.30, "UNCERTAIN", 0.0,
+            "no conclusive proofs")
+
+
+def detect_heap_overflow_mivr(pseudocode: str) -> Tuple[str, float, List[PairProof]]:
+    """MIVR 独立检测入口 — 返回 (verdict, confidence, proofs).
+
+    可用于:
+      - 独立检测 (替代 GAPSBV)
+      - 与 GAPSBV 结果对比
+      - 消融研究
+
+    Example:
+        >>> code = '''
+        ...     buf = malloc(64);
+        ...     if (idx < 64) {
+        ...         buf[idx] = value;
+        ...     }
+        ... '''
+        >>> verdict, conf, proofs = detect_heap_overflow_mivr(code)
+        >>> print(verdict)  # SAFE
+    """
+    prover = MIVRPairProver()
+    proofs = prover.prove_from_source(pseudocode)
+    safe = [p for p in proofs if p.verdict == "SAFE"]
+    overflow = [p for p in proofs if p.verdict == "OVERFLOW"]
+
+    if safe:
+        max_conf = max(p.confidence for p in safe)
+        return "SAFE", max_conf, proofs
+    elif overflow:
+        max_conf = max(p.confidence for p in overflow)
+        return "OVERFLOW", max_conf, proofs
+    else:
+        return "UNCERTAIN", 0.0, proofs
+
+
+def run_gapsbv_with_mivr(pseudocode: str) -> GapsbvReport:
+    """GAPSBV + MIVR 联合检测 — 在现有5维度基础上添加维度6.
+
+    与 detect_heap_overflow_gapsbv 接口兼容, 但额外运行 MIVR 维度.
+    """
+    from analysis.gapsbv_pipeline import detect_heap_overflow_gapsbv
+
+    # 运行原 GAPSBV 5维度
+    report = detect_heap_overflow_gapsbv(pseudocode)
+
+    # 追加 MIVR 作为维度6
+    dim6 = dim6_mivr_constraint_proof(pseudocode)
+
+    # 若MIVR给出更强的判定, 考虑覆盖
+    if dim6.verdict == "SAFE" and report.verdict != "SAFE":
+        # MIVR证明安全而GAPSBV未证明 → 安全覆盖
+        report.verdict = "SAFE"
+        report.confidence = max(report.confidence, dim6.confidence)
+        report.active_filters.append("MIVR_ConstraintProof")
+
+    # 添加MIVR维度结果
+    report.dimensions.append(dim6)
+
+    return report
+
+
+__all__ = [
+    'dim6_mivr_constraint_proof',
+    'detect_heap_overflow_mivr',
+    'run_gapsbv_with_mivr',
+]

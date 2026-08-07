@@ -24,12 +24,11 @@ PQC迁移路径规划器 — 从检测到的经典密码学实现自动生成向
     - 预期的二进制尺寸变化
     - 前置依赖(什么必须先改)
 
-参考:
-  - NIST FIPS 203/204/205 (2024): ML-KEM, ML-DSA, SLH-DSA标准。
-  - NIST SP 800-208 (2020, updated 2024): 有状态哈希签名推荐(LMS/XMSS)。
-  - OMB M-23-02 (2022): 联邦系统PQC迁移时间线要求。
-  - CNSA 2.0 (2024): 国家安全系统密码学算法迁移指南。
-  - QED (IEEE Access 2025): 量子脆弱可执行文件检测 — 本模块补充其"检测后"环节。
+  - NIST FIPS 203/204/205: ML-KEM, ML-DSA, SLH-DSA标准。
+  - NIST SP 800-208: 有状态哈希签名推荐(LMS/XMSS)。
+  - OMB M-23-02: 联邦系统PQC迁移时间线要求。
+  - CNSA 2.0: 国家安全系统密码学算法迁移指南。
+  - QED: 量子脆弱可执行文件检测 — 本模块补充其"检测后"环节。
 
 边界条件:
   - 迁移建议基于NIST标准推荐, 不包含专有算法。
@@ -42,13 +41,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-
 class MigrationPriority(Enum):
     CRITICAL = 0    # 直接暴露在网络攻击面的密钥协商
     HIGH = 1        # 数字签名(证书/身份验证)
     MEDIUM = 2      # 对称加密(需增加密钥长度)
     LOW = 3         # 哈希函数(需增加输出长度)
-
 
 @dataclass
 class MigrationStep:
@@ -64,8 +61,7 @@ class MigrationStep:
     depends_on: List[int] = field(default_factory=list)  # 前置步骤ID列表
     agility_requirement: str = "MODERATE"  # 需要的敏捷性级别
 
-
-# ── 量子脆弱算法→PQC替代方案映射 ──
+# 量子脆弱算法→PQC替代方案映射
 # 格式: (当前算法, [(替代算法, 参数集, 安全级别, NIST标准, 选择理由)])
 _MIGRATION_MAP: Dict[str, List[Tuple[str, str, int, str, str]]] = {
     'RSA': [
@@ -126,7 +122,6 @@ _HASH_UPGRADES: Dict[str, str] = {
     'MD5': 'SHA-256 或 SHA-512 (MD5已废弃)',
 }
 
-
 def _estimate_binary_size_impact(current_algo: str, target_algo: str) -> str:
     """估计迁移到PQC后二进制尺寸的变化量级。"""
     if 'ML-KEM' in target_algo:
@@ -140,7 +135,6 @@ def _estimate_binary_size_impact(current_algo: str, target_algo: str) -> str:
     elif 'SHA-512' in target_algo:
         return '+1-3KB (IV和常量表尺寸翻倍)'
     return 'unknown'
-
 
 def _estimate_key_size_change(current_algo: str, target_algo: str) -> str:
     """描述密钥/签名/密文尺寸变化。"""
@@ -156,7 +150,6 @@ def _estimate_key_size_change(current_algo: str, target_algo: str) -> str:
     return changes.get((current_algo, target_algo),
                         f'密钥/签名尺寸会显著增加(PQC特征)')
 
-
 @dataclass
 class MigrationPlan:
     plan_id: str = ""
@@ -165,7 +158,6 @@ class MigrationPlan:
     critical_count: int = 0
     estimated_total_size_increase: str = ""
     minimum_agility_required: str = "MODERATE"
-
 
 def generate_migration_plan(crypto_findings: Optional[List] = None,
                             agility_report=None

@@ -7,7 +7,7 @@ from collections import defaultdict
 class RaceConditionDetector:
     """TOCTOU, lock ordering, 信号处理 race, kernel double-fetch detection"""
 
-    # ---- 初始化: TOCTOU API对 + 锁API + 信号API ----
+# 初始化: TOCTOU API对 + 锁API + 信号API
 
     def __init__(self):
         # TOCTOU 检查-使用 API pairs
@@ -77,7 +77,7 @@ class RaceConditionDetector:
             'EnterCriticalSection', 'LeaveCriticalSection',
         ]
 
-    # ---- TOCTOU检测: 检查->使用 API对分析 ----
+# TOCTOU检测: 检查->使用 API对分析
 
     def detect_toctou(self, imports: Dict[str, List[str]]) -> List[Dict]:
         _findings = []
@@ -158,7 +158,7 @@ class RaceConditionDetector:
 
         return _findings
 
-    # ===== 信号处理Race检测 =====
+# 信号处理Race检测
 
     def detect_signal_races(self, strings: List[str],
                              imports: Dict[str, List[str]]) -> List[Dict]:
@@ -218,7 +218,7 @@ class RaceConditionDetector:
 
         return _findings
 
-    # ---- 内核Double-Fetch模式检测 ----
+# 内核Double-Fetch模式检测
 
     def detect_double_fetch(self, strings: List[str],
                              imports: Dict[str, List[str]]) -> List[Dict]:
@@ -248,7 +248,7 @@ class RaceConditionDetector:
                     'description': f'Potential kernel double-fetch: {_desc}',
                 })
 
-        # __user annotation + access_ok
+# user annotation + access_ok
         if re.search(r'access_ok.*copy_from_user', _strs_text, re.I | re.DOTALL):
             if re.search(r'copy_from_user.*access_ok', _strs_text, re.I | re.DOTALL):
                 _findings.append({

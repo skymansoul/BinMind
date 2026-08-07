@@ -74,7 +74,7 @@ class RegPressureReport:
         }
 
 
-# ── 寄存器活跃度分析器 ────────────────────────────────────────────
+# 寄存器活跃度分析器
 
 class LivenessTracker:
     """逐指令追踪寄存器活跃度。
@@ -165,7 +165,7 @@ class LivenessTracker:
         return []
 
 
-# ── 端口压力建模 ──────────────────────────────────────────────────
+# 端口压力建模
 
 class PortPressureModel:
     """Skylake/Zen4 简化的执行端口压力模型。
@@ -204,7 +204,7 @@ class PortPressureModel:
         return pp
 
 
-# ── 分析器 ────────────────────────────────────────────────────────
+# 分析器
 
 class RegPressureAnalyzer:
     """补丁寄存器压力分析器。"""

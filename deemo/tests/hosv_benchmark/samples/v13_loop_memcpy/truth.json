@@ -1,0 +1,8 @@
+{
+  "sample": "v13_loop_memcpy",
+  "cve": "CVE-2019-13143",
+  "mode": "walk_write",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "8 次 × 16 字节 = 128 > 64 分配 → 循环累积越界"
+}

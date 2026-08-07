@@ -1,4 +1,4 @@
-"""栈内存完整性检查 —— 借鉴 BASICS [Fang+, arXiv:2511.19670]。
+"""栈内存完整性检查 —— 借鉴 BASICS。
 
 BASICS 用 model checking + concolic execution 验证栈安全属性。
 本模块实现其可工程化子集：字节码模式分析检测栈帧中的溢出、
@@ -74,9 +74,9 @@ class StackIntegrityReport:
         }
 
 
-# ── 危险函数签名表 ────────────────────────────────────────────────
+# 危险函数签名表
 # 每项: (pattern, 默认缓冲区大小(bytes), 风险权重)
-# 参考 BASICS Table 1 的危险函数分类
+# BASICS Table 1 的危险函数分类
 
 _DANGEROUS_FUNC_SIGS = [
     # (regex, estimated buffer size, risk weight 0..10)
@@ -98,7 +98,7 @@ _DANGEROUS_FUNC_SIGS = [
     (r'call.*<g_utf8_strlcpy>', 256, 5),
 ]
 
-# ── 栈帧操作模式 ──────────────────────────────────────────────────
+# 栈帧操作模式
 # 检测函数序言中的栈帧大小和 canary 存在性
 
 _STACK_PROLOGUE_X86 = re.compile(
@@ -141,9 +141,7 @@ class StackIntegrityChecker:
             self._prologue_pat = _STACK_PROLOGUE_X86
             self._canary_read = _CANARY_READ_X86
 
-    # ============================================================
     # 主编排 —— 加载二进制 → 解析函数 → 逐函数栈帧分析
-    # ============================================================
     def analyze(self, binary_path: str,
                 function_list: Optional[List[Dict]] = None) -> StackIntegrityReport:
         """分析二进制栈完整性，返回结构化报告。"""
@@ -196,7 +194,7 @@ class StackIntegrityChecker:
 
         return _rpt
 
-    # ── 二进制加载 ──────────────────────────────────────────────────
+# 二进制加载
 
     def _load_binary(self, path: str) -> Optional[bytes]:
         try:
@@ -206,7 +204,7 @@ class StackIntegrityChecker:
             _logger.warning("cannot load %s", path)
             return None
 
-    # ── 函数发现 ────────────────────────────────────────────────────
+# 函数发现
     # 序言模式扫描，不依赖符号表（stripped binary 无符号）
 
     def _discover_functions(self, data: bytes) -> List[Dict]:
@@ -239,7 +237,7 @@ class StackIntegrityChecker:
 
         return _funcs
 
-    # ── 单函数栈帧分析 ──────────────────────────────────────────────
+# 单函数栈帧分析
 
     def _analyze_frame(self, data: bytes, fn_info: Dict) -> StackFrameInfo:
         _off = fn_info.get('offset', 0)
@@ -319,7 +317,7 @@ class StackIntegrityChecker:
         _sc -= len(frame.dangerous_calls) * 0.05
         return max(_sc, 0.05)
 
-    # ── 综合评分 ────────────────────────────────────────────────────
+# 综合评分
 
     def _compute_safety_score(self, report: StackIntegrityReport) -> float:
         """BASICS 风格 stack safety score。
@@ -351,7 +349,7 @@ class StackIntegrityChecker:
         return StackRisk.CRITICAL
 
 
-# ── 便捷入口 ──────────────────────────────────────────────────────
+# 便捷入口
 
 def check_stack_integrity(binary_path: str,
                           function_list: Optional[List[Dict]] = None) -> Dict:

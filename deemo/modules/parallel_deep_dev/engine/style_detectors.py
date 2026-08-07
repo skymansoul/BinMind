@@ -1,11 +1,9 @@
 """
-创建: 2025-07-28
+创建: 2026-07-05
 修改:
   2025-08-01 - docstring 检测补全实现，修正辅助函数整合
   2025-08-03 - 加权统计函数从 style_normalizer 迁移
 代码风格检测器 — 从 Python 源文件提取 8 维风格特征向量。
-
-从 style_normalizer.py 分离，保持单文件可管理性。
 每个检测函数独立可测，不依赖外部状态。
 """
 
@@ -131,9 +129,7 @@ def blank_lines_between_funcs(source: str) -> int:
     return statistics.mode(gaps) if gaps else 1
 
 
-# ---------------------------------------------------------------------------
 # 自动修正辅助函数
-# ---------------------------------------------------------------------------
 
 def normalize_quotes(source: str, target: str) -> str:
     """将引号统一为目标风格。保守模式：仅处理不含冲突引号的字符串。"""
@@ -148,9 +144,7 @@ def tabs_to_spaces(source: str, spaces: int) -> str:
     return source.replace("\t", " " * spaces)
 
 
-# ---------------------------------------------------------------------------
 # 加权统计 — 用于共识计算
-# ---------------------------------------------------------------------------
 
 def weighted_mode(values: list[str], weights: list[float] | None, default: str) -> str:
     if weights is None:

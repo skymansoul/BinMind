@@ -1,4 +1,4 @@
-# 创建: 2025-09-28
+# 创建: 2026-08-08
 # 分配大小污点追踪 — 从外部输入到malloc(size)的参数值流分析
 
 """分配大小污点追踪器。
@@ -74,7 +74,7 @@ class AllocSiteReport:
         }
 
 
-# ── 分配点扫描器 ──────────────────────────────────────────────────
+# 分配点扫描器
 
 class AllocSiteScanner:
     """扫描汇编中的所有内存分配调用点。
@@ -103,32 +103,38 @@ class AllocSiteScanner:
             sites.append(site)
         return sites
 
+    # 分配size参数寄存器: SysV=rdi, MS x64=rcx
+    _SIZE_ARG_REGS = ('rdi', 'edi', 'rcx', 'ecx')
+
     def _find_size_arg(self, asm: List[str], call_idx: int
                        ) -> Tuple[str, bool, int]:
-        """回溯找 call malloc 前对 rdi 的设置。"""
+        """回溯找 call malloc 前对 size 参数的设置。
+        ABI兼容: SysV (rdi/edi) 和 MS x64 (rcx/ecx)。
+        """
         for j in range(call_idx - 1, max(call_idx - 8, -1), -1):
             line = asm[j].strip().lower().replace(',', ' ')
-            # mov rdi, imm
-            m = re.search(r'\bmov\s+rdi,?\s*(0x[0-9a-f]+|\d+)', line)
-            if m:
-                v = m.group(1)
-                val = int(v, 16) if v.lower().startswith('0x') else int(v)
-                return 'rdi', True, val
-            # mov rdi, reg
-            m = re.search(r'\bmov\s+rdi,?\s*(\w+)', line)
-            if m:
-                return m.group(1), False, 0
-            # lea rdi, [reg+off]
-            m = re.search(r'\blea\s+rdi,?\s*\[', line)
-            if m:
-                return 'rdi (lea)', False, 0
-            # xor edi, edi → rdi=0
-            if re.search(r'\bxor\s+edi,?\s*edi', line):
-                return 'rdi', True, 0
+            for reg in self._SIZE_ARG_REGS:
+                # mov reg, imm
+                m = re.search(r'\bmov\s+' + reg + r',?\s*(0x[0-9a-f]+|\d+)', line)
+                if m:
+                    v = m.group(1)
+                    val = int(v, 16) if v.lower().startswith('0x') else int(v)
+                    return reg, True, val
+                # mov reg, reg
+                m = re.search(r'\bmov\s+' + reg + r',?\s*(\w+)', line)
+                if m and m.group(1) not in ('qword', 'dword', 'ptr'):
+                    return m.group(1), False, 0
+                # lea reg, [reg+off]
+                m = re.search(r'\blea\s+' + reg + r',?\s*\[', line)
+                if m:
+                    return reg + ' (lea)', False, 0
+                # xor reg, reg → 0
+                if re.search(r'\bxor\s+' + reg + r',?\s*' + reg, line):
+                    return reg, True, 0
         return 'rdi', False, 0
 
 
-# ── 需求驱动的污点回溯器 ──────────────────────────────────────────
+# 需求驱动的污点回溯器
 
 class DemandDrivenTaintTracker:
     """仅在遇到 malloc 调用时才从 size 参数反向追踪污点。
@@ -206,17 +212,20 @@ class DemandDrivenTaintTracker:
         return True, "indirect (depth limit)", 15
 
     def _find_rdi_source_reg(self, asm: List[str], call_idx: int) -> Optional[str]:
-        """找到设置 rdi 的源寄存器。"""
-        for j in range(call_idx - 1, max(call_idx - 8, -1), -1):
-            line = asm[j].strip().lower().replace(',', ' ')
-            m = re.search(r'\bmov\s+rdi,?\s*(\w+)', line)
-            if m:
-                reg = m.group(1)
-                if reg not in ('rdi',):
-                    return reg
-            # mov rdi, [mem] — 内存加载，保守返回None
-            if re.search(r'\bmov\s+rdi,?\s*\[', line):
-                return None
+        """找到设置 rdi/rcx (size参数) 的源寄存器。
+        ABI兼容: SysV (rdi) 和 MS x64 (rcx)。
+        """
+        for reg in ('rdi', 'rcx'):
+            for j in range(call_idx - 1, max(call_idx - 8, -1), -1):
+                line = asm[j].strip().lower().replace(',', ' ')
+                m = re.search(r'\bmov\s+' + reg + r',?\s*(\w+)', line)
+                if m:
+                    src = m.group(1)
+                    if src not in ('rdi', 'rcx', 'qword', 'dword', 'ptr'):
+                        return src
+                # mov reg, [mem] — 内存加载，保守返回None
+                if re.search(r'\bmov\s+' + reg + r',?\s*\[', line):
+                    return None
         return 'rdi'
 
     @staticmethod

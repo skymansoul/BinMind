@@ -1,0 +1,176 @@
+tool,sample_id,detected,confirmed,likely,elapsed_ms,peak_mem_mb,notes
+DP-TVRA,cve_2014_0160_heartbleed,True,0,3,35.6,,"C=0,L=3,F=1"
+PatternMatch,cve_2014_0160_heartbleed,True,0,1,19.0,,pattern match baseline
+Angr,cve_2014_0160_heartbleed,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2014_0160_heartbleed,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2014_0160_heartbleed,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2015_3864_stagefright,True,0,1,21.9,,"C=0,L=1,F=0"
+PatternMatch,cve_2015_3864_stagefright,True,0,1,18.5,,pattern match baseline
+Angr,cve_2015_3864_stagefright,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2015_3864_stagefright,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2015_3864_stagefright,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2016_10190_ffmpeg,True,1,1,23.6,,"C=1,L=1,F=0"
+PatternMatch,cve_2016_10190_ffmpeg,True,0,1,18.7,,pattern match baseline
+Angr,cve_2016_10190_ffmpeg,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2016_10190_ffmpeg,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2016_10190_ffmpeg,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2017_5638_struts,True,0,1,57.9,,"C=0,L=1,F=0"
+PatternMatch,cve_2017_5638_struts,True,0,1,44.7,,pattern match baseline
+Angr,cve_2017_5638_struts,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2017_5638_struts,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2017_5638_struts,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2018_1000001_glibc,True,0,2,23.8,,"C=0,L=2,F=0"
+PatternMatch,cve_2018_1000001_glibc,True,0,1,20.1,,pattern match baseline
+Angr,cve_2018_1000001_glibc,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2018_1000001_glibc,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2018_1000001_glibc,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2019_13139_docker,True,0,2,22.7,,"C=0,L=2,F=0"
+PatternMatch,cve_2019_13139_docker,True,0,1,19.4,,pattern match baseline
+Angr,cve_2019_13139_docker,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2019_13139_docker,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2019_13139_docker,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2020_0796_smbghost,True,1,1,25.0,,"C=1,L=1,F=0"
+PatternMatch,cve_2020_0796_smbghost,True,0,1,33.9,,pattern match baseline
+Angr,cve_2020_0796_smbghost,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2020_0796_smbghost,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2020_0796_smbghost,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2021_3156_sudo,True,0,1,24.8,,"C=0,L=1,F=0"
+PatternMatch,cve_2021_3156_sudo,True,0,1,18.2,,pattern match baseline
+Angr,cve_2021_3156_sudo,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2021_3156_sudo,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2021_3156_sudo,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2022_0185_kernel,True,0,2,22.1,,"C=0,L=2,F=0"
+PatternMatch,cve_2022_0185_kernel,True,0,1,18.9,,pattern match baseline
+Angr,cve_2022_0185_kernel,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2022_0185_kernel,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2022_0185_kernel,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2022_22620_webkit,True,0,2,22.5,,"C=0,L=2,F=0"
+PatternMatch,cve_2022_22620_webkit,True,0,1,18.6,,pattern match baseline
+Angr,cve_2022_22620_webkit,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2022_22620_webkit,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2022_22620_webkit,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,cve_2023_0669_gitlab,True,0,1,23.2,,"C=0,L=1,F=0"
+PatternMatch,cve_2023_0669_gitlab,True,0,1,19.7,,pattern match baseline
+Angr,cve_2023_0669_gitlab,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,cve_2023_0669_gitlab,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,cve_2023_0669_gitlab,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_basic_01,True,1,0,22.1,,"C=1,L=0,F=0"
+PatternMatch,heap_overflow_basic_01,True,0,1,19.1,,pattern match baseline
+Angr,heap_overflow_basic_01,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_basic_01,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_basic_01,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_calloc_04,True,1,0,22.7,,"C=1,L=0,F=0"
+PatternMatch,heap_overflow_calloc_04,True,0,1,18.9,,pattern match baseline
+Angr,heap_overflow_calloc_04,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_calloc_04,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_calloc_04,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_guard_05,True,0,1,58.0,,"C=0,L=1,F=0"
+PatternMatch,heap_overflow_guard_05,True,0,1,44.5,,pattern match baseline
+Angr,heap_overflow_guard_05,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_guard_05,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_guard_05,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_loop_02,False,0,0,23.7,,"C=0,L=0,F=0"
+PatternMatch,heap_overflow_loop_02,True,0,1,21.1,,pattern match baseline
+Angr,heap_overflow_loop_02,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_loop_02,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_loop_02,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_multibuf_06,True,1,1,22.9,,"C=1,L=1,F=0"
+PatternMatch,heap_overflow_multibuf_06,True,0,1,18.1,,pattern match baseline
+Angr,heap_overflow_multibuf_06,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_multibuf_06,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_multibuf_06,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,heap_overflow_realloc_03,True,1,0,57.7,,"C=1,L=0,F=1"
+PatternMatch,heap_overflow_realloc_03,True,0,1,46.9,,pattern match baseline
+Angr,heap_overflow_realloc_03,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,heap_overflow_realloc_03,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,heap_overflow_realloc_03,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_01,True,1,0,61.6,,"C=1,L=0,F=0"
+PatternMatch,sample_01,True,0,1,45.3,,pattern match baseline
+Angr,sample_01,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_01,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_01,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_02,True,0,1,62.1,,"C=0,L=1,F=0"
+PatternMatch,sample_02,True,0,1,44.3,,pattern match baseline
+Angr,sample_02,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_02,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_02,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_03,True,0,1,59.0,,"C=0,L=1,F=0"
+PatternMatch,sample_03,True,0,1,45.3,,pattern match baseline
+Angr,sample_03,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_03,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_03,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_04,False,0,0,58.2,,"C=0,L=0,F=0"
+PatternMatch,sample_04,True,0,1,45.9,,pattern match baseline
+Angr,sample_04,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_04,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_04,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_05,True,1,0,63.8,,"C=1,L=0,F=1"
+PatternMatch,sample_05,True,0,1,45.9,,pattern match baseline
+Angr,sample_05,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_05,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_05,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_06,False,0,0,56.3,,"C=0,L=0,F=1"
+PatternMatch,sample_06,True,0,1,44.5,,pattern match baseline
+Angr,sample_06,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_06,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_06,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_07,True,0,1,68.5,,"C=0,L=1,F=0"
+PatternMatch,sample_07,True,0,1,44.0,,pattern match baseline
+Angr,sample_07,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_07,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_07,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_08,True,1,2,58.4,,"C=1,L=2,F=0"
+PatternMatch,sample_08,True,0,1,43.6,,pattern match baseline
+Angr,sample_08,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_08,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_08,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_09,True,1,1,25.2,,"C=1,L=1,F=0"
+PatternMatch,sample_09,True,0,1,18.5,,pattern match baseline
+Angr,sample_09,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_09,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_09,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_10,True,1,1,55.6,,"C=1,L=1,F=0"
+PatternMatch,sample_10,True,0,1,44.5,,pattern match baseline
+Angr,sample_10,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_10,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_10,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_11,False,0,0,58.3,,"C=0,L=0,F=2"
+PatternMatch,sample_11,True,0,1,44.0,,pattern match baseline
+Angr,sample_11,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_11,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_11,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_12,True,1,2,66.0,,"C=1,L=2,F=0"
+PatternMatch,sample_12,True,0,1,45.5,,pattern match baseline
+Angr,sample_12,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_12,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_12,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_13,True,0,2,61.7,,"C=0,L=2,F=0"
+PatternMatch,sample_13,True,0,1,44.6,,pattern match baseline
+Angr,sample_13,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_13,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_13,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_14,True,1,0,66.7,,"C=1,L=0,F=1"
+PatternMatch,sample_14,True,0,1,46.9,,pattern match baseline
+Angr,sample_14,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_14,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_14,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_15,False,0,0,58.2,,"C=0,L=0,F=0"
+PatternMatch,sample_15,True,0,1,61.7,,pattern match baseline
+Angr,sample_15,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_15,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_15,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_16,True,1,0,62.4,,"C=1,L=0,F=1"
+PatternMatch,sample_16,True,0,1,44.2,,pattern match baseline
+Angr,sample_16,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_16,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_16,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_17,True,0,1,58.0,,"C=0,L=1,F=0"
+PatternMatch,sample_17,True,0,1,44.2,,pattern match baseline
+Angr,sample_17,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_17,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_17,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment
+DP-TVRA,sample_18,True,1,0,58.4,,"C=1,L=0,F=1"
+PatternMatch,sample_18,True,0,1,45.5,,pattern match baseline
+Angr,sample_18,True,0,1,3200,450,ESTIMATED — Angr requires Linux environment
+Ghidra,sample_18,True,0,1,4500,800,ESTIMATED — Ghidra requires Linux environment
+QEMU,sample_18,True,0,1,800,50,ESTIMATED — QEMU requires Linux environment

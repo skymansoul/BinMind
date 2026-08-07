@@ -21,7 +21,7 @@ class ReachabilityResult:
     evidence: str = ""
 
 
-# ==== CallGraphBuilder: objdump解析与调用图构建 ====
+# CallGraphBuilder: objdump解析与调用图构建
 
 class CallGraphBuilder:
     """从objdump反汇编提取call/bl指令，构建有向调用图。
@@ -109,7 +109,7 @@ class CallGraphBuilder:
                 "edges": sum(len(v) for v in self.edges.values())}
 
 
-# ==== 三层可达性检测辅助函数 ====
+# 三层可达性检测辅助函数
 
 def _find_imports(disasm: str, component_symbols: List[str]) -> Dict[str, bool]:
     """L1检测。反汇编中搜索call/jmp/bl对目标符号的直接引用。"""
@@ -138,7 +138,7 @@ def _find_string_refs(strings_text: str, component_names: List[str],
     return results
 
 
-# ==== 主分析入口 ====
+# 主分析入口
 
 def analyze_reachability(binary_path: str, sbom_components: List[Dict],
                          disasm: str = "", strings_text: str = "",

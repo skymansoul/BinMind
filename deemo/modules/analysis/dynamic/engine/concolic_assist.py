@@ -1,5 +1,5 @@
 # 2026-07-17
-# TACE 风格 (FSE 2024) 混合执行辅助 —— 污点桥接 + 约束分类 + 路径求解
+# TACE 风格 混合执行辅助 —— 污点桥接 + 约束分类 + 路径求解
 # 设计思路：只对污点相关的约束做符号求解，减少 SMT 求解器压力
 # DependencyTracker 追踪寄存器/Mem依赖，Constraint分类器 按污点分类
 #
@@ -207,8 +207,8 @@ class ConcolicExplorer:
     def set_strategy(self, strategy: ExplorationStrategy):
         self._strategy = strategy
 
-    # ── 舍入 7: 约束简化 — TACE风格的污点过滤 ──────────────────────
-    # TACE (FSE 2024) 的核心优化：只对污点相关的约束做符号求解，
+# 舍入 7: 约束简化 — TACE风格的污点过滤
+    # TACE 的核心优化：只对污点相关的约束做符号求解，
     # 跳过与外部输入无关的内部循环计数器和位掩码约束
     # 这通常能将SMT求解器的调用次数减少40-60%
     def filter_tainted_constraints(self, branches: List[BranchPoint],

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 增量管道执行 — 在 context-key 粒度上检测输入变更, 跳过无变化的钩子.
 

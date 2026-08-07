@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 14:37
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-05-05 14:37
+# 修改: 2026-05-05 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 贝叶斯在线变点检测
 # 贝叶斯在线变点检测 — CVE利用态势的实时结构断点识别
 #
@@ -12,7 +12,7 @@
 # 不可逆的状态跃迁 — 这本质上是变点检测问题.
 #
 # 解决方案: 贝叶斯在线变点检测 (BOCD).
-# 基于Adams & MacKay (2007) 的框架, 适配到CVE利用事件流:
+# 基于Adams & MacKay 的框架, 适配到CVE利用事件流:
 #   1. 维持行程长度 (run length) r_t 的后验分布 P(r_t | x_{1:t}).
 #      r_t = 自上次变点以来的时间步数.
 #   2. 对每个r_t, 计算观测模型 P(x_t | θ) 在参数后验下的预测密度.
@@ -29,8 +29,8 @@
 #     观测模型: 多项Dirichlet.
 #
 # 输出: 对每条CVE流, 实时计算:
-#   - 当前行程长度MAP估计 (自上次态势变化以来的天数)
-#   - 变点概率 (当前步是变点的后验概率)
+# 当前行程长度MAP估计 (自上次态势变化以来的天数)
+# 变点概率 (当前步是变点的后验概率)
 #   - 态势标签 (pre_exploit / active_exploitation / post_patch / dormant)
 #
 # 非显而易见性:
@@ -38,11 +38,11 @@
 #   2. 三类异构观测的联合似然融合: 速度×严重度×多样性.
 #   3. 态势标签不是启发式规则而是后验推断 — 可量化不确定性.
 #
-# 参考:
-#   [Adams & MacKay 2007] Bayesian Online Changepoint Detection (arXiv:0710.3742)
-#   [Fearnhead & Liu 2007] 在线变点检测综述
-#   [Lyrie.ai 2026] CVE→Exploit 时间线实证分析
-#   [Cheimonidis & Rantos 2025] 贝叶斯网络+马尔可夫链的风险评估
+#
+# Bayesian Online Changepoint Detection
+# 在线变点检测综述
+# CVE→Exploit 时间线实证分析
+# 贝叶斯网络+马尔可夫链的风险评估
 
 import math
 from collections import deque
@@ -311,7 +311,7 @@ class MultiStreamChangepointMonitor:
         return self._total_updates
 
 
-# ---- CVE专用适配 ----
+# CVE专用适配
 
 def estimate_hazard_from_kb(kb, lookback_days: int = 365) -> float:
     """从KB中估计经验风险率 (每月态势变化频率).

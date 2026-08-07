@@ -5,7 +5,7 @@
 2025-08-14 09:45 - 在线 Fisher 信息更新
 2025-08-20 09:49 - 修正: Fedorov 交换简化 (3次迭代), 非严格 D-最优收敛;
              对角假设下 D-效率仅近似而非精确最优设计"""
-# 参考: Fedorov (1972), Atkinson et al. (2007), Pukelsheim (2006).
+# Fedorov, Atkinson et al., Pukelsheim.
 # 将突变位置选择建模为最优实验设计: 选择 max det(Fisher) 的位置子集。
 # 使用对角 Fisher 信息做 Fedorov 交换 (3次迭代), D-效率近似而非精确最优。
 
@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ---- DOMP 参数 ----
+# DOMP 参数
 _N_DESIGN_POINTS = 16        # 每轮设计点数
 _MAX_CANDIDATES = 200         # 最大候选位置数
 

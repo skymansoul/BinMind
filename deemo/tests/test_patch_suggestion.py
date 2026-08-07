@@ -104,10 +104,10 @@ lass字段完整性$/d
         response = """## 修复说明
 这是修复说明内容。
 
-## 建议补丁
-```diff
---- a/test.c
-+++ b/test.c
+# 建议补丁
+# ```diff
+# --- a/test.c
+# +++ b/test.c
 @@ -1,3 +1,5 @@
  void func() {
 +    // 添加检查
@@ -115,7 +115,7 @@ lass字段完整性$/d
  }
 ```
 
-## 置信度
+# 置信度
 0.95"""
 
         result = self.suggester._parse_ai_response(response)
@@ -185,16 +185,16 @@ lass字段完整性$/d
         mock_client.chat.completions.create.return_value.choices[0].message.content = """## 修复说明
 修复缓冲区溢出漏洞。
 
-## 建议补丁
-```diff
---- a/test.c
-+++ b/test.c
+# 建议补丁
+# ```diff
+# --- a/test.c
+# +++ b/test.c
 @@ -1 +1 @@
 -old code
 +new code
 ```
 
-## 置信度
+# 置信度
 0.9"""
 
         with patch('modules.patch_suggestion.Config.AI_PROVIDER', 'openai'):

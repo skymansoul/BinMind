@@ -2,7 +2,7 @@
 # 技术问题: seccomp-tools dump输出BPF过滤器但需要手工分析哪些syscall
 #   可用、哪些被阻止、哪些syscall可以替代被阻止的syscall.
 #   例如: open被阻止但openat可用→通过/proc/self/mem读写任意内存.
-#   DEF CON 33 (2025) 披露了11个eBPF verifier漏洞,
+#   DEF CON 33 披露了11个eBPF verifier漏洞,
 #   但经典seccomp-bpf绕过 (不依赖eBPF漏洞) 的分析仍需手工
 # 解决手段: 解析seccomp-BPF过滤器, 自动映射:
 #   1. 系统调用矩阵: 每个syscall→{allowed, killed, errno, trapped}
@@ -10,11 +10,10 @@
 #   3. 逃逸评估: 检测/proc/self/mem可用性、命名空间逃逸可能性、
 #      prctl/seccomp(SECCOMP_SET_MODE_FILTER)的自身修改能力
 # 技术效果: 自动化了通常需要30-60分钟的手工BPF过滤器审计
-# 参考:
+#
 #   经典seccomp-bpf绕过技术 (基于CTF writeup和公开研究)
-#   CTF ORW绕过体系 (2025) — open→openat→/proc/self/mem链
-#   sbe_core sandbox (2025) — KILL/ERRNO双列表架构
-from __future__ import annotations
+#   CTF ORW绕过体系 — open→openat→/proc/self/mem链
+#   sbe_core sandbox — KILL/ERRNO双列表架构
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

@@ -1,0 +1,300 @@
+{
+  "tools": [
+    {
+      "name": "DRIFT (Ours)",
+      "tp": 7,
+      "fp": 2,
+      "precision": 0.7778,
+      "recall": 1.0,
+      "f1": 0.875,
+      "time_ms": 920.2,
+      "per_sample": [
+        {
+          "sample": "cve_uaf_03.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 106.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_04.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 96.0,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_05.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 6,
+          "time_ms": 117.4,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_06.exe",
+          "category": "conditional",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 92.4,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_07.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 95.5,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_08.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 4,
+          "time_ms": 121.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_09.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 2,
+          "time_ms": 92.1,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_10.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 102.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_11.exe",
+          "category": "double_free",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 95.6,
+          "match": true
+        }
+      ]
+    },
+    {
+      "name": "SameRegBaseline",
+      "tp": 7,
+      "fp": 2,
+      "precision": 0.7778,
+      "recall": 1.0,
+      "f1": 0.875,
+      "time_ms": 195.8,
+      "per_sample": [
+        {
+          "sample": "cve_uaf_03.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 1,
+          "time_ms": 21.8,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_04.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 22.9,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_05.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 3,
+          "time_ms": 23.0,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_06.exe",
+          "category": "conditional",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 20.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_07.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 21.3,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_08.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 20.8,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_09.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 2,
+          "time_ms": 20.9,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_10.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 23.1,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_11.exe",
+          "category": "double_free",
+          "expected": 1,
+          "detected": 3,
+          "time_ms": 21.4,
+          "match": true
+        }
+      ]
+    },
+    {
+      "name": "PatternMatch",
+      "tp": 7,
+      "fp": 2,
+      "precision": 0.7778,
+      "recall": 1.0,
+      "f1": 0.875,
+      "time_ms": 197.4,
+      "per_sample": [
+        {
+          "sample": "cve_uaf_03.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 1,
+          "time_ms": 23.0,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_04.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 23.2,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_05.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 3,
+          "time_ms": 22.3,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_06.exe",
+          "category": "conditional",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 21.0,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_07.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 21.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_08.exe",
+          "category": "cross_fn",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 20.7,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_09.exe",
+          "category": "safe",
+          "expected": 0,
+          "detected": 2,
+          "time_ms": 22.1,
+          "match": false
+        },
+        {
+          "sample": "cve_uaf_10.exe",
+          "category": "simple",
+          "expected": 1,
+          "detected": 2,
+          "time_ms": 22.0,
+          "match": true
+        },
+        {
+          "sample": "cve_uaf_11.exe",
+          "category": "double_free",
+          "expected": 1,
+          "detected": 3,
+          "time_ms": 21.4,
+          "match": true
+        }
+      ]
+    }
+  ],
+  "ground_truth": {
+    "cve_uaf_03.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "cross_fn"
+    },
+    "cve_uaf_04.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "cross_fn"
+    },
+    "cve_uaf_05.exe": {
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "category": "safe"
+    },
+    "cve_uaf_06.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "conditional"
+    },
+    "cve_uaf_07.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "simple"
+    },
+    "cve_uaf_08.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "cross_fn"
+    },
+    "cve_uaf_09.exe": {
+      "expected_uaf": 0,
+      "expected_df": 0,
+      "category": "safe"
+    },
+    "cve_uaf_10.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "simple"
+    },
+    "cve_uaf_11.exe": {
+      "expected_uaf": 1,
+      "expected_df": 0,
+      "category": "double_free"
+    }
+  }
+}

@@ -18,7 +18,7 @@ from .src.binary_normalizer import (  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-# ── radare2 可用性 ─────────────────────────────────────────────────
+# radare2 可用性
 _R2_PATH = os.environ.get("R2_PATH", "r2")
 try:
     _r2_test = subprocess.run(
@@ -30,7 +30,7 @@ except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
     _HAS_R2 = False
 
 
-# ── radare2函数级差异分析 ────────────────────────────────────────────────
+# radare2函数级差异分析
 # 使用radare2的radiff2或radare2 diff命令进行函数级语义比较
 
 def _r2_function_diff(binary_a: str, binary_b: str) -> List[Dict[str, Any]]:
@@ -100,7 +100,7 @@ def _r2_function_diff(binary_a: str, binary_b: str) -> List[Dict[str, Any]]:
         return []
 
 
-# ── 二进制执行与输出比较 ─────────────────────────────────────────────────
+# 二进制执行与输出比较
 
 def _execute_and_capture(binary_path: str, args: List[str],
                          timeout_s: int = 15) -> Dict[str, Any]:
@@ -135,8 +135,8 @@ def _execute_and_capture(binary_path: str, args: List[str],
     return result
 
 
-# ── 语义相似度差分引擎 (arXiv 2511.03995, 2025) ──────────────────────────────
-# 参考: "Hybrid 模糊测试 LLM-Guided Input 变异 Semantic Feedback"
+# 语义相似度差分引擎
+# "Hybrid 模糊测试 LLM-Guided Input 变异 Semantic Feedback"
 # 利用嵌入向量的余弦相似度量化两次运行的"行为差异"——不仅比对输出，更比对
 # 执行迹的语义特征：基本块分布、系统调用频率、内存分配模式等
 # 此方法优于纯文本 diff，因语义等价但语法不同的代码段会被正确识别为"相同行为"
@@ -626,7 +626,7 @@ class DifferentialFuzzer:
                     f.write(f"- Type: {diff['type']}\n")
                     f.write(f"  Description: {diff['description']}\n\n")
 
-    # ── 公共辅助: 引用二进制差分 ─────────────────────────────────────
+# 公共辅助: 引用二进制差分
     # 外部调用者可以传入参考二进制来进行真正的成对比较
 
     def diff_against_reference(self, reference_path: str) -> Dict[str, Any]:

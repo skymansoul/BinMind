@@ -27,7 +27,7 @@ class DiagnosticSession:
     session_id:str; binary_path:str; events:List[TraceEvent]=field(default_factory=list)
     start_time:float=0.0; end_time:float=0.0; exit_code:int=0
 
-# ── 舍入 8: 编译器 fingerprinting ─────────────────────────────────────
+# 舍入 8: 编译器 fingerprinting
 # 不同编译器生成独特的代码模式。识别依据:
 # GCC: endbr64; sub rsp, imm;.; add rsp, imm; ret (特定栈帧大小)
 #   Clang: push rbp; mov rbp, rsp; sub rsp, imm (更标准的帧指针)
@@ -208,7 +208,7 @@ class DiagnosticTracer:
             details={'signum': signum, 'signame': signame, 'context': context or ''}))
         self._stats['signals'] += 1
 
-    # ── 舍入 8: 编译器 detection binary ──────────────────────────
+# 舍入 8: 编译器 detection binary
     def fingerprint_compiler(self) -> Dict[str, Any]:
         """对当前二进制进行编译器指纹识别"""
         if not self.binary_path or not os.path.isfile(self.binary_path):

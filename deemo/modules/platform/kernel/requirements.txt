@@ -1,4 +1,0 @@
-pyyaml>=6.0
-# optional
-# qemu-system-x86_64 (system package)
-# gcc (system package)

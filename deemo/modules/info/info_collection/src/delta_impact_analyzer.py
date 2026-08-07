@@ -1,4 +1,4 @@
-# Created: 2025-07-26 10:15:00
+# Created: 2026-07-11 10:15:00
 # Modified: 2025-07-31 14:00:00 — replaced bidirectional diff with Shapley-value
 #   decomposition. Each changed signal's contribution to the net risk delta is
 #   computed by marginalizing over all possible signal orderings, providing a

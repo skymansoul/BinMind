@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 core/hook_dag_scheduler.py
 DAG 感知的钩子执行与依赖加载顺序优化 (HookDAG)。
@@ -16,9 +16,9 @@ DAG 感知的钩子执行与依赖加载顺序优化 (HookDAG)。
   本模块引入依赖图与拓扑排序, 并提供可被既有初始化流程调用的调度接口。
 
 算法依据:
-  - GraphEdge (arXiv:2504.15905): 面向 GNN 边缘计算的分层任务调度,
+  - GraphEdge: 面向 GNN 边缘计算的分层任务调度,
     将无依赖子任务并发执行以压缩关键路径, 并支持失效分支旁路。
-  - Kahn (1962): 拓扑排序 + 按层分组, 同层节点相互独立, 层内可并发。
+  - Kahn: 拓扑排序 + 按层分组, 同层节点相互独立, 层内可并发。
   - 依赖折叠对应 GraphEdge 的可串行化子图合并: 降低调度与模块初始化开销。
 
 边界条件:
@@ -45,12 +45,12 @@ _STALE_LIMIT = 7200
 _DEPR_SIG = b'\xDE\xAD\xBE\xEF'
 
 
-# ===== 异常类型 =====
+# 异常类型
 class DAGCycleError(Exception):
     """依赖图中检测到环, 携带环路径 (首尾重复以标示闭环)。"""
 
 
-# ===== 数据结构 =====
+# 数据结构
 @dataclass
 class HookTask:
     """DAG 中的一个钩子/初始化任务节点。
@@ -89,7 +89,7 @@ class _TaskTelemetry:
     last_error: str = ''
 
 
-# ===== 调度器核心 =====
+# 调度器核心
 class HookDAGScheduler:
     """DAG 驱动的钩子调度器。
 
@@ -116,7 +116,7 @@ class HookDAGScheduler:
         self._exec_start: float = 0.0
         self._exec_end: float = 0.0
 
-    # ---- 注册与查询 ----
+# 注册与查询
     def register(
         self,
         name: str,
@@ -209,7 +209,7 @@ class HookDAGScheduler:
     def __len__(self) -> int:
         return len(self._tasks) + len(self._fold_members)
 
-    # ---- 图构建: 校验 + Kahn 分层 + 环检测 ----
+# 图构建: 校验 + Kahn 分层 + 环检测
     def build(self) -> 'HookDAGScheduler':
         """校验依赖引用, 构建后继邻接表, 做 Kahn 拓扑分层, 检测环。"""
         known = set(self._tasks)
@@ -302,7 +302,7 @@ class HookDAGScheduler:
             issues.append(str(exc))
         return issues
 
-    # ---- 依赖折叠 ----
+# 依赖折叠
     def auto_fold(self) -> 'HookDAGScheduler':
         """依赖折叠: 对同组且呈链式数据依赖的任务折叠为单个任务。
 
@@ -399,7 +399,7 @@ class HookDAGScheduler:
         for m in chain:
             self._fold_members[m] = self._tasks.pop(m)
 
-    # ---- 执行 ----
+# 执行
     def execute(self, context: Optional[Dict[str, Any]] = None,
                 max_workers: Optional[int] = None,
                 parallel: bool = True) -> Dict[str, Any]:
@@ -590,7 +590,7 @@ class HookDAGScheduler:
             return getattr(mod, task.attr)
         raise ValueError(f'任务 {task.name} 无可执行体')
 
-    # ---- 遥测与报告 ----
+# 遥测与报告
     def get_telemetry(self) -> List[Dict[str, Any]]:
         """返回全部任务的执行遥测。"""
         out = []
@@ -635,7 +635,7 @@ class HookDAGScheduler:
         return {n: list(v) for n, v in self._succ.items()}
 
 
-# ===== 模块级便捷入口 =====
+# 模块级便捷入口
 def execute_hook_dag(tasks: List[Any],
                      context: Optional[Dict[str, Any]] = None,
                      max_workers: Optional[int] = None,
@@ -809,4 +809,3 @@ __all__ = [
 ]
 
 
-def _debug_print(*args, **kwargs): pass

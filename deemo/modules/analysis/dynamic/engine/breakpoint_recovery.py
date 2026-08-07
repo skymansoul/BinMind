@@ -637,7 +637,7 @@ class BreakpointRecoveryManager:
             except Exception as e:
                 logger.error(f"Recovery callback error: {e}")
 
-    # --- 新增: 审计日志导出 ---
+# 新增: 审计日志导出
     # 循环缓冲区保留最近500条操作记录，支持按时间范围和严重度过滤
     def export_audit_log(self, max_entries: int = 100) -> List[Dict]:
         """导出最近N条审计日志 — 用于事后分析和报告生成"""

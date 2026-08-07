@@ -9,8 +9,8 @@
 # 对 stripped binary 和固件 blob 失效.基于熵+模式的启发式方法不依赖元数据，
 # 覆盖所有二进制格式.
 #
-# 参考: Jacobson et al., "Detecting Code Reuse Attacks with a Model of
-#   Binary Structure" (2017) — 证明字节熵分布是区分代码/数据的有效信号.
+# Jacobson et al., "Detecting Code Reuse Attacks with a Model of
+#   Binary Structure" — 证明字节熵分布是区分代码/数据的有效信号.
 
 import math
 import struct
@@ -77,7 +77,7 @@ def _detect_prologue(data: bytes, offset: int) -> bool:
 def estimate_entropy(data: bytes, offset: int, size: int) -> float:
     """快速字节熵估计 (256-bin 直方图 + 降采样优化).
 
-    size > 2048 时启用均匀降采样 (步长=size//2048),
+    size > 2048 时启用均匀降采样,
     将复杂度从 O(size) 降至 O(1) 同时偏差 ≤ 3%.
     """
     if size <= 0:

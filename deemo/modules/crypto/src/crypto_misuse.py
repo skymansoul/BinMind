@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 name = "CryptoMisuseDetector"
 module = "crypto_misuse"
 
-# ── 常量库 ──
+# 常量库
 
 _WEAK_IVS = [
     b'\x00' * 16,                  # 全零IV
@@ -77,7 +77,7 @@ PREDICTABLE_RNG_APIS = [
     'drand48', 'lrand48',
 ]
 
-# ── 新增常量库 (2026-07) ──
+# 新增常量库
 
 # RSA小公钥指数 — 当e ≤ 17时存在Coppersmith/Hastad广播/Bleichenbacher攻击风险
 _RSA_SMALL_EXPONENTS = [
@@ -123,7 +123,7 @@ _PADDING_ORACLE_STRINGS = [
     'error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block',
 ]
 
-# ── 误用记录类型 ──
+# 误用记录类型
 
 Misuse = namedtuple('Misuse', ['type', 'api', 'address', 'detail', 'severity'])
 
@@ -150,7 +150,7 @@ class CryptoMisuse:
         return [i for i in self.issues if SEVERITY.get(i.severity.upper(), 0) >= threshold]
 
 
-# ── GEAR哈希预过滤器, 用于加速字符串提取 ──
+# GEAR哈希预过滤器, 用于加速字符串提取
 # GEAR是内容定义分块系统(restic, borg, Veeam)使用的滚动哈希。
 # 此处作为预过滤器: 未命中任何目标前缀哈希的字符串在Python层提取前被跳过。
 
@@ -196,7 +196,7 @@ _BLOOM_CONST = _build_string_bloom(_CONSTANT_TIME_APIS + _GENERIC_MEMCMP_APIS)
 _BLOOM_PADDING = _build_string_bloom(_PADDING_ORACLE_STRINGS + ['padding', 'decrypt', 'pad'])
 
 
-# ── 核心扫描器 ──
+# 核心扫描器
 
 class CryptoMisuseDetector:
     """扫描二进制, 检测十一类密码学最佳实践违规。"""
@@ -232,7 +232,7 @@ class CryptoMisuseDetector:
         self._check_weak_rng(result)
         self._check_ecb_ciphertext_patterns(result)
 
-        # 新增检测 (2026-07)
+        # 新增检测
         self._check_rsa_small_exponent(result)
         self._check_constant_time_absence(result)
         self._check_padding_oracle_strings(result)
@@ -241,7 +241,7 @@ class CryptoMisuseDetector:
 
         return result
 
-    # ── 各检测遍历 ──
+# 各检测遍历
 
     def _extract_strings(self, min_len: int = 4) -> None:
         pat = rb'[\x20-\x7e]{%d,}' % min_len
@@ -304,7 +304,7 @@ class CryptoMisuseDetector:
             result.add(Misuse('ECB_ARTIFACT', 'N/A', hex(0),
                               f'{hits} repeated 16-byte blocks (ECB indicator)', 'LOW'))
 
-    # ── 新增检测遍历 (2026-07) ──
+# 新增检测遍历
 
     def _check_rsa_small_exponent(self, result: CryptoMisuse) -> None:
         """
@@ -428,7 +428,7 @@ class CryptoMisuseDetector:
                     return  # 每二进制报告一次
 
 
-# ── 便捷函数 ──
+# 便捷函数
 
 def scan_for_weak_random(binary) -> list:
     detector = CryptoMisuseDetector()

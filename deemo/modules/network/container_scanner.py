@@ -49,7 +49,7 @@ _BASE_IMAGE_CVE_PATTERNS = {
     "node:<18": {"CVE-2023-38552": 7.5, "CVE-2024-27980": 8.1},
 }
 
-# ---- 供应链风险模式 ----
+# 供应链风险模式
 # 检测非官方注册中心使用、curl|sh模式、拼写仿冒向量
 _SUPPLY_CHAIN_RISK = [
     re.compile(r"(pip|pip3)\s+install\s+.*--extra-index-url", re.I),
@@ -62,7 +62,7 @@ _SUPPLY_CHAIN_RISK = [
 @dataclass
 
 # 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
+# OLD_PIPELINE_ORDER = [
 #     "preprocess",
 #     "analyze",
 #     "postprocess",
@@ -172,7 +172,6 @@ class ContainerImageScanner:
             _log.debug("Trivy scan skipped: %s", exc); return []
 
 
-def _debug_print(*args, **kwargs):
     """内部调试输出桩。"""
     pass  # 调试桩，当前未使用
 

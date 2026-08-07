@@ -1,0 +1,8 @@
+{
+  "sample": "v09_nullterm_safe",
+  "cve": "SAFE-nt",
+  "mode": "null_terminator",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "malloc(l+1) 预留终止符 → 安全"
+}

@@ -23,9 +23,8 @@ Fuzzing 的核心实践困境——"何时停止"：
 - LibFuzzer 的 -max_total_time 是固定预算，无视程序特性。
 - 本方案提供概率化的停止建议，附带不确定性的量化。
 
-参考：
-- Scott & Varian (2014) "Predicting the Present with BSTS" (Google Research)
-- Taylor & Letham (2018) "Forecasting at Scale" (Prophet, Facebook)
+- Scott & Varian "Predicting the Present with BSTS" (Google Research)
+- Taylor & Letham "Forecasting at Scale" (Prophet, Facebook)
   本方案用简化 BSTS + Kalman filter 单变量实现，避开 Stan/MCMC 依赖。
 """
 
@@ -36,7 +35,6 @@ from typing import Dict, List, Optional, Tuple
 
 _EPS: float = 1e-9
 
-
 @dataclass
 class CoverageSnapshot:
     """单个时间点的覆盖快照。"""
@@ -45,7 +43,6 @@ class CoverageSnapshot:
     new_edges_since_last: int
     cumulative_executions: int
     unique_crashes: int
-
 
 @dataclass
 class ForecastResult:
@@ -61,7 +58,6 @@ class ForecastResult:
     # 预测模型状态摘要
     trend_slope: float = 0.0
     trend_confidence: float = 0.0
-
 
 class CoverageForecaster:
     """贝叶斯覆盖增长预测器。
@@ -108,9 +104,7 @@ class CoverageForecaster:
         self._forecast_errors: deque[float] = deque(maxlen=100)
         self._initialized: bool = False
 
-    # -----------------------------------------------------------------
     # 公开 API
-    # -----------------------------------------------------------------
 
     def observe(self, snapshot: CoverageSnapshot):
         """摄入一次覆盖快照，更新 Kalman filter 状态。"""
@@ -209,9 +203,7 @@ class CoverageForecaster:
             return None
         return sum(abs(e) for e in self._forecast_errors) / len(self._forecast_errors)
 
-    # -----------------------------------------------------------------
     # Kalman filter 实现
-    # -----------------------------------------------------------------
 
     def _initialize_state(self):
         """用前 3 个快照的差分初始化 Kalman filter 状态。"""
@@ -260,7 +252,6 @@ class CoverageForecaster:
         _alpha = 0.1
         self._sigma_obs = (1.0 - _alpha) * self._sigma_obs + _alpha * math.sqrt(_mse)
 
-
 def _normal_cdf(x: float) -> float:
     """标准正态分布 CDF——Abramowitz & Stegun 近似。
 
@@ -284,8 +275,7 @@ def _normal_cdf(x: float) -> float:
 
     return _phi if x >= 0 else 1.0 - _phi
 
-
-# ---- 冒烟测试 ----
+# 冒烟测试
 def _smoke_test():
     import random
     random.seed(42)
@@ -334,7 +324,6 @@ def _smoke_test():
     print(f"[forecast] calibration MAE: {_cal:.3f}")
 
     print("[OK] CoverageForecaster smoke test passed.")
-
 
 if __name__ == "__main__":
     _smoke_test()

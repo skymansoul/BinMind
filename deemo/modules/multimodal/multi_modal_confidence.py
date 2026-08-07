@@ -8,12 +8,12 @@ from typing import Dict, List, Optional, Tuple
 
 import hashlib  # unused; reserved for hash-based seed derivation
 
-# ==== 贝叶斯先验参数 ====
+# 贝叶斯先验参数
 _BETA_PRIOR_ALPHA: float = 2.0
 _BETA_PRIOR_BETA: float = 2.0
-# ==== 混合平滑因子，K 越大 → 需要更多观测才信任校准 ====
+# 混合平滑因子，K 越大 → 需要更多观测才信任校准
 _DEFAULT_BLEND_K: float = 10.0
-# ==== 校准权重的上界 ====
+# 校准权重的上界
 _MAX_CAL_WEIGHT: float = 0.95
 
 # 保留
@@ -82,10 +82,8 @@ class ConfusionMatrix:
             self.fn += 1
 
 
-# ============================================================================
 # 校准器比较仪表盘 — 同一数据上运行多种校准方法，输出对比报告
 # 帮助选定最适合当前分析器特性的校准策略
-# ============================================================================
 
 def calibration_benchmark(raw_scores: List[float],
                            labels: List[int],
@@ -149,10 +147,8 @@ def calibration_benchmark(raw_scores: List[float],
     return {'best_method': _best, 'methods': _results, 'sample_size': _n}
 
 
-# ============================================================================
 # Beta 校准器 — Beta(α+success, β+(total-success)) 后验
 # Beta(2,2) 先验：对称分布、mode=0.5，等价于预先观测 2 次成功 + 2 次失败
-# ============================================================================
 
 class BetaCalibration:
     """Beta-Binomial 共轭校准：先验 Beta(2,2) + 二项观测 → Beta 后验。"""
@@ -187,7 +183,7 @@ class BetaCalibration:
         self._success += success
         self._total += total
 
-    # ---- 后验均值 = α/(α+β) —— 最小均方误差估计 ----
+# 后验均值 = α/(α+β) —— 最小均方误差估计
     def get_confidence(self) -> float:
         """Beta 后验均值：E[θ|data] = α/(α+β)。"""
         _a = self._posterior_alpha()
@@ -240,9 +236,7 @@ class BetaCalibration:
         return _area
 
 
-# ============================================================================
 # 温度缩放 — 最简校准方法：学习单一温度参数 T 使 softmax 平滑
-# ============================================================================
 
 class TemperatureScaling:
     """温度缩放校准：logits / T → softmax，优化 T 使 NLL 最小。
@@ -299,10 +293,8 @@ class TemperatureScaling:
         return max(_probs)
 
 
-# ============================================================================
 # Brier 分数 — 概率预测的均方误差
 # BS = (1/N)·Σ(p_i - y_i)²，值越低越好，BS=0 为完美校准
-# ============================================================================
 
 def brier_score(probabilities: List[float], labels: List[int]) -> float:
     """Brier 分数：校准概率与真实标签的均方误差。
@@ -317,10 +309,8 @@ def brier_score(probabilities: List[float], labels: List[int]) -> float:
     return round(_sq_err / _n, 4)
 
 
-# ============================================================================
 # 分位数校准 — 验证预测概率分位数与实际频率一致
 # 对校准后概率排序分桶，比较每桶的期望频率 vs 实际频率
-# ============================================================================
 
 def quantile_calibration_check(probabilities: List[float],
                                 labels: List[int],
@@ -353,9 +343,7 @@ def quantile_calibration_check(probabilities: List[float],
     return {'predicted': _pred_means, 'actual': _actual_means, 'counts': _counts}
 
 
-# ============================================================================
 # 可靠性图数据 — 用于绘制校准曲线
-# ============================================================================
 
 def reliability_diagram_data(probabilities: List[float],
                               labels: List[int],
@@ -393,9 +381,7 @@ def reliability_diagram_data(probabilities: List[float],
     return {'bin_centers': _centers, 'bin_accuracies': _accs, 'bin_counts': _cnts}
 
 
-# ============================================================================
 # Platt 缩放 — 逻辑回归校准原始分数 → 概率
-# ============================================================================
 
 class PlattScaling:
     """Platt 缩放：将原始分数通过 sigmoid(A·f + B) 映射为校准概率。
@@ -442,10 +428,8 @@ class PlattScaling:
         return 1.0 / (1.0 + math.exp(-(self.A * raw_score + self.B)))
 
 
-# ============================================================================
 # 期望校准误差 (ECE) — 衡量预测置信度与实际准确率的一致性
 # ECE = Σ(|B_b|/N) * |acc(B_b) - conf(B_b)|，值越低校准越好
-# ============================================================================
 
 def expected_calibration_error(confidences: List[float],
                                 accuracies: List[float],
@@ -477,10 +461,8 @@ def expected_calibration_error(confidences: List[float],
     return round(_ece, 4)
 
 
-# ============================================================================
 # 概念漂移检测 — 监控分析器性能的时序稳定性
 # 使用滑动窗口 CUSUM 简化版：窗口均值偏离历史均值超过阈值 → 漂移告警
-# ============================================================================
 
 class DriftDetector:
     """概念漂移检测器：监控分析器置信度的时序稳定性。
@@ -528,9 +510,7 @@ class DriftDetector:
         self.in_drift = False
 
 
-# ============================================================================
 # 加权混合器 — 样本量加权融合原始分数与校准分数
-# ============================================================================
 
 class WeightedBlender:
     """原始置信度与校准置信度的加权混合。
@@ -546,10 +526,8 @@ class WeightedBlender:
         return (1.0 - _w) * raw_score + _w * calibrated_score
 
 
-# ============================================================================
 # Isotonic 回归简化 — 保序回归：将分数映射为单调递增的校准值
 # 使用 PAV (Pool-Adjacent-Violators) 算法
-# ============================================================================
 
 class IsotonicCalibration:
     """保序回归校准：通过 PAV 算法强制执行单调性约束。"""
@@ -604,9 +582,7 @@ class IsotonicCalibration:
         return self._calibrated_values[-1]
 
 
-# ============================================================================
 # 批量校准 + 集成预测
-# ============================================================================
 
 def calibrate_analyzers(metadata_list: List[AnalyzerMetadata],
                         credible_mass: float = 0.95,
@@ -662,10 +638,8 @@ def ensemble_predict(calibrated_metadata: List[AnalyzerMetadata],
     return _ensemble, _contrib
 
 
-# ============================================================================
 # 序贯贝叶斯更新 — 每步观测后实时更新后验
 # 用于在线场景：分析器逐样本报告，置信度随观测流持续演化
-# ============================================================================
 
 class SequentialBayesianUpdater:
     """序贯贝叶斯更新器：每观测到一次 (success/fail) 立即更新后验。
@@ -746,11 +720,9 @@ class SequentialBayesianUpdater:
         return round(math.log(max(_current_var, 1e-12) / _first_var) / _n_delta, 4)
 
 
-# ============================================================================
 # 贝叶斯模型平均 (BMA) — 对多个校准器做后验加权
-# 参考：Hoeting et al. Bayesian Model Averaging. Statistical Science 1999.
+# Hoeting et al. Bayesian Model Averaging. Statistical Science 1999.
 # 每个校准方法视为一个"模型"，其后验概率由其历史 Brier 分数决定
-# ============================================================================
 
 def bayesian_model_average(calibrator_outputs: List[Dict[str, Any]],
                              brier_scores: Optional[List[float]] = None
@@ -793,12 +765,10 @@ def bayesian_model_average(calibrator_outputs: List[Dict[str, Any]],
     }
 
 
-# ============================================================================
 # 成本敏感阈值 — 根据假阳性/假阴性代价调整决策阈值
-# 参考：Elkan. The Foundations of Cost-Sensitive Learning. IJCAI 2001.
+# Elkan. The Foundations of Cost-Sensitive Learning. IJCAI 2001.
 # optimal_threshold = C_FP / (C_FP + C_FN)
 # 当假阴性代价远高于假阳性时，自动降低阈值以提高召回
-# ============================================================================
 
 def cost_sensitive_threshold(calibrated_probs: List[float],
                               cost_fp: float = 1.0,
@@ -821,11 +791,9 @@ def cost_sensitive_threshold(calibrated_probs: List[float],
     return round(_opt_thresh, 4)
 
 
-# ============================================================================
 # 校准变化追踪 — 随时间监控校准器的性能退化
-# 参考：Widmer & Kubat. Learning in the Presence of Concept Drift. 1996.
+# Widmer & Kubat. Learning in the Presence of Concept Drift. 1996.
 # 当校准误差趋势线斜率显著为正 → 需要重新校准
-# ============================================================================
 
 class CalibrationDriftMonitor:
     """校准漂移监控：追踪 ECE 的时序变化，预警校准失效。
@@ -869,11 +837,9 @@ class CalibrationDriftMonitor:
         self.recalibrate_needed = False
 
 
-# ============================================================================
 # 鲁棒校准 — 使用 Huber 损失替代 MSE 的稳健保序回归
-# 参考：Huber. Robust Estimation of a Location Parameter. 1964.
+# Huber. Robust Estimation of a Location Parameter. 1964.
 # 对离群值敏感度由 δ 控制：|resid| ≤ δ → MSE, |resid| > δ → MAE
-# ============================================================================
 
 def huber_calibration_loss(prob: float, label: int, delta: float = 0.2) -> float:
     """Huber 校准损失：对离群分数鲁棒的 BCE 替代。

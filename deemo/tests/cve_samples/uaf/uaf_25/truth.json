@@ -1,0 +1,1 @@
+﻿{"expected":"TN","sample":"uaf_25_reassign_safe","description":"Free followed by immediate reassign — use after reassign is safe","cwe":"CWE-416","vuln_type":"use-after-free"}

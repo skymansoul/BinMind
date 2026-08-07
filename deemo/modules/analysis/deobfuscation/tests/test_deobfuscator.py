@@ -13,7 +13,7 @@ except Exception:
     _deobf_available = False
 
 
-# ── 指令模拟（简化版汇编指令） ──
+# 指令模拟（简化版汇编指令）
 
 def _make_block(block_id, instructions, start=0, end=0):
     """创建BasicBlock模拟"""
@@ -183,7 +183,7 @@ class TestDeobfuscationModule:
         assert ControlFlowPattern.OPAQUE is not None
 
 
-# ── 独立测试 ──
+# 独立测试
 
 def test_defs_uses_extraction():
     """_extract_defs_uses解析def/use集合"""

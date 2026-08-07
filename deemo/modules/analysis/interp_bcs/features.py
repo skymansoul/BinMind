@@ -2,7 +2,7 @@
 #
 # 对应论文:
 # Beyond Embeddings: Interpretable 特征提取 for Binary Code
-#   Similarity — arXiv:2509.23449 [待验证]
+#   Similarity — [待验证]
 #
 # 设计意图:
 # 端到端嵌入(embedding)是黑盒——它能给出相似度分数，却无法回答"为何相似"
@@ -106,9 +106,7 @@ class FunctionFeature:
     string_refs: List[StringRef] = field(default_factory=list)
     source_hash: str = ''          # 原文的确定性指纹，用于去重
 
-    # ------------------------------------------------------------------
     # 序列化：人工审计入口。返回完全 JSON 可序列化的字典
-    # ------------------------------------------------------------------
     def to_dict(self) -> Dict[str, Any]:
         return {
             'function_name': self.function_name,
@@ -138,10 +136,8 @@ class FunctionFeature:
             } for s in self.string_refs[:64]],
         }
 
-    # ------------------------------------------------------------------
     # 稠密嵌入：固定 64 维，供 ANNIndex / 聚类等下游数值算法使用
     # 维度划分为 4 组各 16 维，分别对应四类语义特征的有损哈希桶
-    # ------------------------------------------------------------------
     def to_vector(self, dim: int = 64) -> List[float]:
         if dim % 4 != 0:
             dim = 64
@@ -203,10 +199,8 @@ class FeatureExtractor:
         feats.string_refs = self._extract_strings(code)
         return feats
 
-    # ------------------------------------------------------------------
     # 调用模式：捕获 "name(" 并统计实参顶层逗号个数
     # 排除控制流/类型关键字与函数自身(定义头)
-    # ------------------------------------------------------------------
     def _extract_calls(self, code: str, function_name: str) -> List[CallPattern]:
         counter: Dict[str, List[int]] = {}
         # 移除函数定义头行，避免把 "void foo(int a)" 当作调用
@@ -344,9 +338,7 @@ class FeatureExtractor:
             branch_factor=round(decision_count / max(1, len(re.findall(r';', code))), 4),
         )
 
-    # ------------------------------------------------------------------
     # 文本工具
-    # ------------------------------------------------------------------
     @staticmethod
     def _strip_signature_line(code: str, function_name: str) -> str:
         """移除函数定义头行，它看起来像调用 'name(.)'"""
@@ -444,9 +436,7 @@ class InterpretableSimilarity:
         overall = total / max(1e-9, weight_sum)
         return SimilarityReport(overall, scores, audit, dict(self.weights))
 
-    # ------------------------------------------------------------------
     # 各维度相似度
-    # ------------------------------------------------------------------
     @staticmethod
     def _calls_sim(fa: FunctionFeature, fb: FunctionFeature) -> float:
         set_a = {p.callee for p in fa.call_patterns}
@@ -506,9 +496,7 @@ class InterpretableSimilarity:
             return 0.0
         return dot / (na * nb)
 
-    # ------------------------------------------------------------------
     # 审计解释：把分数翻译为人类可读的差异描述
-    # ------------------------------------------------------------------
     @staticmethod
     def _audit_calls(fa: FunctionFeature, fb: FunctionFeature) -> List[str]:
         set_a = {p.callee for p in fa.call_patterns}

@@ -1,0 +1,329 @@
+{
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "fpr": 0.0,
+  "tp": 14,
+  "fp": 0,
+  "fn": 0,
+  "tn": 1,
+  "results": {
+    "double_free_01": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 11,
+          "var": "data",
+          "reason": "'data' free@L9 and 'data' free@L11 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_02": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 10,
+          "var": "p",
+          "reason": "'p' free@L9 and 'p' free@L10 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_03": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 8,
+          "var": "p",
+          "reason": "'setup' wraps free('p') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 9,
+          "var": "g_alias",
+          "reason": "'teardown' wraps free('g_alias') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 9,
+          "var": "g_alias",
+          "reason": "'p' free@L8 and 'g_alias' free@L9 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_04": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 9,
+          "var": "p",
+          "reason": "'p' free@L9 inside loop body",
+          "confidence": 0.85
+        }
+      ]
+    },
+    "double_free_05": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 10,
+          "var": "buf",
+          "reason": "'buf' free@L9 and 'buf' free@L10 (cross)",
+          "confidence": 0.8
+        },
+        {
+          "verdict": "VULN",
+          "line": 12,
+          "var": "buf",
+          "reason": "'buf' free@L9 and 'buf' free@L12 (cross)",
+          "confidence": 0.8
+        },
+        {
+          "verdict": "VULN",
+          "line": 12,
+          "var": "buf",
+          "reason": "'buf' free@L10 and 'buf' free@L12 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_06": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 9,
+          "var": "g_buf",
+          "reason": "'handler' wraps free('g_buf') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 12,
+          "var": "g_buf",
+          "reason": "'g_buf' free@L9 and 'g_buf' free@L12 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_07": {
+      "expected": 0,
+      "detected": 0,
+      "tp": false,
+      "fp": false,
+      "fn": false,
+      "tn": true,
+      "findings": []
+    },
+    "double_free_08": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 12,
+          "var": "a->next",
+          "reason": "'a->next' free@L12 after 'a' freed@L11",
+          "confidence": 0.75
+        }
+      ]
+    },
+    "double_free_09": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 6,
+          "var": "gp",
+          "reason": "'gp' free@L5 and 'gp' free@L6 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_10": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 4,
+          "var": "shared",
+          "reason": "'do_free' wraps free('shared') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "shared",
+          "reason": "'shared' free@L4 and 'shared' free@L5 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_11": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "c->d1",
+          "reason": "'destroy' wraps free('c->d1') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "c->d2",
+          "reason": "'destroy' wraps free('c->d2') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "c",
+          "reason": "'destroy' wraps free('c') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "c->d2",
+          "reason": "'c->d1' free@L5 and 'c->d2' free@L5",
+          "confidence": 0.9
+        }
+      ]
+    },
+    "double_free_12": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "e->val",
+          "reason": "'e->key' free@L5 and 'e->val' free@L5",
+          "confidence": 0.9
+        }
+      ]
+    },
+    "double_free_13": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 6,
+          "var": "resource",
+          "reason": "'release' wraps free('resource') called \u22652x",
+          "confidence": 0.85
+        }
+      ]
+    },
+    "double_free_14": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 5,
+          "var": "ptr",
+          "reason": "'process' wraps free('ptr') called \u22652x",
+          "confidence": 0.85
+        },
+        {
+          "verdict": "VULN",
+          "line": 6,
+          "var": "p",
+          "reason": "'ptr' free@L5 and 'p' free@L6 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "double_free_15": {
+      "expected": 1,
+      "detected": 1,
+      "tp": true,
+      "fp": false,
+      "fn": false,
+      "tn": false,
+      "findings": [
+        {
+          "verdict": "VULN",
+          "line": 6,
+          "var": "b.data",
+          "reason": "'a.data' free@L6 and 'b.data' free@L6 (cross)",
+          "confidence": 0.8
+        }
+      ]
+    }
+  }
+}

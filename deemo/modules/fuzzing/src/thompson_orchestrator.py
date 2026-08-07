@@ -1,5 +1,5 @@
-# 创建: 2025-08-11 14:35
-# 修改: 2025-08-11 — Beta-Bernoulli Thompson 采样 + Cheng BA 算法
+# 创建: 2026-04-20 14:35
+# 修改: 2026-04-20 — Beta-Bernoulli Thompson 采样 + Cheng BA 算法
 """
 Thompson 采样多模糊器编排器 — Bayesian 在线学习动态资源分配。
 
@@ -19,13 +19,13 @@ Thompson 采样的优势 (vs ε-greedy / UCB):
   - 收敛速度: Beta 后验随样本增加快速集中, 减少无谓探索
   - 无超参数: 不像 ε-greedy 需要手动调 ε, UCB 需要调置信界宽度
 
-ref: Thompson (1933) "On the Likelihood that One Unknown Probability
+ref: Thompson "On the Likelihood that One Unknown Probability
      Exceeds Another..." — 原始论文
-ref: Chapelle & Li (2011) "An Empirical Evaluation of Thompson Sampling"
+ref: Chapelle & Li "An Empirical Evaluation of Thompson Sampling"
      (NIPS) — 证明 TS 在 bandit 问题上优于 UCB
-ref: BandFuzz (arXiv:2507.10845, 2025) — 多臂赌博机协作模糊测试,
+ref: BandFuzz  — 多臂赌博机协作模糊测试,
      本项目将 bandit 建模推广到异构模糊器编排而非同构协作
-ref: Scott (2010) "A modern Bayesian look at the multi-armed bandit"
+ref: Scott "A modern Bayesian look at the multi-armed bandit"
      (Applied Stochastic Models in Business and Industry)
 """
 
@@ -39,15 +39,14 @@ import hashlib
 from collections import defaultdict
 from typing import Any, Optional
 
-
-# --- Beta 分布与 Thompson 采样 ---
-# 无 scipy 依赖 — 使用 Cheng (1978) 的 BA 算法从 Gamma 分布采样,
+# Beta 分布与 Thompson 采样
+# 无 scipy 依赖 — 使用 Cheng 的 BA 算法从 Gamma 分布采样,
 # 再用 Gamma(α,1) / (Gamma(α,1) + Gamma(β,1)) 构造 Beta 样本。
 
 def _gamma_sample(shape: float) -> float:
     """Cheng's BA algorithm for Gamma(shape, 1) with shape > 0.
     当 shape < 1 时使用 Johnk's generator。
-    ref: Cheng (1978) "Generating Beta Variates with Nonintegral Shape Parameters" (Algorithm BA)"""
+    ref: Cheng "Generating Beta Variates with Nonintegral Shape Parameters" (Algorithm BA)"""
     if shape <= 0:
         return 1e-9
     if shape < 1.0:
@@ -70,7 +69,6 @@ def _gamma_sample(shape: float) -> float:
         if math.log(u) < 0.5 * x2 + d * (1.0 - v + math.log(v)):
             return d * v
 
-
 def beta_sample(alpha: float, beta: float) -> float:
     """从 Beta(alpha, beta) 采样, 无外部统计库依赖。"""
     if alpha <= 0 or beta <= 0:
@@ -81,8 +79,7 @@ def beta_sample(alpha: float, beta: float) -> float:
         return 0.5
     return g1 / (g1 + g2)
 
-
-# --- 模糊器 arm 定义 ---
+# 模糊器 arm 定义
 
 class FuzzerArm:
     """单个模糊器实例的 Thompson 采样状态。
@@ -144,8 +141,7 @@ class FuzzerArm:
         self.dup_crashes = 0
         self._crash_set.clear()
 
-
-# --- 全局崩溃去重 ---
+# 全局崩溃去重
 # 跨模糊器的崩溃签名去重——检测同一崩溃是否已被其他模糊器发现。
 # 签名基于: 崩溃地址 (前 2 字节) + 调用栈哈希 (前 4 hex chars)
 
@@ -161,8 +157,7 @@ def make_crash_signature(fault_addr: int, stack_trace: list[int],
     h.update(exception_type.encode())
     return h.hexdigest()[:16]
 
-
-# --- Thompson 编排器 ---
+# Thompson 编排器
 
 class ThompsonOrchestrator:
     """多模糊器 Thompson 采样编排器。
@@ -329,8 +324,7 @@ class ThompsonOrchestrator:
     def allocation_history(self) -> list[dict]:
         return list(self._drift_window)
 
-
-# --- 与现有模糊调度器的桥接 ---
+# 与现有模糊调度器的桥接
 # 在增强管线中注册后, Thompson 编排器接管 FuzzingScheduler 的
 # 能量分配职责——但保留现有的种子选择逻辑 (Scheduler/rarity/energy 等)。
 # 仅替换"哪个模糊器实例获得多少 CPU 周期"这一层。
@@ -345,7 +339,6 @@ def thompson_guided_schedule(orchestrator: ThompsonOrchestrator,
         cpus = thompson_guided_schedule(orch, 16)
     """
     return orchestrator.allocate(total_cpus)
-
 
 __all__ = [
     'ThompsonOrchestrator', 'FuzzerArm',

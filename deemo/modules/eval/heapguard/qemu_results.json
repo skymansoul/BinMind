@@ -1,0 +1,181 @@
+{
+  "tool": "QEMU",
+  "results": [
+    {
+      "sample_id": "fmt_01_printf_argv",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_02_printf_gets",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": true,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 QEMU TP"
+    },
+    {
+      "sample_id": "fmt_03_sprintf_fmtarg",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_04_fprintf_user",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_05_fprintf_stdout",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_06_printf_fgets",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": true,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 QEMU TP"
+    },
+    {
+      "sample_id": "fmt_07_printf_read",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": true,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 QEMU TP"
+    },
+    {
+      "sample_id": "fmt_08_snprintf_fmtarg",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_09_printf_heap_fmt",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_10_printf_scanf",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": true,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: stdin-driven format \u2014 QEMU TP"
+    },
+    {
+      "sample_id": "fmt_11_vprintf_user",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_12_printf_strcpy",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: argv-guarded path not taken \u2014 QEMU FN"
+    },
+    {
+      "sample_id": "fmt_safe_literal",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: constant format \u2014 QEMU TN"
+    },
+    {
+      "sample_id": "fmt_safe_literal_var",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: constant format \u2014 QEMU TN"
+    },
+    {
+      "sample_id": "fmt_safe_rodata_table",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: constant format \u2014 QEMU TN"
+    },
+    {
+      "sample_id": "fmt_safe_snprintf_const",
+      "variant": "O2",
+      "mode": "ESTIMATED",
+      "elapsed_sec": 0.6,
+      "overflow_detected": false,
+      "malloc_calls": 0,
+      "memcpy_calls": 0,
+      "segfaults": 0,
+      "notes": "ESTIMATED: constant format \u2014 QEMU TN"
+    }
+  ]
+}

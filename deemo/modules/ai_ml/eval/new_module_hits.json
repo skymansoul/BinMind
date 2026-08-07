@@ -1,0 +1,14 @@
+{
+  "stage_hits": {
+    "\u540c\u6e90": 76,
+    "DCG": 2
+  },
+  "per_sample": {
+    "CVE-2000-0573_wuftpd_fmt": [
+      "\u540c\u6e90"
+    ],
+    "HEAP-FP-006_glibc_alignment_edge": [
+      "DCG"
+    ]
+  }
+}

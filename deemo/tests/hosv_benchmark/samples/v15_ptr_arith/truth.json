@@ -1,0 +1,8 @@
+{
+  "sample": "v15_ptr_arith",
+  "cve": "CVE-2021-3609",
+  "mode": "struct_idx",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "p=arr+3, p[5]=arr[8], 分配 8 元素 → 越界"
+}

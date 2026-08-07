@@ -59,7 +59,7 @@ class ExecutionTrace:
     patch_vicinity_hit: Set[int] = field(default_factory=set)
 
 
-# ── 补丁近接度 ────────────────────────────────────────────────────
+# 补丁近接度
 
 def patch_proximity(trace: ExecutionTrace, patch_sites: List[PatchSite],
                     total_binary_size: int = 0) -> float:
@@ -91,7 +91,7 @@ def patch_proximity(trace: ExecutionTrace, patch_sites: List[PatchSite],
     return min(total_score / max(len(patch_sites), 1), 1.0)
 
 
-# ── 约束边界距离 ──────────────────────────────────────────────────
+# 约束边界距离
 
 def constraint_boundary_distance(input_data: bytes,
                                  patch_sites: List[PatchSite]) -> float:
@@ -164,7 +164,7 @@ def constraint_boundary_distance(input_data: bytes,
     return sum(scores) / max(len(scores), 1)
 
 
-# ── 多样性奖励 ────────────────────────────────────────────────────
+# 多样性奖励
 
 def diversity_bonus(input_data: bytes,
                     seen_inputs: List[bytes],
@@ -230,7 +230,7 @@ def _jensen_shannon_divergence(p: List[float], q: List[float]) -> float:
     return (kl_pm + kl_qm) / 2.0
 
 
-# ── 复合适应度 ────────────────────────────────────────────────────
+# 复合适应度
 
 @dataclass
 class BypassFitness:

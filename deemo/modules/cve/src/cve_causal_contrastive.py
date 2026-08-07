@@ -3,17 +3,17 @@
 # 自监督表示学习方法, 结合因果特征选择、对比学习和因果传播.
 #
 # 核心参考文献:
-#   [CausalVul, ICSE 2024, arXiv:2310.07958]
+#
 #     -- 将 Pearl 的 do-calculus 应用于漏洞检测, 使用后门准则消除虚假相关.
 #     本文将其因果特征选择思想迁移到 CVE 元数据特征空间.
-#   [CMF-Vul, EMSE 2026]
-#     -- 挑战驱动的多模态对比学习, 自适应难负样本挖掘.
+#
+# 挑战驱动的多模态对比学习, 自适应难负样本挖掘.
 #     本文将其对比学习框架适配到 CVE 特征向量 + 利用标签.
-#   [CausalMoE-RAG, May 2026]
-#     -- 结构因果模型 (SCM) 在软件供应链依赖 DAG 上的应用.
+#
+# 结构因果模型 (SCM) 在软件供应链依赖 DAG 上的应用.
 #     本文将其因果传播思想用于 CVE→Product→Vendor 依赖图.
-#   [Parla, arXiv:2411.02618, 2024]
-#     -- EPSS 在 KEV 中的效能分析, 发现 EPSS 对高严重性 CVE 的
+#
+# EPSS 在 KEV 中的效能分析, 发现 EPSS 对高严重性 CVE 的
 #     预妥协预测存在盲区. 本文的难负样本挖掘直接针对此盲区.
 #
 # 方法概述:
@@ -46,7 +46,7 @@ except ImportError:
     _HAS_NUMPY = False
     np = None
 
-# ---- 可观测特征定义 ----
+# 可观测特征定义
 # 从 CVE 元数据中提取的可观测变量, 用于因果发现
 _FEATURE_NAMES = [
     "cvss_score",        # CVSS 基础分数 [0, 10]
@@ -527,7 +527,7 @@ class CausalPropagator:
                 if not k.startswith("product:") and not k.startswith("vendor:")}
 
 
-# ---- C3E Pipeline ----
+# C3E Pipeline
 
 class C3EPipeline:
     """C3E 完整流水线: 因果发现 → 对比学习 → 因果传播."""
@@ -682,7 +682,7 @@ class C3EPipeline:
         return self._fitted
 
 
-# ---- 辅助函数 ----
+# 辅助函数
 
 def _get_num(entry, field: str) -> Optional[float]:
     if hasattr(entry, field):
@@ -735,7 +735,7 @@ def _score_label(score: float) -> str:
     return "LOW"
 
 
-# ---- 便捷接口 ----
+# 便捷接口
 
 def run_c3e_pipeline(kb: CVEKnowledgeBase) -> Dict[str, Any]:
     """一站式 C3E 流水线: 在 KB 上运行因果发现、对比学习、因果传播.

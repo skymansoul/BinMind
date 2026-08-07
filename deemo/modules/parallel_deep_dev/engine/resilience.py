@@ -15,7 +15,7 @@
 - 正常区（health_score > 0.5）：加性增窗口，乘性减窗口（AIMD 风格）
 - 饱和区（health_score <= 0.5）：直接指数退避到 min_concurrency
 
-ref: "Release It! 2nd Edition" (Nygard 2018) — 断路器基础模式，本项目扩展了
+ref: "Release It! 2nd Edition" — 断路器基础模式，本项目扩展了
      多维健康信号和令牌预算联动跳闸
 ref: Toller (github.com/NolanTrem/toller) — Python 异步断路器+速率限制的
      装饰器参考实现，本项目借鉴其状态转换逻辑但增加了令牌预算维度
@@ -25,7 +25,6 @@ ref: throttle-net (github.com/jamesgober/throttle-net) — 多维成本感知
      速率限制的 Rust 参考，本项目借鉴其 acquire_with_cost 思路
 """
 
-from __future__ import annotations
 
 import time
 import threading
@@ -33,9 +32,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-# ---------------------------------------------------------------------------
 # 断路器状态机
-# ---------------------------------------------------------------------------
 
 class CircuitState:
     CLOSED = "CLOSED"          # 正常运行
@@ -123,9 +120,7 @@ class CircuitBreaker:
         return self.state == CircuitState.OPEN
 
 
-# ---------------------------------------------------------------------------
 # 令牌预算追踪 — 独立于断路器，用于 cost-aware 速率限制
-# ---------------------------------------------------------------------------
 
 @dataclass
 class TokenBudget:
@@ -176,9 +171,7 @@ class TokenBudget:
         return max(0, self.tokens_per_minute - self.minute_usage())
 
 
-# ---------------------------------------------------------------------------
 # 自适应并发控制 — AIMD + 双阈值健康信号
-# ---------------------------------------------------------------------------
 
 @dataclass
 class AdaptiveConcurrency:
@@ -219,9 +212,7 @@ class AdaptiveConcurrency:
                 self.current = max(self.min_concurrency, int(self.current * 0.75))
 
 
-# ---------------------------------------------------------------------------
 # 综合健康信号 — 供上层调度决策
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CompositeHealth:

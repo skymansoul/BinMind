@@ -89,7 +89,7 @@ class EntropyAnalyzer:
     def __init__(self):
         pass
 
-    # ---- 公共API ----
+# 公共API
 
     def analyze_file(self, path: str, chunk_size: int = 4096,
                      max_regions: int = 20) -> List[EntropyProfile]:
@@ -202,7 +202,7 @@ class EntropyAnalyzer:
         self._classify(profile)
         return profile
 
-    # ---- 分类 ----
+# 分类
 
     def _classify(self, p: EntropyProfile) -> None:
         """
@@ -232,7 +232,7 @@ class EntropyAnalyzer:
         else:
             p.diagnosis = "indeterminate"
 
-    # ---- 指标实现 ----
+# 指标实现
 
     @staticmethod
     def _monte_carlo_pi(data: bytes) -> Tuple[float, float]:
@@ -376,7 +376,7 @@ class EntropyAnalyzer:
         )
 
 
-# ---- 自适应窗口大小 (2026-07-27) ----
+# 自适应窗口大小
 # 基于数据异质性自适应选择窗口大小。先用小窗口(512B)快速扫描,
 # 计算Shannon熵的MAD(中位绝对偏差), MAD高→窗口加倍,
 # MAD低→窗口缩小。避免齐次区浪费计算, 异质区提高分辨率。
@@ -416,7 +416,7 @@ def adaptive_window_size(data: bytes, min_w: int = 256, max_w: int = 16384) -> i
     return max(min_w, min(max_w, int(min_w * scale)))
 
 
-# ---- 压缩比估计 (2026-07-27) ----
+# 压缩比估计
 # LZ77变体的理论压缩上界: 数据中重复子串越少, 压缩比越低。
 # deflate压缩比估计以entropy/8为下界 — 熵>7.5→几乎不可压缩(密钥/加密数据)。
 
@@ -441,7 +441,7 @@ def compression_ratio_estimate(data: bytes) -> float:
     return 8.0 / max(ent, 0.5)
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def analyze_entropy(path: str, **kwargs) -> List[EntropyProfile]:
     """便捷函数: 扫描文件中的高熵区域。"""

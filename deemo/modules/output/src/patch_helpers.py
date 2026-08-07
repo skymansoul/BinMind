@@ -1,14 +1,14 @@
 """
 补丁分析辅助函数 — 基本块签名、可达性估算、入口候选推断。
 
-从 patch_impact.py 拆分以控制单文件行数。包含:
+以控制单文件行数。包含
   - bb_signature: 指令助记符序列→SHA-256 前 16 位 hex
   - _estimate_reachable: BFS 可达性 (邻接表/启发式回退)
   - _entry_candidates: 导入调用点→入口基本块反推
   - BlockMatch: 单基本块匹配结果的数据类
 
 修改记录:
-  创建 2026-07-30 — 从 patch_impact.py 拆分
+创建 2026-06-10
 """
 
 import hashlib

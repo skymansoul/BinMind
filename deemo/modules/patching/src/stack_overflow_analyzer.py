@@ -70,7 +70,7 @@ class StackOverflowReport:
         }
 
 
-# ── 栈帧分析器 ────────────────────────────────────────────────────
+# 栈帧分析器
 
 class StackFrameAnalyzer:
     """从函数汇编中分析栈帧结构。"""
@@ -79,15 +79,15 @@ class StackFrameAnalyzer:
                 function_name: str = "") -> StackOverflowReport:
         report = StackOverflowReport(function_name=function_name)
 
-        # Step 1: 提取栈帧大小
+        # 提取栈帧大小
         report.stack_frame_size = self._extract_frame_size(asm_lines)
         if report.stack_frame_size == 0:
             report.stack_frame_size = 64  # 默认估计
 
-        # Step 2: 识别局部缓冲区
+        # 识别局部缓冲区
         report.buffers = self._identify_buffers(asm_lines)
 
-        # Step 3: 分析栈写入
+        # 分析栈写入
         for i, line in enumerate(asm_lines):
             write = self._analyze_stack_write(line, i, report.buffers, report.stack_frame_size)
             if write:

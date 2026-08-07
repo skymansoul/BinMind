@@ -1,5 +1,5 @@
-# 创建: 2026-07-29 23:12
-# 修改: 2026-08-04 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2026-07-25 23:12
+# 修改: 2026-07-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: HMM CVE利用生命周期
 # 隐马尔可夫模型 — CVE利用生命周期的状态转移建模
 #
@@ -33,9 +33,9 @@
 #   3. 离散化观测: 将连续特征 (EPSS) 分桶,
 #      使HMM可在小数据集上可靠训练.
 #
-# 参考:
-#   [Rabiner 1989] A Tutorial on Hidden Markov Models (Proceedings of the IEEE)
-#   [HSMJS 2026] Hidden semi-Markov Jump Systems under Deception Attacks
+#
+# A Tutorial on Hidden Markov Models (Proceedings of the IEEE)
+# Hidden semi-Markov Jump Systems under Deception Attacks
 
 import math
 from typing import Dict, List, Optional, Tuple

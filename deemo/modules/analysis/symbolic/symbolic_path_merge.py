@@ -403,9 +403,7 @@ class PathMerger:
         self._merged_count = 0
         self.pre_merge_snapshot = None
 
-    # ---------------------------------------------------------------------------
     # 四轮增强 — 策略驱动合并
-    # ---------------------------------------------------------------------------
 
     def should_attempt_merge(self, step_count: int, new_coverage_addrs: int = 0) -> bool:
         """委托给 MergePolicyEngine 决定当前步骤是否应触发合并
@@ -514,13 +512,11 @@ def merge_states(states: List[SymbolicState], strategy: str = "combined") -> Lis
     return merger.get_states()
 
 
-# =============================================================================
 # 三轮增强 — 合并代价估算 (MergeCostEstimator)
 # 合并前评估精度损失，避免因过度合并导致漏报
 # 权衡：precision_loss_ratio > 0.3 时跳过合并 — 此阈值基于对 OWASP
 # benchmark 符号执行路径的实证分析：丢失超过 30% 的约束时，误报率上升
 # 约 2.5 倍，而合并带来的内存节省仅 ~15%
-# =============================================================================
 
 class MergeCostEstimator:
     """Evaluate precision loss merging two states
@@ -601,12 +597,10 @@ class MergeCostEstimator:
         return should_skip, precision_loss_ratio
 
 
-# =============================================================================
 # 三轮增强 — 增量合并 (IncrementalMerge)
 # 维护距离矩阵避免全量 O(n^2) 重算
 # 策略：合并 state_j 到 state_i 后，仅重新计算 dist_mtx 中涉及
 # 被合并状态的行/列，其余相似度值不变
-# =============================================================================
 
 class IncrementalMerge:
     """Incremental state merging a缓存d distance matrix
@@ -808,7 +802,6 @@ class IncrementalMerge:
         self._merged_count = 0
 
 
-# =============================================================================
 # 四轮增强 — MergePolicyEngine：可配置策略决定何时合并
 #
 # EAGER: 每次执行步后立即合并 → 最大限度节省内存，但合并计算开销累积
@@ -817,7 +810,6 @@ class IncrementalMerge:
 # 当状态膨胀速度 > 新覆盖产生速度时，说明路径爆炸正在发生，触发合并
 #
 # 使用滑动窗口（默认 10 步）计算增长率以避免瞬时尖峰误触发
-# =============================================================================
 
 
 class MergePolicyEngine:
@@ -942,7 +934,6 @@ class MergePolicyEngine:
         }
 
 
-# =============================================================================
 # 四轮增强 — MergeQualityScore：合并后质量评估
 #
 # 思路：合并状态 M = merge(S1, S2) 后，用 S1 和 S2 各自的下一步分支
@@ -953,7 +944,6 @@ class MergePolicyEngine:
 #                      |S1_branches ∪ S2_branches|
 # quality_score = branch_match_ratio * (1 - precision_loss_ratio)
 # 其中 precision_loss_ratio 由 MergeCostEstimator 提供
-# =============================================================================
 
 
 class MergeQualityScore:
@@ -1095,7 +1085,6 @@ class MergeQualityScore:
         }
 
 
-# =============================================================================
 # 四轮增强 — StateHydration：惰性反序列化
 #
 # 符号执行常将 checkpoint 后的状态序列化到磁盘（pickle），在需要重新
@@ -1105,11 +1094,10 @@ class MergeQualityScore:
 # 2. 反序列化大对象导致的内存尖峰
 #
 # 行为：
-# - __init__ 仅保存路径，不加载
-# - 属性访问时自动触发 _hydrate() → pickle.加载
+# __init__ 仅保存路径，不加载
+# 属性访问时自动触发 _hydrate() → pickle.加载
 # - _hydrate() 用 threading.Lock 保证线程安全（只加载一次）
 # - 加载后直接修改 __class__ 绕过代理（Object.__class__ assignment pattern）
-# =============================================================================
 
 
 class StateHydration:
@@ -1183,9 +1171,7 @@ class StateHydration:
 
             return self._state
 
-    # ---------------------------------------------------------------------------
     # SymbolicState 兼容属性 —— 每个属性访问都触发 _hydrate()
-    # ---------------------------------------------------------------------------
 
     @property
     def pc(self) -> int:

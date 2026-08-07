@@ -32,7 +32,7 @@ def seeded_kb(kb):
     return kb
 
 
-# ---- Tokenization (5 tests) ----
+# Tokenization (5 tests)
 
 class TestTokenization:
     def test_english_tokenization(self):
@@ -70,7 +70,7 @@ class TestTokenization:
         assert _is_cjk('1') is False
 
 
-# ---- Synonyms (3 tests) ----
+# Synonyms (3 tests)
 
 class TestSynonyms:
     def test_synonyms_dict(self):
@@ -91,7 +91,7 @@ class TestSynonyms:
         assert 15 <= len(_SYNONYMS) <= 25
 
 
-# ---- Search engine (6 tests) ----
+# Search engine (6 tests)
 
 class TestSearchEngine:
     def test_build_index(self, seeded_kb):
@@ -140,7 +140,7 @@ class TestSearchEngine:
         assert scores == sorted(scores, reverse=True)  # descending
 
 
-# ---- Edge cases (5 tests) ----
+# Edge cases (5 tests)
 
 class TestSearchEdgeCases:
     def test_empty_kb(self, kb):

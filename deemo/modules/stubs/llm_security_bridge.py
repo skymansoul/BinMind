@@ -1,11 +1,11 @@
 # llm_security_bridge.py — 安全分析桥接层
 # 推理能力与传统二进制分析工具链之间的桥接。
-# PwnGPT (ACL 2025) — 自动利用构造
-# ClearAgent (LMPL 2025) — 自主体二进制分析
-# Getting pwn'd (ESEC/FSE 2023) — 渗透测试
-# ReSym (2024) — stripped binary 符号恢复
-# Static Binary Taint Analysis (2024)
-# NYU CTF Bench (2025) — 安全能力基准
+# PwnGPT — 自动利用构造
+# ClearAgent — 自主体二进制分析
+# Getting pwn'd — 渗透测试
+# ReSym — stripped binary 符号恢复
+# Static Binary Taint Analysis
+# NYU CTF Bench — 安全能力基准
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt
 
@@ -19,7 +19,7 @@ class LLMAnalysisResult:
     tokens_used: int = 0
 
 # PwnGPT 风格多阶段分析
-# PwnGPT (ACL 2025) 三阶段: Analysis → Generation → Verification
+# PwnGPT 三阶段: Analysis → Generation → Verification
 # 此处提供本地预处理器，减少远程调用次数
 
 def preprocess_for_llm(function_asm: str, arch: str = 'x86_64') -> dict:

@@ -4,13 +4,13 @@
 #   2. 追踪输入字节到敏感操作（malloc size, memcpy len, 数组索引）的流向
 #   3. 基于taint的种子评分: taint覆盖面广的种子值得更多变异预算
 #
-# 参考:
-#   ZTaint-Havoc (Jung et al. 2024): Zero-execution taint inference
+#
+#   ZTaint-Havoc: Zero-execution taint inference
 #     from Havoc mutations — 无插桩，通过变异反馈推断taint
-#   Scalable Language Agnostic Taint Tracking (Shi et al. CCS 2021)
-#   Angora (Chen & Chen. CCS 2019): 字节级梯度追踪+taint约束
-#   REDQUEEN (Aschermann et al. NDSS 2019): input-to-state推演
-#   FITS (Zheng et al. USENIX 2024): Inferring Intermediate Taint Sources for IoT
+#   Scalable Language Agnostic Taint Tracking
+#   Angora: 字节级梯度追踪+taint约束
+#   REDQUEEN: input-to-state推演
+#   FITS: Inferring Intermediate Taint Sources for IoT
 import math
 import hashlib
 from typing import List, Dict, Set, Tuple, Optional, Any
@@ -61,12 +61,12 @@ class TaintTracker:
                 self._labels[i] = TaintLabel(byte_offset=i,
                                              affected_edges=set())
 
-    # ---- 基线 ----
+    # 基线
     def set_baseline(self, edge_set: Set[int]) -> None:
         self._baseline_edges = set(edge_set)
         self._active_offsets.clear()
 
-    # ---- 变异反馈 ----
+    # 变异反馈
     def observe_mutation(self, byte_offset: int,
                          new_edge_set: Set[int]) -> bool:
         """对offset处做单字节变异，观察覆盖率变化。
@@ -122,7 +122,7 @@ class TaintTracker:
 
         return tainted
 
-    # ---- 查询 ----
+    # 查询
     def is_tainted(self, offset: int) -> bool:
         label = self._labels.get(offset)
         return label is not None and label.influence_count > 0
@@ -151,7 +151,7 @@ class TaintTracker:
         return [off for off in self._labels
                 if self.taint_score(off) < threshold]
 
-    # ---- 敏感度计算 ----
+    # 敏感度计算
     def compute_sensitivity(self, input_size: int) -> List[float]:
         """返回每个偏移的变异敏感度 [0, 1]。
 
@@ -168,7 +168,7 @@ class TaintTracker:
         total = sum(scores) or 1.0
         return [s / total for s in scores]
 
-    # ---- 衰减 ----
+    # 衰减
     def decay(self) -> None:
         """指数衰减所有字节的历史影响力。
 
@@ -180,7 +180,7 @@ class TaintTracker:
             if label.influence_count == 0:
                 label.affected_edges.clear()
 
-    # ---- taint种子评分 ----
+    # taint种子评分
     def score_seed(self, input_data: bytes) -> float:
         """基于taint覆盖面评估种子质量。
 
@@ -203,7 +203,7 @@ class TaintTracker:
                 covered_edges.update(label.affected_edges)
         return covered_edges
 
-    # ---- 报告 ----
+    # 报告
     def stats(self) -> Dict[str, Any]:
         return {
             'total_trials': self._total_trials,

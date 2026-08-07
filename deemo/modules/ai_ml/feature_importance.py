@@ -125,7 +125,7 @@ class FeatureImportanceAnalyzer:
         )
         return report
 
-    # ---------- Permutation ----------
+# Permutation
     def _permutation_importance(self, X, predict_fn, baseline, n_perm):
         N = len(X)
         D = len(X[0]) if X else 0
@@ -150,7 +150,7 @@ class FeatureImportanceAnalyzer:
 
         return scores
 
-    # ---------- Ablation ----------
+# Ablation
     def _ablation_importance(self, X, predict_fn, baseline):
         N = len(X)
         D = len(X[0]) if X else 0
@@ -168,7 +168,7 @@ class FeatureImportanceAnalyzer:
 
         return scores
 
-    # ---------- Shapley采样 ----------
+# Shapley采样
     def _shapley_importance(self, X, predict_fn, baseline, n_samples):
         """简化Kernel SHAP: 随机采样特征子集计算边际贡献"""
         N = len(X)
@@ -209,7 +209,7 @@ class FeatureImportanceAnalyzer:
 
         return [shap_scores[j] / max(shap_counts[j], 1) for j in range(D)]
 
-    # ---------- Sobol ----------
+# Sobol
     def _sobol_importance(self, X, predict_fn):
         """基于Sobol序列的方差分解 (一阶敏感度指数近似)"""
         N = len(X)
@@ -252,7 +252,7 @@ class FeatureImportanceAnalyzer:
 
         return scores
 
-    # ---------- Correlation ----------
+# Correlation
     def _correlation_importance(self, X, y):
         N = len(X)
         D = len(X[0]) if X else 0
@@ -262,7 +262,7 @@ class FeatureImportanceAnalyzer:
             scores.append(abs(self._pearson_r(xj, y)))
         return scores
 
-    # ---------- 冗余检测 ----------
+# 冗余检测
     def _find_redundant_groups(self, X, top_features) -> List[Tuple[str, str, float]]:
         """检测高度相关的特征对"""
         redundant = []
@@ -284,7 +284,7 @@ class FeatureImportanceAnalyzer:
 
         return redundant
 
-    # ---------- 辅助 ----------
+# 辅助
     def _pred_perf(self, preds: List[float]) -> float:
         """预测性能度量 (方差=信息量指标, 方差越大说明模型越敏感)"""
         if not preds:

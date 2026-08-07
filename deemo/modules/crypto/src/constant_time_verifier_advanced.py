@@ -2,7 +2,7 @@
 #
 # 背景:
 #   基础的 constant_time_verifier.py 做单遍数据流传播——只追踪显式数据依赖。
-#   Schneider et al. (2024, ACM AsiaCCS 2025) 的大规模实测表明:
+#   Schneider et al. 的大规模实测表明:
 #   编译器优化会系统性地将常量时间算术模式重新编译为秘密依赖分支,
 #   即使源代码通过了形式化验证 (HACL*) 也无法幸免。
 #   同时, 隐式流 (implicit flow) — 即分支条件受秘密影响时,
@@ -19,21 +19,21 @@
 #       检查其最低 6 位 (缓存行内偏移, 针对 64B 缓存行) 是否可能受秘密影响——
 #       这是 cache-timing 攻击的前提条件。
 #
-# 参考:
-#   Schneider et al. (2024) "Breaking Bad: How Compilers Break Constant-Time
-#     Implementations" (ACM AsiaCCS 2025) — 编译器算术→分支转换的系统性研究,
+#
+#   Schneider et al. "Breaking Bad: How Compilers Break Constant-Time
+#     Implementations" — 编译器算术→分支转换的系统性研究,
 #     覆盖 8 个密码库/6 架构/2 编译器/7 优化级别。本项目在此基础上实现
 #     二进制层面的自动检测——不依赖源码, 不依赖编译器版本。
-#   MicroSampler (Ghaniyoun et al. DSN 2025) — 微架构级泄漏检测框架,
+#   MicroSampler — 微架构级泄漏检测框架,
 #     本项目借鉴其"将微架构状态与秘密值关联"的思路, 简化为缓存行偏移的
 #     静态分析——精确度低于 RTL 仿真但无需运行二进制。
-#   CT-LLVM (Zhang & Barthe 2025) — LLVM pass 层级的常量时间分析,
+#   CT-LLVM — LLVM pass 层级的常量时间分析,
 #     本项目在二进制层面实现类似功能, 处理已编译的第三方库 (无源码场景)。
 #
 # 边界条件:
-#   - 隐式流追踪要求基本块边界信息 (需调用方提供或从反汇编推断)
-#   - 跨函数分析需要调用方提供间接调用目标解析 (本模块不做 CFI 分析)
-#   - ARM64 条件指令的"写目标在条件为假时不变"语义正确建模——
+# 隐式流追踪要求基本块边界信息 (需调用方提供或从反汇编推断)
+# 跨函数分析需要调用方提供间接调用目标解析 (本模块不做 CFI 分析)
+# ARM64 条件指令的"写目标在条件为假时不变"语义正确建模——
 #     这模拟了硬件的条件执行行为 (条件假时寄存器保持原值)
 
 import re
@@ -110,9 +110,7 @@ class AdvancedConstantTimeVerifier:
         # 跨函数摘要: func_addr -> {tainted_regs_out, violated}
         self._func_summaries: Dict[int, Dict] = {}
 
-    # ------------------------------------------------------------------
     # 公开接口
-    # ------------------------------------------------------------------
 
     def analyze_block(self, block: BasicBlock,
                        arch: str = "x86_64") -> List[Dict]:
@@ -127,7 +125,7 @@ class AdvancedConstantTimeVerifier:
         for addr, mnem, ops in block.instructions:
             mnem_lower = mnem.lower()
 
-            # --- 隐式流感知: 标记守卫下的所有写入 ---
+# 隐式流感知: 标记守卫下的所有写入
             if self._guarded_depth > 0:
                 dst_reg = self._extract_dst_reg(mnem_lower, ops)
                 if dst_reg:
@@ -135,16 +133,16 @@ class AdvancedConstantTimeVerifier:
                     ts = TaintSource(dst_reg, FlowType.IMPLICIT, addr, guard_desc)
                     writes_this_block.setdefault(dst_reg, set()).add(ts)
 
-            # --- 违规检测 ---
+# 违规检测
             v = self._detect_violation(addr, mnem_lower, ops, arch)
             if v:
                 new_violations.append(v)
                 self._violations.append(v)
 
-            # --- 污点传播 ---
+# 污点传播
             self._propagate_explicit(addr, mnem_lower, ops, writes_this_block)
 
-            # --- 编译器模式检测 ---
+# 编译器模式检测
             cv = self._detect_compiler_pattern(block, addr, mnem_lower, ops, arch)
             if cv:
                 new_violations.append(cv)
@@ -306,9 +304,7 @@ class AdvancedConstantTimeVerifier:
             if self._active_guards:
                 self._active_guards.pop()
 
-    # ------------------------------------------------------------------
     # 内部辅助方法
-    # ------------------------------------------------------------------
 
     def _propagate_explicit(self, addr: int, mnem: str,
                              ops: List[str],

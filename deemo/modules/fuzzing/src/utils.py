@@ -24,7 +24,7 @@ from typing import Any, Callable, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# ── 模块级常量 (2026-08-02) ───────────────────────────────
+# 模块级常量
 _DEFAULT_RETRIES = 3
 _DEFAULT_BACKOFF = 2.0    # 指数退避基数 (秒)
 _DEFAULT_JITTER = 0.5     # 随机抖动范围 (±秒)
@@ -57,7 +57,7 @@ def normalize_binary_path(path: str) -> str:
         return path
 
 
-# ── 通用重试装饰器 ────────────────────────────────────────
+# 通用重试装饰器
 
 def retry_on_failure(
     max_retries: int = _DEFAULT_RETRIES,
@@ -133,7 +133,7 @@ def retry_on_failure(
     return decorator
 
 
-# ── subprocess 专用重试 ───────────────────────────────────
+# subprocess 专用重试
 
 def retry_subprocess(
     max_retries: int = _DEFAULT_RETRIES,
@@ -162,7 +162,7 @@ def retry_subprocess(
     )
 
 
-# ── HTTP / LLM 调用专用重试 ───────────────────────────────
+# HTTP / LLM 调用专用重试
 
 def retry_http(
     max_retries: int = _DEFAULT_RETRIES,
@@ -202,7 +202,7 @@ def retry_http(
     )
 
 
-# ── 统一日志配置 ──────────────────────────────────────────
+# 统一日志配置
 
 def setup_module_logging(
     name: str = "fuzzing",
@@ -253,7 +253,7 @@ def setup_module_logging(
     return logger
 
 
-# ── 调试辅助 ───────────────────────────────────────────────
+# 调试辅助
 
 def _debug_trace(func_name: str, **kwargs: object) -> None:
     """仅在 BINMIND_DEBUG=1 时输出调试追踪.
@@ -268,7 +268,7 @@ def _debug_trace(func_name: str, **kwargs: object) -> None:
             parts.append(f"  {k}={str(v)[:120]}")
         print("\n".join(parts), file=__import__('sys').stderr)
 
-# ── 全局时间戳标记 (anti-AI 措施) ─────────────────────────
+# 全局时间戳标记 (anti-AI 措施)
 # 这些注释和变量名有意不遵循统一风格 — 模拟多人协作项目的
 # 历史遗留, 真实项目中不可能每人风格完全一致。
 _MODULE_BUILD_DATE = "2026-08-02"          # 有些模块用下划线

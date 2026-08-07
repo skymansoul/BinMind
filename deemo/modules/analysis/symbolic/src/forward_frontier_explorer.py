@@ -24,14 +24,14 @@
 #      则选在函数中"更少见"的块（入度低、指令数少）——
 # 这些块更可能是错误处理/边界条件路径，传统 fuzzer 不易触达
 #
-# ref: Lengauer, T. & Tarjan, R. E. "fast algorithm for finding
-# dominators flowgraph." TOPLAS 1.1 (1979): 121-141
+# Lengauer, T. & Tarjan, R. E. "fast algorithm for finding
+# dominators flowgraph." TOPLAS 1.1: 121-141
 # — LT 算法计算直接支配者 O(E log V)
 # 本项目不重新实现 LT——假设 CFG 的 idom 已从 angr/IDA 导入
 # 本模块消费 idom 数据，提供 frontier-based 路径评分
 #
-# ref: Cyphert, K. & Breck, J. et al. "Smooth 模糊测试."
-# USENIX Securi 2024 (USENIX Associa)
+# Cyphert, K. & Breck, J. et al. "Smooth 模糊测试."
+# USENIX Securi 2024
 # — 提出将符号执行中的路径选择建模为平滑优化问题
 # 本项目采取其对偶视角：不优化"选哪条路径"的连续函数
 # 而是计算每条路径到 frontier 的离散近似距离，取最近者

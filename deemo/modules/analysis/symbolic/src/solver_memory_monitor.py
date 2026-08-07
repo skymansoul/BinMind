@@ -19,9 +19,9 @@
 # 求解器内部状态，因此重建的代价仅是首次求解的冷启动时间
 # 对总吞吐量的影响约为 3-8%（在约束数量为 500-2000 的典型场景中）
 #
-# ref: Z3 Internals (de Moura & Bjørner, 2008) — Z3 的内存管理模型
+# Z3 Internals (de Moura & Bjørner, 2008) — Z3 的内存管理模型
 # 其 sec 5.2 讨论了 backtracking 时不完全释放内部状态的设计
-# ref: arXiv:1811.08620 (Bornholt & Torlak, 2018) — 增量求解中周期性
+# (Bornholt & Torlak, 2018) — 增量求解中周期性
 # 重建的性能/内存权衡分析，其 Figure 7 展示了相似的重建阈值
 
 import math

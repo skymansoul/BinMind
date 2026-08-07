@@ -13,7 +13,6 @@
     - 段膨胀: 非标准段占二进制大小的比例
     - 符号膨胀: 导出但无调用者的函数 (共享库场景)
 
-参考:
   无现有工具 — 2026-08 检索确认.
   Bloaty McBloatface (Google): 二进制大小分析，不评分攻击面.
   Ghidra Dead Code Elimination: 函数级, 不量化风险.
@@ -26,7 +25,6 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
-
 
 # 高风险导入类别 — 即使未使用也会增加 gadget 面
 _HIGH_RISK_IMPORT_PATTERNS: Dict[str, float] = {
@@ -47,7 +45,6 @@ _SECTION_BLOAT_WEIGHTS: Dict[str, float] = {
     '.tdata': 0.05, '.tbss': 0.02,
 }
 
-
 @dataclass
 class BloatAudit:
     """死代码膨胀审计。"""
@@ -59,7 +56,6 @@ class BloatAudit:
     dead_imports: List[str] = field(default_factory=list)
     estimated_bytes_wasted: int = 0 # 估算的可移除字节数
     top_removal_targets: List[str] = field(default_factory=list)
-
 
 def _unused_imports(
     imports: List[str],
@@ -83,7 +79,6 @@ def _unused_imports(
     bloat = round(1.0 - math.exp(-total_risk * 2.0), 2)
     return unused, bloat
 
-
 def _section_bloat_ratio(
     section_sizes: Dict[str, int],
     total_size: int,
@@ -105,7 +100,6 @@ def _section_bloat_ratio(
     # sigmoid: 10% bloat → 0.5, 30% → 0.9
     return round(1.0 / (1.0 + math.exp(-8.0 * (ratio - 0.1))), 2)
 
-
 def _symbol_bloat(
     exported_symbols: List[str],
     internal_callers: Set[str],
@@ -123,7 +117,6 @@ def _symbol_bloat(
 
     ratio = dead_exports / len(exported_symbols)
     return round(min(ratio * 3.0, 1.0), 2)
-
 
 def audit_dead_code(
     binary_name: str = '',
@@ -174,7 +167,6 @@ def audit_dead_code(
         estimated_bytes_wasted=wasted,
         top_removal_targets=targets,
     )
-
 
 def bloat_summary(audit: BloatAudit) -> Dict[str, Any]:
     """膨胀审计摘要。"""

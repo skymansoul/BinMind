@@ -1,12 +1,6 @@
-"""网络协议逆向工具集——熵分析、魔数识别、长度字段推断、CRC 检测
+"""网络协议逆向工具集——熵分析、魔数识别、长度字段推断、CRC 检测、KL 散度边界检测。"""
 
-KL 散度边界检测 —— 以相邻窗口字节值分布差异替代纯熵值跳变，
-对低熵但分布结构变化（如加密载荷边界）的识别准确率提升显著。
-"""
-
-import math
-import struct
-import zlib
+import math, struct, zlib
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -16,30 +10,23 @@ ProtocolReverser = None
 ProtocolInferResult = None
 WiresharkGenerator = None
 
-
 @dataclass
 class FieldInfo:
     name: str
     offset: int = 0
     size: int = 0
-    hypothesis: str = ""      # 如 "length_field"、"magic"、"checksum"、"flag_byte"
+    hypothesis: str = ""
     confidence: float = 0.0
-
 
 @dataclass
 class ProtocolGrammar:
     fields: List[FieldInfo] = field(default_factory=list)
     endianness: str = "unknown"
     name: str = "anonymous"
-
-
 # 基于熵的字段边界检测
-
 class BoundaryDetector:
     """通过字节值熵变与频率跳变检测协议字段边界"""
-
     _WINDOW = 4
-
     @staticmethod
     def shannon_entropy(data: bytes) -> float:
         if not data:
@@ -51,15 +38,9 @@ class BoundaryDetector:
             p = count / total
             ent -= p * math.log2(p)
         return ent
-
     @staticmethod
     def kl_divergence_window(a: bytes, b: bytes) -> float:
-        """计算两个窗口字节值分布的 KL 散度 —— D_KL(P_a || P_b)
-
-        相比纯熵差，KL 散度能捕获分布形状变化，对加密边界
-        （熵值恒定但分布结构偏移）的检测更灵敏。
-        使用 Jelinek-Mercer 平滑处理零概率。
-        """
+        """KL 散度 D_KL(P_a||P_b)：捕获分布形状变化，Jelinek-Mercer 平滑。"""
         ca, cb = Counter(a), Counter(b)
         all_bytes = set(ca) | set(cb)
         na, nb = max(len(a), 1), max(len(b), 1)
@@ -70,20 +51,14 @@ class BoundaryDetector:
             if pa > 0 and pb > 0:
                 kl += pa * math.log2(pa / pb)
         return kl
-
     @staticmethod
     def find_boundaries(samples: List[bytes], window: int = None) -> List[int]:
-        """返回多报文间 KL 散度显著跳变的字节偏移列表
-
-        对每对相邻窗口计算 D_KL，超阈值（2.0 bits）的偏移标记为边界候选。
-        """
+        """返回 KL 散度超阈值(2.0 bits)跳变的字节偏移列表。"""
         if not samples:
             return []
-
         win = window or BoundaryDetector._WINDOW
         max_len = max(len(s) for s in samples)
         boundaries: List[int] = []
-
         prev_dist = None
         for offset in range(0, max_len - win, win):
             win_a = b"".join(s[offset:offset + win] for s in samples
@@ -92,14 +67,11 @@ class BoundaryDetector:
                              if offset + 2 * win <= len(s))
             if len(win_a) < win or len(win_b) < win:
                 continue
-
             kl = BoundaryDetector.kl_divergence_window(win_a, win_b)
             if kl > 2.0:
                 boundaries.append(offset + win)
             prev_dist = kl
-
         return sorted(set(boundaries))
-
     @staticmethod
     def value_frequency_shift(samples: List[bytes], window: int = None) -> Dict[int, float]:
         """返回 {偏移量: 偏移幅度} 指示字节分布变化"""
@@ -116,18 +88,14 @@ class BoundaryDetector:
             shifts[off] = diff / max(1, len(all_keys))
         return shifts
 
-
 # 长度字段相关性分析
-
 class LengthFieldAnalyzer:
     """关联 1/2/4 字节字段与观测到的报文长度"""
-
     @staticmethod
     def find_length_field(samples: List[bytes]) -> List[FieldInfo]:
         results: List[FieldInfo] = []
         if len(samples) < 2:
             return results
-
         for size in (1, 2, 4):
             for endian_sign in ((">", "big"), ("<", "little")):
                 fmt = {1: "B", 2: "H", 4: "I"}[size]
@@ -155,12 +123,9 @@ class LengthFieldAnalyzer:
                         ))
         return results
 
-
 # 校验和 / CRC 检测
-
 class ChecksumDetector:
     """基于多项式相关性检测尾部校验和字段"""
-
     CRC_POLYS = {
         0x1021: "CRC-16-CCITT",
         0x8005: "CRC-16-MODBUS",
@@ -168,7 +133,6 @@ class ChecksumDetector:
         0x1EDC6F41: "CRC-32C",
         0xA001: "CRC-16-MODBUS-REV",
     }
-
     @staticmethod
     def detect_crc(samples: List[bytes]) -> List[FieldInfo]:
         results: List[FieldInfo] = []
@@ -212,7 +176,6 @@ class ChecksumDetector:
                         ))
                         break
         return results
-
     @staticmethod
     def _crc16(data: bytes, poly: int) -> int:
         crc = 0xFFFF
@@ -222,7 +185,6 @@ class ChecksumDetector:
                 crc = (crc << 1) ^ poly if crc & 0x8000 else crc << 1
                 crc &= 0xFFFF
         return crc
-
     @staticmethod
     def _crc32(data: bytes, poly: int) -> int:
         crc = 0xFFFFFFFF
@@ -232,9 +194,7 @@ class ChecksumDetector:
                 crc = (crc >> 1) ^ poly if crc & 1 else crc >> 1
         return crc ^ 0xFFFFFFFF
 
-
 # 魔数字节识别
-
 class MagicByteDetector:
     @staticmethod
     def identify(samples: List[bytes], min_len: int = 2) -> Dict[bytes, int]:
@@ -250,9 +210,7 @@ class MagicByteDetector:
         threshold = max(2, len(samples) // 2)
         return {k: v for k, v in counts.items() if v >= threshold}
 
-
 # Wireshark 解析器桩
-
 class WiresharkDissector:
     @staticmethod
     def generate(grammar: ProtocolGrammar) -> str:
@@ -277,9 +235,7 @@ class WiresharkDissector:
         lines.append(f"DissectorTable.get('tcp.port'):add(9999, {grammar.name}_proto)")
         return "\n".join(lines)
 
-
 # 类型推断——基于观测值猜测字段类型
-
 class TypeInferrer:
     @staticmethod
     def infer(raw: bytes, offset: int, size: int) -> str:
@@ -302,10 +258,7 @@ class TypeInferrer:
         if len(chunk) == 4:
             return "uint32"
         return "bytes"
-
-
 # 快捷工厂函数
-
 def create_protocol_reverser():
     return {
         "boundary": BoundaryDetector(),
@@ -316,30 +269,19 @@ def create_protocol_reverser():
         "dissector_gen": WiresharkDissector(),
     }
 
-
-# ── 共识序列对齐字段推断 ──────────────────────────────
+# 共识序列对齐字段推断
 def infer_fields_by_consensus_alignment(messages: List[bytes],
                                          max_pairs: int = 50
                                          ) -> List[FieldInfo]:
-    """通过NW多序列共识对齐推断字段边界。
-
-    与BoundaryDetector的熵分析法互补: 熵法适合检测加密/压缩边界,
-    共识对齐适合检测常数字段与可变字段之间的结构化边界。
-    max_pairs控制配对对齐数量上限(消息数>10时建议限制)。
-
-    返回推断的FieldInfo列表, confidence来自共识保守度。
-    """
+    """通过NW多序列共识对齐推断字段边界，与熵法互补；confidence来自共识保守度。"""
     try:
         from .consensus_alignment import ConsensusBuilder
     except ImportError:
         from src.consensus_alignment import ConsensusBuilder
-
     builder = ConsensusBuilder()
     profile = builder.build(messages, max_pairs)
-
     fields: List[FieldInfo] = []
     boundaries = [0] + profile.inferred_boundaries + [profile.aligned_length]
-
     for i in range(len(boundaries) - 1):
         start = boundaries[i]
         end = boundaries[i + 1]
@@ -350,7 +292,6 @@ def infer_fields_by_consensus_alignment(messages: List[bytes],
         seg_cons = (profile.position_conservation[start:end]
                     if start < len(profile.position_conservation) else [])
         avg_cons = sum(seg_cons) / len(seg_cons) if seg_cons else 0.5
-
         # 字段假设: 高保守度→常数字段(magic/type), 低保守度→可变字段(data/length)
         if avg_cons > 0.8:
             hypothesis = "constant_field" if size <= 4 else "constant_block"
@@ -358,12 +299,10 @@ def infer_fields_by_consensus_alignment(messages: List[bytes],
             hypothesis = "variable_field"
         else:
             hypothesis = "mixed_field"
-
         fields.append(FieldInfo(
             name=f"field_{i}",
             offset=start, size=size,
             hypothesis=hypothesis,
             confidence=round(avg_cons, 3),
         ))
-
     return fields

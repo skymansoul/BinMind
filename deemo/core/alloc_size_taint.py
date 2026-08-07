@@ -11,22 +11,17 @@
   - 来自算术表达式(含函数参数)→ TAINTED
   - 来自全局变量 → INDETERMINATE
 
-参考文献: CSA (ICSE 2024) 跨域稀疏抽象执行——地址×区间双向细化
 """
-
-from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 class TaintLevel(str, Enum):
     TAINTED = "tainted"            # 确认来自外部输入
     NOT_TAINTED = "not_tainted"    # 确认来自常量
     INDETERMINATE = "indeterminate"  # 无法确定
-
 
 @dataclass
 class AllocSite:
@@ -40,7 +35,6 @@ class AllocSite:
     def __post_init__(self):
         if self.trace_chain is None:
             self.trace_chain = []
-
 
 # 外部输入源函数
 _INPUT_SOURCES = {
@@ -57,7 +51,6 @@ _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', 'malloc_debug',
 _MALLOC_CALL = re.compile(
     r'(?:(\w+)\s*=\s*)?(' + '|'.join(_ALLOC_FUNCS) + r')\s*\(\s*(.+?)\s*\)',
 )
-
 
 def analyze_alloc_taint(
     code: str,
@@ -89,7 +82,6 @@ def analyze_alloc_taint(
             trace_chain=chain,
         ))
     return sites
-
 
 def _trace_size_source(
     code: str,
@@ -135,7 +127,6 @@ def _trace_size_source(
         return TaintLevel.TAINTED, chain + ['func_name_hint']
 
     return TaintLevel.INDETERMINATE, chain
-
 
 def _try_eval_constant(expr: str) -> Optional[int]:
     expr = expr.strip()

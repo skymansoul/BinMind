@@ -325,7 +325,7 @@ class FunctionEmbedder:
         grad_w = [None, None, None]
         grad_b = [None, None, None]
 
-        # --- Layer 3: emb_pre = W2 @ h2_post + b2 ---
+# Layer 3: emb_pre = W2 @ h2_post + b2
         # dL/dW2 = grad_emb_pre ⊗ h2_post (outer product)
         # dL/db2 = grad_emb_pre
         grad_w[2] = []
@@ -354,7 +354,7 @@ class FunctionEmbedder:
             grad_h2_post.append(total)
             ci += 1
 
-        # --- Layer 2: h2_post = ReLU(h2_pre) ---
+# Layer 2: h2_post = ReLU(h2_pre)
         grad_h2_pre = []
         gi = 0
         while gi < len(grad_h2_post):
@@ -388,7 +388,7 @@ class FunctionEmbedder:
             grad_h1_post.append(total)
             ci += 1
 
-        # --- Layer 1: h1_post = ReLU(h1_pre) ---
+# Layer 1: h1_post = ReLU(h1_pre)
         grad_h1_pre = []
         gi = 0
         while gi < len(grad_h1_post):

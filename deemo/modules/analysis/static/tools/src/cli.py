@@ -39,7 +39,7 @@ def _setup_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=level, format=fmt, handlers=handlers)
 
 
-# ---- Subcommand 处理器s ----
+# Subcommand 处理器s
 
 
 def _cmd_static_scan(args: argparse.Namespace) -> int:

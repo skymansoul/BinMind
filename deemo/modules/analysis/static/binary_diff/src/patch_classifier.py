@@ -16,7 +16,7 @@
 #   4. 移除对危险函数（system/popen/execve）的调用 → SECURITY_FIX
 #   5. 仅常量变化 + 无新增检查 → FEATURE_CHANGE
 #
-# ref: 这些启发式与 Google Project Zero 的 "patch gap" 分析方法一脉相承
+# 这些启发式与 Google Project Zero 的 "patch gap" 分析方法一脉相承
 # 但 Project Zero 依赖人工审查，本项目将其自动化并量化可 exploitabili
 
 import logging
@@ -48,9 +48,7 @@ class PatchClassification:
     diff_result: FuncDiffResult
 
 
-# ==============================================================================
 # 安全修复的启发式特征词表
-# ==============================================================================
 
 # 新增这些比较 → 大概率是安全加固（边界/空指针检查）
 _BOUNDS_CHECK_INSNS = {'cmp', 'test', 'cmn', 'tst'}

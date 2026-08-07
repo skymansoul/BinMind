@@ -1,0 +1,16 @@
+{
+  "sample_id": "TP-10",
+  "label": "tp",
+  "cwe": "CWE-122",
+  "description": "Branch-dependent overflow: one path safe, one overflows",
+  "alloc_size": 64,
+  "write_offset": 128,
+  "write_size": 1,
+  "expect_overflow": true,
+  "lpvra_expected_verdict": "UNCERTAIN",
+  "verdict_reason": "flag=1 safe, flag=0 overflow, path-dependent, keep conservative",
+  "detection_targets": {
+    "regex_baseline": "FLAG",
+    "lpvra_filter": "UNCERTAIN"
+  }
+}

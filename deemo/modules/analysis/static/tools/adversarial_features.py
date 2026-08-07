@@ -21,10 +21,9 @@
 - 指令重排不改变基本块的 multiset 签名 -> 防线3 免疫
 - 控制流扁平化改变 CFG 但保留函数级别的调用图 -> 外部调用方额外处理
 
-参考文献:
-- Nguyen et al. (USENIX 2024) "Adversarial Attacks on ML-Based Malware Detectors:
+- Nguyen et al. "Adversarial Attacks on ML-Based Malware Detectors:
    A Survey" - 第 3.2 节归类了常见的二进制特征提取对抗技术
-- Demetrio et al. (2020) "Explaining Vulnerabilities of Deep Learning to
+- Demetrio et al. "Explaining Vulnerabilities of Deep Learning to
    Adversarial Malware Binaries" - 证明了线性 n-gram 模型对指令插入的脆弱性
   本模块的 CFG 感知 n-gram 正是针对此脆弱性的结构性对策
 """
@@ -38,10 +37,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
-
-# ---------------------------------------------------------------------------
 # 语义等价类映射 - 12 个类别覆盖 x86/x86_64 所有常用指令
-# ---------------------------------------------------------------------------
 
 # 类别设计原则:
 # 1. 同一类别内的指令替换不改变程序语义（仅性能和编码不同）
@@ -102,7 +98,6 @@ _SEMANTIC_CLASS_INDEX = {
     11: set(),
 }
 
-
 def _build_class_lookup() -> Dict[str, int]:
     """从语义类定义构建快速查找字典"""
     lookup: Dict[str, int] = {}
@@ -111,9 +106,7 @@ def _build_class_lookup() -> Dict[str, int]:
             lookup[m] = cls_id
     return lookup
 
-
 _SEMANTIC_LOOKUP: Dict[str, int] = _build_class_lookup()
-
 
 def classify_instruction(mnemonic: str) -> int:
     """将指令助记符映射到语义等价类 ID (0-11)
@@ -136,10 +129,7 @@ def classify_instruction(mnemonic: str) -> int:
         return 4
     return _SEMANTIC_LOOKUP.get(m, 11)
 
-
-# ---------------------------------------------------------------------------
 # 顺序无关的基本块签名 - multiset 哈希
-# ---------------------------------------------------------------------------
 
 def basic_block_signature(instructions: List[str], width: int = 8) -> int:
     """对基本块内指令的 multiset 做确定性哈希--忽略指令顺序
@@ -188,10 +178,7 @@ def basic_block_signature(instructions: List[str], width: int = 8) -> int:
 
     return acc
 
-
-# ---------------------------------------------------------------------------
 # CFG 感知的 n-gram 提取 - 沿控制流边进行序列提取
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CFGAwareNGram:
@@ -202,7 +189,6 @@ class CFGAwareNGram:
     is_fallthrough: bool = True              # 线性相邻
     is_branch_target: bool = False           # 分支目标
     is_loop_backedge: bool = False           # 循环回边
-
 
 def extract_cfg_aware_ngrams(
     blocks: Dict[int, List[str]],         # {block_id: [instruction_mnemonics]}
@@ -277,10 +263,7 @@ def extract_cfg_aware_ngrams(
 
     return all_ngrams
 
-
-# ---------------------------------------------------------------------------
 # 多尺度块内特征 - 不依赖指令顺序的统计量
-# ---------------------------------------------------------------------------
 
 @dataclass
 class BlockInvariantFeatures:
@@ -294,7 +277,6 @@ class BlockInvariantFeatures:
     has_indirect_call: bool
     has_indirect_jump: bool
     string_operation_count: int                # REP 类指令数
-
 
 def extract_block_invariants(
     block_id: int, instructions: List[str]

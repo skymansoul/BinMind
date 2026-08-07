@@ -1,247 +1,28 @@
-"""IDS规则引擎——Suricata风格规则解析与匹配。"""
-import logging, re
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any, Set
-import uuid
+"""IDS规则引擎——Suricata风格规则解析与匹配。
 
-_log = logging.getLogger(__name__)
+本模块为主入口，从子模块聚合全部公开符号，保持原有导入路径不变。
+子模块拆分策略：
+  - types: 数据结构与常量，无外部依赖
+  - parser: 规则语法解析，依赖types
+  - builtin: 内置规则定义，依赖types+parser
+  - matching: 数据包匹配工具，依赖types
+  - 本文件: RuleEngine主类，依赖上述全部子模块
+"""
+import logging
+from typing import List, Dict, Optional, Any
 
-# ---- 内置规则SID范围 ----
-SID_RANGE = (9000001, 9000100)
+from .network_ids_types import SuricataRule, SID_RANGE, _log
+from .network_ids_parser import parse_suricata_rule
+from .network_ids_builtin import BUILT_IN_RULES
+from .network_ids_matching import rule_matches_packet
 
-# ===== 数据结构 =====
-@dataclass
-class SuricataRule:
-    sid: int = 0
-    msg: str = ""
-    action: str = "alert"
-    proto: str = "any"
-    src_ip: str = "any"
-    src_port: str = "any"
-    direction: str = "->"
-    dst_ip: str = "any"
-    dst_port: str = "any"
-    content_patterns: List[str] = field(default_factory=list)
-    pcre_patterns: List[str] = field(default_factory=list)
-    flow_direction: str = ""  # to_server, to_client, established
-    dsize_min: int = 0
-    dsize_max: int = 0
-    threshold_count: int = 0
-    threshold_seconds: int = 0
-    reference_urls: List[str] = field(default_factory=list)
-    classtype: str = ""
-    metadata: Dict[str, str] = field(default_factory=dict)
-    raw: str = ""
+# 保持模块级常量可直接引用
+__all__ = [
+    "SuricataRule", "RuleEngine", "BUILT_IN_RULES",
+    "parse_suricata_rule", "SID_RANGE",
+]
 
 
-# Suricata规则解析
-def parse_suricata_rule(line: str) -> Optional[SuricataRule]:
-    """分析Suricata规则语法行到结构化对象。
-
-    格式：action proto src_ip src_port direction dst_ip dst_port (options;)
-    options中以分号分隔，支持content、pcre、dsize、threshold、flow等关键字。
-    """
-    _line = line.strip()
-    if not _line or _line.startswith("#"):
-        return None
-
-    _rule = SuricataRule(raw=_line)
-
-    # 匹配规则头部: action proto src src_port -> dst dst_port
-    _head_pattern = re.compile(
-        r'^(\w+)\s+(\S+)\s+(\S+)\s+(\S+)\s+'
-        r'(->|<>)\s+(\S+)\s+(\S+)\s*\((.*)\)\s*$',
-        re.DOTALL
-    )
-    _m = _head_pattern.match(_line)
-    if not _m:
-        return None
-
-    _rule.action = _m.group(1)
-    _rule.proto = _m.group(2)
-    _rule.src_ip = _m.group(3)
-    _rule.src_port = _m.group(4)
-    _rule.direction = _m.group(5)
-    _rule.dst_ip = _m.group(6)
-    _rule.dst_port = _m.group(7)
-    _options_str = _m.group(8)
-
-    # 解析options
-    _parse_options(_options_str, _rule)
-    return _rule
-
-
-def _parse_options(opts: str, rule: SuricataRule) -> None:
-    # 处理引号内容避免分号拆分错误
-    _parts = _split_options(opts)
-    for _part in _parts:
-        _part = _part.strip()
-        if not _part:
-            continue
-        _kv = _part.split(":", 1)
-        if len(_kv) < 2:
-            continue
-        _key = _kv[0].strip()
-        _val = _kv[1].strip()
-
-        if _key == "msg":
-            rule.msg = _val.strip('"')
-        elif _key == "sid":
-            try:
-                rule.sid = int(_val)
-            except ValueError:
-                pass
-        elif _key == "content":
-            rule.content_patterns.append(_val.strip('"'))
-        elif _key == "pcre":
-            rule.pcre_patterns.append(_val.strip('"'))
-        elif _key == "flow":
-            rule.flow_direction = _val.strip('"')
-        elif _key == "dsize":
-            _parsed = _parse_dsize(_val)
-            rule.dsize_min, rule.dsize_max = _parsed
-        elif _key == "threshold":
-            _parsed = _parse_threshold(_val)
-            rule.threshold_count, rule.threshold_seconds = _parsed
-        elif _key == "reference":
-            rule.reference_urls.append(_val.strip('"'))
-        elif _key == "classtype":
-            rule.classtype = _val.strip('"')
-        elif _key == "metadata":
-            for _pair in _val.strip('"').split(","):
-                _pair = _pair.strip()
-                if " " in _pair:
-                    _mk, _mv = _pair.split(" ", 1)
-                    rule.metadata[_mk.strip()] = _mv.strip()
-                else:
-                    rule.metadata[_pair] = ""
-
-
-def _split_options(s: str) -> List[str]:
-    _parts = []
-    _current = ""
-    _in_quotes = False
-    _quote_char = ""
-    for _ch in s:
-        if _ch in ('"', "'") and not _in_quotes:
-            _in_quotes = True
-            _quote_char = _ch
-            _current += _ch
-        elif _ch == _quote_char and _in_quotes:
-            _in_quotes = False
-            _quote_char = ""
-            _current += _ch
-        elif _ch == ";" and not _in_quotes:
-            _parts.append(_current)
-            _current = ""
-        else:
-            _current += _ch
-    if _current:
-        _parts.append(_current)
-    return _parts
-
-
-def _parse_dsize(val: str) -> Tuple[int, int]:
-    _m = re.match(r'^(\d+)$', val)
-    if _m:
-        _v = int(_m.group(1))
-        return (_v, _v)
-    _range = re.match(r'^(\d+)\s*<>\s*(\d+)$', val)
-    if _range:
-        return (int(_range.group(1)), int(_range.group(2)))
-    _gt = re.match(r'^>(\d+)$', val)
-    if _gt:
-        return (int(_gt.group(1)), 0xFFFFFFFF)
-    _lt = re.match(r'^<(\d+)$', val)
-    if _lt:
-        return (0, int(_lt.group(1)))
-    return (0, 0)
-
-
-def _parse_threshold(val: str) -> Tuple[int, int]:
-    _count = 0
-    _sec = 0
-    _parts = val.strip('"').split(",")
-    for _p in _parts:
-        _p = _p.strip()
-        if "count" in _p:
-            try:
-                _count = int(_p.split("count")[-1].strip())
-            except ValueError:
-                pass
-        elif "seconds" in _p:
-            try:
-                _sec = int(_p.split("seconds")[-1].strip())
-            except ValueError:
-                pass
-    return (_count, _sec)
-
-
-# ===== 内置检测规则 =====
-BUILT_IN_RULES: List[SuricataRule] = []
-
-def _build_builtin_rules() -> List[SuricataRule]:
-    """构建7条内置检测规则，SID范围9000001-9000007。
-
-    规则覆盖ICMP隧道、DNS隧道、非标SSH、C2端口、PE下载、
-    DNS外泄、Heartbleed攻击等典型威胁场景。
-    """
-    _rules_raw = [
-        # SID 9000001: ICMP隧道检测
-        'alert icmp any any -> any any (msg:"ICMP TUNNEL DETECTED - large payload"; '
-        'dsize:>512; sid:9000001; classtype:"trojan-activity"; '
-        'reference:url,attack.mitre.org/techniques/T1095/; '
-        'metadata:detection icmp_tunnel;)',
-
-        # SID 9000002: DNS长查询
-        'alert udp any any -> any 53 (msg:"DNS TUNNEL - long query"; '
-        'dsize:>253; sid:9000002; classtype:"trojan-activity"; '
-        'reference:url,attack.mitre.org/techniques/T1048/; '
-        'metadata:detection dns_tunnel;)',
-
-        # SID 9000003: 非标SSH
-        'alert tcp any any -> any ![22,2222,22222] (msg:"SSH ON NON-STANDARD PORT"; '
-        'content:"SSH-"; sid:9000003; classtype:"policy-violation"; '
-        'threshold:type limit,track by_src,count 1,seconds 60; '
-        'metadata:detection non_standard_ssh;)',
-
-        # SID 9000004: 已知C2默认端口
-        'alert tcp any any -> any [4444,1337,5555,6666,7777,8888,9999,31337,12345,54321,4782,1177,8282,8443] '
-        '(msg:"C2 DEFAULT PORT"; sid:9000004; classtype:"trojan-activity"; '
-        'reference:url,attack.mitre.org/techniques/T1571/; '
-        'metadata:detection c2_default_port;)',
-
-        # SID 9000005: PE文件下载
-        'alert tcp any any -> any any (msg:"PE FILE DOWNLOAD - MZ header"; '
-        'content:"MZ"; content:"This program cannot be run in DOS mode"; '
-        'flow:to_client,established; sid:9000005; classtype:"trojan-activity"; '
-        'reference:url,attack.mitre.org/techniques/T1105/; '
-        'metadata:detection pe_download;)',
-
-        # SID 9000006: DNS数据外泄
-        'alert udp any any -> any 53 (msg:"DNS DATA EXFILTRATION - large TXT"; '
-        'dsize:>256; sid:9000006; classtype:"attempted-recon"; '
-        'reference:url,attack.mitre.org/techniques/T1048/; '
-        'metadata:detection dns_exfil;)',
-
-        # SID 9000007: Heartbleed攻击
-        'alert tcp any any -> any 443 (msg:"HEARTBLEED TLS HEARTBEAT ATTACK"; '
-        'content:"|18 03|"; dsize:>40; sid:9000007; classtype:"attempted-admin"; '
-        'reference:url,cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-0160; '
-        'metadata:detection heartbleed;)',
-    ]
-    _rules = []
-    for _raw in _rules_raw:
-        _r = parse_suricata_rule(_raw)
-        if _r:
-            _rules.append(_r)
-    return _rules
-
-
-BUILT_IN_RULES = _build_builtin_rules()
-
-
-# 规则引擎
 class RuleEngine:
     """Suricata风格规则引擎：加载规则、匹配包和流。
 
@@ -264,7 +45,6 @@ class RuleEngine:
         """
         _rules: List[SuricataRule] = []
         if isinstance(rules_source, str):
-            # 文件路径
             try:
                 with open(rules_source, "r", encoding="utf-8", errors="replace") as _f:
                     for _line in _f:
@@ -305,8 +85,6 @@ class RuleEngine:
         匹配流程：协议过滤 → 端口过滤 → content/pcre匹配。
         """
         _triggered: List[SuricataRule] = []
-
-        # 提取协议和端口
         _proto_str = "any"
         _dport = 0
         _payload = b""
@@ -339,7 +117,7 @@ class RuleEngine:
         _candidates.extend(self._rules_by_proto.get("any", []))
 
         for _rule in _candidates:
-            if _rule_matches_packet(_rule, _payload, _proto_str, _dport):
+            if rule_matches_packet(_rule, _payload, _proto_str, _dport):
                 _triggered.append(_rule)
 
         return _triggered
@@ -353,7 +131,6 @@ class RuleEngine:
         _triggered: List[SuricataRule] = []
         _bytes = getattr(flow, "bytes_sum", 0)
         _packets = getattr(flow, "packets", 0)
-        _dport = getattr(flow, "dst_port", 0)
 
         for _rule in self._rules:
             # dsize匹配
@@ -377,7 +154,7 @@ class RuleEngine:
     def rule_count(self) -> int:
         return len(self._rules)
 
-    # ── 对抗性规则硬化 ────────────────────────────────────
+    # 对抗性规则硬化
     def harden_rules(self) -> Dict[int, Any]:
         """对加载的规则执行对抗性硬化分析。
 
@@ -423,96 +200,3 @@ class RuleEngine:
             "top_gap_types": sorted(gap_types.items(),
                                     key=lambda x: -x[1])[:5],
         }
-
-
-def _rule_matches_packet(rule: SuricataRule, payload: bytes, proto: str, dport: int) -> bool:
-    # 端口过滤
-    if rule.dst_port != "any":
-        if not _port_matches(rule.dst_port, dport):
-            return False
-
-    # content匹配
-    if rule.content_patterns:
-        for _cp in rule.content_patterns:
-            # 处理十六进制转义 |XX XX|
-            _pat = _decode_content_pattern(_cp)
-            if _pat and _pat not in payload:
-                return False
-
-    # pcre匹配
-    if rule.pcre_patterns:
-        for _pcre in rule.pcre_patterns:
-            try:
-                _m = re.search(_pcre.encode() if isinstance(_pcre, str) else _pcre, payload)
-            except Exception:
-                try:
-                    _m = re.search(_pcre, payload.decode("latin-1", errors="replace"))
-                except Exception:
-                    _m = None
-            if not _m:
-                return False
-
-    return True
-
-
-def _port_matches(rule_port: str, actual_port: int) -> bool:
-    if rule_port == "any":
-        return True
-    # 处理端口组 [80,443,8080]
-    if rule_port.startswith("[") and rule_port.endswith("]"):
-        _inner = rule_port[1:-1]
-        _ports = _parse_port_list(_inner)
-        return actual_port in _ports
-    # 处理排除端口 ![22]
-    if rule_port.startswith("![") and rule_port.endswith("]"):
-        _inner = rule_port[2:-1]
-        _ports = _parse_port_list(_inner)
-        return actual_port not in _ports
-    # 范围 8000:8100
-    if ":" in rule_port and not rule_port.startswith("!"):
-        _parts = rule_port.split(":")
-        try:
-            _lo = int(_parts[0])
-            _hi = int(_parts[1])
-            return _lo <= actual_port <= _hi
-        except ValueError:
-            return True
-    # 单个端口
-    try:
-        return int(rule_port) == actual_port
-    except ValueError:
-        return True
-
-
-def _parse_port_list(s: str) -> Set[int]:
-    _ports: Set[int] = set()
-    for _p in s.split(","):
-        _p = _p.strip()
-        try:
-            _ports.add(int(_p))
-        except ValueError:
-            pass
-    return _ports
-
-
-def _decode_content_pattern(pat: str) -> bytes:
-    """解码content模式，支持|XX XX|十六进制和普通ASCII混合"""
-    _result = bytearray()
-    _i = 0
-    while _i < len(pat):
-        if pat[_i] == "|":
-            _end = pat.find("|", _i + 1)
-            if _end == -1:
-                _result.extend(pat[_i:].encode("latin-1"))
-                break
-            _hex = pat[_i+1:_end]
-            for _b in _hex.split():
-                try:
-                    _result.append(int(_b.strip(), 16))
-                except ValueError:
-                    pass
-            _i = _end + 1
-        else:
-            _result.append(ord(pat[_i]))
-            _i += 1
-    return bytes(_result)

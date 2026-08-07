@@ -35,7 +35,7 @@ def _quick_parse(argv=None):
     return p.parse_args(argv)
 
 
-# ── entry point ─────────────────────────────────────────────────────────
+# entry point
 
 def main(argv=None):
     args = _quick_parse(argv)

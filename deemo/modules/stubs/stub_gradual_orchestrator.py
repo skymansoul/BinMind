@@ -7,9 +7,9 @@
 #   2. 验证-回溯自检：verify_chain() 对引擎族执行六类断言检查，
 #      将 Agentic Repair 的"验证-回溯"原则应用于引擎自身 — 出错即回退并报告细节。
 # 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale (arXiv:2507.18755 [待验证])
+#   Agentic Program Repair from Test Failures at Scale
 #     验证-回溯闭环依赖"可判定的验证信号"，自检对引擎族应用同一准则。
-#   SynthFix (arXiv:2604.17184 [待验证])
+#   SynthFix
 #     符号层与神经层的协同由编排层统一调度与降级。
 import ast as _ast
 import os as _os

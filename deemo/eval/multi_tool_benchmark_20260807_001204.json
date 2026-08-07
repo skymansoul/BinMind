@@ -1,0 +1,1523 @@
+{
+  "metrics": {
+    "BinMind-GAPSBV": {
+      "total": 33,
+      "TP": 30,
+      "FP": 0,
+      "TN": 1,
+      "FN": 2,
+      "precision": 1.0,
+      "recall": 0.9375,
+      "f1": 0.9677,
+      "fp_rate": 0.0,
+      "total_ms": 5,
+      "avg_ms": 0
+    },
+    "Objdump-Naive": {
+      "total": 33,
+      "TP": 32,
+      "FP": 1,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.9697,
+      "recall": 1.0,
+      "f1": 0.9846,
+      "fp_rate": 1.0,
+      "total_ms": 1641,
+      "avg_ms": 49
+    },
+    "Nm-Symbol": {
+      "total": 33,
+      "TP": 32,
+      "FP": 1,
+      "TN": 0,
+      "FN": 0,
+      "precision": 0.9697,
+      "recall": 1.0,
+      "f1": 0.9846,
+      "fp_rate": 1.0,
+      "total_ms": 520,
+      "avg_ms": 15
+    },
+    "Regex-Baseline": {
+      "total": 33,
+      "TP": 28,
+      "FP": 1,
+      "TN": 0,
+      "FN": 4,
+      "precision": 0.9655,
+      "recall": 0.875,
+      "f1": 0.918,
+      "fp_rate": 1.0,
+      "total_ms": 0,
+      "avg_ms": 0
+    }
+  },
+  "results": {
+    "BinMind-GAPSBV": [
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2014-0160",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 4,
+        "guard_filtered": 0,
+        "duration_ms": 3,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2016-6301",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2017-11176",
+        "detected": true,
+        "overflow": 2,
+        "uncertain": 0,
+        "safe": 4,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2018-6552",
+        "detected": false,
+        "overflow": 0,
+        "uncertain": 0,
+        "safe": 0,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2019-1010298",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2020-10711",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2021-3156",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2022-0185",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2022-23222",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2023-0461",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "CVE-2024-21894",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "cve_2021_3156_sudoedit",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 3,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "cve_2022_0185_kernel_heap",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "cve_2023_23001_custom",
+        "detected": false,
+        "overflow": 0,
+        "uncertain": 0,
+        "safe": 0,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-ALIGN-05",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-BASIC-01",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 4,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-COND-03",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-FP-04",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-LOOP-02",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-MULTI-06",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 1,
+        "safe": 4,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "HEAP-OVERFLOW-REALLOC-07",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_aliased_ptr",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_dynamic_index",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 1,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_guard_protected",
+        "detected": false,
+        "overflow": 0,
+        "uncertain": 0,
+        "safe": 3,
+        "guard_filtered": 1,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_int_overflow_to_heap",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 2,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 1,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_loop_overflow",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_no_guard_check",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_off_by_one",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_realloc_misuse",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_simple_overflow",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_slack_space",
+        "detected": true,
+        "overflow": 1,
+        "uncertain": 0,
+        "safe": 3,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_strcpy_overflow",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 1,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "BinMind-GAPSBV",
+        "sample": "heap_struct_write",
+        "detected": true,
+        "overflow": 0,
+        "uncertain": 1,
+        "safe": 2,
+        "guard_filtered": 0,
+        "duration_ms": 0,
+        "error": ""
+      }
+    ],
+    "Objdump-Naive": [
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2014-0160",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2016-6301",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2017-11176",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2018-6552",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2019-1010298",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 55,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2020-10711",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 50,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2021-3156",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset",
+          "realloc"
+        ],
+        "duration_ms": 62,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2022-0185",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2022-23222",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2023-0461",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "CVE-2024-21894",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "cve_2021_3156_sudoedit",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "cve_2022_0185_kernel_heap",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 46,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "cve_2023_23001_custom",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-ALIGN-05",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-BASIC-01",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-COND-03",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 46,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-FP-04",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-LOOP-02",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-MULTI-06",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "HEAP-OVERFLOW-REALLOC-07",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset",
+          "realloc"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_aliased_ptr",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 51,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_dynamic_index",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 52,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_guard_protected",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_int_overflow_to_heap",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 48,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_loop_overflow",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 50,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_no_guard_check",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 54,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_off_by_one",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 61,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_realloc_misuse",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset",
+          "realloc"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_simple_overflow",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 54,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_slack_space",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset"
+        ],
+        "duration_ms": 49,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_strcpy_overflow",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 52,
+        "error": ""
+      },
+      {
+        "tool": "Objdump-Naive",
+        "sample": "heap_struct_write",
+        "detected": true,
+        "found_funcs": [
+          "calloc",
+          "free",
+          "malloc",
+          "memcpy",
+          "memset",
+          "strcpy"
+        ],
+        "duration_ms": 47,
+        "error": ""
+      }
+    ],
+    "Nm-Symbol": [
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2014-0160",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2016-6301",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2017-11176",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2018-6552",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2019-1010298",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2020-10711",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2021-3156",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "realloc"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2022-0185",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2022-23222",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2023-0461",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "CVE-2024-21894",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 14,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "cve_2021_3156_sudoedit",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 14,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "cve_2022_0185_kernel_heap",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "cve_2023_23001_custom",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-ALIGN-05",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 34,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-BASIC-01",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-COND-03",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-FP-04",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-LOOP-02",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-MULTI-06",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 18,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "HEAP-OVERFLOW-REALLOC-07",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "realloc"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_aliased_ptr",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_dynamic_index",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 14,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_guard_protected",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_int_overflow_to_heap",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_loop_overflow",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_no_guard_check",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_off_by_one",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_realloc_misuse",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "realloc"
+        ],
+        "duration_ms": 14,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_simple_overflow",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_slack_space",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy"
+        ],
+        "duration_ms": 16,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_strcpy_overflow",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 14,
+        "error": ""
+      },
+      {
+        "tool": "Nm-Symbol",
+        "sample": "heap_struct_write",
+        "detected": true,
+        "dangerous_syms": [
+          "calloc",
+          "malloc",
+          "memcpy",
+          "strcpy"
+        ],
+        "duration_ms": 15,
+        "error": ""
+      }
+    ],
+    "Regex-Baseline": [
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2014-0160",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2016-6301",
+        "detected": false,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2017-11176",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2018-6552",
+        "detected": false,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2019-1010298",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2020-10711",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2021-3156",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2022-0185",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2022-23222",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2023-0461",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "CVE-2024-21894",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "cve_2021_3156_sudoedit",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "cve_2022_0185_kernel_heap",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "cve_2023_23001_custom",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-ALIGN-05",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-BASIC-01",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-COND-03",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-FP-04",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-LOOP-02",
+        "detected": false,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-MULTI-06",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "HEAP-OVERFLOW-REALLOC-07",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_aliased_ptr",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_dynamic_index",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_guard_protected",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_int_overflow_to_heap",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_loop_overflow",
+        "detected": false,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_no_guard_check",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_off_by_one",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_realloc_misuse",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_simple_overflow",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_slack_space",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_strcpy_overflow",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      },
+      {
+        "tool": "Regex-Baseline",
+        "sample": "heap_struct_write",
+        "detected": true,
+        "duration_ms": 0,
+        "error": ""
+      }
+    ]
+  },
+  "generated_at": "2026-08-07 00:12:04"
+}

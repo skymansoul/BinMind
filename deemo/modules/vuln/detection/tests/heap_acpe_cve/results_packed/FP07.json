@@ -1,0 +1,24 @@
+{
+  "id": "FP07",
+  "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP07\\bin\\packed\\smaller_memmove.exe",
+  "acpe": {
+    "detected": false,
+    "kept": 0,
+    "error": "",
+    "findings": [
+      {
+        "func": "move_small",
+        "addr": 5368715157,
+        "write_func": "call",
+        "relation": "CONST_LE",
+        "verdict": "safe",
+        "reasoning": "write 32B <= usable 512B"
+      }
+    ]
+  },
+  "baseline": {
+    "detected": false,
+    "kept": 0,
+    "findings": []
+  }
+}

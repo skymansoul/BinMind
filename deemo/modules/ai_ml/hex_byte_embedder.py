@@ -1,6 +1,6 @@
 """原始字节级嵌入 — 从二进制文件的十六进制表示学习函数表示"""
-# 依据: ContraBin [Zhang et al. TMLR 2025] 的三模态对比学习 (源代码+二进制+注释)
-# DiffBCE [Zhang & Cheng, IST 2025] 的差分对比学习
+# 依据: ContraBin 的三模态对比学习 (源代码+二进制+注释)
+# DiffBCE 的差分对比学习
 # 核心: 绕过反汇编需求, 直接从raw bytes提取语义信息
 # 用途: 处理无法反汇编的混淆/加壳代码; 作为CFG/GNN嵌入的多模态补充
 
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 
-# ========== 辅助 ==========
+# 辅助
 
 def _hb_dot(a: List[float], b: List[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
@@ -31,7 +31,7 @@ def _hb_zeros(n: int) -> List[float]:
     return [0.0] * n
 
 
-# ========== 字节嵌入器 ==========
+# 字节嵌入器
 
 class ByteSequenceEmbedder:
     """原始字节序列嵌入器
@@ -183,10 +183,10 @@ class HexDumpEmbedder:
         return _hb_l2_norm(embed)
 
 
-# ========== ContraBin风格的三模态对齐 ==========
+# ContraBin风格的三模态对齐
 
 class TriModalBinaryEmbedder:
-    """三模态二进制嵌入 — ContraBin [TMLR 2025] 风格
+    """三模态二进制嵌入 — ContraBin 风格
 
     三个模态:
       1. raw_bytes: 原始字节级嵌入 (ByteSequenceEmbedder)

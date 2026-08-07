@@ -1,0 +1,4 @@
+Tool,Samples,TP,FP,TN,FN,Recall_pct,Precision_pct,FP_Rate_pct,F1_Score,Avg_Time_ms
+AC3-v1-Baseline,24,16,7,0,1,94.1,69.6,100.0,0.8,0.6
+PSVR-HLM-v3.0,24,16,0,7,1,94.1,100.0,0.0,0.97,1.2
+CB-HOD-v1.0,24,16,1,6,1,94.1,94.1,14.3,0.941,1.2

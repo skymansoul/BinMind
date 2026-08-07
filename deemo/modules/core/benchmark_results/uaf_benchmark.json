@@ -1,0 +1,110 @@
+{
+  "results": [
+    {
+      "id": "uaf_cve_01",
+      "cve": "CVE-2021-38000",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_02",
+      "cve": "CVE-2020-15999",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_03",
+      "cve": "CVE-2019-13720",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_04",
+      "cve": "CVE-2018-8174",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_05",
+      "cve": "CVE-2017-0674",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_06",
+      "cve": "CVE-2016-0189",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_07",
+      "cve": "CVE-2022-22620",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_08",
+      "cve": "CVE-2021-30551",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_09",
+      "cve": "CVE-2020-6418",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_10",
+      "cve": "CVE-2023-2033",
+      "gt": true,
+      "detected": true,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_11",
+      "cve": "SAFE-001",
+      "gt": false,
+      "detected": false,
+      "correct": true,
+      "confidence": 0.85
+    },
+    {
+      "id": "uaf_cve_12",
+      "cve": "SAFE-002",
+      "gt": false,
+      "detected": false,
+      "correct": true,
+      "confidence": 0.85
+    }
+  ],
+  "stats": {
+    "total": 12,
+    "tp": 10,
+    "tn": 2,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  }
+}

@@ -10,10 +10,10 @@ from pathlib import Path
 
 from .core import Seed
 
-# ---- 支持动态策略切换 ----
+# 支持动态策略切换
 _VALID_STRATEGIES = frozenset({"aflfast", "roundrobin", "random", "weighted", "bandit"})
 
-# ===== 主要调度器 =====
+# 主要调度器
 class Scheduler:
     """AFLfast马尔可夫链调度 -- 根据种子性能和覆盖反馈动态调整概率。
 
@@ -29,7 +29,7 @@ class Scheduler:
         self._seed_scores: dict[str, float] = {}
         self._selection_counts: dict[str, int] = defaultdict(int)
 
-        # ---- 马尔可夫链状态 ----
+# 马尔可夫链状态
         self._markov_chain: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         self._current_state: str = "init"
         self._state_history: list[tuple[str, bool]] = []  # (state, is_new_find)
@@ -167,20 +167,20 @@ class Scheduler:
         self._bandit_impl.notify_reward(sid, None, is_new_find=is_new)
         return chosen
 
-    # ---- AFLfast加权随机 ----
+# AFLfast加权随机
     def _pick_aflfast(self) -> Seed:
         _scores = [self._seed_scores.get(_s.id, 1.0) for _s in self._seed_queue]
         _idx = self._roulette_wheel(_scores)
         return self._seed_queue[_idx]
 
-    # ---- 轮询 ----
+# 轮询
     def _pick_roundrobin(self) -> Seed:
         self._round_robin_idx = self._round_robin_idx % len(self._seed_queue)
         _seed = self._seed_queue[self._round_robin_idx]
         self._round_robin_idx += 1
         return _seed
 
-    # ---- 加权 ----
+# 加权
     def _pick_weighted(self) -> Seed:
         _scores = [self._seed_scores.get(_s.id, 1.0) for _s in self._seed_queue]
         _idx = self._roulette_wheel(_scores)
@@ -1363,7 +1363,7 @@ class Scheduler:
         return len(self._seed_queue) == 0
 
 
-# ===== 语料库管理器 =====
+# 语料库管理器
 class CorpusManager:
     """种子文件持久化 -- save/load/prune"""
 
@@ -1374,7 +1374,7 @@ class CorpusManager:
         self._seed_dir = self.corpus_dir / "seeds"
         self._seed_dir.mkdir(parents=True, exist_ok=True)
 
-    # ---- 文件路径生成 ----
+# 文件路径生成
     def _corpus_path(self, seed_id: str) -> str:
         """每个种子按id前两位分子目录，避免单目录文件过多"""
         _prefix = seed_id[:2]
@@ -1382,7 +1382,7 @@ class CorpusManager:
         _subdir.mkdir(parents=True, exist_ok=True)
         return str(_subdir / f"{seed_id}.bin")
 
-    # ---- 保存单个种子 ----
+# 保存单个种子
     def save_seed(self, seed: Seed) -> str:
         _path = self._corpus_path(seed.id)
         _payload = self._serialize_seed(seed)
@@ -1421,7 +1421,7 @@ class CorpusManager:
 
         return b"".join(_parts)
 
-    # ---- 加载单个种子 ----
+# 加载单个种子
     def load_seed(self, seed_id: str) -> Seed | None:
         _path = self._corpus_path(seed_id)
         if not os.path.isfile(_path):
@@ -1468,7 +1468,7 @@ class CorpusManager:
             mutation_count=_meta.get("mutation_count", 0),
         )
 
-    # ---- 加载全部种子 ----
+# 加载全部种子
     def load_all(self) -> list[Seed]:
         _seeds: list[Seed] = []
         _idx = -1
@@ -1485,7 +1485,7 @@ class CorpusManager:
                     continue  # 损坏的种子文件跳过
         return _seeds
 
-    # ---- 保存/加载队列元数据 ----
+# 保存/加载队列元数据
     def save_queue(self, queue: list[Seed]) -> None:
         _ids = [_s.id for _s in queue]
         _payload = json.dumps({"seed_ids": _ids, "timestamp": time.time()}, indent=2)
@@ -1503,7 +1503,7 @@ class CorpusManager:
                 _seeds.append(_s)
         return _seeds
 
-    # ---- 修剪：保留分数最高的N个种子 ----
+# 修剪：保留分数最高的N个种子
     def prune(self, max_seeds: int) -> int:
         """移除分数最低的种子，将队列大小控制在max_seeds以内"""
         if max_seeds <= 0:
@@ -1542,7 +1542,7 @@ class CorpusManager:
         return _cnt
 
 
-# ===== 独立的便捷函数 =====
+# 独立的便捷函数
 
 def pick_seed(scheduler: Scheduler) -> Seed | None:
     """从调度器中选取下一个种子"""

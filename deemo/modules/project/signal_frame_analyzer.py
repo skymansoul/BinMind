@@ -12,12 +12,12 @@
 # 解决手段: 分析二进制中的信号handler配置, 评估每类信号利用的可行性:
 #   - SROP: 检测是否存在sigreturn gadget (pop rax; syscall)
 #   - sigaltstack: 检测是否使用SS_AUTODISARM+可写的alternate stack
-#   - SIGSYS: 检测是否在seccomp下安装SIGSYS handler
-#   - 信号竞态: 检测handler重入保护 (SA_NODEFER)
+# SIGSYS: 检测是否在seccomp下安装SIGSYS handler
+# 信号竞态: 检测handler重入保护 (SA_NODEFER)
 # 技术效果: 自动识别信号相关的利用路径,
 #   将SROP从手工分析升级为自动化可行性评估
-# 参考:
-#   Sigreturn-oriented programming (Bosman & Bos, IEEE S&P 2014) — SROP原论文
+#
+#   Sigreturn-oriented programming — SROP原论文
 #   Linux signal frame layout (arch/x86/kernel/signal.c) — 内核实现
 from __future__ import annotations
 import logging

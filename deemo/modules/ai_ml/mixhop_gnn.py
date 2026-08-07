@@ -1,6 +1,6 @@
 # MixHop图卷积 — 混合多跳邻域聚合
-# 参考: MixHop (Abu-El-Haija et al. ICML, 2019) 的高阶邻域混合
-# DESCG [Automated Software Engineering 2025] 使用MixHop进行二进制数据编码方案分类
+# MixHop 的高阶邻域混合
+# DESCG 使用MixHop进行二进制数据编码方案分类
 # 核心: 对k=1,2,...跳邻域分别卷积后拼接, 捕获多尺度图拓扑
 
 from __future__ import annotations
@@ -13,9 +13,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 纯Python矩阵运算 (参见 gat_graph_encoder.py 中的同名函数)
-# ---------------------------------------------------------------------------
 
 def _mx_vec_dot(a: List[float], b: List[float]) -> float:
     s = 0.0
@@ -47,9 +45,7 @@ def _mx_elu(x: float) -> float:
     return x if x >= 0.0 else math.exp(x) - 1.0
 
 
-# ---------------------------------------------------------------------------
 # 配置
-# ---------------------------------------------------------------------------
 
 @dataclass
 class MixHopConfig:
@@ -63,9 +59,7 @@ class MixHopConfig:
     use_layer_norm: bool = True
 
 
-# ---------------------------------------------------------------------------
 # MixHop层实现
-# ---------------------------------------------------------------------------
 
 class MixHopLayer:
     """单层MixHop: 对多个邻接矩阵幂进行独立卷积后拼接
@@ -198,9 +192,7 @@ class MixHopLayer:
                 for j in range(d)]
 
 
-# ---------------------------------------------------------------------------
 # 完整MixHop GNN
-# ---------------------------------------------------------------------------
 
 class MixHopGNN:
     """多层MixHop图神经网络
@@ -287,9 +279,7 @@ class MixHopGNN:
         return [self.encode(nf, adj) for nf, adj in graphs]
 
 
-# ---------------------------------------------------------------------------
 # DESCG风格的数据编码方案分类器
-# ---------------------------------------------------------------------------
 
 class DESCGEncodingClassifier:
     """基于MixHop的二进制数据编码方案分类

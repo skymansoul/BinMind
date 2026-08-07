@@ -16,8 +16,7 @@
   IPC 假设: ~1.5 (现代乱序核的中等估计)
   转换为 exploitability 评分: 窗口越宽 → 越容易利用。
 
-参考:
-  Tsafrir et al. (2008): TORTILLA — TOCTOU 利用框架
+  Tsafrir et al.: TORTILLA — TOCTOU 利用框架
   CVE-2023-3269: Linux kernel TOCTOU (check→use: ~50 insns → 可利用)
   无现有量化工具 — 2026-08 检索确认.
 
@@ -30,12 +29,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # 默认 IPC 假设 (每周期指令数)
 _DEFAULT_IPC = 1.5
 # 默认时钟频率 (GHz)
 _DEFAULT_CLOCK_GHZ = 2.5
-
 
 class RaceType(Enum):
     TOCTOU_FS = "toctou_fs"        # 文件系统 TOCTOU
@@ -43,7 +40,6 @@ class RaceType(Enum):
     SIGNAL_RACE = "signal_race"    # 信号处理器竞争
     THREAD_RACE = "thread_race"    # 多线程数据竞争
     UNKNOWN = "unknown"
-
 
 @dataclass
 class RaceWindow:
@@ -55,7 +51,6 @@ class RaceWindow:
     estimated_window_us: float      # 估算竞态窗口 (微秒)
     exploitability: float           # 0-10, 越高越容易利用
     window_quality: str = ''        # tiny/small/medium/large/huge
-
 
 def _classify_race(
     function_context: str = '',
@@ -76,7 +71,6 @@ def _classify_race(
            'atomic', 'concurrent', 'race')):
         return RaceType.THREAD_RACE
     return RaceType.UNKNOWN
-
 
 def _estimate_window_us(
     instruction_count: int,
@@ -102,7 +96,6 @@ def _estimate_window_us(
     window_seconds = total_cycles / (clock_ghz * 1e9)
     return window_seconds * 1e6  # 转微秒
 
-
 def _window_to_exploitability(window_us: float, race_type: RaceType) -> float:
     """
     竞态窗口 → exploitability 映射。
@@ -123,7 +116,6 @@ def _window_to_exploitability(window_us: float, race_type: RaceType) -> float:
     log_w = math.log10(max(window_us, 1e-6))
     score = 10.0 / (1.0 + math.exp(-2.0 * (log_w - 1.0)))
     return round(score * baseline, 1)
-
 
 def estimate_race_window(
     function_context: str = '',
@@ -164,7 +156,6 @@ def estimate_race_window(
         exploitability=exploit,
         window_quality=quality,
     )
-
 
 def race_summary(rw: RaceWindow) -> Dict[str, Any]:
     """竞态窗口评估摘要。"""

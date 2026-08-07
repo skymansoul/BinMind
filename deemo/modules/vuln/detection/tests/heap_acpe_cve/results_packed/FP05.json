@@ -1,0 +1,24 @@
+{
+  "id": "FP05",
+  "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\heap_acpe_cve\\samples\\FP05\\bin\\packed\\early_exit_guard.exe",
+  "acpe": {
+    "detected": false,
+    "kept": 0,
+    "error": "",
+    "findings": [
+      {
+        "func": "early_exit.constprop.0",
+        "addr": 5368715138,
+        "write_func": "call",
+        "relation": "CONST_LE",
+        "verdict": "safe",
+        "reasoning": "write 100B <= usable 256B"
+      }
+    ]
+  },
+  "baseline": {
+    "detected": false,
+    "kept": 0,
+    "findings": []
+  }
+}

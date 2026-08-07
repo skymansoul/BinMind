@@ -8,7 +8,6 @@
 # 三轨独立运行, 结果取并集(最大化召回)。
 # 置信度用贝叶斯加权融合——多轨一致时置信度提升, 单轨时降权。
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -73,8 +72,8 @@ def detect_uaf_unified(
     pattern_findings = []
     if pseudocode:
         try:
-            from core.heap_uaf_detector import detect_uaf_patterns
-            raw = detect_uaf_patterns(pseudocode, func_name)
+            from core.heap_uaf_detector import detect_uaf
+            raw = detect_uaf(pseudocode, func_name)
             for r in raw:
                 pattern_findings.append(UafFinding(
                     object_name=r.get('variable', 'unknown'),

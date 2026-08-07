@@ -27,9 +27,7 @@ try:
 except ImportError:
     LOGURU_AVAILABLE = False
 
-# ═══════════════════════════════════════════════════════════════
 # 插件基础设施 — 兼容core.plugin_manager或本地回退
-# ═══════════════════════════════════════════════════════════════
 
 try:
     from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
@@ -69,9 +67,7 @@ except ImportError:
         def get_metadata(cls) -> 'AnalyzerMetadata':
             return AnalyzerMetadata()
 
-# ═══════════════════════════════════════════════════════════════
 # 从 src/ 子模块导入类型与模型（向后兼容的 str/int Enum）
-# ═══════════════════════════════════════════════════════════════
 
 from platform.smart_contract.src.core.types import (
     ContractType,
@@ -84,9 +80,7 @@ from platform.smart_contract.src.core.models import (
     EVMBasicBlock,
 )
 
-# ═══════════════════════════════════════════════════════════════
 # TaintSource — 内联保留，src/taint_tracker.py 有独立的 TaintSource 模型
-# ═══════════════════════════════════════════════════════════════
 
 class TaintSource(Enum):
     """栈值污染源标记 — 抽象解释时追踪数据来源。
@@ -107,10 +101,7 @@ class TaintSource(Enum):
     DIFFICULTY = "difficulty"
     NUMBER = "number"
 
-
-# ═══════════════════════════════════════════════════════════════
 # Gas 计量常量 — EIP-2929 / EIP-3529 基准
-# ═══════════════════════════════════════════════════════════════
 
 # 冷/热存储访问的 gas 成本（EIP-2929 引入的差异化定价）
 _COLD_SLOAD = 2100
@@ -124,10 +115,7 @@ _SELFDESTRUCT_BASE = 5000
 # 冗余 SLOAD 检测窗口 — 同一 slot 在此窗口内被多次读取视为低效
 _REDUNDANT_SLOAD_WINDOW = 128
 
-
-# ═══════════════════════════════════════════════════════════════
 # 数据结构
-# ═══════════════════════════════════════════════════════════════
 
 @dataclass
 class StackSlot:
@@ -157,7 +145,6 @@ class StackSlot:
                 val = o.value
         return StackSlot(value=val, taint=merged)
 
-
 @dataclass
 class ContractVulnerability:
     """检测到的单项漏洞"""
@@ -174,7 +161,6 @@ class ContractVulnerability:
     # 附加上下文 — 用于报告消费方做更细粒度的过滤
     evidence_snippets: List[str] = field(default_factory=list)
 
-
 @dataclass
 class ContractFunction:
     """从字节码中解析的合约函数"""
@@ -185,7 +171,6 @@ class ContractFunction:
     vulnerabilities: List[ContractVulnerability] = field(default_factory=list)
     is_payable: bool = False
     state_mutability: str = "nonpayable"
-
 
 @dataclass
 class ContractAnalysisReport:
@@ -202,10 +187,7 @@ class ContractAnalysisReport:
     warnings: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-
-# ═══════════════════════════════════════════════════════════════
 # EVM 字节码解析器
-# ═══════════════════════════════════════════════════════════════
 
 class EVMBytecodeParser:
     """EVM 字节码解析器
@@ -657,10 +639,7 @@ class EVMBytecodeParser:
                 hi = mid - 1
         return None
 
-
-# ═══════════════════════════════════════════════════════════════
 # 抽象栈模拟器 — 轻量级符号执行辅助
-# ═══════════════════════════════════════════════════════════════
 
 class AbstractStack:
     """EVM 操作栈的轻量抽象模型。
@@ -730,7 +709,7 @@ class AbstractStack:
         # 栈操作中 args[0] 是栈顶（最后 pop 的），需要反转以对应语义顺序
         args.reverse()
 
-        # --- 按助记符分发语义 ---
+# 按助记符分发语义
         if mnem.startswith('PUSH'):
             self.push(StackSlot.concrete(instr.operand or 0))
 
@@ -834,10 +813,7 @@ class AbstractStack:
             other_idx = -(1 + i)
             self._stack[self_idx].taint |= other._stack[other_idx].taint
 
-
-# ═══════════════════════════════════════════════════════════════
 # WASM 解析器
-# ═══════════════════════════════════════════════════════════════
 
 class WASMContractParser:
     """WASM 二进制解析器 — 仅覆盖安全审计所需的子集
@@ -1023,10 +999,7 @@ class WASMContractParser:
                 return True
         return False
 
-
-# ═══════════════════════════════════════════════════════════════
 # 检测器 — 各漏洞类型的独立分析逻辑
-# ═══════════════════════════════════════════════════════════════
 
 class ReentrancyDetector:
     """重入漏洞检测 — 判断 SSTORE 与 CALL 的前后位置关系
@@ -1096,7 +1069,6 @@ class ReentrancyDetector:
 
         return call_found
 
-
 class IntegerOverflowDetector:
     """整数溢出检测 — 定位缺少安全比较的算术指令"""
 
@@ -1136,7 +1108,6 @@ class IntegerOverflowDetector:
                 return True
         return False
 
-
 class UncheckedCallDetector:
     """未检查返回值调用检测 — 定位 CALL 后缺少 ISZERO/JUMPI 的指令"""
 
@@ -1173,7 +1144,6 @@ class UncheckedCallDetector:
             if instructions[i].mnemonic in ['ISZERO', 'JUMPI']:
                 return True
         return False
-
 
 class DeprecatedOpcodeDetector:
     """废弃/高危操作码检测。
@@ -1232,7 +1202,6 @@ class DeprecatedOpcodeDetector:
 
         return self.vulnerabilities
 
-
 class StorageCollisionDetector:
     """DELEGATECALL 存储布局碰撞检测。
 
@@ -1289,7 +1258,6 @@ class StorageCollisionDetector:
             sim.simulate(instructions[j])
 
         return sim.has_taint_in_range(3, TaintSource.CALLDATA)
-
 
 class GasInefficiencyDetector:
     """Gas 效率低下的代码模式检测。
@@ -1373,7 +1341,6 @@ class GasInefficiencyDetector:
                         recommendation="在循环结束后一次性写入，或使用 event 替代存储"
                     ))
 
-
 class FrontRunningDetector:
     """抢跑/MEV 漏洞检测。
 
@@ -1445,11 +1412,7 @@ class FrontRunningDetector:
                 return True
         return False
 
-
-# ═══════════════════════════════════════════════════════════════
 # 主分析器
-# ═══════════════════════════════════════════════════════════════
-
 
 class WeakRandomnessDetector:
     """弱随机数检测。
@@ -1458,7 +1421,7 @@ class WeakRandomnessDetector:
     → 算术/哈希操作 → 条件分支/转账/SSTORE。
 
     这类随机性可被矿工在单区块内精确预测和操控。
-    CrossInspector (arXiv 2024) 的 State Dependency Graph 将其归类为
+    CrossInspector  的 State Dependency Graph 将其归类为
     timestamp/block 依赖漏洞，精度 97%。
     """
 
@@ -1512,7 +1475,6 @@ class WeakRandomnessDetector:
                     return True
 
         return False
-
 
 class PatternSignatureDetector:
     """类 YARA 的漏洞签名匹配框架。
@@ -1986,7 +1948,6 @@ class SmartContractAnalyzer(BaseAnalyzer):
             dependencies=[],
             supported_platforms=["any"])
 
-
 __all__ = [
     'SmartContractAnalyzer',
     'EVMBytecodeParser',
@@ -2013,6 +1974,3 @@ __all__ = [
     'PatternSignatureDetector',
 ]
 
-
-def _debug_print(*args, **kwargs):
-    pass

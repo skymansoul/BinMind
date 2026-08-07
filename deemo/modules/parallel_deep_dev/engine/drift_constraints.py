@@ -1,5 +1,5 @@
 """
-创建: 2025-08-05
+创建: 2026-05-10
 
 架构漂移约束扩展 — 超越标准 lint 的非平凡约束检查。
 
@@ -167,9 +167,7 @@ def check_interface_leak(
     return None
 
 
-# ---------------------------------------------------------------------------
 # 辅助
-# ---------------------------------------------------------------------------
 
 def _check_simple_self_import(tree: ast.Module, filepath: str) -> str | None:
     file_module = os.path.splitext(os.path.basename(filepath))[0]

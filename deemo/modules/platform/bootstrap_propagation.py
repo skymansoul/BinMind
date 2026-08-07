@@ -8,7 +8,7 @@ Bootstrap传播置信区间 -- Efron重抽样估计传播图边置信度的经�
   Bootstrap提供基于数据重抽样的经验置信区间——两者互补。
 
 方案：
-  非参数Bootstrap (Efron 1979)：
+  非参数Bootstrap：
   1. 将传播图的边置信度观测视为经验分布
   2. 有放回重抽样B次(B=1000), 每次构建一个bootstrap传播图
   3. 在每个bootstrap图上运行RiskScorer
@@ -29,8 +29,8 @@ Bootstrap传播置信区间 -- Efron重抽样估计传播图边置信度的经�
   adversarial_hardening: Beta后验HDI, 需贝叶斯先验
   本模块: 纯频率学派经验方法, 仅需原始数据, 无先验假设
 
-ref: Efron & Tibshirani (1994) "An Introduction to the Bootstrap".
-ref: Efron (1979) "Bootstrap Methods: Another Look at the Jackknife".
+ref: Efron & Tibshirani "An Introduction to the Bootstrap".
+ref: Efron "Bootstrap Methods: Another Look at the Jackknife".
 """
 
 from __future__ import annotations

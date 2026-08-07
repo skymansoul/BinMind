@@ -1,7 +1,7 @@
-# 创建: 2025-08-13
-# 修改: 2025-08-13 — x86-64 JMP rel32 + ARM64 B rel26 编码
-# 修改: 2025-08-13 — 原子 8-byte jmp 写入, 多线程安全
-# 修改: 2025-08-16 — arm64_load_addr 补全 4 指令序列 (movz+movk×3)
+# 创建: 2026-05-02
+# 修改: 2026-05-02 — x86-64 JMP rel32 + ARM64 B rel26 编码
+# 修改: 2026-05-02 — 原子 8-byte jmp 写入, 多线程安全
+# 修改: 2026-05-02 — arm64_load_addr 补全 4 指令序列 (movz+movk×3)
 """
 Trampoline 二进制函数钩子重写器 — 无源码的函数级插桩。
 
@@ -29,11 +29,11 @@ ARM64 Trampoline:
 
 安全性: 在插入 jmp 时使用原子 8-byte write 避免多线程竞争窗口。
 
-ref: ASC-Hook (LCTES 2025) — ARM64 trampoline for syscall interception,
+ref: ASC-Hook — ARM64 trampoline for syscall interception,
      本项目将 syscall hook 的 trampoline 技术推广到任意函数
-ref: DIBE (UNIST 2026) — asynchronous incremental binary editing,
+ref: DIBE — asynchronous incremental binary editing,
      本项目取其"对齐感知原子 jmp 写入"的安全方案
-ref: zpoline (USENIX ATC 2023) — x86-64 trampoline-based hook,
+ref: zpoline — x86-64 trampoline-based hook,
      本项目的 x86-64 trampoline 结构参考其设计
 """
 
@@ -71,7 +71,7 @@ class HookContext:
     arg_registers: dict[str, int]
 
 
-# --- x86-64 Trampoline 生成 ---
+# x86-64 Trampoline 生成
 # 函数入口被替换为: jmp rel32 (5 bytes) → 跳转到 trampoline
 # 需要至少覆盖 5 字节的原始指令——可能跨多条指令
 
@@ -152,7 +152,7 @@ def _x86_restore_context() -> bytes:
     )
 
 
-# --- ARM64 Trampoline 生成 ---
+# ARM64 Trampoline 生成
 
 def generate_arm64_trampoline(target_addr: int, hook_addr: int,
                                trampoline_addr: int,
@@ -219,7 +219,7 @@ def _arm64_load_addr(addr: int) -> bytes:
     return bytes(code)
 
 
-# --- 钩子重写器 ---
+# 钩子重写器
 
 class TrampolineHookRewriter:
     """二进制函数钩子重写器——管理 trampoline 的创建/激活/移除。"""

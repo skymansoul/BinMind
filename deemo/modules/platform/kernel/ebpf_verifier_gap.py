@@ -1,13 +1,13 @@
 # eBPF 验证器拒绝诊断缝隙分析
-# 参考:
+#
 #   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
-#    (arXiv 2607.02748, Jul 2026)
+#
 #    核心发现: Linux eBPF 验证器拒绝消息中 42% 无可执行的诊断信息,
 #    平均调试耗时 3.7 小时; 提出 GAPFIX 框架自动补齐诊断上下文
 #   "A Flow-Sensitive Refinement Type System for Verifying eBPF Programs"
-#    (ACM POPL 2025) — 精化类型体系提升验证精度
+# — 精化类型体系提升验证精度
 #   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
-#    (arXiv 2605.25411, May 2026) — 形式化验证的迁移工具链
+# — 形式化验证的迁移工具链
 
 import os
 import re

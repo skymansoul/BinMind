@@ -10,15 +10,15 @@
 #      遇到 call → 若被调函数已知返回值为常量或已校验 → 停止追踪;
 #      遇到 cmp/test + jcc → 标记该路径上的变量为"已校验".
 #   2. 污染源分类:
-#      - "constant": 编译时确定的值 → 安全
+# "constant": 编译时确定的值 → 安全
 #      - "bounds_checked": 在到达危险调用前通过了 cmp/jcc → 安全
-#      - "external_input": 来自 read/recv/argv → 危险
-#      - "unknown_register": 无法确定来源 → 保守标记为危险
+# "external_input": 来自 read/recv/argv → 危险
+# "unknown_register": 无法确定来源 → 保守标记为危险
 #   3. 跨函数追踪深度: 默认追踪2层调用 (当前函数 + 直接调用者).
 #      超过2层的间接数据流在静态分析中可靠性急剧下降,
 #      不做追踪以减少误追踪导致的漏报.
 #
-# 创建: 2026-08-06
+# 创建: 2026-07-12
 
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple

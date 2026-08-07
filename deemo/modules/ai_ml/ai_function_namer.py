@@ -13,7 +13,7 @@ from math import log as _log, sqrt as _sqrt
 
 __dbg = _logging.getLogger(__name__)
 
-# ── N‑gram 指纹种子 — 多项式滚动哈希用 ─────────────────────────────────
+# N‑gram 指纹种子 — 多项式滚动哈希用
 _NGRAM_SEEDS = (1931, 2137, 31337)
 _NGRAM_N = 3
 _SIMILARITY_PROPAGATE_THRESHOLD = 0.65  # Jaccard ≥ 此值则传播名称
@@ -52,7 +52,7 @@ _FILTER_WORDS = {
     'sub_', 'unknown_', 'unnamed_', 'dummy_', 'nullsub_',
 }
 
-# ── 汇编助记符归一化 — 压缩操作码空间提升 n‑gram 碰撞精度 ──────────
+# 汇编助记符归一化 — 压缩操作码空间提升 n‑gram 碰撞精度
 _OPCODE_NORMALIZE = dict(
     [('mov', 'mov'), ('movzx', 'mov'), ('movsx', 'mov'), ('movsxd', 'mov'),
      ('lea', 'lea'),
@@ -137,7 +137,7 @@ def _similarity_jaccard(fp_a, fp_b):
     return inter_size / union_size if union_size > 0 else 0.0
 
 
-# ── Shannon 熵驱动栈字符串检测 — 区分布局常量与真实混淆字符串 ──────────
+# Shannon 熵驱动栈字符串检测 — 区分布局常量与真实混淆字符串
 def _compute_byte_entropy(byte_vals):
     """对单字节序列计算 Shannon 熵。混淆字符串通常 ≥ 3.5 bits，全零布局 < 1.0。"""
     if byte_vals is None or len(byte_vals) == 0:
@@ -353,7 +353,7 @@ def _infer_indirect_call_target(code, imports):
     return None, 0.0
 
 
-# ── 多证据贝叶斯融合 ─────────────────────────────────────────────────
+# 多证据贝叶斯融合
 def _bayesian_fuse(candidates):
     """将候选 (name, confidence, source) 列表融合为加权共识。
 
@@ -424,7 +424,7 @@ class FunctionNamer:
         self.m_min_conf = min_confidence
         self._fingerprint_cache = {}  # addr → frozenset fingerprint
 
-    # ── N‑gram 相似度名称传播 — CLAP 风格跨函数对比 ─────────────────
+# N‑gram 相似度名称传播 — CLAP 风格跨函数对比
     def _propagate_name_by_similarity(self, code, addr=None):
         """在历史命名中检索最相似函数，若 Jaccard ≥ 阈值则传播其名称。
 
@@ -502,7 +502,7 @@ class FunctionNamer:
         str_list = strings if strings else []
         imp_list = imports if imports else []
 
-        # ── 多证据收集阶段（不提前返回） ──────────────────────────
+# 多证据收集阶段（不提前返回）
         evidence_candidates = []
 
         # 1. API-based naming
@@ -571,7 +571,7 @@ class FunctionNamer:
             evidence_candidates.append(
                 (fallback_label, 0.15, 'fallback'))
 
-        # ── 多证据贝叶斯融合 ──────────────────────────────────────
+# 多证据贝叶斯融合
         fused_result = _bayesian_fuse(evidence_candidates)
         if fused_result is not None and fused_result[0] is not None:
             fused_name, fused_conf = fused_result

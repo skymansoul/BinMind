@@ -1,4 +1,4 @@
-# created: 2026-08-23
+# created: 2026-08-02
 # Tarjan SCC detection for loop_structure_recovery.py
 from typing import Dict, List, Set
 

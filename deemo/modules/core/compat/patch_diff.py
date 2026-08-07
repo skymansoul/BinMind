@@ -1,14 +1,14 @@
 # 安全补丁差分分析 — 1-day 漏洞检测与利用原语推断
-# 参考: ReSyn (Xie et al. CCS 2024) — 符号恢复与程序逻辑交叉验证在补丁分析中的应用
-# 参考: FirmNamer (2025) — 固件逆向中的多模态语义匹配策略
-# 参考: "Enhancing Vulnerability Detection via AST-Based Patch Decomposition"
-#       (Nguyen et al. 2025, arXiv:2503.15065 [待验证]) — AST 层级补丁分解与安全影响评估
+# ReSyn — 符号恢复与程序逻辑交叉验证在补丁分析中的应用
+# FirmNamer — 固件逆向中的多模态语义匹配策略
+# "Enhancing Vulnerability Detection via AST-Based Patch Decomposition"
+# — AST 层级补丁分解与安全影响评估
 
 import re as _re
 import hashlib as _hl
 import difflib as _dl
 
-# ===== 补丁类型分类 =====
+# 补丁类型分类
 # 从 diff hunks 推断补丁的安全性质
 # 基于修改模式而非关键词匹配 — 后者易被 commit message 误导
 
@@ -68,9 +68,9 @@ def classify_patch_type(added_lines: list[str], removed_lines: list[str],
     return 'unknown'
 
 
-# ===== 语义级补丁差分 =====
+# 语义级补丁差分
 # 超越逐行 diff — 比较修改前后函数的控制流和数据流变化
-# 参考: Nguyen et al. (2025) 的 AST 层级分解
+# Nguyen et al. 的 AST 层级分解
 
 
 def compute_semantic_diff(before_cfg: dict, after_cfg: dict) -> dict:
@@ -158,8 +158,8 @@ def _assess_security_impact(n_added: int, n_removed: int, n_changed: int,
     return 'medium'
 
 
-# ===== 相似函数匹配 (用于找到补丁影响的未打补丁版本) =====
-# 参考: ReSyn 的符号交叉验证 — 将函数级匹配从语法提升到语义
+# 相似函数匹配 (用于找到补丁影响的未打补丁版本)
+# ReSyn 的符号交叉验证 — 将函数级匹配从语法提升到语义
 
 def find_vulnerable_clone(patched_func_insns: list[tuple[str, str]],
                            candidate_pool: dict[str, list[tuple[str, str]]],
@@ -199,9 +199,9 @@ def find_vulnerable_clone(patched_func_insns: list[tuple[str, str]],
     return matches
 
 
-# --- Xref 引导的补丁影响分析 ---
+# Xref 引导的补丁影响分析
 # 补丁修改的函数可能被多处调用 — 修复一个点但遗漏其他调用点
-# 参考: FirmNamer 的多模态语义匹配 — 跨编译单元的全局符号关联
+# FirmNamer 的多模态语义匹配 — 跨编译单元的全局符号关联
 
 def patch_impact_analysis(patched_func_name: str,
                            callers: dict[str, list[str]],
@@ -231,9 +231,9 @@ def patch_impact_analysis(patched_func_name: str,
     }
 
 
-# --- Commit Message 解析 ---
+# Commit Message 解析
 # 从 git log 或 CVE 公告中提取安全相关信息
-# 参考: 基于 CVE/NVD 描述的结构化解析模式
+# 基于 CVE/NVD 描述的结构化解析模式
 
 _CVE_PATTERN = _re.compile(r'CVE-\d{4}-\d{4,}', _re.IGNORECASE)
 _SECURITY_KEYWORDS = frozenset({
@@ -276,7 +276,7 @@ def parse_security_commit(message: str) -> dict:
     }
 
 
-# --- 补丁差分行级匹配 (LCS-based) ---
+# 补丁差分行级匹配 (LCS-based)
 # 最长公共子序列 → 识别补丁的实质变更 vs 格式化变更
 # 忽略空白行、注释变更和仅缩进调整的行
 
