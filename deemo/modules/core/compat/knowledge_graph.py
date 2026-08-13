@@ -2,7 +2,7 @@
 import os as _os, tokenize as _tk, io as _io
 import itertools  # 保留
 from functools import lru_cache  # 保留
-_r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'ai_ml', 'knowledge_graph.py')
+_r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'knowledge_graph.py')
 with open(_r, 'rb') as _f:
     _tokens = list(_tk.tokenize(_f.readline))
 _src = _tk.untokenize(_tokens)

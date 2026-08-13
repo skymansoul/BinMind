@@ -104,12 +104,24 @@ def _find_target(lines: List[str], call_line: int, kind: str) -> Optional[str]:
 
 
 def verify_unbounded_io(alloc: ExtAlloc, line: int, max_io: int,
-                        kind: str) -> Optional[ExtResult]:
+                        kind: str,
+                        lines: Optional[List[str]] = None) -> Optional[ExtResult]:
     """验证输入写入是否溢出."""
     if alloc.size_const <= 0:
         return None
     usable = alloc.usable if alloc.usable > 0 else alloc.size_const
     if max_io < 0:
+        # 无界输入前可能存在守卫钳制 (如 if(len<n) 限制读取长度),
+        # 守卫上界不超过 usable 时判 SAFE, 否则按无界处理.
+        guard_hi = _guard_upper_bound(line, alloc.size_const,
+                                      alloc.size_expr, lines)
+        if guard_hi is not None and guard_hi <= usable:
+            return ExtResult(
+                verdict="SAFE", alloc_line=alloc.line, write_line=line,
+                var_name=alloc.var, alloc_size=alloc.size_const,
+                write_size=guard_hi, confidence=0.88, kind=kind,
+                reason="'%s': %s guarded ≤ %dB <= usable %d"
+                       % (alloc.var, kind, guard_hi, usable))
         return ExtResult(
             verdict="VULN", alloc_line=alloc.line, write_line=line,
             var_name=alloc.var, alloc_size=alloc.size_const,
@@ -132,7 +144,45 @@ def verify_unbounded_io(alloc: ExtAlloc, line: int, max_io: int,
                % (alloc.var, kind, max_io, usable))
 
 
+def _guard_upper_bound(call_line: int, alloc_size: int,
+                       size_expr: str, lines: Optional[List[str]]
+                       ) -> Optional[int]:
+    """在调用行之前查找对输入长度的守卫钳制.
+
+    守卫必须满足: 比较的变量出现在分配大小表达式中 (即该变量是
+    输入长度控制变量). 例如 malloc(len+1) + if(len<32) → 守卫上界 32.
+    若守卫比较的变量与分配无关, 不采纳, 避免误判.
+    """
+    if not lines:
+        return None
+    # 提取分配大小表达式中的控制变量
+    ctrl_var = None
+    if size_expr:
+        vm = re.search(r'\b([a-zA-Z_]\w*)\b', size_expr.strip())
+        if vm:
+            ctrl_var = vm.group(1)
+    if ctrl_var is None:
+        return None
+    for i in range(max(0, call_line - 12), call_line):
+        t = lines[i].strip()
+        if _is_comment_or_empty(t):
+            continue
+        m = re.search(
+            r'if\s*\(\s*' + re.escape(ctrl_var) + r'\s*<\s*(\d+)\s*\)', t)
+        if m:
+            n = int(m.group(1))
+            if n <= alloc_size:
+                return n
+        m = re.search(
+            r'if\s*\(\s*' + re.escape(ctrl_var) + r'\s*<=\s*(\d+)\s*\)', t)
+        if m:
+            n = int(m.group(1))
+            if n <= alloc_size:
+                return n
+    return None
+
+
 __all__ = [
     'collect_unbounded_io', 'verify_unbounded_io',
-    '_parse_scanf_width', '_find_target',
+    '_parse_scanf_width', '_find_target', '_guard_upper_bound',
 ]

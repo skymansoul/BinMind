@@ -1,13 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
-/* ¶à·ÖÅä³¡¾°¡ª¡ª²âÊÔL1Ô¼ÊøÅä¶ÔÄÜ·ñÕıÈ·Æ¥ÅämallocºÍmemcpy */
+/* å¤šåˆ†é…åœºæ™¯â€”â€”æµ‹è¯•L1çº¦æŸé…å¯¹èƒ½å¦æ­£ç¡®åŒ¹é…mallocå’Œmemcpy */
 void multi_alloc_test(const char *data, int len) {
     char *safe_buf = malloc(256);
     char *vuln_buf = malloc(32);
     char *safe_buf2 = malloc(512);
     if (!safe_buf || !vuln_buf || !safe_buf2) return;
     memcpy(safe_buf, data, 256);   /* safe: 256 <= 256 */
-    memcpy(vuln_buf, data, len);   /* VULN: len¿É´ï256, µ«Ö»ÓĞ32 */
+    memcpy(vuln_buf, data, len);   /* VULN: lenå¯è¾¾256, ä½†åªæœ‰32 */
     memcpy(safe_buf2, data, 512);  /* safe: 512 <= 512 */
     free(safe_buf); free(vuln_buf); free(safe_buf2);
 }

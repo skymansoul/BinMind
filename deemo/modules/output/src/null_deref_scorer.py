@@ -22,7 +22,7 @@
   SMAP/SMEP (x86) / PAN (ARM) 缓解措施
 
 修改记录:
-  2026-08-01 14:16 - 初始版本，用户/内核×读写×偏移×缓解矩阵
+  2025-05-12 14:16 - 初始版本，用户/内核×读写×偏移×缓解矩阵
 """
 
 from dataclasses import dataclass, field

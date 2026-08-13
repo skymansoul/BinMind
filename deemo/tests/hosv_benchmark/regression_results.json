@@ -1,9 +1,9 @@
 {
   "metrics": {
-    "tp": 12,
+    "tp": 13,
     "fp": 0,
     "fn": 0,
-    "tn": 6,
+    "tn": 7,
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
@@ -12,11 +12,11 @@
   "metrics_hosv_only": {
     "tp": 2,
     "fp": 0,
-    "fn": 10,
-    "tn": 6,
+    "fn": 11,
+    "tn": 7,
     "precision": 1.0,
-    "recall": 0.1667,
-    "f1": 0.2857,
+    "recall": 0.1538,
+    "f1": 0.2667,
     "fpr": 0.0
   },
   "per_sample": [
@@ -26,7 +26,7 @@
       "any_vuln": true,
       "hosv_vuln": false,
       "ext_vuln": true,
-      "time_ms": 2.59,
+      "time_ms": 2.65,
       "reasons": [
         "[EXT:walk_write_asymptotic] 'b': malloc(l + 1) alloc_coef=1 vs ptr-walk write_coef=2 (steps/iter, strlen(s)-driven) → asymptotic overflow for long input"
       ]
@@ -37,7 +37,7 @@
       "any_vuln": false,
       "hosv_vuln": false,
       "ext_vuln": false,
-      "time_ms": 0.8,
+      "time_ms": 0.9,
       "reasons": []
     },
     {
@@ -57,7 +57,7 @@
       "any_vuln": false,
       "hosv_vuln": false,
       "ext_vuln": false,
-      "time_ms": 0.58,
+      "time_ms": 0.59,
       "reasons": []
     },
     {
@@ -86,7 +86,7 @@
       "any_vuln": true,
       "hosv_vuln": false,
       "ext_vuln": true,
-      "time_ms": 0.19,
+      "time_ms": 0.27,
       "reasons": [
         "[EXT:gets] 'b': malloc(48) + unbounded gets → overflow possible"
       ]
@@ -97,7 +97,7 @@
       "any_vuln": true,
       "hosv_vuln": false,
       "ext_vuln": true,
-      "time_ms": 1.45,
+      "time_ms": 1.65,
       "reasons": [
         "[EXT:null_terminator] 'd': malloc(strlen(l)) = l bytes, 'd[l]=0' writes 1B past end (off-by-one)"
       ]
@@ -108,7 +108,7 @@
       "any_vuln": false,
       "hosv_vuln": false,
       "ext_vuln": false,
-      "time_ms": 0.85,
+      "time_ms": 0.86,
       "reasons": []
     },
     {
@@ -139,7 +139,7 @@
       "any_vuln": false,
       "hosv_vuln": false,
       "ext_vuln": false,
-      "time_ms": 0.19,
+      "time_ms": 0.14,
       "reasons": []
     },
     {
@@ -148,7 +148,7 @@
       "any_vuln": true,
       "hosv_vuln": false,
       "ext_vuln": true,
-      "time_ms": 0.39,
+      "time_ms": 0.4,
       "reasons": [
         "[EXT:walk_write] 'b': malloc(64) usable=72, ptr-walk write 8 iters * 16 steps + 0 trailing = 128 > 72"
       ]
@@ -159,7 +159,7 @@
       "any_vuln": false,
       "hosv_vuln": false,
       "ext_vuln": false,
-      "time_ms": 0.39,
+      "time_ms": 0.41,
       "reasons": []
     },
     {
@@ -190,7 +190,7 @@
       "any_vuln": true,
       "hosv_vuln": true,
       "ext_vuln": false,
-      "time_ms": 0.58,
+      "time_ms": 0.78,
       "reasons": [
         "[HOSV] 'b': malloc(8)@L5 + memcpy(unknown size)@L7 — unbounded copy into fixed buffer"
       ]
@@ -201,9 +201,29 @@
       "any_vuln": true,
       "hosv_vuln": false,
       "ext_vuln": true,
-      "time_ms": 0.46,
+      "time_ms": 0.65,
       "reasons": [
         "[EXT:struct_idx] 'a': malloc(-2) usable=200, arr[i] bound=100 elem=4B → 400B write > usable"
+      ]
+    },
+    {
+      "sample": "v19_memcpy_equal",
+      "expected": "SAFE",
+      "any_vuln": false,
+      "hosv_vuln": false,
+      "ext_vuln": false,
+      "time_ms": 0.78,
+      "reasons": []
+    },
+    {
+      "sample": "v20_memcpy_double",
+      "expected": "VULN",
+      "any_vuln": true,
+      "hosv_vuln": false,
+      "ext_vuln": true,
+      "time_ms": 0.53,
+      "reasons": [
+        "[EXT:memcpy_coef] 'buf': alloc_coef(strlen(v[1]))=1 vs memcpy_coef=2 → asymptotic overflow"
       ]
     }
   ]

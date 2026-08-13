@@ -151,7 +151,6 @@ class TestContainerTarParsing(unittest.TestCase):
             manifest_data = json.loads(f.read().decode())
 
             self.assertIsInstance(manifest_data, list)
-lass字段完整性$/d
             self.assertEqual(len(manifest_data), 1)
             self.assertIn('Config', manifest_data[0])
 

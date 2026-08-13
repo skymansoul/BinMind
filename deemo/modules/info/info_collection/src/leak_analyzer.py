@@ -4,6 +4,7 @@
 
 import os
 import re
+import struct
 from typing import List, Dict, Tuple, Set
 
 # 格式化函数列表：(函数名, fmt参数位置, 风险权重)
@@ -63,6 +64,8 @@ _OOB_READ_STRINGS_PATTERNS = [
 
 def _extract_api_set(imports: dict) -> Set[str]:
     _r = set()
+    if not imports:
+        return _r
     for _dll, _funcs in imports.items():
         for _f in _funcs:
             _r.add(_f.lower().strip())
@@ -71,6 +74,8 @@ def _extract_api_set(imports: dict) -> Set[str]:
 
 def _get_strings_text(strings: list) -> str:
     _s = []
+    if not strings:
+        return ""
     for _x in strings:
         _t = _x[1] if isinstance(_x, tuple) else _x
         _s.append(_t)
@@ -93,7 +98,10 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None,
         _str_text = _get_strings_text(strings)
 
     if use_arg_annotations:
-        from .dangerous_arg_annotations import get_arg_annotations, ParamRole
+        try:
+            from .dangerous_arg_annotations import get_arg_annotations, ParamRole
+        except ImportError:
+            from modules.info.info_collection.src.dangerous_arg_annotations import get_arg_annotations, ParamRole
         _fmt_funcs = ["printf","fprintf","sprintf","snprintf","dprintf",
                       "vprintf","vfprintf","vsprintf","vsnprintf","syslog"]
         _weights = {"printf":7,"fprintf":7,"sprintf":7,"snprintf":5,"dprintf":7,
@@ -131,12 +139,12 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None,
             _detail = f"Format function '{_fn}' without visible format literal - potential fmtstr vulnerability"
 
         _has_positional = any(re.search(p, _str_text) for p in _NON_LITERAL_FORMAT_INDICATORS)
-        if _has_positional:
+        if _has_positional and _risk != "HIGH":
             _risk = "MEDIUM"
 
         _weight = _weights.get(_fn, 4)
         _findings.append({
-            "type": "format_string", "function": _fn,
+            "type": "format_string_leak", "function": _fn,
             "risk": _risk, "weight": _weight,
             "detail": _detail,
         })
@@ -185,9 +193,13 @@ def detect_oob_reads(imports: dict = None, strings: list = None, sections: list 
                 })
 
     if sections:
-        _wx_sections = [s for s in sections if isinstance(s, dict) and
-                        "MEM_WRITE" in str(s.get("characteristics", "")) and
-                        "MEM_EXECUTE" in str(s.get("characteristics", ""))]
+        def _is_wx(_s: dict) -> bool:
+            _chars = str(_s.get("characteristics", ""))
+            _flags = str(_s.get("flags", ""))
+            _wx_chars = "MEM_WRITE" in _chars and "MEM_EXECUTE" in _chars
+            _wx_flags = "w" in _flags and "x" in _flags
+            return _wx_chars or _wx_flags
+        _wx_sections = [s for s in sections if isinstance(s, dict) and _is_wx(s)]
         if _wx_sections and _found_funcs:
             _findings.append({
                 "type": "oob_read", "subtype": "wx_memory",

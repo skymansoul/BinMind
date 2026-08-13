@@ -1,6 +1,0 @@
-{
-  "class": "TN",
-  "cve": "",
-  "desc": "TN 对照 2: NULL 置位 — free(p); p = NULL; if (p) use(p).",
-  "trigger": "   null-after-free 是最强安全信号, 代际置 NULL 后压制. "
-}

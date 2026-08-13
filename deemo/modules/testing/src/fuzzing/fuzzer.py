@@ -17,6 +17,40 @@ logger = logging.getLogger(__name__)
 class HarnessGenerator:
     """目标二进制 fuzzing harness 生成——支持 stdin/file/socket 三种接口"""
 
+    def generate_libfuzzer(self, target_name: str, params: str = "uint8_t *data, size_t size") -> str:
+        """生成 libFuzzer C harness"""
+        if target_name is None:
+            target_name = ""
+        return """#include <stdint.h>
+#include <stddef.h>
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
+    if (size < 4) return 0;
+    {target}(data, size);
+    return 0;
+}}
+""".format(target=target_name or "test_target")
+
+    def generate_afl(self, target_name: str) -> str:
+        """生成 AFL stdin harness"""
+        if target_name is None:
+            target_name = ""
+        return """#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char **argv) {{
+    unsigned char buf[65536];
+    ssize_t len;
+    while (__AFL_LOOP(1000)) {{
+        len = read(0, buf, sizeof(buf));
+        if (len <= 0) continue;
+        {target}(buf, (size_t)len);
+    }}
+    return 0;
+}}
+""".format(target=target_name or "test_target")
+
     def generate_c_harness(self, target_func: str,
                            input_mode: str = "file",
                            lib_name: str = "libfuzzer") -> str:
@@ -102,24 +136,24 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 class FuzzHarness:
     """轻量 harness 管理器——生成写入文件"""
 
-    def __init__(self, target_binary: str):
-        self.target = target_binary
+    def __init__(self, target_binary: str = ""):
+        self.target = target_binary or "test_target"
         self.gen = HarnessGenerator()
         self._mode = "file"
 
     def set_mode(self, mode: str):
         self._mode = mode
 
-    def generate(self, output_path: str, lang: str = "c") -> str:
-        """生成并写入 harness 文件"""
-        _func = os.path.basename(self.target).replace("-", "_")
-        if lang == "c":
-            _code = self.gen.generate_c_harness(_func, self._mode)
-        else:
-            _code = self.gen.generate_python_harness(_func)
-        with open(output_path, "w") as _f:
-            _f.write(_code)
-        return output_path
+    def generate(self, target_name: str, engine: str = "libfuzzer",
+                 lang: str = "c") -> str:
+        """生成 harness 代码字符串"""
+        if not target_name:
+            target_name = self.target
+        if lang != "c":
+            return self.gen.generate_python_harness(target_name)
+        if engine == "afl":
+            return self.gen.generate_afl(target_name)
+        return self.gen.generate_libfuzzer(target_name)
 
 
 # 漏洞数据库
@@ -153,10 +187,15 @@ class VulnerabilityDB:
             pass  # FTS5 不可用
         self._conn.commit()
 
-    def insert(self, vuln_type: str, severity: str,
-               description: str, cve: str = "",
-               pattern: bytes = b"") -> int:
-        """插入漏洞签名——同步 FTS 索引"""
+    def insert(self, vuln_type: str, severity: str = "medium",
+               description: str = "", cve: str = "",
+               pattern: bytes = b"", signature: str = None,
+               cwe_id: str = None, **kwargs) -> int:
+        """插入漏洞签名——同步 FTS 索引；signature/cwe_id 兼容旧接口"""
+        if signature is not None:
+            description = signature
+        if cwe_id is not None:
+            cve = cwe_id
         _hash = hashlib.sha256(pattern + vuln_type.encode()).hexdigest()[:16]
         _c = self._conn.execute(
             "INSERT OR IGNORE INTO signatures(pattern_hash, vuln_type, severity, description, cve) "

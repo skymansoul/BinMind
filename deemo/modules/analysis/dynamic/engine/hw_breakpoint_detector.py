@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO)
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 _CURRENT_PLATFORM = platform.system().lower()
 _IS_WINDOWS = _CURRENT_PLATFORM == "windows"
@@ -213,10 +213,10 @@ class HWBreakpointDetector:
         try:
             with open(self._binary_path, "rb") as fh:
                 self._binary_bytes = fh.read()
-            __log.info("Binary loaded for HWBP detection: %s (%d bytes).",
+            _log.info("Binary loaded for HWBP detection: %s (%d bytes).",
                         self._binary_path, len(self._binary_bytes))
         except (IOError, PermissionError) as exc:
-            __log.warning("Failed to load binary for HWBP detection: %s", exc)
+            _log.warning("Failed to load binary for HWBP detection: %s", exc)
 
     # Direct 寄存器 scan
 

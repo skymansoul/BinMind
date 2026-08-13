@@ -6,12 +6,12 @@
 // cve_2019_19332 Integer Overflow: signed mul: (int)n*(int)size overflows
 
 void kvm_mul_intof_mul_overflow(int count) {
-    // count*sizeof(int) ¿ÉÄÜÒç³ö ¡ú malloc ·ÖÅä¹ıĞ¡»º³åÇø
+    // count*sizeof(int) å¯èƒ½æº¢å‡º â†’ malloc åˆ†é…è¿‡å°ç¼“å†²åŒº
     size_t sz = (size_t)count * sizeof(int);
-    if (sz < 4096) {  // °²È«ÃÅÎÀ±»Òç³öÈÆ¹ı: count=1073741824¡úsz=0
+    if (sz < 4096) {  // å®‰å…¨é—¨å«è¢«æº¢å‡ºç»•è¿‡: count=1073741824â†’sz=0
         char *buf = (char *)malloc(sz);
         if (!buf) { printf("kvm_mul_intof: malloc NULL\n"); return; }
-        // Êµ¼ÊĞ´ÈëÔ¶³¬·ÖÅä´óĞ¡ (Èôsz±»½Ø¶Ï)
+        // å®é™…å†™å…¥è¿œè¶…åˆ†é…å¤§å° (è‹¥szè¢«æˆªæ–­)
         memset(buf, 0, sz > 0 ? sz : 4096);
         free(buf);
     }
@@ -20,7 +20,7 @@ void kvm_mul_intof_mul_overflow(int count) {
 
 void kvm_mul_intof_safe_mul(int count) {
     size_t sz = (size_t)count * sizeof(int);
-    // Òç³ö¼ì²â: ÄæÔËËã²»ÏàµÈ¼´Òç³ö
+    // æº¢å‡ºæ£€æµ‹: é€†è¿ç®—ä¸ç›¸ç­‰å³æº¢å‡º
     if (sz / sizeof(int) != (size_t)count) {
         printf("kvm_mul_intof: overflow rejected\n");
         return;

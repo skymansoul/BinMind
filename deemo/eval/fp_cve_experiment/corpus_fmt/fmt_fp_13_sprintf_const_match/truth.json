@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_13_sprintf_const_match",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "sprintf 常量格式串 + 匹配参数 (无 %n)"
-}

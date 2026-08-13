@@ -7,6 +7,14 @@
 import os as _os, struct as _pack, re as _re
 from dataclasses import dataclass as _dc, field as _field
 
+from modules.firmware.firmware_analyzer import (
+    FirmwareFormat,
+    FirmwareExtractor,
+    create_firmware_extractor,
+    FIRMWARE_MAGICS,
+    FIRMWARE_EXTENSIONS,
+)
+
 # 常见固件映像文件系统魔数 — 按前缀匹配判定格式及压缩类型。
 _FS_MAGICS = {
     b'\x28\xcd\x2d\x3d': 'SquashFS (LE)',
@@ -30,7 +38,7 @@ class FirmwareInfo:
     kernel_version: str = ''
     architecture: str = ''
     entropy: float = 0.0
-    sections: list[dict] = field(default_factory=list)
+    sections: list[dict] = _field(default_factory=list)
 
 def analyze_firmware_header(data: bytes) -> FirmwareInfo:
     """判定固件映像的文件系统类型与压缩方式。

@@ -1,0 +1,221 @@
+tool,sample,group,is_vuln,detected,detections,false_positive,false_negative,elapsed_ms,peak_mb,cve,pattern,success,error
+FSV,CVE-2012-0809_sudo,plain,True,True,1,0,0,0.231,95.41,CVE-2012-0809,direct_format_arg,True,
+Baseline,CVE-2012-0809_sudo,plain,True,True,1,0,0,3.164,95.41,CVE-2012-0809,direct_format_arg,True,
+Angr,CVE-2012-0809_sudo,plain,True,True,7,0,0,1385.0,95.41,CVE-2012-0809,direct_format_arg,True,
+Ghidra,CVE-2012-0809_sudo,plain,True,False,0,0,1,0,95.41,CVE-2012-0809,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2012-0809_sudo,plain,True,False,0,0,1,0,95.41,CVE-2012-0809,direct_format_arg,False,qemu-x86_64 not found
+FSV,CVE-2012-0809_sudo~packed,packed,True,True,1,0,0,3.322,67.95,CVE-2012-0809,direct_format_arg,True,
+Baseline,CVE-2012-0809_sudo~packed,packed,True,True,1,0,0,0.85,67.95,CVE-2012-0809,direct_format_arg,True,
+Angr,CVE-2012-0809_sudo~packed,packed,True,True,7,0,0,664.0,67.95,CVE-2012-0809,direct_format_arg,True,
+Ghidra,CVE-2012-0809_sudo~packed,packed,True,False,0,0,1,0,67.95,CVE-2012-0809,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2012-0809_sudo~packed,packed,True,False,0,0,1,0,67.95,CVE-2012-0809,direct_format_arg,False,qemu-x86_64 not found
+FSV,CVE-2017-1000353_jenkins,plain,True,True,1,0,0,0.401,118.83,CVE-2017-1000353,buffer_as_format,True,
+Baseline,CVE-2017-1000353_jenkins,plain,True,True,1,0,0,0.806,118.83,CVE-2017-1000353,buffer_as_format,True,
+Angr,CVE-2017-1000353_jenkins,plain,True,True,8,0,0,2029.0,118.83,CVE-2017-1000353,buffer_as_format,True,
+Ghidra,CVE-2017-1000353_jenkins,plain,True,False,0,0,1,0,118.83,CVE-2017-1000353,buffer_as_format,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-1000353_jenkins,plain,True,False,0,0,1,0,118.83,CVE-2017-1000353,buffer_as_format,False,qemu-x86_64 not found
+FSV,CVE-2017-1000353_jenkins~packed,packed,True,True,1,0,0,0.893,145.54,CVE-2017-1000353,buffer_as_format,True,
+Baseline,CVE-2017-1000353_jenkins~packed,packed,True,True,1,0,0,0.17,145.54,CVE-2017-1000353,buffer_as_format,True,
+Angr,CVE-2017-1000353_jenkins~packed,packed,True,True,8,0,0,2794.0,145.54,CVE-2017-1000353,buffer_as_format,True,
+Ghidra,CVE-2017-1000353_jenkins~packed,packed,True,False,0,0,1,0,145.54,CVE-2017-1000353,buffer_as_format,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-1000353_jenkins~packed,packed,True,False,0,0,1,0,145.54,CVE-2017-1000353,buffer_as_format,False,qemu-x86_64 not found
+FSV,CVE-2019-15642_miniupnpd,plain,True,True,1,0,0,0.329,80.94,CVE-2019-15642,buffer_as_format,True,
+Baseline,CVE-2019-15642_miniupnpd,plain,True,True,1,0,0,0.206,80.94,CVE-2019-15642,buffer_as_format,True,
+Angr,CVE-2019-15642_miniupnpd,plain,True,True,8,0,0,2776.0,80.94,CVE-2019-15642,buffer_as_format,True,
+Ghidra,CVE-2019-15642_miniupnpd,plain,True,False,0,0,1,0,80.94,CVE-2019-15642,buffer_as_format,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2019-15642_miniupnpd,plain,True,False,0,0,1,0,80.94,CVE-2019-15642,buffer_as_format,False,qemu-x86_64 not found
+FSV,CVE-2019-15642_miniupnpd~packed,packed,True,True,1,0,0,0.388,56.8,CVE-2019-15642,buffer_as_format,True,
+Baseline,CVE-2019-15642_miniupnpd~packed,packed,True,True,1,0,0,0.237,56.8,CVE-2019-15642,buffer_as_format,True,
+Angr,CVE-2019-15642_miniupnpd~packed,packed,True,True,8,0,0,2646.0,56.8,CVE-2019-15642,buffer_as_format,True,
+Ghidra,CVE-2019-15642_miniupnpd~packed,packed,True,False,0,0,1,0,56.8,CVE-2019-15642,buffer_as_format,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2019-15642_miniupnpd~packed,packed,True,False,0,0,1,0,56.8,CVE-2019-15642,buffer_as_format,False,qemu-x86_64 not found
+FSV,FMT-004_fprintf_arg,plain,True,True,1,0,0,0.336,32.019999999999996,,direct_format_arg,True,
+Baseline,FMT-004_fprintf_arg,plain,True,True,1,0,0,0.185,32.019999999999996,,direct_format_arg,True,
+Angr,FMT-004_fprintf_arg,plain,True,True,7,0,0,2821.0,32.019999999999996,,direct_format_arg,True,
+Ghidra,FMT-004_fprintf_arg,plain,True,False,0,0,1,0,32.019999999999996,,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,FMT-004_fprintf_arg,plain,True,False,0,0,1,0,32.019999999999996,,direct_format_arg,False,qemu-x86_64 not found
+FSV,FMT-004_fprintf_arg~packed,packed,True,True,1,0,0,0.434,6.31,,direct_format_arg,True,
+Baseline,FMT-004_fprintf_arg~packed,packed,True,True,1,0,0,0.209,6.31,,direct_format_arg,True,
+Angr,FMT-004_fprintf_arg~packed,packed,True,True,7,0,0,2833.0,6.31,,direct_format_arg,True,
+Ghidra,FMT-004_fprintf_arg~packed,packed,True,False,0,0,1,0,6.31,,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,FMT-004_fprintf_arg~packed,packed,True,False,0,0,1,0,6.31,,direct_format_arg,False,qemu-x86_64 not found
+FSV,FMT-005_syslog_arg,plain,True,True,1,0,0,0.311,0.54,,direct_format_arg,True,
+Baseline,FMT-005_syslog_arg,plain,True,True,1,0,0,0.155,0.54,,direct_format_arg,True,
+Angr,FMT-005_syslog_arg,plain,True,True,7,0,0,3138.0,0.54,,direct_format_arg,True,
+Ghidra,FMT-005_syslog_arg,plain,True,False,0,0,1,0,0.54,,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,FMT-005_syslog_arg,plain,True,False,0,0,1,0,0.54,,direct_format_arg,False,qemu-x86_64 not found
+FSV,FMT-005_syslog_arg~packed,packed,True,True,1,0,0,0.403,-0.9299999999999999,,direct_format_arg,True,
+Baseline,FMT-005_syslog_arg~packed,packed,True,True,1,0,0,0.228,-0.9299999999999999,,direct_format_arg,True,
+Angr,FMT-005_syslog_arg~packed,packed,True,True,7,0,0,3225.0,-0.9299999999999999,,direct_format_arg,True,
+Ghidra,FMT-005_syslog_arg~packed,packed,True,False,0,0,1,0,-0.9299999999999999,,direct_format_arg,False,GHIDRA_HOME not set
+QEMU-GT,FMT-005_syslog_arg~packed,packed,True,False,0,0,1,0,-0.9299999999999999,,direct_format_arg,False,qemu-x86_64 not found
+FSV,FMT-006_env_format,plain,True,True,1,0,0,0.315,1.72,,tainted_env_format,True,
+Baseline,FMT-006_env_format,plain,True,True,1,0,0,0.294,1.72,,tainted_env_format,True,
+Angr,FMT-006_env_format,plain,True,True,7,0,0,3267.0,1.72,,tainted_env_format,True,
+Ghidra,FMT-006_env_format,plain,True,False,0,0,1,0,1.72,,tainted_env_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-006_env_format,plain,True,False,0,0,1,0,1.72,,tainted_env_format,False,qemu-x86_64 not found
+FSV,FMT-006_env_format~packed,packed,True,True,1,0,0,0.328,0.73,,tainted_env_format,True,
+Baseline,FMT-006_env_format~packed,packed,True,True,1,0,0,0.19,0.73,,tainted_env_format,True,
+Angr,FMT-006_env_format~packed,packed,True,True,7,0,0,3204.0,0.73,,tainted_env_format,True,
+Ghidra,FMT-006_env_format~packed,packed,True,False,0,0,1,0,0.73,,tainted_env_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-006_env_format~packed,packed,True,False,0,0,1,0,0.73,,tainted_env_format,False,qemu-x86_64 not found
+FSV,FMT-007_recv_buffer,plain,True,True,1,0,0,0.416,0.9,,recv_buffer_format,True,
+Baseline,FMT-007_recv_buffer,plain,True,True,1,0,0,0.246,0.9,,recv_buffer_format,True,
+Angr,FMT-007_recv_buffer,plain,True,True,8,0,0,3242.0,0.9,,recv_buffer_format,True,
+Ghidra,FMT-007_recv_buffer,plain,True,False,0,0,1,0,0.9,,recv_buffer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-007_recv_buffer,plain,True,False,0,0,1,0,0.9,,recv_buffer_format,False,qemu-x86_64 not found
+FSV,FMT-007_recv_buffer~packed,packed,True,True,1,0,0,0.323,0.7,,recv_buffer_format,True,
+Baseline,FMT-007_recv_buffer~packed,packed,True,True,1,0,0,0.19,0.7,,recv_buffer_format,True,
+Angr,FMT-007_recv_buffer~packed,packed,True,True,8,0,0,3184.0,0.7,,recv_buffer_format,True,
+Ghidra,FMT-007_recv_buffer~packed,packed,True,False,0,0,1,0,0.7,,recv_buffer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-007_recv_buffer~packed,packed,True,False,0,0,1,0,0.7,,recv_buffer_format,False,qemu-x86_64 not found
+FSV,FMT-008_scanf_buffer,plain,True,True,1,0,0,0.422,-0.24,,scanf_buffer_format,True,
+Baseline,FMT-008_scanf_buffer,plain,True,True,1,0,0,0.24,-0.24,,scanf_buffer_format,True,
+Angr,FMT-008_scanf_buffer,plain,True,True,17,0,0,3745.0,-0.24,,scanf_buffer_format,True,
+Ghidra,FMT-008_scanf_buffer,plain,True,False,0,0,1,0,-0.24,,scanf_buffer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-008_scanf_buffer,plain,True,False,0,0,1,0,-0.24,,scanf_buffer_format,False,qemu-x86_64 not found
+FSV,FMT-008_scanf_buffer~packed,packed,True,True,1,0,0,0.308,10.18,,scanf_buffer_format,True,
+Baseline,FMT-008_scanf_buffer~packed,packed,True,True,1,0,0,0.169,10.18,,scanf_buffer_format,True,
+Angr,FMT-008_scanf_buffer~packed,packed,True,True,17,0,0,4175.0,10.18,,scanf_buffer_format,True,
+Ghidra,FMT-008_scanf_buffer~packed,packed,True,False,0,0,1,0,10.18,,scanf_buffer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-008_scanf_buffer~packed,packed,True,False,0,0,1,0,10.18,,scanf_buffer_format,False,qemu-x86_64 not found
+FSV,FMT-009_vsnprintf_taint,plain,True,True,1,0,0,0.396,7.79,,tainted_format_sink,True,
+Baseline,FMT-009_vsnprintf_taint,plain,True,True,1,0,0,0.243,7.79,,tainted_format_sink,True,
+Angr,FMT-009_vsnprintf_taint,plain,True,True,7,0,0,4230.0,7.79,,tainted_format_sink,True,
+Ghidra,FMT-009_vsnprintf_taint,plain,True,False,0,0,1,0,7.79,,tainted_format_sink,False,GHIDRA_HOME not set
+QEMU-GT,FMT-009_vsnprintf_taint,plain,True,False,0,0,1,0,7.79,,tainted_format_sink,False,qemu-x86_64 not found
+FSV,FMT-009_vsnprintf_taint~packed,packed,True,True,1,0,0,0.501,7.84,,tainted_format_sink,True,
+Baseline,FMT-009_vsnprintf_taint~packed,packed,True,True,1,0,0,0.385,7.84,,tainted_format_sink,True,
+Angr,FMT-009_vsnprintf_taint~packed,packed,True,True,7,0,0,4384.0,7.84,,tainted_format_sink,True,
+Ghidra,FMT-009_vsnprintf_taint~packed,packed,True,False,0,0,1,0,7.84,,tainted_format_sink,False,GHIDRA_HOME not set
+QEMU-GT,FMT-009_vsnprintf_taint~packed,packed,True,False,0,0,1,0,7.84,,tainted_format_sink,False,qemu-x86_64 not found
+FSV,FMT-010_snprintf_taint,plain,True,True,1,0,0,0.358,6.25,,tainted_format_sink,True,
+Baseline,FMT-010_snprintf_taint,plain,True,True,1,0,0,0.238,6.25,,tainted_format_sink,True,
+Angr,FMT-010_snprintf_taint,plain,True,True,7,0,0,3933.0,6.25,,tainted_format_sink,True,
+Ghidra,FMT-010_snprintf_taint,plain,True,False,0,0,1,0,6.25,,tainted_format_sink,False,GHIDRA_HOME not set
+QEMU-GT,FMT-010_snprintf_taint,plain,True,False,0,0,1,0,6.25,,tainted_format_sink,False,qemu-x86_64 not found
+FSV,FMT-011_sprintf_taint,plain,True,True,1,0,0,0.328,-3.5599999999999996,,tainted_format_sink,True,
+Baseline,FMT-011_sprintf_taint,plain,True,True,1,0,0,0.196,-3.5599999999999996,,tainted_format_sink,True,
+Angr,FMT-011_sprintf_taint,plain,True,True,7,0,0,3599.0,-3.5599999999999996,,tainted_format_sink,True,
+Ghidra,FMT-011_sprintf_taint,plain,True,False,0,0,1,0,-3.5599999999999996,,tainted_format_sink,False,GHIDRA_HOME not set
+QEMU-GT,FMT-011_sprintf_taint,plain,True,False,0,0,1,0,-3.5599999999999996,,tainted_format_sink,False,qemu-x86_64 not found
+FSV,FMT-012_array_element,plain,True,True,1,0,0,0.389,2.71,,tainted_array_format,True,
+Baseline,FMT-012_array_element,plain,True,True,1,0,0,0.217,2.71,,tainted_array_format,True,
+Angr,FMT-012_array_element,plain,True,True,7,0,0,3516.0,2.71,,tainted_array_format,True,
+Ghidra,FMT-012_array_element,plain,True,False,0,0,1,0,2.71,,tainted_array_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-012_array_element,plain,True,False,0,0,1,0,2.71,,tainted_array_format,False,qemu-x86_64 not found
+FSV,FMT-012_array_element~packed,packed,True,True,1,0,0,0.339,1.15,,tainted_array_format,True,
+Baseline,FMT-012_array_element~packed,packed,True,True,1,0,0,0.194,1.15,,tainted_array_format,True,
+Angr,FMT-012_array_element~packed,packed,True,True,7,0,0,3449.0,1.15,,tainted_array_format,True,
+Ghidra,FMT-012_array_element~packed,packed,True,False,0,0,1,0,1.15,,tainted_array_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-012_array_element~packed,packed,True,False,0,0,1,0,1.15,,tainted_array_format,False,qemu-x86_64 not found
+FSV,FMT-013_offset_format,plain,True,True,1,0,0,0.464,2.35,,tainted_pointer_format,True,
+Baseline,FMT-013_offset_format,plain,True,True,1,0,0,0.273,2.35,,tainted_pointer_format,True,
+Angr,FMT-013_offset_format,plain,True,True,8,0,0,3547.0,2.35,,tainted_pointer_format,True,
+Ghidra,FMT-013_offset_format,plain,True,False,0,0,1,0,2.35,,tainted_pointer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-013_offset_format,plain,True,False,0,0,1,0,2.35,,tainted_pointer_format,False,qemu-x86_64 not found
+FSV,FMT-013_offset_format~packed,packed,True,True,1,0,0,0.559,1.69,,tainted_pointer_format,True,
+Baseline,FMT-013_offset_format~packed,packed,True,True,1,0,0,0.27,1.69,,tainted_pointer_format,True,
+Angr,FMT-013_offset_format~packed,packed,True,True,8,0,0,3480.0,1.69,,tainted_pointer_format,True,
+Ghidra,FMT-013_offset_format~packed,packed,True,False,0,0,1,0,1.69,,tainted_pointer_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-013_offset_format~packed,packed,True,False,0,0,1,0,1.69,,tainted_pointer_format,False,qemu-x86_64 not found
+FSV,FMT-014_global_buffer,plain,True,True,1,0,0,0.389,1.1400000000000001,,global_taint_format,True,
+Baseline,FMT-014_global_buffer,plain,True,True,1,0,0,0.23,1.1400000000000001,,global_taint_format,True,
+Angr,FMT-014_global_buffer,plain,True,True,8,0,0,3593.0,1.1400000000000001,,global_taint_format,True,
+Ghidra,FMT-014_global_buffer,plain,True,False,0,0,1,0,1.1400000000000001,,global_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-014_global_buffer,plain,True,False,0,0,1,0,1.1400000000000001,,global_taint_format,False,qemu-x86_64 not found
+FSV,FMT-014_global_buffer~packed,packed,True,True,1,0,0,0.332,1.05,,global_taint_format,True,
+Baseline,FMT-014_global_buffer~packed,packed,True,True,1,0,0,0.195,1.05,,global_taint_format,True,
+Angr,FMT-014_global_buffer~packed,packed,True,True,8,0,0,3611.0,1.05,,global_taint_format,True,
+Ghidra,FMT-014_global_buffer~packed,packed,True,False,0,0,1,0,1.05,,global_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-014_global_buffer~packed,packed,True,False,0,0,1,0,1.05,,global_taint_format,False,qemu-x86_64 not found
+FSV,FMT-015_concat_format,plain,True,True,1,0,0,0.429,2.4,,concat_taint_format,True,
+Baseline,FMT-015_concat_format,plain,True,True,1,0,0,0.274,2.4,,concat_taint_format,True,
+Angr,FMT-015_concat_format,plain,True,True,8,0,0,3238.0,2.4,,concat_taint_format,True,
+Ghidra,FMT-015_concat_format,plain,True,False,0,0,1,0,2.4,,concat_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-015_concat_format,plain,True,False,0,0,1,0,2.4,,concat_taint_format,False,qemu-x86_64 not found
+FSV,FMT-015_concat_format~packed,packed,True,True,1,0,0,0.42,-0.30000000000000004,,concat_taint_format,True,
+Baseline,FMT-015_concat_format~packed,packed,True,True,1,0,0,0.22,-0.30000000000000004,,concat_taint_format,True,
+Angr,FMT-015_concat_format~packed,packed,True,True,8,0,0,3451.0,-0.30000000000000004,,concat_taint_format,True,
+Ghidra,FMT-015_concat_format~packed,packed,True,False,0,0,1,0,-0.30000000000000004,,concat_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-015_concat_format~packed,packed,True,False,0,0,1,0,-0.30000000000000004,,concat_taint_format,False,qemu-x86_64 not found
+FSV,FMT-016_loop_format,plain,True,True,1,0,0,0.442,0.2,,loop_taint_format,True,
+Baseline,FMT-016_loop_format,plain,True,True,1,0,0,0.267,0.2,,loop_taint_format,True,
+Angr,FMT-016_loop_format,plain,True,True,7,0,0,3162.0,0.2,,loop_taint_format,True,
+Ghidra,FMT-016_loop_format,plain,True,False,0,0,1,0,0.2,,loop_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-016_loop_format,plain,True,False,0,0,1,0,0.2,,loop_taint_format,False,qemu-x86_64 not found
+FSV,FMT-016_loop_format~packed,packed,True,True,1,0,0,0.606,-2.72,,loop_taint_format,True,
+Baseline,FMT-016_loop_format~packed,packed,True,True,1,0,0,0.275,-2.72,,loop_taint_format,True,
+Angr,FMT-016_loop_format~packed,packed,True,True,7,0,0,3453.0,-2.72,,loop_taint_format,True,
+Ghidra,FMT-016_loop_format~packed,packed,True,False,0,0,1,0,-2.72,,loop_taint_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-016_loop_format~packed,packed,True,False,0,0,1,0,-2.72,,loop_taint_format,False,qemu-x86_64 not found
+FSV,FMT-S01_literal_direct,plain,False,False,0,0,0,0.277,-2.39,,literal_format,True,
+Baseline,FMT-S01_literal_direct,plain,False,False,0,0,0,0.163,-2.39,,literal_format,True,
+Angr,FMT-S01_literal_direct,plain,False,True,7,1,0,3520.0,-2.39,,literal_format,True,
+Ghidra,FMT-S01_literal_direct,plain,False,False,0,0,0,0,-2.39,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S01_literal_direct,plain,False,False,0,0,0,0,-2.39,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S01_literal_direct~packed,packed,False,False,0,0,0,0.338,-1.8399999999999999,,literal_format,True,
+Baseline,FMT-S01_literal_direct~packed,packed,False,False,0,0,0,0.17,-1.8399999999999999,,literal_format,True,
+Angr,FMT-S01_literal_direct~packed,packed,False,True,7,1,0,3487.0,-1.8399999999999999,,literal_format,True,
+Ghidra,FMT-S01_literal_direct~packed,packed,False,False,0,0,0,0,-1.8399999999999999,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S01_literal_direct~packed,packed,False,False,0,0,0,0,-1.8399999999999999,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S02_literal_fprintf,plain,False,False,0,0,0,0.37,-0.8,,literal_format,True,
+Baseline,FMT-S02_literal_fprintf,plain,False,False,0,0,0,0.233,-0.8,,literal_format,True,
+Angr,FMT-S02_literal_fprintf,plain,False,True,7,1,0,3489.0,-0.8,,literal_format,True,
+Ghidra,FMT-S02_literal_fprintf,plain,False,False,0,0,0,0,-0.8,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S02_literal_fprintf,plain,False,False,0,0,0,0,-0.8,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S02_literal_fprintf~packed,packed,False,False,0,0,0,0.274,3.38,,literal_format,True,
+Baseline,FMT-S02_literal_fprintf~packed,packed,False,False,0,0,0,0.163,3.38,,literal_format,True,
+Angr,FMT-S02_literal_fprintf~packed,packed,False,True,7,1,0,3507.0,3.38,,literal_format,True,
+Ghidra,FMT-S02_literal_fprintf~packed,packed,False,False,0,0,0,0,3.38,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S02_literal_fprintf~packed,packed,False,False,0,0,0,0,3.38,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S03_const_format_var,plain,False,False,0,0,0,0.332,1.76,,const_origin_format,True,
+Baseline,FMT-S03_const_format_var,plain,False,True,1,1,0,0.244,1.76,,const_origin_format,True,
+Angr,FMT-S03_const_format_var,plain,False,True,7,1,0,3471.0,1.76,,const_origin_format,True,
+Ghidra,FMT-S03_const_format_var,plain,False,False,0,0,0,0,1.76,,const_origin_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S03_const_format_var,plain,False,False,0,0,0,0,1.76,,const_origin_format,False,qemu-x86_64 not found
+FSV,FMT-S03_const_format_var~packed,packed,False,False,0,0,0,0.354,0.81,,const_origin_format,True,
+Baseline,FMT-S03_const_format_var~packed,packed,False,True,1,1,0,0.212,0.81,,const_origin_format,True,
+Angr,FMT-S03_const_format_var~packed,packed,False,True,7,1,0,3471.0,0.81,,const_origin_format,True,
+Ghidra,FMT-S03_const_format_var~packed,packed,False,False,0,0,0,0,0.81,,const_origin_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S03_const_format_var~packed,packed,False,False,0,0,0,0,0.81,,const_origin_format,False,qemu-x86_64 not found
+FSV,FMT-S04_snprintf_fputs,plain,False,False,0,0,0,0.393,0.98,,literal_format,True,
+Baseline,FMT-S04_snprintf_fputs,plain,False,False,0,0,0,0.308,0.98,,literal_format,True,
+Angr,FMT-S04_snprintf_fputs,plain,False,True,7,1,0,3533.0,0.98,,literal_format,True,
+Ghidra,FMT-S04_snprintf_fputs,plain,False,False,0,0,0,0,0.98,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S04_snprintf_fputs,plain,False,False,0,0,0,0,0.98,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S04_snprintf_fputs~packed,packed,False,False,0,0,0,0.319,1.54,,literal_format,True,
+Baseline,FMT-S04_snprintf_fputs~packed,packed,False,False,0,0,0,0.208,1.54,,literal_format,True,
+Angr,FMT-S04_snprintf_fputs~packed,packed,False,True,7,1,0,3221.0,1.54,,literal_format,True,
+Ghidra,FMT-S04_snprintf_fputs~packed,packed,False,False,0,0,0,0,1.54,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S04_snprintf_fputs~packed,packed,False,False,0,0,0,0,1.54,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S05_local_literal_var,plain,False,False,0,0,0,0.353,-0.9199999999999999,,const_origin_format,True,
+Baseline,FMT-S05_local_literal_var,plain,False,True,1,1,0,0.221,-0.9199999999999999,,const_origin_format,True,
+Angr,FMT-S05_local_literal_var,plain,False,True,7,1,0,3556.0,-0.9199999999999999,,const_origin_format,True,
+Ghidra,FMT-S05_local_literal_var,plain,False,False,0,0,0,0,-0.9199999999999999,,const_origin_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S05_local_literal_var,plain,False,False,0,0,0,0,-0.9199999999999999,,const_origin_format,False,qemu-x86_64 not found
+FSV,FMT-S06_syslog_literal,plain,False,False,0,0,0,0.37,3.15,,literal_format,True,
+Baseline,FMT-S06_syslog_literal,plain,False,False,0,0,0,0.233,3.15,,literal_format,True,
+Angr,FMT-S06_syslog_literal,plain,False,True,7,1,0,3372.0,3.15,,literal_format,True,
+Ghidra,FMT-S06_syslog_literal,plain,False,False,0,0,0,0,3.15,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S06_syslog_literal,plain,False,False,0,0,0,0,3.15,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S06_syslog_literal~packed,packed,False,False,0,0,0,0.334,-1.44,,literal_format,True,
+Baseline,FMT-S06_syslog_literal~packed,packed,False,False,0,0,0,0.218,-1.44,,literal_format,True,
+Angr,FMT-S06_syslog_literal~packed,packed,False,True,7,1,0,3386.0,-1.44,,literal_format,True,
+Ghidra,FMT-S06_syslog_literal~packed,packed,False,False,0,0,0,0,-1.44,,literal_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S06_syslog_literal~packed,packed,False,False,0,0,0,0,-1.44,,literal_format,False,qemu-x86_64 not found
+FSV,FMT-S07_struct_literal_field,plain,False,False,0,0,0,0.404,-1.45,,field_format,True,
+Baseline,FMT-S07_struct_literal_field,plain,False,True,1,1,0,0.324,-1.45,,field_format,True,
+Angr,FMT-S07_struct_literal_field,plain,False,True,7,1,0,3430.0,-1.45,,field_format,True,
+Ghidra,FMT-S07_struct_literal_field,plain,False,False,0,0,0,0,-1.45,,field_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S07_struct_literal_field,plain,False,False,0,0,0,0,-1.45,,field_format,False,qemu-x86_64 not found
+FSV,FMT-S07_struct_literal_field~packed,packed,False,False,0,0,0,0.365,2.06,,field_format,True,
+Baseline,FMT-S07_struct_literal_field~packed,packed,False,True,1,1,0,0.214,2.06,,field_format,True,
+Angr,FMT-S07_struct_literal_field~packed,packed,False,True,7,1,0,3435.0,2.06,,field_format,True,
+Ghidra,FMT-S07_struct_literal_field~packed,packed,False,False,0,0,0,0,2.06,,field_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S07_struct_literal_field~packed,packed,False,False,0,0,0,0,2.06,,field_format,False,qemu-x86_64 not found
+FSV,FMT-S08_literal_return,plain,False,False,0,0,0,0.425,1.22,,return_format,True,
+Baseline,FMT-S08_literal_return,plain,False,True,1,1,0,0.234,1.22,,return_format,True,
+Angr,FMT-S08_literal_return,plain,False,True,7,1,0,3391.0,1.22,,return_format,True,
+Ghidra,FMT-S08_literal_return,plain,False,False,0,0,0,0,1.22,,return_format,False,GHIDRA_HOME not set
+QEMU-GT,FMT-S08_literal_return,plain,False,False,0,0,0,0,1.22,,return_format,False,qemu-x86_64 not found

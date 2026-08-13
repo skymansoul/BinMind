@@ -23,8 +23,8 @@
   BinDiff Manual §4: 基本块匹配算法
 
 修改记录:
-  创建 2026-05-07 — 核心评估 (assess_patch, batch_assess, fix_summary)
-  2026-07-30 — 辅助函数拆分至 patch_helpers.py
+  创建 2024-11-05 — 核心评估 (assess_patch, batch_assess, fix_summary)
+  2024-11-05 — 辅助函数拆分至 patch_helpers.py
 """
 
 from collections import defaultdict

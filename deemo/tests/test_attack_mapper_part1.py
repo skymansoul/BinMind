@@ -85,7 +85,6 @@ class TestVulnerabilityMapping(unittest.TestCase):
             confidence=0.85
         )
 
-lass字段完整性$/d
         self.assertEqual(len(mapping.mapped_techniques), 2)
 
 

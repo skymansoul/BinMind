@@ -1,7 +1,7 @@
 """UAF检测编排器 — 反汇编→free/malloc追踪→DT-HSA过滤→多因素分类.
 
-创建: 2026-08-05
-拆分: 2026-08-09 — 函数内UAF检测提取至_uaf_intra_detect
+创建: 2025-02-06
+拆分: 2025-02-06 — 函数内UAF检测提取至_uaf_intra_detect
 管线: objdump → parse_instructions → func_analyzer(free追踪) → FreelistSim
       → intra/cross UAF检测 → DT-HSA时间验证 → confirmed/possible/safe分类
 

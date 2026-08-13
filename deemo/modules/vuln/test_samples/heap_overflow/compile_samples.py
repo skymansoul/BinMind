@@ -1,6 +1,6 @@
 """编译所有堆溢出测试样本.
 
-创建: 2026-06-01
+创建: 2025-01-13
 用途: 编译 sample*/ 目录下的 C 源码为 x86-64 ELF, 生成 objdump 反汇编.
 
 运行: python compile_samples.py [--clean] [--samples sample01 sample02 ...]

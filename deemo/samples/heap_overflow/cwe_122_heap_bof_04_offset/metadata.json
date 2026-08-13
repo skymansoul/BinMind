@@ -1,4 +1,0 @@
-{
-  "cwe": "CWE-122",
-  "description": "Heap buffer overflow via pointer offset + computed length"
-}

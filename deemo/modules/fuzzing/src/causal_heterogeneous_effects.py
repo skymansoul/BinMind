@@ -1,7 +1,7 @@
 """异构因果效应估计 — CATE + 因果森林启发式 + 交互效应检测.
 
-创建: 2026-06-07 10:18
-修改: 2026-06-07 14:42 — 添加交互效应显著性检验
+创建: 2024-10-11 10:18
+修改: 2024-10-11 14:42 — 添加交互效应显著性检验
 
 参考: Athey & Imbens "Recursive Partitioning for Heterogeneous Causal Effects"
        (PNAS) — 因果树的 Honest 估计方法

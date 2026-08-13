@@ -1,7 +1,7 @@
 """
 DD-BVF数据类型 — 符号表达式与相关性判定结果.
 
-从cj_bvf_tracer.py拆分, 提供SymbolicExpr和CorrelationResult定义.
+提供SymbolicExpr和CorrelationResult定义.
 """
 
 from dataclasses import dataclass, field

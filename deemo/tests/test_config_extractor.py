@@ -25,11 +25,10 @@ class TestConfigExtractor(unittest.TestCase):
             "mongodb://localhost:27017"
         ]
         result = self.m_extractor.extract_from_strings(strings)
-lass字段完整性$/d
         self.assertGreater(len(result.database_connections), 0)
 
     def test_extract_api_keys(self):
-                strings = [
+        strings = [
             "api_key=sk-1234567890abcdef1234567890abcdef",
             "SECRET_KEY=abc123def456",
             "token=pk_test_xxxxxxxxxxxxxxxx"

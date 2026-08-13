@@ -4,6 +4,6 @@ int main(void) {
     char *buf = (char *)malloc(128);
     if (!buf) return 1;
     printf("[*] %d\n", buf[0]);
-    free(buf);                       /* 之后不再使用 */
+    free(buf);                       /* 涔嬪悗涓嶅啀浣跨敤 */
     return 0;
 }

@@ -26,7 +26,6 @@ class TestTypeConfusionAnalyzer:
     def test_initialization(self, analyzer):
         """测试初始化"""
         assert analyzer is not None
-lass字段完整性$/d
         assert analyzer.binary_path is None
         assert analyzer.suspicious_casts == []
         assert analyzer.vtable_hijack_risk == []
@@ -50,7 +49,6 @@ lass字段完整性$/d
         assert analyzer._is_high_risk('char*') is True
         assert analyzer._is_high_risk('unsigned char*') is True
         assert analyzer._is_high_risk('int*') is False
-lass字段完整性$/d
         assert analyzer._is_high_risk('void**') is False
 
     def test_find_suspicious_casts_static_cast(self, analyzer):
@@ -78,7 +76,6 @@ lass字段完整性$/d
 
         assert len(casts) == 1
         assert casts[0]['cast_type'] == 'c_style_cast'
-lass字段完整性$/d
         assert casts[0]['risk'] == 'medium'
 
     def test_find_suspicious_casts_multiple(self, analyzer):
@@ -181,7 +178,6 @@ lass字段完整性$/d
         assert isinstance(exploit, str)
         assert 'Type Confusion' in exploit
         assert 'vtable' in exploit
-lass字段完整性$/d
         assert 'CWE-843' in exploit
         assert 'vuln_func' in exploit
 
@@ -246,7 +242,6 @@ class TestTypeConfusionAnalyzerEdgeCases:
         assert casts == []
 
     def test_extract_types_empty_pseudocode(self, analyzer):
-                """测试空伪代码提取类型"""
         types = analyzer._extract_types_from_pseudocode('')
         assert types == {}
 
@@ -254,7 +249,6 @@ class TestTypeConfusionAnalyzerEdgeCases:
         """测试空分析器风险等级"""
         analyzer.suspicious_casts = []
         analyzer.vtable_hijack_risk = []
-lass字段完整性$/d
         assert analyzer._calculate_risk_level() == 'none'
 
     def test_is_suspicious_conversion_empty_types(self, analyzer):

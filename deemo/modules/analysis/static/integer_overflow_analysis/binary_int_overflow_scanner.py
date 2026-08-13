@@ -3,8 +3,8 @@
 I-GUARD: 二进制级检测 imul/shl 结果无 overflow check 直接流入 malloc,
 导致分配大小远小于预期 → 后续 memcpy 堆溢出.
 检测: imul/shl→mov chain→call malloc | 栈暂存传播 | add/sub 链
-理论: blexim (Phrack #60) + I-GUARD 符号性追踪.
-创建: 2026-05-01
+方法: I-GUARD 符号性追踪 — imul/shl 结果流入分配函数的欠分配判定.
+创建: 2024-07-02
 """
 
 from dataclasses import dataclass

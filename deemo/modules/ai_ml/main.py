@@ -178,7 +178,7 @@ def _cmd_config(args):
 def build_parser():
     parser = _argparse.ArgumentParser(
         prog='ai_ml',
-        description='BinMind AI/ML module — mutation, search, vulnerability prediction',
+        description='BinMind AI/ML module - mutation, search, vulnerability prediction',
     )
     parser.add_argument('--debug', action='store_true', default=False,
                        help='enable debug logging')

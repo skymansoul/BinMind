@@ -96,7 +96,7 @@ class TestEmbeddedScriptExtractor(unittest.TestCase):
         self.assertEqual(level, ScriptRiskLevel.LOW)
 
     def test_detect_language_lua(self):
-                content = 'function test()\n    local x = 1\nend'
+        content = 'function test()\n    local x = 1\nend'
         extractor = EmbeddedScriptExtractor()
         lang = extractor._detect_language(content)
         self.assertEqual(lang, ScriptLanguage.LUA)

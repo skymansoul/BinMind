@@ -4,7 +4,7 @@
 遍历sample_bins/heap_overflow_cve/CVE_XX/目录,
 用gcc编译vuln.c为可执行文件, 返回编译状态.
 
-创建: 2026-06-20
+创建: 2024-10-11
 """
 
 import os

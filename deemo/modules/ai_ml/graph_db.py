@@ -7,7 +7,7 @@ import os
 import gzip
 from typing import Dict, Any, List, Optional, Tuple, Set
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 try:
     import networkx as nx
@@ -29,14 +29,14 @@ class GraphDB:
     def save(self, filepath: str, compress: bool = True) -> str:
         """将图序列化到磁盘。compress=True 时用 gzip 压缩，返回 sha256 校验和。"""
         if self._nx_graph is None:
-            __log.warning("Graph backend not initialized, nothing to save.")
+            _log.warning("Graph backend not initialized, nothing to save.")
             return ""
         raw = json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
         payload = gzip.compress(raw.encode('utf-8')) if compress else raw.encode('utf-8')
         with open(filepath, 'wb') as fh:
             fh.write(payload)
         self._checksum = hashlib.sha256(payload).hexdigest()
-        __log.info("Graph saved to %s (checksum=%s, compressed=%s)", filepath, self._checksum, compress)
+        _log.info("Graph saved to %s (checksum=%s, compressed=%s)", filepath, self._checksum, compress)
         return self._checksum
 
     @classmethod
@@ -62,7 +62,7 @@ class GraphDB:
             props = {k: v for k, v in edge.items() if k not in ('source', 'target')}
             instance.add_edge(edge['source'], edge['target'], **props)
         instance._checksum = hashlib.sha256(raw_bytes).hexdigest()
-        __log.info("Graph loaded from %s (%d nodes, %d edges)", filepath,
+        _log.info("Graph loaded from %s (%d nodes, %d edges)", filepath,
                     data.get('node_count', 0), data.get('edge_count', 0))
         return instance
 
@@ -139,7 +139,7 @@ class GraphDB:
         for u, v in self._nx_graph.edges():
             if u in sub and v in sub:
                 sg.add_edge(u, v, **self._nx_graph.edges[u, v])
-        __log.info("Extracted %d-node subgraph around '%s' (radius=%d)", len(sub), center, radius)
+        _log.info("Extracted %d-node subgraph around '%s' (radius=%d)", len(sub), center, radius)
         return sg
 
     # }}}
@@ -167,7 +167,7 @@ class GraphDB:
             isolates = sum(1 for n in self._nx_graph.nodes()
                            if self._nx_graph.degree(n) == 0)
         except Exception:
-            __log.exception("stats computation failed for connected components")
+            _log.exception("stats computation failed for connected components")
         return {
             'node_count': n_nodes,
             'edge_count': n_edges,

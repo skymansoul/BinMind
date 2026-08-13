@@ -1,8 +1,0 @@
-{
-  "id": "cve_2016_10190_ffmpeg",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2016-10190",
-  "component": "FFmpeg libavcodec",
-  "mode": "avio读取的长度字段未校验, 覆盖分配区"
-}

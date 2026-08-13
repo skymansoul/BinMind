@@ -126,26 +126,36 @@ def _decode_section_flags(characteristics: int) -> list:
 
 def parse_pe(data: bytes) -> dict:
     """解析 PE 头：架构、区段、导入/导出表、入口点。省略资源表与重定位表。"""
+    if not isinstance(data, (bytes, bytearray)) or len(data) < 64:
+        return None
+
     _info: dict = {"format": "PE", "sections": [], "imports": {}, "exports": []}
-    if len(data) < 64:
-        return _info
+    if data[0:2] != b'MZ':
+        return None
 
     _e_lfanew = struct.unpack_from('<I', data, 0x3C)[0]
     if len(data) <= _e_lfanew + 4:
-        return _info
+        # e_lfanew 越界 — 回退到扫描 PE 签名
+        _sig_off = data.find(b'PE\x00\x00', 0x40)
+        if _sig_off == -1:
+            return None
+        _e_lfanew = _sig_off
 
     _nt_sig = struct.unpack_from('<I', data, _e_lfanew)[0]
     if _nt_sig != _IMAGE_NT_SIGNATURE:
         return _info
 
     _file_header_offset = _e_lfanew + 4
+
+    # 文件头可能不完整 — 至少读到 machine/num_sections 即返回基础信息
+    if len(data) < _file_header_offset + 4:
+        return _info
+    _machine, _num_sections = struct.unpack_from('<HH', data, _file_header_offset)
+    _info["machine"] = _machine
+    _info["machine_arch"] = _pe_machine_to_arch(_machine)
     if len(data) < _file_header_offset + 20:
         return _info
-
-    _machine, _num_sections, _timestamp, _ = struct.unpack_from(
-        '<HHII', data, _file_header_offset
-    )
-    _info["machine"] = _pe_machine_to_arch(_machine)
+    _timestamp = struct.unpack_from('<I', data, _file_header_offset + 8)[0]
     _info["timestamp"] = _timestamp
     _info["timestamp_utc"] = datetime.utcfromtimestamp(_timestamp).isoformat() if _timestamp else "N/A"
 
@@ -270,62 +280,73 @@ def _parse_pe_exports(data: bytes, export_rva: int, export_size: int) -> list:
 
 def parse_elf(data: bytes) -> dict:
     """解析 ELF 头：class、字节序、架构、节/段/符号表。"""
+    if not isinstance(data, (bytes, bytearray)) or len(data) < 6 or data[0:4] != _ELF_MAGIC:
+        return None
     _info: dict = {"format": "ELF", "sections": [], "imports": {}, "exports": []}
-    if len(data) < 52 or data[0:4] != _ELF_MAGIC:
-        return _info
+    # 结论：class/endian 在 magic 校验后即可解析，必须先于长度早退写入；
+    # 否则截断的 ELF 头（<52 字节）丢失 class 字段，调用方取值失败。
     _ei_class = data[4]
     _ei_data = data[5]
     _is_64 = (_ei_class == _ELF_CLASS_64)
     _is_le = (_ei_data == _ELF_DATA_LSB)
     _endian = '<' if _is_le else '>'
-    _info["class"] = "ELF64" if _is_64 else "ELF32"
+    _info["class"] = _ei_class
     _info["endian"] = "little" if _is_le else "big"
+    if len(data) < 52:
+        return _info
 
-    if _is_64:
-        _hdr = struct.unpack_from(f'{_endian}HHIQQQIHHHHHH', data, 16)
-        _info["machine"] = _elf_machine_to_arch(_hdr[1])
-        _info["entry"] = _hdr[4]
-        _phoff, _shoff, _flags, _ehsize = _hdr[5], _hdr[6], _hdr[7], _hdr[8]
-        _phentsize, _phnum, _shentsize, _shnum, _shstrndx = _hdr[9], _hdr[10], _hdr[11], _hdr[12], _hdr[13]
-    else:
-        _hdr = struct.unpack_from(f'{_endian}HHIIIIIHHHHHH', data, 16)
-        _info["machine"] = _elf_machine_to_arch(_hdr[1])
-        _info["entry"] = _hdr[4]
-        _phoff, _shoff, _flags, _ehsize = _hdr[5], _hdr[6], _hdr[7], _hdr[8]
-        _phentsize, _phnum, _shentsize, _shnum, _shstrndx = _hdr[9], _hdr[10], _hdr[11], _hdr[12], _hdr[13]
+    try:
+        if _is_64:
+            _hdr = struct.unpack_from(f'{_endian}HHIQQQIHHHHHH', data, 16)
+        else:
+            _hdr = struct.unpack_from(f'{_endian}HHIIIIIHHHHHH', data, 16)
+    except struct.error:
+        return _info
+
+    _info["machine"] = _elf_machine_to_arch(_hdr[1])
+    _info["entry"] = _hdr[4]
+    _phoff, _shoff, _flags, _ehsize = _hdr[5], _hdr[6], _hdr[7], _hdr[8]
+    _phentsize, _phnum, _shentsize, _shnum, _shstrndx = _hdr[9], _hdr[10], _hdr[11], _hdr[12], _hdr[13]
 
     _info["program_headers"] = []
     for _i in range(min(_phnum, 256)):
         _po = _phoff + _i * _phentsize
         if _po + _phentsize > len(data):
             break
-        if _is_64:
-            _p_type, _p_flags, _p_offset, _p_vaddr, _, _p_filesz = struct.unpack_from(
-                f'{_endian}IIQQQQ', data, _po
-            )
-        else:
-            _p_type, _p_offset, _p_vaddr, _, _p_filesz, _, _p_flags, _ = struct.unpack_from(
-                f'{_endian}IIIIIIII', data, _po
-            )
+        try:
+            if _is_64:
+                _p_type, _p_flags, _p_offset, _p_vaddr, _, _p_filesz = struct.unpack_from(
+                    f'{_endian}IIQQQQ', data, _po
+                )
+            else:
+                _p_type, _p_offset, _p_vaddr, _, _p_filesz, _, _p_flags, _ = struct.unpack_from(
+                    f'{_endian}IIIIIIII', data, _po
+                )
+        except struct.error:
+            break
         _info["program_headers"].append({
             "type": _p_type, "vaddr": _p_vaddr, "filesz": _p_filesz,
             "flags": _p_flags,
         })
 
     _info["sections"] = []
+    _shstr_section = None
     if _shstrndx > 0 and _shoff > 0:
         for _i in range(min(_shnum, 1024)):
             _so = _shoff + _i * _shentsize
             if _so + _shentsize > len(data):
                 break
-            if _is_64:
-                _s_name_idx, _s_type, _s_flags, _s_addr, _s_offset, _s_size = struct.unpack_from(
-                    f'{_endian}IIQQQQ', data, _so
-                )
-            else:
-                _s_name_idx, _s_type, _s_flags, _s_addr, _s_offset, _s_size, _, _, _, _ = struct.unpack_from(
-                    f'{_endian}IIIIIIIIII', data, _so
-                )
+            try:
+                if _is_64:
+                    _s_name_idx, _s_type, _s_flags, _s_addr, _s_offset, _s_size = struct.unpack_from(
+                        f'{_endian}IIQQQQ', data, _so
+                    )
+                else:
+                    _s_name_idx, _s_type, _s_flags, _s_addr, _s_offset, _s_size, _, _, _, _ = struct.unpack_from(
+                        f'{_endian}IIIIIIIIII', data, _so
+                    )
+            except struct.error:
+                break
             _info["sections"].append({
                 "name_idx": _s_name_idx, "type": _s_type,
                 "addr": _s_addr, "offset": _s_offset, "size": _s_size,
@@ -349,7 +370,8 @@ def parse_elf(data: bytes) -> dict:
             _symtab_off = _sec["offset"]
             _symtab_size = _sec["size"]
     for _sec in _info["sections"]:
-        if _sec.get("type") == _ELF_SHT_STRTAB and _sec["offset"] != _shstr_section["offset"]:
+        if _sec.get("type") == _ELF_SHT_STRTAB and (
+                _shstr_section is None or _sec["offset"] != _shstr_section["offset"]):
             _strtab_off = _sec["offset"]
             break
 
@@ -360,13 +382,16 @@ def parse_elf(data: bytes) -> dict:
             _eo = _symtab_off + _i * _entsize
             if _eo + _entsize > len(data):
                 break
-            if _is_64:
-                _st_name, _st_info = struct.unpack_from(f'{_endian}IB', data, _eo)
-                _st_offset = struct.unpack_from(f'{_endian}I', data, _eo)[0]
-                _st_info = data[_eo + 4]
-            else:
-                _st_offset = struct.unpack_from(f'{_endian}I', data, _eo)[0]
-                _st_info = data[_eo + 12]
+            try:
+                if _is_64:
+                    _st_name, _st_info = struct.unpack_from(f'{_endian}IB', data, _eo)
+                    _st_offset = struct.unpack_from(f'{_endian}I', data, _eo)[0]
+                    _st_info = data[_eo + 4]
+                else:
+                    _st_offset = struct.unpack_from(f'{_endian}I', data, _eo)[0]
+                    _st_info = data[_eo + 12]
+            except struct.error:
+                break
             if _st_offset and _strtab_off + _st_offset < len(data):
                 _end = data.find(b'\x00', _strtab_off + _st_offset)
                 _sym_name = data[_strtab_off + _st_offset:_end].decode('ascii', errors='replace')
@@ -380,6 +405,11 @@ def parse_elf(data: bytes) -> dict:
 
 
 def parse_macho(data: bytes) -> dict:
+    if not isinstance(data, (bytes, bytearray)) or len(data) < 4:
+        return None
+    _magic = struct.unpack_from('<I', data, 0)[0]
+    if _magic not in (_MACHO_MAGIC_32, _MACHO_MAGIC_64, _MACHO_CIGAM_32, _MACHO_CIGAM_64):
+        return None
     _info: dict = {"format": "MACHO", "sections": [], "imports": {}}
     if len(data) < 28:
         return _info
@@ -388,6 +418,8 @@ def parse_macho(data: bytes) -> dict:
     _is_swap = _magic in (_MACHO_CIGAM_32, _MACHO_CIGAM_64)
     _e = '>' if _is_swap else '<'
 
+    if len(data) < 24:
+        return _info
     _cputype, _cpusubtype, _filetype, _ncmds, _sizeofcmds = struct.unpack_from(
         f'{_e}IIIII', data, 4
     )

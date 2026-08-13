@@ -1,6 +1,6 @@
 """生成 ACPE 堆溢出样本集目录 (源码/Makefile/README/manifest).
 
-创建: 2026-07-21
+创建: 2024-08-14
 每个样本独立目录:
   <SAMPLE_ROOT>/<ID>/
     <name>.c       CVE 复现或良性对照源码

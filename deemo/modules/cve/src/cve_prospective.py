@@ -1,5 +1,5 @@
-# 创建: 2026-06-09 18:33
-# 修改: 2026-06-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2025-06-09 18:33
+# 修改: 2025-06-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: 防泄露前瞻性评分协议
 # 防泄露前瞻性评分协议 — 时间窗口锁定 + 仅用事件前信息
 #
@@ -304,25 +304,5 @@ def _prospective_label(score: float) -> str:
     return "LOW"
 
 
-def _get_str(entry, field: str, default: str = ""):
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
-
-def _get_num(entry, field: str):
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False

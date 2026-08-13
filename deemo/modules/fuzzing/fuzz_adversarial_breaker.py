@@ -223,7 +223,7 @@ class FullCMAES:
       - 自动重启: 收敛后种群倍增 + 从当前最优解重启
       - 适用于 ≤ 512 字节的种子 (O(d²) 内存可接受)
 
-    参考: Hansen (2016) "The CMA Evolution Strategy: A Tutorial"
+    参考: Hansen "The CMA Evolution Strategy: A Tutorial"
  — 实现 (μ/μ_w, λ)-CMA-ES 的核心机制.
     """
 

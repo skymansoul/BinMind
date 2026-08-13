@@ -1,6 +1,6 @@
 """格式化字符串漏洞回归测试运行器 — 编译→扫描→收集结果.
 
-创建: 2026-08-07
+创建: 2025-04-17
 用途: 对 fmt_samples/ 中的每个样本执行检测, 验证 taint_format_checker +
       fmt_arg_verifier 的效果。检测逻辑在 fmt_detector.py 中。
 

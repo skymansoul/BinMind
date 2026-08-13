@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_10_struct_field_memcpy",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2018-10933 类 (结构体字段越界写)",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "以结构体指针为目标写 64 字节, 超出字段 name[8] 的边界"
-}

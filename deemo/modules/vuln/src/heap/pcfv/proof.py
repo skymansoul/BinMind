@@ -1,6 +1,6 @@
 """安全证明策略 — 仅接受有充分证据的安全判定.
 
-创建: 2026-04-22
+创建: 2023-07-19
 设计决策:
   - 过滤安全的证据等级必须不低于"常量偏移+可用范围"或"支配守卫上界",
     禁止在 offset 未知时仅凭"未检出污点"过滤 — 该模式是基线 Phase1
@@ -17,8 +17,15 @@ from .types import (Verdict, ProofRule, Evidence, ValueInfo,
 class SafetyProver:
     """安全判定: 返回可证明安全的规则列表(空=无法证明)."""
 
-    def __init__(self):
+    def __init__(self, enabled: dict = None):
         self._stats = {r: 0 for r in ProofRule}
+        # 规则开关 (消融实验): 默认全开, 键见 _ALL_KEYS
+        self._enabled = dict(_ALL_KEYS)
+        if enabled:
+            self._enabled.update(enabled)
+
+    def _on(self, key: str) -> bool:
+        return self._enabled.get(key, True)
 
     def prove(self, fv: FindingVerdict,
               guards: List[GuardConstraint],
@@ -40,18 +47,20 @@ class SafetyProver:
                 c = offset.constant_value
                 if size_hi is not None and size_hi >= 0 and c + size_hi <= usable:
                     if c >= alloc:
-                        evs.append(Evidence(
-                            rule=ProofRule.ALLOC_PADDING,
-                            detail=(f'const offset {c} in padding '
-                                    f'[{alloc},{usable}) size≤{size_hi}'),
-                            confidence=0.93))
+                        if self._on('padding'):
+                            evs.append(Evidence(
+                                rule=ProofRule.ALLOC_PADDING,
+                                detail=(f'const offset {c} in padding '
+                                        f'[{alloc},{usable}) size≤{size_hi}'),
+                                confidence=0.93))
                     else:
-                        evs.append(Evidence(
-                            rule=ProofRule.CONSTANT_BOUNDED,
-                            detail=(f'const offset {c}+{size_hi}≤usable '
-                                    f'{usable}'),
-                            confidence=0.97))
-                elif c < 0:
+                        if self._on('const_bounded'):
+                            evs.append(Evidence(
+                                rule=ProofRule.CONSTANT_BOUNDED,
+                                detail=(f'const offset {c}+{size_hi}≤usable '
+                                        f'{usable}'),
+                                confidence=0.97))
+                elif c < 0 and self._on('const_bounded'):
                     evs.append(Evidence(
                         rule=ProofRule.CONSTANT_BOUNDED,
                         detail=f'negative const offset {c} (backward write)',
@@ -59,7 +68,7 @@ class SafetyProver:
 
 # 规则2: 支配守卫窄化 → 上界有界且安全
         # 守卫本身提供上界, 不要求 off_hi 已解析
-        if alloc is not None and usable is not None:
+        if alloc is not None and usable is not None and self._on('guard'):
             for g in guards:
                 if not g.dominates or g.bound_value is None:
                     continue
@@ -77,9 +86,10 @@ class SafetyProver:
 
 # 规则3: 有界区间证明: off_hi + size_hi ≤ 请求分配大小
         # 修正: 必须使用区间上界, 仅 off_lo 有界会误过滤累积溢出.
-        if (alloc is not None and off_hi is not None and off_lo is not None
-                and size_hi is not None and off_lo >= 0
-                and off_hi + size_hi <= alloc):
+        if (self._on('minchunk')
+                and alloc is not None and off_hi is not None
+                and off_lo is not None and size_hi is not None
+                and off_lo >= 0 and off_hi + size_hi <= alloc):
             evs.append(Evidence(
                 rule=ProofRule.MIN_CAP,
                 detail=(f'off_hi {off_hi} + size {size_hi} ≤ alloc '
@@ -87,7 +97,8 @@ class SafetyProver:
                 confidence=0.75))
 
 # 规则4: realloc 缩小后的旧指针语义
-        if fv.access_kind == 'memcpy' and getattr(fv, 'realloc_shrunk', False):
+        if (self._on('realloc') and fv.access_kind == 'memcpy'
+                and getattr(fv, 'realloc_shrunk', False)):
             evs.append(Evidence(
                 rule=ProofRule.REALLOC_SHRINK,
                 detail='post-realloc-shrink access bounded by new size',
@@ -96,9 +107,10 @@ class SafetyProver:
 # 规则5: 最小块安全: alloc 未知但访问 ≤ 最小块可用 16B
         # ptmalloc2 x86-64: 任意 malloc 请求的 usable ≥ 16, 因此
         # 偏移上界 + size ≤ 16 的访问无条件安全 (无需解析分配大小).
-        if (alloc is None and off_hi is not None and off_lo is not None
-                and size_hi is not None and off_lo >= 0
-                and off_hi + size_hi <= 16):
+        # TODO: 最小块 16B 是 ptmalloc2 假设, musl/jemalloc 需按分配器建模
+        if (self._on('minchunk') and alloc is None and off_hi is not None
+                and off_lo is not None and size_hi is not None
+                and off_lo >= 0 and off_hi + size_hi <= 16):
             evs.append(Evidence(
                 rule=ProofRule.MIN_CAP,
                 detail=(f'min-chunk: off_hi {off_hi} + size {size_hi} '
@@ -106,7 +118,7 @@ class SafetyProver:
                 confidence=0.85))
 
 # 规则6: 循环界内安全: 最后一次迭代偏移 + size ≤ usable
-        if (fv.access_kind == 'loop_store'
+        if (self._on('loop') and fv.access_kind == 'loop_store'
                 and alloc is not None and usable is not None):
             iters = getattr(fv, 'loop_iters', None)
             stride = getattr(fv, 'loop_stride', 1)
@@ -135,8 +147,14 @@ class SafetyProver:
 class OverflowProver:
     """溢出判定: 返回可确认溢出的证据列表(空=无法确认)."""
 
-    def __init__(self):
+    def __init__(self, enabled: dict = None):
         self._stats = {r: 0 for r in ProofRule}
+        self._enabled = dict(_ALL_KEYS)
+        if enabled:
+            self._enabled.update(enabled)
+
+    def _on(self, key: str) -> bool:
+        return self._enabled.get(key, True)
 
     def prove(self, fv: FindingVerdict) -> List[Evidence]:
         evs: List[Evidence] = []
@@ -150,9 +168,9 @@ class OverflowProver:
         size_lo = size.interval_lo if size is not None else None
 
 # 规则1: 常量偏移+确定大小超出可用范围
-        if usable is not None and (offset is not None
-                                   and offset.is_constant
-                                   and offset.constant_value is not None):
+        if (self._on('const_bounded') and usable is not None
+                and offset is not None and offset.is_constant
+                and offset.constant_value is not None):
             c = offset.constant_value
             s_lo = size_lo if size_lo is not None else (
                 size_hi if size_hi is not None else 0)
@@ -164,7 +182,7 @@ class OverflowProver:
                     confidence=0.95))
 
 # 规则2: 无界复制(strcpy类) → 确定性溢出风险
-        if fv.access_kind == 'strcpy':
+        if self._on('unbounded_copy') and fv.access_kind == 'strcpy':
             evs.append(Evidence(
                 rule=ProofRule.UNBOUNDED_COPY,
                 detail='strcpy-like unbounded copy into heap buffer',
@@ -172,7 +190,8 @@ class OverflowProver:
 
 # 规则2b: alloc 未知但复制/写入大小 > 最小块可用 16B
         # ptmalloc2 最小 usable=16, 超出该上界的复制必然可能溢出
-        if (alloc is None and size_lo is not None and size_lo > 16
+        if (self._on('minchunk') and alloc is None
+                and size_lo is not None and size_lo > 16
                 and fv.access_kind in ('memcpy', 'strcpy')):
             evs.append(Evidence(
                 rule=ProofRule.UNBOUNDED_COPY,
@@ -181,7 +200,8 @@ class OverflowProver:
                 confidence=0.70))
 
 # 规则3: 循环累积
-        if fv.access_kind == 'loop_store' and usable is not None:
+        if (self._on('loop') and fv.access_kind == 'loop_store'
+                and usable is not None):
             iters = getattr(fv, 'loop_iters', None)
             stride = getattr(fv, 'loop_stride', 1)
             if iters is not None and stride > 0:
@@ -206,3 +226,10 @@ class OverflowProver:
 
     def stats(self) -> dict:
         return {r.name: v for r, v in self._stats.items()}
+
+
+# 规则开关统一键: 消融实验配置入口
+_ALL_KEYS = {
+    'guard': True, 'minchunk': True, 'padding': True, 'loop': True,
+    'const_bounded': True, 'unbounded_copy': True, 'realloc': True,
+}

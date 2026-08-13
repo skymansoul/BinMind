@@ -1,0 +1,34 @@
+{
+  "cve_2021_3156_sudo": {
+    "cve": "CVE-2021-3156",
+    "component": "sudo",
+    "vuln_class": "heap_overflow",
+    "expected": "VULN",
+    "write_mode": "array_walk",
+    "note": "set_cmnd 转义双写 + 终止符越界, malloc(size_needed) 不足"
+  },
+  "cve_2019_13143_minixml": {
+    "cve": "CVE-2019-13143",
+    "component": "MiniXML",
+    "vuln_class": "heap_overflow",
+    "expected": "VULN",
+    "write_mode": "array_walk",
+    "note": "XML 实体展开写入越界"
+  },
+  "cve_2014_0160_heartbleed": {
+    "cve": "CVE-2014-0160",
+    "component": "OpenSSL",
+    "vuln_class": "heap_oob_read",
+    "expected": "UNKNOWN",
+    "write_mode": "-",
+    "note": "越界读为主, 写溢出为次, 简化复现"
+  },
+  "cve_2015_0235_ghost": {
+    "cve": "CVE-2015-0235",
+    "component": "glibc",
+    "vuln_class": "heap_overflow",
+    "expected": "UNKNOWN",
+    "write_mode": "-",
+    "note": "gethostbyname 长度计算回绕"
+  }
+}

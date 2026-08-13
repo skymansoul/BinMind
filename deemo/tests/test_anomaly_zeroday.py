@@ -194,7 +194,6 @@ class TestAnomalyZerodayAnalyzer:
         metadata = AnomalyZerodayAnalyzer.get_metadata()
 
         assert metadata.name == "AnomalyZerodayAnalyzer"
-lass字段完整性$/d
         assert metadata.version == "1.0.0"
 
     def test_validate_input_valid(self):
@@ -242,10 +241,8 @@ lass字段完整性$/d
         analyzer = AnomalyZerodayAnalyzer()
 
         assert analyzer._get_score_level(0.1) == AnomalyScoreLevel.NORMAL
-lass字段完整性$/d
         assert analyzer._get_score_level(0.3) == AnomalyScoreLevel.SUSPICIOUS
         assert analyzer._get_score_level(0.6) == AnomalyScoreLevel.ANOMALOUS
-lass字段完整性$/d
         assert analyzer._get_score_level(0.9) == AnomalyScoreLevel.CRITICAL
 
     def test_calculate_hash(self):

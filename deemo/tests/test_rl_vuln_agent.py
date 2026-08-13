@@ -25,7 +25,6 @@ class TestQLearningAgent:
         assert agent is not None
         assert agent.lr == 0.1
         assert agent.discount == 0.9
-lass字段完整性$/d
         assert isinstance(agent.q_table, dict)
 
     def test_get_action(self):

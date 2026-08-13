@@ -10,7 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class TestStaticDataFlowAnalyzer(unittest.TestCase):
 
     def setUp(self):
-        for mod in ['modules.static_analysis', 'angr', 'angr.analyses',
+        # 全量运行中先前的测试可能已按子目录路径导入该模块并绑定真实 angr；
+        # 同时清理子目录键，保证本测试的 fresh import 命中 sys.modules 补丁
+        for mod in ['modules.static_analysis',
+                    'modules.analysis.static.static_analysis',
+                    'angr', 'angr.analyses',
                     'angr.knowledge_plugins', 'angr.knowledge_plugins.functions']:
             if mod in sys.modules:
                 del sys.modules[mod]

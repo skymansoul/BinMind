@@ -1,7 +1,7 @@
 """
 vuln_analyzer 分析器集合：按漏洞类型分发的 8 个注册分析器。
 
-拆分自 vuln_analyzer.py。每个分析器经 @_register 注册到 _VULN_ANALYZERS，
+每个分析器经 @_register 注册到 _VULN_ANALYZERS
 入口文件 import 本模块即触发副作用完成注册。为兼容测试，函数名与签名保持不变。
 """
 

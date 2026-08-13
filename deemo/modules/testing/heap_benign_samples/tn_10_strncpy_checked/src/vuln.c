@@ -4,7 +4,7 @@
 int main(int argc, char **argv) {
     char *buf = (char *)malloc(256);
     if (!buf) return 1;
-    strncpy(buf, argc > 1 ? argv[1] : "hello", 255);  /* отй╫ио╫Г */
+    strncpy(buf, argc > 1 ? argv[1] : "hello", 255);  /* Ф≤╬Е╪▐Д╦┼Г∙▄ */
     buf[255] = '\0';
     printf("[*] %s\n", buf);
     free(buf);

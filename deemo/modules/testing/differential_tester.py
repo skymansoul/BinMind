@@ -1403,7 +1403,23 @@ def run_differential_test(binary_a: str, binary_b: Optional[str] = None,
     return result
 
 def format_differential_report(result: DifferentialTestResult) -> str:
-    return result.summary
+    """生成中文差异测试报告 — 汇总模式、测试数、差异与耗时。"""
+    lines = [
+        "差异测试结果",
+        "=" * 40,
+        f"  测试模式: {result.test_mode}",
+        f"  测试总数: {result.total_tests}",
+        f"  差异总数: {result.total_differences}",
+        f"  潜在漏洞: {len(result.potential_vulnerabilities)}",
+        f"  唯一崩溃组: {result.unique_crash_groups}",
+        f"  执行耗时: {result.execution_time:.2f}s",
+    ]
+    if result.avg_exec_time_ms:
+        lines.append(f"  平均执行: {result.avg_exec_time_ms:.1f}ms +/- {result.exec_time_stddev:.1f}")
+    if result.summary:
+        lines.append("")
+        lines.append(result.summary)
+    return "\n".join(lines)
 
 def export_differential_json(result: DifferentialTestResult,
                              output_path: str) -> bool:

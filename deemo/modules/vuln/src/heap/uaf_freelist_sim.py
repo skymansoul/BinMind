@@ -1,6 +1,6 @@
 """DT-HSA ptmalloc2 空闲链表模拟器 — UAF 时间维度验证核心引擎.
 
-创建: 2026-06-15
+创建: 2024-11-05
 方法依据: UAFL typestate + Lancet 所有权语义
          + glibc malloc.c bin 管理 (fastbin LIFO/tcache LIFO 7/smallbin FIFO).
 

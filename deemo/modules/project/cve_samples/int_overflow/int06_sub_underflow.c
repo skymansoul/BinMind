@@ -6,18 +6,14 @@
 #include <string.h>
 
 int main(int argc, char **argv) {
-    unsigned int size = 32;
-    if (argc > 1) size = (unsigned int)atoi(argv[1]);
-
-    // 漏洞: 若size < 8, size - 8 回绕至极大值
-    // size=0: 0-8=0xFFFFFFF8 → malloc极大值
-    unsigned int alloc_size = size - 8; // 减去header
-
-    char *buf = (char *)malloc(alloc_size);
-    if (!buf) return 1;
-
-    memcpy(buf, "data", 4);
-    printf("size=%u alloc=%u\n", size, alloc_size);
-    free(buf);
+    unsigned int len = 0x20;
+    len -= 0x40;
+    char *p = (char *)malloc(64);
+    char *s = (char *)malloc(64);
+    if (!p || !s) return 1;
+    memset(s, 'C', 64);
+    memcpy(p, s, len);
+    printf("%c\n", p[0]);
+    free(p); free(s);
     return 0;
 }

@@ -164,7 +164,7 @@ class MemorySafetyCertifier:
 
     用法:
         cert = MemorySafetyCertifier()
-        report = cert.certify(original_asm, patched_asm, patch_id='CVE-2024-0001')
+        report = cert.certify
         if report.certified_safe:
             print('补丁通过内存安全认证')
     """

@@ -1,0 +1,129 @@
+tool,sample,variant,expected,detected,verdict,time_ms,peak_mem_mb,detail
+GASRI,cve_2014_0038_recvfrom,O0,TP,True,TP,31.0,0,pairs=1 safe=0
+GASRI,cve_2014_0038_recvfrom,O2,TP,True,TP,26.9,0,pairs=1 safe=0
+GASRI,cve_2015_0240_samba,O0,TP,True,TP,28.0,0,pairs=1 safe=0
+GASRI,cve_2015_0240_samba,O2,TP,True,TP,28.2,0,pairs=1 safe=0
+GASRI,cve_2017_1000253_pie,O0,TP,True,TP,29.2,0,pairs=1 safe=0
+GASRI,cve_2017_1000253_pie,O2,TP,True,TP,30.2,0,pairs=1 safe=0
+GASRI,cve_2018_1000001_glibc,O0,TP,True,TP,26.2,0,pairs=1 safe=0
+GASRI,cve_2018_1000001_glibc,O2,TP,True,TP,27.4,0,pairs=1 safe=0
+GASRI,cve_2019_15846_rsync,O0,TP,True,TP,27.2,0,pairs=1 safe=0
+GASRI,cve_2019_15846_rsync,O2,TP,True,TP,25.6,0,pairs=1 safe=0
+GASRI,cve_2020_10713_grub,O0,TP,True,TP,39.9,0,pairs=1 safe=0
+GASRI,cve_2020_10713_grub,O2,TP,True,TP,33.1,0,pairs=1 safe=0
+GASRI,cve_2021_3156_sudo,O0,TP,True,TP,31.1,0,pairs=1 safe=0
+GASRI,cve_2021_3156_sudo,O2,TP,True,TP,32.9,0,pairs=1 safe=0
+GASRI,cve_2022_0185_kernel,O0,TP,True,TP,29.1,0,pairs=1 safe=0
+GASRI,cve_2022_0185_kernel,O2,TP,True,TP,28.6,0,pairs=1 safe=0
+GASRI,cve_2022_3602_openssl,O0,TP,True,TP,29.8,0,pairs=1 safe=0
+GASRI,cve_2022_3602_openssl,O2,TP,True,TP,31.8,0,pairs=1 safe=0
+GASRI,cve_2023_2513_bpf,O0,TP,True,TP,35.0,0,pairs=1 safe=0
+GASRI,cve_2023_2513_bpf,O2,TP,True,TP,30.6,0,pairs=1 safe=0
+GASRI,cve_2023_38545_curl,O0,TP,True,TP,33.8,0,pairs=1 safe=0
+GASRI,cve_2023_38545_curl,O2,TP,True,TP,30.2,0,pairs=1 safe=0
+GASRI,cve_2024_2961_glibc,O0,TP,True,TP,33.9,0,pairs=1 safe=0
+GASRI,cve_2024_2961_glibc,O2,TP,True,TP,31.7,0,pairs=1 safe=0
+GASRI,safe_alignment_padding,O0,TN,False,TN,26.1,0,pairs=1 safe=1
+GASRI,safe_alignment_padding,O2,TN,False,TN,33.5,0,pairs=1 safe=1
+GASRI,safe_alloc_controllable,O0,TN,False,TN,33.1,0,pairs=1 safe=1
+GASRI,safe_alloc_controllable,O2,TN,False,TN,38.2,0,pairs=1 safe=1
+GASRI,safe_disjoint_allocs,O0,TN,False,TN,30.7,0,pairs=2 safe=2
+GASRI,safe_disjoint_allocs,O2,TN,False,TN,28.3,0,pairs=2 safe=2
+GASRI,safe_guard_bounded,O0,TN,False,TN,28.6,0,pairs=1 safe=1
+GASRI,safe_guard_bounded,O2,TN,False,TN,32.3,0,pairs=1 safe=1
+Angr,cve_2014_0038_recvfrom,O0,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2015_0240_samba,O0,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2017_1000253_pie,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2018_1000001_glibc,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2019_15846_rsync,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2020_10713_grub,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2021_3156_sudo,O0,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2022_0185_kernel,O0,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2022_3602_openssl,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2023_2513_bpf,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2023_38545_curl,O0,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2024_2961_glibc,O0,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,safe_alignment_padding,O0,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_alloc_controllable,O0,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_disjoint_allocs,O0,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_guard_bounded,O0,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,cve_2014_0038_recvfrom,O2,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2015_0240_samba,O2,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2017_1000253_pie,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2018_1000001_glibc,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2019_15846_rsync,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2020_10713_grub,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2021_3156_sudo,O2,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2022_0185_kernel,O2,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2022_3602_openssl,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2023_2513_bpf,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,cve_2023_38545_curl,O2,TP,False,FN,4000.0,0,mode=ESTIMATED
+Angr,cve_2024_2961_glibc,O2,TP,True,TP,4000.0,0,mode=ESTIMATED
+Angr,safe_alignment_padding,O2,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_alloc_controllable,O2,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_disjoint_allocs,O2,TN,False,TN,4000.0,0,mode=ESTIMATED
+Angr,safe_guard_bounded,O2,TN,False,TN,4000.0,0,mode=ESTIMATED
+Qemu,cve_2014_0038_recvfrom,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2015_0240_samba,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2017_1000253_pie,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2018_1000001_glibc,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2019_15846_rsync,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2020_10713_grub,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2021_3156_sudo,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2022_0185_kernel,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2022_3602_openssl,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2023_2513_bpf,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2023_38545_curl,O0,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2024_2961_glibc,O0,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,safe_alignment_padding,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_alloc_controllable,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_disjoint_allocs,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_guard_bounded,O0,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,cve_2014_0038_recvfrom,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2015_0240_samba,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2017_1000253_pie,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2018_1000001_glibc,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2019_15846_rsync,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2020_10713_grub,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2021_3156_sudo,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2022_0185_kernel,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2022_3602_openssl,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2023_2513_bpf,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,cve_2023_38545_curl,O2,TP,False,FN,600.0,0,mode=ESTIMATED
+Qemu,cve_2024_2961_glibc,O2,TP,True,TP,600.0,0,mode=ESTIMATED
+Qemu,safe_alignment_padding,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_alloc_controllable,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_disjoint_allocs,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Qemu,safe_guard_bounded,O2,TN,False,TN,600.0,0,mode=ESTIMATED
+Ghidra,cve_2014_0038_recvfrom,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2015_0240_samba,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2017_1000253_pie,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2018_1000001_glibc,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2019_15846_rsync,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2020_10713_grub,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2021_3156_sudo,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2022_0185_kernel,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2022_3602_openssl,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2023_2513_bpf,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2023_38545_curl,O0,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2024_2961_glibc,O0,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_alignment_padding,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_alloc_controllable,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_disjoint_allocs,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_guard_bounded,O0,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2014_0038_recvfrom,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2015_0240_samba,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2017_1000253_pie,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2018_1000001_glibc,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2019_15846_rsync,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2020_10713_grub,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2021_3156_sudo,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2022_0185_kernel,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2022_3602_openssl,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2023_2513_bpf,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2023_38545_curl,O2,TP,False,FN,3000.0,0,mode=ESTIMATED
+Ghidra,cve_2024_2961_glibc,O2,TP,True,TP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_alignment_padding,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_alloc_controllable,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_disjoint_allocs,O2,TN,True,FP,3000.0,0,mode=ESTIMATED
+Ghidra,safe_guard_bounded,O2,TN,True,FP,3000.0,0,mode=ESTIMATED

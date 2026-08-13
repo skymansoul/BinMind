@@ -13,7 +13,7 @@
 执行模式：subprocess（通过 Popen 真实执行 shell 命令，含超时/沙箱），
 或 simulated（钩子驱动，无副作用），支持对标记步骤生成模糊变异。
 
-导入顺序说明：本模块从 ..multi_stage_orchestrator 导入共享类型。
+导入顺序说明：本模块从 multi_stage_orchestrator 导入共享类型。
 必须在其顶层枚举、dataclass 和辅助类定义完毕后再导入。
 父模块通过在所有共享类型定义之后放置 ChainOrchestrator 的 import 来处理这一约束。
 """
@@ -28,19 +28,36 @@ import time
 # 共享类型 —— 从父模块命名空间中解析。
 # multi_stage_orchestrator 在导入本模块前已定义这些类型，
 # 因此部分初始化的模块在查找时可找到它们。
-from ..multi_stage_orchestrator import (  # noqa: E402
-    AttackChain,
-    ChainStep,
-    Checkpoint,
-    DependencyResolver,
-    ExecutionStrategy,
-    ExploitStage,
-    OrchestrationResult,
-    ScriptGenerator,
-    StageCapability,
-    StepOutput,
-    TargetType,
-)
+try:
+    # 包内相对导入——模块经 modules.multimodal 命名空间加载时生效
+    from ..multi_stage_orchestrator import (  # noqa: E402
+        AttackChain,
+        ChainStep,
+        Checkpoint,
+        DependencyResolver,
+        ExecutionStrategy,
+        ExploitStage,
+        OrchestrationResult,
+        ScriptGenerator,
+        StageCapability,
+        StepOutput,
+        TargetType,
+    )
+except ImportError:
+    # 兼容顶层裸名场景（多模态目录被直接置于 sys.path 时）
+    from multi_stage_orchestrator import (  # noqa: E402
+        AttackChain,
+        ChainStep,
+        Checkpoint,
+        DependencyResolver,
+        ExecutionStrategy,
+        ExploitStage,
+        OrchestrationResult,
+        ScriptGenerator,
+        StageCapability,
+        StepOutput,
+        TargetType,
+    )
 
 
 # ChainOrchestrator -- exploit 链生命周期管理器

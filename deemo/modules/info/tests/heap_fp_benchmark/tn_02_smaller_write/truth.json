@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_02_smaller_write",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 写入量小于分配量",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "写入 64 远小于分配 256, C2 区间判定安全"
-}

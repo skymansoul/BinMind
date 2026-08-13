@@ -1,9 +1,9 @@
 """ACFPC 主压缩器 — 判决合成与误报压缩.
 
-三值结论: SUPPRESS (证据完整, 不可能越界) / CONFIRM (数值证据确凿,
-提升置信度) / UNCHANGED (无证据, 保留). 证据优先级: 双常量几何 >
-守卫支配 > strncpy 特例 > 参数耦合 > 派生写确认. 显式偏移写与
-判决合成内置于本模块, 供压缩循环直接使用.
+三证据链按优先级求值: 双常量几何 > 守卫支配 > strncpy 特例 >
+参数耦合 > 派生写确认. 任一链给出 SUPPRESS 即压制; CONFIRM 提升
+置信度并补齐检测器盲区 (确认增强). 地址映射缺失时不做压制,
+保证召回不受损. 显式偏移写预扫描独立于调用级证据链.
 """
 import re
 from dataclasses import dataclass, field
@@ -12,9 +12,11 @@ from typing import Dict, List, Optional, Tuple
 
 from .def_chain import DefChainTracker, DefKind, DefNode
 from .alloc_contract import AllocContractExtractor, AllocContract
-from .write_coupling import WriteCouplingAnalyzer, Coupling, CouplingVerdict
+from .write_coupling import WriteCouplingAnalyzer, Coupling
 from .guard_dominance import GuardDominanceChecker
-from .allocator_geometry import usable_size, write_fits, overflow_bytes
+from .allocator_geometry import usable_size, write_fits
+from .verdict import VerdictSynthesizer, ACFPCVerdict, ACFPCVerdictKind
+from .explicit_write import ExplicitWriteChecker
 
 class ACFPCVerdictKind(Enum):
     SUPPRESS = auto()

@@ -73,7 +73,6 @@ class TestProjectManager(unittest.TestCase):
 
         loaded_state = self.pm.load_project(project_id)
 
-lass字段完整性$/d
         self.assertIsNotNone(loaded_state)
         self.assertEqual(loaded_state.current_step, 'decompilation')
         self.assertEqual(loaded_state.decomp_results, [])
@@ -124,7 +123,6 @@ lass字段完整性$/d
 
         state_dict = state.to_dict()
 
-lass字段完整性$/d
         self.assertEqual(state_dict['current_step'], 'exploit_generation')
         self.assertEqual(state_dict['binary_info'], {'arch': 'x86', 'bits': 32})
 

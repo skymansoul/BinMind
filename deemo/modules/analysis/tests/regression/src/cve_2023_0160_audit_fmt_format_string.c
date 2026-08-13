@@ -5,7 +5,7 @@
 // cve_2023_0160 Format String Vuln: audit_log_user_format(user_msg): %n in user_msg
 
 void audit_fmt_vuln(char *user_input) {
-    // Î£ÏÕ: ÓÃ»§ÊäÈëÖ±½Ó×÷Îª¸ñÊ½×Ö·û´® (¶ø·Ç%s²ÎÊı)
+    // å±é™©: ç”¨æˆ·è¾“å…¥ç›´æ¥ä½œä¸ºæ ¼å¼å­—ç¬¦ä¸² (è€Œé%så‚æ•°)
     printf(user_input);
 }
 
@@ -18,7 +18,7 @@ void audit_fmt_safe() {
 }
 
 int main() {
-    char payload[] = "%x %x %x %x %x %x %x %n";  // ¹¥»÷payload: º¬%nĞ´Èë
+    char payload[] = "%x %x %x %x %x %x %x %n";  // æ”»å‡»payload: å«%nå†™å…¥
     printf("cve_2023_0160 fmt test\n");
     audit_fmt_vuln(payload);
     audit_fmt_vuln2(payload);

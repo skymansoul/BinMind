@@ -1,6 +1,0 @@
-{
-  "id": "fmt_tp_11_loop_write",
-  "expected_vuln": true,
-  "vuln_type": "format_string",
-  "mode": "循环内逐段拼接用户输入为格式串"
-}

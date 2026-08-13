@@ -1,0 +1,18 @@
+% UAF 多工具检测对比表 (ALPR benchmark, 46 binaries)
+\begin{table}[t]
+\centering
+\caption{Use-After-Free Detection: ALPR vs. Baseline and General-Purpose Tools (23 samples, O0/O2).}
+\label{tab:uaf-alpr-comparison}
+\small
+\begin{tabular}{lrrrrrrrr}
+\hline
+Tool & TP & FP & FN & Recall & Precision & F1 & FP rate & Time(s) \\
+\hline
+  \textbf{ALPR (ours)} & 30 & 0 & 0 & 1.000 & 1.000 & 1.000 & 0.000 & 2.35 \\
+  Baseline & 0 & 0 & 30 & 0.000 & 0.000 & 0.000 & 0.000 & 2.10 \\
+  Angr (CFG) & 30 & 16 & 0 & 1.000 & 0.652 & 0.789 & 1.000 & 62.48 \\
+  QEMU trace & 0 & 0 & 30 & 0.000 & 0.000 & 0.000 & 0.000 & 2.56 \\
+  Ghidra headless (sim.) & 29 & 12 & 1 & 0.967 & 0.707 & 0.817 & 0.750 & 2.04 \\
+\hline
+\end{tabular}
+\end{table}

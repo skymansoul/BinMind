@@ -1,6 +1,6 @@
 """DP-TVRA 过滤管线共享类型.
 
-创建: 2026-06-20
+创建: 2024-10-11
 用途: FilterPhase / FilterDecision 枚举 + FilterResult 数据结构,
       供 HeapFPFilterV2 和 orchestrator 共用。
 """

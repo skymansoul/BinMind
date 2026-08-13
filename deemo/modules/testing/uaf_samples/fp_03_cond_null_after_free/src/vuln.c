@@ -5,9 +5,9 @@ int main(int argc, char **argv) {
     if (!p) return 1;
     if (argc > 1) {
         free(p);
-        p = NULL;                  /* ·ÖÖ§ÄÚÖÃ¿Õ */
+        p = NULL;                  /* åˆ†æ”¯å†…ç½®ç©º */
     }
-    free(p);                       /* p==NULL »òÎ´·ÖÅä ¡ª ¾ù°²È« */
+    free(p);                       /* p==NULL æˆ–æœªåˆ†é… â€” å‡å®‰å…¨ */
     printf("[*] done\n");
     return 0;
 }

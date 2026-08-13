@@ -1,6 +1,6 @@
 """过程间上下文追踪 — 跨函数边界的size约束传播.
 
-创建: 2026-06-25
+创建: 2025-02-06
 用途: 堆操作的size约束常常跨越函数边界:
         caller: buf = malloc(n); process_data(buf, n);
         callee: void process_data(char *p, int len) { memcpy(dst, p, len); }

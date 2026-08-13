@@ -1,4 +1,4 @@
-/* CVE-2018-1121 ¡ª procps sort key heap overflow (unbounded strcpy) */
+/* CVE-2018-1121 â€” procps sort key heap overflow (unbounded strcpy) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

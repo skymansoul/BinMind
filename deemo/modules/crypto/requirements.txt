@@ -1,0 +1,14 @@
+# crypto module 依赖
+# 核心依赖（必需）
+pyyaml>=6.0
+
+# 可选 —— 硬件加速哈希
+xxhash>=3.0
+blake3>=0.4
+
+# 可选 —— 流量解密
+cryptography>=41.0
+pycryptodome>=3.19
+
+# 开发和测试
+# pytest>=7.0  # 后面再加

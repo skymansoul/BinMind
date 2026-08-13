@@ -13,12 +13,11 @@
   - main() 两套管线均保留: 存在 cve_benchmark.csv 时跑 eval 管线,
     存在 results/benchmark_hfp.csv 时跑 deemo 管线.
 
-决策逻辑:
-  读取 benchmark CSV, 生成:
-    1. 检出率/误报率分组柱状图 (按工具)
-    2. 加壳/未加壳分组图 (若样本含 packed 标记列)
-    3. result_table.tex — 论文用 LaTeX 对比表
-  外部工具不可用时对应柱为 0 并标注 unavailable.
+读取 benchmark CSV, 生成:
+  1. 检出率/误报率分组柱状图 (按工具)
+  2. 加壳/未加壳分组图 (若样本含 packed 标记列)
+  3. result_table.tex — 论文用 LaTeX 对比表
+外部工具不可用时对应柱为 0 并标注 unavailable.
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ RESULTS = BASE / 'results'
 TOOL_LABELS = {
     'BinMind-HFP': 'BinMind-HFP (ours)',
     'angr': 'Angr (symbolic)',
-    'qemu': 'QEMU (dynamic)',
+    'qemu': 'QEMU/Unicorn (dynamic)',
     'ghidra': 'Ghidra (pattern)',
 }
 

@@ -37,7 +37,11 @@ class OracleComparator:
     """
     @staticmethod
     def compare(results: Dict[str, Any]) -> Tuple[Optional[Any], List[str], Dict[str, List[str]]]:
-        """比较输出。返回 (oracle_output, diverging_engines, groups)。"""
+        """比较输出。返回 (oracle_output, diverging_engines, groups)。
+
+        多数票判定: 严格超过半数 (>50%) 才认可 oracle。
+        平局/无多数时 oracle 为 None，全部引擎计入 diverging。
+        """
         if not results:
             return None, [], {}
 
@@ -52,8 +56,8 @@ class OracleComparator:
         _total = len(results)
         _largest = _sorted_groups[0] if _sorted_groups else []
 
-        if len(_largest) >= _total * 0.5:
-            # 存在共识oracle
+        if len(_largest) > _total * 0.5:
+            # 存在多数共识 oracle
             _oracle_hash = None
             for _h, _engines in _groups.items():
                 if _engines == _largest:
@@ -68,7 +72,7 @@ class OracleComparator:
             _diverging = [_e for _e in results if _e not in _largest]
             return _oracle, _diverging, dict(_groups)
         else:
-            return OracleComparator.determine_oracle(results), [], dict(_groups)
+            return None, list(results.keys()), dict(_groups)
 
     @staticmethod
     def determine_oracle(outputs: Dict[str, Any]) -> Optional[Any]:
@@ -86,6 +90,8 @@ class OracleComparator:
             if OracleComparator._hash_output(_output) != _oracle_hash:
                 _diffs.append({
                     "engine": _engine,
+                    "expected": oracle,
+                    "actual": _output,
                     "expected_hash": _oracle_hash,
                     "actual_hash": OracleComparator._hash_output(_output),
                     "output_preview": str(_output)[:200],

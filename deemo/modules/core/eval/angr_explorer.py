@@ -5,34 +5,19 @@ Angr 漏洞点分析 — 使用 Angr 的 CFG 和函数调用图,
 从汇编指令级提取 malloc/memcpy 的实际大小参数.
 
 核心改进 (v2): 不使用硬编码默认值.
-- _estimate_alloc_size: 在 call malloc 前反向搜索 mov 指令, 提取 rdi/rdi 值
-- _estimate_write_size: 在 call memcpy 前反向搜索, 提取 rdx (size) 值
-- 若无法确定, 返回 0 标记为"未知", 不输出误导性的默认值
+- 在 call 前反向搜索 mov 指令, 提取实际参数值 (含子寄存器归一化)
+- 逐基本块扫描 call <目标地址> 定位 alloc/write 调用点
+- 若无法确定大小, 返回 0 标记为"未知", 不输出误导性的默认值
 
 输出格式 (JSON): {sample_id, paths_found, dangerous_calls, wall_time_s, mem_mb}
 """
 
-import os, sys, json, time, re
+import os, sys, json, time
 from typing import Any, Dict, List, Optional, Tuple
 
-_DANGEROUS_WRITES = {
-    'memcpy', 'memmove', 'strcpy', 'strncpy', 'sprintf',
-    'snprintf', 'strcat', 'strncat', 'gets', 'fgets',
-    'read', 'fread', 'recv', 'recvfrom',
-}
-
-_ALLOC_FUNCS = {
-    'malloc', 'calloc', 'realloc', '_Znwm', '_Znam',
-}
-
-# x86-64 调用约定: SysV=rdi/rsi/rdx/rcx/r8/r9, Win64=rcx/rdx/r8/r9/r10/r11
-_ARG_REGS_SYSV = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
-_ARG_REGS_WIN64 = ['rcx', 'rdx', 'r8', 'r9', 'r10', 'r11']
-# alloc size 参数索引: malloc/calloc/realloc → arg0; write size 参数索引
-# memcpy/memmove/memset → arg2; snprintf → arg1
-_ALLOC_SIZE_ARG = {'malloc': 0, 'calloc': 0, 'realloc': 1, '_znwm': 0, '_znam': 0}
-_WRITE_SIZE_ARG = {'memcpy': 2, 'memmove': 2, 'memset': 2, 'snprintf': 1,
-                   'strncpy': 2, 'strncat': 2}
+from eval.angr_helpers import (
+    _ALLOC_SIZE_ARG, _WRITE_SIZE_ARG, _ARG_REGS_SYSV, _ARG_REGS_WIN64,
+    extract_arg_from_disasm)
 
 
 def analyze_with_angr(elf_path: str,
@@ -115,7 +100,7 @@ def analyze_with_angr(elf_path: str,
         for call_site, a_name in alloc_sites:
             size_idx = next((_ALLOC_SIZE_ARG[a] for a in _ALLOC_SIZE_ARG
                              if a in a_name), 0)
-            alloc_size = _extract_arg_from_disasm(
+            alloc_size = extract_arg_from_disasm(
                 proj, cfg, call_site, arg_regs[size_idx])
             if alloc_size <= 0:
                 continue
@@ -124,7 +109,7 @@ def analyze_with_angr(elf_path: str,
                     continue
                 w_idx = next((_WRITE_SIZE_ARG[w] for w in _WRITE_SIZE_ARG
                               if w in w_name), 2)
-                write_size = _extract_arg_from_disasm(
+                write_size = extract_arg_from_disasm(
                     proj, cfg, w_site, arg_regs[w_idx])
                 entry = {
                     'alloc_addr': hex(call_site),

@@ -1,3 +1,4 @@
+# 创建: 2023-11-30
 # 循环写检测器 — 逐字节/逐元素循环写导致的堆越界
 """memcpy类sink扫描无法覆盖"循环内逐字节写"模式:
   for (i = 0; i < user_bound && i < cap; i++) buf[i] = v;
@@ -66,6 +67,10 @@ _LOOP_CMP_MEM = re.compile(
     r'\bcmp\s+(\w+),\s*(?:dword\s+ptr\s+|qword\s+ptr\s+)?'
     r'\[(rbp|rsp)\s*([+\-])\s*(0x[0-9a-f]+|\w+)\]', re.I)
 
+# 用户输入边界来源
+_USER_BOUND_FUNCS = re.compile(
+    r'\bcall\s+(read|recv|fgets|scanf|atoi|strtoul|strtol|getenv)\b', re.I)
+
 
 class LoopWriteDetector:
     """循环写检测器 — 识别tainted alloc后的循环越界写。"""
@@ -100,6 +105,7 @@ class LoopWriteDetector:
             # 找到循环体起点: 写指令前有循环头
             mw = _LOOP_WRITE.search(line) or _LOOP_WRITE_RAW.search(line)
             if mw and mw.group(1) not in _STACK_PTRS:
+                # TODO: 循环写检测窗口120行, 多层嵌套循环的内层写可能漏检
                 loop = self._analyze_loop(
                     asm_lines, i, alloc_line, alloc_upper, alloc_lower)
                 if loop is not None:
@@ -157,9 +163,9 @@ class LoopWriteDetector:
                         cmp_reg = mm.group(1)
 
         # 循环上界来源: 是否由用户输入驱动
-        user_controlled = self._guard.bound_is_user_controlled(
+        user_controlled = self._bound_is_user_controlled(
             asm_lines, cmp_line, cmp_reg, cmp_mem_slot)
-        cap = self._guard.find_loop_cap(asm_lines, cmp_line, write_line)
+        cap = self._find_loop_cap(asm_lines, cmp_line, write_line)
 
         # 判定: 循环上界受控且cap > alloc_upper → 可能越界
         may_overflow = False
@@ -167,7 +173,7 @@ class LoopWriteDetector:
         reason = ""
         if user_controlled:
             # 守卫推断: 循环上界与alloc大小之间是否有cmp+jcc约束
-            guard_safe = self._guard.check_bound_guard(
+            guard_safe = self._check_bound_guard(
                 asm_lines, alloc_line, write_line, cmp_reg, cmp_mem_slot)
             if guard_safe:
                 conf = 0.10
@@ -203,3 +209,104 @@ class LoopWriteDetector:
             'may_overflow': may_overflow, 'confidence': conf,
             'reason': reason,
         }
+
+    def _check_bound_guard(self, asm_lines: List[str], alloc_line: int,
+                           write_line: int, cmp_reg: str,
+                           cmp_mem_slot: str = "") -> bool:
+        """检查循环上界是否被alloc大小守卫约束(loop_bound <= alloc_size)。
+
+        模式: cmp loop_bound_reg/mem, alloc_size_reg/mem; jle/jbe 进入循环
+        若存在该约束, 循环写入不会超过alloc → 安全。
+        """
+        alloc_slot = self._resolve_alloc_slot(asm_lines, alloc_line)
+        if not alloc_slot:
+            return False
+        for j in range(alloc_line - 1, max(alloc_line - 40, -1), -1):
+            line = asm_lines[j].strip().lower()
+            m = re.search(
+                r'\bcmp\s+\w+,\s*(?:dword\s+ptr\s+)?'
+                r'\[(rbp|rsp)\s*([+\-])\s*(0x[0-9a-f]+|\w+)\]', line)
+            if not m:
+                continue
+            cmp_slot = f'{m.group(1)}{m.group(2)}{m.group(3)}'
+            if cmp_slot == alloc_slot:
+                # 后续jcc: jle/jbe 进入安全路径(loop<=alloc)
+                for k in range(j + 1, min(j + 5, len(asm_lines))):
+                    jcc = asm_lines[k].strip().lower()
+                    if re.search(r'\b(jle|jbe)\b', jcc):
+                        return True
+                    if re.search(r'\b(call|jmp|ret)\b', jcc):
+                        break
+        return False
+
+    def _resolve_alloc_slot(self, asm_lines: List[str],
+                            alloc_line: int) -> str:
+        """解析alloc size的来源槽位: 追踪 mov size_reg, [rbp-N]。"""
+        for j in range(alloc_line - 1, max(alloc_line - 12, -1), -1):
+            m = re.search(
+                r'\bmov\s+(\w+),?\s*(?:dword\s+ptr\s+)?'
+                r'\[(rbp|rsp)\s*([+\-])\s*(0x[0-9a-f]+|\w+)\]',
+                asm_lines[j].strip().lower())
+            if m:
+                return f'{m.group(2)}{m.group(3)}{m.group(4)}'
+        return ''
+
+    def _bound_is_user_controlled(self, asm_lines: List[str], cmp_line: int,
+                                  cmp_reg: str, mem_slot: str = "") -> bool:
+        """判断循环比较寄存器是否来自用户输入。
+        mem_slot非空时, 检查该栈槽的写入来源是否含用户输入调用。
+        """
+        if mem_slot:
+            for j in range(cmp_line - 1, max(cmp_line - 15, -1), -1):
+                line = asm_lines[j].strip().lower()
+                if re.search(
+                        r'\bmov\s+\[[^\]]*' + re.escape(mem_slot)
+                        + r'[^\]]*\]\s*,', line):
+                    if _USER_BOUND_FUNCS.search(line):
+                        return True
+                    break
+            for j in range(cmp_line - 1, max(cmp_line - 40, -1), -1):
+                line = asm_lines[j].strip().lower()
+                if _USER_BOUND_FUNCS.search(line):
+                    return True
+            return True  # 内存上界保守视为受控
+
+        reg_re = re.compile(r'\b' + re.escape(cmp_reg) + r'\b', re.I)
+        for j in range(cmp_line - 1, max(cmp_line - 12, -1), -1):
+            line = asm_lines[j].strip().lower()
+            if _USER_BOUND_FUNCS.search(line):
+                return True
+            if re.search(r'\b(movsxd|cdqe|cqo)\b', line) and reg_re.search(line):
+                continue
+            if re.search(r'\bmov\s+' + re.escape(cmp_reg) + r',?\s*\d', line):
+                return False
+        return True  # 保守: 无法确认时视为受控
+
+    def _find_loop_cap(self, asm_lines: List[str], cmp_line: int,
+                       write_line: int) -> int:
+        """查找循环的硬性cap上界(如 i < 4096 && i < user_bound)。"""
+        caps = []
+        for j in range(cmp_line, min(cmp_line + 15, len(asm_lines))):
+            line = asm_lines[j].strip().lower()
+            m = _LOOP_CMP.search(line)
+            if m:
+                b = m.group(2)
+                try:
+                    v = int(b, 16) if b.lower().startswith('0x') else int(b)
+                except ValueError:
+                    continue
+                if 0 < v <= 65536:
+                    caps.append(v)
+                continue
+            m = re.search(
+                r'\bcmp\s+(?:dword\s+ptr\s+|qword\s+ptr\s+)?'
+                r'\[[^\]]+\],\s*(0x[0-9a-f]+|\d+)', line)
+            if m:
+                b = m.group(1)
+                try:
+                    v = int(b, 16) if b.lower().startswith('0x') else int(b)
+                except ValueError:
+                    continue
+                if 0 < v <= 65536:
+                    caps.append(v)
+        return min(caps) if caps else 0

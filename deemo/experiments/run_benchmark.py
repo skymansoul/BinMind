@@ -21,7 +21,7 @@ def run_binmind(binary: str, sample: str, variant: str, timeout: int = 60) -> To
         r = ToolResult('BinMind', sample, variant, 0, 0, 0, True)
         r.wall_ms = (time.perf_counter() - t0) * 1000
         _, peak = tracemalloc.get_traced_memory(); tracemalloc.stop()
-        r.peak_memory_mb = peak / (1024*1024)
+        r.peak_memory_mb = peak / (1024 * 1024)
         return r
     except Exception as e:
         tracemalloc.stop(); return ToolResult('BinMind', sample, variant, 0,0,0, False, error_msg=str(e))

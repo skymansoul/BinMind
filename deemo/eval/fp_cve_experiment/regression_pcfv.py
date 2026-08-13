@@ -1,6 +1,6 @@
 """PCFV 语料库回归 — 对 corpus 下全部样本运行 PCFV 并与 truth 比对.
 
-创建: 2026-06-13
+创建: 2023-06-22
 用法: python eval/fp_cve_experiment/regression_pcfv.py [--json out.json]
 输出: 每样本 检出/漏报/误报 状态 + 汇总指标 + 判定明细
 """
@@ -10,14 +10,9 @@ import json
 import os
 import sys
 import time
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'heap'))
-
-from pcfv import analyze_heap_pcfv, Verdict
-
+from _common import HERE as _HERE, list_samples, setup_paths
+setup_paths(with_format=False)
+from pcfv import analyze_heap_pcfv
 CORPUS = os.path.join(_HERE, 'corpus')
 
 
@@ -61,10 +56,7 @@ def main():
     args = ap.parse_args()
 
     results = []
-    for d in sorted(glob.glob(os.path.join(CORPUS, '*'))):
-        if not os.path.isdir(d) or not os.path.exists(
-                os.path.join(d, 'truth.json')):
-            continue
+    for d, _truth in list_samples(CORPUS):
         results.append(run_one(d))
 
     tp = sum(r['tp'] for r in results)

@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_05_conditional_uaf",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2017-16995 类条件触发 UAF",
-  "expect_overflow": true,
-  "trigger": "./sample 1",
-  "why": "flag=1 时 free, 随后无条件 p->v 解引用"
-}

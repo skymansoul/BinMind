@@ -1,7 +1,7 @@
 """Mapper 覆盖拓扑分析 — filter function + 覆盖 + 聚类 + 复形.
 
-创建: 2026-06-05 16:07
-修改: 2026-06-05 11:34 — 添加 silhouette 自适应聚类数
+创建: 2024-10-11 16:07
+修改: 2024-10-11 11:34 — 添加 silhouette 自适应聚类数
 
 参考: Singh, Mémoli & Carlsson "Topological Methods for the Analysis of
        High Dimensional Data Sets and 3D Object Recognition" (Eurographics)

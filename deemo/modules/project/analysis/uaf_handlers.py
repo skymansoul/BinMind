@@ -33,7 +33,8 @@ class UafHandlerMixin:
     """
 
     def _process_call(self, idx: int, parts: List[str],
-                      instructions: List[str]):
+                      instructions: List[str], in_loop: bool = False):
+        """in_loop: 调用点位于循环体内 (回跳检测结果)."""
         if len(parts) < 2:
             return
         target = _extract_call_target(parts[-1])
@@ -50,7 +51,8 @@ class UafHandlerMixin:
 
         # 释放函数
         if target in _FREE_FUNCTIONS:
-            self._handle_free(idx, target, instructions)
+            self._handle_free(idx, target, instructions,
+                              in_loop=in_loop)
             return
 
         # 其他调用: 检查参数中是否有悬挂指针
@@ -77,10 +79,37 @@ class UafHandlerMixin:
         self._dangling.clear_reg('rax')
 
     def _handle_free(self, idx: int, target: str,
-                     instructions: List[str]):
-        """处理释放: 检查双重释放, 标记悬挂."""
+                     instructions: List[str], in_loop: bool = False):
+        """处理释放: 检查双重释放, 标记悬挂.
+
+        in_loop: 循环体内的 free 在迭代次数 ≥2 时构成重复释放,
+        指针来自循环前分配 (provenance 存在) 即报告.
+        """
         arg0 = _ARG_REGS[0]
         origin = self._prov.get_origin(arg0)
+
+        # 循环内重复释放识别: 循环体每次迭代执行一次 free,
+        # 循环 ≥2 次迭代 → 第二次释放时指针已释放
+        if in_loop and origin is not None and origin.alloc_site_id \
+                and origin.alloc_site_id != 'unknown':
+            finding = UafFinding(
+                finding_id=f"uaf_{self._call_ctr}_df@{idx}",
+                severity=UafSeverity.MEDIUM, confidence=0.60,
+                free_site=FreeSiteInfo(
+                    free_idx=idx, free_func=target, freed_reg=arg0,
+                    ptr_origin=origin,
+                    alloc_site_id=origin.alloc_site_id,
+                    in_function=self._current_func,
+                    is_double_free_candidate=True),
+                use_type="DOUBLE_FREE",
+                use_idx=idx,
+                use_instruction=instructions[idx].strip(),
+                use_reg=arg0, function_name=self._current_func,
+                distance_from_free=0,
+                detail=f"{target}({arg0}) — 循环体内释放, "
+                       f"迭代≥2次即双重释放")
+            self._findings.append(finding)
+            self._call_ctr += 1
 
         # 释放参数的堆溯源门控: 仅当被释放指针可证实为堆分配时才
         # 标记悬挂. free(栈/全局指针) 后对同一寄存器的读写是合法操作,

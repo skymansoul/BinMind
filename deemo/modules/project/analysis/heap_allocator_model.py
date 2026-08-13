@@ -13,9 +13,9 @@
 #   glibc ptmalloc2 source (malloc.c): checked_request2size(), MINSIZE=0x20
 #   Windows Heap Manager: HeapAlloc granularity, _HEAP_ENTRY overhead
 #   jemalloc size classes: https://jemalloc.net/jemalloc.3.html
-#   Heelan et al. "Automatic Heap Layout Manipulation" (USENIX 2021)
+#   Heelan et al. "Automatic Heap Layout Manipulation"
 #     — 堆布局操纵依赖精确知道分配器内部行为
-#   Yun et al. "APISan: Sanitizing API Usages" (USENIX 2016)
+#   Yun et al. "APISan: Sanitizing API Usages"
 #     — 利用分配器语义建模减少误报
 from __future__ import annotations
 from dataclasses import dataclass

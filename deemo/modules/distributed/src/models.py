@@ -84,8 +84,12 @@ class Task:
     @classmethod
     def from_dict(cls, d: dict) -> "Task":
         d = dict(d)  # 浅拷贝，防止污染调用方入参
-        d["type"] = TaskType(d["type"]) if not isinstance(d.get("type"), TaskType) else d["type"]
-        d["status"] = TaskStatus(d["status"]) if not isinstance(d.get("status"), TaskStatus) else d["status"]
+        d.setdefault("type", TaskType.CUSTOM)
+        d.setdefault("status", TaskStatus.PENDING)
+        if not isinstance(d["type"], TaskType):
+            d["type"] = TaskType(d["type"])
+        if not isinstance(d["status"], TaskStatus):
+            d["status"] = TaskStatus(d["status"])
         d.setdefault("tags", [])
         d.setdefault("parent_id", None)
         return cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})

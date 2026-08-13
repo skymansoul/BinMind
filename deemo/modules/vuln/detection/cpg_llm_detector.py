@@ -131,9 +131,9 @@ class CPGLLMVulnDetector:
         5. 鲁棒性评估: 反事实扰动 -> 一致性/最坏偏移
 
     参考:
-        - LLMxCPG (arXiv:2507.16585): CPG 路径序列化增强 LLM 上下文
-        - CodeSAGE (2025): 多特征融合注意力打分
-        - VISION (arXiv:2508.18933) / NatGVD (arXiv:2510.04987): 反事实鲁棒性
+        - LLMxCPG: CPG 路径序列化增强 LLM 上下文
+        - CodeSAGE: 多特征融合注意力打分
+        - VISION / NatGVD: 反事实鲁棒性
     """
 
     def __init__(self, llm_detector: Any = None,

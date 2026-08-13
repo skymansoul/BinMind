@@ -1034,12 +1034,7 @@ def create_concolic_executorCx(f_binary_path,
         f_dynamic_engine=f_dynamic_engine,
         f_mode=mode_enum
     )
-
-    if executor.is_availableCx():
-        return executor
-
-    logger.error("[Concolic] Cannot create concolic executor, all dependencies unavailable")
-    return None
+    return executor
 
 
 def run_concolic_analysisCx(f_binary_path,

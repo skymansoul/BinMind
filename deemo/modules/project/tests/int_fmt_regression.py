@@ -186,7 +186,9 @@ def main():
         else:
             continue
 
-        detected = len(findings) > 0
+        # 有效 finding 口径: FP 抑制标记 (is_false_positive) 不计入
+        detected = any(not getattr(f, 'is_false_positive', False)
+                       for f in findings)
         is_vuln = expected == 'vulnerable'
 
         if is_vuln and detected:

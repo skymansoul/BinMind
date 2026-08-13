@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2015_0235 ¶ÑÒç³öÄ£Äâ: malloc(128) + memcpy(512)
-// ¡ú 384 ×Ö½ÚÒç³ö
+// cve_2015_0235 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(128) + memcpy(512)
+// â†’ 384 å­—èŠ‚æº¢å‡º
 void ghost_glibc_overflow() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
@@ -52,7 +52,7 @@ void ghost_glibc_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(576) + memcpy(576/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(576) + memcpy(576/2) â†’ ä¸æº¢å‡º
 void ghost_glibc_safe() {
     char *buf = (char *)malloc(576);
     if (!buf) return;

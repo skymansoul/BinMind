@@ -7,7 +7,7 @@
 
 输出: JSON数据 + Markdown报告 + ASCII对比图表 + 定性特征矩阵
 
-创建: 2026-04-20
+创建: 2025-04-17
 """
 import json
 import os
@@ -169,7 +169,7 @@ def _generate_md_report(drift: ToolMetrics, samereg: ToolMetrics,
     """生成Markdown对比报告 (含ASCII图表 + 定性特征矩阵 + finding级指标)."""
     L = []
     L.append('# Multi-Tool UAF Detection Comparison\n')
-    L.append('**Generated**: 2026-08-07\n')
+    L.append('**Generated**: 2025-04-17\n')
 
     # Summary
     L.append('## Summary Metrics (Binary Classification)\n')

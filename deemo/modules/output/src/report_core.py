@@ -78,6 +78,21 @@ class ReportGeneratorCore:
         })
         logger.info(f"记录分析步骤: {name}")
 
+    # 兼容别名 — 早期调用方使用 add_step_rp 命名
+    add_step_rp = add_step
+
+    def _get_risk_badge_class(self, severity: str) -> str:
+        """severity 字符串 → CSS 风险标签类名。"""
+        severity_lower = severity.lower() if severity else ''
+        if 'critical' in severity_lower:
+            return 'risk-critical'
+        elif 'high' in severity_lower:
+            return 'risk-high'
+        elif 'medium' in severity_lower:
+            return 'risk-medium'
+        else:
+            return 'risk-low'
+
     def format_binary_info_section(self, binary_info: Dict[str, Any]) -> str:
         """
         渲染二进制元信息 Markdown 段落。
@@ -192,7 +207,7 @@ class ReportGeneratorCore:
         output.append(f"- 描述: {vulnerability_info.get('description', 'N/A')}\n")
 
         output.append(f"### 生成状态")
-        output.append(f"- 最终状态: {' 成功' if exploit_result.get('success') else ' 失败'}")
+        output.append(f"- 最终状态: {'成功' if exploit_result.get('success') else '失败'}")
         output.append(f"- 迭代次数: {len(exploit_result.get('iterations', [])) + 1}\n")
 
         if exploit_result.get('script_path'):
@@ -206,7 +221,7 @@ class ReportGeneratorCore:
                 output.append(f"#### 迭代 {i}")
                 output.append(f"- 脚本: `{iteration.get('script_path', 'N/A')}`")
                 validation = iteration.get('validation', {})
-                output.append(f"- 验证结果: {' 成功' if validation.get('success') else ' 失败'}")
+                output.append(f"- 验证结果: {'成功' if validation.get('success') else '失败'}")
                 if iteration.get('changes_made'):
                     output.append(f"- 修改内容: {iteration['changes_made']}")
                 if iteration.get('improvements'):
@@ -269,9 +284,9 @@ class ReportGeneratorCore:
         if exploit_result:
             summary.append(f"\n### 利用脚本")
             if exploit_result.get('success'):
-                summary.append("- **状态**:  利用脚本验证成功")
+                summary.append("- **状态**: 利用脚本验证成功")
             else:
-                summary.append("- **状态**:  利用脚本需要进一步调试")
+                summary.append("- **状态**: 利用脚本需要进一步调试")
             summary.append(f"- 迭代次数: {len(exploit_result.get('iterations', [])) + 1}")
 
         return '\n'.join(summary)
@@ -476,19 +491,8 @@ class ReportGeneratorCore:
         """
         推断 CVSS 3.1 基础度量并计算评分。
 
-        Args:
-            vuln_info: 字段参考
-                - attack_vector: 'N'/'A'/'L'/'P'
-                - attack_complexity: 'L'/'H'
-                - privileges_required: 'N'/'L'/'H'
-                - user_interaction: 'N'/'R'
-                - scope: 'U'/'C'
-                - confidentiality/integrity/availability: 'N'/'L'/'H'
-                - type: 漏洞类型 (启发式推断)
-                - severity: 严重程度 (回退用)
-
-        Returns:
-            {base_score, severity, vector_string, metrics, explanation}
+        指标来源：vuln_info 显式字段优先，缺失时按漏洞类型关键词启发式推断。
+        返回 {base_score, severity, vector_string, metrics, explanation}。
         """
         logger.info("[Report] 计算 CVSS 3.1 评分")
 
@@ -705,7 +709,10 @@ class ReportGeneratorCore:
         ai_confidence: float = 0.0,
         evidence_chain_nodes: int = 0
     ) -> Dict[str, Any]:
-        """
+        """在基础评分上叠加 CVSS 3.1 时间度量。
+
+        E/RL/RC 三维度量从分析上下文自动推断。
+        Temporal = round_up(Base × E_factor × RL_factor × RC_factor)。
         在基础评分上叠加 CVSS 3.1 时间度量。
 
         三维度量从分析上下文自主推断:
@@ -768,7 +775,7 @@ class ReportGeneratorCore:
         """
         计算 CVSS 3.1 完整环境评分 — 从二进制加固状态自动推断。
 
-        环境度量来源:
+        环境度量来源：
           Modified Base Metrics ← checksec (NX/PIE/Canary/RELRO/FORTIFY)
           Security Requirements  ← 导入表敏感函数分析 + 加固评分
 
@@ -830,8 +837,7 @@ class ReportGeneratorCore:
         decomp_results: List[Dict[str, Any]],
         symbolic_result: Dict[str, Any] = None
     ) -> Tuple[str, str]:
-        """
-        构造 vis.js 调用图 (Call Graph) + 控制流图 (CFG) 的 HTML 片段。
+        """构造 vis.js 调用图 (Call Graph) + 控制流图 (CFG) 的 HTML 片段。
 
         Returns:
             (call_graph_html, cfg_html) 元组
@@ -955,7 +961,7 @@ class ReportGeneratorCore:
 
         cfg_html = f'''
         <div class="card">
-            <h2>🔀 控制流图 (Control Flow Graph)</h2>
+            <h2>🛤️ 控制流图 (Control Flow Graph)</h2>
             <div id="cfg" style="height: 350px; border: 1px solid #e2e8f0; border-radius: 8px;"></div>
             <p style="margin-top: 10px; font-size: 12px; color: #64748b;">
                 基本块执行流程示意（基于符号执行路径分析）
@@ -1116,7 +1122,7 @@ def set_function_color(func, color_int):
             if addrSet is not None and not addrSet.isEmpty():
                 colorizer.setBackgroundColor(addrSet, color, TaskMonitor.DUMMY)
                 return True
-    except Exception:  # 修复: bare except → Exception (Ghidra API)
+    except Exception:
         pass
 
     try:
@@ -1127,7 +1133,7 @@ def set_function_color(func, color_int):
             codeUnit = listing.getCodeUnitAt(addr)
             if codeUnit:
                 pass
-    except Exception:  # 修复: bare except → Exception (Ghidra API)
+    except Exception:
         pass
 
     return False
@@ -1273,3 +1279,6 @@ if __name__ == "__main__":
 
         logger.info(f"已生成 {len(generated)} 种格式的报告")
         return generated
+
+
+__all__ = ['ReportGeneratorCore', 'round_up']

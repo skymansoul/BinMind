@@ -77,7 +77,6 @@ class TestPIIScanner(unittest.TestCase):
             scanner = PIIScanner(test_path)
             result = scanner.scan()
 
-lass字段完整性$/d
             self.assertTrue(result.analysis_success)
 
             phone_detections = [d for d in result.detections
@@ -102,7 +101,6 @@ lass字段完整性$/d
 
             ip_detections = [d for d in result.detections
                             if d.type == PIIType.IP_ADDRESS]
-lass字段完整性$/d
             self.assertGreaterEqual(len(ip_detections), 1)
         finally:
             if os.path.exists(test_path):

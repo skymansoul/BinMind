@@ -1,6 +1,0 @@
-{
-  "id": "uaf_tp_01_direct",
-  "expected_vuln": true,
-  "vuln_type": "use_after_free",
-  "mode": "直接释放后立即解引用"
-}

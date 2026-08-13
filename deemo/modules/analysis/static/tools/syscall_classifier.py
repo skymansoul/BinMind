@@ -276,8 +276,8 @@ class SyscallClassifier:
         # 融合两个分类器：规则匹配 + 嵌入相似度
         rule_cat, rule_conf = self._classify_by_patterns(syscalls)
         emb_cat, emb_sim = self._classify_by_embedding(syscalls)
-        # 若嵌入分类器有高置信度匹配，优先采用（对混淆更鲁棒）
-        if emb_sim > 0.6 and emb_cat != ThreatCategory.UNKNOWN:
+        # 嵌入分类器仅在规则分类器无明确结论时兜底——避免其覆盖高置信规则匹配
+        if rule_cat == ThreatCategory.UNKNOWN and emb_sim > 0.6 and emb_cat != ThreatCategory.UNKNOWN:
             final_cat = emb_cat
             final_conf = emb_sim * 0.7 + rule_conf * 0.3  # 加权融合
         else:

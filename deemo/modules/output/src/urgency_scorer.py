@@ -20,7 +20,7 @@
   ITIL Incident Response: P1-P4 优先级框架
 
 修改记录:
-  2026-08-01 11:52 - 初始版本，四维紧迫度→时间-行动映射
+  2024-12-09 11:52 - 初始版本，四维紧迫度→时间-行动映射
 """
 
 from dataclasses import dataclass, field

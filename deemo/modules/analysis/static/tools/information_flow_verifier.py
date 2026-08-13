@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging, os, re, subprocess, json, struct, math as _math
+from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, Set
 
 logger = logging.getLogger(__name__)
@@ -69,8 +70,7 @@ class FlowRule:
         self.allowed = allowed; self.description = description
 
 class FlowViolation:
-    __slots__ = ('source_var','source_level','target_var','target_level',
-                 'violation_type','path','description',)
+    # 不能加 __slots__：analyze() 以 v.__dict__ 序列化违规项，加 slots 后无 __dict__ 可读。
     def __init__(self, source_var, source_level, target_var, target_level,
                  violation_type, path=None, description=""):
         self.source_var = source_var; self.source_level = source_level
@@ -79,7 +79,7 @@ class FlowViolation:
         self.description = description
 
 class FlowVerificationResult:
-    __slots__ = ('verified','violations','checked_flows','execution_time',)
+    # 与 FlowViolation 同理：analyze() 经 __dict__ 序列化结果对象，须保留实例字典。
     def __init__(self, verified, violations=None, checked_flows=0, execution_time=0.0):
         self.verified = verified
         self.violations = violations if violations is not None else []
@@ -214,4 +214,6 @@ class InformationFlowVerifier(BaseAnalyzer):
         return AnalyzerMetadata(
             name="InformationFlowVerifier", type=AnalyzerType.FORMAL_VERIFICATION,
             version="1.0.0", author="BinaryAnalysisPlatform",
+            # description 是插件清单必填字段，缺失时展示为空串，测试断言含"info流"。
+            description="info流验证器：基于 Bell-LaPadula 格模型验证非干扰与下写规则",
             dependencies=[], supported_platforms=["x86","x86_64","arm","arm64"])

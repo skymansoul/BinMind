@@ -1,6 +1,6 @@
 """统一回归测试入口 — 依次运行所有漏洞类型的回归套件.
 
-创建: 2026-08-10
+创建: 2024-12-09
 用途: 一键运行 HEAP + UAF + Format String + Integer Overflow 四个回归套件.
       汇总结果输出到 unified_regression_results.json.
 

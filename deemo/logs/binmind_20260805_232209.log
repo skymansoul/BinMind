@@ -1,5 +1,0 @@
-23:22:09 | INFO    | core.pipeline | Binary: CVE-2024_nullptr.elf | x86-64 64-bit | size=53978
-23:22:09 | WARNING | core.decompiler | radare2 not found at radare2
-23:22:09 | INFO    | core.pipeline | Found 0 functions
-23:22:09 | INFO    | core.pipeline | Analyzing 0 functions
-23:22:09 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

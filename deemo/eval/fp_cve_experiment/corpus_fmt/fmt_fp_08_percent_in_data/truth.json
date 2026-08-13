@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_08_percent_in_data",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "数据中的百分号被误判 (字符串拼接)"
-}

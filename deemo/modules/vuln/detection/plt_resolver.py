@@ -10,7 +10,7 @@ RVA→文件偏移使用 section header 映射表。
 若导入解析失败, 回退到直接从 .idata 段扫描可打印字符串作为候选函数名。
 
 修改记录:
-  创建 2026-06-22
+  创建 2025-05-12
 """
 import struct, re
 from typing import Dict, List, Optional

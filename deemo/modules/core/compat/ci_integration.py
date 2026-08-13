@@ -9,11 +9,14 @@ from typing import Any, Optional
 
 # CI 退出码映射
 CI_EXIT_CODE = {
-    0: 'SUCCESS',
-    1: 'ERROR',
-    2: 'WARNING',
-    3: 'CRITICAL',
+    'SUCCESS': 0,
+    'VULNERABILITY_FOUND': 1,
+    'TOOL_ERROR': 2,
+    'ERROR': 2,
 }
+
+# 严重度升序 — 用于比较与排序
+SEVERITY_ORDER = ['Unknown', 'Low', 'Medium', 'High', 'Critical']
 
 class CIFindingSeverity(Enum):
     PASS = "pass"
@@ -515,3 +518,234 @@ def _cyclonedx_severity(sev: str) -> str:
 def _cyclonedx_score(sev: str) -> float:
     return {'critical': 9.0, 'error': 7.0, 'warning': 4.0,
             'info': 1.0, 'pass': 0.0}.get(sev, 1.0)
+
+
+# ── CIIntegrator — 面向漏洞字典列表的 CI 集成入口 ──────────────────────────
+# 消费分析模块产出的漏洞 dict 列表，负责环境检测、报告格式输出、
+# 失败阈值判定与退出码计算。与 CIIntegration 的区别: 后者面向
+# CIFinding 结构化对象，本类直接接受普通 dict。
+
+class CIIntegrator:
+    """CI 集成入口 — 环境检测 / 格式设置 / 失败判定 / 报告生成。
+
+    典型用法:
+      ci = CIIntegrator()
+      ci.set_report_format('gitlab')
+      ci.set_fail_on('high')
+      code = ci.calculate_exit_code(vulns)
+      ci.output_report(vulns, binary_path)
+    """
+
+    _VALID_FORMATS = {'sarif', 'junit', 'markdown', 'json', 'gitlab'}
+    _VALID_FAIL_LEVELS = {'never', 'any', 'low', 'medium', 'high', 'critical'}
+    _SEV_ORDER = ['low', 'medium', 'high', 'critical']
+
+    def __init__(self):
+        self.report_format = None
+        self.fail_on = None
+        self.output_path = 'stdout'
+        self.ci_mode = False
+
+    def detect_ci_environment(self) -> bool:
+        """检测是否处于 CI 环境。"""
+        return any(
+            v in os.environ
+            for v in ('CI', 'JENKINS_HOME', 'GITHUB_ACTIONS',
+                      'GITLAB_CI', 'TRAVIS', 'CIRCLECI', 'APPVEYOR')
+        )
+
+    def is_ci_mode(self) -> bool:
+        """返回是否 CI 模式 — 支持 BINMIND_CI_MODE 手动强制开启。"""
+        if os.environ.get('BINMIND_CI_MODE', '').lower() == 'true':
+            self.ci_mode = True
+            return True
+        self.ci_mode = self.detect_ci_environment()
+        return self.ci_mode
+
+    def set_report_format(self, fmt: str) -> bool:
+        if fmt in self._VALID_FORMATS:
+            self.report_format = fmt
+            return True
+        self.report_format = None
+        return False
+
+    def set_fail_on(self, level: str) -> bool:
+        if level in self._VALID_FAIL_LEVELS:
+            self.fail_on = level
+            return True
+        self.fail_on = None
+        return False
+
+    def _get_highest_severity(self, vulns) -> str:
+        """取漏洞列表中的最高严重度, 空列表返回 'Unknown'。"""
+        if not vulns:
+            return 'Unknown'
+        max_idx = -1
+        for v in vulns:
+            sev = str(v.get('severity', 'Low')).lower()
+            for idx, name in enumerate(self._SEV_ORDER):
+                if name in sev:
+                    max_idx = max(max_idx, idx)
+                    break
+        if max_idx < 0:
+            return 'Unknown'
+        return self._SEV_ORDER[max_idx].capitalize()
+
+    def _should_fail(self, vulns) -> bool:
+        """按 fail_on 阈值判定是否触发构建失败。"""
+        if not vulns:
+            return False
+        if self.fail_on == 'never':
+            return False
+        if self.fail_on == 'any':
+            return True
+        highest = self._get_highest_severity(vulns).lower()
+        fail_idx = self._SEV_ORDER.index(self.fail_on) if self.fail_on in self._SEV_ORDER else -1
+        vuln_idx = self._SEV_ORDER.index(highest) if highest in self._SEV_ORDER else -1
+        return vuln_idx >= fail_idx and fail_idx >= 0
+
+    def calculate_exit_code(self, vulns, error_occurred: bool = False) -> int:
+        if error_occurred:
+            return CI_EXIT_CODE['TOOL_ERROR']
+        if self._should_fail(vulns):
+            return CI_EXIT_CODE['VULNERABILITY_FOUND']
+        return CI_EXIT_CODE['SUCCESS']
+
+    def _auto_detect_format(self) -> str:
+        env = os.environ
+        if env.get('GITHUB_ACTIONS'):
+            return 'sarif'
+        if env.get('GITLAB_CI'):
+            return 'gitlab'
+        if env.get('JENKINS_HOME'):
+            return 'junit'
+        return 'json'
+
+    def generate_gitlab_sast_report(self, vulns, binary_path: str) -> str:
+        """生成 GitLab SAST JSON 报告。"""
+        vulnerabilities = []
+        for i, v in enumerate(vulns):
+            sev = str(v.get('severity', 'unknown')).lower()
+            vulnerabilities.append({
+                'id': v.get('id', f'VULN-{i + 1}'),
+                'category': 'sast',
+                'name': v.get('type', 'vulnerability'),
+                'message': v.get('description', ''),
+                'description': v.get('description', ''),
+                'severity': sev,
+                'location': {
+                    'file': binary_path,
+                    'start_line': 0,
+                },
+                'identifiers': [{
+                    'type': 'binmind_rule',
+                    'name': v.get('type', 'vulnerability'),
+                    'value': v.get('type', 'vulnerability'),
+                }],
+            })
+        return json.dumps({
+            'version': '15.0.6',
+            'vulnerabilities': vulnerabilities,
+            'scan': {
+                'type': 'sast',
+                'status': 'success',
+                'scanner': {'id': 'binmind', 'name': 'BinMind'},
+            },
+        }, indent=2)
+
+    def generate_sarif_report(self, vulns, binary_path: str) -> str:
+        """生成 SARIF v2.1.0 JSON 报告。"""
+        sev_map = {'critical': 'error', 'high': 'error', 'medium': 'warning', 'low': 'note'}
+        results = []
+        for i, v in enumerate(vulns):
+            sev = str(v.get('severity', 'medium')).lower()
+            results.append({
+                'ruleId': v.get('type', f'RULE-{i + 1}'),
+                'level': sev_map.get(sev, 'warning'),
+                'message': {'text': v.get('description', '')},
+                'locations': [{
+                    'physicalLocation': {
+                        'artifactLocation': {'uri': binary_path},
+                        'region': {'startLine': 1},
+                    },
+                }],
+            })
+        return json.dumps({
+            '$schema': 'https://json.schemastore.org/sarif-2.1.0.json',
+            'version': '2.1.0',
+            'runs': [{
+                'tool': {'driver': {'name': 'BinMind', 'version': '2.1.0'}},
+                'results': results,
+            }],
+        }, indent=2)
+
+    def generate_junit_report(self, vulns, binary_path: str) -> str:
+        """生成 JUnit XML 报告。"""
+        cases = []
+        for i, v in enumerate(vulns):
+            name = v.get('type', f'VULN-{i + 1}')
+            sev = str(v.get('severity', 'medium')).lower()
+            if sev in ('critical', 'high'):
+                cases.append(
+                    f'    <testcase classname="{binary_path}" name="{name}">\n'
+                    f'      <failure type="{sev}" '
+                    f'message="{html.escape(str(v.get("description", "")))}"/>\n'
+                    f'    </testcase>')
+            else:
+                cases.append(f'    <testcase classname="{binary_path}" name="{name}"/>')
+        body = '\n'.join(cases)
+        return (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            f'<testsuite name="BinMind Security Scan" tests="{len(vulns)}" '
+            f'failures="{len(cases)}" time="0.0">\n{body}\n</testsuite>')
+
+    def _render_report(self, vulns, binary_path: str) -> str:
+        fmt = self.report_format or self._auto_detect_format()
+        if fmt == 'gitlab':
+            return self.generate_gitlab_sast_report(vulns, binary_path)
+        if fmt == 'sarif':
+            return self.generate_sarif_report(vulns, binary_path)
+        if fmt == 'junit':
+            return self.generate_junit_report(vulns, binary_path)
+        return json.dumps({'vulnerabilities': vulns}, indent=2)
+
+    def output_report(self, vulns, binary_path: str) -> None:
+        """将报告输出到 stdout 或指定文件。"""
+        content = self._render_report(vulns, binary_path)
+        if self.output_path == 'stdout':
+            print(content)
+        else:
+            with open(self.output_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+    def run_ci_pipeline(self, binary_path: str, vulns, report_format: str,
+                        fail_on: str, output_path: str = 'stdout') -> int:
+        """完整 CI 管线: 设格式 → 设阈值 → 输出报告 → 返回退出码。"""
+        self.set_report_format(report_format)
+        self.set_fail_on(fail_on)
+        self.output_path = output_path
+        self.output_report(vulns, binary_path)
+        return self.calculate_exit_code(vulns)
+
+    def get_ci_status_summary(self, vulns) -> dict:
+        """生成 CI 状态摘要: 数量/最高严重度/各严重度计数/状态。"""
+        counts = {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Unknown': 0}
+        for v in vulns:
+            sev = self._get_highest_severity([v])
+            counts[sev] = counts.get(sev, 0) + 1
+        highest = self._get_highest_severity(vulns)
+        status = 'FAIL' if vulns else 'PASS'
+        return {
+            'total_vulnerabilities': len(vulns),
+            'highest_severity': highest,
+            'status': status,
+            'severity_counts': counts,
+        }
+
+    def enable_det_mode(self) -> None:
+        """开启确定性模式环境标记。"""
+        os.environ['BINMIND_DETERMINISTIC_MODE'] = 'true'
+
+    def disable_interactive_output(self) -> None:
+        """关闭交互式输出环境标记。"""
+        os.environ['BINMIND_NON_INTERACTIVE'] = 'true'

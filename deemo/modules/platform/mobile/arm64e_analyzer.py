@@ -407,7 +407,7 @@ class Arm64eEnhancedAnalyzer:
     def _detect_mte_operations(s)->List[MTEGadget]:
         """检测ARM MTE标签操作指令，审计内存标签使用模式。
 
-        依据NanoTag（IEEE S&P 2026）Pixel 8上MTE实现特征：
+        依据NanoTagPixel 8上MTE实现特征：
         - IRG数量反映标签随机化覆盖范围
         - STG/LDG配对密度反映内存分配释放的标签管理
         - STZG出现标志清零并删除标签，内存复用安全关键操作
@@ -429,7 +429,7 @@ class Arm64eEnhancedAnalyzer:
     def _detect_tiktag_gadgets(s,mte_gadgets:List[MTEGadget])->List[Dict[str,Any]]:
         """扫描TikTag推测执行MTE标签泄露gadget。
 
-        TikTag（IEEE S&P 2025）展示了推测执行泄露4-bit MTE标签的攻击。
+        TikTag展示了推测执行泄露4-bit MTE标签的攻击。
         关键模式：LDG/LDGV后紧跟条件分支，标签验证结果经由分支预测器
         的推测执行通道泄露至架构状态。
         """

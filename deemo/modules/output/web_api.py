@@ -21,6 +21,13 @@ try:
 except ImportError:
     logger.warning("[WebAPI] FastAPI 或 uvicorn 未安装，Web API 服务不可用")
 
+CELERY_AVAILABLE = False
+try:
+    import celery  # noqa: F401
+    CELERY_AVAILABLE = True
+except ImportError:
+    logger.warning("[WebAPI] celery 未安装，分布式任务功能不可用")
+
 
 if FASTAPI_AVAILABLE:
     

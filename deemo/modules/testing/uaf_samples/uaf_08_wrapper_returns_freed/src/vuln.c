@@ -5,12 +5,12 @@ static char *make_temp(void) {
     char *p = (char *)malloc(64);
     if (!p) return NULL;
     strcpy(p, "temp");
-    free(p);                       /* ÊÍ·Åºó·µ»Ø */
+    free(p);                       /* é‡Šæ”¾åè¿”å› */
     return p;
 }
 int main(void) {
     char *p = make_temp();
     if (!p) return 1;
-    printf("[*] %s\n", p);         /* UAF: Ğü¿Õ·µ»Ø */
+    printf("[*] %s\n", p);         /* UAF: æ‚¬ç©ºè¿”å› */
     return 0;
 }

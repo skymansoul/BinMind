@@ -26,10 +26,8 @@ class TestWirelessProtocolAnalyzer(unittest.TestCase):
         """测试初始化"""
         self.assertIsNotNone(self.analyzer)
         self.assertEqual(self.analyzer.firmware_path, None)
-lass字段完整性$/d
         self.assertEqual(self.analyzer.protocol_functions, [])
         self.assertEqual(self.analyzer.vulnerabilities, [])
-lass字段完整性$/d
         self.assertEqual(self.analyzer.fuzz_cases, [])
 
     def test_infer_bluetooth_layer(self):
@@ -47,13 +45,11 @@ lass字段完整性$/d
         self.assertEqual(self.analyzer._infer_wifi_layer('wlan_scan'), 'management')
         self.assertEqual(self.analyzer._infer_wifi_layer('cfg80211_connect'), 'management')
         self.assertEqual(self.analyzer._infer_wifi_layer('wpa_handshake'), 'security')
-lass字段完整性$/d
         self.assertEqual(self.analyzer._infer_wifi_layer('eapol_process'), 'security')
         self.assertEqual(self.analyzer._infer_wifi_layer('hostap_start'), 'AP')
         self.assertEqual(self.analyzer._infer_wifi_layer('unknown_func'), 'unknown')
 
     def test_parse_frame_logic(self):
-                """测试解析帧处理逻辑"""
         pseudocode_with_checks = """
             if (length > MAX_LEN) return -1;
             strncpy(buffer, data, length);
@@ -125,7 +121,6 @@ lass字段完整性$/d
         result = analyzer.analyze()
 
         self.assertIsInstance(result, dict)
-lass字段完整性$/d
         self.assertIn('protocol_functions', result)
         self.assertIn('vulnerabilities', result)
         self.assertIn('fuzz_cases', result)

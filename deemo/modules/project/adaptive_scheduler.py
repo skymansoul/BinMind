@@ -95,7 +95,7 @@ class AdaptivePriorityLearner:
     算法: 特征加权求和→预测优先级. 权重通过SGD+momentum在线更新.
     loss = (predicted_rank - actual_rank)^2，actual_rank基于最终完成时间.
 
-    参考 GATES (2025): 原用Evolution Strategy，此处在线场景采用简化SGD
+    参考 GATES: 原用Evolution Strategy，此处在线场景采用简化SGD
     with momentum [Sutskever et al. 2013].
     """
 

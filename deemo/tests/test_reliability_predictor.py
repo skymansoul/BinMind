@@ -69,7 +69,6 @@ class TestEntropyEstimator(unittest.TestCase):
 
     def test_estimate_heap(self):
         factor = EntropyEstimator.estimate_heap()
-lass字段完整性$/d
         self.assertIsInstance(factor, RandomnessFactor)
         self.assertEqual(factor.name, "heap")
 

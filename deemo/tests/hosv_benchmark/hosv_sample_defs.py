@@ -150,7 +150,7 @@ void* mat(int r, int c) {
     return calloc(r, c);
 }
 int main() {
-    char* p = (char*)mat(65536, 65536);
+    char* p = (char*)mat;
     if (p) { strcpy(p, "t"); }
     free(p);
     return 0;
@@ -270,6 +270,31 @@ int main() {
     return 0;
 }
 '''),
+    ("v19_memcpy_equal", "SAFE-mceq", "memcpy_corr", "SAFE",
+     r'''/* malloc(n) + memcpy(buf, src, n) 共享系数相等 → 安全 */
+#include <stdlib.h>
+#include <string.h>
+int main(int c, char** v) {
+    size_t n = c > 1 ? strlen(v[1]) : 4;
+    char* buf = malloc(n + 1);
+    memcpy(buf, "abc", n);
+    buf[n] = 0;
+    free(buf);
+    return 0;
+}
+'''),
+    ("v20_memcpy_double", "GENERIC-mcd", "memcpy_corr", "VULN",
+     r'''/* malloc(n) + memcpy(buf, src, n*2) 写入系数大于分配 → 溢出 */
+#include <stdlib.h>
+#include <string.h>
+int main(int c, char** v) {
+    size_t n = c > 1 ? strlen(v[1]) : 4;
+    char* buf = malloc(n);
+    memcpy(buf, "abcdefgh", n * 2);
+    free(buf);
+    return 0;
+}
+'''),
 ]
 
 
@@ -304,6 +329,8 @@ TRUTHS = {
     "v16_nullterm_fgets": "fgets 读满 buf[15]=0 时 l-1=15 写越界 (边界情形)",
     "v17_memcpy_oob": "外部 n 可达 32, 分配仅 8 → memcpy 越界",
     "v18_guard_miss": "守卫 n<=100 仅钳制上限, 分配仅 50 个元素; n 取 51..100 时循环写越界",
+    "v19_memcpy_equal": "malloc(n+1) + memcpy(n) 共享系数相等 → 安全",
+    "v20_memcpy_double": "malloc(n) + memcpy(n*2) 写入系数大于分配 → 溢出",
 }
 
 LABEL_TO_VERDICT = {"VULN": "VULN", "SAFE": "SAFE"}

@@ -58,6 +58,7 @@ import random
 import math
 import struct
 import json
+from enum import Enum
 from typing import Dict, Any, List, Optional, Set, Tuple, Callable
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -70,7 +71,7 @@ _LEGACY_MODE = False  # 保留
 
 
 
-class DiversityStrategy:
+class DiversityStrategy(Enum):
     """Selection strategies for picking next diverse path"""
     RANDOM = "random"
     ROUND_ROBIN = "round_robin"
@@ -80,7 +81,7 @@ class DiversityStrategy:
     WEIGHTED_SAMPLE = "weighted_sample"
 
 
-class PathFeatureType:
+class PathFeatureType(Enum):
     """Dimensions along path similarity measured"""
     STRUCTURAL = "structural"
     SEMANTIC = "semantic"
@@ -1193,8 +1194,9 @@ class PathSimilarityCalculator:
         """Weighted average similarity, SimHash fast-reject"""
         if not f1.features or not f2.features:
             return 0.0
-        # SimHash 快速排斥
-        if f1.simhash_sig and f2.simhash_sig:
+        # SimHash 快速排除
+        if f1.simhash_sig is not None and f2.simhash_sig is not None \
+                and (f1.simhash_sig or f2.simhash_sig):
             if _hamming_distance(f1.simhash_sig, f2.simhash_sig) > 3:
                 return 0.0
 
@@ -1230,6 +1232,18 @@ class PathSimilarityCalculator:
                 total_sim += self._numeric_similarity(v1, v2)
             elif isinstance(v1, set) and isinstance(v2, set):
                 total_sim += len(v1 & v2) / max(1, len(v1 | v2))
+            elif isinstance(v1, (list, tuple)) and isinstance(v2, (list, tuple)):
+                if v1 == v2:
+                    total_sim += 1.0
+                elif not v1 or not v2:
+                    total_sim += 0.0
+                else:
+                    s1, s2 = set(v1), set(v2)
+                    total_sim += len(s1 & s2) / max(1, len(s1 | s2))
+            elif v1 == v2:
+                total_sim += 1.0
+            else:
+                total_sim += 0.0
 
         return total_sim / len(common_keys)
 

@@ -229,7 +229,7 @@ class PoCGenerator:
 
     用法:
         gen = PoCGenerator()
-        report = gen.generate(original_asm, patched_asm, 'CVE-2024-0001')
+        report = gen.generate
         for t in report.triggers:
             print(f'PoC: {t.poc_description} → {t.poc_input[:32].hex()}')
     """

@@ -246,7 +246,7 @@ class TestFullIntegration:
             sched.add_seed(s)
             sched.update_relation_graph(s, s.coverage)
             # 模拟 trace: 每个种子有略微不同的执行路径
-            trace = list(range(s.id[1] + 1)) * 3
+            trace = list(range(int(s.id[1]) + 1)) * 3
             sched.insert_execution_trace(s.id, trace)
             sched.submit_to_pareto(
                 s,

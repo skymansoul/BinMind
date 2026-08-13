@@ -60,11 +60,15 @@ class AnomalyResult:
     """Result of anomaly detection on a trace."""
     trace_id: str
     is_anomalous: bool
-    anomaly_score: float
+    anomaly_score: float = 0.0
     anomaly_positions: List[int] = field(default_factory=list)
     explanation: str = ""
     confidence: float = 0.0
     positional_details: List[PositionalAnomaly] = field(default_factory=list)  # 逐位置异常明细
+    perplexity: float = 0.0
+    threshold: float = 0.0
+    anomaly_type: Optional[str] = None
+    suspicious_regions: List[Tuple[int, int]] = field(default_factory=list)
 
 
 @dataclass
@@ -82,7 +86,12 @@ class ModelConfig:
 
 
 class BasicBlockTokenizer:
-    """Tokenizes basic blocks and instructions for trajectory modeling."""
+    """Tokenizes basic blocks and instructions for trajectory modeling.
+
+    同时维护两套词汇表：指令助记符词表（instruction path）与
+    基本块地址词表（block path）。fit 时按输入内容并行构建，
+    encode/decode 依轨迹是否含 basic_blocks 自动选择路径。
+    """
 
     PAD_TOKEN = "<PAD>"
     UNK_TOKEN = "<UNK>"
@@ -94,7 +103,18 @@ class BasicBlockTokenizer:
         self.token_to_id: Dict[str, int] = {}
         self.id_to_token: Dict[int, str] = {}
         self._freqs: Counter[str] = Counter()  # 指令频率统计，用于稀有度判断
+        self.special_tokens: Dict[str, int] = {
+            '<sos>': 0, '<eos>': 1, '<pad>': 2, '<unk>': 3,
+        }
+        self.block_to_id: Dict[int, int] = {}
+        self.id_to_block: Dict[int, int] = {}
+        self.next_id = 4
         self._build_special_tokens()
+
+    @property
+    def vocab(self) -> Dict[int, int]:
+        """基本块地址到 token id 的映射，兼容旧版 vocab 属性访问。"""
+        return self.block_to_id
 
     def _build_special_tokens(self) -> None:
         """Initialize vocabulary with special tokens."""
@@ -122,6 +142,11 @@ class BasicBlockTokenizer:
                 parts = inst.strip().split()
                 if parts:
                     token_counter[parts[0].lower()] += 1
+            for block in getattr(trace, 'basic_blocks', []) or []:
+                if block not in self.block_to_id:
+                    self.block_to_id[block] = self.next_id
+                    self.id_to_block[self.next_id] = block
+                    self.next_id += 1
 
         self._freqs = token_counter  # 保存原始频率
 
@@ -153,6 +178,13 @@ class BasicBlockTokenizer:
         Returns:
             List of token IDs.
         """
+        if getattr(trace, 'basic_blocks', None):
+            tokens = [self.special_tokens['<sos>']]
+            for block in trace.basic_blocks:
+                tokens.append(self.block_to_id.get(block, self.special_tokens['<unk>']))
+            tokens.append(self.special_tokens['<eos>'])
+            return tokens
+
         ids = [self.token_to_id.get(self.BOS_TOKEN, 0)]
 
         for inst in trace.instructions:
@@ -164,36 +196,61 @@ class BasicBlockTokenizer:
         ids.append(self.token_to_id.get(self.EOS_TOKEN, 2))
         return ids
 
-    def decode(self, ids: List[int]) -> List[str]:
+    def decode(self, ids: List[int]) -> List[Any]:
         """Decode token IDs back to tokens.
 
-        Args:
-            ids: List of token IDs.
-
-        Returns:
-            List of token strings.
+        若 token 序列含基本块 id，则还原为基本块地址列表；
+        否则按指令词表还原为 token 字符串。
         """
+        if ids and any(tid in self.id_to_block for tid in ids):
+            blocks = []
+            for token in ids:
+                if token in self.special_tokens.values():
+                    continue
+                blocks.append(self.id_to_block.get(token, -1))
+            return blocks
+
         return [self.id_to_token.get(i, self.UNK_TOKEN) for i in ids]
 
-    def save(self, filepath: str) -> None:
-        """Save tokenizer to file."""
-        data = {
-            'vocab_size': self.vocab_size,
-            'token_to_id': self.token_to_id,
-            'id_to_token': {str(k): v for k, v in self.id_to_token.items()},
-            'freqs': dict(self._freqs),
-        }
-        with open(filepath, 'w') as f:
-            json.dump(data, f)
+    def save(self, filepath: str) -> bool:
+        """Save tokenizer to file，返回是否成功。"""
+        try:
+            data = {
+                'vocab_size': self.vocab_size,
+                'token_to_id': self.token_to_id,
+                'id_to_token': {str(k): v for k, v in self.id_to_token.items()},
+                'freqs': dict(self._freqs),
+                'special_tokens': self.special_tokens,
+                'block_to_id': {str(k): v for k, v in self.block_to_id.items()},
+                'id_to_block': {str(k): v for k, v in self.id_to_block.items()},
+                'next_id': self.next_id,
+            }
+            with open(filepath, 'w') as f:
+                json.dump(data, f)
+            return True
+        except Exception as e:
+            _log.error(f"保存 tokenizer 失败: {e}")
+            return False
 
-    def load(self, filepath: str) -> None:
-        """Load tokenizer from file."""
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-        self.vocab_size = data['vocab_size']
-        self.token_to_id = data['token_to_id']
-        self.id_to_token = {int(k): v for k, v in data['id_to_token'].items()}
-        self._freqs = Counter(data.get('freqs', {}))
+    def load(self, filepath: str) -> bool:
+        """Load tokenizer from file，返回是否成功。"""
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            self.vocab_size = data['vocab_size']
+            self.token_to_id = data['token_to_id']
+            self.id_to_token = {int(k): v for k, v in data['id_to_token'].items()}
+            self._freqs = Counter(data.get('freqs', {}))
+            self.special_tokens = data.get('special_tokens', {
+                '<sos>': 0, '<eos>': 1, '<pad>': 2, '<unk>': 3,
+            })
+            self.block_to_id = {int(k): v for k, v in data.get('block_to_id', {}).items()}
+            self.id_to_block = {int(k): v for k, v in data.get('id_to_block', {}).items()}
+            self.next_id = data.get('next_id', 4)
+            return True
+        except Exception as e:
+            _log.error(f"加载 tokenizer 失败: {e}")
+            return False
 
 
 class GPTStyleModel:
@@ -666,10 +723,19 @@ class TrajectoryAnomalyDetector:
     ) -> None:
         self.config = config or ModelConfig()
         self.tokenizer = BasicBlockTokenizer(vocab_size=self.config.vocab_size)
-        self.model = GPTStyleModel(self.config)
+        self.model = None
+        self.device = None
         self.dataset = TraceDataset()
         self._trained = False
         self._threshold: float = 0.0
+        self.threshold = 100.0
+
+    def _get_device(self):
+        """按需取计算设备，避免在无 torch 环境下初始化失败。"""
+        if self.device is None:
+            import torch
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return self.device
 
     def train(
         self,
@@ -693,6 +759,8 @@ class TrajectoryAnomalyDetector:
             _log.warning("No valid sequences for training")
             return
 
+        if self.model is None:
+            self.model = GPTStyleModel(self.config)
         self.model.fit(non_empty, self.tokenizer)
 
         # Compute baseline
@@ -819,7 +887,8 @@ class TrajectoryAnomalyDetector:
         self.dataset.save(os.path.join(directory, 'dataset.json'))
 
         # 一并保存模型权重
-        self.model.save_model(directory)
+        if self.model is not None:
+            self.model.save_model(directory)
 
     def load(self, directory: str) -> None:
         """Load detector state from directory.
@@ -836,12 +905,218 @@ class TrajectoryAnomalyDetector:
         self.dataset.load(os.path.join(directory, 'dataset.json'))
 
         # 尝试加载模型权重
+        if self.model is None:
+            self.model = GPTStyleModel(self.config)
         if not self.model.load_model(directory):
             _log.warning("No saved model weights found — detector needs retraining")
 
         self._trained = True
 
         _log.info(f"Loaded detector from {directory}")
+
+    def detect_anomaly(self, trace: ExecutionTrace) -> AnomalyResult:
+        """检测轨迹中的异常，返回兼容旧版字段的 AnomalyResult。"""
+        if not self.model:
+            _log.error("模型未训练")
+            return AnomalyResult(
+                trace_id=trace.trace_id,
+                is_anomalous=False,
+                perplexity=0.0,
+                threshold=self.threshold,
+                anomaly_type=None,
+                suspicious_regions=[],
+                explanation="模型未训练",
+            )
+
+        try:
+            tokens = self.tokenizer.encode(trace)
+
+            if len(tokens) <= 2:
+                return AnomalyResult(
+                    trace_id=trace.trace_id,
+                    is_anomalous=False,
+                    perplexity=0.0,
+                    threshold=self.threshold,
+                    anomaly_type="normal",
+                    suspicious_regions=[],
+                    explanation="轨迹过短",
+                )
+
+            import torch
+            tokens_tensor = torch.tensor(tokens, dtype=torch.long).to(self._get_device())
+            perplexity = self.model.compute_perplexity(tokens_tensor)
+
+            is_anomalous = perplexity > self.threshold
+            anomaly_type = self._classify_anomaly_type(trace, tokens)
+            suspicious_regions = self._find_suspicious_regions(tokens)
+
+            return AnomalyResult(
+                trace_id=trace.trace_id,
+                is_anomalous=is_anomalous,
+                perplexity=perplexity,
+                threshold=self.threshold,
+                anomaly_type=anomaly_type,
+                suspicious_regions=suspicious_regions,
+                explanation=f"困惑度: {perplexity:.2f}, 阈值: {self.threshold:.2f}",
+            )
+        except Exception as e:
+            _log.error(f"检测异常失败: {e}")
+            return AnomalyResult(
+                trace_id=trace.trace_id,
+                is_anomalous=False,
+                perplexity=0.0,
+                threshold=self.threshold,
+                anomaly_type=None,
+                suspicious_regions=[],
+                explanation=str(e),
+            )
+
+    def _classify_anomaly_type(self, trace: ExecutionTrace, tokens: List[int]) -> str:
+        """分类异常类型。"""
+        blocks = trace.basic_blocks
+
+        if len(blocks) > 10:
+            if self._detect_stack_pivot(blocks):
+                return "stack_pivot"
+            if self._detect_rop_chain(blocks):
+                return "ROP"
+            if self._detect_jop_chain(blocks):
+                return "JOP"
+
+        if not self.model:
+            return "normal"
+
+        try:
+            import torch
+            perplexity = self.model.compute_perplexity(
+                torch.tensor(tokens, dtype=torch.long).to(self._get_device())
+            )
+            return "normal" if perplexity <= self.threshold else "unknown_anomaly"
+        except Exception:
+            return "normal"
+
+    def _detect_stack_pivot(self, blocks: List[int]) -> bool:
+        """检测栈 pivot 特征。"""
+        if len(blocks) < 3:
+            return False
+
+        for i in range(len(blocks) - 2):
+            diff1 = abs(blocks[i + 1] - blocks[i])
+            diff2 = abs(blocks[i + 2] - blocks[i + 1])
+            if diff1 < 100 and diff2 < 100 and diff1 != diff2:
+                return True
+
+        return False
+
+    def _detect_rop_chain(self, blocks: List[int]) -> bool:
+        """检测 ROP 链特征：单调递增且地址跨度大，或地址差方差极高。"""
+        if len(blocks) < 5:
+            return False
+
+        diffs = [blocks[i + 1] - blocks[i] for i in range(len(blocks) - 1)]
+
+        if all(d > 0 for d in diffs) and blocks[-1] - blocks[0] > 0x1000:
+            return True
+
+        if len(diffs) < 2:
+            return False
+        variance = np.var([abs(d) for d in diffs])
+        return variance > 1e8
+
+    def _detect_jop_chain(self, blocks: List[int]) -> bool:
+        """检测 JOP 链特征：地址高度重复。"""
+        if len(blocks) < 3:
+            return False
+
+        unique_blocks = set(blocks)
+        return len(unique_blocks) / len(blocks) < 0.5
+
+    def _find_suspicious_regions(self, tokens: List[int]) -> List[Tuple[int, int]]:
+        """定位可疑区域；模型未训练时返回空列表。"""
+        if not self.model:
+            return []
+
+        try:
+            import torch
+            import torch.nn.functional as F
+
+            self.model.eval()
+
+            with torch.no_grad():
+                tokens_tensor = torch.tensor(tokens, dtype=torch.long).unsqueeze(0).to(self._get_device())
+                logits = self.model(tokens_tensor)
+                probs = F.softmax(logits, dim=-1)
+
+                suspicious_regions = []
+                in_suspicious = False
+                start_idx = 0
+
+                for i in range(1, len(tokens)):
+                    true_token = tokens[i]
+                    prob = probs[0, i - 1, true_token].item()
+
+                    if prob < 0.1:
+                        if not in_suspicious:
+                            in_suspicious = True
+                            start_idx = i
+                    else:
+                        if in_suspicious:
+                            in_suspicious = False
+                            suspicious_regions.append((start_idx, i))
+
+                if in_suspicious:
+                    suspicious_regions.append((start_idx, len(tokens)))
+
+            return suspicious_regions
+        except Exception as e:
+            _log.warning(f"定位可疑区域失败: {e}")
+            return []
+
+    def save_model(self, path: str) -> bool:
+        """保存模型和 tokenizer 到目录。"""
+        try:
+            os.makedirs(path, exist_ok=True)
+
+            if self.model is not None:
+                import torch
+                torch.save(self.model.state_dict(), os.path.join(path, "model.pt"))
+
+            self.tokenizer.save(os.path.join(path, "tokenizer.pkl"))
+
+            config_data = {
+                'threshold': self.threshold,
+                'config': self.config.__dict__
+            }
+            with open(os.path.join(path, "config.pkl"), 'wb') as f:
+                pickle.dump(config_data, f)
+
+            _log.info(f"模型已保存到: {path}")
+            return True
+        except Exception as e:
+            _log.error(f"保存模型失败: {e}")
+            return False
+
+    def load_model(self, path: str) -> bool:
+        """加载模型和 tokenizer 从目录。"""
+        try:
+            with open(os.path.join(path, "config.pkl"), 'rb') as f:
+                config_data = pickle.load(f)
+
+            self.threshold = config_data['threshold']
+            self.config.__dict__.update(config_data['config'])
+
+            self.tokenizer.load(os.path.join(path, "tokenizer.pkl"))
+
+            import torch
+            self.model = GPTStyleModel(self.config).to(self._get_device())
+            self.model.load_state_dict(torch.load(os.path.join(path, "model.pt"), map_location=self._get_device()))
+            self.model.eval()
+
+            _log.info(f"模型已从 {path} 加载")
+            return True
+        except Exception as e:
+            _log.error(f"加载模型失败: {e}")
+            return False
 
 
 class TrajectoryAnomalyAnalyzer:
@@ -850,6 +1125,82 @@ class TrajectoryAnomalyAnalyzer:
     def __init__(self) -> None:
         self.detector = TrajectoryAnomalyDetector()
         self.results_history: List[AnomalyResult] = []
+
+    def validate_input(self, mode: str = "detect", **kwargs) -> Tuple[bool, Optional[str]]:
+        """校验分析输入参数，返回 (是否有效, 错误信息)。"""
+        if mode == "train":
+            if not kwargs.get("traces"):
+                return False, "训练需要 traces 参数"
+            return True, None
+
+        test_trace = kwargs.get("test_trace")
+        test_traces = kwargs.get("test_traces")
+        if test_trace is None and not test_traces:
+            return False, "需要 test_trace 或 test_traces"
+        return True, None
+
+    def analyze(self, **kwargs) -> Dict[str, Any]:
+        """执行分析任务，支持 train/detect 两种模式。"""
+        traces = kwargs.get("traces", [])
+        test_trace = kwargs.get("test_trace")
+        test_traces = kwargs.get("test_traces", [])
+        model_path = kwargs.get("model_path")
+        mode = kwargs.get("mode", "detect")
+
+        try:
+            is_valid, error = self.validate_input(mode=mode, **kwargs)
+            if not is_valid:
+                return {"success": False, "error": error}
+
+            results: Dict[str, Any] = {"success": True, "detections": [], "training_result": None}
+
+            if mode == "train":
+                self.detector = TrajectoryAnomalyDetector()
+                self.detector.train(traces)
+
+                if model_path:
+                    self.detector.save_model(model_path)
+
+                results["training_result"] = "训练完成"
+            else:
+                if self.detector is None:
+                    self.detector = TrajectoryAnomalyDetector()
+                if model_path:
+                    self.detector.load_model(model_path)
+
+                if test_trace is not None:
+                    result = self.detector.detect_anomaly(test_trace)
+                    results["detections"].append({
+                        "trace_id": result.trace_id,
+                        "is_anomalous": result.is_anomalous,
+                        "perplexity": result.perplexity,
+                        "threshold": result.threshold,
+                        "anomaly_type": result.anomaly_type,
+                        "suspicious_regions": result.suspicious_regions,
+                        "explanation": result.explanation
+                    })
+
+                for trace in test_traces:
+                    result = self.detector.detect_anomaly(trace)
+                    results["detections"].append({
+                        "trace_id": result.trace_id,
+                        "is_anomalous": result.is_anomalous,
+                        "perplexity": result.perplexity,
+                        "threshold": result.threshold,
+                        "anomaly_type": result.anomaly_type,
+                        "suspicious_regions": result.suspicious_regions,
+                        "explanation": result.explanation
+                    })
+
+            return results
+
+        except Exception as e:
+            _log.error(f"分析失败: {e}")
+            return {"success": False, "error": str(e)}
+
+    def cleanup(self) -> None:
+        """释放检测器资源。"""
+        self.detector = None
 
     def train_from_file(self, traces_file: str) -> None:
         """Train from a JSON traces file.

@@ -250,7 +250,7 @@ class DiffTaintAnalyzer:
 
     用法:
         analyzer = DiffTaintAnalyzer()
-        report = analyzer.analyze(original_asm, patched_asm, 'CVE-2024-0001')
+        report = analyzer.analyze
         if report.patch_improves_safety:
             print('补丁改善了输入净化')
     """

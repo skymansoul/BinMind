@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_08_sprintf_overflow",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2018-14634 类 (sprintf 堆溢出)",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "sprintf 不限制输出长度, 格式化结果超过 16 字节缓冲"
-}

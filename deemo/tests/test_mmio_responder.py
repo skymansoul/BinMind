@@ -104,7 +104,6 @@ class TestStubResult(unittest.TestCase):
         periph = PeripheralSpec(name="TEST", base_address=0x40000000, registers=regs)
         result = StubResult(success=True, code="#include <stdint.h>", peripheral=periph)
         self.assertTrue(result.success)
-lass字段完整性$/d
         self.assertIn("stdint.h", result.code)
         self.assertEqual(result.peripheral.name, "TEST")
 
@@ -189,7 +188,7 @@ class TestLegacyRegisterAccessType(unittest.TestCase):
     """旧版RegisterAccessType测试（已重命名为RegisterType）"""
 
     def test_register_access_type_values(self):
-# pytest.skip("RegisterAccessType removed — replaced by RegisterType with different values (ro/wo/rw/reserved)")
+        pytest.skip("RegisterAccessType removed — replaced by RegisterType with different values (ro/wo/rw/reserved)")
 
 
 class TestLegacyRegisterFieldType(unittest.TestCase):
@@ -203,38 +202,38 @@ class TestLegacyAccessResult(unittest.TestCase):
     """旧版AccessResult测试（已移除）"""
 
     def test_access_result_values(self):
-# pytest.skip("AccessResult enum removed — StubResult.success used instead")
+        pytest.skip("AccessResult enum removed — StubResult.success used instead")
 
 
 class TestLegacyRegisterField(unittest.TestCase):
     """旧版RegisterField测试（已移除）"""
 
     def test_register_field_creation(self):
-# pytest.skip("RegisterField removed — fields are now part of RegisterSpec")
+        pytest.skip("RegisterField removed — fields are now part of RegisterSpec")
 
 
 class TestLegacyRegister(unittest.TestCase):
     """旧版Register测试（已重命名为RegisterSpec）"""
 
     def test_register_creation(self):
-# pytest.skip("Register removed — use RegisterSpec with offset/size/reg_type fields")
+        pytest.skip("Register removed — use RegisterSpec with offset/size/reg_type fields")
 
 
 class TestLegacyPeripheral(unittest.TestCase):
     """旧版Peripheral测试（已重命名为PeripheralSpec）"""
 
     def test_peripheral_creation(self):
-# pytest.skip("Peripheral removed — use PeripheralSpec with base_address/registers fields")
+        pytest.skip("Peripheral removed — use PeripheralSpec with base_address/registers fields")
 
 
 class TestLegacyMMIOResponder(unittest.TestCase):
     """旧版MMIOResponder方法测试（已移除的API）"""
 
     def test_add_peripheral(self):
-# pytest.skip("add_peripheral removed — use define_peripheral(PeripheralSpec)")
+        pytest.skip("add_peripheral removed — use define_peripheral(PeripheralSpec)")
 
     def test_read_register(self):
-# pytest.skip("read removed — MMIOResponder now generates stubs, not runtime simulation")
+        pytest.skip("read removed — MMIOResponder now generates stubs, not runtime simulation")
 
     def test_read_write_only_register(self):
         pytest.skip("read removed")
@@ -253,10 +252,10 @@ class TestLegacyMMIOResponder(unittest.TestCase):
 
     def test_load_from_template(self):
         # 改进标记——当前设计可简化
-# pytest.skip("load_from_template removed — use define_peripheral with manually constructed PeripheralSpec")
+        pytest.skip("load_from_template removed — use define_peripheral with manually constructed PeripheralSpec")
 
     def test_generate_python_stub(self):
-# pytest.skip("generate_stub_code removed — StubGenerator.generate produces C code only")
+        pytest.skip("generate_stub_code removed — StubGenerator.generate produces C code only")
 
     def test_reset(self):
         pytest.skip("reset/access_log removed")

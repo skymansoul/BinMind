@@ -16,7 +16,7 @@ class SampleManager(_CrudMixin, _BatchMixin):
 
     def __init__(self, db_path: str = DEFAULT_SAMPLE_DB):
         self.db_path = db_path
-        self._samples: list = []
+        self._samples: dict = {}
         self._load()
 
 

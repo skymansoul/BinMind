@@ -193,7 +193,7 @@ def detect_embedded_archives(data: bytes) -> List[StegoFinding]:
 
 
 # 高熵区扫描
-def scan_high_entropy_regions(data: bytes, window: int = 256) -> List[StegoFinding]:
+def scan_high_entropy_regions(data: bytes, window: int = 1024) -> List[StegoFinding]:
     _out = []
     _dl = len(data)
     if _dl < window:
@@ -203,7 +203,7 @@ def scan_high_entropy_regions(data: bytes, window: int = 256) -> List[StegoFindi
     for _pos in range(0, _dl - window, window // 4):
         _chunk = data[_pos:_pos + window]
         _ent = shannon_entropy(_chunk)
-        if _ent > 0.92:
+        if _ent > 0.80:
             _regions.append((_pos, _ent))
 
     if not _regions:

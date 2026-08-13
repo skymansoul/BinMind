@@ -31,6 +31,9 @@ class AnomalyLevel(str, Enum):
     CRITICAL = 'critical'
 
 
+AnomalyScoreLevel = AnomalyLevel
+
+
 def _score_to_level(score):
     if score < 0.2:
         return AnomalyLevel.NORMAL
@@ -43,9 +46,12 @@ def _score_to_level(score):
 
 class FeatureType(str, Enum):
     SYSCALL = 'system_call_sequence'
+    SYSTEM_CALL_SEQUENCE = 'system_call_sequence'
     CFG = 'control_flow_graph'
+    CONTROL_FLOW_GRAPH = 'control_flow_graph'
     INSN = 'instruction_patterns'
     STRINGS = 'string_analysis'
+    STRING_ANALYSIS = 'string_analysis'
     IMPORTS = 'import_table'
     EXPORTS = 'export_table'
     SECTIONS = 'section_analysis'
@@ -76,12 +82,12 @@ def _manual_std(values, ddof=1):
 
 @dataclass
 class FunctionFeatures:
-    fname: str
-    faddr: int
-    feats: dict = field(default_factory=dict)
-    ascore: float = 0.0
-    alevel: AnomalyLevel = AnomalyLevel.NORMAL
-    reasons: list = field(default_factory=list)
+    function_name: str
+    function_address: int
+    features: dict = field(default_factory=dict)
+    anomaly_score: float = 0.0
+    score_level: AnomalyLevel = AnomalyLevel.NORMAL
+    suspicious_reasons: list = field(default_factory=list)
 
 
 @dataclass
@@ -387,9 +393,10 @@ class AnomalyZerodayAnalyzer:
             report = AnomalyReport(
                 bpath=bpath or 'memory', bhash=bhash, total_funcs=1,
                 anom_funcs=[FunctionFeatures(
-                    fname='main', faddr=0, feats=all_feats,
-                    ascore=avg_score, alevel=level,
-                    reasons=[r['reasons'] for r in det_results if r['reasons']],
+                    function_name='main', function_address=0,
+                    features=all_feats, anomaly_score=avg_score,
+                    score_level=level,
+                    suspicious_reasons=[r['reasons'] for r in det_results if r['reasons']],
                 )],
                 overall_score=avg_score, level=level, ts='')
 
@@ -404,7 +411,7 @@ class AnomalyZerodayAnalyzer:
                     'report': {
                         'total_functions': report.total_funcs,
                         'anomalous_functions': len([f for f in report.anom_funcs
-                                                    if f.alevel != AnomalyLevel.NORMAL]),
+                                                    if f.score_level != AnomalyLevel.NORMAL]),
                         'summary': self._gen_summary(report),
                     },
                 },
@@ -421,6 +428,12 @@ class AnomalyZerodayAnalyzer:
             for k, v in feats.items():
                 all_f[f'{prefix}_{k}'] = v
         return all_f
+
+    def _get_score_level(self, score):
+        return _score_to_level(score)
+
+    def _calculate_hash(self, data):
+        return hashlib.sha256(data).hexdigest()
 
     def _gen_summary(self, report):
         level = report.level
@@ -474,7 +487,7 @@ class AnomalyZerodayAnalyzer:
             return AnalyzerMetadata(
                 name='AnomalyZerodayAnalyzer',
                 type=AnalyzerType.VULNERABILITY_DETECTOR,
-                version='2.0',
+                version='1.0.0',
                 description='Anomaly-detection-driven zero-day discovery using hand-written statistics',
                 author='ht', dependencies=[],
                 supported_platforms=['x86', 'x86_64', 'arm', 'arm64'],
@@ -498,6 +511,6 @@ class AnomalyZerodayAnalyzer:
             'zscore': ZScoreAnomalyDetector(),
             'isolation_forest': IsolationForestAnomalyDetector(),
         }
+        self.trained = False
 
 
-AnomalyScoreLevel = None

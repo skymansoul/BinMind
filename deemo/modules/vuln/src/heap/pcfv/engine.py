@@ -1,6 +1,6 @@
 """PCFV 判定引擎 — 综合守卫/值流/证明规则输出每个访问的最终判定.
 
-创建: 2026-06-08
+创建: 2023-08-05
 设计决策:
   - 判定顺序: 先安全证明(有充分证据才过滤), 再溢出证明(有充分证据才确认),
     两者都无 → LIKELY/UNPROVEN (保守保留, 保召回).
@@ -21,16 +21,21 @@ from .alloc import AllocSizeResolver
 class PCFVEngine:
     """一次扫描的判定引擎."""
 
-    def __init__(self):
-        self.safety = SafetyProver()
-        self.overflow = OverflowProver()
+    def __init__(self, rule_enabled: dict = None):
+        self.safety = SafetyProver(rule_enabled)
+        self.overflow = OverflowProver(rule_enabled)
         self.alloc_resolver = AllocSizeResolver()
         self._stats = {'total': 0, 'safe': 0, 'confirmed': 0,
                        'likely': 0, 'unproven': 0}
 
     def evaluate_access(self, access: dict, mallocs: List[dict],
-                        insns: list) -> FindingVerdict:
-        """对单个访问做完整判定."""
+                        insns: list,
+                        guard_extractor=None,
+                        insn_index: dict = None) -> FindingVerdict:
+        """对单个访问做完整判定.
+
+        guard_extractor/insn_index: 函数级复用对象 — 每访问点重建
+        CFG 是大函数超线性耗时的主源 (scal_4000 245s)."""
         self._stats['total'] += 1
         fv = FindingVerdict(
             sample_id=access.get('sample_id', ''),
@@ -68,11 +73,13 @@ class PCFVEngine:
                 summary='store-size')
 
 # 守卫收集: 与偏移/大小寄存器相关的支配守卫
-        related = self._related_regs(access, insns)
+        related = self._related_regs(access, insns, insn_index)
         guards = []
         if related:
-            ge = GuardExtractor(insns)
-            guards = ge.collect_for_access(access.get('addr', 0), related)
+            if guard_extractor is None:
+                guard_extractor = GuardExtractor(insns)
+            guards = guard_extractor.collect_for_access(
+                access.get('addr', 0), related)
         if guards:
             fv.evidences.append(Evidence(
                 rule=ProofRule.GUARD_DOMINANCE,
@@ -133,7 +140,8 @@ class PCFVEngine:
         return fv
 
     @staticmethod
-    def _related_regs(access: dict, insns: list) -> Tuple[str, ...]:
+    def _related_regs(access: dict, insns: list,
+                      insn_index: dict = None) -> Tuple[str, ...]:
         """收集与访问偏移相关的寄存器/槽 (供守卫匹配)."""
         import re
         regs = set()
@@ -146,9 +154,13 @@ class PCFVEngine:
             for m in re.finditer(
                     r'\b(r[0-9a-d]+[bwd]?|[er]?[abcd]x)\b', off.summary):
                 regs.add(m.group(1).lower())
-        # 从访问指令文本中直接找索引寄存器
-        target = next((i for i in insns if i.addr == access.get('addr', 0)),
-                      None)
+        # 从访问指令文本中直接找索引寄存器 (索引表避免线性扫描)
+        target = None
+        if insn_index is not None:
+            target = insn_index.get(access.get('addr', 0))
+        if target is None:
+            target = next((i for i in insns if i.addr == access.get('addr', 0)),
+                          None)
         if target is not None:
             for m in re.finditer(
                     r'\b(r[0-9a-d]+[bwd]?|[er]?[abcd]x)\b',

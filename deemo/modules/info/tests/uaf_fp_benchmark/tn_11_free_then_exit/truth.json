@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_11_free_then_exit",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 释放后立即退出",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "exit 前释放, 无后续访问"
-}

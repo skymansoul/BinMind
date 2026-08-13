@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -36,34 +37,84 @@ class ExplanationLevel(Enum):
     DECOMPILER_AWARE = "decompiler_aware"
     # 恶意代码分析专用 — 关注C2、进程注入、反调试等行为
     MALWARE_TRIAGE = "malware_triage"
+    # 兼容别名 — 简化的四级粒度
+    BASIC = "basic"
+    TECHNICAL = "technical"
+    SECURITY = "security"
+    FULL = "full"
 
 
 @dataclass
 class CodeExplanation:
     """A structured explanation of a code snippet."""
-    summary: str
-    purpose: str
-    logic_flow: str
+    original_code: str = ""
+    natural_language_explanation: str = ""
+    line_annotations: Dict[str, str] = field(default_factory=dict)
+    security_notes: List[str] = field(default_factory=list)
+    complexity: str = "medium"
+    confidence: float = 0.0
+    # 兼容字段 — 由启发式分析填充
+    summary: str = ""
+    purpose: str = ""
+    logic_flow: str = ""
     key_variables: Dict[str, str] = field(default_factory=dict)
     security_concerns: List[str] = field(default_factory=list)
     complexity_notes: str = ""
     suggestions: List[str] = field(default_factory=list)
     raw_response: str = ""
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'original_code': self.original_code,
+            'natural_language_explanation': self.natural_language_explanation,
+            'line_annotations': self.line_annotations,
+            'security_notes': self.security_notes,
+            'complexity': self.complexity,
+            'confidence': self.confidence,
+            'summary': self.summary,
+            'purpose': self.purpose,
+            'logic_flow': self.logic_flow,
+            'key_variables': self.key_variables,
+            'security_concerns': self.security_concerns,
+            'suggestions': self.suggestions,
+        }
+
 
 @dataclass
 class FunctionAnalysis:
     """Detailed analysis of a single function."""
-    name: str
-    signature: str
-    summary: str
+    function_name: str = ""
+    signature: str = ""
+    purpose: str = ""
     parameters: Dict[str, str] = field(default_factory=dict)
+    return_value: str = ""
+    side_effects: List[str] = field(default_factory=list)
+    security_risks: List[str] = field(default_factory=list)
+    suggested_fixes: List[str] = field(default_factory=list)
+    # 兼容字段
+    name: str = ""
+    summary: str = ""
     return_description: str = ""
     security_issues: List[Dict[str, str]] = field(default_factory=list)
     complexity: str = "unknown"
     calls: List[str] = field(default_factory=list)
     called_by: List[str] = field(default_factory=list)
     data_flow: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'function_name': self.function_name or self.name,
+            'signature': self.signature,
+            'purpose': self.purpose or self.summary,
+            'parameters': self.parameters,
+            'return_value': self.return_value,
+            'side_effects': self.side_effects,
+            'security_risks': self.security_risks,
+            'suggested_fixes': self.suggested_fixes,
+            'security_issues': self.security_issues,
+            'complexity': self.complexity,
+            'calls': self.calls,
+        }
 
 
 @dataclass
@@ -132,6 +183,12 @@ EXPLANATION_TEMPLATES = {
     ),
 }
 
+# 通用解释模板 —— level 与 code 占位符由调用方填充
+PSEUDOCODE_EXPLANATION_TEMPLATE: str = (
+    "Explain the following pseudocode at {level} level.\n"
+    "Cover: purpose, control flow, and key operations.\n\nCode:\n{code}"
+)
+
 SECURITY_PATTERNS: List[Tuple[str, str, str]] = [
     (r'\bstrcpy\s*\(', 'strcpy', 'Unbounded string copy - buffer overflow risk'),
     (r'\bstrcat\s*\(', 'strcat', 'Unbounded string concatenation - buffer overflow risk'),
@@ -176,12 +233,14 @@ class PseudocodeExplainer:
         api_base_url: Optional[str] = None,
         max_tokens: int = 4096,
         request_timeout: float = 60.0,
+        output_dir: Optional[str] = None,
     ) -> None:
         self.model_name = model_name
         self.api_key = api_key
         self.api_base_url = api_base_url
         self.max_tokens = max_tokens
         self.request_timeout = request_timeout
+        self.output_dir = output_dir
         self._explanation_cache: Dict[str, CodeExplanation] = {}
 
     def explain_code(
@@ -212,6 +271,30 @@ class PseudocodeExplainer:
         self._explanation_cache[cache_key] = explanation
         return explanation
 
+    def _explain_with_rules(self, code: str,
+                            level: ExplanationLevel) -> CodeExplanation:
+        """基于规则生成解释 —— 不依赖外部模型。"""
+        return self._explain_via_heuristics(code, level)
+
+    def _detect_security_patterns(self, code: str) -> List[str]:
+        """返回命中的危险函数名列表。"""
+        return [name for _, name, _ in self._scan_security_patterns(code)]
+
+    def _analyze_function_signature(self, signature: str) -> Dict[str, str]:
+        """从函数签名解析函数名。"""
+        match = re.match(r'(?:\w[\w\s*]*?\s+)?(\w+)\s*\(', signature.strip())
+        return {'function_name': match.group(1) if match else ''}
+
+    def save_explanation(self, explanation: CodeExplanation, name: str) -> str:
+        """将解释结果序列化为 JSON 文件，返回文件路径。"""
+        import json as _json
+        out_dir = self.output_dir or os.getcwd()
+        os.makedirs(out_dir, exist_ok=True)
+        path = os.path.join(out_dir, f"{name}.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            _json.dump(explanation.to_dict(), fh, ensure_ascii=False, indent=2)
+        return path
+
     def _explain_via_heuristics(
         self, pseudocode: str, level: ExplanationLevel
     ) -> CodeExplanation:
@@ -231,6 +314,12 @@ class PseudocodeExplainer:
             suggestions = self._scan_malware_indicators(pseudocode)
 
         return CodeExplanation(
+            original_code=pseudocode,
+            natural_language_explanation=f"This code {purpose}. Flow: {logic_flow}",
+            line_annotations={},
+            security_notes=[s[2] for s in security],
+            complexity=complexity,
+            confidence=0.6,
             summary=f"This code {purpose}",
             purpose=purpose,
             logic_flow=logic_flow,
@@ -255,7 +344,7 @@ class PseudocodeExplainer:
             try:
                 raw = self._call_llm_api(prompt)
                 return CodeExplanation(
-                    summary=self._extract_section(raw, "SUMMARY") or "AI-generated (see raw_response)",
+                    summary=self._extract_section(raw, "SUMMARY") or "unavailable (see raw_response)",
                     purpose=self._extract_section(raw, "PURPOSE") or "See raw_response",
                     logic_flow=self._extract_section(raw, "FLOW") or "See raw_response",
                     raw_response=raw,
@@ -269,9 +358,9 @@ class PseudocodeExplainer:
                 )
 
         return CodeExplanation(
-            summary="AI-generated explanation pending",
-            purpose="See raw_response for AI output",
-            logic_flow="See raw_response for AI output",
+            summary="explanation pending",
+            purpose="See raw_response for model output",
+            logic_flow="See raw_response for model output",
             raw_response=f"[Would call {self.model_name} with prompt: {prompt[:200]}...]",
         )
 
@@ -477,26 +566,26 @@ class PseudocodeExplainer:
         has_dnc = bool(re.search(r'\b(merge_sort|quick_sort|divide|conquer)\b', code, re.IGNORECASE))
         # 归并/快排的递归形态
         if recursion_hints >= 2 and has_binary_split:
-            return "O(n log n) - recursive divide-and-conquer detected"
+            return "medium"  # O(n log n) 递归分治
 
         # 尾递归 / 线性递归
         if recursion_hints == 1 and nested_loops == 0:
-            return f"O(n) - single recursion detected (may be linear or tail-recursive)"
+            return "medium"  # O(n) 线性递归
 
         # 多路递归 (e.g. O(2^n) for naive Fibonacci)
         if recursion_hints >= 2:
-            return f"O(2^n) or worse - multiple recursion paths detected"
+            return "high"  # O(2^n) 多路递归
 
         if nested_loops >= 2:
-            return f"O(n^{nested_loops}) - nested loops detected (depth {max_depth})"
+            return "high"  # O(n^k) 嵌套循环
         elif loop_count > 0:
-            return "O(n) - linear complexity with loops"
+            return "medium"  # O(n) 线性循环
         elif 'sort' in code.lower() or 'qsort' in code:
-            return "O(n log n) - sorting operations detected"
+            return "medium"  # O(n log n) 排序
         elif branch_count > 5:
-            return "O(1) - constant time but high cyclomatic complexity"
+            return "low"  # O(1) 高圈复杂度
         else:
-            return "O(1) - constant time (no loops detected)"
+            return "low"  # O(1) 无循环
 
     def analyze_function(
         self,
@@ -568,28 +657,26 @@ class PseudocodeExplainer:
     def security_analysis(
         self,
         pseudocode: str,
-    ) -> List[Dict[str, str]]:
-        """Perform focused security analysis on pseudocode.
-
-        Args:
-            pseudocode: Code to analyze for security issues.
-
-        Returns:
-            List of security findings with type, severity, and description.
-        """
+    ):
+        """对伪代码做安全分析，返回含安全发现的结构化结果。"""
         findings = self._scan_security_patterns(pseudocode)
-        return [
-            {
-                'type': name,
-                'severity': 'high' if any(
-                    kw in description.lower()
-                    for kw in ('overflow', 'injection', 'execution', 'use-after-free')
-                ) else 'medium',
-                'description': description,
-                'pattern': pattern,
-            }
-            for pattern, name, description in findings
-        ]
+        notes = [description for _, name, description in findings]
+        return {
+            'original_code': pseudocode,
+            'security_notes': notes,
+            'findings': [
+                {
+                    'type': name,
+                    'severity': 'high' if any(
+                        kw in description.lower()
+                        for kw in ('overflow', 'injection', 'execution', 'use-after-free')
+                    ) else 'medium',
+                    'description': description,
+                    'pattern': pattern,
+                }
+                for pattern, name, description in findings
+            ],
+        }
 
     def diff_explain(
         self,
@@ -687,18 +774,24 @@ class PseudocodeExplainer:
 
     def generate_report(
         self,
-        analyses: Dict[str, FunctionAnalysis],
+        analyses,
         format: str = "text",
     ) -> str:
-        """Generate a comprehensive analysis report.
+        """生成分析报告。analyses 可为单条 CodeExplanation 或函数分析映射。"""
+        if isinstance(analyses, CodeExplanation):
+            expl = analyses
+            lines = [
+                "伪代码解释报告",
+                "=" * 40,
+                f"代码: {expl.original_code}",
+                f"解释: {expl.natural_language_explanation}",
+                f"复杂度: {expl.complexity}",
+            ]
+            if expl.security_notes:
+                lines.append("安全发现:")
+                lines.extend(f"  - {n}" for n in expl.security_notes)
+            return '\n'.join(lines)
 
-        Args:
-            analyses: Function analyses to include.
-            format: Output format ('text', 'json', 'markdown').
-
-        Returns:
-            Formatted report string.
-        """
         if format == "json":
             report_data = {
                 name: {

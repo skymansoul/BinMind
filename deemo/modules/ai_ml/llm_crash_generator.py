@@ -355,7 +355,7 @@ class MockLLMClient(LLMClientBase):
 
 class LLMCrashGenerator:
     """LLM-guided crash test case generation with iterative refinement.
-    2026-07-28: 加入自适应温度调度、覆盖率反馈、变异策略管线."""
+    2024-09-02: 加入自适应温度调度、覆盖率反馈、变异策略管线."""
 
     __slots__ = ('m_client', 'm_max_iterations', 'm_temperature',
                  'm_grammar', 'm_history', 'm_target_binary',
@@ -664,7 +664,7 @@ Respond with ONLY valid JSON."""
                              coverage_callback: Optional[Callable[[bytes], Optional[CoverageBitmap]]] = None) -> List[bytes]:
         # 不拆--保持上下文连贯性
         """生成crash输入 — 支持多种变异策略+覆盖率反馈。
-        2026-07-28: 加入mutation strategy pipeline、coverage guidance、自适应温度。"""
+        2024-09-02: 加入mutation strategy pipeline、coverage guidance、自适应温度。"""
         if iterations <= 0:
             iterations = self.m_max_iterations
 

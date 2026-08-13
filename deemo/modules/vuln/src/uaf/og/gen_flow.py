@@ -1,9 +1,8 @@
 """UAF 对象代际转移 — 槽级代际状态与指令流映射.
 
-每个指针槽 (寄存器/栈槽) 维护 (gen, source): alloc 返回推进新代际,
-free 推进到无效态, mov 拷贝继承源代际, 清零置 NULL 代际, 任意重赋值
-改变槽代际. call 返回值隐式更新 rax. 线性扫描将指令映射为代际
-事件, 调用点参数快照供跨函数绑定.
+线性扫描指令, 映射为代际效应: alloc 返回 / free / mov 拷贝 / xor 清零 /
+栈槽读写 / lea 派生 / call clobber. 32 位寄存器写同步 64 位基寄存器
+(零扩展语义). 调用点参数快照 (实参寄存器代际) 供跨函数绑定使用.
 """
 import re
 from dataclasses import dataclass, field
@@ -87,7 +86,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-
+from .gen_state import GenState, SlotGen, GEN_NULL, GEN_UNKNOWN, GEN_GLOBAL
 REG_BITS = ('rax', 'eax', 'rcx', 'ecx', 'rdx', 'edx', 'r8', 'r8d',
             'r9', 'r9d', 'rsi', 'esi', 'rdi', 'edi', 'rbx', 'ebx',
             'r10', 'r10d', 'r11', 'r11d', 'r12', 'r12d', 'r13',
@@ -139,9 +138,9 @@ def parse_int(t: str) -> Optional[int]:
 
 def _strip_ptr(op: str) -> str:
     s = op.strip()
-    for p in ('QWORD PTR ', 'DWORD PTR ', 'BYTE PTR ', 'WORD PTR '):
-        if s.upper().startswith(p):
-            return s[len(p):].strip()
+    for pref in ('QWORD PTR ', 'DWORD PTR ', 'BYTE PTR ', 'WORD PTR '):
+        if s.upper().startswith(pref):
+            return s[len(pref):].strip()
     return s
 
 
@@ -155,6 +154,11 @@ class GenFlowTracker:
         self._calls: List[GenEvent] = []
         self._free_events: List[GenEvent] = []
         self._last_call: str = ''
+        self._import_map: Dict[int, str] = {}
+
+    def set_import_map(self, import_map: Dict[int, str]) -> None:
+        """注入 thunk 地址→名字映射, 支撑 stripped 二进制的调用识别."""
+        self._import_map = import_map
 
     @property
     def state(self) -> GenState:
@@ -194,8 +198,16 @@ class GenFlowTracker:
     def _handle_call(self, ev: GenEvent, ops: str) -> None:
         raw = ops.strip()
         m = re.search(r'<([^>]+)>', raw)
-        callee = m.group(1).split('+')[0].split('@')[0].strip() if m \
-            else raw.split()[0].strip('*')
+        if m:
+            callee = m.group(1).split('+')[0].split('@')[0].strip()
+        else:
+            callee = raw.split()[0].strip('*')
+            try:
+                target = int(callee, 16)
+                if target in self._import_map:
+                    callee = self._import_map[target]
+            except ValueError:
+                pass
         ev.args['callee'] = callee
         args = {}
         for reg in _PARAM_REGS:
@@ -207,7 +219,7 @@ class GenFlowTracker:
         self._last_call = callee
 
         if callee in _ALLOC:
-            ret = self._state.fresh_alloc()
+            ret = self._state.fresh_alloc(f'alloc:{callee}')
             self._state.set_reg('rax', ret)
             self._state.set_reg('eax', ret)
             ev.kind = 'alloc'

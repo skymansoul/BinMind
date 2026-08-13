@@ -1,5 +1,5 @@
 # 两级缓存: L1 LRU + L2 SQLite + stale-while-revalidate + single-flight
-import time, threading, sqlite3, logging, functools, json
+import time, threading, sqlite3, logging, functools, json, atexit
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
@@ -103,7 +103,11 @@ class CacheManager:
     def clear(self): self._l1.clear()
     def stats(self): return {"l1_size": self._l1.size(), "l1_max": self._l1._max, "l2": self._l2e, "flights": len(self._flights)}
     def close(self):
-        if hasattr(self, '_conn') and self._conn: self._conn.close()
+        if hasattr(self, '_conn') and self._conn: self._conn.close(); self._conn = None
+
+    def __del__(self):
+        try: self.close()
+        except Exception: pass
 
     def _l2get(self, key, ns):
         r = self._conn.execute("SELECT value, created_at, ttl FROM cache WHERE key = ? AND namespace = ?", (key, ns)).fetchone()
@@ -122,6 +126,7 @@ class CacheManager:
     def _deser(d): return json.loads(d)
 
 _global_cache = CacheManager()
+atexit.register(_global_cache.close)
 
 def cached(ttl=300, ns="default"):
     def d(f):

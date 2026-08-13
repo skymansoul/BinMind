@@ -224,6 +224,8 @@ class TestEntropy:
 
 # safe_subprocess
 class TestSafeSubprocess:
+    @pytest.mark.skipif(sys.platform == "win32",
+                        reason="echo 为 POSIX shell 内建，Windows 无独立可执行文件")
     def test_echo(self):
         rc, out, err = safe_subprocess(["echo", "hello_test"], timeout=5)
         assert rc == 0

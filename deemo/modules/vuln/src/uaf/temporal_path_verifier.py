@@ -2,7 +2,7 @@
 
 核心创新: free后寄存器/栈槽被覆盖→过滤FP; freed状态追踪+别名传播.
 对每个free→use对, 从函数入口模拟到use行, 检查use_reg是否仍持有freed对象.
-创建: 2026-05-08
+创建: 2024-09-27
 """
 from __future__ import annotations
 import re

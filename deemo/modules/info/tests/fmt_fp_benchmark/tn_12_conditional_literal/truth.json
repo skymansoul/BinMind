@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_12_conditional_literal",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 分支字面量格式",
-  "expect_overflow": false,
-  "trigger": "任意 flag",
-  "why": "两个分支均为常量格式串"
-}

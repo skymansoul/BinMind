@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_11_recv_overflow",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2020-7460 类 (recv 堆溢出)",
-  "expect_overflow": true,
-  "trigger": "无需网络 (fd=0), 读取 1024 字节到 64 字节缓冲",
-  "why": "read 第三参数 1024 大于分配 64, 溢出为静态可证"
-}

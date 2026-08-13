@@ -1,13 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
-/* realloc缩小后使用旧size */
+/* realloc缂╁皬鍚庝娇鐢ㄦ棫size */
 void realloc_shrink_test(const char *data, int old_size, int new_size) {
     char *buf = malloc(old_size);
     if (!buf) return;
     memcpy(buf, data, old_size); /* safe: exactly fits */
     buf = realloc(buf, new_size); /* shrink! new_size < old_size */
     if (!buf) return;
-    /* VULN: 仍按old_size读取——旧内容已丢失，可能读到相邻chunk */
+    /* VULN: 浠嶆寜old_size璇诲彇鈥斺�旀棫鍐呭宸蹭涪澶憋紝鍙兘璇诲埌鐩搁偦chunk */
     memcpy(data, buf, old_size); /* over-read after realloc shrink */
     free(buf);
 }

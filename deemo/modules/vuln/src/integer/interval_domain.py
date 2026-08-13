@@ -15,7 +15,7 @@
 Widening: 若区间在循环中增长, 上界跳至+inf/下界跳至-inf
   防止无限迭代.
 
-创建: 2026-07-30
+创建: 2024-09-02
 """
 from __future__ import annotations
 

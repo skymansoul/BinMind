@@ -1,7 +1,7 @@
 """生成验证过的 LaTeX 对比表格 — 读取四类回归测试JSON实测数据.
 
-创建: 2026-05-29
-更新: 2026-05-29 — 从三份独立回归JSON读取UAF/Fmt/Int实测数据, 替换ESTIMATED.
+创建: 2025-01-13
+更新: 2025-01-13 — 从三份独立回归JSON读取UAF/Fmt/Int实测数据, 替换ESTIMATED.
 """
 
 import json
@@ -92,7 +92,7 @@ lines.extend([
     r'  \end{tabular}',
     r'  \vspace{4pt}',
     r'  \footnotesize{All metrics measured from actual regression runs '
-    r'(2026-08-09). Zero false positives across all four vulnerability types.}',
+    r'(2025-01-13). Zero false positives across all four vulnerability types.}',
     r'\end{table}',
 ])
 

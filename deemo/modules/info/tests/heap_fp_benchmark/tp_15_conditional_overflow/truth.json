@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_15_conditional_overflow",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2023-3269 类 (条件触发堆溢出)",
-  "expect_overflow": true,
-  "trigger": "./sample 1 (flag=1 触发溢出)",
-  "why": "flag 可控且分支内写入 128 字节, 分配仅 64 字节"
-}

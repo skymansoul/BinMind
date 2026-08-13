@@ -5,11 +5,11 @@ UAF 检测的误报压缩包: free 后指针重赋值 (任意来源) 使对象�
 互补: 本包覆盖 mov 拷贝/参数传递/清零等全部重赋值形式.
 """
 
-from gen_flow import GenState, SlotGen, GEN_NULL, GEN_UNKNOWN
-from gen_flow import GenFlowTracker, GenEvent
-from og_filter import GenVerifier, GenVerdict, GenProof
-from og_filter import CallGenPropagator, ParamBinding
-from og_filter import OgFilter, OgResult, OgStats
+from .gen_flow import GenState, SlotGen, GEN_NULL, GEN_UNKNOWN
+from .gen_flow import GenFlowTracker, GenEvent
+from .og_filter import GenVerifier, GenVerdict, GenProof
+from .og_filter import CallGenPropagator, ParamBinding
+from .og_filter import OgFilter, OgResult, OgStats
 
 __all__ = [
     'GenState', 'SlotGen', 'GEN_NULL', 'GEN_UNKNOWN',

@@ -60,9 +60,14 @@ except ImportError:
 class TestClusterIntegration:
     """ClusterAutoscaler 端到端逻辑."""
 
-    def test_tick_cycle_no_nodes_no_tasks(self):
+    @pytest.fixture
+    def fresh_queue(self, tmp_path):
+        """独立持久化路径的任务队列，隔离磁盘残留状态."""
+        return TaskQueue(persist_path=str(tmp_path / "queue.json"))
+
+    def test_tick_cycle_no_nodes_no_tasks(self, fresh_queue):
         """空集群空队列单次 tick 正常完成."""
-        queue = TaskQueue()
+        queue = fresh_queue
         registry = NodeRegistry()
         autoscaler = FuzzClusterAutoscaler(registry=registry, queue=queue)
         result = autoscaler.tick()
@@ -72,9 +77,9 @@ class TestClusterIntegration:
         assert result["pending"] == 0
         assert result["healthy"] == 0
 
-    def test_task_submit_and_pending_count(self):
+    def test_task_submit_and_pending_count(self, fresh_queue):
         """提交任务后 pending 计数递增."""
-        queue = TaskQueue()
+        queue = fresh_queue
         task = FuzzTask(
             task_id="test-001",
             binary_path="/tmp/test.bin",
@@ -83,9 +88,9 @@ class TestClusterIntegration:
         queue.submit(task)
         assert queue.pending_count == 1
 
-    def test_task_queue_stats(self):
+    def test_task_queue_stats(self, fresh_queue):
         """任务队列统计正确."""
-        queue = TaskQueue()
+        queue = fresh_queue
         t1 = FuzzTask(task_id="t1", binary_path="/tmp/a.bin", engine="libfuzzer")
         t2 = FuzzTask(task_id="t2", binary_path="/tmp/b.bin", engine="afl")
         queue.submit(t1)
@@ -109,9 +114,9 @@ class TestClusterIntegration:
         assert registry.heartbeat("node-1") is True
         assert registry.heartbeat("nonexistent") is False
 
-    def test_autoscaler_scale_up_default_provisioner(self):
+    def test_autoscaler_scale_up_default_provisioner(self, fresh_queue):
         """默认 provisioner 创建本地占位节点."""
-        queue = TaskQueue()
+        queue = fresh_queue
         registry = NodeRegistry()
         autoscaler = FuzzClusterAutoscaler(registry=registry, queue=queue)
 
@@ -130,9 +135,9 @@ class TestClusterIntegration:
         # 应触发扩容或至少正常运行
         assert isinstance(result, dict)
 
-    def test_task_reassign_on_node_failure(self):
+    def test_task_reassign_on_node_failure(self, fresh_queue):
         """故障节点上的任务重分配给 pending."""
-        queue = TaskQueue()
+        queue = fresh_queue
         registry = NodeRegistry()
         node = WorkerNode(
             node_id="fail-node",

@@ -1,7 +1,7 @@
 """malloc 参数值流推断器 — 跨块回溯 + 对齐感知.
 
-创建: 2026-06-01
-修改: 2026-06-01 (拆分: 区间域→interval_domain, 后向追踪→backward_tracer)
+创建: 2025-03-03
+修改: 2025-03-03 (拆分: 区间域→interval_domain, 后向追踪→backward_tracer)
 用途: 追踪 malloc(size) 的 size 参数到其定义点, 使用跨步区间
       (SInterval) 推导 size 的精确范围, 然后结合分配器的对齐策略还原实际可用空间。
 

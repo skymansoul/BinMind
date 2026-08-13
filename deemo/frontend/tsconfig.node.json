@@ -1,0 +1,12 @@
+{
+  // Separate tsconfig for vite.config.ts only
+  // composite=true needed for project references, otherwise vue-tsc errors
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}

@@ -5,7 +5,7 @@
 # SEH 利用的两条路径：(1) 栈溢出覆盖 SEH 链中的 handler 指针；
 # (2) 通过 AddVectored异常处理器(1,.) 注册的 VEH 在 SEH 之前触发
 # 本模块增加对 VEH 优先级的建模和 handler 地址的可写性检查
-import logging, os, subprocess
+import logging, os, subprocess, re
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Tuple
 

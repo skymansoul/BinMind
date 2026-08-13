@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
-/* ÕæÕıÒç³ö¡ª¡ªmalloc(32)¿ÉÓÃ48, memcpy(64)¡úÒç³ö16×Ö½Ú */
+/* çœŸæ­£æº¢å‡ºâ€”â€”malloc(32)å¯ç”¨48, memcpy(64)â†’æº¢å‡º16å­—èŠ‚ */
 void true_overflow_test(const char *data) {
     char *buf = malloc(32);
     if (!buf) return;

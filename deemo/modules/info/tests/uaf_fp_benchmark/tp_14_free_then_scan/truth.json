@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_14_free_then_scan",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2020-7460 类遍历后释放",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "head 释放后仍遍历 next 字段"
-}

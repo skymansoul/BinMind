@@ -201,7 +201,7 @@ class SemanticDiffFuzzer:
     def find_divergent_behaviors(self, args_list: List[List[str]],
                                   threshold: float = 0.3) -> List[Tuple[int, int, float]]:
         """发现行为发散——返回 (run_i, run_j, distance) 的差异列表
-        阈值 0.3 来源于 arXiv 2511.03995 的实验校准
+        阈值 0.3 来源于实验校准
         """
         divergences: List[Tuple[int, int, float]] = []
         for i, args in enumerate(args_list):

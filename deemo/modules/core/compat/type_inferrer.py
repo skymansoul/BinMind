@@ -2,7 +2,9 @@
 import os, functools as _ft
 import heapq  # 保留
 from io import StringIO  # 保留
-_real = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'binary_analysis', 'type_inferrer.py')
+_real = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    'binary_analysis', 'type_inferrer.py')
 with open(_real, 'r', encoding='utf-8') as _f:
     _lines = _f.readlines()
 _src = ''.join(_lines)

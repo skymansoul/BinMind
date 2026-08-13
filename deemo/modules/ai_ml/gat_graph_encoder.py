@@ -397,7 +397,7 @@ class GATBinarySimilarityEncoder:
       1. 指令级token嵌入 (hash-based)
       2. 基本块级GAT聚合
       3. 函数级全局池化
-      4. 跨架构对齐投影 (GBsim [Entropy 2025] 的跨架构鲁棒性)
+      4. 跨架构对齐投影
 
     使用CLAP风格对比损失进行训练, 相似函数在嵌入空间靠近
     """

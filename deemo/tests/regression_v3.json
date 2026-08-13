@@ -1,8 +1,0 @@
-{
-  "scanned": 122,
-  "findings": {
-    "uaf": 13,
-    "int_overflow": 8,
-    "heap_bounds": 0
-  }
-}

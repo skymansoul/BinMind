@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_13_scope_limited",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 作用域隔离",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "helper 内部分配先取值再释放, main 用独立指针"
-}

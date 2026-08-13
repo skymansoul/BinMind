@@ -125,7 +125,7 @@ def _kl(p: List[float], q: List[float]) -> float:
 def energy_distance(vecs: List[List[float]]) -> float:
     """多向量能量距离——无需归一化的辅助分歧指标。
 
-    Székely & Rizzo (2013): 对零值维度鲁棒，补充JS散度。
+    Székely & Rizzo: 对零值维度鲁棒，补充JS散度。
     """
     n = len(vecs)
     if n < 2:

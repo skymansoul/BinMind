@@ -131,7 +131,6 @@ class TestStructRecovery(unittest.TestCase):
         recovery = StructRecovery()
         recovery.structs = [struct]
         code = recovery.generate_c_code()
-lass字段完整性$/d
         self.assertIn('struct test_struct', code)
         self.assertIn('int32_t field1', code)
         self.assertIn('char** field2', code)

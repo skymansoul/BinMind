@@ -22,6 +22,7 @@ from .uaf_alias_tracker import (
     UafAliasTracker, AliasSet)
 from .uaf_path_analyzer import (
     UafPathAnalyzer, PathContext, FreeCertainty)
+from .uaf_rebirth_tracker import RebirthTracker
 
 _ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ class EnhancedUafFilter:
     def __init__(self):
         self._alias_tracker = UafAliasTracker(max_trace_dist=40)
         self._path_analyzer = UafPathAnalyzer()
+        self._rebirth = RebirthTracker()
 
     def analyze(self,
                 instructions: List[str],
@@ -70,6 +72,9 @@ class EnhancedUafFilter:
         # 阶段1: 别名感知追踪
         alias_sets = self._alias_tracker.analyze(
             instructions, bb_boundaries)
+
+        # 阶段1.5: 指针重生过滤——realloc/malloc写回等重生赋值清除悬垂use(仅过滤)
+        self._rebirth.apply(instructions, alias_sets)
 
         # 阶段2: 路径敏感分析——对所有free点
         free_sites = []

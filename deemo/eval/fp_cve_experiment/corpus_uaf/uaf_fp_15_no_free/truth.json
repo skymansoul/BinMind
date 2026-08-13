@@ -1,6 +1,0 @@
-{
-  "id": "uaf_fp_15_no_free",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "无 free 调用 (仅分配与使用)"
-}

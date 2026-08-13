@@ -37,7 +37,6 @@ class TestPatchSuggestion(unittest.TestCase):
         self.assertEqual(result['vuln_type'], "stack_overflow")
         self.assertIn("@@ -1 +1 @@", result['patch_diff'])
         self.assertEqual(result['confidence'], 0.85)
-lass字段完整性$/d
         self.assertEqual(result['target_function'], "main")
         self.assertEqual(result['target_offset'], 0x1234)
 
@@ -61,7 +60,6 @@ class TestPatchSuggester(unittest.TestCase):
         """测试栈溢出默认补丁"""
         patch = self.suggester._generate_default_patch("", "stack_overflow")
 
-lass字段完整性$/d
         self.assertIn("strcpy(buffer, input)", patch)
         self.assertIn("strlen(input) >= BUFFER_SIZE", patch)
         self.assertIn("return;  // 防止栈溢出", patch)

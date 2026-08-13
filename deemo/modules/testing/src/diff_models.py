@@ -47,15 +47,20 @@ class ExecutionResult:
     exit_code: int
     stdout: bytes
     stderr: bytes
-    execution_time: float
+    execution_time: float = 0.0
     memory_usage: int = 0
-    crashed: bool = False
+    crashed: Optional[bool] = None
     hung: bool = False
     error_message: str = ""
     # 崩溃上下文扩展
     signal_number: int = 0
     fault_address: int = 0
     crash_stack_frames: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        # crashed 未显式指定时由退出码推导
+        if self.crashed is None:
+            self.crashed = self.exit_code != 0
 
 
 @dataclass

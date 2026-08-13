@@ -85,7 +85,6 @@ class TestInterfaceVulnerability(unittest.TestCase):
         )
         self.assertEqual(vuln.function, "test_func")
         self.assertEqual(vuln.severity, "high")
-lass字段完整性$/d
         self.assertEqual(vuln.description, "Buffer overflow in test_func")
 
 

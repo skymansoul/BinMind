@@ -34,8 +34,8 @@ class VMHandler:
 
 @dataclass
 class VMContext:
-    vip: Optional[int] = None
-    vsp: Optional[int] = None
+    vip: int = 0
+    vsp: int = 0
     bytecode: Optional[bytes] = None
     instructions: list = field(default_factory=list)
     entry_addr: int = 0
@@ -505,6 +505,19 @@ class VMUnvirtualizer:
         if handlers is None:
             handlers = self.extract_handlers()
         return _lift_to_pseudocode(handlers)
+
+    def unvirtualize(self) -> DevirtualizationResult:
+        """执行VM去虚拟化；二进制未加载时返回失败结果。"""
+        if not self.data:
+            logger.warning("binary not loaded: %s", self.binary_path)
+            return DevirtualizationResult(
+                success=False,
+                original_instructions=[],
+                native_code=None,
+                recovered_blocks=0,
+                accuracy_estimate=0.0,
+            )
+        return self.run()
 
     def run(self) -> DevirtualizationResult:
         """执行完整的VM去虚拟化流程"""

@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2021-22600",
-  "desc": "CVE-2021-22600 (Linux netfilter) UAF 复现 — 规则释放后规则链",
-  "trigger": "   的遍历器仍解引用已释放条目. 简化: free(p) 后 memcpy 读 p. "
-}

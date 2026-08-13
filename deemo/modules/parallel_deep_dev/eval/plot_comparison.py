@@ -2,9 +2,11 @@
 
 图1: 各工具检出率(Recall)与误报率(FPR)成对柱状图。
 图2: 工具间 Precision/Recall/F1/FPR 四指标分组柱状图。
-输出 eval/comparison_detection.png 与 eval/comparison_metrics.png。
+用法: python eval/plot_comparison.py [--class heap|uaf]
+输出: eval/comparison_<class>_{plain,packed,metrics}.png。
 """
 
+import argparse
 import json
 from pathlib import Path
 
@@ -14,8 +16,14 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 EVAL = Path(__file__).resolve().parent
-TOOLS = ['CACBV', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT']
-TOOL_LABELS = ['CACBV\n(ours)', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT']
+CLASS_TOOLS = {
+    'heap': (['CACBV', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT'],
+             ['CACBV\n(ours)', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT']),
+    'uaf': (['LCV', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT'],
+            ['LCV\n(ours)', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT']),
+    'fmt': (['FSV', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT'],
+            ['FSV\n(ours)', 'Baseline', 'Angr', 'Ghidra', 'QEMU-GT']),
+}
 
 
 def _get(metrics: dict, tool: str, group: str):
@@ -25,7 +33,7 @@ def _get(metrics: dict, tool: str, group: str):
     return metrics.get(f'{tool}@plain') or metrics.get(tool) or {}
 
 
-def plot_detection(metrics: dict) -> None:
+def plot_detection(metrics: dict, sample_class: str) -> None:
     for group, suffix in (('plain', 'plain'), ('packed', 'packed')):
         rec = [_get(metrics, t, group).get('recall', 0.0) * 100 for t in TOOLS]
         fpr = [_get(metrics, t, group).get('fpr', 0.0) * 100 for t in TOOLS]
@@ -44,18 +52,18 @@ def plot_detection(metrics: dict) -> None:
         ax.set_xticklabels(TOOL_LABELS)
         ax.set_ylabel('Rate (%)')
         ax.set_ylim(0, 105)
-        ax.set_title(f'Heap overflow detection: recall vs FPR '
+        ax.set_title(f'{sample_class.upper()} memory safety: recall vs FPR '
                      f'({group} binaries)')
         ax.legend()
         ax.grid(axis='y', alpha=0.3)
         fig.tight_layout()
-        out = EVAL / f'comparison_{group}.png'
+        out = EVAL / f'comparison_{sample_class}_{group}.png'
         fig.savefig(out, dpi=130)
         plt.close(fig)
         print('[plot]', out)
 
 
-def plot_metrics(metrics: dict) -> None:
+def plot_metrics(metrics: dict, sample_class: str) -> None:
     group = 'plain'
     prec = [_get(metrics, t, group).get('precision', 0.0) * 100 for t in TOOLS]
     rec = [_get(metrics, t, group).get('recall', 0.0) * 100 for t in TOOLS]
@@ -73,25 +81,31 @@ def plot_metrics(metrics: dict) -> None:
     ax.set_xticklabels(TOOL_LABELS)
     ax.set_ylabel('Score (%)')
     ax.set_ylim(0, 105)
-    ax.set_title('Heap overflow detection: precision / recall / F1 / FPR')
+    ax.set_title(f'{sample_class.upper()} memory safety: precision / recall / F1 / FPR')
     ax.legend(ncol=4, loc='upper center', fontsize=8)
     ax.grid(axis='y', alpha=0.3)
     fig.tight_layout()
-    out = EVAL / 'comparison_metrics.png'
+    out = EVAL / f'comparison_{sample_class}_metrics.png'
     fig.savefig(out, dpi=130)
     plt.close(fig)
     print('[plot]', out)
 
 
 def main() -> None:
-    data = json.loads((EVAL / 'benchmark_summary.json').read_text(
-        encoding='utf-8'))
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--class', dest='sample_class', default='heap',
+                    choices=['heap', 'uaf', 'fmt'])
+    args = ap.parse_args()
+    global TOOLS, TOOL_LABELS
+    TOOLS, TOOL_LABELS = CLASS_TOOLS[args.sample_class]
+    data = json.loads((EVAL / f'benchmark_summary_{args.sample_class}.json')
+                      .read_text(encoding='utf-8'))
     metrics = data['tools']
     if not metrics:
         print('[plot] no metrics; run run_benchmark.py first')
         return
-    plot_detection(metrics)
-    plot_metrics(metrics)
+    plot_detection(metrics, args.sample_class)
+    plot_metrics(metrics, args.sample_class)
 
 
 if __name__ == '__main__':

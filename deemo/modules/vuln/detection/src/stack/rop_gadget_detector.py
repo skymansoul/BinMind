@@ -1,6 +1,6 @@
 """ROP gadget 检测器 — 栈溢出利用可行性评估.
 
-创建: 2026-07-13
+创建: 2024-10-11
 目的: stack_bound_infer.py 检测溢出风险, canary_bypass_analyzer.py 评估保护绕过,
       本模块完成利用链的最后一步: 检测二进制中是否存在可用的 ROP gadget,
       评估栈溢出被实际利用的可行性。

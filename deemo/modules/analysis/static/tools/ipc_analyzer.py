@@ -11,7 +11,7 @@ import logging
 from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 class IPCType:
     PIPE = "pipe"
@@ -157,9 +157,9 @@ class IPCSecurityAnalyzer:
             try:
                 with open(path, 'rb') as f:
                     self.binary_data[path] = f.read()
-                __log.info(f"Binary loaded: {path}")
+                _log.info(f"Binary loaded: {path}")
             except Exception as e:
-                __log.error(f"Binary load failed: {path} | {e}")
+                _log.error(f"Binary load failed: {path} | {e}")
 
     def _detect_ipc_patterns(self, binary_data: bytes, binary_name: str) -> List[Tuple[str, str]]:
         results = []
@@ -327,7 +327,7 @@ class IPCSecurityAnalyzer:
 
     def analyze(self) -> IPCAnalysisResult:
         if not self.binary_data:
-            __log.warning("No binaries loaded; returning empty result.")
+            _log.warning("No binaries loaded; returning empty result.")
             return IPCAnalysisResult(binaries=[], endpoints=[], interactions=[],
                                      security_issues=[], interaction_graph='',
                                      cross_binary_taints=[])

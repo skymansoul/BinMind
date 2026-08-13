@@ -5,7 +5,7 @@ from .base import BaseDetector
 from ..core.models import VulnerabilityReport
 from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
-from pathlib import Path  # 未使用
+from pathlib import Path # 未使用
 
 
 # 谓词类型别名：接受EVMOp，返回bool

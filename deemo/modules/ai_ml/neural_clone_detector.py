@@ -1,4 +1,4 @@
-# created: 2026-07-25
+# created: 2025-06-09
 # 神经子图同构——结合GNN嵌入剪枝和子图匹配的函数克隆检测
 #
 # 核心问题: 现有的二进制相似性搜索用GNN嵌入做近似匹配——速度快但精度有限。
@@ -25,7 +25,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

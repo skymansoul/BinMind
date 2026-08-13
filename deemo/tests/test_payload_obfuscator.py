@@ -44,7 +44,6 @@ class TestPayloadObfuscator(unittest.TestCase):
 
         # 非bytes类型
         valid, error = self.obfuscator.validate_input(payload="string")
-lass字段完整性$/d
         self.assertFalse(valid)
         self.assertEqual(error, "payload 必须是 bytes 类型")
 
@@ -84,7 +83,6 @@ lass字段完整性$/d
         self.assertEqual(decompressed, self.test_payload)
 
     def test_polymorphic(self):
-                """测试多态变形引擎"""
         engine = PolymorphicEngine()
 
         result = engine.obfuscate(self.test_payload)
@@ -114,7 +112,6 @@ lass字段完整性$/d
         self.assertTrue(result['success'])
         self.assertEqual(result['technique'], 'base64_encoding')
         self.assertIn('xor_encryption', result['techniques_used'])
-lass字段完整性$/d
         self.assertIn('base64_encoding', result['techniques_used'])
 
     def test_anti_debug(self):

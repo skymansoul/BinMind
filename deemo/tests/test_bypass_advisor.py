@@ -37,7 +37,6 @@ class TestBypassDifficultyEnum(unittest.TestCase):
         self.assertEqual(BypassDifficulty.TRIVIAL.value, "trivial")
         self.assertEqual(BypassDifficulty.EASY.value, "easy")
         self.assertEqual(BypassDifficulty.MODERATE.value, "moderate")
-lass字段完整性$/d
         self.assertEqual(BypassDifficulty.HARD.value, "hard")
         self.assertEqual(BypassDifficulty.NEAR_IMPOSSIBLE.value, "near_impossible")
 
@@ -79,7 +78,6 @@ class TestBypassStrategyDataclass(unittest.TestCase):
             prerequisites=["信息泄露漏洞"],
             recommended_tools=["pwntools"]
         )
-lass字段完整性$/d
         self.assertEqual(strategy.protection, ProtectionType.ASLR)
         self.assertEqual(len(strategy.methods), 2)
         self.assertEqual(strategy.difficulty, BypassDifficulty.MODERATE)
@@ -125,7 +123,6 @@ class TestBypassAdvisor(unittest.TestCase):
         binary_data = b"__stack_chk_fail"
         result = self.advisor.analyze_protections(binary_data, "linux", "x86_64")
         report = self.advisor.generate_report(result)
-lass字段完整性$/d
         self.assertIn("保护机制绕过策略报告", report)
 
     def test_save_result(self):

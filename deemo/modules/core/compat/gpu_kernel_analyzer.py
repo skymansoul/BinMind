@@ -1,6 +1,6 @@
 # Proxy → hardware/gpu_kernel_analyzer.py; complete compat surface.
 import os, importlib.util
-_r = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'hardware', 'gpu_kernel_analyzer.py')
+_r = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'hardware', 'gpu_kernel_analyzer.py')
 _s = importlib.util.spec_from_file_location('gka', _r); _m = importlib.util.module_from_spec(_s)
 _s.loader.exec_module(_m)
 for _k in dir(_m):

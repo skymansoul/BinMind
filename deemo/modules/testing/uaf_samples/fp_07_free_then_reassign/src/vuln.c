@@ -5,7 +5,7 @@ int main(void) {
     char *p = (char *)malloc(64);
     if (!p) return 1;
     free(p);
-    p = (char *)malloc(64);          /* �ظ�ֵ */
+    p = (char *)malloc(64);          /* 重赋值 */
     if (!p) return 1;
     strcpy(p, "new");
     printf("[*] %s\n", p);

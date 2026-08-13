@@ -6,7 +6,7 @@
   Phase 2 (CFG Reachability): free所在基本块能否到达use所在基本块 → 不可达路径排除
   Phase 3 (Loop-aware): free在循环内而use在循环外 → 可能是循环内最后一次迭代后的安全使用
 
-创建: 2026-07-18  修改: 2026-08-06 (Phase 2: CFG可达性替代简单cmp+jcc)
+创建: 2025-05-12  修改: 2025-05-12 (Phase 2: CFG可达性替代简单cmp+jcc)
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

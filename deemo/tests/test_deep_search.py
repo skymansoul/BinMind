@@ -11,7 +11,7 @@ def load_module(module_name, file_name):
     spec.loader.exec_module(module)
     return module
 
-deep_search = load_module("deep_search", "deep_search.py")
+deep_search = load_module("deep_search", os.path.join("ai_ml", "deep_search.py"))
 DeepBinarySearcher = deep_search.DeepBinarySearcher
 
 class TestDeepBinarySearcher(unittest.TestCase):
@@ -26,7 +26,6 @@ class TestDeepBinarySearcher(unittest.TestCase):
         self.assertIsNotNone(self.searcher)
         self.assertIsNotNone(self.searcher.index_path)
         self.assertEqual(self.searcher.embeddings, {})
-lass字段完整性$/d
         self.assertEqual(self.searcher.global_index, {})
 
     def test_calculate_similarity(self):
@@ -51,7 +50,6 @@ lass字段完整性$/d
         """测试空索引搜索"""
         result = self.searcher.search([1.0, 0.0, 0.0])
 
-lass字段完整性$/d
         self.assertEqual(result, [])
 
     def test_load_model(self):

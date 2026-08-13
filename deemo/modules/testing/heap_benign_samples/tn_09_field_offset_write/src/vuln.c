@@ -7,7 +7,7 @@ int main(void) {
     if (!h) return 1;
     h->len = 0x80;
     h->flags = 0;
-    memset(h->body, 0, 0x80);         /* 偏移 8, 写入 0x80, 总量在对象内 */
+    memset(h->body, 0, 0x80);         /* 鍋忕Щ 8, 鍐欏叆 0x80, 鎬婚噺鍦ㄥ璞″唴 */
     printf("[*] len=%u\n", h->len);
     free(h);
     return 0;

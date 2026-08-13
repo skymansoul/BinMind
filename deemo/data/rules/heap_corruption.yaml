@@ -43,15 +43,13 @@ rules:
 # 由 core/ir_rule_engine.py 加载和执行
 ir_rules:
   - id: IR-HC-001
-    ir_pattern: "r[0-9]+\s*=\s*Call.*free.*
-.*r[0-9]+\s*=\s*LDle.*r[0-9]+"
+    ir_pattern: 'r[0-9]+\s*=\s*Call.*free[\s\S]*r[0-9]+\s*=\s*LDle.*r[0-9]+'
     description: "free() 后同一临时变量的内存加载操作 — VEX IR 级 UAF 模式"
     severity: Critical
     cwe: CWE-416
 
   - id: IR-HC-002
-    ir_pattern: "Call.*free.*
-.*Call.*free"
+    ir_pattern: 'Call.*free[\s\S]*Call.*free'
     description: "同一路径上连续两次 free 调用 — VEX IR 级 double-free 模式"
     severity: Critical
     cwe: CWE-415

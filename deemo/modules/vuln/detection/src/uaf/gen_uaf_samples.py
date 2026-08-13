@@ -1,6 +1,6 @@
 """UAF 测试样本生成器 — 从 uaf_sample_data.py 读取样本数据并生成文件.
 
-创建: 2026-06-04
+创建: 2024-08-14
 用途: 读取 UAF_SAMPLES 数据列表, 为每个样本创建独立目录含 main.c + Makefile + README.
       使用: python gen_uaf_samples.py [output_dir]
 """

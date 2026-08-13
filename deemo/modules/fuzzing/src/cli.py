@@ -71,8 +71,9 @@ def _load_config(config_path: str | None) -> dict:
     """
     if config_path and os.path.isfile(config_path):
         pass
-    elif config_path is None:
-        config_path = _find_default_config()
+    elif not config_path:
+        # None/空路径：不自动探测，直接返回空字典
+        return {}
     else:
         print(f"[WARN] 配置文件不存在: {config_path}, 使用默认值", file=sys.stderr)
         config_path = None

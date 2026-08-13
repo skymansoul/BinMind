@@ -2,6 +2,7 @@
 # reads default.yaml, applies AIML_ env overrides, caches result
 # 修复: deep-merge nested dicts from env vars not implemented; flat keys only
 
+import logging as _logging
 from copy import deepcopy as _deepcopy
 import yaml as _yaml
 import os

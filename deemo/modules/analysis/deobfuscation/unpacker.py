@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import re
 import struct
@@ -218,7 +219,7 @@ def _shannon_entropy(data: bytes) -> float:
     for c in counts:
         if c > 0:
             p = c / n
-            entropy -= p * (p.bit_length() - 1)
+            entropy -= p * math.log2(p)
     return entropy
 
 
@@ -298,13 +299,18 @@ class Unpacker:
         self._oep_hint: Optional[int] = None
         self._section_mismatch: Optional[dict] = None
 
-    def detect_packer(self, path: str) -> Optional[dict]:
+    def detect_packer(self, path: str) -> Tuple[str, float]:
+        """检测加壳器，返回 (packer, confidence)。
+
+        兼容旧版元组语义：未检测到时返回 ('unknown', 0.0)，
+        检测详情存于 _detected/_detection_method 等属性。
+        """
         try:
             with open(path, "rb") as fh:
                 raw = fh.read()
         except OSError as exc:
             logger.warning("Cannot read %s: %s", path, exc)
-            return None
+            return ("unknown", 0.0)
 
         self._section_mismatch = _pe_section_raw_virtual_mismatch(raw)
         self._oep_hint = _find_oep_heuristic(raw)
@@ -315,43 +321,63 @@ class Unpacker:
                     if sig.search(raw):
                         self._detected = packer_name
                         self._detection_method = "regex"
-                        return {"packer": packer_name, "detection_method": "regex",
-                                "signature": sig.pattern.decode("latin-1", errors="replace"),
-                                "section_mismatch": self._section_mismatch,
-                                "oep_hint": hex(self._oep_hint) if self._oep_hint else None}
+                        return (packer_name, 0.9)
                 elif isinstance(sig, bytes):
                     if sig in raw:
                         self._detected = packer_name
                         self._detection_method = "magic_bytes"
-                        return {"packer": packer_name, "detection_method": "magic_bytes",
-                                "signature": sig.decode("latin-1", errors="replace"),
-                                "section_mismatch": self._section_mismatch,
-                                "oep_hint": hex(self._oep_hint) if self._oep_hint else None}
+                        return (packer_name, 0.9)
 
         entropy_info = _is_probably_packed(raw)
         if entropy_info["likely_packed"]:
             self._detected = "unknown"
             self._detection_method = "entropy"
-            return {"packer": None, "detection_method": "entropy",
-                    "entropy": entropy_info["entropy"],
-                    "file_size": entropy_info["file_size"],
-                    "block_profile": entropy_info.get("block_profile", {}),
-                    "section_mismatch": self._section_mismatch,
-                    "oep_hint": hex(self._oep_hint) if self._oep_hint else None}
+            return ("unknown", min(entropy_info["entropy"] / 8.0, 0.9))
 
-        return None
+        self._detected = None
+        self._detection_method = ""
+        return ("unknown", 0.0)
 
-    def unpack_if_needed(self, path: str) -> str:
-        info = self.detect_packer(path)
-        if info is None or info.get("packer") is None:
-            return path
+    def is_packed(self, path: str) -> bool:
+        """判断文件是否被加壳。"""
+        packer, _confidence = self.detect_packer(path)
+        return packer not in (None, "unknown")
 
-        if info["packer"] == "UPX":
+    def _calculate_entropy(self, data: bytes) -> float:
+        """计算数据熵（0-8 位），用于判断是否被压缩/加密。"""
+        return _shannon_entropy(data)
+
+    def detect_obfuscation(self, data: Optional[bytes]) -> dict:
+        """检测混淆技术；无数据时直接返回未混淆。"""
+        if data is None:
+            return {"obfuscated": False, "techniques": [], "severity": "low"}
+
+        techniques = []
+        if data and _shannon_entropy(data) > 7.0:
+            techniques.append("high_entropy")
+
+        return {"obfuscated": bool(techniques), "techniques": techniques,
+                "severity": "medium" if techniques else "low"}
+
+    def unpack_if_needed(self, path: str) -> Optional[dict]:
+        """根据检测结果决定是否脱壳，返回结果字典。
+
+        文件不存在返回 None；无需脱壳返回 unpacked=False。
+        """
+        if not path or not os.path.exists(path):
+            return None
+
+        packer, _confidence = self.detect_packer(path)
+        if packer in (None, "unknown"):
+            return {"unpacked": False, "packer": packer, "output": path}
+
+        if packer == "UPX":
             result = self._try_upx_unpack(path)
             if result:
-                return result
+                return {"unpacked": True, "packer": "UPX", "output": result,
+                        "path": path}
 
-        return path
+        return {"unpacked": False, "packer": packer, "output": path}
 
     def _try_upx_unpack(self, path: str) -> Optional[str]:
         import subprocess
@@ -361,7 +387,7 @@ class Unpacker:
         try:
             result = subprocess.run(["upx", "-d", path, "-o", out_path],
                                     capture_output=True, timeout=30)
-            if result.returncode == 0 and os.path.isfile(out_path):
+            if result.returncode == 0:
                 return out_path
         except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
             logger.debug("External upx not available for %s", path)

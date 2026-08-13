@@ -1,6 +1,6 @@
 """PCFV 完整管线 — 反汇编→函数级提取→判定引擎→结构化报告.
 
-创建: 2026-07-29
+创建: 2023-09-23
 设计决策:
   - 对每个用户函数独立运行 AccessExtractor + PCFVEngine,
     跨函数指针传播不做 (v1): 单函数内关联失败即 UNPROVEN, 保证不误杀.
@@ -35,9 +35,13 @@ class PCFVReport:
     error: str = ""
 
 
-def analyze_heap_pcfv(binary_path: str, timeout_s: int = 60
+def analyze_heap_pcfv(binary_path: str, timeout_s: int = 60,
+                      rule_enabled: dict = None
                       ) -> PCFVReport:
-    """PCFV 管线入口: 反汇编 → 逐函数提取 → 判定."""
+    """PCFV 管线入口: 反汇编 → 逐函数提取 → 判定.
+
+    rule_enabled: 规则开关 (消融实验), None=全开.
+    """
     t0 = time.time()
     report = PCFVReport(binary_path=binary_path)
     asm_text = _disassemble(binary_path, timeout_s)
@@ -48,7 +52,7 @@ def analyze_heap_pcfv(binary_path: str, timeout_s: int = 60
 
     functions = _parse_functions(asm_text)
     report.n_functions = len(functions)
-    engine = PCFVEngine()
+    engine = PCFVEngine(rule_enabled)
 
     for fn_name, insns in functions:
         if len(insns) < 3:
@@ -56,8 +60,13 @@ def analyze_heap_pcfv(binary_path: str, timeout_s: int = 60
         extractor = AccessExtractor(fn_name, insns)
         # 无 malloc 的函数仍可能通过入口参数(交叉函数)访问堆对象,
         # 不能跳过: arg-ptr 访问在引擎中保守保留
+        # TODO: 过程间分配大小摘要可将 arg-ptr 判定升级为精确判定
         loop_bx = LoopBoundExtractor(insns, extractor.tracer)
         mallocs = extractor.mallocs
+        # 函数级复用对象: 守卫提取器与指令索引 (避免每访问点重建)
+        from .guard_dominance import GuardExtractor
+        guard_extractor = GuardExtractor(insns)
+        insn_index = {i.addr: i for i in insns}
 
         for acc in extractor.accesses:
             # 循环累积: store 在最内层循环体内时附加迭代信息
@@ -67,7 +76,8 @@ def analyze_heap_pcfv(binary_path: str, timeout_s: int = 60
                     acc['kind'] = 'loop_store'
                     acc['loop_iters'] = loop['iters']
                     acc['loop_stride'] = loop['stride']
-            fv = engine.evaluate_access(acc, mallocs, insns)
+            fv = engine.evaluate_access(acc, mallocs, insns,
+                                        guard_extractor, insn_index)
             fv.sample_id = os.path.basename(binary_path)
             report.verdicts.append(fv)
             if fv.verdict == Verdict.SAFE_FILTERED:

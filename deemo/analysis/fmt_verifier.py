@@ -161,7 +161,8 @@ class FmtVerifier:
                         reason=f"no dangerous: {[s.raw for s in specs[:3]]}",
                         stage='E', is_literal=True)
                 if dangerous: conf = 0.90
-            except ImportError: pass
+            except ImportError:
+                pass
 
         if is_user and not fmt_content: conf = 0.85
 

@@ -14,8 +14,8 @@ CVSS 时间维度漂移追踪 — checksec 差分修正的衰减/增强双机制
   checksec 加固检测: pwntools/pwnlib
 
 修改记录:
-  创建 2026-07-18 — TemporalDriftTracker 核心
-  2026-08-03 — 数据模型拆分至 drift_models.py
+  创建 2025-03-03 — TemporalDriftTracker 核心
+  2025-03-03 — 数据模型拆分至 drift_models.py
 """
 
 import math

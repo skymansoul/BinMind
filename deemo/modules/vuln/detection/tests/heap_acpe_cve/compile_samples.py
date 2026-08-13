@@ -1,6 +1,6 @@
 """编译 ACPE 样本集 — MinGW gcc 双档 (O0/O2), 可跳过缺失工具.
 
-创建: 2026-05-30
+创建: 2025-04-17
 用法:
   python compile_samples.py [样本根目录] [--gcc D:/mingw64/bin/gcc]
 输出:

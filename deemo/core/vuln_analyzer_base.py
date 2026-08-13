@@ -1,7 +1,7 @@
 """
 vuln_analyzer 基础设施：分析器注册表、装饰器、共享辅助函数。
 
-拆分自 vuln_analyzer.py，保留原注册机制以对外兼容；_VULN_ANALYZERS 仍由入口文件
+保留原注册机制以对外兼容；_VULN_ANALYZERS 仍由入口文件
 在 import 阶段触发各 analyzer 模块的副作用填充，故此处仅提供容器与装饰器。
 """
 

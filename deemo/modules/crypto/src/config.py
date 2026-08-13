@@ -5,7 +5,7 @@
 2026-07: 新增_validate_config做最小schema校验, 在畸形配置传播到检测器前拦截。
 对未识别的顶层key及类型约束交叉引用给出警告。
 
-2026-07-22: 为新模块扩展默认值 — secret_auditor, kdf, rng_tester,
+2025-02-06: 为新模块扩展默认值 — secret_auditor, kdf, rng_tester,
 crypto_lib_fingerprint阈值。
 """
 

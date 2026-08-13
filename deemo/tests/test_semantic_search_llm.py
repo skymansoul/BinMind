@@ -33,7 +33,6 @@ class TestFunctionSummary:
         assert summary.address == 0x401000
         assert summary.summary == "Test function that processes data"
         assert len(summary.embedding) == 3
-lass字段完整性$/d
         assert "test" in summary.tags
 
 
@@ -51,7 +50,6 @@ class TestSearchQuery:
 
 
 class TestSearchResult:
-        """Test search result dataclass"""
 
     def test_search_result_success(self):
         summary = FunctionSummary(
@@ -149,7 +147,6 @@ class TestVectorIndex:
 
 
 class TestSemanticSearcher:
-        """Test semantic searcher"""
 
     def test_initialization(self):
         searcher = SemanticSearcher()

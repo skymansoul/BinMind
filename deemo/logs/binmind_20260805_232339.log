@@ -1,5 +1,0 @@
-23:23:39 | INFO    | core.pipeline | Binary: CVE-2024-26590_erofs_intovf.elf | x86-64 64-bit | size=54536
-23:23:39 | WARNING | core.decompiler | radare2 not found at radare2
-23:23:39 | INFO    | core.pipeline | Found 0 functions
-23:23:39 | INFO    | core.pipeline | Analyzing 0 functions
-23:23:39 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

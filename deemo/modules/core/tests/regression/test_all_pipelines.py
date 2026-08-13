@@ -301,7 +301,7 @@ def main():
         print('\nFAILURES:')
         for status, name, detail in _results:
             if status == 'FAIL': print(f'  [{status}] {name}: {detail}')
-    print(f'\n[Step 5/inf] Regression complete ({_PASS+_FAIL+_SKIP} tests)')
+    print(f'\nRegression complete ({_PASS+_FAIL+_SKIP} tests)')
     return _FAIL == 0
 
 

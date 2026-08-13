@@ -235,7 +235,8 @@ class SmartPipeline:
             try:
                 from modules.core.hook_retry import RetryScheduler, RetryPolicy
                 executor = RetryScheduler(executor, {n: RetryPolicy(n, max_retries=2, base_delay_ms=50) for n in self._pool})
-            except ImportError: pass
+            except ImportError:
+                pass
         if strategy.use_time_budget and strategy.time_budget_ms > 0:
             try:
                 from modules.core.time_budget import TimeBudgetExecutor, BudgetSelector
@@ -245,19 +246,22 @@ class SmartPipeline:
                 ctx, plan = executor.execute(context, budget_seconds=strategy.time_budget_ms/1000)
                 meta['executed'] = len(plan.selected_hooks); meta['skipped'] = len(plan.skipped_hooks)
                 return ctx, meta
-            except ImportError: pass
+            except ImportError:
+                pass
         if strategy.use_differential:
             try:
                 from modules.core.diff_executor import DiffExecutor
                 executor = DiffExecutor(executor)
-            except ImportError: pass
+            except ImportError:
+                pass
         try:
             from modules.core.provenance_tracker import ProvenanceScheduler
             executor = ProvenanceScheduler(executor)
             ctx = executor.execute(context, max_workers=max_workers)
             if hasattr(executor, 'graph'): meta['edges'] = executor.graph.edge_count()
             meta['executed'] = len(self._pool); return ctx, meta
-        except ImportError: pass
+        except ImportError:
+            pass
         ctx = executor.execute(context, max_workers=max_workers) if hasattr(executor, 'execute') else context
         meta['executed'] = len(self._pool); return ctx, meta
 

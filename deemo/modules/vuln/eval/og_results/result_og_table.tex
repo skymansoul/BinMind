@@ -1,14 +1,22 @@
 \begin{table}[t]
 \centering
-\caption{UAF detection: UAF-OG generation compression vs naive baseline vs Angr. 20 samples (15 vulnerable + 5 safe). Angr probe is REAL but requires constant arguments; UAF semantics are symbolic, hence its low recall.}
+\caption{UAF detection: UAF-OG generation compression vs naive baseline vs Angr. 20 samples (15 vulnerable + 5 safe). Stripped group shows the cost of losing main-symbol user-range localization; ACFPC-style IAT support is the mitigation.}
 \label{tab:uaf-og}
 \begin{tabular}{lcccccccc}
 \toprule
-Tool & TP & FP & TN & FN & Prec & Rec & F1 & Avg ms \\
+\multirow{2}{*}{Tool} & \multicolumn{4}{c}{Confusion} & \multicolumn{2}{c}{Rates} & \multirow{2}{*}{F1} & \multirow{2}{*}{Avg ms} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-7}
+ & TP & FP & TN & FN & Prec & Rec & & \\
 \midrule
-BASE & 15 & 3 & 2 & 0 & 83.3\% & 100.0\% & 0.909 & 124.0 \\
-UAF-OG & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 124.0 \\
-Angr & 1 & 0 & 5 & 14 & 100.0\% & 6.7\% & 0.125 & 878.1 \\
+\multicolumn{9}{l}{\emph{With symbols (normal, -O0)}} \\
+BASE & 15 & 3 & 2 & 0 & 83.3\% & 100.0\% & 0.909 & 132.6 \\
+UAF-OG & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 132.6 \\
+Angr & 1 & 0 & 5 & 14 & 100.0\% & 6.7\% & 0.125 & 774.6 \\
+\midrule
+\multicolumn{9}{l}{\emph{Stripped (no symbols, -O1)}} \\
+BASE & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 135.4 \\
+UAF-OG & 15 & 0 & 5 & 0 & 100.0\% & 100.0\% & 1.000 & 135.4 \\
+Angr & 1 & 0 & 5 & 14 & 100.0\% & 6.7\% & 0.125 & 760.0 \\
 \bottomrule
 \end{tabular}
 \end{table}

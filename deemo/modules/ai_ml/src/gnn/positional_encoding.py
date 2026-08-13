@@ -201,7 +201,7 @@ class RandomWalkSE:
     """随机游走结构编码。
 
     通过模拟 k 步非回溯随机游走的平稳分布来编码节点的局部结构角色。
-    参考 Dwivedi et al. (NeurIPS 2023) "Long Range Graph Benchmark" 中的
+    参考 Dwivedi et al. "Long Range Graph Benchmark" 中的
     RWSE 设计——本项目针对 CFG 的自环和双节点环做了特定调整。
 
     CFG 特化：

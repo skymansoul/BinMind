@@ -410,7 +410,7 @@ class SimilarityReport:
 class InterpretableSimilarity:
     """可解释相似性判定
     
-    对应论文: Beyond Embeddings (arXiv:2509.23449)
+    对应论文: Beyond Embeddings
     差异点: 论文端到端黑盒嵌入；本实现叠加结构化特征，逐维度给出
     可审计的相似度证据，供安全分析人员复核而非盲信分数
     """

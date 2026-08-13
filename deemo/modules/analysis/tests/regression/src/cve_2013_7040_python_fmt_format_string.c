@@ -5,7 +5,7 @@
 // cve_2013_7040 Format String Vuln: PyString_Format: external fmt control
 
 void python_fmt_vuln(char *user_input) {
-    // Î£ÏÕ: ÓÃ»§ÊäÈëÖ±½Ó×÷Îª¸ñÊ½×Ö·û´® (¶ø·Ç%s²ÎÊı)
+    // å±é™©: ç”¨æˆ·è¾“å…¥ç›´æ¥ä½œä¸ºæ ¼å¼å­—ç¬¦ä¸² (è€Œé%så‚æ•°)
     printf(user_input);
 }
 
@@ -18,7 +18,7 @@ void python_fmt_safe() {
 }
 
 int main() {
-    char payload[] = "%x %x %x %x %x %x %x %n";  // ¹¥»÷payload: º¬%nĞ´Èë
+    char payload[] = "%x %x %x %x %x %x %x %n";  // æ”»å‡»payload: å«%nå†™å…¥
     printf("cve_2013_7040 fmt test\n");
     python_fmt_vuln(payload);
     python_fmt_vuln2(payload);

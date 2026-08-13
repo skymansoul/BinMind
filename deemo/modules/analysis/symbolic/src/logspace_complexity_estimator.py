@@ -96,7 +96,7 @@ class LogSpaceComplexityEstimator:
         特征:
         [0] constraint_count (记录-变换: log2(count+1))
         [1] max_paren_depth (最大括号嵌套深度)
-        [2] bv_width (位宽，正则匹配 bv\d+ 和 提取)
+        [2] bv_width (位宽，正则匹配 bv\\d+ 和 提取)
         [3] arithmetic_ratio (含算术操作的约束比例)
         [4] boolean_ratio (含布尔操作的约束比例)
         """

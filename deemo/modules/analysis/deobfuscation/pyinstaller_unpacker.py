@@ -8,13 +8,30 @@ import sys
 import tempfile
 import zlib
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
 PYTHON_MAGIC_NUMBERS = {
-    0x16D: (3, 3), 0x16E: (3, 3), 0x16F: (3, 3),
+    (3, 3): b'\x6d\x01\r\n',
+    (3, 4): b'\x70\x01\r\n',
+    (3, 5): b'\xf0\x01\r\n',
+    (3, 6): b'\x0d\x02\r\n',
+    (3, 7): b'\x1a\x02\r\n',
+    (3, 8): b'\x2b\x02\r\n',
+    (3, 9): b'\x55\x02\r\n',
+    (3, 10): b'\xa7\r\r\n',
+    (3, 11): b'\xd1\x02\r\n',
+    (3, 12): b'\xf5\x02\r\n',
+    (3, 13): b'\x45\x3d\r\n',
+    (3, 14): b'\x2b\x3f\r\n',
+    (3, 15): b'\x0d\x4a\r\n',
+}
+
+# 魔数整数 → Python 版本（现有字节级解析用）
+_MAGIC_INT_TO_VERSION = {0x16D: (3, 3), 0x16E: (3, 3), 0x16F: (3, 3),
     0x170: (3, 4), 0x171: (3, 4), 0x172: (3, 4), 0x173: (3, 4),
     0x1F0: (3, 5), 0x1F1: (3, 5), 0x1F2: (3, 5), 0x1F3: (3, 5),
     0x20D: (3, 6), 0x20E: (3, 6), 0x20F: (3, 6), 0x210: (3, 6),
@@ -46,24 +63,96 @@ _PYARMOR_MARKERS = [b"pyarmor", b"PyArmor", b"__pyarmor__", b"pytransform"]
 _CXFREEZE_MARKERS = [b"cx_Freeze", b"cx-freeze"]
 
 
+class PackerType(Enum):
+    NONE = "none"
+    PYINSTALLER = "pyinstaller"
+    NUITKA = "nuitka"
+    PYARMOR = "pyarmor"
+    CXFREEZE = "cx_freeze"
+    UNKNOWN = "unknown"
+
+
+class PythonVersion(Enum):
+    PY38 = (3, 8)
+    PY39 = (3, 9)
+    PY310 = (3, 10)
+    PY311 = (3, 11)
+    PY312 = (3, 12)
+    PY313 = (3, 13)
+    PY314 = (3, 14)
+    UNKNOWN = (0, 0)
+
+
 @dataclass
 class PycFile:
-    path: str; size: int = 0
+    filename: str = ""
     python_version: Optional[Tuple[int, int]] = None
-    source: str = ""; is_package: bool = False; entry_type: str = ""
+    magic_number: bytes = b""
+    content: bytes = b""
+    source_code: Optional[str] = None
+    path: str = ""
+    size: int = 0
+    source: str = ""
+    is_package: bool = False
+    entry_type: str = ""
+
+    def __post_init__(self):
+        if not self.path:
+            self.path = self.filename
+        if not self.filename and self.path:
+            self.filename = os.path.basename(self.path)
+        if not self.size and self.content:
+            self.size = len(self.content)
+        if not self.source_code and self.source:
+            self.source_code = self.source
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'filename': self.filename,
+            'python_version': self.python_version,
+            'magic_number': self.magic_number.hex() if self.magic_number else None,
+            'size': self.size,
+            'source_code': self.source_code,
+        }
 
 
 @dataclass
 class UnpackResult:
-    output_dir: str
+    packer_type: str = PackerType.NONE
+    pyc_files: List[PycFile] = field(default_factory=list)
+    source_files: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    errors: List[str] = field(default_factory=list)
+    output_dir: str = ""
     extracted_files: List[PycFile] = field(default_factory=list)
     decompiled_files: List[PycFile] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
     pyinstaller_version: Optional[str] = None
-    is_onefile: bool = True; bootloader_type: str = ""
-    packer_type: str = "pyinstaller"; anti_tamper_detected: bool = False
-    # 新增：叠加 CArchive 计数
+    is_onefile: bool = True
+    bootloader_type: str = ""
+    anti_tamper_detected: bool = False
     overlay_archives: int = 0
+
+    def __post_init__(self):
+        if isinstance(self.packer_type, PackerType):
+            self.packer_type = self.packer_type
+
+    def to_dict(self) -> Dict[str, Any]:
+        packer = self.packer_type
+        packer_val = packer.value if isinstance(packer, PackerType) else str(packer)
+        return {
+            'packer_type': packer_val,
+            'pyc_files': [p.to_dict() for p in self.pyc_files],
+            'source_files': list(self.source_files),
+            'metadata': dict(self.metadata),
+            'errors': list(self.errors),
+            'output_dir': self.output_dir,
+            'pyinstaller_version': self.pyinstaller_version,
+            'is_onefile': self.is_onefile,
+            'bootloader_type': self.bootloader_type,
+            'anti_tamper_detected': self.anti_tamper_detected,
+            'overlay_archives': self.overlay_archives,
+        }
 
 
 class CArchiveHeader:
@@ -78,11 +167,98 @@ class CArchiveHeader:
     def is_valid(self) -> bool:
         return self.magic[:4] == PYINSTALLER_MAGIC[:4]
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'packer_type': self.packer_type.value if hasattr(self.packer_type, 'value') else str(self.packer_type),
+            'pyc_files': [f.to_dict() if hasattr(f, 'to_dict') else str(f) for f in self.pyc_files],
+            'source_files': list(self.source_files),
+            'metadata': dict(self.metadata),
+            'errors': list(self.errors),
+            'output_dir': self.output_dir,
+            'pyinstaller_version': self.pyinstaller_version,
+            'is_onefile': self.is_onefile,
+        }
+
 
 class PyInstallerUnpacker:
 
-    def __init__(self):
+    def __init__(self, output_dir=None, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self._tmpdir: Optional[str] = None; self._header_offset: int = 0
+
+    def detect_packer(self, file_path: str) -> PackerType:
+        """检测可执行文件的打包器类型。"""
+        try:
+            with open(file_path, 'rb') as fh:
+                data = fh.read(4096)
+        except OSError:
+            return PackerType.UNKNOWN
+        if b'Nuitka' in data or b'nuitka' in data:
+            return PackerType.NUITKA
+        if b'MEI' in data and b'\x0c\x0b\x0a\x0b\x0e' in data:
+            return PackerType.PYINSTALLER
+        if b'pyarmor' in data or b'PyArmor' in data:
+            return PackerType.PYARMOR
+        if b'cx_Freeze' in data or b'cx-freeze' in data:
+            return PackerType.CXFREEZE
+        return PackerType.NONE
+
+    def _find_embedded_pyc(self, data: bytes) -> List[PycFile]:
+        """在字节流中搜索 Python 字节码魔数，提取嵌入的 pyc 片段。"""
+        found = []
+        for pyver, magic_bytes in PYTHON_MAGIC_NUMBERS.items():
+            idx = data.find(magic_bytes)
+            if idx == -1:
+                continue
+            end = min(len(data), idx + 4096)
+            found.append(PycFile(
+                filename=f"embedded_{pyver[0]}_{pyver[1]}.pyc",
+                python_version=pyver,
+                magic_number=magic_bytes,
+                content=data[idx:end],
+                size=end - idx,
+            ))
+        return found
+
+    def generate_report(self, result: UnpackResult) -> str:
+        """生成解包结果报告文本。"""
+        packer_name = {
+            PackerType.PYINSTALLER: 'PyInstaller',
+            PackerType.NUITKA: 'Nuitka',
+            PackerType.NONE: 'None',
+        }.get(result.packer_type, str(result.packer_type))
+        lines = [f"Packer: {packer_name}", ""]
+        for pyc in result.pyc_files:
+            lines.append(f"  PYC: {pyc.filename}")
+        for src in result.source_files:
+            lines.append(f"  SRC: {src}")
+        for err in result.errors:
+            lines.append(f"  ERROR: {err}")
+        return "\n".join(lines)
+
+    def save_result(self, result: UnpackResult, name: str = "unpack_result") -> str:
+        """将结果保存为 JSON 文件，返回路径。"""
+        import json
+        if not self._tmpdir:
+            self._tmpdir = tempfile.mkdtemp(prefix="pyi_unpack_")
+        if not name.endswith(".json"):
+            name = name + ".json"
+        out_path = os.path.join(self._tmpdir, name)
+        packer = result.packer_type
+        packer_val = packer.value if isinstance(packer, PackerType) else str(packer)
+        payload = {
+            "packer_type": result.packer_type.value
+            if isinstance(result.packer_type, PackerType)
+            else result.packer_type,
+            "pyc_files": [p.to_dict() for p in result.pyc_files],
+            "source_files": result.source_files,
+            "metadata": result.metadata,
+            "errors": result.errors,
+        }
+        with open(out_path, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2)
+        return out_path
 
     # 多 CArchive 叠加扫描 —— 某些 PyInstaller 打包器会在 PE overlay
     # 区域附加多个 CArchive（典型场景：多阶段解包器）
@@ -117,10 +293,14 @@ class PyInstallerUnpacker:
             result.errors.append(f"Could not read {path}"); return result
 
         packer_type, anti_tamper = self._detect_packer_type(data)
-        result.packer_type = packer_type; result.anti_tamper_detected = anti_tamper
+        try:
+            result.packer_type = PackerType(packer_type)
+        except ValueError:
+            result.packer_type = PackerType.UNKNOWN
+        result.anti_tamper_detected = anti_tamper
 
-        if packer_type != "pyinstaller":
-            result.errors.append(f"Detected packer '{packer_type}' rather than PyInstaller")
+        if result.packer_type != PackerType.PYINSTALLER:
+            result.errors.append(f"Detected packer '{result.packer_type.value}' rather than PyInstaller")
 
         all_headers = self._find_all_carchive_headers(data)
         if not all_headers:
@@ -196,11 +376,11 @@ class PyInstallerUnpacker:
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
             with open(out_path, "wb") as fw:
                 import time as _time
-                magic_bytes = struct.pack("<H", list(PYTHON_MAGIC_NUMBERS.keys())[-1])
+                magic_bytes = struct.pack("<H", list(_MAGIC_INT_TO_VERSION.keys())[-1])
                 fw.write(magic_bytes); fw.write(b"\x00\x00\x00\x00")
                 fw.write(struct.pack("<I", int(_time.time())))
                 fw.write(struct.pack("<I", len(mod_data))); fw.write(mod_data)
-            pyver = PYTHON_MAGIC_NUMBERS.get(struct.unpack("<H", magic_bytes)[0])
+            pyver = _MAGIC_INT_TO_VERSION.get(struct.unpack("<H", magic_bytes)[0])
             extracted.append(PycFile(path=out_path, size=len(mod_data),
                 python_version=pyver, is_package=(mod_tc == 1), entry_type="pyz_marshal"))
         return extracted
@@ -251,7 +431,7 @@ class PyInstallerUnpacker:
         try:
             if len(raw) >= 2:
                 magic = struct.unpack("<H", raw[:2])[0]
-                pyver = PYTHON_MAGIC_NUMBERS.get(magic)
+                pyver = _MAGIC_INT_TO_VERSION.get(magic)
         except struct.error: pass
         return PycFile(path=out_path, size=len(raw), python_version=pyver,
                        entry_type=entry.get("typecode_name", ""))
@@ -261,7 +441,8 @@ class PyInstallerUnpacker:
         try:
             import uncompyle6
             buf = io.StringIO(); uncompyle6.decompile_file(pyc_path, buf); return buf.getvalue()
-        except ImportError: pass
+        except ImportError:
+            pass
         except Exception: _log.debug("suppressed", exc_info=True)
         try:
             import subprocess

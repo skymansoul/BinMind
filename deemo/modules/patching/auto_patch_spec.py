@@ -220,6 +220,7 @@ class RuleBasedSpecGenerator(PatchSpecGenerator):
 
 class LLMPatchSpecGenerator(PatchSpecGenerator):
     def __init__(self, ai_provider="openai"):
+        self.ai_provider = ai_provider
         self._ai_provider = ai_provider
         self.ai = None
         self._init_ai_client()
@@ -484,11 +485,23 @@ Patch specification requirements:
             return spec
 
 
+class AnalyzerMetadata:
+    """分析器元数据 — 供插件基础设施消费。"""
+
+    def __init__(self, name="", version="", dependencies=None, description=""):
+        self.name = name
+        self.version = version
+        self.dependencies = list(dependencies) if dependencies is not None else []
+        self.description = description
+
+
 class AutoPatchSpecAnalyzer:
     def __init__(self):
         self._generator = LLMPatchSpecGenerator()
         self._rule_generator = RuleBasedSpecGenerator()  # 查表直出，远程不可用时兜底
         self._generated_specs = []
+        self.generator = self._generator
+        self.generated_specs = self._generated_specs
 
     def analyze(self, **kwargs):
         is_valid, error = self.validate_input(**kwargs)
@@ -607,8 +620,28 @@ class AutoPatchSpecAnalyzer:
 
     @classmethod
     def get_metadata(cls):
-        # 元数据桩；插件基础设施就绪后引入 AnalyzerMetadata
-        return {}
+        try:
+            from core.plugin_manager import AnalyzerType
+            from types import SimpleNamespace
+            return SimpleNamespace(
+                name='AutoPatchSpecAnalyzer',
+                type=AnalyzerType.VULNERABILITY_DETECTOR,
+                version='1.0.0',
+                description='Automated patch specification generation driven by LLM root-cause analysis',
+                author='BinaryAnalysisPlatform',
+                dependencies=['openai'],
+                requires=['openai'],
+                supported_platforms=['x86', 'x86_64', 'arm', 'arm64'],
+                entry_class=cls,
+                priority=100,
+            )
+        except ImportError:
+            return AnalyzerMetadata(
+                name="AutoPatchSpecAnalyzer",
+                version="1.0.0",
+                dependencies=["openai"],
+                description="自动补丁规格生成器 — 规则+LLM 双路径",
+            )
 
     def validate_input(self, **kwargs):
         required_fields = ["vulnerability_type", "affected_function", "root_cause"]

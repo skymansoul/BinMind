@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_10_double_deref",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2016-2177 类二次解引用 UAF",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "*p = 值 对已释放堆块写入"
-}

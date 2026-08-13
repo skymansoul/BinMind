@@ -198,7 +198,7 @@ def generate_radar_chart(methods: dict):
 def generate_latex_table(methods: dict):
     """生成多工具 LaTeX 对比表。"""
     tex = r"""% Auto-generated — Multi-Tool Heap Overflow Detection Comparison
-% CB-HOD v1.1 + PSVR-HLM v3.0 vs Angr / Ghidra / QEMU, 2026-08-07
+% CB-HOD v1.1 + PSVR-HLM v3.0 vs Angr / Ghidra / QEMU, 2025-02-06
 \begin{table*}[htbp]
 \centering
 \caption{Heap Overflow Detection: BinMind Methods vs External Tools}
@@ -254,7 +254,7 @@ def main():
 
     # 保存 JSON
     output = {
-        "generated": "2026-08-07",
+        "generated": "2025-02-06",
         "methods": methods,
         "external_tool_results": external_results,
         "notes": [

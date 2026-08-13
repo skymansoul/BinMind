@@ -2,9 +2,84 @@
 # 从网络流量中识别工业协议并提取关键操作
 # Wireshark ICS dissectors, NIST SP 800-82 r3, MITRE ATT&CK ICS matrix
 import struct, math
+import os
+from enum import Enum
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from collections import defaultdict
+
+
+# ---- 旧版二进制分析 API 的枚举与数据结构 ----
+# 面向二进制样本的协议识别：枚举协议族，结果以 ICSAnalysisResult 汇总。
+
+class ICSProtocol(Enum):
+    MODBUS_TCP = "modbus_tcp"
+    DNP3 = "dnp3"
+    IEC_61850 = "iec_61850"
+    PROFINET = "profinet"
+    ETHERNET_IP = "ethernet_ip"
+    S7COMM = "s7comm"
+    BACNET = "bacnet"
+    IEC_104 = "iec_104"
+
+
+class VulnerabilityType(Enum):
+    LENGTH_NOT_CHECKED = "length_not_checked"
+    INDEX_OUT_OF_BOUNDS = "index_out_of_bounds"
+    BUFFER_OVERFLOW = "buffer_overflow"
+    PACKET_STRUCTURE = "packet_structure"
+
+
+@dataclass
+class ICSFunction:
+    name: str
+    protocol: ICSProtocol = None
+    address: int = 0
+    risk_score: int = 0
+
+
+@dataclass
+class MalformedPacket:
+    protocol: ICSProtocol
+    mutation_type: str = ""
+    payload: bytes = b""
+
+
+@dataclass
+class ICSAnalysisResult:
+    binary_path: str = ""
+    detected_protocols: List[ICSProtocol] = field(default_factory=list)
+    identified_functions: List[ICSFunction] = field(default_factory=list)
+    detected_vulnerabilities: List[dict] = field(default_factory=list)
+    generated_packets: List[MalformedPacket] = field(default_factory=list)
+    summary: str = ""
+    analysis_time: float = 0.0
+
+
+@dataclass
+class ICSProtocolFeature:
+    protocol: ICSProtocol
+    default_port: int
+    description: str = ""
+
+
+class ICSProtocolFeatureDatabase:
+    """协议特征库 — 协议默认端口与描述。"""
+
+    def __init__(self):
+        self.features: Dict[ICSProtocol, ICSProtocolFeature] = {
+            ICSProtocol.MODBUS_TCP: ICSProtocolFeature(ICSProtocol.MODBUS_TCP, 502, "Modbus TCP"),
+            ICSProtocol.DNP3: ICSProtocolFeature(ICSProtocol.DNP3, 20000, "DNP3"),
+            ICSProtocol.IEC_61850: ICSProtocolFeature(ICSProtocol.IEC_61850, 102, "IEC 61850 MMS"),
+            ICSProtocol.PROFINET: ICSProtocolFeature(ICSProtocol.PROFINET, 34962, "PROFINET DCP"),
+            ICSProtocol.ETHERNET_IP: ICSProtocolFeature(ICSProtocol.ETHERNET_IP, 44818, "EtherNet/IP"),
+        }
+
+    def get_feature(self, protocol: ICSProtocol) -> Optional[ICSProtocolFeature]:
+        return self.features.get(protocol)
+
+    def get_all_features(self) -> Dict[ICSProtocol, ICSProtocolFeature]:
+        return dict(self.features)
 
 
 @dataclass
@@ -242,9 +317,12 @@ def _parse_s7comm(data: bytes) -> Optional[ICSFrame]:
 # 统一分析器
 
 class ICSProtocolAnalyzer:
-    """工业协议分析器 — 自动检测协议类型并提取关键操作。"""
+    """工业协议分析器 — 自动检测协议类型并提取关键操作。
 
-    def __init__(self):
+    binary_path 提供时读取二进制样本，供协议字符串/模式检测使用。
+    """
+
+    def __init__(self, binary_path=None):
         self._parsers = [
             _parse_modbus, _parse_dnp3, _parse_iec104, _parse_bacnet,
             _parse_s7comm,
@@ -253,6 +331,102 @@ class ICSProtocolAnalyzer:
         self._stats: Dict[str, int] = {}
         # 每协议会话跟踪用于异常检测
         self._proto_risk_sessions: Dict[str, List[float]] = defaultdict(list)
+        self.binary_path = binary_path
+        self.binary_data = b""
+        if binary_path and os.path.isfile(binary_path):
+            with open(binary_path, "rb") as _fh:
+                self.binary_data = _fh.read()
+
+    # ---- 旧版二进制分析 API ----
+    _PROTOCOL_STRINGS = {
+        ICSProtocol.MODBUS_TCP: (b"modbus",),
+        ICSProtocol.DNP3: (b"dnp3",),
+        ICSProtocol.IEC_61850: (b"61850", b"mms"),
+        ICSProtocol.PROFINET: (b"profinet", b"pnio"),
+        ICSProtocol.ETHERNET_IP: (b"ethernet_ip", b"enip"),
+    }
+
+    _PROTOCOL_PATTERNS = {
+        ICSProtocol.DNP3: (b"\x05\x64",),
+        ICSProtocol.MODBUS_TCP: (b"\x00\x00\x00\x00\x00\x06",),
+    }
+
+    def _find_protocol_strings(self) -> List[ICSProtocol]:
+        found = []
+        data = self.binary_data or b""
+        for proto, needles in self._PROTOCOL_STRINGS.items():
+            if any(n in data for n in needles):
+                found.append(proto)
+        return found
+
+    def _find_protocol_patterns(self) -> Dict[ICSProtocol, int]:
+        counts: Dict[ICSProtocol, int] = {}
+        data = self.binary_data or b""
+        for proto, needles in self._PROTOCOL_PATTERNS.items():
+            cnt = sum(data.count(n) for n in needles)
+            if cnt:
+                counts[proto] = cnt
+        return counts
+
+    def detect_protocols(self) -> List[ICSProtocol]:
+        detected = self._find_protocol_strings()
+        detected.extend(self._find_protocol_patterns())
+        # 保序去重
+        return list(dict.fromkeys(detected))
+
+    def identify_ics_functions(self) -> List[ICSFunction]:
+        return []
+
+    def analyze_vulnerabilities(self) -> List[dict]:
+        return []
+
+    def generate_malformed_packets(self, protocol: ICSProtocol,
+                                   count: int = 5) -> List[MalformedPacket]:
+        _mutation_types = ["length_truncation", "crc_corruption", "function_code_flip"]
+        packets = []
+        for i in range(count):
+            packets.append(MalformedPacket(
+                protocol=protocol,
+                mutation_type=_mutation_types[i % len(_mutation_types)],
+                payload=b"",
+            ))
+        return packets
+
+    def analyze(self) -> ICSAnalysisResult:
+        protocols = self.detect_protocols()
+        functions = self.identify_ics_functions()
+        vulns = self.analyze_vulnerabilities()
+        return ICSAnalysisResult(
+            binary_path=self.binary_path or "",
+            detected_protocols=protocols,
+            identified_functions=functions,
+            detected_vulnerabilities=vulns,
+            generated_packets=[],
+            summary="检测到 %d 种 ICS 协议" % len(protocols),
+            analysis_time=0.0,
+        )
+
+    def _get_vulnerability_description(self, vuln_type: VulnerabilityType) -> str:
+        return {
+            VulnerabilityType.LENGTH_NOT_CHECKED: "长度字段未校验，可导致越界读取",
+            VulnerabilityType.INDEX_OUT_OF_BOUNDS: "索引越界访问",
+            VulnerabilityType.BUFFER_OVERFLOW: "缓冲区溢出",
+            VulnerabilityType.PACKET_STRUCTURE: "报文结构异常",
+        }.get(vuln_type, "未知漏洞类型")
+
+    def _get_vulnerability_severity(self, vuln_type: VulnerabilityType) -> str:
+        return {
+            VulnerabilityType.BUFFER_OVERFLOW: "critical",
+            VulnerabilityType.INDEX_OUT_OF_BOUNDS: "high",
+            VulnerabilityType.LENGTH_NOT_CHECKED: "medium",
+        }.get(vuln_type, "medium")
+
+    def _get_exploit_difficulty(self, vuln_type: VulnerabilityType) -> str:
+        return {
+            VulnerabilityType.BUFFER_OVERFLOW: "low",
+            VulnerabilityType.INDEX_OUT_OF_BOUNDS: "medium",
+            VulnerabilityType.LENGTH_NOT_CHECKED: "high",
+        }.get(vuln_type, "medium")
 
     def feed(self, data: bytes) -> Optional[ICSFrame]:
         """输入一段原始数据，自动检测并解析。返回解析结果或 None。"""
@@ -319,3 +493,30 @@ class ICSProtocolAnalyzer:
     def find_critical_commands(self) -> List[ICSFrame]:
         """返回所有风险评分 >= 50 的操作（关闭/重启/写入关键寄存器等）。"""
         return [f for f in self.frames if f.risk_score >= 50]
+
+
+def analyze_ics_protocols(binary_path: str) -> ICSAnalysisResult:
+    """对二进制样本执行 ICS 协议识别，返回分析结果。"""
+    analyzer = ICSProtocolAnalyzer(binary_path)
+    return analyzer.analyze()
+
+
+def format_ics_report(result: ICSAnalysisResult) -> str:
+    """将 ICS 分析结果格式化为文本报告。"""
+    lines = [
+        "ICSprotocolanalysis report",
+        "binary_path: %s" % result.binary_path,
+        "protocols: %s" % ", ".join(p.value for p in result.detected_protocols),
+        "summary: %s" % result.summary,
+    ]
+    return "\n".join(lines)
+
+
+def export_ics_json(result: ICSAnalysisResult) -> str:
+    """将 ICS 分析结果序列化为 JSON 字符串。"""
+    import json
+    return json.dumps({
+        "binary_path": result.binary_path,
+        "protocols": [p.value for p in result.detected_protocols],
+        "summary": result.summary,
+    }, ensure_ascii=False)

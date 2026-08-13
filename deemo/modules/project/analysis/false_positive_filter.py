@@ -8,12 +8,12 @@
 #   因此在遇到 malloc(64)+memset(ptr, 0, 128) 这种模式时
 #   一定报警. 本模块通过L0→L3递进证明, 只在无法证明安全时才报警.
 #
-#   Heelan et al. "Automatic Heap Layout Manipulation" (USENIX 2021)
+#   Heelan et al. "Automatic Heap Layout Manipulation"
 #     — 精确的堆分配器行为建模
 #   Gershuni et al. "Simple and Precise Static Analysis of Untrusted
-#     Linux Kernel Extensions" (PLDI 2019) — 内核级别的保守分析
+#     Linux Kernel Extensions" — 内核级别的保守分析
 #   Arzt et al. "FlowDroid: Precise Context, Flow, Field, Object-sensitive
-#     and Lifecycle-aware Taint Analysis" (PLDI 2014)
+#     and Lifecycle-aware Taint Analysis"
 #     — 多层精度递进的思想
 from __future__ import annotations
 from dataclasses import dataclass, field

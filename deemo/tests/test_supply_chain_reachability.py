@@ -15,7 +15,7 @@ class TestSBOMComponent:
     """Test SBOM component dataclass"""
 
     def test_sbom_component_creation(self):
-                component = SBOMComponent(
+        component = SBOMComponent(
             name="openssl",
             version="1.1.1",
             supplier="OpenSSL Foundation",
@@ -29,7 +29,7 @@ class TestSBOMComponent:
         assert "SSL_read" in component.functions
 
     def test_sbom_component_defaults(self):
-                component = SBOMComponent(
+        component = SBOMComponent(
             name="test_lib",
             version="2.0",
             supplier="vendor",
@@ -86,7 +86,7 @@ class TestCallGraphBuilder:
     """Test call graph builder"""
 
     def test_builder_creation(self):
-                builder = CallGraphBuilder(binary_path="/nonexistent/test.bin")
+        builder = CallGraphBuilder(binary_path='/nonexistent/binary')
         assert builder is not None
 
     def test_build_empty(self):
@@ -97,7 +97,6 @@ class TestCallGraphBuilder:
     def test_is_reachable_direct(self):
         builder = CallGraphBuilder(binary_path="test.bin")
         builder.graph = {"main": {"target_func"}}
-lass字段完整性$/d
         assert builder.is_reachable("target_func", "main") is True
 
     def test_is_reachable_indirect(self):

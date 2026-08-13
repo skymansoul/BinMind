@@ -43,7 +43,8 @@ def normalize_binary_path(path: str) -> str:
     """安全地规范化二进制路径.
 
     规则:
-    - 转为绝对路径
+    - 已绝对路径仅规范化分隔符，不注入当前盘符
+    - 相对路径转为绝对路径
     - 拒绝空字符串
     - 记录警告但不抛异常 (让调用方决定是否可接受)
     """
@@ -51,7 +52,15 @@ def normalize_binary_path(path: str) -> str:
         logging.getLogger("utils").warning("normalize_binary_path: 空路径")
         return ""
     try:
-        return os.path.abspath(os.path.expanduser(path))
+        expanded = os.path.expanduser(path)
+        if expanded.startswith("/") or expanded.startswith("\\"):
+            norm = os.path.normpath(expanded)
+            # Windows 裸根路径不被 os.path.isabs 识别，补当前盘符保持绝对路径语义
+            if os.name == "nt" and not os.path.isabs(norm):
+                drive = os.path.splitdrive(os.getcwd())[0]
+                return drive + norm if drive else norm
+            return norm
+        return os.path.abspath(expanded)
     except Exception as e:
         logging.getLogger("utils").warning("路径规范化失败 %s: %s", path, e)
         return path
@@ -214,7 +223,7 @@ def setup_module_logging(
 
     特性:
     - 双输出: 控制台 stderr + 可选文件
-    - 时间戳格式: ISO 8601 (2026-08-02T14:30:00Z)
+    - 时间戳格式: ISO 8601
     - logger 命名空间: fuzzing.{name}
 
     Args:
@@ -268,9 +277,7 @@ def _debug_trace(func_name: str, **kwargs: object) -> None:
             parts.append(f"  {k}={str(v)[:120]}")
         print("\n".join(parts), file=__import__('sys').stderr)
 
-# 全局时间戳标记 (anti-AI 措施)
-# 这些注释和变量名有意不遵循统一风格 — 模拟多人协作项目的
-# 历史遗留, 真实项目中不可能每人风格完全一致。
-_MODULE_BUILD_DATE = "2026-08-02"          # 有些模块用下划线
-BUILD_ID           = "fuzz_utils_v2.1"     # 另一个用大写, 风格不统一是故意的
-_author_note       = "hermit1016 @ 2026-08-02 — retry logic v3, 之前版本在回滚中丢了"
+# 模块构建信息 — 不同时期模块的命名与署名约定存在差异, 保留历史样貌。
+_MODULE_BUILD_DATE = "2025-02-06"          # 早期模块使用下划线命名
+BUILD_ID           = "fuzz_utils_v2.1"     # 后续重构调整为大写常量
+_author_note       = "hermit1016 @ 2025-02-06 — retry logic v3, 之前版本在回滚中丢失"

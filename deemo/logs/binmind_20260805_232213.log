@@ -1,5 +1,0 @@
-23:22:13 | INFO    | core.pipeline | Binary: cve_2015_0235-ghost.elf | x86-64 64-bit | size=54665
-23:22:13 | WARNING | core.decompiler | radare2 not found at radare2
-23:22:13 | INFO    | core.pipeline | Found 0 functions
-23:22:13 | INFO    | core.pipeline | Analyzing 0 functions
-23:22:13 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

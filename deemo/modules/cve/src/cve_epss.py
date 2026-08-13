@@ -29,6 +29,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from .cve_models import CVEEntry
 
 # 可选 urllib 导入 — 模块可通过缓存离线工作
+from ._internal_helpers import _HAS_URLLIB
 try:
     import urllib.request
     import urllib.error
@@ -67,6 +68,8 @@ class EPSSClient:
                     os.makedirs(cache_dir, exist_ok=True)
             self._conn = sqlite3.connect(self._cache_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
+            if self._cache_path != ":memory:":
+                self._conn.execute("PRAGMA journal_mode=WAL")
         return self._conn
 
     def _init_cache(self):

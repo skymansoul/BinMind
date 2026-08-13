@@ -9,7 +9,10 @@ import logging as _logging
 import re as _re
 from collections import defaultdict as _defaultdict
 from collections import Counter as _Counter
+from dataclasses import dataclass, field
+from enum import Enum
 from math import log as _log, sqrt as _sqrt
+from typing import Any, Dict, List, Optional
 
 __dbg = _logging.getLogger(__name__)
 
@@ -660,3 +663,223 @@ class FunctionNamer:
 
 def create_function_namer(min_confidence=0.45):
     return FunctionNamer(min_confidence=min_confidence)
+
+
+# ── 结构化命名 API ────────────────────────────────────────────────────────────
+# 面向测试与批量分析的可组合接口：签名提取 → 启发式/模型预测 → 结果聚合。
+
+from dataclasses import dataclass, field
+from enum import Enum as _Enum
+from typing import List, Dict, Any, Optional
+
+
+class NamingStrategy(_Enum):
+    AI_PREDICTION = "ai_prediction"
+    HEURISTIC = "heuristic"
+
+
+class FunctionCategory(_Enum):
+    IO = "io"
+    MEMORY = "memory"
+    CRYPTO = "crypto"
+    NETWORK = "network"
+    PROCESS = "process"
+    STRING = "string"
+    HANDLER = "handler"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class FunctionSignature:
+    address: int
+    size: int = 0
+    api_calls: List[str] = field(default_factory=list)
+    referenced_strings: List[str] = field(default_factory=list)
+    basic_block_count: int = 0
+    loop_detected: bool = False
+    instruction_count: int = 0
+
+
+@dataclass
+class FunctionNamePrediction:
+    address: int
+    predicted_name: str = ""
+    confidence: float = 0.0
+    category: FunctionCategory = FunctionCategory.UNKNOWN
+    semantic_tags: List[str] = field(default_factory=list)
+    source: NamingStrategy = NamingStrategy.HEURISTIC
+
+
+@dataclass
+class NamingResult:
+    predictions: List[FunctionNamePrediction] = field(default_factory=list)
+    statistics: Dict[str, Any] = field(default_factory=dict)
+
+
+class HeuristicFunctionNamer:
+    """基于 API 调用与字符串引用的启发式命名器。"""
+
+    # API 调用 → (名称前缀, 类别)
+    api_patterns: Dict[str, tuple] = {
+        'fopen': ('file_', FunctionCategory.IO),
+        'fread': ('file_', FunctionCategory.IO),
+        'fwrite': ('file_', FunctionCategory.IO),
+        'fclose': ('file_', FunctionCategory.IO),
+        'open': ('file_', FunctionCategory.IO),
+        'read': ('file_', FunctionCategory.IO),
+        'write': ('file_', FunctionCategory.IO),
+        'malloc': ('memory_', FunctionCategory.MEMORY),
+        'calloc': ('memory_', FunctionCategory.MEMORY),
+        'realloc': ('memory_', FunctionCategory.MEMORY),
+        'free': ('memory_', FunctionCategory.MEMORY),
+        'memcpy': ('memory_', FunctionCategory.MEMORY),
+        'memset': ('memory_', FunctionCategory.MEMORY),
+        'socket': ('network_', FunctionCategory.NETWORK),
+        'connect': ('network_', FunctionCategory.NETWORK),
+        'send': ('network_', FunctionCategory.NETWORK),
+        'recv': ('network_', FunctionCategory.NETWORK),
+        'bind': ('network_', FunctionCategory.NETWORK),
+        'listen': ('network_', FunctionCategory.NETWORK),
+        'accept': ('network_', FunctionCategory.NETWORK),
+        'AES': ('crypto_', FunctionCategory.CRYPTO),
+        'RSA': ('crypto_', FunctionCategory.CRYPTO),
+        'SHA256': ('crypto_', FunctionCategory.CRYPTO),
+        'MD5': ('crypto_', FunctionCategory.CRYPTO),
+        'encrypt': ('crypto_', FunctionCategory.CRYPTO),
+        'decrypt': ('crypto_', FunctionCategory.CRYPTO),
+    }
+    # 字符串关键词 → (名称前缀, 类别)
+    string_patterns: Dict[str, tuple] = {
+        'error': ('error_', FunctionCategory.HANDLER),
+        'fail': ('error_', FunctionCategory.HANDLER),
+        'config': ('config_', FunctionCategory.HANDLER),
+        'setting': ('config_', FunctionCategory.HANDLER),
+        'option': ('config_', FunctionCategory.HANDLER),
+        'init': ('init_', FunctionCategory.HANDLER),
+        'parse': ('parse_', FunctionCategory.HANDLER),
+        'decode': ('decode_', FunctionCategory.HANDLER),
+        'log': ('log_', FunctionCategory.HANDLER),
+        'debug': ('debug_', FunctionCategory.HANDLER),
+        'http': ('http_', FunctionCategory.NETWORK),
+        'url': ('http_', FunctionCategory.NETWORK),
+    }
+
+    def _analyze_api_calls(self, signature: FunctionSignature) -> Optional[dict]:
+        for api in signature.api_calls:
+            for key, (prefix, category) in self.api_patterns.items():
+                if key in api:
+                    return {
+                        'name': f'{prefix}{api}',
+                        'category': category,
+                        'confidence': 0.7,
+                    }
+        return None
+
+    def _analyze_strings(self, signature: FunctionSignature) -> Optional[dict]:
+        for s in signature.referenced_strings:
+            low = s.lower()
+            for key, (prefix, category) in self.string_patterns.items():
+                if key in low:
+                    return {
+                        'name': f'{prefix}{key}',
+                        'category': category,
+                        'confidence': 0.6,
+                    }
+        return None
+
+    def predict_name(self, signature: FunctionSignature) -> FunctionNamePrediction:
+        """启发式命名：优先 API 信号，其次字符串信号，最后结构回退。"""
+        api_result = self._analyze_api_calls(signature)
+        if api_result:
+            return FunctionNamePrediction(
+                address=signature.address,
+                predicted_name=api_result['name'],
+                confidence=api_result['confidence'],
+                category=api_result['category'],
+                semantic_tags=['api'],
+                source=NamingStrategy.HEURISTIC,
+            )
+        str_result = self._analyze_strings(signature)
+        if str_result:
+            return FunctionNamePrediction(
+                address=signature.address,
+                predicted_name=str_result['name'],
+                confidence=str_result['confidence'],
+                category=str_result['category'],
+                semantic_tags=['string'],
+                source=NamingStrategy.HEURISTIC,
+            )
+        return FunctionNamePrediction(
+            address=signature.address,
+            predicted_name=f'func_{signature.address:x}',
+            confidence=0.3,
+            category=FunctionCategory.UNKNOWN,
+            source=NamingStrategy.HEURISTIC,
+        )
+
+
+class FunctionSignatureExtractor:
+    """从反编译伪代码提取函数签名。"""
+
+    def extract(self, code: str, address: int = 0) -> FunctionSignature:
+        api_calls = _re.findall(r'\b(\w+)\s*\(', code)
+        strings = _re.findall(r'"([^"]*)"', code)
+        return FunctionSignature(
+            address=address,
+            size=len(code),
+            api_calls=api_calls,
+            referenced_strings=strings,
+            basic_block_count=code.count('if (') + code.count('goto'),
+            instruction_count=len(code.splitlines()),
+        )
+
+
+class AIFunctionNamer:
+    """AI 函数命名器——启发式底座 + 结果缓存。"""
+
+    def __init__(self):
+        self.heuristic_namer = HeuristicFunctionNamer()
+        self.prediction_cache: Dict[int, FunctionNamePrediction] = {}
+
+    def predict_name(self, signature: FunctionSignature) -> FunctionNamePrediction:
+        prediction = self.heuristic_namer.predict_name(signature)
+        self.prediction_cache[signature.address] = prediction
+        return prediction
+
+    def predict_names(self, functions: List[Dict[str, Any]]) -> NamingResult:
+        predictions = []
+        for f in functions:
+            sig = FunctionSignature(
+                address=f.get('address', 0),
+                size=f.get('size', 0),
+                api_calls=f.get('api_calls', []),
+                referenced_strings=f.get('referenced_strings', []),
+                basic_block_count=f.get('basic_block_count', 0),
+                loop_detected=f.get('loop_detected', False),
+            )
+            predictions.append(self.predict_name(sig))
+        return NamingResult(predictions=predictions)
+
+    def generate_naming_report(self, result: NamingResult,
+                               fmt: str = 'markdown') -> str:
+        """生成人类可读的命名分析报告。"""
+        lines = ['# 函数命名分析报告', '']
+        stats = result.statistics or {}
+        lines.append(f"- 函数总数: {stats.get('total_functions', len(result.predictions))}")
+        lines.append(f"- 高置信度: {stats.get('high_confidence', 0)}")
+        lines.append(f"- 中置信度: {stats.get('medium_confidence', 0)}")
+        lines.append(f"- 低置信度: {stats.get('low_confidence', 0)}")
+        lines.append('')
+        lines.append('| 地址 | 名称 | 置信度 | 类别 | 来源 |')
+        lines.append('|------|------|--------|------|------|')
+        for p in result.predictions:
+            lines.append(
+                f"| 0x{p.address:x} | {p.predicted_name} | "
+                f"{p.confidence:.2f} | {p.category.value} | {p.source.value} |")
+        return '\n'.join(lines)
+
+
+def predict_function_names(functions: List[Dict[str, Any]]) -> NamingResult:
+    """便捷入口：对函数描述列表批量命名。"""
+    namer = AIFunctionNamer()
+    return namer.predict_names(functions)

@@ -5,7 +5,7 @@ __attribute__((noinline)) void trigger_diffobj_safe(void) {
     char *p = (char *)malloc(64);
     char *q = (char *)malloc(64);
     free(p);
-    q[0] = 'X';  /* Ê¹ÓÃ¶ÀÁ¢µÄq ¡ú °²È« */
+    q[0] = 'X';  /* ä½¿ç”¨ç‹¬ç«‹çš„q â†’ å®‰å…¨ */
     free(q);
 }
 

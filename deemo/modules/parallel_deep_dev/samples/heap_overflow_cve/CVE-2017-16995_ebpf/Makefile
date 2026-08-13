@@ -5,7 +5,7 @@ TARGET = vuln.exe
 all: $(TARGET)
 
 $(TARGET): vuln.c
-	$(CC) $(CFLAGS) -o $(TARGET) vuln.c
+	$ $(CFLAGS) -o $(TARGET) vuln.c
 
 clean:
 	rm -f $(TARGET)

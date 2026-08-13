@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_13_cross_func_alias",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2019-12815 类 (跨函数别名溢出)",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "write_to 接收 malloc(64) 的缓冲区却写入 256 字节"
-}

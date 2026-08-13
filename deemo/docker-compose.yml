@@ -1,0 +1,45 @@
+# docker-compose.yml
+# privileged + SYS_PTRACE required for gdb and pwntools process()
+version: '3.8'
+
+services:
+  binmind:
+    build: .
+    container_name: binmind-analysis
+    volumes:
+      - ./workspace:/workspace
+      - ./data:/data
+      - ./reports:/app/reports
+    environment:
+      - BINMIND_WORKSPACE=/workspace
+      - BINMIND_SANDBOX=true
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "4444:4444"   # exploit回连
+      - "9999:9999"   # gdbserver
+    stdin_open: true
+    tty: true
+    privileged: true
+    cap_add:
+      - SYS_PTRACE       # ptrace()系统调用权限
+    security_opt:
+      - seccomp:unconfined  # 允许所有syscall，否则angr的符号执行受限
+
+  binmind-worker:
+    build: .
+    container_name: binmind-worker
+    volumes:
+      - ./workspace:/workspace
+      - ./data:/data
+    environment:
+      - BINMIND_WORKSPACE=/workspace
+      - BINMIND_SANDBOX=true
+      - BINMIND_WORKER=true
+    deploy:
+      replicas: 4    # 四个worker并行处理分析任务
+    depends_on:
+      - binmind
+
+networks:
+  binmind-network:
+    driver: bridge

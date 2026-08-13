@@ -6,7 +6,7 @@ int main(void) {
     if (!buf) return 1;
     unsigned char src[256];
     memset(src, 1, sizeof(src));
-    memcpy(buf, src, 256);   /* 大小精确等于分配 */
+    memcpy(buf, src, 256);   /* 澶у皬绮剧‘绛変簬鍒嗛厤 */
     printf("[*] %d\n", buf[0]);
     free(buf);
     return 0;

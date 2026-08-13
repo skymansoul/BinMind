@@ -146,6 +146,12 @@ class StaticDataFlowAnalyzer:
         """
         加载二进制文件
         """
+        if not os.path.exists(self.binary_path):
+            logger.warning(f"[Static] 二进制文件不存在: {self.binary_path}")
+            self.use_angr = False
+            self.project = None
+            return
+
         if self.use_angr:
             try:
                 self.project = angr.Project(self.binary_path, auto_load_libs=False)

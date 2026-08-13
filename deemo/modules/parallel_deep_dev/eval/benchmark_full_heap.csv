@@ -1,0 +1,241 @@
+tool,sample,group,is_vuln,detected,detections,false_positive,false_negative,elapsed_ms,peak_mb,cve,pattern,success,error
+CACBV,CVE-2015-0235_ghost,plain,True,True,1,0,0,0.825,57.65,CVE-2015-0235,memcpy_len_overflow,True,
+Baseline,CVE-2015-0235_ghost,plain,True,True,1,0,0,0.577,57.65,CVE-2015-0235,memcpy_len_overflow,True,
+Angr,CVE-2015-0235_ghost,plain,True,True,2,0,0,448.0,57.65,CVE-2015-0235,memcpy_len_overflow,True,
+Ghidra,CVE-2015-0235_ghost,plain,True,False,0,0,1,0,57.65,CVE-2015-0235,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2015-0235_ghost,plain,True,False,0,0,1,0,57.65,CVE-2015-0235,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2015-0235_ghost~packed,packed,True,True,1,0,0,1.614,81.34,CVE-2015-0235,memcpy_len_overflow,True,
+Baseline,CVE-2015-0235_ghost~packed,packed,True,True,1,0,0,4.818,81.34,CVE-2015-0235,memcpy_len_overflow,True,
+Angr,CVE-2015-0235_ghost~packed,packed,True,True,2,0,0,834.0,81.34,CVE-2015-0235,memcpy_len_overflow,True,
+Ghidra,CVE-2015-0235_ghost~packed,packed,True,False,0,0,1,0,81.34,CVE-2015-0235,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2015-0235_ghost~packed,packed,True,False,0,0,1,0,81.34,CVE-2015-0235,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2017-1000117_udp_frag,plain,True,True,1,0,0,5.17,105.21,CVE-2017-1000117,loop_off_by_one,True,
+Baseline,CVE-2017-1000117_udp_frag,plain,True,True,1,0,0,1.499,105.21,CVE-2017-1000117,loop_off_by_one,True,
+Angr,CVE-2017-1000117_udp_frag,plain,True,True,2,0,0,1209.0,105.21,CVE-2017-1000117,loop_off_by_one,True,
+Ghidra,CVE-2017-1000117_udp_frag,plain,True,False,0,0,1,0,105.21,CVE-2017-1000117,loop_off_by_one,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-1000117_udp_frag,plain,True,False,0,0,1,0,105.21,CVE-2017-1000117,loop_off_by_one,False,qemu-x86_64 not found
+CACBV,CVE-2017-1000117_udp_frag~packed,packed,True,True,1,0,0,5.721,124.41,CVE-2017-1000117,loop_off_by_one,True,
+Baseline,CVE-2017-1000117_udp_frag~packed,packed,True,True,1,0,0,0.921,124.41,CVE-2017-1000117,loop_off_by_one,True,
+Angr,CVE-2017-1000117_udp_frag~packed,packed,True,True,2,0,0,1755.0,124.41,CVE-2017-1000117,loop_off_by_one,True,
+Ghidra,CVE-2017-1000117_udp_frag~packed,packed,True,False,0,0,1,0,124.41,CVE-2017-1000117,loop_off_by_one,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-1000117_udp_frag~packed,packed,True,False,0,0,1,0,124.41,CVE-2017-1000117,loop_off_by_one,False,qemu-x86_64 not found
+CACBV,CVE-2017-16995_ebpf,plain,True,True,1,0,0,0.666,67.51,CVE-2017-16995,const_offset,True,
+Baseline,CVE-2017-16995_ebpf,plain,True,True,1,0,0,0.399,67.51,CVE-2017-16995,const_offset,True,
+Angr,CVE-2017-16995_ebpf,plain,True,True,2,0,0,1634.0,67.51,CVE-2017-16995,const_offset,True,
+Ghidra,CVE-2017-16995_ebpf,plain,True,False,0,0,1,0,67.51,CVE-2017-16995,const_offset,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-16995_ebpf,plain,True,False,0,0,1,0,67.51,CVE-2017-16995,const_offset,False,qemu-x86_64 not found
+CACBV,CVE-2017-16995_ebpf~packed,packed,True,True,1,0,0,0.495,43.84,CVE-2017-16995,const_offset,True,
+Baseline,CVE-2017-16995_ebpf~packed,packed,True,True,1,0,0,0.305,43.84,CVE-2017-16995,const_offset,True,
+Angr,CVE-2017-16995_ebpf~packed,packed,True,True,2,0,0,1585.0,43.84,CVE-2017-16995,const_offset,True,
+Ghidra,CVE-2017-16995_ebpf~packed,packed,True,False,0,0,1,0,43.84,CVE-2017-16995,const_offset,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2017-16995_ebpf~packed,packed,True,False,0,0,1,0,43.84,CVE-2017-16995,const_offset,False,qemu-x86_64 not found
+CACBV,CVE-2018-1000001_realpath,plain,True,True,1,0,0,0.699,24.43,CVE-2018-1000001,memcpy_len_overflow,True,
+Baseline,CVE-2018-1000001_realpath,plain,True,True,2,0,0,0.395,24.43,CVE-2018-1000001,memcpy_len_overflow,True,
+Angr,CVE-2018-1000001_realpath,plain,True,True,2,0,0,1551.0,24.43,CVE-2018-1000001,memcpy_len_overflow,True,
+Ghidra,CVE-2018-1000001_realpath,plain,True,False,0,0,1,0,24.43,CVE-2018-1000001,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2018-1000001_realpath,plain,True,False,0,0,1,0,24.43,CVE-2018-1000001,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2018-1000001_realpath~packed,packed,True,True,1,0,0,0.617,8.14,CVE-2018-1000001,memcpy_len_overflow,True,
+Baseline,CVE-2018-1000001_realpath~packed,packed,True,True,2,0,0,0.411,8.14,CVE-2018-1000001,memcpy_len_overflow,True,
+Angr,CVE-2018-1000001_realpath~packed,packed,True,True,2,0,0,1534.0,8.14,CVE-2018-1000001,memcpy_len_overflow,True,
+Ghidra,CVE-2018-1000001_realpath~packed,packed,True,False,0,0,1,0,8.14,CVE-2018-1000001,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2018-1000001_realpath~packed,packed,True,False,0,0,1,0,8.14,CVE-2018-1000001,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2019-1010298_hso,plain,True,True,1,0,0,0.521,8.04,CVE-2019-1010298,const_offset,True,
+Baseline,CVE-2019-1010298_hso,plain,True,True,1,0,0,0.326,8.04,CVE-2019-1010298,const_offset,True,
+Angr,CVE-2019-1010298_hso,plain,True,True,2,0,0,1570.0,8.04,CVE-2019-1010298,const_offset,True,
+Ghidra,CVE-2019-1010298_hso,plain,True,False,0,0,1,0,8.04,CVE-2019-1010298,const_offset,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2019-1010298_hso,plain,True,False,0,0,1,0,8.04,CVE-2019-1010298,const_offset,False,qemu-x86_64 not found
+CACBV,CVE-2019-1010298_hso~packed,packed,True,True,1,0,0,0.634,8.07,CVE-2019-1010298,const_offset,True,
+Baseline,CVE-2019-1010298_hso~packed,packed,True,True,1,0,0,0.441,8.07,CVE-2019-1010298,const_offset,True,
+Angr,CVE-2019-1010298_hso~packed,packed,True,True,2,0,0,1580.0,8.07,CVE-2019-1010298,const_offset,True,
+Ghidra,CVE-2019-1010298_hso~packed,packed,True,False,0,0,1,0,8.07,CVE-2019-1010298,const_offset,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2019-1010298_hso~packed,packed,True,False,0,0,1,0,8.07,CVE-2019-1010298,const_offset,False,qemu-x86_64 not found
+CACBV,CVE-2020-14386_afpacket,plain,True,True,2,0,0,0.625,3.56,CVE-2020-14386,index_overflow,True,
+Baseline,CVE-2020-14386_afpacket,plain,True,True,2,0,0,0.443,3.56,CVE-2020-14386,index_overflow,True,
+Angr,CVE-2020-14386_afpacket,plain,True,True,2,0,0,1591.0,3.56,CVE-2020-14386,index_overflow,True,
+Ghidra,CVE-2020-14386_afpacket,plain,True,False,0,0,1,0,3.56,CVE-2020-14386,index_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2020-14386_afpacket,plain,True,False,0,0,1,0,3.56,CVE-2020-14386,index_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2020-14386_afpacket~packed,packed,True,True,2,0,0,0.607,2.01,CVE-2020-14386,index_overflow,True,
+Baseline,CVE-2020-14386_afpacket~packed,packed,True,True,2,0,0,0.481,2.01,CVE-2020-14386,index_overflow,True,
+Angr,CVE-2020-14386_afpacket~packed,packed,True,True,2,0,0,1622.0,2.01,CVE-2020-14386,index_overflow,True,
+Ghidra,CVE-2020-14386_afpacket~packed,packed,True,False,0,0,1,0,2.01,CVE-2020-14386,index_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2020-14386_afpacket~packed,packed,True,False,0,0,1,0,2.01,CVE-2020-14386,index_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2020-25656_vt_ioctl,plain,True,True,2,0,0,0.621,1.98,CVE-2020-25656,loop_scale_mismatch,True,
+Baseline,CVE-2020-25656_vt_ioctl,plain,True,True,2,0,0,0.443,1.98,CVE-2020-25656,loop_scale_mismatch,True,
+Angr,CVE-2020-25656_vt_ioctl,plain,True,True,2,0,0,1625.0,1.98,CVE-2020-25656,loop_scale_mismatch,True,
+Ghidra,CVE-2020-25656_vt_ioctl,plain,True,False,0,0,1,0,1.98,CVE-2020-25656,loop_scale_mismatch,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2020-25656_vt_ioctl,plain,True,False,0,0,1,0,1.98,CVE-2020-25656,loop_scale_mismatch,False,qemu-x86_64 not found
+CACBV,CVE-2020-25656_vt_ioctl~packed,packed,True,True,2,0,0,0.627,1.92,CVE-2020-25656,loop_scale_mismatch,True,
+Baseline,CVE-2020-25656_vt_ioctl~packed,packed,True,True,2,0,0,0.386,1.92,CVE-2020-25656,loop_scale_mismatch,True,
+Angr,CVE-2020-25656_vt_ioctl~packed,packed,True,True,2,0,0,1693.0,1.92,CVE-2020-25656,loop_scale_mismatch,True,
+Ghidra,CVE-2020-25656_vt_ioctl~packed,packed,True,False,0,0,1,0,1.92,CVE-2020-25656,loop_scale_mismatch,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2020-25656_vt_ioctl~packed,packed,True,False,0,0,1,0,1.92,CVE-2020-25656,loop_scale_mismatch,False,qemu-x86_64 not found
+CACBV,CVE-2021-22555_netfilter,plain,True,True,1,0,0,0.652,2.41,CVE-2021-22555,memcpy_len_overflow,True,
+Baseline,CVE-2021-22555_netfilter,plain,True,True,1,0,0,0.431,2.41,CVE-2021-22555,memcpy_len_overflow,True,
+Angr,CVE-2021-22555_netfilter,plain,True,True,2,0,0,1746.0,2.41,CVE-2021-22555,memcpy_len_overflow,True,
+Ghidra,CVE-2021-22555_netfilter,plain,True,False,0,0,1,0,2.41,CVE-2021-22555,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-22555_netfilter,plain,True,False,0,0,1,0,2.41,CVE-2021-22555,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-22555_netfilter~packed,packed,True,True,1,0,0,0.514,1.45,CVE-2021-22555,memcpy_len_overflow,True,
+Baseline,CVE-2021-22555_netfilter~packed,packed,True,True,1,0,0,0.325,1.45,CVE-2021-22555,memcpy_len_overflow,True,
+Angr,CVE-2021-22555_netfilter~packed,packed,True,True,2,0,0,1824.0,1.45,CVE-2021-22555,memcpy_len_overflow,True,
+Ghidra,CVE-2021-22555_netfilter~packed,packed,True,False,0,0,1,0,1.45,CVE-2021-22555,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-22555_netfilter~packed,packed,True,False,0,0,1,0,1.45,CVE-2021-22555,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-3156_sudo,plain,True,True,1,0,0,0.714,1.48,CVE-2021-3156,concat_overflow,True,
+Baseline,CVE-2021-3156_sudo,plain,True,True,2,0,0,0.549,1.48,CVE-2021-3156,concat_overflow,True,
+Angr,CVE-2021-3156_sudo,plain,True,True,2,0,0,1872.0,1.48,CVE-2021-3156,concat_overflow,True,
+Ghidra,CVE-2021-3156_sudo,plain,True,False,0,0,1,0,1.48,CVE-2021-3156,concat_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-3156_sudo,plain,True,False,0,0,1,0,1.48,CVE-2021-3156,concat_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-3156_sudo~packed,packed,True,True,1,0,0,0.568,1.5,CVE-2021-3156,concat_overflow,True,
+Baseline,CVE-2021-3156_sudo~packed,packed,True,True,2,0,0,0.368,1.5,CVE-2021-3156,concat_overflow,True,
+Angr,CVE-2021-3156_sudo~packed,packed,True,True,2,0,0,1869.0,1.5,CVE-2021-3156,concat_overflow,True,
+Ghidra,CVE-2021-3156_sudo~packed,packed,True,False,0,0,1,0,1.5,CVE-2021-3156,concat_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-3156_sudo~packed,packed,True,False,0,0,1,0,1.5,CVE-2021-3156,concat_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-33909_seccomp,plain,True,True,1,0,0,0.64,1.03,CVE-2021-33909,memcpy_len_overflow,True,
+Baseline,CVE-2021-33909_seccomp,plain,True,True,1,0,0,0.451,1.03,CVE-2021-33909,memcpy_len_overflow,True,
+Angr,CVE-2021-33909_seccomp,plain,True,True,2,0,0,1849.0,1.03,CVE-2021-33909,memcpy_len_overflow,True,
+Ghidra,CVE-2021-33909_seccomp,plain,True,False,0,0,1,0,1.03,CVE-2021-33909,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-33909_seccomp,plain,True,False,0,0,1,0,1.03,CVE-2021-33909,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-33909_seccomp~packed,packed,True,True,1,0,0,0.537,3.21,CVE-2021-33909,memcpy_len_overflow,True,
+Baseline,CVE-2021-33909_seccomp~packed,packed,True,True,1,0,0,0.353,3.21,CVE-2021-33909,memcpy_len_overflow,True,
+Angr,CVE-2021-33909_seccomp~packed,packed,True,True,2,0,0,1611.0,3.21,CVE-2021-33909,memcpy_len_overflow,True,
+Ghidra,CVE-2021-33909_seccomp~packed,packed,True,False,0,0,1,0,3.21,CVE-2021-33909,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-33909_seccomp~packed,packed,True,False,0,0,1,0,3.21,CVE-2021-33909,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2021-4204_ebpf32,plain,True,True,1,0,0,1.169,-0.020000000000000018,CVE-2021-4204,scale_mismatch,True,
+Baseline,CVE-2021-4204_ebpf32,plain,True,True,1,0,0,1.904,-0.020000000000000018,CVE-2021-4204,scale_mismatch,True,
+Angr,CVE-2021-4204_ebpf32,plain,True,True,2,0,0,1818.0,-0.020000000000000018,CVE-2021-4204,scale_mismatch,True,
+Ghidra,CVE-2021-4204_ebpf32,plain,True,False,0,0,1,0,-0.020000000000000018,CVE-2021-4204,scale_mismatch,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-4204_ebpf32,plain,True,False,0,0,1,0,-0.020000000000000018,CVE-2021-4204,scale_mismatch,False,qemu-x86_64 not found
+CACBV,CVE-2021-4204_ebpf32~packed,packed,True,True,1,0,0,0.67,0.66,CVE-2021-4204,scale_mismatch,True,
+Baseline,CVE-2021-4204_ebpf32~packed,packed,True,True,1,0,0,0.484,0.66,CVE-2021-4204,scale_mismatch,True,
+Angr,CVE-2021-4204_ebpf32~packed,packed,True,True,2,0,0,1818.0,0.66,CVE-2021-4204,scale_mismatch,True,
+Ghidra,CVE-2021-4204_ebpf32~packed,packed,True,False,0,0,1,0,0.66,CVE-2021-4204,scale_mismatch,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2021-4204_ebpf32~packed,packed,True,False,0,0,1,0,0.66,CVE-2021-4204,scale_mismatch,False,qemu-x86_64 not found
+CACBV,CVE-2022-0185_fsconfig,plain,True,True,1,0,0,0.506,1.2,CVE-2022-0185,memcpy_len_overflow,True,
+Baseline,CVE-2022-0185_fsconfig,plain,True,True,1,0,0,0.33,1.2,CVE-2022-0185,memcpy_len_overflow,True,
+Angr,CVE-2022-0185_fsconfig,plain,True,True,2,0,0,1847.0,1.2,CVE-2022-0185,memcpy_len_overflow,True,
+Ghidra,CVE-2022-0185_fsconfig,plain,True,False,0,0,1,0,1.2,CVE-2022-0185,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2022-0185_fsconfig,plain,True,False,0,0,1,0,1.2,CVE-2022-0185,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2022-0185_fsconfig~packed,packed,True,True,1,0,0,0.557,-0.72,CVE-2022-0185,memcpy_len_overflow,True,
+Baseline,CVE-2022-0185_fsconfig~packed,packed,True,True,1,0,0,0.374,-0.72,CVE-2022-0185,memcpy_len_overflow,True,
+Angr,CVE-2022-0185_fsconfig~packed,packed,True,True,2,0,0,1862.0,-0.72,CVE-2022-0185,memcpy_len_overflow,True,
+Ghidra,CVE-2022-0185_fsconfig~packed,packed,True,False,0,0,1,0,-0.72,CVE-2022-0185,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2022-0185_fsconfig~packed,packed,True,False,0,0,1,0,-0.72,CVE-2022-0185,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2023-0286_x400,plain,True,True,1,0,0,0.513,2.96,CVE-2023-0286,length_double,True,
+Baseline,CVE-2023-0286_x400,plain,True,True,1,0,0,0.343,2.96,CVE-2023-0286,length_double,True,
+Angr,CVE-2023-0286_x400,plain,True,True,2,0,0,1861.0,2.96,CVE-2023-0286,length_double,True,
+Ghidra,CVE-2023-0286_x400,plain,True,False,0,0,1,0,2.96,CVE-2023-0286,length_double,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2023-0286_x400,plain,True,False,0,0,1,0,2.96,CVE-2023-0286,length_double,False,qemu-x86_64 not found
+CACBV,CVE-2023-0286_x400~packed,packed,True,True,1,0,0,0.545,2.27,CVE-2023-0286,length_double,True,
+Baseline,CVE-2023-0286_x400~packed,packed,True,True,1,0,0,0.4,2.27,CVE-2023-0286,length_double,True,
+Angr,CVE-2023-0286_x400~packed,packed,True,True,2,0,0,1836.0,2.27,CVE-2023-0286,length_double,True,
+Ghidra,CVE-2023-0286_x400~packed,packed,True,False,0,0,1,0,2.27,CVE-2023-0286,length_double,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2023-0286_x400~packed,packed,True,False,0,0,1,0,2.27,CVE-2023-0286,length_double,False,qemu-x86_64 not found
+CACBV,CVE-2023-2286_libssh2,plain,True,True,1,0,0,0.535,1.7,CVE-2023-2286,memcpy_len_overflow,True,
+Baseline,CVE-2023-2286_libssh2,plain,True,True,1,0,0,0.343,1.7,CVE-2023-2286,memcpy_len_overflow,True,
+Angr,CVE-2023-2286_libssh2,plain,True,True,2,0,0,1830.0,1.7,CVE-2023-2286,memcpy_len_overflow,True,
+Ghidra,CVE-2023-2286_libssh2,plain,True,False,0,0,1,0,1.7,CVE-2023-2286,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2023-2286_libssh2,plain,True,False,0,0,1,0,1.7,CVE-2023-2286,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2023-2286_libssh2~packed,packed,True,True,1,0,0,0.547,1.02,CVE-2023-2286,memcpy_len_overflow,True,
+Baseline,CVE-2023-2286_libssh2~packed,packed,True,True,1,0,0,0.355,1.02,CVE-2023-2286,memcpy_len_overflow,True,
+Angr,CVE-2023-2286_libssh2~packed,packed,True,True,2,0,0,1770.0,1.02,CVE-2023-2286,memcpy_len_overflow,True,
+Ghidra,CVE-2023-2286_libssh2~packed,packed,True,False,0,0,1,0,1.02,CVE-2023-2286,memcpy_len_overflow,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2023-2286_libssh2~packed,packed,True,False,0,0,1,0,1.02,CVE-2023-2286,memcpy_len_overflow,False,qemu-x86_64 not found
+CACBV,CVE-2024-21762_fortios,plain,True,True,1,0,0,0.491,0.62,CVE-2024-21762,offset_plus_len,True,
+Baseline,CVE-2024-21762_fortios,plain,True,True,1,0,0,0.405,0.62,CVE-2024-21762,offset_plus_len,True,
+Angr,CVE-2024-21762_fortios,plain,True,True,2,0,0,1802.0,0.62,CVE-2024-21762,offset_plus_len,True,
+Ghidra,CVE-2024-21762_fortios,plain,True,False,0,0,1,0,0.62,CVE-2024-21762,offset_plus_len,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2024-21762_fortios,plain,True,False,0,0,1,0,0.62,CVE-2024-21762,offset_plus_len,False,qemu-x86_64 not found
+CACBV,CVE-2024-21762_fortios~packed,packed,True,True,1,0,0,0.548,0.61,CVE-2024-21762,offset_plus_len,True,
+Baseline,CVE-2024-21762_fortios~packed,packed,True,True,1,0,0,0.394,0.61,CVE-2024-21762,offset_plus_len,True,
+Angr,CVE-2024-21762_fortios~packed,packed,True,True,2,0,0,1855.0,0.61,CVE-2024-21762,offset_plus_len,True,
+Ghidra,CVE-2024-21762_fortios~packed,packed,True,False,0,0,1,0,0.61,CVE-2024-21762,offset_plus_len,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2024-21762_fortios~packed,packed,True,False,0,0,1,0,0.61,CVE-2024-21762,offset_plus_len,False,qemu-x86_64 not found
+CACBV,CVE-2024-23222_webkit,plain,True,True,1,0,0,0.535,0.61,CVE-2024-23222,length_double,True,
+Baseline,CVE-2024-23222_webkit,plain,True,True,1,0,0,0.32,0.61,CVE-2024-23222,length_double,True,
+Angr,CVE-2024-23222_webkit,plain,True,True,2,0,0,1874.0,0.61,CVE-2024-23222,length_double,True,
+Ghidra,CVE-2024-23222_webkit,plain,True,False,0,0,1,0,0.61,CVE-2024-23222,length_double,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2024-23222_webkit,plain,True,False,0,0,1,0,0.61,CVE-2024-23222,length_double,False,qemu-x86_64 not found
+CACBV,CVE-2024-23222_webkit~packed,packed,True,True,1,0,0,0.606,0.77,CVE-2024-23222,length_double,True,
+Baseline,CVE-2024-23222_webkit~packed,packed,True,True,1,0,0,0.343,0.77,CVE-2024-23222,length_double,True,
+Angr,CVE-2024-23222_webkit~packed,packed,True,True,2,0,0,1983.0,0.77,CVE-2024-23222,length_double,True,
+Ghidra,CVE-2024-23222_webkit~packed,packed,True,False,0,0,1,0,0.77,CVE-2024-23222,length_double,False,GHIDRA_HOME not set
+QEMU-GT,CVE-2024-23222_webkit~packed,packed,True,False,0,0,1,0,0.77,CVE-2024-23222,length_double,False,qemu-x86_64 not found
+CACBV,FP-01_coupled_len,plain,False,False,0,0,0,0.572,0.69,,coupled_len,True,
+Baseline,FP-01_coupled_len,plain,False,True,1,1,0,0.441,0.69,,coupled_len,True,
+Angr,FP-01_coupled_len,plain,False,True,2,1,0,1971.0,0.69,,coupled_len,True,
+Ghidra,FP-01_coupled_len,plain,False,False,0,0,0,0,0.69,,coupled_len,False,GHIDRA_HOME not set
+QEMU-GT,FP-01_coupled_len,plain,False,False,0,0,0,0,0.69,,coupled_len,False,qemu-x86_64 not found
+CACBV,FP-01_coupled_len~packed,packed,False,False,0,0,0,0.57,0.69,,coupled_len,True,
+Baseline,FP-01_coupled_len~packed,packed,False,True,1,1,0,0.416,0.69,,coupled_len,True,
+Angr,FP-01_coupled_len~packed,packed,False,True,2,1,0,1915.0,0.69,,coupled_len,True,
+Ghidra,FP-01_coupled_len~packed,packed,False,False,0,0,0,0,0.69,,coupled_len,False,GHIDRA_HOME not set
+QEMU-GT,FP-01_coupled_len~packed,packed,False,False,0,0,0,0,0.69,,coupled_len,False,qemu-x86_64 not found
+CACBV,FP-02_loop_scaled,plain,False,False,0,0,0,0.705,0.6799999999999999,,loop_scaled,True,
+Baseline,FP-02_loop_scaled,plain,False,True,1,1,0,0.487,0.6799999999999999,,loop_scaled,True,
+Angr,FP-02_loop_scaled,plain,False,True,2,1,0,1902.0,0.6799999999999999,,loop_scaled,True,
+Ghidra,FP-02_loop_scaled,plain,False,False,0,0,0,0,0.6799999999999999,,loop_scaled,False,GHIDRA_HOME not set
+QEMU-GT,FP-02_loop_scaled,plain,False,False,0,0,0,0,0.6799999999999999,,loop_scaled,False,qemu-x86_64 not found
+CACBV,FP-02_loop_scaled~packed,packed,False,False,0,0,0,0.603,0.5,,loop_scaled,True,
+Baseline,FP-02_loop_scaled~packed,packed,False,True,1,1,0,0.407,0.5,,loop_scaled,True,
+Angr,FP-02_loop_scaled~packed,packed,False,True,2,1,0,1873.0,0.5,,loop_scaled,True,
+Ghidra,FP-02_loop_scaled~packed,packed,False,False,0,0,0,0,0.5,,loop_scaled,False,GHIDRA_HOME not set
+QEMU-GT,FP-02_loop_scaled~packed,packed,False,False,0,0,0,0,0.5,,loop_scaled,False,qemu-x86_64 not found
+CACBV,FP-03_guard_check,plain,False,False,0,0,0,0.55,0.6,,guard_check,True,
+Baseline,FP-03_guard_check,plain,False,True,1,1,0,0.374,0.6,,guard_check,True,
+Angr,FP-03_guard_check,plain,False,True,2,1,0,1847.0,0.6,,guard_check,True,
+Ghidra,FP-03_guard_check,plain,False,False,0,0,0,0,0.6,,guard_check,False,GHIDRA_HOME not set
+QEMU-GT,FP-03_guard_check,plain,False,False,0,0,0,0,0.6,,guard_check,False,qemu-x86_64 not found
+CACBV,FP-03_guard_check~packed,packed,False,False,0,0,0,0.735,0.63,,guard_check,True,
+Baseline,FP-03_guard_check~packed,packed,False,True,1,1,0,0.484,0.63,,guard_check,True,
+Angr,FP-03_guard_check~packed,packed,False,True,2,1,0,1830.0,0.63,,guard_check,True,
+Ghidra,FP-03_guard_check~packed,packed,False,False,0,0,0,0,0.63,,guard_check,False,GHIDRA_HOME not set
+QEMU-GT,FP-03_guard_check~packed,packed,False,False,0,0,0,0,0.63,,guard_check,False,qemu-x86_64 not found
+CACBV,FP-04_aligned_slack,plain,False,False,0,0,0,0.537,0.67,,aligned_slack,True,
+Baseline,FP-04_aligned_slack,plain,False,True,2,1,0,0.349,0.67,,aligned_slack,True,
+Angr,FP-04_aligned_slack,plain,False,True,2,1,0,1830.0,0.67,,aligned_slack,True,
+Ghidra,FP-04_aligned_slack,plain,False,False,0,0,0,0,0.67,,aligned_slack,False,GHIDRA_HOME not set
+QEMU-GT,FP-04_aligned_slack,plain,False,False,0,0,0,0,0.67,,aligned_slack,False,qemu-x86_64 not found
+CACBV,FP-04_aligned_slack~packed,packed,False,False,0,0,0,0.489,0.7,,aligned_slack,True,
+Baseline,FP-04_aligned_slack~packed,packed,False,True,2,1,0,0.363,0.7,,aligned_slack,True,
+Angr,FP-04_aligned_slack~packed,packed,False,True,2,1,0,1808.0,0.7,,aligned_slack,True,
+Ghidra,FP-04_aligned_slack~packed,packed,False,False,0,0,0,0,0.7,,aligned_slack,False,GHIDRA_HOME not set
+QEMU-GT,FP-04_aligned_slack~packed,packed,False,False,0,0,0,0,0.7,,aligned_slack,False,qemu-x86_64 not found
+CACBV,FP-05_strcpy_literal,plain,False,False,0,0,0,0.388,0.8300000000000001,,strcpy_literal,True,
+Baseline,FP-05_strcpy_literal,plain,False,True,1,1,0,0.251,0.8300000000000001,,strcpy_literal,True,
+Angr,FP-05_strcpy_literal,plain,False,True,2,1,0,1812.0,0.8300000000000001,,strcpy_literal,True,
+Ghidra,FP-05_strcpy_literal,plain,False,False,0,0,0,0,0.8300000000000001,,strcpy_literal,False,GHIDRA_HOME not set
+QEMU-GT,FP-05_strcpy_literal,plain,False,False,0,0,0,0,0.8300000000000001,,strcpy_literal,False,qemu-x86_64 not found
+CACBV,FP-05_strcpy_literal~packed,packed,False,False,0,0,0,0.379,0.81,,strcpy_literal,True,
+Baseline,FP-05_strcpy_literal~packed,packed,False,True,1,1,0,0.21,0.81,,strcpy_literal,True,
+Angr,FP-05_strcpy_literal~packed,packed,False,True,2,1,0,1843.0,0.81,,strcpy_literal,True,
+Ghidra,FP-05_strcpy_literal~packed,packed,False,False,0,0,0,0,0.81,,strcpy_literal,False,GHIDRA_HOME not set
+QEMU-GT,FP-05_strcpy_literal~packed,packed,False,False,0,0,0,0,0.81,,strcpy_literal,False,qemu-x86_64 not found
+CACBV,FP-06_realloc_expansion,plain,False,False,0,0,0,0.627,0.77,,realloc_expand,True,
+Baseline,FP-06_realloc_expansion,plain,False,True,1,1,0,0.396,0.77,,realloc_expand,True,
+Angr,FP-06_realloc_expansion,plain,False,True,3,1,0,1839.0,0.77,,realloc_expand,True,
+Ghidra,FP-06_realloc_expansion,plain,False,False,0,0,0,0,0.77,,realloc_expand,False,GHIDRA_HOME not set
+QEMU-GT,FP-06_realloc_expansion,plain,False,False,0,0,0,0,0.77,,realloc_expand,False,qemu-x86_64 not found
+CACBV,FP-06_realloc_expansion~packed,packed,False,False,0,0,0,0.525,0.74,,realloc_expand,True,
+Baseline,FP-06_realloc_expansion~packed,packed,False,True,1,1,0,0.338,0.74,,realloc_expand,True,
+Angr,FP-06_realloc_expansion~packed,packed,False,True,3,1,0,1847.0,0.74,,realloc_expand,True,
+Ghidra,FP-06_realloc_expansion~packed,packed,False,False,0,0,0,0,0.74,,realloc_expand,False,GHIDRA_HOME not set
+QEMU-GT,FP-06_realloc_expansion~packed,packed,False,False,0,0,0,0,0.74,,realloc_expand,False,qemu-x86_64 not found
+CACBV,FP-07_struct_fields,plain,False,False,0,0,0,0.583,0.55,,struct_fields,True,
+Baseline,FP-07_struct_fields,plain,False,True,3,1,0,0.377,0.55,,struct_fields,True,
+Angr,FP-07_struct_fields,plain,False,True,2,1,0,1623.0,0.55,,struct_fields,True,
+Ghidra,FP-07_struct_fields,plain,False,False,0,0,0,0,0.55,,struct_fields,False,GHIDRA_HOME not set
+QEMU-GT,FP-07_struct_fields,plain,False,False,0,0,0,0,0.55,,struct_fields,False,qemu-x86_64 not found
+CACBV,FP-07_struct_fields~packed,packed,False,False,0,0,0,0.499,-1.5499999999999998,,struct_fields,True,
+Baseline,FP-07_struct_fields~packed,packed,False,True,3,1,0,0.346,-1.5499999999999998,,struct_fields,True,
+Angr,FP-07_struct_fields~packed,packed,False,True,2,1,0,1898.0,-1.5499999999999998,,struct_fields,True,
+Ghidra,FP-07_struct_fields~packed,packed,False,False,0,0,0,0,-1.5499999999999998,,struct_fields,False,GHIDRA_HOME not set
+QEMU-GT,FP-07_struct_fields~packed,packed,False,False,0,0,0,0,-1.5499999999999998,,struct_fields,False,qemu-x86_64 not found
+CACBV,FP-08_strncpy_terminated,plain,False,False,0,0,0,0.673,-0.73,,strncpy_terminated,True,
+Baseline,FP-08_strncpy_terminated,plain,False,True,2,1,0,0.407,-0.73,,strncpy_terminated,True,
+Angr,FP-08_strncpy_terminated,plain,False,True,2,1,0,1894.0,-0.73,,strncpy_terminated,True,
+Ghidra,FP-08_strncpy_terminated,plain,False,False,0,0,0,0,-0.73,,strncpy_terminated,False,GHIDRA_HOME not set
+QEMU-GT,FP-08_strncpy_terminated,plain,False,False,0,0,0,0,-0.73,,strncpy_terminated,False,qemu-x86_64 not found
+CACBV,FP-08_strncpy_terminated~packed,packed,False,False,0,0,0,0.634,-0.08999999999999997,,strncpy_terminated,True,
+Baseline,FP-08_strncpy_terminated~packed,packed,False,True,2,1,0,0.373,-0.08999999999999997,,strncpy_terminated,True,
+Angr,FP-08_strncpy_terminated~packed,packed,False,True,2,1,0,1907.0,-0.08999999999999997,,strncpy_terminated,True,
+Ghidra,FP-08_strncpy_terminated~packed,packed,False,False,0,0,0,0,-0.08999999999999997,,strncpy_terminated,False,GHIDRA_HOME not set
+QEMU-GT,FP-08_strncpy_terminated~packed,packed,False,False,0,0,0,0,-0.08999999999999997,,strncpy_terminated,False,qemu-x86_64 not found

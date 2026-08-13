@@ -123,7 +123,22 @@ def main():
         lines.append(f"| FPR | {s.get('fpr')*100:.1f}% |")
     lines.append("")
 
-    out = RESULTS_DIR / "innovation_summary.md"
+    # 6) intof (整数溢出)
+    intof_ = load(RESULTS_DIR / "intof_precision.json", ANALYSIS_RESULTS)
+    lines.append("## 5. 整数溢出守卫识别 (36 vuln + 36 safe)")
+    lines.append("")
+    lines.append("| 指标 | 值 |")
+    lines.append("|------|-----|")
+    if intof_:
+        s = intof_.get("summary", {})
+        lines.append(f"| TP / FP / TN / FN | {s.get('tp')} / "
+                     f"{s.get('fp')} / {s.get('tn')} / {s.get('fn')} |")
+        lines.append(f"| Recall | {s.get('recall')*100:.1f}% |")
+        lines.append(f"| Precision | {s.get('precision')*100:.1f}% |")
+        lines.append(f"| FPR | {s.get('fpr')*100:.1f}% |")
+    lines.append("")
+
+    out = RESULTS_DIR / "innovation_summary.txt"
     out.write_text("\n".join(lines), encoding="utf-8")
     print(f"saved: {out}")
     return out

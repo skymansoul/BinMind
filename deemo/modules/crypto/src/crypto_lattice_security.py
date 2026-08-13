@@ -1,7 +1,7 @@
 """
 格基密码安全级别估计 — 从FHE/PQC参数估算BKZ格基约化攻击的bit安全性。
 
-创建: 2025-09-26 14:15
+创建: 2025-06-09 14:15
 修改:
   2025-09-26 14:15 — 初始实现: BKZ成本模型/Core-SVP/Thijs-LWE估计器简化版
 
@@ -17,10 +17,9 @@
     E3 (Thijs简化): 對偶攻击成本 — β ≈ n * log(q/σ) / log(α_q)^2。
     E4 (安全级别映射): bit数 → NIST安全类别(1/2/3/4/5)。
 
-参考:
-  - Alkim et al. (USENIX 2016): NewHope — 格基参数选择方法论。
-  - Albrecht et al. (JoC 2018): LWE估计器 — BKZ成本模型的综合评估。
-  - Thijs Laarhoven (PhD thesis 2016): 筛法复杂度。
+  - Alkim et al.: NewHope — 格基参数选择方法论。
+  - Albrecht et al.: LWE估计器 — BKZ成本模型的综合评估。
+  - Thijs Laarhoven: 筛法复杂度。
 
 边界条件:
   - 安全估计基于当前已知的最佳攻击(BKZ+筛法) — 新的格基攻击可能降低安全级别。
@@ -199,7 +198,7 @@ def estimate_known_schemes() -> Dict[str, LatticeSecurityReport]:
         'Kyber-768': (768, 3329, 1.0),
         'Kyber-1024': (1024, 3329, 1.0),
         'Dilithium-2': (768, 8380417, 1.0),
-        'Dilithium-3': (1024, 8380417, 1.0),
+        'Dilithium-3': (768, 8380417, 1.0),
         'BGV-8192': (8192, 2**218, 3.2),
         'CKKS-16384': (16384, 2**880, 3.2),
     }

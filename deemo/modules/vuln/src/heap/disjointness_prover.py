@@ -12,7 +12,7 @@
   - DDPS: disjoint domain pruning for symbolic execution
   - 本模块: 二进制级等价, 使用 Ptmalloc2 块元数据约束
 
-创建: 2026-05-31
+创建: 2024-09-27
 """
 from __future__ import annotations
 

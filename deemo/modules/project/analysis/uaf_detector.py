@@ -21,6 +21,7 @@ from .allocation_tracker import AllocationTracker
 from .pointer_provenance import PointerProvenanceTracker
 from .dangling_tracker import DanglingInfo, DanglingPtrTracker
 from .instruction_parser import InstructionParser
+from .uaf_helpers import rip_slot_key, is_crt_function
 
 # 重导出: 保持 from analysis.uaf_detector import UafFinding, UafSeverity 兼容
 __all__ = ['UafDetector', 'UafFinding', 'UafSeverity', 'FreeSiteInfo']
@@ -113,6 +114,11 @@ class UafDetector(UafHandlerMixin):
         self._reset()
         func_map = func_map or {}
 
+        # 回跳检测: 记录循环体指令索引集合 (循环内 free 双释放用)
+        from .uaf_helpers import detect_backward_jumps
+        self._loop_body = detect_backward_jumps(
+            instructions, instr_addrs or [])
+
         for idx, line in enumerate(instructions):
             stripped = line.strip()
             if not stripped:
@@ -130,7 +136,8 @@ class UafDetector(UafHandlerMixin):
                         if self._current_func != fname:
                             self._dangling.clear_all()
                             self._current_func = fname
-                            self._in_crt = self._is_crt_function(fname)
+                            from .uaf_helpers import is_crt_function
+                            self._in_crt = is_crt_function(fname)
                         break
 
             # CRT噪声函数: 跳过UAF检测 (仅维护alloc/prov状态)
@@ -142,7 +149,8 @@ class UafDetector(UafHandlerMixin):
 
 # 调用处理
             if op == 'call':
-                self._process_call(idx, parts, instructions)
+                self._process_call(idx, parts, instructions,
+                                   in_loop=idx in self._loop_body)
 
         return self._findings
 
@@ -170,6 +178,7 @@ class UafDetector(UafHandlerMixin):
         self._in_crt = True  # _entry_ is CRT glue code
         self._call_ctr = 0
         self._findings = []
+        self._loop_body: set = set()
 
 # 指令级传播
 
@@ -190,10 +199,14 @@ class UafDetector(UafHandlerMixin):
                 # 从内存加载到寄存器
                 # 检查是否从悬挂的栈槽加载
                 loaded_from_dangling = False
-                if 'rbp' in parts[2].lower() or 'rsp' in parts[2].lower():
-                    base_reg = 'rbp' if 'rbp' in parts[2].lower() else 'rsp'
+                _mem_txt = parts[2].lower()
+                if ('rbp' in _mem_txt or 'rsp' in _mem_txt
+                        or 'rip' in _mem_txt):
                     mem_base, mem_off = InstructionParser.parse_mem(parts[2])
                     if mem_base:
+                        if 'rip' in _mem_txt:
+                            mem_off = rip_slot_key(
+                                instructions[idx], mem_off)
                         loaded_from_dangling = self._dangling.load_from_stack(
                             mem_base, mem_off, dst64, idx)
                 # 检查是否从悬挂指针读取 (deref read)
@@ -213,10 +226,15 @@ class UafDetector(UafHandlerMixin):
             elif '[' in parts[1] and InstructionParser.is_reg(src):
                 # 存储寄存器到内存
                 self._check_deref_write(idx, parts)
-                # 栈槽悬挂追踪
-                if 'rbp' in parts[1].lower() or 'rsp' in parts[1].lower():
+                # 栈槽/全局槽悬挂追踪 (rbp/rsp/rip 基址)
+                _dst_txt = parts[1].lower()
+                if ('rbp' in _dst_txt or 'rsp' in _dst_txt
+                        or 'rip' in _dst_txt):
                     mem_base, mem_off = InstructionParser.parse_mem(parts[1])
                     if mem_base:
+                        if 'rip' in _dst_txt:
+                            mem_off = rip_slot_key(
+                                instructions[idx], mem_off)
                         if self._dangling.is_dangling(src64):
                             # 悬挂寄存器存入栈 → 栈槽也标记为悬挂
                             info = self._dangling.get_info(src64)
@@ -230,24 +248,35 @@ class UafDetector(UafHandlerMixin):
                 InstructionParser.clean_reg(parts[2]) if len(parts) > 2 else ''):
                 # mov [mem], imm — 检查通过悬挂指针的立即数写入
                 self._check_deref_write(idx, parts)
-                # 清除栈槽悬挂
-                if 'rbp' in parts[1].lower() or 'rsp' in parts[1].lower():
+                # 清除栈槽/全局槽悬挂
+                _dst_txt = parts[1].lower()
+                if ('rbp' in _dst_txt or 'rsp' in _dst_txt
+                        or 'rip' in _dst_txt):
                     mem_base, mem_off = InstructionParser.parse_mem(parts[1])
                     if mem_base:
+                        if 'rip' in _dst_txt:
+                            mem_off = rip_slot_key(
+                                instructions[idx], mem_off)
                         self._dangling.clear_stack_slot(mem_base, mem_off)
 
-            # 溯源: 栈存储
-            if '[' in parts[1] and 'rbp' in parts[1].lower():
+            # 溯源: 栈/全局槽存储
+            if '[' in parts[1] and ('rbp' in parts[1].lower()
+                                    or 'rip' in parts[1].lower()):
                 base, offset = InstructionParser.parse_mem(parts[1])
+                if 'rip' in parts[1].lower():
+                    offset = rip_slot_key(instructions[idx], offset)
                 if InstructionParser.is_reg(src):
                     self._prov.propagate_reg_to_stack(
-                        'rbp', offset, src64, str(idx))
-            # 溯源: 栈加载
-            if '[' in parts[2] and 'rbp' in parts[2].lower():
+                        base, offset, src64, str(idx))
+            # 溯源: 栈/全局槽加载
+            if '[' in parts[2] and ('rbp' in parts[2].lower()
+                                    or 'rip' in parts[2].lower()):
                 base, offset = InstructionParser.parse_mem(parts[2])
+                if 'rip' in parts[2].lower():
+                    offset = rip_slot_key(instructions[idx], offset)
                 if InstructionParser.is_reg(dst):
                     self._prov.propagate_stack_to_reg(
-                        dst64, 'rbp', offset, str(idx))
+                        dst64, base, offset, str(idx))
 
             return
 

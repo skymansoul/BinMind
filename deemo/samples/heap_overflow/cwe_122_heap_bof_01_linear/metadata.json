@@ -1,4 +1,0 @@
-{
-  "cwe": "CWE-122",
-  "description": "Linear heap buffer overflow via unbounded index"
-}

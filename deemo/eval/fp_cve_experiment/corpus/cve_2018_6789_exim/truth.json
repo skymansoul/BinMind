@@ -1,8 +1,0 @@
-{
-  "id": "cve_2018_6789_exim",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2018-6789",
-  "component": "Exim SMTP",
-  "mode": "b64decode 输出长度未校验"
-}

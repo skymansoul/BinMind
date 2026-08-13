@@ -37,7 +37,7 @@ from typing import List, Dict, Optional, Tuple, Set
 from collections import OrderedDict
 from functools import lru_cache
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 # 归一化 pass 注册表
 # 每个 pass 是一个 (name, function) 对，按注册顺序执行。
@@ -259,7 +259,7 @@ def normalize_function(code: str, passes: List[str] = None) -> str:
             try:
                 result = fn(result)
             except Exception:
-                __log.debug("IR cache: pass '%s' failed, skipping", name)
+                _log.debug("IR cache: pass '%s' failed, skipping", name)
     return result
 
 
@@ -372,7 +372,7 @@ class IREquivalenceCache:
             with open(self._persist_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
         except Exception:
-            __log.debug("IR cache: persist failed")
+            _log.debug("IR cache: persist failed")
 
     def _load(self):
         try:
@@ -392,9 +392,9 @@ class IREquivalenceCache:
                     compiler_info=item.get('compiler', ''),
                 )
                 self._cache.put(fp.full_hash, entry)
-            __log.info("IR cache: loaded %d entries", len(data))
+            _log.info("IR cache: loaded %d entries", len(data))
         except Exception:
-            __log.debug("IR cache: load failed")
+            _log.debug("IR cache: load failed")
 
 
 # 便捷工厂

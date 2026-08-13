@@ -1,6 +1,6 @@
 """向后兼容重导出 — 实际实现已拆分为子模块.
 
-创建: 2026-04-30
+创建: 2025-02-06
 
 子模块:
   _types.py       — OverflowType, IntOverflowFinding, 常量, 正则

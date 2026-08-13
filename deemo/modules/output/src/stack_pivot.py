@@ -20,7 +20,7 @@
   ARCANIST: gadget chain synthesis 但无迁移评分
 
 修改记录:
-  2026-08-01 14:23 - 初始版本，四类迁移小工具 + CFI 惩罚模型
+  2025-06-09 14:23 - 初始版本，四类迁移小工具 + CFI 惩罚模型
 """
 
 import math

@@ -133,8 +133,45 @@ def plot(rows):
     (RESULTS / "comparison_bar.png").write_bytes(_fig_bytes(fig))
     plt.close(fig)
 
+    # 图4: 按样本分组 (awsc_same_source / fp_prone) 的误报对比
+    # 两组均为未加壳 MinGW 样本; 加壳样本维度留待扩展.
+    fig, ax = plt.subplots(figsize=(8, 5))
+    groups = sorted(set(r.get("group", "") for r in rows if r.get("group")))
+    if groups:
+        gx = np.arange(len(groups))
+        fpr_bin, fpr_angr = [], []
+        for g in groups:
+            def _fpr(tool):
+                gr = [r for r in rows
+                      if r["tool"] == tool and r.get("group") == g
+                      and r["is_vuln"] == "False"]
+                fp = sum(1 for r in gr if r["detected"] == "True")
+                return fp / max(len(gr), 1)
+            fpr_bin.append(_fpr("BinMind"))
+            fpr_angr.append(_fpr("Angr"))
+        ax.bar(gx - width / 2, fpr_bin, width, color="#2e7d32",
+               label="BinMind")
+        ax.bar(gx + width / 2, fpr_angr, width, color="#c62828",
+               label="Angr")
+        for i, v in enumerate(fpr_bin):
+            ax.text(gx[i] - width / 2, v + 0.02, f"{v:.0%}",
+                    ha="center", fontsize=9)
+        for i, v in enumerate(fpr_angr):
+            ax.text(gx[i] + width / 2, v + 0.02, f"{v:.0%}",
+                    ha="center", fontsize=9)
+        ax.set_xticks(gx)
+        ax.set_xticklabels(groups)
+        ax.set_ylim(0, 1.15)
+        ax.set_ylabel("False Positive Rate")
+        ax.set_title("FPR by sample group (unpacked MinGW binaries)")
+        ax.legend()
+        ax.grid(axis="y", alpha=0.3)
+        plt.tight_layout()
+        (RESULTS / "comparison_group_fpr.png").write_bytes(_fig_bytes(fig))
+        plt.close(fig)
+
     print(f"saved: comparison_recall.png, comparison_fpr.png, "
-          f"comparison_bar.png")
+          f"comparison_bar.png, comparison_group_fpr.png")
     for t in tools:
         a = agg[t]
         print(f"  {t}: TP={a['tp']} FP={a['fp']} TN={a['tn']} FN={a['fn']}")

@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_10_syslog_const",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "syslog 常量格式串"
-}

@@ -1,4 +1,4 @@
-/* CVE-2021-35942 ¡ª elfutils: 32-bit truncation ¡ú small alloc, big copy */
+/* CVE-2021-35942 â€” elfutils: 32-bit truncation â†’ small alloc, big copy */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

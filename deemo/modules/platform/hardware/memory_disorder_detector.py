@@ -53,7 +53,7 @@ class MemoryDisorderDetector:
     """内存重排序侧信道静态检测器。
 
     分析二进制或汇编源码中可被观测者利用的内存重排序模式。
-    检测策略覆盖 arXiv 2601.08770 的 4 种核心模式：
+    检测策略覆盖 4 种核心内存重排序模式：
     1. Load-Load 重排: 两次 load 的观测顺序在另一核上反转
     2. Store-Store 重排: 两次 store 的提交顺序与程序顺序不同
     3. Store-Load 重排: store 后的 load 可能被提前执行 (最常见)

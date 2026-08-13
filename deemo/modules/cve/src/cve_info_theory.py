@@ -1,5 +1,5 @@
-# 创建: 2026-04-28 11:08
-# 修改: 2026-04-28 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
+# 创建: 2025-01-13 11:08
+# 修改: 2025-01-13 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
 # 简述: MI/SU/CMI信息论特征归因
 # 信息论特征归因 — 基于MI/SU/CMI的漏洞可解释性评分
 #
@@ -359,25 +359,5 @@ def analyze_cve_features(kb, max_samples: int = 2000) -> Dict:
     return analyzer.get_report()
 
 
-def _get_str(entry, field: str, default: str = ""):
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
-
-def _get_num(entry, field: str):
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False

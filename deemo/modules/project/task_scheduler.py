@@ -9,22 +9,40 @@ from enum import Enum
 from contextlib import suppress
 
 _log = logging.getLogger(__name__)
-class TaskStatus(Enum): PENDING = "pending"; READY = "ready"; RUNNING = "running"; DONE = "done"; FAILED = "failed"; SKIPPED = "skipped"; RETRYING = "retrying"
-class TaskType(Enum): UNIT = "unit"; INTEGRATION = "integration"; FUZZ = "fuzz"
+class TaskStatus(Enum): PENDING = "pending"; READY = "ready"; RUNNING = "running"; DONE = "done"; FAILED = "failed"; SKIPPED = "skipped"; RETRYING = "retrying"; SUCCESS = "success"
+class TaskType(Enum): UNIT = "unit"; INTEGRATION = "integration"; FUZZ = "fuzz"; ANALYSIS = "analysis"; TRANSFORMATION = "transformation"; EXPORT = "export"
 @dataclass(order=True)
 class _QItem: priority: int; task_id: str = field(compare=False); payload: Any = field(compare=False, default=None)
 
 class TaskResult:
-    def __init__(self, tid="", ok=True, data=None, error=""): self.task_id = tid; self.ok = ok; self.data = data; self.error = error
+    def __init__(self, tid="", ok=True, data=None, error="", task_id=None, status=None, result=None):
+        self.task_id = task_id if task_id is not None else tid
+        self.ok = ok
+        self.data = data if data is not None else result
+        self.result = self.data
+        self.error = error
+        self.status = status if status is not None else (TaskStatus.SUCCESS if ok else TaskStatus.FAILED)
+
+@dataclass
+class TaskDependency:
+    task_id: str
+    required_status: TaskStatus = TaskStatus.SUCCESS
 
 class BaseTask:
     """Airflow风格bitshift DAG+指数退避重试."""
-    def __init__(self, tid="", name="", ttype=TaskType.UNIT, pri=10, func=None, args=None, kwargs=None, deps=None, retries=0, rdelay=1.0, sto=0, hto=0):
-        self.task_id = tid; self.name = name; self.type = ttype; self.priority = pri; self.func: Optional[Callable] = func
+    def __init__(self, tid="", name="", ttype=TaskType.UNIT, pri=10, func=None, args=None, kwargs=None, deps=None, retries=0, rdelay=1.0, sto=0, hto=0, task_id=None, analyzer_name=None, analyzer_params=None):
+        self.task_id = task_id if task_id is not None else tid; self.name = name; self.type = ttype; self.priority = pri; self.func: Optional[Callable] = func
         self.args = args or []; self.kwargs = kwargs or {}; self.depends_on: List[str] = deps or []
         self.status = TaskStatus.PENDING; self.result: Optional[TaskResult] = None; self._created = time.time(); self._finished: Optional[float] = None
         self.retries = retries; self._max_r = retries; self.retry_delay = rdelay; self.soft_to = sto; self.hard_to = hto
+        self.analyzer_name = analyzer_name; self.analyzer_params = analyzer_params or {}
         self._ds: List[BaseTask] = []
+    def execute(self, context=None):
+        if self.func is None:
+            return None
+        if context is not None:
+            return self.func(context)
+        return self.func(*self.args, **self.kwargs)
     def can_run(self, done: Set[str]): return all(d in done for d in self.depends_on)
     def elapsed(self): return (self._finished - self._created) if self._finished else time.time() - self._created
     def __rshift__(self, ds):
@@ -39,7 +57,7 @@ class BaseTask:
         if self.task_id not in o.depends_on: o.depends_on.append(self.task_id)
         self._ds.append(o)
 
-SimpleTask = AnalysisTask = BaseTask; TaskDependency = None
+SimpleTask = AnalysisTask = BaseTask
 
 class TaskScheduler:
     def __init__(self, mw=4):
@@ -93,6 +111,7 @@ class TaskScheduler:
         return self.results()
     def results(self): return {tid: t.result for tid, t in self._tasks.items() if t.result is not None}
     def status(self): return {tid: t.status.value for tid, t in self._tasks.items()}
+    @property
     def tasks(self): return list(self._tasks.values())
     @property
     def pending_count(self): return sum(1 for t in self._tasks.values() if t.status in (TaskStatus.PENDING, TaskStatus.READY, TaskStatus.RETRYING))
@@ -109,8 +128,8 @@ class AnalysisPipeline:
     def run_staged(self, to=None):
         sr = {}; i = 0
         while i < len(self.stages):
-            n = self.stages[i]; sts = [t for t in self.scheduler.tasks() if t.name.startswith(n) or (i > 0 and t.name in self.stages[i-1:i+1])]
-            if not sts: sts = [t for t in self.scheduler.tasks() if t.status != TaskStatus.DONE]
+            n = self.stages[i]; sts = [t for t in self.scheduler.tasks if t.name.startswith(n) or (i > 0 and t.name in self.stages[i-1:i+1])]
+            if not sts: sts = [t for t in self.scheduler.tasks if t.status != TaskStatus.DONE]
             sr[n] = self.scheduler.run_stage(n, [t.task_id for t in sts], to); i += 1
         return sr
 

@@ -4,7 +4,7 @@ int main(int argc, char **argv) {
     char *buf = (char *)malloc(64);
     if (!buf) return 1;
     snprintf(buf, 64, "%d", argc);
-    printf("value=%s\n", buf);       /* ¸ñÊ½´®Îª×ÖÃæÁ¿ */
+    printf("value=%s\n", buf);       /* æ ¼å¼ä¸²ä¸ºå­—é¢é‡ */
     free(buf);
     return 0;
 }

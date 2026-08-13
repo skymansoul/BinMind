@@ -4,8 +4,7 @@
 执行链路: 编译全部样本 → HFP 扫描 → 基线对比 → 收集报告 →
 输出 JSON/CSV 与汇总. 退出码: 0=成功, 1=存在编译失败.
 
-用法:
-    python -m regression.run_regression
+  python -m regression.run_regression
 """
 
 from __future__ import annotations

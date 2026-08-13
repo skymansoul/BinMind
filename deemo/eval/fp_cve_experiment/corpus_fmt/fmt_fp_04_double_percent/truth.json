@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_04_double_percent",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "双重百分号转义 (无格式语义)"
-}

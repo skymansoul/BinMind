@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2020-14351",
-  "desc": "CVE-2020-14351 (Linux perf) UAF 复现 — perf_event 释放后",
-  "trigger": "   event->ctx 在调度回调中被解引用. 简化: free(p) 后 *p 写入. "
-}

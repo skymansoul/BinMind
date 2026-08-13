@@ -311,7 +311,7 @@ class CausalModalityRouter:
         2. 每层内估计移除M的输出偏移。
         3. 加权平均→消除冗余模态"补偿效应"的偏置。
 
-        参考: Pearl (1995) 后门准则的形式化定义。
+        参考: Pearl 后门准则的形式化定义。
         """
         _other_modals = {k: v for k, v in modal_features.items() if k != modal_name}
         if not _other_modals:

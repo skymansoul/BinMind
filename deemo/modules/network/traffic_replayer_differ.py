@@ -11,7 +11,14 @@ class ResponseDiffer:
     @staticmethod
     def compare(original_resp: bytes, replayed_resp: bytes) -> dict:
         if original_resp == replayed_resp:
-            return {"match": True, "diff_level": "identical", "len_delta": 0}
+            return {
+                "match": True,
+                "classification": "identical",
+                "diff_level": "identical",
+                "len_delta": 0,
+                "length_ratio": 1.0,
+                "cosine_similarity": 1.0,
+            }
 
         len_delta = abs(len(original_resp) - len(replayed_resp))
         len_ratio = max(len(original_resp), len(replayed_resp), 1)
@@ -35,7 +42,10 @@ class ResponseDiffer:
             level = "significant"
 
         return {
-            "match": False, "diff_level": level,
+            "match": False,
+            "classification": level,
+            "diff_level": level,
             "len_delta": len_delta,
+            "length_ratio": round(len_delta / len_ratio, 4),
             "cosine_similarity": round(cos_sim, 4),
         }

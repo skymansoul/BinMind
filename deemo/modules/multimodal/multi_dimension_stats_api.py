@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from collections import OrderedDict  # 预留，有序聚合时使用
 
-from .src.stats_models import (
+from src.stats_models import (
     APIResponse,
     AnalysisMetrics,
     ChangePointResult,

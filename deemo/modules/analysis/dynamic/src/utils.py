@@ -162,17 +162,26 @@ def setup_logging(
     root_logger = logging.getLogger("modules.analysis.dynamic")
     root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
-    # Avoid duplicate 处理器s
-    if root_logger.handlers:
-        return root_logger  # type: ignore[return-value]
+    # 按 handler 类型去重：同一 logger 可能已被 pytest 捕获器或
+    # 先前调用附加 handler，直接早退会跳过文件 handler 创建。
+    has_console = any(
+        isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)
+        for h in root_logger.handlers
+    )
+    has_file = any(
+        getattr(h, "baseFilename", None) is not None
+        and os.path.abspath(getattr(h, "baseFilename")) == os.path.abspath(log_file)
+        for h in root_logger.handlers
+    ) if log_file else False
 
     # Console 处理器
-    console = logging.StreamHandler(sys.stderr)
-    console.setFormatter(logging.Formatter(log_format))
-    root_logger.addHandler(console)
+    if not has_console:
+        console = logging.StreamHandler(sys.stderr)
+        console.setFormatter(logging.Formatter(log_format))
+        root_logger.addHandler(console)
 
     # File 处理器 rotation
-    if log_file:
+    if log_file and not has_file:
         try:
             os.makedirs(os.path.dirname(log_file), exist_ok=True)
             from logging.handlers import RotatingFileHandler

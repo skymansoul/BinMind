@@ -53,7 +53,7 @@ class AWSCFPFilter:
                 alloc_value = finding.get("alloc_size", 0) or None
                 if isinstance(ws, int) and 0 < ws < 2**31 - 1 \
                         and alloc_value and 0 < alloc_value < 2**31 - 1:
-                    usable_guard = self._compute_usable(alloc_value)
+                    usable_guard = self._compute_usable(finding)
                     if ws > usable_guard:
                         self._passed += 1
                         survivors.append(finding)
@@ -102,7 +102,7 @@ class AWSCFPFilter:
 
         alloc_value = finding.get("alloc_size", 0) or None
         if usable == 0 and alloc_value:
-            usable = self._compute_usable(alloc_value)
+            usable = self._compute_usable(finding)
 
         # 写入目标偏移: memcpy(buf+0x10, src, n) 的 +0x10 计入写末端.
         # 偏移来自目标指针 (ptr_operand) 相对分配基址的 lea/add 常量,
@@ -118,12 +118,21 @@ class AWSCFPFilter:
         return verdict, f"alloc_root={alloc_root} write_root={write_root} " \
                         f"usable={usable} dst_offset={dst_offset} {reason}"
 
-    def _compute_usable(self, alloc_size: int) -> int:
-        """计算分配器可用量 (含 padding)."""
+    def _compute_usable(self, finding: dict) -> int:
+        """计算分配器可用量 (含 padding).
+
+        优先使用 finding 保留的原始请求 alloc_request; 缺失时回退
+        alloc_size (对齐上界) 逆推请求下界. usable_size 以原始请求
+        为输入做 request2size 映射, 避免对齐值导致可用量偏高.
+        """
+        request = finding.get("alloc_request")
+        if not request or request >= 2**31 - 1:
+            alloc_size = finding.get("alloc_size", 0) or 0
+            request = max(0, alloc_size - 15)
         if self._alloc_model is not None:
-            return self._alloc_model.usable_size(alloc_size)
+            return self._alloc_model.usable_size(request)
         # 默认 glibc 近似: chunk = align(request+24), usable = chunk - 8
-        chunk = max(32, (alloc_size + 8 + 15) & ~15)
+        chunk = max(32, (request + 8 + 15) & ~15)
         return chunk - 8
 
     @staticmethod

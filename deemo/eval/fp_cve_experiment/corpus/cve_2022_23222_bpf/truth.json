@@ -1,8 +1,0 @@
-{
-  "id": "cve_2022_23222_bpf",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2022-23222",
-  "component": "Linux BPF verifier",
-  "mode": "verifier 未验证指针运算, 越界访问堆对象"
-}

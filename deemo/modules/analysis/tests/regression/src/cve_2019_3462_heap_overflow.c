@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2019_3462 ¶ÑÒç³öÄ£Äâ: malloc(96) + memcpy(512)
-// ¡ú 416 ×Ö½ÚÒç³ö
+// cve_2019_3462 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(96) + memcpy(512)
+// â†’ 416 å­—èŠ‚æº¢å‡º
 void debian_apt_overflow() {
     char *buf = (char *)malloc(96);
     if (!buf) return;
@@ -52,7 +52,7 @@ void debian_apt_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(576) + memcpy(576/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(576) + memcpy(576/2) â†’ ä¸æº¢å‡º
 void debian_apt_safe() {
     char *buf = (char *)malloc(576);
     if (!buf) return;

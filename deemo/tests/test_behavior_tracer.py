@@ -35,7 +35,6 @@ class TestBehaviorTracer(unittest.TestCase):
         self.assertEqual(BehaviorCategory.FILE_OPERATION.value, 'file_operation')
         self.assertEqual(BehaviorCategory.NETWORK.value, 'network')
         self.assertEqual(BehaviorCategory.PROCESS.value, 'process')
-lass字段完整性$/d
         self.assertEqual(BehaviorCategory.MEMORY.value, 'memory')
         self.assertEqual(BehaviorCategory.REGISTRY.value, 'registry')
 
@@ -271,7 +270,7 @@ class TestBehaviorSequence(unittest.TestCase):
     """BehaviorSequence confidence必须在[0,1]"""
 
     def test_confidence_range(self):
-                sequence = BehaviorSequence(
+        sequence = BehaviorSequence(
             name='test',
             pattern_type='test',
             severity='medium',

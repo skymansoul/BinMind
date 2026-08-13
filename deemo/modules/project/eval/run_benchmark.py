@@ -479,7 +479,11 @@ class BenchmarkRunner:
 
 
 def run_benchmark_cli():
-    """CLI入口: python -m eval.run_benchmark [--samples DIR] [--output DIR]"""
+    """CLI入口: python -m eval.run_benchmark [--samples DIR] [--output DIR]
+
+    --dataset fp_samples 时委托 FpBenchmarkRunner (统一 CSV/LaTeX 输出);
+    默认走旧 samples 目录的 BenchmarkRunner.
+    """
     import argparse
     parser = argparse.ArgumentParser(
         description="Multi-tool heap overflow detection benchmark")
@@ -487,11 +491,17 @@ def run_benchmark_cli():
                        help="Samples root directory")
     parser.add_argument("--output", default=None,
                        help="Output directory for results")
+    parser.add_argument("--dataset", default=None,
+                       help="fp_samples 使用 FP-Reduction 基准数据集")
     parser.add_argument("--tools", default="our_method,angr,qemu,ghidra",
                        help="Tools to run (comma-separated)")
     args = parser.parse_args()
 
     tools = [t.strip() for t in args.tools.split(",")]
+    if args.dataset == "fp_samples":
+        from eval.fp_benchmark import FpBenchmarkRunner
+        FpBenchmarkRunner().run(tools=tools)
+        return
     runner = BenchmarkRunner(
         samples_root=args.samples, output_dir=args.output)
     runner.run_all(tools=tools)

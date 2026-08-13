@@ -5,7 +5,7 @@
 // cve_2021_3156 Format String Vuln: fprintf(fp, argv[1]): cmdline arg fmt
 
 void sudo_fmt2_vuln(char *user_input) {
-    // Î£ÏÕ: ÓÃ»§ÊäÈëÖ±½Ó×÷Îª¸ñÊ½×Ö·û´® (¶ø·Ç%s²ÎÊı)
+    // å±é™©: ç”¨æˆ·è¾“å…¥ç›´æ¥ä½œä¸ºæ ¼å¼å­—ç¬¦ä¸² (è€Œé%så‚æ•°)
     printf(user_input);
 }
 
@@ -18,7 +18,7 @@ void sudo_fmt2_safe() {
 }
 
 int main() {
-    char payload[] = "%x %x %x %x %x %x %x %n";  // ¹¥»÷payload: º¬%nĞ´Èë
+    char payload[] = "%x %x %x %x %x %x %x %n";  // æ”»å‡»payload: å«%nå†™å…¥
     printf("cve_2021_3156 fmt test\n");
     sudo_fmt2_vuln(payload);
     sudo_fmt2_vuln2(payload);

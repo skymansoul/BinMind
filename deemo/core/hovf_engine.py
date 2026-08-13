@@ -22,6 +22,7 @@ from typing import List, Optional, Tuple
 from core.heap_overflow_detector import (
     HeapAllocSite, HeapOverflowCandidate,
 )
+from core.hovf_crossfunc import CrossFuncSafetyCheck
 from core.hovf_types import EvidenceRecord, HovfStats, ValueInterval, Verdict
 from core.hovf_slack import allocator_usable, align_bound
 from core.hovf_size_vflow import resolve_alloc_size
@@ -33,9 +34,7 @@ from core.hovf_write_extract import (
 _ACCEPT_CONF = 0.40
 _UNBOUNDED_COPY = frozenset(('strcpy', 'strcat', 'gets', 'scanf'))
 
-
-class HovfEngine:
-    """HOVF 核验引擎. 一次构造, 多次调用核验."""
+class HovfEngine(CrossFuncSafetyCheck):
 
     def __init__(self, ir: List[str], allocator: str = 'glibc',
                  slack_loop_extent: bool = False,
@@ -47,6 +46,8 @@ class HovfEngine:
         self.guards = GuardFlow(self.ir)
         self.slack_loop_extent = slack_loop_extent
         self.slack_bound = slack_bound
+        from core.hovf_crossfunc import CrossFuncResolver
+        self.resolver = CrossFuncResolver(self.ir)
 
     def _usable(self, req: int) -> int:
         """宽松边界: 'align' 用 16 字节对齐上界 (与样本基准一致),
@@ -65,8 +66,13 @@ class HovfEngine:
             return ValueInterval(alloc.size_arg, alloc.size_arg)
         iv = None
         if getattr(alloc, 'size_expr', ''):
-            res = resolve_alloc_size(alloc.size_expr, self.ir, alloc.pc)
-            iv = res.interval
+            iv = self._resolve_size_expr(alloc.size_expr, alloc.pc)
+            if iv is None:
+                # 基础通道候选的 pc 在压缩行空间, 与引擎 ir 错位;
+                # 按 size_expr 定位真实分配行后重试.
+                pc = self._locate_alloc_pc(alloc)
+                if pc != alloc.pc:
+                    iv = self._resolve_size_expr(alloc.size_expr, pc)
         return iv
 
     def _accumulates(self, var: str) -> bool:
@@ -164,6 +170,10 @@ class HovfEngine:
         if c.overflow_store.mnemonic in _UNBOUNDED_COPY:
             evidence.reasons.append('无界拷贝写入固定缓冲, 保守确认')
             return Verdict.CONFIRMED
+        reason = self._crossfunc_safe(c)
+        if reason:
+            evidence.reasons.append('写入大小与分配大小同源: ' + reason)
+            return Verdict.FILTERED
         if extent is None:
             evidence.reasons.append('写入范围无法解析, 保留观察')
             return Verdict.UNCERTAIN
@@ -175,6 +185,9 @@ class HovfEngine:
                                     c.overflow_store.pc):
             evidence.reasons.append('分配已在写入前释放, 宽松判定不适用')
             return Verdict.UNCERTAIN
+        if self._is_stack_array(c.overflow_store.base_var):
+            evidence.reasons.append('写入目标为栈数组声明, 非堆对象')
+            return Verdict.FILTERED
         usable_lo = self._usable(alloc_iv.lo)
         usable_hi = self._usable(alloc_iv.hi)
         evidence.alloc_resolved = alloc_iv

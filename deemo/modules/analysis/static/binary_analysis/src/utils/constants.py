@@ -99,6 +99,11 @@ class BinaryFormat(Enum):
 
     @classmethod
     def from_magic(cls, header: bytes) -> "BinaryFormat":
+        if not header:
+            return cls.UNKNOWN
+        # MZ (PE / DOS) — 2 字节签名，短头部即可判定
+        if header[:2] == b"MZ":
+            return cls.PE
         if len(header) < 4:
             return cls.UNKNOWN
         # MZ (PE / DOS)

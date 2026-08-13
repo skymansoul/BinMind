@@ -128,7 +128,7 @@ IO_TP_VARIANTS = [
     ("loop_counter_overflow", "循环计数溢出", "char *buf = malloc(128); if(!buf) return; for(int i = 0; i < v && i < 4096; i++) { buf[i] = (char)i; }", "loop_counter"),
     ("offset_wrap", "偏移回绕", "size_t off = (size_t)(v * 4096); char *buf = malloc(512); if(!buf) return; memcpy(buf + off, arg, 8);", "offset_wrap"),
     ("sign_mismatch", "符号不匹配", "int signed_len = (int)v; size_t len = (size_t)signed_len; char *buf = malloc(len); if(!buf) return; memcpy(buf, arg, 4096);", "sign_mismatch"),
-    ("narrow_cast", "窄化转换", "short s = (short)v; char *buf = malloc((size_t)s); if(!buf) return; memcpy(buf, arg, 2048);", "narrow_cast"),
+    ("narrow_cast", "窄化转换", "short s = (short)v; char *buf = malloc((size_t)s); if(!buf) return; memcpy;", "narrow_cast"),
     ("mixed_type_mul", "混合类型乘", "int count = (int)(v & 0xFFFF); size_t n = count * sizeof(long); char *buf = malloc(n); if(!buf) return; memcpy(buf, arg, 65536);", "mixed_mul"),
     ("widen_cast", "加宽转换", "unsigned long big = (unsigned long)v * 100; char *buf = malloc((size_t)big); if(!buf) return; memcpy(buf, arg, 65536);", "widen_cast"),
     ("ternary_size", "三目表达式", "size_t n = (v > 0) ? (size_t)v : 0; char *buf = malloc(n); if(!buf) return; memcpy(buf, arg, 8192);", "ternary_size"),

@@ -7,7 +7,7 @@ from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 from collections import OrderedDict
 
-_LEGACY_MEV_MODE = False  # 保留
+_LEGACY_MEV_MODE = False # 保留
 
 
 class FrontRunningDetector(BaseDetector):

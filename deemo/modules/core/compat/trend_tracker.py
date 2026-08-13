@@ -35,7 +35,7 @@ class MovingAverageType(Enum):
 class TrendTracker:
     """时间序列数据采集、聚合、异常检测、预测"""
 
-    def __init__(self, name: str, max_points: int = 1000):
+    def __init__(self, name: str = "", max_points: int = 1000):
         self.name = name
         self._points: list[TrendPoint] = []
         self._max_points = max_points
@@ -52,6 +52,15 @@ class TrendTracker:
             if len(self._points) > self._max_points:
                 self._points.pop(0)
         return pt
+
+    def store_analysis_result(self, binary_path: str, binary_hash: str,
+                              results: Optional[dict] = None) -> list[tuple[float, float]]:
+        """记录一次分析结果，返回更新后的完整时序。"""
+        self.track(
+            time.time(), 1.0,
+            label=binary_hash,
+            metadata={'binary_path': binary_path, 'results': results or {}})
+        return self.get_series()
 
     # 别名
     def add_data_point(self, timestamp: float, value: float,

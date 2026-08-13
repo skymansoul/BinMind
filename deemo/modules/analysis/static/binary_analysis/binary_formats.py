@@ -27,15 +27,16 @@ class BinaryFormatParser:
         self._last_result: Optional[dict] = None
 
     def detect(self, data: bytes) -> Optional[str]:
-        """检测二进制格式。返回 'elf', 'pe', 'mach_o', 'raw', 或 None
-        
-        如果数据不足 4 字节，返回 None 表明无法判断
+        """检测二进制格式。返回 'elf', 'pe', 'mach_o', 'unknown', 或 None
+
+        数据不足 2 字节时返回 None 表明无法判断；
+        无法识别的数据统一归为 'unknown'，不返回 'raw'。
         """
-        if not data or len(data) < 4:
+        if not data or len(data) < 2:
             return None
         fmt = BinaryFormat.from_magic(data[:4])
-        if fmt == BinaryFormat.UNKNOWN:
-            return None
+        if fmt in (BinaryFormat.UNKNOWN, BinaryFormat.RAW):
+            return "unknown"
         return fmt.value
 
 # ELF 解析
@@ -166,13 +167,13 @@ class BinaryFormatParser:
             result = self._parse_pe_header(data)
         elif fmt == "mach_o":
             result = self._parse_macho_header(data)
-        elif fmt == "raw":
+        else:
+            # unknown/raw — 保留原始熵信息，不阻断后续分析
             result = {
-                "format": "raw",
+                "format": fmt or "unknown",
                 "size": len(data),
                 "entropy": _shannon_entropy(data[:4096]),
             }
-        else:
             result = {"format": "unknown", "size": len(data)}
         self._last_result = result
         return result

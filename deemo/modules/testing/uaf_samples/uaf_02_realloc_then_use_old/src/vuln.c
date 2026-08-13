@@ -7,7 +7,7 @@ int main(void) {
     strcpy(p, "hello");
     char *q = (char *)realloc(p, 4096);
     if (!q) return 1;
-    printf("[*] %s\n", p);         /* UAF: realloc ³É¹¦ºó¾ÉÖ¸ÕëÒÑÊÍ·Å */
+    printf("[*] %s\n", p);         /* UAF: realloc æˆåŠŸåæ—§æŒ‡é’ˆå·²é‡Šæ”¾ */
     free(q);
     return 0;
 }

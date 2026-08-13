@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2020_25211 UAF: pass-as-arg: malloc→free→pass freed to function
+// cve_2020_25211 UAF: pass-as-arg: malloc鈫抐ree鈫抪ass freed to function
 char *netfilter_uaf_global = NULL;
 
 void netfilter_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    netfilter_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    netfilter_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (netfilter_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("netfilter_uaf: freed[0]=%c\n", netfilter_uaf_global[0]);
     }
     netfilter_uaf_global = NULL;

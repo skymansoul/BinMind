@@ -8,17 +8,20 @@
 \toprule
 Tool & TP & FP & FN & TN & Prec & Recall & F1 & FPR & Avg-ms \\
 \midrule
-binmind\_absint & 43 & 6 & 1 & 32 & 0.88 & 0.98 & 0.92 & 15.8\% & 214 \\
-binmind\_giva & 44 & 3 & 0 & 35 & 0.94 & 1.00 & 0.97 & 7.9\% & 189 \\
-angr & 0 & 0 & 44 & 38 & 1.00 & 0.00 & 0.00 & 0.0\% & 705 \\
+binmind\_absint & 43 & 6 & 1 & 32 & 0.88 & 0.98 & 0.92 & 15.8\% & 598 \\
+binmind\_giva & 44 & 3 & 0 & 35 & 0.94 & 1.00 & 0.97 & 7.9\% & 589 \\
+binmind\_uaf\_fpmin & 12 & 4 & 32 & 34 & 0.75 & 0.27 & 0.40 & 10.5\% & 565 \\
+binmind\_fmt\_fpmin & 0 & 0 & 44 & 38 & 1.00 & 0.00 & 0.00 & 0.0\% & 567 \\
+binmind\_intof\_fpmin & 2 & 0 & 42 & 38 & 1.00 & 0.05 & 0.09 & 0.0\% & 574 \\
+angr & 0 & 0 & 44 & 38 & 1.00 & 0.00 & 0.00 & 0.0\% & 721 \\
 qemu & 0 & 0 & 44 & 38 & 1.00 & 0.00 & 0.00 & 0.0\% & 0 \\
 ghidra & 0 & 0 & 44 & 38 & 1.00 & 0.00 & 0.00 & 0.0\% & 0 \\
-flawfinder & 16 & 11 & 6 & 8 & 0.59 & 0.73 & 0.65 & 57.9\% & 102 \\
-cppcheck & 0 & 0 & 22 & 19 & 1.00 & 0.00 & 0.00 & 0.0\% & 52 \\
+flawfinder & 16 & 11 & 6 & 8 & 0.59 & 0.73 & 0.65 & 57.9\% & 103 \\
+cppcheck & 0 & 0 & 22 & 19 & 1.00 & 0.00 & 0.00 & 0.0\% & 51 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 % 加壳(去符号)分组指标:
-% [plain] binmind_absint: F1=0.91, FPR=15.8\%, binmind_giva: F1=1.00, FPR=0.0\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%, flawfinder: F1=0.65, FPR=57.9\%, cppcheck: F1=0.00, FPR=0.0\%
-% [stripped] binmind_absint: F1=0.94, FPR=15.8\%, binmind_giva: F1=0.94, FPR=15.8\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%
+% [plain] binmind_absint: F1=0.91, FPR=15.8\%, binmind_giva: F1=1.00, FPR=0.0\%, binmind_uaf_fpmin: F1=0.39, FPR=15.8\%, binmind_fmt_fpmin: F1=0.00, FPR=0.0\%, binmind_intof_fpmin: F1=0.17, FPR=0.0\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%, flawfinder: F1=0.65, FPR=57.9\%, cppcheck: F1=0.00, FPR=0.0\%
+% [stripped] binmind_absint: F1=0.94, FPR=15.8\%, binmind_giva: F1=0.94, FPR=15.8\%, binmind_uaf_fpmin: F1=0.41, FPR=5.3\%, binmind_fmt_fpmin: F1=0.00, FPR=0.0\%, binmind_intof_fpmin: F1=0.00, FPR=0.0\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%

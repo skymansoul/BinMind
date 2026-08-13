@@ -1,6 +1,6 @@
 """整数溢出回归测试统一运行器 — 编译→扫描→收集→报告.
 
-创建: 2026-04-30
+创建: 2024-09-27
 用法: python -m vuln.src.integer.regression_runner [--quick] [--output results.json]
 """
 from __future__ import annotations

@@ -26,6 +26,9 @@ RESULTS = os.path.join(EVAL_DIR, "benchmark_results.json")
 TOOL_LABELS = {
     "binmind_absint": "BinMind-absint\n(baseline)",
     "binmind_giva": "BinMind-GIVA\n(PG-WBV)",
+    "binmind_uaf_fpmin": "BinMind-UAF\n(FPMIN)",
+    "binmind_fmt_fpmin": "BinMind-FMT\n(FPMIN)",
+    "binmind_intof_fpmin": "BinMind-IO\n(FPMIN)",
     "angr": "angr\n(symexec)",
     "qemu": "QEMU\n(runtime)",
     "ghidra": "Ghidra\n(headless)",
@@ -36,6 +39,9 @@ TOOL_LABELS = {
 TOOL_COLORS = {
     "binmind_absint": "#8ca0b8",
     "binmind_giva": "#2e7d32",
+    "binmind_uaf_fpmin": "#00695c",
+    "binmind_fmt_fpmin": "#00838f",
+    "binmind_intof_fpmin": "#0277bd",
     "angr": "#c62828",
     "qemu": "#6a1b9a",
     "ghidra": "#ef6c00",

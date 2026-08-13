@@ -1,12 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-/* ÒşÊ½ÀàĞÍ½Ø¶Ï¡ª¡ª64Î»size_t±»½Ø¶ÏÎª32Î»int */
+/* éšå¼ç±»å‹æˆªæ–­â€”â€”64ä½size_tè¢«æˆªæ–­ä¸º32ä½int */
 void truncation_test(const char *data, size_t len) {
-    int alloc_len = (int)len; /* ½Ø¶Ï! len=0x100000001 ¡ú alloc_len=1 */
+    int alloc_len = (int)len; /* æˆªæ–­! len=0x100000001 â†’ alloc_len=1 */
     char *buf = malloc(alloc_len);
     if (!buf) return;
-    memcpy(buf, data, len); /* VULN: lenÊÇÔ­Ê¼µÄ64Î»Öµ£¬Ô¶´óÓÚalloc_len */
+    memcpy(buf, data, len); /* VULN: lenæ˜¯åŸå§‹çš„64ä½å€¼ï¼Œè¿œå¤§äºalloc_len */
     free(buf);
 }
 int main() {

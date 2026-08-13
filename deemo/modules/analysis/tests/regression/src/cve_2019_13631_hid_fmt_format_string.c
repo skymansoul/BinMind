@@ -5,7 +5,7 @@
 // cve_2019_13631 Format String Vuln: snprintf(buf, n, env_var, arg): env-controlled fmt
 
 void hid_fmt_vuln(char *user_input) {
-    // Î£ÏÕ: ÓÃ»§ÊäÈëÖ±½Ó×÷Îª¸ñÊ½×Ö·û´® (¶ø·Ç%s²ÎÊı)
+    // å±é™©: ç”¨æˆ·è¾“å…¥ç›´æ¥ä½œä¸ºæ ¼å¼å­—ç¬¦ä¸² (è€Œé%så‚æ•°)
     printf(user_input);
 }
 
@@ -18,7 +18,7 @@ void hid_fmt_safe() {
 }
 
 int main() {
-    char payload[] = "%x %x %x %x %x %x %x %n";  // ¹¥»÷payload: º¬%nĞ´Èë
+    char payload[] = "%x %x %x %x %x %x %x %n";  // æ”»å‡»payload: å«%nå†™å…¥
     printf("cve_2019_13631 fmt test\n");
     hid_fmt_vuln(payload);
     hid_fmt_vuln2(payload);

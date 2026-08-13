@@ -1,6 +1,6 @@
 """free/use 候选对提取 — 从函数指令流与分配标签提取结构化候选.
 
-创建: 2026-05-06
+创建: 2023-06-03
 设计决策:
   - 复用 func_analyzer 的 frees/writes/memcpys 记录, 但提取逻辑改为
     标签+寄存器双通道: free 调用点的 ptr_val 标签与 use 点的基址标签

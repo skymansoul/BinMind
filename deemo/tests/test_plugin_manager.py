@@ -17,7 +17,6 @@ class TestAnalyzerType(unittest.TestCase):
     def test_type_values(self):
         """测试类型值"""
         self.assertEqual(AnalyzerType.DECOMPILER.value, 'decompiler')
-lass字段完整性$/d
         self.assertEqual(AnalyzerType.STATIC_ANALYZER.value, 'static_analyzer')
         self.assertEqual(AnalyzerType.SYMBOLIC_EXECUTOR.value, 'symbolic_executor')
         self.assertEqual(AnalyzerType.VULNERABILITY_DETECTOR.value, 'vulnerability_detector')

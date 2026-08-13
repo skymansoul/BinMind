@@ -48,6 +48,199 @@ class ExplorationResult:
     path_log: List[Dict[str, Any]] = field(default_factory=list)
 
 
+class SymbolType(Enum):
+    CONCRETE = auto()
+    SYMBOLIC = auto()
+    TAINTED_SYMBOLIC = auto()
+
+
+@dataclass
+class SymbolicByte:
+    address: int = 0
+    sym_type: SymbolType = SymbolType.CONCRETE
+    concrete_value: int = 0
+    symbol_name: str = ""
+    taint_tags: int = 0
+
+
+@dataclass
+class PathConstraint:
+    constraint_id: int
+    is_tainted: bool
+    address: int = 0
+    expression: str = ""
+    involved_addrs: List[int] = field(default_factory=list)
+    taken: bool = True
+
+
+@dataclass
+class ConcolicState:
+    symbolic_bytes: Dict[int, SymbolicByte] = field(default_factory=dict)
+    registers: Dict[str, int] = field(default_factory=dict)
+    constraints: List[PathConstraint] = field(default_factory=list)
+
+
+class TaintSymbolBridge:
+    """污点标记与符号分类桥接。
+
+    内存地址与寄存器分别维护污点标签，classify_symbol 依据
+    污点状态将符号字节升级为 TAINTED_SYMBOLIC 并回填标签。
+    """
+
+    def __init__(self):
+        self._tainted_addrs: Dict[int, int] = {}
+        self._tainted_regs: Dict[str, int] = {}
+
+    def mark_address_tainted(self, address: int, tag: int = 1) -> None:
+        self._tainted_addrs[address] = tag
+
+    def is_tainted(self, address: int) -> bool:
+        return address in self._tainted_addrs
+
+    def mark_register_tainted(self, reg: str, tag: int = 1) -> None:
+        self._tainted_regs[reg] = tag
+
+    def classify_symbol(self, sb: SymbolicByte) -> SymbolType:
+        tag = self._tainted_addrs.get(sb.address, 0)
+        if tag:
+            sb.taint_tags = tag
+            return SymbolType.TAINTED_SYMBOLIC
+        sb.taint_tags = 0
+        return SymbolType.SYMBOLIC
+
+
+class DependencyTracker:
+    """寄存器与内存依赖追踪。
+
+    record_* 系列记录符号来源在寄存器/内存间的传播，
+    get_dependencies 返回某寄存器的符号来源地址集合。
+    """
+
+    def __init__(self):
+        self._reg_deps: Dict[str, Set[int]] = defaultdict(set)
+        self._mem_deps: Dict[int, Set[int]] = defaultdict(set)
+
+    def record_symbolic_source(self, reg: str, address: int) -> None:
+        self._reg_deps[reg].add(address)
+
+    def record_move(self, dst: str, src: str) -> None:
+        self._reg_deps[dst].update(self._reg_deps[src])
+
+    def record_concrete(self, reg: str) -> None:
+        self._reg_deps[reg].clear()
+
+    def record_store(self, address: int, reg: str) -> None:
+        self._mem_deps[address].update(self._reg_deps[reg])
+
+    def record_load(self, reg: str, address: int) -> None:
+        self._reg_deps[reg].update(self._mem_deps[address])
+
+    def get_dependencies(self, reg: str) -> Set[int]:
+        return set(self._reg_deps[reg])
+
+
+class ConcolicAssistant:
+    """混合执行辅助 — 符号输入创建、分支约束分类、状态保存恢复。
+
+    仅对涉及污点地址的约束分配求解器 ID，其余约束标记为
+    is_tainted=False 且 constraint_id=-1，降低 SMT 求解压力。
+    """
+
+    def __init__(self, taint_bridge: Optional[TaintSymbolBridge] = None):
+        self.bridge = taint_bridge or TaintSymbolBridge()
+        self._symbolic_bytes: Dict[int, SymbolicByte] = {}
+        self._constraints: List[PathConstraint] = []
+        self._solver_counter = 0
+        self._stats: Dict[str, int] = {
+            'symbols_created': 0, 'branches_total': 0,
+            'constraints_sent': 0,
+        }
+
+    def create_symbolic_input(self, base_addr: int, size: int,
+                              prefix: str = 'sym') -> List[int]:
+        addrs = []
+        for i in range(size):
+            addr = base_addr + i
+            self._symbolic_bytes[addr] = SymbolicByte(
+                address=addr, sym_type=SymbolType.SYMBOLIC,
+                symbol_name=f'{prefix}_{i}',
+            )
+            addrs.append(addr)
+        self._stats['symbols_created'] += size
+        return addrs
+
+    def on_branch(self, address: int, expression: str,
+                  involved_addrs: Optional[List[int]] = None,
+                  taken: bool = True) -> PathConstraint:
+        involved = involved_addrs or []
+        tainted = any(self.bridge.is_tainted(a) for a in involved)
+        self._stats['branches_total'] += 1
+        if tainted:
+            self._solver_counter += 1
+            cid = self._solver_counter
+            self._stats['constraints_sent'] += 1
+        else:
+            cid = -1
+        pc = PathConstraint(
+            constraint_id=cid, is_tainted=tainted,
+            address=address, expression=expression,
+            involved_addrs=involved, taken=taken,
+        )
+        self._constraints.append(pc)
+        return pc
+
+    def mark_concrete(self, address: int, value: int = 0) -> None:
+        sb = self._symbolic_bytes.get(address)
+        if sb:
+            sb.sym_type = SymbolType.CONCRETE
+            sb.concrete_value = value
+
+    def get_concretization_rate(self) -> float:
+        if not self._symbolic_bytes:
+            return 0.0
+        concrete = sum(1 for sb in self._symbolic_bytes.values()
+                       if sb.sym_type == SymbolType.CONCRETE)
+        return concrete / len(self._symbolic_bytes)
+
+    def save_state(self, pc: int = 0) -> ConcolicState:
+        return ConcolicState(
+            symbolic_bytes={k: SymbolicByte(
+                address=sb.address, sym_type=sb.sym_type,
+                concrete_value=sb.concrete_value,
+                symbol_name=sb.symbol_name, taint_tags=sb.taint_tags,
+            ) for k, sb in self._symbolic_bytes.items()},
+            constraints=list(self._constraints),
+        )
+
+    def restore_state(self, state: ConcolicState) -> None:
+        self._symbolic_bytes = {
+            k: SymbolicByte(
+                address=sb.address, sym_type=sb.sym_type,
+                concrete_value=sb.concrete_value,
+                symbol_name=sb.symbol_name, taint_tags=sb.taint_tags,
+            ) for k, sb in state.symbolic_bytes.items()
+        }
+        self._constraints = list(state.constraints)
+
+    def get_tainted_constraints(self) -> List[PathConstraint]:
+        return [c for c in self._constraints if c.is_tainted]
+
+    def get_stats(self) -> Dict[str, Any]:
+        stats = dict(self._stats)
+        stats['active_symbols'] = len(self._symbolic_bytes)
+        return stats
+
+
+def create_concolic_assistant(tainted_addrs=None,
+                              tainted_regs=None) -> ConcolicAssistant:
+    bridge = TaintSymbolBridge()
+    for a in (tainted_addrs or []):
+        bridge.mark_address_tainted(a, 1)
+    for r in (tainted_regs or []):
+        bridge.mark_register_tainted(r, 1)
+    return ConcolicAssistant(taint_bridge=bridge)
+
+
 class BranchPrioritizer:
     """覆盖率引导的分支优先级调度器 — MD2U (Min-Distance--Uncovered)
     

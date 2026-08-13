@@ -1,6 +1,6 @@
 """LaTeX 对比表格生成 — 从基准CSV输出 result_table.tex.
 
-创建: 2026-05-01
+创建: 2023-10-21
 用法: python eval/fp_cve_experiment/gen_latex_table.py [--exe vuln.exe]
 输出: eval/fp_cve_experiment/results/result_table_O0.tex 等
 """
@@ -9,7 +9,7 @@ import csv
 import os
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
+from _common import HERE as _HERE
 RESULTS = os.path.join(_HERE, 'results')
 
 TOOL_ORDER = ['pcfv', 'baseline', 'angr', 'ghidra', 'asan']
@@ -24,10 +24,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--exe', default='vuln.exe')
     args = ap.parse_args()
-    label = 'O0' if args.exe == 'vuln.exe' else 'O2'
+    label_map = {'vuln.exe': 'O0', 'vuln_O2.exe': 'O2',
+                 'vuln_packed.exe': 'Packed', 'vuln_sysv.exe': 'SysV'}
+    label = label_map.get(args.exe, args.exe)
+    csv_name = {'vuln.exe': 'benchmark_o0.csv',
+                'vuln_O2.exe': 'benchmark_o2.csv',
+                'vuln_packed.exe': 'benchmark_packed.csv',
+                'vuln_sysv.exe': 'benchmark_sysv.csv'}.get(
+                    args.exe, 'benchmark_%s.csv' % label.lower())
 
     rows = list(csv.DictReader(open(
-        os.path.join(RESULTS, 'benchmark_%s.csv' % label.lower()),
+        os.path.join(RESULTS, csv_name),
         encoding='utf-8')))
     total = sum(1 for r in rows if r['tool'] == 'pcfv')
     vuln_n = sum(1 for r in rows if r['tool'] == 'pcfv'

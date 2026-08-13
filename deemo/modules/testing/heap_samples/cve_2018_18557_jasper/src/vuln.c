@@ -1,4 +1,4 @@
-/* CVE-2018-18557 ¡ª JasPer: declared length smaller than copied data */
+/* CVE-2018-18557 â€” JasPer: declared length smaller than copied data */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

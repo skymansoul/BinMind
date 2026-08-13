@@ -22,7 +22,7 @@
 #   本模块将阈值序列视为一维信号的采样值，应用滑动窗口方差 +
 # 符号变化率 + 一阶导数符号一致性三个指标判定状态
 #
-# (Mai et al., 2021) — 符号执行中自适应搜索策略的收敛性
+# — 符号执行中自适应搜索策略的收敛性
 # 分析框架，其 stabili metric 定义被本模块的 _stability_index 借鉴并
 # 扩展为三维判定（方差+符号变化率+导数一致性）
 
@@ -152,7 +152,7 @@ class ConvergenceAnalyzer:
         else:
             trend_strength = 0.0
 
-        #---- 状态判定 ----
+# 状态判定
 
         # 死区较小→较窄的阈值范围也有可能判定振荡
         osc_indicator = direction_changes / max(1, len(significant) - 2)

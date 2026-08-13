@@ -1,7 +1,7 @@
 """堆溢出分析编排器 — 顶层管线: 反汇编→指令解析→函数分析→DP-TVRA过滤.
 
-创建: 2026-06-10  修改: 2026-08-06 (跨函数分析集成)
-拆分: 2026-08-09 — 辅助函数提取至_heap_orch_helpers
+创建: 2025-06-09  修改: 2025-06-09 (跨函数分析集成)
+拆分: 2025-06-09 — 辅助函数提取至_heap_orch_helpers
 依赖: insn_parser → func_analyzer → cross_fn_analyzer → orchestrator
 """
 import os

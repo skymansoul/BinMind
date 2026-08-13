@@ -1,12 +1,11 @@
 """
-HFP 提取层 — 分配点与写点解析 (与判定引擎分离).
+HFP 提取层 — 分配点与写点解析.
 
-决策逻辑:
-  从伪 IR 行中提取:
-    - 分配点: vN = malloc(size_expr) (括号平衡解析 size)
-    - 写点:   memcpy(dst, src, size) / store vN + off
-  写点按变量名关联到分配 (全局别名), 不受块序限制.
-  本模块只做语法提取, 不做判定 — 判定由 hfp_engine 完成.
+从伪 IR 行中提取:
+  - 分配点: vN = malloc(size_expr) (括号平衡解析 size)
+  - 写点:   memcpy(dst, src, size) / store vN + off
+写点按变量名关联到分配 (全局别名), 不受块序限制.
+本模块只做语法提取, 不做判定 — 判定由 hfp_engine 完成.
 """
 
 from __future__ import annotations
@@ -27,7 +26,8 @@ _RE_COPY_CALL = re.compile(
     r'(memcpy|memset|strcpy|strncpy|memmove)\s*\(\s*(\w+)\s*,',
     re.IGNORECASE)
 _RE_STORE_LINE = re.compile(
-    r'store\s+(\w+)\s+\+\s+(0x[0-9a-fA-F]+|\d+)\s*$', re.IGNORECASE)
+    r'store\s+(\w+)\s+\+\s+(0x[0-9a-fA-F]+|\d+)(?:\s*=\s*\d+)?'
+    r'(?:\s*#\s*loop)?\s*$', re.IGNORECASE)
 
 
 @dataclass

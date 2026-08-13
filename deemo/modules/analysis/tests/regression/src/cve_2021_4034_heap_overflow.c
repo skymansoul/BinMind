@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2021_4034 ¶ÑÒç³öÄ£Äâ: malloc(128) + memcpy(2048)
-// ¡ú 1920 ×Ö½ÚÒç³ö
+// cve_2021_4034 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(128) + memcpy(2048)
+// â†’ 1920 å­—èŠ‚æº¢å‡º
 void polkit_dbus_overflow() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
@@ -52,7 +52,7 @@ void polkit_dbus_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(2112) + memcpy(2112/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(2112) + memcpy(2112/2) â†’ ä¸æº¢å‡º
 void polkit_dbus_safe() {
     char *buf = (char *)malloc(2112);
     if (!buf) return;

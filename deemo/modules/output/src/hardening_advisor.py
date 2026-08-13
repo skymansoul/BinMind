@@ -20,7 +20,7 @@ Pareto 前沿构建:
   Cyber ITL Binary Hardening in IoT Firmware 提供加固分布统计但无 ROI 模型。
 
 修改记录:
-  2026-08-01 09:35 - 初始版本，单二进制加固 ROI
+  2024-09-02 09:35 - 初始版本，单二进制加固 ROI
 """
 
 import math

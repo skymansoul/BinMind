@@ -1,4 +1,0 @@
-{
-  "cwe": "CWE-680",
-  "description": "Integer overflow via multiplication then memcpy"
-}

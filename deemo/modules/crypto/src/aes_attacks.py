@@ -1,5 +1,5 @@
 # AES实现攻击 — ECB逐字节/CBC比特翻转/padding oracle骨架/CTR nonce复用XOR
-# CryptoPals Set 2, Boneh-Khovratovich, Vaudenay (EUROCRYPT 2002).
+# CryptoPals Set 2, Boneh-Khovratovich, Vaudenay.
 
 from typing import List, Tuple, Optional
 from .utils import shannon_entropy
@@ -9,7 +9,7 @@ _LEGACY_THRESHOLD = 0.75
 
 
 
-# ---- ECB逐字节攻击 ----
+# ECB逐字节攻击
 # 核心: ECB每16B块独立加密。前缀固定时逐字节填充控制已知块对齐, 逐字节恢复未知后缀。
 # 场景: 服务端在用户输入前追加secret ("AES_ECB(user_input || secret)"),
 # 攻击者控制user_input长度使secret逐字节对齐到块边界。
@@ -70,7 +70,7 @@ def ecb_byte_at_a_time_recover(encrypt_oracle, block_size: int = 16) -> Optional
     return bytes(known)
 
 
-# ---- CBC比特翻转攻击 ----
+# CBC比特翻转攻击
 # 前提: 攻击者知明文结构, 修改前一密文块操控当前块解密结果。
 # CBC解密: P[i] = D(C[i]) ^ C[i-1]。修改C[i-1]第j字节 = 翻转P[i]对应位。
 # 应用: "admin=0"翻转为"admin=1", 无需密钥。
@@ -94,8 +94,8 @@ def cbc_bitflip_ct_positions(ciphertext: bytes, target: bytes,
     return offsets
 
 
-# ---- CBC padding oracle骨架 ----
-# Vaudenay (EUROCRYPT 2002): 服务器对正确/错误padding返回可区分响应时,
+# CBC padding oracle骨架
+# Vaudenay: 服务器对正确/错误padding返回可区分响应时,
 # 修改密文倒数第二块末字节可逐字节恢复明文。
 # 完整实现需实际oracle交互 — 此处提供块解密原语。
 
@@ -139,7 +139,7 @@ def cbc_padding_oracle_decrypt_block(oracle, prev_block: bytes, target_block: by
     return plain
 
 
-# ---- CTR nonce复用XOR恢复 ----
+# CTR nonce复用XOR恢复
 # 两条CTR密文使用相同密钥+nonce时:
 #   C1 = P1 ^ keystream, C2 = P2 ^ keystream
 #   C1 ^ C2 = P1 ^ P2

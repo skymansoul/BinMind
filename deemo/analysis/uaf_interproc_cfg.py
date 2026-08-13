@@ -187,7 +187,7 @@ class InterProcCFGBuilder:
           2. 直接CG路径: alloc_func 可调用 free_func, free_func 可调用 use_func
           3. 共同调用者模式: 存在函数 F 同时可到达三者 (经典场景: main调用三个wrapper)
              F → alloc_wrapper, F → free_wrapper, F → use_wrapper
-             这是最常见的跨函数UAF模式 (CVE-2021-38001等)
+             这是最常见的跨函数UAF模式
 
         Returns:
           (is_reachable, reason)

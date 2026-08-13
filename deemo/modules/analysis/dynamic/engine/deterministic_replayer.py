@@ -8,7 +8,7 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -69,7 +69,7 @@ class EventRecorder:
         except FileNotFoundError:
             logger.info("strace unavailable, using built-in tracing")
         except Exception:
-            __log.debug("suppressed", exc_info=True)
+            _log.debug("suppressed", exc_info=True)
 
         if not self.events:
             self._scan_sync_primitives(max_events)
@@ -103,7 +103,7 @@ class EventRecorder:
                     pos = idx + 1
                     count += 1
         except Exception:
-            __log.debug("suppressed", exc_info=True)
+            _log.debug("suppressed", exc_info=True)
 
     def get_trace(self) -> ReplayTrace:
         return ReplayTrace(

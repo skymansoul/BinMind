@@ -15,9 +15,9 @@ GNN 嵌入模型输出不可解释的向量 → 用户不知道两个函数为�
 
 特征以 JSON-like 结构存储, 配合倒排索引实现亚秒级搜索。
 
-ref: "Beyond Embeddings" — LLM-agent 提取
-     可解释特征, 本项目将 LLM 替换为确定性模式匹配 + 抽象解释,
-     消除 API 依赖同时保持跨架构泛化能力
+ref: "Beyond Embeddings" — 可解释特征提取,
+     本项目采用确定性模式匹配 + 抽象解释替代模型特征提取,
+     消除外部 API 依赖同时保持跨架构泛化能力
 ref: AutoBERT — BERT-based embedding for cross-ISA,
      本项目与其互补: 嵌入模型做语义近似, 本模块做精确语义标注
 ref: Hex-Rays microcode — 中间表示的启发式语义标注, 本项目

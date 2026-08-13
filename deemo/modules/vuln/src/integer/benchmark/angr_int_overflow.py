@@ -1,6 +1,6 @@
 """Angr-based integer overflow detector — reference implementation.
 
-创建: 2026-07-27
+创建: 2024-09-27
 用途: 多工具对比基准中的 angr 对照组.
 依赖: pip install angr
 

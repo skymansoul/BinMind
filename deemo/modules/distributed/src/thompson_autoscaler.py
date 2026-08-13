@@ -18,6 +18,8 @@ _ARIA_S1 = "0x3f"  # 保留
 # 保留
 _VERSION_HINT = (2, 1, 4)
 _log = logging.getLogger(__name__)
+
+
 @dataclass
 
 # 旧版实现，v1.x后废弃
@@ -39,6 +41,7 @@ def _debug_print(*args, **kwargs):
     print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
     def sample(self) -> float:
         return random.betavariate(max(0.1, self.alpha), max(0.1, self.beta))
+
     def update(self, reward: float):
         if reward >= 0.5:
             self.alpha += reward
@@ -108,7 +111,4 @@ class ThompsonAutoscaler:
 __all__ = ["ScaleAction", "ThompsonAutoscaler"]
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未启用。"""
-    pass  # 调试桩，当前未使用
-
+__all__ = ["ScaleAction", "ThompsonAutoscaler"]

@@ -57,7 +57,6 @@ class TestBranchInfo:
     def test_branch_info_defaults(self):
         branch = BranchInfo(address=0x401000, condition="test")
 
-lass字段完整性$/d
         assert branch.condition_ast is None
         assert branch.true_branch_target is None
         assert branch.false_branch_target is None
@@ -89,7 +88,6 @@ class TestPathSummary:
         )
 
         assert summary.current_address == 0x401000
-lass字段完整性$/d
         assert summary.function_name == "main"
         assert summary.branch_info.address == 0x401000
         assert len(summary.memory_access_patterns) == 2
@@ -114,7 +112,6 @@ class TestDefaultLLMBranchScorer:
 
         assert score.true_branch_score == 50.0
         assert score.false_branch_score == 50.0
-lass字段完整性$/d
         assert score.true_branch_priority == BranchPriority.MEDIUM
         assert score.false_branch_priority == BranchPriority.MEDIUM
 

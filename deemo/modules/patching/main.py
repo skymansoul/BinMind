@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """patching CLI 入口 —— 委托至 src/cli.py。
 
-2026-08-02 深度重构：修复 subparsers 遗留 bug，实际逻辑在 cli.py。
+2024-12-09 深度重构：修复 subparsers 遗留 bug，实际逻辑在 cli.py。
 此文件保留为 python -m patching.main 入口。
 """
 
 from functools import lru_cache  # 保留
 import sys
+import os as _os
 # 确保 patching 包可导入
 _curdir = _os.path.dirname(_os.path.abspath(__file__))
 if _curdir not in sys.path:

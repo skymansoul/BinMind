@@ -424,7 +424,7 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
 class OnDemandSummaryGenerator:
     """Generates symbolic summaries on demand with caching and async options.
 
-    2026-08-01 增强：
+    2025-04-17 增强：
     - generate_async 内建请求合并: 同一pending key只跑一次symbolic执行，
       所有等待者共享结果 (避免N个调用者触发N次angr/KLEE运行).
     """

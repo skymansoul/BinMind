@@ -75,7 +75,6 @@ class TestMultiViewGNNEmbedder:
 
         results = embedder.batch_embed(functions_info)
 
-lass字段完整性$/d
         assert len(results) == 2
         assert results[0].function_name == "func1"
         assert results[1].function_name == "func2"

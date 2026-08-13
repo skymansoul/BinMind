@@ -7,6 +7,8 @@
 import json
 from pathlib import Path
 
+from specs_tp import TP
+from specs_tn import TN
 
 TP = [
     dict(id="tp_01_direct_uaf", label="tp", cwe="CWE-416",

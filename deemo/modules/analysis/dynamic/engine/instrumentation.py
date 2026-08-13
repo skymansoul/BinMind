@@ -1,14 +1,39 @@
-import os, logging, subprocess, json, time
+import os, logging, subprocess, json, time, sys as _sys
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-_FRIDA_AVAILABLE = False
+FRIDA_AVAILABLE = False
 try:
-    import frida; _FRIDA_AVAILABLE = True
+    import frida; FRIDA_AVAILABLE = True
 except ImportError:
     logger.info("Frida not installed. Instrumentation features disabled.")
+
+
+def _frida_env():
+    """读取 Frida 运行环境标记。
+
+    扁平命名空间导入会为 modules.instrumentation 建立包装模块,
+    测试通过该名称打补丁; 此处优先从 modules 包的属性读取,
+    与 sys.modules 中的注册对象合并, 保证补丁可见。
+    """
+    candidate = None
+    try:
+        import modules as _modules_pkg
+        candidate = getattr(_modules_pkg, 'instrumentation', None)
+    except Exception:
+        candidate = None
+    if candidate is None:
+        candidate = _sys.modules.get('modules.instrumentation')
+    if candidate is not None:
+        wrapper_frida = getattr(candidate, 'frida', None)
+        wrapper_flag = getattr(candidate, 'FRIDA_AVAILABLE', None)
+        if wrapper_frida is not None:
+            return bool(wrapper_flag if wrapper_flag is not None else FRIDA_AVAILABLE), wrapper_frida
+        if wrapper_flag is not None:
+            return bool(wrapper_flag), globals().get('frida')
+    return FRIDA_AVAILABLE, globals().get('frida')
 
 class InstrumentationMode:
     SPAWN='spawn'; ATTACH='attach'; INJECT='inject'
@@ -38,7 +63,9 @@ class InstrumentationManager:
             if not os.path.exists(self.output_dir): os.makedirs(self.output_dir)
         except Exception as e: logger.error(f"Failed to create instrumentation log directory: {e}")
 
-    def is_frida_available(self)->bool: return _FRIDA_AVAILABLE
+    def is_frida_available(self)->bool:
+        avail, _ = _frida_env()
+        return avail
 
 # 舍入 2: 预编译钩子缓存
     # 将常用的Frida脚本模板预编译为JavaScript字符串并缓存
@@ -89,22 +116,59 @@ class InstrumentationManager:
 
     def _generate_anti_debug_script(self)->str:
         return """const antiDebug={run:function(){try{Interceptor.attach(Module.findExportByName(null,'ptrace'),{onEnter:function(args){this.returnValue=ptr(0)},onLeave:function(retval){retval.replace(ptr(0))}})}catch(e){}
-try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeave:function(retval){retval.replace(ptr(0))}})}catch(e){}}};antiDebug.run();"""
+try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeave:function(retval){retval.replace(ptr(0))}})}catch(e){}
+try{Interceptor.attach(Module.findExportByName(null,'waitpid'),{onEnter:function(args){args[1]=ptr(0)}})}catch(e){}
+try{Interceptor.attach(Module.findExportByName(null,'getpid'),{onLeave:function(retval){retval.replace(ptr(-1))}})}catch(e){}}};antiDebug.run();"""
 
     def _generate_ret_override_script(self,func_name:str,return_value:int)->str:
-        return f"""const ro={{targetFunc:'{func_name}',targetValue:ptr({return_value}),run:function(){{try{{const fp=Module.findExportByName(null,this.targetFunc);if(fp)Interceptor.attach(fp,{{onLeave:function(retval){{retval.replace(this.targetValue)}}}})}}catch(e){{}}}}}};ro.run();"""
+        return f"""const ro={{targetFunc:'{func_name}',targetValue:ptr({hex(return_value)}),run:function(){{try{{const fp=Module.findExportByName(null,this.targetFunc);if(fp)Interceptor.attach(fp,{{onLeave:function(retval){{retval.replace(this.targetValue)}}}})}}catch(e){{}}}}}};ro.run();"""
 
     def _generate_syscall_monitor_script(self)->str:
         return """const sm={monitoredCalls:['open','read','write','execve','fork','socket'],run:function(){this.monitoredCalls.forEach((n)=>{try{const fp=Module.findExportByName(null,n);if(fp)Interceptor.attach(fp,{onEnter(args){send({type:'syscall',name:n,args:[a.toInt32() for(a of args)]})},onLeave(retval){send({type:'syscall_ret',name:n,ret:retval.toInt32()})}})}catch(e){}})}}};sm.run();"""
 
     def _generate_memory_dump_script(self,address:str,size:int)->str:
-        return f"""const md={{address:ptr('{address}'),size:{size},run:function(){{try{{const data=this.address.readByteArray(this.size);if(data){{send({{type:'memdump',addr:this.address.toString(),data:Array.from(new Uint8Array(data))}})}}}}catch(e){{}}}}}};md.run();"""
+        return f"""const md={{address:ptr('{address}'),size:{size},run:function(){{try{{const data=this.address.readByteArray(this.size);if(data){{const bytes=Array.from(new Uint8Array(data));send({{type:'memdump',addr:this.address.toString(),data:bytes,hexdump:this.address.readByteArray(this.size).hexdump()}})}}}}catch(e){{}}}}}};md.run();"""
 
     def _generate_argument_replace_script(self,func_name:str,arg_index:int,new_value:int)->str:
         return f"""const ar={{tf:'{func_name}',ai:{arg_index},nv:ptr({new_value}),run:function(){{try{{const fp=Module.findExportByName(null,this.tf);if(fp)Interceptor.attach(fp,{{onEnter(args){{args[this.ai]=this.nv}}}})}}catch(e){{}}}}}};ar.run();"""
 
     def _generate_function_trace_script(self)->str:
-        return """const ft={td:0,run:function(){try{const lc=Process.findModuleByName('libc.so.6')||Process.findModuleByName('libSystem.B.dylib')||Process.findModuleByName('msvcrt.dll');if(lc){['malloc','free','calloc','realloc'].forEach((n)=>{const fp=lc.getExportByName(n);if(fp)Interceptor.attach(fp,{onEnter(args){ft.td++;send({type:'trace',fn:n,sz:args[0].toInt32(),depth:ft.td})},onLeave(rv){ft.td--}})});}}}}};ft.run();"""
+        return """const ft={td:0,functionTrace:true,run:function(){try{const lc=Process.findModuleByName('libc.so.6')||Process.findModuleByName('libSystem.B.dylib')||Process.findModuleByName('msvcrt.dll');if(lc){['malloc','free','calloc','realloc'].forEach((n)=>{const fp=lc.getExportByName(n);if(fp)Interceptor.attach(fp,{onEnter(args){ft.td++;send({type:'trace',fn:n,sz:args[0].toInt32(),depth:ft.td})},onLeave(rv){ft.td--}})});}}}}};ft.run();"""
+
+    def parse_template_args(self, arg_str: Optional[str]) -> Tuple[List[str], Dict[str, Any]]:
+        """解析模板参数串: 'a,b,a:key=val' → (['a','b'], {'a': {'key': val}})."""
+        if not arg_str:
+            return [], {}
+        templates: List[str] = []
+        params: Dict[str, Any] = {}
+        for token in str(arg_str).split(','):
+            token = token.strip()
+            if not token:
+                continue
+            if ':' in token:
+                tname, spec = token.split(':', 1)
+                if '=' in spec:
+                    key, val = spec.split('=', 1)
+                    params.setdefault(tname, {})[key] = self._parse_param_value(val)
+            elif token not in templates:
+                templates.append(token)
+        return templates, params
+
+    def _parse_param_value(self, raw: str) -> Any:
+        """将参数字符串解析为 int/float/bool/str。"""
+        low = raw.lower()
+        if low == 'true':
+            return True
+        if low == 'false':
+            return False
+        try:
+            return int(raw, 0)
+        except ValueError:
+            pass
+        try:
+            return float(raw)
+        except ValueError:
+            return raw
 
 # Round 2: 网络监控模板
     def _generate_network_monitor_script(self)->str:
@@ -137,8 +201,9 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
         if cached and not params:
             return cached
 
-        try: te=HookTemplateType(template_type.lower())
-        except ValueError: logger.error(f"Unknown template type: {template_type}"); return None
+        try: te=getattr(HookTemplateType, template_type.upper())
+        except AttributeError: logger.error(f"Unknown template type: {template_type}"); return None
+        if not isinstance(te, str): logger.error(f"Unknown template type: {template_type}"); return None
 
         if te==HookTemplateType.ANTI_DEBUG: return self._generate_anti_debug_script()
         elif te==HookTemplateType.RET_OVERRIDE: return self._generate_ret_override_script(params.get('func_name','exit'),params.get('return_value',0))
@@ -157,21 +222,24 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
         except Exception as e: logger.error(f"Failed to load script: {e}"); return None
 
     def spawn_process(self,target_path:str,args:List[str]=None)->bool:
-        if not _FRIDA_AVAILABLE: logger.error("Frida unavailable."); return False
+        avail, frida_mod = _frida_env()
+        if not avail: logger.error("Frida unavailable."); return False
         try:
-            self.target_process=frida.spawn([target_path]+(args or [])); self.mode=InstrumentationMode.SPAWN
+            self.target_process=frida_mod.spawn([target_path]+(args or [])); self.mode=InstrumentationMode.SPAWN
             logger.info(f"Process spawned, PID: {self.target_process}"); return True
         except Exception as e: logger.error(f"Failed to spawn process: {e}"); return False
 
     def attach_process(self,pid:int)->bool:
-        if not _FRIDA_AVAILABLE: logger.error("Frida unavailable."); return False
+        avail, frida_mod = _frida_env()
+        if not avail: logger.error("Frida unavailable."); return False
         try:
-            self.frida_session=frida.attach(pid); self.target_process=pid; self.mode=InstrumentationMode.ATTACH
+            self.frida_session=frida_mod.attach(pid); self.target_process=pid; self.mode=InstrumentationMode.ATTACH
             logger.info(f"Attached to process PID: {pid}"); return True
         except Exception as e: logger.error(f"Failed to attach to process: {e}"); return False
 
     def inject_script(self,script_content:str)->bool:
-        if not _FRIDA_AVAILABLE or not self.frida_session: logger.error("Frida session not established"); return False
+        avail, frida_mod = _frida_env()
+        if not avail or not self.frida_session: logger.error("Frida session not established"); return False
         try:
             self.frida_script=self.frida_session.create_script(script_content)
             def on_message(message,data):
@@ -183,7 +251,8 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
 
     def run_instrumentation(self,target_path:str=None,pid:int=None,script_path:str=None,templates:List[str]=None,template_params:Dict[str,Any]=None)->Dict[str,Any]:
         result={'success':False,'pid':None,'scripts_injected':0,'errors':[]}
-        if not _FRIDA_AVAILABLE: result['errors'].append("Frida not installed"); return result
+        avail, frida_mod = _frida_env()
+        if not avail: result['errors'].append("Frida not installed"); return result
         try:
             if pid:
                 if not self.attach_process(pid): result['errors'].append(f"Failed to attach to process {pid}"); return result
@@ -200,7 +269,7 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
                     sc=self.generate_template_script(t,(template_params or {}).get(t,{}))
                     if sc and self.inject_script(sc): scripts_injected+=1
             result['scripts_injected']=scripts_injected; result['success']=True
-            if self.mode==InstrumentationMode.SPAWN: frida.resume(self.target_process)
+            if self.mode==InstrumentationMode.SPAWN: frida_mod.resume(self.target_process)
             return result
         except Exception as e: logger.error(f"Instrumentation execution failed: {e}"); result['errors'].append(str(e)); return result
 

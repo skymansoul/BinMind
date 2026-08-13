@@ -18,15 +18,21 @@ TOOLS = ('BASE', 'UAF-OG', 'Angr')
 COLORS = {'BASE': '#e76f51', 'UAF-OG': '#2a9d8f', 'Angr': '#e9c46a'}
 
 
-def main():
-    data = json.loads((OUT / 'benchmark_og.json').read_text(encoding='utf-8'))
-    s = data['summary']
+def load_summary(path: Path) -> dict:
+    return json.loads(path.read_text(encoding='utf-8'))['summary']
+
+
+def metrics(m: dict):
+    recall = m['recall']
+    fpr = m['fp'] / max(1, m['fp'] + m['tn'])
+    return recall, fpr
+
+
+def plot_group(ax, s: dict, title: str):
     x = np.arange(len(TOOLS))
     width = 0.35
-    recall = [s[t]['recall'] for t in TOOLS]
-    fpr = [s[t]['fp'] / max(1, s[t]['fp'] + s[t]['tn']) for t in TOOLS]
-
-    fig, ax = plt.subplots(figsize=(9, 5))
+    recall = [metrics(s[t])[0] for t in TOOLS]
+    fpr = [metrics(s[t])[1] for t in TOOLS]
     b1 = ax.bar(x - width / 2, recall, width, label='Recall',
                 color=[COLORS[t] for t in TOOLS], alpha=0.9)
     b2 = ax.bar(x + width / 2, fpr, width, label='FPR',
@@ -35,14 +41,26 @@ def main():
         for bar in bars:
             h = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2, h + 0.01,
-                    f'{h * 100:.0f}%', ha='center', va='bottom', fontsize=9)
+                    f'{h * 100:.0f}%', ha='center', va='bottom', fontsize=8)
+    ax.set_title(title, fontsize=11)
     ax.set_xticks(x)
-    ax.set_xticklabels(TOOLS)
+    ax.set_xticklabels(TOOLS, fontsize=9)
     ax.set_ylim(0, 1.15)
     ax.set_title('UAF detection: recall vs FPR (20 samples, 15 TP + 5 TN)')
     ax.grid(axis='y', alpha=0.3)
-    ax.legend()
-    fig.tight_layout()
+
+
+def main():
+    normal = load_summary(OUT / 'benchmark_og.json')
+    stripped = load_summary(OUT / 'benchmark_og_stripped.json')
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    plot_group(axes[0], normal, 'With symbols (normal, -O0)')
+    plot_group(axes[1], stripped, 'Stripped (no symbols, -O1)')
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=2, fontsize=9)
+    fig.suptitle('UAF detection: recall vs FPR (20 samples, 15 TP + 5 TN)',
+                 fontsize=12)
+    fig.tight_layout(rect=(0, 0.06, 1, 0.95))
     fig.savefig(OUT / 'comparison_og.png', dpi=150)
     fig.savefig(OUT / 'comparison_og.svg')
     print('saved:', OUT / 'comparison_og.png')

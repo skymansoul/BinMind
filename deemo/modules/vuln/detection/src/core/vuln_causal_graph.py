@@ -211,7 +211,7 @@ class VulnCausalGraph:
         贝叶斯更新直觉：若工具 B 在工具 A 之后 Δt 发现了同一函数的同一 CWE 类型，
         则该漏洞为真的概率应上升。使用简化的 Beta-Bernoulli 共轭更新。
 
-        ref: DUCAG (Dong et al. 2024) — 动态因果权重，本项目使用 Beta 分布
+        ref: DUCAG — 动态因果权重，本项目使用 Beta 分布
              而非 DUCAG 的条件概率表——更适用于缺先验的漏洞分析场景。
         """
         node = self._nodes.get(node_id)

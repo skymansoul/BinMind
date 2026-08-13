@@ -1,11 +1,12 @@
 """主实验脚本 — 全样本 × 全工具对比, 输出统一 CSV/JSON/LaTeX。
 
-工具: CACBV(提出方法), Baseline(朴素基线), Angr, Ghidra, QEMU-GT。
+工具: 主检测器(按类: CACBV/LCV), Baseline(朴素基线), Angr, Ghidra, QEMU-GT。
 CSV 列: tool, sample, group, is_vuln, detected, detections,
 false_positive, false_negative, elapsed_ms, peak_mb, cve, pattern,
 success, error。
 内存采样: 进程内工具用 psutil 测本进程 RSS 增量, 子进程工具测峰值。
-用法: python eval/run_benchmark.py [--packed] [--max-workers N]
+用法: python eval/run_benchmark.py [--class heap|uaf] [--packed]
+      [--max-workers N]
 """
 
 import csv
@@ -22,7 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import psutil  # noqa: E402
 
-from tool_runners import run_all  # noqa: E402
+from tool_runners import run_all, set_sample_class  # noqa: E402
+from tests.backends import CLASS_ROOTS  # noqa: E402
 
 VULN_DIR = ROOT / 'samples' / 'heap_overflow_cve'
 SAFE_DIR = ROOT / 'samples' / 'heap_safe_fp'
@@ -30,6 +32,7 @@ EVAL = Path(__file__).resolve().parent
 CSV_OUT = EVAL / 'benchmark_full.csv'
 JSON_OUT = EVAL / 'benchmark_summary.json'
 MEM_PID = os.getpid()
+SAMPLE_CLASS = 'heap'
 
 
 def _mem_now() -> float:
@@ -41,8 +44,9 @@ def _mem_now() -> float:
 
 
 def discover_samples(with_packed: bool) -> list:
+    cfg = CLASS_ROOTS[SAMPLE_CLASS]
     samples = []
-    for base, vuln in ((VULN_DIR, True), (SAFE_DIR, False)):
+    for base, vuln in ((cfg['vuln_dir'], True), (cfg['safe_dir'], False)):
         for d in sorted(p for p in base.iterdir() if p.is_dir()):
             truth = json.loads(
                 (d / 'truth.json').read_text(encoding='utf-8'))
@@ -68,8 +72,9 @@ def discover_samples(with_packed: bool) -> list:
 
 
 def _packed_exists() -> bool:
-    return any((VULN_DIR / d / 'packed').exists()
-               for d in os.listdir(VULN_DIR))
+    cfg = CLASS_ROOTS[SAMPLE_CLASS]
+    return any((cfg['vuln_dir'] / d / 'packed').exists()
+               for d in os.listdir(cfg['vuln_dir']))
 
 
 def measure_one(sample: dict) -> list:
@@ -134,17 +139,27 @@ def write_csv(rows: list, path: Path) -> None:
 def main() -> None:
     import argparse
     ap = argparse.ArgumentParser()
+    ap.add_argument('--class', dest='sample_class', default='heap',
+                    choices=['heap', 'uaf', 'fmt'])
     ap.add_argument('--packed', action='store_true',
                     help='包含 packed 变体(需先运行 pack_samples.py)')
     ap.add_argument('--max-workers', type=int, default=4)
     args = ap.parse_args()
 
+    global SAMPLE_CLASS
+    SAMPLE_CLASS = args.sample_class
+    set_sample_class(args.sample_class)
+
     if args.packed and not _packed_exists():
         print('[benchmark] no packed variants; run pack_samples.py first')
         args.packed = False
 
+    csv_out = EVAL / f'benchmark_full_{args.sample_class}.csv'
+    json_out = EVAL / f'benchmark_summary_{args.sample_class}.json'
+    tex_out = EVAL / f'result_table_{args.sample_class}.tex'
+
     samples = discover_samples(args.packed)
-    print(f'[benchmark] {len(samples)} sample runs '
+    print(f'[benchmark] {args.sample_class}: {len(samples)} sample runs '
           f'({"with packed" if args.packed else "plain only"})')
 
     all_rows = []
@@ -152,13 +167,14 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=args.max_workers) as ex:
         for chunk in ex.map(measure_one, samples):
             all_rows.extend(chunk)
-    write_csv(all_rows, CSV_OUT)
+    write_csv(all_rows, csv_out)
 
     metrics = compute_metrics(all_rows)
     plain = {k: v for (k, v) in metrics.items() if k[1] == 'plain'}
     serializable = {f'{k[0]}@{k[1]}': v for k, v in metrics.items()}
-    with open(JSON_OUT, 'w', encoding='utf-8') as f:
-        json.dump({'samples': len(samples), 'tools': serializable,
+    with open(json_out, 'w', encoding='utf-8') as f:
+        json.dump({'samples': len(samples), 'class': args.sample_class,
+                   'tools': serializable,
                    'elapsed_total_s': round(time.time() - t0, 2)},
                   f, ensure_ascii=False, indent=2)
 
@@ -166,11 +182,11 @@ def main() -> None:
     plain_str = {f'{k[0]}@{k[1]}': v for k, v in metrics.items()
                  if k[1] == 'plain'}
     from gen_latex_table import write_latex
-    write_latex(plain_str, EVAL / 'result_table.tex')
+    write_latex(plain_str, tex_out)
 
-    print(f'[benchmark] CSV: {CSV_OUT}')
-    print(f'[benchmark] JSON: {JSON_OUT}')
-    print(f'[benchmark] LaTeX: {EVAL / "result_table.tex"}')
+    print(f'[benchmark] CSV: {csv_out}')
+    print(f'[benchmark] JSON: {json_out}')
+    print(f'[benchmark] LaTeX: {tex_out}')
     print()
     for (tool, group), m in sorted(plain.items()):
         print(f'  {tool:10s} [{group:6s}] P={m["precision"]:.3f} '

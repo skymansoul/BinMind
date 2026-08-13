@@ -163,7 +163,7 @@ class AndroidManifestAnalyzer:
         """基于Tang & Østvold (2026) 隐私相关方法排名思想。
 
         根据声明的权限映射到GDPR条款并计算加权风险评分。
-        PIChecker (ACM 2026) 的TPL数据收集映射用于识别第三方SDK的隐私影响。
+        PIChecker 的TPL数据收集映射用于识别第三方SDK的隐私影响。
         """
         score=10.0; gdpr_violations=[]
         for perm in s.permissions:

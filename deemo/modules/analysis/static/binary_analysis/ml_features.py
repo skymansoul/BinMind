@@ -135,3 +135,48 @@ def _incremental_extract(opcode_stream, chunk_size: int = 10000):
         for op in chunk:
             hist[op] = hist.get(op, 0) + 1
     return hist
+
+
+def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+    """计算两个向量的余弦相似度。维度不一致或零向量返回 0.0。"""
+    if not vec_a or not vec_b or len(vec_a) != len(vec_b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(vec_a, vec_b))
+    n1 = math.sqrt(sum(x * x for x in vec_a))
+    n2 = math.sqrt(sum(y * y for y in vec_b))
+    if n1 == 0.0 or n2 == 0.0:
+        return 0.0
+    return dot / (n1 * n2)
+
+
+class FuncFeatureVector:
+    """函数级特征向量：封装操作码直方图与标量统计。"""
+
+    def __init__(self, opcodes: list[str] | None = None):
+        self.opcodes: list[str] = opcodes or []
+        self.histogram: dict[str, int] = opcode_histogram(self.opcodes)
+
+    def to_list(self) -> list[float]:
+        """展平为数值列表，供模型输入。"""
+        return [float(self.histogram.get(op, 0.0)) for op in sorted(self.histogram)]
+
+
+class EmbeddingIndex:
+    """固定维度的向量索引，支持增量添加与余弦近邻查询。"""
+
+    def __init__(self, dim: int = 128):
+        self.dim = dim
+        self._vectors: list[list[float]] = []
+
+    def add(self, vector: list[float]) -> None:
+        padded = (list(vector) + [0.0] * self.dim)[:self.dim]
+        self._vectors.append(padded)
+
+    def __len__(self) -> int:
+        return len(self._vectors)
+
+    def query(self, vector: list[float], top_k: int = 5) -> list[tuple[int, float]]:
+        """返回 (下标, 相似度) 的 Top-K 列表，按相似度降序。"""
+        scores = [(i, cosine_similarity(vector, v)) for i, v in enumerate(self._vectors)]
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return scores[:top_k]

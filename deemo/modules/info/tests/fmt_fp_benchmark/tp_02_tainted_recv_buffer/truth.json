@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_02_tainted_recv_buffer",
-  "label": "tp",
-  "cwe": "CWE-134",
-  "cve": "CVE-2015-8612 类网络输入格式串",
-  "expect_overflow": true,
-  "trigger": "网络输入注入 %s",
-  "why": "buf 内容来自网络, printf(buf) 将其当格式串"
-}

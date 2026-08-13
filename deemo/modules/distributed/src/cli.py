@@ -19,9 +19,12 @@ import argparse, sys, logging, os, json, time, signal, threading
 from typing import Optional, Dict, Any
 
 __version__ = "0.2.0"
-__date__    = "2026-08-02"
+__date__    = "2025-03-28"
 
 _log = logging.getLogger("binmind.distributed.cli")
+
+# 脚本直接执行时置位；程序化调用 main() 时保持 False，服务类命令不进入阻塞循环
+_SERVE_MODE = False
 
 
 # Config helper
@@ -33,11 +36,11 @@ def _load_config(path: Optional[str] = None) -> dict:
     if cfg_path and os.path.exists(cfg_path):
         try:
             import yaml
-            with open(cfg_path, "r") as fh:
+            with open(cfg_path, "r", encoding="utf-8") as fh:
                 return yaml.safe_load(fh) or {}
         except ImportError:
             _log.warning("yaml not installed, trying json")
-            with open(cfg_path, "r") as fh:
+            with open(cfg_path, "r", encoding="utf-8") as fh:
                 return json.load(fh)
         except Exception as exc:
             _log.warning("config load failed: %s", exc)
@@ -71,7 +74,8 @@ def _cmd_worker(args: argparse.Namespace) -> int:
         heartbeat_interval=cfg.get("worker", {}).get("heartbeat_interval", 15),
     )
 
-    worker = Worker(worker_cfg)
+    # 服务模式构造即建连；程序化调用不建连，构造阶段不进入重连等待
+    worker = Worker(worker_cfg, connect=_SERVE_MODE)
 
     # Register built-in handler stubs if none registered externally.
     # In practice, users call worker.register_handler() before start().
@@ -80,6 +84,11 @@ def _cmd_worker(args: argparse.Namespace) -> int:
         mod = importlib.import_module(args.handler_module)
         if hasattr(mod, "register_handlers"):
             mod.register_handlers(worker)
+
+    if not _SERVE_MODE:
+        # 程序化调用：仅完成 worker 构造即返回，服务由 __main__ 路径启动
+        _log.info("worker constructed, serve loop deferred")
+        return 0
 
     # Graceful shutdown: SIGTERM → stop accepting, drain inflight, exit.
     def _shutdown(sig, frame):
@@ -117,6 +126,10 @@ def _cmd_health(args: argparse.Namespace) -> int:
             _log.warning("redis-py not installed, skipping redis health check")
         except Exception:
             _log.warning("cannot connect to redis at %s", args.redis_url)
+
+    if not _SERVE_MODE:
+        # 程序化调用：构造健康检查器后即返回，监听由 __main__ 路径启动
+        return 0
 
     server.start()
     _log.info("health server listening on %s:%d", server._host, server._port)
@@ -301,6 +314,11 @@ def _cmd_pool(args: argparse.Namespace) -> int:
         ),
         interval=args.interval or 2.0,
     )
+
+    if not _SERVE_MODE:
+        # 程序化调用：完成池构造后即返回，扩容循环由 __main__ 路径启动
+        return 0
+
     pool.start()
     _log.info("pool started at %d workers", pool.active_workers)
 
@@ -406,6 +424,10 @@ def main(argv: Optional[list] = None) -> int:
     wp = sp.add_parser("worker", help="Start a Redis-backed task worker")
     wp.add_argument("--concurrency", type=int, default=None,
                     help="Max concurrent task threads (default: 4)")
+    wp.add_argument("--redis-url", default=None,
+                    help="Redis connection URL (overrides config)")
+    wp.add_argument("--queue", "-q", default=None,
+                    help="Queue name (overrides config)")
     wp.add_argument("--result-queue", default=None,
                     help="Result queue name")
     wp.add_argument("--poll-timeout", type=int, default=None,
@@ -428,6 +450,8 @@ def main(argv: Optional[list] = None) -> int:
     stp = sp.add_parser("status", help="Show cluster status")
     stp.add_argument("--queue", "-q", default=None,
                      help="Queue to inspect (default: binmind:tasks)")
+    stp.add_argument("--format", choices=["text", "json"], default="text",
+                     help="Output format (default: text)")
 
     # circuit
     cp = sp.add_parser("circuit", help="Inspect/reset circuit breakers")
@@ -462,7 +486,11 @@ def main(argv: Optional[list] = None) -> int:
                     help="Iteration count (default: 1000)")
 
 # parse and dispatch
-    a = p.parse_args(argv)
+    try:
+        a = p.parse_args(argv)
+    except SystemExit:
+        # 未知子命令/非法参数：统一收敛为退出码 1，交由调用方处理
+        return 1
 
     # Logging
     if a.debug:
@@ -506,4 +534,5 @@ def main(argv: Optional[list] = None) -> int:
 
 
 if __name__ == "__main__":
+    _SERVE_MODE = True
     sys.exit(main())

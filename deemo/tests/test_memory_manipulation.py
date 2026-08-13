@@ -51,7 +51,7 @@ class TestMemoryManipulationDetector(unittest.TestCase):
         self.assertGreater(len(detector.injection_indicators), 0)
 
     def test_detect_injection_sequence(self):
-                detector = MemoryManipulationDetector()
+        detector = MemoryManipulationDetector()
         detector._extract_imports = lambda: ['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread']
         detector._detect_injection_sequence()
         self.assertGreater(len(detector.injection_indicators), 0)

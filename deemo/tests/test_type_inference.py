@@ -1,7 +1,6 @@
 
 import unittest
 from modules.type_inferrer import (
-_MOD_DEBUG = False
     TypeInferrer,
     TypeKind,
     TypeInferenceResult,
@@ -97,7 +96,6 @@ class TestTypeInferenceEngine(unittest.TestCase):
         enhanced = enhance_pseudocode_with_types(pseudocode)
 
         self.assertIsInstance(enhanced, str)
-lass字段完整性$/d
         self.assertGreater(len(enhanced), len(pseudocode))
 
     def test_confidence_calculation(self):
@@ -112,7 +110,6 @@ lass字段完整性$/d
 
         result = self.inferrer.infer_types(pseudocode)
 
-lass字段完整性$/d
         self.assertIsInstance(result.confidence_score, float)
         self.assertGreaterEqual(result.confidence_score, 0.0)
         self.assertLessEqual(result.confidence_score, 1.0)

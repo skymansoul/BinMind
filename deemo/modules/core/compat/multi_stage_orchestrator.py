@@ -1,7 +1,12 @@
-import os, importlib.util
-_r = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'multimodal', 'multi_stage_orchestrator.py')
-_m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('mso', _r))
-importlib.util.spec_from_file_location('mso', _r).loader.exec_module(_m)
+import os, sys, importlib.util
+_mm_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'multimodal')
+if _mm_dir not in sys.path:
+    sys.path.insert(0, _mm_dir)
+_r = os.path.join(_mm_dir, 'multi_stage_orchestrator.py')
+_spec = importlib.util.spec_from_file_location('multi_stage_orchestrator', _r)
+_m = importlib.util.module_from_spec(_spec)
+sys.modules['multi_stage_orchestrator'] = _m
+_spec.loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
 # Patch __init__ across all module-level classes — absorb arbitrary kwargs.
@@ -24,14 +29,9 @@ for _cn in list(dir(_m)):
     try: _c.__init__ = _mk(_oi)
     except Exception: pass  # 修复: bare except → Exception
 
-# Bind generic stub methods (to_dict, validate, execute, run, generate_report, compute).
-for _cn in dir(_m):
-    _c = getattr(_m, _cn)
-    if not isinstance(_c, type): continue
-    for _attr in ['to_dict', 'validate', 'execute', 'run', 'generate_report', 'compute']:
-        if not hasattr(_c, _attr):
-            try: setattr(_c, _attr, lambda self, *a, **kw: self)
-            except Exception: pass  # 修复: bare except → Exception
+def __getattr__(name: str):
+    # 惰性属性转发 — 实现模块的延迟导出（如 ChainOrchestrator）
+    return getattr(_m, name)
 
 # DAG 调度器
 # 多阶段分析的依赖管理：通过拓扑排序确定阶段执行顺序。

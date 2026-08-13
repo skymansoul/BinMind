@@ -1,3 +1,4 @@
+from ._user_scope_mixin import UserScopeMixin
 # 双重释放检测器 v1 — 符号指针标签追踪 (Double-Free Detector)
 # 追踪malloc/calloc返回的指针标签, 检测同一标签被free()两次的模式.
 # v1: 指令级分析, 寄存器+栈槽+别名追踪.
@@ -7,7 +8,7 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 
-class DoubleFreeDetector:
+class DoubleFreeDetector(UserScopeMixin):
     """指令级双重释放检测器 v1.
 
     检测模式:

@@ -14,11 +14,10 @@ _CORE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_CORE_DIR))
 sys.path.insert(0, str(_CORE_DIR.parent))
 
+from eval.heap_cve_data_a import SAMPLE_IR_A
+from eval.heap_cve_data_b import SAMPLE_IR_B
 
-# 样本 IR 构造数据
-# 每个样本: (is_vuln, alloc_size, write_size, alloc_var, write_var,
-#             taint_src, cross_func, bounds_check, ir_mov_chain)
-# ir_mov_chain: [(src_var, dst_var, op)] — 描述 alloc_var→write_var 的数据流
+SAMPLE_IR = {**SAMPLE_IR_A, **SAMPLE_IR_B}
 
 SAMPLE_IR = {
 # TP: 真阳性 (真实堆溢出)

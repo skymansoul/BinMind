@@ -74,9 +74,9 @@ class EnhancedFmtFilter:
         fmt_calls = []
         for i in range(n):
             instr = instructions[i].strip().lower()
-            if 'call' not in instr:
+            if 'call' not in instr and 'jmp' not in instr:
                 continue
-            for ff in self._FMT_FUNCS:
+            for ff in sorted(self._FMT_FUNCS, key=len, reverse=True):
                 if ff in instr:
                     v = self._deep.analyze_call(
                         i, instructions, ff, rodata_refs or {})

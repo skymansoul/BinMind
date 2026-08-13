@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_06_int_overflow_malloc",
-  "label": "tp",
-  "cwe": "CWE-190",
-  "cve": "CVE-2016-7117 / CVE-2017-1000112 类 (整型溢出致小分配大写入)",
-  "expect_overflow": true,
-  "trigger": "./sample 0x40000000 (count*4 回绕)",
-  "why": "count*4 发生无符号回绕得到小分配, 随后 4096 字节写入必然越界"
-}

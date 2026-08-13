@@ -30,5 +30,4 @@ class TestAnalysisPipeline:
     def test_static_analysis_module_exists(self):
         # TODO: 之后加上static_analysis的具体功能测试
         from modules import static_analysis
-lass字段完整性$/d
         assert static_analysis is not None

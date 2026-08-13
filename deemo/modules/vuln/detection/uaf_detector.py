@@ -12,7 +12,7 @@ UAF专项检测 — free点→use点可达性 + dangling pointer追踪。
   跨函数情形标记为"possible"而非"confirmed"。
 
 修改记录:
-  创建 2026-07-24
+  创建 2024-11-05
 """
 
 from dataclasses import dataclass, field

@@ -6,9 +6,9 @@ __attribute__((noinline)) void trigger_cond_safe(int err) {
     if (!p) return;
     if (err > 0) {
         free(p);
-        return;  /* ÊÍ·ÅºóÁ¢¼´·µ»Ø ¡ú use²»¿É´ï */
+        return;  /* é‡Šæ”¾åç«‹å³è¿”å› â†’ useä¸å¯è¾¾ */
     }
-    p[0] = 'X';  /* ½öerr¡Ü0Ê±µ½´ï ¡ú °²È« */
+    p[0] = 'X';  /* ä»…errâ‰¤0æ—¶åˆ°è¾¾ â†’ å®‰å…¨ */
 }
 
 int main(void) {

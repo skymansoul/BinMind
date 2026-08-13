@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_11_snprintf_bounded",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: snprintf 长度受限",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "snprintf 显式限制 128, 不会越界 (此样本为安全对照)"
-}

@@ -8,7 +8,7 @@
 
 决策: 需要函数边界信息 + 每条 ret 指令前的 rax 状态.
        合并到 FreedPtrTracker 的扩展 API 中, 不修改现有逻辑.
-创建: 2026-04-17
+创建: 2024-11-29
 """
 
 from dataclasses import dataclass, field

@@ -4,7 +4,7 @@
 定义每个样本的ground truth(含漏洞/安全), 对比检测结果
 计算检出率/误报率/漏报率.
 
-创建: 2026-05-23
+创建: 2024-12-09
 """
 
 from typing import Dict, List
@@ -19,7 +19,7 @@ GROUND_TRUTH = {
     "CVE_10": True, "CVE_11": True, "CVE_12": True,
     "CVE_13": True, "CVE_14": True, "CVE_15": True,
     "CVE_16": False, "CVE_17": False, "CVE_18": False,
-    "CVE_19": True, "CVE_20": True,
+    "CVE_19": True, "CVE_20": True, "CVE_21": False, "CVE_22": True,
 }
 
 

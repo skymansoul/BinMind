@@ -3,8 +3,6 @@
 # 生成后由 tests/deep_suite/compile_samples.py 编译, 供回归与对比实验使用
 # 再生成不会覆盖已存在的样本(幂等)——删除样本目录后重跑即可重建
 
-from __future__ import annotations
-
 import os
 from pathlib import Path
 
@@ -122,7 +120,7 @@ int main(void) {
     "tp_04_arith_size": {
         "cve": "CVE-2016-10158",
         "desc": "算术变换大小失配溢出",
-        "readme": """# tp_04_arith_size — 算术变换后的拷贝大小失配 (CVE-2016-10158模式)
+        "readme": """# tp_04_arith_size — 算术变换后的拷贝大小失配
 CVE参考: CVE-2016-10158 (php exif, 计算错误)
 漏洞: alloc_size=n*2, copy_size=n*4 → n>0恒溢出; 算术链证明两者不等
 触发: read_line(big, 256) → alloc=512, copy=1024
@@ -152,7 +150,7 @@ int main(void) {
     "tp_05_strcpy_heap": {
         "cve": "CVE-2023-3269",
         "desc": "strcpy无界拷贝到堆",
-        "readme": """# tp_05_strcpy_heap — strcpy堆溢出 (CVE-2023-3269模式)
+        "readme": """# tp_05_strcpy_heap — strcpy堆溢出
 CVE参考: CVE-2023-3269 (exfat/相关堆strcpy)
 漏洞: strcpy(dst_heap, src)无界, src长度未知>64
 触发: copy_string(long_str)
@@ -182,7 +180,7 @@ int main(void) {
     "tp_06_realloc_shrink": {
         "cve": "CVE-2018-1000001",
         "desc": "realloc收缩后拷贝超出",
-        "readme": """# tp_06_realloc_shrink — realloc收缩后越界 (CVE-2018-1000001模式)
+        "readme": """# tp_06_realloc_shrink — realloc收缩后越界
 CVE参考: CVE-2018-1000001 (glibc realpath, realloc路径)
 漏洞: malloc(512)→realloc(128)后memcpy 256字节→越界
 触发: shrink_and_copy(big, 256)

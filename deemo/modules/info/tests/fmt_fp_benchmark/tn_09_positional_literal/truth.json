@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_09_positional_literal",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 位置参数常量格式",
-  "expect_overflow": false,
-  "trigger": "任意 argv",
-  "why": "格式串仍为常量"
-}

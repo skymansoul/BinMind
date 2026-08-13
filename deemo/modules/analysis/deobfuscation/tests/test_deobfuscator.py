@@ -44,13 +44,9 @@ class TestDeadCodeElimination:
         ]
         # 活变量分析：r1无下游使用 → 可移除
         uses = set()
-        for insn in reversed(instructions):
-            parts = insn.replace(",", "").split()
-            if len(parts) >= 2:
-                # 收集使用的寄存器
-                for p in parts[1:]:
-                    if p.startswith("r") and p not in (";"):
-                        uses.add(p)
+        for insn in instructions:
+            _, insn_uses = _extract_defs_uses(insn)
+            uses |= insn_uses
         # r1不使用 → 第0条是死代码
         assert "r1" not in uses or uses == set()
 

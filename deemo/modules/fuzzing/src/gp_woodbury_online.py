@@ -1,7 +1,7 @@
 """GP Woodbury 在线更新 — 秩-1 Cholesky 增量 + 自适应诱导点.
 
-创建: 2026-05-14 14:35
-修改: 2026-05-14 09:12 — 添加 Woodbury 数值稳定性保护
+创建: 2024-08-14 14:35
+修改: 2024-08-14 09:12 — 添加 Woodbury 数值稳定性保护
 
 参考: Rasmussen & Williams §3.4.3 (Woodbury for rank-1 updates)
        Osborne "Gaussian Processes for Global Optimization" (adaptive inducing)

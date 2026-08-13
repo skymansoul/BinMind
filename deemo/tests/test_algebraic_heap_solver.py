@@ -23,15 +23,15 @@ class TestLayoutConstraint(unittest.TestCase):
     def test_constraint_creation(self):
         """测试约束创建"""
         c = LayoutConstraint(
-            var_name="chunk_0",
-            min_size=0x40,
-            max_size=0x100,
-            alignment=16,
+            name="chunk_0",
+            min_val=0x40,
+            max_val=0x100,
+            align=16,
         )
-        self.assertEqual(c.var_name, "chunk_0")
-        self.assertEqual(c.min_size, 0x40)
-        self.assertEqual(c.max_size, 0x100)
-        self.assertEqual(c.alignment, 16)
+        self.assertEqual(c.name, "chunk_0")
+        self.assertEqual(c.min_val, 0x40)
+        self.assertEqual(c.max_val, 0x100)
+        self.assertEqual(c.align, 16)
 
 
 class TestAllocationSequence(unittest.TestCase):
@@ -40,13 +40,12 @@ class TestAllocationSequence(unittest.TestCase):
     def test_sequence_satisfies(self):
         """测试满足条件的序列"""
         seq = AllocationSequence(
-            allocations=[(0x80, 0x1000), (0x40, 0x1100)],
+            allocs=[(0x80, 0x1000), (0x40, 0x1100)],
             frees=[0x1000],
-            satisfies=True,
+            ok=True,
         )
-        self.assertTrue(seq.satisfies)
-        self.assertEqual(len(seq.allocations), 2)
-lass字段完整性$/d
+        self.assertTrue(seq.ok)
+        self.assertEqual(len(seq.allocs), 2)
         self.assertEqual(len(seq.frees), 1)
 
 
@@ -63,10 +62,10 @@ class TestZ3Solver(unittest.TestCase):
         """测试无z3库时添加约束"""
         solver = Z3Solver()
         constraints = [
-            LayoutConstraint(var_name="a", min_size=10, max_size=100),
+            LayoutConstraint(name="a", min_val=10, max_val=100),
         ]
         # Without z3 installed, should return False gracefully
-        result = solver.add_constraints(constraints)
+        result = solver.add(constraints)
         # Either True (z3 available) or False (z3 not available) is fine
         self.assertIsInstance(result, bool)
 
@@ -83,13 +82,13 @@ class TestHeuristicSolver(unittest.TestCase):
     def test_heuristic_solve(self):
         """测试启发式求解"""
         constraints = [
-            LayoutConstraint(var_name="a", min_size=0x80, max_size=0x100),
-            LayoutConstraint(var_name="b", min_size=0x40, max_size=0x80),
+            LayoutConstraint(name="a", min_val=0x80, max_val=0x100),
+            LayoutConstraint(name="b", min_val=0x40, max_val=0x80),
         ]
         result = HeuristicSolver.solve(constraints)
         self.assertIsInstance(result, AllocationSequence)
-        self.assertTrue(result.satisfies)
-        self.assertEqual(len(result.allocations), 2)
+        self.assertTrue(result.ok)
+        self.assertEqual(len(result.allocs), 2)
 
 
 class TestAlgebraicHeapSolver(unittest.TestCase):
@@ -98,21 +97,21 @@ class TestAlgebraicHeapSolver(unittest.TestCase):
     def test_solver_init(self):
         """测试求解器初始化"""
         solver = AlgebraicHeapSolver()
-        self.assertIsInstance(solver.z3, Z3Solver)
-        self.assertIsInstance(solver.heuristic, HeuristicSolver)
+        self.assertIsInstance(solver._z3, Z3Solver)
+        self.assertIsInstance(solver._heu, HeuristicSolver)
 
     def test_solver_run(self):
         solver = AlgebraicHeapSolver()
         constraints = [
-            LayoutConstraint(var_name="chunk_0", min_size=0x80, max_size=0x100),
-            LayoutConstraint(var_name="chunk_1", min_size=0x40, max_size=0x80),
+            LayoutConstraint(name="chunk_0", min_val=0x80, max_val=0x100),
+            LayoutConstraint(name="chunk_1", min_val=0x40, max_val=0x80),
         ]
         result = solver.run(constraints)
 
         self.assertIsInstance(result, SolveResult)
-        self.assertTrue(result.success)
-        self.assertIsNotNone(result.sequence)
-        self.assertEqual(result.constraints_used, 2)
+        self.assertTrue(result.ok)
+        self.assertIsNotNone(result.seq)
+        self.assertEqual(result.ncons, 2)
 
     def test_solver_run_empty_constraints(self):
         """测试空约束求解"""
@@ -120,8 +119,8 @@ class TestAlgebraicHeapSolver(unittest.TestCase):
         result = solver.run([])
 
         self.assertIsInstance(result, SolveResult)
-        self.assertTrue(result.success)
-        self.assertIsNotNone(result.sequence)
+        self.assertTrue(result.ok)
+        self.assertIsNotNone(result.seq)
 
 
 class TestSolveResult(unittest.TestCase):
@@ -129,16 +128,16 @@ class TestSolveResult(unittest.TestCase):
 
     def test_successful_result(self):
         """测试成功结果"""
-        seq = AllocationSequence(allocations=[], frees=[], satisfies=True)
-        result = SolveResult(success=True, sequence=seq, constraints_used=3)
-        self.assertTrue(result.success)
-        self.assertEqual(result.constraints_used, 3)
+        seq = AllocationSequence(allocs=[], frees=[], ok=True)
+        result = SolveResult(ok=True, seq=seq, ncons=3)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.ncons, 3)
 
     def test_failed_result(self):
         """测试失败结果"""
-        result = SolveResult(success=False, sequence=None)
-        self.assertFalse(result.success)
-        self.assertIsNone(result.sequence)
+        result = SolveResult(ok=False, seq=None)
+        self.assertFalse(result.ok)
+        self.assertIsNone(result.seq)
 
 
 class TestConvenienceFunctions(unittest.TestCase):

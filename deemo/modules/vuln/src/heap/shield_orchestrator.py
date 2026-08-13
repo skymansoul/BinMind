@@ -7,7 +7,7 @@ SHIELD = Selective Heap Interval-Evidence Logical Disambiguation.
   E3 Size-Bound Correlator: 证明 access_size ≤ alloc_size 恒成立
 
 与 ImprovedHeapOverflowDetector 集成: 产生初始findings → SHIELD滤除 → 保留真实告警.
-创建: 2026-07-22
+创建: 2025-01-13
 """
 from __future__ import annotations
 

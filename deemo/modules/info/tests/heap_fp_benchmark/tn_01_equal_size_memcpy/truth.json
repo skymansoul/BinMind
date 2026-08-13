@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_01_equal_size_memcpy",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 分配量==写入量",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "分配与写入严格相等, 无越界; 触发 C1 代数等价抑制"
-}

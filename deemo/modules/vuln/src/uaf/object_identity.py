@@ -4,7 +4,7 @@
 与旧版PointerLifecycleTracker的区别: 旧版追踪"rax持有某指针", 新版追踪
 "rax持有malloc@0x401000返回的对象#3". 身份粒度从"某指针"提升到"具体对象".
 
-创建: 2026-08-01
+创建: 2025-03-28
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

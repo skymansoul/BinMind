@@ -1,16 +1,16 @@
 #include <string.h>
 #include <stdlib.h>
-/* memmoveÔÚ¶Ñ»º³åÇøÉÏµÄ·Ç·¨Æ«ÒÆ */
+/* memmoveåœ¨å †ç¼“å†²åŒºä¸Šçš„éæ³•åç§» */
 void memmove_offset_overflow(const char *data, int len, int offset) {
     char *buf = malloc(len);
     if (!buf) return;
     memcpy(buf, data, len);
-    /* VULN: offset¿ÉÊ¹memmoveĞ´µ½bufÖ®ºó */
+    /* VULN: offsetå¯ä½¿memmoveå†™åˆ°bufä¹‹å */
     memmove(buf + offset, buf, len);
     free(buf);
 }
 int main() {
     char data[128]; for(int i=0;i<128;i++) data[i]='N';
-    memmove_offset_overflow(data, 64, 48); /* src=buf+48, dst=buf+48 ¡ú 64B copy´Óbuf[48]¿ªÊ¼¡ú³¬³öbuf[64] */
+    memmove_offset_overflow(data, 64, 48); /* src=buf+48, dst=buf+48 â†’ 64B copyä»buf[48]å¼€å§‹â†’è¶…å‡ºbuf[64] */
     return 0;
 }

@@ -1,7 +1,9 @@
+import os
+import importlib.util
 import tempfile  # 保留
 import heapq as _hp, hashlib as _hl
 import uuid  # 保留
-_r = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'symbolic', 'concolic_execution.py')
+_r = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'symbolic', 'concolic_execution.py')
 _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('ce', _r))
 importlib.util.spec_from_file_location('ce', _r).loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
@@ -181,7 +183,72 @@ def score_path_novelty(reachable_blocks: set[int], global_coverage: set[int],
         return 0.0
     return _math.log2(1 + new_blocks) * (1.0 + depth / 100.0)
 
+# 规范签名包装：上游参数为 f_ 前缀，测试与调用方按规范名使用。
+# 在 compat 层桥接，不动上游实现。
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+def _ce_init(self, binary_path=None, mode=None, **kw):
+    if binary_path is None:
+        binary_path = kw.pop('f_binary_path', "")
+    f_mode = mode if mode is not None else kw.pop('f_mode', _m.ConcolicMode.HYBRID)
+    _CE.__orig_init(self, f_binary_path=binary_path, f_mode=f_mode)
 
+
+_CE.__orig_init = _CE.__init__
+_CE.__init__ = _ce_init
+
+
+def _run_dynamic_seeding(self, timeout=None, **kw):
+    return self.run_dynamic_seedingCx(
+        f_timeout=timeout if timeout is not None else kw.pop('f_timeout', 60))
+
+
+_CE.run_dynamic_seeding = _run_dynamic_seeding
+
+
+def _run_concolic_analysis(self, timeout=None, max_paths=None,
+                           exploration_depth=None, **kw):
+    return self.run_concolic_analysisCx(
+        f_timeout=timeout if timeout is not None else kw.pop('f_timeout', 120),
+        f_max_paths=max_paths if max_paths is not None else kw.pop('f_max_paths', 100),
+        f_exploration_depth=(exploration_depth if exploration_depth is not None
+                             else kw.pop('f_exploration_depth', 500)))
+
+
+_CE.run_concolic_analysis = _run_concolic_analysis
+
+
+def _export_seeds(self, output_dir=None, **kw):
+    return self.export_seedsCx(
+        f_output_dir=output_dir if output_dir is not None else kw.pop('f_output_dir', './seeds'))
+
+
+_CE.export_seeds = _export_seeds
+
+
+def _save_report(self, output_path=None, **kw):
+    return self.save_reportCx(
+        f_output_path=output_path if output_path is not None else kw.pop('f_output_path', None))
+
+
+_CE.save_report = _save_report
+
+
+def _create_concolic_executor(binary_path, dynamic_engine='frida', mode='hybrid'):
+    """规范签名工厂：与上游 create_concolic_executorCx 等价，
+    但经规范名 is_available 判定，使测试对类方法的 patch 生效。"""
+    if binary_path is None:
+        return None
+    try:
+        mode_enum = _m.ConcolicMode(mode.lower())
+    except ValueError:
+        return None
+    executor = _m.ConcolicExecutor(
+        f_binary_path=binary_path,
+        f_dynamic_engine=dynamic_engine,
+        f_mode=mode_enum)
+    if executor.is_available():
+        return executor
+    return None
+
+
+create_concolic_executor = _create_concolic_executor

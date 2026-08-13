@@ -1,8 +1,0 @@
-{
-  "sample_id": "TP-03",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "description": "Cross-function UAF: alloc in A, free in B, use in A",
-  "expect_uaf": true,
-  "tarps_expected": "DEF_TP"
-}

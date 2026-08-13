@@ -4,7 +4,9 @@
 # 每条规则带 confidence，综合评估并给出缓解
 
 import re
+import hashlib
 import logging
+import os
 from enum import Enum, auto
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any
@@ -16,16 +18,23 @@ _log = logging.getLogger(__name__)
 
 class CrashType(Enum):
     ACCESS_VIOLATION = auto()
+    NULL_DEREFERENCE = auto()
+    SIGABRT = auto()
     ILLEGAL_INSTRUCTION = auto()
+    SIGBUS = auto()
+    FP_EXCEPTION = auto()
+    INTEGER_DIVIDE_BY_ZERO = auto()
     STACK_OVERFLOW = auto()
     HEAP_CORRUPTION = auto()
-    DIVIDE_BY_ZERO = auto()
+    DOUBLE_FREE = auto()
+    USE_AFTER_FREE = auto()
+    ASSERTION_FAILURE = auto()
     PRIVILEGED_INSTRUCTION = auto()
     ASSERT_FAILURE = auto()
     UNKNOWN = auto()
 
 
-class Exploitability(Enum):
+class ExploitabilityRating(Enum):
     EXPLOITABLE = auto()
     PROBABLY_EXPLOITABLE = auto()
     PROBABLY_NOT_EXPLOITABLE = auto()
@@ -33,23 +42,52 @@ class Exploitability(Enum):
     UNKNOWN = auto()
 
 
-# 数据类
+@dataclass
+class ExploitabilityAssessment:
+    """单项崩溃的可利用性评估结果。"""
+    rating: ExploitabilityRating = ExploitabilityRating.UNKNOWN
+    confidence: float = 0.0
+    ruling_reasons: List[str] = field(default_factory=list)
+    is_controlled_branch: bool = False
+    is_dep_bypass_possible: bool = False
+    is_aslr_bypass_possible: bool = False
+    mitigations: List[str] = field(default_factory=list)
+
 
 @dataclass
 class CrashInfo:
     crash_type: CrashType = CrashType.UNKNOWN
     fault_address: int = 0
     crash_address: int = 0
-    exception_code: int = 0
-    register_context: Dict[str, int] = field(default_factory=dict)
-    stack_trace: List[Dict[str, Any]] = field(default_factory=list)  # [{addr, module, symbol}]
+    exception_code: Any = 0
+    faulting_instruction: str = ""
+    registers: Dict[str, int] = field(default_factory=dict)
+    call_stack: List[str] = field(default_factory=list)
+    stack_trace: List[Dict[str, Any]] = field(default_factory=list)
     instruction_bytes: bytes = b""
-    modules_loaded: List[str] = field(default_factory=list)
+    modules: List[str] = field(default_factory=list)
     thread_id: int = 0
     process_name: str = ""
 
 
-# 崩溃分类器
+# 崩溃类型映射
+
+_SIGNAL_TO_CRASH_TYPE = {
+    11: CrashType.ACCESS_VIOLATION,    # SIGSEGV
+    4: CrashType.ILLEGAL_INSTRUCTION,  # SIGILL
+    6: CrashType.SIGABRT,
+    7: CrashType.SIGBUS,
+    8: CrashType.FP_EXCEPTION,         # SIGFPE
+}
+
+_WINDOWS_EXCEPTION_TO_CRASH_TYPE = {
+    'c0000005': CrashType.ACCESS_VIOLATION,
+    'c00000fd': CrashType.STACK_OVERFLOW,
+    'c0000094': CrashType.INTEGER_DIVIDE_BY_ZERO,
+    'c0000096': CrashType.PRIVILEGED_INSTRUCTION,
+    'c0000008': CrashType.NULL_DEREFERENCE,  # INVALID_HANDLE 兜底
+}
+
 
 class CrashClassifier:
     """
@@ -57,123 +95,44 @@ class CrashClassifier:
     每种崩溃类型对应一个可利用性评分和置信度
     """
 
-# 主分类入口
-    def classify(self, crash_info: CrashInfo) -> Tuple[CrashType, Exploitability, float, str]:
-        ct = crash_info.crash_type
-        reasoning_parts: List[str] = []
+    @classmethod
+    def from_signal(cls, signal: int, fault_addr: int = 0) -> CrashType:
+        if signal == 11:
+            if fault_addr == 0:
+                return CrashType.NULL_DEREFERENCE
+            return CrashType.ACCESS_VIOLATION
+        return _SIGNAL_TO_CRASH_TYPE.get(signal, CrashType.UNKNOWN)
 
-        if ct == CrashType.ACCESS_VIOLATION:
-            return self._classify_av(crash_info, reasoning_parts)
-        elif ct == CrashType.ILLEGAL_INSTRUCTION:
-            return self._classify_illegal(crash_info, reasoning_parts)
-        elif ct == CrashType.STACK_OVERFLOW:
-            return self._classify_stack_overflow(crash_info, reasoning_parts)
-        elif ct == CrashType.HEAP_CORRUPTION:
-            return self._classify_heap_corruption(crash_info, reasoning_parts)
-        elif ct == CrashType.DIVIDE_BY_ZERO:
-            reason = "除零错误通常不可直接利用，除非与信息泄露结合"
-            return (ct, Exploitability.PROBABLY_NOT_EXPLOITABLE, 0.20, reason)
-        elif ct == CrashType.PRIVILEGED_INSTRUCTION:
-            reason = "用户态特权指令执行，可能由 ROP 或控制流劫持触发"
-            return (ct, Exploitability.PROBABLY_EXPLOITABLE, 0.55, reason)
-        elif ct == CrashType.ASSERT_FAILURE:
-            reason = "断言失败一般是防御性检查触发，利用可能性极低"
-            return (ct, Exploitability.NOT_EXPLOITABLE, 0.10, reason)
-        else:
-            return (ct, Exploitability.UNKNOWN, 0.50, "无法确定的崩溃类型")
+    @classmethod
+    def from_windows_exception(cls, code: str) -> CrashType:
+        return _WINDOWS_EXCEPTION_TO_CRASH_TYPE.get(
+            code.lower().replace('0x', ''), CrashType.UNKNOWN)
 
-# 访问违规分类
-    def _classify_av(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
-        # 规则 1: crash_address == fault_address → 高度可疑
-        if ci.crash_address and ci.fault_address and ci.crash_address == ci.fault_address:
-            if self._check_controlled_eip(ci.register_context, ci.stack_trace):
-                parts.append("EIP 被用户可控数据覆盖")
-                return (ci.crash_type, Exploitability.EXPLOITABLE, 0.90, "; ".join(parts))
-            parts.append("崩溃地址 == 故障地址，可能是虚表劫持或函数指针覆盖")
-            return (ci.crash_type, Exploitability.EXPLOITABLE, 0.80, "; ".join(parts))
-
-        # 规则 2: 写入 AV near NULL
-        exception_name = self._exception_code_name(ci.exception_code)
-        is_write = "WRITE" in exception_name.upper() or "write" in exception_name.lower()
-
-        if is_write and self._check_near_null(ci.crash_address):
-            parts.append("近 NULL 地址写入，可能是 NULL 指针解引用利用")
-            return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.70, "; ".join(parts))
-
-        # 规则 3: 读取 AV NULL
-        if self._check_near_null(ci.crash_address):
-            parts.append("NULL 地址读取，可能的信息泄露")
-            return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.60, "; ".join(parts))
-
-        # 规则 4: controlled EIP/RIP
-        if self._check_controlled_eip(ci.register_context, ci.stack_trace):
-            parts.append("EIP/RIP 被用户数据覆盖")
-            return (ci.crash_type, Exploitability.EXPLOITABLE, 0.85, "; ".join(parts))
-
-        # 规则 5: 栈 pivot
-        if self._check_stack_pivot(ci.register_context):
-            parts.append("检测到栈迁移")
-            return (ci.crash_type, Exploitability.EXPLOITABLE, 0.85, "; ".join(parts))
-
-        parts.append("通用访问违规，需要更多上下文")
-        return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.50, "; ".join(parts))
-
-# 非法指令分类
-    def _classify_illegal(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
-        # UD2 / INT3 / 0xCC → 可能是断言或反调试
-        if ci.instruction_bytes:
-            if ci.instruction_bytes[0] in (0xCC,):
-                parts.append("INT3 断点指令，非利用崩溃")
-                return (ci.crash_type, Exploitability.NOT_EXPLOITABLE, 0.10, "; ".join(parts))
-            if bytes(ci.instruction_bytes[:2]) in (b"\x0f\x0b",):  # UD2
-                parts.append("UD2 指令，通常是断言触发")
-                return (ci.crash_type, Exploitability.NOT_EXPLOITABLE, 0.10, "; ".join(parts))
-
-        # 如果 EIP 指向非可执行区域
-        if self._check_controlled_eip(ci.register_context, ci.stack_trace):
-            parts.append("EIP 指向不可执行区域，控制流被劫持")
-            return (ci.crash_type, Exploitability.EXPLOITABLE, 0.85, "; ".join(parts))
-
-        parts.append("非法指令，可能由内存损坏导致")
-        return (ci.crash_type, Exploitability.PROBABLY_NOT_EXPLOITABLE, 0.25, "; ".join(parts))
-
-# 栈溢出分类
-    def _classify_stack_overflow(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
-        parts.append("栈溢出通常用于拒绝服务，直接利用难度高")
-        return (ci.crash_type, Exploitability.PROBABLY_NOT_EXPLOITABLE, 0.30, "; ".join(parts))
-
-# 堆损坏分类
-    def _classify_heap_corruption(self, ci: CrashInfo, parts: List[str]) -> Tuple[CrashType, Exploitability, float, str]:
-        if self._check_controlled_eip(ci.register_context, ci.stack_trace):
-            parts.append("堆损坏 + 控制流劫持 = 高度可利用")
-            return (ci.crash_type, Exploitability.EXPLOITABLE, 0.80, "; ".join(parts))
-        parts.append("堆损坏，需进一步分析")
-        return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.50, "; ".join(parts))
-
-# 辅助检测方法
+    @classmethod
+    def from_crash_info(cls, crash_info: CrashInfo) -> CrashType:
+        if crash_info.crash_type is not CrashType.UNKNOWN:
+            return crash_info.crash_type
+        if isinstance(crash_info.exception_code, str):
+            mapped = cls.from_windows_exception(crash_info.exception_code)
+            if mapped is not CrashType.UNKNOWN:
+                return mapped
+        return CrashType.UNKNOWN
 
     @staticmethod
-    def _check_controlled_eip(registers: Dict[str, int],
-                               stack_trace: 'List[Dict[str, Any]]') -> bool:
-        """
-        检查 EIP/RIP 是否被明显控制
-        启发性: 检查常见 pattern 值 (0x41414141, 0x42424242.)
-        """
-        eip_val = registers.get("rip", None) or registers.get("eip", None)
-        if eip_val is None:
+    def _controlled_branch(registers: Dict[str, int]) -> bool:
+        eip = registers.get("rip") or registers.get("eip")
+        if eip is None:
             return False
         # 常见填充模式
         patterns = [0x41414141, 0x42424242, 0x43434343, 0x44444444,
                     0x90909090, 0xCCCCCCCC, 0xCDCDCDCD, 0xFEEEFEEE,
                     0xABABABAB, 0xDDDDDDDD, 0xFDFDFDFD]
         for p in patterns:
-            if eip_val == p or eip_val & 0xFFFFFFFF == p:
+            if eip == p or (eip & 0xFFFFFFFF) == p:
                 return True
-            # 64-bit 全填充
-            if eip_val == (p | (p << 32)):
+            if eip == (p | (p << 32)):
                 return True
-        # 检查可打印 ASCII: 0x41414141 → "AAAA"
-        if 0x20202020 <= (eip_val & 0xFFFFFFFF) <= 0x7E7E7E7E:
+        if 0x20202020 <= (eip & 0xFFFFFFFF) <= 0x7E7E7E7E:
             return True
         # 检查 EIP 是否不在任何加载模块范围内 (粗略)
         return False
@@ -230,96 +189,136 @@ class CrashAnalyzer:
     分类 + 评估 + 缓解 + 报告生成
     """
 
-    def __init__(self, crash_info: CrashInfo, binary_path: Optional[str] = None):
+    _RATING_BY_TYPE = {
+        CrashType.ASSERTION_FAILURE: ExploitabilityRating.NOT_EXPLOITABLE,
+        CrashType.SIGABRT: ExploitabilityRating.PROBABLY_NOT_EXPLOITABLE,
+        CrashType.INTEGER_DIVIDE_BY_ZERO: ExploitabilityRating.PROBABLY_NOT_EXPLOITABLE,
+        CrashType.NULL_DEREFERENCE: ExploitabilityRating.PROBABLY_NOT_EXPLOITABLE,
+        CrashType.HEAP_CORRUPTION: ExploitabilityRating.EXPLOITABLE,
+        CrashType.DOUBLE_FREE: ExploitabilityRating.EXPLOITABLE,
+        CrashType.USE_AFTER_FREE: ExploitabilityRating.EXPLOITABLE,
+        CrashType.PRIVILEGED_INSTRUCTION: ExploitabilityRating.PROBABLY_EXPLOITABLE,
+    }
+
+    def __init__(self, crash_info: Optional[CrashInfo] = None,
+                 binary_path: Optional[str] = None):
         self.crash_info = crash_info
         self.binary_path = binary_path
         self._classifier = CrashClassifier()
 
-# 评估可利用性
-    def assess_exploitability(self) -> Dict[str, Any]:
-        ct, expl, conf, reason = self._classifier.classify(self.crash_info)
-        mitigations = self.suggest_mitigations(ct, expl)
-        return {
-            "crash_type": ct.name,
-            "exploitability": expl.name,
-            "confidence": conf,
-            "reasoning": reason,
-            "fault_address": f"0x{self.crash_info.fault_address:X}",
-            "crash_address": f"0x{self.crash_info.crash_address:X}",
-            "exception_code": f"0x{self.crash_info.exception_code:08X}",
-            "mitigations": mitigations,
-        }
+    def assess_exploitability(self, crash_info: Optional[CrashInfo] = None) -> ExploitabilityAssessment:
+        """评估崩溃可利用性，返回结构化结果。"""
+        ci = crash_info or self.crash_info
+        if ci is None:
+            return ExploitabilityAssessment()
 
-# 缓解
-    def suggest_mitigations(self, ct: CrashType = None,
-                            expl: Exploitability = None) -> List[str]:
-        mitigs: List[str] = []
+        crash_type = CrashClassifier.from_crash_info(ci)
+        assessment = ExploitabilityAssessment()
 
-        # 通用缓解
-        mitigs.append("DEP (数据执行保护)")
-        mitigs.append("ASLR (地址空间布局随机化)")
-        mitigs.append("CFG/CET (控制流完整性)")
+        if crash_type is CrashType.ILLEGAL_INSTRUCTION:
+            if 'ud2' in (ci.faulting_instruction or "").lower() \
+                    or (ci.instruction_bytes and ci.instruction_bytes[0] == 0xCC):
+                assessment.rating = ExploitabilityRating.NOT_EXPLOITABLE
+                assessment.confidence = 0.10
+                assessment.ruling_reasons.append("UD2/INT3 通常由断言或反调试触发")
+                return assessment
 
-        ct = ct or self.crash_info.crash_type
-        if ct == CrashType.STACK_OVERFLOW:
-            mitigs.append("/GS (栈金丝雀)")
-            mitigs.append("SafeSEH / SEHOP")
-        elif ct == CrashType.HEAP_CORRUPTION:
-            mitigs.append("LFH 加固")
-            mitigs.append("HeapEnableTerminationOnCorruption")
-            mitigs.append("Isolated Heap (隔离堆)")
-            mitigs.append("Delay Free (延迟释放)")
-        elif ct == CrashType.ACCESS_VIOLATION:
-            mitigs.append("sandboxing (沙箱隔离)")
-            mitigs.append("VTableGuard / XFG")
+        if crash_type is CrashType.ACCESS_VIOLATION:
+            controlled = CrashClassifier._controlled_branch(ci.registers)
+            assessment.is_controlled_branch = controlled
+            if controlled:
+                assessment.rating = ExploitabilityRating.EXPLOITABLE
+                assessment.confidence = 0.85
+                assessment.ruling_reasons.append("控制流寄存器被用户数据覆盖")
+            else:
+                assessment.rating = ExploitabilityRating.PROBABLY_EXPLOITABLE
+                assessment.confidence = 0.55
+                assessment.ruling_reasons.append("访问违规，需结合上下文判定")
+            self._suggest_mitigations(assessment)
+            return assessment
 
-        return mitigs
+        if crash_type is CrashType.NULL_DEREFERENCE:
+            assessment.rating = ExploitabilityRating.PROBABLY_NOT_EXPLOITABLE
+            assessment.confidence = 0.30
+            assessment.ruling_reasons.append("NULL 指针解引用，可能仅致拒绝服务")
+            return assessment
 
-# 生成可读报告
+        base_rating = self._RATING_BY_TYPE.get(crash_type)
+        if base_rating is not None:
+            assessment.rating = base_rating
+            assessment.confidence = {
+                ExploitabilityRating.EXPLOITABLE: 0.75,
+                ExploitabilityRating.PROBABLY_EXPLOITABLE: 0.55,
+                ExploitabilityRating.PROBABLY_NOT_EXPLOITABLE: 0.35,
+                ExploitabilityRating.NOT_EXPLOITABLE: 0.20,
+            }.get(base_rating, 0.5)
+            assessment.ruling_reasons.append(f"崩溃类型 {crash_type.name} 的基准评估")
+            self._suggest_mitigations(assessment)
+            return assessment
+
+        assessment.rating = ExploitabilityRating.UNKNOWN
+        assessment.confidence = 0.0
+        return assessment
+
+    def _suggest_mitigations(self, assessment: ExploitabilityAssessment) -> None:
+        assessment.mitigations = [
+            "DEP (数据执行保护)",
+            "ASLR (地址空间布局随机化)",
+            "CFG/CET (控制流完整性)",
+        ]
+        if assessment.is_controlled_branch:
+            assessment.is_dep_bypass_possible = True
+            assessment.is_aslr_bypass_possible = True
+
     def generate_report(self) -> str:
         """
         生成人类可读的崩溃分析报告
         """
         assessment = self.assess_exploitability()
         ci = self.crash_info
+        if ci is None:
+            return ""
+        assessment = self.assess_exploitability(ci)
         lines = [
             "=" * 60,
             "  崩溃分析报告",
             "=" * 60,
             f"  进程名称:      {ci.process_name}",
-            f"  线程 ID:       {ci.thread_id}",
-            f"  崩溃类型:      {assessment['crash_type']}",
-            f"  可利用性:      {assessment['exploitability']}",
-            f"  置信度:        {assessment['confidence']:.0%}",
-            f"  故障地址:      {assessment['fault_address']}",
-            f"  崩溃地址:      {assessment['crash_address']}",
-            f"  异常码:        {assessment['exception_code']}",
+            f"  崩溃类型:      {ci.crash_type.name}",
+            f"  可利用性:      {assessment.rating.name}",
+            f"  置信度:        {assessment.confidence:.0%}",
             "-" * 40,
-            f"  判定理由:      {assessment['reasoning']}",
+            f"  判定理由:      {'; '.join(assessment.ruling_reasons)}",
             "-" * 40,
-            "  寄存器上下文:",
+            "  建议缓解措施:",
         ]
-        for reg, val in sorted(ci.register_context.items()):
-            lines.append(f"    {reg:>6s} = 0x{val:016X}")
-
-        lines.append("-" * 40)
-        lines.append("  调用栈:")
-        for i, frame in enumerate(ci.stack_trace[:10]):
-            addr = frame.get("addr", 0)
-            module = frame.get("module", "")
-            symbol = frame.get("symbol", "")
-            lines.append(f"    #{i:2d}  0x{addr:016X}  {module}!{symbol}")
-
-        lines.append("-" * 40)
-        lines.append("  建议缓解措施:")
-        for m in assessment["mitigations"]:
+        for m in assessment.mitigations:
             lines.append(f"    - {m}")
 
         lines.append("=" * 60)
         return "\n".join(lines)
 
 
-# 崩溃解析器
+class CrashReport:
+    """崩溃报告的字典序列化。"""
+
+    @staticmethod
+    def generate(crash_info: CrashInfo, assessment: ExploitabilityAssessment) -> Dict[str, Any]:
+        crash_type = CrashClassifier.from_crash_info(crash_info)
+        return {
+            'crash_type': crash_type.name.lower(),
+            'exploitability': assessment.rating.name.lower(),
+            'confidence': assessment.confidence,
+            'ruling_reasons': list(assessment.ruling_reasons),
+            'is_controlled_branch': assessment.is_controlled_branch,
+            'mitigations': list(assessment.mitigations),
+            'fault_address': crash_info.fault_address,
+            'exception_code': str(crash_info.exception_code),
+            'call_stack': list(crash_info.call_stack),
+        }
+
+
+# 崩溃解析器 —— 支持 WinDbg / GDB 输出与转储文件
 
 class CrashParser:
     """
@@ -334,38 +333,16 @@ class CrashParser:
         # 异常码
         m = re.search(r'ExceptionCode:\s*([0-9A-Fa-f]+)', text)
         if m:
-            ci.exception_code = int(m.group(1), 16)
-
-        # 故障地址
+            ci.exception_code = m.group(1)
+            ci.crash_type = CrashClassifier.from_windows_exception(m.group(1))
         m = re.search(r'FAULTING_IP:\s*\S+\+([0-9A-Fa-f]+)', text)
         if m:
             ci.fault_address = int(m.group(1), 16)
-
-        # 崩溃类型推断
-        if ci.exception_code == 0xC0000005:
-            ci.crash_type = CrashType.ACCESS_VIOLATION
-        elif ci.exception_code == 0xC000001D:
-            ci.crash_type = CrashType.ILLEGAL_INSTRUCTION
-        elif ci.exception_code == 0xC00000FD:
-            ci.crash_type = CrashType.STACK_OVERFLOW
-        elif ci.exception_code == 0xC0000094:
-            ci.crash_type = CrashType.DIVIDE_BY_ZERO
-        elif ci.exception_code == 0xC0000096:
-            ci.crash_type = CrashType.PRIVILEGED_INSTRUCTION
-        elif ci.exception_code == 0x80000003:
-            ci.crash_type = CrashType.ASSERT_FAILURE
-        else:
-            ci.crash_type = CrashType.UNKNOWN
-
-        # 寄存器: 尝试匹配 CONTEXT 块
-        reg_pattern = re.compile(r'(rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|rip|r8|r9|r10|r11|r12|r13|r14|r15|'
-                                 r'eax|ebx|ecx|edx|esi|edi|ebp|esp|eip)=([0-9a-fA-F`]+)')
+        reg_pattern = re.compile(
+            r'(rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|rip|r8|r9|r10|r11|r12|r13|r14|r15|'
+            r'eax|ebx|ecx|edx|esi|edi|ebp|esp|eip)=([0-9a-fA-F`]+)')
         for m in reg_pattern.finditer(text):
-            reg_name = m.group(1).lower()
-            val_str = m.group(2).replace('`', '')
-            ci.register_context[reg_name] = int(val_str, 16)
-
-        # 进程名
+            ci.registers[m.group(1).lower()] = int(m.group(2).replace('`', ''), 16)
         m = re.search(r'PROCESS_NAME:\s*(\S+)', text)
         if m:
             ci.process_name = m.group(1)
@@ -381,32 +358,15 @@ class CrashParser:
         # 信号
         m = re.search(r'Program received signal (\w+)', text)
         if m:
-            sig = m.group(1)
-            sig_map = {
-                "SIGSEGV": CrashType.ACCESS_VIOLATION,
-                "SIGILL":  CrashType.ILLEGAL_INSTRUCTION,
-                "SIGFPE":  CrashType.DIVIDE_BY_ZERO,
-                "SIGABRT": CrashType.ASSERT_FAILURE,
-                "SIGSTKFLT": CrashType.STACK_OVERFLOW,
-            }
-            ci.crash_type = sig_map.get(sig, CrashType.UNKNOWN)
-
-        # 寄存器
-        reg_pattern = re.compile(r'(rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|rip|'
-                                  r'r\d{1,2})\s+0x([0-9a-fA-F]+)')
+            sig_map = {"SIGSEGV": 11, "SIGILL": 4, "SIGFPE": 8, "SIGABRT": 6, "SIGBUS": 7}
+            ci.crash_type = CrashClassifier.from_signal(sig_map.get(m.group(1), 0))
+            ci.exception_code = m.group(1)
+        reg_pattern = re.compile(r'(rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|rip|r\d{1,2})\s+0x([0-9a-fA-F]+)')
         for m in reg_pattern.finditer(text):
-            ci.register_context[m.group(1)] = int(m.group(2), 16)
-
-        # 调用栈 (bt)
-        bt_pattern = re.compile(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+in\s+(\S+)\s+\(.*\)\s+at\s+(.+)')
+            ci.registers[m.group(1)] = int(m.group(2), 16)
+        bt_pattern = re.compile(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+in\s+(\S+)')
         for m in bt_pattern.finditer(text):
-            ci.stack_trace.append({
-                "index": int(m.group(1)),
-                "addr": int(m.group(2), 16),
-                "symbol": m.group(3),
-                "module": m.group(4).strip(),
-            })
-
+            ci.call_stack.append(m.group(3))
         return ci
 
 # 解析崩溃转储文件
@@ -422,8 +382,7 @@ class CrashParser:
             # Windows minidump: 需要 DbgEng COM 接口或 minidump 解析库
             # 当前回退: 尝试用 cdb 命令行解析
             return CrashParser._parse_dmp_via_cdb(path) or ci
-        elif ext in ("", ".core"):
-            # Linux core 转存: 可尝试用 gdb 批处理
+        if ext in ("", ".core"):
             return CrashParser._parse_core_via_gdb(path) or ci
         return ci
 
@@ -434,8 +393,7 @@ class CrashParser:
             import subprocess
             r = subprocess.run(
                 ["cdb.exe", "-z", path, "-c", "!analyze -v; q"],
-                capture_output=True, text=True, timeout=30
-            )
+                capture_output=True, text=True, timeout=30)
             if r.returncode == 0:
                 return CrashParser.parse_windbg_output(r.stdout)
         except Exception:
@@ -450,8 +408,7 @@ class CrashParser:
             r = subprocess.run(
                 ["gdb", "-batch", "-ex", "thread apply all bt full",
                  "-ex", "info registers", "-ex", "quit", path],
-                capture_output=True, text=True, timeout=30
-            )
+                capture_output=True, text=True, timeout=30)
             if r.returncode == 0:
                 return CrashParser.parse_gdb_output(r.stdout)
         except Exception:
@@ -479,9 +436,10 @@ class CrashDeduplicator:
     def similarity(a: List[int], b: List[int]) -> float:
         """计算两个调用栈的相似度（基于公共前缀长度的Jaccard系数）"""
         min_len = min(len(a), len(b))
-        if min_len == 0: return 0.0
+        if min_len == 0:
+            return 0.0
         matches = sum(1 for i in range(min_len)
-                     if (a[i] & 0xFFFFFFFFFFFFF000) == (b[i] & 0xFFFFFFFFFFFFF000))
+                      if (a[i] & 0xFFFFFFFFFFFFF000) == (b[i] & 0xFFFFFFFFFFFFF000))
         return matches / max(len(a), len(b))
 
     @classmethod

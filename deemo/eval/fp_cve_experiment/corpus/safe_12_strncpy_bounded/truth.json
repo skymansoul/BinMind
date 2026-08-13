@@ -1,8 +1,0 @@
-{
-  "id": "safe_12_strncpy_bounded",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "strncpy 显式长度, 分配=长度+1"
-}

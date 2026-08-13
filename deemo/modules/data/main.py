@@ -187,7 +187,7 @@ def _do_dry_import(path, args):
         except OSError:
             pass
 
-    print(f"Dry run: would import {len(file_list)} files ({total_size / (1024*1024):.1f} MB)")
+    print(f"Dry run: would import {len(file_list)} files ({total_size / (1024 * 1024):.1f} MB)")
     if file_list:
         for fp in file_list[:10]:
             print(f"  {fp}")

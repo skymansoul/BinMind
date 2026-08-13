@@ -1,6 +1,6 @@
 """格式化字符串漏洞测试样本生成器 — 从 fmt_sample_data.py 读取样本数据并生成文件.
 
-创建: 2026-04-18
+创建: 2024-11-05
 用途: 读取 FMT_SAMPLES 数据列表, 为每个样本创建独立目录含 main.c + Makefile + README.
       使用: python gen_fmt_samples.py [output_dir]
 """

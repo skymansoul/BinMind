@@ -100,8 +100,8 @@ retry:
     def test_partial_yaml_override(self):
         """YAML 可仅覆盖部分配置段，其余保留默认。"""
         yaml_content = """
-	logging:
-	  level: DEBUG
+logging:
+  level: DEBUG
 """
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".yaml", delete=False,

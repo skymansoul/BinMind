@@ -1,4 +1,4 @@
-/* malloc(n) ¡ú write n+1 bytes (off-by-one) */
+/* malloc(n) â†’ write n+1 bytes (off-by-one) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

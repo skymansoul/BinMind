@@ -6,7 +6,7 @@ from ..core.models import VulnerabilityReport
 from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 
-_LEGACY_RNG_TRACE = True  # 保留
+_LEGACY_RNG_TRACE = True # 保留
 
 # 遗留代码: v1版本的随机性评分
 # def _compute_randomness_score(self, ops):

@@ -105,6 +105,27 @@ class BatchRunner:
         return self._queue.size()
 
 
+class WorkerPool:
+    """工作线程池：托管 TaskQueue 与并发执行器。"""
+
+    __slots__ = ("num_workers", "_executor", "_queue")
+
+    def __init__(self, num_workers: int = 4):
+        self.num_workers = num_workers
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
+        self._queue = TaskQueue()
+
+    def submit(self, task: dict) -> None:
+        self._queue.enqueue(task)
+
+    def map(self, handler: Callable, tasks: list) -> list:
+        """将 handler 应用到每个任务，返回结果列表。"""
+        return list(self._executor.map(handler, tasks))
+
+    def shutdown(self) -> None:
+        self._executor.shutdown(wait=False)
+
+
 class StageConfig:
     def __init__(self, name: str, handler: Callable, *,
                  depends_on: list[str] | None = None,

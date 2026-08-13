@@ -1,6 +1,0 @@
-{
-  "class": "TN",
-  "cve": "",
-  "desc": "TN 对照 4: 跨函数参数代际 — free(p) 后调用 consume(q), q 为另一",
-  "trigger": "   对象 (经参数传递). 调用边界绑定使 callee 内 use 关联 q 的代际,"
-}

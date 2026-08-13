@@ -1,6 +1,0 @@
-{
-  "class": "TN",
-  "cve": "",
-  "desc": "TN 对照 5: 时序安全 — use(p) 在 free(p) 之前 (地址序 use < free).",
-  "trigger": "   时序判定 DEFINITELY_SAFE, 不构成 UAF. "
-}

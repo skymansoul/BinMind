@@ -1,5 +1,17 @@
 
 
+import os
+import tempfile
+import unittest# -*- coding: utf-8 -*-
+
+import os
+import sys
+import unittest
+import tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 class TestVulDBWithMocks(unittest.TestCase):
 
     def test_vuldb_api_key_from_environ(self):
@@ -90,7 +102,7 @@ class TestVulDBWithMocks(unittest.TestCase):
         self.assertEqual(result['source'], 'VulDB')
         self.assertEqual(result['severity'], 'Critical')
         self.assertEqual(result['cvss_score'], 9.8)
-        self.assertIn('CVE-2026-99999', result['cve_ids'])
+        self.assertIn('CVE-2024-99999', result['cve_ids'])
         self.assertEqual(result['description'], 'This is a full test vulnerability with CVSS score')
 
         db.close()

@@ -1,10 +1,10 @@
 #include <string.h>
 #include <stdlib.h>
-/* strcpyÒşÊ½Òç³ö¡ª¡ªmalloc(16)ºóstrcpy(128×Ö½Ú×Ö·û´®) */
+/* strcpyéšå¼æº¢å‡ºâ€”â€”malloc(16)åstrcpy(128å­—èŠ‚å­—ç¬¦ä¸²) */
 void strcpy_heap_overflow(const char *input) {
     char *buf = malloc(16);
     if (!buf) return;
-    strcpy(buf, input); /* VULN: input±È16×Ö½Ú³¤¡ú¶ÑÒç³ö */
+    strcpy(buf, input); /* VULN: inputæ¯”16å­—èŠ‚é•¿â†’å †æº¢å‡º */
     free(buf);
 }
 int main() {

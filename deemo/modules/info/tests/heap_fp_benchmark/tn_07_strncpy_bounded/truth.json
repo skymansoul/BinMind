@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_07_strncpy_bounded",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: strncpy 限定长度",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "strncpy 写入上限 127 < 128, C2 判定安全"
-}

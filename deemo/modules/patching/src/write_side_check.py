@@ -1,3 +1,4 @@
+# 创建: 2024-10-18
 # 写侧检查集成 — 在既有Filter链中插入双向区间交汇验证
 """既有Filter 4在 w_size==0 时调用 OverflowSatisfiabilitySolver,
   其判定 "alloc.lower >= 0 → cannot_overflow" 恒真, 导致真实溢出被误滤。

@@ -6,8 +6,7 @@
   *p = 0;
 
 原 HOSV 的 find_writes 仅识别 buf[i]=.../memcpy/strcpy 等,
-对 `*p++` 游走式写入 (CVE-2021-3156 sudo, CVE-2017-1000405 glibc,
-CVE-2021-4034 pkexec 等) 漏检. 本模块补足该类写模式.
+对 `*p++` 游走式写入漏检. 本模块补足该类写模式.
 
 判定分两条路径:
   1. 循环上界可定: max_write = bound * steps_per_iter + trailing 与 usable 比较
@@ -350,8 +349,7 @@ def verify_walk(w: WalkWrite, alloc: Optional[ExtAlloc],
 
 
 __all__ = [
-    'WalkWrite', 'collect_walk_writes', 'verify_walk',
-    'asymptotic_check', '_find_strlen_var', '_strlen_coef',
+    'WalkWrite', 'collect_walk_writes',
     '_estimate_iter_bound', '_resolve_strlen',
 ]
 

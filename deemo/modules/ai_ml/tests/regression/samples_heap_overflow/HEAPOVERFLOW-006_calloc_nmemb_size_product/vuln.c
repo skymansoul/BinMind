@@ -1,12 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-/* callocÕûÊıÒç³ö¡ª¡ªnmemb*size¿ÉÄÜ½Ø¶Ï */
+/* callocæ•´æ•°æº¢å‡ºâ€”â€”nmemb*sizeå¯èƒ½æˆªæ–­ */
 void calloc_overflow(int nmemb, int size, const char *data) {
-    /* VULN: nmemb*size¿ÉÄÜ³¬³öint·¶Î§±»½Ø¶Ï */
+    /* VULN: nmemb*sizeå¯èƒ½è¶…å‡ºintèŒƒå›´è¢«æˆªæ–­ */
     char *buf = calloc(nmemb, size);
     if (!buf) return;
-    int total = nmemb * size; /* Èç¹ûnmemb=1000000,size=5000¡úintÒç³ö */
+    int total = nmemb * size; /* å¦‚æœnmemb=1000000,size=5000â†’intæº¢å‡º */
     memcpy(buf, data, total);
     free(buf);
 }

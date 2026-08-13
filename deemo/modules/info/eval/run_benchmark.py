@@ -1,5 +1,9 @@
 # eval/run_benchmark — 多工具堆溢出检测对比基准测试
 # 对同一批样本运行 AC3 / Angr / Ghidra / QEMU, 收集统一指标。
+# 输出两份 CSV:
+#   benchmark_results.csv   — 按工具聚合的 TP/FP/FN/检出率 (原有格式, 保留)
+#   benchmark_unified.csv   — 逐样本统一格式 (工具名/样本ID/检出数/误报数/漏报数/耗时/峰值内存)
+# 二进制解析: build/*.elf → build/*.exe → 样本目录内直接可执行文件。
 
 import os, sys, json, time, subprocess, csv, tempfile
 from pathlib import Path
@@ -9,6 +13,7 @@ ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 SAMPLES_DIR = Path(__file__).parent.parent / "tests" / "regression" / "samples"
 OUTPUT_CSV = Path(__file__).parent / "benchmark_results.csv"
+OUTPUT_UNIFIED = Path(__file__).parent / "benchmark_unified.csv"
 
 GROUND_TRUTH = {
     "CVE-2014-0160_heartbleed": "HO", "CVE-2015-0235_ghost": "HO",
@@ -28,6 +33,20 @@ def _measure_peak_memory():
         return psutil.Process().memory_info().rss / 1024 / 1024
     except ImportError:
         return 0.0
+
+
+def _resolve_binary(sample_dir: Path):
+    """解析样本二进制: build/*.elf → build/*.exe → 目录内直接可执行文件。"""
+    build_dir = sample_dir / "build"
+    if build_dir.exists():
+        for pat in ("*.elf", "*.exe", "sample*"):
+            hits = sorted(build_dir.glob(pat))
+            if hits:
+                return str(hits[0])
+    for f in sorted(sample_dir.iterdir()):
+        if f.is_file() and f.suffix in (".elf", ".exe"):
+            return str(f)
+    return None
 
 
 def run_ac3(target: str) -> dict:
@@ -51,22 +70,32 @@ def run_ac3(target: str) -> dict:
 
 
 def run_angr_benchmark(target: str) -> dict:
-    script = f'''
-import angr, json, time
+    script = r'''
+import sys, angr, json, time
 t0=time.time()
 try:
-    p=angr.Project("{target}",auto_load_libs=False)
+    p=angr.Project(sys.argv[1],auto_load_libs=False)
     cfg=p.analyses.CFGFast()
-    dang={{"memcpy","strcpy","sprintf","gets","malloc","free"}}
-    found=[f for f in cfg.functions if f in dang]
-    print(json.dumps({{"tool":"angr","found":len(found),"elapsed":time.time()-t0}}))
+    dang={"memcpy","strcpy","sprintf","strncpy","gets","malloc","calloc","realloc","read","recv","free"}
+    found=[]
+    try:
+        mo=p.loader.main_object
+        for k in mo.imports.keys():
+            if str(k).lower().rstrip("aw") in dang:
+                found.append(str(k))
+    except Exception:
+        pass
+    for f in cfg.functions:
+        if f in dang and f not in found:
+            found.append(f)
+    print(json.dumps({"tool":"angr","found":len(found),"elapsed":time.time()-t0}))
 except Exception as e:
-    print(json.dumps({{"tool":"angr","error":str(e)[:100]}}))
+    print(json.dumps({"tool":"angr","error":str(e)[:100]}))
 '''
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write(script); tmp = f.name
     try:
-        proc = subprocess.run(["python", tmp], capture_output=True, text=True, timeout=180)
+        proc = subprocess.run(["python", tmp, target], capture_output=True, text=True, timeout=180)
         data = json.loads(proc.stdout.strip()) if proc.stdout.strip().startswith("{") else {}
         return {"detected": data.get("found", 0) > 0, "fp_count": 0, "elapsed": round(data.get("elapsed", 0), 3), "peak_memory_mb": 0}
     except: return {"detected": False, "fp_count": 0, "elapsed": 0, "peak_memory_mb": 0, "error": "timeout"}
@@ -81,27 +110,65 @@ def run_ghidra_benchmark(target: str) -> dict:
     except: return {"detected": False, "fp_count": 0, "elapsed": 0, "peak_memory_mb": 0, "error": "not_installed"}
 
 
+def run_qemu_benchmark(target: str) -> dict:
+    t0 = time.time()
+    try:
+        from qemu_tracer import trace_execution
+        r = trace_execution(target, timeout=25)
+    except ImportError:
+        return {"detected": False, "fp_count": 0, "elapsed": round(time.time() - t0, 3),
+                "peak_memory_mb": 0, "error": "qemu_tracer unavailable"}
+    if r.get("skip") or r.get("error"):
+        return {"detected": False, "fp_count": 0, "elapsed": round(time.time() - t0, 3),
+                "peak_memory_mb": 0, "error": r.get("error", "skip")}
+    return {"detected": r.get("dangerous_calls_detected", 0) > 0, "fp_count": 0,
+            "elapsed": round(time.time() - t0, 3), "peak_memory_mb": 0}
+
+
 def main():
-    tools = {"AC3": run_ac3, "Angr": run_angr_benchmark, "Ghidra": run_ghidra_benchmark}
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--samples", default=str(SAMPLES_DIR))
+    args = parser.parse_args()
+    samples_dir = Path(args.samples)
+
+    tools = {"AC3": run_ac3, "Angr": run_angr_benchmark,
+             "Ghidra": run_ghidra_benchmark, "QEMU": run_qemu_benchmark}
     rows = []
+    unified = []
     for tool_name, runner in tools.items():
         print(f"\n=== {tool_name} ===")
         tp = fp = fn = total_time = 0
         count = 0
-        for d in sorted(SAMPLES_DIR.iterdir()):
-            if not d.is_dir(): continue
-            build_dir = d / "build"
-            elfs = list(build_dir.glob("*.elf")) if build_dir.exists() else []
-            if not elfs: continue
+        for d in sorted(samples_dir.iterdir()):
+            if not d.is_dir():
+                continue
+            target = _resolve_binary(d)
+            if not target:
+                continue
             count += 1
             target = str(elfs[0])
             result = runner(target)
             gt = GROUND_TRUTH.get(d.name, "OTHER")
-            if gt == "HO" and result["detected"]: tp += 1
-            elif gt == "HO" and not result["detected"]: fn += 1
-            elif gt == "OTHER" and result["detected"]: fp += 1
+            is_ho = gt == "HO"
+            detected = bool(result["detected"])
+            if is_ho and detected:
+                tp += 1
+            elif is_ho and not detected:
+                fn += 1
+            elif not is_ho and detected:
+                fp += 1
             total_time += result.get("elapsed", 0)
-            print(f"  {d.name}: gt={gt} detected={result['detected']} time={result.get('elapsed',0):.1f}s")
+            unified.append({
+                "工具名": tool_name,
+                "样本ID": d.name,
+                "检出数": int(detected),
+                "误报数": int(not is_ho and detected),
+                "漏报数": int(is_ho and not detected),
+                "耗时": result.get("elapsed", 0),
+                "峰值内存": result.get("peak_memory_mb", 0),
+            })
+            print(f"  {d.name}: gt={gt} detected={detected} time={result.get('elapsed',0):.1f}s")
 
         ho_count = sum(1 for v in GROUND_TRUTH.values() if v == "HO")
         rows.append({
@@ -111,10 +178,15 @@ def main():
             "Avg_Time_s": round(total_time / max(count, 1), 1),
         })
 
-    with open(OUTPUT_CSV, "w", newline="") as f:
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=rows[0].keys())
         w.writeheader(); w.writerows(rows)
-    print(f"\nResults saved to {OUTPUT_CSV}")
+    with open(OUTPUT_UNIFIED, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=["工具名", "样本ID", "检出数", "误报数",
+                                          "漏报数", "耗时", "峰值内存"])
+        w.writeheader(); w.writerows(unified)
+    print(f"\n聚合结果: {OUTPUT_CSV}")
+    print(f"逐样本统一结果: {OUTPUT_UNIFIED} ({len(unified)} 行)")
     return rows
 
 

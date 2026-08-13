@@ -166,6 +166,10 @@ class RegressionHarness:
             ]
             # UAF样本: 命名以 uaf 开头 → 归入UAF检测器, 不参与堆溢出回归
             _UAF_PATTERNS = ['uaf']
+            # fmt/int 样本: 归入各自的独立回归 (int_fmt_regression)
+            _OTHER_CATEGORIES = ('fmt', 'int')
+            if name_lower.startswith(_OTHER_CATEGORIES):
+                continue
             if any(p in name_lower for p in _UAF_PATTERNS):
                 expected_type = 'uaf'
             if any(p in name_lower for p in _SAFE_PATTERNS):

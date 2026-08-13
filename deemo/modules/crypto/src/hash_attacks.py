@@ -75,7 +75,7 @@ def detect_shattered(data: bytes) -> bool:
     return _SHATTERED_PREFIX_A in data or _SHATTERED_PREFIX_B in data
 
 
-# ---- HMAC长度扩展绕过 ----
+# HMAC长度扩展绕过
 # HMAC结构: H((K⊕opad) || H((K⊕ipad) || msg))
 # SHA-256 HMAC仅取前128bit时, 长度扩展可经内层哈希中间状态伪造追加签名。
 # 判定: 内层H()输出的中间状态可被长度扩展利用。
@@ -111,7 +111,7 @@ def hmac_length_extension_forge(hmac_hex: str, original_msg_len: int,
     return new_outer.hexdigest()
 
 
-# ---- MD5选择前缀碰撞检测 ----
+# MD5选择前缀碰撞检测
 # 2008年Sotirov等利用MD5 chosen-prefix collision伪造CA证书。
 # 碰撞块特征: 两个不同前缀经near-collision blocks达成相同MD5。
 # 检测: 搜索中间相遇痕迹 — 两段不同二进制blob的MD5碰撞。

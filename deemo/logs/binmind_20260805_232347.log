@@ -1,5 +1,0 @@
-23:23:47 | INFO    | core.pipeline | Binary: cve_2023_0179_stack_overflow.elf | x86-64 64-bit | size=54681
-23:23:47 | WARNING | core.decompiler | radare2 not found at radare2
-23:23:47 | INFO    | core.pipeline | Found 0 functions
-23:23:47 | INFO    | core.pipeline | Analyzing 0 functions
-23:23:47 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

@@ -1,8 +1,0 @@
-{
-  "id": "cve_2023_3576_openssl",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2023-3576",
-  "component": "OpenSSL X.509",
-  "mode": "可变长度整数解析导致6字节堆溢出"
-}

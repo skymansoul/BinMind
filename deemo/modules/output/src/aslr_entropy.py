@@ -20,8 +20,8 @@ Miller-Madow 校正:
   Nemenman, Shafee & Bialek: NSB entropy estimator
 
 修改记录:
-  创建 2026-05-27 — 静态基线评估 (assess_aslr_entropy)
-  2026-08-03 — 追加样本驱动的 Miller-Madow 熵估计
+  创建 2024-10-11 — 静态基线评估 (assess_aslr_entropy)
+  2024-10-11 — 追加样本驱动的 Miller-Madow 熵估计
 """
 
 import math

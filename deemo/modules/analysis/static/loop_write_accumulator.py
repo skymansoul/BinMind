@@ -181,24 +181,13 @@ class LoopWriteAccumulator:
 
     @staticmethod
     def _extract_base_reg(op: str) -> Optional[str]:
-        """从 [reg+off] 形式操作数提取基址寄存器."""
-        m = re.search(r'\[([a-z][a-z0-9]*)', op)
-        if m:
-            return m.group(1)
-        return None
+        from .loop_bound_correlate import extract_base_reg
+        return extract_base_reg(op)
 
     @staticmethod
     def _infer_write_size_from_prefix(op: str) -> int:
-        """从操作数前缀推断写入字节数."""
-        if "byte" in op:
-            return 1
-        if "qword" in op:
-            return 8
-        if "dword" in op:
-            return 4
-        if "word" in op:
-            return 2
-        return 1
+        from .loop_bound_correlate import infer_write_size_from_prefix
+        return infer_write_size_from_prefix(op)
 
     def _find_or_create_accum(self, lst: List[WriteAccumulation],
                               alloc_addr: int, ptr_reg: str,
@@ -214,6 +203,9 @@ class LoopWriteAccumulator:
     def _check_overflow(self, alloc_tracker: HeapConstraintTracker
                         ) -> List[dict]:
         """检查每个累加写入是否超过分配大小."""
+        from .loop_overflow_builder import (
+            build_offbyone as _build_offbyone,
+            build_accum as _build_accum)
         findings = []
         for accum in self._accumulations:
             if accum.write_count == 0:
@@ -222,6 +214,8 @@ class LoopWriteAccumulator:
             if alloc is None:
                 continue
             raw_size = getattr(alloc, 'raw_alloc_size', alloc.alloc_size)
+            # alloc_size 用请求上界 (raw_alloc_size.hi); 与对齐上界
+            # 相比更贴近实际请求, 供后续 allocator 层精确判定.
             alloc_size = raw_size.hi
             if alloc_size <= 0:
                 continue
@@ -233,22 +227,8 @@ class LoopWriteAccumulator:
                     self._loop_bound_equals_alloc(accum):
                 total_write = alloc_size + 1
                 accum.total_write = total_write
-                findings.append({
-                    "type": "heap_overflow",
-                    "alloc_addr": alloc.alloc_site,
-                    "alloc_size": alloc_size,
-                    "write_addr": accum.write_addrs[0] if accum.write_addrs else 0,
-                    "write_size": total_write,
-                    "overflow_bytes": 1,
-                    "severity": "high",
-                    "detection_method": "loop_accumulation",
-                    "loop_trip_count": "alloc+1",
-                    "single_write_size": accum.single_write_size,
-                    "ptr_operand": accum.ptr_reg,
-                    "_snapshot_alloc_addr": accum.alloc_addr,
-                    "note": f"loop bound == alloc size: writes "
-                            f"alloc+1 bytes (off-by-one) > alloc {alloc_size}B",
-                })
+                findings.append(_build_offbyone(
+                    accum, alloc, alloc_size, total_write))
                 continue
             # 单次迭代可含多条写指令 (如两个 qword store = 16B),
             # 总量 = 单条写尺寸 × 单迭代写条数 × 迭代次数.
@@ -258,23 +238,8 @@ class LoopWriteAccumulator:
                 accum.total_write = total_write
             if total_write > alloc_size:
                 overflow = total_write - alloc_size
-                findings.append({
-                    "type": "heap_overflow",
-                    "alloc_addr": alloc.alloc_site,
-                    "alloc_size": alloc_size,
-                    "write_addr": accum.write_addrs[0] if accum.write_addrs else 0,
-                    "write_size": total_write,
-                    "overflow_bytes": overflow,
-                    "severity": "critical" if overflow > 64 else "high",
-                    "detection_method": "loop_accumulation",
-                    "loop_trip_count": accum.loop.trip_count,
-                    "single_write_size": accum.single_write_size,
-                    "ptr_operand": accum.ptr_reg,
-                    "_snapshot_alloc_addr": accum.alloc_addr,
-                    "note": f"loop body writes {accum.single_write_size}B"
-                            f" × {accum.loop.trip_count} iterations"
-                            f" = {total_write}B > alloc {alloc_size}B",
-                })
+                findings.append(_build_accum(
+                    accum, alloc, alloc_size, total_write, overflow))
         return findings
 
     def _extract_write_size(self, instructions: List[dict],
@@ -300,149 +265,20 @@ class LoopWriteAccumulator:
     def _loop_bound_equals_alloc(self, accum: WriteAccumulation) -> bool:
         """判断循环上界是否与分配大小同源 (含等号边界循环).
 
-        典型模式 (CVE-2020-25692):
-            n = 参数;  buf = malloc(n);
-            for (i = 0; i <= n; i++) buf[i] = 'A';
-        反汇编: cmp [rbp+X], rax; jae loop — 上界 [rbp+X] 与
-        malloc(n) 的 size 参数同源 → 写入 alloc+1 字节 → off-by-one.
-        保守实现: 上界栈槽与分配 size 参数栈槽相同才判 True.
+        实现委托 loop_bound_correlate.
         """
-        if not self._instructions:
-            return False
-        start_idx = None
-        for i, ins in enumerate(self._instructions):
-            if ins.get("address", 0) == accum.loop.body_start:
-                start_idx = i
-                break
-        if start_idx is None:
-            return False
-        for j in range(start_idx, min(start_idx + 40, len(self._instructions))):
-            ins_j = self._instructions[j]
-            if ins_j.get("mnemonic", "").lower() != "cmp":
-                continue
-            ops = ins_j.get("operands", [])
-            if len(ops) < 2:
-                return False
-            bound_op = self._bound_operand(ops)
-            if bound_op is None:
-                return False
-            alloc_src = self._alloc_size_source(accum.alloc_addr)
-            if alloc_src is None:
-                return False
-            return self._same_source(bound_op, alloc_src)
-        return False
+        from .loop_bound_correlate import loop_bound_equals_alloc as _f
+        return _f(self._instructions, accum.loop.body_start,
+                  accum.alloc_addr, self._arg_regs)
 
-    def _bound_operand(self, cmp_ops: List[str]) -> Optional[str]:
-        """提取 cmp 中的上界操作数 (非计数器操作数).
-
-        计数器是循环体内被 add/inc 修改的寄存器; 上界是另一个操作数.
-        """
-        if len(cmp_ops) < 2:
-            return None
-        ops = [o.strip().lower() for o in cmp_ops]
-        counter = self._norm_cmp_counter(ops)
-        for op in ops:
-            if op != counter:
-                return op
-        return None
-
-    @staticmethod
-    def _norm_cmp_counter(ops: List[str]) -> Optional[str]:
-        """识别 cmp 操作数中的纯寄存器作为计数器."""
-        for op in ops:
-            m = re.search(r'^([a-z][a-z0-9]*)$', op.strip())
-            if m:
-                return m.group(1)
-        return None
-
-    def _alloc_size_source(self, alloc_addr: int) -> Optional[str]:
-        """提取分配点 size 参数的来源 (栈槽或寄存器).
-
-        支持多跳寄存器链: mov rcx, rax; mov rax, [rbp+0x10] →
-        归约到 [rbp+0x10]. 仅当链能归约为栈槽/参数时返回.
-        """
-        if not self._instructions:
-            return None
-        cur_reg = self._arg_regs[0] if self._arg_regs else "rcx"
-        # 定位分配调用指令的下标
-        alloc_idx = None
-        for i, ins in enumerate(self._instructions):
-            if ins.get("address", 0) == alloc_addr:
-                alloc_idx = i
-                break
-        if alloc_idx is None:
-            return None
-        for _hop in range(8):
-            src = None
-            for j in range(alloc_idx - 1, max(0, alloc_idx - 20) - 1, -1):
-                ins_j = self._instructions[j]
-                mnem = ins_j.get("mnemonic", "").lower()
-                ops = ins_j.get("operands", [])
-                if mnem == "call":
-                    return None
-                if mnem in ("mov", "movsxd", "movzx", "movsx") \
-                        and len(ops) >= 2 and norm_reg(ops[0]) == cur_reg:
-                    src = ops[1].strip()
-                    break
-            if src is None:
-                return None
-            src_l = src.lower()
-            if "[" in src_l:
-                slot = re.search(r'(r[bs]p[+-]0x[0-9a-f]+)', src_l)
-                if slot:
-                    return f"[{slot.group(1)}]"
-                return src_l
-            if self._parse_imm(src_l) is not None:
-                return src_l
-            cur_reg = norm_reg(src)
-            # 继续从该定义点向前回溯 (扫描窗口基于当前指令)
-            alloc_idx = alloc_idx - 1
-        return None
-
-    @staticmethod
-    def _same_source(a: str, b: str) -> bool:
-        """比较两个来源 (栈槽/寄存器) 是否同源."""
-        def norm(s: str) -> str:
-            s = s.lower().replace(" ", "")
-            if "ptr" in s:
-                s = s.split("ptr")[-1]
-            s = s.replace("[", "").replace("]", "")
-            m = re.search(r'(r[bs]p[+-]0x[0-9a-f]+)', s)
-            if m:
-                return m.group(1)
-            m = re.search(r'^[a-z][a-z0-9]*$', s)
-            if m:
-                return m.group(0)
-            return s
-        return norm(a) == norm(b)
-
-    @staticmethod
-    def _parse_target(op: str) -> Optional[int]:
-        s = op.strip().lower().lstrip("%").replace("$", "")
-        if "<" in s:
-            s = s.split("<")[0].strip()
-        s = s.split("#")[0].strip()
-        try:
-            if s.startswith("0x"):
-                return int(s, 16)
-            if len(s) >= 6 and all(c in "0123456789abcdef" for c in s):
-                return int(s, 16)
-            return int(s)
-        except ValueError:
-            return None
+    def _parse_target(self, op: str) -> Optional[int]:
+        from .loop_bound_correlate import parse_target
+        return parse_target(op)
 
     @staticmethod
     def _parse_imm(op: str) -> Optional[int]:
-        s = op.strip().lower().lstrip("%").replace("$", "")
-        s = s.split("#")[0].strip()
-        try:
-            if s.startswith("0x"):
-                return int(s, 16)
-            if s.isdigit() or (s.startswith("-") and s[1:].isdigit()):
-                return int(s)
-        except ValueError:
-            pass
-        return None
+        from .loop_bound_correlate import parse_imm
+        return parse_imm(op)
 
     @property
     def findings(self) -> List[dict]:

@@ -1,0 +1,73 @@
+# 样本元数据 — 漏洞样本与安全对照的规格定义.
+#
+# 每条样本: (sample_id, cve, pattern, alloc, write, expected, desc).
+# alloc/write 支持常量或 "param" (来自 argv); expected ∈ confirmed|benign.
+# 模板按 pattern 选型, 定义于 sample_templates.py.
+#
+# 创建: 2025-01-13
+
+VULN = [
+    ("cve_2013_4788_android_media", "CVE-2013-4788", "fixed_alloc_tainted_write",
+     64, 128, "confirmed",
+     "Android mediaserver MPEG4 stbl 解析: 固定64字节堆缓冲, 以样本头长度 memcpy 128字节"),
+    ("cve_2015_0235_ghost", "CVE-2015-0235", "off_by_one_alloc_linked",
+     "param", "param+1", "confirmed",
+     "glibc GHOST: malloc(hostlen) 后写入 hostlen+1 (gethostbyname off-by-one)"),
+    ("cve_2016_10158_php_exif", "CVE-2016-10158", "fixed_alloc_tainted_write",
+     32, 256, "confirmed",
+     "PHP EXIF get_efi_data: 固定32字节缓冲, memcpy 256字节"),
+    ("cve_2016_6301_ntpd", "CVE-2016-6301", "fixed_alloc_tainted_write",
+     48, 1024, "confirmed",
+     "NTPd receive: 48字节堆缓冲, 网络包长度 memcpy 1024字节"),
+    ("cve_2017_1000112_linux_udp", "CVE-2017-1000112", "fixed_alloc_tainted_write",
+     128, 4096, "confirmed",
+     "Linux UDP fraglist: 128字节skb, UDP分片长度 memcpy 4096字节"),
+    ("cve_2017_7269_iis_scstorage", "CVE-2017-7269", "fixed_alloc_tainted_write",
+     80, 512, "confirmed",
+     "IIS ScStoragePathFromUrl: 80字节堆缓冲, 请求URL长度 memcpy 512字节"),
+    ("cve_2018_1000001_curl_tftp", "CVE-2018-1000001", "alloc_param_tainted_write",
+     "param", "param*2", "confirmed",
+     "cURL TFTP: 按包长参数分配, 收到更大块时写入超限"),
+    ("cve_2018_14634_kernel_create_elf", "CVE-2018-14634", "intof_alloc_tainted_write",
+     "param", "param*16", "confirmed",
+     "Linux create_elf_tables: 参数乘积回绕导致小分配+大写入"),
+    ("cve_2019_1579_paloalto_gp", "CVE-2019-1579", "fixed_alloc_tainted_write",
+     16, 256, "confirmed",
+     "Palo Alto GlobalProtect: 16字节堆缓冲, 会话长度 memcpy 256字节"),
+    ("cve_2019_2215_binder_trans", "CVE-2019-2215", "fixed_alloc_tainted_write",
+     64, 512, "confirmed",
+     "Android Binder 交易: 64字节堆缓冲, 事务数据 memcpy 512字节"),
+    ("cve_2019_3462_debian_apt", "CVE-2019-3462", "off_by_one_alloc_linked",
+     "param", "param+1", "confirmed",
+     "Debian apt signedby: 按哈希长度分配, 写入 len+1 溢出1字节"),
+    ("cve_2020_0022_bt_l2cap", "CVE-2020-0022", "fixed_alloc_tainted_write",
+     32, 128, "confirmed",
+     "Android Bluetooth L2CAP: 32字节堆缓冲, 畸形包长度 memcpy 128字节"),
+    ("cve_2021_3156_sudo_baron", "CVE-2021-3156", "off_by_one_alloc_linked",
+     "param", "param+1", "confirmed",
+     "sudo Baron Samedit: 按 argv[0] 长度分配, 写入 len+1 字节 off-by-one"),
+    ("cve_2021_4034_polkit_pkexec", "CVE-2021-4034", "fixed_alloc_tainted_write_param",
+     16, "param", "confirmed",
+     "polkit pkexec: 固定16字节堆缓冲, argv 数据 memcpy 超限"),
+    ("cve_2022_0185_fs_context", "CVE-2022-0185", "off_by_one_alloc_linked",
+     "param", "param+1", "confirmed",
+     "Linux fs_context legacy_parse_param: 分配 len 写入 len+1 字节"),
+]
+
+SAFE = [
+    ("safe_01_correlated", "N/A", "alloc_linked_write",
+     "param", "param", "benign",
+     "同源安全: malloc(n) + memcpy(n), n 来自 argv"),
+    ("safe_02_guarded", "N/A", "guarded_write",
+     64, "param", "benign",
+     "守卫安全: malloc(64), 写入前 if(len<=64) 边界检查"),
+    ("safe_03_padding", "N/A", "allocator_padding",
+     62, 63, "benign",
+     "分配器padding: malloc(62) glibc usable=72, 写入63字节不溢出"),
+    ("safe_04_alloc_plus_one", "N/A", "alloc_linked_write",
+     "param", "param", "benign",
+     "同源-1安全: malloc(n+1) + memcpy(n)"),
+    ("safe_05_exact_constant", "N/A", "exact_constant",
+     256, 256, "benign",
+     "常量精确: malloc(256) + memcpy(256) 恰好等大"),
+]

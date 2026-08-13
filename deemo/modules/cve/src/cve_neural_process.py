@@ -276,16 +276,7 @@ def build_cnp_from_kb(kb, min_cwe_samples: int = 8,
     return cnp
 
 
-def _get_str(entry, field, default=""):
-    return str(getattr(entry, field, default) or default) if hasattr(entry, field) else str(entry.get(field, default)) if isinstance(entry, dict) else default
-
-
-def _get_num(entry, field):
-    return getattr(entry, field, None) if hasattr(entry, field) else (entry.get(field) if isinstance(entry, dict) else None)
-
-
-def _get_bool(entry, field):
-    return bool(getattr(entry, field, False)) if hasattr(entry, field) else bool(entry.get(field, False)) if isinstance(entry, dict) else False
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
 
 def _log_refs(entry) -> float:

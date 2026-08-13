@@ -15,7 +15,7 @@ DDSSC协调器 (DDSSC Coordinator) — 三层混合分析编排.
     HeapFPFilter的三阶段保留不变, 本模块作为Stage 6/7/8
     插入到finalize()的过滤管线末尾, 不破坏已有逻辑.
 
-创建: 2026-07-04
+创建: 2024-09-25
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -95,6 +95,9 @@ class DDSSCCoordinator:
     def _layer1_interval(self, alloc_iv: Interval,
                          write_iv: Interval) -> DDSSCResult:
         """Layer 1: 区间推理."""
+        # alloc_iv 已由调用方传入原始请求区间 (raw_alloc_size);
+        # 写入上界 ≤ 请求下界即安全, 落在 padding 区域的写量由
+        # Layer2/3 或 allocator 层精确判定.
         if write_iv.hi <= alloc_iv.lo:
             self._layer1_safe += 1
             return DDSSCResult(

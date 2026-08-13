@@ -135,6 +135,11 @@ class AutoPatcher:
         self._disassembler = None  # capstone.Cs 实例
         self._resolver = PatchConflictResolver()
         self._arch = 'x86_64'  # 缺省架构
+        # 公开别名——与内部私有属性共享同一对象
+        self.binary_path = binary_path
+        self.vulnerabilities = self._vulns
+        self.patches = self._patches
+        self.hardenings = self._hardenings
 
         logger.info("AutoPatcher init OK")
 

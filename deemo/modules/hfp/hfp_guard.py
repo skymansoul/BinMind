@@ -1,13 +1,12 @@
 """
 路径守卫窄化 — 把分支条件转化为写大小的区间上界。
 
-决策逻辑:
-  误报的高频来源是"机械比较 write_size > alloc_size", 而忽略
-  write_size 在到达写点前已被分支守卫 (guard) 约束。典型模式:
-    if (len < 64) memcpy(buf, src, len);   // len < 64 已证明
-    for (i = 0; i < N; i++) buf[i] = x;    // i < N 隐含上界
-  本模块从 IR 行中提取 (cmp reg, imm; jcc) 对, 把守卫转化为对
-  变量的区间约束, 并在写点处按"路径经过守卫"的保守语义收窄。
+误报的高频来源是"机械比较 write_size > alloc_size", 而忽略
+write_size 在到达写点前已被分支守卫 (guard) 约束。典型模式:
+  if (len < 64) memcpy(buf, src, len);   // len < 64 已证明
+  for (i = 0; i < N; i++) buf[i] = x;    // i < N 隐含上界
+本模块从 IR 行中提取 (cmp reg, imm; jcc) 对, 把守卫转化为对
+变量的区间约束, 并在写点处按"路径经过守卫"的保守语义收窄。
 
   保守原则: 只使用必定成立的守卫 (guard 成立才执行写, 或循环
   上界比较), 不推断守卫不成立的分支。
@@ -113,6 +112,8 @@ def collect_guards(ir_lines: List[str],
     return guards
 
 
+# TODO: 循环上界存于内存槽 (如 [rbp-0x10]) 时当前仅取立即数,
+# 栈槽间接上界 (libwebp 场景) 需寄存器值流回溯支持
 def loop_bound_from_region(ir_lines: List[str],
                            anchor_pc: int, window: int = 40,
                            backward: bool = False) -> Optional[int]:

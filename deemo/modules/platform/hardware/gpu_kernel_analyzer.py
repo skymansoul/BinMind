@@ -123,7 +123,7 @@ class AnalysisReport:
 class PTXParser:
     """解析 CUDA PTX 中间表示。"""
 
-    KERNEL_RE = re.compile(r'\.(?:visible\s+)?\.entry\s+(\w+)', re.MULTILINE)
+    KERNEL_RE = re.compile(r'\.(?:visible\s+)?entry\s+(\w+)', re.MULTILINE)
     REG_RE = re.compile(r'%r\d+')
     PRED_RE = re.compile(r'%p\d+')
 
@@ -290,6 +290,9 @@ class CUBINParser:
 
     def parse(self, bin_path: Optional[str] = None) -> dict:
         path = bin_path or self._path
+        if not path:
+            # 无路径输入：返回空结果而非抛 FileNotFoundError
+            return {"kernels": [], "instructions": 0, "arch": "unknown"}
         with open(path, "rb") as f:
             data = f.read()
 
@@ -358,7 +361,7 @@ class DataRaceDetector:
             if 'STS' in stripped or 'ATOMS' in stripped:
                 shared_writes.append(i)
             if 'BAR' in stripped or 'MEMBAR' in stripped:
-                if shared_writes and last_barrier < min(shared_writes):
+                if len(shared_writes) >= 2 and last_barrier < min(shared_writes):
                     reports.append({
                         "type": "potential_race",
                         "lines": shared_writes,
@@ -389,6 +392,12 @@ class GPUKernelAnalyzer:
         self._last_report: Optional[AnalysisReport] = None
 
     def analyze(self, kernel=None, source_code=None, binary=None) -> AnalysisReport:
+        if not (source_code or binary or kernel):
+            # 空输入：无可分析对象，得分归零
+            report = AnalysisReport(score=0)
+            self._last_report = report
+            return report
+
         report = AnalysisReport(score=100)
 
         if source_code:

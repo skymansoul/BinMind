@@ -1,8 +1,0 @@
-{
-  "sample_id": "TP-04",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "description": "Realloc alias UAF: q=p; p=realloc(p,2n); use(q) \u2014 CVE-2023-28328 class",
-  "expect_uaf": true,
-  "tarps_expected": "DEF_TP"
-}

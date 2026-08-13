@@ -240,7 +240,7 @@ class CrossArchTripletSampler:
                                        embedding_dim: int = 128) -> int:
         """估计达到目标margin所需的最小批次大小。
 
-        基于对比学习理论(Naturenhance et al., 2020):
+        基于对比学习理论:
           样本效率 ∝ exp(-margin² / (2σ²)) × √(batch_size)
           σ ≈ 1/√(embedding_dim) 在高维嵌入空间的渐进性质。
 

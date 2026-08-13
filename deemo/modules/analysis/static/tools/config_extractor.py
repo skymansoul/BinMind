@@ -4,7 +4,7 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class ConfigType(str, Enum):
@@ -59,10 +59,10 @@ class ConfigExtractor:
 
     def __init__(self):
         self.results = ExtractionResult()
-        __log.info("Extractor instantiated.")
+        _log.info("Extractor instantiated.")
 
     def extract_from_strings(self, strings: List[str]) -> ExtractionResult:
-        __log.info("String extraction pipeline started.")
+        _log.info("String extraction pipeline started.")
         for s in strings:
             if not isinstance(s, str): continue
             self._extract_database(s); self._extract_api_keys(s)
@@ -70,7 +70,7 @@ class ConfigExtractor:
             self._extract_emails(s); self._extract_certificates(s)
             self._extract_config_files(s); self._extract_embedded_endpoints(s)
             self._extract_aws_keys(s); self._extract_jwt_tokens(s)
-        __log.info(f"Extraction finished. Items found: {len(self.results.configs)}")
+        _log.info(f"Extraction finished. Items found: {len(self.results.configs)}")
         return self.results
 
     def _extract_database(self, s: str):
@@ -188,12 +188,12 @@ class ConfigExtractor:
         return value[:4] + '*' * (len(value) - 8) + value[-4:]
 
     def extract_from_binary(self, binary_path: str) -> ExtractionResult:
-        __log.info(f"Binary extraction initiated: {binary_path}")
+        _log.info(f"Binary extraction initiated: {binary_path}")
         try:
             with open(binary_path, 'rb') as f: data = f.read()
             return self.extract_from_strings(self._extract_strings_from_binary(data))
         except Exception as e:
-            __log.error(f"Binary extraction error: {e}"); return self.results
+            _log.error(f"Binary extraction error: {e}"); return self.results
 
     def _extract_strings_from_binary(self, data: bytes) -> List[str]:
         strings = []; current_string = []
@@ -218,8 +218,8 @@ class ConfigExtractor:
             }
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result_dict, f, indent=2, ensure_ascii=False)
-            __log.info(f"Results written: {output_path}"); return True
-        except Exception as e: __log.error(f"Save error: {e}"); return False
+            _log.info(f"Results written: {output_path}"); return True
+        except Exception as e: _log.error(f"Save error: {e}"); return False
 
     def _cfg_dict(self, c: ExtractedConfig) -> dict:
         return {'type': c.type.value, 'key': c.key, 'value': c.value,

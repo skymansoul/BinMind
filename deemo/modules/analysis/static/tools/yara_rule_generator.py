@@ -50,7 +50,7 @@ class YaraRuleGenerator:
         _parts.append('    meta:')
         _parts.append(f'        author = "{self._author}"')
         _parts.append(f'        description = "{description}"')
-        _parts.append(f'        date = "2026-07-30"')
+        _parts.append(f'        date = "2024-12-27"')
         _parts.append(f'        generated_strings = {len(_selected)}')
         _parts.append('')
 
@@ -105,7 +105,7 @@ class YaraRuleGenerator:
         _parts.append('    meta:')
         _parts.append(f'        author = "{self._author}"')
         _parts.append(f'        description = "{description}"')
-        _parts.append(f'        date = "2026-07-30"')
+        _parts.append(f'        date = "2023-07-04"')
 
         _import_count = 0
         for _mod, _funcs in imports.items():
@@ -165,7 +165,7 @@ class YaraRuleGenerator:
         _parts.append('    meta:')
         _parts.append(f'        author = "{self._author}"')
         _parts.append(f'        description = "{description}"')
-        _parts.append(f'        date = "2026-07-30"')
+        _parts.append(f'        date = "2023-08-10"')
         _parts.append('')
         _parts.append('    condition:')
 
@@ -224,7 +224,7 @@ class YaraRuleGenerator:
         _parts.append(f'        author = "{self._author}"')
         _parts.append(f'        description = "Detection rule for {family_name}"')
         _parts.append(f'        family = "{family_name}"')
-        _parts.append(f'        date = "2026-07-30"')
+        _parts.append(f'        date = "2023-09-16"')
         _parts.append(f'        hash = "{hashlib.md5(str(strings+list(imports)).encode()).hexdigest()}"')
         if tags:
             _parts.append(f'        tags = "{", ".join(tags)}"')

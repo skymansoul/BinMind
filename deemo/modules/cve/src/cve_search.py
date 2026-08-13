@@ -170,6 +170,26 @@ def _expand_tokens(tokens: List[str]) -> List[str]:
 
 
 # CVESearchEngine
+class SearchResult(dict):
+    """搜索结果条目：支持字段访问与 (entry, score) 解包。
+
+    上层同时存在按字典取字段与按二元组解包的消费方，
+    两类接口由同一对象承载，避免搜索结果格式分裂。
+    """
+
+    def __init__(self, entry: CVEEntry, score: float):
+        super().__init__(
+            cve_id=entry.cve_id,
+            description=entry.description,
+            score=score,
+        )
+        self["_entry"] = entry
+
+    def __iter__(self):
+        yield self["_entry"]
+        yield self["score"]
+
+
 class CVESearchEngine:
     """CVE描述BM25搜索——支持CJK分词。"""
 
@@ -185,6 +205,7 @@ class CVESearchEngine:
         self._idf: Dict[str, float] = {}
         # BM25平均文档长度
         self._avgdl: float = 0.0
+        self._doc_count: int = 0
         self._built = False
 
     def build(self):
@@ -197,6 +218,7 @@ class CVESearchEngine:
         # 从知识库获取所有条目
         entries, total = self._kb.search(limit=100000)
         N = len(entries)
+        self._doc_count = N
         if N == 0:
             self._built = True
             return
@@ -239,9 +261,13 @@ class CVESearchEngine:
         self._built = False
         self.build()
 
-    def search(self, query: str, top_n: int = 10, min_score: float = 0.01) -> List[Tuple[CVEEntry, float]]:
+    def search(self, query: str, top_n: int = 10, min_score: float = 0.01,
+               limit: Optional[int] = None) -> List[SearchResult]:
         """BM25搜索 k1=1.2, b=0.75。
-        返回按评分降序排列的(CVEEntry, score)列表。"""
+        返回按评分降序排列的搜索结果列表。"""
+        if limit is not None:
+            top_n = limit
+
         if not self._built:
             self.build()
 
@@ -291,11 +317,11 @@ class CVESearchEngine:
 
         # 过滤与排序
         results = [
-            (self._docs[doc_idx], score)
+            SearchResult(self._docs[doc_idx], score)
             for doc_idx, score in scores.items()
             if score >= min_score
         ]
-        results.sort(key=lambda x: x[1], reverse=True)
+        results.sort(key=lambda x: x["score"], reverse=True)
         return results[:top_n]
 
     # 注意: explain()使用与search()略不同的评分循环——
@@ -350,6 +376,7 @@ class CVESearchEngine:
         # total_score四舍五入便于阅读
         for r in result_list:
             r["total_score"] = round(r["total_score"], 6)
+            r["score"] = r["total_score"]
         return result_list[:top_n]
 
 

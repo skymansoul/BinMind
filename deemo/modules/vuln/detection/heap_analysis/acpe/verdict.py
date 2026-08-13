@@ -1,6 +1,6 @@
 """ACPE 判定引擎 — 汇总容量/溯源/守卫证据, 输出最终误报裁定.
 
-创建: 2026-06-14
+创建: 2025-05-12
 用途: 将 equivalence.classify_pair 的关系映射为可审计的判定:
       SAFE(滤除) / VULN_CONFIRMED / VULN_LIKELY / UNCERTAIN。
       同时结合反例守卫(写出仅在 size>cap 时可达)提升 CONFIRMED 精度。

@@ -1,4 +1,9 @@
-"""Embedding-space similarity search across binary function representations."""
+"""
+语义漏洞搜索 —— TF-IDF 向量化 + 关键词匹配 + 漏洞模式标注。
+
+索引构建、保存/加载、查询与高亮均在本模块内闭环，
+不依赖外部模型或网络服务。
+"""
 
 from __future__ import annotations
 
@@ -6,507 +11,362 @@ import json
 import logging
 import math
 import os
+import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class FunctionEmbedding:
-    """A function's embedding vector with metadata."""
-    name: str = ""
-    address: int = 0
-    embedding: List[float] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def vector(self) -> np.ndarray:
-        return np.array(self.embedding, dtype=np.float32)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'name': self.name,
-            'address': self.address,
-            'embedding': self.embedding,
-            'metadata': self.metadata,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> FunctionEmbedding:
-        return cls(
-            name=data.get('name', ''),
-            address=data.get('address', 0),
-            embedding=data.get('embedding', []),
-            metadata=data.get('metadata', {}),
-        )
+class SearchMode(Enum):
+    SEMANTIC = "semantic"
+    KEYWORD = "keyword"
+    VECTOR = "vector"
+    HYBRID = "hybrid"
 
 
-class SearchMode:
-    """Search mode constants."""
-    TFIDF: str = "tfidf"
-    EMBEDDING: str = "embedding"
-    HYBRID: str = "hybrid"
-
-
-class SemanticSearchEngine:
-    """Brute-force + FAISS semantic search over function embeddings."""
-
-    def __init__(
-        self,
-        index_dir: str = "",
-        dimension: int = 768,
-    ) -> None:
-        self.index_dir = index_dir or os.path.join(
-            os.path.dirname(__file__), "..", "data", "semantic_index"
-        )
-        self.dimension = dimension
-        self.embeddings: List[FunctionEmbedding] = []
-        self._name_index: Dict[str, int] = {}
-        self._address_index: Dict[int, int] = {}
-        self._faiss_index: Any = None
-        self._use_faiss = False
-
-        try:
-            import faiss
-            self._faiss_index = faiss.IndexFlatL2(dimension)
-            self._use_faiss = True
-            logger.info("FAISS index initialized")
-        except ImportError:
-            logger.info("FAISS not available, using brute-force search")
-
-    def index_function(
-        self,
-        name: str,
-        address: int,
-        embedding: List[float],
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """Add a function embedding to the search index.
-
-        Args:
-            name: Function name.
-            address: Function address.
-            embedding: Embedding vector.
-            metadata: Optional metadata dictionary.
-        """
-        emb = FunctionEmbedding(
-            name=name,
-            address=address,
-            embedding=embedding,
-            metadata=metadata or {},
-        )
-
-        idx = len(self.embeddings)
-        self.embeddings.append(emb)
-        self._name_index[name] = idx
-        self._address_index[address] = idx
-
-        if self._use_faiss and self._faiss_index is not None:
-            vector = np.array([embedding], dtype=np.float32)
-            self._faiss_index.add(vector)
-
-    def search(
-        self,
-        query_embedding: List[float],
-        top_k: int = 10,
-    ) -> List[Tuple[FunctionEmbedding, float]]:
-        """Search for similar functions.
-
-        Args:
-            query_embedding: Query embedding vector.
-            top_k: Number of results to return.
-
-        Returns:
-            List of (FunctionEmbedding, similarity_score) tuples.
-        """
-        if not self.embeddings:
-            return []
-
-        query_vec = np.array([query_embedding], dtype=np.float32)
-
-        if self._use_faiss and self._faiss_index is not None:
-            try:
-                distances, indices = self._faiss_index.search(
-                    query_vec, min(top_k, len(self.embeddings))
-                )
-                results: List[Tuple[FunctionEmbedding, float]] = []
-                for i in range(len(indices[0])):
-                    idx = indices[0][i]
-                    if idx >= 0 and idx < len(self.embeddings):
-                        sim = 1.0 / (1.0 + float(distances[0][i]))
-                        results.append((self.embeddings[idx], sim))
-                return results
-            except Exception as e:
-                logger.warning(f"FAISS search failed, falling back to brute-force: {e}")
-
-        # Brute-force 回退
-        results = []
-        for emb in self.embeddings:
-            score = self._cosine_sim(query_embedding, emb.embedding)
-            results.append((emb, score))
-        results.sort(key=lambda x: x[1], reverse=True)
-        return results[:top_k]
-
-    def search_by_name(
-        self,
-        function_name: str,
-        top_k: int = 10,
-    ) -> List[Tuple[FunctionEmbedding, float]]:
-        """Search similar to a named function.
-
-        Args:
-            function_name: Name of the query function.
-            top_k: Number of results.
-
-        Returns:
-            Similar functions with scores.
-        """
-        if function_name not in self._name_index:
-            return []
-
-        idx = self._name_index[function_name]
-        query = self.embeddings[idx]
-        results = self.search(query.embedding, top_k)
-        # Remove self-match
-        return [(emb, score) for emb, score in results if emb.name != function_name][:top_k - 1]
-
-    def search_by_address(
-        self,
-        address: int,
-        top_k: int = 10,
-    ) -> List[Tuple[FunctionEmbedding, float]]:
-        """Search similar to a function at an address.
-
-        Args:
-            address: Function address.
-            top_k: Number of results.
-
-        Returns:
-            Similar functions with scores.
-        """
-        if address not in self._address_index:
-            return []
-
-        idx = self._address_index[address]
-        query = self.embeddings[idx]
-        return self.search(query.embedding, top_k)
-
-    @staticmethod
-    def _cosine_sim(a: List[float], b: List[float]) -> float:
-        """Compute cosine similarity between two vectors."""
-        if not a or not b:
-            return 0.0
-        vec_a = np.array(a, dtype=np.float32)
-        vec_b = np.array(b, dtype=np.float32)
-        dot = float(np.dot(vec_a, vec_b))
-        norm_a = float(np.linalg.norm(vec_a))
-        norm_b = float(np.linalg.norm(vec_b))
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-        return dot / (norm_a * norm_b)
-
-    def save(self, filepath: str) -> None:
-        """Save index to disk.
-
-        Args:
-            filepath: Output file path.
-        """
-        data = {
-            'dimension': self.dimension,
-            'embeddings': [emb.to_dict() for emb in self.embeddings],
-        }
-        os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=2)
-        logger.info(f"Saved {len(self.embeddings)} embeddings to {filepath}")
-
-    def load(self, filepath: str) -> None:
-        """Load index from disk.
-
-        Args:
-            filepath: Input file path.
-        """
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-        self.dimension = data.get('dimension', self.dimension)
-        self.embeddings = []
-        self._name_index = {}
-        self._address_index = {}
-
-        for emb_data in data.get('embeddings', []):
-            emb = FunctionEmbedding.from_dict(emb_data)
-            idx = len(self.embeddings)
-            self.embeddings.append(emb)
-            self._name_index[emb.name] = idx
-            self._address_index[emb.address] = idx
-
-            if self._use_faiss and self._faiss_index is not None:
-                vector = np.array([emb.embedding], dtype=np.float32)
-                self._faiss_index.add(vector)
-
-        logger.info(f"Loaded {len(self.embeddings)} embeddings from {filepath}")
-
-    def __len__(self) -> int:
-        return len(self.embeddings)
-
-    def clear(self) -> None:
-        """Clear all indexed embeddings."""
-        self.embeddings.clear()
-        self._name_index.clear()
-        self._address_index.clear()
-        if self._use_faiss:
-            try:
-                import faiss
-                self._faiss_index = faiss.IndexFlatL2(self.dimension)
-            except ImportError:
-                self._faiss_index = None
+class VulnerabilityPattern(Enum):
+    OVERFLOW = "overflow"
+    INJECTION = "injection"
+    BUFFER_OVERFLOW = "buffer_overflow"
+    FORMAT_STRING = "format_string"
+    USE_AFTER_FREE = "use_after_free"
 
 
 class TFIDFVectorizer:
-    """TF-IDF vectorizer for text-based function representation."""
+    """TF-IDF 向量化器 —— 词频加权与逆文档频率。"""
 
     def __init__(self) -> None:
-        self.vocabulary_: Dict[str, int] = {}
-        self.idf_: Dict[str, float] = {}
-        self._document_count: int = 0
-
-    def fit_transform(self, documents: List[str]) -> List[List[float]]:
-        """Fit and transform documents in one step.
-
-        Args:
-            documents: List of text documents.
-
-        Returns:
-            TF-IDF weighted vectors.
-        """
-        self.fit(documents)
-        return self.transform(documents)
-
-    def fit(self, documents: List[str]) -> None:
-        """Build vocabulary and compute IDF.
-
-        Args:
-            documents: List of text documents.
-        """
-        doc_freq: Dict[str, int] = {}
-        self._document_count = len(documents)
-
-        for doc in documents:
-            terms = set(self._tokenize(doc))
-            for term in terms:
-                doc_freq[term] = doc_freq.get(term, 0) + 1
-
-        sorted_terms = sorted(doc_freq.keys())
-        self.vocabulary_ = {term: i for i, term in enumerate(sorted_terms)}
-
-        for term, freq in doc_freq.items():
-            self.idf_[term] = math.log(
-                (self._document_count + 1) / (freq + 1)
-            ) + 1.0
-
-    def transform(self, documents: List[str]) -> List[List[float]]:
-        """Transform documents to TF-IDF vectors.
-
-        Args:
-            documents: List of text documents.
-
-        Returns:
-            TF-IDF weighted vectors.
-        """
-        if not self.vocabulary_:
-            return [[0.0] for _ in documents]
-
-        vectors: List[List[float]] = []
-        for doc in documents:
-            vec = [0.0] * len(self.vocabulary_)
-            terms = self._tokenize(doc)
-            term_counts: Dict[str, int] = {}
-            for t in terms:
-                term_counts[t] = term_counts.get(t, 0) + 1
-
-            for term, count in term_counts.items():
-                if term in self.vocabulary_:
-                    tf = count / max(len(terms), 1)
-                    vec[self.vocabulary_[term]] = tf * self.idf_.get(term, 1.0)
-
-            vectors.append(vec)
-
-        return vectors
+        self.vocabulary: Dict[str, int] = {}
+        self.idf: Dict[str, float] = {}
+        self.vocabulary_: Dict[str, int] = {}  # 兼容 sklearn 风格命名
 
     @staticmethod
     def _tokenize(text: str) -> List[str]:
-        """Simple tokenization."""
-        import re
-        return re.findall(r'[a-zA-Z_]\w*', text.lower())
+        return re.findall(r'[a-z_]+', text.lower())
 
-
-class VulnerabilityPattern:
-    """A known vulnerability pattern for semantic matching."""
-
-    def __init__(self, name: str = "", pattern: str = "") -> None:
-        self.name = name
-        self.pattern = pattern
-        self.severity: str = "medium"
-        self.cwe_id: str = ""
-        self.description: str = ""
-
-    def to_dict(self) -> Dict[str, str]:
-        return {
-            'name': self.name,
-            'pattern': self.pattern,
-            'severity': self.severity,
-            'cwe_id': self.cwe_id,
-            'description': self.description,
+    def fit(self, documents: List[str]) -> None:
+        doc_freq: Dict[str, int] = {}
+        for doc in documents:
+            tokens = set(self._tokenize(doc))
+            for tok in tokens:
+                doc_freq[tok] = doc_freq.get(tok, 0) + 1
+        self.vocabulary = {tok: idx for idx, tok in enumerate(doc_freq)}
+        self.vocabulary_ = self.vocabulary
+        n = len(documents)
+        self.idf = {
+            tok: math.log((1 + n) / (1 + freq)) + 1.0
+            for tok, freq in doc_freq.items()
         }
 
+    def transform(self, documents: List[str]) -> np.ndarray:
+        n_docs = len(documents)
+        n_terms = len(self.vocabulary)
+        matrix = np.zeros((n_docs, n_terms), dtype=np.float64)
+        for i, doc in enumerate(documents):
+            tokens = self._tokenize(doc)
+            counts: Dict[str, int] = {}
+            for tok in tokens:
+                counts[tok] = counts.get(tok, 0) + 1
+            total = max(sum(counts.values()), 1)
+            for tok, cnt in counts.items():
+                if tok in self.vocabulary:
+                    tf = cnt / total
+                    matrix[i, self.vocabulary[tok]] = tf * self.idf.get(tok, 1.0)
+        return matrix
 
-class TokenEmbedder:
-    """Simple token-based embedder."""
-
-    def __init__(self) -> None:
-        self.vocab: Dict[str, int] = {}
-        self.dim: int = 128
-
-    def embed(self, text: str) -> List[float]:
-        tokens = text.lower().split()
-        vec = np.zeros(self.dim, dtype=np.float32)
-        for token in tokens:
-            h = hash(token) % self.dim
-            vec[h] += 1.0
-        norm = float(np.linalg.norm(vec))
-        if norm > 0:
-            vec /= norm
-        return vec.tolist()
-
-
-class CodeBERTEmbedder:
-    """Placeholder for CodeBERT-based embedding."""
-
-    def __init__(self) -> None:
-        self.model = None
-
-    def embed(self, code: str) -> List[float]:
-        return [0.0] * 768
+    def fit_transform(self, documents: List[str]) -> np.ndarray:
+        self.fit(documents)
+        return self.transform(documents)
 
 
-class FunctionEmbedder:
-    """Embeds functions into vectors."""
-
-    def __init__(self) -> None:
-        self.token_embedder = TokenEmbedder()
-
-    def embed(self, func: Dict[str, Any]) -> List[float]:
-        text = func.get('pseudocode', '') or func.get('name', '')
-        return self.token_embedder.embed(text)
-
-
+@dataclass
 class FunctionVector:
-    """Wrapper for function vector."""
-
-    def __init__(self) -> None:
-        self.vec: List[float] = []
-
-
-class SymbolEmbedder:
-    """Embeds symbols (function names, etc.) into vectors."""
-
-    def __init__(self) -> None:
-        pass
-
-    def embed(self, symbol: str) -> List[float]:
-        return [0.0]
+    function_name: str = ""
+    function_address: int = 0
+    binary_path: str = ""
+    pseudocode: str = ""
+    assembly: str = ""
+    vector: List[float] = field(default_factory=list)
 
 
+@dataclass
 class SearchResult:
-    """Search result wrapper."""
-
-    def __init__(
-        self,
-        name: str = "",
-        score: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        self.name = name
-        self.score = score
-        self.metadata = metadata or {}
-        self.embedding: List[float] = []
+    function_name: str = ""
+    function_address: int = 0
+    binary_path: str = ""
+    similarity_score: float = 0.0
+    matched_keywords: List[str] = field(default_factory=list)
+    highlighted_code: str = ""
+    vulnerability_indicators: List[str] = field(default_factory=list)
+    match_reason: str = ""
 
 
-class SearchIndex:
-    """Search index wrapper."""
-
-    def __init__(self, dimension: int = 768) -> None:
-        self.dimension = dimension
-        self.engine = SemanticSearchEngine(dimension=dimension)
-
-    def add(self, name: str, embedding: List[float], metadata: Optional[Dict[str, Any]] = None) -> None:
-        self.engine.index_function(name, 0, embedding, metadata)
-
-    def search(self, query: List[float], k: int = 10) -> List[SearchResult]:
-        results = self.engine.search(query, k)
-        return [
-            SearchResult(name=emb.name, score=score, metadata=emb.metadata)
-            for emb, score in results
-        ]
-
-
+@dataclass
 class SemanticSearchResult:
-    """Complete semantic search result."""
-
-    def __init__(
-        self,
-        query: str = "",
-        results: Optional[List[SearchResult]] = None,
-        elapsed_ms: float = 0.0,
-    ) -> None:
-        self.query = query
-        self.results = results or []
-        self.elapsed_ms = elapsed_ms
+    query: str = ""
+    search_mode: SearchMode = SearchMode.HYBRID
+    total_results: int = 0
+    results: List[SearchResult] = field(default_factory=list)
+    search_time: float = 0.0
+    index_info: Dict[str, Any] = field(default_factory=dict)
+    suggestions: List[str] = field(default_factory=list)
 
 
-def semantic_search(
-    query: str,
-    index: SearchIndex,
-    embedder: Optional[TokenEmbedder] = None,
-    top_k: int = 10,
-) -> SemanticSearchResult:
-    """Perform semantic search over function embeddings.
+@dataclass
+class SearchIndex:
+    total_functions: int = 0
+    _functions: List[FunctionVector] = field(default_factory=list)
 
-    Args:
-        query: Search query string.
-        index: SearchIndex to query against.
-        embedder: Optional embedder for query encoding.
-        top_k: Number of results.
 
-    Returns:
-        SemanticSearchResult with matched functions.
+class SemanticVulnSearcher:
+    """语义漏洞搜索器。
+
+    TF-IDF 向量化 + 关键词加权 + 漏洞模式标注，
+    支持索引的构建、保存、加载与查询。
     """
-    if embedder is None:
-        embedder = TokenEmbedder()
-    query_vec = embedder.embed(query)
-    results = index.search(query_vec, top_k)
-    return SemanticSearchResult(query=query, results=results)
+
+    _PATTERN_PATTERNS = [
+        (VulnerabilityPattern.BUFFER_OVERFLOW,
+         [r'\bmemcpy\s*\(', r'\bstrcpy\s*\(', r'\bstrcat\s*\(']),
+        (VulnerabilityPattern.FORMAT_STRING,
+         [r'\bprintf\s*\([^,]*[,]', r'\bsprintf\s*\(', r'\bvsprintf\s*\(']),
+        (VulnerabilityPattern.INJECTION,
+         [r'\bsystem\s*\(', r'\bpopen\s*\(', r'\bexec[lv]p?\s*\(']),
+        (VulnerabilityPattern.USE_AFTER_FREE,
+         [r'\bfree\s*\([^)]*\)[\s\S]{0,80}\*\w+\s*=']),
+        (VulnerabilityPattern.OVERFLOW,
+         [r'\bmalloc\s*\([^)]*\)[\s\S]{0,60}\bmemcpy\s*\(']),
+    ]
+
+    def __init__(self) -> None:
+        self.tfidf_vectorizer = TFIDFVectorizer()
+        self.search_index: Optional[SearchIndex] = None
+        self._index_path: Optional[str] = None
+        self._functions: List[FunctionVector] = []
+
+    def _extract_keywords(self, code: str) -> List[str]:
+        return re.findall(r'[a-z_]+', (code or '').lower())
+
+    def _detect_vulnerability_patterns(self, code: str) -> List[str]:
+        indicators: List[str] = []
+        for pattern, regexes in self._PATTERN_PATTERNS:
+            if any(re.search(rx, code or '') for rx in regexes):
+                indicators.append(pattern.value)
+        return indicators
+
+    @staticmethod
+    def _compute_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+        n1 = np.linalg.norm(vec1)
+        n2 = np.linalg.norm(vec2)
+        if n1 == 0 or n2 == 0:
+            return 0.0
+        return float(np.dot(vec1, vec2) / (n1 * n2))
+
+    @staticmethod
+    def _compute_keyword_score(query_keywords: List[str], func_keywords: List[str]) -> float:
+        if not query_keywords or not func_keywords:
+            return 0.0
+        qset = set(query_keywords)
+        fset = set(func_keywords)
+        overlap = qset & fset
+        return len(overlap) / max(len(qset), 1)
+
+    def _encode_function(self, function_name: str = "", address: int = 0,
+                         binary_path: str = "", pseudocode: str = "",
+                         assembly: str = "") -> FunctionVector:
+        text = f"{function_name} {pseudocode} {assembly}"
+        vec = self.tfidf_vectorizer.transform([text])
+        if vec.shape[1] > 0:
+            vector = vec[0].tolist()
+        else:
+            vector = []
+        return FunctionVector(
+            function_name=function_name,
+            function_address=address,
+            binary_path=binary_path,
+            pseudocode=pseudocode,
+            assembly=assembly,
+            vector=vector,
+        )
+
+    def build_index(self, functions: List[Dict[str, Any]], index_path: Optional[str] = None) -> SearchIndex:
+        texts = []
+        for fn in functions:
+            texts.append(f"{fn.get('function_name', '')} {fn.get('pseudocode', '')} {fn.get('assembly', '')}")
+        self.tfidf_vectorizer.fit(texts)
+
+        encoded = []
+        for fn in functions:
+            encoded.append(self._encode_function(
+                function_name=fn.get('function_name', ''),
+                address=fn.get('address', 0),
+                binary_path=fn.get('binary_path', ''),
+                pseudocode=fn.get('pseudocode', ''),
+                assembly=fn.get('assembly', ''),
+            ))
+        self._functions = encoded
+        self.search_index = SearchIndex(total_functions=len(encoded), _functions=encoded)
+        self._index_path = index_path
+        return self.search_index
+
+    def _vectorize(self, text: str) -> np.ndarray:
+        vec = self.tfidf_vectorizer.transform([text])
+        if vec.shape[1] > 0:
+            return vec[0]
+        return np.zeros(0)
+
+    def search(self, query: str, max_results: int = 10) -> SemanticSearchResult:
+        start = __import__('time').time()
+        if not self.search_index or self.search_index.total_functions == 0:
+            return SemanticSearchResult(
+                query=query, search_mode=SearchMode.HYBRID, total_results=0,
+                results=[], search_time=0.0,
+                index_info={'total_indexed': 0}, suggestions=[],
+            )
+
+        q_keywords = self._extract_keywords(query)
+        q_vec = self._vectorize(query)
+        funcs = self.search_index._functions
+        func_vectors = [f.vector for f in funcs]
+        if func_vectors and len(func_vectors[0]) > 0:
+            matrix = np.array(func_vectors, dtype=np.float64)
+            if matrix.shape[1] == q_vec.shape[0]:
+                scores = np.dot(matrix, q_vec)
+            else:
+                scores = np.zeros(len(funcs))
+        else:
+            scores = np.zeros(len(funcs))
+
+        scored = []
+        for i, fn in enumerate(funcs):
+            f_keywords = self._extract_keywords(fn.pseudocode + ' ' + fn.function_name)
+            kw_score = self._compute_keyword_score(q_keywords, f_keywords)
+            sim = float(scores[i]) if len(scores) else 0.0
+            combined = 0.7 * sim + 0.3 * kw_score
+            indicators = self._detect_vulnerability_patterns(fn.pseudocode)
+            scored.append((combined, fn, kw_score, indicators))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results: List[SearchResult] = []
+        for combined, fn, kw_score, indicators in scored[:max_results]:
+            highlighted = self._highlight_code(fn.pseudocode, q_keywords)
+            matched = [k for k in q_keywords if k in
+                       self._extract_keywords(fn.pseudocode + ' ' + fn.function_name)]
+            results.append(SearchResult(
+                function_name=fn.function_name,
+                function_address=fn.function_address,
+                binary_path=fn.binary_path,
+                similarity_score=round(combined, 4),
+                matched_keywords=matched,
+                highlighted_code=highlighted,
+                vulnerability_indicators=indicators,
+                match_reason='semantic similarity' if sim >= kw_score else 'keyword match',
+            ))
+
+        elapsed = __import__('time').time() - start
+        return SemanticSearchResult(
+            query=query, search_mode=SearchMode.HYBRID, total_results=len(results),
+            results=results, search_time=round(elapsed, 4),
+            index_info={'total_indexed': len(funcs)},
+            suggestions=self._generate_suggestions(query, results),
+        )
+
+    def _highlight_code(self, code: str, keywords: List[str]) -> str:
+        if not code:
+            return code
+        lowered = code.lower()
+        for kw in keywords:
+            if kw and kw in lowered:
+                code = re.sub(rf'\b{re.escape(kw)}\b',
+                              lambda m: f"**{m.group(0)}**", code, flags=re.IGNORECASE)
+        return code
+
+    def _generate_suggestions(self, query: str, results: List[SearchResult]) -> List[str]:
+        suggestions = []
+        for r in results:
+            for ind in r.vulnerability_indicators:
+                suggestion = f"检查 {r.function_name} 的{ind}风险"
+                if suggestion not in suggestions:
+                    suggestions.append(suggestion)
+        if not suggestions:
+            suggestions.append("扩大检索范围或补充更多函数入库")
+        return suggestions
+
+    def save_index(self) -> str:
+        path = self._index_path
+        if not path:
+            raise ValueError("index_path 未配置")
+        os.makedirs(path, exist_ok=True)
+        data_path = os.path.join(path, 'index.json')
+        payload = {
+            'total_functions': self.search_index.total_functions if self.search_index else 0,
+            'functions': [
+                {
+                    'function_name': f.function_name,
+                    'function_address': f.function_address,
+                    'binary_path': f.binary_path,
+                    'pseudocode': f.pseudocode,
+                    'assembly': f.assembly,
+                    'vector': f.vector,
+                }
+                for f in self._functions
+            ],
+        }
+        with open(data_path, 'w', encoding='utf-8') as fh:
+            json.dump(payload, fh)
+        return data_path
+
+    def load_index(self, path: str) -> SearchIndex:
+        with open(path, 'r', encoding='utf-8') as fh:
+            payload = json.load(fh)
+        funcs = [
+            FunctionVector(
+                function_name=fn.get('function_name', ''),
+                function_address=fn.get('function_address', 0),
+                binary_path=fn.get('binary_path', ''),
+                pseudocode=fn.get('pseudocode', ''),
+                assembly=fn.get('assembly', ''),
+                vector=fn.get('vector', []),
+            )
+            for fn in payload.get('functions', [])
+        ]
+        self._functions = funcs
+        self.search_index = SearchIndex(total_functions=len(funcs), _functions=funcs)
+        self._index_path = os.path.dirname(path)
+        if funcs:
+            texts = [f"{f.function_name} {f.pseudocode} {f.assembly}" for f in funcs]
+            self.tfidf_vectorizer.fit(texts)
+        return self.search_index
+
+
+def semantic_search(query: str, max_results: int = 10) -> SemanticSearchResult:
+    """便捷入口 —— 无索引时返回空结果。"""
+    searcher = SemanticVulnSearcher()
+    return searcher.search(query, max_results=max_results)
 
 
 def format_search_report(result: SemanticSearchResult) -> str:
-    """Format search results into a report.
-
-    Args:
-        result: SemanticSearchResult to format.
-
-    Returns:
-        Formatted report string.
-    """
+    """将搜索结果格式化为可读报告。"""
     lines = [
-        f"Semantic Search Results for: '{result.query}'",
+        "语义漏洞搜索报告",
+        "=" * 40,
+        f"查询: {result.query}",
+        f"模式: {result.search_mode.value}",
+        f"结果数: {result.total_results}",
+        f"耗时: {result.search_time}s",
+        f"索引规模: {result.index_info.get('total_indexed', 0)}",
         "-" * 40,
     ]
-    for i, r in enumerate(result.results):
-        lines.append(f"{i + 1}. {r.name} (score: {r.score:.4f})")
-        if r.metadata:
-            for k, v in r.metadata.items():
-                lines.append(f"   {k}: {v}")
-    return '\n'.join(lines)
+    for r in result.results:
+        lines.append(f"  [{r.similarity_score:.3f}] {r.function_name} @ 0x{r.function_address:X}")
+        if r.matched_keywords:
+            lines.append(f"      关键词: {', '.join(r.matched_keywords)}")
+        if r.vulnerability_indicators:
+            lines.append(f"      风险: {', '.join(r.vulnerability_indicators)}")
+    for s in result.suggestions:
+        lines.append(f"建议: {s}")
+    return "\n".join(lines)

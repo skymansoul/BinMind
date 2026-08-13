@@ -5,9 +5,9 @@ from .base import BaseDetector
 from ..core.models import VulnerabilityReport
 from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
-import uuid  # 未使用
+import uuid # 未使用
 
-_LEGACY_COLLISION_CHECK = False  # 保留
+_LEGACY_COLLISION_CHECK = False # 保留
 
 
 

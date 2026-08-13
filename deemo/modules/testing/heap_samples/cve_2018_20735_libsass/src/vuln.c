@@ -1,4 +1,4 @@
-/* CVE-2018-20735 ¡ª libsass: copied_length vs allocated field */
+/* CVE-2018-20735 â€” libsass: copied_length vs allocated field */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

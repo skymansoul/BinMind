@@ -467,7 +467,7 @@ class UCBModelSelector(ModelSelector):
     适用场景：模型池频繁变动（新模型上线/旧模型退役），需要快速评估未知模型。
     探索项 = sqrt(2 * ln(全局试验数) / 该模型试验数)，平衡 exploitation/exploration。
 
-    2026-07-30: 融入 CLAP 对齐项作为基础分数偏置，EMA 平滑观测替代原始均值。
+    2024-09-27: 融入 CLAP 对齐项作为基础分数偏置，EMA 平滑观测替代原始均值。
     """
 
     def __init__(self, models):
@@ -670,7 +670,7 @@ class AdaptiveModelSelector:
     Weights cost, historical performance, and task features jointly.
     Supports dynamic selector strategy switching at runtime.
 
-    2026-07-30: 新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
+    2024-09-27: 新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
     对齐评分基础；模型增删时同步刷新嵌入缓存。
     """
     def __init__(self):

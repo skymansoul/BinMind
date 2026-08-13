@@ -50,7 +50,7 @@ def compute_arcanist_defense_score(
       4. 链复杂度 (0.15)：最小可利用链步数
       5. ASLR 有效熵 (0.25)：信息泄露后剩余熵位
 
-    权重依据 ARCANIST (USENIX Security 2025) Table 4。
+    权重依据 ARCANIST Table 4。
     """
     n = len(gadgets)
     if n == 0:

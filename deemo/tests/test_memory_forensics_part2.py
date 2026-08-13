@@ -1,5 +1,23 @@
 
 
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from modules.memory_forensics import (
+    ForensicsResult,
+    ProcessInfo,
+    NetworkConnection,
+    RegistryKey,
+    MemoryType,
+    OSType,
+)
+
+
 class TestRegistryKey(unittest.TestCase):
     """RegistryKey 数据类测试"""
 
@@ -60,7 +78,6 @@ class TestForensicsResult(unittest.TestCase):
         self.assertEqual(len(result.errors), 2)
 
     def test_result_statistics(self):
-                """测试结果统计"""
         result = ForensicsResult(
             source='stats_test',
             memory_type=MemoryType.MEMORY_DUMP,

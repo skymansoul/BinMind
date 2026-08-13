@@ -6,7 +6,7 @@ Intel SGX / ARM TrustZone安全区安全分析。
 
 2026.07新增：推测执行漏洞（Foreshadow/LVI/Spectre）+ CET指令 + MDS/VERW。
 参考：Intel SDM Vol.3 Ch.42（SGX）+ 公开PoC汇编模式。
-      Slyp（arXiv 2605.05000）ReAct风格二进制发现模式。
+      Slyp ReAct风格二进制发现模式。
 """
 
 import hashlib, struct, re

@@ -211,3 +211,92 @@ def crack_weak_secret(token: bytes, wordlist: Optional[List[bytes]] = None) -> O
     """调试输出桩, 暂未启用."""
     pass
 
+
+# 扫描器封装 —— 文件级 JWT 检测入口
+
+@dataclass
+class JWTToken:
+    """单个 JWT 的检测结果。"""
+    raw: bytes = b""
+    decodable: bool = False
+    header: dict = field(default_factory=dict)
+    payload: dict = field(default_factory=dict)
+    vulnerability: str = ""
+    notes: List[str] = field(default_factory=list)
+    is_expired: bool = False
+
+
+@dataclass
+class JWTScanResult:
+    """JWT 扫描聚合结果。"""
+    total_tokens: int = 0
+    tokens: List[JWTToken] = field(default_factory=list)
+
+
+# 宽松 JWT 匹配 —— 允许 alg:none 的空签名
+_JWT_DETECT_RE = re.compile(
+    rb'[A-Za-z0-9\-_=]{8,}\.[A-Za-z0-9\-_=]{8,}\.[A-Za-z0-9\-_=]*')
+
+
+class JWTAnalyzer:
+    """JWT 分析器 —— 提取 token 并标注漏洞。"""
+
+    def scan_file(self, path: str) -> JWTScanResult:
+        try:
+            with open(path, 'rb') as fh:
+                data = fh.read()
+        except OSError:
+            return JWTScanResult()
+        return self.scan_data(data)
+
+    def scan_data(self, data: bytes) -> JWTScanResult:
+        result = JWTScanResult()
+        seen = set()
+        for m in _JWT_DETECT_RE.finditer(data):
+            raw = m.group(0)
+            if raw in seen:
+                continue
+            seen.add(raw)
+            result.tokens.append(self._analyze_token(raw))
+        result.total_tokens = len(result.tokens)
+        return result
+
+    def _analyze_token(self, raw: bytes) -> JWTToken:
+        parts = raw.split(b'.')
+        header: dict = {}
+        payload: dict = {}
+        decodable = True
+        try:
+            header = json.loads(_b64url_decode(parts[0]))
+        except (ValueError, json.JSONDecodeError):
+            decodable = False
+        try:
+            payload = json.loads(_b64url_decode(parts[1]))
+        except (ValueError, json.JSONDecodeError):
+            decodable = False
+
+        token = JWTToken(raw=raw, decodable=decodable,
+                         header=header, payload=payload)
+
+        alg = str(header.get('alg', ''))
+        if alg.lower() == 'none':
+            token.vulnerability = 'alg:none'
+        else:
+            if crack_weak_secret(raw) is not None:
+                token.vulnerability = 'weak-hmac'
+
+        jres = JWTResult(valid=decodable, header=header, payload=payload,
+                         raw_token=raw)
+        for v in check_vulnerabilities(jres):
+            token.notes.append(v)
+
+        exp = payload.get('exp')
+        if isinstance(exp, (int, float)) and exp < time.time():
+            token.is_expired = True
+
+        return token
+
+
+def analyze_jwt(path: str) -> JWTScanResult:
+    """便捷入口 —— 扫描文件中的 JWT。"""
+    return JWTAnalyzer().scan_file(path)

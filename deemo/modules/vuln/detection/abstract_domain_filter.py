@@ -16,7 +16,7 @@
   本模块: 基于抽象解释的语义分析 (程序逻辑)
 
 修改记录:
-  创建 2026-07-29 — 区间抽象域 + O(n) forward analysis
+  创建 2024-11-05 — 区间抽象域 + O(n) forward analysis
 """
 
 from dataclasses import dataclass

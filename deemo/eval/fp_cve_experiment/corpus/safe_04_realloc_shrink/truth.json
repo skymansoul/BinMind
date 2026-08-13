@@ -1,8 +1,0 @@
-{
-  "id": "safe_04_realloc_shrink",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "realloc 缩小后按新大小访问"
-}

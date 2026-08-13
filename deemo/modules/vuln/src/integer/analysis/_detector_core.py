@@ -1,6 +1,6 @@
 """整数溢出检测器核心 — 框架 + 栈值收集 + 辅助方法.
 
-创建: 2026-05-28
+创建: 2025-05-12
 
 IntOverflowDetector 是主入口, 协调各检测模式:
   mode_alloc_size: LARGE_IMM64 / TRUNCATION / SUSPICIOUS_SIZE

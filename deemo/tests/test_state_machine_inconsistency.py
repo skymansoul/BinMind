@@ -32,7 +32,6 @@ class TestStateMachineInconsistency:
         assert "states" in result
         assert "transitions" in result
         assert "inconsistencies" in result
-lass字段完整性$/d
         assert isinstance(result["inconsistencies"], list)
 
     def test_state_transition_types(self):
@@ -47,7 +46,6 @@ lass字段完整性$/d
         assert InconsistencySeverity.CRITICAL.value == "critical"
         assert InconsistencySeverity.HIGH.value == "high"
         assert InconsistencySeverity.MEDIUM.value == "medium"
-lass字段完整性$/d
         assert InconsistencySeverity.LOW.value == "low"
 
 

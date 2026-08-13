@@ -5,10 +5,10 @@ static int process(char *p) {
     if (!p) return -1;
     size_t len = strlen(p);
     if (len > 100) {
-        free(p);                   /* ³¬³¤ ¡ú ÊÍ·Å²¢·µ»Ø */
+        free(p);                   /* è¶…é•¿ â†’ é‡Šæ”¾å¹¶è¿”å›ž */
         return -1;
     }
-    printf("[*] %s (%zu)\n", p, len);  /* Õý³£Â·¾¶Ê¹ÓÃ ¡ª Óë free »¥³â */
+    printf("[*] %s (%zu)\n", p, len);  /* æ­£å¸¸è·¯å¾„ä½¿ç”¨ â€” ä¸Ž free äº’æ–¥ */
     return 0;
 }
 int main(int argc, char **argv) {

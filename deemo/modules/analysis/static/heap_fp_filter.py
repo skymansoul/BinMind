@@ -82,12 +82,18 @@ class HeapFPFilter:
         """
         size_op = finding.get("size_operand", "")
         alloc_sz = finding.get("alloc_size", 0)
+        # alloc_sz 是对齐后的分配上界; 常量写量须严格落在原始请求
+        # 区间内才判安全, 落在 padding 区域的写量交由 allocator 层
+        # 精确判定, 避免小请求下真实溢出被常量传播误滤.
+        request = finding.get("alloc_request")
+        bound = request if request and request < 2**31 - 1 \
+            else max(0, alloc_sz - 15)
 
         if not size_op:
             return False
 
         src = tracer.trace(instructions, size_op, max_depth=30)
-        if src.kind == SourceKind.CONSTANT and src.value <= alloc_sz:
+        if src.kind == SourceKind.CONSTANT and src.value <= bound:
             finding["fp_stage"] = "stage1_constant"
             return True
         return False
@@ -134,7 +140,12 @@ class HeapFPFilter:
         if alloc is None:
             return False
 
-        if alloc.alloc_size.is_singleton and write_sz <= alloc.alloc_size.lo:
+        # 写入大小须落在原始请求区间内才判同源安全; 落在 padding
+        # 区域的写量交由 allocator 层精确判定.
+        request = finding.get("alloc_request")
+        bound = request if request and request < 2**31 - 1 \
+            else max(0, alloc.alloc_size.lo - 15)
+        if alloc.alloc_size.is_singleton and write_sz <= bound:
             finding["fp_stage"] = "stage3_alloc_correlation"
             return True
         return False

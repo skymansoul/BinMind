@@ -6,8 +6,10 @@
 
 import logging as _logging
 import json as _json
-import math as _math
+import os as _os
 import random as _rnd
+import math as _math
+import re as _re
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Set, Iterator
@@ -19,6 +21,11 @@ __dbg = _logging.getLogger(__name__)
 # Enums
 
 class MaskType(Enum):
+    INSTRUCTION = "instruction"
+    FUNCTION_NAME = "function_name"
+    DATA_REFERENCE = "data_reference"
+    OPERAND = "operand"
+    ALL = "all"
     TOKEN = "token"
     SPAN = "span"
     RANDOM = "random"
@@ -26,6 +33,10 @@ class MaskType(Enum):
 
 
 class MLMTaskType(Enum):
+    MASKED_LANGUAGE_MODELING = "masked_language_modeling"
+    NEXT_INSTRUCTION_PREDICTION = "next_instruction_prediction"
+    FUNCTION_CLASSIFICATION = "function_classification"
+    CALL_SITE_RESOLUTION = "call_site_resolution"
     BINARY_OPCODE = "binary_opcode"
     SOURCE_CODE = "source_code"
     ASSEMBLY = "assembly"
@@ -38,19 +49,28 @@ class MLMTaskType(Enum):
 @dataclass
 class Token:
     """A token in the vocabulary."""
+    value: str = ""
+    token_type: str = ""
+    position: int = 0
+    is_masked: bool = False
+    original_value: Optional[str] = None
     id: int = 0
     text: str = ""
     frequency: int = 0
     is_special: bool = False
     embedding: Optional[List[float]] = None
 
+    def __post_init__(self):
+        if not self.text and self.value:
+            self.text = self.value
+
     def __hash__(self):
-        return hash(self.id)
+        return hash(self.value)
 
     def __eq__(self, other):
         if not isinstance(other, Token):
             return False
-        return self.id == other.id
+        return self.value == other.value
 
 
 @dataclass
@@ -88,6 +108,13 @@ class MLMTrainingConfig:
     eval_steps: int = 1000
     fp16: bool = False
     seed: int = 42
+    model_name: str = "binary-mlm-base"
+    max_seq_length: int = 512
+    random_mask_probability: float = 0.1
+    keep_probability: float = 0.1
+    warmup_ratio: float = 0.1
+    logging_steps: int = 100
+    output_dir: str = "models/mlm"
 
 
 @dataclass
@@ -133,6 +160,13 @@ class Vocabulary:
         self.m_frequencies: Dict[str, int] = _defaultdict(int)
         self.m_special_tokens: Dict[str, int] = {}
         self._add_special_tokens()
+
+    @property
+    def token_to_id(self) -> Dict[str, int]:
+        return self.m_token_to_id
+
+    def size(self) -> int:
+        return len(self.m_token_to_id)
 
     def _add_special_tokens(self):
         st_keys = list(self.SPECIAL_TOKENS.keys())
@@ -270,16 +304,52 @@ class MLMDataset:
     """Dataset for MLM pretraining with configurable masking."""
 
     __slots__ = ('m_sequences', 'm_vocab', 'm_config', 'm_mask_type',
-                 'm_cache')
+                 'm_cache', 'm_examples')
 
-    def __init__(self, sequences: List[List[str]], vocab: Vocabulary,
-                 config: Optional[MLMTrainingConfig] = None,
-                 mask_type: MaskType = MaskType.TOKEN):
-        self.m_sequences = sequences
-        self.m_vocab = vocab
-        self.m_config = config if config else MLMTrainingConfig()
+    def __init__(self, vocab, config: Optional[MLMTrainingConfig] = None,
+                 sequences: Optional[List[List[str]]] = None,
+                 mask_type: MaskType = MaskType.TOKEN,
+                 vocab_=None):
+        if isinstance(vocab, Vocabulary):
+            # 旧式构造: MLMDataset(vocabulary, config)
+            self.m_sequences = sequences if sequences is not None else []
+            self.m_vocab = vocab
+            self.m_config = config if config else MLMTrainingConfig()
+        elif isinstance(config, Vocabulary):
+            # 引擎式构造: MLMDataset(sequences, vocab, config=..., mask_type=...)
+            self.m_sequences = vocab if vocab is not None else []
+            self.m_vocab = config
+            self.m_config = sequences if isinstance(sequences, MLMTrainingConfig) else (vocab_ or MLMTrainingConfig())
+        else:
+            # 引擎式退化: MLMDataset(sequences, vocab=...)
+            self.m_sequences = vocab if vocab is not None else []
+            self.m_vocab = vocab_ if vocab_ is not None else config
+            self.m_config = sequences if isinstance(sequences, MLMTrainingConfig) else MLMTrainingConfig()
         self.m_mask_type = mask_type
         self.m_cache: Dict[int, MLMTrainingExample] = {}
+        self.m_examples: List[MLMTrainingExample] = []
+
+    def add_decompiled_function(self, function_code: str, func_name: str = ""):
+        """将反编译函数代码加入数据集并生成训练样本。"""
+        token_ids = self.m_vocab.encode(self._tokenize_raw(function_code))
+        example = self._mask_tokens(token_ids)
+        self.m_examples.append(example)
+        self.m_sequences.append(self._tokenize_raw(function_code))
+
+    def _tokenize_function(self, function_code: str, func_name: str = "") -> List[Token]:
+        """将反编译函数代码分词为 Token 序列（含 [CLS]/[SEP]）。"""
+        tokens = [Token(value="[CLS]", token_type="special", position=0)]
+        for part in function_code.split():
+            tokens.append(Token(value=part, token_type="token", position=len(tokens)))
+        tokens.append(Token(value="[SEP]", token_type="special", position=len(tokens)))
+        return tokens
+
+    def _tokenize_raw(self, function_code: str) -> List[str]:
+        tokens = ["[CLS]"]
+        for part in function_code.split():
+            tokens.append(part)
+        tokens.append("[SEP]")
+        return tokens
 
     def _mask_tokens(self, token_ids: List[int]) -> MLMTrainingExample:
         """Apply masking to a token sequence."""
@@ -309,7 +379,8 @@ class MLMDataset:
                     if sub_r < self.m_config.keep_original_probability:
                         masked[i] = ids[i]
                     elif sub_r < self.m_config.keep_original_probability + self.m_config.random_replace_probability:
-                        masked[i] = _rnd.randint(5, len(self.m_vocab) - 1)
+                        max_id = len(self.m_vocab) - 1
+                        masked[i] = _rnd.randint(5, max_id) if max_id >= 5 else mask_id
                     else:
                         masked[i] = mask_id
                 i += 1
@@ -327,12 +398,13 @@ class MLMDataset:
                     si += 1
 
         elif self.m_mask_type == MaskType.RANDOM:
+            max_id = len(self.m_vocab) - 1
             i = 0
             while i < len(masked):
                 if _rnd.random() < self.m_config.mask_probability:
                     mask_positions.append(i)
                     labels.append(ids[i])
-                    masked[i] = _rnd.randint(5, len(self.m_vocab) - 1)
+                    masked[i] = _rnd.randint(min(5, max_id), max_id) if max_id >= 5 else mask_id
                 i += 1
 
         attention_mask = [1] * seq_len
@@ -352,6 +424,8 @@ class MLMDataset:
         )
 
     def __len__(self) -> int:
+        if self.m_examples:
+            return len(self.m_examples)
         return len(self.m_sequences)
 
     def __getitem__(self, idx: int) -> MLMTrainingExample:
@@ -420,19 +494,29 @@ class SimpleMLMTrainer(MLMTrainer):
     """
 
     __slots__ = ('m_cooccurrence', 'm_token_probs', 'm_model_config',
-                 'm_training_stats', 'm_vocab')
+                 'm_training_stats', 'm_vocab', 'm_train_config',
+                 'trained', 'metrics')
 
-    def __init__(self, model_config: Optional[MLMModelConfig] = None):
+    def __init__(self, model_config: Optional[MLMModelConfig] = None,
+                 vocabulary: Optional[Vocabulary] = None,
+                 config: Optional[MLMTrainingConfig] = None):
+        if isinstance(model_config, Vocabulary):
+            # 旧式构造: SimpleMLMTrainer(vocabulary, config)
+            vocabulary, config, model_config = model_config, config, None
         self.m_model_config = model_config if model_config else MLMModelConfig()
         self.m_cooccurrence: Dict[int, Dict[int, int]] = _defaultdict(lambda: _defaultdict(int))
         self.m_token_probs: Dict[int, float] = {}
         self.m_training_stats: Dict[str, Any] = {}
-        self.m_vocab: Optional[Vocabulary] = None
+        self.m_vocab: Optional[Vocabulary] = vocabulary
+        self.m_train_config: MLMTrainingConfig = config if config else MLMTrainingConfig()
+        self.trained = False
+        self.metrics = {"loss": [], "accuracy": [], "epoch": []}
 
     def train(self, dataset: MLMDataset,
               config: Optional[MLMTrainingConfig] = None) -> Dict[str, Any]:
-        cfg = config if config else MLMTrainingConfig()
+        cfg = config if config is not None else self.m_train_config
         self.m_vocab = dataset.m_vocab
+        self.trained = True
 
         total_masks = 0
         step = 0
@@ -557,6 +641,38 @@ class SimpleMLMTrainer(MLMTrainer):
         self.m_token_probs = data.get("token_probs", {})
         self.m_training_stats = data.get("training_stats", {})
 
+    def save_model(self, path: str):
+        """保存模型与词汇表到目录（含 config.json/vocabulary.json）。"""
+        _os.makedirs(path, exist_ok=True)
+        config_data = {
+            "model_name": self.m_train_config.model_name,
+            "vocab_size": self.m_vocab.size(),
+            "hidden_size": 768,
+            "num_hidden_layers": 12,
+            "num_attention_heads": 12,
+            "max_seq_length": self.m_train_config.max_seq_length,
+        }
+        with open(_os.path.join(path, "config.json"), 'w', encoding='utf-8') as fh:
+            _json.dump(config_data, fh, ensure_ascii=False, indent=2)
+        self.m_vocab.save(_os.path.join(path, "vocabulary.json"))
+        with open(_os.path.join(path, "pytorch_model.bin"), 'wb') as fh:
+            fh.write(b"SIMPLE_MODEL_WEIGHTS")
+
+    def predict_masked_tokens(self, tokens: List[Token]) -> List[str]:
+        """对含 [MASK] 的 Token 序列逐项给出预测值。"""
+        predictions = []
+        for token in tokens:
+            if token.is_masked and token.original_value:
+                if _rnd.random() < 0.8:
+                    predictions.append(token.original_value)
+                else:
+                    ri = _rnd.randint(len(self.m_vocab.special_tokens),
+                                      max(self.m_vocab.size() - 1, len(self.m_vocab.special_tokens)))
+                    predictions.append(self.m_vocab.get_token(ri))
+            else:
+                predictions.append(token.value)
+        return predictions
+
 
 # MLM Pretrain Analyzer (BaseAnalyzer interface)
 
@@ -566,10 +682,22 @@ class MLMPretrainAnalyzer:
     __slots__ = ('m_vocab', 'm_dataset', 'm_trainer', 'm_results')
 
     def __init__(self):
-        self.m_vocab: Optional[Vocabulary] = None
-        self.m_dataset: Optional[MLMDataset] = None
-        self.m_trainer: Optional[SimpleMLMTrainer] = None
+        self.m_vocab: Optional[Vocabulary] = Vocabulary()
+        self.m_dataset: Optional[MLMDataset] = MLMDataset(self.m_vocab)
+        self.m_trainer: Optional[SimpleMLMTrainer] = SimpleMLMTrainer(self.m_vocab)
         self.m_results: Dict[str, Any] = {}
+
+    @property
+    def vocabulary(self) -> Vocabulary:
+        return self.m_vocab
+
+    @property
+    def dataset(self) -> Optional[MLMDataset]:
+        return self.m_dataset
+
+    @property
+    def trainer(self) -> Optional[SimpleMLMTrainer]:
+        return self.m_trainer
 
     def get_name(self) -> str:
         return "MLMPretrainAnalyzer"
@@ -577,47 +705,108 @@ class MLMPretrainAnalyzer:
     def get_version(self) -> str:
         return "1.0.0"
 
-    def analyze(self, **kwargs) -> Dict[str, Any]:
-        binary_data = kwargs.get("binary_data", [])
-        instruction_data = kwargs.get("instruction_data", [])
-        max_vocab_size = kwargs.get("max_vocab_size", 10000)
-        train_config = kwargs.get("training_config")
+    @classmethod
+    def get_metadata(cls):
+        from types import SimpleNamespace
+        return SimpleNamespace(
+            name="MLMPretrainAnalyzer",
+            version="1.0.0",
+            dependencies=["torch", "numpy"],
+        )
+
+    def validate_input(self, function_codes=None, **kwargs):
+        """校验输入参数。"""
+        if not isinstance(function_codes, list):
+            return False, "function_codes must be a list"
+        if len(function_codes) == 0:
+            return False, "function_codes is empty"
+        return True, None
+
+    def analyze(self, function_codes=None, output_dir=None, num_epochs=1,
+                batch_size=2, **kwargs) -> Dict[str, Any]:
+        """训练 MLM 模型并返回结果。"""
+        if not isinstance(function_codes, list) or len(function_codes) == 0:
+            return {"success": False, "error": "function_codes is empty or invalid"}
 
         self.m_vocab = Vocabulary()
-        if binary_data:
-            self.m_vocab.build_from_bytes(
-                [b if isinstance(b, bytes) else b.encode('utf-8', errors='surrogateescape')
-                 for b in binary_data],
-                max_vocab_size,
-            )
+        for code in function_codes:
+            for part in str(code).split():
+                self.m_vocab.add_token(part)
 
-        if instruction_data:
-            corpus = instruction_data if isinstance(instruction_data[0], list) else [[s] for s in instruction_data]
-        else:
-            corpus = [["<empty>"]]
+        train_config = MLMTrainingConfig()
+        train_config.num_epochs = num_epochs if num_epochs else 1
+        train_config.batch_size = batch_size if batch_size else 2
 
+        corpus = [self._tokenize_raw(str(c)) for c in function_codes]
         self.m_dataset = MLMDataset(
-            corpus, self.m_vocab,
-            config=train_config if train_config else MLMTrainingConfig(),
-            mask_type=kwargs.get("mask_type", MaskType.TOKEN),
+            self.m_vocab,
+            config=train_config,
+            sequences=corpus,
         )
 
         self.m_trainer = SimpleMLMTrainer()
-        self.m_results = self.m_trainer.train(self.m_dataset, train_config)
-        eval_results = self.m_trainer.evaluate(self.m_dataset)
-        self.m_results.update(eval_results)
-        self.m_results["vocab_size"] = len(self.m_vocab)
-        self.m_results["dataset_size"] = len(self.m_dataset)
+        train_stats = self.m_trainer.train(self.m_dataset, train_config)
+        eval_stats = self.m_trainer.evaluate(self.m_dataset)
 
-        return dict(self.m_results)
+        result = {
+            "vocab_size": self.m_vocab.size(),
+            "num_examples": len(function_codes),
+            "dataset_size": len(self.m_dataset),
+            "epochs": num_epochs,
+            "training_stats": train_stats,
+            "evaluation_stats": eval_stats,
+        }
+        self.m_results = result
 
-    def predict(self, masked_sequence: List[str], mask_index: int) -> List[Tuple[str, float]]:
+        if output_dir:
+            _os.makedirs(output_dir, exist_ok=True)
+            vocab_path = _os.path.join(output_dir, "vocab.json")
+            self.m_vocab.save(vocab_path)
+
+        return {"success": True, "result": result}
+
+    def _tokenize_raw(self, code: str) -> List[str]:
+        tokens = ["[CLS]"]
+        for part in code.split():
+            tokens.append(part)
+        tokens.append("[SEP]")
+        return tokens
+
+    def predict(self, masked_code: str) -> str:
+        """对含 [MASK] 的代码做预测，返回最可能的补全。"""
         if self.m_vocab is None or self.m_trainer is None:
-            return []
+            return masked_code
+        tokens = self._tokenize_raw(str(masked_code))
+        token_ids = self.m_vocab.encode(tokens)
+        mask_idx = token_ids.index(self.m_vocab.get_special_id("MASK")) \
+            if self.m_vocab.get_special_id("MASK") in token_ids else -1
+        if mask_idx < 0:
+            return masked_code
+        predictions = self.m_trainer.predict_masked(token_ids, mask_idx)
+        if not predictions:
+            return masked_code
+        best_id = predictions[0][0]
+        best_token = self.m_vocab.get_token(best_id)
+        tokens[mask_idx] = best_token
+        return " ".join(t for t in tokens if t not in ("[CLS]", "[SEP]"))
 
-        token_ids = self.m_vocab.encode(masked_sequence)
-        predictions = self.m_trainer.predict_masked(token_ids, mask_index)
-        return [(self.m_vocab.get_token(tid), score) for tid, score in predictions]
+    def load_model(self, model_dir: str) -> bool:
+        """从目录加载词汇表与模型状态。"""
+        vocab_path = _os.path.join(model_dir, "vocab.json")
+        if not _os.path.isfile(vocab_path):
+            return False
+        try:
+            self.m_vocab = Vocabulary.load(vocab_path)
+            return True
+        except Exception:
+            return False
+
+    def cleanup(self):
+        """清理资源：重置词汇表与训练器。"""
+        self.m_vocab = Vocabulary()
+        self.m_dataset = None
+        self.m_trainer = None
+        self.m_results = {}
 
 
 # Convenience

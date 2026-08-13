@@ -87,7 +87,9 @@ class TestRedisUrlMasking(unittest.TestCase):
         """测试带密码的 Redis URL"""
         url = 'redis://user:mypassword@localhost:6379/0'
         masked = self.config.mask_redis_url(url)
-        self.assertIn('mypassword', masked)  # mask_api_key shows first 4 and last 4 chars
+        # 与 mask_api_key 一致的语义：密码段保留首尾各 4 位
+        self.assertIn('mypa', masked)
+        self.assertIn('word', masked)
         self.assertNotIn('***MASKED***', masked)  # mask_api_key uses * pattern
 
     def test_mask_redis_url_special_password(self):
@@ -197,6 +199,7 @@ class TestAnalysisTaskManagerStandalone(unittest.TestCase):
         import importlib
         import config
         importlib.reload(config)
+        self.config = config
 
         # 测试 mask_redis_url
         self.assertEqual(config.mask_redis_url(''), '')
@@ -244,7 +247,7 @@ class TestConfigSensitiveFilter(unittest.TestCase):
         masked = self.config.mask_api_key(key)
         self.assertEqual(len(masked), len(key))
         self.assertNotEqual(masked, key)
-        self.assertTrue(masked.startswith('sk-12'))
+        self.assertTrue(masked.startswith('sk-1'))
         self.assertTrue(masked.endswith('cdef'))
 
     def test_mask_api_key_short(self):

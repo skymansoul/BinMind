@@ -1,6 +1,6 @@
 """检测模式: 算术溢出 — SIGNED_IDX / MUL_OVERFLOW / 16-bit wraparound.
 
-创建: 2026-07-14
+创建: 2024-09-27
 
 模式覆盖:
   SIGNED_IDX: 有符号加法突破 INT_MAX

@@ -10,7 +10,7 @@ int main(void) {
     if (!n->name) return 1;
     strcpy(n->name, "alice");
     free(n->name);
-    printf("[*] %s\n", n->name);   /* UAF: ×Ö¶Î½âÒýÓÃ */
+    printf("[*] %s\n", n->name);   /* UAF: å­—æ®µè§£å¼•ç”¨ */
     free(n);
     return 0;
 }

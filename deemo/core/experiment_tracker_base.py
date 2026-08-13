@@ -5,6 +5,7 @@
 
 import os
 import sqlite3
+from typing import Optional
 
 from .config import DB_PATH
 from .experiment_tracker_schema import _EXPERIMENTS_SCHEMA
@@ -14,6 +15,15 @@ class _ExperimentDBMixin:
     """封装 SQLite 连接生命周期，供 ExperimentTracker 组合复用。"""
 
     db_path: str
+
+    def __init__(self, db_path: Optional[str] = None) -> None:
+        """绑定数据库路径并建表；路径缺省取 default_db_path()。
+
+        类注解 db_path 仅声明字段不赋值，缺少此构造器时实例无法
+        连接数据库，_init_db/_connect 会因属性缺失报错。
+        """
+        self.db_path = db_path or default_db_path()
+        self._init_db()
 
     def _init_db(self) -> None:
         # 建表为幂等操作，确保实验库就绪

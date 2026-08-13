@@ -41,7 +41,7 @@ def scan_all(out: Path = None):
     for p in sorted(glob.glob(str(_BENCH / "*" / "vuln.exe"))):
         name = Path(p).parent.name
         truth = json.load(open(str(Path(p).parent / "truth.json"),
-                               encoding="utf-8"))
+                               encoding="utf-8-sig"))
         expect = bool(truth.get("expect_uaf", False))
         r = scan_uaf(p)
         v = "TP" if expect and r["count"] > 0 else \

@@ -1,3 +1,4 @@
+# 创建: 2024-07-22
 # 写侧值流区间抽象 — 从写入调用点提取写大小的取值区间
 """写侧区间抽象的核心动机:
   既有流水线对写入侧仅提取单一常量(或0=未知), 未知时求解器退化为
@@ -132,6 +133,7 @@ class WriteIntervalTracker:
         collector = self._get_guard_collector()
         start = max(write_line - 40, 0)
         end = write_line
+        # TODO: 守卫收集窗口固定40行, 跨函数守卫(调用点约束)未覆盖
         try:
             guards = collector.collect(asm_lines, reg, (start, end))
         except Exception:

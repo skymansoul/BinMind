@@ -17,9 +17,12 @@ _logger = logging.getLogger(__name__)
 class AttackSurfaceType(StrEnum):
     EXPORT = 'exported_function'
     NET = 'network_interface'
+    NETWORK_INTERFACE = 'network_interface'
     FILE = 'file_operation'
+    FILE_OPERATION = 'file_operation'
     IPC = 'ipc_endpoint'
     RPC = 'rpc_interface'
+    RPC_INTERFACE = 'rpc_interface'
     CLI = 'command_line'
     CONFIG = 'configuration'
 
@@ -47,6 +50,22 @@ class AttackSurfacePoint:
     evidence: list = field(default_factory=list)
     relvulns: list = field(default_factory=list)
 
+    @property
+    def surface_type(self):
+        return self.type
+
+    @surface_type.setter
+    def surface_type(self, value):
+        self.type = value
+
+    @property
+    def risk_score(self):
+        return self.score
+
+    @risk_score.setter
+    def risk_score(self, value):
+        self.score = value
+
 
 @dataclass
 class AttackSurfaceReport:
@@ -57,6 +76,30 @@ class AttackSurfaceReport:
     nlow: int = 0
     ok: bool = False
     err: str = ''
+
+    @property
+    def analysis_success(self):
+        return self.ok
+
+    @analysis_success.setter
+    def analysis_success(self, value):
+        self.ok = value
+
+    @property
+    def error_message(self):
+        return self.err
+
+    @error_message.setter
+    def error_message(self, value):
+        self.err = value
+
+    @property
+    def surface_points(self):
+        return self.points
+
+    @surface_points.setter
+    def surface_points(self, value):
+        self.points = value
 
     def to_dict(self):
         pts = []
@@ -335,7 +378,7 @@ class AttackSurfaceMapper:
         _logger.info(f'attack surface analysis: {self._path}')
         rpt = AttackSurfaceReport(path=self._path)
         if not self._ok():
-            rpt.err = f'invalid path: {self._path}'
+            rpt.err = f'无效的文件路径: {self._path}'
             return rpt
         try:
             self._extract_exports(rpt)
@@ -367,17 +410,17 @@ class AttackSurfaceMapper:
         if not rpt.ok:
             return None
         lines = [
-            '# Attack Surface Report', '',
-            f'**Target**: `{rpt.path}`',
-            f'**Time**: {datetime.now().isoformat()}', '',
-            '## Overview', '',
-            f'- Critical/High: {rpt.nhigh}',
-            f'- Medium: {rpt.nmed}',
-            f'- Low/Info: {rpt.nlow}',
-            f'- Total: {len(rpt.points)}', '',
-            '## Details', '',
-            '| Name | Type | Risk | Score | Remote | Auth |',
-            '|------|------|------|-------|--------|------|']
+            '# 攻击面分析报告', '',
+            f'**目标文件**: `{rpt.path}`',
+            f'**分析时间**: {datetime.now().isoformat()}', '',
+            '## 概览', '',
+            f'- 严重/高: {rpt.nhigh}',
+            f'- 中危: {rpt.nmed}',
+            f'- 低/info: {rpt.nlow}',
+            f'- 总计: {len(rpt.points)}', '',
+            '## 细节', '',
+            '| 名称 | 类型 | 风险 | 评分 | 远程 | 鉴权 |',
+            '|------|------|------|------|------|------|']
         for p in rpt.points:
             lines.append(
                 f'| `{p.name}` | {p.type} | {p.level} | '
@@ -389,3 +432,7 @@ class AttackSurfaceMapper:
                 fh.write(content)
             return out
         return content
+
+    def generate_report(self, out=None):
+        """generate_report 与 gen_report 同义——统一外部调用命名。"""
+        return self.gen_report(out=out)

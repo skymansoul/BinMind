@@ -8,31 +8,48 @@ import logging
 import hashlib
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple, Dict, Callable, Any
+from typing import Optional, List, Dict, Callable, Any, Union, Set
 
 _log = logging.getLogger(__name__)
 
 
-# 枚举与数据结构
-
 class HookAction(Enum):
-    CONTINUE = auto()        # 继续传递给下一个 hook
-    SKIP_ORIGINAL = auto()   # 跳过原始调用，返回 result
-    MODIFY_ARGS = auto()     # 修改参数后继续执行原始调用
-    DROP = auto()            # 丢弃此次调用
+    CONTINUE = auto()        # 继续执行后续回调
+    SKIP_ORIGINAL = auto()   # 跳过原始调用，使用 return_value
+    MODIFY_ARGS = auto()     # 修改参数后继续
+    DROP = auto()            # 丢弃本次调用
+
+
+class HookEvent(Enum):
+    PRE = auto()
+    POST = auto()
+    ERROR = auto()
 
 
 @dataclass
-class HookEntry:
-    pattern: str                                    # API 名称匹配正则
-    handler: Callable[..., Tuple[HookAction, Any]]  # (api_name, args, module) -> (action, result)
+class HookContext:
+    """单次调用的分发上下文。"""
+    api_name: str
+    args: list = field(default_factory=list)
+    module_name: str = ""
+    action: HookAction = HookAction.CONTINUE
+    return_value: Any = None
+    error: Optional[BaseException] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class HookDescriptor:
+    """已注册 hook 的元数据与回调链。"""
+    hook_id: str
+    pattern: str
+    pre: List[Callable] = field(default_factory=list)
+    post: List[Callable] = field(default_factory=list)
+    error: List[Callable] = field(default_factory=list)
     priority: int = 100
-    module_filter: Optional[str] = None  # 可选模块名正则
+    module_filter: Optional[Union[Set[str], str]] = None
     enabled: bool = True
-    hook_id: str = ""
 
-
-# 钩子 注册表
 
 class HookRegistry:
     """
@@ -41,26 +58,26 @@ class HookRegistry:
     """
 
     def __init__(self):
-        self._hooks: List[HookEntry] = []
-        self._match_cache: Dict[str, List[HookEntry]] = {}
-        self._hook_counter: int = 0
+        self._hooks: List[HookDescriptor] = []
+        self._match_cache: Dict[str, List[HookDescriptor]] = {}
 
-    def register(self, pattern: str, handler: Callable,
-                 priority: int = 100, module_filter: Optional[str] = None) -> str:
-        """注册 钩子, 返回 钩子_id"""
-        self._hook_counter += 1
-        hid = f"hook_{self._hook_counter}_{hashlib.md5(pattern.encode()).hexdigest()[:6]}"
-        entry = HookEntry(
+    def register(self, hook_id: str, pattern: str, pre=None, post=None,
+                 error=None, priority: int = 100,
+                 module_filter: Optional[Union[Set[str], str]] = None) -> str:
+        """注册 hook，返回 hook_id。"""
+        descriptor = HookDescriptor(
+            hook_id=hook_id,
             pattern=pattern,
-            handler=handler,
+            pre=list(pre) if pre else [],
+            post=list(post) if post else [],
+            error=list(error) if error else [],
             priority=priority,
             module_filter=module_filter,
-            hook_id=hid,
         )
-        self._hooks.append(entry)
-        self._hooks.sort(key=lambda h: h.priority)
+        self._hooks.append(descriptor)
+        self._hooks.sort(key=lambda h: h.priority, reverse=True)
         self._match_cache.clear()
-        return hid
+        return hook_id
 
     def unregister(self, hook_id: str) -> bool:
         before = len(self._hooks)
@@ -70,27 +87,56 @@ class HookRegistry:
             return True
         return False
 
-    # //// 获取匹配当前调用的所有 hook ////
-    def get_matches(self, api_name: str, module_name: str = "") -> List[HookEntry]:
+    def enable(self, hook_id: str) -> bool:
+        for h in self._hooks:
+            if h.hook_id == hook_id:
+                h.enabled = True
+                self._match_cache.clear()
+                return True
+        return False
+
+    def disable(self, hook_id: str) -> bool:
+        for h in self._hooks:
+            if h.hook_id == hook_id:
+                h.enabled = False
+                self._match_cache.clear()
+                return True
+        return False
+
+    def list_hooks(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                'hook_id': h.hook_id,
+                'pattern': h.pattern,
+                'priority': h.priority,
+                'enabled': h.enabled,
+            }
+            for h in self._hooks
+        ]
+
+    def _module_matches(self, descriptor: HookDescriptor, module_name: str) -> bool:
+        if not descriptor.module_filter:
+            return True
+        if isinstance(descriptor.module_filter, (set, frozenset)):
+            return module_name in descriptor.module_filter
+        return bool(re.search(descriptor.module_filter, module_name or "", re.IGNORECASE))
+
+    def get_hooks_for_api(self, api_name: str, module_name: str = "") -> List[HookDescriptor]:
         cache_key = f"{api_name}\x00{module_name}"
         if cache_key in self._match_cache:
             return self._match_cache[cache_key]
 
-        matched: List[HookEntry] = []
-        for entry in self._hooks:
-            if not entry.enabled:
-                continue
-            # 匹配 API 名
-            if not re.search(entry.pattern, api_name, re.IGNORECASE):
-                continue
-            # 匹配模块名
-            if entry.module_filter and module_name:
-                if not re.search(entry.module_filter, module_name, re.IGNORECASE):
-                    continue
-            matched.append(entry)
-        # 已按 priority 排序（寄存器 时排序）
+        matched = [
+            h for h in self._hooks
+            if h.enabled
+            and re.search(h.pattern, api_name, re.IGNORECASE)
+            and self._module_matches(h, module_name)
+        ]
         self._match_cache[cache_key] = matched
         return matched
+
+    def get_matches(self, api_name: str, module_name: str = "") -> List[HookDescriptor]:
+        return self.get_hooks_for_api(api_name, module_name)
 
     def clear_cache(self) -> None:
         self._match_cache.clear()
@@ -113,56 +159,72 @@ class HookEngine:
 
     def __init__(self):
         self.registry = HookRegistry()
+        self._stats: Dict[str, int] = {'total_calls': 0, 'skipped': 0}
         self._install_builtins()
 
-# 分发器: 核心分发逻辑
+    def dispatch_pre(self, api_name: str, args: Any,
+                     module_name: str = "") -> HookContext:
+        """执行 pre 回调链，返回处理后的上下文。"""
+        ctx = HookContext(api_name=api_name, args=list(args or []), module_name=module_name)
+        self._stats['total_calls'] = self._stats.get('total_calls', 0) + 1
+        hooks = self.registry.get_hooks_for_api(api_name, module_name)
+        for descriptor in hooks:
+            for callback in descriptor.pre:
+                try:
+                    result = callback(ctx)
+                except Exception:
+                    _log.exception("pre callback %s 异常", descriptor.hook_id)
+                    continue
+                if result is HookAction.SKIP_ORIGINAL:
+                    ctx.action = HookAction.SKIP_ORIGINAL
+                    self._stats['skipped'] = self._stats.get('skipped', 0) + 1
+                    return ctx
+                if result is HookAction.DROP:
+                    ctx.action = HookAction.DROP
+                    return ctx
+        return ctx
+
+    def dispatch_post(self, ctx: HookContext, return_value: Any = None) -> HookContext:
+        """执行 post 回调链。"""
+        ctx.return_value = return_value
+        hooks = self.registry.get_hooks_for_api(ctx.api_name, ctx.module_name)
+        for descriptor in hooks:
+            for callback in descriptor.post:
+                try:
+                    callback(ctx)
+                except Exception:
+                    _log.exception("post callback %s 异常", descriptor.hook_id)
+        return ctx
+
+    def dispatch_error(self, ctx: HookContext, exc: BaseException) -> HookContext:
+        """执行 error 回调链。"""
+        ctx.error = exc
+        hooks = self.registry.get_hooks_for_api(ctx.api_name, ctx.module_name)
+        for descriptor in hooks:
+            for callback in descriptor.error:
+                try:
+                    callback(ctx)
+                except Exception:
+                    _log.exception("error callback %s 异常", descriptor.hook_id)
+        return ctx
+
     def dispatch(self, api_name: str, args: Any,
-                 module_name: str = "") -> Tuple[bool, Any]:
-        """
-        遍历匹配的 钩子s, 返回 (handled, result)
-        handled=True 表示被某 hook 截获，不应再调用原始函数
-        """
-        hooks = self.registry.get_matches(api_name, module_name)
-        if not hooks:
-            return (False, None)
+                 module_name: str = "") -> tuple:
+        """兼容入口：执行 pre 链并按 action 返回 (handled, result)。"""
+        ctx = self.dispatch_pre(api_name, args, module_name)
+        if ctx.action in (HookAction.SKIP_ORIGINAL, HookAction.DROP):
+            return (True, ctx.return_value)
+        return (False, ctx.args)
 
-        current_args = args
-        for entry in hooks:
-            try:
-                action, result = entry.handler(api_name, current_args, module_name)
-            except Exception:
-                _log.exception("hook %s 异常, 跳过", entry.hook_id)
-                continue
+    def get_stats(self) -> Dict[str, int]:
+        return dict(self._stats)
 
-            if action == HookAction.DROP:
-                return (True, None)
-            elif action == HookAction.SKIP_ORIGINAL:
-                return (True, result)
-            elif action == HookAction.MODIFY_ARGS:
-                current_args = result  # 处理器 返回新的 args
-                # 继续下一个 hook
-            elif action == HookAction.CONTINUE:
-                continue
+    def __enter__(self):
+        return self
 
-        # 所有 hook 都未截获 → 执行原始调用
-        return (False, current_args)
-
-# decorator 风格注册
-    def hook(self, pattern: str, priority: int = 100,
-             module_filter: Optional[str] = None):
-        """@engine.钩子('IsDebuggerPresent') 装饰器"""
-        def decorator(fn: Callable):
-            self.registry.register(pattern, fn, priority, module_filter)
-            return fn
-        return decorator
-
-# 启用/禁用
-    def enable_hook(self, hook_id: str) -> bool:
-        for h in self.registry._hooks:
-            if h.hook_id == hook_id:
-                h.enabled = True
-                self.registry.clear_cache()
-                return True
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.registry._hooks.clear()
+        self.registry.clear_cache()
         return False
 
     def disable_hook(self, hook_id: str) -> bool:
@@ -181,81 +243,62 @@ class HookEngine:
 
 # 反调试
     def _register_anti_debug(self):
+        def _block_is_debugger(ctx):
+            ctx.return_value = False
+            return HookAction.SKIP_ORIGINAL
 
-        def _block_is_debugger(api_name, args, module):
-            """IsDebuggerPresent → 永远返回 False"""
-            return (HookAction.SKIP_ORIGINAL, False)
+        def _block_check_remote(ctx):
+            ctx.return_value = False
+            return HookAction.SKIP_ORIGINAL
 
-        def _block_check_remote(api_name, args, module):
-            """CheckRemoteDebuggerPresent → pbDebuggerPresent = False"""
-            # args 可能是 (hProcess, pbDebuggerPresent)
-            return (HookAction.SKIP_ORIGINAL, False)
+        def _filter_nt_query_info(ctx):
+            if len(ctx.args) >= 2 and ctx.args[1] in (7, 30, 31):
+                ctx.return_value = 0
+                return HookAction.SKIP_ORIGINAL
+            return HookAction.CONTINUE
 
-        def _filter_nt_query_info(api_name, args, module):
-            """NtQueryInformationProcess → 过滤 ProcessDebugPort / ProcessDebugObjectHandle"""
-            if len(args) >= 2:
-                info_class = args[1] if len(args) > 1 else 0
-                # 7 = ProcessDebugPort, 30 = ProcessDebugObjectHandle, 31 = ProcessDebugFlags
-                if info_class in (7, 30, 31):
-                    return (HookAction.SKIP_ORIGINAL, 0)
-            return (HookAction.CONTINUE, None)
-
-        def _block_ntset_info_thread(api_name, args, module):
-            """NtSetInformationThread → 拦截 HideFromDebugger (0x11)"""
-            if len(args) >= 2 and args[1] == 0x11:
-                return (HookAction.SKIP_ORIGINAL, 0)  # ThreadHideFromDebugger
-            return (HookAction.CONTINUE, None)
-
-        def _spoof_peb_being_debugged(api_name, args, module):
-            """访问 PEB.BeingDebugged 的任何调用 → 返回 0"""
-            return (HookAction.SKIP_ORIGINAL, 0)
+        def _block_ntset_info_thread(ctx):
+            if len(ctx.args) >= 2 and ctx.args[1] == 0x11:
+                ctx.return_value = 0
+                return HookAction.SKIP_ORIGINAL
+            return HookAction.CONTINUE
 
         anti_debug_hooks = [
-            (r"^IsDebuggerPresent$",             _block_is_debugger,          10),
-            (r"^CheckRemoteDebuggerPresent$",    _block_check_remote,         10),
-            (r"^NtQueryInformationProcess$",     _filter_nt_query_info,       10, r"ntdll"),
-            (r"^ZwQueryInformationProcess$",     _filter_nt_query_info,       10, r"ntdll"),
-            (r"^NtSetInformationThread$",        _block_ntset_info_thread,    10, r"ntdll"),
-            (r"^NtQuerySystemInformation$",      _spoof_peb_being_debugged,  15),
+            ("anti_debug_is_debugger", r"^IsDebuggerPresent$", _block_is_debugger, 10),
+            ("anti_debug_check_remote", r"^CheckRemoteDebuggerPresent$", _block_check_remote, 10),
+            ("anti_debug_query_info", r"^(Nt|Zw)QueryInformationProcess$", _filter_nt_query_info, 10, {"ntdll"}),
+            ("anti_debug_set_thread", r"^NtSetInformationThread$", _block_ntset_info_thread, 10, {"ntdll"}),
         ]
         for spec in anti_debug_hooks:
-            if len(spec) == 3:
-                self.registry.register(spec[0], spec[1], spec[2])
-            else:
-                self.registry.register(spec[0], spec[1], spec[2], spec[3])
+            hook_id, pattern, cb, pri = spec[:4]
+            mf = spec[4] if len(spec) > 4 else None
+            self.registry.register(hook_id, pattern, pre=[cb], priority=pri, module_filter=mf)
 
 # 反虚拟机
     def _register_anti_vm(self):
+        def _fake_registry_vm(ctx):
+            key_path = str(ctx.args[0]).lower() if ctx.args else ""
+            vm_keys = ["vbox", "vmware", "qemu", "virtualbox", "parallels"]
+            if any(vk in key_path for vk in vm_keys):
+                ctx.return_value = 0
+                return HookAction.SKIP_ORIGINAL
+            return HookAction.CONTINUE
 
-        def _fake_registry_vm(api_name, args, module):
-            """拦截注册表查询 VM 特征键"""
-            if len(args) >= 1:
-                key_path = str(args[0]).lower() if args else ""
-                # 常见 VM 注册表路径
-                vm_keys = ["vbox", "vmware", "qemu", "virtualbox", "parallels",
-                          "system\\currentcontrolset\\services\\vbox",
-                          "system\\currentcontrolset\\services\\vmware"]
-                for vk in vm_keys:
-                    if vk in key_path:
-                        return (HookAction.SKIP_ORIGINAL, 0)  # 键不存在
-            return (HookAction.CONTINUE, None)
+        def _fake_system_manufacturer(ctx):
+            ctx.return_value = "Dell Inc."
+            return HookAction.SKIP_ORIGINAL
 
-        def _fake_system_manufacturer(api_name, args, module):
-            """WMI / BIOS 查询 → 返回假的制造商信息"""
-            return (HookAction.SKIP_ORIGINAL, "Dell Inc.")
-
-        def _fake_mac_address(api_name, args, module):
-            """Get适配器sInfo → 过滤 VM 特征 MAC (00:05:69, 00:0C:29, 00:50:56, 08:00:27)"""
-            return (HookAction.SKIP_ORIGINAL, "00:1A:2B:3C:4D:5E")
+        def _fake_mac_address(ctx):
+            ctx.return_value = "00:1A:2B:3C:4D:5E"
+            return HookAction.SKIP_ORIGINAL
 
         anti_vm_specs = [
-            (r"^RegOpenKey(Ex)?[AW]?$",    _fake_registry_vm,        20),
-            (r"^RegQueryValue(Ex)?[AW]?$", _fake_registry_vm,        20),
-            (r"^GetSystemFirmwareTable$",  _fake_system_manufacturer, 20),
-            (r"^GetAdaptersInfo$",         _fake_mac_address,         20),
+            ("anti_vm_registry", r"^Reg(OpenKey|QueryValue)(Ex)?[AW]?$", _fake_registry_vm, 20),
+            ("anti_vm_firmware", r"^GetSystemFirmwareTable$", _fake_system_manufacturer, 20),
+            ("anti_vm_mac", r"^GetAdaptersInfo$", _fake_mac_address, 20),
         ]
-        for pat, handler, pri in anti_vm_specs:
-            self.registry.register(pat, handler, pri)
+        for hook_id, pattern, cb, pri in anti_vm_specs:
+            self.registry.register(hook_id, pattern, pre=[cb], priority=pri)
 
 # timing anti-anti
     def _register_timing(self):
@@ -263,33 +306,62 @@ class HookEngine:
         import time as _tmod
         _const_time = int(_tmod.time() * 1000)
 
-        def _const_get_tick_count(api_name, args, module):
-            """GetTickCount / GetTickCount64 → 返回固定值，防止时间差检测"""
-            return (HookAction.SKIP_ORIGINAL, _const_time)
+        def _const_tick_count(ctx):
+            ctx.return_value = _const_time
+            return HookAction.SKIP_ORIGINAL
 
-        def _const_query_perf_counter(api_name, args, module):
-            """Query性能Counter → 返回固定的单调增长"""
-            return (HookAction.SKIP_ORIGINAL, _const_time * 10000)
+        def _const_perf_counter(ctx):
+            ctx.return_value = _const_time * 10000
+            return HookAction.SKIP_ORIGINAL
 
-        def _const_rdtsc(api_name, args, module):
-            """RDTSC → 返回固定时间戳"""
-            return (HookAction.SKIP_ORIGINAL, _const_time * 1000)
-
-        def _block_sleep_skip(api_name, args, module):
-            """NtDelayExecution / Sleep → 不让恶意代码用 sleep 检测加速"""
-            return (HookAction.CONTINUE, None)  # 不阻止 sleep，但之前已固定时间
+        def _const_rdtsc(ctx):
+            ctx.return_value = _const_time * 1000
+            return HookAction.SKIP_ORIGINAL
 
         timing_specs = [
-            (r"^GetTickCount(64)?$",     _const_get_tick_count,    30),
-            (r"^QueryPerformanceCounter$", _const_query_perf_counter, 30),
-            (r"^__rdtsc$",               _const_rdtsc,             30),
-            (r"^NtDelayExecution$",      _block_sleep_skip,        40, r"ntdll"),
+            ("timing_tick", r"^GetTickCount(64)?$", _const_tick_count, 30),
+            ("timing_perf", r"^QueryPerformanceCounter$", _const_perf_counter, 30),
+            ("timing_rdtsc", r"^__rdtsc$", _const_rdtsc, 30),
         ]
-        for spec in timing_specs:
-            if len(spec) == 3:
-                self.registry.register(spec[0], spec[1], spec[2])
-            else:
-                self.registry.register(spec[0], spec[1], spec[2], spec[3])
+        for hook_id, pattern, cb, pri in timing_specs:
+            self.registry.register(hook_id, pattern, pre=[cb], priority=pri)
+
+
+# ---- 便捷回调工厂 ----
+
+def log_args_callback(prefix: str = "hook") -> Callable:
+    """生成记录调用参数的 pre 回调。"""
+    def _cb(ctx: HookContext):
+        _log.info("%s: %s(%r)", prefix, ctx.api_name, ctx.args)
+        return HookAction.CONTINUE
+    return _cb
+
+
+def return_override_callback(value: Any) -> Callable:
+    """生成固定返回值回调。"""
+    def _cb(ctx: HookContext):
+        ctx.return_value = value
+        return HookAction.SKIP_ORIGINAL
+    return _cb
+
+
+def arg_mutator_callback(index: int, value: Any) -> Callable:
+    """生成修改指定参数的回调。"""
+    def _cb(ctx: HookContext):
+        if 0 <= index < len(ctx.args):
+            ctx.args[index] = value
+        return HookAction.CONTINUE
+    return _cb
+
+
+def conditional_skip(predicate: Callable, return_value: Any = None) -> Callable:
+    """predicate(ctx) 为真时跳过原始调用。"""
+    def _cb(ctx: HookContext):
+        if predicate(ctx):
+            ctx.return_value = return_value
+            return HookAction.SKIP_ORIGINAL
+        return HookAction.CONTINUE
+    return _cb
 
 
 # 便捷工厂

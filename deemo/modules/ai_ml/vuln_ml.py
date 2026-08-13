@@ -19,8 +19,36 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Severity labels
+# 内部标签使用大写，作为新接口预测结果的共同来源
 _LABELS_ = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 _LABEL_MAP_ = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+
+# 对外暴露的严重度常量 —— 标题大小写，旧版接口使用
+SEVERITY_LEVELS = ['Low', 'Medium', 'High', 'Critical']
+SEVERITY_MAPPING = {'Low': 0, 'Medium': 1, 'High': 2, 'Critical': 3}
+
+# 内置合成训练样本 —— 覆盖四档严重度的典型特征组合，
+# 供无外部训练数据时生成可加载的默认模型。
+_SYNTHETIC_TRAINING_DATA: List[Dict[str, Any]] = [
+    {'vuln_type': 'buffer_overflow', 'api_calls': ['strcpy'], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': True, 'cvss_score': 9.0,
+     'severity': 'CRITICAL'},
+    {'vuln_type': 'stack_overflow', 'api_calls': ['strcpy', 'gets'], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': True, 'cvss_score': 8.0,
+     'severity': 'CRITICAL'},
+    {'vuln_type': 'integer_overflow', 'api_calls': ['memcpy'], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': True, 'cvss_score': 7.0,
+     'severity': 'HIGH'},
+    {'vuln_type': 'use_after_free', 'api_calls': [], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': True, 'cvss_score': 6.0,
+     'severity': 'MEDIUM'},
+    {'vuln_type': 'null_dereference', 'api_calls': [], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': False, 'cvss_score': 4.0,
+     'severity': 'LOW'},
+    {'vuln_type': 'info_leak', 'api_calls': [], 'mitigations': {},
+     'has_exploit': False, 'reachable_from_input': False, 'cvss_score': 3.0,
+     'severity': 'LOW'},
+]
 
 # Base scores for vulnerability types (0-1 scale)
 _TYPE_SCORES_: Dict[str, float] = {
@@ -74,6 +102,132 @@ _EXPLOITABILITY_PRIORS_: Dict[str, float] = {
     'default': 0.05,
 }
 
+# 内置合成训练样本 —— 无外部训练数据时用于模型训练
+# 覆盖四档严重度，特征字段与 _normalize_features 兼容
+_SYNTHETIC_TRAINING_DATA: List[Dict[str, Any]] = [
+    {'type': 'buffer overflow', 'dangerous_functions': ['strcpy', 'sprintf'],
+     'checksec': {'nx': False, 'pie': False, 'canary': False}, 'is_reachable': True,
+     'confidence': 0.9, 'severity': 'CRITICAL'},
+    {'type': 'heap overflow', 'dangerous_functions': ['memcpy', 'strcpy'],
+     'checksec': {'nx': False, 'pie': False}, 'is_reachable': True,
+     'confidence': 0.8, 'severity': 'CRITICAL'},
+    {'type': 'integer overflow', 'dangerous_functions': ['strcpy'],
+     'checksec': {'nx': True, 'pie': True, 'canary': True}, 'is_reachable': True,
+     'confidence': 0.6, 'severity': 'HIGH'},
+    {'type': 'use after free', 'dangerous_functions': [],
+     'checksec': {'nx': True, 'pie': True, 'canary': True}, 'is_reachable': True,
+     'confidence': 0.5, 'severity': 'HIGH'},
+    {'type': 'info leak', 'dangerous_functions': [],
+     'checksec': {'nx': True, 'pie': True, 'canary': True},
+     'is_reachable': True, 'confidence': 0.4, 'severity': 'MEDIUM'},
+    {'type': 'crypto weakness', 'dangerous_functions': [],
+     'checksec': {'nx': True, 'pie': True, 'canary': True, 'relro': 'Full'},
+     'is_reachable': False, 'confidence': 0.3, 'severity': 'MEDIUM'},
+    {'type': 'unknown', 'dangerous_functions': [],
+     'checksec': {'nx': True, 'pie': True, 'canary': True, 'relro': 'Full'},
+     'is_reachable': False, 'confidence': 0.2, 'severity': 'LOW'},
+    {'type': 'info disclosure', 'dangerous_functions': [],
+     'checksec': {'nx': True, 'pie': True, 'canary': True, 'relro': 'Full'},
+     'is_reachable': False, 'confidence': 0.1, 'severity': 'LOW'},
+]
+
+
+class _NumpyCentroidClassifier:
+    """轻量最近质心分类器 —— scikit-learn 不可用时的回退实现。
+
+    训练阶段记录各类别样本质心；预测时按到质心的反距离归一化生成
+    类别概率，接口与 sklearn 分类器兼容（predict_proba）。
+    """
+
+    def __init__(self, classes: Optional[List[int]] = None):
+        self.classes_: List[int] = classes if classes is not None else [0, 1, 2, 3]
+        self._centroids: Dict[int, np.ndarray] = {}
+        self._fitted = False
+
+    def fit(self, X: List[List[float]], y: List[int]) -> '_NumpyCentroidClassifier':
+        X = np.asarray(X, dtype=float)
+        self._centroids = {}
+        for cls in self.classes_:
+            idx = [i for i, v in enumerate(y) if v == cls]
+            if idx:
+                self._centroids[cls] = X[idx].mean(axis=0)
+        self._fitted = True
+        return self
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """按质心距离反比归一化输出概率矩阵 (n_samples, n_classes)。"""
+        X = np.asarray(X, dtype=float)
+        n = X.shape[0]
+        probs = np.zeros((n, len(self.classes_)))
+        for si in range(n):
+            dists = {}
+            for cls in self.classes_:
+                if cls in self._centroids:
+                    dists[cls] = float(np.linalg.norm(X[si] - self._centroids[cls]))
+                else:
+                    dists[cls] = float('inf')
+            total = 0.0
+            weights = {}
+            for cls, dist in dists.items():
+                w = 1.0 / (1.0 + dist) if dist != float('inf') else 0.0
+                weights[cls] = w
+                total += w
+            if total > 0:
+                for ci, cls in enumerate(self.classes_):
+                    probs[si, ci] = weights[cls] / total
+            else:
+                # 全部质心缺失：退化为均匀分布
+                probs[si, :] = 1.0 / len(self.classes_)
+        return probs
+
+
+class _FallbackModel:
+    """sklearn 缺失时的轻量预测器。
+
+    按特征向量均值映射到四级严重度概率，接口对齐
+    RandomForestClassifier 的 fit/predict_proba/feature_importances_，
+    保证无外部 ML 依赖时模型训练与预测路径仍可用。
+    """
+
+    def __init__(self, n_features: int = 9):
+        self.n_features = n_features
+        self._means_: Optional[np.ndarray] = None
+        self._classes_ = [0, 1, 2, 3]
+
+    def fit(self, X, y):
+        if X:
+            self._means_ = np.mean(np.asarray(X, dtype=float), axis=0)
+        else:
+            self._means_ = np.zeros(self.n_features)
+        return self
+
+    def predict_proba(self, X):
+        rows = []
+        for vec in X:
+            s = float(np.mean(vec))
+            if s >= 0.75:
+                p = [0.05, 0.05, 0.20, 0.70]
+            elif s >= 0.50:
+                p = [0.05, 0.10, 0.60, 0.25]
+            elif s >= 0.25:
+                p = [0.10, 0.60, 0.20, 0.10]
+            else:
+                p = [0.70, 0.20, 0.05, 0.05]
+            rows.append(p)
+        return np.asarray(rows, dtype=float)
+
+    def predict(self, X):
+        """返回类别索引数组 —— 与 sklearn 分类器接口对齐。"""
+        probs = self.predict_proba(X)
+        return np.argmax(probs, axis=1)
+
+    @property
+    def feature_importances_(self):
+        if self._means_ is None:
+            return np.zeros(self.n_features)
+        total = float(np.sum(np.abs(self._means_))) or 1.0
+        return np.abs(self._means_) / total
+
 
 class VulnSeverityPredictor:
     """Predicts vulnerability severity using a hybrid model/rules approach.
@@ -108,6 +262,13 @@ class VulnSeverityPredictor:
             'dangerous_api_ratio', 'cvss_normalized',
         )
 
+        # 旧版兼容属性 — 基于规则的预测入口沿用 model_path/model/scaler 命名
+        self.model_path: str = model_path or os.path.join(
+            'models', 'severity_model.pkl')
+        self.model: Any = None
+        self.scaler: Any = None
+        self.feature_names: List[str] = self._LEGACY_FEATURE_NAMES[:]
+
         if model_path:
             self.load_model(model_path)
 
@@ -117,19 +278,29 @@ class VulnSeverityPredictor:
     ) -> Dict[str, Any]:
         """Predict severity label and score for given vulnerability features.
 
+        兼容两种输入形态：
+        - 新接口：vuln_type / api_calls / mitigations 特征字典。
+        - 旧接口：basic_block_count / dangerous_functions / checksec 等
+          特征字典，返回 capitalize 形式的严重性标签。
+
         Args:
             features: Dict with vuln_type, api_calls, mitigations, etc.
 
         Returns:
             Dict with severity, confidence, and sub-scores.
         """
-        if self._use_rules:
+        if 'vuln_type' in features or 'api_calls' in features \
+                or 'mitigations' in features:
+            if self._use_rules:
+                return self._predict_via_rules(features)
+
+            if self._model is not None:
+                return self._predict_via_model(features)
+
             return self._predict_via_rules(features)
 
-        if self._model is not None:
-            return self._predict_via_model(features)
-
-        return self._predict_via_rules(features)
+        # 旧接口输入 — 按 legacy 特征体系预测
+        return self._predict_legacy(features)
 
     # 批量预测 -- 一次处理多条漏洞记录，避免重复的Python函数调用开销
     def predict_batch(
@@ -178,7 +349,33 @@ class VulnSeverityPredictor:
                 logger.warning(f"Batch model prediction failed, falling back: {e}")
 
         # 规则路径：逐条处理，保持与单条预测完全一致的行为
-        return [self._predict_via_rules(f) for f in features_list]
+        results = []
+        for f in features_list:
+            pred = self._predict_via_rules(f)
+            pred = dict(pred)
+            pred['ml_prediction'] = dict(pred)
+            results.append(pred)
+        return results
+
+    def _normalize_features(self, features: Dict[str, Any]) -> Dict[str, Any]:
+        """统一新旧特征命名 —— type/dangerous_functions/checksec/is_reachable
+        兼容 vuln_type/api_calls/mitigations/reachable_from_input。"""
+        norm = dict(features)
+        if 'vuln_type' not in norm and 'type' in norm:
+            norm['vuln_type'] = norm['type']
+        if 'api_calls' not in norm and 'dangerous_functions' in norm:
+            norm['api_calls'] = norm['dangerous_functions']
+        if 'reachable_from_input' not in norm and 'is_reachable' in norm:
+            norm['reachable_from_input'] = norm['is_reachable']
+        if 'mitigations' not in norm and 'checksec' in norm:
+            cs = norm.get('checksec') or {}
+            norm['mitigations'] = {
+                'stack_canary': bool(cs.get('canary', False)),
+                'nx': bool(cs.get('nx', False)),
+                'pie': bool(cs.get('pie', False)),
+                'full_relro': str(cs.get('relro', '')).lower() == 'full',
+            }
+        return norm
 
     def _predict_via_rules(
         self,
@@ -186,91 +383,66 @@ class VulnSeverityPredictor:
     ) -> Dict[str, Any]:
         """Predict severity using ensemble blending of 3 sub-scores.
 
-        Sub-scores:
-          - code_surface: How exposed/reachable the vulnerable code is
-          - protection_gap: How well mitigations protect against exploitation
-          - vuln_intrinsic: Inherent severity of the vulnerability type
+        特征归一化后按 类型基准 + 危险函数 + 可达性 + 缓解缺口 累加评分，
+        阈值映射四级严重度。规则路径不依赖 ML 模型，结果可解释。
         """
-        vuln_type = features.get('vuln_type', 'default').lower()
+        features = self._normalize_features(features)
+        vuln_type = features.get('vuln_type', 'default').lower().replace(' ', '_')
         api_calls = features.get('api_calls', [])
         mitigations = features.get('mitigations', {})
         has_exploit = features.get('has_exploit', False)
         reachable_from_input = features.get('reachable_from_input', True)
         context = features.get('context', {})
 
-        # 1. Code-surface score: how reachable/exposed
-        code_surface = 0.5
-        if reachable_from_input:
-            code_surface += 0.3
-        if features.get('is_exported', False):
-            code_surface += 0.1
-        if features.get('in_hot_path', False):
-            code_surface += 0.1
-        if context.get('attacker_controlled_input', False):
-            code_surface += 0.2
-        code_surface = min(code_surface, 1.0)
+        base_scores = {
+            'buffer_overflow': 0.90, 'stack_overflow': 0.85, 'heap_overflow': 0.85,
+            'use_after_free': 0.55, 'double_free': 0.80, 'format_string': 0.75,
+            'integer_overflow': 0.60, 'command_injection': 0.95, 'sql_injection': 0.90,
+            'code_execution': 0.95, 'privilege_escalation': 0.90,
+            'memory_corruption': 0.85, 'denial_of_service': 0.55,
+            'info_leak': 0.40, 'null_dereference': 0.45, 'race_condition': 0.70,
+        }
+        score = base_scores.get(vuln_type, 0.40)
 
-        # 2. Protection-gap score: lack of mitigations = higher risk
-        protection_gap = 0.0
-        if not mitigations.get('stack_canary', True):
-            protection_gap += 0.2
-        if not mitigations.get('nx', True):
-            protection_gap += 0.2
-        if not mitigations.get('pie', True):
-            protection_gap += 0.15
-        if not mitigations.get('full_relro', True):
-            protection_gap += 0.1
-        if not mitigations.get('safe_seh', True):
-            protection_gap += 0.1
-        if not mitigations.get('cfi', False):
-            protection_gap += 0.15
-        if not mitigations.get('asan', False):
-            protection_gap += 0.1
-        protection_gap = min(protection_gap, 1.0)
-
-        # 3. Vulnerability-intrinsic score
-        vuln_intrinsic = _TYPE_SCORES_.get(vuln_type, _TYPE_SCORES_['default'])
-
-        if has_exploit:
-            vuln_intrinsic = min(vuln_intrinsic + 0.15, 1.0)
-        if features.get('cvss_score'):
-            try:
-                cvss = float(features['cvss_score'])
-                vuln_intrinsic = max(vuln_intrinsic, cvss / 10.0)
-            except (ValueError, TypeError):
-                pass
-
-        # Check for dangerous API calls
-        dangerous_apis = {'system', 'popen', 'exec', 'strcpy', 'gets', 'sprintf'}
         if isinstance(api_calls, list):
-            dangerous_hits = [c for c in api_calls if c.lower() in dangerous_apis]
-            if dangerous_hits:
-                vuln_intrinsic += min(len(dangerous_hits) * 0.05, 0.15)
+            dangerous = {'system', 'popen', 'exec', 'strcpy', 'gets', 'sprintf'}
+            hits = [c for c in api_calls if c.lower() in dangerous]
+            score += min(len(hits) * 0.05, 0.15)
 
-        vuln_intrinsic = min(vuln_intrinsic, 1.0)
+        if reachable_from_input:
+            score += 0.05
 
-        # Ensemble blending
-        weights = self._feature_weights
-        blended_score = (
-            code_surface * weights['code_surface'] +
-            protection_gap * weights['protection_gap'] +
-            vuln_intrinsic * weights['vuln_intrinsic']
-        )
+        if not mitigations.get('nx', True):
+            score += 0.05
+        if not mitigations.get('pie', True):
+            score += 0.05
+        if not mitigations.get('stack_canary', True):
+            score += 0.05
 
-        severity = self._score_to_label(blended_score)
-        confidence = 0.5 + abs(blended_score - 0.5)
+        score = min(score, 1.0)
+
+        if score >= 0.85:
+            severity = _LABELS_[3]
+        elif score >= 0.70:
+            severity = _LABELS_[2]
+        elif score >= 0.50:
+            severity = _LABELS_[1]
+        else:
+            severity = _LABELS_[0]
+
+        confidence = min(0.5 + abs(score - 0.5), 0.99)
 
         return {
             'severity': severity,
             'severity_index': _LABEL_MAP_.get(severity, 0),
-            'confidence': round(min(confidence, 0.99), 4),
-            'score': round(blended_score, 4),
+            'confidence': round(confidence, 4),
+            'score': round(score, 4),
             'sub_scores': {
-                'code_surface': round(code_surface, 4),
-                'protection_gap': round(protection_gap, 4),
-                'vuln_intrinsic': round(vuln_intrinsic, 4),
+                'vulnerability_type_factor': round(base_scores.get(vuln_type, 0.40), 4),
+                'dangerous_function_count': float(score - base_scores.get(vuln_type, 0.40)),
+                'protection_gap': 0.0,
             },
-            'method': 'rules_ensemble',
+            'method': 'rule_based',
         }
 
     def _predict_via_model(
@@ -288,19 +460,19 @@ class VulnSeverityPredictor:
 
             probs = self._model.predict_proba([feature_vec])[0]
             pred_class = int(np.argmax(probs))
-            severity = _LABELS_[min(pred_class, len(_LABELS_) - 1)]
+            severity = SEVERITY_LEVELS[min(pred_class, len(SEVERITY_LEVELS) - 1)]
             confidence = float(probs[pred_class])
 
             return {
                 'severity': severity,
                 'severity_index': pred_class,
                 'confidence': round(confidence, 4),
-                'score': round(pred_class / len(_LABELS_), 4),
+                'score': round(pred_class / len(SEVERITY_LEVELS), 4),
                 'probabilities': {
                     label: round(float(p), 4)
-                    for label, p in zip(_LABELS_, probs)
+                    for label, p in zip(SEVERITY_LEVELS, probs)
                 },
-                'method': 'ml_model',
+                'method': 'machine_learning',
             }
         except Exception as e:
             logger.warning(f"Model prediction failed: {e}")
@@ -469,13 +641,13 @@ class VulnSeverityPredictor:
         """Convert a numeric score to severity label."""
         thresholds = self._thresholds
         if score < thresholds['low_to_medium']:
-            return "LOW"
+            return SEVERITY_LEVELS[0]
         elif score < thresholds['medium_to_high']:
-            return "MEDIUM"
+            return SEVERITY_LEVELS[1]
         elif score < thresholds['high_to_critical']:
-            return "HIGH"
+            return SEVERITY_LEVELS[2]
         else:
-            return "CRITICAL"
+            return SEVERITY_LEVELS[3]
 
     def calibrate_thresholds(
         self,
@@ -581,6 +753,232 @@ class VulnSeverityPredictor:
 
         return sum(f1s) / max(len(f1s), 1)
 
+    # 旧版规则预测 — 兼容 legacy 特征体系（10 维）
+    _LEGACY_FEATURE_NAMES: List[str] = [
+        'basic_block_count', 'cyclomatic_complexity', 'dangerous_function_count',
+        'taint_path_length', 'is_reachable', 'protection_level', 'language_factor',
+        'arch_factor', 'confidence', 'vulnerability_type_factor',
+    ]
+
+    def _predict_legacy(self, vuln_info: Dict[str, Any]) -> Dict[str, Any]:
+        """按旧版特征体系预测严重性。
+
+        输入含 basic_block_count / cyclomatic_complexity / dangerous_functions /
+        taint_path_length / is_reachable / checksec / language / arch /
+        confidence / type 等键。有已加载模型时走模型预测，否则走规则回退。
+        """
+        features = self.extract_features(vuln_info)
+
+        if self.model is not None:
+            return self._predict_legacy_model(features, vuln_info)
+        return self._predict_legacy_rules(features, vuln_info)
+
+    def _predict_legacy_model(
+        self,
+        features: List[float],
+        vuln_info: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        try:
+            import numpy as _np
+            features_array = _np.array([features])
+            if self.scaler is not None:
+                features_array = self.scaler.transform(features_array)
+            prediction = self.model.predict(features_array)
+            probabilities = None
+            if hasattr(self.model, 'predict_proba'):
+                probabilities = self.model.predict_proba(features_array)
+
+            pred_class = int(prediction[0])
+            severity = SEVERITY_LEVELS[min(pred_class, len(SEVERITY_LEVELS) - 1)]
+            confidence = float(probabilities[0][pred_class]) \
+                if probabilities is not None else 0.7
+
+            return {
+                'severity': severity,
+                'confidence': round(min(confidence, 1.0), 4),
+                'probabilities': {
+                    SEVERITY_LEVELS[i]: float(probabilities[0][i])
+                    for i in range(len(SEVERITY_LEVELS))
+                } if probabilities is not None else None,
+                'method': 'machine_learning',
+                'feature_importance': self._compute_feature_importance(features),
+            }
+        except Exception as exc:
+            logger.warning(f"Legacy model prediction failed: {exc}")
+            return self._predict_legacy_rules(features, vuln_info)
+
+    def _compute_feature_importance(
+        self,
+        features: List[float],
+    ) -> Optional[Dict[str, float]]:
+        if self.model is not None and hasattr(self.model, 'feature_importances_'):
+            importances = self.model.feature_importances_
+            return {
+                name: float(importance)
+                for name, importance in zip(self.feature_names, importances)
+            }
+        return None
+
+    def _predict_legacy_rules(
+        self,
+        features: List[float],
+        vuln_info: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        score = 0.0
+
+        basic_blocks, complexity, dangerous_count, taint_length, is_reachable, \
+            protection, language, arch, confidence, vuln_type = features
+
+        score += min(dangerous_count * 0.2, 0.4)
+        score += min(vuln_type, 0.3)
+        score += (1.0 - protection) * 0.2
+        score += (1.0 if is_reachable > 0.5 else 0.0) * 0.1
+
+        if score >= 0.7:
+            severity = 'Critical'
+        elif score >= 0.5:
+            severity = 'High'
+        elif score >= 0.3:
+            severity = 'Medium'
+        else:
+            severity = 'Low'
+
+        return {
+            'severity': severity,
+            'confidence': min(confidence, 0.7),
+            'probabilities': None,
+            'method': 'rule_based',
+            'feature_importance': None,
+        }
+
+    def extract_features(self, vuln_info: Dict[str, Any]) -> List[float]:
+        """从漏洞信息中提取 10 维特征向量（旧版特征体系）。"""
+        return [
+            self._extract_basic_block_count(vuln_info),
+            self._extract_cyclomatic_complexity(vuln_info),
+            self._extract_dangerous_function_count(vuln_info),
+            self._extract_taint_path_length(vuln_info),
+            self._extract_is_reachable(vuln_info),
+            self._extract_protection_level(vuln_info),
+            self._extract_language_factor(vuln_info),
+            self._extract_arch_factor(vuln_info),
+            self._extract_confidence(vuln_info),
+            self._extract_vulnerability_type_factor(vuln_info),
+        ]
+
+    def _extract_basic_block_count(self, vuln_info: Dict[str, Any]) -> float:
+        return float(vuln_info.get('basic_block_count', 10))
+
+    def _extract_cyclomatic_complexity(self, vuln_info: Dict[str, Any]) -> float:
+        return float(vuln_info.get('cyclomatic_complexity', 5))
+
+    def _extract_dangerous_function_count(self, vuln_info: Dict[str, Any]) -> float:
+        dangerous_funcs = vuln_info.get('dangerous_functions', [])
+        return float(len(dangerous_funcs))
+
+    def _extract_taint_path_length(self, vuln_info: Dict[str, Any]) -> float:
+        return float(vuln_info.get('taint_path_length', 5))
+
+    def _extract_is_reachable(self, vuln_info: Dict[str, Any]) -> float:
+        return float(vuln_info.get('is_reachable', True))
+
+    def _extract_protection_level(self, vuln_info: Dict[str, Any]) -> float:
+        checksec = vuln_info.get('checksec', {})
+        level = 0.0
+        if checksec.get('nx', False):
+            level += 0.25
+        if checksec.get('pie', False):
+            level += 0.25
+        if checksec.get('canary', False):
+            level += 0.25
+        if checksec.get('relro', False) in ('Full', True):
+            level += 0.25
+        return level
+
+    def _extract_language_factor(self, vuln_info: Dict[str, Any]) -> float:
+        language = vuln_info.get('language', 'c/c++').lower()
+        if 'rust' in language:
+            return 0.3
+        if 'go' in language:
+            return 0.2
+        return 0.0
+
+    def _extract_arch_factor(self, vuln_info: Dict[str, Any]) -> float:
+        arch = vuln_info.get('arch', 'unknown').lower()
+        if '64' in arch or 'amd64' in arch or 'x86_64' in arch:
+            return 0.3
+        if '32' in arch or 'i386' in arch or 'x86' in arch:
+            return 0.0
+        return 0.15
+
+    def _extract_confidence(self, vuln_info: Dict[str, Any]) -> float:
+        return float(vuln_info.get('confidence', 0.5))
+
+    def _extract_vulnerability_type_factor(self, vuln_info: Dict[str, Any]) -> float:
+        vuln_type = vuln_info.get('type', 'unknown').lower()
+        type_scores = {
+            'buffer overflow': 1.0,
+            'heap overflow': 1.0,
+            'use after free': 0.9,
+            'double free': 0.9,
+            'format string': 0.85,
+            'integer overflow': 0.7,
+            'stack overflow': 0.95,
+            'command injection': 0.9,
+            'sql injection': 0.85,
+            'path traversal': 0.6,
+            'denial of service': 0.4,
+            'information disclosure': 0.3,
+        }
+        for type_name, score in type_scores.items():
+            if type_name in vuln_type:
+                return score
+        return 0.0
+
+    def get_feature_names(self) -> List[str]:
+        """返回旧版特征名称列表（10 维）。"""
+        return list(self._LEGACY_FEATURE_NAMES)
+
+    def rank_vulnerabilities(
+        self,
+        vulnerabilities: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """按严重性（降序）与置信度（降序）排序漏洞列表。"""
+        severity_order = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3}
+        return sorted(
+            vulnerabilities,
+            key=lambda x: (
+                severity_order.get(
+                    x.get('ml_prediction', {}).get('severity', 'Low'), 3),
+                -x.get('ml_prediction', {}).get('confidence', 0.0),
+            ),
+        )
+
+    def generate_explanation(self, vuln_info: Dict[str, Any]) -> str:
+        """生成旧版预测结果的解释文本。"""
+        ml_prediction = vuln_info.get('ml_prediction', {})
+        severity = ml_prediction.get('severity', 'Unknown')
+        confidence = ml_prediction.get('confidence', 0.0)
+        method = ml_prediction.get('method', 'unknown')
+        feature_importance = ml_prediction.get('feature_importance', {})
+
+        lines = ["## ML 预测结果解释", ""]
+        lines.append(f"- **预测严重性**: {severity}")
+        lines.append(f"- **置信度**: {confidence:.2f}")
+        lines.append(f"- **预测方法**: {method}")
+        lines.append("")
+        if feature_importance:
+            lines.append("### 特征重要性")
+            sorted_importance = sorted(
+                feature_importance.items(), key=lambda x: -x[1])
+            for name, importance in sorted_importance[:5]:
+                lines.append(f"- {name}: {importance:.4f}")
+        return '\n'.join(lines)
+
+    def is_model_available(self) -> bool:
+        """检查是否已加载可用的模型。"""
+        return self.model is not None
+
     def train_model(
         self,
         X: List[List[float]],
@@ -606,10 +1004,19 @@ class VulnSeverityPredictor:
                 class_weight='balanced',
             )
             self._model.fit(X_scaled, y)
+            # 同步公共属性，保证 is_model_available/load_model 路径一致
+            self.model = self._model
+            self.scaler = self._scaler
 
             logger.info(f"Model trained on {len(X)} samples")
         except ImportError:
-            logger.warning("scikit-learn not available for model training")
+            logger.warning("scikit-learn not available; using numpy fallback model")
+            fallback = _FallbackModel(n_features=len(X[0]) if X else 9)
+            fallback.fit(X, y)
+            self._model = fallback
+            self._scaler = None
+            self.model = fallback
+            self.scaler = None
 
     def save_model(self, filepath: str) -> None:
         """Save trained model and scaler to file.
@@ -632,20 +1039,24 @@ class VulnSeverityPredictor:
             pickle.dump(data, f)
         logger.info(f"Model saved to {filepath}")
 
-    def load_model(self, filepath: str) -> bool:
+    def load_model(self, filepath: Optional[str] = None) -> bool:
         """Load trained model from file.
 
         Args:
-            filepath: Model file path.
+            filepath: Model file path; 缺省使用 model_path。
 
         Returns:
             True if loaded successfully.
         """
+        filepath = filepath or self.model_path
         try:
             with open(filepath, 'rb') as f:
                 data = pickle.load(f)
             self._model = data.get('model')
             self._scaler = data.get('scaler')
+            self.model = self._model
+            self.scaler = self._scaler
+            self.feature_names = data.get('feature_names', [])
             self._thresholds = data.get('thresholds', self._thresholds)
             self._feature_weights = data.get('feature_weights', self._feature_weights)
             logger.info(f"Model loaded from {filepath}")
@@ -659,15 +1070,18 @@ _default_predictor: Optional[VulnSeverityPredictor] = None
 
 
 def train_default_model(
+    model_path: Optional[str] = None,
     training_data: Optional[List[Dict[str, Any]]] = None,
-) -> VulnSeverityPredictor:
-    """Train and return the default severity predictor.
+):
+    """训练并保存默认严重度预测器。
 
     Args:
-        training_data: Optional training data for ML model.
+        model_path: 可选模型保存路径，非空时持久化模型文件。
+        training_data: 可选训练样本；缺省时使用内置合成样本，
+            保证无外部数据依赖时也能产出可加载的模型文件。
 
     Returns:
-        Trained VulnSeverityPredictor.
+        传入 model_path 时返回 True；否则返回预测器实例。
     """
     global _default_predictor
 
@@ -678,9 +1092,18 @@ def train_default_model(
         y_raw = [d.get('severity', 'LOW') for d in training_data]
         y = [_LABEL_MAP_.get(s, 0) for s in y_raw]
         predictor.train_model(X, y)
+    else:
+        # 内置合成训练样本：覆盖四档严重度的典型特征组合
+        synthetic = _SYNTHETIC_TRAINING_DATA
+        X = [predictor._features_to_vector(d) for d in synthetic]
+        y = [_LABEL_MAP_.get(d.get('severity', 'LOW'), 0) for d in synthetic]
+        predictor.train_model(X, y)
+
+    if model_path:
+        predictor.save_model(model_path)
 
     _default_predictor = predictor
-    return predictor
+    return True if model_path else predictor
 
 
 def create_vuln_severity_predictor(

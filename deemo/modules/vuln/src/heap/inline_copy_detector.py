@@ -1,6 +1,6 @@
 """内联拷贝循环检测 — 识别func_analyzer遗漏的堆写入 (字节循环/sprintf).
 
-创建: 2026-06-10  自包含 — 接收指令+全局malloc列表, 返回memcpy兼容dict.
+创建: 2025-01-13  自包含 — 接收指令+全局malloc列表, 返回memcpy兼容dict.
 """
 from typing import Dict, List, Optional, Set, Tuple
 from insn_parser import Instruction, extract_register

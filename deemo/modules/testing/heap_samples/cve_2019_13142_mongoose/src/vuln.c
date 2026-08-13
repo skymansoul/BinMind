@@ -1,4 +1,4 @@
-/* CVE-2019-13142 ¡ª Mongoose OS Content-Disposition heap overflow */
+/* CVE-2019-13142 â€” Mongoose OS Content-Disposition heap overflow */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

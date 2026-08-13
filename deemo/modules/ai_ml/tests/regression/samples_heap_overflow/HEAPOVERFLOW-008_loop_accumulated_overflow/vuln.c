@@ -1,13 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
-/* 循环内累计写超出分配 */
+/* 寰幆鍐呯疮璁″啓瓒呭嚭鍒嗛厤 */
 void loop_accumulate(const char *chunks[4], int n_chunks, int chunk_size) {
     char *buf = malloc(64);
     if (!buf) return;
     int offset = 0;
     for (int i = 0; i < n_chunks; i++) {
         memcpy(buf + offset, chunks[i], chunk_size);
-        offset += chunk_size; /* VULN: offset超出64 */
+        offset += chunk_size; /* VULN: offset瓒呭嚭64 */
     }
     free(buf);
 }

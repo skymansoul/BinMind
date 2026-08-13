@@ -1,7 +1,7 @@
 """
 DD-BVF求解器桥接 — CJ INCONCLUSIVE时触发BVF反向值流证明.
 
-从cj_solver.py拆分, 提供BVF证明入口和循环偏移证明.
+提供BVF证明入口和循环偏移证明.
 """
 from __future__ import annotations
 from typing import Optional

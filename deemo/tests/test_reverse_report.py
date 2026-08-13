@@ -90,7 +90,6 @@ class TestReverseReportGenerator(unittest.TestCase):
             self.assertTrue(os.path.exists(output_path))
             with open(output_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-lass字段完整性$/d
                 self.assertGreater(len(content), 0)
 
     def test_generate_json_report(self):

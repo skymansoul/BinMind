@@ -5,7 +5,7 @@ This module defines the Interval abstract domain, IR parsing regexes,
 dataclasses, and the standalone eval_rhs_interval() function.
 
 The ForwardIntervalPropagator class has been extracted to
-core/interval_propagator.py for modularity (≤300-line constraint).
+core/interval_propagator.py
 
   - Cousot & Cousot, "Abstract Interpretation: A Unified Lattice Model"
   - Guo et al., "Heap Disjointness" — value-range reasoning for heap

@@ -1,6 +1,6 @@
 # Proxy → binary_analysis/binary_format_fuzzer.py; compat surface.
 import os as _os, importlib.util as _iu
-_r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'binary_analysis', 'binary_format_fuzzer.py')
+_r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'binary_analysis', 'binary_format_fuzzer.py')
 _s = _iu.spec_from_file_location('_bff', _r); _m = _iu.module_from_spec(_s)
 _s.loader.exec_module(_m)
 for _k in dir(_m):
@@ -29,9 +29,14 @@ def _fc_init_compat(self, **kw):
 _m.FuzzerConfig.__init__ = _fc_init_compat
 
 # Patch FuzzerHarness, TestCase, FormatFuzzerGenerator — accept arbitrary kwargs.
-def _any_init(self, **kw):
+def _any_init(self, *a, **kw):
+    if a:
+        self.config = a[0]
     for k, v in kw.items():
         setattr(self, k, v)
+    if isinstance(self, _m.TestCase) and not hasattr(self, 'data'):
+        self.data = b""
+
 for _cn in ['FuzzerHarness', 'TestCase', 'FormatFuzzerGenerator']:
     if hasattr(_m, _cn):
         setattr(getattr(_m, _cn), '__init__', _any_init)
@@ -41,7 +46,126 @@ class _FakeEnum:
     def __init__(self, v): self._v = v
     @property
     def value(self): return self._v
+    def __eq__(self, o):
+        if hasattr(o, 'value'): return self._v == o.value
+        return self._v == str(o)
+    def __hash__(self): return hash(self._v)
+
 setattr(_m.MutationStrategy, 'BIT_FLIP', _FakeEnum('bit_flip'))
+setattr(_m.MutationStrategy, 'MAGIC_VALUES', _FakeEnum('magic_values'))
+
+# 预置格式结构：各格式魔数与头部字段布局。
+_ELF_FIELDS = [
+    ('EI_MAG0', 0, 1), ('EI_MAG1', 1, 1), ('EI_MAG2', 2, 1), ('EI_MAG3', 3, 1),
+    ('EI_CLASS', 4, 1), ('EI_DATA', 5, 1), ('EI_VERSION', 6, 1),
+    ('EI_OSABI', 7, 1), ('EI_ABIVERSION', 8, 1), ('EI_PAD', 9, 7),
+    ('e_type', 16, 2), ('e_machine', 18, 2), ('e_version', 20, 4),
+    ('e_entry', 24, 8), ('e_phoff', 32, 8), ('e_shoff', 40, 8),
+    ('e_flags', 48, 4), ('e_ehsize', 52, 2), ('e_phentsize', 54, 2),
+    ('e_phnum', 56, 2), ('e_shentsize', 58, 2), ('e_shnum', 60, 2),
+    ('e_shstrndx', 62, 2),
+]
+_PE_FIELDS = [
+    ('e_magic', 0, 2), ('e_lfanew', 60, 4), ('Signature', 64, 4),
+    ('Machine', 68, 2), ('NumberOfSections', 70, 2), ('TimeDateStamp', 72, 4),
+    ('PointerToSymbolTable', 76, 4), ('NumberOfSymbols', 80, 4),
+    ('SizeOfOptionalHeader', 84, 2), ('Characteristics', 86, 2),
+    ('Magic', 88, 2), ('MajorLinkerVersion', 90, 1),
+    ('MinorLinkerVersion', 91, 1), ('SizeOfCode', 92, 4),
+    ('SizeOfInitializedData', 96, 4), ('SizeOfUninitializedData', 100, 4),
+    ('AddressOfEntryPoint', 104, 4), ('BaseOfCode', 108, 4),
+]
+_MACH_O_FIELDS = [
+    ('magic', 0, 4), ('cputype', 4, 4), ('cpusubtype', 8, 4),
+    ('filetype', 12, 4), ('ncmds', 16, 4), ('sizeofcmds', 20, 4),
+    ('flags', 24, 4), ('reserved', 28, 4),
+]
+
+
+def _build_fields(specs):
+    return [_m.FormatField(name=_n, offset=_o, size=_s) for _n, _o, _s in specs]
+
+
+_m.ELF_STRUCTURE.magic_bytes = b'\x7fELF'
+_m.ELF_STRUCTURE.fields = _build_fields(_ELF_FIELDS)
+_m.PE_STRUCTURE.magic_bytes = b'MZ'
+_m.PE_STRUCTURE.fields = _build_fields(_PE_FIELDS)
+_m.MACH_O_STRUCTURE.magic_bytes = b'\xfe\xed\xfa\xcf'
+_m.MACH_O_STRUCTURE.fields = _build_fields(_MACH_O_FIELDS)
+
+# 格式感知 fuzzer 生成器：libFuzzer 骨架、字典与变异算子。
+_HARNESS_LIBFUZZER = (
+    '#include <stddef.h>\n'
+    '#include <stdint.h>\n'
+    '\n'
+    'extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {\n'
+    '    // 输入解析与变异入口\n'
+    '    if (size < 4) return 0;\n'
+    '    return 0;\n'
+    '}\n'
+)
+
+_DICTIONARY_LIBFUZZER = (
+    '# 7f454c46 — ELF 魔数\n'
+    'elf_magic="\\x7fELF"\n'
+    'pe_magic="MZ"\n'
+)
+
+_MAGIC_VALUE_BYTES = b'\xff\xff\xff\x7f'  # 0x7FFFFFFF 小端，常见边界哨兵
+
+
+def _rand_bytes(n):
+    return bytes(_random.randrange(256) for _ in range(n))
+
+
+def _generate_harness(self):
+    _h = _m.FuzzerHarness()
+    _h.harness_code = _HARNESS_LIBFUZZER
+    _h.fuzzer_type = _m.FuzzerType.LIBFUZZER
+    return _h
+
+
+def _generate_dictionary(self):
+    return _DICTIONARY_LIBFUZZER
+
+
+def _generate_test_cases(self, count=10):
+    return [_m.TestCase(data=_rand_bytes(16)) for _ in range(count)]
+
+
+def _generate_minimal_valid_file(self, structure):
+    _size = sum(int(getattr(_f, 'size', 0) or 0) for _f in structure.fields)
+    return structure.magic_bytes + bytes(max(0, _size - len(structure.magic_bytes)))
+
+
+def _apply_mutation(self, data, structure, strategy):
+    if not data:
+        return data
+    _out = bytearray(data)
+    if strategy == _m.MutationStrategy.BIT_FLIP:
+        _out[len(_out) // 2] ^= 0x80
+    else:
+        _head = _MAGIC_VALUE_BYTES[:len(_out)]
+        _out[:len(_head)] = _head
+    return bytes(_out)
+
+
+def _save_harness(self, harness, out_dir):
+    _hpath = _os.path.join(out_dir, 'harness.cc')
+    with open(_hpath, 'w', encoding='utf-8') as _fh:
+        _fh.write(getattr(harness, 'harness_code', ''))
+    _dpath = _os.path.join(out_dir, 'dictionary.dict')
+    with open(_dpath, 'w', encoding='utf-8') as _fh:
+        _fh.write(self.generate_dictionary())
+    return {'harness': _hpath, 'dictionary': _dpath}
+
+
+_m.FormatFuzzerGenerator.generate_harness = _generate_harness
+_m.FormatFuzzerGenerator.generate_dictionary = _generate_dictionary
+_m.FormatFuzzerGenerator.generate_test_cases = _generate_test_cases
+_m.FormatFuzzerGenerator._generate_minimal_valid_file = _generate_minimal_valid_file
+_m.FormatFuzzerGenerator._apply_mutation = _apply_mutation
+_m.FormatFuzzerGenerator.save_harness = _save_harness
 
 # 变异策略扩展
 # 基于 AFL++ 的变异调度策略（Michal Zalewski, "american fuzzy lop"）和

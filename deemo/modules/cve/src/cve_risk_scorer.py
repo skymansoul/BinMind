@@ -221,12 +221,7 @@ def estimate_days_since_fix(entry) -> Optional[float]:
 
 # 字段访问辅助
 
-def _get_num(entry, field: str) -> Optional[float]:
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
 
 def _get_str(entry, field: str, default: str = "") -> str:

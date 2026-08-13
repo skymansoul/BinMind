@@ -1,8 +1,8 @@
 """
 DD-BVF相关性判定器 — alloc-write符号相关性安全证明.
 
-从cj_bvf_tracer.py拆分, 提供correlate判定逻辑:
-  常量比较、共享变量子集安全性检查、溢出检查、证书构建.
+提供correlate判定逻辑:
+常量比较、共享变量子集安全性检查、溢出检查、证书构建.
 """
 
 from typing import Optional, Set

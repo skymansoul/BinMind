@@ -1,8 +1,0 @@
-{
-  "id": "safe_15_loop_in_bounds",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "循环写入 i<32 严格界内"
-}

@@ -1,0 +1,8 @@
+{
+  "sample": "v19_memcpy_equal",
+  "cve": "SAFE-mceq",
+  "mode": "memcpy_corr",
+  "label": "SAFE",
+  "verdict": "SAFE",
+  "why": "malloc(n+1) + memcpy(n) 共享系数相等 → 安全"
+}

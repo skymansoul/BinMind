@@ -369,7 +369,7 @@ def _simulate_qed_lite_fingerprint(data: bytes) -> List[dict]:
     QED-Lite 库版本指纹检测 -- 轻量级静态二进制分析。
 
     设计意图:
-      QED-Lite (ePrint 2026/660) 的三阶段检测:
+      QED-Lite 的三阶段检测:
         Phase 1: 文件级 -- 检查二进制格式和导入表
         Phase 2: API 级 -- 匹配已知 PQC API 的函数名模式
         Phase 3: 调用图级 -- 验证 PQC API 调用序列合法性
@@ -455,7 +455,7 @@ def generate_pqc_function_summary(
     FoC 启发的 LLM 二进制函数摘要 -- Tier 3 语义理解。
 
     设计意图:
-      FoC (ACM TOSEM 2025) 证明 LLM 可为剥离二进制中的加密函数输出
+      FoC 证明 LLM 可为剥离二进制中的加密函数输出
       高质量自然语言摘要 (ROUGE-L 提升 14.61% 超越 ChatGPT)。
       此函数提供最小化的 FoC 风格接口, 将反编译代码发送给 LLM,
       获取结构化的加密函数描述。

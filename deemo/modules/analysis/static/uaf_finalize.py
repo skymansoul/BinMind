@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple
 
 from .uaf_global_free_scanner import GlobalFreeScanner
 from .uaf_local_free_deref import LocalFreeDerefScanner
+from .uaf_provenance import UAFProvenanceFilter
 
 
 class UAFFinalizer:
@@ -17,6 +18,7 @@ class UAFFinalizer:
         self._det = detector
         self._global_scanner = GlobalFreeScanner(detector)
         self._local_scanner = LocalFreeDerefScanner(detector)
+        self._ulp_filter = UAFProvenanceFilter()
 
     def finalize(self, instructions: List[dict]) -> List[dict]:
         """多阶段后过滤: 全局free补检→去重→CRT过滤→nulled过滤→路径互斥过滤."""
@@ -81,6 +83,15 @@ class UAFFinalizer:
                 continue
             filtered.append(f)
 
+        if getattr(self._det, "_ulp_enabled", True):
+            confirmed, suspected, benign = self._ulp_filter.filter(
+                filtered, instructions)
+            self._det._suspected_findings = suspected
+            self._det._benign_findings = benign
+            # 只抑制可证明安全(BENIGN); SUSPECTED未证安全, 保留在检出中.
+            return confirmed + suspected
+        self._det._suspected_findings = []
+        self._det._benign_findings = []
         return filtered
 
     def stats(self) -> dict:

@@ -289,7 +289,9 @@ class AttackMapper:
         self.techniques = dict(_TECH_DB)
         self.mappings: Dict[str, AttackMapping] = {}
         self.vulnerability_mapping: Dict[str, AttackMapping] = {}
-        # 加载自定义映射文件 (JSON: {"vuln_type": "TXXXX", ...})
+        # 自定义映射记录 (vuln_type -> 完整映射配置)
+        self.custom_mappings: Dict[str, dict] = {}
+        # 加载自定义映射文件 (JSON: {"vuln_type": "TXXXX"} 或 {"vuln_type": {...}})
         if custom_mapping_file:
             self._load_custom_mappings(custom_mapping_file)
 
@@ -299,7 +301,14 @@ class AttackMapper:
             with open(filepath, 'r', encoding='utf-8') as fh:
                 custom = json.load(fh)
             for k, v in custom.items():
-                _VULN_MAP[k] = v
+                if isinstance(v, dict):
+                    # 完整映射配置: {"vuln_type": {"primary_technique": "TXXXX", ...}}
+                    self.custom_mappings[k] = v
+                    prim = v.get("primary_technique") or v.get("technique_id")
+                    if isinstance(prim, str):
+                        _VULN_MAP[k] = prim
+                else:
+                    _VULN_MAP[k] = v
 
     def map_vulnerability(self, vuln_type="", context=None, cwe_id=None,
                           impact_type=None, target_type=None, cvss=None, **kwargs):
@@ -312,8 +321,18 @@ class AttackMapper:
         match = _match_with_confidence(vt_lower, cwe_id, cvss_val)
         tid = match.technique.technique_id
 
-        pri = _TECH_DB.get(tid, _TECH_DB["T1203"])
-        sec = [t for k, t in _TECH_DB.items() if k != tid][:2]
+        # 自定义映射优先
+        custom = self.custom_mappings.get(vuln_type)
+        if custom:
+            prim_id = custom.get("primary_technique") or tid
+            pri = _TECH_DB.get(prim_id, _TECH_DB.get(tid, _TECH_DB["T1203"]))
+            sec_ids = custom.get("secondary_techniques") or []
+            sec = [_TECH_DB.get(s, _TECH_DB["T1203"]) for s in sec_ids]
+            if not sec:
+                sec = [t for k, t in _TECH_DB.items() if k != pri.technique_id][:2]
+        else:
+            pri = _TECH_DB.get(tid, _TECH_DB["T1203"])
+            sec = [t for k, t in _TECH_DB.items() if k != tid][:2]
 
         conf = match.confidence
         if cwe_id:

@@ -1,18 +1,115 @@
-"""Kubernetes 清单安全扫描器。RBAC + pod security + NetworkPolicy。"""
+"""Kubernetes 清单安全扫描器。RBAC + pod security + NetworkPolicy。
 
+同时提供集群二进制风险的数据模型（ContainerInfo/BinaryRisk/ClusterScanResult）
+与报告、保存、风险汇总接口，供上层审计流程消费。
+"""
+
+import json
 import logging
+import os
 import re
 from collections import defaultdict
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
 import yaml
 
 _log = logging.getLogger(__name__)
 
-# 旧代码导入兼容
-RiskLevel = None
-ScanScope = None
-BinaryRisk = None
-ClusterScanResult = None
+
+class ScanScope(Enum):
+    """扫描范围。"""
+    ALL = 'all'
+    SPECIFIC = 'specific'
+    LABEL = 'label'
+    IMAGE = 'image'
+
+
+class RiskLevel(Enum):
+    """风险等级。"""
+    CRITICAL = 'critical'
+    HIGH = 'high'
+    MEDIUM = 'medium'
+    LOW = 'low'
+
+
+@dataclass
+class ContainerInfo:
+    """容器信息。"""
+    name: str
+    image: str
+    namespace: str = ''
+    pod_name: str = ''
+    container_id: str = ''
+    status: str = ''
+    ports: List[int] = field(default_factory=list)
+    env_vars: Dict[str, str] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'name': self.name,
+            'image': self.image,
+            'namespace': self.namespace,
+            'pod_name': self.pod_name,
+            'container_id': self.container_id,
+            'status': self.status,
+            'ports': list(self.ports),
+            'env_vars': dict(self.env_vars),
+        }
+
+
+@dataclass
+class BinaryRisk:
+    """单二进制风险。"""
+    binary_name: str
+    binary_path: str
+    risk_level: RiskLevel
+    vulnerability_type: str
+    description: str
+    cve_id: Optional[str] = None
+    remediation: str = ''
+    container_name: str = ''
+    pod_name: str = ''
+    namespace: str = ''
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'binary_name': self.binary_name,
+            'binary_path': self.binary_path,
+            'risk_level': self.risk_level.value,
+            'vulnerability_type': self.vulnerability_type,
+            'description': self.description,
+            'cve_id': self.cve_id,
+            'remediation': self.remediation,
+            'container_name': self.container_name,
+            'pod_name': self.pod_name,
+            'namespace': self.namespace,
+        }
+
+
+@dataclass
+class ClusterScanResult:
+    """集群扫描结果。"""
+    cluster_name: str
+    scan_scope: ScanScope
+    namespaces: List[str] = field(default_factory=list)
+    containers: List[ContainerInfo] = field(default_factory=list)
+    binary_risks: List[BinaryRisk] = field(default_factory=list)
+    risk_summary: Dict[str, int] = field(default_factory=dict)
+    scan_duration: float = 0.0
+    errors: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'cluster_name': self.cluster_name,
+            'scan_scope': self.scan_scope.value,
+            'namespaces': list(self.namespaces),
+            'containers': [c.to_dict() for c in self.containers],
+            'binary_risks': [r.to_dict() for r in self.binary_risks],
+            'risk_summary': dict(self.risk_summary),
+            'scan_duration': self.scan_duration,
+            'errors': list(self.errors),
+        }
 
 # capability 黑名单
 # 任一在受侵Pod中即大幅扩大攻击面——"容器逃逸入门包"
@@ -56,19 +153,6 @@ class ContainerImage:
         self.pull_policy = pull_policy
 
 
-class ContainerInfo:
-    def __init__(self, name: str = ""):
-        self.name = name
-        self.images: List[ContainerImage] = []
-        self.privileged = False
-        self.allow_priv_esc = False
-        self.read_only_root = False
-        self.run_as_non_root = False
-        self.capabilities: List[str] = []
-        self.resources: Dict[str, Dict[str, str]] = {}
-        self.host_ports: List[int] = []
-
-
 class K8sClusterScanner:
     """K8s YAML manifest 扫描 —— pod安全 + RBAC + NetworkPolicy缺口。
 
@@ -77,9 +161,14 @@ class K8sClusterScanner:
     比单遍多一次迭代但避免了复杂的跨文档依赖追踪。
     """
 
-    def __init__(self, strict: bool = False):
+    def __init__(self, strict: bool = False, output_dir=None, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self._strict = strict
         self._findings: List[Finding] = []
+        self.output_dir = output_dir
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
 
     def scan(self, cluster_spec: Any) -> List[Finding]:
         """接受文件路径(str)、预解析dict或dict列表"""
@@ -303,6 +392,49 @@ class K8sClusterScanner:
 
     def _add(self, severity: str, title: str, resource: str, detail: str = "") -> None:
         self._findings.append(Finding(severity, title, resource, detail))
+
+    def _calculate_risk_summary(self, risks: List[BinaryRisk]) -> Dict[str, int]:
+        """按风险等级统计二进制风险数量。"""
+        summary = {'high': 0, 'medium': 0, 'low': 0, 'critical': 0}
+        for r in risks:
+            key = r.risk_level.value
+            summary[key] = summary.get(key, 0) + 1
+        return summary
+
+    def generate_report(self, result: ClusterScanResult) -> str:
+        """生成人类可读的扫描报告。"""
+        lines = [
+            f"Kubernetes Cluster Scan Report",
+            f"================================",
+            f"Cluster: {result.cluster_name}",
+            f"Scope: {result.scan_scope.value}",
+            f"Namespaces: {', '.join(result.namespaces)}",
+            f"Scan Duration: {result.scan_duration:.1f}s",
+            f"",
+            f"Binary Risks:",
+        ]
+        if not result.binary_risks:
+            lines.append("  (none)")
+        for risk in result.binary_risks:
+            lines.append(f"  [{risk.risk_level.value.upper()}] {risk.binary_name}")
+            lines.append(f"      path: {risk.binary_path}")
+            lines.append(f"      type: {risk.vulnerability_type}")
+            lines.append(f"      description: {risk.description}")
+            if risk.cve_id:
+                lines.append(f"      cve: {risk.cve_id}")
+            if risk.remediation:
+                lines.append(f"      remediation: {risk.remediation}")
+            lines.append(f"      container: {risk.container_name} ({risk.namespace}/{risk.pod_name})")
+        return "\n".join(lines)
+
+    def save_result(self, result: ClusterScanResult, name: str) -> str:
+        """将扫描结果写入 JSON 文件，返回文件路径。"""
+        out_dir = self.output_dir if getattr(self, 'output_dir', None) else '.'
+        os.makedirs(out_dir, exist_ok=True)
+        path = os.path.join(out_dir, f"{name}.json")
+        with open(path, 'w', encoding='utf-8') as fh:
+            json.dump(result.to_dict(), fh, ensure_ascii=False, indent=2)
+        return path
 
     # 遗留别名 —— 旧代码调用 scan_cluster()
     scan_cluster = scan

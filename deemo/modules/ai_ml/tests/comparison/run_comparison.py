@@ -137,10 +137,10 @@ def main():
         # 无编译产物时——生成示例数据结构
         print("无编译产物，生成示例对比数据结构")
         results = [
-            ToolResult('OurMethod', 'CVE-2014-0160', 'O0', True, 1, 0, 45, 0, True),
-            ToolResult('Angr', 'CVE-2014-0160', 'O0', True, 8, 6, 3200, 0, True),
-            ToolResult('QEMU', 'CVE-2014-0160', 'O0', True, 5, 0, 180, 0, True),
-            ToolResult('Ghidra', 'CVE-2014-0160', 'O0', True, 4, 4, 850, 0, True),
+            ToolResult,
+            ToolResult,
+            ToolResult,
+            ToolResult,
         ]
     else:
         results = []

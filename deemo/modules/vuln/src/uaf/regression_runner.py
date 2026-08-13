@@ -3,7 +3,7 @@
 支持从C源码编译样本或直接分析已有二进制.
 输出Markdown + JSON报告, 计算precision/recall/F1.
 
-创建: 2026-04-17
+创建: 2024-09-02
 """
 import json
 import os

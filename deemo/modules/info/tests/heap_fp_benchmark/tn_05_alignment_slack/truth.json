@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_05_alignment_slack",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: glibc 对齐松弛",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "glibc 对 malloc(28) 实际提供 32 字节可用空间, C2 对齐感知判定安全"
-}

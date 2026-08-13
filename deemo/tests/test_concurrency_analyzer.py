@@ -20,17 +20,17 @@ class TestThreadOperation(unittest.TestCase):
         pass
 
     def test_thread_operation_creation(self):
-        op = ThreadOperation(thread_id=1, operation="mutex_lock", address=0x400000)
-        self.assertEqual(op.thread_id, 1)
-        self.assertEqual(op.operation, "mutex_lock")
-        self.assertEqual(op.address, 0x400000)
-        self.assertIsNone(op.lock_type)
+        op = ThreadOperation(tid=1, op="mutex_lock", addr=0x400000)
+        self.assertEqual(op.tid, 1)
+        self.assertEqual(op.op, "mutex_lock")
+        self.assertEqual(op.addr, 0x400000)
+        self.assertIsNone(op.lock)
 
     def test_thread_operation_with_lock_type(self):
         """带锁类型的操作 —— pthread_mutex/spinlock/rwlock"""
-        op = ThreadOperation(thread_id=2, operation="mutex_lock",
-                             address=0x500000, lock_type="pthread_mutex")
-        self.assertEqual(op.lock_type, "pthread_mutex")
+        op = ThreadOperation(tid=2, op="mutex_lock",
+                             addr=0x500000, lock="pthread_mutex")
+        self.assertEqual(op.lock, "pthread_mutex")
 
 
 class TestDataRace(unittest.TestCase):
@@ -41,18 +41,18 @@ class TestDataRace(unittest.TestCase):
 
     def test_data_race_creation(self):
         # 设计改进候选——可读性提升目标
-        op1 = ThreadOperation(thread_id=0, operation="write", address=0x1000)
-        op2 = ThreadOperation(thread_id=1, operation="write", address=0x1000)
+        op1 = ThreadOperation(tid=0, op="write", addr=0x1000)
+        op2 = ThreadOperation(tid=1, op="write", addr=0x1000)
         race = DataRace(
-            var_address=0x1000,
-            thread_a_ops=[op1],
-            thread_b_ops=[op2],
-            severity="high"
+            addr=0x1000,
+            ops_a=[op1],
+            ops_b=[op2],
+            sev="high"
         )
-        self.assertEqual(race.var_address, 0x1000)
-        self.assertEqual(len(race.thread_a_ops), 1)
-        self.assertEqual(len(race.thread_b_ops), 1)
-        self.assertEqual(race.severity, "high")
+        self.assertEqual(race.addr, 0x1000)
+        self.assertEqual(len(race.ops_a), 1)
+        self.assertEqual(len(race.ops_b), 1)
+        self.assertEqual(race.sev, "high")
 
 
 class TestAtomicityViolation(unittest.TestCase):
@@ -63,13 +63,13 @@ class TestAtomicityViolation(unittest.TestCase):
 
     def test_atomicity_violation_creation(self):
         violation = AtomicityViolation(
-            function_a="func1",
-            function_b="func2",
-            missing_lock="mutex1",
+            fna="func1",
+            fnb="func2",
+            miss_lock="mutex1",
             scenario="concurrent_access"
         )
-        self.assertEqual(violation.function_a, "func1")
-        self.assertEqual(violation.missing_lock, "mutex1")
+        self.assertEqual(violation.fna, "func1")
+        self.assertEqual(violation.miss_lock, "mutex1")
 
 
 class TestAnalysisResult(unittest.TestCase):
@@ -78,20 +78,20 @@ class TestAnalysisResult(unittest.TestCase):
         pass
 
     def test_analysis_result_success(self):
-                result = AnalysisResult(success=True, data_races=[], atomicity_violations=[])
-        self.assertTrue(result.success)
-        self.assertEqual(len(result.data_races), 0)
-        self.assertEqual(len(result.atomicity_violations), 0)
+        result = AnalysisResult(ok=True, races=[], viols=[])
+        self.assertTrue(result.ok)
+        self.assertEqual(len(result.races), 0)
+        self.assertEqual(len(result.viols), 0)
 
     def test_analysis_result_with_warnings(self):
         result = AnalysisResult(
-            success=False,
-            data_races=[],
-            atomicity_violations=[],
-            warnings=["No threads detected"]
+            ok=False,
+            races=[],
+            viols=[],
+            warns=["No threads detected"]
         )
-        self.assertFalse(result.success)
-        self.assertIn("No threads detected", result.warnings)
+        self.assertFalse(result.ok)
+        self.assertIn("No threads detected", result.warns)
 
 
 class TestRaceDetector(unittest.TestCase):
@@ -100,8 +100,8 @@ class TestRaceDetector(unittest.TestCase):
     def test_detect_no_races(self):
         """都有锁保护，不应该报race"""
         ops = [
-            ThreadOperation(thread_id=0, operation="read", address=0x1000, lock_type="mutex"),
-            ThreadOperation(thread_id=1, operation="read", address=0x1000, lock_type="mutex"),
+            ThreadOperation(tid=0, op="read", addr=0x1000, lock="mutex"),
+            ThreadOperation(tid=1, op="read", addr=0x1000, lock="mutex"),
         ]
         races = RaceDetector.detect(ops)
         self.assertEqual(len(races), 0)
@@ -109,13 +109,13 @@ class TestRaceDetector(unittest.TestCase):
     def test_detect_data_race(self):
         """两个线程无锁写同一地址 —— 经典data race"""
         ops = [
-            ThreadOperation(thread_id=0, operation="write", address=0x2000),
-            ThreadOperation(thread_id=1, operation="write", address=0x2000),
+            ThreadOperation(tid=0, op="write", addr=0x2000),
+            ThreadOperation(tid=1, op="write", addr=0x2000),
         ]
         races = RaceDetector.detect(ops)
         self.assertGreaterEqual(len(races), 1)
-        self.assertEqual(races[0].var_address, 0x2000)
-        self.assertEqual(races[0].severity, "high")
+        self.assertEqual(races[0].addr, 0x2000)
+        self.assertEqual(races[0].sev, "high")
 
 
 class TestConcurrencyAnalyzer(unittest.TestCase):
@@ -124,7 +124,7 @@ class TestConcurrencyAnalyzer(unittest.TestCase):
     def test_init(self):
         analyzer = ConcurrencyAnalyzer("/tmp/test.bin")
         self.assertIsInstance(analyzer, ConcurrencyAnalyzer)
-        self.assertTrue(analyzer.binary_path.endswith("test.bin"))
+        self.assertTrue(analyzer._path.endswith("test.bin"))
 
     def test_create_concurrency_analyzer(self):
         analyzer = create_concurrency_analyzer("/tmp/test.bin")

@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
-/* ¸ºÑù±¾¡ª¡ªmemcpy´óÐ¡<=malloc´óÐ¡(¾­¹ý¶ÔÆëºó)¡ª¡ª¼ì²âÆ÷²»Ó¦±¨¸æ */
+/* è´Ÿæ ·æœ¬â€”â€”memcpyå¤§å°<=mallocå¤§å°(ç»è¿‡å¯¹é½åŽ)â€”â€”æ£€æµ‹å™¨ä¸åº”æŠ¥å‘Š */
 void safe_copy_test(const char *data) {
     char *buf = malloc(64);
     if (!buf) return;

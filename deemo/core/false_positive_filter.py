@@ -9,6 +9,73 @@
 from typing import List, Dict, Any, Optional
 from core.interval_analysis import BufferSizeAnalyzer
 
+
+class FalsePositiveFilter:
+    """误报过滤器：对漏洞候选执行可选的区间分析过滤。
+
+    封装 filter_stack_findings / filter_all，提供带状态的过滤入口，
+    便于在检测管线中复用同一个分析器实例。
+    """
+
+    def __init__(self):
+        self._analyzer = BufferSizeAnalyzer()
+
+    def filter(self, findings, decompiled_code, cfg=None):
+        return filter_all(findings, decompiled_code, cfg)
+
+    def setup(self, ir, scp, taint, interval):
+        """注入分析器上下文 — 常量传播 / 污点 / 区间分析结果。
+
+        ir 为逐行 IR; scp/taint/interval 为对应分析器实例。
+        """
+        self._ir = list(ir or [])
+        self._const = scp
+        self._taint = taint
+        self._interval = interval
+
+    def filter_findings(self, findings):
+        """对候选执行过滤, 返回过滤结果对象列表。"""
+        results = []
+        for finding in findings:
+            decision = FilterDecision(finding, filtered_out=False)
+            if self._filter_one(finding):
+                decision.filtered_out = True
+                decision.filter_reason = 'interval-safe'
+                decision.filter_layer = 'interval_analysis'
+            results.append(decision)
+        return results
+
+    def _filter_one(self, finding):
+        """区间分析判定写入量不越界则过滤。"""
+        interval = getattr(self, '_interval', None)
+        if interval is None:
+            return False
+        buffers = getattr(interval, '_buffers', {})
+        if not buffers:
+            return False
+        desc = finding.get('description', '') or ''
+        import re
+        buf_match = re.search(r'(\w+).*?(\d+)\s*bytes', desc)
+        if not buf_match:
+            return False
+        buf_name, write_sz = buf_match.group(1), int(buf_match.group(2))
+        size = buffers.get(buf_name)
+        if size is None:
+            return False
+        return write_sz <= size
+
+
+class FilterDecision:
+    """单条候选的过滤判定结果。"""
+
+    def __init__(self, finding, filtered_out=False,
+                 filter_reason='', filter_layer=''):
+        self.finding = finding
+        self.filtered_out = filtered_out
+        self.filter_reason = filter_reason
+        self.filter_layer = filter_layer
+
+
 def filter_stack_findings(findings, decompiled_code):
     """对栈溢出检测结果做区间分析过滤"""
     import re

@@ -6,7 +6,7 @@ int main(void) {
     if (!p) return 1;
     strcpy(p, "data");
     free(p);
-    p[0] = 'X';                    /* UAF: Ð´ÒÑÊÍ·ÅÄÚ´æ */
+    p[0] = 'X';                    /* UAF: å†™å·²é‡Šæ”¾å†…å­˜ */
     printf("[*] %c\n", p[0]);
     return 0;
 }

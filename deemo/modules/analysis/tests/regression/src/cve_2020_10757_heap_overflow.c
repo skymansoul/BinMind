@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2020_10757 ¶ÑÒç³öÄ£Äâ: malloc(128) + memcpy(1024)
-// ¡ú 896 ×Ö½ÚÒç³ö
+// cve_2020_10757 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(128) + memcpy(1024)
+// â†’ 896 å­—èŠ‚æº¢å‡º
 void kernel_mremap_overflow() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
@@ -52,7 +52,7 @@ void kernel_mremap_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(1088) + memcpy(1088/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(1088) + memcpy(1088/2) â†’ ä¸æº¢å‡º
 void kernel_mremap_safe() {
     char *buf = (char *)malloc(1088);
     if (!buf) return;

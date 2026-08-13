@@ -32,7 +32,7 @@ class TestDigitalTwinRiskAnalyzer:
     def test_analyze_with_fuzzing(self):
         """测试启用模糊测试的风险评估"""
         result = self.analyzer.analyze(
-            firmware_path=self.m_fw.name,
+            firmware_path=self.test_firmware.name,
             architecture="arm",
             platform="linux",
             scan_duration=60,
@@ -45,9 +45,8 @@ class TestDigitalTwinRiskAnalyzer:
 
         result_data = result["result"]
         assert "firmware_info" in result_data
-        assert result_data["firmware_info"].name == os.path.basename(self.m_fw.name)
+        assert result_data["firmware_info"].name == os.path.basename(self.test_firmware.name)
 
-lass字段完整性$/d
         assert "total_vulnerabilities" in result_data
         assert result_data["total_vulnerabilities"] > 0
 
@@ -60,7 +59,7 @@ lass字段完整性$/d
     def test_analyze_without_fuzzing(self):
         """测试禁用模糊测试的风险评估"""
         result = self.analyzer.analyze(
-            firmware_path=self.m_fw.name,
+            firmware_path=self.test_firmware.name,
             architecture="arm64",
             platform="embedded",
             scan_duration=30,
@@ -91,7 +90,7 @@ lass字段完整性$/d
     def test_analyze_penetration_only(self):
         """测试仅启用渗透测试"""
         result = self.analyzer.analyze(
-            firmware_path=self.m_fw.name,
+            firmware_path=self.test_firmware.name,
             architecture="mips",
             platform="linux",
             enable_fuzzing=False,

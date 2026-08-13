@@ -73,7 +73,8 @@ def scan_directory(bin_dir: str, timeout_sec: int = 120) -> List[ScanResult]:
     for fname in sorted(os.listdir(bin_dir)):
         fpath = os.path.join(bin_dir, fname)
         if os.path.isfile(fpath) and (
-            fname.endswith('.elf') or _is_elf(fpath)
+            fname.endswith('.elf') or fname.endswith('.exe')
+            or _is_elf(fpath) or _is_pe(fpath)
         ):
             result = scan_single(fpath, timeout_sec)
             results.append(result)
@@ -94,6 +95,14 @@ def _is_elf(filepath: str) -> bool:
     try:
         with open(filepath, 'rb') as f:
             return f.read(4) == b'\x7fELF'
+    except Exception:
+        return False
+
+
+def _is_pe(filepath: str) -> bool:
+    try:
+        with open(filepath, 'rb') as f:
+            return f.read(4) == b'MZ\x90\x00'
     except Exception:
         return False
 

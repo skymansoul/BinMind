@@ -133,40 +133,38 @@ class TestReproducerGenerator(unittest.TestCase):
         self.assertIn('8443:8443', ports)
 
     def test_generate_readme(self):
-        """
-        测试README.md生成
-        """
+        """测试README.md生成"""
         config = ReproConfig(binary_path=self.test_binary_path)
         generator = ReproducerGenerator(config)
         readme = generator.generate_readme()
         self.assertIn('# ' + os.path.basename(self.test_binary_path), readme)
-lass字段完整性$/d
         self.assertIn('docker-compose build', readme)
         self.assertIn('docker-compose up -d', readme)
 
     def test_generate_all_files(self):
-        """
-        测试生成所有文件
-        """
+        """测试生成所有文件"""
         with tempfile.TemporaryDirectory() as tmpdir:
             config = ReproConfig(binary_path=self.test_binary_path)
             generator = ReproducerGenerator(config)
             files = generator.generate_all(tmpdir)
-            
+
             self.assertEqual(len(files), 3)
             file_names = [f.file_name for f in files]
-lass字段完整性$/d
             self.assertIn('Dockerfile', file_names)
             self.assertIn('docker-compose.yml', file_names)
             self.assertIn('README.md', file_names)
-            
+
             for f in files:
                 self.assertTrue(os.path.exists(f.file_path))
 
     def test_validate_dockerfile_simple(self):
-        """
-        测试Dockerfile简单验证
-        """
+        """测试Dockerfile简单验证"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = ReproConfig(binary_path=self.test_binary_path)
+            generator = ReproducerGenerator(config)
+            generator.generate_all(tmpdir)
+            result = generator._validate_dockerfile_simple()
+            self.assertTrue(result)
         with tempfile.TemporaryDirectory() as tmpdir:
             config = ReproConfig(binary_path=self.test_binary_path)
             generator = ReproducerGenerator(config)
@@ -210,9 +208,7 @@ lass字段完整性$/d
             self.assertTrue(any('docker exec' in cmd for cmd in commands))
 
     def test_with_exploit_script(self):
-        """
-        测试带利用脚本的环境生成
-        """
+        """测试带利用脚本的环境生成"""
         with tempfile.TemporaryDirectory() as tmpdir:
             config = ReproConfig(
                 binary_path=self.test_binary_path,

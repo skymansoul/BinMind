@@ -95,5 +95,57 @@ def generate_all(report_path: str = "eval/benchmark_report.json"):
     plot_metrics(all_m)
 
 
+def plot_grouped_comparison(csv_path: str, out_dir: str = "eval_output"):
+    """加壳/未加壳分组的检出率/误报率对比柱状图.
+
+    数据源: fp_benchmark_results.csv (工具 × 样本 × 分组).
+    分组: plain (未加壳/-O0) 与 packed (加壳代理/-O2 release).
+    计算逻辑复用 eval.plot_fp_comparison, 仅绘图入口不同.
+    """
+    from eval.plot_fp_comparison import load_results, metrics_for
+
+    results = load_results(Path(csv_path))
+    tools = ["our_method", "our_base", "naive", "regex", "angr"]
+    groups = ["plain", "packed"]
+    by_tool_group = {
+        t: {g: metrics_for(results, t, g) for g in groups} for t in tools
+    }
+
+    if not _MPL:
+        print("matplotlib 不可用, 仅输出 ASCII 汇总")
+    else:
+        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+        for gi, g in enumerate(groups):
+            recalls = [by_tool_group[t][g]['recall'] for t in tools]
+            fprs = [by_tool_group[t][g]['fpr'] for t in tools]
+            ax = axes[0][gi]
+            x = np.arange(len(tools)); w = 0.35
+            ax.bar(x - w / 2, recalls, w, label='Recall', color='#2ecc71')
+            ax.bar(x + w / 2, fprs, w, label='FPR', color='#e74c3c')
+            ax.set_xticks(x)
+            ax.set_xticklabels(tools, rotation=15)
+            ax.set_ylim(0, 1.15)
+            ax.legend(); ax.grid(axis='y', alpha=0.3)
+            ax.set_title(f'{g} — Recall / FPR')
+        plt.suptitle('Heap Overflow Detection: FP-Reduction '
+                     'Multi-Tool Comparison (grouped)', fontsize=13)
+        plt.tight_layout(rect=(0, 0, 1, 0.96))
+        out = Path(out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        png = out / 'comparison_grouped.png'
+        plt.savefig(png, dpi=150, bbox_inches='tight')
+        print(f'图表: {png}')
+
+    print("\n分组指标 (Recall / FPR):")
+    for g in groups:
+        print(f"  [{g}] " + "  ".join(
+            f"{t}={by_tool_group[t][g]['recall']:.0%}/{by_tool_group[t][g]['fpr']:.0%}"
+            for t in tools))
+
+
 if __name__ == '__main__':
-    generate_all()
+    csv_path = _PROJ_ROOT / "eval_output" / "fp_benchmark_results.csv"
+    if csv_path.exists():
+        plot_grouped_comparison(str(csv_path))
+    else:
+        generate_all()

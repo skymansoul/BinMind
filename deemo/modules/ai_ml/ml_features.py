@@ -829,7 +829,7 @@ class CVEPatternLearner:
     """
 
     __slots__ = ('m_cve_db', 'm_patterns', 'm_rules', 'm_feature_vectors',
-                 'm_cvss_profile')  # 2026-07-29: 新增 CVSS 档案缓存
+                 'm_cvss_profile')  # 2025-03-28: 新增 CVSS 档案缓存
 
     # 2026-07-29: CVSS 严重性等级映射 — 参考 NVD CVSS v3.1 规范
     CVSS_SEVERITY_MAP = {
@@ -856,7 +856,7 @@ class CVEPatternLearner:
         self.m_patterns: Dict[str, List[Dict[str, Any]]] = _defaultdict(list)
         self.m_rules: List[str] = []
         self.m_feature_vectors: Dict[str, List[List[float]]] = _defaultdict(list)
-        self.m_cvss_profile: Dict[str, Dict[str, Any]] = {}  # 2026-07-29
+        self.m_cvss_profile: Dict[str, Dict[str, Any]] = {}  # 2025-03-28
 
     def load_cve_data(self, cve_entries: List[Dict[str, Any]]):
         """Load CVE entries for training."""
@@ -1052,7 +1052,7 @@ class CVEPatternLearner:
 class AIStackVariableAnalyzer:
     """Infers variable purpose and annotates pseudocode using pattern recognition."""
 
-    __slots__ = ('m_var_types', 'm_annotations', 'm_lifetime_graph')  # 2026-07-29
+    __slots__ = ('m_var_types', 'm_annotations', 'm_lifetime_graph')  # 2025-03-28
 
     # Variable purpose patterns
     TYPE_PATTERNS = [
@@ -1088,7 +1088,7 @@ class AIStackVariableAnalyzer:
     def __init__(self):
         self.m_var_types: Dict[str, str] = {}
         self.m_annotations: List[Dict[str, Any]] = []
-        self.m_lifetime_graph: Dict[str, List[Tuple[str, int]]] = _defaultdict(list)  # 2026-07-29
+        self.m_lifetime_graph: Dict[str, List[Tuple[str, int]]] = _defaultdict(list)  # 2025-03-28
 
     def infer_variable_purpose(self, var_name: str,
                                usage_context: str = "") -> Tuple[str, float]:

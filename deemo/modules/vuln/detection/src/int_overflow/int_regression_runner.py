@@ -1,6 +1,6 @@
 """整数溢出回归测试运行器 — 编译→区间分析→溢出检测→收集结果.
 
-创建: 2026-05-17
+创建: 2024-10-11
 用途: 对 int_samples/ 中每个样本: 编译 → objdump → IntervalPropagationEngine → 判定.
       核心检测引擎: interval_domain.py + int_interval_engine.py.
 

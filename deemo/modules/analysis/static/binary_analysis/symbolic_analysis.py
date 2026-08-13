@@ -9,6 +9,9 @@ from typing import Any, Callable, Optional
 
 _log = logging.getLogger(__name__)
 
+# SymbExBridge — 与 SymbolicAnalysisBridge 同一实现的短别名
+SymbExBridge = None  # 在下方类定义后绑定
+
 # //// 能力检测缓存
 # INTJ策略: 使用模块级缓存而非懒加载属性——符号引擎的选择影响全局分析路径
 # 缓存可以避免多次 importlib 检查带来的 /O 开销
@@ -123,6 +126,10 @@ class SymbolicAnalysisBridge:
             "concolic": self._z3_available,
             "symbolic_full": self._angr_available,
         }
+
+
+# 短别名绑定：供以 SymbExBridge 命名的调用方使用
+SymbExBridge = SymbolicAnalysisBridge
 
 
 # 模块级单例

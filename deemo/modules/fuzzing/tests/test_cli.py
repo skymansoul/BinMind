@@ -33,11 +33,9 @@ class TestCliArgumentParsing:
 
     def test_fault_inject_valid_args(self):
         """fault-inject 接收合法参数 (不实际执行)."""
-        # 因为实际执行需要文件, 我们用 --help 验证参数注册
-        result = main(["fault-inject", "--help"])
-        # argparse 的 --help 会触发 SystemExit(0)
-        # 注意: 这个测试预期 SystemExit, 但我们无法在 subprocess 中验证
-        # 所以改为验证 argparse 不崩溃
+        # 因为实际执行需要文件, 用 --help 验证参数注册; argparse 会触发 SystemExit(0)
+        with pytest.raises(SystemExit):
+            main(["fault-inject", "--help"])
 
     def test_coverage_requires_file(self):
         """coverage 要求 --coverage-file."""
@@ -56,8 +54,8 @@ class TestCliArgumentParsing:
 
     def test_evolve_accepts_optional_args(self):
         """evolve 所有参数都是可选的."""
-        result = main(["evolve", "--help"])
-        # 同上, --help 触发 SystemExit
+        with pytest.raises(SystemExit):
+            main(["evolve", "--help"])
 
     def test_unknown_subcommand_exits_with_error(self):
         """未知子命令返回非零退出码."""

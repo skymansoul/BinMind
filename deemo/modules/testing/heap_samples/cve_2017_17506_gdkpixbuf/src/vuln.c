@@ -1,9 +1,9 @@
-/* CVE-2017-17506 ¡ª gdk-pixbuf: header length vs line buffer */
+/* CVE-2017-17506 â€” gdk-pixbuf: header length vs line buffer */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 static void *parse_image(const unsigned char *hdr, size_t hdr_len) {
-    /* ĞĞ»º³å°´¹Ì¶¨¿í¶È·ÖÅä, ¸´ÖÆ³¤¶ÈÀ´×ÔÍ·²¿ */
+    /* è¡Œç¼“å†²æŒ‰å›ºå®šå®½åº¦åˆ†é…, å¤åˆ¶é•¿åº¦æ¥è‡ªå¤´éƒ¨ */
     void *line = malloc(0x100);
     if (!line) return NULL;
     memcpy(line, hdr, hdr_len);         /* BUG: hdr_len up to 0xffff */

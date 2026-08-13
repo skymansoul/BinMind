@@ -499,7 +499,8 @@ class ForensicPathRecorder(BaseAnalyzer):
         for snapshot in crash_snapshots:
             evidence_item = {
                 "timestamp": snapshot.timestamp.isoformat(),
-                "architecture": snapshot.architecture.value,
+                "architecture": snapshot.architecture.value
+                    if hasattr(snapshot.architecture, "value") else snapshot.architecture,
                 "binary": {
                     "path": snapshot.binary_path,
                     "hash": snapshot.binary_hash
@@ -665,7 +666,7 @@ class ForensicPathRecorder(BaseAnalyzer):
             name="ForensicPathRecorder",
             type=AnalyzerType.UTILITY,
             version="1.0.0",
-            description="Vulnerability discovery forensic recorder - captures complete discovery process as replayable records for CVE submission",
+            description="取证级记录器 - 捕获完整漏洞发现过程，生成可复现、防篡改的取证记录用于 CVE 提交",
             author="BinaryAnalysisPlatform",
             dependencies=[],
             supported_platforms=["x86", "x86_64", "arm", "arm64", "mips"]

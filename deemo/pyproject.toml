@@ -1,0 +1,70 @@
+[tool.pytest]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-v", "--tb=short"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
+]
+xfail_strict = true
+
+markers = [
+    "unit: 标记单元测试",
+    "integration: 标记集成测试",
+    "slow: 标记慢测试",
+    "security: 标记安全相关测试",
+]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "binmind"
+version = "1.4.0"
+description = "LLM-assisted binary vulnerability analysis (ELF/PE/Mach-O)"
+authors = [{name = "BinMind Team", email = "binmind@example.com"}]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["binary-analysis", "vulnerability-detection", "LLM", "decompiler", "security", "exploit"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "openai>=1.0.0",
+    "requests>=2.31.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+]
+full = [
+    "angr>=9.0.0",
+    "pwntools>=4.0.0",
+    "pefile>=2023.2.7",
+    "frida>=16.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.scripts]
+binmind = "main:main"
+
+[project.urls]
+"Bug Reports" = "https://github.com/binmind/binmind/issues"
+Source = "https://github.com/binmind/binmind"

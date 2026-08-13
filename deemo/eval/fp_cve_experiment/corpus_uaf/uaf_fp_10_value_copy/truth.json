@@ -1,6 +1,0 @@
-{
-  "id": "uaf_fp_10_value_copy",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "按值复制后使用副本, 原指针释放"
-}

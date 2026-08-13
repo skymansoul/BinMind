@@ -11,6 +11,8 @@ _CORE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 _MODULES_DIR = os.path.dirname(os.path.dirname(_CORE_DIR))
 sys.path.insert(0, _CORE_DIR)
 sys.path.insert(0, _MODULES_DIR)
+# 同目录 regression 包（tests.regression.collect_results）通过该路径解析
+sys.path.insert(0, os.path.join(_CORE_DIR, 'tests'))
 
 print('=' * 60)
 print(' End-to-End Pipeline Integration Test')

@@ -269,3 +269,163 @@ def demonstrate_vtable_hijack() -> Dict:
             '(3) 虚函数调用目标在任何已知 vtable 之外'),
         'mitigation': 'CFI (Control Flow Integrity), Clang CFI, MS Control Flow Guard',
     }
+
+
+import re as _re
+from typing import Any as _Any, Dict as _Dict, List as _List, Optional as _Optional
+
+_SUSPICIOUS_TYPES = {'void*', 'char*', 'unsigned char*', '__int8*'}
+_HIGH_RISK_TYPES = {'void*', 'char*', 'unsigned char*'}
+
+
+class TypeConfusionAnalyzer:
+    """类型混淆分析器 —— 强转审计与虚表劫持风险评估。
+
+    对反编译伪代码中的 static_cast / reinterpret_cast / C 风格强转
+    进行识别，结合 void* 等可疑目标类型判定风险等级。
+    """
+
+    def __init__(self, binary_path: _Optional[str] = None):
+        self.binary_path = binary_path
+        self.suspicious_casts: _List[_Dict[str, _Any]] = []
+        self.vtable_hijack_risk: _List[_Dict[str, _Any]] = []
+        self.type_info: _Dict[str, _Any] = {}
+
+    def _is_suspicious_conversion(self, from_type: str, var_name: str) -> bool:
+        """判定目标类型是否为可疑的指针强转。"""
+        return from_type.strip() in _SUSPICIOUS_TYPES
+
+    def _is_high_risk(self, from_type: str) -> bool:
+        """判定目标类型是否属于高危指针类型。"""
+        return from_type.strip() in _HIGH_RISK_TYPES
+
+    def _find_suspicious_casts(self, func_name: str,
+                               pseudocode: str) -> _List[_Dict[str, _Any]]:
+        """扫描伪代码中的可疑类型转换。"""
+        casts: _List[_Dict[str, _Any]] = []
+        if not pseudocode:
+            return casts
+
+        static_pat = _re.compile(r'static_cast\s*<([^>]+)>\s*\(([^)]*)\)')
+        reinterpret_pat = _re.compile(r'reinterpret_cast\s*<([^>]+)>\s*\(([^)]*)\)')
+        c_style_pat = _re.compile(r'\(\s*(\w+\s*\*?)\s*\)\s*(\w+)')
+
+        for m in static_pat.finditer(pseudocode):
+            target = m.group(1).strip()
+            if self._is_suspicious_conversion(target, ''):
+                casts.append({
+                    'cast_type': 'static_cast',
+                    'target_type': target,
+                    'expression': m.group(2).strip(),
+                    'function': func_name,
+                    'risk': 'high' if self._is_high_risk(target) else 'low',
+                })
+
+        for m in reinterpret_pat.finditer(pseudocode):
+            target = m.group(1).strip()
+            casts.append({
+                'cast_type': 'reinterpret_cast',
+                'target_type': target,
+                'expression': m.group(2).strip(),
+                'function': func_name,
+                'risk': 'high' if self._is_high_risk(target) else 'medium',
+            })
+
+        for m in c_style_pat.finditer(pseudocode):
+            target = m.group(1).strip()
+            casts.append({
+                'cast_type': 'c_style_cast',
+                'target_type': target,
+                'expression': m.group(2),
+                'function': func_name,
+                'risk': 'high' if self._is_high_risk(target) else 'medium',
+            })
+
+        return casts
+
+    def _extract_types_from_pseudocode(self, pseudocode: str) -> _Dict[str, _Any]:
+        """提取伪代码中的类/结构体定义与对象方法调用。"""
+        types: _Dict[str, _Any] = {}
+        if not pseudocode:
+            return types
+
+        class_pat = _re.compile(r'class\s+(\w+)\s*\{(.*?)\}', _re.S)
+        struct_pat = _re.compile(r'struct\s+(\w+)\s*\{(.*?)\}', _re.S)
+
+        for m in class_pat.finditer(pseudocode):
+            name = m.group(1)
+            methods = _re.findall(r'(\w+)\s*\(', m.group(2))
+            types[name] = {'type': 'class', 'methods': methods}
+
+        for m in struct_pat.finditer(pseudocode):
+            name = m.group(1)
+            fields = _re.findall(r'([\w\s\*]+?)\s+(\w+)\s*;', m.group(2))
+            types[name] = {
+                'type': 'struct',
+                'fields': [{'type': ft.strip(), 'name': fname}
+                           for ft, fname in fields],
+            }
+
+        obj_pat = _re.compile(r'(\w+)\s*->\s*(\w+)\s*\(')
+        obj_methods: _Dict[str, _List[str]] = {}
+        for m in obj_pat.finditer(pseudocode):
+            obj_methods.setdefault(m.group(1), []).append(m.group(2))
+        for obj, methods in obj_methods.items():
+            types[obj] = {'type': 'object', 'methods': methods}
+
+        return types
+
+    def _calculate_risk_level(self) -> str:
+        """按可疑转换数量与虚表风险聚合风险等级。"""
+        if self.vtable_hijack_risk:
+            return 'high'
+
+        high_count = sum(1 for c in self.suspicious_casts
+                         if c.get('risk') == 'high')
+        total = len(self.suspicious_casts)
+        if high_count >= 2:
+            return 'high'
+        if high_count == 1 or total >= 3:
+            return 'medium'
+        if total >= 1:
+            return 'low'
+        return 'none'
+
+    def generate_exploit(self, vuln_info: _Dict[str, _Any]) -> str:
+        """生成类型混淆利用说明。"""
+        func = vuln_info.get('function', 'unknown')
+        target = vuln_info.get('target_type', 'unknown')
+        return (
+            f'Type Confusion exploit for {func}\n'
+            f'target type: {target}\n'
+            'attack: 诱导虚表劫持 (vtable hijack)\n'
+            'CWE-843: Type Confusion\n'
+        )
+
+    def analyze(self) -> _Dict[str, _Any]:
+        """执行分析并汇总结果。
+
+        未设置 binary_path 时保留调用方预置的检测结果，
+        仅在给定二进制路径时重新扫描。
+        """
+        if self.binary_path:
+            pseudocode = ''
+            try:
+                with open(self.binary_path, 'r', errors='replace') as f:
+                    pseudocode = f.read()
+            except OSError:
+                pseudocode = ''
+            self.suspicious_casts = self._find_suspicious_casts('', pseudocode)
+            self.type_info = self._extract_types_from_pseudocode(pseudocode)
+            self.vtable_hijack_risk = (
+                [{'risk': 'high'}]
+                if any('vtable' in k.lower() for k in self.type_info)
+                else []
+            )
+
+        return {
+            'suspicious_casts': self.suspicious_casts,
+            'vtable_hijack_risk': self.vtable_hijack_risk,
+            'type_info': self.type_info,
+            'risk_level': self._calculate_risk_level(),
+        }

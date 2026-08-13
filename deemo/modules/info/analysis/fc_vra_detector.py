@@ -17,7 +17,7 @@
 # 保持二进制级 (导入表) 检出能力不变。
 
 from __future__ import annotations
-from typing import Dict, List, Optional
+from typing import Dict, List
 import re
 
 from value_range_analyzer import ValueRange, extract_value_ranges
@@ -26,10 +26,13 @@ from flow_pair_generator import generate_correlated_pairs, CorrelatedPair
 from size_equivalence import sizes_equivalent, write_bounded_by_alloc
 from allocator_slack import verdict_with_slack, usable_range_for_alloc
 from guard_dominance import find_dominating_guards
-from taint_confirm import confirm_controllability, _seed_sources, _propagate
+from taint_confirm import confirm_controllability
 from heap_overflow_v2 import detect_heap_overflow_v2, _in_loop, _has_loop_accumulation
-from heap_layout_model import get_allocator_model
-from pointer_tracker import extract_heap_ptrs
+from fc_size_proof import (
+    size_is_constant, resolve_sizeof_var, write_ternary_capped_by_alloc,
+    read_source_is_local_array,
+)
+from fc_direct_writes import detect_direct_writes
 
 _WRITE_FUNC_RISK = {
     "memcpy": 0.55, "memmove": 0.55, "strncpy": 0.50, "strncat": 0.50,

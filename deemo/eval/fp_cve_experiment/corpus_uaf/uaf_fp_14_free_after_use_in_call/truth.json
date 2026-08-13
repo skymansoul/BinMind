@@ -1,6 +1,0 @@
-{
-  "id": "uaf_fp_14_free_after_use_in_call",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "调用序列: use 在 free 调用前 (参数求值序)"
-}

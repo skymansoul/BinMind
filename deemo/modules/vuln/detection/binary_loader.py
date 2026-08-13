@@ -10,7 +10,7 @@
 不依赖: pyelftools, pefile — 纯二进制头部解析
 
 修改记录:
-  创建 2026-08-09
+  创建 2025-04-17
 """
 import struct
 from typing import Optional, Tuple

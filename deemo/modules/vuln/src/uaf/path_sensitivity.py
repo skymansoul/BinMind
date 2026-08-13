@@ -7,7 +7,7 @@
 与heap_path_sensitivity.py的区别:
   那边做cmp+jcc约束区间交 (值域), 这边做CFG可达性 (控制流).
 
-创建: 2026-04-27
+创建: 2024-08-14
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

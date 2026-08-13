@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2020_0022 ¶ÑÒç³öÄ£Äâ: malloc(32) + memcpy(128)
-// ¡ú 96 ×Ö½ÚÒç³ö
+// cve_2020_0022 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(32) + memcpy(128)
+// â†’ 96 å­—èŠ‚æº¢å‡º
 void bluetooth_l2cap_overflow() {
     char *buf = (char *)malloc(32);
     if (!buf) return;
@@ -52,7 +52,7 @@ void bluetooth_l2cap_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(192) + memcpy(192/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(192) + memcpy(192/2) â†’ ä¸æº¢å‡º
 void bluetooth_l2cap_safe() {
     char *buf = (char *)malloc(192);
     if (!buf) return;

@@ -14,15 +14,72 @@ _log = logging.getLogger(__name__)
 _CGROUP_V2 = os.path.isfile("/sys/fs/cgroup/cgroup.controllers")
 
 class ResourceLimits:
-    def __init__(self): self.cpu = 0; self.memory = 0; self.time = 0.0; self.max_files = 0; self.max_procs = 0; self.net_rx = 0; self.net_tx = 0
+    def __init__(self, timeout=0, memory_limit=0, cpu_limit=0,
+                 max_files=0, max_procs=0, net_rx=0, net_tx=0):
+        self.timeout = timeout
+        self.memory_limit = memory_limit
+        self.cpu_limit = cpu_limit
+        self.max_files = max_files
+        self.max_procs = max_procs
+        self.net_rx = net_rx
+        self.net_tx = net_tx
+        # 兼容旧字段名
+        self.cpu = cpu_limit
+        self.memory = memory_limit
+        self.time = float(timeout) if timeout else 0.0
     def to_dict(self): return {k: v for k, v in self.__dict__.items() if v}
 
 class ExecutionResult:
-    __slots__ = ('exit_code', 'stdout', 'stderr', 'peak_memory', 'wall_time', 'timed_out')
-    def __init__(self, ec=0, out=b"", err=b"", pm=0, wt=0.0, to=False): self.exit_code = ec; self.stdout = out; self.stderr = err; self.peak_memory = pm; self.wall_time = wt; self.timed_out = to
+    __slots__ = ('success', 'output', 'error', 'execution_time', 'memory_peak',
+                 'exit_code', 'stdout', 'stderr', 'peak_memory', 'wall_time', 'timed_out')
+    def __init__(self, success=True, output=b"", error=None, execution_time=0.0,
+                 memory_peak=0, ec=0, out=None, err=None, pm=0, wt=0.0, to=False):
+        self.success = success
+        self.output = output
+        self.error = error
+        self.execution_time = execution_time
+        self.memory_peak = memory_peak
+        # 兼容旧字段
+        self.exit_code = ec
+        self.stdout = out if out is not None else output
+        self.stderr = err if err is not None else error
+        self.peak_memory = pm if pm else memory_peak
+        self.wall_time = wt if wt else execution_time
+        self.timed_out = to
 
 from enum import Enum as _E
-class SandboxType(_E): DOCKER = "docker"; PROCESS = "process"; CGROUP = "cgroup"; NONE = "none"
+class SandboxType(_E): DOCKER = "docker"; PROCESS = "process"; CGROUP = "cgroup"; NONE = "none"; SUBPROCESS = "subprocess"
+
+class IncrementalAnalysisCache:
+    """增量分析缓存：按内容哈希缓存分析结果。"""
+
+    def __init__(self, cache_dir=None, max_entries=256):
+        self.cache_dir = cache_dir
+        self._cache = {}
+        self._max_entries = max_entries
+
+    def _key(self, data):
+        import hashlib
+        if isinstance(data, str):
+            data = data.encode("utf-8", errors="replace")
+        return hashlib.sha256(data).hexdigest()
+
+    def get(self, data):
+        k = self._key(data)
+        return self._cache.get(k)
+
+    def put(self, data, result):
+        k = self._key(data)
+        if len(self._cache) >= self._max_entries:
+            self._cache.pop(next(iter(self._cache)), None)
+        self._cache[k] = result
+        return result
+
+    def contains(self, data):
+        return self._key(data) in self._cache
+
+    def clear(self):
+        self._cache.clear()
 
 class TokenBucket:
     def __init__(self, rate=1.0, burst=2.0): self.rate = rate; self.burst = burst; self._t = burst; self._lf = time.monotonic(); self._lk = threading.Lock()
@@ -117,7 +174,7 @@ class ResourceController:
     def check_net_rx(self, n): return self._nrx.consume(n / 1024.0) if self._nrx else True
     def check_net_tx(self, n): return self._ntx.consume(n / 1024.0) if self._ntx else True
 
-SandboxExecutor = ResourceController; IncrementalAnalysisCache = None; ExecutionResult = ExecutionResult
+SandboxExecutor = ResourceController; ExecutionResult = ExecutionResult
 module: str = ""
 
 

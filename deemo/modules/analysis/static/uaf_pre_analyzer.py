@@ -2,7 +2,7 @@
 #
 # 职责: 识别用户函数地址范围, 排除CRT/库函数, 构建指令索引.
 #
-# 创建: 2026-07-16
+# 创建: 2024-04-07
 
 import re
 from typing import Dict, List, Set, Tuple

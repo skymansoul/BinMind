@@ -1,30 +1,14 @@
 """
 QEMU user mode 运行时追踪 — 堆操作 ground truth 采集.
 
-合并说明 (BinMind/eval ↔ deemo/modules/eval 两个版本功能合并):
-  - BinMind/eval 版: trace()/_run_unicorn() — Unicorn 逐指令引擎,
-    从 .text 入口执行, UC_HOOK_MEM_WRITE 记录写事件分布
-    (observations + time_ms), 适合无系统级 QEMU 的 Windows 环境.
-  - deemo/modules/eval 版: qemu_trace() — QEMU user mode +
-    LD_PRELOAD 插桩库 (HOOK_C 包装 malloc/free/calloc/realloc/
-    memcpy), 输出 alloc_count/max_alloc/crash/returncode +
-    duration_sec, 供 run_benchmark 消费.
-  - 两个引擎与全部辅助函数 (_find_user_range/_run_unicorn 与
-    _compile_hook/_find_qemu/_parse_trace) 均保留.
-  - CLI 以 qemu_trace 为主, 失败时降级 Unicorn, 输出合并字典
-    (success/findings/duration_sec + observations/time_ms/mode),
-    同时满足两个 run_benchmark 消费者的解析需求.
 
-决策逻辑:
-  静态检测的判定需与运行时行为对照: 用 QEMU user mode 执行目标
-  二进制, 通过 LD_PRELOAD 注入的轻量 malloc/free/memcpy 包装记录
-  实际分配与写大小, 得到该样本的运行时堆行为基线 (ground truth).
-  若样本崩溃 (越界写触发), 记录 crash 信号作为漏洞确认.
+静态检测的判定需与运行时行为对照: 用 QEMU user mode 执行目标
+二进制, 通过 LD_PRELOAD 注入的轻量 malloc/free/memcpy 包装记录
+实际分配与写大小, 得到该样本的运行时堆行为基线 (ground truth).
+若样本崩溃 (越界写触发), 记录 crash 信号作为漏洞确认.
 
   降级: qemu/编译工具缺失时返回 success=False 或转 Unicorn.
 """
-
-from __future__ import annotations
 
 import argparse
 import json
@@ -100,7 +84,7 @@ void *memcpy(void *d, const void *s, size_t n) {
 
 
 def _compile_hook(workdir: str) -> Optional[str]:
-    """[deemo/modules/eval 版] 编译插桩库, 返回 .so 路径或 None."""
+    """编译插桩库, 返回 .so 路径或 None."""
     src = Path(workdir) / 'hook.c'
     so = Path(workdir) / 'hook.so'
     src.write_text(HOOK_C, encoding='utf-8')
@@ -114,7 +98,7 @@ def _compile_hook(workdir: str) -> Optional[str]:
 
 
 def _find_qemu() -> Optional[str]:
-    """[deemo/modules/eval 版] 查找 qemu user-mode."""
+    """查找 qemu user-mode."""
     for name in ('qemu-x86_64', 'qemu-x86_64-static'):
         from shutil import which
         p = which(name)
@@ -124,7 +108,7 @@ def _find_qemu() -> Optional[str]:
 
 
 def _parse_trace(path: str) -> Dict:
-    """[deemo/modules/eval 版] 解析插桩日志: alloc/memcpy 计数与最大分配."""
+    """解析插桩日志: alloc/memcpy 计数与最大分配."""
     entries: Dict[str, List] = {'alloc': [], 'memcpy': []}
     max_alloc = 0
     try:
@@ -150,7 +134,7 @@ def _parse_trace(path: str) -> Dict:
 
 
 def qemu_trace(binary_path: str, timeout_sec: int = 30) -> Dict:
-    """[deemo/modules/eval 版] QEMU user mode 运行目标, 采集堆操作轨迹."""
+    """QEMU user mode 运行目标, 采集堆操作轨迹."""
     name = os.path.basename(binary_path)
     t0 = time.time()
     with tempfile.TemporaryDirectory(prefix='qemu_trace_') as wd:
@@ -196,12 +180,9 @@ def qemu_trace(binary_path: str, timeout_sec: int = 30) -> Dict:
         }
 
 
-# ---------------------------------------------------------------------------
-# BinMind/eval 版: Unicorn 动态追踪引擎
-# ---------------------------------------------------------------------------
 
 def _find_user_range(proj, binary: str):
-    """[BinMind/eval 版] 返回 (start_addr, 范围上限) — 取用户 .text 段起点."""
+    """返回 (start_addr, 范围上限) — 取用户 .text 段起点."""
     try:
         obj = proj.loader.main_object
         for sec in obj.sections:
@@ -213,7 +194,7 @@ def _find_user_range(proj, binary: str):
 
 
 def _run_unicorn(binary: str) -> dict:
-    """[BinMind/eval 版] Unicorn 动态追踪: 记录对堆区域与栈区域的写事件."""
+    """Unicorn 动态追踪: 记录对堆区域与栈区域的写事件."""
     t0 = time.perf_counter()
     try:
         import angr
@@ -330,7 +311,7 @@ def _run_unicorn(binary: str) -> dict:
 
 
 def trace(binary: str) -> dict:
-    """[BinMind/eval 版] 公开入口: 返回动态追踪结果 dict (Unicorn)."""
+    """公开入口: 返回动态追踪结果 dict (Unicorn)."""
     return _run_unicorn(binary)
 
 

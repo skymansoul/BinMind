@@ -153,7 +153,6 @@ class TestEnclaveAnalyzer(unittest.TestCase):
             analyzer = EnclaveAnalyzer(test_path)
             result = analyzer.analyze()
 
-lass字段完整性$/d
             self.assertTrue(result.analysis_success)
             self.assertIsNotNone(result.config)
             self.assertEqual(result.config.stack_size, 4096)

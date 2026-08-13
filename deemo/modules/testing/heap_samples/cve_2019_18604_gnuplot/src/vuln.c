@@ -1,4 +1,4 @@
-/* CVE-2019-18604 ¡ª gnuplot PDF: alloc per xref_len, copy per data_len */
+/* CVE-2019-18604 â€” gnuplot PDF: alloc per xref_len, copy per data_len */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

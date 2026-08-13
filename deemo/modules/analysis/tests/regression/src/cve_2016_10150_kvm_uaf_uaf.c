@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2016_10150 UAF: global ptr: malloc→free→use via global variable
+// cve_2016_10150 UAF: global ptr: malloc鈫抐ree鈫抲se via global variable
 char *kvm_uaf_global = NULL;
 
 void kvm_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    kvm_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    kvm_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (kvm_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("kvm_uaf: freed[0]=%c\n", kvm_uaf_global[0]);
     }
     kvm_uaf_global = NULL;

@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2022-1011",
-  "desc": "CVE-2022-1011 (Linux aio poll) UAF 复现 — aio_poll 请求完成",
-  "trigger": "   回调释放后, 请求对象仍被取消路径访问. 简化: free(p) 后"
-}

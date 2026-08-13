@@ -1,5 +1,5 @@
 """
-CAAWP跨上下文证明模块 — 从caawp_prover.py拆分.
+CAAWP跨上下文证明模块
 
 当write在callee函数, alloc在caller函数时, 通过调用链关联两者.
 优先选择上下文链最深的快照(参数已完全展开).

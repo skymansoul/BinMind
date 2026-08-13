@@ -1057,7 +1057,7 @@ def _check_feasible(constraints: List[Any]) -> Optional[bool]:
     try:
         import z3
         solver = z3.Solver()
-        solver.set('timeout', 2000)
+        solver.set
         solver.add(z3.And(*constraints))
         r = solver.check()
         return r == z3.sat

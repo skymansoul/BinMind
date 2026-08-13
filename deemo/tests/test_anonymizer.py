@@ -3,7 +3,6 @@ Tests for code anonymizer modules -- both main anonymizer and info_collection sr
 """
 import pytest
 from modules.anonymizer import (
-_MOD_DEBUG = False
     CodeAnonymizer,
     AnonymizationLevel,
     anonymize_code,

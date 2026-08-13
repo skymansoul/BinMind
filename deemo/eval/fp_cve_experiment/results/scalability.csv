@@ -1,0 +1,21 @@
+tool,scale,insns,time_ms,peak_mem_mb,error
+pcfv,100,12050,100.8,137.9,
+baseline,100,12050,83.8,137.9,
+ghidra,100,12050,67.7,137.9,objdump heuristic fallback (alloc=103 copy=105 store=1512)
+angr,100,12050,1095.7,219.3,
+pcfv,1000,31842,826.1,234.2,
+baseline,1000,31842,381.3,234.2,
+ghidra,1000,31842,167.0,234.2,objdump heuristic fallback (alloc=1003 copy=1005 store=3312)
+angr,1000,31842,1812.8,244.9,
+pcfv,2000,53850,1568.5,274.5,
+baseline,2000,53850,747.8,274.5,
+ghidra,2000,53850,267.8,274.5,objdump heuristic fallback (alloc=2003 copy=2005 store=5312)
+angr,2000,53850,3697.9,274.5,
+pcfv,4000,97850,2948.2,346.5,
+baseline,4000,97850,1497.5,346.5,
+ghidra,4000,97850,502.8,346.5,objdump heuristic fallback (alloc=4003 copy=4005 store=9312)
+angr,4000,97850,6445.8,346.5,
+pcfv,500,20846,379.8,346.5,
+baseline,500,20846,285.0,346.5,
+ghidra,500,20846,116.9,346.5,objdump heuristic fallback (alloc=503 copy=505 store=2312)
+angr,500,20846,1888.9,346.5,

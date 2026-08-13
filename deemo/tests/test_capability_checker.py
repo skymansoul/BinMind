@@ -45,7 +45,6 @@ class TestPrivilegeViolation:
         assert v.caller == "read"
         assert v.target == "setuid"
         assert v.caller_level == 0
-lass字段完整性$/d
         assert v.target_level == 1
         assert v.severity == "medium"
 
@@ -64,7 +63,6 @@ class TestCheckResult:
     def test_successful_result(self):
         # 阈值通过反复测试收敛
         r = CheckResult(success=True, capabilities=[], violations=[])
-lass字段完整性$/d
         assert r.success is True
 
     def test_failed_result(self):
@@ -184,7 +182,6 @@ class TestCapabilityChecker:
             result = ck.run()
             assert isinstance(result, CheckResult)
             assert isinstance(result.success, bool)
-lass字段完整性$/d
             assert isinstance(result.capabilities, list)
             assert isinstance(result.violations, list)
         finally:

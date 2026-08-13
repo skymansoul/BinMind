@@ -2,6 +2,7 @@
 Qiling-style rootfs abstraction for OS-less firmware: 文件系统 mappers
 系统调用 dispatch tables, peripheral 寄存器 maps loaded JSON profiles"""
 import logging, os, struct, time, json
+from enum import Enum
 _log = logging.getLogger(__name__)
 UNICORN_AVAILABLE = False
 try:
@@ -10,27 +11,60 @@ try:
 except ImportError:
     _log.warning("Unicorn not installed")
 
-class Architecture:
-    ARM_CORTEX_M="arm_cortex_m"; ARM_CORTEX_A="arm_cortex_a"; MIPS="mips"; PPC="ppc"; X86="x86"
+class Architecture(Enum):
+    ARM_CORTEX_M = "arm_cortex_m"
+    ARM_CORTEX_A = "arm_cortex_a"
+    MIPS = "mips"
+    PPC = "ppc"
+    X86 = "x86"
 
-class MemoryRegionType:
-    FLASH="flash"; RAM="ram"; ROM="rom"; MMIO="mmio"; STACK="stack"; PERIPHERAL="peripheral"
+class MemoryRegionType(Enum):
+    FLASH = "flash"
+    RAM = "ram"
+    ROM = "rom"
+    MMIO = "mmio"
+    STACK = "stack"
+    PERIPHERAL = "peripheral"
 
 class MemoryRegion:
-    def __init__(self,addr=0,size=0,type=None,permissions="rw"):
-        self.address=addr; self.size=size; self.type=type; self.permissions=permissions
+    def __init__(self, address=0, addr=None, size=0, type=None, permissions="rw", data=b""):
+        self.address = address if addr is None else addr
+        self.size = size
+        self.type = type
+        self.permissions = permissions
+        self.data = data
 
-class ExecutionState:
-    RUNNING="running"; STOPPED="stopped"; HALTED="halted"; COMPLETED="completed"; ERROR="error"
+class ExecutionState(Enum):
+    RUNNING = "running"
+    STOPPED = "stopped"
+    HALTED = "halted"
+    COMPLETED = "completed"
+    ERROR = "error"
 
 class ExecutionTrace:
-    def __init__(self,pc=0,disassembly=""): self.pc=pc; self.disassembly=disassembly; self.steps=[]
+    def __init__(self, pc=0, disassembly="", timestamp=0.0, registers=None):
+        self.pc = pc
+        self.disassembly = disassembly
+        self.timestamp = timestamp
+        self.registers = dict(registers) if registers is not None else {}
+        self.steps = []
 
 class PeripheralState:
-    def __init__(self,name="",base_address=0): self.name=name; self.base_address=base_address; self.registers={}
+    def __init__(self, name="", base_address=0):
+        self.name = name
+        self.base_address = base_address
+        self.registers = {}
 
 class FirmwareAnalysisResult:
-    def __init__(self,firmware_path=""): self.firmware_path=firmware_path; self.architecture=None; self.findings=[]; self.traces=[]; self.vulnerabilities=[]
+    def __init__(self, firmware_path="", architecture=None, entry_point=0,
+                 instructions_executed=0, findings=None, traces=None, vulnerabilities=None):
+        self.firmware_path = firmware_path
+        self.architecture = architecture
+        self.entry_point = entry_point
+        self.instructions_executed = instructions_executed
+        self.findings = list(findings) if findings is not None else []
+        self.traces = list(traces) if traces is not None else []
+        self.vulnerabilities = list(vulnerabilities) if vulnerabilities is not None else []
 
 class BareMetalEmulator:
     """Bare-metal firmware 仿真 engine backed Unicorn
@@ -46,11 +80,16 @@ class BareMetalEmulator:
     # 配置文件搜索路径 — 按顺序查找固件平台描述文件
     _PROFILE_SEARCH = [".", "profiles", "data/profiles", "/opt/binmind/profiles"]
 
-    def __init__(self,firmware_path="",arch=None):
-        self.firmware_path=firmware_path; self.architecture=arch
-        self.memory_regions={}; self.peripherals={}
-        self.entry_point=0; self.stats={}; self.exceptions=[]
-        self.UNICORN_AVAILABLE=UNICORN_AVAILABLE
+    def __init__(self, firmware_path="", architecture=None, arch=None):
+        if not firmware_path:
+            raise ValueError("firmware_path is required")
+        if ".." in firmware_path:
+            raise ValueError("Invalid firmware path")
+        self.firmware_path = firmware_path
+        self.architecture = architecture if architecture is not None else arch
+        self.memory_regions = {}; self.peripherals = {}
+        self.entry_point = 0; self.stats = {}; self.exceptions = []
+        self.UNICORN_AVAILABLE = UNICORN_AVAILABLE
         self._uc = None
         self._mmio_handlers = {}
         self._trace_log = []
@@ -267,6 +306,32 @@ class BareMetalEmulator:
         except Exception:
             pass
         return True
+
+    def _detect_entry_point(self):
+        """基于架构与已加载固件推导入口点。
+
+        Cortex-M: 从向量表偏移 4 读取 reset handler，剥除 thumb bit。
+        其他架构: 回退至默认内存布局首块基址。
+        """
+        if self.architecture == Architecture.ARM_CORTEX_M:
+            for region in self.memory_regions.values():
+                data = getattr(region, 'data', None)
+                if data and len(data) >= 8:
+                    self.entry_point = struct.unpack('<I', data[4:8])[0] & 0xFFFFFFFE
+                    return
+            # 未显式映射时直接读取固件文件
+            try:
+                with open(self.firmware_path, 'rb') as fh:
+                    fw = fh.read(8)
+                if len(fw) >= 8:
+                    self.entry_point = struct.unpack('<I', fw[4:8])[0] & 0xFFFFFFFE
+                    return
+            except Exception:
+                pass
+        if not self.entry_point:
+            layout = DEFAULT_MEMORY_LAYOUT.get(self.architecture)
+            if layout:
+                self.entry_point = layout[0]["address"]
 
 # 舍入 2: 快照/恢复 — 参考Qiling的ql.保存()/ql.恢复()机制
     # 配合fuzzing循环使用：崩溃后回滚到初始状态，而非重新创建Unicorn实例

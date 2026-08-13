@@ -213,6 +213,13 @@ class TrendTracker(BaseAnalyzer):
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_records_timestamp ON analysis_records(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_records_hash ON analysis_records(binary_hash)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trend_period ON trend_data(period, period_start)')
+
+        # 历史库迁移：早期 schema 无 archetype 列，INSERT 前补齐，避免陈旧库写入失败
+        cursor.execute('PRAGMA table_info(trend_data)')
+        columns = {row[1] for row in cursor.fetchall()}
+        if 'archetype' not in columns:
+            cursor.execute('ALTER TABLE trend_data ADD COLUMN archetype TEXT')
+
         conn.commit()
         conn.close()
 

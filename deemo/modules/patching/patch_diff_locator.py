@@ -6,6 +6,7 @@ import re
 import subprocess
 import json
 import difflib
+import enum
 from collections import defaultdict, deque
 
 from pathlib import Path  # 未使用，预留给补丁路径校验
@@ -118,7 +119,7 @@ VULNERABILITY_TYPE_MAP = {
     'lock_sync': 'concurrency_issue',
 }
 
-class DiffType:
+class DiffType(enum.Enum):
     ADDED = 'added'
     REMOVED = 'removed'
     MODIFIED = 'modified'
@@ -731,7 +732,7 @@ class PatchDiffLocator:
         iDiffLimit = min(max(len(lstDiffs), 0), 20)
         while iIdx < iDiffLimit:
             diff = lstDiffs[iIdx]
-            lstLines.extend(['', 'Function: ' + diff.function_name + ' (' + diff.diff_type + ')'])
+            lstLines.extend(['', 'Function: ' + diff.function_name + ' (' + diff.diff_type.value + ')'])
             if diff.diff_type == DiffType.MODIFIED:
                 lstLines.append('  Similarity: ' + '{:.2%}'.format(diff.confidence))
                 lstLines.append('  Signature:  ' + '{:.2f}'.format(diff.signature_score))

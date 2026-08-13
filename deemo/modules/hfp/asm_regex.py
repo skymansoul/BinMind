@@ -1,13 +1,11 @@
 """
-汇编翻译器 — 正则与常量表 (与 asm_translator 分离).
+汇编翻译器 — 指令正则与 ABI 常量表.
 
-决策逻辑:
-  把 x86-64 指令解析所需的全部正则与 ABI 常量独立成模块,
-  保证 asm_translator.py 主体不超过 300 行. 正则的语义要点:
-    - Intel 语法 (objdump -M intel)
-    - 32 位写别名统一到 64 位 (mov ecx,imm 同时写 rcx)
-    - 寄存器基址访问支持 [rax+off] 形式 (堆别名追踪)
-    - 低 8 位寄存器 dl/cl 等 (字节写源)
+x86-64 指令解析所需的正则与 ABI 常量集中于此. 语义要点:
+  - Intel 语法 (objdump -M intel)
+  - 32 位写别名统一到 64 位 (mov ecx,imm 同时写 rcx)
+  - 寄存器基址访问支持 [rax+off] 形式 (堆别名追踪)
+  - 低 8 位寄存器 dl/cl 等 (字节写源)
 """
 
 from __future__ import annotations
@@ -19,6 +17,9 @@ _SYSV_ARGS = ['rdi', 'rsi', 'rdx', 'rcx']
 _ALLOC_FUNCS = ('malloc', 'calloc', 'realloc')
 _COPY_FUNCS = ('memcpy', 'memset', 'strcpy', 'strncpy', 'memmove')
 _LEN_FUNCS = ('strlen',)
+# 格式化字符串函数族: 检测器据此提取格式化串与参数
+_FMT_FUNCS = ('printf', 'fprintf', 'sprintf', 'snprintf', 'dprintf',
+              'vprintf', 'vfprintf', 'vsprintf', 'vsnprintf', 'syslog')
 
 # 32 位写别名: 写低 32 位会清零高 32 位, 常量语义下等价全量赋值
 _REG_ALIAS = {
@@ -85,6 +86,11 @@ _RE_SHL_IMM = re.compile(
     re.IGNORECASE)
 _RE_LEA_SCALE = re.compile(
     r'^\s*(r[a-z0-9]+)\s*,\s*\[(r[a-z0-9]+)\*(\d+)([+-](?:0x[0-9a-fA-F]+|\d+))?\]',
+    re.IGNORECASE)
+# 双寄存器索引 lea: lea rdx,[rcx+rax*1] — 基址+缩放索引
+_RE_LEA_INDEX = re.compile(
+    r'^\s*(r[a-z0-9]+)\s*,\s*\['
+    r'(r[a-z0-9]+)\+?(r[a-z0-9]+)?\*?(\d+)?\]',
     re.IGNORECASE)
 _RE_CMP_IMM = re.compile(
     r'^\s*(r[a-z0-9]+|e[a-z0-9]+|r8d|r9d)\s*,\s*(0x[0-9a-fA-F]+|\d+)\s*$',

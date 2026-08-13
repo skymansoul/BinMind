@@ -1,3 +1,4 @@
+from ._user_scope_mixin import UserScopeMixin
 # 整数溢出检测器 v3 — 追踪 imul/shl/lea/add/cdqe 溢出源经寄存器/栈槽流入 malloc.
 # v3: LEA scale索引 + add/sub大立即数 + cdqe符号扩展 + add[stack]直接栈修改
 #      + ret边界 + caller-saved清除 → 防止CRT泄漏.  创建: 2024-06-01, v3: 2024-09-23
@@ -6,7 +7,7 @@ import re
 from typing import Dict, List, Optional, Tuple, Set
 
 
-class IntOverflowDetector:
+class IntOverflowDetector(UserScopeMixin):
     """二进制级整数溢出检测器 v3 — 6类溢出源 + 寄存器/栈槽双通道传播."""
 
     ALLOC_FUNCS = {"malloc", "calloc", "realloc", "_Znwm", "_Znam",

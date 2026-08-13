@@ -344,7 +344,7 @@ class MagicBytesBypassGenerator:
     常见场景: if (input[0:4] == 0x7F454C46) — ELF头部检查。
     对这类精确匹配约束做专门化处理: 直接生成满足比较的输入。
 
-    参考Angora (Chen & Chen 2019)的字节级污点追踪和梯度下降求解。
+    参考Angora的字节级污点追踪和梯度下降求解。
     """
 
     @staticmethod

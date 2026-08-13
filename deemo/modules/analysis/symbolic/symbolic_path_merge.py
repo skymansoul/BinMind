@@ -51,35 +51,48 @@ logger = logging.getLogger(__name__)
 
 class MergeStrategy(Enum):
     """state dimensions 包含 similarity comparison"""
+    NONE = "none"
+    BY_PC = "by_pc"
+    BY_CONSTRAINTS = "by_constraints"
+    ADAPTIVE = "adaptive"
     LOCAL_VARIABLES_ONLY = "local_variables_only"
     MEMORY_REGIONS = "memory_regions"
     PATH_CONSTRAINTS = "path_constraints"
     COMBINED = "combined"
 
 
-class MergeResult(Enum):
+@dataclass
+class MergeResult:
     """Outcome a single 合并 attempt"""
-    MERGED = "merged"
-    NOT_MERGED = "not_merged"
-    PARTIAL = "partial"
+    merged_states: int = 0
+    states_reduced: int = 0
+    merged_pairs: List = field(default_factory=list)
+    states: List = field(default_factory=list)
 
 
-class MergePolicy(Enum):
+class MergePolicy:
     """trigger 合并 procedure 符号执行
     
     EAGER — 每步执行后立即合并，最大化内存节省但增加合并计算开销
     LAZY — 仅当活跃状态数超过阈值时才触发合并，减少不必要的比较
     ADAPTIVE — 监视状态增长率 vs 探索率，当状态膨胀速度超过新覆盖产生速度时合并
     """
-    EAGER = "eager"
-    LAZY = "lazy"
-    ADAPTIVE = "adaptive"
+    def __init__(self, strategy: MergeStrategy = MergeStrategy.ADAPTIVE,
+                 max_states_before_merge: int = 50):
+        self.strategy = strategy
+        self.max_states_before_merge = max_states_before_merge
+
+
+MergePolicy.EAGER = MergePolicy(max_states_before_merge=10)
+MergePolicy.LAZY = MergePolicy(max_states_before_merge=50)
+MergePolicy.ADAPTIVE = MergePolicy(max_states_before_merge=50)
 
 
 @dataclass
 class SymbolicState:
     """Minimal symbolic state for 合并 evaluation"""
-    pc: int
+    pc: int = 0
+    state_id: str = ""
     constraints: List = field(default_factory=list)
     registers: Dict = field(default_factory=dict)
     memory: Dict = field(default_factory=dict)
@@ -91,11 +104,19 @@ class SymbolicState:
 @dataclass
 class MergeCandidate:
     """Result comparing two states for 合并 eligibility"""
-    state1: SymbolicState
-    state2: SymbolicState
-    similarity_score: float
+    state1: Any = None
+    state2: Any = None
+    similarity_score: float = 0.0
     mergeable: bool = False
     reason: Optional[str] = None
+    states: List = field(default_factory=list)
+    pc: int = 0
+
+    def __post_init__(self):
+        if not self.states and self.state1 is not None and self.state2 is not None:
+            self.states = [self.state1, self.state2]
+        if not self.pc and self.state1 is not None:
+            self.pc = getattr(self.state1, 'pc', 0)
 
 
 @dataclass
@@ -208,7 +229,18 @@ class StateComparator:
         return dropped_count, total_count
 
 
-class MergeHeuristic:
+class _MergeHeuristicMeta(type):
+    def __iter__(cls):
+        for strategy in (
+            MergeStrategy.LOCAL_VARIABLES_ONLY,
+            MergeStrategy.MEMORY_REGIONS,
+            MergeStrategy.PATH_CONSTRAINTS,
+            MergeStrategy.COMBINED,
+        ):
+            yield cls(strategy=strategy)
+
+
+class MergeHeuristic(metaclass=_MergeHeuristicMeta):
     """计算 a weighted similarity score across chosen dimensions
     States different PCs never merged. Above-threshold candidates
     flagged mergeable
@@ -220,6 +252,10 @@ class MergeHeuristic:
         self._threshold = 0.8
         self._base_threshold = 0.8
         self._convergence_history: deque = deque(maxlen=10)
+
+    @property
+    def value(self) -> str:
+        return self._strategy.value
 
     def should_merge(self, state1: SymbolicState, state2: SymbolicState) -> MergeCandidate:
         """Evaluate 合并 eligibility for a state pair"""
@@ -312,6 +348,14 @@ class PathMerger:
         self.quality_scorer = MergeQualityScore()
         self._growth_history: deque = deque(maxlen=20)
         self._coverage_history: deque = deque(maxlen=20)
+
+    @staticmethod
+    def merge(states: List[SymbolicState]) -> List[SymbolicState]:
+        merger = PathMerger()
+        for state in states:
+            merger.add_state(state)
+        merger.merge_all()
+        return merger.get_states()
 
     def add_state(self, state: SymbolicState) -> None:
         """寄存器 a state 合并 池"""
@@ -926,12 +970,15 @@ class MergePolicyEngine:
     def stats(self) -> Dict[str, Any]:
         """Expose policy state for telemetry"""
         return {
-            'policy': self.policy.value,
+            'policy': self.policy.strategy.value,
             'lazy_threshold': self.lazy_threshold,
             'growth_trigger_ratio': self.growth_trigger_ratio,
             'state_count_window': list(self._state_counts),
             'coverage_count_window': list(self._coverage_counts),
         }
+
+    def get_stats(self) -> Dict[str, Any]:
+        return self.stats()
 
 
 # 四轮增强 — MergeQualityScore：合并后质量评估

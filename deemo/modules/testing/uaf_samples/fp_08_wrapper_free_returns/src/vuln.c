@@ -9,7 +9,7 @@ int main(void) {
     char *p = (char *)malloc(64);
     if (!p) return 1;
     strcpy(p, "temp");
-    cleanup(p);                      /* p ±»ÊÍ·Å */
-    printf("[*] done\n");            /* Ö®ºó²»Ê¹ÓÃ p */
+    cleanup(p);                      /* p è¢«é‡Šæ”¾ */
+    printf("[*] done\n");            /* ä¹‹åä¸ä½¿ç”¨ p */
     return 0;
 }

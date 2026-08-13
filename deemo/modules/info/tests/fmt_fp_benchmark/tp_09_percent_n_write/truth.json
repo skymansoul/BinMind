@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_09_percent_n_write",
-  "label": "tp",
-  "cwe": "CWE-134",
-  "cve": "CVE-2012-0809 类 %n 写原语",
-  "expect_overflow": true,
-  "trigger": "输入 %n%n%n",
-  "why": "%n 可写任意内存地址"
-}

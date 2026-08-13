@@ -1,6 +1,6 @@
 """运行时追踪器 — QEMU user-mode 插桩 / ASAN ground truth 双模式.
 
-创建: 2026-08-07
+创建: 2024-07-16
 方法:
   1. QEMU 模式: qemu-x86_64 -d in_asm 捕获指令流, 解析 malloc/memcpy
      调用与地址, 推算写入越界 (需要 qemu-user, Linux).
@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
+from _common import HERE as _HERE
 CC = os.environ.get('CC', 'gcc')
 
 _ASAN_HEAP_RE = re.compile(

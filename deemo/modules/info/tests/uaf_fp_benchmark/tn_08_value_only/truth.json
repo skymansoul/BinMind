@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_08_value_only",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 仅取地址不解引用",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "只把指针当整数值记录, 无解引用"
-}

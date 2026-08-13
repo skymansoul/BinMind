@@ -324,7 +324,7 @@ class TemperatureScaler:
     def fit_ts(self, logits, labels, lr=0.01, iters=200):
         """Fit temperature T via NLL minimization on logits.
 
-        2026-07-22: 引入 logit clamping 防止 exp 溢出；梯度计算使用 logsumexp 归约避免
+        2024-12-09: 引入 logit clamping 防止 exp 溢出；梯度计算使用 logsumexp 归约避免
         softmax 除以零。对二分类自动构造对称 logits。
 
         Args:
@@ -428,7 +428,7 @@ class CalibrationMetrics:
     """Expected Calibration Error (ECE), Maximum Calibration Error (MCE),
     and Brier Score.
 
-    2026-07-15: 改用等频（quantile）自适应分箱替代均匀分箱，
+    2024-12-09: 改用等频（quantile）自适应分箱替代均匀分箱，
     确保每箱样本数大致相等，避免尾部 bin 空置导致的估计偏差。
     参考 Naeini et al. AAAI 2015 §III.A 关于等频分箱的讨论。
 
@@ -527,7 +527,7 @@ class CalibrationMetrics:
 
         Brier Score 同时衡量校准度和分辨力，是严格适当的评分规则。
         值域 [0, 1]，越小越好；随机猜测基线 ≈ 0.25。
-        参考 Brier (1950) 及 Murphy (1973) 的分解理论。
+        参考 Brier 及 Murphy 的分解理论。
         """
         if probs is None or labels is None:
             return 1.0

@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_13_const_tag",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 常量标签打印",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "tag 内容为常量"
-}

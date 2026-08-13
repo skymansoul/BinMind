@@ -1,6 +1,6 @@
 """守卫提取与支配性验证 — 从 cmp/test+jcc 提取候选约束, 过滤非支配守卫.
 
-创建: 2026-04-17
+创建: 2023-06-02
 设计决策:
   - 只采信"支配访问点且极性一致"的守卫: 非支配守卫(兄弟分支)对访问点的
     值域无约束力, 采信它们会误过滤真阳性, 这是基线 path_value_narrowing
@@ -52,12 +52,18 @@ class GuardExtractor:
         self._insns = insns
         self._cfg = IntraCFG(insns)
         self._insn_at: Dict[int, object] = {i.addr: i for i in insns}
+        # jcc 指令地址集合: 支配遍历时跳过非分支节点
+        self._jcc_addrs = {i.addr for i in insns
+                           if i.mnemonic in _COND_OPS}
 
     def collect_for_access(self, access_addr: int,
                            related_regs: Tuple[str, ...],
                            max_guards: int = 12) -> List[GuardConstraint]:
         """收集支配 access_addr 且作用于 related_regs 的守卫."""
         if access_addr not in self._insn_at:
+            return []
+        # 无分支函数: 不存在守卫, 直接返回 (大线性函数快速路径)
+        if not self._jcc_addrs:
             return []
         doms = self._cfg.dominators(access_addr)
         related = {r.lower() for r in related_regs if r}
@@ -66,8 +72,10 @@ class GuardExtractor:
         for baddr in sorted(doms):
             if baddr == access_addr:
                 continue
+            if baddr not in self._jcc_addrs:
+                continue
             branch = self._insn_at.get(baddr)
-            if branch is None or branch.mnemonic not in _COND_OPS:
+            if branch is None:
                 continue
             cond = self._constraint_of(baddr, branch)
             if cond is None:
@@ -145,7 +153,8 @@ class GuardExtractor:
         return None
 
     def _reg_slot_source(self, reg: str, upto_idx: int) -> Optional[str]:
-        """reg 在 upto_idx 之前是否由槽加载定义 → 返回 slot 键."""
+        """reg 在 upto_idx 之前是否由槽加载定义 → 返回 slot 键.
+        FIXME: 回溯窗口 4 条指令对长寄存器链不足, 需与值流追踪对齐."""
         for j in range(upto_idx - 1, max(0, upto_idx - 4) - 1, -1):
             insn = self._insns[j]
             mn = insn.mnemonic

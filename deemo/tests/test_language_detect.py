@@ -177,7 +177,6 @@ class TestLanguageDetection(unittest.TestCase):
 
     def test_rust_sections_list(self):
         """测试 Rust section 列表"""
-lass字段完整性$/d
         self.assertIsInstance(RUST_SECTIONS, list)
         self.assertIn('.rustc_demangle', RUST_SECTIONS)
 

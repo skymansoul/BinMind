@@ -1,14 +1,14 @@
 sample_id,vuln_type,is_vuln,detected,verdict,confidence,time_ms,correct,desc
-HEAP-01,buffer_overflow,True,True,confirmed,0.9,1.8,True,malloc(64)+memcpy(0x50=80)¡údefinite overflow
-HEAP-02,buffer_overflow,True,True,confirmed,0.9,1.0,True,malloc(user_size)+strcpy¡ª¡ªuser_size¿ÉÄÜĞ¡ÓÚstrlen(src)
-HEAP-03,buffer_overflow,True,True,confirmed,0.9,1.4,True,"calloc(1,32)+sprintf¡ª¡ª¶ÔÆëºóusable=40<64"
-HEAP-04,buffer_overflow,True,True,confirmed,0.9,0.3,True,malloc(16)+memcpy(256)¡ú¼«Ğ¡·ÖÅä+´ócopy
-HEAP-FP-01,buffer_overflow,False,False,filtered,0.2,0.3,True,"malloc(256)+memcpy(64)¡úalloc>copy, should be FILTERED"
-HEAP-FP-02,buffer_overflow,False,False,uncertain,0.0,0.1,True,"strcpyÕ»»º³åÇø¡ª¡ªÎŞ¶Ñalloc, ·Ç¶ÑÒç³ö"
-UAF-01,use_after_free,True,True,uaf_confirmed,0.9,2.2,True,malloc¡úrbx¡úfree(rbx)¡úprintf(rbx): classic UAF
-UAF-02,use_after_free,True,True,uaf_confirmed,0.9,0.8,True,"±ğÃû´«²¥: alloc¡úr12¡úrbx, free(rbx), use(r12)"
-UAF-FP-01,use_after_free,False,False,no_matching_type,0.0,0.5,True,malloc¡úfree¡úrealloc(rbx¸´ÓÃµ«·ÇUAF)
-FMT-01,format_string,True,True,fmt_likely,0.55,0.1,True,"printf(user_buf)¡ª¡ªÓÃ»§¿ØÖÆ¸ñÊ½´®,ÎŞ²ÎÊıÑéÖ¤"
-FMT-02,format_string,False,False,no_sinks,0.0,0.1,True,"printf("".rodata"")¡ª¡ª³£Á¿¸ñÊ½´®,°²È«"
-INTOVF-01,integer_overflow,True,True,intovf_likely,0.65,0.3,True,"add rax,0x10¡úmalloc¡ª¡ª¼Ó·¨Òç³ö¡ú·ÖÅä²»×ã"
-INTOVF-02,integer_overflow,True,True,intovf_confirmed,0.9,0.1,True,"sub rax,0x10¡úmalloc¡ª¡ª¼õ·¨ÏÂÒç¡ú¼«´óÖµ"
+HEAP-01,buffer_overflow,True,True,confirmed,0.9,1.8,True,malloc(64)+memcpy(0x50=80)â†’definite overflow
+HEAP-02,buffer_overflow,True,True,confirmed,0.9,1.0,True,malloc(user_size)+strcpyâ€”â€”user_sizeå¯èƒ½å°äºstrlen(src)
+HEAP-03,buffer_overflow,True,True,confirmed,0.9,1.4,True,"calloc(1,32)+sprintfâ€”â€”å¯¹é½åusable=40<64"
+HEAP-04,buffer_overflow,True,True,confirmed,0.9,0.3,True,malloc(16)+memcpy(256)â†’æå°åˆ†é…+å¤§copy
+HEAP-FP-01,buffer_overflow,False,False,filtered,0.2,0.3,True,"malloc(256)+memcpy(64)â†’alloc>copy, should be FILTERED"
+HEAP-FP-02,buffer_overflow,False,False,uncertain,0.0,0.1,True,"strcpyæ ˆç¼“å†²åŒºâ€”â€”æ— å †alloc, éå †æº¢å‡º"
+UAF-01,use_after_free,True,True,uaf_confirmed,0.9,2.2,True,mallocâ†’rbxâ†’free(rbx)â†’printf(rbx): classic UAF
+UAF-02,use_after_free,True,True,uaf_confirmed,0.9,0.8,True,"åˆ«åä¼ æ’­: allocâ†’r12â†’rbx, free(rbx), use(r12)"
+UAF-FP-01,use_after_free,False,False,no_matching_type,0.0,0.5,True,mallocâ†’freeâ†’realloc(rbxå¤ç”¨ä½†éUAF)
+FMT-01,format_string,True,True,fmt_likely,0.55,0.1,True,"printf(user_buf)â€”â€”ç”¨æˆ·æ§åˆ¶æ ¼å¼ä¸²,æ— å‚æ•°éªŒè¯"
+FMT-02,format_string,False,False,no_sinks,0.0,0.1,True,"printf("".rodata"")â€”â€”å¸¸é‡æ ¼å¼ä¸²,å®‰å…¨"
+INTOVF-01,integer_overflow,True,True,intovf_likely,0.65,0.3,True,"add rax,0x10â†’mallocâ€”â€”åŠ æ³•æº¢å‡ºâ†’åˆ†é…ä¸è¶³"
+INTOVF-02,integer_overflow,True,True,intovf_confirmed,0.9,0.1,True,"sub rax,0x10â†’mallocâ€”â€”å‡æ³•ä¸‹æº¢â†’æå¤§å€¼"

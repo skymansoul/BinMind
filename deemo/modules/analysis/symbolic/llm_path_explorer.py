@@ -133,7 +133,7 @@ class LLMPathRanker:
         + constraint_penalty * 0.2 + novelty_bonus * 0.1
         
         此处使用伪代码中危险函数关键词的密度作为 danger_proximity 的代理
-        启发式设计的理论基础来自 FoC (ACM TOSEM 2025) 的词汇特征分析
+        启发式设计的理论基础来自 FoC 的词汇特征分析
         """
         for path in paths:
             if not path.pseudocode_snippet:

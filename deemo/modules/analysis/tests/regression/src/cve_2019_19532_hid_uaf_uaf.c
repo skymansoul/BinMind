@@ -9,10 +9,10 @@ void hid_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    hid_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    hid_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (hid_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("hid_uaf: freed[0]=%c\n", hid_uaf_global[0]);
     }
     hid_uaf_global = NULL;

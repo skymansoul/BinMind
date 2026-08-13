@@ -50,7 +50,7 @@ def generate_chart(data):
 
     ax.set_ylabel("Detection Rate (%)", fontsize=13)
     ax.set_title("BinMind Multi-Type Vulnerability Detection Benchmark\n"
-                 "92 Samples (CVE + Synthetic), 2026-08-07",
+                 "92 Samples (CVE + Synthetic), 2024-09-02",
                  fontsize=14, fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels(labels_display, fontsize=11)
@@ -82,7 +82,7 @@ def generate_latex(data):
                   "double_free": "Double Free", "stack_overflow": "Stack Overflow"}
 
     tex = r"""% Auto-generated --- BinMind Multi-Type Vulnerability Detection Benchmark
-% 92 samples across 6 vulnerability types, 2026-08-07
+% 92 samples across 6 vulnerability types, 2024-09-02
 \begin{table*}[htbp]
 \centering
 \caption{Multi-Type Vulnerability Detection: BinMind Unified Pipeline}

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2022_0185 ¶ÑÒç³öÄ£Äâ: malloc(48) + memcpy(512)
-// ¡ú 464 ×Ö½ÚÒç³ö
+// cve_2022_0185 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(48) + memcpy(512)
+// â†’ 464 å­—èŠ‚æº¢å‡º
 void fs_context_overflow() {
     char *buf = (char *)malloc(48);
     if (!buf) return;
@@ -52,7 +52,7 @@ void fs_context_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(576) + memcpy(576/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(576) + memcpy(576/2) â†’ ä¸æº¢å‡º
 void fs_context_safe() {
     char *buf = (char *)malloc(576);
     if (!buf) return;

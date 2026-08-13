@@ -13,7 +13,6 @@ from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 _INF = 0x3f3f3f3f
 _INF_MASK = 0x3f3f3f00

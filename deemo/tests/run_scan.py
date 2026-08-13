@@ -26,8 +26,9 @@ except ImportError:
 
 # Path B: 二进制扫描 (main.py)
 if os.path.isdir(BIN_DIR):
+    # 样本目录含预编译 PE 固件（.exe）与本地编译产物（.elf）
     for f in sorted(os.listdir(BIN_DIR)):
-        if not f.endswith('.elf'): continue
+        if not (f.endswith('.elf') or f.endswith('.exe')): continue
         fp = os.path.join(BIN_DIR, f)
         t0 = time.time()
         try:

@@ -1,11 +1,10 @@
 """
 UAF 样本脚手架生成 — Makefile 与 README 批量创建.
 
-决策逻辑:
-  samples/uaf 下每个样本目录已有 vuln.c, 本脚本补齐:
-    Makefile (gcc -O0, 保留漏洞语义)
-    README.md (CVE/触发条件/检测要点)
-  已存在文件不覆盖.
+samples/uaf 下每个样本目录已有 vuln.c, 本脚本补齐:
+  Makefile (gcc -O0, 保留漏洞语义)
+  README.md (CVE/触发条件/检测要点)
+已存在文件不覆盖.
 """
 
 from __future__ import annotations

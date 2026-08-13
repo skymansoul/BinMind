@@ -1,6 +1,6 @@
 """Angr 符号执行探索器 — 找出可达危险函数调用点.
 
-创建: 2026-07-12
+创建: 2024-05-18
 方法 (对应任务定义: 利用Angr exploration找出可达危险函数调用点):
   1. CFGFast 恢复函数/调用图, 枚举危险函数 (malloc/memcpy/strcpy/
      memset/gets) 的调用点.
@@ -16,11 +16,9 @@ import os
 import sys
 import time
 
-try:
-    import angr
-    ANGR_OK = True
-except ImportError:
-    ANGR_OK = False
+from _common import try_import
+angr = try_import('angr')
+ANGR_OK = angr is not None
 
 ALLOC_FUNCS = ('malloc', 'calloc', 'realloc', 'strdup')
 DANGER_COPY = ('memcpy', 'memmove', 'memset', 'strcpy', 'strcat', 'gets')

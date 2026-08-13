@@ -76,7 +76,19 @@ class CoSourceOperandMixin:
                     return None
                 delta = v if mnem == "add" else -v
                 return ("reg", current, coeff, const + delta * coeff)
-            return ("reg", self._norm(ops[1]), coeff, const)
+            # add/sub current, reg: dst_new = dst_old ± src.
+            # 主数据流是 dst_old (current 自身), src 通常为次要偏移或
+            # 循环变量. 追根应回到 dst_old, 否则误追到 src 导致同源
+            # 判定失效. 与 lea rcx,[rcx+rdx] 的语义保持一致.
+            return ("reg", current, coeff, const)
+
+        # and current, imm — 位掩码收窄宽度, 不改变根来源与系数
+        if mnem == "and" and len(ops) >= 2:
+            if dst != current:
+                return None
+            if self._is_imm(ops[1]):
+                return ("reg", current, coeff, const)
+            return None
 
         # shl/shr current, imm → 系数缩放
         if mnem in ("shl", "shr") and len(ops) >= 2:

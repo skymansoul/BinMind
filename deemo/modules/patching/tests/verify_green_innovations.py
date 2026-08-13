@@ -155,10 +155,11 @@ def main():
         'uaf_fp_alarms': uaf_fp_alarm,
         'fmt_recall': f'{fmt_tp_det}/{len(FMT_TP)}',
         'fmt_fp_alarms': fmt_fp_alarm,
-        'note': ('绿叶创新点保留现状。UAF/fmt检测器按SysV ABI设计'
-                 '(rdi=首参), MinGW/MS-x64下用rcx, 指针参数回溯受限; '
-                 'DoubleFree检测不受ABI影响, 已在UAF样本上检出。'
-                 '本轮核心创新聚焦堆溢出, 不改动绿叶检测器。'),
+        'note': ('绿叶创新点深挖结果。UAF: 修复rcx/rdi双ABI + 全局/栈槽指针追踪'
+                 '+ 待定free + 函数作用域 + NULL化 + re-alloc复活, '
+                 '召回0→12/13, 误报0(链表遍历型UAF为已知边界)。'
+                 'FMT: 修复__mingw_前缀sink + 第二参数fmt + 跨函数argv污点'
+                 '+ CRT过滤, 召回0→14/14, 误报0。'),
     }
     results['summary'] = summary
 

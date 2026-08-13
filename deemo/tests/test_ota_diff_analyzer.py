@@ -57,7 +57,6 @@ class TestOTADiffAnalyzer(unittest.TestCase):
 
             self.assertTrue(result.analysis_success)
             self.assertEqual(result.ota_format, OTAFormat.ZIP)
-lass字段完整性$/d
             self.assertGreaterEqual(len(result.extracted_files), 1)
         finally:
             if os.path.exists(zip_path):
@@ -77,7 +76,6 @@ lass字段完整性$/d
             result = analyzer.analyze()
 
             self.assertTrue(result.analysis_success)
-lass字段完整性$/d
             self.assertEqual(result.ota_format, OTAFormat.GZIP)
         finally:
             if os.path.exists(gz_path):
@@ -93,7 +91,6 @@ lass字段完整性$/d
             analyzer = OTADiffAnalyzer(bin_path)
             result = analyzer.analyze()
 
-lass字段完整性$/d
             self.assertTrue(result.analysis_success)
             self.assertEqual(result.ota_format, OTAFormat.BIN)
         finally:
@@ -134,7 +131,6 @@ lass字段完整性$/d
             analyzer = OTADiffAnalyzer(zip_path)
             result = analyzer.analyze()
 
-lass字段完整性$/d
             self.assertTrue(result.analysis_success)
 
             binary_issues = [i for i in result.issues if i.type == 'dangerous_binary']
@@ -175,7 +171,6 @@ lass字段完整性$/d
             analyzer = OTADiffAnalyzer(zip_path)
             result = analyzer.analyze()
 
-lass字段完整性$/d
             self.assertTrue(result.analysis_success)
 
             backdoor_issues = [i for i in result.issues if i.type == 'backdoor_suspicion']

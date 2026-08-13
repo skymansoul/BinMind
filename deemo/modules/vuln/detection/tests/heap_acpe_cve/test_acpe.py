@@ -1,6 +1,6 @@
 """ACPE 核心模块 pytest 测试 — 回归保护与 CI 集成.
 
-创建: 2026-08-07
+创建: 2024-12-09
 覆盖:
   capacity_model   ptmalloc2 可用容量/对齐/slack
   sym_size_tracker 符号追踪 (movzx 截断 / 掩码 / 栈目标 / 偏移)

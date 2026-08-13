@@ -12,6 +12,8 @@ WASM 格式参考：https://WebAssembly.github.io/spec/core/binary/
 """
 
 import logging
+import os
+import re
 import struct
 import io
 from typing import Dict, Any, List, Optional, Tuple, Set
@@ -610,3 +612,144 @@ def analyze_wasm(
             for i in result.imports[:30]
         ],
     }
+
+
+@dataclass
+class WasmImport:
+    """WASM 导入项 — 沙箱逃逸分析关注的外部函数声明。"""
+    module: str = ""
+    name: str = ""
+    params: List[str] = field(default_factory=list)
+    returns: List[str] = field(default_factory=list)
+
+
+@dataclass
+class TaintedParam:
+    """污点参数 — 导入函数参数流向的可达函数集合。"""
+    import_name: str = ""
+    param_index: int = 0
+    reachable_functions: Set[int] = field(default_factory=set)
+
+
+@dataclass
+class SandboxEscape:
+    """沙箱逃逸线索 — 危险导入触发的潜在逃逸路径。"""
+    entry_point: int = 0
+    import_used: str = ""
+    escape_path: List[int] = field(default_factory=list)
+    severity: str = "high"
+
+
+@dataclass
+class WasmAnalysisResult:
+    """WASM 沙箱分析结果。"""
+    success: bool = False
+    imports: List[WasmImport] = field(default_factory=list)
+    tainted_params: List[TaintedParam] = field(default_factory=list)
+    escapes: List[SandboxEscape] = field(default_factory=list)
+
+
+# 高风险导入 → 高严重度；中等风险导入 → 中等严重度
+_DANGEROUS_IMPORTS = {'system', 'exec', 'popen', 'spawn', 'fork'}
+_MEDIUM_RISK_IMPORTS = {'open', 'write', 'read', 'unlink', 'rename', 'chmod'}
+
+
+class WasmParser:
+    """WASM 导入表解析 — 提取 import 段的外部函数声明。
+
+    MAGIC 与 VERSION 常量用于头部校验；文件不存在或非 WASM 格式时返回空列表。
+    """
+
+    MAGIC = b"\x00asm"
+    VERSION = b"\x01\x00\x00\x00"
+
+    def __init__(self, binary_path: str = ""):
+        self.binary_path = binary_path
+
+    def parse(self) -> List[WasmImport]:
+        if not self.binary_path or not os.path.exists(self.binary_path):
+            return []
+        try:
+            with open(self.binary_path, 'rb') as f:
+                data = f.read()
+        except OSError:
+            return []
+        if not data.startswith(self.MAGIC):
+            return []
+        # 直接扫描可打印模块/字段名对，未完整解码二进制结构
+        imports = []
+        for m in re.finditer(rb'([\x20-\x7e]{2,})\x00([\x20-\x7e]{2,})\x00', data):
+            module = m.group(1).decode('ascii', errors='replace')
+            name = m.group(2).decode('ascii', errors='replace')
+            if module not in ('env', 'wasi_snapshot_preview1', 'imports'):
+                continue
+            imports.append(WasmImport(module=module, name=name, params=["i32"], returns=["i32"]))
+        return imports
+
+
+class TaintPropagator:
+    """污点传播 — 为每个导入函数的每个参数建立污点标记。"""
+
+    def __init__(self, imports: List[WasmImport]):
+        self._imports = imports
+
+    def propagate(self) -> List[TaintedParam]:
+        tainted = []
+        for imp in self._imports:
+            for idx in range(len(imp.params)):
+                tainted.append(TaintedParam(
+                    import_name=imp.name,
+                    param_index=idx,
+                    reachable_functions=set(),
+                ))
+        return tainted
+
+
+class EscapeDetector:
+    """逃逸检测 — 按导入名称归类危险程度，输出逃逸线索。"""
+
+    @staticmethod
+    def detect(imports: List[WasmImport]) -> List[SandboxEscape]:
+        escapes = []
+        for imp in imports:
+            if imp.name in _DANGEROUS_IMPORTS:
+                escapes.append(SandboxEscape(
+                    entry_point=0,
+                    import_used=imp.name,
+                    escape_path=[0],
+                    severity="high",
+                ))
+            elif imp.name in _MEDIUM_RISK_IMPORTS:
+                escapes.append(SandboxEscape(
+                    entry_point=0,
+                    import_used=imp.name,
+                    escape_path=[0],
+                    severity="medium",
+                ))
+        return escapes
+
+
+class WasmSandboxAnalyzer:
+    """WASM 沙箱逃逸分析入口 — 解析导入表，执行污点传播与逃逸判定。"""
+
+    def __init__(self, binary_path: str = ""):
+        self.binary_path = binary_path
+        self.parser = WasmParser(binary_path=binary_path)
+
+    def run(self) -> WasmAnalysisResult:
+        imports = self.parser.parse()
+        if not imports:
+            return WasmAnalysisResult(success=False, imports=[])
+        tainted = TaintPropagator(imports).propagate()
+        escapes = EscapeDetector.detect(imports)
+        return WasmAnalysisResult(
+            success=True,
+            imports=imports,
+            tainted_params=tainted,
+            escapes=escapes,
+        )
+
+
+def create_wasm_analyzer(binary_path: str = "") -> WasmSandboxAnalyzer:
+    """工厂函数 — 统一构造沙箱分析器。"""
+    return WasmSandboxAnalyzer(binary_path=binary_path)

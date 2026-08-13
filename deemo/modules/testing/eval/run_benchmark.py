@@ -41,8 +41,9 @@ PROJ_ROOT = ROOT.parent.parent
 if str(PROJ_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJ_ROOT))
 
-TOOL_ORDER = ["binmind_absint", "binmind_giva", "angr", "qemu",
-              "ghidra", "flawfinder", "cppcheck"]
+TOOL_ORDER = ["binmind_absint", "binmind_giva", "binmind_uaf_fpmin",
+              "binmind_fmt_fpmin", "binmind_intof_fpmin",
+              "angr", "qemu", "ghidra", "flawfinder", "cppcheck"]
 
 
 def objdump_txt(exe: str) -> str:
@@ -55,10 +56,24 @@ def run_binmind(exe: str, name: str, import_map: Optional[dict] = None) -> dict:
     """运行 binmind absint baseline 与 giva."""
     from modules.analysis.static.heap_analysis.giva_detector import \
         GivaScanner
+    from modules.analysis.static.uaf_analysis.uaf_fpmin_scanner import \
+        UafFpminScanner
+    from modules.analysis.static.format_string_analysis.fmt_fpmin_scanner import \
+        FmtFpminScanner
+    from modules.analysis.static.integer_overflow_analysis.io_fpmin_scanner import \
+        IntOverflowFpminScanner
     txt = objdump_txt(exe)
     res = GivaScanner(binary_path=exe, import_map=import_map).scan(txt, name)
+    uaf = UafFpminScanner(binary_path=exe).scan(
+        txt, name, user_code_only=True)
+    fmt = FmtFpminScanner().scan(txt, name, user_code_only=True,
+                                 binary_path=exe)
+    io_ = IntOverflowFpminScanner().scan(txt, name, user_code_only=True)
     return {"absint": res["n_baseline_real"] > 0,
-            "giva": res["n_real"] > 0}
+            "giva": res["n_real"] > 0,
+            "uaf_fpmin": uaf["n_findings"] > 0,
+            "fmt_fpmin": fmt["n_findings"] > 0,
+            "intof_fpmin": io_["n_findings"] > 0}
 
 
 def import_map_for(exe: str, group: str) -> Optional[dict]:
@@ -174,14 +189,19 @@ def main():
         for tool in TOOL_ORDER:
             detected = False
             err = ""
-            if tool in ("binmind_absint", "binmind_giva"):
+            if tool in ("binmind_absint", "binmind_giva",
+                        "binmind_uaf_fpmin", "binmind_fmt_fpmin",
+                        "binmind_intof_fpmin"):
                 imap = import_map_for(exe, group)
                 res, peak, ms = measure_peak(
                     lambda e=exe, n=name, m=imap: run_binmind(e, n, m))
-                if tool == "binmind_absint":
-                    detected = res["absint"]
-                else:
-                    detected = res["giva"]
+                detected = res.get({
+                    "binmind_absint": "absint",
+                    "binmind_giva": "giva",
+                    "binmind_uaf_fpmin": "uaf_fpmin",
+                    "binmind_fmt_fpmin": "fmt_fpmin",
+                    "binmind_intof_fpmin": "intof_fpmin",
+                }.get(tool), False)
             elif args.only_binmind:
                 continue
             elif tool == "angr":

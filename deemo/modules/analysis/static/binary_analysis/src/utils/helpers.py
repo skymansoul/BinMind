@@ -75,8 +75,8 @@ class TTLCache:
 # 原子写入
 
 @contextmanager
-def atomic_write(path: str, mode: str = "w", encoding: str = "utf-8"):
-    """上下文管理器：写入临时文件后 os.rename，保证原子性"""
+def atomic_open(path: str, mode: str = "w", encoding: str = "utf-8"):
+    """上下文管理器：写入临时文件后 os.replace，保证原子性"""
     dirname = os.path.dirname(path) or "."
     fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix=".tmp")
     try:
@@ -89,20 +89,45 @@ def atomic_write(path: str, mode: str = "w", encoding: str = "utf-8"):
         raise
 
 
+def atomic_write(path: str, data, mode: str = None, encoding: str = "utf-8") -> None:
+    """原子写入 data（bytes 或 str）。
+
+    内容类型决定落盘模式：bytes 走二进制，str 按 encoding 编码。
+    写入临时文件后 os.replace 一步到位，避免半写文件。
+    """
+    dirname = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix=".tmp")
+    try:
+        with os.fdopen(fd, 'wb') as fh:
+            if isinstance(data, bytes):
+                fh.write(data)
+            else:
+                fh.write((data or '').encode(encoding) if data is not None else b'')
+        os.replace(tmp_path, path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+
 def atomic_write_sync(path: str, content: str, mode: str = "w") -> None:
     """同步原子写入字符串"""
-    with atomic_write(path, mode) as fh:
-        fh.write(content)
+    atomic_write(path, content, mode)
 
 
 # //// dig -- 点号分隔的深层字典访问
 
-def dig(d: dict, keypath: str, default: Any = None) -> Any:
-    """dig(d, 'a.b.c') -> d['a']['b']['c']，安全地逐层下探"""
+def dig(d, *keys, default=None):
+    """逐层下探嵌套 dict，安全返回 default。
+
+    兼容变参键与 'a.b.c' 点分串两种调用形式。
+    """
+    if len(keys) == 1 and isinstance(keys[0], str) and '.' in keys[0]:
+        keys = tuple(keys[0].split('.'))
     node = d
-    for part in keypath.split("."):
-        if isinstance(node, dict) and part in node:
-            node = node[part]
+    for key in keys:
+        if isinstance(node, dict) and key in node:
+            node = node[key]
         else:
             return default
     return node
@@ -111,31 +136,39 @@ def dig(d: dict, keypath: str, default: Any = None) -> Any:
 # retry -- 指数退避重试装饰器
 
 def retry(
-    max_retries: int = 3,
-    base_delay: float = 1.0,
+    max_attempts: Optional[int] = None,
+    delay: float = 0.5,
     max_delay: float = 60.0,
-    catch: tuple[type[BaseException], ...] = (Exception,),
+    catch: tuple = (Exception,),
+    max_retries: Optional[int] = None,
+    base_delay: Optional[float] = None,
 ):
     """
-    指数退避 + jitter，INTJ策略：不浪费调用方时间
-    delay = min(base * 2^attempt, max_delay) * (0.75 + random*0.5)
+    指数退避 + jitter 重试装饰器。
+
+    兼容两套参数名：max_attempts/delay（新）与 max_retries/base_delay（旧）。
+    delay 为 0 时不等待，直接进入下一次尝试。
     """
     import random
+
+    attempts = max_attempts if max_attempts is not None else \
+        ((max_retries + 1) if max_retries is not None else 3)
+    base = delay if base_delay is None else base_delay
 
     def _decorator(fn: Callable):
         @functools.wraps(fn)
         def _wrapper(*args, **kwargs):
             last_exc = None
-            for attempt in range(max_retries + 1):
+            for attempt in range(attempts):
                 try:
                     return fn(*args, **kwargs)
                 except catch as exc:
                     last_exc = exc
-                    if attempt == max_retries:
+                    if attempt == attempts - 1:
                         raise
-                    delay = min(base_delay * (2 ** attempt), max_delay)
-                    jitter = delay * (0.75 + random.random() * 0.5)
-                    time.sleep(jitter)
+                    if base > 0:
+                        bd = min(base * (2 ** attempt), max_delay)
+                        time.sleep(bd * (0.75 + random.random() * 0.5))
             raise last_exc  # type: ignore[misc]
         return _wrapper
     return _decorator

@@ -4,18 +4,19 @@ import subprocess
 import tempfile
 import json
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Dict, List, Any, Tuple
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-class TraceType:
+class TraceType(str, Enum):
     # Trace type enumeration
     INTEL_PT = "intel_pt"
     ARM_ETM = "arm_etm"
-    PERF_RECORD = "c"
+    PERF_RECORD = "perf_record"
 
-class TraceStatus:
+class TraceStatus(str, Enum):
     # Trace lifecycle states
     COLLECTING = "collecting"
     DECODED = "decoded"
@@ -485,7 +486,8 @@ class HWTraceAnalyzer:
         """
         report = []
         report.append("=" * 60)
-        report.append("Hardware Trace Analysis Report")
+        report.append("硬件跟踪分析报告 (Hardware Trace Analysis Report)")
+        report.append("硬件跟踪analysis report")
         report.append("=" * 60)
         report.append(f"Status: {result.status.value}")
         report.append(f"Success: {result.success}")
@@ -528,7 +530,7 @@ class HWTraceAnalyzer:
                     } for f in result.functions
                 ],
                 "control_flow_graph": {
-                    hex(k): [hex(v) for v in vs] for k, vs in result.control_flow_graph.items()
+                    hex(k): [hex(v) for v in vs] for k, vs in (result.control_flow_graph or {}).items()
                 },
                 "data_flow_count": len(result.data_flows)
             }

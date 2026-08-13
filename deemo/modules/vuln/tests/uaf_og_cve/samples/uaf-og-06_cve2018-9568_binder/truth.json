@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2018-9568",
-  "desc": "CVE-2018-9568 (Android binder) UAF 复现 — binder_thread 释放后",
-  "trigger": "   waitqueue 唤醒仍引用该线程. 简化: free(p); use(p->wait). "
-}

@@ -310,7 +310,7 @@ def _extract_feat(entry) -> Optional[List[float]]:
             min(math.log(1+len(getattr(entry, 'cpe_matches', None) or (entry.get('cpe_matches',[]) if isinstance(entry, dict) else [])))/math.log(101), 1.0)]
 
 
-def _get_str(e, f, d=""): return str(getattr(e,f,d) or d) if hasattr(e,f) else str(e.get(f,d)) if isinstance(e,dict) else d
-def _get_num(e, f): return getattr(e,f,None) if hasattr(e,f) else (e.get(f) if isinstance(e,dict) else None)
-def _get_bool(e, f): return bool(getattr(e,f,False)) if hasattr(e,f) else bool(e.get(f,False)) if isinstance(e,dict) else False
+from ._internal_helpers import _get_str, _get_num, _get_bool
+
+
 def _mat_val(m): return {"unknown":0,"poc":0.25,"proof_of_concept":0.25,"functional":0.5,"metasploit":0.75,"weaponized":1.0}.get(m.lower().strip(),0.0)

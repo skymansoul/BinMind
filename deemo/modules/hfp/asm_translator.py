@@ -1,14 +1,13 @@
 """
 汇编语义提取 — 把 objdump 寄存器级指令翻译为伪 IR.
 
-决策逻辑:
-  HFP 引擎的正则假定反编译器风格的行 (var = malloc(n),
-  memcpy(dst, src, size)). objdump 输出是寄存器级汇编, 两者
-  存在语义鸿沟. 本模块做有界的数据流模拟, 两遍执行:
-    第一遍逐块收集调用点参数快照 (全局变量编号保证与第二遍
-    别名一致); 第二遍按函数块翻译, 注入实参到参数槽, 输出
-    伪 IR (分配/拷贝/守卫/存储行).
-  局限: 不模拟内存读值, 不处理间接调用.
+HFP 引擎的正则假定反编译器风格的行 (var = malloc(n),
+memcpy(dst, src, size)). objdump 输出是寄存器级汇编, 两者
+存在语义鸿沟. 本模块做有界的数据流模拟, 两遍执行:
+  第一遍逐块收集调用点参数快照 (全局变量编号保证与第二遍
+  别名一致); 第二遍按函数块翻译, 注入实参到参数槽, 输出
+  伪 IR (分配/拷贝/守卫/存储行).
+局限: 不模拟内存读值, 不处理间接调用.
 """
 
 from __future__ import annotations
@@ -41,6 +40,7 @@ class AsmTranslator:
         self._pending_cmp: Optional[tuple] = None
         self._call_args: Dict[str, list] = {}
         self._blocks: Dict[str, list] = {}
+        self._loop_ranges: List[tuple] = []
 
     def _new_var(self) -> str:
         self.var_counter += 1
@@ -110,6 +110,14 @@ class AsmTranslator:
         """翻译单个函数块 (不含函数头注入, 由 translate 预置)."""
         if fn_name:
             self.ir.append(f'# fn {fn_name}')
+        # 回边检测: 块内 jmp/jcc 目标指向块内更早指令 → 循环结构.
+        # 循环内 store 的写量可能随迭代累积, 标记供引擎判定
+        self._loop_ranges = self._detect_loop_ranges(lines)
+        # main 块 argv 语义: rbp+0x18 是 argv 参数槽 (Win64 第2参数),
+        # 无调用者注入时预设 argv 基址元组 — LOAD_REG_BASE 据此
+        # 识别 [argv+delta] 为外部输入 (argv[i])
+        if fn_name == 'main':
+            self.slots.setdefault('rbp+0x18', "('argv', '+', '0x0')")
         # 函数头参数注入: 调用点实参写入参数槽 [rbp+0x10..]
         if self.pending_args:
             for i, val in enumerate(self.pending_args):
@@ -122,13 +130,14 @@ class AsmTranslator:
                 self.slots[slot] = str(val)
                 if i < len(self.arg_regs):
                     self.regs[self.arg_regs[i]] = val
-        for line in lines:
+        for line_idx, line in enumerate(lines):
             m = _RE_INSN.match(line)
             if not m:
                 continue
             mnem, operands = m.group(1).lower(), m.group(2)
             if mnem in ('push', 'pop', 'ret'):
                 continue
+            ir_before = len(self.ir)
             if mnem == 'mov':
                 handle_mov(self, operands)
             elif mnem == 'lea':
@@ -159,6 +168,12 @@ class AsmTranslator:
                 # 内联到当前块, 使跨函数堆操作与调用方变量关联
                 self._emit_inlined_ops(target)
                 self._clear_volatile(self)
+            # 循环内 store 标记: 本行新增的 store 若位于循环体
+            # 区间, 追加 '# loop' 供引擎识别累积写
+            if any(lo <= line_idx <= hi for lo, hi in self._loop_ranges):
+                for new_i in range(ir_before, len(self.ir)):
+                    if self.ir[new_i].startswith('store '):
+                        self.ir[new_i] += ' # loop'
 
     def _call_target(self, operands: str) -> Optional[str]:
         """提取 call 目标函数名 (无符号或间接调用返回 None)."""
@@ -166,6 +181,33 @@ class AsmTranslator:
         if sym:
             return sym.group(1)
         return None
+
+    def _detect_loop_ranges(self, lines: List[str]) -> List[tuple]:
+        """检测块内循环: jmp/jcc 目标指向块内更早指令 → (头, 尾).
+
+        循环内指令的 store 可能随迭代累积写量, 引擎据此禁止
+        SAFE 抑制. 返回循环体行号区间列表.
+        """
+        ranges: List[tuple] = []
+        line_addrs: List[str] = []
+        for l in lines:
+            m = re.match(r'^\s*([0-9a-fA-F]+):', l)
+            line_addrs.append(m.group(1) if m else '')
+        jmp_mnems = ('jmp', 'jne', 'je', 'jl', 'jb', 'jle', 'jbe',
+                     'jg', 'ja', 'jge', 'jae', 'jz', 'jnz', 'loop')
+        for i, l in enumerate(lines):
+            m = _RE_INSN.match(l)
+            if not m or m.group(1).lower() not in jmp_mnems:
+                continue
+            tgt = re.search(r'\b([0-9a-fA-F]{6,})\b', m.group(2))
+            if not tgt:
+                continue
+            target = tgt.group(1)
+            for j in range(i):
+                if line_addrs[j] == target:
+                    ranges.append((j, i))
+                    break
+        return ranges
 
     def _emit_inlined_ops(self, target: Optional[str]) -> None:
         """把被调函数内对参数槽的 memcpy/free 语义内联到当前块.
@@ -224,8 +266,10 @@ class AsmTranslator:
             return
         if fn in ('memcpy', 'memset', 'strcpy', 'strncpy', 'memmove'):
             dst, src, size = args[0], args[1], args[2]
-            dst_name = dst if isinstance(dst, str) else '?'
-            src_name = src if isinstance(src, (str, int)) else '?'
+            # dst/src 保留类型: 栈地址元组 repr 也是 str, 与 '?'
+            # 区分 — fmt 检测需匹配拷贝目标与 printf 的 fmt 参数
+            dst_name = dst if isinstance(dst, (str, tuple)) else '?'
+            src_name = src if isinstance(src, (str, int, tuple)) else '?'
             if isinstance(size, (int, str)):
                 self.ir.append(f'{fn}({dst_name}, {src_name}, {size})')
             else:

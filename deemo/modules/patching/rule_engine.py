@@ -62,6 +62,26 @@ class RuleCondition:
             return _fv is not None and _fv != ''
         elif self.operator == 'not_exists':
             return _fv is None or _fv == ''
+        elif self.operator == 'greater_than':
+            try:
+                return float(_fv) > float(self.value)
+            except (TypeError, ValueError):
+                return False
+        elif self.operator == 'less_than':
+            try:
+                return float(_fv) < float(self.value)
+            except (TypeError, ValueError):
+                return False
+        elif self.operator == 'greater_equal':
+            try:
+                return float(_fv) >= float(self.value)
+            except (TypeError, ValueError):
+                return False
+        elif self.operator == 'less_equal':
+            try:
+                return float(_fv) <= float(self.value)
+            except (TypeError, ValueError):
+                return False
         else:
             return False
 
@@ -96,6 +116,47 @@ class VulnerabilityRule:
     target_formats: List[str] = field(default_factory=lambda: ['ELF', 'PE', 'MACH-O'])
     conditions: List[RuleCondition] = field(default_factory=list)
     actions: List[RuleAction] = field(default_factory=list)
+
+    def __init__(self, data=None, **kw):
+        """兼容两种构造: 传规则字典 (VulnerabilityRule(dict)) 或字段 kwargs。"""
+        if data is None:
+            data = {}
+        if isinstance(data, dict):
+            self.id = data.get('id', kw.get('id', ''))
+            self.name = data.get('name', kw.get('name', ''))
+            self.description = data.get('description', kw.get('description', ''))
+            self.severity = data.get('severity', kw.get('severity', 'Medium'))
+            self.enabled = data.get('enabled', kw.get('enabled', True))
+            self.tags = list(data.get('tags', kw.get('tags', [])))
+            self.target_languages = list(data.get('target_languages',
+                                                 kw.get('target_languages', ['c/c++'])))
+            self.target_formats = list(data.get('target_formats',
+                                                kw.get('target_formats', ['ELF', 'PE', 'MACH-O'])))
+            self.conditions = []
+            for _c in data.get('conditions', []):
+                self.conditions.append(RuleCondition(
+                    field=_c.get('field', ''),
+                    operator=_c.get('operator', 'equals'),
+                    value=_c.get('value'),
+                    regex=_c.get('regex', False),
+                ))
+            self.actions = []
+            for _a in data.get('actions', []):
+                self.actions.append(RuleAction(
+                    action_type=_a.get('type', _a.get('action_type', '')),
+                    parameters=_a.get('parameters', {}),
+                ))
+        else:
+            self.id = kw.get('id', '')
+            self.name = kw.get('name', '')
+            self.description = kw.get('description', '')
+            self.severity = kw.get('severity', 'Medium')
+            self.enabled = kw.get('enabled', True)
+            self.tags = list(kw.get('tags', []))
+            self.target_languages = list(kw.get('target_languages', ['c/c++']))
+            self.target_formats = list(kw.get('target_formats', ['ELF', 'PE', 'MACH-O']))
+            self.conditions = list(kw.get('conditions', []))
+            self.actions = list(kw.get('actions', []))
 
     @classmethod
     def from_dict(cls, data: Dict) -> "VulnerabilityRule":
@@ -169,11 +230,38 @@ class RuleEngine:
     优先级排序保证高优规则先命中。
     """
 
-    def __init__(self, rules_file: Optional[str] = None):
+    def __init__(self, rules_file: Optional[str] = None, rules_dir=None, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self._rules: List[Rule] = []
+        self.rules_dir = rules_dir
         self._regex_cache: Dict[str, re.Pattern] = {}
         if rules_file and os.path.isfile(rules_file):
             self.import_rules(rules_file)
+
+    @property
+    def enabled_rules(self) -> List[Rule]:
+        return [r for r in self._rules if r.enabled]
+
+    def load_rules(self):
+        """从 rules_dir 目录加载全部 JSON 规则文件。"""
+        if not self.rules_dir or not os.path.isdir(self.rules_dir):
+            return
+        for entry in sorted(os.listdir(self.rules_dir)):
+            if not entry.endswith('.json'):
+                continue
+            path = os.path.join(self.rules_dir, entry)
+            try:
+                with open(path, 'r', encoding='utf-8') as fh:
+                    data = json.load(fh)
+            except (OSError, json.JSONDecodeError) as exc:
+                _log.warning("skip rule file %s: %s", path, exc)
+                continue
+            rule = VulnerabilityRule(data) if isinstance(data, dict) else None
+            if rule is None:
+                continue
+            self._rules.append(rule)
+            _log.info("loaded rule %s from %s", rule.id or rule.name, path)
 
 # 注册规则，按优先级降序
     def add_rule(self, rule: Rule):
@@ -182,14 +270,21 @@ class RuleEngine:
         from src.utils import bubble_sort
         self._rules = bubble_sort(self._rules, key=lambda r: r.priority, reverse=True)
 
-    def evaluate(self, data: Dict) -> List[str]:
-        """评估 data，返回匹配规则名（优先级序）。"""
-        _r: List[str] = []
+    def evaluate(self, data: Dict) -> List[Any]:
+        """评估 data，返回匹配规则动作结果。
+
+        漏洞规则 (VulnerabilityRule) 执行动作返回字典列表；
+        普通规则 (Rule) 仅返回规则名，保持旧调用兼容。
+        """
+        _r: List[Any] = []
         for _rule in self._rules:
             if not _rule.enabled:
                 continue
             if self._match_conditions(_rule.conditions, data):
-                _r.append(_rule.name)
+                if hasattr(_rule, 'execute') and getattr(_rule, 'actions', None):
+                    _r.extend(_rule.execute(data))
+                else:
+                    _r.append(_rule.name)
         return _r
 
     def evaluate_first(self, data: Dict) -> Optional[str]:
@@ -211,11 +306,13 @@ class RuleEngine:
         self._rules.clear()
 
     # //// 条件匹配：全 AND ////
-    def _match_conditions(self, conditions: List[Dict], data: Dict) -> bool:
+    def _match_conditions(self, conditions: List[Any], data: Dict) -> bool:
         _matches = [self._match_condition(_c, data) for _c in conditions]
         return all(_matches)
 
-    def _match_condition(self, condition: Dict, data: Dict) -> bool:
+    def _match_condition(self, condition: Any, data: Dict) -> bool:
+        if isinstance(condition, RuleCondition):
+            return condition.matches(data)
         _field = condition.get('field', '')
         _op = condition.get('operator', 'equals')
         _val = condition.get('value')

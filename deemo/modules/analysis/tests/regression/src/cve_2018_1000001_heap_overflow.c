@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2018_1000001 ¶ÑÒç³öÄ£Äâ: malloc(64) + memcpy(256)
-// ¡ú 192 ×Ö½ÚÒç³ö
+// cve_2018_1000001 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(64) + memcpy(256)
+// â†’ 192 å­—èŠ‚æº¢å‡º
 void libcurl_tftp_overflow() {
     char *buf = (char *)malloc(64);
     if (!buf) return;
@@ -52,7 +52,7 @@ void libcurl_tftp_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(320) + memcpy(320/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(320) + memcpy(320/2) â†’ ä¸æº¢å‡º
 void libcurl_tftp_safe() {
     char *buf = (char *)malloc(320);
     if (!buf) return;

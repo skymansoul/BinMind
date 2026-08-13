@@ -5,9 +5,9 @@ int main(int argc, char **argv) {
     unsigned char *buf = (unsigned char *)malloc(256);
     if (!buf) return 1;
     size_t len = argc > 1 ? strlen(argv[1]) : 16;
-    size_t ok = len;                 /* йьню╠Да©╬╜╦Ёж╣а╢ */
+    size_t ok = len;                 /* Е╝┬Е█╚Е▐≤И┤▐Г╩▐Х╣▀Е─╪И⌠╬ */
     if (ok <= 256) {
-        memcpy(buf, argv[1], ok);    /* йьню╠ёж╓╡╩т╫╫Г */
+        memcpy(buf, argv[1], ok);    /* Е╝┬Е█╚Д©²Х╞│Д╦█Х╤┼Г∙▄ */
         printf("[*] %zu\n", ok);
     }
     free(buf);

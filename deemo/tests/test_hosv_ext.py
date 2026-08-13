@@ -14,11 +14,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 from analysis.hosv_ext_verifier import HosvExtVerifier, HosvExtOutput  # noqa: E402
 from analysis.hosv_walk_write import (  # noqa: E402
-    collect_walk_writes, verify_walk, _find_strlen_var, _strlen_coef,
+    collect_walk_writes,
+)
+from analysis.hosv_walk_verify import (  # noqa: E402
+    verify_walk, _find_strlen_var, _strlen_coef,
 )
 from analysis.hosv_struct_idx import (  # noqa: E402
     resolve_elem_size, _bound_int, _extract_index_bound, _loop_bound_var,
-    collect_struct_idx_writes, verify_struct_idx,
+)
+from analysis.hosv_struct_collect import (  # noqa: E402
+    collect_struct_idx_writes,
+)
+from analysis.hosv_struct_verify import (  # noqa: E402
+    verify_struct_idx,
 )
 from analysis.hosv_unbounded_io import (  # noqa: E402
     _parse_scanf_width, collect_unbounded_io,
@@ -247,8 +255,8 @@ def test_terminator_safe_with_plus1():
 def test_end_to_end_regression_samples():
     """跑完整 18 样本回归.
 
-    写模式扩展单独: ≥10 TP, 0 FP (扩展不引入新误报).
-    完整管线 (HOSV + 写模式扩展): 12 TP / 0 FP / 0 FN / 6 TN.
+    写模式扩展单独: ≥11 TP, 0 FP (扩展不引入新误报).
+    完整管线 (HOSV + 写模式扩展): 13 TP / 0 FP / 0 FN / 7 TN.
     """
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "hosv_benchmark", "samples")
@@ -277,5 +285,5 @@ def test_end_to_end_regression_samples():
                 fp += 1
             else:
                 tn += 1
-    assert tp >= 10 and fp == 0
-    assert tn == 6
+    assert tp >= 11 and fp == 0
+    assert tn == 7

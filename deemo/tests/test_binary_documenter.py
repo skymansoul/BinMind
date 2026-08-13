@@ -80,7 +80,6 @@ class TestFunctionDoc(unittest.TestCase):
         self.assertEqual(doc_dict['name'], 'test')
 
     def test_function_doc_to_markdown(self):
-                """md里要有 ## function_name, 地址, 描述"""
         func_doc = FunctionDoc(
             name='test_func',
             address='0x1000',

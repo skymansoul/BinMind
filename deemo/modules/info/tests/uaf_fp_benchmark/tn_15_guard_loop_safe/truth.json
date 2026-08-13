@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_15_guard_loop_safe",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 循环内守卫后解引用",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "每轮循环释放后立即置空并守卫, 解引用仅在非空时发生"
-}

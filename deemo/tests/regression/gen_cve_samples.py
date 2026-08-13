@@ -251,9 +251,9 @@ for name, (code, vtype) in S.items():
     with open(os.path.join(d, 'vuln.c'), 'w') as f:
         f.write(code)
     with open(os.path.join(d, 'Makefile'), 'w') as f:
-        f.write(f'CC=gcc\nCFLAGS=-g -O0 -no-pie -fno-stack-protector\n')
+        f.write
         f.write(f'all: vuln\n\nvuln: vuln.c\n')
-        f.write(f'\t$(CC) $(CFLAGS) -o vuln vuln.c\n\n')
+        f.write(f'\t$ $(CFLAGS) -o vuln vuln.c\n\n')
         f.write(f'clean:\n\trm -f vuln\n')
     print(f'  {name}: vuln.c({len(code)}B) + Makefile')
 

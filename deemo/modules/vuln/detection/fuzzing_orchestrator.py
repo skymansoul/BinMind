@@ -341,9 +341,9 @@ class FuzzingOrchestrator:
         5. 收敛——覆盖率增长停滞或时间/执行数达上限
 
     参考:
-        - HyllFuzz (arXiv:2412.15931): LLM辅助seed构造+混合fuzzing编排
-        - VPGFuzz (IEEE TIFS 2025): 漏洞路径引导灰盒fuzzing
-        - IDFuzz (USENIX 2025): 神经网络驱动定向变异
+        - HyllFuzz: LLM辅助seed构造+混合fuzzing编排
+        - VPGFuzz: 漏洞路径引导灰盒fuzzing
+        - IDFuzz: 神经网络驱动定向变异
     """
 
     def __init__(self, output_base: str = "", max_concurrent: int = 3):

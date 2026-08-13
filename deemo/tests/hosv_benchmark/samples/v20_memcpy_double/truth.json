@@ -1,0 +1,8 @@
+{
+  "sample": "v20_memcpy_double",
+  "cve": "GENERIC-mcd",
+  "mode": "memcpy_corr",
+  "label": "VULN",
+  "verdict": "VULN",
+  "why": "malloc(n) + memcpy(n*2) 写入系数大于分配 → 溢出"
+}

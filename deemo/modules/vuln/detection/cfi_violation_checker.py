@@ -160,7 +160,9 @@ class CFIChecker:
 
     def run(self) -> CheckResult:
         """主入口——执行收集→扫描→交叉验证流程，返回统一CheckResult"""
-        # 保持上下文连贯
+        # 目标不存在时直接失败返回，不进入分析流程
+        if not os.path.isfile(self.binary_path):
+            return CheckResult(success=False, indirect_calls=[], violations=[])
         try:
             entries = self.collector.collect()
             calls = self.scanner.scan()

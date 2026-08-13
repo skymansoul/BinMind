@@ -32,7 +32,15 @@ def _quick_parse(argv=None):
     p.add_argument('--verbose', '-v', action='store_true')
     p.add_argument('--no-crypto', action='store_true')
     p.add_argument('--no-symbolic', action='store_true')
+    # --kernel 开关：内核模块分析标记；流水线暂未消费该值，仅作为命令行契约保留
+    p.add_argument('--kernel', action='store_true',
+                   help='enable kernel module analysis')
     return p.parse_args(argv)
+
+
+def parse_arguments(argv=None):
+    """_quick_parse 的公开别名；测试与外部脚本依赖该名字。"""
+    return _quick_parse(argv)
 
 
 # entry point
@@ -91,6 +99,15 @@ def main(argv=None):
     print()
 
     return 0
+
+
+def __getattr__(name):
+    # 模块级惰性导出：历史脚本以 from main import run_pipeline 获取入口时，
+    # 委派至核心流水线实现，避免导入期加载完整分析链。
+    if name == 'run_pipeline':
+        from core.pipeline import run_pipeline
+        return run_pipeline
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 if __name__ == '__main__':

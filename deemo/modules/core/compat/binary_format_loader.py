@@ -755,6 +755,27 @@ class BinaryFormatLoader:
         self.path = path
         self._info = _quick_sniff(path) if path else None
 
+    def detect_format(self, filepath: str = '') -> BinaryFormat:
+        """按 magic 签名判别二进制格式 — 返回 BinaryFormat 枚举。"""
+        target = filepath or self.path
+        if not target or not os.path.isfile(target):
+            return BinaryFormat.UNKNOWN
+        try:
+            with open(target, 'rb') as fh:
+                head = fh.read(64)
+        except OSError:
+            return BinaryFormat.UNKNOWN
+        if head[:4] == b'\x7fELF':
+            return BinaryFormat.ELF
+        if head[:2] == b'MZ':
+            return BinaryFormat.PE
+        if head[:4] in (b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'):
+            return BinaryFormat.UNIVERSAL
+        if head[:4] in (b'\xfe\xed\xfa\xce', b'\xfe\xed\xfa\xcf',
+                        b'\xce\xfa\xed\xfe', b'\xcf\xfa\xed\xfe'):
+            return BinaryFormat.MACH_O
+        return BinaryFormat.UNKNOWN
+
     def load(self):
         if self._info:
             return dict(self._info)

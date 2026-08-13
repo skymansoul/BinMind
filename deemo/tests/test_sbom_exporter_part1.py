@@ -50,7 +50,7 @@ class TestSBOMDocument(unittest.TestCase):
         doc = SBOMDocument(name="test-app")
         self.assertEqual(doc.name, "test-app")
         self.assertEqual(doc.author, "binmind-analyzer")
-        self.assertEqual(doc.tool, "Binary Vulnerability Analysis Tool")
+        self.assertEqual(doc.tool, "LLM-Assisted Binary Vulnerability Analysis Tool")
     
     def test_with_components(self):
         """测试带组件初始化"""

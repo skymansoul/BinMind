@@ -193,7 +193,8 @@ class DetectionPipeline:
         """格式串三阶段管线——含printf系列调用触发"""
         _FMT_SET = {'printf', 'fprintf', 'sprintf', 'snprintf', 'dprintf', 'vprintf',
                     'vfprintf', 'vsprintf', 'syslog', '__printf_chk', '__fprintf_chk'}
-        if not any('call' in i.lower() and any(f in i.lower() for f in _FMT_SET) for i in instructions):
+        if not any(('call' in i.lower() or 'jmp' in i.lower())
+                   and any(f in i.lower() for f in _FMT_SET) for i in instructions):
             return []
         try:
             fmt_reports = self._fmt_filter.analyze(instructions, bb_boundaries, cfg_edges, func_name)

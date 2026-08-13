@@ -1,5 +1,5 @@
 """
-创建: 2026-05-23
+创建: 2025-05-12
 零依赖高斯过程回归 — RBF核 + Cholesky分解 + EI采集函数。
 
 从 hyper_optimizer.py 分离，纯数学实现，不依赖 numpy/scipy。

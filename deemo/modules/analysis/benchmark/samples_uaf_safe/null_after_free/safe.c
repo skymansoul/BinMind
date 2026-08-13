@@ -7,7 +7,7 @@ __attribute__((noinline)) void trigger_null_after_free_safe(void) {
     g_p_null = (char *)malloc(64);
     if (!g_p_null) return;
     free(g_p_null);
-    g_p_null = NULL;  /* ÏÔÊ½ÖÃNULL ¡ú ºóĞø·ÃÎÊÊÇNULL deref, ²»ÊÇUAF */
+    g_p_null = NULL;  /* æ˜¾å¼ç½®NULL â†’ åç»­è®¿é—®æ˜¯NULL deref, ä¸æ˜¯UAF */
     if (g_p_null) g_p_null[0] = 'X';  /* NULL guard prevents access */
 }
 

@@ -47,7 +47,6 @@ class TestReplayTrace:
     def test_trace_empty(self):
         """测试空跟踪"""
         trace = ReplayTrace(events=[], initial_state={})
-lass字段完整性$/d
         assert len(trace.events) == 0
 
 
@@ -80,7 +79,6 @@ class TestReplayResult:
     """测试重放结果数据类"""
 
     def test_replay_result_success(self):
-                """测试成功的重放结果"""
         trace = ReplayTrace(events=[], initial_state={})
         result = ReplayResult(success=True, trace=trace, permutations=[])
         assert result.success is True

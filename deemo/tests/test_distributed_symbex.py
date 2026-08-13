@@ -206,7 +206,6 @@ class TestDistributedSymbolicExecutionEngine:
     def test_create_distributed_engine(self):
         """测试工厂函数"""
         engine = create_distributed_engine(backend="ray")
-lass字段完整性$/d
         assert isinstance(engine, DistributedSymbolicExecutionEngine)
 
     def test_invalid_backend(self):

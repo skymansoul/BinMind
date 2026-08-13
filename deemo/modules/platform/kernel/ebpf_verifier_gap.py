@@ -18,7 +18,7 @@ from collections import Counter
 
 logger = logging.getLogger(__name__)
 
-# ── 已知的 eBPF verifier 拒绝错误类别 (基于 arXiv 2607.02748 分类学) ──
+    # 已知的 eBPF verifier 拒绝错误类别（基于公开分类学）
 # 各条目结构: 正则匹配验证器输出模式 → 可执行解释 + 补救方向
 _VERIFIER_ERROR_TYPES: list[dict] = [
     {
@@ -119,7 +119,7 @@ class VerifierGapFinding:
 
 
 class EbpfVerifierGapAnalyzer:
-    """eBPF 验证器诊断缝隙分析 (arXiv 2607.02748)。
+    """eBPF 验证器诊断缝隙分析。
 
     输入: Linux eBPF verifier 的输出日志 (bpftool prog load 的 stderr)
     输出: 每条拒绝的结构化诊断 + 可执行的修复建议

@@ -17,7 +17,7 @@ _MOD_DEBUG = False
 
 class TestCANFrameTypeEnum(unittest.TestCase):
     def test_can_frame_type_values(self):
-                self.assertEqual(CANFrameType.DATA_FRAME.value, "data_frame")
+        self.assertEqual(CANFrameType.DATA_FRAME.value, "data_frame")
         self.assertEqual(CANFrameType.REMOTE_FRAME.value, "remote_frame")
         self.assertEqual(CANFrameType.ERROR_FRAME.value, "error_frame")
         self.assertEqual(CANFrameType.OVERLOAD_FRAME.value, "overload_frame")
@@ -58,7 +58,6 @@ class TestCANFrameDataclass(unittest.TestCase):
             self.skipTest("CANFrame creation failed")
         self.assertEqual(f.can_id, 0x123)
         self.assertEqual(f.data, b"\x01\x02\x03\x04")
-lass字段完整性$/d
         self.assertEqual(f.dlc, 4)
         self.assertFalse(f.is_extended)
 
@@ -107,7 +106,6 @@ class TestCRCErrorInjector(unittest.TestCase):
         inj = CRCErrorInjector()
         frame = CANFrame(can_id=0x123, data=b"\x01\x02\x03\x04")
         result = inj.inject(frame, AnomalyConfig(anomaly_type=AnomalyType.CRC_ERROR))
-lass字段完整性$/d
         self.assertNotEqual(result.data[-1], 0x04)
 
 
@@ -187,7 +185,6 @@ class TestVulnerabilityDataclass(unittest.TestCase):
             location=0x1000, recommended_fix="修复建议"
         )
         self.assertEqual(v.anomaly_type, AnomalyType.BIT_FLIP)
-lass字段完整性$/d
         self.assertEqual(v.can_id, 0x123)
         self.assertEqual(v.severity, SeverityLevel.CRITICAL)
 

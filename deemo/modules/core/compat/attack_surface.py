@@ -119,6 +119,38 @@ class AttackSurfaceResult:
     @binary_path.setter
     def binary_path(self, value): pass
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'binary_path': self.binary_path,
+            'analysis_success': bool(self.ok),
+            'surface_points': [
+                {
+                    'name': p.name,
+                    'surface_type': p.surface_type.name if hasattr(p.surface_type, 'name') else p.surface_type,
+                    'risk_score': p.score,
+                    'privileged': p.privileged,
+                    'reachable': p.reachable,
+                    'description': p.description,
+                }
+                for p in self.points
+            ],
+            'high_risk_count': self.nhigh,
+            'medium_risk_count': self.nmed,
+            'low_risk_count': self.nlow,
+            'findings': [
+                {
+                    'category': f.category,
+                    'severity': f.severity,
+                    'description': f.description,
+                    'recommendation': f.recommendation,
+                }
+                for f in self.findings
+            ],
+            'attack_vectors': list(self.attack_vectors),
+            'surface_score': self.surface_score,
+            'exploitability_score': self.exploitability_score,
+        }
+
 
 # 本地化字符串表
 _T = {
@@ -189,10 +221,14 @@ def _run_checksec(binary_path: str) -> Dict[str, Any]:
     if len(header) < 4:
         return {}
 
-    if header[:4] == b'\x7fELF':
-        info = _parse_elf_checksec(binary_path, header, info)
-    elif header[:2] == b'MZ':
-        info = _parse_pe_checksec(binary_path, header, info)
+    try:
+        if header[:4] == b'\x7fELF':
+            info = _parse_elf_checksec(binary_path, header, info)
+        elif header[:2] == b'MZ':
+            info = _parse_pe_checksec(binary_path, header, info)
+    except (struct.error, OSError, ValueError):
+        # 畸形或过短头部：保留默认缓解信息，避免解析异常阻断分析
+        pass
 
     return info
 
@@ -322,23 +358,24 @@ class AttackSurfaceMapper:
         self._points: List[AttackSurfacePoint] = []
 
     def analyze(self) -> AttackSurfaceResult:
+        result = AttackSurfaceResult()
+        result.binary_path = self._path
         if not self._path or not os.path.exists(self._path):
-            result = AttackSurfaceResult(ok=False)
-            result.err = 'invalid file path: ' + (self._path or '(empty)')
+            result.ok = False
+            result.err = '无效的文件路径: ' + (self._path or '(空)')
             return result
 
         try:
             self._binary_info = _run_checksec(self._path)
         except Exception as ex:
-            result = AttackSurfaceResult(ok=False)
-            result.err = f'analysis failed: {ex}'
+            result.ok = False
+            result.err = f'分析失败: {ex}'
             return result
 
+        # 空文件或无符号信息时降级为空分析，不视为失败
         if not self._binary_info:
-            result = AttackSurfaceResult(ok=False)
-            result.err = f'unable to parse binary: {self._path}'
-            return result
-
+            self._binary_info = {'nx': False, 'pie': False, 'canary': False,
+                                 'relro': 'none', 'fortify': False}
         self._findings = self._assess_findings()
         self._points = self._enumerate_entry_points()
         score = self._calculate_surface_score()
@@ -411,39 +448,62 @@ class AttackSurfaceMapper:
         points: List[AttackSurfacePoint] = []
         bi = self._binary_info
 
-        # 文件操作
-        points.append(AttackSurfacePoint(
-            name='file read', type='FILE', score=5.0,
-            privileged=not _check_pie(bi), description='File I/O operations',
-        ))
-        points.append(AttackSurfacePoint(
-            name='file write', type='FILE', score=8.0,
-            privileged=not _check_pie(bi), description='Write file operations',
-        ))
+        # 读取文件内容用于攻击面识别
+        content = b''
+        try:
+            if os.path.isfile(self._path):
+                with open(self._path, 'rb') as fh:
+                    content = fh.read(65536)
+        except OSError:
+            content = b''
 
-        # 网络
-        points.append(AttackSurfacePoint(
-            name='network socket', type='NET', score=12.0,
-            privileged=False, reachable=True,
-            description='Network socket operations',
-        ))
-        points.append(AttackSurfacePoint(
-            name='network bind', type='NET', score=18.0,
-            privileged=True, reachable=True,
-            description='Network bind/listen operations',
-        ))
+        text = content.decode('utf-8', errors='replace').lower()
+
+        # 网络接口：socket/bind/listen/connect/recv 等 API 或 IP 地址
+        net_keywords = ('bind ', 'listen', 'accept', 'recvfrom', 'socket(',
+                        'connect(', 'sendto', 'http://', '192.168.', ':8080')
+        if any(k in text for k in net_keywords):
+            points.append(AttackSurfacePoint(
+                name='network socket', type=AttackSurfaceType.NETWORK_INTERFACE,
+                score=12.0, privileged=False, reachable=True,
+                description='网络套接字操作',
+            ))
+
+        # 文件操作：常见文件路径或文件 I/O 字符串
+        file_keywords = ('/etc/', '/var/', '.conf', '.log', 'file(',
+                         'fopen', '\\windows\\', 'system32')
+        if any(k in text for k in file_keywords):
+            points.append(AttackSurfacePoint(
+                name='file operation', type=AttackSurfaceType.FILE_OPERATION,
+                score=8.0, privileged=not _check_pie(bi),
+                description='文件读写操作',
+            ))
+
+        # RPC 接口：RPC 相关 API 或 grpc 标识
+        rpc_keywords = ('rpcd', 'rpcs', 'rpc_', 'grpc', 'rpcsrv', 'msrpc')
+        if any(k in text for k in rpc_keywords):
+            points.append(AttackSurfacePoint(
+                name='rpc interface', type=AttackSurfaceType.RPC_INTERFACE,
+                score=15.0, privileged=True, reachable=True,
+                description='RPC 接口注册',
+            ))
 
         # 共享内存
-        points.append(AttackSurfacePoint(
-            name='shared memory', type='SHARED_MEMORY', score=10.0,
-            privileged=False, description='Shared memory segment access',
-        ))
+        shm_keywords = ('shmget', 'shmat', 'shm_open', 'mmap(', 'createshared')
+        if any(k in text for k in shm_keywords):
+            points.append(AttackSurfacePoint(
+                name='shared memory', type=AttackSurfaceType.SHARED_MEMORY,
+                score=10.0, privileged=False, description='共享内存段访问',
+            ))
 
-        # 进程
-        points.append(AttackSurfacePoint(
-            name='process creation', type='PROCESS', score=7.0,
-            privileged=not _check_pie(bi), description='Process spawn/exec',
-        ))
+        # 进程创建
+        proc_keywords = ('fork(', 'execve', 'createprocess', 'system(', 'popen(')
+        if any(k in text for k in proc_keywords):
+            points.append(AttackSurfacePoint(
+                name='process creation', type=AttackSurfaceType.PROCESS,
+                score=7.0, privileged=not _check_pie(bi),
+                description='进程创建/执行',
+            ))
 
         return points
 
@@ -453,7 +513,10 @@ class AttackSurfaceMapper:
             return 0.0
         entry_count = len(self._points)
         privileged_count = sum(1 for p in self._points if p.privileged)
-        network_exposed = sum(1 for p in self._points if 'net' in p.type.lower())
+        network_exposed = sum(
+            1 for p in self._points
+            if hasattr(p.type, 'name') and 'net' in p.type.name.lower()
+        )
         total_risk = sum(p.score for p in self._points)
         raw = total_risk * (1.0 + 0.3 * privileged_count + 0.5 * network_exposed)
         return min(100.0, 10.0 * math.log2(1.0 + raw))
@@ -477,9 +540,9 @@ class AttackSurfaceMapper:
         """生成攻击面分析报告 (Markdown)"""
         result = self.analyze()
         lines: List[str] = []
-        lines.append('# attack surfaceanalysis report')
+        lines.append('# 攻击面分析报告')
         lines.append('')
-        lines.append(f'target file: `{self._path}`')
+        lines.append(f'目标文件: `{self._path}`')
         lines.append('')
         lines.append(f'分析时间: {__import__("datetime").datetime.now().isoformat()}')
         lines.append('')

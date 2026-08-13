@@ -6,8 +6,8 @@ static char *g_p_reassign;
 __attribute__((noinline)) void trigger_reassign_safe(void) {
     g_p_reassign = (char *)malloc(64);
     free(g_p_reassign);
-    g_p_reassign = (char *)malloc(128);  /* ĞÂ·ÖÅä */
-    g_p_reassign[0] = 'X';  /* Ê¹ÓÃĞÂÖ¸Õë ¡ú °²È« */
+    g_p_reassign = (char *)malloc(128);  /* æ–°åˆ†é… */
+    g_p_reassign[0] = 'X';  /* ä½¿ç”¨æ–°æŒ‡é’ˆ â†’ å®‰å…¨ */
 }
 
 int main(void) {

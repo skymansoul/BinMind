@@ -1,8 +1,0 @@
-{
-  "id": "safe_13_guard_index",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "下标经 if(idx<len) 守卫后写入"
-}

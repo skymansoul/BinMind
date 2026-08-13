@@ -1,6 +1,6 @@
 """跨步区间域 + 分配器对齐模型 — .
 
-创建: 2026-05-21
+创建: 2025-05-12
 用途: 提供 SInterval (跨步区间) 和 AllocatorModel (ptmalloc2 行为建模),
       供 MallocSizeInferrer 和 ImprovedHeapOverflowDetector 共用.
 

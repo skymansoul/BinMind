@@ -257,7 +257,7 @@ class PatchStealthHardener:
 
     用法:
         hardener = PatchStealthHardener(seed=1337)
-        report = hardener.harden(patch_bytes, original_asm, patched_asm, 'CVE-2024-0001')
+        report = hardener.harden
     """
 
     def __init__(self, seed: int = 1337):

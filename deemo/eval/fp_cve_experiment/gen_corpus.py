@@ -1,6 +1,6 @@
 """堆溢出语料库生成器 — 从 corpus_specs 生成样本目录并编译.
 
-创建: 2026-06-14
+创建: 2024-04-05
 用法: python eval/fp_cve_experiment/gen_corpus.py [--skip-compile]
 输出: corpus/<id>/{vuln.c, Makefile, README.md, truth.json, vuln.exe}
 """
@@ -11,8 +11,7 @@ import shutil
 import subprocess
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, _HERE)
+from _common import HERE as _HERE
 from corpus_specs import CVE_SAMPLES, SAFE_SAMPLES
 
 CORPUS_DIR = os.path.join(_HERE, 'corpus')

@@ -30,8 +30,19 @@ class ScanReport:
     error: str = ""
 
     def has_overflow(self) -> bool:
-        return any("heap_overflow" in f.get("type", "")
-                   for f in self.confirmed)
+        """检出判定: 仅 CONFIRMED 计入, SUSPECTED 不混入检出.
+
+        prov_run 返回 confirmed+suspected (suspected 保留供复核),
+        此处按 wb_verdict 口径只认 confirmed; 基线 (无 wb_verdict)
+        按类型判定.
+        """
+        for f in self.confirmed:
+            if "heap_overflow" not in f.get("type", ""):
+                continue
+            wb = f.get("wb_verdict")
+            if wb is None or wb == "confirmed":
+                return True
+        return False
 
     def to_dict(self) -> dict:
         return {

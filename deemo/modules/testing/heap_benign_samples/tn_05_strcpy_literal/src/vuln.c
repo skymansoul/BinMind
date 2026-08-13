@@ -4,7 +4,7 @@
 int main(void) {
     char *buf = (char *)malloc(64);
     if (!buf) return 1;
-    strcpy(buf, "literal short");    /* ³¤¶È 14 <= 64 */
+    strcpy(buf, "literal short");    /* é•¿åº¦ 14 <= 64 */
     printf("[*] %s\n", buf);
     free(buf);
     return 0;

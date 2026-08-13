@@ -22,13 +22,16 @@
 # 创建: 2026-05-19
 # 修改: 2026-05-19 — 实参寄存器解析, 适配 objdump 指令格式
 
+import re
 from typing import Dict, List, Optional, Tuple
+
+from .int_overflow_guards import IntOverflowGuardMixin
 
 _WIN64_ARGS = ("rcx", "rdx", "r8", "r9")
 _SYSV_ARGS = ("rdi", "rsi", "rdx", "rcx", "r8", "r9")
 
 
-class IntegerOverflowDetector:
+class IntegerOverflowDetector(IntOverflowGuardMixin):
     """整数溢出检测器 — 安全上下文感知.
 
     只报告可能被用于内存操作的溢出, 忽略纯计算溢出.
@@ -48,16 +51,30 @@ class IntegerOverflowDetector:
         self._args = _WIN64_ARGS if use_win64_abi else _SYSV_ARGS
         self._instructions: List[dict] = []
         self._ins_idx = 0
+        self._jno_targets: List[int] = []
+        self._user_ranges = []  # jno 目标地址 (安全路径块起点)
 
     def set_instructions(self, instructions: List[dict]):
         """预置指令序列, 供危险调用实参反查."""
         self._instructions = instructions
+
+    def set_user_func_ranges(self, ranges):
+        """限定用户函数范围; 范围外指令 (CRT/库) 不参与分析."""
+        self._user_ranges = ranges or []
+
+    def _in_user_code(self, addr: int) -> bool:
+        if not self._user_ranges:
+            return True
+        return any(lo <= addr < hi for lo, hi in self._user_ranges)
 
     def analyze(self, ins: dict):
         """逐指令分析."""
         mnem = ins.get("mnemonic","").lower()
         ops = ins.get("operands",[])
         addr = ins.get("address",0)
+        if not self._in_user_code(addr):
+            self._ins_idx += 1
+            return
 
         # 追踪寄存器宽度
         if mnem == "mov" and len(ops) >= 2:
@@ -69,26 +86,71 @@ class IntegerOverflowDetector:
                 self._reg_types[dst] = (64, False)
 
         # 检测溢出操作
-        if mnem in self.OVERFLOW_OPS and len(ops) >= 2:
+        # mul 单操作数 (隐式 rax), 其余指令需 >=2 操作数
+        need_ops = 1 if mnem == "mul" else 2
+        if mnem in self.OVERFLOW_OPS and len(ops) >= need_ops:
             op_info = {
                 "mnemonic": mnem,
                 "operands": ops,
                 "address": addr,
                 "result_reg": self._normalize(ops[0]) if ops else "",
+                "checked": False,
             }
-            # 检查操作数类型以判断是否可能溢出
-            src1 = ops[1].strip().lower().lstrip("%").replace("$","") if len(ops) >= 2 else ""
-            src2 = ops[2].strip().lower().lstrip("%").replace("$","") if len(ops) >= 3 else ""
+            # 栈指针/帧指针算术 (sub rsp, 0x30) 非用户可控溢出, 不追踪
+            is_stack_arith = op_info["result_reg"] in (
+                "rsp", "rbp", "esp", "ebp")
+            if not is_stack_arith:
+                # 单操作数 mul: 隐式 rax × ops[1], 结果在 rdx:rax
+                if mnem == "mul" and len(ops) == 1:
+                    src1 = "rax"
+                    src2 = ops[0].strip().lower().lstrip("%").replace("$","")
+                    op_info["result_reg"] = "rax"
+                else:
+                    # 检查操作数类型以判断是否可能溢出
+                    src1 = ops[1].strip().lower().lstrip("%").replace("$","") if len(ops) >= 2 else ""
+                    src2 = ops[2].strip().lower().lstrip("%").replace("$","") if len(ops) >= 3 else ""
 
-            if mnem in ("imul","mul") and self._can_overflow(src1, src2):
-                op_info["overflow_type"] = "multiplication"
-                self._pending_ops.append(op_info)
-            elif mnem == "shl" and self._can_overflow_shift(src1, src2):
-                op_info["overflow_type"] = "shift"
-                self._pending_ops.append(op_info)
-            elif mnem in ("add","sub"):
-                op_info["overflow_type"] = "addition"
-                self._pending_ops.append(op_info)
+                if mnem in ("imul","mul") and self._can_overflow(src1, src2):
+                    op_info["overflow_type"] = "multiplication"
+                    op_info["src1"] = src1
+                    op_info["src2"] = src2
+                    # 位于 jno 安全路径块内的乘法 (编译器重算) 视为已检查
+                    if any(addr >= t for t in self._jno_targets):
+                        op_info["checked"] = True
+                    self._pending_ops.append(op_info)
+                elif mnem == "shl" and self._can_overflow_shift(src1, src2):
+                    op_info["overflow_type"] = "shift"
+                    op_info["src1"] = src1
+                    op_info["src2"] = src2
+                    self._pending_ops.append(op_info)
+                elif mnem in ("add","sub"):
+                    op_info["overflow_type"] = "addition"
+                    op_info["src1"] = src1
+                    op_info["src2"] = src2
+                    self._pending_ops.append(op_info)
+
+        # O2 优化: count*N 编译为 lea reg, [reg*N] (scaled-index 乘法)
+        # 非 OVERFLOW_OPS, 需单独识别为乘法溢出源.
+        if mnem == "lea" and len(ops) >= 2:
+            m = re.search(r"\[([a-z0-9]+)\s*\*\s*([0-9]+)", ops[1].lower())
+            if m:
+                src1 = m.group(1)
+                scale = int(m.group(2))
+                if scale > 1:
+                    op_info = {
+                        "mnemonic": "lea",
+                        "operands": ops,
+                        "address": addr,
+                        "result_reg": self._normalize(ops[0]),
+                        "overflow_type": "multiplication",
+                        "src1": src1,
+                        "src2": str(scale),
+                        "checked": False,
+                    }
+                    self._pending_ops.append(op_info)
+
+        # 溢出守卫识别: shr 回除 / mul-jno / add-carry / cmp 大常量
+        self.apply_guard(mnem, ins, ops)
 
         # 危险调用检测
         if mnem == "call" and ops:
@@ -98,6 +160,9 @@ class IntegerOverflowDetector:
                 arg_regs = self._resolve_call_args(self._ins_idx, addr)
                 for op_info in self._pending_ops[-8:]:
                     result = op_info["result_reg"]
+                    # 溢出已经过回除校验 (cmp sz/sizeof vs count) → 安全
+                    if op_info.get("checked"):
+                        continue
                     # 溢出结果寄存器与任一实参寄存器同源
                     if result in arg_regs:
                         self._findings.append({
@@ -223,6 +288,12 @@ class IntegerOverflowDetector:
         self._findings.clear(); self._pending_ops.clear()
         self._instructions = []
         self._ins_idx = 0
+        self._jno_targets.clear()
+
+    @staticmethod
+
+
+    @staticmethod
 
     @staticmethod
     def _normalize(op: str) -> str:

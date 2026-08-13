@@ -170,7 +170,7 @@ class OnlineNewtonMutationAdaptor:
     def _project_to_simplex(self) -> None:
         """将权重投影到概率单纯形: Σw_i = 1, w_i ≥ 0.01.
 
-        使用 Wang & Carreira-Perpiñán (2013) 的 O(n log n) 投影算法。
+        使用 Wang & Carreira-Perpiñán 的 O(n log n) 投影算法。
         """
         names = list(self._operators.keys())
         ws = [max(0.01, self._operators[n].weight) for n in names]

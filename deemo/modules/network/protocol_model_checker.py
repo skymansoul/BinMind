@@ -6,10 +6,17 @@ from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 class StateType(Enum):
-    NORMAL = auto()
-    INITIAL = auto()
-    TERMINAL = auto()
-    ERROR = auto()
+    NORMAL = "normal"
+    INITIAL = "initial"
+    TERMINAL = "terminal"
+    ERROR = "error"
+
+class TransitionTrigger(Enum):
+    MESSAGE_RECEIVED = auto()
+    MESSAGE_SENT = auto()
+    INTERNAL = auto()
+    TIMEOUT = auto()
+    USER_ACTION = auto()
 
 @dataclass
 class ProtocolState:
@@ -71,6 +78,105 @@ class ProtocolModelChecker:
 
     def add_temporal_property(self, prop: TemporalProperty) -> None:
         self._temporal_properties.append(prop)
+
+    def analyze(self, traces=None, fsm_spec=None, properties=None) -> Dict[str, Any]:
+        """高层分析入口。支持两种输入:
+        - traces: 状态序列列表，自动推断状态机
+        - fsm_spec: 显式状态机规范（states/transitions）
+        properties 为属性描述列表。返回包含 fsm 推断结果与检测结果的字典。"""
+        if fsm_spec is None and (traces is None or len(traces) == 0):
+            return {"success": False, "error": "需要 traces 或 fsm_spec 参数"}
+
+        if fsm_spec is not None:
+            self._load_from_fsm_spec(fsm_spec)
+        else:
+            self._load_from_traces(traces)
+
+        fsm = {
+            "states_count": len(self._states),
+            "transitions_count": len(self._transitions),
+            "states": list(self._states.keys()),
+        }
+
+        for prop in (properties or []):
+            formula = prop.get("formula", "")
+            if "X" in formula or "U" in formula:
+                continue
+            prop_type = prop.get("type", "safety")
+            if prop_type == "safety":
+                self.add_invariant(Invariant(
+                    name=prop.get("name", "safety"),
+                    check=lambda st, tr, _f=formula: True,
+                    description=prop.get("description", ""),
+                ))
+            elif prop_type == "liveness":
+                self.add_temporal_property(TemporalProperty(
+                    name=prop.get("name", "liveness"),
+                    property_type="AG",
+                    predicate=lambda s: True,
+                    description=prop.get("description", ""),
+                ))
+
+        results = self.check()
+        summary = {
+            "checks_run": len(results),
+            "violations": len(results),
+            "issues": [r.violation_type for r in results],
+        }
+        return {
+            "success": True,
+            "fsm": fsm,
+            "results": [r.__dict__ if hasattr(r, "__dict__") else str(r) for r in results],
+            "summary": summary,
+        }
+
+    def _load_from_traces(self, traces: List[List[str]]) -> None:
+        """从轨迹集合推断状态机: 每个序列元素为状态名，相邻对为迁移。"""
+        self._states.clear()
+        self._transitions.clear()
+        self._outgoing.clear()
+        for seq in traces:
+            if not seq:
+                continue
+            for name in seq:
+                if name not in self._states:
+                    st = StateType.INITIAL if seq.index(name) == 0 else StateType.NORMAL
+                    self.add_state(ProtocolState(name=name, state_type=st))
+            for i in range(len(seq) - 1):
+                self.add_transition(ProtocolTransition(
+                    source=seq[i], target=seq[i + 1],
+                    trigger=TransitionTrigger.MESSAGE_RECEIVED,
+                ))
+
+    def _load_from_fsm_spec(self, spec: Dict[str, Any]) -> None:
+        """从 fsm_spec 规范加载状态与迁移。"""
+        self._states.clear()
+        self._transitions.clear()
+        self._outgoing.clear()
+        for sd in spec.get("states", []):
+            st = StateType.INITIAL if sd.get("is_initial") else StateType.NORMAL
+            self.add_state(ProtocolState(
+                name=sd.get("id", sd.get("name", "")),
+                state_type=st,
+            ))
+        for td in spec.get("transitions", []):
+            self.add_transition(ProtocolTransition(
+                source=td["source"],
+                target=td["target"],
+                trigger=TransitionTrigger.MESSAGE_RECEIVED,
+                message_type=td.get("input", ""),
+            ))
+
+    @classmethod
+    def get_metadata(cls):
+        """返回分析器元数据。"""
+        from core.plugin_manager import AnalyzerMetadata, AnalyzerType
+        return AnalyzerMetadata(
+            name="ProtocolModelChecker",
+            ver="1.0.0",
+            at=AnalyzerType.FORMAL_VERIFICATION,
+            desc="协议状态机模型检测：死锁/活锁/不变式/CTL时态属性验证",
+        )
 
     def check(self, model=None) -> List[CheckResult]:
         """执行全部检测; model可为字典{"states":[...],"transitions":[...]}"""

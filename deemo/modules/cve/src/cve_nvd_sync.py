@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from .cve_models import CVEEntry
 from .cve_kb import CVEKnowledgeBase
 
+from ._internal_helpers import _HAS_URLLIB
 try:
     import urllib.request
     import urllib.error

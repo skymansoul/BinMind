@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_05_positional_const",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "常量位置参数格式串"
-}

@@ -1,6 +1,6 @@
 """一键回归: 生成样本 → 编译 → 扫描 → 汇总指标.
 
-创建: 2026-06-14
+创建: 2025-05-12
 用法:
   python run_all.py [--gcc D:/mingw64/bin/gcc] [--objs bin/plain]
 覆盖 O0/O2 两档产物, 输出 report.json/report.csv。

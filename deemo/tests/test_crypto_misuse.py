@@ -46,7 +46,6 @@ class TestCryptoMisuseDetector(unittest.TestCase):
         detector.strings = []
         misuses = detector.detect_weak_random()
         self.assertIsInstance(misuses, list)
-lass字段完整性$/d
         self.assertEqual(len(misuses), 2)
 
     def test_detect_hardcoded_iv(self):
@@ -65,7 +64,6 @@ lass字段完整性$/d
         self.assertEqual(len(misuses), 2)  # MD5 and SHA1 are weak
 
     def test_detect_weak_cipher(self):
-                """DES和RC4是弱cipher, AES不是"""
         detector = CryptoMisuseDetector()
         detector.imports = ['DES_encrypt', 'AES_encrypt', 'RC4_encrypt']
         misuses = detector.detect_weak_cipher()

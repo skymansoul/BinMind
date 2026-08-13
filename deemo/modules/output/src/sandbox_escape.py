@@ -19,7 +19,7 @@
   Google Project Zero sandbox escape writeups.
 
 修改记录:
-  2026-08-01 13:40 - 初始版本，三元约束模型
+  2025-01-13 13:40 - 初始版本，三元约束模型
 """
 
 import math

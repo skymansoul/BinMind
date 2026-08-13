@@ -1,6 +1,0 @@
-{
-  "id": "uaf_fp_05_independent_objs",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "两个独立对象, free(a) 后写 b"
-}

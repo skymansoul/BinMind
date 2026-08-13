@@ -200,7 +200,7 @@ class EfficacyWatchdog:
     """补丁效力运行时监控。
 
     用法:
-        dog = EfficacyWatchdog(patch_id='CVE-2024-0001', prior_efficacy=0.95)
+        dog = EfficacyWatchdog
         signal = dog.observe(trace_div=0.02, mem_drift=0.01, cg_churn=0.0)
         if dog.report.alert_triggered:
             print(f"补丁效力下降: {dog.report.recommendation}")

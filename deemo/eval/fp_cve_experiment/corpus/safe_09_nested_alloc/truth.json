@@ -1,8 +1,0 @@
-{
-  "id": "safe_09_nested_alloc",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "两个独立堆块互不干扰"
-}

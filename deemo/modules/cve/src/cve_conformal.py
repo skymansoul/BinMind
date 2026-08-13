@@ -297,7 +297,7 @@ class ConformalCVEAnalyzer:
     使用模式:
       analyzer = ConformalCVEAnalyzer(alpha=0.1)
       analyzer.calibrate_from_kb(kb, score_key="gnn_score")
-      result = analyzer.analyze("CVE-2024-12345", point_score=0.78, sigma=0.08)
+      result = analyzer.analyze
       # result包含: prediction, interval, uncertainty_level, recommendation
     """
 
@@ -412,28 +412,7 @@ class ConformalCVEAnalyzer:
 
 # 内部辅助
 
-def _get_str(entry, field: str, default: str = ""):
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
-
-
-def _get_num(entry, field: str):
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
 
 def _extract_features(entry) -> List[float]:

@@ -6,10 +6,15 @@ EWMA自适应去认证洪水检测 + 802.11w PMF (Protected Management Frames) �
 2023年wardriving调查显示约60%部署的AP存在此问题。
 """
 
+import logging
+import re
 import struct
 import math
 from enum import IntEnum
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # BLE常量定义
 BLE_ADV_CHANNELS = (37, 38, 39)
@@ -109,25 +114,314 @@ class EwmaAnomalyScorer:
 class WirelessProtocolAnalyzer:
     """无线协议帧分类器+协议层异常检测引擎。"""
 
-    def __init__(self):
+    def __init__(self, firmware_path: str = None):
+        self.firmware_path = firmware_path
+        self.protocol_functions: List[Dict[str, Any]] = []
+        self.vulnerabilities: List[Dict[str, Any]] = []
+        self.fuzz_cases: List[Dict[str, Any]] = []
         self._anomalies: list[WirelessAnomaly] = []
         self._statistics: dict[str, int] = {}
         self._deauth_counts: dict[str, int] = {}
         self._ewma = EwmaAnomalyScorer()
         self._pmf_state: dict[str, bool] = {}  # bssid → pmf_enabled
 
-    def analyze(self, capture: bytes | list[bytes]) -> list[WirelessAnomaly]:
-        """分析单帧或帧列表。入口方法。"""
-        self._anomalies.clear()
-        frames = [capture] if isinstance(capture, bytes) else capture
+    def analyze(self, capture: Optional[bytes | list[bytes]] = None) -> Any:
+        """入口方法。
 
-        for i, frame in enumerate(frames):
-            if len(frame) < 2:
-                continue
-            self._classify_and_check(frame, i)
+        capture 提供时为帧级分析，返回 WirelessAnomaly 列表；
+        缺省时执行固件协议栈静态分析，返回结果字典。
+        """
+        if capture is not None:
+            self._anomalies.clear()
+            frames = [capture] if isinstance(capture, bytes) else capture
 
-        self._check_aggregate()
-        return list(self._anomalies)
+            for i, frame in enumerate(frames):
+                if len(frame) < 2:
+                    continue
+                self._classify_and_check(frame, i)
+
+            self._check_aggregate()
+            return list(self._anomalies)
+
+        self._identify_protocol_functions()
+        self._analyze_frame_parsing()
+        self._detect_vulnerabilities()
+        self._generate_fuzz_cases()
+
+        return {
+            'protocol_functions': self.protocol_functions,
+            'vulnerabilities': self.vulnerabilities,
+            'fuzz_cases': self.fuzz_cases,
+            'risk_level': self._calculate_risk_level(),
+        }
+
+    # ---- 固件协议栈静态分析（旧版 API）----
+
+    def _identify_protocol_functions(self):
+        """识别固件中的协议栈相关函数。"""
+        if not self.firmware_path:
+            return
+        try:
+            from modules.decomp_ai import DecompilerAI
+            decompiler = DecompilerAI(self.firmware_path, client=None)
+            functions = decompiler.list_functions()
+
+            bluetooth_patterns = [
+                r'hci_.*', r'l2cap_.*', r'sdp_.*', r'a2dp_.*',
+                r'rfcomm_.*', r'smp_.*', r'bnep_.*', r'hidp_.*',
+            ]
+            wifi_patterns = [
+                r'ieee80211_.*', r'wlan_.*', r'wifi_.*', r'ath_.*',
+                r'mac80211_.*', r'cfg80211_.*', r'hostap_.*',
+                r'wpa_.*', r'eapol_.*',
+            ]
+
+            for func_name in functions:
+                for pattern in bluetooth_patterns:
+                    if re.match(pattern, func_name.lower()):
+                        self.protocol_functions.append({
+                            'name': func_name,
+                            'protocol': 'bluetooth',
+                            'layer': self._infer_bluetooth_layer(func_name),
+                            'pattern': pattern,
+                        })
+                        break
+                for pattern in wifi_patterns:
+                    if re.match(pattern, func_name.lower()):
+                        self.protocol_functions.append({
+                            'name': func_name,
+                            'protocol': 'wifi',
+                            'layer': self._infer_wifi_layer(func_name),
+                            'pattern': pattern,
+                        })
+                        break
+        except Exception as e:
+            logger.warning(f"识别协议栈函数失败: {e}")
+
+    def _infer_bluetooth_layer(self, func_name: str) -> str:
+        """推断蓝牙协议层。"""
+        name_lower = func_name.lower()
+        if 'hci' in name_lower:
+            return 'HCI'
+        elif 'l2cap' in name_lower:
+            return 'L2CAP'
+        elif 'sdp' in name_lower:
+            return 'SDP'
+        elif 'rfcomm' in name_lower:
+            return 'RFCOMM'
+        elif 'smp' in name_lower:
+            return 'SMP'
+        elif 'a2dp' in name_lower:
+            return 'A2DP'
+        elif 'bnep' in name_lower:
+            return 'BNEP'
+        return 'unknown'
+
+    def _infer_wifi_layer(self, func_name: str) -> str:
+        """推断 Wi-Fi 协议层。"""
+        name_lower = func_name.lower()
+        if 'ieee80211' in name_lower or 'mac80211' in name_lower:
+            return 'MAC'
+        elif 'wlan' in name_lower or 'cfg80211' in name_lower:
+            return 'management'
+        elif 'wpa' in name_lower or 'eapol' in name_lower:
+            return 'security'
+        elif 'hostap' in name_lower:
+            return 'AP'
+        return 'unknown'
+
+    def _analyze_frame_parsing(self):
+        """分析帧解析逻辑。"""
+        if not self.firmware_path:
+            return
+        try:
+            from modules.decomp_ai import DecompilerAI
+            decompiler = DecompilerAI(self.firmware_path, client=None)
+            for proto_func in self.protocol_functions:
+                try:
+                    analysis = decompiler.analyze_function(proto_func['name'], {})
+                    pseudocode = analysis.get('pseudocode', '')
+                    if pseudocode:
+                        proto_func['parsing_analysis'] = self._parse_frame_logic(pseudocode)
+                        proto_func['pseudocode_snippet'] = (
+                            pseudocode[:500] if len(pseudocode) > 500 else pseudocode)
+                except Exception as e:
+                    logger.debug(f"分析函数 {proto_func['name']} 失败: {e}")
+        except Exception as e:
+            logger.warning(f"分析帧解析逻辑失败: {e}")
+
+    def _parse_frame_logic(self, pseudocode: str) -> Dict[str, Any]:
+        """解析帧处理逻辑，标记长度/类型/边界检查与危险操作。"""
+        analysis = {
+            'has_length_check': False,
+            'has_type_check': False,
+            'has_boundary_check': False,
+            'unsafe_operations': [],
+            'potential_overflows': [],
+        }
+
+        length_check_patterns = [
+            r'(length|len|size)\s*[<>!=]=?',
+            r'memcpy.*length',
+            r'strncpy',
+            r'__memcpy_chk',
+        ]
+        for pattern in length_check_patterns:
+            if re.search(pattern, pseudocode):
+                analysis['has_length_check'] = True
+                break
+
+        if re.search(r'(type|opcode|cmd)\s*==', pseudocode):
+            analysis['has_type_check'] = True
+
+        if re.search(r'(offset|index).*<.*(length|size)', pseudocode):
+            analysis['has_boundary_check'] = True
+
+        unsafe_patterns = [
+            ('memcpy', '无长度限制的memcpy'),
+            ('strcpy', '无长度限制的strcpy'),
+            ('sprintf', '无长度限制的sprintf'),
+            ('gets', '危险函数gets'),
+        ]
+        for pattern, desc in unsafe_patterns:
+            if pattern in pseudocode:
+                analysis['unsafe_operations'].append(desc)
+
+        overflow_patterns = [
+            r'(buffer|buf)\s*\+\s*\d+',
+            r'(buffer|buf)\[.*\]',
+        ]
+        for pattern in overflow_patterns:
+            if re.search(pattern, pseudocode):
+                analysis['potential_overflows'].append(pattern)
+
+        return analysis
+
+    def _detect_vulnerabilities(self):
+        """基于解析分析检测漏洞。"""
+        for proto_func in self.protocol_functions:
+            parsing_analysis = proto_func.get('parsing_analysis', {})
+
+            if not parsing_analysis.get('has_length_check'):
+                self.vulnerabilities.append({
+                    'function': proto_func['name'],
+                    'protocol': proto_func['protocol'],
+                    'layer': proto_func['layer'],
+                    'type': 'buffer_overflow',
+                    'severity': 'high',
+                    'description': '缺少长度检查，可能导致缓冲区溢出',
+                    'cwe': 'CWE-119',
+                })
+
+            if not parsing_analysis.get('has_type_check'):
+                self.vulnerabilities.append({
+                    'function': proto_func['name'],
+                    'protocol': proto_func['protocol'],
+                    'layer': proto_func['layer'],
+                    'type': 'type_confusion',
+                    'severity': 'medium',
+                    'description': '缺少类型/操作码检查，可能导致类型混淆',
+                    'cwe': 'CWE-843',
+                })
+
+            for unsafe_op in parsing_analysis.get('unsafe_operations', []):
+                self.vulnerabilities.append({
+                    'function': proto_func['name'],
+                    'protocol': proto_func['protocol'],
+                    'layer': proto_func['layer'],
+                    'type': 'unsafe_function',
+                    'severity': 'high',
+                    'description': f'使用危险函数: {unsafe_op}',
+                    'cwe': 'CWE-119',
+                })
+
+        seen = set()
+        unique_vulns = []
+        for vuln in self.vulnerabilities:
+            key = f"{vuln['function']}_{vuln['type']}"
+            if key not in seen:
+                seen.add(key)
+                unique_vulns.append(vuln)
+        self.vulnerabilities = unique_vulns
+
+    def _generate_fuzz_cases(self):
+        """生成蓝牙与 Wi-Fi 模糊测试用例。"""
+        self.fuzz_cases.extend(self._generate_bluetooth_fuzz_cases())
+        self.fuzz_cases.extend(self._generate_wifi_fuzz_cases())
+
+    def _generate_bluetooth_fuzz_cases(self) -> List[Dict[str, Any]]:
+        """生成蓝牙模糊测试用例。"""
+        cases = [
+            {
+                'protocol': 'bluetooth', 'layer': 'HCI', 'type': 'fuzz_case',
+                'name': 'HCI超长参数',
+                'description': '发送长度超出预期的HCI命令参数',
+                'payload_template': '\\x01\\x00\\xff\\xff' + '\\x41' * 1024,
+                'target_function': 'hci_recv',
+            },
+            {
+                'protocol': 'bluetooth', 'layer': 'HCI', 'type': 'fuzz_case',
+                'name': 'HCI无效操作码',
+                'description': '发送无效的HCI操作码',
+                'payload_template': '\\x01\\xff\\xff\\x00' + '\\x00' * 16,
+                'target_function': 'hci_recv',
+            },
+            {
+                'protocol': 'bluetooth', 'layer': 'L2CAP', 'type': 'fuzz_case',
+                'name': 'L2CAP超大SDU',
+                'description': '发送超过MTU的L2CAP SDU',
+                'payload_template': '\\x00\\x00\\xff\\xff' + '\\x41' * 2048,
+                'target_function': 'l2cap_recv',
+            },
+            {
+                'protocol': 'bluetooth', 'layer': 'SMP', 'type': 'fuzz_case',
+                'name': 'SMP无效配对请求',
+                'description': '发送畸形的SMP配对请求',
+                'payload_template': '\\xff' + '\\x00' * 63,
+                'target_function': 'smp_process',
+            },
+        ]
+        return cases
+
+    def _generate_wifi_fuzz_cases(self) -> List[Dict[str, Any]]:
+        """生成 Wi-Fi 模糊测试用例。"""
+        cases = [
+            {
+                'protocol': 'wifi', 'layer': 'MAC', 'type': 'fuzz_case',
+                'name': '超长SSID',
+                'description': '发送SSID长度超过32字节的管理帧',
+                'payload_template': '\\x00\\x00' + '\\xff' + '\\x41' * 100,
+                'target_function': 'ieee80211_rx',
+            },
+            {
+                'protocol': 'wifi', 'layer': 'MAC', 'type': 'fuzz_case',
+                'name': '畸形信标帧',
+                'description': '发送字段长度不一致的信标帧',
+                'payload_template': '\\x80\\x00' + '\\x00' * 100 + '\\xff' * 50,
+                'target_function': 'ieee80211_rx',
+            },
+            {
+                'protocol': 'wifi', 'layer': 'security', 'type': 'fuzz_case',
+                'name': 'EAPOL超长帧',
+                'description': '发送超出预期长度的EAPOL帧',
+                'payload_template': '\\x00\\x00' + '\\xff\\xff' + '\\x41' * 1024,
+                'target_function': 'eapol_process',
+            },
+        ]
+        return cases
+
+    def _calculate_risk_level(self) -> str:
+        """计算整体风险等级。"""
+        high_count = sum(1 for v in self.vulnerabilities if v['severity'] == 'high')
+        medium_count = sum(1 for v in self.vulnerabilities if v['severity'] == 'medium')
+
+        if high_count >= 2:
+            return 'high'
+        elif high_count == 1 or medium_count >= 3:
+            return 'medium'
+        elif medium_count > 0 or len(self.vulnerabilities) > 0:
+            return 'low'
+        return 'none'
 
     # 帧分类路由
     def _classify_and_check(self, frame: bytes, idx: int):

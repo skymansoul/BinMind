@@ -247,10 +247,14 @@ class UnicornHybrid:
             mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
 
             # Map segments self._memory
+            code_end = 0
             for addr, data in self._memory.items():
                 size = max(len(data), 0x1000)
                 mu.mem_map(addr, size)
                 mu.mem_write(addr, data)
+                # 实际代码末尾为写入数据上界；线性执行（NOP 等）到达
+                # 该边界即可终止，避免落入映射区的零填充区域。
+                code_end = max(code_end, addr + len(data))
 
             # Set up 栈
             mu.mem_map(self._DEFAULT_STACK_ADDR, self._DEFAULT_STACK_SIZE)
@@ -273,9 +277,12 @@ class UnicornHybrid:
                 mu.reg_write(uc_reg, val)
 
             # 启动 仿真
+            # end 取映射代码段的实际写入末尾：NOP 类线性执行到达边界时
+            # 由 Unicorn 正常返回，避免对零填充区/未映射地址的读取被判为崩溃。
+            run_end = end_address or (code_end if code_end > self._registers.eip else self._registers.eip + 0x10000)
             mu.emu_start(
                 self._registers.eip,
-                end_address or (self._registers.eip + 0x10000),
+                run_end,
                 timeout=timeout * 1000000,
                 count=max_insns,
             )

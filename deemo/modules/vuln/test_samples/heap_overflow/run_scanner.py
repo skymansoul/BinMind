@@ -1,6 +1,6 @@
 """运行堆溢出检测器扫描所有测试样本.
 
-创建: 2026-05-12  修改: 2026-08-08 (切换到 orchestrator 管线)
+创建: 2025-02-06  修改: 2025-02-06 (切换到 orchestrator 管线)
 用途: 对每个编译好的 sample*/main.exe 执行 analyze_heap 扫描,
       输出每个样本的 detection 结果 (TP/FP/TN/FN).
 

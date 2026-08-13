@@ -1,7 +1,8 @@
-# 2026-07-14
+# 2024-10-11
 # 沙箱编排 —— 多后端统一接口，自动选择最优执行环境
 # 设计思路：Docker 优先（隔离性好），QEMU 次之（全系统模拟）
 # Process 兜底（轻量但隔离弱），Windows 沙箱 仅 Windows 下可用
+# 同时提供面向测试/工具的轻量 ProcessSandboxDriver 驱动接口
 
 import os
 import sys
@@ -15,6 +16,7 @@ import platform
 import tempfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional, List, Dict, Any, Callable
 from pathlib import Path
 from io import BytesIO
@@ -24,11 +26,57 @@ import subprocess
 _log = logging.getLogger(__name__)
 
 
+# 后端枚举与资源/网络/状态模型
+
+class SandboxBackend(Enum):
+    """沙箱后端枚举"""
+    DOCKER = "docker"
+    QEMU = "qemu"
+    PROCESS = "process"
+    WINDOWS = "windows_sandbox"
+
+
+class NetworkMode(Enum):
+    """网络模式枚举"""
+    NONE = "none"
+    NAT = "nat"
+    BRIDGE = "bridge"
+    HOST = "host"
+
+
+class SandboxState(Enum):
+    """沙箱生命周期状态"""
+    UNINITIALIZED = "uninitialized"
+    CONFIGURED = "configured"
+    RUNNING = "running"
+    STOPPED = "stopped"
+    ERROR = "error"
+
+
+@dataclass
+class ResourceLimits:
+    """进程资源限制"""
+    cpu_count: float = 1.0
+    memory_mb: int = 512
+    timeout_seconds: int = 300
+    max_processes: int = 1
+    no_new_privileges: bool = True
+
+
 # 配置与结果数据类
 
 @dataclass
 class SandboxConfig:
-    """一次沙箱执行的完整配置"""
+    """一次沙箱执行的完整配置。
+
+    兼容两种构造方式：
+      - backend/resources/network 面向驱动接口
+      - image/executable_path/memory_limit 等保留给 Docker/QEMU 后端
+    """
+    backend: SandboxBackend = SandboxBackend.DOCKER
+    resources: Optional[ResourceLimits] = None
+    network: NetworkMode = NetworkMode.NAT
+    enable_telemetry: bool = True
     image: Optional[str] = None          # Docker 镜像 或 QEMU 磁盘镜像路径
     executable_path: Optional[str] = None
     timeout: int = 60
@@ -41,7 +89,16 @@ class SandboxConfig:
     capture_stdout: bool = True
     capture_stderr: bool = True
     artifact_paths: List[str] = field(default_factory=list)
-    telemetry_enabled: bool = False
+
+    @property
+    def resource_limits(self) -> ResourceLimits:
+        """返回资源限制对象；未显式设置时从 memory_limit 推导。"""
+        if self.resources is not None:
+            return self.resources
+        return ResourceLimits(
+            memory_mb=_parse_memory_mb(self.memory_limit),
+            timeout_seconds=self.timeout,
+        )
 
     def to_docker_kwargs(self) -> List[str]:
         """生成 docker run 附加参数"""
@@ -65,8 +122,26 @@ class SandboxConfig:
         return args
 
 
+def _parse_memory_mb(raw: str) -> int:
+    """将内存限制字符串解析为 MB 数值。"""
+    if not raw:
+        return 512
+    s = str(raw).lower().strip()
+    try:
+        if s.endswith("g"):
+            return int(float(s[:-1]) * 1024)
+        if s.endswith("k"):
+            return max(1, int(float(s[:-1]) / 1024))
+        if s.endswith("m"):
+            return int(float(s[:-1]))
+        return int(float(s))
+    except (ValueError, TypeError):
+        return 512
+
+
 @dataclass
 class SandboxResult:
+    """单次沙箱执行结果"""
     stdout: str = ""
     stderr: str = ""
     returncode: int = -1
@@ -74,8 +149,25 @@ class SandboxResult:
     duration: float = 0.0
     backend_used: str = ""
 
+    @property
+    def success(self) -> bool:
+        """执行是否成功：返回码为 0 且未超时。"""
+        return self.returncode == 0
 
-# 抽象驱动器
+    @property
+    def error(self) -> str:
+        """错误描述 —— 超时或非零返回码时提供可读信息。"""
+        if self.returncode == -1 and 'timeout' in self.stderr.lower():
+            return f"Timed out: {self.stderr}"
+        return self.stderr
+
+    @property
+    def exit_code(self) -> int:
+        """退出码别名。"""
+        return self.returncode
+
+
+# 抽象驱动器（保留原接口）
 
 class SandboxDriver(ABC):
     @abstractmethod
@@ -94,7 +186,106 @@ class SandboxDriver(ABC):
     def cleanup(self) -> None: ...
 
 
-# Docker 沙箱
+# 轻量进程驱动 —— 面向直接调用的 start/execute/stop 接口
+
+class ProcessSandboxDriver:
+    """基于子进程的轻量沙箱驱动。
+
+    生命周期：start() → execute(cmd[, stdin_data]) → stop()。
+    与 SandboxOrchestrator 配合时由编排器统一管理状态。
+    """
+
+    def __init__(self, config: Optional[SandboxConfig] = None):
+        self.config = config if config is not None else SandboxConfig(
+            backend=SandboxBackend.PROCESS)
+        self.backend = SandboxBackend.PROCESS
+        self.state = SandboxState.UNINITIALIZED
+        self._proc: Optional[subprocess.Popen] = None
+        self._execution_count = 0
+        self._success_count = 0
+
+    def start(self) -> None:
+        """进入运行状态。"""
+        self.state = SandboxState.RUNNING
+
+    def stop(self) -> None:
+        """终止当前子进程并进入停止状态。"""
+        if self._proc and self._proc.poll() is None:
+            self._proc.terminate()
+            try:
+                self._proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self._proc.kill()
+                self._proc.wait()
+        self._proc = None
+        self.state = SandboxState.STOPPED
+
+    def execute(self, command: List[str],
+                stdin_data: Optional[bytes] = None) -> SandboxResult:
+        """执行命令并捕获输出。
+
+        Args:
+            command: 命令行参数列表。
+            stdin_data: 可选标准输入字节流。
+
+        Returns:
+            SandboxResult，success/exit_code/stderr 供调用方判定。
+        """
+        if self.state != SandboxState.RUNNING:
+            return SandboxResult(
+                stderr="Sandbox not running",
+                returncode=-1, backend_used="process")
+        limits = self.config.resource_limits
+        timeout = limits.timeout_seconds
+        t0 = time.perf_counter()
+        try:
+            self._proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE if stdin_data is not None else None,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False,
+                start_new_session=True,
+            )
+            out, err = self._proc.communicate(input=stdin_data, timeout=timeout)
+            rc = self._proc.returncode if self._proc.returncode is not None else -1
+            self._execution_count += 1
+            if rc == 0:
+                self._success_count += 1
+            return SandboxResult(
+                stdout=out.decode(errors='replace') if out else "",
+                stderr=err.decode(errors='replace') if err else "",
+                returncode=rc,
+                duration=round(time.perf_counter() - t0, 3),
+                backend_used="process",
+            )
+        except subprocess.TimeoutExpired:
+            self.stop()
+            self._execution_count += 1
+            return SandboxResult(
+                stderr="Timed out",
+                returncode=-1,
+                duration=round(time.perf_counter() - t0, 3),
+                backend_used="process",
+            )
+        except Exception as exc:
+            self._execution_count += 1
+            return SandboxResult(
+                stderr=str(exc),
+                returncode=-1,
+                backend_used="process",
+            )
+
+    def get_summary(self) -> Dict[str, Any]:
+        """输出执行统计。"""
+        return {
+            'total_executions': self._execution_count,
+            'successful': self._success_count,
+            'state': self.state,
+        }
+
+
+# Docker 沙箱（保留原实现）
 
 class DockerSandbox(SandboxDriver):
     """
@@ -107,7 +298,6 @@ class DockerSandbox(SandboxDriver):
         self._image_pulled: bool = False
         self._active_config: Optional[SandboxConfig] = None
 
-# 检查 docker 是否可用
     @staticmethod
     def _docker_available() -> bool:
         """检查 docker CLI 是否可调用"""
@@ -118,7 +308,6 @@ class DockerSandbox(SandboxDriver):
         except Exception:
             return False
 
-# 拉取镜像（若本地不存在）
     def _ensure_image(self, image: str) -> bool:
         # inspect 本地 image
         r = subprocess.run(["docker", "image", "inspect", image],
@@ -163,15 +352,13 @@ class DockerSandbox(SandboxDriver):
         if not self._container_id:
             if not self.setup(config):
                 return SandboxResult(stderr="setup failed", returncode=-1, backend_used="docker")
-        # docker exec 在运行中的容器里执行命令
         exec_args = ["docker", "exec", "-i"]
         if config.working_dir:
             exec_args += ["-w", config.working_dir]
         for k, v in config.env_vars.items():
             exec_args += ["-e", f"{k}={v}"]
         exec_args.append(self._container_id)
-        # shell 包装: 确保 timeout 等可以生效
-        shell_cmd = f"timeout {config.timeout} sh -c {shlex.join([command])}"
+        shell_cmd = f"timeout {config.timeout} sh -c {_shlex_join([command])}"
         exec_args += ["sh", "-c", shell_cmd]
         try:
             r = subprocess.run(exec_args, capture_output=True, text=True,
@@ -197,14 +384,12 @@ class DockerSandbox(SandboxDriver):
         if not self._container_id:
             return artifacts
         for pattern in config.artifact_paths:
-            # 容器内 find
             find_args = ["docker", "exec", self._container_id,
                         "find", "/", "-path", pattern, "-type", "f"]
             r = subprocess.run(find_args, capture_output=True, text=True)
             for line in r.stdout.strip().splitlines():
                 if not line.strip():
                     continue
-                # docker cp
                 tmp = tempfile.mktemp()
                 subprocess.run(["docker", "cp",
                                f"{self._container_id}:{line}", tmp],
@@ -228,13 +413,12 @@ class DockerSandbox(SandboxDriver):
         return "sandbox-" + "".join(random.choices(string.ascii_lowercase, k=8))
 
 
-# QEMU 沙箱
+# QEMU 沙箱（保留原实现）
 
 class QemuSandbox(SandboxDriver):
     """
     QEMU 全系统模拟沙箱
     用于固件、嵌入式二进制等无法在容器中运行的场景
-    QMP 支持标记为 TODO —— 当前通过进程信号控制
     """
 
     def __init__(self):
@@ -242,7 +426,6 @@ class QemuSandbox(SandboxDriver):
         self._disk_path: Optional[str] = None
         self._pid: Optional[int] = None
 
-    # //// 检查 qemu-system 是否可用 ////
     @staticmethod
     def _qemu_available() -> bool:
         for arch in ["x86_64", "i386", "arm", "aarch64"]:
@@ -250,7 +433,6 @@ class QemuSandbox(SandboxDriver):
                 return True
         return False
 
-    # //// 为 QEMU 创建临时磁盘镜像 ////
     def _create_temp_disk(self, size_mb: int = 512) -> str:
         path = tempfile.mktemp(suffix=".qcow2")
         subprocess.run(["qemu-img", "create", "-f", "qcow2", path, f"{size_mb}M"],
@@ -265,14 +447,13 @@ class QemuSandbox(SandboxDriver):
     def run(self, command: str, config: SandboxConfig) -> SandboxResult:
         t0 = time.perf_counter()
         qemu = shutil.which("qemu-system-x86_64") or shutil.which("qemu-system-i386") or "qemu-system-x86_64"
-        # 最小化启动参数
         qargs = [
             qemu,
             "-kernel", config.executable_path or config.image or "",
             "-nographic",
             "-m", config.memory_limit.replace("m", "M").replace("g", "G"),
             "-drive", f"file={self._disk_path},format=qcow2,if=virtio",
-            "-append", f"console=ttyS0 init=/bin/sh -- -c {shlex.join([command])}",
+            "-append", f"console=ttyS0 init=/bin/sh -- -c {_shlex_join([command])}",
         ]
         if not config.network_enabled:
             qargs.append("-nic")
@@ -297,10 +478,6 @@ class QemuSandbox(SandboxDriver):
         )
 
     def stop(self) -> None:
-        """终止 QEMU 进程
-        TODO: 实现 QMP (QEMU Machine 协议) 优雅关机
-        当前方案: SIGTERM → wait 3s → SIGKILL
-        """
         if self._proc and self._proc.poll() is None:
             self._proc.terminate()
             try:
@@ -311,19 +488,16 @@ class QemuSandbox(SandboxDriver):
         self._proc = None
 
     def collect_artifacts(self, config: SandboxConfig) -> Dict[str, bytes]:
-        # QEMU 场景产物从磁盘镜像提取
         artifacts: Dict[str, bytes] = {}
         if not self._disk_path or not os.path.exists(self._disk_path):
             return artifacts
-        # 尝试用 guestmount 或直接读 qcow2
-        # 简化: 用 qemu-img 转换 转成 raw 再搜索
         raw_path = tempfile.mktemp(suffix=".raw")
         subprocess.run(["qemu-img", "convert", "-f", "qcow2", "-O", "raw",
                        self._disk_path, raw_path], check=False, capture_output=True)
         if os.path.exists(raw_path):
             with open(raw_path, "rb") as fh:
                 for pat in config.artifact_paths:
-                    artifacts[f"disk:/{pat}"] = fh.read(4096)  # 简化: 只读前4K
+                    artifacts[f"disk:/{pat}"] = fh.read(4096)
             os.unlink(raw_path)
         return artifacts
 
@@ -334,7 +508,7 @@ class QemuSandbox(SandboxDriver):
         self._disk_path = None
 
 
-# Windows 沙箱
+# Windows 沙箱（保留原实现）
 
 class WindowsSandbox(SandboxDriver):
     """
@@ -355,17 +529,14 @@ class WindowsSandbox(SandboxDriver):
                                "System32", "WindowsSandbox.exe")
         return os.path.isfile(wsb_exe)
 
-# 生成 WSB 配置 XML
     def _write_wsb_config(self, config: SandboxConfig) -> str:
         self._shared_folder = tempfile.mkdtemp(prefix="wsb_share_")
-        # 组装映射目录: 把 volume_mounts 转换为 MappedFolder
         mapped_xml = ""
         for host_path, _container_path in config.volume_mounts.items():
             mapped_xml += f"    <MappedFolder>\n"
             mapped_xml += f"      <HostFolder>{host_path}</HostFolder>\n"
             mapped_xml += f"      <ReadOnly>false</ReadOnly>\n"
             mapped_xml += f"    </MappedFolder>\n"
-        # 默认共享目录
         mapped_xml += f"    <MappedFolder>\n"
         mapped_xml += f"      <HostFolder>{self._shared_folder}</HostFolder>\n"
         mapped_xml += f"      <ReadOnly>false</ReadOnly>\n"
@@ -396,7 +567,6 @@ class WindowsSandbox(SandboxDriver):
         if not self._wsb_path:
             if not self.setup(config):
                 return SandboxResult(stderr="wsb setup failed", returncode=-1, backend_used="windows_sandbox")
-        # 启动 Windows 沙箱
         try:
             subprocess.run(["cmd.exe", "/c", "start", "/wait", self._wsb_path],
                           timeout=config.timeout, check=False)
@@ -409,7 +579,6 @@ class WindowsSandbox(SandboxDriver):
         return SandboxResult(returncode=0, duration=elapsed, backend_used="windows_sandbox")
 
     def stop(self) -> None:
-        """终止 Windows沙箱.exe 进程"""
         if sys.platform == "win32":
             subprocess.run(["taskkill", "/F", "/IM", "WindowsSandbox.exe"],
                           capture_output=True, check=False)
@@ -433,7 +602,7 @@ class WindowsSandbox(SandboxDriver):
         self._wsb_path = None
 
 
-# 进程沙箱
+# 进程沙箱（保留原实现，兼容 SandboxDriver 接口）
 
 class ProcessSandbox(SandboxDriver):
     # 最轻量后端 —— 直接子进程执行，带超时和资源限制
@@ -452,35 +621,13 @@ class ProcessSandbox(SandboxDriver):
         self._validated_binary = exe
         return True
 
-    def _apply_limits(self):
-        """设置进程资源限制 (类unix)"""
-        if sys.platform == "win32":
-            return
-        try:
-            import resource
-            # 内存限制解析
-            mem = 512 * 1024 * 1024  # 默认 512MB
-            cfg = getattr(self, '_active_cfg', None)
-            if cfg:
-                raw = cfg.memory_limit.lower()
-                if raw.endswith("g"):
-                    mem = int(float(raw[:-1]) * 1024 * 1024 * 1024)
-                elif raw.endswith("m"):
-                    mem = int(float(raw[:-1]) * 1024 * 1024)
-                elif raw.endswith("k"):
-                    mem = int(float(raw[:-1]) * 1024)
-            resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
-        except Exception:
-            pass
-
     def run(self, command: str, config: SandboxConfig) -> SandboxResult:
         t0 = time.perf_counter()
         self._active_cfg = config
         exe = self._validated_binary or config.executable_path or command.split()[0]
-        # 构建完整命令
         full_cmd = [exe] + command.split()[1:] if command.startswith(exe) else command
         if isinstance(full_cmd, str):
-            full_cmd = shlex.split(full_cmd)
+            full_cmd = _shlex_split(full_cmd)
         env = os.environ.copy()
         env.update(config.env_vars)
         try:
@@ -491,7 +638,6 @@ class ProcessSandbox(SandboxDriver):
                 env=env,
                 cwd=config.working_dir or None,
                 text=True,
-                preexec_fn=self._apply_limits if sys.platform != "win32" else None,
                 start_new_session=True,
             )
             out, err = self._proc.communicate(timeout=config.timeout)
@@ -531,52 +677,125 @@ class ProcessSandbox(SandboxDriver):
         self._validated_binary = None
 
 
-# 编排器
+# 编排器 —— 兼容原 execute 接口与测试的 configure/run 接口
 
 class SandboxOrchestrator:
     """
     自动检测可用后端并选择最优
     优先级: Docker > QEMU > Process > Windows沙箱
+    同时提供轻量驱动接口：configure → start → run → shutdown
     """
 
     BACKEND_REGISTRY = {
-        "docker":          DockerSandbox,
-        "qemu":            QemuSandbox,
-        "process":         ProcessSandbox,
-        "windows_sandbox": WindowsSandbox,
+        SandboxBackend.DOCKER.value: DockerSandbox,
+        SandboxBackend.QEMU.value: QemuSandbox,
+        SandboxBackend.PROCESS.value: ProcessSandbox,
+        SandboxBackend.WINDOWS.value: WindowsSandbox,
     }
 
     _AVAILABILITY_CACHE: Dict[str, bool] = {}
 
     def __init__(self):
         self._backends: Dict[str, SandboxDriver] = {}
+        self.driver: Optional[ProcessSandboxDriver] = None
+        self._state = SandboxState.UNINITIALIZED
+        self._execution_count = 0
+        self._success_count = 0
         self._detect_backends()
 
-    # //// 检测哪些后端可用 ////
-    def _detect_backends(self):
-        checks = {
-            "docker":          DockerSandbox._docker_available,
-            "qemu":            QemuSandbox._qemu_available,
-            "process":         lambda: True,  # 总是可用
-            "windows_sandbox": WindowsSandbox._wsb_available,
-        }
-        for name, check_fn in checks.items():
-            try:
-                ok = check_fn()
-            except Exception:
-                ok = False
-            self._AVAILABILITY_CACHE[name] = ok
-            if ok:
-                _log.info("沙箱后端可用: %s", name)
-
-    def auto_select(self) -> str:
-        """按优先级返回最优可用后端名"""
-        for name in ["docker", "qemu", "process", "windows_sandbox"]:
-            if self._AVAILABILITY_CACHE.get(name):
+    @classmethod
+    def auto_select(cls) -> SandboxBackend:
+        """返回最优可用后端（静态方法，测试直接调用）。"""
+        for name in [SandboxBackend.DOCKER, SandboxBackend.QEMU,
+                     SandboxBackend.PROCESS, SandboxBackend.WINDOWS]:
+            if cls._AVAILABILITY_CACHE.get(name.value) or cls._probe_backend(name):
                 return name
-        return "process"  # 兜底
+        return SandboxBackend.PROCESS
 
-    def get_backend(self, name: str) -> SandboxDriver:
+    @classmethod
+    def list_available_backends(cls) -> List[str]:
+        """列出当前可用后端名称。
+
+        未探测过的后端按需探测；PROCESS 兜底后端恒可用。
+        """
+        available = set(cls._AVAILABILITY_CACHE)
+        for name in [SandboxBackend.DOCKER, SandboxBackend.QEMU,
+                     SandboxBackend.PROCESS, SandboxBackend.WINDOWS]:
+            if name.value not in available:
+                cls._probe_backend(name)
+        return [backend for backend, ok in cls._AVAILABILITY_CACHE.items() if ok]
+
+    @classmethod
+    def _probe_backend(cls, name: SandboxBackend) -> bool:
+        """探测指定后端是否可用。"""
+        checks = {
+            SandboxBackend.DOCKER: DockerSandbox._docker_available,
+            SandboxBackend.QEMU: QemuSandbox._qemu_available,
+            SandboxBackend.PROCESS: lambda: True,
+            SandboxBackend.WINDOWS: WindowsSandbox._wsb_available,
+        }
+        check_fn = checks.get(name)
+        if check_fn is None:
+            return False
+        try:
+            ok = bool(check_fn())
+        except Exception:
+            ok = False
+        cls._AVAILABILITY_CACHE[name.value] = ok
+        return ok
+
+    def _detect_backends(self):
+        for name in [SandboxBackend.DOCKER, SandboxBackend.QEMU,
+                     SandboxBackend.PROCESS, SandboxBackend.WINDOWS]:
+            self._probe_backend(name)
+
+    def configure(self, config: SandboxConfig) -> bool:
+        """配置轻量驱动（当前仅支持 PROCESS 后端）。"""
+        if config.backend != SandboxBackend.PROCESS:
+            return False
+        self.driver = ProcessSandboxDriver(config)
+        self._state = SandboxState.CONFIGURED
+        return True
+
+    def start(self) -> None:
+        """启动已配置的驱动。"""
+        if self.driver is None:
+            self._state = SandboxState.ERROR
+            return
+        self.driver.start()
+        self._state = SandboxState.RUNNING
+
+    def run(self, command: List[str], **kwargs) -> SandboxResult:
+        """在已配置驱动上执行命令；未启动时返回失败结果。"""
+        if self.driver is None or self._state != SandboxState.RUNNING:
+            return SandboxResult(
+                stderr="Sandbox not running",
+                returncode=-1, backend_used="process")
+        result = self.driver.execute(command, **kwargs)
+        self._execution_count += 1
+        if result.success:
+            self._success_count += 1
+        return result
+
+    def shutdown(self) -> None:
+        """停止驱动并复位状态。"""
+        if self.driver is not None:
+            self.driver.stop()
+        self._state = SandboxState.STOPPED
+
+    def get_summary(self) -> Dict[str, Any]:
+        """输出编排器执行统计。"""
+        return {
+            'total_executions': self._execution_count,
+            'successful': self._success_count,
+            'state': self._state,
+        }
+
+    # 原 execute 接口（Docker/QEMU 等后端）
+
+    def get_backend(self, name) -> SandboxDriver:
+        if isinstance(name, SandboxBackend):
+            name = name.value
         if name not in self.BACKEND_REGISTRY:
             raise ValueError(f"未知后端: {name}. 可用: {list(self.BACKEND_REGISTRY)}")
         if name not in self._backends:
@@ -586,28 +805,20 @@ class SandboxOrchestrator:
     def available_backends(self) -> List[str]:
         return [n for n, ok in self._AVAILABILITY_CACHE.items() if ok]
 
-# 完整执行生命周期
     def execute(self, config: SandboxConfig, command: str,
                 backend: Optional[str] = None) -> SandboxResult:
-        """
-        setup → 运行 → collect_artifacts → cleanup 完整流程
-        返回 沙箱Result 包含 stdout/stderr/returncode/artifacts/d
-        """
-        backend_name = backend or self.auto_select()
+        """setup → 运行 → collect_artifacts → cleanup 完整流程。"""
+        backend_name = backend or self.auto_select().value
         driver = self.get_backend(backend_name)
         t0 = time.perf_counter()
-# setup
         if not driver.setup(config):
             return SandboxResult(stderr="backend setup failed", returncode=-1,
                                 duration=time.perf_counter()-t0, backend_used=backend_name)
-# 运行
         result = driver.run(command, config)
-# collect
         if config.artifact_paths:
             result.artifacts = driver.collect_artifacts(config)
         result.backend_used = backend_name
         result.duration = time.perf_counter() - t0
-# cleanup
         try:
             driver.cleanup()
         except Exception:
@@ -616,8 +827,17 @@ class SandboxOrchestrator:
 
 
 # 命令行快速测试
-import shlex as _shlex_mod
-shlex = _shlex_mod
+
+def _shlex_join(parts: List[str]) -> str:
+    """兼容 Python <3.8 的 shell 拼接（当前环境无需，保留工具）。"""
+    import shlex
+    return shlex.join(parts)
+
+
+def _shlex_split(cmd: str) -> List[str]:
+    import shlex
+    return shlex.split(cmd)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

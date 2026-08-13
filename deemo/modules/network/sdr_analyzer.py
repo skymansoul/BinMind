@@ -169,7 +169,7 @@ class SDRBinaryAnalyzer:
     def generate_report(self, result: SDRAnalysisResult) -> str:
         report = []
         report.append("=" * 60)
-        report.append("SDR 信号处理 —— 二进制分析报告")
+        report.append("SDR信号处理二进制分析报告")
         report.append("=" * 60)
         report.append(f"执行状态: {result.success}")
         report.append(f"信号类型: {result.signal_type if result.signal_type else '未知'}")

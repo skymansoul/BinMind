@@ -1,4 +1,4 @@
-# created: 2026-06-21
+# created: 2024-08-14
 # 基于离散图编辑的反事实解释器，面向二进制漏洞检测GNN模型
 # 核心问题: 给定一个被判定为"漏洞"的二进制函数图，找出最小的一组图编辑操作
 # 使模型预测翻转为"非漏洞"
@@ -20,7 +20,6 @@ from .src.explain.counterfactual_search import (
     CounterfactualSearchEngine, MCTSNode, SearchResult,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

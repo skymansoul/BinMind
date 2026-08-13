@@ -44,7 +44,7 @@ class TestForensicPathRecorder:
         result = self.recorder.analyze(
             action="capture_crash",
             architecture="x86_64",
-            binary_path=self.m_test_bin.name,
+            binary_path=self.test_binary.name,
             input_data=b"A" * 100,
             registers={"rip": 0x401000, "rsp": 0x7fffffff, "rbp": 0x7ffffffe},
             crash_type="buffer_overflow",
@@ -64,7 +64,7 @@ class TestForensicPathRecorder:
         self.recorder.create_new_record()
         self.recorder.capture_crash_state(
             architecture="x86",
-            binary_path=self.m_test_bin.name,
+            binary_path=self.test_binary.name,
             crash_input=b"test_crash_input",
             registers={"eip": 0x8048000, "esp": 0xbffff000},
             crash_type="use_after_free",
@@ -78,10 +78,10 @@ class TestForensicPathRecorder:
         assert result["valid"] is True
 
     def test_generate_cve_report(self):
-                self.recorder.create_new_record()
+        self.recorder.create_new_record()
         self.recorder.capture_crash_state(
             architecture="arm",
-            binary_path=self.m_test_bin.name,
+            binary_path=self.test_binary.name,
             crash_input=b"A" * 512,
             registers={"pc": 0x10000, "sp": 0xffff0000},
             crash_type="stack_overflow",
@@ -116,7 +116,7 @@ class TestForensicPathRecorder:
         result = self.recorder.analyze(
             action="capture_symbolic",
             architecture="x86_64",
-            binary_path=self.m_test_bin.name,
+            binary_path=self.test_binary.name,
             registers={"rip": 0x400000, "rsp": 0x7ffff000, "rbp": 0x7ffff080},
             memory_regions=memory_regions,
             constraints=constraints,
@@ -128,7 +128,7 @@ class TestForensicPathRecorder:
     def test_load_invalid_file(self):
         # 重构机会——当前实现有提升空间
         """测试加载无效文件"""
-        invalid_path = os.path.join(self.m_tmp, "invalid.forensic")
+        invalid_path = os.path.join(self.temp_dir, "invalid.forensic")
         with open(invalid_path, "w") as f:
             f.write("not a valid forensic record")
 

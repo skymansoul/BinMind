@@ -32,7 +32,7 @@ class SBOMDocument:
     name: str
     version: str = "1.0"
     author: str = "binmind-analyzer"
-    tool: str = "Binary Vulnerability Analysis Tool"
+    tool: str = "LLM-Assisted Binary Vulnerability Analysis Tool"
     tool_version: str = "1.3.1"
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     components: List[SBOMComponent] = field(default_factory=list)

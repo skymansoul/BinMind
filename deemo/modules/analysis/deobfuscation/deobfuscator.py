@@ -77,7 +77,7 @@ class _LivenessInfo:
         self.live_in: Set[str] = set(); self.live_out: Set[str] = set()
 
 
-_OPERAND_RX = re.compile(r"\b(e?[abcd]x|[er]?[sb]p|[er]?[sd]i|r\d+\w?|xmm\d+)\b", re.IGNORECASE)
+_OPERAND_RX = re.compile(r"\b(?:[er]?[abcd]x|[er]?si|[er]?di|[er]?[sb]p|r\d+[a-z]?|r[a-z]{1,2}|xmm\d+|ymm\d+|r\d+)\b", re.IGNORECASE)
 
 def _extract_defs_uses(instr: str) -> Tuple[Set[str], Set[str]]:
     defs, uses = set(), set()
@@ -639,7 +639,7 @@ def deobfuscate_function(binary_path, function_name, deobfuscation_level="medium
 
 def format_deobfuscation_report(result):
     if not result.success: return f"Deobfuscation failed: {', '.join(result.warnings)}"
-    parts = ["# Deobfuscation Report", "",
+    parts = ["# 去混淆分析报告", "",
         f"Function: {result.deobfuscated_cfg.function_name if result.deobfuscated_cfg else 'unknown'}",
         f"Level: {result.metrics.get('deobfuscation_level', 'unknown')}",
         f"Pattern: {result.metrics.get('control_flow_pattern', 'unknown')}",

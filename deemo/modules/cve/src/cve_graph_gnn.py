@@ -1,4 +1,4 @@
-"""~ 2026-11-03"""
+"""~ 2025-05-12"""
 # 异构图卷积网络用于 CVE 可利用性传播预测
 #
 # 核心参考文献:
@@ -635,31 +635,8 @@ def _score_label(score: float) -> str:
     return "LOW"
 
 
-def _get_num(entry, field: str) -> Optional[float]:
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
-
-def _get_str(entry, field: str, default: str = "") -> str:
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False
-
-
-# 便捷接口
 
 def score_cves_with_gnn(kb: CVEKnowledgeBase) -> Dict[str, Dict[str, Any]]:
     """一站式: 构建图, 传播, 返回所有 CVE 的 GNN 可利用性分数.

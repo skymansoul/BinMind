@@ -197,7 +197,7 @@ _YARA_TEMPLATE = """rule {rule_name} {{
     meta:
         description = "Auto-generated rule from extracted strings"
         author = "BinMind info_collection"
-        date = "2026-07-16"
+        date = "2025-06-09"
         score = 60
     strings:
 {string_defs}

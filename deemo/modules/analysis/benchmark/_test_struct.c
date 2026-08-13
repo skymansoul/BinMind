@@ -1,4 +1,4 @@
-static volatile void *volatile_vuln_sink;  /* ×èÖ¹O2/Os±àÒëÆÚÏû³ı */
+static volatile void *volatile_vuln_sink;  /* é˜»æ­¢O2/Osç¼–è¯‘æœŸæ¶ˆé™¤ */
 
 __attribute__((noinline))
 void v_test_vuln(int count) {
@@ -9,7 +9,7 @@ void v_test_vuln(int count) {
     __asm__ __volatile__("" : "+r"(count));
     typedef struct {{ void *data; int len; }} Obj;
     Obj obj; obj.data = p; obj.len = 64;
-    void *alias = obj.data;  /* ½á¹¹Ìå×Ö¶Î±ğÃû */
+    void *alias = obj.data;  /* ç»“æ„ä½“å­—æ®µåˆ«å */
     free(obj.data);
     free(alias);  /* double free via struct field alias */
     printf("v_test: done\n");
@@ -24,7 +24,7 @@ void v_test_safe(int count) {
     typedef struct {{ void *data; int len; }} Obj;
     Obj obj; obj.data = p; obj.len = 64;
     free(obj.data);
-    obj.data = NULL;  /* Çå³ı×Ö¶Î */
+    obj.data = NULL;  /* æ¸…é™¤å­—æ®µ */
     printf("v_test: ok\n");
 }
 int main(int argc, char **argv) {

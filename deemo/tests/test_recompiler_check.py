@@ -43,18 +43,15 @@ class TestRecompilerChecker(unittest.TestCase):
         
         complex_code = "int test(int a) { if (a > 0) { while(a--) { a += 1; } } return a; }"
         score2 = verifier._calculate_equivalence(complex_code)
-lass字段完整性$/d
         self.assertGreater(score2, score1)
     
     def test_determine_equivalence_level(self):
         """测试确定等价性等级"""
         verifier = RecompilerVerifier()
         
-lass字段完整性$/d
         self.assertEqual(verifier._determine_equivalence_level(0.95), EquivalenceLevel.FULL)
         self.assertEqual(verifier._determine_equivalence_level(0.75), EquivalenceLevel.HIGH)
         self.assertEqual(verifier._determine_equivalence_level(0.55), EquivalenceLevel.MEDIUM)
-lass字段完整性$/d
         self.assertEqual(verifier._determine_equivalence_level(0.35), EquivalenceLevel.LOW)
         self.assertEqual(verifier._determine_equivalence_level(0.1), EquivalenceLevel.NONE)
     

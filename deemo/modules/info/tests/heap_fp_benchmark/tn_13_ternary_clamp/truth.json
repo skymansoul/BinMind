@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_13_ternary_clamp",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 三目钳制",
-  "expect_overflow": false,
-  "trigger": "任意 n",
-  "why": "三目表达式将 n 钳制在 64 内, C3 钳制守卫证明安全"
-}

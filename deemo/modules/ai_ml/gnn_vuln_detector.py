@@ -8,7 +8,8 @@ _g_log = logging.getLogger(__name__)
 
 NUMPY_AVAILABLE = False
 try: import numpy as np; NUMPY_AVAILABLE = True
-except ImportError: pass
+except ImportError:
+    pass
 
 class NodeFeature:
     INSTR_COUNT=0; HAS_CALL=1; HAS_DANGEROUS_CALL=2; HAS_LOOP=3; HAS_MEM_READ=4; HAS_MEM_WRITE=5

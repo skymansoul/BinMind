@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2022_0995 UAF: two-phase: alloc→free in cleanup→use via cached ref
+// cve_2022_0995 UAF: two-phase: alloc鈫抐ree in cleanup鈫抲se via cached ref
 char *watch_uaf_global = NULL;
 
 void watch_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    watch_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    watch_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (watch_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("watch_uaf: freed[0]=%c\n", watch_uaf_global[0]);
     }
     watch_uaf_global = NULL;

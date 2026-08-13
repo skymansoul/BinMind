@@ -1,6 +1,6 @@
 """UAF 对比绘图与表格 — TOVS vs 基线 (O0/O2).
 
-创建: 2026-07-28
+创建: 2023-11-10
 用法: python eval/fp_cve_experiment/plot_uaf_comparison.py
 输出: results/uaf_comparison.png, results/uaf_result_table_O0.tex,
       results/uaf_result_table_O2.tex
@@ -9,16 +9,16 @@ import json
 import os
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
+from _common import HERE as _HERE
 RESULTS = os.path.join(_HERE, 'results')
 
-try:
-    import matplotlib
+from _common import try_import
+matplotlib = try_import('matplotlib')
+MPL_OK = matplotlib is not None
+if MPL_OK:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     MPL_OK = True
-except ImportError:
-    MPL_OK = False
 
 
 def load(path: str) -> dict:

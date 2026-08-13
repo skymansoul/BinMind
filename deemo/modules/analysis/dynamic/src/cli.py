@@ -30,6 +30,9 @@ def cmd_trace(args: argparse.Namespace) -> int:
     from .engine import DynamicAnalysisEngine, EntropyScanPass, ImportAnalysisPass, PatternMatchPass, RiskScoringPass
 
     input_path: str = args.input
+    if not input_path:
+        log.error("Missing required argument: --input")
+        return 1
     if not os.path.isfile(input_path):
         log.error("Input file not found: %s", input_path)
         return 1
@@ -95,6 +98,9 @@ def cmd_emulate(args: argparse.Namespace) -> int:
     from .emulation import UnicornHybrid
 
     binary_path: str = args.binary
+    if not binary_path:
+        log.error("Missing required argument: --binary")
+        return 1
     if not os.path.isfile(binary_path):
         log.error("Binary not found: %s", binary_path)
         return 1
@@ -177,7 +183,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # trace subcommand
     trace_p = sp.add_parser("trace", help="Collect and analyze API call traces")
-    trace_p.add_argument("--input", "-i", required=True, help="Binary to analyze")
+    trace_p.add_argument("--input", "-i", default=None, help="Binary to analyze")
     trace_p.add_argument("--trace-count", type=int, default=50, help="Trace entries to simulate")
 
     # memory-forensics subcommand
@@ -189,10 +195,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     instr_p = sp.add_parser("instrument", help="Generate Frida instrumentation scripts")
     instr_p.add_argument("--target", "-t", help="Target process name")
     instr_p.add_argument("--generate", action="store_true", help="Write script to file")
+    instr_p.add_argument("--output", "-o", default=None, help="Output file path")
 
     # emulate subcommand
     emu_p = sp.add_parser("emulate", help="Emulate a binary via Unicorn")
-    emu_p.add_argument("--binary", "-b", required=True, help="Binary to emulate")
+    emu_p.add_argument("--binary", "-b", default=None, help="Binary to emulate")
     emu_p.add_argument("--arch", default="x64", choices=["x86", "x64", "arm", "arm64", "mips"], help="Target architecture")
     emu_p.add_argument("--timeout", type=int, default=30, help="Emulation timeout (seconds)")
 
@@ -200,6 +207,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     vmi_p = sp.add_parser("vmi", help="Virtual Machine Introspection")
     vmi_p.add_argument("--domain", "-d", help="VM domain name")
     vmi_p.add_argument("--backend", default="simulated", choices=["libvmi", "qemu", "simulated"], help="VMI backend")
+    vmi_p.add_argument("--output", "-o", default=None, help="Output file path")
+
+    # 未知子命令在 argparse 层会抛 SystemExit(2)；此处先拦截，
+    # 使 CLI 以返回码形式汇报而非抛异常，便于程序化调用方判断。
+    _KNOWN_COMMANDS = {"trace", "memory-forensics", "instrument", "emulate", "vmi"}
+    for tok in (argv or []):
+        if tok.startswith("-"):
+            continue
+        if tok not in _KNOWN_COMMANDS:
+            p.print_usage()
+            return 1
+        break
 
     args = p.parse_args(argv)
 

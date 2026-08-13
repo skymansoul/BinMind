@@ -5,14 +5,16 @@
 二进制工具对 plain 与 packed 各跑一次, 供分组对比。
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VULN_DIR = ROOT / 'samples' / 'heap_overflow_cve'
-SAFE_DIR = ROOT / 'samples' / 'heap_safe_fp'
+sys.path.insert(0, str(ROOT))
+
+from tests.backends import CLASS_ROOTS  # noqa: E402
 
 
 def _method() -> str:
@@ -48,14 +50,15 @@ def pack_binary(binary: Path) -> tuple:
     return None, 'strip-failed'
 
 
-def pack_all() -> dict:
+def pack_all(sample_class: str = 'heap') -> dict:
     method = _method()
     if not method:
         print('[pack] neither upx nor strip available')
         return {}
-    print(f'[pack] method: {method}')
+    print(f'[pack] method: {method} class={sample_class}')
+    cfg = CLASS_ROOTS[sample_class]
     report = {}
-    for base in (VULN_DIR, SAFE_DIR):
+    for base in (cfg['vuln_dir'], cfg['safe_dir']):
         for d in sorted(p for p in base.iterdir() if p.is_dir()):
             binary = d / 'vuln_O2.exe'
             if not binary.exists():
@@ -67,4 +70,8 @@ def pack_all() -> dict:
 
 
 if __name__ == '__main__':
-    sys.exit(0 if pack_all() else 1)
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--class', dest='sample_class', default='heap',
+                    choices=['heap', 'uaf', 'fmt'])
+    args = ap.parse_args()
+    sys.exit(0 if pack_all(args.sample_class) else 1)

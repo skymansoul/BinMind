@@ -225,7 +225,7 @@ class InstructionHistogramExtractor(FeatureExtractor):
 class RandomWalkEmbeddingExtractor(FeatureExtractor):
     """匿名随机游走嵌入——参考GBsim图拓扑编码思想。
 
-    Ivanov & Burnaev (2018)匿名游走: 每个节点在游走序列中用
+    Ivanov & Burnaev匿名游走: 每个节点在游走序列中用
     首次出现顺序编号替代，相同拓扑结构游走得到相同匿名序列。
     统计匿名游走分布直方图作为图拓扑特征的紧凑表示。
     """

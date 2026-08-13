@@ -1,9 +1,10 @@
 # Proxy → deobfuscation/string_unobfuscator.py. types.ModuleType strategy.
 import os, types, importlib.util, functools as _ft
-_real = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'deobfuscation', 'string_unobfuscator.py')
+_real = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'deobfuscation', 'string_unobfuscator.py')
 _spec = importlib.util.spec_from_file_location('string_unobfuscator', _real)
 _mod = types.ModuleType('string_unobfuscator')
-_mod.__dict__.update({k: v for k, v in globals().items() if k.startswith('_')})
+_mod.__dict__.update({k: v for k, v in globals().items()
+                      if k.startswith('_') and not k.endswith('__')})
 _spec.loader.exec_module(_mod)
 globals().update({k: v for k, v in _mod.__dict__.items() if not k.startswith('_')})
 
@@ -124,3 +125,18 @@ def emulate_linear_decryptor(func_bytes: bytes, key_material: bytes | None = Non
     """Internal debug output stub."""
     pass  # 调试桩，当前未使用
 
+class StringUnobfuscator:
+    """字符串反混淆兼容入口：对数据段执行栈字符串提取。
+
+    实现复用本模块 extract_stack_strings；构造参数保留以兼容历史调用
+    （路径仅作记录，分析在调用期基于传入数据完成）。
+    """
+
+    def __init__(self, binary_path=""):
+        self.binary_path = binary_path
+
+    def unobfuscate(self, data_section=None, **kw):
+        data = data_section if data_section is not None else kw.get('data', b'')
+        if not data:
+            return []
+        return extract_stack_strings(data)

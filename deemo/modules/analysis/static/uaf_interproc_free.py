@@ -24,7 +24,7 @@
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
-from .disasm_util import norm_reg, extract_func_name
+from .disasm_util import norm_reg, extract_func_name, extract_stack_slot
 
 
 # free 系列函数完整集合
@@ -153,15 +153,21 @@ class InterprocFreeAnalyzer:
                         call_addr: int) -> Optional[int]:
         """回溯 free() 的参数来源, 判断是否来自函数参数寄存器.
 
-        支持三种模式:
-          - 直接寄存器: mov rcx, arg_reg; call free
-          - 栈转存: mov [rbp+x], rcx; mov rcx, [rbp+x]; call free
-          - 双重指针: mov rax,[rcx]; mov rcx,rax; call free
+        通用寄存器链回溯: 从 call 前的 arg0 赋值反向追踪 mov 链,
+        识别:
+          - 直接参数: mov rcx, arg_reg; call free
+          - 栈转存参数: mov [rbp+x], rcx; mov rcx,[rbp+x]; call free
+          - double-pointer: mov rax,[param]; mov rcx,rax; call free
+          - 栈参数 + double-deref:
+            mov [rbp+0x10], rcx; mov rax,[rbp+0x10]; mov rax,[rax];
+            mov rcx,rax; call free  (free(*pp))
+        链回溯至函数入口 (无前驱 mov) 或 arg_reg 即判定参数索引.
         """
         arg0 = self._arg_regs[0] if self._arg_regs else "rcx"
         arg_reg_set = {reg: idx for idx, reg in enumerate(self._arg_regs)}
 
-        for j in range(call_idx - 1, max(-1, call_idx - 15), -1):
+        current = arg0
+        for j in range(call_idx - 1, max(-1, call_idx - 25), -1):
             ins = func_ins[j]
             mnem = ins.get("mnemonic", "").lower()
             ops = ins.get("operands", [])
@@ -174,8 +180,59 @@ class InterprocFreeAnalyzer:
                     return None
             if mnem == "call":
                 break
+            if mnem not in ("mov", "movzx", "movsx") or len(ops) < 2:
+                continue
+            dst = norm_reg(ops[0])
+            if dst != current:
+                continue
+            src_raw = ops[1].strip()
+            src = norm_reg(src_raw)
+
+            if src in arg_reg_set:
+                return arg_reg_set[src]
+            if "[" in src_raw.lower():
+                base_reg = self._extract_base_reg(src_raw)
+                slot = extract_stack_slot(src_raw)
+                if slot:
+                    # 栈槽 [rbp+0x10] 可能是参数转存: 找写入该槽的 mov
+                    for k in range(j - 1, max(-1, j - 15), -1):
+                        p = func_ins[k]
+                        p_ops = p.get("operands", [])
+                        if p.get("mnemonic", "").lower() == "mov" \
+                                and len(p_ops) >= 2 \
+                                and extract_stack_slot(p_ops[0]) == slot:
+                            src2 = norm_reg(p_ops[1])
+                            if src2 in arg_reg_set:
+                                return arg_reg_set[src2]
+                            break
+                # double-pointer: 内存解引用的基址是参数寄存器
+                if base_reg and base_reg in arg_reg_set:
+                    return arg_reg_set[base_reg]
+                # 多层解引用: base 是中间寄存器 → 继续追踪 base 的来源
+                if base_reg:
+                    current = base_reg
+                    continue
+                return None
+            current = src
         return None
 
+
+    def _parse_mem_base(op: str):
+        """解析内存操作数, 返回 (基址寄存器, 偏移)."""
+        m = re.search(r"\[([a-z][a-z0-9]*)", op.lower())
+        if m:
+            base = norm_reg(m.group(1))
+            off = 0
+            m2 = re.search(r"([+-]0x[0-9a-f]+)", op.lower())
+            if m2:
+                try:
+                    off = int(m2.group(1), 16)
+                except ValueError:
+                    off = 0
+            return base, off
+        return None, 0
+
+    
     def _check_deref_free_pattern(self, func_ins: List[dict], call_idx: int,
                                   call_addr: int, summary: FreeSummary,
                                   arg_map: Dict[str, int]):

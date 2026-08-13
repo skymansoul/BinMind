@@ -1,5 +1,0 @@
-16:51:12 | INFO    | core.pipeline | Binary: cve_2023_45871_libwebp_heap.elf | x86-64 64-bit | size=54685
-16:51:12 | WARNING | core.decompiler | radare2 not found at radare2
-16:51:12 | INFO    | core.pipeline | Found 0 functions
-16:51:12 | INFO    | core.pipeline | Analyzing 0 functions
-16:51:12 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

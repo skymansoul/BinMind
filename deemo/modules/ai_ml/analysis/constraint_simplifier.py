@@ -22,7 +22,6 @@ from enum import Enum
 from .value_flow_engine import StridedInterval, IntervalKind
 from .heap_alloc_model import AllocSiteInfo, HeapAllocModel, ChunkLayout
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

@@ -1,15 +1,14 @@
 """
 HFP 主检测引擎 — 组装污点/守卫/边界/三态判定.
 
-决策逻辑:
-  输入为归一化 IR 行 (objdump 反汇编经 asm_translator 翻译的
-  伪 IR), 输出带证据链的候选列表。流程:
-    S1 污点传播: size 变量来源等级
-    S2 分配表:   var -> alloc (跨块)
-    S3 守卫集合: guard 行 -> 上界约束 (过滤指针空值检查守卫)
-    S4 写点判定: store/copy 按 var 关联, 三态判定 + 证据
-  SAFE 项被抑制, 其余保留并按置信度排序。CRT 函数块的分配点
-  视为运行库噪声跳过。
+输入为归一化 IR 行 (objdump 反汇编经 asm_translator 翻译的
+伪 IR), 输出带证据链的候选列表。流程:
+  污点传播: size 变量来源等级
+  分配表:   var -> alloc (跨块)
+  守卫集合: guard 行 -> 上界约束 (过滤指针空值检查守卫)
+  写点判定: store/copy 按 var 关联, 三态判定 + 证据
+SAFE 项被抑制, 其余保留并按置信度排序。CRT 函数块的分配点
+视为运行库噪声跳过。
 """
 
 from __future__ import annotations
@@ -116,10 +115,13 @@ def detect_heap_overflow_hfp(ir_lines: List[str]) -> List:
 
     # 统计每 var 的 store 数 (循环累积写检测)
     store_count: Dict[str, int] = {}
+    loop_store_vars: set = set()
     for line in ir_lines:
         m = re.search(r'store\s+(\w+)\s+', line)
         if m:
             store_count[m.group(1)] = store_count.get(m.group(1), 0) + 1
+            if '# loop' in line:
+                loop_store_vars.add(m.group(1))
 
     cur_fn = ''
     for i, line in enumerate(ir_lines):
@@ -132,9 +134,31 @@ def detect_heap_overflow_hfp(ir_lines: List[str]) -> List:
             continue
         alloc = alloc_by_var[w.base_var]
         # 循环累积写: 同缓冲多条偏移 0 字节写 (编译器循环展开
-        # 常见形态) 无法证明单条不越界, 禁止 SAFE 抑制
-        multi = store_count.get(w.base_var, 0) >= 2
+        # 常见形态) 或循环内 store (# loop 标记) 无法证明单条
+        # 不越界, 禁止 SAFE 抑制
+        multi = (store_count.get(w.base_var, 0) >= 2
+                 or w.base_var in loop_store_vars)
         findings.extend(_judge(alloc, w, gset, taint, ir_lines, multi))
+
+    # 回绕可疑合成 finding: 分配大小 > 2^32 (32 位乘法回绕特征)
+    # 且无写点关联 (经结构体字段间接寻址无法解析) 时, 直接判
+    # POTENTIAL — 捕获 CVE-2022-22620 类"分配回绕 + 循环写"
+    # 模式, 不依赖 store 关联
+    # TODO: 2^32 阈值未覆盖 16 位乘法回绕 (32 位平台), 待扩充分支
+    for var, alloc in alloc_by_var.items():
+        if fn_of_alloc.get(var, '') in CRT_FUNCS:
+            continue
+        if store_count.get(var, 0) > 0:
+            continue
+        if not alloc.bound.symbolic and alloc.bound.requested > (1 << 32):
+            from .hfp_verdict import HfpFinding, VerdictResult
+            synth = HfpWrite(pc=alloc.pc, base_var=var, offset=0,
+                             write_iv=Interval.top())
+            findings.append(HfpFinding(
+                alloc, synth, Verdict.POTENTIAL, 0.50,
+                [type('E', (), {'kind': 'wrap_suspicious',
+                                'detail': f'alloc {alloc.size_expr} '
+                                f'> 2^32, 乘法回绕可疑, 无写点关联'})()]))
     findings.sort(key=lambda f: -f.confidence)
     return findings
 

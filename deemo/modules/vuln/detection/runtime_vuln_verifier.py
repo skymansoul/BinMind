@@ -248,7 +248,7 @@ class RuntimeVulnVerifier:
         4. ASAN运行确认内存错误类型
         5. 综合评分输出VerificationResult
 
-        - VulDebugger (arXiv:2504.07634): GDB驱动漏洞自修复
+        - VulDebugger: GDB驱动漏洞自修复
         - CogniCrypt : 符号执行+LLM路径优先
     """
 

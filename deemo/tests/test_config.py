@@ -38,7 +38,8 @@ class TestConfig(unittest.TestCase):
             self.assertFalse(check_openai_api_key())
 
     def test_check_openai_api_key_set(self):
-        with patch.dict(os.environ, {'OPENAI_API_KEY': 'sk-test123456'}):
+        # check_openai_api_key 读取 Config.OPENAI_API_KEY（类属性），不读环境变量
+        with patch('config.Config.OPENAI_API_KEY', 'sk-test123456'):
             self.assertTrue(check_openai_api_key())
 
     def test_check_openai_api_key_empty(self):
@@ -127,20 +128,16 @@ class TestAIProviderConfig(unittest.TestCase):
             self.assertEqual(model, 'gpt-4')
 
     def test_get_current_ai_model_ollama(self):
-        with patch.dict(os.environ, {
-            'AI_PROVIDER': 'ollama',
-            'OLLAMA_MODEL': 'llama2',
-            'OPENAI_MODEL': 'gpt-4'
-        }):
+        # get_current_ai_model 读取 Config 类属性，不读环境变量
+        with patch('config.Config.AI_PROVIDER', AI_PROVIDER_OLLAMA), \
+             patch('config.Config.OLLAMA_MODEL', 'llama2'):
             model = get_current_ai_model()
             self.assertEqual(model, 'llama2')
 
     def test_get_current_ai_model_azure(self):
-        with patch.dict(os.environ, {
-            'AI_PROVIDER': 'azure',
-            'AZURE_OPENAI_DEPLOYMENT': 'my-gpt4-deployment',
-            'OPENAI_MODEL': 'gpt-4'
-        }):
+        # get_current_ai_model 读取 Config 类属性，不读环境变量
+        with patch('config.Config.AI_PROVIDER', AI_PROVIDER_AZURE), \
+             patch('config.Config.AZURE_DEPLOYMENT', 'my-gpt4-deployment'):
             model = get_current_ai_model()
             self.assertEqual(model, 'my-gpt4-deployment')
 

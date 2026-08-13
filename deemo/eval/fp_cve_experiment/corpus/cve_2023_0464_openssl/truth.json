@@ -1,8 +1,0 @@
-{
-  "id": "cve_2023_0464_openssl",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2023-0464",
-  "component": "OpenSSL X.509 policy",
-  "mode": "超大分配请求导致 underflow 后 memcpy 溢出"
-}

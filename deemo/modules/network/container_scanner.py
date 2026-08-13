@@ -1,17 +1,62 @@
 """容器镜像扫描器——Dockerfile分析与CVE攻击面映射。"""
-import json, logging, os, re, subprocess
+import hashlib
+import json, logging, os, re, subprocess, tarfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict
+from datetime import datetime
+from typing import List, Optional, Dict, Any
 
 # 保留
 _VERSION_HINT = (2, 1, 4)
 
+try:
+    import docker  # noqa: F401
+    DOCKER_SDK_AVAILABLE = True
+except ImportError:
+    DOCKER_SDK_AVAILABLE = False
+
 
 _log = logging.getLogger(__name__)
 
-# compat 占位符
-DANGEROUS_LIBRARIES = None; PATH_TRAVERSAL_PATTERNS = None; BINARY_SIGNATURES = None
+
+BINARY_SIGNATURES = {
+    'ELF': [b'\x7fELF'],
+    'PE': [b'MZ'],
+    'MACH_O': [b'\xfe\xed\xfa\xce', b'\xfe\xed\xfa\xcf', b'\xce\xfa\xed\xfe', b'\xcf\xfa\xed\xfe'],
+}
+
+# 常见危险库
+DANGEROUS_LIBRARIES = {
+    'openssl': {'cve_prefix': 'CVE-2022-', 'risk': 'High'},
+    'libssl': {'cve_prefix': 'CVE-2022-', 'risk': 'High'},
+    'glibc': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'libc': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'bash': {'cve_prefix': 'CVE-2019-', 'risk': 'Medium'},
+    'curl': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'libcurl': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'ssh': {'cve_prefix': 'CVE-2024-', 'risk': 'High'},
+    'openssh': {'cve_prefix': 'CVE-2024-', 'risk': 'High'},
+    'sudo': {'cve_prefix': 'CVE-2021-', 'risk': 'Critical'},
+    'nginx': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'apache': {'cve_prefix': 'CVE-2024-', 'risk': 'High'},
+    'httpd': {'cve_prefix': 'CVE-2024-', 'risk': 'High'},
+    'redis': {'cve_prefix': 'CVE-2023-', 'risk': 'Medium'},
+    'mysql': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'postgres': {'cve_prefix': 'CVE-2023-', 'risk': 'High'},
+    'python': {'cve_prefix': 'CVE-2023-', 'risk': 'Medium'},
+    'java': {'cve_prefix': 'CVE-2023-', 'risk': 'Medium'},
+    'node': {'cve_prefix': 'CVE-2023-', 'risk': 'Medium'},
+    'php': {'cve_prefix': 'CVE-2024-', 'risk': 'High'},
+}
+
+# 路径遍历防护
+PATH_TRAVERSAL_PATTERNS = [
+    '..',
+    '/../',
+    '\\..\\',
+    '/..',
+    '..\\',
+]
 
 _DANGEROUS_INSTRUCTIONS = [
     re.compile(r"^\s*ADD\s+(https?://[^\s]+)\s", re.I),
@@ -70,13 +115,38 @@ _SUPPLY_CHAIN_RISK = [
 # ]
 
 class BinaryFileInfo:
-    path: str; size: int = 0; sha256: str = ""; setuid: bool = False
+    path: str = ''
+    layer_id: str = ''
+    file_type: str = ''
+    size: int = 0
+    sha256: str = ''
+    hash_sha256: str = ''
+    permissions: str = ''
+    is_executable: bool = False
+    setuid: bool = False
     capabilities: List[str] = field(default_factory=list)
+    analysis_result: Optional[Dict[str, Any]] = None
+    vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
 
 @dataclass
 class LayerInfo:
-    index: int; instruction: str
-    files: List[BinaryFileInfo] = field(default_factory=list)
+    layer_id: str = ''
+    digest: str = ''
+    size: int = 0
+    command: str = ''
+    author: str = ''
+    created: str = ''
+    index: int = 0
+    instruction: str = ''
+    files: List[str] = field(default_factory=list)
+    binaries: List[Dict[str, Any]] = field(default_factory=list)
+    added_files: List[str] = field(default_factory=list)
+    deleted_files: List[str] = field(default_factory=list)
+    modified_files: List[str] = field(default_factory=list)
+    libraries: List[Dict[str, Any]] = field(default_factory=list)
+    vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
+    risk_level: str = 'Unknown'
+    metadata: Dict[str, Any] = field(default_factory=dict)
     size_bytes: int = 0
 
 @dataclass
@@ -84,11 +154,23 @@ class Finding:
     severity: str; category: str; title: str; description: str
     line: int = 0; cve_id: str = ""; cvss_score: float = 0.0
 
+@dataclass
 class ContainerSecurityReport:
-    def __init__(self):
-        self.image: str = ""; self.base_image: str = ""
-        self.layers: List[LayerInfo] = []; self.findings: List[Finding] = []
-        self.base_cves: List[Finding] = []
+    image_name: str = ''
+    total_layers: int = 0
+    total_binaries: int = 0
+    total_vulnerabilities: int = 0
+    critical_layers: List[str] = field(default_factory=list)
+    high_risk_binaries: List[str] = field(default_factory=list)
+    recommendations: List[str] = field(default_factory=list)
+    layers: List[LayerInfo] = field(default_factory=list)
+    libraries_summary: Dict[str, Any] = field(default_factory=dict)
+    analysis_time: str = ''
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    image: str = ''
+    base_image: str = ''
+    findings: List[Finding] = field(default_factory=list)
+    base_cves: List[Finding] = field(default_factory=list)
 
     def summary(self) -> Dict:
         counts: Dict[str, int] = defaultdict(int)
@@ -99,11 +181,57 @@ class ContainerSecurityReport:
                 "critical_cves": [f.cve_id for f in self.base_cves if f.severity == "CRITICAL"]}
 
 class ContainerImageScanner:
-    def __init__(self, trivy_path: Optional[str] = None):
+    def __init__(self, trivy_path: Optional[str] = None, image_source: str = ''):
         self._trivy = trivy_path or "trivy"
+        self.image_source = image_source
+
+    def _is_safe_path(self, path: str) -> bool:
+        """检查路径是否安全（防止路径遍历）。"""
+        for pattern in PATH_TRAVERSAL_PATTERNS:
+            if pattern in path:
+                return False
+        return True
+
+    def _identify_binary_file(self, full_path: str, rel_path: str, layer_id: str) -> Optional[BinaryFileInfo]:
+        """识别单个二进制文件；无法匹配已知签名时返回 None。"""
+        try:
+            with open(full_path, 'rb') as f:
+                header = f.read(16)
+
+            if len(header) < 4:
+                return None
+
+            file_type = None
+            for sig_type, signatures in BINARY_SIGNATURES.items():
+                for sig in signatures:
+                    if header.startswith(sig):
+                        file_type = sig_type
+                        break
+                if file_type:
+                    break
+
+            if not file_type:
+                return None
+
+            size = os.path.getsize(full_path)
+            sha256 = hashlib.sha256()
+            with open(full_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    sha256.update(chunk)
+
+            return BinaryFileInfo(
+                path=rel_path,
+                layer_id=layer_id,
+                file_type=file_type,
+                size=size,
+                hash_sha256=sha256.hexdigest(),
+            )
+        except OSError:
+            return None
 
     def scan(self, image: str) -> ContainerSecurityReport:
         report = ContainerSecurityReport(); report.image = image
+        report.image_name = image
         if os.path.isfile(image): report = self._scan_dockerfile(image, report)
         report.base_cves = self._check_base_image_cves(report.base_image, image)
         return report

@@ -1,4 +1,4 @@
-/* CVE-2018-10732 ¡ª libmobi parse_huff: header-driven memcpy overflow */
+/* CVE-2018-10732 â€” libmobi parse_huff: header-driven memcpy overflow */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

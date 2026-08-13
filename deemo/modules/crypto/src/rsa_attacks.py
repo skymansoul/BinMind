@@ -1,6 +1,6 @@
 # RSA 弱密钥攻击 -- Wiener (连分数), Fermat (因子分解), Batch GCD, ROCA检测。
-# Boneh & Durfee (1999), Wiener (1990), Heninger et al. (2012),
-# Nemec et al. (2017, ROCA: CVE-2017-15361)。
+# Boneh & Durfee, Wiener, Heninger et al.,
+# Nemec et al.。
 
 import math
 from typing import List, Optional, Tuple
@@ -90,14 +90,14 @@ def batch_gcd(moduli: List[int]) -> List[Tuple[int, int, int]]:
     return results
 
 
-# ---- ROCA 漏洞检测 (CVE-2017-15361) ----
+# ROCA 漏洞检测
 # Infineon RSALib 生成的 RSA 密钥因质数生成算法的结构缺陷,
 # 模数 N=pq 满足特定 Coppersmith 格式, 可在 CPU-hours 内分解。
 # 检测: N 的指纹可用离散傅里叶变换验证: N 对一组小素数取模,
 # 余数分布落在 RSALib 的已知枚举范围内 (共 ~71M 可能余数)。
 #
 # Nemec et al. "The Return of Coppersmith's Attack: Practical
-# Factorization of Widely Used RSA Moduli" (CCS 2017)
+# Factorization of Widely Used RSA Moduli"
 
 # ROCA 检测用小素数集 (前39个奇素数, 3..167)
 _ROCA_PRIMES = [
@@ -163,7 +163,7 @@ def is_roca_vulnerable(n: int) -> dict:
     }
 
 
-# ---- 综合检测入口 ----
+# 综合检测入口
 def is_weak_rsa_key(n: int, e: int = 65537) -> dict:
     # 不拆 -- 上下文连贯
     result = {'weak': False, 'reasons': []}

@@ -192,7 +192,7 @@ def _estimate_security_level(poly_n: int, q_bits: int) -> Tuple[int, bool]:
     """
     基于LWE估计器公式估算安全级别。
     简化公式: λ ≈ min(sqrt(N), log2(q)/2) * 常数
-    来源: Albrecht et al., "On the concrete hardness of LWE" (2015).
+    来源: Albrecht et al., "On the concrete hardness of LWE".
     """
     # 简化估计: LWE维度=N, 噪声比=α=q的逆
     # 对于实际参数, 安全级别 ≈ sqrt(N) * 常数

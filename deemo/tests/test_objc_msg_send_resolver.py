@@ -22,7 +22,6 @@ class TestLanguageType:
     def test_language_type_values(self):
         """测试语言类型枚举值"""
         assert LanguageType.OBJC.value == "objc"
-lass字段完整性$/d
         assert LanguageType.SWIFT.value == "swift"
         assert LanguageType.UNKNOWN.value == "unknown"
 
@@ -87,7 +86,6 @@ class TestSwiftMessageSendParser:
 
         classes, sites = parser.parse(test_data)
 
-lass字段完整性$/d
         assert len(classes) >= 1
 
     def test_map_swift_call_type(self):

@@ -1,6 +1,6 @@
 """LaTeX 对比表格生成 — 从基准报告生成多工具对比 LaTeX 表格.
 
-创建: 2026-05-23
+创建: 2025-03-28
 """
 
 from datetime import datetime

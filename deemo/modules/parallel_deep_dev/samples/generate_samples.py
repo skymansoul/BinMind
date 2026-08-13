@@ -8,7 +8,11 @@ import json
 import os
 from pathlib import Path
 
-from sample_defs import SAMPLE_DEFS_A, SAMPLE_DEFS_B, SAMPLE_DEFS_SAFE
+from sample_defs_cve_a import SAMPLE_DEFS_A
+from sample_defs_cve_b import SAMPLE_DEFS_B
+from sample_defs_cve_c import SAMPLE_DEFS_C
+from sample_defs_safe_a import SAMPLE_DEFS_SAFE_A
+from sample_defs_safe_b import SAMPLE_DEFS_SAFE_B
 
 BASE = Path(__file__).resolve().parent
 VULN_DIR = BASE / 'heap_overflow_cve'
@@ -62,31 +66,37 @@ def readme_text(spec: dict, vuln: bool) -> str:
     return '\n'.join(lines)
 
 
+def _write_if_changed(path: Path, text: str) -> None:
+    """内容一致则跳过写入, 保持文件系统状态不变。"""
+    if path.exists() and path.read_text(encoding='utf-8') == text:
+        return
+    path.write_text(text, encoding='utf-8')
+
+
 def write_sample(dir_path: Path, spec: dict, vuln: bool) -> None:
     dir_path.mkdir(parents=True, exist_ok=True)
-    (dir_path / 'vuln.c').write_text(spec['source'], encoding='utf-8')
-    (dir_path / 'Makefile').write_text(MAKEFILE, encoding='utf-8')
-    (dir_path / 'README.md').write_text(
-        readme_text(spec, vuln), encoding='utf-8')
+    _write_if_changed(dir_path / 'vuln.c', spec['source'])
+    _write_if_changed(dir_path / 'Makefile', MAKEFILE)
+    _write_if_changed(dir_path / 'README.md', readme_text(spec, vuln))
     truth = dict(spec['truth'])
     truth['cve'] = spec.get('cve', '')
     truth['func'] = spec['func']
     truth['name'] = spec['name']
-    (dir_path / 'truth.json').write_text(
-        json.dumps(truth, ensure_ascii=False, indent=2), encoding='utf-8')
+    _write_if_changed(dir_path / 'truth.json',
+                      json.dumps(truth, ensure_ascii=False, indent=2))
 
 
 def main() -> None:
     n = 0
-    for spec in SAMPLE_DEFS_A + SAMPLE_DEFS_B:
+    for spec in SAMPLE_DEFS_A + SAMPLE_DEFS_B + SAMPLE_DEFS_C:
         write_sample(VULN_DIR / spec['name'], spec, vuln=True)
         n += 1
-    for spec in SAMPLE_DEFS_SAFE:
+    for spec in SAMPLE_DEFS_SAFE_A + SAMPLE_DEFS_SAFE_B:
         write_sample(SAFE_DIR / spec['name'], spec, vuln=False)
         n += 1
     print(f'[samples] generated {n} sample directories '
-          f'({len(SAMPLE_DEFS_A + SAMPLE_DEFS_B)} vuln + '
-          f'{len(SAMPLE_DEFS_SAFE)} safe)')
+          f'({len(SAMPLE_DEFS_A + SAMPLE_DEFS_B + SAMPLE_DEFS_C)} vuln + '
+          f'{len(SAMPLE_DEFS_SAFE_A + SAMPLE_DEFS_SAFE_B)} safe)')
 
 
 if __name__ == '__main__':

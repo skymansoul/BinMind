@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2018_7566 UAF: double-free: malloc→free→free again
+// cve_2018_7566 UAF: double-free: malloc鈫抐ree鈫抐ree again
 char *alsa_uaf_global = NULL;
 
 void alsa_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    alsa_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    alsa_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (alsa_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("alsa_uaf: freed[0]=%c\n", alsa_uaf_global[0]);
     }
     alsa_uaf_global = NULL;

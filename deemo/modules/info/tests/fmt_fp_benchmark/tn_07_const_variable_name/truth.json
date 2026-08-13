@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_07_const_variable_name",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 名为 fmt 的常量",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "fmt 变量内容为常量"
-}

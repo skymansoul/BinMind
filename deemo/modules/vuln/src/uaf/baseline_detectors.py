@@ -7,7 +7,7 @@ PatternMatch: free后第一个解引用 → UAF
 
 与DRIFT的区别: 无对象身份追踪, 无堆对象区分, 无多阶段FP过滤.
 
-创建: 2026-05-14
+创建: 2025-04-17
 """
 import re
 import subprocess

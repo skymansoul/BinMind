@@ -87,7 +87,6 @@ class TestDeadlockDetector(unittest.TestCase):
     def test_no_operations(self):
         """测试无锁操作情况"""
         result = self.detector.detect_deadlocks()
-lass字段完整性$/d
         self.assertEqual(result.potential_deadlocks, 0)
         self.assertEqual(result.total_locks, 0)
 

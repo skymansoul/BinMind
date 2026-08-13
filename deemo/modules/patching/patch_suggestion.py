@@ -131,15 +131,17 @@ class PatchSuggester:
 
     def _init_ai_client(self):
         strProvider = Config.AI_PROVIDER.lower()
+        openai_cls = globals().get('OpenAI')
+        anthropic_cls = globals().get('Anthropic')
 
-        if strProvider == 'openai' and bOpenaiOk:
+        if strProvider == 'openai' and (bOpenaiOk or openai_cls is not None):
             try:
                 self.ai_client = OpenAI(api_key=Config.OPENAI_API_KEY)
                 logger.info("[PatchSuggester] OpenAI client initialized")
             except Exception as e:
                 logger.warning("[PatchSuggester] OpenAI init failed: %s", e)
 
-        elif strProvider == 'anthropic' and bAnthropicOk:
+        elif strProvider == 'anthropic' and (bAnthropicOk or anthropic_cls is not None):
             try:
                 self.ai_client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
                 logger.info("[PatchSuggester] Anthropic client initialized")
@@ -147,12 +149,12 @@ class PatchSuggester:
                 logger.warning("[PatchSuggester] Anthropic init failed: %s", e)
 
         # 初始化 ensemble 第二 provider（与主 provider 互为备份）
-        if strProvider == 'openai' and bAnthropicOk:
+        if strProvider == 'openai' and (bAnthropicOk or anthropic_cls is not None):
             try:
                 self._secondary_client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
             except Exception:
                 self._secondary_client = None
-        elif strProvider == 'anthropic' and bOpenaiOk:
+        elif strProvider == 'anthropic' and (bOpenaiOk or openai_cls is not None):
             try:
                 self._secondary_client = OpenAI(api_key=Config.OPENAI_API_KEY)
             except Exception:
@@ -417,35 +419,32 @@ class PatchSuggester:
             if mGit is not None:
                 dResult['patch'] = mGit.group(1).strip()
 
-        # 描述块
-        mDesc = re.search(r'## (?:[Ff]ix\s*[Dd]escription|fix说明)\n(.*?)(?=\n##|```|$)', response, re.DOTALL)
+        # 描述块：支持中英文标题，终止于空行后的小节标题或代码块边界
+        mDesc = re.search(
+            r'## (?:修复说明|Fix\s*Description)\s*\n(.*?)(?=\n\n#|\n##|\n```|```|\Z)',
+            response, re.DOTALL)
         if mDesc is not None:
             dResult['description'] = mDesc.group(1).strip()
         else:
             dResult['description'] = response[:500]
 
-        mConf = re.search(r'confidence[:：]?\s*(\d+\.?\d*)', response)
+        # 置信度：中英文关键字均可，仅取首个数值并夹取到 [0, 1]
+        mConf = re.search(r'(?:置信度|confidence)\s*[:：]?\s*(\d+\.?\d*)', response)
         if mConf is not None:
             fRaw = float(mConf.group(1))
             dResult['confidence'] = min(max(fRaw, 0.0), 1.0)
 
         strResp = response
-        bFound = False
-        iCheck = 0
-        while not bFound and iCheck < 5:
-            if iCheck == 0 and ('boundarycheck' in strResp or 'lengthcheck' in strResp):
-                dResult['suggestion_type'] = 'boundary_check'
-                bFound = True
-            elif iCheck == 1 and ('安全函数' in strResp or 'strncpy' in strResp or 'snprintf' in strResp):
-                dResult['suggestion_type'] = 'safe_function'
-                bFound = True
-            elif iCheck == 2 and ('free' in strResp and '置空' in strResp):
-                dResult['suggestion_type'] = 'null_after_free'
-                bFound = True
-            elif iCheck == 3 and ('parameter化' in strResp or '格式化' in strResp):
-                dResult['suggestion_type'] = 'parameterized'
-                bFound = True
-            iCheck += 1
+        # 关键词判定顺序固定：边界检查 → 安全函数 → free 后置空 → 参数化
+        if ('边界检查' in strResp or '长度检查' in strResp
+                or 'boundarycheck' in strResp or 'lengthcheck' in strResp):
+            dResult['suggestion_type'] = 'boundary_check'
+        elif ('安全函数' in strResp or 'strncpy' in strResp or 'snprintf' in strResp):
+            dResult['suggestion_type'] = 'safe_function'
+        elif ('free' in strResp and '置空' in strResp):
+            dResult['suggestion_type'] = 'null_after_free'
+        elif ('参数化' in strResp or '格式化' in strResp):
+            dResult['suggestion_type'] = 'parameterized'
 
         return dResult
 
@@ -489,10 +488,10 @@ class PatchSuggester:
 @@ -1,5 +1,8 @@
  void vulnerable_function(char *input) {
 +    if (strlen(input) >= BUFFER_SIZE) {
-+        return;  // prevent stack overflow
++        return;  // 防止栈溢出
 +    }
-        char buffer[BUFFER_SIZE];
-        strcpy(buffer, input);
+    char buffer[BUFFER_SIZE];
+    strcpy(buffer, input);
  }""",
             'format_string': """--- a/source.c
 +++ b/source.c
@@ -504,30 +503,30 @@ class PatchSuggester:
             'integer_overflow': """--- a/source.c
 +++ b/source.c
 @@ -1,5 +1,8 @@
- int calculate_size(int a, int b) {
+int calculate_size(int a, int b) {
 +    if (a > INT_MAX - b) {
-+        return -1;  // prevent integer overflow
++        return -1;  // 防止整数溢出
 +    }
-        return a + b;
+    return a + b;
  }""",
             'heap_vulnerability': """--- a/source.c
 +++ b/source.c
 @@ -1,5 +1,8 @@
- void allocate_buffer(size_t size) {
+void allocate_buffer(size_t size) {
 +    if (size > MAX_ALLOC_SIZE) {
-+        return NULL;  // prevent heap overflow
++        return NULL;  // 防止堆溢出
 +    }
-        char *buf = malloc(size);
+    char *buf = malloc(size);
  }""",
             'use_after_free': """--- a/source.c
 +++ b/source.c
 @@ -1,8 +1,10 @@
- void process_data() {
-        char *data = malloc(100);
-        // use data...
-        free(data);
-+    data = NULL;  // prevent UAF
-        // won't accidentally use freed data
+void process_data() {
+       char *data = malloc(100);
+       // 使用 data...
+       free(data);
++   data = NULL;  // 防止UAF
+       // 后续代码不会意外使用data
  }""",
             # detect layers
             'detect_stack_overflow': """--- a/build.sh
@@ -562,17 +561,17 @@ class PatchSuggester:
     def _generate_default_description(self, vuln_type):
         dDescs = {
             'stack_overflow':
-                'Add bounds check before copy; use safe string functions (strncpy, snprintf) instead of strcpy/sprintf.',
+                '建议在复制数据前添加边界检查，或使用安全的字符串操作函数（如strncpy、snprintf等）替代不安全的函数（如strcpy、sprintf）。',
             'format_string':
-                'Use parameterised format strings; avoid passing user-controlled input directly as format specifier.',
+                '建议使用参数化格式化输出，避免直接使用用户可控的字符串作为格式字符串。',
             'integer_overflow':
-                'Validate operand range before arithmetic to prevent overflow-induced buffer overrun or logic error.',
+                '建议在进行算术运算前检查操作数范围，防止整数溢出导致的缓冲区溢出或逻辑错误。',
             'heap_vulnerability':
-                'Validate allocation size before heap request to prevent heap overflow. For double-free: use safe memory libraries or add post-free guards.',
+                '建议在分配内存前检查请求大小是否合理，避免堆溢出。对于double free漏洞，建议使用内存安全库或添加释放检查。',
             'use_after_free':
-                'Null the pointer immediately after free() to prevent subsequent accidental dereference of freed memory.'
+                '建议在free()调用后立即将指针置为NULL，防止后续代码意外引用已释放的内存。'
         }
-        return dDescs.get(vuln_type, 'Analyse vulnerability context and provide targeted remediation.')
+        return dDescs.get(vuln_type, '请分析漏洞上下文并提供适当的修复方案。')
 
     def format_patch_for_report(self, suggestion):
         strPatchId = suggestion.patch_id
@@ -580,13 +579,13 @@ class PatchSuggester:
             strPatchId = 'N/A'
 
         lstLines = []
-        lstLines.append("## Patch Suggestion ID: " + strPatchId)
-        lstLines.append("**Vulnerability type:** " + suggestion.vuln_type)
-        lstLines.append("**Target function:** " + suggestion.target_function)
-        lstLines.append("**Vulnerability offset:** 0x{:x}".format(suggestion.target_offset))
-        lstLines.append("**Confidence:** {:.1f}%".format(suggestion.confidence * 100.0))
-        lstLines.append("**Fix description:**\n" + suggestion.description)
-        lstLines.append("\n**Suggested patch (unified diff):**\n```diff\n" + suggestion.patch_diff + "\n```")
+        lstLines.append("## 补丁建议 ID: " + strPatchId)
+        lstLines.append("**漏洞类型:** " + suggestion.vuln_type)
+        lstLines.append("**目标函数:** " + suggestion.target_function)
+        lstLines.append("**漏洞位置:** 偏移 0x{:x}".format(suggestion.target_offset))
+        lstLines.append("**置信度:** {:.1f}%".format(suggestion.confidence * 100.0))
+        lstLines.append("**修复说明:**\n" + suggestion.description)
+        lstLines.append("\n**建议补丁 (unified diff):**\n```diff\n" + suggestion.patch_diff + "\n```")
         lstLines.append("\n---\n")
         return '\n'.join(lstLines)
 

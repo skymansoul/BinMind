@@ -16,9 +16,8 @@
   - main() 调度: 仅给 --out → HFP 管线; 仅给 --output/-t → DDSSSC
     管线; 都不给 → 两条管线顺序执行.
 
-用法:
-    python run_benchmark.py --out results/benchmark_hfp.csv   # HFP 管线
-    python run_benchmark.py --output benchmark_results.csv    # DDSSSC 管线
+  python run_benchmark.py --out results/benchmark_hfp.csv   # HFP 管线
+  python run_benchmark.py --output benchmark_results.csv    # DDSSSC 管线
 """
 
 from __future__ import annotations

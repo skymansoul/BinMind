@@ -1,4 +1,4 @@
-﻿id,expected,acpe_detected,baseline_detected,acpe_kept,baseline_kept
+id,expected,acpe_detected,baseline_detected,acpe_kept,baseline_kept
 CVE-2021-3156,vuln,True,True,1,1
 CVE-2014-0160,vuln,True,True,1,2
 CVE-2015-0235,vuln,True,True,1,2

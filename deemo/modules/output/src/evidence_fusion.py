@@ -20,8 +20,8 @@ mass 函数按分析源特化 (见 evidence_mass_functions.py):
   Sentz & Ferson Combination of Evidence in D-S Theory — 组合规则
 
 修改记录:
-  创建 2026-08-01 — D-S 核心 (组合规则, 融合入口, 冲突矩阵)
-  2026-08-03 — mass 函数拆分至 evidence_mass_functions.py
+  创建 2025-05-12 — D-S 核心 (组合规则, 融合入口, 冲突矩阵)
+  2025-05-12 — mass 函数拆分至 evidence_mass_functions.py
 """
 
 import math

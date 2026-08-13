@@ -461,27 +461,53 @@ def cross_source_coverage(
         "only_nvd": only_nvd,
         "only_ghsa": only_ghsa,
         "both": both,
+        "total": total,
         "total_unique": total,
         "coverage_pct": round(coverage_pct, 2),
     }
 
 
-def merge_with_confidence(entries_list: List[CVEEntry]) -> List[CVEEntry]:
+def merge_with_confidence(entries_list: List[Any]) -> List[Any]:
     """为调试跨源差异标注字段来源。
-    每个条目的 source_confidence 根据填充的字段设置。
-    在调试合并条目为何选取某源而非另一源的数据时有帮助。"""
-    for entry in entries_list:
-        # 从基础置信度开始
-        confidence = entry.source_confidence
 
-        # 若条目有 NVD 质量的元数据，提升置信度
-        if entry.cvss_vector and entry.cvss_score is not None:
+    每个条目的 source_confidence 根据填充的字段设置。
+    接受条目列表，或含 "entries" 键的源分组列表；
+    条目可为 CVEEntry 或 dict。
+    """
+    # 展平 {"entries": [...]} 分组格式
+    flat: List[Any] = []
+    for item in entries_list:
+        if isinstance(item, dict) and "entries" in item:
+            flat.extend(item["entries"])
+        else:
+            flat.append(item)
+
+    for entry in flat:
+        # 读取现有置信度（dict 或对象）
+        if isinstance(entry, dict):
+            confidence = entry.get("source_confidence", 0.5)
+            has_cvss = bool(entry.get("cvss_vector")) and entry.get("cvss_score") is not None
+            has_cwes = bool(entry.get("cwes"))
+            desc = entry.get("description")
+        else:
+            confidence = getattr(entry, "source_confidence", 0.5)
+            has_cvss = bool(getattr(entry, "cvss_vector", None)) and \
+                getattr(entry, "cvss_score", None) is not None
+            has_cwes = bool(getattr(entry, "cwes", None))
+            desc = getattr(entry, "description", None)
+
+        # 从基础置信度开始
+        if has_cvss:
             confidence = max(confidence, 0.9)
-        if entry.cwes:
+        if has_cwes:
             confidence = max(confidence, 0.85)
-        if not entry.description:
+        if not desc:
             confidence = 0.3  # 无描述 = 低质量
 
-        entry.source_confidence = min(confidence, 1.0)
+        confidence = min(confidence, 1.0)
+        if isinstance(entry, dict):
+            entry["source_confidence"] = confidence
+        else:
+            entry.source_confidence = confidence
 
     return entries_list

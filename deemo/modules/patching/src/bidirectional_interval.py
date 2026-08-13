@@ -1,3 +1,4 @@
+# 创建: 2024-09-05
 # 双向区间交汇验证 — alloc可用区间 × write取值区间 的溢出判定
 """既有求解器(OverflowSatisfiabilitySolver)只用alloc单侧区间对比单一
 write常量。当write_size未知(=0)时, "alloc.lower >= 0" 恒真 → 误判
@@ -105,6 +106,7 @@ class BidirectionalIntervalVerifier:
                                verdict: BidirectionalVerdict
                                ) -> BidirectionalVerdict:
         """写侧上界不可知时的保守判定。"""
+        # FIXME: 写侧完全不可知时依赖taint启发式, 未做调用点实参区间推断
         # 写侧不可知 + alloc有界且边界小 → 不能排除溢出但置信度低
         if write_tainted:
             verdict.may_overflow = True

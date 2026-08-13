@@ -1,6 +1,6 @@
 """基线 DP-TVRA 管线 vs PCFV — 在语料库上的误报率/召回率对比.
 
-创建: 2026-05-16
+创建: 2024-06-24
 用法: python eval/fp_cve_experiment/compare_baseline.py [--json out.json]
 输出: 逐样本两管线判定 + 汇总对比 (precision/recall/f1/fp_rate)
 """
@@ -10,12 +10,9 @@ import json
 import os
 import sys
 import time
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'heap'))
-
+from _common import HERE as _HERE, list_samples, setup_paths
+setup_paths(with_format=False)
+from orchestrator import analyze_heap as analyze_heap_baseline
 from pcfv import analyze_heap_pcfv
 from orchestrator import analyze_heap as analyze_heap_baseline
 
@@ -50,12 +47,7 @@ def main():
     args = ap.parse_args()
 
     rows = []
-    for d in sorted(glob.glob(os.path.join(CORPUS, '*'))):
-        if not os.path.isdir(d) or not os.path.exists(
-                os.path.join(d, 'truth.json')):
-            continue
-        with open(os.path.join(d, 'truth.json'), encoding='utf-8') as f:
-            truth = json.load(f)
+    for d, truth in list_samples(CORPUS):
         exe = os.path.join(d, args.exe)
         if not os.path.exists(exe):
             continue

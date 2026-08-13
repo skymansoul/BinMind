@@ -78,7 +78,6 @@ class TestAgentInfo(unittest.TestCase):
             tasks_failed=2
         )
         
-lass字段完整性$/d
         self.assertEqual(info.agent_id, 'test_agent')
         self.assertEqual(info.agent_type, AgentType.SENSOR)
         self.assertEqual(info.status, AgentStatus.ONLINE)
@@ -116,7 +115,6 @@ class TestRemoteAgent(unittest.TestCase):
     def test_agent_init(self):
         """测试代理初始化"""
         self.assertEqual(self.agent.agent_id, 'test_agent')
-lass字段完整性$/d
         self.assertEqual(self.agent.agent_type, AgentType.SENSOR)
         self.assertEqual(self.agent.status, AgentStatus.OFFLINE)
         self.assertIsNotNone(self.agent.capabilities)

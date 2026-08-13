@@ -158,7 +158,7 @@ class PMCSideChannelEvaluator:
         """计算计数器关于秘密值的泄漏量。
 
         增强：增加 Cohen's d、eta-squared 和 Mann-Whitney U 检验，
-        作为 ANOVA F-ratio 的补充。参考 SLAD (2025) 的多维度信号评估思路。
+        作为 ANOVA F-ratio 的补充。参考 SLAD 的多维度信号评估思路。
         """
         if len(data) < 2:
             return ExploitabilityScore(score=0.0, counter=counter)

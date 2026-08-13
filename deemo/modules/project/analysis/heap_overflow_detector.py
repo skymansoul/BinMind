@@ -70,6 +70,8 @@ class OverflowFinding:
     alloc_size_min: int = 0; alloc_size_max: int = 0
     write_size_min: int = 0; write_size_max: int = 0
     input_controlled: bool = False
+    instruction_address: int = 0   # 写入指令索引 (后处理增强层定位用)
+    size_reg: str = ""             # 写入大小寄存器 (路径守卫匹配用)
 
 
 class HeapOverflowDetector(FpReductionMixin, CallHandlerMixin,
@@ -233,7 +235,9 @@ class HeapOverflowDetector(FpReductionMixin, CallHandlerMixin,
             alloc_size_max=alloc.max_allocation(),
             input_controlled=input_ctrl,
             evidence=result.evidence,
-            recommendation=self._recommend(result, chk, alloc))
+            recommendation=self._recommend(result, chk, alloc),
+            instruction_address=chk.instruction_address,
+            size_reg=chk.size_reg)
         return self._fp_reduction_post(chk, finding)
 
     def _severity(self, result: ConstraintResult, input_ctrl: bool

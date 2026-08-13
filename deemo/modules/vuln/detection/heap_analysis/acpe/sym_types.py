@@ -1,6 +1,6 @@
 """ACPE 符号追踪共享类型与工具 — 供 SymSizeTracker 使用.
 
-创建: 2026-07-03
+创建: 2025-03-28
 内容:
   数据类型  SymAlloc / SymWrite / FuncSymResult
   工具     _is_call_name / _extract_scale / _reg_width_bits / _detect_abi

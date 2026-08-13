@@ -398,3 +398,15 @@ def speculative_devirtualize(call_site: int, possible_targets: list[int],
 def recover_vtables(binary_path: str) -> list[VTableInfo]:
     """一键虚表恢复"""
     return VTableRecovery().recover_vtables(binary_path)
+
+
+class PreciseVTableRecovery:
+    """精确虚表恢复入口 — 绑定目标二进制路径，供上层直接实例化调用。"""
+
+    def __init__(self, binary_path: str):
+        self.binary_path = binary_path
+        self._engine = VTableRecovery()
+
+    def recover_vtables(self) -> list[VTableInfo]:
+        return self._engine.recover_vtables(self.binary_path)
+

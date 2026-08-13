@@ -1,9 +1,8 @@
 """反分析 detection bypass engine
 
-检测 common reverse-engineering countermeasures Linux ELF binaries:
-ptrace, LD_PRELOAD 钩子s, /proc/self/status TracerPid, timing-based
-反调试, debugger port scanning. 构造 bypass strategies
-对每个 detected technique
+对二进制文件执行反分析特征检测（调试器/虚拟机/时间检测/沙箱），
+为每个检出的技术构造绕过输入。检测基于字节模式匹配，绕过基于
+技术类型的固定 payload，不依赖符号执行。
 """
 
 import ctypes
@@ -14,8 +13,7 @@ import re
 import struct
 import time
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import List, Dict, Optional, Set, Tuple
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -374,98 +372,63 @@ class AntiAnalysisTechnique:
 
 
 @dataclass
-class DetectionResult:
-    technique: str
-    present: bool
-    detail: str = ""
-    bypass: str = ""
+class AntiAnalysisTechnique:
+    """单项反分析技术及其检测位置。"""
+    name: str
+    location: int
+    detection_code: str
+    bypass_input: Optional[bytes] = None
 
 
 @dataclass
 class BypassResult:
-    technique: str
-    strategy: str
-    difficulty: str = "low"
-
-
-@dataclass
-class AntiAnalysisBypass:
-    detections: List[DetectionResult] = field(default_factory=list)
-    bypasses: List[BypassResult] = field(default_factory=list)
-    overall_confidence: float = 0.0
-    category_breakdown: Dict[str, int] = field(default_factory=dict)
+    """绕过结果 — success 标记整体是否成功，techniques 为检测项。"""
+    success: bool
+    techniques: List[AntiAnalysisTechnique]
+    bypass_inputs: Dict[str, bytes] = field(default_factory=dict)
 
 
 class AntiAnalysisDetector:
     """运行 反分析 检查 against a binary"""
 
-    def __init__(self):
-        self._raw: Optional[bytes] = None
+    ANTI_PATTERNS: Dict[str, List[bytes]] = {
+        "is_debugger": [b"IsDebuggerPresent", b"CheckRemoteDebugger",
+                        b"ptrace", b"NtQueryInformationProcess"],
+        "vm_check": [b"cpuid", b"vmware", b"virtualbox", b"qemu"],
+        "timing": [b"rdtsc", b"QueryPerformanceCounter", b"Sleep"],
+        "sandbox": [b"mouse_event", b"GetAsyncKeyState", b"username"],
+    }
 
-    def detect(self, binary: str) -> List[DetectionResult]:
-        results: List[DetectionResult] = []
+    def __init__(self, binary_path: str):
+        self.binary_path = binary_path
+
+    def detect(self) -> List[AntiAnalysisTechnique]:
+        """扫描二进制内容，返回所有命中的反分析技术。
+
+        同一模式多处出现时逐处记录位置。
+        """
+        techniques: List[AntiAnalysisTechnique] = []
         try:
-            with open(binary, "rb") as fh:
-                self._raw = fh.read()
-        except OSError:
-            return results
+            with open(self.binary_path, "rb") as fh:
+                data = fh.read()
+        except Exception as exc:
+            logger.warning("反分析检测失败: %s", exc)
+            return techniques
 
-        static_checks = [
-            ("ptrace", _check_ptrace_call(binary), ""),
-            ("ld_preload", _check_ld_preload(self._raw), ""),
-        ]
-        for technique, present, detail in static_checks:
-            results.append(DetectionResult(
-                technique=technique, present=present, detail=detail,
-                bypass=_BYPASS_STRATEGIES.get(technique, "")))
-
-        runtime_checks = [
-            ("tracer_pid", _check_tracer_pid(), ""),
-            ("timing", _check_timing_anomaly(), ""),
-            ("ptrace_scope", _check_ptrace_scope(), ""),
-            ("seccomp", _check_seccomp_filter(), "seccomp filter locked"),
-            ("proc_stat", _check_proc_self_stat(), "non-zero TracerPid in /proc/self/stat"),
-            ("maps_breakpoints", _check_maps_breakpoints(self._raw), "anonymous r-x mappings > 3"),
-        ]
-        for technique, present, detail in runtime_checks:
-            results.append(DetectionResult(
-                technique=technique, present=present, detail=detail,
-                bypass=_BYPASS_STRATEGIES.get(technique, "")))
-
-        cg_present, cg_detail = _check_cgroup_sandbox()
-        results.append(DetectionResult(
-            technique="cgroup", present=cg_present, detail=cg_detail,
-            bypass=_BYPASS_STRATEGIES.get("cgroup", "")))
-        ds_present, ds_detail = _check_disk_size_sandbox()
-        results.append(DetectionResult(
-            technique="disk_size", present=ds_present, detail=ds_detail,
-            bypass=_BYPASS_STRATEGIES.get("disk_size", "")))
-        ut_present, ut_detail = _check_uptime_sandbox()
-        results.append(DetectionResult(
-            technique="uptime", present=ut_present, detail=ut_detail,
-            bypass=_BYPASS_STRATEGIES.get("uptime", "")))
-        ex_present, ex_detail = _check_proc_exe_symlink()
-        results.append(DetectionResult(
-            technique="exe_symlink", present=ex_present, detail=ex_detail,
-            bypass=_BYPASS_STRATEGIES.get("exe_symlink", "")))
-
-        # auxv 异常检测
-        auxv_present, auxv_detail = _check_auxv_anomalies()
-        results.append(DetectionResult(
-            technique="auxv_anomaly", present=auxv_present, detail=auxv_detail,
-            bypass=_BYPASS_STRATEGIES.get("auxv_anomaly", "")))
-
-        open_ports = _scan_debugger_ports()
-        if open_ports:
-            results.append(DetectionResult(
-                technique="debugger_port", present=True,
-                detail=f"Open: {open_ports}",
-                bypass=_BYPASS_STRATEGIES["debugger_port"]))
-        else:
-            results.append(DetectionResult(
-                technique="debugger_port", present=False, detail=""))
-
-        return results
+        for category, patterns in self.ANTI_PATTERNS.items():
+            for pattern in patterns:
+                pos = 0
+                while True:
+                    idx = data.find(pattern, pos)
+                    if idx == -1:
+                        break
+                    techniques.append(AntiAnalysisTechnique(
+                        name=category,
+                        location=idx,
+                        detection_code=pattern.decode("ascii", errors="ignore"),
+                    ))
+                    pos = idx + 1
+        return techniques
 
 
 class BypassSolver:
@@ -480,50 +443,83 @@ class BypassSolver:
     }
 
     @staticmethod
-    def solve(detections: List[DetectionResult]) -> List[BypassResult]:
-        out = []
-        for d in detections:
-            if d.present:
-                diff = BypassSolver._DIFFICULTY_MAP.get(d.technique, "low")
-                strategy = _BYPASS_STRATEGIES.get(d.technique, "Unknown")
-                out.append(BypassResult(
-                    technique=d.technique, strategy=strategy, difficulty=diff))
-        diff_order = {"high": 0, "medium": 1, "low": 2}
-        out.sort(key=lambda x: diff_order.get(x.difficulty, 99))
-        return out
+    def solve(technique: AntiAnalysisTechnique) -> Optional[bytes]:
+        """返回该技术的绕过输入；未知类型返回 None。"""
+        if technique.name == "is_debugger":
+            return b"\x00" * 4
+        if technique.name == "vm_check":
+            return b"\x01"
+        if technique.name == "timing":
+            return b"\x00" * 8
+        if technique.name == "sandbox":
+            return b"user" + b"\x00" * 60
+        return None
+
+    @staticmethod
+    def generate_frida_script(techniques: List[AntiAnalysisTechnique]) -> str:
+        """为检测项生成 Frida 拦截脚本；无检测项返回空串。"""
+        if not techniques:
+            return ""
+        parts = ["// Anti-analysis bypass hooks"]
+        for tech in techniques:
+            code = tech.detection_code
+            parts.append(
+                f"Interceptor.attach(Module.findExportByName(null, '{code}'), "
+                f"{{ onEnter: function(args) {{ args[0] = ptr('0'); }} }});"
+            )
+        return "\n".join(parts)
+
+    @staticmethod
+    def generate_ld_preload_stub(techniques: List[AntiAnalysisTechnique]) -> str:
+        """为检测项生成 LD_PRELOAD 桩代码。
+
+        is_debugger 类别固定声明 IsDebuggerPresent 覆盖；其余检测码
+        按可变参数原型生成同名函数。桩内保留检测码标识便于定位。
+        """
+        parts = ["// LD_PRELOAD bypass stub"]
+        has_debugger = False
+        for tech in techniques:
+            code = tech.detection_code
+            parts.append(f"// bypass {code}")
+            if tech.name == "is_debugger":
+                has_debugger = True
+                parts.append("int ptrace(int request, ...) { return 0; }")
+            else:
+                parts.append(f"int {code}(void) {{ return 0; }}")
+        if has_debugger and not any(
+                t.detection_code == "IsDebuggerPresent" for t in techniques):
+            parts.append("int IsDebuggerPresent(void) { return 0; }")
+        return "\n".join(parts)
 
 
-def _calc_confidence(detections: List[DetectionResult]) -> float:
-    if not detections:
-        return 0.0
-    present_techs = {d.technique for d in detections if d.present}
-    all_techs = {d.technique for d in detections}
-    if not present_techs:
-        return 0.0
-    return round(_bayesian_combine(present_techs, all_techs), 3)
+class AntiAnalysisBypass:
+    """反分析绕过执行器 — 检测后生成并保存绕过输入。"""
+
+    def __init__(self, binary_path: str):
+        self.binary_path = os.path.abspath(binary_path)
+        self.detector = AntiAnalysisDetector(binary_path)
+        self.solver = BypassSolver()
+
+    def run(self) -> BypassResult:
+        """执行完整检测与绕过流程。"""
+        try:
+            techniques = self.detector.detect()
+            bypass_inputs: Dict[str, bytes] = {}
+            for tech in techniques:
+                inp = self.solver.solve(tech)
+                if inp is not None:
+                    tech.bypass_input = inp
+                    bypass_inputs[tech.detection_code] = inp
+            return BypassResult(
+                success=True, techniques=techniques, bypass_inputs=bypass_inputs)
+        except Exception as exc:
+            logger.error("反分析绕过失败: %s", exc)
+            return BypassResult(success=False, techniques=[])
 
 
 def create_anti_analysis_bypass(binary_path: str) -> AntiAnalysisBypass:
-    detector = AntiAnalysisDetector()
-    detections = detector.detect(binary_path)
-    bypasses = BypassSolver.solve(detections)
-    confidence = _calc_confidence(detections)
-    breakdown: Dict[str, int] = {}
-    for d in detections:
-        if d.present:
-            if d.technique in ("ptrace", "tracer_pid", "timing", "proc_stat",
-                               "ptrace_scope", "sigtrap", "debugger_port", "auxv_anomaly"):
-                cat = "debugger"
-            elif d.technique in ("seccomp", "maps_breakpoints", "ld_preload"):
-                cat = "anti_tamper"
-            elif d.technique in ("cgroup", "disk_size", "uptime", "exe_symlink"):
-                cat = "sandbox"
-            else:
-                cat = "other"
-            breakdown[cat] = breakdown.get(cat, 0) + 1
-    return AntiAnalysisBypass(
-        detections=detections, bypasses=bypasses,
-        overall_confidence=confidence, category_breakdown=breakdown)
+    """创建反分析绕过执行器。"""
+    return AntiAnalysisBypass(binary_path)
 
 
 name = "anti_analysis"

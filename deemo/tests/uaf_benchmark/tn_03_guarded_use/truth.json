@@ -1,8 +1,0 @@
-{
-  "sample_id": "TN-03",
-  "label": "tn",
-  "cwe": "NONE",
-  "description": "Safe: refcount guard prevents free; use protected by NULL check",
-  "expect_uaf": false,
-  "tarps_expected": "DEF_FP"
-}

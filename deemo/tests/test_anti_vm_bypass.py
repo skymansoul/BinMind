@@ -100,7 +100,6 @@ class TestBypassSolution(unittest.TestCase):
             confidence=0.85
         )
         self.assertEqual(solution.solution_type, 'symbolic')
-lass字段完整性$/d
         self.assertEqual(solution.script_type, 'frida')
         self.assertEqual(solution.confidence, 0.85)
 

@@ -140,18 +140,25 @@ class FpBenchmarkRunner:
         }
 
     def export_csv(self, results: List[ToolResult], path: pathlib.Path):
+        """统一格式 CSV: 工具名/样本ID/检出数/误报数/漏报数/耗时/峰值内存.
+
+        误报数/漏报数为样本级派生标记 (is_vulnerable × detected).
+        """
         with open(path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=[
                 "tool", "sample", "group", "is_vulnerable", "detected",
-                "num_findings", "scan_time_ms", "peak_memory_mb",
-                "success", "error"])
+                "fp", "fn", "num_findings", "scan_time_ms",
+                "peak_memory_mb", "success", "error"])
             writer.writeheader()
             for r in results:
+                fp = 1 if (not r.is_true_vulnerable and r.detected) else 0
+                fn = 1 if (r.is_true_vulnerable and not r.detected) else 0
                 writer.writerow({
                     "tool": r.tool_name, "sample": r.sample_name,
                     "group": r.group,
                     "is_vulnerable": r.is_true_vulnerable,
                     "detected": r.detected,
+                    "fp": fp, "fn": fn,
                     "num_findings": r.num_findings,
                     "scan_time_ms": round(r.scan_time_ms, 1),
                     "peak_memory_mb": round(r.peak_memory_mb, 1),
@@ -209,6 +216,9 @@ class FpBenchmarkRunner:
         metrics = {t: self.compute_metrics(results, t) for t in all_tools}
         self.export_csv(results, self._output_dir / "fp_benchmark_results.csv")
         self.export_latex(metrics, self._output_dir / "fp_result_table.tex")
+        # 任务指定路径: 主实验 LaTeX 表置于 eval/result_table.tex
+        self.export_latex(metrics,
+                          _PROJ_ROOT / "eval" / "result_table.tex")
 
         print(f"\n{'工具':<12} {'Recall':>8} {'Prec':>8} {'FPR':>8} "
               f"{'F1':>8} {'AvgMs':>8}")

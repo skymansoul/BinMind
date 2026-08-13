@@ -155,7 +155,7 @@ class WalmaMemoryChecker:
     def detect_corruptions(self) -> list[MemoryCorruptionFinding]:
         """阶段2: heatmap 四类损坏模式检测。
 
-        策略对齐 arXiv 2603.24167 Section 4:
+        策略对齐以下四类损坏模式:
         - 线性溢出: 页边界连续高写入密度
         - UAF: 零值区域离散高读写点
         - 类型混淆: 同地址段读写交替

@@ -11,12 +11,11 @@ Angr exploration 模式漏洞点分析 — 符号执行搜索危险函数可达�
   - CLI 输出合并字典, 同时满足两个 run_benchmark 消费者的字段需求;
     明细行打到 stderr, 保持 stdout 为纯 JSON (deemo 端 json.loads 解析).
 
-决策逻辑:
-  以 angr 的 CFGFast + 符号执行 exploration 找出二进制中
-  可达的堆危险函数调用点 (memcpy/malloc/free 等). 输出统一
-  dict 结构供 run_benchmark 消费: tool/sample/success/
-  findings/duration_sec. 环境缺失 angr 时降级: 返回 success=False
-  + error 字段, 由 run_benchmark 汇总为 "unavailable" 而非崩溃.
+以 angr 的 CFGFast + 符号执行 exploration 找出二进制中
+可达的堆危险函数调用点 (memcpy/malloc/free 等). 输出统一
+dict 结构供 run_benchmark 消费: tool/sample/success/
+findings/duration_sec. 环境缺失 angr 时降级: 返回 success=False
++ error 字段, 由 run_benchmark 汇总为 "unavailable" 而非崩溃.
 """
 
 from __future__ import annotations

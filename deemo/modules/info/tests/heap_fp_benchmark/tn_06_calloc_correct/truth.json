@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_06_calloc_correct",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: calloc 正确乘法",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "calloc 分配 64 字节, 写入恰好 64, 等量安全"
-}

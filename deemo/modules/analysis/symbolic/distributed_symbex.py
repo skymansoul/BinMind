@@ -19,6 +19,7 @@ State partitioning path-condition-hash-based
 """
 
 from abc import ABC, abstractmethod
+import os
 import pickle
 import uuid
 import zlib
@@ -31,6 +32,7 @@ import struct
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from pathlib import Path
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ HEARTBEAT_TIMEOUT_SEC = 30
 MAX_RETRIES = 3
 
 
-class ExecutionStateStatus:
+class ExecutionStateStatus(Enum):
     """Lifecycle states for a 符号执行 state"""
     PENDING = "pending"
     RUNNING = "running"

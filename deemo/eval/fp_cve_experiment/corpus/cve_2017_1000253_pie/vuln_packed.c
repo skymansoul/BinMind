@@ -1,0 +1,53 @@
+/* CVE-2017-1000253: realpath 中 malloc(n) 后复制 n+1 字节
+ * (含NUL), 单字节堆溢出.
+ */
+#include <stdlib.h>
+
+/* 加壳变体: 分配/复制函数宏包装 + 不透明谓词 (语义保持). */
+#include <string.h>
+volatile int __opq_guard = 0;
+void *__wrap_malloc(unsigned long n) { if (__opq_guard) return (void*)0; return malloc(n); }
+void *__wrap_calloc(unsigned long a, unsigned long b) { if (__opq_guard) return (void*)0; return calloc(a, b); }
+void *__wrap_realloc(void *p, unsigned long n) { if (__opq_guard) return (void*)0; return realloc(p, n); }
+void __wrap_free(void *p) { if (__opq_guard) return; free(p); }
+void *__wrap_memcpy(void *d, const void *s, unsigned long n) { if (__opq_guard) return d; return memcpy(d, s, n); }
+void *__wrap_memset(void *d, int c, unsigned long n) { if (__opq_guard) return d; return memset(d, c, n); }
+void *__wrap_memmove(void *d, const void *s, unsigned long n) { if (__opq_guard) return d; return memmove(d, s, n); }
+char *__wrap_strcpy(char *d, const char *s) { if (__opq_guard) return d; return strcpy(d, s); }
+char *__wrap_strcat(char *d, const char *s) { if (__opq_guard) return d; return strcat(d, s); }
+#define malloc __wrap_malloc
+#define calloc __wrap_calloc
+#define realloc __wrap_realloc
+#define free __wrap_free
+#define memcpy __wrap_memcpy
+#define memset __wrap_memset
+#define memmove __wrap_memmove
+#define strcpy __wrap_strcpy
+#define strcat __wrap_strcat
+
+#include <stdio.h>
+#include <string.h>
+
+char *my_realpath(const char *path) {
+    size_t n = strlen(path);
+    char *r = (char *)malloc(n);
+    if (!r) return 0;
+    memcpy(r, path, n + 1);
+    return r;
+}
+
+int main(int argc, char **argv) {
+    /* 不透明谓词: 恒真分支, 干扰路径分析 */
+    if (__opq_guard == 0) { __opq_guard = 1; }
+
+    char p[64];
+    memset(p, 'C', 63);
+    p[63] = 0;
+    if (argc > 1) {
+        strcpy(p, "/tmp/long/path/name/here");
+    }
+    char *r = my_realpath(p);
+    printf("%d\n", r[0]);
+    free(r);
+    return 0;
+}

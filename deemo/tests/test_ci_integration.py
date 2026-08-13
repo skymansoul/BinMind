@@ -69,7 +69,6 @@ class TestCIIntegrator(unittest.TestCase):
     def test_set_fail_on_invalid(self):
         """invalid => False"""
         result = self.integrator.set_fail_on('invalid')
-lass字段完整性$/d
         self.assertFalse(result)
         self.assertIsNone(self.integrator.fail_on)
 
@@ -127,7 +126,6 @@ lass字段完整性$/d
     def test_calculate_exit_code_success(self):
         self.integrator.fail_on = 'high'
         result = self.integrator.calculate_exit_code([])
-lass字段完整性$/d
         self.assertEqual(result, CI_EXIT_CODE['SUCCESS'])
 
     def test_calculate_exit_code_vulnerability_found(self):

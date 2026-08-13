@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import hashlib
+import re
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 import uuid
@@ -1508,6 +1509,96 @@ class VulnerabilityDatabaseCore:
             ],
             'cwes': advisory.get('cwes', []),
             'raw_data': advisory
+        }
+
+    def _process_vuldb_entry(self, entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """处理 VulDB API 返回条目，标准化为统一漏洞记录结构。
+
+        VulDB 原始条目嵌套在 'source' 键下；输出与 _process_osv_vuln、
+        _process_gh_advisory 保持同构，便于上层统一消费。
+        """
+        if not entry or not isinstance(entry, dict):
+            return None
+
+        src = entry.get('source')
+        if not isinstance(src, dict):
+            src = entry
+
+        vuln_id = str(src.get('id', ''))
+
+        cve_ids = []
+        cve = src.get('cve')
+        if isinstance(cve, dict) and cve.get('id'):
+            cve_ids.append(cve['id'])
+
+        risk = src.get('risk')
+        severity = risk.get('name', 'Unknown') if isinstance(risk, dict) else 'Unknown'
+
+        cvss = src.get('cvss')
+        cvss_score = cvss.get('score') if isinstance(cvss, dict) else None
+
+        product = src.get('product')
+        if isinstance(product, dict):
+            vendor = product.get('vendor')
+            vendor_name = vendor.get('name', '') if isinstance(vendor, dict) else ''
+            product_name = product.get('name', '') or ''
+            product_version = product.get('version', '') or ''
+        else:
+            vendor_name = product_name = product_version = ''
+
+        date = src.get('date')
+        last_modified = date.get('last_modified', '') if isinstance(date, dict) else ''
+
+        return {
+            'vuln_id': vuln_id,
+            'source': 'VulDB',
+            'title': src.get('title', '') or '',
+            'description': (src.get('advisory', '') or '')[:2000],
+            'severity': severity,
+            'cvss_score': cvss_score,
+            'cve_ids': cve_ids,
+            'vuldb_link': src.get('vuldb_link', '') or '',
+            'published': None,
+            'updated': last_modified,
+            'product': {
+                'vendor': vendor_name,
+                'name': product_name,
+                'version': product_version,
+            },
+            'raw_data': entry,
+        }
+
+    def _validate_external_query_params(self, **kwargs) -> Dict[str, Any]:
+        """校验外部漏洞源查询参数并清洗注入风险。
+
+        返回 {'valid': bool, 'sanitized': dict, 'errors': [str]}。
+        - cve_id: 必须匹配 CVE-\\d{4}-\\d{4,7} 格式
+        - package_name / binary_name: 去除路径分隔符与危险字符；
+          含路径穿越片段直接判为非法
+        """
+        sanitized: Dict[str, Any] = {}
+        errors: List[str] = []
+
+        cve_id = kwargs.get('cve_id')
+        if cve_id:
+            if re.match(r'^CVE-\d{4}-\d{4,7}$', str(cve_id)):
+                sanitized['cve_id'] = str(cve_id)
+            else:
+                errors.append(f'非法 CVE ID: {cve_id}')
+
+        for field in ('package_name', 'binary_name'):
+            value = kwargs.get(field)
+            if not value:
+                continue
+            cleaned = re.sub(r'[;|&<>`\s/\\\\]', '', str(value))
+            if '..' in str(value) or str(value).startswith('/'):
+                errors.append(f'{field} 含路径穿越片段')
+            sanitized[field] = cleaned
+
+        return {
+            'valid': not errors,
+            'sanitized': sanitized or dict(kwargs),
+            'errors': errors,
         }
 
     def query_all_external(

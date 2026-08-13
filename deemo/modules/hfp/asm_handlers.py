@@ -1,15 +1,14 @@
 """
-汇编翻译器 — 指令 handler 组 (与 asm_translator 主体分离).
+汇编翻译器 — 指令 handler 组.
 
-决策逻辑:
-  每条指令的寄存器/槽位状态更新独立成函数, 由 translate 循环
-  调度. 语义要点:
-    - mov: 立即数/寄存器/栈槽/寄存器基址四类装载, 栈槽存储
-    - lea: 帧基址与寄存器基址 (堆别名偏移) 两类
-    - add/sub/shl: 常量折叠, 指针别名保持不变 (偏移不改变身份)
-    - cdqe/movzx 等扩展: 别名/常量保持
-    - cmp+jcc: 输出 guard 伪 IR (上界/下界/相等)
-    - call: ABI 参数收集 + alloc/copy/strlen 语义
+每条指令的寄存器/槽位状态更新独立成函数, 由 translate 循环
+调度. 语义要点:
+  - mov: 立即数/寄存器/栈槽/寄存器基址四类装载, 栈槽存储
+  - lea: 帧基址与寄存器基址 (堆别名偏移) 两类
+  - add/sub/shl: 常量折叠, 指针别名保持不变 (偏移不改变身份)
+  - cdqe/movzx 等扩展: 别名/常量保持
+  - cmp+jcc: 输出 guard 伪 IR (上界/下界/相等)
+  - call: ABI 参数收集 + alloc/copy/strlen 语义
 """
 
 from __future__ import annotations
@@ -17,12 +16,14 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from .asm_regex import (_ALLOC_FUNCS, _COPY_FUNCS, _LEN_FUNCS,
+from .asm_regex import (_ALLOC_FUNCS, _COPY_FUNCS, _FMT_FUNCS, _LEN_FUNCS,
                         _RE_ADD_IMM, _RE_ADD_REG, _RE_CMP_IMM, _RE_JCC_EQ,
-                        _RE_JCC_GT, _RE_JCC_LT, _RE_LEA, _RE_LEA_REG,
-                        _RE_LEA_SCALE, _RE_LOAD_REG_BASE, _RE_LOAD_STACK,
-                        _RE_MOV_IMM, _RE_MOV_MEM, _RE_MOV_REG, _RE_SHL_IMM,
-                        _RE_STORE_REG_BASE, _RE_STORE_REG_IMM, norm_reg)
+                        _RE_JCC_GT, _RE_JCC_LT, _RE_LEA, _RE_LEA_INDEX,
+                        _RE_LEA_REG, _RE_LEA_SCALE, _RE_LOAD_REG_BASE,
+                        _RE_LOAD_STACK, _RE_MOV_IMM, _RE_MOV_MEM,
+                        _RE_MOV_REG, _RE_SHL_IMM, _RE_STORE_REG_BASE,
+                        _RE_STORE_REG_IMM, norm_reg)
+from .asm_cond import handle_cmp, handle_extend, handle_jcc  # noqa: E402,F401
 
 
 def handle_mov(self, operands: str) -> None:
@@ -55,7 +56,14 @@ def handle_mov(self, operands: str) -> None:
             try:
                 self.regs[dst] = int(val, 0)
             except (ValueError, TypeError):
-                self.regs[dst] = val
+                # 槽值可能是栈地址元组 repr (lea 产物) — 还原类型
+                if isinstance(val, str) and val.startswith("('"):
+                    try:
+                        self.regs[dst] = eval(val)
+                    except Exception:
+                        self.regs[dst] = val
+                else:
+                    self.regs[dst] = val
         return
     m = _RE_LOAD_REG_BASE.match(operands)
     if m:
@@ -66,8 +74,42 @@ def handle_mov(self, operands: str) -> None:
             # [vN+off] 装载: 字段地址视为指向该堆缓冲的指针
             self.regs[dst] = base_val
             self.ir.append(f'use {base_val} + 0')
-        else:
-            self.regs[dst] = None
+            return
+        if isinstance(base_val, tuple) and len(base_val) == 3:
+            # 栈基址元组 (rbp, sign, off): [栈地址+delta] 是栈槽
+            # 内容间接读 — struct 指针的字段装载 (b->elems 等),
+            # 槽内容若是堆别名则继承
+            slot_base, sign, slot_off = base_val
+            if slot_base == 'argv':
+                # argv 基址: [argv + delta] = argv[i] — 外部输入
+                ext = self._new_var()
+                self.ir.append(f'{ext} = ext_input()')
+                self.regs[dst] = ext
+                return
+            try:
+                delta = int(off_str, 0) if off_str else 0
+            except (ValueError, TypeError):
+                delta = 0
+            cur = int(slot_off, 0) if str(slot_off).startswith('0x') \
+                else int(slot_off)
+            total = cur + delta if sign == '+' else cur - delta
+            slot = self._slot_name(slot_base, '+', hex(total))
+            val = self.slots.get(slot)
+            if val is not None:
+                try:
+                    self.regs[dst] = int(val, 0)
+                except (ValueError, TypeError):
+                    self.regs[dst] = val
+            elif str(slot_off) in ('0x18', '0x10') and slot_base == 'rbp':
+                # argv 参数槽间接: [argv + delta] = argv[i] — 外部
+                # 输入. 生成外部污点变量, fmt 检测据此判用户可控
+                ext = self._new_var()
+                self.ir.append(f'{ext} = ext_input()')
+                self.regs[dst] = ext
+            else:
+                self.regs[dst] = None
+            return
+        self.regs[dst] = None
         return
     m = _RE_STORE_REG_BASE.match(operands)
     if m:
@@ -132,6 +174,23 @@ def handle_lea(self, operands: str) -> None:
             self.regs[dst] = val * k
         else:
             self.regs[dst] = None
+        return
+    # 双寄存器索引: lea rdx,[rcx+rax*1] — 基址或索引为堆别名时
+    # 目标继承别名 (循环内元素寻址, 偏移由索引决定不可静态求值)
+    m = _RE_LEA_INDEX.match(operands)
+    if m:
+        dst = norm_reg(m.group(1))
+        base = norm_reg(m.group(2))
+        idx = norm_reg(m.group(3)) if m.group(3) else ''
+        bv = self.regs.get(base)
+        iv = self.regs.get(idx) if idx else None
+        if isinstance(bv, str) and bv.startswith('v'):
+            self.regs[dst] = bv
+        elif isinstance(iv, str) and iv.startswith('v'):
+            self.regs[dst] = iv
+        else:
+            self.regs[dst] = None
+        return
 
 
 def handle_addsub(self, op: str, operands: str) -> None:
@@ -142,8 +201,9 @@ def handle_addsub(self, op: str, operands: str) -> None:
         cur = self.regs.get(dst)
         if isinstance(cur, int):
             self.regs[dst] = cur + imm if op == 'add' else cur - imm
-        elif isinstance(cur, str):
-            pass  # 指针别名 + 偏移: 身份不变, 保持别名
+        elif isinstance(cur, (str, tuple)):
+            # 指针别名/栈地址元组 + 偏移: 身份不变, 保持
+            self.regs[dst] = cur
         else:
             self.regs[dst] = None
         return
@@ -237,6 +297,12 @@ def handle_call(self, operands: str) -> None:
             self.ir.append(f'{ret} = {fn}()')
             self.regs['rax'] = ret
             return
+    if any(f in name for f in _FMT_FUNCS):
+        # printf 族: 委托 hfp_fmt 的提取函数 (避免本模块超行数),
+        # 生成 fmt(格式化串, 参数...) 伪 IR 行
+        from .hfp_fmt import fmt_extract_call
+        fmt_extract_call(self, name)
+        return
     if 'free' in name:
         # free(vN): 释放语义, UAF 检测器据此追踪生命周期
         arg0 = self.regs.get(self.arg_regs[0])

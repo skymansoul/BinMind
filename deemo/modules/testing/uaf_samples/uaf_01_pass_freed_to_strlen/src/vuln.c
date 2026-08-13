@@ -6,6 +6,6 @@ int main(void) {
     if (!p) return 1;
     strcpy(p, "data");
     free(p);
-    printf("[*] len=%zu\n", strlen(p));   /* UAF: strlen ½âÒıÓÃ */
+    printf("[*] len=%zu\n", strlen(p));   /* UAF: strlen è§£å¼•ç”¨ */
     return 0;
 }

@@ -33,7 +33,32 @@ def build_def_use_chains(cfg) -> Dict[int, List[DefUseNode]]:
 
     返回: {block_addr: [DefUseNode, ...]}
     kind: "def" = 变量被定义 (赋值目标), "use" = 变量被使用, "kill" = free/内存释放
+
+    入参兼容两种形态: angr CFG 对象, 或反编译 IR 文本行列表。
+    后者按行解析赋值/释放/解引用, 不依赖二进制反汇编。
     """
+    import re
+    if isinstance(cfg, (list, tuple)):
+        chains: Dict[int, List[DefUseNode]] = defaultdict(list)
+        for idx, line in enumerate(cfg or []):
+            line = line.strip()
+            fm = re.search(r'\bfree\s*\(\s*(\w+)\s*\)', line)
+            if fm:
+                chains[idx].append(DefUseNode(idx, fm.group(1), idx, "kill"))
+            m = re.match(r'(\w+)\s*=\s*(.+)', line)
+            if m:
+                var, rhs = m.group(1), m.group(2).strip()
+                chains[idx].append(DefUseNode(idx, var, idx, "def", rhs))
+                for used in re.findall(r'\*\s*(\w+)|(\w+)\s*\[', rhs):
+                    chains[idx].append(
+                        DefUseNode(idx, used[0] or used[1], idx, "use"))
+            else:
+                um = re.search(r'\*\s*(\w+)|(\w+)\s*\[', line)
+                if um and not fm:
+                    chains[idx].append(
+                        DefUseNode(idx, um.group(1) or um.group(2), idx, "use"))
+        return dict(chains)
+
     chains: Dict[int, List[DefUseNode]] = defaultdict(list)
     if cfg is None:
         return dict(chains)
@@ -59,13 +84,12 @@ def build_def_use_chains(cfg) -> Dict[int, List[DefUseNode]]:
                     chains[block.addr].append(
                         DefUseNode(i, lhs, block.addr, "def", rhs))
                 # 检测 rhs 中使用的变量
-                import re
-                for tvar in re.findall(r't(\d+)', rhs):
+                for tvar in re.findall(r'\bt(\d+)\b', rhs):
                     chains[block.addr].append(
                         DefUseNode(i, f"t{tvar}", block.addr, "use", lhs))
             # 检测 free 类调用 (STle 向内存写入, 指针被释放)
             if 'STle' in stmt_str or 'free' in stmt_str.lower():
-                for tvar in re.findall(r't(\d+)', stmt_str):
+                for tvar in re.findall(r'\bt(\d+)\b', stmt_str):
                     chains[block.addr].append(
                         DefUseNode(i, f"t{tvar}", block.addr, "kill"))
     return dict(chains)

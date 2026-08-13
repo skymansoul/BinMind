@@ -1,6 +1,0 @@
-{
-  "id": "fmt_tp_13_width_leak",
-  "expected_vuln": true,
-  "vuln_type": "format_string",
-  "mode": "宽度/精度字段泄露 (%.N$x)"
-}

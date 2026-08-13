@@ -37,10 +37,21 @@ except ImportError:
 @dataclass
 class TaintRegion:
     """污点区域：输入字节范围映射"""
-    start_offset: int
-    end_offset: int
-    source_type: str  # 'stdin', 'argv', 'env', 'file', '网络'
+    start_offset: Optional[int] = None
+    end_offset: Optional[int] = None
+    source_type: str = "stdin"
     label: str = ""
+    start: Optional[int] = None
+    size: Optional[int] = None
+    tag: str = ""
+
+    def __post_init__(self):
+        if self.start_offset is None:
+            self.start_offset = self.start
+        if self.end_offset is None and self.start_offset is not None and self.size is not None:
+            self.end_offset = self.start_offset + self.size
+        if not self.tag:
+            self.tag = self.label
 
 
 @dataclass
@@ -51,19 +62,26 @@ class SelectiveState:
     区别于全符号状态，仅标记有限的符号变量和约束
     参考 的剪枝状态表示
     """
-    addr: int
+    addr: int = 0
+    state_id: str = ""
+    pc: Optional[int] = None
     tainted_regs: Set[str] = field(default_factory=set)
     tainted_mem: Set[int] = field(default_factory=set)
     constraints: List[Any] = field(default_factory=list)
     depth: int = 0
     priority: float = 1.0
 
+    def __post_init__(self):
+        if self.pc is None:
+            self.pc = self.addr
+
 
 @dataclass
 class SelectiveExecutionResult:
     """选择性符号执行结果"""
-    paths_found: int
-    tainted_paths: int
+    success: bool = True
+    paths_found: int = 0
+    tainted_paths: int = 0
     vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
     taint_flows: List[Dict[str, Any]] = field(default_factory=list)
     coverage: Dict[str, int] = field(default_factory=dict)
@@ -105,19 +123,25 @@ class TaintPropagator:
         r'(add|sub|or|and|xor|shl|shr|sar|mul|imul)\s+(\w+),\s*(\w+)', re.I
     )
 
+    def __init__(self):
+        self.regions: List[TaintRegion] = []
+
+    def add_region(self, region: TaintRegion) -> None:
+        self.regions.append(region)
+
     def propagate(
         self,
-        instruction: str,
-        tainted_regs: Set[str],
-        tainted_mem: Set[int]
+        instruction: str = "",
+        tainted_regs: Optional[Set[str]] = None,
+        tainted_mem: Optional[Set[int]] = None
     ) -> Tuple[Set[str], Set[int]]:
         """
         单条指令的污点传播
         
         返回更新后的 (tainted_regs, tainted_mem)
         """
-        new_regs = set(tainted_regs)
-        new_mem = set(tainted_mem)
+        new_regs = set(tainted_regs or set())
+        new_mem = set(tainted_mem or set())
 
         # 清除模式检查
         for pat in self._CLEAR_PATTERNS:
@@ -183,17 +207,53 @@ class TaintPropagator:
 
 class SelectiveSymbolicExecutor:
 
-    def __init__(self, binary_path: str, max_steps: int = 10000):
-        if not _HAS_ANGR:
-            raise ImportError("angr 不可用，选择性符号执行需安装 angr")
-
+    def __init__(self, binary_path: Optional[str] = None, max_steps: int = 10000):
         self.binary_path = binary_path
         self.max_steps = max_steps
         self.propagator = TaintPropagator()
         self.project: Optional[angr.Project] = None
+        self._stats: Dict[str, Any] = {
+            'executions': 0, 'paths_found': 0, 'tainted_paths': 0, 'vulnerabilities': 0,
+        }
+
+        if not binary_path:
+            logger.debug("[SelectiveSym] 未提供二进制路径，仅初始化组件")
+            return
+        if not _HAS_ANGR:
+            raise ImportError("angr 不可用，选择性符号执行需安装 angr")
 
         self.project = angr.Project(binary_path, auto_load_libs=False)
         logger.info(f"[SelectiveSym] 加载: {binary_path}")
+
+    def get_stats(self) -> Dict[str, Any]:
+        return dict(self._stats)
+
+    def reset(self) -> None:
+        self._stats = {
+            'executions': 0, 'paths_found': 0, 'tainted_paths': 0, 'vulnerabilities': 0,
+        }
+        self.propagator = TaintPropagator()
+
+    def analyze(self, target_func: str = "") -> Dict[str, Any]:
+        if self.project is None:
+            return {'success': False, 'error': '未加载二进制，无法分析', 'target_func': target_func}
+        try:
+            result = self.execute_with_taint_guidance(taint_regions=[], max_paths=100)
+            self._stats['executions'] += 1
+            self._stats['paths_found'] += result.paths_found
+            self._stats['tainted_paths'] += result.tainted_paths
+            self._stats['vulnerabilities'] += len(result.vulnerabilities)
+            return {
+                'success': True,
+                'target_func': target_func,
+                'paths_found': result.paths_found,
+                'tainted_paths': result.tainted_paths,
+                'vulnerabilities': result.vulnerabilities,
+                'coverage': result.coverage,
+            }
+        except Exception as e:
+            logger.error(f"[SelectiveSym] 分析失败: {e}")
+            return {'success': False, 'error': str(e), 'target_func': target_func}
 
     def execute_with_taint_guidance(
         self,

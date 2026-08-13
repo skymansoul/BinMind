@@ -23,7 +23,7 @@ class TestYamlConfig:
         )
         try:
             import yaml
-            with open(config_path, "r") as fh:
+            with open(config_path, "r", encoding="utf-8") as fh:
                 cfg = yaml.safe_load(fh)
             assert isinstance(cfg, dict)
             assert "paths" in cfg
@@ -32,7 +32,7 @@ class TestYamlConfig:
             assert "analysis" in cfg
         except ImportError:
             # yaml 未安装，按纯文本读取验证非空
-            with open(config_path, "r") as fh:
+            with open(config_path, "r", encoding="utf-8") as fh:
                 content = fh.read()
             assert len(content) > 0
 
@@ -42,7 +42,7 @@ class TestYamlConfig:
         )
         try:
             import yaml
-            with open(config_path, "r") as fh:
+            with open(config_path, "r", encoding="utf-8") as fh:
                 cfg = yaml.safe_load(fh)
             retry = cfg.get("retry", {})
             assert "max_attempts" in retry
@@ -57,7 +57,7 @@ class TestYamlConfig:
         )
         try:
             import yaml
-            with open(config_path, "r") as fh:
+            with open(config_path, "r", encoding="utf-8") as fh:
                 cfg = yaml.safe_load(fh)
             timeout = cfg.get("analysis", {}).get("timeout_seconds", 0)
             assert timeout > 0
@@ -108,7 +108,7 @@ class TestJsonFallback:
             tmp_path = f.name
 
         try:
-            with open(tmp_path, "r") as fh:
+            with open(tmp_path, "r", encoding="utf-8") as fh:
                 cfg = json.load(fh)
             assert cfg["worker"]["concurrency"] == 4
         finally:

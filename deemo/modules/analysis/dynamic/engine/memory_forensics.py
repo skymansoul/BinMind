@@ -24,7 +24,8 @@ class Config:
 log_level_str = getattr(Config, 'LOG_LEVEL', 'INFO')
 log_level = getattr(logging, log_level_str, logging.INFO)
 logging.basicConfig(level=log_level)
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
+logger = _log
 
 class MemoryType(Enum):
     LIVE_PROCESS = "live_process"
@@ -231,6 +232,10 @@ class ForensicsResult:
         return {
             "source": self.source, "memory_type": self.memory_type.value,
             "os_type": self.os_type.value, "timestamp": self.timestamp,
+            "total_processes": self.total_processes,
+            "total_connections": self.total_connections,
+            "total_handles": self.total_handles,
+            "total_sensitive_items": self.total_sensitive_items,
             "summary": {"total_processes": self.total_processes,
                 "total_connections": self.total_connections,
                 "total_handles": self.total_handles,
@@ -673,6 +678,8 @@ class MemoryForensicsAnalyzer:
     def save_result(self, result: ForensicsResult, filename: Optional[str] = None) -> str:
         if filename is None:
             filename = f"forensics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        elif not filename.endswith('.json'):
+            filename = filename + '.json'
         fp = self.output_dir / filename
         with open(fp, 'w', encoding='utf-8') as f:
             json.dump(result.to_dict(), f, indent=2, ensure_ascii=False)

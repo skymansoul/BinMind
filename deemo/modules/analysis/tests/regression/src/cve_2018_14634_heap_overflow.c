@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2018_14634 ¶ÑÒç³öÄ£Äâ: malloc(32) + memcpy(256)
-// ¡ú 224 ×Ö½ÚÒç³ö
+// cve_2018_14634 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(32) + memcpy(256)
+// â†’ 224 å­—èŠ‚æº¢å‡º
 void kernel_create_overflow() {
     char *buf = (char *)malloc(32);
     if (!buf) return;
@@ -52,7 +52,7 @@ void kernel_create_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(320) + memcpy(320/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(320) + memcpy(320/2) â†’ ä¸æº¢å‡º
 void kernel_create_safe() {
     char *buf = (char *)malloc(320);
     if (!buf) return;

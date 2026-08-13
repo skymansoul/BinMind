@@ -6,8 +6,8 @@
 from typing import List, Optional, Tuple
 
 _REG64 = {
-    'rax': 'rax', 'eax': 'rax', 'ax': 'rax', 'al': 'rax',
-    'rbx': 'rbx', 'ebx': 'rbx', 'bx': 'rbx',
+'rax': 'rax', 'eax': 'rax', 'ax': 'rax', 'al': 'rax',
+'rbx': 'rbx', 'ebx': 'rbx', 'bx': 'rbx',
     'rcx': 'rcx', 'ecx': 'rcx', 'cx': 'rcx',
     'rdx': 'rdx', 'edx': 'rdx', 'dx': 'rdx',
     'rsi': 'rsi', 'esi': 'rsi', 'si': 'rsi',

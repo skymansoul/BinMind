@@ -7,7 +7,7 @@ from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt, List as _List, Dict as _Dict
 
 # Import UserRole from upstream project/collaboration.py.
-_real = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'project', 'collaboration.py')
+_real = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), 'project', 'collaboration.py')
 _spec = _iu.spec_from_file_location('_collab_real', _real)
 _real_mod = _iu.module_from_spec(_spec)
 _spec.loader.exec_module(_real_mod)
@@ -23,6 +23,17 @@ class _User:
     role: str = 'viewer'; salt: str = ''
     def __post_init__(self):
         if not self.user_id: self.user_id = str(_uuid.uuid4())
+
+
+@_dc
+class _VersionDiff:
+    """版本差异摘要 — 漏洞增删与大小变化。"""
+    from_version_id: str
+    to_version_id: str
+    new_vulnerabilities: _List[str] = _field(default_factory=list)
+    fixed_vulnerabilities: _List[str] = _field(default_factory=list)
+    same: bool = False
+    size_diff: int = 0
 
 class CollaborationManager:
     def __init__(self, user_db=None, audit_log=None, repo_base=None):
@@ -81,9 +92,9 @@ class CollaborationManager:
 
 # User management
     def register_user(self, username, password, role=None):
-        if not username or not username.strip(): return (False, 'username cannot be empty')
-        if len(password) < 6: return (False, 'password too short')
-        if any(u.username == username for u in self._users): return (False, 'user already exists')
+        if not username or not username.strip(): return (False, '用户名不能为空')
+        if len(password) < 6: return (False, '密码长度不足6位')
+        if any(u.username == username for u in self._users): return (False, '用户已存在')
         pw_hash, salt = self._hash_password(password)
         u = _User(username=username, password_hash=pw_hash, salt=salt,
                   role=role or UserRole.VIEWER)
@@ -148,7 +159,7 @@ class CollaborationManager:
 # Git-style binary version management
     def init_binary_repo(self, project_id, user_id=None):
         if project_id in self._projects:
-            return (False, 'project already exists')
+            return (False, '项目已存在')
         repo_id = str(_uuid.uuid4())[:16]
         self._projects[project_id] = {'project_id': project_id, 'repo_id': repo_id, 'versions': []}
         self._versions[project_id] = {}
@@ -161,28 +172,39 @@ class CollaborationManager:
             return None
         return dict(p)
 
-    def get_project_versions(self, project_id):
-        return list(self._versions.get(project_id, {}).values())
-
     def commit_binary_version(self, project_id, user_id, binary_path, message="",
-                              commit_message="", analysis_summary="", **kwargs):
+                              analysis_summary="", tags=None,
+                              commit_message="", **kwargs):
+        """提交一个二进制版本。
+
+        analysis_summary 与 tags 支持位置传入。
+        版本记录含 author 与 tags 供下游追踪。
+        """
         if project_id not in self._projects:
-            return (False, f'project {project_id} not found')
+            return (False, f'项目 {project_id} 不存在')
         if binary_path and not _os.path.isfile(binary_path):
-            return (False, 'file not found')
-        vid = str(_uuid.uuid4())[:8]
+            return (False, '文件不存在')
+        vid = str(_uuid.uuid4())[:16]
         data = b''
         if binary_path and _os.path.isfile(binary_path):
             with open(binary_path, 'rb') as f: data = f.read()
         msg = commit_message or message
         import hashlib
         checksum = hashlib.sha256(data).hexdigest()[:16] if data else ''
-        ver = {'version_id': vid, 'user_id': user_id,
+        author = ''
+        if user_id:
+            u = self.get_user_by_id(user_id)
+            if u is None:
+                u = self.get_user_by_username(user_id)
+            if u is not None:
+                author = getattr(u, 'username', None) or u
+        ver = {'version_id': vid, 'user_id': user_id, 'author': author,
                'commit_message': msg, 'message': msg,
                'binary_path': binary_path, 'data': data,
                'timestamp': _time.time(),
                'analysis_summary': analysis_summary,
-               'checksum': checksum, 'size': len(data)}
+               'checksum': checksum, 'size': len(data),
+               'tags': list(tags) if tags else []}
         self._versions.setdefault(project_id, {})[vid] = ver
         self._projects[project_id].setdefault('versions', []).append(vid)
         self._log(f'commit {vid} to {project_id}')
@@ -191,18 +213,36 @@ class CollaborationManager:
     def get_version_by_id(self, project_id, version_id):
         return self._versions.get(project_id, {}).get(version_id)
 
+    def get_project_versions(self, project_id):
+        """返回版本列表，按提交时间倒序。"""
+        vers = list(self._versions.get(project_id, {}).values())
+        vers.sort(key=lambda v: v.get('timestamp', 0), reverse=True)
+        return vers
+
     def compare_versions(self, project_id, v1, v2):
         ver1 = self.get_version_by_id(project_id, v1)
         ver2 = self.get_version_by_id(project_id, v2)
         if not ver1 or not ver2: return None
+
+        def _vulns(v):
+            a = v.get('analysis_summary')
+            if isinstance(a, dict):
+                return set(a.get('vulnerabilities', []))
+            return set()
+
+        new_vulns = sorted(_vulns(ver2) - _vulns(ver1))
+        fixed_vulns = sorted(_vulns(ver1) - _vulns(ver2))
         size_diff = len(ver2.get('data', b'')) - len(ver1.get('data', b''))
         # 如果有 checksum，用它替代逐字节比较
         same = ver1.get('checksum') == ver2.get('checksum')
         if not same and 'checksum' not in ver1:
             same = ver1['data'] == ver2['data']
-        return {'same': same, 'size_diff': size_diff, 'v1': v1, 'v2': v2,
-                'checksum_v1': ver1.get('checksum', ''),
-                'checksum_v2': ver2.get('checksum', '')}
+        return _VersionDiff(
+            from_version_id=v1, to_version_id=v2,
+            new_vulnerabilities=new_vulns,
+            fixed_vulnerabilities=fixed_vulns,
+            same=same, size_diff=size_diff,
+        )
 
     def checkout_version(self, project_id, version_id, output_dir):
         ver = self.get_version_by_id(project_id, version_id)
@@ -223,7 +263,8 @@ class CollaborationManager:
         return [c for c in self._comments if c['target_id'] == tid and c['target_type'] == ttype]
 
     def update_vulnerability_status(self, user_id, vulnerability_id, status):
-        valid = {'open', 'in_progress', 'resolved', 'false_positive', 'wont_fix'}
+        valid = {'open', 'in_progress', 'resolved', 'false_positive', 'wont_fix',
+                 'confirmed', 'fixed', 'disputed'}
         if status not in valid:
             return False
         self._log(f'vuln {vulnerability_id} -> {status} by {user_id}')

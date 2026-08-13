@@ -1,6 +1,0 @@
-{
-  "id": "fmt_tp_08_syslog_fmt",
-  "expected_vuln": true,
-  "vuln_type": "format_string",
-  "mode": "syslog 用户格式串"
-}

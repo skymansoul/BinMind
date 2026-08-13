@@ -141,12 +141,14 @@ class TestParetoArchive:
     def test_non_dominated_sort(self):
         objs = [(5, 5), (4, 8), (8, 2), (7, 7), (3, 3)]
         fronts = _non_dominated_sort(objs)
-        # 第一前沿: (5,5), (4,8), (8,2), (7,7) — 互不支配
-        # 第二前沿: (3,3) — 被所有支配
-        assert len(fronts) >= 2
+        # 第一前沿: (4,8), (8,2), (7,7) — 互不支配
+        # (5,5) 被 (7,7) 支配, 落入第二层
+        # 第二前沿: (5,5) — 仅被第一前沿支配
+        # 第三前沿: (3,3) — 被所有支配
+        assert len(fronts) >= 3
         front0 = set(fronts[0])
-        assert front0 == {0, 1, 2, 3}  # (3,3) 被所有支配
-        assert fronts[1] == [4]
+        assert front0 == {1, 2, 3}  # (5,5) 与 (3,3) 均不在此层
+        assert fronts[1] == [0]
 
     def test_archive_acceptance(self):
         pa = ParetoArchive(n_objectives=2, max_archive_size=50)
@@ -162,7 +164,7 @@ class TestParetoArchive:
         # s4 完全支配 s1 → s1 被移除
         assert pa.submit("s4", (15.0, 3.0))
         assert not pa.contains("s1")  # s1 被 s4 支配
-        assert pa.contains("s2")      # s2 仍不被支配
+        assert not pa.contains("s2")  # s2 同样被 s4 支配
 
     def test_archive_pruning(self):
         """超容量裁剪: max_archive_size=3, 提交5个互不支配种子"""

@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2016-6187",
-  "desc": "CVE-2016-6187 (Linux perf) UAF 复现 — probe_event 对象在",
-  "trigger": "   perf_event 释放后经 tracepoint 回调被访问. 简化:"
-}

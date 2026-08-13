@@ -159,7 +159,8 @@ class VulnDetectionPipeline:
                     all_candidates.append(VulnCandidate(
                         vuln_type='format_string', function_name=func_name,
                         confidence=conf, evidence=fc.evidence))
-            except ImportError: pass
+            except ImportError:
+                pass
 
             # 约束过滤
             if enable_constraint_filter and all_candidates:

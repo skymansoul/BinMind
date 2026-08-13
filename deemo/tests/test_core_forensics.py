@@ -92,7 +92,6 @@ class TestCoreForensics(unittest.TestCase):
 
     def test_mask_sensitive_content_empty(self):
 
-lass字段完整性$/d
         self.assertEqual(mask_sensitive_content(""), "")
         self.assertEqual(mask_sensitive_content(None), None)
 
@@ -110,7 +109,6 @@ lass字段完整性$/d
         report = CoreForensicsReport(core_file_path="/test/core")
 
         report.severity_score = 25
-lass字段完整性$/d
         self.assertEqual(report.severity_score, 25)
 
     def test_report_get_findings_by_severity(self):

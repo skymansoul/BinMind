@@ -124,6 +124,164 @@ def explore(binary: str, timeout_s: int = 120) -> Dict:
     return result
 
 
+FREE_FUNCS = {"free", "__libc_free", "_ZdlPv", "_ZdaPv", "g_free"}
+USE_FUNCS = {"strlen", "puts", "printf", "fprintf", "memcpy", "memmove",
+             "memset", "read", "fwrite", "strcmp", "strncmp", "fread"}
+
+
+def explore_uaf(binary: str, timeout_s: int = 120) -> Dict:
+    """UAF 模式 angr 探索: 同函数内 free 后出现 use 调用, 高误报对比基线."""
+    t0 = time.perf_counter()
+    result = {"detected": False, "findings": [], "elapsed_ms": 0.0,
+              "error": ""}
+    if not angr_available():
+        result["error"] = "angr not installed"
+        return result
+    try:
+        import angr
+        proj = angr.Project(binary, auto_load_libs=False)
+        cfg = proj.analyses.CFGFast()
+    except Exception as e:
+        result["error"] = f"load/cfg failed: {str(e)[:120]}"
+        result["elapsed_ms"] = (time.perf_counter() - t0) * 1000
+        return result
+
+    free_addrs = set()
+    use_addrs = set()
+    try:
+        for fn in cfg.functions.values():
+            name = (fn.name or "").split("@@")[0].lower()
+            if name in FREE_FUNCS:
+                free_addrs.add(fn.addr)
+            if name in USE_FUNCS:
+                use_addrs.add(fn.addr)
+    except Exception:
+        pass
+    try:
+        for obj in proj.loader.all_objects:
+            for sym_name, symbol in getattr(obj, "imports", {}).items():
+                name = sym_name.split("@@")[0].lower()
+                if name in FREE_FUNCS:
+                    free_addrs.add(symbol.rebased_addr)
+                if name in USE_FUNCS:
+                    use_addrs.add(symbol.rebased_addr)
+    except Exception:
+        pass
+
+    def _kind(insn) -> str:
+        if insn.mnemonic != "call":
+            return ""
+        try:
+            addr = int(insn.op_str.strip(), 16)
+            if addr in free_addrs:
+                return "free"
+            if addr in use_addrs:
+                return "use"
+        except ValueError:
+            pass
+        name = insn.op_str.split("<")[-1].rstrip(">").split("@")[0] \
+            if "<" in insn.op_str else insn.op_str
+        name = name.strip().lower()
+        if name in FREE_FUNCS:
+            return "free"
+        if name in USE_FUNCS:
+            return "use"
+        return ""
+
+    try:
+        findings = []
+        for func in cfg.functions.values():
+            saw_free = False
+            saw_use = False
+            for block in func.blocks:
+                for insn in block.capstone.insns:
+                    k = _kind(insn)
+                    if k == "free":
+                        saw_free = True
+                    elif k == "use" and saw_free:
+                        saw_use = True
+            if saw_free and saw_use:
+                findings.append({"function": func.name, "address": func.addr})
+        result["findings"] = findings
+        result["detected"] = len(findings) > 0
+    except Exception as e:
+        result["error"] = f"explore failed: {str(e)[:120]}"
+
+    result["elapsed_ms"] = (time.perf_counter() - t0) * 1000
+    return result
+
+
+FMT_FUNCS = {"printf", "fprintf", "sprintf", "snprintf", "vprintf",
+             "vfprintf", "vsprintf", "vsnprintf"}
+
+
+def explore_fmt(binary: str, timeout_s: int = 120) -> Dict:
+    """格式化字符串模式 angr 探索: printf 族调用的格式串参数为非寄存器字面量.
+
+    粗粒度: 不验证格式串来源, 寄存器/内存格式串一律命中,
+    安全样本 (栈槽常量初始化) 同样误报, 作为通用工具对比基线.
+    返回: {detected, findings, elapsed_ms, error}
+    """
+    t0 = time.perf_counter()
+    result = {"detected": False, "findings": [], "elapsed_ms": 0.0,
+              "error": ""}
+    if not angr_available():
+        result["error"] = "angr not installed"
+        return result
+    try:
+        import angr
+        proj = angr.Project(binary, auto_load_libs=False)
+        cfg = proj.analyses.CFGFast()
+    except Exception as e:
+        result["error"] = f"load/cfg failed: {str(e)[:120]}"
+        result["elapsed_ms"] = (time.perf_counter() - t0) * 1000
+        return result
+
+    fmt_addrs = set()
+    try:
+        for fn in cfg.functions.values():
+            name = (fn.name or "").split("@@")[0].lower()
+            if name in FMT_FUNCS:
+                fmt_addrs.add(fn.addr)
+    except Exception:
+        pass
+    try:
+        for obj in proj.loader.all_objects:
+            for sym_name, symbol in getattr(obj, "imports", {}).items():
+                name = sym_name.split("@@")[0].lower()
+                if name in FMT_FUNCS:
+                    fmt_addrs.add(symbol.rebased_addr)
+    except Exception:
+        pass
+
+    def _is_fmt(insn) -> bool:
+        if insn.mnemonic != "call":
+            return False
+        try:
+            return int(insn.op_str.strip(), 16) in fmt_addrs
+        except ValueError:
+            pass
+        name = insn.op_str.split("<")[-1].rstrip(">").split("@")[0] \
+            if "<" in insn.op_str else insn.op_str
+        return name.strip().lower() in FMT_FUNCS
+
+    try:
+        findings = []
+        for func in cfg.functions.values():
+            for block in func.blocks:
+                for insn in block.capstone.insns:
+                    if _is_fmt(insn):
+                        findings.append({"function": func.name,
+                                         "address": insn.address})
+        result["findings"] = findings
+        result["detected"] = len(findings) > 0
+    except Exception as e:
+        result["error"] = f"explore failed: {str(e)[:120]}"
+
+    result["elapsed_ms"] = (time.perf_counter() - t0) * 1000
+    return result
+
+
 def main():
     if len(sys.argv) < 2:
         print("usage: python angr_explorer.py <binary> [--json]")

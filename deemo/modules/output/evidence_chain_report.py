@@ -76,22 +76,12 @@ class ReportSection:
     collapsible: bool = True
 
 
-class EvidenceChainReporter:
-    """
-    证据链追踪报告构造器 — RAVEN 方法论。
 
-    核心能力:
-      1. 发现与证据链自主绑定 (源头模块 + 中间结果)
-      2. 按受众自适应渲染 (高管摘要/技术深度/合规审计)
-      3. RAG 增强摘要
-    """
-
-
+def _dbg(*args, **kwargs):
     """调试输出辅助函数，写入 stderr 避免污染 stdout。"""
     # 不拆——保持上下文连贯性
     import sys as _sys
     print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
-
 
 class EvidenceChainReporter:
     """

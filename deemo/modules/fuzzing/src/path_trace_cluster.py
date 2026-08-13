@@ -298,7 +298,7 @@ def weighted_minhash_signature(edge_set: Set[int],
     罕见的边 (如异常处理路径) 在签名中获得更高权重,
     常见边 (如 libc 入口) 被降权。
 
-    参考: Chum et al. (ICCV 2008) "Total Recall: Automatic Query Expansion
+    参考: Chum et al. "Total Recall: Automatic Query Expansion
     with a Generative Feature Model for Object Retrieval" 中的加权 MinHash。
     """
     if not edge_set:

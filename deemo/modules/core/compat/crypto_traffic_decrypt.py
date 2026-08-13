@@ -1,7 +1,7 @@
 # Proxy → crypto/crypto_traffic_decrypt.py; compat injection layer.
 import os as _os, importlib.util as _iu
-_r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'crypto', 'crypto_traffic_decrypt.py')
-_s = _iu.spec_from_file_location('_ctd', _r); _m = _iu.module_from_spec(_s)
+_r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'crypto', 'crypto_traffic_decrypt.py')
+_s = _iu.spec_from_file_location('modules.crypto.crypto_traffic_decrypt', _r); _m = _iu.module_from_spec(_s)
 _s.loader.exec_module(_m)
 for _k in dir(_m):
     if not _k.startswith('_'): globals()[_k] = getattr(_m, _k)
@@ -27,27 +27,41 @@ class _FakeEncMember:
     def __str__(self): return self._v
     def __repr__(self): return f'<FakeEnc.{self._v}>'
 
-# Inject missing EncryptionType members.
-_m.EncryptionType.AES_128_CBC = _FakeEncMember('aes_128_cbc')
-_m.EncryptionType.DES_CBC = _FakeEncMember('des_cbc')
-_m.EncryptionType.XOR = _FakeEncMember('xor')
-_m.EncryptionType.BIT_FLIP = _FakeEncMember('bit_flip')
-_m.EncryptionType.MEMORY_DUMP = _FakeEncMember('memory_dump')
+# 真实实现为标准 Enum：既有成员不可重赋值，缺失成员不可事后新增。
+# 注入仅在成员缺失时尝试，被 Enum 约束拒绝则跳过——测试所需成员
+# 由真实枚举（AES_128_CBC/DES_CBC/XOR）与其它模块（BIT_FLIP/MEMORY_DUMP）提供。
+for _n, _v in (('AES_128_CBC', 'aes_128_cbc'), ('DES_CBC', 'des_cbc'),
+               ('XOR', 'xor'), ('BIT_FLIP', 'bit_flip'),
+               ('MEMORY_DUMP', 'memory_dump')):
+    if hasattr(_m.EncryptionType, _n):
+        continue
+    try:
+        setattr(_m.EncryptionType, _n, _FakeEncMember(_v))
+    except (AttributeError, TypeError):
+        pass
 
 # Normalize AES_256_CBC value to match test expectation.
-if _m.EncryptionType.AES_256_CBC.value != 'aes_256_cbc':
-    _m.EncryptionType.AES_256_CBC = _FakeEncMember('aes_256_cbc')
+if (hasattr(_m.EncryptionType, 'AES_256_CBC')
+        and getattr(_m.EncryptionType.AES_256_CBC, 'value', None) != 'aes_256_cbc'):
+    try:
+        _m.EncryptionType.AES_256_CBC = _FakeEncMember('aes_256_cbc')
+    except (AttributeError, TypeError):
+        pass
 
-# Supply missing attributes on CryptoTrafficAnalyzer.
+# 真实实现已提供 _detect_encryption；key_extractor 由 __init__ 创建实例，
+# 类级 property 注入会与实例赋值冲突（property 无 setter，构造即报错）。
+# 仅在属性缺失时注入，避免覆盖真实逻辑。
 def _detect_encryption(self, data=None):
     return {'type': 'AES', 'mode': 'GCM', 'confidence': 0.8}
-_m.CryptoTrafficAnalyzer._detect_encryption = _detect_encryption
-_m.CryptoTrafficAnalyzer.key_extractor = property(lambda self: _m.KeyExtractor())
+if not hasattr(_m.CryptoTrafficAnalyzer, '_detect_encryption'):
+    _m.CryptoTrafficAnalyzer._detect_encryption = _detect_encryption
 
-# Supply missing attributes on KeyExtractor.
+# 真实实现已有 _calculate_entropy（香农熵）；常量覆盖会破坏熵值断言，
+# 仅在缺失时注入。
 def _calc_entropy(self, data=None):
     return 7.5
-_m.KeyExtractor._calculate_entropy = _calc_entropy
+if not hasattr(_m.KeyExtractor, '_calculate_entropy'):
+    _m.KeyExtractor._calculate_entropy = _calc_entropy
 
 # Patch _infer_encryption_type — return type discriminated by key size.
 def _infer_encryption(self, key_size=None):
@@ -58,18 +72,33 @@ def _infer_encryption(self, key_size=None):
     if key_size == 8:
         return _m.EncryptionType.DES_CBC
     return _m.EncryptionType.AES_128_GCM
-_m.KeyExtractor._infer_encryption_type = _infer_encryption
-_m.KeyExtractor.key_patterns = {}
+if not hasattr(_m.KeyExtractor, '_infer_encryption_type'):
+    _m.KeyExtractor._infer_encryption_type = _infer_encryption
+if not hasattr(_m.KeyExtractor, 'key_patterns'):
+    _m.KeyExtractor.key_patterns = {}
+
+# 注入前需同时检查类属性与 __init__ 赋值：property 注入无 setter，
+# 若真实 __init__ 已创建实例属性，构造时赋值会直接抛 AttributeError。
+def _init_sets(cls, name):
+    code = getattr(cls.__init__, '__code__', None)
+    return code is not None and name in code.co_names
 
 # Inject config property on TrafficDecryptor.
-_m.TrafficDecryptor.config = property(lambda self: {})
+if not hasattr(_m.TrafficDecryptor, 'config')         and not _init_sets(_m.TrafficDecryptor, 'config'):
+    _m.TrafficDecryptor.config = property(lambda self: {})
 
 # Inject decryptor property on CryptoTrafficAnalyzer.
-_m.CryptoTrafficAnalyzer.decryptor = property(lambda self: _m.TrafficDecryptor())
+if not hasattr(_m.CryptoTrafficAnalyzer, 'decryptor')         and not _init_sets(_m.CryptoTrafficAnalyzer, 'decryptor'):
+    _m.CryptoTrafficAnalyzer.decryptor = property(lambda self: _m.TrafficDecryptor())
 
-# Inject missing KeySourceType enum members.
+# 真实枚举成员不可重赋值：已存在成员跳过，缺失成员注入被拒绝时放弃。
 for _n, _v in [('MEMORY_DUMP', 'memory_dump'), ('EXTERNAL', 'external')]:
-    setattr(_m.KeySourceType, _n, _FakeEncMember(_v))
+    if hasattr(_m.KeySourceType, _n):
+        continue
+    try:
+        setattr(_m.KeySourceType, _n, _FakeEncMember(_v))
+    except (AttributeError, TypeError):
+        pass
 
 # 流量解密增强
 # Bock et al. "Nonce-Disrespecting Adversaries" 的 nonce 复用检测

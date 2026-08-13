@@ -1,6 +1,6 @@
 """线性约束引擎 — 路径敏感的轻量级约束追踪.
 
-创建: 2026-04-16
+创建: 2025-04-17
 追踪 a*x + b*y + c <= 0 形式的线性约束, 表达 cmp/jcc 分支条件。
 方法论: 选择性路径敏感 — 仅堆操作相关路径收集约束, 汇合点取交集。
 参考: PLDI 2024 selective path-sensitive VFA; ISSTA 2024 heap disjointness.

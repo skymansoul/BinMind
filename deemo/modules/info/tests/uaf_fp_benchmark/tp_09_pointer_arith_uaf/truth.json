@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_09_pointer_arith_uaf",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2016-6187 类指针运算 UAF",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "free(p) 后 p+1 仍指向已释放区域"
-}

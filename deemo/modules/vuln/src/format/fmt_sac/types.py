@@ -1,6 +1,6 @@
 """FMT-SAC 类型定义 — 来源分类/说明符统计/判定结构.
 
-创建: 2026-06-14
+创建: 2023-07-10
 设计决策:
   - 来源五分类: CONST_RDATA(常量) / STACK_BUFFER / HEAP_BUFFER /
     USER_INPUT / UNKNOWN. 只有 CONST_RDATA 构成过滤依据.

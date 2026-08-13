@@ -1,8 +1,0 @@
-{
-  "sample_id": "TP-02",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "description": "Alias UAF: q=p; free(p); use(q)",
-  "expect_uaf": true,
-  "tarps_expected": "DEF_TP"
-}

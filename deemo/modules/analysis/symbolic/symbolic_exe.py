@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from typing import Dict, List, Optional, Any, Tuple
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,9 @@ class SymbolicExecutor:
         """
         加载 angr 项目
         """
+        # 运行时从 sys.modules 解析 angr——允许调用方替换实现，
+        # 避免模块被缓存后仍绑定首次导入时的 angr 实例
+        module_angr = sys.modules.get('angr', angr)
         try:
             logger.info(f"[angr] 加载二进制文件: {self.binary_path}")
             
@@ -86,13 +90,13 @@ class SymbolicExecutor:
                 main_opts = {'base_addr': 0}
                 main_opts.update(arch_option)
                 
-                self.project = angr.Project(
+                self.project = module_angr.Project(
                     self.binary_path,
                     auto_load_libs=False,
                     main_opts=main_opts
                 )
             else:
-                self.project = angr.Project(
+                self.project = module_angr.Project(
                     self.binary_path,
                     auto_load_libs=False,
                     main_opts={'base_addr': 0}

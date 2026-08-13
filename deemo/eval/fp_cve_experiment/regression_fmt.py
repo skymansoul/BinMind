@@ -1,6 +1,6 @@
 """FMT-SAC 回归 — 对 corpus_fmt 全部样本运行并与 truth 比对.
 
-创建: 2026-07-29
+创建: 2024-06-17
 用法: python eval/fp_cve_experiment/regression_fmt.py [--json out.json]
 """
 import argparse
@@ -9,14 +9,9 @@ import json
 import os
 import sys
 import time
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'format'))
-
-from fmt_sac import analyze_fmt_sac, SacVerdict
-
+from _common import HERE as _HERE, list_samples, setup_paths
+setup_paths(with_format=True)
+from fmt_sac import analyze_fmt_sac
 CORPUS = os.path.join(_HERE, 'corpus_fmt')
 
 
@@ -55,10 +50,7 @@ def main():
     args = ap.parse_args()
 
     results = []
-    for d in sorted(glob.glob(os.path.join(CORPUS, '*'))):
-        if not os.path.isdir(d) or not os.path.exists(
-                os.path.join(d, 'truth.json')):
-            continue
+    for d, _truth in list_samples(CORPUS):
         results.append(run_one(d))
 
     tp = sum(r['tp'] for r in results)

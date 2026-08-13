@@ -1,8 +1,0 @@
-{
-  "id": "cve_2015_0235_ghost",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2015-0235",
-  "component": "glibc __nss_hostname_digits_and_dots",
-  "mode": "gethostbyname 路径中 malloc 缓冲区被 strcpy 溢出"
-}

@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_01_memcpy_const_mismatch",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2024-001 类比 (malloc/memcpy 常量尺寸错配)",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "分配 32 字节而写入 64 字节, 溢出量为确定常量, 静态可证"
-}

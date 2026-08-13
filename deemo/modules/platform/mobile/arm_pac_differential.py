@@ -168,7 +168,7 @@ class ARMPACDifferentialAnalyzer:
     def detect_pacman_gadgets(self) -> list[dict]:
         """检测PACMAN攻击可用的推测执行gadget。
 
-        PACMAN gadget模式（ISCA 2022）：
+        PACMAN gadget模式：
         - AUTIA/AUTIB后紧跟load/store，推测窗口内可访问验证后的指针
         - RETAA/RETAB前有load，推测返回地址验证可被绕过
         每条gadget标注window_size（AUT到fence的指令数）

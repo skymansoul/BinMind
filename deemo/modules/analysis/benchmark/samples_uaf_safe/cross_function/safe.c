@@ -4,13 +4,13 @@
 static char *g_cross_s;
 
 __attribute__((noinline)) void cross_alloc(char **pp) {
-    *pp = (char *)malloc(64);  /* ÔÚcalleeÖĞ·ÖÅä */
+    *pp = (char *)malloc(64);  /* åœ¨calleeä¸­åˆ†é… */
 }
 
 __attribute__((noinline)) void trigger_cross_safe(void) {
     g_cross_s = NULL;
-    cross_alloc(&g_cross_s);   /* Í¨¹ıcallee·ÖÅä */
-    if (g_cross_s) g_cross_s[0] = 'X';  /* Ê¹ÓÃÇ°Î´ÊÍ·Å ¡ú °²È« */
+    cross_alloc(&g_cross_s);   /* é€šè¿‡calleeåˆ†é… */
+    if (g_cross_s) g_cross_s[0] = 'X';  /* ä½¿ç”¨å‰æœªé‡Šæ”¾ â†’ å®‰å…¨ */
     free(g_cross_s);
 }
 

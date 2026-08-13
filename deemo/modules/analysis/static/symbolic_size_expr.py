@@ -294,8 +294,36 @@ class SymbolicSizeTracker:
             self._regs[dst] = SymExpr.binop(op, src1, src2)
 
     def _handle_rep_movs(self, addr: int, ops: List[str]):
+        """rep movs 内联 memcpy: 写入字节数 = ecx * 元素大小.
+
+        元素大小由 movs 的操作数类型推断 (movsb=1, movsw=2,
+        movsd=4, movsq=8). 只记 ecx 会把字节数低估为元素计数,
+        导致 SAWCE 将真实溢出误判为安全 (alloc>=write).
+        """
+        elem_size = 1
+        first = ops[0].lower() if ops else ""
+        # 先匹配长前缀: "dword"/"qword" 含 "word" 子串, 需先判定
+        if "qword" in first or first == "movsq":
+            elem_size = 8
+        elif "dword" in first or first == "movsd":
+            elem_size = 4
+        elif "word" in first or first == "movsw":
+            elem_size = 2
+        elif "byte" in first or first == "movsb":
+            elem_size = 1
         ecx_expr = self._regs.get("rcx", SymExpr.unknown())
-        self._write_exprs.append((addr, "inline_memcpy", ecx_expr))
+        if ecx_expr.is_unknown():
+            self._write_exprs.append((addr, "inline_memcpy",
+                                      SymExpr.unknown()))
+            return
+        if ecx_expr.is_const():
+            self._write_exprs.append(
+                (addr, "inline_memcpy",
+                 SymExpr.const(ecx_expr.const_val() * elem_size)))
+            return
+        self._write_exprs.append(
+            (addr, "inline_memcpy",
+             SymExpr.binop("*", ecx_expr, SymExpr.const(elem_size))))
 
     @property
     def alloc_exprs(self) -> List[Tuple[int, str, SymExpr]]:

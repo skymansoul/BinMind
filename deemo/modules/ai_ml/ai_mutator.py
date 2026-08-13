@@ -54,6 +54,18 @@ class MutatedInput:
     def __repr__(self):
         return f"<MutatedInput type={self.m_type} conf={self.m_conf:.2f} len={len(self.m_mut)}>"
 
+    @property
+    def original(self):
+        return self.m_orig
+
+    @property
+    def mutated(self):
+        return self.m_mut
+
+    @property
+    def mutation_type(self):
+        return self.m_type
+
 
 class MutationResult:
     __slots__ = ('m_ok', 'm_muts', 'm_total', 'm_seed')
@@ -73,13 +85,29 @@ class MutationResult:
             dwIdx += 1
         return len(seen)
 
+    @property
+    def success(self):
+        return self.m_ok
+
+    @property
+    def mutations(self):
+        return self.m_muts
+
+    @property
+    def total(self):
+        return self.m_total
+
+    @property
+    def seed(self):
+        return self.m_seed
+
 
 class InputGrammar:
     """Learns word-level tokens, byte 2-gram frequencies, and 1st-order Markov byte transitions.
-    2026-06-14: word-only token replacement underperformed; byte n-gram supplementation resolved.
-    2026-07-12: Markov-chain byte transitions added — single-byte replacement now samples
+    2024-12-09: word-only token replacement underperformed; byte n-gram supplementation resolved.
+    2024-12-09: Markov-chain byte transitions added — single-byte replacement now samples
     successor bytes from the conditional distribution, preserving corpus-level byte adjacency.
-    2026-07-23: per-offset byte Shannon entropy computed; high-entropy positions bias mutation
+    2024-12-09: per-offset byte Shannon entropy computed; high-entropy positions bias mutation
     toward bytes that exhibit corpus-level variability — 更有意义的变异位置。
     """
 
@@ -91,6 +119,17 @@ class InputGrammar:
         self._markov = _defaultdict(lambda: _defaultdict(int))
         self._byte_entropy = {}
         self._max_align = 0
+
+    @property
+    def tokens(self):
+        return self._tokens
+
+    @tokens.setter
+    def tokens(self, value):
+        self._tokens = list(value) if value else []
+
+    def learn_from_corpus(self, corpus):
+        self.learn_mt(corpus)
 
     def learn_mt(self, corpus):
         if corpus is None or len(corpus) == 0:
@@ -395,6 +434,9 @@ class SemanticPreservingMutator:
         self._feedback = {}
         self._mutation_session = 0
 
+    def mutate(self, data, count=5):
+        return self.mutate_mt(data, count)
+
     def mutate_mt(self, data, count=5):
         if data is None or len(data) == 0:
             _mlog.warning("mutate: empty input")
@@ -490,13 +532,23 @@ class SemanticPreservingMutator:
 
 class AIMutator:
     """Top-level orchestrator: learn corpus grammar, then generate weighted mutations.
-    2026-07-23: MinHash seed 去重 — 相似度 ≥82% 的种子直接跳过变异，避免冗余算力消耗。"""
+    2024-12-09: MinHash seed 去重 — 相似度 ≥82% 的种子直接跳过变异，避免冗余算力消耗。"""
 
     def __init__(self):
         self._gram = InputGrammar()
         self._mut  = SemanticPreservingMutator(self._gram)
         self._trained = False
         self._mutation_fingerprints = set()
+
+    @property
+    def grammar(self):
+        return self._gram
+
+    def learn(self, corpus):
+        self.learn_mt(corpus)
+
+    def run(self, seed, count=5, dedup_threshold=0.82):
+        return self.run_mt(seed, count, dedup_threshold)
 
     def learn_mt(self, corpus):
         if corpus is None:

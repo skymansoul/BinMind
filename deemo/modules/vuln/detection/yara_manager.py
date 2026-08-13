@@ -56,11 +56,11 @@ COMMON_LIBRARY_STRINGS = {
 }
 
 C2_PATTERN = re.compile(
-    r'^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.[a-zA-Z]{2,}$|'
+    r'^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$|'
     r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$|'
     r'^[a-zA-Z0-9]+\.onion$')
 
-REGISTRY_PATTERN = re.compile(r'^HKEY_[A-Z_]+\\\\|^HKLM\\\\|^HKCU\\\\|^HKCR\\\\|^HKU\\\\')
+REGISTRY_PATTERN = re.compile(r'^HKEY_[A-Z_]+\\|^HKLM\\|^HKCU\\|^HKCR\\|^HKU\\')
 
 MALWARE_MUTEX_PATTERNS = [
     r'^[A-Z]{2,3}-[A-Z0-]{4,8}$', r'^Global\\\\[A-Z0-9_]+$',

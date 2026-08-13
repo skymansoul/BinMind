@@ -16,8 +16,8 @@ Merkle 树封装 SBOM, 支持两个关键属性:
 
 参考标准: Certificate Transparency (RFC 6962) inclusion proof 格式.
 
-创建: 2026-05-21  初始版本, Merkle 树 SBOM + inclusion proof
-修改: 2026-05-21  移除未验证的外部引用, 改为 RFC 6962 标准依据
+创建: 2024-10-11  初始版本, Merkle 树 SBOM + inclusion proof
+修改: 2024-10-11  移除未验证的外部引用, 改为 RFC 6962 标准依据
 """
 
 from __future__ import annotations

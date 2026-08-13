@@ -1,8 +1,0 @@
-{
-  "id": "cve_2019_11477_sack",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2019-11477",
-  "component": "Linux TCP SACK",
-  "mode": "SACK段数过多导致整数溢出与堆写"
-}

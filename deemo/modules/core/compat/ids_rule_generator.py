@@ -1,8 +1,9 @@
 # IDS 规则生成引擎 — 从漏洞/崩溃/协议/符号执行结果生成 Suricata 规则
 __all__ = ['IDSRuleGenerator', 'AttackSignature', 'IDSRuleContent', 'RuleProtocol',
            'RuleAction', 'RulePriority', 'generate_ids_rules', 'score_rule_quality',
-           'filter_high_quality_rules', 'generate_pcre_rule', 'generate_threshold_rule']
-# Anomaly2Sign (Coscia et al. 2024) 决策树方法
+           'filter_high_quality_rules', 'generate_pcre_rule', 'generate_threshold_rule',
+           'NetworkFunctionInfo']
+# Anomaly2Sign 决策树方法
 
 import os, struct, hashlib, time, json
 from dataclasses import dataclass, field
@@ -107,7 +108,28 @@ class AttackSignature:
 
 
 @dataclass
+class NetworkFunctionInfo:
+    """网络相关函数描述：函数名 + 分类 + 服务端/客户端角色。"""
+
+    function_name: str = ""
+    category: str = ""
+    is_server: bool = False
+    is_client: bool = False
+
+
+@dataclass
 class IDSRuleContent:
+    action: str = "alert"
+    protocol: str = "tcp"
+    source_ip: str = "$EXTERNAL_NET"
+    source_port: str = "any"
+    dest_ip: str = "$HOME_NET"
+    dest_port: str = "$SERVICE_PORTS"
+    msg: str = ""
+    sid: int = 0
+    classtype: str = "attempted-admin"
+    reference: str = ""
+    content_matches: List[Dict[str, Any]] = field(default_factory=list)
     content: str = ""
     offset: int = 0
     depth: int = 0
@@ -512,15 +534,19 @@ class IDSRuleGenerator:
             content_parts.append(f'content:"{cm.get("content", "")}";{off}{dep}')
         content_str = ' '.join(content_parts)
 
-        rule = (f'alert tcp {src_ip} {sp} -> {dst_ip} {dp} '
-                f'(msg:"{msg}"; {content_str} sid:{sid}; classtype:{ct};)')
-        return rule.replace(';;', ';')
+        action = getattr(rule_content, 'action', 'alert') if rule_content else 'alert'
+        protocol = getattr(rule_content, 'protocol', 'tcp') if rule_content else 'tcp'
+        ref = getattr(rule_content, 'reference', '') if rule_content else ''
+        ref_str = f' reference:{ref};' if ref else ''
+        rule = (f'{action} {protocol} {src_ip} {sp} -> {dst_ip} {dp} '
+                f'(msg:"{msg}"; {content_str} sid:{sid}; classtype:{ct};{ref_str})')
+        return rule.replace(';;', ';').replace('; )', ')')
 
     # ---- 漏洞规则生成 ----
     def generate_rules_for_vulnerability(self, vuln_info=None, binary_info=None, **kw) -> List[dict]:
         if not vuln_info:
             return []
-        if binary_info and not self.is_network_service(binary_info):
+        if not binary_info or not self.is_network_service(binary_info):
             return []
         sid = self._assign_sid()
         desc = vuln_info.get('description', 'vuln') if isinstance(vuln_info, dict) else str(vuln_info)
@@ -661,11 +687,18 @@ class IDSRuleGenerator:
         elif isinstance(sig, dict) and sig.get('sid'):
             sid_val = sig['sid']
 
+        if isinstance(sig, dict):
+            cve_id = sig.get('cve_id', '')
+            msg = f'{cve_id} {"Manual review required" if cve_id else ""}'.strip()
+        else:
+            msg = 'generated'
+
         class _GenRule:
-            def __init__(self, r): self.rule = r; self.msg = r; self.sid = sid_val
+            def __init__(self, r, m): self.rule = r; self.msg = m; self.sid = sid_val
             def __str__(self): return self.rule
             def __contains__(self, item): return item in self.rule
-        return _GenRule(f'alert {proto_str} any any -> any any (msg:"generated"; sid:{sid_val};)')
+        rule_txt = f'alert {proto_str} any any -> any any (msg:"{msg}"; sid:{sid_val};)'
+        return _GenRule(rule_txt, msg)
 
 
 # ==== 顶层 wrapper ====

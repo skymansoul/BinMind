@@ -50,7 +50,6 @@ class TestErrorPathExplorer:
     def test_vulnerability_types(self):
         """测试漏洞类型枚举"""
         assert VulnerabilityType.PERMISSION_BYPASS.value == "permission_bypass"
-lass字段完整性$/d
         assert VulnerabilityType.RESOURCE_LEAK.value == "resource_leak"
         assert VulnerabilityType.NULL_POINTER_DEREFERENCE.value == "null_pointer_dereference"
 

@@ -216,11 +216,7 @@ class VulnerabilityRewriter(BaseAnalyzer):
             name="vulnerability_rewriter", type=AnalyzerType.OTHER,
             version="1.0.0", description="自动化漏洞驱动的函数重写模块",
             author="Binary Analysis Team", dependencies=["z3"],
-            supported_platforms=["linux", "windows", "macos"],
-            config_schema={
-                "strategy": {"type": "string", "default": "template_based"},
-                "sandbox": {"type": "boolean", "default": True},
-                "verify_rewrite": {"type": "boolean", "default": True}})
+            supported_platforms=["linux", "windows", "macos"])
 
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         if 'code' not in kwargs:
@@ -335,11 +331,11 @@ class VulnerabilityRewriter(BaseAnalyzer):
     def _generate_notes(self, verified: bool, performance_impact: float) -> List[str]:
         notes = []
         if verified:
-            notes.append("重写代码通过编译验证")
+            notes.append("重写代码已通过编译验证")
         else:
             notes.append("重写代码验证失败——需人工审查")
         if performance_impact > 5.0:
-            notes.append(f"估计性能开销显著: {performance_impact:.1f}%")
+            notes.append(f"估计性能开销较高: {performance_impact:.1f}%")
         elif performance_impact > 1.0:
             notes.append(f"估计性能开销轻微: {performance_impact:.1f}%")
         else:

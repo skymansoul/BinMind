@@ -9,12 +9,271 @@ from pathlib import Path
 import logging as _logging
 import math as _math
 import random as _rnd
+import uuid as _uuid
+from dataclasses import dataclass as _dataclass, field as _field
 from collections import defaultdict as _defaultdict
 
 _V2_TOKEN = "0xb4d"  # 保留
 _CACHE_SALT = "0x1a"  # 保留
 
 __dbg = _logging.getLogger(__name__)
+
+
+@_dataclass
+class VulnerabilitySample:
+    """漏洞样本数据条目。label: 1=漏洞, 0=良性, -1=未标注。"""
+    id: str = ""
+    code: str = ""
+    label: int = 0
+    source: str = "generated"
+    metadata: dict = _field(default_factory=dict)
+
+    def __post_init__(self):
+        if not self.id:
+            self.id = str(_uuid.uuid4())
+
+
+@_dataclass
+class DetectionResult:
+    """代码检测输出结果。"""
+    function_name: str = ""
+    function_address: int = 0
+    is_vulnerable: bool = False
+    confidence: float = 0.0
+    vulnerability_type: str = ""
+    explanation: str = ""
+
+
+@_dataclass
+class ActiveLearningConfig:
+    """主动学习采样配置。"""
+    strategy: str = "least_confidence"
+    enabled: bool = False
+    sample_count: int = 10
+    max_iterations: int = 20
+
+
+_CWE_SIGNATURES = {
+    "CWE-121": ["strcpy", "strcat", "gets"],
+    "CWE-78": ["system(", "exec", "popen"],
+    "CWE-20": ["sprintf", "scanf", "atoi"],
+    "CWE-119": ["memcpy", "memmove"],
+    "CWE-416": ["free(", "delete"],
+}
+
+
+class VulnerabilityDataGenerator:
+    """基于 CWE 模板合成漏洞/良性代码样本。"""
+
+    def __init__(self, seed: int = None):
+        self._rng = _rnd.Random(seed)
+
+    def _generate_sample_code(self, cwe_type: str, variant: int) -> str:
+        """按 CWE 类型生成样例代码片段。"""
+        if cwe_type == "CWE-121":
+            return (
+                "void sample_buffer(int variant) {\n"
+                "    char buffer[64];\n"
+                "    char *input = get_input();\n"
+                "    strcpy(buffer, input);\n"
+                "    return;\n"
+                "}"
+            )
+        if cwe_type == "CWE-78":
+            return (
+                "void sample_command(int variant) {\n"
+                "    char cmd[128];\n"
+                "    char *input = get_input();\n"
+                "    sprintf(cmd, \"ls %s\", input);\n"
+                "    system(cmd);\n"
+                "    return;\n"
+                "}"
+            )
+        if cwe_type == "CWE-20":
+            return (
+                "void sample_input(int variant) {\n"
+                "    char buf[256];\n"
+                "    char *input = get_input();\n"
+                "    sprintf(buf, \"%s\", input);\n"
+                "    return;\n"
+                "}"
+            )
+        return (
+            "void sample_generic(int variant) {\n"
+            "    int x = variant * 2;\n"
+            "    return;\n"
+            "}"
+        )
+
+    def _generate_benign_code(self, variant: int) -> str:
+        """生成无漏洞的良性代码片段。"""
+        return (
+            "void benign_function(int variant) {\n"
+            "    int total = 0;\n"
+            f"    for (int i = 0; i < {variant + 1}; i++) {{\n"
+            "        total += i;\n"
+            "    }\n"
+            "    return total;\n"
+            "}"
+        )
+
+    def generate_samples(self, cwe_types, count_per_type: int = 2) -> list:
+        """为每个 CWE 类型生成 count_per_type 条漏洞样本。"""
+        samples = []
+        for cwe in cwe_types:
+            for variant in range(count_per_type):
+                code = self._generate_sample_code(cwe, variant)
+                samples.append(VulnerabilitySample(
+                    id=str(_uuid.uuid4()),
+                    code=code,
+                    label=1,
+                    source="generated",
+                    metadata={"cwe_type": cwe, "variant": variant},
+                ))
+        return samples
+
+    def generate_benign_samples(self, count: int = 5) -> list:
+        """生成指定数量的良性样本。"""
+        samples = []
+        for i in range(count):
+            code = self._generate_benign_code(i)
+            samples.append(VulnerabilitySample(
+                id=str(_uuid.uuid4()),
+                code=code,
+                label=0,
+                source="generated",
+                metadata={"variant": i},
+            ))
+        return samples
+
+
+class DistilledVulnerabilityDetector:
+    """知识蒸馏漏洞检测器封装 — 支持文本特征向量化与启发式漏洞类型预测。
+
+    模型权重懒加载：未加载模型时 detect() 返回未检出并提示模型未加载。
+    """
+
+    def __init__(self):
+        try:
+            from transformers import BertTokenizer
+            self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        except (ImportError, OSError):
+            self.tokenizer = self
+        self.config = {"max_length": 512, "model_path": None, "device": "cpu"}
+        self.model = None
+
+    def _prepare_dataset(self, samples: list):
+        """将样本列表封装为带 features 的对象。"""
+        features = {
+            "text": [s.code for s in samples],
+            "label": [s.label for s in samples],
+        }
+        return _SimpleDataset(features)
+
+    def detect(self, code: str) -> DetectionResult:
+        """检测单段代码。模型未加载时给出明确提示。"""
+        if self.model is None:
+            return DetectionResult(
+                function_name="unknown",
+                is_vulnerable=False,
+                confidence=0.0,
+                explanation="模型未加载，无法执行检测",
+            )
+        vuln_type = self._predict_vulnerability_type(code)
+        return DetectionResult(
+            function_name="unknown",
+            is_vulnerable=vuln_type is not None,
+            confidence=0.8 if vuln_type else 0.1,
+            vulnerability_type=vuln_type or "",
+            explanation=f"检测到漏洞模式: {vuln_type}" if vuln_type else "未检测到漏洞模式",
+        )
+
+    def _predict_vulnerability_type(self, code: str) -> str:
+        """基于签名匹配预测 CWE 漏洞类型。"""
+        code_lower = code.lower()
+        for cwe, keywords in _CWE_SIGNATURES.items():
+            for kw in keywords:
+                if kw in code_lower:
+                    return cwe
+        return ""
+
+
+class _SimpleDataset:
+    """轻量数据集容器，兼容 _prepare_dataset 的返回值契约。"""
+
+    def __init__(self, features: dict):
+        self.features = features
+
+    def __len__(self) -> int:
+        text = self.features.get("text", [])
+        return len(text)
+
+
+class ActiveLearningManager:
+    """基于不确定性采样的主动学习管理器。"""
+
+    def __init__(self, detector, config: ActiveLearningConfig = None):
+        self.detector = detector
+        self.config = config or ActiveLearningConfig()
+
+    def _calculate_uncertainty(self, confidence: float) -> float:
+        """按策略计算样本不确定性。"""
+        if self.config.strategy == "entropy":
+            # 二元熵 H = -p*log2(p) - (1-p)*log2(1-p)
+            p = max(min(confidence, 1.0), 0.0)
+            if p <= 0.0 or p >= 1.0:
+                return 0.0
+            return -(p * _math.log2(p) + (1.0 - p) * _math.log2(1.0 - p))
+        # least_confidence 及默认策略
+        return 1.0 - confidence
+
+    def select_samples(self, unlabeled_samples: list) -> list:
+        """按不确定性排序选取前 sample_count 个样本。"""
+        scored = []
+        for sample in unlabeled_samples:
+            result = self.detector.detect(sample.code)
+            uncertainty = self._calculate_uncertainty(result.confidence)
+            scored.append((uncertainty, sample))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [s for _, s in scored[:self.config.sample_count]]
+
+
+class DistilledVulnDetectorAnalyzer:
+    """蒸馏漏洞检测分析器 — 提供 analyze/validate/cleanup 统一入口。"""
+
+    def __init__(self):
+        self.detector = DistilledVulnerabilityDetector()
+        self.active_learning_manager = ActiveLearningManager(
+            self.detector, ActiveLearningConfig()
+        )
+
+    def validate_input(self, **kwargs) -> tuple:
+        """校验输入参数。检测模式必须提供 code 或 code_list。"""
+        mode = kwargs.get("mode")
+        if mode == "detect":
+            if not kwargs.get("code") and not kwargs.get("code_list"):
+                return False, "需要 code 或 code_list"
+        return True, None
+
+    def analyze(self, code=None, code_list=None, mode="detect", **kwargs) -> dict:
+        """执行检测。单条或多条代码均返回 detections 列表。"""
+        is_valid, error = self.validate_input(mode=mode, code=code, code_list=code_list)
+        if not is_valid:
+            return {"success": False, "error": error, "detections": []}
+
+        if code_list is not None:
+            detections = [self.detector.detect(c) for c in code_list]
+        elif code is not None:
+            detections = [self.detector.detect(code)]
+        else:
+            detections = []
+
+        return {"success": True, "detections": detections, "mode": mode}
+
+    def cleanup(self):
+        """释放检测器与主动学习管理器资源。"""
+        self.detector = None
+        self.active_learning_manager = None
 
 
 class ModelWeights:
@@ -538,7 +797,7 @@ class DistilledVulnDetector:
     Trains a compact student model to match a larger teacher's predictions,
     achieving near-teacher accuracy with a fraction of the inference cost.
 
-    Enhancements (2026-07-24):
+    Enhancements:
       - Adaptive temperature scheduling via cosine annealing.
       - EMA (Exponential Moving Average) shadow weights for stable inference.
       - CLAP-inspired contrastive pre-training for better embedding separation.

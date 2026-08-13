@@ -79,7 +79,8 @@ class TestSHA256Detection:
     def test_sha256_iv_detected(self):
         """包含SHA256 IV的数据被检测到"""
         from ..src.constants import SHA256_IV as REAL_SHA256_IV
-        data = b"\x00" * 40 + REAL_SHA256_IV + b"\xaa" * 40
+        iv_bytes = b''.join(w.to_bytes(4, 'big') for w in REAL_SHA256_IV)
+        data = b"\x00" * 40 + iv_bytes + b"\xaa" * 40
         findings = detect_by_magic_constants(data)
         sha_findings = [f for f in findings if "SHA" in f.algorithm.upper() and "256" in f.algorithm.upper()]
         assert len(sha_findings) > 0

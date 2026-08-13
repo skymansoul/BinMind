@@ -10,14 +10,16 @@
 #     - cmp/test + jcc 守卫          → 被比较对象来源升级为 GUARDED
 #   传播结果是 {address: {reg: ProvValue}} 的映射, 供写界推断器在
 #   危险调用点查询写入大小操作数的来源.
+#   指令级规则 (mov/lea/算术/守卫) 位于 _prov_insn_handlers.
 #
 # 创建: 2026-07-14
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-from .disasm_util import norm_reg, extract_func_name, extract_stack_slot
-from .provenance_domain import ProvClass, ProvValue, join_class
+from .disasm_util import norm_reg, extract_func_name
+from .provenance_domain import ProvClass, ProvValue
 from .sym_size_correlator import SymExpr
+from ._prov_insn_handlers import ProvInsnHandlerMixin
 
 _TAINT_FUNCS = {"read", "recv", "recvfrom", "recvmsg", "fread", "fgets",
                 "gets", "scanf", "__isoc99_scanf", "getenv", "getpwuid",
@@ -26,7 +28,7 @@ _TAINT_FUNCS = {"read", "recv", "recvfrom", "recvmsg", "fread", "fgets",
 _TAINT_PARAM_SRC = {"main", "winmain", "wmain"}
 
 
-class ProvenancePropagator:
+class ProvenancePropagator(ProvInsnHandlerMixin):
     """指令级来源传播器.
 
     与 HeapOverflowDetector.analyze_instruction() 并行调用,

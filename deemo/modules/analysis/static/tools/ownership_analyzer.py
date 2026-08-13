@@ -1,13 +1,17 @@
 import logging, os, json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
+from enum import Enum
 
 from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
 logger = logging.getLogger(__name__)
 
-class LanguageType:
-    RUST = "rust"; GO = "go"; CXX = "cxx"; UNKNOWN = "unknown"
+class LanguageType(Enum):
+    RUST = "rust"
+    GO = "go"
+    CXX = "cxx"
+    UNKNOWN = "unknown"
 
 class AnalysisType:
     BORROW_CHECKING = "borrow_checking"; LIFETIME_ANALYSIS = "lifetime_analysis"
@@ -195,9 +199,9 @@ class OwnershipAnalyzer(BaseAnalyzer):
         logger.info("Starting ownership analysis: %s", binary_path)
         try:
             if binary_data is None and binary_path:
-                if os.path.exists(binary_path):
+                if os.path.isfile(binary_path):
                     with open(binary_path, 'rb') as f: binary_data = f.read()
-                else: return {"success": False, "error": f"file not found: {binary_path}"}
+                else: return {"success": False, "error": f"文件不存在: {binary_path}"}
             if binary_data is None: return {"success": False, "error": "binary_data required"}
             detected_lang = self._detect_language(binary_data) if language == "auto" else LanguageType(language)
             result = OwnershipAnalysisResult(language=detected_lang)
@@ -210,7 +214,7 @@ class OwnershipAnalyzer(BaseAnalyzer):
             result.warnings = self.race_detector.detect_race_conditions(
                 result.borrows, result.locks, result.goroutine_points)
             return {"success": True, "result": {
-                "language": str(detected_lang), "num_borrows": len(result.borrows),
+                "language": detected_lang.value, "num_borrows": len(result.borrows),
                 "num_locks": len(result.locks), "num_warnings": len(result.warnings),
                 "num_unsafe_blocks": len(result.unsafe_blocks),
                 "num_goroutine_points": len(result.goroutine_points),
@@ -240,21 +244,23 @@ class OwnershipAnalyzer(BaseAnalyzer):
         lang_name = {LanguageType.RUST: "Rust", LanguageType.GO: "Go",
                      LanguageType.CXX: "C++", LanguageType.UNKNOWN: "Unknown"}
         nw = len(result.warnings)
-        if nw == 0: return f"{lang_name[result.language]} analysis — no issues"
-        return f"{lang_name[result.language]} analysis — {nw} potential issues"
+        if nw == 0:
+            return f"{lang_name[result.language]} 分析完成，未发现并发问题"
+        return f"{lang_name[result.language]} 分析完成，共 {nw} 个潜在并发问题"
 
     @classmethod
     def get_metadata(cls) -> AnalyzerMetadata:
-        return AnalyzerMetadata(name="OwnershipAnalyzer", type=AnalyzerType.STATIC_ANALYZER,
-                                version="1.0.0", author="BinaryAnalysisPlatform",
-                                dependencies=[], supported_platforms=["x86","x86_64","arm","arm64"])
+        return AnalyzerMetadata(name="OwnershipAnalyzer", ver="1.0.0",
+                                author="BinaryAnalysisPlatform",
+                                at=AnalyzerType.STATIC,
+                                desc="Rust/Go 内存所有权与并发缺陷静态分析")
 
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         bp = kwargs.get("binary_path"); bd = kwargs.get("binary_data")
-        if not bp and bd is None: return False, "binary_path or binary_data required"
-        if bp and not os.path.exists(bp): return False, f"file not found: {bp}"
+        if not bp and bd is None: return False, "必须提供 binary_path 或 binary_data"
+        if bp and not os.path.isfile(bp): return False, f"文件不存在: {bp}"
         lang = kwargs.get("language", "auto")
-        if lang not in ["auto","rust","go","cxx"]: return False, "language must be auto/rust/go/cxx"
+        if lang not in ["auto","rust","go","cxx"]: return False, "language 必须是 auto/rust/go/cxx 之一"
         return True, None
 
     def cleanup(self) -> None: pass

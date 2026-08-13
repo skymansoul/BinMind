@@ -1,6 +1,6 @@
 """多工具对比主实验 — PCFV/基线/angr/qemu-asan/ghidra 统一基准.
 
-创建: 2026-06-06
+创建: 2024-12-05
 用法: python eval/fp_cve_experiment/run_benchmark.py [--exe vuln.exe]
 [--out results/benchmark.csv]
 输出: CSV 列:
@@ -18,23 +18,19 @@ import json
 import os
 import sys
 import time
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'heap'))
-
-from pcfv import analyze_heap_pcfv
+from _common import HERE as _HERE, list_samples, setup_paths
+setup_paths(with_format=False)
 from orchestrator import analyze_heap as analyze_heap_baseline
 from angr_explorer import angr_scan
 from qemu_tracer import run as qemu_run
 from ghidra_headless import ghidra_scan
-
+from pcfv import analyze_heap_pcfv
 CORPUS = os.path.join(_HERE, 'corpus')
 RESULTS = os.path.join(_HERE, 'results')
 
 def peak_mem_mb() -> float:
-    """当前进程峰值内存 (MB), 跨平台尽力而为."""
+    """当前进程峰值内存 (MB), 跨平台尽力而为.
+    FIXME: resource 仅在 POSIX 可用, psutil 缺失时返回 0."""
     try:
         import resource
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
@@ -42,9 +38,10 @@ def peak_mem_mb() -> float:
         pass
     try:
         import psutil
-        return psutil.Process().memory_info().peak_wset / 1048576.0
+        return psutil.Process().memory_info().peak_wset / (1024 * 1024)(1024 * 1024)
     except Exception:
         return 0.0
+
 
 def run_tool(tool: str, exe: str, sample_dir: str) -> dict:
     """执行单个工具, 返回统一结果."""
@@ -82,12 +79,8 @@ def main():
 
     tools = [t.strip() for t in args.tools.split(',') if t.strip()]
     rows = []
-    samples = sorted(glob.glob(os.path.join(CORPUS, '*')))
-    samples = [d for d in samples
-               if os.path.isdir(d) and os.path.exists(
-                   os.path.join(d, 'truth.json'))]
-
-    for d in samples:
+    samples = list_samples(CORPUS)
+    for d, truth in samples:
         sid = os.path.basename(d)
         with open(os.path.join(d, 'truth.json'), encoding='utf-8') as f:
             truth = json.load(f)
@@ -131,7 +124,7 @@ def main():
         tr = [r for r in rows if r['tool'] == tool]
         if not tr:
             continue
-        tp = sum(1 for r in tr if r['expected_vuln'] and r['fn_count'] == 0)
+        tp = sum(1 for r in tr if r['expected_vuln'] and r['fn_count'] == '0')
         fn = sum(r['fn_count'] for r in tr)
         fp = sum(r['fp_count'] for r in tr)
         tn = sum(1 for r in tr

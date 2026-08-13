@@ -1,11 +1,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-/* sprintfĞ´Èë¶Ñ»º³åÇøÎŞ³¤¶ÈÏŞÖÆ */
+/* sprintfå†™å…¥å †ç¼“å†²åŒºæ— é•¿åº¦é™åˆ¶ */
 void sprintf_heap_test(const char *user_input) {
     char *buf = malloc(32);
     if (!buf) return;
-    /* VULN: sprintfÎŞnÏŞÖÆ£¬user_input³¤¶ÈÎ´Öª */
+    /* VULN: sprintfæ— né™åˆ¶ï¼Œuser_inputé•¿åº¦æœªçŸ¥ */
     sprintf(buf, "User data: %s", user_input);
     free(buf);
 }

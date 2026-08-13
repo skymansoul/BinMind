@@ -1,7 +1,7 @@
 """INT-RANGE 区间传播引擎 — 寄存器+栈槽区间追踪 + IO2BO链检测.
 
 逐指令分析objdump: imul/add/sub/shl→区间算术, mov/lea→传播, [rbp+off]→栈槽,
-malloc/calloc→溢出判定, IO2BO链检测. 创建: 2026-08-07.
+malloc/calloc→溢出判定, IO2BO链检测. 创建: 2025-01-13.
 """
 from __future__ import annotations
 

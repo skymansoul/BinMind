@@ -1,4 +1,4 @@
-# 2026-07-26
+# 2025-04-17
 # 敏感操作检测器 — 从内存 dump 或 trace 中识别 keys/creds/secrets
 # 零依赖：纯字节扫描 + 熵分析，不需要 cryptography 库
 import struct

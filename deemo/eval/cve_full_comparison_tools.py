@@ -81,7 +81,7 @@ def _run_csa_source(source: str, sample_name: str) -> dict:
     """
     t0 = time.time()
     try:
-        from tests.source_scanner_part1 import extract_heap_ops_c
+        from tests.source_scanner import extract_heap_ops_c
         from tests.source_classifier import classify_finding
         ops = extract_heap_ops_c(source)
         overflow = sum(1 for o in ops if o.get('is_overflow'))

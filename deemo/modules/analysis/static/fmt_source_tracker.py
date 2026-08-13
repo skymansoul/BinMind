@@ -28,7 +28,7 @@
 #   "UAFx: Use-After-Free Detection with Path-Sensitive Analysis":
 #     全局变量状态追踪对二进制级漏洞检测至关重要.
 #
-# 创建: 2026-05-18
+# 创建: 2024-12-11
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

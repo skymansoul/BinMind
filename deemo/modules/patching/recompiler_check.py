@@ -466,7 +466,7 @@ class RecompilerVerifier:
         """生成可读验证报告。"""
         lines = []
         lines.append("=" * 60)
-        lines.append("Decompiled Code Recompilation Verification Report")
+        lines.append("反编译代码重编译验证报告 (Decompiled Code Recompilation Verification Report)")
         lines.append("=" * 60)
         lines.append("")
 

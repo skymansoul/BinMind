@@ -4,9 +4,9 @@
 __attribute__((noinline)) void trigger_stack_safe(void) {
     char *p = (char *)malloc(64);
     if (!p) return;
-    char *saved = p;  /* Õ»¸±±¾ */
-    /* ... Ğí¶à´úÂë ... */
-    saved[0] = 'X';  /* Ê¹ÓÃÇ°Î´ÊÍ·Å ¡ú °²È« */
+    char *saved = p;  /* æ ˆå‰¯æœ¬ */
+    /* ... è®¸å¤šä»£ç  ... */
+    saved[0] = 'X';  /* ä½¿ç”¨å‰æœªé‡Šæ”¾ â†’ å®‰å…¨ */
     free(p);
 }
 

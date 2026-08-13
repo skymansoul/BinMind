@@ -4,13 +4,14 @@
 # CENTRIS混合哈希策略。
 
 import logging, hashlib
+from enum import Enum
 from typing import Dict, List, Any
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
 
-class DeduplicationStrategy:
+class DeduplicationStrategy(str, Enum):
     DATAFLOW = "dataflow"
     SYNTAX = "syntax"
     SEMANTIC = "semantic"
@@ -18,8 +19,7 @@ class DeduplicationStrategy:
 
     def __init__(self, value=None): pass
 
-
-class ClusterSimilarity:
+class ClusterSimilarity(str, Enum):
     EXACT = "exact"
     HIGH = "high"
     MEDIUM = "medium"
@@ -54,23 +54,23 @@ class VulnerabilitySignature:
 
 
 class VulnerabilityCluster:
-    __slots__ = ('cluster_id', 'representative', 'members', 'similarity', 'nCount')
+    __slots__ = ('cluster_id', 'representative', 'members', 'similarity', 'count')
 
     def __init__(self, cluster_id, representative, members=None,
-                 similarity="medium", nCount=0):
+                 similarity=ClusterSimilarity.MEDIUM, count=0):
         self.cluster_id = cluster_id
         self.representative = representative
         self.members = members if members is not None else []
         self.similarity = similarity
-        self.nCount = nCount
+        self.count = count
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'cluster_id': self.cluster_id,
             'representative': self.representative.to_dict(),
             'members': [m.to_dict() for m in self.members],
-            'similarity': self.similarity,
-            'nCount': self.nCount}
+            'similarity': self.similarity.value if hasattr(self.similarity, 'value') else self.similarity,
+            'count': self.count}
 
 
 class DeduplicationResult:
@@ -91,7 +91,7 @@ class DeduplicationResult:
             'unique_count': self.unique_count,
             'total_count': self.total_count,
             'deduplicated_count': self.deduplicated_count,
-            'strategy': self.strategy if isinstance(self.strategy, str) else str(self.strategy)}
+            'strategy': self.strategy.value if hasattr(self.strategy, 'value') else self.strategy}
 
 
 class VulnDeduplicator:
@@ -174,13 +174,13 @@ class VulnDeduplicator:
                 clusters.append(VulnerabilityCluster(
                     cluster_id=f"df_{sig.dataflow_hash[:8]}",
                     representative=sig, members=[sig],
-                    similarity=ClusterSimilarity.EXACT, nCount=1))
+                    similarity=ClusterSimilarity.EXACT, count=1))
                 seen_hashes.add(sig.dataflow_hash)
             else:
                 for cluster in clusters:
                     if cluster.representative.dataflow_hash == sig.dataflow_hash:
                         cluster.members.append(sig)
-                        cluster.nCount += 1
+                        cluster.count += 1
                         break
         return clusters
 
@@ -193,7 +193,7 @@ class VulnDeduplicator:
                 sim = self._calculate_syntax_similarity(sig, cluster.representative)
                 if sim >= self.similarity_thresholds["syntax"]:
                     cluster.members.append(sig)
-                    cluster.nCount += 1
+                    cluster.count += 1
                     if sim >= 0.95:
                         cluster.similarity = ClusterSimilarity.EXACT
                     elif sim >= 0.85 and cluster.similarity != ClusterSimilarity.EXACT:
@@ -204,7 +204,7 @@ class VulnDeduplicator:
                 clusters.append(VulnerabilityCluster(
                     cluster_id=f"syn_{hash(sig.syntax_hash) % 10000}",
                     representative=sig, members=[sig],
-                    similarity=ClusterSimilarity.EXACT, nCount=1))
+                    similarity=ClusterSimilarity.EXACT, count=1))
         return clusters
 
     def _calculate_syntax_similarity(self, sig1: VulnerabilitySignature,
@@ -227,7 +227,7 @@ class VulnDeduplicator:
                 sim = self._calculate_semantic_similarity(sig, cluster.representative)
                 if sim >= self.similarity_thresholds["semantic"]:
                     cluster.members.append(sig)
-                    cluster.nCount += 1
+                    cluster.count += 1
                     if sim >= 0.9:
                         cluster.similarity = ClusterSimilarity.HIGH
                     matched = True
@@ -236,7 +236,7 @@ class VulnDeduplicator:
                 clusters.append(VulnerabilityCluster(
                     cluster_id=f"sem_{hash(tuple(sig.semantic_features)) % 10000}",
                     representative=sig, members=[sig],
-                    similarity=ClusterSimilarity.EXACT, nCount=1))
+                    similarity=ClusterSimilarity.EXACT, count=1))
         return clusters
 
     def _calculate_semantic_similarity(self, sig1: VulnerabilitySignature,
@@ -261,7 +261,7 @@ class VulnDeduplicator:
                 weighted = (df_sim * 0.4) + (syn_sim * 0.3) + (sem_sim * 0.3)
                 if weighted >= self.similarity_thresholds["hybrid"]:
                     cluster.members.append(sig)
-                    cluster.nCount += 1
+                    cluster.count += 1
                     if weighted >= 0.95:
                         cluster.similarity = ClusterSimilarity.EXACT
                     elif weighted >= 0.85 and cluster.similarity != ClusterSimilarity.EXACT:
@@ -275,7 +275,7 @@ class VulnDeduplicator:
                 clusters.append(VulnerabilityCluster(
                     cluster_id=f"hyb_{hash(sig.dataflow_hash + sig.syntax_hash) % 10000}",
                     representative=sig, members=[sig],
-                    similarity=ClusterSimilarity.EXACT, nCount=1))
+                    similarity=ClusterSimilarity.EXACT, count=1))
         return clusters
 
 

@@ -375,12 +375,7 @@ def build_context_from_cve(entry) -> List[float]:
     ]
 
 
-def _get_str(entry, field: str, default: str = ""):
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
+from ._internal_helpers import _get_str, _get_num
 
 
 def _get_num(entry, field: str):

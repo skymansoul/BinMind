@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2019_2215 ¶ÑÒç³öÄ£Äâ: malloc(64) + memcpy(512)
-// ¡ú 448 ×Ö½ÚÒç³ö
+// cve_2019_2215 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(64) + memcpy(512)
+// â†’ 448 å­—èŠ‚æº¢å‡º
 void binder_use_overflow() {
     char *buf = (char *)malloc(64);
     if (!buf) return;
@@ -52,7 +52,7 @@ void binder_use_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(576) + memcpy(576/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(576) + memcpy(576/2) â†’ ä¸æº¢å‡º
 void binder_use_safe() {
     char *buf = (char *)malloc(576);
     if (!buf) return;

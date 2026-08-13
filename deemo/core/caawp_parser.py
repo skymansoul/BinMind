@@ -1,5 +1,5 @@
 """
-CAAWP表达式解析模块 — 从caawp_interpreter.py拆分.
+CAAWP表达式解析模块
 
 包含size表达式解析、参数分割、仿射运算等功能.
 """

@@ -1,0 +1,76 @@
+{
+  "comment": "LLM backend config template. Copy to llm_config.json with your API keys. Backends are sorted by priority (lower number = higher priority).",
+  "default_backend": "openai",
+  "backends": {
+    "openai": {
+      "backend_type": "openai",
+      "model_name": "gpt-4o-mini",
+      "api_key": null,
+      "base_url": null,
+      "api_version": null,
+      "max_tokens": 2048,
+      "temperature": 0.3,
+      "timeout": 60,
+      "anonymize": true,
+      "anonymization_level": "medium",
+      "enabled": true,
+      "priority": 10
+    },
+    "anthropic": {
+      "backend_type": "anthropic",
+      "model_name": "claude-3-sonnet-20240229",
+      "api_key": null,
+      "base_url": null,
+      "api_version": null,
+      "max_tokens": 2048,
+      "temperature": 0.3,
+      "timeout": 60,
+      "anonymize": true,
+      "anonymization_level": "medium",
+      "enabled": false,
+      "priority": 20
+    },
+    "google": {
+      "backend_type": "google",
+      "model_name": "gemini-1.5-flash",
+      "api_key": null,
+      "base_url": null,
+      "api_version": null,
+      "max_tokens": 2048,
+      "temperature": 0.3,
+      "timeout": 60,
+      "anonymize": true,
+      "anonymization_level": "medium",
+      "enabled": false,
+      "priority": 30
+    },
+    "ollama": {
+      "backend_type": "ollama",
+      "model_name": "qwen2:7b",
+      "api_key": null,
+      "base_url": null,
+      "api_version": null,
+      "max_tokens": 2048,
+      "temperature": 0.3,
+      "timeout": 120,
+      "anonymize": false,
+      "anonymization_level": "low",
+      "enabled": false,
+      "priority": 40
+    },
+    "local": {
+      "backend_type": "transformers",
+      "model_name": "Qwen/Qwen2-7B-Instruct",
+      "api_key": null,
+      "base_url": null,
+      "api_version": null,
+      "max_tokens": 1024,
+      "temperature": 0.3,
+      "timeout": 300,
+      "anonymize": false,
+      "anonymization_level": "low",
+      "enabled": false,
+      "priority": 50
+    }
+  }
+}

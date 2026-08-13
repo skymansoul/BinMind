@@ -1,7 +1,11 @@
 # 交互式分析 Shell — cmd 框架、自动补全、历史持久化、别名系统、彩色输出
 import cmd
 import os
-import readline
+try:
+    import readline
+except ImportError:
+    # Windows 环境无 readline，禁用补全与历史，其余功能不受影响
+    readline = None
 import atexit
 import threading
 from dataclasses import dataclass, field
@@ -100,6 +104,8 @@ class InteractiveShell(cmd.Cmd, ColorOutput):
 
     # //// readline 历史持久化 ////
     def _setup_readline(self):
+        if readline is None:
+            return
         try:
             readline.read_history_file(self._history_file)
         except (FileNotFoundError, OSError):

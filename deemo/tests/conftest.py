@@ -176,6 +176,11 @@ def _patch_one_dataclass(module_name, class_name, defaults_dict):
     if not hasattr(target_cls, '__dataclass_fields__'):
         return False
 
+    # 真实 dataclass 字段留给原 __init__ 处理（含其默认值/枚举类型），
+    # 仅将 extra_defaults 中非 dataclass 字段的兼容属性拆出，回退路径下再补齐
+    real_fields = set(target_cls.__dataclass_fields__)
+    extra_only = {k: v for k, v in defaults_dict.items() if k not in real_fields}
+
     # 获取原始__init__
     orig_init = target_cls.__init__
 
@@ -199,6 +204,8 @@ def _patch_one_dataclass(module_name, class_name, defaults_dict):
                 for field_name in target_cls.__dataclass_fields__:
                     if field_name in kw:
                         object.__setattr__(self, field_name, kw[field_name])
+                    elif field_name in leftover:
+                        object.__setattr__(self, field_name, leftover[field_name])
                     else:
                         object.__setattr__(self, field_name, None)
 
@@ -209,7 +216,7 @@ def _patch_one_dataclass(module_name, class_name, defaults_dict):
 
         return _patched_init
 
-    target_cls.__init__ = _build_patched_init(orig_init, defaults_dict)
+    target_cls.__init__ = _build_patched_init(orig_init, extra_only)
     return True
 
 

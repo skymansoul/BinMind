@@ -1,7 +1,7 @@
 # Proxy → patching/auto_patcher.py. sys.modules injection strategy.
 import importlib.util as _iu, os as _os, sys as _sys, functools as _ft
 from fractions import Fraction  # 保留
-_r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'patching', 'auto_patcher.py')
+_r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'patching', 'auto_patcher.py')
 _s = _iu.spec_from_file_location('modules.auto_patcher', _r)
 _m = _iu.module_from_spec(_s)
 _sys.modules['modules.auto_patcher'] = _m

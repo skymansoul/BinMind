@@ -1,4 +1,5 @@
 # 分布式任务集群 — 优先级队列、节点注册、工作线程池、Redis后端、任务重试、集群协调
+import os
 import heapq
 import threading
 import time
@@ -429,3 +430,23 @@ def create_cluster(num_workers: int = 4) -> dict:
     pool.start()
     coordinator.monitor()
     return {"coordinator": coordinator, "pool": pool, "registry": coordinator._registry}
+
+
+class DistributedCluster:
+    """分布式分析集群入口 — 对目标二进制提交分析任务并汇总结果。"""
+
+    def __init__(self):
+        self._coordinator = ClusterCoordinator()
+
+    def analyze(self, binary_path: str) -> dict:
+        """对指定二进制发起集群分析；文件缺失时返回失败状态。"""
+        if not binary_path or not os.path.exists(binary_path):
+            return {"success": False, "binary_path": binary_path, "error": "binary not found"}
+        task = ClusterTask(
+            task_id=f"task-{int(time.time())}",
+            task_type="binary_analysis",
+            payload={"binary_path": binary_path},
+        )
+        node_id = self._coordinator.dispatch_task(task)
+        return {"success": True, "binary_path": binary_path, "node": node_id, "task_id": task.task_id}
+

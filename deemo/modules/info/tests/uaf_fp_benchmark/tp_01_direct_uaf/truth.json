@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_01_direct_uaf",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2015-0235 (GHOST) 类直接释放后解引用",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "free(p) 后 p->flag 访问已释放对象, 无空态/重赋值"
-}

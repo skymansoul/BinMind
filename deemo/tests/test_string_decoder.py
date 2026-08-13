@@ -18,7 +18,6 @@ class TestStringDecoder(unittest.TestCase):
         """测试分析人类可读字符串"""
         result = self.decoder.analyze_string("Hello, World!")
         self.assertTrue(result.is_human_readable)
-lass字段完整性$/d
         self.assertEqual(result.decoded_text, "Hello, World!")
         self.assertEqual(result.confidence, 1.0)
 
@@ -99,9 +98,7 @@ lass字段完整性$/d
         strings = ["Hello", "SGVsbG8=", "invalid"]
         result = self.decoder.decode_all(strings)
         self.assertIn("decoded_mapping", result)
-lass字段完整性$/d
         self.assertIn("stats", result)
-lass字段完整性$/d
         self.assertEqual(result["stats"]["total_strings"], 3)
 
 

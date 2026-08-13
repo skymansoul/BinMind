@@ -1,8 +1,0 @@
-{
-  "id": "safe_10_large_alloc_small_write",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "malloc(4096) 偏移8写入"
-}

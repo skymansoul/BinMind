@@ -1,4 +1,4 @@
-/* CVE-2017-14492 ¡ª dnsmasq: small alloc + unbounded name copy */
+/* CVE-2017-14492 â€” dnsmasq: small alloc + unbounded name copy */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

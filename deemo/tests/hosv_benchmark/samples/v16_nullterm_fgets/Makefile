@@ -1,5 +1,5 @@
-CC ?= gcc
-CFLAGS ?= -O0 -g
+CC = gcc
+CFLAGS = -O0 -g
 
 all: vuln
 

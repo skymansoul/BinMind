@@ -635,7 +635,7 @@ class CodeLocator:
             "code_patterns": [r"memcpy\\(.*,\\s*0\\)"],
             "version_strings": ["1.2.3"],
         })
-        footprint = locator.find_affected_code("/bin/target", "CVE-2023-1234")
+        footprint = locator.find_affected_code
         all_impacts = locator.assess_impact("/bin/target")
     """
 
@@ -845,7 +845,7 @@ class ThreatIntelClient:
         client = ThreatIntelClient()
         client.configure_misp(url="https://misp.local", api_key="...")
         result = client.lookup_hash("d41d8cd98f00b204e9800998ecf8427e")
-        cve = client.lookup_cve("CVE-2023-1234")
+        cve = client.lookup_cve
     """
 
     _USER_AGENT = "BinMind/2.0"

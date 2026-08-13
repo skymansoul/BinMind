@@ -1,6 +1,0 @@
-{
-  "id": "fmt_tp_05_indirect_arg",
-  "expected_vuln": true,
-  "vuln_type": "format_string",
-  "mode": "格式串经参数传递到辅助函数"
-}

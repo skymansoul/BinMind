@@ -1,4 +1,4 @@
 type,tool,TP,FP,FN,TN,recall_pct,fpr_pct,precision_pct,f1_pct,avg_time_ms
 uaf,NAIVE,13,10,2,5,86.7,66.7,56.5,68.4,0.0
-uaf,UAF_FC_v3,15,0,0,15,100.0,0.0,100.0,100.0,0.1
+uaf,UAF_FC_v3,15,0,0,15,100.0,0.0,100.0,100.0,0.2
 uaf,UAF_v2,3,2,12,13,20.0,13.3,60.0,30.0,0.0

@@ -31,12 +31,14 @@ def scan_binary(binary_path: str, sample_name: str, variant: str = 'default') ->
     return result
 
 def scan_all_binaries(build_dir: str) -> List[ScanResult]:
+    # 样本目录含预编译 PE 固件（.exe）与本地编译产物（.elf）
     results = []
     for f in sorted(os.listdir(build_dir)):
-        if not f.endswith('.elf'): continue
+        stem, ext = os.path.splitext(f)
+        if ext not in ('.elf', '.exe'): continue
         path = os.path.join(build_dir, f)
-        parts = f.replace('.elf', '').rsplit('_', 1)
-        name = parts[0] if len(parts) == 2 else f
+        parts = stem.rsplit('_', 1)
+        name = parts[0] if len(parts) == 2 else stem
         variant = parts[1] if len(parts) == 2 else 'default'
         results.append(scan_binary(path, name, variant))
     return results

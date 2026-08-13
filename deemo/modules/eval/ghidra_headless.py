@@ -15,11 +15,10 @@ Ghidra 无头分析 — 模拟自动化静态审计.
   - CLI 输出合并字典 (success/findings/calls/mode/time_ms/duration_sec
     全字段), 同时满足两个 run_benchmark 消费者的解析需求.
 
-决策逻辑:
-  用 Ghidra headless analyzer (analyzeHeadless) 对目标二进制
-  运行内置脚本, 统计堆危险函数调用与对 malloc 缓冲的越界
-  引用. 无 Ghidra 环境时降级为 objdump + 模式统计, 保持输出
-  结构一致.
+用 Ghidra headless analyzer (analyzeHeadless) 对目标二进制
+运行内置脚本, 统计堆危险函数调用与对 malloc 缓冲的越界
+引用. 无 Ghidra 环境时降级为 objdump + 模式统计, 保持输出
+结构一致.
 
   输出: tool/sample/success/findings/duration_sec (+ calls/mode/time_ms).
 """

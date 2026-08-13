@@ -178,6 +178,7 @@ class TestDecompilerEnhancer(unittest.TestCase):
 # 测试自动补丁模块
 from modules.auto_patcher import (
     AutoPatcher,
+    VulnerabilityInfo,
     VulnerabilityType,
     PatchStrategy,
     PatchResult
@@ -250,7 +251,6 @@ class TestAutoPatcher(unittest.TestCase):
             patcher = AutoPatcher(temp_path)
             result = patcher.analyze_and_patch()
             
-lass字段完整性$/d
             self.assertIsInstance(result, PatchResult)
             self.assertTrue(result.analysis_success)
         finally:

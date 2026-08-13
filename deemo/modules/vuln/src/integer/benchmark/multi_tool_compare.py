@@ -1,6 +1,6 @@
 """整数溢出多工具对比基准 — BinMind vs 正则基线 vs 理论对比.
 
-创建: 2026-06-09
+创建: 2025-03-28
 用法: python -m vuln.src.integer.benchmark.multi_tool_compare
 
 对比维度: 召回率/精确率/F1/扫描速度/FP数量

@@ -395,6 +395,55 @@ class StringUnobfuscator:
         alpha = sum(1 for c in s if c.isalpha())
         return alpha >= 2
 
+    def unobfuscate(self, data_section: bytes = None, **kwargs) -> List[DecodedString]:
+        """对给定数据段进行字符串提取与反混淆。
+
+        支持两种输入形态：
+        - bytes：直接扫描可打印字符串并尝试逐段解码
+        - callable：以空数据调用读取二进制并走 run() 流程
+
+        返回 DecodedString 列表，未发现有效字符串时返回空列表。
+        """
+        if data_section is None:
+            if callable(kwargs.get("loader")):
+                self.binary_path = kwargs["loader"]()
+            result = self.run()
+            return list(result.strings)
+
+        if callable(data_section):
+            result = self.run()
+            return list(result.strings)
+
+        if not isinstance(data_section, bytes):
+            return []
+
+        extracted: List[DecodedString] = []
+        pos = 0
+        length = len(data_section)
+        while pos < length:
+            if data_section[pos] not in range(0x20, 0x7F):
+                pos += 1
+                continue
+            end = pos
+            while end < length and data_section[end] in range(0x20, 0x7F):
+                end += 1
+            raw = data_section[pos:end]
+            decoded = self.decode_string(raw)
+            if decoded is not None:
+                decoded.address = pos
+                extracted.append(decoded)
+            else:
+                try:
+                    plain = raw.decode("ascii", errors="ignore")
+                    if len(plain) >= 3:
+                        extracted.append(DecodedString(
+                            address=pos, original=plain, decoded=plain))
+                except Exception:
+                    logger.debug("suppressed", exc_info=True)
+            pos = end + 1
+
+        return extracted
+
     def run(self) -> DecodeResult:
         try:
             constructors = self.find_string_constructors()

@@ -2,12 +2,12 @@
 工厂函数返回指针绑定. 目标模式:
 
   void* mat(int r, int c) { return calloc(r, c); }
-  int main() { char* p = mat(65536, 65536); strcpy(p, "t"); }
+  int main() { char* p = mat; strcpy(p, "t"); }
 
 原 HOSV 只关联同函数内的 `var = malloc(...)` 分配点与写入. 当分配
 发生在工厂函数内部、通过返回值传播时, find_writes 无法把 main 中的
 strcpy(p) 关联到 mat 的 calloc, 导致漏检. 同时 calloc(r,c) 的整数
-回绕 (r*c 溢出) 是真实根因.
+回绕 (r*c 溢出) 使分配不足.
 
 实现:
   1. 识别工厂函数: 函数体内含 malloc/calloc/realloc 且 return 该指针
@@ -23,7 +23,7 @@ from typing import Dict, List, Optional, Tuple
 
 from analysis.hosv_ext_types import ExtAlloc, ExtResult
 from analysis.heap_overflow_src_patterns import (
-    _is_comment_or_empty, _base_var, _ptmalloc2_usable,
+    _is_comment_or_empty,
 )
 
 _FACTORY_RETURN_RE = re.compile(

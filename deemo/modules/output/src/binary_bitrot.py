@@ -22,7 +22,7 @@
   CWE-1104: Use of Unmaintained Third-Party Components.
 
 修改记录:
-  2026-08-02 10:56 - 初始版本，五因子 bitrot 模型
+  2025-03-03 10:56 - 初始版本，五因子 bitrot 模型
 """
 
 import math

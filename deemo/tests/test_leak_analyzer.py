@@ -9,6 +9,7 @@ Covers:
 """
 import unittest
 import os
+import struct
 import tempfile
 
 import importlib.util

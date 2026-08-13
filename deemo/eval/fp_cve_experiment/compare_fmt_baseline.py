@@ -1,6 +1,6 @@
 """FMT 基线 vs FMT-SAC 对比 — 在 corpus_fmt 上的误报/召回对比.
 
-创建: 2026-07-10
+创建: 2023-06-02
 用法: python eval/fp_cve_experiment/compare_fmt_baseline.py [--json out.json]
 """
 import argparse
@@ -10,10 +10,8 @@ import os
 import sys
 import time
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'format'))
+from _common import HERE as _HERE, list_samples, DEEMO as _DEEMO, setup_paths
+setup_paths(with_format=True)
 sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'detection'))
 
 from fmt_sac import analyze_fmt_sac
@@ -65,12 +63,7 @@ def main():
     args = ap.parse_args()
 
     rows = []
-    for d in sorted(glob.glob(os.path.join(CORPUS, '*'))):
-        if not os.path.isdir(d) or not os.path.exists(
-                os.path.join(d, 'truth.json')):
-            continue
-        with open(os.path.join(d, 'truth.json'), encoding='utf-8') as f:
-            truth = json.load(f)
+    for d, truth in list_samples(CORPUS):
         exe = os.path.join(d, args.exe)
         if not os.path.exists(exe):
             continue

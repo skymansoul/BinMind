@@ -32,7 +32,6 @@ class TestAntiAnalysisTechnique(unittest.TestCase):
             detection_code="IsDebuggerPresent",
         )
         self.assertEqual(t.name, "is_debugger")
-lass字段完整性$/d
         self.assertEqual(t.location, 0x1000)
         self.assertEqual(t.detection_code, "IsDebuggerPresent")
         self.assertIsNone(t.bypass_input)
@@ -236,7 +235,6 @@ class TestAntiAnalysisDetector(unittest.TestCase):
         """测试不存在的文件"""
         detector = AntiAnalysisDetector("/nonexistent/path.bin")
         techniques = detector.detect()
-lass字段完整性$/d
         self.assertEqual(len(techniques), 0)
 
 
@@ -262,7 +260,6 @@ class TestAntiAnalysisBypass(unittest.TestCase):
         result = bypass.run()
 
         self.assertTrue(result.success)
-lass字段完整性$/d
         self.assertGreater(len(result.techniques), 0)
         self.assertIn("ptrace", result.bypass_inputs)
 

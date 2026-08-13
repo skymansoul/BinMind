@@ -154,7 +154,6 @@ class TestBinaryRewriter(unittest.TestCase):
 
         with open(output_file, 'rb') as f:
             content = f.read()
-lass字段完整性$/d
         self.assertEqual(content[2:5], b'\x90\x90\x90')
 
     def test_get_modification_summary(self):

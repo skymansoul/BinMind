@@ -91,19 +91,23 @@ class EnhancedRegressionHarness:
             'baseline': EnhancedHeapOverflowDetector(
                 enable_path_conditions=False,
                 enable_strided_intervals=False,
-                enable_memory_filter=False),
+                enable_memory_filter=False,
+                base_fp_reduction=False),
             '+path_cond': EnhancedHeapOverflowDetector(
                 enable_path_conditions=True,
                 enable_strided_intervals=False,
-                enable_memory_filter=False),
+                enable_memory_filter=False,
+                base_fp_reduction=False),
             '+stride': EnhancedHeapOverflowDetector(
                 enable_path_conditions=False,
                 enable_strided_intervals=True,
-                enable_memory_filter=False),
+                enable_memory_filter=False,
+                base_fp_reduction=False),
             '+all': EnhancedHeapOverflowDetector(
                 enable_path_conditions=True,
                 enable_strided_intervals=True,
-                enable_memory_filter=True),
+                enable_memory_filter=True,
+                base_fp_reduction=False),
         }
 
         results = {}
@@ -122,7 +126,10 @@ class EnhancedRegressionHarness:
                     findings = detector.analyze(instrs, funcs, instr_addrs=addrs)
                     # 过滤CRT噪声 (与regression_harness.py相同逻辑)
                     findings = self._filter_crt_noise(findings)
-                    detected = len(findings) > 0
+                    # 有效 finding 口径: 增强层标记为可抑制误报的
+                    # (is_false_positive) 不计入检出, 使消融可量化
+                    detected = any(not f.is_false_positive
+                                   for f in findings)
 
                     if expected_vuln and detected:
                         result.tp += 1
@@ -136,6 +143,11 @@ class EnhancedRegressionHarness:
                     pass
 
             results[cfg_name] = result
+
+        # 收集各配置的增强层统计 (跨样本累计的活动量)
+        for cfg_name, detector in configs.items():
+            if hasattr(detector, 'enhanced_stats'):
+                results[cfg_name].stats = detector.enhanced_stats()
         return results
 
     def _disassemble(self, binary_path: pathlib.Path):
@@ -177,26 +189,38 @@ class EnhancedRegressionHarness:
             filtered.append(f)
         return filtered
 
-    def discover_and_compile(self) -> List[Tuple[str, bool, Optional[pathlib.Path]]]:
-        """发现并编译所有样本."""
+    def discover_and_compile(self, samples_dir: str = "cve_samples"
+                             ) -> List[Tuple[str, bool, Optional[pathlib.Path]]]:
+        """发现并编译所有样本.
+
+        fp_samples 数据集的预期判定: fp_heap* 为漏洞, fp_safe* 为安全.
+        """
+        self._samples_dir = pathlib.Path(samples_dir)
         samples = []
+        is_fp = (samples_dir == "fp_samples")
         for d in sorted(self._samples_dir.iterdir()):
             if not d.is_dir() or d.name == 'build':
                 continue
-            # 判断预期: cve00_* 是安全对照; 新样本cve19/20/21/23也是安全
-            name_lower = d.name.lower()
-            if 'safe_copy' in name_lower or 'safe_' in name_lower:
-                expected_vuln = False
-            elif 'path_cond_clamp' in name_lower or 'early_return' in name_lower:
-                expected_vuln = False  # 路径条件保护=安全
-            elif 'stride_loop_safe' in name_lower:
-                expected_vuln = False  # 跨步安全
-            elif 'mem_region' in name_lower:
-                expected_vuln = False  # 栈写入=安全
-            elif d.name.startswith('cve00'):
-                expected_vuln = False
+            if is_fp:
+                expected_vuln = d.name.startswith('fp_heap')
+            elif d.name.lower().startswith(('fmt', 'int')):
+                # fmt/int 样本归入各自的独立回归, 不参与堆溢出消融
+                continue
             else:
-                expected_vuln = True
+                # 判断预期: cve00_* 是安全对照; 新样本cve19/20/21/23也是安全
+                name_lower = d.name.lower()
+                if 'safe_copy' in name_lower or 'safe_' in name_lower:
+                    expected_vuln = False
+                elif 'path_cond_clamp' in name_lower or 'early_return' in name_lower:
+                    expected_vuln = False  # 路径条件保护=安全
+                elif 'stride_loop_safe' in name_lower:
+                    expected_vuln = False  # 跨步安全
+                elif 'mem_region' in name_lower:
+                    expected_vuln = False  # 栈写入=安全
+                elif d.name.startswith('cve00'):
+                    expected_vuln = False
+                else:
+                    expected_vuln = True
 
             binary = None
             try:
@@ -208,12 +232,21 @@ class EnhancedRegressionHarness:
 
 
 def main():
-    harness = EnhancedRegressionHarness()
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Enhanced regression: ablation study")
+    parser.add_argument("--dataset", default="cve_samples",
+                        help="cve_samples 或 fp_samples (含 FP 陷阱)")
+    args = parser.parse_args()
+
+    harness = EnhancedRegressionHarness(
+        samples_dir=args.dataset if args.dataset != "cve_samples"
+        else "cve_samples")
     print("=" * 70)
-    print("  增强型回归测试 — 消融实验")
+    print(f"  增强型回归测试 — 消融实验 ({args.dataset})")
     print("=" * 70)
 
-    samples = harness.discover_and_compile()
+    samples = harness.discover_and_compile(args.dataset)
     vuln_count = sum(1 for _, v, _ in samples if v)
     safe_count = sum(1 for _, v, _ in samples if not v)
     compiled = sum(1 for _, _, b in samples if b is not None)
@@ -246,6 +279,13 @@ def main():
             if baseline.fpr > 0 and best.fpr < baseline.fpr:
                 fpr_reduction = (baseline.fpr - best.fpr) / baseline.fpr * 100
                 print(f"FPR降低: {fpr_reduction:.1f}%")
+
+    # 增强层活动统计 (量化各层独立贡献的证据)
+    print("\n增强层活动统计 (跨样本累计):")
+    for cfg_name in ['+path_cond', '+stride', '+all']:
+        r = results.get(cfg_name)
+        if r and r.stats:
+            print(f"  {cfg_name:<12} {r.stats}")
 
     # 保存JSON报告
     report_path = harness._build_dir / 'ablation_report.json'

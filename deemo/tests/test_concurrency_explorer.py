@@ -84,7 +84,6 @@ class TestConcurrencyExplorer:
 
         interleavings = explorer._generate_interleavings(2, 5)
 
-lass字段完整性$/d
         assert isinstance(interleavings, list)
         assert len(interleavings) <= 5
 

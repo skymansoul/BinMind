@@ -11,10 +11,7 @@ CJ求解器收到宽松约束无法证明安全.
   2. 受提示拓宽: 利用路径守卫条件作为hint, 限制widen方向
      若guard(n<=100)存在, widen(n)上界不超过100
 
-理论依据:
-  - Cousot&Cousot 1992: widening with thresholds
-  - Blanchet et al. (Astrée): widening with hints from user annotations
-  - 本模块创新: hints来自自动提取的路径guard, 非手动标注
+hints来自自动提取的路径guard, 非手动标注.
 
 与cj_interval_domain.py的关系: 作为后处理增强,
 不修改IntervalDomain原有逻辑. 对widen结果执行hint收窄.

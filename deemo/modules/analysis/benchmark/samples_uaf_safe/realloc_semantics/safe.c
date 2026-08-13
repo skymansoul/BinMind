@@ -4,9 +4,9 @@
 __attribute__((noinline)) void trigger_realloc_safe(void) {
     char *p = (char *)malloc(64);
     if (!p) return;
-    p = (char *)realloc(p, 128);  /* p¸üĞÂÎªĞÂÖ¸Õë */
+    p = (char *)realloc(p, 128);  /* pæ›´æ–°ä¸ºæ–°æŒ‡é’ˆ */
     if (!p) return;
-    p[0] = 'X';  /* Ê¹ÓÃ¸üĞÂºóµÄp ¡ú °²È« */
+    p[0] = 'X';  /* ä½¿ç”¨æ›´æ–°åçš„p â†’ å®‰å…¨ */
     free(p);
 }
 

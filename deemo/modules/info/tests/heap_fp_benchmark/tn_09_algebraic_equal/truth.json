@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_09_algebraic_equal",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 代数等价 (交换律)",
-  "expect_overflow": false,
-  "trigger": "任意 n",
-  "why": "4*n 与 n*4 代数等价, C1 规范化后判定安全"
-}

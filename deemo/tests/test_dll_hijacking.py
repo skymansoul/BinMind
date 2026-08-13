@@ -30,26 +30,26 @@ class TestDLLHijacking(unittest.TestCase):
         # 测试已知可劫持DLL的风险评估
 # lass字段完整性$/d
         self.assertEqual(
-            analyzer._evaluate_risk("version.dll", False, False, True, ImportType.BY_NAME),
+            analyzer._eval_risk("version.dll", False, False, True, ImportType.BY_NAME),
             HijackRiskLevel.HIGH
         )
 
         # 测试系统DLL的风险评估
         self.assertEqual(
-            analyzer._evaluate_risk("kernel32.dll", False, True, False, ImportType.BY_NAME),
+            analyzer._eval_risk("kernel32.dll", False, True, False, ImportType.BY_NAME),
             HijackRiskLevel.LOW
         )
 
         # 测试带路径的DLL风险评估
         self.assertEqual(
-            analyzer._evaluate_risk("C:\\Windows\\System32\\test.dll", True, False, False, ImportType.BY_NAME),
+            analyzer._eval_risk("C:\\Windows\\System32\\test.dll", True, False, False, ImportType.BY_NAME),
             HijackRiskLevel.NONE
         )
 
     def test_generate_hijack_code(self):
         """测试生成劫持DLL代码"""
         analyzer = DLLHijackAnalyzer()
-        code = analyzer.generate_hijack_dll_code("test.dll")
+        code = analyzer.gen_hijack("test.dll")
 
         self.assertIsNotNone(code)
         self.assertIn("DllMain", code)
@@ -58,7 +58,7 @@ class TestDLLHijacking(unittest.TestCase):
     def test_generate_test_script(self):
         """测试生成测试脚本"""
         analyzer = DLLHijackAnalyzer()
-        script = analyzer.generate_test_script("target.exe", "hijack.dll")
+        script = analyzer.gen_test("target.exe", "hijack.dll")
 
         self.assertIsNotNone(script)
         self.assertIn("test_dll_hijack", script)
@@ -70,7 +70,7 @@ class TestDLLHijacking(unittest.TestCase):
             output_path = f.name
 
         try:
-            code = analyzer.generate_hijack_dll_code("test.dll", output_path)
+            code = analyzer.gen_hijack("test.dll", output_path)
             self.assertTrue(os.path.exists(output_path))
             with open(output_path, 'r', encoding='utf-8') as f:
                 content = f.read()

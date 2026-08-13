@@ -126,13 +126,13 @@ class _BlockPolicy(_BackpressurePolicy):
 
 class _ThrottlePolicy(_BackpressurePolicy):
     """自适应降速 — 压力越大放行概率越低。
-    概率 = max(0, 1 - composite_pressure)，
-    压力 0.5 时放行 50%，压力 1.0 时放行 0%。
+    概率 = max(0, 1 - queue_pressure)，
+    队列满载时放行 0%，空载时放行 100%。
     """
 
     def apply(self, signal: BackpressureSignal, item: Any) -> Optional[Any]:
         import random
-        prob = max(0.0, 1.0 - signal.composite_pressure)
+        prob = max(0.0, 1.0 - signal.queue_pressure)
         if random.random() < prob:
             return item
         return None
@@ -151,7 +151,7 @@ class _DegradePolicy(_BackpressurePolicy):
         self._threshold = threshold
 
     def apply(self, signal: BackpressureSignal, item: Any) -> Optional[Any]:
-        if signal.composite_pressure > self._threshold:
+        if signal.queue_pressure > self._threshold:
             return self._degrader(item)
         return item
 

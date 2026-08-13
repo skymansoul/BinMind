@@ -35,7 +35,7 @@ class AFLFastSchedule(PowerSchedule):
     核心公式: energy = 2^(log2(MAX) * (1 - freq/total))
     低频路径获得指数级更多变异机会，高频路径能量递减。
 
-    参考Bohme et al. CCS 2017, Section III.C.1
+    参考能量调度策略 (执行频率驱动)
     """
 
     def __init__(self, power_exponent: float = 1.0):
@@ -122,7 +122,7 @@ class EcoFuzzSchedule(PowerSchedule):
     - EXPLOIT: 未产生新覆盖但路径罕见（频率<均值）
     - STAGNANT: 长时间无新覆盖且路径常见
 
-    参考Yue et al. USENIX 2020, Section 3.
+    参考自适应能量分配策略
     """
 
     EXPLORE = 'explore'

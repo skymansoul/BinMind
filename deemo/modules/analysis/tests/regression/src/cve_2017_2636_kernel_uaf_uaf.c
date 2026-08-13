@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2017_2636 UAF: local ptr: malloc→free→deref in same function
+// cve_2017_2636 UAF: local ptr: malloc鈫抐ree鈫抎eref in same function
 char *kernel_uaf_global = NULL;
 
 void kernel_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    kernel_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    kernel_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (kernel_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("kernel_uaf: freed[0]=%c\n", kernel_uaf_global[0]);
     }
     kernel_uaf_global = NULL;

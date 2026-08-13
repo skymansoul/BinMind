@@ -557,7 +557,7 @@ class SpectreGadgetDetector:
     def _detect_rsb_overflow(self) -> None:
         """检测 RSB (Return Stack Buffer) 溢出候选。
 
-        μRL (2025) 发现的 LSL+RDSCP 序列说明 RSB 可被非对称 push/ret 操作操控。
+        μRL 发现的 LSL+RDSCP 序列说明 RSB 可被非对称 push/ret 操作操控。
         此处检测深层嵌套 call 或 call/ret 不匹配的模式。
         """
         patterns = _RSB_PATTERNS.get(self.architecture, [])
@@ -648,7 +648,7 @@ class SpectreGadgetDetector:
         标记为可能的 exploit chain。这是启发式分析，实际可利用性
         需要符号执行确认。
 
-        参考 μRL (2025) 的 reinforcement learning 方法：
+        参考 μRL 的 reinforcement learning 方法：
         RL agent 自动发现指令序列组合，此处做静态近似。
         """
         if len(self.gadgets) < 2:

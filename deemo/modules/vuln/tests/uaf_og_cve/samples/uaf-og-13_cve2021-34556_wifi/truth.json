@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2021-34556",
-  "desc": "CVE-2021-34556 (Linux wifi) UAF 复现 — cfg80211 扫描请求释放后",
-  "trigger": "   wdev 仍被使用. 简化: free(p) 后经全局链解引用. "
-}

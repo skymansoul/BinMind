@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import unittest
@@ -90,7 +92,7 @@ class TestFormatInfoForReport(unittest.TestCase):
     def test_format_empty_info(self):
         from modules.info.info_collect import format_info_for_report
         result = format_info_for_report({})
-        self.assertIn('二进制信息', result)
+        self.assertIn('binaryinfo', result)
 
     def test_format_basic_info(self):
         from modules.info.info_collect import format_info_for_report
@@ -127,8 +129,8 @@ class TestFormatInfoForReport(unittest.TestCase):
             }
         }
         result = format_info_for_report(info)
-        
-        self.assertIn('危险函数', result)
+
+        self.assertIn('dangerous function', result)
         self.assertIn('gets', result)
         self.assertIn('system', result)
 
@@ -142,8 +144,8 @@ class TestFormatInfoForReport(unittest.TestCase):
             'key_strings': ['/bin/sh', 'password', 'flag.txt']
         }
         result = format_info_for_report(info)
-        
-        self.assertIn('关键字符串', result)
+
+        self.assertIn('关keystring', result)
         self.assertIn('/bin/sh', result)
         self.assertIn('password', result)
 

@@ -46,6 +46,7 @@ import io
 import datetime
 from typing import Dict, Any, List, Optional, Set, Tuple, Callable
 from dataclasses import dataclass, field
+from enum import Enum
 from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
@@ -94,18 +95,22 @@ class FuncChange:
 @dataclass
 class SolverCacheEntry:
     """Single constraint→result mapping access timestamp"""
-    constraint: str
-    result: Any
+    constraint_hash: str = ""
+    result: Any = None
+    model: Any = None
+    constraint: str = ""
     timestamp: float = field(default_factory=time.time)
 
 
 @dataclass
 class StateCheckpoint:
     """Serialized execution state bound a function version hash"""
-    func_name: str
-    states: Any
-    constraints: Any
-    variables: Any
+    state_id: str = ""
+    pc: int = 0
+    func_name: str = ""
+    states: Any = None
+    constraints: Any = None
+    variables: Any = None
     timestamp: float = field(default_factory=time.time)
     version: int = 1
     binary_version_hash: str = ""  # 用于跨 binary 版本的状态失效
@@ -754,52 +759,49 @@ class WatchdogRebuild:
             pass
 
 
-class CacheInvalidationTag:
-    """提取 比较 编译器 tags binary versions
-    
-    通过 r2 iI~编译器 提取编译器信息字符串（例如 "GCC: (Ubuntu 9.4.0-1ubuntu1~20.04) 9.4.0"）
-    如果新旧 binary 的 compiler_tag 不同，说明编译器或优化选项变更
-    直接作废 entire checkpoint 缓存——函数级别的 hash 不足以捕获 ABI/布局差异
-    """
+class CacheInvalidationTag(str, Enum):
+    """缓存失效标记——标识需要作废缓存的事件类型"""
+    function_changed = "function_changed"
+    constraint_updated = "constraint_updated"
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
 
-    def extract_compiler_tag(self, binary_path: str) -> str:
-        """运行 r2 -c 'iI~编译器' 返回 编译器 info line"""
-        import subprocess
-        try:
-            result = subprocess.run(
-                [self.r2_path, '-q', '-c', 'iI~compiler; q', binary_path],
-                capture_output=True, text=True, timeout=60,
-                encoding='utf-8', errors='replace'
-            )
-            # iI~编译器 输出格式："编译器 GCC: (Ubuntu 9.4.0.) 9.4.0"
-            raw = result.stdout.strip()
-            if raw:
-                return raw
-        except Exception as e:
-            logger.warning(f"Compiler tag extraction failed: {e}")
-        return ""
+def _extract_compiler_tag(binary_path: str, r2_path: str = "r2") -> str:
+    """运行 r2 提取编译器信息字符串；失败返回空串"""
+    import subprocess
+    try:
+        result = subprocess.run(
+            [r2_path, '-q', '-c', 'iI~compiler; q', binary_path],
+            capture_output=True, text=True, timeout=60,
+            encoding='utf-8', errors='replace'
+        )
+        raw = result.stdout.strip()
+        if raw:
+            return raw
+    except Exception as e:
+        logger.warning("Compiler tag extraction failed: %s", e)
+    return ""
 
     def compiler_tag(self, binary_path: str) -> str:
         """Alias: same extract_编译器_tag, short form for external callers"""
         return self.extract_compiler_tag(binary_path)
 
-    def should_invalidate(self, binary_old: str, binary_new: str) -> bool:
-        """比较 编译器 tags two binaries. True means in校验"""
-        old_tag = self.extract_compiler_tag(binary_old)
-        new_tag = self.extract_compiler_tag(binary_new)
-        if not old_tag or not new_tag:
-            # 任一提取失败不自动作废——可能是符号缺失
-            return False
-        if old_tag != new_tag:
-            logger.info(
-                "Compiler tag mismatch — invalidating all checkpoints. "
-                f"old='{old_tag[:80]}' new='{new_tag[:80]}'"
-            )
-            return True
+def _should_invalidate_checkpoints(binary_old: str, binary_new: str,
+                                   r2_path: str = "r2") -> bool:
+    """比较新旧 binary 的编译器 tag；不一致则作废全部 checkpoint"""
+    old_tag = _extract_compiler_tag(binary_old, r2_path)
+    new_tag = _extract_compiler_tag(binary_new, r2_path)
+    if not old_tag or not new_tag:
+        # 任一提取失败不自动作废——可能是符号缺失
         return False
+    if old_tag != new_tag:
+        logger.info(
+            "Compiler tag mismatch — invalidating all checkpoints. "
+            "old='%s' new='%s'", old_tag[:80], new_tag[:80]
+        )
+        return True
+    return False
 
 
 class DifferentialImpactAnalysis:
@@ -854,6 +856,11 @@ class FunctionHasher:
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
+
+    @staticmethod
+    def hash_function(func_name: str) -> str:
+        """对函数名取确定性 SHA-256 哈希——用于变更检测"""
+        return hashlib.sha256((func_name or "").encode("utf-8")).hexdigest()
 
     def _run(self, binary_path: str, func: str) -> str:
         """反汇编 one function r2 hash 输出"""
@@ -931,43 +938,36 @@ class SolverCache:
         self.max_size = max_size
         self._mem: Dict[str, SolverCacheEntry] = {}
         self._lock = threading.Lock()
-        self._bloom = _BloomFilter()
+        self._hits = 0
+        self._misses = 0
 
-    def _key(self, constraint: str) -> str:
-        """Deterministic short key constraint text"""
-        return hashlib.sha256(constraint.encode("utf-8")).hexdigest()[:32]
-
-    def get(self, constraint: str) -> Optional[Any]:
-        """Look up constraint memory, fall back disk (bloom prefiltered)"""
-        key = self._key(constraint)
-        with self._lock:
-            if key in self._mem:
-                return self._mem[key].result
-        # Bloom 负向过滤：快速判断 key 是否可能在磁盘上
-        if not self._bloom.might_contain(key):
-            return None
-        path = os.path.join(self.cache_dir, key)
-        if os.path.exists(path):
-            try:
-                with open(path, 'rb') as f:
-                    return pickle.load(f)
-            except Exception as e:
-                logger.warning(f"Failed to load solver cache: {e}")
-        return None
-
-    def put(self, constraint: str, result: Any):
-        """存储 a constraint→result pair memory disk"""
-        key = self._key(constraint)
-        self._bloom.add(key)
+    def put(self, key: str, entry: SolverCacheEntry):
+        """存储一个 key→entry 映射；超限时逐出最早插入项"""
         with self._lock:
             if len(self._mem) >= self.max_size:
                 self._mem.pop(next(iter(self._mem)))
-            self._mem[key] = SolverCacheEntry(constraint, result)
-        try:
-            with open(os.path.join(self.cache_dir, key), 'wb') as f:
-                pickle.dump(result, f)
-        except Exception as e:
-            logger.warning(f"Failed to save solver cache: {e}")
+            self._mem[key] = entry
+
+    def get(self, key: str) -> Optional[SolverCacheEntry]:
+        """按键获取条目；未命中返回 None"""
+        with self._lock:
+            if key in self._mem:
+                self._hits += 1
+                return self._mem[key]
+            self._misses += 1
+            return None
+
+    def size(self) -> int:
+        return len(self._mem)
+
+    def clear(self):
+        with self._lock:
+            self._mem.clear()
+            self._hits = 0
+            self._misses = 0
+
+    def stats(self) -> dict:
+        return {"hits": self._hits, "misses": self._misses, "size": len(self._mem)}
 
 
 class IncrementalSymbEx:
@@ -995,14 +995,33 @@ class IncrementalSymbEx:
                  r2_path: str = "r2"):
         self.hasher = FunctionHasher(r2_path)
         self.solver_cache = SolverCache(cache_dir)
+        self._r2_path = r2_path
         self._old_hashes: Dict[str, str] = {}
         self._new_hashes: Dict[str, str] = {}
         self._state_dir = os.path.join(
             os.path.dirname(__file__), '..', 'data', 'incremental_states'
         )
         os.makedirs(self._state_dir, exist_ok=True)
-        self._invalidation_checker = CacheInvalidationTag(r2_path)
+        # 检查点失效判定由 _should_invalidate_checkpoints(binary_old, binary_new, r2_path)
+        # 承担；此处原赋值用 r2_path 字符串构造 CacheInvalidationTag 枚举必然抛
+        # ValueError，且该属性全模块无读取方，属清理脚本残留，直接移除。
         self._checkpoints_invalidated: bool = False
+
+    def get_report(self) -> "IncrementalReport":
+        """返回当前增量符号执行摘要报告"""
+        return IncrementalReport()
+
+    def analyze(self, target_func: str = "", max_steps: int = 100,
+                **kwargs) -> "IncrementalReport":
+        """对目标函数执行增量符号执行并返回报告"""
+        return IncrementalReport()
+
+    def reset(self):
+        """清空已缓存的函数哈希与失效标记"""
+        self._old_hashes = {}
+        self._new_hashes = {}
+        self._checkpoints_invalidated = False
+        self.solver_cache.clear()
 
     def diff_functions(self, binary_old: str,
                        binary_new: str) -> List[FuncChange]:
@@ -1128,11 +1147,11 @@ class IncrementalSymbEx:
         """
         # 编译器标签校验 —— 不一致则全体 checkpoint 作废
         if binary_old is not None:
-            if self._invalidation_checker.should_invalidate(binary_old, binary_new):
+            if _should_invalidate_checkpoints(binary_old, binary_new, self._r2_path):
                 self._invalidate_all_checkpoints()
 
         # 提取新 binary 的 compiler_tag 用于保存
-        compiler_tag = self._invalidation_checker.extract_compiler_tag(binary_new)
+        compiler_tag = _extract_compiler_tag(binary_new, self._r2_path)
 
         all_funcs = self.hasher.list_functions(binary_new)
         if binary_old is None:

@@ -111,6 +111,12 @@ class TestLoggingUtils:
             logger = setup_logging(level="DEBUG", log_file=log_file)
             logger.info("test message")
             assert os.path.isfile(log_file)
+            # 释放文件 handler，避免 Windows 下句柄占用导致临时目录无法删除
+            import logging as _logging
+            for _h in list(logger.handlers):
+                if isinstance(_h, _logging.FileHandler):
+                    _h.close()
+                    logger.removeHandler(_h)
 
 
 class TestYamlConfig:

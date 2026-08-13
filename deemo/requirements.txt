@@ -1,0 +1,32 @@
+# Also declared in pyproject.toml [project].dependencies
+# Core
+angr>=9.2.0
+claripy>=9.2.0
+cle>=9.2.0
+pyvex>=9.2.0
+
+# Exploit dev
+pwntools>=4.10.0
+
+# AI / LLM
+openai>=1.0.0
+requests>=2.31.0
+
+# Web API
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Binary parsing
+pefile>=2023.2.7
+
+# Numerical
+numpy>=1.24.0
+
+# Dynamic instrumentation (optional)
+frida>=16.0.0
+
+# Test
+pytest>=7.4.0
+pytest-cov>=4.1.0

@@ -1,4 +1,4 @@
-# ~ 2026-09-21
+# ~ 2024-09-02
 # CVE攻击图生成器——基于CVE匹配数据构建利用链DAG。
 # 思路源于Aksu et al. 2018 "Automated Generation of Attack Graphs Using NVD"，
 # 但实现更简约：用CWE前置/后置条件对加产品重叠推导潜在利用链，

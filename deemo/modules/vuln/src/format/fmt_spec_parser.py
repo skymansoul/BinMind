@@ -12,7 +12,7 @@
   - GNU %m (errno)
   - 动态宽度/精度 %*d / %.*s (额外消费参数)
 
-创建: 2026-06-10
+创建: 2025-06-09
 """
 import re
 from dataclasses import dataclass, field

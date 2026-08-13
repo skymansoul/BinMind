@@ -1,6 +1,6 @@
 """
 Interval propagator engine — ForwardIntervalPropagator extracted from
-forward_interval_prop.py to satisfy ≤300-line modularity constraint.
+forward_interval_prop.py
 
 Reads decompiled IR lines; builds abstract state per program point.
 State maps variable names → Interval.

@@ -98,7 +98,7 @@ class EntropyEstimator:
     def estimate_heap(allocator="glibc") -> RandomnessFactor:
         bits = 12 if allocator == "glibc" else 16
         return RandomnessFactor(
-            name="heap_randomization", entropy_bits=bits,
+            name="heap", entropy_bits=bits,
             success_probability=1.0 - (1.0 / (2 ** bits)),
             description="Heap layout randomization")
 
@@ -107,7 +107,7 @@ class EntropyEstimator:
         # 8 字节 canary，1 字节固定 null → 56 bits 可用
         # 典型实现暴露约 24 bits 给暴力破解
         return RandomnessFactor(
-            name="stack_canary", entropy_bits=24,
+            name="canary", entropy_bits=24,
             success_probability=0.999,
             description="Stack canary / stack guard")
 
@@ -225,7 +225,7 @@ class MonteCarloSimulator:
 class ExploitabilityScorer:
     """基于评分的 exploitability 评估。
 
-    权重来自 200+ CVE (2020-2025) 分析，覆盖 CWE-121/122/416/190。
+    权重来自 200+ CVE 分析，覆盖 CWE-121/122/416/190。
     借鉴 VeriBin 自适应验证分层与 SYMRADAR PoC 中心方法。
     """
 
@@ -401,12 +401,15 @@ class ReliabilityPredictor:
             patch_diff = self.scorer.estimate_patch_difficulty(
                 exploit_score, rate)
 
+            # 零熵因子（如 NX/DEP）不计入结果列表
+            report_factors = [f for f in factors if f.entropy_bits > 0]
+
             return PredictionResult(
                 success=True,
                 success_rate=rate,
                 confidence_interval=ci,
                 iterations=self.mc.iterations,
-                factors=factors,
+                factors=report_factors,
                 exploitability_score=exploit_score,
                 patch_difficulty=patch_diff)
 

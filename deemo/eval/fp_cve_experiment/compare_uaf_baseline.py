@@ -1,6 +1,6 @@
 """UAF 基线 vs TOVS 对比 — 在 corpus_uaf 上的误报/召回对比.
 
-创建: 2026-06-02
+创建: 2024-04-03
 用法: python eval/fp_cve_experiment/compare_uaf_baseline.py [--json out.json]
 """
 import argparse
@@ -9,12 +9,9 @@ import json
 import os
 import sys
 import time
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_DEEMO = os.path.abspath(os.path.join(_HERE, '..', '..'))
-sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_DEEMO, 'modules', 'vuln', 'src', 'heap'))
-
+from _common import HERE as _HERE, list_samples, setup_paths
+setup_paths(with_format=False)
+from uaf_orchestrator import analyze_uaf as analyze_uaf_baseline
 from uaf_tovs import analyze_uaf_tovs
 from uaf_orchestrator import analyze_uaf as analyze_uaf_baseline
 
@@ -48,12 +45,7 @@ def main():
     args = ap.parse_args()
 
     rows = []
-    for d in sorted(glob.glob(os.path.join(CORPUS, '*'))):
-        if not os.path.isdir(d) or not os.path.exists(
-                os.path.join(d, 'truth.json')):
-            continue
-        with open(os.path.join(d, 'truth.json'), encoding='utf-8') as f:
-            truth = json.load(f)
+    for d, truth in list_samples(CORPUS):
         exe = os.path.join(d, args.exe)
         if not os.path.exists(exe):
             continue

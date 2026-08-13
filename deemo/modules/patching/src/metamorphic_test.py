@@ -217,7 +217,7 @@ class MetamorphicTester:
         orig = ['push rbp', 'cmp rdi, 256', 'jbe .ok', 'call abort', '.ok:', '...', 'ret']
         variants = [['push rbp', 'cmp rdi, 256', 'jbe .ok', 'call abort', '.ok:', '...', 'ret'],
                     ['push rbp', 'xor rax,rax', 'cmp rdi, 256', '...', 'ret']]
-        report = tester.test(orig, variants, 'CVE-2024-0001')
+        report = tester.test
     """
 
     def __init__(self):

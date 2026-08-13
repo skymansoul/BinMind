@@ -23,7 +23,7 @@ import re
 import struct
 import time
 from dataclasses import dataclass, field
-from enum import Flag, auto
+from enum import Flag, Enum, auto
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 log = logging.getLogger(__name__)
@@ -92,18 +92,17 @@ _CATEGORY_MAP: Dict[str, BehaviorCategory] = {
 
 
 # malicious API调用 chains (ordered sequences, partial match)
-_MALICIOUS_CHAINS: List[Tuple[str, ...]] = [
-    # Process injection chain
-    ("VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"),
-    # DLL injection chain
-    ("OpenProcess", "VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"),
-    # Process hollowing
-    ("CreateProcess", "NtUnmapViewOfSection", "VirtualAllocEx", "WriteProcessMemory", "SetThreadContext", "ResumeThread"),
-    # lective DLL loading
-    ("NtCreateFile", "VirtualAlloc", "NtWriteVirtualMemory", "NtCreateThreadEx"),
-    # Credential dumping
-    ("OpenProcess", "MiniDumpWriteDump", "CreateFile", "WriteFile"),
-]
+# 名称用于告警展示；chain 字段以 "名称: API1 -> API2 ..." 形式输出，
+# 便于直接识别攻击类型。
+_MALICIOUS_CHAIN_NAMES: Dict[Tuple[str, ...], str] = {
+    ("VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"): "Process Injection",
+    ("OpenProcess", "VirtualAllocEx", "WriteProcessMemory", "CreateRemoteThread"): "DLL Injection",
+    ("CreateProcess", "NtUnmapViewOfSection", "VirtualAllocEx", "WriteProcessMemory", "SetThreadContext", "ResumeThread"): "Process Hollowing",
+    ("NtCreateFile", "VirtualAlloc", "NtWriteVirtualMemory", "NtCreateThreadEx"): "Selective DLL Loading",
+    ("OpenProcess", "MiniDumpWriteDump", "CreateFile", "WriteFile"): "Credential Dumping",
+}
+
+_MALICIOUS_CHAINS: List[Tuple[str, ...]] = list(_MALICIOUS_CHAIN_NAMES.keys())
 
 
 # BehaviorTracer
@@ -194,8 +193,10 @@ class BehaviorTracer:
             for start in range(len(api_sequence) - window + 1):
                 window_seq = api_sequence[start : start + window]
                 if self._sliding_match(window_seq, chain, gap_tolerance):
+                    chain_name = _MALICIOUS_CHAIN_NAMES.get(chain, "Malicious Chain")
                     alerts.append({
-                        "chain": " -> ".join(chain),
+                        "chain": f"{chain_name}: " + " -> ".join(chain),
+                        "name": chain_name,
                         "matched_at_index": start,
                         "matched_apis": [
                             api for api in chain

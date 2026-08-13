@@ -34,7 +34,7 @@ SAMPLES = [
     {'id': 'int_cve_07', 'cve': 'CVE-2022-22817', 'title': 'Narrowing cast overflow',
      'op': 'trunc', 'left': 'large', 'right': '', 'width': 16, 'signed': False,
      'is_vuln': True, 'category': 'narrowing',
-     'left_range': (65536, 131072), 'right_range': (0, 0)},
+     'left_range': (0x10000, 0x10001), 'right_range': (0, 0)},
     {'id': 'int_cve_08', 'cve': 'CVE-2020-35516', 'title': 'Sub overflow → negative alloc',
      'op': 'sub', 'left': 'allocated', 'right': 'used', 'width': 32, 'signed': True,
      'is_vuln': True, 'category': 'sub_underflow',
@@ -83,7 +83,7 @@ def generate_all_samples():
 
 def _int_c_code(s: dict) -> str:
     codes = {
-        'mul_heap_alloc': '#include <stdlib.h>\nvoid vuln(unsigned n, unsigned sz) { malloc(n*sz); }\nint main(){vuln(65536,65536);}',
+        'mul_heap_alloc': '#include <stdlib.h>\nvoid vuln(unsigned n, unsigned sz) { malloc(n*sz); }\nint main(){vuln;}',
         'add_buffer': '#include <stdlib.h>\nvoid vuln(unsigned o, unsigned l) { char b[256]; if(o+l<256) b[o]=0; }\nint main(){vuln(0xFFFFFFF0,256);}',
         'truncation': '#include <stdlib.h>\nvoid vuln(unsigned long long sz) { unsigned s=(unsigned)sz; malloc(s); }\nint main(){vuln(0x100000010);}',
         'signed_unsigned': '#include <stdlib.h>\nvoid vuln(int len) { unsigned n=len-1; malloc(n); }\nint main(){vuln(0);}',

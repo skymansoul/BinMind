@@ -6,12 +6,13 @@ import random
 import hashlib
 import itertools
 import math
+import string
+import json
 from collections import deque, Counter as _FreqCounter
 import uuid
 import zlib
 from functools import singledispatch
-constraint_type: str = ""
-name: str = ""
+from enum import Enum
 import logging
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,13 @@ def _consume_entropy(k: int) -> bytes:
     return chunk
 
 
-class InputType:
+class InputType(Enum):
+    INTEGER = "integer"
+    STRING = "string"
+    BUFFER = "buffer"
+    POINTER = "pointer"
+    FLOAT = "float"
+    ENUM = "enum"
     BINARY = "binary"
     TEXT = "text"
     NETWORK = "network"
@@ -253,8 +260,255 @@ class TestGenerator:
         del buf[start:end]
         return buf
 
+    def generate_test_suite(self, target_binary: str, functions: List[str],
+                            test_count: int = 10) -> TestSuite:
+        suite = TestSuite(
+            name=f"{target_binary}_test_suite",
+            target_binary=target_binary,
+            target_functions=functions
+        )
+        for func in functions:
+            for i in range(test_count):
+                suite.test_cases.append(self._generate_test_case(func, i))
+        return suite
 
-class TestCaseType:
+    def _generate_test_case(self, function_name: str, index: int) -> TestCase:
+        test_type = self._select_test_type()
+        inputs = self._generate_inputs()
+        return TestCase(
+            name=f"{function_name}_test_{index}_{test_type.value}",
+            test_type=test_type,
+            function_name=function_name,
+            inputs=inputs,
+            description=f"测试 {function_name} 的 {test_type.value} 场景"
+        )
+
+    def _select_test_type(self) -> TestCaseType:
+        weights = {
+            TestCaseType.UNIT_TEST: 40,
+            TestCaseType.FUZZ_TEST: 30,
+            TestCaseType.SECURITY_TEST: 20,
+            TestCaseType.REGRESSION_TEST: 10
+        }
+        total = sum(weights.values())
+        rand = self.rng.randint(1, total)
+        cumulative = 0
+        for test_type, weight in weights.items():
+            cumulative += weight
+            if rand <= cumulative:
+                return test_type
+        return TestCaseType.UNIT_TEST
+
+    def _generate_inputs(self) -> List[TestInput]:
+        inputs = []
+        param_count = self.rng.randint(1, 4)
+        for i in range(param_count):
+            input_type = self._select_input_type()
+            inputs.append(TestInput(
+                name=f"param_{i}",
+                input_type=input_type,
+                value=self._generate_value(input_type)
+            ))
+        return inputs
+
+    def _select_input_type(self) -> InputType:
+        return self.rng.choice(list(InputType))
+
+    def _generate_value(self, input_type: InputType) -> Any:
+        if input_type == InputType.INTEGER:
+            return self._generate_integer()
+        elif input_type == InputType.STRING:
+            return self._generate_string()
+        elif input_type == InputType.BUFFER:
+            return self._generate_buffer()
+        elif input_type == InputType.FLOAT:
+            return self._generate_float()
+        elif input_type == InputType.POINTER:
+            return self._generate_pointer()
+        elif input_type == InputType.ENUM:
+            return self.rng.randint(0, 16)
+        else:
+            return 0
+
+    def _generate_integer(self) -> int:
+        boundary_values = [
+            0, 1, -1,
+            0x7FFFFFFF, 0x80000000,
+            0xFFFFFFFF,
+            self.rng.randint(-1000, 1000)
+        ]
+        return self.rng.choice(boundary_values)
+
+    def _generate_string(self) -> str:
+        lengths = [0, 1, 8, 16, 32, 64, 128, 256]
+        length = self.rng.choice(lengths)
+        if length == 0:
+            return ""
+        chars = string.ascii_letters + string.digits + string.punctuation
+        return ''.join(self.rng.choice(chars) for _ in range(length))
+
+    def _generate_buffer(self) -> bytes:
+        lengths = [0, 1, 8, 16, 32, 64, 128, 256, 512, 1024]
+        length = self.rng.choice(lengths)
+        return bytes([self.rng.randint(0, 255) for _ in range(length)])
+
+    def _generate_float(self) -> float:
+        special_values = [
+            0.0, -0.0,
+            float('inf'), float('-inf'), float('nan'),
+            1.0, -1.0,
+            1e308, 1e-308,
+            self.rng.uniform(-1e10, 1e10)
+        ]
+        return self.rng.choice(special_values)
+
+    def _generate_pointer(self) -> int:
+        special_addresses = [
+            0, 0x00000001, 0x7FFFFFFF, 0x80000000,
+            0xFFFFFFFF, 0x10000000, 0x40000000,
+            self.rng.randint(0x1000, 0xFFFF)
+        ]
+        return self.rng.choice(special_addresses)
+
+    def generate_fuzz_test_cases(self, function_name: str, count: int = 100) -> List[TestCase]:
+        cases = []
+        for i in range(count):
+            inputs = self._generate_fuzz_inputs()
+            cases.append(TestCase(
+                name=f"{function_name}_fuzz_{i}",
+                test_type=TestCaseType.FUZZ_TEST,
+                function_name=function_name,
+                inputs=inputs
+            ))
+        return cases
+
+    def _generate_fuzz_inputs(self) -> List[TestInput]:
+        inputs = []
+        param_count = self.rng.randint(1, 5)
+        for i in range(param_count):
+            input_type = self.rng.choice([InputType.BUFFER, InputType.STRING, InputType.INTEGER])
+            inputs.append(TestInput(
+                name=f"fuzz_param_{i}",
+                input_type=input_type,
+                value=self._generate_fuzz_value(input_type)
+            ))
+        return inputs
+
+    def _generate_fuzz_value(self, input_type: InputType) -> Any:
+        if input_type == InputType.BUFFER:
+            length = self.rng.randint(0, 4096)
+            return bytes([self.rng.randint(0, 255) for _ in range(length)])
+        elif input_type == InputType.STRING:
+            length = self.rng.randint(0, 4096)
+            chars = chr(0) + chr(0x7F) + chr(0xFF) + string.printable
+            return ''.join(self.rng.choice(chars) for _ in range(length))
+        else:
+            return self.rng.getrandbits(64)
+
+    def generate_security_test_cases(self, function_name: str) -> List[TestCase]:
+        cases = []
+        security_scenarios = [
+            ("buffer_overflow", self._generate_buffer_overflow_test),
+            ("format_string", self._generate_format_string_test),
+            ("integer_overflow", self._generate_integer_overflow_test),
+            ("null_pointer", self._generate_null_pointer_test),
+            ("stack_smash", self._generate_stack_smash_test),
+        ]
+        for name, generator in security_scenarios:
+            cases.append(TestCase(
+                name=f"{function_name}_security_{name}",
+                test_type=TestCaseType.SECURITY_TEST,
+                function_name=function_name,
+                inputs=generator(),
+                description=f"安全测试: {name} 场景"
+            ))
+        return cases
+
+    def _generate_buffer_overflow_test(self) -> List[TestInput]:
+        return [
+            TestInput(name="buffer", input_type=InputType.BUFFER,
+                      value=b'A' * 1024, min_value=0, max_value=1024),
+            TestInput(name="size", input_type=InputType.INTEGER, value=2048)
+        ]
+
+    def _generate_format_string_test(self) -> List[TestInput]:
+        format_strings = [
+            "%s%s%s%s%s%s", "%x%x%x%x%x", "%n%n%n%n",
+            "%p%p%p%p", "AAAA%x%x%x%x"
+        ]
+        return [
+            TestInput(name="format", input_type=InputType.STRING,
+                      value=self.rng.choice(format_strings))
+        ]
+
+    def _generate_integer_overflow_test(self) -> List[TestInput]:
+        return [
+            TestInput(name="value1", input_type=InputType.INTEGER, value=0x7FFFFFFF),
+            TestInput(name="value2", input_type=InputType.INTEGER, value=1)
+        ]
+
+    def _generate_null_pointer_test(self) -> List[TestInput]:
+        return [
+            TestInput(name="ptr", input_type=InputType.POINTER, value=0)
+        ]
+
+    def _generate_stack_smash_test(self) -> List[TestInput]:
+        pattern = b''.join(bytes([i % 256]) for i in range(512))
+        return [
+            TestInput(name="input", input_type=InputType.BUFFER, value=pattern)
+        ]
+
+    def export_to_pytest(self, suite: TestSuite, filename: str) -> None:
+        lines = ["import pytest", "import unittest", "",
+                 f"class Test{suite.name.replace('_', '')}(unittest.TestCase):",
+                 "    \"\"\"自动生成的测试类\"\"\"", ""]
+        for test_case in suite.test_cases:
+            func_name = f"test_{test_case.name}"
+            lines.append(f"    def {func_name}(self):")
+            lines.append(f"        \"\"\"{test_case.description or test_case.name}\"\"\"")
+            for inp in test_case.inputs:
+                lines.append(f"        {inp.name} = {repr(inp.value)}")
+            lines.append("        # TODO: 实现测试逻辑")
+            lines.append("        # result = target_function(" + ", ".join(i.name for i in test_case.inputs) + ")")
+            lines.append("        # self.assertTrue(True)")
+            lines.append("        pass")
+            lines.append("")
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+
+    def export_to_json(self, suite: TestSuite, filename: str) -> None:
+        suite_dict = {
+            "name": suite.name,
+            "target_binary": suite.target_binary,
+            "target_functions": suite.target_functions,
+            "test_cases": []
+        }
+        for test_case in suite.test_cases:
+            case_dict = {
+                "name": test_case.name,
+                "test_type": test_case.test_type.value,
+                "function_name": test_case.function_name,
+                "inputs": [],
+                "description": test_case.description
+            }
+            for inp in test_case.inputs:
+                case_dict["inputs"].append({
+                    "name": inp.name,
+                    "input_type": inp.input_type.value,
+                    "value": inp.value if isinstance(inp.value, (int, str, float))
+                    else list(inp.value)
+                })
+            suite_dict["test_cases"].append(case_dict)
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(suite_dict, f, indent=2, ensure_ascii=False)
+
+
+class TestCaseType(Enum):
+    UNIT_TEST = "unit_test"
+    FUZZ_TEST = "fuzz_test"
+    REGRESSION_TEST = "regression_test"
+    SECURITY_TEST = "security_test"
+    PERFORMANCE_TEST = "performance_test"
     UNIT = "unit"
     INTEGRATION = "integration"
     FUZZ = "fuzz"
@@ -262,24 +516,33 @@ class TestCaseType:
     REGRESSION = "regression"
 
 
-class TestResultType:
+class TestResultType(Enum):
     PASS = "pass"
     FAIL = "fail"
-    ERROR = "error"
+    CRASH = "crash"
     TIMEOUT = "timeout"
+    ERROR = "error"
     HANG = "hang"
 
 
 class TestInput:
     """测试输入载体——原始字节 + 格式提示 + 来源标记"""
 
-    __slots__ = ("data", "format_hint", "source")
+    __slots__ = ("data", "format_hint", "source", "name", "input_type",
+             "value", "min_value", "max_value")
 
     def __init__(self, data: bytes = b"", format_hint: str = "raw",
-                 source: str = "generated"):
-        self.data = data
+                 source: str = "generated", name: str = "",
+                 input_type: Optional[InputType] = None, value: Any = None,
+                 min_value: Optional[int] = None, max_value: Optional[int] = None):
+        self.data = data if data else (value if isinstance(value, bytes) else b"")
         self.format_hint = format_hint
         self.source = source
+        self.name = name
+        self.input_type = input_type
+        self.value = value
+        self.min_value = min_value
+        self.max_value = max_value
 
     def __bytes__(self) -> bytes:
         return self.data
@@ -289,13 +552,20 @@ class TestInput:
 
 
 class TestCase:
-    __slots__ = ("name", "input", "generation_meta", "tags", "priority")
-
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "", test_type: Optional[TestCaseType] = None,
+                 function_name: str = "", inputs: Optional[List[TestInput]] = None,
+                 expected_output: Any = None, expected_exception: Optional[str] = None,
+                 description: Optional[str] = None):
         self.name = name
+        self.test_type = test_type
+        self.function_name = function_name
+        self.inputs: List[TestInput] = inputs if inputs is not None else []
+        self.expected_output = expected_output
+        self.expected_exception = expected_exception
+        self.description = description
         self.input: Optional[TestInput] = None
         self.generation_meta: Dict[str, Any] = {}
-        self.tags: set[str] = set()
+        self.tags: set = set()
         self.priority: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -309,23 +579,34 @@ class TestCase:
 
 
 class TestResult:
-    __slots__ = ("case", "status", "exit_code", "stdout", "stderr",
-                 "duration_ms", "crash_info")
-
-    def __init__(self):
-        self.case: Optional[TestCase] = None
-        self.status: str = TestResultType.PASS
+    def __init__(self, test_case: Optional[TestCase] = None,
+                 result_type: Optional[TestResultType] = None,
+                 actual_output: Any = None, error_message: Optional[str] = None,
+                 execution_time: Optional[float] = None, memory_usage: Optional[int] = None):
+        self.test_case = test_case
+        self.result_type = result_type
+        self.actual_output = actual_output
+        self.error_message = error_message
+        self.execution_time = execution_time
+        self.memory_usage = memory_usage
+        self.case = test_case
+        self.status = result_type if result_type is not None else TestResultType.PASS
         self.exit_code: int = 0
         self.stdout: bytes = b""
         self.stderr: bytes = b""
-        self.duration_ms: float = 0.0
+        self.duration_ms: float = execution_time if execution_time is not None else 0.0
         self.crash_info: Dict[str, Any] = {}
 
 
 class TestSuite:
     """测试套件——去重收集 + 优先级排序 + 迭代"""
 
-    def __init__(self):
+    def __init__(self, name: str = "", target_binary: Optional[str] = None,
+                 target_functions: Optional[List[str]] = None):
+        self.name = name
+        self.target_binary = target_binary
+        self.target_functions: List[str] = target_functions if target_functions is not None else []
+        self.test_cases: List[TestCase] = []
         self._cases: Dict[str, TestCase] = {}
         self._results: Dict[str, TestResult] = {}
         self._generation_order: list[str] = []
@@ -337,6 +618,8 @@ class TestSuite:
         if key not in self._cases:
             self._cases[key] = case
             self._generation_order.append(key)
+            if case not in self.test_cases:
+                self.test_cases.append(case)
 
     def extend(self, cases: Sequence[TestCase]) -> None:
         for c in cases:

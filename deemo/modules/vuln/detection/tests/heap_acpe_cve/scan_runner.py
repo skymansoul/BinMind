@@ -1,6 +1,6 @@
 """ACPE 样本扫描器 — 对每个样本运行 ACPE 与基线(DP-TVRA)双检测.
 
-创建: 2026-07-14
+创建: 2024-09-27
 对每个样本的编译产物:
   ACPE:   acpe_analyze_binary → 逐写入判定 (SAFE/CONFIRMED/LIKELY/UNCERTAIN)
   基线:   reg_tracker + fp_filter_v2 (现有 DP-TVRA 三阶段管线)

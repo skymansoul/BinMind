@@ -14,6 +14,7 @@ import logging
 import os
 import re
 import json
+import sys
 import subprocess
 import tempfile
 import shutil
@@ -473,9 +474,13 @@ class FridaTaintTracker(DynamicTaintTracker):
         返回:
         True 如果可用，否则 False
         """
-        if not FRIDA_AVAILABLE:
+        frida_in_modules = sys.modules.get('frida')
+        # sys.modules 中的显式 None 表示测试/运行时禁用，优先于缓存标记
+        if frida_in_modules is None:
             return False
-        
+        if not (FRIDA_AVAILABLE or frida_in_modules is not None):
+            return False
+
         if not self._validate_binary_path():
             return False
         
@@ -810,9 +815,13 @@ class QBDITaintTracker(DynamicTaintTracker):
         返回:
         True 如果可用，否则 False
         """
-        if not QBDI_AVAILABLE:
+        qbdi_in_modules = sys.modules.get('pyqbdi')
+        # sys.modules 中的显式 None 表示测试/运行时禁用，优先于缓存标记
+        if qbdi_in_modules is None:
             return False
-        
+        if not (QBDI_AVAILABLE or qbdi_in_modules is not None):
+            return False
+
         if not self._validate_binary_path():
             return False
         

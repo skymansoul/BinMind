@@ -4,9 +4,9 @@ int main(int argc, char **argv) {
     char *p = (char *)malloc(64);
     if (!p) return 1;
     if (argc > 1) {
-        free(p);                   /* 条件释放 */
+        free(p);                   /* 鏉′欢閲婃斁 */
         p = NULL;
     }
-    if (p) printf("[*] %c\n", p[0]);   /* 未释放路径才使用 */
+    if (p) printf("[*] %c\n", p[0]);   /* 鏈噴鏀捐矾寰勬墠浣跨敤 */
     return 0;
 }

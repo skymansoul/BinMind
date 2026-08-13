@@ -1,12 +1,13 @@
 # coding: utf-8
 """
-堆溢出测试样本集生成器 — 18 个样本 (12 VULN + 6 SAFE).
+堆溢出测试样本集生成器 — 20 个样本 (13 VULN + 7 SAFE).
 
 样本定义 (源码/CVE/期望判定) 见 hosv_sample_defs.py.
 本文件仅含目录创建与文件写出逻辑.
 
 覆盖真实 CVE 写模式: 指针游走写, 结构体数组 off-by-one, 无界输入
-(scanf %s / gets), calloc 回绕/工厂指针, 终止符 off-by-one.
+(scanf %s / gets), calloc 回绕/工厂指针, 终止符 off-by-one,
+memcpy 变量长度符号关联.
 SAFE 对照: 有守卫边界/有界输入/正确 +1 分配的变体, 用于验证无误报.
 """
 
@@ -28,8 +29,8 @@ def gen() -> None:
         with open(os.path.join(d, "vuln.c"), "w", encoding="utf-8") as f:
             f.write(src)
         with open(os.path.join(d, "Makefile"), "w", encoding="utf-8") as f:
-            f.write("CC ?= gcc\n"
-                    "CFLAGS ?= -O0 -g\n\n"
+            f.write("CC = gcc\n"
+                    "CFLAGS = -O0 -g\n\n"
                     "all: vuln\n\n"
                     "vuln: vuln.c\n"
                     "\t$(CC) $(CFLAGS) -o vuln vuln.c\n\n"

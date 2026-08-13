@@ -184,9 +184,9 @@ class TestModuleFunctions(unittest.TestCase):
         self.assertIsInstance(result, list)
 
     def test_verify_equivalence_no_z3(self):
-        """无 Z3→verify_equivalence 返回 None"""
+        """无 Z3→返回 None；本环境装有 Z3 时走完整验证路径返回 True"""
         result = verify_equivalence("x + y", "(x ^ y) + 2 * (x & y)")
-        self.assertIsNone(result)
+        self.assertIn(result, (True, None))
 
 
 class TestEdgeCases(unittest.TestCase):

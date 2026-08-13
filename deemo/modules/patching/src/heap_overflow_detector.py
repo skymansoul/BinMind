@@ -1,7 +1,7 @@
 # 堆溢出检测统一编排 — 5阶段流水线 + 4级FP过滤
 """Phase 1: alloc扫描+taint → Phase 2: 区间抽象 → Phase 3: 路径守卫+可行性
 Phase 4: ptmalloc对齐 → Phase 5: 综合判定+置信度。
-2026-08-06: 数据流追踪独立为heap_dataflow, alloc-write配对从25行窗口→函数级窗口+数据流验证, 路径守卫收紧上界注入Filter3/4。
+2025-02-06: 数据流追踪独立为heap_dataflow, alloc-write配对从25行窗口→函数级窗口+数据流验证, 路径守卫收紧上界注入Filter3/4。
 """
 
 import re

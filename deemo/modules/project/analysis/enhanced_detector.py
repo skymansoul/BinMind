@@ -33,8 +33,12 @@ class EnhancedHeapOverflowDetector:
     def __init__(self,
                  enable_path_conditions: bool = True,
                  enable_strided_intervals: bool = True,
-                 enable_memory_filter: bool = True):
+                 enable_memory_filter: bool = True,
+                 base_fp_reduction: bool = True):
+        """base_fp_reduction=False 时关闭主管道 L4/L5/L6 抑制,
+        用于消融实验隔离增强层 (path/stride/memory) 的独立贡献."""
         self._base = HeapOverflowDetector()
+        self._base._fp_reduction_enabled = base_fp_reduction
         self._path_tracker = PathConditionTracker() if enable_path_conditions else None
         self._strided = StridedIntervalDomain() if enable_strided_intervals else None
         self._mem_validator = MemoryWriteValidator() if enable_memory_filter else None
@@ -68,9 +72,10 @@ class EnhancedHeapOverflowDetector:
 # Phase 4: 后处理增强
 
         # 4a: 路径条件约束修正 — 缩小受分支保护的写入大小上界
-        if self._use_path and path_bounds:
+        # 钳位判定独立于 path_bounds 预分析 (applier 自行回溯守卫)
+        if self._use_path and self._path_tracker:
             raw_findings = self._apply_path_constraints(
-                raw_findings, instructions, func_map)
+                raw_findings, instructions, func_map, instr_addrs)
 
         # 4b: 跨步区间二次验证 — 对POSSIBLE_OVERFLOW用跨步信息重新判定
         if self._use_stride and self._strided:
@@ -162,23 +167,43 @@ class EnhancedHeapOverflowDetector:
 
     def _apply_path_constraints(self, findings: List[OverflowFinding],
                                 instructions: List[str],
-                                func_map: Dict[str, Tuple[int, int]]
+                                func_map: Dict[str, Tuple[int, int]],
+                                instr_addrs: Optional[List[int]] = None
                                 ) -> List[OverflowFinding]:
-        """后处理: 对每个finding, 检查其指令位置是否有路径条件约束."""
+        """后处理: 用路径守卫钳位写入大小, 证明安全则标记为可抑制误报.
+
+        前置条件: OverflowFinding 携带 instruction_address 与 size_reg
+        (由 _verify 填充). 对钳位后仍超过分配下界 (含分配器对齐修正)
+        的 finding 保留原判定.
+        """
         if not self._path_tracker:
             return findings
+        from .path_constraint_applier import PathConstraintApplier
 
-        # [DEPRECATED] 此方法的完整实现需要finding中携带指令地址信息.
-        # 当前 OverflowFinding 有 alloc_site_info (字符串格式),
-        # 但缺乏直接的 instruction_address 字段.
-        # 在下一步迭代中: 给 OverflowFinding 添加 find_instruction_idx: int = 0
-        # 当前: 在 path_bounds 中查找与 write_size 相关的约束
+        out = []
         for f in findings:
-            # 若finding有输入控制标记, 路径条件可能已有约束检查
-            # 此处暂不降级, 因为输入控制仍可能是真实漏洞
-            pass
-
-        return findings
+            idx = f.instruction_address
+            if idx > 0 and f.size_reg:
+                vr = ValueRange.unsigned_range(
+                    f.write_size_min, max(f.write_size_max,
+                                          f.write_size_min))
+                clamped, used = PathConstraintApplier.clamp_size_range(
+                    instructions, func_map, idx, f.size_reg, vr,
+                    instr_addrs)
+                if used:
+                    usable = self._base._heap_model.get_usable_size(
+                        f.alloc_size_min)
+                    if clamped.umax <= usable:
+                        self._enhanced_stats['path_constrained'] += 1
+                        f.severity = OverflowSeverity.INFO
+                        f.confidence = min(f.confidence, 0.2)
+                        f.is_false_positive = True
+                        f.false_positive_reason = (
+                            f"路径守卫钳位: 写入≤{clamped.umax}B ≤ 可用{usable}B")
+                        f.overflow_detail += (
+                            f"; [路径约束] 钳位至{clamped.umax}B")
+            out.append(f)
+        return out
 
     def _stride_recheck(self, findings: List[OverflowFinding],
                         instructions: List[str],
@@ -233,18 +258,40 @@ class EnhancedHeapOverflowDetector:
                          ) -> List[OverflowFinding]:
         """内存区域过滤: 排除发现自非堆区域写入的finding.
 
-        当前: OverflowFinding不携带内存操作数信息.
-        保守: 暂不过滤 (宁可保留非堆finding也不漏报),
-        但在finding中标记可能的非堆来源.
+        从 finding 的指令索引反查指令行内存操作数, 经
+        MemoryRegionResolver 语法级判定区域. 栈/全局目标不可能是
+        堆溢出 (如 [rip+off] 全局写入被误关联到堆分配);
+        无法判定区域时保守保留.
         """
         if not self._mem_validator:
             return findings
+        from .instruction_parser import InstructionParser
 
-        # [DEPRECATED] 完整过滤需要 OverlowFinding 增加
-        # mem_operand: str = "" 字段以记录写入目标的内存操作数.
-        # 当前保留所有finding, 不做过滤.
-        # 在下一步迭代中实现.
-        return findings
+        out = []
+        for f in findings:
+            idx = f.instruction_address
+            if 0 <= idx < len(instructions):
+                parsed = InstructionParser.parse_line(instructions[idx])
+                if parsed is not None:
+                    op, ops = parsed
+                    if len(ops) >= 1 and (
+                            '[' in ops[0] or 'PTR' in ops[0].upper()):
+                        is_heap, info = self._mem_validator.is_heap_write(
+                            ops[0])
+                        if not is_heap and info.region_type in (
+                                MemoryRegionType.STACK,
+                                MemoryRegionType.GLOBAL,
+                                MemoryRegionType.CODE):
+                            self._enhanced_stats['memory_filtered'] += 1
+                            f.severity = OverflowSeverity.INFO
+                            f.confidence = min(f.confidence, 0.2)
+                            f.is_false_positive = True
+                            f.false_positive_reason = (
+                                f"非堆区域写入: {info.region_type.name}")
+                            f.overflow_detail += (
+                                f"; [区域过滤] {info.region_type.name}")
+            out.append(f)
+        return out
 
     def enhanced_stats(self) -> Dict:
         """返回增强层的统计信息."""

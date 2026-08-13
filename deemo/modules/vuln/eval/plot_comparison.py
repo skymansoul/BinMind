@@ -1,6 +1,6 @@
 """对比可视化 — matplotlib 图表 + LaTeX 表格生成.
 
-创建: 2026-05-27
+创建: 2024-10-11
 用途: 从 benchmark JSON 结果生成:
   1. 多工具 F1/Recall/Precision 柱状图
   2. 时间效率对比图

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2016_10158 ¶ÑÒç³öÄ£Äâ: malloc(32) + memcpy(256)
-// ¡ú 224 ×Ö½ÚÒç³ö
+// cve_2016_10158 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(32) + memcpy(256)
+// â†’ 224 å­—èŠ‚æº¢å‡º
 void php_exif_overflow() {
     char *buf = (char *)malloc(32);
     if (!buf) return;
@@ -52,7 +52,7 @@ void php_exif_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(320) + memcpy(320/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(320) + memcpy(320/2) â†’ ä¸æº¢å‡º
 void php_exif_safe() {
     char *buf = (char *)malloc(320);
     if (!buf) return;

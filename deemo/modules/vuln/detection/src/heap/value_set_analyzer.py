@@ -1,6 +1,6 @@
 """值集分析器 (Value-Set Analysis) — strided interval 域用于堆指针追踪.
 
-创建: 2026-07-04 14:22
+创建: 2024-09-02 14:22
 用途: 在二进制IR层面追踪堆指针通过算术运算和赋值后的可能取值,
       使用 strided interval (s[lb, ub], stride) 而非简单区间域。
 

@@ -1,5 +1,5 @@
 """
-创建: 2026-05-31
+创建: 2024-12-09
 修改:
   2025-08-02 - _scanned_files 去重防止重复冲突
   2025-08-03 - 返回值使用模式检测从 _infer_return_usage 改为 _detect_return_usages 后处理

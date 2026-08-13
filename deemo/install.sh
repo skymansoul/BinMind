@@ -6,6 +6,7 @@ COMMAND_NAME="${COMMAND_NAME:-binmind}"
 VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 TARGET_DIR=""
 INSTALL_DEPS=1
+FORCE_INSTALL=0
 
 usage() {
     cat <<'USAGE'
@@ -14,7 +15,8 @@ Usage:
   ./install.sh --system     Install binmind to /usr/local/bin
   ./install.sh --user       Install binmind to ~/.local/bin
   ./install.sh --no-deps    Install command only, skip dependency installation
-  ./install.sh -help        Show this help
+  ./install.sh --force      Force reinstall even if already installed
+  ./install.sh -h|--help    Show this help
 
 Environment:
   COMMAND_NAME=name         Override installed command name
@@ -35,13 +37,15 @@ need_root() {
 
 install_system_dependencies() {
     if ! command -v apt-get >/dev/null 2>&1; then
-        echo "apt-get not found; skipping system dependency installation."
+        echo "Warning: apt-get not found; skipping system dependency installation." >&2
+        echo "Please ensure the following packages are installed manually:" >&2
+        echo "  python3 python3-pip python3-venv radare2 file binutils gdb build-essential libssl-dev libffi-dev" >&2
         return
     fi
 
-    echo "Installing Ubuntu/Kali system dependencies..."
-    need_root apt-get update
-    need_root apt-get install -y \
+    echo "[+] Installing Ubuntu/Debian system dependencies..."
+    need_root apt-get update -qq
+    need_root apt-get install -y -qq \
         python3 \
         python3-pip \
         python3-venv \
@@ -51,7 +55,10 @@ install_system_dependencies() {
         gdb \
         build-essential \
         libssl-dev \
-        libffi-dev
+        libffi-dev \
+        git \
+        wget \
+        curl
 }
 
 install_python_dependencies() {
@@ -65,17 +72,54 @@ install_python_dependencies() {
         exit 1
     fi
 
-    echo "Creating Python virtual environment: $VENV_DIR"
-    python3 -m venv "$VENV_DIR"
+    echo "[+] Creating Python virtual environment: $VENV_DIR"
+    if [ -d "$VENV_DIR" ] && [ "$FORCE_INSTALL" -eq 0 ]; then
+        echo "[!] Virtual environment already exists: $VENV_DIR"
+        echo "    Use --force to recreate it."
+    else
+        if [ -d "$VENV_DIR" ]; then
+            echo "[+] Removing existing virtual environment..."
+            rm -rf "$VENV_DIR"
+        fi
+        python3 -m venv "$VENV_DIR"
+    fi
 
-    echo "Installing Python dependencies from requirements.txt..."
-    "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel
-    "$VENV_DIR/bin/python" -m pip install -r "$PROJECT_DIR/requirements.txt"
+    echo "[+] Installing Python dependencies..."
+    "$VENV_DIR/bin/python" -m pip install --upgrade -q pip setuptools wheel
+    
+    echo "[+] Installing requirements from requirements.txt..."
+    if ! "$VENV_DIR/bin/python" -m pip install -q -r "$PROJECT_DIR/requirements.txt"; then
+        echo "Warning: Some dependencies failed to install." >&2
+        echo "This may be normal for optional dependencies." >&2
+    fi
+}
+
+verify_installation() {
+    echo "[+] Verifying installation..."
+    
+    if [ ! -x "$VENV_DIR/bin/python" ]; then
+        echo "Error: Python virtual environment not properly created." >&2
+        return 1
+    fi
+    
+    if [ ! -x "$PROJECT_DIR/main.py" ]; then
+        echo "Error: main.py not found or not executable." >&2
+        return 1
+    fi
+    
+    echo "[+] Running basic health check..."
+    if "$VENV_DIR/bin/python" "$PROJECT_DIR/main.py" --health >/dev/null 2>&1; then
+        echo "[+] Health check passed!"
+    else
+        echo "Warning: Health check failed. Some features may not work." >&2
+    fi
+    
+    return 0
 }
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        -h|--help|-help)
+        -h|--help)
             usage
             exit 0
             ;;
@@ -87,6 +131,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --no-deps)
             INSTALL_DEPS=0
+            ;;
+        --force)
+            FORCE_INSTALL=1
             ;;
         *)
             usage >&2
@@ -104,16 +151,22 @@ if [ -z "$TARGET_DIR" ]; then
     fi
 fi
 
+echo "[*] Starting binmind installation..."
+echo "[*] Project directory: $PROJECT_DIR"
+echo "[*] Target directory: $TARGET_DIR"
+echo "[*] Virtual environment: $VENV_DIR"
+
 if [ "$INSTALL_DEPS" -eq 1 ]; then
     install_system_dependencies
     install_python_dependencies
 else
-    echo "Skipping dependency installation."
+    echo "[+] Skipping dependency installation (--no-deps)."
 fi
 
 PYTHON_BIN="$VENV_DIR/bin/python"
 if [ ! -x "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
+    echo "[!] Using system Python: $PYTHON_BIN"
 fi
 
 chmod +x "$PROJECT_DIR/binmind"
@@ -126,6 +179,7 @@ cat > "$TMP_LAUNCHER" <<EOF
 exec "$PYTHON_BIN" "$PROJECT_DIR/main.py" "\$@"
 EOF
 
+echo "[+] Installing launcher to $TARGET..."
 if [ "$TARGET_DIR" = "/usr/local/bin" ]; then
     need_root mkdir -p "$TARGET_DIR"
     need_root install -m 755 "$TMP_LAUNCHER" "$TARGET"
@@ -134,10 +188,19 @@ else
     install -m 755 "$TMP_LAUNCHER" "$TARGET"
 fi
 
-echo "Installed $COMMAND_NAME -> $TARGET"
+verify_installation
+
+echo ""
+echo "[+] Installed $COMMAND_NAME -> $TARGET"
 if ! command -v "$COMMAND_NAME" >/dev/null 2>&1; then
-    echo "Note: $TARGET_DIR is not in PATH for this shell."
-    echo "Add this line to ~/.bashrc or ~/.zshrc:"
-    echo "  export PATH=\"$TARGET_DIR:\$PATH\""
+    echo "[!] Note: $TARGET_DIR is not in PATH for this shell."
+    echo "    Add this line to ~/.bashrc or ~/.zshrc:"
+    echo "      export PATH=\"$TARGET_DIR:\$PATH\""
+    echo "    Or run this in current shell:"
+    echo "      source ~/.bashrc  # for bash"
+    echo "      source ~/.zshrc   # for zsh"
 fi
-echo "Try: $COMMAND_NAME -help"
+echo ""
+echo "[+] Installation complete!"
+echo "    Try: $COMMAND_NAME --help"
+echo "    Run health check: $COMMAND_NAME --health"

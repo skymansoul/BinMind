@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2019_1579 ¶ÑÒç³öÄ£Äâ: malloc(16) + memcpy(256)
-// ¡ú 240 ×Ö½ÚÒç³ö
+// cve_2019_1579 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(16) + memcpy(256)
+// â†’ 240 å­—èŠ‚æº¢å‡º
 void paloalto_web_overflow() {
     char *buf = (char *)malloc(16);
     if (!buf) return;
@@ -52,7 +52,7 @@ void paloalto_web_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(320) + memcpy(320/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(320) + memcpy(320/2) â†’ ä¸æº¢å‡º
 void paloalto_web_safe() {
     char *buf = (char *)malloc(320);
     if (!buf) return;

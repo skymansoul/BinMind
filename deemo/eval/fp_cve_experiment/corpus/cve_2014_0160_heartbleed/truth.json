@@ -1,8 +1,0 @@
-{
-  "id": "cve_2014_0160_heartbleed",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2014-0160",
-  "component": "OpenSSL TLS heartbeat",
-  "mode": "堆越界读(over-read), 请求长度未校验"
-}

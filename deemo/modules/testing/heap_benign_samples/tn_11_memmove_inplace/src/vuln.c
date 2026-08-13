@@ -5,7 +5,7 @@ int main(void) {
     char *buf = (char *)malloc(128);
     if (!buf) return 1;
     memset(buf, 'X', 128);
-    memmove(buf + 8, buf, 64);       /* ¾ùÔÚ 128 ÄÚ */
+    memmove(buf + 8, buf, 64);       /* å‡åœ¨ 128 å†… */
     printf("[*] %c\n", buf[8]);
     free(buf);
     return 0;

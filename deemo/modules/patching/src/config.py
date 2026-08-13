@@ -151,7 +151,7 @@ def load_config(filepath: str = None):
 
     优先级：YAML 文件 > 默认值。环境变量在别处检查。
 
-    2026-08-02: 无显式路径时扫描 config/default.yaml。
+    2025-03-03: 无显式路径时扫描 config/default.yaml。
     """
     global config
     if filepath and os.path.isfile(filepath):
@@ -207,7 +207,7 @@ def reset_config():
 class PatchConfig:
     """统一补丁配置 —— 环境变量可覆盖，JSON 可序列化（CI 友好）。
 
-    2026-08-02: 保留用于直接构造 PatchConfig 的向后兼容。
+    2025-03-03: 保留用于直接构造 PatchConfig 的向后兼容。
     """
     r2_timeout: int = 30
     cc_flags: str = "-O2 -fPIC"

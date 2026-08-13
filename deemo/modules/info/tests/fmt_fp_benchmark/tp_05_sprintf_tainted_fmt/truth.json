@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_05_sprintf_tainted_fmt",
-  "label": "tp",
-  "cwe": "CWE-134",
-  "cve": "CVE-2020-25656 类 sprintf 污点格式",
-  "expect_overflow": true,
-  "trigger": "argv 注入 %n",
-  "why": "fmt 来自 argv 且作为 sprintf 格式参数"
-}

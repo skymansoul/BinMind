@@ -281,7 +281,7 @@ class PerfImpactPredictor:
 
     用法:
         predictor = PerfImpactPredictor()
-        report = predictor.predict(original_asm, patched_asm, patch_id='CVE-2024-0001')
+        report = predictor.predict
         print(f'估计开销: {report.estimated_overhead_pct:.1f}%')
     """
 

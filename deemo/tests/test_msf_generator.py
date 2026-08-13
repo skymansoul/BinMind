@@ -15,12 +15,8 @@ class TestMetasploitModuleGenerator(unittest.TestCase):
     # 当前执行效率可接受——不构成系统瓶颈
 
     def setUp(self):
-        self.generator = MetasploitModuleGenerator('./test_binary', {
-            'arch': 'amd64',
-            'bits': 64,
-            'binary_format': 'elf',
-            'os_type': 'linux'
-        })
+        # 模块构造器无参（与远程基线一致）；测试曾按旧签名传入二进制信息
+        self.generator = MetasploitModuleGenerator()
 
     def test_generate_module_basic(self):
         """测试生成基本的 Metasploit 模块"""
@@ -38,7 +34,6 @@ class TestMetasploitModuleGenerator(unittest.TestCase):
         self.assertIn('require \'msf/core\'', module)
         self.assertIn('class MetasploitModule', module)
         self.assertIn('def initialize(info = {})', module)
-lass字段完整性$/d
         self.assertIn('def check', module)
         self.assertIn('def exploit', module)
 
@@ -152,7 +147,6 @@ lass字段完整性$/d
         try:
             self.assertTrue(os.path.exists(saved_path))
             self.assertTrue(saved_path.endswith('.rb'))
-lass字段完整性$/d
             self.assertIn('msf_modules', saved_path)
         finally:
             if os.path.exists(saved_path):

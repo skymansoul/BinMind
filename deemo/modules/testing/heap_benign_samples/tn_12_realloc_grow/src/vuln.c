@@ -6,7 +6,7 @@ int main(void) {
     if (!buf) return 1;
     char *nb = (char *)realloc(buf, 512);
     if (!nb) { free(buf); return 1; }
-    memset(nb, 'R', 512);            /* ĞÂ´óĞ¡ 512 ÄÚ */
+    memset(nb, 'R', 512);            /* æ–°å¤§å° 512 å†… */
     printf("[*] %c\n", nb[511]);
     free(nb);
     return 0;

@@ -181,9 +181,8 @@ class TestDebugInfoParser(unittest.TestCase):
         self.assertEqual(DebugInfoType.UNKNOWN.value, 'unknown')
 
     def test_symbol_type_enum(self):
-                self.assertEqual(SymbolType.FUNCTION.value, 'function')
+        self.assertEqual(SymbolType.FUNCTION.value, 'function')
         self.assertEqual(SymbolType.DATA.value, 'data')
-lass字段完整性$/d
         self.assertEqual(SymbolType.TYPE.value, 'type')
         self.assertEqual(SymbolType.STRUCT.value, 'struct')
 

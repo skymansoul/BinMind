@@ -45,10 +45,13 @@ class Interval:
 
 class HeapConstraint:
     """单个堆操作的约束信息."""
-    __slots__ = ("alloc_site","alloc_size","free_site","write_sites")
-    def __init__(self, alloc_site: int, alloc_size: Interval):
+    __slots__ = ("alloc_site","alloc_size","raw_alloc_size",
+                 "free_site","write_sites")
+    def __init__(self, alloc_site: int, alloc_size: Interval,
+                 raw_alloc_size: Optional[Interval] = None):
         self.alloc_site = alloc_site
-        self.alloc_size = alloc_size
+        self.alloc_size = alloc_size            # 对齐后区间
+        self.raw_alloc_size = raw_alloc_size    # 原始请求区间
         self.free_site: Optional[int] = None
         self.write_sites: List[Tuple[int, Interval]] = []  # (addr, write_size)
 
@@ -72,6 +75,11 @@ class HeapConstraintTracker:
     def track_alloc(self, alloc_addr: int, size_interval: Interval,
                      result_reg: str = "rax"):
         """记录 malloc(size) 的分配信息."""
+        # 原始请求区间单独保留, 供 allocator usable 精确计算
+        # (对齐后区间无法可靠逆推请求值).
+        raw_lo = max(0, size_interval.lo)
+        raw_hi = size_interval.hi if size_interval.hi < 2**30 else 2**30 - 1
+        raw_iv = Interval(raw_lo, raw_hi)
         # 对齐修正: glibc 实际分配 ≥ MIN_CHUNK_SIZE 且 16 字节对齐
         aligned_lo = max(self.MIN_CHUNK_SIZE,
                           (size_interval.lo + 15) & ~15)
@@ -79,7 +87,8 @@ class HeapConstraintTracker:
                           (size_interval.hi + 15) & ~15) if size_interval.hi < 2**30 else size_interval.hi
 
         constraint = HeapConstraint(alloc_addr,
-                                     Interval(aligned_lo, aligned_hi))
+                                     Interval(aligned_lo, aligned_hi),
+                                     raw_alloc_size=raw_iv)
         self._allocations[alloc_addr] = constraint
         self._ptr_to_alloc[result_reg] = alloc_addr
 
@@ -100,8 +109,12 @@ class HeapConstraintTracker:
 
         alloc.write_sites.append((write_addr, write_size))
 
-        # 安全性判定: 写入大小的上界 ≤ 分配大小的下界 → 安全
-        if write_size.hi <= alloc.alloc_size.lo and write_size.is_singleton:
+        # 安全性判定: 写入大小的上界 ≤ 分配大小的下界 → 安全.
+        # alloc.alloc_size 是对齐后区间; 写量落在 (aligned_lo-15, aligned_lo]
+        # 的 padding 区域时不能在此判安全, 交由 allocator 层精确判定
+        # (usable 基于原始请求), 避免小请求下真实溢出被误吞.
+        if write_size.is_singleton and \
+                write_size.hi + 15 <= alloc.alloc_size.lo:
             return None  # 确定安全, 不报告
 
         # 写入下界 > 分配上界 → 确定溢出

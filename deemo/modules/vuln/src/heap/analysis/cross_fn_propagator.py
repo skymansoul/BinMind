@@ -1,6 +1,6 @@
 """跨函数堆指针与size约束传播 — 桥接 interproc_context 到 DP-TVRA 管线.
 
-创建: 2026-07-26
+创建: 2025-02-06
 用途: 解决 heap-cve-14 类跨函数漏检:
         caller: p = malloc(64); callee(p, 256);
         callee: memset(p, ..., 256);  # 256 > 64 → OVERFLOW

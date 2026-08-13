@@ -7,8 +7,7 @@ Null 终止符 off-by-one 检测. 目标模式:
   d[l] = 0;       # 写入下标 == 分配大小 → 越界 1 字节
 
 CWE-193. malloc(strlen(s)) 缺 +1 空间, d[l]=0 写入恰好越界.
-CVE-2017-1000405 (glibc glob) 等真实漏洞根因. 原 HOSV 对 `d[l]=0`
-(变量下标 ptr_write) 判 UNCERTAIN.
+原 HOSV 对 `d[l]=0` (变量下标 ptr_write) 判 UNCERTAIN.
 
 判定:
   1. 识别 `d[len] = 0` / `d[len] = '\0'` 终止符写入

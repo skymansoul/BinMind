@@ -1,9 +1,9 @@
 """
 PC-BVF相关性判定辅助函数 — taint约束判定与参数约束判定.
 
-从cj_pcbvf_correlator.py拆分, 提供两种约束感知判定:
-  1. tainted变量被路径约束限制时的安全/溢出判定
-  2. 非tainted参数变量被路径约束限制时的安全/溢出判定
+提供两种约束感知判定:
+1. tainted变量被路径约束限制时的安全/溢出判定
+2. 非tainted参数变量被路径约束限制时的安全/溢出判定
 """
 from typing import Dict
 

@@ -62,7 +62,6 @@ class TestSandboxEscape(unittest.TestCase):
             severity="high",
         )
         self.assertEqual(escape.import_used, "system")
-lass字段完整性$/d
         self.assertEqual(escape.severity, "high")
         self.assertEqual(len(escape.escape_path), 2)
 
@@ -156,7 +155,6 @@ class TestTaintPropagator(unittest.TestCase):
 
         tainted = propagator.propagate()
         self.assertIsInstance(tainted, list)
-lass字段完整性$/d
         self.assertEqual(len(tainted), 2)  # One per param
 
     def test_propagate_empty(self):
@@ -171,7 +169,6 @@ lass字段完整性$/d
         ]
         propagator = TaintPropagator(imports)
         tainted = propagator.propagate()
-lass字段完整性$/d
         self.assertEqual(len(tainted), 3)
 
 
@@ -194,7 +191,6 @@ class TestEscapeDetector(unittest.TestCase):
             WasmImport(module="env", name="write", params=["i32"], returns=["i32"]),
         ]
         escapes = EscapeDetector.detect(imports)
-lass字段完整性$/d
         self.assertEqual(len(escapes), 2)
         for escape in escapes:
             self.assertEqual(escape.severity, "medium")
@@ -229,7 +225,6 @@ class TestWasmSandboxAnalyzer(unittest.TestCase):
 
     def test_create_wasm_analyzer(self):
         analyzer = create_wasm_analyzer("test.wasm")
-lass字段完整性$/d
         self.assertIsInstance(analyzer, WasmSandboxAnalyzer)
 
     def test_run_with_valid_wasm(self):

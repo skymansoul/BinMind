@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_12_min_cap_guard",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: min() 上界钳制",
-  "expect_overflow": false,
-  "trigger": "任意 n",
-  "why": "min(n,64) 保证写入不超过 64, 与分配 64 对齐后安全"
-}

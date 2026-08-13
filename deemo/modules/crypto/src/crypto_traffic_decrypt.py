@@ -22,19 +22,24 @@ _log = logging.getLogger(__name__)
 
 
 class EncryptionType(Enum):
+    AES_128_CBC = "aes_128_cbc"
     AES_256_CBC = "aes_256_cbc"
     AES_128_GCM = "aes_128_gcm"
-    CHACHA20 = "chacha20"
     AES_256_GCM = "aes_256_gcm"
+    DES_CBC = "des_cbc"
     DES_EDE3_CBC = "3des_cbc"
+    CHACHA20 = "chacha20"
+    XOR = "xor"
     RC4 = "rc4"
 
 
 class KeySourceType(Enum):
     HARDCODED = "hardcoded"
+    MEMORY_DUMP = "memory_dump"
     DERIVED = "derived"
     NEGOTIATED = "negotiated"
     TLS_HANDSHAKE = "tls_handshake"
+    EXTERNAL = "external"
     NONE = "none"
 
 
@@ -108,20 +113,28 @@ _WG_IDENTIFIER       = b"WireGuard"
 
 
 class KeyMaterial:
-    def __init__(self, key: bytes = b""):
+    def __init__(self, key: bytes = b"", key_type: EncryptionType = EncryptionType.AES_256_CBC,
+                 source: KeySourceType = KeySourceType.NONE,
+                 source_location: str = "", iv: bytes = b"", confidence: float = 0.0,
+                 salt: bytes = b"", algorithm: str = "", context: str = ""):
         self.key = key
-        self.iv: bytes = b""
-        self.salt: bytes = b""
-        self.algorithm: str = ""
-        self.source: KeySourceType = KeySourceType.NONE
-        self.context: str = ""
+        self.key_type = key_type
+        self.source = source
+        self.source_location = source_location
+        self.iv = iv
+        self.confidence = confidence
+        self.salt = salt
+        self.algorithm = algorithm
+        self.context = context
 
 
 class DecryptionResult:
-    def __init__(self):
-        self.plaintext: bytes = b""
-        self.success: bool = False
-        self.error: str = ""
+    def __init__(self, success: bool = False, decrypted_data: bytes = b"",
+                 plaintext: bytes = b"", error: str = ""):
+        self.success = success
+        self.decrypted_data = decrypted_data
+        self.plaintext = plaintext if plaintext or not decrypted_data else decrypted_data
+        self.error = error
 
 
 class TrafficAnalysisResult:
@@ -359,6 +372,15 @@ _crypto_patterns = {
 class CryptoTrafficAnalyzer:
     def __init__(self):
         self._results: list[TrafficAnalysisResult] = []
+        self.key_extractor = KeyExtractor()
+        self.decryptor = TrafficDecryptor()
+
+    @staticmethod
+    def _detect_encryption(data: bytes) -> bool:
+        """熵阈值判定数据是否加密——高熵流 XOR 随机字节分布。"""
+        if not data:
+            return False
+        return KeyExtractor._calculate_entropy(data) > 7.0
 
     def analyze(self, data: bytes) -> list[TrafficAnalysisResult]:
         self._results = []
@@ -427,13 +449,52 @@ class CryptoTrafficAnalyzer:
 
 class KeyExtractor:
     def __init__(self):
-        self._patterns = [
+        # 密钥模式表: (正则, 来源标签)
+        self.key_patterns = [
             (re.compile(rb'(?:key|KEY)[=:]\s*[\"\']?([A-Za-z0-9+/=]{16,64})[\"\']?'), "string_pattern"),
             (re.compile(rb'\x04\x20([\x20-\x7e]{32})'), "padded_32_byte"),
             (re.compile(rb'static\s+(?:const\s+)?unsigned\s+char\s+\w+\[\]\s*=\s*\{([^}]+)\}'), "c_array_init"),
             # 附加: "key"/"secret"标签旁的裸十六进制字符串
             (re.compile(rb'(?:secret|password|passwd|pwd)[=:]\s*[\"\']([A-Fa-f0-9]{16,64})[\"\']'), "hex_key_string"),
         ]
+        self._patterns = self.key_patterns
+        # 密码学 API 特征表: (正则, 算法类别)
+        self.crypto_api_patterns = [
+            (re.compile(rb'\bAES(?:-\d+)?(?:_(?:ECB|CBC|GCM|CTR))?\b', re.I), "aes"),
+            (re.compile(rb'\bDES(?:-EDE3)?(?:_CBC)?\b', re.I), "des"),
+            (re.compile(rb'\bRC4\b', re.I), "rc4"),
+            (re.compile(rb'\bChaCha20\b', re.I), "chacha20"),
+            (re.compile(rb'\bXOR\b', re.I), "xor"),
+        ]
+
+    @staticmethod
+    def _calculate_entropy(data: bytes) -> float:
+        """Shannon 熵——高熵数据（>7.0）通常是加密流或密钥材料。"""
+        if not data:
+            return 0.0
+        freq = {}
+        for b in data:
+            freq[b] = freq.get(b, 0) + 1
+        total = len(data)
+        entropy = 0.0
+        import math as _m
+        for cnt in freq.values():
+            p = cnt / total
+            entropy -= p * _m.log2(p)
+        return entropy
+
+    @staticmethod
+    def _infer_encryption_type(key_length: int) -> EncryptionType:
+        """按密钥字节长度推断加密类型。"""
+        if key_length == 16:
+            return EncryptionType.AES_128_CBC
+        if key_length == 24:
+            return EncryptionType.DES_EDE3_CBC
+        if key_length == 32:
+            return EncryptionType.AES_256_CBC
+        if key_length == 8:
+            return EncryptionType.DES_CBC
+        return EncryptionType.AES_256_CBC
 
     def extract(self, binary: bytes | str) -> list[KeyMaterial]:
         if isinstance(binary, str):
@@ -462,6 +523,26 @@ class KeyExtractor:
 # 三级库回退解密器
 
 class TrafficDecryptor:
+    def __init__(self):
+        self.config: dict = {
+            "max_key_length": 64,
+            "xor_fallback": True,
+            "aes_fallback": True,
+        }
+
+    def _decrypt_xor(self, encrypted: bytes, key: KeyMaterial) -> DecryptionResult:
+        """单字节 XOR 解密——无第三方库时的兜底路径。"""
+        result = DecryptionResult()
+        if not key.key:
+            result.error = "empty key"
+            return result
+        klen = len(key.key)
+        decrypted = bytes(b ^ key.key[i % klen] for i, b in enumerate(encrypted))
+        result.success = True
+        result.decrypted_data = decrypted
+        result.plaintext = decrypted
+        return result
+
     def decrypt(self, data: bytes, key: bytes | KeyMaterial | None) -> DecryptionResult:
         result = DecryptionResult()
         if key is None:

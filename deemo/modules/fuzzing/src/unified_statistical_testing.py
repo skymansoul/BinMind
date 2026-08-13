@@ -1,7 +1,7 @@
 """统一统计检验框架 — 多策略评估 + 多重检验校正 + 效应量.
 
-创建: 2026-06-22 08:33
-修改: 2026-06-22 15:47 — 添加 Bayesian 因子 + 等价检验 (TOST)
+创建: 2024-08-14 08:33
+修改: 2024-08-14 15:47 — 添加 Bayesian 因子 + 等价检验 (TOST)
 
 参考: Wasserstein & Lazar "The ASA Statement on p-Values" (TAS)
        Lakens "Equivalence Testing" (SPPS)

@@ -1,241 +1,241 @@
 tool,sample,truth,verdict,findings,tp,fp,fn,tn,time_ms,peak_mem_mb,error
-BinMind-DDSSC,bwr_01_strcpy_literal_overflow,vuln,TP,1,1,0,0,0,7385.13,112.57,
-BinMind-Baseline,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,2194.76,11.59,
-angr,bwr_01_strcpy_literal_overflow,vuln,TP,7,1,0,0,0,3220.26,44.95,
-QEMU/Unicorn,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,229.52,1.85,
-Ghidra,bwr_01_strcpy_literal_overflow,vuln,TP,14,1,0,0,0,84.19,1.69,
-BinMind-DDSSC,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,2372.81,12.54,
-BinMind-Baseline,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,2142.73,11.57,
-angr,bwr_02_strcpy_literal_safe,safe,FP,7,0,1,0,0,2726.6,18.15,
-QEMU/Unicorn,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,153.29,1.71,
-Ghidra,bwr_02_strcpy_literal_safe,safe,FP,14,0,1,0,0,74.73,1.69,
-BinMind-DDSSC,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,2290.54,12.55,
-BinMind-Baseline,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,2274.28,11.59,
-angr,bwr_03_strcpy_heap_source_safe,safe,FP,8,0,1,0,0,3018.24,18.24,
-QEMU/Unicorn,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,164.88,1.71,
-Ghidra,bwr_03_strcpy_heap_source_safe,safe,FP,17,0,1,0,0,71.4,1.69,
-BinMind-DDSSC,bwr_04_sprintf_literal_overflow,vuln,TP,1,1,0,0,0,2296.67,12.57,
-BinMind-Baseline,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,2127.62,11.6,
-angr,bwr_04_sprintf_literal_overflow,vuln,TP,7,1,0,0,0,2907.95,17.49,
-QEMU/Unicorn,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,120.01,1.7,
-Ghidra,bwr_04_sprintf_literal_overflow,vuln,TP,13,1,0,0,0,71.09,1.69,
-BinMind-DDSSC,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,2330.19,12.04,
-BinMind-Baseline,bwr_05_snprintf_argfix,vuln,TP,1,1,0,0,0,2125.5,11.65,
-angr,bwr_05_snprintf_argfix,vuln,TP,8,1,0,0,0,2898.98,18.26,
-QEMU/Unicorn,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,129.76,1.7,
-Ghidra,bwr_05_snprintf_argfix,vuln,TP,13,1,0,0,0,86.37,1.7,
-BinMind-DDSSC,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,2857.09,12.55,
-BinMind-Baseline,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,2360.6,11.59,
-angr,bwr_06_strcpy_stack_source_safe,safe,FP,7,0,1,0,0,2790.11,18.28,
-QEMU/Unicorn,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,125.25,1.72,
-Ghidra,bwr_06_strcpy_stack_source_safe,safe,FP,14,0,1,0,0,76.38,1.69,
-BinMind-DDSSC,bwr_07_fread_product,vuln,TP,1,1,0,0,0,446.51,2.56,
-BinMind-Baseline,bwr_07_fread_product,vuln,FN,0,0,0,1,0,432.89,2.42,
-angr,bwr_07_fread_product,vuln,TP,4,1,0,0,0,1460.0,8.06,
-QEMU/Unicorn,bwr_07_fread_product,vuln,FN,0,0,0,1,0,149.1,1.33,
-Ghidra,bwr_07_fread_product,vuln,TP,10,1,0,0,0,36.02,0.46,
-BinMind-DDSSC,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,2829.6,11.95,
-BinMind-Baseline,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,2370.52,11.57,
-angr,bwr_08_read_dstfix,vuln,TP,7,1,0,0,0,2777.71,17.58,
-QEMU/Unicorn,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,122.22,1.67,
-Ghidra,bwr_08_read_dstfix,vuln,TP,14,1,0,0,0,73.41,1.69,
-BinMind-DDSSC,fp_01_alignment_safe,safe,TN,0,0,0,0,1,2351.63,11.95,
-BinMind-Baseline,fp_01_alignment_safe,safe,TN,0,0,0,0,1,2148.76,11.57,
-angr,fp_01_alignment_safe,safe,FP,7,0,1,0,0,2913.22,17.47,
-QEMU/Unicorn,fp_01_alignment_safe,safe,TN,0,0,0,0,1,105.17,1.69,
-Ghidra,fp_01_alignment_safe,safe,FP,14,0,1,0,0,80.87,1.69,
-BinMind-DDSSC,fp_02_path_constrained,safe,TN,0,0,0,0,1,2369.03,11.96,
-BinMind-Baseline,fp_02_path_constrained,safe,TN,0,0,0,0,1,2404.11,11.58,
-angr,fp_02_path_constrained,safe,FP,7,0,1,0,0,2957.2,17.49,
-QEMU/Unicorn,fp_02_path_constrained,safe,TN,0,0,0,0,1,109.28,1.7,
-Ghidra,fp_02_path_constrained,safe,FP,14,0,1,0,0,70.29,1.69,
-BinMind-DDSSC,fp_03_struct_field,safe,TN,0,0,0,0,1,2471.07,11.98,
-BinMind-Baseline,fp_03_struct_field,safe,TN,0,0,0,0,1,2454.25,11.6,
-angr,fp_03_struct_field,safe,FP,6,0,1,0,0,2724.1,17.37,
-QEMU/Unicorn,fp_03_struct_field,safe,TN,0,0,0,0,1,123.16,1.66,
-Ghidra,fp_03_struct_field,safe,FP,13,0,1,0,0,80.8,1.69,
-BinMind-DDSSC,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,2535.37,11.97,
-BinMind-Baseline,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,2929.79,11.6,
-angr,fp_04_realloc_shrink,safe,FP,8,0,1,0,0,2945.88,17.74,
-QEMU/Unicorn,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,125.6,1.67,
-Ghidra,fp_04_realloc_shrink,safe,FP,15,0,1,0,0,87.7,1.69,
-BinMind-DDSSC,fp_05_min_constrained,safe,TN,0,0,0,0,1,2386.64,11.95,
-BinMind-Baseline,fp_05_min_constrained,safe,TN,0,0,0,0,1,2332.54,11.57,
-angr,fp_05_min_constrained,safe,FP,7,0,1,0,0,2886.69,17.34,
-QEMU/Unicorn,fp_05_min_constrained,safe,TN,0,0,0,0,1,128.37,1.5,
-Ghidra,fp_05_min_constrained,safe,FP,14,0,1,0,0,83.51,1.69,
-BinMind-DDSSC,fp_06_sample,safe,TN,0,0,0,0,1,2539.68,11.96,
-BinMind-Baseline,fp_06_sample,safe,TN,0,0,0,0,1,2378.41,11.58,
-angr,fp_06_sample,safe,FP,6,0,1,0,0,2721.87,17.4,
-QEMU/Unicorn,fp_06_sample,safe,TN,0,0,0,0,1,107.03,1.65,
-Ghidra,fp_06_sample,safe,FP,12,0,1,0,0,76.68,1.69,
-BinMind-DDSSC,fp_07_sample,safe,TN,0,0,0,0,1,2918.32,11.98,
-BinMind-Baseline,fp_07_sample,safe,TN,0,0,0,0,1,2646.54,11.59,
-angr,fp_07_sample,safe,FP,8,0,1,0,0,2768.84,17.57,
-QEMU/Unicorn,fp_07_sample,safe,TN,0,0,0,0,1,121.0,1.66,
-Ghidra,fp_07_sample,safe,FP,15,0,1,0,0,77.41,1.69,
-BinMind-DDSSC,fp_08_sample,safe,TN,0,0,0,0,1,457.43,2.54,
-BinMind-Baseline,fp_08_sample,safe,TN,0,0,0,0,1,408.87,2.4,
-angr,fp_08_sample,safe,FP,4,0,1,0,0,1583.45,7.55,
-QEMU/Unicorn,fp_08_sample,safe,TN,0,0,0,0,1,117.14,1.33,
-Ghidra,fp_08_sample,safe,FP,9,0,1,0,0,29.88,0.46,
-BinMind-DDSSC,fp_09_sample,safe,FP,1,0,1,0,0,462.07,2.54,
-BinMind-Baseline,fp_09_sample,safe,FP,1,0,1,0,0,415.14,2.4,
-angr,fp_09_sample,safe,FP,4,0,1,0,0,1438.0,7.63,
-QEMU/Unicorn,fp_09_sample,safe,TN,0,0,0,0,1,98.09,1.31,
-Ghidra,fp_09_sample,safe,FP,9,0,1,0,0,34.61,0.46,
-BinMind-DDSSC,fp_10_sample,safe,TN,0,0,0,0,1,2493.41,11.95,
-BinMind-Baseline,fp_10_sample,safe,TN,0,0,0,0,1,2422.51,11.58,
-angr,fp_10_sample,safe,FP,7,0,1,0,0,3122.75,17.45,
-QEMU/Unicorn,fp_10_sample,safe,TN,0,0,0,0,1,104.79,1.7,
-Ghidra,fp_10_sample,safe,FP,14,0,1,0,0,77.58,1.69,
-BinMind-DDSSC,fp_11_sample,safe,TN,0,0,0,0,1,2690.89,11.96,
-BinMind-Baseline,fp_11_sample,safe,TN,0,0,0,0,1,2386.08,11.58,
-angr,fp_11_sample,safe,FP,7,0,1,0,0,2948.47,17.41,
-QEMU/Unicorn,fp_11_sample,safe,TN,0,0,0,0,1,135.28,1.66,
-Ghidra,fp_11_sample,safe,FP,14,0,1,0,0,96.07,1.69,
-BinMind-DDSSC,fp_12_sample,safe,FP,1,0,1,0,0,2353.28,11.96,
-BinMind-Baseline,fp_12_sample,safe,FP,1,0,1,0,0,2474.79,11.57,
-angr,fp_12_sample,safe,FP,6,0,1,0,0,3057.52,17.51,
-QEMU/Unicorn,fp_12_sample,safe,TN,0,0,0,0,1,107.58,1.66,
-Ghidra,fp_12_sample,safe,FP,13,0,1,0,0,93.9,1.69,
-BinMind-DDSSC,fp_13_sample,safe,TN,0,0,0,0,1,2328.39,11.97,
-BinMind-Baseline,fp_13_sample,safe,TN,0,0,0,0,1,2371.64,11.59,
-angr,fp_13_sample,safe,FP,8,0,1,0,0,2907.68,17.58,
-QEMU/Unicorn,fp_13_sample,safe,TN,0,0,0,0,1,140.66,1.69,
-Ghidra,fp_13_sample,safe,FP,17,0,1,0,0,77.49,1.69,
-BinMind-DDSSC,fp_14_sample,safe,TN,0,0,0,0,1,2646.29,11.95,
-BinMind-Baseline,fp_14_sample,safe,TN,0,0,0,0,1,2455.39,11.57,
-angr,fp_14_sample,safe,FP,7,0,1,0,0,2954.18,17.49,
-QEMU/Unicorn,fp_14_sample,safe,TN,0,0,0,0,1,105.62,1.66,
-Ghidra,fp_14_sample,safe,FP,14,0,1,0,0,81.19,1.69,
-BinMind-DDSSC,fp_15_sample,safe,TN,0,0,0,0,1,3232.27,11.96,
-BinMind-Baseline,fp_15_sample,safe,TN,0,0,0,0,1,2469.82,11.58,
-angr,fp_15_sample,safe,FP,6,0,1,0,0,3037.28,17.49,
-QEMU/Unicorn,fp_15_sample,safe,TN,0,0,0,0,1,126.92,1.65,
-Ghidra,fp_15_sample,safe,FP,13,0,1,0,0,88.8,1.69,
-BinMind-DDSSC,CVE-2014-0160,vuln,FN,0,0,0,1,0,2550.87,12.1,
-BinMind-Baseline,CVE-2014-0160,vuln,FN,0,0,0,1,0,2403.07,11.71,
-angr,CVE-2014-0160,vuln,TP,8,1,0,0,0,3100.84,17.91,
-QEMU/Unicorn,CVE-2014-0160,vuln,FN,0,0,0,1,0,141.24,1.73,
-Ghidra,CVE-2014-0160,vuln,TP,18,1,0,0,0,76.56,1.71,
-BinMind-DDSSC,CVE-2015-0235,vuln,FN,0,0,0,1,0,2441.4,12.01,
-BinMind-Baseline,CVE-2015-0235,vuln,FN,0,0,0,1,0,2446.01,11.63,
-angr,CVE-2015-0235,vuln,TP,8,1,0,0,0,2979.66,17.67,
-QEMU/Unicorn,CVE-2015-0235,vuln,FN,0,0,0,1,0,97.96,1.72,
-Ghidra,CVE-2015-0235,vuln,TP,18,1,0,0,0,71.21,1.7,
-BinMind-DDSSC,CVE-2016-2177,vuln,TP,2,1,0,0,0,2469.27,12.13,
-BinMind-Baseline,CVE-2016-2177,vuln,TP,2,1,0,0,0,2525.63,11.74,
-angr,CVE-2016-2177,vuln,TP,10,1,0,0,0,2779.42,17.88,
-QEMU/Unicorn,CVE-2016-2177,vuln,FN,0,0,0,1,0,115.04,1.7,
-Ghidra,CVE-2016-2177,vuln,TP,26,1,0,0,0,87.33,1.72,
-BinMind-DDSSC,CVE-2016-6301,vuln,FN,0,0,0,1,0,2621.82,12.07,
-BinMind-Baseline,CVE-2016-6301,vuln,FN,0,0,0,1,0,2810.07,11.69,
-angr,CVE-2016-6301,vuln,TP,6,1,0,0,0,2859.43,17.82,
-QEMU/Unicorn,CVE-2016-6301,vuln,FN,0,0,0,1,0,127.45,1.69,
-Ghidra,CVE-2016-6301,vuln,TP,13,1,0,0,0,90.03,1.71,
-BinMind-DDSSC,CVE-2017-11176,vuln,FN,0,0,0,1,0,2720.31,12.17,
-BinMind-Baseline,CVE-2017-11176,vuln,FN,0,0,0,1,0,2553.07,11.78,
-angr,CVE-2017-11176,vuln,TP,9,1,0,0,0,3317.19,18.19,
-QEMU/Unicorn,CVE-2017-11176,vuln,FN,0,0,0,1,0,133.1,1.75,
-Ghidra,CVE-2017-11176,vuln,TP,19,1,0,0,0,87.44,1.72,
-BinMind-DDSSC,CVE-2018-6552,vuln,FN,0,0,0,1,0,2700.48,12.18,
-BinMind-Baseline,CVE-2018-6552,vuln,FN,0,0,0,1,0,2503.19,11.79,
-angr,CVE-2018-6552,vuln,TP,6,1,0,0,0,3283.28,17.95,
-QEMU/Unicorn,CVE-2018-6552,vuln,FN,0,0,0,1,0,121.43,1.75,
-Ghidra,CVE-2018-6552,vuln,TP,14,1,0,0,0,107.9,1.73,
-BinMind-DDSSC,CVE-2019-1010298,vuln,TP,1,1,0,0,0,2936.64,12.09,
-BinMind-Baseline,CVE-2019-1010298,vuln,TP,1,1,0,0,0,2490.57,11.7,
-angr,CVE-2019-1010298,vuln,TP,7,1,0,0,0,3239.4,17.82,
-QEMU/Unicorn,CVE-2019-1010298,vuln,FN,0,0,0,1,0,132.13,1.7,
-Ghidra,CVE-2019-1010298,vuln,TP,14,1,0,0,0,96.52,1.71,
-BinMind-DDSSC,CVE-2020-10711,vuln,TP,2,1,0,0,0,2395.53,12.17,
-BinMind-Baseline,CVE-2020-10711,vuln,TP,2,1,0,0,0,3005.21,11.78,
-angr,CVE-2020-10711,vuln,TP,8,1,0,0,0,3026.81,18.23,
-QEMU/Unicorn,CVE-2020-10711,vuln,FN,0,0,0,1,0,121.64,1.72,
-Ghidra,CVE-2020-10711,vuln,TP,17,1,0,0,0,96.64,1.73,
-BinMind-DDSSC,CVE-2020-25656,vuln,TP,1,1,0,0,0,2809.61,12.06,
-BinMind-Baseline,CVE-2020-25656,vuln,TP,1,1,0,0,0,2596.13,11.67,
-angr,CVE-2020-25656,vuln,TP,8,1,0,0,0,3203.23,17.66,
-QEMU/Unicorn,CVE-2020-25656,vuln,FN,0,0,0,1,0,125.84,1.71,
-Ghidra,CVE-2020-25656,vuln,TP,15,1,0,0,0,83.89,1.7,
-BinMind-DDSSC,CVE-2021-3156,vuln,FN,0,0,0,1,0,2609.36,12.04,
-BinMind-Baseline,CVE-2021-3156,vuln,FN,0,0,0,1,0,2557.06,11.64,
-angr,CVE-2021-3156,vuln,TP,10,1,0,0,0,3016.16,18.34,
-QEMU/Unicorn,CVE-2021-3156,vuln,FN,0,0,0,1,0,409.54,1.76,
-Ghidra,CVE-2021-3156,vuln,TP,18,1,0,0,0,92.57,1.7,
-BinMind-DDSSC,CVE-2022-0185,vuln,TP,1,1,0,0,0,2935.71,12.13,
-BinMind-Baseline,CVE-2022-0185,vuln,TP,1,1,0,0,0,2628.52,11.73,
-angr,CVE-2022-0185,vuln,TP,9,1,0,0,0,2975.58,18.61,
-QEMU/Unicorn,CVE-2022-0185,vuln,FN,0,0,0,1,0,108.8,1.73,
-Ghidra,CVE-2022-0185,vuln,TP,16,1,0,0,0,70.54,1.71,
-BinMind-DDSSC,CVE-2022-23222,vuln,FN,0,0,0,1,0,2549.67,12.05,
-BinMind-Baseline,CVE-2022-23222,vuln,FN,0,0,0,1,0,2607.55,11.66,
-angr,CVE-2022-23222,vuln,TP,7,1,0,0,0,2963.49,17.96,
-QEMU/Unicorn,CVE-2022-23222,vuln,FN,0,0,0,1,0,145.09,1.71,
-Ghidra,CVE-2022-23222,vuln,TP,14,1,0,0,0,94.37,1.7,
-BinMind-DDSSC,CVE-2023-0461,vuln,FN,0,0,0,1,0,2902.72,12.19,
-BinMind-Baseline,CVE-2023-0461,vuln,FN,0,0,0,1,0,2712.27,11.8,
-angr,CVE-2023-0461,vuln,TP,11,1,0,0,0,3186.82,17.89,
-QEMU/Unicorn,CVE-2023-0461,vuln,FN,0,0,0,1,0,129.98,1.73,
-Ghidra,CVE-2023-0461,vuln,TP,19,1,0,0,0,83.3,1.72,
-BinMind-DDSSC,CVE-2023-3576,vuln,TP,1,1,0,0,0,2631.0,12.01,
-BinMind-Baseline,CVE-2023-3576,vuln,TP,1,1,0,0,0,2552.52,11.63,
-angr,CVE-2023-3576,vuln,TP,7,1,0,0,0,2919.85,17.6,
-QEMU/Unicorn,CVE-2023-3576,vuln,FN,0,0,0,1,0,129.51,1.69,
-Ghidra,CVE-2023-3576,vuln,TP,14,1,0,0,0,98.38,1.7,
-BinMind-DDSSC,CVE-2024-21894,vuln,FN,0,0,0,1,0,3089.59,12.62,
-BinMind-Baseline,CVE-2024-21894,vuln,FN,0,0,0,1,0,2695.54,11.66,
-angr,CVE-2024-21894,vuln,TP,7,1,0,0,0,2879.36,17.86,
-QEMU/Unicorn,CVE-2024-21894,vuln,FN,0,0,0,1,0,122.68,1.7,
-Ghidra,CVE-2024-21894,vuln,TP,14,1,0,0,0,86.37,1.7,
-BinMind-DDSSC,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,2645.68,12.11,
-BinMind-Baseline,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,2453.99,11.72,
-angr,cve_2021_3156_sudoedit,vuln,TP,9,1,0,0,0,3070.95,17.9,
-QEMU/Unicorn,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,111.66,1.73,
-Ghidra,cve_2021_3156_sudoedit,vuln,TP,19,1,0,0,0,102.16,1.72,
-BinMind-DDSSC,cve_2022_0185_kernel_heap,vuln,TP,1,1,0,0,0,2709.98,12.15,
-BinMind-Baseline,cve_2022_0185_kernel_heap,vuln,TP,1,1,0,0,0,2548.16,11.75,
-angr,cve_2022_0185_kernel_heap,vuln,TP,9,1,0,0,0,3059.2,17.88,
-QEMU/Unicorn,cve_2022_0185_kernel_heap,vuln,FN,0,0,0,1,0,116.55,1.72,
-Ghidra,cve_2022_0185_kernel_heap,vuln,TP,16,1,0,0,0,83.64,1.72,
-BinMind-DDSSC,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,2641.47,12.11,
-BinMind-Baseline,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,2422.46,11.72,
-angr,cve_2023_23001_custom,vuln,TP,8,1,0,0,0,2680.72,17.65,
-QEMU/Unicorn,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,121.33,1.68,
-Ghidra,cve_2023_23001_custom,vuln,TP,16,1,0,0,0,79.83,1.71,
-BinMind-DDSSC,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,2344.19,12.04,
-BinMind-Baseline,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,3031.31,11.66,
-angr,HEAP-OVERFLOW-ALIGN-05,safe,FP,8,0,1,0,0,2894.79,17.98,
-QEMU/Unicorn,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,127.5,1.73,
-Ghidra,HEAP-OVERFLOW-ALIGN-05,safe,FP,17,0,1,0,0,62.82,1.7,
-BinMind-DDSSC,HEAP-OVERFLOW-BASIC-01,vuln,TP,2,1,0,0,0,2690.54,12.07,
-BinMind-Baseline,HEAP-OVERFLOW-BASIC-01,vuln,TP,2,1,0,0,0,2595.43,11.68,
-angr,HEAP-OVERFLOW-BASIC-01,vuln,TP,10,1,0,0,0,3041.6,17.72,
-QEMU/Unicorn,HEAP-OVERFLOW-BASIC-01,vuln,FN,0,0,0,1,0,128.1,1.74,
-Ghidra,HEAP-OVERFLOW-BASIC-01,vuln,TP,17,1,0,0,0,85.36,1.7,
-BinMind-DDSSC,HEAP-OVERFLOW-COND-03,vuln,TP,1,1,0,0,0,2691.53,11.99,
-BinMind-Baseline,HEAP-OVERFLOW-COND-03,vuln,TP,1,1,0,0,0,2394.12,11.61,
-angr,HEAP-OVERFLOW-COND-03,vuln,TP,8,1,0,0,0,2925.05,17.57,
-QEMU/Unicorn,HEAP-OVERFLOW-COND-03,vuln,FN,0,0,0,1,0,137.34,1.74,
-Ghidra,HEAP-OVERFLOW-COND-03,vuln,TP,16,1,0,0,0,99.76,1.7,
-BinMind-DDSSC,HEAP-OVERFLOW-FP-04,safe,FP,1,0,1,0,0,2958.4,12.05,
-BinMind-Baseline,HEAP-OVERFLOW-FP-04,safe,FP,1,0,1,0,0,2650.55,11.66,
-angr,HEAP-OVERFLOW-FP-04,safe,FP,9,0,1,0,0,2807.3,17.76,
-QEMU/Unicorn,HEAP-OVERFLOW-FP-04,safe,TN,0,0,0,0,1,120.55,1.72,
-Ghidra,HEAP-OVERFLOW-FP-04,safe,FP,18,0,1,0,0,82.3,1.71,
-BinMind-DDSSC,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,2495.14,11.99,
-BinMind-Baseline,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,2818.01,11.61,
-angr,HEAP-OVERFLOW-LOOP-02,vuln,TP,6,1,0,0,0,2954.94,17.72,
-QEMU/Unicorn,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,122.13,1.69,
-Ghidra,HEAP-OVERFLOW-LOOP-02,vuln,TP,13,1,0,0,0,69.37,1.69,
-BinMind-DDSSC,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,2740.55,12.0,
-BinMind-Baseline,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,2467.95,11.62,
-angr,HEAP-OVERFLOW-MULTI-06,vuln,TP,8,1,0,0,0,3014.09,17.68,
-QEMU/Unicorn,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,123.86,1.74,
-Ghidra,HEAP-OVERFLOW-MULTI-06,vuln,TP,18,1,0,0,0,78.61,1.7,
-BinMind-DDSSC,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,2755.44,12.08,
-BinMind-Baseline,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,2590.95,11.69,
-angr,HEAP-OVERFLOW-REALLOC-07,vuln,TP,8,1,0,0,0,2917.09,18.06,
-QEMU/Unicorn,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,123.49,1.73,
-Ghidra,HEAP-OVERFLOW-REALLOC-07,vuln,TP,17,1,0,0,0,87.14,1.71,
+BinMind-DDSSC,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,1709.89,35.63,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,13.29,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,20.9,0.5,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_01_strcpy_literal_overflow,vuln,TP,14,1,0,0,0,87.34,1.71,
+QEMU/Unicorn,bwr_01_strcpy_literal_overflow,vuln,FN,0,0,0,1,0,16.47,0.81,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,8.24,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,7.88,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,8.37,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_02_strcpy_literal_safe,safe,FP,14,0,1,0,0,71.51,1.7,
+QEMU/Unicorn,bwr_02_strcpy_literal_safe,safe,TN,0,0,0,0,1,12.18,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,12.02,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,15.43,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,11.28,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_03_strcpy_heap_source_safe,safe,FP,17,0,1,0,0,92.42,1.71,
+QEMU/Unicorn,bwr_03_strcpy_heap_source_safe,safe,TN,0,0,0,0,1,11.36,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,15.65,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,18.86,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,12.87,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_04_sprintf_literal_overflow,vuln,TP,13,1,0,0,0,87.68,1.71,
+QEMU/Unicorn,bwr_04_sprintf_literal_overflow,vuln,FN,0,0,0,1,0,11.91,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,17.16,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,8.94,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,7.55,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_05_snprintf_argfix,vuln,TP,13,1,0,0,0,70.7,1.71,
+QEMU/Unicorn,bwr_05_snprintf_argfix,vuln,FN,0,0,0,1,0,10.43,0.37,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,12.49,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,38.32,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,10.95,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_06_strcpy_stack_source_safe,safe,FP,14,0,1,0,0,73.99,1.7,
+QEMU/Unicorn,bwr_06_strcpy_stack_source_safe,safe,TN,0,0,0,0,1,11.96,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_07_fread_product,vuln,FN,0,0,0,1,0,10.74,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_07_fread_product,vuln,FN,0,0,0,1,0,11.21,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_07_fread_product,vuln,FN,0,0,0,1,0,11.01,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_07_fread_product,vuln,TP,10,1,0,0,0,33.8,0.47,
+QEMU/Unicorn,bwr_07_fread_product,vuln,FN,0,0,0,1,0,12.4,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,12.27,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,12.79,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,9.13,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,bwr_08_read_dstfix,vuln,TP,14,1,0,0,0,89.99,1.7,
+QEMU/Unicorn,bwr_08_read_dstfix,vuln,FN,0,0,0,1,0,11.0,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_01_alignment_safe,safe,TN,0,0,0,0,1,11.28,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_01_alignment_safe,safe,TN,0,0,0,0,1,13.24,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_01_alignment_safe,safe,TN,0,0,0,0,1,16.19,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_01_alignment_safe,safe,FP,14,0,1,0,0,84.4,1.7,
+QEMU/Unicorn,fp_01_alignment_safe,safe,TN,0,0,0,0,1,11.86,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_02_path_constrained,safe,TN,0,0,0,0,1,10.18,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_02_path_constrained,safe,TN,0,0,0,0,1,12.61,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_02_path_constrained,safe,TN,0,0,0,0,1,17.42,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_02_path_constrained,safe,FP,14,0,1,0,0,101.43,1.7,
+QEMU/Unicorn,fp_02_path_constrained,safe,TN,0,0,0,0,1,9.29,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_03_struct_field,safe,TN,0,0,0,0,1,9.91,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_03_struct_field,safe,TN,0,0,0,0,1,9.95,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_03_struct_field,safe,TN,0,0,0,0,1,13.84,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_03_struct_field,safe,FP,13,0,1,0,0,74.41,1.7,
+QEMU/Unicorn,fp_03_struct_field,safe,TN,0,0,0,0,1,10.01,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,12.37,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,13.27,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,10.76,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_04_realloc_shrink,safe,FP,15,0,1,0,0,80.01,1.71,
+QEMU/Unicorn,fp_04_realloc_shrink,safe,TN,0,0,0,0,1,9.07,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_05_min_constrained,safe,TN,0,0,0,0,1,12.09,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_05_min_constrained,safe,TN,0,0,0,0,1,12.81,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_05_min_constrained,safe,TN,0,0,0,0,1,15.35,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_05_min_constrained,safe,FP,14,0,1,0,0,78.52,1.7,
+QEMU/Unicorn,fp_05_min_constrained,safe,TN,0,0,0,0,1,9.01,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_06_sample,safe,TN,0,0,0,0,1,10.53,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_06_sample,safe,TN,0,0,0,0,1,12.33,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_06_sample,safe,TN,0,0,0,0,1,11.06,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_06_sample,safe,FP,12,0,1,0,0,71.95,1.7,
+QEMU/Unicorn,fp_06_sample,safe,TN,0,0,0,0,1,9.56,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_07_sample,safe,TN,0,0,0,0,1,12.85,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_07_sample,safe,TN,0,0,0,0,1,12.84,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_07_sample,safe,TN,0,0,0,0,1,10.62,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_07_sample,safe,FP,15,0,1,0,0,72.66,1.7,
+QEMU/Unicorn,fp_07_sample,safe,TN,0,0,0,0,1,11.75,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_08_sample,safe,TN,0,0,0,0,1,13.43,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_08_sample,safe,TN,0,0,0,0,1,11.68,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_08_sample,safe,TN,0,0,0,0,1,11.07,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_08_sample,safe,FP,9,0,1,0,0,34.3,0.47,
+QEMU/Unicorn,fp_08_sample,safe,TN,0,0,0,0,1,10.4,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_09_sample,safe,TN,0,0,0,0,1,13.19,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_09_sample,safe,TN,0,0,0,0,1,12.9,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_09_sample,safe,TN,0,0,0,0,1,12.3,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_09_sample,safe,FP,9,0,1,0,0,39.87,0.47,
+QEMU/Unicorn,fp_09_sample,safe,TN,0,0,0,0,1,12.87,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_10_sample,safe,TN,0,0,0,0,1,14.49,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_10_sample,safe,TN,0,0,0,0,1,14.81,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_10_sample,safe,TN,0,0,0,0,1,11.15,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_10_sample,safe,FP,14,0,1,0,0,83.46,1.7,
+QEMU/Unicorn,fp_10_sample,safe,TN,0,0,0,0,1,8.37,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_11_sample,safe,TN,0,0,0,0,1,8.77,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_11_sample,safe,TN,0,0,0,0,1,8.52,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_11_sample,safe,TN,0,0,0,0,1,11.86,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_11_sample,safe,FP,14,0,1,0,0,102.78,1.7,
+QEMU/Unicorn,fp_11_sample,safe,TN,0,0,0,0,1,11.04,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_12_sample,safe,TN,0,0,0,0,1,9.81,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_12_sample,safe,TN,0,0,0,0,1,9.37,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_12_sample,safe,TN,0,0,0,0,1,8.44,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_12_sample,safe,FP,13,0,1,0,0,76.1,1.7,
+QEMU/Unicorn,fp_12_sample,safe,TN,0,0,0,0,1,11.57,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_13_sample,safe,TN,0,0,0,0,1,11.84,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_13_sample,safe,TN,0,0,0,0,1,13.46,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_13_sample,safe,TN,0,0,0,0,1,11.77,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_13_sample,safe,FP,17,0,1,0,0,81.55,1.71,
+QEMU/Unicorn,fp_13_sample,safe,TN,0,0,0,0,1,10.46,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_14_sample,safe,TN,0,0,0,0,1,12.35,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_14_sample,safe,TN,0,0,0,0,1,10.81,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_14_sample,safe,TN,0,0,0,0,1,10.58,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_14_sample,safe,FP,14,0,1,0,0,77.51,1.7,
+QEMU/Unicorn,fp_14_sample,safe,TN,0,0,0,0,1,14.04,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,fp_15_sample,safe,TN,0,0,0,0,1,10.58,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,fp_15_sample,safe,TN,0,0,0,0,1,8.58,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,fp_15_sample,safe,TN,0,0,0,0,1,7.22,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,fp_15_sample,safe,FP,13,0,1,0,0,76.1,1.7,
+QEMU/Unicorn,fp_15_sample,safe,TN,0,0,0,0,1,7.99,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2014-0160,vuln,FN,0,0,0,1,0,8.1,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2014-0160,vuln,FN,0,0,0,1,0,8.04,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2014-0160,vuln,FN,0,0,0,1,0,10.53,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2014-0160,vuln,TP,18,1,0,0,0,81.7,1.73,
+QEMU/Unicorn,CVE-2014-0160,vuln,FN,0,0,0,1,0,13.01,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2015-0235,vuln,FN,0,0,0,1,0,12.17,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2015-0235,vuln,FN,0,0,0,1,0,12.76,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2015-0235,vuln,FN,0,0,0,1,0,9.23,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2015-0235,vuln,TP,18,1,0,0,0,88.83,1.71,
+QEMU/Unicorn,CVE-2015-0235,vuln,FN,0,0,0,1,0,9.61,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2016-2177,vuln,FN,0,0,0,1,0,12.2,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2016-2177,vuln,FN,0,0,0,1,0,9.87,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2016-2177,vuln,FN,0,0,0,1,0,9.61,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2016-2177,vuln,TP,26,1,0,0,0,70.69,1.73,
+QEMU/Unicorn,CVE-2016-2177,vuln,FN,0,0,0,1,0,8.47,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2016-6301,vuln,FN,0,0,0,1,0,9.26,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2016-6301,vuln,FN,0,0,0,1,0,9.04,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2016-6301,vuln,FN,0,0,0,1,0,9.06,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2016-6301,vuln,TP,13,1,0,0,0,76.63,1.72,
+QEMU/Unicorn,CVE-2016-6301,vuln,FN,0,0,0,1,0,15.42,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2017-11176,vuln,FN,0,0,0,1,0,14.41,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2017-11176,vuln,FN,0,0,0,1,0,13.19,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2017-11176,vuln,FN,0,0,0,1,0,11.98,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2017-11176,vuln,TP,19,1,0,0,0,74.64,1.74,
+QEMU/Unicorn,CVE-2017-11176,vuln,FN,0,0,0,1,0,11.94,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2018-6552,vuln,FN,0,0,0,1,0,12.83,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2018-6552,vuln,FN,0,0,0,1,0,13.6,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2018-6552,vuln,FN,0,0,0,1,0,9.57,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2018-6552,vuln,TP,14,1,0,0,0,87.16,1.74,
+QEMU/Unicorn,CVE-2018-6552,vuln,FN,0,0,0,1,0,12.24,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2019-1010298,vuln,FN,0,0,0,1,0,15.1,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2019-1010298,vuln,FN,0,0,0,1,0,10.63,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2019-1010298,vuln,FN,0,0,0,1,0,8.53,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2019-1010298,vuln,TP,14,1,0,0,0,80.02,1.72,
+QEMU/Unicorn,CVE-2019-1010298,vuln,FN,0,0,0,1,0,9.35,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2020-10711,vuln,FN,0,0,0,1,0,13.83,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2020-10711,vuln,FN,0,0,0,1,0,11.12,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2020-10711,vuln,FN,0,0,0,1,0,9.75,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2020-10711,vuln,TP,17,1,0,0,0,85.17,1.74,
+QEMU/Unicorn,CVE-2020-10711,vuln,FN,0,0,0,1,0,11.29,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2020-25656,vuln,FN,0,0,0,1,0,10.77,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2020-25656,vuln,FN,0,0,0,1,0,12.17,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2020-25656,vuln,FN,0,0,0,1,0,8.8,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2020-25656,vuln,TP,15,1,0,0,0,82.14,1.71,
+QEMU/Unicorn,CVE-2020-25656,vuln,FN,0,0,0,1,0,10.3,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2021-3156,vuln,FN,0,0,0,1,0,9.62,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2021-3156,vuln,FN,0,0,0,1,0,11.43,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2021-3156,vuln,FN,0,0,0,1,0,8.63,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2021-3156,vuln,TP,18,1,0,0,0,90.95,1.72,
+QEMU/Unicorn,CVE-2021-3156,vuln,FN,0,0,0,1,0,11.72,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2022-0185,vuln,FN,0,0,0,1,0,11.58,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2022-0185,vuln,FN,0,0,0,1,0,9.84,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2022-0185,vuln,FN,0,0,0,1,0,9.8,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2022-0185,vuln,TP,16,1,0,0,0,88.26,1.73,
+QEMU/Unicorn,CVE-2022-0185,vuln,FN,0,0,0,1,0,12.53,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2022-23222,vuln,FN,0,0,0,1,0,13.78,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2022-23222,vuln,FN,0,0,0,1,0,13.74,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2022-23222,vuln,FN,0,0,0,1,0,11.87,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2022-23222,vuln,TP,14,1,0,0,0,87.09,1.72,
+QEMU/Unicorn,CVE-2022-23222,vuln,FN,0,0,0,1,0,11.46,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2023-0461,vuln,FN,0,0,0,1,0,17.82,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2023-0461,vuln,FN,0,0,0,1,0,15.04,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2023-0461,vuln,FN,0,0,0,1,0,10.59,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2023-0461,vuln,TP,19,1,0,0,0,71.91,1.73,
+QEMU/Unicorn,CVE-2023-0461,vuln,FN,0,0,0,1,0,8.68,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2023-3576,vuln,FN,0,0,0,1,0,12.96,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2023-3576,vuln,FN,0,0,0,1,0,12.88,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2023-3576,vuln,FN,0,0,0,1,0,8.7,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2023-3576,vuln,TP,14,1,0,0,0,82.41,1.71,
+QEMU/Unicorn,CVE-2023-3576,vuln,FN,0,0,0,1,0,10.39,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,CVE-2024-21894,vuln,FN,0,0,0,1,0,9.43,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,CVE-2024-21894,vuln,FN,0,0,0,1,0,11.08,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,CVE-2024-21894,vuln,FN,0,0,0,1,0,11.56,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,CVE-2024-21894,vuln,TP,14,1,0,0,0,75.85,1.72,
+QEMU/Unicorn,CVE-2024-21894,vuln,FN,0,0,0,1,0,11.97,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,10.68,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,12.71,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,11.45,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,cve_2021_3156_sudoedit,vuln,TP,19,1,0,0,0,84.45,1.73,
+QEMU/Unicorn,cve_2021_3156_sudoedit,vuln,FN,0,0,0,1,0,11.63,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,cve_2022_0185_kernel_heap,vuln,FN,0,0,0,1,0,32.73,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,cve_2022_0185_kernel_heap,vuln,FN,0,0,0,1,0,13.2,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,cve_2022_0185_kernel_heap,vuln,FN,0,0,0,1,0,11.52,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,cve_2022_0185_kernel_heap,vuln,TP,16,1,0,0,0,79.46,1.73,
+QEMU/Unicorn,cve_2022_0185_kernel_heap,vuln,FN,0,0,0,1,0,12.42,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,12.95,0.35,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,10.63,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,7.81,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,cve_2023_23001_custom,vuln,TP,16,1,0,0,0,70.23,1.72,
+QEMU/Unicorn,cve_2023_23001_custom,vuln,FN,0,0,0,1,0,10.13,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,8.95,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,10.83,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,10.03,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-ALIGN-05,safe,FP,17,0,1,0,0,78.12,1.72,
+QEMU/Unicorn,HEAP-OVERFLOW-ALIGN-05,safe,TN,0,0,0,0,1,10.16,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-BASIC-01,vuln,FN,0,0,0,1,0,12.56,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-BASIC-01,vuln,FN,0,0,0,1,0,11.8,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-BASIC-01,vuln,FN,0,0,0,1,0,10.3,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-BASIC-01,vuln,TP,17,1,0,0,0,80.09,1.72,
+QEMU/Unicorn,HEAP-OVERFLOW-BASIC-01,vuln,FN,0,0,0,1,0,12.27,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-COND-03,vuln,FN,0,0,0,1,0,13.79,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-COND-03,vuln,FN,0,0,0,1,0,13.44,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-COND-03,vuln,FN,0,0,0,1,0,9.43,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-COND-03,vuln,TP,16,1,0,0,0,89.11,1.71,
+QEMU/Unicorn,HEAP-OVERFLOW-COND-03,vuln,FN,0,0,0,1,0,10.64,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-FP-04,safe,TN,0,0,0,0,1,13.08,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-FP-04,safe,TN,0,0,0,0,1,11.38,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-FP-04,safe,TN,0,0,0,0,1,8.99,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-FP-04,safe,FP,18,0,1,0,0,72.63,1.72,
+QEMU/Unicorn,HEAP-OVERFLOW-FP-04,safe,TN,0,0,0,0,1,11.2,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,11.39,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,10.54,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,8.68,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-LOOP-02,vuln,TP,13,1,0,0,0,83.57,1.71,
+QEMU/Unicorn,HEAP-OVERFLOW-LOOP-02,vuln,FN,0,0,0,1,0,11.27,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,13.14,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,10.91,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,10.1,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-MULTI-06,vuln,TP,18,1,0,0,0,79.48,1.71,
+QEMU/Unicorn,HEAP-OVERFLOW-MULTI-06,vuln,FN,0,0,0,1,0,9.78,0.32,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-DDSSC,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,11.75,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+BinMind-Baseline,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,13.15,0.34,AttributeError: module 'platform' has no attribute 'architecture'
+angr,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,11.24,0.31,AttributeError: module 'platform' has no attribute 'architecture'
+Ghidra,HEAP-OVERFLOW-REALLOC-07,vuln,TP,17,1,0,0,0,82.49,1.73,
+QEMU/Unicorn,HEAP-OVERFLOW-REALLOC-07,vuln,FN,0,0,0,1,0,9.43,0.32,AttributeError: module 'platform' has no attribute 'architecture'

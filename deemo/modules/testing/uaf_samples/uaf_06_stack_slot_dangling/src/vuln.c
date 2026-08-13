@@ -7,6 +7,6 @@ int main(void) {
     strcpy(p, "data");
     char *saved = p;
     free(p);
-    printf("[*] %s\n", saved);     /* UAF: ±ğÃû¾­Õ»²ÛÊ¹ÓÃ */
+    printf("[*] %s\n", saved);     /* UAF: åˆ«åç»æ ˆæ§½ä½¿ç”¨ */
     return 0;
 }

@@ -232,23 +232,36 @@ def run_pipeline_enhanced(binary_path: str, **kwargs) -> Dict[str, Any]:
     binfo = result.get("binary_info", {})
     binary_hash = result.get('binary_hash', '')
 
-    from core.pipeline_enh_1 import apply_enhancements_1
-    from core.pipeline_enh_2 import apply_enhancements_2
-    from core.pipeline_enh_3 import apply_enhancements_3
-    from core.pipeline_enh_4 import apply_enhancements_4
-    apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash)
-    apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash)
-    apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash)
-    apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash)
+    try:
+        from core.pipeline_enhancements import run_enhancement_strategies
+    except ImportError:
+        run_enhancement_strategies = None
 
-    # L5-8: 后处理与融合层, 每层均为可选, ImportError 时静默降级.
-    from core.pipeline_enh_5 import apply_enhancements_5
-    apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash)
-    from core.pipeline_enh_6 import apply_enhancements_6
-    apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash)
-    from core.pipeline_enh_7 import apply_enhancements_7
-    from core.pipeline_enh_8 import apply_enhancements_8
-    apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash)
-    apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash)
+    if run_enhancement_strategies is not None:
+        # 整合策略按序应用, 单策略失败不中断其余策略
+        run_enhancement_strategies(result, binary_path, binfo, kwargs, binary_hash)
+    else:
+        # 整合模块不可用时回退到分层实现
+        try:
+            from core.pipeline_enh_1 import apply_enhancements_1
+            from core.pipeline_enh_2 import apply_enhancements_2
+            from core.pipeline_enh_3 import apply_enhancements_3
+            from core.pipeline_enh_4 import apply_enhancements_4
+            from core.pipeline_enh_5 import apply_enhancements_5
+            from core.pipeline_enh_6 import apply_enhancements_6
+            from core.pipeline_enh_7 import apply_enhancements_7
+            from core.pipeline_enh_8 import apply_enhancements_8
+        except ImportError:
+            # 增强层整体缺失时返回标准管线结果
+            logger.debug('optional enhancement modules not available')
+            return result
+        apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash)
+        apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash)
 
     return result

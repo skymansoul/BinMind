@@ -67,3 +67,15 @@ def main_range(labels: List[Tuple[str, int]], n_lines: int) -> Optional[Tuple[in
             end = labels[i + 1][1] if i + 1 < len(labels) else n_lines
             return (idx, end)
     return None
+
+
+def range_from_addr(addrs: List[int], main_addr: int,
+                    span: int = 120) -> Optional[Tuple[int, int]]:
+    """按 main 起始地址构造用户区间 (stripped 无标签时的回退).
+
+    strip 不重排布局, 编译时记录的 main 地址在去符号后仍有效.
+    span 覆盖 main 函数体 (O1 下约 40-70 行), 保守取 120."""
+    for i, a in enumerate(addrs):
+        if a == main_addr:
+            return (i, min(i + span, len(addrs)))
+    return None

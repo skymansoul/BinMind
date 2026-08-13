@@ -508,6 +508,43 @@ class CryptoParamExtractor:
             for f in findings
         ]
 
+    def extract_parameters(self, source_text: str) -> list:
+        """从反编译源码文本中提取加密函数调用及参数。
+
+        仅做轻量正则匹配：识别常见加密函数名、参数占位符（key/iv/nonce/rounds/mode 等）
+        与十六进制/字符串/数字字面量。
+        """
+        params: List[dict] = []
+        if not source_text:
+            return params
+
+        crypto_call_re = re.compile(
+            r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)',
+            re.MULTILINE,
+        )
+        crypto_keywords = (
+            'aes', 'des', 'sm4', 'gost', 'chacha', 'rc4', 'blowfish',
+            'encrypt', 'decrypt', 'hmac', 'cipher', 'hash', 'sha', 'md5',
+            'crypt',
+        )
+        for m in crypto_call_re.finditer(source_text):
+            func_name = m.group(1)
+            if not any(kw in func_name.lower() for kw in crypto_keywords):
+                continue
+            arg_text = m.group(2)
+            arg_names = [a.strip() for a in arg_text.split(',') if a.strip()]
+            param = {
+                'function': func_name,
+                'parameters': arg_names,
+                'argument_count': len(arg_names),
+            }
+            literal = re.search(r'(0x[0-9a-fA-F]+|\d+)', arg_text)
+            if literal:
+                param['value'] = literal.group(1)
+            params.append(param)
+
+        return params
+
     def extract_params(self):
         findings = self.extract()
         algo_counts: Dict[str, int] = {}

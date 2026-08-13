@@ -48,7 +48,7 @@ class TestDSEBypassDetector(unittest.TestCase):
         self.assertIn('issuer', detector.certificate_info)
 
     def test_analyze_empty_driver(self):
-                result = detect_dse_bypass(self.temp_file_path)
+        result = detect_dse_bypass(self.temp_file_path)
         self.assertEqual(result.filename, os.path.basename(self.temp_file_path))
         self.assertIsInstance(result.bypass_indicators, list)
 

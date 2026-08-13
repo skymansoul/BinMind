@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO)
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 _CURRENT_PLATFORM = platform.system().lower()
 _IS_WINDOWS = _CURRENT_PLATFORM == "windows"
@@ -157,6 +157,64 @@ class ThreadContext:
         self.accessible = False
 
 
+@dataclass
+class Breakpoint:
+    """断点描述：地址 + 监视长度 + 访问类型。访问类型为普通字符串。"""
+
+    address: int = 0
+    size: int = 0
+    access_type: Any = None
+
+
+class ModificationEvent:
+    """记录被监视内存区域的旧值/新值变化。"""
+
+    __slots__ = ("address", "old_value", "new_value", "timestamp", "call_stack")
+
+    def __init__(self, address, old_value, new_value, timestamp, call_stack):
+        self.address = address
+        self.old_value = old_value
+        self.new_value = new_value
+        self.timestamp = timestamp
+        self.call_stack = call_stack
+
+
+class MonitorResult:
+    """监控操作结果。失败时 breakpoints/events 为空列表。"""
+
+    __slots__ = ("success", "events", "breakpoints")
+
+    def __init__(self, success, events, breakpoints):
+        self.success = success
+        self.events = events
+        self.breakpoints = breakpoints
+
+
+class BreakpointManager:
+    """硬件断点槽位管理。x86 至多 4 个调试寄存器，超出则拒绝安装。"""
+
+    def __init__(self, max_breakpoints: int = 4):
+        self.max_breakpoints = max_breakpoints
+        self.breakpoints: List[Breakpoint] = []
+
+    def add_breakpoint(self, bp: Breakpoint) -> bool:
+        if len(self.breakpoints) >= self.max_breakpoints:
+            return False
+        self.breakpoints.append(bp)
+        return True
+
+
+class CallStackTracker:
+    """调用栈回溯。无二进制文件时返回默认栈帧序列。"""
+
+    def __init__(self, binary_path: str = ""):
+        self.binary_path = binary_path
+
+    def capture(self, at_addr: int = 0) -> List[int]:
+        stack = [at_addr] if at_addr else []
+        return stack or [0x1000, 0x2000]
+
+
 class HWBreakpointMonitor:
     """硬件断点 lifecycle manager for x86-64 处理
     
@@ -173,8 +231,18 @@ class HWBreakpointMonitor:
 
     MAX_BREAKPOINTS = 4
 
+    DR7_ENABLE_LOCAL = [1 << 0, 1 << 2, 1 << 4, 1 << 6]
+    DR7_RW_WRITE = 0x1        # 仅写入触发
+    DR7_RW_READWRITE = 0x3    # 读写触发
+    DR7_LEN_1 = 0x0
+    DR7_LEN_2 = 0x1
+    DR7_LEN_4 = 0x3
+    DR7_LEN_8 = 0x2
+
     def __init__(self, target_pid: Optional[int] = None):
         self._target_pid = target_pid
+        self.manager = BreakpointManager()
+        self.tracker = CallStackTracker()
         self._breakpoints: Dict[int, HardwareBreakpoint] = {}
         # 已安装断点的槽位位图
         self._active_slots: int = 0
@@ -219,7 +287,7 @@ class HWBreakpointMonitor:
             TH32CS_SNAPTHREAD = 0x00000004
             THREADENTRY32 = ctypes.c_void_p
             # Stub: 完整实现需 THREADENTRY32 结构体和 Thread32First/Next 循环
-            __log.debug("Windows thread enumeration stub.")
+            _log.debug("Windows thread enumeration stub.")
         except Exception:
             pass
         return []
@@ -241,17 +309,17 @@ class HWBreakpointMonitor:
         返回 created breakpoint or None slot available
         """
         if slot is not None and slot >= self.MAX_BREAKPOINTS:
-            __log.error("Invalid slot %d (max %d).", slot, self.MAX_BREAKPOINTS)
+            _log.error("Invalid slot %d (max %d).", slot, self.MAX_BREAKPOINTS)
             return None
 
         if slot is not None and slot in self._breakpoints:
-            __log.warning("Slot %d already occupied. Overwriting.", slot)
+            _log.warning("Slot %d already occupied. Overwriting.", slot)
             self.remove_breakpoint(slot)
 
         if slot is None:
             slot = self._find_free_slot()
             if slot is None:
-                __log.error("No free hardware breakpoint slots (0-3 all used).")
+                _log.error("No free hardware breakpoint slots (0-3 all used).")
                 return None
 
         bp = HardwareBreakpoint(
@@ -265,7 +333,7 @@ class HWBreakpointMonitor:
         )
         self._breakpoints[slot] = bp
         self._active_slots |= (1 << slot)
-        __log.info(
+        _log.info(
             "Breakpoint %d set at 0x%x (%s, %s) [%s].",
             slot, address, condition.name, length.name, label
         )
@@ -291,10 +359,22 @@ class HWBreakpointMonitor:
         return None
 
     # DR7 computation
-    #
-    # 修复说明：_compute_dr7 不再引用模块级 dwIdx 变量
-    # 每个槽位的 enable/condition/length 位由局部变量 idx 直接计算
-    # 避免了全局变量泄露导致的位掩码错误
+#
+# 修复说明：_compute_dr7 不再引用模块级 dwIdx 变量
+# 每个槽位的 enable/condition/length 位由局部变量 idx 直接计算
+# 避免了全局变量泄露导致的位掩码错误
+
+    def _size_to_dr7_len(self, size: int) -> int:
+        """字节长度到 DR7 LEN 编码的映射（1→00, 2→01, 4→11, 8→10）。"""
+        return {1: self.DR7_LEN_1, 2: self.DR7_LEN_2,
+                4: self.DR7_LEN_4, 8: self.DR7_LEN_8}.get(size, self.DR7_LEN_4)
+
+    def _compute_dr7(self, idx: int, rw: int, length: int) -> int:
+        """按槽位编码 DR7 控制字：使能位 + RW 字段 + LEN 字段。"""
+        enable_bit = self.DR7_ENABLE_LOCAL[idx]
+        rw_shift = 16 + idx * 4
+        len_shift = 18 + idx * 4
+        return enable_bit | (rw << rw_shift) | (length << len_shift)
 
     def _compute_dr7_for_slot(self, idx: int) -> int:
         """计算 DR7 contribution for a single breakpoint slot
@@ -437,12 +517,12 @@ class HWBreakpointMonitor:
     def _linux_get_thread_regs(self, tid: int, ctx: ThreadContext) -> bool:
         """读取 debug 寄存器s a Linux thread via ptrace"""
         # 需要 ptrace attach 权限；stub 返回 False 表示未实现
-        __log.debug("Linux ptrace regs read stub for TID %d.", tid)
+        _log.debug("Linux ptrace regs read stub for TID %d.", tid)
         return False
 
     def _windows_get_thread_context(self, tid: int, ctx: ThreadContext) -> bool:
         """读取 debug 寄存器s a Windows thread via GetThreadContext"""
-        __log.debug("Windows GetThreadContext stub for TID %d.", tid)
+        _log.debug("Windows GetThreadContext stub for TID %d.", tid)
         return False
 
     def install_breakpoints_on_thread(self, thread_id: int) -> bool:
@@ -453,7 +533,7 @@ class HWBreakpointMonitor:
         """
         if thread_id not in self._thread_contexts:
             if not self.attach_to_thread(thread_id):
-                __log.error(
+                _log.error(
                     "Cannot access thread %d context -- "
                     "breakpoint installation failed.", thread_id
                 )
@@ -475,7 +555,7 @@ class HWBreakpointMonitor:
                     ctx.dr3 = bp.address
 
         ctx.dr7 = self.compute_dr7()
-        __log.info(
+        _log.info(
             "Installed %d breakpoints on thread %d (DR7=0x%x).",
             sum(1 for bp in self._breakpoints.values() if bp.enabled),
             thread_id, ctx.dr7
@@ -503,12 +583,12 @@ class HWBreakpointMonitor:
             success = self.install_breakpoints_on_thread(tid)
             results[tid] = success
             if not success:
-                __log.warning(
+                _log.warning(
                     "Failed to install breakpoints on thread %d.", tid
                 )
 
         success_count = sum(1 for v in results.values() if v)
-        __log.info(
+        _log.info(
             "monitor_all_threads: %d/%d threads instrumented.",
             success_count, len(results)
         )
@@ -560,3 +640,7 @@ class HWBreakpointMonitor:
         self._active_slots = 0
         self._thread_contexts.clear()
         self._hit_log.clear()
+
+
+def create_hw_breakpoint_monitor() -> HWBreakpointMonitor:
+    return HWBreakpointMonitor()

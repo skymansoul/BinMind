@@ -28,12 +28,14 @@ import json
 import os
 import sqlite3
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Dict, List, Optional, Union, Any
 
 from .cve_models import CVEEntry
 
 # 可选 HTTP 导入 — 允许离线操作
+from ._internal_helpers import _HAS_URLLIB
 try:
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
@@ -64,74 +66,78 @@ class KEVClient:
         self._conn: Optional[sqlite3.Connection] = None
         self._init_db()
 
+    @contextmanager
+    def _connect(self):
+        """打开短期 sqlite 连接，提交后自动关闭。
+
+        连接句柄在 Windows 上锁定缓存文件；临时目录清理依赖连接已释放，
+        故所有缓存操作均使用即用即关的连接。
+        """
+        conn = sqlite3.connect(self._db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.commit()
+            conn.close()
+
     def _init_db(self):
         """建立 sqlite 本地缓存 — KEV catalog is small (~2MB), sqlite is fine."""
-        if self._conn is not None:
-            return
-        self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("""
-            CREATE TABLE IF NOT EXISTS kev_entries (
-                cve_id TEXT PRIMARY KEY,
-                vendor_project TEXT,
-                product TEXT,
-                vulnerability_name TEXT,
-                date_added TEXT,
-                short_description TEXT,
-                required_action TEXT,
-                due_date TEXT,
-                known_ransomware INTEGER DEFAULT 0,
-                notes TEXT,
-                raw_json TEXT
-            )
-        """)
-        self._conn.execute("""
-            CREATE TABLE IF NOT EXISTS kev_meta (
-                key TEXT PRIMARY KEY,
-                value TEXT,
-                updated_at TEXT
-            )
-        """)
-        self._conn.commit()
-
-    def _get_conn(self) -> sqlite3.Connection:
-        if self._conn is None:
-            self._init_db()
-        return self._conn
+        with self._connect() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS kev_entries (
+                    cve_id TEXT PRIMARY KEY,
+                    vendor_project TEXT,
+                    product TEXT,
+                    vulnerability_name TEXT,
+                    date_added TEXT,
+                    short_description TEXT,
+                    required_action TEXT,
+                    due_date TEXT,
+                    known_ransomware INTEGER DEFAULT 0,
+                    notes TEXT,
+                    raw_json TEXT
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS kev_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TEXT
+                )
+            """)
 
     def _get_etag(self) -> Optional[str]:
         """从元数据表获取缓存的 ETag。"""
-        conn = self._get_conn()
-        row = conn.execute(
-            "SELECT value FROM kev_meta WHERE key = 'etag'"
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT value FROM kev_meta WHERE key = 'etag'"
+            ).fetchone()
         return row["value"] if row else None
 
     def _set_etag(self, etag: str):
         """在元数据表中存储 ETag。"""
-        conn = self._get_conn()
-        conn.execute(
-            "INSERT OR REPLACE INTO kev_meta (key, value, updated_at) VALUES (?, ?, ?)",
-            ("etag", etag, datetime.now().isoformat()),
-        )
-        conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO kev_meta (key, value, updated_at) VALUES (?, ?, ?)",
+                ("etag", etag, datetime.now().isoformat()),
+            )
 
     def _get_last_fetch(self) -> Optional[str]:
-        conn = self._get_conn()
-        row = conn.execute(
-            "SELECT value FROM kev_meta WHERE key = 'last_fetch'"
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT value FROM kev_meta WHERE key = 'last_fetch'"
+            ).fetchone()
         return row["value"] if row else None
 
     def _set_last_fetch(self):
-        conn = self._get_conn()
-        now = datetime.now().isoformat()
-        conn.execute(
-            "INSERT OR REPLACE INTO kev_meta (key, value, updated_at) VALUES (?, ?, ?)",
-            ("last_fetch", now, now),
-        )
-        conn.commit()
+        with self._connect() as conn:
+            now = datetime.now().isoformat()
+            conn.execute(
+                "INSERT OR REPLACE INTO kev_meta (key, value, updated_at) VALUES (?, ?, ?)",
+                ("last_fetch", now, now),
+            )
 
 # 获取 + 解析
     def fetch_catalog(self, force: bool = False) -> List[Dict[str, Any]]:
@@ -248,37 +254,36 @@ class KEVClient:
 # 存储
     def _store_entries(self, entries: List[Dict[str, Any]]):
         """在本地 sqlite 缓存中写入 (或更新) KEV 条目。"""
-        conn = self._get_conn()
-        for entry in entries:
-            conn.execute(
-                """INSERT OR REPLACE INTO kev_entries
-                   (cve_id, vendor_project, product, vulnerability_name,
-                    date_added, short_description, required_action, due_date,
-                    known_ransomware, notes, raw_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    entry["cve_id"],
-                    entry.get("vendor_project", ""),
-                    entry.get("product", ""),
-                    entry.get("vulnerability_name", ""),
-                    entry.get("date_added", ""),
-                    entry.get("short_description", ""),
-                    entry.get("required_action", ""),
-                    entry.get("due_date", ""),
-                    1 if entry.get("known_ransomware") else 0,
-                    entry.get("notes", ""),
-                    json.dumps(entry),
-                ),
-            )
-        conn.commit()
+        with self._connect() as conn:
+            for entry in entries:
+                conn.execute(
+                    """INSERT OR REPLACE INTO kev_entries
+                       (cve_id, vendor_project, product, vulnerability_name,
+                        date_added, short_description, required_action, due_date,
+                        known_ransomware, notes, raw_json)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        entry["cve_id"],
+                        entry.get("vendor_project", ""),
+                        entry.get("product", ""),
+                        entry.get("vulnerability_name", ""),
+                        entry.get("date_added", ""),
+                        entry.get("short_description", ""),
+                        entry.get("required_action", ""),
+                        entry.get("due_date", ""),
+                        1 if entry.get("known_ransomware") else 0,
+                        entry.get("notes", ""),
+                        json.dumps(entry),
+                    ),
+                )
 
     def _load_cached_entries(self) -> List[Dict[str, Any]]:
         """从本地 sqlite 缓存加载 KEV 条目。
 
         从本地缓存加载KEV条目 — 离线模式下的主要数据源
         """
-        conn = self._get_conn()
-        rows = conn.execute("SELECT * FROM kev_entries ORDER BY cve_id").fetchall()
+        with self._connect() as conn:
+            rows = conn.execute("SELECT * FROM kev_entries ORDER BY cve_id").fetchall()
         entries = []
         for row in rows:
             entries.append({
@@ -299,19 +304,19 @@ class KEVClient:
     def is_kev(self, cve_id: str) -> bool:
         """检查 CVE 是否在 KEV 目录中。"""
         cid = cve_id.upper().strip()
-        conn = self._get_conn()
-        row = conn.execute(
-            "SELECT 1 FROM kev_entries WHERE cve_id = ?", (cid,)
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM kev_entries WHERE cve_id = ?", (cid,)
+            ).fetchone()
         return row is not None
 
     def get_kev_entry(self, cve_id: str) -> Optional[Dict[str, Any]]:
         """获取 CVE 的完整 KEV 条目，未找到时返回 None。"""
         cid = cve_id.upper().strip()
-        conn = self._get_conn()
-        row = conn.execute(
-            "SELECT * FROM kev_entries WHERE cve_id = ?", (cid,)
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM kev_entries WHERE cve_id = ?", (cid,)
+            ).fetchone()
         if not row:
             return None
         return {
@@ -329,17 +334,50 @@ class KEVClient:
 
     def all_cve_ids(self) -> List[str]:
         """返回 KEV 目录中当前所有 CVE ID。"""
-        conn = self._get_conn()
-        rows = conn.execute("SELECT cve_id FROM kev_entries ORDER BY cve_id").fetchall()
+        with self._connect() as conn:
+            rows = conn.execute("SELECT cve_id FROM kev_entries ORDER BY cve_id").fetchall()
         return [r["cve_id"] for r in rows]
 
     def count(self) -> int:
         """返回缓存中 KEV 条目数。"""
-        conn = self._get_conn()
-        row = conn.execute("SELECT COUNT(*) as cnt FROM kev_entries").fetchone()
+        with self._connect() as conn:
+            row = conn.execute("SELECT COUNT(*) as cnt FROM kev_entries").fetchone()
         return row["cnt"] if row else 0
 
+# 缓存读写 (供测试与工具使用)
+    def _save_to_cache(self, raw_entries: List[Dict], etag: str):
+        """将原始 KEV 条目写入本地缓存，并记录 ETag。"""
+        normalized = self._normalize_entries(raw_entries)
+        self._store_entries(normalized)
+        self._set_etag(etag)
+        self._set_last_fetch()
+
+    def _load_cached(self) -> List[Dict[str, Any]]:
+        """从本地缓存加载原始 KEV 条目；无缓存时返回空列表。"""
+        with self._connect() as conn:
+            rows = conn.execute("SELECT raw_json FROM kev_entries ORDER BY cve_id").fetchall()
+        entries = []
+        for row in rows:
+            try:
+                raw = json.loads(row["raw_json"])
+            except (ValueError, TypeError):
+                continue
+            entries.append({
+                "cveID": raw.get("cve_id", ""),
+                "vendorProject": raw.get("vendor_project", ""),
+                "product": raw.get("product", ""),
+                "vulnerabilityName": raw.get("vulnerability_name", ""),
+                "dateAdded": raw.get("date_added", ""),
+                "shortDescription": raw.get("short_description", ""),
+                "requiredAction": raw.get("required_action", ""),
+                "dueDate": raw.get("due_date", ""),
+                "knownRansomwareCampaignUse": "Known" if raw.get("known_ransomware") else "",
+                "notes": raw.get("notes", ""),
+            })
+        return entries
+
 # 同步到主 KB
+
     def sync_to_kb(self, kb: Any) -> int:
         """更新主 CVE 知识库中的 cisa_kev 标志。
 

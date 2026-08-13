@@ -1,6 +1,6 @@
 """对比实验绘图 — 检出率/误报率/F1 柱状图 (O0 vs O2 分组).
 
-创建: 2026-06-11
+创建: 2024-05-03
 用法: python eval/fp_cve_experiment/plot_comparison.py
 输出: eval/fp_cve_experiment/results/comparison_precision.png
       eval/fp_cve_experiment/results/comparison_recall.png
@@ -11,15 +11,15 @@ import csv
 import os
 import sys
 
-try:
-    import matplotlib
+from _common import try_import
+matplotlib = try_import('matplotlib')
+MPL_OK = matplotlib is not None
+if MPL_OK:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     MPL_OK = True
-except ImportError:
-    MPL_OK = False
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
+from _common import HERE as _HERE
 RESULTS = os.path.join(_HERE, 'results')
 
 TOOL_ORDER = ['pcfv', 'baseline', 'angr', 'ghidra', 'asan']
@@ -94,6 +94,32 @@ def main():
     _bar_chart(o0, o2, 'f1', 'F1 Score', 'comparison_f1.png')
     _bar_chart(o0, o2, 'fp_rate', 'False Positive Rate',
                'comparison_fp_rate.png', ymax=1.05)
+    # 加壳/未加壳分组
+    packed_path = os.path.join(RESULTS, 'benchmark_packed.csv')
+    if os.path.exists(packed_path):
+        pk = load_metrics(packed_path)
+        _bar_chart(o0, pk, 'precision', 'Precision (packed vs unpacked)',
+                   'comparison_packed_precision.png')
+        _bar_chart(o0, pk, 'recall', 'Recall (packed vs unpacked)',
+                   'comparison_packed_recall.png')
+        _bar_chart(o0, pk, 'f1', 'F1 Score (packed vs unpacked)',
+                   'comparison_packed_f1.png')
+        _bar_chart(o0, pk, 'fp_rate',
+                   'False Positive Rate (packed vs unpacked)',
+                   'comparison_packed_fp_rate.png', ymax=1.05)
+    # SysV ABI 分组
+    sysv_path = os.path.join(RESULTS, 'benchmark_sysv.csv')
+    if os.path.exists(sysv_path):
+        sv = load_metrics(sysv_path)
+        _bar_chart(o0, sv, 'precision', 'Precision (SysV vs Win64 ABI)',
+                   'comparison_sysv_precision.png')
+        _bar_chart(o0, sv, 'recall', 'Recall (SysV vs Win64 ABI)',
+                   'comparison_sysv_recall.png')
+        _bar_chart(o0, sv, 'f1', 'F1 Score (SysV vs Win64 ABI)',
+                   'comparison_sysv_f1.png')
+        _bar_chart(o0, sv, 'fp_rate',
+                   'False Positive Rate (SysV vs Win64 ABI)',
+                   'comparison_sysv_fp_rate.png', ymax=1.05)
     print('all plots generated')
 
 

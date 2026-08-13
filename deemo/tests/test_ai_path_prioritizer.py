@@ -31,7 +31,6 @@ class TestAIPathPrioritizer:
         result = prioritizer.prioritize([])
 
         assert isinstance(result, PrioritizationResult)
-lass字段完整性$/d
         assert result.total_paths == 0
         assert result.prioritized_paths == 0
 

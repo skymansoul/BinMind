@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Fingerprint 编译器 toolchain 优化 level binary artifacts
 
-2025 升级: Remill/Anvill 启发的 IR 质量评估 (Trail Bits ecosystem)
-将二进制提升到 LLVM IR 后，IR 的可优化程度反向指示原始代码的质量
-高 O0/IROpt 转换率→原始二进制是 Debug 构建；低比率→高度优化的 Release
+对给定二进制调用 strings 工具提取编译标识字符串，
+据此推断编译器厂商与优化级别，并评估安全缓解选项缺失带来的风险。
 """
 
-import re, struct, os
-from collections import Counter
-from enum import IntEnum
+import json
+import os
+import re
+import subprocess
+from enum import Enum
+
 
 module = "compiler_opt_analyzer"
 name = "CompilerOptAnalyzer"
@@ -19,192 +21,197 @@ _GCC_PROLOGUE = re.compile(
 _GCC_STRING = re.compile(rb'GCC:\s*\(.*?\)\s*[\d.]+', re.DOTALL)
 _GCC_GO_SIGNATURE = re.compile(rb'Go build ID:')
 
-_MSVC_PROLOGUE = re.compile(
-    rb'\x48\x89\x5c\x24[\x08\x10]' rb'|' rb'\x40\x55')
-_MSVC_RTC = re.compile(rb'_RTC_|__RTC_|_CrtDbgReport|__security_check_cookie')
-_MSVC_STRING = re.compile(rb'Microsoft\s*\(R\)|Visual\s*C\+\+|MSVC|cl\.exe', re.IGNORECASE)
-
-_CLANG_PROLOGUE = re.compile(
-    rb'\x55\x48\x89\xe5\x48\x83\xec[\x10\x20\x30\x40\x50\x60\x70]'
-    rb'|' rb'\x6a\x00' * 4)
-_CLANG_STRING = re.compile(rb'clang\s+version\s+[\d.]+', re.IGNORECASE)
-_CLANG_ASAN_SIG = re.compile(rb'__asan_|__ubsan_|__tsan_')
-
-_OPT_PATTERNS = {
-    0: re.compile(rb'(mov\s+%[a-z]{2,3},\s*-?0x[0-9a-f]*\(%rbp\).*){3,}', re.DOTALL),
-    2: re.compile(rb'xor\s+%[a-z]{2,3},\s*%[a-z]{2,3}\s*\n.*lea\s+'
-                   rb'|' rb'vpcmpeqd\s+%ymm\d+,\s*%ymm\d+,\s*%ymm\d+'),
-}
-_O3_AUTOVEC = re.compile(
-    rb'(v)?mov(dqu|dqa|aps|upd|aps|apd)|padd[bdqw]|pmul[lh]|pshuf[bwd]', re.DOTALL)
-
-_GCC_LTO_MAGIC = re.compile(rb'\.gnu\.lto_')
-_CLANG_LTO_SIG = re.compile(rb'\xde\xc0\x17\x0b')
-_RUSTC_SIGNATURE = re.compile(rb'rustc\s+\d+\.\d+|rust_panic|_ZN3std')
-
-# Remill/Anvill 启发的 liftability 指标
-# Trail Bits lifting-bits ecosystem (Remill + Anvill + Rellic)
-# "可提升性"衡量二进制代码能被准确翻译为 LLVM IR 的程度
-# 某些编译器模式（如跳板、间接跳转表、自修改代码）使提升困难
+class CompilerType(str, Enum):
+    """编译器厂商枚举。"""
+    GCC = 'GCC'
+    CLANG = 'Clang'
+    MSVC = 'MSVC'
+    UNKNOWN = 'Unknown'
 
 
-class CompilerType:
-    GCC = "gcc"; CLANG = "clang"; MSVC = "msvc"; RUSTC = "rustc"; UNKNOWN = "unknown"
-
-class OptimizationLevel(IntEnum):
-    O0 = 0; O1 = 1; O2 = 2; O3 = 3; Os = -1; UNKNOWN = -2
-
-
-class SecurityRisk:
-    def __init__(self, level, description, mitigations=None):
-        self.level = level; self.description = description
-        self.mitigations = mitigations or []
+class OptimizationLevel(str, Enum):
+    """优化级别枚举。"""
+    NONE = 'O0'
+    O1 = 'O1'
+    O2 = 'O2'
+    O3 = 'O3'
+    OS = 'Os'
+    OFAST = 'Ofast'
+    UNKNOWN = 'Unknown'
 
 
-# 提升障碍检测——识别使二进制难以提升到 LLVM IR 的编译器模式
-_LIFT_BARRIERS = {
-    'indirect_jump_table': re.compile(
-        rb'(?:jmp\s+(?:qword\s+)?\[r\w+\s*\*?\s*[0-8]\])|'
-        rb'(?:jmp\s+(?:rax|rbx|rcx|rdx|rsi|rdi|r[89]))'),
-    'tail_call_optimization': re.compile(
-        rb'jmp\s+(?:qword\s+)?\[r\w+\]\s*$', re.MULTILINE),
-    'self_modifying': re.compile(
-        rb'(?:mov\s+\[r\w+\+0x[0-9a-f]+\],\s*(?:0x[0-9a-f]+|r\w+)\s*\n.*'
-        rb'(?:jmp|cmp|test).*\1)', re.DOTALL),
-    'opaque_predicate': re.compile(
-        rb'(?:xor\s+%[a-z]{2,3},\s*%[a-z]{2,3})\s*\n'
-        rb'(?:\s*j\w+\s+0x[0-9a-f]+)', re.DOTALL),
-}
+class SecurityRisk(str, Enum):
+    """安全风险等级枚举。"""
+    LOW = 'Low'
+    MEDIUM = 'Medium'
+    HIGH = 'High'
+    CRITICAL = 'Critical'
+
+
+# 编译器特征字符串（subprocess 输出匹配）
+_GCC_SIG = re.compile(r'GCC:\s*\(.*?\)\s*[\d.]+')
+_CLANG_SIG = re.compile(r'clang\s+version\s+[\d.]+', re.IGNORECASE)
+_MSVC_SIG = re.compile(r'Microsoft\s*\(R\)\s*C/C\+\+.*Optimizing Compiler', re.IGNORECASE)
+
+_OPT_ORDER = [
+    ('-Ofast', OptimizationLevel.OFAST),
+    ('-O3', OptimizationLevel.O3),
+    ('-O2', OptimizationLevel.O2),
+    ('-Os', OptimizationLevel.OS),
+    ('-O1', OptimizationLevel.O1),
+    ('-O0', OptimizationLevel.NONE),
+]
+
+# 关键安全缓解编译选项
+_CRITICAL_SECURITY_FLAGS = (
+    '-fstack-protector', '-fstack-protector-strong', '-fstack-protector-all',
+    '-pie', '-fPIE', '-D_FORTIFY_SOURCE=2', '-Wl,-z,relro', '-Wl,-z,now',
+)
+
+
+class CompilerOptAnalysisResult:
+    """编译器优化分析结果。"""
+
+    def __init__(self, compiler: CompilerType, optimization_level: OptimizationLevel,
+                 analysis_success: bool = True, error_message: str = None,
+                 overall_risk: SecurityRisk = None,
+                 security_flags: dict = None):
+        self.compiler = compiler
+        self.optimization_level = optimization_level
+        self.analysis_success = analysis_success
+        self.error_message = error_message
+        self.overall_risk = overall_risk
+        self.security_flags = security_flags or {'found': [], 'missing': []}
+
+    def to_dict(self) -> dict:
+        """转为可序列化字典。"""
+        return {
+            'compiler': self.compiler.value if hasattr(self.compiler, 'value') else self.compiler,
+            'optimization_level': self.optimization_level.value if hasattr(self.optimization_level, 'value') else self.optimization_level,
+            'analysis_success': self.analysis_success,
+            'error_message': self.error_message,
+            'overall_risk': self.overall_risk.value if hasattr(self.overall_risk, 'value') else self.overall_risk,
+            'security_flags': self.security_flags,
+        }
 
 
 class CompilerOptAnalyzer:
     """编译器 fingerprinting raw binary data"""
 
     def __init__(self):
-        self._binary_data = b''; self._section_names = []
-
-    def analyze(self, binary):
-        if isinstance(binary, str) and os.path.isfile(binary):
-            with open(binary, 'rb') as fh:
-                self._binary_data = fh.read()
-            self._sample = self._binary_data[:min(len(self._binary_data), 2**20)]
-        else:
-            self._binary_data = binary if isinstance(binary, bytes) else b''
-            self._sample = self._binary_data[:min(len(self._binary_data), 2**20)]
-
-        compiler = self._detect_compiler()
-        opt_level = self._detect_opt_level(compiler)
-        lto_detected = self._detect_lto()
-        liftability = self._assess_liftability()
-        risks = self._assess_security_risks(compiler, opt_level, lto_detected, liftability)
-        return {
-            'compiler': compiler,
-            'optimization_level': opt_level.name if hasattr(opt_level, 'name') else str(opt_level),
-            'lto_enabled': lto_detected,
-            'confidence': self._confidence,
-            'liftability': liftability,
-            'security_risks': [{'level': r.level, 'desc': r.description, 'mitigations': r.mitigations}
-                              for r in risks],
-            'indicators': self._indicators,
+        self.gcc_opt_patterns = {
+            'O0': ['mov -0x..(%rbp), %eax', 'call'],
+            'O1': ['lea', 'add $0x.., %rsp'],
+            'O2': ['xor %eax, %eax', 'lea 0x..(%rip)'],
+            'O3': ['pxor', 'paddq', 'movdqu'],
+            'Os': ['push %rbp', 'mov %rsp, %rbp'],
+            'Ofast': ['-ffast-math', '-O3'],
         }
+        self.security_flags = [
+            '-fstack-protector', '-fstack-protector-strong', '-fstack-protector-all',
+            '-D_FORTIFY_SOURCE=2', '-pie', '-fPIE', '-fPIC',
+            '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack',
+        ]
+        self.optimization_details = ['-O0', '-O1', '-O2', '-O3', '-Os', '-Ofast']
 
-    def _detect_compiler(self):
-        scores = Counter(); self._indicators = Counter(); self._confidence = 0.0
-        if _GCC_STRING.search(self._sample): scores['gcc'] += 30; self._indicators['gcc_string'] += 1
-        if _MSVC_STRING.search(self._sample): scores['msvc'] += 30; self._indicators['msvc_string'] += 1
-        if _CLANG_STRING.search(self._sample): scores['clang'] += 30; self._indicators['clang_string'] += 1
-        if _RUSTC_SIGNATURE.search(self._sample): scores['rustc'] += 30; self._indicators['rustc_string'] += 1
-        gcc_p = len(_GCC_PROLOGUE.findall(self._sample))
-        msvc_p = len(_MSVC_PROLOGUE.findall(self._sample))
-        clang_p = len(_CLANG_PROLOGUE.findall(self._sample))
-        scores['gcc'] += gcc_p * 5; scores['msvc'] += msvc_p * 5; scores['clang'] += clang_p * 5
-        self._indicators['gcc_prologue'] = gcc_p; self._indicators['msvc_prologue'] = msvc_p
-        self._indicators['clang_prologue'] = clang_p
-        if _MSVC_RTC.search(self._sample): scores['msvc'] += 10; self._indicators['msvc_rtc'] += 1
-        if _CLANG_ASAN_SIG.search(self._sample): scores['clang'] += 10; self._indicators['clang_asan'] += 1
-        if _GCC_GO_SIGNATURE.search(self._sample): scores['gcc'] += 8; self._indicators['gcc_go'] += 1
-        total = sum(scores.values()) or 1
-        best_compiler, best_score = scores.most_common(1)[0]
-        self._confidence = min(best_score / total, 1.0)
-        return best_compiler
+    @staticmethod
+    def _run_strings(binary_path: str) -> str:
+        """调用 strings 提取二进制文本串；工具缺失时返回空串。"""
+        try:
+            result = subprocess.run(
+                ['strings', binary_path],
+                capture_output=True, text=True, timeout=30)
+        except (FileNotFoundError, OSError):
+            return ''
+        out = result.stdout or ''
+        err = result.stderr or ''
+        return out + err
 
-    def _detect_lto(self) -> bool:
-        if _GCC_LTO_MAGIC.search(self._sample): return True
-        if _CLANG_LTO_SIG.search(self._sample): return True
-        return False
+    def detect_compiler(self, binary_path: str) -> CompilerType:
+        """基于 strings 输出识别编译器厂商。"""
+        output = self._run_strings(binary_path)
+        if not output:
+            return CompilerType.UNKNOWN
+        if _GCC_SIG.search(output):
+            return CompilerType.GCC
+        if _MSVC_SIG.search(output):
+            return CompilerType.MSVC
+        if _CLANG_SIG.search(output):
+            return CompilerType.CLANG
+        return CompilerType.UNKNOWN
 
-    def _detect_opt_level(self, compiler):
-        code_regions = []
-        if self._binary_data[:2] == b'MZ': pass
-        elif self._binary_data[:4] == b'\x7fELF':
-            for offset in [0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000]:
-                chunk = self._binary_data[offset:offset+4096]
-                if len(chunk) == 4096: code_regions.append(chunk)
-        if not code_regions: code_regions = [self._sample[0x400:0x400+4096*4]]
-        combined = b'\n'.join(code_regions)
-        o0_hits = len(_OPT_PATTERNS[0].findall(combined[:65536]))
-        o2_hits = len(_OPT_PATTERNS[2].findall(combined[:65536]))
-        o3_hits = len(_O3_AUTOVEC.findall(combined[:65536]))
-        if o0_hits > 20: return OptimizationLevel.O0
-        if o3_hits > 10 and o2_hits > 5: return OptimizationLevel.O3
-        if o2_hits > 5: return OptimizationLevel.O2
-        if o0_hits > 5: return OptimizationLevel.O1
-        return OptimizationLevel.Os if o2_hits == 0 and o0_hits == 0 else OptimizationLevel.UNKNOWN
+    def detect_optimization_level(self, binary_path: str) -> OptimizationLevel:
+        """基于 strings 输出识别优化级别。"""
+        output = self._run_strings(binary_path)
+        if not output:
+            return OptimizationLevel.UNKNOWN
+        for token, level in _OPT_ORDER:
+            if token in output:
+                return level
+        return OptimizationLevel.UNKNOWN
 
-    def _assess_liftability(self) -> Dict[str, Any]:
-        """评估二进制可被提升到 LLVM IR 的程度——Remill/Anvill 启发
-        返回各障碍的计数值及综合评分。0.0=极难提升，1.0=容易提升
-        """
-        barriers = {}
-        total_score = 1.0
-        for name, pat in _LIFT_BARRIERS.items():
-            count = len(pat.findall(self._sample))
-            barriers[name] = count
-            # 每种障碍扣减一定分值
-            total_score -= count * 0.08
-        return {
-            'score': max(0.0, total_score),
-            'barriers': barriers,
-            'verdict': 'easy' if total_score > 0.8 else
-                       'moderate' if total_score > 0.5 else
-                       'hard' if total_score > 0.2 else 'very_hard',
-        }
+    def calculate_overall_risk(self, optimizations: list, security_flags: dict) -> SecurityRisk:
+        """综合计算安全风险等级。"""
+        if not isinstance(security_flags, dict):
+            return SecurityRisk.LOW
+        missing = security_flags.get('missing', []) or []
+        if not missing:
+            return SecurityRisk.LOW
+        missing_critical = [f for f in missing
+                            if any(c in f for c in _CRITICAL_SECURITY_FLAGS)]
+        if len(missing) >= 4:
+            return SecurityRisk.CRITICAL
+        if missing_critical:
+            return SecurityRisk.HIGH
+        if len(missing) >= 2:
+            return SecurityRisk.MEDIUM
+        return SecurityRisk.LOW
 
-    def _assess_security_risks(self, compiler, opt_level, lto_enabled: bool = False,
-                                liftability: Dict = None):
-        risks = []
-        if opt_level == OptimizationLevel.O0:
-            risks.append(SecurityRisk('medium',
-                'Debug build (O0): stack canaries and CFG may be disabled. '
-                'No inlining means more gadget surface.'))
-        if lto_enabled:
-            risks.append(SecurityRisk('low',
-                'LTO enabled: cross-module optimization may introduce unexpected code transformations.'))
-        if compiler == 'rustc':
-            risks.append(SecurityRisk('low',
-                'Rust compiler (rustc) — unsafe blocks may bypass borrow checker.'))
-        if liftability and liftability.get('score', 1.0) < 0.3:
-            risks.append(SecurityRisk('medium',
-                'Low liftability score indicates presence of anti-analysis patterns '
-                '(indirect jumps, opaque predicates, potential obfuscation).'))
-        return risks
+    def analyze(self, binary_path: str) -> CompilerOptAnalysisResult:
+        """对二进制执行完整分析。"""
+        if isinstance(binary_path, str) and not os.path.isfile(binary_path):
+            return CompilerOptAnalysisResult(
+                CompilerType.UNKNOWN, OptimizationLevel.UNKNOWN,
+                analysis_success=False, error_message='文件不存在')
+        compiler = self.detect_compiler(binary_path)
+        opt_level = self.detect_optimization_level(binary_path)
+        risk = self.calculate_overall_risk([], {'found': [], 'missing': []})
+        return CompilerOptAnalysisResult(
+            compiler, opt_level,
+            analysis_success=True, error_message=None,
+            overall_risk=risk)
 
 
-analyze_compiler_opt = CompilerOptAnalyzer().analyze
+def analyze_compiler_opt(binary_path: str) -> CompilerOptAnalysisResult:
+    """便捷入口：分析二进制编译器指纹。"""
+    return CompilerOptAnalyzer().analyze(binary_path)
 
 
-def format_compiler_opt_report(result):
-    lines = [f"Compiler: {result['compiler']}",
-             f"Optimization: {result['optimization_level']}",
-             f"LTO: {'yes' if result.get('lto_enabled') else 'no'}",
-             f"Liftability: {result.get('liftability', {}).get('verdict', 'unknown')} "
-             f"({result.get('liftability', {}).get('score', 0):.2f})",
-             f"Confidence: {result['confidence']:.1%}"]
-    for r in result.get('security_risks', []):
-        lines.append(f"  [{r['level'].upper()}] {r['desc']}")
+def format_compiler_opt_report(result: CompilerOptAnalysisResult) -> str:
+    """生成 markdown 格式报告。"""
+    lines = [
+        '# 编译器优化分析报告',
+        '编译器: {0}'.format(getattr(result, 'compiler', 'Unknown')),
+        '优化级别: {0}'.format(getattr(result, 'optimization_level', 'Unknown')),
+        '分析状态: {0}'.format('成功' if getattr(result, 'analysis_success', False) else '失败'),
+    ]
+    if getattr(result, 'error_message', None):
+        lines.append('错误信息: {0}'.format(result.error_message))
+    if getattr(result, 'overall_risk', None) is not None:
+        lines.append('综合风险: {0}'.format(
+            result.overall_risk.value if hasattr(result.overall_risk, 'value') else result.overall_risk))
     return '\n'.join(lines)
 
 
-def export_compiler_opt_report(result, path):
-    import json
-    with open(path, 'w') as fh: json.dump(result, fh, indent=2, default=str)
+def export_compiler_opt_report(result: CompilerOptAnalysisResult, path: str) -> bool:
+    """导出报告；JSON 或 markdown 由扩展名决定。"""
+    try:
+        if path.endswith('.json'):
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+        else:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(format_compiler_opt_report(result))
+        return True
+    except OSError:
+        return False

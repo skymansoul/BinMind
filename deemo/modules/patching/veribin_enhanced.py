@@ -153,7 +153,7 @@ def compute_arcanist_defense_score(
               + 0.15 * min(1.0, min_chain_complexity / 10)
               + 0.25 * min(1.0, effective_entropy / aslr_entropy_bits)
 
-    权重来源: ARCANIST (USENIX Security 2025) Table 4 特征重要性分析。
+    权重来源: ARCANIST Table 4 特征重要性分析。
     """
     n = len(gadgets)
     if n == 0:

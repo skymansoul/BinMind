@@ -1,6 +1,6 @@
 """函数内堆操作分析 — 寄存器追踪 + malloc/free/memcpy 数据流提取.
 
-创建: 2026-06-25 , 修改: 2026-08-07
+创建: 2024-09-27 , 修改: 2024-09-27
 用途: 单函数内轻量抽象寄存器追踪, 提取 malloc→ptr 关系和堆指针的 memcpy/write/free。
 设计决策: 不用完整数据流框架(对生产二进制太重), 仅追踪值来源(常量/malloc@addr/argN),
 区间推断留给 HeapBoundInferrer; ABI默认 Windows/MinGW (rcx=arg1).

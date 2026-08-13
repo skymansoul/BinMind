@@ -64,34 +64,31 @@ class TestMobileBinaryAnalyzer(unittest.TestCase):
 
     def test_sensitive_string(self):
         """测试敏感字符串类"""
+        # 字段对齐模块 API：value/offset，无 score 字段
         ss = SensitiveString(
-            string='secret_password',
+            value='secret_password',
             type='password',
-            address=0x1000,
-            score=0.9
+            offset=0x1000
         )
 
-        self.assertEqual(ss.string, 'secret_password')
-lass字段完整性$/d
+        self.assertEqual(ss.value, 'secret_password')
         self.assertEqual(ss.type, 'password')
-        self.assertEqual(ss.address, 0x1000)
-        self.assertEqual(ss.score, 0.9)
+        self.assertEqual(ss.offset, 0x1000)
 
     def test_mobile_vulnerability(self):
         """测试移动漏洞类"""
+        # 字段对齐模块 API：无 code_snippet/remediation 字段
         vuln = MobileVulnerability(
             type='HARDCODED_KEY',
             severity='High',
             description='硬编码的加密密钥',
-            location='0x1000',
-            code_snippet='char key[] = "secret";',
-            remediation='使用安全的密钥管理方案'
+            location='0x1000'
         )
 
         self.assertEqual(vuln.type, 'HARDCODED_KEY')
         self.assertEqual(vuln.severity, 'High')
         self.assertEqual(vuln.description, '硬编码的加密密钥')
-        self.assertEqual(vuln.remediation, '使用安全的密钥管理方案')
+        self.assertEqual(vuln.location, '0x1000')
 
 
 

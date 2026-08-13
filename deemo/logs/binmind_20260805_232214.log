@@ -1,5 +1,0 @@
-23:22:14 | INFO    | core.pipeline | Binary: cve_2017_1000112-ipv6.elf | x86-64 64-bit | size=54721
-23:22:14 | WARNING | core.decompiler | radare2 not found at radare2
-23:22:14 | INFO    | core.pipeline | Found 0 functions
-23:22:14 | INFO    | core.pipeline | Analyzing 0 functions
-23:22:14 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

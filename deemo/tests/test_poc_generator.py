@@ -56,7 +56,6 @@ class TestPOCGenerator(unittest.TestCase):
 
         self.assertTrue(result.success)
         self.assertEqual(result.vulnerability_type, VulnerabilityType.STACK_BUFFER_OVERFLOW.value)
-lass字段完整性$/d
         self.assertGreater(len(result.poc_data), 0)
 
     def test_format_string_poc(self):
@@ -115,7 +114,6 @@ lass字段完整性$/d
         result = generator.generate(vuln_info)
 
         self.assertTrue(result.success)
-lass字段完整性$/d
         self.assertEqual(result.vulnerability_type, VulnerabilityType.INTEGER_OVERFLOW.value)
         self.assertGreater(len(result.poc_data), 0)
 

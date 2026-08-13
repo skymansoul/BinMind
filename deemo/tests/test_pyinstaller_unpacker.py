@@ -13,7 +13,8 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from modules.pyinstaller_unpacker import (
-    PyInstallerUnpacker, PycFile, UnpackResult, PYTHON_MAGIC_NUMBERS
+    PyInstallerUnpacker, PycFile, UnpackResult, PYTHON_MAGIC_NUMBERS,
+    PackerType, PythonVersion
 )
 
 
@@ -212,7 +213,6 @@ class TestUnpackResult(unittest.TestCase):
         
         data = result.to_dict()
         
-lass字段完整性$/d
         self.assertIn('packer_type', data)
         self.assertIn('source_files', data)
         self.assertIn('metadata', data)

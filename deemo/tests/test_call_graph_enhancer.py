@@ -146,7 +146,6 @@ class TestCallGraphEnhancer(unittest.TestCase):
             address=0x605000, class_name="TestClass",
             methods=[(0x00, "method1"), (0x08, "method2")]
         )
-lass字段完整性$/d
         self.assertEqual(vt.class_name, "TestClass")
         self.assertIn(0x605000, self.m_enhancer.vtables)
 
@@ -155,7 +154,6 @@ lass字段完整性$/d
             address=0x606000, array_name="handlers",
             elements=[(0x00, "h1"), (0x08, "h2")]
         )
-lass字段完整性$/d
         self.assertEqual(fpa.array_name, "handlers")
         self.assertIn(0x606000, self.m_enhancer.fp_arrays)
 

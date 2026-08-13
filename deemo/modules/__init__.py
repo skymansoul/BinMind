@@ -64,12 +64,20 @@ _SUBDIR_LIST = (
     'analysis/symbolic',              # symbolic_exe 及内部文件
     'analysis/decompiler',            # decomp_ai
     'analysis/deobfuscation',         # 去混淆内部
-    'platform/firmware',              # 固件分析
-    'platform/kernel',                # 内核分析
-    'platform/hardware',              # 硬件安全
-    'platform/mobile',                # 移动端
-    'platform/malware',               # 恶意软件
-    'platform/smart_contract',        # 智能合约
+    'binary_analysis',                # 二进制分析
+    'analysis_tools',                 # 分析工具集
+    'deobfuscation',                  # 去混淆
+    'dynamic_analysis',               # 动态分析
+    'firmware',                       # 固件
+    'hardware',                       # 硬件
+    'kernel',                         # 内核
+    'malware',                        # 恶意软件
+    'mobile',                         # 移动端扁平目录
+    'info_collection',                # 信息收集
+    'vuln_detection',                 # 漏洞检测
+    'symbolic',                       # 符号执行
+    'cve',                            # CVE 相关
+    'hfp',                            # 堆误报压制
     'ai_ml',                          # AI/ML 模型
     'crypto',                         # 密码学分析
     'data',                           # 数据层
@@ -83,6 +91,19 @@ _SUBDIR_LIST = (
     'testing',                        # 测试框架
 )
 
+# 同名冲突模块的精确归属：扁平名 → 强制子目录
+# vuln_detection 与 vuln/detection 存在同名文件，按功能归属路由
+_FLAT_OVERRIDES = {
+    'attack_to_exploit': 'vuln_detection',
+    'pii_scanner': 'info_collection',
+}
+
+
+def _flat_file_exists(path):
+    # 上层可能对 os.path.isfile 打桩，此处以 lexists 复核真实文件存在性，
+    # 避免对不存在的 compat/子目录文件执行 exec_module 抛出 FileNotFoundError。
+    return os.path.isfile(path) and os.path.lexists(path)
+
 
 def _resolve_module(name):
     """按 compat → 子目录 → _LAZY_MAP 次序查找并加载模块，
@@ -91,21 +112,62 @@ def _resolve_module(name):
     """
     _modules_dir = os.path.dirname(__file__)
 
+    # 已解析过的扁平模块直接返回缓存对象；重复解析会重执行模块文件，
+    # 导致类对象身份分裂（patch/枚举比较在测试中失效）。
+    _cached = sys.modules.get(f"modules.{name}")
+    if _cached is not None:
+        return _cached
+
     # 第一优先级：compat 兼容层
     if _HAS_COMPAT:
         compat_path = os.path.join(_compat_dir, f"{name}.py")
-        if os.path.isfile(compat_path):
+        if _flat_file_exists(compat_path):
+            # compat 层内模块以 compat.<name> 互引，父包需先注册方可解析
+            if 'compat' not in sys.modules:
+                _cpkg = importlib.util.module_from_spec(
+                    importlib.util.spec_from_loader('compat', loader=None))
+                _cpkg.__path__ = [_compat_dir]
+                sys.modules['compat'] = _cpkg
             spec = importlib.util.spec_from_file_location(f"compat.{name}", compat_path)
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
             return mod
 
-    # 第二优先级：遍历子目录
+    # 第二优先级：同名冲突模块的精确路由
+    # 扁平旧目录与嵌套新目录存在同名文件时，此处指定最终归属。
+    _exact = _FLAT_OVERRIDES.get(name)
+    if _exact is not None:
+        sub_path = os.path.join(_modules_dir, _exact, f"{name}.py")
+        if _flat_file_exists(sub_path):
+            spec = importlib.util.spec_from_file_location(f"{_exact.replace('/', '.')}.{name}", sub_path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+
+    # 第三优先级：遍历子目录
     for subdir in _SUBDIR_LIST:
         sub_path = os.path.join(_modules_dir, subdir, f"{name}.py")
-        if os.path.isfile(sub_path):
-            spec = importlib.util.spec_from_file_location(f"{subdir.replace('/', '.')}.{name}", sub_path)
+        if _flat_file_exists(sub_path):
+            pkg_name = subdir.replace('/', '.')
+            # 注册父包，使模块内的相对导入可解析
+            if pkg_name not in sys.modules:
+                pkg_init = os.path.join(_modules_dir, subdir, '__init__.py')
+                try:
+                    if os.path.isfile(pkg_init):
+                        _spec = importlib.util.spec_from_file_location(pkg_name, pkg_init)
+                        _pkg = importlib.util.module_from_spec(_spec)
+                        sys.modules[pkg_name] = _pkg
+                        _spec.loader.exec_module(_pkg)
+                    else:
+                        _pkg = importlib.util.module_from_spec(
+                            importlib.util.spec_from_file_location(pkg_name, sub_path))
+                        _pkg.__path__ = [os.path.join(_modules_dir, subdir)]
+                        sys.modules[pkg_name] = _pkg
+                except Exception:
+                    pass
+            spec = importlib.util.spec_from_file_location(f"{pkg_name}.{name}", sub_path)
             mod = importlib.util.module_from_spec(spec)
+            sys.modules[f"{pkg_name}.{name}"] = mod
             spec.loader.exec_module(mod)
             return mod
 
@@ -127,7 +189,8 @@ class _FlatLoader(importlib.abc.Loader):
     """空 loader：模块实例已由 _resolve_module exec_module 完成，
     此处仅返回 sys.modules 中已存在的对象。"""
     def create_module(self, spec):
-        return sys.modules.get(spec.name)
+        r = sys.modules.get(spec.name)
+        return r
 
     def exec_module(self, module):
         pass
@@ -154,7 +217,14 @@ class _FlatFinder(importlib.abc.MetaPathFinder):
             return None
 
         sys.modules[fullname] = mod
-        return importlib.machinery.ModuleSpec(fullname, _FlatLoader(), origin=getattr(mod, '__file__', None))
+        spec = importlib.machinery.ModuleSpec(
+            fullname, _FlatLoader(), origin=getattr(mod, '__file__', None))
+        # 结论：必须统一 mod.__spec__ 与扁平 spec，否则 import 机制快路径
+        # 发现 __spec__ 不匹配时，会按模块自带 spec（如 ai_ml.threat_intel）
+        # 二次执行同一文件，生成第二个模块对象，导致 patch 与枚举比较失效。
+        # 约束：__package__ 属性不受影响，相对导入行为保持不变。
+        mod.__spec__ = spec
+        return spec
 
 
 sys.meta_path.insert(0, _FlatFinder())

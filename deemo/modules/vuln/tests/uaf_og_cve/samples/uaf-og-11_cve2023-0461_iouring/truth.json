@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2023-0461",
-  "desc": "CVE-2023-0461 (Linux io_uring) UAF 复现 — 请求释放后 completion",
-  "trigger": "   上下文仍被提交路径写入. 简化: free(p) 后 p->ctx 字段读取. "
-}

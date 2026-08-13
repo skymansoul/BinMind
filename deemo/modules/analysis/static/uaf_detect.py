@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 from .disasm_util import (
     norm_reg, extract_stack_slot, resolve_rip_relative, extract_func_name
 )
+from ._user_scope_mixin import UserScopeMixin
 from .uaf_operand_utils import is_indexed_access, parse_immediate
 from .uaf_pre_analyzer import UAFPreAnalyzer
 from .uaf_path_analyzer import PathAnalyzer
@@ -32,7 +33,7 @@ class HeapObject:
         self.realloc_count = 0
 
 
-class UAFDetector:
+class UAFDetector(UserScopeMixin):
     """UAF 生命周期检测器 v6 — PDL-UAF.
 
     新增能力:
@@ -72,6 +73,9 @@ class UAFDetector:
         self._propagator = PointerPropagator(self)
         self._finalizer = UAFFinalizer(self)
         self._all_instructions: List[dict] = []
+        self._suspected_findings: List[dict] = []
+        self._benign_findings: List[dict] = []
+        self._ulp_enabled: bool = True
 
     def set_user_func_ranges(self, ranges: List[Tuple[int, int]]):
         self._user_func_ranges = sorted(ranges, key=lambda r: r[0])
@@ -145,7 +149,7 @@ class UAFDetector:
                                 first_free, addr):
                             self._findings.append({"type":"double_free",
                                 "address":addr,"obj_id":freed_oid,
-                                "severity":"critical",
+                                "severity":"critical","reg":self._arg_regs[0],
                                 "first_free_at":first_free})
                     obj.freed_at.append(addr)
         elif func in self._DANGEROUS_CALLS or \
@@ -177,7 +181,7 @@ class UAFDetector:
                                 first_free, addr):
                             self._findings.append({"type":"double_free",
                                 "address":addr,"obj_id":freed_oid,
-                                "severity":"critical",
+                                "severity":"critical","reg":self._arg_regs[0],
                                 "first_free_at":first_free})
                     obj.freed_at.append(addr)
             self._reg_to_obj.pop(self._arg_regs[0] if self._arg_regs else "rcx", None)
@@ -191,9 +195,17 @@ class UAFDetector:
         if not freed_params: return
         for pidx in freed_params:
             if pidx >= len(self._arg_regs): continue
-            oid = self._reg_to_obj.get(self._arg_regs[pidx])
+            reg = self._arg_regs[pidx]
+            oid = self._reg_to_obj.get(reg)
             if oid is not None and oid in self._objects:
                 self._objects[oid].freed_at.append(addr)
+            # callee 通过取址释放全局 (free(&g)): 实参寄存器指向全局地址,
+            # 全局对象经 _addr_to_obj 登记. 只查 _reg_to_obj 会漏该模式.
+            g_addr = self._reg_to_global.get(reg)
+            if g_addr is not None:
+                g_oid = self._addr_to_obj.get(g_addr)
+                if g_oid is not None and g_oid in self._objects:
+                    self._objects[g_oid].freed_at.append(addr)
 
     def _handle_realloc(self, ins: dict, ops: List[str], addr: int):
         arg0 = self._arg_regs[0] if self._arg_regs else "rdi"
@@ -277,7 +289,8 @@ class UAFDetector:
                     obj.use_after_free_at.append(addr)
                     self._findings.append({"type":"use_after_free","address":addr,
                         "obj_id":oid,"freed_at":obj.freed_at[-1],"instr_gap":gap,
-                        "function":func,"severity":"critical" if gap>100 else "high"})
+                        "function":func,"reg":ar,
+                        "severity":"critical" if gap>100 else "high"})
                     return
 
     def _track_pointer_move(self, ins: dict, dst_op: str, src_op: str, addr: int):

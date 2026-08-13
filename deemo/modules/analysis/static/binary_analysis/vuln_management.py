@@ -60,7 +60,7 @@ class VulnKB:
                 affected_vendors TEXT DEFAULT '[]',
                 affected_products TEXT DEFAULT '[]',
                 published_date TEXT DEFAULT '',
-                references TEXT DEFAULT '[]'
+                "references" TEXT DEFAULT '[]'
             )
         """)
         conn.commit()
@@ -86,6 +86,41 @@ class VulnKB:
 
     def insert(self, entry: CVEEntry) -> None:
         self.add(entry)
+
+    def import_json(self, payload: dict) -> int:
+        """从 NVD JSON 结构导入 CVE 条目，返回导入数量。
+
+        payload 为 {cve_id: {...}} 或包含 'vulnerabilities' 键的 NVD 2.0 结构。
+        """
+        count = 0
+        entries = payload.get("vulnerabilities", []) if isinstance(payload, dict) else []
+        for item in entries:
+            cve = item.get("cve", item) if isinstance(item, dict) else {}
+            cve_id = cve.get("id", "") if isinstance(cve, dict) else ""
+            if not cve_id:
+                continue
+            desc = ""
+            if isinstance(cve, dict) and cve.get("descriptions"):
+                for d in cve["descriptions"]:
+                    if d.get("lang") == "en":
+                        desc = d.get("value", "")
+                        break
+            self.add(CVEEntry(cve_id=cve_id, description=desc))
+            count += 1
+        return count
+
+    def sync_nvd(self, url: str = "") -> int:
+        """从 NVD 拉取并入库（网络依赖）。离线时返回 0。"""
+        if not url:
+            return 0
+        try:
+            import urllib.request
+            import json as _json
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                data = _json.loads(resp.read().decode("utf-8", errors="replace"))
+            return self.import_json(data)
+        except Exception:
+            return 0
 
     def get(self, cve_id: str) -> Optional[CVEEntry]:
         if not self._conn:

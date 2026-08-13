@@ -1,6 +1,0 @@
-{
-  "id": "uaf_tp_02_alias",
-  "expected_vuln": true,
-  "vuln_type": "use_after_free",
-  "mode": "别名指针 q 与 p 指向同一对象, free(p) 后经 q 使用"
-}

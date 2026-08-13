@@ -1,6 +1,6 @@
 """堆溢出回归测试统一运行器 — 一键: 编译→扫描→收集→报告.
 
-创建: 2026-08-02
+创建: 2024-10-11
 用法: python regression_runner.py [--quick] [--output results.json]
       --quick: 跳过编译, 只扫描已有 exe
 """

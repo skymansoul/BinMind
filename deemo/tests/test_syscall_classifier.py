@@ -77,7 +77,6 @@ class TestSyscallClassifier(unittest.TestCase):
         syscalls = ['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread']
         classifier = SyscallClassifier()
         result = classifier.classify(syscalls)
-lass字段完整性$/d
         self.assertEqual(result.category, ThreatCategory.TROJAN)
         self.assertGreater(result.confidence, 0.5)
 
@@ -93,7 +92,6 @@ lass字段完整性$/d
         sequence = SyscallSequence(pid=1234, calls=['CreateFile', 'ReadFile'])
         classifier = SyscallClassifier()
         result = classifier.classify_sequence(sequence)
-lass字段完整性$/d
         self.assertIsNotNone(result)
 
     def test_batch_classify(self):

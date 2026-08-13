@@ -1,6 +1,6 @@
 """UAF 回归测试运行器 — 编译→反汇编→UAF检测→收集结果.
 
-创建: 2026-04-17 | 更新: 2026-08-08 (集成 UAFTemporalVerifier)
+创建: 2024-12-09 | 更新: 2024-12-09 (集成 UAFTemporalVerifier)
 用途: 对 uaf_samples/ 中的每个样本做:
   1. 编译 (gcc)
   2. 反汇编 (objdump)

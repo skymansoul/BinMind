@@ -39,7 +39,6 @@ class TestBareMetalEmulator(unittest.TestCase):
     def test_architecture_enum(self):
         """Architecture enum 值对不对，arm_cortex_m / mips / x86"""
         from modules.baremetal_emulator import Architecture
-lass字段完整性$/d
         self.assertEqual(Architecture.ARM_CORTEX_M.value, 'arm_cortex_m')
         self.assertEqual(Architecture.ARM_CORTEX_A.value, 'arm_cortex_a')
         self.assertEqual(Architecture.MIPS.value, 'mips')
@@ -55,7 +54,6 @@ lass字段完整性$/d
     def test_execution_state_enum(self):
         from modules.baremetal_emulator import ExecutionState
         self.assertEqual(ExecutionState.RUNNING.value, 'running')
-lass字段完整性$/d
         self.assertEqual(ExecutionState.STOPPED.value, 'stopped')
         self.assertEqual(ExecutionState.ERROR.value, 'error')
         self.assertEqual(ExecutionState.COMPLETED.value, 'completed')

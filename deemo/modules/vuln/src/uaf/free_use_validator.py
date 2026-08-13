@@ -9,7 +9,7 @@
   旧版: free(p) + *q 且 free在use之前 → UAF (不验证p==q)
   新版: free(obj#3) + use(obj#3) → UAF (身份粒度)
 
-创建: 2026-06-01  更新: 2026-08-08 (执行序调用图处理)
+创建: 2024-08-14  更新: 2024-08-14 (执行序调用图处理)
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

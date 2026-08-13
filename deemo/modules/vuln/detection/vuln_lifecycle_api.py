@@ -250,8 +250,8 @@ class VulnLifecycleAPI:
         by_status: Dict[str, int] = {}
         by_severity: Dict[str, int] = {}
         for r in self._records.values():
-            by_status[r.status.value] = by_status.get(r.status.value, 0) + 1
-            by_severity[r.severity.value] = by_severity.get(r.severity.value, 0) + 1
+            by_status[r.status.name] = by_status.get(r.status.name, 0) + 1
+            by_severity[r.severity.name] = by_severity.get(r.severity.name, 0) + 1
         return {
             "total": len(self._records),
             "by_status": by_status,

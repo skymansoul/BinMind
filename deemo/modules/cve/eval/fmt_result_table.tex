@@ -1,0 +1,14 @@
+\begin{table}[h]
+\centering
+\caption{Multi-Tool Format String Detection Benchmark (15 vulnerable + 5 safe samples, O0+O2)}
+\label{tab:fmt_benchmark}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+Tool & TP & FP & FN & TN & Recall & Prec. & FPR & F1 & Time(ms) \\
+\midrule
+BinMind-Fmt-FAPV & 30 & 0 & 0 & 10 & 1.000 & 1.000 & 0.000 & 1.000 & 130.0 \\
+BinMind-Fmt-Base & 30 & 4 & 0 & 6 & 1.000 & 0.882 & 0.400 & 0.938 & 103.2 \\
+angr-fmt & 30 & 10 & 0 & 0 & 1.000 & 0.750 & 1.000 & 0.857 & 904.6 \\
+\bottomrule
+\end{tabular}
+\end{table}

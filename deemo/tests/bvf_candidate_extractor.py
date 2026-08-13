@@ -2,7 +2,7 @@
 """
 BVF候选提取器 — 从C源码提取(alloc, write)候选对.
 
-从run_bvf_benchmark.py拆分, 提供候选提取和辅助函数.
+提供候选提取和辅助函数.
 """
 import re
 import sys

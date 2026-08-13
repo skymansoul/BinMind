@@ -18,12 +18,68 @@ from .constants import (
     AESNI_OPCODES, SHANI_OPCODES, PCLMUL_OPCODES,
     ARIA_S1, ARIA_S2, SEED_SBOX0, SEED_SBOX1, SEED_KC,
     SM3_IV, KECCAK_ROUND_CONSTANTS, BLAKE2_IV, BLAKE3_IV,
+    DES_IP,
 )
 from .utils import shannon_entropy
 
 # 模糊匹配容差 — INTJ权衡: 4字节差异/256 = 1.56%容差。
 # P(随机256B序列偶然匹配) ≈ sum_{k=0}^{4} C(256,k)/2^256 ≈ 2^{-183}。
 _FUZZY_HAMMING_TOLERANCE = 4
+
+# DES 初始置换表 — 64字节的固定特征常量，用于识别 DES 实现
+DES_IP = bytes([
+    58, 50, 42, 34, 26, 18, 10,  2,
+    60, 52, 44, 36, 28, 20, 12,  4,
+    62, 54, 46, 38, 30, 22, 14,  6,
+    64, 56, 48, 40, 32, 24, 16,  8,
+    57, 49, 41, 33, 25, 17,  9,  1,
+    59, 51, 43, 35, 27, 19, 11,  3,
+    61, 53, 45, 37, 29, 21, 13,  5,
+    63, 55, 47, 39, 31, 23, 15,  7,
+])
+
+# 公开常量表 — 供上层引用各算法的特征字节
+CRYPTO_CONSTANTS = {
+    'aes': {
+        'name': 'AES', 'type': 'block_cipher',
+        'constants': {
+            'sbox': bytes(AES_SBOX),
+            'inv_sbox': bytes(AES_INV_SBOX),
+            'rcon': bytes(AES_RCON),
+        },
+    },
+    'md5': {
+        'name': 'MD5', 'type': 'hash',
+        'constants': {'initial': b''.join(w.to_bytes(4, 'little') for w in MD5_IV)},
+    },
+    'sha256': {
+        'name': 'SHA-256', 'type': 'hash',
+        'constants': {'initial': SHA256_IV if isinstance(SHA256_IV, bytes) else b''.join(w.to_bytes(4, 'big') for w in SHA256_IV)},
+    },
+    'des': {
+        'name': 'DES', 'type': 'block_cipher',
+        'constants': {'ip': DES_IP},
+    },
+}
+
+
+def _find_all(data: bytes, pattern: bytes) -> List[int]:
+    """返回 pattern 在 data 中的所有出现位置。"""
+    _out = []
+    _start = 0
+    while True:
+        _idx = data.find(pattern, _start)
+        if _idx == -1:
+            break
+        _out.append(_idx)
+        _start = _idx + 1
+    return _out
+
+
+def _normalize_algo(name: str) -> str:
+    """算法名统一为小写短标识，供结果聚合与比对。"""
+    _base = name.split(' ')[0].split('/')[0]
+    return _base.lower().replace('-', '')
 
 
 @dataclass
@@ -148,12 +204,17 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
         ('MD5', MD5_IV, 4, 'little'),
     ]
     for _name, _iv, _wsize, _endian in _iv_entries:
-        _iv_bytes = b''.join(_w.to_bytes(_wsize, _endian) for _w in _iv)
+        if isinstance(_iv, bytes):
+            _iv_bytes = _iv
+            _iv_words = len(_iv) // _wsize
+        else:
+            _iv_bytes = b''.join(_w.to_bytes(_wsize, _endian) for _w in _iv)
+            _iv_words = len(_iv)
         _pos = _bmh_search(data, _iv_bytes)
         while _pos != -1:
             _out.append(CryptoFinding(
                 algorithm=_name, confidence=0.95,
-                evidence='{} IV ({}x{}bit) at 0x{:x}'.format(_name, len(_iv), _wsize * 8, _pos),
+                evidence='{} IV ({}x{}bit) at 0x{:x}'.format(_name, _iv_words, _wsize * 8, _pos),
                 location=_pos))
             _pos = _bmh_search(data, _iv_bytes, _pos + 1)
 
@@ -371,9 +432,55 @@ def _dedup(findings: List[CryptoFinding], eps: int = 16) -> List[CryptoFinding]:
 
 
 # 主检测器
+_ALGO_NORM = {
+    'AES': 'aes',
+    'AES (ECB_mode嫌疑)': 'aes',
+    'MD5': 'md5',
+    'SHA-256': 'sha256',
+    'SHA-512': 'sha512',
+    'SM4': 'sm4',
+    'SM3': 'sm3',
+    'DES': 'des',
+    'GOST': 'gost',
+    'Blowfish': 'blowfish',
+    'CAMELLIA': 'camellia',
+    'CHACHA20': 'chacha20',
+    'KECCAK': 'keccak',
+    'BLAKE2': 'blake2',
+    'BLAKE3': 'blake3',
+    'ARIA': 'aria',
+    'SEED': 'seed',
+}
+
+# 公开常量表 — 供上层引用各算法的特征字节
+CRYPTO_CONSTANTS = {
+    'aes': {
+        'name': 'AES', 'type': 'block_cipher',
+        'constants': {
+            'sbox': bytes(AES_SBOX),
+            'inv_sbox': bytes(AES_INV_SBOX),
+            'rcon': bytes(AES_RCON),
+        },
+    },
+    'md5': {
+        'name': 'MD5', 'type': 'hash',
+        'constants': {'initial': b''.join(w.to_bytes(4, 'little') for w in MD5_IV)},
+    },
+    'sha256': {
+        'name': 'SHA-256', 'type': 'hash',
+        'constants': {'initial': SHA256_IV if isinstance(SHA256_IV, bytes) else b''.join(w.to_bytes(4, 'big') for w in SHA256_IV)},
+    },
+    'des': {
+        'name': 'DES', 'type': 'block_cipher',
+        'constants': {'ip': DES_IP},
+    },
+}
+
+
 class CryptoDetector:
-    def __init__(self, data: bytes, strings: Optional[List[str]] = None):
-        self._data = data
+    def __init__(self, data: Optional[bytes] = None,
+                 strings: Optional[List[str]] = None):
+        self._data = data if data is not None else b""
         self._strs = strings or []
 
     def run_all(self) -> List[CryptoFinding]:
@@ -384,8 +491,33 @@ class CryptoDetector:
             _all.extend(detect_by_api_strings(self._strs))
         return _dedup(_all)
 
-    @classmethod
-    def scan_file(cls, path: str) -> list:
+    def _scan_bytes(self, data: bytes) -> List[CryptoFinding]:
+        """字节级扫描，返回算法名规范化为小写的 finding 列表。"""
+        strings = _extract_printable(data)
+        findings = []
+        findings.extend(detect_by_magic_constants(data))
+        findings.extend(detect_by_structure(data))
+        if strings:
+            findings.extend(detect_by_api_strings(strings))
+        # DES 初始置换表 —— 弱算法指纹
+        try:
+            from .constants import DES_IP
+            _pos = data.find(DES_IP)
+            if _pos >= 0:
+                findings.append(CryptoFinding(
+                    algorithm='DES', confidence=0.90,
+                    evidence='DES IP table at 0x{:x}'.format(_pos), location=_pos))
+        except ImportError:
+            pass
+        for f in findings:
+            f.algorithm = _ALGO_NORM.get(f.algorithm, f.algorithm.lower())
+        return _dedup(findings)
+
+    def _calculate_entropy(self, data: bytes) -> float:
+        return shannon_entropy(data) * 8
+
+    def scan_file(self, path: str):
+        """扫描文件，返回 {algorithms, key_candidates, risks} 结构。"""
         from .utils import safeReadBytes as _srb
         raw = _srb(path)
         if raw is None:
@@ -393,14 +525,59 @@ class CryptoDetector:
             _log.getLogger(__name__).error("Cannot open %s", path)
             return []
         strings = _extract_printable(raw)
-        det = cls(raw, strings)
-        return [_finding_to_dict(f) for f in det.run_all()]
+        det = cls_for_scan(raw, strings)
+        return det._build_file_result()
+
+    def format_result(self, result: dict) -> str:
+        """格式化扫描结果为可读文本。"""
+        lines = ["密码学算法检测结果"]
+        for algo in result.get('algorithms', []):
+            lines.append("  - {} (confidence={})".format(
+                algo.get('name'), algo.get('confidence')))
+        for risk in result.get('risks', []):
+            lines.append("  [risk] {}: {}".format(
+                risk.get('type'), risk.get('description', '')))
+        for key in result.get('key_candidates', []):
+            lines.append("  [key] offset=0x{:x}".format(
+                key.get('offset', 0)))
+        return "\n".join(lines)
+
+    def _build_file_result(self) -> dict:
+        findings = self._scan_bytes(self._data)
+        algorithms = []
+        seen = set()
+        for f in findings:
+            if f.algorithm not in seen:
+                seen.add(f.algorithm)
+                algorithms.append({'name': f.algorithm, 'confidence': f.confidence})
+        risks = []
+        if 'des' in seen:
+            risks.append({'type': 'weak_algorithm',
+                          'description': 'DES 初始置换表 —— 弱加密算法'})
+        key_candidates = []
+        # 高熵数据段作为潜在硬编码密钥: 16字节窗口内字节去重度高视为候选
+        window = 16
+        for i in range(0, max(len(self._data) - window, 0) + 1):
+            chunk = self._data[i:i + window]
+            if len(chunk) < window:
+                continue
+            if len(set(chunk)) < 14:
+                continue
+            key_candidates.append({'offset': i, 'entropy': round(self._calculate_entropy(chunk), 3)})
+            break
+        return {'algorithms': algorithms, 'key_candidates': key_candidates,
+                'risks': risks}
 
     @classmethod
     def scan_bytes(cls, data: bytes) -> list:
         strings = _extract_printable(data)
         det = cls(data, strings)
         return [_finding_to_dict(f) for f in det.run_all()]
+
+
+def cls_for_scan(data: bytes, strings: Optional[List[str]] = None):
+    """scan_file 的实例工厂。"""
+    return CryptoDetector(data, strings)
 
 
 def _extract_printable(data: bytes, min_len: int = 4) -> list:

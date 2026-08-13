@@ -28,7 +28,8 @@ def scan_internal(path, use_filter=True):
             try:
                 from core.heap_fp_filter import apply_fp_filters
                 f = apply_fp_filters(f, [])
-            except ImportError: pass
+            except ImportError:
+                pass
     except Exception: f = []
     return {"findings": len(f), "time_s": round(time.perf_counter()-t0, 2)}
 

@@ -1,6 +1,6 @@
 """函数内控制流图与支配关系 — PCFV 守卫支配性验证的基础.
 
-创建: 2026-07-10
+创建: 2024-09-05
 设计决策:
   - 支配性验证是 PCFV 与基线路径窄化的本质区别: 基线反向BFS收集约束时不验证
     守卫是否真正支配访问点, 兄弟分支的守卫会被错误采信, 导致真阳性被过滤.
@@ -35,6 +35,7 @@ class IntraCFG:
         self.insns = insns
         self.nodes: Dict[int, CFGNode] = {}
         self._entry: int = 0
+        self._dom_table: Dict[int, Set[int]] = None
         self._build()
 
     def _build(self) -> None:
@@ -84,14 +85,26 @@ class IntraCFG:
             return None
 
     def dominators(self, node_addr: int) -> Set[int]:
-        """返回 node_addr 的支配者集合(含自身)."""
+        """返回 node_addr 的支配者集合(含自身).
+
+        支配表一次性计算并缓存: 每访问点重复全图迭代是
+        大函数超线性耗时的主源 (scal_4000 单函数 268s).
+        """
         if node_addr not in self.nodes:
             return set()
+        if self._dom_table is None:
+            self._dom_table = self._compute_all_dominators()
+        return self._dom_table.get(node_addr, set())
+
+    def _compute_all_dominators(self) -> Dict[int, Set[int]]:
+        """迭代计算全部节点的支配者集合."""
         dom: Dict[int, Set[int]] = {a: set(self.nodes) for a in self.nodes}
         dom[self._entry] = {self._entry}
         changed = True
+        rounds = 0
         while changed:
             changed = False
+            rounds += 1
             for a in sorted(self.nodes):
                 if a == self._entry:
                     continue
@@ -103,7 +116,7 @@ class IntraCFG:
                 if new_dom != dom[a]:
                     dom[a] = new_dom
                     changed = True
-        return dom.get(node_addr, set())
+        return dom
 
     def reachable(self, src_addr: int, dst_addr: int,
                   max_steps: int = 300) -> bool:

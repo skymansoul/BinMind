@@ -1,7 +1,7 @@
 """
 vuln_analyzer 堆损坏启发式检测：UAF 启发式、double-free、UAF 参数匹配。
 
-拆分自 vuln_analyzer.py。三者均为基于正则 + 可选 CFG/外部模块的文本级检测，
+三者均为基于正则 + 可选 CFG/外部模块的文本级检测
 保留在独立模块以便 heap-corruption analyzer 复用而不污染注册表逻辑。
 """
 

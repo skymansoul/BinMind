@@ -684,28 +684,7 @@ class C3EPipeline:
 
 # 辅助函数
 
-def _get_num(entry, field: str) -> Optional[float]:
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
-
-
-def _get_str(entry, field: str, default: str = "") -> str:
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
 
 def _maturity_val(maturity: str) -> float:

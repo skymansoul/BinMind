@@ -107,7 +107,6 @@ class TestSEHScanner(unittest.TestCase):
 
 
 class TestSEHAbuseDetector(unittest.TestCase):
-        """Test SEH abuse detector"""
 
     def test_detector_creation(self):
         # 基于历史数据的参数精炼结果

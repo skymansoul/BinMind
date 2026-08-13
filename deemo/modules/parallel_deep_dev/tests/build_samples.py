@@ -1,19 +1,18 @@
 """样本编译模块 — 把全部样本编译为可执行文件。
 
 使用 gcc (MinGW 或系统 cc)。仅记录编译结果, 不扫描。
-输出: 每样本 (name, ok, binary, opt) 列表; 写 build_report.json。
+输出: 每样本 (name, ok, binary, opt) 列表; 写 build_report_<class>.json。
+用法: python tests/build_samples.py [--class heap|uaf]
 """
 
+import argparse
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-VULN_DIR = ROOT / 'samples' / 'heap_overflow_cve'
-SAFE_DIR = ROOT / 'samples' / 'heap_safe_fp'
-REPORT = Path(__file__).resolve().parent / 'build_report.json'
+from backends import CLASS_ROOTS
 
 OLEVELS = ['-O0', '-O2', '-Os']
 
@@ -47,14 +46,15 @@ def compile_one(src_dir: Path, cc: str, opt: str) -> tuple:
         return str(binary), False
 
 
-def build_all() -> dict:
+def build_all(sample_class: str = 'heap') -> dict:
     cc = find_cc()
     if not cc:
         print('[build] no C compiler found')
         sys.exit(1)
-    print(f'[build] compiler: {cc}')
+    print(f'[build] compiler: {cc} class={sample_class}')
+    cfg = CLASS_ROOTS[sample_class]
     report = {'compiler': cc, 'samples': {}}
-    for base, vuln in ((VULN_DIR, True), (SAFE_DIR, False)):
+    for base, vuln in ((cfg['vuln_dir'], True), (cfg['safe_dir'], False)):
         for d in sorted(p for p in base.iterdir() if p.is_dir()):
             entry = {'vuln': vuln, 'binaries': {}}
             for opt in OLEVELS:
@@ -64,7 +64,9 @@ def build_all() -> dict:
             status = 'OK' if all(
                 v['ok'] for v in entry['binaries'].values()) else 'FAIL'
             print(f'  [{status}] {d.name}')
-    with open(REPORT, 'w', encoding='utf-8') as f:
+    report_path = Path(__file__).resolve().parent / \
+        f'build_report_{sample_class}.json'
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     n_ok = sum(1 for e in report['samples'].values()
                if all(v['ok'] for v in e['binaries'].values()))
@@ -73,4 +75,8 @@ def build_all() -> dict:
 
 
 if __name__ == '__main__':
-    build_all()
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--class', dest='sample_class', default='heap',
+                    choices=['heap', 'uaf', 'fmt'])
+    args = ap.parse_args()
+    build_all(args.sample_class)

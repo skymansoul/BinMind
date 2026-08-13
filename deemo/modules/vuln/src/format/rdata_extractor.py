@@ -10,7 +10,7 @@
 与BinaryFmtScanner的区别: 本模块不仅区分.rdata vs 栈来源,
 还提取实际的格式字符串内容, 解析说明符, 计数参数.
 
-创建: 2026-05-16
+创建: 2025-02-06
 """
 import re
 import struct

@@ -48,7 +48,8 @@ class FmtStrFinding:
     function_name: str
     detail: str
     recommendation: str = ""
-
+    is_false_positive: bool = False
+    false_positive_reason: str = ""
 
 class FormatStringDetector:
     """格式化字符串漏洞静态检测器.
@@ -77,7 +78,14 @@ class FormatStringDetector:
         'check_managed_app', 'atexit',
     }
 
-    def __init__(self):
+    def __init__(self, call_site_validation: bool = True):
+        """call_site_validation: wrapper 函数参数格式串的调用点验证.
+
+        关闭时恢复逐调用点判定 (消融基线).
+        """
+        self._call_site_validation = call_site_validation
+        self._call_sites = {}
+
         self._parser = InstructionParser()
         self._current_func = "_entry_"
         self._call_ctr = 0
@@ -95,6 +103,7 @@ class FormatStringDetector:
         self._findings = []
         self._reg_source = {}
         self._reg_detail = {}
+        self._call_sites = {}
         func_map = func_map or {}
 
         for idx, line in enumerate(instructions):
@@ -128,7 +137,16 @@ class FormatStringDetector:
 # call检测
             if op == 'call':
                 self._check_fmt_call(idx, operands, line)
+                # 调用边快照: 记录所有调用点的实参来源 (wrapper 验证用)
+                if operands:
+                    callee = operands[0].split('@')[0]
+                    if not InstructionParser.is_reg(callee):
+                        self._call_sites.setdefault(callee, []).append(
+                            (idx, self._reg_source.get('rcx', 'unknown')))
 
+        from .fmt_call_sites import validate_param_slots
+        validate_param_slots(self._findings, self._call_sites,
+                             self._call_site_validation)
         return self._findings
 
     def _track_source(self, op: str, operands: List[str], line: str):
@@ -190,8 +208,14 @@ class FormatStringDetector:
         if '[' in src and ']' in src:
             # 检查是否是栈变量
             if 'rbp' in src.lower() or 'rsp' in src.lower():
-                self._reg_source[dst64] = 'stack_var'
-                self._reg_detail[dst64] = f'mov {dst}, [stack]'
+                base, offset = InstructionParser.parse_mem(src)
+                if base and offset > 0 and offset <= 0x60:
+                    # 正偏移栈槽 = 函数参数槽 (调用约定压入)
+                    self._reg_source[dst64] = 'param_slot'
+                    self._reg_detail[dst64] = f'mov {dst}, [param+{offset:#x}]'
+                else:
+                    self._reg_source[dst64] = 'stack_var'
+                    self._reg_detail[dst64] = f'mov {dst}, [stack]'
             else:
                 self._reg_source[dst64] = 'memory'
                 self._reg_detail[dst64] = f'mov {dst}, [mem]'
@@ -283,4 +307,6 @@ class FormatStringDetector:
             'total_fmtstr': len(self._findings),
             'by_mode': modes,
             'by_severity': severities,
+            'fp_suppressed': sum(1 for f in self._findings
+                                 if f.is_false_positive),
         }

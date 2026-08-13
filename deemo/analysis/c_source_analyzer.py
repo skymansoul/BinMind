@@ -2,9 +2,9 @@
 C源码直接分析器 — 将C源码解析为 HeapOverflowCandidate 供FP过滤管线消费.
 
 与 heap_overflow_detector 的关系: 互补非替代.
-  · heap_overflow_detector: 输入为 Ghidra/r2 反编译IR
-  · c_source_analyzer: 输入为原始C源码(测试/评估场景)
-拆分自: c_source_patterns (纯函数正则), c_source_write_utils (写入端).
+· heap_overflow_detector: 输入为 Ghidra/r2 反编译IR
+· c_source_analyzer: 输入为原始C源码(测试/评估场景)
+
 """
 
 from __future__ import annotations

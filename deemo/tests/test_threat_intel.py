@@ -43,7 +43,6 @@ class TestThreatIntelResult(unittest.TestCase):
         self.assertTrue(result_dict['is_malicious'])
         self.assertEqual(result_dict['malware_families'], ["MalwareX", "TrojanY"])
         self.assertTrue(result_dict['in_wild'])
-lass字段完整性$/d
         self.assertEqual(result_dict['confidence'], 0.8)
 
     def test_default_values(self):
@@ -121,7 +120,6 @@ class TestThreatIntelClient(unittest.TestCase):
         self.client._parse_otx_pulses(pulses, result)
 
         self.assertEqual(len(result.pulses), 1)
-lass字段完整性$/d
         self.assertEqual(len(result.iocs), 1)
         self.assertEqual(result.malware_families, ["RansomwareX"])
         self.assertEqual(result.apt_groups, ["APT32"])

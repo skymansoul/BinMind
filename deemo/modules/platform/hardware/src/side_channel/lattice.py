@@ -282,7 +282,7 @@ class LatticeSideChannelAnalyzer:
                                        trials: int) -> Optional[TimingAnalysisResult]:
         """频率侧信道检测：运行不同汉明权重输入，观察耗时非线性变化。
 
-        参考: Yu et al. (CHES 2024) "Hints from Hertz" —
+        参考: Yu et al. "Hints from Hertz" —
         NTT 中间值汉明权重差异通过 DVFS 影响 CPU 频率，
         频率变化反向体现为时序方差膨胀。
         """

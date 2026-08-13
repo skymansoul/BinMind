@@ -46,7 +46,6 @@ class TestSecurityMetrics(unittest.TestCase):
             high_vulns=3,
             vuln_counts={Severity.CRITICAL: 2, Severity.HIGH: 3}
         )
-lass字段完整性$/d
         self.assertEqual(metrics.total_vulns, 10)
         self.assertEqual(metrics.critical_vulns, 2)
 
@@ -92,7 +91,7 @@ class TestLifecycleReport(unittest.TestCase):
         report = LifecycleReport(
             binary_name="test_binary",
             total_versions=5,
-            analysis_period=,
+            analysis_period=(0, 0),
             current_metrics=SecurityMetrics()
         )
         self.assertEqual(report.binary_name, "test_binary")

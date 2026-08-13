@@ -1,6 +1,6 @@
 # Proxy → ai_ml/ai_function_namer.py; compat shim.
 import os as _os, importlib.util as _iu
-_r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'ai_ml', 'ai_function_namer.py')
+_r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'ai_ml', 'ai_function_namer.py')
 _s = _iu.spec_from_file_location('_ainamer', _r); _m = _iu.module_from_spec(_s)
 _s.loader.exec_module(_m)
 for _k in dir(_m):
@@ -16,35 +16,59 @@ for _k in dir(_m):
 #     def __getattr__(self, name):
 #         return getattr(self._inner, name)
 
-def _make_heuristic():
-    hn = _m.HeuristicFunctionNamer()
-    hn.api_patterns = {}  # api_patterns dict — test dependency.
-    return hn
-_m.AIFunctionNamer.heuristic_namer = property(lambda self: _make_heuristic())
+# 启发式命名器经 property 挂载：构造期赋值与惰性构建并存。
+def _get_heuristic(self):
+    _hn = self.__dict__.get('_heuristic_namer')
+    if _hn is None:
+        _hn = _m.HeuristicFunctionNamer()
+        self.__dict__['_heuristic_namer'] = _hn
+    return _hn
 
-# Intercept __init__ to inject prediction_cache.
+
+def _set_heuristic(self, value):
+    self.__dict__['_heuristic_namer'] = value
+
+
+_m.AIFunctionNamer.heuristic_namer = property(_get_heuristic, _set_heuristic)
+
+# 构造时注入预测缓存；未提供时回填空字典。
 _orig_init_ai = _m.AIFunctionNamer.__init__
+
 def _new_init_ai(self, *a, **kw):
     _orig_init_ai(self, *a, **kw)
-    self.prediction_cache = {}
+    if not hasattr(self, 'prediction_cache'):
+        self.prediction_cache = {}
+
 _m.AIFunctionNamer.__init__ = _new_init_ai
 
-# Attach api_patterns class attribute to HeuristicFunctionNamer.
-_m.HeuristicFunctionNamer.api_patterns = {}
+# 数据类构造兼容：未显式提供的字段回填类型默认值，多余字段透传为实例属性。
+import dataclasses as _dc
 
-# Absorb surplus kwargs in FunctionSignature, FunctionNamePrediction, NamingResult, FunctionSignatureExtractor.
-for _cn in ['FunctionSignature', 'FunctionNamePrediction', 'NamingResult', 'FunctionSignatureExtractor']:
-    if hasattr(_m, _cn):
-        _c = getattr(_m, _cn)
-        _oi = _c.__init__
-        def _mk(orig):
-            def _w(self, **kw):
-                try: orig(self)
-                except Exception: pass  # 修复: bare except → Exception
-                for k, v in kw.items(): setattr(self, k, v)
-            return _w
-        try: _c.__init__ = _mk(_oi)
-        except Exception: pass  # 修复: bare except → Exception
+def _wrap_dataclass_init(cls):
+    _defaults = {}
+    for _f in getattr(cls, '__dataclass_fields__', {}).values():
+        if _f.default is not _dc.MISSING:
+            _defaults[_f.name] = _f.default
+        elif _f.default_factory is not _dc.MISSING:
+            _defaults[_f.name] = _f.default_factory
+    _orig = cls.__init__
+
+    def _init(self, *a, **kw):
+        try:
+            _orig(self, *a, **kw)
+        except TypeError:
+            for _k, _v in _defaults.items():
+                setattr(self, _k, _v() if callable(_v) else _v)
+        for _k, _v in kw.items():
+            setattr(self, _k, _v)
+
+    cls.__init__ = _init
+
+
+for _cn in ('FunctionSignature', 'FunctionNamePrediction', 'NamingResult', 'FunctionSignatureExtractor'):
+    _cls = getattr(_m, _cn, None)
+    if _cls is not None:
+        _wrap_dataclass_init(_cls)
 
 # 启发式命名增强
 # 基于 callee API 语义推断函数名，参考 VarBERT 的 API 上下文特征工程方法。

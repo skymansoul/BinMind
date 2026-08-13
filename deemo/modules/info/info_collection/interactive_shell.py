@@ -658,7 +658,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"Rich Header 解析失败: {e}")
         """yara_gen [output_path] — 从当前分析结果中生成 YARA 规则。
 
-        参照 yarGen 及 RuleLLM (DSN 2025) 的规则结构：
+        参照 yarGen 及 RuleLLM 的规则结构：
         meta 区含生成元数据，strings 区以检测到的 API/字符串为锚点，
         condition 区使用 PE 魔数 + any of strings 组合。
         """

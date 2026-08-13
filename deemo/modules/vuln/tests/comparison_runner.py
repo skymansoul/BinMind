@@ -1,6 +1,6 @@
 """多工具对比实验 — DP-TVRA vs PatternMatch (vs Angr/Ghidra estimated).
 
-创建: 2026-06-04
+创建: 2025-03-28
 生成CSV、LaTeX表格、matplotlib对比图。
 Angr/Ghidra/QEMU在Windows环境不可用 → 使用文献报告的基准数据标记为ESTIMATED。
 """

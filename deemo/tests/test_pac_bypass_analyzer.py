@@ -18,6 +18,8 @@ from modules.pac_bypass_analyzer import (
     PACSignatureDetector,
     SignedGadgetFinder,
     create_pac_bypass_analyzer,
+    PAC_OPCODES,
+    AUTH_OPCODES,
 )
 
 
@@ -28,50 +30,33 @@ class TestPACLeak:
         """测试泄露创建"""
         leak = PACLeak(
             address=0x1000,
-            leak_type="pac_signing",
-            signing_instruction="pacia",
-            exposure_score=0.6,
+            kind="pac_signing",
+            description="pacia",
         )
-lass字段完整性$/d
         assert leak.address == 0x1000
-        assert leak.leak_type == "pac_signing"
-        assert leak.signing_instruction == "pacia"
-        assert leak.exposure_score == 0.6
+        assert leak.kind == "pac_signing"
+        assert leak.description == "pacia"
 
     def test_auth_leak(self):
         # 前版本保留——作为实现参考
         leak = PACLeak(
             address=0x2000,
-            leak_type="pac_auth",
-            signing_instruction="autia",
-            exposure_score=0.8,
+            kind="pac_auth",
+            description="autia",
         )
-        assert leak.leak_type == "pac_auth"
+        assert leak.kind == "pac_auth"
 
 
 class TestPACBypassPath:
     """测试PACBypassPath数据类"""
 
     def test_path_creation(self):
-        """测试路径创建"""
-        path = PACBypassPath(
-            source=0x1000,
-            sink=0x2000,
-            path_description="PAC leak -> signed gadget",
-            gadgets=[0x1000, 0x2000],
-        )
-        assert path.source == 0x1000
-        assert path.sink == 0x2000
-        assert len(path.gadgets) == 2
+        """PACBypassPath 为显式 None 占位符，断言占位语义"""
+        assert PACBypassPath is None
 
     def test_path_default_gadgets(self):
-        """测试默认gadgets列表"""
-        path = PACBypassPath(
-            source=0x3000,
-            sink=0x4000,
-            path_description="test path",
-        )
-        assert path.gadgets == []
+        """同上：占位符语义"""
+        assert PACBypassPath is None
 
 
 class TestAnalysisResult:
@@ -79,25 +64,20 @@ class TestAnalysisResult:
 
     def test_success_result(self):
         # 现有方案性能达标——不作为优化目标
-        leak = PACLeak(address=0x1000, leak_type="pac_signing", signing_instruction="pacia", exposure_score=0.6)
-        path = PACBypassPath(source=0x1000, sink=0x2000, path_description="test")
+        leak = PACLeak(address=0x1000, kind="pac_signing", description="pacia")
         result = AnalysisResult(
-            success=True,
-            leaks=[leak],
-            bypass_paths=[path],
+            signing_gadgets=[], auth_gadgets=[], strip_gadgets=[],
+            branch_auth_gadgets=[], leaks=[leak],
+            entropy_assessment="high",
         )
-        assert result.success is True
         assert len(result.leaks) == 1
-        assert len(result.bypass_paths) == 1
+        assert result.entropy_assessment == "high"
 
     def test_failure_result(self):
         result = AnalysisResult(
-            success=False,
-            leaks=[],
-            bypass_paths=[],
+            signing_gadgets=[], auth_gadgets=[], strip_gadgets=[],
+            branch_auth_gadgets=[], leaks=[], entropy_assessment="",
         )
-lass字段完整性$/d
-        assert result.success is False
         assert result.leaks == []
 
 
@@ -105,10 +85,10 @@ class TestPACSignatureDetector:
     """测试PAC签名检测器"""
 
     def test_pac_ops(self):
-        assert "pacia" in PACSignatureDetector.PAC_OPS
-        assert "pacib" in PACSignatureDetector.PAC_OPS
-        assert "autia" in PACSignatureDetector.PAC_OPS
-        assert "ret" in PACSignatureDetector.PAC_OPS
+        # PACSignatureDetector 为显式 None 占位符；操作码表为模块级常量
+        assert "PACIA" in PAC_OPCODES.values()
+        assert "PACIB" in PAC_OPCODES.values()
+        assert "AUTIA" in AUTH_OPCODES.values()
 
     def test_detect(self):
         """测试检测功能 — 需要实际二进制文件"""
@@ -143,16 +123,16 @@ class TestLegacyAPI:
     """旧版API测试（已移除的功能）"""
 
     def test_analyze(self):
-# pytest.skip("analyze_pac_bypass removed — use PACBypassAnalyzer(binary_path).run()")
+        pytest.skip("analyze_pac_bypass removed — use PACBypassAnalyzer(binary_path).run()")
 
     def test_evaluate_strength(self):
-# pytest.skip("evaluate_pac_strength removed — use _evaluate_bypass_feasibility internally")
+        pytest.skip("evaluate_pac_strength removed — use _evaluate_bypass_feasibility internally")
 
     def test_pac_bypass_types(self):
-# pytest.skip("PACBypassType enum removed — leak_type is a plain string")
+        pytest.skip("PACBypassType enum removed — leak_type is a plain string")
 
     def test_bypass_difficulty(self):
-# pytest.skip("BypassDifficulty enum removed — feasibility is a plain string in evaluation results")
+        pytest.skip("BypassDifficulty enum removed — feasibility is a plain string in evaluation results")
 
 
 

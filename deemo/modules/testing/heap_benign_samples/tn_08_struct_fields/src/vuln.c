@@ -6,7 +6,7 @@ int main(void) {
     struct rec *r = (struct rec *)malloc(sizeof(struct rec));
     if (!r) return 1;
     r->id = 7;
-    strcpy(r->name, "alice");        /* 48×Ö½Ú×Ö¶ÎÄÚ */
+    strcpy(r->name, "alice");        /* 48å­—èŠ‚å­—æ®µå†… */
     r->score = 3.5;
     printf("[*] %s\n", r->name);
     free(r);

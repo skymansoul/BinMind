@@ -1,8 +1,0 @@
-{
-  "sample_id": "TP-06",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "description": "Conditional UAF: free in if-branch, use after merge",
-  "expect_uaf": true,
-  "tarps_expected": "DEF_TP"
-}

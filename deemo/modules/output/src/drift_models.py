@@ -4,7 +4,7 @@ CVSS 时间漂移的数据模型 — 快照、事件、状态枚举。
 TemporalDriftTracker 的逻辑保留在原文件中。
 
 修改记录:
-创建 2026-05-23
+创建 2025-06-09
 """
 
 import time

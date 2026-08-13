@@ -147,7 +147,7 @@ class ConcurrencyHazardDetector:
 
     用法:
         detector = ConcurrencyHazardDetector()
-        report = detector.analyze(original_asm, patched_asm, patch_id='CVE-2024-0001')
+        report = detector.analyze
         for h in report.hazards:
             if h.severity in (HazardSeverity.CRITICAL, HazardSeverity.HIGH):
                 print(f'{h.hazard_type}: {h.description}')

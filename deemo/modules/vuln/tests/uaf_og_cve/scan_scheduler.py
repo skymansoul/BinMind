@@ -41,7 +41,9 @@ def scan_one(d: Path) -> dict:
         result['error'] = 'no binary'
         return result
     t0 = time.time()
-    from _common.disasm import disassemble, parse_asm, main_range
+    from _common.disasm import (disassemble, parse_asm, main_range,
+                                   range_from_addr)
+    from heap.acfpc.pe_imports import build_import_map
     asm = disassemble(str(binary))
     lines, addrs, labels = parse_asm(asm)
     if not lines:
@@ -49,8 +51,15 @@ def scan_one(d: Path) -> dict:
         result['base'] = result['kept'] = 0
         return result
     urange = main_range(labels, len(lines))
-    base = UafBaseScanner().scan(lines, addrs, user_range=urange)
-    og = OgFilter().compress(lines, base, addrs)
+    if urange is None:
+        addr_file = binary.parent / 'main_addr.txt'
+        if addr_file.exists():
+            urange = range_from_addr(addrs, int(addr_file.read_text(
+                encoding='utf-8').strip(), 16))
+    import_map = build_import_map(str(binary), asm)
+    base = UafBaseScanner().scan(lines, addrs, user_range=urange,
+                                 import_map=import_map)
+    og = OgFilter().compress(lines, base, addrs, import_map=import_map)
     result.update({
         'base': len(base),
         'kept': len(og.kept),

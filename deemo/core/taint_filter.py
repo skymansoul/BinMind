@@ -43,3 +43,37 @@ def filter_format_findings(findings, binary_path):
             continue
         filtered.append(f_r)
     return filtered
+
+
+class TaintFilter:
+    """两级污点过滤 — 标记漏洞候选是否源自外部输入。
+
+    第一级: 按反编译伪代码的函数名判断外部输入源;
+    第二级: 按调用行判断格式化参数是否为编译期常量。
+    """
+
+    def __init__(self):
+        self.sources = set(_SOURCE_FUNCTIONS)
+
+    def is_external_source(self, func_name: str) -> bool:
+        return func_name.lower() in self.sources
+
+    def add_source(self, func_name: str) -> None:
+        self.sources.add(func_name.lower())
+
+    def filter_findings(self, findings: List[dict]) -> List[dict]:
+        """过滤掉格式化参数为常量的误报候选。"""
+        return filter_format_findings(findings, None)
+
+    def analyze(self, ir):
+        """从 IR 行识别外部输入源调用。
+
+        记录命中的输入源函数, 返回 self 供链式调用。
+        """
+        self._external_calls = []
+        for line in (ir or []):
+            for src in self.sources:
+                if re.search(r'\b' + re.escape(src) + r'\s*\(', line):
+                    self._external_calls.append(src)
+                    break
+        return self

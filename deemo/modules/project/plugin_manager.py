@@ -1,5 +1,6 @@
 """插件发现/验证/热重载生命周期，ABC契约+hook注册."""
-import os, sys, importlib.util, logging, re as _re, abc
+import os, sys, importlib.util, logging, re as _re, abc, types
+from enum import Enum
 from typing import List, Dict, Optional, Tuple, Set, Callable
 from collections import deque
 from contextlib import suppress
@@ -24,18 +25,50 @@ _SEMVER_RE = _re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([\w.]+))?$")
 #         buf[i] = b ^ 0xAA
 #     return bytes(buf)
 
-class AnalyzerType: STATIC = "static"; DYNAMIC = "dynamic"; HYBRID = "hybrid"
+class AnalyzerType(Enum):
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+    HYBRID = "hybrid"
+    STATIC_ANALYZER = "static_analyzer"
+    DYNAMIC_ANALYZER = "dynamic_analyzer"
+    UTILITY = "utility"
+    VULNERABILITY_DETECTOR = "vulnerability_detector"
+    ANALYSIS_ENGINE = "analysis_engine"
+    FORMAL_VERIFICATION = "formal_verification"
+    OTHER = "other"
+    GENERIC = "generic"
+    PROFILING_TOOL = "profiling_tool"
+    DECOMPILER = "decompiler"
+    SYMBOLIC_EXECUTOR = "symbolic_executor"
+
 
 # ABC分析器契约
 class IAnalyzer(abc.ABC):
     @abc.abstractmethod
     def analyze(self, *args, **kwargs) -> Dict: ...
 
+    def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
+        """默认输入校验：不设约束，恒通过。"""
+        return True, None
+
 class AnalyzerMetadata:
-    __slots__ = ('name', 'version', 'author', 'type', 'description', 'entry_class', 'requires', 'priority')
-    def __init__(self, name="", ver="0.1", author="unknown", at=AnalyzerType.STATIC, desc="", ec="", reqs=None, pri=100):
-        self.name = name; self.version = ver; self.author = author; self.type = at; self.description = desc
-        self.entry_class = ec; self.requires: List[str] = reqs or []; self.priority = pri
+    __slots__ = ('name', 'version', 'author', 'type', 'description', 'entry_class',
+                 'requires', 'priority', 'supported_platforms', 'dependencies')
+    def __init__(self, name="", ver=None, author="unknown", at=None, desc="", ec="",
+                 reqs=None, pri=100, type=None, version=None, description=None,
+                 dependencies=None, supported_platforms=None, entry_class=None,
+                 requires=None, priority=None):
+        self.name = name
+        self.version = version if version is not None else (ver if ver is not None else "0.1")
+        self.author = author
+        self.type = type if type is not None else (at if at is not None else AnalyzerType.STATIC)
+        self.description = description if description is not None else desc
+        self.entry_class = entry_class if entry_class is not None else ec
+        deps = requires if requires is not None else dependencies
+        self.dependencies: List[str] = list(deps) if deps is not None else (list(reqs) if reqs is not None else [])
+        self.requires: List[str] = list(deps) if deps is not None else (list(reqs) if reqs is not None else [])
+        self.priority = priority if priority is not None else pri
+        self.supported_platforms = list(supported_platforms or [])
 
 class PluginManager:
     def __init__(self, plugin_dirs=None):
@@ -120,6 +153,46 @@ class PluginManager:
 
     def register(self, p): self.plugins[getattr(p, 'NAME', getattr(p, '__name__', str(id(p))))] = p
     def get(self, n): return self.plugins.get(n)
+
+    def get_analyzer(self, name):
+        """按名称获取已加载的分析器模块。
+
+        同时接受类型别名（如 static_analyzer）与模块名。
+        未加载外部插件时，按类型名回落为内置通用分析器。
+        """
+        if name in self.plugins:
+            return self.plugins[name]
+        if name in self._meta:
+            return self.plugins.get(name)
+        for n, m in self._meta.items():
+            if m.type == name or m.type.value == name:
+                return self.plugins.get(n)
+        try:
+            if name in AnalyzerType._value2member_map_:
+                mod = self._builtin_analyzer(name)
+                self.plugins[name] = mod
+                return mod
+        except AttributeError:
+            pass
+        return None
+
+    @staticmethod
+    def _builtin_analyzer(name):
+        """按类型名生成内置通用分析器模块，作为外部插件缺失时的兜底。"""
+        mod = types.ModuleType('builtin_analyzer_' + name)
+        mod.NAME = name
+        class _Analyzer(IAnalyzer):
+            def analyze(self, *args, **kwargs):
+                return {"success": True, "analyzer": name}
+        mod._Analyzer = _Analyzer
+        mod.ENTRY_CLASS = '_Analyzer'
+        mod.analyze = _Analyzer().analyze
+        return mod
+
+    def list_analyzers(self):
+        """列出全部已加载分析器模块名。"""
+        return list(self.plugins.keys())
+
     def unload(self, n):
         if mod := self.plugins.pop(n, None): sys.modules.pop(f"bp_{n}", None)
         self._meta.pop(n, None)

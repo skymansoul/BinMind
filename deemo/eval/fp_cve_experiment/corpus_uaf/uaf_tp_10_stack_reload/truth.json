@@ -1,6 +1,0 @@
-{
-  "id": "uaf_tp_10_stack_reload",
-  "expected_vuln": true,
-  "vuln_type": "use_after_free",
-  "mode": "释放后从栈槽重载指针再使用"
-}

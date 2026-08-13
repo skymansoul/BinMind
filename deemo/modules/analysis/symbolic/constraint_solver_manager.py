@@ -97,7 +97,7 @@ class TDigest:
     storing sample. Suitable for 延迟 distributions
     number observations grow large but memory stay fixed
     
-    算法参考 Dunning & Ertl (2013) 的简化变体：单次遍历插入 + 定期合并
+    算法参考 Dunning & Ertl 的简化变体：单次遍历插入 + 定期合并
     不维护红黑树，改用排序列表 + 二分查找，代码量小且足够精确
     """
 
@@ -440,10 +440,20 @@ class CrossSolverConsensus:
             return self._total_agreed / self._total_comparisons
 
     def snapshot(self) -> Dict[str, Any]:
+        # 持有锁时直接计算，避免对非可重入锁的重复获取
         with self._lock:
+            if self._agreement_window:
+                agreed = sum(1 for a in self._agreement_window if a)
+                score = agreed / len(self._agreement_window)
+            else:
+                score = 1.0
+            if self._total_comparisons:
+                rate = self._total_agreed / self._total_comparisons
+            else:
+                rate = 1.0
             return {
-                "consensus_score": round(self.consensus_score(), 4),
-                "overall_agreement_rate": round(self.overall_agreement_rate(), 4),
+                "consensus_score": round(score, 4),
+                "overall_agreement_rate": round(rate, 4),
                 "window_size": self._window_size,
                 "total_comparisons": self._total_comparisons,
                 "recent_agreements": sum(1 for a in self._agreement_window if a),
@@ -686,25 +696,40 @@ class ConstraintSolverManager:
             return False
 
     def _classify_constraint(self, constraint: str) -> ConstraintCategory:
-        """Keyword-based 分类 a constraint's domain
-        
-        Scores category keyword count; 返回 top-scoring
-        category reaches MAX_CATEGORY_SCORE, otherwise MIXED or UNKNOWN"""
+        """按关键词对约束所属域分类。
+
+        类别关键词按语义强度计分：强语义词（bv* 位向量操作、and/or/
+        not 等逻辑词、select/store/array、str. 前缀）权重 2，通用算术
+        运算符（+、-、*、>、len 等）权重 1。单一强关键词即可判定归属；
+        仅弱运算符命中时分数不足，归为 MIXED，避免 `x + y` 这类表达式
+        被误判为整数运算。
+        """
         lower = constraint.lower()
-        bv_keywords = [
-            "bvadd", "bvmul", "bvsub", "bvsdiv", "bvudiv",
-            "bvand", "bvor", "bvxor", "bvshl", "bvlshr", "bvashr",
-            "bvult", "bvule", "bvugt", "bvuge", "bvslt", "bvsle",
-            "bvsgt", "bvsge", "concat", "extract", "_ bv",
-        ]
-        int_keywords = [
-            "+", "-", "*", "div", "mod", ">", "<", ">=", "<=",
-            "int", "to_int",
-        ]
-        real_keywords = ["real", "to_real", "/"]
-        string_keywords = ["str.", "string", "concat", "substring", "len"]
-        array_keywords = ["select", "store", "array"]
-        bool_keywords = ["and", "or", "not", "=>", "true", "false", "ite"]
+
+        strong_keywords = {
+            ConstraintCategory.BITVECTOR: {
+                "bvadd", "bvmul", "bvsub", "bvsdiv", "bvudiv",
+                "bvand", "bvor", "bvxor", "bvshl", "bvlshr", "bvashr",
+                "bvult", "bvule", "bvugt", "bvuge", "bvslt", "bvsle",
+                "bvsgt", "bvsge", "extract", "_ bv",
+            },
+            ConstraintCategory.INTEGER_ARITHMETIC: {"int", "to_int"},
+            ConstraintCategory.REAL_ARITHMETIC: {"real", "to_real"},
+            ConstraintCategory.STRING: {
+                "str.", "string", "substring", "concat",
+            },
+            ConstraintCategory.ARRAY: {"select", "store", "array"},
+            ConstraintCategory.BOOLEAN: {
+                "and", "or", "not", "=>", "true", "false", "ite",
+            },
+        }
+        weak_keywords = {
+            ConstraintCategory.INTEGER_ARITHMETIC: {
+                "+", "-", "*", "div", "mod", ">", "<", ">=", "<=",
+            },
+            ConstraintCategory.REAL_ARITHMETIC: {"/"},
+            ConstraintCategory.STRING: {"len"},
+        }
 
         category_scores: Dict[ConstraintCategory, int] = {
             ConstraintCategory.BITVECTOR: 0,
@@ -715,24 +740,14 @@ class ConstraintSolverManager:
             ConstraintCategory.BOOLEAN: 0,
         }
 
-        for kw in bv_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.BITVECTOR] += 1
-        for kw in int_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.INTEGER_ARITHMETIC] += 1
-        for kw in real_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.REAL_ARITHMETIC] += 1
-        for kw in string_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.STRING] += 1
-        for kw in array_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.ARRAY] += 1
-        for kw in bool_keywords:
-            if kw in lower:
-                category_scores[ConstraintCategory.BOOLEAN] += 1
+        for category, keywords in strong_keywords.items():
+            for kw in keywords:
+                if kw in lower:
+                    category_scores[category] += 2
+        for category, keywords in weak_keywords.items():
+            for kw in keywords:
+                if kw in lower:
+                    category_scores[category] += 1
 
         max_category = max(category_scores, key=category_scores.get)
         max_score = category_scores[max_category]

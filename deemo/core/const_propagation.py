@@ -80,3 +80,48 @@ def is_format_arg_constant(decompiled_code: str, func_name: str,
         arg_var = m.group(2)
         return cp.is_constant(arg_var) is not None
     return False
+
+
+class SparseConstantPropagation:
+    """稀疏常量传播 — 判定反编译代码中变量是否为编译期常量。
+
+    包装 ConstPropagator, 对外提供变量格值查询, 供误报过滤器
+    判断危险调用的参数是否来自常量字符串。
+    """
+
+    def __init__(self):
+        self._propagator = ConstPropagator()
+
+    def set_constant(self, var: str, value: str) -> None:
+        self._propagator.set_constant(var, value)
+
+    def set_bottom(self, var: str) -> None:
+        self._propagator.set_bottom(var)
+
+    def meet(self, var: str, value) -> None:
+        self._propagator.meet(var, value)
+
+    def is_constant(self, var: str):
+        """返回变量的常量值; 非常量或未知返回 None。"""
+        return self._propagator.is_constant(var)
+
+    def analyze(self, ir, func_name: str = ''):
+        """从 IR 行收集常量赋值。
+
+        识别两种赋值: var = "const" 与 var = other_var(常量传递)。
+        返回 self 供链式调用。
+        """
+        import re as _re
+        propagator = ConstPropagator()
+        for line in (ir or []):
+            m = _re.match(r'\s*(\w+)\s*=\s*"([^"]*)"\s*;?', line)
+            if m:
+                propagator.set_constant(m.group(1), m.group(2))
+                continue
+            m = _re.match(r'\s*(\w+)\s*=\s*(\w+)\s*;?', line)
+            if m:
+                src_val = propagator.is_constant(m.group(2))
+                if src_val is not None:
+                    propagator.set_constant(m.group(1), src_val)
+        self._propagator = propagator
+        return self

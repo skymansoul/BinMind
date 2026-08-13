@@ -1,5 +1,5 @@
 
-C:\Users\Administrator\Desktop\BinMind\round2\samples\heap_overflow\cve_2018_1000001_glibc_realpath\vuln.exe:     file format pei-x86-64
+C:\Users\Administrator\Desktop\BinMind\deemo\modules\samples\heap_overflow\cve_2018_1000001_glibc_realpath\vuln.exe:     file format pei-x86-64
 
 
 Disassembly of section .text:

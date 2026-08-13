@@ -42,7 +42,7 @@ def parse_and_write_files(module_key: str, response_text: str) -> list[str]:
         os.makedirs(os.path.dirname(patch_path), exist_ok=True)
         with open(patch_path, "w", encoding="utf-8") as f:
             f.write(
-                f"# AI 生成的创新代码 — 需人工审查后整合\n"
+                f"# 新增创新代码 — 需人工审查后整合\n"
                 f"# 模块: {module_key}\n\n{response_text}\n"
             )
         print(

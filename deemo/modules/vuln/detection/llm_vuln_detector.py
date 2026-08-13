@@ -197,9 +197,9 @@ class LLMVulnerabilityDetector:
         4. 各维度信号加权聚合产出最终评分
 
     参考:
-        - ANVIL: 漏洞检测建模为异常检测问题 (arXiv:2408.16028)
-        - Multi-LLM IoT: 三模块语义融合架构 (arXiv:2512.19945)
-        - Self-consistency prompting (Wang et al., 2023)
+        - ANVIL: 漏洞检测建模为异常检测问题
+        - Multi-LLM IoT: 三模块语义融合架构
+        - Self-consistency prompting
     """
 
     def __init__(self, model_name: str = "", prefer_local: bool = False,
@@ -387,7 +387,7 @@ class LLMVulnerabilityDetector:
                                    danger_funcs: List[str]) -> Optional[VulnSignal]:
         """Self-consistency投票——同一函数多次独立判断。
 
-        Wang et al. (2023) 论证多次采样取众数可降低LLM随机性噪声。
+        Wang et al. 论证多次采样取众数可降低LLM随机性噪声。
         简化版：3轮投票，每轮prompt微调以增加多样性。
         """
         if self.consistency_rounds < 2:
@@ -428,7 +428,7 @@ class LLMVulnerabilityDetector:
     def _signal_perplexity_anomaly(self, pcode: str) -> Optional[VulnSignal]:
         """基于LLM预测困惑度的异常评分。
 
-        ANVIL (arXiv:2408.16028) 核心发现：LLM对漏洞代码的预测损失
+        ANVIL 核心发现：LLM对漏洞代码的预测损失
         高于正常代码。简化版：计算LLM对代码片段续写的偏差。
         """
         lines = pcode.strip().split('\n')

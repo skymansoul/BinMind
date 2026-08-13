@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_15_conditional_double_use",
-  "label": "tp",
-  "cwe": "CWE-416",
-  "cve": "CVE-2017-1000112 类条件解引用 UAF",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "free(p) 后 p->v 访问, 无守卫"
-}

@@ -1,16 +1,16 @@
 #include <string.h>
 #include <stdlib.h>
-/* ½á¹¹ÌåÇ¶Ì×Ö¸Õëµ¼ÖÂµÄ¼ä½Ó¶ÑÒç³ö */
+/* ç»“æž„ä½“åµŒå¥—æŒ‡é’ˆå¯¼è‡´çš„é—´æŽ¥å †æº¢å‡º */
 typedef struct {
     int id;
     int data_len;
-    char *data_ptr; /* Ö¸Ïò¶ÑÉÏµÄ¿É±ä³¤¶ÈÊý¾Ý */
+    char *data_ptr; /* æŒ‡å‘å †ä¸Šçš„å¯å˜é•¿åº¦æ•°æ® */
 } record_t;
 
 void process_record(record_t *rec, const char *new_data, int new_len) {
     rec->data_ptr = malloc(rec->data_len);
     if (!rec->data_ptr) return;
-    /* VULN: new_lenÎ´Óërec->data_len±È½Ï */
+    /* VULN: new_lenæœªä¸Žrec->data_lenæ¯”è¾ƒ */
     memcpy(rec->data_ptr, new_data, new_len);
     free(rec->data_ptr);
 }

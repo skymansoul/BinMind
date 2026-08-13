@@ -1,4 +1,4 @@
-# ~ 2026-08-02
+# ~ 2025-06-09
 # 多阶段SBOM组件匹配管道。
 #
 # 匹配阶段未统一为模板模式——各阶段逻辑略有差异（置信度计算、搜索策略、结果排序）。
@@ -180,26 +180,29 @@ def _kb_lookup(kb, component_name: str, limit: int = 50) -> Tuple[List[Any], int
 
 # 版本检查辅助
 
-def _check_version_affected(version: str, cve_entry: Any) -> bool:
-    """检查组件的版本是否落入CVE条目的受影响范围。
-    读取affected_ranges（或dict条目的ranges_json）并逐范围测试版本。"""
+def _check_version_affected(version: str, ranges_or_entry: Any) -> bool:
+    """检查组件的版本是否落入受影响范围。
+    第二参数兼容三种形态: 范围列表、dict条目、CVEEntry dataclass。
+    范围列表直接测试; 条目则先提取affected_ranges再测试。"""
 
     if not version:
         return False
 
-    # 从条目提取范围（dict或dataclass）
-    if isinstance(cve_entry, dict):
-        ranges = cve_entry.get("affected_ranges", cve_entry.get("ranges_json", []))
+    # 形态1: 已是范围列表
+    if isinstance(ranges_or_entry, list):
+        ranges = ranges_or_entry
     else:
-        ranges = getattr(cve_entry, "affected_ranges", [])
-        if not ranges:
-            # 尝试从私有属性或类字典方式获取
-            try:
-                ranges = cve_entry.get("affected_ranges", [])
-            except (AttributeError, TypeError):
+        # 形态2/3: 从条目提取范围（dict或dataclass）
+        if isinstance(ranges_or_entry, dict):
+            ranges = ranges_or_entry.get(
+                "affected_ranges", ranges_or_entry.get("ranges_json", [])
+            )
+        else:
+            ranges = getattr(ranges_or_entry, "affected_ranges", [])
+            if not ranges:
                 try:
-                    ranges = cve_entry["affected_ranges"]
-                except (KeyError, TypeError):
+                    ranges = ranges_or_entry["affected_ranges"]
+                except (KeyError, TypeError, AttributeError):
                     ranges = []
 
     if not ranges:
@@ -511,6 +514,9 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
 
             version = component.get("version", "")
             ver_affected = _check_version_affected(version, entry) if version else None
+            # 版本已确认不受影响时，低置信度关键词匹配不应反转该结论
+            if ver_affected is False:
+                continue
 
             matches.append({
                 "cve_id": eid,
@@ -526,6 +532,30 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
 
 
 # 主匹配函数
+
+class SBOMComponentMatcher:
+    """面向对象的SBOM组件匹配器。
+
+    持有CVE知识库引用，对单个组件或组件列表执行多阶段匹配。
+    match_component返回按cve_id去重的匹配字典;
+    match_many对组件列表逐项匹配并返回完整报告。"""
+
+    def __init__(self, kb):
+        self.kb = kb
+
+    def match_component(self, component: Dict) -> List[Dict]:
+        """匹配单个组件，返回匹配字典列表（按cve_id去重）。"""
+        matches = match_component(self.kb, component)
+        return list(matches.values())
+
+    def match_many(self, components: List[Dict]) -> Dict:
+        """匹配组件列表，返回build_sbom_report格式的报告。"""
+        return build_sbom_report(self.kb, components)
+
+    def match(self, component: Dict) -> List[Dict]:
+        """match_component的别名，保持API对称性。"""
+        return self.match_component(component)
+
 
 def match_component(kb, component: Dict) -> Dict[str, Dict]:
     """对单个组件运行所有匹配阶段。
@@ -682,10 +712,15 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
 
 # 一次性便捷函数
 
-def match_sbom(kb, sbom_path: str) -> Dict:
-    """一次性: 加载SBOM JSON文件并匹配所有组件。
+def match_sbom(kb, sbom_input: Any) -> Dict:
+    """一次性: 接受SBOM JSON文件路径或组件字典列表。
+    路径形式加载JSON并抽取components; 列表形式直接匹配。
     返回build_sbom_report的完整报告字典。"""
 
+    if isinstance(sbom_input, (list, tuple)):
+        return build_sbom_report(kb, list(sbom_input))
+
+    sbom_path = sbom_input
     if not os.path.exists(sbom_path):
         return {"error": f"SBOM file not found: {sbom_path}", "summary": {}, "matches": [], "top_priorities": []}
 

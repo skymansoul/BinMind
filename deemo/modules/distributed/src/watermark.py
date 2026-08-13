@@ -193,7 +193,7 @@ class FlowController:
 
     def admit(self) -> bool:
         """检测是否允许生产。非阻塞，暂停时立即返回 False。
-        注：原 docstring 标记为 blocking 但调用 admit_nonblocking()。2026-08-02 修正。
+        注：原 docstring 标记为 blocking 但调用 admit_nonblocking()。2024-12-09 修正。
         阻塞语义使用 admit_blocking(timeout=...)。
         """
         return self.admit_nonblocking()

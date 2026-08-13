@@ -274,7 +274,7 @@ def _weighted_sample_without_replacement(
     items: list, weights: list, k: int
 ) -> list:
     """
-    Efraimidis-Spirakis A-ES 加权无放回采样 (Info. Proc. Letters, 2006)。
+    Efraimidis-Spirakis A-ES 加权无放回采样。
 
     对每元素计算 key = u^(1/w)，u ~ Uniform(0,1)，取 key 最大的 K 个。
     时间复杂度 O(N log K)，对比逐次删除重归一化的 O(KN) 有数量级优势。

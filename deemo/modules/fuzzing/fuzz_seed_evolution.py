@@ -84,7 +84,10 @@ class GeneticMutator:
         mutated = False
         # 权重偏置: 高权重字节以更高有效概率被选中
         if byte_weights and len(byte_weights) == len(data):
-            for i in range(len(data)):
+            _n = len(data)
+            for i in range(_n):
+                if i >= len(data):
+                    break  # 变异算子可能缩短序列
                 bias = byte_weights[i] if i < len(byte_weights) else 0.5
                 effective_rate = mutation_rate * (0.5 + bias)
                 if random.random() < effective_rate:
@@ -92,7 +95,10 @@ class GeneticMutator:
                     data = self._apply_mutation(data, i, mutation_type)
                     mutated = True
         else:
-            for i in range(len(data)):
+            _n = len(data)
+            for i in range(_n):
+                if i >= len(data):
+                    break  # 变异算子可能缩短序列
                 if random.random() < mutation_rate:
                     mutation_type = self._select_mutation_type()
                     data = self._apply_mutation(data, i, mutation_type)
@@ -439,7 +445,7 @@ class SeedPopulation:
     def _elitism_selection(self) -> List[Seed]:
         """精英选择: 前20%直接保留, 其余均匀随机补齐。
 
-        2026-08-02 fix: 使用实际种群规模n而非self._size, 防k > n的ValueError。
+        2025-04-17 fix: 使用实际种群规模n而非self._size, 防k > n的ValueError。
         """
         n = len(self._population)
         if n == 0:

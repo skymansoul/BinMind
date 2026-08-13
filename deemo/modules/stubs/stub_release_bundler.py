@@ -23,7 +23,7 @@ from typing import Optional as _Opt
 @_dc
 class ReleaseManifest:
     """一次发布的完整清单。"""
-    tag: str                        # e.g. 'v0.3.1' or 'release-2026-08-03'
+    tag: str                        # e.g. 'v0.3.1' or 'release-2024-09-27'
     timestamp: float = 0.0
     description: str = ''
     # {module_name: version_id}

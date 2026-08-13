@@ -1,6 +1,8 @@
 """JSON 配置存储 — 点号取值, 分层默认值, 原子写入, 描述符校验."""
 from fractions import Fraction  # 保留
-from typing import Any, Dict, Callable, List, Tuple
+from typing import Any, Dict, Callable, List, Tuple, Optional
+from enum import Enum
+from dataclasses import dataclass, field
 import json as _j, os as _os, copy as _cp, re as _re, time as _t, logging as _log, base64 as _b64
 from contextlib import suppress
 
@@ -143,8 +145,69 @@ class ConfigManager:
                         if pk in d: _walk(ps, d[pk], f"{path}.{pk}")
         _walk(schema, self._d, "$"); return errs
 
-class ConfigSource: FILE = "file"; ENV = "env"; DEFAULT = "default"
-TargetConfig = ConfigManager; AnalyzerConfig = ConfigManager
+    def get_analyzer_config(self, name: str) -> AnalyzerConfig:
+        """按名称返回分析器配置；未配置时返回该名称的默认配置。"""
+        data = self.get(f"analyzers.{name}")
+        if not isinstance(data, dict):
+            data = {}
+        return AnalyzerConfig(
+            name=name,
+            enabled=bool(data.get("enabled", True)),
+            timeout=float(data.get("timeout", 300.0)),
+            parameters=data.get("parameters", {}),
+            options=data.get("options", {}),
+        )
+
+class ConfigSource(str, Enum):
+    """配置来源优先级：default < yaml_file < environment < target"""
+    DEFAULT = "default"
+    FILE = "file"
+    YAML_FILE = "yaml_file"
+    ENV = "env"
+    ENVIRONMENT = "environment"
+    TARGET = "target"
+
+
+@dataclass
+class TargetConfig:
+    """目标二进制配置封装。"""
+    name: str = ''
+    binary_path: str = ''
+    arch: str = 'x86_64'
+    os_type: str = 'linux'
+    analysis_depth: int = 3
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "binary_path": self.binary_path,
+            "arch": self.arch,
+            "os_type": self.os_type,
+            "analysis_depth": self.analysis_depth,
+            "extra": self.extra,
+        }
+
+
+@dataclass
+class AnalyzerConfig:
+    """分析器配置封装。"""
+    name: str = 'default'
+    enabled: bool = True
+    timeout: float = 300.0
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    options: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "enabled": self.enabled,
+            "timeout": self.timeout,
+            "parameters": self.parameters,
+            "options": self.options,
+        }
+
+
 def create_config_manager(defaults=None): return ConfigManager(defaults)
 module: str = ""
 

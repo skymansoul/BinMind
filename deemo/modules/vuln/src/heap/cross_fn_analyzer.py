@@ -1,7 +1,7 @@
 """跨函数堆操作分析 — 调用链上malloc→write数据流追踪.
 
-创建: 2026-06-04
-拆分: 2026-08-09 — 内存追踪方法提取至_crossfn_mem_mixin
+创建: 2024-09-02
+拆分: 2024-09-02 — 内存追踪方法提取至_crossfn_mem_mixin
 沿调用边传播参数绑定, 有界上下文敏感 (MAX_DEPTH=3, MAX_CONTEXTS=16).
 Win x64 ABI: rcx=arg1, rdx=arg2, r8=arg3, r9=arg4.
 参考: Sui ASE 2019 context-sensitive VFA; Saber ISSTA 2018 sparse value-flow."""

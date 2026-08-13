@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_03_early_return_guard",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: 早退守卫",
-  "expect_overflow": false,
-  "trigger": "任意 n",
-  "why": "守卫保证到达 memcpy 时 n<=64, C3 支配守卫证明安全"
-}

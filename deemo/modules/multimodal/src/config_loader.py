@@ -82,7 +82,7 @@ def _env_override(config: Dict[str, Any]) -> Dict[str, Any]:
     - MULTIMODAL_RETRY_MAX_ATTEMPTS → config["retry"]["max_attempts"]
     以此类推。
 
-    2026-08-02 FIX：使用 deep copy 替代浅拷贝 dict()。
+    2025-06-09 FIX：使用 deep copy 替代浅拷贝 dict()。
     原浅拷贝下嵌套 dict 为同一对象引用，环境变量覆写会永久污染
     _MODULE_DEFAULTS 的内部 dict，破坏测试隔离性。
     """

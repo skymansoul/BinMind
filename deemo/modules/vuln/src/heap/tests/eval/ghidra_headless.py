@@ -8,7 +8,7 @@
 用法:
   python ghidra_headless.py --sample cve_2021_3156
 
-创建: 2026-06-17
+创建: 2025-02-06
 """
 import argparse
 import json

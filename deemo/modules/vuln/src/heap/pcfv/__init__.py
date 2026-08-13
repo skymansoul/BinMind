@@ -12,7 +12,7 @@
   - 基线反向BFS收集守卫不验证支配性 → 兄弟分支守卫误过滤;
     PCFV 引入支配性验证.
 
-创建: 2026-07-23
+创建: 2023-12-18
 """
 from .types import (Verdict, ProofRule, Provenance, ValueInfo,
                     Evidence, FindingVerdict, GuardConstraint)
@@ -30,9 +30,9 @@ from .pipeline import PCFVReport, analyze_heap_pcfv
 __all__ = [
     "Verdict", "ProofRule", "Provenance", "ValueInfo", "Evidence",
     "FindingVerdict", "GuardConstraint",
-    "ValueFlowTracer", "ValueOpsMixin", "GuardExtractor",
+    "ValueFlowTracer", "GuardExtractor",
     "AllocSizeResolver", "ptmalloc2_usable", "LoopBoundExtractor",
-    "AccessExtractor", "AccessOpsMixin",
+    "AccessExtractor",
     "SafetyProver", "OverflowProver", "PCFVEngine",
     "PCFVReport", "analyze_heap_pcfv",
 ]

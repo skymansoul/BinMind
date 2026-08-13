@@ -1,5 +1,0 @@
-23:20:45 | INFO    | core.pipeline | Binary: CVE-2020-7460_uaf.elf | x86-64 64-bit | size=54620
-23:20:45 | WARNING | core.decompiler | radare2 not found at radare2
-23:20:45 | INFO    | core.pipeline | Found 0 functions
-23:20:45 | INFO    | core.pipeline | Analyzing 0 functions
-23:20:45 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

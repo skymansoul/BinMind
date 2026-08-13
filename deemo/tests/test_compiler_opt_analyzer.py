@@ -51,7 +51,6 @@ class TestCompilerOptAnalyzer(unittest.TestCase):
     def test_optimization_level_enum(self):
         self.assertEqual(OptimizationLevel.NONE.value, 'O0')
         self.assertEqual(OptimizationLevel.O1.value, 'O1')
-lass字段完整性$/d
         self.assertEqual(OptimizationLevel.O2.value, 'O2')
         self.assertEqual(OptimizationLevel.O3.value, 'O3')
         self.assertEqual(OptimizationLevel.OS.value, 'Os')
@@ -78,7 +77,6 @@ lass字段完整性$/d
             f.write(b'')
 
         result = analyze_compiler_opt(empty_path)
-lass字段完整性$/d
         self.assertIsInstance(result, object)
 
     @patch('modules.compiler_opt_analyzer.subprocess.run')
@@ -100,7 +98,6 @@ lass字段完整性$/d
 
         analyzer = CompilerOptAnalyzer()
         compiler = analyzer.detect_compiler(self.test_file)
-lass字段完整性$/d
         self.assertEqual(compiler, CompilerType.CLANG)
 
     @patch('modules.compiler_opt_analyzer.subprocess.run')

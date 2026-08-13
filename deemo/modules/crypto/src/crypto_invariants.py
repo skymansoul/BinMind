@@ -219,7 +219,7 @@ def detect_feistel_structure(data: bytes, start: int = 0,
 
     策略: 搜索等间距重复的操作码窗口 — 每轮相同的F函数体在二进制中表现为
     等距的重复字节片段。以窗口长度作为候选半块大小, 在此假设下检验其他判据。
-    参考: HAMRAZ et al. (2024), "Code is Not Natural Language" ,
+    参考: HAMRAZ et al., "Code is Not Natural Language" ,
     利用代码段的几何重复结构检测密码学轮函数。
     """
     max_scan = min(len(data) - start, 16384)

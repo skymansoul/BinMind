@@ -217,20 +217,25 @@ class TestCWEClient:
 
     def test_close_and_reopen(self):
         """Close and reopen — data persists."""
-        import tempfile, os
+        import tempfile, os, uuid
         from modules.cve.src.cve_cwe import CWEClient
-        tmp = os.path.join(tempfile.gettempdir(), "cwe_test_cache.db")
+        tmp = os.path.join(tempfile.gettempdir(), f"cwe_test_cache_{uuid.uuid4().hex}.db")
         try:
             client1 = CWEClient(tmp)
             assert client1.has_cwe("CWE-79")
             client1.close()
 
             client2 = CWEClient(tmp)
-            assert client2.has_cwe("CWE-79")  # persisted
+            assert client2.has_cwe("CWE-79")
             client2.close()
         finally:
-            if os.path.exists(tmp):
-                os.remove(tmp)
+            for suffix in ('', '-wal', '-shm'):
+                p = tmp + suffix
+                if os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except OSError:
+                        pass
 
     def test_enrich_entry_dict(self):
         """Enrich works with dict entries too."""

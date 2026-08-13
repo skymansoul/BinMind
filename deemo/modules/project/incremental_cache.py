@@ -202,7 +202,7 @@ class IncrementalAnalysisCache:
 
 class IncrementalAnalysisScheduler:
     """增量分析: 检测变更→复用缓存→仅重分析变更目标.
-    与ScanOrchestrator集成，参考Orion (2025)反馈驱动增量循环.
+    与ScanOrchestrator集成，参考Orion反馈驱动增量循环.
     """
 
     def __init__(self, cache: IncrementalAnalysisCache = None):

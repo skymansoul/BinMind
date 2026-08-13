@@ -8,6 +8,7 @@ PKCS#7填充提示器、GCM nonce重用的12字节计数器模式检测、
 import re
 import struct
 import logging
+import os
 import itertools
 from collections import namedtuple
 from typing import Optional, List, Dict, Tuple
@@ -133,8 +134,14 @@ SEVERITY = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'INFO': 0}
 class CryptoMisuse:
     """收集误用发现, 按严重性排序过滤。"""
 
-    def __init__(self):
+    def __init__(self, filename: str = ""):
         self.issues: List[Misuse] = []
+        self.filename: str = filename
+
+    @property
+    def misuses(self) -> List[Misuse]:
+        """误用列表的只读别名，供结果序列化路径使用。"""
+        return self.issues
 
     def add(self, misuse: Misuse) -> None:
         self.issues.append(misuse)
@@ -201,9 +208,15 @@ _BLOOM_PADDING = _build_string_bloom(_PADDING_ORACLE_STRINGS + ['padding', 'decr
 class CryptoMisuseDetector:
     """扫描二进制, 检测十一类密码学最佳实践违规。"""
 
-    def __init__(self):
+    def __init__(self, binary_path: Optional[str] = None):
         self._data: bytes = b''
         self._strings: list = []
+        self.binary_path: Optional[str] = binary_path
+        self.imports: List[str] = []
+        self.strings: List[str] = []
+        if binary_path:
+            raw = safeReadBytes(binary_path)
+            self._data = raw if raw is not None else b''
 
     def scan(self, binary):
         """主入口: 接受文件路径或原始字节。返回CryptoMisuse集合。"""
@@ -243,10 +256,11 @@ class CryptoMisuseDetector:
 
 # 各检测遍历
 
-    def _extract_strings(self, min_len: int = 4) -> None:
+    def _extract_strings(self, min_len: int = 4) -> List[str]:
         pat = rb'[\x20-\x7e]{%d,}' % min_len
         self._strings = [(m.start(), m.group().decode('ascii', errors='replace'))
                          for m in re.finditer(pat, self._data)]
+        return [s for _, s in self._strings]
 
     def _check_ecb_apis(self, result: CryptoMisuse) -> None:
         for offset, s in self._strings:
@@ -428,7 +442,63 @@ class CryptoMisuseDetector:
                     return  # 每二进制报告一次
 
 
+    def detect_weak_random(self) -> List[Misuse]:
+        """基于 imports 列表检测弱随机数 API。"""
+        return [Misuse('WEAK_RNG', api, '0x0', f'predictable RNG ({api})', 'MEDIUM')
+                for api in self.imports if api in PREDICTABLE_RNG_APIS]
+
+    def detect_hardcoded_iv(self) -> List[Misuse]:
+        """检测硬编码 IV：长十六进制字面量或 password= 赋值。"""
+        findings = []
+        for s in self.strings:
+            if re.match(r'0x[0-9a-fA-F]{8,}', s) or 'password=' in s.lower():
+                findings.append(Misuse('STATIC_IV', 'N/A', '0x0',
+                                       f'hardcoded IV: {s[:40]}', 'HIGH'))
+        return findings
+
+    def detect_weak_hash(self) -> List[Misuse]:
+        """基于 imports 列表检测弱哈希 API (MD5/SHA1)。"""
+        return [Misuse('WEAK_HASH', api, '0x0', f'weak hash function {api}', 'MEDIUM')
+                for api in self.imports
+                if any(w in api.lower() for w in _WEAK_HASH_MARKERS)]
+
+    def detect_weak_cipher(self) -> List[Misuse]:
+        """基于 imports 列表检测弱分组密码 API (DES/RC4 等)。"""
+        return [Misuse('WEAK_CIPHER', api, '0x0', f'weak cipher {api}', 'HIGH')
+                for api in self.imports
+                if any(w in api.lower() for w in _WEAK_CIPHER_MARKERS)]
+
+    def detect_hardcoded_secrets(self) -> List[Misuse]:
+        """检测硬编码密钥/口令类字符串。"""
+        return [Misuse('HARDCODED_SECRET', 'N/A', '0x0',
+                       f'hardcoded secret: {s[:40]}', 'CRITICAL')
+                for s in self.strings if _SECRET_PATTERN.search(s)]
+
+    def generate_report(self) -> str:
+        """生成人类可读的密码误用检测报告。"""
+        lines = ['# 密码误用检测报告', '']
+        all_findings = (self.detect_weak_random() + self.detect_hardcoded_iv()
+                        + self.detect_weak_hash() + self.detect_weak_cipher()
+                        + self.detect_hardcoded_secrets())
+        if not all_findings:
+            lines.append('未发现密码学误用。')
+        else:
+            for m in all_findings:
+                lines.append(f"- [{m.severity}] {m.type}: {m.detail}")
+        return '\n'.join(lines)
+
+
 # 便捷函数
+
+# 独立检测入口 — 基于已抽取的 imports/strings 列表逐类判定。
+# 供上层在反编译产物上直接调用，不依赖原始字节扫描。
+
+_WEAK_HASH_MARKERS = ('md5', 'sha1')
+_WEAK_CIPHER_MARKERS = ('des', 'rc4', 'blowfish', 'idea')
+_SECRET_PATTERN = re.compile(
+    r'(password|passwd|api[_-]?key|secret|token|salt)\s*[=:]\s*\S+',
+    re.IGNORECASE)
+
 
 def scan_for_weak_random(binary) -> list:
     detector = CryptoMisuseDetector()
@@ -438,7 +508,10 @@ def scan_for_weak_random(binary) -> list:
 
 def detect_crypto_misuse(binary) -> CryptoMisuse:
     detector = CryptoMisuseDetector()
-    return detector.scan(binary)
+    result = detector.scan(binary)
+    if isinstance(binary, str):
+        result.filename = os.path.basename(binary)
+    return result
 
 
 # detect_crypto_misuse的重复 — 未解决的合并冲突残留。可考虑移除。

@@ -180,13 +180,18 @@ def main():
             r["is_vuln"] = s["is_vuln"]
             r["group"] = s["group"]
             r["opt"] = s["opt"]
+            # 判定列: TP/FP/TN/FN (基于 ground truth 与检出)
+            if s["is_vuln"]:
+                r["verdict"] = "TP" if r["detected"] else "FN"
+            else:
+                r["verdict"] = "FP" if r["detected"] else "TN"
             rows.append(r)
 
     # CSV 输出
     csv_path = RESULTS_DIR / "multi_tool_comparison.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=[
-            "tool", "sample", "is_vuln", "group", "opt",
+            "tool", "sample", "is_vuln", "group", "opt", "verdict",
             "detected", "findings", "time_ms", "peak_mb", "error"])
         w.writeheader()
         w.writerows(rows)

@@ -123,7 +123,6 @@ class TestEBPFTaintTracker:
     def test_initialization(self):
         """测试初始化"""
         tracker = EBPFTaintTracker()
-lass字段完整性$/d
         assert tracker is not None
 
     def test_create_ebpf_tracker(self):

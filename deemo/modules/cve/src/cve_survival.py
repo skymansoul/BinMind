@@ -355,7 +355,7 @@ def build_survival_records(kb, max_records: int = 5000
 
         # 事件时间: 取kev_date和发布日期的最小间隔
         kev_days = _days_since_epoch(kev_date)
-        now_days = _days_since_epoch("2026-08-01")  # 伪"现在"
+        now_days = _days_since_epoch("2024-10-11")  # 伪"现在"
 
         if is_exploited and kev_days is not None:
             event_time = max(1.0, kev_days - pub_days)
@@ -389,28 +389,7 @@ def build_survival_records(kb, max_records: int = 5000
 
 # 内部辅助
 
-def _get_str(entry, field: str, default: str = ""):
-    if hasattr(entry, field):
-        return str(getattr(entry, field) or default)
-    if isinstance(entry, dict):
-        return str(entry.get(field, default))
-    return default
-
-
-def _get_num(entry, field: str):
-    if hasattr(entry, field):
-        return getattr(entry, field)
-    if isinstance(entry, dict):
-        return entry.get(field)
-    return None
-
-
-def _get_bool(entry, field: str) -> bool:
-    if hasattr(entry, field):
-        return bool(getattr(entry, field))
-    if isinstance(entry, dict):
-        return bool(entry.get(field, False))
-    return False
+from ._internal_helpers import _get_str, _get_num, _get_bool
 
 
 def _days_since_epoch(date_str: str):

@@ -98,7 +98,7 @@ except ImportError:
     logger.warning("psutil not installed. pip install psutil")
 
 
-class PruningStrategy:
+class PruningStrategy(str, Enum):
     """Available path-pruning strategies. 启用 method"""
     NONE = 'none'
     UNSAT_EARLY = 'unsat_early'
@@ -109,7 +109,7 @@ class PruningStrategy:
     ALL = 'all'
 
 
-class CachePolicy:
+class CachePolicy(str, Enum):
     """Storage tier for solver缓存"""
     NONE = 'none'
     MEMORY = 'memory'
@@ -401,17 +401,29 @@ class ConstraintComplexityEstimator:
 
     def mean_absolute_error(self) -> Optional[float]:
         """计算 MAE over recent history. 返回 None data"""
-        with self._lock:
+        if not self._lock.acquire(timeout=5):
+            return None
+        try:
             if not self.history:
                 return None
             total = 0.0
             for feat, actual in self.history:
                 total += abs(self.predict(feat) - actual)
             return total / len(self.history)
+        finally:
+            self._lock.release()
 
     def stats(self) -> Dict[str, Any]:
         """Expose estimator state for telemetry"""
-        with self._lock:
+        if not self._lock.acquire(timeout=5):
+            return {
+                'weights': dict(self.weights),
+                'prediction_count': self.prediction_count,
+                'skip_count': self.skip_count,
+                'mae': None,
+                'history_size': 0,
+            }
+        try:
             return {
                 'weights': dict(self.weights),
                 'prediction_count': self.prediction_count,
@@ -419,6 +431,8 @@ class ConstraintComplexityEstimator:
                 'mae': round(self.mean_absolute_error() or 0.0, 5),
                 'history_size': len(self.history),
             }
+        finally:
+            self._lock.release()
 
 
 # 四轮增强 — OptimizationPipeline：可配置 DAG 的优化通道

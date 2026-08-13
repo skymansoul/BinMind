@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2021-3156",
-  "desc": "off-by-one heap overflow in command copy",
-  "trigger": "argv[1] long string causes len+1 byte write into len-byte buffer"
-}

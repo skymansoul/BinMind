@@ -120,13 +120,21 @@ class CrossFunctionTracker:
                     ga.freed_funcs.add(func.name)
                     cmap.func_frees.setdefault(func.name, set()).add(g_ref)
                 if (self._reg_feeds(instrs, i, dr, _COPY_FUNCS)
-                        or self._reg_as_mem(instrs, i, dr)):
+                        or self._reg_as_mem(instrs, i, dr)
+                        or self._reg_feeds_call(instrs, i, dr)):
                     ga.used_funcs.add(func.name)
                     cmap.func_uses.setdefault(func.name, set()).add(g_ref)
 
-            # free调用→追溯参数来源
-            if 'call' in il and any(ff in il for ff in _FREE_FUNCS):
+            # free调用/尾调用→追溯参数来源 (O3常编译为 jmp free 尾调用)
+            if any(kw in il for kw in ('call', 'jmp')) and any(
+                    ff in il for ff in _FREE_FUNCS):
                 fr = self._free_param(instrs, i, is_att)
+                # 兜底: free参数为全局加载寄存器本身(mov rcx,[rip+X]; jmp free)
+                if fr is None:
+                    for pr in ('rdi', 'rcx', 'edi', 'ecx'):
+                        if pr in reg_global:
+                            fr = pr
+                            break
                 if fr and fr in reg_global:
                     g_ref = reg_global[fr]
                     cmap.globals[g_ref].freed_funcs.add(func.name)
@@ -212,7 +220,9 @@ class CrossFunctionTracker:
         r = re.escape(reg)
         for j in range(fi + 1, min(fi + 20, len(instrs))):
             il = instrs[j].strip().lower()
-            if 'call' not in il or not any(tf in il for tf in tset): continue
+            if (('call' not in il and 'jmp' not in il)
+                    or not any(tf in il for tf in tset)):
+                continue
             for pr in _ARG_REGS:
                 for k in range(max(fi, j - 6), j):
                     ik = instrs[k].strip().lower()
@@ -228,6 +238,31 @@ class CrossFunctionTracker:
                 return True
         return False
 
+    def _reg_feeds_call(self, instrs, fi, reg):
+        """全局加载寄存器作为用户函数调用/尾调用参数→记use(排除free/alloc/CRT)"""
+        r = re.escape(reg)
+        reg_is_arg = reg in _ARG_REGS
+        for j in range(fi + 1, min(fi + 20, len(instrs))):
+            il = instrs[j].strip().lower()
+            if 'call' not in il and 'jmp' not in il:
+                continue
+            if any(tf in il for tf in _FREE_FUNCS) or any(
+                    tf in il for tf in _ALLOC_FUNCS):
+                continue
+            m = re.search(r'(?:call|jmp)\s+.*?([a-z_]\w*(?:@\w+)?)', il)
+            if m and self._is_crt_func(m.group(1)):
+                continue
+            # 加载目标寄存器本身即参数寄存器(mov rcx,[rip+X]; jmp f) → 直接记use
+            if reg_is_arg:
+                return True
+            for pr in _ARG_REGS:
+                for k in range(max(fi, j - 6), j):
+                    ik = instrs[k].strip().lower()
+                    if re.search(rf'mov\s+%?{r},\s*%?{pr}\b', ik) or \
+                       re.search(rf'mov\s+%?{pr},\s*%?{r}\b', ik):
+                        return True
+        return False
+
 # 跨函数检测
 
     def detect_cross_function_uaf(self, cmap: CrossFunctionMap) -> List[Dict]:
@@ -237,9 +272,30 @@ class CrossFunctionTracker:
         for addr, ga in resolved.items():
             fu = {f for f in ga.freed_funcs if not self._is_crt_func(f)}
             uu = {f for f in ga.used_funcs if not self._is_crt_func(f)}
-            if not fu or not uu: continue
+            if not fu:
+                continue
+            # 跨函数双重释放: 两个不同函数均free同一全局且无后续use
+            if not uu and len(fu) >= 2:
+                findings.append({
+                    'type': 'cross_function_double_free',
+                    'global_ref': f'0x{addr:x}',
+                    'free_funcs': sorted(fu), 'use_funcs': [],
+                    'alloc_funcs': sorted(
+                        {a for a in ga.alloc_funcs if not self._is_crt_func(a)}),
+                    'cross_pairs': [],
+                    'confidence': 0.75,
+                    'evidence': [
+                        f"cross-function double free: addr 0x{addr:x}",
+                        f"freed in: {', '.join(sorted(fu))}",
+                        "no use after free — double free only",
+                    ],
+                })
+                continue
+            if not uu:
+                continue
             pairs = [(ff, uf) for ff in fu for uf in uu if ff != uf]
-            if not pairs: continue
+            if not pairs:
+                continue
             au = {a for a in ga.alloc_funcs if not self._is_crt_func(a)}
             findings.append({
                 'type': 'cross_function_uaf', 'global_ref': f'0x{addr:x}',

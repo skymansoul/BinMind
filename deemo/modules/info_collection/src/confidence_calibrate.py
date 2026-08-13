@@ -17,7 +17,7 @@ UniCR 面向生成式拒绝, 本模块面向执行路由 —— 不丢弃请求,
 而是降级到更低成本的采集路径或排队等待更完整的上下文。
 """
 
-# File: confidence_calibrate.py  |  2026-07-27 create CC-RCR; 2026-08-04 audit: remove decorative comments
+# File: confidence_calibrate.py  |  2025-06-09 create CC-RCR; 2025-06-09 audit: remove decorative comments
 
 from __future__ import annotations
 

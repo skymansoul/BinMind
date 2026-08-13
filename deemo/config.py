@@ -117,6 +117,21 @@ class Config:
     项目配置管理类
     """
     
+    # --- 分布式执行配置 ---
+    # 远程基线 worker.py 从 config 导入这些符号；本地恢复后按同一接口提供。
+    DISTRIBUTED_MODE = bool(os.environ.get('DISTRIBUTED_MODE', 'false').lower() == 'true')
+    CELERY_TASK_QUEUE = os.environ.get('CELERY_TASK_QUEUE', 'deemo_tasks')
+    CELERY_MAX_RETRIES = int(os.environ.get('CELERY_MAX_RETRIES', '3'))
+    CELERY_TASK_TIME_LIMIT = int(os.environ.get('CELERY_TASK_TIME_LIMIT', '300'))
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
+    WORKER_HEARTBEAT_INTERVAL = int(os.environ.get('WORKER_HEARTBEAT_INTERVAL', '60'))
+    WORKER_TIMEOUT = int(os.environ.get('WORKER_TIMEOUT', '3600'))
+    WORKER_MAX_TASKS_PER_CHILD = int(os.environ.get('WORKER_MAX_TASKS_PER_CHILD', '100'))
+    TASK_CACHE_TTL = int(os.environ.get('TASK_CACHE_TTL', '3600'))
+
     # AI 服务配置请直接在这里填写，不再通过环境变量读取。
     # 可选值: openai / azure / ollama / llamacpp / custom
     AI_PROVIDER = AI_PROVIDER_OPENAI
@@ -146,6 +161,10 @@ class Config:
     CUSTOM_API_KEY = ''
     CUSTOM_BASE_URL = ''
     CUSTOM_MODEL = ''
+
+    # 外部威胁情报 API
+    VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
+    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
     
     LOGS_DIR = './logs'
     REPORTS_DIR = './reports'
@@ -191,6 +210,10 @@ class Config:
     CACHE_TTL = int(os.environ.get('CACHE_TTL', '3600'))
     EXTERNAL_API_RATE_LIMIT = int(os.environ.get('EXTERNAL_API_RATE_LIMIT', '10'))
     EXTERNAL_API_RATE_PERIOD = int(os.environ.get('EXTERNAL_API_RATE_PERIOD', '60'))
+
+    # 外部威胁情报与漏洞数据库服务凭据
+    VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
+    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
     
     FUZZER_MAX_RUNTIME = int(os.environ.get('FUZZER_MAX_RUNTIME', '3600'))
     FUZZER_MAX_CPU = int(os.environ.get('FUZZER_MAX_CPU', '1'))
@@ -779,3 +802,46 @@ DEFUSE_MAX_CLUSTER_NEIGHBOR_GAP = 3      # 聚类合并的最大字节间隔
 DEFUSE_MUTATION_HISTORY_SIZE = 100       # 变异效果历史记录长度
 # DEFUSE_RECENT_SUCCESS_CAP = 3            # 聚类短期内成功的次数上限——超限后降权
 DEFUSE_SUGGEST_MAX_VALUES = 10           # 翻转建议的最大候选值数
+
+def mask_redis_url(url: str):
+    """Redis URL 脱敏 — 密码段保留首尾各 4 位，中间以 * 替代。
+
+    语义与 mask_api_key 一致；无 @ 分隔的 URL（含空值）原样返回。
+    """
+    if not url or not isinstance(url, str) or "@" not in url:
+        return url
+    head, host = url.rsplit("@", 1)
+    if ":" not in head:
+        return url
+    scheme_user, password = head.rsplit(":", 1)
+    if len(password) <= 8:
+        masked_pw = "*" * len(password)
+    else:
+        masked_pw = password[:4] + "*" * (len(password) - 8) + password[-4:]
+    return f"{scheme_user}:{masked_pw}@{host}"
+
+
+def get_celery_broker_url() -> str:
+    """Celery broker URL — 环境变量优先，缺省回退 Config 默认值。"""
+    return os.environ.get("CELERY_BROKER_URL", Config.CELERY_BROKER_URL)
+
+
+def get_celery_result_backend() -> str:
+    """Celery result backend URL — 环境变量优先。"""
+    return os.environ.get("CELERY_RESULT_BACKEND", Config.CELERY_RESULT_BACKEND)
+
+
+def get_task_cache_key(binary_path: str, options: dict) -> str:
+    """任务缓存键 — 二进制路径与选项的 SHA256 摘要，前缀固定便于检索。"""
+    import hashlib as _hashlib
+    import json as _json
+    key = os.path.basename(binary_path or "")
+    opts = _json.dumps(options or {}, sort_keys=True)
+    digest = _hashlib.sha256((key + opts).encode("utf-8")).hexdigest()
+    return f"deemo:cache:task:{digest}"
+
+
+def is_distributed_mode() -> bool:
+    """分布式模式开关 — 读环境变量，运行期可变（测试经 reload 生效）。"""
+    return os.environ.get("DISTRIBUTED_MODE", "false").lower() == "true"
+

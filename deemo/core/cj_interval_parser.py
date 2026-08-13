@@ -1,13 +1,13 @@
 """
 区间域IR语法解析器 — 从IR行和反编译文本中提取变量区间.
 
-从cj_interval_domain.py拆分, 职责单一: 仅负责语法模式匹配
+职责单一: 仅负责语法模式匹配
 和区间初始化, 不涉及约束系统操作.
 
 支持的语法:
-  - C赋值: x = 40, y = x + 5, y = x * 3
-  - 汇编赋值: mov x, 40, mov y, x, add y, 5, sub y, 3
-  - 条件分支: if (x < 50), if (x >= N)
+- C赋值: x = 40, y = x + 5, y = x * 3
+- 汇编赋值: mov x, 40, mov y, x, add y, 5, sub y, 3
+- 条件分支: if (x < 50), if (x >= N)
   - cmp+jcc: cmp var, val + jl/jle/jg/jge
   - 循环: for (i=0; i<N; i++)
 """

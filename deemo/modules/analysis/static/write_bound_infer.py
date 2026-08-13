@@ -98,14 +98,18 @@ class WriteBoundInferer:
         wb_num = f.get("wb_numeric")
         if wb_num is not None and isinstance(wb_num, int) \
                 and alloc_sz is not None and 0 < alloc_sz < 2**31 - 1:
-            if wb_num > alloc_sz:
+            request = f.get("alloc_request")
+            bound = request if request and 0 < request < 2**31 - 1 \
+                else alloc_sz
+            usable = self._alloc_model.usable_size(bound)
+            if wb_num > usable:
                 return WriteBoundResult(
                     f, WbVerdict.CONFIRMED,
-                    f"static write_end {wb_num} > alloc {alloc_sz}",
+                    f"static write_end {wb_num} > usable {usable}",
                     "inline-store")
             return WriteBoundResult(
                 f, WbVerdict.BENIGN,
-                f"static write_end {wb_num} ≤ alloc {alloc_sz} "
+                f"static write_end {wb_num} ≤ usable {usable} "
                 f"(alignment padding)", "inline-store")
 
         # 分配大小缺失或无界: 无法证明安全, 保守确认.
@@ -120,7 +124,12 @@ class WriteBoundInferer:
                                     "unbounded alloc + tainted write",
                                     wprov.describe())
 
-        usable = self._alloc_model.usable_size(alloc_sz)
+        # alloc_sz 是对齐后的分配上界; usable 优先基于原始请求
+        # alloc_request 计算, 避免对齐值导致可用量偏高而漏报.
+        request = f.get("alloc_request")
+        if not request or request <= 0 or request >= 2**31 - 1:
+            request = max(0, alloc_sz - 15)
+        usable = self._alloc_model.usable_size(request)
 
         if wprov is None:
             # 无来源信息: 数值写大小已知则直接比较, 否则保守.
@@ -134,8 +143,9 @@ class WriteBoundInferer:
         cls = wprov.cls
 
         if cls == ProvClass.CONSTANT:
-            w = wprov.bound if wprov.bound is not None else (
-                write_sz if isinstance(write_sz, int) else None)
+            w = write_sz if (isinstance(write_sz, int)
+                             and 0 < write_sz < 2**31 - 1) \
+                else wprov.bound
             if w is None:
                 return WriteBoundResult(f, WbVerdict.SUSPECTED,
                                         "constant without value", "const")

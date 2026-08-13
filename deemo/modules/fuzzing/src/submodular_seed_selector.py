@@ -1,4 +1,4 @@
-"""次模种子选择器 — 贪心 (1-1/e) 近似保证 + lazy greedy + 随机贪心 + 多目标鲁棒. 参考: Nemhauser et al. (1978), Minoux (1978), Mirzasoleiman et al. (2015). 次模优化在 fuzzing 种子选择中无先例. 覆盖并集函数是单调次模的, 贪心算法提供可证明的最优性下界."""
+"""次模种子选择器 — 贪心 (1-1/e) 近似保证 + lazy greedy + 随机贪心 + 多目标鲁棒. 参考: Nemhauser et al., Minoux, Mirzasoleiman et al.. 次模优化在 fuzzing 种子选择中无先例. 覆盖并集函数是单调次模的, 贪心算法提供可证明的最优性下界."""
 
 import heapq
 import math

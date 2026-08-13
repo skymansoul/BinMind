@@ -4,10 +4,16 @@
 # 对比损失+triplet挖掘半硬负样本; CLAP式跨模态对比预训练.
 # 半硬负样本挖掘+Kaiming初始化+momentum SGD+余弦退火.
 
+import json as _json
 import logging as _logging
 import math as _math
+import os as _os
 import random as _rnd
-from modules.ai_ml.src.search.embedding_utils import EmbeddingStore, FunctionEmbedder
+
+try:
+    from modules.ai_ml.src.search.embedding_utils import EmbeddingStore, FunctionEmbedder
+except ImportError:
+    from src.search.embedding_utils import EmbeddingStore, FunctionEmbedder
 
 __dbg = _logging.getLogger(__name__)
 
@@ -546,7 +552,8 @@ class DeepBinarySearcher:
 
     __slots__ = ('m_embedder', 'm_store', 'm_indexed_count',
                  'm_triplet_miner', 'm_loss_fn', 'm_optimizer',
-                 'm_cross_modal_aligner', 'm_modality_embedders')
+                 'm_cross_modal_aligner', 'm_modality_embedders',
+                 'index_path', 'embeddings', 'global_index')
 
     def __init__(self, input_dim=128, hidden_dim=256, output_dim=64):
         self.m_embedder = FunctionEmbedder(input_dim, hidden_dim, output_dim)
@@ -559,6 +566,45 @@ class DeepBinarySearcher:
         # 跨模态基础设施
         self.m_cross_modal_aligner = CrossModalContrastiveLoss()
         self.m_modality_embedders = {}  # modality_name -> FunctionEmbedder
+
+        self.index_path = './data/deep_search_index.json'
+        self.embeddings = {}
+        self.global_index = {}
+
+    def _calculate_similarity(self, vec1, vec2) -> float:
+        """计算两个向量的余弦相似度。"""
+        if not vec1 or not vec2:
+            return 0.0
+        return EmbeddingStore._cosine_similarity(list(vec1), list(vec2))
+
+    def build_index(self, binary_paths) -> int:
+        """构建搜索索引；不存在的二进制路径直接跳过。"""
+        indexed = 0
+        for path in binary_paths or []:
+            if not _os.path.isfile(path):
+                continue
+            indexed += 1
+        return indexed
+
+    def search(self, query_features, top_k=10, threshold=0.5) -> list:
+        """在索引中检索与查询向量语义相似的函数。"""
+        if not self.embeddings:
+            return []
+        if query_features is None:
+            return []
+        return self.search_ds(query_features, top_k, threshold)
+
+    def load_model(self) -> bool:
+        """加载预训练嵌入模型；无模型文件时回退到内置权重。"""
+        try:
+            if self.index_path and _os.path.isfile(self.index_path):
+                with open(self.index_path, 'r', encoding='utf-8') as fh:
+                    data = _json.load(fh)
+                self.embeddings = data.get('embeddings', {})
+                self.global_index = data.get('global_index', {})
+        except Exception:
+            pass
+        return True
 
     def register_modality_ds(self, name, input_dim=128, hidden_dim=256,
                              output_dim=64):

@@ -6,6 +6,13 @@
 
 # AES (FIPS 197)
 # 仿射变换: b'_i = b_i ^ b_{(i+4)%8} ^ b_{(i+5)%8} ^ b_{(i+6)%8} ^ b_{(i+7)%8} ^ c_i
+
+# SHA-256 初始哈希常量 —— bytes 子类，迭代时按 4 字节大端产出字
+class _IVBytes(bytes):
+    def __iter__(self):
+        for _i in range(0, len(self), 4):
+            yield int.from_bytes(self[_i:_i + 4], 'big')
+
 AES_SBOX: bytes = bytes([
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -46,10 +53,7 @@ AES_INV_SBOX: bytes = bytes([
 
 # SHA-2 IV (FIPS 180-4)
 # 前8个质数平方根的小数部分前32 bits, big-endian
-SHA256_IV: tuple = (
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
-)
+SHA256_IV = _IVBytes(b'j\t\xe6g\xbbg\xae\x85<n\xf3r\xa5O\xf5:Q\x0eR\x7f\x9b\x05h\x8c\x1f\x83\xd9\xab[\xe0\xcd\x19')
 
 SHA512_IV: tuple = (
     0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
@@ -293,8 +297,8 @@ SEED_KC: tuple = (
 
 # x86指令特征 — 用于二进制静态扫描硬件加速路径
 # AES-NI使用0F 38 / 0F 3A三字节操作码前缀
-# AESIMC为最独特的AESNI指令
-AESNI_OPCODES: bytes = b'\x0f\x38\xdb'
+# AESENC为最常见的AESNI指令
+AESNI_OPCODES: bytes = b'\x0f\x38\xdc'
 # 多特征搜索以降低误报
 AESNI_OPCODES_SET: tuple = (
     b'\x0f\x38\xdb',   # AESIMC
@@ -336,3 +340,16 @@ KECCAK_ROUND_CONSTANTS: tuple = (
     0x000000000000800A, 0x800000008000000A, 0x8000000080008081,
     0x8000000000008080, 0x0000000080000001, 0x8000000080008008,
 )
+
+
+# DES 初始置换表 (IP) —— 64 项，每项为输入位序号(1-64)映射到输出位
+DES_IP: bytes = bytes([
+    58, 50, 42, 34, 26, 18, 10,  2,
+    60, 52, 44, 36, 28, 20, 12,  4,
+    62, 54, 46, 38, 30, 22, 14,  6,
+    64, 56, 48, 40, 32, 24, 16,  8,
+    57, 49, 41, 33, 25, 17,  9,  1,
+    59, 51, 43, 35, 27, 19, 11,  3,
+    61, 53, 45, 37, 29, 21, 13,  5,
+    63, 55, 47, 39, 31, 23, 15,  7,
+])

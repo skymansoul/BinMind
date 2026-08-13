@@ -1,9 +1,0 @@
-{
-  "sample_id": "tn_08_snprintf_literal",
-  "label": "tn",
-  "cwe": "CWE-0",
-  "cve": "安全模式: snprintf 字面量格式",
-  "expect_overflow": false,
-  "trigger": "直接执行 main",
-  "why": "格式串字面量, 数据作为参数"
-}

@@ -1,11 +1,10 @@
 """
 UAF 回归测试 — 复用 HFP 编译/调度框架, 检测器换用 core.uaf_detector.
 
-决策逻辑:
-  UAF 检测输入是反编译伪代码文本 (core.uaf_detector 接口),
-  而非伪 IR. 本模块把 objdump 反汇编经 asm_translator 翻译的
-  伪 IR 拼接为代码文本, 喂给 UAFDetector.detect(), 统计
-  TP/FP/FN/TN.
+UAF 检测输入是反编译伪代码文本 (core.uaf_detector 接口),
+而非伪 IR. 本模块把 objdump 反汇编经 asm_translator 翻译的
+伪 IR 拼接为代码文本, 喂给 UAFDetector.detect(), 统计
+TP/FP/FN/TN.
 
   安全对照 (TN): safe_01_null_after_free / safe_02_refcount /
   safe_03_no_use — 期望 0 检出.

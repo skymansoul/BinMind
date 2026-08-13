@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2017_7269 ¶ÑÒç³öÄ£Äâ: malloc(80) + memcpy(512)
-// ¡ú 432 ×Ö½ÚÒç³ö
+// cve_2017_7269 å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(80) + memcpy(512)
+// â†’ 432 å­—èŠ‚æº¢å‡º
 void iis_scstorage_overflow() {
     char *buf = (char *)malloc(80);
     if (!buf) return;
@@ -52,7 +52,7 @@ void iis_scstorage_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(576) + memcpy(576/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(576) + memcpy(576/2) â†’ ä¸æº¢å‡º
 void iis_scstorage_safe() {
     char *buf = (char *)malloc(576);
     if (!buf) return;

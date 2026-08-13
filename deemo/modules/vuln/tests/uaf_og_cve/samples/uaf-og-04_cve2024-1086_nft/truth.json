@@ -1,6 +1,0 @@
-{
-  "class": "TP",
-  "cve": "CVE-2024-1086",
-  "desc": "CVE-2024-1086 (Linux nf_tables) UAF 复现 — nft_verdict_init 中",
-  "trigger": "   规则对象释放后 drop 链继续访问. 简化: free(p); use 前经"
-}

@@ -5,8 +5,8 @@ int main(int argc, char **argv) {
     char *p = (char *)malloc(64);
     if (!p) return 1;
     if (argc > 1) {
-        free(p);                   /* ฬ๕ผþสอทล */
+        free(p);                   /* ๆกไปถ้ๆ”พ */
     }
-    printf("[*] %s\n", p);         /* UAF: สอทลยทพถศิสนำร */
+    printf("[*] %s\n", p);         /* UAF: ้ๆ”พ่ทฏๅพไปไฝฟ็”จ */
     return 0;
 }

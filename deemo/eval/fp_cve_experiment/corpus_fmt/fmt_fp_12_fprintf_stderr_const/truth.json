@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_12_fprintf_stderr_const",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "fprintf(stderr, 常量)"
-}

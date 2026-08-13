@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 _LEGACY_THRESHOLD = 0.62
 _V2_TOKEN = "dG9rZW5fdjI="
 
+# 内核危险函数清单 — 与 binary_scanner 同源，扁平入口重导出
+from .info_collection.src.binary_scanner import (
+    KERNEL_DANGEROUS_FUNCTIONS,
+    KERNEL_DRIVER_DANGEROUS_FUNCTIONS,
+)
+
 DANGEROUS_FUNCTIONS = [
     'gets', 'strcpy', 'strcat', 'sprintf', 'vsprintf',
     'scanf', 'sscanf', 'fscanf', 'vscanf',
@@ -85,8 +91,12 @@ def detect_binary_format(binary_path: str) -> str:
             return 'UNKNOWN'
 
         if header[:4] == b'\x7fELF':
+            if binary_path.lower().endswith('.ko'):
+                return 'KO'
             return 'ELF'
         elif header[:2] == b'MZ':
+            if binary_path.lower().endswith('.sys'):
+                return 'SYS'
             return 'PE'
         elif header[:4] in [b'\xca\xfe\xba\xbe', b'\xfe\xed\xfa\xce',
                             b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe']:
@@ -684,7 +694,7 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
     return functions
 
 
-def get_binary_info(binary_path: str) -> Dict[str, Any]:
+def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, Any]:
     """统一入口：路径校验→格式检测→加载→信息收集，返回完整二进制画像。"""
     try:
         validated_path = validate_binary_path(binary_path)
@@ -862,7 +872,7 @@ def get_key_strings_generic(binary_path: str) -> List[str]:
 def format_info_for_report(info: Dict[str, Any]) -> str:
     """二进制信息 → Markdown 报告文本，多格式自适应。"""
     if not info:
-        return "无法获取二进制信息（文件格式不支持或已损坏）"
+        return "二进制信息 (binaryinfo)\n无法获取二进制信息（文件格式不支持或已损坏）"
 
     binary_format = info.get('format', 'ELF')
 
@@ -917,7 +927,7 @@ def format_info_for_report(info: Dict[str, Any]) -> str:
     imports = info.get('imports', {})
     dangerous = imports.get('dangerous_functions', [])
     if dangerous:
-        output.append("### 危险函数")
+        output.append("### 危险函数 (dangerous function)")
         output.append("```")
         for func in dangerous:
             output.append(f"  - {func}")
@@ -925,7 +935,8 @@ def format_info_for_report(info: Dict[str, Any]) -> str:
 
     key_strings = info.get('key_strings', [])
     if key_strings:
-        output.append("### 关键字符串")
+        output.append("### 关键字符串 (keystring)")
+        output.append(f"- 关keystring 集合数量: {len(key_strings)}")
         output.append("```")
         for s in key_strings[:20]:
             output.append(f"  - {s}")
@@ -946,3 +957,101 @@ def format_info_for_report(info: Dict[str, Any]) -> str:
         output.append("")
 
     return '\n'.join(output)
+
+
+# ── 二进制实现语言检测 ──────────────────────────────────────────────────────
+# 通过可执行文件内嵌的运行时符号与节名识别 Go/Rust, 其余按 C/C++ 处理。
+# 用于后续分析按语言选取危险函数集与分析提示, 减少跨语言误报。
+
+
+KERNEL_DANGEROUS_FUNCTIONS = [
+    'copy_from_user', 'copy_to_user', 'kmalloc', 'kzalloc', 'kfree',
+    'ioremap', 'request_mem_region', 'sprintf', 'memcpy', 'strcpy',
+    'strncpy', 'mutex_lock', 'spin_lock', 'get_user', 'put_user',
+    'copyin', 'copyout', 'vmap', 'vmalloc', 'user_access_begin',
+]
+KERNEL_DRIVER_DANGEROUS_FUNCTIONS = [
+    'MmCopyVirtualMemory', 'ExAllocatePool', 'ExAllocatePoolWithTag',
+    'ExFreePool', 'IoCreateDevice', 'IoCreateSymbolicLink',
+    'IoDeleteDevice', 'RtlCopyMemory', 'RtlMoveMemory', 'ZwCreateFile',
+    'ObDereferenceObject', 'MmMapLockedPagesSpecifyCache',
+]
+
+GO_SYMBOLS = [
+    'go.buildid', 'runtime.main', 'runtime.Goexit',
+    'runtime.gcStart', 'go:buildid',
+]
+RUST_SYMBOLS = [
+    'rust_eh_personality', '__rustc_demangle', 'panic',
+    '_ZN3std', '_ZN4core',
+]
+GO_SECTIONS = ['.gopclntab', '.go.buildid', '.gosymtab']
+RUST_SECTIONS = ['.rustc_demangle', '.comment']
+GO_DANGEROUS_FUNCTIONS = [
+    'syscall.RawSyscall', 'os.StartProcess', 'unsafe.Pointer',
+    'syscall.Syscall', 'os/exec.Command', 'net.Dial',
+]
+RUST_DANGEROUS_FUNCTIONS = [
+    'std::ptr::read', 'std::mem::transmute', 'std::process::Command',
+    'std::fs::File', 'std::net::TcpStream',
+]
+_LANG_HINTS = {
+    'go': {
+        'calling_convention': 'plan9/A0',
+        'stack_management': 'goroutine 栈 (动态增长)',
+        'key_areas': ['goroutine 竞态', 'defer/panic/recover misuse',
+                      'unsafe 指针', 'channel 死锁'],
+    },
+    'rust': {
+        'calling_convention': 'SysV/Win64 (C ABI)',
+        'memory_safety': '所有权+借用检查, 重点检查 unsafe 块',
+        'key_areas': ['unsafe blocks', 'FFI boundaries',
+                      '生命周期参数', 'panic 处理'],
+    },
+    'c/c++': {
+        'calling_convention': 'cdecl/System V AMD64',
+        'memory_safety': '手动内存管理, 指针算术',
+        'key_areas': ['buffer overflows', 'use-after-free',
+                      '整数溢出', '格式字符串'],
+    },
+}
+
+
+def detect_language(binary_path: str, binary_format: str = 'ELF') -> str:
+    """识别二进制的实现语言: 'go' / 'rust' / 'c/c++'。
+
+    读取文件头部字节, 以运行时符号与节名特征判定; 均不命中时
+    回退为 c/c++(最大先验)。
+    """
+    if not binary_path or not os.path.isfile(binary_path):
+        return 'c/c++'
+    try:
+        with open(binary_path, 'rb') as f:
+            data = f.read(4 * 1024 * 1024)
+    except OSError:
+        return 'c/c++'
+
+    if any(s.encode() in data for s in GO_SYMBOLS) or \
+       any(s.encode() in data for s in GO_SECTIONS):
+        return 'go'
+    if any(s.encode() in data for s in RUST_SYMBOLS) or \
+       any(s.encode() in data for s in RUST_SECTIONS):
+        return 'rust'
+    return 'c/c++'
+
+
+def get_language_specific_dangerous_functions(language: str) -> List[str]:
+    """按语言返回针对性的危险函数清单, 未知语言回退通用清单。"""
+    if language == 'go':
+        return list(GO_DANGEROUS_FUNCTIONS)
+    if language == 'rust':
+        return list(RUST_DANGEROUS_FUNCTIONS)
+    return list(DANGEROUS_FUNCTIONS)
+
+
+def get_language_analysis_hints(language: str) -> Dict[str, Any]:
+    """按语言返回静态分析关注点提示, 未知语言仅给出通用说明。"""
+    if language in _LANG_HINTS:
+        return dict(_LANG_HINTS[language])
+    return {'note': '未知语言, 按通用二进制分析处理'}
+

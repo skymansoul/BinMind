@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_01_argv_format",
-  "label": "tp",
-  "cwe": "CWE-134",
-  "cve": "CVE-2018-14665 类直接 argv 格式串",
-  "expect_overflow": true,
-  "trigger": "./sample '%n%n%n'",
-  "why": "格式串完全由攻击者控制"
-}

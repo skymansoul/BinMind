@@ -8,6 +8,7 @@
 
 import csv
 import json
+import pathlib
 import sys
 import time
 from pathlib import Path
@@ -16,6 +17,7 @@ VULN_ROOT = Path(__file__).resolve().parents[1]
 OG_DIR = VULN_ROOT / 'src' / 'uaf' / 'og'
 EVAL_DIR = Path(__file__).resolve().parent
 SAMPLES_DIR = VULN_ROOT / 'tests' / 'uaf_og_cve' / 'samples'
+DEFAULT_SAMPLES = SAMPLES_DIR
 OUT_DIR = EVAL_DIR / 'og_results'
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 for _p in (str(OG_DIR), str(EVAL_DIR), str(VULN_ROOT / 'src'), str(VULN_ROOT / 'tests')):
@@ -48,11 +50,21 @@ def run_base_og(binary: Path, cls: str) -> dict:
     from uaf_base_scanner import UafBaseScanner
     from og_filter import OgFilter
     t0 = time.time()
-    from _common.disasm import disassemble, parse_asm, main_range
-    lines, addrs, labels = parse_asm(disassemble(str(binary)))
+    from _common.disasm import (disassemble, parse_asm, main_range,
+                                range_from_addr)
+    from heap.acfpc.pe_imports import build_import_map
+    asm_text = disassemble(str(binary))
+    lines, addrs, labels = parse_asm(asm_text)
     ur = main_range(labels, len(lines))
-    base = UafBaseScanner().scan(lines, addrs, user_range=ur)
-    og = OgFilter().compress(lines, base, addrs)
+    if ur is None:
+        addr_file = binary.parent / 'main_addr.txt'
+        if addr_file.exists():
+            ur = range_from_addr(addrs, int(addr_file.read_text(
+                encoding='utf-8').strip(), 16))
+    import_map = build_import_map(str(binary), asm_text)
+    base = UafBaseScanner().scan(lines, addrs, user_range=ur,
+                                   import_map=import_map)
+    og = OgFilter().compress(lines, base, addrs, import_map=import_map)
     dt = round((time.time() - t0) * 1000, 1)
     return {
         'base': {'detected': len(base) > 0, 'n': len(base),
@@ -76,9 +88,16 @@ def run_angr(binary: Path, cls: str) -> dict:
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description='UAF-OG 对比实验')
+    ap.add_argument('--samples', type=str, default=str(DEFAULT_SAMPLES))
+    ap.add_argument('--csv', type=str, default=str(OUT_DIR / 'benchmark_og.csv'))
+    ap.add_argument('--json', type=str, default=str(OUT_DIR / 'benchmark_og.json'))
+    args = ap.parse_args()
+    samples_dir = pathlib.Path(args.samples)
     truth = load_truth()
     rows = []
-    for d in sorted(SAMPLES_DIR.iterdir()):
+    for d in sorted(samples_dir.iterdir()):
         if not d.is_dir():
             continue
         binary = d / 'vuln.exe'
@@ -105,7 +124,7 @@ def main():
                 'peak_mb': peak_mb(),
                 'mode': ('REAL' if tool != 'Angr' else ra['mode']),
             })
-    csv_path = OUT_DIR / 'benchmark_og.csv'
+    csv_path = args.csv
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
@@ -127,7 +146,7 @@ def main():
                          'avg_ms': round(sum(r['elapsed_ms'] for r in tr)
                                          / max(1, len(tr)), 1)}
     report = {'rows': rows, 'summary': summary}
-    (OUT_DIR / 'benchmark_og.json').write_text(
+    pathlib.Path(args.json).write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'{"Tool":10s} {"TP":>3s} {"FP":>3s} {"TN":>3s} {"FN":>3s} '
           f'{"Prec":>7s} {"Rec":>7s} {"F1":>6s} {"AvgMs":>8s}')

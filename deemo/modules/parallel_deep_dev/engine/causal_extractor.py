@@ -1,5 +1,5 @@
 """
-创建: 2026-07-17
+创建: 2025-03-28
 因果图静态边提取器 — 从 Python AST 提取 IMPORTS/CALLS/MUTATES/INHERITS/RAISES 依赖边。
 
 本模块独立于 CausalGraph 数据结构，便于在不引入因果图依赖的前提下复用边提取逻辑。

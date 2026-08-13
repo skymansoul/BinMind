@@ -45,7 +45,8 @@ class DCGPostFilter:
     # arg1(Linux:rdi, Win:rcx), arg2(Linux:rsi, Win:rdx), arg3(Linux:rdx, Win:r8)
     _ALLOC_SIZE_PARAM: Dict[str, List[str]] = {
         'malloc':   ['rdi', 'rcx'],        # size=arg1
-        'calloc':   ['rdi', 'rcx', 'rsi', 'rdx'],  # nmemb=arg1, size=arg2; 优先arg1
+        # calloc 容量 = nmemb×size；以 size(arg2) 为保守下界，避免把 nmemb 当容量
+        'calloc':   ['rsi', 'rdx', 'rcx'],
         'realloc':  ['rsi', 'rdx'],        # size=arg2
         'alloca':   ['rdi', 'rcx'],        # size=arg1
         'memcpy':   ['rdx', 'r8'],         # size=arg3
@@ -130,13 +131,14 @@ class DCGPostFilter:
         const_copy = self._parse_const(copy_reg)
         if const_alloc is not None and const_copy is not None:
             diff = const_copy - const_alloc
-            is_safe = diff <= self._margin
-            evidence.append(f"常量比较: {const_copy} - {const_alloc} = {diff} ≤ margin({self._margin}) → {'SAFE' if is_safe else 'UNSAFE'}")
+            # 常量值是确定的, 不存在区间不确定性; 仅当 copy ≤ alloc 时安全
+            is_safe = diff <= 0
+            evidence.append(f"常量比较: {const_copy} - {const_alloc} = {diff} → {'SAFE' if is_safe else 'UNSAFE'}")
             return DCGFilterReport(is_safe=is_safe, graph_stats=stats, evidence=evidence,
                 dcg_report=DCGReport(alloc_var=alloc_reg, copy_var=copy_reg,
                     upper_bound=diff, lower_bound=diff,
                     is_provable_safe=is_safe,
-                    proof_chain=[f"CONST: copy({const_copy}) - alloc({const_alloc}) = {diff} ≤ {self._margin}"],
+                    proof_chain=[f"CONST: copy({const_copy}) - alloc({const_alloc}) = {diff}"],
                     dcg_size=0))
 
         # 若仅一个是常量, 在DCG中添加ZERO锚点约束后查询

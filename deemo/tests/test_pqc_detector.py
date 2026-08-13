@@ -118,12 +118,10 @@ class TestPQCDetector(unittest.TestCase):
         )
 
         report = self.detector.format_report(result)
-lass字段完整性$/d
         self.assertIsInstance(report, str)
         self.assertIn('Kyber', report)
 
     def test_pqc_constants_defined(self):
-                """测试PQC常量定义"""
         self.assertIn('Kyber', PQC_CONSTANTS)
         self.assertIn('Dilithium', PQC_CONSTANTS)
         self.assertIn('NTRU', PQC_CONSTANTS)

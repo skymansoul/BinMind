@@ -1,6 +1,0 @@
-{
-  "class": "TN",
-  "cve": "",
-  "desc": "TN 对照 1: 重赋值推进代际 — free(p); p = q; use(p).",
-  "trigger": "   旧检测器把 free 后的任何 use 报为 UAF; 代际分析判定 p 已指向"
-}

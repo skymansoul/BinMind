@@ -194,10 +194,11 @@ class TestHumanReadableDetection:
 
     def test_threshold_70_percent(self):
         """70%可读阈值"""
-        mixed = "Hello\x00\x01\x02 World"
+        mixed = "Hello\x00\x01\x02\x03\x04 World"
         ratio = sum(1 for c in mixed if 0x20 <= ord(c) < 0x7f or c in '\n\r\t') / len(mixed)
-        # 可打印字符占比应接近8/13≈0.615，低于0.7
-        assert ratio < 0.75
+        # 可打印字符占比应低于0.7，落入不可读区间
+        assert ratio < 0.7
+        assert not _is_printable(mixed)
 
 
 @pytest.mark.skipif(not _decoder_available, reason="string_decoder not importable")

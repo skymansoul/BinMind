@@ -1,0 +1,18 @@
+% Format-string 多工具检测对比表 (FPE benchmark, 46 binaries)
+\begin{table}[t]
+\centering
+\caption{Format-String Detection: FPE vs. Baseline and General-Purpose Tools (23 samples, O0/O2).}
+\label{tab:fmt-fpe-comparison}
+\small
+\begin{tabular}{lrrrrrrrr}
+\hline
+Tool & TP & FP & FN & Recall & Precision & F1 & FP rate & Time(s) \\
+\hline
+  \textbf{FPE (ours)} & 30 & 1 & 0 & 1.000 & 0.968 & 0.984 & 0.062 & 6.63 \\
+  Baseline & 0 & 0 & 30 & 0.000 & 0.000 & 0.000 & 0.000 & 6.21 \\
+  Angr (CFG) & 30 & 16 & 0 & 1.000 & 0.652 & 0.789 & 1.000 & 118.07 \\
+  QEMU trace & 0 & 0 & 30 & 0.000 & 0.000 & 0.000 & 0.000 & 6.80 \\
+  Ghidra headless (sim.) & 30 & 15 & 0 & 1.000 & 0.667 & 0.800 & 0.938 & 6.17 \\
+\hline
+\end{tabular}
+\end{table}

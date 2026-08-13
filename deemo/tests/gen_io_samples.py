@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 ''',
 }
 
-MAKEFILE = 'CC=gcc\nCFLAGS=-g -O0 -fno-stack-protector\n\nall: vuln\n\nvuln: vuln.c\n\t$(CC) $(CFLAGS) -o vuln vuln.c\n\nclean:\n\trm -f vuln\n'
+MAKEFILE = 'CC=gcc\nCFLAGS=-g -O0 -fno-stack-protector\n\nall: vuln\n\nvuln: vuln.c\n\t$ $(CFLAGS) -o vuln vuln.c\n\nclean:\n\trm -f vuln\n'
 
 for name, code in SAMPLES.items():
     d = os.path.join(BASE, name)

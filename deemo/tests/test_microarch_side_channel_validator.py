@@ -21,13 +21,13 @@ class TestSideChannelEvidence(unittest.TestCase):
     def test_evidence_creation(self):
         """测试证据创建"""
         evidence = SideChannelEvidence(
-            type="cache_timing",
+            attack_type="cache_timing",
             confidence=0.95,
-            data_leak_estimate=0.3,
+            measured_bandwidth_bps=0.3,
         )
-        self.assertEqual(evidence.type, "cache_timing")
+        self.assertEqual(evidence.attack_type, "cache_timing")
         self.assertEqual(evidence.confidence, 0.95)
-        self.assertEqual(evidence.data_leak_estimate, 0.3)
+        self.assertEqual(evidence.measured_bandwidth_bps, 0.3)
 
 
 class TestVerificationResult(unittest.TestCase):
@@ -37,24 +37,24 @@ class TestVerificationResult(unittest.TestCase):
     def test_success_result(self):
         """测试成功结果"""
         evidence = SideChannelEvidence(
-            type="spectre_v1",
+            attack_type="spectre_v1",
             confidence=0.8,
-            data_leak_estimate=0.5,
+            measured_bandwidth_bps=0.5,
         )
         result = VerificationResult(
-            success=True,
-            evidences=[evidence],
+            passed=True,
+            evidence=[evidence],
         )
-        self.assertTrue(result.success)
-        self.assertEqual(len(result.evidences), 1)
+        self.assertTrue(result.passed)
+        self.assertEqual(len(result.evidence), 1)
 
     def test_failure_result(self):
         result = VerificationResult(
-            success=False,
-            evidences=[],
+            passed=False,
+            evidence=[],
         )
-        self.assertFalse(result.success)
-        self.assertEqual(len(result.evidences), 0)
+        self.assertFalse(result.passed)
+        self.assertEqual(len(result.evidence), 0)
 
 
 class TestMicroarchSideChannelValidator(unittest.TestCase):

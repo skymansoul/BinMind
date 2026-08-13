@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2023_0461 UAF: chained: alloc→free→use in completion handler
+// cve_2023_0461 UAF: chained: alloc鈫抐ree鈫抲se in completion handler
 char *io_uring_uaf_global = NULL;
 
 void io_uring_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    io_uring_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    io_uring_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (io_uring_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("io_uring_uaf: freed[0]=%c\n", io_uring_uaf_global[0]);
     }
     io_uring_uaf_global = NULL;

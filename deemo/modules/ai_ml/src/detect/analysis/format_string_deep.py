@@ -19,7 +19,8 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
+from .fmt_provenance import FmtProvenance
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,7 +81,7 @@ class FormatStringDeepAnalyzer:
         if rodata_refs is None:
             rodata_refs = {}
 
-        fmt_reg = 'rdi'
+        fmt_reg = self._fmt_reg(instructions, call_idx, func_name)
         fmt_source = self._classify_fmt_source(
             instructions, call_idx, fmt_reg, rodata_refs)
         v = DeepFmtVerdict(
@@ -106,6 +107,40 @@ class FormatStringDeepAnalyzer:
 
         return v
 
+    @staticmethod
+    def _fmt_reg(instructions: List[str], call_idx: int,
+                 func_name: str) -> str:
+        """按函数定位fmt参数寄存器——printf族fmt在首参, sprintf在次参,
+        snprintf在第三参; Windows用rcx/rdx/r8, Linux用rdi/rsi/rdx
+        """
+        # 参数位置: printf=0; fprintf/sprintf/dprintf/syslog=1; snprintf=2
+        base = func_name.split('.')[-1].split('@')[0].lower()
+        idx = 0
+        if base in ('fprintf', 'vfprintf', 'dprintf', 'syslog',
+                    'sprintf', 'vsprintf', '__fprintf_chk'):
+            idx = 1
+        elif base in ('snprintf', 'vsnprintf', '__snprintf_chk',
+                      '__vsnprintf_chk', 'snwprintf'):
+            idx = 2
+        pairs = {0: ('rdi', 'rcx'), 1: ('rsi', 'rdx'), 2: ('rdx', 'r8')}
+        lin, win = pairs[idx]
+        # ABI检测: 实参装载含rcx系→win; rdi系→linux
+        for j in range(call_idx - 1, max(-1, call_idx - 5), -1):
+            if j < 0:
+                break
+            il = instructions[j].strip().lower()
+            if not il or il.startswith((';', '.')):
+                continue
+            if re.search(r'(?:mov|lea)\s+.*?%r(cx|8|9|dx)\b', il):
+                return win
+            if re.search(r'(?:mov|lea)\s+(?:r|e)(cx|8|9|dx)\b', il):
+                return win
+            if re.search(r'(?:mov|lea)\s+.*?%r(di|si)\b', il):
+                return lin
+            if re.search(r'(?:mov|lea)\s+(?:r|e)(di|si)\b', il):
+                return lin
+        return lin
+
     def _classify_fmt_source(self,
                               instructions: List[str],
                               call_idx: int,
@@ -113,6 +148,12 @@ class FormatStringDeepAnalyzer:
                               rodata_refs: Dict[int, str]
                               ) -> FmtSource:
         """分类fmt参数的来源"""
+        # 阶段0: 来源深化追踪——穿透寄存器链/栈槽, 常量来源直接判CONST_RODATA
+        prov = FmtProvenance().resolve(instructions, call_idx, fmt_reg,
+                                       rodata_refs)
+        if prov[0] == 'const_rodata':
+            return FmtSource.CONST_RODATA
+
         # 阶段1: 找设置fmt_reg的指令
         setup_idx = -1
         setup_instr = ""

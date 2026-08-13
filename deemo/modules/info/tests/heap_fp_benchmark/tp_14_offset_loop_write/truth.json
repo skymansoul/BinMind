@@ -1,9 +1,0 @@
-{
-  "sample_id": "tp_14_offset_loop_write",
-  "label": "tp",
-  "cwe": "CWE-122",
-  "cve": "CVE-2014-1767 类 (偏移越界堆写)",
-  "expect_overflow": true,
-  "trigger": "直接执行 main",
-  "why": "循环写入总量 128 超过分配 64, 无任何边界检查"
-}

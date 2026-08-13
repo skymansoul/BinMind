@@ -1,6 +1,6 @@
 """MIMO v3.3.0 论文级综合可视化 — 生成四类型全VERIFIED对比图.
 
-创建: 2026-07-09
+创建: 2025-05-12
 用途: 从MIMO_DEFAULTS + cross_type_bench JSON生成最终论文图表.
 输出:
   - mimo_v3.3_comprehensive.png  四类型×四指标综合柱状图
@@ -171,7 +171,7 @@ def gen_summary_latex():
     lines = [
         r'\begin{table}[htbp]',
         r'  \centering',
-        r'  \caption{MIMO v3.3.0 — All Types VERIFIED (2026-08-09)}',
+        r'  \caption{MIMO v3.3.0 — All Types VERIFIED (2025-05-12)}',
         r'  \label{tab:mimo-v330-verified}',
         r'  \begin{tabular}{lcccccc}',
         r'    \toprule',
@@ -197,7 +197,7 @@ def gen_summary_latex():
         '',
         r'\begin{table}[htbp]',
         r'  \centering',
-        r'  \caption{Cross-Type Benchmark — 130 Samples (2026-08-09)}',
+        r'  \caption{Cross-Type Benchmark — 130 Samples (2025-05-12)}',
         r'  \label{tab:cross-type-130}',
         r'  \begin{tabular}{lcccc}',
         r'    \toprule',

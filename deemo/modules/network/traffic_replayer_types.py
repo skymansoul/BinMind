@@ -46,8 +46,8 @@ class ReplayResult:
                  'vulnerabilities_found',)
 
     def __init__(self, pcap_file, target, sessions_replayed, packets_sent,
-                 responses_received, crash_detected, crash_info,
-                 vulnerabilities_found):
+                 responses_received, crash_detected, crash_info=None,
+                 vulnerabilities_found=None):
         self.pcap_file = pcap_file if pcap_file is not None else ""
         self.target = target if target is not None else ""
         self.sessions_replayed = sessions_replayed if sessions_replayed is not None else 0

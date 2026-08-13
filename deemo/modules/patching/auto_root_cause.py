@@ -1,8 +1,8 @@
 """根因分析引擎。输入 crash dump 和 sanitizer 报告，输出结构化漏洞评估。"""
 
-import re, os, json, logging, hashlib
+import re, os, json, logging, hashlib, time
 import datetime as _dt
-from enum import IntEnum
+from enum import Enum
 from collections import OrderedDict
 
 _log = logging.getLogger(__name__)
@@ -131,24 +131,26 @@ def _parse_hex(val):
 
 # 严重度与可利用性评级
 
-class VulnerabilitySeverity(IntEnum):
-    INFO = 0
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
-    CRITICAL = 4
+class VulnerabilitySeverity(Enum):
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
     @classmethod
     def _missing_(cls, value):
         return cls.INFO
 
 
-class Exploitability(IntEnum):
-    NONE = 0
-    UNLIKELY = 1
-    POSSIBLE = 2
-    LIKELY = 3
-    CONFIRMED = 4
+class Exploitability(Enum):
+    NONE = "none"
+    UNLIKELY = "unlikely"
+    POSSIBLE = "possible"
+    EASY = "easy"
+    MEDIUM = "medium"
+    LIKELY = "likely"
+    CONFIRMED = "confirmed"
 
 
 class CWEDatabase:
@@ -168,6 +170,54 @@ class CWEDatabase:
     @staticmethod
     def lookup(crash_type):
         return CWEDatabase._DB.get(crash_type, ("CWE-0", "Unknown"))
+
+    def search_cwe(self, keywords):
+        """按关键字 token 搜索 CWE 条目 — 返回结构化结果列表。"""
+        results = []
+        keywords = [str(k).lower() for k in (keywords or [])]
+        for crash_type, (cwe_id, cwe_name) in self._DB.items():
+            text = ' '.join([crash_type, cwe_id, cwe_name]).lower()
+            score = sum(1 for kw in keywords if kw and kw in text)
+            if score > 0:
+                results.append({
+                    'cwe_id': cwe_id,
+                    'cwe_name': cwe_name,
+                    'description': CWEDatabase._CWE_DESCRIPTIONS.get(cwe_id, cwe_name),
+                    'score': round(score / max(len(keywords), 1), 3),
+                })
+        results.sort(key=lambda r: r['score'], reverse=True)
+        return results
+
+
+CWEDatabase._CWE_DESCRIPTIONS = {
+    'CWE-121': "Stack-based Buffer Overflow — 栈缓冲区写入越界",
+    'CWE-122': "Heap-based Buffer Overflow — 堆缓冲区写入越界",
+    'CWE-416': "Use After Free — 释放后继续使用悬垂指针",
+    'CWE-415': "Double Free — 同一内存被重复释放",
+    'CWE-476': "NULL Pointer Dereference — 空指针解引用",
+    'CWE-134': "Use of Externally-Controlled Format String — 格式化字符串漏洞",
+    'CWE-190': "Integer Overflow or Wraparound — 整数溢出回绕",
+    'CWE-843': "Access of Resource Using Incompatible Type — 类型混淆",
+    'CWE-770': "Allocation of Resources Without Limits — 资源无限制分配",
+    'CWE-682': "Incorrect Calculation — 错误计算",
+}
+
+CWEDatabase._CWE_NAME_BY_ID = {
+    'CWE-121': "Stack-based Buffer Overflow",
+    'CWE-122': "Heap-based Buffer Overflow",
+    'CWE-416': "Use After Free",
+    'CWE-415': "Double Free",
+    'CWE-476': "NULL Pointer Dereference",
+    'CWE-134': "Use of Externally-Controlled Format String",
+    'CWE-190': "Integer Overflow or Wraparound",
+    'CWE-843': "Access of Resource Using Incompatible Type",
+    'CWE-770': "Allocation of Resources Without Limits or Throttling",
+    'CWE-682': "Incorrect Calculation",
+    'CWE-78': "OS Command Injection",
+    'CWE-119': "Improper Restriction of Operations within the Bounds of a Memory Buffer",
+    'CWE-120': "Buffer Copy without Checking Size of Input",
+    'CWE-362': "Concurrent Execution using Shared Resource with Improper Synchronization",
+}
 
 
 # crash 签名哈希
@@ -202,8 +252,9 @@ class CrashCluster:
     """同类 crash 聚合器 — 跟踪同一根因的多次崩溃。
     Fuzzy hash 一致 → 归入同一 cluster。"""
 
-    def __init__(self):
+    def __init__(self, cluster_id="default"):
         self._clusters = {}  # fuzzy_hash → VulnerabilityContext 列表
+        self.cluster_id = cluster_id
 
     def add(self, ctx):
         fh = _crash_fuzzy_hash(ctx.crash_type, ctx.stack_trace)
@@ -261,7 +312,12 @@ def triage_capabilities(ctx):
 # 分析数据类型
 
 class VulnerabilityContext:
-    def __init__(self):
+    """漏洞上下文 — 同时承载 crash 分析与漏洞语义分析两类字段。"""
+
+    def __init__(self, vulnerability_type="", function_name="", function_address=0,
+                 binary_path="", pseudocode="", assembly="",
+                 vulnerability_description="", severity="", cwe_id="",
+                 root_cause=""):
         self.crash_info = {}
         self.crash_type = ""
         self.confidence = 0.0
@@ -269,11 +325,21 @@ class VulnerabilityContext:
         self.faulting_address = 0
         self.registers = {}
         self.stack_trace = []
-        self.cwe_id = ""
+        self.cwe_id = cwe_id
         self.cwe_description = ""
         self.exact_hash = ""
         self.fuzzy_hash = ""
         self.capabilities_required = []
+        # 漏洞语义分析字段
+        self.vulnerability_type = vulnerability_type
+        self.function_name = function_name
+        self.function_address = function_address
+        self.binary_path = binary_path
+        self.pseudocode = pseudocode
+        self.assembly = assembly
+        self.vulnerability_description = vulnerability_description
+        self.severity = severity
+        self.root_cause = root_cause
 
     def to_dict(self):
         return OrderedDict([
@@ -291,17 +357,53 @@ class VulnerabilityContext:
         ])
 
 
+class CWEMapping:
+    """CWE 映射条目 — 根因分析结果中的最小 CWE 单元。"""
+
+    def __init__(self, cwe_id="", cwe_name="", description="", score=0.0):
+        self.cwe_id = cwe_id
+        self.cwe_name = cwe_name
+        self.description = description
+        self.score = score
+
+    def to_dict(self):
+        return {
+            'cwe_id': self.cwe_id,
+            'cwe_name': self.cwe_name,
+            'description': self.description,
+            'score': self.score,
+        }
+
+
 class AnalysisReport:
-    def __init__(self):
-        self.vulnerabilities = []
+    """分析报告 — 既作 crash 报告，也作根因分析结果(RootCauseAnalysis)。"""
+
+    def __init__(self, analysis_id=None, generated_at=None, target_binary="",
+                 binary_path="", vulnerabilities=None, summary=None,
+                 success=True, root_cause="", confidence=0.0, error="",
+                 vulnerability_type="", vulnerability_id=None, cwe_mappings=None,
+                 severity=None, exploitability=None, function_name="",
+                 function_address=0):
+        self.analysis_id = analysis_id if analysis_id is not None \
+            else hashlib.sha256(os.urandom(16)).hexdigest()[:12]
+        self.generated_at = generated_at if generated_at is not None else time.time()
+        self.target_binary = target_binary
+        self.binary_path = binary_path
+        self.vulnerabilities = list(vulnerabilities) if vulnerabilities is not None else []
+        self.summary = dict(summary) if summary is not None else {}
         self.severity_distribution = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
-        self.generated_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
-        self.binary_path = ""
-        self.target_binary = ""
-        self.analysis_id = hashlib.sha256(os.urandom(16)).hexdigest()[:12]
-        self.summary = {}
-        self.function_name = ""
-        self.function_address = 0
+        # 根因分析结果字段
+        self.success = success
+        self.root_cause = root_cause
+        self.confidence = confidence
+        self.error = error
+        self.vulnerability_type = vulnerability_type
+        self.vulnerability_id = vulnerability_id
+        self.cwe_mappings = list(cwe_mappings) if cwe_mappings is not None else []
+        self.severity = severity
+        self.exploitability = exploitability
+        self.function_name = function_name
+        self.function_address = function_address
 
     def add_vuln(self, ctx):
         self.vulnerabilities.append(ctx)
@@ -350,11 +452,87 @@ def _assess_exploitability(crash_type, context):
 
 # 主分析器
 
-class AutoRootCauseAnalyzer:
-    def __init__(self):
-        self._cluster = CrashCluster()
+def _heuristic_vuln_analysis(context):
+    """启发式漏洞语义分析 — 依据类型 + 伪代码 + 汇编推导根因。
 
-    def analyze(self, crash):
+    返回 (root_cause, cwe_ids, severity, exploitability, confidence)。
+    """
+    vt = (context.vulnerability_type or '').lower()
+    text = ' '.join([context.pseudocode or '', context.assembly or '']).lower()
+
+    if any(k in vt for k in ('buffer', 'stack', 'overflow')) or \
+            any(k in text for k in ('strcpy', 'memcpy', 'strcat', 'gets', 'sprintf')):
+        root_cause = "缓冲区越界写入 — 源长度未校验即执行拷贝"
+        cwe_ids = ['CWE-121', 'CWE-120']
+        severity = VulnerabilitySeverity.CRITICAL
+        explo = Exploitability.EASY
+        conf = 0.92
+    elif any(k in vt for k in ('command', 'inject')) or \
+            any(k in text for k in ('system(', 'popen', 'exec(')):
+        root_cause = "命令注入 — 外部输入未经过滤进入命令执行函数"
+        cwe_ids = ['CWE-78']
+        severity = VulnerabilitySeverity.CRITICAL
+        explo = Exploitability.EASY
+        conf = 0.90
+    elif any(k in vt for k in ('use_after_free', 'uaf', 'dangling')) or \
+            ('free' in text and ('malloc' in text or 'calloc' in text or 'new' in text)):
+        root_cause = "释放后使用 — 内存释放后指针仍被解引用"
+        cwe_ids = ['CWE-416']
+        severity = VulnerabilitySeverity.CRITICAL
+        explo = Exploitability.MEDIUM
+        conf = 0.90
+    elif any(k in vt for k in ('format',)) or 'printf' in text or 'sprintf' in text:
+        root_cause = "格式化字符串漏洞 — 用户可控内容作为格式化参数"
+        cwe_ids = ['CWE-134']
+        severity = VulnerabilitySeverity.HIGH
+        explo = Exploitability.EASY
+        conf = 0.85
+    elif any(k in vt for k in ('null', 'deref')):
+        root_cause = "空指针解引用 — 未校验返回值即使用"
+        cwe_ids = ['CWE-476']
+        severity = VulnerabilitySeverity.HIGH
+        explo = Exploitability.UNLIKELY
+        conf = 0.80
+    elif any(k in vt for k in ('integer', 'overflow')) or 'overflow' in text:
+        root_cause = "整数溢出 — 运算结果超出表示范围"
+        cwe_ids = ['CWE-190']
+        severity = VulnerabilitySeverity.MEDIUM
+        explo = Exploitability.POSSIBLE
+        conf = 0.80
+    elif any(k in vt for k in ('double_free',)):
+        root_cause = "双重释放 — 同一内存块被释放两次"
+        cwe_ids = ['CWE-415']
+        severity = VulnerabilitySeverity.HIGH
+        explo = Exploitability.MEDIUM
+        conf = 0.85
+    elif any(k in vt for k in ('type_confusion',)):
+        root_cause = "类型混淆 — 对象以错误类型被访问"
+        cwe_ids = ['CWE-843']
+        severity = VulnerabilitySeverity.CRITICAL
+        explo = Exploitability.MEDIUM
+        conf = 0.85
+    elif any(k in vt for k in ('race',)):
+        root_cause = "竞态条件 — 共享资源访问缺乏同步"
+        cwe_ids = ['CWE-362']
+        severity = VulnerabilitySeverity.MEDIUM
+        explo = Exploitability.POSSIBLE
+        conf = 0.75
+    else:
+        root_cause = "未知根因 — 缺乏可识别的漏洞模式"
+        cwe_ids = []
+        severity = VulnerabilitySeverity.MEDIUM
+        explo = Exploitability.POSSIBLE
+        conf = 0.50
+    return root_cause, cwe_ids, severity, explo, conf
+
+
+class AutoRootCauseAnalyzer:
+    def __init__(self, analyzer_type="heuristic"):
+        self.analyzer_type = analyzer_type
+        self._cluster = CrashCluster()
+        self._results = []  # 语义分析结果累积 — 供 generate_report 汇总
+
+    def analyze(self, crash=None, crash_data=None):
         """根因分析入口。
 
         输入格式:
@@ -362,6 +540,8 @@ class AutoRootCauseAnalyzer:
           - str: asan/ubsan 输出文件路径或 gdb backtrace
           - str: 原始 crash 日志文本
         """
+        if crash is None:
+            crash = crash_data
         report = AnalysisReport()
         context = VulnerabilityContext()
 
@@ -452,6 +632,78 @@ class AutoRootCauseAnalyzer:
             'capabilities_required': context.capabilities_required,
         }
 
+        return report
+
+    def analyze_vulnerability(self, context):
+        """基于漏洞语义上下文执行启发式根因分析。
+
+        依据漏洞类型 + 伪代码 + 汇编关键词推导 CWE 映射、
+        严重度与可利用性。返回 RootCauseAnalysis。
+        """
+        if context is None:
+            context = VulnerabilityContext()
+        root_cause, cwe_ids, severity, explo, confidence = _heuristic_vuln_analysis(context)
+
+        cwe_mappings = []
+        for cid in cwe_ids:
+            cwe_mappings.append(CWEMapping(
+                cwe_id=cid,
+                cwe_name=CWEDatabase._CWE_NAME_BY_ID.get(cid, cid),
+                description=CWEDatabase._CWE_DESCRIPTIONS.get(cid, ""),
+                score=confidence,
+            ))
+
+        result = AnalysisReport(
+            success=True,
+            root_cause=root_cause,
+            confidence=round(confidence, 3),
+            vulnerability_type=context.vulnerability_type or "",
+            vulnerability_id="VULN_" + hashlib.sha256(
+                ((context.vulnerability_type or '') + (context.function_name or '') +
+                 str(context.function_address)).encode()).hexdigest()[:12],
+            cwe_mappings=cwe_mappings,
+            severity=severity,
+            exploitability=explo,
+            target_binary=context.binary_path,
+            function_name=context.function_name,
+            function_address=context.function_address,
+            vulnerabilities=[context],
+        )
+        result.summary = {
+            'total_vulnerabilities': 1,
+            'critical_count': 1 if severity == VulnerabilitySeverity.CRITICAL else 0,
+            'high_count': 1 if severity == VulnerabilitySeverity.HIGH else 0,
+            'severity_distribution': {severity.name.lower(): 1},
+        }
+        self._results.append(result)
+        return result
+
+    def batch_analyze(self, contexts):
+        """批量根因分析 — 逐条调用 analyze_vulnerability。"""
+        results = []
+        for ctx in (contexts or []):
+            if ctx is not None:
+                results.append(self.analyze_vulnerability(ctx))
+        return results
+
+    def generate_report(self):
+        """汇总已分析结果的报告。"""
+        report = AnalysisReport(
+            target_binary=(self._results[0].target_binary if self._results else ""),
+            vulnerabilities=list(self._results),
+            summary={
+                'total_vulnerabilities': len(self._results),
+                'critical_count': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.CRITICAL),
+                'high_count': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.HIGH),
+                'severity_distribution': {
+                    'critical': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.CRITICAL),
+                    'high': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.HIGH),
+                    'medium': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.MEDIUM),
+                    'low': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.LOW),
+                    'info': sum(1 for r in self._results if r.severity == VulnerabilitySeverity.INFO),
+                },
+            },
+        )
         return report
 
     def cluster_stats(self):
@@ -556,7 +808,24 @@ class AutoRootCauseAnalyzer:
 
 RootCauseAnalysis = AnalysisReport
 
-analyze_root_cause = AutoRootCauseAnalyzer().analyze
+
+def analyze_root_cause(vulnerability_type="", function_name="", pseudocode="",
+                       function_address=0, binary_path="", **kwargs):
+    """便捷函数 — 单次调用完成漏洞根因分析。"""
+    ctx = VulnerabilityContext(
+        vulnerability_type=vulnerability_type,
+        function_name=function_name,
+        function_address=function_address,
+        binary_path=binary_path,
+        pseudocode=pseudocode,
+        assembly=kwargs.get("assembly", ""),
+        vulnerability_description=kwargs.get("vulnerability_description", ""),
+        severity=kwargs.get("severity", ""),
+        cwe_id=kwargs.get("cwe_id", ""),
+        root_cause=kwargs.get("root_cause", ""),
+    )
+    analyzer = AutoRootCauseAnalyzer(analyzer_type=kwargs.get("analyzer_type", "heuristic"))
+    return analyzer.analyze_vulnerability(ctx)
 
 
 def format_root_cause_report(report):
@@ -567,14 +836,24 @@ def format_root_cause_report(report):
 
     lines = []
     lines.append("=" * 60)
-    lines.append("ROOT CAUSE ANALYSIS REPORT")
+    lines.append("自动化漏洞根因分析报告")
     lines.append("=" * 60)
     if isinstance(report, dict):
-        summary = report.get('summary', {})
-        lines.append(f"  Crash Type:   {summary.get('crash_type', 'Unknown')}")
-        lines.append(f"  Confidence:   {summary.get('confidence', 0):.1%}")
-        lines.append(f"  Exploitability: {summary.get('exploitability', 'Unknown')}")
-        lines.append(f"  CWE:          {summary.get('cwe', 'N/A')}")
+        summary = report.get('summary', {}) or {}
+        total = summary.get('total_vulnerabilities')
+        if total is not None:
+            lines.append(f"检测到漏洞数: {total}")
+        critical = summary.get('critical_count')
+        if critical is not None:
+            lines.append(f"严重漏洞数: {critical}")
+        if summary.get('crash_type'):
+            lines.append(f"  Crash Type:   {summary.get('crash_type', 'Unknown')}")
+        if summary.get('confidence') is not None:
+            lines.append(f"  Confidence:   {summary.get('confidence', 0):.1%}")
+        if summary.get('exploitability'):
+            lines.append(f"  Exploitability: {summary.get('exploitability', 'Unknown')}")
+        if summary.get('cwe'):
+            lines.append(f"  CWE:          {summary.get('cwe', 'N/A')}")
         if summary.get('exact_hash'):
             lines.append(f"  Exact Hash:   {summary['exact_hash']}")
         if summary.get('fuzzy_hash'):

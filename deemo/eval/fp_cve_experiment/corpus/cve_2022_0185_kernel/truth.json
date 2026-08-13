@@ -1,8 +1,0 @@
-{
-  "id": "cve_2022_0185_kernel",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2022-0185",
-  "component": "Linux fs_context legacy_parse_param",
-  "mode": "参数长度计算错误导致 2 字节堆溢出"
-}

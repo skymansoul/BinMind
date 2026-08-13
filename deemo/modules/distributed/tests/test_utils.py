@@ -93,7 +93,7 @@ class TestWorkerConfig:
     """WorkerConfig 默认值与优先级层级设置。"""
 
     def test_default_config(self):
-        from ..worker_v1 import WorkerConfig
+        from ..worker import WorkerConfig
         cfg = WorkerConfig()
         assert cfg.queue == "binmind:tasks"
         assert cfg.poll_timeout == 5
@@ -104,7 +104,7 @@ class TestWorkerConfig:
         assert cfg.priority_tiers == {}
 
     def test_custom_config(self):
-        from ..worker_v1 import WorkerConfig
+        from ..worker import WorkerConfig
         cfg = WorkerConfig(
             redis_url="redis://custom:6379/2",
             queue="my:tasks",

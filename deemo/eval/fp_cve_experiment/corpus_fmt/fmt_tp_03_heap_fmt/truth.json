@@ -1,6 +1,0 @@
-{
-  "id": "fmt_tp_03_heap_fmt",
-  "expected_vuln": true,
-  "vuln_type": "format_string",
-  "mode": "堆缓冲作为格式串"
-}

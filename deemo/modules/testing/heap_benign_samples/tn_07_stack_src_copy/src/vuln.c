@@ -6,7 +6,7 @@ int main(void) {
     memset(stack_src, 'S', sizeof(stack_src));
     char *buf = (char *)malloc(128);
     if (!buf) return 1;
-    memcpy(buf, stack_src, 128);     /* ¥Û–°∆•≈‰ */
+    memcpy(buf, stack_src, 128);     /* Â§ßÂ∞èÂåπÈÖç */
     printf("[*] %c\n", buf[0]);
     free(buf);
     return 0;

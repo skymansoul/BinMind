@@ -1,4 +1,4 @@
-/* CVE-2021-3156 ¡ª sudoedit heap overflow (size mismatch) */
+/* CVE-2021-3156 â€” sudoedit heap overflow (size mismatch) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

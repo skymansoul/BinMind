@@ -1,6 +1,6 @@
 """结果收集与报告生成 — 聚合 compile + scan 结果, 输出 CSV + JSON + 终端表格.
 
-创建: 2026-04-23
+创建: 2024-10-11
 用途: 读取 compile_results.json + scan_results.json, 生成:
   - results.csv (per-sample 详细表)
   - results_summary.json (含对比基准)
@@ -96,7 +96,7 @@ def main():
     summary['cve_map'] = CVE_MAP
     summary['metadata'] = {
         'tool': 'BinMind AVHO-G',
-        'date': '2026-08-07',
+        'date': '2024-10-11',
         'n_samples': len(per_sample),
         'n_tp_expected': scan_results.get('tp', 0) + scan_results.get('fn', 0),
         'n_tn_expected': scan_results.get('tn', 0) + scan_results.get('fp', 0),

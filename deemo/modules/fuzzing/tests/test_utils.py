@@ -169,7 +169,8 @@ class TestNormalizeBinaryPath:
     def test_absolute_path(self):
         """绝对路径保持不变."""
         result = normalize_binary_path("/usr/bin/test")
-        assert result == "/usr/bin/test" or result == "\\usr\\bin\\test"
+        assert os.path.isabs(result)
+        assert result.endswith(("usr/bin/test", "usr\\bin\\test"))
 
     def test_relative_path_becomes_absolute(self):
         """相对路径转为绝对路径."""
@@ -184,7 +185,8 @@ class TestNormalizeBinaryPath:
     def test_nonexistent_path_still_normalized(self):
         """不存在的路径也会被规范化 (不检查存在性)."""
         result = normalize_binary_path("/nonexistent/path.bin")
-        assert os.path.isabs(result)
+        # Windows 下裸根路径不被 os.path.isabs 识别，以分隔符前缀判定绝对语义
+        assert os.path.isabs(result) or result.startswith(("/", "\\"))
 
 
 @pytest.mark.skipif(not _utils_available, reason="fuzzing.src.utils not importable")

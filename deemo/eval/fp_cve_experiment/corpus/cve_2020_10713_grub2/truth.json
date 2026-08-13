@@ -1,8 +1,0 @@
-{
-  "id": "cve_2020_10713_grub2",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2020-10713",
-  "component": "GRUB2 grub_net",
-  "mode": "网络栈长度计算错误导致堆溢出"
-}

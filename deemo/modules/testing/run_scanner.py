@@ -210,6 +210,33 @@ class BinaryScanner:
             sr10.n_total = len(fpmin_findings)
             results.append(sr10)
 
+        # 检测器11: FMT-FPMIN — 格式串溯源 + 参数一致性验证
+        if self._use_ppahav:
+            t0 = time.perf_counter()
+            fmt_findings = self._scan_fmt_fpmin_binary(
+                binary_path, sample_name)
+            elapsed = (time.perf_counter() - t0) * 1000
+            sr11 = ScanResult(sample_name=sample_name, detector="fmt_fpmin",
+                             findings=fmt_findings, elapsed_ms=elapsed)
+            sr11.n_format_string = len([f for f in fmt_findings
+                                        if f.get("type") == "format_string"])
+            sr11.n_total = len(fmt_findings)
+            results.append(sr11)
+
+        # 检测器12: INT-OVERFLOW-FPMIN — 乘法域 + 写入验证
+        if self._use_ppahav:
+            t0 = time.perf_counter()
+            io_findings = self._scan_int_ofpmin_binary(
+                binary_path, sample_name)
+            elapsed = (time.perf_counter() - t0) * 1000
+            sr12 = ScanResult(sample_name=sample_name,
+                             detector="int_overflow_fpmin",
+                             findings=io_findings, elapsed_ms=elapsed)
+            sr12.n_integer_overflow = len([f for f in io_findings
+                                           if f.get("type") == "integer_overflow"])
+            sr12.n_total = len(io_findings)
+            results.append(sr12)
+
         return results
 
     @staticmethod
@@ -491,6 +518,97 @@ class BinaryScanner:
                 "reason": v.get("reason", ""),
                 "confidence": v.get("confidence", 0.0),
                 "source": "uaf_fpmin",
+            })
+        return findings
+
+    def _scan_fmt_fpmin_binary(self, binary_path: str,
+                                sample_name: str) -> List[dict]:
+        """FMT-FPMIN 检测 — 格式串溯源分类 + 参数一致性验证.
+
+        与 fmt_binary 的关系: 同一调用点集, 增加溯源/参数证据过滤
+        (RDATA/栈槽常量/堆常量 → 滤; USER → 保留), 并补检
+        sprintf 家族 rdx fmt 与用户堆内容格式串.
+        """
+        txt = self._objdump_txt(binary_path)
+        if not txt or not txt.strip():
+            return []
+
+        try:
+            _proj_root = os.path.dirname(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))))
+            if _proj_root not in sys.path:
+                sys.path.insert(0, _proj_root)
+            from modules.analysis.static.format_string_analysis.fmt_fpmin_scanner import \
+                FmtFpminScanner
+            from modules.analysis.static.heap_analysis.instruction_parser import (
+                InstructionParser)
+        except ImportError as e:
+            return [{"type": "meta",
+                     "reason": f"fmt fpmin scanner import failed: {e}",
+                     "confidence": 0.0}]
+
+        funcs = InstructionParser.parse_functions(txt)
+        scanner = FmtFpminScanner()
+        res = scanner.scan(txt, sample_name, user_code_only=True,
+                           binary_path=binary_path)
+
+        findings = []
+        for v in res.get("findings", []):
+            addr = v.get("insn_addr", 0)
+            findings.append({
+                "type": "format_string",
+                "subtype": "fmt_fpmin",
+                "address": hex(addr),
+                "func": InstructionParser.resolve_function(addr, funcs)
+                        or "?",
+                "reason": v.get("reason", ""),
+                "confidence": v.get("confidence", 0.0),
+                "source": "fmt_fpmin",
+            })
+        return findings
+
+    def _scan_int_ofpmin_binary(self, binary_path: str,
+                                 sample_name: str) -> List[dict]:
+        """整数溢出 FPMIN 检测 — 乘法域分析 + 写入验证抑制.
+
+        与 int_overflow_binary 的关系: 同一调用点集, 增加
+        乘法域 (常量缩放/掩码/窄位) / 检查有效性 / 溢出后
+        写入验证证据过滤, 并补检 calloc 双参数与 add 加倍.
+        """
+        txt = self._objdump_txt(binary_path)
+        if not txt or not txt.strip():
+            return []
+
+        try:
+            _proj_root = os.path.dirname(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))))
+            if _proj_root not in sys.path:
+                sys.path.insert(0, _proj_root)
+            from modules.analysis.static.integer_overflow_analysis.io_fpmin_scanner import \
+                IntOverflowFpminScanner
+            from modules.analysis.static.heap_analysis.instruction_parser import (
+                InstructionParser)
+        except ImportError as e:
+            return [{"type": "meta",
+                     "reason": f"int overflow fpmin import failed: {e}",
+                     "confidence": 0.0}]
+
+        funcs = InstructionParser.parse_functions(txt)
+        scanner = IntOverflowFpminScanner()
+        res = scanner.scan(txt, sample_name, user_code_only=True)
+
+        findings = []
+        for v in res.get("findings", []):
+            addr = v.get("insn_addr", 0)
+            findings.append({
+                "type": "integer_overflow",
+                "subtype": "int_overflow_fpmin",
+                "address": hex(addr),
+                "func": InstructionParser.resolve_function(addr, funcs)
+                        or "?",
+                "reason": v.get("reason", ""),
+                "confidence": v.get("confidence", 0.0),
+                "source": "int_overflow_fpmin",
             })
         return findings
 

@@ -1,12 +1,12 @@
-# ==== 格式保留加密(FPE)检测 ====
+# 格式保留加密(FPE)检测
 # FPE加密后密文与明文具有相同格式(长度和字符集), 常用于:
 #   - 令牌化(tokenization): 信用卡号、社会保险号格式保留
 #   - 数据库列级加密: 不改变schema限制
 #   - 合规要求: PCI-DSS推荐FPE保护PAN
 #
-# 覆盖标准: NIST SP 800-38G Rev.1 (2024), ANSI X9.124-4.
+# 覆盖标准: NIST SP 800-38G Rev.1, ANSI X9.124-4.
 # 算法: FF1 (Feistel架构, 10轮), FF3-1 (修正版, 8轮).
-# 2024年NIST修订SP 800-38G: FF3→FF3-1修复了原始FF3的伪造攻击(Durak-Vaudenay, CRYPTO 2017).
+# 2024年NIST修订SP 800-38G: FF3→FF3-1修复了原始FF3的伪造攻击.
 #
 # 检测策略:
 #   (1) FF1参数指纹: radix ∈ [2, 2^16], min_len ≥ 2, max_len ≤ 2^32
@@ -16,9 +16,9 @@
 #       Prime Factors EncryptRIGHT, comforte SecurDPS, Thales CipherTrust
 #   (4) FPE特有的AES子密钥派生(CBC-MAC变体 + 整数除法和取模运算组合)
 #
-# Bellare-Rogaway-Spies (FFX mode, 2010), Dworkin (NIST SP 800-38G Rev.1, 2024),
-# Durak-Vaudenay (FF3 attack at CRYPTO 2017), Hoang-Miller-Trieu (FF3-1 fix, 2019).
-# 新增BPS (Brier-Peyrin-Stern, 2010)格式保留模式检测,
+# Bellare-Rogaway-Spies, Dworkin,
+# Durak-Vaudenay, Hoang-Miller-Trieu.
+# 新增BPS格式保留模式检测,
 # Thales/Vormetric令牌化产品指纹, comforte/HPE SecureData字符串。
 
 import struct
@@ -39,7 +39,7 @@ class FPEResult:
     detected_in: str = ""
 
 
-# ==== FPE字符串检测库 ====
+# FPE字符串检测库
 
 _FPE_STRING_DB: List[tuple] = [
     # NIST参考实现
@@ -68,7 +68,7 @@ _FPE_STRING_DB: List[tuple] = [
     (b'vormetric', 'FF1/FF3-1', 'Thales/Vormetric tokenization', 0.82),
     (b'CipherTrust', 'FF1/FF3-1', 'Thales CipherTrust', 0.80),
     (b'Protegrity', 'FF1/FF3-1', 'Protegrity Vaultless Tokenization', 0.80),
-    # BPS (Brier-Peyrin-Stern, 2010) — 早期FPE模式, 后被FFX替代
+    # BPS — 早期FPE模式, 后被FFX替代
     (b'bps_fpe', 'BPS', 'Brier-Peyrin-Stern FPE', 0.78),
     (b'BPS_FPE', 'BPS', 'BPS', 0.78),
     # 令牌化专用
@@ -77,7 +77,7 @@ _FPE_STRING_DB: List[tuple] = [
 ]
 
 
-# ==== FF1/FF3-1参数特征检测 ====
+# FF1/FF3-1参数特征检测
 # FF1使用10轮Feistel网络, 每轮: PRF(AES-CBC-MAC) → 整数mod radix^m.
 # 参数: radix ∈ [2..65536], input_len ∈ [2..4096](更大的max_len需要radix足够大)
 # FF3-1: 8轮, tweak = 56 bits(7 bytes), radix ∈ [2..65536], 输入长度∈[2..4096]
@@ -117,7 +117,7 @@ def _detect_fpe_params(data: bytes, source: str) -> List[FPEResult]:
     return results
 
 
-# ==== FPE上下文中的AES-CBC-MAC ====
+# FPE上下文中的AES-CBC-MAC
 # FF1的PRF使用AES-CBC-MAC变体: 从派生密钥通过零向量IV对明文+轮号做CBC。
 # 检测到:
 #   - AES密钥编排(S-box/Rcon)与整数除法和基数转换组合出现
@@ -186,7 +186,7 @@ class FPEDetector:
         return unique
 
 
-# ==== 便捷函数 ====
+# 便捷函数
 
 def detect_fpe(path: str) -> List[FPEResult]:
     return FPEDetector().scan_file(path)

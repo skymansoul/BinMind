@@ -153,18 +153,19 @@ class TestGitVersionManagement:
         manager.init_binary_repo(project_id, user.user_id)
 
         for j in range(3):
-            with tempfile.NamedTemporaryFile(suffix='.bin', delete=False) as f:
-                f.write(f'version_{j}'.encode())
-                success, _ = manager.commit_binary_version(
-                    project_id, user.user_id, f.name, f'Version {j}'
-                )
-                assert success
-                os.unlink(f.name)
+            # Windows 下句柄未关闭时 unlink 触发 PermissionError；先显式关闭再删除
+            f = tempfile.NamedTemporaryFile(suffix='.bin', delete=False)
+            f.write(f'version_{j}'.encode())
+            f.close()
+            success, _ = manager.commit_binary_version(
+                project_id, user.user_id, f.name, f'Version {j}'
+            )
+            assert success
+            os.unlink(f.name)
 
         versions = manager.get_project_versions(project_id)
         assert len(versions) == 3
         assert versions[0]['commit_message'] == 'Version 2'
-lass字段完整性$/d
         assert versions[-1]['commit_message'] == 'Version 0'
 
     def test_get_repo_info_nonexistent(self, manager):

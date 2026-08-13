@@ -318,8 +318,20 @@ _BYPASS_PRESETS: List[_ConfigEntry] = [
 
 
 class BypassConfig:
-    def __init__(self):
+    def __init__(self, output_dir=None, generate_scripts=True,
+                 max_analysis_time=300, use_unicorn=True,
+                 target_functions=None, **kwargs):
         self.techniques: List[Dict[str, str]] = []
+        self.output_dir = output_dir
+        self.generate_scripts = generate_scripts
+        self.max_analysis_time = max_analysis_time
+        self.use_unicorn = use_unicorn
+        self.target_functions = list(target_functions) if target_functions else []
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def validate(self) -> bool:
+        return True
 
     def add(self, technique: str, hypervisor: str, payload: str) -> None:
         self.techniques.append({
@@ -330,26 +342,72 @@ class BypassConfig:
 
 
 class BypassSolution:
-    def __init__(self, hypervisor: str):
+    """单个反虚拟机技术的绕过方案。"""
+
+    def __init__(self, technique=None, solved_values=None, script="",
+                 script_type="", hypervisor="", **kwargs):
+        self.technique = technique
+        self.solved_values = solved_values if solved_values is not None else {}
+        self.script = script
+        self.script_type = script_type
         self.hypervisor = hypervisor
         self.config = BypassConfig()
         self.detections: List[str] = []
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def to_dict(self) -> dict:
+        return {
+            "technique": self.technique.to_dict() if hasattr(self.technique, "to_dict") else str(self.technique),
+            "solution_type": getattr(self, "solution_type", ""),
+            "constraints": list(getattr(self, "constraints", [])),
+            "script": self.script,
+            "script_type": self.script_type,
+            "solved_values": dict(self.solved_values),
+            "confidence": getattr(self, "confidence", 0.0),
+        }
 
     def __repr__(self):
         return f"<BypassSolution hv={self.hypervisor} items={len(self.config.techniques)}>"
 
 
 class AntiVMTechnique:
+    """反虚拟机技术描述。保留类别常量，实例字段承载单条检测结果。"""
     DMI = "dmi"; MAC = "mac"; PCI = "pci"; CPUID = "cpuid"
     REGISTRY = "registry"; PROCESS = "process"; DEV_NODE = "dev_node"
     TIMING = "timing"; ACPI = "acpi"; DRIVER = "driver"
     SMBIOS = "smbios"; PCI_SYSFS = "pci_sysfs"
 
+    def __init__(self, name="", address="", detection_type="", description="",
+                 severity="", bypass_possible=False, **kwargs):
+        self.name = name
+        self.address = address
+        self.detection_type = detection_type
+        self.description = description
+        self.severity = severity
+        self.bypass_possible = bypass_possible
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "address": self.address,
+            "detection_type": self.detection_type,
+            "description": self.description,
+            "severity": self.severity,
+            "bypass_possible": self.bypass_possible,
+        }
+
 
 class AntiVMBypassAnalyzer:
     """入口: 分析 a binary's VM-detection posture"""
 
-    def __init__(self):
+    def __init__(self, config=None, **kwargs):
+        self.config = config if config is not None else BypassConfig()
+        self.binary_path: str = ""
+        self.binary_data: bytes = b""
+        self.solutions: List[BypassSolution] = []
         self._dmi_data: str = ""
         self._mac_prefixes: Set[str] = set()
         self._pci_ids: Set[int] = set()
@@ -362,71 +420,106 @@ class AntiVMBypassAnalyzer:
         self._smbios_hits: Dict[str, str] = {}
         self._pci_sysfs_ids: Set[int] = set()
 
-    def analyze(self, binary: str) -> List[Dict[str, Any]]:
-        findings: List[Dict[str, Any]] = []
-        self._dmi_data = _read_dmi_sysfs()
-        self._mac_prefixes = _enumerate_mac_prefixes()
-        self._pci_ids = _lspci_vendor_ids()
-        self._cpuid_flag = _check_cpuid_hypervisor()
-        self._process_hvs = _check_running_processes()
-        self._dev_node_hvs = _check_dev_nodes()
-        self._timing_suspicious = _check_timing_vm_drift()
-        self._acpi_hits = _check_acpi_tables()
-        self._driver_hvs = _check_loaded_drivers()
-        smbios_raw = _read_smbios_raw()
-        self._smbios_hits = _parse_smbios_vendor(smbios_raw)
-        self._pci_sysfs_ids = _enumerate_pci_devices_sysfs()
+    def analyze(self, binary: str) -> dict:
+        self.load_binary(binary)
+        self._last_techniques = self.detect_anti_vm_techniques()
+        return {
+            'binary_path': self.binary_path,
+            'techniques_detected': [t.to_dict() for t in self._last_techniques],
+            'summary': self._generate_summary(),
+        }
 
-        for hv, vendor_str in _DMI_VENDORS.items():
-            if vendor_str.lower() in self._dmi_data:
-                findings.append({"technique": "dmi", "hypervisor": hv,
-                    "match": vendor_str, "source": "sysfs"})
+    def load_binary(self, binary_path: str) -> bool:
+        try:
+            with open(binary_path, 'rb') as fh:
+                self.binary_data = fh.read()
+            self.binary_path = binary_path
+            return True
+        except OSError:
+            return False
 
-        for hv, prefixes in _VM_MAC_PREFIXES.items():
-            if self._mac_prefixes & prefixes:
-                findings.append({"technique": "mac", "hypervisor": hv,
-                    "match": list(self._mac_prefixes & prefixes), "source": "uuid"})
+    def detect_anti_vm_techniques(self) -> List[AntiVMTechnique]:
+        techniques: List[AntiVMTechnique] = []
+        data = self.binary_data
+        if b'cpuid' in data:
+            techniques.append(AntiVMTechnique(
+                name='cpuid_check', detection_type='cpuid_check',
+                description='CPUID 指令检测虚拟机', severity='High', bypass_possible=True))
+        if b'VMware' in data or b'vmware' in data:
+            techniques.append(AntiVMTechnique(
+                name='vmware_detect', detection_type='string_check',
+                description='VMware 字符串特征', severity='Medium', bypass_possible=True))
+        if b'/proc/cpuinfo' in data or b'/sys/hypervisor' in data:
+            techniques.append(AntiVMTechnique(
+                name='file_check', detection_type='file_check',
+                description='虚拟化文件系统路径检测', severity='Medium', bypass_possible=True))
+        return techniques
 
-        for hv, vid in _VM_PCI_DEVICES.items():
-            if vid in self._pci_ids:
-                findings.append({"technique": "pci", "hypervisor": hv,
-                    "match": hex(vid), "source": "lspci"})
-            if vid in self._pci_sysfs_ids:
-                findings.append({"technique": "pci_sysfs", "hypervisor": hv,
-                    "match": hex(vid), "source": "/sys/bus/pci/devices"})
+    def generate_bypass_scripts(self) -> List[BypassSolution]:
+        solutions: List[BypassSolution] = []
+        for tech in getattr(self, '_last_techniques', []):
+            sol = BypassSolution(technique=tech)
+            if tech.detection_type == 'cpuid_check':
+                sol.script = self._generate_cpuid_frida_script(sol)
+                sol.script_type = 'frida'
+            elif tech.detection_type == 'file_check':
+                sol.script = self._generate_ldpreload_script(sol)
+                sol.script_type = 'ld_preload'
+            elif tech.detection_type == 'timing_check':
+                sol.script = self._generate_timing_frida_script(sol)
+                sol.script_type = 'frida'
+            solutions.append(sol)
+        self.solutions = solutions
+        return solutions
 
-        if self._cpuid_flag:
-            findings.append({"technique": "cpuid", "hypervisor": "generic",
-                "match": True, "source": "/proc/cpuinfo"})
+    def _generate_cpuid_frida_script(self, solution) -> str:
+        return ("Interceptor.attach(Module.findExportByName(null, 'CPUID'), {\n"
+                "  onEnter: function(args) { console.log('CPUID intercepted'); }\n"
+                "});")
 
-        for hv in self._process_hvs:
-            findings.append({"technique": "process", "hypervisor": hv,
-                "match": "running VM tools process", "source": "proc_scan"})
-        for hv in self._dev_node_hvs:
-            findings.append({"technique": "dev_node", "hypervisor": hv,
-                "match": "characteristic device node", "source": "devfs"})
+    def _generate_timing_frida_script(self, solution) -> str:
+        return ("Interceptor.attach(Module.findExportByName(null, 'rdtsc'), {\n"
+                "  onEnter: function(args) { console.log('rdtsc intercepted'); }\n"
+                "});")
 
-        if self._timing_suspicious:
-            findings.append({"technique": "timing", "hypervisor": "generic",
-                "match": "high RDTSC interval variance", "source": "perf_counter"})
+    def _generate_ldpreload_script(self, solution) -> str:
+        return ("#define _GNU_SOURCE\n"
+                "#include <stdio.h>\n"
+                "#include <unistd.h>\n"
+                "int access(const char *p, int m) { return 0; }\n"
+                "FILE *fopen(const char *p, const char *m) { return NULL; }")
 
-        for hv, detail in self._acpi_hits.items():
-            findings.append({"technique": "acpi", "hypervisor": hv,
-                "match": detail, "source": "acpi_tables"})
+    def save_scripts(self) -> List[str]:
+        saved = []
+        for idx, sol in enumerate(self.solutions):
+            if not sol.script:
+                continue
+            path = os.path.join(self.config.output_dir or '.', 'bypass_%d.%s' % (idx, sol.script_type or 'txt'))
+            try:
+                with open(path, 'w', encoding='utf-8') as fh:
+                    fh.write(sol.script)
+                saved.append(path)
+            except OSError:
+                pass
+        return saved
 
-        for hv in self._driver_hvs:
-            findings.append({"technique": "driver", "hypervisor": hv,
-                "match": "VM kernel driver loaded", "source": "/proc/modules"})
+    def generate_report(self) -> dict:
+        return {
+            'binary_path': self.binary_path,
+            'techniques_detected': [t.to_dict() for t in getattr(self, '_last_techniques', [])],
+            'summary': self._generate_summary(),
+        }
 
-        for hv, detail in self._smbios_hits.items():
-            findings.append({"technique": "smbios", "hypervisor": hv,
-                "match": detail, "source": "smbios_raw"})
+    def _generate_summary(self) -> str:
+        n = len(getattr(self, '_last_techniques', []))
+        return '检测到 %d 种反虚拟机技术' % n
 
-        return findings
+    def _generate_recommendations(self) -> List[str]:
+        return ['打补丁', '升级到最新版本', '隔离虚拟化检测代码']
 
 
-def create_anti_vm_analyzer() -> AntiVMBypassAnalyzer:
-    return AntiVMBypassAnalyzer()
+def create_anti_vm_analyzer(config=None) -> AntiVMBypassAnalyzer:
+    return AntiVMBypassAnalyzer(config)
 
 
 name = "anti_vm_bypass"

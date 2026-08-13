@@ -1,10 +1,10 @@
 """
 约束追踪辅助函数 — 从IR/伪代码中反向追踪变量约束.
 
-从_cj_constraint_collector.py拆分, 提供三类追踪:
-  1. 常量赋值追踪: var = N → 等式约束
-  2. 类型上界推断: uint8_t var → var <= 255
-  3. 守卫上界搜索: if(var>N) var=N / var=min(var,N) → 上界约束
+提供三类追踪:
+1. 常量赋值追踪: var = N → 等式约束
+2. 类型上界推断: uint8_t var → var <= 255
+3. 守卫上界搜索: if(var>N) var=N / var=min(var,N) → 上界约束
 """
 
 from __future__ import annotations

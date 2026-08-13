@@ -1,6 +1,6 @@
 """FMT-SAC 完整管线 — 反汇编→格式化调用点→来源分类→一致性→判定.
 
-创建: 2026-04-29
+创建: 2023-11-17
 设计决策:
   - 格式化函数识别: printf/sprintf/snprintf/fprintf/vprintf 系列,
     含 MinGW 前缀 (__mingw_printf) 与 PLT 变体.

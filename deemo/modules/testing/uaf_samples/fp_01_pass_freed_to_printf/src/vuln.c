@@ -6,6 +6,6 @@ int main(void) {
     sprintf(p, "data");
     printf("[*] %s\n", p);
     free(p);
-    printf("[*] freed %p\n", (void *)p);   /* ÎŞº¦´«µİ: ½ö´òÓ¡µØÖ· */
+    printf("[*] freed %p\n", (void *)p);   /* æ— å®³ä¼ é€’: ä»…æ‰“å°åœ°å€ */
     return 0;
 }

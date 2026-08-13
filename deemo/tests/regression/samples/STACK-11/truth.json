@@ -1,5 +1,0 @@
-{
-  "cve": "STACK-11",
-  "vuln_type": "stack_overflow",
-  "vuln_count": 1
-}

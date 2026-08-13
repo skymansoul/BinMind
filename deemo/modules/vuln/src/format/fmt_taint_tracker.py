@@ -4,7 +4,7 @@
   mov reg,[rbp+0x10] → 函数参数 (可能用户可控) → TAINTED
   lea reg,[rip+off] → .rdata 常量 → SAFE
 
-创建: 2026-05-12
+创建: 2025-04-17
 """
 import re
 import subprocess

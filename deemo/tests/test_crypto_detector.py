@@ -25,7 +25,6 @@ class TestCryptoDetector(unittest.TestCase):
     def test_scan_bytes_empty(self):
         # 空数据进去，空结果出来
         result = self.detector._scan_bytes(b'')
-lass字段完整性$/d
         self.assertEqual(len(result), 0)
 
     def test_scan_bytes_aes_sbox(self):
@@ -58,9 +57,9 @@ lass字段完整性$/d
         self.assertTrue(len(sha_matches) > 0)
 
     def test_scan_file_nonexistent(self):
-        # 文件不存在返回None
+        # 文件不存在时模块返回空列表而非 None
         result = self.detector.scan_file("/nonexistent/file.bin")
-        self.assertIsNone(result)
+        self.assertEqual(result, [])
 
     def test_scan_file_empty(self):
         """空文件，algorithms列表为空"""

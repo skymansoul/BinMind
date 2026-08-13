@@ -206,7 +206,6 @@ class TestDistilledVulnDetectorAnalyzer:
         ]
         result = analyzer.analyze(code_list=code_list, mode="detect")
 
-lass字段完整性$/d
         assert result["success"] is True
         assert len(result["detections"]) == 2
 
@@ -219,13 +218,11 @@ lass字段完整性$/d
         # 无效输入 - 检测模式缺少代码
         is_valid, error = analyzer.validate_input(mode="detect")
         assert is_valid is False
-lass字段完整性$/d
         assert "需要 code 或 code_list" in error
 
         # 有效输入
         is_valid, error = analyzer.validate_input(mode="detect", code="test")
         assert is_valid is True
-lass字段完整性$/d
         assert error is None
 
     def test_cleanup(self):

@@ -6,10 +6,10 @@ int main(void) {
     if (!p) return 1;
     strcpy(p, "first");
     free(p);
-    char *q = (char *)malloc(128);   /* ĞÂ¶ÔÏóĞ´ÈëÍ¬Ò»Õ»²Û */
+    char *q = (char *)malloc(128);   /* æ–°å¯¹è±¡å†™å…¥åŒä¸€æ ˆæ§½ */
     if (!q) return 1;
     strcpy(q, "second");
-    printf("[*] %s\n", q);           /* Ê¹ÓÃĞÂ¶ÔÏó ¡ª ·Ç UAF */
+    printf("[*] %s\n", q);           /* ä½¿ç”¨æ–°å¯¹è±¡ â€” é UAF */
     free(q);
     return 0;
 }

@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2020_14386 UAF: error path: malloc→free on error→use on retry
+// cve_2020_14386 UAF: error path: malloc鈫抐ree on error鈫抲se on retry
 char *afpacket_uaf_global = NULL;
 
 void afpacket_uaf_vuln() {
     char *buf = (char *)malloc(128);
     if (!buf) return;
     memcpy(buf, "UAF_TEST", 8);
-    afpacket_uaf_global = buf;  // 存入全局
-    free(buf);              // 释放 (但全局未置NULL)
+    afpacket_uaf_global = buf;  // 瀛樺叆鍏ㄥ眬
+    free(buf);              // 閲婃斁 (浣嗗叏灞�鏈疆NULL)
     if (afpacket_uaf_global) {
-        // USE-AFTER-FREE: 解引用已释放指针
+        // USE-AFTER-FREE: 瑙ｅ紩鐢ㄥ凡閲婃斁鎸囬拡
         printf("afpacket_uaf: freed[0]=%c\n", afpacket_uaf_global[0]);
     }
     afpacket_uaf_global = NULL;

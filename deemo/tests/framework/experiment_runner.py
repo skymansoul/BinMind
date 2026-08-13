@@ -201,10 +201,12 @@ def run_all(bin_dir: str = SAMPLES_DIR) -> List[ToolResult]:
         print("Run build_samples.py first to compile CVE samples.")
         return []
 
+    # 样本含预编译 PE 固件（.exe）与本地编译产物（.elf）
     elfs = [os.path.join(bin_dir, f) for f in sorted(os.listdir(bin_dir))
-            if f.endswith('.elf') or (
+            if f.endswith(('.elf', '.exe')) or (
                 os.path.isfile(os.path.join(bin_dir, f))
-                and open(os.path.join(bin_dir, f), 'rb').read(4) == b'\x7fELF'
+                and open(os.path.join(bin_dir, f), 'rb').read(4)
+                in (b'\x7fELF', b'MZ\x90\x00')
             )]
 
     if not elfs:

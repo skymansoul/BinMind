@@ -78,7 +78,7 @@ class TestErrorHandler(unittest.TestCase):
         self.handler = ErrorHandler()
 
     def test_handler_initialization(self):
-                """测试处理器初始化"""
+        """测试处理器初始化"""
         self.assertIsNotNone(self.handler)
 
 

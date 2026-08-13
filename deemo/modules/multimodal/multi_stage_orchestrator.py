@@ -21,6 +21,7 @@ import tempfile
 import os
 import shutil
 import math
+from types import SimpleNamespace
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,10 @@ class ExploitStage(Enum):
 
 
 class ChainStatus(Enum):
+    PLANNED = "planned"
     PENDING = "pending"
     RUNNING = "running"
+    COMPLETED = "completed"
     DONE = "done"
     FAILED = "failed"
     ROLLED_BACK = "rolled_back"
@@ -52,18 +55,41 @@ class ExecutionStrategy(Enum):
 
 
 class VulnerabilityType(Enum):
+    BUFFER_OVERFLOW = "buffer_overflow"
     STACK_OVERFLOW = "stack_overflow"
     HEAP_OVERFLOW = "heap_overflow"
     FORMAT_STRING = "format_string"
     USE_AFTER_FREE = "use_after_free"
     INTEGER_OVERFLOW = "integer_overflow"
+    INFO_LEAK = "info_leak"
+    DOUBLE_FREE = "double_free"
+    RACE_CONDITION = "race_condition"
+    PATH_TRAVERSAL = "path_traversal"
+    COMMAND_INJECTION = "command_injection"
+    PRIVILEGE_ESCALATION = "privilege_escalation"
+    UNKNOWN = "unknown"
 
 
 class TargetType(Enum):
+    USERLAND = "userland"
+    KERNEL = "kernel"
     LINUX = "linux"
     WINDOWS = "windows"
     WEB = "web"
     EMBEDDED = "embedded"
+    ANDROID = "android"
+    IOS = "ios"
+
+
+class Capability(Enum):
+    READ_MEMORY = "read_memory"
+    WRITE_MEMORY = "write_memory"
+    EXECUTE_CODE = "execute_code"
+    LEAK_ADDRESS = "leak_address"
+    BYPASS_ASLR = "bypass_aslr"
+    BYPASS_DEP = "bypass_dep"
+    SPRAY_HEAP = "spray_heap"
+    GAIN_CONTROL = "gain_control"
 
 
 # 步骤执行输出 — 捕获单步骤的完整执行轨迹
@@ -334,9 +360,20 @@ class OrchestrationResult:
     step_outputs: List[StepOutput] = field(default_factory=list)
 
 
-# ChainOrchestrator 提取至 src.chain_orchestrator_core
-# 此处 import 用于向后兼容；模块级重导出。
-from .src.chain_orchestrator_core import ChainOrchestrator  # noqa: E402
+# ChainOrchestrator 实现位于 src.chain_orchestrator_core，经惰性属性转发。
+# 延迟导入避免与 chain_orchestrator_core 的共享类型导入形成模块加载循环。
+
+
+def __getattr__(name: str):
+    if name == 'ChainOrchestrator':
+        try:
+            # 包内相对导入优先——不依赖外部 sys.path 注入
+            from .src.chain_orchestrator_core import ChainOrchestrator
+        except ImportError:
+            # 兼容顶层裸名场景（多模态目录被直接置于 sys.path 时）
+            from src.chain_orchestrator_core import ChainOrchestrator
+        return ChainOrchestrator
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 # 链差异对比 — 计算两条攻击链的最小变更集
@@ -429,22 +466,371 @@ def annotate_chain(chain: AttackChain) -> Dict[str, Any]:
     }
 
 
-# 向后兼容别名
-MultiStageOrchestrator = ChainOrchestrator
-
-
+# 漏洞节点 — 单条漏洞发现及其利用能力集合
 @dataclass
-class Capability:
-    def __init__(self, name: str = ""):
-        self.name = name
+class VulnerabilityNode:
+    id: str
+    name: str
+    vuln_type: VulnerabilityType = VulnerabilityType.UNKNOWN
+    description: str = ""
+    address: int = 0
+    severity: str = "medium"
+    capabilities: List[Capability] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'vuln_type': self.vuln_type.value,
+            'description': self.description,
+            'address': hex(self.address) if self.address else 0,
+            'severity': self.severity,
+            'capabilities': [c.value for c in self.capabilities],
+        }
 
 
-# 模块级占位引用 — 外部可能有未迁移的 import
-VulnerabilityNode = None
-ExploitChainStep = None
-ExploitChain = None
-ChainAnalysisResult = None
-orchestrate_exploit_chain = None
+# 利用链步骤 — 单步利用动作及其能力需求
+@dataclass
+class ExploitChainStep:
+    id: str
+    name: str
+    vulnerability: Optional[VulnerabilityNode] = None
+    required_capabilities: List[Capability] = field(default_factory=list)
+    output_capabilities: List[Capability] = field(default_factory=list)
+    success_rate: float = 0.5
+    estimated_time: float = 1.0
+    status: ChainStatus = ChainStatus.PLANNED
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'vulnerability_id': self.vulnerability.id if self.vulnerability else None,
+            'required_capabilities': [c.value for c in self.required_capabilities],
+            'output_capabilities': [c.value for c in self.output_capabilities],
+            'success_rate': self.success_rate,
+            'estimated_time': self.estimated_time,
+            'status': self.status.value,
+        }
+
+
+# 利用链 — 有序步骤集合及其整体评估
+@dataclass
+class ExploitChain:
+    id: str
+    name: str = ""
+    target_type: TargetType = TargetType.USERLAND
+    steps: List[ExploitChainStep] = field(default_factory=list)
+    status: ChainStatus = ChainStatus.PLANNED
+    success_rate: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'target_type': self.target_type.value,
+            'steps': [s.to_dict() for s in self.steps],
+            'status': self.status.value,
+            'success_rate': self.success_rate,
+        }
+
+
+# 链分析结果 — 链结构合法性与风险评估
+@dataclass
+class ChainAnalysisResult:
+    valid: bool
+    chain_id: str = ""
+    risk_assessment: str = "low"
+    issues: List[str] = field(default_factory=list)
+    success_rate: float = 0.0
+    step_count: int = 0
+
+
+# 编排器元数据
+@dataclass
+class OrchestratorMetadata:
+    name: str
+    version: str
+    supported_platforms: List[str]
+
+
+# MultiStageOrchestrator — 漏洞利用链编排入口
+# 负责漏洞收集、能力依赖排序、链构建与评估。
+class MultiStageOrchestrator:
+    """多阶段利用链编排器。
+
+    输入为漏洞描述列表，输出为按能力依赖排序的利用链。
+    链构建遵循能力前置关系：泄密类漏洞先于代码执行类漏洞。
+    """
+
+    # 能力依赖图: 前置能力 → 依赖它的能力
+    _CAPABILITY_DEPENDENCIES: Dict[Capability, List[Capability]] = {
+        Capability.READ_MEMORY: [Capability.LEAK_ADDRESS],
+        Capability.WRITE_MEMORY: [Capability.GAIN_CONTROL],
+        Capability.LEAK_ADDRESS: [Capability.BYPASS_ASLR, Capability.EXECUTE_CODE],
+        Capability.BYPASS_ASLR: [Capability.EXECUTE_CODE],
+        Capability.BYPASS_DEP: [Capability.EXECUTE_CODE],
+        Capability.SPRAY_HEAP: [Capability.WRITE_MEMORY, Capability.GAIN_CONTROL],
+    }
+
+    def __init__(self):
+        self.vulnerabilities: Dict[str, VulnerabilityNode] = {}
+        self.chains: Dict[str, ExploitChain] = {}
+        self.capability_graph: Dict[Capability, List[Capability]] = {
+            Capability.READ_MEMORY: [Capability.LEAK_ADDRESS],
+            Capability.EXECUTE_CODE: [Capability.BYPASS_ASLR, Capability.BYPASS_DEP],
+            Capability.LEAK_ADDRESS: [Capability.BYPASS_ASLR],
+            Capability.WRITE_MEMORY: [Capability.GAIN_CONTROL],
+            Capability.SPRAY_HEAP: [Capability.WRITE_MEMORY],
+        }
+        self._chain_counter = 0
+
+    @classmethod
+    def get_metadata(cls) -> OrchestratorMetadata:
+        """返回编排器元数据。"""
+        return OrchestratorMetadata(
+            name="MultiStageOrchestrator",
+            version="1.0.0",
+            supported_platforms=["x86_64", "arm64", "x86", "arm"],
+        )
+
+    def validate_input(self, vulnerabilities: Optional[List[Dict[str, Any]]] = None
+                       ) -> tuple:
+        """校验漏洞输入列表。
+
+        空列表或缺失列表均不合法；合法输入返回 (True, None)。
+        """
+        if vulnerabilities is None:
+            return False, "vulnerabilities 参数缺失"
+        if not isinstance(vulnerabilities, list) or len(vulnerabilities) == 0:
+            return False, "vulnerabilities 必须为非空list"
+        return True, None
+
+    def add_vulnerability(self, vuln: VulnerabilityNode) -> None:
+        """登记一条漏洞。"""
+        self.vulnerabilities[vuln.id] = vuln
+
+    def build_exploit_chain(self, target_type: str,
+                            vulnerabilities: List[Dict[str, Any]]) -> ExploitChain:
+        """根据目标类型与漏洞描述构建利用链。"""
+        target = self._parse_target_type(target_type)
+        nodes: List[VulnerabilityNode] = []
+        for item in vulnerabilities:
+            node = self._make_node(item)
+            nodes.append(node)
+            self.vulnerabilities[node.id] = node
+
+        sorted_nodes = self._sort_by_capability_dependency(nodes)
+        steps = []
+        for idx, node in enumerate(sorted_nodes):
+            steps.append(ExploitChainStep(
+                id=f"step_{idx:03d}",
+                name=f"Exploit {node.name}",
+                vulnerability=node,
+                required_capabilities=node.capabilities,
+                output_capabilities=node.capabilities,
+                success_rate=self._estimate_success_rate(node),
+                estimated_time=self._estimate_time(node),
+            ))
+
+        chain = ExploitChain(
+            id=f"chain_{self._chain_counter:03d}",
+            name=f"Exploit Chain {target.value}",
+            target_type=target,
+            steps=steps,
+            success_rate=round(
+                sum(s.success_rate for s in steps) / max(1, len(steps)), 3),
+        )
+        self._chain_counter += 1
+        self.chains[chain.id] = chain
+        return chain
+
+    def analyze_chain(self, chain: ExploitChain) -> ChainAnalysisResult:
+        """评估链合法性并给出风险等级。"""
+        issues: List[str] = []
+        if chain.target_type not in TargetType:
+            issues.append("非法目标类型")
+        for step in chain.steps:
+            for cap in step.required_capabilities:
+                if cap not in Capability:
+                    issues.append(f"步骤 {step.id} 含非法能力 {cap}")
+        if chain.success_rate < 0:
+            issues.append("成功率非法")
+
+        valid = len(issues) == 0
+        risk = "high" if chain.success_rate < 0.5 else "low"
+        return ChainAnalysisResult(
+            valid=valid,
+            chain_id=chain.id,
+            risk_assessment=risk,
+            issues=issues,
+            success_rate=chain.success_rate,
+            step_count=len(chain.steps),
+        )
+
+    def generate_chain_report(self, chain: ExploitChain) -> str:
+        """生成人类可读的利用链报告。"""
+        lines = [
+            f"利用链报告 — {chain.name}",
+            f"链 ID: {chain.id}",
+            f"目标类型: {chain.target_type.value}",
+            f"状态: {chain.status.value}",
+            f"预估成功率: {chain.success_rate:.2f}",
+            "",
+            "步骤列表:",
+        ]
+        for step in chain.steps:
+            cap_str = ", ".join(c.value for c in step.required_capabilities)
+            lines.append(
+                f"  - [{step.id}] {step.name} "
+                f"(能力: {cap_str or '无'}, 成功率: {step.success_rate:.2f})")
+        return "\n".join(lines)
+
+    def analyze(self, vulnerabilities: List[Dict[str, Any]],
+                target_type: str = "userland") -> Dict[str, Any]:
+        """一键分析：校验、建链、评估一站式入口。"""
+        valid, error = self.validate_input(vulnerabilities)
+        if not valid:
+            return {'success': False, 'error': error}
+
+        chain = self.build_exploit_chain(target_type, vulnerabilities)
+        analysis = self.analyze_chain(chain)
+        return {
+            'success': True,
+            'chain_id': chain.id,
+            'steps_count': len(chain.steps),
+            'success_rate': chain.success_rate,
+            'risk': analysis.risk_assessment,
+        }
+
+    def execute_chain(self, chain_id: str) -> Dict[str, Any]:
+        """执行已构建的链（模拟执行）。"""
+        chain = self.chains.get(chain_id)
+        if chain is None:
+            return {'success': False, 'error': f"链 {chain_id} 不存在"}
+        chain.status = ChainStatus.COMPLETED
+        return {'success': True, 'chain_id': chain.id, 'status': chain.status.value}
+
+    def cleanup(self) -> None:
+        """清空已登记的漏洞与链。"""
+        self.vulnerabilities.clear()
+        self.chains.clear()
+
+    # 内部工具 — 目标类型解析、节点构建、能力排序与评估
+    def _parse_target_type(self, target_type: str) -> TargetType:
+        try:
+            return TargetType(target_type)
+        except ValueError:
+            return TargetType.USERLAND
+
+    def _make_node(self, item: Dict[str, Any]) -> VulnerabilityNode:
+        vuln_type = self._parse_vuln_type(item.get('vuln_type'))
+        caps = [self._parse_capability(c) for c in item.get('capabilities', [])]
+        return VulnerabilityNode(
+            id=item.get('id', f"vuln_{len(self.vulnerabilities):03d}"),
+            name=item.get('name', 'unnamed'),
+            vuln_type=vuln_type,
+            description=item.get('description', ''),
+            address=int(item.get('address', 0)),
+            severity=item.get('severity', 'medium'),
+            capabilities=caps,
+        )
+
+    def _parse_vuln_type(self, raw: Any) -> VulnerabilityType:
+        if isinstance(raw, VulnerabilityType):
+            return raw
+        if isinstance(raw, str):
+            try:
+                return VulnerabilityType(raw)
+            except ValueError:
+                return VulnerabilityType.UNKNOWN
+        return VulnerabilityType.UNKNOWN
+
+    def _parse_capability(self, raw: Any) -> Capability:
+        if isinstance(raw, Capability):
+            return raw
+        if isinstance(raw, str):
+            try:
+                return Capability(raw)
+            except ValueError:
+                return Capability.READ_MEMORY
+        return Capability.READ_MEMORY
+
+    def _sort_by_capability_dependency(
+            self, vulns: List[VulnerabilityNode]) -> List[VulnerabilityNode]:
+        """按能力依赖拓扑排序：被依赖的能力前置。
+
+        无能力声明的节点排最前，依赖链末端的能力排最后。
+        """
+        remaining = list(vulns)
+        ordered: List[VulnerabilityNode] = []
+        while remaining:
+            batch = []
+            for node in remaining:
+                if not self._has_unmet_dependency(node, ordered):
+                    batch.append(node)
+            if not batch:
+                ordered.extend(remaining)
+                break
+            ordered.extend(batch)
+            remaining = [n for n in remaining if n not in batch]
+        return ordered
+
+    def _has_unmet_dependency(self, node: VulnerabilityNode,
+                              placed: List[VulnerabilityNode]) -> bool:
+        placed_caps: set = set()
+        for n in placed:
+            placed_caps.update(n.capabilities)
+        for cap in node.capabilities:
+            for dep in self._CAPABILITY_DEPENDENCIES.get(cap, []):
+                if dep not in placed_caps:
+                    return True
+        return False
+
+    def _estimate_success_rate(self, vuln: VulnerabilityNode) -> float:
+        """按漏洞类型与严重度估计成功率。"""
+        base = {
+            VulnerabilityType.INFO_LEAK: 0.85,
+            VulnerabilityType.FORMAT_STRING: 0.75,
+            VulnerabilityType.BUFFER_OVERFLOW: 0.70,
+            VulnerabilityType.STACK_OVERFLOW: 0.70,
+            VulnerabilityType.HEAP_OVERFLOW: 0.60,
+            VulnerabilityType.USE_AFTER_FREE: 0.65,
+            VulnerabilityType.INTEGER_OVERFLOW: 0.55,
+        }.get(vuln.vuln_type, 0.5)
+        if vuln.severity in ('critical', 'high'):
+            base -= 0.1
+        if vuln.severity == 'low':
+            base += 0.1
+        return max(0.1, min(1.0, round(base, 2)))
+
+    def _estimate_time(self, vuln: VulnerabilityNode) -> float:
+        """按漏洞类型估计单步利用耗时（秒）。"""
+        base = {
+            VulnerabilityType.INFO_LEAK: 2.0,
+            VulnerabilityType.FORMAT_STRING: 3.0,
+            VulnerabilityType.BUFFER_OVERFLOW: 5.0,
+            VulnerabilityType.STACK_OVERFLOW: 5.0,
+            VulnerabilityType.HEAP_OVERFLOW: 6.0,
+            VulnerabilityType.USE_AFTER_FREE: 4.0,
+            VulnerabilityType.INTEGER_OVERFLOW: 3.0,
+        }.get(vuln.vuln_type, 3.0)
+        return base
+
+
+# 便捷函数 — 一键编排入口
+def orchestrate_exploit_chain(
+        vulnerabilities: List[Dict[str, Any]],
+        target_type: str = "userland") -> Dict[str, Any]:
+    """构建并评估利用链，返回包含链信息的字典。"""
+    orchestrator = MultiStageOrchestrator()
+    chain = orchestrator.build_exploit_chain(target_type, vulnerabilities)
+    return {
+        'success': True,
+        'chain_id': chain.id,
+        'steps': [s.to_dict() for s in chain.steps],
+        'success_rate': chain.success_rate,
+    }
 
 
 # MCTS链规划 — 蒙特卡洛树搜索选择最优步骤序列

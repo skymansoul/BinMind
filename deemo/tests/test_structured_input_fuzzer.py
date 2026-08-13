@@ -79,7 +79,6 @@ class TestFormatParser:
         parser = FormatParser("field1:uint")
         parser.parse()
         assert len(parser.constraints) == 1
-lass字段完整性$/d
         assert parser.constraints[0].field == "field1"
         assert parser.constraints[0].constraint_type == "range"
 
@@ -174,7 +173,6 @@ class TestStructuredInputFuzzer:
         fuzzer = StructuredInputFuzzer(format_spec="field1:uint,field2:str")
         result = fuzzer.run(count=5)
 
-lass字段完整性$/d
         assert isinstance(result, FuzzingResult)
         assert result.success is True
         assert result.total_generated == 5

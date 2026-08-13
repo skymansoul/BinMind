@@ -13,11 +13,24 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class InjectionIndicator:
-    signature: str
+    indicator_type: str = ""
+    severity: str = ""
+    description: str = ""
+    evidence: list = field(default_factory=list)
+    recommendation: str = ""
+    signature: str = ""
     technique: str = ""
     confidence: float = 0.0
-    evidence: List[str] = field(default_factory=list)
-    affected_addresses: List[int] = field(default_factory=list)
+    affected_addresses: list = field(default_factory=list)
+
+
+@dataclass
+class MemoryManipulationResult:
+    filename: str = ""
+    injection_indicators: list = field(default_factory=list)
+    suspicious_imports: list = field(default_factory=list)
+    injection_risk: str = "none"
+    risk_score: int = 0
 
 
 class MemoryManipulationDetector:
@@ -101,9 +114,60 @@ class MemoryManipulationDetector:
         "heap_spray": "T1055",
     }
 
-    def __init__(self):
+    INJECTION_IMPORTS = {
+        'high': [
+            'CreateRemoteThread', 'CreateRemoteThreadEx', 'NtCreateThreadEx',
+            'RtlCreateUserThread', 'WriteProcessMemory', 'NtWriteVirtualMemory',
+            'VirtualAllocEx', 'VirtualAllocExNuma', 'VirtualProtectEx',
+            'NtProtectVirtualMemory', 'SetWindowsHookEx', 'SetWindowsHookExA',
+            'SetWindowsHookExW', 'NtQueueApcThread', 'NtQueueApcThreadEx',
+            'QueueUserAPC', 'InjectLibrary', 'InjectDll', 'LoadRemoteLibraryR',
+        ],
+        'medium': [
+            'OpenProcess', 'OpenThread', 'NtOpenProcess', 'NtOpenThread',
+            'GetProcessHandleFromHwnd', 'GetWindowThreadProcessId', 'EnumProcesses',
+            'EnumProcessModules', 'ReadProcessMemory', 'NtReadVirtualMemory',
+            'CreateToolhelp32Snapshot', 'Process32First', 'Process32Next',
+            'Thread32First', 'Thread32Next',
+        ],
+        'low': [
+            'GetModuleHandle', 'GetProcAddress', 'LoadLibrary', 'LoadLibraryA',
+            'LoadLibraryW', 'GetModuleFileName', 'GetModuleFileNameA',
+            'GetModuleFileNameW',
+        ]
+    }
+
+    INJECTION_PATTERNS = [
+        (r'VirtualAllocEx.*MEM_COMMIT.*PAGE_EXECUTE', '分配可执行内存并写入', 'high'),
+        (r'VirtualAllocEx.*MEM_RESERVE.*PAGE_EXECUTE', '预分配可执行内存', 'high'),
+        (r'WriteProcessMemory.*VirtualAllocEx', '先分配后写入模式', 'high'),
+        (r'VirtualProtectEx.*PAGE_EXECUTE', '修改内存为可执行', 'high'),
+        (r'CreateRemoteThread.*WriteProcessMemory', '写入后创建远程线程', 'high'),
+        (r'QueueUserAPC.*WriteProcessMemory', 'APC注入模式', 'high'),
+        (r'SetWindowsHookEx.*WH_KEYBOARD', '键盘钩子注入', 'medium'),
+        (r'SetWindowsHookEx.*WH_MOUSE', '鼠标钩子注入', 'medium'),
+        (r'CreateRemoteThreadEx.*LPTHREAD_START_ROUTINE', '远程线程启动', 'high'),
+    ]
+
+    INJECTION_STRINGS = [
+        ('RemoteThread', '远程线程操作'),
+        ('Inject', '注入相关'),
+        ('Shellcode', 'Shellcode载荷'),
+        ('Payload', '载荷内容'),
+        ('ProcessInjection', '进程注入'),
+        ('DLLInject', 'DLL注入'),
+        ('ReflectiveDLL', '反射式DLL注入'),
+        ('QueueUserAPC', 'APC注入'),
+        ('SetWindowsHook', '钩子注入'),
+    ]
+
+    def __init__(self, binary_path: str = ""):
+        self.binary_path = binary_path
         self._found_imports: Dict[str, Set[str]] = defaultdict(set)
         self._indicators: List[InjectionIndicator] = []
+        self.injection_indicators: List[InjectionIndicator] = []
+        self.suspicious_imports: List[str] = []
+        self.strings: List[str] = []
 
     def detect(self, binary) -> List[InjectionIndicator]:
         self._indicators = []
@@ -275,6 +339,193 @@ class MemoryManipulationDetector:
             mapping.setdefault(attack_id, []).append(ind.technique)
         return mapping
 
+    def _extract_strings(self) -> List[str]:
+        strings = []
+        try:
+            with open(self.binary_path, 'rb') as f:
+                data = f.read()
+            current_string = []
+            for byte in data:
+                if 32 <= byte <= 126:
+                    current_string.append(chr(byte))
+                else:
+                    if len(current_string) >= 4:
+                        strings.append(''.join(current_string))
+                    current_string = []
+            if len(current_string) >= 4:
+                strings.append(''.join(current_string))
+        except Exception as e:
+            _log.error(f"提取字符串失败: {e}")
+        return strings
+
+    def _extract_imports(self) -> List[str]:
+        imports = []
+        try:
+            import pefile
+            pe = pefile.PE(self.binary_path)
+            for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                for imp in entry.imports:
+                    func_name = imp.name.decode('utf-8', errors='ignore') if imp.name else ''
+                    if func_name:
+                        imports.append(func_name)
+        except ImportError:
+            _log.warning("pefile 模块未安装，无法提取导入表")
+        except Exception as e:
+            _log.error(f"提取导入表失败: {e}")
+        return imports
+
+    def _check_imports(self):
+        imports = self._extract_imports()
+        for severity, func_list in self.INJECTION_IMPORTS.items():
+            for func_name in func_list:
+                if func_name in imports:
+                    self.suspicious_imports.append(func_name)
+                    self.injection_indicators.append(InjectionIndicator(
+                        indicator_type='SUSPICIOUS_IMPORT',
+                        severity=severity,
+                        description=f"发现注入相关函数: {self._get_import_description(func_name)}",
+                        evidence=f"导入: {func_name}",
+                        recommendation=self._get_import_recommendation(func_name)
+                    ))
+
+    def _get_import_description(self, func_name: str) -> str:
+        descriptions = {
+            'CreateRemoteThread': '创建远程线程，常用于远程注入',
+            'WriteProcessMemory': '写入远程内存，常用于注入shellcode',
+            'VirtualAllocEx': '在远程进程中分配内存',
+            'VirtualProtectEx': '修改远程进程内存保护',
+            'SetWindowsHookEx': '安装Windows钩子，常用于注入',
+            'NtQueueApcThread': '插入APC队列，用于APC注入',
+            'OpenProcess': '打开进程句柄',
+            'ReadProcessMemory': '读取远程内存',
+        }
+        return descriptions.get(func_name, '注入相关函数')
+
+    def _get_import_recommendation(self, func_name: str) -> str:
+        if func_name in self.INJECTION_IMPORTS['high']:
+            return "此函数常用于远程注入，请确认其合法用途"
+        elif func_name in self.INJECTION_IMPORTS['medium']:
+            return "此函数可能被用于进程枚举或内存操作辅助注入"
+        else:
+            return "此函数本身无害，但可能配合其他函数实现注入"
+
+    def _check_patterns(self):
+        try:
+            with open(self.binary_path, 'rb') as f:
+                data = f.read().hex()
+            for pattern, desc, severity in self.INJECTION_PATTERNS:
+                if re.search(pattern, data, re.IGNORECASE):
+                    self.injection_indicators.append(InjectionIndicator(
+                        indicator_type='INJECTION_PATTERN',
+                        severity=severity,
+                        description=f"检测到注入调用模式: {desc}",
+                        evidence=f"模式: {pattern}",
+                        recommendation="此调用模式可能包含注入功能"
+                    ))
+        except Exception as e:
+            _log.error(f"检查调用模式失败: {e}")
+
+    def _check_strings(self):
+        self.strings = self._extract_strings()
+        for keyword, desc in self.INJECTION_STRINGS:
+            for string in self.strings:
+                if keyword.lower() in string.lower():
+                    self.injection_indicators.append(InjectionIndicator(
+                        indicator_type='INJECTION_STRING',
+                        severity='medium',
+                        description=f"检测到注入相关字符串: {desc}",
+                        evidence=f"字符串: {string[:50]}",
+                        recommendation="确认是否与注入相关功能有关"
+                    ))
+                    break
+
+    def _detect_injection_sequence(self):
+        imports = self._extract_imports()
+        injection_sequences = [
+            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'],
+             '标准注入链: OpenProcess → VirtualAllocEx → WriteProcessMemory → CreateRemoteThread'),
+            (['VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'],
+             '精简注入链'),
+            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'VirtualProtectEx', 'CreateRemoteThread'],
+             '带权限修改的注入链'),
+            (['NtOpenProcess', 'NtAllocateVirtualMemory', 'NtWriteVirtualMemory', 'NtCreateThreadEx'],
+             'Native API注入链'),
+            (['SetWindowsHookEx', 'GetModuleHandle', 'GetProcAddress'],
+             '钩子注入链'),
+        ]
+        for sequence, desc in injection_sequences:
+            if all(func in imports for func in sequence):
+                self.injection_indicators.append(InjectionIndicator(
+                    indicator_type='INJECTION_SEQUENCE',
+                    severity='high',
+                    description=f"检测到完整注入序列: {desc}",
+                    evidence=f"序列函数: {', '.join(sequence)}",
+                    recommendation="此序列可能是注入功能，请审查相关调用"
+                ))
+
+    def analyze(self) -> MemoryManipulationResult:
+        self.injection_indicators = []
+        self.suspicious_imports = []
+        if self.binary_path:
+            self._check_imports()
+            self._check_patterns()
+            self._check_strings()
+            self._detect_injection_sequence()
+        risk_score, risk_level = self._calculate_risk()
+        return MemoryManipulationResult(
+            filename=os.path.basename(self.binary_path) if self.binary_path else 'unknown',
+            injection_indicators=self.injection_indicators,
+            suspicious_imports=self.suspicious_imports,
+            injection_risk=risk_level,
+            risk_score=risk_score
+        )
+
+    def _calculate_risk(self) -> Tuple[int, str]:
+        score = 100
+        high_count = sum(1 for i in self.injection_indicators if i.severity == 'high')
+        medium_count = sum(1 for i in self.injection_indicators if i.severity == 'medium')
+        score -= high_count * 25
+        score -= medium_count * 10
+        if score <= 30:
+            risk_level = 'high'
+        elif score <= 60:
+            risk_level = 'medium'
+        elif score <= 80:
+            risk_level = 'low'
+        else:
+            risk_level = 'none'
+        return max(0, score), risk_level
+
+    def generate_report(self) -> str:
+        result = self.analyze()
+        lines = [
+            "内存扫描与注入技术分析报告",
+            "=========================",
+            "",
+            f"文件: {result.filename}",
+            f"注入风险: {result.injection_risk.upper()}",
+            f"风险评分: {result.risk_score}/100",
+            ""
+        ]
+        if result.suspicious_imports:
+            lines.append("可疑导入函数:")
+            lines.append("--------------")
+            for imp in sorted(result.suspicious_imports):
+                lines.append(f"- {imp}")
+            lines.append("")
+        if result.injection_indicators:
+            lines.append("注入指示器:")
+            lines.append("------------")
+            for i, indicator in enumerate(result.injection_indicators, 1):
+                lines.append(f"{i}. [{indicator.severity.upper()}] {indicator.indicator_type}")
+                lines.append(f"   描述: {indicator.description}")
+                lines.append(f"   证据: {indicator.evidence}")
+                lines.append(f"   建议: {indicator.recommendation}")
+                lines.append("")
+        if result.injection_risk == 'none':
+            lines.append("未发现注入相关功能。")
+        return '\n'.join(lines)
+
 
 def scan_for_injection_imports(binary_path: str) -> Dict[str, List[str]]:
     detector = MemoryManipulationDetector()
@@ -301,5 +552,6 @@ def analyze_injection_risk(indicators: List[InjectionIndicator]) -> float:
     return min(1.0, weighted / max(1, len(indicators)))
 
 
-def detect_memory_manipulation(binary) -> List[InjectionIndicator]:
-    return MemoryManipulationDetector().detect(binary)
+def detect_memory_manipulation(binary_path: str) -> MemoryManipulationResult:
+    detector = MemoryManipulationDetector(binary_path)
+    return detector.analyze()

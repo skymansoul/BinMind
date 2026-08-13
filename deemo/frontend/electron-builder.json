@@ -1,0 +1,23 @@
+{
+  "appId": "com.binmind.analyzer",
+  "productName": "BinMind",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "_note_win": "Windows只打nsis安装包，portable模式试过但杀软报毒，先放弃",
+  "win": {
+    "target": "nsis"
+  },
+  "_note_mac": "dmg不需要签名，pkg要。没有Apple Developer账号的情况下dmg唯一选择",
+  "mac": {
+    "target": "dmg"
+  },
+  "_note_linux": "AppImage在Ubuntu 22.04+和Fedora 38+都测过。snap试过但权限太严，exploit sandbox跑不起来",
+  "linux": {
+    "target": "AppImage"
+  }
+}

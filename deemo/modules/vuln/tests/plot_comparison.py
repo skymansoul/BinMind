@@ -1,7 +1,7 @@
 # coding: utf-8
 """多工具对比可视化 — 检出率/误报率/耗时 柱状图 + LaTeX 表格.
 
-创建: 2026-05-30  更新: 2026-08-06
+创建: 2024-09-27  更新: 2024-09-27
 用法: python plot_comparison.py benchmark_results.json output_dir
 """
 

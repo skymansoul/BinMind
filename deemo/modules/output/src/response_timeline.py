@@ -20,7 +20,7 @@
   ITIL Incident Management: 事件优先级→响应SLA映射
 
 修改记录:
-  2026-08-02 12:33 - 初始版本，五阶段动态响应时间线
+  2025-03-28 12:33 - 初始版本，五阶段动态响应时间线
 """
 
 from dataclasses import dataclass, field

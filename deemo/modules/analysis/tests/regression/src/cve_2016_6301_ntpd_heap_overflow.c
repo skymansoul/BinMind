@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// cve_2016_6301_ntpd ¶ÑÒç³öÄ£Äâ: malloc(64) + memcpy(320)
-// ¡ú 256 ×Ö½ÚÒç³ö
+// cve_2016_6301_ntpd å †æº¢å‡ºæ¨¡æ‹Ÿ: malloc(64) + memcpy(320)
+// â†’ 256 å­—èŠ‚æº¢å‡º
 void ntpd_ctl_overflow() {
     char *buf = (char *)malloc(64);
     if (!buf) return;
@@ -52,7 +52,7 @@ void ntpd_ctl_overflow() {
     free(buf);
 }
 
-// °²È«¶ÔÕÕ: malloc(384) + memcpy(384/2) ¡ú ²»Òç³ö
+// å®‰å…¨å¯¹ç…§: malloc(384) + memcpy(384/2) â†’ ä¸æº¢å‡º
 void ntpd_ctl_safe() {
     char *buf = (char *)malloc(384);
     if (!buf) return;

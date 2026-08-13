@@ -57,7 +57,7 @@ def _make_pe32_stub():
 
     # one section header (40 bytes):.text
     sect = b'.text\x00\x00\x00'
-    sect += struct.pack('<IIIIIIIIHHI', 4, 0x1000, 4, 0x200, 0, 0, 0, 0, 0, 0)
+    sect += struct.pack('<IIIIIIIIHHI', 4, 0x1000, 4, 0x200, 0, 0, 0, 0, 0, 0, 0)
 
     data = mz + b'\x00' * (128 - len(mz)) + pe_sig + coff + opt + sect + b'\x00' * (512 - len(opt) - len(sect))
     return data

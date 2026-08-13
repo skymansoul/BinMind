@@ -1,0 +1,3 @@
+tool,tp,fp,tn,fn,precision,recall,f1,fpr,accuracy,avg_ms
+Baseline,16,8,0,0,0.6667,1.0,0.8,1.0,0.6667,0.232
+CACBV,16,0,8,0,1.0,1.0,1.0,0.0,1.0,0.324

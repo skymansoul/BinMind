@@ -104,7 +104,6 @@ class TestCollaborationManager(unittest.TestCase):
         self.collab_manager.register_user('user1', 'password1')
         self.collab_manager.register_user('user2', 'password2')
         users = self.collab_manager.list_users()
-lass字段完整性$/d
         self.assertEqual(len(users), 2)
 
     def test_add_project_member(self):

@@ -18,7 +18,7 @@ Double-Free 利用性评分 — 分配器版本×tcache/fastbin 检测×合并�
   CWE-415: Double Free
 
 修改记录:
-  2026-08-02 11:34 - 初始版本，分配器版本×保护×大小类×合并路径
+  2025-03-03 11:34 - 初始版本，分配器版本×保护×大小类×合并路径
 """
 
 from dataclasses import dataclass, field

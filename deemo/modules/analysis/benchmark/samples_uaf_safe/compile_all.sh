@@ -1,5 +1,5 @@
 #!/bin/bash
-# UAF FP-Safe Ñù±¾±àÒë½Å±¾ ¡ª ×Ô¶¯Éú³É
+# UAF FP-Safe ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å±ï¿½ ï¿½ï¿½ ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½
 # 2026-08-08T04:50:44.484816
 
 mkdir -p C:\Users\Administrator\Desktop\BinMind\deemo\modules\analysis\benchmark\samples_uaf_safe\build

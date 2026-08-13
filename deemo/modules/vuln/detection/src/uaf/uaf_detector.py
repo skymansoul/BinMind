@@ -1,6 +1,6 @@
 """UAF 检测器 — 指令级扫描 + 时序路径验证.
 
-创建: 2026-06-03
+创建: 2024-09-02
 目的: 整合 UAFTemporalVerifier 的四态时序分析到检测管线中.
       替代 uaf_regression_runner.py 中的骨架 detect_uaf().
 

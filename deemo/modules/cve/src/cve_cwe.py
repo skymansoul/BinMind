@@ -22,6 +22,7 @@ import threading
 import time
 from typing import Dict, List, Optional, Any, Tuple
 
+from ._internal_helpers import _HAS_URLLIB
 try:
     import urllib.request
     import urllib.error
@@ -165,6 +166,8 @@ class CWEClient:
                     os.makedirs(cache_dir, exist_ok=True)
             self._conn = sqlite3.connect(self._cache_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
+            if self._cache_path != ":memory:":
+                self._conn.execute("PRAGMA journal_mode=WAL")
         return self._conn
 
     def _init_cache(self):

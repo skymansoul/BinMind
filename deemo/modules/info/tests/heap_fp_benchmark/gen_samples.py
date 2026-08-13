@@ -15,6 +15,8 @@ import os
 import sys
 from pathlib import Path
 
+from specs_tp import TP
+from specs_tn import TN
 
 TP = [
     dict(id="tp_01_memcpy_const_mismatch", label="tp", cwe="CWE-122",

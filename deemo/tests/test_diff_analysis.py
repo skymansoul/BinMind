@@ -178,7 +178,7 @@ class TestBinaryDiffAnalyzer(unittest.TestCase):
         self.assertLess(sim2, 1.0)
 
     def test_feature_to_dict(self):
-                import importlib.util
+        import importlib.util
         spec = importlib.util.spec_from_file_location("diff_analysis", os.path.join(BASE_DIR, "modules", "diff_analysis.py"))
         diff_analysis = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(diff_analysis)
@@ -257,7 +257,6 @@ class TestBinaryDiffAnalyzerWithMocks(unittest.TestCase):
 
         self.assertEqual(len(regressions), 1)
         self.assertEqual(regressions[0]['type'], 'new_dangerous_call')
-lass字段完整性$/d
         self.assertIn('gets', regressions[0]['added_calls'])
 
 

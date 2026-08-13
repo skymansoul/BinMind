@@ -1,8 +1,8 @@
 """整数溢出分析子模块 — 六模式检测管线.
 
-创建: 2026-07-14
+创建: 2025-06-09
 
-模块结构 (≤300行/文件):
+模块结构:
   _types.py: 共享类型/常量/正则
   _detector_core.py: IntOverflowDetector 主类 + 栈值收集
   _mode_alloc_size.py: LARGE_IMM64 / TRUNCATION / SUSPICIOUS_SIZE

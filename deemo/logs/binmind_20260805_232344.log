@@ -1,5 +1,0 @@
-23:23:44 | INFO    | core.pipeline | Binary: cve_2016_10190-libevent.elf | x86-64 64-bit | size=54539
-23:23:44 | WARNING | core.decompiler | radare2 not found at radare2
-23:23:44 | INFO    | core.pipeline | Found 0 functions
-23:23:44 | INFO    | core.pipeline | Analyzing 0 functions
-23:23:44 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

@@ -30,7 +30,15 @@ class EngineInfo:
     env: Dict[str, str] = field(default_factory=dict)
 
     def build_cmd(self, input_path: str) -> List[str]:
-        return [self.binary_path] + self.args_template.replace("{}", input_path).split()
+        cmd = [self.binary_path]
+        for tok in self.args_template.split():
+            if tok == "{}":
+                cmd.append(input_path)
+            elif tok.isdigit():
+                continue  # 数字型默认值不参与命令构建
+            else:
+                cmd.append(tok)
+        return cmd
 
 
 class EngineRegistry:
@@ -69,12 +77,12 @@ class CrossEngineNormalizer:
     - 十六进制大小写
     """
 
-    _NORM_RE = re.compile(r'@@[a-zA-Z0-9_]+')  # angr @@后缀
+    _NORM_RE = re.compile(r'@@[^\s]+')  # angr @@后缀（可含版本点号）
 
     def normalize(self, output: str, engine_name: str = "") -> str:
         """归一化管道: strip -> hex小写 -> 去除@@ -> 空白压缩。
 
-        保留分号/换行作为结构化分隔符。
+        所有空白（含换行）压缩为单个空格。
         """
         if output is None:
             return ""
@@ -83,12 +91,8 @@ class CrossEngineNormalizer:
         _s = re.sub(r'0x([0-9a-fA-F]+)', lambda m: '0x' + m.group(1).lower(), _s)
         # 去除@@后缀
         _s = self._NORM_RE.sub('', _s)
-        # 空白归一化: 多空白→单空白
-        _s = re.sub(r'[ \t]+', ' ', _s)
-        # 保留换行但去除尾部空白
-        _s = re.sub(r' +\n', '\n', _s)
-        # 多个空行→单个
-        _s = re.sub(r'\n{3,}', '\n\n', _s)
+        # 空白归一化: 所有空白→单空格
+        _s = re.sub(r'\s+', ' ', _s)
         return _s.strip()
 
     def normalize_binary(self, output: bytes) -> bytes:
@@ -134,6 +138,8 @@ class EngineDiffRunner:
                 _raw[_name] = _exec(test_input)
             except Exception as _e:
                 _raw[_name] = _e
+                _normalized[_name] = _e  # 保留异常对象用于 CRASH 分类
+                continue
             _norm = self._normalizer.normalize(
                 str(_raw.get(_name, "")), _name)
             _normalized[_name] = _norm
@@ -143,8 +149,8 @@ class EngineDiffRunner:
             "raw_outputs": _raw,
             "normalized_outputs": _normalized,
             "categories": _cats,
-            "has_semantic_diff": "SEMANTIC" in _cats,
-            "has_crash": "CRASH" in _cats,
+            "has_semantic_diff": bool(_cats["SEMANTIC"]),
+            "has_crash": bool(_cats["CRASH"]),
         }
 
     def categorize_differences(self,
@@ -171,6 +177,8 @@ class EngineDiffRunner:
         for _i in range(len(_names)):
             for _j in range(_i + 1, len(_names)):
                 _a, _b = _names[_i], _names[_j]
+                if _a not in _clean or _b not in _clean:
+                    continue  # 崩溃引擎不参与语义比较
                 _oa = _clean.get(_a, "")
                 _ob = _clean.get(_b, "")
                 if _oa == _ob:

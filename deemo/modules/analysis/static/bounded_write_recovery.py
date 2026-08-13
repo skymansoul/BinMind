@@ -65,6 +65,9 @@ class BoundedWriteRecovery:
     输出: BWRVerdict.
     """
 
+    _ALLOC_FUNCS = {"malloc", "calloc", "realloc", "_Znwm", "_Znam",
+                    "g_malloc", "g_try_malloc"}
+
     # 恢复源的符号名到尺寸的解析
     _SCAN_WINDOW = 80
 
@@ -84,26 +87,33 @@ class BoundedWriteRecovery:
         return dict(self._stats)
 
     def recover(self, instructions: List[dict], call_idx: int, func: str,
-                alloc_tracker, dst_reg: str, src_reg: str) -> BWRVerdict:
+                alloc_tracker, dst_reg: str, src_reg: str,
+                dst_alloc_addr=None) -> BWRVerdict:
         """恢复无界写入的最大写入量.
 
         func: strcpy/strcat/sprintf/gets等.
         dst_reg: 目标指针所在寄存器.
         src_reg: 源操作数寄存器 (strcpy/strcat/sprintf的源/格式串).
+        dst_alloc_addr: 调用点解析的目标分配地址 (规避分析末态映射漂移).
         返回: BWRVerdict.
         """
         if func == "gets":
             self._stats["unknown"] += 1
             return BWRVerdict("unknown", reason="gets unbounded")
+        from .bwr_helpers import (recover_sprintf, recover_strcpy,
+                                  recover_strcat)
         if func in ("sprintf", "vsprintf"):
-            return self._recover_sprintf(instructions, call_idx, alloc_tracker,
-                                         dst_reg, src_reg)
+            return recover_sprintf(self, instructions, call_idx,
+                                   alloc_tracker, dst_reg, src_reg,
+                                   dst_alloc_addr)
         if func in ("strcpy", "stpcpy"):
-            return self._recover_strcpy(instructions, call_idx, func,
-                                        alloc_tracker, dst_reg, src_reg)
+            return recover_strcpy(self, instructions, call_idx, func,
+                                  alloc_tracker, dst_reg, src_reg,
+                                  dst_alloc_addr)
         if func == "strcat":
-            return self._recover_strcat(instructions, call_idx, alloc_tracker,
-                                        dst_reg, src_reg)
+            return recover_strcat(self, instructions, call_idx,
+                                 alloc_tracker, dst_reg, src_reg,
+                                 dst_alloc_addr)
         self._stats["unknown"] += 1
         return BWRVerdict("unknown", reason=f"unhandled {func}")
 
@@ -169,8 +179,9 @@ class BoundedWriteRecovery:
                    f"alloc({raw.hi}B, usable {usable}B)", src=src)
 
     def _compare(self, alloc_tracker, dst_reg, bound: int,
-                 src: SourceInfo) -> BWRVerdict:
-        alloc_addr = alloc_tracker._ptr_to_alloc.get(norm_reg(dst_reg))
+                 src: SourceInfo, dst_alloc_addr=None) -> BWRVerdict:
+        alloc_addr = dst_alloc_addr or alloc_tracker._ptr_to_alloc.get(
+            norm_reg(dst_reg))
         if alloc_addr is None:
             self._stats["unknown"] += 1
             return BWRVerdict("unknown", reason="dst alloc unknown", src=src)
@@ -193,16 +204,31 @@ class BoundedWriteRecovery:
                           src=src)
 
     def _resolve_src(self, instructions, call_idx, reg, alloc_tracker,
-                     depth: int = 0) -> SourceInfo:
-        """从调用点反向解析reg指向的存储来源."""
+                     depth: int = 0, up_to=None) -> SourceInfo:
+        """从调用点反向解析reg指向的存储来源.
+
+        up_to: 回溯上界(指令索引). 递归追踪时限定在来源定义点之前.
+        """
         if depth > 5:
             return SourceInfo(BWRSrcKind.UNKNOWN, detail=f"depth>{depth}")
         reg = norm_reg(reg)
-        start = max(0, call_idx - self._SCAN_WINDOW)
-        for i in range(call_idx - 1, start - 1, -1):
+        upper = up_to if up_to is not None else call_idx
+        start = max(0, upper - self._SCAN_WINDOW)
+        for i in range(upper - 1, start - 1, -1):
             ins = instructions[i]
             mnem = ins.get("mnemonic", "").lower()
             ops = ins.get("operands", [])
+            if mnem == "ret":
+                break
+            if mnem == "call" and reg == "rax":
+                func = extract_func_name(ops[0]) if ops else ""
+                if func in self._ALLOC_FUNCS:
+                    a = self._alloc_at_call(alloc_tracker,
+                                            ins.get("address", 0))
+                    if a is not None:
+                        return self._heap_source_alloc(alloc_tracker, a)
+                return SourceInfo(BWRSrcKind.UNKNOWN,
+                                  detail=f"callret {func}")
             if len(ops) < 2:
                 continue
             dst = norm_reg(ops[0])
@@ -216,53 +242,62 @@ class BoundedWriteRecovery:
                 if "rip" in src_lower or "[" in src_lower:
                     return self._resolve_mem_load(src_op, instructions,
                                                   call_idx, alloc_tracker,
-                                                  depth)
+                                                  depth, up_to=i)
                 imm = self._parse_imm(src_op)
                 if imm is not None:
                     return SourceInfo(BWRSrcKind.UNKNOWN, detail="const_ptr")
                 return self._resolve_src(instructions, call_idx,
                                          norm_reg(src_op), alloc_tracker,
-                                         depth + 1)
-        # 未找到定义: 查分配映射 (如直接传 malloc 返回值)
+                                         depth + 1, up_to=i)
         if reg in alloc_tracker._ptr_to_alloc:
             return self._heap_source(alloc_tracker, reg)
         return SourceInfo(BWRSrcKind.UNKNOWN, detail=f"undef {reg}")
 
     def _resolve_lea(self, src_op: str, instructions, idx: int) -> SourceInfo:
+        from .bwr_helpers import literal_in_comment, rip_abs, read_rodata_string
+        lit = literal_in_comment(src_op)
+        if lit is not None:
+            return SourceInfo(BWRSrcKind.LITERAL,
+                              size=len(lit.encode("utf-8")),
+                              detail=f"literal[{len(lit.encode('utf-8'))}]")
         src_lower = src_op.lower()
         lit = self._literal_in_comment(src_op)
         if lit is not None:
             return SourceInfo(BWRSrcKind.LITERAL, size=len(lit.encode("utf-8")),
                               detail=f"literal[{len(lit.encode('utf-8'))}]")
         if "rip" in src_lower:
-            abs_addr = self._rip_abs(src_op, instructions, idx)
+            abs_addr = rip_abs(src_op, instructions, idx)
             if abs_addr is not None:
-                lit = self._read_rodata_string(abs_addr)
-                if lit is not None:
-                    return SourceInfo(BWRSrcKind.LITERAL, size=len(lit),
-                                      detail=lit)
+                s = read_rodata_string(self._rodata, abs_addr)
+                if s is not None:
+                    return SourceInfo(BWRSrcKind.LITERAL, size=len(s),
+                                      detail=s)
             return SourceInfo(BWRSrcKind.UNKNOWN, detail="rodata_noliteral")
         if "[rbp" in src_lower or "[rsp" in src_lower:
-            size = self._stack_buffer_size(src_op, instructions, idx)
+            from .bwr_helpers import stack_buffer_size
+            size = stack_buffer_size(instructions, src_op, idx)
             if size is not None:
                 return SourceInfo(BWRSrcKind.STACK, size=size,
                                   detail=f"stack[{size}]")
         return SourceInfo(BWRSrcKind.UNKNOWN, detail="lea_other")
 
     def _resolve_mem_load(self, src_op, instructions, call_idx,
-                          alloc_tracker, depth) -> SourceInfo:
+                          alloc_tracker, depth, up_to=None) -> SourceInfo:
+        from .bwr_helpers import find_slot_store
         slot = extract_stack_slot(src_op)
         if slot:
-            store = self._find_slot_store(instructions, call_idx, slot)
+            store = find_slot_store(instructions, up_to or call_idx, slot,
+                                    self._SCAN_WINDOW)
             if store is not None:
-                st_ops = store.get("operands", [])
+                st_ops = store[1].get("operands", [])
                 if len(st_ops) >= 2:
                     st_src = st_ops[1].strip()
                     st_lower = st_src.lower()
                     if "[" not in st_lower:
                         return self._resolve_src(instructions, call_idx,
                                                  norm_reg(st_src),
-                                                 alloc_tracker, depth + 1)
+                                                 alloc_tracker, depth + 1,
+                                                 up_to=store[0])
             return SourceInfo(BWRSrcKind.UNKNOWN, detail=f"slot {slot}")
         return SourceInfo(BWRSrcKind.UNKNOWN, detail="mem_load")
 
@@ -323,81 +358,49 @@ class BoundedWriteRecovery:
         alloc_addr = alloc_tracker._ptr_to_alloc.get(norm_reg(reg))
         if alloc_addr is None:
             return SourceInfo(BWRSrcKind.UNKNOWN, detail="heap?")
+        return self._heap_source_alloc(alloc_tracker, alloc_addr)
+
+    def _heap_source_alloc(self, alloc_tracker, alloc_addr: int) -> SourceInfo:
         alloc = alloc_tracker._allocations.get(alloc_addr)
         if alloc is None:
-            return SourceInfo(BWRSrcKind.UNKNOWN, detail="heap?")
+            return SourceInfo(BWRSrcKind.UNKNOWN, detail="heap no alloc")
         raw = getattr(alloc, "raw_alloc_size", alloc.alloc_size)
-        return SourceInfo(BWRSrcKind.HEAP,
-                          size=self._alloc_model.usable_size(raw.hi),
-                          detail=f"heap[{raw.hi}]")
+        return SourceInfo(BWRSrcKind.HEAP, size=raw.hi,
+                          detail=f"heap[{hex(alloc_addr)}]")
+
+    def _alloc_at_call(self, alloc_tracker, call_addr):
+        return call_addr if call_addr in alloc_tracker._allocations else None
 
     def _dst_zero_initialized(self, instructions, call_idx,
                               dst_reg: str) -> bool:
-        """检测strcat目标是否先被memset清零(常用初始化模式)."""
-        dst_reg = norm_reg(dst_reg)
+        """strcat 目标须已清零初始化 (dst[0]==0), 否则追加语义不可靠."""
+        reg = norm_reg(dst_reg)
         for i in range(call_idx - 1, max(0, call_idx - self._SCAN_WINDOW), -1):
             ins = instructions[i]
             mnem = ins.get("mnemonic", "").lower()
             ops = ins.get("operands", [])
-            if mnem == "call" and ops:
-                func = extract_func_name(ops[0])
-                if func == "memset":
-                    return True
+            if mnem == "call":
                 return False
+            if mnem == "mov" and len(ops) >= 2:
+                dst = norm_reg(ops[0])
+                if dst == reg:
+                    src = ops[1].strip()
+                    if self._parse_imm(src) == 0:
+                        return True
+                    return False
         return False
 
-    def _format_max_len(self, fmt: str, instructions, call_idx) -> Optional[int]:
-        """计算sprintf格式串的最大输出字节数.
-
-        只统计可确定上界的指令; 遇到无界 %s → 返回None.
-        """
-        total = 0
-        i = 0
-        n = len(fmt)
-        while i < n:
-            if fmt[i] != "%":
-                total += 1
-                i += 1
-                continue
-            m = re.match(r'%([+\-#0 ]*)(\d*)(?:\.(\d+))?([hljztL]*)([diouxXeEfFgGaAcspn%])',
-                         fmt[i:])
-            if not m:
-                total += 1
-                i += 1
-                continue
-            flags, width, prec, length, conv = m.groups()
-            i += m.end()
-            if conv == "%":
-                total += 1
-                continue
-            if conv == "n":
-                continue
-            if conv == "c":
-                total += max(int(width or 1), 1)
-                continue
-            if conv in "diouxX":
-                total += max(int(width or 1), 1)
-                continue
-            if conv in "eEfFgGaA":
-                p = int(prec) if prec else 6
-                total += max(int(width or 0), p + 1)
-                continue
-            if conv == "s":
-                w = int(width) if width else 0
-                p = int(prec) if prec else 0
-                if w or p:
-                    total += max(w, p)
-                    continue
-                return None  # 无界 %s
-            return None
-        return total
+    @staticmethod
+    def _parse_imm(op: str) -> Optional[int]:
+        from .bwr_helpers import parse_imm
+        return parse_imm(op)
 
     def _arg_reg(self, instructions, call_idx: int, idx: int) -> Optional[str]:
         """从call指令操作数解析第idx个实参寄存器.
 
         objdump intel格式: call操作数为函数名(1个operand),
         实参寄存器信息丢失, 只能从调用前的指令窗口推导.
-        实际取值由调用方(_handle_write_call)提供, 此处仅为兜底.
+        实际取值由调用方提供, 此处仅为兜底.
         """
         return None
 

@@ -576,7 +576,7 @@ class StateMachineInferrer:
     def infer_from_binary(self, binary_path: str) -> StateMachineModel:
         """从二进制提取真实CFG并映射为状态机模型
         
-        真实实现（v2.0，2026-08-03）：
+        真实实现：
         - 不再返回硬编码的5状态模板
         - 解析PE/ELF代码段，使用capstone反汇编
         - 提取基本块，构建控制流图
@@ -627,7 +627,7 @@ class StateMachineInferrer:
     def infer_from_network_trace(self, packets: List[Dict[str, Any]]) -> StateMachineModel:
         """从网络包序列推断状态机——每个包类型对应一个状态
         
-        2026-08-03: 增强发现能力——相同连续包类型合并
+        2024-08-12: 增强发现能力——相同连续包类型合并
         合并后的序列用于状态推导
         """
         if not packets:

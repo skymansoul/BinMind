@@ -1,0 +1,14 @@
+\begin{table}[h]
+\centering
+\caption{Multi-Tool Use-After-Free Detection Benchmark (15 vulnerable + 5 safe samples, O0+O2)}
+\label{tab:uaf_benchmark}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+Tool & TP & FP & FN & TN & Recall & Prec. & FPR & F1 & Time(ms) \\
+\midrule
+BinMind-UAF-ULPR & 23 & 0 & 7 & 10 & 0.767 & 1.000 & 0.000 & 0.868 & 297.5 \\
+BinMind-UAF-Base & 23 & 1 & 7 & 9 & 0.767 & 0.958 & 0.100 & 0.852 & 275.4 \\
+angr-uaf & 18 & 5 & 12 & 5 & 0.600 & 0.783 & 0.500 & 0.679 & 560.4 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -3,6 +3,7 @@
 每个 runner 返回: {tool, detected, detections, elapsed_ms, success,
 error, detail}。run_all 对单样本执行全部可用工具,
 二进制工具按顺序降级(skip 不抛错)。
+源码工具按漏洞类别选择: heap → CACBV, uaf → LCV。
 """
 
 import os
@@ -12,10 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-
-from heapov import analyze_source, analyze_baseline  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 EXTERNAL_OK = {}
+_SAMPLE_CLASS = 'heap'
+_MAIN_TOOL = 'CACBV'
+_DETECT = None
+_BASELINE = None
 
 
 def _check_external() -> None:
@@ -33,28 +37,51 @@ def _check_external() -> None:
 _check_external()
 
 
+def set_sample_class(sample_class: str) -> None:
+    global _SAMPLE_CLASS, _MAIN_TOOL, _DETECT, _BASELINE
+    _SAMPLE_CLASS = sample_class
+    if sample_class == 'uaf':
+        from uafov import analyze_source, analyze_baseline
+        _DETECT, _BASELINE = analyze_source, analyze_baseline
+        _MAIN_TOOL = 'LCV'
+    elif sample_class == 'fmt':
+        from fmtov import analyze_source, analyze_baseline
+        _DETECT, _BASELINE = analyze_source, analyze_baseline
+        _MAIN_TOOL = 'FSV'
+    else:
+        from heapov import analyze_source, analyze_baseline
+        _DETECT, _BASELINE = analyze_source, analyze_baseline
+        _MAIN_TOOL = 'CACBV'
+
+
+set_sample_class('heap')
+
+
 def _mk(tool, sample, detected, detections, ms, success, error='', detail=None):
     return {'tool': tool, 'sample': sample, 'detected': bool(detected),
             'detections': detections, 'elapsed_ms': round(ms, 3),
             'success': success, 'error': error, 'detail': detail or {}}
 
 
-def run_cacbv(sample: dict) -> dict:
+def run_main(sample: dict) -> dict:
     t0 = time.perf_counter()
     src = Path(sample['src']).read_text(encoding='utf-8', errors='replace')
-    findings = analyze_source(src)[0]
+    findings = _DETECT(src)[0]
     ms = (time.perf_counter() - t0) * 1000
-    return _mk('CACBV', sample['name'], bool(findings), len(findings),
+    reasons = set()
+    for f in findings:
+        reasons.update(f.get('reasons') or f.get('fp_reasons') or [])
+    return _mk(_MAIN_TOOL, sample['name'], bool(findings), len(findings),
                ms, True, detail={
                    'verdicts': sorted({f['verdict'] for f in findings}),
-                   'reasons': sorted({r for f in findings for r in f['fp_reasons']}),
+                   'reasons': sorted(reasons),
                })
 
 
 def run_baseline(sample: dict) -> dict:
     t0 = time.perf_counter()
     src = Path(sample['src']).read_text(encoding='utf-8', errors='replace')
-    findings = analyze_baseline(src)
+    findings = _BASELINE(src)
     ms = (time.perf_counter() - t0) * 1000
     return _mk('Baseline', sample['name'], bool(findings), len(findings),
                ms, True, detail={'verdicts': sorted({f['verdict'] for f in findings})})
@@ -97,9 +124,7 @@ _BINARY_TOOLS = [run_angr, run_ghidra, run_qemu_gt]
 
 
 def run_all(sample: dict) -> list:
-    results = []
-    for fn in _SOURCE_TOOLS:
-        results.append(fn(sample))
+    results = [run_main(sample), run_baseline(sample)]
     for fn in _BINARY_TOOLS:
         results.append(fn(sample))
     return results

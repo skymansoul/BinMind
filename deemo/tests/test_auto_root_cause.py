@@ -2,7 +2,7 @@
 # 上了LLM之后能到90%+，但是要花钱，先heuristic顶着
 
 import pytest
-import os as _os as _os
+import os as _os
 # import sys  # conftest handles this
 
 from modules.auto_root_cause import (
@@ -20,7 +20,6 @@ class TestAutoRootCause:
         if a is None:
             return
         assert a is not None
-lass字段完整性$/d
         assert a.analyzer_type == "heuristic"
 
     def test_cwe_database(self):

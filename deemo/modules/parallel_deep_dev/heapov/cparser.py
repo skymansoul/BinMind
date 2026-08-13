@@ -1,7 +1,7 @@
 """C 解析器 — 词法/表达式/语句级解析与语句模型。
 
-面向堆分析的轻量子集: 声明中的初始化提升为赋值语句, 使数据流
-统一处理 buf = malloc(n); 表达式按优先级爬升解析。
+声明中的初始化提升为赋值语句, 使数据流统一处理 buf = malloc(n)。
+表达式解析由 exprparse 提供; 语句模型由 stmts 提供。
 """
 
 # TODO: 补充 do-while 与 for-init 三目表达式, 覆盖更广的控制流
@@ -10,97 +10,13 @@
 from typing import List, Optional
 
 from heapov.clexer import Token, tokenize, strip_suffixes
-from heapov.expr_ast import (
-    Expr, Const, Var, Neg, Binary, Call, Index, Field, Deref,
-    Addr, Sizeof,
+from heapov.expr_ast import Expr, Binary, Call
+from heapov.exprparse import (
+    ExprParserMixin, ParseError,
+    _TYPE_WORDS, _STRUCT_KEYWORDS, _ASSIGN_OPS,
 )
-
-from dataclasses import dataclass, field
-from typing import List, Optional
-
-from heapov.expr_ast import Expr
-
-
-@dataclass
-class Assign:
-    target: Expr
-    op: str
-    value: Expr
-    pos: int
-
-
-@dataclass
-class CallStmt:
-    call: Expr
-    pos: int
-
-
-@dataclass
-class ExprStmt:
-    expr: Expr
-    pos: int
-
-
-@dataclass
-class If:
-    cond: Expr
-    then_b: 'Block'
-    else_b: Optional['Block']
-    pos: int
-
-
-@dataclass
-class For:
-    init: Optional[object]
-    cond: Optional[Expr]
-    incr: Optional[Expr]
-    body: 'Block'
-    pos: int
-
-
-@dataclass
-class While:
-    cond: Expr
-    body: 'Block'
-    pos: int
-
-
-@dataclass
-class Return:
-    value: Optional[Expr]
-    pos: int
-
-
-@dataclass
-class Block:
-    stmts: List[object] = field(default_factory=list)
-    pos: int = 0
-
-
-@dataclass
-class Decl:
-    name: str
-    base_type: str
-    is_pointer: bool
-    array_size: Optional[int]
-    init: Optional[Expr]
-    pos: int
-
-
-@dataclass
-class Func:
-    name: str
-    params: List[str]
-    body: Block
-    pos: int
-
-
-from typing import List
-
-from heapov.clexer import Token
-from heapov.expr_ast import (
-    Expr, Const, Var, Neg, Binary, Call, Index, Field, Deref, Addr,
-    Sizeof,
+from heapov.stmts import (
+    Assign, CallStmt, ExprStmt, If, For, While, Return, Block, Decl, Func,
 )
 
 _BINOPS = {
@@ -420,6 +336,9 @@ class CParser(ExprParserMixin):
             self._parse_type()
             while self._eat('*'):
                 pass
+            if self._at('...'):
+                self._next()  # 变参: 终止参数列表
+                break
             if self._peek() is not None and self._peek().kind == 'id':
                 names.append(self._next().value)
             while self._at('['):
@@ -594,12 +513,14 @@ class CParser(ExprParserMixin):
         if isinstance(e, Binary) and e.op in _ASSIGN_OPS:
             return Assign(e.left, e.op, e.right, 0)
         return ExprStmt(e, 0)
+
 def parse_source(src: str) -> List[Func]:
     """解析 C 源码, 返回函数列表。解析失败返回空列表(不中断)。"""
     try:
         return CParser(src).parse()
     except ParseError:
         return []
+
 def parse_source_full(src: str):
     """解析 C 源码, 返回 (funcs, 字符串字面量表)。"""
     try:

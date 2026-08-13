@@ -25,8 +25,10 @@ class TestCLI:
 
         p = argparse.ArgumentParser()
         sp = p.add_subparsers(dest="command")
-        sp.add_parser("deobfuscate")
-        sp.add_parser("decode-strings")
+        p_deob = sp.add_parser("deobfuscate")
+        p_deob.add_argument("--input", "-i", required=True)
+        p_dec = sp.add_parser("decode-strings")
+        p_dec.add_argument("--input", "-i", required=True)
         sp.add_parser("unpack")
         sp.add_parser("detect-vm")
         sp.add_parser("extract-scripts")

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>BinMind - 二进制漏洞分析平台</title>
+    <style>
+      #app-loading-binmind {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #606266;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="app-loading-binmind">BinMind 加载中...</div>
+    </div>
+
+    <noscript>
+      <div style="padding:40px;text-align:center;font-family:sans-serif;">
+        <h2>BinMind需要JavaScript才能运行</h2>
+        <p>请启用浏览器的JavaScript支持后刷新页面。</p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

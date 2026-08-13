@@ -2,11 +2,11 @@
 # 创建: 2026-04-30  |  从sym_constraint_engine.py拆分 — 约束求解与判定
 """SSBCP约束求解器 — write_size vs alloc_size+offset 的约束关系判定.
 
-  - 常量比较判定
-  - 符号关系推导(同变量系数差)
-  - 路径约束安全的证明
-  - jcc方向推断
-  - 分配标签查找
+- 常量比较判定
+- 符号关系推导(同变量系数差)
+- 路径约束安全的证明
+- jcc方向推断
+- 分配标签查找
 """
 from typing import Dict, List, Optional
 

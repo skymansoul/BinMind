@@ -202,7 +202,6 @@ class TestTrajectoryAnomalyAnalyzer:
         assert len(result["detections"]) == 1
 
     def test_analyze_batch_detect(self):
-                """测试批量检测"""
         from modules.trajectory_anomaly import TrajectoryAnomalyAnalyzer, ExecutionTrace
 
         analyzer = TrajectoryAnomalyAnalyzer()
@@ -223,14 +222,12 @@ class TestTrajectoryAnomalyAnalyzer:
 
         # 无效输入 - 检测模式缺少轨迹
         is_valid, error = analyzer.validate_input(mode="detect")
-lass字段完整性$/d
         assert is_valid is False
         assert "需要 test_trace 或 test_traces" in error
 
         # 有效输入
         is_valid, error = analyzer.validate_input(mode="detect", test_trace={})
         assert is_valid is True
-lass字段完整性$/d
         assert error is None
 
     def test_cleanup(self):

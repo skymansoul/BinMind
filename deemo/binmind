@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+# binmind launcher — find venv python and run the entry script
 set -euo pipefail
 
+# Resolve symlinks to find the real script directory.
+# Standard while-loop pattern; edge case: Docker overlayfs may loop (untested).
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do
     SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
@@ -14,8 +17,21 @@ done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
 
-if [ ! -x "$PYTHON_BIN" ]; then
+# Find Python: local venv > python3 > python
+if [ -x "$SCRIPT_DIR/.venv/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
+elif [ -x "$SCRIPT_DIR/.venv/Scripts/python.exe" ]; then
+    # Windows venv，WSL里也能调
+    PYTHON_BIN="$SCRIPT_DIR/.venv/Scripts/python.exe"
+elif command -v python3 >/dev/null 2>&1; then
     PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+else
+    echo "错误: 未找到Python解释器" >&2
+    echo "请确认python3已安装或.venv已创建" >&2
+    exit 1
 fi
 
-exec "$PYTHON_BIN" "$SCRIPT_DIR/main.py" "$@"
+# exec replaces the current process; $@ forwards all CLI args
+exec "$PYTHON_BIN" "$SCRIPT_DIR/binmind.py" "$@"

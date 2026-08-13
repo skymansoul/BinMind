@@ -50,7 +50,7 @@ class TestNVDSync:
         sync_mod._HAS_URLLIB = False
         try:
             engine = NVDSyncEngine(kb)
-            engine._state["last_sync"] = "2026-10-01T00:00:00"
+            engine._state["last_sync"] = "2025-02-06T00:00:00"
             stats = engine.sync()
             assert isinstance(stats, dict)
         finally:

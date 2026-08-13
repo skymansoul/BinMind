@@ -1,12 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
-/* ¶ÔÆë±ß½ç²âÊÔ¡ª¡ªmalloc(32)ÔÚglibcÏÂÊµ¼Ê¿ÉÓÃ48×Ö½Ú
- * ¾É¼ì²âÆ÷: alloc=32, copy=40 ¡ú Îó±¨ÎªÒç³ö
- * ĞÂ¼ì²âÆ÷: usable_size(32)=48, copy=40 ¡ú °²È«(²»Ó¦±¨¸æ) */
+/* å¯¹é½è¾¹ç•Œæµ‹è¯•â€”â€”malloc(32)åœ¨glibcä¸‹å®é™…å¯ç”¨48å­—èŠ‚
+ * æ—§æ£€æµ‹å™¨: alloc=32, copy=40 â†’ è¯¯æŠ¥ä¸ºæº¢å‡º
+ * æ–°æ£€æµ‹å™¨: usable_size(32)=48, copy=40 â†’ å®‰å…¨(ä¸åº”æŠ¥å‘Š) */
 void alignment_test(const char *data) {
     char *buf = malloc(32);
     if (!buf) return;
-    memcpy(buf, data, 40); /* SAFE: 32¡úusable=48, 40<48 */
+    memcpy(buf, data, 40); /* SAFE: 32â†’usable=48, 40<48 */
     free(buf);
 }
 int main() {

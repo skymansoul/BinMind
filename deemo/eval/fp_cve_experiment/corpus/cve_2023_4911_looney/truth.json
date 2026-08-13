@@ -1,8 +1,0 @@
-{
-  "id": "cve_2023_4911_looney",
-  "expected_vuln": true,
-  "vuln_type": "heap_overflow",
-  "cve": "CVE-2023-4911",
-  "component": "glibc ld.so tunables",
-  "mode": "GLIBC_TUNABLES 环境变量处理时 strcpy 堆溢出"
-}

@@ -1,4 +1,0 @@
-{
-  "cwe": "CWE-415",
-  "description": "Double free after heap write"
-}

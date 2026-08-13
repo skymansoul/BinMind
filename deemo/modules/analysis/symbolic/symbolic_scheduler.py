@@ -56,7 +56,7 @@ try:
 except ImportError:
     _HAS_PSUTIL = False
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class ResourceProfile(Enum):
@@ -634,7 +634,7 @@ class ResourceOvercommitDetector:
         with self._lock:
             self.total_allocated_mb += budget.memory_mb
             self.running_tasks[task.func_name] = budget.memory_mb
-            __log.debug(
+            _log.debug(
                 f"[OvercommitDetector] Allocated {budget.memory_mb}MB for "
                 f"{task.func_name}, total={self.total_allocated_mb:.0f}MB"
             )
@@ -649,7 +649,7 @@ class ResourceOvercommitDetector:
             if task.func_name in self.running_tasks:
                 freed = self.running_tasks.pop(task.func_name)
                 self.total_allocated_mb = max(0.0, self.total_allocated_mb - freed)
-                __log.debug(
+                _log.debug(
                     f"[OvercommitDetector] Released {freed}MB from "
                     f"{task.func_name}, total={self.total_allocated_mb:.0f}MB"
                 )
@@ -669,7 +669,7 @@ class ResourceOvercommitDetector:
             is_over = self.total_allocated_mb > available_mb * self.safety_ratio
 
         if is_over:
-            __log.warning(
+            _log.warning(
                 f"[OvercommitDetector] Memory overcommit detected: "
                 f"total_allocated={self.total_allocated_mb:.0f}MB > "
                 f"available*safety={available_mb * self.safety_ratio:.0f}MB "
@@ -1191,7 +1191,7 @@ class InterruptibleExecutor:
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            __log.warning(f"Checkpoint load failed {func_name}: {e}")
+            _log.warning(f"Checkpoint load failed {func_name}: {e}")
             return None
 
     def run_one(self, task: TaskSpec, runner) -> TaskResult:
@@ -1265,7 +1265,7 @@ class InterruptibleExecutor:
             # 四轮增强 — 检查内存过度分配
             if self.overcommit_detector.is_overcommitted():
                 overcommit_pauses += 1
-                __log.warning(
+                _log.warning(
                     "[symbex-scheduler] Memory overcommit detected — "
                     "pausing new dispatch until running tasks complete"
                 )
@@ -1310,7 +1310,7 @@ class InterruptibleExecutor:
                     task.func_name, task.binary_path,
                     reason=f"resource_pressure:cpu={self.resource_monitor.sys_load_pct:.1f}"
                 )
-                __log.debug(
+                _log.debug(
                     f"[symbex-scheduler] Skipping {task.func_name} "
                     f"due to resource pressure (cpu={self.resource_monitor.sys_load_pct:.1f}%, "
                     f"mem={self.resource_monitor.mem_usage_pct:.1f}%)"
@@ -1331,7 +1331,7 @@ class InterruptibleExecutor:
                 predicted_seconds=predicted,
             )
 
-            __log.info(
+            _log.info(
                 f"[symbex-scheduler] Scheduling {task.func_name} "
                 f"profile={task.resource_profile.value} "
                 f"complexity={task.complexity.score:.2f} "
@@ -1343,11 +1343,11 @@ class InterruptibleExecutor:
             results.append(res)
 
         if skip_count:
-            __log.warning(
+            _log.warning(
                 f"[symbex-scheduler] {skip_count} task(s) deferred due to resource pressure"
             )
         if overcommit_pauses:
-            __log.warning(
+            _log.warning(
                 f"[symbex-scheduler] {overcommit_pauses} overcommit pause(s) occurred"
             )
 

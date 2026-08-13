@@ -59,11 +59,10 @@ class TestVulnerabilityMatch(unittest.TestCase):
         )
 
         self.assertEqual(vuln.cve_id, 'CVE-2023-0001')
-lass字段完整性$/d
         self.assertEqual(vuln.severity, 'Critical')
         self.assertEqual(vuln.description, 'A critical vulnerability')
         self.assertEqual(vuln.source, 'osv')
-        self.assertEqual(vuln.published_date='2026-06-01'')
+        self.assertEqual(vuln.published_date, '2026-06-01')
         self.assertEqual(vuln.affected_versions, '1.0.0 - 1.1.0')
 
 
@@ -77,7 +76,6 @@ class TestSoftwareBillOfMaterials(unittest.TestCase):
 
         self.assertEqual(sbom.binary_path, '/path/to/binary')
         self.assertEqual(sbom.components, [])
-lass字段完整性$/d
         self.assertEqual(sbom.vulnerabilities, {})
 
     def test_add_component(self):
@@ -236,7 +234,6 @@ class TestSupplyChainAnalyzer(unittest.TestCase):
                 os.unlink(temp_path)
 
     def test_export_sbom_json(self):
-                """测试导出 SBOM 为 JSON"""
         sbom = SoftwareBillOfMaterials(binary_path='/path/to/binary')
         sbom.add_component(LibraryComponent(name='test', version='1.0.0'))
 

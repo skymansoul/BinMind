@@ -18,7 +18,7 @@ class UnOp(Expr): op: str; operand: Expr
 @dataclass
 class BinOp(Expr): op: str; left: Expr; right: Expr
 
-_TOKEN_RE = re.compile(r'\b(?:[a-zA-Z_]\w*|[0-9]+|<<|>>|\+|-|\*|&|\||\^|~|\(|\))')
+_TOKEN_RE = re.compile(r'[a-zA-Z_]\w*|0x[0-9a-fA-F]+|[0-9]+|<<|>>|\+|-|\*|&|\||\^|~|\(|\)')
 def _tokenize(expr: str) -> List[str]:
     return _TOKEN_RE.findall(expr)
 
@@ -67,7 +67,10 @@ class _Parser:
         self._eat(); return Var(t)
 
 def parse_expression(expr_str: str) -> Expr:
-    return _Parser(_tokenize(expr_str)).parse()
+    tokens = _tokenize(expr_str)
+    if not tokens:
+        return None
+    return _Parser(tokens).parse()
 
 def _is_const(expr, val=None):
     return isinstance(expr, Const) and (val is None or expr.value == val)
@@ -449,12 +452,14 @@ class MBASimplifier:
     def normalize(self, expr_str):
         try: tree = parse_expression(expr_str)
         except Exception: return expr_str
+        if tree is None: return ""
         tree = _bottom_up_rewrite(tree, max_passes=3)
         return _to_str(tree)
 
     def simplify(self, expr_str, max_passes=5):
         try: tree = parse_expression(expr_str)
         except Exception: return expr_str
+        if tree is None: return ""
         for _ in range(max_passes):
             prev = _to_str(tree)
             tree = _bottom_up_rewrite(tree, max_passes=1)

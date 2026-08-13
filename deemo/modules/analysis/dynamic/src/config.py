@@ -96,7 +96,16 @@ def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[s
 
 
 def _cast_env_value(value: str) -> Any:
-    """Cast a string environment variable value an appropriate type"""
+    """Cast a string environment variable value an appropriate type
+
+    布尔字面量优先于数值解析：纯 "1"/"0" 视为布尔开关，
+    其余数字串按 int/float 处理。
+    """
+    lowered = value.lower()
+    if lowered in ("true", "yes", "1"):
+        return True
+    if lowered in ("false", "no", "0"):
+        return False
     if value.isdigit():
         return int(value)
     if value.replace(".", "", 1).isdigit() and value.count(".") <= 1:

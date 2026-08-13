@@ -482,3 +482,85 @@ def extract_sct_timestamps(cert_der: bytes) -> list:
         if 1356998400 <= ts_s <= 1924992000:  # 2013..2030
             stamps.append(int(ts_s))
     return sorted(set(stamps))
+
+
+# 扫描器封装 —— 提供文件级入口与结构化结果
+
+@dataclass
+class Cert:
+    """单张证书的检测结果。"""
+    info: Optional[CertInfo] = None
+    is_weak_sig: bool = False
+    is_weak_key: bool = False
+    is_self_signed: bool = False
+
+
+@dataclass
+class CertScanResult:
+    """证书扫描聚合结果。"""
+    total_certs: int = 0
+    private_keys_found: int = 0
+    certs: List[Cert] = field(default_factory=list)
+
+
+class CertAnalyzer:
+    """证书分析器 —— 提取 PEM 证书并标注弱点。"""
+
+    def analyze_file(self, path: str) -> CertScanResult:
+        try:
+            with open(path, 'rb') as fh:
+                data = fh.read()
+        except OSError:
+            return CertScanResult()
+        return self.analyze_data(data)
+
+    def analyze_data(self, data: bytes) -> CertScanResult:
+        result = CertScanResult()
+        if not data:
+            return result
+        text = data.decode('latin-1', errors='ignore')
+        result.private_keys_found = sum(
+            1 for m in re.finditer(
+                r'-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----', text))
+
+        pems = find_pem_certificates(data)
+        for der in pems:
+            info = parse_der_certificate(der)
+            cert = Cert(info=info)
+            if info is not None:
+                sa = (info.sig_alg or '').lower()
+                cert.is_weak_sig = ('md5' in sa or 'sha1' in sa)
+                cert.is_weak_key = ('RSA' in (info.pubkey_alg or '').upper()
+                                    and 0 < info.key_size < 2048)
+                cert.is_self_signed = bool(info.subject and info.subject == info.issuer)
+            # 字段级解析不完整时，回退到原始 DER 的弱点特征扫描
+            if not (cert.is_weak_sig or cert.is_weak_key or cert.is_self_signed):
+                cert.is_weak_sig = cert.is_weak_sig or _raw_weak_sig(der)
+            result.certs.append(cert)
+        result.total_certs = len(result.certs)
+        return result
+
+
+def _raw_weak_sig(der: bytes) -> bool:
+    """在原始 DER 中检测弱签名 OID。
+
+    MD5 with RSA 与 SHA1 with RSA 的 DER OID 序列。
+
+    """
+    md5_oid = bytes.fromhex('300d06092a864886f70d0101040500')
+    sha1_oid = bytes.fromhex('300d06092a864886f70d0101050500')
+    return md5_oid in der or sha1_oid in der
+
+
+def analyze_certificates(path: str) -> CertScanResult:
+    """便捷入口 —— 分析文件中的证书。"""
+    return CertAnalyzer().analyze_file(path)
+
+
+@dataclass
+class CertFinding:
+    """证书弱点发现条目。"""
+    cert: Optional[CertInfo] = None
+    weakness: str = ""
+    severity: CertWeaknessSeverity = CertWeaknessSeverity.INFO
+    description: str = ""

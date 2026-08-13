@@ -244,6 +244,7 @@ def detect_heap_overflow_v2(
                 "reason":"; ".join(reason_parts),"same_dll":pair.get("same_dll",False)})
     # P4: 安全见证
     if checksec:
+        from v2_safety_filter import safety_filter
         findings = safety_filter(findings, checksec, imports)
     findings.sort(key=lambda f: f["confidence"], reverse=True)
     hi = sum(1 for f in findings if f["confidence"] >= 0.70)

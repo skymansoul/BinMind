@@ -357,7 +357,7 @@ class RedunFuseConfidence:
         Beta 后验均值作为结构化校准的输入，使历史观测统计与当前模态结构
         共同决定最终置信度。
         """
-        from .multi_modal_confidence import BetaCalibration, WeightedBlender
+        from multi_modal_confidence import BetaCalibration, WeightedBlender
         _cal = BetaCalibration()
         _cal.update(success_count, sample_count)
         _beta_conf = _cal.get_confidence()

@@ -38,7 +38,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 
-__log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class ExplorationStrategy(Enum):
@@ -724,6 +724,20 @@ class CoverageGuidedSymbolicExecutor:
             'results': results
         }
 
+    def step(self) -> Dict[str, Any]:
+        """执行单步探索，返回该步结果。"""
+        if self._exploration_count >= self._max_explorations:
+            return {'status': 'done', 'path': None}
+        dispatch = {
+            ExplorationStrategy.GREEDY: self._greedy_explore,
+            ExplorationStrategy.GENETIC: self._genetic_explore,
+            ExplorationStrategy.RANDOM: lambda: {'status': 'random'},
+            ExplorationStrategy.HYBRID: self._hybrid_explore,
+            ExplorationStrategy.EPSILON_GREEDY: self._epsilon_greedy_explore,
+        }
+        explorer = dispatch.get(self._strategy, self._hybrid_explore)
+        return explorer()
+
     def add_seed_input(self, input_bytes: bytes):
         """Inject a concrete input genetic population"""
         self._genetic_optimizer.population.append(GeneticSeed(
@@ -897,6 +911,24 @@ class DictionaryGenerator:
         self._top_k = max(1, top_k)
         self._min_occurrences = max(1, min_occurrences)
 
+    @staticmethod
+    def extract_tokens(data: bytes, min_len: int = 2) -> List[str]:
+        """从字节流中提取可打印 token 序列。"""
+        if not data:
+            return []
+        tokens: List[str] = []
+        current: List[str] = []
+        for byte in data:
+            if 32 <= byte <= 126:
+                current.append(chr(byte))
+            else:
+                if len(current) >= min_len:
+                    tokens.append(''.join(current))
+                current = []
+        if len(current) >= min_len:
+            tokens.append(''.join(current))
+        return tokens
+
     def generate(self, optimizer: GeneticPathOptimizer) -> List[Dict[str, str]]:
         """提取 magic tokens top-K fittest seeds
         
@@ -981,7 +1013,7 @@ class DictionaryGenerator:
             for token in tokens:
                 f.write(f'name="{token["name"]}" value="{token["value"]}"\n')
 
-        __log.info("AFL dictionary written to %s (%d tokens)", output_path, len(tokens))
+        _log.info("AFL dictionary written to %s (%d tokens)", output_path, len(tokens))
         return len(tokens)
 
 
@@ -1095,7 +1127,7 @@ class CrashSignatureBuilder:
                 sig = self.build_from_dict(crash)
                 buckets[sig.to_key()].append(crash)
             except (KeyError, ValueError, TypeError) as exc:
-                __log.warning("Failed to build crash signature: %s", exc)
+                _log.warning("Failed to build crash signature: %s", exc)
                 # 无法归类的 crash 归入单独桶
                 buckets['__unclassifiable__'].append(crash)
         return dict(buckets)
@@ -1161,7 +1193,7 @@ def serialize_checkpoint(optimizer: GeneticPathOptimizer,
     }
     with open(filepath, 'wb') as f:
         pickle.dump(data, f, protocol=4)
-    __log.info("Checkpoint serialized to %s (gen=%d, pop=%d, peak_delta=%.1f)",
+    _log.info("Checkpoint serialized to %s (gen=%d, pop=%d, peak_delta=%.1f)",
                filepath, optimizer.generation, len(optimizer.population),
                delta_tracker.peak_delta)
 
@@ -1180,7 +1212,7 @@ def deserialize_checkpoint(filepath: str) -> Dict[str, Any]:
     """
     with open(filepath, 'rb') as f:
         data = pickle.load(f)
-    __log.info("Checkpoint deserialized from %s (gen=%d, pop=%d, peak_delta=%.1f)",
+    _log.info("Checkpoint deserialized from %s (gen=%d, pop=%d, peak_delta=%.1f)",
                filepath, data.get('generation', 0),
                len(data.get('population', [])),
                data.get('peak_delta', 0.0))

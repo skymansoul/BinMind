@@ -5,7 +5,7 @@ int main(void) {
     if (!m) return 1;
     for (int i = 0; i < 50; i++)
         for (int j = 0; j < 50; j++)
-            m[i * 50 + j] = i + j;   /* ÄÚ²ã½çÒÑÖª */
+            m[i * 50 + j] = i + j;   /* å†…å±‚ç•Œå·²çŸ¥ */
     printf("[*] %d\n", m[0]);
     free(m);
     return 0;

@@ -202,14 +202,14 @@ class ThreadSafeAdaptiveAC(AdaptiveAhoCorasick):
 class SPRTRebuildDecider:
     """序贯概率比检验 (SPRT) 重建决策器.
 
-    替代简单基尼阈值: SPRT 按 Wald (1945) 的序贯检验框架,
+    替代简单基尼阈值: SPRT 按 Wald 的序贯检验框架,
     累积每次搜索的对数似然比, 直至有足够证据支持 H1(偏度>阈值).
     相比固定基尼阈值:
       - 控制误报率 α (不应重建却重建) 和漏报率 β (应重建却未重建)
       - 早期强信号可快速触发 (无需等满 min_searches)
       - 晚期弱信号不会无限累积 (对数似然比下界截断)
 
-    参考: Wald, A. (1945) "Sequential Tests of Statistical Hypotheses"
+    参考: Wald, A. "Sequential Tests of Statistical Hypotheses"
     """
 
     def __init__(self, h0_gini: float = 0.3, h1_gini: float = 0.55,

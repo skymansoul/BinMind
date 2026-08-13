@@ -49,14 +49,27 @@ except ImportError:
 @dataclass
 class SubProblem:
     """A single function's symbolic analysis task dispatched a worker"""
-    sub_id: str
-    func_name: str
-    binary_path: str
+    sub_id: str = ""
+    func_name: str = ""
+    binary_path: str = ""
     start_state: Any = None
     inputs: Dict = field(default_factory=dict)
     constraints: List = field(default_factory=list)
     target: Any = None
     metadata: Dict = field(default_factory=dict)
+    problem_id: str = ""
+    function_name: str = ""
+    address_range: Tuple = ()
+
+    def __post_init__(self):
+        if not self.problem_id and self.sub_id:
+            self.problem_id = self.sub_id
+        if not self.sub_id and self.problem_id:
+            self.sub_id = self.problem_id
+        if not self.function_name and self.func_name:
+            self.function_name = self.func_name
+        if not self.func_name and self.function_name:
+            self.func_name = self.function_name
 
 
 @dataclass
@@ -65,22 +78,37 @@ class SubResult:
     
     六轮增强 — completion_status 字段区分 complete / partial / failed
     partial 表示超时终止但挽救了部分路径"""
-    sub_id: str
-    success: bool
+    sub_id: str = ""
+    success: bool = False
     paths: List = field(default_factory=list)
     elapsed: float = 0.0
     error: Optional[str] = None
     state_size: int = 0
     completion_status: str = "complete"  # "complete" | "partial" | "failed"
+    problem_id: str = ""
+    paths_found: int = 0
+
+    def __post_init__(self):
+        if not self.problem_id and self.sub_id:
+            self.problem_id = self.sub_id
+        if not self.sub_id and self.problem_id:
+            self.sub_id = self.problem_id
 
 
 @dataclass
 class MapReduceResult:
     """Aggregate 输出 a full MapReduce 运行"""
-    sub_problems: List
-    sub_results: List
-    merged_paths: List
+    sub_problems: List = field(default_factory=list)
+    sub_results: List = field(default_factory=list)
+    merged_paths: List = field(default_factory=list)
     statistics: Dict = field(default_factory=dict)
+    total_paths: int = 0
+    unique_constraints: List = field(default_factory=list)
+    crash_inputs: List = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.total_paths and self.statistics:
+            self.total_paths = self.statistics.get('total_paths', 0)
 
 
 class FunctionBoundaryDetector:
@@ -544,6 +572,23 @@ class SymbExMapReduce:
         self._mp_checkpoint_dir = checkpoint_dir or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'mapreduce_checkpoints')
         os.makedirs(self._mp_checkpoint_dir, exist_ok=True)
+        self._last_stats: Dict[str, Any] = {}
+
+    def get_stats(self) -> Dict[str, Any]:
+        stats = {
+            'num_workers': self.num_workers,
+            'checkpoint_dir': self._mp_checkpoint_dir,
+            'sub_problems': self._last_stats.get('sub_problems', 0),
+            'successful': self._last_stats.get('successful', 0),
+            'failed': self._last_stats.get('failed', 0),
+            'partial': self._last_stats.get('partial', 0),
+            'merged_paths': self._last_stats.get('merged_paths', 0),
+            'total_paths': self._last_stats.get('total_paths', 0),
+        }
+        return stats
+
+    def reset(self) -> None:
+        self._last_stats = {}
 
     def partition(self, binary_path: str,
                   target_funcs: Optional[List[str]] = None,
@@ -686,7 +731,7 @@ class SymbExMapReduce:
             merged = ResultRanker.rank(merged, top_n=top_n)
         return merged
 
-    def run(self, binary_path: str,
+    def run(self, binary_path: str = "",
             target_funcs: Optional[List[str]] = None,
             max_problems: int = 50,
             top_n: Optional[int] = None,
@@ -696,6 +741,14 @@ class SymbExMapReduce:
         
         五轮增强 — top_n 参数通过 ResultRanker 返回排序路径
         """
+        if not binary_path:
+            empty_stats = {
+                'sub_problems': 0, 'successful': 0, 'failed': 0, 'partial': 0,
+                'completion_failed': 0, 'merged_paths': 0, 'total_paths': 0,
+            }
+            self._last_stats = empty_stats
+            return MapReduceResult(statistics=dict(empty_stats))
+
         subs = self.partition(binary_path, target_funcs, max_problems)
         results = self.map_phase(
             subs,
@@ -714,6 +767,7 @@ class SymbExMapReduce:
             'merged_paths': len(merged),
             'total_paths': sum(len(r.paths) for r in results)
         }
+        self._last_stats = dict(stats)
         return MapReduceResult(
             sub_problems=subs, sub_results=results,
             merged_paths=merged, statistics=stats

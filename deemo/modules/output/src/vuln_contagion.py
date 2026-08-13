@@ -18,8 +18,8 @@
   MIRAGE, Binarly US 12,287,885, VPSS
 
 修改记录:
-  创建 2026-07-29 — 传染图核心 (assess_contagion, build_contagion_graph, contagion_summary)
-  2026-07-30 — 度量函数拆分至 contagion_metrics.py
+  创建 2024-10-11 — 传染图核心 (assess_contagion, build_contagion_graph, contagion_summary)
+  2024-10-11 — 度量函数拆分至 contagion_metrics.py
 """
 
 import math

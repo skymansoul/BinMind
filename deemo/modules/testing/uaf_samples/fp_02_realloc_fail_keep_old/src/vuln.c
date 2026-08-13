@@ -7,9 +7,9 @@ int main(void) {
     strcpy(p, "hello");
     char *q = (char *)realloc(p, 4096);
     if (q) {
-        p = q;                     /* ³É¹¦: ¾ÉÖ¸Õë×÷·Ï */
+        p = q;                     /* æˆåŠŸ: æ—§æŒ‡é’ˆä½œåºŸ */
     }
-    printf("[*] %s\n", p);         /* Ê§°ÜÂ·¾¶: p ÈÔÓĞĞ§ */
+    printf("[*] %s\n", p);         /* å¤±è´¥è·¯å¾„: p ä»æœ‰æ•ˆ */
     free(p);
     return 0;
 }

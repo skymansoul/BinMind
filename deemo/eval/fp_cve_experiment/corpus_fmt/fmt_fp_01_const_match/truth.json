@@ -1,6 +1,0 @@
-{
-  "id": "fmt_fp_01_const_match",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "mode": "常量格式串 + 参数完全匹配"
-}

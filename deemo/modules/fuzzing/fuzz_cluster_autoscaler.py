@@ -87,15 +87,17 @@ class TaskQueue:
     # 任务队列 — 内存驻留 + JSON 文件持久化
 
     def __init__(self, persist_path: Optional[str] = None):
-        self.persist_path = persist_path or os.path.join(
-            os.path.dirname(__file__), '..', 'data', 'fuzz_queue.json'
-        )
-        os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)
+        # persist_path 显式给出时才落盘；默认内存驻留，避免共享文件污染多实例
+        self.persist_path = persist_path
         self._tasks: Dict[str, FuzzTask] = {}
         self._lock = threading.Lock()
-        self._load()
+        if self.persist_path:
+            os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)
+            self._load()
 
     def _load(self):
+        if not self.persist_path:
+            return
         if os.path.exists(self.persist_path):
             try:
                 with open(self.persist_path, 'r', encoding='utf-8') as f:
@@ -106,6 +108,8 @@ class TaskQueue:
                 logger.warning(f"loadtaskqueuefailed: {e}")
 
     def _flush(self):
+        if not self.persist_path:
+            return
         try:
             with open(self.persist_path, 'w', encoding='utf-8') as f:
                 json.dump({tid: asdict(t)

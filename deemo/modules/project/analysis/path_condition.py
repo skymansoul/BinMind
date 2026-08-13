@@ -6,10 +6,10 @@
 #      → 路径条件 size ≤ 256 传播到memcpy, 将写入上界约束为256
 #      → 若malloc(256), 则DEFINITE_SAFE (无路径条件时会是POSSIBLE_OVERFLOW)
 # 理论来源:
-#   Bodik et al. "ABCD: Eliminating Array Bounds Checks on Demand" (PLDI 2000)
+#   Bodik et al. "ABCD: Eliminating Array Bounds Checks on Demand"
 #     — 基于条件的约束推导
 #   Beyer et al. "CPAchecker: A Tool for Configurable Software Verification"
-#     (CAV 2011) — 可配置路径条件分析框架
+# — 可配置路径条件分析框架
 # 与现有分析的关系: 作为值域分析的精度增强层,
 #   只在遇到条件分支时截取条件传递给后续指令,
 #   不改变现有的三阶段管道结构

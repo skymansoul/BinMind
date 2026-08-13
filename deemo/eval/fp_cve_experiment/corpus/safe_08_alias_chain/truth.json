@@ -1,8 +1,0 @@
-{
-  "id": "safe_08_alias_chain",
-  "expected_vuln": false,
-  "vuln_type": "safe",
-  "cve": "",
-  "component": "",
-  "mode": "多级指针别名后界内写入"
-}

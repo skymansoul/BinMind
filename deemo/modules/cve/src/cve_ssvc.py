@@ -120,7 +120,7 @@ def _to_val(raw: str, field: str) -> str:
         return "low"
     return s
 
-def _infer_automatable(cvss_vector: Optional[str]) -> str:
+def _infer_automatable(cvss_vector: Optional[str]) -> bool:
     """从CVSS向量字符串推断自动化可利用性。
 
     SSVC v2定义'automatable'为: 攻击者能否自动化利用？
@@ -130,11 +130,11 @@ def _infer_automatable(cvss_vector: Optional[str]) -> str:
     - PR:N（无权限）→ 更可能可自动化
     - UI:N（无用户交互）→ 更可能可自动化
 
-    若满足上述4项中至少3项，判定为'yes'。
+    满足上述4项中至少3项，判定为可自动化。
     此为启发式，非事实——参考cve_exploitdb获取exploit数据。
     """
     if not cvss_vector:
-        return "no"
+        return False
 
     score = 0
     # 逐一检查CVSS各指标
@@ -148,9 +148,7 @@ def _infer_automatable(cvss_vector: Optional[str]) -> str:
         score += 1
 
     # 4中3 → automatable（阀值经验选定）
-    if score >= 3:
-        return "yes"
-    return "no"
+    return score >= 3
 
 def _infer_exploit_from_epss(epss_score: Optional[float],
                               epss_percentile: Optional[float]) -> str:
@@ -298,9 +296,10 @@ def evaluate_cve(entry: Union[CVEEntry, Dict]) -> Dict[str, Any]:
     elif isinstance(entry, dict):
         cvss_vector = entry.get('cvss_vector')
 
-    automatable = _infer_automatable(cvss_vector)
+    automatable_raw = _infer_automatable(cvss_vector)
+    automatable = "yes" if automatable_raw else "no"
     reasoning.append('automatable: {} (from CVSS: {})'.format(
-        automatable, cvss_vector or 'N/A'
+        automatable_raw, cvss_vector or 'N/A'
     ))
 
 # 技术影响

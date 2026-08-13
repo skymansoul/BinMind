@@ -181,7 +181,6 @@ class TestCodeSigningChecker(unittest.TestCase):
         with open(test_file, 'wb') as f:
             f.write(b'test content')
         result = self.checker.check_signature(test_file)
-lass字段完整性$/d
         self.assertEqual(result.status, SignatureStatus.UNSIGNED)
 
     def test_generate_recommendation(self):
@@ -189,16 +188,15 @@ lass字段完整性$/d
         # 有效签名
         result = SignatureResult(status=SignatureStatus.VALID)
         recommendation = self.checker._generate_recommendation(result)
-        self.assertIn('有效', recommendation)
+        self.assertIn('Signature valid', recommendation)
         # 过期签名
         result = SignatureResult(status=SignatureStatus.EXPIRED)
         recommendation = self.checker._generate_recommendation(result)
-        self.assertIn('过期', recommendation)
+        self.assertIn('expired', recommendation)
         # 泄露签名
         result = SignatureResult(status=SignatureStatus.LEAKED)
         recommendation = self.checker._generate_recommendation(result)
-lass字段完整性$/d
-        self.assertIn('泄露', recommendation)
+        self.assertIn('leaked', recommendation)
 
     def test_generate_report(self):
         result = SignatureResult(
@@ -212,7 +210,7 @@ lass字段完整性$/d
         self.assertIn('recommendation', report)
 
     def test_save_report(self):
-                result = SignatureResult(status=SignatureStatus.UNSIGNED)
+        result = SignatureResult(status=SignatureStatus.UNSIGNED)
         test_file = os.path.join(self.temp_dir, 'test.bin')
         with open(test_file, 'wb') as f:
             f.write(b'test')

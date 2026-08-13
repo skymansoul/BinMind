@@ -1,6 +1,0 @@
-{
-  "class": "TN",
-  "cve": "",
-  "desc": "TN 对照 3: 循环重建 — 每轮迭代 free(p); p = malloc(); use(p).",
-  "trigger": "   每次迭代生成新对象代际, use 与 free 不同代际. "
-}
