@@ -1,13 +1,6 @@
-"""
-LSP数据类型 — 分层安全证明器的类型与证明结果定义.
-
-LSP在DD-BVF返回INCONCLUSIVE时触发, 追加三层证明:
-  Layer 1: 路径条件传播 (path condition propagation)
-  Layer 2: 谓词不变式推导 (predicate invariant inference)
-  Layer 3: 分配器语义对齐 (allocator semantic alignment)
-
-保守性: LSP无法判定时返回INCONCLUSIVE_retain, 不影响召回率.
-"""
+"""LSP数据类型 — 分层安全证明器的类型与证明结果定义。
+LSP在DD-BVF返回INCONCLUSIVE时触发，追加路径条件传播/谓词不变式推导/
+分配器语义对齐三层证明；无法判定时返回INCONCLUSIVE_RETAIN，不影响召回率。"""
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set

@@ -1,14 +1,6 @@
-"""
-Enhanced format string detection — FORMAT (Flow-Origin Resolution for Malicious Argument Tracking).
-五阶段管道对标 GAPSBV/TARPS:
-  Stage 1 — 调用点检测: printf(var) / fprintf(fd, var) / sprintf(dst, var) / syslog(pri, var)
-  Stage 2 — 来源追踪: 5跳回溯 user_var → fgets/argv/recv/getenv
-  Stage 3 — 安全包装过滤: safe_print(s) → printf("%s",s)
-  Stage 4 — 格式说明符分析: 检测 %n(任意写) %x(信息泄露) %s(任意读)
-  Stage 5 — 置信度评分: 综合来源+说明符 → 0-1分
-
-Ref: scut/team teso, 2001; CWE-134
-"""
+"""增强格式字符串检测 — FORMAT (恶意参数追踪的流来源解析), 五阶段管道对标 GAPSBV/TARPS.
+Stage 1 调用点检测 → Stage 2 来源追踪(5跳回溯至 fgets/argv/recv/getenv) → Stage 3 安全包装过滤 → Stage 4 格式说明符分析(%n任意写/%x信息泄露/%s任意读) → Stage 5 置信度评分(综合来源+说明符→0-1分);
+参考: scut/team teso, 2001; CWE-134."""
 
 from __future__ import annotations
 import re, time
@@ -16,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Tuple
 
 
-# data types & constants ─────────────────────────────────────────────
+# 数据类型与常量 ─────────────────────────────────────────────────────
 
 @dataclass
 class FmtCandidate:
@@ -47,7 +39,7 @@ _PERCENT_N_RE = re.compile(r'%n|%hn|%hhn')
 _PERCENT_X_RE = re.compile(r'%[xXp]')
 _PERCENT_S_RE = re.compile(r'%s')
 
-# Stage 1 regex building blocks
+# Stage 1 正则构件
 _ARG_VAR = r'(\w[\w\[\]\']*)'     # 变量名 (允许 argv[1])
 _NOT_QUOTE = r'(?!")'             # 负前瞻: 非字符串字面量
 _SKIP_ARG = r'[^,]+,\s*'          # 跳过一个逗号分隔的参数
@@ -62,7 +54,7 @@ _FMT_PATTERNS: List[Tuple[str, 're.Pattern']] = [
 ]
 
 
-# FORMAT detector ────────────────────────────────────────────────────
+# FORMAT 检测器 ──────────────────────────────────────────────────────
 
 class EnhancedFmtDetector:
     """五阶段FORMAT增强检测器。detect(ir_lines) → List[FmtCandidate]"""
@@ -70,7 +62,7 @@ class EnhancedFmtDetector:
     def __init__(self):
         self.stats: Dict[str, Any] = {}
 
-    # public API ──────────────────────────────────────────────────────
+    # 公开 API ────────────────────────────────────────────────────────
 
     def detect(self, ir_lines: List[str]) -> List[FmtCandidate]:
         t0 = time.time()
@@ -130,7 +122,7 @@ class EnhancedFmtDetector:
         self.stats['elapsed'] = round(time.time() - t0, 4)
         return candidates
 
-    # Stage 1 ─────────────────────────────────────────────────────────
+    # 阶段 1 ──────────────────────────────────────────────────────────
 
     def _detect_format_calls(self, ir_lines: List[str]) -> List[Dict[str, Any]]:
         calls = []
@@ -144,7 +136,7 @@ class EnhancedFmtDetector:
                                      'line': i, 'line_text': s})
         return calls
 
-    # Stage 2 ─────────────────────────────────────────────────────────
+    # 阶段 2 ──────────────────────────────────────────────────────────
 
     def _build_def_use(self, ir_lines: List[str]) -> Dict[str, int]:
         du: Dict[str, int] = {}
@@ -200,7 +192,7 @@ class EnhancedFmtDetector:
             return ('unknown', f'{cur} <- {rhs[:40]}')
         return ('unknown', f'{var}: max hops')
 
-    # Stage 3 ─────────────────────────────────────────────────────────
+    # 阶段 3 ──────────────────────────────────────────────────────────
 
     def _is_safe_wrapper(self, call: Dict, du: Dict[str, int],
                          ir_lines: List[str]) -> bool:
@@ -211,7 +203,7 @@ class EnhancedFmtDetector:
                 return True
         return False
 
-    # Stage 4 ─────────────────────────────────────────────────────────
+    # 阶段 4 ──────────────────────────────────────────────────────────
 
     def _analyze_specifiers(self, var: str, du: Dict[str, int],
                             ir_lines: List[str]) -> Dict[str, bool]:
@@ -227,7 +219,7 @@ class EnhancedFmtDetector:
             r['x'] = r['n'] = r['s'] = True
         return r
 
-    # Stage 5 ─────────────────────────────────────────────────────────
+    # 阶段 5 ──────────────────────────────────────────────────────────
 
     def _score(self, cand: FmtCandidate, src_type: str,
                spec: Dict[str, bool]) -> float:
@@ -242,7 +234,7 @@ class EnhancedFmtDetector:
             base += 0.02
         return max(0.05, min(0.95, base))
 
-    # utility ─────────────────────────────────────────────────────────
+    # 工具函数 ────────────────────────────────────────────────────────
 
     def summary_table(self, candidates: List[FmtCandidate]) -> str:
         hdr = (f"{'Verdict':12s} {'Call':25s} {'Source':12s} "

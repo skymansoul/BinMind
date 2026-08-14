@@ -1,9 +1,4 @@
-# Loop accumulation overflow detection — finds progressive overflow from
-# repeated add instructions inside loops.
-# A single 'add reg, imm' doesn't overflow, but 1000 iterations will —
-# a complete blind spot for pattern matching.
-# Checks: (a) backward jump (jmp/jcc) → loop, (b) add inside loop → accum,
-# (c) accumulated operand fed to malloc → overflow risk.
+# int_loop_accum.py - 检测循环累加溢出: 单次 add 不溢出, 但千次迭代会溢出, 是模式匹配的盲区。
 from __future__ import annotations
 
 import re

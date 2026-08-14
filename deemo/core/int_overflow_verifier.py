@@ -1,19 +1,7 @@
 """
-整数溢出约束验证 -- 对标heap_overflow_verifier的路径敏感验证范式。
-
-设计理由:
-  现有integer_overflow_detector仅做区间分析, int_overflow_taint做污点验证,
-  但缺少最关键的一步: 验证溢出条件在真实执行路径上是否可满足。
-  本模块用angr做定向符号执行, 对每个溢出告警点做:
-    1. 符号化参与运算的变量
-    2. 执行到运算指令处
-    3. SMT求解: 是否存在满足路径约束且结果确实溢出的输入?
-
-  与纯区间分析的区别:
-    区间分析是over-approximation(上界超类型最大值即告警→误报源头)
-    约束验证是精确求解(只有SMT确认可满足才保留→降误报)
-
-  - 与core/heap_overflow_verifier.py同样的Shimizu et al. ISSTA 2025范式
+整数溢出约束验证 — 对标 heap_overflow_verifier 的路径敏感验证范式。
+区间分析是过近似(误报源头), 约束验证是精确求解: 用 angr 定向符号执行,
+SMT 确认溢出条件在真实路径上可满足才保留。
 """
 import time
 from typing import Any, Dict, List, Optional, Tuple

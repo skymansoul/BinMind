@@ -1,12 +1,6 @@
 """
-Interval propagator engine — ForwardIntervalPropagator extracted from
-forward_interval_prop.py
-
-Reads decompiled IR lines; builds abstract state per program point.
-State maps variable names → Interval.
-
-  - Cousot & Cousot, "Abstract Interpretation"
-  - forward_interval_prop.py — Interval domain, regexes, dataclasses
+区间传播引擎 — 从 forward_interval_prop.py 提取的前向区间传播器。
+读取反编译 IR 行, 为每个程序点构建抽象状态 (变量名 → Interval)。
 """
 
 import re
@@ -19,14 +13,7 @@ from core.forward_interval_prop import (
 )
 
 class ForwardIntervalPropagator:
-    """Forward abstract interpreter in the interval domain.
-
-    Reads decompiled IR lines; builds an abstract state per program point.
-    State maps variable names → Interval.
-
-    Entry points:
-      analyze(function_ir_lines) → (alloc_sites, write_sites)
-    """
+    """区间域前向抽象解释器: 读取 IR 并构建每程序点抽象状态, 入口 analyze() → (alloc_sites, write_sites)。"""
 
     def __init__(self, max_iter: int = 20):
         self._max_iter = max_iter
@@ -115,7 +102,7 @@ class ForwardIntervalPropagator:
         return stmts
 
     def _detect_loops(self):
-        """Crude loop detection: find back-edges via cmp/jmp pattern."""
+        """粗略循环检测: 经 cmp/jmp 模式寻找回边。"""
         self._loop_headers.clear()
         self._back_edges.clear()
         n = len(self._stmts)
@@ -143,12 +130,7 @@ class ForwardIntervalPropagator:
                                 break
 
     def analyze(self, ir_lines: List[str]) -> Tuple[List[AllocSite], List[WriteSite]]:
-        """Main analysis entry point.
-
-        Returns:
-          alloc_sites: list of AllocSite with size intervals
-          write_sites: list of WriteSite with size intervals
-        """
+        """主分析入口: 返回带大小区间的分配位点与写入位点列表。"""
         self._stmts = self._parse_ir(ir_lines)
         self._detect_loops()
         n = len(self._stmts)
@@ -156,7 +138,7 @@ class ForwardIntervalPropagator:
         if n == 0:
             return [], []
 
-        # Fixpoint loop: compute abstract state at each program point
+        # 不动点循环: 计算各程序点的抽象状态
         self._state.clear()
         for _ in range(self._max_iter):
             changed = False
@@ -217,7 +199,7 @@ class ForwardIntervalPropagator:
             if not changed:
                 break
 
-        # Extract alloc/write sites
+        # 提取分配/写入位点
         alloc_sites: List[AllocSite] = []
         write_sites: List[WriteSite] = []
         seen_allocs: Set[Tuple[int, str]] = set()

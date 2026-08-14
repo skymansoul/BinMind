@@ -1,7 +1,4 @@
-"""
-Copy约束验证数据类型 — SizeVarOrigin / CopyVerifyResult dataclass 定义.
-
-"""
+"""Copy约束验证数据类型 — SizeVarOrigin / CopyVerifyResult dataclass 定义。"""
 
 from dataclasses import dataclass, field
 from typing import Optional

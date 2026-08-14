@@ -1,9 +1,7 @@
-# Classifies the first argument of printf-like calls into four categories.
-# Static pattern matching flags every printf(foo) occurrence as vulnerable,
-# but foo may be: (a) global .rodata constant, (b) stack buffer written after
-# format, (c) caller-supplied constant string, (d) genuine user input.
-# Only (d) is a vulnerability; (a)(b)(c) should be filtered.
-# Uses disassembly heuristics to distinguish the four cases.
+# 将 printf 系调用的第一个参数分类为四种来源。
+# 静态模式匹配把每个 printf(foo) 标记为漏洞, 但 foo 可能是: (a) 全局 .rodata 常量,
+# (b) 格式化后被写入的栈缓冲, (c) 调用者提供的常量串, (d) 真实用户输入; 仅 (d) 为漏洞。
+# 用反汇编启发式区分四种情况。
 
 from __future__ import annotations
 

@@ -1,14 +1,7 @@
 """
-Heap overflow detection pipeline — chains all modules:
-context tracking → size propagation → boundary detection → FP filtering.
-
-Unified entry point for heap overflow detection. Callers pass IR lines;
-the pipeline internally dispatches through four stages and returns final
-candidates plus pipeline stats.
-
-Each stage is independent. If a module is unavailable (ImportError),
-that stage is skipped — guaranteeing basic detection results in the
-worst case.
+堆溢出检测管线 — 串联全部模块: 上下文追踪→大小传播→边界检测→误报过滤。
+统一入口: 调用方传入IR行, 管线内部经四阶段分发并返回最终候选与统计;
+各阶段独立, 模块缺失时跳过该阶段, 保证基础检测结果。
 """
 
 from typing import Optional
@@ -19,15 +12,13 @@ def detect_heap_overflows_full(
     decompiled_text: str = '',
     enable_hovf: bool = True,
 ) -> tuple[list, dict]:
-    """Full pipeline: context tracking + size propagation + boundary detection + FP filtering.
-
-    返回 (candidates, pipeline_stats)
-    enable_hovf=False 时跳过 Stage 3.5, 用于消融对照.
+    """完整管线: 上下文追踪+大小传播+边界检测+误报过滤, 返回 (候选, 统计)。
+    enable_hovf=False 时跳过 Stage 3.5, 用于消融对照。
     """
     stats = {'stage_context': 0, 'stage_size_prop': 0,
              'stage_detect': 0, 'stage_filter': 0}
 
-    # Stage 0: context tracking — get effective allocation size per variable
+    # 阶段0: 上下文追踪 — 获取每个变量的有效分配大小
     alloc_context = {}
     try:
         from core.heap_context_tracker import extract_alloc_context, get_effective_alloc_size
@@ -45,7 +36,7 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
-    # Stage 1.2: 源码级强化候选提取 — 8种写入模式补充
+    # 阶段1.2: 源码级强化候选提取 — 8种写入模式补充
     if not candidates and decompiled_text:
         try:
             from core.source_level_candidate_extractor import (
@@ -62,7 +53,7 @@ def detect_heap_overflows_full(
         # 该通道独立检测强类型解引用与带偏移库写入, 可单独产出候选.
         pass
     else:
-        # Stage 1.5: correct allocation sizes with context
+        # 阶段1.5: 用上下文修正分配大小
         if alloc_context:
             from core.heap_context_tracker import get_effective_alloc_size
             for c in candidates[:]:
@@ -76,7 +67,7 @@ def detect_heap_overflows_full(
                         if c.overflow_store.offset < effective:
                             candidates.remove(c)
 
-     # Stage 2: size propagation for dynamic allocations
+     # 阶段2: 动态分配的传播
     dyn_count = 0
     try:
         from core.heap_size_propagator import propagate_size_for_var
@@ -92,7 +83,7 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
-    # Stage 2.5: 分配大小污点追踪 — 标注size来源是否为外部输入
+    # 阶段2.5: 分配大小污点追踪 — 标注size来源是否为外部输入
     taint_count = 0
     try:
         from core.alloc_size_taint import analyze_alloc_taint, TaintLevel
@@ -120,7 +111,7 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
-    # Stage 3.5: HOVF 追加通道 + 分配器宽松核验 (附加阶段, 不改动既有结果)
+    # 阶段3.5: HOVF 追加通道 + 分配器宽松核验 (附加阶段, 不改动既有结果)
     if enable_hovf:
         try:
             from core.hovf_engine import refine_heap_candidates

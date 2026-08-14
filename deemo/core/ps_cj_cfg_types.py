@@ -1,9 +1,5 @@
-"""
-路径敏感CFG数据类型 — BasicBlock/CFGPath定义及guard约束提取.
-
-供CFG构建器引用.
-分离数据类型定义与CFG构建逻辑, 降低单文件行数.
-"""
+"""路径敏感CFG数据类型 — BasicBlock/CFGPath定义及guard约束提取。
+供CFG构建器引用, 分离数据类型定义与CFG构建逻辑, 降低单文件行数。"""
 
 import re
 from dataclasses import dataclass, field
@@ -16,7 +12,7 @@ from core.cj_constraint_types import (
 
 @dataclass
 class BasicBlock:
-    """基本块: 一段顺序执行的语句, 以分支/循环/函数边界结束."""
+    """基本块: 一段顺序执行的语句, 以分支/循环/函数边界结束。"""
     start_line: int
     end_line: int
     stmts: List[str] = field(default_factory=list)
@@ -31,7 +27,7 @@ class BasicBlock:
 
 @dataclass
 class CFGPath:
-    """一条从alloc到write的CFG路径."""
+    """一条从alloc到write的CFG路径。"""
     blocks: List[BasicBlock] = field(default_factory=list)
     guard_constraints: List[LinearConstraint] = field(default_factory=list)
     is_feasible: bool = True
@@ -41,10 +37,10 @@ class CFGPath:
 def extract_guard_from_cond(
     cond: str, taken: bool,
 ) -> Optional[LinearConstraint]:
-    """从分支条件提取guard约束.
+    """从分支条件提取guard约束。
 
     taken=True: 分支被取时, cond为真;
-    taken=False: 分支未被取时, cond为假 (取反).
+    taken=False: 分支未被取时, cond为假 (取反)。
     """
     if not cond:
         return None
@@ -96,7 +92,7 @@ def extract_guard_from_cond(
 
 
 def _negate_op(op: str) -> str:
-    """逻辑取反操作符."""
+    """逻辑取反操作符。"""
     return {'>': '<=', '>=': '<', '<': '>=', '<=': '>',
             '==': '!=', '!=': '=='}[op]
 

@@ -1,29 +1,7 @@
 """
 栈帧特征跨编译器泛化 — 从多种编译器(GCC/Clang/MSVC)产物的栈帧中提取通用溢出特征。
-
-设计意图:
-  stack_overflow_analyzer.py的符号执行依赖精确的函数边界和栈帧布局,
-  但不同编译器(GCC/Clang/MSVC)和优化级别(-O0/-O2/-O3/-Os)产生不同的栈帧结构:
-    (a) GCC -O0: push rbp; mov rbp,rsp; sub rsp,imm → 标准帧
-    (b) Clang -O2: 可能省略帧指针(-fomit-frame-pointer), 用rsp直接寻址
-    (c) MSVC: RtlUnwindEx异常处理链插入额外栈空间
-    (d) -Os: 可能将多个局部变量合并到同一栈槽
-
-  本模块从函数序言/结语中推断编译器和栈帧布局, 使偏移计算独立于编译器:
-    G1 (序言分类): 7种常见序言模式 → 编译器+优化级别推断
-    G2 (canary检测): 4种编译器插入canary的模式 → 通用canary识别
-    G3 (栈帧重建): 从序言+函数体引用推断局部变量布局 → 通用缓冲区定位
-
-  - Schneider et al.: "Breaking Bad: How Compilers Break
-    Constant-Time Implementations" — 不同编译器对安全代码的破坏模式。
-  - Di Federico et al.: "How the ELF Ruined Christmas" —
-    二进制分析中栈帧重建的挑战和启发式方法。
-  - Geimer & Maurice: "Fun with Flags" — GCC/Clang优化pass的CT破坏。
-
-边界条件:
-  - 无法处理手写汇编(无标准序言) → 标记为UNKNOWN_BY_CUSTOM_ASM。
-  - 内联函数(inline)没有独立的栈帧 → 分析调用者时需考虑内联展开。
-  - 异常处理栈帧(Windows SEH)的结构与标准帧不同 → 单独处理。
+三阶段推断: G1 序言分类(7种模式→编译器+优化级别), G2 canary检测(4种插入模式),
+G3 栈帧重建(局部变量布局→缓冲区定位)。
 """
 
 from dataclasses import dataclass, field
@@ -65,7 +43,7 @@ _PROLOGUE_SIGNATURES: List[Tuple[bytes, CompilerFamily, OptLevel, str]] = [
     # GCC -O0: push rbp; mov rbp,rsp; sub rsp,imm
     (b'\x55\x48\x89\xE5\x48\x83\xEC', CompilerFamily.GCC, OptLevel.O0,
      'GCC -O0 standard frame pointer'),
-    # GCC -O2: push rbx/rbp等; sub rsp,imm (可能省略帧指针)
+    # GCC -O2: push rbx/rbp等; sub rsp,imm (可省略帧指针)
     (b'\x53\x48\x83\xEC', CompilerFamily.GCC, OptLevel.O2,
      'GCC -O2 push reg + sub (may omit frame pointer)'),
     # Clang -O0: push rbp; mov rbp,rsp; sub rsp,imm (与GCC相同序言但sub立即数常更大)
@@ -162,7 +140,7 @@ def _infer_frame_size(prologue: bytes, compiler: CompilerFamily) -> int:
         if prologue[i:i+3] == b'\x48\x81\xEC' and i + 7 <= len(prologue):
             return int.from_bytes(prologue[i+3:i+7], 'little')
 
-    # Clang可能用push分配栈: 统计被保存寄存器数×8
+    # Clang用push分配栈: 统计被保存寄存器数×8
     push_count = 0
     for b in prologue[:16]:
         if b in (0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57):  # push rN
@@ -219,7 +197,6 @@ def estimate_buffer_offset(frame_info: StackFrameInfo,
         result['warning'] = 'cannot determine frame size'
         return result
 
-    # 计算偏移
     ret_off = frame_info.return_addr_offset
     if frame_info.has_frame_pointer:
         # 帧指针模式: buf在rbp-N, 返回地址在rbp+8

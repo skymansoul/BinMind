@@ -1,19 +1,7 @@
 """
-glibc ptmalloc2 分配器宽松模型.
-
-堆溢出误报的主要来源之一: 静态工具把请求大小当作实际可写边界, 而
-ptmalloc2 按 16 字节对齐向上取整, 小请求实际可写空间大于请求值.
-malloc(13) 的可用空间为 24 字节, 写 16 字节并不溢出, 但
-"16 > 13" 的比较会产生误报.
-
-模型依据 glibc malloc.c 的 request2size 宏:
-  if (req + SIZE_SZ + MALLOC_ALIGN_MASK < MINSIZE) size = MINSIZE
-  else size = (req + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK
-其中 SIZE_SZ=8, MALLOC_ALIGN_MASK=15, MINSIZE=0x20.
-用户可用空间 = chunk_size - SIZE_SZ (inuse 位覆盖时头部仅占 8 字节).
-
-本模块同时提供精确 size class 表, 覆盖 jemalloc/tcmalloc 分桶语义,
-供跨分配器对比实验使用. 未知分配器时回退为请求大小, 宁可多报不漏报.
+glibc ptmalloc2 分配器宽松模型 — 按 request2size 对齐语义计算实际可用空间。
+静态工具以请求大小为边界会误报 (malloc(13) 可用 24 字节, 写 16 不溢出)。
+同时提供 jemalloc/tcmalloc size class 表; 未知分配器回退请求大小, 宁可多报不漏报。
 """
 
 from typing import List

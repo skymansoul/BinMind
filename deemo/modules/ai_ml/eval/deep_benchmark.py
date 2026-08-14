@@ -415,7 +415,6 @@ def main():
               f"{a['precision']:>6.1%} {a['f1']:>6.3f}  {a['desc']}")
     print(f"{'='*70}")
 
-# 写入结果
     csv_path = EVAL_DIR / 'deep_benchmark_results.csv'
     with open(csv_path, 'w', newline='') as f:
         w = csv.writer(f)

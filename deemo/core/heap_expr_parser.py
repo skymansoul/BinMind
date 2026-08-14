@@ -133,10 +133,7 @@ def split_args(args_str: str) -> list:
 
 
 def judge_overflow(alloc: AffineInterval, write: AffineInterval) -> tuple:
-    """判断 (分配大小, 写入大小) 是否构成溢出。
-
-    Returns: (verdict: str, overflow_bytes: int, confidence: float)
-    """
+    """判断 (分配大小, 写入大小) 是否构成溢出, 返回 (verdict, overflow_bytes, confidence)。"""
     ac = alloc.const_val
     wc = write.const_val
 

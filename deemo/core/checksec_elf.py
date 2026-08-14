@@ -1,9 +1,7 @@
-"""ELF 二进制底层解析：文件头、程序头、动态段、符号扫描。
+"""ELF 二进制底层解析: 文件头、程序头、动态段、符号扫描。
 
-纯 Python 解析避免外部脚本依赖；对 stripped 二进制在缺少 PT_GNU_STACK
+纯 Python 解析避免外部脚本依赖; 对 stripped 二进制在缺少 PT_GNU_STACK
 时通过 .note.ABI-tag 和导入表推断 NX/Canary。
-
-参考: Di Federico et al., 2017, USENIX Security; Kell et al., 2019, PLDI
 """
 
 

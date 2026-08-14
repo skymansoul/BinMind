@@ -1,9 +1,6 @@
-# Race condition lockset analysis: shared variable → lock protection modeling.
-# TOCTOU pattern matching alone cannot detect unprotected shared-variable
-# access. Lockset analysis tracks the set of locks held during each access;
-# inconsistent locksets across accesses to the same variable → potential race.
-# Adapted from Eraser lockset algorithm
-# for static analysis — inferred from code structure rather than dynamic traces.
+# 竞态条件锁集分析: 共享变量 → 锁保护建模。
+# TOCTOU模式匹配无法检测无保护的共享变量访问; 锁集分析追踪每次访问持有的锁集合,
+# 同一变量多次访问的锁集不一致 → 潜在竞态。改编自Eraser锁集算法, 从代码结构而非动态trace推断。
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -30,7 +27,7 @@ class RaceWarning:
     confidence: float = 0.5; description: str = ""
 
 def analyze_lockset(ir_lines, func_name=""):
-    """锁集分析: 追踪共享变量访问时的锁保护状态."""
+    """锁集分析: 追踪共享变量访问时的锁保护状态。"""
     shared = {}; current_locks = set(); warnings = []
     code = '\n'.join(ir_lines)
     for pattern, vtype in _SHARED_PATTERNS:

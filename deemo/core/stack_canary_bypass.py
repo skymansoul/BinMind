@@ -1,23 +1,12 @@
 """
-栈canary绕过路径检测 -- 识别可泄露/绕过栈canary的代码模式。
-
-设计理由:
-  单纯检测栈溢出+canary存在是不够的。攻击者可通过以下方式绕过canary:
-    1. 信息泄露: printf/vsprintf泄露栈内容(含canary值)
-    2. 逐字节爆破: fork子进程中canary不变, 可逐字节猜测(TCP服务器场景)
-    3. 覆写__stack_chk_fail的GOT条目——拦截canary校验失败
-    4. 非连续溢出: 仅覆写返回地址而保留canary(通过结构体中的数组)
-
-检测这些模式将单纯的\"canary存在→不可利用\"判断提升为
-\"canary存在但有泄露路径→可利用\"的精细分级。
-
-  - Bittau et al., IEEE S&P 2014, "Hacking Blind" — BROP逐字节爆破技术
-  - Fritsch, 2023, "Stack Canary Bypass Techniques Survey"
+栈canary绕过路径检测 — 识别可泄露/绕过栈canary的代码模式。
+覆盖四类绕过: 信息泄露、fork逐字节爆破、覆写__stack_chk_fail GOT、非连续溢出。
+将"canary存在→不可利用"提升为"有泄露路径→可利用"的精细分级。
 """
 import re
 from typing import Dict, List, Tuple
 
-# canary泄露模式: printf类函数使用%p/%x/%s等可能泄露栈上数据
+# canary泄露模式: printf类函数使用%p/%x/%s等可泄露栈上数据
 _CANARY_LEAK_PATTERNS = [
     (r'printf\s*\([^)]*%[pxs]', 'printf_format_leak'),
     (r'(?:write|send|fwrite)\s*\(\s*\d+\s*,\s*\w+\s*,\s*\d+', 'raw_stack_write'),
@@ -33,8 +22,7 @@ def detect_canary_bypass(pseudocode: str, func_name: str = "",
                          has_canary: bool = False) -> List[Dict]:
     """检测绕过canary保护的潜在路径。
 
-    Returns:
-      [{bypass_type, confidence, description, exploitation_strategy}, ...]
+    返回 [{bypass_type, confidence, description, exploitation_strategy}, ...]。
     """
     findings = []
 
@@ -96,9 +84,8 @@ def assess_canary_risk(pseudocode: str, func_name: str = "",
                        has_canary: bool = False) -> Tuple[str, float, List[Dict]]:
     """综合评估canary保护的实际有效性。
 
-    Returns:
-      (risk_level, bypass_likelihood, bypass_findings)
-      risk_level: 'protected' | 'leakable' | 'bypassable'
+    返回 (risk_level, bypass_likelihood, bypass_findings),
+    risk_level 为 'protected' | 'leakable' | 'bypassable'。
     """
     findings = detect_canary_bypass(pseudocode, func_name, has_canary)
 

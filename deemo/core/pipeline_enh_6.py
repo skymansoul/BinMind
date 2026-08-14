@@ -1,6 +1,4 @@
-"""
-(ao) IOCTL 调度面静态映射器
-"""
+"""第6批可选增强: (ao) IOCTL 调度面静态映射器。"""
 
 import logging
 
@@ -13,10 +11,9 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 零符号执行的二进制驱动 IOCTL 攻击面完整枚举。
     # CTL_CODE/_IOC 解码 + switch-case 分发表恢复 + buffered-input
     # 污点 sink 标记 + METHOD_NEITHER 风险分类。
-    # Windows IOCTL Census (, 2026);
-    # Linux IOCTL Census (, 2026)
+    # 参考: Windows IOCTL Census; Linux IOCTL Census (2026)
     try:
-        from platform.kernel.ioctl_surface_mapper import (
+        from modules.platform.kernel.ioctl_surface_mapper import (
             IOCTLSurfaceMapper, IOCTLDispatchTable,
             decode_windows_ioctl, decode_linux_ioctl,
         )
@@ -38,7 +35,7 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # GraphShield (Expert Systems 2026);
     # AEGCN (IEEE TNSM 2025); MAMBA+ (ACM TOPS 2026)
     try:
-        from platform.malware.temporal_api_graph import (
+        from modules.platform.malware.temporal_api_graph import (
             build_markov_graph, decompose_sequence,
             embed_api_sequence, APIGraphIndex, MarkovAPIGraph,
         )
@@ -59,7 +56,7 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 后者需要符号/debug 信息, 本模块在裸二进制 IR 层工作。
     # RacerF (ECOOP 2025); RAProducer; Eraser (TOCS 1997)
     try:
-        from analysis.static.concurrency_analysis.src.binary_lock_race import (
+        from modules.analysis.static.concurrency_analysis.src.binary_lock_race import (
             LockGraphRaceDetector, identify_lock_functions,
             RaceSeverity,
         )
@@ -74,10 +71,9 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 内容寻址防篡改 SBOM + Merkle inclusion proof 选择性披露。
     # 与现有 cve_sbom/cbom_generator 互补: 后者生成明文 SBOM,
     # 本模块提供加密完整性锚定 + 仅披露指定条目的证明。
-    # Bomfather (); VeriSBOM ();
-    # Certificate Transparency (RFC 6962)
+    # 参考: Bomfather; VeriSBOM; Certificate Transparency (RFC 6962)
     try:
-        from data.src.merkle_sbom import (
+        from modules.data.src.merkle_sbom import (
             MerkleSBOM, SBOMEntry, MerkleProof, selective_disclosure,
         )
         _merkle_sbom = MerkleSBOM()
@@ -91,9 +87,9 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 多表 SimHash LSH → O(L·K) 亚线性函数相似搜索。
     # 与现有 semantic_search/vector_search 互补: 后者遍历全量嵌入,
     # 本模块的多表 LSH 将查询降至常量复杂度, 与 N 无关。
-    # Charikar (STOC 2002) (2026) — 动态查询修改
+    # 参考: Charikar (STOC 2002) — 动态查询修改
     try:
-        from data.src.lsh_function_index import (
+        from modules.data.src.lsh_function_index import (
             LSHFunctionIndex, build_function_embedding,
         )
         _lsh_index = LSHFunctionIndex(
@@ -116,7 +112,7 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # SCOUT-CT (ePrint 2026/776); ExfilState (CCS 2025);
     # Spectre (Kocher et al., IEEE S&P 2019)
     try:
-        from analysis.static.const_time.src.speculation_gadget_detector import (
+        from modules.analysis.static.const_time.src.speculation_gadget_detector import (
             SpeculationTaintTracker, GadgetValidator,
             SpecGadget, GadgetType, Certainty,
         )
@@ -134,7 +130,7 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 本模块针对 64KB SRAM 的 Cortex-M/RISC-V MCU。
     # R-Visor (LCTES 2025); Intel PT+DBI hybrid (J.Comm 2025)
     try:
-        from analysis.dynamic.engine.embedded_dbi_tracer import (
+        from modules.analysis.dynamic.engine.embedded_dbi_tracer import (
             EmbeddedDBIRewriter, TraceBuffer, TraceDecoder,
             ISAFamily,
         )
@@ -154,7 +150,7 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与现有 crash_lsh_dedup 互补: 后者做 LSH 粗筛,
     # 本模块增加执行轨迹嵌入维度——同一 bug 的不同路径正确合并。
     try:
-        from analysis.dynamic.engine.crash_context_dedup import (
+        from modules.analysis.dynamic.engine.crash_context_dedup import (
             CrashContextDeduplicator, CrashRecord,
             make_crash_signature, bb_sequence_embedding,
         )
@@ -174,10 +170,9 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 替代 BLEU/edit distance 等与语义无关的语法指标。
     # 与现有 decompiler_confidence_ensemble 互补: 后者评估反编译器置信度,
     # 本模块验证反编译输出的实际语义正确性。
-    # codealign (); D-SCORE ();
-    # DEBENCH ()
+    # 参考: codealign; D-SCORE; DEBENCH
     try:
-        from analysis.decompiler.decomp_equivalence_verifier import (
+        from modules.analysis.decompiler.decomp_equivalence_verifier import (
             DecompEquivalenceVerifier, EquivalenceLevel,
             check_recompilability, generate_test_inputs,
         )
@@ -192,10 +187,9 @@ def apply_enhancements_6(result, binary_path, binfo, kwargs, binary_hash=None):
     # 22 项指标库 × 加权可靠性评分 × 多样性奖励 → [0,100] 风险分。
     # 与现有 anti_analysis/anti_vm_bypass 互补: 后者做单一技术检测,
     # 本模块做系统化枚举 + 综合风险判定。
-    # LibIHT (); Sabri (ETASR 2026);
-    # Norby et al. (IEEE Access 2025)
+    # 参考: LibIHT; Sabri (ETASR 2026); Norby et al. (IEEE Access 2025)
     try:
-        from analysis.deobfuscation.anti_analysis_detector import (
+        from modules.analysis.deobfuscation.anti_analysis_detector import (
             AntiAnalysisDetector, AntiAnalysisReport,
         )
         _anti_analysis_detector = AntiAnalysisDetector()

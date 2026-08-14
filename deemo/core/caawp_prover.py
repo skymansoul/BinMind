@@ -1,20 +1,8 @@
 """
-CAAWP证明器 — 上下文敏感的分配-写入安全性证明.
-
-当CJ求解器返回INCONCLUSIVE时, 调用本模块:
-  1. 运行CAAWPInterpreter获取所有函数的上下文敏感仿射快照
-  2. 对每个(alloc, write)候选对, 匹配对应上下文快照
-  3. 使用AffineSnapshot.can_prove_safe/can_prove_overflow证明
-  4. 生成形式化安全证书
-
-与DD-BVF(cj_bvf_tracer)的关系:
-  DD-BVF做反向值流追踪, 从告警点反向找定义链.
-  CAAWP做前向上下文敏感传播, 预计算所有调用点的仿射状态.
-  两者互补: DD-BVF适合单函数内, CAAWP适合跨函数上下文区分.
-
-保守性保证:
-  证明失败不影响后续步骤, 不引入假阴性.
-  仅在能明确证明safe时滤除, 能明确证明overflow时确认.
+CAAWP 证明器: 上下文敏感的分配-写入安全性证明。
+CJ 求解器返回 INCONCLUSIVE 时运行 CAAWPInterpreter 获取各函数上下文敏感仿射快照, 匹配 (alloc, write) 候选对,
+用 can_prove_safe/can_prove_overflow 证明并生成证书。与 DD-BVF (反向值流追踪) 互补, 后者适合单函数内, 前者适合跨函数上下文区分。
+证明失败不影响后续步骤, 不引入假阴性。
 """
 
 from typing import Dict, List, Optional, Tuple

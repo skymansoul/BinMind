@@ -1,27 +1,10 @@
 """
-Simplified Value Set Analysis (VSA) taint propagation.
-
-Uses interval abstraction as a fallback when symbolic execution fails due to
-path explosion or unsolvable constraints (indirect calls, obfuscated code,
-hand-written assembly). Tracks "rax in [stack_base, stack_top]" rather than
-"rax = 0x7fff1234" - trading precision for coverage.
-
-Core abstractions:
-  - StridedInterval: value set = {lo + k*stride | 0 <= k <= (hi-lo)/stride}
-    (stride=1: contiguous interval; stride=0: exact value)
-  - TaintTag: {USER_INPUT, STACK_ADDR, HEAP_ADDR, CONSTANT, UNKNOWN}
-  - Transfer rules: per-instruction VSA transfer functions for common x86 ops
-
-Limitations:
-  - Cannot distinguish two different addresses within the same interval
-  - Self-modifying code analysis is based on static byte sequences only
-  - Cross-function propagation only supports direct calls; indirect calls
-    conservatively marked as UNKNOWN
-
-References:
-  - Balakrishnan & Reps: original VSA paper
-  - BinDSA: context-sensitive heap modeling
-  - DEEPVSA: ML-assisted VSA
+简化值集分析 (VSA) 污点传播 — 符号执行因路径爆炸或不可解约束 (间接调用/混淆代码/手写汇编)
+失败时, 以区间抽象作兜底, 追踪 "rax ∈ [stack_base, stack_top]" 而非精确值, 以精度换覆盖率。
+核心抽象: StridedInterval 值集 = {lo + k*stride | 0 <= k <= (hi-lo)/stride}
+(stride=1 连续区间, stride=0 精确值); TaintTag {USER_INPUT, STACK_ADDR, HEAP_ADDR, CONSTANT, UNKNOWN};
+按指令实现常用 x86 操作的 VSA 转移函数。局限: 无法区分同一区间内两个不同地址;
+跨函数传播仅支持直接调用, 间接调用保守标记 UNKNOWN。
 """
 
 
@@ -31,19 +14,19 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class TaintTag(IntEnum):
-    """Taint source labels; larger values indicate greater uncertainty."""
-    CONSTANT = 0       # compile-time constant, attacker cannot control
-    STACK_ADDR = 1     # stack address, potentially controllable (stack overflow)
-    HEAP_ADDR = 2      # heap address, potentially controllable (heap feng shui)
-    USER_INPUT = 3     # directly from external input (recv/read/fgets)
-    UNKNOWN = 4        # unknown origin, conservatively assumed controllable
+    """污点来源标签; 值越大不确定性越高。"""
+    CONSTANT = 0       # 编译期常量, 攻击者无法控制
+    STACK_ADDR = 1     # 栈地址, 可控制 (栈溢出)
+    HEAP_ADDR = 2      # 堆地址, 可控制 (堆风水)
+    USER_INPUT = 3     # 直接来自外部输入 (recv/read/fgets)
+    UNKNOWN = 4        # 来源未知, 保守假定可控制
 
 
 @dataclass
 class StridedInterval:
     """
-    Strided interval: {lo + k*stride | 0 <= k <= (hi-lo)/stride, k in N}
-    stride=0 -> exact value. Uses 64-bit unsigned arithmetic (mod 2^64).
+    stride 区间: {lo + k*stride | 0 <= k <= (hi-lo)/stride, k ∈ N}。
+    stride=0 为精确值。使用 64 位无符号算术 (模 2^64)。
     """
     lo: int = 0
     hi: int = 0
@@ -54,23 +37,23 @@ class StridedInterval:
 
     @classmethod
     def exact(cls, value: int, taint: TaintTag = TaintTag.CONSTANT) -> 'StridedInterval':
-        """Construct exact value (stride=0)."""
+        """构造精确值 (stride=0)。"""
         return cls(lo=value, hi=value, stride=0, taint=taint)
 
     @classmethod
     def interval(cls, lo: int, hi: int, taint: TaintTag = TaintTag.UNKNOWN) -> 'StridedInterval':
-        """Construct contiguous interval (stride=1)."""
+        """构造连续区间 (stride=1)。"""
         return cls(lo=lo, hi=hi, stride=1, taint=taint)
 
     @classmethod
     def top(cls) -> 'StridedInterval':
-        """Construct top (any 64-bit value)."""
+        """构造 top (任意 64 位值)。"""
         return cls(lo=0, hi=0xFFFFFFFFFFFFFFFF, stride=1,
                    taint=TaintTag.UNKNOWN, is_top=True)
 
     @classmethod
     def bottom(cls) -> 'StridedInterval':
-        """Construct bottom (unreachable)."""
+        """构造 bottom (不可达)。"""
         return cls(is_bottom=True)
 
     def contains(self, value: int) -> bool:
@@ -85,7 +68,7 @@ class StridedInterval:
         return (value - self.lo) % self.stride == 0
 
     def join(self, other: 'StridedInterval') -> 'StridedInterval':
-        """Least upper bound (merge two intervals)."""
+        """最小上界 (合并两个区间)。"""
         if self.is_bottom:
             return other
         if other.is_bottom:
@@ -97,16 +80,16 @@ class StridedInterval:
         new_hi = max(self.hi, other.hi)
         import math
         new_stride = math.gcd(self.stride, other.stride)
-        # If two distinct exact values, widen to interval
+        # 两个不同的精确值合并时放宽为区间
         if self.stride == 0 and other.stride == 0 and self.lo != other.lo:
             new_stride = 1
         new_taint = TaintTag(max(self.taint.value, other.taint.value))
         return StridedInterval(new_lo, new_hi, new_stride, new_taint)
 
     def widen(self, other: 'StridedInterval') -> 'StridedInterval':
-        """Widening operator (ensures fixpoint termination): push to top."""
+        """加宽算子 (保证不动点终止): 超出阈值推至 top。"""
         joined = self.join(other)
-        if joined.hi - joined.lo > 0x100000:  # >1MB -> push to top
+        if joined.hi - joined.lo > 0x100000:  # >1MB 推至 top
             result = StridedInterval.top()
             result.taint = max(self.taint, other.taint, key=lambda t: t.value)
             return result
@@ -114,13 +97,13 @@ class StridedInterval:
 
 
 def taint_transfer_mov(src: StridedInterval) -> StridedInterval:
-    """MOV dest, src: taint passes directly."""
+    """MOV dest, src: 污点直接传递。"""
     return StridedInterval(src.lo, src.hi, src.stride,
                            src.taint, src.is_bottom, src.is_top)
 
 
 def taint_transfer_add(a: StridedInterval, b: StridedInterval) -> StridedInterval:
-    """ADD a, b: value intervals added, taint takes upper bound."""
+    """ADD a, b: 值区间相加, 污点取上界。"""
     if a.is_bottom or b.is_bottom:
         return StridedInterval.bottom()
     new_lo = (a.lo + b.lo) & 0xFFFFFFFFFFFFFFFF
@@ -133,10 +116,8 @@ def taint_transfer_add(a: StridedInterval, b: StridedInterval) -> StridedInterva
 
 def taint_transfer_load(base: StridedInterval, offset: int = 0) -> StridedInterval:
     """
-    Memory load: conservative assumption. The loaded value inherits the address
-    taint tag, but the value interval becomes top (memory contents unknown).
-    If base is a stack address, the loaded content interval is still top but
-    taint may be USER_INPUT.
+    内存读取: 保守假设 — 载入值继承地址的污点标签, 但值区间置 top (内存内容未知)。
+    若 base 为栈地址, 载入内容区间仍为 top, 污点可标记 USER_INPUT。
     """
     result = StridedInterval.top()
     result.taint = base.taint
@@ -145,7 +126,7 @@ def taint_transfer_load(base: StridedInterval, offset: int = 0) -> StridedInterv
 
 def taint_transfer_store(value: StridedInterval, addr: StridedInterval
                           ) -> StridedInterval:
-    """Memory store: value unchanged, propagates taint to target address."""
+    """内存写入: 值不变, 污点传播至目标地址。"""
     return value
 
 
@@ -153,27 +134,25 @@ def analyze_format_arg(buf_interval: StridedInterval,
                         fmt_interval: StridedInterval
                         ) -> Tuple[bool, float, str]:
     """
-    Determine if a format string call is dangerous.
-
-    Dangerous: buf is the format parameter (1st arg) and fmt comes from user input.
-    Safe: fmt is a string constant (address in .rodata) or buf is not the 1st arg.
-
-    Returns (is_vulnerable, confidence, reason)
+    判定格式化字符串调用是否危险。
+    危险: buf 为格式参数 (第1参数) 且 fmt 来自用户输入; 安全: fmt 为字符串常量
+    (.rodata 地址) 或 buf 不是第1参数。
+    返回 (is_vulnerable, confidence, reason)。
     """
-    # Case 1: format parameter is a string constant (narrow address range in .rodata)
+    # 情形1: 格式参数为字符串常量 (.rodata 内窄地址区间)
     if fmt_interval.stride == 0 and fmt_interval.taint == TaintTag.CONSTANT:
         fmt_low = fmt_interval.lo
         return False, 0.95, 'format string is constant in .rodata'
 
-    # Case 2: format parameter from user input
+    # 情形2: 格式参数来自用户输入
     if fmt_interval.taint >= TaintTag.USER_INPUT:
         return True, 0.88, 'format string from user input'
 
-    # Case 3: origin unknown, flag conservatively
+    # 情形3: 来源未知, 保守标记
     if fmt_interval.taint == TaintTag.UNKNOWN:
         return True, 0.55, 'format string origin unknown (conservative flag)'
 
-    # Case 4: format parameter from stack/heap, potentially controllable
+    # 情形4: 格式参数来自栈/堆, 可控制
     if fmt_interval.taint >= TaintTag.HEAP_ADDR:
         return True, 0.72, f'format string from {fmt_interval.taint.name}'
 
@@ -182,9 +161,9 @@ def analyze_format_arg(buf_interval: StridedInterval,
 
 class VSATaintEngine:
     """
-    VSA taint propagation engine, used as fallback when symbolic execution fails.
+    VSA 污点传播引擎 — 符号执行失败时作兜底。
 
-    Usage:
+    用法:
       engine = VSATaintEngine()
       engine.mark_input(reg='rdi', source=TaintTag.USER_INPUT)
       engine.step_add('rdi', 'rsi')
@@ -198,7 +177,7 @@ class VSATaintEngine:
 
     def mark_input(self, reg: str = 'rdi', source: TaintTag = TaintTag.USER_INPUT
                    ) -> None:
-        """Mark register as an input source."""
+        """将寄存器标记为输入源。"""
         self._registers[reg] = StridedInterval.top()
         self._registers[reg].taint = source
 
@@ -234,9 +213,8 @@ class VSATaintEngine:
     def downgrade_from_symexec(self, symexec_timeout: bool = False,
                                 path_explosion: bool = False) -> Dict[str, Any]:
         """
-        Record downgrade reason and VSA state when symbolic execution fails.
-        Used by upper modules (format_string_detector, etc.) to decide whether
-        to use VSA results.
+        记录符号执行失败时的降级原因与 VSA 状态。
+        供上层模块 (format_string_detector 等) 决定是否采用 VSA 结果。
         """
         reasons = []
         if symexec_timeout:

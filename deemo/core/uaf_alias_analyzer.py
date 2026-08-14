@@ -1,13 +1,7 @@
 """
-UAF别名感知检测器 — 追踪指针别名 + 跨函数全局变量, 消除3类FN.
-
-检测增强:
-  A1: 别名追踪 — ref=ptr; free(ptr); use(ref) → UAF
-  A2: struct字段别名 — ref=obj->data; free(obj); use(ref) → UAF
-  A3: 跨函数全局变量 — g=malloc(n) in mk(), free(g) in rm(), use(g) in use()
-  A4: 条件池管理 — pool[i]=malloc(); free(pool[i]); if(pool[i]) use(pool[i])
-
-保守性原则: 仅当别名关系确定时标记, 不确定时保留现有行为.
+UAF别名感知检测器 — 追踪指针别名 + 跨函数全局变量, 消除3类FN。
+检测增强: A1 别名追踪, A2 struct字段别名, A3 跨函数全局变量, A4 条件池管理。
+保守性原则: 仅当别名关系确定时标记, 不确定时保留现有行为。
 """
 import re
 from collections import defaultdict
@@ -31,7 +25,7 @@ def detect_uaf_with_aliases(code: str, func_name: str = '') -> List[dict]:
       L2: struct字段: free(obj)后检查obj->field的别名
       L3: 跨函数全局变量: if(g) use(g) after free(g)
 
-    Returns: UAF findings list (兼容现有格式)
+    返回 UAF findings list (兼容现有格式)。
     """
     findings = []
     lines = [l.strip() for l in code.split('\n')]
@@ -149,7 +143,7 @@ def _detect_global_uaf(code: str, func_name: str, lines: List[str]) -> List[dict
     模式: char *g = NULL;
           void mk(){g = malloc(n);}
           void rm(){free(g);}
-          void use(){if(g) printf(...);}  // UAF: g可能已被释放
+          void use(){if(g) printf(...);}  // UAF: g 已被释放
     """
     findings = []
     # 识别全局变量模式: 在函数外声明, 或在多个函数中被赋值/释放
@@ -164,7 +158,7 @@ def _detect_global_uaf(code: str, func_name: str, lines: List[str]) -> List[dict
             free_of_globals[var].append(i)
 
     # 对每个被释放的变量, 检查是否有 "if(var) use(var)" 模式
-    # (条件检查暗示var可能已被释放)
+    # (条件检查暗示var已被释放)
     for var, free_lines in free_of_globals.items():
         for free_ln in free_lines:
             for j in range(free_ln + 1, min(len(lines), free_ln + 30)):
@@ -196,12 +190,10 @@ def _detect_global_uaf(code: str, func_name: str, lines: List[str]) -> List[dict
 
 
 def detect_uaf_interprocedural(pseudocode_by_func: Dict[str, str]) -> List[dict]:
-    """跨函数UAF检测: 在多函数代码中追踪全局变量的alloc→free→use路径.
+    """跨函数UAF检测: 在多函数代码中追踪全局变量的alloc→free→use路径。
 
-    Args:
-        pseudocode_by_func: {func_name: pseudocode} 字典
-
-    Returns: UAF findings across function boundaries
+    参数: pseudocode_by_func {func_name: pseudocode} 字典。
+    返回跨函数边界的 UAF findings。
     """
     findings = []
     # 全局变量候选: 在多个函数中被操作的变量

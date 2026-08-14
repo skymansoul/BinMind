@@ -1,20 +1,8 @@
 """
-控制流图提取器 —— 从 radare2 或 angr 获取函数级 CFG。
-
-输出边列表格式（源块→目标块），支持:
-  - 基本块粒度: 每个基本块的起始地址、指令数、后继块列表
-  - 函数级聚合: 调用图（哪些函数调用了哪些函数）
-  - 导出格式: JSON / DOT (Graphviz) / 结构化 dict
-
-用于: LLM 上下文增强（在 prompt 中提供函数控制流结构），
-     可视化报告生成，以及相似性分析的特征输入。
-
-两层回退: angr CFGEmulated（精确但慢）→ angr CFGFast（快速但可能
-遗漏间接调用）→ radare2 agfj（始终可用但信息量较少）。
-
-  - Shoshitaishvili et al., 2016, IEEE S&P, "SOK: (State of) The Art of War"
-  - Yakdan et al., 2015, USENIX Security, "No More Gotos: Decompilation Using
-    Pattern-Independent Control-Flow Structuring"
+控制流图提取器: 从 radare2 或 angr 获取函数级 CFG。
+支持基本块粒度 (起始地址、指令数、后继块) 与函数级调用图, 可导出 JSON / DOT / 结构化 dict;
+供 LLM 上下文增强、可视化报告与相似性分析使用。
+回退链: angr CFGEmulated (精确但慢) → angr CFGFast → radare2 agfj (始终可用但信息量较少)。
 """
 
 import json
@@ -38,27 +26,9 @@ def extract_cfg(
     max_funcs: int = 20,
 ) -> Dict[str, Any]:
     """
-    提取二进制文件或指定函数的控制流图。
+    提取二进制文件或指定函数的控制流图。method 取 'angr_fast' | 'angr_accurate' | 'r2', func_name 为 None 时提取全部函数的调用图, max_funcs 限制函数数。
 
-    Args:
-        binary_path: ELF 文件路径
-        func_name:   目标函数名，None 表示提取所有函数的调用图
-        method:      提取方法 'angr_fast' | 'angr_accurate' | 'r2'
-        max_funcs:   最大函数数（仅当 func_name=None 时生效）
-
-    Returns:
-        {
-            'binary': str,
-            'functions': [
-                {
-                    'name': str,
-                    'addr': int,
-                    'blocks': [{'addr': int, 'size': int, 'successors': [int]}],
-                    'callees': [str],
-                }
-            ],
-            'call_graph': {'caller': [callee_list]},
-        }
+    返回结构: {'binary', 'functions': [{'name', 'addr', 'blocks': [{'addr', 'size', 'successors'}], 'callees'}], 'call_graph'}。
     """
     if not os.path.isfile(binary_path):
         return {'binary': binary_path, 'error': 'file not found', 'functions': []}
@@ -138,7 +108,7 @@ def _extract_cfg_angr(
 
             # 收集被调用函数
             for ref in (proj.kb.xrefs.get_xrefs_by_ins_addr(f.addr) or []):
-                pass  # xrefs 在 CFGFast 中可能不完整
+                pass  # xrefs 在 CFGFast 中不保证完整
 
             for block_addr in func.block_addrs_set:
                 try:
@@ -180,19 +150,7 @@ def _find_func_addr(proj, func_name: str) -> int:
     return proj.entry
 
 def cfg_summary_for_llm(cfg_data: Dict[str, Any], func_name: str) -> str:
-    """
-    生成 CFG 的文本摘要供 LLM prompt 消费。
-
-    将控制流结构压缩为紧凑的文本表示，
-    便于 LLM 在分析漏洞时理解函数的控制流逻辑。
-
-    Args:
-        cfg_data: extract_cfg() 的返回值
-        func_name: 目标函数名
-
-    Returns:
-        例如 "CFG: 5 blocks, 2 loops, 1 call to system()"
-    """
+    """生成 CFG 的文本摘要供 LLM prompt 消费, 将控制流结构压缩为紧凑文本表示。参数为 extract_cfg() 返回值与目标函数名。"""
     for func in cfg_data.get('functions', []):
         if func['name'] != func_name:
             continue

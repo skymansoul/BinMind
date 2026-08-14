@@ -1,25 +1,7 @@
 """
-Lightweight taint engine — use-def chain reconstruction + simplified VSA.
-
-Shared data-flow infrastructure for format-string / heap overflow / UAF
-detectors. No heavyweight dependencies (angr, z3); all analysis runs on
-decompiler IR text directly, O(n) complexity.
-
-Core data structures:
-  DefUseGraph: SSA-form def-use directed graph for a function.
-  ValueSet: set of possible value categories (simplified VSA — distinguishes
-    only constant / user-input / heap-address / stack-address / unknown).
-
-Design principles:
-  - Precision traded for speed: max 10-hop backtrack, intra-procedural,
-    no path-sensitive conditional branch analysis.
-  - Prefers eliminating 60% of regex false positives over catching every
-    deep-path bug.
-  - Every result carries a confidence [0,1]; callers set their own threshold.
-
-ref: Balakrishnan & Reps — VSA; this module takes the value-set
-     idea but simplifies to O(n) per-function vs. O(n^3) per-program.
-ref: Aho et al. Compilers §9.2 — SSA def-use chain construction.
+轻量污点引擎 — def-use 链重建 + 简化VSA, 为格式化字符串/堆溢出/UAF
+检测器提供共享数据流分析基础设施。无重依赖(angr/z3), 直接在反编译
+IR文本上运行。设计: 精度换速度, 最多10跳回溯, 每结果带confidence。
 """
 
 from collections import defaultdict
@@ -29,7 +11,7 @@ from typing import Optional
 
 @dataclass
 class DefUseNode:
-    """A def-use graph node — one assignment statement."""
+    """def-use 图节点 — 一条赋值语句。"""
     pc: int                          # 指令地址
     var_name: str                    # 被赋值的变量名
     rhs: str                         # 右值表达式 (原始文本)
@@ -41,7 +23,7 @@ class DefUseNode:
 
 @dataclass
 class ValueSet:
-    """Simplified value-set — classifies source types, not concrete values."""
+    """简化值集 — 分类来源类型而非具体值。"""
     types: set[str]   # 此变量可能属于的类别集合
     confidences: dict[str, float]
 
@@ -73,8 +55,8 @@ class ValueSet:
 class LightweightTaintEngine:
     """轻量污点传播引擎。
 
-    输入: 反编译后的指令列表 (每行一条 IR 指令)
-    Output: ValueSet per variable, classifying source as user input / heap / constant.
+    输入: 反编译后的指令列表 (每行一条 IR 指令)。
+    输出: 每个变量的 ValueSet, 分类来源为用户输入/堆/常量。
     """
 
     # 用户输入源函数的识别名
@@ -173,7 +155,7 @@ class LightweightTaintEngine:
 
         node = self._nodes.get(pc)
         if node is None:
-            # no assignment at pc; check if var_name is a parameter/global
+            # pc 处无赋值; 检查 var_name 是否为参数/全局变量
             return ValueSet.from_source(
                 'user_input', 0.4) if self._looks_like_param(var_name) else ValueSet.unknown()
 
@@ -184,12 +166,12 @@ class LightweightTaintEngine:
 
         # 沿 defined_by 链递归
         if not node.defined_by:
-            # chain termination: check if rhs is a literal constant
+            # 链终止: 检查 rhs 是否为字面量常量
             if self._is_literal_constant(node.rhs):
                 return ValueSet.from_source('const', 0.95)
             return ValueSet.unknown()
 
-        # multiple definition sources (e.g. phi node): merge all paths
+        # 多来源定义 (如 phi 节点): 合并所有路径
         merged = ValueSet(types=set(), confidences={})
         for def_pc in node.defined_by:
             def_node = self._nodes.get(def_pc)

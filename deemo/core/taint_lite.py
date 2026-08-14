@@ -1,25 +1,8 @@
 """
-轻量级二进制污点传播 — 基于 def-use 链的静态污点追踪.
-
-不依赖 angr 符号执行或 capstone 完整模拟.
-在反编译代码上进行基于文本模式的污点传播:
-  1. 标记"源" (source) — 用户可控输入点 (recv/read/fgets/argv).
-  2. 通过赋值语句追踪污点传播.
-  3. 检测污点数据到达"汇" (sink) — 危险函数调用.
-
-方法: 纯文本级数据流分析.
-  - 扫描反编译代码, 识别赋值语句 (var = expr).
-  - 若 expr 含污点变量, 则 var 被标记为污点.
-  - 追踪通过函数参数和返回值的跨函数传播.
-
-理论依据:
-  - Arbiter: 静态-动态桥接.
-    本实现取其"轻量级静态污点筛选可疑点"的思想,
-    使用文本模式替代符号执行, 大幅降低计算开销.
-
-局限: 不处理间接内存访问 (指针算术), 不跟踪跨循环的
-复杂数据流. 适用场景为: 从数千个候选调用中快速筛选
-10-50个高风险点, 供后续符号执行或人工审查.
+轻量级二进制污点传播 — 基于def-use链的静态污点追踪, 不依赖angr/capstone。
+在反编译文本上做模式匹配传播: 标记用户可控输入源 (recv/read/fgets/argv),
+经赋值语句传播, 在危险函数调用 (汇点) 处报告。
+局限: 不处理间接内存访问, 适用于从数千候选调用中筛选高风险点。
 """
 
 
@@ -73,12 +56,8 @@ class TaintState:
 def analyze_taint(decompiled: str, func_name: str) -> TaintState:
     """在反编译代码上执行污点分析.
 
-    Args:
-        decompiled: 反编译代码文本
-        func_name: 函数名
-
-    Returns:
-        TaintState 包含污染变量集和警告列表
+    参数: decompiled 反编译代码文本, func_name 函数名。
+    返回包含污染变量集和警告列表的 TaintState。
     """
     state = TaintState(func_name)
     lines = decompiled.splitlines()

@@ -84,7 +84,6 @@ class EngagementArchetype:
         if len(trends) < 3:
             return cls.COLD_START
         values = [t.total_vulnerabilities for t in trends]
-        # 计算变化率序列
         deltas: List[float] = []
         for i in range(1, len(values)):
             if values[i - 1] > 0:

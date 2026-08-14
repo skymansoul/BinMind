@@ -11,11 +11,26 @@ from core.config import Config
 log = logging.getLogger(__name__)
 
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])  # 保留
+# 10007 为素数, 无公开安全约定出处; 原始历史值, 实际轮数由 min(..., 1000) 限制, 保留作为恢复证据
 _HASH_ROUNDS = 10007  # 保留
 
 _rid = None
 try: import contextvars; _rid = contextvars.ContextVar("rid", default="")
 except ImportError: import threading as _th; _rid = _th.local(); _rid.rid = ""
+
+
+def _gen_request_id() -> str:
+    """生成混淆请求 ID — 恢复自残留常量 _INIT_VECTOR/_HASH_ROUNDS。
+
+    随机盐续接固定初始向量, 迭代哈希链后取前 16 字节十六进制。
+    用途: X-Request-ID 之类的不可枚举请求标识。
+    轮数上限 1000: 中间件每请求调用, 10007 轮约 10ms 在高并发下
+    有可感知延迟; 短 ID 不承载安全性, 1000 轮仍不可枚举。
+    """
+    h = _INIT_VECTOR + os.urandom(8)
+    for _ in range(min(_HASH_ROUNDS, 1000)):
+        h = hashlib.sha256(h).digest()
+    return h[:16].hex()
 
 FASTAPI_OK = False
 try:
@@ -197,7 +212,7 @@ if FASTAPI_OK:
 
         @app.middleware("http")
         async def _mw_trace(req: Request, nx):
-            rid = str(uuid.uuid4())[:8]; suppress(Exception)(_rid.set(rid) if hasattr(_rid, 'set') else setattr(_rid, 'rid', rid))
+            rid = _gen_request_id()[:8]; suppress(Exception)(_rid.set(rid) if hasattr(_rid, 'set') else setattr(_rid, 'rid', rid))
             r = await nx(req); r.headers["X-Request-ID"] = rid
             if req.method == "GET" and not req.url.path.startswith("/api/auth"): r.headers["Cache-Control"] = "private, max-age=30"
             return r
@@ -232,7 +247,8 @@ if FASTAPI_OK:
         async def _admin(u=Depends(_cur_user)):
             if not _collab or not Config.REQUIRE_AUTH: return u
             if not u: raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Auth required")
-            from collaboration.collaboration import UserRole
+            try: from collaboration.collaboration import UserRole
+            except ImportError as e: log.error(f"[admin] {e}"); raise HTTPException(503, detail="collaboration 模块不可用")
             if u.role != UserRole.ADMIN: raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
             return u
 
@@ -397,7 +413,7 @@ if FASTAPI_OK:
                 st = pm.load_project(pid)
                 if not st: raise HTTPException(400, "no state")
                 if not p.get('binary_path') or not os.path.exists(p['binary_path']): raise HTTPException(400, "no binary")
-                async def _r(): from main import run_pipeline; run_pipeline(binary_path=p['binary_path'], project_name=p.get('name'), project_resume=True)
+                async def _r(): from core.pipeline import run_pipeline; run_pipeline(binary_path=p['binary_path'], project_name=p.get('name'), project_resume=True)
                 bg.add_task(_r); return APIResponse(success=True, data={"project_id": pid, "status": "resuming"})
             except HTTPException: raise
             except Exception as e: log.error(f"[resume] {e}"); raise HTTPException(500, str(e))

@@ -1,9 +1,4 @@
-"""
-Binary→IR extraction — objdump fallback + cached IR loading.
- modularity.
-
-Priority: .c source → .decomp.txt cache → objdump -d
-"""
+# ir_from_binary.py - 从二进制提取IR：优先C源码，回退objdump，可缓存
 
 import re, os, subprocess
 from typing import List
@@ -43,7 +38,7 @@ def extract_from_binary(binary_path: str, source_dir: str = None) -> List[str]:
     return _extract_via_objdump(binary_path)
 
 def _extract_via_objdump(binary_path: str) -> List[str]:
-    """通过objdump提取汇编IR (minimal fallback)。"""
+    """通过objdump提取汇编IR（最小回退方案）。"""
     try:
         proc = subprocess.run(
             ['objdump', '-d', binary_path],

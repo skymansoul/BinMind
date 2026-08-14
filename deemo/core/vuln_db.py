@@ -1,7 +1,4 @@
-"""
-Vulnerability database backed by SQLite. Stores findings across runs
-for later comparison and CVE correlation.
-"""
+# core/vuln_db.py - SQLite 结果库 (findings / analysis_runs / step_records 三层)
 
 import json
 import logging
@@ -26,6 +23,7 @@ CREATE TABLE IF NOT EXISTS findings (
     cwe TEXT,
     description TEXT,
     evidence TEXT,
+    priority_score REAL DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -39,9 +37,22 @@ CREATE TABLE IF NOT EXISTS analysis_runs (
     summary TEXT
 );
 
+CREATE TABLE IF NOT EXISTS step_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL,
+    step_name TEXT NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    input_summary TEXT,
+    output_summary TEXT,
+    status TEXT NOT NULL DEFAULT 'running',
+    error_message TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_findings_binary ON findings(binary_path);
 CREATE INDEX IF NOT EXISTS idx_findings_type ON findings(vuln_type);
 CREATE INDEX IF NOT EXISTS idx_findings_severity ON findings(severity);
+CREATE INDEX IF NOT EXISTS idx_steps_run ON step_records(run_id);
 """
 
 
@@ -56,6 +67,10 @@ def _connect() -> sqlite3.Connection:
 def init_db():
     conn = _connect()
     conn.executescript(SCHEMA)
+    try:
+        conn.execute("ALTER TABLE findings ADD COLUMN priority_score REAL DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass  # 旧库已含该列
     conn.commit()
     conn.close()
 
@@ -82,23 +97,82 @@ def finish_run(run_id: int, status: str = 'completed', summary: str = ''):
     conn.close()
 
 
+def record_step(run_id: int, step_name: str, start_ts: str = None,
+                status: str = 'running', input_summary: str = '',
+                output_summary: str = '', error_message: str = '') -> int:
+    """
+    写入一条逐步执行记录。end_time 在状态为终态时自动落当前时间。
+
+    返回 step 记录 id，供调用方在步骤结束时二次更新。
+    """
+    now = time.strftime('%Y-%m-%dT%H:%M:%S')
+    start_ts = start_ts or now
+    end_time = now if status in ('success', 'failed', 'skipped') else None
+    conn = _connect()
+    cur = conn.execute(
+        """INSERT INTO step_records
+           (run_id, step_name, start_time, end_time, input_summary,
+            output_summary, status, error_message)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (run_id, step_name, start_ts, end_time, input_summary,
+         output_summary, status, error_message)
+    )
+    sid = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return sid
+
+
+def update_step(sid: int, status: str, output_summary: str = '',
+                error_message: str = ''):
+    conn = _connect()
+    conn.execute(
+        """UPDATE step_records
+           SET end_time=?, status=?, output_summary=?, error_message=?
+           WHERE id=?""",
+        (time.strftime('%Y-%m-%dT%H:%M:%S'), status, output_summary,
+         error_message, sid)
+    )
+    conn.commit()
+    conn.close()
+
+
 def save_finding(run_id: int, binary_path: str, binary_hash: str,
                  func_name: str, vuln_type: str, severity: str,
                  cwe: str = '', description: str = '',
-                 evidence: str = '') -> int:
+                 evidence: str = '', priority_score: float = None) -> int:
     conn = _connect()
     cur = conn.execute(
         """INSERT INTO findings
            (run_ts, binary_path, binary_hash, function_name,
-            vuln_type, severity, cwe, description, evidence)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            vuln_type, severity, cwe, description, evidence, priority_score)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (time.strftime('%Y-%m-%dT%H:%M:%S'), binary_path, binary_hash,
-         func_name, vuln_type, severity, cwe, description, evidence)
+         func_name, vuln_type, severity, cwe, description, evidence,
+         priority_score)
     )
     fid = cur.lastrowid
     conn.commit()
     conn.close()
     return fid
+
+
+def get_run_findings(run_id: int) -> List[Dict]:
+    """按 run 的 started_at 时间窗取该 run 落库的 findings。"""
+    conn = _connect()
+    run = conn.execute(
+        "SELECT started_at, binary_path FROM analysis_runs WHERE id=?",
+        (run_id,)
+    ).fetchone()
+    if run is None:
+        conn.close()
+        return []
+    rows = conn.execute(
+        "SELECT * FROM findings WHERE run_ts >= ? AND binary_path = ? ORDER BY id",
+        (run['started_at'], run['binary_path'])
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def search_similar(vuln_type: str = None, binary_path: str = None,

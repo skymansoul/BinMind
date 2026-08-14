@@ -1,13 +1,6 @@
-"""
-Format-string use-def chain verification.
-
-format_string_detector Level 1 flags every printf(var) as vulnerable,
-including cases where var was safely snprintf'd or is a constant string.
-
-Traces var source along the IR use-def chain (max 5 hops).
-Hits user-input source → confirmed. Hits safe-format call → filtered.
-Unresolved → keep original confidence.
-"""
+"""格式串 use-def 链验证。
+format_string_detector Level 1 将每个 printf(var) 标记为漏洞, 含 snprintf 安全格式化与常量串;
+沿 IR use-def 链 (最多5跳) 追踪 var 来源: 命中用户输入源 → 确认; 命中安全格式化 → 过滤; 无法解析 → 保留原置信度。"""
 
 from core.taint_engine_light import LightweightTaintEngine
 
@@ -17,13 +10,13 @@ def verify_format_arg_source(
     ir_lines: list[str],
     call_pc: int = -1,
 ) -> tuple[str, float]:
-    """Verify the format argument's origin.
+    """验证格式参数的来源。
 
-    Returns (source_category, adjusted_confidence):
-      - ('user_input', 0.85): traced to fgets/read/recv within 5 hops
-      - ('safe_format', 0.20): traced to safe snprintf/sprintf formatting
-      - ('const_string', 0.10): string literal
-      - ('unknown', 0.50): exceeds 5 hops or unresolved
+    返回 (source_category, adjusted_confidence):
+      - ('user_input', 0.85): 5跳内追溯到 fgets/read/recv
+      - ('safe_format', 0.20): 追溯到安全 snprintf/sprintf 格式化
+      - ('const_string', 0.10): 字符串字面量
+      - ('unknown', 0.50): 超过5跳或无法解析
     """
     engine = LightweightTaintEngine(max_backtrack_hops=5)
     engine.build_defuse_graph(ir_lines)

@@ -1,20 +1,7 @@
-# UAF temporal analyzer: tracks each heap pointer's operation sequence and
-# detects free->use temporal violations.
-#
-# heap_uaf_detector uses regex matching on pseudocode ("malloc->free->*p"),
-# essentially grep. It misses:
-#   1. Cross-function UAF (pointer freed after being passed as argument)
-#   2. Alias UAF (same memory accessed through different pointers)
-#   3. Path-sensitive UAF (free in one branch, use in another)
-#
-# This module provides:
-#   (a) Temporal operation sequences per pointer (alloc/free/use ordered by address)
-#   (b) Alias inference (pointers from same malloc or via mov -> same object)
-#   (c) Path feasibility (conditional branch constraints between free and use)
-#
-# Based on Undangle, using
-# disassembly-level analysis instead of IR-level. Added alias inference
-# (Undangle relies on type info, ineffective for stripped binaries).
+# UAF 时序分析器 — 追踪每个堆指针的操作序列, 检测 free→use 时序违例。
+# 基于 Undangle 思路, 但采用反汇编级分析 (Undangle 依赖类型信息, 对去符号二进制无效)。
+# 提供: (a) 每指针的时序操作序列 (按地址排序的 alloc/free/use);
+# (b) 别名推断 (同 malloc 或经 mov 指向同一对象的指针); (c) 路径可行性分析。
 
 from __future__ import annotations
 
@@ -28,12 +15,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 class OpType(Enum):
     ALLOC = 1
     FREE  = 2
-    USE   = 3   # dereference/write/read
+    USE   = 3   # 解引用/写入/读取
 
 
 @dataclass
 class PointerEvent:
-    """Single pointer operation on a heap object."""
+    """堆对象上的单次指针操作。"""
     ptr_name: str       # variable name or register
     op_type: OpType
     address: int        # instruction address (for ordering)
@@ -43,14 +30,14 @@ class PointerEvent:
 
 @dataclass
 class PointerTimeline:
-    """Complete operation timeline for a single logical heap object."""
+    """单个逻辑堆对象的完整操作时间线。"""
     object_id: str       # 唯一标识(malloc地址+变量名)
     events: List[PointerEvent] = field(default_factory=list)
     aliases: Set[str] = field(default_factory=set)  # 指向同一对象的所有指针名
 
     @property
     def has_uaf(self) -> bool:
-        """Check if a USE event exists after a FREE event."""
+        """检查 FREE 事件之后是否存在 USE 事件。"""
         freed = False
         for e in sorted(self.events, key=lambda x: x.address):
             if e.op_type == OpType.FREE:
@@ -67,7 +54,7 @@ class PointerTimeline:
 
 @dataclass
 class TemporalUafReport:
-    """Temporal UAF analysis report."""
+    """时序 UAF 分析报告。"""
     timelines: List[PointerTimeline]
     uaf_objects: List[PointerTimeline]   # has_uaf=True的子集
     double_free_objects: List[PointerTimeline]
@@ -77,11 +64,11 @@ class TemporalUafReport:
 
 
 class UafTemporalAnalyzer:
-    """UAF temporal analyzer: builds pointer timelines and detects temporal violations."""
+    """UAF 时序分析器: 构建指针时间线并检测时序违例。"""
 
     def analyze(self, disasm_lines: List[str],
                 func_name: str = "") -> TemporalUafReport:
-        """Build operation timelines for all heap pointers from disassembly."""
+        """从反汇编构建所有堆指针的操作时间线。"""
         events = self._extract_events(disasm_lines, func_name)
         timelines = self._build_timelines(events)
         timelines = self._merge_aliases(timelines, disasm_lines)
@@ -104,7 +91,7 @@ class UafTemporalAnalyzer:
                 continue
             lower = stripped.lower()
 
-            # malloc/calloc -> ALLOC event
+            # malloc/calloc → ALLOC 事件
             m = re.search(r'(\w+)\s*=.*(?:malloc|calloc|realloc)\s*\(', lower)
             if m:
                 events.append(PointerEvent(
@@ -112,7 +99,7 @@ class UafTemporalAnalyzer:
                     address=i, line=stripped, func_name=func))
                 continue
 
-            # free(p) -> FREE event
+            # free(p) → FREE 事件
             m = re.search(r'free\s*\(\s*(\w+)\s*\)', lower)
             if m:
                 events.append(PointerEvent(
@@ -120,7 +107,7 @@ class UafTemporalAnalyzer:
                     address=i, line=stripped, func_name=func))
                 continue
 
-# p / p->field / p[index] -> USE event
+# p / p->field / p[index] → USE 事件
             m = re.search(r'[*\[]\s*(\w+)\s*[\]\s]|(\w+)\s*->', lower)
             if m:
                 ptr = m.group(1) or m.group(2)
@@ -133,7 +120,7 @@ class UafTemporalAnalyzer:
 
     @staticmethod
     def _build_timelines(events: List[PointerEvent]) -> List[PointerTimeline]:
-        """Group events by pointer name; each group forms one timeline."""
+        """按指针名分组事件, 每组构成一条时间线。"""
         groups: Dict[str, List[PointerEvent]] = defaultdict(list)
         for e in events:
             groups[e.ptr_name].append(e)
@@ -150,8 +137,8 @@ class UafTemporalAnalyzer:
     @staticmethod
     def _merge_aliases(timelines: List[PointerTimeline],
                         disasm_lines: List[str]) -> List[PointerTimeline]:
-        """Merge aliases: if ptr_a = ptr_b via mov, merge their timelines."""
-        # Extract mov alias relationships
+        """合并别名: 若经 mov 得到 ptr_a = ptr_b, 则合并二者的时间线。"""
+        # 提取 mov 别名关系
         aliases: Dict[str, str] = {}
         for line in disasm_lines:
             m = re.search(r'(\w+)\s*=\s*(\w+)\s*;', line.strip())
@@ -162,7 +149,7 @@ class UafTemporalAnalyzer:
                 else:
                     aliases[dst] = src
 
-        # Merge timelines
+        # 合并时间线
         merged: Dict[str, PointerTimeline] = {}
         for tl in timelines:
             canonical = aliases.get(tl.object_id, tl.object_id)

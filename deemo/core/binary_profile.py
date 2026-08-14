@@ -1,22 +1,7 @@
 """
-二进制程序画像 —— 生成 pwnpasi 风格的综合性安全分析画像。
-
-整合 checksec 保护检测、PLT/GOT 扫描、libc 版本识别、ROP gadget 统计和
-静态危险函数分析，输出一份结构化的"程序安全画像"字典。
-
-设计意图: 替代 pwnpasi 的独立 checksec+plt+libc 手动收集流程，
-提供机器可读的一体化输出，同时生成人类可读的摘要供 LLM context 注入。
-
-画像包含六维度:
-  1. 元数据 (架构/位数/格式/大小)
-  2. 保护机制矩阵 (NX/PIE/Canary/RELRO/FORTIFY/ASLR/RWX)
-  3. 导入表与可攻击面 (危险函数清单+PLT地址)
-  4. libc 依赖与关键偏移
-  5. ROP gadget 库存统计
-  6. 潜在利用路径建议
-
-  - pwnpasi, "PWN PASI: Automated Exploit Generation Pipeline"
-  - Xu et al., 2024, USENIX Security, "MOBE: Multi-Objective Binary Exploitation"
+二进制程序画像: 整合 checksec 保护检测、PLT/GOT 扫描、libc 版本识别、ROP gadget 统计与静态危险函数分析,
+输出结构化安全画像字典, 并生成人类可读摘要供 LLM context 注入。
+六维度: 元数据、保护矩阵、导入表与攻击面、libc 依赖、gadget 库存、利用路径建议。
 """
 
 import logging
@@ -36,24 +21,7 @@ def build_binary_profile(
     gadgets: Optional[List[Dict[str, Any]]] = None,
     suspect_strings: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
-    """
-    生成完整的二进制安全画像。
-
-    接受可选的中间分析结果以避免重复计算。
-    若未提供某个子结果，则按需惰性调用对应模块采集。
-
-    Args:
-        binary_path:     二进制文件路径
-        checksec:        core.checksec.detect_checksec() 的结果
-        plt_entries:     core.plt_scanner.scan_plt() 的结果
-        libc_info:       core.libc_identifier.identify_libc() 的结果
-        dangerous_imports: core.static_analysis.scan_imports() 的结果
-        gadgets:         plugins.rop_tools.find_gadgets() 的结果
-        suspect_strings: core.static_analysis.find_suspicious_strings() 的结果
-
-    Returns:
-        结构化画像字典，可直接注入 pipeline result['binary_profile']
-    """
+    """生成完整的二进制安全画像。接受可选的中间分析结果以避免重复计算, 未提供时按需惰性调用对应模块采集; 返回可直接注入 pipeline result['binary_profile'] 的结构化画像字典。"""
     if not os.path.isfile(binary_path):
         return {'error': f'file not found: {binary_path}', 'path': binary_path}
 
@@ -143,15 +111,7 @@ def _summarize_gadget_types(gadgets: List[Dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 def _assess_exploit_difficulty(profile: Dict[str, Any]) -> str:
-    """
-    基于保护机制的利用难度评估。
-
-    规则:
-      - 无 NX → 直接 shellcode → Easy
-      - NX 但无 PIE 且无 Canary + 有 system@PLT → Easy (ret2libc)
-      - NX + PIE 但无 Canary → Medium (需 info leak)
-      - NX + PIE + Canary + Full RELRO → Hard (需多个 primitive 组合)
-    """
+    """基于保护机制的利用难度评估: 无 NX → Easy (shellcode), NX 无 PIE 无 Canary 且有 system@PLT → Easy (ret2libc), NX+PIE 无 Canary → Medium, NX+PIE+Canary+Full RELRO → Hard。"""
     cs = profile.get('checksec', {})
     score = 0
     if cs.get('nx', True):
@@ -211,15 +171,7 @@ def _recommend_approach(profile: Dict[str, Any]) -> List[str]:
     return approaches
 
 def profile_summary_for_report(profile: Dict[str, Any]) -> str:
-    """
-    生成画像的 Markdown 文本摘要，供报告嵌入。
-
-    Args:
-        profile: build_binary_profile() 的返回值
-
-    Returns:
-        Markdown 格式的画像摘要
-    """
+    """生成画像的 Markdown 文本摘要供报告嵌入。参数 profile 为 build_binary_profile() 的返回值。"""
     cs = profile.get('checksec', {})
     libc = profile.get('libc', {})
 

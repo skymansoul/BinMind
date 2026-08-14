@@ -1,6 +1,4 @@
-"""
-(a) 路径多样性管理
-"""
+"""第1批可选增强: (a) 路径多样性管理。"""
 
 import logging
 
@@ -25,7 +23,8 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # (a) 路径多样性管理
     if sym_result:
         try:
-            from analysis.symbolic.src.path_diversity_core import (
+            # path_diversity_core 已重写, SimHashCalibrator/ConvergenceAnalyzer 不存在, 该增强当前跳过
+            from modules.analysis.symbolic.src.path_diversity_core import (
                 PathDiversityTracker, DiversityAwarePathSelector,
                 DiversityStrategy, SimHashCalibrator, ConvergenceAnalyzer,
             )
@@ -41,14 +40,14 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (b) 求解器优化管线
     try:
-        from analysis.symbolic.src.symexec_opt_passes import (
+        from modules.analysis.symbolic.src.symexec_opt_passes import (
             ConstraintComplexityEstimator, IncrementalSolverCache,
             SolverBudgetManager, OptimizationPipeline,
         )
-        from analysis.symbolic.src.adaptive_complexity_calibrator import (
+        from modules.analysis.symbolic.src.adaptive_complexity_calibrator import (
             AdaptiveComplexityCalibrator,
         )
-        from analysis.symbolic.src.entropy_guided_budget import (
+        from modules.analysis.symbolic.src.entropy_guided_budget import (
             EntropyBudgetAllocator,
         )
 
@@ -76,7 +75,7 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (c) 反编译器集成
     try:
-        from analysis.decompiler.src.decompiler_confidence_ensemble import (
+        from modules.analysis.decompiler.src.decompiler_confidence_ensemble import (
             DecompilerConfidenceEnsemble,
         )
         _ensemble = DecompilerConfidenceEnsemble()
@@ -87,14 +86,14 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (d) GNN 预处理增强
     try:
-        from ai_ml.src.data.cfg_coarsening import coarsen_cfg
+        from modules.ai_ml.src.data.cfg_coarsening import coarsen_cfg
         result['_cfg_coarsening_fn'] = coarsen_cfg
         logger.debug("CFG 粗化已就绪")
     except ImportError:
         logger.debug('optional plugin not available')
 
     try:
-        from ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
+        from modules.ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
         result['_cross_arch_normalizer'] = normalize_mnemonic
         result['_arch'] = binfo.get('arch', 'unknown')
         logger.debug("跨架构归一化已就绪，目标架构: %s", binfo.get('arch', 'unknown'))
@@ -105,7 +104,7 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 在路径多样性管理之上叠加 CFG 支配前沿引导。
     # 与 (a) path_diversity_core 互补: 多样性保证广度，前沿引导保证方向。
     try:
-        from analysis.symbolic.src.forward_frontier_explorer import (
+        from modules.analysis.symbolic.src.forward_frontier_explorer import (
             ForwardFrontierExplorer,
         )
         _frontier_explorer = ForwardFrontierExplorer()
@@ -146,10 +145,10 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 常规流程中三模态数据需要上游填充到 result['_modal_features']；
     # 此处仅初始化引擎并注入 result，供下游按需调用 fuse_step()。
     try:
-        from multimodal.src.tri_modal_fusion import (
+        from modules.multimodal.src.tri_modal_fusion import (
             TriModalFusionEngine, ModalityConflictArbiter,
         )
-        from multimodal.src.fusion_provenance import (
+        from modules.multimodal.src.fusion_provenance import (
             FusionProvenanceTracker, ProvenanceEdge,
         )
 
@@ -169,10 +168,10 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 将分散的 exploit primitive 按类型文法归约为完整攻击链。
     # 使用约束传播验证（格代数替代 SMT 求解），降低组合路径的验证开销。
     try:
-        from exploit.src.core.primitive_composer import (
+        from modules.exploit.src.core.primitive_composer import (
             PrimitiveComposer, AtomicPrimitive, PrimitiveType,
         )
-        from exploit.src.core.constraint_propagator import (
+        from modules.exploit.src.core.constraint_propagator import (
             ConstraintPropagator, MachineState,
         )
 
@@ -193,7 +192,7 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与 (b) 中的 _estimator 互补：estimator 做快速线性预测，
     # nonlinear_predictor 处理高约束数区域（线性模型系统性低估的场景）。
     try:
-        from analysis.symbolic.src.constraint_predictor_nonlinear import (
+        from modules.analysis.symbolic.src.constraint_predictor_nonlinear import (
             NonlinearConstraintPredictor,
         )
         _nonlinear_predictor = NonlinearConstraintPredictor(learning_rate=0.005)
@@ -206,7 +205,7 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 替代 path_diversity_core 中原始的比例控制器，
     # 通过 hysteresis band + integral accumulator 消除阈值振荡。
     try:
-        from analysis.symbolic.src.adaptive_threshold_controller import (
+        from modules.analysis.symbolic.src.adaptive_threshold_controller import (
             OscillationDampedController,
         )
         _threshold_controller = OscillationDampedController(
@@ -221,7 +220,7 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # 建立路径多样性 ↔ 求解器预算的双向信息通道。
     # 高新颖度路径获更多求解预算，求解结果反向更新路径新颖度评分。
     try:
-        from analysis.symbolic.src.cross_layer_feedback import (
+        from modules.analysis.symbolic.src.cross_layer_feedback import (
             CrossLayerFeedbackLoop,
         )
         _cross_layer = CrossLayerFeedbackLoop(

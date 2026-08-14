@@ -1,17 +1,6 @@
 """
-整数溢出统一检测管线 — 整合4个算法级模块, 替代7个分散的IntOverflowDetector.
-
-管线架构 (三轨并行 + 贝叶斯融合):
-  轨道A: 区间抽象解释 (integer_overflow_detector.py)
-  轨道B: 符号执行验证 (int_overflow_verifier.py, angr+SMT)
-  轨道C: 污点源验证 (int_overflow_taint.py)
-
-用法:
-  from core.int_overflow_unified_pipeline import IntOverflowPipeline
-  pipe = IntOverflowPipeline()
-  results = pipe.analyze(pseudocode, binary_path=None)
-
-2026-08-06 创建: 替代7个重复的 IntOverflowDetector 实现.
+整数溢出统一检测管线 — 整合 4 个算法级模块, 替代 7 个分散的 IntOverflowDetector。
+三轨并行 + 贝叶斯融合: 区间抽象解释 / 符号执行验证 / 污点源验证。
 """
 
 from __future__ import annotations

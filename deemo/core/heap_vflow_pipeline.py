@@ -1,25 +1,6 @@
 """
-Heap overflow value-flow verification pipeline.
-
-This is the core innovation: a constraint-based verification stage that
-filters heap overflow false positives by proving write safety, rather
-than by heuristic pattern matching alone.
-
-Pipeline stages (order matters):
-  1. VFG construction — builds value-flow graph from decompiled IR
-  2. Constraint accumulation — extracts linear constraints from VFG
-  3. Loop bound inference — finds loop bounds and correlates with allocs
-  4. Safety proof — attempts to prove write_offset < alloc_size for each
-     (alloc, write) pair using the accumulated constraints
-  5. Path feasibility — demotes candidates on infeasible paths
-
-Each stage is independent and can fail gracefully (skip stage, retain
-all candidates) — zero impact on recall.
-
-Key metrics (target):
-  - FP reduction: 40-60% over baseline regex-based detection
-  - Recall preservation: 100% (no real overflow filtered)
-  - Per-sample overhead: <100ms (lightweight, no SMT solver)
+堆溢出值流验证管道 — 用约束安全证明过滤堆溢出误报, 而非仅靠启发式模式匹配。
+阶段: VFG构建→约束累加→循环边界推断→安全证明→路径可行性, 各阶段独立可降级。
 """
 
 from dataclasses import dataclass, field

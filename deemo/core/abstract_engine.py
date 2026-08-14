@@ -1,30 +1,6 @@
 """
-抽象解释引擎 —— 对反编译伪代码执行基于区间抽象解释的不动点分析。
-
-DDAI-ASR 系统的第三层: 在控制流图上执行 worklist 驱动的抽象解释。
-每步迭代应用转移函数:
-  - 赋值: [x := e]♯(Σ) = Σ[x ↦ eval♯(e, Σ)]
-  - 条件: [if(c)]♯(Σ) = Σ ⊓ c  (true分支) / Σ ⊓ ¬c (false分支)
-  - 合并: [φ-node]♯(Σ₁, Σ₂) = Σ₁ ⊔ Σ₂ (widen at loop headers)
-
-关键设计决策:
-  1. 只追踪数值变量(整数类型)和堆对象指针, 不追踪浮点或结构体字段
-  2. 对循环头使用 widening 确保收敛 (最多 10 次迭代)
-  3. 若 widening 后仍不收敛 → 设变量为 ⊤ (放弃精度, 保守)
-  4. 函数调用: 不跨函数分析, 被调用者视为 ⊤ 修改全局状态
-
-与现有 interval_abstractor 的差异:
-  - 后者只做单次逆向追踪, 不做不动点迭代
-  - 本模块在 CFG 上做正向迭代直至 fixpoint
-  - 支持 widening/narrowing 处理循环
-
-  - Cousot & Cousot "Abstract Interpretation: A Unified
-    Lattice Model for Static Analysis"
-  - Blanchet et al. "A Static Analyzer for Large
-    Safety-Critical Software" —— widening 策略
-
-▎AbstractState → core.abstract_state
-▎转移函数 (_transfer/_transfer_alloc/_transfer_write/_apply_condition) → core.abstract_transfer
+抽象解释引擎: 在控制流图上执行 worklist 驱动的区间抽象解释不动点分析,
+追踪数值变量与堆对象指针, 以 widening 保证循环收敛, 用于检测反编译伪代码中的堆溢出与 UAF。
 """
 
 import re
@@ -36,17 +12,7 @@ from core.heap_abstract_domain import HeapAbstractDomain, Interval, compute_effe
 from core.path_constraints import ConstraintExtractor, refine_interval_with_constraints
 
 class AbstractEngine:
-    """
-    Worklist 驱动的抽象解释引擎。
-
-    输入: 反编译伪代码字符串
-    输出: 每个语句点处的 AbstractState (可用于查询是否存在溢出)
-
-    使用方式:
-      engine = AbstractEngine()
-      results = engine.analyze(pseudocode)
-      overflow_candidates = engine.get_overflow_findings(results)
-    """
+    """Worklist 驱动的抽象解释引擎。输入反编译伪代码, 输出每行语句处的 AbstractState, 供溢出查询使用。"""
 
     MAX_ITERATIONS = 15          # 最多迭代次数
     WIDEN_DELAY = 3              # 第 N 次才触发 widening
@@ -64,7 +30,6 @@ class AbstractEngine:
         if n == 0:
             return {}
 
-        # 初始化
         states: Dict[int, AbstractState] = {
             i: AbstractState(reachable=False) for i in range(n)
         }
@@ -266,7 +231,7 @@ class AbstractEngine:
         if obj.offset_range.is_finite and obj.offset_range.high is not None:
             if obj.offset_range.high >= obj.effective_size:
                 return 0.90  # 确定溢出
-            return 0.15  # 大概率安全
+            return 0.15  # 基本安全
         if obj.requested_size <= 0:
             return 0.40  # 大小未知
         return 0.55  # 可能溢出

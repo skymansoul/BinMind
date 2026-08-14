@@ -1,10 +1,6 @@
 """
-C 源码 → Ghidra风格伪代码 转换器。
-将 malloc/calloc/realloc/memcpy/strcpy/memset 调用重写为
-GAPSBV 管线期望的反编译格式 (变量名带类型, 赋值显式).
-
-v2: 检测数组/指针手动写入, 插入合成 memcpy 标注,
-使 path_sensitive_vrf 能识别非标准库写入模式。
+C 源码 → Ghidra 风格伪代码转换器: 将 malloc/calloc/realloc/memcpy/strcpy/memset 调用
+重写为 GAPSBV 管线期望的格式 (变量名带类型、赋值显式), 并检测数组/指针手动写入, 插入合成 memcpy 标注。
 """
 
 from __future__ import annotations
@@ -17,7 +13,7 @@ def convert(source: str) -> str:
     """主入口: C 源码 → 简化伪代码 (含合成 memcpy 标注)。"""
     lines = []
 
-    # Pass 0: 提取 #define 宏 (仅简单常量)
+    # 阶段 0: 提取 #define 宏 (仅简单常量)
     macros: Dict[str, str] = {}
     for line in source.split('\n'):
         stripped = line.strip()
@@ -92,23 +88,17 @@ _RE_PTR_DEREF_INC = re.compile(
 
 
 def _inject_synthetic_writes(body: str) -> str:
-    """检测手动数组/指针写入, 为堆变量插入合成 memcpy 标注。
-
-    流程:
-      1. 收集所有堆变量 (malloc/calloc/realloc 目标)
-      2. 构建别名映射 (p = buf → p 是 buf 的别名)
-      3. 对每个含堆变量写入的行, 插入 memcpy 标注
-    """
+    """检测手动数组/指针写入, 为堆变量插入合成 memcpy 标注。流程: 收集堆变量 (malloc/calloc/realloc 目标), 构建别名映射 (p = buf → p 为 buf 别名), 对含堆变量写入的行插入标注。"""
     heap_vars: Set[str] = set()
     alias_map: Dict[str, str] = {}
 
-    # Pass 1: 收集堆变量
+    # 阶段 1: 收集堆变量
     for line in body.split('\n'):
         m = _RE_MALLOC.search(line)
         if m:
             heap_vars.add(m.group(1))
 
-    # Pass 1b: 构建别名映射
+    # 阶段 1b: 构建别名映射
     for line in body.split('\n'):
         m = _RE_PTR_ALIAS.search(line)
         if m:
@@ -122,7 +112,7 @@ def _inject_synthetic_writes(body: str) -> str:
     if not extended_vars:
         return body
 
-    # Pass 2: 为堆变量写入插入合成 memcpy 调用
+    # 阶段 2: 为堆变量写入插入合成 memcpy 调用
     out_lines = []
     for line in body.split('\n'):
         injected = False

@@ -1,15 +1,4 @@
-# Heap operation sequence analysis and UAF candidate detection.
-#
-# Uses lightweight two-phase analysis without full symbolic execution:
-#   1. Heap op extraction: locate malloc/free/realloc/calloc call sites via radare2
-#   2. Pointer lifetime: track each malloc-returned pointer through the call graph
-#      to detect dereferences after free.
-#
-# Unlike HexType, which relies on DWARF debug info, this module
-# works purely from disassembly instruction patterns, effective on stripped binaries.
-#
-# Limitations: cannot track pointers across translation units; limited indirect call
-# (call rax) tracking.
+# heap_use_analyzer.py - 堆操作序列分析: 经 radare2 提取 malloc/free 调用点并检测 UAF。
 
 
 import json
@@ -25,7 +14,7 @@ from config import R2_PATH
 
 _log = logging.getLogger(__name__)
 
-# Heap allocation function family
+# 堆分配函数族
 _ALLOC_FUNCTIONS = {'malloc', 'calloc', 'realloc', 'memalign', 'aligned_alloc',
                     'posix_memalign', 'mmap', 'brk', 'sbrk', '_Znwm', '_Znam',
                     'operator new', 'operator new[]'}
@@ -35,7 +24,7 @@ _FREE_FUNCTIONS = {'free', 'realloc', 'munmap', '_ZdlPv', '_ZdaPv',
 
 @dataclass
 class HeapOp:
-    """Single heap operation record."""
+    """单条堆操作记录。"""
     address: int               # instruction address
     op_type: str               # "alloc" / "free" / "realloc"
     func_name: str             # called function name
@@ -46,7 +35,7 @@ class HeapOp:
 
 @dataclass
 class UafCandidate:
-    """UAF candidate point."""
+    """UAF 候选点。"""
     alloc_site: HeapOp          # 分配点
     free_site: HeapOp           # 释放点
     use_site_addr: int          # "free后use"的解引用地址
@@ -57,13 +46,13 @@ class UafCandidate:
 
 
 class HeapUseAnalyzer:
-    """Heap operation sequence analyzer: extracts heap ops from binaries and detects UAF."""
+    """堆操作序列分析器: 从二进制提取堆操作并检测 UAF。"""
 
     def __init__(self, r2_path: str = None):
         self._r2 = r2_path or R2_PATH
 
     def analyze(self, binary_path: str) -> Dict[str, Any]:
-        """Analyze heap operation sequence in a binary, returning UAF candidate list."""
+        """分析二进制中的堆操作序列, 返回 UAF 候选列表。"""
         if not os.path.exists(binary_path):
             return {"error": f"Binary not found: {binary_path}", "uaf_candidates": []}
 
@@ -92,10 +81,10 @@ class HeapUseAnalyzer:
         }
 
     def _extract_heap_operations(self, binary_path: str) -> List[HeapOp]:
-        """Extract all heap alloc/free call sites via radare2."""
+        """通过 radare2 提取全部堆分配/释放调用点。"""
         ops: List[HeapOp] = []
         try:
-            # Extract all function names and call sites in one pass
+            # 一次性提取全部函数名与调用点
             cmd = [self._r2, '-q', '-c',
                    'aa; aflj~{malloc|free|realloc|calloc|mmap|new|delete}',
                    binary_path]
@@ -103,7 +92,7 @@ class HeapUseAnalyzer:
             if result.returncode != 0 and not result.stdout.strip():
                 return ops
 
-            # Analyze call instructions per function
+            # 按函数分析 call 指令
             funcs_json = subprocess.run(
                 [self._r2, '-q', '-c', 'aa; aflj', binary_path],
                 capture_output=True, text=True, timeout=30)
@@ -119,7 +108,7 @@ class HeapUseAnalyzer:
                 faddr = func.get('offset', 0)
                 if not fname or faddr == 0:
                     continue
-                # Disassemble function and extract call instructions
+                # 反汇编函数并提取 call 指令
                 disasm = subprocess.run(
                     [self._r2, '-q', '-c',
                      f's {hex(faddr)}; pdfj', binary_path],
@@ -133,7 +122,7 @@ class HeapUseAnalyzer:
                 for instr in fdata.get('ops', []):
                     if instr.get('type') != 'call':
                         continue
-                    # Resolve call target
+                    # 解析 call 目标
                     dest = instr.get('dest', '')
                     op_type = self._classify_call(dest)
                     if op_type:
@@ -150,9 +139,9 @@ class HeapUseAnalyzer:
 
     @staticmethod
     def _classify_call(call_target: str) -> Optional[str]:
-        """Classify a call target as heap operation, returning the operation type."""
+        """将调用目标归类为堆操作, 返回操作类型。"""
         target_lower = call_target.lower()
-        # Match key function names in symbol
+        # 在符号中匹配关键函数名
         for af in _ALLOC_FUNCTIONS:
             if af in target_lower:
                 return "alloc"
@@ -163,16 +152,11 @@ class HeapUseAnalyzer:
 
     def _detect_uaf(self, heap_ops: List[HeapOp],
                      binary_path: str) -> List[UafCandidate]:
-        """Detect UAF from heap operation sequence via alloc->free->...->use pattern.
-
-        Two phases: (1) intra-function detection, (2) cross-function detection
-        (alloc in caller, free in callee, use back in caller). Phase 2 covers
-        the most common UAF pattern (C++ destructor / callback after free).
-        """
+        """按 alloc->free->...->use 模式检测 UAF, 分函数内与跨函数两阶段。"""
         candidates: List[UafCandidate] = []
         sorted_ops = sorted(heap_ops, key=lambda o: o.address)
 
-        # Phase 1: intra-function alloc->free->use
+        # 阶段1: 函数内 alloc->free->use
         for i, alloc_op in enumerate(sorted_ops):
             if alloc_op.op_type != "alloc":
                 continue
@@ -196,7 +180,7 @@ class HeapUseAnalyzer:
                         break
                 break
 
-        # Phase 2: cross-function UAF - alloc in A, free in B, use back in A
+        # 阶段2: 跨函数 UAF — A 中分配, B 中释放, 回到 A 中使用
         cross_func = self._detect_cross_function_uaf(heap_ops, binary_path)
         candidates.extend(cross_func)
 
@@ -205,13 +189,7 @@ class HeapUseAnalyzer:
 
     def _detect_cross_function_uaf(self, heap_ops: List[HeapOp],
                                     binary_path: str) -> List[UafCandidate]:
-        """Cross-function UAF detection: alloc -> (call free) -> (return) -> use.
-
-        Heuristic: if a function has an alloc followed by a call, and the callee
-        contains a free, the alloc-returned pointer may have been passed to the
-        callee and freed there. If the caller continues to use the pointer after
-        return, this constitutes a cross-function UAF.
-        """
+        """跨函数 UAF 检测: 调用者分配, 被调函数中释放, 返回后继续使用。"""
         candidates: List[UafCandidate] = []
         sorted_ops = sorted(heap_ops, key=lambda o: o.address)
 
@@ -219,16 +197,15 @@ class HeapUseAnalyzer:
             if alloc_op.op_type != "alloc":
                 continue
             alloc_func = alloc_op.enclosing_func
-            # Find free ops after alloc in the same function (may be in callee)
+            # 查找同函数中 alloc 之后的 free (可能在被调函数中)
             for j in range(i + 1, len(sorted_ops)):
                 free_op = sorted_ops[j]
                 if free_op.op_type != "free":
                     continue
                 if free_op.enclosing_func == alloc_func:
-                    continue  # already handled in Phase 1
-                # Check if alloc and free are related via call chain.
-                # Simplified: if the free function is called by the alloc function
-                # and the alloc function still has operations after free -> cross-function UAF
+                    continue  # 阶段1 已处理
+                # 经调用链判断 alloc 与 free 是否关联:
+                # 释放函数被分配函数调用, 且分配函数在 free 后仍有操作 → 跨函数 UAF
                 for k in range(j + 1, min(j + 15, len(sorted_ops))):
                     use_op = sorted_ops[k]
                     if (use_op.enclosing_func == alloc_func and

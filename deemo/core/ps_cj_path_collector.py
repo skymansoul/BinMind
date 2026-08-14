@@ -1,18 +1,7 @@
 """
-路径敏感约束收集器 — 在每条CFG路径上单独收集约束.
-
-全局CJ收集器将所有守卫条件约束混合到单一ConstraintSystem,
-不考虑控制流路径可达性. 当守卫条件(如 `if(n>100)return`)和
-写入操作(如 `memcpy(buf,src,64)`)在不同分支路径上时, 守卫约束
-和写入约束被混合, 导致跨路径约束泄露, 产生误报.
-
-PS-CJ路径收集器:
-  1. 从反编译文本构建简化CFG
-  2. 对每个(alloc,write)对枚举从alloc到write的有界路径集
-  3. 每条路径收集基础约束(alloc/copy/offset/loop) + 路径级guard约束
-  4. 返回路径-约束系统列表, 供路径敏感求解器逐路径判定
-
-保守性: 路径数超限或CFG构建失败时回退到全局收集(单路径, 含全部guard).
+路径敏感约束收集器 — 在每条CFG路径上单独收集约束, 避免跨路径约束泄露与误报.
+从反编译文本构建简化CFG, 对每个(alloc,write)对枚举有界路径集, 每条路径收集基础约束+路径级guard约束;
+路径数超限或CFG构建失败时回退到全局收集(单路径, 含全部guard).
 """
 from __future__ import annotations
 import re
@@ -37,10 +26,10 @@ def collect_path_sensitive_constraints(
     ir_lines: list[str],
     decompiled_text: str = "",
 ) -> List[Tuple[CFGPath, ConstraintSystem]]:
-    """为候选构建路径敏感约束系统列表.
+    """为候选构建路径敏感约束系统列表。
 
-    返回 [(path, constraint_system), ...].
-    单元素列表表示路径枚举失败, 回退到全局CJ.
+    返回 [(path, constraint_system), ...]。
+    单元素列表表示路径枚举失败, 回退到全局CJ。
     """
     base_sys = collect_constraints(candidate, ir_lines, decompiled_text)
 
@@ -104,7 +93,7 @@ def _find_alloc_line(
     lines: List[str],
     candidate: HeapOverflowCandidate,
 ) -> int:
-    """在反编译文本中定位分配行(1-indexed)."""
+    """在反编译文本中定位分配行(1-indexed)。"""
     for i, line in enumerate(lines):
         if _ALLOC_RE.search(line):
             return i + 1
@@ -115,9 +104,9 @@ def _find_write_line(
     lines: List[str],
     candidate: HeapOverflowCandidate,
 ) -> int:
-    """在反编译文本中定位写入行(1-indexed).
+    """在反编译文本中定位写入行(1-indexed)。
 
-    优先匹配具体的写入助记符, 其次匹配通用赋值模式.
+    优先匹配具体的写入助记符, 其次匹配通用赋值模式。
     """
     mnemonic = candidate.overflow_store.mnemonic
     specific_re = re.compile(
@@ -136,11 +125,11 @@ def _find_write_line(
 def _strip_guard_constraints(
     sys: ConstraintSystem,
 ) -> ConstraintSystem:
-    """从约束系统中移除全局GUARD_CONDITION约束, 保留路径无关约束.
+    """从约束系统中移除全局GUARD_CONDITION约束, 保留路径无关约束。
 
     路径无关约束: ALLOC_SIZE, COPY_SIZE, WRITE_OFFSET, LOOP_BOUND,
-    TYPE_BOUND, AFFINE_RELATION, ALIGNMENT.
-    路径相关约束: GUARD_CONDITION — 需按路径重新注入.
+    TYPE_BOUND, AFFINE_RELATION, ALIGNMENT。
+    路径相关约束: GUARD_CONDITION — 需按路径重新注入。
     """
     stripped = _clone_system(sys)
     stripped.constraints = [
@@ -151,7 +140,7 @@ def _strip_guard_constraints(
 
 
 def _clone_system(sys: ConstraintSystem) -> ConstraintSystem:
-    """深拷贝约束系统."""
+    """深拷贝约束系统。"""
     return ConstraintSystem(
         constraints=list(sys.constraints),
         alloc_var=sys.alloc_var,
@@ -171,9 +160,9 @@ def _has_overlapping_guards(
     sys: ConstraintSystem,
     path_guards: List[LinearConstraint],
 ) -> bool:
-    """检测路径guard约束是否与系统中的已有约束矛盾.
+    """检测路径guard约束是否与系统中的已有约束矛盾。
 
-    若路径本身不可行(guard自相矛盾), 标记为infeasible.
+    若路径本身不可行(guard自相矛盾), 标记为infeasible。
     """
     from core.cj_fourier_motzkin import check_feasibility
 

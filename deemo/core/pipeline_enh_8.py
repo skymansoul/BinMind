@@ -1,6 +1,4 @@
-"""
-(bi) 访问模式结构体布局恢复
-"""
+"""第8批可选增强: (bi) 访问模式结构体布局恢复。"""
 
 import logging
 
@@ -13,9 +11,9 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # n-gram 内存访问模式→字段边界推断→C struct 生成, 无需 ML 训练。
     # 与现有 type_inferrer/precise_vtable_recovery 互补: 后者做虚表/类型推断,
     # 本模块做完整 struct 布局恢复 (字段偏移+类型+对齐)。
-    # XTRIDE (); ReSym (2024); TYGR
+    # 参考: XTRIDE; ReSym (2024); TYGR
     try:
-        from analysis.static.binary_analysis.struct_layout_recovery import (
+        from modules.analysis.static.binary_analysis.struct_layout_recovery import (
             StructLayoutRecoverer, collect_struct_accesses,
             infer_field_boundaries,
         )
@@ -32,7 +30,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 自动适配目标特性, 替代硬编码策略或人工选择。
     # ARCANIST (USENIX 2025); PBAEG (Cybersecurity 2025)
     try:
-        from exploit.src.strategy.adaptive_exploit_selector import (
+        from modules.exploit.src.strategy.adaptive_exploit_selector import (
             AdaptiveExploitSelector, BinaryFingerprint, StrategyKind,
             assess_strategy,
         )
@@ -48,7 +46,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 容忍 f 个 Byzantine 节点 (N≥3f+1)——解决不同分析工具结果冲突。
     # PBFT (Castro & Liskov, OSDI 1999); ensemble weighted voting
     try:
-        from distributed.src.quorum_consensus import (
+        from modules.distributed.src.quorum_consensus import (
             QuorumConsensusEngine, NodeWeightTracker,
             weighted_quorum_vote,
         )
@@ -64,7 +62,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # x86-64 + ARM64 双架构支持, 原子 8-byte jmp 写入避免多线程竞争。
     # ASC-Hook (LCTES 2025); DIBE (UNIST 2026); zpoline (USENIX ATC 2023)
     try:
-        from analysis.dynamic.engine.trampoline_hook import (
+        from modules.analysis.dynamic.engine.trampoline_hook import (
             TrampolineHookRewriter, generate_x86_64_trampoline,
             generate_arm64_trampoline, Arch,
         )
@@ -83,7 +81,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与现有 compiler_fingerprint 互补: 后者做粗粒度识别, 本模块做版本/O级细粒度。
     # Rosenblum et al. (PLDI 2010); Caliskan et al. (USENIX 2018)
     try:
-        from analysis.static.tools.compiler_fingerprinter import (
+        from modules.analysis.static.tools.compiler_fingerprinter import (
             CompilerFingerprinter, CompilerFingerprint,
             detect_from_strings, detect_from_code_idioms,
             detect_from_epilogue_patterns,
@@ -101,7 +99,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与现有 coverage/edge_coverage 互补: 后者报告覆盖统计, 本模块做空间可视化。
     # AFL++ collision-free coverage; DrCov (DynamoRIO)
     try:
-        from output.src.coverage_heatmap import (
+        from modules.output.src.coverage_heatmap import (
             CoverageHeatmapGenerator, aggregate_heatmap,
             suggest_coldspot_targets,
         )
@@ -119,7 +117,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 无源码 ground truth 的自动化 IR 质量度量。
     # An & Lee (SPLASH 2025); RetDec/McSema IR formats
     try:
-        from analysis.static.binary_analysis.ir_lifting_quality import (
+        from modules.analysis.static.binary_analysis.ir_lifting_quality import (
             IRLiftingQualityEvaluator, IRQualityReport,
         )
         _ir_quality_evaluator = IRLiftingQualityEvaluator()
@@ -131,9 +129,9 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # (bp) 前向边 CFI 插桩器
     # 间接调用定位 + 函数类型恢复 + landing pad 插入。
     # COTS 剥离二进制的纯软件前向边控制流完整性保护。
-    # MOBIUS (IEEE TIFS 2025); Branch Landing ()
+    # 参考: MOBIUS (IEEE TIFS 2025); Branch Landing
     try:
-        from analysis.static.binary_analysis.forward_edge_cfi import (
+        from modules.analysis.static.binary_analysis.forward_edge_cfi import (
             ForwardEdgeCFI, locate_indirect_calls,
             infer_function_signatures,
         )
@@ -149,7 +147,7 @@ def apply_enhancements_8(result, binary_path, binfo, kwargs, binary_hash=None):
     # 基于 def-use 依赖的语义匹配——比 CFG 跨编译器/优化级别更稳定。
     # CSB (NDSS 2005); VxWolf/BinDiff
     try:
-        from analysis.static.binary_diff.src.dfg_isomorphism_match import (
+        from modules.analysis.static.binary_diff.src.dfg_isomorphism_match import (
             build_dfg_from_instructions, compute_dfg_similarity,
             DFGGraph, DFGNode,
         )

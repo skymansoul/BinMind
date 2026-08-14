@@ -112,14 +112,19 @@ class SensitiveFilter(logging.Filter):
         return True
 
 
+def _is_enabled(key: str, default: str = 'false') -> bool:
+    """环境开关解析 — true/1/yes/on 视为启用。"""
+    return os.environ.get(key, default).strip().lower() in ('true', '1', 'yes', 'on')
+
+
 class Config:
     """
     项目配置管理类
     """
-    
+
     # --- 分布式执行配置 ---
     # 远程基线 worker.py 从 config 导入这些符号；本地恢复后按同一接口提供。
-    DISTRIBUTED_MODE = bool(os.environ.get('DISTRIBUTED_MODE', 'false').lower() == 'true')
+    DISTRIBUTED_MODE = _is_enabled('DISTRIBUTED_MODE')
     CELERY_TASK_QUEUE = os.environ.get('CELERY_TASK_QUEUE', 'deemo_tasks')
     CELERY_MAX_RETRIES = int(os.environ.get('CELERY_MAX_RETRIES', '3'))
     CELERY_TASK_TIME_LIMIT = int(os.environ.get('CELERY_TASK_TIME_LIMIT', '300'))
@@ -185,7 +190,7 @@ class Config:
     OPTIONAL_FIELDS_CRASH_DATA = ['stack_trace', 'fault_instruction', 'output', 'stdout', 'stderr']
     
     DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
-    ENABLE_SYMBOLIC_EXECUTION = os.environ.get('ENABLE_SYMBOLIC_EXECUTION', 'false').lower() == 'true'
+    ENABLE_SYMBOLIC_EXECUTION = _is_enabled('ENABLE_SYMBOLIC_EXECUTION')
     
     DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
     
@@ -194,7 +199,7 @@ class Config:
     SANDBOX_TIMEOUT = int(os.environ.get('SANDBOX_TIMEOUT', '60'))
     SANDBOX_MEMORY_LIMIT = os.environ.get('SANDBOX_MEMORY_LIMIT', '512m')
     SANDBOX_CPU_LIMIT = float(os.environ.get('SANDBOX_CPU_LIMIT', '1.0'))
-    SANDBOX_NETWORK_ENABLED = os.environ.get('SANDBOX_NETWORK_ENABLED', 'false').lower() == 'true'
+    SANDBOX_NETWORK_ENABLED = _is_enabled('SANDBOX_NETWORK_ENABLED')
     
     DB_TYPE = os.environ.get('DB_TYPE', 'sqlite').lower()
     POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'localhost')
@@ -205,7 +210,7 @@ class Config:
     
     API_HOST = os.environ.get('API_HOST', '0.0.0.0')
     API_PORT = int(os.environ.get('API_PORT', '8000'))
-    API_RELOAD = os.environ.get('API_RELOAD', 'false').lower() == 'true'
+    API_RELOAD = _is_enabled('API_RELOAD')
     
     CACHE_TTL = int(os.environ.get('CACHE_TTL', '3600'))
     EXTERNAL_API_RATE_LIMIT = int(os.environ.get('EXTERNAL_API_RATE_LIMIT', '10'))
@@ -588,10 +593,10 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # 功能开关 — 环境变量控制，默认关闭重型分析
-ENABLE_SYMBOLIC = os.environ.get('ENABLE_SYMBOLIC', 'false').lower() == 'true'
-ENABLE_CRYPTO_SCAN = os.environ.get('ENABLE_CRYPTO_SCAN', 'false').lower() == 'true'
-ENABLE_TAINTRACK = os.environ.get('ENABLE_TAINTRACK', 'false').lower() == 'true'
-ENABLE_UNPACK = os.environ.get('ENABLE_UNPACK', 'false').lower() == 'true'
+ENABLE_SYMBOLIC = _is_enabled('ENABLE_SYMBOLIC')
+ENABLE_CRYPTO_SCAN = _is_enabled('ENABLE_CRYPTO_SCAN')
+ENABLE_TAINTRACK = _is_enabled('ENABLE_TAINTRACK')
+ENABLE_UNPACK = _is_enabled('ENABLE_UNPACK')
 
 # 并行与规模限制
 MAX_FUNCTIONS = int(os.environ.get('MAX_FUNCTIONS', '500'))

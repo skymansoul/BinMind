@@ -1,7 +1,4 @@
-"""
-LLM 崩溃分析的辅助函数集。
-
-"""
+"""LLM 崩溃分析的辅助函数集。"""
 
 
 import json
@@ -18,7 +15,7 @@ def _build_crash_context(
     decompiled_context: Optional[str],
     binfo: Optional[Dict[str, Any]],
 ) -> str:
-    """Assemble crash context from binary info, registers, stack trace, and decompiled code."""
+    """组装崩溃上下文: 二进制信息、寄存器、栈回溯与反编译代码。"""
     parts = []
 
     if binfo:
@@ -75,7 +72,7 @@ def _build_crash_context(
 
 
 def _fallback_heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Heuristic fallback when LLM is unavailable."""
+    """LLM 不可用时的启发式回退分析。"""
     from core.crash_analysis import analyze_crash_for_exploit
 
     heuristic = analyze_crash_for_exploit(crash_data)
@@ -116,7 +113,7 @@ def _fallback_heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _infer_severity_from_llm(result: Dict[str, Any]) -> str:
-    """Map LLM exploitability verdict and crash type to severity level."""
+    """将 LLM 可利用性裁决与崩溃类型映射为严重级别。"""
     exploitability = result.get('exploitability', 'unknown')
     crash_type = result.get('crash_type', 'other')
 

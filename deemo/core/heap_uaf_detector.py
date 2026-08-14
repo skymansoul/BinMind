@@ -1,20 +1,7 @@
 """
-Static heap vulnerability and UAF detection via decompiled pseudocode and
-pattern matching with lightweight data flow analysis.
-
-Detection targets:
-  1. Use-After-Free: pointer dereference after free(p)
-  2. Double Free: same pointer freed twice
-  3. Heap overflow: write exceeds malloc allocation size (inferred from
-     subsequent memcpy/strcpy call arguments)
-
-Pure static analysis (no angr symbolic execution dependency). Serves as a
-fast scanning layer. Limited effectiveness against heavily obfuscated code
-(known limitation).
-
-References:
-  - Caballero et al., 2012, USENIX Security, "Undangle"
-  - Gennissen & O'Keeffe, 2023, "HeapHop"
+基于反编译伪代码与模式匹配+轻量数据流的堆漏洞与UAF静态检测。
+覆盖: UAF(free后解引用)、双重释放、堆溢出(写入超过malloc分配大小)。
+纯静态分析, 不依赖angr符号执行, 作为快速扫描层。
 """
 
 
@@ -24,10 +11,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
-# Memory allocation/deallocation functions
+# 内存分配/释放函数
 _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', 'memalign', 'aligned_alloc'}
 _FREE_FUNCS = {'free', 'realloc'}
-# Dangerous functions that may write into heap buffers
+# 可能写入堆缓冲区的危险函数
 _HEAP_WRITE_FUNCS = {
     'memcpy', 'memmove', 'strcpy', 'strncpy', 'strcat', 'strncat',
     'gets', 'fgets', 'read', 'fread', 'recv', 'sprintf', 'snprintf',
@@ -35,10 +22,7 @@ _HEAP_WRITE_FUNCS = {
 
 
 def _find_allocations(pseudocode: str) -> List[Dict[str, Any]]:
-    """Extract all memory allocation sites from pseudocode.
-
-    Returns: [{var: str, func: str, size: int, line: str}, ...]
-    """
+    """从伪代码中提取所有分配点, 返回 [{var, func, size, line}, ...]。"""
     allocs = []
     for m in re.finditer(
         r'(\w+)\s*=\s*(?:\(\s*\w+\s*\*\s*\))?\s*(malloc|calloc|realloc|memalign|aligned_alloc)\s*\(([^)]+)\)',
@@ -57,10 +41,7 @@ def _find_allocations(pseudocode: str) -> List[Dict[str, Any]]:
 
 
 def _find_frees(pseudocode: str) -> List[Dict[str, Any]]:
-    """Extract all deallocation sites from pseudocode.
-
-    Returns: [{var: str, func: str, line: str}, ...]
-    """
+    """提取所有释放点, 返回 [{var, func, line}, ...]。"""
     frees = []
     for m in re.finditer(
         r'(free)\s*\(\s*(\w+)\s*\)',
@@ -75,10 +56,7 @@ def _find_frees(pseudocode: str) -> List[Dict[str, Any]]:
 
 
 def _find_pointer_uses(pseudocode: str, ptr_var: str) -> List[str]:
-    """Search for pointer dereference sites in pseudocode.
-
-    Matching patterns: *ptr, ptr->field, ptr[expr], ptr + offset
-    """
+    """查找伪代码中的指针解引用点, 匹配 *ptr / ptr->field / ptr[expr] / ptr+offset。"""
     refs = []
     for m in re.finditer(
         rf'(\*{ptr_var}\b|{ptr_var}\s*->|{ptr_var}\s*\[|{ptr_var}\s*\+)',
@@ -89,14 +67,14 @@ def _find_pointer_uses(pseudocode: str, ptr_var: str) -> List[str]:
 
 
 def _parse_size(expr: str) -> int:
-    """Attempt to parse byte count from a size expression. Returns -1 on failure."""
+    """尝试解析大小表达式中的字节数, 失败返回 -1。"""
     expr = expr.strip()
-    # Plain integer literal
+    # 纯整数字面量
     try:
         return int(expr)
     except ValueError:
         pass
-    # sizeof(type) or sizeof(*ptr)
+    # sizeof(类型) 或 sizeof(*ptr)
     sizeof_match = re.match(r'sizeof\s*\(\s*(\w+)\s*\)', expr)
     if sizeof_match:
         type_name = sizeof_match.group(1)
@@ -104,7 +82,7 @@ def _parse_size(expr: str) -> int:
                  'float': 4, 'double': 8, 'void': 1, 'size_t': 8,
                  'uint32_t': 4, 'uint64_t': 8, 'int32_t': 4, 'int64_t': 8}
         return sizes.get(type_name, -1)
-    # Multiplication: n * sizeof(type)
+    # 乘法: n * sizeof(类型)
     mul_match = re.match(r'(\w+)\s*\*\s*sizeof\s*\(\s*(\w+)\s*\)', expr)
     if mul_match:
         sizes = {'int': 4, 'long': 8, 'char': 1}
@@ -120,11 +98,7 @@ def detect_uaf(
     pseudocode: str,
     func_name: str = "",
 ) -> List[Dict[str, Any]]:
-    """Detect Use-After-Free vulnerabilities.
-
-    For each (free(p), p dereference) pair, check temporal ordering:
-    if the dereference appears after free (by line number) -> UAF candidate.
-    """
+    """检测 UAF: 对每对 (free(p), p解引用) 检查时序, 解引用出现在 free 之后 → 候选。"""
     findings = []
     frees = _find_frees(pseudocode)
     if not frees:
@@ -134,7 +108,7 @@ def detect_uaf(
 
     for fr in frees:
         ptr = fr['variable']
-        # Find pointer uses after the free line
+        # 查找 free 之后的指针使用行
         free_pos = -1
         for i, line in enumerate(lines):
             if ptr in line and 'free' in line:
@@ -144,7 +118,7 @@ def detect_uaf(
         if free_pos < 0:
             continue
 
-        # Search for pointer uses after free
+        # 查找 free 之后的指针使用
         uses_after = []
         for i in range(free_pos + 1, min(len(lines), free_pos + 50)):
             if re.search(rf'\*{ptr}\b|{ptr}\s*->|{ptr}\s*\[', lines[i]):
@@ -174,7 +148,7 @@ def detect_double_free(
     pseudocode: str,
     func_name: str = "",
 ) -> List[Dict[str, Any]]:
-    """Detect Double Free: same variable passed to free() twice."""
+    """检测双重释放: 同一变量传入 free() 两次以上。"""
     findings = []
     freed_vars: Dict[str, int] = {}
 
@@ -206,12 +180,7 @@ def detect_heap_overflow(
     pseudocode: str,
     func_name: str = "",
 ) -> List[Dict[str, Any]]:
-    """Detect heap overflow: write exceeds malloc allocation size.
-
-    Strategy:
-      1. Find malloc(n) -> var
-      2. Find subsequent writes to var (memcpy etc.) with size > n
-    """
+    """检测堆溢出: 写入大小超过 malloc 分配大小。"""
     findings = []
     allocs = _find_allocations(pseudocode)
 
@@ -222,7 +191,7 @@ def detect_heap_overflow(
         var = alloc['variable']
         alloc_size = alloc['estimated_size']
 
-        # Search for writes targeting this variable
+        # 查找写入该变量的调用
         for write_func in _HEAP_WRITE_FUNCS:
             for m in re.finditer(
                 rf'{write_func}\s*\(\s*{re.escape(var)}\s*,[^,)]*,\s*(\d+)\s*\)',
@@ -259,16 +228,7 @@ def analyze_heap_vulnerabilities(
     func_name: Optional[str] = None,
     pseudocode: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Comprehensive heap vulnerability detection: UAF, Double Free, and heap overflow.
-
-    Args:
-        binary_path: ELF path (for logging)
-        func_name: restrict to specific function, None = scan all
-        pseudocode: pre-fetched pseudocode, None = auto-decompile
-
-    Returns:
-        Vulnerability findings sorted by confidence descending
-    """
+    """综合堆漏洞检测: UAF、双重释放与堆溢出, 按置信度降序返回结果。"""
     findings: List[Dict[str, Any]] = []
 
     if pseudocode:
@@ -281,7 +241,7 @@ def analyze_heap_vulnerabilities(
         except Exception:
             return findings
     else:
-        # Full scan of all user functions - expensive, requires explicit invocation
+        # 全量扫描所有用户函数 — 开销大, 需显式调用
         return findings
 
     for fname, pcode in all_pseudocode.items():

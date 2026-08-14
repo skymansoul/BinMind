@@ -1,20 +1,6 @@
-"""
-格式化字符串调用图分析 —— 跨函数追踪格式化参数的传播路径。
-
-现有 format_string_detector 的 Level 1 正则匹配仅在单函数内搜索
-printf(user_input) 模式。若 user_input 经过函数封装:
-  void log_msg(char *s) { printf(s); }
-  log_msg(argv[1]);
-正则匹配无法跨越 log_msg 的调用边界追踪到 argv[1]。
-
-本模块在调用图上做 BFS 传播:
-1. 识别 printf 系列调用点为 sink
-2. 反向沿调用图追踪每个 sink 的格式化参数直到找到外部输入源
-3. BFS 深度限制 ≤ 5 层以避免全程序分析
-
-与非跨函数方法的互补: 本模块捕获间接调用路径, 原有静态匹配覆盖直接调用,
-两者结果取并集。
-"""
+"""格式化字符串调用图分析 —— 跨函数追踪格式化参数的传播路径。
+Level 1 正则仅在单函数内匹配 printf(user_input), 无法跨越封装函数 (如 log_msg(s) { printf(s); });
+本模块在调用图上从 sink 反向 BFS 追踪到外部输入源, 深度限制 ≤5 层, 与非跨函数方法的结果取并集。"""
 
 from collections import deque
 from dataclasses import dataclass, field

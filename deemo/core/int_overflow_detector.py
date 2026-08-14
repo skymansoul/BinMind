@@ -1,16 +1,6 @@
 """
-整数溢出→堆溢出检测 —— 乘法溢出导致分配不足的静态分析。
-
-CWE-190 (Integer Overflow) 经常是 CWE-122 (Heap Overflow) 的前置条件:
-  size_t n = count * sizeof(T);  // count 可控且足够大时溢出为小值
-  buf = malloc(n);               // 分配远小于预期
-  memcpy(buf, src, count*sizeof(T)); // 实际写入超出分配 → 堆溢出
-
-现有检测只报告 memcpy 的写入大小 > malloc 的大小,
-但不追溯到乘法溢出的根因。本模块专门检测此模式。
-
-方法: 搜索 mul/imul 指令或伪代码中的 * 运算符,
-对操作数做上下界估计, 若乘积的上界超过 SIZE_MAX 则标记。
+整数溢出→堆溢出检测 — 乘法溢出导致分配不足的静态分析 (CWE-190 → CWE-122)。
+count*sizeof(T) 溢出为小值时 malloc 分配不足, 后续写入越界; 本模块追溯到乘法根因。
 """
 
 from dataclasses import dataclass, field

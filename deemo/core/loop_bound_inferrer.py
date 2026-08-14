@@ -1,27 +1,7 @@
 """
-Loop bound inferrer for heap overflow false positive reduction.
-
-The single largest source of heap overflow FPs is loop-based writes:
-  for (i = 0; i < N; i++) buf[i] = src[i];
-
-The existing detector sees `store(buf + N-1)` and flags it as overflow
-without knowing that the loop bound N is the same N passed to malloc(N).
-
-This module infers loop bounds from decompiled IR patterns and correlates
-them with allocation sizes. It uses a three-tier approach:
-
-Tier 1: Direct pattern matching — cmp reg, imm → loop upper bound
-Tier 2: Induction variable tracking — extract bounds from loop-carried variables
-Tier 3: Interval widening — for nested loops, compute outer bound from inner
-
-When a loop bound equals or is less than the allocation size, the write is
-provably safe, and we can filter the FP with high confidence.
-
-  He et al., "Loop Bound Analysis for WCET" — classification of
-  loop patterns in compiled code.
-  Our approach: simplified O(n) pattern matching vs. full abstract interpretation,
-  targeting only the most common patterns (for/while loops with constant bounds)
-  which account for ~70% of heap overflow FPs in practice.
+循环边界推断 — 削减堆溢出误报：从IR模式推断循环上界并与分配大小
+关联，上界≤分配大小时写操作可判安全。三级方法: 直接模式匹配、
+归纳变量追踪、区间加宽(嵌套循环)。
 """
 
 from __future__ import annotations

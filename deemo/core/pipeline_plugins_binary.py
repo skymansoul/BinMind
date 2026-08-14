@@ -13,14 +13,14 @@ def _register_binary_layers(
     kwargs: Dict[str, Any],
     logger: Any,
 ) -> None:
-    """注册 exploit/二进制分析/安全特性增强层 (g, p-r, s-x, af-bq 中剩余块)."""
+    """注册 exploit/二进制分析/安全特性增强层 (g, p-r, s-x, af-bq 中剩余块)。"""
 
     # (g) exploit 原语组合文法
     try:
-        from exploit.src.core.primitive_composer import (
+        from modules.exploit.src.core.primitive_composer import (
             PrimitiveComposer, AtomicPrimitive, PrimitiveType,
         )
-        from exploit.src.core.constraint_propagator import (
+        from modules.exploit.src.core.constraint_propagator import (
             ConstraintPropagator, MachineState,
         )
         result['_primitive_composer'] = PrimitiveComposer(
@@ -40,11 +40,11 @@ def _register_binary_layers(
         if not _imports_for_concurrency:
             _imports_for_concurrency = binfo.get('imports', [])
         if _imports_for_concurrency:
-            from analysis.static.concurrency_analysis.src.sync_primitive import (
+            from modules.analysis.static.concurrency_analysis.src.sync_primitive import (
                 extract_sync_primitives,
             )
             if extract_sync_primitives(_imports_for_concurrency):
-                from analysis.static.concurrency_analysis.src.concurrency_pipeline import (
+                from modules.analysis.static.concurrency_analysis.src.concurrency_pipeline import (
                     analyze_binary_concurrency,
                 )
                 result['_concurrency_analyzer'] = analyze_binary_concurrency
@@ -55,7 +55,7 @@ def _register_binary_layers(
 
     # 混淆类型预分类器与跨函数证据传播
     try:
-        from deobfuscation.src.obfuscation_classifier import (
+        from modules.analysis.deobfuscation.src.obfuscation_classifier import (
             ObfuscationClassifier, VoteTally,
         )
         result['_obfuscation_classifier'] = ObfuscationClassifier()
@@ -63,7 +63,7 @@ def _register_binary_layers(
     except ImportError:
         logger.debug('optional plugin not available')
     try:
-        from deobfuscation.src.evidence_propagation import (
+        from modules.analysis.deobfuscation.src.evidence_propagation import (
             EvidencePropagator, EvidenceRecord,
         )
         result['_evidence_propagator'] = EvidencePropagator()
@@ -75,9 +75,9 @@ def _register_binary_layers(
     baseline_path = kwargs.get('baseline_binary')
     if baseline_path:
         try:
-            from analysis.static.binary_diff.src.func_differ import diff_pipeline
-            from analysis.static.binary_diff.src.patch_classifier import classify_patch
-            from analysis.static.binary_diff.src.exploit_ranker import rank_patches
+            from modules.analysis.static.binary_diff.src.func_differ import diff_pipeline
+            from modules.analysis.static.binary_diff.src.patch_classifier import classify_patch
+            from modules.analysis.static.binary_diff.src.exploit_ranker import rank_patches
             result['_diff_baseline_path'] = baseline_path
             result['_diff_pipeline'] = diff_pipeline
             result['_classify_patch'] = classify_patch
@@ -88,7 +88,7 @@ def _register_binary_layers(
 
     # (q) 跨合约污点流分析器
     try:
-        from smart_contract.src.cross_contract_taint import (
+        from modules.platform.smart_contract.src.cross_contract_taint import (
             CrossContractTaintAnalyzer, CrossContractCallGraph,
             ContractCallEdge, CrossContractTaintPath,
         )
@@ -146,6 +146,7 @@ def _register_binary_layers(
 
     # 编译器产物归一化器
     try:
+        # CompilerArtifactNormalizer 已重构为 normalize_cfg 函数 API, 该增强当前跳过
         from modules.core.compat.compiler_artifact_normalizer import (
             CompilerArtifactNormalizer,
         )
@@ -176,7 +177,7 @@ def _register_binary_layers(
 
     # EVM 重入检测器
     try:
-        from crypto.src.evm.reentrancy_detector import (
+        from modules.crypto.src.evm.reentrancy_detector import (
             EVMReentrancyDetector, EVMDisassembler,
         )
         result['_evm_reentrancy_detector'] = EVMReentrancyDetector()
@@ -186,13 +187,13 @@ def _register_binary_layers(
 
     # 堆原语链搜索
     try:
-        from exploit.src.heap.primitive_chain.primitive_classifier import (
+        from modules.exploit.src.heap.primitive_chain.primitive_classifier import (
             classify_heap_ops,
         )
-        from exploit.src.heap.primitive_chain.chain_search import (
+        from modules.exploit.src.heap.primitive_chain.chain_search import (
             search_primitive_chain, rank_chains,
         )
-        from exploit.src.heap.primitive_chain.allocator_constraints import (
+        from modules.exploit.src.heap.primitive_chain.allocator_constraints import (
             PTMalloc2Constraints,
         )
         result['_heap_primitive_classifier'] = classify_heap_ops
@@ -205,7 +206,7 @@ def _register_binary_layers(
 
     # 二进制级常量时间验证
     try:
-        from analysis.static.const_time.src.const_time_pipeline import (
+        from modules.analysis.static.const_time.src.const_time_pipeline import (
             verify_constant_time, ViolationSeverity,
         )
         result['_const_time_verifier'] = verify_constant_time
@@ -216,7 +217,7 @@ def _register_binary_layers(
 
     # 堆分配器副作用补偿引擎
     try:
-        from exploit.src.heap.side_effect_compensator import (
+        from modules.exploit.src.heap.side_effect_compensator import (
             SideEffectPredictor, CompensationSynthesizer,
             predict_and_compensate,
         )
@@ -231,7 +232,7 @@ def _register_binary_layers(
 
     # 可解释二进制特征提取器
     try:
-        from analysis.static.binary_analysis.interpretable_features import (
+        from modules.analysis.static.binary_analysis.interpretable_features import (
             InterpretableFeatureExtractor, InvertedFeatureIndex,
             FunctionFeatures,
         )
@@ -243,7 +244,7 @@ def _register_binary_layers(
 
     # E-Graph 等式饱和 MBA 简化器
     try:
-        from deobfuscation.egraph_mba_simplifier import EGraphMBASimplifier
+        from modules.analysis.deobfuscation.egraph_mba_simplifier import EGraphMBASimplifier
         result['_egraph_mba_simplifier'] = EGraphMBASimplifier(
             max_iterations=kwargs.get('egraph_max_iter', 10),
             max_nodes=kwargs.get('egraph_max_nodes', 5000),
@@ -254,7 +255,7 @@ def _register_binary_layers(
 
     # 主动协议状态机推断器
     try:
-        from network.active_state_inferrer import (
+        from modules.network.active_state_inferrer import (
             ActiveStateInferrer, generate_counterexample_candidates,
         )
         result['_active_state_inferrer'] = ActiveStateInferrer(
@@ -268,7 +269,7 @@ def _register_binary_layers(
 
     # 表达式基元对齐微补丁生成器
     try:
-        from patching.expression_primitive_aligner import (
+        from modules.patching.expression_primitive_aligner import (
             PrimitiveDecomposer, BehavioralSignatureMatcher,
             MicroPatchGenerator, RelationalEquivalenceVerifier,
         )
@@ -284,7 +285,7 @@ def _register_binary_layers(
 
     # 引力模型对比学习二进制嵌入
     try:
-        from ai_ml.src.training.gravity_contrastive import (
+        from modules.ai_ml.src.training.gravity_contrastive import (
             MomentumContrastEmbedder, build_gravity_model,
             GravityCFGNode, pretrain_step,
         )

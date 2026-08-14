@@ -1,17 +1,7 @@
 """
-Heap overflow detector with ensemble FP filter — wraps the GAPSBV 5-stage
-pipeline and post-processes candidates through the 3-engine ensemble filter
-(VFS + Guard Correlation + Taint Propagation) to suppress false positives.
-
-This is the recommended entry point for heap overflow detection.
-  Original pipeline → EnhancedHeapOverflowDetector (Stages 1-5)
-  Ensemble filter   → EnsembleFpFilter (3-engine committee vote)
-
-Integration: candidates from Stage 5 pass through the ensemble; any
-candidate voted SUPPRESS by ≥2 engines (or unanimously) is reclassified
-from CONFIRMED/UNCERTAIN → FILTERED.
-
-Ref: ensemble_fp_filter.py, heap_overflow_enhanced.py
+带集成误报过滤的堆溢出检测器 — 包装 GAPSBV 5阶段管线, 将候选经
+3引擎集成过滤 (VFS + 守卫关联 + 污点传播) 后处理; ≥2引擎判 SUPPRESS
+的候选从 CONFIRMED/UNCERTAIN 重分类为 FILTERED。
 """
 
 from __future__ import annotations
@@ -34,7 +24,7 @@ _WRITE_ARGS = _re.compile(
     r'(?:memcpy|memmove|strncpy|strcpy|sprintf)\s*\(\s*[^,]+,\s*[^,]+,\s*(\w[\w.]*)')
 
 def _extract_size_var(ir: list, wl: int) -> str:
-    """Extract the size argument variable from a heap write IR line."""
+    """从堆写入IR行提取大小参数变量。"""
     if wl < len(ir):
         m = _WRITE_ARGS.search(ir[wl])
         if m:
@@ -42,7 +32,7 @@ def _extract_size_var(ir: list, wl: int) -> str:
     return 'len'
 
 def _best_alloc_size(c) -> int:
-    """Best-effort alloc size: effective > refined > raw."""
+    """尽力获取分配大小: effective > refined > raw。"""
     if c.effective_alloc > 0:
         return c.effective_alloc
     lo = c.refined_alloc_iv.lo
@@ -52,14 +42,7 @@ def _best_alloc_size(c) -> int:
 # integrated detector ──────────────────────────────────────────────────
 
 class HeapEnsembleDetector:
-    """GAPSBV 5-stage pipeline + 3-engine ensemble FP filter.
-
-    Usage:
-      det = HeapEnsembleDetector(platform='x86_64')
-      results = det.detect(ir_lines)
-      for r in results:
-          print(r.summary())
-    """
+    """GAPSBV 5阶段管线 + 3引擎集成误报过滤。"""
 
     def __init__(self, platform: str = 'x86_64',
                  enable_ensemble: bool = True):
@@ -71,11 +54,8 @@ class HeapEnsembleDetector:
         self, ir_lines: List[str],
         binary_path: str = '', arch_bits: int = 64,
     ) -> Tuple[List[EnhancedHeapCandidate], List[EnsembleDecision], Dict]:
-        """Run detection pipeline + optional ensemble filtering.
-
-        Returns: (candidates, ensemble_decisions, stats)
-        """
-        # Stage 1-5: existing GAPSBV pipeline
+        """运行检测管线与可选的集成过滤, 返回 (候选, 集成判定, 统计)。"""
+        # 阶段1-5: 既有GAPSBV管线
         candidates = self._pipeline.detect(ir_lines, binary_path, arch_bits)
         pipeline_stats = dict(self._pipeline.stats)
         ensemble_decisions: List[EnsembleDecision] = []
@@ -86,7 +66,7 @@ class HeapEnsembleDetector:
                 'ensemble_suppressed': 0}
             return candidates, ensemble_decisions, self.stats
 
-        # Convert candidates to ensemble input format
+        # 将候选转换为集成输入格式
         cand_dicts = []
         for c in candidates:
             size_var = _extract_size_var(ir_lines, c.write_site.loc)
@@ -98,22 +78,22 @@ class HeapEnsembleDetector:
                 'write_func': 'memcpy',
             })
 
-        # Stage 6: ensemble FP filtering
+        # 阶段6: 集成误报过滤
         decisions = self._ensemble.filter(ir_lines, cand_dicts)
         ensemble_decisions = decisions
 
-        # Re-classify candidates based on ensemble decisions
+        # 依据集成判定重分类候选
         for i, dec in enumerate(decisions):
             if i >= len(candidates):
                 break
             if dec.verdict == 'SUPPRESS':
                 cand = candidates[i]
-                # Only suppress non-definite overflows
+                # 仅抑制非确定性溢出
                 if cand.verdict in ('UNCERTAIN',):
                     cand.verdict = 'FILTERED'
                     cand.fp_likelihood = max(cand.fp_likelihood, 0.85)
                 elif cand.verdict == 'CONFIRMED' and cand.confidence < 0.85:
-                    # Borderline: downgrade to UNCERTAIN
+                    # 临界情形: 降级为 UNCERTAIN
                     cand.verdict = 'UNCERTAIN'
                     cand.confidence = max(cand.confidence - 0.15, 0.30)
                     cand.fp_likelihood = min(cand.fp_likelihood + 0.30, 0.95)
@@ -134,7 +114,7 @@ class HeapEnsembleDetector:
         self, candidates: List[EnhancedHeapCandidate],
         decisions: List[EnsembleDecision],
     ) -> str:
-        """Generate a human-readable ensemble report."""
+        """生成可读的集成报告文本。"""
         lines = ['Ensemble FP Filter Report',
                  f"{'='*70}",
                  f"{'Line':5s} {'Write':35s} {'Pipeline':12s} "
@@ -155,7 +135,7 @@ class HeapEnsembleDetector:
 def detect_with_ensemble(
     ir_lines: List[str], binary_path: str = '', arch_bits: int = 64,
 ) -> Tuple[List[EnhancedHeapCandidate], List[EnsembleDecision], Dict]:
-    """Convenience: detect heap overflows with ensemble FP filtering."""
+    """便捷接口: 带集成误报过滤的堆溢出检测。"""
     det = HeapEnsembleDetector()
     return det.detect(ir_lines, binary_path, arch_bits)
 

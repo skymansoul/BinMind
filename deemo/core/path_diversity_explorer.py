@@ -1,25 +1,7 @@
 """
-Path-diversity-guided symbolic execution explorer.
-
-When symbolic execution hits path explosion, instead of full constraint solving
-to pick the next path, this module ranks active paths by lightweight statistical
-features, preferring directions that differ most from already-explored paths.
-This avoids wasting solver budget on semantically similar paths.
-
-Core mechanism:
-  1. Extract statistical feature vectors per active path (branch history,
-     call depth, symbolic variable count)
-  2. Compute minimum cosine distance to the explored feature library as "novelty"
-  3. Combined priority = novelty * branch potential (unexplored successors)
-  4. Highest-priority paths are explored first
-
-Unlike KLEE's default DFS/BFS/random-path strategies, this module's feature
-vectors require no constraint solving to compute, enabling fast sorting over
-large numbers of active paths. Solver budget is only spent on top-k paths.
-
-Reference:
-  Yang, U.Toronto PhD Thesis, "ML-Assisted Symbolic Analysis"
-  KLEE Workshop 2024, "State Merging and Prioritization"
+路径多样性引导的符号执行探索器。
+路径爆炸时按轻量统计特征为活跃路径排序，优先探索与已探索路径差异最大的
+方向，避免把求解预算浪费在语义相似路径上（特征向量无需约束求解即可计算）。
 """
 
 
@@ -32,11 +14,9 @@ _log = logging.getLogger(__name__)
 
 
 class PathDiversityExplorer:
-    """Statistical-feature-based path diversity explorer.
-
-    Maintains a library of explored path features and ranks active paths by
-    novelty + potential gain. No dependency on angr's constraint solver:
-    feature extraction only needs path metadata."""
+    """基于统计特征的路径多样性探索器：维护已探索路径特征库，
+    按新颖度+潜在增益排序活跃路径；不依赖angr约束求解器，
+    特征提取只需路径元数据。"""
 
     def __init__(
         self,
@@ -47,10 +27,10 @@ class PathDiversityExplorer:
     ):
         """
         Args:
-            feature_dim: dimension of normalized feature vectors
-            diversity_weight: weight of diversity in combined priority (0-1)
-            novelty_threshold: paths below this novelty are considered "sufficiently explored"
-            max_explored_features: max capacity of explored feature library (FIFO eviction)
+            feature_dim: 归一化特征向量维度
+            diversity_weight: 综合优先级中多样性权重(0-1)
+            novelty_threshold: 低于此新颖度的路径视为"已充分探索"
+            max_explored_features: 已探索特征库容量(FIFO淘汰)
         """
         self.feature_dim = feature_dim
         self.diversity_weight = diversity_weight
@@ -71,15 +51,15 @@ class PathDiversityExplorer:
         unexplored_successors: int = 0,
     ) -> None:
         """
-        Register an active path and its metadata.
+        注册活跃路径及其元数据。
 
         Args:
-            path_id: unique path identifier
-            branch_history: hashed sequence of (addr, taken) for conditional branches
-            call_depth: current call stack depth
-            sym_var_count: number of active symbolic variables
-            block_count: basic blocks executed so far
-            unexplored_successors: count of unexplored successor branches at current state
+            path_id: 路径唯一标识
+            branch_history: 条件分支的(地址, 是否跳转)哈希序列
+            call_depth: 当前调用栈深度
+            sym_var_count: 活跃符号变量数
+            block_count: 已执行的基本块数
+            unexplored_successors: 当前状态未探索的后继分支数
         """
         features = _extract_features(
             branch_history, call_depth, sym_var_count, block_count,
@@ -94,9 +74,7 @@ class PathDiversityExplorer:
 
     def mark_explored(self, path_id: str) -> None:
         """
-        Mark a path as explored and add its features to the library.
-
-        Evicts the oldest entry if the library exceeds capacity (FIFO).
+        标记路径为已探索并加入特征库；超出容量时淘汰最旧条目(FIFO)。
         """
         if path_id not in self._active_paths:
             return
@@ -109,15 +87,15 @@ class PathDiversityExplorer:
         del self._active_paths[path_id]
 
     def remove_path(self, path_id: str) -> None:
-        """Remove an active path (e.g., discarded as unsatisfiable)."""
+        """移除活跃路径（如判定不可满足被丢弃）。"""
         self._active_paths.pop(path_id, None)
 
     def compute_priorities(self) -> List[Tuple[str, float]]:
         """
-        Compute combined priority for all active paths.
+        计算全部活跃路径的综合优先级。
 
         Returns:
-            [(path_id, priority_score)] sorted by priority descending
+            [(path_id, priority_score)] 按优先级降序排列
         """
         if not self._active_paths:
             return []
@@ -137,13 +115,11 @@ class PathDiversityExplorer:
 
     def select_next(self, top_k: int = 3) -> List[str]:
         """
-        Select the top-k paths by priority.
-
-        Automatically skips paths below the novelty threshold since those
-        regions are considered sufficiently explored.
+        按优先级选取前k条路径；自动跳过低于新颖度阈值的路径
+        （该区域视为已充分探索）。
 
         Returns:
-            List of path IDs
+            路径ID列表
         """
         priorities = self.compute_priorities()
         selected = []
@@ -155,18 +131,15 @@ class PathDiversityExplorer:
             if novelty >= self.novelty_threshold or len(self._explored_features) < 10:
                 selected.append(pid)
             else:
-                # Low-novelty path: log but don't auto-remove; caller decides
+                # 低新颖度路径: 仅记录不自动移除, 由调用方决定
                 _log.debug("Path %s below novelty threshold (%.3f)", pid, novelty)
 
         return selected
 
     def is_stagnating(self, window: int = 50) -> bool:
         """
-        Check if exploration is stagnating.
-
-        Returns True if the average novelty of the last `window` paths is below
-        the threshold. Caller should consider increasing random exploration
-        weight or switching exploration strategy.
+        检查探索是否停滞：最近`window`条路径的平均新颖度低于阈值时
+        返回True。调用方应增加随机探索权重或切换探索策略。
         """
         if len(self._explored_features) < window:
             return False
@@ -175,7 +148,7 @@ class PathDiversityExplorer:
         if len(recent) < 2:
             return False
 
-        # Compute pairwise cosine distance mean of recent features
+        # 计算近期特征的两两余弦距离均值
         total_dist = 0.0
         pairs = 0
         for i in range(len(recent)):
@@ -204,16 +177,14 @@ def _extract_features(
     dim: int,
 ) -> List[float]:
     """
-    Compress path metadata into a fixed-dimension feature vector.
-
-    Features:
-      [0] normalized branch history hash
-      [1] branch history length / max history length
-      [2] call stack depth / max depth
-      [3] symbolic variable count / max count
-      [4] basic block count / max count
-      [5] branch entropy (ratio of unique branches in history)
-      [6-7] hash split high/low 16-bit (captures fine-grained differences)
+    将路径元数据压缩为定维特征向量:
+      [0] 归一化分支历史哈希
+      [1] 历史长度/最大长度
+      [2] 调用深度/最大深度
+      [3] 符号变量数/最大数
+      [4] 基本块数/最大数
+      [5] 分支熵(历史中唯一分支占比)
+      [6-7] 哈希高低16位(捕捉细粒度差异)
     """
     hist_str = ",".join(str(b & 0xFFFF) for b in branch_history[-16:])
     hist_hash = int(hashlib.md5(hist_str.encode()).hexdigest()[:8], 16)
@@ -233,7 +204,7 @@ def _extract_features(
         (hist_hash & 0xFFFF) / 65536.0,
     ]
 
-    # Pad or truncate to dim
+    # 补齐或截断到目标维度
     while len(features) < dim:
         features.append(0.0)
     return features[:dim]
@@ -244,12 +215,9 @@ def _compute_novelty(
     explored_library: List[List[float]],
 ) -> float:
     """
-    Compute novelty of a feature vector relative to the explored library.
-
-    Novelty = 1 - max(cosine_sim(features, explored_i)),
-    i.e., the cosine distance to the nearest explored feature.
-
-    Returns 1.0 if the explored library is empty.
+    计算特征向量相对已探索库的新颖度:
+    新颖度 = 1 - max(cosine_sim(features, explored_i))，即到最近已探索
+    特征的余弦距离。库为空时返回1.0。
     """
     if not explored_library or not features:
         return 1.0
@@ -262,7 +230,7 @@ def _compute_novelty(
 
 
 def _cosine_sim(a: List[float], b: List[float]) -> float:
-    """Cosine similarity, returns [-1, 1]; closer to 1 = more similar."""
+    """余弦相似度，返回[-1, 1]；越接近1越相似。"""
     if len(a) != len(b) or len(a) == 0:
         return 0.0
 
@@ -276,6 +244,6 @@ def _cosine_sim(a: List[float], b: List[float]) -> float:
 
 
 def _branch_potential(unexplored_successors: int) -> float:
-    """Potential gain from unexplored successors, sigmoid-normalized to [0, 1]."""
+    """未探索后继的潜在增益，sigmoid归一化到[0, 1]。"""
     x = max(0, unexplored_successors)
     return 2.0 / (1.0 + math.exp(-x / 2.0)) - 1.0

@@ -1,18 +1,5 @@
-# 在反编译伪代码文本上做use-def链构建+污点传播。
-# 不做完整到达-定值分析 — 仅追踪source到sink的2跳内直接数据流。
-# 复杂度O(n), 可扩展到大型二进制。
-#
-# 设计依据:
-#   FSVDTG 在S2E上做符号化参数检测, 但需要全系统仿真。
-#   Pandora 在angr上做attacker taint, 但仅限SGX。
-#   本模块在反编译伪代码级别实现: 不需要IR翻译, 不需要符号执行引擎,
-#   直接解析r2/rizin的pdc输出文本做变量传播。
-#
-# 算法:
-#   1. 扫描伪代码行, 标记污点源调用 (read/fgets/recv/scanf/getenv)
-#   2. 追踪污点变量的赋值传播: var_b = var_a (tainted) -> var_b
-#   3. 检测污点变量传入危险函数 (sink)
-#   4. 限制传播深度depth<=2: 避免全程序分析, 保持线性复杂度
+# 在反编译伪代码文本上做use-def链构建+污点传播, 复杂度O(n)。
+# 仅追踪source到sink的2跳内直接数据流, 避免全程序分析, 可扩展至大型二进制。
 import re as _re
 from dataclasses import dataclass as _dc
 from typing import List, Set

@@ -1,17 +1,6 @@
-"""
-Copy操作约束验证器 — 对 strcpy/memcpy 类堆溢出候选执行值流约束推理.
-
-核心方法: 追踪 alloc_sz 和 copy_sz 的值来源, 通过以下维度判定:
-  1. 来源独立性: alloc_sz 和 copy_sz 是否来自不同的外部输入
-  2. 守卫约束: 是否存在 if(cond) 限制 copy_sz 或 alloc_sz 的范围
-  3. 常量上界: 即使变量来源未知, 是否有隐式上界 (uint16_t→65535)
-  4. 仿射关系: copy_sz = alloc_sz + k 或 copy_sz = alloc_sz * c 等
-
-与传统符号执行的区别: 不符号化内存地址, 仅追踪 size 变量值流;
-  无 SMT 求解器, 使用区间代数做保守近似; 确定性可复现.
-
-参考: SUTURE, VYPER, MIRAI tag analysis.
-"""
+"""Copy操作约束验证器 — 对 strcpy/memcpy 类堆溢出候选执行值流约束推理.
+追踪 alloc_sz/copy_sz 值源, 从来源独立性/守卫约束/常量上界/仿射关系四维判定;
+不符号化内存地址, 无 SMT 求解器, 用区间代数保守近似. 参考: SUTURE, VYPER, MIRAI."""
 
 from __future__ import annotations
 import re

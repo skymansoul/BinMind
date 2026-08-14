@@ -1,15 +1,6 @@
 """
-约束收集器 — 从IR/伪代码中提取四类堆溢出约束并构建ConstraintSystem.
-
-四类约束来源:
-  1. 分配大小约束: malloc(N)的N来自常量/类型上界/守卫约束
-  2. 拷贝大小约束: memcpy的第三参数来自常量/变量/循环计数
-  3. 写入偏移约束: store指令的offset来自常量/索引变量/循环变量
-  4. 循环上界约束: for(i=0;i<N;i++)的N和步长
-
-每个候选(alloc, write)对构建一个ConstraintSystem, 供求解器判定.
-
-拷贝/偏移约束的子收集函数已拆至 cj_constraint_collector_collectors.py
+约束收集器 — 从 IR/伪代码中提取四类堆溢出约束: 分配大小 (malloc 参数)、拷贝大小 (memcpy 第三参数)、写入偏移 (store 的 offset)、循环上界 (for 的 N 与步长)。
+每个 (alloc, write) 候选构建一个 ConstraintSystem 供求解器判定; 拷贝/偏移约束的子收集函数拆至 cj_constraint_collector_collectors.py。
 """
 
 from __future__ import annotations

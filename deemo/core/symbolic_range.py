@@ -1,19 +1,7 @@
 """
 符号化区间抽象 — 替代简单[min,max]区间, 引入符号偏移和路径条件。
-
-设计理由:
-  value_range.py 的 Interval 只能表示常量边界。当 malloc 的大小来自
-  函数参数或表达式 (如 malloc(n*4+8)), 简单区间退化为 [-1, 2^31-1] (⊤),
-  导致无法判断溢出。本模块引入 AffineInterval:
-    base + coef*var  其中 var 可以是符号变量
-  例如: n*4+8 → base=8, coef=4, sym='n'
-
-  同时引入 PathCondition 追踪分支约束 (如 if(n<256) → n∈[0,255]),
-  在后续路径中可用于细化符号范围。
-
-  - Mine "The Octagon Abstract Domain" — 弱关系域思想
-  - Bodik et al. "SUTURE" USENIX — 选择性符号执行中用到 affine 约束
-  - Z3 API — 我们不做完整 SMT, 只在最后 resort 时用到
+AffineInterval 表示 base + coef*var (如 malloc(n*4+8) → base=8, coef=4, sym='n'),
+PathCondition 追踪分支约束 (如 if(n<256) → n∈[0,255]) 以细化符号范围。
 """
 
 from dataclasses import dataclass, field
@@ -34,7 +22,7 @@ class AffineInterval:
     当所有 coef=0 时退化为常量区间。
     """
     base: int = 0
-    coef: Dict[str, int] = field(default_factory=dict)  # sym_name → coefficient
+    coef: Dict[str, int] = field(default_factory=dict)  # 符号名 → 系数
     lo: int = -1        # 数值下界 (-1 = 未知)
     hi: int = 2**31 - 1  # 数值上界
 
@@ -103,7 +91,7 @@ class AffineInterval:
         # 仅当 write.max ≤ alloc.min (已知下界) 时可判定安全
         if self.hi < 2**31 - 1 and other.lo >= 0 and self.hi <= other.lo:
             return False
-        return True  # 保守: 可能溢出
+        return True  # 保守: 判定为潜在溢出
 
     def __add__(self, other: "AffineInterval") -> "AffineInterval":
         combined = dict(self.coef)

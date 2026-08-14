@@ -449,7 +449,6 @@ class FunctionSummarizer:
         if not scores:
             return ""
 
-        # 返回得分最高的类别标签
         best_cat = max(scores, key=lambda k: scores[k])
         return _PURPOSE_CATEGORIES[best_cat]['label']
 

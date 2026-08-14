@@ -1,26 +1,7 @@
 """
-LSP Layer 2 — 谓词不变式推导器.
-
-结合BVF构建的SymbolicExpr和LSP Layer1收集的PathPredicate,
-将路径条件代入符号表达式, 推导write_end和alloc_size的确切关系.
-
-核心思想: BVF无法判定是因为变量缺少界限信息. LSP通过路径谓词
-为变量补充上界/下界, 使BVF的子集安全/系数溢出判定重新可解.
-
-三类推导:
-  A. 有界变量安全证明:
-     BVF: write={n:1}, alloc=const(256), 无共享 → INCONCLUSIVE
-     LSP: 路径谓词 n <= 256 → write_end = n <= 256 = alloc → SAFE
-
-  B. 有界变量溢出证明:
-     BVF: write={n:1}, alloc=const(64) → INCONCLUSIVE
-     LSP: 路径谓词 n >= 128 → write_end = n >= 128 > 64 = alloc → OVERFLOW
-
-  C. 仿射增强证明:
-     BVF: alloc={n:1}+8, write={n:1}, 共享n → SAFE (子集关系)
-     LSP: 额外证明 n的上界使得 write_end + alloc余量均在安全范围
-
-保守性: 无路径谓词或推导无法判定时返回None, 不影响后续层.
+LSP Layer 2 — 谓词不变式推导器: 将路径谓词代入符号表达式，
+推导write_end与alloc_size的确切关系（有界变量安全/溢出、仿射增强三类推导）。
+无法判定时返回None，不影响后续层。
 """
 from typing import Dict, List, Optional, Set, Tuple
 

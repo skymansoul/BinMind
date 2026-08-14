@@ -1,8 +1,6 @@
 """
-[DEPRECATED] 选择性符号执行 — 已迁移至 analysis/selective_symexec.py (142行).
-保留本文件仅用于向后兼容, 新代码请从 analysis 导入.
-路径上限128, 只符号化size参数, 不建模内存。
-参考: SUTURE, MAYHEM, BINSEC/Rel.
+[DEPRECATED] 选择性符号执行, 已迁移至 analysis/selective_symexec.py.
+仅保留向后兼容, 新代码从 analysis 导入。路径上限 128, 只符号化 size 参数。
 """
 
 
@@ -71,7 +69,7 @@ class SymExpr:
 class HeapPath:
     """一条从 malloc 到 memcpy 的路径摘要。"""
     alloc_var: str
-    alloc_size_expr: SymExpr         # malloc 的大小表达式 (可能含符号变量)
+    alloc_size_expr: SymExpr         # malloc 的大小表达式 (可含符号变量)
     write_var: str
     write_size_expr: SymExpr         # memcpy 的大小表达式
     constraints: List[Tuple[str, str, int]]  # [(var, op, val), ...] 路径上的条件

@@ -1,8 +1,6 @@
-"""
-Ensemble FP filter — 3-engine (VFS+Guard+Taint) FP suppression for heap overflow.
-Weighted committee: unanimous→auto; 2:1+REVIEW→majority; split→REVIEW.
-Ref: Dietterich MCS 2000; Sridharan et al. OOPSLA 2011
-"""
+"""集成 FP 过滤器 — 3 引擎 (值流切片+守卫关联+污点) 抑制堆溢出假阳性.
+加权委员会投票: 全票一致→直接采纳; 2:1+REVIEW→多数决; 三向分裂→REVIEW.
+参考: Dietterich MCS 2000; Sridharan et al. OOPSLA 2011."""
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -13,13 +11,13 @@ from core.guard_correlator import GuardCorrelator, GuardCorrelationResult
 from core.taint_propagator import TaintPropagator, HeapWriteTaint
 
 
-# decision domain ──────────────────────────────────────────────────────
+# 判定域 ──────────────────────────────────────────────────────────────
 
-VERDICT = {'SUPPRESS', 'REVIEW', 'KEEP'}  # KEEP = likely real overflow
+VERDICT = {'SUPPRESS', 'REVIEW', 'KEEP'}  # KEEP = 疑似真实溢出
 
 @dataclass
 class EngineVote:
-    """One engine's vote on a heap write candidate."""
+    """单个引擎对堆写入候选的投票."""
     engine: str           # 'vfs' | 'guard' | 'taint'
     verdict: str          # SUPPRESS | REVIEW | KEEP
     confidence: float     # 0-1
@@ -28,7 +26,7 @@ class EngineVote:
 
 @dataclass
 class EnsembleDecision:
-    """Aggregated FP filtering decision for one heap write."""
+    """单个堆写入的 FP 过滤聚合决策."""
     write_line: int; write_text: str
     alloc_var: str = ''; alloc_size: int = 0; size_var: str = ''
     votes: List[EngineVote] = field(default_factory=list)
@@ -47,17 +45,12 @@ class EnsembleDecision:
                 f'votes={"/".join(v.engine[0]+":"+v.verdict[0] for v in self.votes)}')
 
 
-# ensemble engine ──────────────────────────────────────────────────────
+# 集成引擎 ────────────────────────────────────────────────────────────
 
 class EnsembleFpFilter:
-    """Three-engine FP filter for heap overflow candidates.
+    """堆溢出候选的三引擎 FP 过滤器.
 
-    Usage:
-      ef = EnsembleFpFilter()
-      decisions = ef.filter(ir_lines, candidates)
-      for d in decisions:
-          if d.is_suppressed():
-              print(f"FP suppressed: {d.summary()}")
+    用法: filter(ir_lines, candidates) → decisions, 逐条给出 SUPPRESS/REVIEW/KEEP.
     """
 
     def __init__(self):
@@ -66,21 +59,20 @@ class EnsembleFpFilter:
         self._taint = TaintPropagator()
         self.stats: Dict[str, Any] = {}
 
-    # public API ──────────────────────────────────────────────────────
+    # 公开 API ────────────────────────────────────────────────────────
 
     def filter(
         self, ir_lines: List[str],
         candidates: List[Dict[str, Any]],
     ) -> List[EnsembleDecision]:
-        """Run three engines on each candidate, return ensemble decisions.
+        """对每个候选运行三引擎, 返回集成决策列表.
 
-        candidates: [{'line': int, 'alloc_var': str, 'alloc_size': int,
-                       'size_var': str, 'write_func': str}, ...]
+        candidates: [{'line', 'alloc_var', 'alloc_size', 'size_var', 'write_func'}, ...]
         """
         t0 = time.time()
         decisions: List[EnsembleDecision] = []
 
-        # Pre-compute taint analysis (works across all lines)
+        # 预计算污点分析 (跨全部行)
         taint_map = self._taint.analyze(ir_lines)
 
         for cand in candidates:
@@ -99,24 +91,24 @@ class EnsembleFpFilter:
                 size_var=size_var,
             )
 
-            # Engine A: Value-flow slicing
+            # 引擎 A: 值流切片
             vfs_r = self._vfs.slice_write(ir_lines, wl, alloc_var)
             dec.vfs_result = vfs_r
             dec.votes.append(self._vfs_vote(vfs_r, alloc_size))
 
-            # Engine B: Guard correlation
+            # 引擎 B: 守卫关联
             guard_r = self._guard.correlate(
                 ir_lines, wl, size_var, alloc_var, alloc_size)
             dec.guard_result = guard_r
             dec.votes.append(self._guard_vote(guard_r))
 
-            # Engine C: Taint propagation
+            # 引擎 C: 污点传播
             taint_r = self._taint.check_write(
                 ir_lines, wl, alloc_var, size_var)
             dec.taint_result = taint_r
             dec.votes.append(self._taint_vote(taint_r))
 
-            # Ensemble aggregation
+            # 集成聚合
             dec.verdict, dec.ensemble_score = self._aggregate(dec.votes)
             decisions.append(dec)
 
@@ -129,13 +121,13 @@ class EnsembleFpFilter:
         }
         return decisions
 
-    # per-engine voting ───────────────────────────────────────────────
+    # 逐引擎投票 ─────────────────────────────────────────────────────
 
     @staticmethod
     def _vfs_vote(vfs: SlicedWrite, alloc_size: int) -> EngineVote:
-        """Value-flow slicer → vote."""
+        """值流切片器 → 投票."""
         reasons = []
-        fp_score = vfs.fp_likelihood  # high → likely FP
+        fp_score = vfs.fp_likelihood  # 高 → 疑似 FP
 
         if vfs.size_slice:
             ss = vfs.size_slice
@@ -169,9 +161,9 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _guard_vote(gr: GuardCorrelationResult) -> EngineVote:
-        """Guard correlator → vote."""
+        """守卫关联器 → 投票."""
         reasons = []
-        score = gr.safe_confidence  # high → likely safe (FP)
+        score = gr.safe_confidence  # 高 → 疑似安全 (FP)
 
         if gr.dominant_guard:
             dg = gr.dominant_guard
@@ -199,10 +191,10 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _taint_vote(ht: HeapWriteTaint) -> EngineVote:
-        """Taint propagator → vote."""
+        """污点传播器 → 投票."""
         reasons = []
-        # score: 0=clean(safe/FP), 1=tainted(real overflow)
-        # invert: high taint_score → low FP score
+        # 分数: 0=干净(安全/FP), 1=被污染(真实溢出)
+        # 反转: 高 taint_score → 低 FP 分数
         taint_score = ht.taint_score if ht else 0.0
         fp_score = 1.0 - taint_score
 
@@ -229,23 +221,23 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _threshold(score: float) -> str:
-        """Map 0-1 score to verdict. score→1 = FP (suppress), score→0 = real (keep)."""
+        """将 0-1 分数映射为判定. 分数→1 = FP (抑制), 分数→0 = 真实 (保留)."""
         if score >= 0.65:
             return 'SUPPRESS'
         elif score <= 0.35:
             return 'KEEP'
         return 'REVIEW'
 
-    # aggregation ─────────────────────────────────────────────────────
+    # 聚合 ────────────────────────────────────────────────────────────
 
     @staticmethod
     def _aggregate(votes: List[EngineVote]) -> Tuple[str, float]:
-        """Weighted committee: 3 engines → verdict + ensemble score.
+        """加权委员会: 3 引擎 → 判定 + 集成分数.
 
-        Decision matrix:
-          All 3 agree → that verdict
-          2 agree, 1 disagrees → majority (weighted by confidence)
-          3-way split or 1-1-1 → REVIEW
+        决策矩阵:
+          三引擎全一致 → 直接采纳该判定
+          2 票一致, 1 票分歧 → 按置信度加权多数决
+          三向分裂或 1-1-1 → REVIEW
         """
         counts = {'SUPPRESS': 0, 'REVIEW': 0, 'KEEP': 0}
         conf_sum = {'SUPPRESS': 0.0, 'REVIEW': 0.0, 'KEEP': 0.0}
@@ -253,12 +245,12 @@ class EnsembleFpFilter:
             counts[v.verdict] += 1
             conf_sum[v.verdict] += v.confidence
 
-        # Unanimous
+        # 全票一致
         for vk in ['SUPPRESS', 'KEEP', 'REVIEW']:
             if counts[vk] == 3:
                 return vk, conf_sum[vk] / 3
 
-        # Majority (2 vs 1) or (2 vs REVIEW)
+        # 多数决 (2 vs 1) 或 (2 vs REVIEW)
         for vk in ['SUPPRESS', 'KEEP']:
             if counts[vk] == 2:
                 # 2:1 vs REVIEW → majority wins directly
@@ -271,17 +263,17 @@ class EnsembleFpFilter:
                     return vk, conf_sum[vk] / 3
                 return 'REVIEW', 0.50
 
-        # Split → REVIEW
+        # 三向分裂 → REVIEW
         return 'REVIEW', 0.50
 
 
-# convenience ──────────────────────────────────────────────────────────
+# 便捷接口 ─────────────────────────────────────────────────────────────
 
 def filter_heap_candidates(
     ir_lines: List[str],
     candidates: List[Dict[str, Any]],
 ) -> Tuple[List[EnsembleDecision], Dict[str, Any]]:
-    """Convenience: filter heap overflow candidates through ensemble."""
+    """便捷函数: 对堆溢出候选执行集成过滤."""
     ef = EnsembleFpFilter()
     decisions = ef.filter(ir_lines, candidates)
     return decisions, ef.stats

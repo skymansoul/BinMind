@@ -1,16 +1,8 @@
 """
-Heap-allocation-aware bounds checking via value-range analysis.
-
-Inspired by Guo et al., ISSTA 2024, "Heap Disjointness" (value-range reasoning
-reduces false positives to 37%). This module implements intra-function integer
-interval tracking on decompiled pseudocode:
-
-  malloc(N) -> record allocation site and interval
-  memcpy(buf, src, M) -> if M.lo > N.hi: definite overflow (CRITICAL)
-                       -> if M.hi > N.hi but M.lo <= N.hi: possible overflow (WARNING)
-                       -> if M.hi <= N.hi: safe
-
-Complexity: O(N*V), N=lines, V=variables. <1ms per function.
+基于值域分析的堆分配边界检查 — 在反编译伪代码上做函数内整型区间跟踪。
+malloc(N) 记录分配点与区间; memcpy(buf, src, M) 比较: M.lo > N.hi 为确定溢出 (CRITICAL);
+M.hi > N.hi 且 M.lo <= N.hi 为疑似溢出 (WARNING); M.hi <= N.hi 为安全。
+复杂度 O(N*V), N=行数, V=变量数, 每函数 <1ms。
 """
 
 
@@ -21,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 @dataclass
 class Interval:
-    """Integer value interval [lo, hi]. lo=-1 = unknown lower, hi=2**31-1 = unknown upper."""
+    """整型值区间 [lo, hi]。lo=-1 表示下界未知, hi=2**31-1 表示上界未知。"""
     lo: int
     hi: int
 
@@ -47,11 +39,11 @@ class Interval:
         return Interval(min(candidates), min(max(candidates), 2**31 - 1))
 
     def dominates(self, other: Interval) -> bool:
-        """self.lo > other.hi -> definite overflow."""
+        """self.lo > other.hi → 确定溢出。"""
         return self.lo >= 0 and other.hi < 2**31 - 1 and self.lo > other.hi
 
     def may_exceed(self, other: Interval) -> bool:
-        """self.hi > other.hi but self.lo <= other.hi -> possible overflow."""
+        """self.hi > other.hi 且 self.lo <= other.hi → 疑似溢出。"""
         return (self.hi > other.hi and self.lo >= 0
                 and not self.dominates(other))
 
@@ -61,33 +53,33 @@ class Interval:
 
 @dataclass
 class AllocSite:
-    """Heap allocation site record."""
-    var_name: str           # variable receiving alloc pointer
-    size_interval: Interval  # alloc size value interval
+    """堆分配点记录。"""
+    var_name: str           # 接收分配指针的变量
+    size_interval: Interval  # 分配大小的值区间
     lineno: int
     func_name: str
 
 
 @dataclass
 class HeapWrite:
-    """Heap write site record."""
-    var_name: str            # heap variable being written to
-    size_interval: Interval  # write size value interval
+    """堆写入点记录。"""
+    var_name: str            # 被写入的堆变量
+    size_interval: Interval  # 写入大小的值区间
     lineno: int
-    call_name: str           # memcpy / strcpy / strcat etc.
+    call_name: str           # memcpy / strcpy / strcat 等
     func_name: str
 
 
 @dataclass
 class BoundsViolation:
-    """Bounds violation: alloc_size < write_size instance."""
+    """边界违例: 分配大小 < 写入大小。"""
     alloc_site: AllocSite
     write_site: HeapWrite
-    severity: str            # "CRITICAL" | "WARNING"
+    severity: str            # "CRITICAL" | "WARNING" 严重级
     description: str
 
 
-# Regex patterns
+# 正则模式
 _RE_MALLOC = re.compile(
     r'(\w[\w.]*)\s*=\s*(?:\(\s*\w+\s*\*?\s*\)\s*)?(malloc|calloc|realloc)\s*\(\s*(\d+)')
 _RE_MEMCPY = re.compile(r'(memcpy|strcpy|strcat|sprintf|snprintf)\s*\(\s*(\w+)\s*,')
@@ -97,7 +89,7 @@ _RE_SCANF_S = re.compile(r'sscanf\s*\([^,]+,\s*"[^"]*%s[^"]*"\s*,\s*(\w+)\s*\)')
 
 
 def extract_alloc_sites(pseudocode: str, func_name: str) -> List[AllocSite]:
-    """Extract all heap allocation sites and their sizes from decompiled code."""
+    """从反编译代码提取所有堆分配点及其大小。"""
     sites: List[AllocSite] = []
     for i, line in enumerate(pseudocode.split('\n'), start=1):
         m = _RE_MALLOC.search(line)
@@ -112,10 +104,10 @@ def extract_alloc_sites(pseudocode: str, func_name: str) -> List[AllocSite]:
 
 
 def extract_heap_writes(pseudocode: str, func_name: str) -> List[HeapWrite]:
-    """Extract all heap write sites and their sizes from decompiled code."""
+    """从反编译代码提取所有堆写入点及其大小。"""
     writes: List[HeapWrite] = []
     for i, line in enumerate(pseudocode.split('\n'), start=1):
-        # snprintf(buf, N, ...) - N is the buffer size
+        # snprintf(buf, N, ...) - N 为缓冲区大小
         m = _RE_SNPRINTF.search(line)
         if m:
             var, size = m.group(1), int(m.group(2))
@@ -124,7 +116,7 @@ def extract_heap_writes(pseudocode: str, func_name: str) -> List[HeapWrite]:
                 lineno=i, call_name='snprintf', func_name=func_name,
             ))
             continue
-        # memcpy/strcpy(buf, ...) - write size must be inferred from other sources
+        # memcpy/strcpy(buf, ...) - 写入大小需从其他来源推断
         m = _RE_STRCPY.search(line)
         if m:
             writes.append(HeapWrite(
@@ -139,7 +131,7 @@ def check_bounds(
     alloc_sites: List[AllocSite],
     heap_writes: List[HeapWrite],
 ) -> List[BoundsViolation]:
-    """Compare allocation sizes against write sizes, returning all bounds violations."""
+    """比较分配大小与写入大小, 返回全部边界违例。"""
     violations: List[BoundsViolation] = []
     for alloc in alloc_sites:
         for write in heap_writes:
@@ -172,7 +164,7 @@ def check_bounds(
 def analyze_heap_bounds(
     pseudocode: str, func_name: str,
 ) -> List[BoundsViolation]:
-    """Extract and detect in one call, returning bounds violation list."""
+    """单次调用完成提取与检测, 返回边界违例列表。"""
     allocs = extract_alloc_sites(pseudocode, func_name)
     if not allocs:
         return []

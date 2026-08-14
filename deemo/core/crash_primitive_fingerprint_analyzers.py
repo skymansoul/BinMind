@@ -1,4 +1,4 @@
-"""Crash primitive fingerprinting: analysis functions."""
+"""崩溃原语指纹: 分析函数。"""
 
 import re
 from typing import Any, Dict, List, Optional, Tuple
@@ -20,7 +20,7 @@ def _analyze_register(
     stack_bounds: Optional[Tuple[int, int]] = None,
     heap_bounds: Optional[List[Tuple[int, int]]] = None,
 ) -> RegisterAnalysis:
-    """Analyze register controllability and memory region membership."""
+    """分析寄存器可控性与内存区域归属。"""
     analysis = RegisterAnalysis(name=reg_name, value=reg_value)
 
     hex_val = f"0x{reg_value:x}"
@@ -50,34 +50,34 @@ def _analyze_register(
 
 
 def _extract_heap_ops_from_text(crash_text: str) -> Optional[HeapOperationSequence]:
-    """Extract heap operation sequences from ASAN or glibc crash logs.
+    """从 ASAN 或 glibc 崩溃日志中提取堆操作序列。
 
-    ASAN format: "allocated by thread T0 here:" followed by allocation stack.
-    glibc format: "free(): invalid pointer" / "double free or corruption"
+    ASAN 格式: "allocated by thread T0 here:" 后跟分配栈;
+    glibc 格式: "free(): invalid pointer" / "double free or corruption"。
     """
     seq = HeapOperationSequence()
 
-    # ASAN heap operation patterns
+    # ASAN 堆操作模式
     alloc_pattern = re.findall(
         r'(allocated by thread|freed by thread|previously allocated)',
         crash_text, re.IGNORECASE
     )
 
-    # Extract allocation sizes
+    # 提取分配大小
     sizes = re.findall(
         r'(?:alloc|malloc|calloc|realloc)[\w\s]*?(?:size|of)\s*(\d+)',
         crash_text, re.IGNORECASE
     )
     seq.alloc_sizes = [int(s) for s in sizes[:10]]
 
-    # Freed chunk addresses
+    # 已释放 chunk 地址
     freed = re.findall(
         r'(?:freed|freeing|attempt to free).*?(0x[0-9a-fA-F]{6,16})',
         crash_text, re.IGNORECASE
     )
     seq.freed_chunks = [int(a, 16) for a in freed[:5]]
 
-    # Build operation sequence
+    # 构建操作序列
     if 'allocated' in crash_text.lower() and 'freed' in crash_text.lower():
         seq.operations.append("alloc_free_interleave")
     if 'double free' in crash_text.lower():
@@ -100,7 +100,7 @@ def _compute_exploitability_scores(
     crash_type: str,
     fault_addr: int,
 ) -> Dict[str, float]:
-    """Compute multi-axis exploitability scores (0.0 to 1.0)."""
+    """计算多轴可利用性评分 (0.0 到 1.0)。"""
 
     scores = {
         'rip_control': 0.0,
@@ -109,7 +109,7 @@ def _compute_exploitability_scores(
         'info_leak': 0.0,
     }
 
-    # RIP control scoring based on rip/r15(ARM:pc) controllability
+    # RIP 控制评分: 基于 rip/r15 (ARM: pc) 可控性
     rip_regs = ['rip', 'pc', 'eip', 'r15']
     for r in rip_regs:
         if r in reg_analysis:
@@ -122,7 +122,7 @@ def _compute_exploitability_scores(
                 scores['rip_control'] = 0.05
             break
 
-    # Stack control scoring based on rsp controllability
+    # 栈控制评分: 基于 rsp 可控性
     sp_regs = ['rsp', 'sp', 'esp']
     for r in sp_regs:
         if r in reg_analysis:
@@ -133,7 +133,7 @@ def _compute_exploitability_scores(
                 scores['stack_control'] = 0.40
             break
 
-    # Heap control scoring based on heap operation sequence
+    # 堆控制评分: 基于堆操作序列
     if heap_ops:
         if 'use_after_free' in heap_ops.operations:
             scores['heap_control'] = 0.85
@@ -142,8 +142,7 @@ def _compute_exploitability_scores(
         elif 'alloc_free_interleave' in heap_ops.operations:
             scores['heap_control'] = 0.55
 
-    # Info leak scoring
-    # Check if any register points to a known library address range
+    # 信息泄露评分: 检查是否有寄存器指向已知库地址范围
     for ra in reg_analysis.values():
         if ra.contains_pattern and 'libc_range' in str(ra.control):
             scores['info_leak'] = max(scores['info_leak'], 0.60)
@@ -163,7 +162,7 @@ def _compute_exploitability_scores(
 def _recommend_strategy(
     scores: Dict[str, float], crash_type: str
 ) -> Tuple[List[PrimitiveType], str]:
-    """Recommend exploit primitives and strategies based on scores."""
+    """基于评分推荐利用原语与策略。"""
     primitives = []
     strategies = []
 

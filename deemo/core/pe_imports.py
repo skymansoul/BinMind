@@ -1,8 +1,8 @@
-"""Fast PE import table parsing, in-memory, sub-millisecond."""
+"""快速PE导入表解析：内存解析，亚毫秒级。"""
 import struct
 
 def resolve(path: str) -> dict:
-    """Return {IAT thunk address: "malloc"/"memcpy"/...}."""
+    """返回 {IAT thunk地址: "malloc"/"memcpy"/...}。"""
     try:
         with open(path, 'rb') as f: data = f.read()
         if data[:2] != b'MZ': return {}
@@ -43,7 +43,7 @@ def _parse_imports(data: bytes, sections: list) -> dict:
     for nm, va, vs, ra in sections:
         if nm == '.idata': idata_va=va; idata_ra=ra; idata_vs=vs
     if not idata_ra: return {}
-    # Iterate import directory entries (20 bytes each)
+    # 遍历导入目录项(每个20字节)
     idata_end = idata_ra + min(idata_vs, len(data)-idata_ra)
     pos = idata_ra
     while pos + 20 <= idata_end:
@@ -54,7 +54,7 @@ def _parse_imports(data: bytes, sections: list) -> dict:
         pos += 20
         if not iat_rva or not name_rva: continue
         dll_name = _read_str(data, _rva_to_off(name_rva, sections))
-        # Iterate IAT (8 bytes per thunk)
+        # 遍历IAT(每个thunk 8字节)
         iat_off = _rva_to_off(iat_rva, sections)
         if iat_off < 0: continue
         while iat_off + 8 <= len(data):

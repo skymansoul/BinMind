@@ -1,24 +1,10 @@
 """
-Value-Flow Graph (VFG) builder for decompiled binary IR.
-
-Constructs explicit def-use chains from decompiler output to enable
-constraint-based safety proofs. Each node is a value definition (assignment,
-function call result, constant); edges represent data flow from definition
-to use site.
-
-Design decisions:
-- Works on decompiler text, not Ghidra/IDA IR directly — decouples from
-  specific decompiler versions, trades precision for generality.
-- SSA reconstruction is local (within function scope) — inter-procedural
-  flow handled via heuristic call-site propagation in constraint_accumulator.
-- Nodes carry source location (line index) and type info (constant, variable,
-  expression) for downstream path feasibility analysis.
-
-  VYPER — value-flow on decompiled output for
-  vulnerability detection in stripped binaries.
-  MIRAI (Facebook) — tag analysis for buffer overrun via abstract interpretation.
-  We adopt VYPER's decompiler-first approach but add constraint reasoning
-  beyond simple pattern matching.
+反编译二进制 IR 的值流图 (VFG) 构建器 — 从反编译器输出构建显式 def-use 链, 供基于约束的安全性证明使用。
+节点为值定义点 (赋值/函数调用结果/常量), 边表示从定义到使用点的数据流。
+设计决策: 直接处理反编译文本而非 Ghidra/IDA IR (与反编译器版本解耦, 以精度换通用性);
+SSA 重构限定函数内, 跨函数流由 constraint_accumulator 的调用点启发式传播处理;
+节点携带源行号与类型信息 (常量/变量/表达式) 供路径可行性分析。采纳 VYPER 的反编译优先思路,
+并在此基础上加入约束推理。
 """
 
 import re

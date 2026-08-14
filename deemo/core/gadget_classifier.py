@@ -1,23 +1,6 @@
-"""
-ROP gadget semantic classifier.
-
-Maps assembly fragments to parameterized semantic types using concrete
-interpretation, enabling cross-compiler and cross-optimization-level
-interoperability of gadgets. Traditional tools (ROPgadget, ropper) use
-regex matching and miss semantic equivalence (e.g., "mov eax, [esp+8]; ret"
-vs "pop eax; ret").
-
-Semantic types (ref: MAJORCA, arXiv 2111.05781):
-  MoveReg(dst, src), LoadConst(dst, val), LoadMem(dst, addr),
-  StoreMem(addr, src), ArithOp(op, dst, a, b), Syscall(nr)
-
-Concrete interpretation trades full constraint tracking for speed
-(~0.1ms/gadget vs seconds for symbolic), suitable for batch classification
-of thousands of gadgets. Use angrop for precise chain construction.
-
-Reference:
-  MAJORCA 
-"""
+"""ROP gadget 语义分类器 — 用具体解释将汇编片段映射为参数化语义类型.
+支持跨编译器/跨优化级别的 gadget 互用; 传统工具 (ROPgadget/ropper) 纯正则匹配会漏语义等价 (如 "mov eax,[esp+8];ret" vs "pop eax;ret");
+语义类型 (参考 MAJORCA, arXiv 2111.05781): MoveReg/LoadConst/LoadMem/StoreMem/ArithOp/Syscall; 具体解释约 0.1ms/gadget, 适合批量分类, 精确链构造请用 angrop."""
 
 import logging
 import re
@@ -38,7 +21,7 @@ class SemType(Enum):
 
 @dataclass
 class GadgetSemantic:
-    """Gadget semantic descriptor with parameterized operation type and operands."""
+    """带参数化操作类型与操作数的 gadget 语义描述."""
 
     stype: SemType
     operands: List[str] = field(default_factory=list)
@@ -46,7 +29,7 @@ class GadgetSemantic:
     clobbers: List[str] = field(default_factory=list)
 
     def template(self) -> str:
-        """Generate semantic template string for cross-architecture matching."""
+        """生成跨架构匹配的语义模板字符串."""
         if self.stype == SemType.MoveReg and len(self.operands) >= 2:
             return f"MoveReg({self.operands[0]}, {self.operands[1]})"
         if self.stype == SemType.LoadConst and len(self.operands) >= 2:
@@ -61,7 +44,7 @@ class GadgetSemantic:
             return "Syscall"
         return "Unknown"
 
-# x86_64 register set (including sub-registers)
+# x86_64 寄存器集合 (含子寄存器)
 _X86_REGS = {
     "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp",
     "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
@@ -72,7 +55,7 @@ _X86_REGS = {
     "rip", "eip",
 }
 
-# Canonical register name mapping (sub-registers -> parent 64-bit register)
+# 规范寄存器名映射 (子寄存器 → 父 64 位寄存器)
 _REG_CANONICAL = {
     "eax": "rax", "ebx": "rbx", "ecx": "rcx", "edx": "rdx",
     "esi": "rsi", "edi": "rdi", "ebp": "rbp", "esp": "rsp",
@@ -84,28 +67,21 @@ _REG_CANONICAL = {
 }
 
 def _canon_reg(reg: str) -> str:
-    """Canonicalize register name: 32/16/8-bit sub-register -> 64-bit parent."""
+    """规范化寄存器名: 32/16/8 位子寄存器 → 64 位父寄存器."""
     return _REG_CANONICAL.get(reg.lower(), reg.lower())
 
 def classify_gadget(asm_lines: str) -> GadgetSemantic:
     """
-    Semantically classify a single gadget's assembly instruction sequence.
+    语义分类单个 gadget 的汇编指令序列.
 
-    Only analyzes key instructions (usually 1-3) before the final ret/call/jmp,
-    using heuristic rules and operand pattern matching.
-
-    Args:
-        asm_lines: assembly text for one gadget (multi-line, semicolon or newline separated)
-
-    Returns:
-        GadgetSemantic object
+    仅分析最终 ret/call/jmp 之前的关键指令 (通常 1-3 条), 用启发式规则与操作数模式匹配.
     """
-    # Split into individual instruction lines
+    # 拆分为单条指令行
     lines = [l.strip() for l in re.split(r'[;\n]+', asm_lines) if l.strip()]
     if not lines:
         return GadgetSemantic(SemType.Unknown)
 
-    # Check for syscall/int first (highest priority)
+    # 优先检查 syscall/int (最高优先级)
     last_mnems = []
     for line in reversed(lines):
         m = line.split()[0] if line.split() else ""
@@ -117,7 +93,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
     if "syscall" in last_mnems or "int" in last_mnems:
         return GadgetSemantic(SemType.Syscall, raw_asm=asm_lines[:80])
 
-    # Extract key instructions (last 1-3, skipping control flow transfers)
+    # 提取关键指令 (最后 1-3 条, 跳过控制流转移)
     key_insns = []
     for line in reversed(lines):
         mnemonic = line.split()[0] if line.split() else ""
@@ -132,7 +108,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
     if not key_insns:
         return GadgetSemantic(SemType.Unknown, raw_asm=asm_lines[:80])
 
-    # Classify by priority matching
+    # 按优先级匹配分类
     clobbers = []
     result = GadgetSemantic(SemType.Unknown, raw_asm=asm_lines[:80])
 
@@ -143,7 +119,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
         mnemonic = parts[0]
         operands = parts[1:]
 
-        # syscall / int 0x80 handling
+        # syscall / int 0x80 处理
         if mnemonic in ("syscall", "int"):
             return GadgetSemantic(
                 SemType.Syscall,
@@ -230,10 +206,9 @@ def classify_gadget_batch(
     gadgets: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Batch-classify a list of gadgets.
+    批量分类 gadget 列表.
 
-    Input format is the output of rop_tools.find_gadgets().
-    Appends semantic and semantic_template fields to each record.
+    输入格式为 rop_tools.find_gadgets() 的输出, 为每条记录追加 semantic 与 semantic_template 字段.
     """
     enriched = []
     for g in gadgets:
@@ -245,7 +220,7 @@ def classify_gadget_batch(
         g["semantic_clobbers"] = sem.clobbers
         enriched.append(g)
 
-    # Group by semantic type for diagnostics
+    # 按语义类型分组, 用于诊断
     by_type: Dict[str, int] = {}
     for g in enriched:
         t = g.get("semantic", "Unknown")
@@ -259,17 +234,9 @@ def find_semantic_equivalent(
     gadget_pool: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Find semantically equivalent gadgets in a pool.
+    在 gadget 池中查找语义等价的 gadget.
 
-    For example, target_template="LoadConst(rdi, stack)" matches all
-    pop rdi; ...; ret gadgets regardless of intermediate instructions.
-
-    Args:
-        target_template: template string from classify_gadget()
-        gadget_pool: return value from classify_gadget_batch()
-
-    Returns:
-        List of semantically matching gadgets
+    例: target_template="LoadConst(rdi, stack)" 匹配所有 pop rdi; ...; ret, 忽略中间指令差异.
     """
     return [g for g in gadget_pool
             if g.get("semantic_template") == target_template]

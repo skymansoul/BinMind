@@ -1,39 +1,209 @@
-"""
-LLM backend abstraction. Supports OpenAI, Anthropic, Ollama, and
-llama.cpp. Each backend is queried via a uniform interface.
-"""
+# core/ai_backends.py - LLM 后端抽象层
+# 统一接口查询 OpenAI / Anthropic / Ollama / llamacpp / custom 五通道;
+# 每次调用(含跳过事件)追加记录到 logs/llm_calls.jsonl。
 
 import json
 import logging
 import os
-from typing import Optional
+import time
+from typing import Dict, Optional
 
 from config import AI_PROVIDER, OPENAI_API_KEY, ANTHROPIC_API_KEY, LLM_ENDPOINTS
 
 __log = logging.getLogger(__name__)
 
+# 调用日志落盘路径 — deemo/logs/llm_calls.jsonl，运行时追加
+_LLM_LOG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'logs', 'llm_calls.jsonl')
 
-# FIXME: custom provider currently ignores model param — need to thread
-# it through to _custom_chat if we ever migrate off the DeepSeek proxy.
+
+def _record_llm_call(provider: str, system: str, user: str,
+                     model: str = None, output: str = '',
+                     duration: float = None, error: str = '',
+                     skipped: bool = False, reason: str = '',
+                     status: str = '') -> None:
+    """把一次 LLM 调用（或跳过事件）追加到 jsonl。写失败不影响主流程。
+
+    status 取值: ok / skipped / error; duration_ms 为 duration 的毫秒形式。
+    """
+    entry = {
+        'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+        'provider': provider,
+        'model': model,
+        'input_head': (user or '')[:200],
+        'output_head': (output or '')[:200],
+        'duration_sec': round(duration, 3) if duration is not None else None,
+        'duration_ms': round(duration * 1000) if duration is not None else None,
+        'error': (error or '')[:300],
+        'skipped': skipped,
+        'reason': reason,
+        'status': status,
+    }
+    try:
+        os.makedirs(os.path.dirname(_LLM_LOG_PATH), exist_ok=True)
+        with open(_LLM_LOG_PATH, 'a', encoding='utf-8') as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    except OSError as err:
+        __log.debug("llm call log write failed: %s", err)
+
+
+def _provider_configured(provider: str) -> bool:
+    if provider == 'openai':
+        return bool(OPENAI_API_KEY)
+    if provider == 'anthropic':
+        return bool(ANTHROPIC_API_KEY)
+    return bool(LLM_ENDPOINTS.get(provider))
+
+
+# Claude 通道常量 — Messages API 契约与 SDK messages.create 等价
+_CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'
+_CLAUDE_MAX_TOKENS = 2048
+_CLAUDE_TEMPERATURE = 0.3
+_ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
+_ANTHROPIC_VERSION = '2023-06-01'
+
+
+def _effective_provider() -> str:
+    """LLM_PROVIDER 环境变量优先, 回退 config.AI_PROVIDER。"""
+    return os.environ.get('LLM_PROVIDER', AI_PROVIDER).lower()
+
+
+def _claude_key() -> str:
+    """读取 Claude 密钥: 环境变量优先, 其次 deemo/.temp_claude_key。"""
+    key = os.environ.get('ANTHROPIC_API_KEY', '').strip()
+    if key:
+        return key
+    key_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        '.temp_claude_key')
+    try:
+        with open(key_path, encoding='utf-8') as fh:
+            return fh.read().strip()
+    except OSError:
+        return ''
+
+
+def _mock_response(provider: str, system: str, user: str,
+                   model: str = None) -> str:
+    """模拟回退: 记录跳过事件并返回空内容, 不抛异常。"""
+    _record_llm_call(provider, system, user, model=model,
+                     skipped=True, reason='no_key', status='skipped')
+    return ''
+
+
+class BaseBackend:
+    """LLM 后端基类: generate 返回 {fallback, content}。"""
+
+    def generate(self, system: str, user: str) -> Dict[str, str]:
+        raise NotImplementedError
+
+
+# Claude 后端：读取 ANTHROPIC_API_KEY，若缺失则回退模拟。
+# 仅用于实验对照，不持久化密钥。
+class ClaudeBackend(BaseBackend):
+    """Claude 后端。
+
+    密钥优先级: ANTHROPIC_API_KEY 环境变量 → deemo/.temp_claude_key。
+    两者均无时回退模拟模式 (status=skipped, reason=no_key)。
+    异常 (超时/认证/限流) 记入 error 字段, 返回回退结果, 不中断流水线。
+    """
+
+    def __init__(self):
+        self.api_key = _claude_key()
+
+    def generate(self, system: str, user: str) -> Dict[str, str]:
+        """调用 Messages API, 返回 {fallback, content}。
+
+        content 前 200 字符由 _record_llm_call 截断写入 jsonl。
+        """
+        if not self.api_key:
+            content = _mock_response('claude', system, user, _CLAUDE_MODEL)
+            return {'fallback': True, 'content': content}
+        t0 = time.time()
+        try:
+            import requests as _rq
+            resp = _rq.post(
+                _ANTHROPIC_MESSAGES_URL,
+                headers={
+                    'x-api-key': self.api_key,
+                    'anthropic-version': _ANTHROPIC_VERSION,
+                    'content-type': 'application/json',
+                },
+                json={
+                    'model': _CLAUDE_MODEL,
+                    'max_tokens': _CLAUDE_MAX_TOKENS,
+                    'temperature': _CLAUDE_TEMPERATURE,
+                    'system': system,
+                    'messages': [{'role': 'user', 'content': user}],
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            text = resp.json()['content'][0]['text']
+            _record_llm_call('claude', system, user, model=_CLAUDE_MODEL,
+                             output=text, duration=time.time() - t0,
+                             status='ok')
+            return {'fallback': False, 'content': text}
+        except Exception as err:
+            _record_llm_call('claude', system, user, model=_CLAUDE_MODEL,
+                             duration=time.time() - t0, error=str(err),
+                             status='error')
+            return {'fallback': True,
+                    'content': 'LLM unavailable, using static heuristics'}
+
+
+def get_backend():
+    """后端工厂: provider 为 claude 时返回 ClaudeBackend, 其余返回 None。"""
+    if _effective_provider() == 'claude':
+        return ClaudeBackend()
+    return None
+
+
+# TODO: custom 通道忽略 model 参数, 迁移 DeepSeek 代理时需透传到 _custom_chat
 def query_llm(system: str, user: str, model: str = None,
               temperature: float = 0.3, max_tokens: int = 4096) -> str:
-    """
-    Send a prompt to the configured LLM backend and return the text response.
-    Provider is determined by the AI_PROVIDER env/config.
-    """
-    provider = AI_PROVIDER.lower()
+    """向配置的 LLM 后端发提示, 返回文本响应。
 
-    if provider == 'openai':
-        return _openai_chat(system, user, model, temperature, max_tokens)
-    if provider == 'anthropic':
-        return _anthropic_chat(system, user, model, temperature, max_tokens)
-    if provider == 'ollama':
-        return _ollama_chat(system, user, model, temperature, max_tokens)
-    if provider == 'llamacpp':
-        return _llamacpp_chat(system, user, model, temperature, max_tokens)
-    if provider == 'custom':
-        return _custom_chat(system, user, model, temperature, max_tokens)
-    raise ValueError(f"Unknown AI provider: {provider}")
+    Provider 取自 LLM_PROVIDER 环境变量 (缺省回退 config.AI_PROVIDER)。
+    未配置凭据时记录一次跳过事件并返回空串, 不抛异常。
+    claude 通道经 ClaudeBackend 处理, 异常不回抛。
+    """
+    provider = _effective_provider()
+
+    if provider == 'claude':
+        # 跳过/错误/成功记录均由 ClaudeBackend 内聚完成
+        return get_backend().generate(system, user).get('content', '')
+
+    if not _provider_configured(provider):
+        _record_llm_call(provider, system, user, model=model,
+                         skipped=True, reason='provider not configured',
+                         status='skipped')
+        return ''
+
+    t0 = time.time()
+    try:
+        if provider == 'openai':
+            result = _openai_chat(system, user, model, temperature, max_tokens)
+        elif provider == 'anthropic':
+            result = _anthropic_chat(system, user, model, temperature, max_tokens)
+        elif provider == 'ollama':
+            result = _ollama_chat(system, user, model, temperature, max_tokens)
+        elif provider == 'llamacpp':
+            result = _llamacpp_chat(system, user, model, temperature, max_tokens)
+        elif provider == 'custom':
+            result = _custom_chat(system, user, model, temperature, max_tokens)
+        else:
+            raise ValueError(f"Unknown AI provider: {provider}")
+        _record_llm_call(provider, system, user, model=model,
+                         output=result, duration=time.time() - t0,
+                         status='ok')
+        return result
+    except Exception as err:
+        _record_llm_call(provider, system, user, model=model,
+                         duration=time.time() - t0, error=str(err),
+                         status='error')
+        raise
 
 
 def _openai_chat(system: str, user: str, model: str,

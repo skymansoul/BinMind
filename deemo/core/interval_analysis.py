@@ -1,16 +1,10 @@
-# Interval abstraction analysis: tracks numerical ranges for buffer sizes.
-#
-# For each candidate vulnerability, tracks variable ranges via interval abstraction.
-# If overflow conditions are provably unsatisfiable within the interval, the
-# candidate is ruled out. Reference: Crab.
-#
-# This module implements the simplest subset: intraprocedural interval analysis
-# with O(n*k) complexity.
+# interval_analysis.py - 区间抽象分析: 追踪缓冲区大小相关变量的数值区间。
+# 若溢出条件在区间内可证明不可满足, 则排除该候选; 实现最简子集: 函数内区间分析 O(n*k)。
 
 from typing import Dict, Tuple, Optional
 
 class Interval:
-    """Interval [lo, hi] with special values: empty (contradiction), top (unbounded)."""
+    """区间 [lo, hi], 特殊值: bottom(矛盾), top(无界)。"""
     __slots__ = ("lo", "hi", "is_top", "is_bottom")
     def __init__(self, lo=None, hi=None):
         if lo is None: self.lo = float("-inf"); self.hi = float("inf"); self.is_top = True; self.is_bottom = False
@@ -31,7 +25,7 @@ class Interval:
         prods = [self.lo*other.lo, self.lo*other.hi, self.hi*other.lo, self.hi*other.hi]
         return Interval(min(prods), max(prods))
     def widen(self, other):
-        """Widening operator: ensures termination of fixed-point iteration."""
+        """宽化算子 — 保证不动点迭代收敛。"""
         if self.is_top or other.is_top: return Interval.top()
         if self.is_bottom: return other
         return Interval(min(self.lo, other.lo), max(self.hi, other.hi))
@@ -43,13 +37,13 @@ class Interval:
         return f"[{self.lo},{self.hi}]"
 
 class BufferSizeAnalyzer:
-    """Interval analyzer for tracking stack buffer sizes."""
+    """追踪栈缓冲区大小的区间分析器。"""
     def __init__(self):
         self._vars: Dict[str, Interval] = {}
     def set_range(self, var, lo, hi):
         self._vars[var] = Interval(lo, hi)
     def analyze_write(self, buffer_var, write_count) -> bool:
-        """Return True if overflow is possible: write_count > buffer_size."""
+        """返回是否可能溢出: write_count > 缓冲区大小。"""
         buf = self._vars.get(buffer_var, Interval.top())
         if buf.is_top: return True  # unknown -> conservative: keep candidate
         if buf.is_bottom: return False

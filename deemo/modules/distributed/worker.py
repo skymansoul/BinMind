@@ -505,7 +505,7 @@ def execute_analysis_pipeline(
     Returns:
         分析结果字典
     """
-    from main import run_pipeline
+    from core.pipeline import run_pipeline
 
     options = options or {}
 

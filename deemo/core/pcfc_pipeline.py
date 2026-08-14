@@ -1,16 +1,6 @@
-"""
-PCFC管线集成 — 将路径条件感知过滤接入FCPV格式串检测管线.
-
-集成位置: FCPV求解之后, 对VULN判定执行PCFC过滤.
-集成策略:
-  1. FcpvSafetySolver.solve -> 获取VULN candidates
-  2. PCFC提取sink路径条件 -> 过滤路径不可达的误报
-  3. 返回过滤后的candidates
-
-PCFC是FCPV的正交补充:
-  FCPV回答: "格式串参数是否从外部输入可达?" (taint可达性)
-  PCFC回答: "sink调用是否在可达路径上?" (路径可达性)
-"""
+"""PCFC管线集成 — 将路径条件感知过滤接入FCPV格式串检测管线。
+FCPV求解后对VULN判定执行PCFC过滤：FCPV回答taint可达性，
+PCFC回答sink调用是否在可达路径上（过滤路径不可达的误报）。"""
 from typing import Any, Dict, List
 
 from core.fcpv_constraint_types import FcpvCandidate, SafetyLabel

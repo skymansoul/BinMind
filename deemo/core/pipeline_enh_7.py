@@ -1,6 +1,4 @@
-"""
-(ay) 稳定锚点补丁定位器
-"""
+"""第7批可选增强: (ay) 稳定锚点补丁定位器。"""
 
 import logging
 
@@ -13,9 +11,9 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # cmp_imm/call_target/struct 三类语义常量锚点 → 贪心匹配 → 未匹配区域=补丁。
     # 与现有 binary_diff/block_matcher 互补: 后者做指令级相似度,
     # 本模块在跨编译器/优化级别场景下用语义常量锚点定位补丁。
-    # PLocator (); 1dFuzz (ISSTA 2023)
+    # 参考: PLocator; 1dFuzz (ISSTA 2023)
     try:
-        from analysis.static.binary_diff.src.patch_anchor_localizer import (
+        from modules.analysis.static.binary_diff.src.patch_anchor_localizer import (
             extract_anchors, match_anchors, locate_patch_regions,
             StableAnchor, PatchCandidate,
         )
@@ -29,9 +27,9 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # (az) 分治符号执行切片器
     # 后向数据流切片→独立切片符号执行→副作用摘要组合。
     # 从漏洞 sink 回溯, 自动裁剪 90%+ 无关代码, 每切片独立探索避免路径爆炸。
-    # BinSleuth (JSS 2026); Divide,Conquer&Verify ()
+    # 参考: BinSleuth (JSS 2026); Divide,Conquer&Verify
     try:
-        from analysis.symbolic.src.divide_conquer_slicer import (
+        from modules.analysis.symbolic.src.divide_conquer_slicer import (
             DivideConquerSymExec, build_dataflow_graph, backward_slice,
         )
         _dc_symexec = DivideConquerSymExec()
@@ -47,7 +45,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # 惩罚高波动性种子, 奖励稳定产出种——反直觉于传统平均收益调度。
     # Kummita & Bodden (SSRN 2026); Truzz (2026); Sharpe (1966)
     try:
-        from fuzzing.src.risk_adjusted_schedule import (
+        from modules.fuzzing.src.risk_adjusted_schedule import (
             RiskAdjustedScheduler, SeedPerformanceHistory,
         )
         _risk_scheduler = RiskAdjustedScheduler(
@@ -62,9 +60,9 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # (bb) 路径转换图种子探索器
     # 覆盖状态哈希→Markov 转换模型→上下文感知种子选择 + 字节级验证检查保护。
     # 建模同一种子在不同程序状态下的有效性差异——突破 stationary 假设。
-    # Truzz (2026); PathFuzzing (); SEAFuzz (IEEE 2025)
+    # 参考: Truzz (2026); PathFuzzing; SEAFuzz (IEEE 2025)
     try:
-        from fuzzing.src.path_transition_explorer import (
+        from modules.fuzzing.src.path_transition_explorer import (
             PathTransitionGraph, hash_coverage_state,
             context_aware_schedule,
         )
@@ -81,7 +79,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # 零运行时开销, 不可被反插桩检测——替代软件插桩 (Pin/DynamoRIO)。
     # LibIHT (SUR 2025); HardTaint; PT+DBI hybrid (J.Comm Dec 2025)
     try:
-        from analysis.dynamic.engine.intel_pt_coverage import (
+        from modules.analysis.dynamic.engine.intel_pt_coverage import (
             PTCoverageReconstructor, find_psb_boundaries,
             parse_pt_packets, bb_sequence_to_edge_bitmap,
         )
@@ -101,7 +99,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # ASE 2025 "Risk Estimation in Differential Fuzzing via EVT";
     Coles (2001); Pickands (1975)
     try:
-        from fuzzing.src.evt_risk_estimator import (
+        from modules.fuzzing.src.evt_risk_estimator import (
             EVTRiskEstimator, fit_gpd, score_diff_severity,
         )
         _evt_estimator = EVTRiskEstimator(
@@ -116,9 +114,9 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # (be) 二进制语义差分 Oracle
     # 四维差分判定 (输出/覆盖/性能/系统调用)→差异分类+严重度评估。
     # 无需源码——纯黑盒 I/O+覆盖比较, 闭源二进制版本间的回归检测。
-    # DDYF (ePrint 2026/991); DIFFSPEC (); HyDiff
+    # 参考: DDYF (ePrint 2026/991); DIFFSPEC; HyDiff
     try:
-        from analysis.dynamic.engine.semantic_diff_oracle import (
+        from modules.analysis.dynamic.engine.semantic_diff_oracle import (
             SemanticDiffOracle, ExecutionSnapshot, DiffType,
             capture_execution,
         )
@@ -153,9 +151,9 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # 后向数据流切片→见证路径→evidence-weighted 最小 blame 集 ranking。
     # 从崩溃 symptom 追溯到 root cause——O(30) 步 use-def 回溯。
     # 与现有 crash_analysis 互补: 后者报告崩溃点, 本模块报告根因函数。
-    # Veritas (); Kumushi (CCS 2026); AutoCrashFL (2025)
+    # 参考: Veritas; Kumushi (CCS 2026); AutoCrashFL (2025)
     try:
-        from analysis.dynamic.engine.witness_root_cause import (
+        from modules.analysis.dynamic.engine.witness_root_cause import (
             backward_crash_slice, rank_blame_candidates,
             WitnessPath, BlameCandidate,
         )
@@ -170,7 +168,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与现有 crash_analysis 互补: 后者分析单个崩溃, 本模块从单个 PoC 生成变体族。
     # Kumushi (CCS 2026) crash exploration; AFL++ crash exploration mode
     try:
-        from analysis.dynamic.engine.crash_variant_generator import (
+        from modules.analysis.dynamic.engine.crash_variant_generator import (
             CrashVariantGenerator, triangulate_root_cause,
             CrashVariant, TriangulationResult,
         )

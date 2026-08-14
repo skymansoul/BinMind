@@ -1,6 +1,4 @@
-"""
-(ae) LLM-SMT 混合约束求解器
-"""
+"""第5批可选增强: (ae) LLM-SMT 混合约束求解器。"""
 
 import logging
 
@@ -14,10 +12,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与 (b) symexec_opt_passes 的求解器优化互补: 后者优化 Z3 调用策略,
     # 本模块在 Z3 之前插入 LLM 草图层——利用语义理解跳过位级搜索。
     # LLM 不可用时自动降级为纯 Z3 求解。
-    # ICSE 2026 "Generator Solving for Symbolic Execution";
-    # (2025) — LLM 路径约束求解
+    # 参考: ICSE 2026 "Generator Solving for Symbolic Execution"; LLM路径约束求解
     try:
-        from analysis.symbolic.src.llm_smt_hybrid_solver import (
+        from modules.analysis.symbolic.src.llm_smt_hybrid_solver import (
             LLMSMTHybridSolver, ConstraintTemplateCache,
         )
         _template_cache = ConstraintTemplateCache(max_size=128)
@@ -36,10 +33,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 贪心合成最小补偿操作序列。
     # 与 (w) Ptmalloc2StateMachine 互补: 后者执行操作,
     # 本模块在执行前预测副作用并计算补偿。
-    # Bagua (NDSS 2023) — ILP side-effect elimination;
-    # MAZE (USENIX 2021) — Dig & Fill Diophantine solver
+    # 参考: Bagua (NDSS 2023) ILP副作用消除; MAZE (USENIX 2021) Dig&Fill 丢番图求解
     try:
-        from exploit.src.heap.side_effect_compensator import (
+        from modules.exploit.src.heap.side_effect_compensator import (
             SideEffectPredictor, CompensationSynthesizer,
             predict_and_compensate,
         )
@@ -58,10 +54,10 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 确定性模式匹配 + 轻量抽象解释 → 人类可读的函数特征。
     # 与现有 GNN embedding 互补: GNN 做语义近似搜索,
     # 本模块做精确特征标注 + 倒排索引快速精确检索。
-    # (2025) "Beyond Embeddings" — LLM-agent
-    # feature extraction, 本项目将 LLM 替换为确定性模式匹配
+    # 参考 (2025) "Beyond Embeddings" LLM-agent特征提取思路,
+    # 本项目将LLM替换为确定性模式匹配
     try:
-        from analysis.static.binary_analysis.interpretable_features import (
+        from modules.analysis.static.binary_analysis.interpretable_features import (
             InterpretableFeatureExtractor, InvertedFeatureIndex,
             FunctionFeatures,
         )
@@ -78,10 +74,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 在指数级等价形式空间中通过 cost-guided extraction 找最简形式。
     # 与现有 mba_deobfuscator/semilinear_mba 互补: 后者做确定性规则链,
     # 本模块做非确定性搜索——发现固定规则无法触达的等价简化。
-    # ProMBA (ACM TOSEM 2026); SaMBA (AsiaCCS 2026);
-    # egg (Willsey et al., POPL 2021)
+    # 参考: ProMBA (ACM TOSEM 2026); SaMBA (AsiaCCS 2026); egg (Willsey et al., POPL 2021)
     try:
-        from deobfuscation.egraph_mba_simplifier import (
+        from modules.analysis.deobfuscation.egraph_mba_simplifier import (
             EGraphMBASimplifier,
         )
         _egraph_simplifier = EGraphMBASimplifier(
@@ -97,10 +92,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # L* 算法适配 Mealy 机 + 消息子类型发现 + 确定性 counterexample 生成。
     # 与现有 protocol_state_inferrer 互补: 后者被动观测 trace,
     # 本模块主动探测——发送 membership query 补全 trace 未覆盖的转换。
-    # Act_Infer (FITEE 2025); Angluin (1987) L*;
-    # ICEPRE (ISSTA 2025)
+    # 参考: Act_Infer (FITEE 2025); Angluin (1987) L*; ICEPRE (ISSTA 2025)
     try:
-        from network.active_state_inferrer import (
+        from modules.network.active_state_inferrer import (
             ActiveStateInferrer, generate_counterexample_candidates,
         )
         _active_inferrer = ActiveStateInferrer(
@@ -117,9 +111,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 源码 AST diff → 基元分解 → 行为签名匹配 → 二进制 trampoline 补丁。
     # 与现有 auto_patcher/patch_suggestion 互补: 后者生成源码补丁,
     # 本模块在无源码场景下将补丁映射到二进制层。
-    # Dilipa (NDSS); SCRIBE (2026); BASICS ()
+    # Dilipa (NDSS); SCRIBE (2026); BASICS
     try:
-        from patching.expression_primitive_aligner import (
+        from modules.patching.expression_primitive_aligner import (
             PrimitiveDecomposer, BehavioralSignatureMatcher,
             MicroPatchGenerator, RelationalEquivalenceVerifier,
         )
@@ -142,10 +136,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 两个增广视图通过引力模型(质量×质量/距离²)控制边丢弃,
     # InfoNCE 对比损失训练嵌入空间。与 (d) GNN 分类器互补:
     # 先自监督预训练 → 再微调下游任务 (CWE/CVE 分类)。
-    # BEGA (IEEE 2026); MoCo (He et al., CVPR 2020);
-    # GraphCL (You et al., NeurIPS 2020)
+    # 参考: BEGA (IEEE 2026); MoCo (He et al., CVPR 2020); GraphCL (You et al., NeurIPS 2020)
     try:
-        from ai_ml.src.training.gravity_contrastive import (
+        from modules.ai_ml.src.training.gravity_contrastive import (
             MomentumContrastEmbedder, build_gravity_model,
             GravityCFGNode, pretrain_step,
         )
@@ -165,10 +158,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 从裸机固件自动推断 MMIO 寄存器类型 (T0-T4) + 外设边界 +
     # 中断向量表→ISR→MMIO 追溯。与现有 firmware_analyzer 互补:
     # 后者做通用固件解包/格式识别, 本模块做 MMIO 语义推断。
-    # XtractIO (Univ. Twente 2025); ES-Fuzz (arXiv 2026);
-    # μEmu (USENIX 2022)
+    # 参考: XtractIO (Univ. Twente 2025); ES-Fuzz (arXiv 2026); μEmu (USENIX 2022)
     try:
-        from platform.firmware.src.mmio_inference import (
+        from modules.platform.firmware.src.mmio_inference import (
             MMIORegister, MMIORegisterClassifier, Peripheral,
             detect_lms_patterns, infer_peripherals, link_isr_to_mmio,
         )
@@ -186,10 +178,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 组织间共享漏洞数据无需可信中心——在本地加噪后共享,
     # 聚合时噪声相互抵消恢复人口统计。与现有 CVE/cve_kb 互补:
     # 后者做单方 CVE 管理, 本模块做多方隐私保护情报共享。
-    # Dwork & Roth (2014) ε-DP; RAPPOR (CCS 2014);
-    # DDP-SA (, 2026)
+    # 参考: Dwork & Roth (2014) ε-DP; RAPPOR (CCS 2014); DDP-SA (2026)
     try:
-        from cve.src.private_vuln_sharing import (
+        from modules.cve.src.private_vuln_sharing import (
             VulnerabilityPrivatizer, FederatedAggregator,
             simhash_64, VulnerabilityRecord,
         )
@@ -209,9 +200,9 @@ def apply_enhancements_5(result, binary_path, binfo, kwargs, binary_hash=None):
     # 存储变量流追踪 + CALL前后分叉检测 → exploitable reentrancy判定。
     # 与现有 (x) EVMReentrancyDetector 互补: 后者做快速 CALL/SSTORE
     # 模式匹配 (高召回), 本模块做流分叉精确判定 (高精度)。
-    # DivertScan (FSE 2025); Oyente (CCS 2016)
+    # 参考: DivertScan (FSE 2025); Oyente (CCS 2016)
     try:
-        from crypto.src.evm.flow_divergence_detector import (
+        from modules.crypto.src.evm.flow_divergence_detector import (
             StorageFlowTracer, FlowDivergenceDetector,
             replay_evm_trace,
         )

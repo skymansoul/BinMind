@@ -1,21 +1,8 @@
 """
 Use-After-Free 深度分析 — 从简单正则升级为指针别名追踪+调用上下文分析。
-
-当前 _check_uaf_heuristic 用 free(X).*?X-> 正则跨行匹配,
-无法处理以下真实场景:
-  1. 指针复制后释放: p=ptr; free(ptr); p->field → 检测失败
-  2. 通过函数参数传递: free(obj); process(obj) → 检测失败(process内解引用)
-  3. 条件释放后的使用: if(x) free(p); p->field → 缺路径感知
-
-方案: 两阶段分析。
-  Phase 1 — 别名追踪: 在反编译伪代码中追踪指针赋值链(p=ptr, q=p),
-    构建别名集。free(X) 将 X 及其所有别名标记为 freed。
-    后续任何 freed 别名的解引用均报警。
-  Phase 2 — 调用上下文: 若 free(X) 后 X 作为参数传递给其他函数,
-    标记为 "潜在UAF" (WARNING), 因无法静态分析被调用函数的内部行为。
-
-复杂度: O(N·A), N=代码行数, A=每行平均别名数(通常<5)。
-不引入符号执行——保持与现有管线兼容的轻量特性。
+两阶段: Phase 1 别名追踪(指针赋值链→别名集, free 标记全部别名为 freed);
+Phase 2 调用上下文(free 后作为参数传递 → 标记潜在UAF)。
+复杂度 O(N·A), 不引入符号执行。
 """
 
 from __future__ import annotations

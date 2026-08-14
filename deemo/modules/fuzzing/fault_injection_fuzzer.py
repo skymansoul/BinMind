@@ -1,15 +1,14 @@
 import logging
 import os
 import struct
-import random as _random_module
+import random
 import time
 import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Callable, Set
 from collections import defaultdict
-from itertools import count  # unused; 保留以备将来批量注入点编号
 
-logger = logging.getLogger(__name__)  # 修复: __log → logger, 消除 NameError — 代码其余部分全部引用 logger
+logger = logging.getLogger(__name__)  # 修复: 原 __log 与引用不一致
 
 try:
     import unicorn

@@ -110,7 +110,6 @@ class PipelineSynthesizer:
             scores[name] = gain * infl
             durations[name] = dur
 
-        # 初始化
         available_keys: Set[str] = set(initial_keys)
         selected: Set[str] = set(mandatory)
         remaining_budget = budget_ms

@@ -1,1 +1,6 @@
-fatal: path 'deemo/create_module.py' exists on disk, but not in 'deaca8e4'
+"""模块脚手架入口。
+
+历史内容为 git 错误文本，已替换。实际脚手架功能由同目录
+scaffold_module.py 提供（按 modules/<name>/ 目录约定生成骨架）。
+本文件保留为占位模块，防止外部脚本的导入引用失效。
+"""

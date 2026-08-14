@@ -1,8 +1,6 @@
 """
 C源码→伪代码IR提取器 — 从C源文件提取malloc/memcpy/赋值等关键IR行,
 生成与增强检测器兼容的伪代码。Binary IR提取移至 core/ir_from_binary.py。
-
-Ref: Ghidra decompiler output format, forward_interval_prop.py regex patterns
 """
 
 from __future__ import annotations
@@ -11,7 +9,7 @@ import re, os
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# Preprocessing moved to core/ir_preprocessor.py
+# 预处理已移至 core/ir_preprocessor.py
 from core.ir_preprocessor import (
     strip_comments, strip_preprocessor,
     extract_var_from_decl, normalize_declaration,
@@ -58,7 +56,7 @@ _HEAP_MEMCPY_RE = re.compile(
 _HEAP_STRCPY_RE = re.compile(
     r'(strcpy|strcat|sprintf)\s*\(\s*(\w[\w.]*)\s*,')
 
-# 匹配 unsigned/size_t/int 类型的常量赋值 (可能用作alloc/write size)
+# 匹配 unsigned/size_t/int 类型的常量赋值 (用于alloc/write size)
 _SIZE_ASSIGN_RE = re.compile(
     r'(?:size_t|ssize_t|unsigned\s+(?:int|long|long\s+long|char|short)|'
     r'u?int(?:8|16|32|64)_t|int|long)\s+'
@@ -68,9 +66,8 @@ _SIZE_ASSIGN_RE = re.compile(
 _IF_CMP_RE = re.compile(
     r'if\s*\(\s*(\w[\w.]*)\s*(<|<=|>|>=|==|!=)\s*(\d+)\s*\)')
 
-# 扩展: 匹配溢出守卫
-# if (var > CONST / expr) return → var safe from overflow
-# CONST can be SIZE_MAX, UINT_MAX, INT_MAX, or hex literal
+# 扩展: 匹配溢出守卫 (var > CONST / expr 则 return → 变量免于溢出)
+# CONST 可为 SIZE_MAX, UINT_MAX, INT_MAX 或十六进制字面量
 _IF_MAX_GUARD_RE = re.compile(
     r'if\s*\(\s*(\w[\w.]*)\s*(>|>=)\s*'
     r'(?:SIZE_MAX|UINT_MAX|INT_MAX|ULLONG_MAX|0x[0-9a-fA-F]+)\s*'
@@ -80,8 +77,7 @@ _IF_MAX_GUARD_RE = re.compile(
 def extract_from_source(c_source: str) -> List[str]:
     """从C源码提取堆操作相关IR行。
 
-    Returns:
-      List[str]: 伪代码IR行, 每行一条语句, 格式与增强检测器兼容
+    返回 List[str]: 伪代码IR行, 每行一条语句, 格式与增强检测器兼容。
     """
     # 预处理
     s = strip_comments(c_source)
@@ -168,7 +164,7 @@ def extract_from_source(c_source: str) -> List[str]:
             continue
 
         # 检测用户函数调用 (用于跨函数UAF/堆溢出追踪)
-        # emit: call func_name(arg1, arg2, ...);
+        # 发出: call func_name(arg1, arg2, ...);
         # 跳过已知库函数和控制关键字, 仅保留用户定义的函数调用
         _ucm = re.match(r'\s*(\w[\w.]*)\s*\(([^)]*)\)\s*;?\s*$', line)
         if _ucm and '=' not in line.split('(')[0]:
@@ -209,7 +205,7 @@ def extract_from_source(c_source: str) -> List[str]:
             continue
 
         # 检测指针解引用赋值 (p->field = val; p[idx] = val)
-        # 注意: 使用normalized避免C类型声明中的 * 被误判为解引用
+        # 使用normalized避免C类型声明中的 * 被误判为解引用
         _PTR_USE_RE = re.compile(
             r'(?:(\w[\w.]*)\s*->\s*(\w[\w.]*)|'
             r'(\w[\w.]*)\s*\[[^\]]*\])\s*=\s*')
@@ -265,7 +261,7 @@ def extract_from_file(c_path: str) -> List[str]:
     return extract_from_source(source)
 
 
-# Binary extraction and get_ir_lines moved to core/ir_from_binary.py
+# Binary 提取与 get_ir_lines 已移至 core/ir_from_binary.py
 
 __all__ = [
     'extract_from_source', 'extract_from_file',

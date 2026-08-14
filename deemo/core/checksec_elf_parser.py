@@ -1,8 +1,6 @@
 """
-ELF low-level parsing primitives.
-
-封装 ELF 文件头/程序头/动态段的二进制读取，为上层硬化检测提供结构化数据。
-纯 Python 实现以避免 pyelftools 依赖，对 stripped binary 优雅降级。
+封装 ELF 文件头/程序头/动态段的二进制读取, 为上层硬化检测提供结构化数据。
+纯 Python 实现以避免 pyelftools 依赖, 对 stripped 二进制优雅降级。
 """
 
 
@@ -18,14 +16,14 @@ from .checksec_constants import (
 
 
 def _read_struct(f, offset: int, fmt: str) -> Tuple:
-    """Read structured data from ELF at the given offset without moving the file pointer."""
+    """在指定偏移读取 ELF 结构化数据, 不移动文件指针。"""
     f.seek(offset)
     size = struct.calcsize(fmt)
     return struct.unpack(fmt, f.read(size))
 
 
 def _detect_elf_class(f) -> int:
-    """Read the EI_CLASS byte to determine 32- vs 64-bit."""
+    """读取 EI_CLASS 字节判断 32/64 位。"""
     f.seek(0)
     magic = f.read(5)
     if magic[:4] != ELFMAG:
@@ -34,12 +32,7 @@ def _detect_elf_class(f) -> int:
 
 
 def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
-    """
-    Parse ELF file header and Program Headers.
-
-    Returns a dict with phdrs, dynamic section offsets, and string table info,
-    or None on parse failure.
-    """
+    """解析 ELF 文件头与程序头, 返回 phdrs/动态段偏移/字符串表信息, 解析失败返回 None。"""
     try:
         with open(path, 'rb') as f:
             elf_class = _detect_elf_class(f)
@@ -104,11 +97,7 @@ def _parse_dynamic_section(
     dyn_entry_fmt: str,
     dyn_entry_size: int,
 ) -> Dict[int, int]:
-    """
-    Parse the .dynamic section, extracting all tag-value pairs.
-
-    Iterates entries from PT_DYNAMIC, stopping at DT_NULL.
-    """
+    """解析 .dynamic 段, 提取全部 tag-value 对; 从 PT_DYNAMIC 起遍历条目, 遇 DT_NULL 停止。"""
     dynamic: Dict[int, int] = {}
     for phdr in phdrs:
         if phdr['type'] == 2:  # PT_DYNAMIC

@@ -1,32 +1,6 @@
 """
-集成堆溢出验证器 —— 组合 DDAI-ASR 全部四层分析做最终判定。
-
-DDAI-ASR = Demand-Driven Abstract Interpretation + Allocator-Semantic Refinement
-
-四层分析管道:
-  Layer 1: HeapAbstractDomain        — 维护堆对象状态空间 (base, offset, capacity)
-  Layer 2: ConstraintExtractor       — 从路径条件中提取数值约束
-  Layer 3: AbstractEngine            — 不动点区间抽象解释
-  Layer 4: AllocatorConstraintChecker — glibc 分配器语义对齐过滤
-
-最终判定逻辑 (对每个告警):
-  1. 若 AbstractEngine 分析后发现 max_offset < effective_size → FILTER (安全)
-  2. 若 max_offset >= effective_size 且约束确定 → KEEP (真阳性)
-  3. 若状态不可达 → FILTER (死代码)
-  4. 若无法判定 → UNCERTAIN (保守保留)
-
-与原有 heap_false_positive_filter 的差异:
-  - 原方案: 仅做 value-flow + 约束匹配, 无不动点分析
-  - 本方案: 完整的不动点抽象解释, 可处理循环和条件分支
-  - 精度提升来源: widening 处理循环 + 路径约束求精
-
-与 Angr 符号执行的差异:
-  - Angr: 全路径符号执行 → 路径爆炸, 慢但精确
-  - 本方案: 区间抽象解释 → 线性时间, 牺牲精度换速度
-  - 互补: Angr 用于验证可疑点, 本方案用于大规模初筛
-
-  - Cheng et al. "Cross-Domain Interaction" 的地址×区间双向细化
-  - Cousot & Cousot 抽象解释框架
+集成堆溢出验证器 —— 组合 DDAI-ASR 四层分析做最终判定。
+四层: 堆抽象域、路径约束提取、不动点区间抽象解释、分配器语义对齐过滤。
 """
 
 import re
@@ -72,20 +46,7 @@ class VerifySummary:
     details: List[VerifyResult] = field(default_factory=list)
 
 class HeapVerify:
-    """
-    堆漏洞验证引擎的核心入口。
-
-    典型用法:
-      verifier = HeapVerify()
-      summary = verifier.verify_function(pseudocode)
-      for r in summary.details:
-          print(f"  {r.pointer}: {r.verdict} ({r.reason})")
-
-    对含有多函数的二进制:
-      for fname, code in decompiled.items():
-          summary = verifier.verify_function(code, fname)
-          all_summaries[fname] = summary
-    """
+    """堆漏洞验证引擎的核心入口: verify_function(伪代码) → VerifySummary。"""
 
     def __init__(self, arch_bits: int = 64, platform: str = "x86_64"):
         self._arch_bits = arch_bits
@@ -96,14 +57,7 @@ class HeapVerify:
     def verify_function(
         self, pseudocode: str, func_name: str = "",
     ) -> VerifySummary:
-        """
-        验证单个函数中所有堆操作的溢出风险。
-
-        三步流程:
-          1. 快速扫描 — 正则找到所有 malloc/memcpy 对
-          2. 抽象解释 — AbstractEngine 执行不动点分析
-          3. 精确判定 — 用分析结果对每个候选做判定
-        """
+        """验证单个函数中所有堆操作的溢出风险: 快速扫描→抽象解释→精确判定。"""
         t_start = time.time()
         results: List[VerifyResult] = []
 
@@ -209,7 +163,6 @@ class HeapVerify:
                     "effective": eff, "line": i, "code": line.strip(),
                 }
 
-            # 写入
             write_m = re.search(
                 r'(memcpy|memmove|memset|strcpy|strncpy|sprintf|snprintf|read|fread|recv)\s*\(([^)]+)\)',
                 line,

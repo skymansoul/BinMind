@@ -1,18 +1,7 @@
 """
-CAAWP解释器 — 上下文敏感的仿射域前向传播引擎.
-
-在每个函数调用点区分上下文, 独立维护仿射状态:
-  foo(n=64) → ctx=main>foo@0x401000, n的仿射快照={n:1.0}
-  foo(n=128) → ctx=main>foo@0x401020, n的仿射快照={n:1.0}
-
-不同上下文下的alloc_size和write_size关系独立证明,
-合并时取保守join(取最宽松边界).
-
-与现有affine_analyzer.py的区别:
-  affine_analyzer无上下文区分, 所有调用点合并为一个状态.
-  本模块按call-site分桶, 上下文独立存储和证明.
-
-复杂度: O(C*N) where C=上下文数(≤16), N=指令数.
+CAAWP 解释器: 上下文敏感的仿射域前向传播引擎。
+在每个函数调用点按 call-site 分桶独立维护仿射状态 (如 foo(n=64) 与 foo(n=128) 分属不同上下文), 独立证明 alloc_size/write_size 关系, 合并时取保守 join。
+与 affine_analyzer (无上下文区分) 不同; 复杂度 O(C*N), C 为上下文数 (≤16)。
 """
 
 from __future__ import annotations

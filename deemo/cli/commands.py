@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command-line interface — argparse-based, delegates to core.pipeline."""
+# cli/commands.py - 命令行入口 (argparse 分发到 core.pipeline 与各子命令)
 
 import argparse, os, sys, time
 
@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = p.add_subparsers(dest='command', help='subcommands')
 
-# analyze
+    # analyze
     ap = sub.add_parser('analyze', help='analyze a binary file')
     ap.add_argument('binary', help='path to ELF/PE/Mach-O file')
     ap.add_argument('-o', '--output', default='./results',
@@ -34,6 +34,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help='run function analysis in parallel')
     ap.add_argument('--symbolic', action='store_true',
                     help='enable symbolic execution (requires angr)')
+    ap.add_argument('--fuzz', action='store_true',
+                    help='generate libFuzzer harness workspace for the target')
     ap.add_argument('--no-crypto', action='store_true',
                     help='skip cryptographic constant scanning')
     ap.add_argument('--decompiler', choices=['auto', 'r2', 'ghidra'],
@@ -43,14 +45,28 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument('-v', '--verbose', action='store_true',
                     help='debug logging')
 
-# batch
+    # batch
     bp = sub.add_parser('batch', help='analyze multiple binaries')
     bp.add_argument('directory', help='directory containing binaries')
     bp.add_argument('-o', '--output', default='./results', help='output dir')
     bp.add_argument('-f', '--format', choices=['markdown', 'json'],
                     default='markdown')
 
-# version
+    # serve
+    svp = sub.add_parser('serve', help='start the Web API service')
+    svp.add_argument('--host', default='127.0.0.1',
+                     help='listen address (default: 127.0.0.1)')
+    svp.add_argument('--port', type=int, default=8000,
+                     help='listen port (default: 8000)')
+    svp.add_argument('--reload', action='store_true',
+                     help='enable uvicorn auto-reload (dev only)')
+
+    # fuzz
+    fp = sub.add_parser('fuzz', help='fuzzing tools (delegates to binmind-fuzzing)')
+    fp.add_argument('args', nargs=argparse.REMAINDER,
+                    help='arguments forwarded to the fuzzing CLI')
+
+    # version
     sub.add_parser('version', help='show version info')
 
     return p
@@ -82,6 +98,8 @@ def cmd_analyze(args):
         output_format=args.format,
         hooks_dir=args.hooks,
         decompiler=args.decompiler,
+        symbolic=args.symbolic,
+        fuzz=args.fuzz,
     )
 
     if 'error' in result:
@@ -130,11 +148,26 @@ def cmd_batch(args):
                 binary=b, output=args.output, format=args.format,
                 crash=None, functions=None, max_funcs=20,
                 include_lib=False, parallel=False, symbolic=False,
-                no_crypto=False, decompiler='auto', hooks=None,
+                fuzz=False, no_crypto=False, decompiler='auto', hooks=None,
                 verbose=False))
         except Exception as e:
             print(f"  failed: {e}", file=sys.stderr)
     return 0
+
+
+def cmd_serve(args):
+    try:
+        from modules.output.web_api import start_server
+    except ImportError:
+        print("error: FastAPI/uvicorn 未安装，无法启动 Web 服务", file=sys.stderr)
+        return 1
+    start_server(host=args.host, port=args.port, reload=args.reload)
+    return 0
+
+
+def cmd_fuzz(args):
+    from modules.fuzzing.src.cli import main as fuzz_main
+    return fuzz_main(args.args)
 
 
 def cmd_version():
@@ -151,6 +184,10 @@ def main() -> int:
         return cmd_analyze(args)
     elif args.command == 'batch':
         return cmd_batch(args)
+    elif args.command == 'serve':
+        return cmd_serve(args)
+    elif args.command == 'fuzz':
+        return cmd_fuzz(args)
     elif args.command == 'version':
         return cmd_version()
     else:

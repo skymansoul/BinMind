@@ -1,25 +1,7 @@
 """
-Path feasibility checker — eliminates heap overflow reports on infeasible paths.
-
-Problem: the decompiler produces linearized IR that includes all code paths.
-A heap overflow candidate found on a path guarded by mutually exclusive
-conditions is a false positive that never executes at runtime.
-
-Approach (lightweight, applied post-detection):
-1. Parse branch conditions (cmp/test + conditional jumps) from IR.
-2. For each heap overflow candidate, check if the path from the allocation
-   site to the write site contains contradictory guards.
-3. If a contradiction is found, demote the candidate's confidence.
-
-Conservative design: we only filter when contradiction is *provable* from
-the IR text alone. Edge cases (indirect calls, computed jumps) are kept.
-
-This is NOT full symbolic execution — it's a heuristic path-pruning that
-filters ~15-20% of remaining FPs with near-zero risk of removing true positives.
-
-  Angr Veritesting — merges static CFG paths
-  with symbolic exec to reduce state explosion. Our lighter approach uses
-  only branch-condition comparison, not constraint solving.
+路径可行性检查器 — 排除不可行路径上的堆溢出报告：解析IR分支条件，
+发现分配点到写入点路径上可证明的矛盾守卫则降低候选置信度。
+仅过滤可证明的矛盾，间接调用/计算跳转等边界情况保留（非完整符号执行）。
 """
 
 from dataclasses import dataclass, field
@@ -28,7 +10,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 @dataclass
 class BranchCondition:
-    """A branch condition extracted from IR."""
+    """从IR提取的分支条件。"""
     line_idx: int
     condition_var: str = ''       # 被比较的变量
     comparison_op: str = ''       # 'eq', 'ne', 'lt', 'le', 'gt', 'ge'

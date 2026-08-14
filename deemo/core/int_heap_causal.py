@@ -1,10 +1,4 @@
-# Integer overflow → heap overflow causal chain: tracks mul/add results
-# flowing directly into malloc size arguments.
-# Most dangerous pattern: size = count * element_size; ptr = malloc(size);
-# if count*element_size overflows, malloc allocates far less than expected,
-# and subsequent writes trigger heap overflow.
-# Pattern matching catches individual patterns; this module establishes the
-# causal chain: overflow op → malloc → heap write.
+# int_heap_causal.py - 追踪整数溢出(mul/add)结果流入 malloc 大小参数的因果链, 建立 溢出运算→malloc→堆写入 关联。
 from __future__ import annotations
 
 import re

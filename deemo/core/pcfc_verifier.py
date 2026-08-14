@@ -1,31 +1,7 @@
-"""
-PCFC路径条件验证器 — 格式串漏洞的路径条件感知误报过滤.
-
-当FCPV判定VULN时, PCFC提取sink调用点的路径条件,
-判定sink是否在不可达路径上:
-  1. early-return: sink前有return/exit/abort使攻击路径不可达
-  2. 条件互斥: sink所在路径与攻击输入路径互斥
-  3. 路径不互斥 -> 保持VULN
-  4. 无路径条件信息 -> 保持VULN (保守, 零召回损失)
-
-核心场景:
-  if (trusted_mode) { return 0; }
-  printf(argv[1]);  <- attack path requires trusted_mode=false,
-                       but if trusted_mode is always true, sink unreachable
-
-  if (validated) {
-      printf(argv[1]);  <- sink only on validated path -> FP if validated
-                            always implies safe input
-  }
-
-与FCPV的关系:
-  FCPV判定taint可达性和sanitizer有效性, PCFC过滤路径不可达的sink
-  PCFC不影响FCPV的SAFE判定, 仅过滤VULN
-
-复用PCOL约束提取器:
-  PCOL的extract_path_conditions/check_path_mutex原样复用,
-  target_line改为sink行号而非use行号.
-"""
+"""PCFC路径条件验证器 — 格式串漏洞的路径条件感知误报过滤。
+FCPV判定VULN时提取sink调用点的路径条件：early-return使攻击路径不可达、
+sink路径与攻击输入路径互斥则过滤；路径不互斥或无路径条件信息时保持
+VULN(保守, 零召回损失)。复用PCOL的约束提取器(target_line取sink行号)。"""
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple

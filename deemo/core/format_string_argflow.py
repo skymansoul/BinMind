@@ -1,21 +1,7 @@
-"""
-格式化字符串参数流分析 —— 追踪格式化参数在调用链中的位置映射。
-
-printf 有多个变体 (fprintf/sprintf/snprintf/dprintf/syslog),
-每个的格式化参数位置不同:
-  printf(fmt, ...)     → fmt 在 arg[0]
-  fprintf(fp, fmt, ...)→ fmt 在 arg[1]
-  snprintf(buf, n, fmt, ...) → fmt 在 arg[2]
-  syslog(prio, fmt, ...) → fmt 在 arg[1]
-
-若调用链中存在位置偏移: wrapper(fmt, ...) → printf(fmt, ...)
-则 wrapper 的 arg[0] 应对应 printf 的 arg[0]。
-但若 wrapper(const_char, fmt) → printf(fmt), 则 wrapper 的 arg[1]
-对应 printf 的 arg[0]。本模块追踪这种跨调用边界的位置映射。
-
-方法: 对每个调用边 (caller → callee), 记录调用方实参位置到
-被调方形参位置的映射。沿调用链累积映射。
-"""
+"""格式化字符串参数流分析 —— 追踪格式化参数在调用链中的位置映射。
+各 printf 变体的格式参数位置不同 (printf→arg[0], fprintf→arg[1], snprintf→arg[2] 等),
+跨调用边界时实参位置会偏移 (如 wrapper(const_char, fmt) → printf(fmt));
+对每个调用边记录调用方实参位置到被调方形参位置的映射, 沿调用链累积。"""
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

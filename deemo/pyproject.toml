@@ -63,7 +63,7 @@ full = [
 ]
 
 [project.scripts]
-binmind = "main:main"
+binmind = "cli.commands:main"
 
 [project.urls]
 "Bug Reports" = "https://github.com/binmind/binmind/issues"

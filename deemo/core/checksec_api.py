@@ -1,8 +1,5 @@
 """
-Public API: format dispatch and summary generation.
-
-格式识别后分派到对应检测器，汇总硬化状态。对外稳定接口为 detect_checksec
-和 checksec_summary。
+公开 API: 格式识别后分派到对应检测器并汇总硬化状态。对外稳定接口为 detect_checksec 与 checksec_summary。
 """
 
 
@@ -24,25 +21,7 @@ _MACHO_MAGICS = (
 
 
 def detect_checksec(path: str) -> Dict[str, Any]:
-    """
-    Detect binary hardening / protection mechanisms.
-
-    Args:
-        path: path to ELF or PE file
-
-    Returns:
-        Standardized hardening dictionary:
-        {
-            'nx': bool,
-            'pie': bool,
-            'canary': bool,
-            'relro': str,         # 'full' | 'partial' | 'none'
-            'fortify': bool,
-            'aslr': bool,
-            'rwx_segments': bool,
-            'format': str,        # 'ELF' | 'PE' | 'Mach-O' | 'unknown'
-        }
-    """
+    """检测二进制硬化/保护机制。返回标准化字典: nx/pie/canary/relro ('full'|'partial'|'none')/fortify/aslr/rwx_segments/format ('ELF'|'PE'|'Mach-O'|'unknown')。"""
     result: Dict[str, Any] = {
         'nx': True,
         'pie': False,
@@ -78,15 +57,7 @@ def detect_checksec(path: str) -> Dict[str, Any]:
 
 
 def checksec_summary(checksec: Dict[str, Any]) -> str:
-    """
-    Generate a text summary of hardening status for reports and LLM prompts.
-
-    Args:
-        checksec: return value from detect_checksec()
-
-    Returns:
-        Single-line summary, e.g. "NX✓ PIE✗ Canary✓ Full RELRO FORTIFY✗"
-    """
+    """生成硬化状态文本摘要供报告与 LLM prompt 使用, 如 "NX✓ PIE✗ Canary✓ Full RELRO FORTIFY✗"。"""
     parts = [
         f"NX{'✓' if checksec.get('nx') else '✗'}",
         f"PIE{'✓' if checksec.get('pie') else '✗'}",

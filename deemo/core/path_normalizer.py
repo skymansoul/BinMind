@@ -1,4 +1,4 @@
-# Path normalization analyzer for CWE-22 path traversal
+# CWE-22 路径穿越的路径归一化分析器
 import re
 
 _PATH_DANGER = ['../', '/etc/', '/root/', '/home/', '..']

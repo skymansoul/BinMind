@@ -62,9 +62,8 @@ def symbolic_overflow_analysis(
                 ret_addr_bytes = path_state.memory.load(rsp_val, 8, endness='Iend_LE')
                 ret_addr_val = path_state.solver.eval(ret_addr_bytes)
 
-                # 如果返回地址包含符号输入，说明可能溢出
+                # 若返回地址包含符号输入, 说明发生溢出
                 if path_state.solver.symbolic(ret_addr_bytes):
-                    # 计算最小偏移
                     min_offset = compute_padding_from_state(
                         path_state, symbolic_input, rsp_val
                     )

@@ -1,6 +1,4 @@
-"""
-(k) 求解器周期性重建调度器
-"""
+"""第2批可选增强: (k) 求解器周期性重建调度器。"""
 
 import logging
 
@@ -13,7 +11,7 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
     # 解决 IncrementalSolverCache 的 Z3 状态累积问题。
     # 成本预估 + 内存压力感知 + warm_start 传递。
     try:
-        from analysis.symbolic.src.solver_rebuild_scheduler import (
+        from modules.analysis.symbolic.src.solver_rebuild_scheduler import (
             SolverRebuildScheduler,
         )
         _rebuild_scheduler = SolverRebuildScheduler(
@@ -30,7 +28,7 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
     # 在 gravity_edge_dropout 基础上增加桥边检测和
     # 谱连通性监控，防止边丢弃破坏 CFG 的全局连通结构。
     try:
-        from ai_ml.src.data.spectral_edge_dropout import (
+        from modules.ai_ml.src.data.spectral_edge_dropout import (
             DegreeAwareSpectralDropout,
         )
         _spectral_dropout = DegreeAwareSpectralDropout(
@@ -43,9 +41,8 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
     # (m) 状态备忘录 (StateMemento)
     # Memento 模式的符号状态增量快照与压缩。
-# KLEE 2024 ICSE Workshop; Gamma et al. 1995
     try:
-        from analysis.symbolic.src.state_memento import StateMemento
+        from modules.analysis.symbolic.src.state_memento import StateMemento
         _memento = StateMemento(
             memory_budget_mb=kwargs.get("memento_budget_mb", 256.0),
             max_mementos_per_path=kwargs.get("memento_max_per_path", 10),
@@ -57,10 +54,10 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (n) 冷点引导探索器 (ColdSpotGuidedExplorer)
-    # PathHeatmap cold spot -> constraint edit distance -> redirection
-# Sun et al. ICSE 2024 — 路径覆盖热力图与约束编辑距离
+    # 热力图冷点 → 约束编辑距离 → 路径重定向。
+    # 参考: Sun et al. ICSE 2024 — 路径覆盖热力图与约束编辑距离
     try:
-        from analysis.symbolic.src.coldspot_guided_explorer import (
+        from modules.analysis.symbolic.src.coldspot_guided_explorer import (
             ColdSpotGuidedExplorer,
         )
         _coldspot_explorer = ColdSpotGuidedExplorer(
@@ -73,9 +70,9 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (o) 时态路径缓存 (TemporalPathCache)
-    # Integrated into enhanced pipeline
+    # 集成于增强管线
     try:
-        from analysis.symbolic.src.temporal_path_cache import TemporalPathCache
+        from modules.analysis.symbolic.src.temporal_path_cache import TemporalPathCache
         _temporal_cache = TemporalPathCache(
             halflife_seconds=kwargs.get("temporal_halflife", 120.0),
             max_per_bucket=kwargs.get("temporal_max_per_bucket", 50),
@@ -87,10 +84,9 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (p) 度保持边丢弃 (DegreePreservingDropout)
-    # degree-aware protection over DropEdge O(|V|)
-# DropEdge
+    # 度感知保护, 优于DropEdge O(|V|)。参考: DropEdge
     try:
-        from ai_ml.src.augment.degree_preserving_dropout import (
+        from modules.ai_ml.src.augment.degree_preserving_dropout import (
             DegreePreservingDropout,
         )
         _deg_dropout = DegreePreservingDropout(
@@ -106,9 +102,9 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (l) 混淆类型预分类器与跨函数证据传播
     # 在反混淆pass之前判定混淆类型；证据传播器沿
-    # 调用图追踪常量来源。参考: Chisel + Tkachenko et al..
+    # 调用图追踪常量来源。参考: Chisel + Tkachenko et al.
     try:
-        from deobfuscation.src.obfuscation_classifier import (
+        from modules.analysis.deobfuscation.src.obfuscation_classifier import (
             ObfuscationClassifier, VoteTally,
         )
         _obf_classifier = ObfuscationClassifier()
@@ -118,7 +114,7 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     try:
-        from deobfuscation.src.evidence_propagation import (
+        from modules.analysis.deobfuscation.src.evidence_propagation import (
             EvidencePropagator, EvidenceRecord,
         )
         _evidence_prop = EvidencePropagator()
@@ -132,7 +128,7 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与Scheduler(AFLfast马尔可夫链)互补。参考: Graphuzz +
     # SEAFuzz — 本模块在关系图基础上新增时间衰减维度。
     try:
-        from fuzzing.src.decaying_novelty_scheduler import (
+        from modules.fuzzing.src.decaying_novelty_scheduler import (
             DecayingNoveltyScheduler, NoveltyRecord,
         )
         _novelty_scheduler = DecayingNoveltyScheduler(
@@ -149,7 +145,7 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
     # 约束间变量依赖建模为有向图，拓扑分层递进求解。
     # SCC condensation 处理循环依赖，partial SAT propagation 缩小搜索空间。
     try:
-        from analysis.symbolic.src.constraint_dependency_graph import (
+        from modules.analysis.symbolic.src.constraint_dependency_graph import (
             ConstraintDependencyGraph,
         )
         _cdg = ConstraintDependencyGraph(min_constraints_for_sort=10)
@@ -164,9 +160,9 @@ def apply_enhancements_2(result, binary_path, binfo, kwargs, binary_hash=None):
     baseline_path = kwargs.get('baseline_binary')
     if baseline_path:
         try:
-            from analysis.static.binary_diff.src.func_differ import diff_pipeline
-            from analysis.static.binary_diff.src.patch_classifier import classify_patch
-            from analysis.static.binary_diff.src.exploit_ranker import rank_patches
+            from modules.analysis.static.binary_diff.src.func_differ import diff_pipeline
+            from modules.analysis.static.binary_diff.src.patch_classifier import classify_patch
+            from modules.analysis.static.binary_diff.src.exploit_ranker import rank_patches
 
             result['_diff_baseline_path'] = baseline_path
             result['_diff_pipeline'] = diff_pipeline

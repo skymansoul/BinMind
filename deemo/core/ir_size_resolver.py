@@ -1,4 +1,4 @@
-"""sizeof/macro/struct → concrete values for IR interval propagation."""
+"""将sizeof/宏/结构体解析为具体值，供IR区间传播。"""
 
 from __future__ import annotations
 import re
@@ -7,36 +7,36 @@ from typing import Dict, List, Optional, Tuple
 from core.loop_write_detector import add_loop_write_hints
 
 
-# patterns ───────────────────────────────────────────────────────────
+# 模式定义 ───────────────────────────────────────────────────────────
 
-# Match: sizeof(type_name), sizeof(expr), sizeof expr
+# 匹配 sizeof(类型名)、sizeof(表达式)、sizeof 表达式
 _SIZEOF_RE = re.compile(
     r'sizeof\s*\(\s*([^()]+?)\s*\)|'
     r'sizeof\s+([a-zA-Z_]\w*(?:\s*\[[^\]]*\])?)')
 
-# Match struct field: var->field, var.field
+# 匹配结构体字段: var->field, var.field
 _FIELD_ACCESS = re.compile(r'(\w[\w.]*)\s*->\s*(\w[\w.]*)')
 
-# Match array definition: type name[N];
+# 匹配数组定义: type name[N];
 _ARRAY_DEF = re.compile(
     r'(?:char|int|short|long|float|double|void|unsigned|'
     r'u?int\d+_t|size_t)\s+(\w[\w.]*)\s*\[(\d+)\]')
 
-# Match struct member: type field[N];
+# 匹配结构体成员: type field[N];
 _STRUCT_MEMBER = re.compile(
     r'(?:char|int|short|long|float|double|void|unsigned|'
     r'u?int\d+_t|size_t)\s+(\w[\w.]*)\s*\[(\d+)\]\s*;')
 
-# String literal: "..." — count characters
+# 字符串字面量: "..." 字符计数
 _STRING_LIT = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
-# ALL_CAPS constant assignment: MACRO_NAME = number;
+# 全大写常量赋值: MACRO_NAME = number;
 _CONST_DEF = re.compile(r'(\b[A-Z][A-Z_0-9]+\b)\s*=\s*(\d+)\s*;')
 
-# Variable aliasing: var1 = var2;
+# 变量别名拷贝: var1 = var2;
 _VAR_COPY = re.compile(r'(\w[\w.]*)\s*=\s*(\w[\w.]*)\s*;')
 
-# malloc with variable: var = malloc(size_var);
+# malloc携带变量: var = malloc(size_var);
 _MALLOC_VAR = re.compile(
     r'(\w[\w.]*)\s*=\s*(?:\([^)]*\))?\s*malloc\s*\(\s*(\w[\w.]*)\s*\)')
 
@@ -44,43 +44,38 @@ _MALLOC_VAR = re.compile(
 _STRCPY_LIT = re.compile(
     r'(strcpy|sprintf)\s*\(\s*(\w[\w.]*)\s*,\s*"((?:[^"\\]|\\.)*)"')
 
-# memcpy with ternary size: memcpy(dst, src, cond ? a : b)
+# memcpy三元大小: memcpy(dst, src, cond ? a : b)
 _MEMCPY_TERNARY = re.compile(
     r'memcpy\s*\(\s*(\w[\w.]*)\s*,[^,]*,\s*'
     r'(\w[\w.]*)\s*\?\s*(\d+)\s*:\s*(\w[\w.]*)')
 
 
 class IrSizeResolver:
-    """Resolve IR size expressions using source-level context.
-
-    Parses struct definitions, array sizes, string literals, and
-    macro constants from C source to annotate IR lines with
-    concrete size hints.
-    """
+    """基于源码上下文解析IR尺寸表达式：解析结构体定义、数组大小、
+    字符串字面量与宏常量，为IR行标注具体尺寸提示。"""
 
     def __init__(self):
-        # Known sizes from source analysis
+        # 源码分析得到的已知尺寸
         self._struct_fields: Dict[str, Dict[str, int]] = {}
-        # struct_name → {field_name → size}
+        # 结构体名 → {字段名 → 尺寸}
         self._struct_bodies: Dict[str, str] = {}
-        # struct_name → raw body text (for nested resolution)
+        # 结构体名 → 原始体文本（用于嵌套解析）
         self._struct_sizes: Dict[str, int] = {}
-        # struct/typedef name → total byte size
+        # 结构体/typedef名 → 总字节数
         self._array_sizes: Dict[str, int] = {}
-        # var_name → element_count (for char name[N])
+        # 变量名 → 元素个数（如 char name[N]）
         self._constants: Dict[str, int] = {}
-        # MACRO → value
+        # 宏 → 值
         self._variable_constants: Dict[str, int] = {}
-        # var → value (const-qualified assignments)
+        # 变量 → 值（const限定赋值）
 
     def analyze_source(self, c_source: str) -> None:
-        """Parse C source to extract type sizes, struct defs, constants."""
-        # Strip comments
+        """解析C源码，提取类型尺寸、结构体定义与常量。"""
+        # 剥离注释
         s = re.sub(r'/\*.*?\*/', '', c_source, flags=re.DOTALL)
         s = re.sub(r'//[^\n]*', '', s)
 
-        # struct definitions
-        # Find all struct { ... } blocks, extract member arrays + save body
+        # 结构体定义：查找全部struct块，提取数组成员并保存体文本
         struct_blocks = re.finditer(
             r'(?:typedef\s+)?struct\s+(?:(\w+)\s*)?\{([^}]+)\}\s*'
             r'(?:(\w+)\s*)?;',
@@ -91,7 +86,7 @@ class IrSizeResolver:
             if struct_tag:
                 self._struct_fields.setdefault(struct_tag, {})
                 self._struct_bodies[struct_tag] = body
-            # Extract array members: type name[N];
+            # 提取数组成员: type name[N];
             for mm in _STRUCT_MEMBER.finditer(body):
                 fname = mm.group(1)
                 fsize = int(mm.group(2))
@@ -99,29 +94,29 @@ class IrSizeResolver:
                     self._struct_fields[struct_tag][fname] = fsize
                 self._array_sizes[fname] = fsize
 
-        # #define constants (must precede struct size calc)
+        # #define 常量（须在结构体尺寸计算前）
         for dm in re.finditer(
             r'#define\s+(\w[\w.]*)\s+(\d+)\b', c_source):
             self._constants[dm.group(1)] = int(dm.group(2))
         for m in _CONST_DEF.finditer(s):
             self._constants[m.group(1)] = int(m.group(2))
 
-        # compute total struct sizes (macros now resolved)
+        # 计算结构体总尺寸（宏已展开）
         for sname in list(self._struct_bodies.keys()):
             self._struct_sizes[sname] = self._compute_struct_size(sname)
 
-        # top-level array definitions
+        # 顶层数组定义
         for m in _ARRAY_DEF.finditer(s):
             self._array_sizes[m.group(1)] = int(m.group(2))
 
-        # variable const assignments
+        # 变量常量赋值
         for m in re.finditer(
             r'(?:size_t|int|unsigned)\s+(\w[\w.]*)\s*=\s*(\d+)\s*;', s):
             self._variable_constants[m.group(1)] = int(m.group(2))
 
     def resolve(self, ir_lines: List[str],
                 c_source: str = '') -> List[str]:
-        """sizeof/strcpy/ternary → concrete values."""
+        """解析 sizeof/strcpy/三元表达式为具体值。"""
         if c_source:
             self.analyze_source(c_source)
         enhanced: List[str] = []
@@ -152,7 +147,7 @@ class IrSizeResolver:
                         var_values[var] = size_val
                         continue
 
-            # strcpy/sprintf literal → synthetic memcpy
+            # strcpy/sprintf 字面量 → 合成memcpy
             slm = _STRCPY_LIT.search(line)
             if slm:
                 fn = slm.group(1)
@@ -160,23 +155,22 @@ class IrSizeResolver:
                 lit = slm.group(3)
                 lit_len = self._string_len(lit)
                 if lit_len > 0:
-                    # Emit as: dst = memcpy(dst, "lit", len);
-                    # The forward propagator will parse this as a write
+                    # 输出为: dst = memcpy(dst, "lit", len); 前向传播器按写操作解析
                     enhanced.append(
                         f'memcpy({dst}, "<literal>", {lit_len});')
                     continue  # replace original strcpy/sprintf
 
-            # ternary in memcpy: var ? N : other → emit upper bound
+            # memcpy中的三元: var ? N : other → 输出上界
             tlm = _MEMCPY_TERNARY.search(line)
             if tlm:
                 dst = tlm.group(1)
                 const_val = int(tlm.group(3))
-                # Replace with memcpy using the upper bound (N)
+                # 用上界(N)替换为memcpy
                 enhanced.append(
                     f'memcpy({dst}, "<input>", {const_val});')
                 continue
 
-            # variable copy propagation
+            # 变量拷贝传播
             vcm = _VAR_COPY.match(line.strip().rstrip(';'))
             if vcm:
                 src = vcm.group(2)
@@ -222,37 +216,36 @@ class IrSizeResolver:
         self, sm: re.Match, line: str,
         ir_lines: List[str], var_values: Dict[str, int],
     ) -> Optional[int]:
-        """Resolve sizeof to a concrete number."""
+        """将 sizeof 解析为具体数值。"""
         inner = (sm.group(1) or sm.group(2) or '').strip()
 
-        # Case 1: sizeof(type) where type is known (int, char, etc.)
+        # 情形1: sizeof(已知类型)
         if inner in self._TYPE_SIZES:
             return self._TYPE_SIZES[inner]
 
-        # Case 2: sizeof(struct_type) — typedef'd struct name
+        # 情形2: sizeof(typedef结构体名)
         if inner in self._struct_sizes:
             return self._struct_sizes[inner]
 
-        # Case 3: sizeof(array_name) or sizeof(type[N])
+        # 情形3: sizeof(数组名) 或 sizeof(type[N])
         if inner in self._array_sizes:
             return self._array_sizes[inner]
 
-        # Case 5: sizeof(expr->field) or sizeof(expr.field)
+        # 情形5: sizeof(expr->field) 或 sizeof(expr.field)
         fm = _FIELD_ACCESS.search(inner)
         if fm:
             obj = fm.group(1)
             field = fm.group(2)
-            # Try to resolve from struct type of obj
-            # obj might be typed as struct_name *obj in source
+            # 尝试从obj的结构体类型解析；源码中obj可能声明为 struct_name *obj
             for sname, fields in self._struct_fields.items():
                 if field in fields:
-                    # Check if obj has type sname (heuristic)
+                    # 启发式: 检查obj类型是否为sname
                     return fields[field]
-            # Fallback: check array_sizes
+            # 回退: 查数组尺寸表
             if field in self._array_sizes:
                 return self._array_sizes[field]
 
-        # Case 6: sizeof(variable) — variable might be known array
+        # 情形6: sizeof(变量)，可能为已知数组
         if re.match(r'^[a-zA-Z_]\w*$', inner):
             if inner in self._array_sizes:
                 return self._array_sizes[inner]
@@ -261,7 +254,7 @@ class IrSizeResolver:
 
     @staticmethod
     def _string_len(literal: str) -> int:
-        """C string literal length (basic escape handling)."""
+        """计算C字符串字面量长度（基础转义处理）。"""
         length, i = 0, 0
         while i < len(literal):
             if literal[i] == '\\':

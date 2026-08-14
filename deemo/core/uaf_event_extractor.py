@@ -1,14 +1,7 @@
 """
-UAF event extractor — 从伪代码IR提取指针生命周期事件 (ALLOC/FREE/USE/ALIAS)。
-
-模块化约束。
-事件提取独立于TARPS评估管道 — 仅依赖PtrEvent dataclass和正则模式。
-
-设计要点:
-  - 数组索引指针支持: nodes[i], nodes[1] 被正确提取和匹配
-  - 跨函数call跟踪: call func(ptr) 行作为USE事件
-  - 数组基名USE传播: nodes的USE事件传播给 nodes[1] 等索引变体
-  - 别名闭包: free(p) → 所有别名获得FREE事件; 双FREE→USE
+UAF事件提取器 — 从伪代码IR提取指针生命周期事件 (ALLOC/FREE/USE/ALIAS)。
+事件提取独立于TARPS评估管道, 仅依赖 PtrEvent dataclass 和正则模式。
+设计要点: 数组索引指针支持, 跨函数call跟踪, 数组基名USE传播, 别名闭包。
 """
 
 from __future__ import annotations
@@ -94,8 +87,8 @@ def _propagate_nullify_to_aliases(
 def extract_uaf_events(ir_lines: List[str]) -> Tuple[List[PtrEvent], Dict[str, str]]:
     """从伪代码IR提取指针生命周期事件 + 别名映射。
 
-    Returns (events, alias_map).
-    alias_map: lhs → rhs, 表示 lhs 是 rhs 的别名.
+    返回 (events, alias_map)。
+    alias_map: lhs → rhs, 表示 lhs 是 rhs 的别名。
     """
     events: List[PtrEvent] = []
     alias_map: Dict[str, str] = {}

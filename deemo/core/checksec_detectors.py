@@ -1,7 +1,5 @@
 """
-Per-format hardening detection logic.
-
-ELF/PE/Mach-O 三种格式的硬化机制检测实现，各自独立以隔离解析依赖。
+ELF/PE/Mach-O 三种格式的硬化机制检测实现, 各自独立以隔离解析依赖。
 """
 
 
@@ -28,13 +26,9 @@ from .checksec_elf_parser import (
 
 
 def _detect_canary_from_imports(path: str) -> bool:
-    """
-    Detect canary by scanning ELF import symbol table.
-
-    Fallback when pyelftools is not available: searches for symbol name strings directly.
-    """
+    """扫描 ELF 导入符号表检测 canary; pyelftools 不可用时直接搜索符号名字符串作为回退。"""
     try:
-        # Quick detection via r2
+        # 优先用 r2 快速检测
         import subprocess
         proc = subprocess.run(
             ['radare2', '-q', '-e', 'io.color=false', '-c', 'is~__stack_chk', path],
@@ -44,7 +38,7 @@ def _detect_canary_from_imports(path: str) -> bool:
     except Exception:
         pass
 
-    # Pure-Python fallback: search for canary symbols in .dynstr
+    # 纯 Python 回退: 在 .dynstr 中搜索 canary 符号
     try:
         with open(path, 'rb') as f:
             content = f.read()
@@ -57,7 +51,7 @@ def _detect_canary_from_imports(path: str) -> bool:
 
 
 def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
-    """Detect ELF binary hardening mechanisms."""
+    """检测 ELF 二进制硬化机制。"""
     headers = _parse_elf_headers(path)
     if headers is None:
         return
@@ -65,20 +59,20 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     phdrs = headers['phdrs']
     is_64bit = headers['is_64bit']
 
-    # NX (based on PF_X flag in PT_GNU_STACK)
+    # NX: 基于 PT_GNU_STACK 的 PF_X 标志
     for phdr in phdrs:
         if phdr['type'] == PT_GNU_STACK:
             result['nx'] = not bool(phdr['flags'] & PF_X)
             break
 
-    # PIE (ET_DYN vs ET_EXEC)
+    # PIE: ET_DYN(3) vs ET_EXEC(2)
     try:
         with open(path, 'rb') as f:
             if is_64bit:
                 e_type = _read_struct(f, 16, '<H')[0]
             else:
                 e_type = _read_struct(f, 16, '<H')[0]
-        # ET_DYN=3 (shared object, PIE-enabled); ET_EXEC=2 (fixed address)
+        # ET_DYN=3 (共享对象, 启用 PIE); ET_EXEC=2 (固定地址)
         result['pie'] = e_type == 3
     except (OSError, struct.error):
         pass
@@ -86,7 +80,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     # Canary
     result['canary'] = _detect_canary_from_imports(path)
 
-    # RELRO (PT_GNU_RELRO + DT_FLAGS/DT_FLAGS_1)
+    # RELRO: PT_GNU_RELRO + DT_FLAGS/DT_FLAGS_1
     dynamic = _parse_dynamic_section(
         path, phdrs,
         headers['dyn_entry_fmt'],
@@ -97,7 +91,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
 
     if has_relro_segment:
         result['relro'] = 'partial'
-        # BIND_NOW signals Full RELRO
+        # BIND_NOW 表示 Full RELRO
         if dynamic.get(DF_1_NOW, 0) & 1:
             result['relro'] = 'full'
         elif dynamic.get(DT_FLAGS, 0) & DF_BIND_NOW:
@@ -106,7 +100,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     # FORTIFY_SOURCE（导入 __*_chk 函数）
     try:
         with open(path, 'rb') as f:
-            raw = f.read(1048576)  # first 1MB
+            raw = f.read(1048576)  # 前 1MB
         fortify_markers = [b'__memcpy_chk', b'__sprintf_chk', b'__strcpy_chk',
                            b'__fprintf_chk', b'__snprintf_chk']
         result['fortify'] = any(m in raw for m in fortify_markers)
@@ -124,7 +118,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
 
 
 def _detect_pe_checksec(path: str, result: Dict[str, Any]) -> None:
-    """Detect PE binary hardening mechanisms."""
+    """检测 PE 二进制硬化机制。"""
     try:
         import pefile
         pe = pefile.PE(path)
@@ -147,7 +141,7 @@ def _detect_pe_checksec(path: str, result: Dict[str, Any]) -> None:
 
 
 def _detect_macho_checksec(path: str, result: Dict[str, Any]) -> None:
-    """Detect Mach-O binary hardening mechanisms (simplified)."""
+    """检测 Mach-O 二进制硬化机制 (简化实现)。"""
     try:
         import macholib.MachO
         macho = macholib.MachO.MachO(path)

@@ -1,13 +1,5 @@
 """
-DD-BVF循环偏移追踪器 — 从循环结构提取偏移上界.
-
-当memcpy的写入偏移含循环变量(buf+i*stride)时,
-从for/while循环条件提取循环变量上界, 计算:
-  max_offset = (loop_upper - 1) * stride
-  max_write_end = max_offset + store_size
-
-若 max_write_end > alloc_size → 溢出.
-若 max_write_end <= alloc_size → 安全.
+DD-BVF 循环偏移追踪器 — 当 memcpy 写入偏移含循环变量 (buf+i*stride) 时, 从 for/while 循环条件提取循环变量上界, 计算 max_offset = (loop_upper-1)*stride 与 max_write_end = max_offset + store_size; max_write_end > alloc_size 判定溢出, 反之安全。
 """
 import re
 from typing import Optional, Tuple

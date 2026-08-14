@@ -1,22 +1,7 @@
 """
-堆抽象域 —— 用区间抽象表示堆分配对象的状态空间。
-
-DDAI-ASR 系统的第一层: 每个堆分配被抽象为一个三元组
-  (base_ptr, offset_range, capacity)
-其中 offset_range 是 Interval([low, high]), 表示对该块的所有
-写入偏移的范围。capacity 是分配器实际提供的可用字节数。
-
-若 ∀写入: offset_range.high < capacity → 安全 (FILTER)
-若 ∃写入: offset_range.high ≥ capacity → 保留 (KEEP)
-
-与现有IntervalAbstractor的差异:
-  - 后者只追踪单个变量的[min,max], 无堆对象上下文
-  - 本模块追踪(pointer → 分配大小 → 写入偏移)的完整关联链
-  - 引入 MustAlias / MayAlias 区分, 避免保守合并导致的精度损失
-
-  - Mine "Weakly Relational Numerical Abstract Domains"
-  - Cheng et al. "Precise Sparse Abstract Execution via
-    Cross-Domain Interaction" —— 地址×区间双向细化的思路
+堆抽象域 —— 用区间抽象表示堆分配对象的状态空间, 维护指针→分配大小→写入偏移的关联链。
+每个堆分配抽象为三元组 (base_ptr, offset_range, capacity), 以 MustAlias/MayAlias
+区分合并精度; 全部写入偏移上界小于 capacity 时判定安全。
 """
 
 import re
@@ -62,7 +47,7 @@ class Interval:
         return Interval(lo, hi)
 
     def widen(self, other: "Interval") -> "Interval":
-        """Widening ▽ —— 确保迭代收敛。若上界增长则跳到+∞。"""
+        """宽化 ▽ —— 保证迭代收敛, 上界增长时跳到+∞。"""
         lo = self.low if self.low is not None and other.low is not None and self.low <= other.low else None
         hi = (None
               if self.high is not None and other.high is not None and other.high > self.high
@@ -120,16 +105,7 @@ class HeapObject:
         return self.offset_range.high < self.effective_size
 
 class HeapAbstractDomain:
-    """
-    堆抽象域 —— 维护 (ptr_var → HeapObject) 的映射。
-
-    对每条语句转移抽象状态:
-      malloc:   创建新 HeapObject, offset_range = [0, 0]
-      free:     标记 HeapObject.is_freed = True
-      memcpy:   更新目标 HeapObject 的 offset_range
-      store:    计算偏移范围并更新
-      branch:   用条件约束求精 offset_range
-    """
+    """堆抽象域 —— 维护 (ptr_var → HeapObject) 的映射, 逐语句转移抽象状态。"""
 
     def __init__(self, arch_bits: int = 64):
         self._objects: Dict[str, HeapObject] = {}
@@ -245,12 +221,7 @@ class HeapAbstractDomain:
 
 def compute_effective_size(requested: int, platform: str = "x86_64",
                           allocator: str = "glibc") -> int:
-    """从请求大小计算分配器实际可用字节数。
-
-    glibc ptmalloc2 (x86_64):
-      chunk_size = max(0x20, (req + 8 + 0xF) & ~0xF)
-      usable = chunk_size - 8
-    """
+    """由请求大小计算分配器实际可用字节数 (ptmalloc2: 16字节对齐后减去开销)。"""
     if allocator == "jemalloc":
         classes = [8, 16, 32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256,
                    320, 384, 448, 512, 640, 768, 896, 1024, 1280, 1536, 1792,

@@ -1,9 +1,6 @@
 """
-Enhanced UAF detection — TARPS五阶段管道 (Temporal Alias-aware Reuse
-Path-sensitive Scoring): A-NULL置零, B-立即复用, C-别名分析, D-路径可行性,
-E-置信度评分. 事件提取移至 core/uaf_event_extractor.py.
-
-Ref: Feist et al., GUEB — VSA-based UAF
+TARPS五阶段增强UAF检测: A-NULL置零, B-立即复用, C-别名分析,
+D-路径可行性, E-置信度评分。事件提取移至 core/uaf_event_extractor.py。
 """
 
 from __future__ import annotations
@@ -44,12 +41,12 @@ class UafCandidate:
         )
 
 
-# TARPS enhanced detector ──────────────────────────────────────────
+# TARPS 增强检测器 ──────────────────────────────────────────────────
 
 class EnhancedUafDetector:
     """五阶段增强UAF检测器。
 
-    Usage:
+    用法:
       detector = EnhancedUafDetector()
       candidates = detector.detect(ir_lines)
     """

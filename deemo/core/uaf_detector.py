@@ -1,14 +1,7 @@
 """
-UAF detector — static pointer lifecycle analysis.
-
-Tracks heap pointer lifecycle (alloc→free→use) in decompiled code.
-A use (dereference of the pointer or its derivatives) on a code path
-after a free constitutes a UAF.
-
-Unlike dynamic UAF detection (DangSan/FreeSentry), this does not require
-program execution — pure static analysis suitable for binary auditing
-without test cases. Cross-function tracking is limited by function-summary
-completeness.
+UAF检测器 — 静态指针生命周期分析。
+在反编译代码中追踪堆指针生命周期 (alloc→free→use), free 之后的解引用即构成UAF。
+纯静态分析, 无需程序执行; 跨函数追踪受函数摘要完整性限制。
 """
 import re
 from dataclasses import dataclass, field
@@ -32,7 +25,7 @@ class UAFFinding:
 
 
 class UAFDetector:
-    """UAF detector — static pointer lifecycle analysis.
+    """UAF检测器 — 静态指针生命周期分析。
 
     用法:
       uaf = UAFDetector()

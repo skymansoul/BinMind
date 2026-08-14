@@ -1,6 +1,4 @@
-"""
-(p) 静态并发缺陷检测
-"""
+"""第3批可选增强: (p) 静态并发缺陷检测。"""
 
 import logging
 
@@ -17,12 +15,12 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         if not _imports_for_concurrency:
             _imports_for_concurrency = binfo.get('imports', [])
         if _imports_for_concurrency:
-            from analysis.static.concurrency_analysis.src.sync_primitive import (
+            from modules.analysis.static.concurrency_analysis.src.sync_primitive import (
                 extract_sync_primitives,
             )
             _primitives = extract_sync_primitives(_imports_for_concurrency)
             if _primitives:
-                from analysis.static.concurrency_analysis.src.concurrency_pipeline import (
+                from modules.analysis.static.concurrency_analysis.src.concurrency_pipeline import (
                     analyze_binary_concurrency,
                 )
                 result['_concurrency_analyzer'] = analyze_binary_concurrency
@@ -34,10 +32,9 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
     # (q) 跨合约污点流分析器
     # 在合约边界间追踪污染数据，检测单合约分析遗漏的
     # 跨合约重入和状态不一致。支持proxy/delegatecall动态dispatch解析。
-# SmartReco — 跨DApp边界识别;
-    #       CrossMiner — 跨合约依赖图建模。
+    # SmartReco — 跨DApp边界识别; CrossMiner — 跨合约依赖图建模。
     try:
-        from smart_contract.src.cross_contract_taint import (
+        from modules.platform.smart_contract.src.cross_contract_taint import (
             CrossContractTaintAnalyzer, CrossContractCallGraph,
             ContractCallEdge, CrossContractTaintPath,
         )
@@ -63,8 +60,7 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
 
 
     # (q) 子寄存器污点追踪 (SubRegTaintState)
-    # Intel SDM Vol.1; Brumley et al. BAP (CMU)
-    # Intel SDM Vol.1; Brumley et al. BAP (CMU)
+    # 参考: Intel SDM Vol.1; Brumley et al. BAP (CMU)
     try:
         from modules.core.compat.subreg_taint import (
             SubRegTaintState, propagate_subreg,
@@ -80,8 +76,7 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (r) 漂移校准器 (DriftCalibrator)
-    # , 2025-08-03 integrated.
-# Gama et al. ACM CSUR; Page Biometrika
+    # 参考: Gama et al. ACM CSUR; Page Biometrika
     try:
         from modules.core.compat.drift_calibrator import (
             DriftCalibrator, WeightImportanceTracker,
@@ -95,8 +90,7 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (s) CFG 熵指纹 (cfg_entropy_fingerprint)
-# Spielman — 谱图理论与拉普拉斯特征值分解
-# Spielman — 谱图理论与拉普拉斯特征值分解
+    # 参考: Spielman — 谱图理论与拉普拉斯特征值分解
     try:
         from modules.core.compat.cfg_entropy_fingerprint import (
             cfg_entropy_fingerprint, fingerprint_similarity,
@@ -108,8 +102,9 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (t) 编译器产物归一化器 (CompilerArtifactNormalizer)
-# Caballero et al. USENIX Security 2009
+    # 参考: Caballero et al. USENIX Security 2009
     try:
+        # CompilerArtifactNormalizer 已重构为 normalize_cfg 函数 API, 该增强当前跳过
         from modules.core.compat.compiler_artifact_normalizer import (
             CompilerArtifactNormalizer,
         )
@@ -120,8 +115,7 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (u) 跨层污点路由器 (CrossLayerTaintRouter)
-# Caballero et al. USENIX Security 2009
-# Caballero et al. USENIX Security 2009
+    # 参考: Caballero et al. USENIX Security 2009
     try:
         from modules.core.compat.cross_layer_taint_router import (
             CrossLayerTaintRouter,
@@ -133,9 +127,9 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (v) 污点约束符号探索器 (TaintConstrainedExplorer)
-    # byte-level taint -> symbolic path priority bridge.
+    # 字节级污点 → 符号路径优先级桥接。
     try:
-        from analysis.symbolic.src.taint_constrained_explorer import (
+        from modules.analysis.symbolic.src.taint_constrained_explorer import (
             TaintConstrainedExplorer,
         )
         _taint_explorer = TaintConstrainedExplorer(
@@ -150,8 +144,7 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     # (w) ptmalloc2 堆状态机 (Ptmalloc2StateMachine)
-    # DFA deterministic heap layout prediction.
-# glibc malloc/malloc.c; He et al. IEEE S&P 2023
+    # DFA确定性堆布局预测。参考: glibc malloc/malloc.c; He et al. IEEE S&P 2023
     try:
         from modules.exploit.ptmalloc2_state_machine import (
             Ptmalloc2StateMachine,

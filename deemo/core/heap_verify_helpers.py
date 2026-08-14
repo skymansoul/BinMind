@@ -1,8 +1,4 @@
-"""
-
-verify_candidate: 单候选精判逻辑，不依赖实例状态
-split_args: 括号感知参数分割
-"""
+"""verify_candidate: 单候选精判逻辑; split_args: 括号感知参数分割。"""
 
 
 from typing import TYPE_CHECKING, Any, Dict, List

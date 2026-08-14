@@ -1,6 +1,4 @@
-# 二进制硬化检测入口 — 从checksec_elf_parser/checksec_detectors/checksec_api拆分.
-# 原实现已按职责分散到子模块, 此文件仅做re-export以保持API兼容.
-# 创建: 2026-05-26 (拆分)
+# 二进制硬化检测入口: 实现按职责分散到 checksec_elf_parser/checksec_detectors/checksec_api, 本文件仅做再导出以保持 API 兼容。
 
 from .checksec_constants import (
     ELFMAG, ELFCLASS32, ELFCLASS64,

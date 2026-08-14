@@ -1,32 +1,7 @@
 """
-污点引导的约束精简——仅对影响分支的输入字节执行符号化。
-
-传统 concolic 执行将整个输入标记为符号变量，导致约束表达式膨胀。
-本模块通过动态污点追踪识别"哪些输入字节实际影响了目标分支"，
-只符号化这些关键字节，将其余字节保持为具体值。
-
-核心算法:
-  1. 对输入执行动态污点标记（逐字节tag）
-  2. 探索到目标分支时，检查分支条件的污点来源
-  3. 仅提取受污染的输入字节偏移集合
-  4. 仅对这些偏移创建符号变量→约束求解器处理的变量数量从O(N)降到O(K)，
-     其中K<<N（实测K通常为4-32字节）
-
-与现有模块的关系:
-  - 不替代 core/symexec.py——作为符号执行前的输入预处理步骤
-  - 依赖 angr 的符号引擎但大幅减少符号变量的数量
-  - 污点追踪使用 Triton/QBDI 加速（若有），否则用 angr 内置引擎回退
-
-设计权衡:
-  采用保守的部分符号化——如果无法确定某字节是否影响分支
-  （如通过内存间接传递），则将其也符号化。这保证了soundness
-  而非completeness，即永远不会因漏符号化而导致漏报，但可能
-  因过度符号化而损失部分性能优势。
-
-  LeanSym — 污点引导的部分符号化, ~1k LOC on Triton+AFL,
-    7.61% coverage gain + 4.79× faster bug finding vs QSYM
-  Driller — selective concolic execution,
-    仅在fuzzer停滞时调用符号执行，本模块在其基础上增加了输入字节级选择性
+污点引导的约束精简 — 仅对影响目标分支的输入字节执行符号化。
+核心算法: 动态污点标记输入字节 → 分支处检查污点来源 → 仅符号化
+受污染的偏移, 符号变量数从 O(N) 降到 O(K), K 通常为 4-32 字节。
 """
 
 import logging
@@ -43,19 +18,12 @@ def identify_tainted_offsets(
     """
     识别输入中影响目标分支的字节偏移。
 
-    执行污点追踪——标记输入的每个字节为独立污点源，
-    在目标分支地址处检查 eflags/条件寄存器受哪些字节影响。
-    返回受污染的字节偏移集合——仅这些偏移需要被符号化。
-
-    Args:
-        binary_path: 目标二进制
-        input_bytes: 触发目标分支的具体输入
-        target_branch_addr: 目标条件分支的地址
-        max_input_len: 输入的最大长度
-
-    Returns:
-        {offset} —— 影响目标分支的输入字节偏移集合。
-        空集合表示无法确定（回退为全符号化）。
+    执行污点追踪, 标记输入的每个字节为独立污点源, 在目标分支地址处
+    检查 eflags/条件寄存器受哪些字节影响。
+    参数: binary_path 目标二进制, input_bytes 具体输入,
+    target_branch_addr 目标条件分支地址, max_input_len 输入最大长度。
+    返回 {offset} 影响目标分支的输入字节偏移集合,
+    空集合表示无法确定 (回退为全符号化)。
     """
     tainted: Set[int] = set()
 
@@ -142,15 +110,10 @@ def build_debloated_input(
     """
     构建精简后的符号化方案。
 
-    将输入分为两类偏移:
-      - symbol_offsets: 需要符号化的字节位置
-      - concret_offsets: 保持具体值的字节位置
-
-    符号执行时仅对 symbol_offsets 创建符号变量，
-    concret_offsets 使用原始输入的具体值。
-
-    Returns:
-        (symbol_offsets, concrete_offsets) 两个偏移列表
+    将输入分为两类偏移: symbol_offsets 为需符号化的字节位置,
+    concret_offsets 为保持具体值的字节位置。符号执行时仅对前者
+    创建符号变量, 后者使用原始输入的具体值。
+    返回 (symbol_offsets, concrete_offsets) 两个偏移列表。
     """
     total = len(input_bytes)
     sym_offs = sorted(tainted_offsets)

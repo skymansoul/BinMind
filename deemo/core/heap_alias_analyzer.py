@@ -1,36 +1,7 @@
 """
-Alias-aware pointer analysis for heap access disambiguation.
-
-Rationale:
-  A major FP source in heap overflow detection is pointer aliasing:
-    buf = malloc(64);
-    ptr = buf + 40;    // ptr aliases buf+40
-    memcpy(ptr, src, 32);  // writes at buf+40..buf+72, overflow by 8
-
-  Without alias analysis, the memcpy target 'ptr' is not linked to 'buf',
-  and the overflow is missed (false negative). With alias analysis:
-    - ptr → {buf + 40}
-    - effective write range: [40, 72)
-    - allocation: 64 bytes
-    - verdict: overflow by 8
-
-  This module implements a lightweight Andersen-style inclusion-based pointer
-  analysis restricted to the heap domain. It tracks pointer assignments and
-  arithmetic, computing a points-to set for each pointer variable.
-
-Design decisions:
-  - Field-insensitive: aggregates don't distinguish struct fields
-  - Flow-insensitive: assignment order doesn't affect points-to sets
-  - Intra-procedural: callee effects summarized as 'may-alias everything'
-  - Restricted to heap pointers: stack/global pointers treated as ⊤
-
-  This is much lighter than full Andersen analysis (O(N³)) and targets
-  specifically the heap overflow disambiguation problem.
-
-  - Andersen, L.O., "Program Analysis and Specialization for the C
-    Programming Language"
-  - Hardekopf & Lin, "The Ant and the Grasshopper" —
-    fast inclusion-based pointer analysis
+堆别名分析 — 面向堆域的轻量级 Andersen 包含式指针分析。
+追踪指针赋值与算术, 计算各指针变量的指向集, 将 memcpy 目标与分配基址关联,
+从而判定写入范围是否超出分配。域不敏感/流不敏感/函数内, 栈与全局指针视为 ⊤。
 """
 
 from __future__ import annotations
@@ -39,22 +10,22 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-# points-to data structures ────────────────────────────────────────
+# 指向集数据结构 ────────────────────────────────────────
 
 @dataclass
 class HeapObject:
-    """An abstract heap object — created at one allocation site."""
+    """抽象堆对象 —— 在单个分配点创建。"""
     obj_id: int
     alloc_site_line: int
     alloc_func: str        # malloc / calloc / realloc
-    base_name: str         # variable name receiving the pointer
+    base_name: str         # 接收指针的变量名
 
 @dataclass
 class PointsToSet:
-    """Points-to set for a pointer variable: base object + integer offset interval."""
-    base: str              # base variable name (or '' for ⊤)
-    offset_min: int        # lower bound of offset from base
-    offset_max: int        # upper bound of offset from base
+    """指针变量的指向集: 基对象 + 整数偏移区间。"""
+    base: str              # 基变量名 ('' 表示 ⊤)
+    offset_min: int        # 相对基址的偏移下界
+    offset_max: int        # 相对基址的偏移上界
 
     @staticmethod
     def unknown() -> "PointsToSet":
@@ -81,7 +52,7 @@ class PointsToSet:
                 and self.base == other.base)
 
     def effective_write_range(self, write_size: int) -> Tuple[int, int]:
-        """Return [start_byte, end_byte) of a write through this pointer."""
+        """返回经该指针写入的字节区间 [start, end)。"""
         if self.is_unknown:
             return (0, 2**63 - 1)
         return (self.offset_min, self.offset_max + write_size)
@@ -93,37 +64,37 @@ class PointsToSet:
                else f"+[{self.offset_min},{self.offset_max}]")
         return f"{self.base}{off}"
 
-# pattern matching macros ──────────────────────────────────────────
+# 模式匹配宏 ──────────────────────────────────────────
 
-# var = malloc(N)  →  HeapObject
+# var = malloc(N) → 堆对象
 _PTR_ALLOC_RE = re.compile(
     r'(\w[\w.]*)\s*=\s*(?:\(\s*\w+\s*\*?\s*\)\s*)?'
     r'(malloc|calloc|realloc)\s*\(')
 
-# var = base + offset  →  pointer arithmetic
+# var = base + offset → 指针算术
 _PTR_ADD_RE = re.compile(r'(\w[\w.]*)\s*=\s*(\w[\w.]*)\s*\+\s*(\d+)')
 
-# var = &base[offset]  →  array element address
+# var = &base[offset] → 数组元素地址
 _PTR_IDX_RE = re.compile(r'(\w[\w.]*)\s*=\s*&(\w[\w.]*)\[(\d+)\]')
 
-# var = base  →  simple pointer copy
+# var = base → 简单指针复制
 _PTR_COPY_RE = re.compile(r'(\w[\w.]*)\s*=\s*(\w[\w.]*)\s*$')
 
-# Store to pointer: *var = val / var[idx] = val
+# 指针写入: *var = val / var[idx] = val
 _PTR_STORE_RE = re.compile(
     r'(?:memcpy|strcpy|strncpy|__memcpy_chk)\s*\(\s*(\w[\w.]*)\s*,'
     r'|(\w[\w.]*)\[(\d+)\]\s*=')
 
 @dataclass
 class AliasResult:
-    """Result of alias analysis for one pointer variable."""
+    """单个指针变量的别名分析结果。"""
     var_name: str
     points_to: PointsToSet
     definition_line: int
     is_heap_derived: bool   # ultimately derived from malloc/calloc/realloc
 
 class HeapAliasAnalyzer:
-    """Lightweight intra-procedural heap pointer alias analysis."""
+    """轻量级函数内堆指针别名分析。"""
 
     def __init__(self):
         self._heap_objects: Dict[str, HeapObject] = {}
@@ -131,10 +102,7 @@ class HeapAliasAnalyzer:
         self._obj_counter: int = 0
 
     def analyze(self, ir_lines: List[str]) -> Dict[str, PointsToSet]:
-        """Single-pass analysis: extract heap objects and track pointer flow.
-
-        Returns {var_name → PointsToSet} for all tracked heap-derived pointers.
-        """
+        """单趟分析: 提取堆对象并追踪指针流向, 返回全部已追踪指针的 {变量→指向集}。"""
         self._heap_objects = {}
         self._points_to = {}
         self._obj_counter = 0
@@ -142,7 +110,7 @@ class HeapAliasAnalyzer:
         for i, line in enumerate(ir_lines):
             stripped = line.strip()
 
-            # Allocation: ptr = malloc(N)
+            # 分配: ptr = malloc(N)
             m = _PTR_ALLOC_RE.search(stripped)
             if m:
                 ptr_var = m.group(1)
@@ -158,7 +126,7 @@ class HeapAliasAnalyzer:
                 self._points_to[ptr_var] = PointsToSet.exact(ptr_var, 0)
                 continue
 
-            # Pointer arithmetic: dst = base + offset
+            # 指针算术: dst = base + offset
             m = _PTR_ADD_RE.search(stripped)
             if m:
                 dst = m.group(1)
@@ -169,7 +137,7 @@ class HeapAliasAnalyzer:
                     self._points_to[dst] = pt.offset_by(delta)
                 continue
 
-            # Array indexing: dst = &base[idx]
+            # 数组索引: dst = &base[idx]
             m = _PTR_IDX_RE.search(stripped)
             if m:
                 dst = m.group(1)
@@ -177,11 +145,11 @@ class HeapAliasAnalyzer:
                 idx = int(m.group(3))
                 if base in self._points_to:
                     pt = self._points_to[base]
-                    # Conservative: idx is a constant offset in this line
+                    # 保守处理: idx 是本行内的常量偏移
                     self._points_to[dst] = pt.offset_by(idx)
                 continue
 
-            # Pointer copy: dst = base
+            # 指针复制: dst = base
             m = _PTR_COPY_RE.match(stripped)
             if m:
                 dst = m.group(1)
@@ -193,11 +161,11 @@ class HeapAliasAnalyzer:
         return self._points_to
 
     def resolve(self, var_name: str) -> PointsToSet:
-        """Resolve a variable to its points-to set."""
+        """将变量解析为指向集。"""
         return self._points_to.get(var_name, PointsToSet.unknown())
 
     def get_aliases(self, var_name: str) -> List[str]:
-        """Find all variables that may alias var_name."""
+        """查找与 var_name 可能互为别名的全部变量。"""
         target = self.resolve(var_name)
         if target.is_unknown:
             return []
@@ -211,7 +179,7 @@ class HeapAliasAnalyzer:
     def compute_write_range(
         self, var_name: str, write_size: int,
     ) -> Tuple[int, int]:
-        """Compute the byte range [start, end) of a write through var_name."""
+        """计算经 var_name 写入的字节区间 [start, end)。"""
         pt = self.resolve(var_name)
         return pt.effective_write_range(write_size)
 
@@ -225,10 +193,7 @@ class HeapAliasAnalyzer:
 def analyze_heap_aliases(
     ir_lines: List[str],
 ) -> Tuple[Dict[str, PointsToSet], Dict[int, HeapObject]]:
-    """Convenience: full alias analysis on IR lines.
-
-    Returns (points_to_map, heap_objects_by_line)
-    """
+    """便捷接口: 对IR行执行完整别名分析, 返回 (指向集映射, 按行号堆对象)。"""
     analyzer = HeapAliasAnalyzer()
     pt_map = analyzer.analyze(ir_lines)
     obj_map = {obj.alloc_site_line: obj

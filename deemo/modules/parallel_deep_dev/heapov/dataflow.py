@@ -92,7 +92,6 @@ class DataflowEnv:
                     else:
                         self.alias[var] = (bname, idx.value * es)
 
-# 赋值
     def assign(self, target: Expr, value: Expr) -> None:
         if isinstance(target, Var):
             self._assign_var(target.name, value)

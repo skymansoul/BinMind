@@ -1,19 +1,6 @@
 """
-路径敏感区间域抽象解释器 — CJ前置精度增强层.
-
-现有CJ求解器依赖constraint_collector静态提取约束, 变量边界
-来自模式匹配, 精度受限于IR可见性. 本模块在CJ求解前执行
-路径敏感区间抽象解释, 为约束系统提供更精确的变量边界.
-
-核心流程:
-  1. 沿alloc→write路径逐行传播变量区间(语法解析在cj_interval_parser)
-  2. 多变量联合约束(2*x+y<=N)用区间算术分解传播
-  3. 迭代到不动点: 传播→消元→生成约束, 直到收敛
-  4. 输出额外LinearConstraint注入ConstraintSystem
-
-理论: Cousot&Cousot区间抽象域, 路径敏感变体.
-与fm_boundary的区别: fm_boundary从残差约束反推边界,
-本模块从控制流正向传播边界, 信息来源互补.
+路径敏感区间域抽象解释器 — CJ 前置精度增强层: 在 CJ 求解前沿 alloc→write 路径逐行传播变量区间 (语法解析在 cj_interval_parser), 多变量联合约束 (2*x+y<=N) 用区间算术分解传播, 迭代到不动点后输出额外 LinearConstraint 注入约束系统。
+与 fm_boundary 的区别: fm_boundary 从残差约束反推边界, 本模块从控制流正向传播边界, 信息来源互补。
 """
 
 

@@ -18,7 +18,7 @@ _NARROW_TYPE = re.compile(
     r'\b(?:unsigned\s+short|uint16_t|WORD|unsigned\s+char|uint8_t|BYTE|'
     r'short\s+int|short)\s+(\w[\w\d_]*)')
 # 真正宽类型: 在64位平台上不会常规溢出
-# 注意: unsigned int / uint32_t / u32 是32位的, CAN溢出! 不在宽类型列表中.
+# unsigned int / uint32_t / u32 为32位, 仍会溢出, 不在宽类型列表
 _WIDE_TYPE = re.compile(
     r'\b(?:size_t|uint64_t|unsigned\s+long\s+long|ssize_t|int64_t|'
     r'unsigned\s+long)\s+(\w[\w\d_]*)')

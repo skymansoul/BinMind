@@ -1,16 +1,7 @@
-"""
-LPVRA 适配器 — 将 LPVRA 抽象解释引擎接入 unified_heap_pipeline 的 finding 格式.
-
-GAPSBV 管线当前使用 path_sensitive_vrf (DFS + AffineInterval → VerifiedFinding),
-LPVRA 提供了更严格的抽象解释框架 (widening/join/constrain + 路径覆盖).
-本模块作为桥接: 将 LPVRA 的 HeapVerdict 转换为管线可消费的 finding dict,
-使基准测试可三方对比: Baseline vs path_sensitive_vrf vs LPVRA.
-
-与现有管线的关系:
-  - path_sensitive_vrf: DFS + fork-not-join, 探索所有路径但无 widening
-  - LPVRA engine: 前向区间传播 + join + widening, 更接近经典抽象解释
-  - 两者互补: LPVRA 更适合循环/复杂CFG, path_sensitive_vrf 更适合线性代码
-"""
+"""LPVRA适配器 — 将LPVRA抽象解释引擎接入unified_heap_pipeline的finding格式。
+桥接LPVRA的HeapVerdict为管线可消费的finding dict，支持三方对比。
+LPVRA采用前向区间传播+join+widening（适合循环/复杂CFG），与
+path_sensitive_vrf（DFS+仿射区间，适合线性代码）互补。"""
 
 
 import re

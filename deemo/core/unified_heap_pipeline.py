@@ -1,27 +1,50 @@
-"""
-统一堆分析管线 — 集成所有核心模块做端到端检测。
-
-功能: 将单文件分析(AffineInterval→PathCondition→HeapObject→SymExec→Filter)
-      串联为统一的检测流水线。
-
-使用:
-  from core.unified_heap_pipeline import analyze_heap_safety
-  findings, stats = analyze_heap_safety(code, func_name, binary_path)
-
-输入: 反编译伪代码 + 可选二进制路径(用于分配器检测)
-输出: (confirmed_findings, verification_stats)
-"""
-
+# core/unified_heap_pipeline.py - 统一堆分析管线
+# 单函数端到端检测: 分配器检测 → 分配/写入点提取 → 路径条件 →
+# 不可行路径剪枝 → 四层验证 → UAF/Double-Free 检测。
+# 输入: 反编译伪代码 + 可选二进制路径 (分配器检测); 输出 (findings, stats)。
 
 from typing import Any, Dict, List, Optional, Tuple
-
-# 导入所有组件 ──────────────────────────────────────
 
 from .symbolic_range import AffineInterval, PathCondition
 from .allocator_model import effective_chunk_size, detect_allocator, AllocatorType
 from .allocator_constraints import AllocatorConstraintChecker, AllocSize
 from .heap_object_tracker import track_heap_objects
 from .infeasible_path_pruner import InfeasiblePathPruner, extract_branch_constraints
+
+
+# 区间算术 — 参照 Cousot & Cousot 抽象解释区间域 (POPL 1977)。
+# AffineInterval 以 -1 / 2^31-1 为无界哨兵; 下方三个函数构成区间运算基座。
+def _interval_join(a: Tuple[int, int], b: Tuple[int, int]) -> Tuple[int, int]:
+    """区间并: (min(lo), max(hi))。哨兵语义由调用方保证。"""
+    return (min(a[0], b[0]), max(a[1], b[1]))
+
+
+def _interval_widen(r: Tuple[int, int], bound: int = 2 ** 31 - 1) -> Tuple[int, int]:
+    """加宽算子: hi 翻倍直至 bound, 用于不动点加速。架构预留, 暂不参与主流程。"""
+    lo, hi = r
+    if hi >= bound:
+        return (lo, bound)
+    return (lo, min(hi * 2, bound))
+
+
+def _interval_verdict(alloc_range, write_range) -> str:
+    """分配/写入大小的区间判定。
+
+    返回 'safe' (写入恒不大于分配) / 'overflow' (写入恒大于分配) /
+    'unknown' (区间交叠或无界)。无界侧 (哨兵值) 不参与比较, 防止
+    TOP 区间产生假过滤或假确认。
+    """
+    if alloc_range is None or write_range is None:
+        return 'unknown'
+    alloc_lo = alloc_range.lo if alloc_range.lo >= 0 else None
+    alloc_hi = alloc_range.hi if alloc_range.hi < 2 ** 31 - 1 else None
+    write_lo = write_range.lo if write_range.lo >= 0 else None
+    write_hi = write_range.hi if write_range.hi < 2 ** 31 - 1 else None
+    if write_hi is not None and alloc_lo is not None and write_hi <= alloc_lo:
+        return 'safe'
+    if alloc_hi is not None and write_lo is not None and write_lo > alloc_hi:
+        return 'overflow'
+    return 'unknown'
 
 
 def analyze_heap_safety(
@@ -117,11 +140,26 @@ def analyze_heap_safety(
 
             # Tier 0: 分配器语义检查 ──────────────
             # 仅当 write_val 是真实常量(非 lo 降级)时才做常量比较过滤
+            _iv = 'unknown'
             if alloc_val > 0 and write_val > 0 and not _write_from_lo and not _alloc_from_lo:
                 effective = effective_chunk_size(alloc_val, allocator)
                 if write_val <= effective:
                     stats["filtered"] += 1
                     continue  # 分配器对齐后安全
+            else:
+                # Tier 0.5: 区间判定 — FIX: 2026-08-15 区间算术接入
+                # 常量路径未命中时(至少一侧为符号区间), 用 [lo,hi] 比较:
+                # write.hi <= alloc.lo → 确定安全, 过滤;
+                # write.lo > alloc.hi → 确定溢出, 标记 finding;
+                # 交叠或无界 → unknown, 走原 Tier 1 流程, 行为不变。
+                _iv = _interval_verdict(alloc_site.size_range, write_site.write_size)
+                if _iv == 'safe':
+                    stats["filtered"] += 1
+                    stats['interval_filtered'] = stats.get('interval_filtered', 0) + 1
+                    continue
+                if _iv == 'overflow':
+                    stats['interval_provable_overflow'] = \
+                        stats.get('interval_provable_overflow', 0) + 1
 
             # Tier 1: 路径敏感值域 ────────────────
             if pf.verdict == "SAFE":
@@ -129,7 +167,7 @@ def analyze_heap_safety(
                 continue
 
             if pf.verdict == "DEFINITE":
-                findings.append({
+                _fd = {
                     "type": "heap-overflow",
                     "function": func_name,
                     "alloc_var": alloc_site.var_name,
@@ -142,12 +180,15 @@ def analyze_heap_safety(
                     "cwe": "CWE-122",
                     "verdict": "DEFINITE",
                     "description": pf.description,
-                })
+                }
+                if _iv != 'unknown':
+                    _fd['interval_verdict'] = _iv
+                findings.append(_fd)
                 stats["confirmed"] += 1
                 continue
 
             # Tier 2 & 3: 符号执行 + 保守 ─────────
-            findings.append({
+            _fd = {
                 "type": "heap-overflow",
                 "function": func_name,
                 "alloc_var": alloc_site.var_name,
@@ -160,7 +201,10 @@ def analyze_heap_safety(
                 "cwe": "CWE-122",
                 "verdict": pf.verdict,
                 "description": pf.description,
-            })
+            }
+            if _iv != 'unknown':
+                _fd['interval_verdict'] = _iv
+            findings.append(_fd)
             if pf.verdict == "POSSIBLE":
                 stats["possible"] += 1
             else:

@@ -1,8 +1,6 @@
-"""
-Symbolic execution interface via angr. The engine is optional —
-the tool functions without it, but symbolic execution enables
-deeper path exploration and constraint solving.
-"""
+# core/symexec.py - angr 符号执行接口
+# FIX: 2026-08-15 结果回填 — 返回 dict 恒含 paths_found/constraints 键;
+# 各阶段细粒度日志; 约束提取失败记 debug 而非静默吞掉。
 
 import logging
 from typing import Dict, List, Optional
@@ -23,28 +21,31 @@ def check_angr() -> bool:
     return ANGR_AVAILABLE
 
 
+def _empty_result(error: str = '') -> Dict:
+    """统一返回结构, 调用方无需防御缺失键。"""
+    return {'success': False, 'paths_found': 0, 'constraints': [],
+            'vulnerabilities': [], 'error': error}
+
+
 def run_symbolic(binary_path: str, target_func: str = None,
                  find_addr: int = None, avoid_addrs: list = None,
                  timeout: int = None) -> Dict:
-    """
-    Perform symbolic execution on a binary starting from a target
-    function or the entry point. Returns {success, paths_found,
-    constraints, vulnerabilities}.
+    """对二进制执行符号执行, 从目标函数或入口出发。
+
+    返回 {success, paths_found, constraints, vulnerabilities, error}。
+    成功与否只反映路径可达, 不代表发现漏洞。
     """
     if not ANGR_AVAILABLE:
-        return {'success': False, 'error': 'angr not installed'}
+        logger.warning("Symbolic execution unavailable: angr not installed")
+        return _empty_result('angr not installed')
 
     if timeout is None:
         timeout = ANGR_TIMEOUT
 
-    result = {
-        'success': False,
-        'paths_found': 0,
-        'constraints': [],
-        'vulnerabilities': [],
-    }
+    result = _empty_result()
 
     try:
+        logger.info("Symbolic: loading project %s", binary_path)
         proj = angr.Project(binary_path, auto_load_libs=False)
 
         if target_func:
@@ -56,7 +57,11 @@ def run_symbolic(binary_path: str, target_func: str = None,
                             addr = f.addr
                             break
                 state = proj.factory.call_state(addr) if addr else proj.factory.entry_state()
-            except Exception:
+                logger.info("Symbolic: entry=%s (0x%x)",
+                            target_func, addr if addr else proj.entry)
+            except Exception as err:
+                logger.debug("Symbolic: target symbol lookup failed (%s), "
+                             "falling back to entry state", err)
                 state = proj.factory.entry_state()
         else:
             state = proj.factory.entry_state()
@@ -64,6 +69,8 @@ def run_symbolic(binary_path: str, target_func: str = None,
         simgr = proj.factory.simulation_manager(state)
 
         if find_addr:
+            logger.info("Symbolic: explore find=0x%x avoid=%d", find_addr,
+                        len(avoid_addrs or []))
             simgr.explore(find=find_addr, avoid=avoid_addrs or [])
         else:
             simgr.run(until=lambda s: len(s.active) > 100 or
@@ -71,25 +78,31 @@ def run_symbolic(binary_path: str, target_func: str = None,
 
         result['paths_found'] = len(simgr.deadended) + len(simgr.active)
         result['success'] = result['paths_found'] > 0
+        logger.info("Symbolic: %d paths (deadended=%d active=%d)",
+                    result['paths_found'], len(simgr.deadended),
+                    len(simgr.active))
 
-        # extract inputs that trigger different paths
+        # 提取触发不同路径的输入
         for s in simgr.deadended[:10]:
             try:
                 inp = s.posix.dumps(0)
                 if inp:
                     result['constraints'].append(
                         {'input': inp[:256].hex()})
-            except Exception:
-                pass
+            except Exception as err:
+                logger.debug("Symbolic: constraint extraction skipped: %s", err)
+        logger.info("Symbolic: %d constraints extracted",
+                    len(result['constraints']))
 
         return result
     except Exception as err:
         logger.warning("Symbolic execution error: %s", err)
-        return {'success': False, 'error': str(err)}
+        result['error'] = str(err)
+        return result
 
 
 def find_buffer_overflow(binary_path: str, func_name: str) -> Dict:
-    """Try to find buffer overflow conditions via symbolic execution."""
+    """符号执行定位缓冲区溢出调用点。"""
     if not ANGR_AVAILABLE:
         return {'found': False, 'reason': 'angr unavailable'}
 

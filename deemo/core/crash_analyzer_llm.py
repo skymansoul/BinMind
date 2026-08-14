@@ -1,22 +1,7 @@
-"""
-LLM-powered deep crash analysis: semantic root cause analysis of fuzzing/symbolic
-execution crash results.
-
-Complements crash_analysis.py keyword matching:
-  crash_analysis.py: fast classification (SIGSEGV -> stack/heap -> exploitable)
-  crash_analyzer_llm.py: deep reasoning (decompiled code + registers + stack trace)
-
-Input modes: raw crash text (ASAN/GDB/coredump), structured crash data
-(registers + backtrace + fault instruction), or context-enhanced (with
-decompiled code of the crashing function).
-
-Output: structured root cause report with vulnerability type, trigger chain,
-exploit direction, and confidence. Called after crash_analysis to augment results.
-
-References:
-  - Xu et al., 2024, USENIX Security, "VulnRepair"
-  - Pearce et al., 2022, IEEE S&P, "Asleep at the Keyboard?"
-"""
+"""LLM 深度崩溃分析 — 对模糊测试/符号执行的崩溃结果做语义级根因分析。
+补充 crash_analysis.py 的关键词匹配: 该模块做快速分类 (SIGSEGV→栈/堆→可利用), 本模块做深度推理 (反编译代码+寄存器+栈回溯);
+输入支持原始崩溃文本 (ASAN/GDB/coredump)、结构化崩溃数据或带反编译上下文的增强模式, 输出含漏洞类型、触发链、利用方向与置信度的结构化报告。
+参考: Xu et al., 2024, USENIX Security "VulnRepair"; Pearce et al., 2022, IEEE S&P "Asleep at the Keyboard?"。"""
 
 
 import json
@@ -125,7 +110,7 @@ def analyze_crash_with_llm(
 
 
 def _parse_llm_crash_response(response: str) -> Optional[Dict[str, Any]]:
-    """Parse JSON from LLM response, trying direct parse, code block, and fallback patterns."""
+    """从 LLM 响应解析 JSON: 依次尝试直接解析、代码块提取与回退模式。"""
     if not response:
         return None
 
@@ -157,15 +142,15 @@ def batch_analyze_crashes(
     parallel: bool = False,
 ) -> List[Dict[str, Any]]:
     """
-    Batch analyze multiple crashes, ordered by severity (most critical first).
+    批量分析多个崩溃, 按严重级别排序 (最严重在前)。
 
     Args:
-        crashes: list of crash data dicts
-        binary_path: source binary
-        parallel: use ThreadPoolExecutor when True and crash count > 1
+        crashes: 崩溃数据 dict 列表
+        binary_path: 源二进制
+        parallel: 为 True 且崩溃数 >1 时使用 ThreadPoolExecutor
 
     Returns:
-        Analysis results sorted by severity
+        按严重级别排序的分析结果
     """
     results = []
 

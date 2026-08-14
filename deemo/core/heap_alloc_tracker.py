@@ -1,23 +1,7 @@
 """
-堆分配点追踪 — 从二进制中提取malloc调用点的分配大小并向前传播。
-
-设计意图:
-  堆溢出检测的误报根源在于缺少分配大小信息。静态分析看到 malloc+memcpy 就告警,
-  但不知道 malloc(256) 后 memcpy(buf, src, 128) 是安全的。本模块从反编译代码或
-  原始指令中提取 malloc 类函数的分配大小参数, 建立"分配点→分配大小"的映射,
-  向前传播到同一函数内的后续内存操作, 为误报过滤提供数值约束。
-
-  技术路线:
-    1. 识别调用点: malloc/calloc/realloc 的调用地址和参数寄存器
-    2. 大小提取: 从立即数参数(如 malloc(256))直接提取; 从变量参数尝试反向追踪
-    3. 传播: 将分配大小沿控制流向前传播, 直到遇到 free 或函数返回
-
-  与 ISSTA 2024 "Heap Disjointness" 的区别: 该工作做堆符号位置的强更新;
-  本模块聚焦于分配大小的二进制级提取和约束传播, 是互补的前置步骤。
-
-边界条件:
-  - 对间接计算的大小(如 malloc(strlen(s)+1))仅能部分追踪
-  - 对跨函数的分配-使用对(如 malloc 在 A, memcpy 在 B)当前不做跨函数传播
+堆分配点追踪 — 从反编译代码或原始指令中提取 malloc 类函数的分配大小并向前传播。
+建立"分配点→分配大小"映射, 为同一函数内后续内存操作提供数值约束以过滤误报;
+间接计算的大小仅部分追踪, 跨函数分配-使用对不做传播。
 """
 
 import re
@@ -50,10 +34,7 @@ class MemAccess:
 
 def extract_alloc_sites(decompiled_text: str, func_offset: int = 0
                          ) -> List[AllocSite]:
-    """
-    从反编译文本中提取所有堆分配点。
-    匹配模式: var = malloc(size); var = calloc(n, size); var = realloc(ptr, size)
-    """
+    """从反编译文本中提取所有堆分配点, 匹配 malloc/calloc/realloc 赋值模式。"""
     sites: List[AllocSite] = []
 
     patterns = [
@@ -101,10 +82,7 @@ def extract_alloc_sites(decompiled_text: str, func_offset: int = 0
 
 
 def extract_mem_accesses(decompiled_text: str) -> List[MemAccess]:
-    """
-    从反编译文本中提取所有堆内存写入操作。
-    模式: memcpy(dest, src, size); strcpy(dest, src); sprintf(dest, fmt, ...)
-    """
+    """从反编译文本中提取所有堆内存写入操作 (memcpy/strcpy/sprintf 等)。"""
     accesses: List[MemAccess] = []
 
     patterns = [
@@ -142,16 +120,10 @@ def extract_mem_accesses(decompiled_text: str) -> List[MemAccess]:
 def match_alloc_to_access(sites: List[AllocSite],
                            accesses: List[MemAccess]
                            ) -> List[Tuple[AllocSite, MemAccess, str]]:
-    """
-    将分配点与内存访问配对, 判定每次写入是否安全。
+    """将分配点与内存访问配对, 判定每次写入是否安全。
 
-    判定逻辑:
-      - 若 alloc.size_known 且 access.size_known:
-          access.size ≤ alloc.size → SAFE(过滤)
-          access.size > alloc.size → UNSAFE(告警)
-      - 若任一方size未知 → UNCERTAIN(保留, 需更深分析)
-
-    返回 [(alloc, access, verdict), ...]
+    双方大小已知时按数值比较得 SAFE/UNSAFE, 任一方未知得 UNCERTAIN。
+    返回 [(alloc, access, verdict), ...]。
     """
     pairs: List[Tuple[AllocSite, MemAccess, str]] = []
 

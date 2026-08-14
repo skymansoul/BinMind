@@ -1,8 +1,7 @@
-# x86_64: first 6 args in registers (rdi,rsi,rdx,rcx,r8,r9), stack from 7th.
-# Format string = 1st arg (rdi); stack offset counted from caller's rsp+0.
-# i386: all args on stack, format string at esp+4 (above return address).
-# Offset affects %n write exploitability: offset<=0 means format string itself
-# is on the stack, allowing direct control of the write target.
+# x86_64: 前6个参数在寄存器 (rdi,rsi,rdx,rcx,r8,r9), 第7个起在栈上;
+# 格式串=第1个参数(rdi), 栈偏移从调用者 rsp+0 计。i386: 全部参数在栈上,
+# 格式串位于返回地址之上 (esp+4)。
+# 偏移影响 %n 写入可利用性: 偏移<=0 表示格式串自身在栈上, 可直接控制写入目标。
 
 from __future__ import annotations
 
@@ -13,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 @dataclass
 class FormatOffsetEstimate:
-    """Format-string stack offset estimate."""
+    """格式化字符串栈偏移估计。"""
     call_addr: int
     format_func: str
     estimated_offset: int      # 栈上偏移(以%p参数位置计), -1表示未知

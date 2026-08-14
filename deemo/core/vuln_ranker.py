@@ -1,24 +1,7 @@
 """
-Function-level vulnerability risk ranking.
-
-Ranks analyzed functions by multi-dimensional risk scoring to produce a
-"Top-N functions for manual review" list. Addresses the gap where AI analysis
-results flow into reports but lack targeted prioritization.
-
-Scoring dimensions:
-  1. Dangerous function density (0-30): count * severity weight of dangerous calls
-  2. Input exposure (0-25): parameters sourced from read/recv/fgets etc.
-  3. Protection gaps (0-20): missing mitigations (No Canary +10, No NX +10)
-  4. LLM confidence (0-15): bonus when LLM flagged vulnerabilities
-  5. Call graph position (0-10): criticality (directly called by main > deep call)
-
-Total 0-100. Used for ranking, not absolute judgment — low-scoring functions
-may still be vulnerable; high-scoring ones are the best starting points.
-
-References:
-  - Grieco et al., 2016, IEEE S&P, "Toward Large-Scale Vulnerability Discovery"
-  - Lin et al., 2020, CCS, "Software Vulnerability Discovery via Learning
-    Multi-Dimensional Hierarchical Code Feature"
+函数级漏洞风险排序 — 按多维风险评分对已分析函数排序, 产出 "Top-N 人工复核函数" 清单。
+评分维度: 危险函数密度 (0-30) / 输入暴露面 (0-25) / 保护缺口 (0-20) / LLM 置信度 (0-15) /
+调用图位置 (0-10)。总分 0-100, 仅用于排序而非绝对判定——低分函数仍可脆弱, 高分函数是最佳入手点。
 """
 
 
@@ -52,7 +35,7 @@ def rank_functions(
     """
     对分析结果中的函数按风险评分排序。
 
-    Args:
+    参数:
         decomp_results:   pipeline 的 decomp_analysis 输出——每个元素包含
                           function/function_name + analysis.vulnerabilities
         dangerous_imports: static_analysis.scan_imports() 的结果
@@ -60,7 +43,7 @@ def rank_functions(
         call_graph:        cfg_extractor.extract_cfg()["call_graph"] 的结果
         top_n:             返回 Top-N 个函数
 
-    Returns:
+    返回:
         排序后的函数风险列表，每个元素包含函数名、总分、各维度得分和排序理由
     """
     # 构建危险函数名→严重度的快速查表

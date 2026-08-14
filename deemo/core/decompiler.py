@@ -1,7 +1,4 @@
-"""
-Decompiler interface. Talks to radare2, Ghidra, or IDA.
-The AI-assisted decompilation path is handled here.
-"""
+# core/decompiler.py - 反编译接口 (radare2 / Ghidra 回退 + LLM 辅助审查)
 
 import json
 import logging
@@ -21,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 def strip_ansi(text: str) -> str:
-    return re.sub(r'\x1b\[[0-9;]*m', '', text)
+    return re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', text)
 
 
 def _run_radare2(binary_path: str, commands: List[str], timeout: int = 300) -> str:
-    cmd = [R2_PATH, '-q', '-e', 'io.color=false']
+    cmd = [R2_PATH, '-q', '-e', 'scr.color=false', '-e', 'scr.interactive=false']
     for c in commands:
         cmd.extend(['-c', c])
     cmd.append(binary_path)
@@ -40,8 +37,8 @@ def _run_radare2(binary_path: str, commands: List[str], timeout: int = 300) -> s
 
 
 def list_functions(binary_path: str) -> List[str]:
-    """Return all function names via radare2."""
-    raw = _run_radare2(binary_path, ['afl'], timeout=60)
+    """返回 r2 发现的全部函数名。"""
+    raw = _run_radare2(binary_path, ['aa', 'afl'], timeout=60)
     funcs = []
     for line in raw.splitlines():
         # afl output: addr size name
@@ -53,9 +50,9 @@ def list_functions(binary_path: str) -> List[str]:
 
 def decompile_function(binary_path: str, func_name: str,
                        decompiler: str = None) -> Dict:
-    """
-    Decompile a single function. Returns {name, pseudocode, raw_asm}.
-    If the decompiler is 'auto', tries r2 first, then Ghidra.
+    """反编译单个函数, 返回 {name, pseudocode, raw_asm}。
+
+    decompiler='auto' 时先试 r2, 失败回退 Ghidra。
     """
     if decompiler is None:
         decompiler = DEFAULT_DECOMPILER
@@ -69,9 +66,9 @@ def decompile_function(binary_path: str, func_name: str,
 
     if decompiler in ('auto', 'r2'):
         # try r2 decompiler
-        raw = _run_radare2(binary_path, [f's {func_name}', 'pdc'], timeout=120)
+        raw = _run_radare2(binary_path, ['aa', f's {func_name}', 'pdc'], timeout=120)
         result['pseudocode'] = strip_ansi(raw)
-        raw_asm = _run_radare2(binary_path, [f's {func_name}', 'pdf'], timeout=60)
+        raw_asm = _run_radare2(binary_path, ['aa', f's {func_name}', 'pdf'], timeout=60)
         result['raw_asm'] = strip_ansi(raw_asm)
         if result['pseudocode'].strip():
             result['decompiler'] = 'r2'
@@ -88,9 +85,8 @@ def decompile_function(binary_path: str, func_name: str,
 
 
 def _decompile_ghidra(binary_path: str, func_name: str) -> Optional[Dict]:
-    """Attempt Ghidra headless decompilation."""
+    """Ghidra headless 反编译; 未配置 GHIDRA_HOME 时返回 None。"""
     try:
-        import subprocess
         ghidra_home = os.environ.get('GHIDRA_HOME', '')
         if not ghidra_home:
             return None
@@ -104,17 +100,17 @@ def _decompile_ghidra(binary_path: str, func_name: str) -> Optional[Dict]:
                 '-postScript', 'DecompileFunction.java', func_name,
             ]
             subprocess.run(cmd, capture_output=True, timeout=GHIDRA_TIMEOUT)
-            # read output from script
+            # 脚本产物: <func_name>.c
             out_file = os.path.join(tmpdir, f'{func_name}.c')
             if os.path.isfile(out_file):
                 with open(out_file, encoding='utf-8') as fh:
                     return {'pseudocode': fh.read(), 'source': 'ghidra'}
-    except Exception:
-        pass
+    except Exception as err:
+        logger.debug("ghidra headless failed for %s: %s", func_name, err)
     return None
 
 
-# AI-assisted analysis
+# AI 辅助分析
 
 _AI_SYSTEM_PROMPT = """You are a binary reverse-engineering expert.
 Analyze the provided decompiled C code for security vulnerabilities.
@@ -131,10 +127,7 @@ Output as JSON with a "vulnerabilities" array."""
 
 def ai_analyze_function(func_name: str, pseudocode: str,
                         binary_info: Dict = None) -> Dict:
-    """
-    Ask an LLM to review decompiled code for vulnerabilities.
-    Falls back gracefully if no API key is configured.
-    """
+    """LLM 审查反编译代码。无 API key 时返回带 skip 说明的空结果。"""
     if not pseudocode or not pseudocode.strip():
         return {'function': func_name, 'vulnerabilities': [], 'summary': ''}
 

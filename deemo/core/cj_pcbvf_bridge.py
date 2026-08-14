@@ -1,16 +1,6 @@
 """
-PC-BVF求解器桥接 — BVF INCONCLUSIVE时触发路径约束感知判定.
-
-集成策略:
-  1. CJ → INCONCLUSIVE → BVF → INCONCLUSIVE → PC-BVF
-  2. PC-BVF从告警点提取路径约束, 收紧变量值域
-  3. 受约束后重新判定安全性/溢出
-  4. PC-BVF无法判定时返回None, 调用方保留原始结果(零召回损失)
-
-与BVF的关系:
-  - BVF在前, PC-BVF在后: BVF能判定的不触发PC-BVF
-  - PC-BVF是BVF的约束增强: 利用BVF无法获取的路径条件信息
-  - PC-BVF不重复BVF的工作: 只在BVF返回INCONCLUSIVE时启动
+PC-BVF 求解器桥接 — BVF INCONCLUSIVE 时触发路径约束感知判定: 从告警点提取路径约束收紧变量值域, 受约束后重新判定安全性/溢出, 无法判定时返回 None (零召回损失)。
+BVF 在前, PC-BVF 在后: 只在 BVF 返回 INCONCLUSIVE 时启动, 利用 BVF 无法获取的路径条件信息, 不重复 BVF 的工作。
 """
 from typing import Optional
 

@@ -1,18 +1,7 @@
 """
-PLT/GOT resolver: extracts import table address mappings from ELF binaries.
-
-Parses .rela.plt and .got.plt to build function-name -> PLT stub -> GOT entry
-mappings. Cross-references with static_analysis.DANGEROUS_FUNCTIONS to flag
-exploitable imports (system, execve, etc.).
-
-Stripped binary support: falls back to .dynstr offset resolution when .dynsym
-symbol names are truncated. PLT entries are resolved via .rela.plt r_offset
-without relying on angr/pyelftools high-level APIs, maintaining consistency
-with radare2 output.
-
-References:
-  - Andriesse, 2019, "Practical Binary Analysis" (Ch.2 ELF Internals)
-  - Di Federico et al., 2015, BAR '15, "How the ELF Ruined Christmas"
+PLT/GOT 解析器: 从 ELF 提取导入表地址映射。
+解析 .rela.plt/.got.plt 构建 函数名→PLT桩→GOT条目 映射, 并与危险函数清单交叉标记可利用导入;
+剥离二进制回退到 .dynstr 偏移解析, 不依赖 angr/pyelftools 高层 API。
 """
 
 

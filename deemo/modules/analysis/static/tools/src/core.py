@@ -26,7 +26,6 @@ class SemanticRoleLabeler:
     but requires a heuristic 't 计算 pre-analysis
     """
 
-    # 循环计数器命名模式
     _LOOP_COUNTER_PATTERNS: list[str] = [
         r"^[ijk]$", r"^[ijk]\d*$",
         r"(?i)^(idx|index|ind|count|cnt|counter|iter|iterator|n)$",

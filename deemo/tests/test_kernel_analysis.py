@@ -307,58 +307,37 @@ class TestKernelExploitGenerator(unittest.TestCase):
             self.assertIn('内核漏洞利用高度依赖', strategy['disclaimer'])
 
 
-class TestKernelCommandLineArgs(unittest.TestCase):
+class TestCliArgumentContract(unittest.TestCase):
     """
-    测试内核模块分析命令行参数
+    测试新 CLI (cli.commands) 的参数契约
     """
 
-    def test_kernel_argument_exists(self):
+    def test_symbolic_argument_exists(self):
         """
-        测试--kernel参数是否已添加到解析器
+        测试analyze子命令是否提供--symbolic参数
         """
-        import io
-        import sys
-        import main
+        from cli.commands import build_parser
+        parser = build_parser()
+        ns = parser.parse_args(['analyze', 'some_binary'])
+        self.assertTrue(hasattr(ns, 'symbolic'))
 
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py']
-
-        try:
-            parsed = main.parse_arguments()
-            self.assertTrue(hasattr(parsed, 'kernel'))
-        finally:
-            sys.argv = original_argv
-
-    def test_kernel_argument_default_value(self):
+    def test_symbolic_argument_default_value(self):
         """
-        测试--kernel参数默认值为False
+        测试--symbolic参数默认值为False
         """
-        import main
+        from cli.commands import build_parser
+        parser = build_parser()
+        ns = parser.parse_args(['analyze', 'some_binary'])
+        self.assertFalse(ns.symbolic)
 
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py']
-
-        try:
-            parsed = main.parse_arguments()
-            self.assertFalse(parsed.kernel)
-        finally:
-            sys.argv = original_argv
-
-    def test_kernel_argument_with_flag(self):
+    def test_symbolic_argument_with_flag(self):
         """
-        测试--kernel参数设置后为True
+        测试--symbolic参数设置后为True
         """
-        import sys
-        import main
-
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py', '--kernel']
-
-        try:
-            parsed = main.parse_arguments()
-            self.assertTrue(parsed.kernel)
-        finally:
-            sys.argv = original_argv
+        from cli.commands import build_parser
+        parser = build_parser()
+        ns = parser.parse_args(['analyze', 'some_binary', '--symbolic'])
+        self.assertTrue(ns.symbolic)
 
 
 class TestForceKernelMode(unittest.TestCase):

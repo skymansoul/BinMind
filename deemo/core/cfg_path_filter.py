@@ -1,20 +1,7 @@
 """
-CFG 可达路径过滤 — 基于控制流图的基本块可达性分析。
-
-问题: vuln_analyzer 的 UAF 检测用 free(X).*?X-> 正则跨行匹配，
-不区分 free 和 deref 之间是否有保护性分支、是否在同一可达路径上。
-误报来源: 反编译伪代码中 free 在 if 分支内、deref 在 else 分支内,
-两者在文本上相邻但永不共存于同一执行路径。
-
-方案: 从 angr 或 r2 获取 CFG 基本块邻接表，做 BFS 可达性判定。
-  - 若 free 所在基本块到 deref 所在基本块无路径 → 排除
-  - 若路径上存在 realloc/重新赋值 → 排除
-  - 若不可获取 CFG → 回退到原始正则（宁误报不漏报）
-
-复杂度: O(V+E) BFS, V=基本块数(通常 <100/函数), E=边数。
-
-参考: CodeGrafter 用跨域 CPG 做编译器无关检测,
-本模块退一步只做函数内 CFG 可达——但比纯正则多了路径感知。
+CFG 可达路径过滤: 基于控制流图的基本块可达性分析。
+针对 UAF 正则跨行匹配不区分分支路径的误报 (free 在 if 分支、deref 在 else 分支), 从 angr/r2 获取基本块邻接表做 BFS 可达判定:
+free 块到 deref 块无路径或路径上有 realloc/重新赋值则排除; CFG 不可获取时回退原始正则 (宁误报不漏报)。复杂度 O(V+E)。
 """
 
 from __future__ import annotations
@@ -32,12 +19,7 @@ def extract_cfg_blocks(
     binary_path: str,
     func_name: str,
 ) -> List[CFGBlock]:
-    """
-    从二进制中提取指定函数的基本块及邻接关系。
-
-    优先使用 angr CFG, angr 不可用时回退到 r2 反汇编手动构建。
-    返回基本块列表——若提取失败返回空列表。
-    """
+    """从二进制中提取指定函数的基本块及邻接关系。优先使用 angr CFG, 不可用时回退到 r2 反汇编手动构建; 提取失败返回空列表。"""
     blocks: List[CFGBlock] = []
 
     # 路径A: angr CFGEmulated (最精确，但最重)
@@ -165,12 +147,7 @@ def verify_uaf_path(
     free_lineno: int = 0,
     deref_lineno: int = 0,
 ) -> Tuple[bool, str]:
-    """验证 UAF: free(X) 到 X-> 是否在同一可达路径上。
-
-    返回 (is_valid_true_positive, reason)。
-    - True → 确实在同一可达路径上，保留 finding
-    - False → 不在同一路径或有重分配，排除（降级或删除）
-    """
+    """验证 UAF: free(X) 到 X-> 是否在同一可达路径上。返回 (is_valid_true_positive, reason): True 表示在同一可达路径上 (保留), False 表示不在同一路径或有重分配 (排除)。"""
     blocks = extract_cfg_blocks(binary_path, func_name)
     if not blocks:
         return True, "CFG不可获取，保留原判(宁误报不漏报)"

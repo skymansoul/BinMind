@@ -1,14 +1,5 @@
-"""
-FCPV pipeline 集成模块 — 将 FCPV 求解器接入格式串检测管线.
-
-集成位置: 在 FSCS 评分之前, 作为源码级约束验证层.
-若 FCPV 判定 SAFE → 过滤候选, 无需 FSCS 评分.
-若 FCPV 判定 VULN → 保留, FSCS 可补充评分.
-若 FCPV 判定 UNCERTAIN → 保留, 交 FSCS 评分决定.
-
-设计决策: FCPV 不替代 FSCS, 而是作为前置约束验证器.
-FSCS 评分作为后处理精化 (补充 exploitability/impact 量化).
-"""
+"""FCPV pipeline 集成模块 — 将 FCPV 求解器作为前置约束验证层接入格式串检测管线。
+若 FCPV 判定 SAFE → 过滤候选; VULN/UNCERTAIN → 保留交 FSCS 评分; FCPV 不替代 FSCS。"""
 
 from typing import Dict, List, Tuple
 

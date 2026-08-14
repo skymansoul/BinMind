@@ -1,6 +1,4 @@
-"""
-(x) EVM 重入检测器
-"""
+"""第4批可选增强: (x) EVM 重入检测器。"""
 
 import logging
 
@@ -14,7 +12,7 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 检测 classic/cross-function/read-only 三类重入模式。
     # Consensys SWC-107
     try:
-        from crypto.src.evm.reentrancy_detector import (
+        from modules.crypto.src.evm.reentrancy_detector import (
             EVMReentrancyDetector, EVMDisassembler,
         )
         _evm_detector = EVMReentrancyDetector()
@@ -27,7 +25,7 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 三级回退消息边界检测（魔数→长度字段→熵跳变）
     # 配合协议状态机推断，从二进制网络流自动逆向协议格式。
     try:
-        from analysis.static.tools.entropy_jump_detector import (
+        from modules.analysis.static.tools.entropy_jump_detector import (
             EntropyJumpDetector, IncrementalEntropyWindow,
         )
         _entropy_detector = EntropyJumpDetector()
@@ -37,7 +35,8 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     try:
-        from analysis.static.tools.protocol_state_inferrer import (
+        # ProtocolStateMachineInferrer 已重构为 ProtocolStateMachine, 该增强当前跳过
+        from modules.analysis.static.tools.protocol_state_inferrer import (
             ProtocolStateMachineInferrer,
         )
         _proto_inferrer = ProtocolStateMachineInferrer()
@@ -48,15 +47,15 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (w) 堆原语链搜索
     # A* 搜索从漏洞点到可利用状态的最短堆原语链。
-    # Complements (r) heap layout solver: solver works with known target layout, this searches for candidate layouts.
+    # 与(r)堆布局求解器互补: 求解器面向已知目标布局, 本模块搜索候选布局。
     try:
-        from exploit.src.heap.primitive_chain.primitive_classifier import (
+        from modules.exploit.src.heap.primitive_chain.primitive_classifier import (
             classify_heap_ops,
         )
-        from exploit.src.heap.primitive_chain.chain_search import (
+        from modules.exploit.src.heap.primitive_chain.chain_search import (
             search_primitive_chain, rank_chains,
         )
-        from exploit.src.heap.primitive_chain.allocator_constraints import (
+        from modules.exploit.src.heap.primitive_chain.allocator_constraints import (
             PTMalloc2Constraints,
         )
         result['_heap_primitive_classifier'] = classify_heap_ops
@@ -71,7 +70,7 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 无源码条件下检测秘密依赖的分支/访存/循环违规。
     # 对固件、闭源密码库等无 LLVM IR 的场景提供常量时间合规检查。
     try:
-        from analysis.static.const_time.src.const_time_pipeline import (
+        from modules.analysis.static.const_time.src.const_time_pipeline import (
             verify_constant_time, ViolationSeverity,
         )
         result['_const_time_verifier'] = verify_constant_time
@@ -84,10 +83,10 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 运行时行为嵌入 + 特征哈希 + 滑动窗口余弦相似度。
     # 与 (m) decaying_novelty_scheduler 互补：后者做时间维度的 Ebbinghaus
     # 遗忘曲线，本模块做语义维度的行为新颖度检测。
-    # (2025) — LLM-guided semantic fuzzing 的思路,
-    # 但将 LLM 嵌入替换为确定性 feature hashing，消除外部模型依赖
+    # 参考LLM引导语义模糊测试思路, 但将LLM嵌入替换为确定性feature hashing，
+    # 消除外部模型依赖
     try:
-        from fuzzing.src.semantic_novelty_detector import (
+        from modules.fuzzing.src.semantic_novelty_detector import (
             SemanticNoveltyDetector, ExecutionSummary,
             NoveltyGuidedEnergyPolicy,
         )
@@ -107,10 +106,9 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 后者解决"均匀分配任务到同构 worker"，
     # 本模块解决"异质模糊器的非均匀资源分配"——不同模糊器对同一目标
     # 的产出率差异可能达 10x，均匀分配会浪费算力。
-    # BandFuzz () — multi-armed bandit 协作 fuzzing,
-    本项目将其推广到异构模糊器编排场景
+    # BandFuzz 多臂老虎机协作fuzzing思路, 本项目将其推广到异构模糊器编排场景
     try:
-        from fuzzing.src.thompson_orchestrator import (
+        from modules.fuzzing.src.thompson_orchestrator import (
             ThompsonOrchestrator, make_crash_signature,
         )
         _orchestrator = ThompsonOrchestrator(
@@ -127,10 +125,9 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 二进制级 def-use 重建 + Jaccard 聚类 + 约束引导的字节翻转。
     # 与 (g) primitive_composer 互补：primitive_composer 做 exploit 阶段
     # 的原语组合，本模块做 fuzzing 阶段的输入字节级定向变异。
-    # FuzzRDUCC () — def-use chain coverage,
-    # 本项目在"重建"基础上增加约束引导赋值阶段
+    # 参考FuzzRDUCC def-use链覆盖思路, 本项目在"重建"基础上增加约束引导赋值阶段
     try:
-        from fuzzing.src.defuse_mutation_guide import (
+        from modules.fuzzing.src.defuse_mutation_guide import (
             ConstraintGuidedMutator, ConditionBranchCollector,
             defuse_guided_mutation_pipeline, BranchCoverageFingerprint,
         )
@@ -148,9 +145,9 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # (ab) 反事实变异优化器
     # Pearl SCM rung-3: 已知变异X→效果Y, 反事实推断"若做X'会如何"。
     # 将变异选择从随机探索升级为因果推断——现有变异器全在 rung-1/2。
-    # Pearl (2009) "Causality" §7; DeCaF (, 2026)
+    # 参考: Pearl (2009) "Causality" §7; DeCaF
     try:
-        from fuzzing.src.counterfactual_mutator import CounterfactualMutator
+        from modules.fuzzing.src.counterfactual_mutator import CounterfactualMutator
         _cf_mutator = CounterfactualMutator(
             max_history=kwargs.get('cf_max_history', 500),
         )
@@ -164,7 +161,7 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # surprise bonus 检测逆预期高收益事件, regret monitor 检测策略退化。
     ref: Shalev-Shwartz (2012); Hazan (2016); Cesa-Bianchi & Lugosi (2006)
     try:
-        from fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
+        from modules.fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
         _regret_ensemble = RegretMinimizingEnsemble(
             learning_rate=kwargs.get('regret_lr', 0.1),
             ent_lambda=kwargs.get('regret_ent_lambda', 0.01),
@@ -180,7 +177,7 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # 与 ISRG/PathCluster 互补: 前者看局部关系, TCN 看全局拓扑结构。
     # Edelsbrunner & Harer (2010); Carlsson (2009) "Topology and Data"
     try:
-        from fuzzing.src.topological_coverage_navigator import (
+        from modules.fuzzing.src.topological_coverage_navigator import (
             TopologicalCoverageNavigator, CoveragePoint, TopologicalFeature,
         )
         _topo_nav = TopologicalCoverageNavigator(

@@ -1,9 +1,4 @@
-"""
-FOVF 通用解析辅助.
-
-正则常量、函数签名/调用点解析、顶层参数切分、用户源判定等
-纯工具函数, 供 fovf_argflow 使用.
-"""
+"""FOVF 通用解析辅助 — 正则常量、函数签名/调用点解析、顶层参数切分、用户源判定等纯工具函数, 供 fovf_argflow 使用。"""
 
 import re
 from typing import Dict, List, Tuple

@@ -9,15 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 def parse_size_expr(expr: str) -> Tuple[Dict[str, float], float]:
-    """解析size表达式为(coefs, const).
-
-    "64" -> ({}, 64.0)
-    "n" -> ({"n": 1.0}, 0.0)
-    "n*2" -> ({"n": 2.0}, 0.0)
-    "n+8" -> ({"n": 1.0}, 8.0)
-    "2*n+8" -> ({"n": 2.0}, 8.0)
-    "nmemb*size" -> ({"nmemb": 1.0, "size": 1.0}, 0.0)
-    """
+    """解析 size 表达式为 (coefs, const)。如 "64" → ({}, 64.0), "n*2" → ({"n": 2.0}, 0.0), "2*n+8" → ({"n": 2.0}, 8.0)。"""
     expr = expr.strip()
     if not expr:
         return {}, 0.0

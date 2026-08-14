@@ -1,6 +1,5 @@
 """
-Binary file detection and info extraction.
-Supports ELF, PE, Mach-O. Falls back to `file` command on Linux.
+二进制文件检测与信息提取, 支持 ELF、PE、Mach-O。
 """
 
 import os
@@ -13,13 +12,13 @@ from utils.pe import is_pe, pe_arch_name, read_pe_sections
 from utils.macho import is_macho, macho_arch_name
 
 
-# cache the last result to avoid re-reading the same binary within a pipeline run
+# 缓存最近结果, 避免同一管线运行内重复读取同一二进制
 _last_path: Optional[str] = None
 _last_info: Optional[Dict] = None
 
 
 def detect_format(path: str) -> str:
-    """Return 'ELF', 'PE', 'Mach-O', or 'unknown'."""
+    """返回 'ELF'、'PE'、'Mach-O' 或 'unknown'。"""
     if is_elf(path):
         return 'ELF'
     if is_pe(path):
@@ -30,7 +29,7 @@ def detect_format(path: str) -> str:
 
 
 def _r2_info(path: str) -> Dict:
-    """Gather binary metadata via radare2."""
+    """通过 radare2 收集二进制元数据。"""
     try:
         result = subprocess.run(
             ['r2', '-q', '-e', 'io.color=false', '-c', 'iI', path],
@@ -47,7 +46,7 @@ def _r2_info(path: str) -> Dict:
 
 
 def get_binary_info(path: str) -> Dict:
-    """Extract core metadata: arch, bits, sections, imports, strings."""
+    """提取核心元数据: 架构、位宽、段、导入、字符串。"""
     global _last_path, _last_info
 
     path = os.path.abspath(path)
@@ -94,5 +93,5 @@ def get_binary_info(path: str) -> Dict:
 
 
 def validate_binary(path: str) -> bool:
-    """True if the file exists and looks like a supported binary."""
+    """若文件存在且格式受支持, 返回 True。"""
     return os.path.isfile(path) and detect_format(path) != 'unknown'

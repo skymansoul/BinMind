@@ -1,5 +1,5 @@
-# Shell metachar taint propagation analyzer for CWE-78 command injection
-# Tracks dangerous shell chars (|;&) from user input to exec/sink functions
+# CWE-78 命令注入的 shell 元字符污点传播分析器
+# 追踪危险 shell 字符 (|;&) 从用户输入到 exec/sink 函数的传播
 import re
 
 _SHELL_DANGER = {

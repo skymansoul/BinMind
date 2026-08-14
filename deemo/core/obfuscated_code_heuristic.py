@@ -1,6 +1,5 @@
-# Assembly-level pattern matching for obfuscated code, used as fallback when
-# the decompiler fails on obfuscated binaries (UPX/OLLVM, etc.).
-# Only detects core vulnerability patterns that obfuscation cannot hide.
+# 混淆代码的汇编级模式匹配，反编译器在混淆二进制(UPX/OLLVM等)上失效时的回退。
+# 只检测混淆无法隐藏的核心漏洞模式。
 import re
 
 # 混淆后常见漏洞模式 (保留核心语义的汇编级特征)

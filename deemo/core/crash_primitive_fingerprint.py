@@ -1,6 +1,5 @@
-# 崩溃原语指纹入口 — 从crash_primitive_fingerprint_types/analyzers/api拆分.
-# 原实现已按职责分散到子模块, 此文件仅做re-export以保持API兼容.
-# 创建: 2026-05-10 (拆分)
+# 崩溃原语指纹入口 — 原实现已按职责拆分到 types/analyzers/api 子模块,
+# 此文件仅做 re-export 以保持 API 兼容。
 
 from .crash_primitive_fingerprint_types import (
     RegisterControl, PrimitiveType,

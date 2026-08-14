@@ -1,4 +1,4 @@
-"""Crash primitive fingerprinting: main API entry points."""
+"""崩溃原语指纹: 主 API 入口。"""
 
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -16,15 +16,15 @@ def fingerprint_crash(
     stack_bounds: Optional[Tuple[int, int]] = None,
     heap_bounds: Optional[List[Tuple[int, int]]] = None,
 ) -> CrashFingerprint:
-    """Multi-axis crash primitive fingerprinting.
+    """多轴崩溃原语指纹。
 
     Args:
-        crash_data: structured crash data from parse_crash()
+        crash_data: parse_crash() 输出的结构化崩溃数据
         stack_bounds: (stack_low, stack_high)
         heap_bounds: [(heap_start, heap_end), ...]
 
     Returns:
-        CrashFingerprint with scores and recommended strategy
+        含各轴评分与推荐策略的 CrashFingerprint
     """
     raw_text = crash_data.get('raw', '')
     crash_type = crash_data.get('crash_type', 'unknown')
@@ -32,7 +32,7 @@ def fingerprint_crash(
 
     fingerprint = CrashFingerprint(crash_type=crash_type)
 
-    # 1. Register analysis from crash data
+    # 1. 崩溃数据寄存器分析
     registers_raw = crash_data.get('registers', {})
     for reg_name, reg_val_str in registers_raw.items():
         try:
@@ -43,18 +43,18 @@ def fingerprint_crash(
             reg_name, reg_val, stack_bounds, heap_bounds,
         )
 
-    # 2. Heap operation sequence extraction
+    # 2. 堆操作序列提取
     fingerprint.heap_ops = _extract_heap_ops_from_text(raw_text)
 
-    # 3. Faulting instruction and address
+    # 3. 崩溃指令与地址
     fingerprint.faulting_instruction = crash_data.get('fault_instruction', '')
     if addresses:
         fingerprint.faulting_address = int(addresses[0], 16) if addresses[0].startswith('0x') else 0
 
-    # 4. Stack trace
+    # 4. 栈回溯
     fingerprint.stack_trace = crash_data.get('stack_trace', [])
 
-    # 5. Multi-axis scoring
+    # 5. 多轴评分
     fault_addr = fingerprint.faulting_address
     scores = _compute_exploitability_scores(
         fingerprint.registers, fingerprint.heap_ops, crash_type, fault_addr,
@@ -65,12 +65,12 @@ def fingerprint_crash(
     fingerprint.info_leak_score = scores['info_leak']
     fingerprint.overall_exploitability = scores['overall']
 
-    # 6. Strategy recommendation
+    # 6. 策略推荐
     primitives, strategy = _recommend_strategy(scores, crash_type)
     fingerprint.recommended_primitives = primitives
     fingerprint.recommended_strategy = strategy
 
-    # 7. Heap layout inference for heap-corruption crashes
+    # 7. 堆破坏类崩溃的堆布局推断
     if crash_type in ('heap_corruption', 'uaf', 'double_free'):
         heap_ctx = infer_heap_layout(regs, crash_type)
         fingerprint.metadata['heap_context'] = heap_ctx
@@ -80,19 +80,16 @@ def fingerprint_crash(
 
 def infer_heap_layout(regs: Dict[str, str],
                        crash_type: str) -> Dict[str, Any]:
-    """Infer heap chunk layout from crash register state.
+    """从崩溃寄存器状态推断堆块布局。
 
-    Determines whether the fault address lies in a known heap region, whether
-    corrupted bytes overlap heap metadata (fd/bk pointers), and estimates chunk size.
+    判定崩溃地址是否落在已知堆区域、被破坏字节是否覆盖堆元数据 (fd/bk 指针), 并估计块大小。
     """
     ctx: Dict[str, Any] = {}
     rip = regs.get('rip', '')
     rsp = regs.get('rsp', '')
     rax = regs.get('rax', '')
 
-    # Infer chunk size from crash address offset.
-    # If crash address is 0x?8 aligned and next 8 bytes match a pattern,
-    # the fd/bk pointers may have been overwritten.
+    # 从崩溃地址偏移推断块大小: 地址 0x?8 对齐且后续 8 字节匹配某模式时, fd/bk 指针可能已被覆盖。
     for reg_name, val in regs.items():
         if not val or len(val) < 4:
             continue
@@ -100,15 +97,15 @@ def infer_heap_layout(regs: Dict[str, str],
             addr = int(val, 16)
         except ValueError:
             continue
-        # glibc chunk header: prev_size(8B) + size(8B, LSB=flags)
-        # addr % 16 == 8 suggests writing the chunk's fd pointer
+        # glibc chunk 头: prev_size(8B) + size(8B, LSB=flags)
+        # addr % 16 == 8 表示写入的是 chunk 的 fd 指针
         if addr % 16 == 8 and crash_type == 'heap_corruption':
             ctx['likely_overwritten'] = 'fd_pointer'
             ctx['estimated_chunk_offset'] = 16  # skip prev_size + size header
         elif addr % 16 == 0 and crash_type == 'heap_corruption':
             ctx['likely_overwritten'] = 'prev_size_or_size_field'
 
-    # Infer free-list state: if crash happens inside free(), chunk may already be in a bin
+    # 推断空闲链表状态: 崩溃发生在 free() 内时, chunk 可能已入 bin
     if crash_type in ('uaf', 'double_free'):
         ctx['in_free_list'] = True
         ctx['note'] = 'crash during free, chunk may already be in free-list'

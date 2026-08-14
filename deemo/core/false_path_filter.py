@@ -1,7 +1,5 @@
-# core/false_path_filter.py
-# Filters false positives by checking path condition feasibility.
-# Uses IntervalAbstractor to detect contradictory constraints.
-# Conservative: when in doubt, keep the finding (no false negatives).
+# false_path_filter.py — 路径可行性过滤, 用 IntervalAbstractor 检测矛盾约束。
+# 保守策略: 无法判定时保留结果, 不产生漏报。
 import re
 from typing import List, Set
 from core.interval_abstractor import IntervalAbstractor

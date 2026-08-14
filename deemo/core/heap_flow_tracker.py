@@ -1,19 +1,7 @@
 """
-堆分配值流追踪 —— 追踪 malloc/calloc/realloc 的 size 参数来源。
-
-现有堆溢出检测的最大误报来源: 无法确定 size 参数在到达 malloc 前经过
-哪些约束操作。例如 int size = atoi(argv[1]); if(size>1024) size=1024;
-buf=malloc(size); 如果只看 malloc(size) 而不追踪 size 的来源和约束,
-就会误报 "用户输入控制分配大小"。
-
-本模块在反编译伪代码上做反向值流追踪:
-1. 定位 malloc(size_var) 调用点
-2. 反向追踪 size_var 的来源: 常量? 用户输入? 算术表达式?
-3. 正向检查 size_var 在 malloc 前是否经过约束 (if/ternary/min/max)
-4. 输出 TraceResult: {size_var, source_type, is_constrained, upper_bound}
-
-  CAFD — 自定义分配函数的 value-flow 检测
-  本模块不做指针分析, 不做完整到达-定值, 仅追踪分配大小的 2 跳数据流
+堆分配值流追踪 — 在反编译伪代码上追踪 malloc/calloc/realloc 的 size 参数来源。
+定位调用点→反向溯源 (常量/用户输入/算术表达式)→正向检查约束 (if/ternary/min/max),
+输出 TraceResult {size_var, source_type, is_constrained, upper_bound}; 仅追踪分配大小的数据流。
 """
 
 import re
@@ -38,13 +26,7 @@ class TraceResult:
     line: str = ""               # 伪代码中对应的行
 
 class HeapFlowTracker:
-    """
-    堆分配值流追踪器。
-
-    Level 1 — 定位: 正则匹配 malloc/calloc/realloc 调用, 提取 size 参数
-    Level 2 — 溯源: 反向搜索 size_var 的定义, 判定来源类型
-    Level 3 — 约束检测: 正向搜索 size_var 是否被 if/sanitize 约束
-    """
+    """堆分配值流追踪器 — 定位调用点, 反向溯源来源类型, 正向检测约束。"""
 
     _ALLOC_PAT = re.compile(
         r'(\w[\w\d_]*)\s*=\s*(?:\([^)]*\*?\s*\))?\s*'
@@ -58,11 +40,7 @@ class HeapFlowTracker:
     )
 
     def trace(self, pseudocode: str) -> List[TraceResult]:
-        """
-        在伪代码中追踪所有堆分配调用的 size 来源。
-
-        返回 TraceResult 列表, 用于后续的分配器约束分析。
-        """
+        """在伪代码中追踪所有堆分配调用的 size 来源, 返回 TraceResult 列表。"""
         results: List[TraceResult] = []
         lines = pseudocode.splitlines()
 
@@ -125,11 +103,7 @@ class HeapFlowTracker:
     def _find_constraint(
         self, var_name: str, lines: List[str], call_idx: int,
     ) -> Optional[int]:
-        """
-        在 malloc 调用之前搜索对 var_name 的约束操作。
-
-        检测模式: if(var > N) var = N; 或 var = min(var, N);
-        """
+        """在 malloc 调用前搜索对 var_name 的约束操作, 检测 if(var>N) var=N 或 min/MAX 模式。"""
         context = lines[max(0, call_idx - 15):call_idx]
         context_str = '\n'.join(context)
 

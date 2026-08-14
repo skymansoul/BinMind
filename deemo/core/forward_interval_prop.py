@@ -1,15 +1,6 @@
-"""
-Forward interval propagation — interval domain + IR parsing + convenience API.
-
-This module defines the Interval abstract domain, IR parsing regexes,
-dataclasses, and the standalone eval_rhs_interval() function.
-
-The ForwardIntervalPropagator class has been extracted to
-core/interval_propagator.py
-
-  - Cousot & Cousot, "Abstract Interpretation: A Unified Lattice Model"
-  - Guo et al., "Heap Disjointness" — value-range reasoning for heap
-"""
+"""前向区间传播 — 区间抽象域 + IR 解析 + 便捷 API.
+定义 Interval 抽象域, IR 解析正则, 数据结构与独立函数 eval_rhs_interval(); ForwardIntervalPropagator 类已提取至 core/interval_propagator.py;
+参考: Cousot & Cousot, "Abstract Interpretation: A Unified Lattice Model"; Guo et al., "Heap Disjointness" (堆的值域推理)."""
 
 from __future__ import annotations
 
@@ -17,11 +8,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-# interval domain ──────────────────────────────────────────────────
+# 区间抽象域 ───────────────────────────────────────────────────────
 
 @dataclass
 class Interval:
-    """Integer interval [lo, hi]. lo=-1 means -inf; hi=2**63-1 means +inf."""
+    """整数区间 [lo, hi]. lo=-1 表示 -inf; hi=2**63-1 表示 +inf."""
     lo: int
     hi: int
 
@@ -110,7 +101,7 @@ class Interval:
         hi_s = str(self.hi) if self.hi < 2**63 - 1 else "+inf"
         return f"[{lo_s}, {hi_s}]"
 
-# IR parsing regexes (shared) ──────────────────────────────────────
+# IR 解析正则 (共享) ────────────────────────────────────────────────
 
 _C_TYPE_KEYWORDS = {
     'int', 'char', 'short', 'long', 'float', 'double', 'void',
@@ -136,11 +127,11 @@ _STRCPY_RE = re.compile(
 _CMP_RE = re.compile(r'(?:cmp|if)\s*\(?\s*(\w[\w.]*)\s*(<|<=|>|>=|==)\s*(\d+|\w[\w.]*)')
 _INCR_RE = re.compile(r'(\w[\w.]*)\s*=\s*\1\s*([+-])\s*(\d+)')
 
-# dataclasses ───────────────────────────────────────────────────────
+# 数据结构 ──────────────────────────────────────────────────────────
 
 @dataclass
 class IRStatement:
-    """One analyzed IR statement."""
+    """一条被分析的 IR 语句."""
     idx: int
     var: str = ""
     rhs: str = ""
@@ -162,24 +153,23 @@ class WriteSite:
     dst_var: str
     size_interval: Interval
 
-# standalone expression evaluator ──────────────────────────────────
+# 独立表达式求值器 ──────────────────────────────────────────────────
 
 def eval_rhs_interval(rhs: str, state: Dict[str, Interval]) -> Interval:
-    """Evaluate RHS expression to an interval, given current variable state.
+    """在当前变量状态下将 RHS 表达式求值为区间.
 
-    Extracted from ForwardIntervalPropagator._eval_rhs to make it reusable
-    without requiring a class instance. Uses only `rhs` and `state` params.
+    从 ForwardIntervalPropagator._eval_rhs 提取, 便于无需类实例直接复用, 仅用 rhs 与 state 参数.
     """
     rhs = rhs.strip()
 
-    # Integer literal
+    # 整数字面量
     try:
         v = int(rhs, 0)
         return Interval.exact(v)
     except (ValueError, TypeError):
         pass
 
-    # Variable reference
+    # 变量引用
     if re.match(r'^[a-zA-Z_]\w*$', rhs) and rhs in state:
         return state[rhs]
 
@@ -191,7 +181,7 @@ def eval_rhs_interval(rhs: str, state: Dict[str, Interval]) -> Interval:
         elif op == '-': return Interval.exact(a - b)
         elif op == '*': return Interval.exact(a * b)
 
-    # var op const
+    # 变量 op 常量
     m = re.match(r'(\w[\w.]*)\s*([+\-*])\s*(\d+)$', rhs)
     if m:
         base_var, op, const = m.group(1), m.group(2), int(m.group(3))
@@ -200,7 +190,7 @@ def eval_rhs_interval(rhs: str, state: Dict[str, Interval]) -> Interval:
         elif op == '-': return base - Interval.exact(const)
         elif op == '*': return base * Interval.exact(const)
 
-    # const op var
+    # 常量 op 变量
     m_cv = re.match(r'^(\d+)\s*([+\-*])\s*(\w[\w.]*)$', rhs)
     if m_cv:
         const, op, var = int(m_cv.group(1)), m_cv.group(2), m_cv.group(3)
@@ -208,12 +198,12 @@ def eval_rhs_interval(rhs: str, state: Dict[str, Interval]) -> Interval:
         if op == '+':   return Interval.exact(const) + base
         elif op == '*': return Interval.exact(const) * base
 
-    # Bitwise AND: var & mask → [0, mask] (sound over-approximation)
+    # 按位与: var & mask → [0, mask] (可靠过近似)
     m_and = re.match(r'^(\w[\w.]*)\s*&\s*(0x[0-9a-fA-F]+|\d+)$', rhs)
     if m_and:
         return Interval.range_(0, int(m_and.group(2), 0))
 
-    # var + const (const as numeric literal)
+    # 变量 + 常量 (常量按数值字面量)
     m_add_id = re.match(r'^(\w[\w.]*)\s*\+\s*(\d+)$', rhs)
     if m_add_id:
         base = state.get(m_add_id.group(1), Interval.unknown())
@@ -221,12 +211,12 @@ def eval_rhs_interval(rhs: str, state: Dict[str, Interval]) -> Interval:
 
     return Interval.unknown()
 
-# convenience API ──────────────────────────────────────────────────
+# 便捷 API ─────────────────────────────────────────────────────────
 
 def analyze_heap_bounds_forward(ir_lines: List[str]) -> Dict:
-    """Convenience wrapper: forward interval analysis for heap bounds.
+    """便捷包装: 前向区间分析堆边界.
 
-    Returns dict with alloc_sites, write_sites, and overflow candidates.
+    返回含 alloc_sites/write_sites/overflow_candidates 的字典.
     """
     from core.interval_propagator import ForwardIntervalPropagator
 
@@ -266,7 +256,7 @@ def analyze_heap_bounds_forward(ir_lines: List[str]) -> Dict:
 __all__ = [
     'Interval', 'IRStatement', 'AllocSite', 'WriteSite',
     'eval_rhs_interval', 'analyze_heap_bounds_forward',
-    # Re-exported regexes for interval_propagator.py
+    # 为 interval_propagator.py 重新导出的正则
     '_C_TYPE_KEYWORDS', '_ASSIGN_RE', '_MALLOC_RE', '_CALLOC_RE',
     '_REALLOC_RE', '_MEMCPY_RE', '_STRCPY_RE', '_CMP_RE', '_INCR_RE',
 ]

@@ -1,13 +1,6 @@
-"""
-FOVF 组合引擎.
-
-串联 调用点提取 → 参数值流分类 → 三值裁决. 对外提供
-detect_fmt_fovf 入口, 输出逐调用点证据与统计.
-
-格式调用点覆盖: printf/fprintf/sprintf/snprintf/dprintf/syslog/
-vsprintf/vsnprintf/vprintf/vfprintf. snprintf 格式参数位置为 2,
-其余按参数位置表取.
-"""
+"""FOVF 组合引擎 — 串联调用点提取 → 参数值流分类 → 三值裁决, 对外提供 detect_fmt_fovf 入口。
+格式调用点覆盖 printf/fprintf/sprintf/snprintf/dprintf/syslog/vsprintf/vsnprintf/vprintf/vfprintf;
+snprintf 格式参数位置为 2, 其余按参数位置表取。"""
 
 import re
 import time

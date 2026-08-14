@@ -74,7 +74,6 @@ class HeapStructLayout:
         offsets = sorted(self.fields.keys())
         if not offsets:
             return False
-        # 计算连续偏移之间的间距
         gaps = [offsets[i+1] - offsets[i] for i in range(len(offsets)-1)]
         if not gaps:
             return False

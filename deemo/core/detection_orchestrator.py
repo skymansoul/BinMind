@@ -1,14 +1,6 @@
-"""
-Multi-method detection orchestrator with weighted confidence voting.
-
-Fuses independent detector outputs into unified vulnerability reports:
-  Format string: static regex (0.30) + taint (0.40) + LLM (0.30)
-  Stack overflow: angr (0.50) + pattern fallback (0.30) + taint (0.20)
-  UAF: pointer FSM (0.60) + pattern fallback (0.40)
-  Heap overflow: static inference (0.40) + taint (0.40) + abstract filter (0.20)
-
-Weighted average fusion with consistency bonus: +10% when multiple methods agree.
-"""
+"""多方法检测调度器 — 加权置信度投票融合独立检测器输出为统一漏洞报告.
+格式串: 静态0.30+污点0.40+LLM0.30; 栈溢出: angr0.50+模式回退0.30+污点0.20; UAF: 指针FSM0.60+模式回退0.40; 堆溢出: 静态0.40+污点0.40+抽象过滤0.20;
+加权平均融合, 多方法一致时给予 +10% 一致性奖励."""
 
 
 import logging

@@ -1,30 +1,7 @@
-"""
-Multi-modal crash analysis: fused decompiled code + assembly + execution trace
-for joint LLM reasoning.
-
-Concatenates three channels into a multi-modal prompt for cross-modal causal
-inference:
-  Channel A: decompiled pseudocode (program semantics)
-  Channel B: assembly near crash point (instruction-level precision)
-  Channel C: execution trace (dynamic context, branch decisions)
-
-Single-modal blind spots:
-  Decompiled only: misses compiler-optimization UB (e.g., signed overflow elided)
-  Assembly only: hard to infer high-level semantics
-  Trace only: lacks code-level causal explanation
-
-Three-channel cross-validation: "trace shows branch A taken -> asm shows jne ->
-decompiled shows the condition guards size field -> conclusion: size check bypassed."
-
-Design trade-off: no explicit modal alignment here (decompilers already provide
-instruction-to-pseudocode mapping). Channels are implicitly aligned via LLM
-attention rather than explicit feature fusion — lower complexity, with alignment
-precision compensated by LLM semantic understanding.
-
-References:
-  - Artuso et al., 2024, NDSS BAR, "In-Memory Fuzzing with Multi-Modal LLMs"
-  - Xu et al., 2025, arXiv, "Toward Multi-Modal Vulnerability Detection"
-"""
+"""多模态崩溃分析: 融合反编译代码+汇编+执行轨迹三通道，供LLM联合推理，
+三通道交叉验证构建输入到崩溃的因果链。单模态各自有盲区（反编译漏编译器
+优化UB、汇编难推高层语义、轨迹缺代码级因果）；此处不做显式模态对齐，
+由LLM注意力隐式对齐，复杂度低。"""
 
 from __future__ import annotations
 

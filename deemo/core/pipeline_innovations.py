@@ -1,10 +1,7 @@
 """
-Optional enhancement layer for run_pipeline_enhanced(): DESG construction,
-entropy scheduling, and path diversity exploration.
-
-Each module is silently skipped on ImportError. No modification to pipeline.py.
-Activation is automatic when the corresponding data (CFG blocks, seed queue,
-active paths) is available during the run.
+增强层: DESG 构造、熵调度与路径多样性探索, 供 run_pipeline_enhanced() 使用。
+各模块 ImportError 时静默跳过, 不修改 pipeline.py;
+数据 (CFG 块/种子队列/活跃路径) 可用时自动激活。
 """
 
 

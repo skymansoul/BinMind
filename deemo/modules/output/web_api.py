@@ -204,10 +204,6 @@ if FASTAPI_AVAILABLE:
             task_id: 任务标识
             request: 分析请求参数
         """
-        from modules.info.info_collect import BinaryInfoCollector
-        from modules.decompiler import Decompiler
-        from modules.vuln_checker import VulnerabilityChecker
-        from modules.llm_helper import LLMVulnerabilityAnalyzer
         from modules.output.report import ReportGenerator
         
         logger.info(f"[TaskRunner] 开始执行任务: {task_id}")
@@ -219,79 +215,103 @@ if FASTAPI_AVAILABLE:
             if not os.path.exists(reports_dir):
                 os.makedirs(reports_dir, exist_ok=True)
             
-            binary_name = request.binary_name
+            # 上传目录优先, 其次 binary_name 本身视为路径
+            binary_path = os.path.join(
+                task_manager.tasks_dir, 'uploads', request.binary_name)
+            if not os.path.isfile(binary_path):
+                binary_path = request.binary_name
+            if not os.path.isfile(binary_path):
+                task_manager.update_task(
+                    task_id, status='failed', progress=100,
+                    message='二进制文件不存在: 请先调用 /api/analyze/upload 上传')
+                return
+
+            task_manager.update_task(task_id, progress=20, message='正在收集二进制信息...')
+
+            from core.pipeline import run_pipeline
+
+            pipeline_result = run_pipeline(
+                binary_path=binary_path,
+                functions=request.function_names or None,
+                max_funcs=20,
+                include_lib=False,
+                parallel=False,
+                output_format='json',
+                decompiler='auto',
+                symbolic=request.enable_symbolic,
+                fuzz=bool(request.fuzzer_type),
+            )
+            if 'error' in pipeline_result:
+                task_manager.update_task(
+                    task_id, status='failed', progress=100,
+                    message=f"分析失败: {pipeline_result['error']}")
+                return
+
+            binfo = pipeline_result.get('binary_info', {})
             binary_info = {
-                'binary_path': binary_name,
-                'binary_name': binary_name,
-                'binary_format': request.binary_format or 'ELF',
-                'arch': request.architecture or 'amd64',
-                'bits': 64 if request.architecture in ['amd64', 'x86_64'] else 32,
+                'binary_path': binary_path,
+                'binary_name': request.binary_name,
+                'binary_format': binfo.get('format', request.binary_format or 'unknown'),
+                'arch': binfo.get('arch', request.architecture or 'unknown'),
+                'bits': binfo.get('bits', 64 if request.architecture in ['amd64', 'x86_64'] else 32),
                 'checksec': {},
                 'symbols': {},
                 'imports': [],
                 'strings': []
             }
-            
-            task_manager.update_task(task_id, progress=20, message='正在收集二进制信息...')
-            
+
+            task_manager.update_task(task_id, progress=50, message='正在分析函数...')
+
             func_analyses = []
-            function_names = request.function_names or ['main']
-            
-            for i, func_name in enumerate(function_names):
-                progress = 20 + (i / len(function_names) * 40)
-                task_manager.update_task(
-                    task_id, 
-                    progress=int(progress), 
-                    message=f'正在分析函数: {func_name}...'
-                )
-                
-                func_analysis = {
-                    'function_name': func_name,
-                    'pseudocode': f'// Function: {func_name}\n// Auto-generated analysis for API demo',
+            for r in pipeline_result.get('decomp_analysis', []):
+                analysis = r.get('analysis', r) or {}
+                vulns = analysis.get('vulnerabilities', [])
+                func_analyses.append({
+                    'function_name': r.get('function_name', r.get('function', '?')),
+                    'pseudocode': analysis.get('pseudocode', ''),
                     'analysis': {
-                        'vulnerabilities': [],
-                        'risk_level': 'Low',
-                        'summary': '函数分析完成'
+                        'vulnerabilities': vulns,
+                        'risk_level': 'High' if vulns else 'Low',
+                        'summary': analysis.get('summary', ''),
                     }
-                }
-                func_analyses.append(func_analysis)
-            
+                })
+
             task_manager.update_task(task_id, progress=70, message='正在生成报告...')
-            
+
             report_gen = ReportGenerator(output_dir=reports_dir)
-            
+
             report_paths = {}
             if 'md' in request.report_formats:
                 report_paths['markdown'] = report_gen.generate_report(
-                    binary_path=binary_name,
+                    binary_path=binary_path,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
                 )
-            
+
             if 'json' in request.report_formats:
                 report_paths['json'] = report_gen.generate_json_report(
-                    binary_path=binary_name,
+                    binary_path=binary_path,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
                 )
-            
+
             if 'html' in request.report_formats:
                 report_paths['html'] = report_gen.generate_html_report(
-                    binary_path=binary_name,
+                    binary_path=binary_path,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
                 )
-            
+
             task_manager.update_task(
-                task_id, 
-                status='completed', 
-                progress=100, 
+                task_id,
+                status='completed',
+                progress=100,
                 message='分析完成',
                 result={
                     'binary_info': binary_info,
@@ -908,7 +928,7 @@ if FASTAPI_AVAILABLE:
     app = create_app()
 
 else:
-    
+
     def start_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
         """
         API 服务端占位符 — FastAPI/uvicorn 依赖缺失时抛出 ImportError。
@@ -916,5 +936,5 @@ else:
         logger.error("[WebAPI] FastAPI 或 uvicorn 未安装，无法启动服务器")
         logger.error("[WebAPI] 请运行: pip install fastapi uvicorn python-multipart")
         raise ImportError("FastAPI 和 uvicorn 必须安装才能使用 Web API 功能")
-    
+
     app = None

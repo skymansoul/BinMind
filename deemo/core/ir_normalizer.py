@@ -1,9 +1,6 @@
-# IR normalization: normalizes decompiler output to unified line-level IR.
-# Row-level normalization, not AST — C pseudocode grammar varies across
-# decompilers (Ghidra's type* vs. Radare2's var_xx cannot be unified).
-# Row-level IR loses some semantics but is sufficient for def-use analysis;
-# the TaintEngine runs regex matches on IR line text.
-# JTrans — binary similarity improves 30-50% after IR normalization.
+# IR归一化：将反编译器输出归一为统一行级IR（非AST，各反编译器伪代码语法
+# 差异大无法统一）。行级IR损失部分语义但足以支撑def-use分析，TaintEngine
+# 基于IR行文本正则匹配；归一化后二进制相似度提升30-50%。
 import re, logging
 from collections import defaultdict
 from typing import Optional

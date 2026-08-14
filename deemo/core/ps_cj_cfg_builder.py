@@ -1,17 +1,8 @@
 """
 路径敏感CFG构建器 — 从C源码/伪代码构建简化控制流图.
-
-CJ求解器将所有约束收集到全局ConstraintSystem, 不区分控制流路径.
-当guard条件 `if(n>100)exit` 和写入 `memcpy(buf,src,64)` 在不同分支时,
-guard约束和写入约束被混合, 导致跨路径约束泄露.
-
-PS-CJ在CFG路径上分离约束:
-  1. 从源码提取基本块(顺序语句+分支/循环头)
-  2. 构建CFG边(branch_taken, branch_not_taken, loop_back)
-  3. 对每个(alloc,write)对枚举从alloc到write的有界路径集
-  4. 每条路径携带独立的guard约束集
-
-保守性: 路径数上限128 (可配置), 超限时不做路径敏感判定(回退到全局CJ).
+在CFG路径上分离约束: 提取基本块→构建CFG边→枚举(alloc,write)有界路径集→每条路径携带独立guard约束集,
+避免全局ConstraintSystem混合跨路径约束导致泄露.
+保守性: 路径数上限128 (可配置), 超限时回退到全局CJ.
 """
 from __future__ import annotations
 import re
@@ -59,7 +50,7 @@ class SimplifiedCFGBuilder:
         self._line_to_block: Dict[int, int] = {}
 
     def build(self, lines: List[str]) -> List[BasicBlock]:
-        """构建CFG, 返回基本块列表."""
+        """构建CFG, 返回基本块列表。"""
         self._blocks = []
         self._line_to_block = {}
         current: Optional[BasicBlock] = None
@@ -126,7 +117,7 @@ class SimplifiedCFGBuilder:
         return self._blocks
 
     def _classify_line(self, text: str) -> str:
-        """分类行类型."""
+        """分类行类型。"""
         if self._FUNC_DEF_RE.search(text) and not text.startswith(
                 ('if', 'for', 'while', 'switch', 'else')):
             return 'func_def'
@@ -148,7 +139,7 @@ class SimplifiedCFGBuilder:
         return 'stmt'
 
     def _link_blocks(self) -> None:
-        """连接基本块的跳边."""
+        """连接基本块的跳边。"""
         for i, bb in enumerate(self._blocks):
             if bb.is_loop_header or bb.branch_cond:
                 bb.branch_taken_line = (
@@ -160,7 +151,7 @@ class SimplifiedCFGBuilder:
                 bb.branch_not_taken_line = self._blocks[i + 1].start_line
 
     def _find_next_after_branch(self, block_idx: int) -> int:
-        """找到分支体结束后的下一行(跳过分支体)."""
+        """找到分支体结束后的下一行(跳过分支体)。"""
         depth = 0
         for j in range(block_idx + 1, len(self._blocks)):
             bb = self._blocks[j]
@@ -173,7 +164,7 @@ class SimplifiedCFGBuilder:
     def enumerate_paths(
         self, alloc_line: int, write_line: int,
     ) -> List[CFGPath]:
-        """枚举从alloc_line到write_line的所有CFG路径."""
+        """枚举从alloc_line到write_line的所有CFG路径。"""
         if not self._blocks:
             return [CFGPath(description="empty CFG, single path")]
 
@@ -220,7 +211,7 @@ class SimplifiedCFGBuilder:
         return paths
 
     def _find_block_at_line(self, line: int) -> Optional[int]:
-        """找到包含指定行的基本块索引."""
+        """找到包含指定行的基本块索引。"""
         for i, bb in enumerate(self._blocks):
             if bb.start_line <= line <= bb.end_line:
                 return i
@@ -232,7 +223,7 @@ class SimplifiedCFGBuilder:
     def _get_successors(
         self, bb: BasicBlock, block_idx: int,
     ) -> List[Tuple[Optional[int], Optional[LinearConstraint]]]:
-        """获取基本块的后继及对应的guard约束."""
+        """获取基本块的后继及对应的guard约束。"""
         result: List[Tuple[Optional[int], Optional[LinearConstraint]]] = []
         if not bb.branch_cond and not bb.is_loop_header:
             if block_idx + 1 < len(self._blocks):

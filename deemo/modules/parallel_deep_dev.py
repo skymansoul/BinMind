@@ -1115,7 +1115,6 @@ def process_module(module_name: str) -> Dict[str, Any]:
         sub_prompt = build_sub_prompt(module_name)
         print(f"  [准备] prompt 长度: {len(sub_prompt)} 字符")
 
-        # 调用 API
         response = call_anthropic_api(SYSTEM_PROMPT, sub_prompt, module_name)
 
         if response is None:

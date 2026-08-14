@@ -1,16 +1,5 @@
-# Interval abstract interpreter: conservative [min,max] analysis for heap access
-# offsets, filtering infeasible overflow paths.
-#
-# Abstract interpretation of store instruction offset expressions:
-# Constant offset: [c, c] exact
-# Register + constant: back-trace register definition -> [def_min+c, def_max+c]
-# Loop variable: extract upper bound from cmp/jl -> [0, loop_bound]
-# Cannot infer: [None, None] (deferred to other passes)
-#
-# Based on Cousot & Cousot abstract interpretation, interval domain.
-# Tracks single-variable intervals only (no relational constraints). This is
-# sufficient for heap overflow: we only need "could max offset exceed allocation size?"
-# erence: Mine "Weakly Relational Numerical Abstract Domains"
+# interval_abstractor.py - 区间抽象解释: 对堆访问偏移做保守 [min,max] 分析, 过滤不可行溢出路径。
+# 常量偏移精确, 寄存器+常量回溯定义链, 循环变量取 cmp/jl 上界; 无法推断则交由其他趟处理。
 
 import re
 from dataclasses import dataclass
@@ -19,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 @dataclass
 class Interval:
-    """Integer interval [low, high]; None means +/-inf."""
+    """整数区间 [low, high]; None 表示 ±∞。"""
     low: Optional[int] = None
     high: Optional[int] = None
 
@@ -39,11 +28,7 @@ def infer_offset_interval(
     disasm_lines: List[str],
     store_line_idx: int,
 ) -> Interval:
-    """Infer the offset interval for a store instruction by back-tracing the
-    offset calculation chain.
-
-    Returns: Interval [min_offset, max_offset]; None means unbounded.
-    """
+    """回溯偏移计算链, 推断 store 指令的偏移区间, 返回 [min, max], None 表示无界。"""
     if store_line_idx < 0 or store_line_idx >= len(disasm_lines):
         return Interval(None, None)
 
@@ -89,7 +74,7 @@ def _extract_index_register(line: str) -> Optional[str]:
 def _trace_register_range(
     disasm_lines: List[str], from_idx: int, reg: str, max_back: int = 30
 ) -> Interval:
-    """Back-trace the value range of a register."""
+    """回溯寄存器的值域。"""
     for i in range(from_idx - 1, max(-1, from_idx - max_back), -1):
         line = disasm_lines[i].strip().lower()
         if not line or line.startswith(';'):
@@ -134,7 +119,7 @@ def _extract_imm(line_lower: str) -> Optional[int]:
 
 
 __all__ = ["Interval", "infer_offset_interval"]
-# Does NOT solve SMT - interval arithmetic only, trading precision for speed.
+# 不调用 SMT — 仅区间算术, 以精度换速度。
 import re
 from typing import Dict, Tuple
 

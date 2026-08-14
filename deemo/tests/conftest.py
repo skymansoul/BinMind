@@ -187,7 +187,7 @@ def _patch_one_dataclass(module_name, class_name, defaults_dict):
     # closure factories -- 2026-07-18: 之前用lambda导致闭包问题
     def _build_patched_init(old_init, extra_defaults):
         def _patched_init(self, *a, **kw):
-                        # 先拆出我们关心的额外参数
+                        # 先拆出额外参数
             leftover = {}
             for k, default_factory in extra_defaults.items():
                 val = kw.pop(k, None)

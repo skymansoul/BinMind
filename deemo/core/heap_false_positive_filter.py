@@ -1,18 +1,7 @@
 """
-堆溢出误报过滤器 —— value-flow + 分配器约束 两级过滤。
-
-这是项目的核心创新模块:
-  第一级: HeapFlowTracker 追踪 size 的 value-flow → 类型+约束+上界
-  第二级: AllocatorConstraintChecker 将 glibc 语义应用于上界 → KEEP/FILTER
-
-与现有方案的差异:
-  · SAST工具 (Coverity/CodeSonar): 报告所有 malloc(N)+memcpy(M) where M>N,
-    但忽略对齐填充 → 大量误报 (malloc(20) 实际可用 32B)
-  · 动态工具 (ASAN/Valgrind): 零误报, 但需要触发路径, 覆盖率低
-  · 本模块: 静态分析 + 分配器语义, 在不降低召回的前提下压缩 ~40% 误报
-
-  · CAFD — value-flow 追踪分配大小的思路
-  · glibc ptmalloc 源码 — malloc.c 中 checked_request2size/request2size 宏
+堆溢出误报过滤器 — value-flow + 分配器约束两级过滤。
+第一级追踪 size 的 value-flow 得类型/约束/上界, 第二级应用 glibc 分配器语义
+判 KEEP/FILTER; 静态分析结合分配器语义, 在不降召回的前提下压缩误报。
 """
 
 import re
@@ -35,20 +24,7 @@ class FilteredFinding:
     fp_likelihood: float  # 误报概率 [0,1], 0=确定真阳性, 1=确定误报
 
 class HeapFalsePositiveFilter:
-    """
-    堆溢出误报过滤器。
-
-    工作流:
-    1. 接收伪代码 + 写入大小 → 运行 HeapFlowTracker
-    2. 对每个 TraceResult:
-       a. 若 source=CONSTANT + constrained → AllocSize.from_request → 检查容量
-       b. 若 source=USER_INPUT + constrained + upper_bound → 检查上界
-       c. 若 source=USER_INPUT + NOT constrained → KEEP (潜在真阳性)
-    3. 输出 FilteredFinding 列表
-
-    参数 write_size 可从 taint_propagator 或 abstract_filter 获取;
-    若未知则设为 0 (过滤层退化为 PASS-THROUGH, 不干预)。
-    """
+    """堆溢出误报过滤器 — 按来源分流: 常量约束→分配器容量检查, 用户输入未约束→KEEP。"""
 
     def __init__(self, platform: str = "x86_64"):
         self._tracker = HeapFlowTracker()
@@ -57,12 +33,7 @@ class HeapFalsePositiveFilter:
     def filter(
         self, pseudocode: str, write_size: int = 0, func_name: str = "",
     ) -> List[FilteredFinding]:
-        """
-        过滤伪代码中的堆溢出候选。
-
-        write_size: 危险写入的字节数, 从 taint_propagator 或手工指定。
-        若为 0 表示未知, 过滤层退化为 PASS-THROUGH。
-        """
+        """过滤伪代码中的堆溢出候选; write_size 为0表示未知, 过滤层退化为 PASS-THROUGH。"""
         traces = self._tracker.trace(pseudocode)
         findings = []
 

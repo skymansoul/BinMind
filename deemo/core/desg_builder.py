@@ -1,24 +1,6 @@
-"""
-支配增强语义图 (DESG) 构建器。
-
-将 CFG 的基本块关系扩展为异构图，包含三种边类型:
-  E_bb:   基本块间控制流边（CFG 原边）
-  E_dom:  支配树边（immediate dominator → dominatee）
-  E_pdom: 后支配树边（immediate post-dominator → post-dominatee）
-
-三类边构成的异构图对控制流平坦化 (ollvm -fla) 具有天然鲁棒性:
-  - 平坦化插入的 dispatcher 块不改变原始基本块间的支配关系
-  - 后支配树边缘可恢复被 switch-case 打散的路径汇合点
-
-图的节点属性嵌入字节级熵值 (0-255 的字节频率分布)，使得:
-  - 语义等价但指令不同的基本块有相近的熵特征
-  - 编译器优化 (O0/O2/O3) 造成的指令重排不改变块的字节熵分布
-  - ref: ORCAS 的 DESG 概念; Speilman 的拉普拉斯谱理论
-         本项目在 ORCAS 基础上增加字节熵节点嵌入和可配置的支配深度阈值
-
-算法: Cooper-Harvey-Kennedy 迭代支配树 (O(N²) worst, O(N log N) typical)
-      后支配树通过 CFG 逆图 + 添加虚拟出口节点 (vex) 后运行同一算法得到
-"""
+"""支配增强语义图 (DESG) 构建器 — 将 CFG 基本块关系扩展为异构图.
+三种边: E_bb 控制流边, E_dom 支配树边, E_pdom 后支配树边; 对控制流平坦化 (ollvm -fla) 天然鲁棒, 后支配树可恢复被 switch-case 打散的汇合点;
+节点嵌入字节熵特征 (语义等价块熵相近, 编译优化不改变熵分布), 支配树用 Cooper-Harvey-Kennedy 迭代算法 (O(N²) worst). 参考 ORCAS."""
 
 
 import logging
@@ -80,7 +62,6 @@ def build_desg(
     # 识别出口节点 (无后继的基本块)
     exit_addrs = [a for a in addrs if not succ_map.get(a)]
 
-    # 计算支配树
     idom = _compute_dominators(addrs, pred_map, entry)
 
     # 计算后支配树: 逆图 + 虚拟出口节点

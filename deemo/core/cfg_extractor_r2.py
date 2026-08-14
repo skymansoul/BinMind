@@ -82,16 +82,7 @@ def extract_cfg_r2(
 
 
 def cfg_to_dot(cfg_data: Dict[str, Any], func_name: str = '') -> str:
-    """
-    将 CFG 数据转为 Graphviz DOT 格式。
-
-    Args:
-        cfg_data: extract_cfg() 的返回值
-        func_name: 要渲染的函数名（空字符串 = 渲染调用图）
-
-    Returns:
-        DOT 格式字符串
-    """
+    """将 CFG 数据转为 Graphviz DOT 格式。func_name 为空字符串时渲染调用图。"""
     lines = ['digraph CFG {', '  rankdir=TB;', '  node [shape=box];']
 
     for func in cfg_data.get('functions', []):

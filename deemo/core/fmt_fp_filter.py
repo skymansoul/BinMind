@@ -30,7 +30,7 @@ class FormatStringFPFilter:
         for pat in self._SAFE_PATTERNS:
             if pat.search(code):
                 return True
-        # 额外检查: 如果没有任何用户输入函数 → 可能是静态
+        # 额外检查: 无任何用户输入函数 → 视为静态
         if not any(src in code for src in ('recv','read','fgets','gets','scanf','getenv','argv')):
             return True
         return False

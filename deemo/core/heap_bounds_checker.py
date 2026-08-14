@@ -1,5 +1,4 @@
-# core/heap_bounds_checker.py
-# Compare heap write sizes against allocation sizes.
+# heap_bounds_checker.py - 比较堆写入大小与分配大小, 判定是否越界。
 import re
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -44,8 +43,7 @@ class HeapBoundsChecker:
                 write_size_expr=ws,
                 is_overflow=(av is not None and wmax > av),
                 confidence=0.85 if av else 0.40))
-        # Phase 2: variable-name correlation heuristic.
-        # malloc(V) + memcpy(ptr, src, V) with same V -> correlated, flag as risk.
+        # 阶段2: 变量名相关性启发式 — 分配与写入同用变量 V 时视为关联, 标记风险
         for line in lines:
             m = _WRITE_PAT.search(line.strip())
             if not m: continue
@@ -60,7 +58,7 @@ class HeapBoundsChecker:
             for a_name, a_site in tracker._allocations.items():
                 if not a_site.is_constant:
                     import re as _re2
-                    # Token match: alloc_var appears as standalone identifier in write_size
+                    # 词元匹配: alloc_var 以独立标识符形式出现在写入大小表达式中
                     alloc_var = a_site.size_expr
                     token_match = _re2.search(r'' + _re2.escape(alloc_var) + r'', ws)
                     if token_match:

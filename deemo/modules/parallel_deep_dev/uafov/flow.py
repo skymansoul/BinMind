@@ -155,7 +155,6 @@ class EventExtractor:
                 elif isinstance(it, (For, While)):
                     self._walk(_stmt_list(it.body), path)
 
-    # 赋值处理
     def _on_assign_stmt(self, a: Assign, pos: int) -> None:
         tgt = a.target
         if isinstance(tgt, Var):
@@ -196,7 +195,6 @@ class EventExtractor:
         self.rebinds.append(RebindEvent(var, None, pos, 'other'))
         self._collect_uses(value, pos, 'expr')
 
-    # 调用处理
     def _on_call(self, call: Call, pos: int) -> None:
         if call.name == 'free' and call.args:
             arg = call.args[0]

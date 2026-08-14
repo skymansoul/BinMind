@@ -1,7 +1,5 @@
 """
-Binary hardening detection — shared constants and logger.
-
-ELF/PE/Mach-O 硬化检测的公共常量集中管理，避免解析器与检测器重复定义。
+二进制硬化检测的公共常量与日志器集中管理, 避免解析器与检测器重复定义。
 """
 
 

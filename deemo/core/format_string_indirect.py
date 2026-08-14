@@ -1,6 +1,6 @@
-# Indirect format-string detection via def-use backtracking.
-# Tracks two-hop variable propagation: char *p = user_input; ... printf(p).
-# Longer chains are not tracked (>2 hops rare in real vulns, increase FPs).
+# 基于 def-use 回溯的间接格式串检测。
+# 追踪两跳变量传播: char *p = user_input; ... printf(p)。
+# 超过两跳不追踪 (真实漏洞中少见, 避免误报)。
 _FORMAT_FUNCS = {"printf","fprintf","sprintf","snprintf","dprintf",
                  "syslog","vprintf","vfprintf","vsprintf","vsnprintf"}
 _TAINT_SRC = {"read","recv","fgets","scanf","gets","argv","getenv",

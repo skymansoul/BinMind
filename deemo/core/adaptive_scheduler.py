@@ -1,25 +1,6 @@
 """
-自适应方法调度器 —— 基于样本特征动态选择最优分析策略。
-
-根据二进制文件的保护机制、复杂度评估和历史分析表现，
-使用 ε-greedy 多臂老虎机（MAB）算法在线选择最优分析方法的组合。
-
-设计原理:
-  1. 从 checksec 和 binary_profile 提取样本特征向量
-  2. 初始化各"分析方法臂"的期望奖励估计
-  3. 每次实验以概率 ε 随机探索新方法，以概率 1-ε 选择历史最优
-  4. 根据实验结果更新对应方法臂的奖励估计
-
-实现为轻量级规则引擎 + MAB 的组合:
-  - 规则层: 根据保护机制硬约束决定部分方法选择（如无源码→跳过编译时分析）
-  - MAB层:   对满足硬约束的方法组合进行在线学习调度
-
-  - Li et al., 2010, NIPS, "A Contextual-Bandit Approach to Personalized News Article Recommendation"
-  - Böhme et al., 2021, ACM CSUR, "Fuzzing: On the Exponential Cost of Vulnerability Discovery"
-
-创新点: 与现有固定顺序管线不同，调度器将模糊测试、符号执行、规则检测
-和 LLM 分析视为可竞争的资源消费者，通过 MAB 在线学习各方法在具体样本上的
-边际效用，动态分配分析预算。
+自适应方法调度器: 依据 checksec 与 binary_profile 特征, 用 ε-greedy 多臂老虎机
+在线学习模糊测试、符号执行、规则检测与 LLM 分析各方法的边际效用, 动态分配分析预算。
 """
 
 import logging
@@ -52,22 +33,10 @@ _DEFAULT_BUDGETS = {
 }
 
 class AdaptiveScheduler:
-    """
-    自适应方法调度器 —— ε-greedy MAB 驱动的分析方法选择。
-
-    用法:
-        scheduler = AdaptiveScheduler(epsilon=0.15)
-        methods = scheduler.select_methods(checksec, profile)
-        # 在管线中按 methods 执行对应的分析阶段
-        scheduler.update(method, reward=0.8)
-    """
+    """ε-greedy MAB 驱动的分析方法选择器。select_methods 选出方法及预算, update 反馈奖励, stats 输出统计。"""
 
     def __init__(self, epsilon: float = 0.15, seed: int = 42):
-        """
-        Args:
-            epsilon: 探索率（0.0=纯贪心, 1.0=纯随机）
-            seed:    随机种子（用于可复现性）
-        """
+        """epsilon 为探索率 (0.0 纯贪心, 1.0 纯随机), seed 为随机种子 (用于复现)。"""
         self.epsilon = epsilon
         self._rng = random.Random(seed)
 
@@ -85,20 +54,7 @@ class AdaptiveScheduler:
         profile: Optional[Dict[str, Any]] = None,
         total_budget_sec: float = 600.0,
     ) -> List[Tuple[AnalysisMethod, float]]:
-        """
-        基于样本特征选择分析方法及预算分配。
-
-        返回按优先级排序的方法列表，每个元素为 (方法, 分配秒数)。
-        硬约束（如 angr 不可用时排除 SYMBOLIC）在规则层处理。
-
-        Args:
-            checksec:         checksec 检测结果
-            profile:          二进制画像（可选，用于更细粒度的特征）
-            total_budget_sec: 总分析预算（秒）
-
-        Returns:
-            方法-预算配对列表
-        """
+        """基于样本特征选择分析方法及预算分配。返回按优先级排序的 (方法, 分配秒数) 列表, 硬约束在规则层处理。"""
         # 硬约束过滤
         eligible = self._apply_hard_constraints(checksec, profile)
 
@@ -154,13 +110,7 @@ class AdaptiveScheduler:
         method: AnalysisMethod,
         reward: float,
     ) -> None:
-        """
-        更新方法臂的奖励估计。
-
-        Args:
-            method: 被评估的方法
-            reward: 0.0–1.0 的奖励值（1.0 = 发现了可利用漏洞）
-        """
+        """更新方法臂的奖励估计。reward 取 0.0–1.0 (1.0 表示发现可利用漏洞)。"""
         self._counts[method] = self._counts.get(method, 0) + 1
         self._rewards[method] = self._rewards.get(method, 0.0) + reward
         _log.debug(
@@ -188,15 +138,7 @@ class AdaptiveScheduler:
         checksec: Dict[str, Any],
         profile: Optional[Dict[str, Any]],
     ) -> List[AnalysisMethod]:
-        """
-        基于样本特征的硬约束过滤。
-
-        规则:
-          - angr 未安装 → 排除 SYMBOLIC
-          - NX 关闭 → 降低 ROP_CHAIN 优先级（shellcode 更直接）
-          - 无 PLT 危险函数 → 降低 LLM_DECOMP 优先级
-          - 有 printf 导入 → 增加 FORMAT_STRING 优先级
-        """
+        """基于样本特征做硬约束过滤: angr 不可用则排除 SYMBOLIC, 模糊测试不可用则排除 FUZZING, 静态规则始终可用。"""
         eligible = list(AnalysisMethod)
 
         # 检查 angr 可用性
@@ -227,22 +169,8 @@ def compute_reward(
     elapsed_sec: float,
 ) -> float:
     """
-    计算一次分析的奖励值（0.0-1.0）。
-
-    奖励由四部分加权:
-      - 漏洞发现: 40% — 每个 Critical/High 漏洞 +0.3，Medium +0.1
-      - 利用成功: 30% — exploit 成功 +1.0
-      - 精度:     20% — 1 - fp/max(vulns, 1)
-      - 效率:     10% — 1 / (1 + elapsed_sec/600)
-
-    Args:
-        vulns_found:      发现的漏洞总数
-        exploit_success:  是否成功生成有效 exploit
-        false_positives:  误报数
-        elapsed_sec:      分析耗时
-
-    Returns:
-        0.0–1.0 的奖励值
+    计算一次分析的奖励值 (0.0-1.0), 加权为: 漏洞发现 40%、利用成功 30%、精度 20%、效率 10%。
+    参数: vulns_found 漏洞总数, exploit_success 是否成功生成有效 exploit, false_positives 误报数, elapsed_sec 分析耗时。
     """
     # 漏洞发现奖励
     vuln_reward = min(1.0, vulns_found * 0.2)

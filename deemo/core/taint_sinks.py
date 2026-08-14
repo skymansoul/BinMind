@@ -1,12 +1,6 @@
-# 定义"污点数据到达此处即构成漏洞"的危险函数集合。
-# 与taint_propagator配合: propagator追踪数据流, sinks判定终点是否危险。
-#
-# 汇分类:
-#   FORMAT_STRING — 格式化函数, 污点到达第一个参数 → 格式字符串漏洞
-#   HEAP_OVERFLOW — 堆写入函数, 污点控制size或src → 堆溢出
-#   STACK_OVERFLOW — 栈写入函数, 污点控制len → 栈溢出
-#   COMMAND_INJ  — 命令执行, 污点到达参数 → 命令注入
-#   UAF_COND     — free参数为污点 → 可能double-free或UAF前提
+# 定义"污点数据到达此处即构成漏洞"的危险函数集合, 与taint_propagator配合。
+# 汇分类: FORMAT_STRING 格式字符串漏洞, HEAP/STACK_OVERFLOW 溢出,
+# COMMAND_INJ 命令注入, UAF_COND 为double-free或UAF前提。
 
 _FORMAT_SINKS = {
     'printf', 'fprintf', 'dprintf', 'sprintf', 'snprintf',

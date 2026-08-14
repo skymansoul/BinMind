@@ -1,14 +1,7 @@
 """
-UAF函数参数匹配增强 — 检测free(p)后p出现在函数调用参数中的模式。
-
-问题: heap_lifecycle_fsm.py 的 detect_uaf_static 仅检测赋值RHS中的
-变量使用(var = expr中的expr), 漏检以下模式:
-  printf("%s", p)    ← p 是函数参数, 非赋值RHS
-  memcpy(dst, p, n)  ← p 是函数参数
-  return p           ← p 是返回值
-  p[0] = 'x'         ← p 是数组基址
-
-本模块不替换heap_lifecycle_fsm——作为补充层, 在FSM结果之上追加检测。
+UAF函数参数匹配增强 — 检测free(p)后p出现在函数参数/返回值/数组索引中的模式。
+补充 heap_lifecycle_fsm 的盲区 (赋值RHS之外的函数参数、return p、p[0] 使用),
+不替换原模块, 作为补充层在FSM结果之上追加检测。
 """
 
 import re
@@ -35,7 +28,7 @@ def detect_uaf_args(code: str, func_name: str = "") -> List[Dict]:
              if l.strip() and not l.strip().startswith('//')]
     findings = []
 
-    # Phase 1: 收集alloc/free站点
+    # 阶段1: 收集alloc/free站点
     alloc_vars: Dict[str, int] = {}   # var -> alloc_line
     free_vars: Dict[str, int] = {}    # var -> free_line
 
@@ -47,7 +40,7 @@ def detect_uaf_args(code: str, func_name: str = "") -> List[Dict]:
         if m:
             free_vars[m.group(2)] = i
 
-    # Phase 2: 对每个free的变量, 检查free之后是否有使用
+    # 阶段2: 对每个free的变量, 检查free之后是否有使用
     for var, free_ln in free_vars.items():
         if var not in alloc_vars:
             continue

@@ -1,10 +1,7 @@
 """
 路径敏感的值域流分析器 — CFG 上 branch-sensitive 区间传播 (fork-not-join)。
-
-核心: BasicBlock CFG + AffineInterval + PathCondition → malloc/memcpy 不等式检查。
-处理仿射表达式 (malloc(n*4+8)), 嵌套 malloc, 别名指针循环写。
-
-参考: SUTURE; CSA。复杂度 O(B·V), 实测 <10ms/function。
+BasicBlock CFG + AffineInterval + PathCondition → malloc/memcpy 不等式检查，
+处理仿射表达式(malloc(n*4+8))、嵌套malloc、别名指针循环写；复杂度O(B·V)。
 """
 
 

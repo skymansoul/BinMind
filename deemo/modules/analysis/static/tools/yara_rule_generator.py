@@ -8,8 +8,6 @@ from typing import List, Dict, Tuple, Optional
 class YaraRuleGenerator:
     """Auto-构造 YARA 4.x rules 二进制分析 results"""
 
-# 初始化
-
     def __init__(self, author="BinMind Auto-Generator"):
         self._author = author
         self._rule_counter = 0

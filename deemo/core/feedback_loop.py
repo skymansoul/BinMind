@@ -1,24 +1,8 @@
-"""
-Exploit feedback iteration loop: analyze -> generate -> execute -> feedback.
-
-When exploit execution fails, collects logs and invokes LLM for root cause
-analysis and correction suggestions, then regenerates and re-executes.
-Caps at MAX_ITERATIONS.
-
-Iteration strategy:
-  1. Collect failure info (exit code, stdout, stderr, signal, registers)
-  2. LLM chain-of-thought failure analysis
-  3. LLM outputs corrected exploit script
-  4. Re-execute; record success or continue iterating
-  5. Early termination after 3 consecutive identical errors
-
-LLM dynamically adjusts payload structure, offsets, and bypass strategies based
-on actual execution feedback, emulating a human trial-and-error debugging cycle.
-
-References:
-  - Peng et al., 2025, ACL, "PwnGPT"
-  - Zeng et al., 2026, NDSS, "ropbot"
-"""
+"""Exploit 反馈迭代环: 分析 → 生成 → 执行 → 反馈。
+执行失败时收集日志 (退出码/stdout/stderr/信号/寄存器) 并调用 LLM 做根因分析与修正建议,
+再生成并重执行, 上限 MAX_ITERATIONS; LLM 依据实际执行反馈动态调整载荷结构、偏移与绕过策略,
+模拟人工试错调试; 连续 3 次相同错误提前终止。
+参考: Peng et al., 2025, ACL "PwnGPT"; Zeng et al., 2026, NDSS "ropbot"。"""
 
 
 import logging

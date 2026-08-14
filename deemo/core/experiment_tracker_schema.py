@@ -1,8 +1,6 @@
 """
-实验元数据表 schema 定义。
-
-扩展 vuln_db 的 analysis_runs，四维评估指标对应申报书 §5.3 第四条。
-参考: Klees et al., 2018, CCS; Bohme et al., 2021, IEEE S&P.
+实验元数据表 schema 定义 — 扩展 vuln_db 的 analysis_runs, 四维评估指标对应申报书 §5.3 第四条。
+参考: Klees et al., 2018, CCS; Bohme et al., 2021, IEEE S&P。
 """
 
 # 实验元数据表（扩展 vuln_db 的 analysis_runs）

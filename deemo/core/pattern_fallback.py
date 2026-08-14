@@ -1,14 +1,8 @@
 """
-Cross-compiler assembly pattern fallback: static matching when angr fails.
-
-angr times out or fails on stripped binaries, indirect-call-heavy code,
-and large binaries (>10MB). Falls back to assembly-level pattern matching:
-  1. Match argument-prep sequences for dangerous calls (mov rdi, X; call printf)
-  2. Use compiler-version-specific pattern libraries (GCC/Clang)
-  3. Operates without symbol info — works on stripped binaries
-
-Patterns sourced from GCC 8-14 and Clang 15-19 at -O0/-O2 for
-printf(buf) / strcpy(dst, src) / free(ptr) instruction sequences.
+跨编译器汇编模式回退 — angr失败时的静态匹配。
+angr在去符号/间接调用密集/大二进制(>10MB)上超时或失败时，回退到汇编级
+模式匹配：匹配危险调用的参数准备序列(GCC 8-14/Clang 15-19, -O0/-O2)，
+无需符号信息即可工作于去符号二进制。
 """
 
 

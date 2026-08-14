@@ -1,8 +1,5 @@
-"""
-Copy约束值流提取器 — ValueFlowExtractor + GuardConditionExtractor.
-
-提取 size 变量的值来源 (常量/外部输入/类型推断) 和守卫条件.
-"""
+"""Copy约束值流提取器 — ValueFlowExtractor + GuardConditionExtractor。
+提取 size 变量的值来源 (常量/外部输入/类型推断) 和守卫条件。"""
 
 import re
 

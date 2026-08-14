@@ -1,23 +1,7 @@
 """
-Human review gate: inserts structured human decision nodes into the exploit
-feedback iteration loop.
-
-After each feedback-loop iteration, a pending status file is written. The human
-edits it to set status to approved/rejected/modify, and the pipeline reads it
-on the next cycle. Absent a status file, the gate is skipped (backward compatible).
-
-State machine: pending -> approved | rejected | modify
-  - approved: accept current exploit, terminate iteration
-  - rejected: discard current path, mark experiment needs_manual_analysis
-  - modify: human supplies correction instructions for LLM re-generation
-
-Design: filesystem-based gate (TOML), no HTTP/gRPC dependency. Fits CTF and
-classroom single-machine workflows. TOML avoids JSON quoting noise.
-
-References:
-  - Amershi et al., 2019, CHI, "Guidelines for Human-AI Interaction"
-  - Xin et al., 2024, USENIX Security, "Understanding the Challenges of
-    Human-in-the-Loop Binary Exploitation"
+人工审查门控: 在利用反馈迭代循环中插入结构化人工决策节点。
+每轮迭代后写入 pending 状态文件, 人工编辑为 approved/rejected/modify, 下一轮读取;
+无状态文件时跳过门控 (向后兼容)。基于文件系统(TOML), 无 HTTP/gRPC 依赖。
 """
 
 from __future__ import annotations
@@ -30,10 +14,10 @@ from typing import Any, Dict, Optional
 
 _log = logging.getLogger(__name__)
 
-# Gate file path relative to experiment output directory
+# 门控文件路径 (相对实验输出目录)
 _DEFAULT_GATE_FILENAME = "review_gate.toml"
 
-# Human wait timeout (seconds); auto-skip in non-interactive mode
+# 人工等待超时 (秒); 非交互模式自动跳过
 _DEFAULT_TIMEOUT = 3600
 
 
@@ -56,10 +40,9 @@ def write_gate(
     llm_feedback: str = "",
 ) -> str:
     """
-    Write a pending gate file for human review.
+    写入待人工审查的门控文件。
 
-    Called after each feedback loop iteration (including initial script generation).
-    Auto-creates output_dir if it does not exist.
+    在每轮反馈循环迭代后调用 (含初始脚本生成), 自动创建 output_dir。
 
     Args:
         output_dir:    实验输出目录
@@ -79,7 +62,7 @@ def write_gate(
     stdout_tail = (exec_result.get("stdout", "") or "")[-2048:]
     stderr_tail = (exec_result.get("stderr", "") or "")[-1024:]
 
-    # TOML format: human-editable, no JSON escaping needed
+    # TOML格式: 人工可编辑, 无需JSON转义
     content = (
         f'# BinMind Review Gate\n'
         f'# Set status to approved / rejected / modify, then save.\n'
@@ -107,7 +90,7 @@ def write_gate(
         f'# --- script (first 40 lines) ---\n'
     )
 
-    # Embed script content as line-by-line comments (human-readable, valid TOML)
+    # 脚本内容按行嵌入为注释 (人工可读, 合法TOML)
     for i, line in enumerate(script_content.splitlines()[:40]):
         content += f"# L{i+1:04d}: {line}\n"
 
@@ -120,13 +103,10 @@ def write_gate(
 
 def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, Any]:
     """
-    Read gate status.
+    读取门控状态。
 
-    If gate file does not exist, returns {"status": "skip", "reason": "no_gate_file"}，
-    Caller proceeds in fully automatic mode. This is by design: the gate is an optional layer.
-
-    If pending and not timed out, returns pending; caller should wait and retry.
-    If pending and timed out, returns skip; caller continues automatic iteration.
+    门控文件不存在时返回 {"status": "skip", "reason": "no_gate_file"}, 调用方全自动继续;
+    pending 未超时返回 pending (调用方等待重试), 超时返回 skip 继续自动迭代。
 
     Args:
         output_dir: 实验输出目录
@@ -189,7 +169,7 @@ def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, A
 
 
 def clear_gate(output_dir: str) -> None:
-    """Delete the gate file after experiment completion."""
+    """实验完成后删除门控文件。"""
     path = _gate_path(output_dir)
     if os.path.isfile(path):
         try:
@@ -209,9 +189,9 @@ def gate_in_feedback_loop(
     poll_interval: float = 5.0,
 ) -> Dict[str, Any]:
     """
-    Convenience wrapper for embedding gate checks in the feedback loop.
+    反馈循环中嵌入门控检查的便捷封装。
 
-    Writes a gate file and polls for human decision.
+    写入门控文件并轮询人工决策。
 
     Returns:
         {"action": "continue"|"accept"|"reject"|"modify"|"skip",
@@ -232,7 +212,7 @@ def gate_in_feedback_loop(
         if gate["status"] == "skip":
             return {"action": "skip", "instruction": ""}
 
-        # pending - wait and retry
+        # pending — 等待并重试
         time.sleep(poll_interval)
         waited += poll_interval
 

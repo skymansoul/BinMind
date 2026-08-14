@@ -11,8 +11,6 @@
 import numpy as np
 from .layers import GraphConv, GATConv, normalize_adj
 
-# 初始化工具
-
 def _xavier(fi, fo):
     _l = np.sqrt(6.0 / (fi + fo))
     return np.random.uniform(-_l, _l, (fi, fo))

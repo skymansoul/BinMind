@@ -19,8 +19,8 @@ def _check_uaf_heuristic(func_name: str, code: str,
 						binary_path: str = '') -> None:
 	"""UAF 启发式：free 后 -> 解引用模式匹配，叠加 CFG 可达性过滤。
 
-	angler 可用时以 CFG 判定 free→deref 可达性，不可达则按假阳跳过；
-	CG 不可用时退回正则，优先召回而非精度。
+	angr 可用时以 CFG 判定 free→deref 可达性，不可达则按假阳跳过；
+	CFG 不可用时退回正则，优先召回而非精度。
 	"""
 	freed = set(re.findall(r'free\s*\(\s*(?:&)?(\w+)\s*\)', code))
 	for var in freed:
@@ -38,7 +38,7 @@ def _check_uaf_heuristic(func_name: str, code: str,
 				cfg_verified = is_tp
 				if not is_tp:
 					_log.info("UAF CFG filter: %s", reason)
-					continue  # CFG confirmed as false positive -> skip
+					continue  # CFG 确认为误报 → 跳过
 			except Exception:
 				pass
 

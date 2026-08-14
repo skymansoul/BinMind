@@ -1,16 +1,6 @@
 """
-分配大小污点追踪 — 判断malloc/calloc/realloc的size参数是否来自外部输入。
-
-核心洞察: 堆溢出误报的最大来源——检测到malloc(64)后write超过64字节,
-但未检查"64"是否真的来自用户输入。若size参数是硬编码常量, write超过它
-才是真正的溢出。若size来自用户输入且已被上游校验截断, write可能安全。
-
-方法: 从malloc调用点出发, 沿def-use链回溯size参数的来源:
-  - 来自常量 → NOT_TAINTED (溢出是确定的bug, 非误报)
-  - 来自函数参数 → TAINTED (取决于调用方)
-  - 来自算术表达式(含函数参数)→ TAINTED
-  - 来自全局变量 → INDETERMINATE
-
+分配大小污点追踪: 判断 malloc/calloc/realloc 的 size 参数是否来自外部输入。
+从调用点沿 def-use 链回溯: 来自常量则 NOT_TAINTED (溢出为确定 bug), 来自函数参数或含输入源的表达式则 TAINTED, 否则 INDETERMINATE。
 """
 
 import re
@@ -57,13 +47,9 @@ def analyze_alloc_taint(
     func_name: str = "",
     max_depth: int = 4,
 ) -> List[AllocSite]:
-    """分析函数中所有malloc调用点的size参数来源。
+    """分析函数中所有 malloc 调用点的 size 参数来源, 返回标记了 taint_level 的 AllocSite 列表。
 
-    返回AllocSite列表, 每个标记了taint_level。
-    调用方根据taint_level决定是否抑制误报:
-      NOT_TAINTED → 写超出常量size → 确定溢出 (保留)
-      TAINTED → 写超出用户控制size → 需进一步验证size是否被截断 (value_range分析)
-      INDETERMINATE → 保守保留
+    调用方据此抑制误报: NOT_TAINTED 时写超出常量 size 为确定溢出 (保留), TAINTED 时需进一步验证 size 是否被截断, INDETERMINATE 时保守保留。
     """
     sites: List[AllocSite] = []
     for m in _MALLOC_CALL.finditer(code):
@@ -138,7 +124,7 @@ def _try_eval_constant(expr: str) -> Optional[int]:
         return int(expr, 16)
     except ValueError:
         pass
-    # sizeof(type) — map common type sizes
+    # sizeof(type) — 常见类型大小映射
     m = re.match(r'sizeof\s*\(\s*(\w+)\s*\)', expr)
     if m:
         sizes = {'int': 4, 'long': 8, 'char': 1, 'short': 2,

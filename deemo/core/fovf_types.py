@@ -1,10 +1,5 @@
-"""
-FOVF 类型定义.
-
-FOVF (Format-String re-verification with Value-Flow) 对格式化字符串
-检测误报做复核: 对每个危险格式化调用点, 沿值流把格式参数分类为
-常量/用户可控/未知, 产出 CONFIRMED/FILTERED/UNCERTAIN 三值裁决.
-"""
+"""FOVF 类型定义 — FOVF (Format-String re-verification with Value-Flow) 对格式化字符串
+检测误报做复核: 沿值流把格式参数分类为常量/用户可控/未知, 产出 CONFIRMED/FILTERED/UNCERTAIN 三值裁决。"""
 
 from dataclasses import dataclass, field
 from enum import Enum

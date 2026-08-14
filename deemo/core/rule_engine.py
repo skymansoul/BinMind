@@ -1,16 +1,7 @@
 """
-YAML-rule-based static vulnerability pattern matching engine.
-
-Loads rule files from data/rules/ and runs regex matching on decompiled code.
-Each rule outputs matched_func, severity, cwe, and evidence. Format is compatible
-with static_analysis.py but supports externalized rule sets so new patterns
-don't require code changes.
-
-Complementary to static_analysis.DANGEROUS_FUNCTIONS:
-  - DANGEROUS_FUNCTIONS: O(1) per import via import table matching (faster)
-  - rule_engine: semantic-level pattern matching on decompiled code (O(n*m))
-
-Falls back to JSON parsing when PyYAML is not available.
+基于YAML规则文件的静态漏洞模式匹配引擎。
+从 data/rules/ 加载规则并在反编译代码上做正则匹配, 输出 rule_id/severity/cwe/evidence;
+与 static_analysis.DANGEROUS_FUNCTIONS 互补 (后者导入表O(1)匹配, 本引擎语义级O(n*m)), PyYAML 缺失时回退 JSON 解析。
 """
 
 
@@ -26,7 +17,7 @@ _RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "rules")
 
 
 def _load_yaml_safe(path: str) -> Optional[Dict[str, Any]]:
-    """Load YAML file: prefer yaml library, fall back to manual parsing for simple structures."""
+    """加载YAML文件: 优先yaml库, 简单结构回退手动解析。"""
     try:
         import yaml
         with open(path, "r", encoding="utf-8") as f:
@@ -34,19 +25,17 @@ def _load_yaml_safe(path: str) -> Optional[Dict[str, Any]]:
     except ImportError:
         pass
 
-    # Manual parse for simple rule structures only (rules list + fixed fields per rule).
-    # Full YAML parsing requires a proper parser; this is a fallback for no-PyYAML envs.
+    # 仅手动解析简单规则结构 (rules列表+固定字段); 完整YAML解析需正式解析器, 此为无PyYAML环境的回退。
     try:
         import json as _json
-        # YAML is a superset of JSON; simple structures parse as JSON.
-        # Comment lines are stripped below.
+        # YAML是JSON的超集; 简单结构可作JSON解析, 注释行在下文去除。
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
-        # Remove YAML comment lines (starting with #)
+        # 去除YAML注释行 (以#开头)
         lines = [l for l in content.splitlines()
                  if not l.strip().startswith("#")]
         clean = "\n".join(lines)
-        # Try JSON parsing as fallback for simple cases
+        # 简单场景回退JSON解析
         return _json.loads(clean)
     except (json.JSONDecodeError, OSError):
         return None
@@ -54,14 +43,10 @@ def _load_yaml_safe(path: str) -> Optional[Dict[str, Any]]:
 
 def load_rules(rule_dir: str = _RULES_DIR) -> List[Dict[str, Any]]:
     """
-    Load all YAML rule files from a directory.
+    加载目录下的全部YAML规则文件。
 
-    Returns a flat list of rules with source file provenance.
-    Returns an empty list for nonexistent directories.
-
-    Design: static file loading instead of dynamic module imports (unlike
-    hooks.py) because rule files are pure data and should not have code
-    execution privileges.
+    返回带源文件溯源的扁平规则列表; 目录不存在时返回空列表。
+    采用静态文件加载而非动态模块导入: 规则文件是纯数据, 不应具备代码执行权限。
     """
     if not os.path.isdir(rule_dir):
         return []
@@ -91,13 +76,10 @@ def apply_rules(
     rules: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Execute all rules against a single function's decompiled code.
+    对单个函数的反编译代码执行全部规则。
 
-    Each match contains rule_id, description, severity, cwe, function name,
-    and evidence (code snippet truncated to 120 chars).
-
-    Time complexity: O(|rules| * |pseudocode|). For large rule sets (>100 rules),
-    pre-filter by func_pattern before running the full regex.
+    每个匹配包含 rule_id/description/severity/cwe/函数名/evidence (代码片段截断至120字符);
+    复杂度 O(|rules|*|pseudocode|), 规则集>100时先用 func_pattern 预过滤。
 
     Args:
         pseudocode: decompiled pseudocode text
@@ -112,7 +94,7 @@ def apply_rules(
 
     for rule in rules:
         rule_id = rule.get("id", "")
-        # Pre-filter: skip regex if func_pattern is specified and absent from pseudocode
+        # 预过滤: func_pattern 指定且伪代码中不存在时跳过正则
         func_pat = rule.get("func_pattern", "")
         if func_pat and func_pat not in pseudocode:
             continue
@@ -126,7 +108,7 @@ def apply_rules(
             matches = compiled.finditer(pseudocode)
             for m in matches:
                 if rule_id in seen_ids:
-                    break  # Report each rule once per function
+                    break  # 每个函数每条规则只报告一次
                 seen_ids.add(rule_id)
 
                 evidence = m.group(0).strip()[:120]
@@ -143,7 +125,7 @@ def apply_rules(
             _log.debug("Regex error in rule %s: %s", rule_id, e)
             continue
 
-    # Sort by severity
+    # 按严重程度排序
     sev_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
     findings.sort(key=lambda f: sev_order.get(f["severity"], 99))
 
@@ -156,9 +138,9 @@ def scan_with_rules(
     rule_dir: str = _RULES_DIR,
 ) -> List[Dict[str, Any]]:
     """
-    Perform a complete rule scan on a binary file.
+    对二进制文件执行完整规则扫描。
 
-    Iterates specified functions (or all) and applies all rules to each decompiled function.
+    遍历指定函数 (或全部) 并对每个反编译函数应用全部规则。
 
     Args:
         binary_path: ELF file path
@@ -175,7 +157,7 @@ def scan_with_rules(
 
     from core.decompiler import list_functions, decompile_function
 
-    # Function selection logic, consistent with pipeline.py
+    # 函数选择逻辑, 与 pipeline.py 一致
     if func_names is None:
         all_funcs = list_functions(binary_path)
         priority = ("main", "vuln", "win", "get_flag", "read_input",

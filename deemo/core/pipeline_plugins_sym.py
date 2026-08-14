@@ -14,12 +14,13 @@ def _register_sym_layers(
     kwargs: Dict[str, Any],
     logger: Any,
 ) -> None:
-    """注册符号执行/求解器/GNN/反编译器增强层 (layers a-o, v, ae, az)."""
+    """注册符号执行/求解器/GNN/反编译器增强层 (layers a-o, v, ae, az)。"""
 
     # (a) 路径多样性管理
     if sym_result:
         try:
-            from analysis.symbolic.src.path_diversity_core import (
+            # path_diversity_core 已重写, SimHashCalibrator/ConvergenceAnalyzer 不存在, 该增强当前跳过
+            from modules.analysis.symbolic.src.path_diversity_core import (
                 PathDiversityTracker, DiversityAwarePathSelector,
                 DiversityStrategy, SimHashCalibrator, ConvergenceAnalyzer,
             )
@@ -34,14 +35,14 @@ def _register_sym_layers(
 
     # (b) 求解器优化管线
     try:
-        from analysis.symbolic.src.symexec_opt_passes import (
+        from modules.analysis.symbolic.src.symexec_opt_passes import (
             ConstraintComplexityEstimator, IncrementalSolverCache,
             SolverBudgetManager, OptimizationPipeline,
         )
-        from analysis.symbolic.src.adaptive_complexity_calibrator import (
+        from modules.analysis.symbolic.src.adaptive_complexity_calibrator import (
             AdaptiveComplexityCalibrator,
         )
-        from analysis.symbolic.src.entropy_guided_budget import (
+        from modules.analysis.symbolic.src.entropy_guided_budget import (
             EntropyBudgetAllocator,
         )
         _estimator = ConstraintComplexityEstimator()
@@ -66,7 +67,7 @@ def _register_sym_layers(
 
     # (c) 反编译器集成
     try:
-        from analysis.decompiler.src.decompiler_confidence_ensemble import (
+        from modules.analysis.decompiler.src.decompiler_confidence_ensemble import (
             DecompilerConfidenceEnsemble,
         )
         result['_decompiler_ensemble'] = DecompilerConfidenceEnsemble()
@@ -76,13 +77,13 @@ def _register_sym_layers(
 
     # (d) GNN 预处理增强
     try:
-        from ai_ml.src.data.cfg_coarsening import coarsen_cfg
+        from modules.ai_ml.src.data.cfg_coarsening import coarsen_cfg
         result['_cfg_coarsening_fn'] = coarsen_cfg
         logger.debug("CFG 粗化已就绪")
     except ImportError:
         logger.debug('optional plugin not available')
     try:
-        from ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
+        from modules.ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
         result['_cross_arch_normalizer'] = normalize_mnemonic
         result['_arch'] = binfo.get('arch', 'unknown')
         logger.debug("跨架构归一化已就绪，目标架构: %s", binfo.get('arch', 'unknown'))
@@ -91,7 +92,7 @@ def _register_sym_layers(
 
     # (e) 前向支配前沿探索器
     try:
-        from analysis.symbolic.src.forward_frontier_explorer import (
+        from modules.analysis.symbolic.src.forward_frontier_explorer import (
             ForwardFrontierExplorer,
         )
         _frontier_explorer = ForwardFrontierExplorer()
@@ -119,7 +120,7 @@ def _register_sym_layers(
 
     # (f) 三模态融合引擎
     try:
-        from multimodal.src.tri_modal_fusion import (
+        from modules.multimodal.src.tri_modal_fusion import (
             TriModalFusionEngine, ModalityConflictArbiter,
         )
         _fusion_engine = TriModalFusionEngine(
@@ -135,7 +136,7 @@ def _register_sym_layers(
 
     # (h) 非线性约束求解时间预测器
     try:
-        from analysis.symbolic.src.constraint_predictor_nonlinear import (
+        from modules.analysis.symbolic.src.constraint_predictor_nonlinear import (
             NonlinearConstraintPredictor,
         )
         result['_nonlinear_predictor'] = NonlinearConstraintPredictor(learning_rate=0.005)
@@ -145,7 +146,7 @@ def _register_sym_layers(
 
     # (i) 滞环防抖自适应阈值控制器
     try:
-        from analysis.symbolic.src.adaptive_threshold_controller import (
+        from modules.analysis.symbolic.src.adaptive_threshold_controller import (
             OscillationDampedController,
         )
         result['_threshold_controller'] = OscillationDampedController(
@@ -157,7 +158,7 @@ def _register_sym_layers(
 
     # (j) 跨层优化反馈环
     try:
-        from analysis.symbolic.src.cross_layer_feedback import CrossLayerFeedbackLoop
+        from modules.analysis.symbolic.src.cross_layer_feedback import CrossLayerFeedbackLoop
         result['_cross_layer_feedback'] = CrossLayerFeedbackLoop(
             base_budget_per_path=kwargs.get('base_solver_budget', 5.0),
         )
@@ -167,7 +168,7 @@ def _register_sym_layers(
 
     # (k) 求解器周期性重建调度器
     try:
-        from analysis.symbolic.src.solver_rebuild_scheduler import SolverRebuildScheduler
+        from modules.analysis.symbolic.src.solver_rebuild_scheduler import SolverRebuildScheduler
         result['_solver_rebuild_scheduler'] = SolverRebuildScheduler(
             hard_rebuild_pushes=500, hard_rebuild_solves=200, warm_start_transfer=True,
         )
@@ -177,7 +178,7 @@ def _register_sym_layers(
 
     # (l) 谱保持边丢弃
     try:
-        from ai_ml.src.data.spectral_edge_dropout import DegreeAwareSpectralDropout
+        from modules.ai_ml.src.data.spectral_edge_dropout import DegreeAwareSpectralDropout
         result['_spectral_edge_dropout'] = DegreeAwareSpectralDropout(
             base_dropout=0.2, low_degree_threshold=1,
         )
@@ -187,7 +188,7 @@ def _register_sym_layers(
 
     # (m) 状态备忘录 (StateMemento)
     try:
-        from analysis.symbolic.src.state_memento import StateMemento
+        from modules.analysis.symbolic.src.state_memento import StateMemento
         result["_state_memento"] = StateMemento(
             memory_budget_mb=kwargs.get("memento_budget_mb", 256.0),
             max_mementos_per_path=kwargs.get("memento_max_per_path", 10),
@@ -199,7 +200,7 @@ def _register_sym_layers(
 
     # (n) 冷点引导探索器
     try:
-        from analysis.symbolic.src.coldspot_guided_explorer import ColdSpotGuidedExplorer
+        from modules.analysis.symbolic.src.coldspot_guided_explorer import ColdSpotGuidedExplorer
         result["_coldspot_explorer"] = ColdSpotGuidedExplorer(
             max_edit_distance=kwargs.get("coldspot_max_edit_dist", 15.0),
             min_reachability=kwargs.get("coldspot_min_reach", 0.1),
@@ -210,7 +211,7 @@ def _register_sym_layers(
 
     # (o) 时态路径缓存
     try:
-        from analysis.symbolic.src.temporal_path_cache import TemporalPathCache
+        from modules.analysis.symbolic.src.temporal_path_cache import TemporalPathCache
         result["_temporal_cache"] = TemporalPathCache(
             halflife_seconds=kwargs.get("temporal_halflife", 120.0),
             max_per_bucket=kwargs.get("temporal_max_per_bucket", 50),
@@ -222,7 +223,7 @@ def _register_sym_layers(
 
     # (v) 污点约束符号探索器
     try:
-        from analysis.symbolic.src.taint_constrained_explorer import (
+        from modules.analysis.symbolic.src.taint_constrained_explorer import (
             TaintConstrainedExplorer,
         )
         result['_taint_constrained_explorer'] = TaintConstrainedExplorer(
@@ -237,7 +238,7 @@ def _register_sym_layers(
 
     # (ae) LLM-SMT 混合约束求解器
     try:
-        from analysis.symbolic.src.llm_smt_hybrid_solver import (
+        from modules.analysis.symbolic.src.llm_smt_hybrid_solver import (
             LLMSMTHybridSolver, ConstraintTemplateCache,
         )
         _template_cache = ConstraintTemplateCache(max_size=128)
@@ -252,7 +253,7 @@ def _register_sym_layers(
 
     # (az) 分治符号执行切片器
     try:
-        from analysis.symbolic.src.divide_conquer_slicer import (
+        from modules.analysis.symbolic.src.divide_conquer_slicer import (
             DivideConquerSymExec, build_dataflow_graph, backward_slice,
         )
         result['_divide_conquer_symexec'] = DivideConquerSymExec()
@@ -264,7 +265,7 @@ def _register_sym_layers(
 
     # (p) 度保持边丢弃
     try:
-        from ai_ml.src.augment.degree_preserving_dropout import DegreePreservingDropout
+        from modules.ai_ml.src.augment.degree_preserving_dropout import DegreePreservingDropout
         result["_degree_preserving_dropout"] = DegreePreservingDropout(
             drop_prob=kwargs.get("degree_dropout_p", 0.15),
             beta=kwargs.get("degree_dropout_beta", 2.0),
@@ -277,7 +278,7 @@ def _register_sym_layers(
 
     # (n) 约束依赖图拓扑排序求解
     try:
-        from analysis.symbolic.src.constraint_dependency_graph import (
+        from modules.analysis.symbolic.src.constraint_dependency_graph import (
             ConstraintDependencyGraph,
         )
         result['_constraint_dependency_graph'] = ConstraintDependencyGraph(

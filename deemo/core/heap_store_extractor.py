@@ -94,11 +94,7 @@ def _extract_struct_field_store(line: str, field_name: str) -> tuple[int, int, s
 
 def track_heap_stores(ir_lines: list[str],
                       alloc: HeapAllocSite) -> list[HeapStore]:
-    """追踪 malloc 返回值到后续 store 指令.
-
-    If alloc.result_var is set, searches subsequent lines for stores
-    using that variable and any pointer aliases (e.g. inner = outer + 8).
-    """
+    """追踪 malloc 返回值到后续 store 指令, 含指针别名 (如 inner = outer + 8)。"""
     stores = []
     if not alloc.result_var:
         return stores

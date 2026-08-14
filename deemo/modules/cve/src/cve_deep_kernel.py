@@ -39,7 +39,7 @@
 import math, random
 from typing import Dict, List, Optional, Tuple
 
-# 性能注意: 训练循环使用数值梯度近似, 复杂度O(n_params × n_samples).
+# 训练循环使用数值梯度近似, 复杂度O(n_params × n_samples).
 # 在>1000样本时建议替换为解析梯度 (手动反向传播) 或 autograd.
 # 当前实现适用于原型验证和小规模实验.
 def _matern32(x1, x2, ell=1.0, var=1.0):

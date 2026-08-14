@@ -1,5 +1,5 @@
 """
-UAF lifecycle FSM - tracks heap pointer state from alloc through free to dangling use.
+UAF 生命周期状态机 — 追踪堆指针从分配到释放到悬垂使用的状态。
 """
 import re
 from dataclasses import dataclass, field

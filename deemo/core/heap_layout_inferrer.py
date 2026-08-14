@@ -1,16 +1,7 @@
 """
-Heap layout inference from allocation sequences.
-
-Models ptmalloc2 allocation behavior:
-  - Small allocations come from fastbin/tcache in LIFO order
-  - Large allocations come from unsorted bin (non-deterministic order)
-  - Consecutive small allocations are likely adjacent in memory
-
-If A is allocated before B and they have similar sizes, A and B are likely
-adjacent. If A overflows, it can corrupt B's header/data.
-
-Unlike ptmalloc2_state_machine (which needs runtime chunk addresses), this
-module uses static inference based only on allocation sizes and ordering.
+堆布局推断 — 依据分配序列建模 ptmalloc2 分配行为。
+连续相似大小的分配相邻概率高, 前者溢出可破坏后者的头部/数据;
+仅基于分配大小与顺序做静态推断, 无需运行时 chunk 地址。
 """
 import math
 from collections import defaultdict
@@ -20,32 +11,32 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 @dataclass
 class HeapAllocSite:
-    """Heap allocation site descriptor."""
-    site_id: str            # unique id, e.g. "line_12_malloc"
+    """堆分配点描述。"""
+    site_id: str            # 唯一标识, 如 "line_12_malloc"
     alloc_func: str         # malloc / calloc / realloc
-    size_arg: Optional[int] # allocation size argument (if statically inferrable)
-    order: int              # allocation order within function
-    var_name: str = ""      # variable receiving return value
+    size_arg: Optional[int] # 分配大小参数 (可静态推断时)
+    order: int              # 函数内分配顺序
+    var_name: str = ""      # 接收返回值的变量名
 
 
 @dataclass
 class AdjacencyInference:
-    """Adjacency inference between two heap objects."""
-    obj_a: str              # first allocated object variable name
-    obj_b: str              # later allocated object variable name
-    is_adjacent: bool       # likely adjacent
-    confidence: float       # 0-1 confidence
-    reasoning: str = ""     # reasoning basis
+    """两个堆对象之间的相邻推断。"""
+    obj_a: str              # 先分配对象的变量名
+    obj_b: str              # 后分配对象的变量名
+    is_adjacent: bool       # 是否可能相邻
+    confidence: float       # 置信度 0-1
+    reasoning: str = ""     # 推断依据
 
 
 @dataclass
 class OverflowImpact:
-    """Overflow impact: what data can be overwritten if an object overflows."""
-    source_var: str          # overflow source variable name
-    source_size: int         # source object allocation size
-    write_size_estimate: int # estimated write size
+    """溢出影响: 对象溢出时可覆盖的数据。"""
+    source_var: str          # 溢出源变量名
+    source_size: int         # 源对象分配大小
+    write_size_estimate: int # 估算写入大小
     reachable_targets: List[str] = field(default_factory=list)
-    # high-value target types
+    # 高价值目标类型
     can_reach_function_ptr: bool = False
     can_reach_vtable: bool = False
     can_reach_size_field: bool = False
@@ -53,13 +44,9 @@ class OverflowImpact:
 
 
 class HeapLayoutInferrer:
-    """Heap layout inferrer. Statically estimates adjacency relationships between heap objects.
+    """堆布局推断器 — 静态估计堆对象间的相邻关系。
 
-    Usage:
-      hli = HeapLayoutInferrer()
-      sites = hli.extract_alloc_sites(decompiled_code)
-      adjacencies = hli.infer_adjacency(sites)
-      impact = hli.assess_overflow_impact(sites, adjacencies, 'buf', 64, 128)
+    用法: extract_alloc_sites → infer_adjacency → assess_overflow_impact。
     """
 
     _FASTBIN_MAX = 0x80      # 128 bytes (x86_64 fastbin default)
@@ -69,7 +56,7 @@ class HeapLayoutInferrer:
     _VTABLE_KEYWORDS = {'vtable', 'vptr', 'virtual', 'class', 'object'}
 
     def extract_alloc_sites(self, code: str) -> List[HeapAllocSite]:
-        """Extract all heap allocation sites from decompiled code."""
+        """从反编译代码中提取全部堆分配点。"""
         import re
         sites = []
         call_pat = re.compile(r'(\b[a-zA-Z_]\w{0,31}\b)\s*\(([^)]*)\)')
@@ -105,7 +92,7 @@ class HeapLayoutInferrer:
         return sites
 
     def infer_adjacency(self, sites: List[HeapAllocSite]) -> List[AdjacencyInference]:
-        """Infer object adjacency relationships between allocation sites."""
+        """推断分配点之间的对象相邻关系。"""
         sorted_sites = sorted(sites, key=lambda s: s.order)
         inferences = []
         for i in range(len(sorted_sites)):
@@ -125,13 +112,13 @@ class HeapLayoutInferrer:
         return inferences
 
     def _adjacency_confidence(self, a: HeapAllocSite, b: HeapAllocSite) -> float:
-        """Confidence that a and b are likely adjacent."""
+        """a 与 b 可能相邻的置信度。"""
         if a.size_arg is None or b.size_arg is None:
             return 0.3
-        # Same size + same bin -> high probability of adjacency (LIFO)
+        # 同大小同bin → 相邻概率高 (LIFO)
         if abs(a.size_arg - b.size_arg) <= 8:
             return 0.85
-        # Same bin class (both in fastbin/tcache) -> medium probability
+        # 同bin类别 (均在 fastbin/tcache) → 中等概率
         both_fastbin = (a.size_arg <= self._FASTBIN_MAX and
                         b.size_arg <= self._FASTBIN_MAX)
         both_tcache = (a.size_arg <= self._TCACHE_MAX and
@@ -140,7 +127,7 @@ class HeapLayoutInferrer:
             return 0.70
         if both_tcache:
             return 0.55
-        # Large allocation -> low probability (direct mmap)
+        # 大分配 → 低概率 (直接mmap)
         if a.size_arg > self._TCACHE_MAX or b.size_arg > self._TCACHE_MAX:
             return 0.15
         return 0.35
@@ -160,7 +147,7 @@ class HeapLayoutInferrer:
         source_size: int,
         write_amount: int,
     ) -> OverflowImpact:
-        """Assess the impact range of a heap overflow."""
+        """评估堆溢出的影响范围。"""
         source_site = None
         for s in sites:
             if s.var_name == overflow_var:
@@ -201,7 +188,7 @@ class HeapLayoutInferrer:
         if impact.can_reach_size_field:
             score += 0.3
         if overflow_bytes >= 8:
-            score += 0.2  # at least enough to overwrite one pointer
+            score += 0.2  # 至少足以覆盖一个指针
         score = min(1.0, score * (1.0 if impact.reachable_targets else 0.3))
         impact.exploitability_score = round(score, 3)
         return impact

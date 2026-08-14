@@ -96,7 +96,6 @@ class StateFingerprint:
     symbolic_register_set: Set[str] = field(default_factory=set)
     # 活跃内存页的粗粒度标识
     active_memory_pages: Set[int] = field(default_factory=set)
-    # 调用栈深度
     call_stack_depth: int = 0
 
 

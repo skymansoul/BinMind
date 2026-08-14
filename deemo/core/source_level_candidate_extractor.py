@@ -1,15 +1,7 @@
 """
-强化版源码级候选提取器 — 支持8种堆写入模式的(alloc, write)候选对提取.
-
-在原有bvf_candidate_extractor基础上新增3种核心写入模式:
-  6. 数组索引写入: buf[i]=val / buf[idx]=c / buf[out++]=x
-  7. 指针算术写入: *(ptr+off)=val / ptr[n]=c
-  8. sprintf/snprintf写入: sprintf(buf,fmt,...) / snprintf(buf,sz,fmt,...)
-
-原有5种(memcpy/strcpy/strncpy/memset/memmove)逻辑保持不变.
-与bvf_candidate_extractor.py并行存在, 不删除原文件.
-
-辅助函数已拆至 source_level_candidate_extractor_patterns.py
+强化版源码级候选提取器 — 支持8种堆写入模式的 (alloc, write) 候选对提取,
+与原 bvf_candidate_extractor 并行存在。辅助函数拆分至
+source_level_candidate_extractor_patterns.py / _writes.py。
 """
 
 import re

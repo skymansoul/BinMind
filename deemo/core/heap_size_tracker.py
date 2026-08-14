@@ -1,6 +1,4 @@
-# core/heap_size_tracker.py
-# Track heap allocation sizes for false positive reduction.
-# When malloc(N) is called, record {pointer_var: size_expression}.
+# heap_size_tracker.py - 记录堆分配大小以减少误报, malloc(N) 时登记 {指针变量: 大小表达式}。
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional

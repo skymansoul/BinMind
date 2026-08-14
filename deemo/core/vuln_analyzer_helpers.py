@@ -15,10 +15,10 @@ _log = logging.getLogger(__name__)
 def _check_uaf_heuristic(func_name: str, code: str,
 						findings: List[Dict[str, Any]],
 						binary_path: str = '') -> None:
-	"""UAF heuristic detection with CFG reachable path filtering.
+	"""UAF 启发式检测 — 带 CFG 可达路径过滤。
 
-	Checks reachability from free to deref via basic block analysis when angr is available.
-	Falls back to regex when CFG is unavailable (prefer false positives over false negatives).
+	angr 可用时经基本块分析检查 free 到解引用的可达性; CFG 不可用时回退正则匹配
+	(宁可误报也不漏报)。
 	"""
 	freed = set(re.findall(r'free\s*\(\s*(?:&)?(\w+)\s*\)', code))
 	for var in freed:
@@ -70,9 +70,9 @@ def _check_double_free(func_name: str, code: str,
 
 def _check_uaf_args(func_name: str, code: str,
 					findings: List[Dict[str, Any]]) -> None:
-	"""UAF argument matching — supplements heap_lifecycle_fsm detection blind spots.
+	"""UAF 参数匹配 — 补充 heap_lifecycle_fsm 的检测盲区。
 
-	Detects patterns where p appears in function call args/return value/array index after free(p).
+	检测 free(p) 后 p 出现在函数调用参数/返回值/数组下标中的模式。
 	"""
 	try:
 		from core.uaf_argument_matcher import detect_uaf_args
@@ -92,8 +92,8 @@ def _check_uaf_args(func_name: str, code: str,
 
 
 def _run_value_flow_analysis(decompiled, findings):
-	"""Run value flow + heap analysis as additional detection layer.
-	Appends new UAF/double_free/heap_overflow findings without modifying existing ones.
+	"""运行值流+堆分析作为附加检测层。
+	追加新的 UAF/double_free/heap_overflow 发现, 不修改既有发现。
 	"""
 	try:
 		from core.value_flow import ValueFlowAnalyzer
@@ -124,7 +124,7 @@ def _run_value_flow_analysis(decompiled, findings):
 
 
 def _apply_false_positive_filter(findings, decompiled):
-	"""Apply false positive reduction filters to detection results."""
+	"""对检测结果应用误报削减过滤。"""
 	try:
 		from core.false_positive_filter import FalsePositiveFilter
 		from core.const_propagation import SparseConstantPropagation

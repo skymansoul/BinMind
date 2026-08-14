@@ -30,11 +30,7 @@ _RE_IF = re.compile(r'if\s*\(\s*(\w+)\s*(<|>|<=|>=|==|!=)\s*(\d+)\s*\)')
 
 
 def split_into_blocks(code: str) -> List[BasicBlock]:
-    """将反编译伪代码按控制流分割为基本块。
-
-    简化策略: 每个 if 语句是条件块, 其他为顺序块。
-    不处理 while/for/goto——这些较罕见且保守处理不会引入误报。
-    """
+    """将反编译伪代码按控制流分割为基本块。简化策略: 每个 if 语句为条件块, 其余为顺序块; 不处理 while/for/goto, 保守处理不引入误报。"""
     lines = code.split('\n')
     blocks: List[BasicBlock] = []
     cur_lines: List[str] = []

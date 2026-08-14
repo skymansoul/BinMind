@@ -1,22 +1,7 @@
 """
-CAAWP-CJ桥接器 — 将上下文敏感仿射证明集成到CJ求解管线.
-
-集成策略:
-  在solve_candidate管线中, 当BVF和PCBVF都返回INCONCLUSIVE时,
-  调用CAAWP做上下文敏感仿射证明:
-    1. 从候选提取alloc_var和write_var
-    2. 从IR/源码提取alloc_size_expr和write_size_expr
-    3. 调用caawp_prover.prove_candidate
-    4. 证明成功返回SolverResult, 否则返回None
-
-保守性: CAAWP证明失败不影响后续步骤, 不引入假阴性.
-
-与现有仿射桥接器(cj_affine_bridge)的区别:
-  cj_affine_bridge: 无上下文区分, 全函数一个仿射状态
-  caawp_bridge: 按call-site区分上下文, 跨函数时区分调用来源
-
-  SAIL USENIX'23 — 上下文敏感稀疏值流
-  Inferbo PLDI'23 — 区间域+缓冲区推理
+CAAWP-CJ 桥接器: 将上下文敏感仿射证明集成到 CJ 求解管线。
+当 BVF 与 PCBVF 均返回 INCONCLUSIVE 时, 从候选提取 alloc/write 变量与大小表达式, 调用 caawp_prover 证明;
+证明失败不影响后续步骤, 不引入假阴性。与 cj_affine_bridge (无上下文区分) 不同, 本模块按 call-site 区分上下文。
 """
 
 from __future__ import annotations
@@ -32,10 +17,7 @@ def try_caawp_proof(
     ir_lines: list[str],
     platform: str = "x86_64",
 ) -> Optional[SolverResult]:
-    """对候选尝试CAAWP上下文敏感仿射证明.
-
-    返回SolverResult(证明成功时)或None(无法判定).
-    """
+    """对候选尝试 CAAWP 上下文敏感仿射证明。证明成功时返回 SolverResult, 无法判定时返回 None。"""
     from core.caawp_prover import prove_candidate
 
     alloc = candidate.alloc_site

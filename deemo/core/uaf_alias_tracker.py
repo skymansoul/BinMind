@@ -1,30 +1,8 @@
 """
-UAF alias tracker — pointer aliasing analysis for use-after-free FP reduction.
-
-Problem: PointerStateMachine treats each variable independently. When two
-variables point to the same heap object (via assignment p=q), and only one
-is freed, the other's subsequent use is flagged as UAF — but if freed through
-the correct variable, accesses through the alias are actually safe.
-
-Example FP:
-  p = malloc(64);
-  q = p;           // alias: q points to same object as p
-  free(p);          // correct free
-  ... q->field ...  // flagged as UAF but q was aliased to p which was freed
-
-This module builds a conservative alias graph and:
-1. Marks variables sharing the same heap object as aliases
-2. When one alias is freed, marks all aliases as freed
-3. Distinguishes "use after correct free through alias" (FP → filter)
-   from "use after incorrect free path" (TP → keep)
-
-Conservative: over-approximates aliases (may merge variables that don't alias).
-This errs on the side of filtering FPs, but is mitigated by requiring an
-explicit assignment edge in the IR to establish aliasing.
-
-  Andersen-style pointer analysis adapted for decompiled binary output.
-  Unlike source-level alias analysis, we cannot rely on type compatibility
-  or field sensitivity — heap objects are untyped in stripped binaries.
+UAF别名追踪器 — 指针别名分析, 用于use-after-free误报削减。
+构建保守别名图: 标记共享同一堆对象的变量, 一处释放则标记全部别名,
+区分"通过别名正确释放后的使用"(FP→滤除)与"错误释放路径上的使用"(TP→保留)。
+别名关系需IR中的显式赋值边建立, 避免过度合并。
 """
 
 from dataclasses import dataclass, field
@@ -33,7 +11,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 @dataclass
 class AliasGroup:
-    """A set of variables that all point to the same heap object."""
+    """指向同一堆对象的一组变量。"""
     canonical: str                    # 代表变量名
     members: Set[str] = field(default_factory=set)
     alloc_site_idx: int = -1          # 分配点在IR中的行索引

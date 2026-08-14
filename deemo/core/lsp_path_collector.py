@@ -1,19 +1,6 @@
-"""
-LSP Layer 1 — 路径条件传播器.
-
-从IR文本中提取条件分支语句(for/while/if中的比较),
-构建路径谓词集(PathPredicate), 对变量施加上下界约束.
-
-核心思想: BVF无法判定时, 往往因为变量缺少已知界限.
-许多安全代码在访问堆前有隐式路径条件:
-  if (n > 0 && n <= 1024) { buf = malloc(1024); memcpy(buf, src, n); }
-BVF看到alloc=1024(常量), write=n(变量), 无共享变量 → INCONCLUSIVE
-LSP从if条件提取 n <= 1024, 证明 write_end = n <= 1024 = alloc → SAFE
-
-理论参考:
-  - SUTURE: 路径约束驱动的二进制验证
-  - CLOVER: 路径敏感的抽象解释优化
-"""
+"""LSP Layer 1 — 路径条件传播器: 从IR提取条件分支中的比较，构建路径
+谓词集并对变量施加上下界约束，使BVF可判（如 if (n<=1024) 下
+memcpy(buf, src, n) 判SAFE）。"""
 from __future__ import annotations
 import re
 from typing import List, Optional, Set, Tuple

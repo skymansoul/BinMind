@@ -1,13 +1,6 @@
-"""
-可选增强层 — 在标准管线上叠加的独立增强策略。
-
-每个策略以 (result, binary_path, binfo, kwargs, binary_hash) 为输入,
-在 result 上注入扩展对象或执行后处理。所有模块均为可选依赖,
-ImportError 时静默降级, 不改变标准管线行为。
-
-ENHANCEMENT_STRATEGIES 维护策略名到实现的映射,
-run_enhancement_strategies 按默认顺序应用全部策略。
-"""
+"""可选增强层 — 在标准管线上叠加的独立增强策略。
+每个策略以 (result, binary_path, binfo, kwargs, binary_hash) 为输入, 在 result 上注入扩展对象;
+所有模块为可选依赖, ImportError 时静默降级。ENHANCEMENT_STRATEGIES 维护策略映射。"""
 
 import logging
 
@@ -32,7 +25,8 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # (a) 路径多样性管理
     if sym_result:
         try:
-            from analysis.symbolic.src.path_diversity_core import (
+            # path_diversity_core 已重写, SimHashCalibrator/ConvergenceAnalyzer 不存在, 该增强当前跳过
+            from modules.analysis.symbolic.src.path_diversity_core import (
                 PathDiversityTracker, DiversityAwarePathSelector,
                 DiversityStrategy, SimHashCalibrator, ConvergenceAnalyzer,
             )
@@ -48,14 +42,14 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
 
     # (b) 求解器优化管线
     try:
-        from analysis.symbolic.src.symexec_opt_passes import (
+        from modules.analysis.symbolic.src.symexec_opt_passes import (
             ConstraintComplexityEstimator, IncrementalSolverCache,
             SolverBudgetManager, OptimizationPipeline,
         )
-        from analysis.symbolic.src.adaptive_complexity_calibrator import (
+        from modules.analysis.symbolic.src.adaptive_complexity_calibrator import (
             AdaptiveComplexityCalibrator,
         )
-        from analysis.symbolic.src.entropy_guided_budget import (
+        from modules.analysis.symbolic.src.entropy_guided_budget import (
             EntropyBudgetAllocator,
         )
 
@@ -83,7 +77,7 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
 
     # (c) 反编译器集成
     try:
-        from analysis.decompiler.src.decompiler_confidence_ensemble import (
+        from modules.analysis.decompiler.src.decompiler_confidence_ensemble import (
             DecompilerConfidenceEnsemble,
         )
         _ensemble = DecompilerConfidenceEnsemble()
@@ -94,14 +88,14 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
 
     # (d) GNN 预处理增强
     try:
-        from ai_ml.src.data.cfg_coarsening import coarsen_cfg
+        from modules.ai_ml.src.data.cfg_coarsening import coarsen_cfg
         result['_cfg_coarsening_fn'] = coarsen_cfg
         logger.debug("CFG 粗化已就绪")
     except ImportError:
         logger.debug('optional plugin not available')
 
     try:
-        from ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
+        from modules.ai_ml.src.data.cross_arch_normalizer import normalize_mnemonic
         result['_cross_arch_normalizer'] = normalize_mnemonic
         result['_arch'] = binfo.get('arch', 'unknown')
         logger.debug("跨架构归一化已就绪，目标架构: %s", binfo.get('arch', 'unknown'))
@@ -112,7 +106,7 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 在路径多样性管理之上叠加 CFG 支配前沿引导。
     # 与 (a) path_diversity_core 互补: 多样性保证广度，前沿引导保证方向。
     try:
-        from analysis.symbolic.src.forward_frontier_explorer import (
+        from modules.analysis.symbolic.src.forward_frontier_explorer import (
             ForwardFrontierExplorer,
         )
         _frontier_explorer = ForwardFrontierExplorer()
@@ -153,10 +147,10 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 常规流程中三模态数据需要上游填充到 result['_modal_features']；
     # 此处仅初始化引擎并注入 result，供下游按需调用 fuse_step()。
     try:
-        from multimodal.src.tri_modal_fusion import (
+        from modules.multimodal.src.tri_modal_fusion import (
             TriModalFusionEngine, ModalityConflictArbiter,
         )
-        from multimodal.src.fusion_provenance import (
+        from modules.multimodal.src.fusion_provenance import (
             FusionProvenanceTracker, ProvenanceEdge,
         )
 
@@ -176,10 +170,10 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 将分散的 exploit primitive 按类型文法归约为完整攻击链。
     # 使用约束传播验证（格代数替代 SMT 求解），降低组合路径的验证开销。
     try:
-        from exploit.src.core.primitive_composer import (
+        from modules.exploit.src.core.primitive_composer import (
             PrimitiveComposer, AtomicPrimitive, PrimitiveType,
         )
-        from exploit.src.core.constraint_propagator import (
+        from modules.exploit.src.core.constraint_propagator import (
             ConstraintPropagator, MachineState,
         )
 
@@ -200,7 +194,7 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 与 (b) 中的 _estimator 互补：estimator 做快速线性预测，
     # nonlinear_predictor 处理高约束数区域（线性模型系统性低估的场景）。
     try:
-        from analysis.symbolic.src.constraint_predictor_nonlinear import (
+        from modules.analysis.symbolic.src.constraint_predictor_nonlinear import (
             NonlinearConstraintPredictor,
         )
         _nonlinear_predictor = NonlinearConstraintPredictor(learning_rate=0.005)
@@ -213,7 +207,7 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 替代 path_diversity_core 中原始的比例控制器，
     # 通过 hysteresis band + integral accumulator 消除阈值振荡。
     try:
-        from analysis.symbolic.src.adaptive_threshold_controller import (
+        from modules.analysis.symbolic.src.adaptive_threshold_controller import (
             OscillationDampedController,
         )
         _threshold_controller = OscillationDampedController(
@@ -228,7 +222,7 @@ def apply_diversity_and_solver_optimizations(result, binary_path, binfo, kwargs,
     # 建立路径多样性 ↔ 求解器预算的双向信息通道。
     # 高新颖度路径获更多求解预算，求解结果反向更新路径新颖度评分。
     try:
-        from analysis.symbolic.src.cross_layer_feedback import (
+        from modules.analysis.symbolic.src.cross_layer_feedback import (
             CrossLayerFeedbackLoop,
         )
         _cross_layer = CrossLayerFeedbackLoop(
@@ -245,7 +239,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # 解决 IncrementalSolverCache 的 Z3 状态累积问题。
     # 成本预估 + 内存压力感知 + warm_start 传递。
     try:
-        from analysis.symbolic.src.solver_rebuild_scheduler import (
+        from modules.analysis.symbolic.src.solver_rebuild_scheduler import (
             SolverRebuildScheduler,
         )
         _rebuild_scheduler = SolverRebuildScheduler(
@@ -262,7 +256,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # 在 gravity_edge_dropout 基础上增加桥边检测和
     # 谱连通性监控，防止边丢弃破坏 CFG 的全局连通结构。
     try:
-        from ai_ml.src.data.spectral_edge_dropout import (
+        from modules.ai_ml.src.data.spectral_edge_dropout import (
             DegreeAwareSpectralDropout,
         )
         _spectral_dropout = DegreeAwareSpectralDropout(
@@ -276,7 +270,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # (m) 状态备忘录 (StateMemento)
     # Memento 模式的符号状态增量快照与压缩。
     try:
-        from analysis.symbolic.src.state_memento import StateMemento
+        from modules.analysis.symbolic.src.state_memento import StateMemento
         _memento = StateMemento(
             memory_budget_mb=kwargs.get("memento_budget_mb", 256.0),
             max_mementos_per_path=kwargs.get("memento_max_per_path", 10),
@@ -288,10 +282,9 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
         logger.debug('optional plugin not available')
 
     # (n) 冷点引导探索器 (ColdSpotGuidedExplorer)
-    # PathHeatmap cold spot -> constraint edit distance -> redirection
-# 路径覆盖热力图与约束编辑距离
+    # 热力图冷点 → 约束编辑距离 → 路径重定向
     try:
-        from analysis.symbolic.src.coldspot_guided_explorer import (
+        from modules.analysis.symbolic.src.coldspot_guided_explorer import (
             ColdSpotGuidedExplorer,
         )
         _coldspot_explorer = ColdSpotGuidedExplorer(
@@ -306,7 +299,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # (o) 时态路径缓存 (TemporalPathCache)
     # 时态路径缓存并入增强管线
     try:
-        from analysis.symbolic.src.temporal_path_cache import TemporalPathCache
+        from modules.analysis.symbolic.src.temporal_path_cache import TemporalPathCache
         _temporal_cache = TemporalPathCache(
             halflife_seconds=kwargs.get("temporal_halflife", 120.0),
             max_per_bucket=kwargs.get("temporal_max_per_bucket", 50),
@@ -318,10 +311,9 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
         logger.debug('optional plugin not available')
 
     # (p) 度保持边丢弃 (DegreePreservingDropout)
-    # degree-aware protection over DropEdge O(|V|)
-# DropEdge
+    # 度感知保护, 优于DropEdge O(|V|)
     try:
-        from ai_ml.src.augment.degree_preserving_dropout import (
+        from modules.ai_ml.src.augment.degree_preserving_dropout import (
             DegreePreservingDropout,
         )
         _deg_dropout = DegreePreservingDropout(
@@ -337,9 +329,9 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
 
     # (l) 混淆类型预分类器与跨函数证据传播
     # 在反混淆pass之前判定混淆类型；证据传播器沿
-    # # 调用图追踪常量来源。
+    # 调用图追踪常量来源。
     try:
-        from deobfuscation.src.obfuscation_classifier import (
+        from modules.analysis.deobfuscation.src.obfuscation_classifier import (
             ObfuscationClassifier, VoteTally,
         )
         _obf_classifier = ObfuscationClassifier()
@@ -349,7 +341,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
         logger.debug('optional plugin not available')
 
     try:
-        from deobfuscation.src.evidence_propagation import (
+        from modules.analysis.deobfuscation.src.evidence_propagation import (
             EvidencePropagator, EvidenceRecord,
         )
         _evidence_prop = EvidencePropagator()
@@ -363,7 +355,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # 与Scheduler(AFLfast马尔可夫链)互补。参考: Graphuzz +
     # SEAFuzz — 本模块在关系图基础上新增时间衰减维度。
     try:
-        from fuzzing.src.decaying_novelty_scheduler import (
+        from modules.fuzzing.src.decaying_novelty_scheduler import (
             DecayingNoveltyScheduler, NoveltyRecord,
         )
         _novelty_scheduler = DecayingNoveltyScheduler(
@@ -380,7 +372,7 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     # 约束间变量依赖建模为有向图，拓扑分层递进求解。
     # SCC condensation 处理循环依赖，partial SAT propagation 缩小搜索空间。
     try:
-        from analysis.symbolic.src.constraint_dependency_graph import (
+        from modules.analysis.symbolic.src.constraint_dependency_graph import (
             ConstraintDependencyGraph,
         )
         _cdg = ConstraintDependencyGraph(min_constraints_for_sort=10)
@@ -395,9 +387,9 @@ def apply_solver_rebuild_scheduler(result, binary_path, binfo, kwargs, binary_ha
     baseline_path = kwargs.get('baseline_binary')
     if baseline_path:
         try:
-            from analysis.static.binary_diff.src.func_differ import diff_pipeline
-            from analysis.static.binary_diff.src.patch_classifier import classify_patch
-            from analysis.static.binary_diff.src.exploit_ranker import rank_patches
+            from modules.analysis.static.binary_diff.src.func_differ import diff_pipeline
+            from modules.analysis.static.binary_diff.src.patch_classifier import classify_patch
+            from modules.analysis.static.binary_diff.src.exploit_ranker import rank_patches
 
             result['_diff_baseline_path'] = baseline_path
             result['_diff_pipeline'] = diff_pipeline
@@ -417,12 +409,12 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
         if not _imports_for_concurrency:
             _imports_for_concurrency = binfo.get('imports', [])
         if _imports_for_concurrency:
-            from analysis.static.concurrency_analysis.src.sync_primitive import (
+            from modules.analysis.static.concurrency_analysis.src.sync_primitive import (
                 extract_sync_primitives,
             )
             _primitives = extract_sync_primitives(_imports_for_concurrency)
             if _primitives:
-                from analysis.static.concurrency_analysis.src.concurrency_pipeline import (
+                from modules.analysis.static.concurrency_analysis.src.concurrency_pipeline import (
                     analyze_binary_concurrency,
                 )
                 result['_concurrency_analyzer'] = analyze_binary_concurrency
@@ -434,10 +426,9 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
     # (q) 跨合约污点流分析器
     # 在合约边界间追踪污染数据，检测单合约分析遗漏的
     # 跨合约重入和状态不一致。支持proxy/delegatecall动态dispatch解析。
-# SmartReco — 跨DApp边界识别;
-    #       CrossMiner — 跨合约依赖图建模。
+    # SmartReco — 跨DApp边界识别; CrossMiner — 跨合约依赖图建模。
     try:
-        from smart_contract.src.cross_contract_taint import (
+        from modules.platform.smart_contract.src.cross_contract_taint import (
             CrossContractTaintAnalyzer, CrossContractCallGraph,
             ContractCallEdge, CrossContractTaintPath,
         )
@@ -478,7 +469,6 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
         logger.debug('optional plugin not available')
 
     # (r) 漂移校准器 (DriftCalibrator)
-    # , 2025-08-03 integrated.
     try:
         from modules.core.compat.drift_calibrator import (
             DriftCalibrator, WeightImportanceTracker,
@@ -492,8 +482,7 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
         logger.debug('optional plugin not available')
 
     # (s) CFG 熵指纹 (cfg_entropy_fingerprint)
-# Spielman — 谱图理论与拉普拉斯特征值分解
-# Spielman — 谱图理论与拉普拉斯特征值分解
+    # 参考: Spielman — 谱图理论与拉普拉斯特征值分解
     try:
         from modules.core.compat.cfg_entropy_fingerprint import (
             cfg_entropy_fingerprint, fingerprint_similarity,
@@ -527,9 +516,9 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
         logger.debug('optional plugin not available')
 
     # (v) 污点约束符号探索器 (TaintConstrainedExplorer)
-    # byte-level taint -> symbolic path priority bridge.
+    # 字节级污点 → 符号路径优先级桥接。
     try:
-        from analysis.symbolic.src.taint_constrained_explorer import (
+        from modules.analysis.symbolic.src.taint_constrained_explorer import (
             TaintConstrainedExplorer,
         )
         _taint_explorer = TaintConstrainedExplorer(
@@ -544,7 +533,7 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
         logger.debug('optional plugin not available')
 
     # (w) ptmalloc2 堆状态机 (Ptmalloc2StateMachine)
-    # DFA deterministic heap layout prediction.
+    # DFA确定性堆布局预测。
     try:
         from modules.exploit.ptmalloc2_state_machine import (
             Ptmalloc2StateMachine,
@@ -564,7 +553,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 检测 classic/cross-function/read-only 三类重入模式。
     # Consensys SWC-107
     try:
-        from crypto.src.evm.reentrancy_detector import (
+        from modules.crypto.src.evm.reentrancy_detector import (
             EVMReentrancyDetector, EVMDisassembler,
         )
         _evm_detector = EVMReentrancyDetector()
@@ -577,7 +566,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 三级回退消息边界检测（魔数→长度字段→熵跳变）
     # 配合协议状态机推断，从二进制网络流自动逆向协议格式。
     try:
-        from analysis.static.tools.entropy_jump_detector import (
+        from modules.analysis.static.tools.entropy_jump_detector import (
             EntropyJumpDetector, IncrementalEntropyWindow,
         )
         _entropy_detector = EntropyJumpDetector()
@@ -587,7 +576,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
         logger.debug('optional plugin not available')
 
     try:
-        from analysis.static.tools.protocol_state_inferrer import (
+        from modules.analysis.static.tools.protocol_state_inferrer import (
             ProtocolStateMachineInferrer,
         )
         _proto_inferrer = ProtocolStateMachineInferrer()
@@ -598,15 +587,15 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
 
     # (w) 堆原语链搜索
     # A* 搜索从漏洞点到可利用状态的最短堆原语链。
-    # Complements (r) heap layout solver: solver works with known target layout, this searches for candidate layouts.
+    # 与(r)堆布局求解器互补: 求解器面向已知目标布局, 本模块搜索候选布局。
     try:
-        from exploit.src.heap.primitive_chain.primitive_classifier import (
+        from modules.exploit.src.heap.primitive_chain.primitive_classifier import (
             classify_heap_ops,
         )
-        from exploit.src.heap.primitive_chain.chain_search import (
+        from modules.exploit.src.heap.primitive_chain.chain_search import (
             search_primitive_chain, rank_chains,
         )
-        from exploit.src.heap.primitive_chain.allocator_constraints import (
+        from modules.exploit.src.heap.primitive_chain.allocator_constraints import (
             PTMalloc2Constraints,
         )
         result['_heap_primitive_classifier'] = classify_heap_ops
@@ -621,7 +610,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 无源码条件下检测秘密依赖的分支/访存/循环违规。
     # 对固件、闭源密码库等无 LLVM IR 的场景提供常量时间合规检查。
     try:
-        from analysis.static.const_time.src.const_time_pipeline import (
+        from modules.analysis.static.const_time.src.const_time_pipeline import (
             verify_constant_time, ViolationSeverity,
         )
         result['_const_time_verifier'] = verify_constant_time
@@ -634,10 +623,10 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 运行时行为嵌入 + 特征哈希 + 滑动窗口余弦相似度。
     # 与 (m) decaying_novelty_scheduler 互补：后者做时间维度的 Ebbinghaus
     # 遗忘曲线，本模块做语义维度的行为新颖度检测。
-    # — LLM-guided semantic fuzzing 的思路,
+    # 参考LLM引导语义模糊测试思路,
     # 但将 LLM 嵌入替换为确定性 feature hashing，消除外部模型依赖
     try:
-        from fuzzing.src.semantic_novelty_detector import (
+        from modules.fuzzing.src.semantic_novelty_detector import (
             SemanticNoveltyDetector, ExecutionSummary,
             NoveltyGuidedEnergyPolicy,
         )
@@ -657,10 +646,10 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 后者解决"均匀分配任务到同构 worker"，
     # 本模块解决"异质模糊器的非均匀资源分配"——不同模糊器对同一目标
     # 的产出率差异可能达 10x，均匀分配会浪费算力。
-    # BandFuzz () — multi-armed bandit 协作 fuzzing,
+    # BandFuzz 多臂老虎机协作fuzzing思路,
     # 本项目将其推广到异构模糊器编排场景
     try:
-        from fuzzing.src.thompson_orchestrator import (
+        from modules.fuzzing.src.thompson_orchestrator import (
             ThompsonOrchestrator, make_crash_signature,
         )
         _orchestrator = ThompsonOrchestrator(
@@ -677,10 +666,10 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 二进制级 def-use 重建 + Jaccard 聚类 + 约束引导的字节翻转。
     # 与 (g) primitive_composer 互补：primitive_composer 做 exploit 阶段
     # 的原语组合，本模块做 fuzzing 阶段的输入字节级定向变异。
-    # FuzzRDUCC () — def-use chain coverage,
+    # 参考FuzzRDUCC def-use链覆盖思路,
     # 本项目在"重建"基础上增加约束引导赋值阶段
     try:
-        from fuzzing.src.defuse_mutation_guide import (
+        from modules.fuzzing.src.defuse_mutation_guide import (
             ConstraintGuidedMutator, ConditionBranchCollector,
             defuse_guided_mutation_pipeline, BranchCoverageFingerprint,
         )
@@ -700,7 +689,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 将变异选择从随机探索升级为因果推断——现有变异器全在 rung-1/2。
     # Pearl "Causality" §7; DeCaF
     try:
-        from fuzzing.src.counterfactual_mutator import CounterfactualMutator
+        from modules.fuzzing.src.counterfactual_mutator import CounterfactualMutator
         _cf_mutator = CounterfactualMutator(
             max_history=kwargs.get('cf_max_history', 500),
         )
@@ -712,9 +701,9 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # (ac) 对抗遗憾最小化变异集成
     # 8 种突变策略 → FTRL+Entropy 在线加权 → 对抗性非平稳环境的最优混合。
     # surprise bonus 检测逆预期高收益事件, regret monitor 检测策略退化。
-    # ref: Shalev-Shwartz (2012); Hazan (2016); Cesa-Bianchi & Lugosi (2006)
+    # 参考: Shalev-Shwartz (2012); Hazan (2016); Cesa-Bianchi & Lugosi (2006)
     try:
-        from fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
+        from modules.fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
         _regret_ensemble = RegretMinimizingEnsemble(
             learning_rate=kwargs.get('regret_lr', 0.1),
             ent_lambda=kwargs.get('regret_ent_lambda', 0.01),
@@ -730,7 +719,7 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
     # 与 ISRG/PathCluster 互补: 前者看局部关系, TCN 看全局拓扑结构。
     # Edelsbrunner & Harer; Carlsson "Topology and Data"
     try:
-        from fuzzing.src.topological_coverage_navigator import (
+        from modules.fuzzing.src.topological_coverage_navigator import (
             TopologicalCoverageNavigator, CoveragePoint, TopologicalFeature,
         )
         _topo_nav = TopologicalCoverageNavigator(
@@ -749,9 +738,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 与 (b) symexec_opt_passes 的求解器优化互补: 后者优化 Z3 调用策略,
     # 本模块在 Z3 之前插入 LLM 草图层——利用语义理解跳过位级搜索。
     # LLM 不可用时自动降级为纯 Z3 求解。
-    # — LLM 路径约束求解
+    # 参考: LLM 路径约束求解思路
     try:
-        from analysis.symbolic.src.llm_smt_hybrid_solver import (
+        from modules.analysis.symbolic.src.llm_smt_hybrid_solver import (
             LLMSMTHybridSolver, ConstraintTemplateCache,
         )
         _template_cache = ConstraintTemplateCache(max_size=128)
@@ -770,10 +759,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 贪心合成最小补偿操作序列。
     # 与 (w) Ptmalloc2StateMachine 互补: 后者执行操作,
     # 本模块在执行前预测副作用并计算补偿。
-    # Bagua — ILP side-effect elimination;
-    # MAZE — Dig & Fill Diophantine solver
+    # 参考: Bagua ILP副作用消除; MAZE Dig&Fill 丢番图求解
     try:
-        from exploit.src.heap.side_effect_compensator import (
+        from modules.exploit.src.heap.side_effect_compensator import (
             SideEffectPredictor, CompensationSynthesizer,
             predict_and_compensate,
         )
@@ -794,7 +782,7 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 本模块做精确特征标注 + 倒排索引快速精确检索。
     # 不依赖外部模型 API, 保持跨架构泛化能力
     try:
-        from analysis.static.binary_analysis.interpretable_features import (
+        from modules.analysis.static.binary_analysis.interpretable_features import (
             InterpretableFeatureExtractor, InvertedFeatureIndex,
             FunctionFeatures,
         )
@@ -811,10 +799,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 在指数级等价形式空间中通过 cost-guided extraction 找最简形式。
     # 与现有 mba_deobfuscator/semilinear_mba 互补: 后者做确定性规则链,
     # 本模块做非确定性搜索——发现固定规则无法触达的等价简化。
-    # ProMBA; SaMBA;
-    # egg
+    # 参考: ProMBA; SaMBA; egg
     try:
-        from deobfuscation.egraph_mba_simplifier import (
+        from modules.analysis.deobfuscation.egraph_mba_simplifier import (
             EGraphMBASimplifier,
         )
         _egraph_simplifier = EGraphMBASimplifier(
@@ -830,10 +817,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # L* 算法适配 Mealy 机 + 消息子类型发现 + 确定性 counterexample 生成。
     # 与现有 protocol_state_inferrer 互补: 后者被动观测 trace,
     # 本模块主动探测——发送 membership query 补全 trace 未覆盖的转换。
-    # Act_Infer; Angluin L*;
-    # ICEPRE
+    # 参考: Act_Infer; Angluin L*; ICEPRE
     try:
-        from network.active_state_inferrer import (
+        from modules.network.active_state_inferrer import (
             ActiveStateInferrer, generate_counterexample_candidates,
         )
         _active_inferrer = ActiveStateInferrer(
@@ -851,7 +837,7 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 与现有 auto_patcher/patch_suggestion 互补: 后者生成源码补丁,
     # 本模块在无源码场景下将补丁映射到二进制层。
     try:
-        from patching.expression_primitive_aligner import (
+        from modules.patching.expression_primitive_aligner import (
             PrimitiveDecomposer, BehavioralSignatureMatcher,
             MicroPatchGenerator, RelationalEquivalenceVerifier,
         )
@@ -874,10 +860,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 两个增广视图通过引力模型(质量×质量/距离²)控制边丢弃,
     # InfoNCE 对比损失训练嵌入空间。与 (d) GNN 分类器互补:
     # 先自监督预训练 → 再微调下游任务 (CWE/CVE 分类)。
-    # BEGA; MoCo;
-    # GraphCL
+    # 参考: BEGA; MoCo; GraphCL
     try:
-        from ai_ml.src.training.gravity_contrastive import (
+        from modules.ai_ml.src.training.gravity_contrastive import (
             MomentumContrastEmbedder, build_gravity_model,
             GravityCFGNode, pretrain_step,
         )
@@ -897,10 +882,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 从裸机固件自动推断 MMIO 寄存器类型 (T0-T4) + 外设边界 +
     # 中断向量表→ISR→MMIO 追溯。与现有 firmware_analyzer 互补:
     # 后者做通用固件解包/格式识别, 本模块做 MMIO 语义推断。
-    # XtractIO; ES-Fuzz;
-    # μEmu
+    # 参考: XtractIO; ES-Fuzz; μEmu
     try:
-        from platform.firmware.src.mmio_inference import (
+        from modules.platform.firmware.src.mmio_inference import (
             MMIORegister, MMIORegisterClassifier, Peripheral,
             detect_lms_patterns, infer_peripherals, link_isr_to_mmio,
         )
@@ -918,10 +902,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 组织间共享漏洞数据无需可信中心——在本地加噪后共享,
     # 聚合时噪声相互抵消恢复人口统计。与现有 CVE/cve_kb 互补:
     # 后者做单方 CVE 管理, 本模块做多方隐私保护情报共享。
-    # Dwork & Roth ε-DP; RAPPOR;
-    # DDP-SA
+    # 参考: Dwork & Roth ε-DP; RAPPOR; DDP-SA
     try:
-        from cve.src.private_vuln_sharing import (
+        from modules.cve.src.private_vuln_sharing import (
             VulnerabilityPrivatizer, FederatedAggregator,
             simhash_64, VulnerabilityRecord,
         )
@@ -941,9 +924,9 @@ def apply_llm_smt_hybrid_solver(result, binary_path, binfo, kwargs, binary_hash=
     # 存储变量流追踪 + CALL前后分叉检测 → exploitable reentrancy判定。
     # 与现有 (x) EVMReentrancyDetector 互补: 后者做快速 CALL/SSTORE
     # 模式匹配 (高召回), 本模块做流分叉精确判定 (高精度)。
-    # DivertScan; Oyente
+    # 参考: DivertScan; Oyente
     try:
-        from crypto.src.evm.flow_divergence_detector import (
+        from modules.crypto.src.evm.flow_divergence_detector import (
             StorageFlowTracer, FlowDivergenceDetector,
             replay_evm_trace,
         )
@@ -962,10 +945,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 零符号执行的二进制驱动 IOCTL 攻击面完整枚举。
     # CTL_CODE/_IOC 解码 + switch-case 分发表恢复 + buffered-input
     # 污点 sink 标记 + METHOD_NEITHER 风险分类。
-    # Windows IOCTL Census;
-    # Linux IOCTL Census
+    # 参考: Windows IOCTL Census; Linux IOCTL Census
     try:
-        from platform.kernel.ioctl_surface_mapper import (
+        from modules.platform.kernel.ioctl_surface_mapper import (
             IOCTLSurfaceMapper, IOCTLDispatchTable,
             decode_windows_ioctl, decode_linux_ioctl,
         )
@@ -984,10 +966,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 固定维度行为嵌入用于恶意软件家族分类/相似搜索。
     # 与现有 malware_family_classifier 互补: 后者做静态特征分类,
     # 本模块做动态 API 调用序列的时序图嵌入。
-    # GraphShield;
-    # AEGCN; MAMBA+
+    # 参考: GraphShield; AEGCN; MAMBA+
     try:
-        from platform.malware.temporal_api_graph import (
+        from modules.platform.malware.temporal_api_graph import (
             build_markov_graph, decompose_sequence,
             embed_api_sequence, APIGraphIndex, MarkovAPIGraph,
         )
@@ -1006,9 +987,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # stripped binary 中原子指令模式识别锁函数 + lockset 分析 +
     # must-race vs may-race 分类。与现有 (p) 源码级并发检测互补:
     # 后者需要符号/debug 信息, 本模块在裸二进制 IR 层工作。
-    # RacerF; RAProducer; Eraser
+    # 参考: RacerF; RAProducer; Eraser
     try:
-        from analysis.static.concurrency_analysis.src.binary_lock_race import (
+        from modules.analysis.static.concurrency_analysis.src.binary_lock_race import (
             LockGraphRaceDetector, identify_lock_functions,
             RaceSeverity,
         )
@@ -1023,10 +1004,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 内容寻址防篡改 SBOM + Merkle inclusion proof 选择性披露。
     # 与现有 cve_sbom/cbom_generator 互补: 后者生成明文 SBOM,
     # 本模块提供加密完整性锚定 + 仅披露指定条目的证明。
-    # Bomfather (); VeriSBOM ();
-    # Certificate Transparency (RFC 6962)
+    # 参考: Bomfather; VeriSBOM; Certificate Transparency (RFC 6962)
     try:
-        from data.src.merkle_sbom import (
+        from modules.data.src.merkle_sbom import (
             MerkleSBOM, SBOMEntry, MerkleProof, selective_disclosure,
         )
         _merkle_sbom = MerkleSBOM()
@@ -1040,9 +1020,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 多表 SimHash LSH → O(L·K) 亚线性函数相似搜索。
     # 与现有 semantic_search/vector_search 互补: 后者遍历全量嵌入,
     # 本模块的多表 LSH 将查询降至常量复杂度, 与 N 无关。
-    # Charikar — 动态查询修改
+    # 参考: Charikar — 动态查询修改
     try:
-        from data.src.lsh_function_index import (
+        from modules.data.src.lsh_function_index import (
             LSHFunctionIndex, build_function_embedding,
         )
         _lsh_index = LSHFunctionIndex(
@@ -1062,10 +1042,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 分类 confirmed(必然可利用)/potential(条件触发)/false_alarm(过近似)。
     # 与现有 (x) const_time_verifier 互补: 后者检测泄露,
     # 本模块检测推测执行打破常量时间假设的场景。
-    # SCOUT-CT; ExfilState;
-    # Spectre
+    # 参考: SCOUT-CT; ExfilState; Spectre
     try:
-        from analysis.static.const_time.src.speculation_gadget_detector import (
+        from modules.analysis.static.const_time.src.speculation_gadget_detector import (
             SpeculationTaintTracker, GadgetValidator,
             SpecGadget, GadgetType, Certainty,
         )
@@ -1081,9 +1060,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 离线 IR 重写 + 8 字节压缩追踪桩 + RISC-V/ARMv6M ISA 适配。
     # 与现有 instrumentation/dynamic_analysis 互补: 后者面向 x86/Linux,
     # 本模块针对 64KB SRAM 的 Cortex-M/RISC-V MCU。
-    # R-Visor; Intel PT+DBI hybrid
+    # 参考: R-Visor; Intel PT+DBI hybrid
     try:
-        from analysis.dynamic.engine.embedded_dbi_tracer import (
+        from modules.analysis.dynamic.engine.embedded_dbi_tracer import (
             EmbeddedDBIRewriter, TraceBuffer, TraceDecoder,
             ISAFamily,
         )
@@ -1103,7 +1082,7 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 与现有 crash_lsh_dedup 互补: 后者做 LSH 粗筛,
     # 本模块增加执行轨迹嵌入维度——同一 bug 的不同路径正确合并。
     try:
-        from analysis.dynamic.engine.crash_context_dedup import (
+        from modules.analysis.dynamic.engine.crash_context_dedup import (
             CrashContextDeduplicator, CrashRecord,
             make_crash_signature, bb_sequence_embedding,
         )
@@ -1123,10 +1102,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 替代 BLEU/edit distance 等与语义无关的语法指标。
     # 与现有 decompiler_confidence_ensemble 互补: 后者评估反编译器置信度,
     # 本模块验证反编译输出的实际语义正确性。
-    # codealign (); D-SCORE ();
-    # DEBENCH ()
+    # 参考: codealign; D-SCORE; DEBENCH
     try:
-        from analysis.decompiler.decomp_equivalence_verifier import (
+        from modules.analysis.decompiler.decomp_equivalence_verifier import (
             DecompEquivalenceVerifier, EquivalenceLevel,
             check_recompilability, generate_test_inputs,
         )
@@ -1141,9 +1119,9 @@ def apply_ioctl_surface_mapping(result, binary_path, binfo, kwargs, binary_hash=
     # 22 项指标库 × 加权可靠性评分 × 多样性奖励 → [0,100] 风险分。
     # 与现有 anti_analysis/anti_vm_bypass 互补: 后者做单一技术检测,
     # 本模块做系统化枚举 + 综合风险判定。
-    # LibIHT (); Sabri;
+    # 参考: LibIHT; Sabri
     try:
-        from analysis.deobfuscation.anti_analysis_detector import (
+        from modules.analysis.deobfuscation.anti_analysis_detector import (
             AntiAnalysisDetector, AntiAnalysisReport,
         )
         _anti_analysis_detector = AntiAnalysisDetector()
@@ -1158,9 +1136,9 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # cmp_imm/call_target/struct 三类语义常量锚点 → 贪心匹配 → 未匹配区域=补丁。
     # 与现有 binary_diff/block_matcher 互补: 后者做指令级相似度,
     # 本模块在跨编译器/优化级别场景下用语义常量锚点定位补丁。
-    # PLocator (); 1dFuzz
+    # 参考: PLocator; 1dFuzz
     try:
-        from analysis.static.binary_diff.src.patch_anchor_localizer import (
+        from modules.analysis.static.binary_diff.src.patch_anchor_localizer import (
             extract_anchors, match_anchors, locate_patch_regions,
             StableAnchor, PatchCandidate,
         )
@@ -1174,9 +1152,9 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # (az) 分治符号执行切片器
     # 后向数据流切片→独立切片符号执行→副作用摘要组合。
     # 从漏洞 sink 回溯, 自动裁剪 90%+ 无关代码, 每切片独立探索避免路径爆炸。
-    # BinSleuth; Divide,Conquer&Verify ()
+    # 参考: BinSleuth; Divide,Conquer&Verify
     try:
-        from analysis.symbolic.src.divide_conquer_slicer import (
+        from modules.analysis.symbolic.src.divide_conquer_slicer import (
             DivideConquerSymExec, build_dataflow_graph, backward_slice,
         )
         _dc_symexec = DivideConquerSymExec()
@@ -1192,7 +1170,7 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # 惩罚高波动性种子, 奖励稳定产出种——反直觉于传统平均收益调度。
     # Kummita & Bodden; Truzz; Sharpe
     try:
-        from fuzzing.src.risk_adjusted_schedule import (
+        from modules.fuzzing.src.risk_adjusted_schedule import (
             RiskAdjustedScheduler, SeedPerformanceHistory,
         )
         _risk_scheduler = RiskAdjustedScheduler(
@@ -1207,9 +1185,9 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # (bb) 路径转换图种子探索器
     # 覆盖状态哈希→Markov 转换模型→上下文感知种子选择 + 字节级验证检查保护。
     # 建模同一种子在不同程序状态下的有效性差异——突破 stationary 假设。
-    # Truzz; PathFuzzing (); SEAFuzz
+    # 参考: Truzz; PathFuzzing; SEAFuzz
     try:
-        from fuzzing.src.path_transition_explorer import (
+        from modules.fuzzing.src.path_transition_explorer import (
             PathTransitionGraph, hash_coverage_state,
             context_aware_schedule,
         )
@@ -1226,7 +1204,7 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # 零运行时开销, 不可被反插桩检测——替代软件插桩 (Pin/DynamoRIO)。
     # LibIHT; HardTaint; PT+DBI hybrid
     try:
-        from analysis.dynamic.engine.intel_pt_coverage import (
+        from modules.analysis.dynamic.engine.intel_pt_coverage import (
             PTCoverageReconstructor, find_psb_boundaries,
             parse_pt_packets, bb_sequence_to_edge_bitmap,
         )
@@ -1246,7 +1224,7 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # ASE 2025 "Risk Estimation in Differential Fuzzing via EVT";
     # Coles (2001); Pickands (1975)
     try:
-        from fuzzing.src.evt_risk_estimator import (
+        from modules.fuzzing.src.evt_risk_estimator import (
             EVTRiskEstimator, fit_gpd, score_diff_severity,
         )
         _evt_estimator = EVTRiskEstimator(
@@ -1261,9 +1239,9 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # (be) 二进制语义差分 Oracle
     # 四维差分判定 (输出/覆盖/性能/系统调用)→差异分类+严重度评估。
     # 无需源码——纯黑盒 I/O+覆盖比较, 闭源二进制版本间的回归检测。
-    # DDYF; DIFFSPEC (); HyDiff
+    # 参考: DDYF; DIFFSPEC; HyDiff
     try:
-        from analysis.dynamic.engine.semantic_diff_oracle import (
+        from modules.analysis.dynamic.engine.semantic_diff_oracle import (
             SemanticDiffOracle, ExecutionSnapshot, DiffType,
             capture_execution,
         )
@@ -1298,9 +1276,9 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # 后向数据流切片→见证路径→evidence-weighted 最小 blame 集 ranking。
     # 从崩溃 symptom 追溯到 root cause——O(30) 步 use-def 回溯。
     # 与现有 crash_analysis 互补: 后者报告崩溃点, 本模块报告根因函数。
-    # Veritas (); Kumushi; AutoCrashFL
+    # 参考: Veritas; Kumushi; AutoCrashFL
     try:
-        from analysis.dynamic.engine.witness_root_cause import (
+        from modules.analysis.dynamic.engine.witness_root_cause import (
             backward_crash_slice, rank_blame_candidates,
             WitnessPath, BlameCandidate,
         )
@@ -1315,7 +1293,7 @@ def apply_patch_anchor_localization(result, binary_path, binfo, kwargs, binary_h
     # 与现有 crash_analysis 互补: 后者分析单个崩溃, 本模块从单个 PoC 生成变体族。
     # Kumushi crash exploration; AFL++ crash exploration mode
     try:
-        from analysis.dynamic.engine.crash_variant_generator import (
+        from modules.analysis.dynamic.engine.crash_variant_generator import (
             CrashVariantGenerator, triangulate_root_cause,
             CrashVariant, TriangulationResult,
         )
@@ -1332,9 +1310,9 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # n-gram 内存访问模式→字段边界推断→C struct 生成, 无需 ML 训练。
     # 与现有 type_inferrer/precise_vtable_recovery 互补: 后者做虚表/类型推断,
     # 本模块做完整 struct 布局恢复 (字段偏移+类型+对齐)。
-    # XTRIDE (); ReSym; TYGR
+    # 参考: XTRIDE; ReSym; TYGR
     try:
-        from analysis.static.binary_analysis.struct_layout_recovery import (
+        from modules.analysis.static.binary_analysis.struct_layout_recovery import (
             StructLayoutRecoverer, collect_struct_accesses,
             infer_field_boundaries,
         )
@@ -1351,7 +1329,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 自动适配目标特性, 替代硬编码策略或人工选择。
     # ARCANIST; PBAEG
     try:
-        from exploit.src.strategy.adaptive_exploit_selector import (
+        from modules.exploit.src.strategy.adaptive_exploit_selector import (
             AdaptiveExploitSelector, BinaryFingerprint, StrategyKind,
             assess_strategy,
         )
@@ -1367,7 +1345,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 容忍 f 个 Byzantine 节点 (N≥3f+1)——解决不同分析工具结果冲突。
     # PBFT; ensemble weighted voting
     try:
-        from distributed.src.quorum_consensus import (
+        from modules.distributed.src.quorum_consensus import (
             QuorumConsensusEngine, NodeWeightTracker,
             weighted_quorum_vote,
         )
@@ -1383,7 +1361,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # x86-64 + ARM64 双架构支持, 原子 8-byte jmp 写入避免多线程竞争。
     # ASC-Hook; DIBE; zpoline
     try:
-        from analysis.dynamic.engine.trampoline_hook import (
+        from modules.analysis.dynamic.engine.trampoline_hook import (
             TrampolineHookRewriter, generate_x86_64_trampoline,
             generate_arm64_trampoline, Arch,
         )
@@ -1401,7 +1379,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 字符串+代码惯用法+尾声模式→贝叶斯融合→编译器+版本+O级别+语言方言。
     # 与现有 compiler_fingerprint 互补: 后者做粗粒度识别, 本模块做版本/O级细粒度。
     try:
-        from analysis.static.tools.compiler_fingerprinter import (
+        from modules.analysis.static.tools.compiler_fingerprinter import (
             CompilerFingerprinter, CompilerFingerprint,
             detect_from_strings, detect_from_code_idioms,
             detect_from_epilogue_patterns,
@@ -1419,7 +1397,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 与现有 coverage/edge_coverage 互补: 后者报告覆盖统计, 本模块做空间可视化。
     # AFL++ collision-free coverage; DrCov (DynamoRIO)
     try:
-        from output.src.coverage_heatmap import (
+        from modules.output.src.coverage_heatmap import (
             CoverageHeatmapGenerator, aggregate_heatmap,
             suggest_coldspot_targets,
         )
@@ -1437,7 +1415,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 无源码 ground truth 的自动化 IR 质量度量。
     # An & Lee; RetDec/McSema IR formats
     try:
-        from analysis.static.binary_analysis.ir_lifting_quality import (
+        from modules.analysis.static.binary_analysis.ir_lifting_quality import (
             IRLiftingQualityEvaluator, IRQualityReport,
         )
         _ir_quality_evaluator = IRLiftingQualityEvaluator()
@@ -1449,9 +1427,9 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # (bp) 前向边 CFI 插桩器
     # 间接调用定位 + 函数类型恢复 + landing pad 插入。
     # COTS 剥离二进制的纯软件前向边控制流完整性保护。
-    # MOBIUS; Branch Landing ()
+    # 参考: MOBIUS; Branch Landing
     try:
-        from analysis.static.binary_analysis.forward_edge_cfi import (
+        from modules.analysis.static.binary_analysis.forward_edge_cfi import (
             ForwardEdgeCFI, locate_indirect_calls,
             infer_function_signatures,
         )
@@ -1467,7 +1445,7 @@ def apply_struct_layout_recovery(result, binary_path, binfo, kwargs, binary_hash
     # 基于 def-use 依赖的语义匹配——比 CFG 跨编译器/优化级别更稳定。
     # CSB; VxWolf/BinDiff
     try:
-        from analysis.static.binary_diff.src.dfg_isomorphism_match import (
+        from modules.analysis.static.binary_diff.src.dfg_isomorphism_match import (
             build_dfg_from_instructions, compute_dfg_similarity,
             DFGGraph, DFGNode,
         )

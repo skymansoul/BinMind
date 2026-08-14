@@ -1,19 +1,6 @@
 """
-约束联结求解器核心数据结构 — GAPSBV-CJ方法的类型定义.
-
-GAPSBV-CJ: Constraint-Joined Path-Sensitive Binary Verification
-将堆溢出检测中四类约束统一建模为线性不等式系统, 通过Feasibility
-Check和简化Farkas引理判定安全性, 无需SMT求解器.
-
-核心思路: 不再让各维度独立判定SAFE/KEEP, 而是将所有约束收集到
-统一的LinearConstraintSystem中, 做联合可行性判定. 当约束系统
-证明"写入不可能溢出"时才FILTER, 否则保守保留.
-
-  - Cousot & Cousot, POPL 1977: 抽象解释框架
-  - Karr, 1976: 仿射关系分析
-  - CAFD/AFD: 值流追踪分配大小
-  - SUTURE: 路径约束驱动的二进制验证
-  - CSA: 跨域稀疏抽象执行
+GAPSBV-CJ 类型定义: 将堆溢出检测中分配/拷贝/偏移/循环四类约束统一建模为线性不等式系统, 通过可行性检查与简化 Farkas 引理判定安全性, 无需 SMT 求解器。
+所有约束收集到统一的约束系统中做联合可行性判定, 证明"写入不可能溢出"时才 FILTER, 否则保守保留。
 """
 
 from dataclasses import dataclass, field

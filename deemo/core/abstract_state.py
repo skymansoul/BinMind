@@ -13,13 +13,7 @@ from core.heap_abstract_domain import HeapAbstractDomain, Interval
 
 @dataclass
 class AbstractState:
-    """单个程序点的抽象状态。
-
-    包含:
-      intervals: 变量名 → 区间
-      heap: 堆抽象域
-      reachable: 该点是否可达 (不可达 = 死代码)
-    """
+    """单个程序点的抽象状态。包含 intervals 变量区间映射、heap 堆抽象域、reachable 可达标记。"""
     intervals: Dict[str, Interval] = field(default_factory=dict)
     heap: HeapAbstractDomain = field(default_factory=HeapAbstractDomain)
     reachable: bool = True

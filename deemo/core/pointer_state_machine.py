@@ -1,16 +1,7 @@
 """
-Pointer state machine: tracks heap pointer allocation/free/escape states.
-
-Each heap pointer follows: ALLOCATED -> FREED -> (ESCAPED | DANGLING)
-  - ALLOCATED: initial state after malloc/calloc/realloc
-  - FREED: after free(), if pointer value not overwritten -> DANGLING
-  - ESCAPED: pointer stored to global or returned, exits tracking scope
-  - DANGLING: pointer dereferenced after FREED -> UAF
-
-A state machine suffices instead of full dataflow analysis because:
-  - Heap pointer patterns are highly structured; 3 states cover 90%+ of cases
-  - Transition conditions are simple (assignment/call/return), no complex aliasing
-  - Function summaries enable cross-function tracking without full call graph modeling
+指针状态机: 追踪堆指针的分配/释放/逃逸状态。
+每个堆指针遵循 ALLOCATED→FREED→(ESCAPED|DANGLING) 状态转移;
+用状态机而非完整数据流分析: 堆指针模式结构化、转移条件简单、函数摘要支持跨函数跟踪。
 """
 import re
 from collections import defaultdict
@@ -20,16 +11,16 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class PtrState(Enum):
-    ALLOCATED = auto()      # allocated, still in scope
-    FREED = auto()          # freed but pointer value unchanged
-    ESCAPED = auto()        # escaped to global/external (out of tracking scope)
-    DANGLING = auto()       # use-after-free (triggers alert)
-    OVERWRITTEN = auto()    # pointer overwritten or zeroed (safe)
+    ALLOCATED = auto()      # 已分配, 仍在作用域内
+    FREED = auto()          # 已释放但指针值未变
+    ESCAPED = auto()        # 逃逸至全局/外部 (超出跟踪范围)
+    DANGLING = auto()       # 释放后使用 (触发告警)
+    OVERWRITTEN = auto()    # 指针被覆盖或清零 (安全)
 
 
 @dataclass
 class HeapPointer:
-    """Tracking record for a single heap pointer."""
+    """单个堆指针的跟踪记录。"""
     name: str                        # 变量名
     alloc_site: str = ""             # 分配点描述
     alloc_size: Optional[int] = None # 分配大小 (若可从静态分析推断)
@@ -41,7 +32,7 @@ class HeapPointer:
 
 @dataclass
 class FunctionSummary:
-    """Function summary for cross-function pointer state propagation."""
+    """跨函数指针状态传播的函数摘要。"""
     func_name: str
     allocates: List[str] = field(default_factory=list)      # 返回的新分配指针名
     frees_params: List[int] = field(default_factory=list)    # 释放的参数索引
@@ -49,26 +40,26 @@ class FunctionSummary:
 
 
 class PointerStateMachine:
-    """Pointer state machine for intra-function heap pointer tracking.
+    """函数内堆指针跟踪的指针状态机。
 
-    Usage:
+    用法:
       psm = PointerStateMachine()
       pointers = psm.analyze(decompiled_code, function_summaries)
       uaf_ptrs = [p for p in pointers if p.state == PtrState.DANGLING]
     """
 
-    # Allocation functions
+    # 分配函数
     _ALLOC_FUNCS = frozenset({
         'malloc', 'calloc', 'realloc', 'aligned_alloc',
         'memalign', 'posix_memalign', 'valloc', 'pvalloc',
         'new', 'new[]', 'operator_new',
     })
-    # Deallocation functions
+    # 释放函数
     _FREE_FUNCS = frozenset({
         'free', 'delete', 'delete[]', 'operator_delete',
-        'realloc',  # realloc(NULL, size) = malloc; realloc(ptr, 0) = free
+        'realloc',  # realloc(NULL, size) 等价于 malloc; realloc(ptr, 0) 等价于 free
     })
-    # Variable name patterns, supporting plain vars and struct fields (a->b, a.b)
+    # 变量名模式: 支持普通变量与结构体字段 (a->b, a.b)
     _VAR_PATTERN = re.compile(r'\b([a-zA-Z_]\w{0,31}(?:->\w+)?(?:\.\w+)?)\b')
     _ASSIGN_PATTERN = re.compile(r'([a-zA-Z_]\w{0,31}(?:->\w+)?(?:\.\w+)?)\s*=\s*(.+)')
     _CALL_PATTERN = re.compile(r'(\b[a-zA-Z_]\w{0,31}\b)\s*\(([^)]*)\)')
@@ -81,7 +72,7 @@ class PointerStateMachine:
 
     def analyze(self, code: str,
                 function_name: str = "") -> List[HeapPointer]:
-        """Analyze heap pointer lifetimes in decompiled code."""
+        """分析反编译代码中的堆指针生命周期。"""
         lines = [l.strip() for l in code.split('\n') if l.strip()]
         pointers: Dict[str, HeapPointer] = {}
         line_idx = 0
@@ -93,10 +84,10 @@ class PointerStateMachine:
             self._process_escape(line, pointers, line_idx)
             line_idx += 1
 
-        # Final state determination
+        # 最终状态判定
         for ptr in pointers.values():
             if ptr.state == PtrState.FREED:
-                # Freed but not overwritten; if there's use after free -> DANGLING
+                # 已释放但未覆盖; 若其后有使用 → DANGLING
                 free_max_idx = max(
                     [self._line_of(lines, fs) for fs in ptr.free_sites],
                     default=-1
@@ -112,7 +103,7 @@ class PointerStateMachine:
 
     def _process_allocation(self, line: str,
                             pointers: Dict[str, HeapPointer], idx: int):
-        """Detect var = malloc(size) pattern."""
+        """检测 var = malloc(size) 模式。"""
         m = self._CALL_PATTERN.search(line)
         if not m:
             return
@@ -136,7 +127,7 @@ class PointerStateMachine:
 
     def _process_free(self, line: str,
                       pointers: Dict[str, HeapPointer], idx: int):
-        """Detect free(ptr) pattern."""
+        """检测 free(ptr) 模式。"""
         m = self._CALL_PATTERN.search(line)
         if not m:
             return
@@ -146,7 +137,7 @@ class PointerStateMachine:
         args = self._split_args(m.group(2))
         if not args:
             return
-        # Special case: realloc(ptr, 0) = free(ptr)
+        # 特例: realloc(ptr, 0) 等价于 free(ptr)
         if func == 'realloc':
             if len(args) < 2 or args[1].strip() != '0':
                 return
@@ -157,28 +148,28 @@ class PointerStateMachine:
                 cur.state = PtrState.FREED
                 cur.free_sites.append(f'line_{idx}: {func}({freed_var})')
             elif cur.state == PtrState.FREED:
-                # Second free -> double-free
+                # 第二次释放 → double-free
                 cur.free_sites.append(f'line_{idx}: {func}({freed_var}) [DOUBLE]')
 
     def _process_use(self, line: str,
                      pointers: Dict[str, HeapPointer], idx: int):
-        """Record pointer usage sites."""
+        """记录指针使用位置。"""
         for var_name in list(pointers.keys()):
             if re.search(r'\b' + re.escape(var_name) + r'\b', line):
-                # Exclude self-assignment lines (handled in _process_allocation)
+                # 排除自赋值行 (已在 _process_allocation 处理)
                 if f'{var_name} =' not in line and f'{var_name}=' not in line:
                     pointers[var_name].use_sites.append(f'line_{idx}')
 
     def _process_escape(self, line: str,
                         pointers: Dict[str, HeapPointer], idx: int):
-        """Detect pointer escape: return ptr / global = ptr / func(ptr)."""
+        """检测指针逃逸: return ptr / 全局=ptr / func(ptr)。"""
         for var_name, ptr in list(pointers.items()):
             if ptr.state != PtrState.ALLOCATED:
                 continue
             if f'return {var_name}' in line or f'return ({var_name})' in line:
                 ptr.state = PtrState.ESCAPED
                 ptr.escaped_to = 'return_value'
-            # Passed as argument to an external function
+            # 作为参数传给外部函数
             m = self._CALL_PATTERN.search(line)
             if m:
                 func = m.group(1).strip()
@@ -189,7 +180,7 @@ class PointerStateMachine:
                         ptr.escaped_to = f'arg_to_{func}'
 
     def _line_of(self, lines: List[str], site_label: str) -> int:
-        """Extract line number from a site_label string."""
+        """从 site_label 字符串提取行号。"""
         try:
             return int(site_label.split('_')[1].split(':')[0])
         except (IndexError, ValueError):
@@ -210,7 +201,7 @@ class PointerStateMachine:
 
 
 def infer_function_summary(code: str, func_name: str) -> FunctionSummary:
-    """Auto-infer function summary from decompiled code (no manual annotation needed)."""
+    """从反编译代码自动推断函数摘要 (无需手工标注)。"""
     summary = FunctionSummary(func_name=func_name)
     alloc_funcs = frozenset({'malloc', 'calloc', 'realloc', 'new'})
     free_funcs = frozenset({'free', 'delete'})

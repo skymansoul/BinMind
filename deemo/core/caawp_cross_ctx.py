@@ -1,9 +1,6 @@
 """
-CAAWP跨上下文证明模块
-
-当write在callee函数, alloc在caller函数时, 通过调用链关联两者.
-优先选择上下文链最深的快照(参数已完全展开).
-对于多调用点场景, 通过alloc_size匹配正确的调用上下文.
+CAAWP 跨上下文证明: write 在 callee、alloc 在 caller 时通过调用链关联两者。
+优先选择上下文链最深的快照 (参数已完全展开), 多调用点场景按 alloc_size 匹配正确的调用上下文。
 """
 
 from typing import Dict, List, Optional, Tuple

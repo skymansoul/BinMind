@@ -1,20 +1,7 @@
 """
-栈帧大小静态推断 —— 不执行符号执行, 从汇编指令推断栈缓冲区边界。
-
-angr 符号执行在大型二进制上超时率高 (>40%), 此时需要纯静态方法
-估计栈缓冲区大小。本模块分析函数序言 (prologue) 中的 sub rsp, N
-指令来推断栈帧大小, 然后搜索栈缓冲区 (lea rax, [rbp-N]) 的引用,
-估计缓冲区边界。
-
-方法:
-1. 解析函数序言: sub rsp, 0xNNN / push rbp; mov rbp, rsp; sub rsp, N
-2. 搜索栈缓冲区: lea REG, [rbp - offset] → offset 即为缓冲区起始
-3. 对比危险写入的偏移: 若写入偏移 > 缓冲区起始 + 估计大小 → 告警
-
-局限:
-- alloca/VLA 动态分配无法静态推断
-- 编译器优化可能消除标准序言 (omit-frame-pointer)
-- 仅 x86_64 实现, ARM/MIPS 需要不同的序言模式
+栈帧大小静态推断 — 不执行符号执行, 从汇编指令推断栈缓冲区边界。
+方法: 解析序言 sub rsp N 推断帧大小, 搜索 lea rax,[rbp-N] 定位缓冲区,
+对比危险写入偏移是否越界。局限: alloca/VLA 无法推断, 仅 x86_64。
 """
 
 import re
@@ -101,7 +88,7 @@ class StackFrameInferrer:
         self, frame: StackFrame, write_offset: int, write_size: int,
     ) -> List[FrameOverflowRisk]:
         """
-        检查写入操作是否可能溢出栈缓冲区。
+        检查写入操作是否溢出栈缓冲区。
 
         write_offset: 写入操作访问的 rbp 偏移量
         write_size: 写入的字节数

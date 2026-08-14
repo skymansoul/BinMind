@@ -1,21 +1,6 @@
-"""
-Format string FP depth filter — suppresses false positives through three
-orthogonal analyses: format string ownership, buffer write-back detection,
-and call-site context scoring.
-
-Algorithm:
-  1. OwnershipCheck: Is the format string user-controlled or literal?
-     - Literal strings → SAFE (FP), user-controlled → KEEP (TP)
-  2. WriteBackCheck: Does snprintf emit to a bounded buffer that is later
-     passed to printf? If yes, the format is indirect but safe.
-  3. CallSiteContext: Is the printf-family call in an error path or debug
-     block? If yes, lower exploitability.
-
-Novelty over existing fmt detectors:
-  - OwnershipCheck distinguishes literal vs. tainted format strings
-  - WriteBackCheck resolves snprintf->printf false positive chains
-  - Weighted decision replaces binary safe/unsafe verdict
-"""
+"""格式串 FP 深度过滤器 — 经三种正交分析抑制误报: 格式串所有权、缓冲区写回检测、调用点上下文评分。
+所有权检查区分字面量与污点格式串 (字面量→SAFE 过滤, 用户可控→KEEP 保留);
+写回检查解析 snprintf→printf 误报链; 加权决策替代二值安全判定。"""
 
 from __future__ import annotations
 import re
@@ -23,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 
-# patterns ───────────────────────────────────────────────────────────
+# 正则模式 ───────────────────────────────────────────────────────────
 
 _PRINTF_CALL = re.compile(
     r'\b(?:printf|fprintf|sprintf|snprintf|syslog|dprintf)\s*\(')
@@ -41,7 +26,7 @@ _ERROR_PATH = re.compile(r'\b(?:error|err|warn|debug|log|trace|assert)\b',
 
 @dataclass
 class FmtDepthDecision:
-    """Format string FP filter decision."""
+    """格式串 FP 过滤判定。"""
     line: int; line_text: str = ''
     is_literal: bool = False
     is_writeback: bool = False
@@ -52,31 +37,31 @@ class FmtDepthDecision:
 
 
 class FmtFpDepthFilter:
-    """Three-check format string FP depth filter."""
+    """三检查格式串 FP 深度过滤器。"""
 
     def __init__(self):
         self.stats: Dict[str, Any] = {}
 
     def filter(self, ir_lines: List[str],
                candidates: List[Dict]) -> List[FmtDepthDecision]:
-        """Run ownership + writeback + context checks on each candidate."""
+        """对每个候选执行所有权 + 写回 + 上下文检查。"""
         decisions = []
         for cand in candidates:
             line = cand.get('line', 0)
             text = cand.get('text', ir_lines[line] if line < len(ir_lines) else '')
             dec = FmtDepthDecision(line=line, line_text=str(text))
 
-            # Check 1: format string ownership
+            # 检查 1: 格式串所有权
             dec.is_literal, dec.ownership_score = self._check_ownership(
                 ir_lines, line, text)
 
-            # Check 2: snprintf write-back pattern
+            # 检查 2: snprintf 写回模式
             dec.is_writeback = self._check_writeback(ir_lines, line, text)
 
-            # Check 3: error/debug path context
+            # 检查 3: 错误/调试路径上下文
             dec.is_error_path = self._check_error_path(ir_lines, line, text)
 
-            # Weighted decision
+            # 加权决策
             dec.verdict, dec.confidence = self._decide(dec)
             decisions.append(dec)
 
@@ -88,56 +73,55 @@ class FmtFpDepthFilter:
         }
         return decisions
 
-    # Check 1: format string ownership ───────────────────────────
+    # 检查 1: 格式串所有权 ───────────────────────────
 
     def _check_ownership(self, ir_lines: List[str], line: int,
                          text: str) -> Tuple[bool, float]:
-        """Literal format strings are safe; tainted ones are dangerous."""
+        """字面量格式串安全, 污点格式串危险。"""
         m = _FORMAT_LITERAL.search(text)
         if m:
-            return True, 0.05  # literal → nearly certainly safe
+            return True, 0.05  # 字面量 → 基本确定安全
 
-        # Check if format arg is tainted
+        # 检查格式参数是否被污点化
         pm = _PRINTF_FMT_ARG.search(text)
         if pm:
             fmt_var = pm.group(1)
             if fmt_var in ('fmt', 'format', 'buf', 'msg', 'errmsg',
                            'str', 'string', 'output'):
-                # Likely user-controlled → suspicious
+                # 用户可控 → 可疑
                 for i in range(max(0, line - 30), line):
                     if _TAINTED_SRC.search(ir_lines[i]):
-                        return False, 0.85  # tainted → keep
+                        return False, 0.85  # 已污点 → 保留
 
-        return False, 0.50  # uncertain
+        return False, 0.50  # 无法判定
 
-    # Check 2: snprintf write-back ────────────────────────────────
+    # 检查 2: snprintf 写回 ────────────────────────────────
 
     @staticmethod
     def _check_writeback(ir_lines: List[str], line: int,
                          text: str) -> bool:
-        """Detect snprintf→printf chain where format is indirect but safe.
-        Pattern: snprintf(buf,sz,fmt,...); printf(buf)
-        The printf format arg comes from snprintf which used a fixed fmt."""
-        # Get the printf's format argument
+        """检测 snprintf→printf 链: 格式串经间接但安全的方式传入。
+        模式: snprintf(buf,sz,fmt,...); printf(buf) — printf 的格式参数来自使用固定 fmt 的 snprintf。"""
+        # 取 printf 的格式参数
         pm = _PRINTF_FMT_ARG.search(text)
         if not pm:
             return False
         fmt_arg = pm.group(1)
         if not fmt_arg:
             return False
-        # Scan backwards for snprintf that writes to this arg
+        # 向前扫描向该参数写入的 snprintf
         for i in range(max(0, line - 10), line):
             sm = _SNPRINTF_BUF.search(ir_lines[i])
             if sm and sm.group(1) == fmt_arg:
                 return True
         return False
 
-    # Check 3: error/debug context ────────────────────────────────
+    # 检查 3: 错误/调试上下文 ────────────────────────────────
 
     @staticmethod
     def _check_error_path(ir_lines: List[str], line: int,
                           text: str) -> bool:
-        """Format string in error/debug path → lower exploitability."""
+        """错误/调试路径中的格式串 → 降低可利用性。"""
         if _ERROR_PATH.search(text):
             return True
         for i in range(max(0, line - 3), line):
@@ -145,11 +129,11 @@ class FmtFpDepthFilter:
                 return True
         return False
 
-    # decision ───────────────────────────────────────────────────
+    # 决策 ───────────────────────────────────────────────────
 
     @staticmethod
     def _decide(dec: FmtDepthDecision) -> Tuple[str, float]:
-        """Weighted decision: literal(0.50) + writeback(0.30) + error(0.20)."""
+        """加权决策: 所有权(0.50) + 写回(0.30) + 错误路径(0.20)。"""
         score = dec.ownership_score * 0.50
         if dec.is_writeback:
             score += 0.30
@@ -166,7 +150,7 @@ class FmtFpDepthFilter:
 def filter_fmt_candidates(
     ir_lines: List[str], candidates: List[Dict],
 ) -> Tuple[List[FmtDepthDecision], Dict[str, Any]]:
-    """Convenience: filter format string candidates."""
+    """便捷入口: 过滤格式串候选。"""
     engine = FmtFpDepthFilter()
     decisions = engine.filter(ir_lines, candidates)
     return decisions, engine.stats

@@ -12,11 +12,11 @@ def _register_misc_layers(
     kwargs: Dict[str, Any],
     logger: Any,
 ) -> None:
-    """注册安全特性/固件/分布式/其他增强层."""
+    """注册安全特性/固件/分布式/其他增强层。"""
 
     # MMIO 外设模型推断
     try:
-        from platform.firmware.src.mmio_inference import (
+        from modules.platform.firmware.src.mmio_inference import (
             MMIORegister, MMIORegisterClassifier, Peripheral,
             detect_lms_patterns, infer_peripherals, link_isr_to_mmio,
         )
@@ -30,7 +30,7 @@ def _register_misc_layers(
 
     # 隐私保护漏洞情报共享
     try:
-        from cve.src.private_vuln_sharing import (
+        from modules.cve.src.private_vuln_sharing import (
             VulnerabilityPrivatizer, FederatedAggregator,
             simhash_64, VulnerabilityRecord,
         )
@@ -46,7 +46,7 @@ def _register_misc_layers(
 
     # 流分叉分析重入检测器
     try:
-        from crypto.src.evm.flow_divergence_detector import (
+        from modules.crypto.src.evm.flow_divergence_detector import (
             StorageFlowTracer, FlowDivergenceDetector,
             replay_evm_trace,
         )
@@ -59,7 +59,7 @@ def _register_misc_layers(
 
     # IOCTL 调度面静态映射器
     try:
-        from platform.kernel.ioctl_surface_mapper import (
+        from modules.platform.kernel.ioctl_surface_mapper import (
             IOCTLSurfaceMapper, IOCTLDispatchTable,
             decode_windows_ioctl, decode_linux_ioctl,
         )
@@ -74,7 +74,7 @@ def _register_misc_layers(
 
     # API 时序图恶意软件行为嵌入
     try:
-        from platform.malware.temporal_api_graph import (
+        from modules.platform.malware.temporal_api_graph import (
             build_markov_graph, decompose_sequence,
             embed_api_sequence, APIGraphIndex, MarkovAPIGraph,
         )
@@ -90,7 +90,7 @@ def _register_misc_layers(
 
     # 二进制级锁图 must-race 检测器
     try:
-        from analysis.static.concurrency_analysis.src.binary_lock_race import (
+        from modules.analysis.static.concurrency_analysis.src.binary_lock_race import (
             LockGraphRaceDetector, identify_lock_functions,
             RaceSeverity,
         )
@@ -102,7 +102,7 @@ def _register_misc_layers(
 
     # 加密 Merkle SBOM 构建器
     try:
-        from data.src.merkle_sbom import (
+        from modules.data.src.merkle_sbom import (
             MerkleSBOM, SBOMEntry, MerkleProof, selective_disclosure,
         )
         result['_merkle_sbom'] = MerkleSBOM()
@@ -113,7 +113,7 @@ def _register_misc_layers(
 
     # SimHash LSH 函数搜索索引
     try:
-        from data.src.lsh_function_index import (
+        from modules.data.src.lsh_function_index import (
             LSHFunctionIndex, build_function_embedding,
         )
         result['_lsh_function_index'] = LSHFunctionIndex(
@@ -129,7 +129,7 @@ def _register_misc_layers(
 
     # 二进制级推测执行小工具检测器
     try:
-        from analysis.static.const_time.src.speculation_gadget_detector import (
+        from modules.analysis.static.const_time.src.speculation_gadget_detector import (
             SpeculationTaintTracker, GadgetValidator,
             SpecGadget, GadgetType, Certainty,
         )
@@ -141,7 +141,7 @@ def _register_misc_layers(
 
     # 反编译 I/O 等价性验证器
     try:
-        from analysis.decompiler.decomp_equivalence_verifier import (
+        from modules.analysis.decompiler.decomp_equivalence_verifier import (
             DecompEquivalenceVerifier, EquivalenceLevel,
             check_recompilability, generate_test_inputs,
         )
@@ -153,7 +153,7 @@ def _register_misc_layers(
 
     # 反分析技术加权检测器
     try:
-        from analysis.deobfuscation.anti_analysis_detector import (
+        from modules.analysis.deobfuscation.anti_analysis_detector import (
             AntiAnalysisDetector, AntiAnalysisReport,
         )
         result['_anti_analysis_detector'] = AntiAnalysisDetector()
@@ -163,7 +163,7 @@ def _register_misc_layers(
 
     # 稳定锚点补丁定位器
     try:
-        from analysis.static.binary_diff.src.patch_anchor_localizer import (
+        from modules.analysis.static.binary_diff.src.patch_anchor_localizer import (
             extract_anchors, match_anchors, locate_patch_regions,
             StableAnchor, PatchCandidate,
         )
@@ -187,7 +187,7 @@ def _register_misc_layers(
 
     # 访问模式结构体布局恢复
     try:
-        from analysis.static.binary_analysis.struct_layout_recovery import (
+        from modules.analysis.static.binary_analysis.struct_layout_recovery import (
             StructLayoutRecoverer, collect_struct_accesses,
             infer_field_boundaries,
         )
@@ -200,7 +200,7 @@ def _register_misc_layers(
 
     # 自适应漏洞利用策略选择器
     try:
-        from exploit.src.strategy.adaptive_exploit_selector import (
+        from modules.exploit.src.strategy.adaptive_exploit_selector import (
             AdaptiveExploitSelector, BinaryFingerprint, StrategyKind,
             assess_strategy,
         )
@@ -212,7 +212,7 @@ def _register_misc_layers(
 
     # 法定人数共识引擎
     try:
-        from distributed.src.quorum_consensus import (
+        from modules.distributed.src.quorum_consensus import (
             QuorumConsensusEngine, NodeWeightTracker,
             weighted_quorum_vote,
         )
@@ -224,7 +224,7 @@ def _register_misc_layers(
 
     # Trampoline 二进制函数钩子重写器
     try:
-        from analysis.dynamic.engine.trampoline_hook import (
+        from modules.analysis.dynamic.engine.trampoline_hook import (
             TrampolineHookRewriter, generate_x86_64_trampoline,
             generate_arm64_trampoline, Arch,
         )
@@ -239,7 +239,7 @@ def _register_misc_layers(
 
     # 编译器/工具链元数据指纹识别
     try:
-        from analysis.static.tools.compiler_fingerprinter import (
+        from modules.analysis.static.tools.compiler_fingerprinter import (
             CompilerFingerprinter, CompilerFingerprint,
             detect_from_strings, detect_from_code_idioms,
             detect_from_epilogue_patterns,
@@ -253,7 +253,7 @@ def _register_misc_layers(
 
     # 空间覆盖热力图生成器
     try:
-        from output.src.coverage_heatmap import (
+        from modules.output.src.coverage_heatmap import (
             CoverageHeatmapGenerator, aggregate_heatmap,
             suggest_coldspot_targets,
         )
@@ -267,7 +267,7 @@ def _register_misc_layers(
 
     # IR 提升质量评估器
     try:
-        from analysis.static.binary_analysis.ir_lifting_quality import (
+        from modules.analysis.static.binary_analysis.ir_lifting_quality import (
             IRLiftingQualityEvaluator, IRQualityReport,
         )
         result['_ir_lifting_quality_evaluator'] = IRLiftingQualityEvaluator()
@@ -277,7 +277,7 @@ def _register_misc_layers(
 
     # 前向边 CFI 插桩器
     try:
-        from analysis.static.binary_analysis.forward_edge_cfi import (
+        from modules.analysis.static.binary_analysis.forward_edge_cfi import (
             ForwardEdgeCFI, locate_indirect_calls,
             infer_function_signatures,
         )
@@ -289,7 +289,7 @@ def _register_misc_layers(
 
     # DFG 子图同构函数匹配
     try:
-        from analysis.static.binary_diff.src.dfg_isomorphism_match import (
+        from modules.analysis.static.binary_diff.src.dfg_isomorphism_match import (
             build_dfg_from_instructions, compute_dfg_similarity,
             DFGGraph, DFGNode,
         )

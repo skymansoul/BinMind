@@ -1,6 +1,5 @@
 # 栈溢出分析器入口 — 从symbolic/static/canary/strategy/pattern_fallback拆分.
 # 主编排函数保留在此, 辅助函数散到子模块.
-# 创建: 2026-05-24 (拆分)
 
 
 import logging

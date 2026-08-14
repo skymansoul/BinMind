@@ -1,25 +1,7 @@
 """
-PC-BVF约束感知相关性判定器 — 利用路径约束收紧变量值域后重新判定.
-
-当DD-BVF correlator返回INCONCLUSIVE时, PC-BVF:
-  1. 从告警点提取路径约束(VarBound)
-  2. 将约束注入alloc_expr和write_expr的变量
-  3. 对受约束的变量求值或收紧范围
-  4. 用收紧后的范围重新判定安全性/溢出
-
-判定规则(在BVF基础上的扩展):
-  - 子集安全 + 路径约束收紧: 共享变量有上界, write_const+max(var)*gap <= alloc → SAFE
-  - 路径约束证明溢出约束不可达: if(n<=64) + memcpy(buf,src,n) + malloc(64) → SAFE
-  - 路径约束证明溢出必然: if(n>128) + memcpy(buf,src,n) + malloc(128) → OVERFLOW
-  - 非tainted参数变量无约束: fixed alloc + unbounded write param → OVERFLOW
-  - 非约束变量: BVF原有逻辑不变
-
-关键技术点:
-  系数差分析——当alloc_coef[v]==write_coef[v]但write_const>alloc_const时,
-  若路径约束给出v的上界N, 且alloc额外含非共享变量w(有下界),
-  则 max(write_end) = N*wc + write_const,
-      min(alloc)    = N*ac + alloc_const + min(w)*aw
-  比较max(write_end)与min(alloc)即可判定.
+PC-BVF 约束感知相关性判定器 — 利用路径约束收紧变量值域后重新判定: 从告警点提取路径约束 (VarBound) 注入 alloc/write 表达式, 对受约束变量求值或收紧范围后重新判定安全性/溢出。
+判定规则: 子集安全 + 路径约束收紧 → SAFE; 约束证明溢出不可达 → SAFE; 约束证明溢出必然 → OVERFLOW; 非 tainted 参数变量无约束 → OVERFLOW; 非约束变量沿用 BVF 原逻辑。
+关键技术: 系数差分析 — alloc_coef[v]==write_coef[v] 但 write_const>alloc_const 时, 用 v 的上界 N 与 alloc 非共享变量 w 的下界计算 max(write_end) 与 min(alloc) 并比较。
 """
 from typing import Dict, Optional, Set
 

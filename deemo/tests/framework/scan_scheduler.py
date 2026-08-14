@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BINMIND_MAIN = os.path.join(PROJECT_ROOT, "main.py")
+BINMIND_MAIN = os.path.join(PROJECT_ROOT, "binmind.py")
 
 
 @dataclass
@@ -40,7 +40,7 @@ def scan_single(binary_path: str, timeout_sec: int = 120) -> ScanResult:
 
     try:
         proc = subprocess.run(
-            [sys.executable, BINMIND_MAIN, binary_path],
+            [sys.executable, BINMIND_MAIN, "analyze", binary_path, "--format", "json"],
             capture_output=True, text=True,
             timeout=timeout_sec, cwd=PROJECT_ROOT,
         )

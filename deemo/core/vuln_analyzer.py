@@ -1,16 +1,8 @@
 """
-统一漏洞分析器入口：按漏洞类型分发到专用模块并聚合结果。
-
-模块拆分说明：
-  - vuln_analyzer_base       注册表/装饰器/共享辅助
-  - vuln_analyzer_heuristics 堆启发式（UAF/double-free/UAF args）
-  - vuln_analyzer_analyzers  8 个 @_register 分析器（import 即触发注册）
-  - vuln_analyzer_layers     值流分析 + 误报过滤增强层
-  - vuln_analyzer.py (本文件) 对外 API 入口，保持原 analyze_all 等符号不变
-
-References:
-  - "The Art of Software Security Assessment"
-  - CWE Top 25 Most Dangerous Software Weaknesses
+统一漏洞分析器入口 — 按漏洞类型分发到专用模块并聚合结果。
+模块拆分: vuln_analyzer_base 注册表/装饰器; vuln_analyzer_heuristics 堆启发式;
+vuln_analyzer_analyzers 8 个 @_register 分析器; vuln_analyzer_layers 值流分析+误报过滤;
+本文件为对外 API 入口, 保持 analyze_all 等符号不变。
 """
 
 

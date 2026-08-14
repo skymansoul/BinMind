@@ -1,25 +1,7 @@
 """
-Heap allocation size propagation — recover malloc size arguments that cannot
-be determined locally from the calling context.
-
-Problem: malloc(size) size may be a variable (function parameter, global,
-return value). Detection is impossible without a known size, leading to
-missed findings (false negatives) when dynamically-sized allocations are
-skipped.
-
-Heuristic recovery for three common sources:
-  1. Function parameter: if size comes from func(N, size), search call sites
-     for a constant argument.
-  2. sizeof expression: infer compile-time constants from decompiler output.
-  3. Arithmetic expression: if size = N * M with constant factors, compute
-     a lower bound.
-
-Returns the *minimum possible* value, not the exact value. Chunk boundary
-comparison only fires when store offset exceeds this minimum — guaranteeing
-zero false negatives (conservative: report only when overflow is certain).
-
-ref: GUEB — abstract interpretation for heap sizes.
-     Simplified here to heuristic constant propagation (O(n) vs. full AI).
+堆分配大小传播 — 恢复无法在调用上下文局部确定的 malloc 大小参数。
+对三类来源做启发式恢复: 函数参数、sizeof 表达式、算术表达式;
+返回最小可能值而非精确值, 保证 chunk 边界比较零漏报。
 """
 
 import re
@@ -29,7 +11,7 @@ from typing import Optional
 
 @dataclass
 class SizeEstimate:
-    """Estimated or lower-bound allocation size."""
+    """估算或下界的分配大小。"""
     exact: int = 0          # 精确值 (常量直接可确定)
     lower_bound: int = 0     # 下界 (表达式可推断的最小值)
     confidence: float = 0.0  # [0,1]
@@ -83,7 +65,7 @@ def _infer_size_from_rhs(rhs: str, ir_lines: list[str]) -> SizeEstimate:
         return SizeEstimate(exact=product, lower_bound=product, confidence=0.75,
                           source='expression')
 
-    # variable name — may be a function parameter
+    # 变量名 — 可能是函数参数
     if re.match(r'^[a-z_]\w*$', rhs, re.IGNORECASE):
         return SizeEstimate(lower_bound=1, confidence=0.30, source='param')
 
@@ -91,10 +73,7 @@ def _infer_size_from_rhs(rhs: str, ir_lines: list[str]) -> SizeEstimate:
 
 
 def _estimate_struct_size(struct_name: str) -> int:
-    """Estimate struct size from name via field-count heuristic.
-
-    Covers common libc/system structs only. A full implementation would
-    require Ghidra's data type database."""
+    """按名称用字段数启发式估算结构体大小, 仅覆盖常见libc/系统结构体。"""
     known_structs = {
         'sockaddr': 16, 'sockaddr_in': 16, 'sockaddr_in6': 28,
         'timeval': 16, 'timespec': 16,

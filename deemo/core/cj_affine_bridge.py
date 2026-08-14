@@ -1,29 +1,6 @@
 """
-仿射关系桥接器 — 将路径敏感仿射分析集成到CJ约束求解器.
-
-核心问题:
-  现有CJ求解器仅做FM消元和单变量边界推导, 无法处理:
-    malloc(n+8); memcpy(buf, src, n) — alloc=1*n+8, write=1*n, 差=+8 → 安全
-    buf = malloc(n*2); memcpy(buf, src, n) — alloc=2*n, write=1*n, 系数2>1 → 安全
-    buf = malloc(n); memcpy(buf+8, src, n) — write_end=n+8 > alloc=n → 溢出
-
-  仿射关系域跟踪变量间的线性等式 x = k*y + c,
-  在共享基变量时可通过系数比较判定安全性, 无需具体区间.
-
-集成策略:
-  在CJ求解器的常量代换之后、FM消元之前插入仿射证明步骤:
-    1. 运行AffineAnalyzer获取malloc/memcpy site的仿射状态快照
-    2. 匹配候选的alloc/write到对应仿射site
-    3. 查询affine_state.can_prove_safe / can_prove_overflow
-    4. 仿射证明成功 → 直接返回, 跳过FM
-    5. 仿射无法判定 → 回退到FM流程(零召回损失)
-
-保守性: 仿射证明失败不影响后续FM步骤, 不引入假阴性.
-
-理论基础:
-  - Karr 1976: 仿射关系域, O(n·α(n)) per program point
-  - Müller-Olm & Seidl 2004: 最弱前置条件仿射分析
-  - Mine 2006: 弱关系域在安全验证中的应用
+仿射关系桥接器 — 将路径敏感仿射分析集成到 CJ 约束求解器: 仿射关系域跟踪变量间线性等式 x = k*y + c, 在共享基变量时通过系数比较判定安全性, 无需具体区间。
+集成策略: 在常量代换之后、FM 消元之前插入仿射证明步骤, 匹配候选的 alloc/write 到对应仿射 site, 查询 can_prove_safe / can_prove_overflow; 仿射无法判定时回退到 FM 流程 (零召回损失)。
 """
 
 import re

@@ -1,7 +1,4 @@
-"""
-FCPV 约束收集器辅助模块 — 常量、正则模式、工具函数、污点源检测.
-
-"""
+"""FCPV 约束收集器辅助模块 — 常量、正则模式、工具函数、污点源检测。"""
 from __future__ import annotations
 
 import re

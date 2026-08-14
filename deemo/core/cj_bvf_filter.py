@@ -1,23 +1,6 @@
 """
-DD-BVF误报过滤器 — 在CJ返回INCONCLUSIVE时触发反向值流安全证明.
-
-集成策略:
-  CJ求解器四步均返回INCONCLUSIVE时, 不保守保留, 而是:
-    1. 触发BackwardValueFlow追踪alloc_size和write_size的符号表达式
-    2. 用correlate()判定alloc-write的符号相关性
-    3. 共享变量 + 子集关系 → PROVEN_SAFE (过滤)
-    4. 共享变量 + 系数溢出 → PROVEN_OVERFLOW (确认)
-    5. 无法判定 → 保留(零召回损失, 回退到保守策略)
-
-  与CJ的关系:
-    - CJ在前, BVF在后: CJ能判定的不触发BVF
-    - BVF是CJ的精确化: 利用CJ无法获取的跨跳赋值链信息
-    - BVF不重复CJ的工作: 只在CJ无法判定时启动
-
-  分配器对齐余量:
-    BVF判定SAFE时, 将分配器对齐余量(chunk_slack)纳入考虑:
-      write_end <= alloc_size + chunk_slack → SAFE
-    避免因对齐余量导致的边界case误判.
+DD-BVF 误报过滤器 — 在 CJ 返回 INCONCLUSIVE 时触发反向值流安全证明: 追踪 alloc_size/write_size 的符号表达式, 用 correlate() 判定 alloc-write 符号相关性; 共享变量 + 子集关系 → PROVEN_SAFE, 共享变量 + 系数溢出 → PROVEN_OVERFLOW, 无法判定 → 保留 (零召回损失)。
+CJ 在前, BVF 在后: CJ 能判定的不触发 BVF, BVF 只在 CJ 无法判定时启动, 利用跨跳赋值链信息; 判定 SAFE 时纳入分配器对齐余量 (chunk_slack), write_end <= alloc_size + chunk_slack → SAFE。
 """
 
 from typing import Any, Dict, List, Optional, Tuple

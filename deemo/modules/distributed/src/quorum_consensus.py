@@ -91,7 +91,6 @@ def weighted_quorum_vote(results: list[NodeResult],
         key = _value_to_key(r.value)
         value_groups[key].append(r)
 
-    # 计算每组的总权重
     group_weights = {}
     for key, group in value_groups.items():
         group_weights[key] = sum(r.node_weight * r.confidence for r in group)

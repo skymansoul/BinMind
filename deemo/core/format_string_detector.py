@@ -1,18 +1,6 @@
-"""
-格式化字符串漏洞检测与偏移分析。
-
-检测 printf/fprintf/sprintf/snprintf 系列函数的格式化字符串漏洞：
-1. 静态识别 vararg 调用中格式化参数来自用户输入的代码模式
-2. 利用 angr 符号执行或动态爆破计算格式化字符串在栈上的参数偏移
-3. 输出偏移值和利用建议（直接修改 GOT / 泄露地址 / 任意写）
-
-多层检测策略:
-  Level 1 — 静态模式匹配: 在反编译代码中搜索 printf(buf) 等危险模式
-  Level 2 — 符号执行: 将格式化参数符号化，追踪到栈上位置计算偏移
-  Level 3 — LLM 辅助: 调用 LLM 分析反编译代码判断格式化字符串利用可行性
-
-辅助函数拆分至 fmt_helpers.py 和 fmt_confidence.py。
-"""
+"""格式化字符串漏洞检测与偏移分析.
+检测 printf/fprintf/sprintf/snprintf 族漏洞: 静态识别格式化参数来自用户输入的代码模式, 用 angr 符号执行或动态爆破计算栈上参数偏移, 输出偏移值与利用建议 (改GOT/泄露地址/任意写);
+多层策略: L1 静态模式匹配 → L2 符号执行/约束验证 → L3 LLM 辅助. 辅助函数拆分至 fmt_helpers.py 和 fmt_confidence.py."""
 
 
 import logging

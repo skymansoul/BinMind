@@ -1,19 +1,6 @@
 """
-DD-BVF反向值流符号追踪器 — 从告警点反向构建size变量的符号表达式.
-
-当CJ求解器返回INCONCLUSIVE时, 从告警点反向追踪alloc_size和
-write_size的完整定义链, 构建符号表达式, 通过相关性证明过滤误报.
-
-追踪规则:
-  x = 5           → x = {const: 5}
-  x = y           → x = y的expr
-  x = y + 3       → x = y.coefs, const = y.const + 3
-  x = y * 2       → x = {y: 2}, const = 0
-  x = y + z       → x = {y: 1, z: 1}, const = 0
-  x = atoi(argv)  → x = {x: 1}, tainted=True
-
-安全性判定委派给cj_bvf_correlator.correlate.
-表达式解析委派给cj_bvf_parser.parse_rhs.
+DD-BVF 反向值流符号追踪器 — 从告警点反向构建 size 变量的符号表达式: 常量/别名/加减乘/多变量加法按规则合并系数, taint 源 (atoi/argv 等) 标记 tainted=True。
+当 CJ 求解器返回 INCONCLUSIVE 时, 反向追踪 alloc_size 与 write_size 的完整定义链, 通过相关性证明过滤误报; 安全性判定委派给 cj_bvf_correlator.correlate, 表达式解析委派给 cj_bvf_parser.parse_rhs。
 """
 
 from __future__ import annotations

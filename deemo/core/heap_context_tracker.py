@@ -1,15 +1,7 @@
 """
-Multi-allocation context tracking for heap operations.
-
-The heap overflow detector analyzes malloc→store pairs but ignores
-intermediate realloc/free calls. e.g. p=malloc(64); free(p); p=malloc(256);
-store(p+200) is legal because p was reallocated larger after free.
-
-Maintains per-variable allocation history recording every malloc/realloc/free.
-When checking a store, uses the *last* allocation size, not the first.
-
-Runs as an independent context layer before the detector, correcting
-the allocation size passed in — does not modify the core detector logic.
+多分配上下文追踪 — 记录每个变量的 malloc/realloc/free 历史。
+检查 store 时采用最近一次分配的大小而非首次, 修正传入的分配大小;
+作为独立上下文层运行, 不修改核心检测器逻辑。
 """
 
 from dataclasses import dataclass, field
@@ -19,7 +11,7 @@ from typing import Optional
 
 @dataclass
 class AllocEvent:
-    """A single allocation event — malloc/realloc/free call."""
+    """单个分配事件 — malloc/realloc/free 调用。"""
     pc: int
     op_type: str         # 'malloc' | 'calloc' | 'realloc' | 'free'
     var_name: str         # 接收/释放的变量名
@@ -29,12 +21,12 @@ class AllocEvent:
 
 @dataclass
 class VariableAllocHistory:
-    """Complete allocation history for one variable, time-ordered."""
+    """单个变量的完整分配历史, 按时间排序。"""
     var_name: str
     events: list[AllocEvent] = field(default_factory=list)
 
     def last_alloc_size(self) -> int:
-        """Effective size from the most recent allocation; zeroed after free."""
+        """最近一次分配的有效大小, free 后归零。"""
         effective = 0
         for e in self.events:
             if e.op_type in ('malloc', 'calloc'):
@@ -58,9 +50,7 @@ class VariableAllocHistory:
 
 
 def extract_alloc_context(ir_lines: list[str]) -> dict[str, VariableAllocHistory]:
-    """从 IR 中提取所有堆操作事件的完整上下文。
-
-    Returns {var_name: VariableAllocHistory} for use by the heap overflow detector."""
+    """从IR中提取所有堆操作事件的完整上下文, 返回 {变量名: 历史} 供溢出检测器使用。"""
     histories: dict[str, VariableAllocHistory] = {}
     alloc_pattern = re.compile(
         r'(?:(\w+)\s*=\s*)?(malloc|calloc|realloc)\s*\(\s*(\d+|\w+)(?:,\s*(\d+|\w+))?\s*\)',
@@ -97,9 +87,7 @@ def extract_alloc_context(ir_lines: list[str]) -> dict[str, VariableAllocHistory
 
 def get_effective_alloc_size(var_name: str, store_pc: int,
                               histories: dict[str, VariableAllocHistory]) -> int:
-    """查询变量在 store_pc 处的有效分配大小。
-
-    Returns 0 if freed without reallocation (UAF, not heap overflow; handled by uaf_use_site_detector)."""
+    """查询变量在 store_pc 处的有效分配大小; 释放后未重分配返回 0 (属UAF, 由 uaf_use_site_detector 处理)。"""
     hist = histories.get(var_name)
     if hist is None:
         return 0

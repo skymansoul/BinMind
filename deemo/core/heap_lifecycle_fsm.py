@@ -1,8 +1,5 @@
-# Heap object lifecycle FSM: alloc→free→use path detection.
-# Uses finite state machine instead of full pointer analysis. Alias analysis
-# precision in the binary context is bounded by decompiler variable recovery.
-# The FSM approach correctly tracks alloc/free/use triples as long as the
-# decompiler assigns the same variable name.
+# heap_lifecycle_fsm.py - 堆对象生命周期FSM: alloc→free→use 路径检测。
+# 用有限状态机替代完整指针分析, 反编译器为同一变量赋同名时即可正确追踪三元组。
 import re
 from collections import defaultdict
 

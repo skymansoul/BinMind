@@ -1,8 +1,5 @@
-"""
-增强管线编排器 — 调度所有插件注册器, 叠加到标准管线之上。
-每个注册器内部由独立的 try/except ImportError 块组成,
-插件缺失时静默降级, 不影响主流程。
-"""
+"""增强管线编排器 — 调度所有插件注册器, 叠加到标准管线之上。
+每个注册器由独立 try/except ImportError 块组成, 插件缺失时静默降级。"""
 
 import logging
 from typing import Any, Dict

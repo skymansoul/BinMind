@@ -1,18 +1,8 @@
-"""
-FOVF 格式参数值流分类.
-
-核心判定: 格式参数是否可控.
-  1. 字面量 -> LITERAL (安全)
-  2. 用户输入源 -> USER (漏洞)
-  3. 栈缓冲: 全部写入点仅常量 -> CONST_BUFFER (安全)
-     由常量模板 + 用户实参生成 -> TEMPLATE (间接可控)
-  4. 函数形参: 绑定调用点实参分类 (跨函数)
-  5. 无法确定 -> UNKNOWN
-
-与既有 format_string_taint (仅 user/safe/const 三元) 的差异:
-  增加 CONST_BUFFER 负向证明 (缓冲全常量填充) 与 TEMPLATE 间接
-  可控识别, 两者都需要跨写入点值流而非单点来源判定.
-"""
+"""FOVF 格式参数值流分类 — 核心判定格式参数是否可控。
+字面量→LITERAL (安全); 用户输入源→USER (漏洞); 栈缓冲全常量填充→CONST_BUFFER (安全),
+常量模板+用户实参生成→TEMPLATE (间接可控); 函数形参绑定调用点实参分类 (跨函数); 无法确定→UNKNOWN。
+与 format_string_taint (仅 user/safe/const 三元) 的差异: 增加 CONST_BUFFER 负向证明与 TEMPLATE
+间接可控识别, 两者均需跨写入点值流而非单点来源判定。"""
 
 import re
 from typing import Dict, List, Optional, Set, Tuple

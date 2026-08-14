@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
-# — hermit1016: 深重重写，接入全部子模块
+# hermit1016: 重写统一入口, 接入全部子模块
 
 """fuzzing — 命令行入口
 
@@ -116,7 +116,7 @@ def _cmd_fault_inject(args: argparse.Namespace, config: dict) -> int:
 
     默认从 CLI 参数取值, 未指定则从 YAML config 中 fallback。
     """
-    from fuzzing.fault_injection_fuzzer import FaultInjectionFuzzer
+    from modules.fuzzing.fault_injection_fuzzer import FaultInjectionFuzzer
     log = logging.getLogger("fault_inject")
 
     binary = args.binary or config.get('fault_injection', {}).get('binary_path', '')
@@ -143,7 +143,7 @@ def _cmd_fault_inject(args: argparse.Namespace, config: dict) -> int:
 
 def _cmd_cluster(args: argparse.Namespace, config: dict) -> int:
     """集群自动伸缩 — 单次 tick 或持续循环."""
-    from fuzzing.fuzz_cluster_autoscaler import (
+    from modules.fuzzing.fuzz_cluster_autoscaler import (
         FuzzClusterAutoscaler, TaskQueue, NodeRegistry
     )
     log = logging.getLogger("cluster")
@@ -172,7 +172,7 @@ def _cmd_cluster(args: argparse.Namespace, config: dict) -> int:
 
 def _cmd_coverage(args: argparse.Namespace, config: dict) -> int:
     """覆盖率可视化 — 解析 JSON 并生成 heatmap / HTML 报告."""
-    from fuzzing.fuzz_coverage_visualizer import FuzzCoverageVisualizer
+    from modules.fuzzing.fuzz_coverage_visualizer import FuzzCoverageVisualizer
     log = logging.getLogger("coverage")
 
     coverage_file = args.coverage_file or config.get('coverage', {}).get('input_file', '')
@@ -200,7 +200,7 @@ def _cmd_coverage(args: argparse.Namespace, config: dict) -> int:
 
 def _cmd_dictionary(args: argparse.Namespace, config: dict) -> int:
     """字典生成 — 二进制分析 + LLM 增强字典输出."""
-    from fuzzing.fuzz_dictionary_generator import generate_fuzz_dictionary
+    from modules.fuzzing.fuzz_dictionary_generator import generate_fuzz_dictionary
     log = logging.getLogger("dictionary")
 
     binary = args.binary or config.get('dictionary', {}).get('binary_path', '')
@@ -227,7 +227,7 @@ def _cmd_dictionary(args: argparse.Namespace, config: dict) -> int:
 
 def _cmd_harness(args: argparse.Namespace, config: dict) -> int:
     """Harness 优化 — 从二进制生成 C++ fuzz harness."""
-    from fuzzing.fuzz_harness_optimizer import FuzzHarnessOptimizer
+    from modules.fuzzing.fuzz_harness_optimizer import FuzzHarnessOptimizer
     log = logging.getLogger("harness")
 
     binary = args.binary or config.get('harness', {}).get('binary_path', '')
@@ -253,7 +253,7 @@ def _cmd_evolve(args: argparse.Namespace, config: dict) -> int:
 
     从 seed-dir 加载初始种子, 运行 N 代进化, 输出蒸馏后的最佳种子。
     """
-    from fuzzing.fuzz_seed_evolution import evolve_seeds
+    from modules.fuzzing.fuzz_seed_evolution import evolve_seeds
     log = logging.getLogger("evolve")
 
     seed_dir = args.seed_dir or config.get('seed_evolution', {}).get('seed_dir', '')

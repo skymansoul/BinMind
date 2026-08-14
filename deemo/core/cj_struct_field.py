@@ -1,19 +1,6 @@
 """
-结构体字段偏移域(SFOD) — 从源码提取struct字段布局并建模为CJ约束.
-
-将HOSV的struct_write_check逻辑系统化桥接到CJ约束系统,
-使CJ管线自主处理struct field写入场景, 不再依赖HOSV旁路补位.
-
-核心机制:
-  1. 从源码typedef struct定义中提取字段偏移和大小
-  2. 从IR中识别 buf->field 写入模式
-  3. 将field_offset建模为CJ约束系统的偏移常量
-  4. write_end = field_offset + write_size vs usable_size判定安全
-
-设计决策:
-  - 仅处理线性偏移(常量字段偏移), 不处理动态字段偏移(数组索引)
-  - 复用compute_struct_field_info的字段解析逻辑, 但输出为LinearConstraint
-  - 解析失败时返回空列表(保守策略, 不产生误判)
+结构体字段偏移域 (SFOD) — 从源码提取 struct 字段布局并建模为 CJ 约束: 解析 typedef struct 定义提取字段偏移和大小, 识别 buf->field 写入模式, 将 field_offset 建模为约束系统的偏移常量, 以 write_end = field_offset + write_size vs usable_size 判定安全。
+将 HOSV 的 struct_write_check 逻辑系统化桥接到 CJ 约束系统; 仅处理线性偏移 (常量字段偏移), 不处理动态字段偏移 (数组索引); 解析失败时返回空列表 (保守策略, 不产生误判)。
 """
 from __future__ import annotations
 import re

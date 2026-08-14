@@ -1,17 +1,6 @@
-# 跨函数匹配malloc/free对, 构建堆对象从分配到释放的完整生命周期。
-# 用于: UAF候选生成 (追踪free后的use), double-free检测。
-#
-# 设计依据:
-#   TypeArmor 从二进制恢复C类型信息用于UAF检测。
-#   本模块不恢复类型 — 而是追踪指针变量在函数间的传递。
-#   通过栈帧偏移模式匹配malloc/free调用点, 不依赖调试信息。
-#
-# 追踪策略:
-#   1. 在反编译伪代码中定位malloc/calloc/realloc调用
-#   2. 追踪返回的指针变量: 赋值给哪个变量, 传递给哪些函数
-#   3. 定位同一指针变量的free调用
-#   4. 在free之后继续追踪: 该指针是否仍被引用 (UAF风险)
-#   5. 输出: (malloc_site, free_site, post_free_uses)
+# 跨函数匹配malloc/free对，构建堆对象从分配到释放的完整生命周期，
+# 供UAF候选生成与double-free检测。追踪指针变量在函数间的传递，
+# 通过栈帧偏移模式匹配malloc/free调用点，不依赖调试信息。
 import re as _re
 from dataclasses import dataclass as _dc, field as _field
 from typing import List, Optional, Set, Tuple

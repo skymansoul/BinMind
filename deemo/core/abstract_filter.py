@@ -1,21 +1,7 @@
 """
-Abstract interpretation filter: interval abstraction + infeasible path pruning.
-
-Detectors (regex/angr/taint) produce candidate vulnerabilities, many of which
-are unreachable at runtime: buffer size is sufficient, path conditions
-contradict, or calling context protects the sink.
-
-This module uses lightweight interval abstraction to filter false positives,
-tracking only buffer sizes with O(n) complexity instead of full abstract
-interpretation at O(2^n).
-
-Method:
-  Buffer allocation: extract size from malloc(size) / char buf[N] -> [N, N]
-  Path constraint accumulation: narrow intervals along CFG edges
-  Dangerous call check: verify memcpy(dst, src, len) len <= buffer lower bound
-    lower bound > len -> FILTER (conservatively safe)
-    upper bound < len -> KEEP (definite overflow)
-    interval overlaps len -> UNCERTAIN
+区间抽象过滤器: 用区间算术追踪缓冲区大小并裁剪不可达路径。
+对 malloc 大小与栈数组提取区间, 沿 CFG 边累积路径约束, 判定 memcpy 等危险调用的拷贝长度是否超出缓冲区下界:
+下界 > 长度则过滤 (安全), 上界 < 长度则保留 (确定溢出), 区间重叠则标记为不确定。
 """
 
 
@@ -76,17 +62,10 @@ class FilterResult:
 
 class AbstractFilter:
     """
-    区间抽象过滤器。
+    区间抽象过滤器, 用区间算术追踪缓冲区大小。
 
-    使用区间算术追踪缓冲区大小。
-
-    局限性 (需要诚实标注):
-    - 不对指针做别名分析: 若同一个指针被重分配到更大缓冲区, 本分析不知道
-    - 不对循环做 widening: 循环内的 malloc 大小会被低估
-    - 不处理变长数组 (VLA): int buf[n] 中 n 的值无法静态确定
-
-    这些限制意味着本过滤器是 "保守保留" 的 —— 宁可留下可能的误报,
-    不丢弃真阳性。误报率降低目标: 20-30%, 不追求更高以避免漏报。
+    局限: 不做指针别名分析, 不对循环做 widening, 不处理变长数组。
+    策略为保守保留: 宁可保留误报也不丢弃真阳性, 误报率降低目标 20-30%。
     """
 
     def __init__(self):
@@ -156,7 +135,7 @@ class AbstractFilter:
                 copy_size=copy_iv,
             )
 
-        # 区间重叠 → 部分路径可能溢出
+        # 区间重叠 → 部分路径存在溢出
         return FilterResult(
             candidate_id=call_site,
             verdict="UNCERTAIN",
@@ -171,12 +150,7 @@ class AbstractFilter:
     def filter_use_after_free(
         self, ptr_name: str, use_site: str, free_site: str,
     ) -> FilterResult:
-        """
-        检查指针在 free 后是否被使用。
-
-        此处简化: 若 free_site 存在且 use_site 在 CFG 上可达 free_site 之后,
-        则保留 (KEEP)。更精确的分析需要指针别名信息, 超出本模块范围。
-        """
+        """检查指针在 free 后是否被使用。简化规则: free_site 存在且 use_site 在 CFG 上可达 free_site 之后则保留 (KEEP)。"""
         if free_site and use_site:
             return FilterResult(
                 candidate_id=use_site,

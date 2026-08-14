@@ -1,23 +1,7 @@
 """
-FM边界推理增强 — 从Fourier-Motzkin消元残差约束中推导变量边界.
-
-现有FM消元流程:
-  1. 常量代换 → 2. FM消元 → 3. 矛盾检测(纯常量约束求值)
-
-问题: FM消元后残差约束中仍含变量, 当前只检查纯常量矛盾.
-大量场景下, 残差约束形如 `2*var <= 100` 可直接推出 var <= 50,
-但求解器不利用这个信息, 返回INCONCLUSIVE.
-
-本模块在FM消元后追加一步边界推导:
-  - 从残差约束中提取单变量不等式 `c*var + k <= 0` → var <= -k/c
-  - 计算每个变量的[lo, hi]区间
-  - 若write_end_expr的变量区间能确定 write_end <= alloc_usable → SAFE
-  - 若能确定 write_end > alloc_usable → OVERFLOW
-
-这是对FM消元的信息最大化利用, 将INCONCLUSIVE转为可判定.
-不替代SMT求解器 — 仅处理单变量线性边界推导.
-
-理论: 区间算术的传播规则.
+FM 边界推理增强 — 从 Fourier-Motzkin 消元残差约束中推导变量边界: 消元后残差如 `2*var <= 100` 可直接推出 var <= 50, 但原流程只检查纯常量矛盾而返回 INCONCLUSIVE。
+本模块追加一步: 从残差约束提取单变量不等式 `c*var + k <= 0` → var <= -k/c, 计算每个变量的 [lo, hi] 区间, 区间能确定 write_end <= alloc_usable 则 SAFE, 能确定 write_end > alloc_usable 则 OVERFLOW。
+不替代 SMT 求解器 — 仅处理单变量线性边界推导, 理论依据为区间算术传播规则。
 """
 
 

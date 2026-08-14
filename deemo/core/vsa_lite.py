@@ -1,11 +1,7 @@
 """
 寄存器级 VSA-Lite — Capstone 反汇编上的 stride-interval 值集分析。
-
-DEEPVSA 用分层 Bi-LSTM 增强 VSA, 需 160 万行执行轨迹训练。
-本模块做确定性 stride-interval 追踪: 每条 mov/lea 指令追踪寄存器值区间,
-跨基本块汇合取并集, 遇 call 保守置 ⊤。仅追踪 malloc 返回值和 memcpy 目标地址。
-
-参考: Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables"。
+每条 mov/lea 指令追踪寄存器值区间, 跨基本块汇合取并集, 遇 call 保守置 ⊤。
+仅追踪 malloc 返回值和 memcpy 目标地址, 判定堆写越界。
 """
 
 
@@ -147,7 +143,6 @@ def _parse_pe_imports(path: str) -> dict[int,str]:
                     idata_ra=struct.unpack('<I',sh[20:24])[0]
                     idata_sz=struct.unpack('<I',sh[16:20])[0]
             if not idata_ra: return {}
-            # 读取导入目录
             f.seek(idata_ra)
             imap={}
             while True:
@@ -156,7 +151,6 @@ def _parse_pe_imports(path: str) -> dict[int,str]:
                 iat_rva=struct.unpack('<I',entry[16:20])[0]
                 name_rva=struct.unpack('<I',entry[12:16])[0]
                 if not iat_rva or not name_rva: continue
-                # 读取DLL名称
                 cur=f.tell(); f.seek(name_rva)
                 dll_name=b''
                 while True:
@@ -164,18 +158,17 @@ def _parse_pe_imports(path: str) -> dict[int,str]:
                     if b==b'\x00': break
                     dll_name+=b
                 dll_name=dll_name.decode(errors='replace')
-                # 读取IAT
                 f.seek(iat_rva)
                 hint_off=0
                 while True:
                     f.seek(iat_rva+hint_off*8)
                     va=struct.unpack('<Q',f.read(8))[0]
                     if va==0: break
-                    if va&0x8000000000000000:  # ordinal import
+                    if va&0x8000000000000000:  # 序号导入
                         ord_val=va&0xFFFF
                         imap[va]=f'{dll_name}!ord_{ord_val}'
                     else:
-                        f.seek(va+2)  # skip hint
+                        f.seek(va+2)  # 跳过 hint 字段
                         fn=b''
                         while True:
                             b=f.read(1)
@@ -206,7 +199,7 @@ def _read_text(path: str) -> Tuple[Optional[bytes], int]:
                     nm=ss[no:ss.index(b'\x00',no)].decode()
                     if nm=='.text':
                         return f.read(struct.unpack('<Q',sh[32:40])[0]), struct.unpack('<Q',sh[16:24])[0]
-            # PE/COFF (MinGW on Windows)
+            # PE/COFF (Windows 下的 MinGW 编译产物)
             elif h[:2]==b'MZ':
                 f.seek(0x3C); pe_off=struct.unpack('<I',f.read(4))[0]
                 f.seek(pe_off)

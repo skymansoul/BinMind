@@ -13,12 +13,12 @@ def _register_fuzz_layers(
     kwargs: Dict[str, Any],
     logger: Any,
 ) -> None:
-    """注册模糊测试/插桩/种子调度增强层."""
+    """注册模糊测试/插桩/种子调度增强层。"""
 
     # 时态新颖度模糊调度器
     # Ebbinghaus遗忘曲线式种子新颖度衰减，双队列调度。
     try:
-        from fuzzing.src.decaying_novelty_scheduler import (
+        from modules.fuzzing.src.decaying_novelty_scheduler import (
             DecayingNoveltyScheduler, NoveltyRecord,
         )
         result['_decaying_novelty_scheduler'] = DecayingNoveltyScheduler(
@@ -32,7 +32,7 @@ def _register_fuzz_layers(
 
     # 语义执行新颖度检测器 (SEND)
     try:
-        from fuzzing.src.semantic_novelty_detector import (
+        from modules.fuzzing.src.semantic_novelty_detector import (
             SemanticNoveltyDetector, ExecutionSummary,
             NoveltyGuidedEnergyPolicy,
         )
@@ -48,7 +48,7 @@ def _register_fuzz_layers(
 
     # Thompson 采样多模糊器编排器
     try:
-        from fuzzing.src.thompson_orchestrator import (
+        from modules.fuzzing.src.thompson_orchestrator import (
             ThompsonOrchestrator, make_crash_signature,
         )
         result['_thompson_orchestrator'] = ThompsonOrchestrator(
@@ -62,7 +62,7 @@ def _register_fuzz_layers(
 
     # 约束感知 def-use 链引导变异
     try:
-        from fuzzing.src.defuse_mutation_guide import (
+        from modules.fuzzing.src.defuse_mutation_guide import (
             ConstraintGuidedMutator, ConditionBranchCollector,
             defuse_guided_mutation_pipeline, BranchCoverageFingerprint,
         )
@@ -76,7 +76,7 @@ def _register_fuzz_layers(
 
     # 反事实变异优化器
     try:
-        from fuzzing.src.counterfactual_mutator import CounterfactualMutator
+        from modules.fuzzing.src.counterfactual_mutator import CounterfactualMutator
         result['_counterfactual_mutator'] = CounterfactualMutator(
             max_history=kwargs.get('cf_max_history', 500),
         )
@@ -86,7 +86,7 @@ def _register_fuzz_layers(
 
     # 对抗遗憾最小化变异集成
     try:
-        from fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
+        from modules.fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
         result['_regret_ensemble'] = RegretMinimizingEnsemble(
             learning_rate=kwargs.get('regret_lr', 0.1),
             ent_lambda=kwargs.get('regret_ent_lambda', 0.01),
@@ -97,7 +97,7 @@ def _register_fuzz_layers(
 
     # 拓扑覆盖导航器
     try:
-        from fuzzing.src.topological_coverage_navigator import (
+        from modules.fuzzing.src.topological_coverage_navigator import (
             TopologicalCoverageNavigator, CoveragePoint, TopologicalFeature,
         )
         result['_topological_navigator'] = TopologicalCoverageNavigator(
@@ -110,7 +110,7 @@ def _register_fuzz_layers(
 
     # 风险调整模糊测试能量调度
     try:
-        from fuzzing.src.risk_adjusted_schedule import (
+        from modules.fuzzing.src.risk_adjusted_schedule import (
             RiskAdjustedScheduler, SeedPerformanceHistory,
         )
         result['_risk_adjusted_scheduler'] = RiskAdjustedScheduler(
@@ -123,7 +123,7 @@ def _register_fuzz_layers(
 
     # 路径转换图种子探索器
     try:
-        from fuzzing.src.path_transition_explorer import (
+        from modules.fuzzing.src.path_transition_explorer import (
             PathTransitionGraph, hash_coverage_state,
             context_aware_schedule,
         )
@@ -136,7 +136,7 @@ def _register_fuzz_layers(
 
     # Intel PT 覆盖位图重建器
     try:
-        from analysis.dynamic.engine.intel_pt_coverage import (
+        from modules.analysis.dynamic.engine.intel_pt_coverage import (
             PTCoverageReconstructor, find_psb_boundaries,
             parse_pt_packets, bb_sequence_to_edge_bitmap,
         )
@@ -151,7 +151,7 @@ def _register_fuzz_layers(
 
     # EVT 差分模糊测试风险估计器
     try:
-        from fuzzing.src.evt_risk_estimator import (
+        from modules.fuzzing.src.evt_risk_estimator import (
             EVTRiskEstimator, fit_gpd, score_diff_severity,
         )
         result['_evt_risk_estimator'] = EVTRiskEstimator(
@@ -164,7 +164,7 @@ def _register_fuzz_layers(
 
     # 二进制语义差分 Oracle
     try:
-        from analysis.dynamic.engine.semantic_diff_oracle import (
+        from modules.analysis.dynamic.engine.semantic_diff_oracle import (
             SemanticDiffOracle, ExecutionSnapshot, DiffType,
             capture_execution,
         )
@@ -179,7 +179,7 @@ def _register_fuzz_layers(
 
     # 崩溃变体生成器
     try:
-        from analysis.dynamic.engine.crash_variant_generator import (
+        from modules.analysis.dynamic.engine.crash_variant_generator import (
             CrashVariantGenerator, triangulate_root_cause,
             CrashVariant, TriangulationResult,
         )
@@ -191,7 +191,7 @@ def _register_fuzz_layers(
 
     # 嵌入式 DBI 追踪适配器
     try:
-        from analysis.dynamic.engine.embedded_dbi_tracer import (
+        from modules.analysis.dynamic.engine.embedded_dbi_tracer import (
             EmbeddedDBIRewriter, TraceBuffer, TraceDecoder,
             ISAFamily,
         )
@@ -207,7 +207,7 @@ def _register_fuzz_layers(
 
     # 执行上下文崩溃去重引擎
     try:
-        from analysis.dynamic.engine.crash_context_dedup import (
+        from modules.analysis.dynamic.engine.crash_context_dedup import (
             CrashContextDeduplicator, CrashRecord,
             make_crash_signature, bb_sequence_embedding,
         )
@@ -223,7 +223,7 @@ def _register_fuzz_layers(
 
     # 见证支持的崩溃根因定位器
     try:
-        from analysis.dynamic.engine.witness_root_cause import (
+        from modules.analysis.dynamic.engine.witness_root_cause import (
             backward_crash_slice, rank_blame_candidates,
             WitnessPath, BlameCandidate,
         )
@@ -235,7 +235,7 @@ def _register_fuzz_layers(
 
     # 协议边界检测 + 状态机推断
     try:
-        from analysis.static.tools.entropy_jump_detector import (
+        from modules.analysis.static.tools.entropy_jump_detector import (
             EntropyJumpDetector, IncrementalEntropyWindow,
         )
         result['_entropy_jump_detector'] = EntropyJumpDetector()
@@ -243,7 +243,8 @@ def _register_fuzz_layers(
     except ImportError:
         logger.debug('optional plugin not available')
     try:
-        from analysis.static.tools.protocol_state_inferrer import (
+        # ProtocolStateMachineInferrer 已重构为 ProtocolStateMachine, 该增强当前跳过
+        from modules.analysis.static.tools.protocol_state_inferrer import (
             ProtocolStateMachineInferrer,
         )
         result['_protocol_state_inferrer'] = ProtocolStateMachineInferrer()

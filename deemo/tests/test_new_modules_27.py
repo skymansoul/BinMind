@@ -508,15 +508,12 @@ class TestIntegration:
         assert crypto_traffic_decrypt is not None
         assert binary_format_fuzzer is not None
 
-    def test_main_py_imports(self):
+    def test_binmind_entry_imports(self):
         import importlib.util
-        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "main.py"), 'r', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "binmind.py"), 'r', encoding='utf-8') as f:
             content = f.read()
-        assert 'from core.pipeline import run_pipeline' in content
-        assert 'from utils.logging_setup import init_logging' in content
-        assert 'from config import ensure_dirs' in content
-        assert 'def main(' in content
-        assert 'def __getattr__(' in content
+        assert 'from cli.commands import main as entry' in content
+        assert 'def _run(' in content
 
 
 if __name__ == '__main__':

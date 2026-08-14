@@ -1,22 +1,7 @@
 """
-libc version identification: extracts libc fingerprints from binaries and
-matches against known version databases.
-
-Extracts GNU version strings from .rodata, __libc_start_main byte signatures,
-and .gnu.version_r symbol version requirements. Supports offline (local
-fingerprint DB) and online (libc.rip / niklasb/libc-database) modes.
-
-Multi-tier fallback:
-  1. Extract GNU C Library version string (e.g., "Ubuntu GLIBC 2.31-0ubuntu9")
-  2. Hash first N bytes of key functions as fingerprint -> match against preset DB
-  3. Online API query (requires network)
-
-Combines compile-time string fingerprints with runtime _IO_2_1_stdin_ struct
-offset features for robustness against stripped binaries and incomplete symtabs.
-
-References:
-  - niklasb/libc-database (GitHub)
-  - Marcelllo et al., 2021, DFRWS EU
+libc版本识别: 从二进制提取指纹并匹配已知版本库。
+从.rodata提取GNU版本字符串、关键函数字节指纹、_IO_2_1_stdin_结构偏移特征，
+支持离线本地库与在线API两种模式，对去除符号的二进制依然有效。
 """
 
 from __future__ import annotations
@@ -210,7 +195,7 @@ def _lookup_symbols(path: str, version: str) -> Dict[str, str]:
 
 
 def _lookup_system_libc(path: str) -> Dict[str, str]:
-    """Resolve key symbol offsets from system libc or the binary's import table."""
+    """从系统libc或二进制的导入表解析关键符号偏移。"""
     symbols: Dict[str, str] = {}
 
     try:

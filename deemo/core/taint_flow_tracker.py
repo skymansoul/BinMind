@@ -1,24 +1,6 @@
-# Lightweight value-flow tracking: back-traces register/variable origin
-# along def-use chains without symbolic execution.
-#
-# Full symbolic execution (angr) times out on >100KB binaries due to path
-# explosion. This module does conservative def-use analysis from disassembly
-# text, tracing a register's value back to its nearest function call/param.
-#
-# Strategy:
-#   1. Scan backward from target instruction (e.g., call printf) for the
-#      target register's definition point
-#   2. Immediate mov/lea -> stop (constant/string)
-#   3. Register mov -> continue tracing source register
-#   4. Memory load -> "from memory" (possibly global/heap variable)
-#   5. Function return (rax after call) -> "from function call"
-#
-# Used by format_string_detector to determine if printf format args derive
-# from user-controlled input (recv/read/fgets return values).
-#
-# erences:
-# VSA: abstract domain value-set tracking
-# BAP (CMU): full IR-level dataflow analysis; this module stays at asm level
+# 轻量值流追踪: 沿def-use链回溯寄存器/变量来源, 不依赖符号执行。
+# 大型二进制上angr符号执行因路径爆炸超时, 本模块在反汇编文本上做保守
+# def-use分析。供format_string_detector判断printf格式参数是否来自用户输入。
 
 
 from collections import defaultdict
@@ -28,14 +10,14 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 @dataclass
 class TaintSource:
-    """Taint source descriptor: the ultimate origin of a value."""
+    """污点源描述: 值的最终来源。"""
     source_type: str   # "constant" / "memory" / "function_return" / "input_function"
     detail: str        # e.g., "from recv() return value" or "constant 0x400"
     confidence: float  # 0.0-1.0, trace reliability
     trace_depth: int   # back-trace steps
 
 
-# Common user input functions whose return values carry external input
+# 返回值携带外部输入的常见用户输入函数
 _INPUT_FUNCTIONS = {
     'read', 'recv', 'recvfrom', 'recvmsg', 'fread', 'fgets',
     'gets', 'scanf', 'getchar', 'getline', 'readline',
@@ -49,16 +31,12 @@ def trace_register_source(
     target_register: str,
     max_depth: int = 20,
 ) -> TaintSource:
-    """Back-trace a register's value origin from a target instruction.
+    """从目标指令回溯寄存器的值来源。
 
-    Args:
-        disasm_lines: disassembly text lines (e.g., radare2 'pdf' output)
-        target_line_idx: line index of the target instruction
-        target_register: register name to trace (e.g., 'rdi', 'eax')
-        max_depth: max back-trace steps
-
-    Returns:
-        TaintSource describing the value's ultimate origin.
+    参数: disasm_lines 反汇编文本行 (如 radare2 'pdf' 输出),
+    target_line_idx 目标指令行号, target_register 待追踪寄存器名 (如 'rdi'),
+    max_depth 最大回溯步数。
+    返回描述值最终来源的 TaintSource。
     """
     depth = 0
     current_reg = target_register.lower()
@@ -75,28 +53,28 @@ def trace_register_source(
         depth += 1
         lower = line.lower()
 
-        # Check if current line defines current_reg
+        # 检查当前行是否定义了 current_reg
         if not _defines_register(lower, current_reg):
             continue
 
         visited_regs.add(current_reg)
 
-        # Case 1: mov reg, imm -> constant value
+        # 情形1: mov reg, imm → 常量值
         imm = _extract_immediate(lower)
         if imm is not None:
             return TaintSource("constant", f"immediate {hex(imm)}", 0.95, depth)
 
-        # Case 2: mov reg, reg2 -> continue tracing reg2
+        # 情形2: mov reg, reg2 → 继续追踪 reg2
         src_reg = _extract_source_register(lower, current_reg)
         if src_reg and src_reg not in visited_regs:
             current_reg = src_reg
             continue
 
-        # Case 3: lea reg, [mem] -> memory address (not user-controlled)
+        # 情形3: lea reg, [mem] → 内存地址 (非用户控制)
         if 'lea' in lower and current_reg in lower:
             return TaintSource("constant", "stack/global address", 0.7, depth)
 
-        # Case 4: call xxx; mov result -> function return value
+        # 情形4: call 后取返回值 → 函数返回值
         if 'call' in lower:
             callee = _extract_call_target(line)
             if callee and callee in _INPUT_FUNCTIONS:
@@ -105,11 +83,11 @@ def trace_register_source(
             return TaintSource("function_return",
                               f"from {callee or 'unknown'}() return value", 0.5, depth)
 
-        # Case 5: load from memory
+        # 情形5: 从内存加载
         if any(kw in lower for kw in ('mov', 'ldr')) and '[' in lower:
             return TaintSource("memory", "from memory load", 0.3, depth)
 
-        # Case 6: xor reg,reg / sub reg,reg -> zeroing
+        # 情形6: xor/sub 清零操作
         if any(kw in lower for kw in ('xor', 'sub')) and current_reg in lower:
             if lower.count(current_reg) >= 2 or '0x0' in lower:
                 return TaintSource("constant", "zeroing op", 0.95, depth)
@@ -120,9 +98,9 @@ def trace_register_source(
 
 
 def _defines_register(line_lower: str, reg: str) -> bool:
-    """Check if the line defines the given register as a destination operand.
+    """检查行是否将给定寄存器作为目标操作数定义。
 
-    For x86-64 assembly syntax: mov DST, SRC or lea DST, [SRC].
+    x86-64 汇编语法: mov DST, SRC 或 lea DST, [SRC]。
     """
     parts = line_lower.split(',')[0] if ',' in line_lower else line_lower
     tokens = parts.replace('[', ' ').replace(']', ' ').replace(':', ' ').split()
@@ -132,7 +110,7 @@ def _defines_register(line_lower: str, reg: str) -> bool:
 
 
 def _extract_immediate(line_lower: str) -> Optional[int]:
-    """Extract immediate value from instruction line, returns int or None."""
+    """从指令行提取立即数, 返回 int 或 None。"""
     import re
     m = re.search(r'(?:^|[,\s])(0x[0-9a-fA-F]+|\d+)\s*(?:$|[,\s\]])', line_lower)
     if m:
@@ -144,7 +122,7 @@ def _extract_immediate(line_lower: str) -> Optional[int]:
 
 
 def _extract_source_register(line_lower: str, dest_reg: str) -> Optional[str]:
-    """Extract SRC register from 'mov DST, SRC' instruction."""
+    """从 'mov DST, SRC' 指令提取源寄存器。"""
     parts = line_lower.split(',')
     if len(parts) < 2:
         return None
@@ -161,7 +139,7 @@ def _extract_source_register(line_lower: str, dest_reg: str) -> Optional[str]:
 
 
 def _extract_call_target(line: str) -> Optional[str]:
-    """Extract callee function name from a call instruction line."""
+    """从 call 指令行提取被调函数名。"""
     import re
     m = re.search(r'call\s+(\S+)', line, re.IGNORECASE)
     if m:
@@ -179,15 +157,11 @@ def is_format_arg_user_controlled(
     call_line_idx: int,
     format_arg_reg: str = 'rdi',
 ) -> Tuple[bool, TaintSource]:
-    """Convenience entry point: check if a printf format argument is user-controlled.
+    """便捷入口: 检查 printf 格式参数是否受用户控制。
 
-    Args:
-        disasm_lines: disassembly line list
-        call_line_idx: line index of call printf
-        format_arg_reg: format argument register (x86-64 calling convention: rdi)
-
-    Returns:
-        (is_user_controlled, taint_source)
+    参数: disasm_lines 反汇编行列表, call_line_idx call printf 行号,
+    format_arg_reg 格式参数寄存器 (x86-64 调用约定: rdi)。
+    返回 (is_user_controlled, taint_source)。
     """
     source = trace_register_source(disasm_lines, call_line_idx,
                                     format_arg_reg, max_depth=30)
@@ -201,10 +175,8 @@ def interprocedural_trace(
     target_register: str,
     callee_disasm: List[str] = None,
 ) -> TaintSource:
-    """Cross-function taint tracing: when back-slicing hits a call, enter the
-    callee's disassembly to analyze the return value's origin.
-
-    x86-64 calling convention: rax = return value.
+    """跨函数污点追踪: 回溯切片遇到 call 时, 进入被调函数反汇编,
+    分析返回值的来源。x86-64 调用约定: rax 为返回值。
     """
     if callee_disasm is None:
         return TaintSource("function_return", "no callee disassembly available", 0.3, 1)

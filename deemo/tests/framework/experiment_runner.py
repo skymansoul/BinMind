@@ -49,14 +49,14 @@ def measure_memory_peak(pid: int) -> float:
 
 
 def run_binmind(binary_path: str, timeout_sec: int = 120) -> ToolResult:
-    """BinMind 扫描——使用 main.py 入口。"""
-    binmind = os.path.join(PROJECT_ROOT, "main.py")
+    """BinMind 扫描——使用 binmind.py 新入口。"""
+    binmind = os.path.join(PROJECT_ROOT, "binmind.py")
     sample = os.path.basename(binary_path)
     start = time.time()
 
     try:
         proc = subprocess.Popen(
-            [sys.executable, binmind, binary_path],
+            [sys.executable, binmind, "analyze", binary_path, "--format", "json"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
         try:

@@ -1,24 +1,7 @@
 """
-轻量级静态污点源追踪 -- 沿CFG做反向def-use链追踪, 判断危险调用的参数是否来自用户输入。
-
-设计决策:
-  1. 不使用完整数据流分析框架(SVF/PhASAR) -- 依赖太重, 与项目零外部依赖原则冲突
-  2. 在反编译伪代码上做反向符号追踪(≤5跳) -- 牺牲精度换取速度和零依赖
-  3. 仅追踪"用户输入→危险调用"的二元可达性, 不计算精确污染传播路径
-     -- 够用于过滤静态告警中的假阳性(参数来自常量字符串等安全源)
-
-与静态regex的区别:
-  正则匹配printf(var)仅看语法。本模块追踪var的定义链:
-    若var来自fgets(buf, n, stdin) → tainted
-    若var来自snprintf(buf, n, "%s", const_str) → safe (格式串是常量)
-    若var来自strcpy(dst, src) 且src来自argv → tainted (间接污染)
-
-局限:
-  - 不处理间接调用/jump table (保守地标记为tainted -- 宁可误报不漏报)
-  - 不跨函数追踪(仅函数内分析) -- 调用者上下文由上层模块提供
-
-  - Yamaguchi et al., 2014, ACSAC, "Generalized Vulnerability Extrapolation using Abstract Syntax Trees"
-  - SVF, "Value-Flow-Based Program Analysis" -- 值流分析简化为def-use链
+轻量级静态污点源追踪 — 沿CFG做反向def-use链追踪, 判断危险调用参数是否来自用户输入。
+在反编译伪代码上做≤5跳反向追踪, 仅追踪"用户输入→危险调用"的二元可达性,
+用于过滤静态告警假阳性。局限: 不处理间接调用, 不跨函数追踪。
 """
 
 from __future__ import annotations
@@ -109,7 +92,7 @@ def _is_tainted_expr(expr: str, var_defs: Dict[str, str],
             return True, f'direct call to taint source: {fname}'
         if fname in _SAFE_WRAPPERS:
             return False, f'safe wrapper: {fname}'
-        # 其他函数调用 → 保守处理(攻击者可能控制参数)
+        # 其他函数调用 → 保守处理(攻击者可控制参数)
         return True, f'opaque function call: {fname}'
 
     # 规则2: 污染变量
@@ -148,14 +131,10 @@ def trace_taint_source(
 ) -> Dict[str, Any]:
     """追踪函数内所有危险调用的参数污染状态。
 
-    Args:
-        pseudocode: 反编译伪代码文本
-        func_name: 函数名(用于日志)
-        call_signatures: [(call_text, arg_var), ...] 待追踪的调用列表
-            若None, 自动扫描所有 _TAINT_SOURCES 调用
-
-    Returns:
-        {call_id: {tainted: bool, source: str, path_len: int}}
+    参数: pseudocode 反编译伪代码文本, func_name 函数名(用于日志),
+    call_signatures [(call_text, arg_var), ...] 待追踪调用列表,
+    为None时自动扫描所有 _TAINT_SOURCES 调用。
+    返回 {call_id: {tainted: bool, source: str, path_len: int}}。
     """
     result: Dict[str, Any] = {}
     var_defs = _extract_var_defs(pseudocode)
@@ -192,8 +171,7 @@ def is_arg_tainted(
 ) -> Tuple[bool, str]:
     """便捷接口——判断单个参数是否来自污染源。
 
-    Returns:
-        (tainted, reason) 二元组
+    返回 (tainted, reason) 二元组。
     """
     var_defs = _extract_var_defs(pseudocode)
     return _is_tainted_expr(arg_var, var_defs, max_depth=max_depth)
@@ -201,8 +179,7 @@ def is_arg_tainted(
 def list_taint_sources(pseudocode: str) -> List[Dict[str, str]]:
     """列出函数内所有用户输入引入点。
 
-    Returns:
-        [{call: str, var: str, source: str}, ...]
+    返回 [{call: str, var: str, source: str}, ...]。
     """
     sources = []
     var_defs = _extract_var_defs(pseudocode)

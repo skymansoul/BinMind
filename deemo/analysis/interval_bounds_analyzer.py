@@ -157,7 +157,7 @@ class IntervalBoundsAnalyzer:
         lhs = m.group(1)
         rhs = m.group(2).strip()
 
-        # 过滤掉无关的赋值: 变量名不同且不是我们的目标
+        # 过滤无关赋值: 变量名不同且非目标变量
         lhs_base = re.sub(r'^(?:e|r)?', '', lhs.lower())
         tgt_base = re.sub(r'^(?:e|r)?', '', target_var.lower())
 

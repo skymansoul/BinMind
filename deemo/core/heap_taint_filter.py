@@ -1,17 +1,6 @@
 """
-堆分配参数污点过滤器 —— 分析malloc/calloc的大小参数是否来自用户输入。
-
-核心问题: 静态检测中, malloc(n)的n若来自recv/read等用户输入,
-分配大小在编译时不可知。后续对buf[offset]的写入无论offset取何值,
-都无法静态判定是否溢出——因为实际分配大小由运行时输入决定。
-此场景下标记为"动态大小"而非"溢出", 消除最常见误报源。
-
-方法论: 对每个malloc调用点, 反向追踪其size参数寄存器(rdi/esi)的
-def-use链。若参数最终追溯到recv/read/fgets等输入函数的返回值,
-则标记为tainted——分配大小由攻击者可控。
-
-与taint_flow_tracker.py的关系: 本模块专用于堆分配参数的污点分析,
-追踪深度更深(跨3层调用)且只关心size参数, 不做全寄存器追踪。
+堆分配参数污点过滤器 —— 反向追踪 malloc size 参数的 def-use 链,
+若追溯到 recv/read 等输入源则判定分配大小为攻击者可控(动态大小)。
 """
 
 
@@ -51,21 +40,12 @@ def analyze_alloc_taint(
     alloc_line_idx: int,
     max_depth: int = 50,
 ) -> AllocTaint:
-    """分析malloc调用点的size参数是否来自用户输入。
-
-    Args:
-        disasm_lines: 反汇编文本行
-        alloc_line_idx: malloc调用所在行索引
-        max_depth: 最大反向追踪步数
-
-    Returns:
-        AllocTaint含污点判定结果。
-    """
+    """分析 malloc 调用点的 size 参数是否来自用户输入, 返回含污点判定的 AllocTaint。"""
     if alloc_line_idx < 0 or alloc_line_idx >= len(disasm_lines):
         return AllocTaint(0, "", "malloc", False, "", 0, 0.0)
 
-    # x86_64: malloc size via rdi; i386: via stack
-    target_regs = {'rdi', 'edi', 'rsi', 'esi'}  # rsi=calloc的第二参数
+    # x86_64: size 经 rdi 传入; i386 经栈传参
+    target_regs = {'rdi', 'edi', 'rsi', 'esi'}  # rsi = calloc 的第二参数
 
     for depth in range(1, max_depth + 1):
         idx = alloc_line_idx - depth

@@ -1,8 +1,4 @@
-"""
-Hook framework. Allows injecting custom analysis steps at various
-pipeline stages. Hooks are Python files in a directory; they get
-loaded dynamically and called with stage-specific context.
-"""
+"""Hook 框架 — 允许在各管道阶段注入自定义分析步骤, 钩子为目录中的 Python 文件, 动态加载并按阶段上下文调用。"""
 
 import importlib.util
 import logging
@@ -21,7 +17,7 @@ class HookManager:
         self._hooks: Dict[str, List[Callable]] = {s: [] for s in STAGES}
 
     def load_dir(self, directory: str):
-        """Load all .py files in `directory` as hook modules."""
+        """加载目录中全部 .py 文件作为 hook 模块。"""
         if not os.path.isdir(directory):
             return
 
@@ -45,7 +41,7 @@ class HookManager:
                 logger.warning("Failed to load hook %s", fname, exc_info=True)
 
     def run(self, stage: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
-        """Call all hooks registered for `stage`, passing `ctx` through them."""
+        """调用注册在指定阶段的所有 hook, 依次传递 ctx。"""
         if stage not in STAGES:
             raise ValueError(f"Unknown stage: {stage}")
         for hook in self._hooks[stage]:
@@ -56,7 +52,7 @@ class HookManager:
         return ctx
 
 
-# module-level singleton
+# 模块级单例
 _manager: HookManager = None
 
 

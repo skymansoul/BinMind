@@ -1,29 +1,7 @@
 """
-Cross-compiler stack frame analysis via function prologue disassembly.
-
-Determines stack frame size and canary presence by matching prologue
-bytecode patterns for GCC/Clang/MSVC across optimization levels.
-
-7 prologue patterns (in frequency order):
-  P1 [GCC -O0]:    push rbp; mov rbp, rsp; sub rsp, IMM
-  P2 [GCC -O1/2]:  push rbx/r12-r15; sub rsp, IMM
-  P3 [Clang -O0]:   push rbp; mov rbp, rsp; sub rsp, IMM
-  P4 [Clang -O1/2]: sub rsp, IMM (no frame pointer)
-  P5 [MSVC /GS]:    push rbp; mov rbp, rsp; sub rsp, IMM; mov rax, __security_cookie
-  P6 [MSVC noGS]:   push rbp; mov rbp, rsp; sub rsp, IMM
-  P7 [GCC -Os]:     push rbp; mov rbp, rsp (no sub rsp, no locals)
-
-4 canary patterns:
-  C1 [GCC]:   mov rax, fs:0x28; mov [rbp-8], rax
-  C2 [Clang]: same as C1
-  C3 [MSVC]:  mov eax, __security_cookie; mov [rbp-4], eax
-  C4 [i386]:  mov eax, gs:0x14; mov [ebp-4], eax
-
-Prologue matching is the most reliable cross-compiler method for frame
-size extraction since pseudocode regex (char buf[N]) is inconsistent
-across Clang/MSVC output.
-
-Reference: Di Federico et al., 2017, NDSS, "How the ELF Ruined Christmas"
+跨编译器栈帧分析 — 通过函数序言反汇编字节匹配, 推断栈帧大小与canary存在性。
+基于7种序言模式(P1-P7, 覆盖GCC/Clang/MSVC各优化级别)与4种canary模式(C1-C4)。
+序言字节匹配是跨编译器提取帧大小最可靠的方法。
 """
 
 from __future__ import annotations
@@ -36,22 +14,22 @@ from typing import Any, Dict, List, Optional, Tuple
 _log = logging.getLogger(__name__)
 
 
-# Max scan range for prologue instructions (most compiler prologues fit in 32B)
+# 序言指令最大扫描范围 (多数编译器序言在32字节内)
 _PROLOGUE_SCAN_BYTES = 64
 
-# Canary detection patterns
+# canary检测模式
 _CANARY_PATTERNS = [
-    (b'\x64\x48\x8b\x04\x25\x28\x00\x00\x00', 'gcc-x64-fs0x28'),    # mov rax, fs:0x28
-    (b'\x65\x48\x8b\x04\x25\x28\x00\x00\x00', 'gcc-x64-gs0x28'),    # mov rax, gs:0x28
-    (b'\x64\x8b\x04\x25\x14\x00\x00\x00', 'i386-fs0x14'),           # mov eax, fs:0x14
-    (b'\x65\x8b\x04\x25\x14\x00\x00\x00', 'i386-gs0x14'),           # mov eax, gs:0x14
-    (b'\x64\xa1\x14\x00\x00\x00', 'i386-fs0x14-alt'),               # mov eax, fs:0x14 (alt encoding)
-    (b'\xa1', 'msvc-cookie'),  # mov eax, __security_cookie (needs context verification)
+    (b'\x64\x48\x8b\x04\x25\x28\x00\x00\x00', 'gcc-x64-fs0x28'),    # 读 fs:0x28 到 rax
+    (b'\x65\x48\x8b\x04\x25\x28\x00\x00\x00', 'gcc-x64-gs0x28'),    # 读 gs:0x28 到 rax
+    (b'\x64\x8b\x04\x25\x14\x00\x00\x00', 'i386-fs0x14'),           # 读 fs:0x14 到 eax
+    (b'\x65\x8b\x04\x25\x14\x00\x00\x00', 'i386-gs0x14'),           # 读 gs:0x14 到 eax
+    (b'\x64\xa1\x14\x00\x00\x00', 'i386-fs0x14-alt'),               # 读 fs:0x14 到 eax (替代编码)
+    (b'\xa1', 'msvc-cookie'),  # 读 __security_cookie 到 eax (需上下文验证)
 ]
 
 
 def _disassemble_prologue(binary_path: str, func_name: str) -> Optional[bytes]:
-    """Extract the first 64 bytes of a function for prologue pattern matching."""
+    """提取函数前64字节, 用于序言模式匹配。"""
     try:
         import subprocess
         from config import R2_PATH
@@ -82,11 +60,10 @@ def _disassemble_prologue(binary_path: str, func_name: str) -> Optional[bytes]:
 
 def analyze_stack_frame(binary_path: str, func_name: str,
                         arch_bits: int = 64) -> Dict[str, Any]:
-    """Analyze function stack frame structure (cross-compiler robust).
+    """分析函数栈帧结构 (跨编译器健壮)。
 
-    Returns:
-        {frame_size: int, has_frame_pointer: bool, has_canary: bool,
-         prologue_type: str, canary_pattern: str|null, confidence: float}
+    返回 {frame_size: int, has_frame_pointer: bool, has_canary: bool,
+          prologue_type: str, canary_pattern: str|null, confidence: float}。
     """
     result: Dict[str, Any] = {
         'frame_size': 0,
@@ -101,8 +78,7 @@ def analyze_stack_frame(binary_path: str, func_name: str,
     if raw is None or len(raw) < 4:
         return result
 
-    # Frame pointer detection
-    # push rbp = 0x55, mov rbp,rsp = 0x48 0x89 0xe5
+    # 帧指针检测: push rbp = 0x55, mov rbp,rsp = 0x48 0x89 0xe5
     has_push_rbp = raw[0] == 0x55
     has_mov_rbp = len(raw) >= 3 and raw[1:4] == b'\x48\x89\xe5'
 
@@ -115,35 +91,34 @@ def analyze_stack_frame(binary_path: str, func_name: str,
     else:
         scan_start = 0
 
-    # Stack frame size extraction
-    # sub rsp, IMM = 0x48 0x81 0xec IMM(4B LE)
-    # sub rsp, imm8 = 0x48 0x83 0xec IMM(1B)
+    # 栈帧大小提取: sub rsp imm32 = 48 81 ec + 4字节小端立即数
+    # sub rsp imm8 = 48 83 ec + 1字节立即数
     frame_size = 0
     confidence = 0.0
 
     for i in range(scan_start, min(len(raw) - 3, _PROLOGUE_SCAN_BYTES)):
-        # sub rsp, imm32: 48 81 ec XX XX XX XX
+        # sub rsp imm32: 48 81 ec + 4字节立即数
         if raw[i:i+3] == b'\x48\x81\xec' and i + 7 <= len(raw):
             frame_size = struct.unpack('<I', raw[i+3:i+7])[0]
             confidence = 0.90
             break
-        # sub rsp, imm8: 48 83 ec XX
+        # sub rsp imm8: 48 83 ec + 1字节立即数
         if raw[i:i+3] == b'\x48\x83\xec' and i + 4 <= len(raw):
             frame_size = raw[i+3]
             confidence = 0.85
             break
-        # i386: sub esp, IMM: 81 ec XX XX XX XX
+        # i386: sub esp imm32: 81 ec + 4字节立即数
         if raw[i:i+2] == b'\x81\xec' and i + 6 <= len(raw) and arch_bits == 32:
             frame_size = struct.unpack('<I', raw[i+2:i+6])[0]
             confidence = 0.85
             break
-        # i386: sub esp, imm8: 83 ec XX
+        # i386: sub esp imm8: 83 ec + 1字节立即数
         if raw[i:i+2] == b'\x83\xec' and i + 3 <= len(raw) and arch_bits == 32:
             frame_size = raw[i+2]
             confidence = 0.80
             break
 
-    # Prologue type classification
+    # 序言类型分类
     if has_push_rbp and has_mov_rbp and frame_size > 0:
         result['prologue_type'] = 'P1-GCC-Clang-O0' if frame_size <= 256 else 'P5-MSVC-GS'
     elif has_push_rbp and not has_mov_rbp and frame_size > 0:
@@ -156,7 +131,7 @@ def analyze_stack_frame(binary_path: str, func_name: str,
         result['prologue_type'] = (
             f'unknown:{raw[:min(len(raw),6)].hex()}')
 
-    # Canary detection
+    # canary检测
     for pattern_bytes, pattern_name in _CANARY_PATTERNS:
         if pattern_bytes in raw:
             result['has_canary'] = True
@@ -170,16 +145,11 @@ def analyze_stack_frame(binary_path: str, func_name: str,
 
 def estimate_buffer_padding(binary_path: str, func_name: str,
                             arch_bits: int = 64) -> Tuple[int, str]:
-    """Estimate padding from buffer to return address.
+    """估计缓冲区到返回地址的填充长度。
 
-    Algorithm:
-      1. Analyze stack frame size (from prologue)
-      2. padding = frame_size (with frame pointer)
-         padding = frame_size + 8 (without frame pointer)
-      3. Fall back to default value 72 if prologue match is unconfident
-
-    Returns:
-        (padding_bytes, method_description)
+    算法: 1. 从序言分析栈帧大小; 2. 有帧指针时 padding=frame_size,
+    无帧指针时 padding=frame_size+8; 3. 序言匹配不确信时回退默认值72。
+    返回 (padding_bytes, method_description)。
     """
     frame = analyze_stack_frame(binary_path, func_name, arch_bits)
 

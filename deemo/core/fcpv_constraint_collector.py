@@ -1,14 +1,6 @@
-"""
-FCPV 约束收集器 — 从 C 源码提取四类约束.
-
-收集策略:
-  1. Sink 约束: 扫描 printf 族调用, 提取第 N 参数性质
-  2. Taint 约束: 构建变量定义图, BFS 追踪外部输入可达性
-  3. Sanitize 约束: 识别 snprintf(dst, sz, "%s", src) 安全化模式
-  4. Cross-func 约束: 匹配函数定义 + 调用点, 绑定形参→实参
-
-辅助函数和常量已提取到 fcpv_collector_helpers.py.
-"""
+"""FCPV 约束收集器 — 从 C 源码提取四类约束.
+Sink 约束 (printf 族调用第 N 参数性质), Taint 约束 (变量定义图 BFS 外部输入可达性), Sanitize 约束 (snprintf 安全化模式), Cross-func 约束 (函数定义+调用点绑定形参→实参);
+辅助函数与常量已提取至 fcpv_collector_helpers.py."""
 
 import re
 from collections import deque

@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 # 硬编码，CI需要时可通过环境变量覆盖
 # 版本号规则: MAJOR.MINOR.PATCH
 _NAME_STR       = 'binmind'
-_VERSION_STR    = '1.3.1'
+_VERSION_STR    = '1.4.0'
 # py3.8保持兼容Ubuntu 20.04服务器——仍有生产实例运行
 # 全面迁移到22.04后将下限提升至3.10
 # 20.04 EOL为2025-04，客户侧迁移尚未完成
@@ -103,7 +103,7 @@ if not _os.path.exists(_req_path):
 # 入口点——装完以后命令行直接binmind就能跑
 kw['entry_points'] = {
     'console_scripts': [
-        'binmind=main:main',
+        'binmind=cli.commands:main',
     ],
 }
 
@@ -133,6 +133,5 @@ kw['project_urls'] = {
     'Source': 'https://github.com/binmind/binmind',
 }
 
-# 最后一步: setup
 # 此处不添加额外逻辑，历史上有在setup()前修改sys.path导致打包路径混乱的案例
 setup(**kw)

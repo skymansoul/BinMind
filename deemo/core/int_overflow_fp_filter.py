@@ -1,16 +1,7 @@
 """
-Integer overflow FP filter — three-stage false positive suppression for
-integer overflow leading to heap buffer overflow (CWE-190/CWE-191/CWE-680).
-
-Stage G (Guard): overflow-check guard detection — if (n > MAX/size) return
-Stage T (Type): type-widening analysis — size_t arithmetic eliminates wraps
-Stage C (Constant): constant folding — compile-time expressions are safe
-
-Ensemble: weighted majority vote across G+T+C stages.
-  Unanimous SUPPRESS → FILTERED; 2:1 → SUPPRESS; split → REVIEW.
-
-Rationale: existing int_overflow_detector marks all multiply-in-alloc as
-suspicious. Most are guarded or use size_t arithmetic → FP.
+整数溢出误报过滤器 — 三阶段抑制通往堆溢出的整数溢出误报 (CWE-190/191/680)。
+阶段G: 溢出守卫检测; 阶段T: 类型加宽 (size_t 算术不截断); 阶段C: 常量折叠。
+集成: G+T+C 加权多数投票, 全票 SUPPRESS → FILTERED, 2:1 → SUPPRESS, 分歧 → REVIEW。
 """
 
 from __future__ import annotations
@@ -19,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 
-# patterns ─────────────────────────────────────────────────────────────
+# 模式 ─────────────────────────────────────────────────────────────
 
 _OVERFLOW_GUARD = re.compile(
     r'if\s*\(\s*(\w[\w.]*)\s*[><=!]+\s*(\d+|0x[0-9a-fA-F]+)\s*/\s*sizeof')
@@ -31,11 +22,11 @@ _MUL_IN_ALLOC = re.compile(
 _CONST_MUL = re.compile(r'malloc\s*\(\s*(\d+)\s*\*\s*(\d+|sizeof\([^)]+\))\s*\)')
 
 
-# datatypes ────────────────────────────────────────────────────────────
+# 数据类型 ────────────────────────────────────────────────────────────
 
 @dataclass
 class IntOverflowCandidate:
-    """Integer overflow candidate at a malloc site."""
+    """malloc 位点的整数溢出候选。"""
     line: int; line_text: str; alloc_var: str = ''
     mul_left: str = ''; mul_right: str = ''
     verdict: str = 'UNCERTAIN'
@@ -43,7 +34,7 @@ class IntOverflowCandidate:
 
 @dataclass
 class IoDecision:
-    """FP filter decision for one integer overflow candidate."""
+    """单个整数溢出候选的误报过滤判定。"""
     candidate: IntOverflowCandidate
     guard_detected: bool = False; guard_detail: str = ''
     sizet_typed: bool = False; sizet_detail: str = ''
@@ -51,10 +42,10 @@ class IoDecision:
     verdict: str = 'REVIEW'; score: float = 0.50
 
 
-# engine ───────────────────────────────────────────────────────────────
+# 引擎 ───────────────────────────────────────────────────────────────
 
 class IntOverflowFpFilter:
-    """Three-stage integer overflow FP filter."""
+    """三阶段整数溢出误报过滤器。"""
 
     def __init__(self):
         self.stats: Dict[str, Any] = {}
@@ -63,23 +54,23 @@ class IntOverflowFpFilter:
         self, ir_lines: List[str],
         candidates: List[IntOverflowCandidate],
     ) -> List[IoDecision]:
-        """Run Stage G+T+C on each candidate, return ensemble decisions."""
+        """对每个候选执行 G+T+C 三阶段, 返回集成判定。"""
         decisions = []
         for cand in candidates:
             dec = IoDecision(candidate=cand)
 
-            # Stage G: overflow guard
+            # 阶段G: 溢出守卫
             dec.guard_detected, dec.guard_detail = self._stage_guard(
                 ir_lines, cand)
 
-            # Stage T: type widening
+            # 阶段T: 类型加宽
             dec.sizet_typed, dec.sizet_detail = self._stage_type(
                 ir_lines, cand)
 
-            # Stage C: constant folding
+            # 阶段C: 常量折叠
             dec.constant_folded = self._stage_constant(cand)
 
-            # Ensemble: weighted vote
+            # 集成: 加权投票
             dec.verdict, dec.score = self._decide(dec)
             decisions.append(dec)
 
@@ -91,12 +82,12 @@ class IntOverflowFpFilter:
         }
         return decisions
 
-    # Stage G: guard detection ─────────────────────────────────────
+    # 阶段G: 守卫检测 ─────────────────────────────────────
 
     def _stage_guard(
         self, ir_lines: List[str], cand: IntOverflowCandidate,
     ) -> Tuple[bool, str]:
-        """Detect overflow-check guards that bound multiplication operands."""
+        """检测约束乘法操作数的溢出守卫。"""
         for i in range(max(0, cand.line - 20), cand.line):
             line = ir_lines[i]
             m = _OVERFLOW_GUARD.search(line)
@@ -109,35 +100,35 @@ class IntOverflowFpFilter:
                 return True, f'L{i}: if({sm.group(1)} > MAX) guard'
         return False, ''
 
-    # Stage T: type widening ───────────────────────────────────────
+    # 阶段T: 类型加宽 ───────────────────────────────────────
 
     def _stage_type(
         self, ir_lines: List[str], cand: IntOverflowCandidate,
     ) -> Tuple[bool, str]:
-        """Check if operands use size_t — no 32-bit truncation."""
+        """检查操作数是否使用 size_t — 无 32 位截断。"""
         for i in range(max(0, cand.line - 30), cand.line + 1):
             line = ir_lines[i]
             for m in _SIZET_VAR.finditer(line):
                 v = m.group(1)
                 if v == cand.mul_left or v == cand.mul_right:
                     return True, f'L{i}: {v} is {m.group(0).split()[0]}'
-        # Check sizeof — always size_t
+        # sizeof 恒为 size_t
         if 'sizeof' in cand.mul_right or 'sizeof' in cand.mul_left:
             return True, 'sizeof operand → size_t arithmetic'
         return False, ''
 
-    # Stage C: constant folding ────────────────────────────────────
+    # 阶段C: 常量折叠 ────────────────────────────────────
 
     @staticmethod
     def _stage_constant(cand: IntOverflowCandidate) -> bool:
-        """Check if multiplication is constant-foldable."""
+        """检查乘法是否可常量折叠。"""
         return bool(_CONST_MUL.search(cand.line_text))
 
-    # decision ─────────────────────────────────────────────────────
+    # 判定 ─────────────────────────────────────────────────────
 
     @staticmethod
     def _decide(dec: IoDecision) -> Tuple[str, float]:
-        """Weighted vote: G(0.40) + T(0.35) + C(0.25)."""
+        """加权投票: G(0.40) + T(0.35) + C(0.25)。"""
         score = 0.0
         if dec.guard_detected:
             score += 0.40
@@ -153,12 +144,12 @@ class IntOverflowFpFilter:
         return 'REVIEW', score
 
 
-# extraction ───────────────────────────────────────────────────────────
+# 提取 ───────────────────────────────────────────────────────────
 
 def extract_int_overflow_candidates(
     ir_lines: List[str],
 ) -> List[IntOverflowCandidate]:
-    """Extract integer overflow candidates from IR lines."""
+    """从 IR 行提取整数溢出候选。"""
     candidates = []
     for i, line in enumerate(ir_lines):
         m = _MUL_IN_ALLOC.search(line)
@@ -169,13 +160,13 @@ def extract_int_overflow_candidates(
                 mul_left=m.group(2).strip(),
                 mul_right=m.group(3).strip(),
             )
-            # Skip if left/right are both constants
+            # 左右均为常量则跳过
             try:
                 int(m.group(2).strip(), 0)
                 int(m.group(3).strip().replace('sizeof(int)', '4')
                        .replace('sizeof(char)', '1')
                        .replace('sizeof(char*)', '8'))
-                # Both constants — not an overflow risk (Stage C handles)
+                # 双常量 — 无溢出风险 (阶段C处理)
                 cand.constant_folded = True
             except (ValueError, AttributeError):
                 pass
@@ -186,7 +177,7 @@ def extract_int_overflow_candidates(
 def filter_int_overflow(
     ir_lines: List[str],
 ) -> Tuple[List[IoDecision], Dict[str, Any]]:
-    """Convenience: extract + filter integer overflow candidates."""
+    """便捷接口: 提取并过滤整数溢出候选。"""
     cands = extract_int_overflow_candidates(ir_lines)
     engine = IntOverflowFpFilter()
     decisions = engine.filter(ir_lines, cands)

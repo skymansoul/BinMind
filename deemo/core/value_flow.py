@@ -1,19 +1,6 @@
-# 值流分析 — def-use 链构建 + 指针生命周期追踪
-#
-# 现有 heap_corruption.yaml 用正则匹配 free/malloc 调用模式。
-# 正则无法追踪指针经别名/结构体字段/函数参数传递后的使用——
-# 导致 UAF 检出率低于 30%。
-#
-# 本模块在 angr CFG 上构建 SSA 形式的 def-use 链:
-#   def(p) = 定义指针 p 的语句 (malloc/free/赋值)
-#   use(p) = 使用指针 p 的语句 (解引用/传参/比较)
-#   path(p, def, use) = def 到 use 之间 p 是否被重新赋值
-#
-# 方法: 对每个函数遍历其 VEX IR 基本块, 追踪临时变量
-# (tN) 和内存操作 (STle/LDle) 之间的数据依赖。
-#
-# UAFSan 在 LLVM IR 上验证了值流分析的误报率 < 5%。
-# 本模块将其下推到 VEX IR 层——angr 产生的 VEX IR 是编译器无关的。
+# 值流分析 — def-use 链构建 + 指针生命周期追踪。
+# 正则匹配无法追踪指针经别名/结构体字段/函数参数传递后的使用 (UAF 检出率 < 30%),
+# 本模块在 angr CFG (或反编译 IR 行) 上构建 def-use 链: def 定义 / use 使用 / kill 释放。
 
 
 from collections import defaultdict

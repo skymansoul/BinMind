@@ -1,18 +1,6 @@
-"""
-Double-free detection via IR-level free-call pairing.
-
-Existing memory_heap.py uses the regex 'free.*free' and cannot distinguish:
-  - two frees of the same pointer (true double-free)
-  - two frees of different pointers (false positive)
-  - legal realloc patterns: p=free(p); p=malloc(64); free(p)
-
-This module:
-  1. Extracts every free(p) call with the freed variable name.
-  2. For each variable: checks whether a realloc (malloc/realloc to the
-     same variable) sits between two frees.
-  3. Realloc between → legal; none → double-free.
-  4. Reachability quick-check: are both frees on the same execution path?
-"""
+"""基于 IR 级 free 调用配对的双重释放检测。
+memory_heap.py 的 'free.*free' 正则无法区分同指针双释放、异指针双释放与 realloc 合法模式;
+本模块按释放变量分组, 检查两次 free 之间是否有重新分配, 并做同路径可达性快速检查。"""
 
 from dataclasses import dataclass, field
 import re

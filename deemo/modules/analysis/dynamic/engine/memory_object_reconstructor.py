@@ -101,7 +101,6 @@ class WYTIWYGRecovery:
             for elem_sz, offs in offsets_by_size.items():
                 offs.sort()
                 if len(offs) >= 3:
-                    # 计算连续偏移之间的步长
                     strides = [offs[i+1] - offs[i] for i in range(len(offs)-1)]
                     if len(set(strides)) == 1 and strides[0] == elem_sz:
                         # 等间距 = 数组

@@ -1,16 +1,6 @@
-"""
-LSP编排器 — 协调Layer 1→2→3的级联安全证明.
-
-在CJ+BVF均返回INCONCLUSIVE时触发, 逐层尝试证明:
-  Layer 1 (路径条件传播): 从IR提取路径谓词, 约束变量边界
-  Layer 2 (不变式推导): 将谓词代入BVF符号表达式, 推导write_end边界
-  Layer 3 (分配器对齐): 处理padding区边界case
-
-层间短路: 任一层证明SAFE → 过滤误报; 任一层证明OVERFLOW → 确认漏洞.
-全部无法判定 → INCONCLUSIVE_RETAIN (保守保留, 零召回损失).
-
-集成点: cj_solver.solve_candidate()末尾, BVF try_bvf_proof返回None后.
-"""
+"""LSP编排器 — 协调Layer 1→2→3级联安全证明: 路径谓词约束变量边界、
+不变式推导write_end边界、分配器对齐处理padding区。任一层证明SAFE→滤误报，
+OVERFLOW→确认漏洞，全部无法判定→INCONCLUSIVE_RETAIN保守保留(零召回损失)。"""
 from typing import Optional
 
 from core.cj_bvf_types import SymbolicExpr, CorrelationResult

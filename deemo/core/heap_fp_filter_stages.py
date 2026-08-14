@@ -1,6 +1,5 @@
-# Pipeline-level false-positive filtering for heap overflow detection.
-# Called from heap_overflow_pipeline. Distinct from heap_fp_filter.py which
-# handles single-detection-point filtering.
+# heap_fp_filter_stages.py - 管线级堆溢出误报过滤, 由 heap_overflow_pipeline 调用。
+# 与 heap_fp_filter.py 的单点过滤不同, 本模块在管线层面过滤。
 import re
 from typing import Optional
 

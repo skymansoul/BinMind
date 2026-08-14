@@ -1,7 +1,6 @@
 """
-Static binary analysis: dangerous function detection, string scanning,
-import table review. No external disassembler required — works from
-raw bytes and radare2 output.
+静态二进制分析 — 危险函数检测、字符串扫描、导入表审查。
+无需外部反汇编器, 基于原始字节与 radare2 输出。
 """
 
 import logging
@@ -13,9 +12,9 @@ from config import R2_PATH, SUBPROCESS_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
-# Functions that commonly indicate a vulnerability surface
+# 常见漏洞面指示函数
 DANGEROUS_FUNCTIONS = {
-    # memory corruption
+    # 内存破坏
     'gets':     ('buffer-overflow', 'Critical', 'CWE-242'),
     'strcpy':   ('buffer-overflow', 'High', 'CWE-120'),
     'strcat':   ('buffer-overflow', 'High', 'CWE-120'),
@@ -24,26 +23,26 @@ DANGEROUS_FUNCTIONS = {
     'scanf':    ('buffer-overflow', 'Medium', 'CWE-120'),
     'memcpy':   ('buffer-overflow', 'Medium', 'CWE-119'),
     'read':     ('buffer-overflow', 'Medium', 'CWE-119'),
-    # format string
+    # 格式化字符串
     'printf':   ('format-string', 'Medium', 'CWE-134'),
     'fprintf':  ('format-string', 'Medium', 'CWE-134'),
-    # integer issues
+    # 整数问题
     'malloc':   ('integer-overflow', 'Low', 'CWE-190'),
     'calloc':   ('integer-overflow', 'Low', 'CWE-190'),
-    # command injection
+    # 命令注入
     'system':   ('command-injection', 'Critical', 'CWE-78'),
     'popen':    ('command-injection', 'Critical', 'CWE-78'),
     'execve':   ('command-injection', 'Critical', 'CWE-78'),
-    # race conditions
+    # 竞态条件
     'fork':     ('race-condition', 'Low', 'CWE-362'),
-    # privilege
+    # 权限提升
     'setuid':   ('privilege-escalation', 'High', 'CWE-250'),
     'setgid':   ('privilege-escalation', 'High', 'CWE-250'),
 }
 
 
 def scan_imports(binary_path: str) -> List[Dict]:
-    """Scan a binary's import table for dangerous functions via r2."""
+    """通过 r2 扫描二进制导入表中的危险函数。"""
     raw = _radare2_cmd(binary_path, ['iE'], timeout=60)
     found = []
 
@@ -64,22 +63,22 @@ def scan_imports(binary_path: str) -> List[Dict]:
 
 
 def scan_strings(binary_path: str) -> List[str]:
-    """Extract printable strings from binary. Looks for suspicious patterns."""
+    """提取二进制中的可打印字符串, 查找可疑模式。"""
     raw = _radare2_cmd(binary_path, ['izz'], timeout=60)
     strings = []
     for line in raw.splitlines():
-        # izz output: addr length encoding string
+        # izz 输出: 地址 长度 编码 字符串
         parts = line.split(None, 3)
         if len(parts) >= 4:
             s = parts[3]
-            # filter non-printable
+            # 过滤不可打印字符
             if s.isprintable() and len(s) >= 4:
                 strings.append(s)
     return strings
 
 
 def find_suspicious_strings(strings: List[str]) -> List[Dict]:
-    """Flag strings that look like they might be interesting."""
+    """标记有分析价值的可疑字符串。"""
     patterns = {
         'hardcoded-password': r'(?i)(password|passwd|secret|api[_-]?key|token)\s*[:=]',
         'shell-command': r'(?i)(/bin/(ba)?sh|cmd\.exe|/bin/bash)',

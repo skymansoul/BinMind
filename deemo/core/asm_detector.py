@@ -1,22 +1,8 @@
 """
-汇编级回退检测 — 不依赖反编译器，直接在 .text 段扫描漏洞特征。
-
-问题: 反编译器可能消除漏洞特征 (, Decompiling for
-Constant-Time Analysis)。加壳/混淆后的二进制，Ghidra/IDA 反编译输出
-不可靠甚至完全失败。当前所有检测都依赖反编译伪代码——反编译失败时
-静默降级为无结果。
-
-方案: 用 Capstone 直接反汇编 .text 段，在汇编级别扫描危险模式。
-作为反编译检测的补充层——反编译成功时做交叉验证，反编译失败时独立工作。
-不替代反编译检测，而是作为正交证据源增加检测鲁棒性。
-
-检测模式（x86_64）:
-  格式字符串: call printf 前 rdi 来自 lea rax,[rsp+offset]（栈上数据）
-  栈溢出: call gets/strcpy 前 rdi 指向比函数帧小的缓冲区
-  UAF: call free 后同一寄存器值用于 memory write（mov [reg], X）
-  Double-free: 同一寄存器值两次传递给 free
-
-限制: 目前仅支持 x86_64 ELF。32-bit/i386 和 ARM 待后续补充。
+汇编级回退检测: 不依赖反编译器, 用 Capstone 直接反汇编 .text 段扫描漏洞特征。
+反编译失败时独立工作, 成功时作为正交证据源交叉验证。
+检测模式 (x86_64): printf 前 rdi 指向栈上数据 (格式字符串)、gets/strcpy 到小缓冲区 (栈溢出)、free 后同寄存器写入 (UAF);
+限制为仅支持 x86_64 ELF。
 """
 
 from __future__ import annotations
@@ -204,11 +190,7 @@ def _detect_uaf_asm(
     instructions: list[tuple[int, str, str, str]],
     func_name: str | None,
 ) -> list[dict[str, Any]]:
-    """汇编级 UAF 检测: free 后同一寄存器用于 memory write。
-
-    简化版: 检测 free(X) 后是否存在 mov [X], Y 模式（同一寄存器）。
-    实际 UAF 更复杂——这里只做第一种常见模式的检测。
-    """
+    """汇编级 UAF 检测: free 后同一寄存器用于 memory write。简化版仅检测 free(X) 后 mov [X], Y 模式。"""
     findings: list[dict[str, Any]] = []
     free_regs: dict[int, str] = {}
 

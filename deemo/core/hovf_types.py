@@ -1,12 +1,6 @@
 """
-HOVF 裁决类型定义.
-
-HOVF (Heap Overflow Value-Flow Re-verification) 是管线末端的独立核验层:
-对既有候选追加新检出通道, 并按 值流分配大小 + 分配器宽松 + 守卫支配
-三类证据给出 CONFIRMED/FILTERED/UNCERTAIN 裁决. 裁决证据可序列化为 JSON,
-用于论文实验复现.
-
-类型与枚举集中于本文件, 其余 HOVF 模块仅做逻辑, 避免循环导入.
+HOVF 裁决类型定义 — 按值流分配大小+分配器宽松+守卫支配三类证据给出裁决。
+类型与枚举集中于本文件, 其余 HOVF 模块仅做逻辑, 避免循环导入。
 """
 
 from dataclasses import dataclass, field
@@ -41,7 +35,7 @@ class ValueInterval:
 
 @dataclass
 class EvidenceRecord:
-    """单候选的裁决证据. 理由链与数值支撑均保留, 供审计与论文引用."""
+    """单候选的裁决证据. 理由链与数值支撑均保留, 供审计."""
     verdict: Verdict
     reasons: List[str] = field(default_factory=list)
     alloc_requested: int = 0

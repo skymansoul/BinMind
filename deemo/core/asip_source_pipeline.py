@@ -1,15 +1,7 @@
 """
-ASIP源码级管线 — 将ASIP误报削减集成到源码级检测流程.
-
-源码级检测(GAPSBV-CJ)的误报根因与汇编级不同:
-  1. 源码级无需间接约束传播(变量名直接可见)
-  2. 源码级核心误报源: widen过激进 + alloc-write粗粒度配对
-  3. 源码级增强: 受提示拓宽 + 路径条件感知过滤(复用PCOL思路)
-
-本模块实现:
-  1. asip_refine_intervals: 用guard hints收窄区间域变量边界
-  2. asip_filter_by_path: 路径条件感知过滤(对CJ VULN判定)
-  3. asip_source_enhance: 一键增强入口
+ASIP 源码级管线: 将 ASIP 误报削减集成到源码级检测流程。
+核心误报源为 widen 过激进与 alloc-write 粗粒度配对, 本模块提供 guard 提示收窄区间 (asip_refine_intervals)、
+路径条件感知过滤 (asip_filter_by_path) 与一键增强入口 (asip_source_enhance)。
 """
 
 import re
@@ -25,11 +17,7 @@ def asip_refine_intervals(
     var_bounds: Dict[str, Tuple[Optional[int], Optional[int]]],
     target_vars: List[str] = None,
 ) -> Dict[str, Tuple[Optional[int], Optional[int]]]:
-    """用源码中的guard条件收窄区间域变量边界.
-
-    扫描if(x<=N)模式, 将N作为x的upper_bound hint.
-    若当前x的上界为None(即+∞), 用hint收窄.
-    """
+    """用源码中的 guard 条件收窄区间域变量边界。扫描 if(x<=N) 模式, 以 N 作为 x 的 upper_bound hint, 当前上界为 None (即 +∞) 时用 hint 收窄。"""
     if target_vars is None:
         target_vars = list(var_bounds.keys())
 
@@ -54,11 +42,7 @@ def asip_filter_by_path(
     source: str,
     candidates: List,
 ) -> List:
-    """路径条件感知过滤: 复用PCOL约束提取器.
-
-    对CJ判定VULN的候选, 检查alloc路径与write路径是否互斥.
-    仅处理源码级候选, 不修改汇编级候选.
-    """
+    """路径条件感知过滤, 复用 PCOL 约束提取器。对 CJ 判定 VULN 的候选检查 alloc 路径与 write 路径是否互斥, 仅处理源码级候选。"""
     from analysis.uaf_pcol_constraints import (
         extract_path_conditions, check_path_mutex,
     )

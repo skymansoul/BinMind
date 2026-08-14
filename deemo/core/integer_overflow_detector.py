@@ -1,8 +1,4 @@
-# core/integer_overflow_detector.py
-# Integer overflow detection with value range analysis.
-# Unlike naive pattern matching, checks whether operand values can provably
-# exceed INT32_MAX when multiplied or added.
-# Creates 2024-05-10. Modified 2024-08-17: added actual range checking.
+# integer_overflow_detector.py - 带值域分析的整数溢出检测: 验证操作数相乘/相加是否可超出 INT32_MAX。
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -27,16 +23,15 @@ class OverflowSite:
 class IntegerOverflowDetector:
     def detect(self, pseudocode):
         lines = pseudocode.splitlines()
-        # Extract variable constant assignments for range analysis.
-        # Handles both "int a = 5;" and "int a = 5, b = 6;" patterns.
+        # 提取变量常量赋值用于范围分析, 兼容 "int a = 5;" 与 "int a = 5, b = 6;" 两种形式。
         var_constants = {}
         for line in lines:
             stripped = line.strip()
             m = _VAR_ASSIGN.search(stripped)
             if m: var_constants[m.group(1)] = int(m.group(2), 0)
-            # Comma-separated: int a = 5, b = 6;
+            # 逗号分隔: int a = 5, b = 6;
             if '=' in stripped and ',' in stripped:
-                # Extract type prefix and split assignments
+                # 提取类型前缀并按逗号拆分
                 parts = stripped.split(None, 1)
                 if len(parts) > 1:
                     rhs = parts[1]
@@ -80,27 +75,27 @@ class IntegerOverflowDetector:
     
     @staticmethod
     def _overflow_conf(va, vb, op):
-        # Both constants: definitive check
+        # 双常量: 确定性检查
         if va is not None and vb is not None:
             if op == 'mul' and va > 0 and vb > 0 and va * vb > INT32_MAX:
                 return 0.95
             if op == 'add' and va + vb > INT32_MAX:
                 return 0.90
-            return 0.10  # constants but no overflow
-        # One constant large enough to be risky
+            return 0.10  # 常量但无溢出
+        # 单常量足够大, 有风险
         if va is not None and va > 0xFFFF:
             return 0.50
         if vb is not None and vb > 0xFFFF:
             return 0.50
-        # Both variables: potential risk, low confidence
+        # 双变量: 潜在风险, 低置信度
         if va is None and vb is None:
             return 0.25
-        # One variable + one small constant = unlikely to overflow
+        # 单变量+小常量: 不太可能溢出
         return 0.15
 
 __all__ = ['OverflowSite', 'IntegerOverflowDetector']
 
-# Backward compatibility wrapper
+# 向后兼容包装
 def detect_integer_overflows(pseudocode, func_name=''):
     detector = IntegerOverflowDetector()
     sites = detector.detect(pseudocode)

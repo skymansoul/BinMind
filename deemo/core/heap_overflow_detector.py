@@ -1,17 +1,7 @@
 """
-Chunk-boundary-aware heap overflow detection.
-
-Existing MemoryCorruptionPreciseLocator matches any 'mov [mem], reg' —
-cannot distinguish heap writes from stack writes, producing high FPs.
-
-1. Extract malloc call sites and allocation sizes.
-2. Track malloc return value (rax/x0) to the base register of later stores.
-3. For store [base + offset], compare offset to chunk size.
-4. Report only heap writes where offset > chunk_size.
-
-Limitation: depends on decompiler variable recovery. If variables are not
-recovered (stripped + O3), falls back to heuristics (strcpy/memcpy into
-malloc buffers).
+chunk 边界感知的堆溢出检测。
+提取 malloc 调用点与分配大小, 将返回值追踪到后续 store 的基址寄存器,
+仅报告 offset > chunk_size 的堆写入; 变量恢复失败时退回启发式规则。
 """
 
 from dataclasses import dataclass, field
@@ -33,7 +23,7 @@ class HeapAllocSite:
 
 @dataclass
 class HeapStore:
-    """A heap store — write targeting a malloc'd buffer."""
+    """堆写入点 — 写向 malloc 缓冲区的写入。"""
     pc: int
     base_var: str         # 基址变量 (malloc 的返回值)
     offset: int            # 相对基址的偏移 (常量) 或 -1 (动态)
@@ -44,7 +34,7 @@ class HeapStore:
 
 @dataclass
 class HeapOverflowCandidate:
-    """A heap overflow candidate — store offset exceeds allocation size."""
+    """堆溢出候选 — store 偏移超出分配大小。"""
     alloc_site: HeapAllocSite
     overflow_store: HeapStore
     overflow_bytes: int = 0
@@ -53,7 +43,7 @@ class HeapOverflowCandidate:
 
 
 def extract_heap_allocations(ir_lines: list[str]) -> list[HeapAllocSite]:
-    """Extract heap allocation sites from IR lines."""
+    """从IR行中提取堆分配点。"""
     allocs = []
     alloc_pattern = re.compile(
         r'(?:(\w+)\s*=\s*)?(malloc|calloc|realloc)\s*\(\s*(\d+|\w+)\s*'
@@ -86,10 +76,7 @@ def extract_heap_allocations(ir_lines: list[str]) -> list[HeapAllocSite]:
 
 def track_heap_stores(ir_lines: list[str],
                       alloc: HeapAllocSite) -> list[HeapStore]:
-    """追踪 malloc 返回值到后续 store 指令。
-
-    If alloc.result_var is set, searches subsequent lines for stores
-    using that variable. Otherwise uses heuristics to find stores to heap."""
+    """追踪 malloc 返回值到后续 store 指令; result_var 缺失时退回启发式查找。"""
     stores = []
     if not alloc.result_var:
         return stores
@@ -103,7 +90,7 @@ def track_heap_stores(ir_lines: list[str],
         re.IGNORECASE,
     )
 
-    # Direct text search is more robust than line-by-line matching.
+    # 直接文本搜索比逐行匹配更稳健
     for i in range(alloc.pc + 1, min(len(ir_lines), alloc.pc + 50)):
         line = ir_lines[i]
 
@@ -179,7 +166,7 @@ def detect_heap_overflow(
             continue
 
         stores = track_heap_stores(ir_lines, alloc)
-        # L2: loop-bound inference for indexed writes
+        # L2: 为索引写入推断循环上界
         loop_bound = _infer_loop_bound(ir_lines, alloc)
         for store in stores:
             if store.offset_is_dynamic and loop_bound > 0:

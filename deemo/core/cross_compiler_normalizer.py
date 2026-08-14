@@ -1,19 +1,7 @@
-# Eliminates instruction-level differences across O0/O2/O3 compiler output,
-# extracting semantically equivalent features across optimization levels.
-#
-# Rationale:
-#   同一C代码在不同优化级别下编译, 指令序列差异显著:
-#     O0: 每条C语句独立翻译, 大量栈load/store
-#     O2: 寄存器分配优化, 循环展开, 死代码消除
-#     O3: 向量化, 函数内联
-#   但语义特征 (块级操作码分布、调用密度、分支比例)
-#   在优化级别间保持相对稳定。
-#
-# 归一化策略:
-#   1. 块合并: O0下被拆分的基本块在O2下合并 — 对相邻无分支块做合并
-#   2. 指令过滤: 移除编译器生成的栈帧管理指令 (push rbp; mov rbp,rsp; leave)
-#   3. 特征缩放: 对每个特征维度做z-score归一化 (基于统计基准)
-#   4. 语义等价映射: lea+mov模式 -> 单次内存操作 (O0特征) 对O2的寄存器操作
+# cross_compiler_normalizer.py - 消除 O0/O2/O3 编译输出的指令级差异, 提取语义等价特征。
+# 归一化策略: 相邻无分支块合并、移除栈帧管理指令 (push rbp/leave 等)、
+# z-score 特征缩放、lea+mov 模式映射为单次内存操作。
+# 语义特征 (块级操作码分布、调用密度、分支比例) 在各优化级别间保持相对稳定。
 import re as _re
 from typing import List, Dict
 

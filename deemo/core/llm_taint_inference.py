@@ -107,7 +107,7 @@ def infer_taint_sources(
             temperature=0.1,
             max_tokens=1024,
         )
-        # 移除可能的markdown包裹
+        # 移除markdown包裹
         resp = resp.strip()
         if resp.startswith('```'):
             resp = resp.split('\n', 1)[1].rsplit('\n```', 1)[0]

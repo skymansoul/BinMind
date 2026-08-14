@@ -1,26 +1,7 @@
-"""
-FCPV 安全格求解器 — 在三值安全格上求解约束联结.
-
-核心算法:
-  对每个候选 (FcpvCandidate), 沿四类约束推导最终安全标签.
-
-  推导规则 (保守性保证):
-    1. Sink=CONSTANT → SAFE (格式串是字面量, 不可利用)
-    2. Sink=VARIABLE ∧ Taint=TAINTED ∧ Sanitize=∅ → VULN
-    3. Sink=VARIABLE ∧ Taint=TAINTED ∧ Sanitize⟨fmt="%s"|无%n⟩ → SAFE
-    4. Sink=VARIABLE ∧ Taint=TAINTED ∧ Sanitize⟨fmt含%n⟩ → VULN (安全化无效)
-    5. Sink=VARIABLE ∧ Taint=CLEAN → SAFE
-    6. Sink=VARIABLE ∧ Taint=UNKNOWN ∧ CrossFunc=caller_tainted → VULN
-    7. 无法判定 → UNCERTAIN (保守保留, 交后续处理)
-
-  扩展规则:
-    8. Sink=VARIABLE ∧ literal含%n ∧ Taint=CLEAN → VULN (常量含写原语)
-    9. Sink=VARIABLE ∧ Sanitize(src=tainted, fmt="%s") → VULN (snprintf %s 透传)
-
-  与 FSCS 的区别:
-    FSCS 用乘法评分 (exploit×impact/10), 当 impact 未知时产生低分→FN.
-    FCPV 用格论推导, 不依赖数值评分, 消除乘法惩罚效应.
-"""
+"""FCPV 安全格求解器 — 在三值安全格上求解约束联结, 对每个候选沿四类约束推导最终安全标签。
+推导规则 (保守性保证): Sink=CONSTANT→SAFE; 有污点且无有效安全化 (或安全化含 %n)→VULN;
+无法判定→UNCERTAIN 保留。与 FSCS 的区别: FSCS 乘法评分 (exploit×impact/10) 在 impact 未知时
+产生低分→FN, FCPV 用格论推导不依赖数值评分, 消除乘法惩罚效应。"""
 
 import re
 from typing import List, Optional

@@ -1,0 +1,19 @@
+sample,tool,llm_enabled,elapsed_sec,vulns_tool,vulns_llm_confirmed,false_positives,poc_success,notes
+CVE-2017_stkovf.exe,binmind-analyze,false,0.1,0,0,0,0,no r2 installed; function discovery empty
+CVE-2001-0017_format_string.exe,binmind-analyze,false,0.1,0,0,0,0,no r2 installed; function discovery empty
+CVE-2018_heapovf.exe,binmind-analyze,false,0.1,0,0,0,0,no r2 installed; function discovery empty
+CVE-2017_stkovf.exe,binmind-analyze,false,0.2,0,0,0,0,all four env switches=true; taint_track step recorded
+CVE-2001-0017_format_string.exe,binmind-analyze,false,0.1,0,0,0,0,all four env switches=true; taint_track step recorded
+CVE-2018_heapovf.exe,binmind-analyze,false,0.2,0,0,0,0,all four env switches=true; taint_track step recorded
+CVE-2018_heapovf.exe,binmind-analyze,false,0.8,0,0,0,0,analyze --symbolic; angr 9.3.2; 0 functions so 0 paths
+CVE-2018_heapovf.exe,binmind-fuzz-fault-inject,false,0,0,0,0,0,instruction discovery failed (no objdump/r2 on Windows); 0 injection points
+logs/fuzz_seeds(3 inputs),binmind-fuzz-evolve,false,0,0,0,0,0,3 seeds mutated to 20 outputs across 3 generations
+CVE-2018_heapovf.exe,binmind-analyze,false,6.0,0,0,0,0,round2 baseline; r2 5.4.2 installed; 74 functions discovered; 20 analyzed; 0 vulns (no API key)
+CVE-2018_heapovf.exe,binmind-analyze,false,7.0,0,0,0,0,round2 symbolic+taint; symbolic_exec/taint_track/20x llm_analyze steps all success; 0 vulns
+logs/fuzz_seeds(3 inputs),binmind-fuzz-evolve,false,0,0,0,0,0,round2 evolve; 3 seeds -> 20 outputs
+CVE-2018_heapovf.exe,binmind-analyze,false,6.4,3,0,0,1,round7;vuln_type=heap_overflow;run_id=495;avg_priority_score=4.0;poc_generated=3
+CVE-2001-0017_format_string.exe,binmind-analyze,false,10.3,1,0,0,1,round7;vuln_type=format_string;run_id=492;avg_priority_score=4.0;poc_generated=1
+CVE-2017_stkovf.exe,binmind-analyze,false,10.3,3,0,0,1,round7;vuln_type=stack_overflow;run_id=493;avg_priority_score=4.0;poc_generated=3
+CVE-2013-4312_mq_notify_alias_uaf.exe,binmind-analyze,false,6.4,1,0,0,1,round7;vuln_type=uaf;run_id=494;avg_priority_score=4.0;poc_generated=1
+CVE-2016-6301_heap_overflow.exe,binmind-analyze,false,600,0,0,0,0,round7;vuln_type=heap_overflow;run_failed=timeout>600s (93KB sample, r2 per-function decompile path);skipped
+CVE-2016-6301_heap_overflow.exe,binmind-analyze,false,10.5,3,0,0,1,round8_after_timeout_fix;vuln_type=heap_overflow;timeout_guard=30s;no_interruption

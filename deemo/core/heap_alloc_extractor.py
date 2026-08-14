@@ -1,8 +1,6 @@
 """
-堆分配点提取器 — 从IR行中识别 malloc/calloc/realloc 调用点.
-
-2026-08-07: 新增表达式参数支持 (malloc(n*4+8), malloc(len+1))
-            新增 kmalloc/grub_malloc/OPENSSL_malloc 等变体支持
+堆分配点提取器 — 从IR行中识别 malloc/calloc/realloc 调用点。
+支持表达式参数 (malloc(n*4+8)) 及 kmalloc/grub_malloc/OPENSSL_malloc 等变体。
 """
 import re
 
@@ -10,12 +8,7 @@ from core.heap_overflow_detector import HeapAllocSite
 
 
 def _resolve_sizeof(expr: str) -> int:
-    """解析 sizeof 表达式为具体字节数.
-
-    支持: sizeof(int)=4, sizeof(char)=1, sizeof(long)=8 (LP64),
-          sizeof(void*)=8, sizeof(uint16_t)=2 等.
-    返回 0 表示无法解析.
-    """
+    """解析 sizeof 表达式为具体字节数 (int=4, char=1, long=8 等), 返回 0 表示无法解析。"""
     _SIZEOF_MAP = {
         'char': 1, 'unsigned char': 1, 'signed char': 1,
         'short': 2, 'unsigned short': 2, 'uint16_t': 2, 'int16_t': 2,
@@ -36,8 +29,7 @@ def _resolve_sizeof(expr: str) -> int:
 
 
 def _parse_alloc_size(size_str: str) -> tuple[int, bool, str]:
-    """解析分配大小: 常量→变量→表达式.
-    返回 (size, is_dynamic, size_expr)."""
+    """解析分配大小: 常量→变量→表达式, 返回 (size, is_dynamic, size_expr)。"""
     try:
         return (int(size_str, 0), False, size_str)
     except (ValueError, TypeError):
@@ -63,11 +55,8 @@ _ALLOC_FUNCS = (
 
 
 def extract_heap_allocations(ir_lines: list[str]) -> list[HeapAllocSite]:
-    """Extract heap allocation sites from IR lines.
-
-    支持 struct 字段 LHS: field->value = malloc(n)
-    支持表达式参数: malloc(n*4+8), malloc(len+1)
-    两遍扫描: 主regex (简单参数) + 回退regex (表达式参数).
+    """从IR行提取堆分配点, 支持 struct 字段 LHS 与表达式参数。
+    两遍扫描: 主regex (简单参数) + 回退regex (表达式参数)。
     """
     allocs = []
     lhs = r'(?:(\w+(?:->\w+)?(?:\s*\[\s*\w+\s*\])?)\s*=\s*)?'

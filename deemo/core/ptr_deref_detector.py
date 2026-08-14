@@ -1,23 +1,21 @@
 """
-Pointer-deref write detector for string-iteration loops.
-Detects CVE-2021-3156 style expansion overflow:
-  malloc(strlen(X)+K) but loop writes > alloc via *ptr++ in str-iteration.
-
-Integrated into ir_size_resolver.py → add_loop_write_hints() pipeline.
+指针解引用写检测器: 检测 CVE-2021-3156 式字符串迭代循环的扩张溢出。
+malloc(strlen(X)+K) 但循环经 *ptr++ 写入超过分配量 → 扩张溢出。
+集成于 ir_size_resolver.py 的 add_loop_write_hints() 管线。
 """
 
 from __future__ import annotations
 import re
 from typing import Dict, List, Optional, Tuple
 
-# String-iteration loop: for(s=str; *s; s++)
+# 字符串迭代循环: for(s=str; *s; s++)
 _STRCHR_FOR = re.compile(
     r'for\s*\(\s*(?:const\s+)?char\s*\*\s*(\w[\w.]*)\s*=\s*'
     r'(\w[\w.]*)\s*;'
     r'\s*\*\1\s*;'
     r'\s*\1\+\+\s*\)')
 
-# Deref write: *ptr++ = val, *ptr = val (not ==, !=, <=, >=)
+# 解引用写: *ptr++ = val, *ptr = val (排除 ==, !=, <=, >=)
 _PTR_DEREF_WRITE = re.compile(r'\*\s*(\w[\w.]*)\s*(\+\+)?\s*=(?!=)')
 
 # strlen: var = strlen(X);
@@ -33,18 +31,18 @@ _RE_MALLOC = re.compile(
 def detect_ptr_deref_overflow(source: str, enhanced: List[str],
                               existing_syn_bufs: set,
                               fresh_var_fn) -> None:
-    """Detect *ptr++ writes in strchr loops where ptr aliases a malloc buf.
+    """检测 strchr 循环中 *ptr++ 写入且 ptr 别名 malloc 缓冲区的情况。
 
-    Pattern: malloc(strlen(X)+K) with K<=1, but loop body has >=2 deref
-    writes per iteration → expansion overflow.
+    模式: malloc(strlen(X)+K) 且 K<=1, 但循环体每次迭代 >=2 次解引用
+    写入 → 扩张溢出。
     """
     lines = source.splitlines()
 
-    # Alias: ptr_var -> malloc_buf_var
+    # 别名: ptr_var -> malloc_buf_var
     ptr_to_buf: Dict[str, str] = {}
-    # Malloc sizes: buf_var -> (size_var, size_const)
+    # malloc 大小: buf_var -> (size_var, size_const)
     malloc_sizes: Dict[str, Tuple[str, int]] = {}
-    # Strlen: var -> source_str
+    # strlen: var -> source_str
     strlen_of: Dict[str, str] = {}
 
     for line in lines:
@@ -72,7 +70,7 @@ def detect_ptr_deref_overflow(source: str, enhanced: List[str],
         if am and am.group(2) in malloc_sizes:
             ptr_to_buf[am.group(1)] = am.group(2)
 
-    # Scan for strchr loops with deref writes
+    # 扫描含解引用写入的 strchr 循环
     in_loop = False
     brace_depth = 0
     loop_str_src: Optional[str] = None
@@ -111,7 +109,7 @@ def detect_ptr_deref_overflow(source: str, enhanced: List[str],
 
 def _count_deref(line: str, ptr_to_buf: Dict[str, str],
                  counts: Dict[str, int]) -> None:
-    """Count deref writes on a single-line loop body."""
+    """统计单行循环体中的解引用写入次数。"""
     for dwm in _PTR_DEREF_WRITE.finditer(line):
         if dwm.group(1) in ptr_to_buf:
             counts[dwm.group(1)] = counts.get(dwm.group(1), 0) + 1
@@ -123,7 +121,7 @@ def _emit_if_overflow(enhanced: List[str], deref_counts: Dict[str, int],
                       strlen_of: Dict[str, str],
                       loop_str_src: Optional[str],
                       fresh_var_fn, existing_syn_bufs: set) -> None:
-    """Emit synthetic memcpy when expansion overflow detected."""
+    """检测到扩张溢出时生成合成 memcpy。"""
     for ptr, count in deref_counts.items():
         if ptr not in ptr_to_buf or count < 2:
             continue
@@ -135,7 +133,7 @@ def _emit_if_overflow(enhanced: List[str], deref_counts: Dict[str, int],
             continue
         if strlen_of[sz_var] != loop_str_src:
             continue
-        # Proven: write >= 2*strlen(X), alloc = strlen(X) + K where K<=1
+        # 已证明: 写入 >= 2*strlen(X), 分配 = strlen(X) + K 且 K<=1
         fv = fresh_var_fn()
         enhanced.append(f'{fv} = {sz_var} * 2;')
         enhanced.append(

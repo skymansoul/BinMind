@@ -1,27 +1,6 @@
-"""
-Constraint accumulator — affine constraint reasoning over the value-flow graph.
-
-Given a VFG, this module extracts linear constraints (x = y, x = c, x = y + z,
-x = y * c) and uses them to prove or disprove heap write safety.
-
-Core reasoning: for each (alloc, write) pair:
-  - Trace value-flow paths from the allocation size expression to the write
-    offset expression through the VFG.
-  - Accumulate affine constraints along each path.
-  - If constraints prove `write_offset < alloc_size`, mark as provably safe (FP).
-  - If constraints prove `write_offset >= alloc_size`, mark as provably unsafe.
-  - Otherwise, mark as uncertain.
-
-Key insight over existing code: instead of comparing raw numeric values, we
-reason about *symbolic relationships*. e.g.:
-    n = get_size(); p = malloc(n); ... memcpy(p + n - 8, src, 8)
-  → constraint: offset = n - 8, alloc = n → offset < alloc (safe, FP filtered)
-
-  Crab-LLVM — abstract interpretation with linear
-  constraints for array bounds checking.
-  We adopt their constraint language but apply it to decompiled binary output,
-  not LLVM IR — which means we also handle stripped, non-debug code.
-"""
+"""约束累加器 — 在值流图上做仿射约束推理.
+提取线性约束 (x=y, x=c, x=y+z, x=y*c) 证明或推翻堆写入安全;
+沿值流路径累积约束, 证 write_offset<alloc_size 则判安全(滤FP), 证反则判不安全, 否则不确定. 参考 Crab-LLVM."""
 
 from dataclasses import dataclass, field
 from enum import Enum

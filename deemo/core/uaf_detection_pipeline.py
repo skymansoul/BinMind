@@ -1,12 +1,5 @@
-# UAF检测统一流水线 —— 时序分析+别名推断+模式匹配三轨并行。
-#
-# 融合三种独立证据源:
-#   轨道1 (temporal): uaf_temporal_analyzer的时序违反检测
-#   轨道2 (pattern): heap_uaf_detector的伪代码模式匹配
-#   轨道3 (cross_func): heap_use_analyzer的跨函数UAF启发式
-#
-# 三轨独立运行, 结果取并集(最大化召回)。
-# 置信度用贝叶斯加权融合——多轨一致时置信度提升, 单轨时降权。
+# UAF检测统一流水线 — 时序分析+别名推断+模式匹配三轨并行, 结果取并集。
+# 置信度用贝叶斯加权融合: 多轨一致时置信度提升, 单轨时降权。
 
 
 from dataclasses import dataclass, field

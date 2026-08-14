@@ -1,19 +1,10 @@
 """
-Interval constraint analysis — extracts numeric constraints from decompiled
-code and uses interval arithmetic to prove heap-operation safety.
-
-Forward data-flow analysis maintaining [min, max] intervals per variable.
-  malloc(size) → record the size interval.
-  memcpy(dst, src, n) → compare n's interval against the alloc's size interval.
-  prove(n ≤ alloc_size) → safe (FP, filtered).
-  prove(n > alloc_size) → unsafe (true positive).
-  otherwise → uncertain (kept for further analysis).
-
-O(N·V) complexity, N ≤ 500 statements, V ≤ 50 variables.
-
-Works on binary decompiler output (no type info, no heap shape), so uses
-conservative interval arithmetic — filters only statically provable safe
-cases. The rest stays as uncertain (false negatives avoided at all cost).
+区间约束分析 — 从反编译代码提取数值约束, 用区间算术证明堆操作安全性。
+前向数据流分析维护每变量的 [min, max] 区间: malloc(size) 记录大小区间;
+memcpy(dst, src, n) 比较 n 的区间与分配大小区间; 证明 n ≤ alloc_size → 安全 (滤除 FP);
+n > alloc_size → 不安全 (真阳性); 否则 → 不确定 (保留进一步分析)。
+复杂度 O(N·V), N ≤ 500 语句, V ≤ 50 变量。因作用于无类型信息、无堆形状的反编译输出,
+采用保守区间算术, 只过滤可静态证明安全的用例, 其余保留为不确定 (宁漏不误杀)。
 """
 import re
 from dataclasses import dataclass
@@ -88,7 +79,7 @@ class ValueRangeAnalyzer:
                         self._intervals[lhs] = self._intervals[ref]; break
 
     def _handle_call(self, func: str, args: List[str], lhs: str, line: str):
-        """Handle function calls: both assignment form and bare call form."""
+        """处理函数调用: 赋值形式与裸调用形式。"""
         if func in ('malloc', 'calloc', 'realloc'):
             sv, sr = self._extract_alloc_size(args, func)
             var = lhs if lhs else (args[0].strip() if args else '?')

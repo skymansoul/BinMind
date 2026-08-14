@@ -21,7 +21,7 @@ class NodeKind(Enum):
 
 @dataclass
 class VFGNode:
-    """Value-flow graph node — a single value definition site."""
+    """值流图节点 — 单个值定义点。"""
     node_id: int
     kind: NodeKind
     name: str = ''               # 变量名或表达式文本
@@ -43,7 +43,7 @@ class VFGNode:
 
 @dataclass
 class VFGEdge:
-    """Value-flow edge — data flows from source definition to target use."""
+    """值流边 — 数据从源定义流向目标使用。"""
     source: VFGNode
     target: VFGNode
     relation: str = ''  # 'identity' | 'add' | 'mul' | 'cmp_bound'
@@ -51,7 +51,7 @@ class VFGEdge:
 
 @dataclass
 class ValueFlowGraph:
-    """Complete value-flow graph for a function's decompiled output."""
+    """函数反编译输出的完整值流图。"""
     nodes: List[VFGNode] = field(default_factory=list)
     edges: List[VFGEdge] = field(default_factory=list)
     function_name: str = ''

@@ -1,21 +1,6 @@
 """函数内 use-def 污点传播 — 区分用户输入与内部数据流。
-
-问题: format_string_detector 和 stack_overflow_analyzer 的静态检测用
-纯正则匹配——看到 printf(var) 就报警，不区分 var 是否真来自用户输入。
-误报主要来源: 内部日志、调试输出、格式化错误消息(参数是内部常量)。
-
-方案: 单函数内 use-def chain 追踪。按代码行顺序做标签传播:
-  1. 识别污点源: read/recv/fgets/scanf/getenv → 标记为 TAINTED
-  2. 沿行序前向传播: 赋值语句将右值标签复制给左值, 重组操作合并标签
-  3. 到达 sink (strcpy/printf/system) 时检查参数是否携带 TAINTED 标签
-  4. 无标签的 sink → 降级 confidence 或附加说明
-
-复杂度: O(N·V), N=变量数(通常 <50/函数), V=代码行数(<500)。
-
-设计依据:
-  - NVScope: 输入源验证降低 56.8% FPR——本模块做函数内版本
-  - CodeGrafter: 跨域 CPG 图传播——本模块退一步只做行级线性传播,
-    换取零外部依赖和亚毫秒级延迟
+按行序做标签传播: 标记污点源(read/recv/fgets/scanf/getenv) → 赋值传播 →
+到达 sink (strcpy/printf/system) 时检查标签, 无标签则降级置信度。复杂度 O(N·V)。
 """
 
 
@@ -53,7 +38,7 @@ def track_taint_intraprocedural(
     if not sinks:
         return paths
 
-    # 标签传播: var → set of source indices
+    # 标签传播: var → 源索引集合
     labels: dict[str, set[int]] = {}
 
     for lineno, line in enumerate(lines, start=1):

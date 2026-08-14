@@ -1,18 +1,7 @@
-"""
-FCPV 约束类型定义 — 格式串约束传播验证器的类型系统.
-
-核心抽象: 将格式串漏洞判定建模为三值安全格上的约束满足问题.
-格关系: SAFE ≤ UNCERTAIN ≤ VULN (保守性: 不确定时取 VULN 侧)
-
-四类约束:
-  1. SinkConstraint:     printf 族函数第 N 参数是否为非常量
-  2. TaintConstraint:    该参数变量是否从外部输入可达
-  3. SanitizeConstraint: 该变量是否经过安全化处理
-  4. CrossFuncConstraint: 跨函数参数绑定传播 taint
-
-设计决策: 约束不可消解 (类似 CJ 的反证法) — 只要存在一条
-taint 路径未被 sanitize 打断, 且 sink 为非常量, 则保守判 VULN.
-"""
+"""FCPV 约束类型定义 — 格式串约束传播验证器的类型系统。
+将格式串漏洞判定建模为三值安全格 (SAFE ≤ UNCERTAIN ≤ VULN, 不确定时取 VULN 侧) 上的约束满足问题;
+四类约束: sink (第 N 参数是否非常量)、taint (是否从外部输入可达)、sanitize (是否安全化)、跨函数参数绑定。
+只要存在一条未被 sanitize 打断的 taint 路径且 sink 为非常量, 即保守判 VULN。"""
 
 from dataclasses import dataclass, field
 from enum import IntEnum

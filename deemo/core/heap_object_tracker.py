@@ -1,24 +1,7 @@
 """
 堆对象生命周期追踪 — 跨函数的堆对象识别与别名分析。
-
-设计理由:
-  uaf_analyzer.py 的别名追踪只在单函数内工作, 遇到以下场景就失效:
-    obj = get_buffer();  free(obj);  // 跨函数, 别名未知
-    p = obj; q = p; free(p); q->field = 0;  // 多级别名链
-
-  本模块做两级扩展:
-    Level 1 (函数内): 追踪赋值链、结构体字段偏移别名
-    Level 2 (跨函数): 基于调用约定推测返回值和参数间的堆对象关系
-
-方法:
-  - Andersen-style 子集约束的轻量版: 只追踪堆对象, 忽略栈/全局变量
-  - 赋值 p = q → p ⊇ q; 解引用 *p = q → *p ⊇ q (保守)
-  - free(p) → 标记 p 及其别名集为 "已释放"
-  - 此后解引用 → UAF 候选
-
-  - SVF: 稀疏值流框架, 我们取其 demand-driven 思想
-  - CRYPTIC: 路径敏感+别名感知的状态机分析
-  - Datalog-based pointer analysis: 声明式规则, 我们不做完整实现
+Level 1 函数内: 追踪赋值链与结构体字段偏移别名; Level 2 跨函数: 按调用约定
+推测返回值与参数间的堆对象关系。采用 Andersen 子集约束的轻量版, 只追踪堆对象。
 """
 
 from __future__ import annotations
@@ -47,13 +30,7 @@ class AliasEdge:
     kind: str  # "direct" | "field" | "return" | "param"
 
 class HeapObjectTracker:
-    """堆对象生命周期追踪器。
-
-    用法:
-      tracker = HeapObjectTracker()
-      tracker.process_function(code, func_name)
-      findings = tracker.find_uaf()
-    """
+    """堆对象生命周期追踪器 — 处理函数代码并返回 UAF/双重释放发现。"""
 
     def __init__(self):
         self._objects: Dict[str, HeapObj] = {}  # obj_id → HeapObj
@@ -72,7 +49,7 @@ class HeapObjectTracker:
 
         lines = code.split('\n')
 
-        # Pass 1: 收集 malloc/free/赋值/解引用 (无continue, 同行可匹配多模式)
+        # 趟1: 收集 malloc/free/赋值/解引用 (无continue, 同行可匹配多模式)
         for i, line in enumerate(lines, start=1):
             stripped = line.strip()
             # 剥离 C 风格注释 (避免注释中的 free/malloc 误匹配)
@@ -143,17 +120,17 @@ class HeapObjectTracker:
                 self._aliases.append(AliasEdge(from_var=rhs, to_var=lhs,
                                                lineno=i, kind="direct"))
 
-        # Pass 2: 传播别名 (传递闭包)
+        # 趟2: 传播别名 (传递闭包)
         self._propagate_aliases()
 
-        # Pass 2.5: 处理之前因别名未解析而暂存的解引用
+        # 趟2.5: 处理之前因别名未解析而暂存的解引用
         for var, lineno, pattern in self._pending_derefs:
             oid = self._var_to_obj.get(var)
             if oid and oid in self._objects:
                 self._objects[oid].deref_sites.append((lineno, pattern))
         self._pending_derefs.clear()
 
-        # Pass 3: 检查释放后使用
+        # 趟3: 检查释放后使用
         self._check_uaf()
 
         return self._findings

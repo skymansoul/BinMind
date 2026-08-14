@@ -1,20 +1,10 @@
 """
-Post-free use-site detection via live-variable analysis.
-
-Existing uaf_candidate_scorer only pairs malloc/free and assigns a
-probability — it does not know whether the pointer is actually used
-after free. This module fills that gap.
-
-  1. Extract free(p) calls and the freed variable p from IR.
-  2. Live-variable analysis: in the interval from free to function return,
-     does p appear as an operand (load/store/call arg/mov src)?
-  3. Use found → confirmed UAF.
-  4. p explicitly set to NULL after free (p = NULL) → likely_safe.
-  5. Reassignment (p = malloc(...)) after free → not a UAF.
-
-Limitations:
-  - Intra-procedural only. free in callee, use in caller → false negative.
-  - Depends on decompiler variable name recovery (stripped binaries may fail).
+free 后 use-site 检测 — 基于活跃变量分析。
+uaf_candidate_scorer 只配对 malloc/free 并给出概率, 不判断指针在 free 后是否真的被使用, 本模块补齐该缺口。
+流程: 1. 从 IR 提取 free(p) 调用与被释放变量; 2. 活跃变量分析: 在 free 到函数返回的区间内检查 p
+是否作为操作数出现 (load/store/call arg/mov src); 3. 出现 → 确认 UAF; 4. free 后置 NULL → 安全;
+5. free 后重新赋值 (p = malloc(...)) → 非 UAF。局限: 仅函数内分析 (callee free + caller use 为漏报),
+依赖反编译器变量名恢复 (去符号二进制可能失败)。
 """
 
 from dataclasses import dataclass, field
@@ -96,7 +86,7 @@ def detect_use_after_free(
         for j in range(free_site.pc + 1, len(ir_lines)):
             line = ir_lines[j]
 
-            # Check if the variable was reassigned (legal reuse, not a UAF)
+            # 检查变量是否被重新赋值 (合法复用, 非 UAF)
             if not use_after_free_found:
                 if re.search(rf'{re.escape(var)}\s*=\s*(?!NULL|nullptr)', line):
                     reassigned = True
@@ -117,7 +107,7 @@ def detect_use_after_free(
                     confidence=conf,
                     description=f'{var} freed at line {free_site.pc}, used as {use_type} at line {j}',
                 ))
-                # Stop after first use; subsequent uses are extensions of the same bug.
+                # 首个使用后停止; 后续使用视为同一漏洞的延伸
                 break
 
     findings.sort(key=lambda f: -f.confidence)
@@ -128,7 +118,7 @@ def _detect_var_use(line: str, var: str) -> Optional[str]:
     """检测一行 IR 中是否以特定方式使用了变量 var。
 
     返回 'load' | 'store' | 'call_arg' | 'mov_src' | None。"""
-    # Exclude writes to var (var = XXX) — reassignment, not use-after-free.
+    # 排除对 var 的写入 (var = XXX) — 属重新赋值而非 use-after-free
     if re.match(rf'{re.escape(var)}\s*=', line.strip()):
         return None
     # 排除 var 出现在函数调用名中

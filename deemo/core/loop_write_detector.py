@@ -1,7 +1,6 @@
 """
-Loop-bound scalar write detection — emit synthetic memcpy IR for loop-body
-array writes. Without this, scalar writes in loops have no IR-visible size →
-TOP interval → UNCERTAIN verdict on otherwise-detectable overflows.
+循环边界标量写检测 — 为循环体内数组写合成memcpy IR。
+若无此处理，循环内标量写无IR可见尺寸 → TOP区间 → 本可检测的溢出被判UNCERTAIN。
 """
 
 from __future__ import annotations
@@ -184,18 +183,15 @@ def _add_loop_write_site(buf_var: str, alloc_bufs: Dict[str, int],
 
 
 def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
-    """Detect scalar writes inside loops and add synthetic memcpy IR lines.
-
-    Uses line-by-line scanning to detect for-loops followed by array
-    writes. More robust than multi-line regex for C source patterns.
-    """
+    """检测循环内标量写并追加合成memcpy IR行：逐行扫描检测for循环后
+    的数组写，对C源码模式比多行正则更稳健。"""
     enhanced = list(ir_lines)
 
-    # Strip comments
+    # 剥离注释
     s = re.sub(r'/\*.*?\*/', '', c_source, flags=re.DOTALL)
     s = re.sub(r'//[^\n]*', '', s)
 
-    # Only skip if there's already a SYNTHETIC memcpy for this buffer
+    # 该缓冲区已有合成memcpy则跳过
     existing_syn_bufs = set()
     for l in enhanced:
         if 'loop_write' in l:
@@ -203,7 +199,7 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
             if wm:
                 existing_syn_bufs.add(wm.group(1))
 
-    # Generate unique synthetic variable names for affine tracking
+    # 为仿射跟踪生成唯一合成变量名
     _syn_counter = [0]
     def _fresh_syn_var() -> str:
         _syn_counter[0] += 1
@@ -217,7 +213,7 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
     for i, line in enumerate(lines):
         stripped = line.strip()
 
-        # Detect for-loop header
+        # 检测for循环头
         fm = _SIMPLE_FOR.search(stripped)
         if fm:
             in_loop = True
@@ -231,7 +227,7 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
                 loop_bound = bound_var
             continue
 
-        # End of loop
+        # 循环结束
         if in_loop and stripped == '}':
             for buf_var, bound_expr in loop_body_bufs.items():
                 if buf_var not in existing_syn_bufs and bound_expr:
@@ -242,7 +238,7 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
             loop_body_bufs.clear()
             continue
 
-        # Inside loop: look for array writes
+        # 循环内: 查找数组写
         if in_loop and loop_bound:
             aw = re.search(
                 r'(\w[\w.]*)\s*\[([^\]]*)\]\s*=',
@@ -250,7 +246,7 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
             if aw:
                 buf_var = aw.group(1)
                 index_expr = aw.group(2).strip()
-                # Accept both numeric and symbolic offsets (macro-expanded)
+                # 接受数值与符号偏移（宏已展开）
                 offset_m = re.match(r'(\w+)\s*\+', index_expr)
                 if offset_m:
                     offset = offset_m.group(1)
@@ -258,8 +254,8 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
                 else:
                     loop_body_bufs[buf_var] = loop_bound
 
-    # Phase 2: pointer-deref writes in string-iteration loops
-    # Detects CVE-2021-3156: malloc(strlen(X)+K) but *ptr++ writes overflow
+    # 阶段2: 字符串迭代循环中的指针解引用写
+    # 检测CVE-2021-3156: malloc(strlen(X)+K)但*ptr++写溢出
     from core.ptr_deref_detector import detect_ptr_deref_overflow
     detect_ptr_deref_overflow(s, enhanced, existing_syn_bufs, _fresh_syn_var)
 
@@ -268,18 +264,18 @@ def add_loop_write_hints(c_source: str, ir_lines: List[str]) -> List[str]:
 
 def _emit_syn_memcpy(enhanced: List[str], buf_var: str,
                      bound_expr: str, fresh_var: str) -> None:
-    """Emit synthetic memcpy IR; decomposes 'user_size+1+16' →
-    _syn_N_base=user_size+1; _syn_N=_syn_N_base+16; memcpy(buf,*, _syn_N);
-    affine analyzer chains: write_sz = alloc_sz + 1 → overflow proven."""
+    """输出合成memcpy IR；将'user_size+1+16'分解为 _syn_N_base=user_size+1;
+    _syn_N=_syn_N_base+16; memcpy(buf,*, _syn_N); 仿射分析器链接:
+    write_sz = alloc_sz + 1 → 判定溢出。"""
     if bound_expr.isdigit():
         enhanced.append(
             f'memcpy({buf_var}, <loop_body>, {bound_expr});'
             f'  /* loop_write */')
         return
 
-    # Decompose: find the last '+const' in the expression for affine tracking
-    # e.g. 'user_size+1+16' -> base='user_size+1', offset=16
-    # No trailing comments — affine analyzer regexes match strictly
+    # 分解: 找到表达式末尾的'+const'用于仿射跟踪
+    # 例如 'user_size+1+16' → base='user_size+1', offset=16
+    # 不加尾注释 — 仿射分析器正则严格匹配
     parts = bound_expr.rsplit('+', 1)
     if len(parts) == 2 and parts[1].strip().isdigit():
         base_expr = parts[0].strip()

@@ -1,10 +1,5 @@
-# 抽象解释驱动的误报削减过滤器
-#
-# 集成 interval_analysis 到检测管线: 对每个漏洞候选,
-# 提取涉及的缓冲区变量和写入操作, 用区间分析判定溢出条件是否可行。
-#
-# Crab 和 IKOS 验证了区间抽象削减 50-70% 误报。
-# 本模块简化到仅对栈缓冲区做分析——最相关的子问题。
+# 抽象解释驱动的误报削减过滤器 — 对每个漏洞候选提取缓冲区变量与写入操作,
+# 用区间分析判定溢出条件是否可行 (Crab/IKOS 验证可削减 50-70% 误报; 本模块仅分析栈缓冲区)。
 
 from typing import List, Dict, Any, Optional
 from core.interval_analysis import BufferSizeAnalyzer

@@ -102,18 +102,18 @@ verify_installation() {
         return 1
     fi
     
-    if [ ! -x "$PROJECT_DIR/main.py" ]; then
-        echo "Error: main.py not found or not executable." >&2
+    if [ ! -x "$PROJECT_DIR/binmind.py" ]; then
+        echo "Error: binmind.py not found or not executable." >&2
         return 1
     fi
-    
+
     echo "[+] Running basic health check..."
-    if "$VENV_DIR/bin/python" "$PROJECT_DIR/main.py" --health >/dev/null 2>&1; then
+    if "$VENV_DIR/bin/python" "$PROJECT_DIR/binmind.py" version >/dev/null 2>&1; then
         echo "[+] Health check passed!"
     else
         echo "Warning: Health check failed. Some features may not work." >&2
     fi
-    
+
     return 0
 }
 
@@ -176,7 +176,7 @@ trap 'rm -f "$TMP_LAUNCHER"' EXIT
 
 cat > "$TMP_LAUNCHER" <<EOF
 #!/usr/bin/env bash
-exec "$PYTHON_BIN" "$PROJECT_DIR/main.py" "\$@"
+exec "$PYTHON_BIN" "$PROJECT_DIR/binmind.py" "\$@"
 EOF
 
 echo "[+] Installing launcher to $TARGET..."

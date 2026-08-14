@@ -1,7 +1,4 @@
-"""
-Crash dump analysis. Parses crash data (ASAN output, GDB backtraces,
-coredump summaries) and classifies crash types. Feeds into exploit_gen.
-"""
+"""崩溃转储分析 — 解析崩溃数据 (ASAN 输出、GDB 回溯、coredump 摘要) 并分类崩溃类型, 供 exploit_gen 使用。"""
 
 import logging
 import re
@@ -28,7 +25,7 @@ SEVERITY_MAP = {
 
 
 def _guess_crash_type(text: str) -> str:
-    """Parse crash data text to identify the crash category."""
+    """解析崩溃数据文本, 判定崩溃类别。"""
     if 'heap-use-after-free' in text or 'use after free' in text.lower():
         return 'use-after-free'
     if 'heap-buffer-overflow' in text:
@@ -51,13 +48,13 @@ def _guess_crash_type(text: str) -> str:
 
 
 def _extract_addresses(text: str) -> List[str]:
-    """Pull hex addresses from crash output."""
+    """从崩溃输出中提取十六进制地址。"""
     pattern = r'(0x[0-9a-fA-F]{6,16})'
     return re.findall(pattern, text)
 
 
 def parse_crash(raw: str) -> Dict[str, Any]:
-    """Parse raw crash output into a structured dict."""
+    """将原始崩溃输出解析为结构化字典。"""
     crash_type = _guess_crash_type(raw)
     addrs = _extract_addresses(raw)
 
@@ -73,7 +70,7 @@ def parse_crash(raw: str) -> Dict[str, Any]:
 
 
 def load_crash_file(path: str) -> Optional[Dict]:
-    """Read a crash log from disk and parse it."""
+    """从磁盘读取崩溃日志并解析。"""
     try:
         with open(path, 'r', encoding='utf-8', errors='replace') as fh:
             content = fh.read(65536)  # max 64KB
@@ -87,7 +84,7 @@ def load_crash_file(path: str) -> Optional[Dict]:
 
 
 def analyze_crash_for_exploit(crash: Dict) -> Dict:
-    """Determine exploitability and suggest primitive types."""
+    """判定可利用性并建议原语类型。"""
     exploitable = crash.get('exploitable', False)
     crash_type = crash.get('crash_type', 'unknown')
 
@@ -118,27 +115,24 @@ def analyze_crash_for_exploit(crash: Dict) -> Dict:
     return analysis
 
 
-# Multi-dimensional primitive fingerprinting.
-# Finer-grained exploitability assessment than analyze_crash_for_exploit():
-# register controllability analysis, heap op sequence extraction, multi-axis
-# scoring, and strategy recommendation.
-# erences: Lancet, HEXP, AutoPwn
+# 多维原语指纹 — 比 analyze_crash_for_exploit 更细粒度的可利用性评估:
+# 寄存器可控性分析、堆操作序列提取、多轴评分与策略推荐。参考: Lancet, HEXP, AutoPwn。
 
 def fingerprint_crash_detailed(
     crash_data: dict,
     stack_bounds: tuple = None,
     heap_bounds: list = None,
 ) -> dict:
-    """Multi-dimensional crash primitive fingerprinting.
+    """多维崩溃原语指纹。
 
-    Finer-grained alternative to analyze_crash_for_exploit. Returns:
-      registers: per-register controllability analysis
-      heap_ops: extracted heap operation sequence
+    比 analyze_crash_for_exploit 更细粒度的替代方案, 返回:
+      registers: 逐寄存器可控性分析
+      heap_ops: 提取的堆操作序列
       scores: rip_control / stack_control / heap_control / info_leak / overall
-      recommended_primitives: suggested exploit primitive types
-      recommended_strategy: suggested exploitation strategy
+      recommended_primitives: 建议的利用原语类型
+      recommended_strategy: 建议的利用策略
 
-    Pure Python stdlib — no external dependencies.
+    纯 Python 标准库实现, 无外部依赖。
     """
     try:
         from core.crash_primitive_fingerprint import fingerprint_crash

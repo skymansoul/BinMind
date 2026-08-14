@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 """
-ASIP增强源码检测器 v5 — 精细化的逻辑溢出+物理安全判定.
-
-五引擎级联误报过滤:
-  E1: guard过滤 — if(n>X) return → X≤alloc_size → SAFE
-  E2: clamp过滤 — if(n>X) n=X → X≤alloc_size → SAFE
-  E3: 路径条件 — if(n>0&&n<=X) → X≤alloc_size → SAFE
-  E4: alloc=write配对 — malloc(var)+memcpy(buf,src,var) → SAFE
-  E5: 取模保护 — buf[i%N] → N≤alloc_size → SAFE
-
-正则与提取函数从 asip_source_regex / asip_source_extract 导入.
+ASIP 增强源码检测器: 逻辑溢出与物理安全判定。
+五引擎级联误报过滤: guard 上界、clamp 截断、路径条件、alloc=write 配对、取模保护, 任一满足即判 SAFE。
+正则与提取函数从 asip_source_regex / asip_source_extract 导入。
 """
 
 from typing import Dict, List, Optional

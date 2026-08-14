@@ -1,7 +1,4 @@
-"""
-C source preprocessing — strip comments, preprocessor directives, normalize
-declarations for IR extraction. Extracted from source_ir_extractor.py.
-"""
+# ir_preprocessor.py - C源码预处理：剥离注释与预处理指令，归一化声明，供IR提取
 
 from __future__ import annotations
 import re

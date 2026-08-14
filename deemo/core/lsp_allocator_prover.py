@@ -1,24 +1,7 @@
 """
-LSP Layer 3 — 分配器语义对齐证明器.
-
-处理分配器对齐余量导致的边界判定. 当write_end恰好落在
-alloc_size到usable_size之间的padding区时, BVF可能因严格
-比较而无法判定.
-
-核心场景:
-  malloc(24) → ptmalloc2 usable=32 (对齐到32字节边界)
-  memcpy(buf, src, 28) → BVF: write_end=28 > alloc=24 → INCONCLUSIVE
-  LSP: usable=32 >= 28 → SAFE (padding区访问不溢出)
-
-对齐模型参考:
-  - glibc ptmalloc2: 16字节对齐, min_chunk_size=32
-    request N → chunk_size = max(32, align_up(N + 16, 16))
-    usable = chunk_size - 16 (x86_64) 或 chunk_size - 8 (x86_32)
-  - jemalloc: 16字节对齐, 类似策略
-  - Windows CRT: 16字节对齐
-
-保守性: 仅当write_end明确落在padding区时判定SAFE,
-若超出usable_size则判定OVERFLOW, 否则返回None.
+LSP Layer 3 — 分配器语义对齐证明器: 处理分配器对齐余量导致的边界判定。
+malloc(24)→usable=32，write_end落在alloc与usable之间时按padding访问判SAFE。
+仅当write_end明确落在padding区判SAFE，超出usable_size判OVERFLOW，否则返回None。
 """
 from typing import Optional
 

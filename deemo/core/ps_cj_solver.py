@@ -1,26 +1,6 @@
-"""
-路径敏感约束联结求解器 — PS-CJ核心求解模块.
-
-核心思想:
-  全局CJ将所有路径的约束混合到单一系统, 产生跨路径约束泄露.
-  PS-CJ在每条CFG路径上独立做FM消元+安全性证明, 保守融合结果.
-
-  保守融合策略:
-    - 所有可行路径都PROVEN_SAFE → FILTER (误报过滤)
-    - 任一可行路径PROVEN_OVERFLOW → KEEP (溢出确认)
-    - 任意路径INCONCLUSIVE → KEEP (保守保留)
-    - 不可行路径: 路径guard自相矛盾, 不影响最终判定
-    - 全部路径不可行 → 回退全局CJ (保守保留)
-
-与传统路径敏感分析的区别:
-  - 不符号化执行, 仅在线性约束系统上做路径分离
-  - 路径来自简化CFG(正则+启发式构建), 非完整CFG
-  - 有界路径枚举(max 128), 超限回退全局CJ
-  - 每条路径的约束系统独立, 无路径间约束传播
-
-理论: 路径敏感分析;
-      Reps-Horwitz-Sagiv 路径可达性.
-"""
+"""路径敏感约束联结求解器 — PS-CJ核心求解模块: 每条CFG路径独立FM消元+安全性证明, 保守融合.
+融合: 所有可行路径SAFE→过滤; 任一可行路径OVERFLOW→保留; 任意INCONCLUSIVE→保守保留; 全部不可行→回退全局CJ.
+路径来自简化CFG(正则+启发式), 有界枚举(max 128), 无路径间约束传播。理论: Reps-Horwitz-Sagiv 路径可达性。"""
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -37,7 +17,7 @@ from core.heap_overflow_detector import HeapOverflowCandidate
 
 @dataclass
 class PathSolverResult:
-    """单条路径的求解结果."""
+    """单条路径的求解结果。"""
     verdict: SolverVerdict = SolverVerdict.INCONCLUSIVE
     reason: str = ""
     path_feasible: bool = True
@@ -48,7 +28,7 @@ class PathSolverResult:
 
 @dataclass
 class PSJResult:
-    """路径敏感求解器的整体结果."""
+    """路径敏感求解器的整体结果。"""
     verdict: SolverVerdict = SolverVerdict.INCONCLUSIVE
     reason: str = ""
     paths_analyzed: int = 0
@@ -63,9 +43,9 @@ class PSJResult:
 
 
 class PathSensitiveCJSolver:
-    """路径敏感约束联结求解器.
+    """路径敏感约束联结求解器。
 
-    接口与ConstraintJoinSolver.solve()兼容, 可作为替代.
+    接口与ConstraintJoinSolver.solve()兼容, 可作为替代。
     """
 
     def __init__(self, platform: str = "x86_64"):
@@ -76,7 +56,7 @@ class PathSensitiveCJSolver:
         self,
         sys: ConstraintSystem,
     ) -> SolverResult:
-        """全局CJ回退接口 — 无路径信息时使用."""
+        """全局CJ回退接口 — 无路径信息时使用。"""
         return self._global_solver.solve(sys)
 
     def solve_path_sensitive(
@@ -85,7 +65,7 @@ class PathSensitiveCJSolver:
         ir_lines: list[str],
         decompiled_text: str = "",
     ) -> PSJResult:
-        """路径敏感求解: 枚举路径→逐路径CJ→保守融合."""
+        """路径敏感求解: 枚举路径→逐路径CJ→保守融合。"""
         path_systems = collect_path_sensitive_constraints(
             candidate, ir_lines, decompiled_text)
 
@@ -105,7 +85,7 @@ class PathSensitiveCJSolver:
         path: CFGPath,
         psys: ConstraintSystem,
     ) -> PathSolverResult:
-        """对单条路径的约束系统做CJ求解."""
+        """对单条路径的约束系统做CJ求解。"""
         if not path.is_feasible:
             return PathSolverResult(
                 verdict=SolverVerdict.INCONCLUSIVE,
@@ -162,7 +142,7 @@ class PathSensitiveCJSolver:
         self,
         path_results: List[PathSolverResult],
     ) -> PSJResult:
-        """保守融合所有路径的判定结果.
+        """保守融合所有路径的判定结果。
 
         融合规则:
           - 任一可行路径OVERFLOW → OVERFLOW (保留候选)
@@ -236,7 +216,7 @@ class PathSensitiveCJSolver:
         ir_lines: list[str],
         decompiled_text: str,
     ) -> PSJResult:
-        """回退到全局CJ求解."""
+        """回退到全局CJ求解。"""
         from core.cj_constraint_collector import collect_constraints
         sys = collect_constraints(candidate, ir_lines, decompiled_text)
         global_result = self._global_solver.solve(sys)
@@ -267,9 +247,9 @@ def solve_candidate_path_sensitive(
     decompiled_text: str = "",
     platform: str = "x86_64",
 ) -> Tuple[PSJResult, List[Tuple[CFGPath, ConstraintSystem]]]:
-    """便捷接口: 路径敏感求解单个候选.
+    """便捷接口: 路径敏感求解单个候选。
 
-    返回 (psj_result, path_systems).
+    返回 (psj_result, path_systems)。
     """
     solver = PathSensitiveCJSolver(platform)
     path_systems = collect_path_sensitive_constraints(

@@ -122,7 +122,6 @@ class EntropyBudgetAllocator:
         if not paths:
             return {}
 
-        # 计算各路径的熵
         entropies: Dict[str, float] = {}
         for pid, constraints in paths.items():
             entropies[pid] = self.estimate_entropy(constraints)

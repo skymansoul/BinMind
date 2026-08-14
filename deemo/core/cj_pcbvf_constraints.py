@@ -1,18 +1,6 @@
 """
-PC-BVF路径约束提取器 — 从IR行中提取支配告警点的分支条件.
-
-当BVF判定alloc-write相关性为INCONCLUSIVE时, 路径约束提取器
-反向搜索支配告警点的if/switch条件, 将其转化为变量值域约束:
-  if (n <= 64) → n ∈ [0, 64]
-  if (n > 0 && n < 256) → n ∈ [1, 255]
-  if (len >= sizeof(hdr)) → len ∈ [sizeof(hdr), +∞)
-
-提取的值域约束被注入BVF correlator, 收紧变量取值范围后重新判定.
-
-设计决策:
-  - 仅提取显式分支条件, 不做路径可达性推理(保持O(n)复杂度)
-  - 支持简单比较和逻辑与组合, 不支持逻辑或(保守丢弃)
-  - 提取结果为VarBound字典, 无副作用
+PC-BVF 路径约束提取器 — 从 IR 行中提取支配告警点的分支条件: BVF 判定 alloc-write 相关性为 INCONCLUSIVE 时, 反向搜索支配告警点的 if/switch 条件并转化为变量值域约束 (if (n <= 64) → n ∈ [0, 64]), 注入 BVF correlator 收紧取值范围后重新判定。
+设计决策: 仅提取显式分支条件, 不做路径可达性推理 (O(n) 复杂度); 支持简单比较与逻辑与组合, 逻辑或保守取并集上界; 提取结果为 VarBound 字典, 无副作用。
 """
 import re
 from dataclasses import dataclass, field

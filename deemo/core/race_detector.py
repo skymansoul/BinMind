@@ -1,9 +1,6 @@
-# Race condition detection: TOCTOU / double-checked locking / shared pointers.
-# Three-channel static detection for binary analysis (no source):
-#   Channel 1: TOCTOU anti-patterns (access→open, stat→open, check→use)
-#   Channel 2: Non-atomic operations (check-modify-write, unprotected shared vars)
-#   Channel 3: Double-checked locking (classic lazy-init race pattern)
-# Each channel scores independently, producing exploitability [0,1] + remediation.
+# 竞态条件检测: TOCTOU / 双重检查锁定 / 共享指针。
+# 三通道静态检测(无源码二进制分析): 通道1 TOCTOU反模式(access→open等);
+# 通道2 非原子操作(check-modify-write); 通道3 双重检查锁定。各通道独立评分。
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -34,7 +31,7 @@ _NON_ATOMIC_PATTERNS = [
 ]
 
 def detect_race_conditions(ir_lines, func_name=""):
-    """检测竞态条件: TOCTOU + 非原子操作 + 双重检查锁定."""
+    """检测竞态条件: TOCTOU + 非原子操作 + 双重检查锁定。"""
     findings = []
     code = '\n'.join(ir_lines)
 

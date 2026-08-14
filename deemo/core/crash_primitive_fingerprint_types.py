@@ -1,4 +1,4 @@
-"""Crash primitive fingerprinting: type definitions and constants."""
+"""崩溃原语指纹: 类型定义与常量。"""
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -6,11 +6,11 @@ from typing import Any, Dict, List, Optional
 
 
 class RegisterControl(Enum):
-    CONTROLLED = auto()       # attacker can directly control register value
-    PARTIALLY = auto()        # attacker can partially influence (via offset)
-    UNCONTROLLED = auto()     # register value not controllable
-    ZERO = auto()             # register is NULL/0
-    UNKNOWN = auto()          # insufficient information
+    CONTROLLED = auto()       # 攻击者可直接控制寄存器值
+    PARTIALLY = auto()        # 攻击者可部分影响 (经偏移)
+    UNCONTROLLED = auto()     # 寄存器值不可控
+    ZERO = auto()             # 寄存器为 NULL/0
+    UNKNOWN = auto()          # 信息不足
 
 
 class PrimitiveType(Enum):
@@ -41,7 +41,7 @@ class RegisterAnalysis:
 
 @dataclass
 class HeapOperationSequence:
-    """Heap operation sequence extracted from crash context, useful for UAF/double-free detection."""
+    """从崩溃上下文中提取的堆操作序列, 用于 UAF/双重释放检测。"""
     operations: List[str] = field(default_factory=list)  # ["alloc(0x40)", "free", "use", ...]
     freed_chunks: List[int] = field(default_factory=list)  # 已释放的内存地址
     alloc_sizes: List[int] = field(default_factory=list)   # 分配大小序列
@@ -51,7 +51,7 @@ class HeapOperationSequence:
 
 @dataclass
 class CrashFingerprint:
-    """Complete crash fingerprint with multi-dimensional exploitability signals."""
+    """完整崩溃指纹, 含多维可利用性信号。"""
     crash_type: str
     registers: Dict[str, RegisterAnalysis] = field(default_factory=dict)
     heap_ops: Optional[HeapOperationSequence] = None
@@ -69,8 +69,7 @@ class CrashFingerprint:
     recommended_strategy: str = ""
 
 
-# Known register-value patterns mapped to exploit strategy hints.
-# Derived from AutoPwn artifact analysis.
+# 已知寄存器值模式到利用策略提示的映射, 源自 AutoPwn 样本分析。
 _VALUE_PATTERNS = {
     r'^0x41{4,}': ('user_controlled', 'pattern fill, RIP likely controllable'),
     r'^0x0+$': ('null_deref', 'NULL deref, usually not exploitable unless mmap_min_addr=0'),

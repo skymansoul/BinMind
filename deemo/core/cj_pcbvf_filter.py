@@ -1,12 +1,6 @@
 """
-PC-BVF管线级过滤器 — 在BVF INCONCLUSIVE时触发路径约束感知判定.
-
-集成到heap_overflow_pipeline的BVF阶段之后:
-  阶段7.5: DD-BVF反向值流过滤 → 过滤SAFE/确认OVERFLOW
-  阶段7.6: PC-BVF路径约束感知过滤 → 对BVF无法判定的候选,
-          提取路径约束收紧变量值域后重新判定
-
-保守策略: PC-BVF无法判定时保留候选, 不影响召回率.
+PC-BVF 管线级过滤器 — 在 BVF INCONCLUSIVE 时触发路径约束感知判定; 集成到 heap_overflow_pipeline 的 BVF 阶段之后 (阶段 7.5 DD-BVF 反向值流过滤, 阶段 7.6 PC-BVF 对 BVF 无法判定的候选提取路径约束收紧值域后重新判定)。
+保守策略: PC-BVF 无法判定时保留候选, 不影响召回率。
 """
 from typing import Any, Dict, List, Tuple
 

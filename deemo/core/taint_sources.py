@@ -1,16 +1,7 @@
 """
 污点源识别 — 识别二进制中用户可控输入进入程序的位置。
-
 污点源 = 外部输入函数返回值被存入变量/寄存器的点。
-
-设计依据: 对标FSVDTG的"检查格式化参数是否符号化"思路, 但在反编译伪代码级别实现,
-不需要S2E全系统仿真。源识别覆盖POSIX输入API + C标准库 + Linux特有输入通道。
-
-源分类:
-  NETWORK — recv/recvfrom/read(socket)/accept
-  FILE    — fread/fgets/getline/read(file)
-  ENV     — getenv/argv
-  STDIN   — scanf/gets/getchar
+源分类: NETWORK (recv/read), FILE (fread/fgets), ENV (getenv/argv), STDIN (scanf/gets)。
 """
 
 _SOURCES = {

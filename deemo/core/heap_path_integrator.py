@@ -1,21 +1,8 @@
 """
-Path-sensitive integrator for heap overflow ensemble — bridges
-cfg_path_splitter with the 3-engine ensemble filter to prevent
-merged-path guard correlation from suppressing real overflows.
-
-Problem: When a function has both guarded and unguarded write paths
-(e.g., heap_fp_05), the merged-path guard correlation sees a guard
-and votes SUPPRESS — losing a real overflow on the unguarded path.
-
-Solution: Before ensemble voting, check if the write site is in a
-multi-path region. If so, invoke CfgPathSplitter to decompose into
-individual paths. Vote on each path independently:
-  - If ANY path shows overflow → KEEP (preserve TP)
-  - Only if ALL paths are safe → SUPPRESS (safe FP reduction)
-
-Novelty: This is "path-aware committee voting" — unlike standard
-ensemble methods that vote on the merged analysis, we fork the
-analysis at branch points and vote per-path before re-aggregating.
+堆溢出集成器的路径敏感整合 — 桥接 cfg_path_splitter 与 3引擎集成过滤。
+函数同时含守卫与非守卫写入路径时, 合并路径的守卫关联会误判 SUPPRESS;
+本模块在集成投票前检查写入点是否处于多路径区域, 逐路径独立投票:
+任一路径溢出→KEEP, 全部路径安全→SUPPRESS。
 """
 
 from dataclasses import dataclass, field
@@ -29,28 +16,22 @@ from core.cfg_path_splitter import (
 
 @dataclass
 class PathIntegratorResult:
-    """Integration result for a single write site."""
+    """单个写入点的整合结果。"""
     write_line: int
     path_result: Optional[PathSplitResult] = None
     is_multi_path: bool = False
-    # Original ensemble votes (pre-split)
+    # 原始集成投票 (拆分前)
     original_verdict: str = 'KEEP'
-    # Path-aware verdict
+    # 路径感知判定
     path_verdict: str = 'KEEP'
-    # Final: path-aware overrides ensemble if paths disagree
+    # 最终: 路径不一致时以路径感知结果为准
     final_verdict: str = 'KEEP'
     confidence: float = 0.50
     detail: str = ''
 
 
 class HeapPathIntegrator:
-    """Path-sensitive integrator for heap ensemble detection.
-
-    Usage:
-      integrator = HeapPathIntegrator()
-      result = integrator.integrate(ir_lines, write_line,
-                                     ensemble_verdict, ensemble_confidence)
-    """
+    """堆集成检测的路径敏感整合器 — 用法: integrate(ir_lines, write_line, ensemble_verdict, confidence)。"""
 
     def __init__(self, max_paths: int = 64):
         self._splitter = CfgPathSplitter(max_paths=max_paths)
@@ -63,13 +44,9 @@ class HeapPathIntegrator:
         ensemble_verdict: str = 'KEEP',
         ensemble_confidence: float = 0.50,
     ) -> PathIntegratorResult:
-        """Run path-sensitive analysis and merge with ensemble verdict.
+        """执行路径敏感分析并与集成判定合并。
 
-        Strategy:
-          1. Run path splitter at write_line
-          2. If single path: trust ensemble (no merging ambiguity)
-          3. If multi-path with safe paths: ensemble may be wrong → REVIEW
-          4. If multi-path all overflow: confirm ensemble KEEP
+        单路径信任集成; 多路径含安全路径→REVIEW; 多路径全溢出→确认KEEP。
         """
         result = PathIntegratorResult(
             write_line=write_line,
@@ -80,7 +57,7 @@ class HeapPathIntegrator:
         result.path_result = path
 
         if path.total_paths <= 1:
-            # Single path: no merging ambiguity, trust ensemble
+            # 单路径: 无合并歧义, 信任集成
             result.is_multi_path = False
             result.path_verdict = ensemble_verdict
             result.final_verdict = ensemble_verdict
@@ -90,32 +67,31 @@ class HeapPathIntegrator:
 
         result.is_multi_path = True
 
-        # Multi-path: evaluate per-path safety
+        # 多路径: 逐路径评估安全性
         if path.overflow_paths > 0 and path.safe_paths == 0:
-            # All paths overflow → confirmed vulnerability
+            # 全部路径溢出 → 确认为漏洞
             result.path_verdict = 'KEEP'
             result.confidence = min(0.90, ensemble_confidence + 0.15)
             result.detail = f'{path.overflow_paths} overflow paths, 0 safe'
         elif path.overflow_paths > 0 and path.safe_paths > 0:
-            # Some safe, some overflow → REVIEW (real bug on some path)
-            # Don't suppress — there IS an overflow path
+            # 部分安全部分溢出 → REVIEW (存在真实溢出路径, 不应抑制)
             result.path_verdict = 'KEEP'
             result.confidence = max(0.55, ensemble_confidence - 0.10)
             result.detail = (f'{path.safe_paths} safe + '
                            f'{path.overflow_paths} overflow paths')
         elif path.overflow_paths == 0 and path.safe_paths > 0:
-            # All paths safe → definite FP, suppress
+            # 全部路径安全 → 确定性误报, 抑制
             result.path_verdict = 'SUPPRESS'
             result.confidence = 0.85
             result.detail = f'all {path.safe_paths} paths safe'
         else:
-            # Dead paths only → can't decide, trust ensemble
+            # 仅死路径 → 无法判定, 信任集成
             result.path_verdict = ensemble_verdict
             result.confidence = ensemble_confidence
             result.detail = f'{path.dead_paths} dead paths, no live paths'
 
-        # Final: path-aware overrides ensemble when paths disagree
-        # Conservative: if path says SUPPRESS and ensemble says KEEP → REVIEW
+        # 最终: 路径不一致时以路径感知结果为准
+        # 保守处理: 路径判 SUPPRESS 而集成判 KEEP → REVIEW
         if (result.path_verdict == 'SUPPRESS' and
                 ensemble_verdict == 'KEEP'):
             result.final_verdict = 'REVIEW'
@@ -123,7 +99,7 @@ class HeapPathIntegrator:
             result.detail += '; ensemble/path conflict→REVIEW'
         elif (result.path_verdict == 'KEEP' and
               ensemble_verdict == 'SUPPRESS'):
-            # Path analysis found an overflow path, don't suppress
+            # 路径分析发现溢出路径, 不抑制
             result.final_verdict = 'REVIEW'
             result.confidence = 0.55
             result.detail += '; path found overflow despite ensemble SUPPRESS'
@@ -138,16 +114,7 @@ class HeapPathIntegrator:
         candidates: List[Dict],
         decisions: List[Any],
     ) -> Tuple[List[PathIntegratorResult], Dict[str, int]]:
-        """Integrate path analysis across all candidates.
-
-        Args:
-            ir_lines: IR lines from source_ir_extractor
-            candidates: candidate dicts with 'line', 'alloc_var', etc.
-            decisions: ensemble decisions with .verdict attribute
-
-        Returns:
-            (integration_results, stats)
-        """
+        """对全部候选执行路径整合, 返回 (整合结果列表, 统计)。"""
         results = []
         suppressed = kept = review = 0
 
@@ -186,7 +153,7 @@ def integrate_path_analysis(
     candidates: List[Dict],
     decisions: List[Any],
 ) -> Tuple[List[PathIntegratorResult], Dict[str, int]]:
-    """Convenience: run path-aware integration on ensemble results."""
+    """便捷接口: 对集成结果运行路径感知整合。"""
     integrator = HeapPathIntegrator()
     return integrator.integrate_all(ir_lines, candidates, decisions)
 

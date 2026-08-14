@@ -1,7 +1,7 @@
-"""
-Report generation. Produces Markdown, JSON, and optionally HTML
-reports from vulnerability findings.
-"""
+# core/report.py - 报告生成 (Markdown + JSON)
+# FIX: 2026-08-15 补序列化规则 finding 与符号执行结果 —
+# write_report 原仅输出逐函数分析结果, 规则检测器 (unified_heap_pipeline)
+# 与符号执行 (symexec) 的产物只落 DB 不落报告, 导致 MD 摘要与 DB 记录矛盾。
 
 import json
 import logging
@@ -15,15 +15,62 @@ logger = logging.getLogger(__name__)
 
 
 def _md_escape(text: str) -> str:
-    """Minimal Markdown escaping for report content."""
+    """Markdown 转义: 竖线与换行。"""
     return text.replace('|', '\\|').replace('\n', '<br>')
 
 
-def generate_markdown(findings: List[Dict], binary_info: Dict,
-                      crash_result: Dict = None) -> str:
+def _collect_vulns(findings: List[Dict], rule_findings: List[Dict]) -> List[Dict]:
+    """合并逐函数漏洞与规则检测 finding, 附排序键后返回。
+
+    逐函数结果的漏洞在 analysis.vulnerabilities 内;
+    规则 finding 为扁平的 {type, severity, function_name, ...} 结构。
     """
-    Build a self-contained Markdown report.
-    findings: list of per-function analysis results
+    all_vulns = []
+    for f in findings:
+        analysis = f.get('analysis', f)
+        for v in analysis.get('vulnerabilities', []):
+            v['_function'] = f.get('function_name', f.get('function', '?'))
+            v['_severity_val'] = {'Critical': 0, 'High': 1, 'Medium': 2,
+                                  'Low': 3, 'Unknown': 4}.get(
+                                      v.get('severity', 'Unknown'), 5)
+            all_vulns.append(v)
+    # FIX: 2026-08-15 规则 finding 并入报告 — 此前仅存在于 DB 与 report_enhance JSON
+    for v in (rule_findings or []):
+        if not isinstance(v, dict):
+            continue
+        v['_function'] = v.get('function_name', v.get('function', '?'))
+        v['_severity_val'] = {'Critical': 0, 'High': 1, 'Medium': 2,
+                              'Low': 3, 'Unknown': 4}.get(
+                                  v.get('severity', 'Unknown'), 5)
+        all_vulns.append(v)
+    all_vulns.sort(key=lambda x: x['_severity_val'])
+    return all_vulns
+
+
+def _md_symbolic_section(symbolic_result: Dict) -> List[str]:
+    """符号执行结果摘要。"""
+    if not symbolic_result:
+        return []
+    lines = ['### Symbolic Execution', '']
+    if symbolic_result.get('success'):
+        lines.append(
+            f"- **Paths found:** {symbolic_result.get('paths_found', 0)}")
+        lines.append(
+            f"- **Constraints extracted:** {len(symbolic_result.get('constraints', []))}")
+    else:
+        lines.append(f"- **Status:** failed")
+        lines.append(f"- **Error:** {symbolic_result.get('error', 'unknown')}")
+    lines.append('')
+    return lines
+
+
+def generate_markdown(findings: List[Dict], binary_info: Dict,
+                      crash_result: Dict = None,
+                      rule_findings: List[Dict] = None,
+                      symbolic_result: Dict = None) -> str:
+    """生成 Markdown 报告。
+
+    rule_findings: 规则检测器产物; symbolic_result: 符号执行返回 dict。
     """
     binary_name = os.path.basename(binary_info.get('path', 'unknown'))
     arch = binary_info.get('arch', 'unknown')
@@ -41,23 +88,13 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
         f'',
     ]
 
-    # collect all vulns across functions
-    all_vulns = []
-    for f in findings:
-        analysis = f.get('analysis', f)
-        for v in analysis.get('vulnerabilities', []):
-            v['_function'] = f.get('function_name', f.get('function', '?'))
-            v['_severity_val'] = {'Critical': 0, 'High': 1, 'Medium': 2,
-                                  'Low': 3, 'Unknown': 4}.get(
-                                      v.get('severity', 'Unknown'), 5)
-            all_vulns.append(v)
-
-    all_vulns.sort(key=lambda x: x['_severity_val'])
+    all_vulns = _collect_vulns(findings, rule_findings)
 
     if not all_vulns:
         lines.append('## Summary')
         lines.append('')
         lines.append('No vulnerabilities found in the analyzed functions.')
+        lines.extend(_md_symbolic_section(symbolic_result))
         return '\n'.join(lines)
 
     lines.append(f'## Summary')
@@ -79,13 +116,10 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
         lines.append(f'- Exploitable: {crash_result.get("exploitable", False)}')
         lines.append('')
 
+    lines.extend(_md_symbolic_section(symbolic_result))
+
     lines.append('---')
     lines.append('')
-
-    # HTML export was considered here (--format html) but the markdown
-    # already renders fine in GitHub/GitLab — deferred until someone
-    # actually asks for it.
-
     lines.append('## Findings')
     lines.append('')
 
@@ -97,14 +131,20 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
         lines.append(f'- **Description:** {v.get("description", "no details")}')
         if v.get('location'):
             lines.append(f'- **Location:** {v["location"]}')
+        if v.get('priority_score') is not None:
+            lines.append(f'- **Priority score:** {v["priority_score"]}')
+        if v.get('evidence'):
+            lines.append(f'- **Evidence:** {v["evidence"]}')
         lines.append('')
 
     return '\n'.join(lines)
 
 
 def generate_json(findings: List[Dict], binary_info: Dict,
-                  crash_result: Dict = None) -> str:
-    """JSON-format report."""
+                  crash_result: Dict = None,
+                  rule_findings: List[Dict] = None,
+                  symbolic_result: Dict = None) -> str:
+    """JSON 报告。"""
     return json.dumps({
         'metadata': {
             'binary': binary_info.get('path', ''),
@@ -113,14 +153,21 @@ def generate_json(findings: List[Dict], binary_info: Dict,
             'timestamp': datetime.now().isoformat(),
         },
         'findings': findings,
+        # FIX: 2026-08-15 规则 finding 与符号执行结果入 JSON 报告
+        'rule_findings': rule_findings or [],
+        'symbolic_execution': symbolic_result,
         'crash': crash_result,
     }, indent=2, default=str)
 
 
 def write_report(findings: List[Dict], binary_info: Dict,
-                 crash_result: Dict = None, fmt: str = 'markdown') -> Dict[str, str]:
-    """
-    Write report files to RESULTS_DIR. Returns {format: path} dict.
+                 crash_result: Dict = None, fmt: str = 'markdown',
+                 rule_findings: List[Dict] = None,
+                 symbolic_result: Dict = None) -> Dict[str, str]:
+    """写报告到 RESULTS_DIR, 返回 {format: path}。
+
+    参数向后兼容: rule_findings/symbolic_result 为可选追加项,
+    缺省时行为与旧版一致。
     """
     os.makedirs(RESULTS_DIR, exist_ok=True)
     binary_stem = os.path.splitext(
@@ -129,13 +176,15 @@ def write_report(findings: List[Dict], binary_info: Dict,
 
     paths = {}
 
-    md_content = generate_markdown(findings, binary_info, crash_result)
+    md_content = generate_markdown(findings, binary_info, crash_result,
+                                   rule_findings, symbolic_result)
     md_path = os.path.join(RESULTS_DIR, f'{binary_stem}_{ts}.md')
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
     paths['markdown'] = md_path
 
-    json_content = generate_json(findings, binary_info, crash_result)
+    json_content = generate_json(findings, binary_info, crash_result,
+                                 rule_findings, symbolic_result)
     json_path = os.path.join(RESULTS_DIR, f'{binary_stem}_{ts}.json')
     with open(json_path, 'w', encoding='utf-8') as f:
         f.write(json_content)

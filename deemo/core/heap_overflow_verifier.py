@@ -1,29 +1,7 @@
 """
-约束验证堆溢出过滤器 -- 路径敏感的SMT约束验证, 过滤不可行路径上的堆溢出告警。
-
-核心创新:
-  现有 heap_uaf_detector.py 仅做伪代码正则匹配(malloc(n) + memcpy(m) with m>n
-  即告警), 未验证: (a) 溢出路径是否可达 (b) 分配大小是否真的小于写入大小
-  在满足路径约束的条件下。这导致大量误报。
-
-方案:
-  对每个静态告警点, 用angr做定向符号执行:
-    1. 符号化malloc的大小参数(若来自用户输入则BVS, 否则具体化)
-    2. 符号化memcpy写入大小参数(同上)
-    3. 执行到memcpy调用点, 收集路径约束
-    4. SMT查询: 是否存在满足路径约束且 write_size > alloc_size 的解?
-    5. 若不存在 → 此告警在真实执行中不可触发 → 过滤(降置信度至0.20)
-    6. 若存在 → 保留告警, 记录触发所需的最小输入
-
-方法论定位:
-  不是全程序符号执行(路径爆炸), 不是纯模式匹配(高误报)。
-  是定向约束验证——Shimizu et al. 验证了"静态trace→动态验证"
-  范式在降误报上的有效性, 本模块将该范式适配至堆溢出场景。
-  与FSVDTG 的格式化字符串验证思路一致, 但目标漏洞类型不同。
-
-  - Shimizu et al., ISSTA 2025, "Revisiting the Combination of Static Analysis
-    Error Traces and Dynamic Symbolic Execution"
-  - FSVDTG -- 符号性检测+SMT约束验证的范式
+约束验证堆溢出过滤器 — 路径敏感的SMT约束验证, 过滤不可行路径上的堆溢出告警。
+对每个静态告警点做定向符号执行: 符号化分配与写入大小, 收集路径约束,
+SMT查询是否存在满足路径约束且 write_size > alloc_size 的解, 不存在则过滤。
 """
 
 import logging
@@ -45,13 +23,8 @@ def verify_heap_overflow_reachable(
 ) -> Dict[str, Any]:
     """验证堆溢出是否沿可行路径可达。
 
-    对 malloc(n) + memcpy(ptr, src, m) 模式:
-      符号化 n 和 m (若来自用户输入),
-      SMT求解: exists input s.t. path_constraints AND m > n
-
-    Returns:
-      {reachable, exploitable, alloc_size_possible, write_size_possible,
-       max_overflow_bytes, solver_time, error}
+    对 malloc(n)+memcpy(ptr,src,m) 符号化 n、m, SMT求解是否存在满足
+    路径约束且 m>n 的输入。返回 {reachable, exploitable, max_overflow_bytes, ...}。
     """
     result = {
         'reachable': False, 'exploitable': False,
@@ -142,17 +115,10 @@ def filter_heap_findings(
     findings: List[Dict[str, Any]],
     max_points: int = 8,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    """批量过滤堆溢出告警——对每条finding做约束验证, 调整置信度。
+    """批量过滤堆溢出告警 — 对每条 finding 做约束验证并按结果调整置信度。
 
-    过滤规则:
-      不可达 → confidence × 0.20 (大幅降权)
-      可达但不可利用 → confidence × 0.45
-      可达且可溢出的最小量 < 16B → confidence × 0.60 (小溢出, 利用难度高)
-      可达且可溢出 >= 16B → confidence = max(0.85, old_confidence)
-      无法验证(angr错误) → confidence 不变
-
-    Returns:
-      (filtered_findings, stats)
+    规则: 不可达×0.20, 可达不可利用×0.45, 最小溢出<16B×0.60, 溢出≥16B 取 max(0.85, 原置信度)。
+    返回 (过滤后findings, stats)。
     """
     stats = {
         'total': len(findings), 'verified': 0, 'filtered': 0,

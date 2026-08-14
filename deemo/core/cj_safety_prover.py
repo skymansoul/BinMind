@@ -1,23 +1,7 @@
 """
-安全性证明器 — 尝试证明堆写入在约束系统下是安全的.
-
-安全性判定逻辑:
-  对copy操作(strcpy/memcpy): 证明 copy_size <= effective_alloc_size
-  对偏移写入(store): 证明 offset + store_size <= effective_alloc_size
-  对循环写入: 证明 loop_bound * elem_size <= alloc_size
-
-证明方法:
-  1. 构造"安全约束": write_end - effective_alloc_size <= 0
-  2. 将安全约束加入约束系统
-  3. 对非安全相关变量做Fourier-Motzkin消元
-  4. 检查剩余常量约束是否矛盾
-     - 矛盾 → 原约束系统蕴含安全性 → PROVEN_SAFE
-     - 无矛盾 → 无法证明安全 → 返回None
-
-关键创新: 不是逐维度独立判定, 而是将四类约束联合后,
-用反证法证明"溢出不可能发生".
-
-保守性: 当证明失败时返回None, 不影响召回率(候选保留).
+安全性证明器 — 尝试证明堆写入在约束系统下安全: 对 copy 操作证明 copy_size <= effective_alloc_size, 对偏移写入证明 offset + store_size <= effective_alloc_size, 对循环写入证明 loop_bound * elem_size <= alloc_size。
+方法: 构造"安全约束" write_end - effective_alloc_size <= 0 并加入系统, 对非安全相关变量做 Fourier-Motzkin 消元, 剩余常量约束矛盾 → 原系统蕴含安全 → PROVEN_SAFE; 无矛盾 → 返回 None。
+保守性: 证明失败时返回 None, 不影响召回率 (候选保留)。
 """
 
 import math

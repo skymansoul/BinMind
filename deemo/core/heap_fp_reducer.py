@@ -1,15 +1,5 @@
-# Heap overflow false positive reducer.
-# Three-pass pipeline: taint -> interval abstraction -> path feasibility.
-#
-# Pass 1 (taint): malloc(n) with user-controlled n -> dynamic size, downgrade confidence.
-# Pass 2 (interval): store offset interval entirely within allocation -> safe, remove.
-# Pass 3 (path): alloc and store not on the same feasible path -> unreachable, remove.
-#
-# Each pass runs independently, ordered by determinism. Pass 2 can definitively
-# rule out false positives (offset interval within bounds). Passes 1 and 3 only
-# downgrade confidence (taint/path conditions are uncertain without symbolic execution).
-#
-# Non-invasive: operates as a post-processing filter at the end of the detection pipeline.
+# heap_fp_reducer.py - 堆溢出误报压缩器, 三趟过滤: 污点→区间抽象→路径可行性。
+# 污点趟与路径趟仅降级置信度, 区间趟可确定性剔除; 作为管线末端的非侵入式后处理过滤器。
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -17,27 +7,22 @@ from typing import Any, Dict, List, Optional, Tuple
 
 @dataclass
 class FilterResult:
-    """Filter result statistics for measuring method effectiveness."""
+    """过滤结果统计, 用于衡量方法有效性。"""
     candidates_before: int
     candidates_after: int
-    removed_by_taint: int       # Pass 1 downgrades/removals
-    removed_by_interval: int    # Pass 2 safe removals
-    removed_by_path: int        # Pass 3 infeasible removals
-    fp_reduction_ratio: float   # FP reduction ratio = removed/total
+    removed_by_taint: int       # 污点趟降级/移除数
+    removed_by_interval: int    # 区间趟安全移除数
+    removed_by_path: int        # 路径趟不可行移除数
+    fp_reduction_ratio: float   # 误报缩减比例 = 移除数/总数
 
 
 def apply_fp_filters(
     candidates: List[Any],
     disasm_lines: List[str] = None,
 ) -> Tuple[List[Any], FilterResult]:
-    """Apply the three-pass false positive filter to a candidate list.
+    """对候选列表执行三趟误报过滤, 返回 (过滤后候选, 过滤统计)。
 
-    Args:
-        candidates: HeapOverflowCandidate list (from detect_heap_overflow)
-        disasm_lines: disassembly lines (optional, for Pass 2 and 3)
-
-    Returns:
-        (filtered candidates, filter statistics)
+    candidates: 堆溢出候选列表; disasm_lines: 反汇编行 (供趟2/3使用)。
     """
     before = len(candidates)
     removed_taint = 0
@@ -53,26 +38,26 @@ def apply_fp_filters(
         alloc_size = _get_alloc_size(c)
         store_offset = _get_store_offset(c)
 
-        # Pass 1: taint filtering
+        # 趟1: 污点过滤
         if _check_taint(c):
-            # Downgrade but don't remove: dynamic sizes reduce confidence, not certainty
+            # 仅降级不移除: 动态大小降低置信度而非确定性
             if hasattr(c, 'confidence'):
                 c.confidence = max(0.1, c.confidence * 0.4)
             removed_taint += 1
-            # Still kept in the filtered list (low confidence)
+            # 仍保留在过滤列表中 (低置信度)
 
-        # Pass 2: interval abstraction - precise safety determination
+        # 趟2: 区间抽象 — 确定性安全判定
         if (alloc_size > 0 and store_offset >= 0 and
                 store_offset < alloc_size):
-            # offset fully within allocation -> safe, remove
+            # 偏移完全落在分配内 → 安全, 移除
             removed_interval += 1
             keep = False
         elif (alloc_size > 0 and store_offset > alloc_size * 10 and
                 hasattr(c, 'confidence')):
-            # offset far exceeds allocation (10x+) -> likely true positive
+            # 偏移远超分配 (10倍以上) → 视为真阳性
             c.confidence = min(1.0, getattr(c, 'confidence', 0.5) + 0.2)
 
-        # Pass 3: path feasibility - only for high-confidence candidates
+        # 趟3: 路径可行性 — 仅对高置信度候选执行
         if keep and disasm_lines and hasattr(c, 'alloc_site') and hasattr(c, 'overflow_store'):
             try:
                 from core.path_feasibility import check_path_feasibility
@@ -117,7 +102,7 @@ def _get_store_offset(candidate: Any) -> int:
 
 
 def _check_taint(candidate: Any) -> bool:
-    """Check if the candidate allocation size is tainted (dynamic size)."""
+    """检查候选分配大小是否被污点化 (动态大小)。"""
     if hasattr(candidate, 'alloc_site'):
         alloc = candidate.alloc_site
         if hasattr(alloc, 'size_is_dynamic') and alloc.size_is_dynamic:

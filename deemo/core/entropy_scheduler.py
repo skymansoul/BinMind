@@ -1,24 +1,6 @@
-"""
-Entropy-guided fuzzing seed scheduler.
-
-Allocates energy to seeds based on the global rarity of the coverage edges
-they hit, using an exponential forgetting factor so historical frequency
-decays over time and the scheduler remains sensitive to newly discovered edges.
-
-Uses the core formula from Entropic with an exponential
-decay window instead of a fixed one.
-
-Distinct from adaptive_scheduler.py (MAB method-level) and complementary to
-rarity_weighted_scheduler.py (frequency-based rarity) by adding temporal decay.
-
-Key parameters:
-  halflife: half-life of coverage frequency counts (in executions)
-  min_energy / max_energy: mutation energy bounds
-
-References:
-  Böhme et al., 2020, IEEE S&P, "Entropic: Boosting Fuzzing with Information Theory"
-  T-Scheduler
-"""
+"""熵引导的模糊测试种子调度器 — 按种子覆盖边的全局稀有度分配能量。
+用指数遗忘因子使历史频率随时间衰减, 保持对新覆盖边的敏感 (核心公式取自 Entropic, 以指数衰减窗口替代固定窗口);
+与 adaptive_scheduler.py (MAB 方法级) 互补。参考: Böhme et al., 2020, IEEE S&P "Entropic"; T-Scheduler。"""
 
 
 import logging
@@ -30,11 +12,10 @@ _log = logging.getLogger(__name__)
 
 
 class EntropySeedScheduler:
-    """Seed energy scheduler based on Shannon entropy.
+    """基于香农熵的种子能量调度器。
 
-    Each seed tracks its covered edge set. The scheduler maintains per-edge
-    global coverage frequency with exponential decay and allocates energy
-    proportional to each seed's information content during select()."""
+    每个种子记录其覆盖边集; 调度器维护逐边全局覆盖频率 (带指数衰减),
+    select() 时按各种子的信息量分配能量。"""
 
     def __init__(
         self,
@@ -61,7 +42,7 @@ class EntropySeedScheduler:
         self._total_execs: int = 0
 
     def register_seed(self, seed_id: str, covered_edges: List[int]) -> None:
-        """Register a new seed and its covered edges. Appends edges for existing seeds."""
+        """注册新种子及其覆盖边; 对已存在种子追加新边。"""
         if seed_id not in self._seed_edges:
             self._seed_edges[seed_id] = set()
             self._seed_energy[seed_id] = self.min_energy
@@ -72,54 +53,52 @@ class EntropySeedScheduler:
         self._seed_edges[seed_id] |= new_edges
 
     def record_execution(self, hit_edges: List[int], seed_id: str = "") -> None:
-        """Record edges hit in one execution, updating global frequency with decay.
+        """记录一次执行的命中边, 全局频率带衰减更新。
 
-        Each call: increments global exec count, decays all edge frequencies,
-        increments hit edges, and optionally updates the seed's edge set."""
+        每次调用: 全局执行计数+1, 所有边频率衰减, 命中边频率+1, 并可选更新种子的边集。"""
         self._total_execs += 1
 
-        # Decay all edge frequencies
+        # 所有边频率衰减
         for e in list(self._edge_freq.keys()):
             self._edge_freq[e] *= self.decay_base
             if self._edge_freq[e] < 0.001:
                 del self._edge_freq[e]
 
-        # Edges hit in this execution
+        # 本次执行的命中边
         for e in hit_edges:
             self._edge_freq[e] = self._edge_freq.get(e, 0.0) + 1.0
 
         if seed_id and seed_id in self._seed_edges:
             self._seed_edges[seed_id] |= set(hit_edges)
 
-        # Periodic energy recomputation every 500 execs
+        # 每 500 次执行周期性重算能量
         if self._total_execs % 500 == 0:
             self._recompute_energies()
 
     def _recompute_energies(self) -> None:
-        """Recompute Shannon information content for all seeds."""
+        """重算所有种子的香农信息量。"""
         total_execs = max(1, self._total_execs)
         for sid, edges in self._seed_edges.items():
             if not edges:
                 self._seed_energy[sid] = self.min_energy
                 continue
 
-            # Shannon info: I(seed) = Σ_{e∈edges} -log₂(freq(e) / total)
+            # 香农信息量: I(seed) = Σ_{e∈edges} -log₂(freq(e) / total)
             info = 0.0
             for e in edges:
                 freq = max(0.001, self._edge_freq.get(e, 0.001))
                 p = freq / total_execs
                 info += -math.log2(p)
 
-            # Normalize to [min_energy, max_energy]
+            # 归一化到 [min_energy, max_energy]
             normalized = info / max(1, math.log2(total_execs))
             energy = self.min_energy + normalized * (self.max_energy - self.min_energy)
             self._seed_energy[sid] = min(self.max_energy, max(self.min_energy, energy))
 
     def select_seed(self) -> Optional[str]:
-        """Select a seed with probability proportional to its energy.
+        """按能量成比例的概率选择种子。
 
-        High-information seeds are more likely to be chosen but not guaranteed,
-        preserving some exploration (softmax-style rather than argmax)."""
+        高信息量种子更可能被选中但不保证, 保留一定探索 (softmax 式而非 argmax)。"""
         if not self._seed_energy:
             return None
 
@@ -138,18 +117,18 @@ class EntropySeedScheduler:
         return list(self._seed_energy.keys())[-1]
 
     def get_energy(self, seed_id: str) -> float:
-        """Return the current energy value for a seed."""
+        """返回种子的当前能量值。"""
         return self._seed_energy.get(seed_id, self.min_energy)
 
     def top_seeds(self, n: int = 5) -> List[Tuple[str, float]]:
-        """Return the top n seeds by energy."""
+        """返回能量最高的前 n 个种子。"""
         sorted_seeds = sorted(
             self._seed_energy.items(), key=lambda x: -x[1]
         )
         return sorted_seeds[:n]
 
     def stats(self) -> Dict[str, Any]:
-        """Scheduler statistics snapshot."""
+        """调度器统计快照。"""
         return {
             "total_execs": self._total_execs,
             "active_seeds": len(self._seed_edges),

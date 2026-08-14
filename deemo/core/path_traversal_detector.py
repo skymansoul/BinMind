@@ -1,6 +1,5 @@
-# Path traversal detection: CWE-22 directory traversal.
-# Three-layer detection: (1) direct '../' literal, (2) unfiltered user input
-# in path concatenation, (3) realpath bypass.
+# CWE-22 目录穿越检测: 三层检测 — (1) 直接'../'字面量, (2) 路径拼接中的
+# 未过滤用户输入, (3) realpath绕过。
 import re
 from dataclasses import dataclass
 

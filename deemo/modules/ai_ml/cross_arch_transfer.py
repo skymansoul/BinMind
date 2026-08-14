@@ -170,7 +170,6 @@ class CrossArchAligner:
         src_v = src.to_vector()
         dst_v = dst.to_vector()
 
-        # 计算架构差异向量
         diff = [dst_v[i] - src_v[i] for i in range(len(src_v))]
         diff_norm = math.sqrt(sum(d * d for d in diff))
         if diff_norm < 0.01:

@@ -1,21 +1,7 @@
 """
-glibc 分配器约束 —— 将分配器语义纳入堆溢出误报过滤。
-
-glibc ptmalloc 的行为约束——现有静态检测器几乎全部忽略——能显著降低误报:
-1. 最小块大小: x86_64 上 chunk 最小 0x20 字节 (32B), 含 metadata
-   → malloc(1) 实际上分配了 32B 可用空间 (含对齐填充)
-2. 对齐: 分配大小向上取整到 2*sizeof(size_t) = 16B (x86_64)
-   → malloc(20) → 实际可用 32B (含对齐和 metadata)
-3. realloc 语义:
-   - realloc(NULL, N) ≡ malloc(N)
-   - realloc(ptr, 0) ≡ free(ptr), return NULL
-   - realloc(ptr, N) 中若 N ≤ 原块大小, 原地缩小不分配新块
-4. calloc 语义: nmemb * size, 若溢出则返回 NULL (不分配)
-
-应用: 对每个检测到的 "潜在溢出", 检查:
-  · 实际分配大小 (含对齐) ≥ 写入大小 → FILTER (安全)
-  · 实际分配大小 < 写入大小 → KEEP (真溢出)
-  · 无法确定 → UNCERTAIN
+glibc 分配器约束: 将 ptmalloc 语义纳入堆溢出误报过滤。
+依据最小块大小 (x86_64 上 32B 含 metadata)、16B 对齐、realloc 原地缩小与 calloc 溢出返回 NULL 等行为,
+对每个候选溢出判定: 实际分配大小 ≥ 写入大小 → FILTER, 实际分配大小 < 写入大小 → KEEP, 无法确定 → UNCERTAIN。
 """
 
 from dataclasses import dataclass
@@ -88,12 +74,9 @@ class ReallocCheck:
 
 
 class AllocatorConstraintChecker:
-    """
-    分配器约束检查器。
+    """分配器约束检查器。
 
-    对每个检测到的堆操作候选, 应用 glibc 语义判断是否为真溢出。
-
-    保守原则: 无法确定时返回 UNCERTAIN (宁可保留, 不误过滤)。
+    对每个堆操作候选应用 glibc 语义判断是否为真溢出; 无法确定时返回 UNCERTAIN (宁可保留, 不误过滤)。
     """
 
     def __init__(self, platform: str = "x86_64"):
@@ -102,11 +85,7 @@ class AllocatorConstraintChecker:
     def check_overflow(
         self, alloc_size: int, write_size: int, alloc_type: str = "malloc",
     ) -> str:
-        """
-        检查 (分配大小, 写入大小) 是否构成真正的溢出。
-
-        返回: "KEEP" (真阳性), "FILTER" (误报, 过滤), "UNCERTAIN"
-        """
+        """检查 (分配大小, 写入大小) 是否构成真正的溢出。返回 "KEEP" (真阳性)、"FILTER" (误报)、"UNCERTAIN"。"""
         if alloc_size <= 0 or write_size <= 0:
             return "UNCERTAIN"
 
@@ -116,7 +95,7 @@ class AllocatorConstraintChecker:
             # calloc 已做零初始化, 但大小语义同 malloc
             pass
         elif alloc_type == "realloc":
-            # realloc: 若新大小 ≤ 旧大小, 可能不分配
+            # realloc: 新大小 ≤ 旧大小 → 原地缩小, 不分配新块
             if write_size <= alloc_size:
                 return "FILTER"
 
@@ -129,11 +108,7 @@ class AllocatorConstraintChecker:
     def check_upper_bound(
         self, upper_bound: int, write_size: int, alloc_type: str = "malloc",
     ) -> str:
-        """
-        使用 value-flow 追踪到的上界进行更精确的判断。
-
-        若约束确保分配大小 ≥ 写入大小, 则安全。
-        """
+        """使用 value-flow 追踪到的上界做更精确的判断。若约束确保分配大小 ≥ 写入大小, 则安全。"""
         if upper_bound <= 0:
             return "UNCERTAIN"
         actual = AllocSize.from_request(upper_bound, self._platform)

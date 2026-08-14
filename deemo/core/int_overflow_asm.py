@@ -1,11 +1,6 @@
 """
-Assembly-level integer overflow detection. Tracks mul/imul/add results flowing
-into malloc/memcpy to detect allocation size determined by overflowed product.
-
-Complements integer_overflow_detector.py (pseudocode) with disassembly-level
-analysis, effective on stripped/O3 binaries where the decompiler fails.
-
-Core pattern: mul reg -> mov rdi,rax -> call malloc.
+汇编级整数溢出检测 — 追踪 mul/imul/add 结果流入 malloc/memcpy 的路径。
+补充伪代码检测的盲区, 适用于反编译器失效的 stripped/O3 二进制。
 """
 
 from __future__ import annotations
