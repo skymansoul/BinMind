@@ -159,7 +159,8 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
     # (ac) 对抗遗憾最小化变异集成
     # 8 种突变策略 → FTRL+Entropy 在线加权 → 对抗性非平稳环境的最优混合。
     # surprise bonus 检测逆预期高收益事件, regret monitor 检测策略退化。
-    ref: Shalev-Shwartz (2012); Hazan (2016); Cesa-Bianchi & Lugosi (2006)
+    # 参考: Shalev-Shwartz (2012); Hazan (2016); Cesa-Bianchi & Lugosi (2006)
+    # FIX: 2026-08-15 原引用行缺 # 前缀, 挂载后执行期 NameError, 转为注释
     try:
         from modules.fuzzing.src.regret_minimizing_ensemble import RegretMinimizingEnsemble
         _regret_ensemble = RegretMinimizingEnsemble(

@@ -69,6 +69,24 @@ def build_parser() -> argparse.ArgumentParser:
     # version
     sub.add_parser('version', help='show version info')
 
+    # export
+    ep = sub.add_parser('export', help='export analysis reports')
+    ep.add_argument('binary', help='binary whose reports to export')
+    ep.add_argument('-o', '--output', default='./exported_reports',
+                    help='target directory for exported reports')
+
+    # status
+    sub.add_parser('status', help='show analysis run status from DB')
+
+    # replay
+    rp = sub.add_parser('replay', help='replay recorded analysis (placeholder)')
+    rp.add_argument('run_id', type=int, help='analysis run id to replay')
+
+    # debug
+    dp = sub.add_parser('debug', help='manual entry for internal capabilities')
+    dp.add_argument('tool', choices=['checksec', 'plt', 'strings', 'gadgets', 'libc', 'symexec'])
+    dp.add_argument('binary', help='target binary')
+
     return p
 
 
@@ -170,6 +188,82 @@ def cmd_fuzz(args):
     return fuzz_main(args.args)
 
 
+def cmd_export(args):
+    # 子命令 export：复制已有 md/json 报告产物到目标目录。
+    import shutil
+    from config import RESULTS_DIR
+    binary_stem = os.path.splitext(os.path.basename(os.path.abspath(args.binary)))[0]
+    if not os.path.isdir(RESULTS_DIR):
+        print("error: 报告目录不存在", file=sys.stderr)
+        return 1
+    matches = sorted(
+        f for f in os.listdir(RESULTS_DIR)
+        if f.startswith(binary_stem) and f.endswith(('.md', '.json')))
+    if not matches:
+        print(f"error: 未找到 {binary_stem} 的报告", file=sys.stderr)
+        return 1
+    os.makedirs(args.output, exist_ok=True)
+    for f in matches:
+        shutil.copy2(os.path.join(RESULTS_DIR, f), args.output)
+    print(f"exported {len(matches)} report(s) to {args.output}")
+    return 0
+
+
+def cmd_status(args):
+    # 子命令 status：汇总 analysis_runs 与 findings 计数。
+    import sqlite3
+    from config import DB_PATH
+    if not os.path.isfile(DB_PATH):
+        print("error: 数据库不存在，尚无分析记录", file=sys.stderr)
+        return 1
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    runs = conn.execute(
+        "SELECT id, started_at, status, binary_path, summary FROM analysis_runs "
+        "ORDER BY id DESC LIMIT 10").fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM findings").fetchone()[0]
+    conn.close()
+    print(f"findings total: {total}")
+    for r in runs:
+        print(f"  run {r['id']} [{r['status']}] "
+              f"{os.path.basename(r['binary_path'])} — {r['summary'] or ''}")
+    return 0
+
+
+def cmd_replay(args):
+    # 子命令 replay：重放分析结果，实现未就绪。
+    print(f"Not implemented yet (run_id={args.run_id})")
+    return 0
+
+
+def cmd_debug(args):
+    # 子命令 debug：转发至 core 内部能力函数, JSON 输出。
+    import json as _json
+    if args.tool == 'checksec':
+        from core.checksec_api import detect_checksec
+        out = detect_checksec(args.binary)
+    elif args.tool == 'plt':
+        from core.plt_scanner import scan_plt
+        out = scan_plt(args.binary)
+    elif args.tool == 'strings':
+        from core.static_analysis import scan_strings
+        out = scan_strings(args.binary)
+    elif args.tool == 'gadgets':
+        from modules.core.compat.gadget_scan import headless_scan_gadgets
+        out = headless_scan_gadgets([args.binary])
+    elif args.tool == 'libc':
+        from core.libc_identifier import identify_libc
+        out = identify_libc(args.binary)
+    elif args.tool == 'symexec':
+        from core.symexec import run_symbolic
+        out = run_symbolic(args.binary)
+    else:
+        print('error: unknown tool', file=sys.stderr)
+        return 1
+    print(_json.dumps(out, ensure_ascii=False, indent=2, default=str))
+    return 0
+
+
 def cmd_version():
     print("binmind v1.4.0 — Binary Vulnerability Analysis Tool")
     print("https://github.com/binmind/binmind")
@@ -188,6 +282,14 @@ def main() -> int:
         return cmd_serve(args)
     elif args.command == 'fuzz':
         return cmd_fuzz(args)
+    elif args.command == 'export':
+        return cmd_export(args)
+    elif args.command == 'status':
+        return cmd_status(args)
+    elif args.command == 'replay':
+        return cmd_replay(args)
+    elif args.command == 'debug':
+        return cmd_debug(args)
     elif args.command == 'version':
         return cmd_version()
     else:

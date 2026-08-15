@@ -820,6 +820,34 @@ except Exception as e:
         'elapsed': None,
         'total_vulns': len(all_vulns),
     }
+    # 增强族挂载 — FIX: 2026-08-15 pipeline_enh_1..8 挂回主流水线
+    # ENABLE_PIPELINE_ENH 默认开启, 显式 =0 可关闭; ENABLE_ENHANCED_PIPELINE
+    # 开启时由整合策略接管, 跳过本块防重复应用。各增强仅向 result 追加
+    # 内部状态键, 不改 findings; 单模块失败记 step_records
+    # status=enhancement_failed, 不中断管线。
+    if _is_enabled('ENABLE_PIPELINE_ENH', default='true') and \
+            not os.environ.get('ENABLE_ENHANCED_PIPELINE', 'false').lower() == 'true':
+        _sid = _step_begin(run_id, 'pipeline_enhancements')
+        _enh_failures = []
+        for _enh_idx in range(1, 9):
+            try:
+                _enh_mod = __import__(f'core.pipeline_enh_{_enh_idx}',
+                                      fromlist=['apply'])
+                _enh_fn = getattr(_enh_mod, f'apply_enhancements_{_enh_idx}')
+                _enh_fn(result, binary_path, binfo, kwargs, binary_hash)
+                logger.info("[ENH] pipeline_enh_%d applied", _enh_idx)
+            except Exception as err:
+                _enh_failures.append(str(_enh_idx))
+                logger.warning("[ENH] pipeline_enh_%d failed: %s", _enh_idx, err)
+        if _enh_failures:
+            _step_end(_sid, 'enhancement_failed',
+                      output_summary='failed: ' + ','.join(_enh_failures),
+                      error_message='enhancement modules failed: '
+                                    + ','.join(_enh_failures))
+        else:
+            _step_end(_sid, 'success',
+                      output_summary='8 enhancement modules applied')
+
     if os.environ.get('ENABLE_ENHANCED_PIPELINE', 'false').lower() == 'true':
         try:
             from core.pipeline_enhancements import run_enhancement_strategies
