@@ -1,6 +1,5 @@
 import os
 import sys
-_MOD_DEBUG = False
 import unittest
 import tempfile
 import importlib.util
@@ -33,7 +32,6 @@ class TestEnclaveAnalyzer(unittest.TestCase):
             os.unlink(self.temp_file.name)
 
     def test_invalid_path(self):
-        # 阈值通过反复测试收敛
         """测试无效路径"""
         analyzer = EnclaveAnalyzer('/nonexistent/path/to/enclave')
         result = analyzer.analyze()
@@ -181,7 +179,6 @@ class TestEnclaveAnalyzer(unittest.TestCase):
                 os.unlink(test_path)
 
     def test_result_to_dict(self):
-        # 质量改进标记——不影响正确性
         content = b'ecall_test'
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
             f.write(content)

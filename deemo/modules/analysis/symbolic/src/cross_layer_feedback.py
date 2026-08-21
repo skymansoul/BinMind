@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-20 09:48 - 增加 bidirectional feedback：求解结果反向更新路径新颖度评分
-# 2025-07-23 11:15 - 引入 novelty_decay 因子，避免历史高分路径永久垄断
-# 2025-07-28 16:40 - 增加 budget_reclaim 机制：低产路径归还未用完的求解预算
+# 增加 bidirectional feedback：求解结果反向更新路径新颖度评分
+# 引入 novelty_decay 因子，避免历史高分路径永久垄断
+# 增加 budget_reclaim 机制：低产路径归还未用完的求解预算
 
-"""跨层优化反馈环——路径多样性管理 ↔ 求解器资源管理
+"""跨层优化反馈环-路径多样性管理 ↔ 求解器资源管理
 
 现有系统将路径多样性（path_diversity_core.py）和求解器预算
 （symexec_opt_passes.py 的 SolverBudgetManager）作为两个独立层运作
@@ -25,7 +24,7 @@ Solver → Path direc:
 
 ref: DiversePath 仅做路径选择不做求解器资源联动
 ref: BandFuzz 使用 Thompson 采样分配 模糊测试 能量
-但未反馈到符号执行路径选择——本模块的 bidirectional 设计弥补此缺口
+但未反馈到符号执行路径选择-本模块的 bidirectional 设计弥补此缺口
 """
 
 import math
@@ -52,14 +51,14 @@ class PathNoveltyScore:
 
 class CrossLayerFeedbackLoop:
     """路径多样性管理与求解器预算管理的双向反馈环
-    
+
     使用模式：
     loop = CrossLayerFeedbackLoop()
     for path active_paths:
     budget = loop.allocate_budget(path, base_budget)
     solve_result = solver.solve(path.constraints, timeout=budget)
     loop.record_solve_result(path, solve_result)
-    
+
     每 allocate_budget 调用会根据当前路径新颖度调整预算；
     每 record_solve_result 调用会根据求解结果更新新颖度
     """
@@ -93,7 +92,7 @@ class CrossLayerFeedbackLoop:
         self._budget_efficiency: float = 0.0   # 有效求解数 / 总预算
 
     def _decay_if_needed(self) -> None:
-        """周期性衰减所有路径的新颖度——防止早期高分路径永久垄断"""
+        """周期性衰减所有路径的新颖度-防止早期高分路径永久垄断"""
         now = time.time()
         if now - self._last_decay_time < self._decay_interval:
             return
@@ -110,9 +109,9 @@ class CrossLayerFeedbackLoop:
     def compute_novelty(self, path_simhash: int,
                         neighbor_simhashes: List[int]) -> float:
         """基于 SimHash 汉明距离计算路径新颖度
-        
+
         新颖度 = min(汉明距离 / 32, 1.0)，即最近邻距离归一化
-        32 是 64-bit SimHash 距离的一半——超过此值认为完全新颖
+        32 是 64-bit SimHash 距离的一半-超过此值认为完全新颖
         """
         if not neighbor_simhashes:
             return 1.0  # 无邻居 → 完全新颖
@@ -127,7 +126,7 @@ class CrossLayerFeedbackLoop:
                         neighbor_simhashes: List[int],
                         base_override: Optional[float] = None) -> float:
         """为路径分配求解预算
-        
+
         返回分配的求解时间（秒）。会考虑当前新颖度、回收池余额
         """
         with self._lock:
@@ -146,7 +145,7 @@ class CrossLayerFeedbackLoop:
 
             allocated = base * multiplier
 
-            # 回收池分配——将低产路径归还的预算重新分配给高产路径
+            # 回收池分配-将低产路径归还的预算重新分配给高产路径
             if novelty > 0.7 and self._reclaim_pool > 0:
                 reclaim_bonus = min(self._reclaim_pool * 0.1, base * 0.5)
                 allocated += reclaim_bonus
@@ -173,8 +172,8 @@ class CrossLayerFeedbackLoop:
     def record_solve_result(self, path_id: str, success: bool,
                             actual_time: float,
                             new_states_count: int = 0) -> None:
-        """记录求解结果——反向更新路径新颖度
-        
+        """记录求解结果-反向更新路径新颖度
+
         success=True 且产生了新状态 → 提升新颖度
         success=False (超时/UNSAT) → 降低新颖度
         未用完的预算 → 回收到 reclaim_pool
@@ -189,12 +188,12 @@ class CrossLayerFeedbackLoop:
             if success:
                 score.solve_success_count += 1
                 if new_states_count > 0:
-                    # 产生新状态——路径价值高于预期，提升新颖度
+                    # 产生新状态-路径价值高于预期，提升新颖度
                     score.novelty = min(
                         1.0, score.novelty + 0.05 * new_states_count)
             else:
                 score.solve_failure_count += 1
-                # UNSAT/超时——路径可能已死胡同，降低新颖度
+                # UNSAT/超时-路径可能已死胡同，降低新颖度
                 score.novelty *= 0.85
 
             # Budget reclaim: 实际消耗小于分配的 50% → 回收差额
@@ -214,7 +213,7 @@ class CrossLayerFeedbackLoop:
                 self._budget_efficiency = successful / max(total_consumed, 0.001)
 
     def get_top_novelty_paths(self, n: int = 5) -> List[Tuple[str, float]]:
-        """返回当前新颖度最高的 N 条路径——供外部调度器优先选择"""
+        """返回当前新颖度最高的 N 条路径-供外部调度器优先选择"""
         with self._lock:
             sorted_paths = sorted(
                 self._path_scores.items(),
@@ -224,7 +223,7 @@ class CrossLayerFeedbackLoop:
             return [(pid, score.novelty) for pid, score in sorted_paths[:n]]
 
     def get_low_yield_paths(self, threshold: float = 0.15) -> List[str]:
-        """返回求解成功率低于 threshold 的路径 ID——可供外部剪枝决策"""
+        """返回求解成功率低于 threshold 的路径 ID-可供外部剪枝决策"""
         with self._lock:
             low_yield = []
             for pid, score in self._path_scores.items():

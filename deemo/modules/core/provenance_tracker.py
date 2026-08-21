@@ -1,7 +1,6 @@
 # coding: utf-8
-# 创建: 2026-05-02  修改: 2026-07-29 (_ReadProbe+写键推断)
 """
-因果溯源追踪 — 钩子管道的每次状态变迁以有向溯源图记录.
+因果溯源追踪 - 钩子管道的每次状态变迁以有向溯源图记录.
 
 现有 DAG 调度器的遥测是统计型 (count/latency/success_rate) —
 能回答 "某钩子是否成功/耗时多少", 但回答不了 "钩子 B 的输出异常是否由
@@ -11,7 +10,7 @@
 钩子管道执行域: 每个钩子执行 → 一条溯源边 (input_version → output_version).
 引入读键集/写键集记录, 刻画数据流以支持裁剪式传播路径查询.
 
-溯源图使管道从 "可观测" 升级为 "可解释" —
+溯源图使管道从 "可观测" 升级为 "可解释" -
 类似数据库的 provenance (why + where) 但面向动态管道执行.
 """
 
@@ -25,7 +24,7 @@ from modules.core.context_versioning import ContextVersion, ContextVersionStore
 
 @dataclass
 class ProvenanceEdge:
-    """溯源图中的一条有向边: 钩子执行 f(input_version) → output_version.
+    """溯源图中的一条有向边: 钩子执行 f(input_version) -> output_version.
 
     read_keys / written_keys 记录该钩子实际触碰的 context 键集,
     用于 impact_analysis 时的精准传播路径裁剪.
@@ -183,7 +182,7 @@ class ProvenanceGraph:
 
 
 class ProvenanceScheduler:
-    """溯源感知的调度器包装 — 包裹 HookDAGScheduler 并在每次钩子执行前后
+    """溯源感知的调度器包装 - 包裹 HookDAGScheduler 并在每次钩子执行前后
     自动记录溯源边, 对既有调度器零侵入.
 
     用法:

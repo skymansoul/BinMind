@@ -83,7 +83,7 @@ class OTADiffAnalyzer:
         self.ota_path = ota_path
         self._last_result: Optional[OTADiffResult] = None
 
-    # -- 分析主流程 -----------------------------------------------------------
+    # 分析主流程
 
     def analyze(self) -> OTADiffResult:
         """分析 OTA 包；路径无效时返回失败结果，错误信息固定前缀。"""
@@ -184,7 +184,7 @@ class OTADiffAnalyzer:
                 risk=RiskLevel.HIGH,
             ))
 
-    # -- 报告 -------------------------------------------------------------
+    # 报告
 
     def generate_report(self) -> str:
         """生成中文文本报告；标题为固定值。"""

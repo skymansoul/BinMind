@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 import re
 
-from pointer_tracker import (
+from .pointer_tracker import (
     HeapPtr, extract_heap_ptrs, extract_write_sites,
     build_ptr_aliases, bind_writes_to_allocs,
 )

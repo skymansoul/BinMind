@@ -1,14 +1,13 @@
-# created: 2026-06-25
-# 轻量级后向污点传播——从sink出发沿def-use链反向追踪参数来源
+# 轻量级后向污点传播-从sink出发沿def-use链反向追踪参数来源
 # 理论依据: sink-to-source分析比前向传播
-# 大幅减少误报——发现路径不可达或值被净化时立即放弃
+# 大幅减少误报-发现路径不可达或值被净化时立即放弃
 #
 # 核心设计决策:
-#   1. 追踪深度限制为5——5步def-use链足以覆盖大部分漏洞路径，
+#   1. 追踪深度限制为5-5步def-use链足以覆盖大部分漏洞路径，
 #      更深追踪在静态分析中误报率急剧升高
-#   2. 三级分类而非二进制taint/not-taint——CONSTRAINED状态是关键创新，
+#   2. 三级分类而非二进制taint/not-taint-CONSTRAINED状态是关键创新，
 #      区分"用户输入经过边界检查"(安全)和"用户输入未经检查"(危险)
-#   3. 仅追踪寄存器级def-use——不建模内存别名的精确关系，
+#   3. 仅追踪寄存器级def-use-不建模内存别名的精确关系，
 #      这是性能(线性时间)和精度(处理80%常见模式)的折衷
 
 from __future__ import annotations
@@ -20,7 +19,6 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +41,7 @@ class TaintResult:
 
 
 class BackwardTaintEngine:
-    """后向污点传播引擎——从危险函数参数沿def-use链反向追踪。
+    """后向污点传播引擎-从危险函数参数沿def-use链反向追踪。
 
     支持的指令模式(x86_64):
       mov dst, src    → dst被污染当且仅当src被污染
@@ -72,17 +70,7 @@ class BackwardTaintEngine:
                     instructions: List[str],
                     func_args: Optional[List[str]] = None
                     ) -> TaintResult:
-        """从sink指令的指定参数寄存器反向追踪污点来源。
-
-        Args:
-            sink_instr_idx: 危险函数调用指令的索引
-            param_reg: 要追踪的参数寄存器名(如'rdi'=第一个参数)
-            instructions: 函数内所有指令列表
-            func_args: 函数参数名列表(用于判断参数来源)
-
-        Returns:
-            TaintResult with taint level and trace
-        """
+        """从sink指令的指定参数寄存器反向追踪污点来源。"""
         current_reg = param_reg.lower()
         trace_steps = 0
         constrained = False
@@ -195,15 +183,7 @@ class BackwardTaintEngine:
                     instructions: List[str],
                     func_args: Optional[List[str]] = None
                     ) -> Dict[Tuple[int, str], TaintResult]:
-        """对函数内的多个sink批量执行污点追踪。
-
-        Args:
-            sinks: [(instr_idx, sink_func, param_reg), ...]
-            instructions: 函数指令列表
-
-        Returns:
-            {(instr_idx, sink_func): TaintResult}
-        """
+        """对函数内的多个sink批量执行污点追踪。"""
         results = {}
         for idx, func, reg in sinks:
             results[(idx, func)] = self.trace_param(

@@ -1,10 +1,11 @@
 """
 PLT/GOT 解析器: 从 ELF 提取导入表地址映射。
-解析 .rela.plt/.got.plt 构建 函数名→PLT桩→GOT条目 映射, 并与危险函数清单交叉标记可利用导入;
+解析 .rela.plt/.got.plt 构建 函数名-PLT桩-GOT条目 映射, 并与危险函数清单交叉标记可利用导入;
 剥离二进制回退到 .dynstr 偏移解析, 不依赖 angr/pyelftools 高层 API。
 """
 
 
+import json
 import logging
 import os
 import struct
@@ -15,7 +16,7 @@ from config import R2_PATH
 
 _log = logging.getLogger(__name__)
 
-# 危险函数清单 —— 与 core/static_analysis.py 中的 DANGEROUS_FUNCTIONS 保持同步
+# 危险函数清单 - 与 core/static_analysis.py 中的 DANGEROUS_FUNCTIONS 保持同步
 _EXPLOITABLE_CATEGORIES = {
     'system':   ('command-injection', 'Critical'),
     'popen':    ('command-injection', 'Critical'),
@@ -45,22 +46,8 @@ def scan_plt(path: str) -> List[Dict[str, Any]]:
     """
     解析 ELF 的 PLT/GOT 条目。
 
-    优先使用 radare2 解析，失败时回退到 pyelftools。
-    返回的条目列表按地址排序，每个条目包含名称、PLT地址、GOT地址和风险标记。
-
-    Args:
-        path: ELF 文件路径
-
-    Returns:
-        PLT 条目列表，每个条目为:
-        {
-            'name': str,           # 函数名
-            'plt_addr': int,       # PLT 桩地址
-            'got_addr': int,       # GOT 条目地址 (0 表示不可用)
-            'is_dangerous': bool,  # 属于危险函数
-            'risk_category': str,   # 风险类别
-            'risk_severity': str,   # 严重程度
-        }
+    优先 radare2, 失败回退 pyelftools。每项含名称/PLT地址/
+    GOT地址/危险标记/风险类别/严重度。
     """
     entries = _scan_plt_r2(path)
     if entries:
@@ -81,7 +68,6 @@ def _scan_plt_r2(path: str) -> List[Dict[str, Any]]:
             [R2_PATH, '-q', '-e', 'io.color=false', '-c', 'iEj', path],
             capture_output=True, text=True, timeout=30,
         )
-        import json
         raw = json.loads(proc.stdout)
         return _build_plt_entries(raw)
     except (json.JSONDecodeError, subprocess.TimeoutExpired):
@@ -187,14 +173,9 @@ def find_exploitable_functions(plt_entries: List[Dict[str, Any]]) -> List[Dict[s
     """
     筛选出可被利用的导入函数。
 
-    在 PLT 条目中过滤危险函数，按利用价值排序：
+    在 PLT 条目中过滤危险函数, 按利用价值排序:
     exec 类函数 (system/popen/execve) 排在最前。
-
-    Args:
-        plt_entries: scan_plt() 的返回值
-
-    Returns:
-        仅包含 is_dangerous=True 的条目子集
+    返回仅含 is_dangerous=True 的条目子集。
     """
     exploitable = [e for e in plt_entries if e['is_dangerous']]
     exec_order = {'command-injection': 0, 'buffer-overflow': 1,

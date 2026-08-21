@@ -1,6 +1,6 @@
 #                               关系即使 A 和 B 不是全局变量也可推断锁依赖
 #
-# 锁图 —— 锁获取的偏序关系图，用于死锁检测
+# 锁图 - 锁获取的偏序关系图，用于死锁检测
 #
 # 节点: 锁标识符（从 SyncSite.lock_identifier 推导）
 # 有向边 A → B: 存在某个函数先获取锁 A 再获取锁 B（锁序偏序）
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LockNode:
-    """锁图中的一个节点——代表一个锁标识符"""
+    """锁图中的一个节点-代表一个锁标识符"""
     lock_id: str
     sites: List[SyncSite] = field(default_factory=list)  # 所有操作此锁的 SyncSite
     func_count: int = 0  # 涉及此锁的函数数量
@@ -40,22 +40,22 @@ class LockGraph:
     """锁依赖有向图"""
     nodes: Dict[str, LockNode] = field(default_factory=dict)
     edges: List[LockOrderEdge] = field(default_factory=list)
-    # 邻接表 —— 用于快速检测传递闭包
+    # 邻接表 - 用于快速检测传递闭包
     _adj: Dict[str, Set[str]] = field(default_factory=lambda: defaultdict(set))
 
 
 def build_lock_graph(sites: List[SyncSite]) -> LockGraph:
     """从同步操作位点构建锁依赖图
-    
+
     算法：
     对每个函数：
     1. 按指令偏移排序锁操作
     2. 在 lock(A) 和对应的 unlock(A) 之间的所有 lock(B)
     都产生 A → B 的偏序关系
     3. 嵌套的锁对也递归产生关系（传递闭包由 SCC 检测处理）
-    
+
     复杂度 O(F × S × L)，F=函数数, S=每函数平均锁操作数, L=嵌套深度
-    对大型二进制文件（10k+函数）可考虑采样——目前先保证正确性
+    对大型二进制文件（10k+函数）可考虑采样-目前先保证正确性
     """
     graph = LockGraph()
 
@@ -118,8 +118,8 @@ def build_lock_graph(sites: List[SyncSite]) -> LockGraph:
 
 
 def _tarjan_scc(adj: Dict[str, Set[str]]) -> List[List[str]]:
-    """Tarjan 强连通分量算法——比简单环搜索更高效
-    
+    """Tarjan 强连通分量算法-比简单环搜索更高效
+
     返回所有 SCC，每个 SCC 是节点 ID 列表。大小 >1 的 SCC 含环
     """
     index = 0
@@ -163,11 +163,11 @@ def _tarjan_scc(adj: Dict[str, Set[str]]) -> List[List[str]]:
 
 def detect_deadlock_cycles(graph: LockGraph) -> List[Tuple[List[str], List[LockOrderEdge]]]:
     """检测锁图中的死锁环
-    
-    返回 [(cycle_nodes, involved_edges),.]——每个环对应一个潜在死锁
-    
+
+    返回 [(cycle_nodes, involved_edges),.]-每个环对应一个潜在死锁
+
     注意：
-    - 仅报告大小 >1 的 SCC 中的全体节点——不是每个具体环
+    - 仅报告大小 >1 的 SCC 中的全体节点-不是每个具体环
     - SCC 中任意两点之间存在有向路径，所以整个 SCC 都是潜在死锁区域
     - 生产环境中应进一步过滤：排除 trylock 保护的环（有回退策略）
     """

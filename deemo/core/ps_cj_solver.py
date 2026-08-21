@@ -1,4 +1,4 @@
-"""路径敏感约束联结求解器 — PS-CJ核心求解模块: 每条CFG路径独立FM消元+安全性证明, 保守融合.
+"""路径敏感约束联结求解器, PS-CJ核心求解模块: 每条CFG路径独立FM消元+安全性证明, 保守融合.
 融合: 所有可行路径SAFE→过滤; 任一可行路径OVERFLOW→保留; 任意INCONCLUSIVE→保守保留; 全部不可行→回退全局CJ.
 路径来自简化CFG(正则+启发式), 有界枚举(max 128), 无路径间约束传播。理论: Reps-Horwitz-Sagiv 路径可达性。"""
 from dataclasses import dataclass, field
@@ -56,7 +56,7 @@ class PathSensitiveCJSolver:
         self,
         sys: ConstraintSystem,
     ) -> SolverResult:
-        """全局CJ回退接口 — 无路径信息时使用。"""
+        """全局CJ回退接口 - 无路径信息时使用。"""
         return self._global_solver.solve(sys)
 
     def solve_path_sensitive(
@@ -65,7 +65,7 @@ class PathSensitiveCJSolver:
         ir_lines: list[str],
         decompiled_text: str = "",
     ) -> PSJResult:
-        """路径敏感求解: 枚举路径→逐路径CJ→保守融合。"""
+        """路径敏感求解: 枚举路径-逐路径CJ-保守融合。"""
         path_systems = collect_path_sensitive_constraints(
             candidate, ir_lines, decompiled_text)
 
@@ -145,10 +145,10 @@ class PathSensitiveCJSolver:
         """保守融合所有路径的判定结果。
 
         融合规则:
-          - 任一可行路径OVERFLOW → OVERFLOW (保留候选)
-          - 所有可行路径SAFE → SAFE (过滤候选)
-          - 否则 → INCONCLUSIVE (保守保留)
-          - 全部不可行 → 回退全局CJ
+          - 任一可行路径OVERFLOW - OVERFLOW (保留候选)
+          - 所有可行路径SAFE - SAFE (过滤候选)
+          - 否则 - INCONCLUSIVE (保守保留)
+          - 全部不可行 - 回退全局CJ
         """
         result = PSJResult()
         result.paths_analyzed = len(path_results)

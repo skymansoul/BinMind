@@ -1,24 +1,23 @@
-# 修改记录:
-# 2025-08-02 18:14 - 三通道匹配的加权投票机制: 至少两通道确认才接受候选
-# 2025-08-03 12:22 - 指数退避桶宽替代线性桶, 短 persist 区间 (噪声) 的密度权重降低
+# 三通道匹配的加权投票机制: 至少两通道确认才接受候选
+# 指数退避桶宽替代线性桶, 短 persist 区间 (噪声) 的密度权重降低
 
 """CFG 持续同调指纹匹配引擎 - 二进制相似度搜索的顶层 API
 
 三通道并行匹配:
-  通道1 (指令熵): 捕获 CFG 基本块的内容密度--对编译器指令选择不敏感
-  通道2 (中介中心性): 捕获 CFG 的全局枢纽结构--对局部 CFG 变形不敏感
-  通道3 (执行频率): 捕获动态热路径--对静态混淆不敏感
+  通道1 (指令熵): 捕获 CFG 基本块的内容密度, 对编译器指令选择不敏感
+  通道2 (中介中心性): 捕获 CFG 的全局枢纽结构, 对局部 CFG 变形不敏感
+  通道3 (执行频率): 捕获动态热路径, 对静态混淆不敏感
 
 匹配策略 - 加权投票:
   每条通道独立产生 top-K 候选 + 相似度分数
   候选经三通道多数投票 (>=2/3 通道一致) 后按加权得分排序
-  此设计避免了单通道误匹配--例如熵通道可能将不同程序的结构相似
+  此设计避免了单通道误匹配, 例如熵通道可能将不同程序的结构相似
   代码片段误判为同一二进制, 但中心性和频率通道会给出低分
 
 指纹数据库:
   使用 LSH (局部敏感哈希) 索引加速搜索
   LSH 将 64 维向量散列到 8 个哈希表中, 每表使用 4 个随机投影
-  查询时只比较落入同一桶的候选--O(|db|) 降为 O(|db|^(1/8))
+  查询时只比较落入同一桶的候选, O(|db|) 降为 O(|db|^(1/8))
 """
 
 from __future__ import annotations
@@ -47,7 +46,7 @@ class LSHIndex:
     使用随机投影 (SimHash 风格): 每张哈希表用 d 个随机超平面
     将向量散列为 d-bit 哈希值
     碰撞概率 P(hash(a)=hash(b)) = 1 - arccos(sim(a,b))/π
-    --余弦相似度越高, 碰撞概率越大
+    即余弦相似度越高, 碰撞概率越大
 
     参数:
     num_tables: 哈希表数量 (默认 8, 在精度和内存间平衡)
@@ -60,12 +59,12 @@ class LSHIndex:
         ]
         self._bits = bits_per_table
         self._num_tables = num_tables
-        # 随机投影向量--使用确定性种子保证可复现性
+        # 随机投影向量, 使用确定性种子保证可复现性
         self._projections: List[List[List[float]]] = []
         self._init_projections()
 
     def _init_projections(self) -> None:
-        """初始化随机投影向量--确定性伪随机保证可复现"""
+        """初始化随机投影向量, 确定性伪随机保证可复现"""
         import random as _rnd
         rng = _rnd.Random(0xCF6F19)  # 固定种子
 
@@ -272,7 +271,7 @@ class CFGHomologyEngine:
                 1 for s in (ent_sim, bet_sim, frq_sim) if s > self._SIMILARITY_FLOOR
             )
 
-            # 至少两通道确认才保留--单通道匹配置信度不足
+            # 至少两通道确认才保留, 单通道匹配置信度不足
             if active_channels < 2:
                 continue
 
@@ -298,9 +297,9 @@ class CFGHomologyEngine:
         return results[:top_k]
 
     def remove_binary(self, name: str) -> bool:
-        """从数据库中移除一个二进制 (LSH 索引不重建--仅标记删除)
+        """从数据库中移除一个二进制 (LSH 索引不重建, 仅标记删除)
 
-        LSH 索引的删除代价高--采用惰性删除: 移除 database 中的条目
+        LSH 索引的删除代价高, 采用惰性删除: 移除 database 中的条目
         但不重建 LSH 表。查询时会跳过 database 中不存在的 key
         """
         if name in self._database:

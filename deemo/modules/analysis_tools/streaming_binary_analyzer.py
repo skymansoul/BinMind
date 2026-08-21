@@ -16,12 +16,12 @@ class ChunkType(Enum):
     SECTION = "section"
 @dataclass
 class BinaryChunk:
-    offset
-    size
-    chunk_type
+    offset: int
+    size: int
+    chunk_type: str
     data = None
-    metadata = field(default_factory=dict)
-    processed = False
+    metadata: dict = field(default_factory=dict)
+    processed: bool = False
 
 class LazyBinaryLoader:
     def __init__(self, file_path: str):

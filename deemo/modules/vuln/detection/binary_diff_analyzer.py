@@ -1,4 +1,4 @@
-# 二进制版本差异分析器——对比同一程序两个版本，识别安全相关增删改。
+# 二进制版本差异分析器-对比同一程序两个版本，识别安全相关增删改。
 # IRBinDiff LLVM-IR级对比学习与
 # Value Flow GNN 值流图差异检测方法。
 #
@@ -9,8 +9,8 @@
 # 控制流差异: 基本块级图编辑距离近似
 # 指令级差异: 逐指令对比，标记安全敏感修改（提权、认证旁路）
 #
-# 当前实现——函数+字符串+导入差异
-# 增强——安全关键词加权与差异报告模板
+# 当前实现-函数+字符串+导入差异
+# 增强-安全关键词加权与差异报告模板
 
 import os, re, hashlib, json, logging, struct, difflib
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -68,7 +68,7 @@ class DiffReport:
     change_distribution: Dict[str, int] = field(default_factory=dict)
 
 
-# 安全关键词集合——在函数名/字符串/导入中匹配时暗示安全敏感性变更
+# 安全关键词集合-在函数名/字符串/导入中匹配时暗示安全敏感性变更
 _SECURITY_KEYWORDS = {
     'auth': SecurityImpact.HIGH,
     'login': SecurityImpact.HIGH,
@@ -123,7 +123,7 @@ class BinaryDiffAnalyzer:
 
     分析两个二进制版本差异，重点标记安全相关变更。
     支持从工具输出（objdump/nm/readelf）提取特征，不依赖
-    完整反编译器——降低环境依赖。
+    完整反编译器-降低环境依赖。
     """
 
     def __init__(self):
@@ -176,7 +176,7 @@ class BinaryDiffAnalyzer:
                 address=old_funcs[fname].get('addr', 0),
                 security_impact=impact, security_keywords_matched=kw_matches))
 
-        # 公共函数修改检测——基于代码哈希差异
+        # 公共函数修改检测-基于代码哈希差异
         for fname in common_funcs:
             old_hash_v = old_funcs[fname].get('code_hash', '')
             new_hash_v = new_funcs[fname].get('code_hash', '')
@@ -302,18 +302,18 @@ class BinaryDiffAnalyzer:
         recs = []
         if report.security_summary.get('CRITICAL', 0) > 0:
             recs.append(
-                f"检测到 {report.security_summary['CRITICAL']} 个严重安全变更——"
+                f"检测到 {report.security_summary['CRITICAL']} 个严重安全变更-"
                 "建议立即进行安全审计，关注认证机制和权限变更。")
         if report.security_summary.get('HIGH', 0) > 0:
             recs.append(
-                f"检测到 {report.security_summary['HIGH']} 个高风险变更——"
+                f"检测到 {report.security_summary['HIGH']} 个高风险变更-"
                 "建议审查加密实现和输入验证逻辑的变更。")
         danger_imports = [c for c in report.changes
                           if c.category == ChangeCategory.IMPORT_ADDED
                           and c.security_impact in (SecurityImpact.CRITICAL, SecurityImpact.HIGH)]
         if danger_imports:
             names = ', '.join(c.item_name for c in danger_imports[:5])
-            recs.append(f"新增危险导入: {names}——可能存在后门或未授权的系统调用。")
+            recs.append(f"新增危险导入: {names}-可能存在后门或未授权的系统调用。")
         if report.risk_score > 0.5:
             recs.append("整体风险评分偏高，建议在部署前完成全量安全回归测试。")
         return recs

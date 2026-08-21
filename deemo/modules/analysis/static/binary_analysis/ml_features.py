@@ -1,5 +1,5 @@
 # 从二进制中提取可被机器学习模型消费的特征向量
-# INTJ策略: 特征工程是ML链中最重要的一环——垃圾特征进，垃圾结果出
+# 策略: 特征工程是ML链中最重要的一环 - 垃圾特征进，垃圾结果出
 # 这里不做花哨的深度学习，聚焦于统计上可解释、可重现的传统特征
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from collections import Counter
 
 def opcode_histogram(opcodes: list[str]) -> dict[str, int]:
     """从操作码序列生成频次直方图。O(n) n = len(opcodes)
-    
+
     返回 {opcode: count} 字典，是后续TF-IDF/N-gram特征的基础
     """
     return dict(Counter(opcodes))
@@ -21,8 +21,8 @@ def opcode_histogram(opcodes: list[str]) -> dict[str, int]:
 
 def ngram_features(opcodes: list[str], n: int = 3) -> dict[str, int]:
     """提取N-gram特征。O(n * m) m = len(opcodes)
-    
-    INTJ策略: 3-gram比2-gram区分度高一个数量级
+
+    策略: 3-gram比2-gram区分度高一个数量级
     但维数爆炸。这里限制top 500个最高频的3-gram作为特征
     """
     grams: list[str] = []
@@ -73,7 +73,7 @@ def section_features(section_data: bytes) -> dict[str, float]:
 
 def compute_imphash(imports: list[str]) -> str:
     """计算导入表哈希（类 pefile.imphash）。O(n log n) 排序主导
-    
+
     算法: 将所有 DLL:函数名 排序后拼接，MD5
     """
     sorted_imports = sorted(imports, key=str.lower)
@@ -94,7 +94,7 @@ def compute_rich_header_hash(data: bytes) -> str:
 def extract_feature_vector(opcodes: list[str], imports: list[str],
                            section_sizes: list[int]) -> dict[str, Any]:
     """综合特征提取——返回可直接喂给 sklearn 的特征字典
-    
+
     复杂度: O(n + m + k) n=opcodes, m=imports, k=sections
     """
     op_hist = opcode_histogram(opcodes)
@@ -117,7 +117,7 @@ def extract_feature_vector(opcodes: list[str], imports: list[str],
     for i, (ng, count) in enumerate(top_ngrams):
         features[f"top_ngram_{i}"] = count
 
-    # 用BFS去遍历AST的速度比DFS快——这里简化用线性扫描
+    # 用BFS去遍历AST的速度比DFS快 - 这里简化用线性扫描
     dangerous = {"strcpy", "strcat", "gets", "sprintf", "system", "exec",
                  "popen", "memcpy", "malloc", "free"}
     for api in dangerous:

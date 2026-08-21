@@ -233,10 +233,7 @@ def batch_correlate(
     int_overflow_findings: List[Dict] = None,
     threshold: float = 0.70,
 ) -> Tuple[List[CorrelatedFinding], Dict]:
-    """便利批量关联 — 从管线输出字典直接构建 EvidenceNode 并关联.
-
-    返回: (filtered_findings, stats).
-    """
+    """便利批量关联 — 从管线输出字典直接构建 EvidenceNode 并关联, 返回 (filtered_findings, stats)。"""
     heap_findings = heap_findings or []
     uaf_findings = uaf_findings or []
     fmt_findings = fmt_findings or []

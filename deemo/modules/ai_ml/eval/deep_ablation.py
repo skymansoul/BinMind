@@ -1,4 +1,4 @@
-# 新模块消融实验——逐项禁用参数等式/路径守卫/循环累积, 量化各自误报压制贡献
+# 新模块消融实验: 逐项禁用参数等式/路径守卫/循环累积, 量化各自误报压制贡献
 # 输入: tests/deep_suite/build/*.exe; 输出: eval/deep_ablation.json + 控制台表格
 import json
 import subprocess
@@ -44,7 +44,7 @@ def run_config(flags: dict):
                            capture_output=True, text=True, timeout=60)
         funcs = ObjdumpParser()._parse_output(r.stdout) if r.returncode == 0 else []
         pipe = DetectionPipeline()
-        # 用带开关的过滤器替换默认——pipeline_bridge硬编码默认配置, 故直接测evaluate
+        # 用带开关的过滤器替换默认, pipeline_bridge硬编码默认配置, 故直接测evaluate
         from src.detect.heap_overflow_filter import HeapOverflowFilter
         f = HeapFalsePositiveFilter(**flags)
         det = False

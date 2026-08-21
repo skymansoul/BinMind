@@ -1,4 +1,3 @@
-# 创建: 2026-06-19 14:40
 # Sink-to-source 反向路径分析 — 从危险调用点回溯到外部输入
 
 """Path Analyzer — Sink-to-source 反向可达性分析。

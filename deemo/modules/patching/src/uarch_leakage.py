@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-10 15:37 — 初始实现：KS 检验 + Welch t-test 双检测器
-# 2025-08-11 09:14 — 增加分位数比对比（不只是均值比较）
-# 2025-08-12 16:28 — 引入 input-dependent 泄漏检测：不同输入类别的时差模式
+# 初始实现：KS 检验 + Welch t-test 双检测器
+# 增加分位数比对比（不只是均值比较）
+# 引入 input-dependent 泄漏检测：不同输入类别的时差模式
 
 """Micro-Architectural Leakage Detector — 补丁引入的时序侧信道检测。
 

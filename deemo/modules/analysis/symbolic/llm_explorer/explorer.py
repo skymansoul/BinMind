@@ -3,14 +3,14 @@ from typing import Any, Dict, List, Optional
 import logging
 _log = logging.getLogger(__name__)
 
-from analysis.symbolic.llm_explorer.ranker import LLMPathRanker, PathState
-from analysis.symbolic.llm_explorer.strategy import SearchStrategy, AdaptiveStrategySwitcher
+from modules.analysis.symbolic.llm_explorer.ranker import LLMPathRanker, PathState
+from modules.analysis.symbolic.llm_explorer.strategy import SearchStrategy, AdaptiveStrategySwitcher
 
 
 class LLMGuidedPathExplorer:
     """
     LLM 引导的混合符号执行路径探索器
-    
+
     包装 SymbolicExecutor, 添加 LLM 路径排名 + 自适应策略切换
     """
 

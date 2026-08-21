@@ -1,8 +1,9 @@
-# 值流分析 — def-use 链构建 + 指针生命周期追踪。
+# 值流分析 - def-use 链构建 + 指针生命周期追踪。
 # 正则匹配无法追踪指针经别名/结构体字段/函数参数传递后的使用 (UAF 检出率 < 30%),
 # 本模块在 angr CFG (或反编译 IR 行) 上构建 def-use 链: def 定义 / use 使用 / kill 释放。
 
 
+import re
 from collections import defaultdict
 from typing import List, Dict, Tuple, Optional, Set
 
@@ -24,7 +25,6 @@ def build_def_use_chains(cfg) -> Dict[int, List[DefUseNode]]:
     入参兼容两种形态: angr CFG 对象, 或反编译 IR 文本行列表。
     后者按行解析赋值/释放/解引用, 不依赖二进制反汇编。
     """
-    import re
     if isinstance(cfg, (list, tuple)):
         chains: Dict[int, List[DefUseNode]] = defaultdict(list)
         for idx, line in enumerate(cfg or []):
@@ -90,7 +90,7 @@ def trace_pointer_lifetime(
     """追踪指针从定义点到生命期结束的使用链。
 
     返回: ["def@0x401000", "use@0x401020", "kill@0x401050", "use@0x401060 (UAF!)"]
-    最后一项若是 kill 后的 use → 标记 UAF。
+    最后一项若是 kill 后的 use, 标记 UAF。
     """
     events = []
     visited: Set[int] = set()

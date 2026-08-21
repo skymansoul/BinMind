@@ -41,7 +41,7 @@ class IntegerOverflowDetector:
                         if not m2:
                             m2 = _VAR_ASSIGN.search(eq + ';')
                         if m2: var_constants[m2.group(1)] = int(m2.group(2), 0)
-        
+
         sites = []
         for i, raw in enumerate(lines):
             line = raw.strip()
@@ -72,7 +72,7 @@ class IntegerOverflowDetector:
     @staticmethod
     def _value(name, constants):
         return constants.get(name)
-    
+
     @staticmethod
     def _overflow_conf(va, vb, op):
         # 双常量: 确定性检查

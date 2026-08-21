@@ -1,7 +1,7 @@
-# 共形预测包装器——为二进制漏洞检测提供带校准拒绝选项的集合预测
+# 共形预测包装器-为二进制漏洞检测提供带校准拒绝选项的集合预测
 #
 # 核心问题: ai_confidence_calibrator.py校准模型的置信度分数，
-# 但校准后的概率仍可能误导——模型对out-of-distribution样本可能同时
+# 但校准后的概率仍可能误导-模型对out-of-distribution样本可能同时
 # 输出低置信度但实际不应做任何预测。标准分类器强制二选一(vuln/benign)，
 # 没有"我不知道"的选项。
 #
@@ -9,18 +9,18 @@
 #   1. 归纳共形预测(ICP): 在留出校准集上计算nonconformity scores，
 #      对测试样本输出预测集合而非单点预测
 #   2. 集合预测: {vuln}, {benign}, {vuln, benign}, 或 ∅（空集=拒绝预测）
-#   3. 校准拒绝: 当预测集为空时，触发"拒绝预测+解释"——
+#   3. 校准拒绝: 当预测集为空时，触发"拒绝预测+解释"-
 #      解释哪个校准样本的nonconformity最接近测试样本
-#   4. 自适应显著性: 根据目标的关键性动态调整α——
+#   4. 自适应显著性: 根据目标的关键性动态调整α-
 #      关键基础设施用更严格α（宁可拒绝也不误判）vs 批量扫描用宽松α
 #
 # 新颖性:
 # 首次将共形预测应用于二进制漏洞检测（现有工作仅用于硬件木马检测）
 # 集合预测+拒绝选项提供了形式化的不确定性量化保证
-#   - 边际覆盖保证: P(Y_test ∈ prediction_set) ≥ 1-α（在数据可交换假设下）
+#   - 边际覆盖保证: P(Y_test ∈ prediction_set) >= 1-α（在数据可交换假设下）
 #
 # 技术效果:
-# 在指定α=0.05下，预测集覆盖率≥95%（形式化保证）
+# 在指定α=0.05下，预测集覆盖率>=95%（形式化保证）
 # 拒绝率在OOD样本上~15-25%（有效识别"不该预测"的样本）
 # 单例预测集比例~70-80%（多数情况下仍给出明确答案）
 
@@ -34,13 +34,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ConformalResult:
-    """共形预测结果——集合预测 + 拒绝选项"""
+    """共形预测结果-集合预测 + 拒绝选项"""
     sample_id: str
     prediction_set: Set[int]           # 预测类别集合（0=benign, 1=vuln）
     p_values: Dict[int, float]         # 每个类别的共形p值
@@ -69,10 +68,10 @@ class ConformalResult:
 
 
 class InductiveConformalPredictor:
-    """归纳共形预测——模型无关的包装器。
+    """归纳共形预测-模型无关的包装器。
 
     与transductive CP的区别: 使用留出校准集预计算nonconformity scores，
-    测试时无需重新训练/重新计算——适合在线/批量推理场景。
+    测试时无需重新训练/重新计算-适合在线/批量推理场景。
 
     Nonconformity measure: 1 - softmax_prob(true_class)
     直觉: 模型对正确类别越不"确定"（低概率），nonconformity越高。
@@ -80,11 +79,6 @@ class InductiveConformalPredictor:
 
     def __init__(self, model_fn: Callable,
                  significance_level: float = 0.05):
-        """
-        Args:
-            model_fn: (features, adjacency) → logits or probabilities
-            significance_level: α——允许的错误覆盖率
-        """
         self._model = model_fn
         self.alpha = significance_level
         self._calibration_scores: Optional[np.ndarray] = None
@@ -97,13 +91,7 @@ class InductiveConformalPredictor:
                         features_list: List[Any],
                         adjacencies: List[Any],
                         labels: List[int]):
-        """在留出校准集上拟合——计算nonconformity scores的分位数。
-
-        Args:
-            features_list: 校准样本特征
-            adjacencies: 校准样本邻接矩阵
-            labels: 校准样本真实标签
-        """
+        """在留出校准集上拟合-计算nonconformity scores的分位数。"""
         n = len(features_list)
         if n < 20:
             logger.warning(f"校准集太小(n={n})，共形预测的保证不可靠")
@@ -213,8 +201,8 @@ class InductiveConformalPredictor:
                         true_labels: List[int]) -> Dict[str, float]:
         """评估共形预测的实际覆盖率和效率。
 
-        覆盖率 = 真实标签在预测集中的比例（应≥1-α）
-        效率 = 单例预测集的比例（越高越好——明确答案）
+        覆盖率 = 真实标签在预测集中的比例（应>=1-α）
+        效率 = 单例预测集的比例（越高越好-明确答案）
         拒绝率 = 空集比例
         """
         n = len(results)

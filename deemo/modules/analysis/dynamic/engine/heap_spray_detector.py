@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-10 12:33 - 三分辨率熵扫描: 页(4KB)/缓存行(64B)/字(8B) 三级粒度
-# 2025-08-10 17:10 - Wasserstein 距离基线: 正常堆 vs 喷射堆的熵剖面分布差异
+# 三分辨率熵扫描: 页(4KB)/缓存行(64B)/字(8B) 三级粒度
+# Wasserstein 距离基线: 正常堆 vs 喷射堆的熵剖面分布差异
 
 """堆喷射熵检测器 - 多分辨率内存熵扫描区分喷射攻击与合法数据
 
@@ -57,10 +56,10 @@ def _byte_entropy(data: bytes) -> float:
 
 
 def _byte_repetition_rate(data: bytes, chunk_size: int = 8) -> float:
-    """计算数据中重复 chunk 的比例--高重复率暗示喷射
+    """计算数据中重复 chunk 的比例--高重复率暗示喷射。
 
-    chunk_size: 比较粒度 (默认 8 字节 = 64-bit 值)
-    返回: [0,1] - 1=全部相同 chunk, 0=所有 chunk 唯一
+    chunk_size: 比较粒度 (默认 8 字节 = 64-bit 值);
+    返回 [0,1] - 1=全部相同 chunk, 0=所有 chunk 唯一。
     """
     if len(data) < chunk_size:
         return 0.0

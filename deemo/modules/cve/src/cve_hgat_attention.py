@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-21 15:30 - 实现单头注意力, 在类型分组的邻域上聚合
-# 2025-07-24 10:12 - 扩展为多头注意力 (K=4), 拼接后线性投影
-# 2025-07-27 09:05 - 添加注意力权重归一化 + 边类型特定的消息变换
-# 2025-07-29 16:40 - 集成 CascadePrediction, 用注意力权重替代纯 Jaccard
+# 实现单头注意力, 在类型分组的邻域上聚合
+# 扩展为多头注意力 (K=4), 拼接后线性投影
+# 添加注意力权重归一化 + 边类型特定的消息变换
+# 集成 CascadePrediction, 用注意力权重替代纯 Jaccard
 #
 # HGAT Attention: 异构图注意力网络的注意力层实现
 #
@@ -96,14 +95,12 @@ class HGATAttentionLayer:
     def forward(self, features: List[List[float]],
                 adj_by_rel: Dict[int, Dict[int, List[int]]],
                 node_types: List[int]) -> List[List[float]]:
-        """前向传播 — 多头注意力聚合.
+        """前向传播 — 多头注意力聚合。
 
-        features: N × d 节点特征矩阵.
-        adj_by_rel: {rel_type: {src_idx: [dst_indices]}}, 邻接表.
-        node_types: 节点类型列表, 用于关系筛选 (某些关系仅适用于特定节点类型).
-
-        Returns:
-          N × (K*d') 更新的节点特征 (多头拼接).
+        features 为 N×d 节点特征矩阵, adj_by_rel 为
+        {rel_type: {src_idx: [dst_indices]}} 邻接表, node_types
+        为节点类型列表用于关系筛选; 返回 N×(K*d') 更新的节点
+        特征 (多头拼接)。
         """
         N = len(features)
         if not self._initialized:

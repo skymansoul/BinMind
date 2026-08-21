@@ -1,10 +1,9 @@
-# UAF LaTeX 对比表格生成器 — 从 uaf_benchmark.json 聚合工具指标.
+# UAF LaTeX 对比表格生成器 - 从 uaf_benchmark.json 聚合工具指标.
 #
 # 决策逻辑:
 #   对每个工具计算 TP/FP/FN/TN, Recall, Precision, FPR, F1,
 #   输出 LaTeX booktabs 表格. 未运行工具 (全部 NA) 标注 n/a.
 #
-# 创建: 2025-03-03
 
 import json
 from pathlib import Path

@@ -1,19 +1,16 @@
-# 2026-07-28
-# Utility tests for 去混淆 module
-"""Tests for shared 工具集: entropy, XOR, printable scoring, English scoring, CJK detection, error hierarchy"""
+# 去混淆模块工具函数测试
+"""Shannon熵、XOR解码、可打印比例、英语评分、CJK检测、异常层级测试"""
 
 import math
 import pytest
 from collections import Counter
 
-
-# Entropy tests
+# 熵计算测试
 
 class TestEntropy:
-    """Shannon entropy computation tests"""
+    """Shannon熵计算测试"""
 
     def test_entropy_uniform_distribution(self) -> None:
-        """Uniform distribution max entropy (~8 bits)"""
         data = bytes(range(256))
         counter = Counter(data)
         n = len(data)
@@ -23,7 +20,6 @@ class TestEntropy:
         assert entropy > 7.9  # Near max 8.0
 
     def test_entropy_single_value(self) -> None:
-        """Single byte value zero entropy"""
         data = b"\x42" * 100
         counter = Counter(data)
         n = len(data)
@@ -33,14 +29,12 @@ class TestEntropy:
         assert entropy == 0.0
 
     def test_entropy_empty_data(self) -> None:
-        """Empty data zero entropy"""
         data = b""
         if len(data) == 0:
             entropy = 0.0
         assert entropy == 0.0
 
     def test_entropy_laplace_smoothing(self) -> None:
-        """LaPlace smoothing 处理 zero-count bytes"""
         # Small sample: bytes 0x41 0x42
         data = b"AABB"
         n = len(data)
@@ -54,7 +48,6 @@ class TestEntropy:
         assert entropy > 0.0
 
     def test_entropy_monotonic_with_randomness(self) -> None:
-        """random data higher entropy"""
         import os
         random_data = os.urandom(1024)
         repeated_data = b"A" * 1024
@@ -69,13 +62,12 @@ class TestEntropy:
         assert e_random > e_repeated
 
 
-# XOR tests
+# XOR解码测试
 
 class TestXOR:
-    """XOR 解码 tests"""
+    """XOR解码测试"""
 
     def test_xor_decode_basic(self) -> None:
-        """Single-byte XOR 解码 correctly"""
         key = 0x55
         plaintext = b"HELLO"
         ciphertext = bytes(b ^ key for b in plaintext)
@@ -83,19 +75,16 @@ class TestXOR:
         assert decoded == plaintext
 
     def test_xor_key_zero_identity(self) -> None:
-        """XOR key 0 identity operation"""
         data = b"TestData123"
         assert bytes(b ^ 0 for b in data) == data
 
     def test_xor_key_255_inverts(self) -> None:
-        """XOR 0xFF inverts bits"""
         data = b"\x00\xFF\x55\xAA"
         inverted = bytes(b ^ 0xFF for b in data)
         expected = bytes(~b & 0xFF for b in data)
         assert inverted == expected
 
     def test_xor_double_apply_recovers(self) -> None:
-        """Applying XOR twice same key recovers original"""
         import os
         data = os.urandom(64)
         key = 0xAB
@@ -104,7 +93,6 @@ class TestXOR:
         assert recovered == data
 
     def test_xor_all_keys_reversible(self) -> None:
-        """256 single-byte keys reversible"""
         for key in range(256):
             data = b"\x00\x01\x7F\x80\xFE\xFF"
             encrypted = bytes(b ^ key for b in data)
@@ -112,13 +100,12 @@ class TestXOR:
             assert decrypted == data
 
 
-# Printable ratio tests
+# 可打印比例测试
 
 class TestPrintableRatio:
-    """Printable ratio computation tests"""
+    """可打印比例计算测试"""
 
     def test_all_printable(self) -> None:
-        """printable string 返回 1.0"""
         s = "Hello World 123!@#"
         ratio = sum(
             1 for c in s if 0x20 <= ord(c) <= 0x7E or c in "\n\r\t"
@@ -126,7 +113,6 @@ class TestPrintableRatio:
         assert ratio == 1.0
 
     def test_all_binary(self) -> None:
-        """binary data 返回 0.0"""
         s = "\x00\x01\x02\xff\xfe"
         ratio = sum(
             1 for c in s if 0x20 <= ord(c) <= 0x7E or c in "\n\r\t"
@@ -134,7 +120,6 @@ class TestPrintableRatio:
         assert ratio < 0.2
 
     def test_empty_string(self) -> None:
-        """Empty string 返回 0.0"""
         s = ""
         if s:
             ratio = sum(1 for c in s if 0x20 <= ord(c) <= 0x7E) / len(s)
@@ -143,7 +128,6 @@ class TestPrintableRatio:
         assert ratio == 0.0
 
     def test_mixed_content(self) -> None:
-        """Mixed printable/binary 返回 intermediate ratio"""
         s = "ABC\x00\x01\xFF"
         ratio = sum(
             1 for c in s if 0x20 <= ord(c) <= 0x7E or c in "\n\r\t"
@@ -152,13 +136,12 @@ class TestPrintableRatio:
         assert 0.4 < ratio < 0.6
 
 
-# English score tests
+# 英语评分测试
 
 class TestEnglishScore:
-    """English language likelihood scoring tests"""
+    """英语文本似然评分测试"""
 
     def test_english_text_scores_high(self) -> None:
-        """清除 English text score highly"""
         s = "This is a normal English sentence that should score well"
         s_lower = s.lower()
         common_bigrams = {"th", "he", "in", "er", "an", "on", "at", "en", "is", "it"}
@@ -169,7 +152,6 @@ class TestEnglishScore:
         assert bigram_hits > 0
 
     def test_random_string_scores_low(self) -> None:
-        """Random character string score low"""
         s = "zxqjv kpwgy bmfcl dhrnt"  # Low-frequency letter combinations
         s_lower = s.lower()
         common_bigrams = {"th", "he", "in", "er", "an"}
@@ -180,7 +162,6 @@ class TestEnglishScore:
         assert bigram_hits <= 1  # Very few common bigrams
 
     def test_score_range(self) -> None:
-        """Score 0.0 1.0"""
         scores = []
         test_strings = [
             "Hello world this is a test",
@@ -202,13 +183,12 @@ class TestEnglishScore:
             assert 0.0 <= score <= 1.0
 
 
-# CJK detection tests
+# CJK检测测试
 
 class TestCJKDetection:
-    """CJK character detection tests"""
+    """CJK字符检测测试"""
 
     def test_chinese_detected(self) -> None:
-        """Chinese characters detected"""
         s = "中文测试"  # "中文测试"
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
@@ -220,7 +200,6 @@ class TestCJKDetection:
         assert has_cjk
 
     def test_japanese_hiragana_detected(self) -> None:
-        """Japanese Hiragana detected"""
         s = "あいう"  # "あいう"
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
@@ -232,7 +211,6 @@ class TestCJKDetection:
         assert has_cjk
 
     def test_korean_detected(self) -> None:
-        """Korean Hangul detected"""
         s = "가각갂"  # Basic Hangul
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
@@ -244,7 +222,6 @@ class TestCJKDetection:
         assert has_cjk
 
     def test_ascii_not_detected(self) -> None:
-        """Pure ASCII trigger CJK detection"""
         s = "Hello World 12345!@#$%"
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
@@ -256,7 +233,6 @@ class TestCJKDetection:
         assert not has_cjk
 
     def test_mixed_cjk_ascii_detected(self) -> None:
-        """Mixed CJK+ASCII 检测 CJK"""
         s = "Hello 中文 World"  # "Hello 中文 World"
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
@@ -268,13 +244,12 @@ class TestCJKDetection:
         assert has_cjk
 
 
-# Error hierarchy tests
+# 异常层级测试
 
 class TestErrorHierarchy:
-    """异常 class hierarchy tests"""
+    """异常类层级测试"""
 
     def test_deobf_error_base(self) -> None:
-        """DeobfError a base 异常"""
 
         class DeobfError(Exception):
             pass
@@ -282,7 +257,6 @@ class TestErrorHierarchy:
         assert issubclass(DeobfError, Exception)
 
     def test_unpack_error_inherits(self) -> None:
-        """脱壳器ror inherit DeobfError"""
 
         class DeobfError(Exception):
             pass
@@ -294,7 +268,6 @@ class TestErrorHierarchy:
         assert issubclass(UnpackError, Exception)
 
     def test_decode_error_inherits(self) -> None:
-        """DecodeError inherit DeobfError"""
 
         class DeobfError(Exception):
             pass
@@ -306,7 +279,6 @@ class TestErrorHierarchy:
         assert issubclass(DecodeError, Exception)
 
     def test_error_can_be_caught_by_parent(self) -> None:
-        """Child errors catchable parent type"""
 
         class DeobfError(Exception):
             pass
@@ -323,7 +295,6 @@ class TestErrorHierarchy:
         assert caught
 
     def test_error_messages_preserved(self) -> None:
-        """Error messages preserved"""
 
         class DeobfError(Exception):
             pass

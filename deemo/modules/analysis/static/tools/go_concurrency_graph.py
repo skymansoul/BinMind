@@ -1,14 +1,13 @@
 # coding: utf-8
-# 修改记录:
-# 2025-08-11 10:08 - Go runtime 调用签名: 识别 channel/sync/goroutine 操作
-# 2025-08-11 16:25 - 通信图构建: 节点=goroutine函数, 边=channel send->recv配对
-# 2025-08-16 12:45 - 修复配对: 调用图距离+名称相似度替代索引配对
-# 2025-08-21 10:35 - 寄存器追踪: 提取channel指针所在寄存器, 同寄存器=同channel
+# Go runtime 调用签名: 识别 channel/sync/goroutine 操作
+# 通信图构建: 节点=goroutine函数, 边=channel send->recv配对
+# 修复配对: 调用图距离+名称相似度替代索引配对
+# 寄存器追踪: 提取channel指针所在寄存器, 同寄存器=同channel
 
 """Go goroutine 并发图恢复 - 从剥离 Go 二进制恢复并发通信拓扑
 
 Go 二进制 (尤其是经 garble 混淆后) 的函数名和类型信息被剥离
-但 Go runtime 的函数调用模式是固定的--runtime 函数通过特定的
+但 Go runtime 的函数调用模式是固定的, runtime 函数通过特定的
 参数传递约定和调用模式可被识别
 
 本模块识别以下 Go runtime 操作:
@@ -38,7 +37,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# Go runtime 函数签名--用于识别 stripped binary 中的 runtime 调用
+# Go runtime 函数签名, 用于识别 stripped binary 中的 runtime 调用
 
 # Go runtime 内部函数名及其并发语义
 _GO_RUNTIME_OPS: Dict[str, Tuple[str, float]] = {
@@ -181,7 +180,7 @@ class GoConcurrencyRecoverer:
     def _heuristic_ops(
         self, func_name: str, asm_text: str,
     ) -> List[GoConcurrencyOp]:
-        """启发式检测--用于符号完全剥离的场景
+        """启发式检测, 用于符号完全剥离的场景
 
         无符号时从指令模式推断:
         - goroutine: lea rax, [func_addr]; mov [rsp], rax; call runtime.newproc
@@ -274,7 +273,7 @@ class GoConcurrencyRecoverer:
     def _infer_channel_edges(
         self, ops_by_func: Dict[str, List[GoConcurrencyOp]],
     ) -> List[Tuple[str, str, str]]:
-        """推断 channel 通信边--配对 send 和 recv
+        """推断 channel 通信边, 配对 send 和 recv
 
         四级启发式按优先级:
           0. 同寄存器配对: send和recv使用同一个寄存器传channel指针
@@ -321,7 +320,7 @@ class GoConcurrencyRecoverer:
             edges.append((name, name, 'same_func'))
             paired.add((name, name))
 
-        # 规则 2: caller-callee 配对--若 sender 调用 receiver 或被 receiver 调用
+        # 规则 2: caller-callee 配对, 若 sender 调用 receiver 或被 receiver 调用
         for s_name in funcs_with_send - {e[0] for e in paired}:
             for r_name in funcs_with_recv - {e[1] for e in paired}:
                 if (s_name, r_name) in paired or (r_name, s_name) in paired:
@@ -334,7 +333,7 @@ class GoConcurrencyRecoverer:
                     edges.append((s_name, r_name, hint))
                     paired.add((s_name, r_name))
 
-        # 规则 3: 剩余未配对--按名称相似度匹配 (fallback)
+        # 规则 3: 剩余未配对, 按名称相似度匹配 (fallback)
         remaining_s = [n for n in funcs_with_send if n not in {e[0] for e in paired}]
         remaining_r = [n for n in funcs_with_recv if n not in {e[1] for e in paired}]
         for s_name in remaining_s:

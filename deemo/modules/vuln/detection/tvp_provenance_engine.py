@@ -1,22 +1,20 @@
 # coding: utf-8
-# 创建: 2026-05-27  |  溯源编排引擎
-# 修改: 2026-05-27  |  审计后补充文件头与错误处理
 #
 """
-时态漏洞溯源引擎——编排git追溯、程序切片、贝叶斯推断的完整管线。
+时态漏洞溯源引擎-编排git追溯、程序切片、贝叶斯推断的完整管线。
 
 管线流程:
-  1. 程序切片: 定位漏洞函数代码范围 → 限定blame区域
-  2. Git追溯: blame切片区域 → 候选提交 + 因果特征
-  3. 因果推断: 贝叶斯模型 → 提交后验概率 → 时间窗口
+  1. 程序切片: 定位漏洞函数代码范围 - 限定blame区域
+  2. Git追溯: blame切片区域 - 候选提交 + 因果特征
+  3. 因果推断: 贝叶斯模型 - 提交后验概率 - 时间窗口
   4. 多信号融合: BMA聚合git+static+LLM证据
   5. 审计导出: JSON序列化完整溯源轨迹
 
 专利创新点（独立权利要求级别）:
-  (a) 程序切片约束下的git blame——降低非相关代码变更的误归因
-  (b) 贝叶斯结构因果模型——概率性溯源替代确定性归因
-  (c) 后门准则混淆因子调整——校正团队协作偏差
-  (d) 多源信号BMA融合——综合历史+静态+语义的证据强度
+  (a) 程序切片约束下的git blame-降低非相关代码变更的误归因
+  (b) 贝叶斯结构因果模型-概率性溯源替代确定性归因
+  (c) 后门准则混淆因子调整-校正团队协作偏差
+  (d) 多源信号BMA融合-综合历史+静态+语义的证据强度
 """
 
 import os
@@ -40,7 +38,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class ProvenanceReport:
-    """溯源报告——完整管线的序列化输出"""
+    """溯源报告-完整管线的序列化输出"""
     vulnerability_id: str
     function_name: str
     file_path: str
@@ -56,7 +54,7 @@ class ProvenanceReport:
 
 
 def _parse_date(date_str: str) -> float:
-    """ISO 8601日期→Unix时间戳"""
+    """ISO 8601日期-Unix时间戳"""
     if not date_str:
         return datetime.now(timezone.utc).timestamp()
     for fmt in ('%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%SZ'):
@@ -69,14 +67,14 @@ def _parse_date(date_str: str) -> float:
 
 
 def _ts_to_date(ts: float) -> str:
-    """Unix时间戳→ISO日期"""
+    """Unix时间戳-ISO日期"""
     if ts <= 0:
         return ""
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime('%Y-%m-%d')
 
 
 class TemporalProvenanceEngine:
-    """时态漏洞溯源引擎——完整管线编排。
+    """时态漏洞溯源引擎-完整管线编排。
 
     使用示例:
         engine = TemporalProvenanceEngine('/path/to/repo')
@@ -99,7 +97,7 @@ class TemporalProvenanceEngine:
               static_hints: Dict[str, float] = None,
               llm_signals: Dict[str, float] = None,
               confounders: Dict[str, float] = None) -> ProvenanceReport:
-        """执行完整溯源管线——单漏洞。
+        """执行完整溯源管线-单漏洞。
 
         参数:
           function_name: 漏洞函数名
@@ -119,7 +117,7 @@ class TemporalProvenanceEngine:
         steps.append("程序切片")
         region = self._slicer.locate_function(full_path, function_name)
         if region is None:
-            _log.warning("函数%s未定位——回退全文件追溯", function_name)
+            _log.warning("函数%s未定位-回退全文件追溯", function_name)
             region = SliceRegion(file_path=file_path, start_line=1,
                                   end_line=9999, function_name=function_name,
                                   slice_type='fallback', confidence=0.3)
@@ -139,7 +137,7 @@ class TemporalProvenanceEngine:
                 function_name=function_name, file_path=file_path,
                 cve_id=cve_id, estimated_intro_date="",
                 credible_interval_dates=("", ""),
-                pipeline_steps=steps + ["无候选提交——中止"])
+                pipeline_steps=steps + ["无候选提交-中止"])
 
         steps.append(f"候选提交: {len(hypotheses)}")
 
@@ -204,7 +202,7 @@ class TemporalProvenanceEngine:
 
     def batch_trace(self, vulns: List[Dict[str, str]],
                      report_date: str = "") -> List[ProvenanceReport]:
-        """批量溯源——对多个漏洞依次执行管线"""
+        """批量溯源-对多个漏洞依次执行管线"""
         reports = []
         for v in vulns:
             try:
@@ -216,7 +214,7 @@ class TemporalProvenanceEngine:
         return reports
 
     def export_audit(self, report: ProvenanceReport) -> Dict:
-        """导出审计就绪JSON——含完整溯源轨迹"""
+        """导出审计就绪JSON-含完整溯源轨迹"""
         return {
             'vulnerability': {
                 'id': report.vulnerability_id,
@@ -241,14 +239,14 @@ class TemporalProvenanceEngine:
         }
 
     def get_adjustment_set(self) -> List[str]:
-        """返回因果模型的最小充分调整集——供外部审计"""
+        """返回因果模型的最小充分调整集-供外部审计"""
         return self._causal_model.get_adjustment_set('code_churn', 'vuln_introduction')
 
 
 def trace_vulnerability_provenance(repo_path: str, function_name: str,
                                     file_path: str, cve_id: str = "",
                                     report_date: str = "") -> ProvenanceReport:
-    """漏洞溯源便捷入口——单行调用"""
+    """漏洞溯源便捷入口-单行调用"""
     return TemporalProvenanceEngine(repo_path).trace(
         function_name=function_name, file_path=file_path,
         cve_id=cve_id, vuln_report_date=report_date)

@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-03 16:44 - 三域联合抽象: interval+congruence+pointer, 每域独立追踪完备性边界
-# 2025-08-04 13:51 - widening 阈值自适应: 循环迭代 <=3 次不触发 widening, 保持精度
+# 三域联合抽象: interval+congruence+pointer, 每域独立追踪完备性边界
+# widening 阈值自适应: 循环迭代 <=3 次不触发 widening, 保持精度
 
 """跨架构类型推断的抽象域定义 - 完备性边界的理论基础
 
@@ -14,7 +13,7 @@
 完备性定义:
   一个类型查询 q 在抽象域 A 上是完备的,
   当且仅当 alpha(q(γ(a))) = q#(a) 对所有 a ∈ A 成立
-  即--抽象域上的操作精确对应具体域上的操作, 无精度损失
+  即-抽象域上的操作精确对应具体域上的操作, 无精度损失
 
 三个互补抽象域:
   1. 区间域: 追踪变量的数值范围 [low, high]
@@ -66,7 +65,7 @@ class Interval:
 
     @property
     def is_precise(self) -> bool:
-        """区间是否精确--能够给出有意义的类型推断"""
+        """区间是否精确-能够给出有意义的类型推断"""
         if self.is_bottom or self.is_top:
             return False
         # 区间宽度 <= 2^16 -> 可判定具体整数类型 (int8/int16/int32)
@@ -85,11 +84,11 @@ class Interval:
         )
 
     def widen(self, other: 'Interval', threshold: int = 3) -> 'Interval':
-        """widen--确保不动点计算终止
+        """widen-确保不动点计算终止
 
         若新上界超出旧上界 -> 将上界推到 +inf (极端但安全)
         若新下界低于旧下界 -> 将下界推到 -inf
-        仅在第 threshold 次迭代后触发--前几次保留精度
+        仅在第 threshold 次迭代后触发-前几次保留精度
         """
         result = Interval(self.low, self.high)
         if other.low < self.low:
@@ -133,7 +132,7 @@ class Congruence:
 
     @property
     def is_precise(self) -> bool:
-        """同余信息可用--能推断对齐和位结构"""
+        """同余信息可用 - 能推断对齐和位结构"""
         return self.modulus > 0
 
     def join(self, other: 'Congruence') -> 'Congruence':
@@ -164,7 +163,7 @@ class Congruence:
 # 指针域 - 内存关系的抽象
 
 class PointerClass(Enum):
-    """指针的分类--抽象域可区分的指针类型"""
+    """指针的分类 - 抽象域可区分的指针类型"""
     NULL = auto()        # 恒为 NULL
     STACK = auto()       # 栈上地址 (相对 rbp/rsp)
     HEAP = auto()        # 堆上地址 (malloc 返回)
@@ -175,7 +174,7 @@ class PointerClass(Enum):
 
 @dataclass
 class PointerAbstract:
-    """指针的抽象--基址类别 + 偏移区间"""
+    """指针的抽象 - 基址类别 + 偏移区间"""
     ptr_class: PointerClass = PointerClass.UNKNOWN
     base_region: str = ""                  # 基址的符号名 (如 'rbp', 'main')
     offset_interval: Interval = field(default_factory=Interval.top)
@@ -196,7 +195,7 @@ class PointerAbstract:
 
     @property
     def is_complete(self) -> bool:
-        """指针信息完备--基址类别和偏移均已知"""
+        """指针信息完备 - 基址类别和偏移均已知"""
         return (
             self.ptr_class != PointerClass.UNKNOWN
             and self.offset_interval.is_precise
@@ -233,7 +232,7 @@ class PointerAbstract:
 
 @dataclass
 class TypeAbstractState:
-    """一个变量的完整类型抽象--三域联合"""
+    """一个变量的完整类型抽象 - 三域联合"""
     var_name: str
     interval: Interval = field(default_factory=Interval.top)
     congruence: Congruence = field(default_factory=Congruence.top)
@@ -246,7 +245,7 @@ class TypeAbstractState:
     inferred_type: str = 'unknown'  # int8|int16|int32|int64|ptr|uint|unknown
 
     def join(self, other: 'TypeAbstractState') -> 'TypeAbstractState':
-        """状态合并--用于控制流汇合点"""
+        """状态合并 - 用于控制流汇合点"""
         return TypeAbstractState(
             var_name=self.var_name,
             interval=self.interval.join(other.interval),
@@ -284,7 +283,7 @@ class TypeAbstractState:
             if w <= 32767:
                 return 'int16'
             return 'int32'
-        # 同余推断对齐--可能是指针的间接证据
+        # 同余推断对齐 - 可能是指针的间接证据
         if self.congruence.is_precise and self.congruence.modulus >= 4:
             return 'aligned_int'
         return 'unknown'
@@ -296,8 +295,8 @@ class TypeCompletenessAnalyzer:
     """分析一组变量的类型抽象状态, 量化完备性差距
 
     完备性比例 c = |完备的变量| / |总变量|
-    量化了当前抽象域的能力边界--哪些变量的类型可以保证正确
-    哪些仍不确定--这些是后续精化分析的候选
+    量化了当前抽象域的能力边界 - 哪些变量的类型可以保证正确
+    哪些仍不确定 - 这些是后续精化分析的候选
     """
 
     def __init__(self):
@@ -330,7 +329,7 @@ class TypeCompletenessAnalyzer:
         return (c_int, c_con, c_ptr, c_any)
 
     def completeness_gap(self) -> Dict[str, List[str]]:
-        """返回完备性差距--每个变量的不完备域列表
+        """返回完备性差距 - 每个变量的不完备域列表
 
         例如 {'v1': ['interval', 'pointer'], 'v2': ['congruence']}
         表示 v1 在区间域和指针域上不完备, v2 在同余域上不完备

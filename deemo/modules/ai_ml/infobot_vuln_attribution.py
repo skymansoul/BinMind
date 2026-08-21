@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -89,9 +88,6 @@ class InformationBottleneckGNN:
 
         对节点特征和邻接矩阵分别应用可学习的随机掩码，
         通过重参数化技巧保持梯度流动。
-
-        Returns:
-            (predictions, node_mask_probs, edge_mask_probs, kl_divergence)
         """
         n = len(node_features)
         if node_mask_logits is None:
@@ -189,11 +185,7 @@ class InformationBottleneckGNN:
     def rank_critical_edges(self,
                             edge_probs: np.ndarray,
                             top_k: int = 20) -> List[Tuple[int, int, float]]:
-        """按信息贡献排序的边——最关键的CFG边。
-
-        Returns:
-            [(src_node, dst_node, info_score), ...]
-        """
+        """按信息贡献排序的边——最关键的CFG边。"""
         n = edge_probs.shape[0]
         edges = []
         for i in range(n):
@@ -217,9 +209,6 @@ class InformationBottleneckGNN:
         测量剪枝后预测与全图预测的一致性。
         这是IB归因可信度的核心验证——如果丢弃"不重要"的边
         后预测不变，说明IB确实找到了充分统计量。
-
-        Returns:
-            {prune_ratio: {'fidelity': ..., 'edges_kept': ..., 'nodes_kept': ...}}
         """
         if prune_ratios is None:
             prune_ratios = [0.1, 0.3, 0.5, 0.7, 0.9]

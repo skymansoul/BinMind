@@ -1,4 +1,4 @@
-"""约束包含性检测 — 基于模式匹配与蕴涵图的 SMT 查询最小化
+"""约束包含性检测 - 基于模式匹配与蕴涵图的 SMT 查询最小化
 
 修改记录:
 2025-07-15 20:18 - 增加位向量不等式蕴涵（< b ∧ b < c ⇒ < c）
@@ -6,7 +6,7 @@
 2025-07-23 13:27 - 嵌入 solver 调用，预留 entailment_check 用于 Z3 精确包含
 
 符号执行中路径约束的显著特征: 许多约束在逻辑上被其他约束蕴含
-但求解器以黑盒方式处理整个集合——等价于对已成立的谓词重复求解
+但求解器以黑盒方式处理整个集合-等价于对已成立的谓词重复求解
 对于每条路径生成 10²–10³ 量级约束的场景，冗余约束可占总数的 30–50%
 若能在送入求解器前消除蕴含约束，可显著降低 Z3 内存与时间开销
 
@@ -20,7 +20,7 @@
 for 约束求解":
 提出路径与变量选择联合优化，本文在此基础上将冗余检测前移至约束层
 - Duck, Jaffar & Koh, "约束求解器 for 堆s Separa":
-首次在符号执行中引入基于内插 (interpola) 的约束包含——
+首次在符号执行中引入基于内插 (interpola) 的约束包含-
 本项目使用更轻量的图传递闭包替代全内插，以损失少量精度换取 O(n²) 时间
 精度损失在典型符号执行路径上 < 2%（来自内部 benchmark）
 
@@ -51,7 +51,7 @@ class ConstraintKind(Enum):
 
 @dataclass
 class ConstraintAtom:
-    """归一化后的原子约束——操作数排序以消除语法糖差"""
+    """归一化后的原子约束-操作数排序以消除语法糖差"""
     kind: ConstraintKind
     operands: Tuple[str, ...]
     values: Tuple[int, ...]       # 具体值 (mask, bounds 等)
@@ -82,7 +82,7 @@ class SubsumptionResult:
 
 class ConstraintSubsumptionDetector:
     """约束包含检测器: 构建蕴涵图并进行传递闭包消除
-    
+
     用法:
     detector = ConstraintSubsumptionDetector()
     result = detector.分析(atoms)
@@ -281,7 +281,7 @@ def normalize_atom(kind: ConstraintKind,
                     values: Tuple[int, ...] = (),
                     original: Optional[str] = None,
                     path_id: str = "") -> ConstraintAtom:
-    """构造归一化的约束原子——操作数按字典序排列以消除语法差异
+    """构造归一化的约束原子-操作数按字典序排列以消除语法差异
     EQ 和 NEQ 的操作数排序不影响语义，LE/LT 则不排序（方向有意义）
     """
     if kind in (ConstraintKind.EQ, ConstraintKind.NEQ):

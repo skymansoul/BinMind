@@ -1,4 +1,4 @@
-"""Copy操作约束验证器 — 对 strcpy/memcpy 类堆溢出候选执行值流约束推理.
+"""Copy操作约束验证器: 对 strcpy/memcpy 类堆溢出候选执行值流约束推理.
 追踪 alloc_sz/copy_sz 值源, 从来源独立性/守卫约束/常量上界/仿射关系四维判定;
 不符号化内存地址, 无 SMT 求解器, 用区间代数保守近似. 参考: SUTURE, VYPER, MIRAI."""
 
@@ -6,8 +6,9 @@ from __future__ import annotations
 import re
 
 from core.heap_overflow_detector import (
-    HeapAllocSite, HeapStore, HeapOverflowCandidate, _UNBOUNDED_COPY,
+    HeapAllocSite, HeapStore, HeapOverflowCandidate,
 )
+from core.hovf_engine import _UNBOUNDED_COPY
 from core.copy_constraint_types import SizeVarOrigin, CopyVerifyResult
 from core.copy_value_flow import ValueFlowExtractor, GuardConditionExtractor
 
@@ -54,9 +55,9 @@ def verify_copy_operation(
     """验证 copy 操作是否可证伪安全或确认溢出.
 
     核心逻辑:
-      若 alloc_sz/copy_sz 来自不同外部输入 → 攻击者可差异化控制 → 置信度提升.
-      若同一输入源且有守卫约束 → 可能安全 → 置信度降低.
-      若 copy_sz 类型上界 ≤ alloc_sz → 可证明安全 → FILTER.
+      若 alloc_sz/copy_sz 来自不同外部输入, 攻击者可差异化控制, 置信度提升.
+      若同一输入源且有守卫约束, 可能安全, 置信度降低.
+      若 copy_sz 类型上界 <= alloc_sz, 可证明安全, FILTER.
     """
     result = CopyVerifyResult()
     flow_extractor = ValueFlowExtractor()

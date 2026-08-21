@@ -1,4 +1,3 @@
-# created: 2024-08-14
 # 基于离散图编辑的反事实解释器，面向二进制漏洞检测GNN模型
 # 核心问题: 给定一个被判定为"漏洞"的二进制函数图，找出最小的一组图编辑操作
 # 使模型预测翻转为"非漏洞"
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CounterfactualResult:
-    """反事实解释的完整结果——对SearchResult的用户友好包装"""
+    """反事实解释的完整结果-对SearchResult的用户友好包装"""
     original_pred: float
     counterfactual_pred: float
     flip_achieved: bool
@@ -101,18 +100,7 @@ class CounterfactualExplainer:
                 target_node: int,
                 node_types: Optional[List[str]] = None,
                 loop_edges: Optional[List[Tuple[int, int]]] = None) -> CounterfactualResult:
-        """为指定节点生成反事实解释。
-
-        Args:
-            node_features: 节点特征矩阵 (n_nodes x dim)
-            adjacency: 邻接矩阵 (n_nodes x n_nodes)
-            target_node: 待解释的目标节点索引
-            node_types: 可选节点类型标签
-            loop_edges: 可选循环回边列表
-
-        Returns:
-            CounterfactualResult
-        """
+        """为指定节点生成反事实解释。"""
         self._constraints.load_from_cfg(adjacency, node_types, loop_edges)
 
         engine = CounterfactualSearchEngine(

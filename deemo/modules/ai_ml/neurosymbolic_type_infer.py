@@ -37,7 +37,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -133,11 +132,7 @@ class NeuroSymbolicTypeInferer:
 
     def set_gnn_proposals(self,
                           gnn_predictions: Dict[str, np.ndarray]):
-        """注入GNN的类型提议——每个变量的类型概率分布。
-
-        Args:
-            gnn_predictions: {var_id: prob_array_of_18_types}
-        """
+        """注入GNN的类型提议——每个变量的类型概率分布。"""
         for var_id, probs in gnn_predictions.items():
             if var_id in self._variables:
                 self._variables[var_id].gnn_type_probs = probs
@@ -221,11 +216,7 @@ class NeuroSymbolicTypeInferer:
         return results
 
     def get_conflicts(self) -> List[Tuple[str, str]]:
-        """获取冲突变量列表及冲突原因。
-
-        Returns:
-            [(var_id, reason), ...]
-        """
+        """获取冲突变量列表及冲突原因。"""
         reasons = []
         for var_id in self._conflicts:
             node = self._variables.get(var_id)

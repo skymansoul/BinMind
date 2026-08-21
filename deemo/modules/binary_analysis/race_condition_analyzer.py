@@ -376,9 +376,6 @@ class TOCTOUDetector:
         'copy_to_user': r'\bcopy_to_user\s*\(',
     }
 
-    def __init__(self):
-        pass
-
     def detect(self, func_name: str,
                instructions: List[InstructionInfo],
                calls: List[Tuple[int, str]],

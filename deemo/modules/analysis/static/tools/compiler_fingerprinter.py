@@ -1,9 +1,8 @@
-# 创建: 2026-06-06 15:08
-# 修改: 2026-06-06 — 贝叶斯融合: 字符串+代码惯用法+尾声模式
+# 贝叶斯融合: 字符串+代码惯用法+尾声模式
 """
-编译器/工具链元数据指纹识别 — 从二进制 artifacts 推断编译器/版本/O级别。
+编译器/工具链元数据指纹识别, 从二进制 artifacts 推断编译器/版本/O级别。
 
-现有编译器指纹 (compiler_fingerprint.py) 基于简单的字符串匹配——
+现有编译器指纹 (compiler_fingerprint.py) 基于简单的字符串匹配,
 无法区分 GCC 12 vs GCC 13, 或 Clang 15 vs Clang 17。
 本模块通过多维特征综合判定。
 
@@ -15,7 +14,7 @@
   5. 安全特性: -fstack-protector 的 canary 检测模式
   6. 异常处理: .eh_frame 的 FDE/CIE 布局差异
 
-综合判定: 贝叶斯融合——每个特征维度独立计算 (编译器,版本,O级别)
+综合判定: 贝叶斯融合, 每个特征维度独立计算 (编译器,版本,O级别)
 的后验概率, 多项证据的乘积归一化为最终判定。
 
 为什么需要精确的编译器版本:
@@ -23,10 +22,10 @@
   可利用性: 不同 O 级别的 gadget 可用性完全不同
   供应链: 确定二进制是否由声明的编译器版本构建
 
-ref: Rosenblum et al. "Compiler Provenance" — 编译器指纹
+ref: Rosenblum et al. "Compiler Provenance", 编译器指纹
      的原始框架, 本项目扩展到版本级 + O级别
 ref: Caliskan et al. "When Coding Style Survives Compilation"
-     — 代码风格→二进制残留, 本项目取其风格残留检测思路
+     , 代码风格→二进制残留, 本项目取其风格残留检测思路
 """
 
 from __future__ import annotations
@@ -39,7 +38,7 @@ from typing import Optional
 
 @dataclass
 class CompilerFingerprint:
-    """编译器指纹——编译器 + 版本 + 优化级别 + 语言方言。"""
+    """编译器指纹: 编译器 + 版本 + 优化级别 + 语言方言。"""
     compiler: str = ''        # 'GCC' | 'Clang' | 'MSVC' | 'ICC'
     version: str = ''         # '12.2.0' | '15.0.7'
     optimization: str = ''    # 'O0' | 'O1' | 'O2' | 'O3' | 'Os' | 'Oz'

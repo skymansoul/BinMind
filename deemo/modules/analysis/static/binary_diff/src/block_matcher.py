@@ -1,5 +1,5 @@
 #
-# 基本块匹配器 —— 在两个二进制的函数之间匹配等价的基本块
+# 基本块匹配器 - 在两个二进制的函数之间匹配等价的基本块
 #
 # 核心思路：
 # 不是做图匹配（太慢），而是做序列匹配 + 结构验证
@@ -11,7 +11,7 @@
 # 这个设计在 O(n·m·k) 时间内运行（n,m 是两版本的块数，k 是平均指令数）
 # 对比图同构的 NP-hard 复杂度在大型二进制文件上可实际部署
 #
-# 去重约束：每条基本块最多匹配 3 条对端块——防止一个"万能匹配块"
+    # 去重约束：每条基本块最多匹配 3 条对端块 - 防止一个"万能匹配块"
 # （如只有一条 ret 指令的块）匹配目标函数中所有类似的桩代码
 
 import logging
@@ -53,7 +53,7 @@ def _kgram_set(insn_hashes: List[int], k: int = 3) -> Set[int]:
 
 def _smith_waterman_sim(a: List[int], b: List[int]) -> Tuple[float, int]:
     """简化的 Smith-Waterman 序列相似度
-    
+
     返回 (normalized_score, matched_count)
     gap 罚分 = -1, mismatch = -1, match = +2
     归一化 = score / (2 * max_len)，所以完全匹配 = 1.0
@@ -62,7 +62,7 @@ def _smith_waterman_sim(a: List[int], b: List[int]) -> Tuple[float, int]:
         return 0.0, 0
 
     max_len = max(len(a), len(b))
-    # 只用两行——节省空间，本模块处理的大型函数可能有万级指令
+    # 只用两行 - 节省空间，本模块处理的大型函数可能有万级指令
     prev = [0] * (len(b) + 1)
     curr = [0] * (len(b) + 1)
     best_score = 0
@@ -75,7 +75,7 @@ def _smith_waterman_sim(a: List[int], b: List[int]) -> Tuple[float, int]:
                 diag = prev[j-1] + 2
                 match_count += 1
             else:
-                # 近似匹配——汉明距离 ≤ 1 的指令哈希也视为相似
+                # 近似匹配 - 汉明距离 ≤ 1 的指令哈希也视为相似
                 if hamming_distance(a[i-1], b[j-1]) <= 1:
                     diag = prev[j-1] + 1
                 else:
@@ -92,7 +92,7 @@ def _smith_waterman_sim(a: List[int], b: List[int]) -> Tuple[float, int]:
     return min(normalized, 1.0), match_count
 
 
-# 匹配阈值——0.45 以下几乎肯定是误匹配；此值是在 O2 vs O0 的
+# 匹配阈值 - 0.45 以下几乎肯定是误匹配；此值是在 O2 vs O0 的
 # coreutils 子集上经验校准的，生产环境可能需要按目标编译器调整
 
 _DEFAULT_MATCH_THRESHOLD = 0.45
@@ -105,13 +105,13 @@ def match_blocks(
     max_per_block: int = 3,
 ) -> List[BlockMatch]:
     """匹配两个函数之间的基本块
-    
+
     参数:
     src_blocks: {addr: [(mnemonic, [op1, op2,.]),.]} 源函数的基本块
     dst_blocks: {addr: [(mnemonic, [op1, op2,.]),.]} 目标函数的基本块
     match_threshold: 最小匹配分数 [0, 1]
-    max_per_block: 每条块的最大匹配数——防垄断
-    
+    max_per_block: 每条块的最大匹配数 - 防垄断
+
     返回: BlockMatch 列表，按 score 降序排列
     """
     # 预计算所有块的指令哈希和 k-gram 集合

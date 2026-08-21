@@ -71,7 +71,7 @@ class DataFlowGraph:
 
 
 class DataFlowExtractor:
-    """数据流 extractor -- 提取 数据流s binary import analysis"""
+    """数据流 extractor, 提取 数据流s binary import analysis"""
 
     NETWORK_IMPORTS = {
         "send", "sendto", "sendmsg", "write", "writev",
@@ -193,7 +193,7 @@ class DataFlowExtractor:
 
 
 class TrustBoundaryDetector:
-    """Trust boundary detector -- identifies zone crossings 数据流s"""
+    """Trust boundary detector, identifies zone crossings 数据流s"""
 
     def identify(self, flows: List[Tuple[str, str, str, Dict[str, Any]]]) -> List[Dict[str, Any]]:
         boundaries: List[Dict[str, Any]] = []
@@ -230,14 +230,14 @@ class TrustBoundaryDetector:
 
 
 class DFDGraphBuilder:
-    """DFD graph builder -- assembles nodes/edges extracted flows"""
+    """DFD graph builder, assembles nodes/edges extracted flows"""
 
     def build(self, flows: List[Tuple[str, str, str, Dict[str, Any]]],
               boundaries: List[Dict[str, Any]],
               binary_name: str = "binary") -> DataFlowGraph:
         graph = DataFlowGraph(
             graph_id=hashlib.md5(str(flows).encode()).hexdigest()[:12],
-            title=f"Data Flow Diagram -- {binary_name}",
+            title=f"Data Flow Diagram, {binary_name}",
         )
 
         node_ids: Dict[str, str] = {}
@@ -310,7 +310,7 @@ class DFDGraphBuilder:
 
 
 class MermaidRenderer:
-    """Mermaid diagram renderer -- produces flowchart sequence diagrams"""
+    """Mermaid diagram renderer, produces flowchart sequence diagrams"""
 
     @staticmethod
     def render_flowchart(graph: DataFlowGraph) -> str:
@@ -373,7 +373,7 @@ class MermaidRenderer:
 
 
 class GraphvizRenderer:
-    """Graphviz DOT renderer -- produces directed graph visualization"""
+    """Graphviz DOT renderer, produces directed graph visualization"""
 
     @staticmethod
     def render(graph: DataFlowGraph) -> str:
@@ -420,7 +420,7 @@ def _dot_id(node_id: str) -> str:
 
 
 class DFDGenerator(BaseAnalyzer):
-    """数据流 diagram auto-generation analyzer -- 提取 flows, identifies boundaries, 渲染 diagrams"""
+    """数据流 diagram auto-generation analyzer, 提取 flows, identifies boundaries, 渲染 diagrams"""
 
     def __init__(self):
         super().__init__()
@@ -565,7 +565,7 @@ class DFDGenerator(BaseAnalyzer):
 
 __all__ = ["DFDGenerator"]
 
-def _debug_print(*args, **kwargs):  # 调试残余——未删除
+def _debug_print(*args, **kwargs):  # 调试残余, 未删除
     """Print debug info env var set. currently"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)

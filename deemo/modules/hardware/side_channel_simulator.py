@@ -2,7 +2,7 @@ import logging
 import time
 import math
 from typing import Dict, Any, List, Optional, Set, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from collections import defaultdict, Counter
 from enum import Enum
 
@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 
-class SideChannelType:
+class SideChannelType(str, Enum):
+    """侧信道类型。str 基类保证与内部字符串常量兼容比较。"""
     TIMING = "timing"
     CACHE_ACCESS = "cache_access"
     CACHE_TIMING = "cache_timing"
@@ -18,7 +19,6 @@ class SideChannelType:
     BRANCH_PREDICTION = "branch_prediction"
     SPECULATIVE_EXECUTION = "speculative_execution"
     MEMORY_ACCESS_PATTERN = "memory_access_pattern"
-    POWER = SideChannelType("power")
 class AttackMethod(Enum):
     FLUSH_RELOAD = "flush_reload"
     PRIME_PROBE = "prime_probe"
@@ -29,36 +29,38 @@ class AttackMethod(Enum):
     SPECTRE_V2 = "spectre_v2"
     TIMING_CORRELATION = "timing_correlation"
 
-class LeakageSeverity:
+class LeakageSeverity(str, Enum):
+    """泄露严重度。"""
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
-    LOW = LeakageSeverity("low")
 @dataclass
 class InstructionTiming:
-    mnemonic
-    base_cycles = 1
-    memory_cycles = 0
-    branch_cycles = 0
-    division_variable = False
+    mnemonic: str
+    base_cycles: int = 1
+    memory_cycles: int = 0
+    branch_cycles: int = 0
+    division_variable: bool = False
 
 @dataclass
 class CacheLine:
-    tag
-    set_index
-    valid = True
+    tag: int
+    set_index: int
+    valid: bool = True
 
     access_count = 0
 
 class CacheSet:
     __slots__ = ('index', 'ways', 'lines',)
 
-    def __init__(self, index, ways=8, lines=field(default_factory=list)):
+    def __init__(self, index, ways=8, lines=None):
         self.index = index
         self.ways = ways
-        self.lines = lines
+        # 缺省新建列表; field(default_factory=...) 是 dataclass 声明语法,
+        # 不能用作普通参数默认值, 否则 lines 会持有 Field 对象
+        self.lines = lines if lines is not None else []
 
     def access(self, tag: int) -> bool:
         for line in self.lines:
@@ -104,9 +106,10 @@ class CacheSimulator:
 class PowerTrace:
     __slots__ = ('time_points', 'power_values', 'hamming_weight',)
 
-    def __init__(self, time_points=field(default_factory=list), power_values=field(default_factory=list), hamming_weight=0):
-        self.time_points = time_points
-        self.power_values = power_values
+    def __init__(self, time_points=None, power_values=None, hamming_weight=0):
+        # 同 CacheSet: 缺省新建列表, 不用 Field 对象作默认值
+        self.time_points = time_points if time_points is not None else []
+        self.power_values = power_values if power_values is not None else []
         self.hamming_weight = hamming_weight
 
     def add_point(self, hw: int, weight: float = 1.0):
@@ -283,7 +286,7 @@ class SpectreDetector:
                             'instruction': post_instr.strip(),
                             'multiplier_4096': multiplier,
                             'confidence': 0.7 if multiplier else 0.4,
-                            'remediation': '在array访问前insert lfence 结束投机execute'
+                            'remediation': '在数组访问前插入 lfence 结束投机执行'
                         })
         return findings
 
@@ -353,7 +356,7 @@ class SideChannelSimulator:
 
     def generate_report(self) -> Dict[str, Any]:
         if not self._findings:
-            return {'success': True, 'summary': '未detected侧信道泄露',
+            return {'success': True, 'summary': '未检测到侧信道泄露',
                     'risk_level': 'none', 'findings': []}
         by_type = Counter(f.get('type', 'unknown') for f in self._findings)
         critical = sum(1 for f in self._findings
@@ -368,10 +371,10 @@ class SideChannelSimulator:
             'risk_level': risk, 'types_detected': dict(by_type),
             'total_findings': len(self._findings), 'findings': self._findings[:100],
             'recommendations': [
-                '使用常数时间算法处理秘密data',
-                '避免based on秘密value的分支, 使用condition移动 (cmov) 替代',
-                '对于 Spectre v1: 在array访问前insert lfence',
-                '使用硬件encrypt加速器进行secret key操作'
+                '使用常数时间算法处理秘密数据',
+                '避免基于秘密值的分支, 用条件移动 (cmov) 替代',
+                '对于 Spectre v1: 在数组访问前插入 lfence',
+                '使用硬件加密加速器进行密钥操作'
             ]
         }
 

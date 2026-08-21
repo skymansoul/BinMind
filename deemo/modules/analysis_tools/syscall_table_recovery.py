@@ -31,6 +31,6 @@ class SyscallTableRecovery:
 
 def recover_syscall_table(binary): return []
 def analyze_syscall_sequence(seq): return SyscallAnalysisResult()
-# Production syscall tables — 300+ entries per table. Placeholder stubs for now.
-LINUX_X64_SYSCALLS = {i: f"syscall_{i}" for i in range(350)}
-WINDOWS_SYSCALLS = {i: f"nt_{i}" for i in range(60)}
+# 系统调用表需配合内核符号解析引擎填充，当前留空待集成
+LINUX_X64_SYSCALLS: Dict[int, str] = {}
+WINDOWS_SYSCALLS: Dict[int, str] = {}

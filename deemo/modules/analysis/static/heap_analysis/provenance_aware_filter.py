@@ -1,4 +1,4 @@
-"""溯源感知过滤器 — PPA-HAV 与现有 AAVSA 管线的串联层.
+"""溯源感知过滤器 - PPA-HAV 与现有 AAVSA 管线的串联层.
 
 本模块是 PPA-HAV 方法论的最高层集成:
   - 输入: AAVSA 管线 (AllocatorModel + VSA + ControllabilityFilter) 的原始检测结果
@@ -72,7 +72,7 @@ class PPAHAVReport:
 
 
 class ProvenanceAwareFilter:
-    """PPA-HAV 溯源感知过滤器 — 与 AAVSA 管线集成.
+    """PPA-HAV 溯源感知过滤器 - 与 AAVSA 管线集成.
 
     使用方式:
       # 1. 创建过滤器

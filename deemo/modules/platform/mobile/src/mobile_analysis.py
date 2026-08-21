@@ -23,27 +23,27 @@ ART_MAGIC=b'art\n'; OAT_MAGIC=b'oat\n'; DEX_MAGIC_035=b'dex\n035'; DEX_MAGIC_037
 _OAT_HEADER_OFFSETS={'magic':(0,4),'version':(4,8),'data_begin':(16,24),'exec_offset':(24,32),'image_base':(32,40),'dex_count':(48,52)}
 
 # WOOTdroid/LEMON eBPF追踪模式
-# 从二进制中检测与eBPF内核追踪相关的模式——加壳app常见的反追踪特征
+# 从二进制中检测与eBPF内核追踪相关的模式, 加壳app常见的反追踪特征
 _ANTI_TRACING_PATTERNS:Dict[bytes,str]={
-    b'/sys/kernel/debug/tracing':'debugfs tracing检测——反eBPF/内核追踪',
-    b'/sys/fs/bpf':'bpffs挂载点检测——检测eBPF程序存在',
-    b'perf_event_open':'perf_event检测——反性能计数器追踪',
-    b'kprobe':'kprobe检测——反内核探针',
-    b'uprobe':'uprobe检测——反用户态探针',
-    b'BPF_PROG_LOAD':'BPF程序加载检测——反eBPF instrumentation',
-    b'bpf\\(\\s*0x':'BPF系统调用检测——内核追踪感知',
-    b'tracepoint':'tracepoint检测——反内核追踪点',
-    b'__arm64_sys_bpf':'sys_bpf调用检测——eBPF程序加载感知',
+    b'/sys/kernel/debug/tracing':'debugfs tracing检测, 反eBPF/内核追踪',
+    b'/sys/fs/bpf':'bpffs挂载点检测, 检测eBPF程序存在',
+    b'perf_event_open':'perf_event检测, 反性能计数器追踪',
+    b'kprobe':'kprobe检测, 反内核探针',
+    b'uprobe':'uprobe检测, 反用户态探针',
+    b'BPF_PROG_LOAD':'BPF程序加载检测, 反eBPF instrumentation',
+    b'bpf\\(\\s*0x':'BPF系统调用检测, 内核追踪感知',
+    b'tracepoint':'tracepoint检测, 反内核追踪点',
+    b'__arm64_sys_bpf':'sys_bpf调用检测, eBPF程序加载感知',
 }
 
 # WOOTdroid Binder syscall审计点
 _BINDER_SYSCALL_PATTERNS:Dict[bytes,str]={
-    b'__arm64_sys_ioctl':'ioctl调度——Binder IPC入口',
+    b'__arm64_sys_ioctl':'ioctl调度, Binder IPC入口',
     b'BINDER_WRITE_READ':'Binder读写事务',
     b'binder_ioctl_write_read':'Binder内核ioctl处理',
-    b'BC_TRANSACTION':'Binder命令——事务',
-    b'BC_REPLY':'Binder命令——回复',
-    b'BR_TRANSACTION':'Binder返回——接收事务',
+    b'BC_TRANSACTION':'Binder命令, 事务',
+    b'BC_REPLY':'Binder命令, 回复',
+    b'BR_TRANSACTION':'Binder返回, 接收事务',
 }
 
 
@@ -109,7 +109,7 @@ class AndroidRTAnalyzer:
         return findings
 
     def detect_binder_syscall_tracepoints(self)->List[Dict[str,Any]]:
-        """检测Binder ioctl调用点——WOOTdroid WDBind的静态定位。
+        """检测Binder ioctl调用点, WOOTdroid WDBind的静态定位。
 
         WDBind在kernel中捕获Binder parcels并通过Java反射解码方法名和参数类型。
         此静态检测识别二进制中与Binder事务相关的syscall封装函数，
@@ -145,7 +145,7 @@ class AndroidRTAnalyzer:
             if 'android' not in jc.lower(): v.append({'type':'Native Code Injection','severity':'High','description':f'非系统类{jc}使用了原生代码','detail':m['method_name']})
             mn=m['method_name'].lower()
             if 'exec' in mn or 'system' in mn or 'runtime' in mn: v.append({'type':'Command Injection','severity':'Critical','description':'原生方法可能执行命令注入','detail':m['method_name']})
-        if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','description':'OAT编译过滤级别为verify-at-runtime——存在JIT代码注入风险','detail':'oat file header'})
+            if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','description':'OAT编译过滤级别为verify-at-runtime, 存在JIT代码注入风险','detail':'oat file header'})
         return v
 
 
@@ -250,12 +250,12 @@ class SensitiveString: value:str=''; type:str=''; offset:int=0
 @_dc
 class MobileVulnerability: type:str=''; severity:str='Medium'; description:str=''; location:str=''
 
-# 不拆: WOOTdroid eBPF hook点缓存——Binder syscall定位加速
+
 _BINDER_HOOK_CACHE: dict = {}
 
 
 def _dead_oatexec_carver(data: bytes) -> list:
-    """OAT文件oatexec段carver——从oatdata提取编译后的aot代码段。"""
+    """OAT文件oatexec段carver, 从oatdata提取编译后的aot代码段。"""
     offsets = []
     pos = 0
     while True:

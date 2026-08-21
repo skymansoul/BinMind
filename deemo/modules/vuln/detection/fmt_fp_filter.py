@@ -1,5 +1,5 @@
 # coding: utf-8
-# 格式字符串误报过滤——验证污点路径的实际可达性
+# 格式字符串误报过滤-验证污点路径的实际可达性
 import re, logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -12,11 +12,11 @@ class FmtFilterResult:
     fp_reduction_pct: float = 0.0
 
 class FormatStringFpFilter:
-    """格式字符串误报过滤器——双重验证污点路径。
+    """格式字符串误报过滤器-双重验证污点路径。
 
-    Layer 1: .rodata地址检测——若格式参数地址在只读段, 安全。
-    Layer 2: 指令间寄存器清除检测——若污点寄存器在printf之前被xor清零, 污点不可达。
-    Layer 3: 安全包装检测——若格式串经过snprintf/asprintf限制大小, 风险降低。
+    Layer 1: .rodata地址检测-若格式参数地址在只读段, 安全。
+    Layer 2: 指令间寄存器清除检测-若污点寄存器在printf之前被xor清零, 污点不可达。
+    Layer 3: 安全包装检测-若格式串经过snprintf/asprintf限制大小, 风险降低。
 
     与constraint_filter的关系: constraint_filter做数值约束过滤, 本模块做格式特定的逻辑过滤。
     """

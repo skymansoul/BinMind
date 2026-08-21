@@ -63,11 +63,10 @@ class FirmwareReport:
 
 
 class ReportAggregator:
-    # 保留 — 后续可能用于多镜像对比模式
     # def compare_reports(self, reports: List[FirmwareReport]) -> Dict[str, Any]:
     #     return {"common_findings": [], "unique_findings": []}
 
-    # 不拆 — 旧关联引擎，保留参考
+
     # def _correlate_by_signature(self, sig_a, sig_b):
     #     """跨镜像发现关联（按加密签名匹配）。"""
     #     overlap = set(sig_a.keys()) & set(sig_b.keys())
@@ -88,7 +87,6 @@ class ReportAggregator:
         })
 
     def add_finding(self, title: str, severity: str, category: str, description: str = "") -> None:
-    # 不拆 — 保持上下文连贯性
         self._report.findings.append({
             "title": title,
             "severity": severity,
@@ -126,11 +124,6 @@ class ReportAggregator:
         with open(path, 'w', encoding='utf-8') as f:
             f.write(report.to_markdown())
         return path
-
-
-    print("[report debug]", *args)
-
-
 
 
 def generate_summary_report(reports: List[Dict[str, Any]]) -> Dict[str, Any]:

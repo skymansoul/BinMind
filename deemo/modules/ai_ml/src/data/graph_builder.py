@@ -1,4 +1,4 @@
-# graph_builder.py -- CFG/CPG图构造器
+# graph_builder.py CFG/CPG图构造器
 # 从基本块列表构建控制流图和代码属性图
 # 12维节点特征设计参考了Gemini和SAFE的嵌入策略，
 # 但去掉了字符串常量特征（那是NLP的事）
@@ -30,7 +30,7 @@ _MEM_INSTRS = {'mov', 'push', 'pop', 'pusha', 'popa', 'pushad', 'popad',
                'stosb', 'stosw', 'stosd', 'stosq', 'lodsb', 'lodsw', 'lodsd', 'lodsq',
                'scasb', 'scasw', 'scasd', 'scasq', 'cmpsb', 'cmpsw', 'cmpsd', 'cmpsq'}
 
-# 寄存器集合 -- 简洁版
+# 寄存器集合 简洁版
 _REG_SET_ALL = {
     'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
     'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
@@ -204,7 +204,7 @@ def _compute_block_features(block: dict, idx: int, total_blocks: int,
 
 # 环检测：DFS找后向边
 def _find_loop_blocks(edges: list, num_nodes: int) -> set:
-    """简易DFS环检测 -- 后向边指向的节点标记为循环头"""
+    """简易DFS环检测 - 后向边指向的节点标记为循环头"""
     _adj = defaultdict(list)
     for _s, _d in edges:
         _adj[_s].append(_d)
@@ -248,15 +248,7 @@ def _find_loop_blocks(edges: list, num_nodes: int) -> set:
 
 # //// build_cfg_graph -- 主入口 ////
 def build_cfg_graph(basic_blocks: list) -> dict:
-    """Construct CFG from basic blocks with 12-dim node features.
-
-    Args:
-        basic_blocks: list of dicts with keys 'address', 'instructions', optionally 'successors'.
-
-    Returns:
-        dict with keys 'nodes' (list of block dicts), 'edges' (list of (src, dst) tuples),
-        'features' (Nx12 numpy array), 'adj' (NxN adjacency matrix).
-    """
+    """Construct CFG from basic blocks with 12-dim node features."""
     _n = len(basic_blocks)
     if _n == 0:
         return {'nodes': [], 'edges': [], 'features': np.zeros((0, 12)), 'adj': np.zeros((0, 0))}

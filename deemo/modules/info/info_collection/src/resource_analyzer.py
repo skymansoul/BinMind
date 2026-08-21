@@ -1,5 +1,3 @@
-# Created: 2026-07-27 09:10:34
-#
 # resource_analyzer — 嵌入式资源安全分析器
 # 提取并安全分析二进制中嵌入的资源 (PE/DLL, 清单, 脚本, 证书)
 # 区别于 Resource Hacker/pestudio (仅展示): 对每个嵌入资源做独立安全评估

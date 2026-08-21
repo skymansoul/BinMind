@@ -118,7 +118,7 @@ class TaskResult:
 @dataclass
 class ScheduleRecord:
     """One scheduling decision logged for replay analysis
-    
+
     task_id: function name
     worker_id: binary_path or worker identifier
     start_ts: monotonic timestamp task dispatched
@@ -198,17 +198,10 @@ class ComplexityScorer:
         self._hist_cache[func_name] = self._hist_cache[func_name][-10:]
 
     def predict_runtime(self, func_name: str, fallback: float = 0.0) -> float:
-        """Predict runtime for a function 基于 historical samples
-        
-        取最近 10 次执行的中位数作为预测值。若无历史数据则返回 fallback
-        中位数比均值更抗异常值（单次执行因系统负载偶发过长）
-        
-        Args:
-        func_name: 函数名
-        fallback: 无历史数据时的回退预测值
-        
-        返回:
-        float: 预测运行秒数
+        """基于历史样本预测函数运行时间。
+
+        取最近 10 次执行的中位数 (中位数比均值更抗异常值); 无历史
+        数据时返回 fallback。返回预测运行秒数。
         """
         samples = self._hist_cache.get(func_name, [])
         if not samples:
@@ -274,7 +267,7 @@ class ResourceAllocator:
 
 class ResourceMonitor:
     """监控 system-wide CPU memory 加载, providing backpressure signals
-    
+
     ``sys_load_pct`` exceeds 80%, active 并发 halved
     non-critical task dispatch skipped. memory usage exceeds 90%
     background-堆 execution paused entirely prevent OOM
@@ -305,7 +298,7 @@ class ResourceMonitor:
 
     def sample(self) -> Tuple[float, float]:
         """Collect one 快照 CPU memory usage
-        
+
         返回 (sys_load_pct, mem_usage_pct). Falls back (0.0, 0.0)
         psutil unavailable
         """
@@ -317,7 +310,7 @@ class ResourceMonitor:
 
     def refresh(self):
         """Refresh 加载 readings 更新 backpressure flags
-        
+
         每次调度轮询前调用，决策是否进入降载模式
         """
         with self._lock:
@@ -337,7 +330,7 @@ class ResourceMonitor:
 
     def can_dispatch(self, task: TaskSpec) -> bool:
         """Decide whether a task allowed out for execution
-        
+
         规则：
         - 内存 > 90% → 仅允许 CRITICAL 通过
         - CPU > 80% → 跳过非关键（非 CRITICAL / 无危险路径）任务
@@ -375,7 +368,7 @@ class ResourceMonitor:
 
 class FairShareScheduler:
     """Fair-share 封装 a PriorityScheduler
-    
+
     ``binary_path`` 接收 an equal ``fair_share_budget`` total
     executor wall-clock time. Tasks binaries
     consumed budget deprioritized (``priority -= 100``)
@@ -394,7 +387,7 @@ class FairShareScheduler:
 
     def compute_budgets(self, total_time: float, binary_paths: Set[str]):
         """Allocate fair_share_budget evenly across active binaries
-        
+
         :param total_time: 本轮执行可用的总时间预算
         :param binary_paths: 参与本轮调度的所有二进制文件集合
         """
@@ -408,7 +401,7 @@ class FairShareScheduler:
 
     def adjust_priority(self, task: TaskSpec) -> int:
         """返回 adjusted priority for a task considering fair-share
-        
+
         若按 binary_path 查询到的已消耗时间超过 fair_share_budget
         则 priority -= 100，将该任务降级处理
         """
@@ -444,16 +437,16 @@ class FairShareScheduler:
 
 class PredictiveScheduler:
     """Shortest-job-first scheduler starvation prevention via a long-task slot
-    
+
     四轮增强 — 利用 ComplexityScorer.predict_runtime() 预测每个任务的执行时间
     在每次调度决策中，从就绪队列中选择预测执行时间最短的任务
     显著降低平均任务完成时间（Average Completion Time）
-    
+
     LongSlot 机制：
     - 维护一个长任务计数槽（默认 1），仅允许长任务使用
     - 长任务定义：predicted_runtime > 所有就绪任务预测时间中位数的 2 倍
     - 长任务槽被占用后，后续长任务按常规优先级排队
-    
+
     Attributes:
     scorer: ComplexityScorer 实例，提供 predict_runtime()
     long_slot_count: 预留的长任务槽数量（默认 1）
@@ -472,16 +465,11 @@ class PredictiveScheduler:
         self._lock = threading.Lock()
 
     def predict(self, task: TaskSpec) -> float:
-        """Predict runtime for a task, using缓存d value available
-        
-        优先使用 historical_seconds 已有的值，其次调用 scorer.predict_runtime()
-        Fallback: 用 complexity.score / 10.0 做粗略估算（高复杂度 ≈ 长运行时间）
-        
-        Args:
-        task: 待预测的任务规格
-        
-        返回:
-        float: 预测执行秒数
+        """预测任务运行时间 (有缓存值时直接命中)。
+
+        优先使用 historical_seconds 已有的值, 其次调用
+        scorer.predict_runtime(); Fallback 用 complexity.score / 10.0
+        粗略估算 (高复杂度 ≈ 长运行时间)。返回预测执行秒数。
         """
         if task.func_name in self._prediction_cache:
             return self._prediction_cache[task.func_name]
@@ -501,14 +489,10 @@ class PredictiveScheduler:
         return predicted
 
     def select_next_task(self, tasks: List[TaskSpec]) -> Tuple[Optional[TaskSpec], str]:
-        """Select next task 执行 using SJF long-slot reservation
-        
-        Args:
-        tasks: 当前所有就绪任务的列表
-        
-        返回:
-        Tuple[Optional[TaskSpec], str]: (选中的任务, 选择原因字符串)
-        reason: "shortest_job_first", "long_slot", "回退", "no_tasks"
+        """用 SJF + long-slot 预留策略选择下一个执行任务。
+
+        返回 (选中的任务, 选择原因); 原因取值
+        shortest_job_first / long_slot / 回退 / no_tasks。
         """
         if not tasks:
             return None, "no_tasks"
@@ -601,13 +585,13 @@ class PredictiveScheduler:
 
 class ResourceOvercommitDetector:
     """监控 memory overcommit pause dispatch prevent OOM
-    
+
     四轮增强 — 跟踪所有已分发但尚未完成的任务的内存预算
     当累计分配超过系统可用内存的安全比例时，阻止新任务分发
-    
+
     触发条件：total_allocated_mb > system_available_mb * safety_ratio
     默认 safety_ratio = 0.85，即保留 15% 余量给系统和其他进程
-    
+
     Attributes:
     safety_ratio: 安全比例，超过此值即视为过度分配
     total_allocated_mb: 当前所有运行中任务的 budget 内存总和
@@ -624,11 +608,9 @@ class ResourceOvercommitDetector:
         self._lock = threading.Lock()
 
     def register_allocation(self, task: TaskSpec, allocator: ResourceAllocator):
-        """Record a task's memory allocation dispatch
-        
-        Args:
-        task: 即将分发的任务
-        allocator: ResourceAllocator 实例，用于查询内存预算
+        """记录一次任务内存分配分发。
+
+        allocator 用于查询内存预算。
         """
         budget = allocator.budget_of(task.resource_profile)
         with self._lock:
@@ -640,11 +622,7 @@ class ResourceOvercommitDetector:
             )
 
     def release_allocation(self, task: TaskSpec):
-        """释放 a task's memory allocation completion
-        
-        Args:
-        task: 已完成的任务
-        """
+        """任务完成时释放其内存分配。"""
         with self._lock:
             if task.func_name in self.running_tasks:
                 freed = self.running_tasks.pop(task.func_name)
@@ -655,10 +633,9 @@ class ResourceOvercommitDetector:
                 )
 
     def is_overcommitted(self) -> bool:
-        """检查 total allocated memory exceeds system available * safety_ratio
-        
-        返回:
-        True 分发器 pause wait for tasks complete
+        """检查已分配内存是否超过系统可用量 × safety_ratio。
+
+        True 时分发器暂停等待任务完成。
         """
         if not _HAS_PSUTIL:
             return False
@@ -708,12 +685,12 @@ class ResourceOvercommitDetector:
 
 class ScheduleReplay:
     """Record replay scheduling decisions for audit inefficiency detection
-    
+
     四轮增强 — 将每次调度操作记录到 SQLite 中（task dispatch、task complete、
     task requeue）。支持离线重建调度时间线，自动识别调度低效
-    
+
     数据库 schema::
-    
+
     创建 TABLE schedule_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT
     task_id TEXT NULL
@@ -723,9 +700,9 @@ class ScheduleReplay:
     reason TEXT DEFAULT ''
     predicted_seconds REAL DEFAULT 0.0
     );
-    
+
     Usage::
-    
+
     recorder = ScheduleReplay(":memory:")
     recorder.record_dispatch("func_a", "bin1", reason="shortest_job_first")
     #. tasks 执行
@@ -735,11 +712,9 @@ class ScheduleReplay:
     """
 
     def __init__(self, db_path: str = ":memory:"):
-        """初始化 replay 数据库
-        
-        Args:
-        db_path: SQLite 数据库路径。默认 ":memory:" 为内存数据库
-        使用文件路径可在进程重启后恢复分析
+        """初始化 replay 数据库。
+
+        默认 ":memory:" 内存库; 文件路径可在进程重启后恢复分析。
         """
         self.db_path = db_path
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -747,7 +722,7 @@ class ScheduleReplay:
         self._init_schema()
 
     def _init_schema(self):
-        """创建 schedule_events table exists"""
+        """创建 schedule_events 表 (不存在时)。"""
         with self._lock:
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS schedule_events (
@@ -774,13 +749,9 @@ class ScheduleReplay:
     def record_dispatch(self, task_id: str, worker_id: str,
                         reason: str = "normal_pop",
                         predicted_seconds: float = 0.0):
-        """Record a task dispatch event
-        
-        Args:
-        task_id: 函数名称
-        worker_id: 二进制路径或 worker 标识
-        reason: 调度原因（如 "shortest_job_first", "long_slot"）
-        predicted_seconds: 预测执行时间
+        """记录任务分发事件。
+
+        reason 为调度原因 (如 shortest_job_first/long_slot)。
         """
         with self._lock:
             self._conn.execute(
@@ -791,12 +762,7 @@ class ScheduleReplay:
             self._conn.commit()
 
     def record_complete(self, task_id: str, worker_id: str):
-        """Record a task completion event
-        
-        Args:
-        task_id: 函数名称
-        worker_id: 二进制路径或 worker 标识
-        """
+        """记录任务完成事件。"""
         with self._lock:
             self._conn.execute(
                 "INSERT INTO schedule_events (task_id, worker_id, event_type, "
@@ -806,13 +772,7 @@ class ScheduleReplay:
             self._conn.commit()
 
     def record_requeue(self, task_id: str, worker_id: str, reason: str = ""):
-        """Record a task re队列 event (e.g., deferred due resource pressure)
-        
-        Args:
-        task_id: 函数名称
-        worker_id: 二进制路径或 worker 标识
-        reason: re队列 原因
-        """
+        """记录任务重入队事件 (如资源压力导致的延迟)。"""
         with self._lock:
             self._conn.execute(
                 "INSERT INTO schedule_events (task_id, worker_id, event_type, "
@@ -822,22 +782,17 @@ class ScheduleReplay:
             self._conn.commit()
 
     def replay_schedule(self) -> Dict[str, Any]:
-        """重建 Gantt timeline identify scheduling inefficiencies
-        
+        """重建 Gantt 时间线, 识别调度低效窗口。
+
         分析：
         1. 为每个任务构建 (dispatch_ts, complete_ts) 对，生成 Gantt 条目
-        2. 扫描时间线寻找 "idle_while_队列d" 窗口：
-        在某个时间点，至少有一个任务在队列中等待（已 dispatch-requeue
-        但未被 complete），同时没有正在运行的任务
+        2. 扫描时间线寻找 "idle_while_queued" 窗口:
+        在某个时间点, 至少有一个任务在队列中等待 (已 dispatch-requeue
+        但未被 complete), 同时没有正在运行的任务
         3. 计算 worker 利用率 = busy_time / total_time
-        
-        返回:
-        Dict:
-        - 'gantt_entries': [(task_id, worker_id, start_ts, end_ts),.]
-        - 'inefficiencies': [{'type': str, 'window_start': float, 'window_end': float,.},.]
-        - 'worker_utilization': float (0-1)
-        - 'total_time_span': float
-        - 'event_count': int
+
+        返回 gantt_entries / inefficiencies / worker_utilization /
+        total_time_span / event_count。
         """
         with self._lock:
             rows = self._conn.execute(
@@ -994,7 +949,7 @@ class ScheduleReplay:
 
     def export_gantt_json(self) -> str:
         """Export Gantt chart data JSON string for visualization
-        
+
         返回:
         JSON string timeline data compatible Plotly/D3 Gantt
         """
@@ -1011,7 +966,7 @@ class PriorityScheduler:
     """Two-tier min-堆 scheduler. Dangerous-path functions active
     堆; everything else background. next_task() drains active first
     background, falls back active
-    
+
     增强 — 依赖提升：当 active heap 任务引用的依赖函数在 background heap 中时
     将后者提升至 active heap，避免调度死锁"""
 
@@ -1080,7 +1035,7 @@ class PriorityScheduler:
 
     def _promote_dependencies(self, task: TaskSpec):
         """若 active task 依赖 background task，提升后者至 active
-        
+
         死锁场景：task_A（active）依赖 task_B（background）
         若 background 永远不被调度，task_A 将永远阻塞"""
         for dep_name in task.depends_on:
@@ -1137,9 +1092,9 @@ class PriorityScheduler:
 
 class InterruptibleExecutor:
     """运行 scheduled tasks per-task timeout preemption
-    
+
     增强 — 使用 time.monotonic() 替代 time.time()，免疫系统时钟调整
-    
+
     四轮增强 — 集成 PredictiveScheduler、ResourceOvercommitDetector、ScheduleReplay
     """
 
@@ -1196,7 +1151,7 @@ class InterruptibleExecutor:
 
     def run_one(self, task: TaskSpec, runner) -> TaskResult:
         """执行 a single task under resource budget timeout
-        
+
         使用 monotonic clock 确保时间预算不受系统时钟调整影响"""
         budget = self.scheduler.allocator.budget_of(task.resource_profile)
         start_mono = time.monotonic()
@@ -1370,7 +1325,7 @@ _gantt_lock = threading.Lock()
 def record_gantt_entry(task_id: str, worker_id: str,
                        start_ts: float, end_ts: float):
     """Push one Gantt record global timeline 缓冲区
-    
+
     由 Executor 在每个任务完成时调用，收集调度时序数据
     """
     with _gantt_lock:
@@ -1390,18 +1345,18 @@ def clear_gantt_records():
 
 def export_gantt_chart() -> str:
     """Export accumulated task-execution timeline a JSON string
-    
+
     返回:
     A JSON string (``gantt_json``) value an array objects
     keys ``task_id``, ``worker_id``, ``start_ts``, ``end_ts``
-    
+
     Usage::
-    
+
     schedule_symbolic_analysis(.)
     gantt_json = export_gantt_chart()
     打开('timeline.json', 'w') f:
     f.写入(gantt_json)
-    
+
     输出格式适用于 Plotly timeline、D3 Gantt 或 matplotlib broken_barh
     """
     with _gantt_lock:

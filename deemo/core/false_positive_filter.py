@@ -1,6 +1,7 @@
 # 抽象解释驱动的误报削减过滤器 — 对每个漏洞候选提取缓冲区变量与写入操作,
 # 用区间分析判定溢出条件是否可行 (Crab/IKOS 验证可削减 50-70% 误报; 本模块仅分析栈缓冲区)。
 
+import re
 from typing import List, Dict, Any, Optional
 from core.interval_analysis import BufferSizeAnalyzer
 
@@ -49,7 +50,6 @@ class FalsePositiveFilter:
         if not buffers:
             return False
         desc = finding.get('description', '') or ''
-        import re
         buf_match = re.search(r'(\w+).*?(\d+)\s*bytes', desc)
         if not buf_match:
             return False
@@ -73,7 +73,6 @@ class FilterDecision:
 
 def filter_stack_findings(findings, decompiled_code):
     """对栈溢出检测结果做区间分析过滤"""
-    import re
     analyzer = BufferSizeAnalyzer()
     # 从反编译代码提取缓冲区声明: char buf[SIZE]
     buf_pattern = re.compile(r"char\s+(\w+)\s*\[\s*(\d+)\s*\]" )

@@ -32,7 +32,7 @@ def refine_fmt_findings(
       2. 用污点验证器确认 EXTERNAL_INPUT 是否真可达
       3. 常量格式串且无危险说明符 → SAFE (过滤)
 
-    Returns: {filtered_count, confirmed_count, detail}
+    返回 {filtered_count, confirmed_count, detail}.
     """
     if not findings:
         return {'filtered_count': 0, 'confirmed_count': 0, 'detail': 'no findings'}

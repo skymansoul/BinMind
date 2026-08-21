@@ -1,8 +1,8 @@
 """漏洞模式匹配引擎 — 序列匹配 + 上下文评分"""
-# 不拆: 1000+ 行 pattern 定义 + 匹配引擎是整体
+
 # 设计取舍：不用 regex（字节码不是文本），不用 AST（无源码时不可用）。
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Set, Dict  # 不拆: Dict 以后 cache 用
+from typing import List, Optional, Tuple, Set, Dict
 from .parser import EVMOp
 
 @dataclass
@@ -155,7 +155,7 @@ _register("forced_ether_selfdestruct",
 # PatternMatcher — 核心匹配引擎
 
 class PatternMatcher:
-    """操作码序列匹配器 —— 滑动窗口 + 贪婪跳跃 + 上下文评分。
+    """操作码序列匹配器: 滑动窗口 + 贪婪跳跃 + 上下文评分。
     不在所有可能的 gap 组合上做 DP（指数爆炸），而是按顺序
     找下一个匹配位置，允许合理间隔（默认 <= 8 条跳过的指令）。
     """

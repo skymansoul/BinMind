@@ -27,7 +27,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -103,11 +102,7 @@ class MultiObjFeatureOptimizer:
         self._pareto_front: List[MultiObjResult] = []
 
     def optimize(self) -> Tuple[List[PipelineConfig], Dict[str, Any]]:
-        """执行多目标优化——返回帕累托最优配置集。
-
-        Returns:
-            (pareto_configs, optimization_report)
-        """
+        """执行多目标优化——返回帕累托最优配置集。"""
         # 初始随机采样
         rng = np.random.RandomState(42)
         for _ in range(self._n_initial):

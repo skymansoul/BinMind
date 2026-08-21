@@ -1,4 +1,4 @@
-"""槽/堆内容溯源 — 栈槽常量初始化与堆内容写入链分类.
+"""槽/堆内容溯源 - 栈槽常量初始化与堆内容写入链分类.
 
   _classify_slot   栈槽分类: 立即数序列初始化 → STACK_CONST;
                    参数槽 (rbp+0x10 起) → USER
@@ -30,7 +30,7 @@ _INPUT_FUNCS = {"gets", "fgets", "recv", "read", "fread", "getline",
 
 
 class SlotContentTracer:
-    """槽内容与堆内容溯源 — 由 FmtProvenance 委派调用."""
+    """槽内容与堆内容溯源 - 由 FmtProvenance 委派调用."""
 
     def __init__(self, insns: list, chase):
         self._insns = insns

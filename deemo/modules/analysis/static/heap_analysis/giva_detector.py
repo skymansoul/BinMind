@@ -1,4 +1,4 @@
-"""GIVA 检测器 — 溯源门控写入界验证 (Provenance-Gated Write-Bound Verification).
+"""GIVA 检测器 - 溯源门控写入界验证 (Provenance-Gated Write-Bound Verification).
 
 管线: AbstractInterpreter (既有 absint 引擎, 不改动) →
       FpSuppressor (三层误报抑制: 归属 / 大小界定 / 循环界).
@@ -8,7 +8,7 @@
 设计决策:
   - 子类化引擎仅为了捕获堆写入的完整操作数 (索引寄存器),
     不覆盖任何既有判定逻辑
-  - 整数溢出风险与 UAF/格式化字符串不在此管线 — 由既有检测器承担
+  - 整数溢出风险与 UAF/格式化字符串不在此管线 - 由既有检测器承担
 """
 
 from typing import Dict, List, Optional, Set, Tuple
@@ -62,7 +62,7 @@ class GivaInterpreter(AbstractInterpreter):
         return (real, filtered, baseline_real, baseline_filtered)
 
     def _fix_realloc_sizes(self):
-        """修正 realloc 分配大小 — 大小参数在 rdx/r8, 非 rdi/rcx.
+        """修正 realloc 分配大小 - 大小参数在 rdx/r8, 非 rdi/rcx.
 
         引擎的 _prescan_allocs 只查 rdi/rcx, 对 realloc(ptr, size)
         会误取指针寄存器为大小 → 分配记录错误 → 误报. 此处按
@@ -134,7 +134,7 @@ class GivaInterpreter(AbstractInterpreter):
 
 
 class GivaScanner:
-    """GIVA 扫描器 — objdump 文本 → 结构化结果."""
+    """GIVA 扫描器 - objdump 文本 → 结构化结果."""
 
     def __init__(self, binary_path: Optional[str] = None,
                  import_map: Optional[Dict[int, str]] = None):

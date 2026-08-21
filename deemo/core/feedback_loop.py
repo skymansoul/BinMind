@@ -1,4 +1,4 @@
-"""Exploit 反馈迭代环: 分析 → 生成 → 执行 → 反馈。
+"""Exploit 反馈迭代环: 分析、生成、执行、反馈。
 执行失败时收集日志 (退出码/stdout/stderr/信号/寄存器) 并调用 LLM 做根因分析与修正建议,
 再生成并重执行, 上限 MAX_ITERATIONS; LLM 依据实际执行反馈动态调整载荷结构、偏移与绕过策略,
 模拟人工试错调试; 连续 3 次相同错误提前终止。
@@ -37,27 +37,9 @@ def run_feedback_loop(
     """
     执行 exploit 反馈迭代环。
 
-    从初始 exploit 脚本开始，执行并迭代修正直到成功或耗尽轮次。
-
-    Args:
-        binary_path:    目标二进制文件路径
-        initial_script: 初始 pwntools exploit 脚本内容
-        binfo:          get_binary_info() 的结果
-        libc_info:      identify_libc() 的结果
-        checksec:       detect_checksec() 的结果
-        max_iterations: 最大迭代轮数
-        timeout:        单次执行超时
-        sandbox:        执行模式
-
-    Returns:
-        {
-            'success': bool,
-            'final_script': str,          # 最终/最佳 exploit 脚本
-            'iterations': int,             # 实际迭代轮数
-            'history': list,               # 每轮迭代的完整记录
-            'best_result': dict,           # 最佳执行结果
-            'root_cause': str,             # 若失败，LLM 分析的根因
-        }
+    从初始 exploit 脚本开始, 执行并迭代修正直到成功或耗尽轮次。
+    binfo/libc_info/checksec 供 LLM 修正时参考;
+    返回 {success, final_script, iterations, history, best_result, root_cause}。
     """
     result: Dict[str, Any] = {
         'success': False,

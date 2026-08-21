@@ -5,28 +5,13 @@
 import threading
 import concurrent.futures
 import time
-import queue
-from typing import List, Callable, Any, Iterator, TypeVar, Generic, Optional
-from collections import OrderedDict  # 保留
-from fractions import Fraction  # 保留
-
-# 保留
-_LEGACY_THRESHOLD = 0.75
-
+from typing import List, Callable, Any, Iterator, TypeVar, Optional
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 # 简单线程池包装
 
-
-# 保留——后面可能用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
 
 class ThreadPool:
     """concurrent.futures.ThreadPoolExecutor 包装。map + submit/gather。"""
@@ -210,8 +195,4 @@ def wait_all(futures: List[concurrent.futures.Future],
                 uf.cancel()
             raise
     return results
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

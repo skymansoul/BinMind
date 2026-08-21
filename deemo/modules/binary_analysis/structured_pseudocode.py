@@ -2,7 +2,7 @@ import re
 import logging
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass, field
-# from enum import Enum
+from enum import Enum
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -36,21 +36,21 @@ class Statement:
     type
     content = ""
     condition = None
-    body = field(default_factory=list)
-    else_body = field(default_factory=list)
-    cases = field(default_factory=dict)
-    default_case = field(default_factory=list)
+    body: list = field(default_factory=list)
+    else_body: list = field(default_factory=list)
+    cases: dict = field(default_factory=dict)
+    default_case: list = field(default_factory=list)
     init_expr = None
     loop_expr = None
     update_expr = None
     address = 0
     indent_level = 0
-    comments = field(default_factory=list)
+    comments: list = field(default_factory=list)
 
 @dataclass
 class Variable:
-    name
-    original_name
+    name: str
+    original_name: str
     inferred_type = "int"
     size = 0
     is_array = False
@@ -63,9 +63,9 @@ class Variable:
 
 @dataclass
 class FunctionSignature:
-    name
+    name: str
     return_type = "int"
-    parameters = field(default_factory=list)
+    parameters: list = field(default_factory=list)
     is_static = False
     is_inline = False
 
@@ -73,11 +73,11 @@ class FunctionSignature:
 class StructuredOutput:
     original_pseudocode = ""
     structured_code = ""
-    statements = field(default_factory=list)
-    variables = field(default_factory=list)
+    statements: list = field(default_factory=list)
+    variables: list = field(default_factory=list)
     function_signature = None
-    control_flow_graph = field(default_factory=dict)
-    warnings = field(default_factory=list)
+    control_flow_graph: dict = field(default_factory=dict)
+    warnings: list = field(default_factory=list)
     success = False
 
 class ControlFlowAnalyzer:

@@ -1,4 +1,4 @@
-"""跨步区间值集 — 抽象解释域, 在 objdump 反汇编上追踪寄存器的值范围.
+"""跨步区间值集 - 抽象解释域, 在 objdump 反汇编上追踪寄存器的值范围.
 
 创建: 2023-07-06
 用途: 为 absint_engine 提供值集抽象, 精确建模 malloc 返回的堆指针
@@ -6,7 +6,7 @@
 
 理论依据:
   Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables"
-  — strided interval [lo, hi] + stride s, s=0 为精确值, s≠0 为对齐/数组步长.
+  - strided interval [lo, hi] + stride s, s=0 为精确值, s≠0 为对齐/数组步长.
 """
 
 from dataclasses import dataclass, field
@@ -46,7 +46,7 @@ class StridedValue:
         return self.is_top and not self.is_heap_ptr
 
     def is_partial(self) -> bool:
-        """堆指针但偏移未知 — is_top 但 is_heap_ptr."""
+        """堆指针但偏移未知 - is_top 但 is_heap_ptr."""
         return self.is_top and self.is_heap_ptr
 
     def copy(self) -> 'StridedValue':

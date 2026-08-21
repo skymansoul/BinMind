@@ -1,7 +1,6 @@
-# 创建: 2026-07-29 12:40
-# 修改: 2026-07-29 — 22 项指标库 x 加权可靠性 x 多样性奖励
+# 22 项指标库 x 加权可靠性 x 多样性奖励
 """
-反分析技术检测器 — 多指标加权风险评分。
+反分析技术检测器 - 多指标加权风险评分。
 
 现有反混淆模块 (anti_analysis.py, anti_vm_bypass.py) 检测特定的单一
 反分析技术。本模块提供系统化的枚举 + 加权评分:
@@ -13,25 +12,26 @@
   4. 完整性检查: 代码段 CRC/反篡改/import hook 检测
 
 加权评分:
-  每个指标的可靠性不同——ptrace 检查可靠 (99%), 而 timing-based
+  每个指标的可靠性不同-ptrace 检查可靠 (99%), 而 timing-based
   检查有噪声 (可能只是性能测量)。最终风险分数 = Σ(检测到 × 权重),
   归一化到 [0, 100]。
 
 为什么选择加权而非二值判定:
-  商用保护器 (VMProtect/Themida) 使用 10+ 层反分析——权重评分
+  商用保护器 (VMProtect/Themida) 使用 10+ 层反分析-权重评分
   反映"对抗强度"。单一反调试可能是误报 (调试版编译残留),
   但 5+ 个指标同时命中几乎是确定的反分析意图。
 
-ref: LibIHT — hardware-assisted evasion-
-     resistant DBI, 本项目取其反检测思路的反面——检测反分析技术
-ref: Sabri — adaptive anti-debugging framework,
+ref: LibIHT - hardware-assisted evasion-
+     resistant DBI, 本项目取其反检测思路的反面-检测反分析技术
+ref: Sabri - adaptive anti-debugging framework,
      本项目将其多指标加权模型改编为检测器而非保护器
-ref: Norby et al. — measurement of anti-debugging
+ref: Norby et al. - measurement of anti-debugging
      techniques, 本项目引用其 Windows/Linux 双平台技术枚举
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -47,11 +47,11 @@ class DetectionCategory(Enum):
 
 @dataclass
 class DetectionIndicator:
-    """单个检测指标——一种反分析技术的签名。"""
+    """单个检测指标-一种反分析技术的签名。"""
     name: str
     category: DetectionCategory
     pattern: str              # 字节/字符串/API名 的检测模式
-    weight: float = 0.5       # [0,1] 可靠性权重——越高越确定
+    weight: float = 0.5       # [0,1] 可靠性权重-越高越确定
     platform: str = 'all'     # 'windows' | 'linux' | 'all'
 
 
@@ -71,7 +71,7 @@ class AntiAnalysisReport:
 # 每个指标: (名称, 类别, 检测模式, 权重, 平台)
 
 _INDICATOR_LIBRARY: list[DetectionIndicator] = [
-    # 反调试 — Windows
+    # 反调试 - Windows
     DetectionIndicator('IsDebuggerPresent', DetectionCategory.ANTI_DEBUG,
                        'IsDebuggerPresent', 0.85, 'windows'),
     DetectionIndicator('NtQueryInformationProcess', DetectionCategory.ANTI_DEBUG,
@@ -84,7 +84,7 @@ _INDICATOR_LIBRARY: list[DetectionIndicator] = [
     DetectionIndicator('OutputDebugString exploit',
                        DetectionCategory.ANTI_DEBUG,
                        'OutputDebugString', 0.40, 'windows'),
-    # 反调试 — Linux
+    # 反调试 - Linux
     DetectionIndicator('ptrace(PTRACE_TRACEME)', DetectionCategory.ANTI_DEBUG,
                        'ptrace', 0.85, 'linux'),
     DetectionIndicator('/proc/self/status', DetectionCategory.ANTI_DEBUG,
@@ -213,8 +213,7 @@ class AntiAnalysisDetector:
 
 
 def _pattern_in_hex(pattern: str, hex_data: str) -> bool:
-    """在 hex 数据中搜索模式——处理 | 分隔的多模式。"""
-    import re
+    """在 hex 数据中搜索模式-处理 | 分隔的多模式。"""
     for alt in pattern.split('|'):
         alt_hex = alt.encode().hex()
         if alt_hex in hex_data:

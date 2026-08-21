@@ -1,5 +1,5 @@
 """
-ANVIL 2.0 —— 基于共形预测的自适应异常评分阈值。
+ANVIL 2.0 - 基于共形预测的自适应异常评分阈值。
 
 理论基础:
   1. DeBinVul: 150K样本多架构/多优化数据集，
@@ -11,8 +11,8 @@ ANVIL 2.0 —— 基于共形预测的自适应异常评分阈值。
      40.8% MRR提升。五模态融合设计参考了其跨模态对齐策略。
 
 动机:
-  现有LLMVulnerabilityDetector采用硬编码阈值（score >= 0.7 → VULNERABLE,
-  score <= 0.3 → BENIGN, 否则UNCERTAIN）。这些阈值未经校准，对不同项目、
+  现有LLMVulnerabilityDetector采用硬编码阈值（score >= 0.7 则 VULNERABLE,
+  score <= 0.3 则 BENIGN, 否则UNCERTAIN）。这些阈值未经校准，对不同项目、
   不同CWE类型、不同LLM模型的误差分布缺乏适应性。
 
   共形预测（Conformal Prediction）提供有限样本边际覆盖率保证:
@@ -23,7 +23,7 @@ ANVIL 2.0 —— 基于共形预测的自适应异常评分阈值。
   硬编码阈值对新漏洞模式缺乏适应性。ANVIL 2.0的共形阈值:
   1. 在标注校准数据集上计算非一致性分数（nonconformity score）
   2. 新样本仅当分数超过校准分位数时标记为异常
-  3. 提供FDR保证——无需手动调整阈值
+  3. 提供FDR保证 - 无需手动调整阈值
 
 模块位置: vuln/detection/anvil_v2.py
 """
@@ -41,7 +41,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class CalibrationSample:
-    """校准样本——用于计算非一致性分数阈值"""
+    """校准样本 - 用于计算非一致性分数阈值"""
     function_name: str
     score: float                     # LLM输出异常分数 [0, 1]
     is_vulnerable: bool              # 真实标签（来自CVE/审计）
@@ -51,15 +51,15 @@ class CalibrationSample:
 
 class ConformalThreshold:
     """
-    共形预测阈值——基于校准数据集计算自适应判定边界。
+    共形预测阈值 - 基于校准数据集计算自适应判定边界。
 
     设计目标:
       替代LLMVulnerabilityDetector.detect()中的硬编码阈值。
       提供FDR控制: α=0.05时假阳性率不超过5%（边际保证）。
 
     非一致性分数定义:
-      漏洞样本: nonconf = 1 - score  （高分→低非一致性→更可能被包含）
-      良性样本: nonconf = score      （低分→低非一致性→更可能被排除）
+      漏洞样本: nonconf = 1 - score  （高分, 低非一致性, 更可能被包含）
+      良性样本: nonconf = score      （低分, 低非一致性, 更可能被排除）
       即: nonconf = min(1 - score if vuln else score)
 
       定义源自Vovk et al.归纳共形预测框架Section 2.2。
@@ -85,7 +85,7 @@ class ConformalThreshold:
 
     def calibrate(self):
         """
-        计算共形阈值——Vovk et al.算法。
+        计算共形阈值 - Vovk et al.算法。
 
         步骤:
           1. 对每个校准样本计算非一致性分数。
@@ -94,7 +94,7 @@ class ConformalThreshold:
           4. 应用有限样本校正因子(n+1)/n。
         """
         if not self._calibration_samples:
-            _log.warning("校准集为空——回退默认阈值")
+            _log.warning("校准集为空 - 回退默认阈值")
             self._global_threshold = 0.5
             self._calibrated = True
             return
@@ -145,16 +145,12 @@ class ConformalThreshold:
         """
         单样本共形预测。
 
-        参数:
-          score:    LLM输出异常分数 [0, 1]
-          cwe_type: CWE类型（分层阈值用，可选）
-
-        返回:
-          (is_anomalous, confidence)
+        参数: score LLM输出异常分数 [0, 1], cwe_type CWE类型
+        （分层阈值用，可选）; 返回 (is_anomalous, confidence)。
 
         判定逻辑:
-          非一致性 = 1 - score（分数越高→越像漏洞→非一致性越低）
-          若非一致性 <= 阈值→样本在预测集合内→标记为异常
+          非一致性 = 1 - score（分数越高, 越像漏洞, 非一致性越低）
+          若非一致性 <= 阈值, 样本在预测集合内, 标记为异常
 
         边界条件:
           未校准时回退到score >= 0.7硬编码阈值（保持向后兼容）。
@@ -165,11 +161,11 @@ class ConformalThreshold:
 
         nonconf = 1.0 - score
 
-        # 优先分层阈值——无对应CWE阈值时回退全局
+        # 优先分层阈值 - 无对应CWE阈值时回退全局
         threshold = self._thresholds.get(cwe_type, self._global_threshold)
         is_anomalous = nonconf <= threshold
 
-        # 置信度: 阈值与分数的距离（越低于阈值→置信度越高）
+        # 置信度: 阈值与分数的距离（越低于阈值, 置信度越高）
         gap = threshold - nonconf
         confidence = min(1.0, max(0.0, 0.5 + gap))
 
@@ -185,11 +181,11 @@ class ConformalThreshold:
         }
 
 
-# ANVIL 2.0 —— 增强异常检测器
+# ANVIL 2.0 - 增强异常检测器
 
 @dataclass
 class ANVILResult:
-    """ANVIL 2.0检测结果——扩展LLMVulnReport的共形预测信息"""
+    """ANVIL 2.0检测结果 - 扩展LLMVulnReport的共形预测信息"""
     function_name: str
     overall_score: float
     is_anomalous: bool
@@ -201,7 +197,7 @@ class ANVILResult:
 
 class ANVILDetector:
     """
-    ANVIL 2.0异常检测器——共形预测 + 多信号集成。
+    ANVIL 2.0异常检测器 - 共形预测 + 多信号集成。
 
     设计目标:
       包装现有LLMVulnerabilityDetector，在硬编码阈值之上叠加
@@ -238,19 +234,15 @@ class ANVILDetector:
         """
         单函数漏洞异常检测。
 
-        参数:
-          function_name:          函数名称
-          llm_score:              LLM异常分数 [0, 1]
-          graph_similarity_score: 图嵌入相似度（可选，与已知漏洞函数比对）
-          cwe_type:               CWE类型
-
-        返回:
-          ANVILResult含判定、共形置信度及所用阈值。
+        参数: function_name 函数名称, llm_score LLM异常分数
+        [0, 1], graph_similarity_score 图嵌入相似度（可选，与
+        已知漏洞函数比对）, cwe_type CWE类型;
+        返回 ANVILResult含判定、共形置信度及所用阈值。
 
         增强策略:
           graph_similarity_score > 0时与llm_score加权平均:
             combined = 0.7 * llm_score + 0.3 * graph_similarity_score
-          权重基于FuseBinRepr消融实验——文本-结构特征
+          权重基于FuseBinRepr消融实验 - 文本-结构特征
           0.7:0.3融合在漏洞检测任务上取得最优F1。
         """
         combined_score = llm_score
@@ -274,7 +266,7 @@ class ANVILDetector:
         self, functions: List[dict]
     ) -> List[ANVILResult]:
         """
-        批量检测——按异常分数降序排列返回。
+        批量检测 - 按异常分数降序排列返回。
 
         functions格式: [{"name": str, "llm_score": float, "graph_score": float, "cwe": str}, ...]
         """

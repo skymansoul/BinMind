@@ -1,16 +1,14 @@
-# 2026-08-01
-"""
-配置 加载器 for 动态分析 module
+"""动态分析模块的配置加载器。
 
-加载 default.yaml (bundled), overrides a user-specified
-YAML file, overrides environment variables prefixed DYN_
+加载 default.yaml (内置), 叠加用户指定的 YAML 文件, 再叠加
+以 DYN_ 为前缀的环境变量。
 
-Priority: env > user YAML > default YAML
+优先级: env > user YAML > default YAML。
 
-Usage::
+用法::
 
-modules.analysis.dynamic.src.配置 import load_配置
-cfg = load_配置("custom_配置.yaml")
+from modules.analysis.dynamic.src.config import load_config
+cfg = load_config("custom_config.yaml")
 timeout = cfg["analysis"]["timeout_seconds"]
 """
 
@@ -22,7 +20,7 @@ from typing import Any, Dict, Optional
 
 log = logging.getLogger(__name__)
 
-# Default 配置 — 匹配 配置/default.yaml
+# 默认配置 — 与 config/default.yaml 对齐
 _DEFAULT_CONFIG: Dict[str, Any] = {
     "paths": {
         "data_dir": "data",
@@ -49,7 +47,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
 
 
 def _get_default_config_path() -> str:
-    """path bundled default.yaml"""
+    """返回内置 default.yaml 的路径。"""
     return os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "config",
@@ -58,7 +56,7 @@ def _get_default_config_path() -> str:
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-    """Deep 合并 two dictionaries. override values win conflict"""
+    """深度合并两个字典, 冲突时 override 值优先。"""
     result = dict(base)
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
@@ -69,12 +67,13 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
 
 
 def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[str, Any]:
-    """Override 配置 values environment variables
-    
-    Environment variable 格式化: DYN_SECTION_KEY
-    Example: DYN_ANALYSIS_TIMEOUT_SECONDS=120 overrides 配置["analysis"]["timeout_seconds"]
-    
-    支持 string/int/float/boolean values
+    """用环境变量覆盖配置值。
+
+    环境变量格式: DYN_SECTION_KEY
+    例: DYN_ANALYSIS_TIMEOUT_SECONDS=120 覆盖
+    config["analysis"]["timeout_seconds"]。
+
+    支持 string/int/float/boolean 值。
     """
     for env_key, env_value in os.environ.items():
         if not env_key.startswith(prefix):
@@ -87,7 +86,7 @@ def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[s
 
         section, key = parts
         if section in config and isinstance(config[section], dict):
-            # Cast value appropriate type
+            # 按类型推断转换值
             typed_value = _cast_env_value(env_value)
             config[section][key] = typed_value
             log.debug("Env override: %s -> %s.%s = %s", env_key, section, key, typed_value)
@@ -96,7 +95,7 @@ def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[s
 
 
 def _cast_env_value(value: str) -> Any:
-    """Cast a string environment variable value an appropriate type
+    """将字符串环境变量值转换为适当类型。
 
     布尔字面量优先于数值解析：纯 "1"/"0" 视为布尔开关，
     其余数字串按 int/float 处理。
@@ -110,11 +109,7 @@ def _cast_env_value(value: str) -> Any:
         return int(value)
     if value.replace(".", "", 1).isdigit() and value.count(".") <= 1:
         return float(value)
-    if value.lower() in ("true", "yes", "1"):
-        return True
-    if value.lower() in ("false", "no", "0"):
-        return False
-    # Unquote quoted
+    # 去除引号包裹
     if (value.startswith('"') and value.endswith('"')) or \
        (value.startswith("'") and value.endswith("'")):
         return value[1:-1]
@@ -122,22 +117,17 @@ def _cast_env_value(value: str) -> Any:
 
 
 def load_config(user_config_path: Optional[str] = None) -> Dict[str, Any]:
-    """加载 合并 配置 sources
-    
-    Order:
-    1. 启动 _DEFAULT_配置 (-memory default)
-    2. 合并 bundled 配置/default.yaml exists
-    3. 合并 user-specified YAML file (provided exists)
-    4. Override DYN_* environment variables
-    
-    Args:
-    user_配置_path: Optional path a user YAML 配置 file
-    
-    返回:
-    Merged 配置 dictionary
-    
-    Raises:
-    FileNotFoundError: user_配置_path specified but doesn't exist
+    """加载并合并配置源。
+
+    顺序:
+    1. 以 _DEFAULT_CONFIG 起步 (内存默认值)
+    2. 合并内置 config/default.yaml (若存在)
+    3. 合并用户指定的 YAML 文件 (若提供且存在)
+    4. 应用 DYN_* 环境变量覆盖
+
+    参数: user_config_path 可选, 用户 YAML 配置文件路径;
+    返回合并后的配置字典。user_config_path 指定但不存在时
+    抛 FileNotFoundError。
     """
     config = dict(_DEFAULT_CONFIG)
 
@@ -152,7 +142,7 @@ def load_config(user_config_path: Optional[str] = None) -> Dict[str, Any]:
         except Exception as e:
             log.warning("Failed to load bundled config %s: %s", default_path, e)
 
-    # 合并 user 配置
+    # 合并用户配置
     if user_config_path is not None:
         if not os.path.isfile(user_config_path):
             raise FileNotFoundError(f"User config not found: {user_config_path}")
@@ -171,9 +161,7 @@ def load_config(user_config_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 def get_config_value(config: Dict[str, Any], dotted_key: str, default: Any = None) -> Any:
-    """a nested 配置 value using dotted notation
-    
-    Example: get_配置_value(配置, "analysis.timeout_seconds", 300)
+    """用点号路径读取嵌套配置值，如 get_config_value(config, "analysis.timeout_seconds", 300)。
     """
     keys = dotted_key.split(".")
     current: Any = config

@@ -66,7 +66,7 @@ class TOCTOUVulnerability:
 
 class LinkTracker:
     """解析 快照s symlink targets for later comparison
-    
+
     增强 — Windows Junction 检测：使用 os.path.realpath() 和 ctypes
     检测 NTFS reparse points。在非 Windows 平台上退化为标准 symlink 解析
     """
@@ -138,7 +138,7 @@ class TOCTOUDetector:
     """检测 TOCTOU races comparing symlink 快照s across operation
     pairs same path. A target change consecutive accesses
     indicates a race window
-    
+
     增强 — 原子回放验证：detect 后对每个候选漏洞执行回放
     在独立线程中模拟 check/use 序列，确认窗口的实际可利用性
     """
@@ -185,7 +185,7 @@ class TOCTOUDetector:
 
     def replay_confirm(self, vuln: TOCTOUVulnerability) -> bool:
         """回放操作序列，在真实文件系统上验证 TOCTOU 窗口
-        
+
         在临时目录中创建符号链接，模拟 check→use 序列
         若操作间的 target 发生了变化则将 vuln.confirmed 设为 True"""
         tmpdir = tempfile.mkdtemp(prefix="toctou_replay_")
@@ -219,7 +219,7 @@ class TOCTOUDetector:
 
 class PathAnalyzer:
     """Decomposes a 文件系统 path traversal steps, flagging '.' escapes
-    
+
     增强 — Junction 混淆检测：Windows 上 junction 点跨越卷边界时
     路径解析结果可能与预期不同。标记此类路径"""
 
@@ -247,7 +247,7 @@ class PathAnalyzer:
 
     def detect_junction_confusion(self, path: str) -> Dict[str, Any]:
         """检测 path crosses NTFS junction / volume boundary
-        
+
         在 Windows 上，os.path.realpath 会解析 junction 到真实路径
         如果 realpath 与 abspath 的驱动器/根不同，则是 junction 跨越"""
         try:
@@ -289,11 +289,11 @@ _FsSnapshotEntry = Tuple[int, float]
 
 class FilesystemEventMonitor:
     """Poll directories containing tracked links N seconds using os.scandir
-    
+
     三轮增强 — os.scandir 返回的 DirEntry 自带 stat 信息（inode/mtime）
     无需为每个条目额外调用 os.stat。对比两次快照间的 (path, inode, mtime)
     三元组差异即可检测新建、删除和修改的符号链接
-    
+
     Attributes:
     fs_poll_interval: 轮询间隔（秒），默认 2.0
     dir_快照: Dict[str, Dict[str, _Fs快照Entry]]
@@ -301,11 +301,7 @@ class FilesystemEventMonitor:
     """
 
     def __init__(self, fs_poll_interval: float = 2.0):
-        """初始化监控器
-        
-        Args:
-        fs_poll_interval: 两次轮询之间的睡眠秒数
-        """
+        """初始化监控器, fs_poll_interval 为轮询间隔秒数。"""
         self.fs_poll_interval = fs_poll_interval
         # 目录快照: {dir_path: {filename: (inode, mtime)}}
         self.dir_snapshot: Dict[str, Dict[str, _FsSnapshotEntry]] = {}
@@ -314,15 +310,10 @@ class FilesystemEventMonitor:
         self._poll_thread: Optional[threading.Thread] = None
 
     def poll_directory(self, dir_path: str) -> List[Dict[str, Any]]:
-        """扫描指定目录一次，返回自上次 poll 后的变更事件列表
-        
-        若该目录未被监控过，则创建初始快照并返回空列表（后续 poll 才有 diff）
-        
-        Args:
-        dir_path: 要扫描的目录路径
-        
-        返回:
-        List[Dict]: 变更事件列表，每项含 event_type/new_path/old_inode/new_inode 等
+        """扫描指定目录一次, 返回自上次 poll 后的变更事件列表。
+
+        若该目录未被监控过, 则创建初始快照并返回空列表。
+        每项含 event_type/new_path/old_inode/new_inode 等。
         """
         dir_path = os.path.abspath(dir_path)
         new_snapshot: Dict[str, _FsSnapshotEntry] = self._capture_snapshot(dir_path)
@@ -335,13 +326,9 @@ class FilesystemEventMonitor:
 
     def start_monitoring(self, dir_paths: List[str], callback=None):
         """启动后台轮询线程，对给定目录集合持续调用 poll_directory
-        
-        线程在每次 poll 后睡眠 fs_poll_interval 秒
-        若提供 callback，每个变更事件将调用 callback(event)
-        
-        Args:
-        dir_paths: 要监控的目录路径列表
-        回调: 可选回调，签名为 回调(event: dict) -> None
+
+        线程在每次 poll 后睡眠 fs_poll_interval 秒;
+        callback 可选, 每个变更事件将调用 callback(event)。
         """
         if self._running:
             return
@@ -383,16 +370,10 @@ class FilesystemEventMonitor:
         self._events.clear()
 
     def _capture_snapshot(self, dir_path: str) -> Dict[str, _FsSnapshotEntry]:
-        """使用 os.scandir 捕获目录中所有条目的 (inode, mtime) 映射
-        
-        os.scandir 返回的 DirEntry.stat() 在 Windows/Linux 上通常不需要
-        额外系统调用（信息已在 readdir 时获取）。fallback 为 os.stat
-        
-        Args:
-        dir_path: 绝对目录路径
-        
-        返回:
-        Dict[str, Tuple[int, float]]: {文件名: (inode, mtime)}
+        """用 os.scandir 捕获目录所有条目的 (inode, mtime) 映射。
+
+        DirEntry.stat() 通常无需额外系统调用, 失败回退 os.stat。
+        返回 {文件名: (inode, mtime)}。
         """
         snapshot: Dict[str, _FsSnapshotEntry] = {}
         try:
@@ -413,20 +394,10 @@ class FilesystemEventMonitor:
         new_snap: Dict[str, _FsSnapshotEntry],
         dir_path: str,
     ) -> List[Dict[str, Any]]:
-        """对比两个快照，返回新建/删除/修改事件
-        
-        检测逻辑：
-        - 新快照中有、旧快照中无 → 'created'
-        - 旧快照中有、新快照中无 → 'deleted'
-        - 两边都有但 (inode, mtime) 不同 → 'modified'（inode 变则硬替换）
-        
-        Args:
-        old_snap: 上一轮快照
-        new_snap: 当前快照
-        dir_path: 目录绝对路径
-        
-        返回:
-        List[Dict]: 事件列表
+        """对比两个快照, 返回新建/删除/修改事件列表。
+
+        检测逻辑: 新增 → created; 消失 → deleted;
+        均在但 (inode, mtime) 不同 → modified (inode 变则硬替换)。
         """
         events: List[Dict[str, Any]] = []
         old_keys = set(old_snap.keys())
@@ -479,11 +450,11 @@ class FilesystemEventMonitor:
 
 class RaceWindowEstimator:
     """估算 TOCTOU race window size 漏洞利用ability
-    
+
     三轮增强 — 当相邻操作检测到 target/inode 变更时
     race_window_ms = |op2.timestamp - op1.timestamp|
     同时收集 symlink 目标文件的 mtime 信息以交叉验证
-    
+
     理论背景：
     - < 1ms: 极难利用（需要精确 timing 或内核调度配合）
     - 1-100ms: 中等难度（多线程竞态或 busy-loop swap 可触发）
@@ -499,14 +470,9 @@ class RaceWindowEstimator:
         op1: Dict[str, Any],
         op2: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """计算两个文件操作之间的竞争窗口大小
-        
-        Args:
-        op1: 第一个操作记录（含 timestamp, link_info）
-        op2: 第二个操作记录（含 timestamp, link_info）
-        
-        返回:
-        Dict: 含 race_window_ms/漏洞利用ability/mtime_delta/verdict 的评估结果
+        """计算两个文件操作之间的竞争窗口大小。
+
+        返回含 race_window_ms/exploitability/mtime_delta/verdict 的评估结果。
         """
         t1 = op1.get('timestamp', 0.0)
         t2 = op2.get('timestamp', 0.0)
@@ -552,14 +518,7 @@ class RaceWindowEstimator:
         }
 
     def _get_target_mtime(self, link_info) -> Optional[float]:
-        """安全获取链接目标的 mtime，失败返回 None
-        
-        Args:
-        link_info: LinkInfo 对象或 None
-        
-        返回:
-        float: mtime 秒值，或 None
-        """
+        """安全获取链接目标的 mtime, 失败返回 None。"""
         if link_info is None:
             return None
         target_path = getattr(link_info, 'target', None)
@@ -575,17 +534,11 @@ class RaceWindowEstimator:
 # 产出 bash symlink-swap 循环脚本骨架，用于验证 TOCTOU 窗口
 
 def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
-    """构造 a bash shell script skeleton for testing a detected TOCTOU window
-    
-    三轮增强 — 产出的脚本在后台持续翻转符号链接目标，同时在前台反复
-    触发易受攻击的操作序列。通过调整 SLEEP_INTERVAL 可以匹配不同大小的
-    竞争窗口
-    
-    Args:
-    vuln: 已检出的 TOCTOU 漏洞记录
-    
-    返回:
-    str: 可执行的 bash 脚本文本（变量名 漏洞利用_skeleton）
+    """构造用于验证 TOCTOU 窗口的 bash 脚本骨架。
+
+    脚本在后台持续翻转符号链接目标, 同时前台反复触发易受攻击的
+    操作序列; 调整 SLEEP_INTERVAL 可匹配不同大小的竞争窗口。
+    返回可执行 bash 脚本文本。
     """
     path = vuln.path
     risk = vuln.risk_level

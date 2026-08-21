@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-08-23 09:30 - 初始创建: 扫描调度模块, 将编译后的样本送入各检测器
-# 2025-08-23 17:45 - 增加内存/耗时统计: 每样本记录峰值内存和扫描耗时
+# 初始创建: 扫描调度模块, 将编译后的样本送入各检测器
+# 增加内存/耗时统计: 每样本记录峰值内存和扫描耗时
 
-"""扫描调度模块 — 将编译后的 ELF 送入检测器, 收集检测结果
+"""扫描调度模块 - 将编译后的 ELF 送入检测器, 收集检测结果
 
 读取 compile_samples.py 生成的 manifest.json,
 对每个已编译的二进制调用检测器, 汇总结果。
@@ -75,7 +74,7 @@ def run_heap_overflow_detector(binary_path: str) -> List[Dict]:
     try:
         from modules.analysis.static.tools.heap_overflow_detector import HeapOverflowDetector
         detector = HeapOverflowDetector()
-        # 需要反汇编——此处为简化stub, 实际集成需调用r2/objdump
+        # 需要反汇编-此处为简化stub, 实际集成需调用r2/objdump
         return []
     except Exception as e:
         return [{'error': str(e)[:100]}]

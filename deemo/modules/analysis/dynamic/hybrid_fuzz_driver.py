@@ -2,7 +2,7 @@
 """
 混合模糊测试驱动引擎
 
-基于 的 LLM 辅助混合模糊测试框架
+基于 LLM 辅助的混合模糊测试框架
 结合符号执行和 LLM 约束求解，突破传统 concolic 执行
 在非线性约束（hash、crypto、复杂数学）上的瓶颈
 
@@ -10,8 +10,6 @@
 - LLMConstraintSolver: 对 SMT 求解器难以处理的约束使用 LLM 推断
 - TraceSlicer: 执行轨迹切片，提取与分支相关的指令序列
 - HybridFuzzLoop: 混合循环（模糊测试 → concolic → LLM → 模糊测试）
-
-参考 的 def-使用 链反馈
 """
 
 import logging
@@ -51,11 +49,10 @@ class SolveResult:
 class LLMConstraintSolver:
     """
     LLM 约束求解器
-    
+
     对传统 SMT 求解器难以处理的非线性约束
     （如哈希、加密、CRC），使用 LLM 进行推理或生成输入
-    参考 的 LLM-solver 设计
-    
+
     注意：LLM 求解器不保证正确性
     生成的解需要通过具体执行验证
     """
@@ -66,15 +63,10 @@ class LLMConstraintSolver:
         self._solve_cache: Dict[str, SolveResult] = {}
 
     def solve(self, constraint_desc: str, context: str = "") -> SolveResult:
-        """
-        使用 LLM 求解约束
-        
-        Args:
-        constraint_desc: 约束描述（自然语言或伪代码）
-        context: 上下文信息（如周边代码）
-        
-        返回:
-        SolveResult
+        """使用 LLM 求解约束。
+
+        参数: constraint_desc 约束描述（自然语言或伪代码）,
+        context 上下文信息（如周边代码）; 返回 SolveResult。
         """
         cache_key = hashlib.md5(
             (constraint_desc + context).encode()
@@ -95,7 +87,7 @@ class LLMConstraintSolver:
         return result
 
     def _is_simple_check(self, desc: str) -> bool:
-        """判断是否为简单比较（strcmp/memcmp 等）"""
+        """判断是否为简单比较"""
         simple_patterns = [
             r'strcmp', r'memcmp', r'strncmp', r'strlen',
             r'==\s*0', r'!=\s*0', r'==\s*[\w]+',
@@ -146,7 +138,7 @@ class LLMConstraintSolver:
     def _hash_bypass_solve(self, desc: str, context: str) -> SolveResult:
         """
         哈希绕过策略
-        
+
         对于哈希约束，LLM 无法直接求逆
         返回类型混淆或空字符串 bypass 尝试
         """
@@ -168,7 +160,7 @@ class LLMConstraintSolver:
     def _generic_solve(self, desc: str) -> SolveResult:
         """
         通用约束求解（基于模式推断）
-        
+
         尝试对常见约束模式进行求解
         """
         # 范围约束: N <= var <= M
@@ -210,15 +202,13 @@ class LLMConstraintSolver:
 class TraceSlicer:
     """
     执行轨迹切片器
-    
+
     将完整的指令执行轨迹切分为与分支判断相关的片段
     每个切片包含：
     - 入口/出口地址
     - 影响分支结果的关键指令
     - 相关的寄存器/内存变量
     - 分支条件表达式
-    
-    参考 [HyllFuzz 2026] 的 trace-slicing 方法
     """
 
     def __init__(self, slice_size: int = 20):
@@ -229,15 +219,11 @@ class TraceSlicer:
         execution_trace: List[Dict[str, Any]],
         branch_points: List[int]
     ) -> List[TraceSlice]:
-        """
-        将执行轨迹切分为分支相关片段
-        
-        Args:
-        execution_trace: [{'address': int, 'instruction': str,.},.]
-        branch_points: 分支指令地址列表
-        
-        返回:
-        TraceSlice 列表
+        """将执行轨迹切分为分支相关片段。
+
+        参数: execution_trace [{'address': int, 'instruction':
+        str}, ...], branch_points 分支指令地址列表;
+        返回 TraceSlice 列表。
         """
         if not execution_trace or not branch_points:
             return []
@@ -295,13 +281,11 @@ class TraceSlicer:
 class HybridFuzzDriver:
     """
     混合模糊测试驱动
-    
+
     在三种模式间动态切换：
     1. 灰盒模糊测试（coverage-guided，默认模式）
     2. 符号执行（对复杂的 magic bytes / 校验和分支）
     3. LLM 求解（对 SMT 超时的非线性约束）
-    
-    参考 [HyllFuzz 2026] 的 LLM 混合架构
     """
 
     class Mode(Enum):
@@ -334,7 +318,7 @@ class HybridFuzzDriver:
     ) -> SolveResult:
         """
         对单个分支约束进行求解
-        
+
         自动选择求解策略（SMT → LLM 降级）
         """
         # 简单约束直接求解
@@ -366,7 +350,7 @@ class HybridFuzzDriver:
     def should_switch_mode(self) -> Optional[Mode]:
         """
         判断是否应切换模糊测试模式
-        
+
         返回的下一个模式或 None
         """
         if self._smt_timeouts >= self._max_smt_timeouts:
@@ -408,8 +392,6 @@ def run_hybrid_fuzz(
 ) -> Dict[str, Any]:
     """
     便捷函数：运行混合模糊测试
-    
-    参考 [HyllFuzz 2026] 的 LLM 辅助架构
     """
     driver = HybridFuzzDriver(binary_path)
 

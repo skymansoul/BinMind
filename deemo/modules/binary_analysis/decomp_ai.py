@@ -146,8 +146,11 @@ def _extract_loop_summaries(decompiled: str) -> list[str]:
 
 
 class DecompilerAI:
-    def __init__(self):
+    def __init__(self, client=None, model: str = ''):
         self._var_suggestions: dict[str, str] = {}
+        # LLM 客户端为可选，未配置时降级为纯正则分析
+        self._client = client
+        self._model = model
 
     def analyze(self, decompiled_code: str) -> dict:
         cleaned = strip_ansi_escape(decompiled_code)
@@ -207,6 +210,54 @@ class DecompilerAI:
                 return f"// {desc}"
 
         return ""
+
+
+    def analyze_with_llm(self, decompiled_code: str, binary_info: dict = None,
+                         dangerous_functions: list = None, key_strings: list = None,
+                         crash_log: str = '') -> dict:
+        """通过统一适配层发起 LLM 研判，返回结构化 Finding"""
+        from modules.llm_client import call_llm, is_ai_configured, make_finding
+        from prompts import DECOMP_ANALYSIS_TEMPLATE
+
+        # 未配置模型时强制 simulation
+        if not is_ai_configured():
+            logger.info("[decomp_ai] AI 未配置，返回纯启发式结果（simulation=true）")
+            heuristic = self.analyze(decompiled_code)
+            heuristic['simulation'] = True
+            heuristic['llm_findings'] = []
+            return heuristic
+
+        binfo = binary_info or {}
+        checksec = binfo.get('checksec', {})
+        prompt = DECOMP_ANALYSIS_TEMPLATE.format(
+            binary_path=binfo.get('binary_path', ''),
+            function_name=binfo.get('function_name', ''),
+            nx=checksec.get('nx', 'N/A'),
+            pie=checksec.get('pie', 'N/A'),
+            relro=checksec.get('relro', 'N/A'),
+            canary=checksec.get('canary', 'N/A'),
+            aslr=checksec.get('aslr', 'N/A'),
+            dangerous_functions=', '.join(dangerous_functions or []),
+            key_strings=', '.join((key_strings or [])[:20]),
+            pseudocode=decompiled_code[:4000],
+            crash_log=crash_log or 'N/A',
+        )
+
+        result = call_llm(
+            messages=[{'role': 'user', 'content': prompt}],
+            model=self._model or None,
+        )
+
+        findings = result.get('findings', [])
+        simulation = result.get('simulation', False)
+
+        return {
+            'simulation': simulation,
+            'llm_findings': findings,
+            'raw_response': result.get('text', ''),
+            'error': result.get('error'),
+            'model': result.get('model', ''),
+        }
 
 
 DecompilerAI_class = DecompilerAI

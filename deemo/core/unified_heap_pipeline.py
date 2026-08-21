@@ -62,8 +62,7 @@ def analyze_heap_safety(
       5. 四层验证 (分配器语义 → 值域 → 符号 → 启发式)
       6. UAF/Double-Free 并行检测
 
-    Returns:
-      (findings, stats) — findings 是确认的发现列表, stats 含各级过滤统计。
+    返回 (findings, stats), stats 含各级过滤统计。
     """
     stats = {
         "function": func_name,
@@ -99,7 +98,7 @@ def analyze_heap_safety(
 
         # Tier -1: 缓冲区正交预过滤 ─────────────
         # 在 Tier 0-3 之前, 先用 BufferDisjointness 消除跨类型误报
-        # 若 alloc/write 目标是栈/全局变量 → 不是堆溢出, 直接过滤
+        # 若 alloc/write 目标是栈/全局变量, 不是堆溢出, 直接过滤
         try:
             from analysis.heap_buffer_disjointness import BufferDisjointness
             _buf_disjoint = BufferDisjointness()
@@ -114,7 +113,7 @@ def analyze_heap_safety(
             alloc_site = pf.alloc_site
             write_site = pf.write_site
 
-            # Tier -1: 缓冲区正交 — 栈/全局变量不产生堆告警
+            # Tier -1: 缓冲区正交 - 栈/全局变量不产生堆告警
             if _buf_disjoint:
                 a_kind = _buf_disjoint.classify_target(alloc_site.var_name)
                 w_kind = _buf_disjoint.classify_target(write_site.var_name)
@@ -147,11 +146,11 @@ def analyze_heap_safety(
                     stats["filtered"] += 1
                     continue  # 分配器对齐后安全
             else:
-                # Tier 0.5: 区间判定 — FIX: 2026-08-15 区间算术接入
+                # Tier 0.5: 区间判定 - FIX: 2026-08-15 区间算术接入
                 # 常量路径未命中时(至少一侧为符号区间), 用 [lo,hi] 比较:
-                # write.hi <= alloc.lo → 确定安全, 过滤;
-                # write.lo > alloc.hi → 确定溢出, 标记 finding;
-                # 交叠或无界 → unknown, 走原 Tier 1 流程, 行为不变。
+                # write.hi <= alloc.lo, 确定安全, 过滤;
+                # write.lo > alloc.hi, 确定溢出, 标记 finding;
+                # 交叠或无界, unknown, 走原 Tier 1 流程, 行为不变。
                 _iv = _interval_verdict(alloc_site.size_range, write_site.write_size)
                 if _iv == 'safe':
                     stats["filtered"] += 1

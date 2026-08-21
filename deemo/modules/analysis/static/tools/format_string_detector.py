@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-08-22 09:15 - 初始创建: 基于逆向数据流的格式字符串漏洞检测, 替代函数名匹配
-# 2025-08-23 14:20 - 增加常量字符串过滤: 识别.rodata引用, 过滤误报
+# 初始创建: 基于逆向数据流的格式字符串漏洞检测, 替代函数名匹配
+# 增加常量字符串过滤: 识别.rodata引用, 过滤误报
 
-"""数据流感知的格式字符串漏洞检测 — 从函数名匹配升级为参数来源追踪
+"""数据流感知的格式字符串漏洞检测, 从函数名匹配升级为参数来源追踪
 
 static_analysis.py 仅检查函数名含printf→每个printf都被标记, 误报率高
 本模块逆向追踪格式参数来源: 用户输入→真阳性, .rodata常量→假阳性过滤
@@ -26,7 +25,7 @@ static_analysis.py 仅检查函数名含printf→每个printf都被标记, 误�
 引用:
   - Dowser: 污点引导的缓冲区溢出检测, 污点传播方法论
   - Driller: 混合fuzzing中的污点引导, 选择性符号执行概念
-  本方案将污点传播简化为 12 步逆向切片——适合无符号的二进制场景
+  本方案将污点传播简化为 12 步逆向切片, 适合无符号的二进制场景
 """
 
 from __future__ import annotations
@@ -102,12 +101,11 @@ class FormatStringDetector:
         functions: Dict[str, List[Tuple[int, str]]],
         blocks_ir: Optional[Dict[int, List[str]]] = None,
     ) -> List[FormatStringFinding]:
-        """扫描所有函数中的格式字符串漏洞
+        """扫描所有函数中的格式字符串漏洞。
 
-        functions: {函数名: [(地址, 反汇编行), ...]}
-        blocks_ir: 可选的基本块IR指令, 用于更精确的数据流追踪
-
-        返回: 按置信度降序排列的检测结果
+        functions: {函数名: [(地址, 反汇编行), ...]};
+        blocks_ir 可选, 基本块 IR 指令, 用于更精确的数据流追踪;
+        返回按置信度降序排列的检测结果。
         """
         findings: List[FormatStringFinding] = []
         all_insns = self._build_global_insn_index(functions)
@@ -179,10 +177,7 @@ class FormatStringDetector:
         insn_index: Dict[int, Tuple[str, str]],
         depth: int,
     ) -> Tuple[str, List[str], float]:
-        """逆向追踪格式参数寄存器到其数据源
-
-        返回: (source_type, trace_evidence, confidence)
-        """
+        """逆向追踪格式参数寄存器到其数据源, 返回 (source_type, trace_evidence, confidence)。"""
         trace: List[str] = []
         if not target_reg:
             return 'unknown', trace, 0.4

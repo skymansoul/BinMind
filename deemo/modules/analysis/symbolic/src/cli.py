@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 
 def _load_config(config_path: Optional[str] = None) -> Any:
-    """加载 配置, falling back defaults. O(|配置_file|)"""
+    """Load config, falling back to defaults. O(|config_file|)"""
     try:
         from analysis.symbolic.src.config import load_config
         return load_config(config_path)
@@ -38,18 +38,8 @@ def _load_config(config_path: Optional[str] = None) -> Any:
 def _cmd_execute(args: argparse.Namespace) -> int:
     """
     运行 符号执行 a target
-    
-    Args:
-    args.ir: Path IR file (JSON lines, one IR instruction per line)
-    args.entry: Entry address (hex or decimal)
-    args.strategy: Exploration strategy (bfs, dfs, 覆盖率, llm)
-    args.max_steps: Maximum execution steps
-    args.max_depth: Maximum path depth
-    
-    返回:
-    0 success, 1 error
-    
-    这个命令会读取IR文件，逐行解析IR指令，然后喂给SymbolicExecutor跑符号执行
+
+    这个命令会读取IR文件，逐行解析IR指令，然后喟给SymbolicExecutor跑符号执行
     """
     _log.info("Executing symbolic exploration...")
 
@@ -134,14 +124,7 @@ def _cmd_execute(args: argparse.Namespace) -> int:
 def _cmd_optimize(args: argparse.Namespace) -> int:
     """
     运行 path 优化 constraints/states
-    
-    Args:
-    args.constraints: Path constraints JSON file
-    args.mode: 优化 mode (prune, 合并, simplify,)
-    
-    返回:
-    0 success, 1 error
-    
+
     Edge case: Z3 installed, prune mode skip fully
     symbolic 检查 heuristic simplification
     """
@@ -193,16 +176,8 @@ def _cmd_optimize(args: argparse.Namespace) -> int:
 def _cmd_solve(args: argparse.Namespace) -> int:
     """
     Solve constraints standalone (execution needed)
-    
-    Args:
-    args.constraints: Constraints a JSON string or file path
-    args.var: Variable solve for
-    args.smtlib: SMT-LIB2 string solve
-    
-    返回:
-    0 SAT, 1 UNSAT, 2 error
-    
-    // INTJ策略: 独立求解模式允许在不跑完整符号执行的情况下快速
+
+    // 策略: 独立求解模式允许在不跑完整符号执行的情况下快速
     // 验证某条路径的约束是否可满足，这对路径可行性分析有用
     """
     _log.info("Solving constraints...")
@@ -259,12 +234,12 @@ def _cmd_solve(args: argparse.Namespace) -> int:
 def _load_ir_file(path: str) -> List[Any]:
     """
     加载 IR instructions a JSON-lines file
-    
+
     格式化 (one JSON object per line):
     {"op": "MOV", "operands": ["%eax", "$0x10"], "address": 0x401000}
-    
+
     返回 a list IRInstruction objects
-    
+
     Time: O(|file_lines|). Space: O(|instructions|)
     """
     from analysis.symbolic.src.executor import IRInstruction
@@ -307,11 +282,11 @@ def _save_json_result(path: str, data: Dict[str, Any]) -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     """
     Main 入口 for binmind-symbolic CLI
-    
+
     解析 args, sets up 日志, 分派 subcommands
-    
+
     Time: O(|argv|) for parsing. Space: O(1)
-    
+
     Edge case: argv None, sys.argv used (standard argparse behavior)
     """
     p = argparse.ArgumentParser(

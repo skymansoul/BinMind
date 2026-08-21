@@ -9,20 +9,8 @@ import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-# 保留
-_LEGACY_THRESHOLD = 0.75
-
 
 # ANSI 彩色终端日志格式化器
-
-
-# 旧版实现，v1.x后废弃
-# OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
 
 class ColoredFormatter(logging.Formatter):
     """终端 ANSI 颜色日志格式化器。
@@ -170,8 +158,4 @@ def add_rotating_file_handler(logger_name: str, filepath: str,
         datefmt="%Y-%m-%d %H:%M:%S",
     ))
     logging.getLogger(logger_name).addHandler(handler)
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

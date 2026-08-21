@@ -1,37 +1,28 @@
-"""Incremental symbolic re-execution via function-level 哈希
+"""基于函数级哈希的增量符号重执行。
 
-a binary rebuilt, functions byte-identical prior
-version. Re-executing wastes solver time. module 哈希
-function (via r2 反汇编), diffs old vs. new, re-运行
-modified/added functions plus transitive callers
+二进制重编译后, 与旧版本逐函数比较 r2 反汇编哈希, 只重执行
+修改/新增函数及其传递性调用者, 未变更函数复用缓存的执行状态,
+节省求解器时间。
 
-增强 — 调用图感知的影响分析：使用 r2 的 `agj` 命令获取函数调用关系的
-JSON 格式数据，构建邻接表后通过 BFS 从修改函数出发遍历所有被调用者
-替代原先基于函数名字符串匹配的启发式方法
-
-增强 — 差分影响分析 (DifferentialImpactAnalysis)：
-diff 后自动计算每个变更函数的 blast_radius（传递性调用该函数的唯一
-函数数量），按 blast_radius 降序排列执行顺序。影响范围越大的函数优先重执行
-避免先执行叶子函数造成的重复回溯
-
-增强 — 编译器版本校验 (CacheIn校验Tag)：
-通过 r2 iI~编译器 提取编译器版本，存入 State检查点.编译器_tag
-当新旧 binary 的 compiler_tag 不一致时，所有 checkpoint 直接作废——
-编译器/优化选项不同意味着即使函数 disasm 相同，二进制布局也可能差异巨大
-
-增强 — DeltaSerializer：
-将 FuncChange 列表序列化为紧凑的二进制格式（struct 打包：
-func_name_hash(8B) + status(1B) + flags(1B) + old_hash(32B可选) +
-new_hash(32B可选) + blast_radius(4B)）。支持反序列化以快速重载
-无需重新运行 r2 哈希。文件头含 magic number 和版本号用于校验
-
-增强 — IncrementalReport：
-生成 Markdown 摘要报告，汇总变更内容、重新执行项、复用项、
-以及相对完整重分析预估节省的时间
-
-增强 — WatchdogRebuild：
-通过文件 mtime 轮询检测被分析二进制何时重新编译
-自动触发增量重分析
+增强:
+- 调用图感知影响分析: 使用 r2 的 agj 命令获取 JSON 格式调用关系,
+  构建邻接表后 BFS 遍历确定受影响范围
+- 差分影响分析 (DifferentialImpactAnalysis): diff 后计算每个变更
+  函数的 blast_radius (传递性调用该函数的唯一函数数量), 按
+  blast_radius 降序执行, 高扇出函数优先, 避免先执行叶子函数
+  造成的重复回溯
+- 编译器版本校验 (CacheInvalidationTag): 通过 r2 iI~compiler 提取
+  编译器版本, 存入 StateCheckpoint.compiler_tag; 新旧 binary 的
+  compiler_tag 不一致时所有 checkpoint 直接作废 — 编译器/优化选项
+  不同意味着即使函数 disasm 相同, 二进制布局也可能差异巨大
+- DeltaSerializer: FuncChange 列表序列化为紧凑二进制格式
+  (func_name_hash 8B + status 1B + flags 1B + old/new_hash 各 32B
+  可选 + blast_radius 4B), 支持反序列化快速重载, 无需重新运行
+  r2 哈希; 文件头含 magic 与版本号校验
+- IncrementalReport: 生成 Markdown 摘要报告, 汇总变更内容、
+  重新执行项、复用项与相对完整重分析预估节省的时间
+- WatchdogRebuild: 通过文件 mtime 轮询检测二进制重编译,
+  自动触发增量重分析
 """
 
 import logging
@@ -83,7 +74,7 @@ _DELTA_ENTRY_MAX_BYTES: int = 8 + 1 + 1 + 32 + 32 + 4  # 78 bytes
 
 @dataclass
 class FuncChange:
-    """Delta record: old hash, new hash, status, blast_radius for one function"""
+    """单个函数的差异记录: 旧哈希、新哈希、状态与影响半径。"""
     func_name: str
     status: str
     old_hash: Optional[str] = None
@@ -94,7 +85,7 @@ class FuncChange:
 
 @dataclass
 class SolverCacheEntry:
-    """Single constraint→result mapping access timestamp"""
+    """约束到结果的一次映射, 含访问时间戳。"""
     constraint_hash: str = ""
     result: Any = None
     model: Any = None
@@ -104,7 +95,7 @@ class SolverCacheEntry:
 
 @dataclass
 class StateCheckpoint:
-    """Serialized execution state bound a function version hash"""
+    """绑定函数版本哈希的序列化执行状态。"""
     state_id: str = ""
     pc: int = 0
     func_name: str = ""
@@ -145,12 +136,10 @@ class _BloomFilter:
 # precompute_call_fanout — 构建反向调用图，BFS 计数每个函数的传递性调用者
 # 结果存入 fanout_cache（Dict[str, int]），供 DifferentialImpactAnalysis 使用
 def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
-    """BFS-count unique transitive callers for function
-    
-    构建 rev_call_adj (callee → [caller_list]) call_adj, for
-    leaf function BFS-遍历 upward count distinct transitive
-    caller functions. result a fanout_缓存mapping function name
-    blast_radius
+    """BFS 统计每个函数的唯一传递性调用者数 (blast_radius)。
+
+    由 call_adj 构建反向邻接 (callee -> [caller]), 对每个函数
+    向上 BFS 计数不同的传递性调用者, 结果存入 fanout_cache。
     """
     # 反向邻接：谁调用了这个函数
     rev_call_adj: Dict[str, List[str]] = defaultdict(list)
@@ -190,13 +179,11 @@ def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
 #
 # func_name_hash = sha256(func_name) 的前 8 字节，用于快速索引。
 class DeltaSerializer:
-    """序列化 FuncChange lists a compact 二进制格式 using struct packing
-    
-    紧凑二进制格式：
-    func_name_hash(8B) + status(1B) + flags(1B)
-    + old_hash(32B optional) + new_hash(32B optional) + blast_radius(4B)
-    
-    反序列化 for fast 重载 re-running r2 哈希
+    """把 FuncChange 列表序列化为紧凑二进制格式。
+
+    条目: func_name_hash(8B) + status(1B) + flags(1B) + old_hash(32B
+    可选) + new_hash(32B 可选) + blast_radius(4B); 反序列化用于
+    快速重载, 无需重新运行 r2 哈希。
     """
 
     # flags 字节的位定义
@@ -211,7 +198,7 @@ class DeltaSerializer:
 
     @staticmethod
     def _hex_to_bytes(hex_str: Optional[str]) -> Optional[bytes]:
-        """转换 a hex SHA256 string (64 chars) 32 raw bytes"""
+        """把 64 字符 hex SHA256 字符串转为 32 原始字节, 非法输入返回 None。"""
         if not hex_str or len(hex_str) != 64:
             return None
         try:
@@ -221,14 +208,11 @@ class DeltaSerializer:
 
     @staticmethod
     def _bytes_to_hex(raw: bytes) -> str:
-        """转换 32 raw bytes back 64-char hex string"""
+        """把 32 原始字节转回 64 字符 hex 字符串。"""
         return raw.hex()
 
     def serialize(self, changes: List[FuncChange]) -> bytes:
-        """Pack a list FuncChange a compact binary blob
-        
-        返回 bytes ready for writing disk
-        """
+        """把 FuncChange 列表打包为紧凑二进制 blob, 返回可写盘的 bytes。"""
         buf = io.BytesIO()
         # 文件头：magic(4B) + version(2B) + entry_count(4B)
         buf.write(_DELTA_MAGIC)
@@ -265,10 +249,7 @@ class DeltaSerializer:
         return buf.getvalue()
 
     def serialize_to_file(self, changes: List[FuncChange], filepath: str) -> int:
-        """序列化 FuncChange list 写入 directly a file
-        
-        返回 number bytes written
-        """
+        """序列化 FuncChange 列表并直接写入文件, 返回写入字节数。"""
         data = self.serialize(changes)
         os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
         with open(filepath, 'wb') as f:
@@ -280,11 +261,7 @@ class DeltaSerializer:
         return len(data)
 
     def deserialize(self, data: bytes) -> List[FuncChange]:
-        """脱壳 a binary blob back a list FuncChange
-        
-        校验s magic number version parsing
-        Raises ValueError corrupt data
-        """
+        """从二进制 blob 还原 FuncChange 列表, 校验 magic 与版本, 数据损坏抛 ValueError。"""
         if len(data) < 10:
             raise ValueError("Delta data too short for header")
 
@@ -347,7 +324,7 @@ class DeltaSerializer:
         return changes
 
     def deserialize_from_file(self, filepath: str) -> List[FuncChange]:
-        """读取 a delta binary file 反序列化 FuncChange list"""
+        """读取 delta 二进制文件并反序列化为 FuncChange 列表。"""
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Delta file not found: {filepath}")
         with open(filepath, 'rb') as f:
@@ -357,11 +334,7 @@ class DeltaSerializer:
     def deserialize_with_names(
         self, data: bytes, func_name_map: Dict[int, str]
     ) -> List[FuncChange]:
-        """反序列化 恢复 original function names a name_hash→name map
-        
-        使用 caller original function name list wants
-        human-readable func_name values deserialized changes
-        """
+        """反序列化并借助 name_hash->name 映射恢复原始函数名。"""
         changes = self.deserialize(data)
         for c in changes:
             # 从 func_name 字段解析出 name_hash
@@ -382,11 +355,9 @@ class DeltaSerializer:
 #   2. 重新执行列表（含 blast_radius）
 #   3. 复用列表
 #   4. 时间节省估计（reused_count * avg_time_per_func）
-# 5. 编译器_tag 信息
+# 5. compiler_tag 信息
 class IncrementalReport:
-    """构造 a markdown 报告 summarizing changed, re-executed
-    reused, estimated time saved vs full re-运行
-    """
+    """生成 Markdown 摘要报告, 汇总变更、重执行、复用与时间节省估计。"""
 
     # 每个函数平均符号执行时间（秒），用于估算节省时间
     DEFAULT_AVG_EXEC_SECONDS: float = 2.5
@@ -408,21 +379,10 @@ class IncrementalReport:
         binary_old: Optional[str] = None,
         binary_new: Optional[str] = None,
     ) -> str:
-        """构造 a Markdown-formatted incremental analysis 报告
-        
-        Args:
-        changes: full list FuncChange entries diff
-        executed: Number functions actually re-executed
-        reused: Number functions state loaded from缓存
-        affected: Sorted list function names affected set
-        total_funcs: Total number functions new binary
-        编译器_tag: Extracted 编译器 tag string
-        检查点s_in校验d: Whether 检查点s in校验d
-        binary_old: Path old binary (optional)
-        binary_new: Path new binary (optional)
-        
-        返回:
-        A Markdown string suitable for saving.md or displaying
+        """生成 Markdown 格式的增量分析报告。
+
+        汇总变更明细 (按 blast_radius 排序)、重新执行/复用项、
+        受影响函数与相对完整重分析节省的时间估算。
         """
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         lines: List[str] = []
@@ -542,10 +502,7 @@ class IncrementalReport:
         binary_old: Optional[str] = None,
         binary_new: Optional[str] = None,
     ) -> str:
-        """构造 报告 写入 a Markdown file
-        
-        返回 file path success
-        """
+        """生成报告并写入 Markdown 文件, 返回文件路径。"""
         report = self.generate(
             changes=changes,
             executed=executed,
@@ -570,16 +527,10 @@ class IncrementalReport:
 # 调用注册的回调函数（通常是 IncrementalSymbEx.run_incremental）
 # polling_interval 控制轮询频率（默认 5 秒）
 class WatchdogRebuild:
-    """使用 file mtime polling 检测 binary under analysis
-    recompiled, auto-triggering incremental re-analysis
-    
-    运行 a background daemon thread polls os.path.getmtime a
-    配置urable interval. mtime differs previously recorded
-    timestamp, fires 寄存器ed 回调 (old_mtime, new_mtime, binary_path)
-    
-    回调签名: Callable[[str, str, Optional[str]], Dict[str,]]
-    参数依次是 binary_path, old_binary_path (可选), mtime_info 字符串
-    如果提供了 old_binary_path，回调应执行增量分析；否则为首次分析
+    """用文件 mtime 轮询检测被分析二进制是否重编译, 自动触发增量重分析。
+
+    后台 daemon 线程按可配置间隔轮询 os.path.getmtime; mtime 与上次
+    记录不一致时触发注册的回调 (binary_path, old_binary_path, context)。
     """
 
     def __init__(
@@ -588,14 +539,11 @@ class WatchdogRebuild:
         polling_interval: float = 5.0,
         old_binary_path: Optional[str] = None,
     ):
-        """初始化 watchdog for a specific binary
-        
-        Args:
-        binary_path: Path binary 监控
-        polling_interval: Seconds mtime 检查 (default 5)
-        old_binary_path:, path a previous version binary
-        a rebuild detected, watchdog 提供
-        回调 for incremental diffing
+        """初始化指定二进制的 watchdog。
+
+        polling_interval 为 mtime 检查间隔 (默认 5s);
+        old_binary_path 为上一版本二进制路径, 检测到重建后
+        提供给回调做增量 diff。
         """
         self._binary_path = os.path.abspath(binary_path)
         self._polling_interval = max(1.0, polling_interval)
@@ -633,7 +581,7 @@ class WatchdogRebuild:
         return self._last_mtime
 
     def _refresh_mtime(self) -> Optional[float]:
-        """读取 current mtime disk. 返回 None file absent"""
+        """读取磁盘上的当前 mtime, 文件不存在时返回 None。"""
         try:
             return os.path.getmtime(self._binary_path)
         except OSError:
@@ -642,23 +590,16 @@ class WatchdogRebuild:
     def register_callback(
         self, callback: Callable[[str, Optional[str], Dict[str, Any]], Any]
     ):
-        """寄存器 a 回调 invoked rebuild detection
-        
-        回调 签名:
-        回调(binary_path: str, old_binary_path: Optional[str]
-        context: Dict[str,]) ->
-        
-        context dict 包含:
-        - 'old_mtime': previous mtime value
-        - 'new_mtime': newly detected mtime value
-        - 'rebuild_count': rebuilds detected far
-        - 'event_time': ISO-格式化 timestamp detection
+        """注册重建检测时触发的回调。
+
+        回调签名: callback(binary_path, old_binary_path, context);
+        context 含 old_mtime/new_mtime/rebuild_count/event_time。
         """
         with self._lock:
             self._callbacks.append(callback)
 
     def start(self):
-        """启动 background polling thread (daemon, non-blocking)"""
+        """启动后台轮询线程 (daemon, 非阻塞)。"""
         if self._running:
             logger.warning("WatchdogRebuild already running for %s", self._binary_path)
             return
@@ -682,11 +623,7 @@ class WatchdogRebuild:
         )
 
     def stop(self, timeout: float = 10.0):
-        """Signal polling thread 停止 wait for join
-        
-        Args:
-        timeout: Max seconds wait for thread exit
-        """
+        """通知轮询线程停止并等待其退出, timeout 为最长等待秒数。"""
         if not self._running:
             return
         self._stop_event.set()
@@ -697,7 +634,7 @@ class WatchdogRebuild:
         logger.info("WatchdogRebuild stopped: %s", self._binary_path)
 
     def _poll_loop(self):
-        """Main polling loop running a background thread"""
+        """后台轮询主循环。"""
         while not self._stop_event.is_set():
             try:
                 current_mtime = self._refresh_mtime()
@@ -726,7 +663,7 @@ class WatchdogRebuild:
                 break
 
     def _on_rebuild_detected(self, old_mtime: float, new_mtime: float):
-        """Fire 寄存器ed 回调s 构建 context"""
+        """触发已注册的回调并构造 context。"""
         self._rebuild_count += 1
 
         context: Dict[str, Any] = {
@@ -753,19 +690,15 @@ class WatchdogRebuild:
                     self._binary_path, e
                 )
 
-        # 构建完成后，将旧路径设为当前路径以供后续增量 diff
+        # 首次重建后, 将当前 binary 视为后续增量 diff 的旧版本
         if self._old_binary_path is None:
-            # 首次重建后，将当前 binary 备份视为"旧版本"
-            pass
+            self._old_binary_path = self._binary_path
 
 
 class CacheInvalidationTag(str, Enum):
-    """缓存失效标记——标识需要作废缓存的事件类型"""
+    """缓存失效标记, 标识需要作废缓存的事件类型。"""
     function_changed = "function_changed"
     constraint_updated = "constraint_updated"
-
-    def __init__(self, r2_path: str = "r2"):
-        self.r2_path = r2_path
 
 def _extract_compiler_tag(binary_path: str, r2_path: str = "r2") -> str:
     """运行 r2 提取编译器信息字符串；失败返回空串"""
@@ -782,10 +715,6 @@ def _extract_compiler_tag(binary_path: str, r2_path: str = "r2") -> str:
     except Exception as e:
         logger.warning("Compiler tag extraction failed: %s", e)
     return ""
-
-    def compiler_tag(self, binary_path: str) -> str:
-        """Alias: same extract_编译器_tag, short form for external callers"""
-        return self.extract_compiler_tag(binary_path)
 
 def _should_invalidate_checkpoints(binary_old: str, binary_new: str,
                                    r2_path: str = "r2") -> bool:
@@ -805,11 +734,11 @@ def _should_invalidate_checkpoints(binary_old: str, binary_new: str,
 
 
 class DifferentialImpactAnalysis:
-    """计算 blast_radius 对每个 changed function prioritize impact
-    
-    差分影响分析：调用 precompute_call_fanout 构建 fanout_cache
-    然后为每个变更函数分配 blast_radius = 传递性调用该函数的唯一函数数量
-    影响越大的函数（被更多函数传递依赖）越应优先重执行
+    """差分影响分析: 计算每个变更函数的 blast_radius 并排序。
+
+    调用 precompute_call_fanout 构建 fanout_cache, 为每个变更函数
+    分配 blast_radius = 传递性调用该函数的唯一函数数量; 影响越大
+    (被更多函数传递依赖) 越应优先重执行。
     """
 
     def __init__(self, call_adj: Optional[Dict[str, List[str]]] = None):
@@ -817,7 +746,7 @@ class DifferentialImpactAnalysis:
         self._fanout_cache: Dict[str, int] = {}
 
     def compute_blast_radii(self, changes: List[FuncChange]) -> List[FuncChange]:
-        """Annotate change blast_radius, sorted descending"""
+        """为变更列表标注 blast_radius, 按降序返回。"""
         if self._call_adj:
             self._fanout_cache = precompute_call_fanout(self._call_adj)
 
@@ -833,7 +762,7 @@ class DifferentialImpactAnalysis:
 
     def prioritize_execution_order(self,
                                    changes: List[FuncChange]) -> List[FuncChange]:
-        """排序 changes high blast_radius entries come first. Convenience 封装"""
+        """按 blast_radius 降序排列变更列表, 便捷封装。"""
         return self.compute_blast_radii(changes)
 
     @property
@@ -842,7 +771,7 @@ class DifferentialImpactAnalysis:
 
     @property
     def rev_call_adj(self) -> Dict[str, List[str]]:
-        """Rebuild 返回 reverse adjacency demand"""
+        """按需重建并返回反向邻接表。"""
         rev: Dict[str, List[str]] = defaultdict(list)
         for caller, callees in self._call_adj.items():
             for callee in callees:
@@ -851,8 +780,7 @@ class DifferentialImpactAnalysis:
 
 
 class FunctionHasher:
-    """计算 SHA256 over r2's 反汇编 输出 for a function
-    Identical 反汇编 → identical hash → safe skip"""
+    """对 r2 反汇编输出计算 SHA256, 反汇编相同则哈希相同, 可安全跳过。"""
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
@@ -863,7 +791,7 @@ class FunctionHasher:
         return hashlib.sha256((func_name or "").encode("utf-8")).hexdigest()
 
     def _run(self, binary_path: str, func: str) -> str:
-        """反汇编 one function r2 hash 输出"""
+        """用 r2 反汇编单个函数并对其输出取哈希。"""
         import subprocess
         try:
             result = subprocess.run(
@@ -877,11 +805,11 @@ class FunctionHasher:
             return ""
 
     def hash_all(self, binary_path: str, funcs: List[str]) -> Dict[str, str]:
-        """Hash function list; 返回 name→sha256 map"""
+        """对函数列表批量哈希, 返回 name->sha256 映射。"""
         return {fn: self._run(binary_path, fn) for fn in funcs}
 
     def list_functions(self, binary_path: str) -> List[str]:
-        """Enumerate function names via r2's 'afl' command"""
+        """通过 r2 的 afl 命令枚举函数名。"""
         import subprocess
         try:
             result = subprocess.run(
@@ -902,7 +830,7 @@ class FunctionHasher:
 
     def build_call_graph(self, binary_path: str) -> Dict[str, List[str]]:
         """使用 r2 `agj` 命令获取 JSON 格式的调用图
-        
+
         `agj` 输出为每个函数的 JSON 对象，包含 `name` 和 `call_refs` 字段
         构建邻接表 {caller → [callee_list]}，用于精确的影响范围分析"""
         import subprocess
@@ -925,8 +853,11 @@ class FunctionHasher:
 
 
 class SolverCache:
-    """Two-tier constraint solution缓存: memory dict + per-key disk files
-    bloom prefilter. Evicts oldest entry max_size exceeded"""
+    """两级约束解缓存: 内存 dict + 每 key 磁盘文件, 布隆预筛。
+
+    超出 max_size 时逐出最旧条目; 布隆过滤器用于访问磁盘前的
+    快速负向过滤, 全 0 则可确定 key 不在磁盘上。
+    """
 
     def __init__(self, cache_dir: Optional[str] = None, max_size: int = 10000):
         if cache_dir is None:
@@ -938,24 +869,50 @@ class SolverCache:
         self.max_size = max_size
         self._mem: Dict[str, SolverCacheEntry] = {}
         self._lock = threading.Lock()
+        self._bloom = _BloomFilter()
         self._hits = 0
         self._misses = 0
 
+    @staticmethod
+    def _key(key: str) -> str:
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
+
     def put(self, key: str, entry: SolverCacheEntry):
-        """存储一个 key→entry 映射；超限时逐出最早插入项"""
+        """存储一个 key→entry 映射, 同步写磁盘, 超限时逐出最早插入项。"""
         with self._lock:
             if len(self._mem) >= self.max_size:
                 self._mem.pop(next(iter(self._mem)))
             self._mem[key] = entry
+            self._bloom.add(key)
+        try:
+            with open(os.path.join(self.cache_dir, self._key(key)), 'wb') as f:
+                pickle.dump(entry, f)
+        except Exception as e:
+            logger.warning(f"Failed to save solver cache: {e}")
 
     def get(self, key: str) -> Optional[SolverCacheEntry]:
-        """按键获取条目；未命中返回 None"""
+        """按键获取条目, 内存未命中时经布隆预筛后回退磁盘。"""
         with self._lock:
             if key in self._mem:
                 self._hits += 1
                 return self._mem[key]
+            if not self._bloom.might_contain(key):
+                self._misses += 1
+                return None
+        path = os.path.join(self.cache_dir, self._key(key))
+        if os.path.exists(path):
+            try:
+                with open(path, 'rb') as f:
+                    entry = pickle.load(f)
+                with self._lock:
+                    self._mem[key] = entry
+                self._hits += 1
+                return entry
+            except Exception as e:
+                logger.warning(f"Failed to load solver cache: {e}")
+        with self._lock:
             self._misses += 1
-            return None
+        return None
 
     def size(self) -> int:
         return len(self._mem)
@@ -963,6 +920,7 @@ class SolverCache:
     def clear(self):
         with self._lock:
             self._mem.clear()
+            self._bloom = _BloomFilter()
             self._hits = 0
             self._misses = 0
 
@@ -971,24 +929,15 @@ class SolverCache:
 
 
 class IncrementalSymbEx:
-    """Core incremental engine
-    
-    维护 function hash maps old new binaries. Identifies
-    unchanged functions, 加载 their缓存d execution states
-    re-执行 modified/added functions plus anything call
-    reachability cone
-    
-    增强 — 调用图感知：
-    使用 r2 `agj` 构建精确的 {caller → [callee_list]} 邻接表
-    从每个变更函数出发 BFS 遍历以确定受影响范围
-    
-    增强 — 编译器版本检查：
-    在加载 检查点 前通过缓存In校验Tag 比较新旧 binary 的
-    compiler_tag。不一致则所有 checkpoint 失效，与函数 hash 无关
-    
-    增强 — 差分影响排序：
-    DifferentialImpactAnalysis 计算 blast_radius 后按影响范围降序执行
-    高扇出函数优先重分析
+    """增量符号执行核心引擎。
+
+    维护新旧二进制的函数哈希映射; 识别未变更函数并从缓存加载
+    其执行状态, 重执行修改/新增函数及其调用可达闭包。
+
+    增强: 调用图感知 (r2 agj 构建 {caller -> [callee_list]} 邻接表,
+    从变更函数 BFS 确定受影响范围); 编译器版本检查 (新旧
+    compiler_tag 不一致则全部 checkpoint 失效, 与函数哈希无关);
+    差分影响排序 (按 blast_radius 降序执行, 高扇出函数优先)。
     """
 
     def __init__(self, cache_dir: Optional[str] = None,
@@ -1006,15 +955,45 @@ class IncrementalSymbEx:
         # 承担；此处原赋值用 r2_path 字符串构造 CacheInvalidationTag 枚举必然抛
         # ValueError，且该属性全模块无读取方，属清理脚本残留，直接移除。
         self._checkpoints_invalidated: bool = False
+        # 最近一次 run_incremental/analyze 的结果, 供 get_report 使用
+        self._last_run: Optional[Dict[str, Any]] = None
 
     def get_report(self) -> "IncrementalReport":
-        """返回当前增量符号执行摘要报告"""
+        """返回报告生成器; 最近一次运行数据存于 _last_run。
+
+        调用方可用 generate() 生成 Markdown 摘要。
+        """
         return IncrementalReport()
 
     def analyze(self, target_func: str = "", max_steps: int = 100,
                 **kwargs) -> "IncrementalReport":
-        """对目标函数执行增量符号执行并返回报告"""
-        return IncrementalReport()
+        """对目标函数执行增量符号执行并返回报告。
+
+        便捷入口: binary_path 经 kwargs 传入, 内部调用
+        run_incremental, 仅对 target_func 注入执行 runner,
+        其余函数跳过; max_steps 作为单函数步数上限透传给 runner。
+        """
+        binary_new = kwargs.get('binary_path')
+        if not binary_new:
+            logger.warning("analyze() requires 'binary_path' kwarg")
+            return self.get_report()
+
+        target = target_func or kwargs.get('target_func') or ""
+        if not target:
+            logger.warning("analyze() requires target_func")
+            return self.get_report()
+
+        binary_old = kwargs.get('binary_old')
+
+        def target_runner(fn, bp):
+            # 仅对目标函数执行; 其余函数返回 None 表示跳过
+            if fn != target:
+                return None
+            return {'states': max_steps, 'func': fn, 'binary': bp,
+                    'max_steps': max_steps}
+
+        self.run_incremental(binary_old, binary_new, runner=target_runner)
+        return self.get_report()
 
     def reset(self):
         """清空已缓存的函数哈希与失效标记"""
@@ -1025,7 +1004,7 @@ class IncrementalSymbEx:
 
     def diff_functions(self, binary_old: str,
                        binary_new: str) -> List[FuncChange]:
-        """Produce a per-function change list two binary versions"""
+        """产生两个二进制版本间的逐函数变更列表。"""
         funcs_old = self.hasher.list_functions(binary_old)
         funcs_new = self.hasher.list_functions(binary_new)
         self._old_hashes = self.hasher.hash_all(binary_old, funcs_old)
@@ -1056,11 +1035,10 @@ class IncrementalSymbEx:
 
     def diff_with_impact(self, binary_old: str,
                          binary_new: str) -> List[FuncChange]:
-        """diff_functions + DifferentialImpactAnalysis priority sorting
-        
-        计算 blast_radius for changed function 返回
-        change list sorted blast_radius descending. 高扇出函数优先执行
-        避免被低扇出叶子阻塞
+        """diff_functions 加差分影响优先级排序。
+
+        计算变更函数的 blast_radius, 返回按 blast_radius 降序的
+        变更列表; 高扇出函数优先执行, 避免被低扇出叶子阻塞。
         """
         changes = self.diff_functions(binary_old, binary_new)
         call_adj = self.hasher.build_call_graph(binary_new)
@@ -1070,7 +1048,7 @@ class IncrementalSymbEx:
     def _affected_callers(self, changed: List[str],
                           binary_path: str) -> Set[str]:
         """BFS call graph: 从每个变更函数出发，遍历所有调用者
-        
+
         构建反向邻接表 {callee → [caller_list]}，然后 BFS 即可高效找到
         所有（直接或间接）调用了变更函数的函数"""
         call_adj = self.hasher.build_call_graph(binary_path)
@@ -1091,12 +1069,12 @@ class IncrementalSymbEx:
         return affected
 
     def _state_path(self, func_name: str, version_hash: str) -> str:
-        """文件系统 path for a function's 检查点 file"""
+        """函数检查点文件的文件系统路径。"""
         return os.path.join(self._state_dir, f"{func_name}_{version_hash}.pkl")
 
     def save_state(self, func_name: str, version_hash: str,
                    checkpoint: StateCheckpoint) -> bool:
-        """Persist execution state disk"""
+        """把执行状态持久化到磁盘检查点文件。"""
         try:
             with open(self._state_path(func_name, version_hash), 'wb') as f:
                 pickle.dump(checkpoint, f)
@@ -1106,10 +1084,11 @@ class IncrementalSymbEx:
             return False
 
     def load_state(self, func_name: str, version_hash: str) -> Optional[StateCheckpoint]:
-        """恢复 execution state disk. 返回 None absent
-        
-        如果 _检查点s_in校验d 为 True（编译器_tag 不一致触发）
-        直接返回 None——不信任任何旧状态"""
+        """从磁盘恢复执行状态, 不存在返回 None。
+
+        _checkpoints_invalidated 为 True (编译器 tag 不一致触发)
+        时直接返回 None——不信任任何旧状态。
+        """
         if self._checkpoints_invalidated:
             return None
         path = self._state_path(func_name, version_hash)
@@ -1134,16 +1113,15 @@ class IncrementalSymbEx:
                         binary_old: Optional[str],
                         binary_new: str,
                         runner=None) -> Dict[str, Any]:
-        """执行 incremental analysis
-        
-        binary_old=None signals a first 运行 — function 执行
-        runner callable 接收 (func_name, binary_path) → dict
-        
-        增强逻辑：
-        1. 如果 binary_old 非空，通过缓存In校验Tag 比较 编译器_tag
-        不一致则作废全部 checkpoint
-        2. 通过 diff_with_impact 获取按 blast_radius 降序排列的变更列表
-        确保高影响力函数优先执行
+        """执行增量分析, 返回汇总结果。
+
+        binary_old=None 表示首次运行; runner 可调用, 接收
+        (func_name, binary_path) 并返回结果 dict, 返回 None 时
+        跳过该函数。
+
+        增强逻辑: 1) binary_old 非空时比较新旧 compiler_tag,
+        不一致则作废全部 checkpoint; 2) diff_with_impact 按
+        blast_radius 降序排列变更列表, 高影响力函数优先执行。
         """
         # 编译器标签校验 —— 不一致则全体 checkpoint 作废
         if binary_old is not None:
@@ -1186,6 +1164,11 @@ class IncrementalSymbEx:
             else:
                 runner_local = runner
             out = runner_local(c.func_name, binary_new)
+            if out is None:
+                # runner 返回 None 表示跳过该函数, 不计入执行数
+                results.append({'func': c.func_name, 'status': 'skipped',
+                                'blast_radius': c.blast_radius})
+                continue
             exec_count += 1
             if c.new_hash:
                 ck = StateCheckpoint(
@@ -1202,7 +1185,7 @@ class IncrementalSymbEx:
                 'output': out,
                 'blast_radius': c.blast_radius
             })
-        return {
+        self._last_run = {
             'success': True,
             'total_funcs': len(all_funcs),
             'executed': exec_count,
@@ -1210,5 +1193,7 @@ class IncrementalSymbEx:
             'affected': sorted(list(affected)),
             'results': results,
             'compiler_tag': compiler_tag,
-            'checkpoints_invalidated': self._checkpoints_invalidated
+            'checkpoints_invalidated': self._checkpoints_invalidated,
+            'changes': changes,
         }
+        return self._last_run

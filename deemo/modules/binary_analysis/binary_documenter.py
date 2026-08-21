@@ -1,47 +1,26 @@
 #!/usr/bin/env python3
-"""
-Automated binary documentation and function annotation module.
+"""二进制自动化文档与函数注解模块。
 
-Leverages decompilation and AI analysis results to automatically generate
-reverse-engineering-oriented documentation (Markdown format) for key functions
-in a binary, describing function purpose, parameters, return values, internal
-logic and potential risks — akin to automated "reverse engineering notes."
-
-Author: BinMind Security Team
-Version: 1.0.0
+结合反编译与 AI 分析结果, 为二进制关键函数自动生成逆向导向的
+Markdown 文档: 函数用途/参数/返回值/内部逻辑/潜在风险,
+相当于自动化的"逆向工程笔记"。
 """
 
-import os
 import json
 import logging
+import os
 import re
-from typing import List, Dict, Optional, Any
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger('binmind.binary_documenter')
 
 
 @dataclass
 class FunctionDoc:
-    """Function documentation data structure.
-
-    Each field corresponds to one dimension of function metadata.
-
-    Attributes:
-        name: Function name
-        address: Function address
-        description: Functional description
-        parameters: Parameter list
-        return_value: Return value description
-        calling_convention: Calling convention
-        side_effects: Side effect list
-        risk_level: Risk level
-        dependencies: Dependency function list
-        pseudocode: Pseudocode snippet
-        notes: Remarks
-    """
+    """函数文档结构: 名称/地址/描述/参数/返回值/调用约定/副作用/风险/依赖/伪代码/备注。"""
     name: str
     address: str = ''
     description: str = ''
@@ -70,11 +49,7 @@ class FunctionDoc:
         }
 
     def to_markdown(self) -> str:
-        """Convert to Markdown format.
-
-        Returns:
-            Markdown string
-        """
+        """转换为 Markdown 格式。"""
         md_lines = [
             f"## {self.name}",
             "",
@@ -143,18 +118,7 @@ class FunctionDoc:
 
 @dataclass
 class DocumenterConfig:
-    """Document generator configuration.
-
-    Configuration object responsible for all output and behavior switches.
-
-    Attributes:
-        output_dir: Output directory
-        output_format: Output format (markdown/json/pdf)
-        include_pseudocode: Whether to include pseudocode
-        include_risk_analysis: Whether to include risk analysis
-        language: Document language
-        project_name: Project name
-    """
+    """文档生成配置: 输出目录/格式(markdown|json|pdf)/是否含伪代码/是否含风险分析/语言/项目名。"""
     output_dir: str = './reports/docs'
     format: str = 'markdown'
     include_pseudocode: bool = True
@@ -163,7 +127,7 @@ class DocumenterConfig:
     project_name: str = 'unknown'
 
     def validate(self) -> bool:
-        """Validate configuration."""
+        """配置校验。"""
         if self.format not in ['markdown', 'json', 'pdf']:
             logger.error(f"[DocGen] 不支持的格式: {self.format}")
             return False
@@ -171,24 +135,15 @@ class DocumenterConfig:
 
 
 class BinaryDocumenter:
-    """Binary document generator.
+    """二进制文档生成器。
 
-    Leverages decompilation and AI analysis results to automatically generate
-    reverse-engineering-oriented documentation for key functions in a binary,
-    describing function purpose, parameters, return values, internal logic
-    and potential risks.
-
-    Core pipeline: extract -> analyze -> document -> save
-
-    Attributes:
-        config: Document generator configuration
-        functions: Function document list
-        pseudocode: Decompiled pseudocode
-        ai_analysis_results: AI analysis results
+    结合反编译与 AI 分析结果, 为二进制关键函数自动生成逆向导向
+    文档。主链路: extract -> analyze -> document -> save。
+    字段: config 配置, functions 函数文档列表, pseudocode 伪代码,
+    ai_analysis_results AI 分析结果。
     """
 
-    # Calling convention recognition patterns, matching symbol decorations
-    # produced by different compilers.
+    # 调用约定识别模式, 匹配不同编译器的符号修饰
     CALLING_CONVENTIONS = {
         '__stdcall': 'stdcall',
         '__cdecl': 'cdecl',
@@ -197,7 +152,7 @@ class BinaryDocumenter:
         'syscall': 'syscall',
     }
 
-    # Risk level keywords stratified by severity, used to assess function threat potential.
+    # 风险等级关键词按严重度分层, 用于评估函数威胁潜力
     RISK_KEYWORDS = {
         'Critical': ['exec', 'system', 'shell', 'cmd', 'fork', 'ptrace', 'mprotect'],
         'High': ['malloc', 'free', 'strcpy', 'sprintf', 'gets', 'scanf', 'memcpy'],
@@ -206,65 +161,48 @@ class BinaryDocumenter:
     }
 
     def __init__(self, config: DocumenterConfig):
-        """Initialize the document generator.
-
-        Args:
-            config: Document generator configuration
-        """
+        """初始化文档生成器。"""
         self.config = config
         self.functions: List[FunctionDoc] = []
         self.pseudocode: str = ''
         self.ai_analysis_results: Dict[str, Any] = {}
         self.global_analysis: Dict[str, Any] = {}
 
-        # Create output directory.
+        # 创建输出目录
         self._setup_output_dir()
 
         logger.info(f"[DocGen] Document generator initialized, output dir: {config.output_dir}")
 
     def _setup_output_dir(self) -> None:
-        """Set up output directory."""
+        """创建输出目录。"""
         output_path = Path(self.config.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
     def load_pseudocode(self, pseudocode_text: str) -> None:
-        """Load decompiled pseudocode.
-
-        Args:
-            pseudocode_text: Pseudocode text
-        """
+        """载入反编译伪代码。"""
         self.pseudocode = pseudocode_text
         logger.info(f"[DocGen] Pseudocode loaded, length: {len(pseudocode_text)} chars")
 
     def load_ai_analysis(self, analysis_results: Dict[str, Any]) -> None:
-        """Load AI analysis results.
-
-        Args:
-            analysis_results: AI analysis results dictionary
-        """
+        """载入 AI 分析结果。"""
         self.ai_analysis_results = analysis_results
         logger.info(f"[DocGen] AI analysis results loaded")
 
     def extract_functions(self) -> List[Dict[str, Any]]:
-        """Extract functions from pseudocode.
-
-        Returns:
-            List of function info dictionaries
-        """
+        """从伪代码提取函数信息列表。"""
         if not self.pseudocode:
             logger.warning("[DocGen] No pseudocode loaded")
             return []
 
         functions = []
 
-        # Support multiple decompiler output formats (C-style, IDA, Ghidra),
-        # matched by priority.
+        # 支持多种反编译器输出格式 (C 风格 / IDA / Ghidra), 按优先级匹配
         patterns = [
-            # C-style function definition
+            # C 风格函数定义
             r'(?P<return_type>\w+)\s+(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*\{(?P<body>.*?)\n\}',
-            # IDA pseudo-code style
+            # IDA 伪代码风格
             r'(?P<return_type>\w+)\s+(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*//\s*(?P<address>0x[0-9a-fA-F]+)',
-            # Ghidra style
+            # Ghidra 风格
             r'(undefined|void|int|char|long|ulong|uint)\s+(?P<name>\w+)\s*\((?P<params>[^)]*)\)',
         ]
 
@@ -279,7 +217,7 @@ class BinaryDocumenter:
                     'body': match.group('body') if 'body' in match.groupdict() else '',
                 }
 
-                # Deduplicate: multiple regexes may match the same function.
+                # 去重: 多个正则可能命中同一函数
                 if not any(f['name'] == func_info['name'] for f in functions):
                     functions.append(func_info)
 
@@ -287,57 +225,42 @@ class BinaryDocumenter:
         return functions
 
     def analyze_function(self, func_info: Dict[str, Any]) -> FunctionDoc:
-        """Analyze a single function.
-
-        Args:
-            func_info: Function info dictionary
-
-        Returns:
-            FunctionDoc instance
-        """
+        """分析单个函数, 产出 FunctionDoc。"""
         func_name = func_info.get('name', 'unknown')
         func_body = func_info.get('body', '')
         func_params = func_info.get('params', '')
 
-        # Create function document.
+        # 构造函数文档
         func_doc = FunctionDoc(
             name=func_name,
             address=func_info.get('address', ''),
             pseudocode=func_body if self.config.include_pseudocode else '')
 
-        # Analyze parameters.
+        # 解析参数
         func_doc.parameters = self._parse_parameters(func_params)
 
-        # Analyze calling convention, risk level, side effects, and dependencies
-        # in priority order. Each analysis dimension is independent.
+        # 各分析维度独立: 调用约定/风险/副作用/依赖
         func_doc.calling_convention = self._detect_calling_convention(func_body)
         func_doc.risk_level = self._assess_risk_level(func_name, func_body)
         func_doc.side_effects = self._detect_side_effects(func_body)
         func_doc.dependencies = self._detect_dependencies(func_body)
 
-        # Get description from AI analysis results.
+        # 优先取 AI 分析结果中的描述
         if self.ai_analysis_results:
             func_doc.description = self._get_ai_description(func_name)
             func_doc.return_value = self._get_ai_return_value(func_name)
 
-        # Fall back to heuristic description if no AI result available.
+        # 无 AI 结果时回退启发式描述
         if not func_doc.description:
             func_doc.description = self._generate_basic_description(func_name, func_body)
 
         return func_doc
 
     def _parse_parameters(self, params_str: str) -> List[Dict[str, str]]:
-        """Parse parameter string.
-
-        Args:
-            params_str: Parameter string
-
-        Returns:
-            Parameter list
-        """
+        """解析参数字符串为参数列表。"""
         parameters = []
 
-        # 'void' means no-arg function, return empty list.
+        # 'void' 表示无参函数
         if not params_str or params_str.strip() == 'void':
             return parameters
 
@@ -353,7 +276,7 @@ class BinaryDocumenter:
                 param_type = tokens[0]
                 param_name = tokens[-1].replace('*', '')
 
-                # Pointer types append * to the type name.
+                # 指针类型在类型名后追加 *
                 if '*' in part:
                     param_type += '*'
 
@@ -366,32 +289,17 @@ class BinaryDocumenter:
         return parameters
 
     def _detect_calling_convention(self, func_body: str) -> str:
-        """Detect calling convention.
-
-        Args:
-            func_body: Function body
-
-        Returns:
-            Calling convention name
-        """
+        """检测调用约定。"""
         for convention, name in self.CALLING_CONVENTIONS.items():
             if convention in func_body:
                 return name
 
-        # Default to cdecl when unable to identify.
+        # 无法识别时默认 cdecl
         return 'cdecl'
 
     def _assess_risk_level(self, func_name: str, func_body: str) -> str:
-        """Assess function risk level.
-
-        Args:
-            func_name: Function name
-            func_body: Function body
-
-        Returns:
-            Risk level
-        """
-        # Merge function name and body into search text, match from highest to lowest risk.
+        """评估函数风险等级。"""
+        # 函数名与函数体合并为搜索文本, 按风险从高到低匹配
         combined_text = func_name + ' ' + func_body
 
         for level, keywords in self.RISK_KEYWORDS.items():
@@ -402,18 +310,10 @@ class BinaryDocumenter:
         return 'Low'
 
     def _detect_side_effects(self, func_body: str) -> List[str]:
-        """Detect side effects.
-
-        Args:
-            func_body: Function body
-
-        Returns:
-            Side effect list
-        """
+        """检测副作用列表。"""
         side_effects = []
 
-        # Detect side effects by category. Each category uses an independent
-        # regex check and multiple categories may be hit simultaneously.
+        # 按类别独立检测, 可同时命中多个类别
         if re.search(r'malloc|calloc|realloc|free', func_body, re.IGNORECASE):
             side_effects.append('动态内存分配/释放')
 
@@ -432,21 +332,14 @@ class BinaryDocumenter:
         return side_effects
 
     def _detect_dependencies(self, func_body: str) -> List[str]:
-        """Detect dependency functions.
-
-        Args:
-            func_body: Function body
-
-        Returns:
-            Dependency function list
-        """
+        """检测依赖函数列表。"""
         dependencies = []
 
-        # Match function call syntax name(...) to extract all called functions.
+        # 匹配 name(...) 调用语法, 提取所有被调函数
         call_pattern = r'(\w+)\s*\([^)]*\)'
         matches = re.findall(call_pattern, func_body)
 
-        # Filter out control flow keywords, keep only actual function calls.
+        # 过滤控制流关键字, 只保留真实函数调用
         keywords = ['if', 'while', 'for', 'switch', 'return', 'sizeof', 'typeof']
 
         for match in matches:
@@ -456,16 +349,8 @@ class BinaryDocumenter:
         return dependencies
 
     def _get_ai_description(self, func_name: str) -> str:
-        """Get function description from AI analysis results.
-
-        Args:
-            func_name: Function name
-
-        Returns:
-            Function description
-        """
-        # Check functions list first, then vulnerabilities list.
-        # Vulnerability descriptions take higher priority.
+        """从 AI 分析结果取函数描述。"""
+        # 先查 functions 列表, 再查 vulnerabilities 列表, 漏洞描述优先
         if 'functions' in self.ai_analysis_results:
             for func in self.ai_analysis_results['functions']:
                 if func.get('name') == func_name:
@@ -479,14 +364,7 @@ class BinaryDocumenter:
         return ''
 
     def _get_ai_return_value(self, func_name: str) -> str:
-        """Get return value description from AI analysis results.
-
-        Args:
-            func_name: Function name
-
-        Returns:
-            Return value description
-        """
+        """从 AI 分析结果取返回值描述。"""
         if 'functions' in self.ai_analysis_results:
             for func in self.ai_analysis_results['functions']:
                 if func.get('name') == func_name:
@@ -495,17 +373,7 @@ class BinaryDocumenter:
         return ''
 
     def _generate_basic_description(self, func_name: str, func_body: str) -> str:
-        """Generate basic description.
-
-        Args:
-            func_name: Function name
-            func_body: Function body
-
-        Returns:
-            Basic description
-        """
-        # Infer function purpose from naming conventions.
-        # Accuracy depends on whether function names are semantically meaningful.
+        """按命名约定生成基础描述, 精度取决于函数名是否有语义。"""
         name_lower = func_name.lower()
 
         if 'init' in name_lower:
@@ -532,11 +400,7 @@ class BinaryDocumenter:
             return f'函数 {func_name}，需要进一步分析'
 
     def generate_all_docs(self) -> List[FunctionDoc]:
-        """Generate documentation for all functions.
-
-        Returns:
-            Function document list
-        """
+        """为全部函数生成文档。"""
         func_infos = self.extract_functions()
 
         self.functions = []
@@ -548,11 +412,7 @@ class BinaryDocumenter:
         return self.functions
 
     def generate_document(self) -> str:
-        """Generate complete document.
-
-        Returns:
-            Complete Markdown document
-        """
+        """生成完整 Markdown 文档。"""
         if not self.functions:
             self.generate_all_docs()
 
@@ -568,8 +428,7 @@ class BinaryDocumenter:
             "",
         ]
 
-        # Generate TOC anchors. Anchor names use lowercase function names
-        # and must match Markdown heading anchor generation rules.
+        # TOC 锚点用小写函数名, 需与 Markdown 标题锚点生成规则一致
         for func in self.functions:
             doc_lines.append(f"- [{func.name}](#{func.name.lower()})")
 
@@ -582,9 +441,7 @@ class BinaryDocumenter:
         for func in self.functions:
             doc_lines.append(func.to_markdown())
 
-        # Append risk summary if risk analysis is enabled.
-        # Risk summary aggregates risk level distribution across all functions
-        # and highlights high-risk items.
+        # 启用风险分析时追加风险摘要 (各等级分布 + 高风险项)
         if self.config.include_risk_analysis:
             doc_lines.extend([
                 "---",
@@ -598,11 +455,7 @@ class BinaryDocumenter:
         return '\n'.join(doc_lines)
 
     def _generate_risk_summary(self) -> str:
-        """Generate risk summary.
-
-        Returns:
-            Risk summary Markdown
-        """
+        """生成风险摘要 Markdown。"""
         risk_counts = {
             'Critical': 0,
             'High': 0,
@@ -627,7 +480,7 @@ class BinaryDocumenter:
             "",
         ])
 
-        # Only list Critical and High level functions in the summary.
+        # 摘要只列 Critical 与 High 级函数
         high_risk_funcs = [f for f in self.functions if f.risk_level in ['Critical', 'High']]
         if high_risk_funcs:
             for func in high_risk_funcs:
@@ -638,20 +491,13 @@ class BinaryDocumenter:
         return '\n'.join(summary_lines)
 
     def save_document(self, output_path: Optional[str] = None) -> str:
-        """Save document.
-
-        Args:
-            output_path: Output path
-
-        Returns:
-            Saved file path
-        """
+        """保存 Markdown 文档, 返回路径。"""
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{self.config.project_name}_analysis_{timestamp}.md"
             output_path = os.path.join(self.config.output_dir, filename)
 
-        # Path safety check to prevent directory traversal attacks.
+        # 路径安全检查, 防目录穿越
         output_path = os.path.abspath(output_path)
         if not output_path.startswith(os.path.abspath(self.config.output_dir)):
             raise ValueError("Output path is outside the allowed directory scope")
@@ -665,20 +511,13 @@ class BinaryDocumenter:
         return output_path
 
     def save_json(self, output_path: Optional[str] = None) -> str:
-        """Save JSON format document.
-
-        Args:
-            output_path: Output path
-
-        Returns:
-            Saved file path
-        """
+        """保存 JSON 格式文档, 返回路径。"""
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{self.config.project_name}_analysis_{timestamp}.json"
             output_path = os.path.join(self.config.output_dir, filename)
 
-        # Path safety check to prevent directory traversal attacks.
+        # 路径安全检查, 防目录穿越
         output_path = os.path.abspath(output_path)
         if not output_path.startswith(os.path.abspath(self.config.output_dir)):
             raise ValueError("Output path is outside the allowed directory scope")
@@ -693,7 +532,7 @@ class BinaryDocumenter:
             }
         }
 
-        # Compute risk distribution dynamically for chart generation.
+        # 动态统计风险分布, 供图表生成使用
         for func in self.functions:
             level = func.risk_level
             data['summary']['risk_distribution'][level] = data['summary']['risk_distribution'].get(level, 0) + 1
@@ -705,32 +544,18 @@ class BinaryDocumenter:
         return output_path
 
     def get_function_doc(self, func_name: str) -> Optional[FunctionDoc]:
-        """Get documentation for a specific function.
-
-        Args:
-            func_name: Function name
-
-        Returns:
-            FunctionDoc or None
-        """
+        """按名取函数文档, 未命中返回 None。"""
         for func in self.functions:
             if func.name == func_name:
                 return func
         return None
 
     def search_functions(self, keyword: str) -> List[FunctionDoc]:
-        """Search for functions containing a keyword.
-
-        Args:
-            keyword: Search keyword
-
-        Returns:
-            Matching function document list
-        """
+        """按关键词在函数名与描述中大小写不敏感搜索。"""
         results = []
         keyword_lower = keyword.lower()
 
-        # Case-insensitive search in function name and description.
+        # 函数名与描述中大小写不敏感匹配
         for func in self.functions:
             if keyword_lower in func.name.lower() or keyword_lower in func.description.lower():
                 results.append(func)
@@ -738,16 +563,8 @@ class BinaryDocumenter:
         return results
 
     def analyze(self, pseudocode_text: str, ai_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Execute full document generation analysis.
-
-        Args:
-            pseudocode_text: Pseudocode
-            ai_results: AI analysis results
-
-        Returns:
-            Analysis result dictionary
-        """
-        # One-stop entry point: load -> generate -> save pipeline.
+        """完整文档生成分析: load → generate → save。"""
+        # 一站式入口
         self.load_pseudocode(pseudocode_text)
         if ai_results:
             self.load_ai_analysis(ai_results)
@@ -767,14 +584,6 @@ class BinaryDocumenter:
 
 
 def create_documenter(project_name: str, **kwargs) -> BinaryDocumenter:
-    """Convenience function to create a document generator.
-
-    Args:
-        project_name: Project name
-
-    Returns:
-        BinaryDocumenter instance
-    """
-    # Factory function: merges default config with caller-supplied overrides.
+    """便捷工厂: 默认配置与调用方覆盖合并后创建文档生成器。"""
     config = DocumenterConfig(project_name=project_name, **kwargs)
     return BinaryDocumenter(config)

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-# 修改记录:
-# 2025-08-03 11:28 - 加入 leave-one-out 消融的方差估计（重复 5 次随机种子取均值）
+# 加入 leave-one-out 消融的方差估计（重复 5 次随机种子取均值）
 """
-GNN 特征重要性消融分析框架 —— 对 graph_builder 的 12 维特征做系统化量化
+GNN 特征重要性消融分析框架 - 对 graph_builder 的 12 维特征做系统化量化
 
 专利差距分析指出: "12 维特征设计原理未文档化（为什么计数不是比例？为什么这 12 维？）"
 本模块提供消融实验的工具链，使特征设计从"领域直觉"升级为"数据驱动的定量决策"
@@ -37,7 +36,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# graph_builder 的 12 维特征名称 —— 需与 _compute_block_features 保持同步
+# graph_builder 的 12 维特征名称 - 需与 _compute_block_features 保持同步
 FEATURE_NAMES = [
     "in_degree", "out_degree", "num_instructions", "num_calls",
     "num_arith", "num_logic", "num_mem", "num_branch",
@@ -68,8 +67,8 @@ class FeatureImportanceReport:
 
 class FeatureAblationAnalyzer:
     """GNN 节点特征的消融实验执行器
-    
-    不依赖具体的 GNN 实现 —— 通过 model_fn(features, adjacency) → metric 的
+
+    不依赖具体的 GNN 实现 - 通过 model_fn(features, adjacency) → metric 的
     回调接口与被测模型交互。调用方提供:
     - model_fn: 给定特征矩阵和邻接矩阵，返回性能指标（如 F1/AUC）
     - features: (N, 12) numpy 数组, N 个基本块的 12 维特征
@@ -79,14 +78,7 @@ class FeatureAblationAnalyzer:
     def __init__(self, model_fn: Callable[[np.ndarray, Any], float],
                  features: np.ndarray, adjacency: Any,
                  n_repeats: int = 5, random_seed: int = 42):
-        """
-        Args:
-        model_fn: (features, adjacency) → metric_score (higher=better)
-        features: shape (N, 12) 的原始特征矩阵
-        adjacency: 图结构（由 model_fn 决定格式）
-        n_repeats: 每次消融的重复次数（不同随机种子取均值降噪）
-        random_seed: 基础种子
-        """
+        """初始化特征消融分析器。"""
         self._model = model_fn
         self._features = features.astype(np.float64)
         self._adj = adjacency
@@ -102,11 +94,11 @@ class FeatureAblationAnalyzer:
             self._baseline = self._model(self._features, self._adj)
         return self._baseline
 
-    # Individual Abla —— 逐维消融
+    # Individual Abla - 逐维消融
 
     def individual_ablation(self) -> List[FeatureImportanceEntry]:
         """逐维消融: 每次将一维特征归零，测量性能下降
-        
+
         下降 = baseline - ablated_score。正值越大表示该维度越重要
         负值表示该维度可能是噪声（移除后性能反而提升）
         """
@@ -132,11 +124,11 @@ class FeatureAblationAnalyzer:
         entries.sort(key=lambda e: e.individual_ablation_drop, reverse=True)
         return entries
 
-    # Permuta Import —— 破坏信息但保持边际分布
+    # Permuta Import - 破坏信息但保持边际分布
 
     def permutation_importance(self) -> List[FeatureImportanceEntry]:
         """排列重要性: 对每个维度独立重排（破坏与其他维度的关联+自身信息）
-        
+
         与 individual abla 的不同: 消融是"归零该维度"（信息完全消失）
         排列是"保持值域分布不变但断开语义关联"（更接近真实缺失情况）
         """
@@ -162,13 +154,13 @@ class FeatureAblationAnalyzer:
         entries.sort(key=lambda e: e.permutation_drop, reverse=True)
         return entries
 
-    # 相关矩阵 —— 识别冗余特征
+    # 相关矩阵 - 识别冗余特征
 
     def correlation_matrix(self) -> Tuple[np.ndarray, List[Tuple[str, str, float]]]:
         """计算 12×12 Pearson 相关矩阵，标记高度冗余的特征对
-        
+
         高度相关（|r| > 0.85）的两个特征中，保留性能贡献更高的一个
-        另一个标记为 redundant。这不能替代消融实验——只是加速特征筛选
+        另一个标记为 redundant。这不能替代消融实验 - 只是加速特征筛选
         """
         corr = np.corrcoef(self._features.T)
         redundant_pairs: List[Tuple[str, str, float]] = []
@@ -186,7 +178,7 @@ class FeatureAblationAnalyzer:
 
     def full_report(self) -> FeatureImportanceReport:
         """生成完整的特征重要性报告
-        
+
         合并 individual abla、per变异 import 和相关矩阵分析
         产出单一结构化的 FeatureImportanceReport
         """

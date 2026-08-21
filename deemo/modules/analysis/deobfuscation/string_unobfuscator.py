@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-import hashlib
+import base64
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -31,11 +31,11 @@ class DecodeResult:
 
 
 class XORDecoder:
-    """XOR decoder"""
+    """XOR 解码器"""
 
     @staticmethod
     def detect_key(data: bytes) -> Optional[int]:
-        """Heuristic detection single-byte XOR key"""
+        """启发式检测单字节 XOR 密钥"""
         if not data:
             return None
         for key in range(1, 256):
@@ -96,12 +96,11 @@ class XORDecoder:
 
 
 class Base64Decoder:
-    """Base64 decoder"""
+    """Base64 解码器"""
 
     @staticmethod
     def is_base64(data: bytes) -> bool:
         try:
-            import base64
             s = data.decode("ascii", errors="ignore")
             return all(c.isalnum() or c in "+/=" for c in s.strip()) and len(s) > 4
         except Exception:
@@ -110,14 +109,13 @@ class Base64Decoder:
     @staticmethod
     def decode(data: bytes) -> Optional[bytes]:
         try:
-            import base64
             return base64.b64decode(data)
         except Exception:
             return None
 
 
 class RC4Decoder:
-    """RC4 decoder"""
+    """RC4 解码器"""
 
     @staticmethod
     def decode(data: bytes, key: bytes) -> bytes:
@@ -136,9 +134,9 @@ class RC4Decoder:
         return bytes(out)
 
 
-# AES-ECB 模式检测 —— 通过块级熵分析识别 AES 加密的字符串
+# AES-ECB 模式检测 - 通过块级熵分析识别 AES 加密的字符串
 # AES-ECB 密文的特征：16 字节对齐、块间无相关性、字节分布均匀
-# 检测策略：将数据按 16 字节分块，计算块间汉明距的标准差——
+# 检测策略：将数据按 16 字节分块，计算块间汉明距的标准差-
 # AES-ECB 密文各块间汉明距接近 64（均匀随机），标准差 < 10
 
 def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
@@ -170,7 +168,7 @@ def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
 
 
 class MicroInterpreter:
-    """Micro-interpreter for static 仿真 解码 logic"""
+    """用于静态仿真解码逻辑的微型解释器"""
 
     def __init__(self):
         self.registers: Dict[str, int] = {}
@@ -231,7 +229,7 @@ _MOV_IMM_PATTERNS = [
 
 
 class StringUnobfuscator:
-    """String deobfuscator"""
+    """字符串反混淆器"""
 
     _STACK_STRING_PATTERNS = [
         rb'\xc7\x45[\x80-\xff].{3}',
@@ -239,7 +237,7 @@ class StringUnobfuscator:
         rb'\x68.{3}',
     ]
 
-    # RC4 常用密钥 —— 恶意软件常见的硬编码密钥
+    # RC4 常用密钥 - 恶意软件常见的硬编码密钥
     _RC4_COMMON_KEYS = [
         b"key", b"pass", b"rc4", b"1234", b"test",
         b"\x00\x01\x02\x03", b"mail", b"http",
@@ -281,7 +279,7 @@ class StringUnobfuscator:
         return results
 
     def find_string_constructors(self) -> List[Tuple[int, bytes]]:
-        """查找 栈 string construction instructions"""
+        """查找栈上字符串构造指令"""
         results = []
         try:
             with open(self.binary_path, "rb") as f:
@@ -302,7 +300,7 @@ class StringUnobfuscator:
         return results
 
     def decode_string(self, raw: bytes) -> Optional[DecodedString]:
-        """解码 a single string multi-layer 流水线
+        """解码单个字符串的多层流水线
         尝试顺序: XOR single → XOR multi → RC4 → Base64 → AES-ECB 检测
         """
         if not raw:
@@ -323,7 +321,7 @@ class StringUnobfuscator:
                         address=0, original=current.decode("ascii", errors="ignore"),
                         decoded=s, layers_applied=layers)
             except Exception:
-                logger.debug("suppressed", exc_info=True)
+                pass
 
         # 2) 多字节 XOR
         multi_key = XORDecoder.detect_multibyte_key(current)
@@ -339,9 +337,9 @@ class StringUnobfuscator:
                         address=0, original=current.decode("ascii", errors="ignore"),
                         decoded=s, layers_applied=layers)
             except Exception:
-                logger.debug("suppressed", exc_info=True)
+                pass
 
-        # 3) RC4 —— 尝试常用密钥
+        # 3) RC4 - 尝试常用密钥
         if len(current) >= 8:
             for rc4_key in self._RC4_COMMON_KEYS:
                 try:
@@ -369,7 +367,7 @@ class StringUnobfuscator:
                         address=0, original=current.decode("ascii", errors="ignore"),
                         decoded=s, layers_applied=layers)
                 except Exception:
-                    logger.debug("suppressed", exc_info=True)
+                    pass
 
         # 5) AES-ECB 检测
         aes_hit = _detect_aes_ecb(current)
@@ -439,7 +437,7 @@ class StringUnobfuscator:
                         extracted.append(DecodedString(
                             address=pos, original=plain, decoded=plain))
                 except Exception:
-                    logger.debug("suppressed", exc_info=True)
+                    pass
             pos = end + 1
 
         return extracted

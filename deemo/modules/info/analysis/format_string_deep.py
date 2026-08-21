@@ -11,7 +11,7 @@
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple, Set, Optional
-from format_parser_utils import (
+from .format_parser_utils import (
     parse_format_specifiers, split_args, is_string_variable,
 )
 

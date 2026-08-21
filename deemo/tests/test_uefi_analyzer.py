@@ -10,7 +10,6 @@ UEFI 固件分析模块单元测试
 """
 
 import os
-_MOD_DEBUG = False
 import sys
 import unittest
 import tempfile
@@ -26,7 +25,6 @@ class TestUEFIFirmwareAnalyzer(unittest.TestCase):
     """
 
     def setUp(self):
-        # 改进点标记——不阻塞当前功能
         """
         测试前初始化
         """

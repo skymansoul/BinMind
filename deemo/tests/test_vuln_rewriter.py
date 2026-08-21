@@ -28,7 +28,7 @@ class TestVulnerabilityTypeEnum(unittest.TestCase):
         """测试枚举值"""
         self.assertEqual(VulnerabilityType.BUFFER_OVERFLOW.value, "buffer_overflow")
         self.assertEqual(VulnerabilityType.USE_AFTER_FREE.value, "use_after_free")
-# lass字段完整性$/d
+
         self.assertEqual(VulnerabilityType.FORMAT_STRING.value, "format_string")
 
 
@@ -76,7 +76,7 @@ class TestFunctionSummary(unittest.TestCase):
 
         self.assertEqual(summary.name, "test_func")
         self.assertEqual(len(summary.inputs), 2)
-# lass字段完整性$/d
+
         self.assertEqual(len(summary.outputs), 1)
 
 
@@ -96,7 +96,7 @@ class TestIRBuilder(unittest.TestCase):
 
         ir = builder.build_from_code(code)
 
-# lass字段完整性$/d
+
         self.assertIsNotNone(ir)
         self.assertEqual(ir.node_type, "Program")
 
@@ -136,7 +136,7 @@ class TestVulnerabilityRewriter(unittest.TestCase):
         """测试重写器初始化"""
         rewriter = VulnerabilityRewriter()
         self.assertIsInstance(rewriter, VulnerabilityRewriter)
-# lass字段完整性$/d
+
         self.assertIsNotNone(rewriter.config)
 
     def test_rewriter_init_with_config(self):
@@ -294,7 +294,7 @@ class TestEstimatePerformanceImpact(unittest.TestCase):
 
         impact = rewriter._estimate_performance_impact(original, original)
 
-# lass字段完整性$/d
+
         self.assertEqual(impact, 0.0)
 
 

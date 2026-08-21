@@ -1,4 +1,4 @@
-# 堆分配大小对齐归一化 — glibc malloc 的最小对齐是 16 字节 (64-bit) 或 8 字节 (32-bit)
+# 堆分配大小对齐归一化, glibc malloc 的最小对齐是 16 字节 (64-bit) 或 8 字节 (32-bit)
 # 方法论依据: glibc malloc.c 的 request2size() 宏将请求大小向上对齐到 MALLOC_ALIGNMENT
 # alloc(14) 实际获得 16 字节, memcpy(15) 是安全的 — 但朴素比较会误报
 
@@ -17,7 +17,7 @@ _SAFETY_PATTERNS = [
 ]
 
 class HeapSizeAligner:
-    """堆大小对齐归一化 — 消除因对齐导致的假阳性
+    """堆大小对齐归一化, 消除因对齐导致的假阳性
 
     glibc malloc(14) 实际分配 16 字节 (向 MALLOC_ALIGNMENT 对齐)
     若检测器比较 malloc(14) vs memcpy(15) → 不应判定为溢出
@@ -57,10 +57,7 @@ class HeapSizeAligner:
 
     def classify_overflow(self, alloc_size: int, write_size: int,
                           has_bounds_check: bool = False) -> Tuple[str, float]:
-        """分类: 确定为溢出 / 对齐安全 / 需要更多信息
-
-        返回: (verdict, confidence)
-        """
+        """分类: 确定为溢出 / 对齐安全 / 需要更多信息, 返回 (判定, 置信度)。"""
         if alloc_size <= 0 or write_size <= 0:
             return 'potential', 0.35
 

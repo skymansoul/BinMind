@@ -1,4 +1,4 @@
-# 格式化字符串多工具对比主实验 — 统一 CSV 基准测试.
+# 格式化字符串多工具对比主实验 - 统一 CSV 基准测试.
 #
 # 决策逻辑:
 #   对 regression_fmt/build 下全部编译产物运行三类工具:
@@ -7,7 +7,6 @@
 #     angr-fmt         (CFG 层 printf 族调用探测)
 #   输出 eval/results/fmt_benchmark.csv 与 fmt_benchmark.json.
 #
-# 创建: 2025-03-28
 
 import csv
 import json

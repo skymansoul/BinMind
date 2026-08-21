@@ -1,4 +1,4 @@
-"""IO-FPMIN 检测器 — BinaryIntOverflowScanner + 乘法域/写入验证抑制.
+"""IO-FPMIN 检测器 - BinaryIntOverflowScanner + 乘法域/写入验证抑制.
 
 相对既有 scanner 的增强 (不修改原类):
   1. calloc 双参数补检: 原 scanner 只查 rcx/rdi 单参数,
@@ -19,7 +19,7 @@ from ..heap_analysis.instruction_parser import InstructionParser    # noqa: E402
 
 
 class IntOverflowFpminScanner(BinaryIntOverflowScanner):
-    """误报抑制版整数溢出扫描器 — 补检 + 证据过滤."""
+    """误报抑制版整数溢出扫描器 - 补检 + 证据过滤."""
 
     def scan(self, objdump_output: str, sample_name: str = "",
              user_code_only: bool = True,

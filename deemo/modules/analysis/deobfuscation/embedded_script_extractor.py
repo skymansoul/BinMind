@@ -127,7 +127,7 @@ class EmbeddedScriptExtractor:
         self.binary_path = binary_path
         self.binary_data = binary_data
         self.scripts: list = []
-        # 哈希去重 —— 缓存已见内容的 SHA256 以避免重复提取
+        # 哈希去重 - 缓存已见内容的 SHA256 以避免重复提取
         self._seen_hashes: Set[str] = set()
         if binary_path and not binary_data:
             self._load_binary()

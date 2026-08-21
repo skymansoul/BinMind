@@ -18,7 +18,6 @@
 # 理论依据:
 #   符号化分配-写入关联判定同源; 指针来源感知的堆访问验证.
 #
-# 创建: 2026-06-28
 
 from typing import Dict, List, Optional, Tuple, Set
 from .symbolic_size_expr import SymExpr, SymbolicSizeTracker

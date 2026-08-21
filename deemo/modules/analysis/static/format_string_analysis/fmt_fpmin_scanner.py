@@ -1,4 +1,4 @@
-"""FMT-FPMIN 检测器 — BinaryFmtScanner + 溯源/参数一致性抑制封装.
+"""FMT-FPMIN 检测器 - BinaryFmtScanner + 溯源/参数一致性抑制封装.
 
 相对既有 scanner 的两处增强 (不修改原类):
   1. _FMT_FUNCS 扩展: 补 __mingw_fprintf/__mingw_sprintf 等 MinGW
@@ -19,7 +19,7 @@ from ..heap_analysis.instruction_parser import InstructionParser  # noqa: E402
 
 
 class FmtFpminScanner(BinaryFmtScanner):
-    """误报抑制版格式串扫描器 — 扩展 callee 集 + 证据过滤."""
+    """误报抑制版格式串扫描器 - 扩展 callee 集 + 证据过滤."""
 
     _FMT_FUNCS = {
         "printf", "fprintf", "sprintf", "snprintf",
@@ -29,7 +29,7 @@ class FmtFpminScanner(BinaryFmtScanner):
         "__sprintf_chk", "__snprintf_chk",
     }
 
-    # sprintf 家族: dst=rcx, fmt=rdx — 原 scanner 只查 rcx/rdi, 漏 rdx
+    # sprintf 家族: dst=rcx, fmt=rdx - 原 scanner 只查 rcx/rdi, 漏 rdx
     _SPRINTF_FAMILY = {"sprintf", "snprintf", "__mingw_sprintf",
                        "__mingw_snprintf", "__mingw_vsprintf",
                        "__mingw_vsnprintf", "__sprintf_chk",
@@ -41,7 +41,7 @@ class FmtFpminScanner(BinaryFmtScanner):
              binary_path: Optional[str] = None) -> dict:
         import time
         t0 = time.perf_counter()
-        # 导入映射显式设置 — callee 解析不依赖外部 import 时序
+        # 导入映射显式设置 - callee 解析不依赖外部 import 时序
         if binary_path and os.path.isfile(binary_path):
             from ..heap_analysis.plt_resolver import build_import_map
             InstructionParser.set_import_map(build_import_map(binary_path))

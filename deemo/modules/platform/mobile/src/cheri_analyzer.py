@@ -54,7 +54,6 @@ class CHERIAnalyzer:
         try:
             with open(bp,"rb") as f: return f.read().decode("utf-8",errors="replace")
         except OSError: return ""  # 修复: bare except → OSError
-        # 不拆: _disassemble为桩函数——完整CHERI反汇编需接入r2插件或llvm-objdump
 
     def _extract_capabilities(s,d):
         ins=[]; addr=0
@@ -81,14 +80,14 @@ class CHERIAnalyzer:
         v=[]; u=s._analyze_capability_usage(ins)
         if u.get("seal",0)==0: v.append({"type":"missing_seal","desc":"No seal operations detected"})
         sc=u.get("seal",0); usc=u.get("unseal",0)
-        if sc>usc: v.append({"type":"unbalanced_seal_unseal","desc":f"Seal({sc})>Unseal({usc})——孤儿sealed capability风险"})
+        if sc>usc: v.append({"type":"unbalanced_seal_unseal","desc":f"Seal({sc})>Unseal({usc}), 孤儿sealed capability风险"})
         ic=u.get("indirect_call",0); pc=u.get("perm_modify",0)
         if ic>0 and pc==0: v.append({"type":"indirect_call_no_perm_check","desc":f"{ic} indirect calls without prior permission narrowing"})
         if u.get("inspect",0)>0 and u.get("bounds_set",0)==0 and u.get("store_cap",0)>0:
             v.append({"type":"store_without_bounds","desc":"Capability stored without explicit bounds"})
         # Capability单调性约束: bounds应只缩小不扩大
         if u.get("bounds_set",0)>0 and u.get("cap_create",0)>u.get("bounds_set",0):
-            v.append({"type":"capability_monotonicity_violation","desc":"Capability bounds设置少于创建——可能存在权限扩大路径"})
+            v.append({"type":"capability_monotonicity_violation","desc":"Capability bounds设置少于创建, 可能存在权限扩大路径"})
         return v
 
     def _analyze_capability_usage(s,ins):
@@ -119,11 +118,11 @@ class CHERIAnalyzer:
         lines=["CHERI Analysis Report",f"  Capabilities: {len(r.capabilities)}",f"  Instructions: {len(r.instructions)}",f"  Vulnerabilities: {len(r.vulnerabilities)}",f"  Mitigations: {len(r.mitigations)}",f"  Summary: {r.summary}"]
         return "\n".join(lines)
 
-# 不拆: CHERI capability seal type cache——Morello seal/unseal预计算
+
 _CHERI_SEAL_CACHE: dict = {}
 
 
 def _dead_cheri_bounds_check(base: int, offset: int, length: int) -> bool:
-    """CHERI bounds单调性验证——检查capability访问是否在bounds内。"""
+    """CHERI bounds单调性验证, 检查capability访问是否在bounds内。"""
     # 保留: Morello capability单调性不变式校验
     return 0 <= offset < length and base <= base + offset < base + length

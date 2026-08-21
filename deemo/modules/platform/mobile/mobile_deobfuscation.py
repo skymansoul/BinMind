@@ -4,8 +4,8 @@
 
 检测维度:
   1. Java/Kotlin 混淆器判别
-  2. 原生层混淆——OLLVM, Hikari, Arxan, DexProtector
-  3. 字符串加密检测——熵分析及解码函数交叉引用
+  2. 原生层混淆: OLLVM, Hikari, Arxan, DexProtector
+  3. 字符串加密检测: 熵分析及解码函数交叉引用
   4. 控制流平坦化(CFF)辨识
   5. 虚假控制流(BCF)检测
   6. 跨平台框架混淆——Flutter, React Native, Xamarin, Unity
@@ -100,12 +100,12 @@ _OBFUSCATION_RESILIENCE={ObfuscationType.IDENTIFIER_RENAMING:0.2,ObfuscationType
 
 # KEENHash SimHash轻量实现
 def _simhash_64(data:bytes)->int:
-    """64-bit SimHash——KEENHash核心算法的轻量实现。
+    """64-bit SimHash, KEENHash核心算法的轻量实现。
 
-    将任意字节序列映射为64-bit指纹，确保：
+    将任意字节序列映射为64-bit指纹, 确保:
       - 相似输入→低Hamming距离（检测混淆变体）
       - 完全不同输入→高Hamming距离
-    时间复杂度O(n)，n=data长度，空间O(1)。
+    时间复杂度O(n), n=data长度, 空间O(1)。
     """
     if not data: return 0
     v=[0]*64
@@ -123,15 +123,15 @@ def _simhash_64(data:bytes)->int:
     return result&0xFFFFFFFFFFFFFFFF
 
 def _compute_semantic_graph_score(indicators:List[ObfuscationIndicator])->Tuple[float,str]:
-    if not indicators: return 0.0,"无混淆——语义图完整得以保留"
+    if not indicators: return 0.0,"无混淆, 语义图完整得以保留"
     weighted=0.0; seen:Set[ObfuscationType]=set()
     for ind in indicators: seen.add(ind.technique)
     for t in seen: weighted+=_OBFUSCATION_RESILIENCE.get(t,0.1)
     score=min(weighted/max(len(seen),1),1.0)
-    if score<0.3: desc="低韧性——标准解混淆工具可还原大部分语义"
-    elif score<0.6: desc="中韧性——需定制化解混淆方案"
-    elif score<0.8: desc="高韧性——ORCAS语义图面临显著退化"
-    else: desc="极高韧性——代码虚拟化+多层混淆，自动分析基本失灵"
+    if score<0.3: desc="低韧性, 标准解混淆工具可还原大部分语义"
+    elif score<0.6: desc="中韧性, 需定制化解混淆方案"
+    elif score<0.8: desc="高韧性, ORCAS语义图面临显著退化"
+    else: desc="极高韧性, 代码虚拟化+多层混淆, 自动分析基本失灵"
     return round(score,3),desc
 
 def _compute_shannon_entropy(data:bytes)->float:
@@ -226,7 +226,7 @@ class DEXObfuscationDetector:
         return fps
 
     def compute_keenhash_similarity(s)->float:
-        """计算函数指纹集合的自相似度——高相似度意味着大量重复代码，
+        """计算函数指纹集合的自相似度, 高相似度意味着大量重复代码,
         可能源自混淆器产出的样板代码或虚拟机dispatch块。"""
         fps=s.compute_function_fingerprints()
         if len(fps)<2: return 0.0
@@ -259,7 +259,7 @@ class NativeObfuscationDetector:
 
     def detect_cff_patterns(s)->bool:
         brc=len(re.findall(rb'\x60\x01\x1f\xd6',s.data)); adc=len(re.findall(rb'[\x00-\xff]\x00\x00\x90',s.data))
-        if brc>20 and adc>50: s.indicators.append(ObfuscationIndicator('cff_arm64_dispatcher',technique=ObfuscationType.CONTROL_FLOW_FLATTENING,confidence=min(brc/100.0,0.85),evidence=f'{brc}间接分支,{adc}ADRP——CFF可疑',location='native arm64')); return True
+        if brc>20 and adc>50: s.indicators.append(ObfuscationIndicator('cff_arm64_dispatcher',technique=ObfuscationType.CONTROL_FLOW_FLATTENING,confidence=min(brc/100.0,0.85),evidence=f'{brc}间接分支,{adc}ADRP, CFF可疑',location='native arm64')); return True
         return False
 
     def detect_bcf_patterns(s)->bool:
@@ -334,7 +334,7 @@ class MobileObfuscationAnalyzer:
         s._entropy_scores[name]=_compute_shannon_entropy(data)
 
     def compute_keenhash_similarity(s)->float:
-        """全局KEENHash相似性评分——全体DEX函数SimHash指纹自相似度。"""
+        """全局KEENHash相似性评分, 全体DEX函数SimHash指纹自相似度。"""
         hashes=list(s._function_fingerprints.values())
         if len(hashes)<2: return 0.0
         n=len(hashes); close=0
@@ -381,10 +381,10 @@ class MobileObfuscationAnalyzer:
     def _estimate_difficulty(s)->str:
         ly=s._count_layers()
         if ly==0: return "无混淆"
-        if ly<=1: return "简单——ProGuard/R8, jadx/CFR直接反编译"
-        if ly<=2: return "中等——需deobfuscation脚本+手工分析"
-        if ly<=3: return "困难——Frida hook+动态调试+定制解混淆器"
-        return "极难——商业加固+代码虚拟化，VM逆向+内核级调试"
+        if ly<=1: return "简单, ProGuard/R8, jadx/CFR直接反编译"
+        if ly<=2: return "中等, 需deobfuscation脚本+手工分析"
+        if ly<=3: return "困难, Frida hook+动态调试+定制解混淆器"
+        return "极难, 商业加固+代码虚拟化, VM逆向+内核级调试"
 
 
 def analyze_obfuscation(fp:str)->ObfuscationReport: return MobileObfuscationAnalyzer(fp).analyze()

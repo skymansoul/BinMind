@@ -3,11 +3,10 @@
 # 决策逻辑:
 #   对 build/manifest_build.json 中每个编译产物调用 heapdet 扫描,
 #   按样本 ground truth 判定 TP/FP/FN/TN:
-#     - vulnerable 样本检出 confirmed → TP; 未检出 → FN.
+#     - vulnerable 样本检出 confirmed -> TP; 未检出 -> FN.
 # safe 样本检出 confirmed → FP; 未检出 → TN.
 #   结果写 results/scan_results.json, 供收集模块汇总.
 #
-# 创建: 2026-07-23
 
 import json
 import os

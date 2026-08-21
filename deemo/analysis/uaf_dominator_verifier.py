@@ -132,9 +132,6 @@ class UAFDominatorVerifier:
       - Nullify block post-dominates Free block → 所有free后的路径必经nullify
     """
 
-    def __init__(self):
-        pass
-
     def verify(
         self,
         source: str,
@@ -142,16 +139,9 @@ class UAFDominatorVerifier:
         use_line: int,
         ptr_var: str,
     ) -> DominatorResult:
-        """对给定的 free→use pair 执行支配关系验证.
+        """对给定的 free→use pair 执行支配关系验证。
 
-        Args:
-            source: C 源码
-            free_line: free() 调用行号 (1-indexed)
-            use_line: 指针使用行号 (1-indexed)
-            ptr_var: 被释放的指针变量名
-
-        Returns:
-            DominatorResult with verdict
+        行号均 1-indexed, 返回带判定结论的 DominatorResult。
         """
         lines = source.splitlines()
         blocks, adj = build_simple_cfg(lines)
@@ -273,14 +263,10 @@ def dominator_batch_verify(
     source: str,
     free_use_pairs: List[Tuple[int, int, str]],
 ) -> List[DominatorResult]:
-    """批量支配关系验证.
+    """批量支配关系验证。
 
-    Args:
-        source: C 源码
-        free_use_pairs: [(free_line, use_line, ptr_var), ...]
-
-    Returns:
-        DominatorResult 列表, 按置信度排序 (CONFIRMED > SAFE > CONDITIONAL > UNCERTAIN)
+    free_use_pairs 为 [(free_line, use_line, ptr_var), ...],
+    结果按置信度排序 (CONFIRMED > SAFE > CONDITIONAL > UNCERTAIN)。
     """
     verifier = UAFDominatorVerifier()
     results = []

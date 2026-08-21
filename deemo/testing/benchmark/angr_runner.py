@@ -1,5 +1,4 @@
-# Angr exploration模式漏洞点分析 —— 通过符号执行探索危险函数可达路径。
-# 创建: 2026-08-02
+# Angr exploration模式漏洞点分析 - 通过符号执行探索危险函数可达路径。
 
 import os, sys, time
 

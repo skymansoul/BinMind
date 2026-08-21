@@ -1,5 +1,5 @@
 """
-符号尺寸关联分析 (Symbolic Size Correlation Analysis) — DDSSC核心模块.
+符号尺寸关联分析 (Symbolic Size Correlation Analysis) - DDSSC核心模块.
 
 核心决策:
   堆溢出误报的最大来源: malloc(N) 与 memcpy(ptr, src, M) 中
@@ -118,10 +118,10 @@ def correlate_sizes(
     """判定分配尺寸与写入尺寸的符号关系.
 
     返回: (判定类别, 溢出字节数)
-      ("safe_equal", 0)      — 两者完全等价, 安全
-      ("safe_dominates", 0)  — 分配尺寸 ≥ 写入尺寸(符号证明), 安全
-      ("overflow", n)        — 写入 > 分配, 溢出 n 字节
-      ("unknown", 0)         — 无法判定, 需更高层分析
+      ("safe_equal", 0)      - 两者完全等价, 安全
+      ("safe_dominates", 0)  - 分配尺寸 ≥ 写入尺寸(符号证明), 安全
+      ("overflow", n)        - 写入 > 分配, 溢出 n 字节
+      ("unknown", 0)         - 无法判定, 需更高层分析
     """
     if alloc_expr is None or write_expr is None:
         return ("unknown", 0)

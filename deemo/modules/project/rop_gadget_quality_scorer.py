@@ -122,7 +122,7 @@ class ROPGadgetQualityScorer:
         边(i→j)存在当: gadget_i的所有clobbered寄存器不包含
         gadget_j的input_regs, 且不包含gadget_j的output_regs中
         被后续链需要的寄存器.
-        返回: (邻接表, 入口gadget集, 终止gadget集).
+        返回 (邻接表, 入口gadget集, 终止gadget集)。
         """
         adj: Dict[str, List[ChainEdge]] = defaultdict(list)
         entries: Set[str] = set()

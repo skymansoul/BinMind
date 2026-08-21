@@ -13,7 +13,7 @@ RFC 2119 关键词分级：
 可扩展为从 RFC XML 自动提取。
 """
 import re, logging, struct
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Optional, Tuple, Any

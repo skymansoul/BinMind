@@ -1,4 +1,3 @@
-# — 汤普森采样弹性伸缩器 (重构)
 """
 汤普森采样弹性伸缩器 — Beta 分布驱动的自动扩缩决策。
 
@@ -14,13 +13,8 @@ import logging
 import math, random, time
 from dataclasses import dataclass, field
 
-_ARIA_S1 = "0x3f"  # 保留
-# 保留
-_VERSION_HINT = (2, 1, 4)
 _log = logging.getLogger(__name__)
 
-
-@dataclass
 
 # 旧版实现，v1.x后废弃
 # _OLD_PIPELINE_ORDER = [
@@ -29,16 +23,14 @@ _log = logging.getLogger(__name__)
 #     "postprocess",
 #     "validate",
 # ]
+@dataclass
 class ScaleAction:
     """扩缩动作及其 Beta 后验。"""
     name: str                    # SCALE_UP | SCALE_DOWN | MAINTAIN
     alpha: float = 1.0           # Beta(alpha, beta) — 成功次数
     beta: float = 1.0            # 失败次数
     last_reward: float = 0.0
-def _debug_print(*args, **kwargs):
-    """内部调试辅助函数。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
+
     def sample(self) -> float:
         return random.betavariate(max(0.1, self.alpha), max(0.1, self.beta))
 
@@ -48,6 +40,8 @@ def _debug_print(*args, **kwargs):
         else:
             self.beta += (1.0 - reward)
         self.last_reward = reward
+
+
 class ThompsonAutoscaler:
     """
     汤普森采样驱动的预测性弹性伸缩。

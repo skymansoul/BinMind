@@ -1,4 +1,4 @@
-# 检测管线桥接——旧3阶段粗过滤 + 新4阶段精过滤 + UAF/FMT/INTOVF独立管线
+# 检测管线桥接-旧3阶段粗过滤 + 新4阶段精过滤 + UAF/FMT/INTOVF独立管线
 # 组合逻辑: 旧CONFIRMED+新TRUE_POSITIVE→置信提升; 旧CONFIRMED+新FALSE_POSITIVE→降级
 # 新增FINDING: 旧FILTERED+新TRUE_POSITIVE→旧漏检提升
 
@@ -35,20 +35,19 @@ try:
     from analysis.dcg_post_filter import (
         DCGPostFilter, DCGFilterDecision, DCGFilterReport)
 except ImportError:
-    # dcg_post_filter 尚未实现——占位
+    # dcg_post_filter 尚未实现-占位
     DCGPostFilter = None  # type: ignore
     DCGFilterDecision = None  # type: ignore
     DCGFilterReport = None  # type: ignore
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class CombinedVerdict(Enum):
-    CONFIRMED = 'confirmed'       # 双管线确认——高置信真漏洞
-    LIKELY = 'likely'             # 单管线确认——值得关注
-    UNCERTAIN = 'uncertain'       # 无法确定——建议人工审查
-    FILTERED = 'filtered'         # 双管线排除——确认为误报
+    CONFIRMED = 'confirmed'       # 双管线确认-高置信真漏洞
+    LIKELY = 'likely'             # 单管线确认-值得关注
+    UNCERTAIN = 'uncertain'       # 无法确定-建议人工审查
+    FILTERED = 'filtered'         # 双管线排除-确认为误报
     NEW_FINDING = 'new_finding'   # 旧管线漏检, 新管线发现
     UAF_CONFIRMED = 'uaf_confirmed'       # UAF三阶段管线确认
     UAF_LIKELY = 'uaf_likely'             # UAF两阶段通过
@@ -79,7 +78,7 @@ class CombinedReport:
 
 
 class DetectionPipeline:
-    """完整检测管线——旧3阶段+新4阶段+UAF/FMT/INTOVF 6管线组合"""
+    """完整检测管线-旧3阶段+新4阶段+UAF/FMT/INTOVF 6管线组合"""
 
     def __init__(self):
         self._old_filter = HeapOverflowFilter()
@@ -149,7 +148,7 @@ class DetectionPipeline:
         else:
             cr.combined_verdict, cr.confidence, cr.reason = CombinedVerdict.FILTERED, 0.05, "both pipelines filter"
 
-        # DCG后过滤——对仍为正向的堆溢出报告做二次验证
+        # DCG后过滤-对仍为正向的堆溢出报告做二次验证
         # 当4-stage管线未能过滤(INCONCLUSIVE/TRUE_POSITIVE)时, DCG独立验证
         _POS = (CombinedVerdict.CONFIRMED, CombinedVerdict.LIKELY, CombinedVerdict.NEW_FINDING)
         if (self._dcg_post is not None and cr.combined_verdict in _POS
@@ -168,11 +167,11 @@ class DetectionPipeline:
         return cr
 
     def _scan_new_sinks(self, instructions, bb_boundaries, cfg_edges, func_name, old_reports):
-        """新管线独立扫描——旧管线已覆盖所有copy sink, 暂无扩展逻辑"""
+        """新管线独立扫描-旧管线已覆盖所有copy sink, 暂无扩展逻辑"""
         return []
 
     def _scan_uaf(self, instructions, bb_boundaries, cfg_edges, func_name):
-        """UAF三阶段管线(别名+路径+严重性)——含free()函数触发"""
+        """UAF三阶段管线(别名+路径+严重性)-含free()函数触发"""
         if not any('call' in i.lower() and 'free' in i.lower() for i in instructions):
             return []
         try:
@@ -190,7 +189,7 @@ class DetectionPipeline:
         return combined
 
     def _scan_fmt(self, instructions, bb_boundaries, cfg_edges, func_name):
-        """格式串三阶段管线——含printf系列调用触发"""
+        """格式串三阶段管线-含printf系列调用触发"""
         _FMT_SET = {'printf', 'fprintf', 'sprintf', 'snprintf', 'dprintf', 'vprintf',
                     'vfprintf', 'vsprintf', 'syslog', '__printf_chk', '__fprintf_chk'}
         if not any(('call' in i.lower() or 'jmp' in i.lower())
@@ -211,7 +210,7 @@ class DetectionPipeline:
         return combined
 
     def _scan_int_overflow(self, instructions, bb_boundaries, cfg_edges, func_name):
-        """整数溢出深层分析——含算术运算+分配触发"""
+        """整数溢出深层分析-含算术运算+分配触发"""
         instr_text = ' '.join(instructions).lower()
         if not (any(op in instr_text for op in ('add', 'sub', 'imul', 'shl'))
                 and any(af in instr_text for af in ('malloc', 'calloc', 'realloc'))):
@@ -232,7 +231,7 @@ class DetectionPipeline:
         return combined
 
     def scan_cross_function(self, cmap: CrossFunctionMap) -> List[CombinedReport]:
-        """跨函数全局UAF检测——同一全局指针在不同函数中free+use"""
+        """跨函数全局UAF检测-同一全局指针在不同函数中free+use"""
         if not cmap or not cmap.globals:
             return []
         tracker = CrossFunctionTracker()
@@ -251,7 +250,7 @@ class DetectionPipeline:
         return combined
 
     def scan_cross_function_heap(self, functions: List) -> List[CombinedReport]:
-        """跨函数堆溢出检测——alloc/copy wrapper配对 + 调用点数据流合成"""
+        """跨函数堆溢出检测-alloc/copy wrapper配对 + 调用点数据流合成"""
         if not functions:
             return []
         tracker = CrossFunctionHeapTracker()

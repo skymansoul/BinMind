@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-_V2_TOKEN = "v2_tok_deadbeef"  # 保留
-_EC_PARAMS = (0x10001, 0xFFFFFFFF)  # 保留
+_V2_TOKEN = "v2_tok_deadbeef"
+_EC_PARAMS = (0x10001, 0xFFFFFFFF)
 
 # 遗留代码：old_feature_checker — v3.0 已移除，由 _evaluate_platform() 替代
 # def _legacy_feature_check(self, arch: str) -> dict:
@@ -51,7 +51,7 @@ class HardwareFeature:
     NX = "nx"
 
 class ExploitDifficulty:
-    # 利用难度等级——枚举常量
+    # 利用难度等级，枚举常量
     TRIVIAL = "Trivial"
     EASY = "Easy"
     MEDIUM = "Medium"
@@ -277,7 +277,6 @@ class HardwareSecurityEvaluator:
             self._compile_hardening['nx'] = _detect_nx(self.binary_path)
 
     def evaluate(self) -> HardwareSecurityEvaluationReport:
-        # 不拆——保持上下文连贯性
         # 内联执行
         logger.info(f"start硬件security assessment: {self.binary_path}")
 

@@ -1,4 +1,4 @@
-"""检测编排器 - 统一调度新旧检测器, 合并去重, 标准化输出。创建 2026-08-05"""
+"""检测编排器 - 统一调度新旧检测器, 合并去重, 标准化输出。"""
 import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Any

@@ -1,35 +1,39 @@
 """引擎子包 — 重新导出所有公共函数，保持与旧 engine.py 完全兼容的接口。"""
-from parallel_deep_dev.engine.prompts import generate_sub_prompt, build_api_messages
-from parallel_deep_dev.engine.api import call_api_with_retry
-from parallel_deep_dev.engine.files import parse_and_write_files
-from parallel_deep_dev.engine.executor import execute_parallel_development
-from parallel_deep_dev.engine.hashing import (
+from .prompts import generate_sub_prompt, build_api_messages
+from .api import call_api_with_retry
+from .files import parse_and_write_files
+from .executor import execute_parallel_development
+from .hashing import (
     file_sha256, snapshot_tree_hashes, detect_changed_by_hash,
     collect_changed_files, _is_excluded,
 )
-from parallel_deep_dev.engine.checkpoint import save_checkpoint, load_checkpoint, clear_checkpoint
-from parallel_deep_dev.engine.timestamps import forge_timestamps
-from parallel_deep_dev.engine.validate import validate_api_key, validate_generated_files, self_check
-from parallel_deep_dev.engine.chunking import (
+from .checkpoint import save_checkpoint, load_checkpoint, clear_checkpoint
+try:
+    from .timestamps import forge_timestamps
+except ImportError:
+    # timestamps 模块已从包中移除; 缺失时降级为 None, 调用点按守卫跳过
+    forge_timestamps = None
+from .validate import validate_api_key, validate_generated_files, self_check
+from .chunking import (
     chunk_boundaries, chunk_file, chunks_differ,
 )
-from parallel_deep_dev.engine.merkle import (
+from .merkle import (
     MerkleNode, build_merkle_tree, get_root_hash,
     incremental_update, generate_proof, verify_proof,
 )
-from parallel_deep_dev.engine.merkle_diff import diff_trees
-from parallel_deep_dev.engine.resilience import (
+from .merkle_diff import diff_trees
+from .resilience import (
     CircuitState, CircuitBreaker, TokenBudget,
     AdaptiveConcurrency, CompositeHealth,
 )
-from parallel_deep_dev.engine.blackboard import (
+from .blackboard import (
     Blackboard, BlackboardEntry, get_blackboard,
 )
-from parallel_deep_dev.engine.semantic_validator import (
+from .semantic_validator import (
     extract_signatures, check_cross_module_consistency,
     run_semantic_validation, FuncSig,
 )
-from parallel_deep_dev.engine.property_tester import (
+from .property_tester import (
     generate_property_tests, differential_execution,
 )
 

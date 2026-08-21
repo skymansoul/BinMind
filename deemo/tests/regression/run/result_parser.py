@@ -1,6 +1,5 @@
 """结果解析模块 — TP/FP/FN 统计 + JSON 汇总.
 
-创建: 2026-06-01 17:08
 用途: 读取 scan_runner 的扫描结果 + ground truth 标注, 计算检出率/误报率/漏报率。
 
 ground truth 格式 (每个样本目录下的 truth.json):
@@ -14,9 +13,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
-
-from .scan_runner import ScanResult
-
 
 @dataclass
 class EvalResult:
@@ -46,7 +42,7 @@ def load_ground_truth(samples_dir: str) -> Dict[str, dict]:
     return gt
 
 
-def evaluate(results: List[ScanResult],
+def evaluate(results: List[EvalResult],
              ground_truth: Dict[str, dict]) -> List[EvalResult]:
     """计算各样本的 TP/FP/FN."""
     eval_results = []

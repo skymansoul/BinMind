@@ -146,6 +146,24 @@ def _extract_linux_version(blob: bytes) -> str:
     return m.group(1).decode() if m else ""
 
 
+def _kernel_series(version: str) -> str:
+    parts = version.split(".")
+    return ".".join(parts[:2]) if len(parts) >= 2 else ""
+
+
+# 公开漏洞通报覆盖的受影响内核系列 -> CVE 集合
+_VULN_KERNELS: Dict[str, list[str]] = {
+    "5.16": ["CVE-2022-0847"],
+    "5.15": ["CVE-2022-0847"],
+    "5.10": ["CVE-2022-0847"],
+    "5.4": ["CVE-2022-0847"],
+    "4.14": ["CVE-2017-16995", "CVE-2022-1015"],
+    "4.13": ["CVE-2017-16995"],
+    "4.9": ["CVE-2017-16995", "CVE-2022-1015"],
+    "4.4": ["CVE-2017-16995"],
+}
+
+
 _VERSION_EXTRACTORS: Dict[BootStage, Callable[[bytes], str]] = {
     BootStage.UBOOT:  _extract_uboot_version,
     BootStage.KERNEL: _extract_linux_version,
@@ -279,12 +297,10 @@ class SecureBootChecker:
                 if version and version <= vrange:
                     cves.extend(v for v in vulns if v not in cves)
         elif stage == BootStage.KERNEL:
-            # Stub: kernel-stage GRUB vulnerability cross-reference — deferred
-            db = _VULN_BOOTLOADERS.get("grub", {})
-            for vrange, vulns in db.items():
-                if version and version <= vrange.partition(".")[0] + "." + \
-                   vrange.partition(".")[2]:
-                    pass
+            series = _kernel_series(version)
+            if series:
+                vulns = _VULN_KERNELS.get(series, [])
+                cves.extend(v for v in vulns if v not in cves)
         return cves
 
     @staticmethod

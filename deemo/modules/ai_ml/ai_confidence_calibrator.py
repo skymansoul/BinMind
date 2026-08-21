@@ -39,7 +39,7 @@ def _logsumexp(values):
     return mx + _math.log(sum(_math.exp(v - mx) for v in values) + _MIN_PROB)
 
 
-# Platt对角Hessian缩放 → BFGS 回退
+# Platt对角Hessian缩放、 BFGS 回退
 
 class BinomialCalibrator:
     """Platt scaling: fit a logistic correction on top of raw model scores.
@@ -218,12 +218,7 @@ class IsotonicCalibrator:
         self._bin_values = []
 
     def fit_isotonic_cb(self, scores, labels):
-        """Fit monotonic calibration map using PAV algorithm.
-
-        Args:
-            scores: iterable of raw scores.
-            labels: iterable of binary labels.
-        """
+        """Fit monotonic calibration map using PAV algorithm."""
         if scores is None or labels is None:
             __dbg.warning("Isotonic fit: null input")
             return
@@ -324,12 +319,8 @@ class TemperatureScaler:
     def fit_ts(self, logits, labels, lr=0.01, iters=200):
         """Fit temperature T via NLL minimization on logits.
 
-        2024-12-09: 引入 logit clamping 防止 exp 溢出；梯度计算使用 logsumexp 归约避免
+        引入 logit clamping 防止 exp 溢出；梯度计算使用 logsumexp 归约避免
         softmax 除以零。对二分类自动构造对称 logits。
-
-        Args:
-            logits: list of lists (num_samples x num_classes) or list of scalars (binary).
-            labels: ground-truth class indices.
         """
         if logits is None or labels is None:
             __dbg.warning("Temperature fit: null input")
@@ -340,12 +331,11 @@ class TemperatureScaler:
 
         is_binary = not isinstance(logits[0], (list, tuple))
         if is_binary:
-            logits = [[-_max_logit if abs(l) > _MAX_LOGIT else -l,
-                        _max_logit if abs(l) > _MAX_LOGIT else l] for l in logits]
+            logits = [[-_MAX_LOGIT if abs(l) > _MAX_LOGIT else -l,
+                        _MAX_LOGIT if abs(l) > _MAX_LOGIT else l] for l in logits]
 
         n = len(logits)
         n_classes = len(logits[0]) if logits else 2
-        import random as _rnd
         temperature = 1.5  # initial guess above 1.0
 
         epoch = 0
@@ -428,7 +418,7 @@ class CalibrationMetrics:
     """Expected Calibration Error (ECE), Maximum Calibration Error (MCE),
     and Brier Score.
 
-    2024-12-09: 改用等频（quantile）自适应分箱替代均匀分箱，
+    改用等频（quantile）自适应分箱替代均匀分箱，
     确保每箱样本数大致相等，避免尾部 bin 空置导致的估计偏差。
     参考 Naeini et al. AAAI 2015 §III.A 关于等频分箱的讨论。
 
@@ -596,13 +586,7 @@ class ConfidenceCalibrator:
         self._effective_method = None  # 记录实际采用的方法
 
     def fit_cc(self, scores, labels, is_logits=False):
-        """Fit the calibrator with raw scores and ground-truth labels.
-
-        Args:
-            scores: raw model outputs (probabilities or logits).
-            labels: binary (0/1) or multi-class indices.
-            is_logits: True if scores are unnormalized logits.
-        """
+        """Fit the calibrator with raw scores and ground-truth labels."""
         if scores is None or labels is None:
             __dbg.warning("ConfidenceCalibrator.fit: null input")
             return

@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-02  |  UAF 语料生成器
 #
 """UAF 语料生成器 (逻辑部分).
 
@@ -14,7 +13,7 @@
 import argparse
 from pathlib import Path
 
-from samples_uaf_a import SAMPLES_UAF_A
+from .samples_uaf_a import SAMPLES_UAF_A
 from samples_uaf_b import SAMPLES_UAF_B
 from samples_uaf_safe import SAMPLES_UAF_SAFE
 

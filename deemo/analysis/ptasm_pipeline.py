@@ -56,14 +56,9 @@ def ptasm_verify_candidates(
       - PTASM 证明安全 → 过滤 (PROTECTED, 不加入 filtered)
       - PTASM 无法判定 → 保留 (UNCERTAIN, fall through)
 
-    Args:
-        candidates: UAF 检测器输出的候选列表 (dict 形式)
-        source: C 源码文本
-        min_confidence: 最低置信度阈值, 低于此值的候选跳过验证
-
-    Returns:
-        (filtered_candidates, verification_results)
-        与 uaf_verifier.verify_uaf_candidates 格式兼容
+    min_confidence 以下的候选跳过验证;
+    返回 (filtered_candidates, verification_results),
+    与 uaf_verifier.verify_uaf_candidates 格式兼容。
     """
     if not candidates or not source:
         return list(candidates), []
@@ -158,9 +153,8 @@ def ptasm_detect_uaf(source: str) -> Dict:
       - Free-wrapper: free_request(r) 等价于 free(r)
       - 条件路径: if(cond) free(p); else use(p) → 各路径独立分析
 
-    Returns:
-        {detected, findings, count, free_count, stats}
-        格式兼容 uaf_detector 返回
+    返回 {detected, findings, count, free_count, stats},
+    格式兼容 uaf_detector 返回。
     """
     engine = PTASMEngine()
     ptasm_results, stats = engine.analyze(source)
@@ -220,8 +214,7 @@ def ptasm_pipeline_detect(source: str) -> Dict:
                                → safe pointers (filtered, 零新增漏报)
                                → uncertain     (fall through → TARPS)
 
-    Returns:
-        {detected, findings, confirmed, filtered, uncertain, stats}
+    返回 {detected, findings, confirmed, filtered, uncertain, stats}。
     """
     result = ptasm_detect_uaf(source)
     uaf_list = [f for f in result['findings'] if f['type'] == 'use-after-free']

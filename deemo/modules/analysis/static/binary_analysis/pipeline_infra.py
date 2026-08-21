@@ -1,4 +1,4 @@
-# INTJ策略: 生产者-消费者队列 + 工作池模式
+# 策略: 生产者-消费者队列 + 工作池模式
 # 复杂度: en队列 O(1), de队列 O(1), dispatch_tasks O(n/workers)
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ _log = logging.getLogger(__name__)
 
 class TaskQueue:
     """线程安全的 FIFO 任务队列
-    
-    INTJ策略: deque + Lock 而非 queue.Queue——后者自带额外线程管理开销
+
+    策略: deque + Lock 而非 queue.Queue - 后者自带额外线程管理开销
     在单线程流水线场景下是浪费。多线程场景用 dispatch_tasks + ThreadPoolExecutor
     """
 
@@ -77,8 +77,8 @@ def dispatch_tasks(tasks: list[dict], max_workers: int = 4,
 
 class BatchRunner:
     """批量任务执行器
-    
-    INTJ策略: 用 __slots__ 减少内存分配——批量分析可能创建数百个实例
+
+    策略: 用 __slots__ 减少内存分配 - 批量分析可能创建数百个实例
     """
 
     __slots__ = ("max_workers", "_queue", "_executor")

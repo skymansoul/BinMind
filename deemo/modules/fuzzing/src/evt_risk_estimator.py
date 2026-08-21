@@ -1,14 +1,13 @@
-# 创建: 2026-06-29 14:28
-# 修改: 2026-06-29 — GPD 矩估计 + 残余风险 + 早期停止策略
+# GPD 矩估计 + 残余风险 + 早期停止策略
 """
-极值理论差分模糊测试风险估计 — 量化"还有多少 bug 没找到"。
+极值理论差分模糊测试风险估计 - 量化"还有多少 bug 没找到"。
 
-差分模糊测试发现在不同版本/实现间的行为差异——但作为一种随机搜索,
+差分模糊测试发现在不同版本/实现间的行为差异-但作为一种随机搜索,
 它无法保证"已经找完了所有差异"。本模块应用极值理论 (EVT)
 从已发现差异的分布中推断总体尾部特征, 估计残余风险。
 
 EVT 的核心洞察:
-  已发现的差异是"极端事件"——它们分布在行为差异严重程度的尾部。
+  已发现的差异是"极端事件"-它们分布在行为差异严重程度的尾部。
   EVT 的 GPD (Generalized Pareto Distribution) 对尾部建模,
   由此可以推断: (a) 还有多少未发现的差异, (b) 继续 fuzzing 的边际收益。
 
@@ -21,20 +20,20 @@ GPD 拟合:
   σ=尺度参数。
 
 应用:
-  1. 估计残余风险: 基于已发现差异的 GPD 尾部→未发现差异的数量估计
-  2. 早期停止: 当边际新差异发现率降至阈值以下→停止 fuzzing
-  3. 置信区间: GPD 参数估计的 Bootstrap CI→风险估计的不确定性
+  1. 估计残余风险: 基于已发现差异的 GPD 尾部-未发现差异的数量估计
+  2. 早期停止: 当边际新差异发现率降至阈值以下-停止 fuzzing
+  3. 置信区间: GPD 参数估计的 Bootstrap CI-风险估计的不确定性
 
 为什么选择 EVT 而非简单的统计推断:
-  中心极限定理 (CLT) 对"均值"建模→适合描述"典型"行为。
-  但 bug 是"极端"事件→在分布尾部, CLT 失效。EVT 专门为尾部建模而生。
+  中心极限定理 (CLT) 对"均值"建模-适合描述"典型"行为。
+  但 bug 是"极端"事件-在分布尾部, CLT 失效。EVT 专门为尾部建模而生。
 
-ref: ASE 2025 "Risk Estimation in Differential Fuzzing via EVT" —
+ref: ASE 2025 "Risk Estimation in Differential Fuzzing via EVT" -
      GPD 尾部拟合 + 残余风险估计 + 早期停止策略
 ref: Coles "An Introduction to Statistical Modeling of Extreme
-     Values" — EVT 的标准参考书, GPD 的 MLE 估计
+     Values" - EVT 的标准参考书, GPD 的 MLE 估计
 ref: Pickands "Statistical Inference Using Extreme Order Statistics"
-     — POT (Peaks Over Threshold) 方法的原始论文
+     - POT (Peaks Over Threshold) 方法的原始论文
 """
 
 from __future__ import annotations
@@ -57,7 +56,7 @@ class GPDEstimate:
 
 @dataclass
 class RiskEstimate:
-    """残余风险估计——还有多少未发现的差异。"""
+    """残余风险估计-还有多少未发现的差异。"""
     estimated_remaining: float = 0.0
     ci_lower: float = 0.0
     ci_upper: float = 0.0
@@ -72,7 +71,7 @@ def fit_gpd(exceedances: list[float], threshold: float,
             max_iter: int = 50) -> GPDEstimate:
     """用简化 MLE 对超过阈值的数据拟合 GPD。
 
-    完整 MLE 需要数值优化——此处使用矩估计 (Method of Moments)
+    完整 MLE 需要数值优化-此处使用矩估计 (Method of Moments)
     作为近似: 对于 GPD, E[X] = σ/(1-ξ), Var[X] = σ²/((1-ξ)²(1-2ξ))。"""
     if len(exceedances) < 10:
         return GPDEstimate(xi=0.0, sigma=1.0, threshold=threshold,
@@ -118,13 +117,13 @@ def estimate_remaining_risk(gpd: GPDEstimate,
                              tail_prob: float = 0.1) -> RiskEstimate:
     """基于 GPD 尾部估计残留差异数。
 
-    若 ξ > 0 (heavy tail): 尾部有更多差异待发现→继续 fuzzing
-    若 ξ < 0 (bounded): 尾部有限→接近发现所有差异→考虑停止"""
+    若 ξ > 0 (heavy tail): 尾部有更多差异待发现-继续 fuzzing
+    若 ξ < 0 (bounded): 尾部有限-接近发现所有差异-考虑停止"""
     if gpd.n_exceedances < 5:
         return RiskEstimate(estimated_remaining=float('inf'),
                            recommendation='extend')
 
-    # 尾部概率→预期剩余
+    # 尾部概率-预期剩余
     try:
         if gpd.xi > 0.05:
             # Heavy tail: 剩余 ≫ discovered
@@ -167,7 +166,7 @@ def estimate_remaining_risk(gpd: GPDEstimate,
 
 def score_diff_severity(output_a: bytes, output_b: bytes,
                         crash_a: bool, crash_b: bool) -> float:
-    """对差分差异的严重程度赋分。越高→越严重的差异。
+    """对差分差异的严重程度赋分。越高-越严重的差异。
 
     崩溃差异: 10.0 (一方崩溃一方正常)
     输出长度差异: 5.0 (输出不同长度)
@@ -189,7 +188,7 @@ def score_diff_severity(output_a: bytes, output_b: bytes,
 # EVT 风险管线
 
 class EVTRiskEstimator:
-    """EVT 差分模糊测试风险估计器——早期停止 + 残余风险报告。"""
+    """EVT 差分模糊测试风险估计器-早期停止 + 残余风险报告。"""
 
     __slots__ = ('_severities', '_round_count', '_discovered',
                  '_threshold_percentile')
@@ -208,7 +207,7 @@ class EVTRiskEstimator:
             self._discovered += 1
 
     def estimate(self) -> RiskEstimate:
-        """基于已发现差异的 EVT 尾部→残余风险估计。"""
+        """基于已发现差异的 EVT 尾部-残余风险估计。"""
         self._round_count += 1
         if len(self._severities) < 20:
             return RiskEstimate(estimated_remaining=float('inf'),

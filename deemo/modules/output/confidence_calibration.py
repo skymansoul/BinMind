@@ -1,12 +1,10 @@
-# 创建: 2026-07-14 21:38
-# 修改: 2026-07-14 22:10 — 审计修复: RAVEN引用替换为Dempster-Shafer证据理论
 """
 证据驱动置信度校准 (Evidence-Driven Confidence Calibration, EDCC)
 ------------------------------------------------------------------
 基于证据链的完整性和一致性, 动态校准报告的置信度评分.
 
 设计依据:
-  安全分析报告的置信度常基于单一模型输出——可能过于乐观.
+  安全分析报告的置信度常基于单一模型输出-可能过于乐观.
   借鉴 Dempster-Shafer 证据理论 中多源证据
   按可靠度折扣合并的原则: 完整性低的证据源应降低其权重.
   EDCC 将此原则工程化为三维折扣因子.
@@ -35,17 +33,10 @@ class EvidenceChain:
 
 
 class ConfidenceCalibrator:
-    """证据驱动的置信度校准器.
-
-    用法:
-      cc = ConfidenceCalibrator()
-      calibrated = cc.calibrate(evidence_chain)
-      print(f'Raw: {evidence_chain.raw_confidence:.2f}, '
-            f'Calibrated: {calibrated:.2f}')
-    """
+    """证据驱动的置信度校准器."""
 
     def __init__(self):
-        # 期望的证据类型——完整分析应覆盖所有 4 类
+        # 期望的证据类型-完整分析应覆盖所有 4 类
         self._expected_types = {'cfg', 'dataflow', 'symbolic', 'dynamic'}
         # 各证据类型的权重
         self._type_weights = {
@@ -84,7 +75,7 @@ class ConfidenceCalibrator:
 
     def _consistency_discount(self, chain: EvidenceChain) -> float:
         if len(chain.evidence_items) < 2:
-            return 0.7  # 单条证据 → 折扣
+            return 0.7  # 单条证据 - 折扣
         # 按类型分组
         by_type: Dict[str, List[str]] = {}
         for item in chain.evidence_items:
@@ -104,7 +95,7 @@ class ConfidenceCalibrator:
             scores.append(sum(sims) / len(sims) if sims else 0.5)
 
         avg_consistency = sum(scores) / len(scores) if scores else 0.5
-        # 一致性 > 0.7 → 小折扣, < 0.3 → 大折扣
+        # 一致性 > 0.7 - 小折扣, < 0.3 - 大折扣
         return max(0.4, avg_consistency)
 
     def _freshness_discount(self, age_hours: float) -> float:

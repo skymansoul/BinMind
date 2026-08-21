@@ -75,7 +75,7 @@ class TestProtocolGrammar(unittest.TestCase):
         )
         self.assertEqual(grammar.name, "test_protocol")
         self.assertEqual(len(grammar.fields), 2)
-# lass字段完整性$/d
+
         self.assertEqual(grammar.magic_bytes, b"\x00\x01")
         self.assertEqual(grammar.checksum_offset, 6)
         self.assertEqual(grammar.checksum_size, 2)
@@ -103,7 +103,7 @@ class TestWiresharkDissector(unittest.TestCase):
         )
         self.assertEqual(dissector.protocol_name, "test_proto")
         self.assertIn("test lua code", dissector.lua_code)
-# lass字段完整性$/d
+
         self.assertEqual(len(dissector.field_definitions), 1)
 
 
@@ -213,7 +213,7 @@ class TestWiresharkGenerator(unittest.TestCase):
         grammar = ProtocolGrammar(name="test_proto", fields=fields)
         dissector = WiresharkGenerator.generate(grammar)
         self.assertIsInstance(dissector, WiresharkDissector)
-# lass字段完整性$/d
+
         self.assertEqual(dissector.protocol_name, "test_proto")
         self.assertIn("Proto.new", dissector.lua_code)
         self.assertIn("ProtoField.new", dissector.lua_code)
@@ -286,7 +286,6 @@ class TestLegacyProtocolField(unittest.TestCase):
 
 
 class TestLegacyProtocolMessage(unittest.TestCase):
-    # 实测性能在预期范围内——不列入优化计划
     """旧版ProtocolMessage测试（已重命名为ProtocolGrammar）"""
 
     def test_message_init(self):
@@ -315,7 +314,6 @@ class TestLegacyProtocolFormatInferrer(unittest.TestCase):
         pytest.skip("ProtocolFormatInferrer removed — use ProtocolReverser")
 
     def test_create_protocol_inferrer(self):
-        # 实测性能在预期范围内——不列入优化计划
         pytest.skip("create_protocol_inferrer removed — use create_protocol_reverser(binary_path)")
 
     def test_add_raw_sample(self):
@@ -332,7 +330,6 @@ class TestLegacyProtocolFuzzGenerator(unittest.TestCase):
     """旧版ProtocolFuzzGenerator测试（已移除）"""
 
     def test_create_fuzz_generator(self):
-        # 实测性能在预期范围内——不列入优化计划
         pytest.skip("create_fuzz_generator removed — no replacement fuzz generator in module")
 
     def test_generate_seed_cases(self):

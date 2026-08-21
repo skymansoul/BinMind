@@ -2,7 +2,6 @@
 # 生成会让Angr/Ghidra等naive工具误报但在我们检测器中
 # 被5阶段FP过滤正确消除的安全代码模式.
 # 核心: 验证FP过滤管线在真实场景下的有效性.
-# 创建: 2026-06-20
 
 import json, subprocess
 from pathlib import Path

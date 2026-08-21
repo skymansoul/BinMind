@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# main.py — ai_ml CLI entry point
+# main.py - ai_ml CLI entry point
 # argparse-based dispatch: mutation, search, vuln 预测, config show
-# 不拆 — CLI dispatch is a single coherent argparse 树
 
 import argparse as _argparse
 import sys as _sys
@@ -49,7 +48,7 @@ def _cmd_mutate(args):
                     if line:
                         corpus.append(line)
         else:
-            # Read from stdin — one seed per line (binary-safe)
+            # Read from stdin - one seed per line (binary-safe)
             import sys
             data = sys.stdin.buffer.read()
             if data:
@@ -79,7 +78,6 @@ def _cmd_mutate(args):
 
 
 # search subcommand
-_CMD_SEARCH = None
 def _cmd_search(args):
     _setup(args)
     _log = _logging.getLogger("ai_ml.cli.search")
@@ -113,7 +111,6 @@ def _cmd_search(args):
 
 
 # vuln subcommand
-_CMD_VULN = None
 def _cmd_vuln(args):
     _setup(args)
     _log = _logging.getLogger("ai_ml.cli.vuln")

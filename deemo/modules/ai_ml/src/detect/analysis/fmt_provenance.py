@@ -1,4 +1,4 @@
-# 格式串来源深化追踪——溯源fmt寄存器至最终来源, 区分常量与用户输入
+# 格式串来源深化追踪-溯源fmt寄存器至最终来源, 区分常量与用户输入
 # 误报根源: 栈驻留常量格式串被分类为STACK→DANGEROUS
 #   例: char fmt[]="%s"; printf(fmt,x) —— fmt在栈上但内容是编译期常量
 #   例: char *fmt="hello"; printf(fmt) —— rdi←rbx, rbx来自.rodata
@@ -16,7 +16,7 @@ import re
 import logging
 from typing import Dict, List, Optional, Tuple
 
-# 来源常量——与format_string_deep.FmtSource.value对应, 避免循环导入
+# 来源常量-与format_string_deep.FmtSource.value对应, 避免循环导入
 CONST_RODATA = 'const_rodata'
 ARG = 'arg'
 HEAP = 'heap'
@@ -54,7 +54,7 @@ _SLOT_LEA = re.compile(
 
 
 class FmtProvenance:
-    """格式串来源深化追踪器——溯源fmt寄存器到常量/参数/堆最终来源"""
+    """格式串来源深化追踪器-溯源fmt寄存器到常量/参数/堆最终来源"""
 
     def __init__(self, max_depth: int = 12):
         self._max_depth = max_depth
@@ -71,7 +71,7 @@ class FmtProvenance:
 
     def _trace_reg(self, instructions, from_idx, reg,
                    rodata_refs, depth: int) -> Tuple[str, str]:
-        """沿寄存器链+栈槽回溯——终止于.rodata/立即数/参数/call"""
+        """沿寄存器链+栈槽回溯-终止于.rodata/立即数/参数/call"""
         if from_idx < 0 and reg.lower().lstrip('%') in _ARG_REGS:
             return ARG, ""
         if depth > self._max_depth or from_idx < 0:
@@ -136,7 +136,7 @@ class FmtProvenance:
                     return self._trace_reg(instructions, j - 1, r2,
                                            rodata_refs, depth + 1)
 
-            # 调用截断——fmt来自函数返回值
+            # 调用截断-fmt来自函数返回值
             if 'call' in il:
                 return UNKNOWN, ""
         # 循环结束: 参数寄存器
@@ -146,7 +146,7 @@ class FmtProvenance:
 
     def _trace_slot(self, instructions, from_idx, slot,
                     rodata_refs, depth) -> Tuple[str, str]:
-        """栈槽写回溯源——立即数→常量; call写入→保持分类; 寄存器→继续。
+        """栈槽写回溯源-立即数→常量; call写入→保持分类; 寄存器→继续。
         槽写可发生在lea之后call之前(lea rcx,[rsp+X]; mov [rsp+X],rax), 需前向扫描
         """
         # 前向: lea之后到call之前
@@ -209,7 +209,7 @@ class FmtProvenance:
 
     @staticmethod
     def _imm_content(imm: str) -> str:
-        """立即数(小端字节)转ASCII内容片段——用于短字符串常量"""
+        """立即数(小端字节)转ASCII内容片段-用于短字符串常量"""
         try:
             v = int(imm, 16) if '0x' in imm else int(imm)
         except ValueError:

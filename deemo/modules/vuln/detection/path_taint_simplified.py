@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-07-29  |  简化版静态污点传播
 #
 """
-简化版静态污点传播——从输入源沿指令传播污点至格式化调用点。
+简化版静态污点传播-从输入源沿指令传播污点至格式化调用点。
 解决FormatStringDetector无法追踪多层函数传递的问题。
 """
 
@@ -23,7 +22,7 @@ class TaintResult:
     format_calls: List = field(default_factory=list)
 
 class SimplifiedTaintTracker:
-    """简化版静态污点追踪——面向格式化字符串检测优化。
+    """简化版静态污点追踪-面向格式化字符串检测优化。
 
     从输入源(recv/read/fgets等)标记rax为污点,
     沿mov/lea/算术指令向前传播, 在格式化调用点检查rdi是否被污点。

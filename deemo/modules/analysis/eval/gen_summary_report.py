@@ -1,7 +1,7 @@
 # 多创新点精度汇总报告
 #
 # 汇总三个深挖创新点的实测指标:
-#   1. 堆溢出 (AWSC 同源关联) — 主打创新点
+#   1. 堆溢出 (AWSC 同源关联) - 主打创新点
 #   2. UAF 生命周期追踪
 #   3. 格式化字符串
 #
@@ -9,7 +9,6 @@
 #           samples_fmt/run_fmt_benchmark.py, samples_awsc/run_awsc_ablation.py,
 #           eval/run_benchmark.py 的 JSON 输出.
 # 生成: results/innovation_summary.md (可交付报告)
-# 创建: 2026-05-11
 
 import json
 from pathlib import Path
@@ -47,7 +46,7 @@ def main():
 
     # 1) 堆溢出 CVE 基准
     heap = load(RESULTS_DIR / "heap_benchmark_binmind.json")
-    lines.append("## 1. 堆溢出 — 全量 CVE + FP 安全样本 (主打创新点)")
+    lines.append("## 1. 堆溢出 - 全量 CVE + FP 安全样本 (主打创新点)")
     lines.append("")
     lines.append("| 指标 | 值 |")
     lines.append("|------|-----|")

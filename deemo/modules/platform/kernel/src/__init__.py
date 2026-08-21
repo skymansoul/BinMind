@@ -1,4 +1,4 @@
-# kernel/src -- kernel introspection & hardening analysis core
+# kernel/src - kernel introspection & hardening analysis core
 
 __version__ = "0.2.0"
 

@@ -146,7 +146,7 @@ class SyscallTableRecovery:
         return self._assess_security_level(syscall)
 
     def recover_table(self, arch: ArchType = ArchType.X64) -> List[SyscallEntry]:
-        """根据架构恢复系统调用表条目——从静态表中按 syscall 号匹配名称"""
+        """根据架构恢复系统调用表条目, 从静态表中按 syscall 号匹配名称"""
         kernel = self.detect_kernel()
         entries: List[SyscallEntry] = []
         if kernel == KernelType.LINUX:
@@ -203,7 +203,7 @@ def recover_syscall_table(binary):
 def analyze_syscall_sequence(seq):
     return SyscallTableRecovery("").analyze_syscall_usage(seq)
 
-# Production 系统调用 tables — 300+ entries per table
+# Production 系统调用 tables , 300+ entries per table
 LINUX_X64_SYSCALLS = {
     0: ('read',), 1: ('write',), 2: ('open',), 3: ('close',), 4: ('stat',),
     5: ('fstat',), 6: ('lstat',), 7: ('poll',), 8: ('lseek',), 9: ('mmap',),

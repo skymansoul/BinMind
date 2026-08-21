@@ -3,7 +3,6 @@
 # 验证 DBM 闭包传播、关系查询、约束构建器、FP过滤器核心逻辑.
 # 覆盖 malloc(x);memcpy(,,x) 等价关系、常量传播、差值推导.
 #
-# 创建: 2026-05-01
 
 import sys
 import os

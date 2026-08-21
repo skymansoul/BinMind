@@ -18,7 +18,6 @@
 #     超过2层的间接传播在静态分析中可靠性低,
 #     不做追踪以避免误追踪导致的漏报.
 #
-# 创建: 2026-04-28
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

@@ -15,7 +15,7 @@ try:
 except ImportError:
     ANGR_AVAILABLE = False
 
-from run_benchmark import ToolAdapter, VULN_SAMPLES
+from .run_benchmark import ToolAdapter, VULN_SAMPLES
 
 
 class AngrAdapter(ToolAdapter):

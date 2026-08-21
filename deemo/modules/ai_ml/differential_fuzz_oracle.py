@@ -1,16 +1,14 @@
-# created: 2026-08-11
-# modified: 2026-08-26 — added ToolInvoker with subprocess-based disassembler bridges
-# 差分模糊测试预言——多工具共识/分歧驱动的二进制分析质量评估
+# 差分模糊测试预言-多工具共识/分歧驱动的二进制分析质量评估
 #
 # 核心问题: 二进制分析工具对同一二进制可能产生不同的反汇编/CFG/函数边界。
 # 这些差异揭示: (1)工具bug或局限性，(2)真正难分析的代码区域。
 #      比较反汇编指令、CFG边、函数边界的一致性
-#   2. 不一致区域定位: 工具间存在分歧的代码区域被标记为"可疑"——
+#   2. 不一致区域定位: 工具间存在分歧的代码区域被标记为"可疑"-
 #      这些区域要么是混淆代码（工具有不同处理），要么是工具bug
 #   3. 共识分数: 对每个基本块/函数计算跨工具共识度(0-1)
-#      低共识区域→优先人工审核
-#   4. 差分测试用例生成: 不一致区域自动生成最小化的测试用例——
-#      Ghidra认为是函数A但IDA认为是函数B的代码片段→提交给工具开发者
+#      低共识区域-优先人工审核
+#   4. 差分测试用例生成: 不一致区域自动生成最小化的测试用例-
+#      Ghidra认为是函数A但IDA认为是函数B的代码片段-提交给工具开发者
 #
 # 新颖性: 首次将差分测试应用于二进制分析工具的交叉验证
 
@@ -19,6 +17,7 @@ from __future__ import annotations
 import math
 import logging
 import hashlib
+import re
 from typing import Dict, List, Optional, Set, Tuple, Any, Callable
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -26,7 +25,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -67,7 +65,7 @@ class ConsensusReport:
 
 
 class DifferentialFuzzOracle:
-    """差分模糊测试预言——多工具交叉验证。
+    """差分模糊测试预言-多工具交叉验证。
 
     三个分析维度:
       1. 指令级: 同一地址不同工具反汇编出的助记符是否一致
@@ -75,8 +73,8 @@ class DifferentialFuzzOracle:
       3. 函数级: 函数边界划分是否一致
 
     指令比较容忍语法差异:
-      "mov eax, [rbp-0x10]" vs "mov eax, dword [rbp-0x10]" → 一致
-      "call 0x401000" vs "call sub_401000" → 一致（规范化后）
+      "mov eax, [rbp-0x10]" vs "mov eax, dword [rbp-0x10]" - 一致
+      "call 0x401000" vs "call sub_401000" - 一致（规范化后）
     """
 
     def __init__(self, tools: Optional[List[ToolName]] = None):
@@ -87,13 +85,12 @@ class DifferentialFuzzOracle:
         self._outputs[output.tool] = output
 
     def _normalize_instr(self, instr: str) -> str:
-        """规范化汇编指令——消除工具间语法差异。
+        """规范化汇编指令-消除工具间语法差异。
 
         - 移除size前缀 (dword/byte/word ptr)
         - 将地址引用替换为占位符 <ADDR>
         - 统一空白字符
         """
-        import re
         s = instr.strip().lower()
         s = re.sub(r'\b(dword|byte|word|qword)\s+ptr\s+', '', s)
         s = re.sub(r'0x[0-9a-f]+', '<ADDR>', s)
@@ -201,7 +198,7 @@ class DifferentialFuzzOracle:
                                 min_region_size: int = 4,
                                 min_conflict_score: float = 0.5
                                 ) -> List[Tuple[int, int, float]]:
-        """定位连续高冲突地址区域——可能是混淆代码或工具bug集中区"""
+        """定位连续高冲突地址区域-可能是混淆代码或工具bug集中区"""
         sorted_addrs = sorted(addr_conflicts.keys())
         if not sorted_addrs:
             return []

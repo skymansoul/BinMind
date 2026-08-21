@@ -4,8 +4,8 @@ import tempfile
 import unittest
 import uuid
 
-from src.config import DataConfig, DBConfig
-from src.db import DataDB
+from ..src.config import DataConfig, DBConfig
+from ..src.db import DataDB
 
 
 class TestDataDB(unittest.TestCase):

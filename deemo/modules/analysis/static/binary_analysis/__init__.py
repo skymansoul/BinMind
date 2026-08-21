@@ -1,8 +1,8 @@
 # BinMind v0.5.0 — 协议 classes, timeout guards, 压缩, delta 编码
-import importlib,sys,os,uuid,hashlib,functools,atexit,threading as _t,signal as _sig,glob as _glob,gzip,lzma
-from typing import Any,Protocol,runtime_checkable
+import importlib,sys,os,json,uuid,hashlib,functools,atexit,threading as _t,signal as _sig,glob as _glob,gzip,lzma
+from typing import Protocol,runtime_checkable
 
-__version__="0.5.0"; __author__="BinMind"
+__version__="0.5.0"
 
 _ALL_MODULES=["pipeline_infra","kernel_driver","testing_fuzzing","cli","function_inliner","function_boundary","binary_formats","exploit_primitives","memory_heap","ml_features","symbolic_analysis","vuln_management","analysis_depth_estimator","cross_validation","diff_notification"]
 
@@ -55,7 +55,7 @@ def register_cleanup(cb): _cbs.append(cb)
 def _run_cbs():
     for cb in reversed(_cbs):
         try: cb()
-        except Exception: pass  # 修复: bare except → 异常
+        except Exception: pass
 atexit.register(_run_cbs)
 
 # signals
@@ -67,7 +67,7 @@ def _hs(sig,_f):
     _sd.set(); [cb()for cb in reversed(_sh)]; _run_cbs(); os._exit(0)
 for _sn in('SIGTERM','SIGINT'):
     try: _sig.signal(getattr(_sig,_sn),_hs)
-    except Exception: pass  # 修复: bare except → 异常
+    except Exception: pass
 
 # features
 _ff={}
@@ -92,13 +92,13 @@ class OpTimeout:
     def __enter__(self):
         if self._s<=0: return self
         try: _sig.signal(_sig.SIGALRM,lambda s,f:exec('raise TimeoutError(self._lb)'))
-        except Exception: pass  # 修复: bare except → 异常
+        except Exception: pass
         try: _sig.alarm(int(self._s))
-        except Exception: pass  # 修复: bare except → 异常
+        except Exception: pass
         return self
     def __exit__(self,*_):
         try: _sig.alarm(0)
-        except Exception: pass  # 修复: bare except → 异常
+        except Exception: pass
         return False
 
 # //// 压缩 辅助函数 ////
@@ -132,10 +132,10 @@ def check_compatibility()->dict:
     try:
         import subprocess; o=subprocess.run(['r2','-v'],capture_output=True,text=True,timeout=5)
         v=o.stdout.split()[1]if len(o.stdout.split())>1 else'0'; r['radare2']={'ok':v>=_MIN_VERSIONS['radare2'],'v':v}
-    except (FileNotFoundError, subprocess.SubprocessError): r['radare2']={'ok':False,'v':'N/A'}  # 修复: bare except → subprocess errors
+    except (FileNotFoundError, subprocess.SubprocessError): r['radare2']={'ok':False,'v':'N/A'}
     for mod,mv in[('capstone','4.0.0'),('angr','9.0.0'),('z3','4.8.0')]:
         try: m=importlib.import_module(mod); mv2=getattr(m,'__version__',getattr(m,'VERSION','0')); r[mod]={'ok':str(mv2)>=mv,'v':str(mv2)}
-        except (ImportError, AttributeError): r[mod]={'ok':False,'v':'N/A'}  # 修复: bare except → ImportError
+        except (ImportError, AttributeError): r[mod]={'ok':False,'v':'N/A'}
     return r
 def discover_plugins(pd=None)->list:
     if pd is None: pd=os.path.join(os.path.dirname(__file__),'plugins')
@@ -147,7 +147,7 @@ def discover_plugins(pd=None)->list:
             spec=importlib.util.spec_from_file_location(f"{__package__}.plugins.{nm}",fp)
             mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
             if isinstance(mod,AnalysisPlugin): pl.append({'name':nm,'path':fp,'v':getattr(mod,'__version__','0.1.0'),'proto':True})
-        except Exception: pass  # 修复: bare except → 异常
+        except Exception: pass
     return pl
 def layered_config(cli_args=None,env_prefix='BINMIND_')->dict:
     cfg={}

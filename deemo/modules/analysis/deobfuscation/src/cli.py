@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# 2026-07-27
-# 去混淆 CLI 入口
-"""BinMind 去混淆 command-line interface
+# Deobfuscation CLI entry point
+"""BinMind deobfuscation command-line interface
 
-INTJ策略: 每个子命令使用独立handler函数，避免巨型if-elif链
+策略: 每个子命令使用独立handler函数，避免巨型if-elif链
 argparse的subparser机制天然支持命令路由，比手动dispatch更可维护
 """
 
@@ -36,7 +35,7 @@ def _setup_logging(verbose: bool, debug: bool) -> None:
 
 
 def _load_module_config(config_path: str | None) -> Dict[str, Any]:
-    """加载 配置 file or 返回 defaults"""
+    """Load config file or return defaults"""
     if config_path and os.path.isfile(config_path):
         try:
             from .config import load_config as cfg_loader
@@ -250,14 +249,7 @@ def _handle_detect_repack(args: argparse.Namespace) -> int:
 
 
 def main(argv: List[str] | None = None) -> int:
-    """Main CLI 入口
-    
-    Args:
-    argv: Command-line arguments (defaults sys.argv[1:])
-    
-    返回:
-    Exit code (0 for success, non-zero for error)
-    """
+    """CLI 主入口, argv 默认取 sys.argv[1:], 返回退出码 (0 成功)。"""
     p = argparse.ArgumentParser(
         prog="binmind-deobfuscation",
         description="BinMind Deobfuscation Toolkit",

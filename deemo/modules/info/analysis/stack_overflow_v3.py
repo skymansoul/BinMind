@@ -8,7 +8,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional
 import re
-from value_range_analyzer import ValueRange, extract_value_ranges
+from .value_range_analyzer import ValueRange, extract_value_ranges
 from stack_frame_model import (estimate_frame_layout, canary_bypass_risk,
                                 compute_frame_overflow_risk)
 

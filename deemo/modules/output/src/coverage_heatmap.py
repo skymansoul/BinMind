@@ -1,18 +1,17 @@
-# 创建: 2024-09-02 18:33
-# 修改: 2024-09-02 — 边->地址反向映射 + 256B bucket 密度聚合
+# 边->地址反向映射 + 256B bucket 密度聚合
 """
-空间覆盖热力图生成器 — 边覆盖位图→地址空间热力图→热点/冷点识别。
+空间覆盖热力图生成器 - 边覆盖位图-地址空间热力图-热点/冷点识别。
 
-现有覆盖统计 (coverage.py) 报告"覆盖了多少条边"——但不知道
+现有覆盖统计 (coverage.py) 报告"覆盖了多少条边"-但不知道
 "哪些代码区域被密集覆盖, 哪些区域从未触及"。本模块将覆盖位图
 映射回二进制地址空间, 生成空间感知的覆盖热力图。
 
 映射过程:
-  1. 边→地址: 边哈希解码为 (src_addr, dst_addr) → 定位到代码段
+  1. 边-地址: 边哈希解码为 (src_addr, dst_addr) - 定位到代码段
   2. 热度聚合: 按 256 字节粒度聚合成函数/基本块的覆盖密度
-  3. 冷点检测: 覆盖密度 < 阈值的连续区域 → 标记为未探索
-  4. 热点检测: 覆盖密度最高的 top-N% 区域 → 标记为密集测试
-  5. 边界检测: 热/冷区域交界 → fuzzing 的优先探索目标
+  3. 冷点检测: 覆盖密度 < 阈值的连续区域 - 标记为未探索
+  4. 热点检测: 覆盖密度最高的 top-N% 区域 - 标记为密集测试
+  5. 边界检测: 热/冷区域交界 - fuzzing 的优先探索目标
 
 应用场景:
   - 模糊测试导航: 优先变异"能到达冷点边界"的种子
@@ -20,9 +19,9 @@
   - 补丁验证: 补丁后的新增代码是否被覆盖?
 
 为什么 256 字节粒度:
-  太粗 (4096) → 掩盖函数内部的覆盖差异 (前半覆盖, 后半未覆盖)
-  太细 (16) → 噪声过多, 相邻指令几乎总是一起覆盖
-  256 字节 ≈ 2-4 个基本块 → 平衡粒度与信噪比
+  太粗 (4096) - 掩盖函数内部的覆盖差异 (前半覆盖, 后半未覆盖)
+  太细 (16) - 噪声过多, 相邻指令几乎总是一起覆盖
+  256 字节 ~= 2-4 个基本块 - 平衡粒度与信噪比
 
 ref: AFL++ collision-free coverage — 边覆盖位图结构,
      本项目的 addr→bitmap 逆向映射补充了 AFL++ 的单向设计
@@ -39,7 +38,7 @@ from typing import Optional
 
 @dataclass
 class HeatmapRegion:
-    """热力图中的一个区域——地址范围 + 覆盖密度。"""
+    """热力图中的一个区域-地址范围 + 覆盖密度。"""
     start_addr: int
     end_addr: int
     density: float = 0.0        # [0,1] 覆盖密度
@@ -51,7 +50,7 @@ class HeatmapRegion:
 
 @dataclass
 class CoverageHeatmap:
-    """完整的覆盖热力图——所有区域 + 统计摘要。"""
+    """完整的覆盖热力图-所有区域 + 统计摘要。"""
     binary_name: str = ''
     total_address_space: int = 0
     covered_regions: list[HeatmapRegion] = field(default_factory=list)
@@ -61,11 +60,11 @@ class CoverageHeatmap:
     overall_density: float = 0.0
 
 
-# 边→地址映射
+                # 边-地址映射
 
 def decode_edge_hash(edge_hash: int) -> tuple[int, int]:
     """从 AFL 风格的边哈希反推 src 和 dst 地址的近似值。
-    hash = (prev >> 4) ^ (curr << 8)。无法精确还原——但可还原代码区域。"""
+    hash = (prev >> 4) ^ (curr << 8)。无法精确还原-但可还原代码区域。"""
     # 近似: 假设 prev 已知 (从上一条边传递), 或仅使用高 16 位
     prev_approx = (edge_hash & 0xFFFF) << 4
     curr_approx = (edge_hash >> 16) << 8
@@ -103,7 +102,7 @@ def aggregate_heatmap(edge_bitmap: bytearray,
         for bit in range(8):
             if edge_bitmap[byte_idx] & (1 << bit):
                 edge_id = byte_idx * 8 + bit
-                # 边→地址映射
+# 边-地址映射
                 src, dst = edge_to_addr.get(edge_id, (0, 0))
                 if src:
                     bucket_idx = src // bucket_size
@@ -134,7 +133,7 @@ def aggregate_heatmap(edge_bitmap: bytearray,
         if region_start is None:
             region_start = addr
             region_density = density
-        elif abs(density - region_density) > 0.3:  # 密度变化→关闭前一个区域
+        elif abs(density - region_density) > 0.3:  # 密度变化-关闭前一个区域
             region = HeatmapRegion(
                 start_addr=region_start, end_addr=addr,
                 density=round(region_density, 3),
@@ -181,10 +180,10 @@ def _categorize(density: float) -> str:
 
 def suggest_coldspot_targets(heatmap: CoverageHeatmap,
                              top_k: int = 5) -> list[dict]:
-    """从热力图中提取冷点引导目标——供模糊测试定向使用。"""
+    """从热力图中提取冷点引导目标-供模糊测试定向使用。"""
     targets = []
 
-    # 策略1: 冷热边界 (最有希望——从已探索到未探索)
+    # 策略1: 冷热边界 (最有希望-从已探索到未探索)
     for cold_start, hot_start in heatmap.boundaries:
         targets.append({
             'type': 'boundary',
@@ -210,7 +209,7 @@ def suggest_coldspot_targets(heatmap: CoverageHeatmap,
 
 
 class CoverageHeatmapGenerator:
-    """覆盖热力图生成器——边位图→空间热力图→冷热点目标。"""
+    """覆盖热力图生成器-边位图-空间热力图-冷热点目标。"""
 
     def __init__(self, bucket_size: int = 256):
         self._bucket_size = bucket_size

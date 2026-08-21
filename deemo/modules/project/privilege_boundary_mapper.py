@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-22 16:50 — 初始创建: 六层权限模型+路径枚举
-# 2025-07-29 10:15 — 增加权限图+Dijkstra最短攻击路径+跨层传播
-# 2025-08-04 14:22 — 增加capability传播图+攻击路径风险评分
+# 初始创建: 六层权限模型+路径枚举
+# 增加权限图+Dijkstra最短攻击路径+跨层传播
+# 增加capability传播图+攻击路径风险评分
 # 权限边界映射器: 权限图传播 / Dijkstra最短路径 / 跨层攻击链
 # 技术问题: 简单if-else枚举无法发现跨层攻击路径.
 #   例如: CAP_SYS_ADMIN(层3) 可创建user namespace→在其中获得
@@ -66,10 +65,10 @@ class PrivilegeGraph:
                              target_layer: str = "root",
                              target_caps: int = 0
                              ) -> Tuple[List[PrivEdge], float]:
-        """Dijkstra求最短攻击路径.
+        """Dijkstra求最短攻击路径。
 
-        边权重 = difficulty (越小越容易).
-        返回: (path_edges, total_difficulty).
+        边权重 = difficulty (越小越容易)。
+        返回 (path_edges, total_difficulty)。
         """
         if start_id not in self._nodes:
             return [], float('inf')

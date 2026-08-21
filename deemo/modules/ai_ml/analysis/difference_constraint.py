@@ -1,6 +1,6 @@
-# 差分约束图(DCG)——寄存器/栈槽间的差值约束传递闭包
+# 差分约束图(DCG): 寄存器/栈槽间的差值约束传递闭包
 # 核心创新: 从指令序列提取 x-y≤c 约束, Floyd-Warshall O(n³) 传递闭包
-# 揭示alloc_size与copy_size间的隐藏关系——即使它们通过不同寄存器链传递
+# 揭示alloc_size与copy_size间的隐藏关系, 即使它们通过不同寄存器链传递
 # 与值流引擎互补: 值流追踪绝对值区间, DCG追踪变量间相对关系
 # 典型场景: mov %rax,%rbx; add $16,%rbx; cmp %rbx,%rcx → 发现 rcx ≤ rax+16
 # 稳定性: n≤64时FW<1ms; 若出现负环则约束矛盾→标记不可信
@@ -24,7 +24,7 @@ class ConstraintClass(Enum):
 
 @dataclass
 class DCGReport:
-    """DCG分析结果——alloc/copy之间的可证明关系"""
+    """DCG分析结果: alloc/copy之间的可证明关系"""
     alloc_var: str; copy_var: str
     upper_bound: int; lower_bound: int
     is_provable_safe: bool
@@ -33,7 +33,7 @@ class DCGReport:
 
 
 class DifferenceConstraintGraph:
-    """差分约束图——dist[i][j]=var_i-var_j≤c 的最紧上界, FW传递闭包"""
+    """差分约束图: dist[i][j]=var_i-var_j≤c 的最紧上界, FW传递闭包"""
 
     _REG_ALIAS = {'eax':'rax','ebx':'rbx','ecx':'rcx','edx':'rdx',
                   'esi':'rsi','edi':'rdi','ebp':'rbp','esp':'rsp',
@@ -76,7 +76,7 @@ class DifferenceConstraintGraph:
                 self.add_constraint('ZERO', var, -bound, instr_idx, ConstraintClass.BOUND))
 
     def reset_var(self, var: str) -> bool:
-        """重置变量的所有约束——模拟寄存器被覆写(破坏旧值, 断开传递链)
+        """重置变量的所有约束: 模拟寄存器被覆写(破坏旧值, 断开传递链)
 
         当mov/add/sub等指令写入目标寄存器时调用, 防止旧约束通过复用寄存器形成虚假传递路径。
         只重置非ZERO变量; 成功后标记图需重新闭包。
@@ -95,7 +95,7 @@ class DifferenceConstraintGraph:
         return True
 
     def copy_var(self, src: str, dst: str) -> bool:
-        """复制src的所有约束到dst——用于add/sub前保存旧值到PRE_reg
+        """复制src的所有约束到dst: 用于add/sub前保存旧值到PRE_reg
 
         必须先close()以确保复制的是完整的传递闭包约束。
         """
@@ -116,7 +116,7 @@ class DifferenceConstraintGraph:
         return True
 
     def close(self):
-        """Floyd-Warshall全源最短路径——O(n³), n≤64时<1ms"""
+        """Floyd-Warshall全源最短路径: O(n³), n≤64时<1ms"""
         n = len(self._vars)
         if n == 0 or self._closed: return
         for k in range(n):
@@ -165,7 +165,7 @@ class DifferenceConstraintGraph:
 
 
 class DCGBuilder:
-    """从指令序列构建DCG——识别mov/add/sub/cmp/栈槽, 提取差值约束"""
+    """从指令序列构建DCG: 识别mov/add/sub/cmp/栈槽, 提取差值约束"""
 
     _NON_REG = {'qword','dword','word','byte','ptr','xmmword','ymmword','tbyte','oword'}
     _JCC_SET = {'ja','jae','jb','jbe','jc','je','jg','jge','jl','jle',
@@ -175,14 +175,14 @@ class DCGBuilder:
     def __init__(self):
         self._dcg = DifferenceConstraintGraph()
 
-    # caller-saved寄存器——call后必须reset, 因为调用可能改变其值
+    # caller-saved寄存器, call后必须reset, 因为调用可能改变其值
     _CALLER_SAVED = {'rax','rcx','rdx','rsi','rdi','r8','r9','r10','r11',
                      'eax','ecx','edx','esi','edi','r8d','r9d','r10d','r11d'}
 
     def build(self, instructions: List[str], start_idx: int = 0,
               end_idx: int = -1,
               bb_boundaries: List[Tuple[int,int]] = None) -> DifferenceConstraintGraph:
-        """从指令序列构建DCG——含寄存器覆写复位(流敏感), 防止虚假传递路径"""
+        """从指令序列构建DCG: 含寄存器覆写复位(流敏感), 防止虚假传递路径"""
         if end_idx < 0: end_idx = len(instructions)
         n = min(end_idx, len(instructions))
         _intel = self._detect_syntax(instructions, start_idx, n)
@@ -293,7 +293,7 @@ class DCGBuilder:
 def verify_heap_safety(dcg: DifferenceConstraintGraph,
                        alloc_size_var: str, copy_size_var: str,
                        margin: int = 8) -> DCGReport:
-    """验证copy_size ≤ alloc_size + margin在DCG中是否可证——heap_fp_filter的stage 0.5"""
+    """验证copy_size ≤ alloc_size + margin在DCG中是否可证, heap_fp_filter的stage 0.5"""
     upper, lower = dcg.query_bidirectional(copy_size_var, alloc_size_var)
     chain = []; is_safe = False
     if upper is not None:

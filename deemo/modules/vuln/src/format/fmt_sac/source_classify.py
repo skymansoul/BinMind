@@ -127,4 +127,14 @@ def _extract_rip_disp(src: str, insn, def_idx: int) -> Optional[int]:
 
 def _heap_label_before(insns: list, upto_idx: int, tracer) -> Optional[str]:
     """def_idx 之前最近 malloc 标签定义."""
+    _ALLOCATORS = ('malloc', 'calloc', 'realloc', '_Znwm', '_Znaj',
+                   '_Znam', 'HeapAlloc', 'LocalAlloc', 'GlobalAlloc')
+    for j in range(upto_idx - 1, max(0, upto_idx - 12) - 1, -1):
+        insn = insns[j]
+        if insn.mnemonic != 'call':
+            continue
+        callee = insn.operands.lower()
+        for alloc in _ALLOCATORS:
+            if alloc in callee:
+                return alloc
     return None

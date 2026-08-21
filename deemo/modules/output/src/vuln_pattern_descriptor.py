@@ -135,17 +135,12 @@ def extract_pattern(
     call_depths: Optional[List[int]] = None,
 ) -> VulnPattern:
     """
-    提取跨架构漏洞模式 — 返回 VulnPattern。
+    提取跨架构漏洞模式。
 
-    Args:
-      function_name: 函数名
-      block_sizes: 每个基本块的指令数 [int, ...]
-      block_instructions: 基本块内的指令文本 [[str, ...], ...]
-      pseudocode: Ghidra/IDA 反编译伪 C 输出
-      call_depths: 调用树中每层调用数 [int, ...]
-
-    Returns:
-      VulnPattern，含架构无关的归一化特征向量。
+    参数: function_name 函数名, block_sizes 每基本块指令数,
+    block_instructions 基本块内指令文本, pseudocode 反编译伪 C
+    输出, call_depths 调用树每层调用数; 返回含架构无关归一化
+    特征向量的 VulnPattern。
     """
     mean_s, std_s, skew_s = _basic_block_moments(block_sizes)
     nesting = _estimate_loop_nesting(pseudocode) if pseudocode else 0

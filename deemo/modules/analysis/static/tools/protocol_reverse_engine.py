@@ -1,10 +1,8 @@
-# 2026-07-24
 import struct
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 from collections import Counter
 import re
-
 
 @dataclass
 class Message:
@@ -110,7 +108,7 @@ class ProtocolReverseEngine:
 
         return _r
 
-    # //// 校验和暴力识别: CRC32, CRC16 variants, XOR, ADD, Fletcher, Adler ////
+    # 校验和暴力识别: CRC32, CRC16, XOR, ADD, Fletcher, Adler
 
     def identify_checksum(self, traces=None) -> List[dict]:
         if traces is None:
@@ -309,7 +307,7 @@ class ProtocolReverseEngine:
 
         return 'binary'
 
-    # //// 字段结构推断: 对齐消息，找constant/variable/length/type字段 ////
+    # 字段结构推断: 对齐消息，找constant/variable/length/type字段
 
     def infer_field_structure(self, messages=None) -> List[Field]:
         if messages is None:

@@ -19,7 +19,7 @@ from config import R2_PATH
 
 _log = logging.getLogger(__name__)
 
-# 已知 libc 关键符号 —— 按架构提供备选名称
+# 已知 libc 关键符号 - 按架构提供备选名称
 _KEY_SYMBOLS = {
     'system': ('system',),
     'execve': ('execve',),
@@ -51,18 +51,7 @@ def identify_libc(path: str) -> Dict[str, Any]:
     """
     识别二进制文件所依赖的 libc 版本和关键符号偏移。
 
-    返回的 dict 包含:
-      - version: 版本字符串（如 "2.31"）
-      - distro: 发行版标识
-      - symbols: {符号名: 偏移量} 的字典
-      - confidence: 匹配置信度 0.0–1.0
-      - source: 信息来源（'string' | 'fingerprint' | 'heuristic' | 'unknown'）
-
-    Args:
-        path: ELF 二进制文件路径
-
-    Returns:
-        libc 识别结果字典
+    返回 {version, distro, symbols, confidence, source}。
     """
     result: Dict[str, Any] = {
         'version': '',
@@ -187,8 +176,11 @@ def _lookup_symbols(path: str, version: str) -> Dict[str, str]:
                     break
         except (json.JSONDecodeError, OSError):
             pass
+    else:
+        _log.info("libc 本地数据库不存在 (%s), 降级为从二进制导入表解析符号", local_db)
 
     if not symbols:
+        # 无本地库且指纹匹配失败时, 从目标二进制自身导入表解析符号偏移
         symbols = _lookup_system_libc(path)
 
     return symbols
@@ -199,7 +191,6 @@ def _lookup_system_libc(path: str) -> Dict[str, str]:
     symbols: Dict[str, str] = {}
 
     try:
-        import subprocess
         for sym_name in ('system', 'execve', '__libc_start_main'):
             proc = subprocess.run(
                 [R2_PATH, '-q', '-e', 'io.color=false',
@@ -224,12 +215,6 @@ def _lookup_system_libc(path: str) -> Dict[str, str]:
 def get_libc_context_for_llm(libc_info: Dict[str, Any]) -> str:
     """
     将 libc 识别结果格式化为 LLM prompt 的上下文文本。
-
-    Args:
-        libc_info: identify_libc() 的返回值
-
-    Returns:
-        适合嵌入 LLM prompt 的文本描述
     """
     parts = []
     if libc_info.get('version'):

@@ -1,6 +1,6 @@
-# 跨函数UAF检测增强 — 追踪指针通过函数调用逃逸后在调用者中的使用
+# 跨函数UAF检测增强 - 追踪指针通过函数调用逃逸后在调用者中的使用
 # uaf_detector.py 仅做函数内扫描; 本模块补充跨函数场景
-# 方法论依据: UAFSan — 别名分析+跨函数liveness
+# 方法论依据: UAFSan - 别名分析+跨函数liveness
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
@@ -15,7 +15,7 @@ class PointerEscape:
     target_function: str = ''      # 逃逸到的函数 (arg_pass) 或 '' (return/global)
 
 class CrossFunctionUAFDetector(UAFDetector):
-    """跨函数UAF检测 — 在函数内检测基础上增加跨函数指针追踪
+    """跨函数UAF检测 - 在函数内检测基础上增加跨函数指针追踪
 
     场景: 函数A分配堆指针, 传递给函数B, B中free, A中继续使用
     当前 uaf_detector.py 看不到B中的free→报告漏报

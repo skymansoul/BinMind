@@ -259,9 +259,8 @@ def generate_cve_report(title, desc, cwe,
     }
 
 
-# Compatibility bridge — aliases for tests/legacy consumers
-# Tests expect different field/method/param names than the
-# refactored internals. This block bridges the gap.
+# 兼容桥 — 为测试与旧调用方保留的字段/方法别名
+# 旧接口字段名与重构后内部名不一致, 此处逐一映射。
 
 # --- VulnerabilityDetail field aliases (property access) ---
 VulnerabilityDetail.description = property(

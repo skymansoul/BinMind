@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List
 
-from run_benchmark import ToolAdapter
+from .run_benchmark import ToolAdapter
 
 GHIDRA_HOME = os.environ.get("GHIDRA_HOME", "")
 GHIDRA_AVAILABLE = bool(GHIDRA_HOME

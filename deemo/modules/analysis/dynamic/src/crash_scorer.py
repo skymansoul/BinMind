@@ -1,21 +1,21 @@
 """
-Crash 寄存器 parsing 漏洞利用ability scoring
+Crash register parsing and exploitability scoring
 
-INTJ commentary: two concerns — 寄存器-state extraction heuristic
-漏洞利用ability scoring — previously embedded inside crash_analysis.py's
-CrashAnalyzer monolith. untestable isolation impossible
-reuse dragging full -analysis 流水线. Extracting
+Two concerns: register-state extraction heuristic and
+exploitability scoring — previously embedded inside crash_analysis.py's
+CrashAnalyzer monolith. Untestable, isolation impossible,
+reuse dragging full analysis pipeline. Extracting
 a dedicated module achieves three things:
 
-1. 寄存器 parsing becomes a reusable utility for 格式化-specific
-解析器 (GDB, ASAN, WinDbg, coredump) circular imports
-2. scoring heuristics unit-tested against a matrix
-crash 签名s instantiating an OpenAI client
-3. Future scoring backends (ML 分类器s, CVSS-style calculators)
-slot touching core analysis workflow
+1. Register parsing becomes a reusable utility for format-specific
+   parsers (GDB, ASAN, WinDbg, coredump) without circular imports
+2. Scoring heuristics unit-tested against a matrix of
+   crash signatures without instantiating an OpenAI client
+3. Future scoring backends (ML classifiers, CVSS-style calculators)
+   slot in without touching core analysis workflow
 
-logic changed — function body a direct copy
-lived crash_analysis.py 分割
+Logic unchanged — function bodies are direct copies from
+crash_analysis.py, split out for modularity.
 """
 
 import logging
@@ -42,14 +42,9 @@ REGISTER_NAMES = {
 
 
 def parse_registers_from_text(text: str) -> Dict[str, str]:
-    """
-    从文本中解析寄存器值，兼容多种格式
-    
-    Args:
-    text: 包含寄存器信息的文本
-    
-    返回:
-    寄存器名字典
+    """从文本中解析寄存器值，兼容多种格式。
+
+    text: 包含寄存器信息的文本; 返回寄存器名字典。
     """
     registers = {}
 
@@ -77,14 +72,9 @@ def parse_registers_from_text(text: str) -> Dict[str, str]:
 
 
 def heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    基于规则的启发式崩溃分析
-    
-    Args:
-    crash_data: 崩溃数据
-    
-    返回:
-    分析结果
+    """基于规则的启发式崩溃分析。
+
+    crash_data: 崩溃数据; 返回分析结果。
     """
     result = {
         'crash_type': 'Unknown',
@@ -269,9 +259,7 @@ def _heuristic_detect_difficulty(text: str) -> str:
 
 
 def _heuristic_extract_recommendations(text: str) -> List[str]:
-    """
-    启发式提取
-    """
+    """从文本中启发式提取修复建议列表。"""
     recommendations = []
 
     lines = text.split('\n')

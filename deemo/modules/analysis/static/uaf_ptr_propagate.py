@@ -1,6 +1,5 @@
 # 指针传播器.
 # 职责: mov/lea/movzx 等指令中的指针别名传播 + 内存操作数目标解析
-# 创建: 2026-07-17
 
 from typing import Optional
 

@@ -1,25 +1,24 @@
-# 修改记录:
-# 2025-08-04 17:18 - 初始实现：三模态联合嵌入 + 跨模态对比损失
+# 初始实现：三模态联合嵌入 + 跨模态对比损失
 
 """跨模态对比二进制表示 — CFG图 × 反汇编文本 × 动态trace 的联合嵌入。
 
 现有 multimodal_embedding.py 为三种模态（图/文本/结构特征）独立编码后
-加权拼接——这是"晚期融合"，模态间没有共享表示空间，
+加权拼接-这是"晚期融合"，模态间没有共享表示空间，
 无法捕获跨模态的细粒度对应关系（如"某个基本块在图嵌入中的向量"
 与"该块指令的文本嵌入"在语义上的一致性）。
 
-本模块的方案——共享潜在空间中的跨模态对比学习 (CMCL)：
+本模块的方案-共享潜在空间中的跨模态对比学习 (CMCL)：
 1. 三个编码器分别处理 CFG 图、反汇编文本序列、动态执行 trace，
    输出同维度（d=128）的嵌入向量。
 2. 对比损失确保：同一函数的三种模态嵌入在空间中聚拢（正样本对），
    不同函数的嵌入推开（负样本对）。
-3. 训练后，任一单模态即可检索其他模态——
+3. 训练后，任一单模态即可检索其他模态-
    例如用 CFG 图嵌入找到语义相似的文本描述或执行行为。
 
 与 MSIVD 的区别：
 - MSIVD: 直接拼接 LLM hidden state + GNN embedding，无跨模态对比目标。
 - 本方案: InfoNCE 对比损失联合训练，嵌入空间具有跨模态对齐性。
-  效果：模态缺失时可以"从图推测文本特征"——这对缺失调试符号的二进制尤为重要。
+  效果：模态缺失时可以"从图推测文本特征"-这对缺失调试符号的二进制尤为重要。
 
 技术细节：
 - 图编码：2 层 GCN + mean pooling → d 维向量。
@@ -187,7 +186,7 @@ class CrossModalContrastiveEncoder:
         texts: List[TextEmbedding],
         traces: Optional[List[TraceEmbedding]] = None,
     ) -> float:
-        """对称 InfoNCE 损失——最大化匹配对的相似度，最小化非匹配对。
+        """对称 InfoNCE 损失-最大化匹配对的相似度，最小化非匹配对。
 
         对 batch 中的每对 (graph_i, text_i, trace_i)：
         - 正样本：同一函数的三模态嵌入
@@ -219,7 +218,7 @@ class CrossModalContrastiveEncoder:
     def align_score(
         self, graph: GraphEmbedding, text: TextEmbedding
     ) -> float:
-        """计算图-文本嵌入的余弦相似度——用于模态对齐质量评估。"""
+        """计算图-文本嵌入的余弦相似度-用于模态对齐质量评估。"""
         return _cosine_similarity(graph.vector, text.vector)
 
     # 内部方法

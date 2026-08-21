@@ -1,4 +1,4 @@
-# 堆分配器语义模型——精确建模glibc ptmalloc2的chunk布局和大小计算
+# 堆分配器语义模型: 精确建模glibc ptmalloc2的chunk布局和大小计算
 # 这是降低堆溢出误报的核心基础设施之一
 #
 # 理论背景:
@@ -25,7 +25,6 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -47,8 +46,7 @@ class ChunkLayout:
     alignment: int = 16      # MALLOC_ALIGNMENT
     # ptmalloc2 计算可用大小的公式:
     # usable = max(MINSIZE, (req + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK)
-# SIZE_SZ
-    # 其中 SIZE_SZ=8, MALLOC_ALIGN_MASK=15
+    # 其中 SIZE_SZ=8(x86_64), MALLOC_ALIGN_MASK=15
 
     def usable_size(self, requested: int) -> int:
         """给定malloc(N)的N, 返回实际可用字节数"""
@@ -89,7 +87,7 @@ class HeapAllocModel:
     """堆分配器语义模型。
 
     核心职责: 给定malloc(N)中的N, 计算实际可用空间。
-    这一步对降低误报至关重要——很多"溢出"实际上在
+    这一步对降低误报至关重要, 很多"溢出"实际上在
     合法分配空间内，因为glibc分配的chunk比请求大。
 
     支持的平台:
@@ -118,17 +116,7 @@ class HeapAllocModel:
                             requested_size: Optional[int] = None,
                             has_size_check: bool = False
                             ) -> AllocSiteInfo:
-        """分析单个分配点的chunk信息。
-
-        Args:
-            instr_idx: call malloc指令索引
-            instructions: 函数指令列表
-            requested_size: 外部已推断出的请求大小(可选)
-            has_size_check: 附近是否检测到大小检查逻辑
-
-        Returns:
-            AllocSiteInfo with precise allocator semantics
-        """
+        """分析单个分配点的chunk信息。"""
         instr = instructions[instr_idx].strip().lower() if instr_idx < len(instructions) else ''
         alloc_func = 'malloc'
         alloc_family = AllocFamily.UNKNOWN
@@ -155,7 +143,7 @@ class HeapAllocModel:
         else:
             evidence.append(f"{alloc_func}(?): unable to infer size locally")
 
-        # calloc: nmemb * size —— 两参数相乘
+        # calloc: nmemb * size, 两参数相乘
         if alloc_family == AllocFamily.CALLOC and is_exact:
             evidence.append("calloc: size may be product of nmemb*size")
 
@@ -174,11 +162,7 @@ class HeapAllocModel:
                                  alloc_info: AllocSiteInfo,
                                  copy_size: int
                                  ) -> Tuple[bool, int, str]:
-        """判断copy_size是否真的溢出。
-
-        Returns:
-            (is_overflow, margin_bytes, explanation)
-        """
+        """判断copy_size是否真的溢出。"""
         usable = alloc_info.usable_size
 
         if not alloc_info.is_size_exact:

@@ -260,4 +260,4 @@ def _get_max_write_size(loop_bound, guard_limits, clamp_limits) -> int:
     return loop_bound
 
 
-__all__ = ['extract_candidates_v3', 'extract_candidates_v2']
+__all__ = ['extract_candidates_v3']

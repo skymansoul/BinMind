@@ -1,5 +1,4 @@
-# 2026-08-01
-"""dynamic — CLI tests"""
+"""dynamic - CLI tests"""
 
 import argparse
 import json

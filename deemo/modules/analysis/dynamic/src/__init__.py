@@ -1,4 +1,3 @@
-# 2026-08-01
 # dynamic — lazy-loading module 入口
 # Exports sub-systems: engine, memory, 追踪, 插桩
 # 仿真, forensic, vmi

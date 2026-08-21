@@ -8,13 +8,13 @@
 
 from typing import Dict, List, Optional, Tuple
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Const, Var, Binary, Call, Index, Field, Deref, Addr,
     expr_str,
 )
-from heapov.interval import Interval, eval_expr
-from heapov import cparser as cp
-from heapov.model import AllocSite
+from .interval import Interval, eval_expr
+from . import cparser as cp
+from .model import AllocSite
 
 # 视为外部输入的调用(返回值污点)
 _TAINT_SOURCES = frozenset([

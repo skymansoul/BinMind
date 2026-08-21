@@ -101,12 +101,85 @@ def run_qemu(binary_path: str, sample: str,
     return r
 
 
+# Ghidra headless 后处理脚本（写入临时 .py，统计危险函数）
+GHIDRA_SCRIPT = '''
+import ghidra.app.script.GhidraScript
+import json, os
+
+class CountFuncs(GhidraScript):
+    def run(self):
+        dangerous = {
+            'printf', 'sprintf', 'snprintf', 'fprintf',
+            'malloc', 'calloc', 'realloc', 'free',
+            'memcpy', 'strcpy', 'strcat', 'gets', 'scanf',
+            'read', 'recv', 'recvfrom',
+        }
+        findings = 0
+        func_mgr = self.currentProgram.getFunctionManager()
+        for func in func_mgr.getFunctions(True):
+            fname = func.getName().lower()
+            for d in dangerous:
+                if d in fname:
+                    findings += 1
+                    break
+        with open(os.environ['GHIDRA_OUTPUT'], 'w') as f:
+            json.dump({'findings': findings}, f)
+'''
+
+
 def run_ghidra(binary_path: str, sample: str,
                optimize: str = 'O0') -> ToolResult:
-    """Placeholder for Ghidra headless analysis."""
+    """Run Ghidra headless analysis and count dangerous functions."""
     r = ToolResult(tool='Ghidra', sample=sample, optimize=optimize)
-    r.success = False
-    r.error_msg = 'Ghidra headless requires JAVA_HOME and analyzeHeadless'
+    t0 = time.perf_counter()
+    try:
+        import tempfile
+        ghidra_home = os.environ.get('GHIDRA_INSTALL_DIR', '')
+        if not ghidra_home:
+            for p in ['/opt/ghidra', '/usr/local/ghidra',
+                      os.path.expanduser('~/ghidra')]:
+                if os.path.isdir(p):
+                    ghidra_home = p
+                    break
+        if not ghidra_home:
+            r.error_msg = ('Ghidra headless not found. '
+                           'Set GHIDRA_INSTALL_DIR.')
+        else:
+            if sys.platform == 'win32':
+                headless = os.path.join(ghidra_home, 'support',
+                                        'analyzeHeadless.bat')
+            else:
+                headless = os.path.join(ghidra_home, 'support',
+                                        'analyzeHeadless')
+            if not os.path.isfile(headless):
+                r.error_msg = f'analyzeHeadless not found: {headless}'
+            else:
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    project_dir = os.path.join(tmpdir, 'project')
+                    script_path = os.path.join(tmpdir, 'CountFuncs.py')
+                    output_path = os.path.join(tmpdir, 'output.json')
+                    with open(script_path, 'w') as f:
+                        f.write(GHIDRA_SCRIPT)
+                    env = os.environ.copy()
+                    env['GHIDRA_OUTPUT'] = output_path
+                    proc = subprocess.run(
+                        [headless, project_dir, 'TempProject',
+                         '-import', os.path.abspath(binary_path),
+                         '-postScript', script_path, '-deleteProject'],
+                        capture_output=True, text=True, timeout=180,
+                        env=env)
+                    if os.path.isfile(output_path):
+                        with open(output_path) as f:
+                            data = json.load(f)
+                        r.findings = data.get('findings', 0)
+                        r.success = True
+                    else:
+                        r.error_msg = 'Ghidra produced no output'
+    except subprocess.TimeoutExpired:
+        r.error_msg = 'Ghidra headless timeout (>180s)'
+    except Exception as e:
+        r.error_msg = str(e)[:100]
+    r.duration_sec = round(time.perf_counter() - t0, 2)
     return r
 
 

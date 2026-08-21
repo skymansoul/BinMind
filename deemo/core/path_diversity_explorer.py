@@ -26,11 +26,8 @@ class PathDiversityExplorer:
         max_explored_features: int = 1000,
     ):
         """
-        Args:
-            feature_dim: 归一化特征向量维度
-            diversity_weight: 综合优先级中多样性权重(0-1)
-            novelty_threshold: 低于此新颖度的路径视为"已充分探索"
-            max_explored_features: 已探索特征库容量(FIFO淘汰)
+        feature_dim 特征维度, diversity_weight 优先级中多样性权重(0-1),
+        novelty_threshold 新颖度阈值, max_explored_features 特征库容量(FIFO)。
         """
         self.feature_dim = feature_dim
         self.diversity_weight = diversity_weight
@@ -51,15 +48,8 @@ class PathDiversityExplorer:
         unexplored_successors: int = 0,
     ) -> None:
         """
-        注册活跃路径及其元数据。
-
-        Args:
-            path_id: 路径唯一标识
-            branch_history: 条件分支的(地址, 是否跳转)哈希序列
-            call_depth: 当前调用栈深度
-            sym_var_count: 活跃符号变量数
-            block_count: 已执行的基本块数
-            unexplored_successors: 当前状态未探索的后继分支数
+        注册活跃路径及其元数据: 分支历史哈希序列/调用深度/符号变量数/
+        基本块数/未探索后继数, 并计算轻量特征向量。
         """
         features = _extract_features(
             branch_history, call_depth, sym_var_count, block_count,
@@ -92,10 +82,8 @@ class PathDiversityExplorer:
 
     def compute_priorities(self) -> List[Tuple[str, float]]:
         """
-        计算全部活跃路径的综合优先级。
-
-        Returns:
-            [(path_id, priority_score)] 按优先级降序排列
+        计算全部活跃路径的综合优先级,
+        返回 [(path_id, priority_score)] 按优先级降序排列。
         """
         if not self._active_paths:
             return []
@@ -115,11 +103,8 @@ class PathDiversityExplorer:
 
     def select_next(self, top_k: int = 3) -> List[str]:
         """
-        按优先级选取前k条路径；自动跳过低于新颖度阈值的路径
-        （该区域视为已充分探索）。
-
-        Returns:
-            路径ID列表
+        按优先级选取前 k 条路径; 低于新颖度阈值的路径视为已充分
+        探索自动跳过 (仅记录不移除), 返回路径 ID 列表。
         """
         priorities = self.compute_priorities()
         selected = []

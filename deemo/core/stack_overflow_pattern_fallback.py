@@ -1,5 +1,5 @@
 """
-栈溢出模式回退分析 —— angr 失败时使用 r2 + 汇编级模式匹配。
+栈溢出模式回退分析 - angr 失败时使用 r2 + 汇编级模式匹配。
 
 """
 
@@ -26,12 +26,12 @@ def analyze_with_pattern_fallback(
 
     result = analyze_stack_overflow(binary_path, func_name, binfo, libc_info)
 
-    # angr 成功 → 直接返回
+    # angr 成功 - 直接返回
     if result.get('overflowable') and not result.get('error'):
         result['method'] = 'angr'
         return result
 
-    # angr 失败/超时/无结果 → 回退到 pattern_fallback
+    # angr 失败/超时/无结果 - 回退到 pattern_fallback
     import subprocess, json
     from config import R2_PATH
     from core.pattern_fallback import match_patterns

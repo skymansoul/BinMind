@@ -14,9 +14,6 @@
 
 不实现完整SSA或别名分析 —— 仅追踪函数内的直接赋值链。
 O(n) 单遍扫描。
-
-  - "Demand-Driven Pointer Analysis"
-  - Steensgaard: unification-based alias analysis
 """
 
 import re

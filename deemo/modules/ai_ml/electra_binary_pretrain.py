@@ -1,21 +1,19 @@
-# created: 2026-08-16
-# modified: 2026-08-22 — replaced placeholder generator loss with full MLM cross-entropy
-# ELECTRA风格替换token检测——比MLM更高效的二进制代码预训练
+# ELECTRA风格替换token检测-比MLM更高效的二进制代码预训练
 #
-# 核心问题: mlm_pretrain.py和span_corruption_pretrain.py都使用掩码语言模型——
+# 核心问题: mlm_pretrain.py和span_corruption_pretrain.py都使用掩码语言模型-
 # 仅对15%被掩码的token计算损失，每个样本仅15%的token提供训练信号。
 # ELECTRA思路: 训练一个判别器检测被替换的token
-# 比训练生成器预测被掩码的token更高效——所有输入token都参与损失计算。
+# 比训练生成器预测被掩码的token更高效-所有输入token都参与损失计算。
 #
 # 技术方案:
-#   1. 生成器-判别器架构: 小生成器(MLM)替换部分token→判别器判断
-#      每个token是否被替换——这是二分类任务，所有token都参与
-#   2. CFG感知替换: 替换token时考虑控制流——同一基本块内的token
+#   1. 生成器-判别器架构: 小生成器(MLM)替换部分token-判别器判断
+#      每个token是否被替换-这是二分类任务，所有token都参与
+#   2. CFG感知替换: 替换token时考虑控制流-同一基本块内的token
 #      更可能被联合替换(模拟内联/轮廓外提)
-#   3. 对抗训练: 生成器学习产生更"逼真"的替换→判别器学习
-#      更精确的检测→两者在对抗中共同提升
+#   3. 对抗训练: 生成器学习产生更"逼真"的替换-判别器学习
+#      更精确的检测-两者在对抗中共同提升
 #   4. 判别器即下游编码器: 预训练后丢弃生成器，判别器作为下游任务的
-#      特征提取器——判别器对每个token的"是否被替换"判断蕴含了
+#      特征提取器-判别器对每个token的"是否被替换"判断蕴含了
 #      对指令语义的深层理解
 #
 # 新颖性: 首次将ELECTRA的replaced token detection应用于二进制代码预训练
@@ -31,14 +29,13 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class BinaryTokenGenerator:
-    """小生成器——掩码并替换token，产生"被污染"的指令序列。
+    """小生成器-掩码并替换token，产生"被污染"的指令序列。
 
-    与标准MLM的区别: 不仅预测被掩码token，还实际替换它们——
+    与标准MLM的区别: 不仅预测被掩码token，还实际替换它们-
     使判别器面对的不是[MASK]占位符，而是真实的（但可能错误的）token。
     """
 
@@ -57,9 +54,6 @@ class BinaryTokenGenerator:
 
         对被选中的位置: 80%概率替换为随机token, 10%保持原样,
         10%替换为同基本块内的其他token（CFG感知）。
-
-        Returns:
-            (corrupted_ids, labels) — labels[i]=1表示该位置被替换
         """
         n = len(token_ids)
         labels = np.zeros(n, dtype=np.int32)
@@ -100,11 +94,11 @@ class BinaryTokenGenerator:
 
 
 class BinaryTokenDiscriminator:
-    """判别器——判断每个token是否被生成器替换。
+    """判别器-判断每个token是否被生成器替换。
 
     这是ELECTRA的核心: 不是预测被掩码token是什么（生成任务），
     而是判断每个token是否"真实"（判别任务）。
-    二分类→所有token参与损失→样本效率提升。
+    二分类-所有token参与损失-样本效率提升。
     """
 
     def __init__(self, vocab_size: int = 5000,
@@ -121,11 +115,7 @@ class BinaryTokenDiscriminator:
         self.b_out = np.zeros(2)
 
     def forward(self, token_ids: List[int]) -> np.ndarray:
-        """对每个token做二分类: P(replaced | token_i)。
-
-        Returns:
-            (n_tokens, 2) — [P(real), P(replaced)]
-        """
+        """对每个token做二分类: P(replaced | token_i)。"""
         n = len(token_ids)
         if n == 0:
             return np.zeros((0, 2))
@@ -163,10 +153,10 @@ class ElectraBinaryTrainer:
     """ELECTRA风格二进制预训练器。
 
     训练流程:
-      1. 生成器对输入序列做掩码+替换→corrupted序列+替换标签
+      1. 生成器对输入序列做掩码+替换-corrupted序列+替换标签
       2. 判别器对corrupted序列做逐token二分类
       3. 生成器损失: 仅对被掩码位置的MLM交叉熵（标准）
-      4. 判别器损失: 对所有token的二分类交叉熵（核心改进——
+      4. 判别器损失: 对所有token的二分类交叉熵（核心改进-
          每个token都参与，而不仅是15%）
     """
 

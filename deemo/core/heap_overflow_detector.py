@@ -23,7 +23,7 @@ class HeapAllocSite:
 
 @dataclass
 class HeapStore:
-    """堆写入点 — 写向 malloc 缓冲区的写入。"""
+    """堆写入点 - 写向 malloc 缓冲区的写入。"""
     pc: int
     base_var: str         # 基址变量 (malloc 的返回值)
     offset: int            # 相对基址的偏移 (常量) 或 -1 (动态)
@@ -34,7 +34,7 @@ class HeapStore:
 
 @dataclass
 class HeapOverflowCandidate:
-    """堆溢出候选 — store 偏移超出分配大小。"""
+    """堆溢出候选 - store 偏移超出分配大小。"""
     alloc_site: HeapAllocSite
     overflow_store: HeapStore
     overflow_bytes: int = 0
@@ -207,11 +207,10 @@ def _infer_loop_bound(ir_lines: list[str],
     从cmp指令的第二操作数提取N作为循环上界。
     返回: 循环上界(正整数), -1表示无法推断。
     """
-    import re as _re
     # 在alloc之后的IR行中搜索cmp reg, imm模式
     for i in range(alloc.pc, min(len(ir_lines), alloc.pc + 30)):
         line = ir_lines[i]
-        m = _re.search(r'cmp\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)', line, _re.IGNORECASE)
+        m = re.search(r'cmp\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)', line, re.IGNORECASE)
         if m:
             try:
                 bound = int(m.group(1), 0)

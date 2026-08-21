@@ -1,17 +1,16 @@
-# 修改记录:
-# 2025-07-28 11:15 - 增加跨层衰减因子，避免深层传播路径的置信度虚高
-# 2025-07-31 09:33 - 风险分位数归一化改用经验CDF，替代min-max
+# 增加跨层衰减因子，避免深层传播路径的置信度虚高
+# 风险分位数归一化改用经验CDF，替代min-max
 
 """
 跨层风险评分引擎。
 
 对PropagationGraph中的节点和路径做统一风险量化：
   (a) 节点基础风险 = 自身严重度 + 入边加权传播风险
-  (b) 跨层传播风险随层跨度衰减——固件→智能合约经5层跳跃，累积不确定性
+  (b) 跨层传播风险随层跨度衰减，固件→智能合约经5层跳跃，累积不确定性
       远大于固件→内核单跳
   (c) 最终风险分位数以经验CDF归一化至[0,1]，便于跨项目比较
 
-与CVSS的区别：CVSS为静态单漏洞评分，此处评分为图拓扑敏感——
+与CVSS的区别：CVSS为静态单漏洞评分，此处评分为图拓扑敏感，
 同一漏洞在不同固件中的风险取决于传播图中位置和可达节点数。
 
 ref: VPSS — 动态漏洞传播评分，此处扩展至跨层图结构。
@@ -44,9 +43,9 @@ class RiskScorer:
             print(f"{node_id}: {risk:.3f}")
     """
 
-    # 跨层衰减系数——每跨一层，传播风险乘此因子
+    # 跨层衰减系数，每跨一层，传播风险乘此因子
     _LAYER_DECAY = 0.72
-    # 入度阻尼——入边多时边际风险递减（log阻尼）
+    # 入度阻尼，入边多时边际风险递减（log阻尼）
     _INDEGREE_LOG_BASE = 2.0
 
     def __init__(self, graph: PropagationGraph):
@@ -64,7 +63,7 @@ class RiskScorer:
         if not nodes:
             return {}
 
-        # 初始化——仅基于自身严重度
+        # 初始化，仅基于自身严重度
         scores: Dict[str, float] = {}
         for nid, node in nodes.items():
             scores[nid] = node.severity
@@ -82,7 +81,7 @@ class RiskScorer:
                         in_edges.append((src_id, edge))
 
                 if in_edges:
-                    # 入度阻尼——入边多时使用log阻尼
+                    # 入度阻尼，入边多时使用log阻尼
                     damp = 1.0 / math.log(len(in_edges) + self._INDEGREE_LOG_BASE,
                                           self._INDEGREE_LOG_BASE)
                     for src_id, edge in in_edges:
@@ -106,7 +105,7 @@ class RiskScorer:
         return dict(self._scores)
 
     def layer_aggregate(self) -> Dict[PlatformLayer, float]:
-        """按平台层聚合风险——每层平均归一化风险。"""
+        """按平台层聚合风险，每层平均归一化风险。"""
         if not self._scores:
             self.score_all()
 
@@ -122,7 +121,7 @@ class RiskScorer:
         }
 
     def top_risk_paths(self, k: int = 5) -> List[Tuple[List[str], float]]:
-        """找风险最高的传播路径——适合可解释风险报告。
+        """找风险最高的传播路径，适合可解释风险报告。
 
         对每对(source, target)节点，路径联合风险 =
         Σ(边置信度 × 层衰减) / 路径长度。
@@ -148,7 +147,7 @@ class RiskScorer:
 
     @staticmethod
     def _empirical_cdf_normalize(scores: Dict[str, float]) -> Dict[str, float]:
-        """经验CDF归一化——比min-max鲁棒，不受极端值影响。"""
+        """经验CDF归一化，比min-max鲁棒，不受极端值影响。"""
         if not scores:
             return {}
         sorted_vals = sorted(scores.values())

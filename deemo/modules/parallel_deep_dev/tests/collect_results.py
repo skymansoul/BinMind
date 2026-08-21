@@ -10,7 +10,7 @@ import csv
 import json
 from pathlib import Path
 
-from backends import CLASS_ROOTS
+from .backends import CLASS_ROOTS
 
 TESTS = Path(__file__).resolve().parent
 
@@ -111,7 +111,7 @@ def main() -> None:
 
 
 def load_backend(sample_class: str):
-    from backends import load_detectors
+    from .backends import load_detectors
     return load_detectors(sample_class)
 
 

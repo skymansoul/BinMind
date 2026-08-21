@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Conn{int fd;char*b;void(*cb)(struct Conn*);}Conn;
+typedef struct{int fd;char*b;void(*cb)(struct conn*);}Conn;
 Conn*active=NULL;
 void on_data(Conn*c){if(c&&c->b)printf("data[%d]:%s\n",c->fd,c->b);}
 void close_conn(Conn*c){if(c){free(c->b);free(c);}}

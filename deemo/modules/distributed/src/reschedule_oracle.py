@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-21 15:33 - 迁移代价估算中加入带宽约束检查
-# 2025-07-24 08:57 - 修复重划分边界条件：若所有节点均异常则全量重划
+# 迁移代价估算中加入带宽约束检查
+# 修复重划分边界条件：若所有节点均异常则全量重划
 
-# 自适应重调度谕示器 — 故障后最小化迁移成本的恢复调度
+# 自适应重调度谕示器 - 故障后最小化迁移成本的恢复调度
 #
 # 输入: FaultPropagationGraph 的根因分析结果 + 当前调度计划 + TaskDependencyGraph
 # 输出: 修改后的调度方案 (受影响的子集)，最小化 makespan 退化 + 迁移代价
@@ -11,12 +10,12 @@
 #   EFTR-HGNet 使用 Heterogeneous GNN + A2C 做端到端故障恢复，
 #   本模块采用更轻量但可解释的两阶段方法:
 #     1. 受影响任务识别 (基于 FaultPropagationGraph 的影响域)
-#     2. 增量重调度 = 冻结不受影响任务的分配 → 仅对受影响子图运行 GRL-Sched
+#     2. 增量重调度 = 冻结不受影响任务的分配 -> 仅对受影响子图运行 GRL-Sched
 #   无需额外训练，直接复用既有 GRL 调度器/划分器，迁移代价可控。
 #
 # 论文对照:
-#   - EFTR-HGNet: 自动将受影响任务放入 rescheduling queue → 此处等价实现
-#   - MADRL-FJSP: 多目标 (稳定性 + makespan) → 此处用加权目标
+#   - EFTR-HGNet: 自动将受影响任务放入 rescheduling queue -> 此处等价实现
+#   - MADRL-FJSP: 多目标 (稳定性 + makespan) -> 此处用加权目标
 # 故障影响域识别由 fault_propagation 模块提供
 
 from __future__ import annotations
@@ -34,7 +33,7 @@ from .fault_propagation import (
 
 
 class RescheduleOracle:
-    """故障恢复重调度谕示器 — 最小化迁移的增量调度。
+    """故障恢复重调度谕示器 - 最小化迁移的增量调度。
 
     设计权衡:
       增量重调度 (仅移动受故障影响的任务) vs 全量重调度:
@@ -103,7 +102,7 @@ class RescheduleOracle:
             target_ids = set(dag.node_ids)
         else:
             strategy = "incremental"
-            # 冻结不受影响的任务 — 它们在原序中的相对位置保留
+            # 冻结不受影响的任务 - 它们在原序中的相对位置保留
             frozen = set(dag.node_ids) - affected_ids
 
         # 3. 调度受影响子集
@@ -150,7 +149,7 @@ class RescheduleOracle:
         }
 
     def _grl_schedule(self, dag: TaskDependencyGraph) -> Tuple[List[str], float]:
-        """全量重调度 — 委托给 GRL 调度器 (优先 RL，降级 HEFT)。"""
+        """全量重调度 - 委托给 GRL 调度器 (优先 RL，降级 HEFT)。"""
         result = self._grl.schedule(dag, n_machines=self._m_count, mode="auto")
         return result["order"], result["makespan"]
 
@@ -247,7 +246,7 @@ def reschedule_after_fault(
     backpressure: Optional[Dict[str, float]] = None,
     machine_count: int = 2,
 ) -> dict:
-    """一站式故障恢复: 熔断器状态 → 根因定位 → 重调度。
+    """一站式故障恢复: 熔断器状态 -> 根因定位 -> 重调度。
 
     breakers: {node_id: CircuitBreaker.to_dict()}
     backpressure: {node_id: composite_pressure}

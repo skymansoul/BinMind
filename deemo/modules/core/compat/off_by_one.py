@@ -70,17 +70,13 @@ def detect_off_by_one(
     alignment: int = 16, min_chunk: int = 32, metadata: int = 16,
     adjacent_alloc: Optional[int] = None,
 ) -> OBOAnalysis:
-    """检测 off-by-one 溢出.
+    """检测 off-by-one 溢出。
 
-    Args:
-      alloc_size: malloc(N) 中的 N
-      write_size: 实际写入大小
-      alignment: 对齐 (默认 16)
-      min_chunk: 最小 chunk 大小 (默认 32)
-      metadata: chunk 元数据开销 (默认 16 = prev_size+size)
-      adjacent_alloc: 相邻 chunk 的分配大小 (若已知)
-
-    Returns: OBOAnalysis 结果.
+    参数: alloc_size malloc(N) 中的 N, write_size 实际写入大小,
+    alignment 对齐 (默认 16), min_chunk 最小 chunk 大小
+    (默认 32), metadata chunk 元数据开销 (默认 16 =
+    prev_size+size), adjacent_alloc 相邻 chunk 的分配大小
+    (若已知); 返回 OBOAnalysis 结果。
     """
     usable = ChunkLayout.compute_usable(alloc_size, alignment, min_chunk, metadata)
 

@@ -1,10 +1,9 @@
 """
-Fourier-Motzkin 消元 — 线性不等式系统的变量消去与可行性判定: 将约束按 x_j 系数正/负/零分组, 组合正负系数约束消去 x_j, 系数为零的约束保留。
+Fourier-Motzkin 消元: 线性不等式系统的变量消去与可行性判定: 将约束按 x_j 系数正/负/零分组, 组合正负系数约束消去 x_j, 系数为零的约束保留。
 消元后出现矛盾 (如 1 <= 0) 则系统不可行, 无剩余约束则可行; 复杂度最坏 O(n^2)/变量, 堆溢出约束系统通常 <20 条, 实际运行 <1ms。
-不替代 SMT 求解器 — 仅处理线性不等式, 不处理位运算/非线性关系; 这是 GAPSBV-CJ 的核心简化。
+不替代 SMT 求解器, 仅处理线性不等式, 不处理位运算/非线性关系; 这是 GAPSBV-CJ 的核心简化。
 """
 
-import math
 from typing import Optional
 
 from core.cj_constraint_types import LinearConstraint
@@ -19,8 +18,8 @@ def substitute_constant(
 ) -> Optional[LinearConstraint]:
     """将已知常量值代入约束, 返回简化后的约束.
 
-    若约束中所有变量都已知 → 返回纯常量约束.
-    若约束中仍有未知变量 → 代入已知值, 保留未知变量.
+    若约束中所有变量都已知, 返回纯常量约束.
+    若约束中仍有未知变量, 代入已知值, 保留未知变量.
     """
     new_coeffs = {}
     new_const = constraint.constant
@@ -100,7 +99,7 @@ def check_feasibility(
     feasible=True: 系统可能可行(未发现矛盾)
     feasible=False: 系统确定不可行(存在矛盾约束)
 
-    矛盾检测: 纯常量约束 1 <= 0 → 不可行.
+    矛盾检测: 纯常量约束 1 <= 0 判不可行.
     """
     for c in constraints:
         if c.is_constant_only():
@@ -120,7 +119,7 @@ def _combine(
     c_pos: a*x_j + rest_pos <= 0  (a > 0)
     c_neg: b*x_j + rest_neg <= 0  (b < 0)
 
-    消去x_j: |b|*c_pos + a*c_neg → (|b|*rest_pos + a*rest_neg) <= 0
+    消去x_j: |b|*c_pos + a*c_neg 即 (|b|*rest_pos + a*rest_neg) <= 0
     x_j被消去.
     """
     a = c_pos.coefficients[var]

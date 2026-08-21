@@ -15,7 +15,6 @@
 import re
 from typing import List, Optional, Set
 
-# 保留
 _ARIA_S1 = "0x3f"
 
 
@@ -42,7 +41,6 @@ _CJK_RANGES = [
 
 
 
-# 保留 — 后续可能启用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)

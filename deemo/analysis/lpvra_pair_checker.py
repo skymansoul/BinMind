@@ -194,7 +194,6 @@ class PairAnalyzer:
             b = blocks[cur_bid] if cur_bid < len(blocks) else None
             if b is None:
                 continue
-            # process_block is injected by LPVRAEngine
             new_state = self._process_block_fn(b, state, lines)
             for sid in adj.get(cur_bid, []):
                 q.append((sid, dict(new_state), trace + [(sid, 'succ')]))

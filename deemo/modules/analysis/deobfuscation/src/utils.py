@@ -1,4 +1,3 @@
-# 2026-07-25
 # Shared 工具集 for 去混淆
 """Common 工具函数 error classes for 去混淆 module"""
 
@@ -34,17 +33,10 @@ class DecodeError(DeobfError):
 
 
 def compute_entropy(data: bytes) -> float:
-    """计算 Shannon entropy Laplace (+1) smoothing
-    
-    Laplace smoothing 确保 byte values zero observations
-    don't cause log2(0) issues 提供 a stable 估算
-    for small sample sizes
-    
-    Args:
-    data: Raw byte sequence
-    
-    返回:
-    Entropy value bits (0.0 8.0)
+    """计算带 Laplace (+1) 平滑的 Shannon 熵。
+
+    Laplace 平滑确保零观测字节不会导致 log2(0) 问题,
+    为小样本提供稳定估算。
     """
     if not data:
         return 0.0
@@ -72,15 +64,7 @@ def compute_entropy(data: bytes) -> float:
 
 
 def xor_decode(data: bytes, key: int) -> bytes:
-    """Single-byte XOR 解码
-    
-    Args:
-    data: XOR-encoded byte sequence
-    key: Single-byte XOR key (0-255)
-    
-    返回:
-    Decoded byte sequence
-    """
+    """单字节 XOR 解码。"""
     return bytes(b ^ key for b in data)
 
 
@@ -88,14 +72,7 @@ def xor_decode(data: bytes, key: int) -> bytes:
 
 
 def is_printable_ratio(s: str) -> float:
-    """计算 ratio printable ASCII characters a string
-    
-    Args:
-    s: Input string
-    
-    返回:
-    Float 0.0 1.0
-    """
+    """计算字符串中可打印 ASCII 字符的占比, 返回 0.0-1.0。"""
     if not s:
         return 0.0
 
@@ -126,14 +103,7 @@ _MAX_BIGRAM = max(_ENGLISH_BIGRAMS.values()) if _ENGLISH_BIGRAMS else 1.0
 
 
 def english_score(s: str) -> float:
-    """Score a string's likelihood English text using bigram frequency
-    
-    Args:
-    s: Input string
-    
-    返回:
-    Score 0.0 1.0 (higher = English-like)
-    """
+    """用双字母频率给字符串的英文相似度打分, 返回 0.0-1.0。"""
     if not s or len(s) < 2:
         return 0.0
 
@@ -157,19 +127,13 @@ def english_score(s: str) -> float:
 
 
 def cjk_detect(s: str) -> bool:
-    """检测 a string 包含 CJK (Chinese/Japanese/Korean) characters
-    
-    检查 Unicode ranges:
-    - CJK Unified Ideographs: U+4E00 - U+9FFF
-    - Hiragana: U+3040 - U+309F
-    - Katakana: U+30A0 - U+30FF
-    - Hangul Syllables: U+AC00 - U+D7AF
-    
-    Args:
-    s: Input string
-    
-    返回:
-    True CJK character found
+    """检测字符串是否包含 CJK (中/日/韩) 字符。
+
+    检查 Unicode 范围:
+    - CJK 统一表意文字: U+4E00 - U+9FFF
+    - 平假名: U+3040 - U+309F
+    - 片假名: U+30A0 - U+30FF
+    - 谚文字节: U+AC00 - U+D7AF
     """
     for c in s:
         cp = ord(c)

@@ -1,6 +1,4 @@
-# 2026-07-28
-# Binary 脱壳 加壳器 detection
-"""Detection 脱壳 common 可执行文件 加壳器s PyInstaller archives"""
+"""检测并脱壳常见可执行文件加壳器与 PyInstaller 归档。"""
 
 import os
 import struct
@@ -10,13 +8,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# 脱壳器
+# Unpacker
 
 
 class Unpacker:
-    """检测 脱壳 common 可执行文件 加壳器s (UPX, ASPack, MPRESS, etc.)"""
+    """检测并脱壳常见可执行文件加壳器 (UPX、ASPack、MPRESS 等)。"""
 
-    # 加壳器 section names
+    # 加壳器节名
     PACKER_SECTIONS: List[str] = [
         ".UPX0", ".UPX1", ".UPX2",
         ".aspack", ".ASPack",
@@ -30,7 +28,7 @@ class Unpacker:
         ".winlice",
     ]
 
-    # 加壳器 byte-level 签名s
+    # 加壳器字节级签名
     PACKER_SIGNATURES: Dict[str, List[bytes]] = {
         "UPX": [b"UPX0", b"UPX1", b"UPX!"],
         "ASPack": [b".aspack", b"ASPack"],
@@ -44,14 +42,7 @@ class Unpacker:
         self._logger = logging.getLogger(__name__)
 
     def detect_by_sections(self, filepath: str) -> List[Dict[str, Any]]:
-        """检测 加壳器 基于 PE section names
-        
-        Args:
-        filepath: Path 可执行文件 file
-        
-        返回:
-        List detection results 加壳器 name confidence
-        """
+        """按 PE 节名检测加壳器, 返回含加壳器名与置信度的检测结果列表。"""
         matches: List[Dict[str, Any]] = []
         try:
             with open(filepath, "rb") as fh:
@@ -66,7 +57,7 @@ class Unpacker:
 
         for section in self.PACKER_SECTIONS:
             if section.lower() in content_lower:
-                # Map section name 加壳器 name
+                # 节名映射到加壳器名
                 packer_name = section.lstrip(".").rstrip("0123456789")
                 matches.append({
                     "packer": packer_name,
@@ -78,15 +69,9 @@ class Unpacker:
         return matches
 
     def detect_by_entropy(self, filepath: str) -> List[Dict[str, Any]]:
-        """检测 packing high-entropy sections
-        
-        High entropy (>7.0 bits) a strong indicator packed/encrypted data
-        
-        Args:
-        filepath: Path 可执行文件 file
-        
-        返回:
-        List high-entropy findings
+        """按高熵节检测加壳。
+
+        高熵 (>7.0 bits) 是加壳/加密数据的强指示; 返回高熵发现列表。
         """
         matches: List[Dict[str, Any]] = []
         try:
@@ -142,14 +127,7 @@ class Unpacker:
         return matches
 
     def detect_by_signatures(self, filepath: str) -> List[Dict[str, Any]]:
-        """检测 加壳器 byte 签名s
-        
-        Args:
-        filepath: Path 可执行文件 file
-        
-        返回:
-        List 签名 匹配
-        """
+        """按字节签名检测加壳器, 返回签名匹配列表。"""
         matches: List[Dict[str, Any]] = []
         try:
             with open(filepath, "rb") as fh:
@@ -167,19 +145,12 @@ class Unpacker:
                         "evidence": sig.hex(),
                         "confidence": 0.85,
                     })
-                    break  # One match per 加壳器 enough
+                    break  # 每个加壳器一个匹配即可
 
         return matches
 
     def detect_packer(self, filepath: str) -> List[Dict[str, Any]]:
-        """运行 detection methods 返回 combined results
-        
-        Args:
-        filepath: Path 可执行文件 file
-        
-        返回:
-        Combined list detections methods
-        """
+        """运行全部检测方法, 返回合并的检测结果列表。"""
         results: List[Dict[str, Any]] = []
         results.extend(self.detect_by_sections(filepath))
         results.extend(self.detect_by_entropy(filepath))
@@ -187,15 +158,7 @@ class Unpacker:
         return results
 
     def unpack_upx(self, filepath: str, output_dir: str) -> bool:
-        """Attempt UPX 脱壳 using external upx tool
-        
-        Args:
-        filepath: Path UPX-packed file
-        output_dir: Directory for 脱壳ed 输出
-        
-        返回:
-        True 脱壳 succeeded
-        """
+        """用外部 upx 工具尝试 UPX 脱壳, 成功返回 True。"""
         output_path = os.path.join(
             output_dir,
             os.path.basename(filepath).replace(".exe", "_unpacked.exe"),
@@ -232,15 +195,7 @@ class Unpacker:
             return False
 
     def unpack(self, filepath: str, output_dir: str) -> Dict[str, Any]:
-        """Full detection 脱壳 流水线
-        
-        Args:
-        filepath: Path 可执行文件 file
-        output_dir: Directory for 脱壳ed 输出
-        
-        返回:
-        Dict detection results 脱壳 status
-        """
+        """完整检测与脱壳流水线, 返回含检测结果与脱壳状态的字典。"""
         os.makedirs(output_dir, exist_ok=True)
 
         results = self.detect_packer(filepath)
@@ -284,16 +239,11 @@ class PyInstallerUnpacker:
         self._logger = logging.getLogger(__name__)
 
     def parse_carchive_header(self, data: bytes) -> Dict[str, Any]:
-        """解析 PyInstaller CArchive header
-        
-        Args:
-        data: Raw bytes PyInstaller 可执行文件
-        
-        返回:
-        Dict header fields: magic, cookie_size, toc_offset, toc_length, python_version
-        
-        Raises:
-        ValueError: file doesn't appear a PyInstaller archive
+        """解析 PyInstaller CArchive 头。
+
+        返回含 magic、cookie_size、toc_offset、toc_length、
+        python_version 的字典; 文件不像 PyInstaller 归档时抛
+        ValueError。
         """
         # 查找 magic bytes
         magic = _PYINSTALLER_MAGIC
@@ -310,7 +260,7 @@ class PyInstallerUnpacker:
 
         # CArchive header: cookie_size(4), TOC_length(4), TOC_offset(4), pyver(4)
         try:
-            # struct 脱壳 fail truncated data
+            # struct 解析在截断数据上失败
             header_fields = struct.unpack_from(  # type: ignore[unused-variable]
                 "<IIII", data, header_start
             )
@@ -331,15 +281,7 @@ class PyInstallerUnpacker:
     def extract_toc(
         self, data: bytes, header: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """提取 Table Contents a PyInstaller archive
-        
-        Args:
-        data: Raw bytes archive
-        header: Parsed CArchive header
-        
-        返回:
-        List TOC entries metadata
-        """
+        """提取 PyInstaller 归档的 Table of Contents, 返回 TOC 条目元数据列表。"""
         toc_offset = header["toc_offset"]  # type: ignore[arg-type]
         toc_length = header["toc_length"]  # type: ignore[arg-type]
 
@@ -409,16 +351,7 @@ class PyInstallerUnpacker:
         toc: List[Dict[str, Any]],
         output_dir: str,
     ) -> List[str]:
-        """提取.pyc files resources archive
-        
-        Args:
-        data: Raw archive bytes
-        toc: Table contents entries
-        output_dir: Directory 写入 extracted files
-        
-        返回:
-        List extracted file paths
-        """
+        """从归档资源提取 .pyc 文件, 返回已提取文件路径列表。"""
         os.makedirs(output_dir, exist_ok=True)
         extracted: List[str] = []
 
@@ -449,15 +382,7 @@ class PyInstallerUnpacker:
         return extracted
 
     def unpack(self, filepath: str, output_dir: str) -> Dict[str, Any]:
-        """Full PyInstaller 脱壳 流水线
-        
-        Args:
-        filepath: Path PyInstaller 可执行文件
-        output_dir: Directory for extracted files
-        
-        返回:
-        Dict header info list extracted files
-        """
+        """完整 PyInstaller 脱壳流水线, 返回含头信息与已提取文件列表的字典。"""
         try:
             with open(filepath, "rb") as fh:
                 data = fh.read()

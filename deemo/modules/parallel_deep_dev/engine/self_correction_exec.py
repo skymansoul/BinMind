@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import re
-from parallel_deep_dev.engine.self_correction import (
+from .self_correction import (
     SelfCorrectionLoop, AggregatedFinding,
 )
 

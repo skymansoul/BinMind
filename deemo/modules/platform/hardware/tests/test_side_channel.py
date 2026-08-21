@@ -17,7 +17,7 @@ from ..src.side_channel.simulator import (
 
 
 def _debug_print(msg: str) -> None:
-  pass  # 保留——后续可能切换logging
+  pass
 
 
 # 汉明权重测试
@@ -307,7 +307,6 @@ def test_estimate_cycles():
   assert max_c >= min_c
 
 
-# 保留——后续可能用：侧信道泄漏轨迹对比
 # def test_trace_comparison():
 #   analyzer = SideChannelEvaluator()
 #   traces_a = [[1.0, 2.0], [1.1, 2.1]]

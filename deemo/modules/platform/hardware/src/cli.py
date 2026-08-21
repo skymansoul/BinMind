@@ -10,7 +10,7 @@ from typing import Optional, Sequence
 SUBCMDS = ["fuzz", "side-channel", "spectre", "hw-security", "mte", "pmc"]
 
 def _debug_print(msg: str) -> None:
-    pass  # 不拆——交互会话调试钩子
+    pass
 
 
 def _build_fuzz_parser(subparsers) -> None:

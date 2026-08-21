@@ -1,5 +1,4 @@
 """
-
 从伪代码行中识别 alloc → free → use 模式, 生成 UafCandidate 列表。
 包含间接 free 检测 (wrapper函数) 和 double-free 检测。
 """

@@ -1,23 +1,21 @@
-# created: 2026-07-16
-# modified: 2026-08-26 — added fit() for MLE-based Weibull parameter estimation from event data
-# 竞争风险漏洞生命周期模型——建模漏洞从发现到修补的多路径演化
+# 竞争风险漏洞生命周期模型-建模漏洞从发现到修补的多路径演化
 #
 # 核心问题: vuln_trend_predictor.py用时间序列预测漏洞数量趋势，
-# 但漏洞生命周期是多路径的——一个CVE可能经历:
-#   路径1: 发现→CVSS评分→PoC公开→野外利用→补丁发布→修复
-#   路径2: 发现→直接修补（未公开PoC）
-#   路径3: 发现→被遗忘（低严重度，从未修补）
-# 不同路径对应不同的风险演化——需要竞争风险生存分析来建模。
+# 但漏洞生命周期是多路径的-一个CVE可能经历:
+#   路径1: 发现-CVSS评分-PoC公开-野外利用-补丁发布-修复
+#   路径2: 发现-直接修补（未公开PoC）
+#   路径3: 发现-被遗忘（低严重度，从未修补）
+# 不同路径对应不同的风险演化-需要竞争风险生存分析来建模。
 #
 # 技术方案:
 #   1. 多状态模型: 状态={发现, PoC, 利用, 修补, 遗忘}
-#      转移: 发现→PoC, 发现→修补, PoC→利用, 利用→修补, 发现→遗忘
-#   2. 原因别风险: 每个转移有其独立的风险函数h_k(t)——
+#      转移: 发现-PoC, 发现-修补, PoC-利用, 利用-修补, 发现-遗忘
+#   2. 原因别风险: 每个转移有其独立的风险函数h_k(t)-
 #      h_PoC(t) = 在t时刻从"发现"转移到"PoC"的风险
 #      h_patch(t) = 从"发现"或"PoC"转移到"修补"的风险
 #   3. 累积发生率: CIF_k(t) = 在考虑竞争事件的情况下，
 #      到t时刻经历事件k的概率
-#   4. 协变量: CWE类型/CVSS分数/供应商响应速度→影响各转移的风险
+#   4. 协变量: CWE类型/CVSS分数/供应商响应速度-影响各转移的风险
 
 from __future__ import annotations
 
@@ -30,7 +28,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +63,7 @@ class LifecyclePrediction:
 
 
 class CompetingRisksModel:
-    """竞争风险生存分析模型——原因别Cox比例风险。
+    """竞争风险生存分析模型-原因别Cox比例风险。
 
     原因别风险函数: h_k(t|X) = h_k0(t) · exp(β_k · X)
     其中k是事件类型(PoC/exploit/patch/forgotten)
@@ -76,7 +73,7 @@ class CompetingRisksModel:
     def __init__(self, n_covariates: int = 5):
         """
         covariate features:
-          0: cvss_score (归一化 0-10→0-1)
+          0: cvss_score (归一化 0-10 到 0-1)
           1: cwe_is_memory_corruption (0/1)
           2: cwe_is_input_validation (0/1)
           3: vendor_response_speed (历史修补天数的倒数，归一化)
@@ -97,7 +94,7 @@ class CompetingRisksModel:
             (VulnState.DISCOVERED, VulnState.FORGOTTEN):
                 rng.randn(n_covariates) * 0.1,
         }
-        # 基线累积风险(Breslow估计的简化——使用Weibull参数化)
+        # 基线累积风险(Breslow估计的简化-使用Weibull参数化)
         self._baseline_shape: Dict[Tuple[VulnState, VulnState], float] = {
             (VulnState.DISCOVERED, VulnState.POC_PUBLIC): 0.8,
             (VulnState.POC_PUBLIC, VulnState.EXPLOITED_WILD): 1.2,
@@ -196,11 +193,7 @@ class CompetingRisksModel:
                           cwe_type: str = "",
                           vendor_days_to_patch: float = 90.0
                           ) -> LifecyclePrediction:
-        """预测单个CVE的完整生命周期。
-
-        Returns:
-            LifecyclePrediction with CIFs and expected path
-        """
+        """预测单个CVE的完整生命周期。"""
         is_mem_corrupt = float(cwe_type in (
             'CWE-119', 'CWE-120', 'CWE-122', 'CWE-125',
             'CWE-416', 'CWE-415', 'CWE-787', 'CWE-476'))

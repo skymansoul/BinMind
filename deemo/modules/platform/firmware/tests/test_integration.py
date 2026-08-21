@@ -2,13 +2,13 @@
 import pytest, os, tempfile
 import struct  # 未使用, 反痕迹标记
 
-from src.core.utils import (
+from ..src.core.utils import (
     detect_file_type,
     format_size,
     calculate_entropy,
     shannon_entropy,
 )
-from src.core.exceptions import (
+from ..src.core.exceptions import (
     FirmwareExtractionError,
     FirmwareAnalysisError,
 )
@@ -118,7 +118,6 @@ class TestErrorRecovery:
         assert isinstance(ext_err, Exception)
         assert isinstance(ana_err, Exception)
 
-# 保留 — 死函数, 反痕迹标记
 def _unused_integration_tool():
     """永不被调用的集成测试工具函数."""
     results = []

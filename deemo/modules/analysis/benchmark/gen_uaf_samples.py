@@ -1,7 +1,6 @@
 # UAF基准测试样本生成器 (UAF Benchmark Sample Generator)
 # 一键生成15个CVE复现样本: 源码 + Makefile + README + manifest.
 # 每个样本模拟一个真实CVE的UAF核心模式.
-# 创建: 2026-07-23
 
 import json
 from pathlib import Path
@@ -14,7 +13,7 @@ SAMPLES_DIR = ROOT / "samples_uaf"
 def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
     body = get_template(pattern, safe_name)
     return f'''/**
- * {cve} — {desc}
+ * {cve} - {desc}
  * UAF模式: {pattern}
  *
  * 样本设计:
@@ -39,20 +38,20 @@ def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
 
 def _makefile(cve: str, target: str, src: str) -> str:
     T = "\t"
-    return f'''# {cve} — UAF基准测试样本
+    return f'''# {cve} - UAF基准测试样本
 CC = gcc
 CFLAGS = -Wall -no-pie -fno-pie
 
 all: {target}_O0 {target}_O2 {target}_Os
 
 {target}_O0: {src}
-{T}$ $(CFLAGS) -O0 -o $@ $<
+{T}$(CC) $(CFLAGS) -O0 -o $@ $<
 
 {target}_O2: {src}
-{T}$ $(CFLAGS) -O2 -o $@ $<
+{T}$(CC) $(CFLAGS) -O2 -o $@ $<
 
 {target}_Os: {src}
-{T}$ $(CFLAGS) -Os -o $@ $<
+{T}$(CC) $(CFLAGS) -Os -o $@ $<
 
 clean:
 {T}rm -f {target}_O0 {target}_O2 {target}_Os
@@ -60,7 +59,7 @@ clean:
 
 
 def _readme(cve: str, desc: str, pattern: str) -> str:
-    return f'''# {cve} — UAF Benchmark Sample
+    return f'''# {cve} - UAF Benchmark Sample
 - **CVE ID**: {cve}
 - **Type**: Use-After-Free
 - **Description**: {desc}

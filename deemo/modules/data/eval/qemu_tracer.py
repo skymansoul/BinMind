@@ -1,6 +1,5 @@
-# QEMU User Mode Tracer — 轻量插桩获取运行时内存操作
+# QEMU User Mode Tracer - 轻量插桩获取运行时内存操作
 # 用 -strace 追踪系统调用, 提取 heap 相关操作作为 ground truth.
-# 创建: 2026-05-19
 
 import os, sys, json, time, subprocess
 

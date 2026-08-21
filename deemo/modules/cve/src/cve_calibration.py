@@ -1,10 +1,8 @@
-# 创建: 2026-04-25 18:21
-# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: PAVA保序回归分数校准
-# 分数校准 — CVE评分的非参数保序回归校准
+# PAVA保序回归分数校准
+# 分数校准 - CVE评分的非参数保序回归校准
 #
 # 问题: CVE评分模型 (GNN/Hawkes/GP/EBM) 输出的原始分数通常
-# 未校准 — 预测"利用概率0.8"并不意味着实际有80%的CVE被利用.
+# 未校准 - 预测"利用概率0.8"并不意味着实际有80%的CVE被利用.
 # Platt缩放 (cve_ensemble.py) 假设logit空间线性,
 # 但在CVE场景中, 评分分布常呈S形或阶梯状, 违反线性假设.
 #
@@ -44,7 +42,7 @@ import math
 from typing import Dict, List, Optional, Tuple
 
 def _pava(scores, labels):
-    """Pool Adjacent Violators Algorithm — 保序回归核心."""
+    """Pool Adjacent Violators Algorithm - 保序回归核心."""
     n = len(scores)
     if n == 0: return [], []
     pairs = sorted(zip(scores, labels), key=lambda x: x[0])
@@ -68,7 +66,7 @@ def _pava(scores, labels):
     return x_vals, y_vals
 
 class IsotonicCalibrator:
-    """保序回归校准器 — 非参数分数校准."""
+    """保序回归校准器 - 非参数分数校准."""
 
     def __init__(self, n_bins_reliability=10):
         self._n_bins = n_bins_reliability

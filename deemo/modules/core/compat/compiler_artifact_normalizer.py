@@ -175,13 +175,9 @@ def normalize_cfg(blocks, enable_unroll_detection=True,
                   enable_register_normalization=True):
     """编译器产物归一化主入口。
 
-    Args:
-        blocks: {address: BasicBlock} —— 函数的 CFG 基本块集合。
-        各 enable_* 开关控制归一化阶段。
-
-    Returns:
-        (归一化后的 blocks, NormalizationReport)。
-        原始 blocks 不被修改——返回新字典。
+    blocks 为 {address: BasicBlock} 的函数 CFG 基本块集合,
+    各 enable_* 开关控制归一化阶段; 返回 (归一化后的 blocks,
+    NormalizationReport), 原始 blocks 不被修改。
     """
     report = NormalizationReport(blocks_before=len(blocks))
 

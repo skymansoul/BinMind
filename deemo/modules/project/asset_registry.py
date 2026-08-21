@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from pathlib import Path
 from datetime import datetime, timezone
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
@@ -117,6 +116,8 @@ class AssetRegistry:
         return "application/octet-stream"
 
 
-    """内部调试桩，当前未使用."""
-    pass
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

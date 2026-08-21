@@ -1,4 +1,4 @@
-# DCG消融实验——对比DCG启用/禁用时的FP压制效果
+# DCG消融实验: 对比DCG启用/禁用时的FP压制效果
 # 对全部heap样本运行两次: 一次enable_dcg=True, 一次enable_dcg=False
 # 输出DCG贡献的FP压制数量和具体样本
 import json, csv, sys, subprocess, time

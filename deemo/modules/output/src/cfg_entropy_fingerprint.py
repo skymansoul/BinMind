@@ -43,12 +43,12 @@ def compute_cfg_fingerprint(
     """
     从 CFG 基本块信息计算结构指纹。
 
-    Args:
-      basic_block_sizes: 每个基本块的指令数列表。空列表表示无 CFG 数据。
-      edge_count: 边数。0 表示未知，自动估算为 len(blocks) - 1 + connected_components - 1。
-      connected_components: 连通分量数，默认 1。
+    参数: basic_block_sizes 每基本块指令数列表 (空列表表示无
+    CFG 数据), edge_count 边数 (0 表示未知, 自动估算为
+    len(blocks) - 1 + connected_components - 1),
+    connected_components 连通分量数, 默认 1。
 
-    Returns:
+    返回:
       {
         'block_size_entropy': float,    # 基本块大小分布熵，高 → 结构不均匀
         'cyclomatic_complexity': int,   # McCabe 圈复杂度 E - N + 2P
@@ -119,15 +119,10 @@ def triage_functions(
     functions: List[Dict[str, Any]],
     max_depth: int = 50
 ) -> List[Dict[str, Any]]:
-    """
-    对函数列表按漏洞倾向分排序，返回 Top-N 用于深度分析。
+    """对函数列表按漏洞倾向分排序, 返回前 N 个高风险函数供深度分析。
 
-    Args:
-      functions: [{'name': str, 'basic_blocks': [int], ...}, ...]
-      max_depth: 返回前 N 个高风险的函数
-
-    Returns:
-      排序后的函数列表，每个附加 cfg_fingerprint 字段。
+    参数: functions 函数列表, max_depth 返回的 Top-N 数量;
+    返回排序后的函数列表, 每个附加 cfg_fingerprint 字段。
     """
     scored = []
     for func in functions:

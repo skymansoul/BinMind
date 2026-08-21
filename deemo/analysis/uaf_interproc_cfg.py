@@ -189,8 +189,7 @@ class InterProcCFGBuilder:
              F → alloc_wrapper, F → free_wrapper, F → use_wrapper
              这是最常见的跨函数UAF模式
 
-        Returns:
-          (is_reachable, reason)
+        返回 (is_reachable, reason)。
         """
         cg = self._cg
 
@@ -255,10 +254,9 @@ class InterProcCFGBuilder:
     def find_reachable_use_sites(
         self, free_func: str, ptr_var: str = "",
     ) -> List[Tuple[str, int]]:
-        """查找从 free_func 可到达的所有函数中的 use sites.
+        """查找从 free_func 可到达的所有函数中的 use sites。
 
-        Returns:
-          [(func_name, line_no), ...] 从 free 可到达的使用点列表
+        返回 [(func_name, line_no), ...] 使用点列表。
         """
         reachable_funcs = self._cg.reachable_from(free_func)
         reachable_funcs.add(free_func)

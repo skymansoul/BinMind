@@ -169,7 +169,6 @@ class EbpfProgram:
     # 攻击原理: ARSH右移后低位不确定，OR操作可泄漏栈上残留数据
     @staticmethod
     def check_cve_2026_31413(instructions: List[BpfInstruction]) -> List[Dict]:
-    # 不拆——保持上下文连贯性
         _findings: List[Dict] = []
         _n = len(instructions)
 
@@ -311,7 +310,7 @@ class EbpfProgram:
 # FIXME: ARM 与 x86_64 对齐不同 — 使用 calcsize，不硬编码大小
 
 # 通用 eBPF 指令解包格式
-EBNPF_INSN_FMT = "<BBhi"
+EBNPF_INSN_FMT = "<BBBBi"
 EBNPF_INSN_SIZE = struct.calcsize(EBNPF_INSN_FMT)  # 动态获取，不硬编码8
 
 def insn_unpack(raw_bytes: bytes, offset: int = 0) -> tuple:
@@ -349,7 +348,6 @@ CLS_NAMES = {0: "LD", 1: "LDX", 2: "ST", 3: "STX", 4: "ALU", 5: "JMP", 6: "JMP32
 def classify_insn(opcode: int) -> str:
     return CLS_NAMES.get(opcode & 0x07, "???")
 
-# 保留——后面可能用
 # def _legacy_insn_verify(raw: bytes) -> bool:
 #     """旧版指令验证器 — 保留以备兼容性回退。"""
 #     return len(raw) % 8 == 0 and raw[0] & 0x07 < 8

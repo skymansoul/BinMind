@@ -42,7 +42,7 @@ class MinimizationResult:
 class DeltaDebugger:
     """
     Delta Debugging minimizer
-    
+
     舍入 3: Added FrameShift strategy — 检测 relation fields
     (size fields, 校验和s, length prefixes) preserves
     integrity reduction. FrameShift  显示

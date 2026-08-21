@@ -1,24 +1,24 @@
-"""Task scheduler for 分布式 符号执行
+"""分布式符号执行任务调度器。
 
-分割 a binary per-function analysis tasks, 分派
-寄存器ed workers using pluggable 加载-balancing strategies (舍入-robin
-least-loaded, adaptive, consistent-hash), aggregates results
-重试逻辑 for transient failures
+把二进制按函数拆分为分析任务, 分派给注册的 worker, 支持可插拔的
+负载均衡策略 (round-robin / least-loaded / adaptive / consistent-hash),
+聚合结果并对瞬态故障做重试。
 
-增强 — 一致性哈希：按 binary_path 的哈希映射任务到 worker，确保同一
-二进制文件的多个函数在同一个 worker 上执行，利用 warm cache 效应
-worker 亲和性加分：已完成某 binary 的 N 个任务的 worker 在下次调度
-该 binary 时获得优先级加分
-
-新增 — WorkerCapabilityRegistry：worker 注册时验证其声称的能力是否
-真的可用（检查所需包的 import 是否成功），防止能力虚报导致的运行时错误
-TaskDependencyResolver：基于 Kahn 拓扑排序的依赖解析器，未满足依赖的
-任务暂存在 pending 队列中，依赖完成后自动释放
-rebalance()：worker 加入/离开时重新均衡待处理任务的分配
-
-DeadlineAwareDispatch：按 (task.deadline_ts -) 排序堆，deadline 最近的任务优先
-WorkerScorecard：基于 {success_rate, avg_延迟, capability_match_ratio} 的 worker 质量评分
-PartialResultMerger：超时/失败任务的中间结果回收合并，避免丢弃已探索路径
+增强:
+- 一致性哈希: 按 binary_path 哈希映射任务到 worker, 同一二进制的多个
+  函数在同一 worker 上执行, 利用 warm cache 效应
+- worker 亲和性加分: 已完成某 binary 的 N 个任务的 worker 在下次调度
+  该 binary 时获得优先级加分
+- WorkerCapabilityRegistry: worker 注册时验证其声称的能力是否真的可用
+  (检查所需包的 import 是否成功), 防止能力虚报导致运行时错误
+- TaskDependencyResolver: 基于 Kahn 拓扑排序的依赖解析器, 未满足依赖的
+  任务暂存在 pending 队列中, 依赖完成后自动释放
+- rebalance(): worker 加入/离开时重新均衡待处理任务的分配
+- DeadlineAwareDispatch: 按 deadline_ts - now 的 slack 排序堆,
+  deadline 最近的任务优先
+- WorkerScorecard: 基于 {success_rate, avg_latency, capability_match_ratio}
+  的 worker 质量评分
+- PartialResultMerger: 超时/失败任务的中间结果回收合并, 避免丢弃已探索路径
 """
 
 import logging
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskStatus:
-    """Task lifecycle states"""
+    """任务生命周期状态。"""
     PENDING = "pending"
     ASSIGNED = "assigned"
     RUNNING = "running"
@@ -48,7 +48,7 @@ class TaskStatus:
 
 
 class WorkerStatus:
-    """Worker node states"""
+    """Worker 节点状态。"""
     IDLE = "idle"
     BUSY = "busy"
     OFFLINE = "offline"
@@ -56,7 +56,7 @@ class WorkerStatus:
 
 
 class LoadBalanceStrategy(Enum):
-    """Dispatch policies for worker selection"""
+    """worker 选择的调度策略。"""
     ROUND_ROBIN = "round_robin"
     CONSISTENT_HASH = "consistent_hash"
     LEAST_LOADED = "least_loaded"
@@ -65,7 +65,7 @@ class LoadBalanceStrategy(Enum):
 
 @dataclass
 class SymbolicTask:
-    """One function's symbolic analysis unit for 分布式 dispatch"""
+    """单个函数的符号分析单元, 供分布式分发。"""
     task_id: str
     binary_path: str
     func_name: str
@@ -82,13 +82,15 @@ class SymbolicTask:
     completed_at: float = 0.0
     retry_count: int = 0
     max_retries: int = 3
+    # 任务所需能力 (如 'angr'/'z3'), 用于 capability_match_ratio 评分
+    capabilities: List = field(default_factory=list)
     # 截止时间戳（UTC epoch 秒），用于 deadline-aware 调度
     deadline_ts: float = 0.0
     # 部分结果：任务超时/失败但已有中间产出时暂存于此
     partial_results: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """Compact 序列化 for status reporting"""
+        """状态上报用的紧凑序列化。"""
         return {'task_id': self.task_id, 'func_name': self.func_name,
                 'priority': self.priority, 'status': self.status,
                 'assigned_worker': self.assigned_worker, 'retry_count': self.retry_count,
@@ -97,7 +99,7 @@ class SymbolicTask:
 
 @dataclass
 class TaskResult:
-    """Result returned a worker completing a task"""
+    """worker 完成任务后返回的结果。"""
     task_id: str
     success: bool
     paths_explored: int = 0
@@ -111,7 +113,7 @@ class TaskResult:
 
 @dataclass
 class WorkerInfo:
-    """Worker node registration 性能 metadata"""
+    """Worker 节点注册信息与性能元数据。"""
     worker_id: str
     hostname: str = ""
     status: str = WorkerStatus.IDLE
@@ -127,8 +129,7 @@ class WorkerInfo:
     binary_affinity: Dict[str, int] = field(default_factory=dict)
 
     def load_score(self) -> float:
-        """Heuristic 加载: avg time per task weighted failure count
-        OFFLINE workers 返回 infinity"""
+        """启发式负载: 按失败数加权的平均任务耗时, OFFLINE 返回无穷大。"""
         if self.status == WorkerStatus.OFFLINE:
             return float('inf')
         if self.status == WorkerStatus.IDLE:
@@ -137,20 +138,20 @@ class WorkerInfo:
 
     def affinity_for(self, binary_path: str) -> int:
         """返回 worker 对特定 binary 的亲和度（已完成任务数）
-        
+
         设计意图 — 同一 binary 的函数共享指令缓存和 angr project 对象
         亲和调度减少 worker 上的冷启动开销"""
         return self.binary_affinity.get(binary_path, 0)
 
     def success_rate(self) -> float:
-        """Ratio completed tasks succeeded. 返回 1.0 tasks"""
+        """已完成任务的成功比例, 无历史时返回 1.0。"""
         total = self.tasks_completed + self.tasks_failed
         if total == 0:
             return 1.0
         return self.tasks_completed / total
 
     def avg_latency_sec(self) -> float:
-        """Average task execution time seconds"""
+        """平均任务执行时间 (秒)。"""
         total = self.tasks_completed + self.tasks_failed
         if total == 0:
             return 0.0
@@ -169,15 +170,13 @@ class WorkerInfo:
 #
 # 注意：latency 是越小越好，因此取 1/(1+latency) 做正向化
 class WorkerScorecard:
-    """Per-worker quality score 基于 multi-dimensional metrics
-    
-    计算 a composite score {success_rate, avg_延迟
-    capability_match_ratio}. Used weight dispatch decisions:
-    higher-scoring workers preferred 加载 scores similar
-    
-    Formula: score = 0.4 * success_rate + 0.3 * 延迟_norm + 0.3 * capability_match
-    延迟_norm = 1 / (1 + avg_延迟_sec) ranges ~0 (very slow)
-    1.0 (instantaneous)
+    """基于多维指标的逐 worker 质量评分。
+
+    由 {success_rate, avg_latency, capability_match_ratio} 加权合成
+    综合分, 用于 dispatch 时打破 load_score 相近的僵局:
+    score = 0.4 * success_rate + 0.3 * latency_norm + 0.3 * capability_match,
+    其中 latency_norm = 1 / (1 + avg_latency_sec), 取值从 ~0 (极慢)
+    到 1.0 (瞬时)。
     """
 
     _SUCCESS_WEIGHT = 0.4
@@ -194,15 +193,10 @@ class WorkerScorecard:
 
     def compute(self, worker: WorkerInfo,
                 required_capabilities: Optional[List[str]] = None) -> float:
-        """计算 quality score for a worker
-        
-        Args:
-        worker: WorkerInfo score
-        required_capabilities: Optional list capability strings
-        current task requires. Used 计算 capability_match_ratio
-        
-        返回:
-        Float [0.0, 1.0], higher better
+        """计算 worker 的质量评分, 返回 [0.0, 1.0], 越高越好。
+
+        required_capabilities 为当前任务所需能力列表, 用于
+        capability_match_ratio 维度。
         """
         success = worker.success_rate()
         latency_norm = self._normalize_latency(worker.avg_latency_sec())
@@ -225,15 +219,7 @@ class WorkerScorecard:
     def score_workers(self, workers: List[WorkerInfo],
                       required_capabilities: Optional[List[str]] = None
                       ) -> List[Tuple[WorkerInfo, float]]:
-        """Score multiple workers 返回 sorted score descending
-        
-        Args:
-        workers: List workers score
-        required_capabilities: Optional required capabilities for task
-        
-        返回:
-        List (WorkerInfo, score) tuples sorted highest score first
-        """
+        """为多个 worker 评分, 返回按得分降序排列的 (WorkerInfo, score) 列表。"""
         scored = [(w, self.compute(w, required_capabilities)) for w in workers]
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored
@@ -247,13 +233,12 @@ class WorkerScorecard:
 # ModuleNotFoundError。验证失败的能力记录警告日志但不阻止注册——
 # worker 仍可处理不需要该能力的任务
 class WorkerCapabilityRegistry:
-    """校验s worker capability claims against actually installed packages
-    
-    cap_registry maps capability strings lists required Python packages
-    寄存器_worker(), claimed capability 校验d attempting
-    import required packages. verified capabilities accepted
-    
-    阻止"声称支持 angr 但未安装"的情况，避免任务分配到无能力 worker
+    """对照实际安装的包校验 worker 声称的能力。
+
+    cap_registry 将能力字符串映射到所需的 Python 包名列表;
+    register_worker() 时逐一尝试 import 所需包, 只接受验证通过的
+    能力。阻止"声称支持 angr 但未安装"的情况, 避免任务分配到
+    无能力 worker。
     """
 
     def __init__(self):
@@ -267,16 +252,11 @@ class WorkerCapabilityRegistry:
         }
 
     def register_capability(self, name: str, required_packages: List[str]):
-        """Extend registry a custom capability"""
+        """向注册表扩展自定义能力。"""
         self.cap_registry[name] = list(required_packages)
 
     def validate(self, claimed_capabilities: List[str]) -> Tuple[List[str], List[str]]:
-        """校验 a list claimed capabilities
-        
-        返回:
-        (valid_capabilities, invalid_capabilities) — two lists
-        capability strings passed/failed import 验证
-        """
+        """校验声称的能力列表, 返回 (通过, 未通过) 两个列表。"""
         valid: List[str] = []
         invalid: List[str] = []
         for cap in claimed_capabilities:
@@ -311,13 +291,11 @@ class WorkerCapabilityRegistry:
 # dep_dag_in_degree 记录每个 task_id 的未完成前驱数量
 # pending_dep 是反向索引：前驱 task_id → 依赖它的任务列表
 class TaskDependencyResolver:
-    """Topological 排序 via Kahn's algorithm for dependency-aware scheduling
-    
-    Tasks unfulfilled dependencies held a pending_dep 队列
-    until prerequisite tasks complete
-    
-    dep_dag_in_degree 追踪 incomplete predecessors task
-    _pending_dep a reverse index: predecessor_task_id -> list dependent tasks
+    """基于 Kahn 算法的拓扑排序, 用于依赖感知调度。
+
+    有未满足依赖的任务暂存于 pending_dep 队列, 直到前置任务完成;
+    dep_dag_in_degree 追踪每个任务的未完成前驱数,
+    _pending_dep 是反向索引: 前驱 task_id -> 依赖它的任务列表。
     """
 
     def __init__(self):
@@ -327,11 +305,10 @@ class TaskDependencyResolver:
         self._task_by_id: Dict[str, SymbolicTask] = {}
 
     def register(self, task: SymbolicTask):
-        """寄存器 a task dependency resolver
-        
-        task dependencies (in_degree == 0), immediately
-        ready. Otherwise, held _pending_dep until predecessors
-        complete
+        """向依赖解析器注册任务。
+
+        无依赖 (入度 0) 的任务立即就绪; 否则暂存于 _pending_dep,
+        直到前置任务全部完成。
         """
         self._task_by_id[task.task_id] = task
         deps = task.dependencies if task.dependencies else []
@@ -342,16 +319,11 @@ class TaskDependencyResolver:
             self._pending_dep[dep_id].append(task)
 
     def is_ready(self, task_id: str) -> bool:
-        """返回 True task remaining unfulfilled dependencies"""
+        """入度为 0 (无未满足依赖) 时返回 True。"""
         return self.dep_dag_in_degree.get(task_id, -1) == 0
 
     def mark_completed(self, task_id: str) -> List[SymbolicTask]:
-        """Mark a task completed 释放 tasks waiting
-        
-        返回:
-        List SymbolicTask instances ready 调度
-        (in_degree dropped 0)
-        """
+        """标记任务完成, 返回入度降为 0 而就绪待调度的任务列表。"""
         self._completed.add(task_id)
         ready: List[SymbolicTask] = []
         dependents = self._pending_dep.pop(task_id, [])
@@ -363,11 +335,11 @@ class TaskDependencyResolver:
         return ready
 
     def pending_count(self) -> int:
-        """返回 number tasks currently blocked dependencies"""
+        """返回当前被依赖阻塞的任务数。"""
         return sum(1 for deg in self.dep_dag_in_degree.values() if deg > 0)
 
     def reset(self):
-        """清除 dependency state"""
+        """清除依赖状态。"""
         self.dep_dag_in_degree.clear()
         self._pending_dep.clear()
         self._completed.clear()
@@ -386,30 +358,26 @@ class TaskDependencyResolver:
 # 这防止了超时级联效应：当一批任务共享截止时间且调度延迟时
 # 最临近 deadline 的任务优先执行，最大化截止时间内完成的任务数
 class DeadlineAwareDispatch:
-    """排序 task 堆 deadline proximity tasks closest deadline
-    dispatched first, preventing timeout cascades
-    
-    Overrides standard priority-based ordering a composite key:
-    (is_overdue, deadline_slack, -priority). Tasks a deadline
-    (deadline_ts == 0) treated having infinite slack
-    
-    使用方式：将 堆 key 函数注入 TaskScheduler._堆_key(task)
-    替代默认的 (-priority, created_at, task_id)
+    """按 deadline 临近程度排序任务堆, deadline 最近的任务优先分发。
+
+    覆写标准优先级排序, 改用组合键 (is_overdue, deadline_slack,
+    -priority); 无 deadline 的任务 (deadline_ts == 0) 视为有无穷
+    slack。使用方式: 将 heap_key 函数注入 TaskScheduler._heap_key(task),
+    替代默认的 (-priority, created_at, task_id)。防止超时级联效应。
     """
 
     def __init__(self):
         self._now_func: Callable[[], float] = time.time
 
     def set_clock(self, now_func: Callable[[], float]):
-        """Inject a custom clock for testing (e.g. freezegun)"""
+        """注入自定义时钟供测试用 (如 freezegun)。"""
         self._now_func = now_func
 
     def heap_key(self, task: SymbolicTask) -> Tuple[int, float, int, float, str]:
-        """计算 堆 ordering key for a task
-        
-        返回:
-        Tuple (is_overdue, deadline_slack, negative_priority, created_at, task_id)
-        suitable for 堆q. Lower values = higher dispatch priority
+        """计算任务的堆排序键。
+
+        返回 (is_overdue, deadline_slack, negative_priority, created_at,
+        task_id) 五元组, 供 heapq 使用, 值越小调度优先级越高。
         """
         now = self._now_func()
         if task.deadline_ts > 0:
@@ -423,11 +391,7 @@ class DeadlineAwareDispatch:
 
     @staticmethod
     def from_deadline(task: SymbolicTask) -> float:
-        """返回 remaining time deadline seconds
-        
-        Negative values indicate deadline passed
-        返回 inf deadline set
-        """
+        """返回距 deadline 的剩余秒数, 负值表示已逾期, 无 deadline 返回无穷大。"""
         if task.deadline_ts <= 0:
             return float('inf')
         return task.deadline_ts - time.time()
@@ -447,13 +411,11 @@ class DeadlineAwareDispatch:
 # constraints 去重（按字符串哈希去重）
 # output 字段浅合并（同名键后面的覆盖前面的）
 class PartialResultMerger:
-    """Salvage intermediate results timed-out or failed tasks 合并
-    final aggregate instead discarding
-    
-    a task times out or fails partial completion, worker
-    explored paths discovered constraints
-    merger collects partial results folds
-    overall ResultAggregator totals
+    """回收超时/失败任务的中间结果, 合并进最终聚合而非丢弃。
+
+    任务因瞬态故障 (网络分区、worker OOM) 失败前可能已探索大量
+    路径; merger 收集 partial_results 中的产出, 并入
+    ResultAggregator 的总计。
     """
 
     def __init__(self):
@@ -463,13 +425,7 @@ class PartialResultMerger:
         self._partial_outputs: Dict[str, Dict[str, Any]] = {}  # task_id -> 输出 dict
 
     def record_partial(self, task: SymbolicTask):
-        """Capture partial results a task marked
-        timed out or failed
-        
-        Args:
-        task: SymbolicTask partial_results field 包含
-        intermediate findings
-        """
+        """捕获被标记为超时/失败任务的 partial_results 中间产出。"""
         partial = task.partial_results
         if not partial:
             return
@@ -501,15 +457,7 @@ class PartialResultMerger:
                      tid, paths, len(vulns), len(constraints))
 
     def merge_into_aggregate(self, aggregate: Dict[str, Any]) -> Dict[str, Any]:
-        """合并 accumulated partial results an aggregate summary dict
-        
-        Args:
-        aggregate: aggregate dict produced ResultAggregator
-        Modified -place returned
-        
-        返回:
-        same aggregate dict, partial results merged
-        """
+        """把累积的部分结果合并进聚合汇总字典, 原地修改并返回同一字典。"""
         total_partial_paths = sum(self._partial_paths.values())
         if total_partial_paths > 0:
             aggregate['total_paths_explored'] = (
@@ -540,7 +488,7 @@ class PartialResultMerger:
         return aggregate
 
     def clear(self):
-        """重置 accumulated partial results"""
+        """重置累积的部分结果。"""
         self._partial_paths.clear()
         self._partial_vulns.clear()
         self._partial_constraints.clear()
@@ -548,12 +496,11 @@ class PartialResultMerger:
 
 
 class TaskScheduler:
-    """Priority-队列-based task 分发器 pluggable 负载均衡
-    支持 deadline-aware dispatch via DeadlineAwareDispatch 堆 keys
-    
-    增强：deadline-aware 排序 —— 当 enable_deadline_dispatch=True 时
-    _heap_key 使用 DeadlineAwareDispatch 计算堆键，确保最临近截止时间的
-    任务优先被调度
+    """基于优先队列的任务分发器, 支持可插拔负载均衡。
+
+    增强: deadline-aware 排序 — 当 enable_deadline_dispatch=True 时
+    _heap_key 使用 DeadlineAwareDispatch 计算堆键, 确保最临近截止
+    时间的任务优先被调度。
     """
 
     # rebalance_threshold：worker 数量变化超过此比例时触发自动再平衡
@@ -577,21 +524,21 @@ class TaskScheduler:
 
     @property
     def dependency_resolver(self) -> TaskDependencyResolver:
-        """Expose dependency resolver for external inspection"""
+        """暴露依赖解析器供外部检查。"""
         return self._dependency_resolver
 
     @property
     def scorecard(self) -> WorkerScorecard:
-        """Expose worker scorecard for external inspection"""
+        """暴露 worker 评分卡供外部检查。"""
         return self._scorecard
 
     @property
     def partial_merger(self) -> PartialResultMerger:
-        """Expose partial result merger for external inspection"""
+        """暴露部分结果合并器供外部检查。"""
         return self._partial_merger
 
     def register_worker(self, worker: WorkerInfo):
-        """Add or 更新 a worker 池"""
+        """新增或更新 worker 池中的条目。"""
         with self._lock:
             prev_count = len(self._workers)
             self._workers[worker.worker_id] = worker
@@ -602,7 +549,7 @@ class TaskScheduler:
                 self._rebalance_locked()
 
     def unregister_worker(self, worker_id: str):
-        """Remove a worker 池"""
+        """从 worker 池移除条目。"""
         with self._lock:
             prev_count = len(self._workers)
             self._workers.pop(worker_id, None)
@@ -613,7 +560,7 @@ class TaskScheduler:
 
     def _should_rebalance(self, old_count: int, new_count: int) -> bool:
         """判断 worker 数量变化是否超过 rebalance_threshold
-        
+
         变化比例 = |new - old| / max(old, 1)，超过阈值则返回 True
         这避免了每增减一个 worker 都触发昂贵的再平衡操作
         """
@@ -632,7 +579,7 @@ class TaskScheduler:
     # 设计权衡：完全不移动已 ASSIGNED/RUNNING 的任务（避免中断进行中的工作）
     # 只重排尚未分配的任务
     def _rebalance_locked(self):
-        """Internal rebalance under lock. 调用方必须持有 self._lock"""
+        """锁内再平衡, 调用方必须持有 self._lock。"""
         if not self._task_heap:
             return
         # 收集所有 PENDING 状态的任务
@@ -660,10 +607,10 @@ class TaskScheduler:
                     len(pending_tasks), len(self._workers))
 
     def rebalance(self):
-        """Public 入口: redistribute pending tasks across current workers
-        
-        当 检测 到 worker 加入/离开（是 stale eviction）时
-        外部调用方可以通过此方法手动触发再平衡
+        """公开入口: 在当前 worker 集合上重新分配待处理任务。
+
+        检测到 worker 加入/离开 (或 stale 驱逐) 时, 外部调用方
+        可以通过此方法手动触发再平衡。
         """
         with self._lock:
             self._rebalance_locked()
@@ -699,7 +646,7 @@ class TaskScheduler:
     # task_id 始终在最后，便于 rebalance 中按 entry[-1] 提取
     def _heap_key(self, task: SymbolicTask) -> Tuple:
         """计算 堆 ordering key for a task
-        
+
         如果 deadline-aware 模式开启且有 deadline_ts，按 deadline slack 排序；
         否则回退到传统的 (-priority, created_at, task_id)
         """
@@ -708,10 +655,10 @@ class TaskScheduler:
         return (-task.priority, task.created_at, task.task_id)
 
     def submit(self, task: SymbolicTask):
-        """En队列 a task. 使用 堆q for O(记录 n) operations
-        
-        有依赖的任务先经过 TaskDependencyResolver：如果入度 > 0
-        不进入主堆，而是注册到依赖解析器等待前置任务完成
+        """任务入队, 用堆实现 O(log n) 操作。
+
+        有依赖的任务先经过 TaskDependencyResolver: 入度 > 0 时
+        不进入主堆, 注册到依赖解析器等待前置任务完成。
         """
         task.created_at = time.time()
         with self._lock:
@@ -730,7 +677,7 @@ class TaskScheduler:
 
     def _release_ready_dependents(self, completed_task_id: str):
         """当一个任务完成时，释放所有等待它的就绪任务到主堆
-        
+
         调用方必须持有 self._lock"""
         ready_tasks = self._dependency_resolver.mark_completed(completed_task_id)
         for rt in ready_tasks:
@@ -742,11 +689,11 @@ class TaskScheduler:
             logger.debug("[Scheduler] Dependency resolved: task %s is now ready", rt.task_id)
 
     def dispatch(self) -> Optional[Tuple[SymbolicTask, WorkerInfo]]:
-        """De队列 highest-priority task assign a worker
-        使用 deadline-aware ordering enabled
-        
-        Worker selection weighted WorkerScorecard multiple
-        candidates similar 加载 scores (10% tolerance)
+        """弹出最高优先级任务并分配 worker。
+
+        启用 deadline-aware 排序时按 deadline 优先; worker 选择以
+        WorkerScorecard 加权, 多个候选 load_score 相近 (10% 容差)
+        时用它打破僵局。
         """
         with self._lock:
             if not self._task_heap:
@@ -772,10 +719,10 @@ class TaskScheduler:
             return (task, worker)
 
     def complete_task(self, task_id: str, result: TaskResult):
-        """Mark a task complete 更新 worker 性能 counters
-        
-        failure or timeout, partial results salvaged via
-        PartialResultMerger task optionally re队列d
+        """标记任务完成并更新 worker 性能计数。
+
+        失败或超时时通过 PartialResultMerger 回收部分结果,
+        任务可选重新入队。
         """
         with self._lock:
             task = self._task_cache.get(task_id)
@@ -804,7 +751,7 @@ class TaskScheduler:
             self._release_ready_dependents(task_id)
 
     def requeue_task(self, task_id: str):
-        """Re-en队列 a failed task 重试 remaining"""
+        """重试次数未耗尽时把失败任务重新入队。"""
         task = self._task_cache.get(task_id)
         if task and task.retry_count < task.max_retries:
             task.retry_count += 1
@@ -814,9 +761,9 @@ class TaskScheduler:
             heapq.heappush(self._task_heap, key)
 
     def _select_worker(self) -> Optional[WorkerInfo]:
-        """Pick best worker according active 加载-balancing strategy
-        multiple workers similar 加载 scores, 使用 WorkerScorecard
-        a tiebreaker
+        """按当前负载均衡策略选出最佳 worker。
+
+        多个 worker load_score 相近时用 WorkerScorecard 打破僵局。
         """
         online = [w for w in self._workers.values()
                  if w.status != WorkerStatus.OFFLINE]
@@ -829,12 +776,9 @@ class TaskScheduler:
         # 获取栈顶任务所需能力
         required_caps = None
         if self._task_heap:
-            _, _, _, _, _ = self._task_heap[0] if len(self._task_heap[0]) >= 5 else \
-                (None, None, self._task_heap[0][2]) if len(self._task_heap[0]) == 3 else \
-                (None, None, None)
             peek_id = self._task_heap[0][-1]
             peek_task = self._task_cache.get(peek_id)
-            if peek_task and hasattr(peek_task, 'capabilities'):
+            if peek_task and peek_task.capabilities:
                 required_caps = peek_task.capabilities
 
         if self.strategy == LoadBalanceStrategy.ROUND_ROBIN:
@@ -878,7 +822,7 @@ class TaskScheduler:
         return idle[0]
 
     def stats(self) -> Dict[str, Any]:
-        """返回 scheduler-level aggregate metrics"""
+        """返回调度器级聚合指标。"""
         return {
             'queue_size': len(self._task_heap),
             'workers': len(self._workers),
@@ -894,10 +838,10 @@ class TaskScheduler:
 
 
 class TaskSplitter:
-    """Decomposes a binary per-function SymbolicTasks
-    
-    支持 flat function-list splitting DAG-based splitting
-    dependency-aware priority assignment"""
+    """把二进制按函数拆分为 SymbolicTask。
+
+    支持平面函数列表拆分与基于 DAG 的依赖感知拆分。
+    """
 
     def __init__(self, max_tasks_per_binary: int = 1000):
         self.max_tasks_per_binary = max_tasks_per_binary
@@ -905,7 +849,7 @@ class TaskSplitter:
     def split_by_functions(self, binary_path: str, functions: List[str],
                            priority_func: Optional[Callable[[str], int]] = None
                            ) -> List[SymbolicTask]:
-        """创建 one task per function name, capped max_tasks_per_binary"""
+        """每个函数创建一个任务, 数量上限 max_tasks_per_binary。"""
         tasks = []
         for func_name in functions[:self.max_tasks_per_binary]:
             priority = priority_func(func_name) if priority_func else 0
@@ -917,9 +861,14 @@ class TaskSplitter:
 
     def split_by_dag(self, binary_path: str, dag: Dict[str, List[str]],
                      entry_points: List[str]) -> List[SymbolicTask]:
-        """BFS call-graph roots; priority = 100 - level*10
-        callers precede callees 调度"""
+        """从调用图根节点 BFS 拆分, priority = 100 - level*10。
+
+        依赖指向调用者 (BFS 父节点) 任务的 md5 id, 保证调用者
+        先于被调用者调度; 不在 BFS 闭包内的父节点不参与调度,
+        跳过以免任务永久阻塞。
+        """
         levels: Dict[str, int] = {}
+        parents: Dict[str, List[str]] = {}
         queue = [(ep, 0) for ep in entry_points]
         while queue:
             node, level = queue.pop(0)
@@ -927,24 +876,27 @@ class TaskSplitter:
                 continue
             levels[node] = level
             for child in dag.get(node, []):
+                if node not in parents.setdefault(child, []):
+                    parents[child].append(node)
                 if child not in levels:
                     queue.append((child, level + 1))
         tasks = []
         for func_name, level in levels.items():
             task_id = hashlib.md5(f"{binary_path}:{func_name}:L{level}".encode()).hexdigest()[:16]
             priority = max(0, 100 - level * 10)
+            deps = [hashlib.md5(
+                f"{binary_path}:{p}:L{levels[p]}".encode()).hexdigest()[:16]
+                for p in parents.get(func_name, []) if p in levels]
             tasks.append(SymbolicTask(
                 task_id=task_id, binary_path=binary_path, func_name=func_name,
-                priority=priority,
-                dependencies=[f"{binary_path}:{p}" for p in dag.get(func_name, [])]))
+                priority=priority, dependencies=deps))
         return tasks
 
 
 class ResultAggregator:
-    """Collects aggregates per-task results a summary 报告
-    
-    支持 merging partial results salvaged timed-out/failed tasks
-    via PartialResultMerger
+    """收集并聚合各任务结果为汇总报告。
+
+    支持通过 PartialResultMerger 合并超时/失败任务回收的部分结果。
     """
 
     def __init__(self):
@@ -954,19 +906,18 @@ class ResultAggregator:
 
     @property
     def partial_merger(self) -> PartialResultMerger:
-        """Expose partial merger for external 使用"""
+        """暴露部分结果合并器供外部使用。"""
         return self._partial_merger
 
     def add_result(self, result: TaskResult):
-        """寄存器 a completed task's result"""
+        """记录一个已完成任务的结果。"""
         with self._lock:
             self._results[result.task_id] = result
 
     def aggregate(self) -> Dict[str, Any]:
-        """计算 summary statistics across collected results
-        
-        Partial results timed-out/failed tasks merged
-        final totals via PartialResultMerger.merge_into_aggregate
+        """计算已收集结果的汇总统计。
+
+        超时/失败任务的部分结果经 PartialResultMerger 合并进最终总计。
         """
         with self._lock:
             total = len(self._results)
@@ -998,19 +949,10 @@ class ResultAggregator:
 
 
 class DistributedSymbolicExecutor:
-    """Top-level 调度器: splitter -> scheduler -> aggregator
-    
-    Usage:
-    executor = 分布式SymbolicExecutor()
-    executor.寄存器_worker("w1", cpu_cores=4)
-    executor.submit_binary("/path//binary", ["func_a", "func_b"])
-    True:
-    dispatch_info = executor.dispatch()
-    dispatch_info None:
-    break
-    #. 运行 task assigned worker
-    executor.submit_result(task_id, worker_id, success=True, paths=42)
-    报告 = executor.分析()
+    """顶层编排器: splitter -> scheduler -> aggregator。
+
+    用法: 注册 worker、submit_binary 拆分入队、循环 dispatch 领取
+    任务-worker 对、执行后 submit_result 回报、最后 analyze 汇总。
     """
 
     def __init__(self, strategy: LoadBalanceStrategy = LoadBalanceStrategy.ADAPTIVE,
@@ -1026,10 +968,10 @@ class DistributedSymbolicExecutor:
     def register_worker(self, worker_id: str, hostname: str = "",
                         cpu_cores: int = 1, memory_mb: int = 1024,
                         capabilities: Optional[List[str]] = None):
-        """寄存器 a worker node scheduler
-        
-        能力验证：通过 cap_registry 验证 worker 声称的能力
-        只有 import 对应包成功的能力才被接受，无效的仅记录警告
+        """向调度器注册一个 worker 节点。
+
+        能力验证: 通过 cap_registry 验证 worker 声称的能力,
+        只有 import 对应包成功的能力才被接受, 无效的仅记录警告。
         """
         caps = capabilities or []
         valid_caps: List[str] = []
@@ -1046,10 +988,10 @@ class DistributedSymbolicExecutor:
         self.scheduler.register_worker(worker)
 
     def unregister_worker(self, worker_id: str):
-        """Remove a worker. Triggers automatic rebalance needed
-        
-        stale eviction 也会调用此路径，确保离开 worker 的待处理任务
-        被重新分配到剩余 worker
+        """移除 worker, 必要时触发自动再平衡。
+
+        stale 驱逐也走此路径, 确保离开 worker 的待处理任务
+        被重新分配到剩余 worker。
         """
         self.scheduler.unregister_worker(worker_id)
         logger.info("[Executor] Worker %s unregistered, %d workers remain",
@@ -1058,14 +1000,10 @@ class DistributedSymbolicExecutor:
     def submit_binary(self, binary_path: str, functions: List[str],
                       priority_func: Optional[Callable[[str], int]] = None,
                       deadline_ts: float = 0.0):
-        """分割 a binary per-function tasks en队列
-        
-        Args:
-        binary_path: Path target binary
-        functions: List function names 分析
-        priority_func: Optional callable maps function name priority int
-        deadline_ts: Optional absolute deadline timestamp (UTC epoch seconds)
-        tasks derived binary inherit deadline
+        """把二进制按函数拆分并全部入队。
+
+        deadline_ts 为绝对截止时间戳 (UTC epoch 秒), 拆分出的
+        任务继承该 deadline。
         """
         tasks = self.splitter.split_by_functions(binary_path, functions, priority_func)
         for task in tasks:
@@ -1075,7 +1013,7 @@ class DistributedSymbolicExecutor:
         logger.info(f"Submitted {len(tasks)} distributed symbolic execution tasks")
 
     def dispatch(self) -> Optional[Dict[str, Any]]:
-        """De队列 next task-worker pair. 返回 None nothing ready"""
+        """弹出下一个任务-worker 对, 无可调度任务时返回 None。"""
         pair = self.scheduler.dispatch()
         if not pair:
             return None
@@ -1089,10 +1027,10 @@ class DistributedSymbolicExecutor:
                       paths: int = 0, vulns: int = 0, elapsed: float = 0.0,
                       output: Optional[Dict[str, Any]] = None, error: str = "",
                       partial: Optional[Dict[str, Any]] = None):
-        """Record a completed task result. 重试 non-timeout failures
-        
-        timeout/failure, partial intermediate results salvaged via
-        PartialResultMerger instead discarded
+        """记录已完成任务的结果, 非超时失败自动重试。
+
+        超时/失败时 partial 中间结果经 PartialResultMerger 回收
+        而非丢弃。
         """
         # 如果提供了部分结果且任务未成功，将其暂存到任务上供 PartialResultMerger 回收
         if partial and not success:
@@ -1114,16 +1052,15 @@ class DistributedSymbolicExecutor:
     # 1. 寄存器_worker / un寄存器_worker 检测到 worker 数变化超过阈值
     # 2. 外部监控发现负载不均时手动触发
     def rebalance(self):
-        """Redistribute pending tasks workers join/leave
-        
-        Stale eviction triggers automatically via scheduler's
-        rebalance_threshold 检查. manually
-        加载 imbalance detected externally
+        """在 worker 加入/离开后重新分配待处理任务。
+
+        Stale 驱逐通过调度器的 rebalance_threshold 检查自动触发;
+        外部检测到负载不均时也可手动调用。
         """
         self.scheduler.rebalance()
 
     def save_checkpoint(self):
-        """Persist scheduler aggregator state disk"""
+        """把调度器与聚合器状态持久化到磁盘。"""
         checkpoint = {'timestamp': time.time(),
                      'scheduler_stats': self.scheduler.stats(),
                      'aggregate': self.aggregator.aggregate()}
@@ -1132,9 +1069,10 @@ class DistributedSymbolicExecutor:
             json.dump(checkpoint, f, ensure_ascii=False, indent=2)
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """返回 aggregated results scheduler stats
-        Partial results timed-out/failed tasks merged
-        aggregate totals"""
+        """返回聚合结果与调度器统计。
+
+        超时/失败任务的部分结果已合并进聚合总计。
+        """
         aggregate = self.aggregator.aggregate()
         aggregate['scheduler_stats'] = self.scheduler.stats()
         return aggregate
@@ -1144,7 +1082,7 @@ def distributed_symbolic_execution(
     binary_path: str, functions: List[str],
     workers: List[Dict[str, Any]], strategy: str = "adaptive"
 ) -> Dict[str, Any]:
-    """One-shot: 寄存器 workers, submit binary, 返回 aggregate stats"""
+    """一次性流程: 注册 worker、提交二进制、返回聚合统计。"""
     try:
         strat = LoadBalanceStrategy(strategy.lower())
     except ValueError:

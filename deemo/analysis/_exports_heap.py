@@ -56,10 +56,21 @@ from analysis.heap_confidence_scorer import (
 from analysis.heap_analysis_pipeline import (
     run_heap_analysis_pipeline, PipelineStats,
 )
-from analysis.value_range_filter import (
-    analyze_heap_bounds, extract_alloc_sites, extract_heap_writes,
-    check_bounds, Interval, AllocSite, HeapWrite, BoundsViolation,
-)
+try:
+    from analysis.value_range_filter import (
+        analyze_heap_bounds, extract_alloc_sites, extract_heap_writes,
+        check_bounds, Interval, AllocSite, HeapWrite, BoundsViolation,
+    )
+except ImportError:
+    # value_range_filter 模块已移除; 名称降级为 None, 调用点按守卫使用
+    analyze_heap_bounds = None
+    extract_alloc_sites = None
+    extract_heap_writes = None
+    check_bounds = None
+    Interval = None
+    AllocSite = None
+    HeapWrite = None
+    BoundsViolation = None
 try:
     from analysis.taint_simplifier import (
         TaintSource, TaintSink, TaintPath, is_source, is_sink,

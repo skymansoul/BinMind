@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import List
 
-from heapov.cparser import parse_source_full
-from heapov.expr_ast import Var, Deref, Field, Index, Call, Binary, Const
-from heapov.stmts import Assign, CallStmt, ExprStmt, Decl
-from heapov.dataflow import iter_statements
+from ..heapov.cparser import parse_source_full
+from ..heapov.expr_ast import Var, Deref, Field, Index, Call, Binary, Const
+from ..heapov.stmts import Assign, CallStmt, ExprStmt, Decl
+from ..heapov.dataflow import iter_statements
 
 
 def _root_var(e) -> str:

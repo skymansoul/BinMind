@@ -5,12 +5,12 @@ import re
 import random
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from parallel_deep_dev.config import CONFIG
-from parallel_deep_dev.engine.api import call_api_with_retry, get_adaptive_workers, get_resilience_stats
-from parallel_deep_dev.engine.files import parse_and_write_files
-from parallel_deep_dev.engine.hashing import snapshot_tree_hashes, detect_changed_by_hash, snapshot_tree_hashes_cdc
-from parallel_deep_dev.engine.checkpoint import save_checkpoint, load_checkpoint, clear_checkpoint
-from parallel_deep_dev.engine.validate import validate_generated_files
+from ..config import CONFIG
+from .api import call_api_with_retry, get_adaptive_workers, get_resilience_stats
+from .files import parse_and_write_files
+from .hashing import snapshot_tree_hashes, detect_changed_by_hash, snapshot_tree_hashes_cdc
+from .checkpoint import save_checkpoint, load_checkpoint, clear_checkpoint
+from .validate import validate_generated_files
 
 
 def execute_parallel_development(
@@ -69,7 +69,7 @@ def execute_parallel_development(
     # 黑板初始化
     blackboard = None
     if CONFIG.BLACKBOARD_ENABLED:
-        from parallel_deep_dev.engine.blackboard import get_blackboard
+        from .blackboard import get_blackboard
         blackboard = get_blackboard()
 
     results: dict[str, list[str]] = {}
@@ -138,7 +138,7 @@ def execute_parallel_development(
     if CONFIG.SEMANTIC_VALIDATION_ENABLED and all_gen_files:
         print(f"\n[语义验证] 检查跨模块接口一致性...")
         try:
-            from parallel_deep_dev.engine.semantic_validator import run_semantic_validation
+            from .semantic_validator import run_semantic_validation
             sem_result = run_semantic_validation(all_gen_files, CONFIG.ROOT_DIR)
             if sem_result["interface_issues"]:
                 print(f"  [警告] 发现 {len(sem_result['interface_issues'])} 个接口不一致:")

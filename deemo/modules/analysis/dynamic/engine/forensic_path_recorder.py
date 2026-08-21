@@ -108,7 +108,7 @@ class ForensicRecord:
 class ForensicPathRecorder(BaseAnalyzer):
     """
     Reproducible 漏洞-discovery audit trail
-    
+
     Captures full execution context — inputs, 寄存器 file, memory maps
     symbolic constraints — tamper-evident, replayable forensic records
     Designed satisfy CVE submission evidentiary requirements

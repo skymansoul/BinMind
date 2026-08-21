@@ -49,7 +49,7 @@ class TestBatchRunner:
 
 
 class TestPipelineIntegration:
-    """End--end 流水线 flow tests"""
+    """End-to-end 流水线 flow tests"""
 
     def test_config_loading(self):
         """Verify 配置 loaded"""

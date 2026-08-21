@@ -5,8 +5,6 @@
 # Binary Diff Summarization] 的 FSS 指标计算涉及函数地址
 # 区间和差分区间比对 —— 区间树提供 O(log N) 查询和 O(N log N) 构建。
 from typing import List, Tuple, Optional, Any, TypeVar, Generic, Iterator
-from functools import lru_cache  # 保留
-import itertools  # 保留
 
 T = TypeVar("T")
 
@@ -175,8 +173,4 @@ def gap_intervals(intervals: List[Tuple[int, int]],
     if current < domain_end:
         gaps.append((current, domain_end))
     return gaps
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

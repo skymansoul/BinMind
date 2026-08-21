@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SyscallPattern:
-    name
-    sequence
-    severity = ""
-    description = ""
-    mitre_id = ""
+    name: str
+    sequence: str
+    severity: str = ""
+    description: str = ""
+    mitre_id: str = ""
 
 class SyscallPatternMatcher:
     kDANGEROUS_PATTERNS = [

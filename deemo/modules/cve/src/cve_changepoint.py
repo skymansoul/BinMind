@@ -1,7 +1,5 @@
-# 创建: 2025-05-12 14:37
-# 修改: 2025-05-12 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 贝叶斯在线变点检测
-# 贝叶斯在线变点检测 — CVE利用态势的实时结构断点识别
+# 贝叶斯在线变点检测
+# 贝叶斯在线变点检测 - CVE利用态势的实时结构断点识别
 #
 # 问题: 2026年CVE利用时间线发生了结构性断裂:
 #   2024年 CVE→Exploit 中位延迟: 56天
@@ -9,7 +7,7 @@
 #   2026年YTD: ~10小时
 # 传统的固定窗口风险评分假设数据生成过程稳定, 在此速率下已失效.
 # 当PoC发布、KEV收录、或武器化利用代码出现时, CVE的风险态势发生
-# 不可逆的状态跃迁 — 这本质上是变点检测问题.
+# 不可逆的状态跃迁 - 这本质上是变点检测问题.
 #
 # 解决方案: 贝叶斯在线变点检测 (BOCD).
 # 基于Adams & MacKay 的框架, 适配到CVE利用事件流:
@@ -17,15 +15,15 @@
 #      r_t = 自上次变点以来的时间步数.
 #   2. 对每个r_t, 计算观测模型 P(x_t | θ) 在参数后验下的预测密度.
 #   3. 变点概率: P(r_t=0 | x_{1:t}) ∝ Σ_{r_{t-1}} P(r_t=0 | r_{t-1}) × P(x_t | r_{t-1}, x).
-#   4. 风险函数 (hazard rate) 控制先验变点概率 — 使用常数风险率
+#   4. 风险函数 (hazard rate) 控制先验变点概率 - 使用常数风险率
 #      λ=1/30 (平均每月一次态势变化).
 #
 # 适配到CVE的三类观测:
-#   Type 1 — 利用速度: 事件间到达时间 (inter-arrival time).
+#   Type 1 - 利用速度: 事件间到达时间 (inter-arrival time).
 #     观测模型: 指数分布 (单次利用) / 泊松过程 (批量利用).
-#   Type 2 — 利用严重度: 标记值的移动平均.
+#   Type 2 - 利用严重度: 标记值的移动平均.
 #     观测模型: 高斯分布 (经logit变换).
-#   Type 3 — 来源多样性: 不同情报源的加权混合熵.
+#   Type 3 - 来源多样性: 不同情报源的加权混合熵.
 #     观测模型: 多项Dirichlet.
 #
 # 输出: 对每条CVE流, 实时计算:
@@ -36,7 +34,7 @@
 # 非显而易见性:
 #   1. BOCD在工业过程控制中成熟, 但从未用于CVE利用态势检测.
 #   2. 三类异构观测的联合似然融合: 速度×严重度×多样性.
-#   3. 态势标签不是启发式规则而是后验推断 — 可量化不确定性.
+#   3. 态势标签不是启发式规则而是后验推断 - 可量化不确定性.
 #
 #
 # Bayesian Online Changepoint Detection
@@ -63,13 +61,13 @@ class ChangepointResult:
 
 
 class BayesianChangepointDetector:
-    """贝叶斯在线变点检测器 — 单流CVE利用态势跟踪.
+    """贝叶斯在线变点检测器 - 单流CVE利用态势跟踪.
 
     使用恒定风险率h的简化BOCD.
     观测模型: 指数族共轭先验 (Gamma-Poisson用于速度, Normal-Gamma用于严重度).
 
     算法复杂度: O(T) 每步 (T=最大行程长度截断).
-    使用截断 T_max=200 控制计算量 — 超过200天无变点的概率 < 0.001 (h=1/30).
+    使用截断 T_max=200 控制计算量 - 超过200天无变点的概率 < 0.001 (h=1/30).
     """
 
     def __init__(self, hazard_rate: float = 1.0 / 30.0,
@@ -91,7 +89,7 @@ class BayesianChangepointDetector:
         self._observations: Deque[float] = deque(maxlen=max_run_length)
 
         # 每行程长度的充分统计量 (用于共轭更新)
-        # Gamma模型: alpha_r, beta_r — 观测x_t的指数分布参数
+        # Gamma模型: alpha_r, beta_r - 观测x_t的指数分布参数
         self._alpha_stats: List[float] = [prior_alpha]
         self._beta_stats: List[float] = [prior_beta]
 
@@ -241,7 +239,7 @@ class BayesianChangepointDetector:
 
 
 class MultiStreamChangepointMonitor:
-    """多流变点监控器 — 同时跟踪多个CVE的态势变化.
+    """多流变点监控器 - 同时跟踪多个CVE的态势变化.
 
     维护一个 {cve_id: BayesianChangepointDetector} 映射.
     对每个CVE有独立的观测序列和变点历史.
@@ -351,7 +349,7 @@ def _logsumexp(log_vals: List[float]) -> float:
 
 
 def _logadd(log_a: float, log_b: float) -> float:
-    """log(exp(a) + exp(b)) — 两参数的log-sum-exp."""
+    """log(exp(a) + exp(b)) - 两参数的log-sum-exp."""
     if log_a < log_b:
         log_a, log_b = log_b, log_a
     if log_a < -700:

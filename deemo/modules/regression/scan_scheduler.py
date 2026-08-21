@@ -19,8 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from hfp.hfp_engine import detect_heap_overflow_hfp, suppress_and_report
-from hfp.hfp_verdict import Verdict
+from ..hfp.hfp_engine import detect_heap_overflow_hfp, suppress_and_report
+from ..hfp.hfp_verdict import Verdict
 
 SAFE_SAMPLES = {'safe_01_guard_narrow', 'safe_02_align_slack',
                 'safe_03_same_source'}
@@ -48,7 +48,7 @@ class ScanScheduler:
         try:
             text = Path(asm_path).read_text(encoding='utf-8',
                                             errors='replace')
-            from hfp.hfp_scan import asm_to_pseudo_ir
+            from ..hfp.hfp_scan import asm_to_pseudo_ir
             pseudo_ir = asm_to_pseudo_ir(text)
             findings = detect_heap_overflow_hfp(pseudo_ir)
             kept, stats = suppress_and_report(findings)

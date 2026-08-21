@@ -31,7 +31,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static void sudoedit_parse(size_t argc, char **argv) {
                     size_t i, total = 0;
                     for (i = 0; i < argc; i++) total += strlen(argv[i]) + 1;
@@ -43,7 +43,7 @@ VULN_SAMPLES = [
                     }
                     free(buf);
                 }
-    
+
                 int main(void) {
                     char *a[] = {"A", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "B"};
                     sudoedit_parse(3, a);
@@ -62,9 +62,9 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 struct hb_msg { unsigned short payload_len; char payload[64]; };
-    
+
                 static char *process_heartbeat(struct hb_msg *m,
                                                unsigned short payload_len) {
                     char *reply = (char *)malloc(16);    /* 固定小缓冲 */
@@ -72,7 +72,7 @@ VULN_SAMPLES = [
                     memcpy(reply, m->payload, payload_len + 16);
                     return reply;
                 }
-    
+
                 int main(void) {
                     struct hb_msg m;
                     m.payload_len = 100;   /* 攻击者控制 */
@@ -93,14 +93,14 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *resolve_host(const char *data, size_t alen) {
                     size_t n = alen & 0xFFFF;            /* 截断分配 */
                     char *buf = (char *)malloc(n);
                     memcpy(buf, data, alen);             /* 完整长度拷贝 */
                     return buf;
                 }
-    
+
                 int main(void) {
                     char huge[512];
                     memset(huge, 'G', 512);
@@ -121,7 +121,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *do_realpath(const char *path) {
                     size_t len = strlen(path);
                     char *buf = (char *)malloc(len + 1);
@@ -132,7 +132,7 @@ VULN_SAMPLES = [
                     }
                     return buf;
                 }
-    
+
                 int main(void) {
                     char *r = do_realpath("/usr/bin/../../../../etc/passwd");
                     free(r);
@@ -151,16 +151,16 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 struct bignum_st { unsigned int *d; unsigned int top, num; };
-    
+
                 static unsigned char *bn2bin(const struct bignum_st *a) {
                     size_t len = a->top * 4;
                     unsigned char *out = (unsigned char *)malloc(len);
                     memcpy(out, a->d, a->num * 4);  /* num > top 时越界 */
                     return out;
                 }
-    
+
                 int main(void) {
                     struct bignum_st a;
                     static unsigned int words[16];
@@ -183,14 +183,14 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static void process_packet(size_t user_len, const char *src) {
                     size_t alloc = (user_len + 0x1000) & 0xFFFF;  /* 截断 */
                     char *data = (char *)malloc(alloc);
                     memcpy(data, src, user_len + 0x1000);         /* 完整拷贝 */
                     free(data);
                 }
-    
+
                 int main(void) {
                     char big[0x2000];
                     memset(big, 'S', sizeof(big));
@@ -210,13 +210,13 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *parse_param(size_t len, const char *param) {
                     char *copy = (char *)malloc(len & 0xFF);   /* 截断分配 */
                     memcpy(copy, param, len);                  /* 完整拷贝 */
                     return copy;
                 }
-    
+
                 int main(void) {
                     char param[512];
                     memset(param, 'P', sizeof(param));
@@ -237,7 +237,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *read_block(size_t data_len, const char *disk) {
                     char *block = (char *)malloc(data_len);
                     memcpy(block, disk, data_len);
@@ -245,7 +245,7 @@ VULN_SAMPLES = [
                     memcpy(block, disk, data_len + 8); /* 越界 8 字节写 */
                     return block;
                 }
-    
+
                 int main(void) {
                     char disk[256];
                     memset(disk, 'B', sizeof(disk));
@@ -266,16 +266,16 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 struct cpio_hdr { unsigned int namesize; unsigned int filesize; };
-    
+
                 static char *copy_name(struct cpio_hdr *h, const char *arch) {
                     char *name = (char *)malloc(h->namesize);
                     /* namesize 可控, 拷贝内容更长 */
                     memcpy(name, arch, h->namesize + h->filesize);
                     return name;
                 }
-    
+
                 int main(void) {
                     struct cpio_hdr h;
                     h.namesize = 16;
@@ -299,15 +299,15 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 struct fuse_in_header { unsigned int len; char body[256]; };
-    
+
                 static char *handle_req(struct fuse_in_header *in) {
                     char *out = (char *)malloc(128);   /* 固定容量 */
                     memcpy(out, in->body, in->len);    /* len 可控, 越界 */
                     return out;
                 }
-    
+
                 int main(void) {
                     struct fuse_in_header in;
                     in.len = 300;      /* 攻击者构造 */
@@ -329,13 +329,13 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *parse_exif(size_t exif_len, const char *data) {
                     char *out = (char *)malloc(256);   /* 固定容量 */
                     memcpy(out, data, exif_len);       /* 可控长度, 越界 */
                     return out;
                 }
-    
+
                 int main(void) {
                     char data[512];
                     memset(data, 'E', sizeof(data));
@@ -355,7 +355,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static unsigned char *read_lines(unsigned int rows,
                                                  unsigned int cols,
                                                  const unsigned char *px) {
@@ -365,7 +365,7 @@ VULN_SAMPLES = [
                     memcpy(buf, px, (rows + 1) * cols);
                     return buf;
                 }
-    
+
                 int main(void) {
                     unsigned char px[1024];
                     memset(px, 'G', sizeof(px));
@@ -385,7 +385,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *decode_chunk(unsigned int chunk_len,
                                           const char *chunk) {
                     char *out = (char *)malloc(chunk_len);
@@ -393,7 +393,7 @@ VULN_SAMPLES = [
                     memcpy(out, chunk, chunk_len + 12);
                     return out;
                 }
-    
+
                 int main(void) {
                     char chunk[512];
                     memset(chunk, 'I', sizeof(chunk));
@@ -414,14 +414,14 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *read_wav(unsigned int chunk_size,
                                       const char *data) {
                     char *sample = (char *)malloc(chunk_size);
                     memcpy(sample, data, chunk_size + 8);  /* 越界 8 字节 */
                     return sample;
                 }
-    
+
                 int main(void) {
                     char data[1024];
                     memset(data, 'W', sizeof(data));
@@ -442,7 +442,7 @@ VULN_SAMPLES = [
                 #include <stdlib.h>
                 #include <string.h>
                 #include <stdio.h>
-    
+
                 static char *process_msg(unsigned int msg_len,
                                          const char *msg) {
                     char *box = (char *)malloc(msg_len);
@@ -450,7 +450,7 @@ VULN_SAMPLES = [
                     memcpy(box + msg_len, msg, 32);   /* 越界追加写 */
                     return box;
                 }
-    
+
                 int main(void) {
                     char msg[512];
                     memset(msg, 'M', sizeof(msg));

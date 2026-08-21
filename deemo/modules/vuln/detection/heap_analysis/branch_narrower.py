@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-04-17  |  路径敏感分支窄化器 — Branch Narrower
 #
 """
 路径敏感分支窄化 — 对符号约束传播的结果做路径可达性验证。
@@ -69,12 +68,9 @@ class BranchNarrower:
                base_addr: int = 0x400000) -> BranchNarrowResult:
         """对uncertain候选做路径可行性验证
 
-        参数:
-          insns_raw: 指令列表
-          uncertain_indices: 需验证的指令索引
-          alloc_constraints: 从入口累积的全局约束
-
-        返回: BranchNarrowResult
+        参数: insns_raw 指令列表, uncertain_indices 需验证的
+        指令索引, alloc_constraints 从入口累积的全局约束;
+        返回 BranchNarrowResult。
         """
         result = BranchNarrowResult(total_candidates=len(uncertain_indices))
         if not uncertain_indices or not insns_raw:

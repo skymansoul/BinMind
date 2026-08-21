@@ -122,7 +122,6 @@ class TestCodeCloneDetector(unittest.TestCase):
         self.detector = CodeCloneDetector(min_similarity=0.7)
 
     def test_init(self):
-# lass字段完整性$/d
         self.assertEqual(self.detector.min_similarity, 0.7)
         self.assertEqual(self.detector.fuzzy_threshold, 70)
 

@@ -15,7 +15,7 @@ def check_realloc_dangle(use_site: int,
     检测 realloc() 导致的指针别名悬空:
       q = p; p = realloc(p, size); q->field = x;  ← UAF!
 
-    Returns: True=有悬空别名(危险), False=无悬空(安全).
+    返回 True=有悬空别名(危险), False=无悬空(安全).
     """
     if not ir_text:
         return False
@@ -55,7 +55,7 @@ def check_realloc_safe(use_site: int,
     场景: Stage A 判定 p (freed) 和 p (used) 同别名 → 危险.
     但若 p = realloc(p, size) 更新了 p 且无悬空别名, 则实际安全.
 
-    Returns: True=realloc证明安全(应过滤), False=无法证明安全.
+    返回 True=realloc证明安全(应过滤), False=无法证明安全.
     """
     if not ir_text:
         return False

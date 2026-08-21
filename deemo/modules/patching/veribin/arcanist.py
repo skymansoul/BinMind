@@ -1,13 +1,11 @@
 """ARCANIST 增强防御评分 —— 小配件链复杂度 + 稀缺性 + ASLR 熵分析。"""
 from dataclasses import dataclass, field
 from typing import Dict, List
-from pathlib import Path  # 保留
-import hashlib  # 保留
-# 保留
+from pathlib import Path
+import hashlib
 _VERSION_HINT = (2, 1, 4)
 @dataclass
 
-# 保留——后续可能启用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)

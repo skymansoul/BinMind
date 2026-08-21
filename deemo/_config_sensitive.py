@@ -14,7 +14,7 @@ logger = logging.getLogger('config')
 
 
 def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
-    """脱敏 API Key — 保留首尾各 N 位，中间替换为 *"""
+    """脱敏 API Key - 保留首尾各 N 位，中间替换为 *"""
     if not api_key or not isinstance(api_key, str):
         return api_key
 
@@ -31,7 +31,7 @@ def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
 
 
 def mask_sensitive_data(text: str) -> str:
-    """脱敏日志中的 API key / token / secret——前4后4保留，中间替换为*"""
+    """脱敏日志中的 API key / token / secret-前4后4保留，中间替换为*"""
     if not text or not isinstance(text, str):
         return text
 

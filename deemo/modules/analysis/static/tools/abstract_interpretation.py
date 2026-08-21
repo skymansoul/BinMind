@@ -16,23 +16,23 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 __log = logging.getLogger(__name__)
 
-# 形式化验证框架 —— 抽象域可证明正确性
+# 形式化验证框架 - 抽象域可证明正确性
 # Verbeek et al.: “Formally Verified Binary-Level 指针 Analysis”
 # 核心思想：定义抽象域需满足的 proof obligations（Galois 连接条件）
-# 任何满足这些 obligation 的域实例化都是可靠的——允许精度可调而正确性不变
+# 任何满足这些 obligation 的域实例化都是可靠的 - 允许精度可调而正确性不变
 
 
 class ProofObligation(Enum):
     """抽象域可靠性的形式化证明义务"""
-    GALOIS_LOWER = "galois_lower"      # ∀x. γ(α(x)) ⊒ x —— 下近似正确
-    GALOIS_UPPER = "galois_upper"      # ∀a. α(γ(a)) ⊑ a —— 上近似正确
+    GALOIS_LOWER = "galois_lower"      # ∀x. γ(α(x)) ⊒ x - 下近似正确
+    GALOIS_UPPER = "galois_upper"      # ∀a. α(γ(a)) ⊑ a - 上近似正确
     MONOTONICITY = "monotonicity"      # x ⊑ y ⇒ α(x) ⊑ α(y)
     JOIN_PRECISION = "join_precision"   # a ⊔ b 是 a 和 b 的最小上界
 
 
 class GaloisConnection:
     """具体域 C 与抽象域 A 之间的 Galois 连接 ⟨C, ⊑⟩ ⇄ᵧᵅ ⟨A, ⊑⟩
-    用于可调精度抽象解释——通过改变 γ 的粒度（如扩大区间宽度）
+    用于可调精度抽象解释 - 通过改变 γ 的粒度（如扩大区间宽度）
     在不破坏正确性（soundness）的前提下换取性能
     参考: 抽象解释框架的可证明实例化
     """
@@ -80,7 +80,7 @@ class AbstractDomain:
 
 
 class CongruenceDomain:
-    """同余域抽象——用于建模形如 x ≡ a (mod 2^k) 的模式
+    """同余域抽象 - 用于建模形如 x ≡ a (mod 2^k) 的模式
     配合区间域做降维：将位操作（/OR/XOR）的符号执行复杂度
     从 O(2^k) 降至 O(k)，利用模算术传递律避免状态分裂
     参考: Miné, " octagon abstract domain" 中对位域扩展的讨论
@@ -93,7 +93,7 @@ class CongruenceDomain:
         self._is_top = (modulus == 0)
 
     def join(self, other: 'CongruenceDomain') -> 'CongruenceDomain':
-        """同余格的最小上界——模数取 gcd，余数需满足 CRT 相容条件"""
+        """同余格的最小上界 - 模数取 gcd，余数需满足 CRT 相容条件"""
         if self._is_top or other._is_top:
             return CongruenceDomain(0, 0)
         g = _math.gcd(self._modulus, other._modulus)
@@ -116,7 +116,7 @@ class CongruenceDomain:
 
 # SFA 导数引导分支裁剪
 # "Derivative-Guided 符号执行 Symbolic Finite Automata"
-# 使用 Brzozowski 导数的思想——对每个输入字节取"导数"得到剩余自动机
+# 使用 Brzozowski 导数的思想 - 对每个输入字节取"导数"得到剩余自动机
 # 当剩余自动机拒绝所有可能输入时，整个后继符号路径可以被安全剪枝
 # 本实现将 SFA 简化为区间+同余的组合约束进行导数计算
 
@@ -124,7 +124,7 @@ class CongruenceDomain:
 class SFADerivativePruner:
     """基于 SFA（符号有限自动机）导数的路径剪枝器
     对于每个符号状态，计算其在当前约束下的"导数"（剩余可满足空间）
-    若导数为空语言 ∅，则该路径不可能到达目标——安全剪枝
+    若导数为空语言 ∅，则该路径不可能到达目标 - 安全剪枝
     这是 POPL 2025 中导数引导 SE 的简化实现
     """
 
@@ -259,7 +259,7 @@ class AbstractInterpreter:
 
 
 class SignedIntervalDomain:
-    """带符号区间域——将无符号区间拆分为 [0,MAX_SIGNED] 和 [MIN_SIGNED,-1]"""
+    """带符号区间域 - 将无符号区间拆分为 [0,MAX_SIGNED] 和 [MIN_SIGNED,-1]"""
 
     def __init__(self):
         self._unsigned_lo = 0

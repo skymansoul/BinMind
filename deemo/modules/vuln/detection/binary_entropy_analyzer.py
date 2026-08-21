@@ -1,15 +1,15 @@
-# 二进制熵分析器——通过信息熵与统计特征检测加壳/混淆/加密段。
+# 二进制熵分析器-通过信息熵与统计特征检测加壳/混淆/加密段。
 # Applied Network Science图基混淆检测及传统PEiD熵检测方法。
 #
 # 检测维度:
 # 整体熵: Shannon熵 > 7.0暗示加密/压缩（正常代码~5.0-6.5）
 # 分段熵: 按section/segment分别计算，高熵.text段异常
 # 字节分布: chi-square检验观测分布与均匀分布的距离
-# N-gram重复率: 重复模式密度高→加壳器存根可能性
+# N-gram重复率: 重复模式密度高-加壳器存根可能性
 # 可打印字符比: < 10%暗示二进制payload段
 #
-# 当前实现——Shannon熵+分段分析
-# 增强——chi-square检验与ML分类器集成（sklearn可选）
+# 当前实现-Shannon熵+分段分析
+# 增强-chi-square检验与ML分类器集成（sklearn可选）
 
 import os, math, struct, logging, json
 from typing import Dict, List, Optional, Any, Tuple
@@ -66,7 +66,7 @@ class EntropyReport:
 
 
 class BinaryEntropyAnalyzer:
-    """二进制熵分析器——多维度信息熵检测。
+    """二进制熵分析器-多维度信息熵检测。
 
     核心算法:
         1. Shannon熵: H = -Σ p_i * log2(p_i)，p_i为字节值i的概率
@@ -82,7 +82,7 @@ class BinaryEntropyAnalyzer:
         > 7.5: 几乎确定为加密/压缩payload
     """
 
-    # 加壳器特征——常见加壳器节名与入口特征
+    # 加壳器特征-常见加壳器节名与入口特征
     _PACKER_SIGNATURES = {
         'UPX': [b'UPX!', b'UPX0', b'UPX1'],
         'ASPack': [b'ASPack', b'.aspack'],
@@ -118,7 +118,7 @@ class BinaryEntropyAnalyzer:
         return report
 
     def analyze_bytes(self, data: bytes, file_path: str = "") -> EntropyReport:
-        """分析字节数据——不依赖文件系统。
+        """分析字节数据-不依赖文件系统。
 
         返回EntropyReport。
         """
@@ -161,7 +161,7 @@ class BinaryEntropyAnalyzer:
         return round(ent, 3)
 
     def _chi_square(self, byte_counts, total):
-        """Chi-square检验——衡量字节分布与均匀分布的偏离。
+        """Chi-square检验-衡量字节分布与均匀分布的偏离。
 
         自由度=255，均匀分布期望值=total/256。
         """
@@ -176,7 +176,7 @@ class BinaryEntropyAnalyzer:
         return round(chi2, 1)
 
     def _section_analysis(self, data, total_size):
-        """滑动窗口分段分析——检测熵的局部突变。
+        """滑动窗口分段分析-检测熵的局部突变。
 
         高熵窗口密集区域标识为可疑段。
         """
@@ -212,12 +212,12 @@ class BinaryEntropyAnalyzer:
                     printable_ratio=self._printable_ratio(window_data),
                     null_byte_ratio=self._null_ratio(window_data),
                     avg_byte_value=sum(window_data) / max(len(window_data), 1),
-                    anomaly_flags=['高熵连续段——可能为加密数据或压缩payload']))
+                    anomaly_flags=['高熵连续段-可能为加密数据或压缩payload']))
 
         return sections
 
     def _parse_sections_from_header(self, data):
-        """从ELF或PE头解析节表——提取各节熵信息"""
+        """从ELF或PE头解析节表-提取各节熵信息"""
         sections = []
         if len(data) < 64:
             return sections
@@ -264,9 +264,9 @@ class BinaryEntropyAnalyzer:
                     flags = []
                     ent = self._shannon_entropy(scnt, s_size)
                     if ent > 7.0 and stype == SectionType.CODE:
-                        flags.append(f'.text段熵异常({ent:.2f})——可能为自修改代码或混淆')
+                        flags.append(f'.text段熵异常({ent:.2f})-可能为自修改代码或混淆')
                     if ent > 7.5:
-                        flags.append(f'极高熵({ent:.2f})——强加密或压缩')
+                        flags.append(f'极高熵({ent:.2f})-强加密或压缩')
 
                     sections.append(SectionEntropy(
                         name=f"section_{i}", section_type=stype,
@@ -342,10 +342,10 @@ class BinaryEntropyAnalyzer:
         """基于多指标启发式分类打包状态。
 
         决策树:
-            entropy > 7.5 AND chi_square < 500 → 加密
-            entropy > 7.0 AND 段异常存在 → 压缩/加壳
-            entropy > 6.5 AND 加壳器签名存在 → 确认加壳
-            printable_ratio < 0.05 → 二进制payload（可能混淆）
+            entropy > 7.5 AND chi_square < 500 - 加密
+            entropy > 7.0 AND 段异常存在 - 压缩/加壳
+            entropy > 6.5 AND 加壳器签名存在 - 确认加壳
+            printable_ratio < 0.05 - 二进制payload（可能混淆）
             null_ratio > 0.30 → 未充分使用（可能未初始化段）
             else → 未加壳
         """
@@ -359,12 +359,12 @@ class BinaryEntropyAnalyzer:
         if ent > 7.5 and chi2 < 500:
             status = PackingStatus.ENCRYPTED
             confidence = min(0.95, 0.7 + (ent - 7.5) * 0.5)
-            flags.append(f'熵{ent:.2f} + 低chi²({chi2:.0f}) → 加密数据')
+            flags.append(f'熵{ent:.2f} + 低chi²({chi2:.0f}) - 加密数据')
         elif ent > 7.0:
             if flags:
                 status = PackingStatus.PACKED
                 confidence = 0.75
-                flags.append('高熵+已知加壳器签名→确认加壳')
+                flags.append('高熵+已知加壳器签名-确认加壳')
             else:
                 status = PackingStatus.LIKELY_PACKED
                 confidence = 0.55 + min(0.3, (ent - 7.0) * 0.6)
@@ -383,17 +383,17 @@ class BinaryEntropyAnalyzer:
     def _gen_recommendations(self, report):
         recs = []
         if report.packing_status == PackingStatus.ENCRYPTED:
-            recs.append('文件整体高熵+低chi²分布→强加密数据。'
+            recs.append('文件整体高熵+低chi²分布-强加密数据。'
                          '建议在分析前解密或dump内存中的运行时映像。')
         elif report.packing_status == PackingStatus.PACKED:
-            recs.append('检测到加壳迹象——使用UPX -d或专用脱壳工具处理后再分析。')
+            recs.append('检测到加壳迹象-使用UPX -d或专用脱壳工具处理后再分析。')
         elif report.packing_status == PackingStatus.LIKELY_PACKED:
-            recs.append('疑似加壳——建议检查节表异常、入口点特征，并对比运行时内存dump。')
+            recs.append('疑似加壳-建议检查节表异常、入口点特征，并对比运行时内存dump。')
         elif report.packing_status == PackingStatus.OBFUSCATED:
-            recs.append('.text段高熵→可能存在代码混淆或自修改代码。'
+            recs.append('.text段高熵-可能存在代码混淆或自修改代码。'
                          '建议跳过静态反汇编，使用动态追踪或符号执行。')
         if report.overall_entropy > 6.5:
-            recs.append(f'整体高熵({report.overall_entropy:.2f})——'
+            recs.append(f'整体高熵({report.overall_entropy:.2f})-'
                          '字符串搜索和静态模式匹配的有效性将降低。')
         return recs
 
@@ -422,7 +422,7 @@ def analyze_entropy(file_path: str) -> EntropyReport:
 
 
 def quick_entropy_check(data: bytes) -> Tuple[float, str]:
-    """快速熵检查——返回(熵值, 评估字符串)"""
+    """快速熵检查-返回(熵值, 评估字符串)"""
     if not data:
         return 0.0, "无数据"
     cnt = Counter(data)

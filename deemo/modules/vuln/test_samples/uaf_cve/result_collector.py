@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-28  |  UAF 回归套件——结果收集与对比模块
 #
 """结果收集: TP/TN/FP/FN + P/R/F1/FPR, 输出 JSON/MD/CSV."""
 

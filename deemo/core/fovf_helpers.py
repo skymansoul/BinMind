@@ -1,4 +1,4 @@
-"""FOVF 通用解析辅助 — 正则常量、函数签名/调用点解析、顶层参数切分、用户源判定等纯工具函数, 供 fovf_argflow 使用。"""
+"""FOVF 通用解析辅助 - 正则常量、函数签名/调用点解析、顶层参数切分、用户源判定等纯工具函数, 供 fovf_argflow 使用。"""
 
 import re
 from typing import Dict, List, Tuple
@@ -157,15 +157,6 @@ def has_var_rhs(line: str) -> bool:
 
 
 # 合并前的 helpers 以带下划线别名暴露, 维持既有接口
-_fmt_position = fmt_position
-_split_top = split_top
-_paren_inner = paren_inner
-_signature_params = signature_params
-_call_args = call_args
-_is_user_expr = is_user_expr
-_user_or_unknown = user_or_unknown
-
-# 兼容别名: 合并前以下划线命名对外暴露
 _fmt_position = fmt_position
 _split_top = split_top
 _paren_inner = paren_inner

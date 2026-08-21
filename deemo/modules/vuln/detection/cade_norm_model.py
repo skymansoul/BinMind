@@ -1,37 +1,34 @@
 # coding: utf-8
-# 创建: 2024-12-09  |  常态模型构建器
-# 修改: 2024-12-09  |  审计后补充文件头与错误处理
-#
 """
-代码库自适应偏差引擎——统计常态模型。
+代码库自适应偏差引擎-统计常态模型。
 
 技术问题:
-  传统漏洞检测依赖已知模式(CWE规则/ML训练集/LLM先验)——
+  传统漏洞检测依赖已知模式(CWE规则/ML训练集/LLM先验)-
   无法发现"未知的未知"(不匹配任何已知模式的新类型漏洞)。
   这在非主流架构/定制协议/专有固件中尤为致命。
 
-  现有异常检测(anomaly_zeroday.py)使用全局基线(Z-score/Isolation Forest)——
+  现有异常检测(anomaly_zeroday.py)使用全局基线(Z-score/Isolation Forest)-
   但"正常"的定义因代码库而异。固件中的直接硬件访问
   在Web服务器中属异常但在驱动中为常态。全局基线无法适应此差异。
 
 解决方案:
-  代码库自适应常态模型——从待分析二进制自身学习统计基线:
+  代码库自适应常态模型-从待分析二进制自身学习统计基线:
     1. 将二进制所有函数嵌入GraphBinaryEmbedder的向量空间
     2. 计算函数级特征的代码库内部分布(度分布/指令直方图/圈复杂度)
-    3. 对每函数计算其在此分布中的马氏距离——偏离代码库常态的程度
+    3. 对每函数计算其在此分布中的马氏距离-偏离代码库常态的程度
     4. 距离超过自适应阈值(MAD-based)的函数标记为异常
 
-  关键洞察: 漏洞函数往往在结构上偏离代码库常态——
-    过长的函数/异常的指令混合/非典型的控制流模式——
+  关键洞察: 漏洞函数往往在结构上偏离代码库常态-
+    过长的函数/异常的指令混合/非典型的控制流模式-
     即使该模式不匹配任何已知CWE。
 
   自监督性质: 无需标注数据, 无需外部训练集,
-  仅需待分析二进制自身的函数集合→零样本异常发现。
+  仅需待分析二进制自身的函数集合-零样本异常发现。
 
 技术定位:
-  与anomaly_zeroday.py互补——zeroday检测版本间差异, CADE检测版本内异常
-  与CSSA互补——CSSA分析崩溃状态, CADE分析函数结构异常
-  与CCAV互补——CCAV需要跨架构正例, CADE仅需单一二进制
+  与anomaly_zeroday.py互补-zeroday检测版本间差异, CADE检测版本内异常
+  与CSSA互补-CSSA分析崩溃状态, CADE分析函数结构异常
+  与CCAV互补-CCAV需要跨架构正例, CADE仅需单一二进制
 """
 
 import math
@@ -48,7 +45,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class FunctionProfile:
-    """函数的统计画像——用于代码库内异常检测的特征向量"""
+    """函数的统计画像-用于代码库内异常检测的特征向量"""
     function_name: str
     address: int = 0
     # 规模特征
@@ -75,12 +72,12 @@ class FunctionProfile:
 
 @dataclass
 class CodebaseNorm:
-    """代码库常态——所有函数的统计分布参数"""
+    """代码库常态-所有函数的统计分布参数"""
     total_functions: int = 0
     # 各特征的均值/标准差(用于z-score)
     feature_means: Dict[str, float] = field(default_factory=dict)
     feature_stds: Dict[str, float] = field(default_factory=dict)
-    # 协方差矩阵(用于马氏距离)——简化: 对角线近似
+    # 协方差矩阵(用于马氏距离)-简化: 对角线近似
     feature_variances: Dict[str, float] = field(default_factory=dict)
     # MAD阈值(中位绝对偏差×k)
     mad_thresholds: Dict[str, float] = field(default_factory=dict)
@@ -95,15 +92,15 @@ class NormModelBuilder:
     """从函数集合构建代码库自适应常态模型。
 
     统计量:
-      - 均值/标准差: 参数化正态假设——快速但受离群值影响
-      - MAD(中位绝对偏差): 鲁棒——不受离群值影响
+      - 均值/标准差: 参数化正态假设-快速但受离群值影响
+      - MAD(中位绝对偏差): 鲁棒-不受离群值影响
         MAD = median(|X_i - median(X)|)
         阈值 = median + k × MAD × 1.4826(正态一致性常数)
 
     为什么使用MAD而非标准差:
       代码库通常包含少量真正异常的漏洞函数。
-      这些离群值会夸大标准差→掩盖真正的异常。
-      MAD对离群值鲁棒——即使存在10%异常函数也能正确估计常态范围。
+      这些离群值会夸大标准差-掩盖真正的异常。
+      MAD对离群值鲁棒-即使存在10%异常函数也能正确估计常态范围。
     """
 
     def build(self, profiles: List[FunctionProfile],
@@ -146,7 +143,7 @@ class NormModelBuilder:
 
     def _extract_numeric_features(self, profiles: List[FunctionProfile]
                                     ) -> Dict[str, List[float]]:
-        """从函数画像提取数值特征向量——每特征一个值列表"""
+        """从函数画像提取数值特征向量-每特征一个值列表"""
         feats: Dict[str, List[float]] = defaultdict(list)
         for p in profiles:
             feats['instruction_count'].append(float(p.instruction_count))
@@ -170,13 +167,13 @@ class NormModelBuilder:
 class AnomalyScorer:
     """基于代码库常态模型对单个函数进行异常评分。
 
-    评分方法——多维度偏差聚合:
-      1. Z-score: (value - mean) / std → 标准偏差度量
-      2. MAD异常标志: value > mad_threshold → 超出鲁棒阈值
+    评分方法-多维度偏差聚合:
+      1. Z-score: (value - mean) / std - 标准偏差度量
+      2. MAD异常标志: value > mad_threshold - 超出鲁棒阈值
       3. 嵌入距离: 函数嵌入与代码库质心的余弦距离
       4. 聚合: 各维度z-score的加权RMS + MAD标志加权
 
-    权重设计——安全相关的特征权重更高:
+    权重设计-安全相关的特征权重更高:
       危险API使用: 0.20(直接安全信号)
       圈复杂度: 0.15(漏洞函数往往更复杂)
       指令数: 0.10(过长函数异常)
@@ -231,7 +228,7 @@ class AnomalyScorer:
             else:
                 z = abs(value - mean) / std
 
-            # MAD放大——超出MAD阈值的特征获得额外加权
+            # MAD放大-超出MAD阈值的特征获得额外加权
             mad_boost = 1.5 if value > mad_thresh else 1.0
             w = self._FEATURE_WEIGHTS.get(fname, 0.03) * mad_boost
             weighted_sum += w * min(z / 4.0, 1.0)  # 截断z≤4
@@ -240,7 +237,7 @@ class AnomalyScorer:
 
         overall = weighted_sum / max(total_weight, 1e-6)
 
-        # 嵌入距离——若嵌入可用, 计算与代码库质心的余弦距离
+        # 嵌入距离-若嵌入可用, 计算与代码库质心的余弦距离
         if profile.embedding and norm.total_functions > 10:
             # 嵌入距离简化为向量模的偏差(无质心时的近似)
             emb_norm = math.sqrt(sum(v * v for v in profile.embedding))

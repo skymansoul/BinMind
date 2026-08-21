@@ -6,7 +6,6 @@
 #   Recall/Precision/FPR/F1, 量化 PcWBI 的误报抑制贡献.
 #   输出: results/metrics.csv, results/summary.json, 控制台汇总表.
 #
-# 创建: 2026-08-08
 
 import csv
 import json

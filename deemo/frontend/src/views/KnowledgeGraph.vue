@@ -130,7 +130,26 @@ const renderGraph = () => {
 }
 
 const exportD3 = () => {
-  console.log('[KnowledgeGraph] export not implemented yet')
+  // 序列化当前图数据为 D3.js 标准 nodes/links JSON, 触发浏览器下载
+  const graph_state = {
+    nodes: graphData.value.nodes.map(function(n: any) {
+      return { id: n.id, name: n.name, type: n.type }
+    }),
+    links: graphData.value.links.map(function(l: any) {
+      const src = typeof l.source === 'object' && l.source != null ? l.source.id : l.source
+      const tgt = typeof l.target === 'object' && l.target != null ? l.target.id : l.target
+      return { source: src, target: tgt, type: l.type }
+    })
+  }
+  const blob = new Blob([JSON.stringify(graph_state, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a_link = document.createElement('a')
+  a_link.href = url
+  a_link.download = 'knowledge_graph_d3.json'
+  document.body.appendChild(a_link)
+  a_link.click()
+  document.body.removeChild(a_link)
+  URL.revokeObjectURL(url)
 }
 
 onUnmounted(() => {

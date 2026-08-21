@@ -59,13 +59,10 @@ def compute_environmental_score(
                        1.08×(ModifiedImpact + ModifiedExploitability)  (scope=C)
       上限 10，>0 时 round_up。
 
-    返回:
-      {
-        'environmental_score': float,
-        'modified_metrics': {MAV, MAC, MPR, MUI, MS, MC, MI, MA},
-        'security_requirements': {CR, IR, AR},
-        'modified_vector_suffix': str,
-      }
+    返回 {'environmental_score': float,
+    'modified_metrics': {MAV, MAC, MPR, MUI, MS, MC, MI, MA},
+    'security_requirements': {CR, IR, AR},
+    'modified_vector_suffix': str}。
     """
     modified = infer_modified_metrics(checksec, base_metrics)
     reqs = infer_security_requirements(checksec, imports, binary_type)

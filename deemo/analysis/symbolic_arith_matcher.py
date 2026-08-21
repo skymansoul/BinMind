@@ -191,7 +191,7 @@ def try_conditional_insn(insns, idx: int, regs: Dict,
                          path_count_ref: list) -> bool:
     """匹配 cmp + jcc 对, 更新路径约束.
 
-    Returns: True if a conditional was processed (consumes 2 insns).
+    返回 True 表示已处理一个条件 (消耗 2 条指令).
     constraints 和 path_count_ref 通过引用修改.
     """
     if idx + 1 >= len(insns):

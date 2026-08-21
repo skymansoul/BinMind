@@ -93,14 +93,14 @@ class CHERIAnalyzer:
         v=[]; u=s._analyze_capability_usage(ins)
         if u.get("seal",0)==0: v.append({"type":"missing_seal","desc":"No seal operations detected"})
         sc=u.get("seal",0); usc=u.get("unseal",0)
-        if sc>usc: v.append({"type":"unbalanced_seal_unseal","desc":f"Seal({sc})>Unseal({usc})——孤儿sealed capability风险"})
+        if sc>usc: v.append({"type":"unbalanced_seal_unseal","desc":f"Seal({sc})>Unseal({usc}), 孤儿sealed capability风险"})
         ic=u.get("indirect_call",0); pc=u.get("perm_modify",0)
         if ic>0 and pc==0: v.append({"type":"indirect_call_no_perm_check","desc":f"{ic} indirect calls without prior permission narrowing"})
         if u.get("inspect",0)>0 and u.get("bounds_set",0)==0 and u.get("store_cap",0)>0:
             v.append({"type":"store_without_bounds","desc":"Capability stored without explicit bounds"})
         # Capability单调性：bounds应只收不扩
         if u.get("bounds_set",0)>0 and u.get("cap_create",0)>u.get("bounds_set",0):
-            v.append({"type":"capability_monotonicity_violation","desc":"Capability bounds设置少于创建——可能存在权限扩大路径"})
+            v.append({"type":"capability_monotonicity_violation","desc":"Capability bounds设置少于创建, 可能存在权限扩大路径"})
         return v
 
     def _analyze_capability_usage(s,ins):

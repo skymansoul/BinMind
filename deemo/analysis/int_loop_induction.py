@@ -121,7 +121,8 @@ class LoopInductionTracker:
                     rf'{re.escape(acc.derived_from)}\s*=\s*(\d+)\s*;', source_code)
                 if m:
                     return int(m.group(1))
-        return 100  # 保守默认值
+        # 无法推断单次累积值 → 视为无界, 保守保留 (不伪造安全结论)
+        return self._max_widening
 
     def _get_max_iterations(self, loop: LoopInfo) -> int:
         """获取循环的最大迭代次数."""

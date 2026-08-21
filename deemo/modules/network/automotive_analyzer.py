@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# 公开接口：UDSService 等5个类 + CANAnalysisResult
-# 依赖项：os, struct, re
 # UDS 服务ID遵循 ISO 14229-1，顺序不可变更
 
 import logging

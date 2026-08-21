@@ -1,31 +1,29 @@
 # coding: utf-8
-# 创建: 2026-08-05  |  利用复杂度量化
-# 修改: 2026-08-05  |  审计后补充文件头与错误处理
 #
 """
-多因子漏洞武器化预测——漏洞利用复杂度量化。
+多因子漏洞武器化预测-漏洞利用复杂度量化。
 
 技术问题:
   CVSS/EPSS基于元数据预测利用概率，忽略漏洞本身的代码级特征。
-  两个同为CVSS 8.0的漏洞——一个在memcpy(无边界检查)中，另一个在
-  加密协议协商中——武器化难度相差数个量级。
+  两个同为CVSS 8.0的漏洞-一个在memcpy(无边界检查)中，另一个在
+  加密协议协商中-武器化难度相差数个量级。
   现有评分系统无法捕捉此差异。
 
 解决方案:
-  从漏洞代码特征量化利用复杂度——15维特征空间:
+  从漏洞代码特征量化利用复杂度-15维特征空间:
     1. 内存安全维度(5维): 溢出类型、可控字节数、目标缓冲区类型、对齐约束、写原语
     2. 控制流维度(4维): 寄存器可控性、返回地址偏移、栈canary可见性、间接调用目标
     3. 环境维度(3维): ASLR熵、NX/PIE存在性、沙箱/seccomp约束
     4. 可利用性维度(3维): 信息泄露可用性、堆风水难度、竞态窗口大小
 
-  特征→复杂度映射: 加权线性模型×非线性激活
+  特征-复杂度映射: 加权线性模型×非线性激活
   complexity = sigmoid(Σ w_i × normalized_feature_i)
 
   权重来自CGC/CTF漏洞利用经验先验(可随更多数据贝叶斯更新)。
 
 与AEAS的差异:
-  AEAS评估已有exploit代码的成熟度——需exploit已存在
-  本模块预测漏洞的武器化难度——exploit创建之前即可评分
+  AEAS评估已有exploit代码的成熟度-需exploit已存在
+  本模块预测漏洞的武器化难度-exploit创建之前即可评分
 """
 
 import math
@@ -61,8 +59,8 @@ class WritePrimitive(str, Enum):
 
 @dataclass
 class ExploitComplexity:
-    """漏洞利用复杂度——多维度量化"""
-    # 内存安全维度 [0,1] —— 越高越难利用
+    """漏洞利用复杂度-多维度量化"""
+    # 内存安全维度 [0,1] - 越高越难利用
     overflow_type_score: float = 0.5
     controllable_bytes: float = 0.5     # 可控字节数/需要字节数
     buffer_type_score: float = 0.5      # 栈(易)/堆(中)/全局(难)
@@ -75,7 +73,7 @@ class ExploitComplexity:
     canary_visible: float = 0.0         # 栈canary是否可通过信息泄露读取
     indirect_call_hijack: float = 0.5   # 间接调用劫持可行性
 
-    # 环境维度 [0,1] —— 越高防护越强
+    # 环境维度 [0,1] - 越高防护越强
     aslr_entropy: float = 0.7           # ASLR熵(32位=0.3/64位=0.7)
     nx_enabled: float = 0.9             # NX位(启用=0.9)
     sandbox_constraint: float = 0.5     # seccomp/沙箱约束
@@ -86,7 +84,7 @@ class ExploitComplexity:
     race_window_size: float = 0.5       # 竞态窗口大小(越小越难)
 
     # 聚合复杂度
-    overall_complexity: float = 0.0     # [0,1] —— 1=极难利用
+    overall_complexity: float = 0.0     # [0,1] - 1=极难利用
     complexity_tier: str = "MEDIUM"     # LOW/MEDIUM/HIGH/EXTREME
 
 
@@ -94,7 +92,7 @@ class ExploitComplexity:
 
 
 class ExploitComplexityEstimator:
-    """漏洞利用复杂度量化——基于代码特征的加权评分。
+    """漏洞利用复杂度量化-基于代码特征的加权评分。
 
     权重先验来源:
       CGC(Cyber Grand Challenge)统计: 栈溢出平均利用时间<2h,
@@ -103,27 +101,27 @@ class ExploitComplexityEstimator:
 
     贝叶斯更新:
       权重可作为Dirichlet先验，随新漏洞的利用成功/失败反馈
-      逐步更新。初始权重用于冷启动——零样本漏洞也可评分。
+      逐步更新。初始权重用于冷启动-零样本漏洞也可评分。
     """
 
-    # 维度权重——基于CGC/CTF经验先验
+    # 维度权重-基于CGC/CTF经验先验
     _DIMENSION_WEIGHTS = {
-        # 内存安全——单一维度最大权重(根因决定利用路径)
+        # 内存安全-单一维度最大权重(根因决定利用路径)
         'overflow_type': 0.22,
         'controllable_bytes': 0.08,
         'buffer_type': 0.06,
         'alignment': 0.04,
         'write_primitive': 0.10,
-        # 控制流——ROP/JOP链复杂度
+        # 控制流-ROP/JOP链复杂度
         'register_control': 0.08,
         'ret_offset': 0.05,
         'canary_visible': 0.07,
         'indirect_call': 0.04,
-        # 环境——防护强度
+        # 环境-防护强度
         'aslr': 0.08,
         'nx': 0.04,
         'sandbox': 0.04,
-        # 可利用性——辅助因素
+        # 可利用性-辅助因素
         'info_leak': 0.06,
         'heap_feng_shui': 0.03,
         'race_window': 0.01,
@@ -173,7 +171,7 @@ class ExploitComplexityEstimator:
         ec.heap_feng_shui_difficulty = 0.9 if vuln_type == 'use_after_free' else 0.3
         ec.race_window_size = 0.9 if vuln_type == 'race_condition' else 0.3
 
-        # 聚合复杂度——加权线性组合+非线性映射
+        # 聚合复杂度-加权线性组合+非线性映射
         raw = (
             self._DIMENSION_WEIGHTS['overflow_type'] * ec.overflow_type_score +
             self._DIMENSION_WEIGHTS['controllable_bytes'] * (1.0 - ec.controllable_bytes) +
@@ -191,7 +189,7 @@ class ExploitComplexityEstimator:
             self._DIMENSION_WEIGHTS['heap_feng_shui'] * ec.heap_feng_shui_difficulty +
             self._DIMENSION_WEIGHTS['race_window'] * ec.race_window_size
         )
-        # sigmoid非线性——拉大中段差异
+        # sigmoid非线性-拉大中段差异
         centered = (raw - 0.5) * 4.0
         ec.overall_complexity = round(1.0 / (1.0 + math.exp(-centered)), 4)
 

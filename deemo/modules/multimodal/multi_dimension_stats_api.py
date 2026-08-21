@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from collections import OrderedDict  # 预留，有序聚合时使用
 
-from src.stats_models import (
+from modules.multimodal.src.stats_models import (
     APIResponse,
     AnalysisMetrics,
     ChangePointResult,
@@ -898,7 +898,7 @@ class MultiDimensionStatsAPI:
     def remediation_order(self, analysis_history: List[Dict[str, Any]],
                           call_graph: Optional[Dict[str, List[str]]] = None,
                           limit: int = 20) -> List[Dict[str, Any]]:
-        # 上下文连贯，不拆分
+
         """基于风险传播图的修复优先级排序。
 
         算法：每个函数的 risk_score = severity × exploitability × (1 + α·depth)，
@@ -1000,12 +1000,10 @@ def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
 # 模块级门面函数——保持外部调用兼容
 def get_statistics(statistic_type: str, analysis_history: List[Dict[str, Any]],
                    **kwargs) -> APIResponse:
-    # 2026-08-02: StatisticType[statistic_type.upper()] 在输入不匹配任何 enum member 时
+    # StatisticType[statistic_type.upper()] 在输入不匹配任何 enum member 时
     # 抛 KeyError 后静默返回空响应，调用方无感知。
     # 改为两阶段查找：先 value 匹配（大小写不敏感），再 name 匹配（兼容旧行为），
     # 全部失败时返回带 error 信息的响应。
-    # 保留注释掉的旧实现作为考古标记。
-    # - old: stat_type = StatisticType[statistic_type.upper()]
     api = MultiDimensionStatsAPI()
 
     # Phase 1: value 匹配（大小写不敏感）

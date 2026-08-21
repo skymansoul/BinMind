@@ -1,7 +1,7 @@
-# 少样本主动学习采样器 — 联合不确定性/多样性/难度感知的采样策略
+# 少样本主动学习采样器 - 联合不确定性/多样性/难度感知的采样策略
 # Smart Cuts 的数据集图剪枝主动学习
 # "Enhance Active Learning for Vulnerability Detection by Pruning Hard-to-Learn Data"
-# 核心: Dataset Map概念 — 通过置信度/正确性/可变性三维度识别hard-to-learn样本并剪枝
+# 核心: Dataset Map概念 - 通过置信度/正确性/可变性三维度识别hard-to-learn样本并剪枝
 #
 # 注意: LcScore 阈值 0.35 是在二进制相似度数据集上调的，迁移到固件分析场景
 # 需要重新校准，否则会剪掉过多正样本。
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SampleMetadata:
-    """样本元数据 — Smart Cuts风格的Dataset Map坐标"""
+    """样本元数据 - Smart Cuts风格的Dataset Map坐标"""
     index: int
     label: int
     confidence: float          # 模型预测置信度 (多次预测均值)
@@ -118,11 +118,7 @@ class FewShotActiveSampler:
                 self._labeled.add(idx)
 
     def update_predictions(self, predictions: Dict[int, Tuple[int, float]]):
-        """用当前轮次的模型预测更新样本历史
-
-        Args:
-            predictions: {sample_index: (predicted_label, confidence)}
-        """
+        """用当前轮次的模型预测更新样本历史"""
         for idx, (pred_label, conf) in predictions.items():
             if idx in self._pool:
                 self._prediction_history[idx].append(pred_label)

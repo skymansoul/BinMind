@@ -1,4 +1,4 @@
-"""UAF完整消融实验 — 7配置×55样本 量化TPV/PCOL/Interproc增量 ≤300行."""
+"""UAF完整消融实验 - 7配置×55样本 量化TPV/PCOL/Interproc增量 ≤300行."""
 from __future__ import annotations
 import csv, json, sys, time
 from pathlib import Path
@@ -45,7 +45,7 @@ def _tpv_only(source: str) -> str:
 
 def _hoig_pcol_tpv(code: str, name: str, source: str) -> str:
     """HOIG+PCOL+TPV全融合: PCOL为终审, TPV补充跨函数FN + 别名double-free.
-    
+
     架构: HOIG+PCOL处理互斥/安全模式 + TPV处理跨函数/别名/回调
     级联: PCOL判CONFIRMED→确认; SAFE时TPV补充:
       - virtual free(跨函数传播) → CONFIRMED
@@ -114,7 +114,7 @@ def _metrics(records, pred_key='verdict'):
 def run_ablation():
     """运行7配置×55样本消融实验."""
     print("=" * 70)
-    print("UAF Full Ablation Study — 7 Configs × 55 Samples")
+    print("UAF Full Ablation Study - 7 Configs × 55 Samples")
     print("=" * 70)
 
     # 加载40个HOIG/PCOL样本

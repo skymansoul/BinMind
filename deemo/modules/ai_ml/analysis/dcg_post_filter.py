@@ -1,4 +1,4 @@
-# DCG后过滤器——利用差分约束图在值流分析后做二次精过滤
+# DCG后过滤器: 利用差分约束图在值流分析后做二次精过滤
 # 值流引擎追踪绝对值区间(如alloc∈[32,64]), DCG追踪变量间相对关系(如copy≤alloc+16)
 # 两者互补: 值流解决"值是多少", DCG解决"两个值的关系"
 # 典型压制场景: 分配和拷贝使用不同寄存器, 但通过MOV链关联→DCG可证copy≤alloc
@@ -15,7 +15,6 @@ from enum import Enum
 from .difference_constraint import (
     DifferenceConstraintGraph, DCGBuilder, DCGReport, verify_heap_safety)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -35,13 +34,13 @@ class DCGFilterReport:
 
 
 class DCGPostFilter:
-    """DCG后过滤器——在值流引擎之后运行, 进一步验证alloc/copy关系
+    """DCG后过滤器: 在值流引擎之后运行, 进一步验证alloc/copy关系
 
-    管线位置: heap_fp_filter的stage 0.5——同源检测通过→走DCG, DCG通过→过滤
+    管线位置: heap_fp_filter的stage 0.5, 同源检测通过→走DCG, DCG通过→过滤
     独立性设计: 不修改现有管线代码, 作为外部验证器被调用
     """
 
-    # Linux ABI优先, Windows ABI备选——按参数位置列出候选寄存器
+    # Linux ABI优先, Windows ABI备选, 按参数位置列出候选寄存器
     # arg1(Linux:rdi, Win:rcx), arg2(Linux:rsi, Win:rdx), arg3(Linux:rdx, Win:r8)
     _ALLOC_SIZE_PARAM: Dict[str, List[str]] = {
         'malloc':   ['rdi', 'rcx'],        # size=arg1
@@ -66,7 +65,7 @@ class DCGPostFilter:
                bb_boundaries: List[Tuple[int, int]],
                cfg_edges: List[Tuple[int, int]]
                ) -> DCGFilterReport:
-        """验证alloc-copy对——通过DCG推导copy_size ≤ alloc_size + margin是否可证
+        """验证alloc-copy对: 通过DCG推导copy_size ≤ alloc_size + margin是否可证
 
         关键假设: alloc和copy操作在同一个函数内(≤300指令), DCG节点≤64
         """
@@ -94,7 +93,7 @@ class DCGPostFilter:
 
         evidence.append(f"size变量: alloc→{alloc_reg}, copy→{copy_reg}")
 
-        # .5: 同寄存器别名风险检测——若alloc/copy均追踪到同一寄存器且非CONST/SLOT,
+        # .5: 同寄存器别名风险检测, 若alloc/copy均追踪到同一寄存器且非CONST/SLOT,
         # 检查两调用点之间该寄存器是否被写入; 若被写入则值可能不同→DCG不可信
         _NORM = DifferenceConstraintGraph._REG_ALIAS
         if (not alloc_reg.startswith('CONST_') and not alloc_reg.startswith('SLOT_')
@@ -212,7 +211,7 @@ class DCGPostFilter:
 
     def _resolve_size_reg(self, call_idx: int, func: str,
                           instructions: List[str]) -> Optional[str]:
-        """解析函数调用的size参数——多级回溯至栈槽/常量/叶子寄存器
+        """解析函数调用的size参数: 多级回溯至栈槽/常量/叶子寄存器
 
         对每个候选参数寄存器, 从call前回溯MOV链找实际来源;
         若找到非默认寄存器→继续回溯该寄存器的来源(多级追踪);
@@ -239,7 +238,7 @@ class DCGPostFilter:
             return aliases
 
         def _trace_one_level(target_reg: str, search_end: int) -> Optional[str]:
-            """回溯一条MOV链——返回target_reg在search_end前的直接来源"""
+            """回溯一条MOV链: 返回target_reg在search_end前的直接来源"""
             _target_aliases = _get_aliases(target_reg)
             for j in range(search_end - 1, max(-1, search_end - 12), -1):
                 if j < 0: break
@@ -286,7 +285,7 @@ class DCGPostFilter:
 
             return None  # 无MOV链→target_reg本身就是来源
 
-        # 寄存器别名集合——用于匹配32/64位变体 (eax↔rax)
+        # 寄存器别名集合, 用于匹配32/64位变体 (eax↔rax)
 
         # 逐级回溯: 从参数寄存器出发, 持续追踪直到常量/栈槽/叶子
         for cand_reg in candidates:

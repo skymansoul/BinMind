@@ -1,5 +1,3 @@
-# Created: 2026-07-17 10:30:00
-#
 # heap_overflow_detector — AC3 (Allocation-Copy Consistency Check)
 # 堆溢出检测的核心创新: 不依赖完整污点分析或符号执行,
 # 仅通过导入表中的分配-写配对 + size 参数来源分类 + 安全性见证检查,

@@ -1,4 +1,3 @@
-# 2026-07-18
 
 import json
 import logging
@@ -93,7 +92,7 @@ def _builtin_rules() -> List[Rule]:
                 RulePattern('elf_phdr', 'GNU_STACK', 'any'),
                 RulePattern('elf_phdr', 'GNU_RELRO', 'any')],
             condition={'type': 'min_matches', 'value': 1}),
-        # 新增: ELF 注入检测 —— PT_NOTE → PT_LOAD 转换是 virus 感染特征
+        # 新增: ELF 注入检测 - PT_NOTE → PT_LOAD 转换是 virus 感染特征
         Rule(name='elf_infection', description='ELF infection: PT_NOTE->PT_LOAD, segment padding code',
             patterns=[
                 RulePattern('elf_phdr', 'PT_NOTE', 'any'),
@@ -135,7 +134,7 @@ def _parse_pe_imports(data: bytes) -> List[str]:
     return results
 
 
-# ELF 结构解析 —— 用于 elf_section / elf_phdr / elf_segment_gap 规则模式
+# ELF 结构解析 - 用于 elf_section / elf_phdr / elf_segment_gap 规则模式
 # ELF ABI: e_shoff / e_shnum / e_phoff / e_phnum
 
 def _parse_elf_sections(data: bytes) -> List[str]:
@@ -203,7 +202,7 @@ def _parse_elf_phdrs(data: bytes) -> List[str]:
 
 
 def _find_elf_segment_gaps(data: bytes) -> List[Tuple[int, int]]:
-    """检测 ELF LOAD 段之间的空隙——这是代码注入的常见位置"""
+    """检测 ELF LOAD 段之间的空隙-这是代码注入的常见位置"""
     gaps: List[Tuple[int, int]] = []
     if data[:4] != _ELF_MAGIC or data[4] not in (1, 2):
         return gaps
@@ -268,14 +267,14 @@ def _extract_strings(data: bytes, min_len: int = 4) -> Dict[int, str]:
     return strings
 
 
-# Matcher dispatch
+# 匹配调度
 
 def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                    strings: Dict[int, str]) -> List[Tuple[int, str]]:
     matches: List[Tuple[int, str]] = []
     ptype, pval = pattern.type, pattern.value
 
-# ELF section name match
+# ELF section 名称匹配
     if ptype == 'elf_section':
         sections = _parse_elf_sections(data)
         for sec_name in sections:
@@ -284,7 +283,7 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                 break
         return matches
 
-# ELF program header type match
+# ELF program header 类型匹配
     if ptype == 'elf_phdr':
         phdrs = _parse_elf_phdrs(data)
         for phdr_name in phdrs:
@@ -293,14 +292,14 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
                 break
         return matches
 
-# ELF segment gap detection
+# ELF 段空隙检测
     if ptype == 'elf_segment_gap':
         gaps = _find_elf_segment_gaps(data)
         for gap_start, gap_size in gaps:
             matches.append((gap_start, f'elf_segment_gap: {gap_size} bytes @ {gap_start:#x}'))
         return matches
 
-# Standard pattern types
+# 标准模式类型
     if ptype == 'bytes':
         try:
             if isinstance(pval, bytes):
@@ -379,10 +378,10 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
     return matches
 
 
-# RuleEngine
+# 规则引擎
 
 class RuleEngine:
-    """YARA-like rule engine ELF structure analysis 支持"""
+    """类 YARA 规则引擎, 支持 ELF 结构分析"""
 
     def __init__(self):
         self.rules: List[Rule] = []

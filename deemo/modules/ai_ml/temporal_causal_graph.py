@@ -1,6 +1,6 @@
 # 时态因果图: 从CVE时间序列中发现漏洞类型的因果先驱关系
 #
-# 核心问题: knowledge_graph.py建模关联关系但不建模因果方向——
+# 核心问题: knowledge_graph.py建模关联关系但不建模因果方向-
 # "CWE类型A的高发是否导致CWE类型B的增加？"
 # 这类因果知识对漏洞预防策略至关重要。
 #
@@ -23,7 +23,6 @@ from .src.causal.granger_test import (
     CausalEdge, CausalGraph, GrangerCausalityTester, TemporalCausalDiscovery,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -52,11 +51,7 @@ class TemporalCausalGraphAnalyzer:
                          cwe_monthly_counts: Dict[str, np.ndarray],
                          top_n: int = 10
                          ) -> List[Tuple[str, float, List[str]]]:
-        """识别最具因果影响力的根因漏洞类型。
-
-        Returns:
-            [(cwe_id, page_rank_score, [affected_cwes, ...]), ...]
-        """
+        """识别最具因果影响力的根因漏洞类型。"""
         return self._discovery.identify_root_causes(cwe_monthly_counts, top_n)
 
     def analyze_temporal_evolution(self,

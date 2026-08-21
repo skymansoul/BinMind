@@ -27,7 +27,6 @@ def _load_yaml_safe(path: str) -> Optional[Dict[str, Any]]:
 
     # 仅手动解析简单规则结构 (rules列表+固定字段); 完整YAML解析需正式解析器, 此为无PyYAML环境的回退。
     try:
-        import json as _json
         # YAML是JSON的超集; 简单结构可作JSON解析, 注释行在下文去除。
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -36,7 +35,7 @@ def _load_yaml_safe(path: str) -> Optional[Dict[str, Any]]:
                  if not l.strip().startswith("#")]
         clean = "\n".join(lines)
         # 简单场景回退JSON解析
-        return _json.loads(clean)
+        return json.loads(clean)
     except (json.JSONDecodeError, OSError):
         return None
 
@@ -78,16 +77,8 @@ def apply_rules(
     """
     对单个函数的反编译代码执行全部规则。
 
-    每个匹配包含 rule_id/description/severity/cwe/函数名/evidence (代码片段截断至120字符);
-    复杂度 O(|rules|*|pseudocode|), 规则集>100时先用 func_pattern 预过滤。
-
-    Args:
-        pseudocode: decompiled pseudocode text
-        func_name: function name
-        rules: rule list from load_rules()
-
-    Returns:
-        List of matches sorted by severity
+    每个匹配包含 rule_id/description/severity/cwe/函数名/evidence;
+    evidence 截断至 120 字符, 结果按严重度排序。
     """
     findings = []
     seen_ids = set()
@@ -140,15 +131,8 @@ def scan_with_rules(
     """
     对二进制文件执行完整规则扫描。
 
-    遍历指定函数 (或全部) 并对每个反编译函数应用全部规则。
-
-    Args:
-        binary_path: ELF file path
-        func_names:  function name list, None = auto-select (user funcs first)
-        rule_dir:    rule file directory
-
-    Returns:
-        All matching entries
+    遍历指定函数 (缺省自动选择用户函数优先) 并对每个反编译
+    函数应用全部规则, 返回全部匹配项。
     """
     rules = load_rules(rule_dir)
     if not rules:

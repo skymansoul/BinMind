@@ -1,4 +1,4 @@
-# YARA规则自动生成——从二进制样本提取字符串、字节模式、熵值、魔数特征。
+# YARA规则自动生成 - 从二进制样本提取字符串、字节模式、熵值、魔数特征。
 # Shannon熵基于log2计算，高熵区(>7.0)标记为潜在加密/压缩载荷。
 # 优化策略：丢弃置信度<0.5特征，特征>=3时收紧匹配条件以降低误报。
 
@@ -104,7 +104,7 @@ class YaraAutoGenerator:
                 self._optimize_rules()
                 result.rules = self.rules
                 result.analysis_success = True
-                logger.info(f"YARA规则生成完成——产出{len(self.rules)}条规则")
+                logger.info(f"YARA规则生成完成 - 产出{len(self.rules)}条规则")
             else:
                 result.warnings.append("样本数据加载失败")
         except Exception as e:
@@ -154,7 +154,7 @@ class YaraAutoGenerator:
                 feature = YaraFeature(
                     feature_type=FeatureType("byte_pattern"), value=pattern_hex,
                     confidence=0.6 + nCount * 0.05,
-                    description=f"字节模式特征——出现{nCount}次")
+                    description=f"字节模式特征 - 出现{nCount}次")
                 self.features.append(feature)
 
     def _extract_entropy_features(self, data: bytes) -> None:
@@ -171,7 +171,7 @@ class YaraAutoGenerator:
         if entropy > 7.0:
             feature = YaraFeature(
                 feature_type=FeatureType("entropy"), value="entropy > 7.0",
-                confidence=0.8, description="高熵区域——可能为加密或压缩载荷")
+                confidence=0.8, description="高熵区域 - 可能为加密或压缩载荷")
             self.features.append(feature)
 
     def _extract_magic_features(self, data: bytes) -> None:
@@ -264,7 +264,7 @@ class YaraAutoGenerator:
             rule.validated = True
             rule.false_positive_rate = result.false_positives / total_negative if total_negative > 0 else 0
         except ImportError:
-            logger.warning("yara-python未安装——跳过验证")
+            logger.warning("yara-python未安装 - 跳过验证")
             result.true_positives = len(positive_samples)
             result.true_negatives = len(negative_samples)
         return result

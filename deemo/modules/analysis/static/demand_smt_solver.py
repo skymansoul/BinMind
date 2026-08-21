@@ -1,4 +1,4 @@
-"""按需SMT约束求解器 (Demand-Driven SMT Constraint Solver) — DDSSC核心模块.
+"""按需SMT约束求解器 (Demand-Driven SMT Constraint Solver) - DDSSC核心模块.
 
 核心决策:
   符号关联分析无法判定的告警("unknown"), 需要更强的分析能力.

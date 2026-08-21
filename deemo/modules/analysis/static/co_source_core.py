@@ -1,7 +1,6 @@
-# AWSC 共享基础 — 根来源类型常量与 Root 数据结构
+# AWSC 共享基础 - 根来源类型常量与 Root 数据结构
 #
 # 独立模块避免 co_source_engine 与 co_source_operands 循环导入.
-# 创建: 2026-05-29
 
 # 根来源类型
 ROOT_IMM = "imm"          # 立即数

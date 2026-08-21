@@ -1,4 +1,4 @@
-# UAF深度分析器——在状态机基础上增加跨函数指针流追踪和堆上下文感知
+# UAF深度分析器-在状态机基础上增加跨函数指针流追踪和堆上下文感知
 # 与uaf_state_machine.py的区别: 后者只在单函数内追踪ptr生命周期，
 # 此处扩展到跨函数的参数传递链和内存分配上下文
 #
@@ -18,7 +18,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -54,13 +53,13 @@ class UAFDeepReport:
 
 
 class UAFDeepAnalyzer:
-    """UAF深度分析器——跨函数指针流+堆上下文感知。
+    """UAF深度分析器-跨函数指针流+堆上下文感知。
 
     分析流程:
       1. 在函数CFG中识别malloc→free序列
       2. 对每个free，检查其后是否有对同一指针的DEREF/CALL_ARG
       3. 追踪指针在调用图中的传递(参数→被调用者, 返回值→调用者)
-      4. 分类使用严重度——仅DEREF/CALL_ARG触发告警
+      4. 分类使用严重度-仅DEREF/CALL_ARG触发告警
     """
 
     # 分配函数→(size参数位置, type_hint)
@@ -84,16 +83,7 @@ class UAFDeepAnalyzer:
                           func_name: str = "",
                           call_graph_callees: Optional[Dict[str, List[str]]] = None
                           ) -> List[UAFDeepReport]:
-        """深度分析单个函数内的UAF模式。
-
-        Args:
-            instructions: 汇编指令列表
-            func_name: 函数名
-            call_graph_callees: {func_name: [callee_names]} 调用图
-
-        Returns:
-            深度UAF报告列表
-        """
+        """深度分析单个函数内的UAF模式。"""
         reports = []
         n = len(instructions)
         if n < 5:

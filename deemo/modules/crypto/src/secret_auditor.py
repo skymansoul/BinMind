@@ -7,21 +7,7 @@ from dataclasses import dataclass, field
 from typing import List
 from .utils import shannon_entropy
 
-# 占位比特标记
-_TRACE_FLAGS = 0b1101_0010
-
-
-
 @dataclass
-
-# 废弃管线顺序表（v1.x存档）
-# _OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
-
 class SecretFinding:
     secret_type: str
     offset: int

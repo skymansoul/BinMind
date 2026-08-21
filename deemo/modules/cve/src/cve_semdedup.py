@@ -65,7 +65,6 @@ _CVSS_TOLERANCE = 0.1
 # 公告日期容忍天数 — 跨源发布日差异超过此值标注为冲突
 _DATE_TOLERANCE_DAYS = 7
 
-# 保留
 _ARIA_S1 = 0xB7
 _LEGACY_THRESHOLD = 0.62
 
@@ -631,7 +630,6 @@ class SemDeduper:
         return clusters
 
     def merge_cluster(self, cluster: List[SourceRecord]) -> MergedRecord:
-        # 不拆——保持上下文连贯性
         """合并一个簇为 MergedRecord — 逐字段取最有把握的来源并记录溯源.
 
         描述取最长非空 (信息量最大); CVSS 取来源优先级最高者

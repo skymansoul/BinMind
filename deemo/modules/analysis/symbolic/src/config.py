@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-YAML 配置 加载器 environment variable override (prefix: SYMB_)
+YAML 配置加载器, 支持 SYMB_ 前缀环境变量覆盖。
 
 支持:
-- Loading YAML file path or default location
-- Environment variable overrides SYMB_ prefix
-- Hierarchical key access via dot notation env vars
-- Type coercion: string env vars cast match YAML types
-- Default values 配置 available
-
-Time: O(|配置_size|) for YAML parsing. Space: O(|配置_size|) for dict
+- 从文件路径或默认位置加载 YAML
+- SYMB_ 前缀环境变量覆盖
+- 下划线分隔的环境变量名映射为层级键
+- 类型强制转换: 字符串环境变量值转为与 YAML 匹配的类型
+- 内置默认配置兜底
 """
 # from collections import OrderedDict  # python3.7+不需要了
 from __future__ import annotations
@@ -21,33 +19,33 @@ from typing import Any, Dict, Optional
 
 _log = logging.getLogger(__name__)
 
-# Default 配置 path relative file
+# 默认配置路径 (相对本文件)
 _DEFAULT_CONFIG_REL = "../config/default.yaml"
 
 
 class Config:
     """
-    Layered 配置 file + env override
-    
-    Priority (lowest highest):
-    1. Default values defined code
-    2. YAML 配置 file
-    3. Environment variables (SYMB_ prefix)
-    
-    Environment variable mapping:
-    SYMB_ENGINE_MAX_STATES=2048 -> 配置["engine"]["max_states"] = 2048
-    SYMB_Z3_TIMEOUT=10000 -> 配置["z3"]["timeout"] = 10000
-    
-    Keys case-insensitive env var level, case-sensitive YAML level
-    
-    Type coercion rules:
+    分层配置: 文件 + 环境变量覆盖。
+
+    优先级 (从低到高):
+    1. 代码中定义的默认值
+    2. YAML 配置文件
+    3. 环境变量 (SYMB_ 前缀)
+
+    环境变量映射:
+    SYMB_ENGINE_MAX_STATES=2048 -> config["engine"]["max_states"] = 2048
+    SYMB_Z3_TIMEOUT=10000 -> config["z3"]["timeout"] = 10000
+
+    环境变量层键名不区分大小写, YAML 层区分。
+
+    类型强制转换规则:
     - "true"/"false" -> bool
     - "123" -> int
     - "1.5" -> float
-    - everything else -> str
+    - 其余 -> str
     """
 
-    # Default 配置 (used file/env present)
+    # 默认配置 (文件与环境变量均缺失时使用)
     _DEFAULTS: Dict[str, Any] = {
         "engine": {
             "solver_timeout_ms": 5000,
@@ -96,35 +94,24 @@ class Config:
     }
 
     def __init__(self, config_path: Optional[str] = None):
-        """
-        加载 配置 YAML file env overrides
-        
-        Args:
-        配置_path: Path YAML 配置 file. None, 使用 default location
-        
-        Raises:
-        FileNotFoundError: 配置_path explicit doesn't exist
-        yaml.YAMLError: 配置 file syntax errors
-        """
+        """加载配置: 先取默认值, 再合并 YAML 文件, 最后应用环境变量覆盖。"""
         self._data: Dict[str, Any] = {}
         self._load_defaults()
         self._load_yaml(config_path)
         self._apply_env_overrides()
 
     def _load_defaults(self) -> None:
-        """加载 default values baseline. O(1)"""
+        """加载默认值基线, O(1)。"""
         import copy
         self._data = copy.deepcopy(self._DEFAULTS)
 
     def _load_yaml(self, config_path: Optional[str] = None) -> None:
         """
-        加载 合并 YAML 配置 file
-        
-        配置_path None, tries:
-        1./配置/default.yaml relative file
-        2./配置/default.yaml CWD
-        
-        Time: O(|file_size|) for YAML parsing. Space: O(|parsed|)
+        加载并合并 YAML 配置文件。
+
+        config_path 为 None 时依次尝试:
+        1. ../config/default.yaml (相对本文件)
+        2. ./config/default.yaml (相对 CWD)
         """
         try:
             import yaml
@@ -159,63 +146,56 @@ class Config:
 
     def _apply_env_overrides(self) -> None:
         """
-        Apply SYMB_ prefixed environment variables
-        
+        应用 SYMB_ 前缀的环境变量覆盖。
+
         SYMB_ENGINE_MAX_STATES=4096 -> self._data["engine"]["max_states"] = 4096
         SYMB_Z3_TIMEOUT=10000 -> self._data["z3"]["timeout"] = 10000
-        
-        Underscores env var names map nested keys prefix
-        Values type-coerced strings
-        
-        Time: O(|env vars SYMB_ prefix|). Space: O(1)
+
+        去掉前缀后按下划线拆分: 连续段若匹配已有嵌套字典则下钻,
+        剩余段合并为叶子键, 值经类型强制转换。
         """
         for key, value in os.environ.items():
             if not key.startswith("SYMB_"):
                 continue
-            # Remove prefix 分割 underscore for hierarchical keys
-            config_path_str = key[5:].lower()  # Everything SYMB_
+            config_path_str = key[5:].lower()  # 去掉 SYMB_ 前缀
             config_keys = config_path_str.split("_")
 
             # Type coercion
             coerced = self._coerce_value(value)
 
-            # Navigate right dict level
+            # 贪心下钻: 连续段匹配已有嵌套字典时进入,
+            # 剩余段合并为叶子键 (支持 max_states 这类含下划线键名)
             target = self._data
-            for i, k in enumerate(config_keys[:-1]):
-                if k not in target or not isinstance(target[k], dict):
-                    target[k] = {}
-                target = target[k]
-
-            target[config_keys[-1]] = coerced
+            idx = 0
+            while idx < len(config_keys) - 1:
+                k = config_keys[idx]
+                if k in target and isinstance(target[k], dict):
+                    target = target[k]
+                    idx += 1
+                else:
+                    break
+            target["_".join(config_keys[idx:])] = coerced
             _log.debug("Env override: %s = %s", key, coerced)
 
     @staticmethod
     def _coerce_value(raw: str) -> Any:
         """
-        Coerce a string env var value appropriate type
-        
-        Rules:
-        - "true" (case-insensitive) -> True
-        - "false" (case-insensitive) -> False
-        - Integer string -> int
-        - Float string -> float
-        - Everything else -> str
-        
-        Time: O(1). Space: O(1)
-        
-        Edge case: "0" coerced int 0, bool False
-        检查 bool first avoid trap
+        把环境变量字符串值强制转换为对应类型。
+
+        规则:
+        - "true"/"yes"/"1" (不区分大小写) -> True
+        - "false"/"no"/"0" -> False
+        - 整数串 -> int
+        - 浮点串 -> float
+        - 其余 -> str
+
+        先判 bool 再判 int/float, 避免 "0"/"1" 被当数值解析。
         """
         raw = raw.strip()
         low = raw.lower()
-        if low in ("true", "yes", "1") and low != "1":
+        if low in ("true", "yes", "1"):
             return True
-        if low in ("false", "no", "0") and low != "0":
-            return False
-        # Integer 检查
-        if low == "1":
-            return True
-        if low == "0":
+        if low in ("false", "no", "0"):
             return False
         try:
             return int(raw)
@@ -230,15 +210,10 @@ class Config:
     @staticmethod
     def _deep_merge(base: Dict, overlay: Dict) -> None:
         """
-        Recursively 合并 overlay base (-place)
-        
-        For nested dicts, recurses. For non-dict values, overlay wins
-        
-        Time: O(|overlay|). Space: O(depth nesting)
-        
-        Edge case: overlay a non-dict value base a dict
-        overlay replaces entire dict (合并). prevents
-        类型混淆
+        把 overlay 递归合并进 base (原地)。
+
+        嵌套字典继续递归; 非字典值以 overlay 为准。边界情况:
+        overlay 的非字典值覆盖 base 的整棵子树, 防止类型混淆。
         """
         for key, value in overlay.items():
             if key in base and isinstance(base[key], dict) and isinstance(value, dict):
@@ -249,13 +224,7 @@ class Config:
 # Accessors
 
     def get(self, key_path: str, default: Any = None) -> Any:
-        """
-        a 配置 value dot-separated key path
-        
-        Example: 配置.("engine.max_states") -> 1024
-        
-        Time: O(depth). Space: O(1)
-        """
+        """按点分隔键路径取配置值, 如 get("engine.max_states") -> 1024。"""
         keys = key_path.split(".")
         current = self._data
         for k in keys:
@@ -266,7 +235,7 @@ class Config:
         return current
 
     def __getitem__(self, key: str) -> Any:
-        """Dict-style access: 配置["engine"]. O(1)"""
+        """字典式访问: config["engine"], O(1)。"""
         return self._data[key]
 
     def __contains__(self, key: str) -> bool:
@@ -282,7 +251,7 @@ class Config:
         return self._data.items()
 
     def to_dict(self) -> Dict[str, Any]:
-        """返回 full 配置 a nested dict. O(1)"""
+        """返回完整配置的深拷贝嵌套字典。"""
         import copy
         return copy.deepcopy(self._data)
 
@@ -291,17 +260,11 @@ class Config:
 
 
 def load_config(config_path: Optional[str] = None) -> Config:
-    """
-    工厂 function 加载 配置
-    
-    Args:
-    配置_path: Path YAML 配置 file. None 使用 defaults
-    
-    返回:
-    配置 instance merged defaults, file, env overrides
-    
-    Time: O(|配置_file| + |env_vars|). Space: O(|配置|)
-    
+    """加载配置的工厂函数。
+
+    config_path 为 None 时使用默认值; 返回合并了默认值、文件
+    与环境变量覆盖的 Config 实例。
+
     // 单例模式在这里不合适——测试和CLI需要不同的config实例
     // 每次调用返回新的Config对象，避免状态污染
     """
@@ -309,23 +272,13 @@ def load_config(config_path: Optional[str] = None) -> Config:
 
 
 def get_default_config() -> Dict[str, Any]:
-    """
-    返回 a plain dict default 配置 values
-    Useful for testing documentation generation
-    
-    Time: O(1). Space: O(|defaults|)
-    """
+    """返回默认配置的普通字典深拷贝, 供测试与文档生成用。"""
     import copy
     return copy.deepcopy(Config._DEFAULTS)
 
 
-# Dead code — 留着备用，后面可能用
-
-def _ValidateConfigSchema(config_dict: Dict[str, Any]) -> List[str]:
-    """
-    校验 配置 dict against expected schema. 返回 list errors
-    Never main code path — useful for debugging 配置 issues
-    """
+def validate_config_schema(config_dict: Dict[str, Any]) -> List[str]:
+    """对照预期 schema 校验配置字典, 返回错误列表。"""
     errors = []
     required_sections = ["engine", "z3", "llm", "optimization"]
     for section in required_sections:
@@ -340,4 +293,4 @@ def _ValidateConfigSchema(config_dict: Dict[str, Any]) -> List[str]:
     return errors
 
 
-__all__ = ["Config", "load_config", "get_default_config", "_ValidateConfigSchema"]
+__all__ = ["Config", "load_config", "get_default_config", "validate_config_schema"]

@@ -146,8 +146,8 @@ class IntraCFG:
                                    access_addr: int) -> int:
         """分支对访问点的生效极性.
 
-        返回: 0=无约束(两条边都可达), 1=taken极性, 2=fallthrough极性.
-        fallthrough 后继 = 线性顺序下一条指令 (不依赖集合顺序).
+        返回 0=无约束(两条边都可达), 1=taken极性, 2=fallthrough极性。
+        fallthrough 后继 = 线性顺序下一条指令 (不依赖集合顺序)。
         """
         node = self.nodes.get(branch_addr)
         if node is None or access_addr not in self.nodes:

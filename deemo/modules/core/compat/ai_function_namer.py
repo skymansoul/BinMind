@@ -8,7 +8,6 @@ for _k in dir(_m):
 
 # Supply heuristic_namer property on AIFunctionNamer — test requirement.
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -75,7 +74,6 @@ for _cn in ('FunctionSignature', 'FunctionNamePrediction', 'NamingResult', 'Func
 # 设计考量：优先使用调用模式（caller-callee 关系）而非指令序列，因前者跨编译器版本更稳定。
 import re as _re
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -146,6 +144,8 @@ def headless_name_functions(binary_paths: list[str], output_json: str = '') -> d
     return results
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

@@ -1,7 +1,7 @@
-# 多工具对比实验可视化——检出率/误报率对比柱状图
+# 多工具对比实验可视化: 检出率/误报率对比柱状图
 # 输入: eval/benchmark_summary.json (由run_benchmark.py生成)
 # 输出: eval/comparison_plot.pdf + eval/comparison_plot.png
-# 中文INTJ风格——无修饰标题, 纯数据呈现
+# 中文简洁风格: 无修饰标题, 纯数据呈现
 
 import json
 import sys
@@ -17,7 +17,7 @@ import numpy as np
 
 # 配色: 学术论文风格灰度优先, 我们的方法用深蓝标注
 PALETTE = {
-    'OurMethod': '#1a3a5c',  # 深蓝——突出
+    'OurMethod': '#1a3a5c',  # 深蓝: 突出
     'Angr':      '#666666',  # 灰
     'Ghidra':    '#999999',  # 浅灰
     'QEMU':      '#cccccc',  # 更浅灰
@@ -41,7 +41,7 @@ def load_data(summary_path: Path) -> dict:
 
 
 def _default_data() -> dict:
-    """默认数据结构——当benchmark未运行时使用"""
+    """默认数据结构: 当benchmark未运行时使用"""
     return {
         'OurMethod': {'n_samples': 30, 'detection_rate': 0.87,
                        'fp_count': 3, 'avg_time_ms': 63},

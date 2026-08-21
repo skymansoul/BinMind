@@ -1,15 +1,15 @@
-# 运行时漏洞验证器——通过动态执行确认静态分析发现的漏洞。
+# 运行时漏洞验证器-通过动态执行确认静态分析发现的漏洞。
 # VulDebugger GDB驱动运行时状态比较和CogniCrypt
 # 混合执行+LLM路径优先。
 #
 # 核心机制:
-# 崩溃复现——PoC输入运行目标，验证崩溃发生在预期漏洞点
-#   - ASAN/UBSAN/MSAN集成——收集sanitizer报告与静态finding做差异比对
-# 可达性追踪——从污点源到漏洞点的实际执行路径覆盖验证
-# 内存状态诊断——在崩溃点检查寄存器值与栈帧布局
+# 崩溃复现-PoC输入运行目标，验证崩溃发生在预期漏洞点
+#   - ASAN/UBSAN/MSAN集成-收集sanitizer报告与静态finding做差异比对
+# 可达性追踪-从污点源到漏洞点的实际执行路径覆盖验证
+# 内存状态诊断-在崩溃点检查寄存器值与栈帧布局
 #
-# —— 初版，GDB崩溃复现
-# —— 新增ASAN集成和可达性验证
+# - 初版，GDB崩溃复现
+# - 新增ASAN集成和可达性验证
 
 import os, re, subprocess, json, time, logging, tempfile, shutil
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -54,7 +54,7 @@ class VerificationResult:
 # GDB集成
 
 class GDBRunner:
-    """GDB子进程管理——脚本模式驱动调试器执行预设命令。
+    """GDB子进程管理-脚本模式驱动调试器执行预设命令。
 
     通过临时GDB脚本文件传递命令，避免交互式GDB的pty复杂性。
     """
@@ -162,7 +162,7 @@ class GDBRunner:
 # ASAN集成
 
 class ASANRunner:
-    """AddressSanitizer运行器——在ASAN环境下执行目标程序。"""
+    """AddressSanitizer运行器-在ASAN环境下执行目标程序。"""
 
     def __init__(self, timeout: int = 30):
         self.timeout = timeout
@@ -195,7 +195,7 @@ class ASANRunner:
     def classify_asan_report(asan_output: str) -> Dict[str, Any]:
         """分类ASAN报告类型并提取关键信息。
 
-        返回: {type, address, access_type, allocation_info, stack_trace, ...}
+        返回 {type, address, access_type, allocation_info, stack_trace, ...}。
         """
         report = {'type': 'unknown', 'address': 0, 'access_size': 0,
                   'access_type': '', 'allocation_site': '', 'stack': ''}
@@ -239,7 +239,7 @@ class ASANRunner:
 # 主编排器
 
 class RuntimeVulnVerifier:
-    """运行时漏洞验证器——编排GDB和ASAN执行，验证静态分析发现。
+    """运行时漏洞验证器-编排GDB和ASAN执行，验证静态分析发现。
 
     核心流程:
         1. 构造触发输入（基于静态分析推断的溢出大小）
@@ -285,7 +285,7 @@ class RuntimeVulnVerifier:
                 error_message=f"文件不存在: {binary_path}",
                 elapsed_seconds=time.time() - t0)
 
-        # 构造触发输入——pattern填充检测边界错误
+        # 构造触发输入-pattern填充检测边界错误
         trigger_input = self._craft_trigger_input(overflow_size, vuln_type)
 
         # GDB运行
@@ -361,7 +361,7 @@ class RuntimeVulnVerifier:
         return b'A' * 256
 
     def _assess_exploitability(self, state, asan_rpt, vuln_type):
-        """评估漏洞可利用性——基于运行时状态与ASAN报告。
+        """评估漏洞可利用性-基于运行时状态与ASAN报告。
 
         返回描述字符串。
         """
@@ -377,13 +377,13 @@ class RuntimeVulnVerifier:
             controlled_pc = True
 
         if controlled_pc:
-            return "严重——指令指针已被输入数据控制，可利用性极高"
+            return "严重-指令指针已被输入数据控制，可利用性极高"
         elif asan_rpt.get('type') in ('heap_overflow', 'stack_overflow',
                                         'use_after_free'):
-            return f"可复现——ASAN确认{asan_rpt['type']}，存在利用可能"
+            return f"可复现-ASAN确认{asan_rpt['type']}，存在利用可能"
         elif state.signal_info:
             return ("崩溃可复现但未确认控制流劫持，需进一步分析")
-        return "利用性未知——需人工分析崩溃上下文"
+        return "利用性未知-需人工分析崩溃上下文"
 
     def batch_verify(self, findings: List[Dict],
                       binary_path: str) -> List[VerificationResult]:

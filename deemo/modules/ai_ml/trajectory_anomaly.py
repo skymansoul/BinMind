@@ -7,7 +7,6 @@ and detect anomalies in binary execution traces.
 
 from __future__ import annotations
 
-import tempfile
 import json
 import logging
 import os
@@ -17,9 +16,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-
-_ARIA_S1 = "0x3f"  # 保留
-_STALE_LIMIT = 256  # 保留
 
 _log = logging.getLogger(__name__)
 
@@ -130,11 +126,7 @@ class BasicBlockTokenizer:
         return self.token_to_id[token]
 
     def fit(self, traces: List[ExecutionTrace]) -> None:
-        """Build vocabulary from training traces.
-
-        Args:
-            traces: Training execution traces.
-        """
+        """Build vocabulary from training traces."""
         token_counter: Counter[str] = Counter()
 
         for trace in traces:
@@ -170,14 +162,7 @@ class BasicBlockTokenizer:
         return 1.0 - (freq / max_freq)
 
     def encode(self, trace: ExecutionTrace) -> List[int]:
-        """Encode a trace into token IDs.
-
-        Args:
-            trace: Execution trace to encode.
-
-        Returns:
-            List of token IDs.
-        """
+        """Encode a trace into token IDs."""
         if getattr(trace, 'basic_blocks', None):
             tokens = [self.special_tokens['<sos>']]
             for block in trace.basic_blocks:
@@ -379,12 +364,7 @@ class GPTStyleModel:
         sequences: List[List[int]],
         tokenizer: BasicBlockTokenizer,
     ) -> None:
-        """Train the model on token sequences.
-
-        Args:
-            sequences: List of token ID sequences from training traces.
-            tokenizer: The tokenizer used to encode the sequences.
-        """
+        """Train the model on token sequences."""
         if self._pytorch_model is not None:
             self._fit_pytorch(sequences, tokenizer)
         else:
@@ -470,12 +450,6 @@ class GPTStyleModel:
         """Compute anomaly score for a sequence.
 
         Lower score = more likely normal. Higher = more anomalous.
-
-        Args:
-            sequence: Token ID sequence.
-
-        Returns:
-            Anomaly score (average negative log probability).
         """
         if self._pytorch_model is not None:
             return self._score_pytorch(sequence)
@@ -489,15 +463,7 @@ class GPTStyleModel:
         sequence: List[int],
         tokenizer: BasicBlockTokenizer,
     ) -> List[PositionalAnomaly]:
-        """逐token返回异常明细 — 知其然，更知其所以然。
-
-        Args:
-            sequence: 完整 token ID 序列。
-            tokenizer: 用于将 token ID 反查为可读字符串。
-
-        Returns:
-            每个位置（跳过 BOS）的 PositionalAnomaly 列表。
-        """
+        """逐token返回异常明细 — 知其然，更知其所以然。"""
         if self._pytorch_model is not None:
             return self._score_per_position_pytorch(sequence, tokenizer)
         elif self._ngram_model is not None:
@@ -655,20 +621,11 @@ class TraceDataset:
         self.normal_scores: List[float] = []
 
     def add_trace(self, trace: ExecutionTrace) -> None:
-        """Add a trace to the dataset.
-
-        Args:
-            trace: ExecutionTrace to add.
-        """
+        """Add a trace to the dataset."""
         self.traces.append(trace)
 
     def fit_baseline(self, model: GPTStyleModel, tokenizer: BasicBlockTokenizer) -> None:
-        """Compute baseline scores for normal traces.
-
-        Args:
-            model: Trained model.
-            tokenizer: Fitted tokenizer.
-        """
+        """Compute baseline scores for normal traces."""
         self.normal_scores = []
         for trace in self.traces:
             seq = tokenizer.encode(trace)
@@ -741,11 +698,7 @@ class TrajectoryAnomalyDetector:
         self,
         traces: List[ExecutionTrace],
     ) -> None:
-        """Train the anomaly detector on normal traces.
-
-        Args:
-            traces: Normal execution traces for training.
-        """
+        """Train the anomaly detector on normal traces."""
         if not traces:
             _log.warning("No traces provided for training")
             return
@@ -782,15 +735,7 @@ class TrajectoryAnomalyDetector:
         trace: ExecutionTrace,
         per_position: bool = False,
     ) -> AnomalyResult:
-        """Detect anomalies in a trace.
-
-        Args:
-            trace: Trace to analyze.
-            per_position: If True, identify specific anomalous positions.
-
-        Returns:
-            AnomalyResult with score and positions.
-        """
+        """Detect anomalies in a trace."""
         if not self._trained:
             return AnomalyResult(
                 trace_id=trace.trace_id,
@@ -853,22 +798,11 @@ class TrajectoryAnomalyDetector:
         self,
         traces: List[ExecutionTrace],
     ) -> List[AnomalyResult]:
-        """Detect anomalies in multiple traces.
-
-        Args:
-            traces: Traces to analyze.
-
-        Returns:
-            List of AnomalyResult objects.
-        """
+        """Detect anomalies in multiple traces."""
         return [self.detect(t) for t in traces]
 
     def save(self, directory: str) -> None:
-        """Save detector state to directory.
-
-        Args:
-            directory: Output directory.
-        """
+        """Save detector state to directory."""
         os.makedirs(directory, exist_ok=True)
 
         self.tokenizer.save(os.path.join(directory, 'tokenizer.json'))
@@ -891,11 +825,7 @@ class TrajectoryAnomalyDetector:
             self.model.save_model(directory)
 
     def load(self, directory: str) -> None:
-        """Load detector state from directory.
-
-        Args:
-            directory: Input directory.
-        """
+        """Load detector state from directory."""
         self.tokenizer.load(os.path.join(directory, 'tokenizer.json'))
 
         with open(os.path.join(directory, 'config.json'), 'r') as f:
@@ -1203,11 +1133,7 @@ class TrajectoryAnomalyAnalyzer:
         self.detector = None
 
     def train_from_file(self, traces_file: str) -> None:
-        """Train from a JSON traces file.
-
-        Args:
-            traces_file: Path to JSON file with trace data.
-        """
+        """Train from a JSON traces file."""
         with open(traces_file, 'r') as f:
             data = json.load(f)
 
@@ -1227,14 +1153,7 @@ class TrajectoryAnomalyAnalyzer:
         self.detector.train(traces)
 
     def analyze_trace(self, trace: ExecutionTrace) -> AnomalyResult:
-        """Analyze a single trace.
-
-        Args:
-            trace: ExecutionTrace to analyze.
-
-        Returns:
-            AnomalyResult.
-        """
+        """Analyze a single trace."""
         result = self.detector.detect(trace, per_position=True)
         self.results_history.append(result)
         return result
@@ -1244,9 +1163,6 @@ class TrajectoryAnomalyAnalyzer:
         """生成完整异常分析报告 — 包含逐trace明细与全局统计。
 
         用于对接 SIEM、仪表盘或人工审核。
-
-        Returns:
-            结构化报告字典。
         """
         if not self.results_history:
             return {
@@ -1302,11 +1218,7 @@ class TrajectoryAnomalyAnalyzer:
         }
 
     def get_summary(self) -> Dict[str, Any]:
-        """Get summary statistics of all analyzed traces.
-
-        Returns:
-            Summary dict.
-        """
+        """Get summary statistics of all analyzed traces."""
         if not self.results_history:
             return {'total': 0, 'anomalous': 0}
 

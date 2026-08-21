@@ -1,6 +1,4 @@
-# 创建: 2026-05-17 09:12
-# 修改: 2026-05-17 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 熵基漂移检测+安全门控TTA
+# 熵基漂移检测+安全门控TTA
 # 测试时自适应 — CVE评分模型的在线漂移适应
 #
 # 问题: CVE评分模型在训练后假设输入分布稳定. 但2024-2026年数据表明:
@@ -196,12 +194,10 @@ class TestTimeAdapter:
 
     def adapt(self, features: List[float],
               base_score: Optional[float] = None) -> Tuple[float, TTADriftStatus]:
-        """对单个CVE执行自适应评分.
+        """对单个 CVE 执行自适应评分。
 
-        features: 特征向量.
-        base_score: 若已计算可传入, 否则调用scoring_fn.
-
-        Returns: (adapted_score, drift_status).
+        features 为特征向量, base_score 已计算时传入, 否则调用
+        scoring_fn; 返回 (adapted_score, drift_status)。
         """
         if base_score is None:
             base_score = self._scoring_fn(features)

@@ -1,5 +1,4 @@
-# 修改记录:
-# 2025-08-07 15:23 - 初始实现：GNN预测→符号验证→对比反馈闭环
+# 初始实现：GNN预测→符号验证→对比反馈闭环
 
 """神经符号验证闭环 — GNN 漏洞预测与符号约束求解的互增强回路。
 
@@ -20,7 +19,7 @@
 与 MoCQ 的区别：
 - MoCQ: LLM↔CodeQL 闭环，针对源码的查询生成。
 - 本方案: GNN↔符号执行闭环，针对二进制漏洞的可 exploit 性验证。
-- 本方案产生的是"被验证的"而非"被预测的"漏洞标签——训练数据质量更高。
+- 本方案产生的是"被验证的"而非"被预测的"漏洞标签-训练数据质量更高。
 
 - MoCQ "Holistic Neuro-Symbolic Approach" — 验证器反馈的架构灵感。
 - MSIVD — LLM+GNN 联合嵌入的可行性依据。
@@ -63,11 +62,11 @@ class FeedbackSample:
     """闭环反馈的一次训练样本。"""
     embedding: List[float]
     label: int             # 1=exploitable, 0=benign, -1=uncertain (no gradient)
-    weight: float          # 样本权重——已验证的样本权重更高
+    weight: float          # 样本权重-已验证的样本权重更高
     function_name: str = ""
 
 class NeuroSymbolicLoop:
-    """神经符号验证闭环——GNN ↔ 符号执行的互增强回路。
+    """神经符号验证闭环-GNN ↔ 符号执行的互增强回路。
 
     使用范式：
       loop = NeuroSymbolicLoop(embedding_dim=128)
@@ -131,7 +130,7 @@ class NeuroSymbolicLoop:
             self._verified_benign += 1
             _label = 0
             _w = self.verification_weight * 0.8
-            # 负样本权重略低——"未找到"不等于"不存在"
+            # 负样本权重略低-"未找到"不等于"不存在"
         else:
             self._verification_timeouts += 1
             _label = -1
@@ -154,7 +153,7 @@ class NeuroSymbolicLoop:
         predictions: List[GNNPrediction],
         verifications: Dict[str, SymbolicVerification],
     ) -> Tuple[float, Dict[str, float]]:
-        """计算对比损失——结合未验证预测与已验证反馈。
+        """计算对比损失-结合未验证预测与已验证反馈。
 
         返回：(total_loss, loss_components)。
         loss_components 包含 'verified_pairwise', 'uncertainty_penalty', 'total'。
@@ -162,7 +161,7 @@ class NeuroSymbolicLoop:
         损失函数设计：
         1. verified_pairwise: 已验证的正/负样本对之间的对比损失。
            正样本（可exploit）与负样本（不可exploit）在嵌入空间中的距离 ≥ margin。
-        2. uncertainty_penalty: 对超时（未验证）样本中模型过度自信的惩罚——
+        2. uncertainty_penalty: 对超时（未验证）样本中模型过度自信的惩罚-
            若 GNN 对某函数给出 >0.9 的概率但验证超时，说明可能误报。
         """
         for _pred in predictions:
@@ -188,9 +187,9 @@ class NeuroSymbolicLoop:
         """从 GNN 预测中选择最具验证价值的目标。
 
         优先级：
-        1. 高概率（>0.7）且未验证过的函数——最可能发现 exploit
-        2. 概率在 0.4-0.7 且未被验证——最需要去模糊化的边界样本
-        3. 概率<0.3 且多次调用危险函数的——潜在漏报
+        1. 高概率（>0.7）且未验证过的函数-最可能发现 exploit
+        2. 概率在 0.4-0.7 且未被验证-最需要去模糊化的边界样本
+        3. 概率<0.3 且多次调用危险函数的-潜在漏报
 
         不重复验证已确认的函数。
         """
@@ -231,7 +230,7 @@ class NeuroSymbolicLoop:
         """已验证样本对之间的对比损失。
 
         对每对 (正样本, 负样本)：max(0, margin - D(pos, neg))²
-        只用已验证的样本——未验证样本不参与此损失。
+        只用已验证的样本-未验证样本不参与此损失。
         """
         _positives = [s for s in self._feedback_samples if s.label == 1]
         _negatives = [s for s in self._feedback_samples if s.label == 0]

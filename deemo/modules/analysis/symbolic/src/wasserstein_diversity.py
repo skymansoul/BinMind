@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-18 13:27 - 增加自适应切片数 K=min(50, max(5, N//3)), 权衡精度与速度
-# 2025-07-22 09:55 - 修复零向量导致的除零错误 (空路径集)
-# 2025-07-26 16:18 - 增加 diversity_gain 指标: SWD(U∪{p}) - SWD(U), 供探索策略使用
+# 增加自适应切片数 K=min(50, max(5, N//3)), 权衡精度与速度
+# 修复零向量导致的除零错误 (空路径集)
+# 增加 diversity_gain 指标: SWD(U∪{p}) - SWD(U), 供探索策略使用
 
-"""切片 Wasserstein 路径多样性 — PathDiversityTracker 的替代实施例
+"""切片 Wasserstein 路径多样性 - PathDiversityTracker 的替代实施例
 
 PathDiversityTracker (path_diversity_core.py, ~1800 行) 使用 SimHash +
 随机投影森林做路径多样性度量。SimHash 的理论保证建立在"输入为 TF-IDF
@@ -21,13 +20,13 @@ SimHash: O(D) per path, 汉明距离 ∈ [0,64], 余弦相似度近似, 无三�
 SWD: O(K·N·记录 N) per set comparison, 真实度量, 对特征分布变化不敏感
 
 ref: Rabin et al. "Wasserstein Barycenter Applica Texture Mixing"
-— 提出切片 Wasserstein 距离以规避高维 Wasserstein 的计算瓶颈
+- 提出切片 Wasserstein 距离以规避高维 Wasserstein 的计算瓶颈
 ref: Kolouri et al. "Sliced Wasserstein Dist for Learning Gaussian Mixture Models"
-— SWD 在 1D 上的闭式解即排序后 L1 距离, O(N log N) per slice
+- SWD 在 1D 上的闭式解即排序后 L1 距离, O(N log N) per slice
 ref: Bonneel et al. "Sliced Partial Optimal Transport" (ACM TOG)
-— 首次将 SWD 应用于离散分布比较
+- 首次将 SWD 应用于离散分布比较
 
-本实现不替代 PathDiversityTracker — 作为独立模块提供可替换的多样性度量
+本实现不替代 PathDiversityTracker - 作为独立模块提供可替换的多样性度量
 两者可并存, 调用方通过策略模式选择 SimHash 或 SWD
 """
 
@@ -41,9 +40,9 @@ from typing import Optional, List, Dict, Tuple
 
 def _feature_dict_to_vector(features: dict, dim: int = 64) -> List[float]:
     """将 PathDiversityTracker 风格的嵌套特征字典展平为 D 维向量
-    
+
     与 path_diversity_core._feature_to_vector 的展平逻辑一致
-    保持互操作性 — 同一路径输入在两种方案中产生相同的基础向量"""
+    保持互操作性 - 同一路径输入在两种方案中产生相同的基础向量"""
     vec = [0.0] * dim
     # 对每个 key:val 对生成一个确定性哈希索引
     items = sorted(str(k) + ":" + str(v) for k, v in features.items())
@@ -56,7 +55,7 @@ def _feature_dict_to_vector(features: dict, dim: int = 64) -> List[float]:
             val = int.from_bytes(chunk, 'little') % 100000
             idx = val % dim
             vec[idx] += val / 100000.0
-    # L2 归一化 — 使向量位于单位球面上, 减少量级差异对投影的影响
+    # L2 归一化 - 使向量位于单位球面上, 减少量级差异对投影的影响
     norm = math.sqrt(sum(v * v for v in vec))
     if norm > 1e-12:
         vec = [v / norm for v in vec]
@@ -65,7 +64,7 @@ def _feature_dict_to_vector(features: dict, dim: int = 64) -> List[float]:
 
 class SlicedWassersteinDiversity:
     """切片 Wasserstein 路径多样性度量
-    
+
     线程安全: 实例不可变, _directions 在 __init__ 中确定后不再修改
     """
 
@@ -73,14 +72,14 @@ class SlicedWassersteinDiversity:
                  seed: Optional[int] = None):
         """
         dim: 特征向量维度, 与 PathDiversityTracker 的 64 维对齐
-        n_slices: 随机投影方向数 — K 越大精度越高, 但计算 O(K·N·log N)
+        n_slices: 随机投影方向数 - K 越大精度越高, 但计算 O(K·N·log N)
         K=20 在实践中方差已小 (<3%), N 在 100-5000 范围
         """
         self._dim = dim
         # 自适应 K: 不小于 5, 不超过 min(50, N//3), 默认 20
         self._n_slices = n_slices
         self._rng = random.Random(seed)
-        # 随机投影方向 — 从单位球面均匀采样
+        # 随机投影方向 - 从单位球面均匀采样
         self._directions = self._sample_directions(n_slices, dim)
 
     def _sample_directions(self, K: int, D: int) -> List[List[float]]:
@@ -99,7 +98,7 @@ class SlicedWassersteinDiversity:
 
     def set_n_slices(self, n_paths: int):
         """根据路径数自适应调整切片数
-        
+
         K 太小 → 方差大; K 太大 → 计算浪费
         K=20 在 100-5000 路径范围内精度/速度平衡最优 (经验值)"""
         self._n_slices = max(5, min(50, n_paths // 3))
@@ -107,8 +106,8 @@ class SlicedWassersteinDiversity:
 
     def distance(self, paths_a: List[dict], paths_b: List[dict]) -> float:
         """计算两个路径集合间的切片 Wasserstein 距离
-        
-        返回 [0, ∞) 的标量距离 — 越小越相似。空集 vs 空集 = 0.0"""
+
+        返回 [0, ∞) 的标量距离 - 越小越相似。空集 vs 空集 = 0.0"""
         if not paths_a and not paths_b:
             return 0.0
         if not paths_a or not paths_b:
@@ -138,8 +137,8 @@ class SlicedWassersteinDiversity:
         return total / K
 
     def diversity_score(self, paths: List[dict]) -> float:
-        """单一路径集合的内部多样性 — 路径间平均两两 SWD
-        
+        """单一路径集合的内部多样性 - 路径间平均两两 SWD
+
         高值 → 路径探索覆盖了更广的语义空间
         用于替代 PathDiversityTracker 的聚类内 SimHash 平均距离"""
         if len(paths) < 2:
@@ -149,7 +148,7 @@ class SlicedWassersteinDiversity:
         total = 0.0
         count = 0
         K = min(self._n_slices, len(self._directions))
-        # 对每一对路径计算 SWD — 此处使用 O(N²) 而非 O(K·N·log N)
+        # 对每一对路径计算 SWD - 此处使用 O(N²) 而非 O(K·N·log N)
         # 因为需要成对距离矩阵用于聚类和配额管理
         # 对于 N<200 的典型聚类场景, N² 开销可接受
         for k in range(K):
@@ -164,7 +163,7 @@ class SlicedWassersteinDiversity:
 
     def diversity_gain(self, existing: List[dict], candidate: dict) -> float:
         """新增一条路径带来的多样性增益: SWD(现有) - SWD(现有+候选)
-        
+
         正值 → 候选路径增加了多样性; 负值/零 → 冗余路径, 可裁剪
         此指标直接替换 DiversityBudget 中的相似度判断逻辑"""
         if not existing:
@@ -176,8 +175,8 @@ class SlicedWassersteinDiversity:
     def select_diverse_subset(self, paths: List[dict],
                               budget: int) -> List[int]:
         """从路径集合中选出 budget 条最具多样性的子集
-        
-        贪心最大-最小 (max-min) 选择 — 每次选取与已选集 SWD 最大的路径
+
+        贪心最大-最小 (max-min) 选择 - 每次选取与已选集 SWD 最大的路径
         这是 DiversityBudget.enforce 的替代实现
         复杂度 O(budget * N * K * 记录 N), 在 budget<<N 时高效"""
         if budget <= 0 or not paths:
@@ -234,7 +233,7 @@ class SlicedWassersteinDiversity:
 def wasserstein_enforce_budget(paths: List[dict], budget: int,
                                dim: int = 64) -> Tuple[List[dict], float]:
     """与 DiversityBudget.enforce() 接口兼容的 SWD 配额管理
-    
+
     返回 (selected_paths, diversity_score)
     PathDiversityTracker 可直接将 enforce 替换为本函数
     无需修改调用方"""

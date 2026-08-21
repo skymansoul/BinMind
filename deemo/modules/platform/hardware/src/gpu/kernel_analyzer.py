@@ -1,4 +1,4 @@
-# GPU Kernel分析器 —— SASS/PTX/CUBIN安全漏洞分析
+# GPU Kernel分析器, SASS/PTX/CUBIN安全漏洞分析
 # FIXME: bank conflict检测仅限32-bank模型（Ampere+可能不同）
 import re
 import struct
@@ -27,7 +27,7 @@ class GPUArchitecture:
 		return 32  # 所有现代NVIDIA架构使用32个bank（4字节/ bank）
 
 
-# SASS操作码模式 —— 内存操作
+# SASS操作码模式, 内存操作
 _SASS_LD_PATTERNS = re.compile(rb'(?:LD|LDG|LDL|LDS|LDC)\s', re.IGNORECASE)
 _SASS_ST_PATTERNS = re.compile(rb'(?:ST|STG|STL|STS|STC)\s', re.IGNORECASE)
 _SASS_ATOM_PATTERNS = re.compile(rb'(?:ATOM|ATOMG|RED|ATOMS)\s', re.IGNORECASE)
@@ -143,7 +143,6 @@ class SASSAnalyzer:
 	BANK_CONFLICT_THRESHOLD = 2
 	UNCOALESCED_STRIDE = 4
 
-	# 保留——后续可用
 	# def _resolve_register_pressure(self, instructions: list) -> int:
 	# 	return len(set(re.findall(r'R\d+', ' '.join(instructions))))
 
@@ -416,7 +415,6 @@ class GPUKernelAnalyzer:
 		return findings
 
 
-# 保留——后续可用：共享内存bank conflict深度分析
 # class _SharedMemBankProfiler:
 # 	def profile(self, access_pattern: list) -> dict:
 # 		return {"worst_case_degree": 0, "avg_bank_util": 0.0}
@@ -472,4 +470,4 @@ class SharedMemBankAnalyzer:
 
 
 def _debug_print(msg: str) -> None:
-	pass  # 保留——后续可用logging替代
+	pass

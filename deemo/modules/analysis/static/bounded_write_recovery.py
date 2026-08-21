@@ -4,12 +4,12 @@
 #   无界写入函数(strcpy/strcat/sprintf/gets)的写尺寸由源字符串长度
 #   决定, 静态检测器通常整体跳过, 既不确认溢出也不判定安全.
 #   本模块从源操作数的实际存储来源恢复写尺寸上界:
-# 源为.rodata字符串字面量 → 上界 = 字面量长度(+NUL)
-# 源为栈缓冲区[rbp-X] → 上界 = 缓冲区跨度
-# 源为已追踪的堆分配 → 上界 = 该分配的可写尺寸
-#   恢复成功且上界 ≤ 分配可用区 → 判定安全(消除误报);
-#   上界 > 分配可用区 → 判定溢出(召回提升);
-#   无法恢复 → 保持跳过(不引入新误报).
+# 源为.rodata字符串字面量 - 上界 = 字面量长度(+NUL)
+# 源为栈缓冲区[rbp-X] - 上界 = 缓冲区跨度
+# 源为已追踪的堆分配 - 上界 = 该分配的可写尺寸
+#   恢复成功且上界 <= 分配可用区 - 判定安全(消除误报);
+#   上界 > 分配可用区 - 判定溢出(召回提升);
+#   无法恢复 - 保持跳过(不引入新误报).
 #
 #   核心不动摇原则: 只做 under-approximation of danger,
 #   不确定即保守跳过, 绝不猜安全.
@@ -19,7 +19,6 @@
 #   通过恢复字面量/缓冲区尺寸剔除内存API误用误报;
 #   CWE-787/CWE-121 的静态检测同样依赖写入量上界的可靠恢复.
 #
-# 创建: 2026-07-05
 
 import re
 from enum import Enum
@@ -254,12 +253,7 @@ class BoundedWriteRecovery:
         return SourceInfo(BWRSrcKind.UNKNOWN, detail=f"undef {reg}")
 
     def _resolve_lea(self, src_op: str, instructions, idx: int) -> SourceInfo:
-        from .bwr_helpers import literal_in_comment, rip_abs, read_rodata_string
-        lit = literal_in_comment(src_op)
-        if lit is not None:
-            return SourceInfo(BWRSrcKind.LITERAL,
-                              size=len(lit.encode("utf-8")),
-                              detail=f"literal[{len(lit.encode('utf-8'))}]")
+        from .bwr_helpers import rip_abs, read_rodata_string
         src_lower = src_op.lower()
         lit = self._literal_in_comment(src_op)
         if lit is not None:
@@ -390,11 +384,6 @@ class BoundedWriteRecovery:
                     return False
         return False
 
-    @staticmethod
-    def _parse_imm(op: str) -> Optional[int]:
-        from .bwr_helpers import parse_imm
-        return parse_imm(op)
-
     def _arg_reg(self, instructions, call_idx: int, idx: int) -> Optional[str]:
         """从call指令操作数解析第idx个实参寄存器.
 
@@ -434,6 +423,11 @@ class BoundedWriteRecovery:
         if not all(32 <= b < 127 for b in raw):
             return None
         return raw.decode("utf-8", errors="replace")
+
+    def _format_max_len(self, fmt: str, instructions, call_idx) -> Optional[int]:
+        """格式串最大输出长度上界; 含无界 %s 返回 None."""
+        from .bwr_helpers import format_max_len
+        return format_max_len(fmt)
 
     @staticmethod
     def _parse_imm(op: str) -> Optional[int]:

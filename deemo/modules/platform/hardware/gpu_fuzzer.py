@@ -150,7 +150,7 @@ class GPUSeedScheduler:
         """移除命中频次最高的冗余种子，保留稀有路径。
 
         策略：按 bitmap 频次降序排列，删除前 N 个过频繁的种子。
-        此为 AFL 式 corpus minimization 的简化版——不做最小集覆盖，
+        此为 AFL 式 corpus minimization 的简化版, 不做最小集覆盖，
         因 GPU fuzz 中 bitmap 碰撞率低，删除高频种子基本等价于去重。
         """
         with self._lock:

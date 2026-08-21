@@ -19,29 +19,29 @@ class ManifestSeverity(StrEnum): CRITICAL="critical"; HIGH="high"; MEDIUM="mediu
 
 _GDPR_ARTICLE_MAP:Dict[str,Tuple[str,int]]={
     # (权限声明, (GDPR条款, 风险权重))
-    'CAMERA':('Art.6/9——生物特征数据（面部/虹膜）合法处理基础',8),
-    'RECORD_AUDIO':('Art.5(1)(c)——数据最小化原则：音频记录',8),
-    'ACCESS_FINE_LOCATION':('Art.5(1)(c)——位置数据最小化',8),
-    'ACCESS_BACKGROUND_LOCATION':('Art.5(1)(c)——后台位置跟踪需明确同意',10),
-    'READ_CONTACTS':('Art.6——第三方数据传输需合法基础',7),
-    'READ_SMS':('Art.5(1)(f)——通信数据机密性',9),
-    'SEND_SMS':('Art.5(1)(f)——通信数据完整性',8),
-    'RECEIVE_SMS':('Art.5(1)(f)——敏感通信拦截',9),
-    'READ_CALL_LOG':('Art.5(1)(c)——通话元数据最小化',7),
-    'CALL_PHONE':('Art.5(1)(f)——电话服务完整性',6),
-    'BODY_SENSORS':('Art.9——特殊类别个人数据（健康数据）',10),
-    'READ_EXTERNAL_STORAGE':('Art.5(1)(c)——文件系统访问需审计',5),
-    'WRITE_EXTERNAL_STORAGE':('Art.5(1)(c)——文件系统修改需审计',5),
-    'READ_PHONE_STATE':('Art.5(1)(c)——设备指纹/标识符',6),
-    'PROCESS_OUTGOING_CALLS':('Art.5(1)(f)——通信元数据',7),
-    'BLUETOOTH':('Art.5(1)(c)——近场数据采集',4),
-    'POST_NOTIFICATIONS':('Art.5(1)(c)——用户交互追踪',3),
-    'SYSTEM_ALERT_WINDOW':('Art.5(1)(f)——覆盖层可被滥用于钓鱼',7),
-    'BIND_ACCESSIBILITY_SERVICE':('Art.9——可访问所有屏幕内容的特殊能力',10),
-    'REQUEST_INSTALL_PACKAGES':('Art.5(1)(f)——应用安装完整性',6),
+    'CAMERA':('Art.6/9, 生物特征数据（面部/虹膜）合法处理基础',8),
+    'RECORD_AUDIO':('Art.5(1)(c), 数据最小化原则: 音频记录',8),
+    'ACCESS_FINE_LOCATION':('Art.5(1)(c), 位置数据最小化',8),
+    'ACCESS_BACKGROUND_LOCATION':('Art.5(1)(c), 后台位置跟踪需明确同意',10),
+    'READ_CONTACTS':('Art.6, 第三方数据传输需合法基础',7),
+    'READ_SMS':('Art.5(1)(f), 通信数据机密性',9),
+    'SEND_SMS':('Art.5(1)(f), 通信数据完整性',8),
+    'RECEIVE_SMS':('Art.5(1)(f), 敏感通信拦截',9),
+    'READ_CALL_LOG':('Art.5(1)(c), 通话元数据最小化',7),
+    'CALL_PHONE':('Art.5(1)(f), 电话服务完整性',6),
+    'BODY_SENSORS':('Art.9, 特殊类别个人数据（健康数据）',10),
+    'READ_EXTERNAL_STORAGE':('Art.5(1)(c), 文件系统访问需审计',5),
+    'WRITE_EXTERNAL_STORAGE':('Art.5(1)(c), 文件系统修改需审计',5),
+    'READ_PHONE_STATE':('Art.5(1)(c), 设备指纹/标识符',6),
+    'PROCESS_OUTGOING_CALLS':('Art.5(1)(f), 通信元数据',7),
+    'BLUETOOTH':('Art.5(1)(c), 近场数据采集',4),
+    'POST_NOTIFICATIONS':('Art.5(1)(c), 用户交互追踪',3),
+    'SYSTEM_ALERT_WINDOW':('Art.5(1)(f), 覆盖层可被滥用于钓鱼',7),
+    'BIND_ACCESSIBILITY_SERVICE':('Art.9, 可访问所有屏幕内容的特殊能力',10),
+    'REQUEST_INSTALL_PACKAGES':('Art.5(1)(f), 应用安装完整性',6),
 }
 
-# PIChecker — 第三方SDK常见数据收集类型与权限对应关系
+# PIChecker: 第三方SDK常见数据收集类型与权限对应关系
 _TPL_DATA_COLLECTION_MAP:Dict[str,List[str]]={
     'com.google.android.gms':['location','device_id','advertising_id'],
     'com.google.firebase':['app_instance_id','device_info','analytics'],
@@ -58,7 +58,7 @@ _DANGEROUS_PERMISSIONS:Dict[str,str]={'android.permission.READ_CALENDAR':'读取
 
 _CRITICAL_PERMISSIONS=['android.permission.READ_SMS','android.permission.SEND_SMS','android.permission.RECEIVE_SMS','android.permission.CALL_PHONE','android.permission.RECORD_AUDIO','android.permission.CAMERA','android.permission.ACCESS_FINE_LOCATION','android.permission.ACCESS_BACKGROUND_LOCATION','android.permission.READ_CONTACTS','android.permission.MANAGE_EXTERNAL_STORAGE','android.permission.INSTALL_PACKAGES','android.permission.REQUEST_INSTALL_PACKAGES','android.permission.SYSTEM_ALERT_WINDOW','android.permission.BIND_ACCESSIBILITY_SERVICE','android.permission.BIND_DEVICE_ADMIN','android.permission.BIND_NOTIFICATION_LISTENER_SERVICE']
 
-_DANGEROUS_PERMISSION_COMBOS:List[Tuple[List[str],str]]=[(['CAMERA','RECORD_AUDIO'],'相机+录音——可进行隐秘音视频录制'),(['ACCESS_FINE_LOCATION','CAMERA'],'GPS+相机——可进行地理位置标记拍照'),(['READ_CONTACTS','SEND_SMS'],'通讯录+短信——可向所有联系人发送短信'),(['READ_SMS','INTERNET'],'短信+网络——可窃取短信验证码并外传'),(['ACCESS_FINE_LOCATION','INTERNET'],'位置+网络——可跟踪用户位置并上传'),(['RECORD_AUDIO','INTERNET'],'录音+网络——可窃听并上传'),(['CAMERA','INTERNET'],'相机+网络——可偷拍并上传')]
+_DANGEROUS_PERMISSION_COMBOS:List[Tuple[List[str],str]]=[(['CAMERA','RECORD_AUDIO'],'相机+录音, 可进行隐秘音视频录制'),(['ACCESS_FINE_LOCATION','CAMERA'],'GPS+相机, 可进行地理位置标记拍照'),(['READ_CONTACTS','SEND_SMS'],'通讯录+短信, 可向所有联系人发送短信'),(['READ_SMS','INTERNET'],'短信+网络, 可窃取短信验证码并外传'),(['ACCESS_FINE_LOCATION','INTERNET'],'位置+网络, 可跟踪用户位置并上传'),(['RECORD_AUDIO','INTERNET'],'录音+网络, 可窃听并上传'),(['CAMERA','INTERNET'],'相机+网络, 可偷拍并上传')]
 
 _IOS_PRIVACY_KEYS:Dict[str,str]={'NSCameraUsageDescription':'相机','NSPhotoLibraryUsageDescription':'相册','NSPhotoLibraryAddUsageDescription':'写入相册','NSMicrophoneUsageDescription':'麦克风','NSLocationWhenInUseUsageDescription':'位置(使用中)','NSLocationAlwaysUsageDescription':'位置(始终)','NSLocationAlwaysAndWhenInUseUsageDescription':'位置(始终+使用中)','NSContactsUsageDescription':'通讯录','NSCalendarsUsageDescription':'日历','NSRemindersUsageDescription':'提醒事项','NSMotionUsageDescription':'运动与健身','NSHealthShareUsageDescription':'健康数据(读)','NSHealthUpdateUsageDescription':'健康数据(写)','NSFaceIDUsageDescription':'Face ID','NSBluetoothAlwaysUsageDescription':'蓝牙','NSSpeechRecognitionUsageDescription':'语音识别','NSAppleMusicUsageDescription':'Apple Music','NSHomeKitUsageDescription':'HomeKit','NFCReaderUsageDescription':'NFC','NSVideoSubscriberAccountUsageDescription':'视频订阅','NSUserTrackingUsageDescription':'跟踪(ATT)'}
 
@@ -123,20 +123,20 @@ class AndroidManifestAnalyzer:
         return s.findings
 
     def _check_debuggable(s):
-        if s.parser.extract_debuggable(): s.findings.append(ManifestFinding('debuggable',ManifestSeverity.CRITICAL,'android:debuggable="true"——发布版本可调试','','CWE-489','release构建中设置debuggable=false'))
+        if s.parser.extract_debuggable(): s.findings.append(ManifestFinding('debuggable',ManifestSeverity.CRITICAL,'android:debuggable="true", 发布版本可调试','','CWE-489','release构建中设置debuggable=false'))
     def _check_backup(s):
-        if s.parser.extract_backup_allowed(): s.findings.append(ManifestFinding('allow_backup',ManifestSeverity.MEDIUM,'allowBackup默认开启——可通过ADB备份导出数据','','CWE-200','若需禁用备份，显式设置allowBackup="false"'))
+        if s.parser.extract_backup_allowed(): s.findings.append(ManifestFinding('allow_backup',ManifestSeverity.MEDIUM,'allowBackup默认开启, 可通过ADB备份导出数据','','CWE-200','若需禁用备份，显式设置allowBackup="false"'))
     def _check_cleartext(s):
-        if s.parser.extract_uses_cleartext(): s.findings.append(ManifestFinding('cleartext_traffic',ManifestSeverity.HIGH,'usesCleartextTraffic="true"——允许HTTP明文','','','使用HTTPS并在NetworkSecurityConfig中禁用明文'))
+        if s.parser.extract_uses_cleartext(): s.findings.append(ManifestFinding('cleartext_traffic',ManifestSeverity.HIGH,'usesCleartextTraffic="true", 允许HTTP明文','','','使用HTTPS并在NetworkSecurityConfig中禁用明文'))
     def _check_target_sdk(s):
         ts=s.parser.extract_target_sdk()
-        if ts>0 and ts<33: s.findings.append(ManifestFinding('low_target_sdk',ManifestSeverity.MEDIUM,f'targetSdkVersion={ts}(<33)——未适配最新隐私保护','','','升级至34+'))
+        if ts>0 and ts<33: s.findings.append(ManifestFinding('low_target_sdk',ManifestSeverity.MEDIUM,f'targetSdkVersion={ts}(<33), 未适配最新隐私保护','','','升级至34+'))
     def _check_exported_components(s):
         for comp in s.components:
             if comp.exported and not comp.permission:
                 sev=ManifestSeverity.HIGH if any(ifl.get('actions') for ifl in comp.intent_filters) else ManifestSeverity.MEDIUM
                 s.findings.append(ManifestFinding('exported_no_permission',sev,f'{comp.component_type.value}"{comp.name}"导出且无权限保护',comp.name,'CWE-926','为非必要导出组件设置exported=false'))
-            if comp.component_type==ComponentType.PROVIDER and comp.exported: s.findings.append(ManifestFinding('exported_provider',ManifestSeverity.HIGH,f'ContentProvider"{comp.name}"导出——可能泄露数据',comp.name,'CWE-284','设置readPermission和writePermission'))
+            if comp.component_type==ComponentType.PROVIDER and comp.exported: s.findings.append(ManifestFinding('exported_provider',ManifestSeverity.HIGH,f'ContentProvider"{comp.name}"导出, 可能泄露数据',comp.name,'CWE-284','设置readPermission和writePermission'))
     def _check_dangerous_permissions(s):
         for perm in s.permissions:
             if perm in _DANGEROUS_PERMISSIONS: s.findings.append(ManifestFinding('dangerous_permission',ManifestSeverity.MEDIUM,f'危险权限:{perm}({_DANGEROUS_PERMISSIONS[perm]})',perm))
@@ -156,7 +156,7 @@ class AndroidManifestAnalyzer:
         for comp in s.components:
             for ifl in comp.intent_filters:
                 for act in ifl.get('actions',[]):
-                    if 'VIEW' in act and not comp.permission: s.findings.append(ManifestFinding('deep_link_weak',ManifestSeverity.MEDIUM,f'{comp.component_type.value}"{comp.name}"处理VIEW action无权限——Deep Link可被任意应用触发',comp.name,'CWE-927','添加permission保护或使用App Links'))
+                    if 'VIEW' in act and not comp.permission: s.findings.append(ManifestFinding('deep_link_weak',ManifestSeverity.MEDIUM,f'{comp.component_type.value}"{comp.name}"处理VIEW action无权限, Deep Link可被任意应用触发',comp.name,'CWE-927','添加permission保护或使用App Links'))
 
 # GDPR隐私合规评分
     def _compute_gdpr_score(s):
@@ -177,7 +177,7 @@ class AndroidManifestAnalyzer:
         for tpl_pkg,data_types in _TPL_DATA_COLLECTION_MAP.items():
             if tpl_pkg in raw_data:
                 score-=len(data_types)*0.3
-                gdpr_violations.append({"tpl":tpl_pkg,"data_collected":data_types,"article":"Art.30——处理活动记录(ROPA)"})
+                gdpr_violations.append({"tpl":tpl_pkg,"data_collected":data_types,"article":"Art.30, 处理活动记录(ROPA)"})
         s.gdpr_score=round(max(0.0,score),1)
         if s.gdpr_score<=3: lvl="critical"
         elif s.gdpr_score<=5: lvl="high"
@@ -205,7 +205,7 @@ class IOSInfoPlistAnalyzer:
     def _check_ats(s):
         ats=s.plist.get(s._ATS_KEY,{})
         if not ats: return
-        if ats.get('NSAllowsArbitraryLoads',False): s.findings.append(ManifestFinding('ats_disabled',ManifestSeverity.HIGH,'NSAllowsArbitraryLoads=true——ATS已完全禁用','','','移除NSAllowsArbitraryLoads'))
+        if ats.get('NSAllowsArbitraryLoads',False): s.findings.append(ManifestFinding('ats_disabled',ManifestSeverity.HIGH,'NSAllowsArbitraryLoads=true, ATS已完全禁用','','','移除NSAllowsArbitraryLoads'))
         for domain,config in ats.get('NSExceptionDomains',{}).items():
             if config.get('NSExceptionAllowsInsecureHTTPLoads',False): s.findings.append(ManifestFinding('ats_domain_exception',ManifestSeverity.MEDIUM,f'ATS例外域名"{domain}"允许不安全的HTTP',domain))
     def _check_privacy_permissions(s):
@@ -216,14 +216,14 @@ class IOSInfoPlistAnalyzer:
     def _check_url_schemes(s):
         for ut in s.plist.get(s._URL_TYPES_KEY,[]):
             for scheme in ut.get('CFBundleURLSchemes',[]):
-                if scheme.lower() in _KNOWN_HIGH_RISK_SCHEMES: s.findings.append(ManifestFinding('url_scheme_hijack_risk',ManifestSeverity.HIGH,f'注册敏感URL scheme:"{scheme}"——可能劫持其他应用',scheme,f'确认是否无意劫持了"{scheme}"'))
+                if scheme.lower() in _KNOWN_HIGH_RISK_SCHEMES: s.findings.append(ManifestFinding('url_scheme_hijack_risk',ManifestSeverity.HIGH,f'注册敏感URL scheme:"{scheme}", 可能劫持其他应用',scheme,f'确认是否无意劫持了"{scheme}"'))
                 s.findings.append(ManifestFinding('url_scheme_registered',ManifestSeverity.INFO,f'注册URL scheme:"{scheme}"',scheme,'优先使用Universal Links'))
     def _check_background_modes(s):
         for mode in s.plist.get(s._BACKGROUND_MODES_KEY,[]):
-            if mode in ('location','external-accessory','bluetooth-central'): s.findings.append(ManifestFinding('background_mode_sensitive',ManifestSeverity.LOW,f'后台模式:{mode}——可能被用于后台跟踪',mode))
+            if mode in ('location','external-accessory','bluetooth-central'): s.findings.append(ManifestFinding('background_mode_sensitive',ManifestSeverity.LOW,f'后台模式:{mode}, 可能被用于后台跟踪',mode))
     def _check_file_sharing(s):
-        if s.plist.get('UIFileSharingEnabled',False): s.findings.append(ManifestFinding('file_sharing_enabled',ManifestSeverity.MEDIUM,'UIFileSharingEnabled=true——可通过iTunes访问应用文件','','','除非必要，关闭文件共享'))
-        if s.plist.get('LSSupportsOpeningDocumentsInPlace',False): s.findings.append(ManifestFinding('document_browser_exposed',ManifestSeverity.LOW,'LSSupportsOpeningDocumentsInPlace=true——文档可被其他应用直接修改'))
+        if s.plist.get('UIFileSharingEnabled',False): s.findings.append(ManifestFinding('file_sharing_enabled',ManifestSeverity.MEDIUM,'UIFileSharingEnabled=true, 可通过iTunes访问应用文件','','','除非必要，关闭文件共享'))
+        if s.plist.get('LSSupportsOpeningDocumentsInPlace',False): s.findings.append(ManifestFinding('document_browser_exposed',ManifestSeverity.LOW,'LSSupportsOpeningDocumentsInPlace=true, 文档可被其他应用直接修改'))
     def _compute_gdpr_score(s):
         score=10.0; violations=[]
         for key,desc in _IOS_PRIVACY_KEYS.items():

@@ -1,5 +1,4 @@
-# EVM bytecode parser — hex → instruction sequence → basic blocks → function selectors
-# 不拆: 核心解析器 320 行，拆了 circular import 风险高
+# EVM bytecode parser - hex → instruction sequence → basic blocks → function selectors
 
 import re
 from dataclasses import dataclass, field
@@ -10,7 +9,7 @@ from ..core.opcodes import OPCODES, PUSH_OPCODES
 
 @dataclass
 class EVMOp:
-    """解码后的 EVM 操作 — pc, opcode, name, push_data。"""
+    """解码后的 EVM 操作 - pc, opcode, name, push_data。"""
     pc: int
     opcode: int
     name: str
@@ -27,7 +26,7 @@ class EVMOp:
 
 
 class EVMBytecodeParser:
-    """EVM 字节码解析器 — decode → basic blocks → CFG → selectors。"""
+    """EVM 字节码解析器 - decode → basic blocks → CFG → selectors。"""
 
     # 终止指令: 执行停止或无条件转移
     _TERMINATORS = frozenset({

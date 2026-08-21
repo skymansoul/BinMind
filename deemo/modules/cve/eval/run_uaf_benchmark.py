@@ -1,14 +1,13 @@
-# UAF 多工具对比主实验 — 统一 CSV 基准测试.
+# UAF 多工具对比主实验 - 统一 CSV 基准测试.
 #
 # 决策逻辑:
 #   对 regression_uaf/build 下全部编译产物运行三类工具:
 #     BinMind-UAF-ULPR (本工作, 含生命周期来源复核)
 #     BinMind-UAF-Base  (同管线, 关闭 ULPR)
-#     angr-uaf         (CFG 层 free→use 模式探测)
+#     angr-uaf         (CFG 层 free->use 模式探测)
 #   输出 eval/results/uaf_benchmark.csv 与 uaf_benchmark.json,
 #   含: 工具名、样本ID、优化档、检出数、误报数、漏报数、耗时、峰值内存.
 #
-# 创建: 2025-03-03
 
 import csv
 import json

@@ -1,16 +1,16 @@
-# 补丁质量评估器——评估漏洞修复的正确性、完整性和安全回归风险。
+# 补丁质量评估器-评估漏洞修复的正确性、完整性和安全回归风险。
 # SAN2PATCH 四阶段验证模式和VRpilot
 # 迭代反馈验证方法。
 #
 # 评估维度:
-#   1. 正确性——补丁是否修复了目标漏洞（功能维度）
-#   2. 完整性——补丁是否覆盖所有相关漏洞变体（覆盖维度）
-#   3. 安全性——补丁是否引入新的安全回归（安全回归维度）
-#   4. 可维护性——补丁代码是否符合安全与可维护标准（质量维度）
-#   5. 向后兼容——补丁是否改变API/ABI（兼容性维度）
+#   1. 正确性-补丁是否修复了目标漏洞（功能维度）
+#   2. 完整性-补丁是否覆盖所有相关漏洞变体（覆盖维度）
+#   3. 安全性-补丁是否引入新的安全回归（安全回归维度）
+#   4. 可维护性-补丁代码是否符合安全与可维护标准（质量维度）
+#   5. 向后兼容-补丁是否改变API/ABI（兼容性维度）
 #
-# —— 初版，静态分析+编译验证
-# —— 新增回归测试和安全模式检查
+# - 初版，静态分析+编译验证
+# - 新增回归测试和安全模式检查
 
 import os, re, json, subprocess, tempfile, difflib, logging, hashlib
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -55,18 +55,18 @@ class PatchEvaluation:
 
 
 class PatchQualityEvaluator:
-    """补丁质量评估器——五维度评估+编译验证。
+    """补丁质量评估器-五维度评估+编译验证。
 
     评估流程:
-        1. 编译验证——补丁是否能通过编译
-        2. 正确性检查——修复前后行为差异分析
-        3. 完整性检查——是否存在未修复的同类型漏洞变体
-        4. 安全性检查——新代码是否引入新的危险模式
-        5. 质量检查——代码风格/边界处理/错误处理
-        6. 兼容性检查——函数签名/ABI是否变化
+        1. 编译验证-补丁是否能通过编译
+        2. 正确性检查-修复前后行为差异分析
+        3. 完整性检查-是否存在未修复的同类型漏洞变体
+        4. 安全性检查-新代码是否引入新的危险模式
+        5. 质量检查-代码风格/边界处理/错误处理
+        6. 兼容性检查-函数签名/ABI是否变化
     """
 
-    # 危险代码模式——补丁应避免引入
+    # 危险代码模式-补丁应避免引入
     _DANGER_PATTERNS = [
         (r'\bstrcpy\s*\(', 'strcpy is unsafe, use strncpy or strlcpy'),
         (r'\bstrcat\s*\(', 'strcat is unsafe'),
@@ -78,7 +78,7 @@ class PatchQualityEvaluator:
         (r'\bstrncpy\s*\([^,]+,\s*[^,]+,\s*sizeof', 'sizeof with strncpy may not null-terminate'),
     ]
 
-    # 安全模式——补丁应包含的正面模式
+    # 安全模式-补丁应包含的正面模式
     _SAFE_PATTERNS = [
         (r'\bif\s*\([^)]*==\s*NULL\)', 'NULL check present'),
         (r'\bif\s*\([^)]*<\s*sizeof', 'size validation present'),
@@ -113,21 +113,21 @@ class PatchQualityEvaluator:
         self._issues = []
         dims = []
 
-        # 维度1: 正确性——diff分析
+        # 维度1: 正确性-diff分析
         dims.append(self._evaluate_correctness(original_code, patched_code,
                                                  vuln_type, patch_desc))
 
-        # 维度2: 完整性——检查残留同类漏洞模式
+        # 维度2: 完整性-检查残留同类漏洞模式
         dims.append(self._evaluate_completeness(original_code, patched_code,
                                                   vuln_type))
 
-        # 维度3: 安全性——补丁代码危险模式检查
+        # 维度3: 安全性-补丁代码危险模式检查
         dims.append(self._evaluate_security(patched_code, original_code))
 
-        # 维度4: 可维护性——代码质量
+        # 维度4: 可维护性-代码质量
         dims.append(self._evaluate_maintainability(original_code, patched_code))
 
-        # 维度5: 兼容性——函数签名与API
+        # 维度5: 兼容性-函数签名与API
         dims.append(self._evaluate_compatibility(original_code, patched_code))
 
         # 加权总分
@@ -160,7 +160,7 @@ class PatchQualityEvaluator:
             test_results={})
 
     def _evaluate_correctness(self, orig, patched, vuln_type, desc):
-        """正确性评估——检查补丁是否实际修改漏洞相关代码。"""
+        """正确性评估-检查补丁是否实际修改漏洞相关代码。"""
         diff = list(difflib.unified_diff(
             orig.splitlines(keepends=True),
             patched.splitlines(keepends=True),
@@ -207,12 +207,12 @@ class PatchQualityEvaluator:
                      'matched_terms': matched_terms[:10]})
 
     def _evaluate_completeness(self, orig, patched, vuln_type):
-        """完整性评估——补丁是否修复所有类似漏洞实例。
+        """完整性评估-补丁是否修复所有类似漏洞实例。
 
         在原始代码中搜索与修复模式相似的未修复位置。
         """
         issues = []
-        # 默认偏乐观——无法确定时
+        # 默认偏乐观-无法确定时
         score = 0.7
 
         # 从diff中提取修复模式
@@ -245,7 +245,7 @@ class PatchQualityEvaluator:
             passed=score >= 0.5, issues=issues[:3])
 
     def _evaluate_security(self, patched, original):
-        """安全性评估——检查补丁是否引入新的安全问题。"""
+        """安全性评估-检查补丁是否引入新的安全问题。"""
         issues = []
         safe_count = 0
         score = 0.5
@@ -278,7 +278,7 @@ class PatchQualityEvaluator:
                      'danger_patterns_found': len(issues)})
 
     def _evaluate_maintainability(self, orig, patched):
-        """可维护性评估——代码质量指标。"""
+        """可维护性评估-代码质量指标。"""
         issues = []
         score = 0.6
 
@@ -289,10 +289,10 @@ class PatchQualityEvaluator:
                              if (l.startswith('+') and not l.startswith('+++'))
                              or (l.startswith('-') and not l.startswith('---'))])
         if total_changes > 100:
-            issues.append(f'变更行数过多({total_changes})——建议拆分为多个逻辑独立补丁')
+            issues.append(f'变更行数过多({total_changes})-建议拆分为多个逻辑独立补丁')
             score -= 0.2
         elif total_changes < 2:
-            issues.append('变更量极小——可能未完全修复')
+            issues.append('变更量极小-可能未完全修复')
             score -= 0.1
 
         # 注释质量
@@ -307,7 +307,7 @@ class PatchQualityEvaluator:
             details={'total_changes': total_changes})
 
     def _evaluate_compatibility(self, orig, patched):
-        """兼容性评估——函数签名/API/ABI是否改变。"""
+        """兼容性评估-函数签名/API/ABI是否改变。"""
         issues = []
         score = 0.8
 
@@ -326,7 +326,7 @@ class PatchQualityEvaluator:
 
         removed = orig_names - patch_names
         if removed:
-            issues.append(f'函数被移除: {removed}——可能破坏ABI兼容性')
+            issues.append(f'函数被移除: {removed}-可能破坏ABI兼容性')
             score -= 0.3
 
         # 签名变更检测
@@ -343,7 +343,7 @@ class PatchQualityEvaluator:
             passed=score >= 0.5, issues=issues[:3])
 
     def _estimate_regression_risk(self, dims, orig, patched):
-        """评估回归风险——基于变更规模与安全性评估。"""
+        """评估回归风险-基于变更规模与安全性评估。"""
         sec_dim = next((d for d in dims if d.dimension == 'security'), None)
         comp_dim = next((d for d in dims if d.dimension == 'compatibility'), None)
 
@@ -354,7 +354,7 @@ class PatchQualityEvaluator:
         if comp_dim and comp_dim.score < 0.5:
             risk += 0.2
 
-        # 大变更→高回归风险
+        # 大变更-高回归风险
         change_size = len(patched) - len(orig)
         if abs(change_size) > 500:
             risk += 0.2
@@ -370,9 +370,9 @@ class PatchQualityEvaluator:
                 for issue in d.issues[:2]:
                     recs.append(f'[{d.dimension}] {issue}')
         if overall < 0.5:
-            recs.append('建议拒绝该补丁——综合评分过低，需要重新设计修复方案。')
+            recs.append('建议拒绝该补丁-综合评分过低，需要重新设计修复方案。')
         elif overall < 0.7:
-            recs.append('补丁可接受但需要补充修改——关注安全性维度的警告。')
+            recs.append('补丁可接受但需要补充修改-关注安全性维度的警告。')
         return recs
 
 

@@ -15,6 +15,7 @@ SAMPLE_DIR = _ROOT / "sample_bins"
 
 sys.path.insert(0, str(HEAP_DIR))
 from orchestrator import analyze_heap
+BASE_DIR = Path(__file__).resolve().parents[3]
 RESULTS_DIR = BASE_DIR / "tests" / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 

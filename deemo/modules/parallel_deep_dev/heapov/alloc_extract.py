@@ -7,12 +7,12 @@ calloc(n, sz) 的大小合并为 n*sz; 同变量多次分配取最后一次
 
 from typing import List
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Var, Const, Binary, Call, Sizeof,
 )
-from heapov import cparser as cp
-from heapov.dataflow import iter_statements
-from heapov.model import AllocSite
+from . import cparser as cp
+from .dataflow import iter_statements
+from .model import AllocSite
 
 
 def _size_of_alloc(call: Call, args: List[Expr]) -> Expr:

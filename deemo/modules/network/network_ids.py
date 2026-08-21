@@ -11,7 +11,7 @@
 import logging
 from typing import List, Dict, Optional, Any
 
-from .network_ids_types import SuricataRule, SID_RANGE, _log
+from .network_ids_types import SuricataRule, _log
 from .network_ids_parser import parse_suricata_rule
 from .network_ids_builtin import BUILT_IN_RULES
 from .network_ids_matching import rule_matches_packet
@@ -19,7 +19,7 @@ from .network_ids_matching import rule_matches_packet
 # 保持模块级常量可直接引用
 __all__ = [
     "SuricataRule", "RuleEngine", "BUILT_IN_RULES",
-    "parse_suricata_rule", "SID_RANGE",
+    "parse_suricata_rule",
 ]
 
 

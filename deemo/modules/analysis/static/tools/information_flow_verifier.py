@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 # ── Bell-LaPadula 格模型 ───────────────────────────────────────────────────
 # Bell & LaPadula (1973) "Secure Computer Systems"
 # 核心规则: (1) 读取 up (简单安全属性) (2) 写入 down (*属性)
-# 本实现将安全标签建模为完全偏序格——Unclassified < Confidential < Secret < TopSecret
+# 本实现将安全标签建模为完全偏序格, Unclassified < Confidential < Secret < TopSecret
 # 格的 join 操作用来确定两个标签合并后的最低允许级别
 
 class SecurityLattice:
-    """Bell-LaPadula 安全格——对安全标签进行偏序比较和合并"""
+    """Bell-LaPadula 安全格, 对安全标签进行偏序比较和合并"""
     _ORDER = {"public": 0, "confidential": 1, "secret": 2, "top_secret": 3}
     _NAMES = {0: "public", 1: "confidential", 2: "secret", 3: "top_secret"}
 
@@ -26,7 +26,7 @@ class SecurityLattice:
 
     @classmethod
     def join(cls, level_a: str, level_b: str) -> str:
-        """格的最小上界——两个标签的 join 是较高级别的那个"""
+        """格的最小上界, 两个标签的 join 是较高级别的那个"""
         a = cls._ORDER.get(str(level_a).lower(), 0)
         b = cls._ORDER.get(str(level_b).lower(), 0)
         return cls._NAMES[max(a, b)]
@@ -164,7 +164,7 @@ class InformationFlowVerifier(BaseAnalyzer):
 
     def _verify_bell_lapadula(self) -> List[FlowViolation]:
         """使用 Bell-LaPadula 格模型进行形式化信息流验证
-        比简单的非干扰检查更精确——明确验证 *属性 和简单安全属性
+        比简单的非干扰检查更精确, 明确验证 *属性 和简单安全属性
         """
         violations: List[FlowViolation] = []
         variables = list(self._security_labels.keys())

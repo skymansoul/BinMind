@@ -86,7 +86,6 @@ def attempt_lifting_pattern(handler_seq: list[dict]) -> str | None:
 # 去重后 handler 数量可减少 30-50%，简化后续分析
 import re as _re
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
@@ -132,7 +131,6 @@ def compute_handler_entropy(handler_list: list[dict]) -> float:
 # Headless VM 检测批量入口
 def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
     """无头批量 VM 保护壳检测。对多个二进制执行 handler 分类和复杂度评估。
-    # 不拆——保持上下文连贯性，拆了反而难读
     输出各文件的 VM 保护等级和 handler 统计。"""
     import json as _json
     results = {}
@@ -158,6 +156,8 @@ def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
     return out
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

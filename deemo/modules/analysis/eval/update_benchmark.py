@@ -1,4 +1,4 @@
-"""更新基准测试结果 — 将 PPA-HAV 实测数据与基线工具对比.
+"""更新基准测试结果 - 将 PPA-HAV 实测数据与基线工具对比.
 
 使用:
   python update_benchmark.py [--scan-results PATH] [--samples N]

@@ -1,4 +1,4 @@
-"""UAF-FPMIN 检测器 — BinaryUafScanner + 误报融合抑制封装.
+"""UAF-FPMIN 检测器 - BinaryUafScanner + 误报融合抑制封装.
 
 管线: objdump 文本 → BinaryUafScanner (既有, 不改动) →
       UafFpSuppressor (S1-S5 证据过滤) → 最终 findings.
@@ -18,7 +18,7 @@ from ..heap_analysis.instruction_parser import InstructionParser  # noqa: E402
 
 
 class UafFpminScanner:
-    """误报抑制版 UAF 扫描器 — run_scanner 的 uaf_fpmin 检测器."""
+    """误报抑制版 UAF 扫描器 - run_scanner 的 uaf_fpmin 检测器."""
 
     def __init__(self, binary_path: Optional[str] = None):
         self._binary_path = binary_path

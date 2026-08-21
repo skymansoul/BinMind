@@ -7,13 +7,12 @@ import os as _os
 import sys
 from typing import Optional
 
-  # 保留 — 交互式调试 shell 备用
 import code
 
 from . import ebpf_common, ebpf_analyzer, ebpf_taint_tracker
 from . import kernel_exploit_gen, windows_kernel_callback_detector
 
-# 保留——旧版单命令入口，暂时不删
+# 保留, 旧版单命令入口，暂时不删
 # def _legacy_main():
 #     print("legacy kernel CLI — use argparse instead")
 #     sys.exit(1)
@@ -85,7 +84,6 @@ def _parse_callback_detect_args(sub):
     sub.add_argument('--risk-threshold', type=int, default=30,
                     help='Minimum risk score for reporting')
 
-  # 保留——计划支持 ETW provider GUID XML 解析
   # subscriber.add_argument('--etw-manifest', help='ETW manifest XML path')
 
 def _build_parser():

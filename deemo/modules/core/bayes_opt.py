@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-06-28 — GP 回归 + EI 采集 + 参数空间
-# 修改: 2026-06-28 — 增加 max_evaluations 上限 (默认100), Cholesky 数值稳定性
+# 增加 max_evaluations 上限 (默认100), Cholesky 数值稳定性
 """
-贝叶斯优化钩子参数调优 — GP 代理模型 + EI 采集, 面向管道执行的参数搜索.
+贝叶斯优化钩子参数调优 - GP 代理模型 + EI 采集, 面向管道执行的参数搜索.
 
 与 scikit-optimize/Optuna 的差异: 目标函数是管道执行质量 (非 ML 精度),
 参数空间是钩子语义参数 (分析深度/阈值/算法变体). 纯 Python 无外部依赖.
@@ -36,7 +35,7 @@ class Trial:
 
 
 class GaussianProcess:
-    """简化高斯过程回归 — RBF kernel + 噪声 + Cholesky 分解.
+    """简化高斯过程回归 - RBF kernel + 噪声 + Cholesky 分解.
 
     参考: Rasmussen & Williams, Algorithm 2.1.
     """
@@ -128,7 +127,7 @@ def expected_improvement(mu: float, sigma: float, best_y: float, xi: float = 0.0
 
 
 class BayesOptimizer:
-    """贝叶斯优化器 — 为钩子参数空间找到最大化产出质量的参数组合.
+    """贝叶斯优化器 - 为钩子参数空间找到最大化产出质量的参数组合.
 
     用法:
       space = [ParamDef('depth', 'integer', 1, 10),

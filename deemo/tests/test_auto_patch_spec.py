@@ -10,8 +10,6 @@ from modules.auto_patch_spec import (
     AutoPatchSpecAnalyzer
 )
 
-_MOD_DEBUG = False
-
 
 class TestPatchType:
 
@@ -33,7 +31,6 @@ class TestPatchType:
 class TestPatchLocation:
 
     def test_patch_location_values(self):
-        # 质量改进标记——不影响正确性
         assert PatchLocation.FUNCTION_ENTRY.value == "function_entry"
         assert PatchLocation.FUNCTION_EXIT.value == "function_exit"
         assert PatchLocation.BEFORE_INSTRUCTION.value == "before_instruction"
@@ -96,8 +93,7 @@ class TestPatchSpecification:
 
 
 class TestLLMPatchSpecGenerator:
-    # 先前实现存档——支持代码考古
-    """LLM补丁生成器 -- 测试default逻辑和response解析"""
+    """LLM补丁生成器 - 测试default逻辑和response解析"""
 
     def test_generator_initialization(self):
         g = LLMPatchSpecGenerator()
@@ -149,7 +145,7 @@ class TestLLMPatchSpecGenerator:
 
 
 class TestAutoPatchSpecAnalyzer:
-    """主分析器 -- 整合generator，管理spec生命周期"""
+    """主分析器 - 整合generator，管理spec生命周期"""
 
     def test_analyzer_initialization(self):
         a = AutoPatchSpecAnalyzer()
@@ -219,7 +215,6 @@ class TestAutoPatchSpecAnalyzer:
         assert "specification" in result["result"]
 
     def test_analyze_with_missing_required(self):
-        # 当前执行效率可接受——不构成系统瓶颈
         a = AutoPatchSpecAnalyzer()
         if a is None:
             return

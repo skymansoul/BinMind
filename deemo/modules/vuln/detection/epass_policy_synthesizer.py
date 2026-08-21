@@ -1,19 +1,16 @@
 # coding: utf-8
-# 创建: 2026-05-27  |  BPF策略合成器
-# 修改: 2026-05-27  |  审计后补充文件头与错误处理
-#
 """
-漏洞利用原语感知的沙箱策略——seccomp-BPF策略合成器。
+漏洞利用原语感知的沙箱策略-seccomp-BPF策略合成器。
 
 从SyscallBlocklist生成可加载的seccomp-BPF策略。
 
 seccomp-BPF策略格式(Berkeley Packet Filter字节码):
-  每条指令: {opcode, jt, jf, k} —— 共8字节
+  每条指令: {opcode, jt, jf, k} - 共8字节
   策略结构:
-    1. 加载系统调用号(ld [4])——从seccomp_data.nr
-    2. 架构检查(jeq AUDIT_ARCH_X86_64)——确保64位
-    3. syscall匹配序列——每syscall一条jeq/jgt/jge指令
-    4. 默认动作——SECCOMP_RET_ALLOW或SECCOMP_RET_KILL
+    1. 加载系统调用号(ld [4])-从seccomp_data.nr
+    2. 架构检查(jeq AUDIT_ARCH_X86_64)-确保64位
+    3. syscall匹配序列-每syscall一条jeq/jgt/jge指令
+    4. 默认动作-SECCOMP_RET_ALLOW或SECCOMP_RET_KILL
 
 动作选项:
   SECCOMP_RET_KILL_PROCESS (0x80000000): 杀死进程(最安全)
@@ -21,9 +18,9 @@ seccomp-BPF策略格式(Berkeley Packet Filter字节码):
   SECCOMP_RET_ALLOW (0x7FFF0000): 允许
 
 策略优化:
-  1. syscall排序→二分查找(减少BPF指令数)
-  2. 相邻syscall合并→jge/jle区间比较
-  3. 高影响syscall→ERRNO替代KILL(保持程序运行但阻断利用)
+  1. syscall排序-二分查找(减少BPF指令数)
+  2. 相邻syscall合并-jge/jle区间比较
+  3. 高影响syscall-ERRNO替代KILL(保持程序运行但阻断利用)
 
 与sandbox_policy_gen的差异:
   sandbox_policy_gen: 通用syscall allowlist(基于strace/sysdig)
@@ -64,7 +61,7 @@ _BPF_RET = 0x06         # 返回
 
 @dataclass
 class SeccompPolicy:
-    """seccomp-BPF策略——可加载至内核"""
+    """seccomp-BPF策略-可加载至内核"""
     policy_name: str
     target_primitive: str
     # BPF指令列表(每条指令为8字节打包)
@@ -82,14 +79,14 @@ class SeccompPolicySynthesizer:
     """从SyscallBlocklist合成seccomp-BPF字节码。
 
     BPF生成算法:
-      1. 加载syscall号(seccomp_data.nr → 偏移0)
-      2. 架构检查——非x86_64→KILL
+      1. 加载syscall号(seccomp_data.nr - 偏移0)
+      2. 架构检查-非x86_64-KILL
       3. 对排序后的syscall号序列生成线性匹配链
-      4. 对每syscall→KILL/ERRNO, 默认→ALLOW
+      4. 对每syscall-KILL/ERRNO, 默认-ALLOW
 
     指令数优化:
-      - 排序后二分查找→O(log N) vs 线性O(N)
-      - 相邻syscall区间合并→jge/jle替代单syscall的jeq
+      - 排序后二分查找-O(log N) vs 线性O(N)
+      - 相邻syscall区间合并-jge/jle替代单syscall的jeq
       - 典型策略: 1(架构)+3-8(syscall)+1(默认) = 5-10条指令
     """
 
@@ -133,23 +130,23 @@ class SeccompPolicySynthesizer:
         instructions.append(_bpf_stmt(_BPF_LD_ABS, 0, 0, 0))  # offset 0 = nr
 
         # 指令1: 架构检查
-        arch_check_jt = 0   # 匹配→下一条(继续)
-        arch_check_jf = 1   # 不匹配→KILL(跳1条)
+        arch_check_jt = 0   # 匹配-下一条(继续)
+        arch_check_jf = 1   # 不匹配-KILL(跳1条)
         instructions.append(_bpf_jmp(_BPF_JMP_JEQ, arch_check_jt, arch_check_jf,
                                        _AUDIT_ARCH_X86_64, 0))
-        # 架构不匹配→KILL
+        # 架构不匹配-KILL
         instructions.append(_bpf_ret(_SECCOMP_RET_KILL))
 
-        # 指令2+: syscall匹配链(当前为线性——大集合可升级二分)
-        # 线性匹配: 对每个syscall号→如果匹配则KILL/ERRNO
+        # 指令2+: syscall匹配链(当前为线性-大集合可升级二分)
+        # 线性匹配: 对每个syscall号-如果匹配则KILL/ERRNO
         offset_after_chain = len(instructions) + len(blocked_nrs) * 2 + 1
         for i, nr in enumerate(blocked_nrs):
             is_high = all_blocked[i] in blocklist.high_impact_syscalls
             action = (_SECCOMP_RET_ERRNO | 1  # EPERM
                       if (is_high and use_errno) else _SECCOMP_RET_KILL)
-            # jeq nr → 匹配则采取动作
-            jt_match = 0  # 匹配→下一条=动作
-            jf_match = 1  # 不匹配→跳过动作继续
+            # jeq nr - 匹配则采取动作
+            jt_match = 0  # 匹配-下一条=动作
+            jf_match = 1  # 不匹配-跳过动作继续
             instructions.append(_bpf_jmp(_BPF_JMP_JEQ, jt_match, jf_match, nr, 0))
             # 动作
             instructions.append(_bpf_ret(action))
@@ -169,7 +166,7 @@ class SeccompPolicySynthesizer:
             instruction_count=len(instructions))
 
     def render_readable(self, policy: SeccompPolicy) -> str:
-        """渲染为人类可读的伪代码——审计/调试用"""
+        """渲染为人类可读的伪代码-审计/调试用"""
         lines = [
             f"# Seccomp-BPF Policy: {policy.policy_name}",
             f"# Target: {policy.target_primitive}",
@@ -191,17 +188,17 @@ class SeccompPolicySynthesizer:
 
 
 def _bpf_stmt(code: int, jt: int, jf: int, k: int) -> bytes:
-    """BPF语句——无返回值"""
+    """BPF语句-无返回值"""
     return struct.pack('<HBBI', code, jt, jf, k)
 
 
 def _bpf_jmp(code: int, jt: int, jf: int, k: int, jt_offset: int) -> bytes:
-    """BPF跳转——jt/jf为相对偏移(指令数)"""
+    """BPF跳转-jt/jf为相对偏移(指令数)"""
     return struct.pack('<HBBI', code, jt, jf, k)
 
 
 def _bpf_ret(action: int) -> bytes:
-    """BPF返回——SECCOMP_RET_*"""
+    """BPF返回-SECCOMP_RET_*"""
     return struct.pack('<HBBI', _BPF_RET, 0, 0, action)
 
 

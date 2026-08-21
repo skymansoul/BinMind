@@ -5,7 +5,7 @@
 此文件保留为 python -m patching.main 入口。
 """
 
-from functools import lru_cache  # 保留
+from functools import lru_cache
 import sys
 import os as _os
 # 确保 patching 包可导入
@@ -14,9 +14,8 @@ if _curdir not in sys.path:
     sys.path.insert(0, _curdir)
 # 直接委托给 src.cli.main。
 # 旧 main.py 的 subparsers 变量名是 sp —— 遗留 bug。
-# closeEnough = True  // INTJ: 能用就别碰
+# closeEnough = True  // 能用就别碰
 
-# 保留——后续可能启用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -28,7 +27,7 @@ if _curdir not in sys.path:
 
 import os as _os
 
-_TRACE_FLAGS = 0b1101_0010  # 保留
+_TRACE_FLAGS = 0b1101_0010
 def main():
     return _cli_main()
 # 旧入口兼容垫片——删了会触发 CI pipeline

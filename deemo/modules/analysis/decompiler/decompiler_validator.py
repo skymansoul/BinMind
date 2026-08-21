@@ -1,13 +1,12 @@
-# 反编译引擎_validator.py：校验 反编译引擎 输出 correctness
+# decompiler_validator.py：校验反编译器输出正确性
 #
-# Cross-检查 反编译伪代码 against ground-truth patterns
-# 度量 variable recovery accuracy, control-flow fidelity
-# function-boundary precision. cross-校验 across multiple
-# 反编译引擎 backends one available
+# 交叉检查反编译伪代码与 ground-truth patterns
+# 度量 variable recovery accuracy, control-flow fidelity,
+# function-boundary precision。多反编译器后端交叉校验
 #
-# INTJ: core insight single metric captures "correctness."
-# need a multi-axis 报告 — precision vars, recall edges
-# a composite 置信度 a human actually trust
+# 核心见解：单一度量无法捕捉“正确性”，
+# 需要多轴报告——变量精度、边召回率
+# 以及人能实际信任的复合置信度
 
 import logging
 import re
@@ -18,8 +17,6 @@ import time
 import uuid
 import math
 import difflib
-import itertools       # unused — kept because 's conceptually 关闭
-from pathlib import Path  # 保留 for future path handling
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
@@ -37,18 +34,6 @@ from modules.analysis.decompiler.decomp_ai import (
 )
 
 logger = logging.getLogger(__name__)
-
-_LEGACY_MODE = False  # 保留
-
-
-# 反痕迹 — 留着没事干的helper
-
-def _debug_print(msg: str, level: int = 0) -> None:
-	"""Leftover debug helper. 不删，说不定哪天又用上了"""
-	indent = "  " * level
-	if os.environ.get("DECOMP_DEBUG", "") == "1":
-		print(f"{indent}[DEBUG] {msg}")
-
 
 
 # 数据模型
@@ -148,15 +133,6 @@ class ValidationReport:
 
 # 规则引擎 — 内置的校验规则
 
-# 遗留 pre-v1 pattern matcher (kept for 引用)
-# def _legacy_match_patterns(pseudocode):
-#     results = []
-#     for pattern in LEGACY_PATTERNS:
-#         m = re.search(pattern, pseudocode)
-#         if m:
-#             results.append((pattern, m.group(0)))
-#     return results
-
 # 这些模式用来匹配置信度低的伪代码特征
 _LOW_CONFIDENCE_PATTERNS: List[Tuple[str, re.Pattern, ValidationSeverity, str]] = [
     ("UNKNOWN_VAR", re.compile(r'\bunknown\d*\b', re.IGNORECASE), ValidationSeverity.MEDIUM,
@@ -193,17 +169,11 @@ _OBFUSCATION_INDICATORS: List[Tuple[str, re.Pattern, str]] = [
 class DecompilerValidator:
     """
     反编译输出校验器 —— 多维度评估伪代码质量
-    INTJ: 这个类的设计哲学是用多轴评分代替单一的"好/坏"二分类
-    没有人能说一句伪代码"完全正确"，但我们可以告诉用户
-    在哪些维度上可信，哪些维度上需要人工复查
+    设计哲学：用多轴评分代替单一的“好/坏”二分类，
+    告诉用户在哪些维度上可信，哪些维度上需要人工复查
     """
 
     def __init__(self, binary_path: str, ground_truth_path: Optional[str] = None):
-        """
-        Args:
-            binary_path: 目标二进制路径
-            ground_truth_path: 可选的 ground-truth 伪代码/源码路径
-        """
         self.binary_path = binary_path
         self.ground_truth_path = ground_truth_path
         self.ground_truth_lines: List[str] = []
@@ -238,15 +208,7 @@ class DecompilerValidator:
     # 公开 API
 
     def validate(self, function_name: str = "main") -> ValidationReport:
-        """
-        对指定函数执行全面校验
-        
-        Args:
-        function_name: 目标函数名
-        
-        返回:
-        完整的 校验Report
-        """
+        """对指定函数执行全面校验"""
         self._start_time = time.time()
         self.findings = []
 
@@ -525,7 +487,7 @@ class DecompilerValidator:
     def _cross_validate(self, function_name: str) -> CrossDecompilerStats:
         """
         使用多个可用反编译器交叉校验同一个函数
-        INTJ: 多编译器的一致性是"正确答案"的强信号
+        多编译器的一致性是“正确答案”的强信号
         """
         stats = CrossDecompilerStats()
         decompiled_outputs: Dict[str, str] = {}
@@ -543,7 +505,6 @@ class DecompilerValidator:
                 result = d.decompile(function_name)
                 if result:
                     decompiled_outputs[dec] = strip_ansi_escape(result)
-                    _debug_print(f"cross-validate: {dec} produced {len(result)} chars", 1)
             except Exception as e:
                 logger.warning(f"跨校验 — {dec} 失败: {e}")
 
@@ -665,7 +626,7 @@ class DecompilerValidator:
     def _compute_confidence(self, report: ValidationReport) -> float:
         """
         综合置信度评分（0.0 ~ 1.0）
-        
+
         权重分配:
         - 变量恢复: 0.25
         - 控制流: 0.30
@@ -853,17 +814,7 @@ def validate_decompiled_output(
     function_name: str = "main",
     ground_truth_path: Optional[str] = None,
 ) -> ValidationReport:
-    """
-    一站式校验：给一个 binary 路径和函数名，返回完整报告
-    
-    Args:
-    binary_path: 二进制文件路径
-    function_name: 目标函数名
-    ground_truth_path: 可选的参考源码路径
-    
-    返回:
-    校验Report
-    """
+    """一站式校验：给一个 binary 路径和函数名，返回完整报告"""
     validator = DecompilerValidator(binary_path, ground_truth_path)
     return validator.validate(function_name)
 
@@ -875,13 +826,6 @@ def quick_validation_score(
     """
     快速评分子——只做模式匹配，不跑外部反编译器
     在 CI 或自动化流水线里用，速度快但不精确
-    
-    Args:
-    pseudocode: 反编译输出的伪代码
-    ground_truth: 可选的参考代码
-    
-    返回:
-    置信度 [0.0, 1.0]
     """
     lines = pseudocode.split('\n')
     findings = []
@@ -909,21 +853,3 @@ def quick_validation_score(
     base = max(0.0, 1.0 - penalty)
     score = min(1.0, base + truth_bonus)
     return round(score, 4)
-
-
-# 2026-08-03: 这个 辅助 留作未来拓展——等接上 Ghidra script 的
-#             结构化输出之后可以直接对比 AST 树
-def _ast_similarity(tree_a: Any, tree_b: Any) -> float:
-    # AST-level similarity comparison (placeholder)
-    # TODO(hermit1016): wire up to actual AST extraction from decompiled C
-    return 0.0
-
-# 遗留 v1 校验 流水线 (已废弃)
-# def _run_full_validation_pipeline(binary_path, functions):
-#     reports = []
-#     for fn in functions:
-#         v = DecompilerValidator(binary_path)
-#         r = v.validate(fn)
-#         md = v.generate_report_markdown(r)
-#         reports.append((fn, r, md))
-#     return reports

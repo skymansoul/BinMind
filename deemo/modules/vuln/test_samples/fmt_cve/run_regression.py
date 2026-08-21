@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-11  |  格式串回归套件——一键编排
 #
 """一键回归: compile → scan → collect → report."""
 

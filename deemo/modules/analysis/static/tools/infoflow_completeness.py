@@ -1,32 +1,12 @@
-# 修改记录:
-# 2025-08-14 11:28 - 可达流上界: 调用图 + 数据依赖边 -> 可能流估计
-# 2025-08-14 16:05 - 已验证流比率: 实际追踪 / 可能流上界 -> 完备性百分比
-# 2025-08-16 13:40 - 上界估计改进: 使用 Floyd-Warshall 传递闭包
-# 2025-08-21 10:10 - 隐式流估计: 控制依赖边作为额外潜在流, 每条件分支增加1条隐式流
+# 可达流上界: 调用图 + 数据依赖边 -> 可能流估计
+# 已验证流比率: 实际追踪 / 可能流上界 -> 完备性百分比
+# 上界估计改进: 使用 Floyd-Warshall 传递闭包
+# 隐式流估计: 控制依赖边作为额外潜在流, 每条件分支增加1条隐式流
 
-"""信息流分析完备性量化 - 从二值 (通过/失败) 到连续完备性度量
-
-information_flow_verifier.py 验证信息流是否违反策略 (如 secret->public)
-但回答的是"是否存在违规流"--不回答"我们检查了多少可能的流"
-
-完备性差距的后果:
-  若仅检查了 30% 的可能流 -> "未发现违规"很可能意味着"未充分检查"
-  若检查了 95% 的可能流 -> "未发现违规"有较高的置信度
-
-本模块量化:
-  1. 可能流的上界: 调用图可达路径数 x 每路径的数据依赖边数
-  2. 已验证流: 实际被 information_flow_verifier 检查的流
-  3. 完备性比率 = 已验证 / 可能流上界
-
-完备性比率解读:
-  >= 0.90 -> 高置信--分析覆盖了绝大多数可能的流
-  0.50-0.90 -> 中等--分析覆盖了主要路径, 但存在盲区
-  < 0.50 -> 低--分析不完整, "未发现违规"不可信
-
-与现有工作的关系:
-- information_flow_verifier.py: 验证->本模块: 完备性量化
-- 静态污点分析: 精度评估趋势->本模块: 完备性维度
-"""
+# 信息流分析完备性量化: 从二值(通过/失败)到连续完备性度量
+# information_flow_verifier.py 验证信息流是否违反策略(如 secret->public)
+# 但回答的是"是否存在违规流", 不回答"检查了多少可能的流"
+# 完备性比率 = 已验证流 / 可能流上界
 
 from __future__ import annotations
 
@@ -63,17 +43,7 @@ class CompletenessReport:
 
 
 class InfoflowCompletenessAnalyzer:
-    """信息流完备性分析器
-
-    用法:
-    analyzer = InfoflowCompletenessAnalyzer()
-    analyzer.register_flow(FlowEdge('secret_var', 'public_output', verified=True))
-    report = analyzer.compute_completeness(
-        call_graph={'main': ['process', 'output'], ...},
-        data_deps={'secret_var': ['tmp', 'result'], ...},
-        verified_flows=[(src, dst), ...],
-    )
-    """
+    """信息流完备性分析器"""
 
     def __init__(self):
         self._flows: List[FlowEdge] = []
@@ -104,7 +74,6 @@ class InfoflowCompletenessAnalyzer:
             call_graph or {}
         )
         # 隐式流: 每条件分支创建 1 条额外的潜在隐式流
-#
         implicit = self._count_implicit_flows(data_deps or {}, call_graph or {})
         total_potential = potential_data + potential_control + implicit
 

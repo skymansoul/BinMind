@@ -26,7 +26,7 @@ class DisjointReport:
     fp_reduction_pct: float = 0.0
 
 class HeapDisjointAnalyzer:
-    """堆不相交分析——追踪malloc-memcpy指针-分配点关联以滤除FP。
+    """堆不相交分析-追踪malloc-memcpy指针-分配点关联以滤除FP。
     基于Guo et al. ISSTA 2024堆不相交假设: malloc返回不重叠区域,
     仅同allocation site的(alloc,write)对才可能真实溢出。"""
     _ALLOC_FUNCS = {"malloc","calloc","realloc"}
@@ -67,7 +67,7 @@ class HeapDisjointAnalyzer:
 
     def _link(self, insns, write_idx, src_of_dst, alloc_sites):
         if not src_of_dst or src_of_dst=="unknown": return -1
-        # 直接路径: rdi来自rax(即malloc返回值) → 搜索call malloc
+        # 直接路径: rdi来自rax(即malloc返回值) - 搜索call malloc
         if src_of_dst == 'rax':
             for k in range(write_idx-1, max(-1,write_idx-25), -1):
                 c = self._callee(insns[k])
@@ -75,7 +75,7 @@ class HeapDisjointAnalyzer:
                     for a in alloc_sites:
                         if a.insn_idx == k: return a.site_id
             return -1
-        # 间接路径: rdi来自rbx, rbx来自rax → 搜索mov src_of_dst, rax
+        # 间接路径: rdi来自rbx, rbx来自rax - 搜索mov src_of_dst, rax
         for j in range(write_idx-1, max(-1,write_idx-25), -1):
             insn = insns[j].lower().strip()
             if ":" in insn[:20]: insn = insn.split(":",1)[1].strip()

@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-06-04  |  三元组采样器
-# 修改: 2026-06-04  |  审计后补充文件头与错误处理
-#
 """
-对比跨架构漏洞嵌入——三元组采样器。
+对比跨架构漏洞嵌入 - 三元组采样器。
 
 技术问题:
   跨架构二进制函数相似性检测长期受困于架构差异压倒语义差异。
@@ -12,18 +9,18 @@
   标注成本高且覆盖CWE类型有限。
 
 解决方案:
-  架构感知的三元组采样——利用编译工具链自动生成跨架构正例对，
+  架构感知的三元组采样 - 利用编译工具链自动生成跨架构正例对，
   无需人工标注。对每个漏洞函数:
     - Anchor: 架构A的编译产物（如x86_64）
-    - Positive: 同一源码架构B的编译产物（如ARM64）——编译器自动生成
-    - Negative: 随机非同源函数（架构B）——强制嵌入区分架构与语义
+    - Positive: 同一源码架构B的编译产物（如ARM64）, 编译器自动生成
+    - Negative: 随机非同源函数（架构B）, 强制嵌入区分架构与语义
 
   硬负例挖掘: 从与Anchor架构相同但函数不同的样本中选择困难负例，
   即结构相似(同架构同CWE类型)但语义不同的函数。
 
 创新对比:
-  现有方法(jTrans, GraphEmbedding): 需标注跨架构对——成本O(N²)
-  本方法: 编译器自动生成正例——成本O(N)，利用编译确定性消除标注需求
+  现有方法(jTrans, GraphEmbedding): 需标注跨架构对, 成本O(N²)
+  本方法: 编译器自动生成正例, 成本O(N)，利用编译确定性消除标注需求
 """
 
 import math
@@ -41,29 +38,29 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class TripletSample:
-    """对比学习三元组——(anchor, positive, negative)"""
+    """对比学习三元组 - (anchor, positive, negative)"""
     anchor_id: str              # 锚点函数标识
     anchor_arch: str            # 锚点架构
     positive_id: str
     positive_arch: str          # 不同架构
     negative_id: str
     negative_arch: str
-    # 嵌入向量——默认空列表
+    # 嵌入向量, 默认空列表
     anchor_embedding: List[float] = field(default_factory=list)
     positive_embedding: List[float] = field(default_factory=list)
     negative_embedding: List[float] = field(default_factory=list)
     # 三元组质量标记
     is_hard_negative: bool = False  # 是否为困难负例
-    cwe_type: str = ""              # CWE类型——用于CWE感知采样
+    cwe_type: str = ""              # CWE类型, 用于CWE感知采样
     margin: float = 0.0             # ||anchor-pos|| - ||anchor-neg|| + α
 
 
 @dataclass
 class TripletBatch:
-    """小批量三元组——用于对比训练迭代"""
+    """小批量三元组 - 用于对比训练迭代"""
     samples: List[TripletSample] = field(default_factory=list)
     batch_size: int = 32
-    # 批量统计——监控训练质量
+    # 批量统计, 监控训练质量
     avg_positive_dist: float = 0.0
     avg_negative_dist: float = 0.0
     hard_negative_ratio: float = 0.0
@@ -73,17 +70,17 @@ class TripletBatch:
 
 
 class CrossArchTripletSampler:
-    """跨架构三元组采样器——编译器驱动的正例生成 + 架构感知负例挖掘。
+    """跨架构三元组采样器 - 编译器驱动的正例生成 + 架构感知负例挖掘。
 
     正例生成策略:
       同一C源码用GCC(x86_64)和AArch64 GCC(clang)分别编译，
-      提取同名函数的CFG图→嵌入→自动正例对。
+      提取同名函数的CFG图, 嵌入, 自动正例对。
       利用编译过程的确定性消除人工标注。
 
     负例挖掘策略:
       1. 随机负例: 不同函数名，任意架构（基准线）
-      2. 同架构硬负例: 不同函数，相同架构——强制模型区分子图差异
-      3. 同CWE硬负例: 不同函数，相同CWE，相同架构——最困难
+      2. 同架构硬负例: 不同函数，相同架构, 强制模型区分子图差异
+      3. 同CWE硬负例: 不同函数，相同CWE，相同架构, 最困难
     """
 
     def __init__(self,
@@ -94,7 +91,7 @@ class CrossArchTripletSampler:
         self._hard_ratio = hard_neg_ratio
         self._rng = _random.Random(rng_seed)
 
-        # 架构到编译器的映射——生成跨架构变体时使用
+        # 架构到编译器的映射, 生成跨架构变体时使用
         self._arch_compiler_map = {
             'x86_64': 'gcc-13 -O2',
             'arm64': 'aarch64-linux-gnu-gcc-13 -O2',
@@ -114,7 +111,7 @@ class CrossArchTripletSampler:
             例如: {"memcpy_vuln": {"x86_64": [...], "arm64": [...]}}
           cwe_labels: {func_id: cwe_type}
 
-        返回TripletBatch——采样结果含质量统计。
+        返回TripletBatch - 采样结果含质量统计。
 
         采样算法:
           1. 遍历每个有≥2架构变体的函数作为anchor候选
@@ -132,7 +129,7 @@ class CrossArchTripletSampler:
             if len(embeddings.get(fid, {})) >= 2
         ]
         if len(multi_arch_funcs) < 2:
-            _log.warning("多架构变体不足——至少需要2个函数各有2+架构")
+            _log.warning("多架构变体不足, 至少需要2个函数各有2+架构")
             return TripletBatch()
 
         for anchor_func in multi_arch_funcs:
@@ -198,10 +195,10 @@ class CrossArchTripletSampler:
                           embeddings: Dict, cwe_labels: Dict,
                           use_hard: bool
                           ) -> Tuple[str, str, Optional[List[float]], bool]:
-        """选择负例——困难或随机。
+        """选择负例 - 困难或随机。
 
         困难负例优先级:
-          1. 同CWE + 同架构 + 不同函数（最困难——语义混淆）
+          1. 同CWE + 同架构 + 不同函数（最困难, 语义混淆）
           2. 同架构 + 不同函数（结构混淆）
           3. 不同函数 + 任意架构（回退）
         """
@@ -252,7 +249,7 @@ class CrossArchTripletSampler:
 
 
 def _euclidean(a: List[float], b: List[float]) -> float:
-    """欧几里得距离——无numpy依赖"""
+    """欧几里得距离 - 无numpy依赖"""
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
 

@@ -1,5 +1,5 @@
 """
-整数溢出约束验证 — 对标 heap_overflow_verifier 的路径敏感验证范式。
+整数溢出约束验证 - 对标 heap_overflow_verifier 的路径敏感验证范式。
 区间分析是过近似(误报源头), 约束验证是精确求解: 用 angr 定向符号执行,
 SMT 确认溢出条件在真实路径上可满足才保留。
 """
@@ -17,8 +17,7 @@ def verify_overflow_reachable(
 ) -> Dict[str, Any]:
     """验证整数溢出在真实执行路径上是否可达且可触发。
 
-    Returns:
-      {reachable, overflow_possible, solver_time, error}
+    返回 {reachable, overflow_possible, solver_time, error}。
     """
     result = {
         'reachable': False, 'overflow_possible': False,
@@ -92,10 +91,10 @@ def filter_iof_findings(
     """对整数溢出告警做约束验证过滤。
 
     规则:
-      angr不可用 → 不调整(保留原置信度)
-      不可达 → confidence × 0.20
-      可达但溢出不可满足 → confidence × 0.40
-      可达且溢出可满足 → confidence = max(0.85, old)
+      angr不可用 - 不调整(保留原置信度)
+      不可达 - confidence x 0.20
+      可达但溢出不可满足 - confidence x 0.40
+      可达且溢出可满足 - confidence = max(0.85, old)
     """
     stats = {'total': len(findings), 'verified': 0, 'filtered': 0, 'confirmed': 0}
 

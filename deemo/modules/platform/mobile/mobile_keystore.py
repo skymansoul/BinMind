@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-移动端密钥存储安全审计——Android Keystore及iOS Keychain深度扫描 + PQC后量子密码迁移检测。
+移动端密钥存储安全审计: Android Keystore及iOS Keychain深度扫描 + PQC后量子密码迁移检测。
 
 覆盖范围：
   1. Keymaster HAL版本检测及已知漏洞映射
@@ -11,8 +11,8 @@
   6. 密钥提取可行性评估（root/jailbreak场景攻击面）
   7. Key Attestation 链路验证
   8. 硬编码密钥材料扫描（AES key, RSA private key, HMAC secret 等）
-  9. WithSecureLabs审计模式——密钥用途组合安全性及导入密钥溯源
-  10. QED式PQC就绪度评估——检测量子脆弱算法并量化评分
+  9. WithSecureLabs审计模式: 密钥用途组合安全性及导入密钥溯源
+  10. QED式PQC就绪度评估: 检测量子脆弱算法并量化评分
 
 QED 核心思路：
   三阶段静态分析：(1) 文件级量子脆弱库依赖检测,
@@ -40,38 +40,38 @@ class KeyAuthenticationType(StrEnum): NONE="none"; PASSWORD="password"; FINGERPR
 class KeyOrigin(StrEnum): GENERATED="generated"; DERIVED="derived"; IMPORTED="imported"; SECURELY_IMPORTED="securely_imported"; UNKNOWN="unknown"
 class SecurityLevel(StrEnum): SOFTWARE="software"; TRUSTED_ENVIRONMENT="tee"; STRONGBOX="strongbox"; UNKNOWN="unknown"
 
-# PQC就绪度——量子脆弱算法及PQC标准签名数据库
+# PQC就绪度: 量子脆弱算法及PQC标准签名数据库
 # 基于QED Toolchain + Strauss et al. 算法分类
 
 _QUANTUM_VULNERABLE_ALGORITHMS = {
     # 非对称加密 (Shor算法可破)
     "RSA": ("RSA", "asymmetric", "Shor算法于多项式时间内分解大整数", 2048),
-    "RSA/ECB": ("RSA-ECB", "asymmetric", "RSA-ECB填充模式——量子脆弱", 2048),
-    "RSA/PKCS1": ("RSA-PKCS1", "asymmetric", "RSA PKCS#1 v1.5——量子脆弱且存填充神谕风险", 2048),
-    "RSA/OAEP": ("RSA-OAEP", "asymmetric", "RSA-OAEP——量子脆弱然填充安全", 2048),
-    "ECDSA": ("ECDSA", "asymmetric", "椭圆曲线签名——Shor算法可破", 256),
-    "ECDH": ("ECDH", "asymmetric", "椭圆曲线密钥交换——量子脆弱", 256),
-    "EC": ("Elliptic Curve", "asymmetric", "通用椭圆曲线密码——量子脆弱", 256),
+    "RSA/ECB": ("RSA-ECB", "asymmetric", "RSA-ECB填充模式, 量子脆弱", 2048),
+    "RSA/PKCS1": ("RSA-PKCS1", "asymmetric", "RSA PKCS#1 v1.5, 量子脆弱且存填充神谕风险", 2048),
+    "RSA/OAEP": ("RSA-OAEP", "asymmetric", "RSA-OAEP, 量子脆弱然填充安全", 2048),
+    "ECDSA": ("ECDSA", "asymmetric", "椭圆曲线签名, Shor算法可破", 256),
+    "ECDH": ("ECDH", "asymmetric", "椭圆曲线密钥交换, 量子脆弱", 256),
+    "EC": ("Elliptic Curve", "asymmetric", "通用椭圆曲线密码, 量子脆弱", 256),
     # 哈希 (Grover算法二次加速)
-    "SHA-1": ("SHA-1", "hash", "SHA-1——经典碰撞攻击已实现，Grover给予二次加速", None),
-    "SHA-256": ("SHA-256", "hash", "SHA-256——Grover算法将安全性降至128位", None),
-    "MD5": ("MD5", "hash", "MD5——经典碰撞攻击已实现，已完全不安全", None),
-    # 对称加密 (Grover算法二次加速——需双倍密钥长度)
-    "AES-128": ("AES-128", "symmetric", "AES-128——Grover算法将安全性降至64位", 256),
-    "DES": ("DES", "symmetric", "DES——经典暴力破解已实现，量子加速愈加脆弱", 256),
-    "3DES": ("3DES", "symmetric", "3DES——Grover算法将安全性降至56位等效", 256),
+    "SHA-1": ("SHA-1", "hash", "SHA-1, 经典碰撞攻击已实现, Grover给予二次加速", None),
+    "SHA-256": ("SHA-256", "hash", "SHA-256, Grover算法将安全性降至128位", None),
+    "MD5": ("MD5", "hash", "MD5, 经典碰撞攻击已实现, 已完全不安全", None),
+    # 对称加密 (Grover算法二次加速, 需双倍密钥长度)
+    "AES-128": ("AES-128", "symmetric", "AES-128, Grover算法将安全性降至64位", 256),
+    "DES": ("DES", "symmetric", "DES, 经典暴力破解已实现, 量子加速愈加脆弱", 256),
+    "3DES": ("3DES", "symmetric", "3DES, Grover算法将安全性降至56位等效", 256),
 }
 
 _PQC_STANDARDS = {
     # NIST PQC标准化算法
-    "Kyber": ("CRYSTALS-Kyber", "kem", "NIST FIPS 203——基于格的后量子密钥封装"),
-    "ML-KEM": ("ML-KEM", "kem", "NIST FIPS 203——Kyber的正式标准名称"),
-    "Dilithium": ("CRYSTALS-Dilithium", "signature", "NIST FIPS 204——基于格的后量子签名"),
-    "ML-DSA": ("ML-DSA", "signature", "NIST FIPS 204——Dilithium的正式标准名称"),
-    "SPHINCS+": ("SPHINCS+", "signature", "NIST FIPS 205——基于哈希的状态无关后量子签名"),
-    "SLH-DSA": ("SLH-DSA", "signature", "NIST FIPS 205——SPHINCS+的正式标准名称"),
-    "FrodoKEM": ("FrodoKEM", "kem", "基于LWE的后量子密钥封装——备选方案"),
-    "ClassicMcEliece": ("Classic McEliece", "kem", "基于编码理论的后量子密钥封装——最长公开审计历史"),
+    "Kyber": ("CRYSTALS-Kyber", "kem", "NIST FIPS 203, 基于格的后量子密钥封装"),
+    "ML-KEM": ("ML-KEM", "kem", "NIST FIPS 203, Kyber的正式标准名称"),
+    "Dilithium": ("CRYSTALS-Dilithium", "signature", "NIST FIPS 204, 基于格的后量子签名"),
+    "ML-DSA": ("ML-DSA", "signature", "NIST FIPS 204, Dilithium的正式标准名称"),
+    "SPHINCS+": ("SPHINCS+", "signature", "NIST FIPS 205, 基于哈希的状态无关后量子签名"),
+    "SLH-DSA": ("SLH-DSA", "signature", "NIST FIPS 205, SPHINCS+的正式标准名称"),
+    "FrodoKEM": ("FrodoKEM", "kem", "基于LWE的后量子密钥封装, 备选方案"),
+    "ClassicMcEliece": ("Classic McEliece", "kem", "基于编码理论的后量子密钥封装, 最长公开审计历史"),
     "BIKE": ("BIKE", "kem", "基于编码理论的后量子密钥封装"),
     "HQC": ("HQC", "kem", "基于编码理论的后量子密钥封装"),
     "XMSS": ("XMSS", "signature", "基于哈希的状态相关后量子签名"),
@@ -110,7 +110,7 @@ class IOSKeychainItem:
 
 _KEYMASTER_VULNS=[KeymasterVulnerability("CVE-2018-9475",[KeymasterVersion.V1_0,KeymasterVersion.V2_0],"Keymaster TA边界检查缺失","high",patch_level="2018-11-05"),KeymasterVulnerability("CVE-2021-0392",[KeymasterVersion.V3_0,KeymasterVersion.V4_0],"Keymaster 4.0 importKey绕过安全导入检查","critical","low","2021-02-05"),KeymasterVulnerability("CVE-2021-1905",[KeymasterVersion.V4_0],"Qualcomm Keymaster UAF密钥泄露","critical",patch_level="2021-05-05"),KeymasterVulnerability("CVE-2022-20224",[KeymasterVersion.V3_0,KeymasterVersion.V4_0,KeymasterVersion.V4_1],"Keymaster TA race condition","high",patch_level="2022-08-05"),KeymasterVulnerability("CVE-2023-21137",[KeymasterVersion.V4_0,KeymasterVersion.V4_1],"Keymint shared memory未初始化","medium",patch_level="2023-05-05"),KeymasterVulnerability("CVE-2024-29745",[KeymasterVersion.V4_1],"Android 14 Keymint auth token重放","high","low","2024-04-05"),KeymasterVulnerability("CVE-2024-34724",[KeymasterVersion.V4_0,KeymasterVersion.V4_1],"Keymint shared memory参数注入","critical","medium","2024-06-05")]
 
-_ANDROID_WEAK_PURPOSE_COMBOS=[(KeyPurpose.ENCRYPT.value|KeyPurpose.DECRYPT.value,"加密+解密组合：可用于对称密码学绕过"),(KeyPurpose.SIGN.value|KeyPurpose.VERIFY.value,"签名+验证组合：结合不当使用可伪造签名"),(KeyPurpose.SIGN.value|KeyPurpose.ENCRYPT.value,"签名+加密组合：同一密钥用于两种不同密码学原语——破坏密钥用途隔离"),(KeyPurpose.WRAP_KEY.value,"密钥包装能力：充当密钥导出神谕")]
+_ANDROID_WEAK_PURPOSE_COMBOS=[(KeyPurpose.ENCRYPT.value|KeyPurpose.DECRYPT.value,"加密+解密组合: 可用于对称密码学绕过"),(KeyPurpose.SIGN.value|KeyPurpose.VERIFY.value,"签名+验证组合: 结合不当使用可伪造签名"),(KeyPurpose.SIGN.value|KeyPurpose.ENCRYPT.value,"签名+加密组合: 同一密钥用于两种不同密码学原语, 破坏密钥用途隔离"),(KeyPurpose.WRAP_KEY.value,"密钥包装能力: 充当密钥导出神谕")]
 
 _IOS_WEAK_ACCESSIBILITY=[KeychainAccessibility.ALWAYS,KeychainAccessibility.ALWAYS_THIS_DEVICE_ONLY,KeychainAccessibility.WHEN_UNLOCKED]
 _WEAK_KEY_SIZES={"RSA":2048,"EC":256,"AES":128}
@@ -238,9 +238,9 @@ class AndroidKeystoreAnalyzer:
     def assess_pqc_readiness(s)->Dict[str,Any]:
         """基于QED Toolchain的三阶段PQC就绪度评估。
 
-        阶段1：文件级——检测量子脆弱算法库的使用 (OpenSSL, BoringSSL, etc.)
-        阶段2：API级——识别量子脆弱API (RSA_generate_key, ECDSA_sign, etc.)
-        阶段3：PQC标准采纳——检测Kyber/Dilithium/SPHINCS+的使用
+        阶段1: 文件级, 检测量子脆弱算法库的使用 (OpenSSL, BoringSSL, etc.)
+        阶段2: API级, 识别量子脆弱API (RSA_generate_key, ECDSA_sign, etc.)
+        阶段3: PQC标准采纳, 检测Kyber/Dilithium/SPHINCS+的使用
         """
         result={"pqc_score":0.0,"quantum_vulnerable_algos":[],"pqc_standards_adopted":[],
                 "vulnerable_key_count":0,"hardcoded_qv_count":0,"migration_urgency":"none"}
@@ -259,7 +259,7 @@ class AndroidKeystoreAnalyzer:
         # 密钥材料之量子脆弱性统计
         result["vulnerable_key_count"]=sum(1 for k in s.key_infos if k.uses_quantum_vulnerable_algo)
         result["hardcoded_qv_count"]=sum(1 for k in s.hardcoded_keys if k.is_quantum_vulnerable)
-        # PQC评分：起始10→每发现量子脆弱算法扣分，每采纳PQC标准加分
+        # PQC评分: 起始10, 每发现量子脆弱算法扣分, 每采纳PQC标准加分
         score=10.0
         score-=len(result["quantum_vulnerable_algos"])*1.5
         score-=result["vulnerable_key_count"]*0.5

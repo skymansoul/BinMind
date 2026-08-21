@@ -6,7 +6,6 @@
 # 样本 type=uaf/fmt/heap/intof 且检测器命中 → TP
 # 样本存在且检测器未命中且无错误 → FN (漏报)
 # 检测器命中但样本 type 不匹配 → FP (误报, 本套件无此场景)
-# 创建: 2026-08-06
 
 import csv
 import json

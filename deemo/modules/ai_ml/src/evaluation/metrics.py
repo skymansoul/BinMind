@@ -1,4 +1,4 @@
-# 排序指标核心 -- 所有实现纯numpy，零依赖，INTJ风格
+# 排序指标核心 -- 所有实现纯numpy，零依赖，简洁风格
 # 设计哲学：每个函数独立可测，输入shape自推断，Multi-label原生支持
 
 import numpy as np

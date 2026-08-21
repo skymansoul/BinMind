@@ -1,4 +1,4 @@
-# 来源格 (Provenance Lattice) — PcWBI来源约束写界推断.
+# 来源格 (Provenance Lattice) - PcWBI来源约束写界推断.
 #
 # 决策逻辑:
 #   堆溢出误报的根源是"宽区间回退": 当写入大小操作数无法解析为常量时,
@@ -12,7 +12,6 @@
 #   提供统一的数据结构. 精度序: CONSTANT < GUARDED < ALLOC_LINKED <
 #   INPUT_TAINTED < UNKNOWN, 即"对写入上界的确信程度"自高向低.
 #
-# 创建: 2026-05-26
 
 from enum import Enum
 from typing import Optional

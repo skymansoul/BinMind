@@ -71,7 +71,7 @@ class PQAssessment:
 class CryptoFingerprintDB:
     """
     密码学指纹数据库
-    
+
     维护已知密码学实现的特征签名
     用于二进制文件中的原语识别
     """
@@ -264,7 +264,7 @@ def evaluate_pq_threat(primitive: CryptoPrimitive) -> PQThreat:
 class PostQuantumDetector:
     """
     后量子密码检测器
-    
+
     扫描二进制中的密码学原语，评估其后量子安全性
     融合 [SoK 2026] 的系统化分类框架
     """
@@ -280,16 +280,11 @@ class PostQuantumDetector:
         imports: Optional[Dict[str, List[str]]] = None,
         binary_data: Optional[bytes] = None
     ) -> Dict[str, Any]:
-        """
-        执行后量子安全评估
-        
-        Args:
-        strings: 二进制中提取的字符串列表
-        imports: 导入函数表 {module: [func_names]}
-        binary_data: 原始二进制数据
-        
-        返回:
-        评估结果字典
+        """执行后量子安全评估。
+
+        strings 为二进制中提取的字符串列表, imports 为导入函数
+        表 {module: [func_names]}, binary_data 为原始二进制数据;
+        返回评估结果字典。
         """
         primitives = []
 
@@ -551,7 +546,7 @@ def audit_pq_readiness(
 ) -> Dict[str, Any]:
     """
     便捷函数：后量子密码就绪审计
-    
+
     参考 NIST PQC 标准化进程和 BSI 迁移
     """
     detector = PostQuantumDetector()

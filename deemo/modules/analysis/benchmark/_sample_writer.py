@@ -1,4 +1,4 @@
-"""样本脚手架 — 对抗样本生成器的公共写入逻辑.
+"""样本脚手架 - 对抗样本生成器的公共写入逻辑.
 
 多个生成器 (gen_fmt_fp_samples / gen_intof_fp_samples) 复用:
   write_sample 写源码 + Makefile + README 三件套.

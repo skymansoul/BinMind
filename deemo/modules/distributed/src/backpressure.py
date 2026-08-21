@@ -1,6 +1,6 @@
-"""背压控制器 — 下游过载时的流量整形"""
+"""背压控制器 - 下游过载时的流量整形"""
 # Rajomon [USENIX NSDI '25]: 去中心化市场式过载控制，令牌+定价减少尾延迟 78%
-# 背压控制 — 分区队列深度驱动的反压信号传播
+# 背压控制 - 分区队列深度驱动的反压信号传播
 #
 # 五种背压策略：
 # drop_head:  丢弃队列头部（旧任务），适合实时场景
@@ -19,9 +19,8 @@ import time
 import threading
 from collections import deque
 from typing import Optional, Callable, Any
-from functools import lru_cache  # 保留
+from functools import lru_cache
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 

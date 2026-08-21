@@ -1,9 +1,8 @@
-# 创建: 2026-07-25 09:45
-# 修改: 2026-07-25 — Sharpe/Calmar/Martin 量化金融指标->fuzzer 能量分配
+# Sharpe/Calmar/Martin 量化金融指标->fuzzer 能量分配
 """
-量化金融风险调整的模糊测试能量调度 — Sharpe/Calmar 替代均匀分配。
+量化金融风险调整的模糊测试能量调度 - Sharpe/Calmar 替代均匀分配。
 
-现有能量调度 (AFLFast, entropy_scheduler) 基于覆盖增益的简单指数移动平均——
+现有能量调度 (AFLFast, entropy_scheduler) 基于覆盖增益的简单指数移动平均-
 将所有增益等同看待, 不考虑"增益的波动性"。例如:
   种子A: 每次执行稳定产出 +5 边 (低风险)
   种子B: 50%概率产出 +50 边, 50%概率产出 0 (高风险)
@@ -12,28 +11,28 @@
 本模块将量化金融的风险调整指标移植到 fuzzing:
   1. Sharpe 比率: (平均收益 - 无风险收益) / 收益标准差
      衡量单位风险的超额回报
-  2. Calmar 比率: 平均收益 / 最大回撤
-     衡量最坏情况下的回报——对模糊测试特别适用:
-     因为 fuzzer 的时间预算有限, 大回撤意味着"浪费了时间"
-  3. Martin 比率: (最终累积覆盖 - 初始) / sqrt(Σ squared drawdowns)
-     惩罚回撤的平方——比 Calmar 更敏感
+   2. Calmar 比率: 平均收益 / 最大回撤
+      衡量最坏情况下的回报-对模糊测试特别适用:
+      因为 fuzzer 的时间预算有限, 大回撤意味着"浪费了时间"
+   3. Martin 比率: (最终累积覆盖 - 初始) / sqrt(Σ squared drawdowns)
+      惩罚回撤的平方-比 Calmar 更敏感
 
 风险调整后的能量分配:
   energy(i) = base_energy × (1 + α × risk_adjusted_ratio(i))
   其中 α 为风险偏好参数 (0=完全风险厌恶, 1=中性)。
-  低 Sharpe/Calmar 的种子获得较少能量→节省的算力分配给高比率种子。
+  低 Sharpe/Calmar 的种子获得较少能量-节省的算力分配给高比率种子。
 
 为什么 Sharpe 在模糊测试中有效:
-  模糊测试的覆盖增益是非平稳的——种子的"回报"随被测程序状态变化。
+  模糊测试的覆盖增益是非平稳的-种子的"回报"随被测程序状态变化。
   Sharpe 比率同时考虑收益均值和波动性, 避免将能量浪费在
   "偶尔爆发但大部分时间无产出" 的种子上。
 
-ref: Kummita & Bodden — risk-adjusted power schedules,
+ref: Kummita & Bodden - risk-adjusted power schedules,
      本项目实现其 Sharpe/Calmar/Martin 三项指标并增加自适应 α
-ref: Truzz — byte-level validation check protection,
+ref: Truzz - byte-level validation check protection,
      本项目的"回撤惩罚"概念与其"验证检查字节保护"互补
-ref: Sharpe "Mutual Fund Performance" (Journal of Business) —
-     Sharpe 比率的原始论文——(R_p - R_f) / σ_p
+ref: Sharpe "Mutual Fund Performance" (Journal of Business) -
+     Sharpe 比率的原始论文-(R_p - R_f) / σ_p
 """
 
 from __future__ import annotations
@@ -45,7 +44,7 @@ from collections import defaultdict
 
 @dataclass
 class SeedPerformanceHistory:
-    """种子的历史覆盖增益记录——用于计算风险指标。"""
+    """种子的历史覆盖增益记录-用于计算风险指标。"""
     seed_id: str
     gains: list[float] = field(default_factory=list)   # 每次执行的覆盖增益
     cumulative_gain: float = 0.0
@@ -88,7 +87,7 @@ class SeedPerformanceHistory:
         return excess / self.std_gain()
 
     def calmar_ratio(self) -> float:
-        """Calmar = mean / max_drawdown。越高→单位回撤的回报越高。"""
+        """Calmar = mean / max_drawdown。越高-单位回撤的回报越高。"""
         if self.max_drawdown < 0.01:
             return self.mean_gain() / 0.01
         return self.mean_gain() / self.max_drawdown
@@ -155,9 +154,9 @@ class RiskAdjustedScheduler:
             sharpe = max(-1.0, h.sharpe_ratio(self._risk_free_rate))
             calmar = max(-1.0, h.calmar_ratio())
             martin = max(-1.0, h.martin_ratio())
-            # 归一化 (tanh 压缩到 [-1, 1] → [0, 1])
+            # 归一化 (tanh 压缩到 [-1, 1] - [0, 1])
             composite = (math.tanh(sharpe) + math.tanh(calmar * 0.1) + math.tanh(martin * 0.05)) / 3.0
-            ratios[sid] = (composite + 1.0) / 2.0  # → [0, 1]
+            ratios[sid] = (composite + 1.0) / 2.0  # - [0, 1]
 
         # 分配能量
         allocation = {}
@@ -170,7 +169,7 @@ class RiskAdjustedScheduler:
         return allocation
 
     def get_risk_report(self, seed_id: str) -> dict:
-        """单种子风险报告——用于调试和可视化。"""
+        """单种子风险报告-用于调试和可视化。"""
         h = self._histories.get(seed_id)
         if h is None:
             return {}

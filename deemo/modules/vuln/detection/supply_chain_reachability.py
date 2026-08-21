@@ -1,5 +1,5 @@
 # 供应链漏洞可达性分析。
-# 三层递进：导入表直接引用 → objdump调用图BFS → 二进制字符串匹配。
+# 三层递进：导入表直接引用 - objdump调用图BFS - 二进制字符串匹配。
 # 置信度递减: L1=100%, L2=85%, L3=50%
 
 from dataclasses import dataclass, field
@@ -153,7 +153,7 @@ def analyze_reachability(binary_path: str, sbom_components: List[Dict],
         strings_text: 预取strings输出（可选）
         entry_points: 入口函数列表（可选，默认main/start）
 
-    返回: 按置信度降序排列的ReachabilityResult列表。
+    返回按置信度降序排列的ReachabilityResult列表。
     """
     if not disasm:
         cg = CallGraphBuilder()

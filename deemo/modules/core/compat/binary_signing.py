@@ -11,7 +11,6 @@ globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')}
 # 以及 Apple Code Signing Guide (LC_CODE_SIGNATURE 的 SuperBlob 结构)
 import struct as _struct, hashlib as _hl
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -34,7 +33,6 @@ _WIN_CERT_TYPES = {
 
 def extract_pe_certificate(pe_data: bytes) -> dict | None:
     """从 PE 文件中提取 Authenticode 证书信息。
-    # 不拆——保持上下文连贯性，拆了反而难读
     定位 DataDirectory[4] (Security Directory) → WIN_CERTIFICATE 结构。
     不完整解析 PKCS#7 — 仅提取签名者、颁发者和指纹用于审计。"""
     if len(pe_data) < 64 or pe_data[:2] != b'MZ':
@@ -88,7 +86,6 @@ def _rva_to_file_offset(pe_data: bytes, pe_off: int, rva: int) -> int | None:
 
 def extract_macho_codesign(macho_data: bytes) -> dict | None:
     """从 Mach-O 中检测 LC_CODE_SIGNATURE 加载命令。
-    # 不拆——保持上下文连贯性，拆了反而难读
     返回签名数据的偏移和大小，由上游模块完成 CMS 解析。"""
     if len(macho_data) < 28:
         return None
@@ -113,5 +110,8 @@ def extract_macho_codesign(macho_data: bytes) -> dict | None:
     return {'signed': False, 'reason': 'no LC_CODE_SIGNATURE'}
 
 
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

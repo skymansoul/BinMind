@@ -1,10 +1,13 @@
 """
-栈溢出分析器静态层 — 静态CFG分析/canary检测/策略推荐/exploit参数/pattern回退.
+栈溢出分析器静态层 - 静态CFG分析/canary检测/策略推荐/exploit参数/pattern回退.
 
 """
 
 
+import json
 import logging
+import re
+import subprocess
 from typing import Any, Dict, Optional
 
 _log = logging.getLogger(__name__)
@@ -21,7 +24,7 @@ def _static_overflow_analysis(
     func_name: str,
     binfo: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """静态回退分析(增强版)——反向污点追踪 + 缓冲区大小估算.
+    """静态回退分析(增强版)-反向污点追踪 + 缓冲区大小估算.
 
     对每个危险调用做反向def-use链追踪, 验证参数是否来自用户输入源.
     若参数来自安全源(常量字符串/snprintf格式化), 不标记为危险.
@@ -36,13 +39,12 @@ def _static_overflow_analysis(
         if not pseudocode:
             return result
 
-        # 污点追踪 —— 验证危险调用的参数是否来自用户输入
+        # 污点追踪 - 验证危险调用的参数是否来自用户输入
         try:
             from core.taint_source_tracker import trace_taint_source
             call_sigs = []
-            import re as _re
             for call in _DIRTY_CALLS:
-                for m in _re.finditer(rf'({call})\s*\(\s*([^,)]+)', pseudocode):
+                for m in re.finditer(rf'({call})\s*\(\s*([^,)]+)', pseudocode):
                     call_sigs.append((call, m.group(2).strip()))
 
             taint_result = trace_taint_source(pseudocode, func_name, call_sigs)
@@ -72,7 +74,6 @@ def _static_overflow_analysis(
 
         # 估算缓冲区大小
         if result['overflowable']:
-            import re
             buf_matches = re.findall(
                 r'char\s+\w+\s*\[(\d+)\]', pseudocode
             )
@@ -102,7 +103,6 @@ def _detect_canary_in_function(binary_path: str, func_name: str) -> bool:
     通过 r2 反汇编搜索 __stack_chk_fail 调用来判断。
     """
     try:
-        import subprocess
         from config import R2_PATH
 
         proc = subprocess.run(
@@ -194,13 +194,12 @@ def analyze_with_pattern_fallback(
     from core.stack_overflow_analyzer import analyze_stack_overflow
     result = analyze_stack_overflow(binary_path, func_name, binfo, libc_info)
 
-    # angr 成功 → 直接返回
+    # angr 成功 - 直接返回
     if result.get('overflowable') and not result.get('error'):
         result['method'] = 'angr'
         return result
 
-    # angr 失败/超时/无结果 → 回退到 pattern_fallback
-    import subprocess, json
+    # angr 失败/超时/无结果 - 回退到 pattern_fallback
     from config import R2_PATH
     from core.pattern_fallback import match_patterns
 

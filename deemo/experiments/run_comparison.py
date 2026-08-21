@@ -92,17 +92,47 @@ def run_ghidra(binary: str, timeout: int = 300) -> ToolResult:
     if not ghidra_home:
         return ToolResult('Ghidra', os.path.basename(binary), '', False, 0, 0, 0, False, 'GHIDRA_INSTALL_DIR not set')
     start = time.time()
+    # 运行时生成 GhidraScript, 避免依赖预置脚本文件
+    java_script = '''
+import ghidra.app.script.GhidraScript;
+import ghidra.program.model.listing.Function;
+
+public class FindVulnerabilities extends GhidraScript {
+    public void run() throws Exception {
+        String[] danger = {"memcpy", "strcpy", "sprintf", "gets", "free", "system", "popen"};
+        java.util.Set<String> dset = new java.util.HashSet<>(java.util.Arrays.asList(danger));
+        for (Function f : currentProgram.getFunctionManager().getFunctions(true)) {
+            if (dset.contains(f.getName())) println("VULN_FOUND " + f.getName());
+        }
+    }
+}
+'''
     try:
+        import tempfile
         analyze_headless = os.path.join(ghidra_home, 'support', 'analyzeHeadless')
-        r = subprocess.run([analyze_headless, '/tmp/ghidra_proj', 'Analysis',
-                           '-import', binary, '-postScript', 'FindVulnerabilities.java',
-                           '-deleteProject', '-noanalysis'],
-                          capture_output=True, text=True, timeout=timeout)
-        elapsed = time.time() - start
-        n = r.stdout.count('VULN_FOUND')
-        return ToolResult('Ghidra', os.path.basename(binary), '', False, n, round(elapsed,2), 0, n > 0)
+        if sys.platform == 'win32':
+            analyze_headless += '.bat'
+        if not os.path.isfile(analyze_headless):
+            return ToolResult('Ghidra', os.path.basename(binary), '', False, 0,
+                              round(time.time() - start, 2), 0, False,
+                              f'analyzeHeadless missing at {analyze_headless}')
+        with tempfile.TemporaryDirectory() as tmp:
+            script_path = os.path.join(tmp, 'FindVulnerabilities.java')
+            with open(script_path, 'w') as f:
+                f.write(java_script)
+            r = subprocess.run([analyze_headless, os.path.join(tmp, 'proj'), 'Analysis',
+                               '-import', os.path.abspath(binary), '-scriptPath', tmp,
+                               '-postScript', 'FindVulnerabilities.java', '-deleteProject'],
+                              capture_output=True, text=True, timeout=timeout)
+            elapsed = round(time.time() - start, 2)
+            n = (r.stdout + r.stderr).count('VULN_FOUND')
+            return ToolResult('Ghidra', os.path.basename(binary), '', False, n,
+                              elapsed, 0, n > 0)
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return ToolResult('Ghidra', os.path.basename(binary), '', False, 0, timeout, 0, False, 'timeout')
+    except Exception as e:
+        return ToolResult('Ghidra', os.path.basename(binary), '', False, 0,
+                          round(time.time() - start, 2), 0, False, str(e)[:80])
 
 def run_all(samples_dir: str, output_dir: str, tools: List[str] = None):
     tools = tools or ['ours', 'angr']

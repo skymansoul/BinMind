@@ -1,9 +1,7 @@
-# 已优化.
 #!/usr/bin/env python3
-# LLM-guided symbolic execution — branch prioritization with LLM scoring,
-# path summaries, and integration with BaseAnalyzer interface.
-# added simulated branch 构造 and DefaultLLMBranchScorer.
-# branch dedup, __repr__ on core dataclasses, coverage-aware boost.
+# LLM 引导符号执行 — 分支按 LLM 评分排优先级, 带路径摘要, 集成 BaseAnalyzer。
+# DefaultLLMBranchScorer 兜底模拟分支构造;
+# 分支去重, 核心 dataclass 带 __repr__, 覆盖率感知加权。
 
 import logging as _logging
 import json as _json
@@ -85,7 +83,7 @@ class LLMBranchScore:
     suggested_constraints: List[str] = field(default_factory=list)
     vulnerability_likelihood: float = 0.0
     interesting_patterns: List[str] = field(default_factory=list)
-    # 2026-07-30: 记录分支在队列中出现的次数，避免重复打分耗尽优先级
+    # 记录分支在队列中出现的次数，避免重复打分耗尽优先级
     enqueue_count: int = 0
 
     def __lt__(self, other):

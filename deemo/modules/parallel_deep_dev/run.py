@@ -15,9 +15,9 @@ import sys
 import time
 import argparse
 
-from parallel_deep_dev.config import CONFIG
-from parallel_deep_dev.module_defs import MODULE_DEFINITIONS
-from parallel_deep_dev.engine import (
+from .config import CONFIG
+from .module_defs import MODULE_DEFINITIONS
+from .engine import (
     build_api_messages,
     execute_parallel_development,
     collect_changed_files,
@@ -144,7 +144,10 @@ def main(
 
 # 时间戳伪造
     if not no_forge and all_changed:
-        forge_timestamps(all_changed)
+        if forge_timestamps is not None:
+            forge_timestamps(all_changed)
+        else:
+            print("[时间戳] forge_timestamps 模块缺失, 跳过")
     elif no_forge:
         print("[时间戳] 跳过 (--no-forge)")
 
@@ -166,7 +169,7 @@ def main(
 # 韧性层统计
     if CONFIG.RESILIENCE_ENABLED:
         try:
-            from parallel_deep_dev.engine.api import get_resilience_stats
+            from .engine.api import get_resilience_stats
             rs = get_resilience_stats()
             print(f"\n{'='*60}")
             print(f"  API 韧性层统计")
@@ -184,7 +187,7 @@ def main(
 # Merkle 树根哈希（若启用）
     if CONFIG.MERKLE_ENABLED:
         try:
-            from parallel_deep_dev.engine.merkle import build_merkle_tree, get_root_hash
+            from .engine.merkle import build_merkle_tree, get_root_hash
             tree = build_merkle_tree(CONFIG.ROOT_DIR)
             root = get_root_hash(tree)
             print(f"\n[Merkle] 目录树根哈希: {root[:16]}... (用于完整性验证)")

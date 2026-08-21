@@ -40,7 +40,6 @@ def _root_ptr(ptr: str) -> str:
 def detect_struct_field_uaf(code: str) -> List[Dict]:
     """检测结构体字段UAF: free(p->field); p->field = X;"""
     results, lines = [], code.splitlines()
-    raw = code
 
     # 收集所有 struct field free
     field_frees: List[Tuple[str, str, int]] = []  # (struct_var, field, line)
@@ -175,7 +174,6 @@ def detect_null_deref_alias_uaf(code: str) -> List[Dict]:
     """检测全局指针通过函数间接双重释放: g_f = malloc(); f(); f(); 其中 f() 内 free(g_f)."""
     results = []
     lines = code.splitlines()
-    raw = code
 
     # 收集 globals — 在第一个函数定义前的 name = NULL; 声明
     globals_set = set()

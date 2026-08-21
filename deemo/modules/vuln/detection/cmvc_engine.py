@@ -1,33 +1,30 @@
 # coding: utf-8
-# 创建: 2026-06-23  |  CMVC编排引擎
-# 修改: 2026-06-23  |  审计后补充文件头与错误处理
-#
 """
-跨模态漏洞关联——编排引擎。
+跨模态漏洞关联 - 编排引擎。
 
 管线流程:
-  1. 证据归一化: 各模态finding→NormalizedEvidence(EvidenceNormalizer)
-  2. 初步筛选: 按函数名/文件路径分组→同组内执行全对关联
-  3. 因果关联: 空间语义评分+因果推断→确认/争议/补充/重复(CorrelationEngine)
-  4. 确认链构建: 被≥2个独立模态确认的漏洞→高可信度列表
-  5. 争议标记: 矛盾finding→人工审查队列
-  6. 输出: 关联报告——含确认链/争议项/独立finding统计
+  1. 证据归一化: 各模态finding, NormalizedEvidence(EvidenceNormalizer)
+  2. 初步筛选: 按函数名/文件路径分组, 同组内执行全对关联
+  3. 因果关联: 空间语义评分+因果推断, 确认/争议/补充/重复(CorrelationEngine)
+  4. 确认链构建: 被≥2个独立模态确认的漏洞, 高可信度列表
+  5. 争议标记: 矛盾finding, 人工审查队列
+  6. 输出: 关联报告, 含确认链/争议项/独立finding统计
 
 使用场景:
   在完整分析管线结束后, 将所有finding汇集至本引擎:
-    static_findings + llm_reports + fuzz_crashes + dynamic_traces
-    → CorrelationReport → 按可信度分层的漏洞清单
+     static_findings + llm_reports + fuzz_crashes + dynamic_traces
+     CorrelationReport, 按可信度分层的漏洞清单
 
 与传统分数融合的差异:
-  分数融合: [0.8, 0.7, 0.9]→0.82(丢失了"哪个证据贡献了什么"的信息)
+  分数融合: [0.8, 0.7, 0.9] -> 0.82(丢失了"哪个证据贡献了什么"的信息)
   实例关联: 保持每条finding独立可追溯, 仅建立关系边
-  分析师可下钻至原始finding验证关联推理——可解释性远高于黑盒融合
+  分析师可下钻至原始finding验证关联推理 - 可解释性远高于黑盒融合
 
 与现有模块集成:
-  multimodal_vuln_fusion → 分数级融合(输出一个分数)
-  cmvc_engine → 实例级关联(输出关系图)
-  CSSA → 崩溃分类结果注入为证据
-  MEWF → 武器化预测作为证据加权依据
+  multimodal_vuln_fusion, 分数级融合(输出一个分数)
+  cmvc_engine, 实例级关联(输出关系图)
+  CSSA, 崩溃分类结果注入为证据
+  MEWF, 武器化预测作为证据加权依据
 """
 
 import logging
@@ -49,7 +46,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class CorroborationChain:
-    """确认链——被多个独立模态确认的漏洞"""
+    """确认链 - 被多个独立模态确认的漏洞"""
     chain_id: str
     location: str                   # "function@file" 标识
     evidences: List[NormalizedEvidence] = field(default_factory=list)
@@ -123,7 +120,7 @@ class CmvcEngine:
         if not all_evidence:
             return CorrelationReport()
 
-        # 按位置分组—降低全对比较的复杂度
+        # 按位置分组, 降低全对比较的复杂度
         groups = self._group_by_location(all_evidence)
 
         # 组内全对关联
@@ -170,11 +167,11 @@ class CmvcEngine:
 
     def _group_by_location(self, evidence_list: List[NormalizedEvidence]
                             ) -> Dict[str, List[NormalizedEvidence]]:
-        """按(函数名, 文件)分组——同函数finding更可能指向同一漏洞。
+        """按(函数名, 文件)分组 - 同函数finding更可能指向同一漏洞。
 
         组键: "function_name::file_path"(去重时忽略大小写差异)
-        若无函数名→按文件路径分组
-        若无文件→归入"ungrouped"
+        若无函数名, 按文件路径分组
+        若无文件, 归入"ungrouped"
         """
         groups: Dict[str, List[NormalizedEvidence]] = defaultdict(list)
         for ev in evidence_list:
@@ -194,7 +191,7 @@ class CmvcEngine:
     def _build_chains(self, corroborated: List[Tuple[str, List[NormalizedEvidence]]],
                         all_evidence: List[NormalizedEvidence]
                         ) -> List[CorroborationChain]:
-        """从关联结果构建确认链——去重+聚合"""
+        """从关联结果构建确认链 - 去重+聚合"""
         chain_map: Dict[str, CorroborationChain] = {}
 
         for loc_key, ev_list in corroborated:
@@ -226,7 +223,7 @@ class CmvcEngine:
             else:
                 chain.consensus_level = "LOW"
 
-            # 主要漏洞类型——取众数
+            # 主要漏洞类型, 取众数
             type_counts = defaultdict(int)
             for ev in chain.evidences:
                 if ev.vuln_type != 'unknown':
@@ -249,7 +246,7 @@ class CmvcEngine:
 
 def correlate_findings(findings_by_modality: Dict[str, List[Dict]]
                         ) -> CorrelationReport:
-    """跨模态关联便捷入口——单行调用"""
+    """跨模态关联便捷入口 - 单行调用"""
     return CmvcEngine().analyze(findings_by_modality)
 
 

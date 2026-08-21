@@ -1,6 +1,6 @@
 """Proxy → analysis_tools/jit_analyzer.py; compat method injection."""
 import importlib.util as _iu, os as _os
-from functools import lru_cache  # 保留
+from functools import lru_cache
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'analysis_tools', 'jit_analyzer.py')
 _s = _iu.spec_from_file_location('_jit', _r)
 _m = _iu.module_from_spec(_s)
@@ -138,7 +138,6 @@ _JIT_SPRAY_SIGNATURES: list[tuple[bytes, str]] = [
 
 def detect_jit_spray(jit_code: bytes, page_size: int = 4096) -> list[dict]:
     """扫描 JIT 编译后的代码页，检测 spray 模式。
-    # 不拆——保持上下文连贯性，拆了反而难读
     返回可疑区域的列表，含偏移、类型和严重度。"""
     findings = []
     for sig, spray_type in _JIT_SPRAY_SIGNATURES:
@@ -172,7 +171,6 @@ def detect_jit_spray(jit_code: bytes, page_size: int = 4096) -> list[dict]:
 
 def estimate_rwx_risk(engine_type: str, jit_flags: dict) -> str:
     """评估 JIT 引擎的 RWX 内存风险等级。
-    # 不拆——保持上下文连贯性，拆了反而难读
     V8 自 2018 年起默认启用 W^X；LuaJIT 在 2.1+ 支持但需显式开启；
     JavaScriptCore 在 iOS 上受代码签名强制保护。"""
     if engine_type == 'V8':
@@ -193,7 +191,6 @@ def estimate_rwx_risk(engine_type: str, jit_flags: dict) -> str:
 # 检测指标: JIT 代码页的间接跳转密度、gadget 密度、ROP 链可用性
 def assess_cfi_bypass_risk(jit_region: bytes, engine_type: str = 'V8') -> dict:
     """评估 JIT 代码区域被用于 CFI 绕过的风险。
-    # 不拆——保持上下文连贯性，拆了反而难读
     统计间接跳转指令（jmp reg / call reg / ret）的密度。"""
     if len(jit_region) < 16:
         return {'risk': 'low', 'gadget_density': 0.0}
@@ -268,7 +265,7 @@ def headless_analyze_jit(engine_types: list[str], dump_paths: dict[str, str],
     return results
 
 
-def _debug_print(*args, **kwargs):
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

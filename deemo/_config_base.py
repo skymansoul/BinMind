@@ -16,7 +16,7 @@ logger = __import__('logging').getLogger('config')
 class Config:
     """项目配置管理类"""
 
-    # AI 服务配置——可选值: openai / azure / ollama / llamacpp / custom
+    # AI 服务配置-可选值: openai / azure / ollama / llamacpp / custom
     AI_PROVIDER = AI_PROVIDER_OPENAI
 
     # OpenAI 或 OpenAI 兼容服务

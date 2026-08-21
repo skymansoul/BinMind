@@ -67,6 +67,8 @@ class CrashFingerprint:
     # 推荐的利用策略
     recommended_primitives: List[PrimitiveType] = field(default_factory=list)
     recommended_strategy: str = ""
+    # 附加上下文 (如 fingerprint_crash 写入的 heap_context)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 # 已知寄存器值模式到利用策略提示的映射, 源自 AutoPwn 样本分析。

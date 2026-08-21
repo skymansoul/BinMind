@@ -123,7 +123,7 @@ class TestMemoryChecker:
         insns = [('mov', ['rax', '[rsp + 0x8]'])]
         taints = propagate_taint_intraprocedural(sources, insns)
         violations = check_secret_dependent_memory('test', insns, taints)
-        # 栈访问不违规——即使 rsp 可能被标记为污点（它不会被标记——这里测试的是误报抑制）
+        # 栈访问不违规-即使 rsp 可能被标记为污点（它不会被标记-这里测试的是误报抑制）
         assert len(violations) == 0
 
 

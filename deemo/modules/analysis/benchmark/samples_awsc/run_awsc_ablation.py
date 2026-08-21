@@ -1,4 +1,4 @@
-# AWSC 消融实验 — 量化同源关联过滤对误报的抑制效果
+# AWSC 消融实验 - 量化同源关联过滤对误报的抑制效果
 #
 # 对照: BinMind 堆检测器 (含 AWSC Stage10) vs 关闭 AWSC 的基础管线.
 # 样本: benchmark/samples_awsc 的 vuln(应检出) 与 safe(应过滤) 配对.
@@ -6,7 +6,6 @@
 #
 # 决策: AWSC 是 finalize 的第10阶段, 关闭它即可获得"无同源过滤"基线,
 # 无需改动既有逻辑, 保证消融对比同一管线骨架.
-# 创建: 2026-06-28
 
 import json
 import sys
@@ -14,7 +13,6 @@ import time
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parents[2]  # benchmark → samples_awsc → benchmark → ...
 # benchmark/samples_awsc/gen_awsc_samples.py 的层级: samples_awsc → benchmark → analysis
 PROJECT_ROOT = SCRIPT_DIR.parents[2]
 sys.path.insert(0, str(PROJECT_ROOT.parents[0]))  # analysis

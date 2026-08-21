@@ -1,11 +1,8 @@
 # coding: utf-8
-# 创建: 2026-05-07  |  数据流切片器
-# 修改: 2026-05-07  |  审计后补充文件头与错误处理
-#
 """
-DABSS数据流切片器——从二进制反汇编中追溯缓冲区/指针操作的数据流路径。
+DABSS数据流切片器-从二进制反汇编中追溯缓冲区/指针操作的数据流路径。
 
-算法: 反向数据流切片——从敏感操作(sink)沿定义-使用链追溯至外部输入(source)。
+算法: 反向数据流切片-从敏感操作(sink)沿定义-使用链追溯至外部输入(source)。
 约束标注: 路径上的比较指令(cmp/test)被标注为边界约束节点。
 
 与现有方法的差异:
@@ -30,7 +27,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class DataFlowNode:
-    """数据流切片节点——单条指令"""
+    """数据流切片节点-单条指令"""
     addr: int
     mnemonic: str
     operands: List[str] = field(default_factory=list)
@@ -46,7 +43,7 @@ class DataFlowNode:
 
 @dataclass
 class BufferSlice:
-    """缓冲区切片——sink到source的完整数据流路径"""
+    """缓冲区切片-sink到source的完整数据流路径"""
     sink_addr: int
     sink_mnemonic: str
     buffer_operand: str = ""
@@ -60,7 +57,7 @@ class BufferSlice:
 
 
 class DataFlowSlicer:
-    """反向数据流切片器——从sink指令追溯至输入源。
+    """反向数据流切片器-从sink指令追溯至输入源。
 
     切片深度: 最大64步(函数内)，跨函数截断→标记为source。
     架构支持: x86_64/ARM32/ARM64/MIPS32(通过操作数解析适配)。
@@ -75,7 +72,7 @@ class DataFlowSlicer:
 
     def slice_function(self, basic_blocks: List[Dict],
                         arch: str = "x86_64") -> List[BufferSlice]:
-        """对函数基本块列表执行数据流切片——定位所有sink并逐条追溯。"""
+        """对函数基本块列表执行数据流切片-定位所有sink并逐条追溯。"""
         insn_map: Dict[int, Tuple[str, List[str], int]] = {}
         block_preds: Dict[int, List[int]] = defaultdict(list)
         for bb in basic_blocks:
@@ -115,13 +112,13 @@ class DataFlowSlicer:
 
     def _backward_slice(self, addr, target_op, insn_map, preds,
                           visited, depth) -> List[DataFlowNode]:
-        """递归后向切片——含跨基本块与跨函数传播。
+        """递归后向切片-含跨基本块与跨函数传播。
 
         追踪三层:
-          1. 同基本块内——搜索当前指令之前的写入target_op寄存器的指令
-          2. 跨基本块——若当前块内无定义, 沿前驱边递归追踪
+          1. 同基本块内-搜索当前指令之前的写入target_op寄存器的指令
+          2. 跨基本块-若当前块内无定义, 沿前驱边递归追踪
              (检查前驱块的最后一条写入target_op的指令)
-          3. 跨函数——若target_op来自call指令的返回值(rax),
+          3. 跨函数-若target_op来自call指令的返回值(rax),
              且有调用图信息, 递归进入被调用函数
 
         深度计数严格递增, 到达max_depth或循环时终止。
@@ -148,7 +145,7 @@ class DataFlowSlicer:
             if not op_reg:
                 continue
 
-            # Layer 1: 同基本块内——搜索当前指令之前的定义者
+            # Layer 1: 同基本块内-搜索当前指令之前的定义者
             found_in_block = False
             same_block_addrs = sorted(
                 [a for a in insn_map if insn_map[a][2] == bb_addr and a < addr],
@@ -159,13 +156,13 @@ class DataFlowSlicer:
                 if op_reg in get_def_regs(*insn_map[prev_addr][:2]):
                     node.def_sources.append(prev_addr)
                     found_in_block = True
-                    # 检查是否为call指令——若是, 标记为跨函数源
+                    # 检查是否为call指令-若是, 标记为跨函数源
                     p_mnem = insn_map[prev_addr][0]
                     if p_mnem == 'call':
                         node.is_source = True
                     break
 
-            # Layer 2: 跨基本块——沿前驱边递归
+            # Layer 2: 跨基本块-沿前驱边递归
             if not found_in_block and bb_addr in preds:
                 for pred_addr in preds[bb_addr]:
                     if depth + 1 >= self._max_depth:
@@ -209,7 +206,7 @@ class DataFlowSlicer:
         return '', ''
 
     def _slice_confidence(self, nodes: List[DataFlowNode]) -> float:
-        """切片可靠性——source存在(+0.3)+约束≥2(+0.2)+短路径(+0.2)+完整(+0.3)"""
+        """切片可靠性-source存在(+0.3)+约束≥2(+0.2)+短路径(+0.2)+完整(+0.3)"""
         if not nodes:
             return 0.0
         c = sum([0.3 * any(n.is_source for n in nodes),

@@ -8,5 +8,16 @@ def extract_constants(code: str) -> Dict[str, int]:
             for m in re.finditer(r"(\w+)\s*=\s*(\d+)\s*;", code)}
 
 def filter_false_positives(findings: list, code: str) -> list:
-    """空实现 — 实际FP过滤由GAPSBV七阶段管线完成."""
-    return findings
+    """按源码存在性去重过滤疑似误报 — 兼容旧调用方."""
+    seen = set()
+    out = []
+    for f in findings:
+        var = f.get('var') if isinstance(f, dict) else None
+        if var and var not in code:
+            continue
+        key = (f.get('type'), var, f.get('op'), f.get('val'), f.get('line'))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(f)
+    return out

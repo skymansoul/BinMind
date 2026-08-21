@@ -1,11 +1,10 @@
 # UAF函数内检测 — 从uaf_orchestrator.py拆分.
 # 包含三路策略: ptr_val精确匹配 / 源寄存器追踪 / 栈重载追踪.
-# 创建: 2026-04-16
 
 import re
 from typing import Dict, List, Optional
 
-from insn_parser import Instruction, extract_register
+from .insn_parser import Instruction, extract_register
 from func_analyzer import FunctionAnalysis
 
 _DEREF_MNEMONICS = {'mov', 'movzx', 'movsx', 'movsxd', 'add', 'sub',

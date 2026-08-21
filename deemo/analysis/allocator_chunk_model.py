@@ -99,9 +99,6 @@ def estimate_chunk_layout(
     calloc(n,m)处理: 总请求 = n*m, 对齐由calloc内部处理。
     realloc(ptr, n): chunk布局同malloc(n)。
     """
-    if alloc_func == 'calloc':
-        pass  # alloc_arg 已由调用方解析为 n*m
-
     if allocator == Allocator.GLIBC_PTMALLOC:
         usable = glibc_request2size(alloc_arg)
         chunk_total = usable + 2 * SIZE_SZ

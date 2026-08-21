@@ -8,7 +8,12 @@ import time
 from pathlib import Path
 from typing import Dict, List
 
-from compare.common import ExperimentResult, compute_metrics
+try:
+    from compare.common import ExperimentResult, compute_metrics
+except ImportError:
+    # compare 实验框架已移除; 降级为 None
+    ExperimentResult = None
+    compute_metrics = None
 
 BINARIES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                             'tests', 'regression', 'binaries')
@@ -71,7 +76,11 @@ def run_binmind(binary_path: str) -> ExperimentResult:
     """BinMind 自身的 taint + heap 检测."""
     start = time.time()
     try:
-        from tests.regression.run.scan_runner import scan_with_taint_detector
+        try:
+            from tests.regression.run.scan_runner import scan_with_taint_detector
+        except ImportError:
+            # scan_with_taint_detector 已移除; 降级为 None
+            scan_with_taint_detector = None
         r = scan_with_taint_detector(binary_path)
         elapsed = time.time() - start
         return ExperimentResult(

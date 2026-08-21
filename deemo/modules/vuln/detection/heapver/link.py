@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-27  |  写入目标→分配点关联——堆不相交性判定
 #
 """
 写入目标指针与分配点的关联 (pointer provenance linking)。

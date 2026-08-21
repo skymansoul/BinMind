@@ -316,10 +316,35 @@ class ProtocolInferEngine:
                 success=False, protocol=None, samples_analyzed=0,
                 errors=[f"PCAP 文件不存在: {pcap_path}"],
             )
-        return ProtocolInferenceResult(
-            success=False, protocol=None, samples_analyzed=0,
-            errors=["PCAP 解析需要 scapy，当前环境不可用"],
-        )
+        # 借本模块 PcapReader 解析 pcap，无需外部 scapy 依赖
+        try:
+            from .pcap_reader import PcapReader
+        except ImportError:
+            from pcap_reader import PcapReader
+
+        samples: List[bytes] = []
+        reader = PcapReader()
+        try:
+            reader.open(pcap_path)
+            for _pkt in reader.iter_packets():
+                _pkt._ensure_parsed()
+                _sample = _pkt.payload or _pkt.raw_data
+                if _sample:
+                    samples.append(_sample)
+        except OSError as exc:
+            return ProtocolInferenceResult(
+                success=False, protocol=None, samples_analyzed=0,
+                errors=[f"PCAP 读取失败: {exc}"],
+            )
+        finally:
+            reader.close()
+
+        if not samples:
+            return ProtocolInferenceResult(
+                success=False, protocol=None, samples_analyzed=0,
+                errors=["PCAP 中未提取到载荷样本"],
+            )
+        return self.analyze_samples(samples, protocol_name="InferredProtocol")
 
     def generate_scapy_code(self, protocol: ProtocolDefinition) -> str:
         lines = [

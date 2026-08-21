@@ -1,15 +1,14 @@
-# 2026-08-01
-"""
-Memory forensics facade — live process 转存 file analysis, volatility3
-backend, sensitive data extraction (keys, tokens, passwords), memory layout
-visualization, 堆 analysis
+"""内存取证门面 — 活动进程与转存文件分析, volatility3 后端,
+敏感数据提取 (keys, tokens, passwords), 内存布局可视化,
+堆分析。
 
-Wraps engine/memory_*.py (memory_forensics, memory_堆, memory_visualizer
-memory_malware_detector, memory_object_reconstructor
-memory_primitive_extractor, memory_sensitive_op_detector, memory_manipulation)
+封装 engine/memory_*.py (memory_forensics, memory_heap,
+memory_visualizer, memory_malware_detector,
+memory_object_reconstructor, memory_primitive_extractor,
+memory_sensitive_op_detector, memory_manipulation)。
 
-// WATCH: 转存 file truncated, volatility3 SIGSEGV
-// pre-校验 file size loading
+注意: 转存文件截断时 volatility3 会 SIGSEGV,
+加载前先校验文件大小。
 """
 
 from __future__ import annotations
@@ -38,7 +37,7 @@ class MemoryImageFormat(str, Enum):
     QEMU = "qemu"
 
 
-# MemoryForensics — live + 转存 analysis
+# 内存取证 — 活动进程与转存文件分析
 
 @dataclass
 class ProcessInfo:
@@ -71,18 +70,18 @@ class SensitiveData:
 
 
 class MemoryForensics:
-    """Memory forensics engine backed volatility3 (available)
-    
-    支持 live process analysis (via /proc, ptrace, or readprocessmemory)
-    offline 转存 file analysis. Falls back heuristic scanning
-    volatility3 installed
-    
-    Usage::
-    
+    """由 volatility3 (若可用) 支撑的内存取证引擎。
+
+    支持活动进程分析 (via /proc, ptrace, or readprocessmemory)
+    与离线转存文件分析。volatility3 未安装时回退到启发式
+    扫描。
+
+    用法::
+
     mf = MemoryForensics()
     # Live analysis
     proc_info = mf.analyze_live_process(1234)
-    # 转存 analysis
+    # 转存分析
     results = mf.analyze_dump("memory.dmp")
     """
 
@@ -96,13 +95,13 @@ class MemoryForensics:
         except ImportError:
             log.info("volatility3 not installed; using heuristic fallback")
 
-# Live process analysis
+# 活动进程分析
 
     def analyze_live_process(self, pid: int) -> Optional[ProcessInfo]:
-        """分析 a live process PID
-        
-        Linux 读取 /proc/<pid>/*. Windows 使用 Win32 API
-        via ctypes (Toolhelp32快照)
+        """按 PID 分析活动进程。
+
+        Linux 读取 /proc/<pid>/*; Windows 通过 ctypes 使用
+        Win32 API (Toolhelp32 快照)。
         """
         log.info("Analyzing live process PID=%d", pid)
         info = ProcessInfo(pid=pid, name=f"process_{pid}")
@@ -115,7 +114,7 @@ class MemoryForensics:
         return info
 
     def _analyze_linux_proc(self, pid: int, info: ProcessInfo) -> ProcessInfo:
-        """读取 /proc/<pid> for Linux live analysis"""
+        """读取 /proc/<pid> 进行 Linux 活动分析。"""
         proc_path = f"/proc/{pid}"
         try:
             with open(os.path.join(proc_path, "comm"), "r") as f:
@@ -140,7 +139,7 @@ class MemoryForensics:
         return info
 
     def _analyze_windows_proc(self, pid: int, info: ProcessInfo) -> ProcessInfo:
-        """使用 Windows API for live process analysis via ctypes"""
+        """通过 ctypes 使用 Windows API 进行活动进程分析。"""
         try:
             import ctypes
             import ctypes.wintypes
@@ -163,13 +162,13 @@ class MemoryForensics:
 
         return info
 
-# 转存 file analysis
+# 转存文件分析
 
     def analyze_dump(self, dump_path: str) -> Dict[str, Any]:
-        """分析 a memory 转存 file
-        
-        Pre-校验s file size avoid volatility3 SIGSEGV truncated 转存
-        delegates volatility3 backend or heuristic scanning
+        """分析内存转存文件。
+
+        预先校验文件大小, 避免截断转存导致 volatility3
+        SIGSEGV; 委托给 volatility3 后端或启发式扫描。
         """
         log.info("Analyzing dump: %s", dump_path)
         result: Dict[str, Any] = {"path": dump_path, "findings": []}
@@ -196,7 +195,7 @@ class MemoryForensics:
         return result
 
     def _detect_dump_format(self, path: str) -> str:
-        """检测 memory 转存 格式化 magic bytes"""
+        """按 magic bytes 检测内存转存格式。"""
         try:
             with open(path, "rb") as f:
                 header = f.read(64)
@@ -211,26 +210,25 @@ class MemoryForensics:
             return "unknown"
 
     def _run_volatility(self, dump_path: str) -> Dict[str, Any]:
-        """运行 volatility3 plugins against a memory 转存"""
+        """对内存转存运行 volatility3 插件。"""
         results: Dict[str, Any] = {"plugins": {}}
         try:
             import volatility3
             import volatility3.plugins
-            # practice 调用 volatility3.cli or 使用 Python API
+            # 实践中调用 volatility3.cli 或使用其 Python API
             results["status"] = "volatility3_invoked"
             log.info("volatility3 analysis started for %s", dump_path)
         except ImportError:
             results["status"] = "volatility3_not_available"
-    # 这坨代码先不清了，后面重构的时候再说
         return results
 
     def _heuristic_scan(self, dump_path: str) -> Dict[str, Any]:
-        """Basic heuristic scanning volatility3 unavailable"""
+        """volatility3 不可用时的基础启发式扫描。"""
         results: Dict[str, Any] = {"strings_found": 0, "urls": [], "pe_headers": 0}
         try:
             with open(dump_path, "rb") as f:
                 data = f.read()
-            # Simple PE header scan
+            # 扫描 PE 头部
             pe_offset = 0
             while True:
                 pe_offset = data.find(b"MZ", pe_offset)
@@ -253,13 +251,13 @@ class MemoryForensics:
             log.error("Heuristic scan failed: %s", e)
         return results
 
-# Sensitive data extraction
+# 敏感数据提取
 
     def extract_sensitive_data(self, dump_data: bytes) -> List[SensitiveData]:
-        """提取 sensitive data (keys, tokens, passwords) raw memory bytes
-        
-        使用 regex patterns for common sensitive data 格式化: AES/GCM keys
-        RSA private keys, JWTs, API tokens, credential patterns
+        """从原始内存字节中提取敏感数据 (keys, tokens, passwords)。
+
+        对常见敏感数据格式使用正则模式: AES/GCM keys,
+        RSA 私钥, JWT, API token, 凭据模式。
         """
         import re
         findings: List[SensitiveData] = []
@@ -287,17 +285,17 @@ class MemoryForensics:
 # MemoryVisualizer — ASCII/SVG memory layout
 
 class MemoryVisualizer:
-    """构造 ASCII art SVG memory layout visualizations
-    
-    输出 hex-转存 style ASCII maps memory regions, or 渲染
-    an SVG showing allocation boundaries, permissions, data density
+    """构造 ASCII art 与 SVG 内存布局可视化。
+
+    输出 hex 转存风格的 ASCII 内存区域映射, 或渲染展示分配
+    边界、权限与数据密度的 SVG。
     """
 
     def __init__(self, width: int = 80) -> None:
         self._width = width
 
     def ascii_layout(self, regions: List[MemoryRegion]) -> str:
-        """Produce an ASCII art representation memory layout"""
+        """生成内存布局的 ASCII art 表示。"""
         if not regions:
             return "(empty)"
         total_size = max(r.end for r in regions) - min(r.start for r in regions)
@@ -335,7 +333,7 @@ class MemoryVisualizer:
     def svg_layout(
         self, regions: List[MemoryRegion], width: int = 800, height: int = 600
     ) -> str:
-        """渲染 memory layout an SVG diagram"""
+        """将内存布局渲染为 SVG 图。"""
         if not regions:
             return '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><text>empty</text></svg>'
 
@@ -368,7 +366,7 @@ class MemoryVisualizer:
         return "\n".join(svg_parts)
 
 
-# 堆Analyzer — allocator state analysis, 堆 feng shui
+# 堆分析器 — 分配器状态分析与堆风水
 
 @dataclass
 class HeapChunk:
@@ -381,11 +379,11 @@ class HeapChunk:
 
 
 class HeapAnalyzer:
-    """分析 堆 allocator state a memory 转存
-    
-    支持 glibc ptmalloc2 (Linux) NT 堆 (Windows) 格式化
-    Performs 堆 feng shui analysis, 构造 fuzz inputs targeting
-    specific 堆 states, produce 漏洞利用 code skeletons
+    """分析内存转存中的堆分配器状态。
+
+    支持 glibc ptmalloc2 (Linux) 与 NT 堆 (Windows) 格式。
+    执行堆 feng shui 分析, 构造针对特定堆状态的 fuzz 输入,
+    生成漏洞利用代码骨架。
     """
 
     ALLOCATOR_GLIBC = "glibc_ptmalloc2"
@@ -396,7 +394,7 @@ class HeapAnalyzer:
         self._chunks: List[HeapChunk] = []
 
     def parse_heap(self, data: bytes, base_addr: int = 0) -> List[HeapChunk]:
-        """解析 堆 data 提取 chunk metadata"""
+        """解析堆数据并提取 chunk 元数据。"""
         self._chunks = []
         offset = 0
 
@@ -452,7 +450,7 @@ class HeapAnalyzer:
             return None
 
     def analyze_heap_state(self) -> Dict[str, Any]:
-        """分析 堆 allocator state for 漏洞利用ation opportunities"""
+        """分析堆分配器状态以寻找利用机会。"""
         total_free = 0
         total_used = 0
         free_chunks = 0
@@ -478,10 +476,10 @@ class HeapAnalyzer:
     def heap_feng_shui_plan(
         self, target_size: int, allocation_count: int
     ) -> List[Dict[str, Any]]:
-        """构造 a 堆 feng shui plan secure a chunk target_size
-        
-        返回 a sequence allocation/deallocation steps designed
-        创建 a contiguous free region desired size
+        """构造堆 feng shui 计划以取得 target_size 的 chunk。
+
+        返回分配/释放步骤序列, 旨在创建期望大小的连续空闲
+        区域。
         """
         steps: List[Dict[str, Any]] = []
         remaining = target_size
@@ -497,7 +495,7 @@ class HeapAnalyzer:
         return steps
 
     def generate_exploit_code(self, vulnerability_type: str) -> str:
-        """构造 漏洞利用 code skeleton for a 堆 漏洞"""
+        """为堆漏洞构造利用代码骨架。"""
         templates = {
             "use_after_free": self._uaf_exploit_template,
             "double_free": self._double_free_template,
@@ -508,8 +506,8 @@ class HeapAnalyzer:
 
     def _uaf_exploit_template(self) -> str:
         return """#include <stdio.h>
-# 包含 <stdlib.h>
-# 包含 <string.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main() {
     char *victim = malloc(128);
@@ -534,8 +532,8 @@ int main() {
 
     def _heap_overflow_template(self) -> str:
         return """#include <stdio.h>
-# 包含 <stdlib.h>
-# 包含 <string.h>
+#include <stdlib.h>
+#include <string.h>
 int main() {
     char *buf = malloc(16);
     char *victim = malloc(128);

@@ -3,7 +3,6 @@
 # 扫描 free 后指令流: 全局变量被加载到寄存器后解引用即为 UAF.
 # 若全局变量在 free 后被新 malloc 赋值, 停止扫描.
 #
-# 创建: 2026-08-05
 
 from typing import List, Optional, Set
 

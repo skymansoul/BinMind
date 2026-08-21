@@ -38,7 +38,7 @@ from src.wasi_sandbox_escape import (
 )
 
 
-# 1. 导入检查——WASIImportAnalyzer
+# 1. 导入检查: WASIImportAnalyzer
 
 class TestImportChecking:
     """验证WASIImportAnalyzer正确将WASI导入分类为危险/安全并映射到能力集。"""
@@ -131,7 +131,7 @@ class TestImportChecking:
         assert d["is_dangerous"] is True
 
 
-# 2. 内存增长分析——guard page绕过检测
+# 2. 内存增长分析: guard page绕过检测
 
 class TestMemoryGrowthAnalysis:
     """验证MemoryEscapeAnalyzer检测可疑内存增长模式以实现guard page绕过和沙箱逃逸。"""
@@ -229,7 +229,7 @@ class TestMemoryGrowthAnalysis:
 # 3. Table操作分析
 
 class TestTableManipulation:
-    """验证table.grow + call_indirect模式的检测——该组合可启用WASM沙箱逃逸的间接调用劫持。"""
+    """验证table.grow + call_indirect模式的检测: 该组合可启用WASM沙箱逃逸的间接调用劫持。"""
 
     def test_grow_with_indirect_calls_is_suspicious(self):
         """table.grow + call_indirect共存 = 劫持可行。"""

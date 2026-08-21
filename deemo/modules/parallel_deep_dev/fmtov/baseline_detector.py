@@ -8,12 +8,12 @@ from __future__ import annotations
 
 from typing import List
 
-from heapov.cparser import parse_source_full
-from heapov.expr_ast import Var, Const
-from heapov.stmts import If, For, While, Block, CallStmt
-from heapov.dataflow import _stmt_list
+from ..heapov.cparser import parse_source_full
+from ..heapov.expr_ast import Var, Const
+from ..heapov.stmts import If, For, While, Block, CallStmt
+from ..heapov.dataflow import _stmt_list
 
-from fmtov.taint import FMT_FUNCS
+from .taint import FMT_FUNCS
 
 
 def _is_literal(fmt) -> bool:
@@ -53,7 +53,7 @@ def analyze_baseline(src: str) -> List[dict]:
 
 
 def _mk(func: str, call: str, fmt) -> dict:
-    from heapov.expr_ast import expr_str
+    from ..heapov.expr_ast import expr_str
     return {
         'func': func, 'fmt': expr_str(fmt), 'call': call,
         'verdict': 'FORMAT_STRING', 'confidence': 0.5,

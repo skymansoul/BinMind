@@ -34,7 +34,7 @@ import math
 import os
 from dataclasses import dataclass, field
 
-from parallel_deep_dev.config import _data_dir
+from ..config import _data_dir
 
 _CONTEXTUAL_PATH = os.path.join(_data_dir(), "bandit_contextual.json")
 
@@ -147,7 +147,7 @@ class ContextualBanditRouter:
     def _linucb_select(self, module_key: str, features: list[float]) -> dict[str, float]:
         arms = self._linucb_arms.get(module_key, {})
         if not arms:
-            from parallel_deep_dev.engine.bandit_router import BanditRouter
+            from .bandit_router import BanditRouter
             cfg = BanditRouter().select(module_key)
             arm_key = _config_to_key(cfg)
             arms[arm_key] = LinUCBArm()

@@ -16,15 +16,15 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
-from heapov.expr_ast import (
+from ..heapov.expr_ast import (
     Expr, Var, Const, Binary, Call, Index, Field, Deref, Addr,
 )
-from heapov.stmts import (
+from ..heapov.stmts import (
     Assign, CallStmt, ExprStmt, If, For, While, Decl, Func,
 )
-from heapov.dataflow import _stmt_list
+from ..heapov.dataflow import _stmt_list
 
-from uafov.model import AllocSite, FreeEvent, UseEvent, RebindEvent
+from .model import AllocSite, FreeEvent, UseEvent, RebindEvent
 
 ALLOC_FUNCS = frozenset(['malloc', 'calloc', 'realloc'])
 NULL_REFS = frozenset(['NULL', 'nullptr'])

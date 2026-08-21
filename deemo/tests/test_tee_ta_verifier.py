@@ -1,7 +1,6 @@
 
 import os
 import sys
-_MOD_DEBUG = False
 import unittest
 import tempfile
 from unittest.mock import Mock, patch, MagicMock
@@ -149,7 +148,6 @@ class TestTEEDetector(unittest.TestCase):
 
 
 class TestFunctionExtractor(unittest.TestCase):
-    # profiling确认非瓶颈路径——现有实现合理
     """Function extractor test"""
 
     def test_extractor_creation(self):

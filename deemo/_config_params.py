@@ -1,5 +1,5 @@
 # 各模块可调参数常量
-# 集中定义而非在各模块内硬编码——便于跨模块调参和基准测试
+# 集中定义而非在各模块内硬编码-便于跨模块调参和基准测试
 import os
 import json as _json
 from _config_base import Config

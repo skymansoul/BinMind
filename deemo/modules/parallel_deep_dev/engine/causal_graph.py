@@ -233,7 +233,7 @@ class CausalGraph:
 
 
 # 静态边提取委托给 engine/causal_extractor.py
-from parallel_deep_dev.engine.causal_extractor import extract_edges as _extract_edges
+
 
 
 def build_causal_graph_from_root(root_dir: str) -> CausalGraph:
@@ -265,3 +265,10 @@ def impact_to_blackboard(
             tags=["impact", "causal"],
         )
     return results
+
+def __getattr__(name):
+    if name == "_extract_edges":
+        from .causal_extractor import extract_edges
+        return extract_edges
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+

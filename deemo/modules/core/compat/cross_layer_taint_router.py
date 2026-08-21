@@ -142,16 +142,12 @@ class CrossLayerTaintRouter:
                           reg_state_callback) -> List[CrossLayerTaintTrace]:
         """追踪一个报文的全部字段到寄存器的污点流。
 
-        Args:
-            packet_id: 唯一报文标识
-            packet_data: 原始报文字节
-            protocol: 协议标识
-            reg_state_callback: callable(reg_or_mem, byte_slot) → TaintTag | None
-                回调函数——查询当前二进制执行上下文中指定寄存器字节槽的污点状态。
-                返回 None 表示该字节槽未被追踪。
-
-        Returns:
-            CrossLayerTaintTrace 列表——每条追踪对应一个成功追踪的协议字段。
+        参数: packet_id 唯一报文标识, packet_data 原始报文字节,
+        protocol 协议标识, reg_state_callback 为
+        callable(reg_or_mem, byte_slot) → TaintTag | None —
+        查询当前二进制执行上下文中指定寄存器字节槽的污点状态,
+        返回 None 表示该字节槽未被追踪;
+        返回 CrossLayerTaintTrace 列表, 每条对应一个成功追踪的协议字段。
         """
         bindings = self.get_bindings_for_packet(protocol, len(packet_data))
         traces = []

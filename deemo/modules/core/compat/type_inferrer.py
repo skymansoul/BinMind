@@ -1,7 +1,7 @@
 # Proxy → binary_analysis/type_inferrer.py. Line-filter → compile → exec strategy.
 import os, functools as _ft
-import heapq  # 保留
-from io import StringIO  # 保留
+import heapq
+from io import StringIO
 _real = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
     'binary_analysis', 'type_inferrer.py')
@@ -96,6 +96,8 @@ def _type_size(hint: str) -> int:
     return sz_map.get(hint, 8)
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

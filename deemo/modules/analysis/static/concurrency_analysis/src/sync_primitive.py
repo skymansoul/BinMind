@@ -1,5 +1,5 @@
 #
-# 同步原语提取 —— 从二进制导入表和指令序列中识别线程同步操作
+# 同步原语提取 - 从二进制导入表和指令序列中识别线程同步操作
 #
 # 覆盖三类平台：
 #   POSIX: pthread_mutex_lock/trylock/unlock, pthread_rwlock_*, pthread_spin_*
@@ -7,7 +7,7 @@
 # AcquireSRWLockExclus/Shared, ReleaseSRWLockExclus/Shared
 #    Darwin: os_unfair_lock_lock/unlock, dispatch_semaphore_wait/signal
 #
-# 输出 SyncSite 列表——每条记录标记了 (函数地址, 指令偏移, 原语类型, 锁标识符)
+# 输出 SyncSite 列表-每条记录标记了 (函数地址, 指令偏移, 原语类型, 锁标识符)
 
 import logging
 from typing import Dict, List, Optional, Set, Tuple
@@ -38,7 +38,7 @@ class SyncType(Enum):
 
 @dataclass
 class SyncPrimitive:
-    """一个同步原语的定义——映射导入符号到 SyncType"""
+    """一个同步原语的定义-映射导入符号到 SyncType"""
     import_name: str
     sync_type: SyncType
     lock_arg_position: int = 0  # 锁指针在参数列表中的位置（0-indexed）
@@ -67,7 +67,7 @@ _SYNC_PRIMITIVE_MAP: Dict[str, SyncPrimitive] = {
     'pthread_rwlock_rdlock':  SyncPrimitive('pthread_rwlock_rdlock',  SyncType.RWLOCK_RDLOCK),
     'pthread_rwlock_wrlock':  SyncPrimitive('pthread_rwlock_wrlock',  SyncType.RWLOCK_WRLOCK),
     'pthread_rwlock_unlock':  SyncPrimitive('pthread_rwlock_unlock',  SyncType.RWLOCK_UNLOCK),
-# POSIX spinlock —— 与 mutex 在锁序分析中等价
+# POSIX spinlock - 与 mutex 在锁序分析中等价
     'pthread_spin_lock':     SyncPrimitive('pthread_spin_lock',     SyncType.SPIN_LOCK),
     'pthread_spin_trylock':  SyncPrimitive('pthread_spin_trylock',  SyncType.MUTEX_TRYLOCK),
     'pthread_spin_unlock':   SyncPrimitive('pthread_spin_unlock',   SyncType.SPIN_UNLOCK),
@@ -124,7 +124,7 @@ def extract_sync_primitives(imports: List[str]) -> Dict[str, SyncPrimitive]:
 
 def build_lock_pairs(sites: List[SyncSite]) -> List[Tuple[SyncSite, SyncSite]]:
     """匹配 lock→unlock 配对。同一函数内按指令偏移顺序配对
-    
+
     lock 操作（MUTEX_LOCK, RWLOCK_WRLOCK, RWLOCK_RDLOCK, SPIN_LOCK）
     与后续最近的同一锁标识符的 unlock 操作配对
     未配对的操作（如提前 return 跳过了 unlock）标记为警告

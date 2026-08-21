@@ -1,5 +1,4 @@
-# fmt扫描调度 — 运行BinaryFmtDetector于单个二进制.
-# 创建: 2024-12-23
+# fmt扫描调度 - 运行BinaryFmtDetector于单个二进制.
 
 import sys
 import time

@@ -1,5 +1,5 @@
 """
-守卫相关性关联 — 将上游 if 守卫匹配到下游堆写入, 用于误报抑制。
+守卫相关性关联 - 将上游 if 守卫匹配到下游堆写入, 用于误报抑制。
 对每个堆写入识别其支配守卫及约束区间, 计算守卫强度分数以区分强弱守卫,
 按文本支配关系限定作用域, 并关联守卫变量与写入大小变量。
 """
@@ -29,7 +29,7 @@ class GuardCorrelationResult:
     alloc_size: int; write_size_range: Tuple[int, int]
     guards: List[CorrelatedGuard] = field(default_factory=list)
     dominant_guard: Optional[CorrelatedGuard] = None
-    safe_confidence: float = 0.0       # 0→可能溢出, 1→可能安全(误报)
+    safe_confidence: float = 0.0       # 0-可能溢出, 1-可能安全(误报)
 
 # patterns ──────────────────────────────────────────────────────────
 
@@ -57,8 +57,8 @@ class GuardCorrelator:
     def __init__(self, max_lookback: int = 50):
         self._lookback = max_lookback
 
-    def extract_guards(self, ir_lines: List[str]) -> List[CorrelatedGuard]:
-        """阶段1: 从IR中提取全部守卫点。"""
+    def extract_guards(self, ir_lines: List[str]) -> List[Tuple[int, str, str, int]]:
+        """阶段1: 从IR中提取全部守卫点, 返回 (行号, 变量, 操作符, 边界值) 列表。"""
         raw: List[Tuple[int, str, str, int]] = []
         for i, line in enumerate(ir_lines):
             m = _GUARD_IF.search(line)
@@ -67,8 +67,8 @@ class GuardCorrelator:
                     bound = int(m.group(3), 0)
                     raw.append((i, m.group(1), m.group(2), bound))
                 except ValueError:
-                    pass  # 符号边界 — 暂不处理
-        return []  # correlate() 期间填充
+                    pass  # 符号边界 - 暂不处理
+        return raw
 
     def correlate(
         self, ir_lines: List[str], write_line: int,
@@ -201,7 +201,7 @@ class GuardCorrelator:
             else:
                 return 0.10
         elif op in ('>', '>='):
-            # 早退模式: if(var > X) return → 走到底的路径上 var <= X
+            # 早退模式: if(var > X) return - 走到底的路径上 var <= X
             if bound <= effective_alloc:
                 return 0.80
             elif bound <= effective_alloc * 2:
@@ -224,7 +224,7 @@ class GuardCorrelator:
         if result.dominant_guard and result.dominant_guard.scope_match:
             base = result.dominant_guard.strength
         else:
-            # 无守卫支配该写入 → 施加作用域惩罚(0.45x), 防止单分支守卫压制其他分支写入
+            # 无守卫支配该写入 - 施加作用域惩罚(0.45x), 防止单分支守卫压制其他分支写入
             raw = max((g.strength for g in result.guards), default=0.0)
             base = raw * 0.45
 

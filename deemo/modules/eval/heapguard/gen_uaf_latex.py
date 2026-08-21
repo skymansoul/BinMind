@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# 创建: 2026-04-25  |  UAF LaTeX 对比表生成
 #
 """从 UAF 基准 JSON 生成 LaTeX 表."""
 

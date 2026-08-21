@@ -4,7 +4,7 @@
 import time
 import sys
 from functools import wraps
-from typing import Callable, Type, Tuple, Any
+from typing import Callable, Type, Tuple, Any, TypeVar
 
 _RetryExcT = TypeVar("_RetryExcT", bound=Exception)
 

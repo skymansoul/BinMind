@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-28 14:18 - 增加证据传播器与deobfuscate的联动，将跨函数常量
+# 增加证据传播器与deobfuscate的联动，将跨函数常量
 #                    自动注册到分类器的校准数据中
 
 """
-混淆感知反混淆编排器 —— 桥接 混淆分类器 与 FunctionDeobfuscator
+混淆感知反混淆编排器 - 桥接 混淆分类器 与 FunctionDeobfuscator
 
 将分类器的判定结果转化为反混淆pass的选择策略，避免对未混淆代码
 运行重量级恢复pass。同时利用 EvidencePropagator 的跨函数信息
@@ -18,16 +17,16 @@
 
 from typing import Any, Dict, List, Optional, Tuple
 
-# 要求 FunctionDeobfuscator 已在环境中可用——此处为可选桥接
+# 要求 FunctionDeobfuscator 已在环境中可用-此处为可选桥接
 # ImportError 时调用方自行降级
 
 
 class ClassificationAwareOrchestrator:
     """将混淆分类结果映射为反混淆pass选择策略
-    
+
     与 FunctionDeobfuscator.去混淆() 的区别:
     去混淆 按 level ("light"/"medium"/"aggress") 运行固定pass序列
-    本编排器根据分类结果动态选择pass——对每种混淆类型运行其针对性恢复
+    本编排器根据分类结果动态选择pass-对每种混淆类型运行其针对性恢复
     """
 
     def __init__(self) -> None:
@@ -40,14 +39,11 @@ class ClassificationAwareOrchestrator:
         instructions: List[Dict[str, Any]],
         rodata_bytes: Optional[bytes] = None,
     ) -> Dict[str, Any]:
-        """运行分类器并生成恢复计划
-        
-        返回:
-        {
-        '分类': [(type, confid),.]
-        'recommended_passes': ['dead_code', 'cff',.]
-        'skip_passes': ['opaque_pred',.]
-        }
+        """运行分类器并生成恢复计划。
+
+        返回 {'classification': [(type, confid), ...],
+        'recommended_passes': ['dead_code', 'cff', ...],
+        'skip_passes': ['opaque_pred', ...]}。
         """
         result = classifier.classify(instructions, rodata_bytes)
         self._last_classification = result
@@ -60,10 +56,10 @@ class ClassificationAwareOrchestrator:
             }
 
         top_type, top_conf = result[0]
-        passes = ['dead_code']  # 永远运行——零副作用
+        passes = ['dead_code']  # 永远运行-零副作用
 
         if top_type == 'none' and top_conf > 0.7:
-            # 高置信度未混淆——仅死代码消除
+            # 高置信度未混淆-仅死代码消除
             return {
                 'classification': result,
                 'recommended_passes': passes,
@@ -104,19 +100,13 @@ class ClassificationAwareOrchestrator:
         evidence_propagator=None,
         known_constants: Optional[Dict[str, Tuple[Any, float]]] = None,
     ) -> Dict[str, Any]:
-        """基于分类结果的定向反混淆——替代固定level的策略
-        
-        Args:
-        deobfuscator: FunctionDeobfuscator 实例
-        instructions: 指令列表
-        entry: 入口地址
-        分类器: 混淆分类器 实例（可选）
-        rodata_bytes:.rodata段字节（可选）
-        evidence_propagator: EvidencePropagator 实例（可选）
-        known_constants: {变量名: (值, 置信度)}，用于证据传播
-        
-        返回:
-        与 FunctionDeobfuscator.去混淆() 格式兼容
+        """基于分类结果的定向反混淆 - 替代固定 level 的策略。
+
+        deobfuscator 为 FunctionDeobfuscator 实例, instructions
+        为指令列表, entry 为入口地址; 其余参数可选: classifier
+        混淆分类器, rodata_bytes .rodata 段字节, evidence_propagator
+        证据传播器, known_constants {变量名: (值, 置信度)}。
+        返回格式与 FunctionDeobfuscator.deobfuscate() 兼容。
         """
         current = list(instructions)
         stats: Dict[str, int] = {

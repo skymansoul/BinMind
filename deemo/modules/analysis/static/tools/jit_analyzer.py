@@ -155,7 +155,7 @@ class LuaJITAnalyzer:
 # 热页面（新编译的代码）可能还包含调试信息，更容易被利用
 
 class JITPageAgeEstimator:
-    """JIT 代码页年龄估计器——基于代码密度和重编译痕迹。"""
+    """JIT 代码页年龄估计器, 基于代码密度和重编译痕迹。"""
 
     _PROLOGUE_DENSITY_THRESHOLD = 3
 
@@ -348,5 +348,5 @@ def analyze_jit_security(binary):
     if constant_blinded:
         result.add_finding('INFO', 'Constant blinding detected')
     if result.hot_pages:
-        result.add_finding('INFO', f'{len(result.hot_pages)} hot JIT pages — recently compiled code')
+        result.add_finding('INFO', f'{len(result.hot_pages)} hot JIT pages, recently compiled code')
     return result

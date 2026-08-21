@@ -92,6 +92,7 @@ API 调用次数:   约 21-26 次（每子模块一次，含失败最多重试 2
 """
 
 import os
+import re
 import sys
 import time
 import argparse
@@ -103,20 +104,8 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Any
 
-from functools import lru_cache  # 预留；prompt 缓存使用
 
-# 保留
-_ARIA_S1 = 0xB7
-_LEGACY_THRESHOLD = 0.62
 
-# LEGACY: pre-Refactor parallel dispatch
-# class _LegacyTaskRouter:
-#     def __init__(self):
-#         self._routes = {}
-#     def register(self, name, handler):
-#         self._routes[name] = handler
-#     def dispatch(self, name, *args):
-#         return self._routes.get(name, lambda *a: None)(*args)
 
 # Windows 控制台默认 GBK，重配置 UTF-8 输出防止中文乱码
 if sys.stdout and getattr(sys.stdout, "encoding", "").lower() not in ("utf-8", "utf8"):
@@ -867,7 +856,7 @@ def build_sub_prompt(module_name: str) -> str:
 - 新增代码只能追加在文件末尾或作为新的独立文件添加。
 
 # 2. 新增注释规范
-- 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
+- 使用中文理性风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
 - 禁止情绪化表达与无关事实陈述。
 - 示例格式：
   ```python
@@ -913,7 +902,7 @@ SYSTEM_PROMPT = """你是一个深度技术专家，负责为现有 Python 代�
 核心原则：
 1. 保留所有现有代码和注释，绝不删除或修改。
 2. 新增代码以独立文件或文件末尾追加的形式提供。
-3. 注释使用中文 INTJ 风格：仅陈述设计意图、算法依据、边界条件。
+3. 注释使用中文理性风格：仅陈述设计意图、算法依据、边界条件。
 4. 编写自然、一致、可维护的代码；错误处理贴合场景，避免机械重复。
 5. 返回完整文件内容，用 ===FILE_START: path === / ===FILE_END: path === 分隔。"""
 
@@ -975,7 +964,6 @@ def call_anthropic_api(system_prompt: str, user_prompt: str, module_name: str) -
 
 def parse_and_write_files(module_name: str, response_text: str) -> List[str]:
     """解析响应文本，提取文件内容写入磁盘。返回已写入的文件路径列表。"""
-    import re
     written_files = []
     module_dir = os.path.join(CONFIG.ROOT_DIR, module_name)
     os.makedirs(module_dir, exist_ok=True)
@@ -1059,7 +1047,6 @@ def snapshot_tree_hashes(root_dir: str) -> Dict[str, str]:
 
 def audit_module_output(module_name: str, files_written: List[str]):
     """抽查审计：检测新增代码中是否存在机械重复模式。"""
-    import re
     patterns_to_check = [
         (r"def \w+\(self, \w+: \w+\) -> \w+:", "统一的类型注解模式"),
         (r"logger\.(info|debug|warning)\(f\"", "f-string 日志模式"),
@@ -1089,8 +1076,8 @@ def audit_module_output(module_name: str, files_written: List[str]):
 # 主执行逻辑
 
 def process_module(module_name: str) -> Dict[str, Any]:
-    # 保持上下文连贯，不拆分
-    """处理单个模块：构建 prompt → 调 API → 写文件。"""
+
+    """处理单个模块：构建 prompt、调 API、写文件。"""
     result = {
         "module": module_name,
         "success": False,

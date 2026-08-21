@@ -139,7 +139,7 @@ class InterprocContextTracker:
                       param_idx: int) -> Optional[Tuple[int, int]]:
         """获取某函数某参数在所有已知调用上下文中的区间.
 
-        返回: 所有caller传入区间的并集 (最宽的lo和hi).
+        返回所有caller传入区间的并集 (最宽的lo和hi)。
         """
         key = (func_name, param_idx)
         bindings = self._param_bindings.get(key, [])

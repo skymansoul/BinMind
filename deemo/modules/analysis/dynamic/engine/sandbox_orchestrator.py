@@ -1,4 +1,3 @@
-# 2024-10-11
 # 沙箱编排 —— 多后端统一接口，自动选择最优执行环境
 # 设计思路：Docker 优先（隔离性好），QEMU 次之（全系统模拟）
 # Process 兜底（轻量但隔离弱），Windows 沙箱 仅 Windows 下可用
@@ -224,12 +223,9 @@ class ProcessSandboxDriver:
                 stdin_data: Optional[bytes] = None) -> SandboxResult:
         """执行命令并捕获输出。
 
-        Args:
-            command: 命令行参数列表。
-            stdin_data: 可选标准输入字节流。
-
-        Returns:
-            SandboxResult，success/exit_code/stderr 供调用方判定。
+        参数: command 命令行参数列表, stdin_data 可选标准输入
+        字节流; 返回 SandboxResult, 调用方通过
+        success/exit_code/stderr 判定。
         """
         if self.state != SandboxState.RUNNING:
             return SandboxResult(

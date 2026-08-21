@@ -77,10 +77,8 @@ class FmtSpecifier:
 def parse_format_specs(fmt_string: str) -> List[FmtSpecifier]:
     """解析格式字符串, 返回所有格式说明符.
 
-    参数:
-      fmt_string: C格式字符串 (如 "value=%03d name=%s\\n")
-    返回:
-      按出现顺序的格式说明符列表
+    参数: fmt_string C格式字符串 (如 "value=%03d name=%s\\n");
+    返回按出现顺序的格式说明符列表。
     """
     specs = []
     # 处理C转义: 将\\n转为实际换行等 (简化处理)

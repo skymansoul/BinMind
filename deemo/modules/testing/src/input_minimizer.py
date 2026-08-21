@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-26 15:22 - 结构保持模式，未提供TypeAwareStructureInferer时退化为纯ddmin
-# 2025-07-30 08:41 - 块级缩减时字段边界对齐修复
-# 2025-08-01 17:03 - token-level缩减策略 (文本类输入按分隔符分块)
+# 结构保持模式，未提供TypeAwareStructureInferer时退化为纯ddmin
+# 块级缩减时字段边界对齐修复
+# token-level缩减策略 (文本类输入按分隔符分块)
 
-# 结构感知的测试用例最小化器 — 基于加权delta debugging的输入缩减
+# 结构感知的测试用例最小化器 - 基于加权delta debugging的输入缩减
 #
 # 设计动机:
 #   Fuzzing产出的崩溃输入通常含大量无关字节。最小化到触发崩溃的最小
@@ -17,19 +16,19 @@
 #       string字段: 按token (分隔符) 或逐字节删除
 #       magic/length/checksum: 不缩减（保持格式有效性）
 #   阶段2 — 对阶段1结果执行块级ddmin，块大小从N/2开始二分。
-#     每个候选提交给predicate(data)->bool验证。
+#     每个候选提交给predicate(data)-bool验证。
 #
 #   无结构信息时退化为标准ddmin+字节级渐进缩减。
 #
 # 文献:
 #   WDD: Weighted Delta Debugging
-#     — 提出按输入元素大小加权分区，大块优先检测，减少测试次数。
-#     本项目借鉴其加权思想但替换为字段类型优先级——类型敏感缩减
+#     - 提出按输入元素大小加权分区，大块优先检测，减少测试次数。
+#     本项目借鉴其加权思想但替换为字段类型优先级-类型敏感缩减
 #     比纯大小加权在二进制格式上更高效。
 #   GReduce
-#     — 通过生成器trace缩减保持输入有效性。本项目取其结构保持缩减
+#     - 通过生成器trace缩减保持输入有效性。本项目取其结构保持缩减
 #       思想，但以推断字段边界而非生成器trace作为结构来源。
-#     — ddmin原始算法，本项目阶段2的退化路径。
+#     - ddmin原始算法，本项目阶段2的退化路径。
 import math
 import time
 from typing import Callable, Dict, List, Optional, Tuple
@@ -58,7 +57,7 @@ class InputMinimizer:
         result = minimizer.minimize(crash_input, predicate=lambda d: crashes(d))
         # result即为保持崩溃属性的最小输入
 
-    predicate(data: bytes) -> bool:
+    predicate(data: bytes) - bool:
         返回True表示data仍保持目标属性 (如触发同一崩溃/覆盖同一路径)。
     """
 

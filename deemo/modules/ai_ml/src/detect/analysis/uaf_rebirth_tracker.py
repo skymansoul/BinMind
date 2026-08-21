@@ -1,4 +1,4 @@
-# UAF指针重生追踪——free后指针被重新赋有效值则悬垂状态清除
+# UAF指针重生追踪-free后指针被重新赋有效值则悬垂状态清除
 # 误报根源: realloc(p,n)结果写回p被当作free→p是旧指针释放,但写回后p已是新分配;
 #   后续使用新指针p是合法用法, 却被别名追踪标记为UAF
 #   例: p=realloc(p,n); memcpy(p,src,n) → 误报UAF
@@ -7,7 +7,7 @@
 #   (2) xor m,m / mov m,imm → 成员被重写 → 重生
 #   (3) 从重生槽重新加载的成员(use窗口内 mov m,[slot]) → 该成员新鲜
 # use时仅当使用仍未重生的(悬垂)成员才成立; 全部重生则use为误报
-# 安全性: 仅过滤(清除误报use), 不新增检测——召回只增不减
+# 安全性: 仅过滤(清除误报use), 不新增检测-召回只增不减
 
 import re
 import logging
@@ -27,7 +27,7 @@ _RELOAD_RE = re.compile(
 
 
 class RebirthTracker:
-    """指针重生追踪器——成员+槽粒度识别free后的重生赋值, 过滤误报use。
+    """指针重生追踪器-成员+槽粒度识别free后的重生赋值, 过滤误报use。
 
     独立于别名追踪器运行: 输入其输出的AliasSet列表, 就地剪除已重生成员的use_sites。
     """
@@ -51,7 +51,7 @@ class RebirthTracker:
 
     def _is_dangling_use(self, instructions: List[str],
                          aset: AliasSet, use_idx: int) -> bool:
-        """use是否命中仍未重生的悬垂成员——成员/槽两级重生判定"""
+        """use是否命中仍未重生的悬垂成员-成员/槽两级重生判定"""
         last_free = max((f for f in aset.free_sites if f < use_idx), default=-1)
         if last_free < 0:
             return True

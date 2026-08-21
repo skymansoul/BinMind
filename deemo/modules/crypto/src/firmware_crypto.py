@@ -304,9 +304,6 @@ def _detect_opal_sed(data: bytes, source: str) -> List[FirmwareCryptoResult]:
 class FirmwareCryptoDetector:
     """固件和磁盘加密方案指纹检测器。"""
 
-    def __init__(self):
-        pass
-
     def scan_file(self, path: str) -> List[FirmwareCryptoResult]:
         raw = safeReadBytes(path)
         if raw is None:

@@ -1,13 +1,10 @@
-# 2026-08-01
-"""
-插桩 facade — Frida-based 钩子 script generation, 检查点
-management for 快照 持久化, auto-recovery strategies for
-插桩 failures
+"""插桩门面 — 基于 Frida 的钩子脚本生成, 快照持久化的检查点
+管理, 插桩失败的自动恢复策略。
 
-Wraps engine/插桩.py engine/breakpoint_recovery.py
+封装 engine/插桩.py 与 engine/breakpoint_recovery.py。
 
-// Using registry pattern instead inheritance — less type-safe but
-// avoids deep class hierarchies hurt readability
+注: 使用注册表模式而非继承 — 类型安全性略低, 但避免深类
+层次损害可读性。
 """
 
 from __future__ import annotations
@@ -24,7 +21,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 log = logging.getLogger(__name__)
 
 
-# Frida插桩 — 钩子 script generation
+# Frida插桩 — 钩子脚本生成
 
 class HookCategory(str, Enum):
     ANTI_DEBUG = "anti_debug"
@@ -40,24 +37,24 @@ class HookSpec:
     name: str
     target: str  # function name or address
     category: HookCategory
-    on_enter: Optional[str] = None  # JavaScript code for onEnter
-    on_leave: Optional[str] = None  # JavaScript code for onLeave
+    on_enter: Optional[str] = None  # onEnter 回调的 JavaScript 代码
+    on_leave: Optional[str] = None  # onLeave 回调的 JavaScript 代码
     arguments: Dict[str, Any] = field(default_factory=dict)
 
 
 class FridaInstrumentation:
-    """Frida-based 钩子 script template generator
-    
-    构造 JavaScript 钩子 scripts for Frida's interceptor API
-    支持 common patterns: 反调试 bypass, 返回 value modification
-    系统调用 monitoring, API 追踪, memory access monitoring
-    
-    Usage::
-    
-    frida = Frida插桩()
-    script = frida.generate_钩子_script([
-    frida.anti_debug_钩子("IsDebuggerPresent")
-    frida.return_value_钩子("CheckRemoteDebuggerPresent", 0)
+    """基于 Frida 的钩子脚本模板生成器。
+
+    为 Frida 的 interceptor API 构造 JavaScript 钩子脚本,
+    支持常见模式: 反调试绕过, 返回值修改, 系统调用监控,
+    API 追踪, 内存访问监控。
+
+    用法::
+
+    frida = FridaInstrumentation()
+    script = frida.generate_hook_script([
+    frida.anti_debug_hook("IsDebuggerPresent")
+    frida.return_value_hook("CheckRemoteDebuggerPresent", 0)
     ], output_format="javascript")
     """
 
@@ -65,10 +62,10 @@ class FridaInstrumentation:
         self._device = device
         self._hooks: List[HookSpec] = []
 
-# 钩子 工厂 methods
+# 钩子工厂方法
 
     def anti_debug_hook(self, function_name: str) -> HookSpec:
-        """创建 a 钩子 spec bypass 反调试 检查"""
+        """创建绕过反调试检查的钩子 spec。"""
         return HookSpec(
             name=f"bypass_{function_name}",
             target=function_name,
@@ -86,7 +83,7 @@ class FridaInstrumentation:
     def return_value_hook(
         self, function_name: str, forced_value: Any
     ) -> HookSpec:
-        """创建 a 钩子 spec modify a function's 返回 value"""
+        """创建修改函数返回值的钩子 spec。"""
         return HookSpec(
             name=f"modify_ret_{function_name}",
             target=function_name,
@@ -101,7 +98,7 @@ class FridaInstrumentation:
     def syscall_monitor_hook(
         self, syscall_number: int, log_args: bool = True
     ) -> HookSpec:
-        """创建 a 钩子 spec for 系统调用 monitoring"""
+        """创建系统调用监控的钩子 spec。"""
         return HookSpec(
             name=f"syscall_{syscall_number}",
             target=f"syscall_{syscall_number}",
@@ -115,7 +112,7 @@ class FridaInstrumentation:
         )
 
     def api_trace_hook(self, function_name: str) -> HookSpec:
-        """创建 a 钩子 spec for API调用 追踪"""
+        """创建 API 调用追踪的钩子 spec。"""
         return HookSpec(
             name=f"trace_{function_name}",
             target=function_name,
@@ -133,7 +130,7 @@ class FridaInstrumentation:
     def memory_monitor_hook(
         self, address_range: Tuple[int, int], access_type: str = "rw"
     ) -> HookSpec:
-        """创建 a memory access monitoring 钩子 spec"""
+        """创建内存访问监控的钩子 spec。"""
         start, end = address_range
         return HookSpec(
             name=f"mem_monitor_{start:#x}_{end:#x}",
@@ -142,21 +139,18 @@ class FridaInstrumentation:
             arguments={"start": start, "end": end, "access": access_type},
         )
 
-# Script generation
+# 脚本生成
 
     def generate_hook_script(
         self,
         hooks: Optional[List[HookSpec]] = None,
         output_format: str = "javascript",
     ) -> str:
-        """构造 a complete Frida 钩子 script a list 钩子Specs
-        
-        Args:
-        钩子s: List 钩子 specifications. None, 使用 accumulated 钩子s
-        output_format: "javascript" (Frida script) or "python" (frida-python)
-        
-        返回:
-        A string containing complete Frida 钩子 script
+        """由钩子 spec 列表构造完整的 Frida 钩子脚本。
+
+        参数: hooks 钩子 spec 列表, None 则使用累积的钩子,
+        output_format "javascript" (Frida script) 或 "python"
+        (frida-python); 返回包含完整 Frida 钩子脚本的字符串。
         """
         if hooks is None:
             hooks = self._hooks
@@ -170,7 +164,7 @@ class FridaInstrumentation:
             return self._generate_python_script(hooks)
 
     def _generate_js_script(self, hooks: List[HookSpec]) -> str:
-        """构造 a JavaScript Frida script 钩子s"""
+        """根据钩子列表构造 JavaScript Frida 脚本。"""
         lines: List[str] = [
             "// Auto-generated Frida hook script",
             f"// Generated at {time.ctime()}",
@@ -199,7 +193,7 @@ class FridaInstrumentation:
         return "\n".join(lines)
 
     def _generate_python_script(self, hooks: List[HookSpec]) -> str:
-        """构造 a Python frida-python script"""
+        """构造 frida-python 脚本。"""
         lines: List[str] = [
             "#!/usr/bin/env python3",
             "# Auto-generated Frida instrumentation script",
@@ -239,22 +233,22 @@ class FridaInstrumentation:
         ])
         return "\n".join(lines)
 
-# 钩子 management
+# 钩子管理
 
     def add_hook(self, hook: HookSpec) -> None:
-        """Add a 钩子 specification"""
+        """添加钩子 spec。"""
         self._hooks.append(hook)
 
     def clear_hooks(self) -> None:
-        """Remove 钩子 specifications"""
+        """移除全部钩子 spec。"""
         self._hooks.clear()
 
     def list_hooks(self) -> List[HookSpec]:
-        """List 寄存器ed 钩子s"""
+        """列出已注册的钩子。"""
         return list(self._hooks)
 
 
-# 检查点Manager — 快照 持久化
+# 检查点管理器 — 快照持久化
 
 class CheckpointState(str, Enum):
     INITIAL = "initial"
@@ -275,17 +269,16 @@ class Checkpoint:
 
 
 class CheckpointManager:
-    """快照 持久化 for 动态分析 state
-    
-    支持 保存/恢复 execution state, memory 快照s
-    寄存器 files. 使用 JSON manifests 追踪 检查点 lineage
-    支持 incremental diffs 检查点s
-    
-    Usage::
-    
-    cm = 检查点Manager("快照s/")
-    cm.保存("after_init", {"寄存器s": {"eax": 0, "ebx": 1}})
-    state = cm.恢复("after_init")
+    """动态分析状态的快照持久化。
+
+    支持保存/恢复执行状态、内存快照与寄存器文件。使用 JSON
+    manifest 追踪检查点谱系, 支持检查点间增量 diff。
+
+    用法::
+
+    cm = CheckpointManager("checkpoints/")
+    cm.save("after_init", {"registers": {"eax": 0, "ebx": 1}})
+    state = cm.restore("after_init")
     """
 
     def __init__(self, snapshot_dir: str) -> None:
@@ -300,7 +293,7 @@ class CheckpointManager:
         state_data: Dict[str, Any],
         parent: Optional[str] = None,
     ) -> Checkpoint:
-        """保存 a 检查点"""
+        """保存检查点。"""
         checkpoint_id = f"{name}_{int(time.time())}"
         snapshot_path = os.path.join(self._snapshot_dir, f"{checkpoint_id}.json")
         snapshot_data = {
@@ -331,7 +324,7 @@ class CheckpointManager:
         return cp
 
     def restore(self, checkpoint_id: str) -> Dict[str, Any]:
-        """恢复 a 检查点"""
+        """恢复检查点。"""
         if checkpoint_id not in self._checkpoints:
             raise KeyError(f"Checkpoint not found: {checkpoint_id}")
 
@@ -348,7 +341,7 @@ class CheckpointManager:
         return data.get("state_data", {})
 
     def list_checkpoints(self) -> List[Dict[str, Any]]:
-        """List saved 检查点s"""
+        """列出已保存的检查点。"""
         return [
             {
                 "id": cp.checkpoint_id,
@@ -360,7 +353,7 @@ class CheckpointManager:
         ]
 
     def delete_checkpoint(self, checkpoint_id: str) -> None:
-        """删除 a 检查点 快照 file"""
+        """删除检查点及其快照文件。"""
         if checkpoint_id not in self._checkpoints:
             return
         cp = self._checkpoints[checkpoint_id]
@@ -374,7 +367,7 @@ class CheckpointManager:
             self._current = None
 
 
-# RecoveryStrategy — auto-重试, skip, rollback
+# 恢复策略 — 自动重试、跳过、回滚
 
 class RecoveryAction(str, Enum):
     RETRY = "retry"
@@ -393,23 +386,22 @@ class RecoveryDecision:
 
 
 class RecoveryStrategy:
-    """Auto-recovery strategy for 插桩 failures
-    
-    插桩 fails (e.g., process crash, 钩子 conflict
-    沙箱 detection), class decides whether 重试, skip
-    current step, rollback a previous 检查点, or abort entirely
-    
-    Usage::
-    
+    """插桩失败的自动恢复策略。
+
+    插桩失败时 (如进程崩溃、钩子冲突、沙箱检测), 该类决定
+    重试、跳过当前步骤、回滚到先前检查点, 还是直接中止。
+
+    用法::
+
     rs = RecoveryStrategy(max_retries=3)
-    for attempt range(rs.max_retries):
-    try:
-    run_插桩()
-    break
-    except 插桩Error e:
-    decision = rs.on_error(e, attempt)
-    decision.action == RecoveryAction.ABORT:
-    raise
+    for attempt in range(rs.max_retries):
+        try:
+            run_instrumentation()
+            break
+        except InstrumentationError as e:
+            decision = rs.on_error(e, attempt)
+            if decision.action == RecoveryAction.ABORT:
+                raise
     """
 
     def __init__(self, max_retries: int = 3, checkpoint_manager: Optional[CheckpointManager] = None) -> None:
@@ -418,23 +410,23 @@ class RecoveryStrategy:
         self._error_history: List[Tuple[Exception, float]] = []
 
     def on_error(self, error: Exception, attempt: int) -> RecoveryDecision:
-        """Decide recovery action 基于 error type attempt count"""
+        """基于错误类型和尝试次数决定恢复动作。"""
         self._error_history.append((error, time.time()))
 
-        # Clean old history
+        # 清理过期错误历史
         cutoff = time.time() - 300  # 5 minutes
         self._error_history = [
             (e, t) for e, t in self._error_history if t > cutoff
         ]
 
-        # Too attempts -> skip
+        # 超过最大重试次数则跳过
         if attempt >= self.max_retries:
             return RecoveryDecision(
                 action=RecoveryAction.SKIP,
                 reason=f"Exceeded max retries ({self.max_retries})",
             )
 
-        # Process crash -> rollback 检查点 available, else 重试
+        # 进程崩溃：有可用检查点则回滚，否则重试
         if "crash" in str(error).lower() or "segfault" in str(error).lower():
             if self._cm and self._cm._current:
                 return RecoveryDecision(
@@ -449,14 +441,14 @@ class RecoveryStrategy:
                 max_retries=self.max_retries,
             )
 
-        # 钩子 conflict -> skip 钩子
+        # 钩子冲突：跳过当前钩子
         if "hook" in str(error).lower():
             return RecoveryDecision(
                 action=RecoveryAction.SKIP,
                 reason="Hook conflict detected, skipping",
             )
 
-        # Default: 重试 exponential backoff
+        # 默认：指数退避重试
         return RecoveryDecision(
             action=RecoveryAction.RETRY,
             reason=str(error)[:100],
@@ -465,12 +457,12 @@ class RecoveryStrategy:
         )
 
     def should_abort(self) -> bool:
-        """检查 error rate too high — abort analysis"""
+        """检查错误率是否过高，过高则建议中止分析。"""
         if len(self._error_history) >= 10:
             return True
         recent = [t for _, t in self._error_history if t > time.time() - 60]
         return len(recent) >= 5
 
     def reset(self) -> None:
-        """清除 error history"""
+        """清除错误历史。"""
         self._error_history.clear()

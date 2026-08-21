@@ -1,5 +1,4 @@
-# Ghidra Headless 自动化静态审计 — 批量分析危险函数调用
-# 创建: 2026-05-02
+# Ghidra Headless 自动化静态审计 - 批量分析危险函数调用
 
 import os, sys, json, time, subprocess, tempfile
 

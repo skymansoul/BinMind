@@ -1,5 +1,5 @@
 """
-差分隐私传播图 -- epsilon-差分隐私保护下的漏洞传播图数据共享。
+ 差分隐私传播图 - epsilon-差分隐私保护下的漏洞传播图数据共享。
 
 问题：
   多个组织（安全厂商、CERT、ISAC）共享漏洞传播图数据可提升整体安全态势。
@@ -30,7 +30,7 @@
   本模块：首次将Laplace机制应用于漏洞传播图的边和节点隐私保护。
 
 ref: Dwork & Roth "The Algorithmic Foundations of Differential Privacy".
-ref: CTI Privacy Framework -- 威胁情报共享隐私，最接近的已有工作。
+ref: CTI Privacy Framework - 威胁情报共享隐私，最接近的已有工作。
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ from .propagation_graph import (
 
 @dataclass
 class PrivacyBudget:
-    """差分隐私预算分配 -- 控制在传播图各组件上的噪声注入量。"""
+    """差分隐私预算分配 - 控制在传播图各组件上的噪声注入量。"""
     epsilon_total: float
     epsilon_edges: float = 0.0       # 边置信度的隐私预算
     epsilon_nodes: float = 0.0       # 节点严重度的隐私预算
@@ -67,7 +67,7 @@ class PrivacyBudget:
 
 
 class LaplaceMechanism:
-    """拉普拉斯机制 -- 对数值查询结果注入校准噪声。
+    """拉普拉斯机制 - 对数值查询结果注入校准噪声。
 
     全局敏感度Delta_f = 查询函数在相邻数据集上的最大差异。
     对边置信度和节点严重度：Delta_f = 1.0（单条边/单个节点的存在与否最多改变1.0）。
@@ -87,7 +87,7 @@ class LaplaceMechanism:
 
     @staticmethod
     def clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
-        """后处理截断 -- 不消耗隐私预算。"""
+        """后处理截断 - 不消耗隐私预算。"""
         return max(lo, min(hi, value))
 
 
@@ -120,13 +120,13 @@ class DifferentialPrivacyGraph:
         """生成原始传播图的epsilon-DP净化版本。
 
         对每条边的confidence和每个节点的severity注入Laplace噪声。
-        返回净化后的PropagationGraph -- 接口与原图完全兼容。
+        返回净化后的PropagationGraph - 接口与原图完全兼容。
         """
         instance = cls(graph, budget, noise_seed)
         return instance._build_sanitized()
 
     def _build_sanitized(self) -> PropagationGraph:
-        """构建净化图 -- 深拷贝节点和边，对敏感字段注入噪声。"""
+        """构建净化图 - 深拷贝节点和边，对敏感字段注入噪声。"""
         sanitized = PropagationGraph(max_nodes=self._original._max_nodes)
 
         # 节点：severity + Laplace噪声
@@ -139,7 +139,7 @@ class DifferentialPrivacyGraph:
                 node_id=node.node_id, layer=node.layer,
                 vuln_type=node.vuln_type, severity=noisy_sev,
                 entity_ref=node.entity_ref,
-                # metadata不注入噪声 -- 非数值敏感字段
+                # metadata不注入噪声 - 非数值敏感字段
                 metadata={k: v for k, v in node.metadata.items()
                          if k != 'noisy_severity'},
             ))
@@ -159,7 +159,7 @@ class DifferentialPrivacyGraph:
         return sanitized
 
     def privacy_loss_report(self) -> Dict[str, Any]:
-        """隐私损失报告 -- 用于合规审计。
+        """隐私损失报告 - 用于合规审计。
 
         返回各组件消耗的隐私预算和对应的噪声尺度。
         """
@@ -175,7 +175,7 @@ class DifferentialPrivacyGraph:
         }
 
     def utility_metrics(self) -> Dict[str, float]:
-        """净化图的效用度量 -- 原始 vs 净化版本的偏差。
+        """净化图的效用度量 - 原始 vs 净化版本的偏差。
 
         L1偏差度量噪声对风险评分的平均影响。
         值越小说明效用保持越好（噪声影响小）。
@@ -210,7 +210,7 @@ class DifferentialPrivacyGraph:
 def privacy_preserving_share(graph: PropagationGraph,
                              epsilon: float = 1.0,
                              seed: int = 42) -> Tuple[PropagationGraph, Dict]:
-    """一站式隐私保护共享 -- 净化传播图并返回审计报告。
+    """一站式隐私保护共享 - 净化传播图并返回审计报告。
 
     epsilon推荐值:
       0.1: 强隐私保护，噪声大，效用低

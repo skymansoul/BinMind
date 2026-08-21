@@ -1,12 +1,3 @@
-avg_severity=None
-binary_count=None
-info_count=None
-low_count=None
-medium_count=None
-high_count=None
-critical_count=None
-total_vulnerabilities=None
-timestamp: str = ""
 import os
 import json
 import logging
@@ -36,33 +27,33 @@ class SeverityLevel(Enum):
     INFO = "info"
 @dataclass
 class VulnerabilityTrend:
-    timestamp
-    total_vulnerabilities
-    critical_count
-    high_count
-    medium_count
-    low_count
-    info_count
-    binary_count
-    avg_severity
-    
+    timestamp: str = ""
+    total_vulnerabilities: Optional[int] = None
+    critical_count: Optional[int] = None
+    high_count: Optional[int] = None
+    medium_count: Optional[int] = None
+    low_count: Optional[int] = None
+    info_count: Optional[int] = None
+    binary_count: Optional[int] = None
+    avg_severity: Optional[float] = None
+
 @dataclass
 class TrendAnalysisResult:
-    period
-    trends
-    summary
-    anomalies
+    period: Optional[TrendPeriod] = None
+    trends: Optional[List[VulnerabilityTrend]] = None
+    summary: Optional[Dict[str, Any]] = None
+    anomalies: Optional[List[Any]] = None
 
 @dataclass
 class AnalysisRecord:
-    record_id
-    timestamp
-    binary_path
-    binary_hash
-    binary_version
-    results
-    vulnerability_count
-    severity_distribution
+    record_id: str = ""
+    timestamp: Optional[datetime] = None
+    binary_path: str = ""
+    binary_hash: str = ""
+    binary_version: Optional[str] = None
+    results: Optional[Any] = None
+    vulnerability_count: int = 0
+    severity_distribution: Optional[Dict[str, Any]] = None
 
 class TrendTracker(BaseAnalyzer):
     """

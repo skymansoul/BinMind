@@ -1,4 +1,4 @@
-"""LPVRA适配器 — 将LPVRA抽象解释引擎接入unified_heap_pipeline的finding格式。
+"""LPVRA适配器 - 将LPVRA抽象解释引擎接入unified_heap_pipeline的finding格式。
 桥接LPVRA的HeapVerdict为管线可消费的finding dict，支持三方对比。
 LPVRA采用前向区间传播+join+widening（适合循环/复杂CFG），与
 path_sensitive_vrf（DFS+仿射区间，适合线性代码）互补。"""
@@ -9,14 +9,9 @@ from typing import Any, Dict, List, Tuple
 
 
 def lpvra_analyze(code: str, func_name: str = "") -> Tuple[List[dict], Dict[str, Any]]:
-    """LPVRA 桥接入口: 对伪代码执行抽象解释, 输出 unified 格式.
+    """LPVRA 桥接入口: 对伪代码执行抽象解释, 输出 unified 格式。
 
-    Args:
-        code: C 源码或伪代码 (LPVRA 直接解析 C 语法)
-        func_name: 函数名 (保留, 与 unified pipeline 接口兼容)
-
-    Returns:
-        (findings, stats) — findings 是 dict 列表, stats 含各阶段统计
+    返回 (findings, stats), findings 为 dict 列表, stats 含各阶段统计。
     """
     stats = {
         "function": func_name,

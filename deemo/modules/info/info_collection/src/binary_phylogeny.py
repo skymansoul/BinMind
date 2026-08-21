@@ -1,5 +1,3 @@
-# Created: 2026-06-22 18:12:11
-#
 # binary_phylogeny — 零训练多模态二进制遗传谱系重建
 # CFG熵 + MREM + 编译器归一化 + TTP 五维距离融合 → Neighbor-Joining 建树
 # 区别于 MalTree (ICML'26)/Amalan (TU Delft'24)/Razaulla: 零训练，纯结构度量

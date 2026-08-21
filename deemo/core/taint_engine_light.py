@@ -1,9 +1,10 @@
 """
-轻量污点引擎 — def-use 链重建 + 简化VSA, 为格式化字符串/堆溢出/UAF
+轻量污点引擎 - def-use 链重建 + 简化VSA, 为格式化字符串/堆溢出/UAF
 检测器提供共享数据流分析基础设施。无重依赖(angr/z3), 直接在反编译
 IR文本上运行。设计: 精度换速度, 最多10跳回溯, 每结果带confidence。
 """
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
@@ -11,7 +12,7 @@ from typing import Optional
 
 @dataclass
 class DefUseNode:
-    """def-use 图节点 — 一条赋值语句。"""
+    """def-use 图节点 - 一条赋值语句。"""
     pc: int                          # 指令地址
     var_name: str                    # 被赋值的变量名
     rhs: str                         # 右值表达式 (原始文本)
@@ -23,7 +24,7 @@ class DefUseNode:
 
 @dataclass
 class ValueSet:
-    """简化值集 — 分类来源类型而非具体值。"""
+    """简化值集 - 分类来源类型而非具体值。"""
     types: set[str]   # 此变量可能属于的类别集合
     confidences: dict[str, float]
 
@@ -82,7 +83,6 @@ class LightweightTaintEngine:
 
         识别形如 `var = expr` 或 `%1 = load i32, ptr %2` 的 SSA 赋值。
         返回 {pc: DefUseNode} 映射。"""
-        import re
         self._nodes = {}
 
         # 匹配赋值语句: var = expr 或 %id = op args

@@ -1,15 +1,15 @@
 # equivalence.py：神经反编译等价校验（Fine-Grained Equivalence Checking）
 #
 # 对应论文:
-# Fast, Fine-Grained Equivalence Checking for Neural 反编译引擎s —
+# Fast, Fine-Grained Equivalence Checking for Neural 反编译引擎s -
 # [待验证]
 #
 # 设计意图:
 #   反编译产物是对真实语义的近似，不能凭文本相似断言等价。本模块对
 #   反编译结果与参考实现做细粒度等价性检查，输出三类结论:
-# EQUIVALENT —— 符号执行证明全部可达路径输出一致
-#     NOT_EQUIVALENT —— 采样对拍或符号反例发现可观察差异
-# UNKNOWN —— 求解器不可用 / 路径爆炸截断 / 解析失败
+# EQUIVALENT - 符号执行证明全部可达路径输出一致
+#     NOT_EQUIVALENT - 采样对拍或符号反例发现可观察差异
+# UNKNOWN - 求解器不可用 / 路径爆炸截断 / 解析失败
 #   证据链由两部分叠加:
 #     (1) 输入采样对拍: 在参数取值范围上随机采样，具体执行两段代码比较输出
 #     (2) 符号路径枚举: 将受限 C 子集翻译为 z3 约束，逐路径比较输出表达式
@@ -18,7 +18,7 @@
 #
 # 边界条件:
 # 解析器仅支持受限 C 子集（整型算术、位运算、比较、//for、
-#   声明、赋值、return）。库函数副作用不可模拟——符号执行中把同一
+#   声明、赋值、return）。库函数副作用不可模拟-符号执行中把同一
 # (被调函数, 实参) 映射为同一符号变量，采样中把调用视为返回 0
 # 循环做有界展开，路径数有上限，超出即判 UNKNOWN
 
@@ -396,8 +396,8 @@ class _StmtParser:
 
     def parse_loop_update(self) -> Optional[Any]:
         """解析 for 更新子句：`++` / `--` / ` = + 1` / ` += 1`
-        
-        更新子句不是普通表达式——可能含赋值/复合赋值，需在此处特殊处理
+
+        更新子句不是普通表达式-可能含赋值/复合赋值，需在此处特殊处理
         """
         tok = self.peek()
         if tok is None or (tok[0] == 'OP' and tok[1] == ')'):
@@ -700,7 +700,7 @@ class _MiniCInterp:
 
 class _SymbolicPathBuilder:
     """在 z3 上枚举受限 C 子集的可达返回路径
-    
+
     库调用映射为按 (被调函数, 实参规范化串) 键控的独立符号变量
     使两段代码中对同一库函数的相同调用共享同一符号值
     """
@@ -927,7 +927,7 @@ class _SymbolicPathBuilder:
 
     def _apply_update(self, update: Any, env: Dict[str, Any]) -> Dict[str, Any]:
         """应用 for 更新子句到符号环境，返回新环境
-        
+
         支持 ++ / -- / = expr / += expr 等形式；
         无法识别的更新表达式保持环境不变（保守）
         """
@@ -954,7 +954,7 @@ _optimizer_failed = False
 
 def _get_shared_optimizer():
     """惰性创建 SymExecOptimizer 单例（线程安全）
-    
+
     仅当 symbolic.symexec_optimizer 可导入时启用；否则置失败标记
     后续直接走裸 z3，避免反复尝试导入的开销
     """
@@ -982,7 +982,7 @@ def _get_shared_optimizer():
 
 def _model_satisfies(constraints: List[Any], solution: Dict[str, Any]) -> bool:
     """校验优化器返回的候选模型是否真正满足全部约束
-    
+
     设计依据: SymExecOptimizer 的简化器存在丢弃平凡假约束的缺陷
     (会把 [False] 简化为空集从而误报 sat)，故不可直接采信其
     satisfiable 字段；本函数把候选模型代回每条约束逐一化简
@@ -1030,9 +1030,9 @@ _optimizer_runtime_failed = False
 
 def _check_feasible(constraints: List[Any]) -> Optional[bool]:
     """判断约束合取是否可满足；None 表示求解器不可用/出错
-    
+
     判定策略:
-    SymExecOptimizer 作为加速首查——其求解缓存可降低重复路径对拍的
+    SymExecOptimizer 作为加速首查-其求解缓存可降低重复路径对拍的
     开销；但上游存在误报 sat 与复杂度预估器 NameError 等缺陷，故仅当
     其返回 satisfiable=True 且附带完整候选模型、且该模型经
     _model_satisfies 逐条复核通过时才采信。其余情况一律回退裸 z3
@@ -1079,7 +1079,7 @@ def _z3_available() -> bool:
 
 class EquivalenceChecker:
     """对反编译结果与参考实现做细粒度等价性校验
-    
+
     调用方式:
     checker = EquivalenceChecker()
     result = checker.检查(decompiled_text, 引用_text)

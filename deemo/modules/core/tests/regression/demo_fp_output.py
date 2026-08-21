@@ -6,7 +6,7 @@ FP reduction demo 输出工具 — ASCII 表格打印 + LaTeX 表生成 + JSON �
 
 import json, os
 from typing import List
-from tests.regression.demo_fp_reduction import LayerResult
+from .demo_fp_reduction import LayerResult
 
 
 def print_layer_table(layers: List[LayerResult]):

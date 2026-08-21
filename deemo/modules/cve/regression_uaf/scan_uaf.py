@@ -3,12 +3,11 @@
 # 决策逻辑:
 #   对 build/manifest_build.json 中每个编译产物调用 UAFDetector,
 #   按样本 ground truth 判定 TP/FP/FN/TN:
-#     - vulnerable 检出 use_after_free → TP; 未检出 → FN.
+#     - vulnerable 检出 use_after_free -> TP; 未检出 -> FN.
 #     - safe 检出 use_after_free → FP; 未检出 → TN.
 #   每个产物扫描两遍: use_ulp=True (增强) 与 use_ulp=False (基线),
 #   量化 ULPR 的误报抑制贡献. 结果写 results/uaf_scan_results.json.
 #
-# 创建: 2024-12-09
 
 import json
 import os

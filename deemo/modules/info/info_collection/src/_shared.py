@@ -10,13 +10,25 @@ from collections import Counter
 from typing import Dict, List, Set, Optional
 
 
-def shannon_entropy(data: bytes) -> float:
-    """Byte-level Shannon entropy in bits. Returns 0.0 for empty input."""
-    if not data:
+def shannon_entropy(data, total=None) -> float:
+    """Byte-level Shannon entropy in bits. Returns 0.0 for empty input.
+    Also accepts a Counter-like frequency mapping; optional total avoids
+    re-summing when the caller already knows the item count."""
+    if isinstance(data, (bytes, bytearray)):
+        cnt = Counter(data)
+        if total is None:
+            total = len(data)
+    elif hasattr(data, 'values'):
+        cnt = data
+        if total is None:
+            total = sum(cnt.values())
+    else:
+        cnt = Counter(data)
+        if total is None:
+            total = len(data)
+    if total <= 0:
         return 0.0
-    cnt = Counter(data)
-    n = len(data)
-    return -sum((c / n) * math.log2(c / n) for c in cnt.values())
+    return -sum((c / total) * math.log2(c / total) for c in cnt.values() if c > 0)
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:

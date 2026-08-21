@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-# (c) 2024-2025 h1016 — Constraint-solving 优化 strategies for concolic execution
+# (c) 2024-2025 h1016 — concolic 执行的约束求解优化策略
 
-"""Constraint-solving 优化 strategies for concolic execution
+"""concolic 执行的约束求解优化策略。
 
-Extracted concolic_execution.py — self-contained strategy components
-composed independently main executor:
+从 concolic_execution.py 拆出的自包含策略组件, 可与主执行器独立组合:
 
-CrashCategory / CrashTriage分类器
-Constraint-签名 崩溃分类 — classifies crashes fusing
-address, error message, symbolic constraint pattern signals
+CrashCategory / CrashTriageClassifier
+基于约束签名的崩溃分类 — 融合地址、错误消息与符号约束模式信号
 
 FuzzDictEntry / FuzzDictGenerator
-High-entropy seed → AFL/lib模糊测试器 dictionary 流水线. 排序
-composite effectiveness score (覆盖率 gain ∨ entropy)
+高熵种子 → AFL/libFuzzer 字典流水线, 按综合有效性分数
+(coverage_gain ∨ entropy) 排序
 
 StructuredMetrics
-Per-舍入 metric accumulator — replaces scattered 记录 statements
-a single 快照 per concolic loop iteration
+逐轮指标累加器 — 用每轮 concolic 循环迭代的一张快照
+替代分散的 log 语句
 
-Seed变异流水线
-Three-operator lightweight 变异 (byte flip, arithmetic tweak
-block swap) applied seeds symbolic injection
+SeedMutationPipeline
+三算子的轻量变异 (byte flip、arithmetic tweak、block swap),
+在种子注入符号执行器前应用
 
 _entropy_of
-Shannon entropy over byte sequences — 代理 for seed diversity
+字节序列的 Shannon 熵 — 种子多样性的代理指标
 """
 
 from __future__ import annotations
@@ -53,9 +51,9 @@ __all__ = [
 ]
 
 
-# CrashCategory — crash taxonomy for triage 分类
+# CrashCategory — triage 分类用的崩溃分类学
 class CrashCategory(Enum):
-    """Crash taxonomy for triage 分类"""
+    """triage 分类用的崩溃分类学。"""
     STACK_OVERFLOW = "stack_overflow"
     HEAP_CORRUPTION = "heap_corruption"
     FORMAT_STRING = "format_string"
@@ -64,10 +62,10 @@ class CrashCategory(Enum):
     UNKNOWN = "unknown"
 
 
-# FuzzDictEntry — one dictionary token for AFL/lib模糊测试器 corpus
+# FuzzDictEntry — AFL/libFuzzer 语料库的一个字典 token
 @dataclass
 class FuzzDictEntry:
-    """One dictionary token for AFL/lib模糊测试器 corpus"""
+    """AFL/libFuzzer 语料库的一个字典 token。"""
     key: str            # "SEED_xxx" label
     payload: bytes
     source_name: str
@@ -76,21 +74,22 @@ class FuzzDictEntry:
     coverage_gain: float
 
 
-# CrashTriage分类器
+# CrashTriageClassifier
 #   基于崩溃地址+错误信息+约束模式的分类器
 #   匹配优先级从具体到抽象 — 先检查特定函数偏移，再检查通用错误文本
 #   约束模式匹配作为兜底，当崩溃地址无法解析时被激活
 class CrashTriageClassifier:
-    """Classify crashes one {栈_overflow, 堆_corruption
-    format_string, integer_overflow, null_deref, unknown}
-    
-    Three-phase analysis 流水线:
-    1. crash address canonicalization (strip paging bits, 标准化)
-    2. error message pattern matching (canary, 堆 guard, fmt specifier)
-    3. constraint 签名 analysis (overflow bounds, deref guards)
-    
-    设计取舍 — 不依赖符号解析作为必要条件，地址信息缺失时仍可通过错误文本
-    和约束模式完成分类，确保在 stripped binary 场景下也能输出有意义的标签
+    """把崩溃归类为 {stack_overflow, heap_corruption,
+    format_string, integer_overflow, null_deref, unknown} 之一。
+
+    三阶段分析流水线:
+    1. 崩溃地址规范化 (去掉分页位, 标准化)
+    2. 错误消息模式匹配 (canary、堆 guard、fmt specifier)
+    3. 约束签名分析 (溢出边界、解引用 guard)
+
+    设计取舍 — 不把符号解析作为必要条件, 地址信息缺失时仍可通过
+    错误文本与约束模式完成分类, 确保 stripped binary 场景下也能
+    输出有意义的标签。
     """
 
     # 栈溢出特征：低地址段（< 0x1000）的违规写入，或 __stack_chk 错误
@@ -160,7 +159,7 @@ class CrashTriageClassifier:
         self._classification_cache: Dict[str, CrashCategory] = {}
 
     # triage_stage_address: 地址优先匹配 — 低地址段优先判断栈/空指针
-    # 堆地址典型范围在 0x7f. 附近（libc 分配的 mmap 区域）
+    # 堆地址典型范围在 0x7f 开头附近 (libc 分配的 mmap 区域)
     def _triage_by_address(self, crash_addr: int) -> Optional[CrashCategory]:
         normalized = crash_addr & self.ADDRESS_NORMALIZE_MASK
         if normalized == 0:
@@ -218,18 +217,14 @@ class CrashTriageClassifier:
         error_message: str = "",
         constraint_texts: Optional[List[str]] = None,
     ) -> CrashCategory:
-        """Classify a crash fusing address, message, constraint signals
-        
-        Priority: address > message > constraints. stage defers
-        next signal absent or inconclusive
-        
-        Args:
-        crash_address: Faulting instruction or data address (raw)
-        error_message: OS/signal/runtime error text (e.g. SIGSEGV detail)
-        constraint_texts: Symbolic constraint expressions active crash
-        
-        返回:
-        Best-fit CrashCategory enum
+        """融合地址、消息与约束信号对崩溃分类。
+
+        优先级: address > message > constraints, 当前信号缺失或
+        不明确时交给下一信号。
+
+        参数: crash_address 故障指令或数据地址 (原始值),
+        error_message OS/信号/运行时错误文本 (如 SIGSEGV 详情),
+        constraint_texts 崩溃时活跃的符号约束表达式。
         """
         # 地址优先 — 确定性最强
         if crash_address != 0:
@@ -258,15 +253,11 @@ class CrashTriageClassifier:
         constraint_texts: Optional[List[str]] = None,
         path_constraints: Optional[List[str]] = None,
     ) -> Tuple[CrashCategory, float]:
-        """Classify 返回 a confidence 估算 [0, 1]
-        
-        Confidence heuristics:
-        - address-based: 0.95 (near-certain)
-        - error-message >= 2 pattern hits: 0.85
-        - error-message 1 pattern hit: 0.70
-        - constraint-based >= 2 hits across constraints: 0.55
-        - constraint-based 1 hit: 0.35
-        - unknown: 0.0
+        """分类并返回置信度估算 [0, 1]。
+
+        置信度启发式: 基于地址 0.95 (近乎确定); 错误消息命中
+        >= 2 个模式 0.85; 错误消息命中 1 个模式 0.70; 约束命中
+        >= 2 处 0.55; 约束命中 1 处 0.35; 无法归类 0.0。
         """
         category = self.classify(crash_address, error_message, constraint_texts)
 
@@ -291,22 +282,21 @@ class CrashTriageClassifier:
         return category, 0.35
 
 
-# FuzzDictGenerator: 从高熵种子生成 AFL/lib模糊测试器 字典
+# FuzzDictGenerator: 从高熵种子生成 AFL/libFuzzer 字典
 # 格式：每行 "SEED_xxx"="<hex bytes>" 或 "SEED_xxx"="<escaped ascii>"
 # 按种子有效性排序：coverage_gain 降序 → entropy 降序 → 收集轮次升序
 class FuzzDictGenerator:
-    """Produce an AFL/lib模糊测试器-compatible dictionary high-entropy seeds
-    
-    Dictionary entries ``SEED_xxx`` sorted a composite
-    effectiveness score: higher 覆盖率 gain + higher entropy + earlier
-    collection 舍入 yields a higher rank
-    
-    输出 格式化 follows AFL/lib模糊测试器 convention:
+    """从高熵种子生成 AFL/libFuzzer 兼容字典。
+
+    字典条目 ``SEED_xxx`` 按综合有效性分数排序: coverage gain
+    越高 + entropy 越高 + 收集轮次越早, 排名越靠前。
+
+    输出格式遵循 AFL/libFuzzer 惯例:
     SEED_001="\\x48\\x65\\x6c\\x6c\\x6f" (hex-escaped)
-    SEED_002="readable_ascii" (printable -)
-    
-    设计意图 — 高熵种子更可能携带魔术字节、结构签名或边界值
-    作为 fuzzer 字典条目可以加速路径发现，是对文件格式解析器
+    SEED_002="readable_ascii" (可打印)
+
+    设计意图 — 高熵种子更可能携带魔术字节、结构签名或边界值,
+    作为 fuzzer 字典条目可以加速路径发现。
     """
 
     # 最小熵阈值：低于此值的种子过于均匀（全 A / 全 NUL），不值得加入字典
@@ -321,18 +311,18 @@ class FuzzDictGenerator:
         self._entries: List[FuzzDictEntry] = []
 
     def _escape_hex(self, raw: bytes) -> str:
-        """转换 bytes \\xHH escaped literal for AFL dictionary 格式化"""
+        """把 bytes 转为 AFL 字典格式的 \\xHH 转义字面量。"""
         return "".join(f"\\x{b:02x}" for b in raw)
 
     def _is_printable_ascii(self, raw: bytes) -> bool:
-        """True bytes printable ASCII (0x20–0x7E) excluding backslash"""
+        """bytes 全部为可打印 ASCII (0x20-0x7E, 不含反斜杠) 时返回 True。"""
         for byte in raw:
             if byte < 0x20 or byte > 0x7E or byte == 0x5C:
                 return False
         return len(raw) > 0
 
     def _is_bmp_header(self, raw: bytes) -> bool:
-        """BMP magic 'BM' — heuristic 包含 dictionary entry"""
+        """BMP 魔数 'BM' — 启发式地把该种子纳入字典条目。"""
         return len(raw) >= 2 and raw[:2] == b'\x42\x4d'
 
     def ingest_seed(
@@ -344,10 +334,7 @@ class FuzzDictGenerator:
         hit_round: int = 0,
         coverage_gain: float = 0.0,
     ) -> bool:
-        """Accept a seed passes entropy length gates
-        
-        返回 True seed added entry set
-        """
+        """接受通过熵与长度门槛的种子, 加入条目集时返回 True。"""
         if entropy < self.MIN_ENTROPY_THRESHOLD and not self._is_bmp_header(payload):
             return False
         p_len = len(payload) if payload else 0
@@ -370,10 +357,10 @@ class FuzzDictGenerator:
         seeds: List[ConcolicSeed],
         coverage_gains: Optional[Dict[int, float]] = None,
     ) -> int:
-        """Batch ingestion a list ConcolicSeed objects
-        
-        Seeds keyed source_name round_collected; 覆盖率
-        gains map seed index a gain delta
+        """批量接收 ConcolicSeed 对象列表。
+
+        种子键为 source_name 与 round_collected; coverage_gains
+        把种子索引映射到增益增量。
         """
         admitted = 0
         if coverage_gains is None:
@@ -395,14 +382,11 @@ class FuzzDictGenerator:
         return admitted
 
     def _effectiveness_score(self, entry: FuzzDictEntry) -> float:
-        """Composite score: 覆盖率 gain primary, entropy tiebreaker"""
+        """综合分数: coverage gain 为主, entropy 打破僵局。"""
         return entry.coverage_gain * 10.0 + entry.entropy * 0.5 - entry.hit_round * 0.1
 
     def generate_dict(self) -> str:
-        """Produce dictionary text, sorted effectiveness score descending
-        
-        截断 ``max_entries`` formatting
-        """
+        """生成按有效性分数降序的字典文本, 截断到 max_entries 条。"""
         if not self._entries:
             return "# AFL/libFuzzer dictionary — no entries\n"
 
@@ -427,7 +411,7 @@ class FuzzDictGenerator:
         return "\n".join(lines)
 
     def export_to_file(self, filepath: str) -> int:
-        """写入 dictionary *filepath*. 返回 entry count written"""
+        """把字典写入 filepath, 返回写入的条目数。"""
         content = self.generate_dict()
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
@@ -449,15 +433,15 @@ class FuzzDictGenerator:
 # 下游解析工具可直接读取此结构体而非 grep 日志行
 @dataclass
 class StructuredMetrics:
-    """Per-舍入 metrics — replaces scattered inline 日志器 calls
-    
-    字段说明：
+    """逐轮指标 — 替代分散的 logger 调用。
+
+    字段说明:
     seeds_collected 本轮/累计收集的种子数
-    paths_validated 成功验证（动态重放通过）的路径数
-    false_positives 验证失败（标记不可行）的路径数
+    paths_validated 成功验证 (动态重放通过) 的路径数
+    false_positives 验证失败 (标记不可行) 的路径数
     solver_timeouts 符号求解器超时次数
     taint_constraints_generated 从污点流生成的约束数量
-    round_number 当前轮次编号（concolic loop iteration）
+    round_number 当前轮次编号 (concolic loop iteration)
     """
     seeds_collected: int = 0
     paths_validated: int = 0
@@ -467,20 +451,20 @@ class StructuredMetrics:
     round_number: int = 0
 
 
-# Seed变异流水线 — 种子变异流水线
+# SeedMutationPipeline — 种子变异流水线
 # 在种子收集后、注入符号执行器前应用
 # 三个变异算子，由 mut_rates 字典控制激活概率
 # 变异率保持低位：破坏性低，多样性增益高
 class SeedMutationPipeline:
-    """Applies 变异 operators a seed corpus increase diversity
-    
-    Three operators 配置ured via mut_rates dict:
-    byte_flip — flip random bits, 1% per-byte activation
-    arith_tweak — +1 or -1 a random offset, 2% activation
-    block_swap — swap two 4-byte chunks, 0.5% activation
-    
-    设计意图：在种子注入符号执行器之前引入轻量变异，增加路径多样性
-    变异率保持低位以防止种子语义被完全破坏
+    """对种子语料库应用变异算子以增加多样性。
+
+    三个算子经 mut_rates 字典配置:
+    byte_flip — 随机位翻转, 每字节 1% 激活
+    arith_tweak — 随机偏移处 +1 或 -1, 2% 激活
+    block_swap — 交换两个 4 字节块, 0.5% 激活
+
+    设计意图: 在种子注入符号执行器之前引入轻量变异, 增加路径
+    多样性; 变异率保持低位以防止种子语义被完全破坏。
     """
 
     def __init__(self, mut_rates: Optional[Dict[str, float]] = None) -> None:
@@ -490,10 +474,10 @@ class SeedMutationPipeline:
             'block_swap': 0.005,
         }
 
-# operator implementations
+# 算子实现
 
     def _op_byte_flip(self, data: bytes) -> bytes:
-        """Flip random bits byte mut_rates['byte_flip'] probability"""
+        """按 mut_rates['byte_flip'] 概率逐字节翻转随机位。"""
         rate = self.mut_rates.get('byte_flip', 0.01)
         if len(data) < 1:
             return data
@@ -504,7 +488,7 @@ class SeedMutationPipeline:
         return bytes(out)
 
     def _op_arith_tweak(self, data: bytes) -> bytes:
-        """+1 or -1 a random offset, gated mut_rates['arith_tweak']"""
+        """在随机偏移处 +1 或 -1, 受 mut_rates['arith_tweak'] 门控。"""
         rate = self.mut_rates.get('arith_tweak', 0.02)
         if len(data) < 1 or random.random() >= rate:
             return data
@@ -515,7 +499,7 @@ class SeedMutationPipeline:
         return bytes(out)
 
     def _op_block_swap(self, data: bytes) -> bytes:
-        """Swap two non-overlapping 4-byte chunks mut_rates['block_swap']"""
+        """交换两个不重叠的 4 字节块, 受 mut_rates['block_swap'] 门控。"""
         rate = self.mut_rates.get('block_swap', 0.005)
         block_sz = 4
         if len(data) < block_sz * 2 or random.random() >= rate:
@@ -531,10 +515,10 @@ class SeedMutationPipeline:
         return bytes(out)
 
     def mutate(self, seeds: List[ConcolicSeed]) -> List[ConcolicSeed]:
-        """Apply operators sequentially seed's value
-        
-        返回 same list (mutated -place) callers chain
-        熵值在变异后重新计算，因为字节分布已变化
+        """对每个种子的值依次应用变异算子。
+
+        返回同一列表 (原地变异), 供调用方链式使用;
+        变异后重算熵值, 因为字节分布已变化。
         """
         if not seeds:
             return seeds
@@ -549,11 +533,9 @@ class SeedMutationPipeline:
         return seeds
 
 
-# _entropy_of — Shannon entropy over byte sequence
-# 种子质量衰减：连续无覆盖率增长的轮次越多，新种子的注入权重越低
-# 采用 sigmoid 衰减而非线性，避免过早放弃但能快速响应长期停滞
+# _entropy_of — 字节序列的 Shannon 熵
 def _entropy_of(byte_seq: bytes) -> float:
-    """计算 Shannon entropy over *byte_seq*. 返回 0.0 for empty input"""
+    """计算 byte_seq 的 Shannon 熵, 空输入返回 0.0。"""
     if not byte_seq:
         return 0.0
     freq = [0] * 256

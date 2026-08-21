@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # 生成 LaTeX 对比表格 — 读 benchmark_summary.json → result_table.tex.
-# 创建: 2026-05-27
 
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-
 
 def gen(summary: dict) -> str:
     order = ["BinMind-DDSSC", "BinMind-Baseline", "angr", "Ghidra",

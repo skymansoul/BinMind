@@ -1,5 +1,5 @@
 """
-对比传播路径嵌入 -- InfoNCE自监督学习传播路径的语义向量表示。
+ 对比传播路径嵌入 - InfoNCE自监督学习传播路径的语义向量表示。
 
 问题：\"哪些历史漏洞的传播模式与当前CVE最相似？\"传统关键词匹配无法捕捉
 传播模式的结构语义。
@@ -35,7 +35,7 @@ class PathSample:
 
 
 class ContrastivePathEncoder:
-    """对比传播路径编码器 -- MLP架构, 输出L2归一化嵌入。
+    """对比传播路径编码器 - MLP架构, 输出L2归一化嵌入。
 
     用法::
 
@@ -381,7 +381,7 @@ class ContrastivePathEncoder:
 
     def find_similar(self, query_path_id: str, top_k: int = 5
                      ) -> List[Tuple[str, float]]:
-        """余弦相似度搜索 -- 找与查询路径最相似的k条路径。
+        """余弦相似度搜索 - 找与查询路径最相似的k条路径。
 
         返回 [(path_id, cosine_similarity), ...]。
         """

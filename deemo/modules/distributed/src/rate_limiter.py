@@ -1,8 +1,8 @@
-# 限流器 — 本地令牌桶 + Redis Lua 分布式令牌桶
+# 限流器 - 本地令牌桶 + Redis Lua 分布式令牌桶
 # 惰性填充：允许时才根据时间差补令牌，零后台开销
 # Redis 版用 Lua 脚本原子化 refill+consume，避免分布式竞态
 #
-# 扩展：并发信号量限制器 — 限制同时执行的数量而非速率
+# 扩展：并发信号量限制器 - 限制同时执行的数量而非速率
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import threading
 import functools
 from typing import Optional
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -25,7 +24,6 @@ except ImportError:
 
 
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -42,7 +40,7 @@ class RateLimitExceeded(Exception):
 # 本地令牌桶
 
 class TokenBucket:
-    """惰性填充令牌桶 — 参考 Stripe rate limiter 设计。
+    """惰性填充令牌桶 - 参考 Stripe rate limiter 设计。
 
     rate: 每秒生成令牌数
     burst: 桶容量（最大瞬时突发）
@@ -161,7 +159,7 @@ return 0
 
 
 class DistributedTokenBucket:
-    """Redis 分布式令牌桶 — Lua 原子操作。
+    """Redis 分布式令牌桶 - Lua 原子操作。
 
     回退：Redis 不可用时退化为本地 TokenBucket。
     """

@@ -1,7 +1,7 @@
 # 基于抽象解释的值范围分析器 (Abstract Interpretation Value Range Analyzer)
 #
 # 核心决策:
-#   堆溢出误报的主要来源 — 对未知寄存器/变量使用[0, 2^31-1]的最宽区间.
+#   堆溢出误报的主要来源 - 对未知寄存器/变量使用[0, 2^31-1]的最宽区间.
 #   本模块用轻量级抽象解释替换宽区间策略:
 # 前向传播: 从函数入口参数出发, 沿控制流传播值区间
 # widening at loop headers: 防止循环体无限迭代
@@ -11,7 +11,6 @@
 # 理论依据:
 #   抽象解释框架; 组合式堆对象不相交性分析降低区间重叠误报.
 #
-# 创建: 2026-04-28
 
 from collections import deque
 from typing import Dict, List, Optional, Tuple

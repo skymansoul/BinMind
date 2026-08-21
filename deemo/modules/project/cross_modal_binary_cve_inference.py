@@ -241,7 +241,7 @@ class CrossModalAttention:
 
         patch_vec: [d] 补丁结构向量
         cve_embeddings: [(cve_id, [d])] CVE嵌入列表
-        返回: [(cve_id, attention_score)] 按分数降序排列
+        返回 [(cve_id, attention_score)] 按分数降序排列。
         """
         if not cve_embeddings:
             return []

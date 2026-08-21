@@ -12,15 +12,15 @@
 # explored_blocks = 已到达的基本块集合
 # frontier_blocks = 未到达，但至少有 1 个前驱已被探索的块
 #
-# 支配前沿 (domin frontier) 的直观意义：
+# 支配前沿 (dominance frontier) 的直观意义：
 #   块 B 在支配前沿中 = "刚刚超出被支配区域" ——
 # 即 B 自身不被当前路径支配，但 B 的某个前驱被支配
 # 这些 frontier 块是"再往前一步就能探索到的盲区"
 #
 # 优先级策略（二段式）：
-# 1. Dominator proximi: 距当前探索区域支配者的距离越近，优先级越高
+# 1. Dominator proximity: 距当前探索区域支配者的距离越近，优先级越高
 # 支配者 = 已探索区域中支配了最多其他已探索块的那个块
-# 2. Block rari: 如果多个 frontier 块到支配者的距离相同
+# 2. Block rarity: 如果多个 frontier 块到支配者的距离相同
 #      则选在函数中"更少见"的块（入度低、指令数少）——
 # 这些块更可能是错误处理/边界条件路径，传统 fuzzer 不易触达
 #
@@ -30,8 +30,8 @@
 # 本项目不重新实现 LT——假设 CFG 的 idom 已从 angr/IDA 导入
 # 本模块消费 idom 数据，提供 frontier-based 路径评分
 #
-# Cyphert, K. & Breck, J. et al. "Smooth 模糊测试."
-# USENIX Securi 2024
+# Cyphert, K. & Breck, J. et al. "Smooth Fuzzing."
+# USENIX Security 2024
 # — 提出将符号执行中的路径选择建模为平滑优化问题
 # 本项目采取其对偶视角：不优化"选哪条路径"的连续函数
 # 而是计算每条路径到 frontier 的离散近似距离，取最近者
@@ -66,7 +66,7 @@ class PathFrontierScore:
 
 class ForwardFrontierExplorer:
     """基于支配树信息的符号执行路径优先级排序器
-    
+
     消费一个函数的 CFG（基本块 + 边 + idom 映射）
     结合当前已探索块集合，对候选路径评分
     """
@@ -91,13 +91,7 @@ class ForwardFrontierExplorer:
                  idom: Dict[int, int],
                  cfg_edges: Dict[int, List[int]],
                  block_sizes: Optional[Dict[int, int]] = None):
-        """加载函数的 CFG 结构
-        
-        Args:
-        idom: 直接支配者映射 (node → immedi dominator)
-        cfg_edges: CFG 邻接表 (src → [dst_list])
-        block_sizes: 可选——各基本块的指令数
-        """
+        """加载函数的 CFG 结构"""
         self._idom = dict(idom)
         self._cfg_edges = defaultdict(list)
         self._rev_cfg = defaultdict(list)
@@ -119,7 +113,7 @@ class ForwardFrontierExplorer:
     def _compute_dominator_distance(self, block_addr: int,
                                     dominator_addr: int) -> int:
         """计算 block_addr 到 dominator_addr 在支配树上的距离
-        
+
         沿 idom 链向上追溯到 dominator 或函数入口（idom[addr]==addr 或不存在）
         返回穿越的 idom 步数
         """
@@ -137,10 +131,7 @@ class ForwardFrontierExplorer:
         return dist if current == dominator_addr else 999  # 不可达
 
     def find_frontier_blocks(self) -> List[FrontierBlock]:
-        """定位支配前沿——未探索但至少有一个前驱已探索的块
-        
-        返回: 按 (距支配者距离, 稀有度分) 排序的前沿块列表
-        """
+        """定位支配前沿——未探索但至少有一个前驱已探索的块。"""
         if not self._explored:
             return []
 
@@ -174,7 +165,7 @@ class ForwardFrontierExplorer:
             # 稀有度 = 入度越低、指令越少 → 越罕见（错误处理/边界路径的典型特征）
             # 归一化入度稀有度: 入度 1 → rari=1.0, 入度 ≥8 → rari=0.1
             rarity_pred = max(0.1, 1.0 / max(1, math.log2(pred_count + 1)))
-            # 小基本块更可能是边界路径——指令
+            # 小基本块更可能是边界路径——指令数少
             rarity_size = max(0.1, 1.0 / max(1, math.log2(insn_count + 1)))
             rarity = 0.6 * rarity_pred + 0.4 * rarity_size  # 加权平均
 
@@ -203,15 +194,7 @@ class ForwardFrontierExplorer:
                     # (path_id, current_block_addr)
                     cfg_shortest_path_cache: Optional[Dict[Tuple[int, int], int]] = None,
                     ) -> List[PathFrontierScore]:
-        """对路径列表评分，按到达前沿的优先级排序
-        
-        Args:
-        paths: 候选路径列表——(path_id, 当前所在块地址)
-        cfg_shortest_path_cache: 可选的 (src, dst) → 最短距离的预计算缓存
-        
-        返回:
-        按 total_frontier_score 降序排列的评分列表
-        """
+        """对路径列表评分，按到达前沿的优先级排序"""
         frontiers = self.find_frontier_blocks()
         if not frontiers:
             return [PathFrontierScore(
@@ -263,7 +246,7 @@ class ForwardFrontierExplorer:
 
     def record_frontier_guided(self, frontier_addr: int):
         """记录一次对某前沿块的引导尝试
-        
+
         用于热力衰减——同一个前沿被反复引导但始终未到达时
         其优先级应逐渐降低（可能是死代码或不精确的 CFG 边）
         """
@@ -305,11 +288,7 @@ class ForwardFrontierExplorer:
                          paths: List[Tuple[str, int]],
                          cfg_cache: Optional[Dict[Tuple[int, int], int]] = None,
                          ) -> Optional[Tuple[str, int, float]]:
-        """从候选路径中选择最有希望到达未探索区域的一条
-        
-        返回:
-        (path_id, current_addr, score) 或 None（无候选时）
-        """
+        """从候选路径中选择最有希望到达未探索区域的一条。"""
         scored = self.score_paths(paths, cfg_cache)
         if not scored:
             return None

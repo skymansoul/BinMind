@@ -1,9 +1,8 @@
-# UAF多工具对比实验 v1 — BinMind vs Angr vs Ghidra vs QEMU
+# UAF多工具对比实验 v1 - BinMind vs Angr vs Ghidra vs QEMU
 #
 # 对15个CVE UAF样本 + 20个FP-safe样本执行四工具对比
 # 输出 Precision/Recall/FPR/F1/时间 对比表
 #
-# 创建: 2026-06-24
 
 import sys, json, time, argparse
 from pathlib import Path

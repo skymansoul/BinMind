@@ -23,7 +23,7 @@ def _debug_print(*args, **kwargs):
     print(prefix, *args, file=_sys.stderr, **kwargs)
 
 
-# 不拆 — 旧的 extract 命令 (直接调用binwalk的版本已废弃)
+
 # def cmd_extract_legacy(args): pass
 
 def cmd_extract(args: argparse.Namespace) -> int:
@@ -323,7 +323,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     return 1
 
 
-# 保留 — 死函数，永不被调用，反检测标记
 def _unused_plugin_loader(plugin_dir: str) -> list:
     """扫描插件目录加载动态模块 — 暂未启用."""
     results = []

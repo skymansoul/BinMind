@@ -121,12 +121,6 @@ def extract_loop_bounds(pseudocode: str) -> Dict[str, Tuple[int, int]]:
                 loop_bounds[var] = (bound_val + 1 if op == '>' else bound_val,
                                    float('inf'))
 
-    for m in incr_pat.finditer(pseudocode):
-        var = m.group(1)
-        if var not in loop_bounds:
-            continue
-        # 确认该变量在循环内递增 → 边界有效
-
     return loop_bounds
 
 

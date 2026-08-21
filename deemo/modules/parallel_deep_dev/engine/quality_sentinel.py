@@ -215,7 +215,7 @@ class QualitySentinel:
 
 
 # 信号计算委托给 engine/quality_signals.py
-from parallel_deep_dev.engine.quality_signals import (
+from .quality_signals import (
     compute_repetition, compute_symbol_density,
     compute_structure_entropy, compute_comment_ratio,
 )

@@ -1,8 +1,7 @@
-# 独立基准测试——对所有编译样本运行真实BinMind双管线扫描
+# 独立基准测试: 对所有编译样本运行真实BinMind双管线扫描
 # 基于实际objdump→检测管线结果, 不使用模拟/合成数据
 # Angr/Ghidra/QEMU指标标注为'文献估计'(工具未安装于当前环境)
 # 输出: benchmark_results.csv + benchmark_summary.json + final_metrics.json
-# created: 2026-05-19
 
 import subprocess, json, sys, time, csv, os
 from pathlib import Path
@@ -36,7 +35,7 @@ _FMT_CVES = ['CVE-2000-0573','CVE-2001-0013','CVE-2002-1343','CVE-2003-0358',
     'CVE-2004-0557','CVE-2005-2793','CVE-2006-3074','CVE-2007-5191',
     'CVE-2008-1686','CVE-2009-1384','CVE-2010-2948','CVE-2011-0411',
     'CVE-2012-0809','CVE-2013-2178','CVE-2014-2851']
-# UAF负样本: 清理代码(free+return)和条件free永不执行——不应检出UAF
+# UAF负样本: 清理代码(free+return)和条件free永不执行, 不应检出UAF
 _UAF_NEGATIVE_SAMPLES = {'CVE-2016-1665', 'CVE-2017-5123'}
 for _cid in _HEAP_CVES + _UAF_CVES + _FMT_CVES:
     GROUND_TRUTH[_cid] = _cid not in _UAF_NEGATIVE_SAMPLES
@@ -186,7 +185,7 @@ def main():
     print(f"  Out-of-scope ({m['scope_out_n']} samples): {m['out_of_scope_fn']} undetected")
     print(f"  Confirmed: {m['total_confirmed']}  Filtered: {m['total_filtered']}  Avg time: {m['avg_time_ms']:.0f}ms")
 
-    # 工具对比(文献估计) —— 使用管线覆盖范围内指标
+    # 工具对比(文献估计): 使用管线覆盖范围内指标
     tools = [
         ('BinMind (measured)', m['scope_recall'], m['scope_fpr'], m['avg_time_ms'], 'measured'),
         ('Angr CFGFast', 0.90, 0.50, 3200, 'estimated (Mango USENIX24)'),
@@ -234,7 +233,7 @@ def main():
 
 
 def _write_latex_table(m: Dict, tools: list):
-    """生成对比表格LaTeX源码——使用管线覆盖范围内的指标"""
+    """生成对比表格LaTeX源码: 使用管线覆盖范围内的指标"""
     tex = r"""% BinMind vs existing tools comparison — measured + literature estimates
 % In-scope metrics (heap overflow + UAF + format string) from actual BinMind scans
 \begin{table}[htbp]

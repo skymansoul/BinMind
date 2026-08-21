@@ -151,7 +151,7 @@ class BinaryTypeInference:
                             ) -> Dict[str, int]:
         """检测数组步幅: 循环中的指针增量模式.
 
-        返回: {base_reg: stride_size}.
+        返回 {base_reg: stride_size}。
         """
         strides = defaultdict(list)
         for line in trace_lines:

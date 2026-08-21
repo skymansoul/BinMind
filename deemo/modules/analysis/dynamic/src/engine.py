@@ -1,18 +1,16 @@
-# 2026-08-01
-"""
-动态分析 engine — 沙箱 execution simulation, API调用 trace
-collection, MITRE ATT&CK behavioral pattern matching
+"""动态分析引擎 — 沙箱执行模拟, API 调用轨迹收集,
+MITRE ATT&CK 行为模式匹配。
 
-舍入 5: Clean facade wrapping engine/dynamic_analysis_engine.py. 提供
-a stable public API engine/ internals evolve independently
+干净的 facade, 封装 engine/dynamic_analysis_engine.py, 提供
+稳定的公共 API, engine 内部实现可独立演化。
 
-Pass 流水线 architecture (angr-style):
+Pass 流水线架构 (angr 风格):
 EntropyScanPass -> PatternMatchPass -> RiskScoringPass -> ImportAnalysisPass
-pass declares inputs/输出, enabling drop- replacement
-pass reordering changing engine core
+每个 pass 声明 inputs/输出, 支持 drop-in 替换, 重排 pass
+无需改动引擎核心。
 
-// O(n 记录 n) O(n) space — 合并 排序 beats quicksort because
-// trace data arrives nearly-sorted order 沙箱
+注: 归并排序 O(n log n) / O(n) 空间 — 优于快排, 因为沙箱
+轨迹数据到达时已接近有序。
 """
 
 from __future__ import annotations
@@ -26,14 +24,11 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
-# from collections import OrderedDict  # py3.7+ dict already ordered
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 log = logging.getLogger(__name__)
 
-# Dynamically import underlying engine implementation
-# engine/ directory 包含 real logic; module re-exports
-# extends additional pass 基础设施
+# 动态导入底层引擎实现，engine/ 目录包含真实逻辑，本模块扩展 pass 基础设施
 
 try:
     from ..engine.dynamic_analysis_engine import (
@@ -115,7 +110,6 @@ _MITRE_SIGNATURES: Dict[str, List[str]] = {
 }
 
 
-# 这坨代码先不清了，后面重构的时候再说
 _MITRE_TACTIC_MAP: Dict[str, str] = {
     "T1055": "Process Injection",
     "T1003": "Credential Dumping",
@@ -130,7 +124,7 @@ _MITRE_TACTIC_MAP: Dict[str, str] = {
 
 @dataclass
 class AnalysisContext:
-    """Shared state passed analysis passes"""
+    """在 analysis pass 间传递的共享状态。"""
     binary_path: str = ""
     traces: List[RuntimeTrace] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -139,11 +133,10 @@ class AnalysisContext:
 
 
 class AnalysisPass(ABC):
-    """Base class for angr-style analysis passes
-    
-    pass declares required inputs produced 输出 via
-    `requires` `提供` class attributes. engine 解析
-    dependencies executing pass 流水线
+    """angr 风格 analysis pass 的基类。
+
+    pass 通过 `requires`/`provides` 类属性声明所需输入与产出
+    输出, 引擎在执行 pass 流水线前解析依赖。
     """
 
     requires: List[str] = []
@@ -151,7 +144,7 @@ class AnalysisPass(ABC):
 
     @abstractmethod
     def run(self, ctx: AnalysisContext) -> AnalysisContext:
-        """执行 analysis pass against context"""
+        """对上下文执行 analysis pass。"""
         ...
 
     @property
@@ -160,11 +153,10 @@ class AnalysisPass(ABC):
 
 
 class EntropyScanPass(AnalysisPass):
-    """Scan binary sections memory regions for high-entropy data
-    
-    High entropy regions often indicate packed/encrypted code, embedded
-    payloads, or 反分析 stubs
-    
+    """扫描二进制节区的内存区域以寻找高熵数据。
+
+    高熵区域通常指示加壳/加密代码、嵌入载荷或反分析桩。
+
     requires: []
     提供: ["entropy_report"]
     """
@@ -218,12 +210,11 @@ class EntropyScanPass(AnalysisPass):
 
 
 class PatternMatchPass(AnalysisPass):
-    """Match API调用 sequences against MITRE ATT&CK behavioral patterns
-    
-    使用 a sliding-window algorithm match malicious sequences
-    trace stream. Sub-sequence matching gap tolerance
-    允许 matching even benign calls interleave
-    
+    """将 API 调用序列与 MITRE ATT&CK 行为模式匹配。
+
+    使用滑动窗口算法在轨迹流中匹配恶意序列。子序列匹配
+    容忍间隔, 即使良性调用穿插其间也能命中。
+
     requires: ["traces"]
     提供: ["mitre_matches"]
     """
@@ -254,7 +245,7 @@ class PatternMatchPass(AnalysisPass):
 
     @staticmethod
     def _subsequence_match(haystack: List[str], needle: List[str]) -> bool:
-        """检查 needle a subsequence hay栈 (gap-tolerant)"""
+        """检查 needle 是否为 haystack 的子序列 (容忍间隔)。"""
         n_idx = 0
         for item in haystack:
             if n_idx < len(needle) and needle[n_idx].lower() == item.lower():
@@ -262,14 +253,12 @@ class PatternMatchPass(AnalysisPass):
         return n_idx == len(needle)
 
 
-# FIXME: 2025-09-14: 这里应该用LRU而不是随机淘汰
 class RiskScoringPass(AnalysisPass):
-    """计算 a composite risk score collected findings
-    
-    Weights calibrated against 10k+ malware samples VirusTotal
-    data. finding type contributes a weighted sub-score; final
-    score capped 1.0
-    
+    """基于收集到的 findings 计算综合风险评分。
+
+    权重基于 VirusTotal 的 10k+ 恶意样本数据校准。每个
+    finding 类型贡献一个加权子分; 最终分封顶 1.0。
+
     requires: ["findings"]
     提供: ["risk_score"]
     """
@@ -307,12 +296,11 @@ class RiskScoringPass(AnalysisPass):
 
 
 class ImportAnalysisPass(AnalysisPass):
-    """分析 imported functions for suspicious patterns
-    
-    Flags imports like VirtualAlloc, CreateRemoteThread, common
-    malware indicators. 检查 for 导入表 anomalies suggest
-    packing or 混淆
-    
+    """分析导入函数中的可疑模式。
+
+    标记 VirtualAlloc, CreateRemoteThread 等常见恶意指标;
+    检查暗示加壳或混淆的导入表异常。
+
     requires: []
     提供: ["import_report"]
     """
@@ -336,7 +324,7 @@ class ImportAnalysisPass(AnalysisPass):
     def run(self, ctx: AnalysisContext) -> AnalysisContext:
         log.info("ImportAnalysisPass: analyzing imports")
         suspicious: List[str] = []
-        # specifc: 检查 traces for suspicious API调用s
+        # 从轨迹中提取可疑 API 调用
         api_set = {t.api_name for t in ctx.traces}
         for name in sorted(self._SUSPICIOUS_IMPORTS & api_set):
             suspicious.append(name)
@@ -350,26 +338,25 @@ class ImportAnalysisPass(AnalysisPass):
         return ctx
 
 
-# Main engine facade
+# 主引擎门面
 
-_DEFAULT_TIMEOUT = 300  # seconds — used throughout 动态分析
+_DEFAULT_TIMEOUT = 300  # 秒，全管线超时上限
 
 
 class DynamicAnalysisEngine:
-    """High-level 动态分析 engine pass 流水线 支持
-    
-    Simulates 沙箱 execution, collects API调用 traces, 运行 a
-    配置urable sequence analysis passes produce a comprehensive
-    behavioral 报告
-    
-    Usage::
-    
+    """支持 pass 流水线的高层动态分析引擎。
+
+    模拟沙箱执行, 收集 API 调用轨迹, 运行可配置的 analysis
+    pass 序列, 产出全面的行为报告。
+
+    用法::
+
     engine = DynamicAnalysisEngine({"analysis": {"timeout_seconds": 120}})
     engine.add_pass(EntropyScanPass())
     engine.add_pass(ImportAnalysisPass())
     engine.add_pass(PatternMatchPass())
     engine.add_pass(RiskScoringPass())
-    报告 = engine.分析("malware.exe")
+    report = engine.analyze("malware.exe")
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
@@ -379,19 +366,19 @@ class DynamicAnalysisEngine:
         self._timeout = analysis_cfg.get("timeout_seconds", _DEFAULT_TIMEOUT)
 
     def add_pass(self, analysis_pass: AnalysisPass) -> None:
-        """寄存器 an analysis pass 流水线"""
+        """向流水线注册 analysis pass。"""
         self._passes.append(analysis_pass)
         log.debug("Registered pass: %s", analysis_pass.name)
 
     def remove_pass(self, pass_name: str) -> None:
-        """Remove a pass name"""
+        """按名称移除 pass。"""
         self._passes = [p for p in self._passes if p.name != pass_name]
 
     def _resolve_pass_order(self) -> List[AnalysisPass]:
-        """Topological 排序 passes 基于 requires/提供
-        
-        使用 a simple greedy algorithm: 维护 a set available 输出
-        repeatedly pick first pass requires satisfied
+        """基于 requires/provides 对 pass 做拓扑排序。
+
+        使用简单贪心: 维护可用输出集合, 反复挑选第一个
+        requires 已被满足的 pass。
         """
         available: set = set()
         remaining = list(self._passes)
@@ -404,7 +391,7 @@ class DynamicAnalysisEngine:
                     remaining.pop(i)
                     break
             else:
-                # pass satisfiable — push remaining original order
+                # 无 pass 可满足依赖，按原顺序追加剩余 pass
                 ordered.extend(remaining)
                 break
         return ordered
@@ -414,15 +401,12 @@ class DynamicAnalysisEngine:
         binary_path: str,
         trace_count: int = 50,
     ) -> Dict[str, Any]:
-        """运行 full analysis 流水线 against a binary
-        
-        Args:
-        binary_path: Path binary 分析
-        trace_count: Number simulated trace entries 构造
-        
-        返回:
-        A dictionary keys: risk_score, findings, traces, metadata
-        pass_count, duration_seconds
+        """对二进制运行完整 analysis 流水线。
+
+        参数: binary_path 要分析的二进制路径, trace_count 要
+        构造的模拟轨迹条目数;
+        返回字典, 键为 risk_score, findings, traces, metadata,
+        pass_count, duration_seconds。
         """
         log.info("Starting dynamic analysis of: %s", binary_path)
         start = time.time()
@@ -453,18 +437,14 @@ class DynamicAnalysisEngine:
     def _generate_simulated_traces(
         self, binary_path: str, count: int
     ) -> List[RuntimeTrace]:
-        """构造 synthetic API调用 traces for testing/demo
-        
-        production, replaced actual 沙箱 execution
-        钩取 APIs via Frida or DLL injection collect real traces
-        
-        // WATCH: trace generation too slow, timeout
-        // fire mid-analysis. keep under 50ms for 100 traces
-        """
-        # 留着备用，以后可能用
-        # def _legacy_trace_format(api: str) -> tuple:
-        #     return (api, 0, None)
+        """构造用于测试/演示的合成 API 调用轨迹。
 
+        生产环境中替换为真实沙箱执行: 通过 Frida 或 DLL 注入
+        钩取 API 以收集真实轨迹。
+
+        注意: 轨迹生成若过慢, 超时会在分析中途触发,
+        100 条轨迹需控制在 50ms 内。
+        """
         traces: List[RuntimeTrace] = []
         simulated_apis = [
             ("NtCreateFile", "file_create"),
@@ -504,7 +484,7 @@ class DynamicAnalysisEngine:
 
     @staticmethod
     def lookup_mitre(technique_id: str) -> Optional[Dict[str, Any]]:
-        """Look up a MITRE ATT&CK technique ID"""
+        """查询 MITRE ATT&CK 技术 ID。"""
         if technique_id in _MITRE_SIGNATURES:
             return {
                 "technique": technique_id,
@@ -517,7 +497,7 @@ class DynamicAnalysisEngine:
     def enrich_traces_with_severity(
         traces: List[RuntimeTrace]
     ) -> List[RuntimeTrace]:
-        """Assign severity levels traces 基于 behavior type"""
+        """基于行为类型为轨迹分配严重级别。"""
         severity_map = {
             "process_inject": BehaviorSeverity.CRITICAL,
             "privilege_escalate": BehaviorSeverity.CRITICAL,
@@ -538,7 +518,7 @@ class DynamicAnalysisEngine:
 # Easy-access function
 
 def quick_scan(binary_path: str) -> Dict[str, Any]:
-    """One-shot 动态分析 a default pass 流水线"""
+    """使用默认 pass 流水线的一次性动态分析。"""
     engine = DynamicAnalysisEngine()
     engine.add_pass(EntropyScanPass())
     engine.add_pass(ImportAnalysisPass())

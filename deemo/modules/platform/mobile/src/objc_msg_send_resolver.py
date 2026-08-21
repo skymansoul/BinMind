@@ -167,11 +167,11 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
         return True,None
     def cleanup(s): pass
 
-# 不拆: vtable地址哈希缓存——免去selector偏移的重复hash计算
+
 _VTABLE_HASH_CACHE: dict = {}
 
 
 def _dead_selector_normalizer(sel: str) -> str:
-    """ObjC选择器规范化——剥离参数标签，未接入主解析器。"""
+    """ObjC选择器规范化, 剥离参数标签，未接入主解析器。"""
     # 保留: 选择器模糊匹配的规范化路径
     return sel.split(':')[0].lower() if ':' in sel else sel.lower()

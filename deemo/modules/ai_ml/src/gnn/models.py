@@ -4,8 +4,8 @@
 # 训练逻辑由外部编排器负责，模型只管前向传播
 #
 # PE 集成方式：forward() 的可选 pe 参数接收预计算的 (N, pe_dim) 位置编码矩阵。
-# 若传入--拼接到节点特征上后送入第一层 GNN；PE 的维度计入 in_dim。
-# 这种"外部提供、模型消费"的设计将 PE 计算与模型结构解耦--
+# 若传入，拼接到节点特征上后送入第一层 GNN；PE 的维度计入 in_dim。
+# 这种"外部提供、模型消费"的设计将 PE 计算与模型结构解耦，
 # 调用方可切换不同的 PE 策略（LPE / RWSE / 组合）而不改变模型代码。
 
 import numpy as np
@@ -58,7 +58,7 @@ class GATVulnDetector:
     池化策略选择mean pooling而非max — 更平滑的梯度，对小样本友好
 
     支持可选的位置编码 (PE): 传入 pe 参数时，PE 矩阵拼接到节点特征右侧。
-    PE 由外部 CFGPositionalEncoder 预计算——调用方控制编码策略。
+    PE 由外部 CFGPositionalEncoder 预计算-调用方控制编码策略。
     """
 
     def __init__(self, in_dim=12, hidden_dim=64, heads=4, pe_dim: int = 0):
@@ -75,7 +75,7 @@ class GATVulnDetector:
     def forward(self, _x, _a, pe: np.ndarray = None):
         """返回标量漏洞分数 ∈ [0, 1]。
 
-        pe: 可选的 (N, pe_dim) 位置编码矩阵。若提供——拼接到 _x 右侧。
+        pe: 可选的 (N, pe_dim) 位置编码矩阵。若提供-拼接到 _x 右侧。
             不提供时行为与原有接口完全一致（向后兼容）。
         """
         if pe is not None and self._pe_dim > 0:
@@ -98,7 +98,7 @@ class SiameseBinaryMatcher:
     共享权重的两层GCN编码器 → global mean pool → 余弦相似度
     选择余弦而非欧氏距离：归一化到[-1,1]后线性映射至[0,1]，对嵌入模长不敏感
 
-    PE 支持同 GATVulnDetector——外部注入，模型内部拼接。
+    PE 支持同 GATVulnDetector-外部注入，模型内部拼接。
     """
 
     def __init__(self, in_dim=12, hidden_dim=64, pe_dim: int = 0):

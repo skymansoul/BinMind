@@ -40,19 +40,15 @@ class FuzzingResult:
 
 class StateMachineInferrer:
     def infer_from_binary(self, binary_path: str) -> StateMachineModel:
-        states = {
-            "init": ProtocolState(name="init"),
-            "connected": ProtocolState(name="connected"),
-            "authenticated": ProtocolState(name="authenticated", is_authenticated=True),
-            "privileged": ProtocolState(name="privileged", is_privileged=True),
-        }
-        transitions = [
-            StateTransition("init", "connected", "connect"),
-            StateTransition("connected", "authenticated", "login"),
-            StateTransition("authenticated", "privileged", "escalate"),
-        ]
+        if not binary_path or not os.path.isfile(binary_path):
+            logger.warning("binary_path 缺失或无效，返回空状态机模型")
+            return StateMachineModel(
+                states={}, transitions=[], initial_state=""
+            )
+        # 协议状态机推断需上层符号执行引擎支持，此处仅构建空模型骨架
+        logger.info("状态机推断需配合符号执行引擎，当前返回空模型: %s", binary_path)
         return StateMachineModel(
-            states=states, transitions=transitions, initial_state="init"
+            states={}, transitions=[], initial_state=""
         )
 
 

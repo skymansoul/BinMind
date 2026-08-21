@@ -89,7 +89,7 @@ class MicroarchValidator:
 
 # 驱逐集构建
     # Prime+Probe 攻击的关键预备步骤：找到映射到同一缓存组的地址集合。
-    # 原理：分配大数组，对每组逐一测试——访问候选地址后测量探针延迟，
+    # 原理：分配大数组，对每组逐一测试, 访问候选地址后测量探针延迟，
     # 延迟升高说明候选地址与探针属于同一组。
     def build_eviction_set(self, target_set: int, max_candidates: int = 512) -> list[int]:
         """为指定缓存组构建驱逐集。

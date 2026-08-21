@@ -1,12 +1,12 @@
 #
-# 常量时间验证管线 —— 编排秘密源识别→污点传播→三违规检测的完整流程
+# 常量时间验证管线 - 编排秘密源识别→污点传播→三违规检测的完整流程
 #
 # 预期用途：
 # CI/CD 安全门禁：对密码库二进制做每次构建的常量时间合规检查
 # 安全审计：对第三方闭源 crypto 二进制做评估
 # 固件安全分析：对 IoT 设备固件中的加密实现做检测
 #
-# 输出格式: ConstTimeReport —— 包含三种违规的分项统计和严重度汇总
+# 输出格式: ConstTimeReport - 包含三种违规的分项统计和严重度汇总
 
 import logging
 from typing import Dict, List, Tuple, Optional
@@ -108,15 +108,15 @@ def verify_constant_time(
     ci_fail_on: ViolationSeverity = ViolationSeverity.HIGH,
 ) -> ConstTimeReport:
     """对二进制文件做常量时间验证
-    
+
     参数:
     binary_path: 二进制文件路径
     func_insns: {name: (addr, [(mnemonic, [operands]),.])}
-    func_params: {name: [param_names]} — 从反编译器推断的函数参数
+    func_params: {name: [param_names]} - 从反编译器推断的函数参数
     imports: 导入符号列表
     global_vars: {name: addr} 全局变量
     ci_fail_on: CI 中断的最低严重度
-    
+
     返回 ConstTimeReport
     """
     if func_params is None:

@@ -2,7 +2,7 @@
 """
 半线性 MBA 去混淆器
 
-基于 的半线性 MBA 扩展框架
+基于 Skees et al. 2024 的半线性 MBA 扩展框架
 将含常量的位运算操作数（如 x&1, (x&0xF)+(y&0xF)）纳入
 简化范围，突破了传统线性 MBA 方法仅处理纯变量操作数的局限
 
@@ -33,11 +33,11 @@ except ImportError:
 class BitExpr:
     """
     位级别布尔表达式 AST
-    
-    参考 的位级别建模方法
+
+    参考 Zhou et al. 2024 的位级别建模方法
     支持的节点类型：
-    -, OR, XOR, （布尔运算）
-    - VAR()（第 位的变量值）
+    - AND, OR, XOR（布尔运算）
+    - VAR(name, bit_index)（第 bit_index 位的变量值）
     - CONST(0/1)（布尔常量）
     """
 
@@ -83,7 +83,7 @@ class BitVar:
         return hash(('var', self.name, self.bit_index))
 
 class BitOp:
-    """位操作：, OR, XOR"""
+    """位操作：AND, OR, XOR"""
     __slots__ = ('op', 'left', 'right')
 
     def __init__(self, op: str, left, right):
@@ -97,7 +97,7 @@ class BitOp:
         return f"({self.left} {self.op} {self.right})"
 
 class BitNot:
-    """位非："""
+    """位非：NOT"""
     __slots__ = ('operand',)
 
     def __init__(self, operand):
@@ -111,9 +111,9 @@ BitExprType = BitConst | BitVar | BitOp | BitNot
 class BitLevelSimplifier:
     """
     位级别布尔表达式简化器
-    
+
     应用布尔代数恒等式在位级别进行简化
-    [Skees 2024,]
+    [Skees et al. 2024]
     """
 
     # 布尔代数重写规则（bottom-up 应用）
@@ -144,7 +144,7 @@ class BitLevelSimplifier:
     def simplify(self, expr: BitExprType, depth: int = 0) -> BitExprType:
         """
         递归简化位表达式
-        
+
         深度优先 + 后序重写，最大递归深度 20
         """
         if depth > 20:
@@ -213,7 +213,7 @@ class BitLevelSimplifier:
                 if op == 'xor':
                     return BitConst(0)
 
-            # xor 1 =
+            # xor 1 = not
             if op == 'xor' and isinstance(right, BitConst) and right.value == 1:
                 return BitNot(left)
             if op == 'xor' and isinstance(left, BitConst) and left.value == 1:
@@ -228,7 +228,7 @@ class BitLevelSimplifier:
 class SemiLinearParser:
     """
     半线性 MBA 表达式解析器
-    
+
     解析混合常量和变量的位运算表达式
     识别模式：
     - x & C（常量掩码）
@@ -237,12 +237,10 @@ class SemiLinearParser:
     """
 
     def parse(self, expr_str: str) -> Optional[Dict[str, Any]]:
-        """
-        解析半线性 MBA 表达式
-        
-        返回:
-        {'type': 'semilinear', 'terms': [.], 'operations': [.]}
-        或 None（解析失败）
+        """解析半线性 MBA 表达式。
+
+        成功返回 {'type': 'semilinear', 'terms': [...],
+        'operations': [...]}, 解析失败返回 None。
         """
         expr = expr_str.replace(' ', '')
 
@@ -343,7 +341,7 @@ class SemiLinearMBASimplifier:
             'is_semilinear': True,
             'masked_terms_found': len([t for t in parsed['terms']
                                        if t.get('mask') is not None]),
-            'method': 'semilinear_bitlevel [Skees 2024]'
+            'method': 'semilinear_bitlevel [Skees et al. 2024]'
         }
 
     def _apply_bitwise_simplification(
@@ -351,7 +349,7 @@ class SemiLinearMBASimplifier:
     ) -> str:
         """
         逐位简化半线性表达式
-        
+
         对每个位构建独立的布尔表达式
         应用位级别简化规则后重建字级别结果
         """

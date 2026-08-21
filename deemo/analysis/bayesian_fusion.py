@@ -34,11 +34,7 @@ class BayesianFusionEngine:
     数学基础:
       P(vuln | e1, e2, ..., en) ∝ P(e1|vuln) × ... × P(en|vuln) × P(vuln)
       其中 P(ei|vuln) 通过管道可靠性和观察置信度联合估计。
-
-    Attributes:
-        pipeline_weights: 每个管道的权重 (默认等权)
-        prior_prob: 先验概率 (在没有证据时的基础风险)
-        eps: 数值稳定性参数
+    字段: weights 管道权重, prior_prob 先验概率, eps 数值稳定参数。
     """
 
     # 管道可靠性权重 (基于消融研究)
@@ -66,19 +62,9 @@ class BayesianFusionEngine:
         scores: Dict[str, float],
         active_weights: Optional[Dict[str, float]] = None,
     ) -> Tuple[float, Dict[str, float]]:
-        """融合多个管道的置信度.
+        """融合多管道置信度, 返回 (融合概率, 各管道贡献)。
 
-        Args:
-            scores: {pipeline_name: confidence_score}
-            active_weights: 覆盖默认权重 (可选)
-
-        Returns:
-            (fused_probability, per_pipeline_contributions)
-
-        Example:
-            engine = BayesianFusionEngine()
-            prob, contribs = engine.fuse({'heap_overflow': 0.85, 'uaf': 0.60})
-            # prob ≈ 0.78, contribs = {'heap_overflow': 0.35, 'uaf': 0.43}
+        scores 为 {管道名: 置信度}, active_weights 可选覆盖默认权重。
         """
         weights = active_weights or self.weights
         total_lo = self.prior_log_odds
@@ -113,16 +99,7 @@ class BayesianFusionEngine:
         new_evidence: Dict[str, float],
         evidence_weight: float = 0.3,
     ) -> float:
-        """贝叶斯更新: 将新证据增量融合到现有概率中.
-
-        Args:
-            current_prob: 当前融合概率
-            new_evidence: 新证据 (管道→置信度)
-            evidence_weight: 新证据的权重 (0~1)
-
-        Returns:
-            updated_probability
-        """
+        """贝叶斯更新: 新证据按 EWMA 权重增量融合到当前概率。"""
         current_lo = probability_to_log_odds(current_prob, self.eps)
 
         # 计算新证据的对数几率贡献
@@ -142,14 +119,9 @@ class BayesianFusionEngine:
         candidates: list,
         score_key: str = 'scores',
     ) -> list:
-        """对候选检测结果按融合风险排序.
+        """对候选检测结果按融合风险降序排序。
 
-        Args:
-            candidates: [{score_key: {pipeline: confidence}, ...}, ...]
-            score_key: 置信度字典的键名
-
-        Returns:
-            按 fused_probability 降序排列的候选列表
+        candidates 每项含 score_key 指向的 {管道: 置信度} 字典。
         """
         ranked = []
         for c in candidates:
@@ -161,11 +133,7 @@ class BayesianFusionEngine:
         return ranked
 
     def classify(self, fused_prob: float) -> Tuple[str, str]:
-        """基于融合概率给出风险等级.
-
-        Returns:
-            (risk_level, recommendation)
-        """
+        """基于融合概率给出 (风险等级, 处置建议)。"""
         if fused_prob >= 0.80:
             return 'CRITICAL', 'immediate review required'
         elif fused_prob >= 0.60:
@@ -181,11 +149,7 @@ class BayesianFusionEngine:
         self,
         test_points: int = 20,
     ) -> Dict[str, list]:
-        """生成校准曲线数据 (用于可靠性图).
-
-        Returns:
-            {pipeline_name: [(confidence, fused_prob_contribution), ...]}
-        """
+        """生成校准曲线数据: {管道名: [(置信度, 融合概率贡献), ...]}。"""
         curves = {}
         for pipeline in self.weights:
             points = []

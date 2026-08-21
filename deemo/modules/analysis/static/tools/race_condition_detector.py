@@ -1,11 +1,9 @@
-# 2026-07-30
 import re
 from typing import List, Dict, Tuple, Set, Optional
 from collections import defaultdict
 
-
 class RaceConditionDetector:
-    """TOCTOU, lock ordering, 信号处理 race, kernel double-fetch detection"""
+    """竞态条件检测: TOCTOU, 锁顺序, 信号处理race, 内核double-fetch"""
 
 # 初始化: TOCTOU API对 + 锁API + 信号API
 
@@ -111,7 +109,7 @@ class RaceConditionDetector:
 
         return _findings
 
-    # //// 锁顺序检测 (死锁/双重锁) ////
+    # 锁顺序检测 (死锁/双重锁)
 
     def detect_lock_issues(self, strings: List[str],
                             imports: Dict[str, List[str]]) -> List[Dict]:
@@ -222,10 +220,8 @@ class RaceConditionDetector:
 
     def detect_double_fetch(self, strings: List[str],
                              imports: Dict[str, List[str]]) -> List[Dict]:
-        """
-        Kernel double-fetch pattern: 同一用户态地址以copy_from_user读取两次
-        第一次校验，第二次使用，但两次读取之间值可能被另一个线程修改
-        """
+        # 内核double-fetch: 同一用户态地址以copy_from_user读取两次
+        # 第一次校验，第二次使用，两次读取间值可能被另一线程修改
         _findings = []
         _strs_text = ' '.join(strings)
 
@@ -261,7 +257,7 @@ class RaceConditionDetector:
 
         return _findings
 
-    # //// 综合分析入口 ////
+    # 综合分析入口
 
     def analyze(self, strings: List[str] = None,
                 imports: Dict[str, List[str]] = None) -> Dict:

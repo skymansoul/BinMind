@@ -1,32 +1,29 @@
 # coding: utf-8
-# 创建: 2026-05-23  |  EPASS编排引擎
-# 修改: 2026-05-23  |  审计后补充文件头与错误处理
-#
 """
-漏洞利用原语感知的沙箱策略合成——编排引擎。
+漏洞利用原语感知的沙箱策略合成-编排引擎。
 
 管线流程:
   1. 输入: 漏洞分析管线产出(漏洞类型+利用策略+保护机制)
-  2. 原语映射: ExploitPrimitiveMapper→策略→系统调用阻断集
-  3. BPF合成: SeccompPolicySynthesizer→可加载seccomp-BPF字节码
+  2. 原语映射: ExploitPrimitiveMapper-策略-系统调用阻断集
+  3. BPF合成: SeccompPolicySynthesizer-可加载seccomp-BPF字节码
   4. 效果评估: 阻断后的预期防护效果+程序功能影响评估
   5. 策略推荐: 按效果/影响比排序的多级策略建议
 
 策略分级:
-  STRICT: 阻断所有核心syscall(KILL)——最高安全, 可能影响程序功能
-  BALANCED: 核心syscall→ERRNO, 高影响syscall→ERRNO——平衡安全与可用
-  PERMISSIVE: 仅阻断非高影响核心syscall——最低功能影响
+  STRICT: 阻断所有核心syscall(KILL)-最高安全, 可能影响程序功能
+  BALANCED: 核心syscall-ERRNO, 高影响syscall-ERRNO-平衡安全与可用
+  PERMISSIVE: 仅阻断非高影响核心syscall-最低功能影响
 
 与现有沙箱模块集成:
-  sandbox_policy_gen → 通用allowlist(程序基线)
-  sandbox_escape_detector → 运行时逃逸检测
-  epass_engine → 利用特定的blocklist(漏洞临时防护)
+  sandbox_policy_gen - 通用allowlist(程序基线)
+  sandbox_escape_detector - 运行时逃逸检测
+  epass_engine - 利用特定的blocklist(漏洞临时防护)
   三者组合: 基线allowlist + 逃逸检测 + 利用blocklist = 纵深防御
 
 创新点:
-  预防式+利用原语特定——不同于DeSFAM(反应式)和BeaCon(通用allowlist),
+  预防式+利用原语特定-不同于DeSFAM(反应式)和BeaCon(通用allowlist),
   EPASS策略仅在二进制分析发现具体利用技术后才激活,
-  且仅阻断该利用技术所需的syscall——最小化功能影响。
+  且仅阻断该利用技术所需的syscall-最小化功能影响。
 """
 
 import logging
@@ -52,7 +49,7 @@ class PolicyLevel(str):
 
 @dataclass
 class PolicyRecommendation:
-    """单条策略建议——含seccomp策略+效果评估"""
+    """单条策略建议-含seccomp策略+效果评估"""
     level: str                         # PolicyLevel值
     policy: Optional[SeccompPolicy] = None
     # 效果评估
@@ -93,8 +90,8 @@ class EpassEngine:
             binary_name='/usr/bin/target')
 
     与exploit_generation_pipeline集成:
-      ExploitPlan.strategies → 传入strategies参数
-      保护机制信息 → 用于效果评估(ASLR/NX已启用→某些原语天然受阻)
+      ExploitPlan.strategies - 传入strategies参数
+      保护机制信息 - 用于效果评估(ASLR/NX已启用-某些原语天然受阻)
     """
 
     def __init__(self):
@@ -138,7 +135,7 @@ class EpassEngine:
         # 三级策略合成
         recommendations = []
 
-        # STRICT——阻断所有核心syscall(KILL)
+        # STRICT-阻断所有核心syscall(KILL)
         strict_bl = SyscallBlocklist(
             target_primitive="strict",
             critical_syscalls=unified.critical_syscalls,
@@ -155,10 +152,10 @@ class EpassEngine:
             functionality_impact=func_impact_strict,
             blocked_syscall_count=len(strict_bl.critical_syscalls),
             high_impact_count=len(strict_bl.high_impact_syscalls),
-            recommendation=f"最高安全——阻断{len(strict_bl.critical_syscalls)}个syscall, "
+            recommendation=f"最高安全-阻断{len(strict_bl.critical_syscalls)}个syscall, "
                            f"功能影响{func_impact_strict:.0%}"))
 
-        # BALANCED——KILL+高影响ERRNO
+        # BALANCED-KILL+高影响ERRNO
         balanced_policy = self._synthesizer.synthesize(
             unified, f"epass_{binary_name}_balanced", use_errno=True)
         func_impact_bal = self._assess_functional_impact(
@@ -170,10 +167,10 @@ class EpassEngine:
             functionality_impact=func_impact_bal,
             blocked_syscall_count=len(unified.critical_syscalls),
             high_impact_count=len(unified.high_impact_syscalls),
-            recommendation=f"平衡——高影响syscall返回EPERM而非KILL, "
+            recommendation=f"平衡-高影响syscall返回EPERM而非KILL, "
                            f"功能影响{func_impact_bal:.0%}"))
 
-        # PERMISSIVE——仅阻断非高影响核心syscall
+        # PERMISSIVE-仅阻断非高影响核心syscall
         permissive_critical = [s for s in unified.critical_syscalls
                                 if s not in unified.high_impact_syscalls]
         perm_bl = SyscallBlocklist(
@@ -192,10 +189,10 @@ class EpassEngine:
             functionality_impact=func_impact_perm,
             blocked_syscall_count=len(permissive_critical),
             high_impact_count=0,
-            recommendation=f"宽松——仅阻断{len(permissive_critical)}个低影响syscall, "
+            recommendation=f"宽松-仅阻断{len(permissive_critical)}个低影响syscall, "
                            f"功能影响{func_impact_perm:.0%}"))
 
-        # 最佳推荐——选取效果>0.5中功能影响最小的
+        # 最佳推荐-选取效果>0.5中功能影响最小的
         best = None
         best_score = -1.0
         for rec in recommendations:
@@ -216,18 +213,18 @@ class EpassEngine:
     def _assess_functional_impact(self, blocklist: SyscallBlocklist,
                                     level: str,
                                     prot: Dict[str, str]) -> float:
-        """评估策略对程序功能的影响——基于syscall的重要性权重。
+        """评估策略对程序功能的影响-基于syscall的重要性权重。
 
-        高影响syscall每阻断一个→+15%功能影响
-        核心syscall每阻断一个→+5%功能影响
-        ERRNO模式→影响减半(程序可优雅处理错误)
+        高影响syscall每阻断一个-+15%功能影响
+        核心syscall每阻断一个-+5%功能影响
+        ERRNO模式-影响减半(程序可优雅处理错误)
         """
         impact = 0.0
         impact += len(blocklist.high_impact_syscalls) * 0.15
         impact += (len(blocklist.critical_syscalls) -
                    len(blocklist.high_impact_syscalls)) * 0.05
         if level != PolicyLevel.STRICT:
-            impact *= 0.5  # ERRNO→影响减半
+            impact *= 0.5  # ERRNO-影响减半
         return min(1.0, impact)
 
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Pipeline 训练 configuration -- task types, checkpoint management, and
+# Pipeline 训练 configuration - task types, checkpoint management, and
 # default 超参数 presets consumed by the fine-tuning pipeline.
 #
-# INTJ rationale: extracting config from custom_ai_finetune_pipeline.py
+# Rationale: extracting config from custom_ai_finetune_pipeline.py
 # separates "what we train with" from "how we train." The pipeline module
-# should orchestrate -- not own task-type enums or checkpoint hashing logic.
+# should orchestrate, not own task-type enums or checkpoint hashing logic.
 # This keeps the config surface narrow and allows the trainer layer to import
 # config types without dragging in the full data-augmentation / curriculum /
 # contrastive-采样 machinery. Single-responsibility, low coupling.

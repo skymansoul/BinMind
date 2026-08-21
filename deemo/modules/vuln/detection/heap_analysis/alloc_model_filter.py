@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-03  |  分配器感知FP消除 — Alloc Model Filter
 #
 """
 分配器感知FP消除 — 基于多分配器内部模型的false positive削减。
@@ -172,12 +171,9 @@ class AllocModelFilter:
                  write_size: int) -> AllocModelResult:
         """评估单条写入是否在分配器padding zone内
 
-        参数:
-          requested_size: malloc请求的size
-          write_offset: 写入偏移(相对于buffer起始)
-          write_size: 写入字节数(0=单元素写入)
-
-        返回: AllocModelResult
+        参数: requested_size malloc请求的size, write_offset
+        写入偏移(相对于buffer起始), write_size 写入字节数
+        (0=单元素写入); 返回 AllocModelResult。
         """
         result = AllocModelResult()
         result.alloc_type = self.alloc_type

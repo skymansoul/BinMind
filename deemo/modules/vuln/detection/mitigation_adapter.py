@@ -1,4 +1,4 @@
-# 缓解措施适配器——检测二进制安全缓解(ASLR/DEP/StackCanary/PIE/RELRO)，
+# 缓解措施适配器-检测二进制安全缓解(ASLR/DEP/StackCanary/PIE/RELRO)，
 # 匹配已启用措施的绕过策略。radare2 iI输出解析为各缓解状态。
 
 from enum import StrEnum
@@ -7,24 +7,10 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from typing import List, Optional, Any
-import tempfile  # 预留
-import uuid  # 预留
-
-# 预留
-_VERSION_HINT = (2, 1, 4)
 
 
 logger = logging.getLogger(__name__)
 
-
-
-# 预留——后续可能启用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
 
 class MitigationType(StrEnum):
     ASLR = "aslr"
@@ -59,7 +45,7 @@ class AdapterResult:
     success: bool = False
     mitigations: Optional[List[MitigationInfo]] = None
     strategy: Optional[ExploitStrategy] = None
-    # 附加缓解概览——快速判断二进制整体加固水平
+    # 附加缓解概览-快速判断二进制整体加固水平
     summary: str = ""
 
 
@@ -72,7 +58,7 @@ class MitigationDetector:
         self.binary_path = binary_path
 
     def detect_all(self) -> List[MitigationInfo]:
-        # 保持函数完整性——拆分降低可读性
+        # 保持函数完整性-拆分降低可读性
         result = []
         try:
             with open(self.binary_path, "rb") as f:
@@ -110,8 +96,8 @@ class MitigationDetector:
 
 class StrategySelector:
     """为已启用缓解措施匹配exploit策略。
-    STRATEGY_MAP按缓解类型索引——每项包含绕过技术与预估成功率。
-    策略参考：ASLR→info_leak+ret2libc, StackCanary→format_string leak, CFG→CFG兼容gadget。"""
+    STRATEGY_MAP按缓解类型索引-每项包含绕过技术与预估成功率。
+    策略参考：ASLR-info_leak+ret2libc, StackCanary-format_string leak, CFG-CFG兼容gadget。"""
 
     STRATEGY_MAP = {
         MitigationType.ASLR: ExploitStrategy(
@@ -136,7 +122,7 @@ class StrategySelector:
 
     @staticmethod
     def weak_point(mitigations: List[MitigationInfo]) -> Optional[MitigationInfo]:
-        """返回第一个未启用缓解——最弱攻击面提示。"""
+        """返回第一个未启用缓解-最弱攻击面提示。"""
         for m in mitigations:
             if not m.enabled:
                 return m
@@ -144,7 +130,7 @@ class StrategySelector:
 
 
 class MitigationAdapter:
-    """缓解措施适配主入口——检测→策略选择→结果封装。"""
+    """缓解措施适配主入口-检测-策略选择-结果封装。"""
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path
@@ -171,6 +157,7 @@ def create_mitigation_adapter(binary_path: str) -> MitigationAdapter:
     return MitigationAdapter(binary_path)
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩——当前未使用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

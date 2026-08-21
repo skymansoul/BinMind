@@ -209,16 +209,9 @@ class HeapLayoutOracle:
         region: HeapRegion,
         store_size: int = 1,
     ) -> Tuple[bool, str]:
-        """判断对 target_chunk 的写入是否安全.
+        """判断对 target_chunk 的写入是否安全。
 
-        Args:
-          store_offset: 相对 data 起始的写入偏移
-          target_chunk: 目标 chunk 的布局信息
-          region: 堆区域布局
-          store_size: 写入字节数
-
-        Returns:
-          (is_safe, reason)
+        返回 (is_safe, reason)。
         """
         if target_chunk.usable_size <= 0:
             return True, 'usable_size unknown, cannot prove unsafe'

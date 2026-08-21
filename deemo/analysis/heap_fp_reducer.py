@@ -73,16 +73,11 @@ class HeapFpReducer:
                candidates: Optional[List[Dict]] = None,
                alloc_write_pairs: Optional[List[Tuple[int, str, str, int, str, str]]] = None,
                ) -> Tuple[List[FpReductionVerdict], ReductionStats]:
-        """执行四阶段 FP 削减.
+        """执行四阶段 FP 削减, 返回 (verdicts, stats)。
 
-        Args:
-            code: C源码/反编译伪代码
-            candidates: 已有候选列表 (兼容现有管线)
-            alloc_write_pairs: [(alloc_line, alloc_func, alloc_size_expr,
-                                 write_line, write_func, write_size_expr), ...]
-
-        Returns:
-            (verdicts, stats)
+        candidates 兼容现有管线; alloc_write_pairs 为
+        [(alloc_line, alloc_func, alloc_size_expr, write_line, write_func,
+        write_size_expr), ...]。
         """
         t0 = time.perf_counter()
         stats = ReductionStats()

@@ -89,7 +89,7 @@ class ResolutionResult:
 
 class MessageSendParser(ABC):
     """消息发送解析器基类"""
-    
+
     @abstractmethod
     def parse(self, binary_data: bytes) -> Tuple[List[ClassInfo], List[MessageSendSite]]:
         """解析二进制数据，提取类信息和消息发送站点"""
@@ -98,7 +98,7 @@ class MessageSendParser(ABC):
 
 class ObjcMessageSendParser(MessageSendParser):
     """Objective-C 消息发送解析器"""
-    
+
     def __init__(self):
         self.msg_send_patterns = {
             b'\xff\x25': 'objc_msgSend',           # jmp qword ptr [rip+offset]
@@ -107,27 +107,27 @@ class ObjcMessageSendParser(MessageSendParser):
         self.selector_patterns = [
             b'@selector' + b'(', b'sel_registerName', b'NSStringFromSelector'
         ]
-    
+
     def parse(self, binary_data: bytes) -> Tuple[List[ClassInfo], List[MessageSendSite]]:
         """解析 Objective-C 消息发送"""
         classes = []
         message_sites = []
-        
+
         # 提取类信息
         classes = self._extract_classes(binary_data)
-        
+
         # 提取消息发送站点
         message_sites = self._extract_message_sites(binary_data)
-        
+
         return classes, message_sites
-    
+
     def _extract_classes(self, data: bytes) -> List[ClassInfo]:
         """提取类信息"""
         classes = []
-        
+
         # 查找类名模式
         class_patterns = [b'_OBJC_CLASS_$_', b'_OBJC_METACLASS_$_']
-        
+
         for pattern in class_patterns:
             offset = data.find(pattern)
             while offset != -1:
@@ -143,13 +143,13 @@ class ObjcMessageSendParser(MessageSendParser):
                     ))
 
                 offset = data.find(pattern, offset + 1)
-        
+
         return classes
-    
+
     def _extract_methods_for_class(self, data: bytes, class_name: str) -> List[str]:
         """提取类的方法"""
         methods = []
-        
+
         # 查找选择器
         selector_pattern = class_name.encode() + b'_'
         offset = data.find(selector_pattern)
@@ -161,19 +161,19 @@ class ObjcMessageSendParser(MessageSendParser):
                 if method_name not in methods:
                     methods.append(method_name)
             offset = data.find(selector_pattern, offset + 1)
-        
+
         return methods
-    
+
     def _extract_message_sites(self, data: bytes) -> List[MessageSendSite]:
         """提取消息发送站点"""
         sites = []
-        
+
         for pattern, call_type_name in self.msg_send_patterns.items():
             offset = data.find(pattern)
             while offset != -1:
                 call_type = self._map_call_type(call_type_name)
                 selector = self._infer_selector(data, offset)
-                
+
                 sites.append(MessageSendSite(
                     offset=offset,
                     class_name=None,
@@ -182,15 +182,15 @@ class ObjcMessageSendParser(MessageSendParser):
                     confidence=0.7))
 
                 offset = data.find(pattern, offset + 1)
-        
+
         return sites
-    
+
     def _map_call_type(self, name: str) -> CallType:
         """映射调用类型"""
         if name == 'objc_msgSend':
             return CallType.OBJC_MSGSEND
         return CallType.OBJC_MSGSEND
-    
+
     def _infer_selector(self, data: bytes, offset: int) -> str:
         """推断选择器"""
         # 简单模拟：根据偏移量生成选择器名称
@@ -200,7 +200,7 @@ class ObjcMessageSendParser(MessageSendParser):
 
 class SwiftMessageSendParser(MessageSendParser):
     """Swift 消息发送解析器"""
-    
+
     def __init__(self):
         self.swift_patterns = {
             b'\x48\x8b\x05': 'swift_method',     # mov rax, [rip+offset]
@@ -208,27 +208,27 @@ class SwiftMessageSendParser(MessageSendParser):
             b'\xff\x15': 'swift_indirect',      # call [rip+offset]
         }
         self.swift_vtable_patterns = [b'_TWV', b'_TWZ', b'_TF']
-    
+
     def parse(self, binary_data: bytes) -> Tuple[List[ClassInfo], List[MessageSendSite]]:
         """解析 Swift 消息发送"""
         classes = []
         message_sites = []
-        
+
         # 提取 Swift 类信息
         classes = self._extract_swift_classes(binary_data)
-        
+
         # 提取消息发送站点
         message_sites = self._extract_swift_message_sites(binary_data)
-        
+
         return classes, message_sites
-    
+
     def _extract_swift_classes(self, data: bytes) -> List[ClassInfo]:
         """提取 Swift 类信息"""
         classes = []
-        
+
         # 查找 Swift 元数据模式
         metadata_patterns = [b'_TMd', b'_Tt', b'_TW']
-        
+
         for pattern in metadata_patterns:
             offset = data.find(pattern)
             while offset != -1:
@@ -242,18 +242,18 @@ class SwiftMessageSendParser(MessageSendParser):
                             methods=[]))
 
                 offset = data.find(pattern, offset + 1)
-        
+
         return classes
-    
+
     def _extract_swift_message_sites(self, data: bytes) -> List[MessageSendSite]:
         """提取 Swift 消息发送站点"""
         sites = []
-        
+
         for pattern, call_type_name in self.swift_patterns.items():
             offset = data.find(pattern)
             while offset != -1:
                 call_type = self._map_swift_call_type(call_type_name)
-                
+
                 sites.append(MessageSendSite(
                     offset=offset,
                     class_name=None,
@@ -262,9 +262,9 @@ class SwiftMessageSendParser(MessageSendParser):
                     confidence=0.6))
 
                 offset = data.find(pattern, offset + 1)
-        
+
         return sites
-    
+
     def _map_swift_call_type(self, name: str) -> CallType:
         """映射 Swift 调用类型"""
         if name == 'swift_method':
@@ -273,7 +273,7 @@ class SwiftMessageSendParser(MessageSendParser):
             return CallType.DIRECT_CALL
         else:
             return CallType.SWIFT_FUNCTION_REF
-    
+
     def _infer_swift_method(self, data: bytes, offset: int) -> str:
         """推断 Swift 方法名"""
         method_names = ["init", "deinit", "description", "hashValue", "equatable", "comparable"]
@@ -282,20 +282,20 @@ class SwiftMessageSendParser(MessageSendParser):
 
 class MessageSendResolver:
     """消息发送解析器"""
-    
+
     def __init__(self):
         self.type_propagation_cache: Dict[str, str] = {}
-    
+
     def resolve(self, classes: List[ClassInfo], sites: List[MessageSendSite]) -> List[MessageSendSite]:
         """解析消息发送站点"""
         resolved_sites = []
-        
+
         for site in sites:
             resolved = self._resolve_site(classes, site)
             resolved_sites.append(resolved)
-        
+
         return resolved_sites
-    
+
     def _resolve_site(self, classes: List[ClassInfo], site: MessageSendSite) -> MessageSendSite:
         """解析单个消息发送站点"""
         # 尝试通过类层次结构解析
@@ -309,9 +309,9 @@ class MessageSendResolver:
                     resolved_target=f"{class_info.name}::{site.selector}",
                     resolved_address=self._compute_vtable_address(class_info, site.selector),
                     confidence=0.9)
-                
 
-        
+
+
         # 尝试通过类型传播解析
         if site.selector in self.type_propagation_cache:
             return MessageSendSite(
@@ -321,11 +321,11 @@ class MessageSendResolver:
                 call_type=site.call_type,
                 resolved_target=f"{self.type_propagation_cache[site.selector]}::{site.selector}",
                 confidence=0.75)
-            
 
-        
+
+
         return site
-    
+
     def _compute_vtable_address(self, class_info: ClassInfo, selector: str) -> Optional[int]:
         """计算虚表地址"""
         # 简单模拟：基于类名和选择器生成地址
@@ -338,11 +338,11 @@ class MessageSendResolver:
 class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
     """
     Swift/ObjC 消息发送静态解糖分析器
-    
+
     将 objc_msgSend 和 Swift 虚调用静态解析为直接调用。
     结合类层次结构和选择器字符串分析，利用类型传播消除动态调度。
     """
-    
+
     def __init__(self):
         """初始化分析器"""
         self.parsers = {
@@ -350,26 +350,15 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
             LanguageType.SWIFT: SwiftMessageSendParser()
         }
         self.resolver = MessageSendResolver()
-    
+
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """
-        执行消息发送解糖分析
-        
-        Args:
-            **kwargs: 分析参数
-                - binary_path: 二进制文件路径
-                - binary_data: 二进制数据（可选）
-                - language: 目标语言（objc/swift/auto）
-        
-        Returns:
-            分析结果字典
-        """
+        """执行消息发送解糖分析"""
         binary_path = kwargs.get("binary_path")
         binary_data = kwargs.get("binary_data")
         language = kwargs.get("language", "auto")
-        
+
         logger.info(f"开始消息发送解糖分析: {binary_path}")
-        
+
         try:
             # 加载二进制数据
             if binary_data is None and binary_path:
@@ -378,31 +367,31 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
                         binary_data = f.read()
                 else:
                     return {"success": False, "error": f"文件不存在: {binary_path}"}
-            
+
             if binary_data is None:
                 return {"success": False, "error": "缺少二进制数据"}
-            
+
             # 检测或确认语言
             detected_lang = self._detect_language(binary_data) if language == "auto" else LanguageType(language)
-            
+
             # 检查是否有对应的解析器
             if detected_lang not in self.parsers:
                 return {
                     "success": False,
                     "error": f"不支持的语言: {detected_lang.value}"
                 }
-            
+
             # 使用对应解析器解析
             parser = self.parsers[detected_lang]
             classes, message_sites = parser.parse(binary_data)
-            
+
             # 解析消息发送站点
             resolved_sites = self.resolver.resolve(classes, message_sites)
-            
+
             # 统计结果
             resolved_count = sum(1 for s in resolved_sites if s.resolved_target is not None)
             unresolved_count = len(resolved_sites) - resolved_count
-            
+
             return {
                 "success": True,
                 "result": {
@@ -434,29 +423,29 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
                     "summary": self._generate_summary(detected_lang, resolved_count, unresolved_count)
                 }
             }
-            
+
         except Exception as e:
             logger.error(f"消息发送解糖分析失败: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def _detect_language(self, binary_data: bytes) -> LanguageType:
         """检测二进制文件的语言类型"""
         # 检查 Objective-C 特征
         objc_signatures = [b'objc_msgSend', b'_OBJC_', b'@selector', b'sel_registerName']
-        
+
         # 检查 Swift 特征
         swift_signatures = [b'_Tt', b'_TM', b'_TW', b'swift_allocObject', b'Swift._SwiftNativeNSObject']
-        
+
         has_objc = any(s in binary_data for s in objc_signatures)
         has_swift = any(s in binary_data for s in swift_signatures)
-        
+
         if has_objc and not has_swift:
             return LanguageType.OBJC
         elif has_swift:
             return LanguageType.SWIFT
-        
+
         return LanguageType.UNKNOWN
-    
+
     def _generate_summary(self, language: LanguageType, resolved: int, unresolved: int) -> str:
         """生成分析摘要"""
         lang_name = {
@@ -464,15 +453,15 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
             LanguageType.SWIFT: "Swift",
             LanguageType.UNKNOWN: "未知"
         }[language]
-        
+
         total = resolved + unresolved
-        
+
         if total == 0:
             return f"{lang_name} 分析完成，未发现消息发送站点"
         else:
             rate = (resolved / total) * 100
             return f"{lang_name} 分析完成，共 {total} 个消息发送站点，成功解析 {resolved} 个 ({rate:.1f}%)"
-    
+
     @classmethod
     def get_metadata(cls) -> AnalyzerMetadata:
         """获取分析器元数据"""
@@ -484,26 +473,26 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
             author="BinaryAnalysisPlatform",
             dependencies=[],
             supported_platforms=["x86_64", "arm64"])
-        
 
-    
+
+
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
         binary_path = kwargs.get("binary_path")
         binary_data = kwargs.get("binary_data")
-        
+
         if not binary_path and binary_data is None:
             return False, "必须提供 binary_path 或 binary_data"
-        
+
         if binary_path and not os.path.exists(binary_path):
             return False, f"文件不存在: {binary_path}"
-        
+
         language = kwargs.get("language", "auto")
         if language not in ["auto", "objc", "swift"]:
             return False, "language 必须是 auto、objc 或 swift"
-        
+
         return True, None
-    
+
     def cleanup(self) -> None:
         """清理资源"""
         pass

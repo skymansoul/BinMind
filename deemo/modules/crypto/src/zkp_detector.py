@@ -2,7 +2,7 @@
 # 覆盖: Groth16, Plonk, Bulletproofs, Marlin, Spartan, Halo2, Nova, STIR, Ligero, Aurora.
 # 检测策略: (1) BLS12-381/BN254/BW6-761 配对曲线参数, (2) zk-crate/toolkit字符串,
 # (3) 算术电路编译产物 (R1CS/QAP/Plonkish), (4) Fiat-Shamir transcript结构。
-Groth, Gabizon-Williamson-Ciobotaru,
+# Groth, Gabizon-Williamson-Ciobotaru,
 # Bunz et al., Chiesa et al.,
 # Setty, Arnon et al..
 # 扩展: Binius (二进制域ZKP), Lasso/Jolt lookup argument,
@@ -140,9 +140,6 @@ _FS_TRANSCRIPT_TAGS = [
 
 class ZKPDetector:
     """ZKP系统指纹检测器 — SNARK/STARK/Bulletproofs/zkVM全覆盖."""
-
-    def __init__(self):
-        pass
 
     def scan_file(self, path: str) -> List[ZKPDetectionResult]:
         raw = safeReadBytes(path)

@@ -1,6 +1,5 @@
-# 回归测试主入口 —— 编译→扫描→解析→统计。
+# 回归测试主入口 - 编译→扫描→解析→统计。
 # 用法: python -m testing.regression.run_tests [--timeout N]
-# 创建: 2026-06-10
 
 import json, os, sys, time
 from testing.regression.compile_samples import compile_all

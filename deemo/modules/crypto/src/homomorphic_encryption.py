@@ -5,7 +5,7 @@
 # (3) TFHE 的 blind rotate / CMux gate 汇编特征,
 # (4) OpenFHE/Lattigo/SEAL/HElib 库字符串特征。
 #
-Cheon-Kim-Kim-Song, Brakerski-Gentry-Vaikuntanathan
+# Cheon-Kim-Kim-Song, Brakerski-Gentry-Vaikuntanathan
 #, Fan-Vercauteren, Chillotti et al.,
 # Badawi et al., Albrecht et al..
 
@@ -223,9 +223,6 @@ def detect_tfhe_bootstrapping_key(data: bytes) -> Optional[dict]:
 
 class HESchemeDetector:
     """同态加密方案检测器 -- scheme/库/参数综合指纹."""
-
-    def __init__(self):
-        pass
 
     def scan_file(self, path: str) -> List[HEDetectionResult]:
         raw = safeReadBytes(path)

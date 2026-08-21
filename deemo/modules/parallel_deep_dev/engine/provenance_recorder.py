@@ -9,8 +9,8 @@
 
 import ast
 import os
-from parallel_deep_dev.engine._io import safe_read
-from parallel_deep_dev.engine.provenance import ProvenanceGraph
+from ._io import safe_read
+from .provenance import ProvenanceGraph
 
 
 def record_worker_output(

@@ -19,7 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 
-from parallel_deep_dev.config import _data_dir
+from ..config import _data_dir
 _FINGERPRINTS_PATH = os.path.join(_data_dir(), "evo_fingerprints.json")
 
 

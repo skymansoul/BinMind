@@ -1,37 +1,37 @@
 #
-# 指令语义哈希 —— 将单条汇编指令映射到对编译器变异不敏感的语义指纹
+# 指令语义哈希 - 将单条汇编指令映射到对编译器变异不敏感的语义指纹
 #
 # 设计约束：
-#   (a) 不编码寄存器编号 —— 同一函数用 rax vs rbx 不应影响哈希
-# (b) 立即数截断到 8-bit 粒度 —— 0x41 和 0x42 在语义上等价（都是小常数比较）
+#   (a) 不编码寄存器编号 - 同一函数用 rax vs rbx 不应影响哈希
+# (b) 立即数截断到 8-bit 粒度 - 0x41 和 0x42 在语义上等价（都是小常数比较）
 #       但 0x1000 和 0x2000 不等价（可能是不同的偏移）
-# (c) flags_effect 规范化 —— cmp/sub 类指令统一标记为 {ZF, SF, CF} 的幂集
+# (c) flags_effect 规范化 - cmp/sub 类指令统一标记为 {ZF, SF, CF} 的幂集
 #       消除 O2（test+jcc 合并为单个指令）vs O0（显式 cmp+jcc）的哈希差异
 #
 # 三元组 (op_type, operand_types, flags_effect) 的 SHA256 前 32-bit 作为指令哈希
 # 冲突概率 < 2^-32，对实际二进制文件中的指令数量而言足够
 #
-# — BinSub 的语义哈希使用操作码和操作数大小
+# - BinSub 的语义哈希使用操作码和操作数大小
 # 本项目在此基础上增加了 flags_effect 维度和立即数粒度折叠
 
 import hashlib
 import re
 from typing import List, Tuple, Optional
 
-# 操作数类型常量 —— 用单字符编码以减少哈希输入长度
+# 操作数类型常量 - 用单字符编码以减少哈希输入长度
 _OP_REG = 'r'    # 寄存器
 _OP_IMM = 'i'    # 立即数
 _OP_MEM = 'm'    # 内存引用
 _OP_BRANCH = 'b' # 分支目标（相对偏移）
 _OP_NONE = '_'   # 无操作数
 
-# 标志位规范化的等价类 —— 同类的标志组合映射到同一标识符
+# 标志位规范化的等价类 - 同类的标志组合映射到同一标识符
 # 类 0: 无标志影响
-# 类 1: 仅零标志 (ZF) —— test,, or
-# 类 2: 零+符号 (ZF,SF) —— cmp, sub
-# 类 3: 零+符号+进位 (ZF,SF,CF) —— add, adc, sbb
-# 类 4: 全部算术标志 —— mul, imul, div, idiv
-# 类 5: 进位 (CF) —— shl, shr, rol, ror
+# 类 1: 仅零标志 (ZF) - test,, or
+# 类 2: 零+符号 (ZF,SF) - cmp, sub
+# 类 3: 零+符号+进位 (ZF,SF,CF) - add, adc, sbb
+# 类 4: 全部算术标志 - mul, imul, div, idiv
+# 类 5: 进位 (CF) - shl, shr, rol, ror
 _FLAGS_CLASS: dict = {}
 
 def _init_flags_class():
@@ -58,7 +58,7 @@ def _init_flags_class():
     for m in ('shl', 'shr', 'sal', 'sar', 'rol', 'ror', 'rcl', 'rcr'):
         _FLAGS_CLASS[m] = 5
 
-# 操作数类型检测 —— 不依赖 Capstone 的 operand.type，纯文本模式匹配
+# 操作数类型检测 - 不依赖 Capstone 的 operand.type，纯文本模式匹配
 # 这样即使不同反汇编器的输出格式略有差异也能工作
 _MEM_PAT = re.compile(r'\[|ptr\s')
 _BRANCH_PAT = re.compile(r'^0x[0-9a-fA-F]+$|<')
@@ -82,14 +82,14 @@ def _classify_operand(op_str: str) -> str:
     return _OP_REG
 
 def _truncate_imm(op_str: str) -> str:
-    """立即数规范化折叠 —— 小于 256 的值折叠到 8-bit 粒度"""
+    """立即数规范化折叠 - 小于 256 的值折叠到 8-bit 粒度"""
     op = op_str.strip()
     try:
         val = int(op, 16) if op.startswith('0x') or op.startswith('-0x') else int(op)
     except (ValueError, AttributeError):
         return op
     if abs(val) < 256:
-        # 折叠到符号 —— 只保留正/零/负
+        # 折叠到符号 - 只保留正/零/负
         if val > 0:
             return 'pos_small'
         elif val < 0:
@@ -102,13 +102,13 @@ def _truncate_imm(op_str: str) -> str:
 
 def semantic_hash_insn(mnemonic: str, operands: List[str]) -> Tuple[int, str]:
     """返回 (hash32, normalized_op_type) 的指令语义哈希
-    
+
     参数:
     mnemonic: 助记符字符串（如 'mov', 'add', 'cmp'）
     operands: 操作数字符串列表，可以为空
-    
+
     canon 三元组 = (op_type, operand_type_seq, flags_class)
-    其中 op_type 是通过跨架构归一化映射得到的——如果未提供则用 mnemonic 本身
+    其中 op_type 是通过跨架构归一化映射得到的-如果未提供则用 mnemonic 本身
     """
     _init_flags_class()
     m = mnemonic.lower()
@@ -137,11 +137,11 @@ def semantic_hash_insn(mnemonic: str, operands: List[str]) -> Tuple[int, str]:
 def hash_basic_block(insns: List[Tuple[str, List[str]]],
                      block_addr: int = 0) -> Tuple[int, List[int]]:
     """返回 (block_hash64, insn_hash_list) 的基本块语义哈希
-    
+
     块哈希 = 指令哈希列表的顺序相关 XOR+shift 组合
-    指令两两之间的哈希也做 XOR，使得相似的指令序列产生相近的块哈希——
+    指令两两之间的哈希也做 XOR，使得相似的指令序列产生相近的块哈希-
     两个仅差一条指令的块，其汉明距离约为 1-3 位
-    
+
     参数:
     insns: [(mnemonic, [operand_str,.]),.]
     block_addr: 基本块起始地址（仅用于日志，不影响哈希值）
@@ -154,7 +154,7 @@ def hash_basic_block(insns: List[Tuple[str, List[str]]],
     if not insn_hashes:
         return 0, []
 
-    # 滚动 XOR+shift —— 使序列顺序影响最终哈希
+    # 滚动 XOR+shift - 使序列顺序影响最终哈希
     block_hash = insn_hashes[0]
     for i in range(1, len(insn_hashes)):
         # 相邻指令的交叉影响
@@ -162,7 +162,7 @@ def hash_basic_block(insns: List[Tuple[str, List[str]]],
         block_hash = (block_hash << 7) | (block_hash >> (64 - 7))
         block_hash &= 0xFFFFFFFFFFFFFFFF
 
-    # 长度也参与哈希 —— 防止不同长度的块碰巧产生相同值
+    # 长度也参与哈希 - 防止不同长度的块碰巧产生相同值
     block_hash ^= (len(insn_hashes) << 48)
 
     return block_hash, insn_hashes

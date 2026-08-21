@@ -1,9 +1,8 @@
-# QEMU UAF基线检测器 v1 — 动态执行检测UAF导致的崩溃
+# QEMU UAF基线检测器 v1 - 动态执行检测UAF导致的崩溃
 #
 # 策略: 通过QEMU用户模式执行二进制, 检测SIGSEGV/SIGABRT
 # UAF不总是导致崩溃 → 预期低召回但低误报
 #
-# 创建: 2026-07-22
 
 import sys, time, subprocess, os
 from pathlib import Path

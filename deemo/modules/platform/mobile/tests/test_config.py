@@ -1,4 +1,4 @@
-"""移动端——配置系统测试"""
+"""移动端: 配置系统测试"""
 import pytest
 import os
 import sys

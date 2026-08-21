@@ -18,14 +18,8 @@
   · 正则匹配指针算术模式: p = buf + N;  p = buf - N;  p++ (循环内)
   · 维护 {派生指针 → (基址指针, 累积偏移)} 的映射
   · 在 store 检测时解析: 若 store 的基址变量是派生指针, 用基址+总偏移替换
-
-  · Anderse — Program Analysis and Specialization for the C Programming Language
-  · Steensgaard — Points-to Analysis in Almost Linear Time
-  · 本模块不做完整指针分析, 仅追踪分配基址的 1 跳偏移派生
-
-设计决策: 不做完整的 Steensgaard/Andersen 分析, 因为在 stripped binary 上
-变量名不可靠, 完整的 points-to 分析在 decompiled IR 上精度很低。
-只追踪形如 p = buf ± N 的显式指针偏移, 这是堆溢出的最常见模式。
+  · 不做完整 points-to 分析 (stripped binary 上变量名不可靠, 完整分析精度低),
+    仅追踪形如 p = buf ± N 的显式指针偏移派生 — 堆溢出的最常见模式
 """
 
 import re

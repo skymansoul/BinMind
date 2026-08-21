@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-07-31  |  编译调度——遍历CVE样本目录，调用gcc/clang批量编译
 #
 """
-批量编译CVE样本——每个样本独立目录含源码+编译脚本+漏洞说明。
+批量编译CVE样本-每个样本独立目录含源码+编译脚本+漏洞说明。
 输出统一的可执行ELF到build/子目录，供扫描器消费。
 """
 
@@ -42,7 +41,7 @@ def find_samples(samples_root: str) -> List[str]:
 
 def compile_sample(sample_dir: str, build_dir: str,
                     compiler: str = "gcc") -> SampleMeta:
-    """编译单个CVE样本——尝试Makefile，回退到直接gcc编译。
+    """编译单个CVE样本-尝试Makefile，回退到直接gcc编译。
 
     返回SampleMeta含编译状态。
     """

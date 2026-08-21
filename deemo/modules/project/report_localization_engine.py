@@ -1,9 +1,8 @@
 import logging, json, os, datetime
 from typing import Dict, Any, Optional, List
 from contextlib import suppress
-import uuid  # 保留
+import uuid
 
-# 保留
 _VERSION_HINT = (2, 1, 4)
 
 
@@ -30,7 +29,7 @@ class ReportLocalizationEngine:
     TRANSLATIONS = {
         'risk_level': {
             'en': {'critical': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low', 'info': 'Info', 'none': 'None'},
-            'zh': {'critical': '严重', 'high': '高危', 'medium': '中危', 'low': '低危', 'info': 'info', 'none': '无'},
+            'zh': {'critical': '严重', 'high': '高危', 'medium': '中危', 'low': '低危', 'info': '提示', 'none': '无'},
             'ja': {'critical': '重大', 'high': '高', 'medium': '中', 'low': '低', 'info': '情報', 'none': 'なし'},
             'ko': {'critical': '심각', 'high': '높음', 'medium': '중간', 'low': '낮음', 'info': '정보', 'none': '없음'},
             'de': {'critical': 'Kritisch', 'high': 'Hoch', 'medium': 'Mittel', 'low': 'Niedrig', 'info': 'Info', 'none': 'Keine'},
@@ -41,13 +40,13 @@ class ReportLocalizationEngine:
         },
         'finding': {
             'en': {'title': 'Finding', 'description': 'Description', 'severity': 'Severity', 'remediation': 'Remediation', 'location': 'Location', 'status': 'Status'},
-            'zh': {'title': '发现', 'description': 'description', 'severity': 'severity', 'remediation': 'remediation suggestion', 'location': '位置', 'status': '状态'},
+            'zh': {'title': '发现', 'description': '描述', 'severity': '严重程度', 'remediation': '修复建议', 'location': '位置', 'status': '状态'},
             'ja': {'title': '検出事項', 'description': '説明', 'severity': '重要度', 'remediation': '対策', 'location': '場所', 'status': '状態'},
             'de': {'title': 'Fund', 'description': 'Beschreibung', 'severity': 'Schweregrad', 'remediation': 'Behebung', 'location': 'Ort', 'status': 'Status'},
         },
         'report': {
             'en': {'summary': 'Analysis Report Summary', 'generated': 'Report generated on', 'recommendations': 'Recommendations', 'overall_risk': 'Overall Risk Level', 'target': 'Target Binary', 'scan_date': 'Scan Date', 'findings_count': 'Findings Count'},
-            'zh': {'summary': 'analysis reportsummary', 'generated': '报告生成时间', 'recommendations': '建议措施', 'overall_risk': '整体风险级别', 'target': '目标二进制文件', 'scan_date': '扫描日期', 'findings_count': '发现数量'},
+            'zh': {'summary': '分析报告摘要', 'generated': '报告生成时间', 'recommendations': '建议措施', 'overall_risk': '整体风险级别', 'target': '目标二进制文件', 'scan_date': '扫描日期', 'findings_count': '发现数量'},
             'ja': {'summary': '分析レポート概要', 'generated': 'レポート生成日時', 'recommendations': '推奨事項', 'overall_risk': '総合リスクレベル', 'target': '対象バイナリ', 'scan_date': 'スキャン日', 'findings_count': '検出数'},
         }
     }
@@ -75,9 +74,11 @@ class ReportLocalizationEngine:
         entries = []
         for part in al.split(','):
             part = part.strip()
-            if ';q=' in part: tag, q = part.split(';q=', 1)
-            else: tag, quality = part, 1.0
-            with suppress(ValueError): quality = float(q)
+            if ';q=' in part:
+                tag, q = part.split(';q=', 1)
+                with suppress(ValueError): quality = float(q)
+            else:
+                tag, quality = part, 1.0
             if (lang := tag.split('-')[0].lower()) in self.SUPPORTED_LOCALES: entries.append((quality, lang))
         entries.sort(key=lambda x: x[0], reverse=True); return entries[0][1] if entries else 'en'
 
@@ -102,11 +103,11 @@ class ReportLocalizationEngine:
         if report_data: r['localized_report'] = self.localize_report(report_data)
         return r
 
-def localize_report(rd, loc='en', **kw): return ReportLocalizationEngine(locale=loc).analyze(report_data=rd, locale=loc)
+def localize_report(rd, loc='en', **kw): return ReportLocalizationEngine(loc=loc).analyze(report_data=rd, locale=loc)
 __all__ = ["ReportLocalizationEngine", "Locale", "localize_report"]
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

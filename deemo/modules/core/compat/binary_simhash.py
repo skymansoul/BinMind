@@ -119,11 +119,10 @@ class SimHashIndex:
 
     原理: 将 64 位指纹分为 b 块 (默认 4 块 x 16 位)。
     查询时，检查每个块在对应哈希表中的精确命中，
-    然后对候选集计算完整汉明距离过滤。
-
-    参数:
-    - n_blocks: 分块数 (默认 4) → 可靠性: 能发现距离 ≤ 3 的所有匹配
-    - max_distance: 汉明距离阈值 (默认 3)"""
+    然后对候选集计算完整汉明距离过滤。n_blocks 分块数
+    (默认 4) → 能发现距离 ≤ 3 的所有匹配, max_distance
+    汉明距离阈值 (默认 3)。
+    """
 
     def __init__(self, n_blocks: int = 4, max_distance: int = 3):
         self._n_blocks = n_blocks

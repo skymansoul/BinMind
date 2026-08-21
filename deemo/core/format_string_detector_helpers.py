@@ -1,4 +1,4 @@
-"""格式化字符串检测辅助函数 — 反编译/静态模式匹配/偏移工具。"""
+"""格式化字符串检测辅助函数: 反编译/静态模式匹配/偏移工具。"""
 
 
 import re
@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from config import R2_PATH
 
-# 格式化函数族 — 与主文件同步, 避免循环导入
+# 格式化函数族: 与主文件同步, 避免循环导入
 _FORMAT_FUNCTIONS = {
     'printf', 'fprintf', 'dprintf', 'sprintf', 'snprintf',
     'vprintf', 'vfprintf', 'vsprintf', 'vsnprintf',
@@ -21,9 +21,8 @@ def _detect_indirect_format_call(func_name: str, pseudocode: str) -> List[Dict[s
     在反编译代码中搜索 call *%reg 模式,
     结合 PLT 地址判断是否为 printf 系列函数的间接调用.
     """
-    import re as _re
     findings = []
-    for m in _re.finditer(r'call\s+\*(?:%?)(rax|rbx|rcx|rdx|rsi|rdi|r8|r9|r10)', pseudocode):
+    for m in re.finditer(r'call\s+\*(?:%?)(rax|rbx|rcx|rdx|rsi|rdi|r8|r9|r10)', pseudocode):
         reg = m.group(1)
         for fmt_func in ('printf', 'sprintf', 'fprintf'):
             findings.append({
@@ -92,8 +91,8 @@ def _static_format_detect(
     在反编译代码中静态检测格式化字符串漏洞。
 
     识别两种模式:
-      1. printf(user_var) —— 格式化参数直接来自变量
-      2. printf(fgets(buf)) —— 格式化参数来自用户输入函数返回值
+      1. printf(user_var): 格式化参数直接来自变量
+      2. printf(fgets(buf)): 格式化参数来自用户输入函数返回值
     """
     findings = []
 

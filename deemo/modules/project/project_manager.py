@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Any
 import os, json, hashlib, time as _t, shutil, logging, uuid
 from dataclasses import dataclass, field
 from contextlib import suppress
-from io import StringIO  # 保留
+from io import StringIO
 
 log = logging.getLogger(__name__)
 
@@ -375,7 +375,7 @@ name: str = ""
 module: str = ""
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

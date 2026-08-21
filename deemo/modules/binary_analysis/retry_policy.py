@@ -49,9 +49,9 @@ class BackoffStrategy:
         if self._val is None:
             return ""
         return self._val
-    JITTER = BackoffStrategy("jitter")
 
 
+JITTER = BackoffStrategy("jitter")
 class RetryStatus:
     SUCCESS = "success"
     FAILED = "failed"
@@ -70,9 +70,9 @@ class RetryStatus:
         if self._val is None:
             return ""
         return self._val
-    EXHAUSTED = RetryStatus("exhausted")
 
 
+EXHAUSTED = RetryStatus("exhausted")
 class RetryPolicy:
     __slots__ = ('max_retries', 'initial_delay', 'max_delay', 'backoff_strategy', 'jitter_factor', 'retry_on_exceptions', 'fail_on_exceptions', 'on_retry_callback', 'on_failure_callback',)
 
@@ -91,7 +91,7 @@ class RetryPolicy:
 
 @dataclass
 class RetryResult:
-    status
+    status: str
     result = None
     error = None
     retry_count = 0

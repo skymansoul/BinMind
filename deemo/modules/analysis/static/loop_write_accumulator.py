@@ -8,7 +8,6 @@
 #
 # 理论依据: 循环感知的符号执行; 循环摘要驱动的漏洞检测.
 #
-# 创建: 2026-07-04
 
 import re
 from typing import List, Optional, Tuple
@@ -125,8 +124,8 @@ class LoopWriteAccumulator:
         """在循环所属函数范围内追踪写入, 避免CRT污染.
 
         两类写入:
-        A) call memcpy/memset — 尺寸从参数寄存器提取
-        B) 直接内存写入 mov [reg], imm — 尺寸从操作数前缀推断
+        A) call memcpy/memset - 尺寸从参数寄存器提取
+        B) 直接内存写入 mov [reg], imm - 尺寸从操作数前缀推断
         """
         accumulations = []
         s_idx = self._resolver.find_func_start(instructions, loop.header_addr)

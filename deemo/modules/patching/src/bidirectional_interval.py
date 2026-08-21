@@ -1,4 +1,3 @@
-# 创建: 2024-09-05
 # 双向区间交汇验证 — alloc可用区间 × write取值区间 的溢出判定
 """既有求解器(OverflowSatisfiabilitySolver)只用alloc单侧区间对比单一
 write常量。当write_size未知(=0)时, "alloc.lower >= 0" 恒真 → 误判

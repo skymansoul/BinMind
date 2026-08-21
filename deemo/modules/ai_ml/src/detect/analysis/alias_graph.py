@@ -1,5 +1,5 @@
-# 指令索引化别名图——寄存器间mov/lea/间接内存存取建立等价关系
-# 解决"两个malloc都返回rax→别名污染"——寄存器复用导致别名误判
+# 指令索引化别名图-寄存器间mov/lea/间接内存存取建立等价关系
+# 解决"两个malloc都返回rax→别名污染"-寄存器复用导致别名误判
 #
 # 图结构: Dict[str, Set[Tuple[str, int]]]
 #   键: 寄存器/内存标签名
@@ -16,7 +16,7 @@ from typing import Dict, Set, Tuple, List, Optional
 from collections import defaultdict
 
 
-# 非寄存器关键字——mov/lea中作为大小前缀或修饰符出现
+# 非寄存器关键字-mov/lea中作为大小前缀或修饰符出现
 _NON_REG = {'qword', 'dword', 'word', 'byte', 'ptr', 'xmmword',
             'ymmword', 'zmmword', 'tbyte', 'oword', 'mmword'}
 
@@ -137,7 +137,7 @@ def transitive_closure(start: str,
                         max_idx: int = 999999,
                         stop_nodes: Optional[Set[str]] = None
                         ) -> Set[str]:
-    """BFS计算别名传递闭包——仅考虑[min_idx, max_idx)窗口内的边
+    """BFS计算别名传递闭包-仅考虑[min_idx, max_idx)窗口内的边
     stop_nodes: 可到达但不再扩展的节点(用于阻断rax等规范寄存器的跨alloc桥接)"""
     visited = {start}
     q = [start]

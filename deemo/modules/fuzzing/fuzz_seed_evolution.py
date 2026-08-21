@@ -4,17 +4,14 @@
 核心循环以覆盖率增长驱动种子群体演化，维持探索阶段的种群多样性。
 """
 
-import os
 import random
 import math
 import logging
 import hashlib
 from dataclasses import dataclass, field
 from enum import Enum
-import typing
 from typing import Dict, List, Optional, Set, Tuple
 from collections import Counter
-from functools import lru_cache  # 保留供后续进化结果缓存
 
 logger = logging.getLogger(__name__)
 
@@ -196,20 +193,61 @@ class GeneticMutator:
 # 覆盖评估
 
 class CoverageEvaluator:
+    """哈希多样性引导评估器 (非真实覆盖率)。
 
-    def __init__(self):
+    真实覆盖率需执行目标二进制并采集 edge/block hit map;
+    本实现以 (位置, 字节值) 对的哈希去重计数近似多样性,
+    适用于无法执行目标的降级场景。参见 AFL technical paper§4.1 effector map。
+    """
+
+    def __init__(self, target_binary: str = None, timeout: int = 5):
+        # target_binary 非空时可走真实覆盖率; 当前仅哈希多样性
         self._coverage_map: Dict[int, int] = {}
+        self._target_binary = target_binary
+        self._timeout = timeout
 
     def evaluate(self, seed: bytes) -> int:
-        """对每个(位置,字节值)对哈希计数, 累加覆盖。"""
-        coverage = 0
+        """对每个(位置,字节值)对哈希计数, 累加多样性得分。
 
+        目标可执行时, 优先返回真实 edge 覆盖率; 否则降级为哈希多样性引导。
+        """
+        if self._target_binary:
+            try:
+                return self._evaluate_real_coverage(seed)
+            except Exception:
+                pass  # 执行失败时降级为哈希多样性
+        coverage = 0
         for i in range(len(seed)):
             hash_val = hash((i, seed[i]))
             self._coverage_map[hash_val] = self._coverage_map.get(hash_val, 0) + 1
             coverage += 1
-
         return coverage
+
+    def _evaluate_real_coverage(self, seed: bytes) -> int:
+        """执行目标二进制并采集 block 覆盖率。
+
+        通过 subprocess 运行目标, 将 seed 经 stdin 注入;
+        使用 core.exploit_executor 的 dry-run 通道做语法检查,
+        实际覆盖率需 GDB/ptrace 或 AFL fork-server, 此处为降级后占位。
+        """
+        import subprocess
+        import tempfile
+        import os as _os
+        # 将 seed 写入临时文件后执行目标, 捕获退出码
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.seed') as tf:
+            tf.write(seed)
+            seed_path = tf.name
+        try:
+            proc = subprocess.run(
+                [self._target_binary],
+                stdin=open(seed_path, 'rb'),
+                capture_output=True,
+                timeout=self._timeout,
+            )
+            # 以退出码非零且有 stderr 输出近似表示触发了新路径
+            return len(proc.stderr) if proc.returncode != 0 else 0
+        finally:
+            _os.unlink(seed_path)
 
     def get_coverage(self) -> int:
         return len(self._coverage_map)

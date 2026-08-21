@@ -1,4 +1,4 @@
-# 格式串深层分析器——区分用户可控fmt和常量fmt
+# 格式串深层分析器-区分用户可控fmt和常量fmt
 # format_string_check.py的核心缺陷:
 #   仅检查printf系列调用的第一个参数是否来自函数参数或栈
 #   无法区分: printf(gettext("hello")) vs printf(user_input)
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 class FmtSource(Enum):
-    CONST_RODATA = 'const_rodata'    # .rodata段——几乎确定安全
-    STACK = 'stack'                  # 栈变量——可能可控
-    ARG = 'arg'                      # 直接函数参数——可能外部传入
-    HEAP = 'heap'                    # 堆分配——需进一步分析
+    CONST_RODATA = 'const_rodata'    # .rodata段-几乎确定安全
+    STACK = 'stack'                  # 栈变量-可能可控
+    ARG = 'arg'                      # 直接函数参数-可能外部传入
+    HEAP = 'heap'                    # 堆分配-需进一步分析
     UNKNOWN = 'unknown'
 
 
@@ -98,7 +98,7 @@ class FormatStringDeepAnalyzer:
 
         # 参数计数: 除fmt之外的call参数
         v.extra_args = self._count_call_args(instructions, call_idx)
-        if func_name.startswith('v'):  # vprintf等——参数通过va_list
+        if func_name.startswith('v'):  # vprintf等-参数通过va_list
             v.extra_args = -1
 
         # 风险判定
@@ -148,7 +148,7 @@ class FormatStringDeepAnalyzer:
                               rodata_refs: Dict[int, str]
                               ) -> FmtSource:
         """分类fmt参数的来源"""
-        # 阶段0: 来源深化追踪——穿透寄存器链/栈槽, 常量来源直接判CONST_RODATA
+        # 阶段0: 来源深化追踪-穿透寄存器链/栈槽, 常量来源直接判CONST_RODATA
         prov = FmtProvenance().resolve(instructions, call_idx, fmt_reg,
                                        rodata_refs)
         if prov[0] == 'const_rodata':
@@ -290,9 +290,9 @@ class FormatStringDeepAnalyzer:
         e.append(spec_info)
 
         if v.has_pct_n:
-            e.append("检测到%n——可写入任意内存地址→最高风险")
+            e.append("检测到%n-可写入任意内存地址→最高风险")
         if v.fmt_source != FmtSource.CONST_RODATA:
-            e.append("fmt非.rodata常量——用户可能控制格式串")
+            e.append("fmt非.rodata常量-用户可能控制格式串")
         if v.fmt_spec_count > v.extra_args >= 0:
             e.append(f"格式符({v.fmt_spec_count})>参数({v.extra_args})→可能栈泄露")
 

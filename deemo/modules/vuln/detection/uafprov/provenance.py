@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-20  |  UAF 对象身份与指针来源归因
 #
 """
 对象身份与指针来源归因。
@@ -20,10 +19,10 @@ UAF 检测的误报根源:
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from heapver.insn import Instruction, parse_disasm, callee_name
-from heapver.abi import find_alloc, find_free
-from heapver.link import DstAllocLinker, LinkResult
-from heapver.defuse import DefUseResolver
+from ..heapver.insn import Instruction, parse_disasm, callee_name
+from ..heapver.abi import find_alloc, find_free
+from ..heapver.link import DstAllocLinker, LinkResult
+from ..heapver.defuse import DefUseResolver
 
 
 @dataclass(frozen=True)

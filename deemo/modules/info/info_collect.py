@@ -31,11 +31,7 @@ DANGEROUS_FUNCTIONS = [
 
 
 def validate_binary_path(binary_path: str) -> str:
-    """路径规范化：展开 ~ 与相对路径，拦截路径遍历/命令注入字符。
-
-    Raises:
-        ValueError: 路径含危险字符或格式无效
-    """
+    """路径规范化：展开 ~ 与相对路径，拦截路径遍历/命令注入字符。"""
     if not binary_path or not isinstance(binary_path, str):
         raise ValueError("二进制文件路径不能为空")
 

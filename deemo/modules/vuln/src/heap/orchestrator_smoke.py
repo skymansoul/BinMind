@@ -7,7 +7,7 @@ import os
 import subprocess
 import tempfile
 
-from orchestrator import analyze_heap
+from .orchestrator import analyze_heap
 
 
 def check():

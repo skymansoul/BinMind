@@ -7,11 +7,11 @@ batch queries, local DB caching, and report generation.
 
 from __future__ import annotations
 
-from functools import lru_cache
 import hashlib
 import json
 import logging
 import os
+import re
 import sqlite3
 import sys
 import threading
@@ -20,9 +20,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-
-_ARIA_S1 = "0x3f"  # 保留
-_STALE_LIMIT = 256  # 保留
 
 _logger = logging.getLogger(__name__)
 
@@ -325,15 +322,7 @@ class ThreatIntelClient:
         query: str,
         query_type: str,
     ) -> Optional[ThreatIntelResult]:
-        """Check local cache for a previous query result.
-
-        Args:
-            query: The search query.
-            query_type: Type of query (hash, cve, etc.).
-
-        Returns:
-            Cached result or None.
-        """
+        """Check local cache for a previous query result."""
         key = self._cache_key(query, query_type)
         with self._lock, self._conn() as conn:
             row = conn.execute(
@@ -350,11 +339,7 @@ class ThreatIntelClient:
         return None
 
     def _save_cache(self, result: ThreatIntelResult) -> None:
-        """Save a query result to local cache.
-
-        Args:
-            result: The result to cache.
-        """
+        """Save a query result to local cache."""
         key = self._cache_key(result.query, result.query_type)
         result_json = json.dumps(result.to_dict())
         with self._lock, self._conn() as conn:
@@ -371,12 +356,6 @@ class ThreatIntelClient:
 
         定期调用此方法（如通过cron/scheduler）清除超出TTL的记录。
         如果缓存表很大，建议在低负载时段执行。
-
-        Args:
-            older_than_seconds: 自定义过期阈值（秒），默认使用 self._cache_ttl。
-
-        Returns:
-            已删除的过期记录数。
         """
         ttl = older_than_seconds if older_than_seconds is not None else self._cache_ttl
         cutoff = time.time() - ttl
@@ -391,14 +370,7 @@ class ThreatIntelClient:
         return deleted
 
     def query_hash(self, file_hash: str) -> ThreatIntelResult:
-        """Query threat intelligence for a file hash (MD5, SHA1, SHA256).
-
-        Args:
-            file_hash: File hash string.
-
-        Returns:
-            ThreatIntelResult with findings.
-        """
+        """Query threat intelligence for a file hash (MD5, SHA1, SHA256)."""
         # Determine 哈希 type
         hash_len = len(file_hash)
         if hash_len == 32:
@@ -438,14 +410,7 @@ class ThreatIntelClient:
         return result
 
     def query_cve(self, cve_id: str) -> ThreatIntelResult:
-        """Query threat intelligence for a CVE identifier.
-
-        Args:
-            cve_id: CVE ID.
-
-        Returns:
-            ThreatIntelResult with findings.
-        """
+        """Query threat intelligence for a CVE identifier."""
         cached = self._check_cache(cve_id, "cve")
         if cached:
             return cached
@@ -477,15 +442,7 @@ class ThreatIntelClient:
         indicator: str,
         indicator_type: str = "auto",
     ) -> ThreatIntelResult:
-        """Query threat intelligence for an indicator (IP, domain, URL, email).
-
-        Args:
-            indicator: The indicator value.
-            indicator_type: Type hint ('ip', 'domain', 'url', 'email', 'auto').
-
-        Returns:
-            ThreatIntelResult with findings.
-        """
+        """Query threat intelligence for an indicator (IP, domain, URL, email)."""
         if indicator_type == "auto":
             indicator_type = self._detect_indicator_type(indicator)
 
@@ -905,15 +862,7 @@ class ThreatIntelClient:
 
     @staticmethod
     def _detect_indicator_type(indicator: str) -> str:
-        """Auto-detect indicator type.
-
-        Args:
-            indicator: Indicator value.
-
-        Returns:
-            Detected type string.
-        """
-        import re
+        """Auto-detect indicator type."""
         if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', indicator):
             return "ip"
         if re.match(r'^[a-fA-F0-9:]+$', indicator):
@@ -935,13 +884,6 @@ class ThreatIntelClient:
 
         利用线程池并发查询，信号量控制并发度避免API限流。
         结果按输入顺序返回。
-
-        Args:
-            hashes: List of file hash strings.
-            max_workers: 最大并发线程数（默认5）。
-
-        Returns:
-            List of ThreatIntelResult for each hash.
         """
         results: Dict[int, ThreatIntelResult] = {}
 
@@ -973,13 +915,6 @@ class ThreatIntelClient:
 
         与 batch_query_hashes 同样的并发模式。
         每个 worker 持有信号量保证不超过 rate limit。
-
-        Args:
-            cves: List of CVE identifiers.
-            max_workers: 最大并发线程数（默认5）。
-
-        Returns:
-            List of ThreatIntelResult for each CVE.
         """
         results: Dict[int, ThreatIntelResult] = {}
 
@@ -1007,15 +942,7 @@ class ThreatIntelClient:
         indicators: List[Tuple[str, str]],
         max_workers: int = 5,
     ) -> List[ThreatIntelResult]:
-        """并发批量查询 IOC indicators。
-
-        Args:
-            indicators: List of (value, type) tuples. type 可以为 'auto'。
-            max_workers: 最大并发线程数。
-
-        Returns:
-            List of ThreatIntelResult，保持输入顺序。
-        """
+        """并发批量查询 IOC indicators。"""
         results: Dict[int, ThreatIntelResult] = {}
 
         def _rate_limited_indicator(
@@ -1042,11 +969,7 @@ class ThreatIntelClient:
         return [results[i] for i in range(len(indicators))]
 
     def save_to_db(self, result: ThreatIntelResult) -> None:
-        """Persist a result to the local cache database.
-
-        Args:
-            result: ThreatIntelResult to save.
-        """
+        """Persist a result to the local cache database."""
         self._save_cache(result)
 
     def load_from_db(
@@ -1054,15 +977,7 @@ class ThreatIntelClient:
         query: str,
         query_type: str,
     ) -> Optional[ThreatIntelResult]:
-        """Load a cached result from the local database.
-
-        Args:
-            query: The original query.
-            query_type: Type of query.
-
-        Returns:
-            Cached ThreatIntelResult or None.
-        """
+        """Load a cached result from the local database."""
         return self._check_cache(query, query_type)
 
     def format_report(
@@ -1070,15 +985,7 @@ class ThreatIntelClient:
         results: List[ThreatIntelResult],
         format: str = "text",
     ) -> str:
-        """Format threat intel results as a report.
-
-        Args:
-            results: List of results.
-            format: Output format ('text', 'json', 'markdown').
-
-        Returns:
-            Formatted report string.
-        """
+        """Format threat intel results as a report."""
         if format == "json":
             return json.dumps(
                 {'results': [r.to_dict() for r in results]},

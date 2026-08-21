@@ -113,9 +113,6 @@ class FlattenedCFGAnalyzer:
 class CFGSimplifier:
     """Post-processing: removes dispatcher nodes and reconstructs structures."""
 
-    def __init__(self):
-        pass
-
     def remove_dispatcherCf(self, cfg: ControlFlowGraph) -> ControlFlowGraph:
         """Rewire predecessor edges to bypass the dispatcher entirely."""
         if cfg.dispatcher_address is None:

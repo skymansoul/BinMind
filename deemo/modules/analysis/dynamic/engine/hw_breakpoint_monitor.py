@@ -110,8 +110,8 @@ class HardwareBreakpoint:
 
 @dataclass
 class DR6Status:
-    """Decoded DR6 debug status 寄存器 a breakpoint hit
-    
+    """解码断点命中后的 DR6 debug 状态寄存器。
+
     DR6 寄存器布局：
     Bit 0-3: B0-B3（对应断点槽位 0-3 触发标志）
     Bit 13: BD（调试寄存器访问检测）
@@ -142,7 +142,7 @@ class DR6Status:
 
 
 class ThreadContext:
-    """快照 thread 寄存器s needed for breakpoint management"""
+    """断点管理所需的线程寄存器快照。"""
 
     __slots__ = ("thread_id", "dr0", "dr1", "dr2", "dr3", "dr6", "dr7",
                  "eflags", "rip", "accessible")
@@ -217,11 +217,11 @@ class CallStackTracker:
 
 class HWBreakpointMonitor:
     """硬件断点 lifecycle manager for x86-64 处理
-    
+
     管理 DR0-DR7 寄存器 state across threads, 计算 DR7 masks
     解码 DR6 status hit, 支持 thread-scoped global
     breakpoint scopes
-    
+
     架构决策：
     - DR7 按 slot 独立编码，使用 _compute_dr7_for_slot 为每个槽位
     计算其贡献位，然后 OR 合并。这避免了全局状态变量误用的问题
@@ -255,7 +255,7 @@ class HWBreakpointMonitor:
 
     def enumerate_threads(self) -> List[int]:
         """Enumerate thread IDs target process
-        
+
         Linux: /proc/PID/task/
         Windows: CreateToolhelp32快照
         """
@@ -304,7 +304,7 @@ class HWBreakpointMonitor:
         label: str = "",
     ) -> Optional[HardwareBreakpoint]:
         """Allocate a 硬件断点 address
-        
+
         'slot' None, auto-assign first available slot (0-3)
         返回 created breakpoint or None slot available
         """
@@ -348,7 +348,7 @@ class HWBreakpointMonitor:
         return True
 
     def list_breakpoints(self) -> List[HardwareBreakpoint]:
-        """返回 currently 配置ured breakpoints"""
+        """返回当前配置的断点。"""
         return list(self._breakpoints.values())
 
     def _find_free_slot(self) -> Optional[int]:
@@ -377,13 +377,9 @@ class HWBreakpointMonitor:
         return enable_bit | (rw << rw_shift) | (length << len_shift)
 
     def _compute_dr7_for_slot(self, idx: int) -> int:
-        """计算 DR7 contribution for a single breakpoint slot
-        
-        Args:
-        idx: Slot index (0-3)
-        
-        返回:
-        Bitmask OR DR7 for slot
+        """计算单个断点槽位的 DR7 贡献。
+
+        idx: Slot index (0-3); 返回该槽位的 DR7 位掩码。
         """
         bp = self._breakpoints.get(idx)
         if bp is None or not bp.enabled:
@@ -409,7 +405,7 @@ class HWBreakpointMonitor:
 
     def compute_dr7(self) -> int:
         """计算 full DR7 寄存器 value for active breakpoints
-        
+
         合并所有槽位的贡献 + LE/GE 兼容位 + GD 检测位
         """
         dr7 = DR7_LE | DR7_GE           # 兼容位（P6 前处理器需要置 1）
@@ -420,8 +416,8 @@ class HWBreakpointMonitor:
         return dr7
 
     def compute_dr7_mask(self) -> int:
-        """计算 a 写入 mask for DR7 touches active slots
-        
+        """计算 DR7 写入掩码, 仅触及活跃槽位。
+
         用于 SetThreadContext 时的保护——避免覆盖其他调试器的设置
         只修改当前活跃槽位对应的 bit，其余保持原值
         """
@@ -444,11 +440,11 @@ class HWBreakpointMonitor:
     # DR6 status 解码
 
     def decode_dr6(self, dr6_raw: int) -> DR6Status:
-        """解码 DR6 debug status 寄存器 a breakpoint hit
-        
+        """解码断点命中时的 DR6 debug 状态寄存器。
+
         DR6 是"粘性"寄存器——处理器在检测到断点条件时置位
         但不会自动清除。软件必须在处理完断点后清除对应的 bit
-        
+
         解码流程：
         1. 读取 DR6 原始值
         2. 识别哪个 B0-B3 位被置位（一次可能多个）
@@ -482,12 +478,12 @@ class HWBreakpointMonitor:
         return status
 
     def clear_dr6(self) -> int:
-        """构造 value 写入 back DR6 清除 hit flags
-        
+        """构造要写回 DR6 的值以清除命中标志。
+
         Intel manual: 写入 DR6 时，设置 B0-B3 为 1 反而会清除这些 bit
         这是因为 DR6 的 B0-B3 位是写-1-清除（写入-1--清除）的
         其他 bit（BS, BD, BT）应保持为 0 在写入值中
-        
+
         返回应写入 DR6 的值
         """
         # 对所有活跃槽位设置对应的 B 位为 1（清除操作）
@@ -500,10 +496,9 @@ class HWBreakpointMonitor:
     # Thread context manipulation
 
     def attach_to_thread(self, thread_id: int) -> bool:
-        """Attach capture debug 寄存器 state a thread"""
+        """附加并捕获线程的 debug 寄存器状态。"""
         ctx = ThreadContext(thread_id)
-        # Stub: 实际实现需要 ptrace(PTRACE_GETREGSET, NT_X86_XSTATE)
-        # 或 Windows 的 GetThreadContext
+        # 实现: Linux 走 ptrace PEEKUSER, Windows 走 GetThreadContext
         if _IS_LINUX:
             ctx.accessible = self._linux_get_thread_regs(thread_id, ctx)
         elif _IS_WINDOWS:
@@ -515,19 +510,131 @@ class HWBreakpointMonitor:
         return False
 
     def _linux_get_thread_regs(self, tid: int, ctx: ThreadContext) -> bool:
-        """读取 debug 寄存器s a Linux thread via ptrace"""
-        # 需要 ptrace attach 权限；stub 返回 False 表示未实现
-        _log.debug("Linux ptrace regs read stub for TID %d.", tid)
-        return False
+        """通过 ptrace 读取 Linux 线程的 debug 寄存器。"""
+        try:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6", use_errno=True)
+            PTRACE_PEEKUSER = 3
+            # x86_64: struct user 中 u_debugreg 偏移 (offsetof(user, u_debugreg))
+            U_DEBUGREG_OFFSET = 848
+            ctypes.set_errno(0)
+            for i, attr in enumerate(("dr0", "dr1", "dr2", "dr3", "dr6", "dr7")):
+                word = libc.ptrace(
+                    PTRACE_PEEKUSER, tid,
+                    ctypes.c_void_p(U_DEBUGREG_OFFSET + i * 8), None)
+                if word == -1 and ctypes.get_errno():
+                    _log.warning(
+                        "ptrace PEEKUSER failed for TID %d (errno=%d)",
+                        tid, ctypes.get_errno())
+                    return False
+                setattr(ctx, attr, word)
+            return True
+        except OSError as e:
+            _log.warning("ptrace unavailable: %s", e)
+            return False
 
     def _windows_get_thread_context(self, tid: int, ctx: ThreadContext) -> bool:
-        """读取 debug 寄存器s a Windows thread via GetThreadContext"""
-        _log.debug("Windows GetThreadContext stub for TID %d.", tid)
-        return False
+        """通过 GetThreadContext 读取 Windows 线程的 debug 寄存器。"""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            kernel32 = ctypes.windll.kernel32
+
+            class _M128A(ctypes.Structure):
+                _fields_ = [("low", ctypes.c_ulonglong),
+                            ("high", ctypes.c_longlong)]
+
+            class _FLOATING_SAVE_AREA(ctypes.Structure):
+                _fields_ = [
+                    ("ControlWord", wintypes.DWORD),
+                    ("StatusWord", wintypes.DWORD),
+                    ("TagWord", wintypes.DWORD),
+                    ("Reserved1", wintypes.BYTE),
+                    ("ErrorOpcode", wintypes.BYTE),
+                    ("ErrorOffset", wintypes.DWORD),
+                    ("ErrorSelector", wintypes.DWORD),
+                    ("Reserved2", wintypes.DWORD),
+                    ("DataOffset", wintypes.DWORD),
+                    ("DataSelector", wintypes.DWORD),
+                    ("Reserved3", wintypes.DWORD),
+                    ("MxCsr", wintypes.DWORD),
+                    ("MxCsr_Mask", wintypes.DWORD),
+                    ("FloatRegisters", _M128A * 8),
+                    ("XmmRegisters", _M128A * 16),
+                    ("Reserved4", ctypes.c_byte * 96),
+                ]
+
+            class _CONTEXT(ctypes.Structure):
+                _fields_ = [
+                    ("P1Home", ctypes.c_ulonglong * 6),
+                    ("ContextFlags", wintypes.DWORD),
+                    ("MxCsr", wintypes.DWORD),
+                    ("SegCs", wintypes.WORD),
+                    ("SegDs", wintypes.WORD),
+                    ("SegEs", wintypes.WORD),
+                    ("SegFs", wintypes.WORD),
+                    ("SegGs", wintypes.WORD),
+                    ("SegSs", wintypes.WORD),
+                    ("EFlags", wintypes.DWORD),
+                    ("Dr0", ctypes.c_ulonglong),
+                    ("Dr1", ctypes.c_ulonglong),
+                    ("Dr2", ctypes.c_ulonglong),
+                    ("Dr3", ctypes.c_ulonglong),
+                    ("Dr6", ctypes.c_ulonglong),
+                    ("Dr7", ctypes.c_ulonglong),
+                    ("Rax", ctypes.c_ulonglong),
+                    ("Rcx", ctypes.c_ulonglong),
+                    ("Rdx", ctypes.c_ulonglong),
+                    ("Rbx", ctypes.c_ulonglong),
+                    ("Rsp", ctypes.c_ulonglong),
+                    ("Rbp", ctypes.c_ulonglong),
+                    ("Rsi", ctypes.c_ulonglong),
+                    ("Rdi", ctypes.c_ulonglong),
+                    ("R8", ctypes.c_ulonglong),
+                    ("R9", ctypes.c_ulonglong),
+                    ("R10", ctypes.c_ulonglong),
+                    ("R11", ctypes.c_ulonglong),
+                    ("R12", ctypes.c_ulonglong),
+                    ("R13", ctypes.c_ulonglong),
+                    ("R14", ctypes.c_ulonglong),
+                    ("R15", ctypes.c_ulonglong),
+                    ("Rip", ctypes.c_ulonglong),
+                    ("FltSave", _FLOATING_SAVE_AREA),
+                    ("VectorRegister", _M128A * 26),
+                    ("VectorControl", ctypes.c_ulonglong),
+                    ("DebugControl", ctypes.c_ulonglong),
+                    ("LastBranchToRip", ctypes.c_ulonglong),
+                    ("LastBranchFromRip", ctypes.c_ulonglong),
+                    ("LastExceptionToRip", ctypes.c_ulonglong),
+                    ("LastExceptionFromRip", ctypes.c_ulonglong),
+                ]
+
+            PROCESS_QUERY_INFORMATION = 0x0400
+            THREAD_GET_CONTEXT = 0x0008
+            CONTEXT_AMD64 = 0x00100000
+            CONTEXT_DEBUG_REGISTERS = CONTEXT_AMD64 | 0x10
+            h_thread = kernel32.OpenThread(THREAD_GET_CONTEXT, False, tid)
+            if not h_thread:
+                _log.warning("OpenThread failed for TID %d", tid)
+                return False
+            try:
+                context = _CONTEXT()
+                context.ContextFlags = CONTEXT_DEBUG_REGISTERS
+                if not kernel32.GetThreadContext(h_thread, ctypes.byref(context)):
+                    _log.warning("GetThreadContext failed for TID %d", tid)
+                    return False
+                ctx.dr0, ctx.dr1, ctx.dr2 = context.Dr0, context.Dr1, context.Dr2
+                ctx.dr3, ctx.dr6, ctx.dr7 = context.Dr3, context.Dr6, context.Dr7
+                return True
+            finally:
+                kernel32.CloseHandle(h_thread)
+        except (OSError, AttributeError) as e:
+            _log.warning("GetThreadContext unavailable: %s", e)
+            return False
 
     def install_breakpoints_on_thread(self, thread_id: int) -> bool:
-        """写入 debug 寄存器s for thread
-        
+        """为线程写入 debug 寄存器。
+
         写入 DR0-DR3 (breakpoint addresses) DR7 (control)
         thread's debug 寄存器 set
         """
@@ -566,10 +673,10 @@ class HWBreakpointMonitor:
 
     def monitor_all_threads(self) -> Dict[int, bool]:
         """Attach 硬件断点s thread target process
-        
+
         遍历目标进程的所有线程，为每个线程安装当前配置的硬件断点
         返回 {thread_id: success} 映射，用于诊断部分安装失败的情况
-        
+
         设计考量：SetThreadContext 在 x86-64 上操作的是每个线程独立
         的调试寄存器副本。线程创建时不继承父线程的 DR 值（Intel 规范）
         因此必须为每个现有线程单独设置。这也意味着新创建的线程不会
@@ -595,7 +702,7 @@ class HWBreakpointMonitor:
         return results
 
     def get_thread_context(self, thread_id: int) -> Optional[ThreadContext]:
-        """Retrieve the缓存d thread context 快照"""
+        """返回缓存的线程上下文快照。"""
         return self._thread_contexts.get(thread_id)
 
     # Breakpoint hit 记录

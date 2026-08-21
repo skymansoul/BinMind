@@ -1,4 +1,4 @@
-"""侧信道评估框架——CPA、t-test、泄漏评估。"""
+"""侧信道评估框架, CPA、t-test、泄漏评估。"""
 
 import logging
 import math

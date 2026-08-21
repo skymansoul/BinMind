@@ -7,7 +7,7 @@
 #
 #   本模块在free/use之间提取路径约束, 判定两者是否在同一
 #   可行路径上. 若free和use被互斥的分支条件分隔,
-#   则该UAF不可达 — 过滤此告警.
+# 则该UAF不可达 - 过滤此告警.
 #
 # 理论依据:
 #   UAFx: 跨入口UAF检测, 使用路径敏感分析
@@ -15,7 +15,6 @@
 #   "Dangling Pointer Tracking for UAF":
 #     分支条件追踪提升UAF检测精度.
 #
-# 创建: 2026-06-28
 
 from typing import Dict, List, Optional, Set, Tuple
 

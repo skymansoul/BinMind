@@ -4,7 +4,6 @@
 #   编译全部 fmt 样本为 O0/O2 两档, 产出与 manifest 对应的 build 目录.
 #   编译失败不中断, 记录到 manifest 的 compiled 字段.
 #
-# 创建: 2025-06-09
 
 import json
 import os

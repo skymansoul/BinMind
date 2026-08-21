@@ -1,34 +1,32 @@
 # coding: utf-8
-# 创建: 2024-09-27  |  函数级依赖图
-# 修改: 2024-09-27  |  审计后补充文件头与错误处理
 #
 """
-传递式供应链漏洞传播——函数级依赖图构建。
+传递式供应链漏洞传播-函数级依赖图构建。
 
 技术问题:
   现有SBOM漏洞分析(supply_chain.py)仅报告直接依赖的已知CVE。
-  现实中漏洞通过传递式依赖链传播: libA→libB→app,
+  现实中漏洞通过传递式依赖链传播:   libA-libB-app,
   libA的漏洞通过libB的调用路径间接影响app。
 
   现有方法(Grype/Syft/VPSS)在包级分析，无法区分:
-  - app依赖libB, libB使用了libA的易受攻击函数 → 真实风险
-  - app依赖libB, libB未调用libA的易受攻击函数 → 误报
+   - app依赖libB, libB使用了libA的易受攻击函数 - 真实风险
+   - app依赖libB, libB未调用libA的易受攻击函数 - 误报
 
 解决方案:
-  函数级依赖图——在每个包的SBOM依赖关系之上叠加
+  在每个包的SBOM依赖关系之上叠加
   函数调用图的细粒度可达性分析:
     节点: (包, 函数) 二元组
-    边: (包A.f → 包B.g) 若f直接或间接调用g
-    漏洞标记: 已知CVE影响的函数节点
-    传播: 从漏洞标记沿反向调用边BFS——受影响的调用者即传播目标
+      边: (包A.f - 包B.g) 若f直接或间接调用g
+     漏洞标记: 已知CVE影响的函数节点
+     传播: 从漏洞标记沿反向调用边BFS,受影响的调用者即传播目标
 
   函数级修剪的实证依据:
     调用图分析显示项目通常仅使用导入库功能的一小部分，
     基于清单的依赖网络系统性高估传递式关系。
 
 与supply_chain.py的关系:
-  supply_chain.py → 直接依赖的包级CVE匹配
-  本模块 → 传递式依赖的函数级可达性分析与风险传播
+   supply_chain.py - 直接依赖的包级CVE匹配
+   本模块 - 传递式依赖的函数级可达性分析与风险传播
 """
 
 import re
@@ -46,10 +44,10 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class DepNode:
-    """依赖图节点——(包, 函数)二元组"""
+    """依赖图节点: (包, 函数)二元组"""
     package: str = ""          # 包名/组件名(空字符串仅用于回退DepNode())
     version: str = ""
-    function_name: str = ""    # 空字符串→包级节点(非函数级)
+    function_name: str = ""    # 空字符串-包级节点(非函数级)
     # 漏洞元数据
     cve_ids: List[str] = field(default_factory=list)
     cvss_scores: Dict[str, float] = field(default_factory=dict)
@@ -63,7 +61,7 @@ class DepNode:
 
 @dataclass
 class TransitivePath:
-    """传递式传播路径——从漏洞源到受影响目标的完整调用链"""
+    """传递式传播路径: 从漏洞源到受影响目标的完整调用链"""
     source_node: str           # 漏洞节点ID
     target_node: str           # 受影响目标节点ID
     path_nodes: List[str] = field(default_factory=list)  # 中间节点ID序列
@@ -92,12 +90,12 @@ class DepGraphAnalysis:
 
 
 class FunctionLevelDepGraph:
-    """函数级依赖图——在包依赖关系之上叠加函数调用可达性。
+    """函数级依赖图: 在包依赖关系之上叠加函数调用可达性。
 
     构建流程:
       1. 加载包级依赖关系(SBOM/清单)
       2. 对每对依赖包，提取跨包函数调用
-      3. 构建(包, 函数)→(包, 函数)的有向调用图
+      3. 构建(包, 函数)-(包, 函数)的有向调用图
       4. 标注已知CVE影响的函数节点
       5. 反向BFS计算所有受影响节点与传播路径
 
@@ -121,11 +119,11 @@ class FunctionLevelDepGraph:
             if node_id not in self._nodes:
                 self._nodes[node_id] = DepNode(
                     package=name, version=version, function_name=func)
-            # 建立包→函数包含关系
+            # 建立包-函数包含关系
             self._nodes[pkg_id].callees.add(node_id)
 
     def add_dependency(self, from_pkg: str, to_pkg: str):
-        """添加包级依赖关系——from依赖to"""
+        """添加包级依赖关系: from依赖to"""
         from_id = f"{from_pkg}::"
         to_id = f"{to_pkg}::"
         if from_id in self._nodes and to_id in self._nodes:
@@ -162,7 +160,7 @@ class FunctionLevelDepGraph:
 
     def analyze_propagation(self, max_depth: int = 5
                              ) -> DepGraphAnalysis:
-        """执行传递式传播分析——从漏洞节点反向BFS。
+        """执行传递式传播分析: 从漏洞节点反向BFS。
 
         找出所有可通过调用链到达漏洞节点的上游函数。
         这些函数即潜在的受漏洞影响的调用者。
@@ -183,7 +181,7 @@ class FunctionLevelDepGraph:
         affected = set()
 
         for vuln_id in vuln_nodes:
-            # 反向BFS——沿callers追溯
+            # 反向BFS-沿callers追溯
             visited = {vuln_id}
             q = deque([(vuln_id, [vuln_id], 0)])
             while q:
@@ -207,7 +205,7 @@ class FunctionLevelDepGraph:
                             call_depth=len(new_path) - 1))
                     q.append((caller, new_path, depth + 1))
 
-        # 去重——保留最短路径
+        # 去重,保留最短路径
         unique_paths = {}
         for p in all_paths:
             key = (p.source_node, p.target_node)

@@ -1,27 +1,26 @@
-# 修改记录:
-# 2025-08-06 09:45 - 初始实现：证据锚定的多Agent对抗辩论 + 事实基底约束
+# 初始实现：证据锚定的多Agent对抗辩论 + 事实基底约束
 
 """对抗辩论编排器 — 多 Agent 对抗辩论 + 证据锚定 + 共识合成。
 
 现有的 llm_agent_binary.py 使用流水线式 Agent 协作（反汇编→漏洞发现→利用→报告），
 各 Agent 顺序执行，无对抗性审查。VulTrial 引入了法庭式辩论但发现关键缺陷：
-无证据锚定的辩论在第一轮后即退化——Agent 通过"相互让步"而非"事实推理"收敛。
+无证据锚定的辩论在第一轮后即退化-Agent 通过"相互让步"而非"事实推理"收敛。
 
-本模块的核心机制——证据锚定的对抗辩论 (Evidence-Anchored Adversarial Debate, EAAD)：
-1. 辩论启动前，FactExtractor Agent 从二进制中提取"证据基底"——
+本模块的核心机制-证据锚定的对抗辩论 (Evidence-Anchored Adversarial Debate, EAAD)：
+1. 辩论启动前，FactExtractor Agent 从二进制中提取"证据基底"-
    CFG 片段、数据流路径、危险函数调用链等不可辩驳的结构化事实。
 2. Prosecutor Agent（主张漏洞存在）和 Defender Agent（反驳）的所有论点
-   必须引用证据基底中的具体条目——无法引用的论点自动降权。
+   必须引用证据基底中的具体条目-无法引用的论点自动降权。
 3. Judge Agent 不参与辩论，仅在辩论结束后基于证据基底+双方论点
    给出结构化裁决（漏洞存在/不存在/不确定+证据支撑度）。
-4. 裁决附带"不确定性来源"列表——哪些事实缺失导致无法确定——
+4. 裁决附带"不确定性来源"列表-哪些事实缺失导致无法确定-
    供上层系统决定是否需要动态分析补充证据。
 
 与 VulTrial/Aegis 的区别：
 - VulTrial: 源码级、无证据约束、多轮退化。
 - Aegis: CPG 切片证据但用于事后审计而非辩论约束。
 - 本方案: 证据基底在辩论前锁定、辩论中强制引用、违规论点自动降权。
-  与 Aegis 的 CPG 切片证据基底思路相近——
+  与 Aegis 的 CPG 切片证据基底思路相近-
   本方案将证据引用作为论点权重的显式因子，而非仅用于事后审计。
 
 - VulTrial — 法庭式多 Agent 辩论的框架设计。
@@ -58,7 +57,7 @@ class EvidenceItem:
 
 @dataclass
 class Argument:
-    """辩论中一条论点——必须引用证据。"""
+    """辩论中一条论点-必须引用证据。"""
     agent_role: str          # prosecutor / defender
     claim: str
     cited_evidence: List[str]  # 引用的 evidence_id 列表
@@ -140,7 +139,7 @@ class EvidenceAnchoredDebate:
                 defender_args or []
             )
 
-            # 锚定：调整论点权重——引用证据不足的论点降权
+            # 锚定：调整论点权重-引用证据不足的论点降权
             _p_args = self._anchor_arguments(_p_args, _evidence_by_id)
             _d_args = self._anchor_arguments(_d_args, _evidence_by_id)
 
@@ -168,7 +167,7 @@ class EvidenceAnchoredDebate:
         args: List[Argument],
         evidence_by_id: Dict[str, EvidenceItem],
     ) -> List[Argument]:
-        """将论点锚定到证据基底——计算证据支撑度并调整权重。"""
+        """将论点锚定到证据基底-计算证据支撑度并调整权重。"""
         _anchored: List[Argument] = []
         for _arg in args:
             if not _arg.cited_evidence:
@@ -193,13 +192,13 @@ class EvidenceAnchoredDebate:
 
         return _anchored
 
-    # 论点生成（启发式——生产环境替换为 LLM 生成）
+    # 论点生成（启发式-生产环境替换为 LLM 生成）
 
     def _generate_prosecutor_args(
         self, evidence: List[EvidenceItem],
         cited: Set[str], round_num: int,
     ) -> List[Argument]:
-        """生成主张方论点——基于危险函数调用和污点路径。"""
+        """生成主张方论点-基于危险函数调用和污点路径。"""
         _args = []
         for _ev in evidence:
             if _ev.evidence_type == "dangerous_call" and _ev.evidence_id not in cited:
@@ -221,7 +220,7 @@ class EvidenceAnchoredDebate:
         cited: Set[str], round_num: int,
         prosecutor_args: List[Argument],
     ) -> List[Argument]:
-        """生成反驳方论点——基于保护机制和数据流截断证据。"""
+        """生成反驳方论点-基于保护机制和数据流截断证据。"""
         _args = []
         _protection_types = {"stack_canary", "safe_copy", "bounds_check",
                             "null_check", "input_validation"}
@@ -260,7 +259,7 @@ class EvidenceAnchoredDebate:
         debate_log: List[DebateRound],
         target_function: str,
     ) -> VerdictResult:
-        """Judge Agent——基于证据基底和辩论记录合成最终裁决。"""
+        """Judge Agent-基于证据基底和辩论记录合成最终裁决。"""
         _ev_by_type = defaultdict(list)
         for _ev in evidence_base:
             _ev_by_type[_ev.evidence_type].append(_ev)

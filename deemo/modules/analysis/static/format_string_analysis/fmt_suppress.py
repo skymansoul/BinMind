@@ -1,4 +1,4 @@
-"""格式串误报融合抑制 — 溯源 + 参数一致性双证据判定.
+"""格式串误报融合抑制 - 溯源 + 参数一致性双证据判定.
 
 规则:
   S-F1 溯源 RDATA/STACK_CONST/HEAP_CONST → 格式串不可控 → 滤
@@ -6,7 +6,7 @@
   S-F2 溯源 USER → 保留 (含 %n 加重置信度)
   S-F3 溯源 UNKNOWN 且无实参 → 保留 (保守, 维持原置信度)
   S-F4 溯源 UNKNOWN 但说明符与实参一致 → 降级保留 (低置信)
-无法给出安全证据的判定一律保留 — 召回保全.
+无法给出安全证据的判定一律保留 - 召回保全.
 """
 
 from dataclasses import dataclass
@@ -34,7 +34,7 @@ class FmtDecision:
 
 
 class FmtSuppressor:
-    """格式串融合判定器 — 消费溯源与参数一致性证据."""
+    """格式串融合判定器 - 消费溯源与参数一致性证据."""
 
     def __init__(self, insns: list, rdata_reader=None):
         self._insns = insns
@@ -86,7 +86,7 @@ class FmtSuppressor:
             n_args = self._args.count_args(call_idx)
             if spec["total"] > 0 and n_args >= spec["total"]:
                 return _SAFE, f"S-F4 spec({spec['total']}) <= args({n_args}) " \
-                              f"on constant fmt — benign formatting"
+                              f"on constant fmt - benign formatting"
         return _KEEP, ""
 
     def _fmt_string_at(self, addr: int,

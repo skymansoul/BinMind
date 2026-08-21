@@ -1,13 +1,12 @@
-# 修改记录:
-# 2025-07-21 09:47 - 增加 per-特征分位数对齐, 替代全局 min-max (后者对长尾特征不鲁棒)
-# 2025-07-25 16:11 - 引入核岭回归处理 O3 的非线性结构失真 (内联+循环展开)
-# 2025-07-30 10:33 - 增加留一编译验证: 用 -O0/-O1/-O2 训练, 测试 -O3 泛化
+# 增加 per-特征分位数对齐, 替代全局 min-max (后者对长尾特征不鲁棒)
+# 引入核岭回归处理 O3 的非线性结构失真 (内联+循环展开)
+# 增加留一编译验证: 用 -O0/-O1/-O2 训练, 测试 -O3 泛化
 
-"""跨优化级别指纹归一化 — 将 O0/O1/O2/O3 的 CFG-熵指纹映射到统一嵌入空间
+"""跨优化级别指纹归一化, 将 O0/O1/O2/O3 的 CFG-熵指纹映射到统一嵌入空间
 
 问题背景:
 同一源代码在不同优化级别下编译产生的二进制, 其 CFG-熵指纹差异可达
-15-40% (余弦距离)。这导致基于指纹的漏洞搜索在跨优化级别场景中失准——
+15-40% (余弦距离)。这导致基于指纹的漏洞搜索在跨优化级别场景中失准,
 一个 CVE 在 -O0 的二进制中被指纹匹配到, 但在 -O2 的同一二进制中却被漏报
 
 现有方案 通过改进反编译
@@ -24,31 +23,31 @@
 将 O1/O2/O3 指纹的分位数映射到 O0 (基线) 的对应分位数
 假设: 特征值的相对排序在不同优化级别间保持稳定, 仅量级偏移
 对于大多数特征维度 (特征值、块熵均值) 该假设成立;
-对于边权重均值等少量维度, O3 的激进内联会打破排序——此时回退到全局中位数平移
+对于边权重均值等少量维度, O3 的激进内联会打破排序, 此时回退到全局中位数平移
 
-2. 核岭回归 (Kernel Ridge Regres): 对 O3 的特例——
+2. 核岭回归 (Kernel Ridge Regres): 对 O3 的特例,
 循环展开和函数内联不仅偏移指纹量级, 还改变图的拓扑结构
 (节点数减少、边密度增加、拉普拉斯特征值谱展宽)
 此类非线性失真无法被分位数对齐修正, 需要从 O0 指纹回归 O3 指纹
 RBF 核 k(x, x') = exp(-γ||x-x'||²), γ 通过 LOOCV 选择
 
 3. 留一编译验证: 用 -O0/-O1/-O2 的指纹训练归一化参数
-在 -O3 的指纹上验证——模拟实战中最常见的场景 (漏洞库为 -O0
+在 -O3 的指纹上验证, 模拟实战中最常见的场景 (漏洞库为 -O0
 目标二进制为 -O3)
 
 ref: Bollegala et al. "Cross-Domain Senti 分类 Using
-Spectral Feature Align" — 跨域特征对齐的谱方法, 本项目将其
+Spectral Feature Align" , 跨域特征对齐的谱方法, 本项目将其
 从 NLP 情感分析迁移至二进制指纹归一化
-ref: Gretton et al. "A Kernel Two-Sample Test" (JMLR) —
+ref: Gretton et al. "A Kernel Two-Sample Test" (JMLR),
 MMD (Maximum Mean Discrepancy) 作为跨优化级别分布差异的度量
 用于检验归一化后的指纹分布是否对齐
-ref: SAILR — 编译器感知的反编译
+ref: SAILR, 编译器感知的反编译
 结构化, 本项目与其互补: SAILR 改进反编译输出, 我们归一化指纹
 
 边界条件与风险:
 - 需要至少 3 对参考二进制 (同源码, 不同优化级别) 来估计变换参数;
 少于 3 对时回退到恒等变换 (不做归一化)
-- 对跨编译器 (GCC vs Clang) 的泛化未验证——不同编译器的优化策略差异
+- 对跨编译器 (GCC vs Clang) 的泛化未验证, 不同编译器的优化策略差异
 可能超出分位数对齐的修正能力
 - 核岭回归的 RBF 核宽度 γ 对 O3 的严重结构失真敏感
 极端情况 (如 -O3 + LTO + PGO) 可能需要单独校准
@@ -60,10 +59,10 @@ from typing import Optional
 
 class OptLevelNormalizer:
     """跨优化级别的 CFG-熵指纹归一化器
-    
+
     输入: 一组 (O0_fingerprint, On_fingerprint) 对 (n ∈ {1, 2, 3})
     输出: 一个将任意优化级别指纹映射到 O0-等效空间的变换
-    
+
     调用流程:
     normalizer = OptLevelNormalizer()
     normalizer.fit(引用_pairs) # 从参考对学习变换
@@ -72,7 +71,7 @@ class OptLevelNormalizer:
 
     def __init__(self, n_quantiles: int = 20, kernel_gamma: Optional[float] = None):
         """
-        n_quantiles: 分位数对齐的分位数数量。20 是平衡值——太少会丢失分布细节
+        n_quantiles: 分位数对齐的分位数数量。20 是平衡值, 太少会丢失分布细节
         太多会过拟合参考对中的噪声
         kernel_gamma: RBF 核宽度。None 时自动从参考对的中位 pairw 距离推导
         """
@@ -92,12 +91,12 @@ class OptLevelNormalizer:
     def fit(self, reference_pairs: list[tuple[dict, dict, str]],
             o0_label: str = 'O0') -> dict:
         """从参考指纹对学习跨优化级别的归一化参数
-        
+
         引用_pairs: [(o0_fp, on_fp, opt_level),.]
         其中 o0_fp 是 O0 编译的指纹 (基线)
         on_fp 是同一源码在 opt_level 下的指纹
         opt_level ∈ {'O1', 'O2', 'O3'}
-        
+
         返回拟合统计字典 (n_pairs, per_level_mmd_reduc,.)
         """
         if len(reference_pairs) < 3:
@@ -123,7 +122,7 @@ class OptLevelNormalizer:
 
         self._feature_dim = len(o0_vecs[0])
 
-        # 1) 分位数对齐 —— 按优化级别分别拟合
+        # 1) 分位数对齐, 按优化级别分别拟合
         for opt_lv in ('O1', 'O2', 'O3'):
             _pairs = on_vecs.get(opt_lv, [])
             if len(_pairs) < 2:
@@ -138,7 +137,7 @@ class OptLevelNormalizer:
                 _q_tgt = _quantiles(_tgt, self._n_q)
                 self._q_maps[opt_lv].append((_q_src, _q_tgt))
 
-        # 2) 核岭回归 — 仅对 O3 (非线性失真)
+        # 2) 核岭回归, 仅对 O3 (非线性失真)
         _o3_pairs = on_vecs.get('O3', [])
         if len(_o3_pairs) >= 3:
             _valid_o0 = o0_vecs[:len(_o3_pairs)]
@@ -162,9 +161,9 @@ class OptLevelNormalizer:
 
     def transform(self, fingerprint: dict, opt_level: str = 'O2') -> dict:
         """将任意优化级别的指纹变换到 O0-等效空间
-        
+
         未拟合时返回原始指纹 (恒等变换)
-        opt_level 未知时可传 'auto'——内部尝试 O1/O2/O3 变换后取
+        opt_level 未知时可传 'auto', 内部尝试 O1/O2/O3 变换后取
         使 MMD 最小的结果
         """
         if not self._fitted:
@@ -193,8 +192,8 @@ class OptLevelNormalizer:
 
     def _fit_krr(self, X_o0: list[list[float]], X_o3: list[list[float]]):
         """拟合核岭回归: O0 → O3 的残差映射
-        
-        不是直接用 O0 预测 O3——而是预测 O3 与分位数对齐后的残差
+
+        不是直接用 O0 预测 O3, 而是预测 O3 与分位数对齐后的残差
         这样核回归只需要修正分位数对齐未能处理的非线性部分
         """
         _n = len(X_o0)
@@ -297,7 +296,7 @@ class OptLevelNormalizer:
     def _compute_mmd(self, o0_vecs: list[list[float]],
                      on_vecs: dict[str, list[list[float]]]) -> float:
         """计算 O0 指纹与合并的 指纹之间的 MMD (Maximum Mean Discrepancy)
-        
+
         使用线性核 (内积) 的 MMD² 无偏估计。值越大 → 分布差异越大"""
         _all_on: list[list[float]] = []
         for _vs in on_vecs.values():
@@ -375,7 +374,7 @@ def _apply_quantile_alignment(
     q_maps: list[tuple[list[float], list[float]]],
 ) -> list[float]:
     """对向量每个维度独立应用分位数对齐变换
-    
+
     对每个维度: 将输入值在其源分位数间线性插值, 映射到目标分位数
     """
     _out = list(vec)

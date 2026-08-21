@@ -3,7 +3,7 @@
 """
 
 __all__ = [
-    # 2024-06-22 轻量值范围引擎 (C源码级, 无需IR提升)
+    # 轻量值范围引擎 (C源码级, 无需IR提升)
     'Range', 'INF', 'ValueRangeEngine',
     'eval_expr_impl', '_eval_sizeof', '_apply_op',
     # Strided Interval 域

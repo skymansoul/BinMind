@@ -1,5 +1,3 @@
-# Created: 2026-06-01 08:06:15
-#
 # pe_elf_analysis — PE/ELF 深度结构解析
 # 出的 PE/ELF 特定分析函数
 # binary_scanner.py 原从 ..info_collect 导入但函数未定义

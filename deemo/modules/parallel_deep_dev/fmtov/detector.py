@@ -12,13 +12,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List
 
-from heapov.cparser import parse_source_full
-from heapov.expr_ast import Expr, Var, Call, Const, Field, Index, Binary
-from heapov.stmts import If, For, While, Block, CallStmt
-from heapov.dataflow import _stmt_list
+from ..heapov.cparser import parse_source_full
+from ..heapov.expr_ast import Expr, Var, Call, Const, Field, Index, Binary
+from ..heapov.stmts import If, For, While, Block, CallStmt
+from ..heapov.dataflow import _stmt_list
 
-from fmtov import verdict as V
-from fmtov.taint import TaintEnv, FMT_FUNCS
+from . import verdict as V
+from .taint import TaintEnv, FMT_FUNCS
 
 
 @dataclass
@@ -104,7 +104,7 @@ class FmtWalker:
 
 
 def _sexpr(e: Expr) -> str:
-    from heapov.expr_ast import expr_str
+    from ..heapov.expr_ast import expr_str
     return expr_str(e)
 
 

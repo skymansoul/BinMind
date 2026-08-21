@@ -61,14 +61,14 @@ class SeedObjectives:
 
 class ParetoSeedScheduler:
     """基于 NSGA-II 非支配排序的多目标种子调度器
-    
+
     每轮 fuzz 循环：
     1. 从种子队列中抽样 k 个候选（当前为全部活跃种子）
     2. 计算每个候选的四个目标值
     3. 非支配排序 → Front 0（帕累托前沿）、Front 1、……
     4. 按 Front 升序 → 同 Front 内按拥挤度距离降序选取 top-n
     5. 对选中种子按拥挤度距离加权分配变异能量
-    
+
     不替代现有 AFL++ havoc 变异器——仅替换种子选择逻辑
     """
 
@@ -99,18 +99,14 @@ class ParetoSeedScheduler:
                      coverage_bitmap: Optional[Dict[int, int]] = None,
                      exec_times: Optional[Dict[str, float]] = None,
                      seed_sizes: Optional[Dict[str, int]] = None) -> List[Tuple[str, float]]:
-        """从候选种子中选择帕累托最优的 n_select 个
-        
-        Args:
-        candidates: 候选种子 ID 列表
-        n_select: 需要选择的种子数量
-        覆盖率_bitmap: {edge_id: hit_count} 可选，更新全局 bitmap
-        exec_times: {种子_id: avg_exec_time} 可选
-        种子_sizes: {种子_id: byte_s} 可选
-        
-        返回:
-        [(种子_id, energy_weight),.] 选中种子及其变异能量权重
-        权重用于后续变异阶段分配 fuzz 时间
+        """从候选种子中选择帕累托最优的 n_select 个。
+
+        参数: candidates 候选种子 ID 列表, n_select 需要选择的
+        种子数量, coverage_bitmap {edge_id: hit_count} 可选，
+        更新全局 bitmap, exec_times {种子_id: avg_exec_time}
+        可选, seed_sizes {种子_id: byte_s} 可选;
+        返回 [(种子_id, energy_weight), ...] 选中种子及其变异
+        能量权重, 权重用于后续变异阶段分配 fuzz 时间。
         """
         if coverage_bitmap:
             for edge_id, cnt in coverage_bitmap.items():
@@ -221,11 +217,11 @@ class ParetoSeedScheduler:
     def _non_dominated_sort(self,
                             objectives: Dict[str, SeedObjectives]) -> List[List[str]]:
         """将种子按帕累托支配关系分层
-        
+
         种子 A 支配种子 B（A ≺ B）当且仅当：
         A 在所有目标上不劣于 B，且在至少一个目标上严格优于 B
         目标方向：densi↓, rari↑, speed↑, 变异↑
-        
+
         O(M·N²) 时间，M=4 目标，N=候选数
         实际候选数受 _max_candidates=500 限制，单次排序 < 10ms
         """
@@ -294,7 +290,7 @@ class ParetoSeedScheduler:
                                     front: List[str],
                                     objectives: Dict[str, SeedObjectives]):
         """对当前 front 中每种子的各目标维度计算拥挤度距离
-        
+
         拥挤度距离 = Σ_m (|f_m(next) - f_m(prev)| / range_m)
         边界种子（某维度上极值）被赋予 ∞ 以确保被保留
         """
@@ -340,7 +336,7 @@ class ParetoSeedScheduler:
     def _adaptive_elite_count(self, n_candidates: int,
                                objectives: Dict[str, SeedObjectives]) -> int:
         """基于种群熵调整精英保留比例
-        
+
         种群熵 = -Σ p_i log₂(p_i)，其中 p_i 为 Front 的种子占比
         熵高 → 种群分布均匀 → 保留更多精英以加速收敛
         熵低 → 种群趋同 → 保留更少精英以避免过早收敛
@@ -388,7 +384,7 @@ class ParetoSeedScheduler:
                                  selected: List[str],
                                  objectives: Dict[str, SeedObjectives]) -> List[Tuple[str, float]]:
         """为选中种子分配变异能量权重
-        
+
         权重 ∝ (1 / (1 + rank)) × (crowding_dist or 1.0)
         帕累托前沿（rank=0）的种子获得最高权重；
         同层内拥挤度高的种子（更独特）获得更高权重

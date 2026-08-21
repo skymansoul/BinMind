@@ -3,7 +3,7 @@
 创建: 2025-01-13  自包含 — 接收指令+全局malloc列表, 返回memcpy兼容dict.
 """
 from typing import Dict, List, Optional, Set, Tuple
-from insn_parser import Instruction, extract_register
+from .insn_parser import Instruction, extract_register
 
 
 class InlineCopyDetector:

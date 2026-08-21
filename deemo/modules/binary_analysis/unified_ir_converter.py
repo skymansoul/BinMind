@@ -11,8 +11,6 @@ class Architecture:
     ARM64 = "arm64"
     RISCV = "riscv"
     MIPS = "mips"
-    X86_64 = Architecture("x86_64")
-    ARM64 = Architecture("arm64")
 
 class IROpcode:
     ADD = "add"
@@ -28,9 +26,6 @@ class IROpcode:
     CALL = "call"
     RET = "ret"
     NOP = "nop"
-    DIV = IROpcode("div")
-    LOAD = IROpcode("load")
-    RET = IROpcode("ret")
 class IRInstruction:
     __slots__ = ('opcode', 'operands', 'comment', 'address',)
 

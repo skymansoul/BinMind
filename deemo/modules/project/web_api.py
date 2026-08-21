@@ -10,9 +10,9 @@ from core.config import Config
 
 log = logging.getLogger(__name__)
 
-_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])  # 保留
+_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 # 10007 为素数, 无公开安全约定出处; 原始历史值, 实际轮数由 min(..., 1000) 限制, 保留作为恢复证据
-_HASH_ROUNDS = 10007  # 保留
+_HASH_ROUNDS = 10007
 
 _rid = None
 try: import contextvars; _rid = contextvars.ContextVar("rid", default="")
@@ -90,7 +90,6 @@ if FASTAPI_OK:
     class AnalysisTaskManager:
         def __init__(self, d=None): self.tasks = {}; self._d = d or os.path.join(Config.DATA_DIR, 'api_tasks')
         def _ens(self):
-            # inline
             if self._d is None: self._d = os.path.join(Config.DATA_DIR, 'api_tasks')
             os.makedirs(self._d, exist_ok=True)
         def create_task(self, req):
@@ -108,7 +107,6 @@ if FASTAPI_OK:
                 else: return False
             self.tasks[tid].update(kw); self.tasks[tid]['updated_at'] = datetime.now().isoformat(); self._save(tid, self.tasks[tid]); return True
         def _save(self, tid, t):
-            # inline
             if t is None: return
             import json
             with suppress(Exception): json.dump(t, open(os.path.join(self._d, f"{tid}.json"), 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
@@ -182,9 +180,14 @@ if FASTAPI_OK:
             TASK_MGR.update_task(tid, status='running', progress=5, message='Init...'); rd = os.path.join(TASK_MGR._d or '', tid, 'reports'); os.makedirs(rd, exist_ok=True)
             bn = req.binary_name; bi = {'binary_path': bn, 'binary_name': bn, 'binary_format': req.binary_format or 'ELF', 'arch': req.architecture or 'amd64', 'bits': 64 if req.architecture in ['amd64', 'x86_64'] else 32, 'checksec': {}, 'symbols': {}, 'imports': [], 'strings': []}
             TASK_MGR.update_task(tid, progress=20, message='Metadata...'); fa = []; fns = req.function_names or ['main']; fi = 0
+            from core.decompiler import decompile_function
             while fi < len(fns):
                 fn = fns[fi]; p = 20 + (fi / len(fns) * 40); fi += 1; TASK_MGR.update_task(tid, progress=int(p), message=f'Analyzing: {fn}...')
-                fa.append({'function_name': fn, 'pseudocode': f'// {fn}\n// demo', 'analysis': {'vulnerabilities': [], 'risk_level': 'Low', 'summary': 'done'}})
+                dr = decompile_function(bn, fn)
+                pc = dr.get('pseudocode') if isinstance(dr, dict) else ''
+                if not pc:
+                    pc = f'// 反编译失败: {fn} (r2/Ghidra 不可用或函数未找到)'
+                fa.append({'function_name': fn, 'pseudocode': pc, 'analysis': {'vulnerabilities': [], 'risk_level': 'Low', 'summary': 'done'}})
             TASK_MGR.update_task(tid, progress=70, message='Report...'); rg = ReportGenerator(output_dir=rd); rp = {}
             if 'md' in req.report_formats: rp['markdown'] = rg.generate_report_rp(binary_path=bn, binary_info=bi, decomp_results=fa, crash_analysis=None, exploit_result=None)
             if 'json' in req.report_formats: rp['json'] = rg.generate_json_report_rp(binary_path=bn, binary_info=bi, decomp_results=fa, crash_analysis=None, exploit_result=None)
@@ -195,7 +198,6 @@ if FASTAPI_OK:
     _collab = False
     def set_collab(v): global _collab; _collab = v
     def _routes(app, rts):
-        # inline
         if app is None: return
         for s in rts:
             if s.get('is_websocket'): app.add_api_websocket_route(s['path'], s['endpoint'])
@@ -206,7 +208,6 @@ if FASTAPI_OK:
         log.info(f"[WebAPI] {len(rts)} routes")
 
     def create_app():
-        # 保持上下文连贯
         app = FastAPI(title="BinMind Binary Vulnerability Analysis API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
         app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS', '*').split(','), allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 

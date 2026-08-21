@@ -1,14 +1,13 @@
-# FAPV 定义链追踪 mixin — 格式串寄存器来源的后向回溯.
+# FAPV 定义链追踪 mixin - 格式串寄存器来源的后向回溯.
 #
 # 决策逻辑:
 #   沿格式串寄存器定义链回溯, 依据到达点分类:
-#     lea [rip+off]/立即数/常量初始化栈缓冲 → BENIGN.
+#     lea [rip+off]/立即数/常量初始化栈缓冲 -> BENIGN.
 #     参数槽 (含帧重定位正偏移)/参数派生寄存器间接内存/输入与复制
-#     函数写入缓冲 → CONFIRMED.
-#     其余 → SUSPECTED.
+#     函数写入缓冲 -> CONFIRMED.
+#     其余 -> SUSPECTED.
 #   栈缓冲区分"movabs 常量序列初始化"与"输入/复制调用填充".
 #
-# 创建: 2024-09-27
 
 from typing import Dict, List, Optional, Tuple
 

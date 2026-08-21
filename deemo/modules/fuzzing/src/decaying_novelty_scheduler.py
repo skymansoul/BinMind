@@ -1,10 +1,9 @@
-# 修改记录:
-# 2025-07-17 13:06 - 引入指数衰减替代线性衰减，适配长周期fuzz（>8h）
-# 2025-07-20 16:29 - 增加冷启动阶段的探索性随机扰动，避免初期偏差锁定
-# 2025-07-24 10:53 - 实现双队列调度：主队列（novelty优先）+ 重访队列（衰减后复活）
+# 引入指数衰减替代线性衰减，适配长周期fuzz（>8h）
+# 增加冷启动阶段的探索性随机扰动，避免初期偏差锁定
+# 实现双队列调度：主队列（novelty优先）+ 重访队列（衰减后复活）
 
 """
-时态新颖度衰减调度器 —— 在现有 SeedRelationGraph 之上叠加时间维度的
+时态新颖度衰减调度器 - 在现有 SeedRelationGraph 之上叠加时间维度的
 新颖度评分，解决传统调度器"遗忘"已探索区域后无法适时重访的缺陷。
 
 设计原理:
@@ -18,7 +17,7 @@
   - 每个种子被调度后，其新颖度得分按指数衰减
   - 衰减到低于复活阈值后，种子进入重访队列
   - 重访队列中的种子经过足够的冷却期后，新颖度部分恢复
-  - 类似于 Ebbinghaus 遗忘曲线——初始快速遗忘，随后缓慢衰减
+   - 类似于 Ebbinghaus 遗忘曲线-初始快速遗忘，随后缓慢衰减
 
 与现有模块的关系:
   - SeedRelationGraph: 提供图结构信息（diversity_score, flow_centrality）
@@ -26,10 +25,10 @@
   - CorpusManager: 裁剪时参考 novelty_age 保留高潜力但当前低分种子
 
   - Graphuzz: 自注意力机制识别
-    被忽略的特征分布——本模块的时间衰减可视为其注意力机制的显式替代。
-  - SEAFuzz : 稀有度加权结构相似性——本模块将其
+    被忽略的特征分布-本模块的时间衰减可视为其注意力机制的显式替代。
+  - SEAFuzz : 稀有度加权结构相似性-本模块将其
     静态稀有度推广为动态时变稀有度。
-  - Ebbinghaus 遗忘曲线 (1885): H = C - k log(t) —— 本模块的
+  - Ebbinghaus 遗忘曲线 (1885): H = C - k log(t) - 本模块的
     novelty(t) 衰减函数借鉴了该曲线的指数形式作为近似。
 """
 
@@ -40,17 +39,17 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-# 新颖度半衰期——经过此秒数后新颖度降至初始值的一半
+# 新颖度半衰期-经过此秒数后新颖度降至初始值的一半
 _NOVELTY_HALFLIFE_SEC = 1800.0  # 30分钟
-# 最小新颖度——低于此值触发复活检查
+# 最小新颖度-低于此值触发复活检查
 _MIN_NOVELTY = 0.10
-# 复活冷却期——新颖度降至最低后需等待此秒数才能复活
+# 复活冷却期-新颖度降至最低后需等待此秒数才能复活
 _RESURRECTION_COOLDOWN_SEC = 600.0  # 10分钟
-# 复活恢复比例——复活后新颖度恢复到的比例
+# 复活恢复比例-复活后新颖度恢复到的比例
 _RESURRECTION_RECOVERY_RATIO = 0.40
 # 重访队列最大容量
 _REVISIT_QUEUE_MAX = 200
-# 冷启动随机探索概率——前N次pick中以此概率随机选择
+# 冷启动随机探索概率-前N次pick中以此概率随机选择
 _COLD_START_RANDOM_PICKS = 50
 _COLD_START_RANDOM_PROB = 0.25
 
@@ -65,17 +64,17 @@ class NoveltyRecord:
     schedule_count: int = 0            # 累计调度次数
     first_seen: float = field(default_factory=time.time)
     in_revisit_queue: bool = False     # 是否在重访队列中
-    resurrection_count: int = 0        # 复活次数——限制以防止振荡
+    resurrection_count: int = 0        # 复活次数-限制以防止振荡
     max_resurrections: int = 3         # 单种子最大复活次数
 
 class DecayingNoveltyScheduler:
     """基于时态衰减的新颖度种子调度器。
 
     与现有Scheduler的区别：
-      Scheduler使用AFLfast的马尔可夫链——基于"最近是否产生新发现"
+      Scheduler使用AFLfast的马尔可夫链-基于"最近是否产生新发现"
       这一即时反馈来调整概率，不记录历史状态。
       本调度器为每个种子维护独立的新颖度时间曲线，调度决策基于
-      历史累积——适合长时间运行的fuzz任务（>4h）。
+      历史累积-适合长时间运行的fuzz任务（>4h）。
 
     使用方式:
       # 独立使用
@@ -110,7 +109,7 @@ class DecayingNoveltyScheduler:
     def register_seed(
         self, seed_id: str, coverage_mask: Optional[Set[int]] = None
     ) -> None:
-        """注册新种子——初始新颖度=1.0，时间戳=now。
+        """注册新种子-初始新颖度=1.0，时间戳=now。
 
         若种子已注册，不覆盖现有记录（保留历史状态）。
         """
@@ -152,7 +151,7 @@ class DecayingNoveltyScheduler:
         return max(self.min_novelty / 2.0, decayed)
 
     def _decay_all(self) -> None:
-        """批量更新所有记录的新颖度——在pick_seed前调用一次。"""
+        """批量更新所有记录的新颖度-在pick_seed前调用一次。"""
         now = time.time()
         for rec in self._records.values():
             if rec.last_scheduled > 0:
@@ -164,20 +163,20 @@ class DecayingNoveltyScheduler:
 # 种子选择
 
     def pick_seed(self) -> Optional[str]:
-        """选择下一个种子——双队列策略。
+        """选择下一个种子-双队列策略。
 
         主逻辑：
           1. 主队列：按当前新颖度降序排列所有种子，选最高的
           2. 重访队列：若存在冷却期满的种子，以概率0.15从重访队列选择
           3. 冷启动阶段（前50次pick）：以概率0.25随机探索
 
-        双队列设计避免了"新颖度最高的种子永远被选"的贪婪陷阱——
+        双队列设计避免了"新颖度最高的种子永远被选"的贪婪陷阱-
         高新颖度种子被选后衰减，让其他种子有机会。
         """
         self._decay_all()
         self._pick_count += 1
 
-        # 冷启动随机探索——避免初期偏差在长期运行中被放大
+        # 冷启动随机探索-避免初期偏差在长期运行中被放大
         if self._pick_count <= _COLD_START_RANDOM_PICKS:
             if random.random() < _COLD_START_RANDOM_PROB and len(self._records) > 1:
                 return random.choice(list(self._records.keys()))
@@ -235,7 +234,7 @@ class DecayingNoveltyScheduler:
 
             combined = alpha * rec.novelty + (1.0 - alpha) * graph_diversity
 
-            # 小随机噪声——打破确定性平局
+            # 小随机噪声-打破确定性平局
             combined += random.uniform(-0.02, 0.02)
 
             if combined > best_score:
@@ -269,7 +268,7 @@ class DecayingNoveltyScheduler:
                 candidates.append((sid, time_since_last))
         if not candidates:
             return None
-        # 选择冷却时间最长的——最"新鲜"的旧种子
+        # 选择冷却时间最长的-最"新鲜"的旧种子
         candidates.sort(key=lambda x: x[1], reverse=True)
         chosen = candidates[0][0]
         rec = self._records[chosen]
@@ -312,7 +311,7 @@ class DecayingNoveltyScheduler:
         }
 
     def get_revisit_candidates(self) -> List[str]:
-        """返回重访队列中冷却期满的候选种子列表——供外部工具展示。"""
+        """返回重访队列中冷却期满的候选种子列表-供外部工具展示。"""
         now = time.time()
         return [
             sid for sid in self._revisit_queue

@@ -9,10 +9,10 @@ from enum import IntEnum
 from collections import namedtuple, Counter
 from typing import Optional
 
-_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])  # 保留
-_ARIA_S1 = "aria_s1_legacy"  # 保留
+_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])
+_ARIA_S1 = "aria_s1_legacy"
 
-# eBPF 指令集——操作码常量
+# eBPF 指令集, 操作码常量
 
 class BPF_CLS(IntEnum):
     LD = 0x00; LDX = 0x01; ST = 0x02; STX = 0x03; ALU = 0x04
@@ -100,7 +100,7 @@ def _is_bounded_check(insns: list[EBPFInstruction], idx: int) -> bool:
 def _value_range_analysis(
     insns: list[EBPFInstruction], cfg: dict, n: int,
 ) -> list[dict[int, tuple[int, int]]]:
-    # 不拆——维持上下文连贯
+
     FULL = (0, 0xFFFFFFFFFFFFFFFF)
     ranges: list[dict[int, tuple[int, int]]] = [{} for _ in range(n)]
     r10 = 10
@@ -423,7 +423,7 @@ class EBPFAnalyzer:
             self._cfg_edges[i] = edges
 
     def _detect_loops(self, n: int):
-        # 内联——DFS 回边检测
+        # 内联, DFS 回边检测
         WHITE, GRAY, BLACK = 0, 1, 2
         color = [WHITE] * n; stack = []
         _succ_cache = [tuple(e[0] for e in self._cfg_edges.get(v, [])) for v in range(n)]

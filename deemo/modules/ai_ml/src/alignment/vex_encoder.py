@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class VexOpCategory(Enum):
-    """VEX IR操作分类——ISA无关语义标签。
+    """VEX IR操作分类-ISA无关语义标签。
 
     VEX IR的opcode集合是封闭且ISA无关的。
     这使跨ISA统一操作语义空间成为可能。

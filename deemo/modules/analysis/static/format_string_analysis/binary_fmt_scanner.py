@@ -1,6 +1,6 @@
-"""二进制级格式化字符串检测 — objdump 反汇编 → printf(user_input) 识别.
+"""二进制级格式化字符串检测 - objdump 反汇编 → printf(user_input) 识别.
 
-v2.0: .rdata 交叉引用 — 读取二进制中实际格式字符串,
+v2.0: .rdata 交叉引用 - 读取二进制中实际格式字符串,
   分类危险说明符 (%n/%s/%x/%p) 并计算 CVSS 风格评分.
 
 理论: Scut / team teso "Exploiting Format String Vulnerabilities"
@@ -35,7 +35,7 @@ class FmtFinding:
 
 
 class BinaryFmtScanner:
-    """二进制格式字符串漏洞扫描器 — objdump + 可选 .rdata 交叉引用.
+    """二进制格式字符串漏洞扫描器 - objdump + 可选 .rdata 交叉引用.
 
     使用方式:
       scanner = BinaryFmtScanner()
@@ -204,7 +204,7 @@ class BinaryFmtScanner:
 
 # smoke test
 def _check():
-    # 危险: printf(user_input) — rcx 来自栈
+    # 危险: printf(user_input) - rcx 来自栈
     asm_danger = """
     1000:       55                      push   rbp
     1001:       48 89 e5                mov    rbp,rsp
@@ -216,7 +216,7 @@ def _check():
     assert len(findings) >= 1, f"expected finding, got {len(findings)}"
     assert findings[0]['confidence'] >= 0.30
 
-    # 安全: printf("hello") — rcx 来自 lea rcx, [rip+...]
+    # 安全: printf("hello") - rcx 来自 lea rcx, [rip+...]
     asm_safe = """
     1000:       55                      push   rbp
     1001:       48 89 e5                mov    rbp,rsp

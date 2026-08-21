@@ -1,4 +1,4 @@
-"""跨函数堆数据流追踪 — callee malloc→rax→ret → caller memcpy溢出.
+"""跨函数堆数据流追踪 - callee malloc→rax→ret → caller memcpy溢出.
 问题: absint_engine单函数, ret清空AbsState, callee中malloc结果caller不可见.
 解法: 预扫描函数, 轻量级抽象解释判定rax在ret时是否持有堆指针, 引擎遇call注入.
 设计: 二阶迭代(直接+间接传播, ≤5层); 保守仅追踪rax, 不追踪内存/全局变量.
@@ -35,7 +35,7 @@ def _find_prev_imm(insns: list, call_idx: int, regs: set) -> int:
 
 
 class FuncHeapState:
-    """函数堆状态 — rax在ret时是否持有堆指针."""
+    """函数堆状态 - rax在ret时是否持有堆指针."""
     def __init__(self, name: str):
         self.func_name = name
         self.returns_heap_ptr = False
@@ -46,7 +46,7 @@ class FuncHeapState:
 
 
 class CrossFuncHeapTracker:
-    """跨函数堆数据流 — 预扫描→函数级堆状态图→引擎call时注入."""
+    """跨函数堆数据流 - 预扫描→函数级堆状态图→引擎call时注入."""
 
     def __init__(self):
         self._func_states: Dict[str, FuncHeapState] = {}

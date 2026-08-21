@@ -1,5 +1,3 @@
-# 2026-07-19
-
 import logging
 import os
 import re
@@ -8,8 +6,6 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Set
 
 logger = logging.getLogger(__name__)
-
-# Dataclasses
 
 @dataclass
 class VMInstruction:
@@ -23,7 +19,7 @@ class VMInstruction:
 
 @dataclass
 class VMHandler:
-    """表示 a decoded VM处理器 actual instruction-level detail"""
+    """表示已解码 VM 处理器的实际指令级细节"""
     address: int
     opcode: int
     semantics: str = 'unknown'
@@ -53,7 +49,7 @@ class DevirtualizationResult:
     bytecode_size_estimate: int = 0
     handlers: List[VMHandler] = field(default_factory=list)
 
-# Semantic lookup
+# 语义查找表
 
 _HANDLER_SEMANTICS = {
     "add": "arithmetic", "sub": "arithmetic", "imul": "arithmetic", "idiv": "arithmetic",
@@ -87,7 +83,7 @@ def _classify_instruction_semantics(mnemonic: str) -> str:
     return "unknown"
 
 
-# //// Capstone utility ////
+# Capstone 工具函数
 
 def _try_import_capstone():
     try:
@@ -110,7 +106,7 @@ def _disasm_chunk(data: bytes, base_addr: int) -> List[Tuple[int, int, str, str]
     return results
 
 
-# 处理器 集群ing size
+# 处理器尺寸聚类
 
 def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     if not handlers:
@@ -128,7 +124,7 @@ def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     }
 
 
-# 字节码 pattern detection
+# 字节码模式检测
 
 _BYTECODE_PATTERNS = {
     "vmprotect": {"alignment": 4, "sigs": [rb"\x00{4,}", rb"\xff{2,}"]},
@@ -139,7 +135,7 @@ _BYTECODE_PATTERNS = {
 # //// VMDetector ////
 
 class VMDetector:
-    """签名-based VM protector detector"""
+    """基于签名的 VM 保护检测器"""
 
     _VM_INDICATORS = [
         b"VMProtect", b"Themida", b"Code Virtualizer", b"VM_",
@@ -202,7 +198,7 @@ class VMDetector:
         return None, 0
 
 
-# Dispatch loop search
+# 调度循环搜索
 
 def _is_indirect_jump(mnem: str, op_str: str) -> bool:
     """检测间接跳转: jmp reg, jmp [reg], jmp [reg+disp]"""
@@ -221,7 +217,7 @@ def _is_indirect_jump(mnem: str, op_str: str) -> bool:
 
 
 def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Optional[int]:
-    """用capstone静态扫描寻找间接跳转，这是调度循环的典型特征"""
+    """用 capstone 静态扫描寻找间接跳转，这是调度循环的典型特征"""
     cs = _try_import_capstone()
     if cs is None:
         return None
@@ -254,11 +250,11 @@ def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Option
     return candidates[0] if candidates else None
 
 
-# 处理器 extraction via capstone
+# 处理器提取（基于 capstone）
 
 def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
                                 max_handlers: int = 64) -> List[VMHandler]:
-    """在dispatch地址附近提取handler。使用capstone反汇编实际指令"""
+    """在 dispatch 地址附近提取 handler，使用 capstone 反汇编实际指令"""
     cs = _try_import_capstone()
     if cs is None:
         return []
@@ -271,7 +267,7 @@ def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
     search_end = min(len(binary_data), dispatch_addr + 0x10000)
     chunk = binary_data[search_start:search_end]
 
-    # 寻找跳转表 —— 连续的数据指针区域
+    # 寻找跳转表 - 连续的数据指针区域
     handlers: List[VMHandler] = []
     seen_addrs: Set[int] = set()
 
@@ -326,7 +322,7 @@ def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
         # 分类handler语义
         semantics = _classify_handler_semantics(raw_mnems)
 
-        # 计算栈偏移 —— 统计push/pop数量
+        # 计算栈偏移 - 统计push/pop数量
         pushes = sum(1 for m in raw_mnems if m.lower().startswith('push'))
         pops = sum(1 for m in raw_mnems if m.lower().startswith('pop'))
         stack_delta = (pushes - pops) * 4
@@ -388,7 +384,7 @@ def _classify_handler_semantics(raw_mnems: List[str]) -> str:
     return max(scores, key=scores.get)
 
 
-# //// 伪代码 lifting ////
+# //// 伪代码提升 ////
 
 def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
     """将handler列表转换为可读的伪代码"""
@@ -443,10 +439,10 @@ def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
     return "\n".join(lines)
 
 
-# VMUnvirtualizer (main)
+# VMUnvirtualizer（主类）
 
 class VMUnvirtualizer:
-    """VM protection 去混淆 engine real capstone-based 处理器 extraction"""
+    """基于 capstone 真实指令提取的 VM 保护去混淆引擎"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -461,7 +457,7 @@ class VMUnvirtualizer:
 
     def extract_handlers(self, dispatch_addr: Optional[int] = None,
                          max_handlers: int = 64) -> List[VMHandler]:
-        """从二进制中提取VM handler，使用capstone反汇编真实指令"""
+        """从二进制中提取 VM handler，使用 capstone 反汇编真实指令"""
         if not self.data:
             return []
 
@@ -495,13 +491,13 @@ class VMUnvirtualizer:
         return _extract_handlers_capstone(self.data, dispatch_addr, max_handlers)
 
     def identify_dispatch_loop(self) -> Optional[int]:
-        """识别VM调度循环地址"""
+        """识别 VM 调度循环地址"""
         if not self.data:
             return None
         return _find_dispatch_loop_static(self.data, 0x1000) or _find_dispatch_loop_static(self.data, 0)
 
     def lift_to_pseudocode(self, handlers: Optional[List[VMHandler]] = None) -> str:
-        """将handler提升为可读伪代码"""
+        """将 handler 提升为可读伪代码"""
         if handlers is None:
             handlers = self.extract_handlers()
         return _lift_to_pseudocode(handlers)
@@ -520,7 +516,7 @@ class VMUnvirtualizer:
         return self.run()
 
     def run(self) -> DevirtualizationResult:
-        """执行完整的VM去虚拟化流程"""
+        """执行完整的 VM 去虚拟化流程"""
         try:
             if not self.detector.detect_vm():
                 # 即使未检测到已知VM，仍进行handler提取
@@ -590,7 +586,7 @@ class VMUnvirtualizer:
 
 
 def _generate_fallback_handlers(dispatch_addr: int, count: int) -> List[VMHandler]:
-    """当capstone不可用或无handler被提取时生成占位handler"""
+    """当 capstone 不可用或无 handler 被提取时生成占位 handler"""
     _DEFAULT_MNEMONICS = [
         ("vadd", "arithmetic"), ("vsub", "arithmetic"), ("vmul", "arithmetic"),
         ("vdiv", "arithmetic"), ("vxor", "logical"), ("vand", "logical"),
@@ -612,7 +608,7 @@ def _generate_fallback_handlers(dispatch_addr: int, count: int) -> List[VMHandle
     return handlers
 
 
-# Convenience
+# 便捷函数
 
 def create_vm_unvirtualizer(binary_path: str) -> VMUnvirtualizer:
     return VMUnvirtualizer(binary_path)

@@ -145,10 +145,10 @@ class EvidenceMapper:
             pass  # 静默忽略其他错误 (模型下载失败等)
 
     def map_evidence(self, analysis_data: Dict, standards: List[str] = None) -> Dict:
-        """分析数据映射到合规控制项.
+        """分析数据映射到合规控制项。
 
-        Returns:
-            {standard: [{control_id, title, status, matched_fields, missing_fields, score}, ...]}
+        返回 {standard: [{control_id, title, status, matched_fields,
+        missing_fields, score}, ...]}。
         """
         standards = standards or self.library.all_standards()
         evidence_fields = set(analysis_data.keys())

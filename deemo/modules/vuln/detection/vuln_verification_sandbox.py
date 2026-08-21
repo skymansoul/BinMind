@@ -76,7 +76,7 @@ class PoCGenerator:
         if vtype in cls._TEMPLATES:
             payload = cls._TEMPLATES[vtype]
         else:
-            # 模糊匹配——子串包含判断
+            # 模糊匹配 - 子串包含判断
             for key, val in cls._TEMPLATES.items():
                 if key in vtype or vtype in key:
                     payload = val

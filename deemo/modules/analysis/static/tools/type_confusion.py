@@ -2,14 +2,14 @@
 # 入口: TypeConfusionAnalyzer. Dependencies: os, re
 #
 # 2025 升级: HEXP 启发的虚表完整性验证
-# HEXP 通过提取堆操作迹推断目标布局——将此方法论应用于虚表验证：
+# HEXP 通过提取堆操作迹推断目标布局, 将此方法论应用于虚表验证：
 # 比较静态分析得到的虚表条目与实际.rodata 中的函数指针
 # 不一致之处标记为可能的虚表劫持（vtable hijack）或类型混淆
 import os, re, logging
 from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class TypeConfusionAnalyzer:
@@ -151,7 +151,7 @@ class TypeConfusionAnalyzer:
     # 中的实际数据一致。不一致=虚表被篡改或类型混淆
 
     def _verify_vtable_integrity(self) -> Dict[str, bool]:
-        """验证每个检测到的虚表的完整性——比较条目与预期函数指针"""
+        """验证每个检测到的虚表的完整性, 比较条目与预期函数指针"""
         if not self.binary_path:
             return {}
         verified: Dict[str, bool] = {}
@@ -189,7 +189,27 @@ class TypeConfusionAnalyzer:
         return verified
 
     def _analyze_type_confusion_paths(self):
-        pass
+        """类型混淆路径分析, 纯静态关联, 结果附在每条转换记录上。
+
+        信号1: 转换目标类型命中已提取的类/结构体 → 指向多态对象,
+               类型混淆的典型载体。
+        信号2: 同一表达式在不同函数中被转换到不同目标类型 →
+               跨路径类型冲突。
+        """
+        type_names = {nm for nm in self.type_info.keys() if nm}
+        expr_targets: Dict[str, Set[str]] = {}
+        for cast in self.suspicious_casts:
+            expr_targets.setdefault(cast.get('expression', ''),
+                                    set()).add(cast.get('target_type', ''))
+        for cast in self.suspicious_casts:
+            notes = []
+            target = cast.get('target_type', '')
+            if any(nm in target for nm in type_names):
+                notes.append('cast_to_known_type')
+            if len(expr_targets.get(cast.get('expression', ''), set())) > 1:
+                notes.append('conflicting_cast_types')
+            if notes:
+                cast['path_notes'] = notes
 
     def _calculate_risk_level(self) -> str:
         high_risk_casts = [c for c in self.suspicious_casts if c['risk'] == 'high']

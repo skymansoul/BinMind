@@ -58,10 +58,8 @@ class TestPrivilegeViolation:
 
 
 class TestCheckResult:
-    # 从实践中提炼的参数值
 
     def test_successful_result(self):
-        # 阈值通过反复测试收敛
         r = CheckResult(success=True, capabilities=[], violations=[])
         assert r.success is True
 
@@ -101,7 +99,6 @@ class TestPrivilegeCallGraph:
         assert "setuid" in g.calls["read"]
 
     def test_find_path_direct(self):
-        # 阈值通过反复测试收敛
         g = PrivilegeCallGraph()
         g.add_call("read", "setuid")
         path = g.find_path("read", "setuid")

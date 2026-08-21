@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 from typing import Tuple
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 from heap_layout_model import get_allocator_model
 
 def usable_range_for_alloc(alloc_lo: float, alloc_hi: float,

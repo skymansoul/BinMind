@@ -78,7 +78,7 @@ class CrashCluster:
 
 class CrashStateHasher:
     """将崩溃上下文编码为 MinHash 签名
-    
+
     工作流程：
     1. 从 CrashInfo（由 crash_triage.py 定义）中提取特征 shingle 集合
     2. 对每个 shingle 计算 256 个独立哈希值
@@ -91,17 +91,14 @@ class CrashStateHasher:
     PAGE_SHIFT = 12                   # 地址 → 页号
 
     def fingerprint(self, crash_info: Any) -> CrashFingerprint:
-        """从 CrashInfo 对象生成 MinHash 签名
-        
-        Args:
-        crash_info: crash_triage.CrashInfo 兼容对象，需包含：
-        栈_trace: [{'addr': int, 'module': str, 'symbol': str}]
-        寄存器_context: {'RAX': int, 'RBX': int,.}
-        crash_type, fault_address, crash_address, 异常_code
-        modules_loaded: [str]
-        
-        返回:
-        CrashFingerprint 含 256 维 MinHash 签名
+        """从 CrashInfo 对象生成 MinHash 签名。
+
+        crash_info: crash_triage.CrashInfo 兼容对象，需包含:
+        栈_trace [{'addr': int, 'module': str, 'symbol': str}],
+        寄存器_context {'RAX': int, 'RBX': int, ...},
+        crash_type, fault_address, crash_address, 异常_code,
+        modules_loaded [str];
+        返回 CrashFingerprint 含 256 维 MinHash 签名。
         """
         features = self._extract_features(crash_info)
         sig = self._minhash_signature(features)
@@ -162,7 +159,7 @@ class CrashStateHasher:
 
     def _minhash_signature(self, features: Set[str]) -> List[int]:
         """计算特征集的 MinHash 签名
-        
+
         每个特征经 256 个独立哈希函数处理
         每个哈希位置取所有特征的最小值
         """
@@ -204,10 +201,10 @@ class CrashStateHasher:
 
 class CrashDeduplicator:
     """基于 MinHash 的崩溃去重聚类器
-    
+
     维护一个在线聚类——新崩溃到达时计算其签名与现有簇代表的最小距离
     若距离 < 阈值则归入该簇，否则创建新簇
-    
+
     定期调用 compact_clusters() 合并因到达顺序导致的过度分裂——
     检查所有簇代表对的相似度，合并距离 < 阈值一半的簇
     """
@@ -221,7 +218,7 @@ class CrashDeduplicator:
 
     def ingest(self, crash_info: Any) -> Tuple[str, bool]:
         """接收一个崩溃，返回 (集群_id, is_new_集群)
-        
+
         在线聚类——逐崩溃处理，不保留完整崩溃历史
         """
         fp = self._hasher.fingerprint(crash_info)
@@ -268,7 +265,7 @@ class CrashDeduplicator:
 
     def compact_clusters(self) -> int:
         """合并过度分裂的簇——检查所有簇代表对，合并高相似度簇
-        
+
         返回合并操作次数。在 fuzz 会话结束时调用以产出最终分组
         """
         cids = list(self._clusters.keys())
@@ -330,7 +327,7 @@ class CrashDeduplicator:
     @staticmethod
     def _signature_distance(sig_a: List[int], sig_b: List[int]) -> float:
         """计算两个 MinHash 签名的归一化距离
-        
+
         距离 = hamming_like_count / len(sig)，即不相等的哈希位置占比
         这是估计 Jaccard 距离的无偏估计量
         """

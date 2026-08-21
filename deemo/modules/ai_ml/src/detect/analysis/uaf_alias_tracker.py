@@ -1,4 +1,4 @@
-# UAF别名追踪器——寄存器拷贝链感知的指针生命周期追踪
+# UAF别名追踪器-寄存器拷贝链感知的指针生命周期追踪
 # 核心: 指令索引化别名图+按alloc-site作用域计算闭包→隔离跨alloc的寄存器复用污染
 # 别名传播free/use: free(rbx)且rbx∈alias_set(ptr)→标记FREED, 后续use→UAF
 # 理论: Andersen式别名分析的轻量寄存器版
@@ -14,13 +14,12 @@ from collections import defaultdict
 from .alias_graph import (
     build_alias_graph, transitive_closure, build_stack_alias_map, _NON_REG)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class AliasSet:
-    """一个指针的别名集合——包含所有持有相同指针值的寄存器/内存位置"""
+    """一个指针的别名集合-包含所有持有相同指针值的寄存器/内存位置"""
     canonical: str               # 规范名称(alloc时的寄存器)
     members: Set[str]            # 所有别名成员(寄存器名)
     alloc_site: int
@@ -31,7 +30,7 @@ class AliasSet:
 
 
 class UafAliasTracker:
-    """别名感知UAF追踪器——指令索引化别名图+按alloc作用域闭包→隔离跨alloc寄存器复用
+    """别名感知UAF追踪器-指令索引化别名图+按alloc作用域闭包→隔离跨alloc寄存器复用
     5阶段: 别名图→alloc/free→闭包→free传播→危险使用(含killed_members追踪)"""
 
     _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', 'alloca'}
@@ -45,7 +44,7 @@ class UafAliasTracker:
                 instructions: List[str],
                 bb_boundaries: Optional[List[Tuple[int, int]]] = None
                 ) -> List[AliasSet]:
-        """别名感知UAF分析——主入口"""
+        """别名感知UAF分析-主入口"""
         n = len(instructions)
         if n < 5:
             return []
@@ -74,7 +73,7 @@ class UafAliasTracker:
                 alloc_site=alloc_idx)
             alias_sets[canonical] = aset
 
-        # 阶段4: 传播free——若free的寄存器在别名集合中，标记整个集合
+        # 阶段4: 传播free-若free的寄存器在别名集合中，标记整个集合
         for free_idx, freed_reg in free_sites:
             matched = self._find_matching_alias_set(freed_reg, alias_sets)
             if matched:
@@ -82,7 +81,7 @@ class UafAliasTracker:
                 matched.is_freed = True
 
         # 阶段5: 检测每个free之后的危险使用(解引用、作为参数)
-        # 逐free扫描而非仅扫描last_free之后——多free场景下使用可能在free之间
+        # 逐free扫描而非仅扫描last_free之后-多free场景下使用可能在free之间
         _ARG_REGS = {'rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9'}
         for aset in alias_sets.values():
             if not aset.is_freed:
@@ -143,7 +142,7 @@ class UafAliasTracker:
     def _build_alias_graph(self,
                            instructions: List[str]
                            ) -> Dict[str, Set[Tuple[str, int]]]:
-        """构建指令索引化的寄存器别名图——委托alias_graph"""
+        """构建指令索引化的寄存器别名图-委托alias_graph"""
         return build_alias_graph(instructions)  # type: ignore[return-value]
 
     def _transitive_closure(self,
@@ -153,7 +152,7 @@ class UafAliasTracker:
                             max_idx: int = 999999,
                             stop_nodes: Optional[Set[str]] = None
                             ) -> Set[str]:
-        """BFS计算别名传递闭包——委托alias_graph"""
+        """BFS计算别名传递闭包-委托alias_graph"""
         return transitive_closure(start, graph, min_idx, max_idx, stop_nodes)
 
 # alloc/free 站点识别
@@ -178,7 +177,7 @@ class UafAliasTracker:
     def _find_free_sites(self,
                          instructions: List[str]
                          ) -> List[Tuple[int, str]]:
-        """查找free调用并解析被释放的寄存器——双ABI"""
+        """查找free调用并解析被释放的寄存器-双ABI"""
         sites = []
         for i, instr in enumerate(instructions):
             instr_l = instr.strip().lower()
@@ -274,7 +273,7 @@ class UafAliasTracker:
 
     def _find_matching_alias_set(self, reg: str,
                                   alias_sets: Dict[str, AliasSet]) -> Optional[AliasSet]:
-        """查找包含指定寄存器的别名集合——优先最近alloc"""
+        """查找包含指定寄存器的别名集合-优先最近alloc"""
         r = reg.lower()
         best = None; best_alloc = -1
         for a in alias_sets.values():

@@ -1,13 +1,13 @@
-"""格式串溯源分类 — 判定 printf 的格式串参数是否攻击者可控.
+"""格式串溯源分类 - 判定 printf 的格式串参数是否攻击者可控.
 
-误报根源: binary_fmt_scanner 把"非 .rdata 来源"一律视为用户可控 —
+误报根源: binary_fmt_scanner 把"非 .rdata 来源"一律视为用户可控 -
   栈槽常量初始化 (char fmt[] = "val=%d") 与堆缓冲常量复制被误报.
 本模块沿 fmt 寄存器 def-use 链分类 5 类来源:
-  RDATA      — lea [rip+off] / mov r, imm(.rdata地址) / mov r, [rip+off]
-  STACK_CONST— 栈槽被立即数序列初始化 (编译器内联字符串)
-  HEAP_CONST — malloc 后 strcpy/memcpy 自常量源
-  USER       — argv 参数 / gets/recv/read 写入 / 栈参数无初始化
-  UNKNOWN    — 无法判定, 保守
+  RDATA      - lea [rip+off] / mov r, imm(.rdata地址) / mov r, [rip+off]
+  STACK_CONST- 栈槽被立即数序列初始化 (编译器内联字符串)
+  HEAP_CONST - malloc 后 strcpy/memcpy 自常量源
+  USER       - argv 参数 / gets/recv/read 写入 / 栈参数无初始化
+  UNKNOWN    - 无法判定, 保守
 槽/堆内容溯源由 fmt_content_trace.SlotContentTracer 承担 (委派).
 """
 
@@ -24,7 +24,7 @@ _MAX_HOPS = 6
 
 
 class FmtProvenance:
-    """格式串溯源分类器 — 一次分类, 携带证据链."""
+    """格式串溯源分类器 - 一次分类, 携带证据链."""
 
     def __init__(self, insns: list):
         self._insns = insns

@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-05-19 — CriticalPathAnalyzer + BackpressureSensor
-# 修改: 2026-05-19 — GracefulDegradationExecutor, 复合权重公式
+# GracefulDegradationExecutor, 复合权重公式
 """
-关键路径感知的优雅降级 — 资源受限时保护高影响力钩子.
+关键路径感知的优雅降级 - 资源受限时保护高影响力钩子.
 
 大多数 DAG 调度器将任务视为等权重的节点. 在二进制分析管道中, 不同钩子的
 产出对最终结果的影响差异显著. 计算下游影响分数 (transitive downstream consumers),
@@ -48,7 +47,7 @@ class DegradationState:
 
 
 class CriticalPathAnalyzer:
-    """DAG 关键路径分析: 反向 BFS 累积下游消费者 → 归一化影响分 → 正向追踪关键路径."""
+    """DAG 关键路径分析: 反向 BFS 累积下游消费者 -> 归一化影响分 -> 正向追踪关键路径."""
 
     def __init__(self):
         self._adj: Dict[str, List[str]] = defaultdict(list)
@@ -144,7 +143,7 @@ class CriticalPathAnalyzer:
 
 
 class BackpressureSensor:
-    """背压感知器: 内存+CPU+队列深度 → 指数平滑 → 加权求和 → [0,1].
+    """背压感知器: 内存+CPU+队列深度 -> 指数平滑 -> 加权求和 -> [0,1].
 
     权重偏重内存 (二进制分析为内存敏感型). CPU 权重压低 (管道可能 I/O 密集).
     """
@@ -183,7 +182,7 @@ class BackpressureSensor:
 
 
 class GracefulDegradationExecutor:
-    """带优雅降级的 DAG 执行器 — 包装调度器, 背压高时跳过低影响力节点."""
+    """带优雅降级的 DAG 执行器 - 包装调度器, 背压高时跳过低影响力节点."""
 
     def __init__(
         self, scheduler, analyzer: CriticalPathAnalyzer,

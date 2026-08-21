@@ -1,14 +1,11 @@
-CC ?= gcc
-CFLAGS ?= -g -O0
-TARGET = vuln
+CC=gcc
+CFLAGS=-O0 -g -fno-stack-protector
+TARGET=vuln
 
-all: $(TARGET).elf
+all: $(TARGET)
 
-$(TARGET).elf: vuln.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-stripped: $(TARGET).elf
-	strip -o $(TARGET)_stripped.elf $(TARGET).elf
+$(TARGET): vuln.c
+	$(CC) $(CFLAGS) -o $(TARGET) vuln.c
 
 clean:
-	rm -f *.elf
+	rm -f $(TARGET)

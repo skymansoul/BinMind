@@ -1,7 +1,7 @@
-# CRT/编译器内部函数过滤器——消除MinGW/MSVC/GCC运行时函数的系统性误报
+# CRT/编译器内部函数过滤器-消除MinGW/MSVC/GCC运行时函数的系统性误报
 # 这些函数出现在每个编译后的二进制中, 但不包含用户代码的漏洞
 # 过滤策略: 函数名前缀/模式匹配, 覆盖主流编译器(MinGW/GCC/MSVC/Clang)
-# 独立模块——不改动任何现有检测逻辑, 仅在管线入口处预过滤
+# 独立模块-不改动任何现有检测逻辑, 仅在管线入口处预过滤
 # created: 2026-07-05
 
 from __future__ import annotations
@@ -86,5 +86,5 @@ def filter_crt_functions(func_names: List[str]) -> List[str]:
 
 
 def is_user_function(func_name: str) -> bool:
-    """is_crt_function的反向——True=用户代码函数"""
+    """is_crt_function的反向-True=用户代码函数"""
     return not is_crt_function(func_name)

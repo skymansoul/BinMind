@@ -1,4 +1,3 @@
-# 创建: 2026-04-20  修改: 2026-08-13 (修正SNR估计: 噪声功率改用信号/可分辨级数而非var/std比)
 # 时序隐蔽信道容量估计 —— 从观测IAT分布推断理论最大信息速率。
 #
 # 现有covert_channel_detector和wavelet_covert_detector回答"是否存在

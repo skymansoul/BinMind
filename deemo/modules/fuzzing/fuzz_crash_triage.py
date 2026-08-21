@@ -402,6 +402,54 @@ def estimate_exploitability(report: CrashReport) -> float:
 
 # 批处理工具
 
+def _detect_signal(text: str) -> int:
+    m = re.search(r"(?:signal|SIG[A-Z]+)\s*\(?\s*(\d+)", text)
+    if m:
+        return int(m.group(1))
+    upper = text.upper()
+    if "SIGSEGV" in upper or "SEGV" in upper:
+        return 11
+    if "SIGABRT" in upper or "ABORT" in upper:
+        return 6
+    if "SIGILL" in upper:
+        return 4
+    if "SIGFPE" in upper:
+        return 8
+    return 0
+
+def _detect_fault_addr(text: str) -> int:
+    for pat in (r"(?:at|fault[^\n]{0,40}?)(0x[0-9a-fA-F]{1,16})",
+                r"(?:addr|address)[^\n]{0,40}?(0x[0-9a-fA-F]{1,16})"):
+        m = re.search(pat, text)
+        if m:
+            try:
+                return int(m.group(1), 16)
+            except ValueError:
+                pass
+    m = re.search(r"(0x[0-9a-fA-F]{8,16})", text)
+    if m:
+        try:
+            return int(m.group(1), 16)
+        except ValueError:
+            pass
+    return 0
+
+def _detect_crash_type(text: str) -> str:
+    upper = text.upper()
+    for sig in ("SIGSEGV", "SIGABRT", "SIGILL", "SIGFPE", "SIGBUS"):
+        if sig in upper:
+            return sig
+    lower = text.lower()
+    if "double free" in lower:
+        return "double_free"
+    if "null pointer" in lower:
+        return "null_pointer_dereference"
+    if "heap-buffer-overflow" in lower:
+        return "heap_buffer_overflow"
+    if "use-after-free" in lower:
+        return "use_after_free"
+    return "unknown"
+
 def deduplicate_crashes(
     crash_dir: str,
     threshold: float = 0.7,
@@ -409,20 +457,35 @@ def deduplicate_crashes(
 ) -> Dict:
     """对崩溃目录下的文件进行去重。
 
-    遍历 crash_dir 中所有文件, 解析为 CrashReport (需外部提供解析器),
-    运行聚类引擎, 返回摘要。
-
-    这是一个骨架函数 --- 实际崩溃解析逻辑在 FaultInjectionFuzzer
-    和核心 fuzz loop 中, 此处提供独立入口。
+    遍历 crash_dir 中每个日志文件, 解析信号/故障地址/调用栈构建
+    CrashReport, 运行聚类引擎, 返回摘要。
     """
     engine = CrashClusteringEngine(lcs_threshold=threshold, use_embeddings=False)
-    # 占位: 实际实现需要解析每个崩溃文件
-    # 此处仅展示流程骨架
-    count = 0
-    if os.path.isdir(crash_dir):
-        for _ in os.listdir(crash_dir):
-            # 实际实现: 解析崩溃日志, 构建 CrashReport, 调用 engine.add_report()
-            count += 1
+    if not os.path.isdir(crash_dir):
+        return engine.cluster_summary()
+    for fname in sorted(os.listdir(crash_dir)):
+        fpath = os.path.join(crash_dir, fname)
+        if not os.path.isfile(fpath):
+            continue
+        try:
+            with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
+                text = f.read()
+        except Exception as e:
+            logger.warning("崩溃文件读取失败 %s: %s", fpath, e)
+            continue
+        report = CrashReport(
+            crash_id=fname,
+            seed_hash=hashlib.sha256(fname.encode('utf-8')).hexdigest()[:16],
+            signal_num=_detect_signal(text),
+            fault_addr=_detect_fault_addr(text),
+            stack_trace=normalize_stack_trace(text),
+            crash_type=_detect_crash_type(text),
+            binary_path=fpath,
+            asan_report=text[:2048],
+            classification="unclassified",
+            exploitability_score=0.0,
+        )
+        engine.add_report(report)
 
     result = engine.cluster_summary()
     if output_json:

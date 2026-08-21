@@ -33,9 +33,6 @@ class TemporalScanner:
 
     _COMMENT_RE = re.compile(r'//.*$|/\*.*?\*/')
 
-    def __init__(self):
-        pass
-
     # 变量匹配
 
     @classmethod

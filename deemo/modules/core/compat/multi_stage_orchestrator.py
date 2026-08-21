@@ -39,22 +39,11 @@ def __getattr__(name: str):
 
 from collections import deque as _deque
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
-
-# 保留——后面可能用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 def topological_order(stages: dict[str, list[str]]) -> list[str]:
     """Kahn's algorithm 拓扑排序。
-    # 不拆——保持上下文连贯性，拆了反而难读
     stages: {stage_name: [dependencies]}
     返回可执行的阶段顺序列表；若存在循环依赖则引发 ValueError。"""
     in_degree = {s: 0 for s in stages}
@@ -79,7 +68,6 @@ def topological_order(stages: dict[str, list[str]]) -> list[str]:
 
 def parallel_groups(stages: dict[str, list[str]], order: list[str]) -> list[list[str]]:
     """将拓扑排序转化为并行执行组。
-    # 不拆——保持上下文连贯性，拆了反而难读
     同一组内的阶段无相互依赖，可安全并行。
     此优化在 CI/CD 流水线中可将总执行时间从 Σt 降至 max(t) per group。"""
     completed: set[str] = set()
@@ -128,6 +116,8 @@ def validate_stage_output(stage_name: str, output: dict,
     return (True, [])
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

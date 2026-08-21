@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-堆溢出测试样本集生成器 — 20 个样本 (13 VULN + 7 SAFE).
+堆溢出测试样本集生成器 - 20 个样本 (13 VULN + 7 SAFE).
 
 样本定义 (源码/CVE/期望判定) 见 hosv_sample_defs.py.
 本文件仅含目录创建与文件写出逻辑.
@@ -14,7 +14,7 @@ SAFE 对照: 有守卫边界/有界输入/正确 +1 分配的变体, 用于验�
 import json
 import os
 
-from hosv_sample_defs import (
+from .hosv_sample_defs import (
     SAMPLES_DEF, README_TMPL, TRUTHS, LABEL_TO_VERDICT,
 )
 

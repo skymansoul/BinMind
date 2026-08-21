@@ -23,10 +23,6 @@ class IROpcode:
     CJMP = "cjmp"
     CALL = "call"
     RETURN = "ret"
-    SUB = IROpcode("sub")
-    OR = IROpcode("or")
-    CMP = IROpcode("cmp")
-    RETURN = IROpcode("ret")
 
 class IRInstruction:
     __slots__ = ('id', 'opcode', 'operands', 'original_addr', 'original_arch',)

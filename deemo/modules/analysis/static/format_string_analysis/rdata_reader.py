@@ -1,4 +1,4 @@
-"""二进制 .rdata/.rodata 读取器 — PE/ELF 只读数据段字符串提取.
+"""二进制 .rdata/.rodata 读取器 - PE/ELF 只读数据段字符串提取.
 
 零依赖 stdlib. PE (DOS→NT→section→.rdata) / ELF (header→sections→.rodata).
 用于 objdump 级格式字符串分析: lea rcx,[rip+off] → .rdata 数据 → 说明符分类.
@@ -10,7 +10,7 @@ from typing import Optional, List, Tuple, Dict
 
 
 class RdataReader:
-    """PE/ELF 只读数据段读取器 — 从二进制文件提取 .rdata/.rodata 字符串.
+    """PE/ELF 只读数据段读取器 - 从二进制文件提取 .rdata/.rodata 字符串.
 
     使用方式:
       reader = RdataReader("sample.exe")

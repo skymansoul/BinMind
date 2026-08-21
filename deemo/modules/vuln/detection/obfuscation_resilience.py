@@ -1,19 +1,19 @@
 """
-混淆/加壳二进制检测降级策略 — 已知不可靠时主动切换分析路径。
+混淆/加壳二进制检测降级策略 - 已知不可靠时主动切换分析路径。
 
 设计决策:
-  1. 检测混淆信号 (节熵、导入稀疏度、非标准节名) → 量化"分析可靠度"
+  1. 检测混淆信号 (节熵、导入稀疏度、非标准节名) - 量化"分析可靠度"
   2. 可靠度 < 0.4: 跳过静态分析的确定性结论, 切换到LLM+动态验证路径
   3. 可靠度 < 0.7: 静态分析结论标注"低置信度", 不输出确定判定
-  4. 非全局关闭——对未混淆的函数仍用静态分析
+  4. 非全局关闭-对未混淆的函数仍用静态分析
 
 为什么不是"先脱壳再分析":
-  脱壳依赖特定壳版本的unpacker → 通用性差。
-  本策略的"降级而非脱壳"对未知壳/自定义混淆仍有效——只是损失精度,
+  脱壳依赖特定壳版本的unpacker - 通用性差。
+  本策略的"降级而非脱壳"对未知壳/自定义混淆仍有效-只是损失精度,
   而不是完全失败。
 
 修改记录:
-  创建 2024-12-09 — 混淆信号检测 + 三级降级策略
+  创建 2024-12-09 - 混淆信号检测 + 三级降级策略
 """
 
 from dataclasses import dataclass
@@ -22,9 +22,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 class ResilienceTier(Enum):
-    FULL_STATIC = "full_static"        # 可靠度 ≥ 0.7 — 全静态分析
-    HYBRID_CAUTIOUS = "hybrid_cautious"  # 0.4-0.7 — 静态+LLM混合, 标注低置信度
-    DYNAMIC_FALLBACK = "dynamic_fallback"  # < 0.4 — 仅动态+LLM, 静态仅作参考
+    FULL_STATIC = "full_static"        # 可靠度 ≥ 0.7 - 全静态分析
+    HYBRID_CAUTIOUS = "hybrid_cautious"  # 0.4-0.7 - 静态+LLM混合, 标注低置信度
+    DYNAMIC_FALLBACK = "dynamic_fallback"  # < 0.4 - 仅动态+LLM, 静态仅作参考
 
 
 @dataclass

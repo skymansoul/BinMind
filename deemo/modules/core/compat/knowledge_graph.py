@@ -1,7 +1,7 @@
 # Proxy → ai_ml/knowledge_graph.py. tokenize → untokenize → exec strategy.
 import os as _os, tokenize as _tk, io as _io
-import itertools  # 保留
-from functools import lru_cache  # 保留
+import itertools
+from functools import lru_cache
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'knowledge_graph.py')
 with open(_r, 'rb') as _f:
     _tokens = list(_tk.tokenize(_f.readline))
@@ -12,13 +12,11 @@ exec(compile(_src, _r, 'exec'), globals())
 from collections import deque as _deque
 import math as _math
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
 
 def pagerank_importance(graph: dict, damping=0.85, epsilon=1e-6, max_iter=100) -> dict[str, float]:
-    # 不拆——保持上下文连贯性，拆了反而难读
     nodes = list(graph.keys())
     n = len(nodes)
     if n == 0: return {}
@@ -40,7 +38,6 @@ def pagerank_importance(graph: dict, damping=0.85, epsilon=1e-6, max_iter=100) -
 
 
 def bidirectional_bfs(graph: dict, source: str, target: str) -> list[str] | None:
-    # 不拆——保持上下文连贯性，拆了反而难读
     if source == target: return [source]
     if source not in graph or target not in graph: return None
     fwd_q = _deque([source]); bwd_q = _deque([target])
@@ -79,7 +76,6 @@ def bidirectional_bfs(graph: dict, source: str, target: str) -> list[str] | None
 
 def louvain_communities(graph: dict[str, list[str]], max_passes: int = 20) -> dict[str, int]:
     """Louvain 算法的简化实现。
-    # 不拆——保持上下文连贯性，拆了反而难读
     返回 {node_id: community_id} 映射。
     两阶段迭代：局部模块度优化 → 社区聚合，直到模块度不再改善。"""
     n_nodes = len(graph)
@@ -172,6 +168,8 @@ def headless_export_graph(graph: dict[str, list[str]], output_format: str = 'jso
     return {'error': f'unsupported format: {output_format}'}
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

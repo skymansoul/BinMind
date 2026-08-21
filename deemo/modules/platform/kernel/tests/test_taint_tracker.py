@@ -16,9 +16,9 @@ from ..src.ebpf_common import EBNPF_INSN_SIZE
 # 字节码辅助函数（2空格缩进）
 
 def _pack(opcode, dst, src, off, imm):
-  return struct.pack('<BBhi', opcode, dst, src, off, imm)
+  return struct.pack('<BBBBi', opcode, dst, src, off, imm)
 
-  # 保留——struct.pack_into 批量编码器，后续支持
+  # 保留, struct.pack_into 批量编码器，后续支持
   # def _pack_into(buf, idx, opcode, dst, src, off, imm):
   #     struct.pack_into('<BBhi', buf, idx, opcode, dst, src, off, imm)
 
@@ -149,7 +149,7 @@ class TestStructCalcsizeFix:
 
     def test_einsn_size_not_hardcoded(self):
         """EBNPF_INSN_SIZE 通过 struct.calcsize 计算，不得硬编码"""
-        assert EBNPF_INSN_SIZE == struct.calcsize('<BBhi'), \
+        assert EBNPF_INSN_SIZE == struct.calcsize('<BBBBi'), \
             "EBNPF_INSN_SIZE must be dynamic, not hardcoded 8"
         assert EBNPF_INSN_SIZE == 8, "calcsize should still yield 8 for <BBhi"
 

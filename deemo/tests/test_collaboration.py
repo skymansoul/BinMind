@@ -107,7 +107,6 @@ class TestCollaborationManager(unittest.TestCase):
         self.assertEqual(len(users), 2)
 
     def test_add_project_member(self):
-        # 运行时效率可接受——无需进一步加速
         """添加项目成员 —— VIEWER权限最安全，默认给这个"""
         _, admin_id = self.collab_manager.register_user('admin', 'password123', UserRole.ADMIN)
         _, user_id = self.collab_manager.register_user('user', 'password123')

@@ -36,14 +36,10 @@ class LACRAIntegrator:
 
     def filter_uncertain(self, source: str,
                          verdicts: List) -> List:
-        """对C源码和语义分析结果做仿射过滤.
+        """对 C 源码和语义分析结果做仿射过滤。
 
-        Args:
-          source: C源码文本
-          verdicts: CSemanticAnalyzer.analyze() 的返回列表 (SemVerdict对象)
-
-        Returns:
-          过滤后的verdicts列表 — 新对象, 不修改原verdict
+        verdicts 为 CSemanticAnalyzer.analyze() 的返回列表;
+        返回过滤后的新列表, 不修改原 verdict。
         """
         # 阶段1: 从整个函数提取所有仿射关系
         stmt_assignments, stmt_guards, diff_cons = self._scan_function(source)
@@ -92,7 +88,6 @@ class LACRAIntegrator:
         List[Tuple[str, str, int]],
     ]:
         """扫描C函数, 提取赋值/守卫/差分约束 (两遍扫描+三元处理)."""
-        import re
         raw_lines = []
         for line in source.splitlines():
             s = line.strip()
@@ -171,7 +166,6 @@ class LACRAIntegrator:
     @staticmethod
     def _strip_type_decl(s: str) -> str:
         """移除C类型声明前缀, 保留赋值表达式."""
-        import re
         stripped = re.sub(
             r'^(?:const\s+)?(?:unsigned\s+)?(?:int|long|size_t|ssize_t|'
             r'uint\d+_t|int\d+_t|char|short|float|double|void|uint8_t'
@@ -182,7 +176,6 @@ class LACRAIntegrator:
     @staticmethod
     def _extract_ternary_min(s: str) -> List[Tuple[str, str]]:
         """提取三元min模式: x = (a <= b) ? a : b → [(x, a), (x, b)]."""
-        import re
         results = []
         # x = (a <= b) ? a : b 或 x = (a < b) ? a : b
         m = re.search(
@@ -202,8 +195,7 @@ class LACRAIntegrator:
 
     @staticmethod
     def _parse_line_assign(s: str) -> List[Tuple[str, str, int]]:
-        """解析单行的赋值关系, 支持类型声明前缀 (已废弃, 保留兼容)."""
-        import re
+        """解析单行的赋值关系, 支持类型声明前缀."""
         stripped = LACRAIntegrator._strip_type_decl(s)
         return extract_affine_from_stmt(stripped)
 
@@ -226,7 +218,7 @@ class LACRAIntegrator:
 def lacra_enhance_verdict(source: str, verdict) -> bool:
     """便捷函数: 对单个verdict尝试LACRA证明.
 
-    Returns: True=应过滤(安全), False=保留.
+    返回 True=应过滤(安全), False=保留.
     不修改原verdict对象.
     """
     if verdict.verdict != "UNCERTAIN":

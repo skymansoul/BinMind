@@ -106,7 +106,7 @@ class ObfuscationDetector:
 
     # 不透明谓词的常见模式
     _OPAQUE_PATTERNS = [
-        (re.compile(r'(?:xor|and|or)\s+.*,\s*\1', re.I), 0.60),
+        (re.compile(r'(?:xor|and|or)\s+(\w+),\s*\1', re.I), 0.60),
         (re.compile(r'mov\s+\w+,\s*0\s*\n.*cmp\s+\w+,\s*0', re.I), 0.50),
         (re.compile(r'(?:add|sub)\s+\w+,\s*1\s*\n.*(?:cmp|test)\s+\w+', re.I), 0.45),
     ]

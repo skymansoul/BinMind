@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-23 14:52 - 增加 GHSA/OSV 双源交叉验证, 降低单源误匹配
-# 2025-07-27 09:17 - 引入 EBGF (Entropy-based Binary Gadget Fingerprint) 替代
+# 增加 GHSA/OSV 双源交叉验证, 降低单源误匹配
+# 引入 EBGF (Entropy-based Binary Gadget Fingerprint) 替代
 #                      纯字节哈希, 使匹配对编译器优化级别不敏感
-# 2025-08-01 16:31 - 增加变更块安全语义分类器 (capability_change→privilege_escalation,
+# 增加变更块安全语义分类器 (capability_change→privilege_escalation,
 #                      bounds_check_addition→buffer_overflow_fix, etc.)
 
 """Patch-to-CVE 因果链重建 — 从二进制补丁差异反溯 CVE 归属。
@@ -139,11 +138,10 @@ def classify_patch_hunk(added_asm: list[str], removed_asm: list[str]) -> dict:
 def compute_ebgf(block_bytes_list: list[bytes]) -> str:
     """为基本块集合计算 EBGF 指纹。
 
-    不直接哈希原始字节——而是计算每块字节熵 + 平均字节值 + 块大小,
-    然后对拼接向量做 SHA256。这使指纹对编译器优化变化 (寄存器重分配、
-    指令重排) 鲁棒, 但保留了对安全敏感代码变更的辨识力。
-
-    返回: 64 字符十六进制指纹字符串。
+    不直接哈希原始字节 — 而是计算每块字节熵 + 平均字节值 + 块
+    大小, 再对拼接向量做 SHA256。这使指纹对编译器优化变化
+    (寄存器重分配、指令重排) 鲁棒, 但保留对安全敏感代码变更的
+    辨识力。返回 64 字符十六进制指纹字符串。
     """
     if not block_bytes_list:
         return hashlib.sha256(b'').hexdigest()
@@ -357,12 +355,9 @@ def analyze_patch_causality(
 ) -> dict:
     """对二进制补丁做完整的因果链分析。
 
-    added_blocks: [(addr, asm_lines, block_bytes), ...]
-    removed_blocks: [(addr, asm_lines, block_bytes), ...]
-
-    返回:
-      {hunks: [...], ebgf_before: str, ebgf_after: str,
-       candidate_cves: [...], causal_summary: str}
+    added_blocks/removed_blocks: [(addr, asm_lines, block_bytes), ...];
+    返回 {hunks, ebgf_before, ebgf_after, candidate_cves,
+    causal_summary}。
     """
     # 安全语义分类
     _hunks = []

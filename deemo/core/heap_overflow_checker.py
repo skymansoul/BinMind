@@ -1,5 +1,5 @@
 """
-堆溢出检查器 — copy操作溢出判定 + 循环边界推断.
+堆溢出检查器 - copy操作溢出判定 + 循环边界推断.
 """
 import re
 from typing import Optional
@@ -12,8 +12,8 @@ def _check_copy_overflow(alloc: HeapAllocSite, store: HeapStore) -> Optional[Hea
     """检查拷贝操作 (strcpy/memcpy/strncpy/memset) 是否溢出分配缓冲区.
 
     核心逻辑:
-      - strcpy: 无界拷贝 → 始终标记为潜在溢出 (除非有守卫证明安全)
-      - memcpy/strncpy/memset: 若拷贝大小 > 分配大小 → 确定溢出
+      - strcpy: 无界拷贝, 始终标记为潜在溢出 (除非有守卫证明安全)
+      - memcpy/strncpy/memset: 若拷贝大小 > 分配大小, 确定溢出
       - 拷贝大小未知 (变量): 低置信度标记 (后续管线阶段可收紧)
     """
     copy_size = store.store_size
@@ -128,10 +128,9 @@ def _infer_loop_bound(ir_lines: list[str],
     模式: for(i=0;i<N;i++) → N; cmp i,N; jl loop_start → N.
     返回: 循环上界(正整数), -1表示无法推断.
     """
-    import re as _re
     for i in range(alloc.pc, min(len(ir_lines), alloc.pc + 30)):
         line = ir_lines[i]
-        fm = _re.search(r'for\s*\([^;]*;\s*(\w+)\s*(<=|<|>)\s*(\w+|\d+)[^;]*;', line)
+        fm = re.search(r'for\s*\([^;]*;\s*(\w+)\s*(<=|<|>)\s*(\w+|\d+)[^;]*;', line)
         if fm:
             bound_var = fm.group(3)
             try:
@@ -144,7 +143,7 @@ def _infer_loop_bound(ir_lines: list[str],
                     return traced
     for i in range(alloc.pc, min(len(ir_lines), alloc.pc + 30)):
         line = ir_lines[i]
-        m = _re.search(r'cmp\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)', line, _re.IGNORECASE)
+        m = re.search(r'cmp\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)', line, re.IGNORECASE)
         if m:
             try:
                 bound = int(m.group(1), 0)
@@ -160,8 +159,7 @@ def _trace_var_constant(ir_lines: list[str], var_name: str, max_pc: int) -> int:
     先在 max_pc 之前搜索, 若未找到则搜索整个 IR.
     返回常量值, -1 表示无法追踪.
     """
-    import re as _re
-    pat = _re.compile(rf'{_re.escape(var_name)}\s*=\s*(\d+)')
+    pat = re.compile(rf'{re.escape(var_name)}\s*=\s*(\d+)')
     for i in range(max_pc, -1, -1):
         m = pat.search(ir_lines[i])
         if m:

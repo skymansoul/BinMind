@@ -8,7 +8,7 @@ _parent = os.path.dirname(_curdir)
 if _parent not in sys.path:
     sys.path.insert(0, _parent)
 
-from patching.src.config import config, load_config
+from ..src.config import config, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def setup_logging(level=None, log_file=None):
 
 def cmd_analyze(args):
     print(f"[*] analyzing: {args.binary}")
-    from patching.auto_patcher import AutoPatcher
+    from ..auto_patcher import AutoPatcher
     patcher = AutoPatcher(args.binary)
     result = patcher.analyze_and_patch()
     if result.analysis_success:
@@ -50,7 +50,7 @@ def cmd_analyze(args):
 
 def cmd_diff(args):
     print(f"[*] diffing: {args.original} -> {args.patched}")
-    from patching.patch_diff_locator import analyze_patch_diff
+    from ..patch_diff_locator import analyze_patch_diff
     result = analyze_patch_diff(args.original, args.patched, output_dir=args.output, use_ai=not args.no_ai)
     if result.error:
         print(f"[-] diff failed: {result.error}")
@@ -67,7 +67,7 @@ def cmd_diff(args):
 
 def cmd_root_cause(args):
     print(f"[*] analyzing crash: {args.crash}")
-    from patching.auto_root_cause import AutoRootCauseAnalyzer, format_root_cause_report
+    from ..auto_root_cause import AutoRootCauseAnalyzer, format_root_cause_report
     analyzer = AutoRootCauseAnalyzer()
     report = analyzer.analyze(args.crash)
     formatted = format_root_cause_report(report)
@@ -84,7 +84,7 @@ def cmd_root_cause(args):
 
 def cmd_quality(args):
     print(f"[*] evaluating patch quality: {args.patch_data}")
-    from patching.patch_quality_evaluator import PatchQualityEvaluator
+    from ..patch_quality_evaluator import PatchQualityEvaluator
     with open(args.patch_data, 'r', encoding='utf-8') as fh:
         patch_data = json.load(fh)
     evaluator = PatchQualityEvaluator()
@@ -95,7 +95,7 @@ def cmd_quality(args):
 
 
 def cmd_rules(args):
-    from patching.rule_engine import RuleEngine
+    from ..rule_engine import RuleEngine
     engine = RuleEngine(args.rules_dir)
     engine.load_rules()
     if args.list:
@@ -114,7 +114,7 @@ def cmd_rules(args):
 
 def cmd_impact(args):
     print(f"[*] analyzing impact: {args.before} -> {args.after}")
-    from patching.patch_impact_analyzer import analyze_patch_impact
+    from ..patch_impact_analyzer import analyze_patch_impact
     result = analyze_patch_impact(args.before, args.after)
     if result.get('success'):
         report = result['report']
@@ -129,7 +129,7 @@ def cmd_impact(args):
 
 def cmd_self_heal(args):
     print(f"[*] self-healing: {args.binary}")
-    from patching.self_healing_rewriter import apply_self_healing_protection
+    from ..self_healing_rewriter import apply_self_healing_protection
     result = apply_self_healing_protection(binary_path=args.binary, cve_id=args.cve_id, framework=args.framework)
     if result.get('success'):
         print(f"[+] framework: {result.get('framework')}")
@@ -148,7 +148,7 @@ def cmd_self_heal(args):
 
 def cmd_recompile(args):
     print(f"[*] recompile check: {args.source}")
-    from patching.recompiler_check import RecompilerVerifier
+    from ..recompiler_check import RecompilerVerifier
     if args.source == '-':
         source_code = sys.stdin.read()
     else:
@@ -169,7 +169,7 @@ def cmd_recompile(args):
 
 def cmd_predict(args):
     print(f"[*] reliability prediction (arch={args.arch}, allocator={args.allocator})")
-    from patching.reliability_predictor import create_reliability_predictor
+    from ..reliability_predictor import create_reliability_predictor
     predictor = create_reliability_predictor(arch=args.arch)
     predictor.allocator = args.allocator
     capabilities = {}

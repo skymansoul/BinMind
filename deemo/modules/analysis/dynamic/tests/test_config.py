@@ -1,5 +1,4 @@
-# 2026-08-01
-"""dynamic — 配置 tests"""
+"""dynamic - 配置 tests"""
 
 import os
 import tempfile

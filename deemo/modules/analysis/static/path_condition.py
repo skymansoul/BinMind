@@ -1,7 +1,7 @@
 # 路径条件追踪与约束窄化 (Path Condition Tracking & Narrowing)
 #
 # 核心决策:
-#   堆溢出误报的最大单一来源 — 值范围分析在分支合并点用join丢弃
+# 堆溢出误报的最大单一来源 - 值范围分析在分支合并点用join丢弃
 #   路径条件. 例如: cmp rcx,256; ja .error → 安全路径上rcx≤256,
 #   但标准抽象解释无法捕获此信息, 将rcx保持为[0, 2^31-1].
 #
@@ -12,7 +12,6 @@
 # 理论依据:
 #   路径敏感分析降低二进制静态审计误报; 分支条件驱动的区间窄化.
 #
-# 创建: 2026-05-29
 
 from dataclasses import dataclass
 from enum import Enum

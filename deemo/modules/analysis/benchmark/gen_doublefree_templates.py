@@ -1,7 +1,6 @@
 # 双重释放基准测试模板生成器 (Double-Free Benchmark Templates)
 # 12个CVE复现样本: O0/O2/Os × 12 = 36个二进制.
 # v1: asm barrier反优化, 保持O2/Os下漏洞函数体存活.
-# 创建: 2026-07-05
 
 SAMPLE_DEFS = [
     ("CVE-2018-7566", "cve_2018_7566_alsa", "simple double free: free(p);free(p)", "simple_df"),

@@ -1,11 +1,9 @@
 # coding: utf-8
-# 创建: 2026-06-01  |  补丁完备性引擎
-# 修改: 2026-06-01  |  审计后补充文件头与错误处理
 #
 """
-语义补丁完备性验证引擎——编排契约推断与抽象解释的完整验证管线。
+语义补丁完备性验证引擎-编排契约推断与抽象解释的完整验证管线。
 
-管线流程: 契约推断→代码提取→抽象解释→语义比较→完备性分级。
+管线流程: 契约推断-代码提取-抽象解释-语义比较-完备性分级。
 
 与patch_quality_evaluator互补: 后者检查代码模式，本引擎检查语义完备。
 """
@@ -34,11 +32,11 @@ _log = logging.getLogger(__name__)
 
 
 class CompletenessGrade(str):
-    COMPLETE = "COMPLETE"         # 语义完备——补丁满足所有推断契约
-    PARTIAL = "PARTIAL"           # 部分完备——核心约束满足，边缘条件存疑
-    INCOMPLETE = "INCOMPLETE"     # 不完备——存在可确认的契约违反
-    REGRESSION = "REGRESSION"     # 回归——补丁引入了新的安全问题
-    UNVERIFIABLE = "UNVERIFIABLE"  # 不可验证——源码信息不足
+    COMPLETE = "COMPLETE"         # 语义完备-补丁满足所有推断契约
+    PARTIAL = "PARTIAL"           # 部分完备-核心约束满足，边缘条件存疑
+    INCOMPLETE = "INCOMPLETE"     # 不完备-存在可确认的契约违反
+    REGRESSION = "REGRESSION"     # 回归-补丁引入了新的安全问题
+    UNVERIFIABLE = "UNVERIFIABLE"  # 不可验证-源码信息不足
 
 
 @dataclass
@@ -67,9 +65,9 @@ class CompletenessReport:
 
 
 def _parse_unified_diff(diff_text: str) -> Tuple[List[str], List[str]]:
-    """解析unified diff——提取原代码（删除行）与补丁代码（新增行）。
+    """解析unified diff-提取原代码（删除行）与补丁代码（新增行）。
 
-    返回(original_lines, patched_lines)——仅含代码内容，不含diff标记。
+    返回(original_lines, patched_lines)-仅含代码内容，不含diff标记。
     """
     original: List[str] = []
     patched: List[str] = []
@@ -84,7 +82,7 @@ def _parse_unified_diff(diff_text: str) -> Tuple[List[str], List[str]]:
         elif line.startswith('+') and not line.startswith('+++'):
             patched.append(line[1:])
         else:
-            # 上下文行——两版共用
+            # 上下文行-两版共用
             content = line[1:] if line.startswith(' ') else line
             original.append(content)
             patched.append(content)
@@ -94,7 +92,7 @@ def _parse_unified_diff(diff_text: str) -> Tuple[List[str], List[str]]:
 
 def _extract_function_body(lines: List[str],
                             func_name: str) -> List[str]:
-    """从源码行中提取函数体——大括号范围内的行"""
+    """从源码行中提取函数体-大括号范围内的行"""
     in_func = False
     brace_depth = 0
     body = []
@@ -117,9 +115,9 @@ def _extract_function_body(lines: List[str],
 
 
 class CompletenessEngine:
-    """语义补丁完备性验证引擎——契约推断 + 抽象解释 + 语义比较。
+    """语义补丁完备性验证引擎-契约推断 + 抽象解释 + 语义比较。
 
-    verify() → CompletenessReport 含COMPLETE/PARTIAL/INCOMPLETE/REGRESSION分级。
+    verify() - CompletenessReport 含COMPLETE/PARTIAL/INCOMPLETE/REGRESSION分级。
     与patch_quality_evaluator互补: 后者检查代码模式，本引擎检查语义完备。
     """
 
@@ -133,7 +131,7 @@ class CompletenessEngine:
                cve_id: str = "",
                param_names: List[str] = None
                ) -> CompletenessReport:
-        """执行补丁完备性验证——完整管线。
+        """执行补丁完备性验证-完整管线。
 
         source_lines/patched_lines二选一，function_name/cve_id为必填。
         """
@@ -178,7 +176,7 @@ class CompletenessEngine:
 
         # 抽象解释 + 语义比较
         if not patch_body:
-            report.recommendations.append("补丁体为空——函数被移除？")
+            report.recommendations.append("补丁体为空-函数被移除？")
             return report
 
         diff_result = check_patch_completeness(orig_body, patch_body, contract)
@@ -238,20 +236,20 @@ class CompletenessEngine:
             for v in diff.violations:
                 recs.append(f"  - {v.contract_entry}: {v.patched_behavior}")
         elif grade == CompletenessGrade.INCOMPLETE:
-            recs.append("补丁不完整——存在可确认的契约违反。")
+            recs.append("补丁不完整-存在可确认的契约违反。")
             recs.append("建议在修复中逐项处理以下违反:")
             for v in diff.violations:
                 recs.append(f"  - [{v.severity}] {v.contract_entry} @ {v.fix_location}")
         elif grade == CompletenessGrade.REGRESSION:
-            recs.append("补丁引入了新的安全问题——不建议合并。")
-            recs.append(f"缓冲区边界未收紧——抽象路径分歧: {diff.abstract_paths_diverged}")
+            recs.append("补丁引入了新的安全问题-不建议合并。")
+            recs.append(f"缓冲区边界未收紧-抽象路径分歧: {diff.abstract_paths_diverged}")
 
         if contract.return_check_pattern == "always_checked":
-            recs.append("注意: 调用方始终检查返回值——补丁应保持此约定。")
+            recs.append("注意: 调用方始终检查返回值-补丁应保持此约定。")
         return recs
 
     def batch_verify(self, patches: List[Dict]) -> List[CompletenessReport]:
-        """批量验证——对多个补丁依次执行管线。
+        """批量验证-对多个补丁依次执行管线。
 
         patches格式: [{"source_lines": [...], "diff": "...",
                         "function": str, "cve": str}, ...]
@@ -280,7 +278,7 @@ def verify_patch_completeness(source_lines: List[str],
                                cve_id: str = "",
                                param_names: List[str] = None
                                ) -> CompletenessReport:
-    """补丁完备性验证便捷入口——单行调用"""
+    """补丁完备性验证便捷入口-单行调用"""
     engine = CompletenessEngine()
     return engine.verify(
         source_lines=source_lines, patch_diff=patch_diff,

@@ -1,6 +1,4 @@
-# 创建: 2026-04-25 08:34
-# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 连续时间图扩散风险传播
+# 连续时间图扩散风险传播
 # 图扩散 — CVE异构图上的连续时间利用知识传播
 #
 # 问题: 现有GNN (cve_graph_gnn) 使用离散消息传递 (2层GCN).
@@ -122,11 +120,8 @@ class GraphDiffusionPropagator:
 
     def diffuse(self, features: List[List[float]]
                 ) -> Dict[float, List[List[float]]]:
-        """多尺度扩散: 在每个时间尺度上产生节点表示.
-
-        Returns: {t: [[feat_dim_scaled], ...]}.
-        每个t对应一个完整的N×F特征矩阵.
-        """
+        """多尺度扩散: 在每个时间尺度上产生节点表示, 返回
+        {t: [[feat_dim_scaled], ...]}, 每个 t 对应完整的 N×F 特征矩阵。"""
         if not self._built or self._L is None:
             return {}
 
@@ -238,10 +233,7 @@ def build_diffusion_from_graph(graph, time_scales: Optional[List[float]] = None
 
 def compute_risk_propagation(graph, initial_scores: List[float],
                              t: float = 5.0) -> Dict[str, List[float]]:
-    """计算风险在多个时间尺度上的传播.
-
-    Returns: {t_scale: smoothed_scores}.
-    """
+    """计算风险在多个时间尺度上的传播, 返回 {t_scale: smoothed_scores}。"""
     propagator = build_diffusion_from_graph(graph)
     results = {}
     for scale in [1.0, 3.0, 5.0, 10.0]:

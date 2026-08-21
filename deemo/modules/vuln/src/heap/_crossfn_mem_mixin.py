@@ -1,10 +1,8 @@
 # 跨函数内存值映射追踪 — 从cross_fn_analyzer.py拆分.
 # 包含全局变量/结构体字段/栈槽的值传播辅助方法.
-# 创建: 2026-06-20
 
 import re
 from typing import Dict, Optional
-
 
 class CrossFnMemMixin:
     """内存值追踪辅助方法, 由CrossFnAnalyzer继承."""

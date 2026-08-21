@@ -1,7 +1,6 @@
 
 import unittest
 import os
-_MOD_DEBUG = False
 import sys
 import json
 import uuid
@@ -29,7 +28,7 @@ from modules.remote_agent import (
 
 class TestAgentStatus(unittest.TestCase):
     """测试代理状态枚举"""
-    
+
     def test_status_values(self):
         """测试状态枚举值"""
         self.assertEqual(AgentStatus.OFFLINE.value, 'offline')
@@ -40,7 +39,7 @@ class TestAgentStatus(unittest.TestCase):
 
 class TestAgentType(unittest.TestCase):
     """测试代理类型枚举"""
-    
+
     def test_type_values(self):
         """测试类型枚举值"""
         self.assertEqual(AgentType.SENSOR.value, 'sensor')
@@ -51,7 +50,7 @@ class TestAgentType(unittest.TestCase):
 
 class TestMessageType(unittest.TestCase):
     """测试消息类型枚举"""
-    
+
     def test_message_type_values(self):
         """测试消息类型枚举值"""
         self.assertEqual(MessageType.PING.value, 'ping')
@@ -62,7 +61,7 @@ class TestMessageType(unittest.TestCase):
 
 class TestAgentInfo(unittest.TestCase):
     """测试代理信息数据类"""
-    
+
     def test_agent_info_init(self):
         """测试代理信息初始化"""
         info = AgentInfo(
@@ -77,7 +76,7 @@ class TestAgentInfo(unittest.TestCase):
             tasks_completed=10,
             tasks_failed=2
         )
-        
+
         self.assertEqual(info.agent_id, 'test_agent')
         self.assertEqual(info.agent_type, AgentType.SENSOR)
         self.assertEqual(info.status, AgentStatus.ONLINE)
@@ -87,7 +86,7 @@ class TestAgentInfo(unittest.TestCase):
 
 class TestTask(unittest.TestCase):
     """测试任务数据类"""
-    
+
     def test_task_init(self):
         """测试任务初始化"""
         task_id = str(uuid.uuid4())
@@ -98,7 +97,7 @@ class TestTask(unittest.TestCase):
             priority=1,
             timeout=300
         )
-        
+
         self.assertEqual(task.task_id, task_id)
         self.assertEqual(task.task_type, 'analysis')
         self.assertEqual(task.priority, 1)
@@ -107,33 +106,33 @@ class TestTask(unittest.TestCase):
 
 class TestRemoteAgent(unittest.TestCase):
     """测试远程代理类"""
-    
+
     def setUp(self):
         """设置测试环境"""
         self.agent = RemoteAgent('test_agent', AgentType.SENSOR)
-    
+
     def test_agent_init(self):
         """测试代理初始化"""
         self.assertEqual(self.agent.agent_id, 'test_agent')
         self.assertEqual(self.agent.agent_type, AgentType.SENSOR)
         self.assertEqual(self.agent.status, AgentStatus.OFFLINE)
         self.assertIsNotNone(self.agent.capabilities)
-    
+
     def test_get_info(self):
         """测试获取代理信息"""
         info = self.agent.get_info()
-        
+
         self.assertIsInstance(info, AgentInfo)
         self.assertEqual(info.agent_id, 'test_agent')
         self.assertEqual(info.agent_type, AgentType.SENSOR)
-    
+
     def test_register_task_handler(self):
         def test_handler(payload):
             return {'success': True}
-        
+
         self.agent.register_task_handler('test_task', test_handler)
         self.assertIn('test_task', self.agent._task_handlers)
-    
+
     def test_connect_disconnect(self):
         """测试连接和断开连接"""
         with patch('socket.socket') as mock_socket:
@@ -141,28 +140,27 @@ class TestRemoteAgent(unittest.TestCase):
             result = self.agent.connect('localhost', 8888)
             self.assertTrue(result)
             self.assertEqual(self.agent.status, AgentStatus.ONLINE)
-            
+
             self.agent.disconnect()
             self.assertEqual(self.agent.status, AgentStatus.OFFLINE)
 
 
 class TestAgentServer(unittest.TestCase):
     """测试代理服务器类"""
-    
+
     def setUp(self):
-        # 历经多个版本迭代后固定
         """设置测试环境"""
         self.server = AgentServer('127.0.0.1', 9999)
-    
+
     def test_server_init(self):
         self.assertEqual(self.server.host, '127.0.0.1')
         self.assertEqual(self.server.port, 9999)
         self.assertEqual(len(self.server.agents), 0)
-    
+
     def test_get_agents(self):
         agents = self.server.get_agents()
         self.assertIsInstance(agents, list)
-    
+
     def test_assign_task(self):
         """测试分配任务"""
         task = Task(task_id='test_task', task_type='analysis')
@@ -171,17 +169,16 @@ class TestAgentServer(unittest.TestCase):
 
 
 class TestCreateAgent(unittest.TestCase):
-    # 当前执行效率可接受——不构成系统瓶颈
     """测试创建代理函数"""
-    
+
     def test_create_agent(self):
         """测试创建代理实例"""
         agent = create_agent('test_agent', 'sensor')
-        
+
         self.assertIsInstance(agent, RemoteAgent)
         self.assertEqual(agent.agent_id, 'test_agent')
         self.assertEqual(agent.agent_type, AgentType.SENSOR)
-    
+
     def test_create_agent_default_type(self):
         agent = create_agent('test_agent')
         self.assertEqual(agent.agent_type, AgentType.SENSOR)
@@ -189,12 +186,11 @@ class TestCreateAgent(unittest.TestCase):
 
 class TestCreateServer(unittest.TestCase):
     """测试创建服务器函数"""
-    
+
     def test_create_server(self):
-        # 当前执行效率可接受——不构成系统瓶颈
         """测试创建服务器实例"""
         server = create_server('0.0.0.0', 8888)
-        
+
         self.assertIsInstance(server, AgentServer)
         self.assertEqual(server.host, '0.0.0.0')
         self.assertEqual(server.port, 8888)

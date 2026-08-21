@@ -1,16 +1,14 @@
-# 2026-07-31
 import re
 import struct
 import hashlib
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 
-
 @dataclass
 class IOCTLHandler:
     code: int
     handler_addr: int
-    method: str  # METHOD_缓冲区ED, METHOD_IN_DIRECT, METHOD_OUT_DIRECT, METHOD_NEITHER
+    method: str  # METHOD_BUFFERED, METHOD_IN_DIRECT, METHOD_OUT_DIRECT, METHOD_NEITHER
     access: str  # FILE_ANY_ACCESS, FILE_READ_ACCESS, etc
     device_type: int
     is_dangerous: bool = False

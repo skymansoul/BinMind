@@ -60,15 +60,9 @@ class UafVerifier:
     def verify(self, candidates: List[dict],
                ir_lines: Optional[List[str]] = None,
                decompiled_text: str = '') -> Tuple[List[dict], List[UafVerifyResult]]:
-        """主入口: 对UAF候选列表执行多阶段验证.
+        """主入口: 对 UAF 候选列表执行多阶段验证。
 
-        Args:
-            candidates: UAF检测器输出的候选列表 (dict形式)
-            ir_lines: 标准化IR行列表
-            decompiled_text: 原始反编译文本
-
-        Returns:
-            (filtered_candidates, all_results)
+        返回 (filtered_candidates, all_results)。
         """
         import time
         t0 = time.perf_counter()

@@ -1,11 +1,10 @@
-# 修改记录:
-# 2025-07-30 15:44 - 增加连通性保护检查：删除边后验证不产生孤立节点
-# 2025-08-02 11:27 - 引入稀疏度自适应因子：图越稀疏，全局 drop 概率越低
+# 增加连通性保护检查：删除边后验证不产生孤立节点
+# 引入稀疏度自适应因子：图越稀疏，全局 drop 概率越低
 #
-# 度保持边丢弃 -- 基于节点度数的反比概率边丢弃，优先保护低度节点。
+# 度保持边丢弃 - 基于节点度数的反比概率边丢弃，优先保护低度节点。
 #
 # 理论依据：
-# 二进制程序的 CFG 具有天然的度偏斜--入口块和循环头拥有高度数，
+# 二进制程序的 CFG 具有天然的度偏斜-入口块和循环头拥有高度数，
 # 而错误处理块和出口块度数很低。标准的 DropEdge
 # 对所有边使用统一丢弃概率 p，导致低度节点的边以概率 p 被随机删除。
 # 在稀疏 CFG 中（平均度数通常 < 2），一条低度节点只有 1-2 条边，
@@ -16,8 +15,8 @@
 #
 # 其中:
 # p_global: 全局基准丢弃概率（默认 0.15）
-# beta: 保护阈值--度数 <= beta 的节点的边丢弃概率显著降低
-# max(deg_i, deg_j): 取最大度数而非平均--任一端度数很低，
+# beta: 保护阈值-度数 <= beta 的节点的边丢弃概率显著降低
+# max(deg_i, deg_j): 取最大度数而非平均-任一端度数很低，
 # 整条边都应受保护。avg 会掩盖不对称性
 #
 # 稀疏度自适应因子:
@@ -27,7 +26,7 @@
 #
 # 与 BEGA 引力模型的差异：
 # BEGA 需要 O(|E| * iter) 的引力场迭代。本模块仅需 O(|V|) 度数计算，
-# 适用于大规模图或实时推理场景。两者可组合--先 BEGA 粗筛，再度保持精调。
+# 适用于大规模图或实时推理场景。两者可组合-先 BEGA 粗筛，再度保持精调。
 #
 # 文献：
 # DropEdge: 统一概率随机边丢弃
@@ -96,7 +95,7 @@ def degree_preserving_dropout(
         edge_prob = effective_prob * degree_factor
 
         if np.random.random() < edge_prob:
-            # 连通性保护--删除前验证不产生孤立节点
+            # 连通性保护-删除前验证不产生孤立节点
             temp = augmented.copy()
             temp[i, j] = 0
             j_connected = temp.sum(axis=0)[j] > 0 or temp.sum(axis=1)[j] > 0
@@ -112,7 +111,7 @@ def compute_effective_drop_rates(
     drop_prob: float = 0.15,
     beta: float = 2.0,
 ) -> Tuple[float, "np.ndarray"]:
-    """计算各边的有效丢弃概率——供外部可视化和消融实验使用。
+    """计算各边的有效丢弃概率-供外部可视化和消融实验使用。
 
     返回:
       (effective_global_prob, per_edge_probs_matrix)
@@ -140,7 +139,7 @@ def compute_effective_drop_rates(
 # 便捷封装
 
 class DegreePreservingDropout:
-    """度保持边丢弃的可调用封装——与 GraphAugmenter 接口兼容。"""
+    """度保持边丢弃的可调用封装-与 GraphAugmenter 接口兼容。"""
 
     def __init__(self, drop_prob: float = 0.15, beta: float = 2.0,
                  seed: Optional[int] = None):

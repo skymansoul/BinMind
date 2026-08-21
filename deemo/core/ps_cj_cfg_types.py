@@ -1,4 +1,4 @@
-"""路径敏感CFG数据类型 — BasicBlock/CFGPath定义及guard约束提取。
+"""路径敏感CFG数据类型, BasicBlock/CFGPath定义及guard约束提取。
 供CFG构建器引用, 分离数据类型定义与CFG构建逻辑, 降低单文件行数。"""
 
 import re

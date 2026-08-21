@@ -31,12 +31,12 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-# 保留: debug桩——环境变量BINMIND_DEBUG控制输出
+# 保留: debug桩, 环境变量BINMIND_DEBUG控制输出
 def _debug_print(*a, **kw): pass
 
-# 不拆: 子命令别名映射——用于短命令扩展
+
 _CLI_ALIASES = {"a": "analyze", "w": "wasm", "m": "managed-code", "p": "pac-bypass", "n": "network"}
 
 def _dead_cli_autocomplete(cmd: str):
-    """CLI tab补全候选生成——未接入readline。"""
+    """CLI tab补全候选生成, 未接入readline。"""
     return [k for k in _CLI_ALIASES if k.startswith(cmd)]

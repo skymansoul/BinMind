@@ -55,9 +55,6 @@ class DeltaReport:
 
 
 class StructuralHasher:
-    def __init__(self):
-        pass
-
     def hash_opcode_sequence(self, opcodes: List[str]) -> str:
         concatenated = "|".join(opcodes)
         return hashlib.md5(concatenated.encode()).hexdigest()

@@ -153,7 +153,7 @@ class UEFIRuntimeSecurityAnalyzer:
                 i += 1
         return findings
 
-    # 不拆 — 旧版 SMM heap spray 检测，速度慢但逻辑正确
+
     # def _smm_heap_spray_check(self, smm_modules):
     #     findings = []
     #     for mod in (smm_modules or []):

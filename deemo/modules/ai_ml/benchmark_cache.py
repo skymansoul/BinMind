@@ -307,7 +307,6 @@ class BenchmarkTimer:
     def measure(self, func_name: str, func: Callable, *args,
                 iterations: int = 10, warmup: int = 3,
                 input_size: int = 0, **kwargs) -> BenchmarkEntry:
-        import time as _time
 
         # 预热
         for _ in range(warmup):
@@ -316,9 +315,9 @@ class BenchmarkTimer:
         # 测量
         times = []
         for _ in range(iterations):
-            t0 = _time.perf_counter_ns()
+            t0 = time.perf_counter_ns()
             func(*args, **kwargs)
-            t1 = _time.perf_counter_ns()
+            t1 = time.perf_counter_ns()
             times.append((t1 - t0) / 1000.0)  # ns -> us
 
         times.sort()

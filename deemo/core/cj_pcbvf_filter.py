@@ -1,5 +1,5 @@
 """
-PC-BVF 管线级过滤器 — 在 BVF INCONCLUSIVE 时触发路径约束感知判定; 集成到 heap_overflow_pipeline 的 BVF 阶段之后 (阶段 7.5 DD-BVF 反向值流过滤, 阶段 7.6 PC-BVF 对 BVF 无法判定的候选提取路径约束收紧值域后重新判定)。
+PC-BVF 管线级过滤器: 在 BVF INCONCLUSIVE 时触发路径约束感知判定; 集成到 heap_overflow_pipeline 的 BVF 阶段之后 (阶段 7.5 DD-BVF 反向值流过滤, 阶段 7.6 PC-BVF 对 BVF 无法判定的候选提取路径约束收紧值域后重新判定)。
 保守策略: PC-BVF 无法判定时保留候选, 不影响召回率。
 """
 from typing import Any, Dict, List, Tuple
@@ -90,14 +90,10 @@ def _should_trigger_pcbvf(
         return True
 
     if store.mnemonic in ('memcpy', 'strncpy', 'memset', 'strncat',
-                          'memmove') and store.store_size <= 0:
+                          'memmove'):
         return True
 
     if store.offset_is_dynamic:
-        return True
-
-    if store.mnemonic in ('memcpy', 'strncpy', 'memset', 'strncat',
-                          'memmove') and store.store_size > 0:
         return True
 
     return False

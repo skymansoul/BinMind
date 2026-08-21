@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-06-18  |  YARA规则合成器
-# 修改: 2026-06-18  |  审计后补充文件头与错误处理
-#
 """
-二进制YARA规则合成——从字节模式到可部署YARA规则的完整合成管线。
+二进制YARA规则合成-从字节模式到可部署YARA规则的完整合成管线。
 
 YARA规则生成:
   从PatternMiner产出的BytePattern集合合成YARA规则字符串,
@@ -38,7 +35,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class YARARule:
-    """单条YARA规则——可直接写入.yar文件"""
+    """单条YARA规则-可直接写入.yar文件"""
     rule_name: str
     meta: Dict[str, str] = field(default_factory=dict)
     strings: List[Tuple[str, str]] = field(default_factory=list)
@@ -51,7 +48,7 @@ class YARARule:
 
 @dataclass
 class YARARuleSet:
-    """YARA规则集——一个函数的完整规则族"""
+    """YARA规则集-一个函数的完整规则族"""
     function_name: str
     rules: List[YARARule] = field(default_factory=list)
     # 变体: 严格规则/宽松规则
@@ -66,8 +63,8 @@ class YARARuleSynthesizer:
     """从FunctionPatterns合成可部署的YARA规则。
 
     合成策略:
-      strict_rule:  所有模式必须匹配(all of them)——FP<0.1%
-      relaxed_rule: 任一模式匹配(any of them)——召回率>90%
+      strict_rule:  所有模式必须匹配(all of them)-FP<0.1%
+      relaxed_rule: 任一模式匹配(any of them)-召回率>90%
       默认部署strict_rule, 批量扫描用relaxed_rule做初筛。
 
     规则命名: vuln_{cwe}_{function_hash_short}
@@ -113,7 +110,7 @@ class YARARuleSynthesizer:
             hex_str = self._pattern_to_hex(p)
             yara_strings.append((f"$pattern_{i}", f"{{ {hex_str} }}"))
 
-        # strict规则——all of them
+        # strict规则-all of them
         rule_name = f"vuln_{cwe_id.replace('-','_')}_{func_patterns.function_hash}"
         strict = YARARule(
             rule_name=f"{rule_name}_strict",
@@ -124,7 +121,7 @@ class YARARuleSynthesizer:
             expected_fp_rate=0.001,
             pattern_count=len(yara_strings))
 
-        # relaxed规则——any of them
+        # relaxed规则-any of them
         relaxed = YARARule(
             rule_name=f"{rule_name}_relaxed",
             meta=dict(meta),
@@ -141,7 +138,7 @@ class YARARuleSynthesizer:
             relaxed_rule=relaxed)
 
     def render_rule(self, rule: YARARule) -> str:
-        """将YARARule渲染为YARA语法字符串——可直接写入.yar文件。"""
+        """将YARARule渲染为YARA语法字符串-可直接写入.yar文件。"""
         lines = [f"rule {rule.rule_name} {{"]
         lines.append("    meta:")
         for key, val in rule.meta.items():
@@ -156,7 +153,7 @@ class YARARuleSynthesizer:
 
     def export_ruleset(self, ruleset: YARARuleSet,
                         output_path: str = "") -> str:
-        """导出规则集为.yar文件——返回文件内容字符串。"""
+        """导出规则集为.yar文件-返回文件内容字符串。"""
         sections = [
             f"// BYRS Auto-Generated YARA Rules",
             f"// Target: {ruleset.function_name}",
@@ -178,7 +175,7 @@ class YARARuleSynthesizer:
         return content
 
     def _pattern_to_hex(self, pattern: BytePattern) -> str:
-        """将BytePattern转换为YARA十六进制字符串——通配符压缩。
+        """将BytePattern转换为YARA十六进制字符串-通配符压缩。
 
         连续通配符合并为[n-m]跳转, 减少规则体积。
         例: [(0x48,False), (0x00,True), (0x00,True), (0x89,False)]
@@ -216,7 +213,7 @@ def synthesize_yara_from_function(function_bytes: bytes,
                                    arch: str = "x86_64",
                                    output_path: str = ""
                                    ) -> YARARuleSet:
-    """端到端便捷入口——二进制函数→YARA规则。
+    """端到端便捷入口-二进制函数-YARA规则。
 
     返回YARARuleSet。
     """

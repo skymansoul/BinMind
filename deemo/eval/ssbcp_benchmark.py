@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-10  |  SSBCP vs Angr 对比基准测试
 #
 """
 SSBCP vs Angr 堆溢出检测对比基准。
@@ -238,7 +237,7 @@ def main():
         sample_dir = SAMPLE_DIR / sample_name
         binary = find_binary(sample_dir)
         if not binary:
-            print(f'  [{sample_name}] BINARY NOT FOUND — skipping')
+            print(f'  [{sample_name}] BINARY NOT FOUND - skipping')
             continue
 
         row = {

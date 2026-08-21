@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-02 12:45 - 语义等价类替代原始助记符: 12 个等价类覆盖 x86/x86_64 常用指令
-# 2025-08-03 17:20 - CFG 拓扑约束的 n-gram: 仅在控制流相邻的块间提取序列, 抵抗死代码插入
+# 语义等价类替代原始助记符: 12 个等价类覆盖 x86/x86_64 常用指令
+# CFG 拓扑约束的 n-gram: 仅在控制流相邻的块间提取序列, 抵抗死代码插入
 
 """对抗鲁棒的二進制特征提取 - 语义等价类与拓扑稳定哈希
 
@@ -11,7 +10,7 @@
 - 控制流扁平化: switch-case 展开 -> CFG 结构改变但功能不变
 
 本模块采用三道防线:
-1. 语义等价类: 将指令映射到 12 个语义类别--消除寄存器选择和操作码变体
+1. 语义等价类: 将指令映射到 12 个语义类别, 消除寄存器选择和操作码变体
 2. 控制流感知的 n-gram: 只在控制流相邻 (而非线性相邻) 的基本块间提取序列
 3. 顺序无关的基本块签名: 对基本块内指令的 multiset (非序列) 做确定性哈希
 
@@ -41,8 +40,8 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 # 类别设计原则:
 # 1. 同一类别内的指令替换不改变程序语义（仅性能和编码不同）
-# 2. 类别间区分度最大化--不同类别的指令代表不同语义操作
-# 3. 未知指令单独归入一类--保守处理避免误分类
+# 2. 类别间区分度最大化, 不同类别的指令代表不同语义操作
+# 3. 未知指令单独归入一类, 保守处理避免误分类
 
 _SEMANTIC_CLASS_INDEX = {
     # C0: 数据移动 - mov/lea/push/pop/xchg/... 的值传递语义
@@ -132,7 +131,7 @@ def classify_instruction(mnemonic: str) -> int:
 # 顺序无关的基本块签名 - multiset 哈希
 
 def basic_block_signature(instructions: List[str], width: int = 8) -> int:
-    """对基本块内指令的 multiset 做确定性哈希--忽略指令顺序
+    """对基本块内指令的 multiset 做确定性哈希, 忽略指令顺序
 
     算法:
     1. 每指令映射到语义类 + 精炼特征 (如是否访存、是否间接跳转)
@@ -196,17 +195,17 @@ def extract_cfg_aware_ngrams(
     n: int = 3,
     max_per_function: int = 200,
 ) -> Dict[Tuple[int, ...], CFGAwareNGram]:
-    """沿 CFG 边提取语义类 n-gram--对死代码插入和线性 n-gram 污染免疫
+    """沿 CFG 边提取语义类 n-gram, 对死代码插入和线性 n-gram 污染免疫
 
     blocks: 基本块 ID -> 指令助记符列表
     edges: (src_block_id, dst_block_id, edge_type) 的 CFG 边
     n: n-gram 长度 (默认 3)
-    max_per_function: 每函数的 n-gram 数量上限--防止超大函数主导特征
+    max_per_function: 每函数的 n-gram 数量上限, 防止超大函数主导特征
 
     与传统线性 n-gram 的关键区别:
-    - 线性 n-gram: 按指令在 .text 段的出现顺序提取--一段 NOP sled
+    - 线性 n-gram: 按指令在 .text 段的出现顺序提取, 一段 NOP sled
       插入在函数 A 和 B 之间会同时污染 A 和 B 的 n-gram 特征
-    - CFG 感知 n-gram: 只在有 CFG 边的块之间提取--死代码所在块的
+    - CFG 感知 n-gram: 只在有 CFG 边的块之间提取, 死代码所在块的
       指令不会进入合法基本块的 n-gram 路径
     """
     # 构建邻接表
@@ -267,7 +266,7 @@ def extract_cfg_aware_ngrams(
 
 @dataclass
 class BlockInvariantFeatures:
-    """基本块的顺序无关统计特征--对指令重排和 nop 填充不敏感"""
+    """基本块的顺序无关统计特征, 对指令重排和 nop 填充不敏感"""
     block_id: int
     insn_count: int
     semantic_class_distribution: List[float]   # 12 维归一化分布
@@ -283,7 +282,7 @@ def extract_block_invariants(
 ) -> BlockInvariantFeatures:
     """从基本块的指令列表提取顺序无关的统计特征
 
-    所有特征都是 multiset 的聚合统计量--指令的线性顺序不影响结果
+    所有特征都是 multiset 的聚合统计量, 指令的线性顺序不影响结果
     """
     cls_counts = [0.0] * 12
     mem_count = 0

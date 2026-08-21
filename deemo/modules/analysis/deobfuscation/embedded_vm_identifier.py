@@ -56,7 +56,7 @@ _OPCODE_CLASSES = {
 }
 
 
-# Handler 相似聚类 —— 基于 Jaccard 相似度的层次聚类
+# Handler 相似聚类 - 基于 Jaccard 相似度的层次聚类
 # 原理: 对每个 handler，提取其 opcode 频率向量，计算两两 Jaccard
 # 相似度。相似度 > 0.7 的 handler 合并为一类。这对于识别 VM 指令集
 # 中的"指令族"（如所有算术指令、所有内存指令）有效
@@ -194,7 +194,8 @@ class EmbeddedVMIdentifier:
                 capture_output=True, text=True, timeout=60,
                 encoding='utf-8', errors='replace')
             asm = r.stdout
-        except Exception: logger.debug("suppressed", exc_info=True)
+        except Exception as e:
+            logger.debug(f"radare2 disassembly failed: {e}", exc_info=True)
 
         size_uniform = self._handler_size_coefficient(asm) if asm else 0.0
         opcode_dist = self._opcode_frequency_distribution(raw)

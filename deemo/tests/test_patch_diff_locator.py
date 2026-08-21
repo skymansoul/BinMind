@@ -37,7 +37,7 @@ class TestDiffType(unittest.TestCase):
     def test_diff_type_from_string(self):
         # 历史版本保留——便于理解代码演进
         """测试字符串转换"""
-# lass字段完整性$/d
+
         self.assertEqual(DiffType('assembly'), DiffType.ASSEMBLY)
         self.assertEqual(DiffType('pseudo_code'), DiffType.PSEUDO_CODE)
 
@@ -213,7 +213,7 @@ class TestSecurityPatchPatterns(unittest.TestCase):
         """测试安全补丁模式存在"""
         self.assertIn('boundary_check', SECURITY_PATCH_PATTERNS)
         self.assertIn('input_validation', SECURITY_PATCH_PATTERNS)
-# lass字段完整性$/d
+
         self.assertIn('memory_safety', SECURITY_PATCH_PATTERNS)
 
     def test_pattern_keywords(self):

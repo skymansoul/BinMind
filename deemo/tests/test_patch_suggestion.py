@@ -4,7 +4,6 @@
 """
 
 import os
-_MOD_DEBUG = False
 import sys
 import unittest
 from unittest.mock import patch, MagicMock
@@ -50,7 +49,6 @@ class TestPatchSuggestion(unittest.TestCase):
 
 
 class TestPatchSuggester(unittest.TestCase):
-    # 多次运行后收敛至当前值
     """测试补丁建议器"""
 
     def setUp(self):

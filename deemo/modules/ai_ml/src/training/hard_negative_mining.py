@@ -1,14 +1,14 @@
 #
 # 对比学习的困难负样本挖掘 — 面向二进制代码嵌入。
 #
-# 标准 MoCo / SimCLR 的对比学习随机采样负样本--大量负样本是"显而易见"的
+# 标准 MoCo / SimCLR 的对比学习随机采样负样本，大量负样本是"显而易见"的
 # （不同架构/不同编译器/完全不同功能的函数），对模型区分能力的贡献有限。
-# 真正有效的梯度来自"困难负样本"--结构相似但功能不同的函数对。
+# 真正有效的梯度来自"困难负样本"-结构相似但功能不同的函数对。
 #
-# 困难负样本在二进制相似度场景中的定义（与 CV/NLP 不同--二进制代码有独特结构）：
-# (a) 同架构同编译器、CFG 形状相似但语义无关 -- 编译器模式复用导致的"假相似"
-# (b) 同函数名不同版本 -- 补丁/重构导致的结构微调
-# (c) 不同函数但碰巧有相似的 CFG 骨架 -- 分支结构同构但数据流不同
+# 困难负样本在二进制相似度场景中的定义（与 CV/NLP 不同，二进制代码有独特结构）：
+# (a) 同架构同编译器、CFG 形状相似但语义无关 - 编译器模式复用导致的"假相似"
+# (b) 同函数名不同版本 - 补丁/重构导致的结构微调
+# (c) 不同函数但碰巧有相似的 CFG 骨架 - 分支结构同构但数据流不同
 #
 #
 # CoCoHaNeRe — 双向困难负样本挖掘用于代码搜索。
@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 
 
 def _cfg_degree_distribution(adj: np.ndarray) -> np.ndarray:
-    """计算图的度分布直方图——作为结构指纹的快速近似。
+    """计算图的度分布直方图-作为结构指纹的快速近似。
 
-    完整的图编辑距离 (GED) 是 NP-hard——本项目用度分布作为代理。
+    完整的图编辑距离 (GED) 是 NP-hard-本项目用度分布作为代理。
     对 CFG 场景：不同函数的度分布通常已足够区分（实测区分度 >85%）。
     """
     in_deg = adj.sum(axis=0)
@@ -52,12 +52,12 @@ def _cfg_degree_distribution(adj: np.ndarray) -> np.ndarray:
 
 
 def cfg_structure_distance(adj_a: np.ndarray, adj_b: np.ndarray) -> float:
-    """CFG 结构距离——度分布直方图的 Jensen-Shannon 散度。
+    """CFG 结构距离-度分布直方图的 Jensen-Shannon 散度。
 
     JS 散度在 [0, ln(2)] 间，对称且适用于直方图比较。
     返回值越大表示结构差异越大。
 
-    # 此段可在 GPU 上微调为批量计算——当前串行版本对小规模数据已足够
+    # 此段可在 GPU 上微调为批量计算-当前串行版本对小规模数据已足够
     """
     hist_a = _cfg_degree_distribution(adj_a)
     hist_b = _cfg_degree_distribution(adj_b)
@@ -67,7 +67,7 @@ def cfg_structure_distance(adj_a: np.ndarray, adj_b: np.ndarray) -> float:
     eps = 1e-12
 
     def kl_div(p, q):
-        # 只对 p>0 的项求和--熵加权的方向性
+        # 只对 p>0 的项求和，熵加权的方向性
         mask = p > eps
         return np.sum(p[mask] * np.log(p[mask] / (q[mask] + eps)))
 
@@ -87,7 +87,7 @@ class StructureAwareNegativeSampler:
     负样本难度定义（二进制特化）：
       easy    — JS > 0.5（结构明显不同，区分容易）
       semi-hard — JS ∈ [0.2, 0.5]
-      hard    — JS < 0.2（结构相似但功能不同——真正考验模型的样本）
+      hard    — JS < 0.2（结构相似但功能不同-真正考验模型的样本）
 
     参数:
       easy_threshold: JS 散度 > 此值为 easy
@@ -102,7 +102,7 @@ class StructureAwareNegativeSampler:
         self._hist_cache: Dict[int, np.ndarray] = {}
 
     def _get_hist(self, adj: np.ndarray, idx: int) -> np.ndarray:
-        """获取度分布直方图——带缓存。"""
+        """获取度分布直方图-带缓存。"""
         if idx not in self._hist_cache:
             self._hist_cache[idx] = _cfg_degree_distribution(adj)
         return self._hist_cache[idx]
@@ -144,7 +144,7 @@ class StructureAwareNegativeSampler:
                                 negative_ids: List[int],
                                 epoch: int, total_epochs: int,
                                 n_samples: int = 32) -> List[int]:
-        """课程学习采样——训练初期偏 easy，后期偏 hard。
+        """课程学习采样-训练初期偏 easy，后期偏 hard。
 
         调度函数: hard_ratio = min(0.8, epoch / total_epochs)
         即最后一轮 80% 的负样本来自 hard 类。
@@ -176,10 +176,10 @@ class StructureAwareNegativeSampler:
 class CFGMixUpNegatives:
     """在嵌入空间生成 MixUp 软负样本。
 
-    标准 MixUp 对正样本对做凸组合作为增强——本项目将其用于负样本空间：
+    标准 MixUp 对正样本对做凸组合作为增强-本项目将其用于负样本空间：
     在困难负样本和简单负样本之间做线性插值，产生"中等难度"的合成负样本。
 
-    关键约束：MixUp 系数 λ ∈ [0.3, 0.7] —— 避免生成样本过于接近任一源样本，
+    关键约束：MixUp 系数 λ ∈ [0.3, 0.7] - 避免生成样本过于接近任一源样本，
     确保合成样本具有独立的信息价值。
     """
 
@@ -263,7 +263,7 @@ class CFGMixUpNegatives:
 
 
 class CurriculumHardnessScheduler:
-    """对比学习课程调度器——控制训练过程中负样本的难度。
+    """对比学习课程调度器-控制训练过程中负样本的难度。
 
     训练早期使用简单负样本建立基本嵌入空间，后期引入困难负样本
     精炼决策边界。避免早期因困难负样本导致训练崩溃。
@@ -273,7 +273,7 @@ class CurriculumHardnessScheduler:
       Transition 期 (20-50%): semi-hard 逐步加入，线性过渡
       Refinement 期 (50-100%): hard 占主导，挑战决策边界
 
-    温度参数控制 softmax 分布的平滑度——高温使困难负样本的影响更温和。
+    温度参数控制 softmax 分布的平滑度-高温使困难负样本的影响更温和。
     """
 
     def __init__(self, warmup_ratio: float = 0.2,
@@ -287,7 +287,7 @@ class CurriculumHardnessScheduler:
         """获取当前训练进度的对比温度。
 
         progress ∈ [0, 1]，温度从 initial_temp 指数衰减到 final_temp。
-        指数衰减而非线性——在 transition 期变化更平滑。
+        指数衰减而非线性-在 transition 期变化更平滑。
         """
         progress = max(0.0, min(1.0, progress))
         if progress <= self.warmup_ratio:

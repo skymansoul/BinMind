@@ -1,4 +1,4 @@
-# 格式化字符串检测精度基准 — 安全样本误报控制验证
+# 格式化字符串检测精度基准 - 安全样本误报控制验证
 #
 # 目标: 验证 fmt 检测器在安全样本 (字面量/常量/snprintf截断) 上
 # 不产生误报, 在真实 CVE 样本上保持召回.
@@ -6,7 +6,6 @@
 #
 # 判定: 样本名含 safe/const/trunc → 安全 (检出=FP);
 #       含 vuln/nested/offset/write/loop 等 → 漏洞 (检出=TP).
-# 创建: 2026-05-20
 
 import json
 import sys

@@ -233,7 +233,7 @@ class CFGGraphEmbedder:
 
     def _build_adjacency(self, n: int,
                          edges: List[Tuple[int, int, float]]) -> List[List[int]]:
-        """构建邻接表用于单跳消息传递。INTJ 直觉：控制流边天然有向，
+        """构建邻接表用于单跳消息传递。控制流边天然有向，
         但这里做对称化（入边+出边）以捕获双向结构上下文。"""
         adj: List[List[int]] = [[] for _ in range(n)]
         ei = 0
@@ -393,7 +393,7 @@ class InstructionTextEmbedder:
         self.m_unk_vector = [_r.uniform(-0.1, 0.1) for _ in range(dim)]
 
         # 注意力参数 — 可学习的 Q/K/V 投影 + 全局上下文向量
-        # INTJ 设计决策：用浅层加性注意力而非缩放点积，
+        # 设计决策：用浅层加性注意力而非缩放点积，
         # 理由是汇编序列短（<512 条指令），计算开销可忽略，
         # 且加性注意力在小维度上稳定性更好。
         self.m_attn_query: List[List[float]] = self._init_weights(dim, dim // 4)

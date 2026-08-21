@@ -1,13 +1,13 @@
-# UAF路径敏感分析器——区分条件free和无条件free
+# UAF路径敏感分析器-区分条件free和无条件free
 # uaf_state_machine.py的核心缺陷2: 假设每个free都必然执行
 # 实际代码中: if(err) { free(ptr); return; } — free是条件执行的
-# 若条件不成立，后续use(ptr)是安全的——不是UAF
+# 若条件不成立，后续use(ptr)是安全的-不是UAF
 #
 # 改进:
 #   1. 识别free所在基本块的前驱条件(cmp/test + jcc)
 #   2. 若free在条件分支内，降低置信度(conservative downgrade)
 #   3. 若free在无条件路径(直行代码)，保持高置信度
-#   4. 识别return/exit后的free——这些是清理代码，后续use不可达
+#   4. 识别return/exit后的free-这些是清理代码，后续use不可达
 #
 # 理论: 基于路径敏感的污点分析思想，在二进制层面做轻量级条件推理
 #       不执行完整符号执行，仅利用cmp/jcc的局部约束
@@ -20,14 +20,13 @@ from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class FreeCertainty(Enum):
-    UNCONDITIONAL = 'unconditional'   # 必然执行——最高风险
-    CONDITIONAL = 'conditional'       # 条件执行——中等风险
-    UNREACHABLE_AFTER = 'unreachable_after'  # free后立即返回——低风险
+    UNCONDITIONAL = 'unconditional'   # 必然执行-最高风险
+    CONDITIONAL = 'conditional'       # 条件执行-中等风险
+    UNREACHABLE_AFTER = 'unreachable_after'  # free后立即返回-低风险
     UNKNOWN = 'unknown'
 
 
@@ -219,5 +218,5 @@ class UafPathAnalyzer:
         if ctx.has_call_after:
             e.append("free后还有其他函数调用→路径上可能继续执行")
         if not e:
-            e.append("无条件free——路径上必然执行")
+            e.append("无条件free-路径上必然执行")
         return e

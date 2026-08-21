@@ -123,7 +123,6 @@ class VEXNormalizer:
         return self._eliminate_dead_stores(folded)
 
     def _rename_regs(self, stmts: list[str]) -> list[str]:
-        import re
         reg_map: dict[str, str] = {}; counter = [0]
         def _vreg(phys: str) -> str:
             if phys not in reg_map:
@@ -139,7 +138,6 @@ class VEXNormalizer:
         return result
 
     def _fold_constants(self, stmt: str) -> str:
-        import re
         m = re.match(r'(\w+)\s*=\s*(-?\d+)\s*([+\-*/])\s*(-?\d+)', stmt)
         if m:
             try:

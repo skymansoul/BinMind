@@ -1,21 +1,21 @@
 #
-# 时态路径缓存 — SimHash 分桶 + 时间衰减 + 自适应桶分裂
+# 时态路径缓存 - SimHash 分桶 + 时间衰减 + 自适应桶分裂
 #
 # 符号执行中路径缓存的特殊性：不同于通用 KV 缓存，路径的"有用性"随
-# 探索进程递减。早期探索阶段缓存了大量浅层路径的 SimHash 签名——
+# 探索进程递减。早期探索阶段缓存了大量浅层路径的 SimHash 签名--
 # 这些浅层路径在后期几乎不可能被再次匹配到（因为后期路径普遍更深、
 # 约束更复杂）。如果不加衰减，缓存被早期噪声主导
 #
 # 设计：
-#   (a) SimHash 的前 16 bits 作为桶索引——2^16=65536 个桶，冲突概率低
+#   (a) SimHash 的前 16 bits 作为桶索引--2^16=65536 个桶，冲突概率低
 #   (b) 每个桶内的路径按插入时间排序，查询时用指数衰减权重修正相似度
 #       新路径 weight=1.0，半衰期后 weight≈0.5
-#   (c) 桶内路径数超过阈值时自适应分裂——沿 SimHash 的第 17-20 bits
+#   (c) 桶内路径数超过阈值时自适应分裂--沿 SimHash 的第 17-20 bits
 #       进一步划分子桶，但这仅在实际查询热度的桶上触发（惰性）
 #
 # 与 PathDiversityTracker 的 ANNIndex 的关系：
-# ANNIndex 用于"给定路径，找 k 个最近邻"——这是 top-k 搜索
-#   本模块用于"给定路径，判断是否与缓存中任一路径高度相似"——
+# ANNIndex 用于"给定路径，找 k 个最近邻"--这是 top-k 搜索
+#   本模块用于"给定路径，判断是否与缓存中任一路径高度相似"--
 # 这是 membership 查询。两者互补，不替代
 
 import hashlib
@@ -29,11 +29,11 @@ from dataclasses import dataclass, field
 @dataclass
 class CachedPath:
     """缓存中的单条路径条目
-    
+
     simhash: 64-bit SimHash 签名（由 PathDiversityTracker 计算后传入）
     inserted_at: 插入时间戳（epoch seconds）
-    depth: 路径深度——用于辅助判断"浅层噪声"
-    constraint_count: 约束数量——用于辅助相似度阈值自适应
+    depth: 路径深度--用于辅助判断"浅层噪声"
+    constraint_count: 约束数量--用于辅助相似度阈值自适应
     """
     path_id: str
     simhash: int
@@ -44,13 +44,13 @@ class CachedPath:
 
 class TemporalPathCache:
     """SimHash 分桶的时态路径缓存
-    
+
     桶索引 = simhash 的前 16 bits。桶内路径按时间衰减加权
     查询返回与给定 SimHash 在桶内最相似的 k 条路径
     相似度 = (1 - 汉明距离/64) × exp(-λ × age)。λ = ln(2)/halflife
     """
 
-    # 桶索引的位数——16 bits → 65536 桶
+    # 桶索引的位数--16 bits → 65536 桶
     BUCKET_BITS = 16
     BUCKET_MASK = (1 << BUCKET_BITS) - 1
 
@@ -95,8 +95,8 @@ class TemporalPathCache:
 
     def _split_bucket(self, bucket: int):
         """将桶内路径按子桶重新分配
-        
-        仅在查询触发时对已满的桶执行——非全局重哈希
+
+        仅在查询触发时对已满的桶执行--非全局重哈希
         子桶结构建立后，主桶的 list 保留但后续查询优先走子桶
         """
         if bucket in self._sub_buckets:
@@ -110,7 +110,7 @@ class TemporalPathCache:
     def query(self, simhash: int, k: int = 5,
               min_similarity: float = 0.7) -> List[Tuple[str, float]]:
         """在桶 + 子桶中搜索与给定 SimHash 最相似的 k 条路径
-        
+
         相似度 = 原始 SimHash 余弦相似度 × 时间衰减因子
         返回 [(path_id, weighted_similari),.]，按加权相似度降序
         """
@@ -153,7 +153,7 @@ class TemporalPathCache:
 
     def evict_expired(self, max_age_seconds: float = 600.0) -> int:
         """批量逐出超过最大年龄的路径条目
-        
+
         返回逐出数量。调用方可周期性调用（如在符号执行检查点）
         """
         now = time.time()

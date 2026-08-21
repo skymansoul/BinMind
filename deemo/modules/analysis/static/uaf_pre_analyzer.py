@@ -1,8 +1,7 @@
-# UAF 预分析器 — 函数识别与用户代码范围推导
+# UAF 预分析器 - 函数识别与用户代码范围推导
 #
 # 职责: 识别用户函数地址范围, 排除CRT/库函数, 构建指令索引.
 #
-# 创建: 2024-04-07
 
 import re
 from typing import Dict, List, Set, Tuple
@@ -115,7 +114,7 @@ class UAFPreAnalyzer:
         all_starts = sorted(self._all_func_starts | self._user_func_addrs)
         user_sorted = sorted(self._user_func_addrs)
 
-        # 构建每个函数的 [start, end) — end = 下一个函数起点
+        # 构建每个函数的 [start, end) - end = 下一个函数起点
         func_endpoints: Dict[int, int] = {}
         for i, s in enumerate(all_starts):
             if i + 1 < len(all_starts):

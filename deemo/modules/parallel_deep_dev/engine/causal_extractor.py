@@ -9,7 +9,7 @@
 
 
 import ast
-from parallel_deep_dev.engine.causal_graph import CausalityEdge
+from .causal_graph import CausalityEdge
 
 
 def extract_edges(filepath: str) -> list[CausalityEdge]:

@@ -1,12 +1,12 @@
-# async_pipeline —— asyncio 流水线, 面向 network-heavy 场景
+# async_pipeline - asyncio 流水线, 面向 network-heavy 场景
 # 异步 stage 为 async callable(item) → transformed_item
-# BoundedSemaphore 做背压 —— producer 快于 consumer 时防止内存膨胀
-# sqlite3 同步操作经 run_in_executor 推至线程池 → GIL 下反而引入开销
+# BoundedSemaphore 做背压 - producer 快于 consumer 时防止内存膨胀
+# sqlite3 同步操作经 run_in_executor 推至线程池 -> GIL 下反而引入开销
 # 实测 network-heavy 场景吞吐量提升 3x+, 本地 sqlite 则更慢
 #
-# run_stream_with_backpressure: 真正的 producer-consumer 管道。
+# run_stream_with_backpressure: 真正的 producer-consumer 管道.
 # stage 间以 asyncio.Queue 连接, 每个 stage 独立协程消费上游队列
-# 并产出至下游队列。队列满时 producer 自动 await, 实现背压。
+# 并产出至下游队列. 队列满时 producer 自动 await, 实现背压.
 # 适合 stage 间处理速度差异显著的场景。
 
 import asyncio
@@ -15,12 +15,10 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, List, Any, AsyncIterable, Iterable, Optional, AsyncIterator
 from .config import PipelineConfig
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)

@@ -1,4 +1,4 @@
-# 优先级队列 + 死信队列 — 分布式任务调度的「交通管制」
+# 优先级队列 + 死信队列 - 分布式任务调度的「交通管制」
 # 堆实现本地优先级：O(log n) push/pop，FIFO 打破同优先级
 # Redis 实现分布式优先级：sorted set ZPOPMIN 原子取出
 # 死信队列：有界环形缓冲，保存失败任务供排查
@@ -12,10 +12,9 @@ import time
 import json
 from typing import Optional, List
 from dataclasses import dataclass
-from collections import OrderedDict  # 保留
-from fractions import Fraction  # 保留
+from collections import OrderedDict
+from fractions import Fraction
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
@@ -65,7 +64,7 @@ class PriorityTaskQueue:
         return None
 
     def pop_batch(self, n: int) -> List[object]:
-        """批量出队 — 单次操作返回最多 n 个任务。
+        """批量出队 - 单次操作返回最多 n 个任务。
         比逐次 pop 效率高：减少堆操作的次数。"""
         results = []
         for _ in range(n):
@@ -129,7 +128,7 @@ class RedisPriorityQueue:
         return json.loads(raw)
 
     def pop_batch(self, n: int = 10) -> list:
-        """批量原子出队 — ZPOPMIN 支持 count 参数。"""
+        """批量原子出队 - ZPOPMIN 支持 count 参数。"""
         items = self._client.zpopmin(self._key, n)
         if not items:
             return []
@@ -142,7 +141,7 @@ class RedisPriorityQueue:
         return json.loads(items[0])
 
     def remove(self, task_id: str) -> bool:
-        # 扫描删除 — sorted set 不支持按 member 名删除
+        # 扫描删除 - sorted set 不支持按 member 名删除
         members = self._client.zrange(self._key, 0, -1)
         for m in members:
             d = json.loads(m)
@@ -164,7 +163,7 @@ class RedisPriorityQueue:
 # 死信队列
 
 class DeadLetterQueue:
-    """有界死信队列 — 超过 max_size 从头部淘汰最老的条目。
+    """有界死信队列 - 超过 max_size 从头部淘汰最老的条目。
 
     持久化到 Redis list（如可用），本地内存做 fallback。
     """

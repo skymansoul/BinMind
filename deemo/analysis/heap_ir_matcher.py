@@ -31,7 +31,7 @@ def match_if(text: str) -> Optional[Tuple[str, bool]]:
 def match_alloc(text: str) -> Optional[Tuple[str, str, str]]:
     """匹配malloc/calloc/realloc调用.
 
-    Returns: (dst_var, func_name, size_text) or None.
+    返回 (dst_var, func_name, size_text) 或 None.
       - calloc 自动转换为乘积表达式: "(n) * (size)"
       - realloc 只提取新大小参数 (忽略旧指针)
     """
@@ -56,7 +56,7 @@ def match_alloc(text: str) -> Optional[Tuple[str, str, str]]:
 def match_write(text: str) -> Optional[Tuple[str, str]]:
     """匹配堆写入操作 (memcpy/memmove/memset/strcpy/strncpy).
 
-    Returns: (func_name, size_text) or None.
+    返回 (func_name, size_text) 或 None.
       - memcpy 返回第3参数大小
       - strcpy 返回'0' (未知, 保守)
       - strncpy 返回第3参数

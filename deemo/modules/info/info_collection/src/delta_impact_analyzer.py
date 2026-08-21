@@ -1,9 +1,3 @@
-# Created: 2026-07-11 10:15:00
-# Modified: 2025-07-31 14:00:00 — replaced bidirectional diff with Shapley-value
-#   decomposition. Each changed signal's contribution to the net risk delta is
-#   computed by marginalizing over all possible signal orderings, providing a
-#   mathematically fair attribution of impact to individual changes.
-#
 # delta_impact_analyzer — Shapley 值分解的增量安全影响分析
 # 对版本间安全变化做公平归因：每个变化信号的风险贡献通过其所有可能
 # 加入顺序的边际效应均值 (Shapley value) 计算，消除简单线性分解中的

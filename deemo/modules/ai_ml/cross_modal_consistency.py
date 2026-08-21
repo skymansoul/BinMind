@@ -1,7 +1,7 @@
-# 跨模态一致性正则化——多模态二进制嵌入的互相约束训练
+# 跨模态一致性正则化-多模态二进制嵌入的互相约束训练
 #
 # 核心问题: 现有multimodal_embedding.py将不同模态（CFG结构、指令序列、
-# 数据流图）的嵌入拼接或简单加和——但如果CFG嵌入说"这是一个循环密集的函数"
+# 数据流图）的嵌入拼接或简单加和-但如果CFG嵌入说"这是一个循环密集的函数"
 # 而指令嵌入说"这是直线代码"，两个模态互相矛盾却没有被惩罚。
 # 这种跨模态不一致是模型对编译器优化级别敏感的根因之一。
 #
@@ -10,9 +10,9 @@
 #      强制不同模态对同一函数的嵌入保持一致方向
 #   2. 模态特异性保留: 一致性损失仅应用于共享语义子空间（前K维），
 #      剩余维度保留各模态的特异性信息
-#   3. 自适应权重: 训练过程中动态调整一致性损失的权重——
+#   3. 自适应权重: 训练过程中动态调整一致性损失的权重-
 #      训练早期高权重（强制对齐），后期逐步降低（允许细粒度差异）
-#   4. 模态冲突检测: 识别跨模态不一致的样本——
+#   4. 模态冲突检测: 识别跨模态不一致的样本-
 #      可能是混淆代码、编译器bug、或分析工具误差
 #
 # 新颖性:
@@ -35,7 +35,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MultiModalEmbedding:
-    """多模态嵌入——每个模态独立嵌入 + 共享/特异性维度分离"""
+    """多模态嵌入-每个模态独立嵌入 + 共享/特异性维度分离"""
     func_id: str
     cfg_embedding: np.ndarray        # CFG结构嵌入 (dim,)
     instr_embedding: np.ndarray      # 指令序列嵌入 (dim,)
@@ -91,14 +90,6 @@ class CrossModalConsistency:
                  lambda_initial: float = 0.5,
                  lambda_decay: float = 0.01,
                  conflict_threshold: float = 0.3):
-        """
-        Args:
-            shared_dim: 共享语义子空间维度（前K维）
-            total_dim: 每个模态的总嵌入维度
-            lambda_initial: 初始一致性损失权重
-            lambda_decay: 每训练步的λ衰减率
-            conflict_threshold: 低于此cosine阈值的样本标记为冲突
-        """
         self.shared_dim = shared_dim
         self.total_dim = total_dim
         self.lambda_initial = lambda_initial
@@ -109,15 +100,7 @@ class CrossModalConsistency:
     def compute_consistency_loss(self,
                                   modality_embs: List[np.ndarray]
                                   ) -> Tuple[float, ConsistencyMetrics]:
-        """计算跨模态一致性损失和度量。
-
-        Args:
-            modality_embs: [emb_cfg, emb_instr, emb_dataflow]
-                           每个嵌入维度为(total_dim,)
-
-        Returns:
-            (loss_value, metrics)
-        """
+        """计算跨模态一致性损失和度量。"""
         n_mods = len(modality_embs)
         if n_mods < 2:
             return 0.0, ConsistencyMetrics(
@@ -161,16 +144,7 @@ class CrossModalConsistency:
                         modality_embs: List[np.ndarray],
                         enforce_consistency: bool = True
                         ) -> np.ndarray:
-        """融合多模态嵌入——共享子空间取均值，特异性维度拼接。
-
-        Args:
-            modality_embs: 各模态嵌入列表
-            enforce_consistency: 是否对共享子空间强制均值化
-                                （推理时建议True，训练时由loss自然引导）
-
-        Returns:
-            融合嵌入 (total_dim,)
-        """
+        """融合多模态嵌入-共享子空间取均值，特异性维度拼接。"""
         n_mods = len(modality_embs)
         if n_mods == 0:
             return np.zeros(self.total_dim)
@@ -212,7 +186,7 @@ class CrossModalConsistency:
 # 模态冲突检测
 
 class ModalityConflictDetector:
-    """检测跨模态不一致的样本——诊断数据质量或分析工具问题。
+    """检测跨模态不一致的样本-诊断数据质量或分析工具问题。
 
     高冲突样本的可能原因:
       - 混淆代码: CFG结构被刻意扭曲，但指令序列语义正常
@@ -229,11 +203,7 @@ class ModalityConflictDetector:
     def detect_conflicts(self,
                          embeddings: List[MultiModalEmbedding]
                          ) -> List[Tuple[str, float, List[str]]]:
-        """批量检测模态冲突样本。
-
-        Returns:
-            [(func_id, conflict_score, [conflict_descriptions, ...]), ...]
-        """
+        """批量检测模态冲突样本。"""
         conflicts = []
         for emb in embeddings:
             mod_embs = emb.get_modality_embs()

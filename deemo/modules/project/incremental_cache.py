@@ -211,12 +211,10 @@ class IncrementalAnalysisScheduler:
 
     def partition_targets(self, targets: Dict[str, bytes]) -> Tuple[
             List[str], List[str], Dict[str, AnalysisArtifact]]:
-        """目标分三类: 未变更(复用)/相似(候选复用)/新目标(重分析).
+        """目标分三类: 未变更(复用)/相似(候选复用)/新目标(重分析)。
 
-        Returns:
-            unchanged: 精确匹配可跳过
-            changed: 需重分析
-            similar_matches: {target_id: best_candidate_artifact}
+        返回 (unchanged 精确匹配可跳过, changed 需重分析,
+        similar_matches {target_id: best_candidate_artifact})。
         """
         unchanged = []
         changed = []

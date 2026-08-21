@@ -148,7 +148,6 @@ class TestCompilerOptAnalyzer(unittest.TestCase):
         self.assertIsInstance(report, str)
 
     def test_export_report(self):
-        # 运行时效率可接受——无需进一步加速
         analyzer = CompilerOptAnalyzer()
         result = analyzer.analyze(self.test_file)
 

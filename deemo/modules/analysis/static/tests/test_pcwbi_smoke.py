@@ -6,7 +6,6 @@
 #   3. 守卫安全: malloc(64) + 有界写入     → 守卫约束, 不确认.
 #   4. 同源越界: malloc(n) + memcpy(n+100) → 符号相关溢出, 确认.
 #
-# 创建: 2026-06-02
 
 import os
 import sys

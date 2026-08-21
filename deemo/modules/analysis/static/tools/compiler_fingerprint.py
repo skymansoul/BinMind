@@ -1,24 +1,23 @@
-# 修改记录:
-# 2025-08-01 15:12 - 增加 register pressure 度量的滑动窗口归一化，消解函数长度差异的偏置
-# 2025-08-03 09:47 - 引入 instruc dyad 共现频率——单指令频率对编译器区分度低，指令对序列更有鉴别力
-# 2025-08-03 14:30 - 特征数据库拆至 compiler_profiles.py，本文件仅保留推断逻辑
+# 增加 register pressure 度量的滑动窗口归一化，消解函数长度差异的偏置
+# 引入 instruc dyad 共现频率, 单指令频率对编译器区分度低, 指令对序列更有鉴别力
+# 特征数据库拆至 compiler_profiles.py，本文件仅保留推断逻辑
 
-"""Compiler proven fingerprinting — 从二进制统计特征推断编译器、版本、优化级别
+"""Compiler proven fingerprinting, 从二进制统计特征推断编译器、版本、优化级别
 
 现有 编译器_opt_analyzer.py 基于规则匹配（如识别 -O2 特有的 loop unrolling 模式）
 在面对新编译器版本或非主流编译器（ICC, Rustc,）时规则库过时
 
-本模块采用统计指纹方法——不依赖具体规则，而是从指令序列中提取多种弱信号
+本模块采用统计指纹方法, 不依赖具体规则，而是从指令序列中提取多种弱信号
 通过概率集成实现鲁棒的编译器识别。三个特征维度：
 
-1. 指令 dyad 共现频率 —— 相邻指令对的分布是编译器的深层签名
-2. 寄存器分配压力度量 —— 编译器后端寄存器分配策略的可区分残留
-3. 循环结构残差 —— 优化级别在循环体大小和展开因子上的留存痕迹
+1. 指令 dyad 共现频率, 相邻指令对的分布是编译器的深层签名
+2. 寄存器分配压力度量, 编译器后端寄存器分配策略的可区分残留
+3. 循环结构残差, 优化级别在循环体大小和展开因子上的留存痕迹
 
-ref: MulCPI — 多模态特征融合的编译器来源识别
-ref: BinAlign — 对齐填充特征的注意力机制方法
+ref: MulCPI, 多模态特征融合的编译器来源识别
+ref: BinAlign, 对齐填充特征的注意力机制方法
 本项目的 instruc dyad 特征受其"编译器特有指令序列模式"思想启发
-ref: Benoit et al. — CFG site-based GNN 在编译器来源上的 F1=0.995
+ref: Benoit et al., CFG site-based GNN 在编译器来源上的 F1=0.995
 """
 
 import math
@@ -47,14 +46,14 @@ class CompilerFingerprint:
 
 class CompilerFingerprinter:
     """从反汇编输出中提取统计指纹，匹配编译器/优化级别
-    
+
     使用接口:
     fp = 编译器Fingerprinter()
     result = fp.fingerprint(instructions=asm_lines, reg_pressure=0.5, loop_metrics={.})
     # result: 编译器Fingerprint
     """
 
-    # 弱信号集成权重——通过交叉验证校准
+    # 弱信号集成权重, 通过交叉验证校准
     _ENSEMBLE_WEIGHTS = {
         "dyad": 0.45,
         "reg_pressure": 0.30,
@@ -68,7 +67,7 @@ class CompilerFingerprinter:
 # 指令 dyad 提取
     @staticmethod
     def _normalize_mnemonic(mnemonic: str) -> str:
-        """将变体归一化到标准助记符——忽略操作数宽度后缀（b/w/l/q）"""
+        """将变体归一化到标准助记符, 忽略操作数宽度后缀（b/w/l/q）"""
         _m = mnemonic.lower().strip()
         # x86 条件跳转归并：je/jne/jz/jnz/jb/jae/. → jcc
         _jcc_set = {'je', 'jne', 'jz', 'jnz', 'jb', 'jae', 'ja', 'jbe',
@@ -91,11 +90,11 @@ class CompilerFingerprinter:
 
     def extract_dyads(self, instructions: List[str]) -> Dict[str, float]:
         """从指令列表提取归一化后的指令对频率分布
-        
+
         instructions: 反汇编行列表，每行格式如 "mov rax, rbx"（只取助记符部分）
         """
         _mnemonics = []
-        for line in instructions[:50000]:  # 采样前 50K 条——大文件足够统计稳定
+        for line in instructions[:50000]:  # 采样前 50K 条, 大文件足够统计稳定
             _parts = line.strip().split()
             if not _parts:
                 continue
@@ -133,7 +132,7 @@ class CompilerFingerprinter:
 
     def _score_reg_pressure(self, reg_pressure: float) -> Dict[str, float]:
         """基于寄存器压力度量匹配每种编译器的各优化级别。”
-        返回 {编译器_optlevel: score}——不是 {编译器: score}
+        返回 {编译器_optlevel: score}, 不是 {编译器: score}
         因为寄存器压力同时受到编译器和优化级别的双重影响
         """
         _scores = {}
@@ -163,7 +162,7 @@ class CompilerFingerprinter:
                   reg_scores: Dict[str, float],
                   loop_scores: Dict[str, float]) -> CompilerFingerprint:
         """概率集成：加权 + 一致性校验 → 最终推断
-        
+
         三个维度各自独立产生每种 (compiler, opt) 的得分
         集成的关键在于：(a) 加权，(b) 维度间一致性作为额外置信度信号
         """
@@ -242,7 +241,7 @@ class CompilerFingerprinter:
                     loop_body_sizes: Optional[List[float]] = None,
                     unroll_indicators: Optional[List[float]] = None) -> CompilerFingerprint:
         """主入口：对反汇编输出做编译器指纹识别
-        
+
         instructions: 反汇编指令列表（可来自 r2/objdump/Ghidra）
         reg_pressure: 外部估算的寄存器压力值 [0, 1]，若为 None 则从指令估算
         loop_body_sizes: 循环体大小列表（指令数），若为 None 则跳过
@@ -260,7 +259,7 @@ class CompilerFingerprinter:
         if loop_body_sizes and unroll_indicators:
             _loop_scores = self._score_loop_residue(loop_body_sizes, unroll_indicators)
         else:
-            # 无循环信息时——该维度对所有人等权
+            # 无循环信息时, 该维度对所有人等权
             for comp in ("GCC", "Clang", "MSVC"):
                 for opt in ("O0", "O2", "Os"):
                     _loop_scores[f"{comp}_{opt}"] = 0.5
@@ -269,8 +268,8 @@ class CompilerFingerprinter:
 
     @staticmethod
     def _rough_reg_pressure_estimate(instructions: List[str]) -> float:
-        """无 CFG 分析下的寄存器压力粗估——基于唯一寄存器引用密度
-        
+        """无 CFG 分析下的寄存器压力粗估, 基于唯一寄存器引用密度
+
         归一化：寄存器引用数 / (指令数 × 架构寄存器池大小)
         此为粗粒度估计，CFG 级别的 l 分析会产生更准确的结果
         """

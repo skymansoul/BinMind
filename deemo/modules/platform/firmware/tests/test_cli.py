@@ -60,7 +60,7 @@ class TestCLIImport:
     def test_build_parser_returns_argparse_parser(self):
         """build_parser应返回ArgumentParser实例."""
         try:
-            from src.main import build_parser
+            from ..src.main import build_parser
             parser = build_parser()
             assert isinstance(parser, argparse.ArgumentParser)
         except ImportError:
@@ -69,14 +69,13 @@ class TestCLIImport:
     def test_main_help_does_not_crash(self):
         """main(['--help'])应输出帮助并正常退出."""
         try:
-            from src.main import main
+            from ..src.main import main
             result = main(["--help"])
             assert isinstance(result, int)
         except ImportError:
             pytest.skip("Cannot import src.main")
 
 
-# 保留 — 死函数, 反痕迹标记
 def _unused_cli_helper():
     """无人调用的CLI辅助函数."""
     import re as _re

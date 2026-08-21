@@ -1,8 +1,8 @@
-# 增强UAF过滤器——整合别名追踪+路径分析+状态机的三阶段UAF检测管线
+# 增强UAF过滤器-整合别名追踪+路径分析+状态机的三阶段UAF检测管线
 # 原有uaf_state_machine.py: 单函数mov rdi, reg匹配free目标
-#   缺陷1: 寄存器别名丢失——ptr→rbx→free(rbx)后使用ptr不检测
-#   缺陷2: 无条件假设free必然执行——条件分支内free误报
-#   缺陷3: 无跨函数use检测——free后传递给其他函数的指针未追踪
+#   缺陷1: 寄存器别名丢失-ptr→rbx→free(rbx)后使用ptr不检测
+#   缺陷2: 无条件假设free必然执行-条件分支内free误报
+#   缺陷3: 无跨函数use检测-free后传递给其他函数的指针未追踪
 #
 # 改进(三阶段管线):
 #   阶段1(UafAliasTracker): 寄存器别名图+传递闭包→间接free/use检测
@@ -24,7 +24,6 @@ from .uaf_path_analyzer import (
     UafPathAnalyzer, PathContext, FreeCertainty)
 from .uaf_rebirth_tracker import RebirthTracker
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -73,10 +72,10 @@ class EnhancedUafFilter:
         alias_sets = self._alias_tracker.analyze(
             instructions, bb_boundaries)
 
-        # 阶段1.5: 指针重生过滤——realloc/malloc写回等重生赋值清除悬垂use(仅过滤)
+        # 阶段1.5: 指针重生过滤-realloc/malloc写回等重生赋值清除悬垂use(仅过滤)
         self._rebirth.apply(instructions, alias_sets)
 
-        # 阶段2: 路径敏感分析——对所有free点
+        # 阶段2: 路径敏感分析-对所有free点
         free_sites = []
         for aset in alias_sets:
             free_sites.extend(aset.free_sites)
@@ -216,10 +215,10 @@ class EnhancedUafFilter:
     def _assess_use_severity(self, instr: str) -> int:
         """评估use的严重性: 3=解引用, 2=call参数, 1=copy/mov"""
         if f'[' in instr and 'lea' not in instr:
-            return 3  # 内存读写——最可能触发崩溃
+            return 3  # 内存读写-最可能触发崩溃
         if 'call' in instr:
-            return 2  # 作为参数传递——可能被其他函数解引用
-        return 1     # 普通mov——可能只是copy值
+            return 2  # 作为参数传递-可能被其他函数解引用
+        return 1     # 普通mov-可能只是copy值
 
     def _make_empty_report(self,
                             func_name: str,
@@ -235,6 +234,6 @@ class EnhancedUafFilter:
                 verdict=UafVerdict.UNCERTAIN,
                 confidence=0.2,
                 alias_sets=freed,
-                evidence=["仅有free, 未发现危险use——可能是安全清理"],
+                evidence=["仅有free, 未发现危险use-可能是安全清理"],
                 fp_likelihood=0.8)]
         return []

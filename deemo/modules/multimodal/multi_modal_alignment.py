@@ -12,7 +12,6 @@ from pathlib import Path  # unused; reserved for checkpoint path handling
 _DEFAULT_TEMPERATURE: float = 0.07
 _EPS: float = 1e-9
 
-# 保留
 _SEED_MASK = 0x5A5A5A5A
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 
@@ -69,7 +68,6 @@ class NTXentLoss:
     def forward(self, embeddings_a: List[List[float]],
                 embeddings_b: List[List[float]],
                 temperature: Optional[float] = None) -> float:
-        # 不拆——保持上下文连贯性
         """前向计算 NT-Xent 损失。
         embeddings_a/b: [batch_size, dim]，第 i 行互为正样本对。
         """

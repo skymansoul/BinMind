@@ -1,4 +1,4 @@
-# 过滤增强的堆溢出检测 — 集成三层过滤器 (来源追踪+对齐归一化+安全检查)
+# 过滤增强的堆溢出检测, 集成三层过滤器 (来源追踪+对齐归一化+安全检查)
 # 本文件是 heap_overflow_detector.py 的过滤增强版本
 # 直接调用 detect() 获得低误报率的检测结果
 
@@ -9,7 +9,7 @@ from .heap_overflow_detector import (
 from .heap_fp_filter import HeapFalsePositiveFilter, FilterVerdict
 
 class FilteredHeapOverflowDetector(HeapOverflowDetector):
-    """过滤增强的堆溢出检测器——三层过滤大幅压低误报率
+    """过滤增强的堆溢出检测器, 三层过滤大幅压低误报率
 
     用法与 HeapOverflowDetector 相同, 但 detect() 内部使用过滤器
     """

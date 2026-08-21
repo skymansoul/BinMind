@@ -18,7 +18,6 @@
 #      超过2层的间接数据流在静态分析中可靠性急剧下降,
 #      不做追踪以减少误追踪导致的漏报.
 #
-# 创建: 2026-07-12
 
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple

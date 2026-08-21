@@ -4,6 +4,7 @@
 
 
 import logging
+import math
 from typing import Any, Dict, List, Optional
 
 _log = logging.getLogger(__name__)
@@ -131,7 +132,6 @@ def _fuse_confidence(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
       L0(汇编): 0.6, L1(静态): 0.5, L1.5(污点): 0.7,
       L1.7(def-use): 0.65, L2(符号): 0.8
     """
-    import math
     weights = {'asm': 0.6, 'static': 0.5, 'taint': 0.7,
                'defuse': 0.65, 'symbolic': 0.8}
 

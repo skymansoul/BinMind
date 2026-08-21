@@ -1,25 +1,15 @@
 """
-路径约束追踪器 — 累积分支条件并在报告前检查可行性.
+路径约束追踪器 - 累积分支条件并在报告前检查可行性.
 
-理论来源:
-  Cadar et al., "KLEE: Unassisted and Automatic Generation of High-Coverage Tests
-  for Complex Systems Programs"
-  — 符号执行中路径条件积累的标准范式, 本模块将其实例化为轻量级约束检查.
+原理: 静态分析把所有 CFG 路径视为可行, 在汇聚点合并两分支状态导致过近似
+(如 if(x>100) 与 if(x<50) 合并出 "x 可为 30 也可为 200")。本模块记录每条路径的
+分支守卫, 在报告堆溢出前检查 "是否存在可行路径使分配大小 < 写入偏移";
+若路径约束已隐含偏移必超上限, 则该溢出路径不可行, 可排除。
 
-误报削减原理:
-  静态分析中, 所有CFG路径都被视为可行. 但实际上许多路径互相矛盾——
-  如 if(x>100) 和 if(x<50) 分别进入两分支, 在汇聚点分析时合并了两个分支
-  的状态, 导致"x 可能为 30 且可能为 200" 的过近似. 当检测到偏移 200 超过
-  分配上限 100 时, 这其实是x>100分支的合法情况——但分析器不知道.
-
-  约束追踪器记录每条路径上的分支守卫, 在报告堆溢出前检查:
-  "是否存在一条可行路径, 使得分配大小 < 写入偏移?"
-
-设计决策:
-  - 为什么不做完整的 SMT 求解: 完整符号执行对二进制路径爆炸不可行.
-    我们只在报告违规时做轻量级约束检查——不探索路径, 只验证.
-  - 约束表示: 线性不等式 a*x + b*y + c >= 0 的有限集合.
-    对于 malloc 大小推断这已足够——大多数分配大小是常数或简单表达式.
+设计决策 (参照 KLEE 路径条件积累范式):
+  - 不做完整 SMT 求解: 完整符号执行对二进制路径爆炸不可行, 只在报告违规时做
+    轻量级约束验证 - 不探索路径, 只验证.
+  - 约束表示: 线性不等式 a*x + b*y + c >= 0 的有限集合, 对 malloc 大小推断已足够.
 """
 
 from dataclasses import dataclass, field
@@ -176,15 +166,7 @@ class ConstraintTracker:
         self._last_cmp = (v1, v2)
 
     def feed_jcc(self, cc: str, taken: bool) -> PathCondition:
-        """记录条件分支.
-
-        Args:
-            cc: 条件码 (jg, jle, je 等)
-            taken: True=走分支, False=不跳转
-
-        Returns:
-            更新后的路径条件
-        """
+        """记录条件分支: cc 为条件码, taken 为是否走分支; 返回更新后的路径条件。"""
         if self._last_cmp is None:
             return self._current_pc
 
@@ -222,18 +204,10 @@ class ConstraintTracker:
 
     def is_path_feasible(self, alloc_var: str, alloc_size: int,
                          access_offset: int) -> bool:
-        """检查是否存在可行路径使得 access_offset < alloc_size.
+        """检查是否存在可行路径使得 access_offset < alloc_size。
 
-        核心思想: 如果当前路径约束隐含 access_offset 必须大于 alloc_size,
-        则溢出报告的这条路径不可行, 可以排除.
-
-        Args:
-            alloc_var: 分配大小变量名
-            alloc_size: 推断的分配大小 (保守下界: 最小值)
-            access_offset: 访问偏移
-
-        Returns:
-            True if the overflow path is feasible (i.e., shouldn't be filtered)
+        核心思想: 若路径约束隐含 access_offset 必大于 alloc_size,
+        则该溢出路径不可行, 可排除; 无法排除时保守保留。
         """
         # 构建反约束: access_offset < alloc_size
         # 等价于 alloc_var >= access_offset + 1

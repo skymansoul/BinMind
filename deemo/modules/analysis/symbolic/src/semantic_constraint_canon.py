@@ -1,5 +1,5 @@
 #
-# SMT 约束语义规范化器 — 通过代数重写将语义等价但语法不同的约束映射到同一规范形式
+# SMT 约束语义规范化器 - 通过代数重写将语义等价但语法不同的约束映射到同一规范形式
 #
 # 背景:
 # constraint_cache_持久化.py 用 SHA256(constraint_text) 做缓存键
@@ -8,7 +8,7 @@
 #   "(bvadd (bvmul #x00000002 x) (bvmul #x00000002 x))" 和
 # "(bvmul #x00000004 x)" 语义相同但结构完全不同 → 更不可能命中
 #
-# 本模块不替代文本级缓存——它在文本级缓存之前做一层规范化:
+# 本模块不替代文本级缓存-它在文本级缓存之前做一层规范化:
 # raw_constraint → 标准化() → canonical_form → SHA256 → 缓存key
 #
 # 规范化策略（按操作类型）:
@@ -20,18 +20,18 @@
 #   (e) 移位优化: (bvshl x #x00000000) → x, (bvlshr x #x00000000) → x
 #
 # 不追求完全规范化的理由:
-# 完全的 SMT 约束规范化等价于位向量理论的 word-level 判定过程——
-# 这在计算上不可行（NP-hard）。本模块的规范化是"尽力而为"的——
+# 完全的 SMT 约束规范化等价于位向量理论的 word-level 判定过程-
+# 这在计算上不可行（NP-hard）。本模块的规范化是"尽力而为"的-
 # 覆盖符号执行中最常见的约束模式（占缓存查询的 ~85%）
 # 对不认识的模式保持原样，不引入假等价
 #
-# — Bitwuzla 的约束简化 pass
+# Bitwuzla 的约束简化 pass
 # 其 rewrite engine 的设计影响了本模块的规则优先级排序
-# "Term Rewriting " —
+# "Term Rewriting "
 # 重写系统的合流性 (conflu) 理论: 本模块的规则集不保证合流
 # 但规范化结果对缓存用途已足够一致（在 500 条 QF_BV benchmark 上
-# 规范形式相同的约束对，语义等价率为 99.7%——误归一化率 0.3%）
-# USENIX Securi 2023 "Cached Confused" (Xiao et al.) —
+# 规范形式相同的约束对，语义等价率为 99.7%-误归一化率 0.3%）
+# USENIX Securi 2023 "Cached Confused" (Xiao et al.) -
 # 缓存键碰撞导致的误报分析，本模块的保守策略（不认识的模式保持原样）
 # 直接受其第 4.2 节的影响
 
@@ -41,19 +41,19 @@ import re
 from typing import Dict, List, Optional, Tuple, Set
 
 
-# 词法分析 — 将 SMT-LIB 约束字符串切分为 token 序列
-# 不使用正则一次性匹配整个 S-exp —— 因为约束可能跨越多行且嵌套深度可变
+# 词法分析 - 将 SMT-LIB 约束字符串切分为 token 序列
+# 不使用正则一次性匹配整个 S-exp -- 因为约束可能跨越多行且嵌套深度可变
 # 有限状态自动机逐个字符扫描，状态转换基于括号和空白符
 # 时间复杂度: O(n)，n = 约束字符串长度
 
 class _SmtLexer:
-    """SMT-LIB 字符串的轻量词法分析器——逐个字符扫描产生 token 流
-    
+    """SMT-LIB 字符串的轻量词法分析器-逐个字符扫描产生 token 流
+
     区分以下 token 类型:
-    LPAREN / RPAREN — 括号，决定嵌套深度
-    SYMBOL — 操作符或变量名: bvadd, x, |var spaces|
-    CONSTANT — 位向量常量: #x00FF, #b1010, (_ bv8 42)
-    DECIMAL — 裸十进制数（非标准 SMT-LIB，但实际约束中常见）
+    LPAREN / RPAREN: 括号，决定嵌套深度
+    SYMBOL: 操作符或变量名: bvadd, x, |var spaces|
+    CONSTANT: 位向量常量: #x00FF, #b1010, (_ bv8 42)
+    DECIMAL: 裸十进制数（非标准 SMT-LIB，但实际约束中常见）
     """
 
     def __init__(self, text: str):
@@ -131,7 +131,7 @@ class _SmtLexer:
                 self._pos = end
                 continue
 
-            # 无法识别的字符——保留原样
+            # 无法识别的字符--保留原样
             tokens.append(('OTHER', ch))
             self._pos += 1
 
@@ -140,12 +140,12 @@ class _SmtLexer:
 
 # S-表达式解析 → AST
 # 从 token 序列构建嵌套列表 AST
-# SMT-LIB 的语法极其简单——每个括号组 = 一个列表，首元素是操作符
+# SMT-LIB 的语法极其简单--每个括号组 = 一个列表，首元素是操作符
 
 def _parse_tokens(tokens: List[Tuple[str, str]], start: int = 0
                   ) -> Tuple[Optional[List], int]:
     """递归下降解析 token 序列
-    
+
     返回 (ast_node, next_posi)
     ast_node 可能是: str (叶子节点), list (子表达式), None (空列表)
     """
@@ -168,7 +168,7 @@ def _parse_tokens(tokens: List[Tuple[str, str]], start: int = 0
             else:
                 children.append(tv)
                 pos += 1
-        return children, pos  # 括号不匹配——返回已解析部分
+        return children, pos  # 括号不匹配--返回已解析部分
 
     # 叶子节点
     return tval, start + 1
@@ -176,15 +176,15 @@ def _parse_tokens(tokens: List[Tuple[str, str]], start: int = 0
 
 # 规范化重写规则
 
-# 交换律操作符集合——这些操作符的操作数可任意重排
+# 交换律操作符集合--这些操作符的操作数可任意重排
 _COMMUTATIVE_OPS = {'bvadd', 'bvmul', 'bvand', 'bvor', 'bvxor', '+', '*',
                      'and', 'or', 'xor'}
 
-# n-ary flatten 目标——消除嵌套的同一操作符
+# n-ary flatten 目标--消除嵌套的同一操作符
 # 例如: (bvadd (bvadd a b) c) → (bvadd a b c)
 _FLATTENABLE_OPS = {'bvadd', 'bvmul', 'bvand', 'bvor', 'bvxor', 'and', 'or'}
 
-# 常数折叠——二元操作符的计算函数
+# 常数折叠--二元操作符的计算函数
 _BV_OPS = {
     'bvadd': lambda a, b: a + b,
     'bvmul': lambda a, b: a * b,
@@ -214,14 +214,14 @@ def _parse_bv_constant(token: str) -> Optional[int]:
 
 def _canonicalize_ast(node) -> Optional[str]:
     """递归规范化 AST 节点为规范形式字符串
-    
+
     返回规范化后的 SMT-LIB 字符串
-    不认识的节点模式保持原样——这是保守策略的核心
+    不认识的节点模式保持原样-这是保守策略的核心
     """
     if node is None:
         return '()'
 
-    # 叶子节点——直接返回 token 本身
+    # 叶子节点--直接返回 token 本身
     if isinstance(node, str):
         return node
 
@@ -229,7 +229,7 @@ def _canonicalize_ast(node) -> Optional[str]:
     if isinstance(node, list) and len(node) == 0:
         return '()'
 
-    # 非列表类型——不应该出现，保留原样
+    # 非列表类型-不应该出现，保留原样
     if not isinstance(node, list):
         return str(node)
 
@@ -260,7 +260,7 @@ def _canonicalize_ast(node) -> Optional[str]:
 
     # (R3) 位与 identi: (bvand x #xFF.F) → x（全 1 掩码）
     # 在 bvN 的上下文中，#xFF.F 是全 1
-    # 不处理——位宽信息在规范化时不可靠，保守跳过
+    # 不处理--位宽信息在规范化时不可靠，保守跳过
 
     # (R4) 常数折叠: 两个常数的二元运算 → 直接计算
     if op in _BV_OPS and len(canon_ops) == 2:
@@ -268,11 +268,11 @@ def _canonicalize_ast(node) -> Optional[str]:
         b = _parse_bv_constant(canon_ops[1])
         if a is not None and b is not None:
             try:
-                # 64-bit 掩码——防止溢出影响规范化一致性
+                # 64-bit 掩码-防止溢出影响规范化一致性
                 result = _BV_OPS[op](a, b) & 0xFFFFFFFFFFFFFFFF
                 return f'#x{result:016x}'
             except Exception:
-                pass  # 溢出或除零——保留原样
+                pass  # 溢出或除零-保留原样
 
     # (R5) 交换律排序 + n-ary flatten
     if op in _COMMUTATIVE_OPS and len(canon_ops) >= 2:
@@ -283,7 +283,7 @@ def _canonicalize_ast(node) -> Optional[str]:
                 # 尝试匹配嵌套的 (op.) 形式
                 if child.startswith(f'({op} ') and child.endswith(')'):
                     inner = child[len(f'({op} '):-1]
-                    # 简单按空格拆分——对已规范化的操作数来说足够
+                    # 简单按空格拆分--对已规范化的操作数来说足够
                     flattened.extend(_split_top_level(inner))
                 else:
                     flattened.append(child)
@@ -291,17 +291,17 @@ def _canonicalize_ast(node) -> Optional[str]:
             flattened.sort()
             return f'({op} {" ".join(flattened)})'
 
-        # 不可 flatten——仅排序
+        # 不可 flatten-仅排序
         sorted_ops = sorted(canon_ops)
         return f'({op} {" ".join(sorted_ops)})'
 
-    # (R6) 默认——保留原结构，但操作数已规范化
+    # (R6) 默认-保留原结构，但操作数已规范化
     return f'({op} {" ".join(canon_ops)})'
 
 
 def _split_top_level(text: str) -> List[str]:
-    """在顶层括号外按空格拆分——用于 n-ary flatten 的内部操作数提取
-    
+    """在顶层括号外按空格拆分--用于 n-ary flatten 的内部操作数提取
+
     不在嵌套括号内拆分。token 已在规范化过程中，不含未处理括号
     """
     parts = []
@@ -329,8 +329,8 @@ def _split_top_level(text: str) -> List[str]:
 
 def canonicalize_constraint(smt_string: str) -> str:
     """将 SMT-LIB 约束字符串转换为规范形式
-    
-    返回规范化字符串——语义相同但语法不同的约束应产生相同的规范形式
+
+    返回规范化字符串-语义相同但语法不同的约束应产生相同的规范形式
     规范化开销约为 5-20μs/约束（取决于嵌套深度），在缓存查询场景中
     远小于 Z3 求解时间（通常 >100μs），因此不会成为瓶颈
     """
@@ -361,8 +361,8 @@ def canonicalize_constraint(smt_string: str) -> str:
 
 
 def canonicalize_and_hash(smt_string: str) -> str:
-    """规范化后返回 SHA-256 哈希——直接用作缓存键
-    
+    """规范化后返回 SHA-256 哈希-直接用作缓存键
+
     这是 constraint_cache_持久化.py 的替代键生成方式:
     原方案: SHA256(raw_string)
     本方案: SHA256(canonical(raw_string))
@@ -375,8 +375,8 @@ def canonicalize_and_hash(smt_string: str) -> str:
 
 def equivalent(constraint_a: str, constraint_b: str) -> bool:
     """快速检查两个约束是否语义等价（基于规范形式比较）
-    
-    返回 True 表示规范形式相同——强烈暗示语义等价（但非证明）
+
+    返回 True 表示规范形式相同-强烈暗示语义等价（但非证明）
     误判率 <0.5%（在 QF_BV benchmark 上测量），原因是规范化未覆盖
     的约束模式回退到原始文本比较
     """
@@ -385,7 +385,7 @@ def equivalent(constraint_a: str, constraint_b: str) -> bool:
 
 # 此段为模块初始版本，后续可补充:
 #   - 分配律展开: (bvmul x (bvadd a b)) → (bvadd (bvmul x a) (bvmul x b))
-#     在精确位宽已知时展开——当前跳过的原因是无法从 #xHEX 常量推断位宽
+#     在精确位宽已知时展开--当前跳过的原因是无法从 #xHEX 常量推断位宽
 # - 提取/concat 简化: (concat (提取 hi mid x) (提取 mid-1 lo x))
-#     → (extract hi lo x) —— 需要可靠位宽信息，待符号执行引擎提供后启用
+#     → (extract hi lo x) -需要可靠位宽信息，待符号执行引擎提供后启用
 # TODO: 考虑适配 CVC5/Bitwuzla 的 SMT-LIB 方言差异

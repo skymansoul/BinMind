@@ -1,5 +1,5 @@
-"""Common 工具集: entropy computation, sliding windows, YAML 配置 loading
-日志 setup, error hierarchy for 静态分析 tools"""
+"""Common utilities: entropy computation, sliding windows, YAML config loading,
+logging setup, error hierarchy for static analysis tools"""
 
 import logging
 import math
@@ -41,15 +41,9 @@ class FuzzError(ToolsError):
 
 def compute_entropy(data: bytes) -> float:
     """计算 Shannon entropy LaPlace smoothing (add-1 counts)
-    
-    LaPlace smoothing prevents zero probabilities cause
-    记录(0) errors gives a small probability mass unseen bytes
-    
-    Args:
-    data: Byte sequence 分析
-    
-    返回:
-    Entropy value bits (range varies LaPlace smoothing)
+
+    LaPlace smoothing prevents zero probabilities causing
+    log(0) errors and gives a small probability mass to unseen bytes
     """
     if not data:
         return 0.0
@@ -88,18 +82,7 @@ def _legacy_entropy_calc(data: bytes) -> float:
 # Sliding window
 
 def sliding_window(items: list[Any], n: int) -> Iterator[tuple[Any, ...]]:
-    """构造 n-grams via sliding window over a list
-    
-    Args:
-    items: List items window over
-    n: Window size
-    
-    Yields:
-    Tuples n consecutive items
-    
-    Raises:
-    ValueError: n <= 0
-    """
+    """构造 n-grams via sliding window over a list"""
     if n <= 0:
         raise ValueError("Window size n must be positive")
     if n > len(items):
@@ -114,18 +97,7 @@ _ENV_VAR_PATTERN: re.Pattern[str] = re.compile(r"\$\{(\w+)\}")
 
 
 def load_yaml_config(path: str) -> dict[str, Any]:
-    """加载 a YAML 配置 file substitute ${VAR} environment variables
-    
-    Args:
-    path: Path YAML 配置 file
-    
-    返回:
-    Parsed 配置 dict env vars substituted
-    
-    Raises:
-    FileNotFoundError: 配置 file exist
-    ImportError: PyYAML installed
-    """
+    """Load a YAML config file with ${VAR} environment variable substitution"""
     try:
         import yaml
     except ImportError:
@@ -151,22 +123,10 @@ def load_yaml_config(path: str) -> dict[str, Any]:
     return config
 
 
-# 日志 setup
+# Logging setup
 
 def setup_logging(config: dict[str, Any]) -> logging.Logger:
-    """Set up a unified 日志器 a 配置 dict
-    
-    Args:
-    配置: Dict optional '日志' key containing:
-    - level: str (DEBUG, INFO, WARNING, ERROR)
-    - 格式化: str (记录 格式化字符串)
-    - file: str (optional 记录 file path)
-    - max_bytes: int (optional max 记录 file size)
-    - 备份_count: int (optional 备份 file count)
-    
-    返回:
-    配置ured root 日志器
-    """
+    """Set up a unified logger from a config dict"""
     log_config = config.get("logging", {})
     level_name = log_config.get("level", "INFO").upper()
     log_format = log_config.get(
@@ -177,15 +137,15 @@ def setup_logging(config: dict[str, Any]) -> logging.Logger:
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, level_name, logging.INFO))
 
-    # Remove existing 处理器s avoid duplicates
+    # Remove existing handlers to avoid duplicates
     root_logger.handlers.clear()
 
-    # Console 处理器
+    # Console handler
     console = logging.StreamHandler()
     console.setFormatter(logging.Formatter(log_format))
     root_logger.addHandler(console)
 
-    # File 处理器
+    # File handler
     log_file = log_config.get("file")
     if log_file:
         os.makedirs(os.path.dirname(log_file), exist_ok=True)

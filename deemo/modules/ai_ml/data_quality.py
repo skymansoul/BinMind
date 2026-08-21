@@ -1,4 +1,4 @@
-# 数据质量评估器 — 检测和修复ML训练数据中的常见质量问题
+# 数据质量评估器 - 检测和修复ML训练数据中的常见质量问题
 # 核心: 缺失值/异常值/类别不平衡/标签噪声/特征冗余检测
 # 设计: 不对现有pipeline做假设, 作为独立的质量审计层使用
 
@@ -90,16 +90,7 @@ class DataQualityAssessor:
                sample_ids: Optional[List[str]] = None,
                dataset_name: str = "unnamed",
                prediction_confidences: Optional[List[float]] = None) -> QualityReport:
-        """全维度质量评估
-
-        Args:
-            X: 特征矩阵 [N, D]
-            y: 标签列表 (可选)
-            feature_names: 特征名称 (可选)
-            sample_ids: 样本标识 (可选, 用于去重)
-            dataset_name: 数据集名称
-            prediction_confidences: 模型预测置信度 (可选, 用于标签噪声估计)
-        """
+        """全维度质量评估"""
         N = len(X)
         D = len(X[0]) if X else 0
         n_classes = len(set(y)) if y else 1
@@ -346,7 +337,7 @@ class DataQualityAssessor:
         return list(groups.values())
 
     def _check_reliability(self, y, confidences) -> List[QualityIssue]:
-        """标签噪声估计 — 低置信度正确预测可能指示噪声"""
+        """标签噪声估计 - 低置信度正确预测可能指示噪声"""
         issues = []
         low_conf_correct = []
         low_conf_incorrect = []

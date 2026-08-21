@@ -1,4 +1,4 @@
-# 自适应多视图GNN——基于预测熵的动态视图权重融合
+# 自适应多视图GNN-基于预测熵的动态视图权重融合
 #
 # 核心问题: multi_view_gnn.py使用固定权重融合多个GNN视图（CFG/DFG/调用图），
 # 但不同样本在不同视图上的可靠性不同。循环密集函数的CFG视图信息丰富，
@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +41,7 @@ class ViewOutput:
     view_name: str
     logits: np.ndarray             # (n_nodes, n_classes)
     probabilities: np.ndarray      # softmax(logits)
-    entropy: float                 # 预测熵——不确定性度量
+    entropy: float                 # 预测熵-不确定性度量
     embedding: np.ndarray          # (n_nodes, hidden_dim)
     weight: float = 0.0            # 动态融合权重
 
@@ -59,7 +58,7 @@ class MultiViewFusion:
 
 
 class AdaptiveMultiViewGNN:
-    """自适应多视图GNN——熵驱动的动态视图权重。
+    """自适应多视图GNN-熵驱动的动态视图权重。
 
     融合公式:
       entropy_i = -sum(p_ij * log(p_ij))  // 视图i的预测熵
@@ -68,8 +67,8 @@ class AdaptiveMultiViewGNN:
 
     温度调度:
       T(t) = T_0 / (1 + log(1 + t))
-      早期T高→权重更均匀(探索各视图)
-      后期T低→sharp融合(确定性视图主导)
+      早期T高，权重更均匀(探索各视图)
+      后期T低，sharp融合(确定性视图主导)
     """
 
     def __init__(self,
@@ -88,15 +87,7 @@ class AdaptiveMultiViewGNN:
                 view_fns: Dict[str, Callable],
                 view_data: Dict[str, Tuple[Any, Any]]
                 ) -> MultiViewFusion:
-        """多视图自适应前向传播。
-
-        Args:
-            view_fns: {view_name: gnn_fn(features, adj) → logits}
-            view_data: {view_name: (features, adjacency)}
-
-        Returns:
-            MultiViewFusion with dynamic weights
-        """
+        """多视图自适应前向传播。"""
         view_outputs = {}
         T = self._current_temperature()
         entropies = []
@@ -173,9 +164,9 @@ class AdaptiveMultiViewGNN:
     def _compute_consistency_loss(self,
                                    view_outputs: Dict[str, ViewOutput]
                                    ) -> float:
-        """视图间预测一致性——KL散度的均值。
+        """视图间预测一致性-KL散度的均值。
 
-        低一致性→模型对不同视图的推理结果矛盾→应该降低融合置信度。
+        低一致性，模型对不同视图的推理结果矛盾，应该降低融合置信度。
         """
         names = list(view_outputs.keys())
         if len(names) < 2:

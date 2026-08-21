@@ -1,12 +1,10 @@
 # 分析质量元评分: 5维+Bayesian证据累积+自适应阈值+可操作建议.
 # 区别于表格数据质量工具(Deequ等), 面向二进制分析结果的多维自动化评估.
-# 创建: 2026-06-06  初始版本
-# 修改: 2026-06-06  _compl/_consis/_confid 升级为Beta-Binomial共轭证据累积
+# _compl/_consis/_confid 升级为Beta-Binomial共轭证据累积
 
 import math, time, json
 from collections import deque
 from typing import Dict, List, Optional, Tuple
-
 
 class QualityScorer:
     """分析质量元评分器.

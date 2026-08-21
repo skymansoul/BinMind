@@ -43,7 +43,7 @@ class HeapBoundsChecker:
                 write_size_expr=ws,
                 is_overflow=(av is not None and wmax > av),
                 confidence=0.85 if av else 0.40))
-        # 阶段2: 变量名相关性启发式 — 分配与写入同用变量 V 时视为关联, 标记风险
+        # 阶段2: 变量名相关性启发式 - 分配与写入同用变量 V 时视为关联, 标记风险
         for line in lines:
             m = _WRITE_PAT.search(line.strip())
             if not m: continue
@@ -57,19 +57,14 @@ class HeapBoundsChecker:
             if ws is None: continue
             for a_name, a_site in tracker._allocations.items():
                 if not a_site.is_constant:
-                    import re as _re2
                     # 词元匹配: alloc_var 以独立标识符形式出现在写入大小表达式中
                     alloc_var = a_site.size_expr
-                    token_match = _re2.search(r'' + _re2.escape(alloc_var) + r'', ws)
+                    token_match = re.search(r'\b' + re.escape(alloc_var) + r'\b', ws)
                     if token_match:
                         results.append(BoundsCheckResult(
                             pointer_var=base, alloc_size=a_site.size_value,
                             write_size_expr=ws,
                             is_overflow=True, confidence=0.55))
-                    results.append(BoundsCheckResult(
-                        pointer_var=base, alloc_size=a_site.size_value,
-                        write_size_expr=ws,
-                        is_overflow=True, confidence=0.55))
         return results
     @staticmethod
     def _write_size(func, args):

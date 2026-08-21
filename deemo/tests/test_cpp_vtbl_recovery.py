@@ -59,7 +59,7 @@ class TestRecoveryResultDataclass(unittest.TestCase):
         self.assertEqual(len(result.calls), 0)
 
     def test_recovery_result_failure(self):
-                # failed recovery，列表也应该为空
+        # failed recovery，列表也应该为空
         result = RecoveryResult(success=False, vtables=[], calls=[])
         self.assertFalse(result.success)
 

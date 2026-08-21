@@ -4,8 +4,8 @@
 与 CACBV 同构(证明式安全过滤 + 未证否即报告)。
 """
 
-from uafov.detector import analyze_source
-from uafov.baseline_detector import analyze_baseline
-from uafov import verdict as V
+from .detector import analyze_source
+from .baseline_detector import analyze_baseline
+from . import verdict as V
 
 __all__ = ['analyze_source', 'analyze_baseline', 'V']

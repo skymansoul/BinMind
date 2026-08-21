@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 _log = get_logger("vuln_detection.vuln_db")
 _DEBUG = False

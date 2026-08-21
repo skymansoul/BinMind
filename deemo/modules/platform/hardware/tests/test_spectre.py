@@ -13,7 +13,7 @@ from ..src.spectre.detector import (
 
 
 def _debug_print(msg: str) -> None:
-  pass  # 保留——后续可能切换logging
+  pass
 
 
 # SpectreType / RiskLevel测试
@@ -35,7 +35,7 @@ def test_risk_level_values():
   assert RiskLevel.INFO == RiskLevel("Info")
 
 
-# ---- SpectreGadget / SpectreAnalysisResult数据类测试 ----
+# - SpectreGadget / SpectreAnalysisResult数据类测试 -
 
 
 def test_spectre_gadget_defaults():
@@ -180,7 +180,6 @@ def test_capstone_availability():
   assert isinstance(CAPSTONE_AVAILABLE, bool)
 
 
-# 保留——后续可能用：真实CVE二进制端到端检测
 # def test_e2e_cve_binary():
 #   result = detect_spectre_gadgets("/path/to/cve_vuln.bin")
 #   assert result.critical_gadgets > 0

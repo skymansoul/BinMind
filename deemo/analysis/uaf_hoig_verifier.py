@@ -64,14 +64,10 @@ class HoigVerifier:
                           func_bodies: Dict[str, str],
                           calls: List[Tuple[str, str]]
                           ) -> List[UafHoigVerdict]:
-        """多函数 HOIG 验证 (含跨函数分析).
+        """多函数 HOIG 验证 (含跨函数分析)。
 
-        Args:
-            func_bodies: {func_name: pseudocode}
-            calls: [(caller, callee), ...]
-
-        Returns:
-            HOIG verdicts (intra + cross-function)
+        func_bodies 为 {函数名: 伪代码}, calls 为 [(caller, callee), ...];
+        返回单函数与跨函数的 HOIG verdicts。
         """
         all_verdicts: List[UafHoigVerdict] = []
 

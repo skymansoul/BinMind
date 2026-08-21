@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\01_stack_overflow\\01_stack_overflow.exe",
+    "arch": "x86-64",
+    "bits": 64,
+    "timestamp": "2026-08-21T20:20:48.905445"
+  },
+  "findings": [],
+  "rule_findings": [],
+  "symbolic_execution": null,
+  "crash": null
+}

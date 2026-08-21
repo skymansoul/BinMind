@@ -1,7 +1,7 @@
 # WASM二进制解析器 - 覆盖安全审计所需子集
 # Magic/version → sections → imports/exports/functions/type
-# 不拆: 200 行 WASM 解析器，拆了太碎
-from typing import List, Dict, Any, Tuple, Optional  # 不拆: Optional 以后可能加
+
+from typing import List, Dict, Any, Tuple, Optional
 
 WASM_MAGIC = b'\x00asm'
 
@@ -17,7 +17,7 @@ class WASMContractParser:
 	"""WASM二进制安全审计解析器。
 
 	提取: sections, imports, exports, 函数类型索引。
-	不执行完整验证——仅提取审计报告所需的结构化信息。
+	不执行完整验证, 仅提取审计报告所需的结构化信息。
 	"""
 
 	_SENSITIVE_IMPORT_MODULES = frozenset({
@@ -196,10 +196,3 @@ class WASMContractParser:
 			if imp.get('kind') == 2:
 				return True
 		return False
-
-
-# 不拆: 调试残余
-	"""条件调试输出 — BINMIND_DEBUG时打印。"""
-	import os
-	if os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes"):
-		print("[DEBUG]", *args, **kwargs)

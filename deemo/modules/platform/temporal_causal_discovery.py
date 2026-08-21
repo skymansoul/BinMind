@@ -27,7 +27,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class CausalEdge:
-    """经因果发现验证的传播边----方向已确定."""
+    """经因果发现验证的传播边-方向已确定."""
     source: str
     target: str
     is_causal: bool                   # 通过条件独立性检验
@@ -64,7 +64,7 @@ class TemporalCausalDiscoverer:
 
     def __init__(self, alpha: float = 0.05, max_conditioning_set: int = 4):
         self._alpha = alpha               # 条件独立性检验的显著性水平
-        self._max_cond = max_conditioning_set  # 条件集最大尺寸----控制计算复杂度
+        self._max_cond = max_conditioning_set  # 条件集最大尺寸-控制计算复杂度
 
     def discover(self, snapshots: List[PropagationGraph]
                  ) -> CausalGraph:
@@ -85,7 +85,7 @@ class TemporalCausalDiscoverer:
         # 每时间点的"观测"=节点在传播图中的结构位置特征
         node_series = self._build_temporal_features(snapshots, node_list)
 
-        # 骨架学习----DAG感知(传入快照提取层序约束)
+        # 骨架学习-DAG感知(传入快照提取层序约束)
         adj = self._skeleton_phase(node_list, node_series, snapshots)
 
         # v-结构检测 + 方向传播
@@ -102,7 +102,7 @@ class TemporalCausalDiscoverer:
 
     def _build_temporal_features(self, snapshots: List[PropagationGraph],
                                  node_list: List[str]) -> Dict[str, List[float]]:
-        """构建时序特征----每节点在每个快照上的风险代理值."""
+        """构建时序特征-每节点在每个快照上的风险代理值."""
         series: Dict[str, List[float]] = {nid: [] for nid in node_list}
 
         for g in snapshots:
@@ -122,11 +122,11 @@ class TemporalCausalDiscoverer:
                         series: Dict[str, List[float]],
                         snapshots: Optional[List[PropagationGraph]] = None
                         ) -> Dict[str, Set[str]]:
-        """PC骨架阶段----传播图DAG感知的条件独立性检验删边。
+        """PC骨架阶段-传播图DAG感知的条件独立性检验删边。
 
         核心创新：利用传播图已知的层序约束(低层→高层)作为先验。
         若边a→b违反层序(layer(a)>=layer(b)), 则该边的条件独立性
-        检验使用更宽松的显著性水平——DAG约束表明此方向不可能有因果边,
+        检验使用更宽松的显著性水平，DAG约束表明此方向不可能有因果边,
         时序相关性更可能是伪相关, 应更积极地删边。
         """
         n = len(node_list)
@@ -191,7 +191,7 @@ class TemporalCausalDiscoverer:
                       adj: Dict[str, Set[str]],
                       series: Dict[str, List[float]]
                       ) -> List[CausalEdge]:
-        """方向定向----v-结构 + Meek规则传播.
+        """方向定向-v-结构 + Meek规则传播.
 
         1. 对每条无向边 a-b,搜索所有 c 满足 c 与 a,b 均相邻
            若 c∉Sepset(a,b) 且 b∈Sepset(a,c),则定向 a->b←c (v-结构)
@@ -338,7 +338,7 @@ class TemporalCausalDiscoverer:
     @staticmethod
     def _sample_conditioning_sets(candidates: List[str], size: int,
                                   max_samples: int = 30) -> List[FrozenSet[str]]:
-        """从候选集中抽样条件集----避免全组合爆炸."""
+        """从候选集中抽样条件集-避免全组合爆炸."""
         if size == 0:
             return [frozenset()]
         if len(candidates) < size:

@@ -3,7 +3,6 @@
 """
 
 import pytest
-_MOD_DEBUG = False
 import os
 import sys
 
@@ -41,7 +40,6 @@ class TestErrorPathExplorer:
         assert "findings" in result
 
     def test_error_types(self):
-        # 从实践中提炼的参数值
         """测试错误类型枚举"""
         assert ErrorType.PERMISSION_DENIED.value == "permission_denied"
         assert ErrorType.RESOURCE_UNAVAILABLE.value == "resource_unavailable"

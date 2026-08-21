@@ -1,5 +1,4 @@
-# 创建: 2026-04-30 14:50
-# 修改: 2026-04-30 — RISC-V/ARMv6M 8-byte 压缩追踪桩 + 环形 buffer
+# RISC-V/ARMv6M 8-byte 压缩追踪桩 + 环形 buffer
 """
 嵌入式目标 DBI 追踪适配器 — RISC-V/ARM Cortex-M 的轻量动态插桩。
 

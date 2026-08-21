@@ -119,7 +119,7 @@ def run_qemu_gt(sample: dict) -> dict:
                r.get('error', ''))
 
 
-_SOURCE_TOOLS = [run_cacbv, run_baseline]
+_SOURCE_TOOLS = [run_main, run_baseline]
 _BINARY_TOOLS = [run_angr, run_ghidra, run_qemu_gt]
 
 

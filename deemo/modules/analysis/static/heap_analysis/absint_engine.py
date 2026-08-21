@@ -1,5 +1,5 @@
-"""二进制级抽象解释引擎 — objdump上的跨步区间VSA + 跨函数堆数据流.
-理论: Balakrishnan & Reps CC 2004 — VSA应用于反汇编.
+"""二进制级抽象解释引擎 - objdump上的跨步区间VSA + 跨函数堆数据流.
+理论: Balakrishnan & Reps CC 2004 - VSA应用于反汇编.
 设计: 零外部依赖; 跨函数堆追踪; 保守汇合→TOP; 后向约束窄化.
 """
 
@@ -17,7 +17,7 @@ from .cross_func_heap_tracker import CrossFuncHeapTracker
 
 
 class AbstractInterpreter:
-    """前向抽象解释器 — 逐指令追踪寄存器值集, 跨函数感知."""
+    """前向抽象解释器 - 逐指令追踪寄存器值集, 跨函数感知."""
 
     def __init__(self):
         self._state = AbsState()
@@ -205,7 +205,7 @@ class AbstractInterpreter:
             alloc_size = self._allocs.get(ins.address, (128, 128))[0]
             self._int_overflow_risks.append(
                 (ins.address, alloc_size, 0,
-                 f"malloc size from imul/shl ({size_reg}) — "
+                 f"malloc size from imul/shl ({size_reg}) - "
                  f"potential integer overflow in alloc size computation"))
 
 

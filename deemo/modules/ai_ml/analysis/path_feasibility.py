@@ -1,4 +1,4 @@
-# 路径可行性分析器——判定从入口到sink的CFG路径是否实际可达
+# 路径可行性分析器: 判定从入口到sink的CFG路径是否实际可达
 # 在现有简单BFS可达性基础上增加路径条件的轻量符号追踪
 #
 # 核心创新: 不构建完整的符号执行引擎(太重)，而是从CFG中提取
@@ -7,7 +7,7 @@
 # 应用场景:
 # 阶段3过滤: 排除死代码/不可达路径中的误报
 #   - 与constraint_simplifier配合: 对POSSIBLE_OVERFLOW做路径条件
-#     棱镜分析——在特定路径条件下溢出是否成立
+#     棱镜分析, 在特定路径条件下溢出是否成立
 #
 # 与 heap_overflow_filter.py 中 _is_reachable_block 的BFS方式区别:
 #   BFS仅检查块是否从入口可达，不关心路径条件
@@ -23,7 +23,6 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -117,11 +116,7 @@ class PathFeasibilityAnalyzer:
                       cfg_edges: List[Tuple[int, int]],
                       entry_bb: int = 0
                       ) -> Tuple[FeasibilityVerdict, Optional[PathCondition]]:
-        """分析从入口到sink的路径可行性。
-
-        Returns:
-            (FeasibilityVerdict, optional PathCondition)
-        """
+        """分析从入口到sink的路径可行性。"""
         # 找到sink所在的基本块
         sink_bb = -1
         for bb_id, (start, end) in enumerate(bb_boundaries):
@@ -164,9 +159,6 @@ class PathFeasibilityAnalyzer:
 
         用途: 若路径条件要求 len ≤ 64, 但 alloc_size=32,
               则拷贝的len被限制为≤64 → 可能溢出仍需报告
-
-        Returns:
-            (lower_bound, upper_bound) or (None, None) if no bounds found
         """
         _, path_cond = self.analyze_path(
             sink_instr_idx, instructions, bb_boundaries, cfg_edges)
@@ -256,7 +248,7 @@ class PathFeasibilityAnalyzer:
                                      ) -> bool:
         """判断溢出是否发生在循环控制的上下文中。
 
-        循环中逐次递增的拷贝更容易导致非预期的溢出——这是真漏洞的强信号。
+        循环中逐次递增的拷贝更容易导致非预期的溢出, 这是真漏洞的强信号。
         """
         sink_bb = -1
         for bb_id, (start, end) in enumerate(bb_boundaries):

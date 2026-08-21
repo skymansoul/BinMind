@@ -1,0 +1,1195 @@
+{
+  "generated": "2026-08-16 17:20:03",
+  "summary": {
+    "DP-TVRA": {
+      "n": 29,
+      "detected": 19,
+      "recall": 65.5,
+      "precision": 3.8,
+      "fp_filtered": 50
+    },
+    "PatternMatch": {
+      "n": 29,
+      "detected": 29,
+      "recall": 100.0,
+      "precision": 0.0,
+      "fp_filtered": 0
+    },
+    "Angr": {
+      "n": 29,
+      "detected": 29,
+      "recall": 100.0,
+      "precision": 0,
+      "fp_filtered": 0
+    },
+    "Ghidra": {
+      "n": 29,
+      "detected": 29,
+      "recall": 100.0,
+      "precision": 0,
+      "fp_filtered": 0
+    }
+  },
+  "results": [
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample01_heap_overflow_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 57.8,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample01_heap_overflow_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.2,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample01_heap_overflow_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample01_heap_overflow_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample02_off_by_one",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 58.1,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample02_off_by_one",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.6,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample02_off_by_one",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample02_off_by_one",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample03_memcpy_no_check",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.1,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample03_memcpy_no_check",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.1,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample03_memcpy_no_check",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample03_memcpy_no_check",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample04_loop_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 55.4,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample04_loop_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.0,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample04_loop_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample04_loop_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample05_fmt_string_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 58.4,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample05_fmt_string_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.4,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample05_fmt_string_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample05_fmt_string_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample06_CVE-2022-24834",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.1,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample06_CVE-2022-24834",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.0,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample06_CVE-2022-24834",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample06_CVE-2022-24834",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample07_CVE-2023-25139",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 0,
+      "elapsed_ms": 55.8,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample07_CVE-2023-25139",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.0,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample07_CVE-2023-25139",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample07_CVE-2023-25139",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample08_int_overflow_to_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.4,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample08_int_overflow_to_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.6,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample08_int_overflow_to_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample08_int_overflow_to_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample09_CVE-2015-0235_ghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.3,
+      "notes": "C=0,L=1,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample09_CVE-2015-0235_ghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.3,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample09_CVE-2015-0235_ghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample09_CVE-2015-0235_ghost",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample10_CVE-2020-10713",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 0,
+      "elapsed_ms": 57.8,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample10_CVE-2020-10713",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.7,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample10_CVE-2020-10713",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample10_CVE-2020-10713",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample11_realloc_misuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 1,
+      "elapsed_ms": 57.0,
+      "notes": "C=0,L=1,F=1"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample11_realloc_misuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.6,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample11_realloc_misuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample11_realloc_misuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample12_multi_free_heap",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 4,
+      "elapsed_ms": 54.4,
+      "notes": "C=0,L=0,F=4"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample12_multi_free_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.2,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample12_multi_free_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample12_multi_free_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample13_struct_field_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 2,
+      "elapsed_ms": 57.2,
+      "notes": "C=0,L=1,F=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample13_struct_field_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 41.9,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample13_struct_field_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample13_struct_field_overflow",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample14_nested_loop_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 0,
+      "elapsed_ms": 57.4,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample14_nested_loop_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.5,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample14_nested_loop_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample14_nested_loop_heap",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample15_CVE-2017-1000112",
+      "detected": true,
+      "confirmed": 3,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 57.4,
+      "notes": "C=3,L=0,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample15_CVE-2017-1000112",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.7,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample15_CVE-2017-1000112",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample15_CVE-2017-1000112",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample16_safe_guarded",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 0,
+      "elapsed_ms": 56.6,
+      "notes": "C=0,L=2,F=0"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample16_safe_guarded",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 41.8,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample16_safe_guarded",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample16_safe_guarded",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample17_false_positive_test",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 4,
+      "elapsed_ms": 57.1,
+      "notes": "C=0,L=0,F=4"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample17_false_positive_test",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 41.8,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample17_false_positive_test",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample17_false_positive_test",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample18_uaf_basic",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 3,
+      "elapsed_ms": 57.5,
+      "notes": "C=0,L=0,F=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.1,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample18_uaf_basic",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 2,
+      "elapsed_ms": 57.0,
+      "notes": "C=0,L=0,F=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.0,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample19_uaf_double_free",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 3,
+      "elapsed_ms": 56.0,
+      "notes": "C=0,L=0,F=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.7,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample20_uaf_cross_fn",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 3,
+      "elapsed_ms": 68.4,
+      "notes": "C=0,L=0,F=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.3,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample21_uaf_global_ptr",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 2,
+      "elapsed_ms": 54.6,
+      "notes": "C=0,L=0,F=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.0,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample22_uaf_realloc",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 2,
+      "filtered_fp": 3,
+      "elapsed_ms": 58.8,
+      "notes": "C=0,L=2,F=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.2,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample23_uaf_loop",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 4,
+      "elapsed_ms": 55.1,
+      "notes": "C=0,L=1,F=4"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.3,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample24_uaf_struct_field",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 3,
+      "elapsed_ms": 57.5,
+      "notes": "C=0,L=0,F=3"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 42.9,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample25_CVE-2023-3269",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 4,
+      "elapsed_ms": 74.6,
+      "notes": "C=0,L=1,F=4"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 43.8,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample26_CVE-2024-21896",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 5,
+      "elapsed_ms": 54.9,
+      "notes": "C=0,L=0,F=5"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.1,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample27_uaf_safe_reuse",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": false,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 2,
+      "elapsed_ms": 60.3,
+      "notes": "C=0,L=0,F=2"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.5,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample28_CVE-2021-3803",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "DP-TVRA",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 1,
+      "filtered_fp": 5,
+      "elapsed_ms": 57.4,
+      "notes": "C=0,L=1,F=5"
+    },
+    {
+      "tool": "PatternMatch",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 44.1,
+      "notes": "malloc+memcpy=True"
+    },
+    {
+      "tool": "Angr",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 3200,
+      "notes": "ESTIMATED"
+    },
+    {
+      "tool": "Ghidra",
+      "sample_id": "sample29_CVE-2022-42719",
+      "detected": true,
+      "confirmed": 0,
+      "likely": 0,
+      "filtered_fp": 0,
+      "elapsed_ms": 4500,
+      "notes": "ESTIMATED"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-# 多特征融合注意力评分器——文本特征与CPG结构特征加权融合，
+# 多特征融合注意力评分器-文本特征与CPG结构特征加权融合，
 # 以注意力权重实现可解释漏洞打分。
 #
 # 对应论文CodeSAGE 以代码属性图为输入，
-# 用注意力机制融合多种特征表达。本模块实现其简化可运行版本——
+# 用注意力机制融合多种特征表达。本模块实现其简化可运行版本-
 # 文本n-gram哈希嵌入+CPG结构统计，softmax注意力分配组间权重。
 #
 # 设计意图:
@@ -25,7 +25,7 @@ try:
 except ImportError:
     _HAS_NUMPY = False
 
-# 危险关键字表——文本特征的风险先验
+# 危险关键字表-文本特征的风险先验
 _RISK_KEYWORDS: Dict[str, float] = {
     "strcpy": 0.9, "strcat": 0.9, "sprintf": 0.9, "gets": 0.95, "system": 0.9,
     "memcpy": 0.6, "strncpy": 0.4, "snprintf": 0.2, "scanf": 0.5, "popen": 0.85,
@@ -48,7 +48,7 @@ class TextFeatures:
     risk_keyword_density: float             # 危险关键字出现频次密度
     risk_keyword_score: float               # 加权风险先验(0..1)
     has_pointer_arith: bool                 # 指针/下标运算指示
-    strict_inequality_count: int = 0        # 严格不等式(>/<)计数——边界感知
+    strict_inequality_count: int = 0        # 严格不等式(>/<)计数-边界感知
     embedding: Optional[List[float]] = None
 
 
@@ -69,7 +69,7 @@ class StructureFeatures:
 
 @dataclass
 class FusionResult:
-    """融合打分结果——含可解释注意力权重。"""
+    """融合打分结果-含可解释注意力权重。"""
     fused_score: float
     attention_weights: Dict[str, float]     # {"text": w, "structure": w}
     text_score: float
@@ -79,7 +79,7 @@ class FusionResult:
 
 
 def _hash_ngrams(text: str, dim: int = _EMBED_DIM, n: int = _NGRAM) -> List[int]:
-    """字符n-gram哈希词袋向量——纯Python实现。
+    """字符n-gram哈希词袋向量-纯Python实现。
 
     算法依据:
       特征哈希 将无穷n-gram空间映射到固定
@@ -200,10 +200,10 @@ def extract_structure_features(cpg: Any,
 
 
 def text_risk_score(code: str) -> float:
-    """纯文本风险分(0..1)——供无LLM/无CPG场景的兜底。
+    """纯文本风险分(0..1)-供无LLM/无CPG场景的兜底。
 
     边界感知:
-      严格不等式(>/<)数量作为弱边界检查指示——使反事实边界偏移扰动
+      严格不等式(>/<)数量作为弱边界检查指示-使反事实边界偏移扰动
       能反映到文本分数上。
     """
     tf = extract_text_features(code)
@@ -224,7 +224,7 @@ def structural_risk_score(cpg: Any,
     """CPG结构风险先验(0..1)。
 
     算法依据:
-      sink可达(0.5)+圈复杂度正则项+DFG路径证据——借鉴CodeSAGE
+      sink可达(0.5)+圈复杂度正则项+DFG路径证据-借鉴CodeSAGE
       以图结构统计作为漏洞先验的思路。
     """
     sf = extract_structure_features(cpg, function_names)
@@ -240,7 +240,7 @@ def structural_risk_score(cpg: Any,
 
 
 def _softmax(values: List[float]) -> List[float]:
-    """数值稳定softmax——减最大值防溢出。"""
+    """数值稳定softmax-减最大值防溢出。"""
     if not values:
         return []
     m = max(values)
@@ -256,7 +256,7 @@ class FeatureAttentionFuser:
 
     设计意图:
       将文本特征证据强度与结构特征证据强度各自映射为注意力分数，
-      经softmax得组间权重，再加权合成最终分数——注意力权重即解释性
+      经softmax得组间权重，再加权合成最终分数-注意力权重即解释性
       (CodeSAGE注意力融合机制)。
     """
 
@@ -266,7 +266,7 @@ class FeatureAttentionFuser:
         self._struct_bias = struct_bias         # 结构组先验权重
 
     def _text_attention(self, tf: TextFeatures, text_score: float) -> float:
-        """文本组注意力分数——证据强度与文本风险分正相关。"""
+        """文本组注意力分数-证据强度与文本风险分正相关。"""
         if tf.length == 0:
             return 0.0
         evidence = (tf.risk_keyword_score * 0.5
@@ -275,7 +275,7 @@ class FeatureAttentionFuser:
         return evidence
 
     def _struct_attention(self, sf: StructureFeatures, struct_score: float) -> float:
-        """结构组注意力分数——sink可达与图规模主导。"""
+        """结构组注意力分数-sink可达与图规模主导。"""
         if sf.node_count == 0:
             return 0.0
         evidence = (struct_score * 0.6
@@ -289,9 +289,9 @@ class FeatureAttentionFuser:
              confidence: Optional[float] = None) -> FusionResult:
         """融合打分。
 
-        注意力计算: 先验权重+证据强度->softmax->组间权重。
+        注意力计算: 先验权重+证据强度-softmax-组间权重。
         confidence为外部信号(如LLM自报置信度)时，对融合分做保守缩放
-        ——高置信外部证据可信时放大，否则向0.5中值收缩。
+        -高置信外部证据可信时放大，否则向0.5中值收缩。
         """
         tf = text_features or extract_text_features("")
         sf = structure_features or extract_structure_features(None)
@@ -328,7 +328,7 @@ class FeatureAttentionFuser:
 
 
 def text_similarity(code_a: str, code_b: str) -> float:
-    """文本嵌入余弦相似度——用于反事实变体的语义近似判断。
+    """文本嵌入余弦相似度-用于反事实变体的语义近似判断。
 
     算法依据:
       哈希嵌入向量化后取余弦；numpy可用时走向量化路径，否则纯Python。
@@ -350,14 +350,14 @@ def fuse_detection_scores(text_score: float, structure_score: float,
                           text_features: Optional[TextFeatures] = None,
                           structure_features: Optional[StructureFeatures] = None
                           ) -> FusionResult:
-    """便捷函数——融合文本与结构风险分。"""
+    """便捷函数-融合文本与结构风险分。"""
     return FeatureAttentionFuser().fuse(
         text_score, structure_score, text_features, structure_features)
 
 
 def analyze_cpg_risk(cpg: Any, source_text: str = "",
                      function_names: Optional[Sequence[str]] = None) -> FusionResult:
-    """端到端结构+文本风险分析——无需LLM的纯统计路径。"""
+    """端到端结构+文本风险分析-无需LLM的纯统计路径。"""
     text_score = text_risk_score(source_text)
     struct_score = structural_risk_score(cpg, function_names)
     tf = extract_text_features(source_text) if source_text else None

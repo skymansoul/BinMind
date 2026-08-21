@@ -279,7 +279,7 @@ class StyleNormalizer:
 
 
 # 风格检测委托给 engine/style_detectors.py
-from parallel_deep_dev.engine.style_detectors import (
+from .style_detectors import (
     detect_quote_style, detect_import_style, detect_naming_style,
     detect_docstring_style, detect_indent, has_trailing_commas,
     max_line_len, blank_lines_between_funcs,

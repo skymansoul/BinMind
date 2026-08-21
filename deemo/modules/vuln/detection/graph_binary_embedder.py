@@ -1,15 +1,15 @@
-# 图驱动的二进制函数嵌入器——从CFG+数据流图提取函数级向量表征。
+# 图驱动的二进制函数嵌入器-从CFG+数据流图提取函数级向量表征。
 # GBsim GCN+Transformer混合架构、AMMF
 # 多特征融合策略、Call Graphlets 局部/全局图统计特征。
 #
 # 核心设计:
-#   - 基础图统计特征（度分布、集聚系数、中心性）→ Call Graphlets统计视角
-#   - 节点级语义特征（指令类别直方图+操作数类型分布）→ AMMF basic-block特征
-# 图拓扑嵌入（匿名随机游走签名）→ GBsim图结构编码
-# 跨架构归一化——特征提取与架构解耦，同函数不同架构产物距离可控
+#   - 基础图统计特征（度分布、集聚系数、中心性）- Call Graphlets统计视角
+#   - 节点级语义特征（指令类别直方图+操作数类型分布）- AMMF basic-block特征
+# 图拓扑嵌入（匿名随机游走签名）- GBsim图结构编码
+# 跨架构归一化-特征提取与架构解耦，同函数不同架构产物距离可控
 #
-# 当前实现——x86/x86_64/ARM/MIPS四架构
-# 增强——随机游走嵌入与跨架构对齐投影
+# 当前实现-x86/x86_64/ARM/MIPS四架构
+# 增强-随机游走嵌入与跨架构对齐投影
 
 import os, re, math, json, hashlib, struct, logging
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -20,7 +20,7 @@ import random as _random
 
 logger = logging.getLogger(__name__)
 
-# numpy为可选依赖——无numpy时回退至纯Python实现
+# numpy为可选依赖-无numpy时回退至纯Python实现
 try:
     import numpy as np
     _NUMPY_AVAIL = True
@@ -41,7 +41,7 @@ class ArchFamily(str, Enum):
 
 @dataclass
 class BasicBlockNode:
-    """基本块节点——图嵌入原子单元"""
+    """基本块节点-图嵌入原子单元"""
     addr: int
     size: int = 0
     instructions: List[str] = field(default_factory=list)
@@ -54,7 +54,7 @@ class BasicBlockNode:
 
 @dataclass
 class FunctionGraph:
-    """函数图表示——节点为基本块，边为控制流转移"""
+    """函数图表示-节点为基本块，边为控制流转移"""
     name: str
     addr: int
     arch: ArchFamily = ArchFamily.UNKNOWN
@@ -67,7 +67,7 @@ class FunctionGraph:
 
 @dataclass
 class GraphEmbedding:
-    """GNN风格图嵌入结果——固定维度特征向量"""
+    """GNN风格图嵌入结果-固定维度特征向量"""
     func_name: str
     func_addr: int
     arch: ArchFamily
@@ -79,7 +79,7 @@ class GraphEmbedding:
 
 # 特征提取器基类
 # 每个提取器负责一个特征维度，产出固定大小数值向量。
-# 可插拔设计——新增特征维度只需实现extract()。
+# 可插拔设计-新增特征维度只需实现extract()。
 
 class FeatureExtractor:
     """图特征提取器基类"""
@@ -93,7 +93,7 @@ class FeatureExtractor:
 
 
 class GraphStatisticsExtractor(FeatureExtractor):
-    """图统计特征提取——Call Graphlets统计视角。
+    """图统计特征提取-Call Graphlets统计视角。
 
     提取16维特征: 节点数、边数、密度、最大/平均入度出度、
     集聚系数、直径估计、叶子节点比例、中心节点比例。
@@ -129,7 +129,7 @@ class GraphStatisticsExtractor(FeatureExtractor):
         feats['leaf_ratio'] = leaves / max(n, 1)
         feats['root_ratio'] = roots / max(n, 1)
 
-        # 循环复杂度近似——McCabe: E - N + 2P
+        # 循环复杂度近似-McCabe: E - N + 2P
         # 单函数P=1，简化为 m - n + 2
         feats['cyclomatic_complexity'] = float(max(1, m - n + 2))
         feats['log_complexity'] = math.log1p(max(1, m - n + 2))
@@ -143,7 +143,7 @@ class GraphStatisticsExtractor(FeatureExtractor):
 
 
 class InstructionHistogramExtractor(FeatureExtractor):
-    """指令类别直方图——AMMF basic-block级语义特征。
+    """指令类别直方图-AMMF basic-block级语义特征。
 
     按操作类型分12类: 算术、逻辑、分支、调用、
     内存读写、栈操作、比较、传送、移位、浮点、特权、其他。
@@ -223,7 +223,7 @@ class InstructionHistogramExtractor(FeatureExtractor):
 
 
 class RandomWalkEmbeddingExtractor(FeatureExtractor):
-    """匿名随机游走嵌入——参考GBsim图拓扑编码思想。
+    """匿名随机游走嵌入-参考GBsim图拓扑编码思想。
 
     Ivanov & Burnaev匿名游走: 每个节点在游走序列中用
     首次出现顺序编号替代，相同拓扑结构游走得到相同匿名序列。
@@ -243,7 +243,7 @@ class RandomWalkEmbeddingExtractor(FeatureExtractor):
         adj = defaultdict(set)
         for src, dst in graph.edges:
             adj[src].add(dst)
-            adj[dst].add(src)  # 无向化——简化游走
+            adj[dst].add(src)  # 无向化-简化游走
 
         walk_signatures = []
         for _ in range(self.num_walks):
@@ -262,7 +262,7 @@ class RandomWalkEmbeddingExtractor(FeatureExtractor):
         feats['rw_var'] = (sum((l - feats['rw_mean'])**2 for l in walk_lens)
                            / max(len(walk_lens), 1))
 
-        # 熵——衡量游走多样性
+        # 熵-衡量游走多样性
         sig_counts = Counter(walk_signatures)
         total = sum(sig_counts.values())
         ent = 0.0
@@ -309,7 +309,7 @@ class RandomWalkEmbeddingExtractor(FeatureExtractor):
 # GBsim跨架构语言模型思路，采用更轻量的PCA启发方法。
 
 class CrossArchAligner:
-    """跨架构特征对齐器——将不同架构特征映射至可比空间。
+    """跨架构特征对齐器-将不同架构特征映射至可比空间。
 
     方法: 对每种架构-特征对的均值做中心化，使同一函数
     在不同架构下的特征向量差异主要由编译差异而非架构差异贡献。
@@ -344,7 +344,7 @@ class CrossArchAligner:
         for fname, vals in all_feats.items():
             global_means[fname] = sum(vals) / len(vals)
 
-        # 存储偏移量——架构均值减全局均值再取反（对齐用的偏移）
+        # 存储偏移量-架构均值减全局均值再取反（对齐用的偏移）
         for arch_key in self._arch_offsets:
             for fname in self._arch_offsets[arch_key]:
                 self._arch_offsets[arch_key][fname] = (
@@ -387,7 +387,7 @@ class GraphBinaryEmbedder:
     def embed(self, graph: FunctionGraph) -> GraphEmbedding:
         """从FunctionGraph构造嵌入向量。
 
-        流程: 各提取器提取特征→拼接→PCA式降维至embed_dim→可选跨架构对齐。
+        流程: 各提取器提取特征-拼接-PCA式降维至embed_dim-可选跨架构对齐。
         """
         all_feats: Dict[str, float] = {}
         feature_names = []
@@ -411,7 +411,7 @@ class GraphBinaryEmbedder:
             feature_names=feature_names[:self.embed_dim])
 
     def embed_batch(self, graphs: List[FunctionGraph]) -> List[GraphEmbedding]:
-        """批量嵌入——多函数并行特征提取"""
+        """批量嵌入-多函数并行特征提取"""
         return [self.embed(g) for g in graphs]
 
     def similarity(self, emb1: GraphEmbedding, emb2: GraphEmbedding) -> float:
@@ -433,7 +433,7 @@ class GraphBinaryEmbedder:
             self.aligner.fit(samples)
 
     def _pad_or_truncate(self, feats, target_dim):
-        """填充或截断特征至目标维度——右侧0-padding"""
+        """填充或截断特征至目标维度-右侧0-padding"""
         if len(feats) >= target_dim:
             return list(feats)[:target_dim]
         return list(feats) + [0.0] * (target_dim - len(feats))

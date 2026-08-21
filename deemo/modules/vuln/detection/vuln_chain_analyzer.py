@@ -1,4 +1,4 @@
-# 漏洞链分析器——程序依赖图中多步利用路径发现。
+# 漏洞链分析器: 程序依赖图中多步利用路径发现。
 # 基于HGAT图建模。
 #
 # 核心逻辑:
@@ -7,12 +7,12 @@
 #
 # 执行流程:
 #   1. 漏洞标记为图节点（属性: CWE类型、CVSS评分、位置）
-#   2. 节点间建边——基于调用可达性（A的崩溃可控制B的输入）
+#   2. 节点间建边, 基于调用可达性（A的崩溃可控制B的输入）
 #   3. 图遍历寻找入口点到高价值目标（敏感函数、特权操作）的路径
 #   4. 路径评分 = 累乘可达概率 × 目标节点影响权重
 #   5. 输出Top-K最危险漏洞链
 #
-# 初版实现——调用图BFS + 可达性分析
+# 初版实现: 调用图BFS + 可达性分析
 
 import os, json, logging, heapq, math
 from typing import Dict, List, Optional, Any, Tuple, Set, Iterator
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class VulnNode:
-    """漏洞节点——图中单点漏洞实体。"""
+    """漏洞节点: 图中单点漏洞实体。"""
     node_id: str
     vuln_type: str                    # CWE类型标识
     cve_id: str = ""
@@ -43,7 +43,7 @@ class VulnNode:
 
 @dataclass
 class ChainEdge:
-    """链边——前驱漏洞到后继漏洞的可达路径。"""
+    """链边: 前驱漏洞到后继漏洞的可达路径。"""
     from_node: str
     to_node: str
     edge_type: str = "call_reachable"  # 边类型: call_reachable / data_flow / shared_state
@@ -54,7 +54,7 @@ class ChainEdge:
 
 @dataclass
 class VulnChain:
-    """漏洞利用链——从入口到目标的漏洞节点有序序列。"""
+    """漏洞利用链: 从入口到目标的漏洞节点有序序列。"""
     chain_id: str
     nodes: List[VulnNode] = field(default_factory=list)
     edges: List[ChainEdge] = field(default_factory=list)
@@ -68,7 +68,7 @@ class VulnChain:
 
 @dataclass
 class ChainAnalysisResult:
-    """链分析输出——所有利用链及统计信息聚合体。"""
+    """链分析输出: 所有利用链及统计信息聚合体。"""
     chains: List[VulnChain] = field(default_factory=list)
     total_nodes: int = 0
     total_edges: int = 0
@@ -79,7 +79,7 @@ class ChainAnalysisResult:
 
 
 class VulnChainAnalyzer:
-    """漏洞链分析器——程序依赖图中多步利用路径发掘。
+    """漏洞链分析器: 程序依赖图中多步利用路径发掘。
 
     算法:
         1. 构建漏洞图（VulnNode + 调用图可达性边 = ChainEdge）
@@ -134,7 +134,7 @@ class VulnChainAnalyzer:
                     vn.is_entry_point = True
                     entry_pts.append(vn)
 
-        # 可达性闭包计算——每函数其可达函数集合
+        # 可达性闭包计算, 每函数其可达函数集合
         reachable = self._compute_reachability(call_graph, self.max_depth)
 
         # 基于可达性构建漏洞间边
@@ -180,7 +180,7 @@ class VulnChainAnalyzer:
 
     def _compute_reachability(self, call_graph: Dict[str, List[str]],
                                max_depth: int) -> Dict[str, Set[str]]:
-        """调用图可达性闭包——每节点BFS限max_depth步。"""
+        """调用图可达性闭包: 每节点BFS限max_depth步。"""
         reachable = {}
         all_funcs = set(call_graph.keys())
         for callers in call_graph.values():
@@ -207,13 +207,13 @@ class VulnChainAnalyzer:
 
     def _build_vuln_edges(self, vuln_by_func, reachable, call_graph,
                            data_flow_edges) -> List[ChainEdge]:
-        """构建漏洞边——前驱所在函数可达后继所在函数时建立连接。"""
+        """构建漏洞边: 前驱所在函数可达后继所在函数时建立连接。"""
         edges = []
         funcs = list(vuln_by_func.keys())
 
         for i, fa in enumerate(funcs):
             for fb in funcs[i + 1:]:
-                # A可达B则建A→B边，B可达A则建B→A边
+                # A可达B则建A-B边，B可达A则建B-A边
                 if fb in reachable.get(fa, set()):
                     dist = self._estimate_call_distance(fa, fb, call_graph)
                     edges.append(ChainEdge(
@@ -231,7 +231,7 @@ class VulnChainAnalyzer:
         return edges
 
     def _estimate_call_distance(self, src, dst, call_graph, max_d=10) -> int:
-        """调用距离估计——BFS最短路径长度。"""
+        """调用距离估计: BFS最短路径长度。"""
         if src == dst:
             return 0
         visited = {src}
@@ -287,7 +287,7 @@ class VulnChainAnalyzer:
 
     def _find_intermediate_vulns(self, entry, target, vuln_by_func,
                                    reachable, call_graph, max_depth):
-        """入口到目标路径上的中间漏洞集——取同时可达入口且可达目标的节点。"""
+        """入口到目标路径上的中间漏洞集: 取同时可达入口且可达目标的节点。"""
         entry_key = entry.function_name or entry.node_id
         target_key = target.function_name or target.node_id
         intermediates = [entry]
@@ -314,7 +314,7 @@ class VulnChainAnalyzer:
         for e in edges:
             score *= e.confidence
 
-        # 链长度惩罚——路径越长不确定性越大
+        # 链长度惩罚, 路径越长不确定性越大
         length_penalty = 1.0 / math.sqrt(max(len(nodes), 1))
         score *= length_penalty
 
@@ -333,7 +333,7 @@ class VulnChainAnalyzer:
 
     @staticmethod
     def _cwe_exploit_prob(cwe_type: str) -> float:
-        """CWE类型利用概率估计——基于CISA KEV统计先验。"""
+        """CWE类型利用概率估计: 基于CISA KEV统计先验。"""
         probs = {
             'CWE-787': 0.85, 'CWE-79': 0.90, 'CWE-89': 0.92,
             'CWE-416': 0.75, 'CWE-78': 0.88, 'CWE-20': 0.60,
@@ -353,7 +353,7 @@ class VulnChainAnalyzer:
         return "HIGH"
 
     def _deduplicate_chains(self, chains):
-        """链去重——同节点集合不同排列视为重复。"""
+        """链去重: 同节点集合不同排列视为重复。"""
         seen = set()
         unique = []
         for chain in chains:

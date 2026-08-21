@@ -6,7 +6,7 @@ UAF Realloc 集成适配器 — TARPS集成 + 便捷函数 + 报告生成.
 from typing import Dict, List, Optional, Set, Tuple
 
 from analysis.uaf_realloc_tracker import ReallocPathTracker
-from analysis.uaf_realloc_types import DanglingAlias, ReallocVerdict
+from analysis.uaf_realloc_types import DanglingAlias, ReallocSite, ReallocVerdict
 
 
 def enhance_tarps_alias_with_realloc(
@@ -28,7 +28,7 @@ def enhance_tarps_alias_with_realloc(
 def check_realloc_uaf(pseudocode: str) -> List[Dict]:
     """便捷函数: 检查伪代码中的 realloc UAF.
 
-    Returns: [{line, var, realloc_line, reason, risk}, ...]
+    返回 [{line, var, realloc_line, reason, risk}, ...].
     """
     tracker = ReallocPathTracker()
     danglings = tracker.analyze(pseudocode)

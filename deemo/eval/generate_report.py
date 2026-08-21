@@ -1,10 +1,8 @@
-# 统一对比报告生成器 —— 读取benchmark CSV, 生成LaTeX表格+matplotlib图表。
-# 创建: 自主执行轮次
+# 统一对比报告生成器 - 读取benchmark CSV, 生成LaTeX表格+matplotlib图表。
 
 import os, csv, json, sys
 
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
-
 
 def read_csv(csv_path: str = None) -> list:
     """读取benchmark CSV, 返回行列表。"""

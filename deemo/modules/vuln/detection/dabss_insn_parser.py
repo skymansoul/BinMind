@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-06-29  |  指令解析工具
-# 修改: 2026-06-29  |  审计后补充文件头与错误处理
-#
 """
-DABSS指令解析工具——反汇编行解析、寄存器提取、约束识别。
+DABSS指令解析工具-反汇编行解析、寄存器提取、约束识别。
 
 从反汇编文本行中提取地址/助记符/操作数，识别约束操作，
 为DataFlowSlicer提供结构化的指令表示。
@@ -14,7 +11,7 @@ from typing import Dict, List, Optional, Tuple, Set
 
 
 def parse_insn(insn_str: str, arch: str = "x86_64") -> Tuple[int, str, List[str]]:
-    """解析单行反汇编——返回(地址, 助记符, 操作数列表)。
+    """解析单行反汇编-返回(地址, 助记符, 操作数列表)。
 
     支持格式:
       "0x401000: mov rax, [rbp-0x8]"
@@ -39,7 +36,7 @@ def parse_insn(insn_str: str, arch: str = "x86_64") -> Tuple[int, str, List[str]
 
 
 def extract_reg(operand: str) -> str:
-    """从操作数提取基寄存器——去除偏移/缩放/段前缀。
+    """从操作数提取基寄存器-去除偏移/缩放/段前缀。
 
     例: '[rbp-0x8]' → '', 'rax+8' → 'rax', 'eax' → 'eax'
     """
@@ -55,7 +52,7 @@ def extract_reg(operand: str) -> str:
 
 
 def get_def_regs(mnem: str, ops: List[str]) -> Set[str]:
-    """获取指令定义的寄存器集合——写入目标寄存器。
+    """获取指令定义的寄存器集合-写入目标寄存器。
 
     不跟踪内存写入(mov [mem], reg→无寄存器定义)。
     """
@@ -79,10 +76,10 @@ def get_def_regs(mnem: str, ops: List[str]) -> Set[str]:
 
 
 def parse_constraint_value(mnem: str, ops: List[str]) -> Tuple[str, int]:
-    """解析比较指令的约束值——返回(操作符, 立即数)。
+    """解析比较指令的约束值-返回(操作符, 立即数)。
 
     例: "cmp eax, 0x100" → ("cmp", 256)
-    注意: 操作符的实际方向(上界/下界)取决于后续条件跳转——
+    注意: 操作符的实际方向(上界/下界)取决于后续条件跳转-
     此处保守提取数值，方向在BufferSlice汇总时补充。
     """
     if len(ops) < 2:
@@ -112,7 +109,7 @@ def infer_buffer_capacity(bounds: List[Tuple[str, int]],
     return min(uppers) if uppers else 0
 
 
-# 敏感操作——DataFlowSlicer的sink目标
+# 敏感操作-DataFlowSlicer的sink目标
 SINK_MNEMONICS = {
     'call': {'memcpy', 'strcpy', 'strncpy', 'strcat', 'strncat',
              'sprintf', 'snprintf', 'memmove', 'memset',
@@ -122,7 +119,7 @@ SINK_MNEMONICS = {
     'any': {'rep movs', 'rep stos'},
 }
 
-# 外部输入指示器——切片起点标记
+# 外部输入指示器-切片起点标记
 SOURCE_INDICATORS = {
     'reg': {'rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9', 'edi', 'esi', 'edx',
             'ecx', 'r0', 'r1', 'r2', 'r3'},

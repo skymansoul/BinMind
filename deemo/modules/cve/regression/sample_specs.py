@@ -1,10 +1,9 @@
-# 样本元数据 — 漏洞样本与安全对照的规格定义.
+# 样本元数据 - 漏洞样本与安全对照的规格定义.
 #
 # 每条样本: (sample_id, cve, pattern, alloc, write, expected, desc).
 # alloc/write 支持常量或 "param" (来自 argv); expected ∈ confirmed|benign.
 # 模板按 pattern 选型, 定义于 sample_templates.py.
 #
-# 创建: 2025-01-13
 
 VULN = [
     ("cve_2013_4788_android_media", "CVE-2013-4788", "fixed_alloc_tainted_write",

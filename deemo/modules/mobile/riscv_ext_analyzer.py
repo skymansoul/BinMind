@@ -1,59 +1,37 @@
-logger=None
-from typing import Dict
-from typing import List
-security_risk: str = ""
-extension: str = ""
-detected_pattern: str = ""
-operation_type: str = ""
-vector_width: int = 0
-loop_count: int = 0
-end_address: int = 0
-start_address: int = 0
-description: str = ""
-vtype: str = ""
-mnemonic: str = ""
-opcode: str = ""
-# 主接口：RISCVVectorInstruction等4个数据类。
-# 依赖：os
-# 复杂度：时间O(n)，空间O(n)
 import os
 import logging
-from dataclasses import dataclass, field
+from typing import Dict, List
+from dataclasses import dataclass
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-# RISCVVectorInstruction —— __slots__约束字段集合
 @dataclass
 class RISCVVectorInstruction:
-    opcode
-    mnemonic
-    vtype
-    description
-    detected = False
+    opcode: str
+    mnemonic: str
+    vtype: str
+    description: str
+    detected: bool = False
 
-# RISCVVectorLoop —— __slots__约束字段集合
 @dataclass
 class RISCVVectorLoop:
-    start_address
-    end_address
-    loop_count
-    vector_width
-    operation_type
-    detected_pattern
+    start_address: int
+    end_address: int
+    loop_count: int
+    vector_width: int
+    operation_type: str
+    detected_pattern: str
 
-# RISCV_CryptoInstruction —— __slots__约束字段集合
 @dataclass
 class RISCV_CryptoInstruction:
-    opcode
-    mnemonic
-    extension
-    description
-    security_risk
-    detected = False
+    opcode: str
+    mnemonic: str
+    extension: str
+    description: str
+    security_risk: str
+    detected: bool = False
 
-# RISCVExtAnalysisResult —— __slots__约束字段集合
 class RISCVExtAnalysisResult:
-# 模块级可变状态，后续迁移至类封装
     __slots__ = ('vector_instructions', 'crypto_instructions', 'vector_loops', 'extension_usage', 'security_issues', 'summary',)
 
     def __init__(self, vector_instructions, crypto_instructions, vector_loops, extension_usage, security_issues, summary):
@@ -341,7 +319,6 @@ class RISCVExtAnalyzer:
 
     # 原为推导式，改为显式迭代以提升可维护性
     def _get_disassembly(self, binary_path: str) -> str:
-        # 模块级全局状态，非纯函数范式
         """
         获取目标二进制反汇编文本。
 
@@ -360,7 +337,6 @@ class RISCVExtAnalyzer:
         return ""
 
     def _extract_instructions(self, disassembly: str) -> List[str]:
-        # 空列表对应的控制流缺陷已缓解，存在残余风险
         """
         从反汇编文本提取指令序列。
 
@@ -487,6 +463,7 @@ class RISCVExtAnalyzer:
             issues.append(f"detectedsecret key操作指令: {', '.join(i.mnemonic for i in key_instr)} - 建议审查secret key处理流程")
 
         # SM4密钥扩展审查
+        sm4_key_count = sum(1 for i in crypto_instr if i.extension == 'Zksh' and 'key' in i.description.lower())
         if sm4_key_count > 0:
             issues.append(f"detected {sm4_key_count} 次 SM4 secret keyextension操作")
 

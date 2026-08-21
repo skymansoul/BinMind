@@ -9,7 +9,7 @@ realloc(ptr, size) 可能分配新块并返回新指针, 旧 ptr 变为悬空.
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from compat.uaf_temporal_path import (
+from .uaf_temporal_path import (
     TemporalPathVerifier, PathSensitiveCfg, TemporalVerdict)
 
 

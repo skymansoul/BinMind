@@ -1,4 +1,4 @@
-# UAF利用难度分级 — 根据free后use的类型评估可利用性
+# UAF利用难度分级 - 根据free后use的类型评估可利用性
 # 不同use类型的利用难度差异巨大: dereference > arithmetic > comparison
 
 from enum import Enum

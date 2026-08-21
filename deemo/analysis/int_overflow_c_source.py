@@ -41,8 +41,7 @@ def detect_int_overflow_c_source(source: str) -> List[IntOverflowFinding]:
       2. 逐行模式匹配 + 溢出分析
       3. LoopInductionTracker 循环增强
 
-    Returns:
-        List[IntOverflowFinding], 按置信度降序
+    返回按置信度降序的 IntOverflowFinding 列表。
     """
     findings: List[IntOverflowFinding] = []
 

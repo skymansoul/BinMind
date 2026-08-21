@@ -1,12 +1,11 @@
-# 修改记录:
-# 2025-08-06 11:28 - 初始实现：mmap+滚动哈希的O(N)二进制差分计算
+# 初始实现: mmap+滚动哈希的O(N)二进制差分计算
 
-"""内存映射二进制差分 — mmap+内容定义分块的高效补丁级差异分析。
+"""内存映射二进制差分 - mmap+内容定义分块的高效补丁级差异分析。
 
-现有二进制差异工具 (diaphora/Bindiff) 依赖反汇编并与函数签名匹配——
+现有二进制差异工具 (diaphora/Bindiff) 依赖反汇编并与函数签名匹配-
 对striped binary精度大幅下降，且O(N²)函数匹配耗时高。
 
-本模块的方案——内容驱动的分层差分：
+本模块的方案-内容驱动的分层差分：
 Layer1-mmapi/o级: mmap两个二进制文件，直接在字节级检测变化区域。
   使用Adler-32滚动哈希的内容定义分块(CDC)，O(N)识别变化段。
 Layer2-结构化: 对变化段做快速函数边界检测(prologue/epilogue模式)，
@@ -97,7 +96,7 @@ class MMapBinaryDiffer:
     ) -> BinaryDiffResult:
         """执行二进制差分分析。
 
-        接受 bytes 而非文件路径——调用方负责 mmap/读取。
+        接受 bytes 而非文件路径-调用方负责 mmap/读取。
         """
         _regions = self._find_changed_regions(old_bytes, new_bytes)
         _classified = self._classify_changes(old_bytes, new_bytes, _regions)
@@ -137,7 +136,7 @@ class MMapBinaryDiffer:
         )
 
     def quick_similarity(self, old_bytes: bytes, new_bytes: bytes) -> float:
-        """快速相似度——基于内容定义分块哈希的Jaccard系数。
+        """快速相似度-基于内容定义分块哈希的Jaccard系数。
 
         O(N)时间，不需要完整diff。
         """
@@ -154,7 +153,7 @@ class MMapBinaryDiffer:
     def _find_changed_regions(
         self, old: bytes, new: bytes,
     ) -> List[Tuple[int, int, int]]:
-        """找到所有变化区域——(old_offset, new_offset, length)。"""
+        """找到所有变化区域-(old_offset, new_offset, length)。"""
         _regions: List[Tuple[int, int, int]] = []
         _i = 0
         _j = 0
@@ -165,7 +164,7 @@ class MMapBinaryDiffer:
                 _j += 1
                 continue
 
-            # 发现变化——向后搜索同步点
+            # 发现变化-向后搜索同步点
             _start_i, _start_j = _i, _j
             _sync_found = False
             for _look in range(1, min(256, min(len(old) - _i, len(new) - _j))):
@@ -189,7 +188,7 @@ class MMapBinaryDiffer:
         self, old: bytes, new: bytes,
         regions: List[Tuple[int, int, int]],
     ) -> List[ChangedRegion]:
-        """对变化区域进行分类——指令修改/常量变化/控制流变化。"""
+        """对变化区域进行分类-指令修改/常量变化/控制流变化。"""
         _classified: List[ChangedRegion] = []
         for _old_off, _new_off, _length in regions:
             _old_seg = old[_old_off:_old_off + _length] if _old_off + _length <= len(old) else b""
@@ -269,7 +268,7 @@ class MMapBinaryDiffer:
     # CDC分块
 
     def _cdc_chunk_hashes(self, data: bytes) -> List[str]:
-        """内容定义分块——基于滚动哈希的边界识别。
+        """内容定义分块-基于滚动哈希的边界识别。
 
         滚动哈希遇到"边界值"→切块→哈希该块。
         """

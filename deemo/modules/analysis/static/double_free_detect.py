@@ -1,21 +1,19 @@
 from ._user_scope_mixin import UserScopeMixin
-# 双重释放检测器 v1 — 符号指针标签追踪 (Double-Free Detector)
+# 双重释放检测器 v1 - 符号指针标签追踪 (Double-Free Detector)
 # 追踪malloc/calloc返回的指针标签, 检测同一标签被free()两次的模式.
 # v1: 指令级分析, 寄存器+栈槽+别名追踪.
-# 创建: 2026-07-25
 
 import re
 from typing import Dict, List, Optional, Tuple
-
 
 class DoubleFreeDetector(UserScopeMixin):
     """指令级双重释放检测器 v1.
 
     检测模式:
-      1. 直线双重释放: free(p); free(p) — 同寄存器/栈槽
-      2. 别名双重释放: q=p; free(p); free(q) — 不同寄存器同标签
+      1. 直线双重释放: free(p); free(p) - 同寄存器/栈槽
+      2. 别名双重释放: q=p; free(p); free(q) - 不同寄存器同标签
       3. 栈重载双重释放: 指针存栈→free→从栈再加载→free
-      4. 错误路径双重释放: if(err)free(p); free(p) — 条件+无条件
+      4. 错误路径双重释放: if(err)free(p); free(p) - 条件+无条件
 
     方法: 每个malloc返回唯一符号标签(tag_id), 追踪标签通过寄存器/栈槽传播,
           在free()调用点检查参数标签是否已FREED.

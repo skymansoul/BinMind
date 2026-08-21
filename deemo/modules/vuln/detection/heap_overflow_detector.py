@@ -1,13 +1,13 @@
 """
-堆溢出专项检测 — malloc/free配对 + size参数流分析。
+堆溢出专项检测 - malloc/free配对 + size参数流分析。
 
 检测逻辑:
   1. 定位malloc/calloc/realloc调用点, 提取size参数
   2. 定位后续memcpy/strcpy/read等写入操作, 提取写入长度
-  3. 若size参数 < 写入长度 → 堆溢出告警
+  3. 若size参数 < 写入长度 - 堆溢出告警
 
 与path_taint_simplified.py的关系:
-  path_taint_simplified检测"外部输入→危险函数"的污点路径。
+  path_taint_simplified检测"外部输入-危险函数"的污点路径。
   本模块检测"分配大小≠写入大小"的算术不一致。
 
 修改记录:

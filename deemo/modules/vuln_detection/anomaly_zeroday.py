@@ -18,12 +18,6 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional
 
-# NumPy——可用则加速，缺失则回退纯Python
-try:
-    import numpy
-except ImportError:
-    numpy = None
-
 logger = logging.getLogger(__name__)
 
 
@@ -324,52 +318,141 @@ class ZScoreAnomalyDetector:
         return det
 
 
-class IsolationForestAnomalyDetector:
-    """隔离森林模拟——加权特征评分，无需sklearn依赖"""
+@dataclass
+class _IFNode:
+    """隔离树节点——递归二分结构。"""
+    coeffs: dict = None
+    split: float = 0.0
+    left: '_IFNode' = None
+    right: '_IFNode' = None
+    size: int = 1
 
-    def __init__(self):
+
+def _if_c(n: int) -> float:
+    """iForest 路径长度校正项: c(n)=2H(n-1)-2(n-1)/n。
+
+    H 为调和数近似 ln + 欧拉常数; 标准 Isolation Forest 定义。
+    """
+    if n <= 1:
+        return 0.0
+    if n == 2:
+        return 1.0
+    gamma = 0.5772156649015329
+    return 2.0 * (math.log(n - 1) + gamma) - 2.0 * (n - 1) / n
+
+
+class IsolationForestAnomalyDetector:
+    """隔离森林——纯Python实现，无sklearn/numpy依赖。
+
+    训练: 每棵树在随机子样本上递归二分; 分裂采用随机超平面
+    (Extended Isolation Forest 变体, Hariri et al. 2019),
+    每节点取随机系数组合全部特征后投影切分, 单变量异常更易被隔离。
+    检测: 平均路径长度经 c(n) 校正换算 2^(-E[h]/c(n)),
+    再以 0.5 为不动点线性重标定到 [0,1] 以对齐模块阈值。
+    """
+
+    def __init__(self, n_trees: int = 100, sample_size: int = 256):
+        self.n_trees = n_trees
+        self.sample_size = sample_size
+        self.trees = []
+        self.mean = {}
+        self.std = {}
+        self._c_psi = 1.0
         self.trained = False
-        self.feat_imp = {}
+
+    def _project(self, row, coeffs):
+        """随机超平面投影: 行向量与随机系数向量点积。"""
+        return sum(c * float(row.get(k, 0.0)) for k, c in coeffs.items())
+
+    def _build_tree(self, rows, depth, max_depth):
+        """对样本子集构建单棵隔离树, 深度封顶防退化。"""
+        n = len(rows)
+        if n <= 1 or depth >= max_depth:
+            return _IFNode(size=n)
+        keys = list(rows[0].keys())
+        if not keys:
+            return _IFNode(size=n)
+        coeffs = {k: random.uniform(-1.0, 1.0) for k in keys}
+        projs = sorted(self._project(r, coeffs) for r in rows)
+        lo, hi = projs[0], projs[-1]
+        if hi - lo < 1e-12:
+            return _IFNode(size=n)
+        cut = random.uniform(lo, hi)
+        left = [r for r in rows if self._project(r, coeffs) < cut]
+        right = [r for r in rows if self._project(r, coeffs) >= cut]
+        if not left or not right:
+            return _IFNode(size=n)
+        node = _IFNode(coeffs=coeffs, split=cut, size=n)
+        node.left = self._build_tree(left, depth + 1, max_depth)
+        node.right = self._build_tree(right, depth + 1, max_depth)
+        return node
+
+    def _path_len(self, feats, node, depth):
+        """单样本在单棵树上的路径长度, 叶节点加 c(size) 校正。"""
+        if node.left is None and node.right is None:
+            return depth + _if_c(node.size)
+        v = self._project(feats, node.coeffs)
+        if v < node.split:
+            return self._path_len(feats, node.left, depth + 1)
+        return self._path_len(feats, node.right, depth + 1)
 
     def train(self, features_list):
-        """从训练分布推导逐特征重要性权重"""
+        """在训练语料上构建隔离树集合, 并记录逐特征统计量。"""
         if not features_list:
             return
+        max_depth = int(math.ceil(math.log2(max(2, len(features_list))))) + 1
+        psi = min(self.sample_size, len(features_list))
+        # 校正项取实际子样本大小, 与树构建的 psi 保持一致
+        self._c_psi = _if_c(max(2, psi))
+        self.trees = []
+        for _ in range(self.n_trees):
+            rows = random.sample(features_list, psi)
+            self.trees.append(self._build_tree(rows, 0, max_depth))
         all_keys = set()
         for f in features_list:
             all_keys.update(f.keys())
-        if numpy is not None:
-            for k in all_keys:
-                self.feat_imp[k] = float(numpy.random.uniform(0.1, 1.0))
-        else:
-            for k in all_keys:
-                self.feat_imp[k] = random.uniform(0.1, 1.0)
+        for k in all_keys:
+            vals = [float(f.get(k, 0.0)) for f in features_list]
+            self.mean[k] = _manual_mean(vals)
+            self.std[k] = _manual_std(vals) if len(vals) > 1 else 1.0
         self.trained = True
-        logger.info('IsolationForest training complete (simulated)')
+        logger.info(f'IsolationForest training complete: {len(self.trees)} trees')
 
     def detect(self, features):
-        """加权异常分——每特征值乘以其重要性权重后聚合"""
+        """隔离异常分——平均路径越短分越高, 附逐特征偏离证据。"""
         if not self.trained:
             return 0.0, ['Model not trained']
-        scores = []
+        if self._c_psi <= 0:
+            return 0.0, []
+        avg_h = sum(self._path_len(features, t, 0) for t in self.trees) / len(self.trees)
+        raw = 2.0 ** (-avg_h / self._c_psi)
+        # 原始分不动点 0.5 为正常/异常分界; 重标定系数 4
+        # 使典型异常原始分 (~0.6) 落到 ANOMALOUS 区间 (>=0.5)
+        score = max(0.0, min(1.0, (raw - 0.5) * 4.0))
         reasons = []
         for k, v in features.items():
-            imp = self.feat_imp.get(k, 0.5)
-            nv = min(1.0, abs(float(v)) / 100)
-            sc = nv * imp
-            scores.append(sc)
-            if nv > 0.5:
-                reasons.append(f'{k}: anomalous value ({v})')
-        if scores:
-            return min(1.0, sum(scores) / len(scores)), reasons
-        return 0.0, reasons
+            mu = self.mean.get(k)
+            if mu is None:
+                continue
+            z = abs(float(v) - mu) / max(self.std.get(k, 1.0), 1e-6)
+            if z > 1.5:
+                reasons.append(f'{k}: deviation from normal (Z={z:.2f})')
+        return score, reasons
 
     def save_model(self, path):
         d = os.path.dirname(path)
         if d:
             os.makedirs(d, exist_ok=True)
         with open(path, 'wb') as fh:
-            pickle.dump({'feature_importance': self.feat_imp, 'trained': self.trained}, fh)
+            pickle.dump({
+                'trees': self.trees,
+                'n_trees': self.n_trees,
+                'sample_size': self.sample_size,
+                'mean': self.mean,
+                'std': self.std,
+                'c_psi': self._c_psi,
+                'trained': self.trained,
+            }, fh)
         logger.info(f'IF model saved: {path}')
 
     @classmethod
@@ -377,8 +460,18 @@ class IsolationForestAnomalyDetector:
         det = cls()
         with open(path, 'rb') as fh:
             data = pickle.load(fh)
-        det.feat_imp = data['feature_importance']
-        det.trained = data['trained']
+        if 'trees' not in data:
+            # 旧版随机权重模型无法还原为隔离树, 按未训练处理
+            logger.warning('legacy IF model (feature_importance) cannot be restored, retrain required')
+            det.trained = False
+            return det
+        det.trees = data['trees']
+        det.n_trees = data.get('n_trees', det.n_trees)
+        det.sample_size = data.get('sample_size', det.sample_size)
+        det.mean = data.get('mean', {})
+        det.std = data.get('std', {})
+        det._c_psi = data.get('c_psi', 1.0)
+        det.trained = data.get('trained', True)
         logger.info(f'IF model loaded: {path}')
         return det
 

@@ -1,7 +1,7 @@
 """响应解析与文件写入 — 解析 AI 返回的文件内容并安全写入磁盘。"""
 import os
 import re
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 
 def parse_and_write_files(module_key: str, response_text: str) -> list[str]:

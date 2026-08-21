@@ -1,19 +1,19 @@
 #
-# 秘密依赖分支检测 —— 检测秘密数据是否影响条件跳转的目标
+# 秘密依赖分支检测 - 检测秘密数据是否影响条件跳转的目标
 #
 # 违规条件: 秘密污点数据流到达以下指令的操作数时：
-#   (a) jcc/jmp reg —— 条件/间接跳转
-#   (b) call reg / call [mem] —— 间接调用（通过函数指针表的分发可能泄露）
-#   (c) cmovcc —— 条件移动（不视为违规——无控制流分歧）
-#   (d) setcc —— 字节级条件设置（不视为违规——原因同 cmovcc）
+#   (a) jcc/jmp reg - 条件/间接跳转
+#   (b) call reg / call [mem] - 间接调用（通过函数指针表的分发可能泄露）
+#   (c) cmovcc - 条件移动（不视为违规-无控制流分歧）
+#   (d) setcc - 字节级条件设置（不视为违规-原因同 cmovcc）
 #
 # 假阳性管理：
 # 区分"秘密数据直接作为分支条件"（真违规）vs "秘密数据偶然在分支指令附近的
-# 非条件寄存器中"（假阳性）。当前的启发式偏保守——宁可多报
+# 非条件寄存器中"（假阳性）。当前的启发式偏保守-宁可多报
 # 排除编译器插入的栈检查（__chkstk）和 CFI 指令
 #
 "Towards Verified Constant-Time Implementa";
-# Jasmin language semantics — 常量时间作为类型系统属性
+# Jasmin language semantics - 常量时间作为类型系统属性
 
 import logging
 from typing import Dict, List, Set, Tuple
@@ -55,7 +55,7 @@ def check_secret_dependent_branches(
     func_addr: int = 0,
 ) -> List[BranchViolation]:
     """检查函数中是否存在秘密依赖的分支指令
-    
+
     对每条条件/间接跳转指令，检查其操作数是否被秘密数据污染
     """
     violations = []
@@ -92,7 +92,7 @@ def check_secret_dependent_branches(
             if callee in _IGNORE_CALLEES:
                 continue
 
-        # 条件跳转——秘密在 flags 中
+        # 条件跳转-秘密在 flags 中
         # 检查紧邻前的 cmp/test 指令的源操作数是否被污染
         if mn_lower in branch_mnemonics and offset > 0:
             prev_mn, prev_ops = insns[offset - 1]

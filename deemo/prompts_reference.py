@@ -51,7 +51,7 @@ PATCH_DIFF_ANALYSIS = """
 }}
 """
 
-# -- cross-architecture exploit transpile (preserved) --
+# cross-architecture exploit transpile (preserved)
 
 EXPLOIT_TRANSPILE = """
 你是一名漏洞利用开发专家，请将以下源架构的利用代码转换为目标架构。

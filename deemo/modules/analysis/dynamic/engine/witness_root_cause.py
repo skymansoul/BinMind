@@ -1,6 +1,5 @@
-# 创建: 2026-05-14 上午
-# 修改: 2026-05-14 — use-def BFS 后向切片 + evidence-weighted blame
-# 修改: 2026-05-14 — 修复 _enclosing_function 未初始化变量
+# use-def BFS 后向切片 + evidence-weighted blame
+# 修复 _enclosing_function 未初始化变量
 """
 见证支持的崩溃根因定位器 — 从崩溃点沿 lifted IR 后向溯源。
 

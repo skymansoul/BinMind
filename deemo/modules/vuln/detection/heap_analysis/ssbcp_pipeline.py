@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-21  |  SSBCP三阶段过滤管线 — 整合符号约束+分支窄化+分配器模型
 #
 """
 SSBCP (Symbolic Size-Bound Constraint Propagation) 过滤管线。
@@ -80,11 +79,8 @@ def analyze_heap_ssbcp(binary_path: str,
                        timeout_s: int = 60) -> SSBCPReport:
     """SSBCP完整管线: 反汇编→解析→符号传播→分支窄化→分配器模型
 
-    参数:
-      binary_path: 二进制文件路径
-      timeout_s: objdump超时秒数
-
-    返回: SSBCPReport
+    参数: binary_path 二进制文件路径, timeout_s objdump超时
+    秒数; 返回 SSBCPReport。
     """
     t0 = time.time()
     report = SSBCPReport(binary_path=binary_path)

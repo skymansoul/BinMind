@@ -22,6 +22,17 @@ class UafPathVerdict(Enum):
     DOMINATED = "DOMINATED"            # free dominates use (确定UAF)
     UNCERTAIN = "UNCERTAIN"
 
+@dataclass
+class UafPathResult:
+    """UAF路径可达性验证结果."""
+    ptr_name: str = ""
+    free_block: int = -1
+    use_block: int = -1
+    verdict: UafPathVerdict = UafPathVerdict.UNCERTAIN
+    reachable: bool = False
+    reason: str = ""
+    confidence_delta: float = 0.0
+
 class UafPathVerifier:
     """UAF路径可达性验证器 — 可达性分析。
 
@@ -170,12 +181,7 @@ def verify_uaf_paths(candidates: List[dict],
                      pseudocode: str = '') -> Tuple[List[dict], List[UafPathResult]]:
     """便捷函数: 对 UAF 候选列表执行路径可达性验证。
 
-    Args:
-        candidates: UAF候选字典列表 (含 freed_variable 或 pointer_name)
-        pseudocode: 反编译伪代码文本
-
-    Returns:
-        (filtered_candidates, path_results)
+    返回 (filtered_candidates, path_results)。
     """
     if not pseudocode or not candidates:
         return list(candidates), []
@@ -211,6 +217,6 @@ def verify_uaf_paths(candidates: List[dict],
     return kept, results
 
 __all__ = [
-    'UafPathVerdict', 'UafPathResult', 'BasicBlock',
+    'UafPathVerdict', 'UafPathResult',
     'UafPathVerifier', 'verify_uaf_paths',
 ]

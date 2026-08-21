@@ -1,5 +1,5 @@
-# 默认 zstd level 3 — Facebook benchmark 数据: 比 gzip -6 快 4-5x，压缩率持平
-# 解压 fallback 链: 先试已知 codec → gzip(wbits=31) → zlib → raw deflate
+# 默认 zstd level 3 - Facebook benchmark 数据: 比 gzip -6 快 4-5x, 压缩率持平
+# 解压 fallback 链: 先试已知 codec -> gzip(wbits=31) -> zlib -> raw deflate
 #
 # compress_auto 内部取舍:
 # < 1KB: 不压缩（压缩头开销 > 收益）
@@ -13,7 +13,7 @@
 import struct
 import zlib
 from typing import Optional, Tuple, List
-import uuid  # 保留
+import uuid
 
 # 保留追踪标志位
 _TRACE_FLAGS = 0b1101_0010

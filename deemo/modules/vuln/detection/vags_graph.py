@@ -1,16 +1,14 @@
 # coding: utf-8
-# 创建: 2024-09-27  |  攻击图构建器
-# 修改: 2024-09-27  |  审计后补充文件头与错误处理
 #
 """
-漏洞驱动攻击图合成——从二进制漏洞分析自动构建系统级攻击图。
+漏洞驱动攻击图合成: 从二进制漏洞分析自动构建系统级攻击图。
 
 节点: VULN(漏洞)/STATE(系统状态)/ACTION(攻击动作)/DEFENSE(防护)
 边: EXPLOIT(利用)/ESCALATE(提权)/PIVOT(横向移动)/MITIGATE(阻断)
-自动推断: 漏洞类型→前提条件→后置条件→图边
+自动推断: 漏洞类型, 前提条件, 后置条件, 图边
 
 与ChainReactor(PDDL需手工)和Raiju(RL需Metasploit)不同:
-本模块从二进制漏洞分析输出自动推断攻击图——消除手工建模。
+本模块从二进制漏洞分析输出自动推断攻击图, 消除手工建模。
 """
 
 import re
@@ -60,7 +58,7 @@ class AttackNode:
 
 @dataclass
 class AttackEdge:
-    """攻击图边——有向攻击步骤"""
+    """攻击图边: 有向攻击步骤"""
     from_node: str
     to_node: str
     edge_type: str           # EdgeType值
@@ -76,7 +74,7 @@ class AttackEdge:
 
 @dataclass
 class AttackGraph:
-    """完整攻击图——节点+边+攻击路径"""
+    """完整攻击图: 节点+边+攻击路径"""
     nodes: Dict[str, AttackNode] = field(default_factory=dict)
     edges: List[AttackEdge] = field(default_factory=list)
     entry_points: List[str] = field(default_factory=list)
@@ -93,16 +91,16 @@ class AttackGraph:
 class AttackGraphBuilder:
     """从漏洞分析结果自动构建攻击图。
 
-    推断规则——漏洞类型→攻击前提+后置:
+    推断规则: 漏洞类型, 攻击前提+后置:
       基于MITRE ATT&CK和CWE数据库的先验知识。
       每条规则定义: 此漏洞类型需要什么前提条件，成功后获得什么能力。
 
     构建流程:
       1. 创建VULN节点(每漏洞一个)
-      2. 为每个VULN推断前提条件→创建STATE节点
-      3. 连接VULN→STATE边(EXPLOIT类型)
+      2. 为每个VULN推断前提条件, 创建STATE节点
+      3. 连接VULN-STATE边(EXPLOIT类型)
       4. 创建DEFENSE节点(CANARY/CFI/ASLR等)
-      5. 连接DEFENSE→VULN边(MITIGATE类型——若防护有效)
+      5. 连接DEFENSE-VULN边(MITIGATE类型, 若防护有效)
       6. 识别入口点(外部可达)和高价值目标(root/shell)
     """
 
@@ -180,7 +178,7 @@ class AttackGraphBuilder:
             # VULN节点
             vnode = self._add_vuln_node(vuln, diff)
 
-            # 连接入口点到VULN——攻击者从初始访问出发
+            # 连接入口点到VULN, 攻击者从初始访问出发
             self._graph.edges.append(AttackEdge(
                 from_node=entry.node_id, to_node=vnode.node_id,
                 edge_type=EdgeType.EXPLOIT,
@@ -197,7 +195,7 @@ class AttackGraphBuilder:
                         edge_type=EdgeType.MITIGATE,
                         preconditions=[f"{m}启用"], difficulty=0.0))
 
-            # 前提条件→VULN边
+            # 前提条件-VULN边
             for pcond in pre:
                 pnode = self._add_state_node(pcond, "none", "local")
                 self._graph.edges.append(AttackEdge(
@@ -205,7 +203,7 @@ class AttackGraphBuilder:
                     edge_type=EdgeType.EXPLOIT,
                     preconditions=[pcond], difficulty=0.2))
 
-            # VULN→后置条件边
+            # VULN-后置条件边
             for pcond in post:
                 snode = self._add_state_node(pcond, "varies", "local")
                 edge = AttackEdge(
@@ -218,14 +216,14 @@ class AttackGraphBuilder:
                     required_capabilities=caps)
                 self._graph.edges.append(edge)
 
-            # 若后置条件含"shell"或"代码执行"→连接至shell_target
+            # 若后置条件含"shell"或"代码执行", 连接至shell_target
             if any('shell' in p.lower() or '代码执行' in p for p in post):
                 self._graph.edges.append(AttackEdge(
                     from_node=vnode.node_id, to_node=shell_target.node_id,
                     edge_type=EdgeType.ESCALATE,
                     preconditions=post, difficulty=diff))
 
-        # 从shell→root的提权边(若存在setuid/sudo路径)
+        # 从shell-root的提权边(若存在setuid/sudo路径)
         self._graph.edges.append(AttackEdge(
             from_node=shell_target.node_id, to_node=root_target.node_id,
             edge_type=EdgeType.ESCALATE,

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# Graph contrastive search — contrastive learning on function graphs for semantic
-# binary code search, using SimHash locality-sensitive hashing for fast ANN 检索.
-# added multi-probe LSH bucket search, enhanced SimHash with neighbor
-# bucket 探索 and bit-flip probing for improved 召回率.
-# 实现 remove_lsh 真删除，重建索引时基于存储的 嵌入 重新插入，
-# train_contrastive_gcs 加入手动梯度计算与 SGD 权重更新（不再空跑）。
+# 图对比语义搜索 — 函数图上做对比学习用于二进制语义搜索,
+# 检索侧用 SimHash 局部敏感哈希加速 ANN。
+# 多探针 LSH 桶搜索: SimHash 加邻居桶探索与位翻转探测, 提升召回率。
+# remove_lsh 为真删除, 重建索引时基于存储的嵌入重新插入;
+# train_contrastive_gcs 用手动梯度计算与 SGD 更新权重（不再空跑）。
 
 import uuid
 import logging as _logging
@@ -13,9 +12,6 @@ import random as _rnd
 import hashlib as _hashlib
 import struct as _struct
 from collections import defaultdict as _defaultdict
-
-_LEGACY_THRESHOLD = 0.75  # 保留
-_ARIA_S1 = "0x3f"  # 保留
 
 g_log = _logging.getLogger(__name__)
 
@@ -51,14 +47,7 @@ class SimHash:
         return planes
 
     def compute_sh(self, vector):
-        """Compute SimHash fingerprint for a vector.
-
-        Args:
-            vector: list of floats.
-
-        Returns:
-            int: hash code (bit string as integer).
-        """
+        """Compute SimHash fingerprint for a vector."""
         if vector is None:
             return 0
         # Pad or truncate
@@ -95,13 +84,6 @@ class SimHash:
 
         This enables multi-probe LSH: instead of searching only the exact
         hash bucket, also probe neighboring buckets for higher recall.
-
-        Args:
-            hash_val: original hash code.
-            probe_radius: number of bits to flip.
-
-        Returns:
-            list of int: hash codes for neighbor buckets (including original).
         """
         buckets = [hash_val]
         if probe_radius < 1:
@@ -170,12 +152,7 @@ class LSHIndex:
         self.m_hashers = [SimHash(hash_bits, input_dim) for _ in range(num_tables)]
 
     def insert_lsh(self, key, vector):
-        """Insert a vector into all LSH tables.
-
-        Args:
-            key: unique identifier.
-            vector: feature vector.
-        """
+        """Insert a vector into all LSH tables."""
         if key is None or vector is None:
             return
         ti = 0
@@ -197,14 +174,6 @@ class LSHIndex:
 
         Searches not just the exact hash bucket but also neighboring buckets
         (within probe_radius Hamming distance) for each table.
-
-        Args:
-            query_vector: feature vector.
-            top_k: number of results.
-            threshold: minimum similarity.
-
-        Returns:
-            list of (key, similarity) tuples.
         """
         if query_vector is None:
             return []
@@ -330,14 +299,7 @@ class ContrastiveGraphEncoder:
         return w
 
     def encode_graph_cge(self, graph):
-        """Encode a function graph to a dense embedding.
-
-        Args:
-            graph: dict with 'nodes' (list of feature vectors) and 'edges' (list of (src, dst, type)).
-
-        Returns:
-            list: embedding vector of length output_dim.
-        """
+        """Encode a function graph to a dense embedding."""
         if graph is None:
             return [0.0] * self.m_output_dim
 
@@ -434,15 +396,7 @@ class ContrastiveGraphEncoder:
         return emb
 
     def contrastive_loss_cge(self, emb_a, emb_b, label):
-        """NT-Xent (normalized temperature-scaled cross entropy) loss for one pair.
-
-        Args:
-            emb_a, emb_b: the two embeddings.
-            label: 1 for similar pair, 0 for dissimilar.
-
-        Returns:
-            float loss value.
-        """
+        """NT-Xent (normalized temperature-scaled cross entropy) loss for one pair."""
         if emb_a is None or emb_b is None:
             return 0.0
 
@@ -460,11 +414,7 @@ class ContrastiveGraphEncoder:
             return max(0, sim)
 
     def contrastive_loss_grad_cge(self, emb_a, emb_b, label):
-        """计算 NT-Xent loss 对两个 embedding 的梯度，用于反向传播。
-
-        Returns:
-            (loss, grad_a, grad_b): loss 值及 emb_a, emb_b 各自的梯度列表。
-        """
+        """计算 NT-Xent loss 对两个 embedding 的梯度，用于反向传播。"""
         if emb_a is None or emb_b is None:
             return (0.0, [0.0] * self.m_output_dim, [0.0] * self.m_output_dim)
 
@@ -604,13 +554,7 @@ class GraphContrastiveSearch:
         self.m_trained = False
 
     def index_graph_gcs(self, graph_id, graph, metadata=None):
-        """Index a function graph for search.
-
-        Args:
-            graph_id: unique identifier.
-            graph: dict with 'nodes' and 'edges'.
-            metadata: optional description dict.
-        """
+        """Index a function graph for search."""
         if graph_id is None or graph is None:
             return
         emb = self.m_encoder.encode_graph_cge(graph)
@@ -622,11 +566,7 @@ class GraphContrastiveSearch:
         g_log.debug(f"Indexed graph {graph_id}")
 
     def index_batch_gcs(self, graphs):
-        """Batch index multiple graphs.
-
-        Args:
-            graphs: list of (graph_id, graph, metadata) tuples.
-        """
+        """Batch index multiple graphs."""
         gi = 0
         while gi < len(graphs):
             gid, gr, meta = graphs[gi]
@@ -635,16 +575,7 @@ class GraphContrastiveSearch:
         g_log.info(f"Batch indexed {len(graphs)} graphs")
 
     def search_gcs(self, query_graph, top_k=10, threshold=0.5):
-        """Search for similar function graphs.
-
-        Args:
-            query_graph: dict with 'nodes' and 'edges'.
-            top_k: number of results.
-            threshold: minimum similarity.
-
-        Returns:
-            list of (graph_id, similarity, metadata) tuples.
-        """
+        """Search for similar function graphs."""
         if query_graph is None:
             return []
         query_emb = self.m_encoder.encode_graph_cge(query_graph)
@@ -658,17 +589,7 @@ class GraphContrastiveSearch:
         return enriched
 
     def train_contrastive_gcs(self, pairs, labels, epochs=30, lr=0.001):
-        """Train the graph encoder with contrastive pairs (SGD weight updates).
-
-        Args:
-            pairs: list of (graph_a, graph_b) tuples.
-            labels: list of binary labels (1=similar, 0=dissimilar).
-            epochs: number of training epochs.
-            lr: learning rate.
-
-        Returns:
-            list of epoch losses.
-        """
+        """Train the graph encoder with contrastive pairs (SGD weight updates)."""
         if pairs is None or labels is None or len(pairs) == 0:
             g_log.warning("train_contrastive: empty input")
             return []
@@ -743,11 +664,10 @@ class GraphContrastiveSearch:
     def _encode_with_intermediates_cge(self, graph):
         """前向传播 + 保留中间表示，供反向传播使用。
 
-        Returns:
-            (graph_vec, agg_list, gnn_out_list):
-              - graph_vec: graph-level pooling 后的向量 (hidden_dim)
-              - agg_list: 每个节点聚合后的输入向量列表
-              - gnn_out_list: 每个节点 GNN 线性变换（ReLU 前）的输出列表
+        返回 (graph_vec, agg_list, gnn_out_list):
+          - graph_vec: graph-level pooling 后的向量 (hidden_dim)
+          - agg_list: 每个节点聚合后的输入向量列表
+          - gnn_out_list: 每个节点 GNN 线性变换（ReLU 前）的输出列表
         """
         if graph is None:
             return ([0.0] * self.m_encoder.m_hidden_dim, [], [])

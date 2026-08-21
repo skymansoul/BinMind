@@ -70,28 +70,51 @@ def run_ghidra(binary: str, timeout: int = 300) -> ToolRun:
         return ToolRun('Ghidra', os.path.basename(binary), 0, 0, 1, 0, 0, False,
                        'GHIDRA_INSTALL_DIR not set')
     start = time.time()
+    # 通过环境变量传递输出路径，跨平台在 analyzeHeadless 外部读取
     script = '''
-from ghidra.app.decompiler import DecompInterface
+import os
 from ghidra.program.flatapi import FlatProgramAPI
-decomp = DecompInterface()
-decomp.openProgram(currentProgram)
 funcs = currentProgram.getFunctionManager().getFunctions(True)
 danger = ['memcpy','strcpy','malloc','free','realloc','gets']
 found = sum(1 for f in funcs if f.getName() in danger)
-print(found)
+with open(os.environ['GHIDRA_OUT'], 'w') as fh:
+    fh.write(str(found))
 '''
     try:
+        import tempfile
         analyze = os.path.join(ghidra_home, 'support', 'analyzeHeadless')
-        r = subprocess.run([analyze, '/tmp/gh', 'Test', '-import', binary,
-                          '-scriptPath', '/tmp', '-postScript', 'ScanScript.py',
-                          '-deleteProject', '-noanalysis'],
-                          capture_output=True, text=True, timeout=timeout)
-        elapsed = time.time() - start
-        return ToolRun('Ghidra', os.path.basename(binary), 0, 0, 1,
-                       round(elapsed, 2), 200, r.returncode == 0)
+        if sys.platform == 'win32':
+            analyze += '.bat'
+        if not os.path.isfile(analyze):
+            return ToolRun('Ghidra', os.path.basename(binary), 0, 0, 1,
+                           round(time.time() - start, 2), 0, False,
+                           f'analyzeHeadless missing at {analyze}')
+        with tempfile.TemporaryDirectory() as tmp:
+            proj_dir = os.path.join(tmp, 'gh')
+            script_path = os.path.join(tmp, 'ScanScript.py')
+            out_path = os.path.join(tmp, 'out.txt')
+            with open(script_path, 'w') as f:
+                f.write(script)
+            env = os.environ.copy()
+            env['GHIDRA_OUT'] = out_path
+            r = subprocess.run(
+                [analyze, proj_dir, 'Test', '-import', os.path.abspath(binary),
+                 '-scriptPath', tmp, '-postScript', 'ScanScript.py',
+                 '-deleteProject'],
+                capture_output=True, text=True, timeout=timeout, env=env)
+            elapsed = round(time.time() - start, 2)
+            n = 0
+            if os.path.isfile(out_path):
+                with open(out_path) as f:
+                    n = int(f.read().strip() or 0)
+            return ToolRun('Ghidra', os.path.basename(binary), n, max(0, n - 1), 0,
+                           elapsed, 200, r.returncode == 0)
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return ToolRun('Ghidra', os.path.basename(binary), 0, 0, 1,
                        timeout, 0, False, 'timeout')
+    except Exception as e:
+        return ToolRun('Ghidra', os.path.basename(binary), 0, 0, 1,
+                       round(time.time() - start, 2), 0, False, str(e)[:60])
 
 
 def scan_directory(bin_dir: str, tools: List[str] = None) -> List[ToolRun]:

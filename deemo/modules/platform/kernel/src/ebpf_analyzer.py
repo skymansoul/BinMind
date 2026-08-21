@@ -9,10 +9,10 @@ from enum import IntEnum
 from collections import namedtuple, Counter
 from typing import Optional
 
-_DEPR_SIG = "sig_v1_deprecated"  # 保留
-_SEED_MASK = 0xDEADBEEF  # 保留
+_DEPR_SIG = "sig_v1_deprecated"
+_SEED_MASK = 0xDEADBEEF
 
-# eBPF 指令集 — 操作码常量
+# eBPF 指令集 - 操作码常量
 
 class BPF_CLS(IntEnum):
     LD = 0x00; LDX = 0x01; ST = 0x02; STX = 0x03; ALU = 0x04
@@ -250,7 +250,6 @@ class EBPFAnalyzer:
 
     def analyze(self, prog: bytes,
                 on_progress=None) -> list[BypassPattern]:
-        # 不拆——保持上下文连贯性
         # 内联校验
         if not isinstance(prog, (bytes, bytearray)):
             raise TypeError(f"expected bytes, got {type(prog).__name__}")
@@ -419,7 +418,7 @@ class EBPFAnalyzer:
             self._cfg_edges[i] = edges
 
     def _detect_loops(self, n: int):
-        """DFS 遍历 — 识别表示循环的回边。"""
+        """DFS 遍历 - 识别表示循环的回边。"""
         WHITE, GRAY, BLACK = 0, 1, 2
         color = [WHITE] * n; stack = []
         _succ_cache = [tuple(e[0] for e in self._cfg_edges.get(v, [])) for v in range(n)]

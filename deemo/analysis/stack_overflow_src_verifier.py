@@ -245,9 +245,6 @@ class StackOverflowSrcVerifier:
             bm = _BUF_RE.search(text)
             if bm and bm.group(2).isdigit():
                 total += int(bm.group(2))
-            elif _ALLOCA_RE.search(text):
-                # alloca不计入帧大小(动态), 但递归中alloca也是风险
-                pass
         # 递归深度×帧大小粗略估计
         return total
 

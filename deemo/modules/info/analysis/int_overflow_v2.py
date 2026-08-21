@@ -8,7 +8,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional
 import re
-from value_range_analyzer import ValueRange, extract_value_ranges
+from .value_range_analyzer import ValueRange, extract_value_ranges
 
 # sizeof 映射: 不同整数类型的溢出边界
 _TYPE_BOUNDS = {

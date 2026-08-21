@@ -1,53 +1,36 @@
-"""Core path diversity analysis engine for anti-explosion 符号执行
+"""抗路径爆炸的核心路径多样性分析引擎。
 
-路径爆炸 constrained selecting maximally dissimilar paths
-module 计算 pairwise similarity across structural, semantic
-constraint, 覆盖率 feature dimensions, 集群s paths a
-similarity threshold, selects representatives 集群
-maximize exploration diversity
+通过选择彼此差异最大的路径抑制路径爆炸: 在结构、语义、约束
+与覆盖率特征维度上计算两两相似度, 按相似度阈值把路径聚类,
+再从各簇选代表以最大化探索多样性。
 
-core implementation extracted path_diversity.py
-包含 real library code: 特征提取, SimHash, ANN
-indexing, diversity budgeting, path heatmap, streaming 监控
-快照 diff, similarity calculation, diversity tracking
-diversity-aware path selection
+核心实现从 path_diversity.py 拆出, 包含真实库代码: 特征提取、
+SimHash、ANN 索引、多样性预算、路径热力图、流式监控、快照
+diff、相似度计算、多样性追踪与多样性感知的路径选择。
 
-增强 — LSH (Locality-Sensitive 哈希) 加速相似度搜索：
-使用随机超平面投影将路径特征向量映射到汉明空间
-近似 KNN 查询时间复杂度从 O(n²·d) 降至 O(k·d·log n)
-SimHash 指纹用于快速去重：两路径 SimHash 不同 → 必定不相似
-避免昂贵的精确相似度计算
-
-增强 — WEIGHTED_SAMPLE 策略：
-按簇大小的反比抽样 —— 小路簇的代表被选中的概率更高
-防止少数大簇垄断探索预算
-
-增强 — 近似最近邻索引 (ANN via Random Projection Forest)：
-构建 ann_forest —— 多棵随机投影树的森林，每棵树在随机超平面上
-递归分割特征空间。构建 O(n·log n)，查询 O(log n)，替代原始的
-O(n²) pairwise 比较
-
-增强 — 多样性预算管理 (DiversityBudget)：
-将总路径预算按 集群_quota = max_paths / num_集群s 均分
-当某个簇超过配额时，逐出与该簇 centroid_simhash 的 SimHash 汉明距离
-最大的路径（即最不具代表性的），保留核心多样性
-
-增强 — 簇可视化导出 (export_集群_visualization)：
-将当前簇状态导出为 JSON，包含 集群_id、centroid_features
-和 member_count，供外部图表工具渲染
-
-增强 — StreamingDiversityMonitor：
-基于回调的监控器，按可配置的间隔发射
-(timestamp, diversity_score, exploration_velocity, 集群_count) 元组
-用于实时仪表板集成
-
-增强 — PathHeatmap：
-维护按 (depth_bucket, constraint_count_bucket) 的已探索路径 2D 直方图
-识别冷点（低探索密度区域）以进行针对性重探索
-
-增强 — 快照Diff：
-比较两个 PathDiversityTracker 快照，计算变化：
-新簇形成、簇合并、路径在簇间移动、多样性评分增量
+增强:
+- LSH (Locality-Sensitive Hashing) 加速相似度搜索: 随机超平面
+  投影把路径特征向量映射到汉明空间, 近似 KNN 查询复杂度从
+  O(n²·d) 降至 O(k·d·log n); SimHash 指纹用于快速去重 —
+  两路径 SimHash 差异大则无需精确相似度计算
+- WEIGHTED_SAMPLE 策略: 按簇大小反比抽样, 小簇代表被选中的
+  概率更高, 防止少数大簇垄断探索预算
+- 近似最近邻索引 (ANN via Random Projection Forest): ann_forest
+  由多棵随机投影树组成, 每棵在随机超平面上递归分割特征空间;
+  构建 O(n·log n), 查询 O(log n), 替代 O(n²) 两两比较
+- 多样性预算管理 (DiversityBudget): 总路径预算按
+  cluster_quota = max_paths / num_clusters 均分; 簇超配额时
+  逐出与 centroid_simhash 汉明距离最大的路径 (最不具代表性),
+  保留核心多样性
+- 簇可视化导出 (export_cluster_visualization): 当前簇状态导出
+  为 JSON, 含 cluster_id、centroid_features 与 member_count
+- StreamingDiversityMonitor: 基于回调的监控器, 按可配置间隔
+  发射 (timestamp, diversity_score, exploration_velocity,
+  cluster_count) 元组, 用于实时仪表板集成
+- PathHeatmap: 按 (depth_bucket, constraint_count_bucket) 维护
+  已探索路径的 2D 直方图, 识别冷点做针对性重探索
+- SnapshotDiff: 比较两个 PathDiversityTracker 快照, 计算新簇
+  形成、簇合并、路径在簇间移动与多样性评分增量
 """
 
 import logging
@@ -66,13 +49,13 @@ from collections import OrderedDict  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-_LEGACY_MODE = False  # 保留
+_LEGACY_MODE = False
 
 
 
 
 class DiversityStrategy(Enum):
-    """Selection strategies for picking next diverse path"""
+    """挑选下一条多样路径的选择策略。"""
     RANDOM = "random"
     ROUND_ROBIN = "round_robin"
     SIMILARITY_BASED = "similarity_based"
@@ -82,7 +65,7 @@ class DiversityStrategy(Enum):
 
 
 class PathFeatureType(Enum):
-    """Dimensions along path similarity measured"""
+    """路径相似度的度量维度。"""
     STRUCTURAL = "structural"
     SEMANTIC = "semantic"
     CONSTRAINTS = "constraints"
@@ -123,7 +106,7 @@ def _hamming_distance(a: int, b: int) -> int:
 # 策略：对每个 feature_type 按 key 排序取 val 的 hash 值，归一化到 [0,1]
 # 维度固定为 64，确保所有特征向量的长度一致
 def _feature_to_vector(feature: "PathFeature", dim: int = 64) -> List[float]:
-    # Flatten a PathFeature a fixed-dimension float vector
+    # 把 PathFeature 展平为固定维度浮点向量
     vec = [0.0] * dim
     idx = 0
     sorted_items = sorted(feature.features.items())
@@ -153,7 +136,7 @@ def _feature_to_vector(feature: "PathFeature", dim: int = 64) -> List[float]:
 # RandomProjectionTree — 单棵随机投影树
 # 节点在随机方向上分割，递归构造直到叶子节点 ≤ leaf_size
 class _RandomProjectionNode:
-    """Internal node a random projection tree"""
+    """随机投影树的内部节点。"""
     __slots__ = ('random_dir', 'split_val', 'left', 'right', 'leaf_ids')
 
     def __init__(self):
@@ -165,14 +148,14 @@ class _RandomProjectionNode:
 
 
 class _RandomProjectionTree:
-    """A single random projection tree for approximate nearest neighbor search
-    
-    构造：随机生成超平面方向 random_dir，将所有向量投影到该方向上
-    取中位数作为分割点 split_val。递归作用于左右子集
-    叶节点存储 path_id 列表，查询时下降到叶节点后扫描该叶中的所有点
-    
-    单棵树查询可能漏掉跨分割边界的近邻，因此使用 ann_forest（多棵树）
-    来提高召回率
+    """近似最近邻搜索的单棵随机投影树。
+
+    构造: 随机生成超平面方向 random_dir, 把所有向量投影到该方向,
+    取中位数作分割点 split_val, 递归作用于左右子集; 叶节点存储
+    path_id 列表, 查询时下降到叶节点后扫描该叶中的全部点。
+
+    单棵树查询可能漏掉跨分割边界的近邻, 因此用 ann_forest
+    (多棵树) 提高召回率。
     """
 
     def __init__(self, dim: int, leaf_size: int = 10):
@@ -181,7 +164,7 @@ class _RandomProjectionTree:
         self._root: Optional[_RandomProjectionNode] = None
 
     def build(self, vectors: Dict[str, List[float]]):
-        """构建 tree a dict path_id → float vector. O(n 记录 n)"""
+        """用 path_id → 浮点向量字典构建树, O(n log n)。"""
         ids = list(vectors.keys())
         self._root = self._build_node(ids, vectors)
 
@@ -221,7 +204,7 @@ class _RandomProjectionTree:
 
     def query(self, query_vec: List[float], vectors: Dict[str, List[float]],
               k: int = 5) -> List[Tuple[str, float]]:
-        """Query for k nearest neighbors. 返回 [(path_id, cosine_sim),.]"""
+        """查询 k 个最近邻, 返回 [(path_id, cosine_sim), ...]。"""
         if self._root is None:
             return []
 
@@ -282,13 +265,13 @@ class _RandomProjectionTree:
 # ann_forest 包含多棵 _RandomProjectionTree
 # 查询时汇总所有树的候选并按余弦相似度合并排序
 class ANNIndex:
-    """Approximate nearest neighbor index via random projection forest
-    
-    构建：对 features 字典中每个 PathFeature 展平为 64 维向量
-    用 n_trees 棵随机投影树索引。构建 O(n·d·记录 n·n_trees)
-    
-    查询：给定一个 PathFeature，下降到各棵树的叶节点
-    汇总候选后计算余弦相似度排序。查询 O(n_trees·log n + leaf_size·d)
+    """基于随机投影森林的近似最近邻索引。
+
+    构建: features 字典中每个 PathFeature 展平为 64 维向量,
+    用 n_trees 棵随机投影树索引, 构建 O(n·d·log n·n_trees)。
+
+    查询: 给定一个 PathFeature, 下降到各棵树的叶节点, 汇总
+    候选后按余弦相似度排序, 查询 O(n_trees·log n + leaf_size·d)。
     """
 
     def __init__(self, n_trees: int = 10, leaf_size: int = 10, vector_dim: int = 64):
@@ -304,7 +287,7 @@ class ANNIndex:
         return self._ann_forest
 
     def build(self, features: Dict[str, "PathFeature"]):
-        """构建 random projection forest. O(n·记录 n·n_trees)"""
+        """构建随机投影森林, O(n·log n·n_trees)。"""
         if not features:
             return
         # 将所有 PathFeature 转为固定维度浮点向量
@@ -324,10 +307,10 @@ class ANNIndex:
         )
 
     def query(self, feature: "PathFeature", k: int = 5) -> List[Tuple[str, float]]:
-        """查找 up k approximate nearest neighbors
-        
-        返回 list (path_id, cosine_similarity) sorted similarity descending
-        如果索引未构建，回退返回空列表
+        """查找至多 k 个近似最近邻。
+
+        返回按相似度降序的 (path_id, cosine_similarity) 列表;
+        索引未构建时返回空列表。
         """
         if not self._built or not self._ann_forest:
             return []
@@ -348,7 +331,7 @@ class ANNIndex:
 
     def find_similar(self, feature: "PathFeature",
                      threshold: float = 0.7) -> List[str]:
-        """返回 indexed paths cosine similarity >= threshold"""
+        """返回余弦相似度不低于阈值的已索引路径。"""
         if not self._built:
             return []
         # 查询足够多的候选，再按阈值过滤
@@ -356,14 +339,14 @@ class ANNIndex:
         return [pid for pid, sim in candidates if sim >= threshold]
 
 
-# DiversityBudget — 簇配额管理：集群_quota = max_paths / num_集群s
+# DiversityBudget — 簇配额管理：cluster_quota = max_paths / num_clusters
 # 超配额的簇逐出与 centroid_simhash 汉明距离最大的路径
 class DiversityBudget:
-    """Enforce per-集群 path quotas prevent resource monopolization
-    
-    集群_quota = max_paths / num_集群s
-    当某簇路径数超过 quota 时，计算该簇所有成员的 SimHash 与 centroid_simhash
-    的汉明距离，逐出距离最大的路径（该路径最不具代表性）
+    """按簇执行路径配额, 防止资源垄断。
+
+    cluster_quota = max_paths / num_clusters; 某簇路径数超过
+    quota 时, 计算该簇所有成员 SimHash 与 centroid_simhash 的
+    汉明距离, 逐出距离最大的路径 (最不具代表性)。
     """
 
     def __init__(self, max_paths: int = 1000):
@@ -371,7 +354,7 @@ class DiversityBudget:
         self._cluster_quota: int = max_paths
 
     def set_cluster_count(self, num_clusters: int):
-        """Recalculate 集群_quota number 集群s changes"""
+        """簇数量变化时重算 cluster_quota。"""
         self._cluster_quota = self._max_paths // max(1, num_clusters)
         # 每个簇至少保留 1 条路径
         self._cluster_quota = max(1, self._cluster_quota)
@@ -386,11 +369,11 @@ class DiversityBudget:
 
     def compute_centroid_simhash(self, cluster_members: List[str],
                                   features: Dict[str, "PathFeature"]) -> int:
-        """计算 centroid_simhash a 集群
-        
-        策略：对每个 bit 位置（0.63），统计成员 SimHash 中该位为 1 的数量
-        若过半数为 1，则 centroid_simhash 该位也为 1
-        这使得 centroid_simhash 成为成员的"多数投票"指纹
+        """计算簇的 centroid_simhash。
+
+        策略: 对每个 bit 位置 (0..63), 统计成员 SimHash 中该位为
+        1 的数量, 超过半数则 centroid_simhash 该位也为 1 —
+        即成员的"多数投票"指纹。
         """
         if not cluster_members:
             return 0
@@ -411,9 +394,9 @@ class DiversityBudget:
 
     def enforce(self, clusters: Dict[str, List[str]],
                 features: Dict[str, "PathFeature"]) -> List[str]:
-        """Evict over-quota paths 返回 list evicted path_ids
-        
-        仅从超配额簇中逐出，不影响力配额的簇
+        """逐出超配额路径, 返回被逐出的 path_id 列表。
+
+        只处理超配额簇, 不影响配额内的簇。
         """
         evicted: List[str] = []
         for cluster_id, members in list(clusters.items()):
@@ -446,12 +429,10 @@ class DiversityBudget:
 #
 # 冷点识别：histogram 值低于全局平均密度 * COLD_SPOT_RATIO 的单元格
 class PathHeatmap:
-    """维护 a 2D histogram explored paths (depth_bucket
-    constraint_count_bucket). Identify cold spots (regions low
-    exploration density) for targeted re-exploration
-    
-    depth_bucket = int(depth // DEPTH_BUCKET_WIDTH)
-    constraint_bucket = int(constraint_count // CONSTRAINT_BUCKET_WIDTH)
+    """维护已探索路径的 2D 直方图, 识别冷点做针对性重探索。
+
+    depth_bucket = int(depth // DEPTH_BUCKET_WIDTH),
+    constraint_bucket = int(constraint_count // CONSTRAINT_BUCKET_WIDTH)。
     """
 
     DEPTH_BUCKET_WIDTH: int = 2
@@ -482,7 +463,7 @@ class PathHeatmap:
 
     @property
     def histogram(self) -> Dict[Tuple[int, int], int]:
-        """返回 a copy current histogram"""
+        """返回当前直方图的副本。"""
         with self._lock:
             return dict(self._histogram)
 
@@ -491,12 +472,9 @@ class PathHeatmap:
         return self._total_paths
 
     def record(self, path_id: str, depth: int, constraint_count: int):
-        """寄存器 a path 2D histogram
-        
-        Args:
-        path_id: Unique identifier for path
-        depth: Tree depth path
-        constraint_count: Number constraints along path
+        """把一条路径记录到 2D 直方图。
+
+        depth 为路径树深度, constraint_count 为路径上的约束数。
         """
         db = depth // self._depth_bw
         cb = constraint_count // self._constraint_bw
@@ -508,10 +486,7 @@ class PathHeatmap:
             self._total_paths += 1
 
     def record_batch(self, paths: List[Tuple[str, int, int]]):
-        """Record multiple paths once
-        
-        element (path_id, depth, constraint_count)
-        """
+        """一次记录多条路径, 元素为 (path_id, depth, constraint_count)。"""
         with self._lock:
             for path_id, depth, constraint_count in paths:
                 db = depth // self._depth_bw
@@ -522,11 +497,11 @@ class PathHeatmap:
                 self._total_paths += 1
 
     def get_density(self, depth_bucket: int, constraint_bucket: int) -> int:
-        """返回 path count a specific histogram cell"""
+        """返回指定直方图单元格的路径数。"""
         return self._histogram.get((depth_bucket, constraint_bucket), 0)
 
     def average_density(self) -> float:
-        """计算 average path count across non-empty cells"""
+        """计算非空单元格的平均路径数。"""
         with self._lock:
             if not self._histogram:
                 return 0.0
@@ -536,17 +511,11 @@ class PathHeatmap:
     def identify_cold_spots(
         self, cold_spot_ratio: Optional[float] = None
     ) -> List[Dict[str, Any]]:
-        """Identify histogram cells path density below cold-spot threshold
-        
-        A cell considered a cold spot count < avg_density * cold_spot_ratio
-        
-        Args:
-        cold_spot_ratio: Override for COLD_SPOT_RATIO. Default 0.2
-        
-        返回:
-        List cold spot dicts keys:
-        depth_bucket, constraint_bucket, count, avg_density, paths
-        Sorted count ascending (coldest first)
+        """识别路径密度低于冷点阈值的直方图单元格。
+
+        单元格计数 < avg_density * cold_spot_ratio 即视为冷点;
+        返回按计数升序 (最冷在前) 的冷点字典列表, 键含
+        depth_bucket、constraint_bucket、count、avg_density、paths。
         """
         ratio = cold_spot_ratio if cold_spot_ratio is not None else self.COLD_SPOT_RATIO
         avg = self.average_density()
@@ -571,10 +540,7 @@ class PathHeatmap:
         return cold_spots
 
     def identify_hot_spots(self, top_n: int = 5) -> List[Dict[str, Any]]:
-        """Identify densely populated histogram cells
-        
-        返回 top N hottest cells sorted count descending
-        """
+        """识别密度最高的直方图单元格, 返回按计数降序的前 N 个热点。"""
         with self._lock:
             sorted_cells = sorted(
                 self._histogram.items(), key=lambda x: -x[1]
@@ -597,10 +563,10 @@ class PathHeatmap:
     def paths_in_cold_spots(
         self, cold_spot_ratio: Optional[float] = None
     ) -> List[str]:
-        """返回 path_ids cold-spot cells for targeted re-exploration
-        
-        paths under-explored regions (depth, constraints)
-        space -- ideal candidates for focused 符号执行
+        """返回冷点单元格中的 path_id 列表, 供针对性重探索。
+
+        这些路径位于探索不足的 (深度, 约束) 区域, 是聚焦符号执行
+        的理想候选。
         """
         cold_spots = self.identify_cold_spots(cold_spot_ratio)
         all_paths: List[str] = []
@@ -609,19 +575,10 @@ class PathHeatmap:
         return all_paths
 
     def export_histogram_json(self, output_path: Optional[str] = None) -> Dict[str, Any]:
-        """Export 2D histogram a JSON-serializable dict for visualization
-        
-        格式化:
-        {
-        "depth_bucket_width": int
-        "constraint_bucket_width": int
-        "total_paths": int
-        "average_density": float
-        "cells": [
-        {"depth_bucket": int, "constraint_bucket": int, "count": int}
-        
-        ]
-        }
+        """把 2D 直方图导出为可 JSON 序列化的字典, 供可视化。
+
+        含 depth_bucket_width、constraint_bucket_width、
+        total_paths、average_density 与 cells 列表。
         """
         avg = self.average_density()
         with self._lock:
@@ -652,7 +609,7 @@ class PathHeatmap:
         return result
 
     def reset(self):
-        """清除 histogram data"""
+        """清除直方图数据。"""
         with self._lock:
             self._histogram.clear()
             self._cell_paths.clear()
@@ -662,20 +619,18 @@ class PathHeatmap:
 # StreamingDiversityMonitor — 定时回调发射多样性指标
 #
 # 在后台线程中以可配置间隔运行，每次触发时调用注册的回调函数
-# 传递 (timestamp, diversity_score, exploration_velocity, 集群_count)
+# 传递 (timestamp, diversity_score, exploration_velocity, cluster_count)
 # 用于实时仪表板、时间序列日志或外部可视化集成
 class StreamingDiversityMonitor:
-    """A 回调-based 监控 emits (timestamp, diversity_score
-    exploration_velocity, 集群_count) tuples 配置urable intervals
-    for real-time dashboard integration
-    
-    在后台 daemon 线程中定期轮询 PathDiversityTracker.get_metrics()
-    并通过注册的回调将指标推送到外部系统（日志、WebSocket、时间序列 DB 等）
-    
-    回调 签名:
-    回调(timestamp: float, diversity_score: float
-    exploration_velocity: float, 集群_count: int
-    extra_metrics: Dict[str,]) -> None
+    """基于回调的监控器, 按可配置间隔发射 (timestamp,
+    diversity_score, exploration_velocity, cluster_count) 元组,
+    用于实时仪表板集成。
+
+    后台 daemon 线程定期轮询 PathDiversityTracker.get_metrics(),
+    经注册的回调把指标推送到外部系统 (日志、WebSocket、时序 DB)。
+
+    回调签名: callback(timestamp, diversity_score,
+    exploration_velocity, cluster_count, extra_metrics) -> None。
     """
 
     def __init__(
@@ -683,11 +638,10 @@ class StreamingDiversityMonitor:
         tracker: "PathDiversityTracker",
         interval_seconds: float = 2.0,
     ):
-        """初始化 streaming 监控
-        
-        Args:
-        tracker: PathDiversityTracker instance poll for metrics
-        interval_seconds: often emit metrics (default 2s)
+        """初始化流式监控。
+
+        tracker 为轮询指标的 PathDiversityTracker 实例,
+        interval_seconds 为发射间隔 (默认 2s)。
         """
         self._tracker = tracker
         self._interval = max(0.1, interval_seconds)
@@ -717,10 +671,8 @@ class StreamingDiversityMonitor:
 
     @property
     def history(self) -> List[Tuple[float, float, float, int]]:
-        """返回 a copy recent metrics history
-        
-        entry (timestamp, diversity_score, exploration_velocity, 集群_count)
-        """
+        """返回近期指标历史的副本, 元素为 (timestamp, diversity_score,
+        exploration_velocity, cluster_count)。"""
         with self._lock:
             return list(self._history)
 
@@ -728,17 +680,16 @@ class StreamingDiversityMonitor:
         self,
         callback: Callable[[float, float, float, int, Dict[str, Any]], None],
     ):
-        """寄存器 a 回调 接收 streaming metrics
-        
-        回调 invoked 监控's background thread
-        interval tick. Keep 回调s short avoid blocking
-        emission loop
+        """注册接收流式指标的回调。
+
+        回调在监控后台线程的每个间隔 tick 触发; 回调应保持简短,
+        避免阻塞发射循环。
         """
         with self._lock:
             self._callbacks.append(callback)
 
     def start(self):
-        """启动 background monitoring thread"""
+        """启动后台监控线程。"""
         if self._running:
             logger.warning("StreamingDiversityMonitor already running")
             return
@@ -756,7 +707,7 @@ class StreamingDiversityMonitor:
         )
 
     def stop(self, timeout: float = 5.0):
-        """停止 monitoring thread"""
+        """停止监控线程。"""
         if not self._running:
             return
         self._stop_event.set()
@@ -769,7 +720,7 @@ class StreamingDiversityMonitor:
         )
 
     def _emit_loop(self):
-        """Background emission loop"""
+        """后台发射循环。"""
         while not self._stop_event.is_set():
             try:
                 metrics = self._tracker.get_metrics()
@@ -817,7 +768,7 @@ class StreamingDiversityMonitor:
                 break
 
     def get_latest(self) -> Optional[Tuple[float, float, float, int]]:
-        """返回 recent metrics tuple, or None emissions"""
+        """返回最近一次指标元组, 尚无发射时返回 None。"""
         with self._lock:
             if self._history:
                 return self._history[-1]
@@ -826,11 +777,10 @@ class StreamingDiversityMonitor:
     def export_history_json(
         self, output_path: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Export metrics history a JSON-serializable list
-        
-        entry:
-        {"timestamp": float, "diversity_score": float
-        "exploration_velocity": float, "集群_count": int}
+        """把指标历史导出为可 JSON 序列化的列表。
+
+        元素: {"timestamp": float, "diversity_score": float,
+        "exploration_velocity": float, "cluster_count": int}。
         """
         with self._lock:
             data = [
@@ -859,12 +809,12 @@ class StreamingDiversityMonitor:
         return data
 
 
-# 快照Diff — 比较两个 PathDiversityTracker 快照
+# SnapshotDiff — 比较两个 PathDiversityTracker 快照
 #
-# 快照格式：{'集群s': Dict[str, List[str]], 'features': Dict[str, PathFeature]
+# 快照格式：{'clusters': Dict[str, List[str]], 'features': Dict[str, PathFeature],
 #            'metrics': DiversityMetrics}
 #
-# 快照Diff 计算：
+# SnapshotDiff 计算：
 # new_clusters: 仅在新快照中存在的簇 ID
 # removed_clusters: 仅在旧快照中存在的簇 ID
 # merged_clusters: 旧快照中的多个簇在新快照中合并为一个
@@ -873,7 +823,7 @@ class StreamingDiversityMonitor:
 # diversity_delta: 多样性评分的变化量
 @dataclass
 class SnapshotDiffResult:
-    """Result comparing two PathDiversityTracker 快照s"""
+    """两个 PathDiversityTracker 快照的比较结果。"""
     new_clusters: List[str] = field(default_factory=list)
     removed_clusters: List[str] = field(default_factory=list)
     merged_clusters: List[Dict[str, Any]] = field(default_factory=list)
@@ -886,7 +836,7 @@ class SnapshotDiffResult:
     removed_paths: List[str] = field(default_factory=list)
 
     def summary(self) -> str:
-        """返回 a human-readable one-line summary diff"""
+        """返回人类可读的单行差异摘要。"""
         parts = []
         if self.new_clusters:
             parts.append(f"+{len(self.new_clusters)} clusters")
@@ -903,25 +853,18 @@ class SnapshotDiffResult:
 
 
 class SnapshotDiff:
-    """比较 two PathDiversityTracker 快照s 计算 changed:
-    new 集群s formed, 集群s merged, paths moved 集群s
-    diversity score delta
-    
-    快照可以通过 PathDiversityTracker 的 public 接口获取：
-    快照 = {
-    '集群s': dict(tracker._集群s)
-    'features': {pid: feat for pid, feat tracker._features.items()}
-    'metrics': tracker.get_metrics()
-    'timestamp': time.time()
-    }
+    """比较两个 PathDiversityTracker 快照, 计算变化: 新簇形成、
+    簇合并、路径在簇间移动与多样性评分增量。
+
+    快照可通过 PathDiversityTracker 的 public 接口获取:
+    {'clusters': dict(tracker._clusters),
+     'features': {pid: feat for pid, feat in tracker._features.items()},
+     'metrics': tracker.get_metrics(), 'timestamp': time.time()}。
     """
 
     @staticmethod
     def capture(tracker: "PathDiversityTracker") -> Dict[str, Any]:
-        """Capture a 快照 current tracker state
-        
-        返回 a dict suitable for 快照Diff.比较()
-        """
+        """捕获当前 tracker 状态的快照, 返回可供 SnapshotDiff.compare() 使用的字典。"""
         with tracker._lock:
             return {
                 "clusters": {
@@ -947,14 +890,9 @@ class SnapshotDiff:
         snapshot_old: Dict[str, Any],
         snapshot_new: Dict[str, Any],
     ) -> SnapshotDiffResult:
-        """比较 two 快照s produce a detailed diff
-        
-        Args:
-        快照_old: Earlier 快照 dict
-        快照_new: Later 快照 dict
-        
-        返回:
-        快照DiffResult detected changes
+        """比较两个快照, 产生详细差异。
+
+        snapshot_old 为较早的快照字典, snapshot_new 为较晚的。
         """
         result = SnapshotDiffResult()
 
@@ -1032,7 +970,7 @@ class SnapshotDiff:
         old_clusters: Dict[str, List[str]],
         new_clusters: Dict[str, List[str]],
     ) -> List[Dict[str, Any]]:
-        """检测 cases multiple old 集群s merged one new 集群"""
+        """检测多个旧簇合并为一个新簇的情况。"""
         merges: List[Dict[str, Any]] = []
 
         # 对每个新簇，看它包含了哪些旧簇的成员
@@ -1062,7 +1000,7 @@ class SnapshotDiff:
         old_clusters: Dict[str, List[str]],
         new_clusters: Dict[str, List[str]],
     ) -> List[Dict[str, Any]]:
-        """检测 cases one old 集群 分割 multiple new 集群s"""
+        """检测一个旧簇分裂为多个新簇的情况。"""
         splits: List[Dict[str, Any]] = []
 
         for old_cid, old_members in old_clusters.items():
@@ -1092,14 +1030,10 @@ class SnapshotDiff:
         result: SnapshotDiffResult,
         output_path: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Export 快照DiffResult a JSON-serializable dict
-        
-        Args:
-        result: diff result 比较()
-        output_path: Optional path 写入 JSON
-        
-        返回:
-        Dict suitable for JSON 序列化
+        """把 SnapshotDiffResult 导出为可 JSON 序列化的字典。
+
+        result 为 compare() 的差异结果; output_path 可选,
+        指定时写入 JSON 文件。
         """
         report = {
             "summary": result.summary(),
@@ -1130,7 +1064,7 @@ class SnapshotDiff:
 
 @dataclass
 class PathFeature:
-    """特征向量 for one path, similarity 缓存and SimHash"""
+    """单条路径的特征向量, 含相似度缓存与 SimHash。"""
     path_id: str
     features: Dict = field(default_factory=dict)
     similarity_cache: Dict = field(default_factory=dict)
@@ -1139,13 +1073,13 @@ class PathFeature:
     cluster_id: str = ""
 
     def compute_hash(self) -> str:
-        """Deterministic hash sorted feature items"""
+        """对排序后的特征项取确定性哈希。"""
         return hashlib.sha256(str(sorted(self.features.items())).encode()).hexdigest()[:16]
 
 
 @dataclass
 class PathNode:
-    """A node 路径探索 tree"""
+    """路径探索树的节点。"""
     path_id: str
     address: int
     constraints: List = field(default_factory=list)
@@ -1159,7 +1093,7 @@ class PathNode:
 
 @dataclass
 class DiversityMetrics:
-    """Aggregate diversity statistics for current path set"""
+    """当前路径集的聚合多样性统计。"""
     total_paths: int = 0
     unique_paths: int = 0
     avg_similarity: float = 0.0
@@ -1170,16 +1104,16 @@ class DiversityMetrics:
 
 
 class PathSimilarityCalculator:
-    """Weighted multi-dimensional similarity two PathFeatures
-    
-    Weights (配置urable):
-    STRUCTURAL: 0.3 — depth, constraint count, path hash
-    SEMANTIC: 0.3 — presence comparisons, arithmetic, bitwise ops
-    CONSTRAINTS:0.2 — raw constraint text
-    覆盖率: 0.2 — hit counts
-    
-    SimHash 预检：两 path 的 SimHash 汉明距离 > 3 时直接返回 0
-    跳过昂贵的逐维度比较。这是针对大规模路径集的性能优化
+    """两个 PathFeature 的加权多维相似度。
+
+    权重 (可配置):
+    STRUCTURAL: 0.3 — 深度、约束数、路径哈希
+    SEMANTIC: 0.3 — 比较/算术/位运算的有无
+    CONSTRAINTS: 0.2 — 原始约束文本
+    COVERAGE: 0.2 — 命中计数
+
+    SimHash 预检: 两路径 SimHash 汉明距离 > 3 时直接返回 0,
+    跳过昂贵的逐维度比较 — 针对大规模路径集的性能优化。
     """
 
     def __init__(self, weights: Dict[PathFeatureType, float] = None):
@@ -1191,7 +1125,7 @@ class PathSimilarityCalculator:
         }
 
     def compute(self, f1: PathFeature, f2: PathFeature) -> float:
-        """Weighted average similarity, SimHash fast-reject"""
+        """加权平均相似度, 带 SimHash 快速排除。"""
         if not f1.features or not f2.features:
             return 0.0
         # SimHash 快速排除
@@ -1214,8 +1148,8 @@ class PathSimilarityCalculator:
         return total_sim / max(1.0, weight_sum)
 
     def _feature_similarity(self, f1: Dict[str, Any], f2: Dict[str, Any]) -> float:
-        """Per-dimension similarity: averages Jaccard for sets, prefix match
-        for strings, normalized distance for numerics"""
+        """逐维度相似度: 集合取 Jaccard, 字符串取前缀匹配,
+        数值取归一化距离。"""
         if not f1 or not f2:
             return 0.0
 
@@ -1248,7 +1182,7 @@ class PathSimilarityCalculator:
         return total_sim / len(common_keys)
 
     def _string_similarity(self, s1: str, s2: str) -> float:
-        """Prefix character match ratio — a fast, crude string similarity"""
+        """前缀字符匹配率 — 快速粗糙的字符串相似度。"""
         if s1 == s2:
             return 1.0
         min_len = min(len(s1), len(s2))
@@ -1258,31 +1192,23 @@ class PathSimilarityCalculator:
         return matches / min_len
 
     def _numeric_similarity(self, n1: float, n2: float) -> float:
-        """1 - normalized absolute difference"""
+        """1 减去归一化绝对差。"""
         if n1 == n2:
             return 1.0
         return 1.0 - abs(n1 - n2) / max(1.0, abs(n1), abs(n2))
 
 
 class PathDiversityTracker:
-    """维护 path 集群s keyed a representative. New paths
-    assigned 集群 representative similar, or form
-    a new 集群 below similarity threshold
-    
-    增强 — 自适应阈值：
-    exploration_velocity（每秒发现的新唯一路径数）低于 0.5 时自动
-    降低 similarity_threshold（更激进地分化簇），高于 5 时提高
-    
-    增强 — ANN 索引：
-    内置 ANNIndex（ann_forest），当路径数量超过 50 时自动构建
-    用于加速相似度搜索。get_similar_paths() 优先使用 ANN 查询
-    
-    增强 — 多样性预算：
-    内置 DiversityBudget，限制单簇路径数不超过 集群_quota
-    add_path 后自动 enforces 配额
-    
-    增强 — 簇可视化：
-    export_集群_visualization() 导出当前簇状态的 JSON
+    """按代表路径维护路径簇。新路径归入代表相似的簇,
+    低于相似度阈值时形成新簇。
+
+    增强: 自适应阈值 (exploration_velocity 低于 0.5 时自动降低
+    similarity_threshold 更激进分化簇, 高于 5 时提高);
+    ANN 索引 (内置 ANNIndex, 路径数超过 50 时自动构建,
+    get_similar_paths() 优先使用 ANN 查询);
+    多样性预算 (内置 DiversityBudget, 单簇路径数不超过
+    cluster_quota, add_path 后自动执行配额);
+    簇可视化 (export_cluster_visualization() 导出当前簇状态 JSON)。
     """
 
     def __init__(self, similarity_threshold: float = 0.8, max_paths: int = 1000):
@@ -1301,25 +1227,19 @@ class PathDiversityTracker:
 
     @property
     def heatmap(self) -> PathHeatmap:
-        """Access PathHeatmap for cold-spot analysis"""
+        """暴露 PathHeatmap 供冷点分析。"""
         return self._heatmap
 
     @property
     def streaming_monitor(self) -> Optional[StreamingDiversityMonitor]:
-        """Access StreamingDiversityMonitor started"""
+        """暴露已启动的 StreamingDiversityMonitor。"""
         return self._streaming_monitor
 
     def start_streaming(
         self, interval_seconds: float = 2.0
     ) -> StreamingDiversityMonitor:
-        """创建 启动 a StreamingDiversityMonitor for tracker
-        
-        Args:
-        interval_seconds: Emission interval. Default 2s
-        
-        返回:
-        started StreamingDiversityMonitor instance
-        """
+        """为 tracker 创建并启动 StreamingDiversityMonitor,
+        interval_seconds 为发射间隔 (默认 2s)。"""
         if self._streaming_monitor is not None and self._streaming_monitor.running:
             logger.warning("StreamingDiversityMonitor already running")
             return self._streaming_monitor
@@ -1331,16 +1251,16 @@ class PathDiversityTracker:
         return self._streaming_monitor
 
     def stop_streaming(self):
-        """停止 StreamingDiversityMonitor running"""
+        """停止运行中的 StreamingDiversityMonitor。"""
         if self._streaming_monitor is not None:
             self._streaming_monitor.stop()
 
     def add_path(self, path_id: str, address: int, constraints: List[str],
                  depth: int = 0, parent_id: Optional[str] = None):
-        """寄存器 a path, 提取 features, 计算 SimHash, assign 集群
-        
-        增强：达到阈值后自动（重新）构建 ANN 索引；添加后执行多样性预算 enforcement；
-        同时更新 PathHeatmap
+        """登记一条路径: 提取特征、计算 SimHash 并分配簇。
+
+        增强: 达到阈值后自动 (重新) 构建 ANN 索引; 添加后执行
+        多样性预算 enforcement; 同时更新 PathHeatmap。
         """
         with self._lock:
             if path_id in self._paths:
@@ -1393,7 +1313,7 @@ class PathDiversityTracker:
 
     def _auto_adjust_threshold(self):
         """动态调整相似度阈值
-        
+
         速度 = 近 10s 内发现的唯一路径 / 10
         速度 < 0.5 → 阈值 −0.02（更易分簇 → 更多样化选择）
         速度 > 5.0 → 阈值 +0.02（更严格合并 → 减少冗余计算）
@@ -1408,7 +1328,7 @@ class PathDiversityTracker:
             self._similarity_threshold = min(0.95, self._similarity_threshold + 0.02)
 
     def _extract_features(self, path_id: str, constraints: List[str], depth: int) -> PathFeature:
-        """构建 four-dimensional 特征向量 for a path. 计算 SimHash"""
+        """构建路径的四维特征向量, 并计算 SimHash。"""
         structural = {
             'depth': depth,
             'constraint_count': len(constraints),
@@ -1436,9 +1356,9 @@ class PathDiversityTracker:
         )
 
     def _update_clusters(self, path_id: str):
-        """Assign path nearest 集群, or 创建 new one
-        
-        增强：优先使用 ANN 索引加速相似度搜索（当 ANN 已构建时）
+        """把路径归入最近的簇, 或创建新簇。
+
+        增强: ANN 已构建时优先用 ANN 索引加速相似度搜索。
         """
         new_feature = self._features[path_id]
         assigned = False
@@ -1491,7 +1411,7 @@ class PathDiversityTracker:
             new_feature.cluster_id = path_id
 
     def find_diverse_paths(self, count: int = 5) -> List[str]:
-        """返回 one representative `count` 集群s, weighted sample"""
+        """返回 `count` 个簇各一名代表, 加权采样。"""
         with self._lock:
             cluster_reps = [(cid, members[0]) for cid, members in self._clusters.items() if members]
             if len(cluster_reps) <= count:
@@ -1500,7 +1420,7 @@ class PathDiversityTracker:
 
     def find_weighted_paths(self, count: int = 5) -> List[str]:
         """WEIGHTED_SAMPLE：按簇大小反比采样 —— 小簇获得更高概率
-        
+
         实现：权重 = 1/|cluster|，使用 numpy-style 归一化后进行
         不放回加权随机采样"""
         with self._lock:
@@ -1526,7 +1446,7 @@ class PathDiversityTracker:
             return chosen
 
     def is_path_diverse(self, path_id: str) -> bool:
-        """True path's similarity path below threshold"""
+        """路径与所有其他路径的相似度都低于阈值时返回 True。"""
         with self._lock:
             if path_id not in self._features:
                 return True
@@ -1541,9 +1461,9 @@ class PathDiversityTracker:
             return True
 
     def get_similar_paths(self, path_id: str, threshold: float = 0.7) -> List[str]:
-        """返回 paths similar one, sorted similarity descending
-        
-        增强：优先使用 ANN 索引加速（O(log n) vs O(n) 逐对比较）
+        """返回与该路径相似的其他路径, 按相似度降序。
+
+        增强: 优先用 ANN 索引加速 (O(log n) vs O(n) 逐对比较)。
         """
         with self._lock:
             if path_id not in self._features:
@@ -1578,7 +1498,7 @@ class PathDiversityTracker:
             return [p[0] for p in sorted(similar, key=lambda x: -x[1])]
 
     def get_metrics(self) -> DiversityMetrics:
-        """计算 aggregate diversity statistics including exploration velocity"""
+        """计算聚合多样性统计, 含探索速度。"""
         with self._lock:
             if not self._features:
                 return DiversityMetrics()
@@ -1611,18 +1531,17 @@ class PathDiversityTracker:
             )
 
     def capture_snapshot(self) -> Dict[str, Any]:
-        """Capture current tracker state for 快照Diff comparison"""
+        """捕获当前 tracker 状态, 供 SnapshotDiff 比较。"""
         return SnapshotDiff.capture(self)
 
-    # export_集群_visualization — 导出簇状态 JSON 用于外部可视化
+    # export_cluster_visualization — 导出簇状态 JSON 用于外部可视化
     def export_cluster_visualization(self, output_path: Optional[str] = None) -> Dict[str, Any]:
-        """Export 集群 state JSON for external visualization tools
-        
-        返回 a dict 集群_id, centroid_features, member_count
-        for 集群. output_path provided, 写入 JSON disk
-        
-        每个簇的 centroid_features 取成员的多数投票 SimHash (centroid_simhash)
-        以及第一个成员的特征字典作为代表
+        """导出簇状态 JSON, 供外部可视化工具使用。
+
+        返回含 cluster_id、centroid_features、member_count 的字典;
+        提供 output_path 时写入 JSON 磁盘。每个簇的
+        centroid_features 取成员的多数投票 SimHash
+        (centroid_simhash) 与第一个成员的特征字典作为代表。
         """
         with self._lock:
             clusters_data = []
@@ -1663,9 +1582,11 @@ class PathDiversityTracker:
 
 
 class DiversityAwarePathSelector:
-    """Selects next path using 配置ured diversity strategy. 支持
-    random, 舍入-robin, similarity-based, 覆盖率-guided, hybrid
-    weighted_sample"""
+    """按配置的多样性策略挑选下一条路径。
+
+    支持 random、round-robin、similarity-based、coverage-guided、
+    hybrid 与 weighted_sample。
+    """
 
     def __init__(self, strategy: DiversityStrategy = DiversityStrategy.HYBRID):
         self._strategy = strategy
@@ -1677,14 +1598,14 @@ class DiversityAwarePathSelector:
 
     def add_path(self, path_id: str, address: int, constraints: List[str],
                  depth: int = 0, parent_id: Optional[str] = None):
-        """寄存器 a path candidate for future selection"""
+        """登记一条供后续选择的候选路径。"""
         with self._lock:
             self._diversity_tracker.add_path(path_id, address, constraints, depth, parent_id)
             if path_id not in self._path_queue:
                 self._path_queue.append(path_id)
 
     def select_next(self) -> Optional[str]:
-        """Pick next path according active strategy"""
+        """按当前策略挑选下一条路径。"""
         with self._lock:
             if not self._path_queue:
                 return None

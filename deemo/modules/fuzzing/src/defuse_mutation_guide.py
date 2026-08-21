@@ -1,7 +1,6 @@
-# 创建: 2026-07-15 10:08
-# 修改: 2026-07-15 — def-use 链重建 + Jaccard 聚类 + 约束引导变异
+# def-use 链重建 + Jaccard 聚类 + 约束引导变异
 """
-约束感知的定值-使用链引导变异 — 二进制层 def-use 重建 + 约束求解驱动定向变异。
+约束感知的定值-使用链引导变异 - 二进制层 def-use 重建 + 约束求解驱动定向变异。
 
 传统变异策略 (bitflip, havoc, splice) 对输入空间做无差别探索。
 本模块在变异前先分析"哪些输入字节影响哪些分支条件",
@@ -9,26 +8,26 @@
 
 核心思路:
   1. 执行期动态污点追踪: 标记每个输入字节的 taint 标签,
-     在执行过程中传播——当遇到条件跳转 (jz/jnz/jg/...) 时,
+     在执行过程中传播-当遇到条件跳转 (jz/jnz/jg/...) 时,
      记录 {分支地址: 影响该分支的输入字节集合}
-  2. 定值-使用链重组: 从污点记录反向构建输入字节的"影响指纹"——
+   2. 定值-使用链重组: 从污点记录反向构建输入字节的"影响指纹"-
      一个输入字节可能影响多个分支, 一个分支可能被多个字节影响
   3. 聚类变异区间: 将相邻的、影响相同分支集的字节归并为一个变异区间,
      减少变异候选的搜索空间 (从 10⁴ 字节降至 10¹ 区间)
   4. 约束引导赋值: 对每个区间, 查询其影响的分支条件,
      使用区间算术或约束求解确定"翻转哪个字节能翻转该分支",
-     生成最小化变异——比随机 bitflip 效率高 1-2 个数量级
+      生成最小化变异-比随机 bitflip 效率高 1-2 个数量级
 
 与现有模块的关系:
   - subreg_taint.py: 提供字节级寄存器污点, 本模块消费其污点记录
   - taint_debloat.py: 去冗余污点, 本模块的 def-use 分析在此基础上运行
   - constraint_predictor_nonlinear.py: 本模块的约束求解路径可选择调用
 
-ref: FuzzRDUCC  — binary def-use chain coverage fuzzing,
+ref: FuzzRDUCC  - binary def-use chain coverage fuzzing,
      本模块在其"重建"基础上增加"约束引导赋值"阶段
-ref: Vuzzer  — 使用污点追踪+魔术字节检测引导变异,
+ref: Vuzzer  - 使用污点追踪+魔术字节检测引导变异,
      本模块的字节影响力归并受其启发但增加了聚类+约束求解
-ref: S2E — 选择性符号执行,
+ref: S2E - 选择性符号执行,
      本模块的"仅符号化输入相关约束"策略与此一致
 """
 
@@ -52,7 +51,7 @@ class TaintRecord:
 
 @dataclass
 class DefUseChain:
-    """一条定值-使用链: 输入偏移 → 影响的 [分支地址列表]。"""
+    """一条定值-使用链: 输入偏移 -> 影响的 [分支地址列表]。"""
     input_offset: int
     branch_addrs: list[int] = field(default_factory=list)
     influence_count: int = 0     # 总影响次数 (同一分支多次执行的计数)
@@ -64,7 +63,7 @@ class MutationCluster:
     start_offset: int
     end_offset: int              # inclusive
     affected_branches: set[int]  # 此区间的字节共同影响的分支集合
-    priority: float = 0.0         # 变异优先级 —— 越高越先变异
+    priority: float = 0.0         # 变异优先级 - 越高越先变异
     suggested_values: list[int] = field(default_factory=list)  # 候选字节序列
 
 # 污点驱动的条件分支收集
@@ -136,7 +135,7 @@ class ConditionBranchCollector:
 # 变异聚类器
 # 将独立的输入字节按"影响的分支集相似度"聚合成变异区间。
 # 相似度度量: Jaccard 指数: |A ∩ B| / |A ∪ B|
-# 相邻字节 + Jaccard > 0.5 → 合并为同一聚类
+# 相邻字节 + Jaccard > 0.5 -> 合并为同一聚类
 
 def _jaccard(a: set, b: set) -> float:
     if not a and not b:
@@ -207,7 +206,7 @@ def _estimate_flip_value(branch_addr: int,
                          constraint_type: str = '') -> list[int]:
     """启发式字节翻转建议 — 在无完整约束求解时使用。
     策略:
-      - 'eq'/'neq':  尝试翻转最高位 → 对整数比较最有效
+      - 'eq'/'neq':  尝试翻转最高位 -> 对整数比较最有效
       - 'lt'/'gt':   尝试边界值 0x00, 0xFF, 0x7F
       - 'range':     尝试区间中点和边界
       - 默认:        bitflip 每个字节的最高位 + LSB"""
@@ -217,7 +216,7 @@ def _estimate_flip_value(branch_addr: int,
         return suggestions
 
     if constraint_type in ('eq', 'neq'):
-        # 最高位翻转: 0x41 ('A') → 0xC1, 常用于绕过字符检查
+        # 最高位翻转: 0x41 ('A') -> 0xC1, 常用于绕过字符检查
         for b in seg:
             flipped = b ^ 0x80
             suggestions.append(flipped)
@@ -241,7 +240,7 @@ def _estimate_flip_value(branch_addr: int,
             suggestions.append(mid)
 
     # 通用: 每个字节的 LSB 翻转
-    for b in seg[:3]:  # 前 3 个字节——后面的一般是常量
+    for b in seg[:3]:  # 前 3 个字节-后面的一般是常量
         suggestions.append(b ^ 0x01)
 
     return suggestions[:10]  # 限制输出数量
@@ -296,7 +295,7 @@ class ConstraintGuidedMutator:
                 if h.get('cluster') == cluster_key and h.get('new_branches', 0) > 0
             )
             if recent_successes > 3:
-                # 此聚类已多次成功 — 降低优先级以腾出资源给其他区间
+                # 此聚类已多次成功 -降低优先级以腾出资源给其他区间
                 continue
 
             # 生成翻转建议
@@ -380,7 +379,7 @@ def defuse_guided_mutation_pipeline(
     return mutator.generate_mutations(seed, max_mutants)
 
 # 分支覆盖率指纹
-# 轻量级的"此分支是否已被覆盖"检查——用于快速判断变异是否触发了新路径。
+# 轻量级的"此分支是否已被覆盖"检查-用于快速判断变异是否触发了新路径。
 # 与 full edge coverage bitmap 不同, 仅追踪在执行中影响了条件跳转的分支。
 
 class BranchCoverageFingerprint:

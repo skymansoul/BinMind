@@ -3,7 +3,7 @@
 # Biehl-Meyer-Muller "Differential Fault Attacks on ECC" (2000), Bos-Halderman et al. (2014).
 
 import hashlib
-from io import StringIO  # 保留
+from io import StringIO
 from typing import List, Tuple, Optional
 
 

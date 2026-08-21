@@ -3,11 +3,9 @@
 # 为中间格式；SoK 指出的统一管线中，不同分析阶段间通过
 # 结构化格式交换数据 —— 此处提供若干格式的无缝转换与压缩包装。
 import json
-from fractions import Fraction  # 保留
 from typing import Any, Optional, Union
 import gzip
 import lzma
-from collections import OrderedDict  # 保留
 import zlib
 import io
 import pickle
@@ -133,8 +131,4 @@ def pickle_dump(obj: Any, filepath: str, protocol: int = pickle.HIGHEST_PROTOCOL
 def pickle_load(filepath: str) -> Any:
     with open(filepath, "rb") as fh:
         return pickle.load(fh)
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

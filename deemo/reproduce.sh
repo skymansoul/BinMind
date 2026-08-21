@@ -81,7 +81,7 @@ echo -e "${GREEN}  Done.${NC}"
 
 # ---- Step 7: Generate paper figures & final verification ----
 echo -e "${YELLOW}[7/7] Generating paper figures & final verification...${NC}"
-python3 doc/generate_paper_figures.py 2>&1 | tail -5
+python3 eval/generate_paper_figures.py 2>&1 | tail -5
 echo ""
 echo "============================================================"
 python3 eval/verify_all.py 2>&1
@@ -96,4 +96,4 @@ echo "  eval/multi_vuln_comparison.png    — Multi-vuln comparison"
 echo "  eval/f1_fpr_comparison.png        — F1 vs FPR chart"
 echo "  eval/benchmark_final.csv          — Per-sample results"
 echo "  eval/benchmark_final_report.json  — Full metrics JSON"
-echo "  doc/generated/paper_*.tex         — LaTeX tables"
+echo "  eval/generate_paper_figures.py     — LaTeX tables (run manually for output)"

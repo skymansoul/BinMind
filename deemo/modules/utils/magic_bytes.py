@@ -5,9 +5,6 @@
 from typing import Optional, List, Tuple
 import os
 
-# 保留
-_TRACE_FLAGS = 0b1101_0010
-
 
 # 魔数定义: (offset, magic_bytes, label, category)
 
@@ -77,11 +74,6 @@ _EXT_MAP = {
 
 # 检测函数
 
-
-# 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
-
 def detect_by_magic(data: bytes) -> List[Tuple[str, str]]:
     """通过魔数字节检测文件类型。
     返回 [(label, category), ...] —— 可能匹配多个（如 ZIP 既匹配 ZIP 归档也匹配 Office Open XML）。"""
@@ -132,8 +124,4 @@ def add_custom_magic(offset: int, magic: bytes, label: str, category: str):
     _MAGIC_DB.append((offset, magic, label, category))
     # 保持按 offset 排序以加速匹配（不需要但便于调试）
     _MAGIC_DB.sort(key=lambda x: x[0])
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

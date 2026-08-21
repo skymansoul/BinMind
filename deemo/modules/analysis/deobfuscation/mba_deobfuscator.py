@@ -1,4 +1,3 @@
-# 2026-07-15
 
 import re
 import logging
@@ -86,7 +85,7 @@ def _is_var(expr, name=None):
 MBA_RULES: List[tuple] = []
 def _register_rule(pfn, rfn): MBA_RULES.append((pfn, rfn))
 
-# --- 21 MBA identity rules (rules 1-21 kept previous wave) ---
+# --- 21 条 MBA 恒等式规则（1-21 为上一轮保留的规则）---
 def _p1(node):
     if not isinstance(node, BinOp) or node.op != '+': return None
     if not isinstance(node.left, BinOp) or node.left.op != '^': return None
@@ -285,7 +284,7 @@ def _p21(node):
 def _r21(m): return BinOp('|', UnOp('~', _clone(m['x'])), UnOp('~', _clone(m['y'])))
 _register_rule(_p21, _r21)
 
-# 新增: 真实恶意软件 MBA 模式识别 —— 基于对 TrickBot/Emotet/FormBook
+# 新增: 真实恶意软件 MBA 模式识别 - 基于对 TrickBot/Emotet/FormBook
 # 等恶意软件家族中 MBA 混淆的逆向经验，添加以下额外规则
 
 # 22. (x << 3) - x = x * 7
@@ -444,7 +443,7 @@ def verify_equivalence(expr_a, expr_b, bit_width=32):
 
 
 class MBASimplifier:
-    """Mixed Boolean-Arithmetic simplifier — 25 identity rules + Z3 验证"""
+    """Mixed Boolean-Arithmetic 简化器 - 25 条恒等式规则 + Z3 验证"""
 
     def __init__(self, use_z3=True):
         self._z3 = _try_import_z3() if use_z3 else None

@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-09  |  FMTPROV 自检——内联夹具验证
 #
 """
 FMTPROV 自检 (Win64):

@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-16 09:55 — 增加跨编译器归一化 pass（GCC↔Clang↔MSVC 常见差异消除）
-# 2025-08-21 17:08 — 缓存淘汰策略从 LRU 改为 LFU-DA（LFU with Dynamic Aging）
+# 增加跨编译器归一化 pass（GCC↔Clang↔MSVC 常见差异消除）
+# 缓存淘汰策略从 LRU 改为 LFU-DA（LFU with Dynamic Aging）
 
 """IR-Level Recompilation Equivalence Cache — 语义指纹归一化 + 缓存。
 

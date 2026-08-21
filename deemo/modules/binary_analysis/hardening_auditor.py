@@ -1,7 +1,6 @@
 # Copyright (c) 2024-2026 BinMind Project. All rights reserved.
 # Licensed under the BinMind Proprietary License — see LICENSE file.
 # hardening_auditor.py — Binary Hardening Auditor
-# Author: hermit1016  Last modified: 2026-07-29
 
 import os
 import re

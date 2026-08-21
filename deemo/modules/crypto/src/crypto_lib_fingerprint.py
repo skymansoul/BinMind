@@ -98,7 +98,7 @@ _LIB_SIGNATURES = [
 
 
 def fingerprint_library(data: bytes) -> List[LibraryMatch]:
-    # 保持上下文完整性，不拆分
+
     results: List[LibraryMatch] = []
     text = data.decode('ascii', errors='ignore')
 

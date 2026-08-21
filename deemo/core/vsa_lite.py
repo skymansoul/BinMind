@@ -1,5 +1,5 @@
 """
-寄存器级 VSA-Lite — Capstone 反汇编上的 stride-interval 值集分析。
+寄存器级 VSA-Lite - Capstone 反汇编上的 stride-interval 值集分析。
 每条 mov/lea 指令追踪寄存器值区间, 跨基本块汇合取并集, 遇 call 保守置 ⊤。
 仅追踪 malloc 返回值和 memcpy 目标地址, 判定堆写越界。
 """
@@ -7,6 +7,7 @@
 
 import re
 import struct
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
@@ -40,7 +41,6 @@ class MemWrite:
 
 
 def analyze_vsa(binary_path: str) -> Tuple[List[dict], dict]:
-    import time
     t0 = time.time()
     data, base = _read_text(binary_path)
     if not data: return [], {"error":"no .text","elapsed":time.time()-t0}

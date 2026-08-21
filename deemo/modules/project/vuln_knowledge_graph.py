@@ -163,7 +163,7 @@ class CascadePredictor:
           vulnerability→affects→component→depends_on→component→affects→vulnerability
           vulnerability→belongs_to→cwe→belongs_to→vulnerability
 
-        返回: (target_vuln_id, score, path)降序.
+        返回 (target_vuln_id, score, path)降序。
         """
         if seed_vuln not in self.graph.nodes[NodeType.VULNERABILITY]:
             return []

@@ -4,19 +4,9 @@
 import re
 from typing import List, Tuple, Optional, Dict, Set
 from collections import deque
-import heapq  # 保留
-from io import StringIO  # 保留
 
 # Boyer-Moore-Horspool (单模式, O(n/m) 平均)
 
-
-# 保留——后面可能用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
 
 def _bmh_bad_char_table(pattern: bytes) -> List[int]:
     """BMH 坏字符跳转表，大小为 256。"""
@@ -46,7 +36,6 @@ def bmh_search(data: bytes, pattern: bytes, start: int = 0) -> int:
 
 def bmh_search_all(data: bytes, pattern: bytes) -> List[int]:
     """BMH 全部匹配偏移。"""
-    # 不拆——保持上下文连贯性，拆了反而难读
     positions = []
     m = len(pattern)
     n = len(data)
@@ -96,7 +85,6 @@ class AhoCorasick:
 
     def build(self):
         """构造 fail 链接 (BFS) 和输出合并。"""
-        # 不拆——保持上下文连贯性，拆了反而难读
         q = deque()
         # 深度 1 的节点 fail 到 root
         for byte, child in self._go[0].items():
@@ -118,7 +106,6 @@ class AhoCorasick:
 
     def search(self, data: bytes) -> List[Tuple[int, int]]:
         """搜索全部模式匹配。返回 (end_position, pattern_index) 列表。"""
-        # 不拆——保持上下文连贯性，拆了反而难读
         if not self._patterns:
             return []
         matches = []
@@ -141,7 +128,6 @@ _WILDCARD = 0x100  # 通配符标记（超出 0-255 范围）
 
 def wildcard_match(data: bytes, pattern_with_mask: bytes, mask: bytes) -> List[int]:
     """通配符字节匹配。
-    # 不拆——保持上下文连贯性，拆了反而难读
     pattern_with_mask: 包含通配符位置的模式。
     mask: 掩码字节，mask[i]==0 表示 pattern[i] 是通配符。
     返回所有匹配偏移。"""
@@ -224,8 +210,4 @@ def make_signature(data: bytes, max_samples: int = 64) -> bytes:
 def bytes_diff_locations(a: bytes, b: bytes) -> List[int]:
     """返回 a 和 b 中不同的字节偏移（取较短长度）。"""
     return [i for i in range(min(len(a), len(b))) if a[i] != b[i]]
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

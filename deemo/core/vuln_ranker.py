@@ -1,7 +1,7 @@
 """
 函数级漏洞风险排序 — 按多维风险评分对已分析函数排序, 产出 "Top-N 人工复核函数" 清单。
 评分维度: 危险函数密度 (0-30) / 输入暴露面 (0-25) / 保护缺口 (0-20) / LLM 置信度 (0-15) /
-调用图位置 (0-10)。总分 0-100, 仅用于排序而非绝对判定——低分函数仍可脆弱, 高分函数是最佳入手点。
+调用图位置 (0-10)。总分 0-100, 仅用于排序而非绝对判定, 低分函数仍可脆弱, 高分函数是最佳入手点。
 """
 
 
@@ -10,12 +10,12 @@ from typing import Any, Dict, List, Optional
 
 _log = logging.getLogger(__name__)
 
-# 危险函数的严重度权重——与 static_analysis.DANGEROUS_FUNCTIONS 的映射
+# 危险函数的严重度权重-与 static_analysis.DANGEROUS_FUNCTIONS 的映射
 _SEVERITY_WEIGHT = {
     "Critical": 10, "High": 7, "Medium": 4, "Low": 1,
 }
 
-# 来自外部输入的函数——其参数可能是攻击面
+# 来自外部输入的函数, 其参数可能是攻击面
 _INPUT_SOURCES = {
     "read", "recv", "recvfrom", "fgets", "gets", "scanf",
     "fread", "getline", "getchar", "argv", "argc",

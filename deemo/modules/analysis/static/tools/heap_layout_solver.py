@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from collections import defaultdict
 import itertools
-from collections import OrderedDict  # 保留——未使用
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class BinType(Enum):
 class Chunk:
     """
     ptmalloc malloc_chunk 模型（x86-64）
-    
+
     字段与 glibc 2.35+ 兼容
     """
     address: int
@@ -87,7 +87,7 @@ class Chunk:
 class HeapLayout:
     """
     堆布局快照
-    
+
     在某个时间点的完整堆状态
     """
     chunks: List[Chunk] = field(default_factory=list)
@@ -103,7 +103,7 @@ class HeapLayout:
 class HeapConstraint:
     """
     堆布局约束
-    
+
     表示一条与堆操作相关的约束条件
     可转换为 ILP 变量
     """
@@ -133,7 +133,7 @@ class ExploitStrategy:
 class HeapOpSequenceExtractor:
     """
     堆操作序列提取器
-    
+
     从程序调用图/汇编/输出中提取 malloc/free 操作序列
     参考 [CtxFuzz 2025] 的 CHOS (Context 堆 Operation Sequence) 提取方法
     """
@@ -153,12 +153,7 @@ class HeapOpSequenceExtractor:
     ]
 
     def extract_from_asm(self, assembly: str) -> List[Tuple[int, HeapOp, str]]:
-        """
-        从汇编代码中提取堆操作序列
-        
-        返回:
-        [(address, 堆Op, raw_instruction),.]
-        """
+        """从汇编代码中提取堆操作序列, 返回 [(address, HeapOp, raw_instruction), ...]。"""
         ops = []
         addr_pattern = re.compile(r'^\s*(0x[0-9a-fA-F]+)')
 
@@ -198,7 +193,7 @@ class HeapOpSequenceExtractor:
     ) -> List[Dict[str, Any]]:
         """
         提取带有上下文信息的堆操作序列（CHOS）
-        
+
         为每个操作标注：地址、调用栈深度、操作序数、前后操作类型
         """
         chos = []
@@ -228,11 +223,11 @@ class HeapOpSequenceExtractor:
 class HeapLayoutSolver:
     """
     堆布局约束求解器
-    
+
     基于 [HEXP 2025] 的 ILP 方法建模堆布局
     将目标布局表示为关于分配大小和次数的线性约束
     使用整数线性规划求解可行的布局参数
-    
+
     支持的抽象：
     - 自由块合并（unlink 操作）
     - 切割（remainder chunk）
@@ -258,18 +253,14 @@ class HeapLayoutSolver:
         max_iterations: int = 1000
     ) -> Optional[Dict[str, Any]]:
         """
-        求解 释放后使用 的堆布局
-        
-        目标：在释放 target_size 大小的 chunk 后
-        用相同大小的分配重新占据，实现类型混淆或控制流劫持
-        
-        Args:
-        target_size: 目标 chunk 的用户大小
-        vulnerability_offset: 漏洞触发前需要的操作数
-        max_iterations: 最大尝试次数
-        
-        返回:
-        布局参数字典或 None
+        求解释放后使用的堆布局。
+
+        目标: 在释放 target_size 大小的 chunk 后, 用相同大小的
+        分配重新占据, 实现类型混淆或控制流劫持。
+
+        参数: target_size 目标 chunk 的用户大小,
+        vulnerability_offset 漏洞触发前需要的操作数,
+        max_iterations 最大尝试次数; 返回布局参数字典或 None。
         """
         chunk_size = self._align_size(target_size + 0x10)
 
@@ -334,17 +325,14 @@ class HeapLayoutSolver:
         max_iterations: int = 500
     ) -> Optional[Dict[str, Any]]:
         """
-        求解堆溢出的布局约束
-        
-        目标：使得溢出源 chunk 与需要覆写的目标 chunk 相邻
-        从而实现元数据或指针覆写
-        
-        Args:
-        overflow_source_size: 溢出源 chunk 大小
-        target_type: 目标类型（'adjacent', 'tcache_fd', 'fastbin_fd'）
-        
-        返回:
-        布局参数字典或 None
+        求解堆溢出的布局约束。
+
+        目标: 使溢出源 chunk 与需要覆写的目标 chunk 相邻, 从而
+        实现元数据或指针覆写。
+
+        参数: overflow_source_size 溢出源 chunk 大小,
+        target_type 目标类型 ('adjacent'/'tcache_fd'/'fastbin_fd');
+        返回布局参数字典或 None。
         """
         layout = {
             'overflow_size': overflow_source_size,
@@ -402,10 +390,10 @@ class HeapLayoutSolver:
 class ExploitStrategyRecommender:
     """
     漏洞利用策略器
-    
+
     基于 [AutoPwn 2024] 的 artifact-assisted 策略重用方法
     将已知漏洞模式映射到具体的利用策略
-    
+
     [HEXP 2025] 的布局约束模型用于验证策略的可行性
     """
 
@@ -480,15 +468,12 @@ class ExploitStrategyRecommender:
         known_conditions: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
-        适用于给定漏洞类型的利用策略
-        
-        Args:
-        vuln_type: 漏洞类型（如 'uaf', '堆_overflow'）
-        ptmalloc_version: glibc/ptmalloc 版本
-        known_conditions: 已知满足的条件
-        
-        返回:
-        按成功概率降序排列的策略列表
+        给出适用于给定漏洞类型的利用策略。
+
+        参数: vuln_type 漏洞类型 (如 'uaf'/'heap_overflow'),
+        ptmalloc_version glibc/ptmalloc 版本,
+        known_conditions 已知满足的条件;
+        返回按成功概率降序排列的策略列表。
         """
         candidates = []
 
@@ -532,7 +517,7 @@ def analyze_heap_layout(
 ) -> Dict[str, Any]:
     """
     便捷函数：堆布局分析
-    
+
     整合序列提取 → 布局求解 → 策略的完整流程
     """
     solver = HeapLayoutSolver()

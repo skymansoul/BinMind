@@ -1,6 +1,6 @@
 # Public interface: ChangeType SemanticChangeCategory enums plus SemanticDiffAnalyzer
 #
-# 2025 升级: 融合 BINSEC 关系符号执行 的侧信道检测思想——
+# 2025 升级: 融合 BINSEC 关系符号执行 的侧信道检测思想,
 # 对安全关键函数（crypto、auth）的比较增加"常量时间"维度：
 # 若一个函数的指令序列在两个版本间变化但基本块数不变，可能是加固；
 # 若变化引入了数据依赖的分支，则可能引入了侧信道
@@ -53,7 +53,7 @@ class SemanticChangeCategory:
     NETWORK = "network"
     PERFORMANCE = "performance"
     SECURITY = "security"
-    SIDE_CHANNEL = "side_channel"   # BINSEC 启发——常量时间违规检测
+    SIDE_CHANNEL = "side_channel"   # BINSEC 启发, 常量时间违规检测
     OTHER = "other"
 
     _val = None
@@ -161,7 +161,7 @@ class SemanticDiffResult:
 class SideChannelDetector:
     """基于指令模式的关系差分侧信道检测器
     BINSEC 使用双程序符号执行来证明两个版本的执行时间对所有秘密输入恒定
-    本实现使用启发式方法——分析 crypto 函数在版本间的分支指令密度变化
+    本实现使用启发式方法, 分析 crypto 函数在版本间的分支指令密度变化
     """
 
     _BRANCH_OPS = {'jmp', 'je', 'jne', 'jz', 'jnz', 'jg', 'jl', 'jge', 'jle',
@@ -174,7 +174,7 @@ class SideChannelDetector:
         self._baseline_branch_density: float = 0.0
 
     def compute_branch_density(self, asm_lines: List[str]) -> float:
-        """计算汇编代码的分支密度——分支指令数/总指令数"""
+        """计算汇编代码的分支密度, 分支指令数/总指令数"""
         total = 0
         branches = 0
         for line in asm_lines:
@@ -189,7 +189,7 @@ class SideChannelDetector:
     def detect_constant_time_violation(self, old_asm: List[str],
                                         new_asm: List[str],
                                         func_category: str) -> float:
-        """检测常量时间违规——若 crypto/auth 函数的分支密度增加了超过20%
+        """检测常量时间违规, 若 crypto/auth 函数的分支密度增加了超过20%
         且新分支位于数据路径上（而非控制路径），标记为可能的侧信道
         返回 0.0-1.0 的风险评分
         """
@@ -324,7 +324,7 @@ class SemanticDiffAnalyzer:
                     category = self._classify_function(sz_name, new_sig)
                     security_relevant = self._is_security_relevant(sz_name, new_sig)
                     sz_description = self._generate_modification_description(old_sig, new_sig)
-                    # 侧信道检测——检查 crypto/auth 函数的分支密度变化
+                    # 侧信道检测, 检查 crypto/auth 函数的分支密度变化
                     old_asm = (new_funcs.get(sz_name, {}) or {}).get('asm_lines', [])
                     sc_risk = self._side_channel_detector.detect_constant_time_violation(
                         [], [], category.value if hasattr(category, 'value') else str(category))

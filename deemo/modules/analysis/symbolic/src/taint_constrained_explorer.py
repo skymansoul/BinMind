@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-02 09:55 - 增加污点置信度衰减链：间接污点 (mov rax, [rbx]; cmp al, 0) 的权重低于直接污点
+# 增加污点置信度衰减链：间接污点 (mov rax, [rbx]; cmp al, 0) 的权重低于直接污点
 #
-# 污点约束符号探索器 -- 将字节级污点信息注入符号执行路径优先级
+# 污点约束符号探索器 - 将字节级污点信息注入符号执行路径优先级
 #
 # 问题:
 # subreg_taint 知道 RAX[2] 被用户输入污染
@@ -20,19 +19,19 @@
 #       taint_score = weighted_sum(taint_confidence / distance_to_source)
 # 其中 distance_to_source 是污点传播跳数, 直接污染=1, 间接=2
 #   (d) 污点置信度衰减: 每经过一次 mov/运算传播, 置信度乘以衰减因子
-#       (默认 0.85) —— 间接污点的分支更可能是良性而非可利用路径
+#       (默认 0.85) -- 间接污点的分支更可能是良性而非可利用路径
 #
 # 与现有模块的关系:
 # subreg_taint: 提供字节级污点状态 (数据源)
 # PathDiversityTracker: 提供路径空间多样性评分 (竞争者)
 # 本模块: 提供基于污点的优先级修正因子 (与多样性评分正交)
 #     最终优先级 = diversity_score * 0.6 + taint_score * 0.4
-#     权重可调——当前 0.6/0.4 基于 CTF pwn 题的初步调试
+#     权重可调--当前 0.6/0.4 基于 CTF pwn 题的初步调试
 #
 # 文献:
 # Caballero et al. "Binary Code Extrac via 污点追踪."
-# USENIX Securi 2009. -- 奠基性动态污点工作, 但仅追踪到二进制层
-#   FIE -- 固件符号执行,
+# USENIX Securi 2009. 奠基性动态污点工作, 但仅追踪到二进制层
+#   FIE - 固件符号执行,
 #     提出基于外设访问的路径优先级, 但未使用字节级污点
 #   本模块首次将字节级寄存器污点与符号执行路径优先级关联:
 # taint granulari (1 byte) -> constraint relev -> path priori
@@ -77,7 +76,7 @@ class TaintPriorityScore:
 
 class TaintConstrainedExplorer:
     """基于污点信息的符号执行路径优先级调整器
-    
+
     用法:
     explorer = TaintConstrainedExplorer()
     快照 = explorer.capture_taint(path_id, subreg_st)
@@ -85,7 +84,7 @@ class TaintConstrainedExplorer:
     # 将 score.taint_score 作为 PathDiversityTracker 优先级的修正因子
     """
 
-    # x86-64 通用寄存器集合 -- 与 subreg_taint._REG_SLOT_MAP 一致
+    # x86-64 通用寄存器集合, 与 subreg_taint._REG_SLOT_MAP 一致
     _GP_REGS = {
         'RAX', 'RBX', 'RCX', 'RDX', 'RSI', 'RDI', 'RBP', 'RSP',
         'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15',
@@ -128,9 +127,9 @@ class TaintConstrainedExplorer:
     def capture_taint(self, path_id: str,
                       subreg_state) -> TaintSnapshot:
         """从 SubRegTaintSt 捕获当前路径的寄存器污点快照
-        
+
         subreg_st 需实现 read_reg(reg_name) -> TaintSet 接口
-        不直接 import subreg_taint 以保持模块松耦合——
+        不直接 import subreg_taint 以保持模块松耦合--
         任何实现了 read_reg/read_mem 接口的对象均可作为数据源
         """
         snapshot = TaintSnapshot(path_id=path_id)
@@ -170,7 +169,7 @@ class TaintConstrainedExplorer:
         slots = [0.0] * 8
         if taint_set is None or not hasattr(taint_set, 'tags'):
             return slots
-        # 单个 TaintSet 覆盖所有 8 槽位 -- 取最高置信度
+        # 单个 TaintSet 覆盖所有 8 槽位, 取最高置信度
         max_conf = 0.0
         for tag in taint_set.tags.values():
             if hasattr(tag, 'conf'):
@@ -185,7 +184,7 @@ class TaintConstrainedExplorer:
     def score_path(self, snapshot: TaintSnapshot,
                    constraints: List[str]) -> TaintPriorityScore:
         """计算路径的污点优先级评分
-        
+
         算法:
         1. 从约束字符串中提取所有引用的寄存器名
         2. 检查这些寄存器在污点快照中是否被污染
@@ -255,16 +254,16 @@ class TaintConstrainedExplorer:
     def fuse_priority(diversity_score: float, taint_score: float,
                        diversity_weight: float = 0.6) -> float:
         """将多样性评分和污点评分融合为最终优先级
-        
+
         diversity_weight: 多样性评分的权重 (0.0-1.0)
         剩余权重归污点评分。当前默认 0.6 基于 CTF pwn 题的初步调试
         后续需要对各类二进制做系统化的权重扫描
-        
+
         返回 [0, 1] 区间的融合评分
         """
         return diversity_score * diversity_weight + taint_score * (1.0 - diversity_weight)
 
-    # 批量评分 -- 用于路径调度器
+    # 批量评分, 用于路径调度器
 
     def rank_paths(self,
                    snapshots: Dict[str, TaintSnapshot],
@@ -272,7 +271,7 @@ class TaintConstrainedExplorer:
                    diversity_scores: Optional[Dict[str, float]] = None,
                    top_k: int = 10) -> List[Tuple[str, float]]:
         """对多条路径按融合优先级排序
-        
+
         返回 [(path_id, fused_score),.] 降序排列
         """
         scored = []

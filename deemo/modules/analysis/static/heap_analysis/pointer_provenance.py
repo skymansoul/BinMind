@@ -1,4 +1,4 @@
-"""指针溯源追踪器 — 基于 def-use 链的轻量级指针来源追踪.
+"""指针溯源追踪器 - 基于 def-use 链的轻量级指针来源追踪.
 
 每个 malloc 返回值被赋予唯一 Provenance ID (alloc@0xADDR),
 通过 mov/lea/add/sub/load/store 追踪其在寄存器/栈/内存中的传播路径.
@@ -28,7 +28,7 @@ class ProvenanceType(Enum):
     GLOBAL = auto()         # 全局/静态变量地址
     PARAMETER = auto()      # 函数参数传入
     DERIVED = auto()        # 通过算术从其他指针派生
-    UNKNOWN = auto()        # 无法确定来源 — 保守标记
+    UNKNOWN = auto()        # 无法确定来源 - 保守标记
 
 
 @dataclass
@@ -52,7 +52,7 @@ class Provenance:
 
 @dataclass
 class DefUseChain:
-    """一条 def-use 链 — 追踪一个值的传播路径."""
+    """一条 def-use 链 - 追踪一个值的传播路径."""
     def_addr: int                       # 定义地址
     def_operand: str                    # 被定义的寄存器/变量
     use_addrs: List[int] = field(default_factory=list)  # 所有使用该定义的地址

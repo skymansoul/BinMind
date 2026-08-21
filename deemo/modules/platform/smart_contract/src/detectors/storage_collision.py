@@ -1,4 +1,4 @@
-# 存储碰撞检测器 — DELEGATECALL/CALLCODE代理模式风险
+# 存储碰撞检测器 - DELEGATECALL/CALLCODE代理模式风险
 # 从smart_contract_analyzer.py内联实现拆分
 from typing import List, Set
 from .base import BaseDetector
@@ -7,7 +7,7 @@ from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 import uuid # 未使用
 
-_LEGACY_COLLISION_CHECK = False # 保留
+_LEGACY_COLLISION_CHECK = False
 
 
 

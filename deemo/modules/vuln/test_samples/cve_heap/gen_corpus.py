@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-24  |  堆溢出 CVE 样本语料生成器
 #
 """
 CVE 样本语料生成器 (逻辑部分)。
@@ -17,7 +16,7 @@ CVE 样本语料生成器 (逻辑部分)。
 import argparse
 from pathlib import Path
 
-from samples_vuln_a import SAMPLES_VULN_A
+from .samples_vuln_a import SAMPLES_VULN_A
 from samples_vuln_b import SAMPLES_VULN_B
 from samples_safe import SAMPLES_SAFE
 

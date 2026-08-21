@@ -14,7 +14,7 @@ try:
     from capstone import Cs, CS_ARCH_X86, CS_ARCH_ARM, CS_MODE_32, CS_MODE_64, CsInsn
     CAPSTONE_AVAILABLE = True
 except ImportError:
-    logger.warning("Capstone not installed，汇编分析受限。install: pip install capstone")
+    logger.warning("Capstone 未安装，汇编分析受限。安装: pip install capstone")
 
 
 class SpectreType(str, Enum):
@@ -37,24 +37,24 @@ SPECTRE_V1_PATTERNS = {
     'x86': [
         {
             'pattern': 'cmp.*j[a-z]{1,2}.*mov|cmp.*j[a-z]{1,2}.*lea',
-            'description': 'condition比较后进行memory访问',
+            'description': '条件比较后进行内存访问',
             'risk': RiskLevel.HIGH
         },
         {
             'pattern': 'test.*j[a-z]{1,2}.*mov|test.*j[a-z]{1,2}.*lea',
-            'description': 'test后进行memory访问',
+            'description': 'test 后进行内存访问',
             'risk': RiskLevel.HIGH
         },
         {
             'pattern': 'cmp\\s+\\[.*\\],.*j[a-z]{1,2}.*\\[.*\\+.*\\]',
-            'description': 'boundarycheck后index访问',
+            'description': '边界检查后索引访问',
             'risk': RiskLevel.CRITICAL
         },
     ],
     'arm': [
         {
             'pattern': 'cmp.*b[a-z]{1,2}.*ldr|cmp.*b[a-z]{1,2}.*str',
-            'description': 'ARM condition比较后memory访问',
+            'description': 'ARM 条件比较后内存访问',
             'risk': RiskLevel.HIGH
         },
         {
@@ -74,7 +74,7 @@ SPECTRE_V2_PATTERNS = {
         },
         {
             'pattern': 'call\\s+\\[.*\\]|jmp\\s+\\[.*\\]',
-            'description': '间接调用/跳转（memorytarget）',
+            'description': '间接调用/跳转（内存目标）',
             'risk': RiskLevel.HIGH
         },
         {
@@ -101,24 +101,24 @@ MELTDOWN_PATTERNS = {
     'x86': [
         {
             'pattern': 'mov\\s+\\[0xffff[0-9a-fA-F]+\\]',
-            'description': '访问内核address空间（x86_64 高位address）',
+            'description': '访问内核地址空间（x86_64 高位地址）',
             'risk': RiskLevel.CRITICAL
         },
         {
             'pattern': 'mov\\s+r[a-z]{2},\\s+\\[r[a-z]{2}\\]\\s*;\\s*test',
-            'description': 'load后test（可能触发exception）',
+            'description': 'load 后 test（可能触发异常）',
             'risk': RiskLevel.HIGH
         },
         {
             'pattern': 'kernel.*user|access_user|copy_from_user',
-            'description': '内核到用户data传输函数',
+            'description': '内核到用户数据传输函数',
             'risk': RiskLevel.MEDIUM
         },
     ],
     'arm': [
         {
             'pattern': 'ldr.*0xffff',
-            'description': 'ARM 访问高address',
+            'description': 'ARM 访问高地址',
             'risk': RiskLevel.CRITICAL
         },
     ]
@@ -164,7 +164,7 @@ CACHE_SIDE_CHANNEL_PATTERNS = [
     },
     {
         'pattern': 'mfence|lfence|sfence',
-        'description': 'memory屏障（推测executeboundary）',
+        'description': '内存屏障（推测执行边界）',
         'risk': RiskLevel.LOW
     },
 ]
@@ -172,7 +172,7 @@ CACHE_SIDE_CHANNEL_PATTERNS = [
 MITIGATION_PATTERNS = [
     {
         'pattern': 'lfence',
-        'description': 'load屏障（Spectre V1 缓解）',
+        'description': 'load 屏障（Spectre V1 缓解）',
         'mitigation': True
     },
     {
@@ -187,7 +187,7 @@ MITIGATION_PATTERNS = [
     },
     {
         'pattern': 'csdb|ssbb',
-        'description': 'ARM 推测execute屏障',
+        'description': 'ARM 推测执行屏障',
         'mitigation': True
     },
 ]
@@ -248,16 +248,16 @@ class SpectreGadgetDetector:
 
         self._validate_path()
 
-        logger.info(f"[Spectre] initialize检测器: {binary_path}, architecture: {architecture}")
+        logger.info(f"[Spectre] 初始化检测器: {binary_path}, architecture: {architecture}")
 
     def _validate_path(self) -> None:
         if not self.binary_path:
-            raise ValueError("binaryfilepath不能is empty")
+            raise ValueError("二进制文件路径不能为空")
 
         path = os.path.abspath(self.binary_path)
 
         if '..' in self.binary_path:
-            raise ValueError("path包含非法字符")
+            raise ValueError("路径包含非法字符")
 
         if not os.path.exists(path):
             raise ValueError(f"file not found: {self.binary_path}")
@@ -266,7 +266,7 @@ class SpectreGadgetDetector:
 
     def detect(self) -> SpectreAnalysisResult:
         """执行完整检测流程：反汇编 → 模式匹配 → 缓解措施识别 → 风险评估"""
-        logger.info("[Spectre] start检测推测execute Gadget...")
+        logger.info("[Spectre] 开始检测推测执行 Gadget...")
 
         try:
             self._get_disassembly()
@@ -286,18 +286,18 @@ class SpectreGadgetDetector:
 
             result = self._generate_result()
 
-            logger.info(f"[Spectre] 检测complete，发现 {len(self.gadgets)} 个潜在 Gadget")
+            logger.info(f"[Spectre] 检测完成，发现 {len(self.gadgets)} 个潜在 Gadget")
 
             return result
 
         except Exception as e:
-            logger.error(f"[Spectre] 检测failed: {e}")
+            logger.error(f"[Spectre] 检测失败: {e}")
             return SpectreAnalysisResult(
                 binary_path=self.binary_path,
                 metadata={'error': str(e)})
 
     def _get_disassembly(self) -> None:
-        logger.info("[Spectre] 获取disassembly代码...")
+        logger.info("[Spectre] 获取反汇编代码...")
 
         if self.use_capstone:
             self._disassemble_with_capstone()
@@ -325,10 +325,10 @@ class SpectreGadgetDetector:
             for insn in md.disasm(code, 0x1000):
                 self.disassembly.append(f'{hex(insn.address)}: {insn.mnemonic} {insn.op_str}')
 
-            logger.info(f"[Spectre] Capstone disassemblycomplete，{len(self.disassembly)} 条指令")
+            logger.info(f"[Spectre] Capstone 反汇编完成，{len(self.disassembly)} 条指令")
 
         except Exception as e:
-            logger.warning(f"[Spectre] Capstone disassemblyfailed: {e}")
+            logger.warning(f"[Spectre] Capstone 反汇编失败: {e}")
             self._disassemble_with_radare2()
 
     def _disassemble_with_radare2(self) -> None:
@@ -350,12 +350,12 @@ class SpectreGadgetDetector:
 
             if result.returncode == 0:
                 self.disassembly = result.stdout.strip().split('\n')
-                logger.info(f"[Spectre] radare2 disassemblycomplete，{len(self.disassembly)} 条指令")
+                logger.info(f"[Spectre] radare2 反汇编完成，{len(self.disassembly)} 条指令")
             else:
-                logger.warning(f"[Spectre] radare2 disassemblyfailed: {result.stderr}")
+                logger.warning(f"[Spectre] radare2 反汇编失败: {result.stderr}")
 
         except Exception as e:
-            logger.warning(f"[Spectre] radare2 disassemblyfailed: {e}")
+            logger.warning(f"[Spectre] radare2 反汇编失败: {e}")
 
     def _get_pseudocode(self) -> None:
         try:
@@ -365,7 +365,7 @@ class SpectreGadgetDetector:
             self.pseudocode = decompiler.decompile_function('main') or ''
 
         except Exception as e:
-            logger.debug(f"[Spectre] 获取pseudocodefailed: {e}")
+            logger.debug(f"[Spectre] 获取伪代码失败: {e}")
             self.pseudocode = ''
 
     def _detect_spectre_v1(self) -> None:
@@ -391,9 +391,9 @@ class SpectreGadgetDetector:
                     pattern_matched=pattern,
                     description=desc,
                     recommendations=[
-                        '添加 lfence 指令在boundarycheck后',
-                        '使用arrayindex掩码',
-                        'validateindexrange'
+                        '在边界检查后添加 lfence 指令',
+                        '使用数组索引掩码',
+                        '校验索引范围'
                     ]
                 )
 
@@ -423,8 +423,8 @@ class SpectreGadgetDetector:
                     pattern_matched=pattern,
                     description=desc,
                     recommendations=[
-                        '使用 retpoline replace间接调用',
-                        'enable IBRS/IBPB',
+                        '使用 retpoline 替换间接调用',
+                        '启用 IBRS/IBPB',
                         '使用 Intel CET (endbr64)'
                     ]
                 )
@@ -455,9 +455,9 @@ class SpectreGadgetDetector:
                     pattern_matched=pattern,
                     description=desc,
                     recommendations=[
-                        'enable KPTI (Kernel Page Table Isolation)',
-                        '避免直接访问用户空间memory',
-                        '使用安全的data传输函数'
+                        '启用 KPTI (内核页表隔离)',
+                        '避免直接访问用户空间内存',
+                        '使用安全的数据传输函数'
                     ]
                 )
 
@@ -497,7 +497,7 @@ class SpectreGadgetDetector:
                 self.stats['spectre_v4'] += 1
 
     def _detect_cache_side_channel(self) -> None:
-        logger.info("[Spectre] 检测cache侧信道mode...")
+        logger.info("[Spectre] 检测 cache 侧信道模式...")
 
         for pattern_info in CACHE_SIDE_CHANNEL_PATTERNS:
             pattern = pattern_info['pattern']
@@ -540,7 +540,7 @@ class SpectreGadgetDetector:
                 logger.info(f"[Spectre] 发现缓解措施: {desc}")
 
     def _analyze_input_dependency(self) -> None:
-        logger.info("[Spectre] 分析输入dependency性...")
+        logger.info("[Spectre] 分析输入依赖性...")
 
         user_input_patterns = [
             'input', 'read', 'recv', 'get', 'user', 'param', 'arg',
@@ -582,7 +582,7 @@ class SpectreGadgetDetector:
                     })
 
         except re.error as e:
-            logger.warning(f"[Spectre] 正则error: {pattern} - {e}")
+            logger.warning(f"[Spectre] 正则错误: {pattern} - {e}")
 
         return matches
 
@@ -623,29 +623,29 @@ class SpectreGadgetDetector:
         recommendations = []
 
         if self.stats['spectre_v1'] > 0:
-            recommendations.append('Spectre V1: 在boundarycheck后添加 lfence 指令')
-            recommendations.append('Spectre V1: 使用arrayindex掩码技术')
+            recommendations.append('Spectre V1: 在边界检查后添加 lfence 指令')
+            recommendations.append('Spectre V1: 使用数组索引掩码技术')
 
         if self.stats['spectre_v2'] > 0:
-            recommendations.append('Spectre V2: 使用 retpoline replace间接调用')
-            recommendations.append('Spectre V2: enable IBRS 和 IBPB')
+            recommendations.append('Spectre V2: 使用 retpoline 替换间接调用')
+            recommendations.append('Spectre V2: 启用 IBRS 和 IBPB')
 
         if self.stats['meltdown'] > 0:
-            recommendations.append('Meltdown: enable KPTI')
-            recommendations.append('Meltdown: validate所有用户空间访问')
+            recommendations.append('Meltdown: 启用 KPTI')
+            recommendations.append('Meltdown: 校验所有用户空间访问')
 
         if self.stats['spectre_v4'] > 0:
             recommendations.append('Spectre V4: 添加存储屏障指令')
 
         if self.stats['cache_side_channel'] > 0:
             recommendations.append('侧信道: 使用常数时间算法')
-            recommendations.append('侧信道: 避免cache刷新和时间测量')
+            recommendations.append('侧信道: 避免 cache 刷新和时间测量')
 
         recommendations.extend([
-            'updatecompile器以enable自动缓解',
-            '使用最新的微码update',
-            '在敏感代码中添加推测execute屏障',
-            '审查encrypt库实现'
+            '更新编译器以启用自动缓解',
+            '使用最新的微码更新',
+            '在敏感代码中添加推测执行屏障',
+            '审查加密库实现'
         ])
 
         return recommendations

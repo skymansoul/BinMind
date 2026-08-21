@@ -183,11 +183,9 @@ class FormatStringVerifier:
 
     def verify_all(self, call_sites: List[Tuple[int, str, str]],
                    insns: List[Tuple[int, str]]) -> List[FmtStringVerdict]:
-        """批量验证.
+        """批量验证。
 
-        Args:
-          call_sites: [(addr, func_name, fmt_arg), ...]
-          insns: 伪代码行列表
+        call_sites 为 [(addr, func_name, fmt_arg), ...], insns 为伪代码行。
         """
         self.scan_constants(insns)
         self.scan_taint(insns)

@@ -1,5 +1,5 @@
 """
-eBPF 字节码数据流污点分析。追踪用户可控输入——map 查询、数据包缓冲区——
+eBPF 字节码数据流污点分析。追踪用户可控输入, map 查询、数据包缓冲区,
 经 ALU 和内存操作传播至危险汇聚点：尾调用、含污点键的 map 变更。
 """
 
@@ -25,27 +25,27 @@ BPF_SKB_LOAD = 25
 BPF_XDP_ADJUST = 29
 BPF_RINGBUF_OUTPUT = 38
 BPF_RINGBUF_RESERVE = 36
-BPF_SKB_STORE = 54   # bpf_skb_store_bytes——写入路径
-BPF_XDP_STORE = 55    # bpf_xdp_store_bytes——写入路径
+BPF_SKB_STORE = 54   # bpf_skb_store_bytes, 写入路径
+BPF_XDP_STORE = 55    # bpf_xdp_store_bytes, 写入路径
 BPF_PERF_EVENT_OUTPUT = 25
 
-MAP_VALUE = 0xF0     # 合成污点源——map 查询返回值
-PACKET_DATA = 0xF1   # 合成污点源——数据包/XDP 缓冲区
-ARGUMENT = 0xF2      # 合成污点源——函数参数
+MAP_VALUE = 0xF0     # 合成污点源, map 查询返回值
+PACKET_DATA = 0xF1   # 合成污点源, 数据包/XDP 缓冲区
+ARGUMENT = 0xF2      # 合成污点源, 函数参数
 STACK_SPILL = 0xF3   # 栈溢出路径引致的污染
 RESERVED = 0xFF
 
 R10 = 10  # 栈帧基址寄存器
 CALL_REG = 1  # r1 持有上下文指针
 
-# helper 函数返回值——污点继承映射
+# helper 函数返回值, 污点继承映射
 _HELPER_TAINT_RULES = {
     BPF_MAP_LOOKUP: (0, MAP_VALUE),
     BPF_SKB_LOAD:   (0, PACKET_DATA),
     BPF_PROBE_READ: (0, PACKET_DATA),
 }
 
-# 写入路径 helper——源数据被污染则污点传播至目标对象
+# 写入路径 helper, 源数据被污染则污点传播至目标对象
 _WRITE_PATH_HELPERS = frozenset({
     BPF_SKB_STORE, BPF_XDP_STORE, BPF_MAP_UPDATE,
 })
@@ -106,11 +106,11 @@ class EBPFTaintTracker:
         BPF_TAIL_CALL: TaintSink("tail_call", "bpf_tail_call with tainted target"),
         BPF_MAP_UPDATE: TaintSink("map_update", "map value update with tainted key"),
         BPF_MAP_DELETE: TaintSink("map_delete", "map deletion with tainted key"),
-        BPF_RINGBUF_OUTPUT: TaintSink("data_leak", "ringbuf_output——用户态数据泄漏"),
-        BPF_RINGBUF_RESERVE: TaintSink("data_leak", "ringbuf_reserve——缓冲区保留污染数据"),
-        BPF_PERF_EVENT_OUTPUT: TaintSink("data_leak", "perf_event_output——事件数据泄漏"),
-        BPF_SKB_STORE: TaintSink("data_inject", "skb_store_bytes——污染数据写入数据包"),
-        BPF_XDP_STORE: TaintSink("data_inject", "xdp_store_bytes——污染数据写入 XDP 缓冲区"),
+        BPF_RINGBUF_OUTPUT: TaintSink("data_leak", "ringbuf_output, 用户态数据泄漏"),
+        BPF_RINGBUF_RESERVE: TaintSink("data_leak", "ringbuf_reserve, 缓冲区保留污染数据"),
+        BPF_PERF_EVENT_OUTPUT: TaintSink("data_leak", "perf_event_output, 事件数据泄漏"),
+        BPF_SKB_STORE: TaintSink("data_inject", "skb_store_bytes, 污染数据写入数据包"),
+        BPF_XDP_STORE: TaintSink("data_inject", "xdp_store_bytes, 污染数据写入 XDP 缓冲区"),
     }
 
     _CLEAR_ALU = frozenset({BPF_XOR, BPF_AND, BPF_SUB})
@@ -169,7 +169,7 @@ class EBPFTaintTracker:
         cls, op = insn["cls"], insn["op_alu"]
         dst, src, imm, off = insn["dst"], insn["src"], insn["imm"], insn["off"]
 
-        # 条件分支隐式流追踪——VeRefine 概念：
+        # 条件分支隐式流追踪, VeRefine 概念：
         # 分支条件依赖污染数据时，分支体内所有赋值均获得隐式污染标记，
         # 因控制流本身携带信息量。
         if cls == BPF_JMP and op != 0x80 and op != 0x90:
@@ -200,7 +200,7 @@ class EBPFTaintTracker:
             if dst == R10: self._stack_initialized.add(off)
 
         elif cls == BPF_LDX and src == R10:
-            # 从栈加载——该槽位从未初始化则标记为残存泄漏风险
+            # 从栈加载, 该槽位从未初始化则标记为残存泄漏风险
             if off not in self._stack_initialized:
                 result.stack_leak_alerts.append((idx, off))
             if off in self._stack_taint:
@@ -228,7 +228,7 @@ class EBPFTaintTracker:
             result.inputs.append((idx, f"packet_load"))
         elif imm == BPF_PROBE_READ:
             self._taint[0] = {f"kern_read@{idx}"}
-            result.inputs.append((idx, f"probe_read——内核内存暴露"))
+            result.inputs.append((idx, f"probe_read, 内核内存暴露"))
 
         if imm in _HELPER_TAINT_RULES:
             ret_reg, source_tag = _HELPER_TAINT_RULES[imm]

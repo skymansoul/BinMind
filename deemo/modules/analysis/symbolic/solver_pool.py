@@ -4,25 +4,25 @@ solver instance 运行 own process behind a request/response
 队列. 池 分派 incoming constraint strings idle workers
 and缓存s results constraint hash avoid redundant solves
 
-二轮增强 — 进程崩溃自动重启：monitor 线程定期检查 worker 进程存活状态
+二轮增强 - 进程崩溃自动重启：monitor 线程定期检查 worker 进程存活状态
 发现已死进程自动重启并恢复 IDLE 状态
 
-三轮增强 — RSS 内存配额 + 优先级调度：SolverProcessManager 通过 psutil
+三轮增强 - RSS 内存配额 + 优先级调度：SolverProcessManager 通过 psutil
 监控每个 worker 进程的 RSS，超限时发送 SIGTERM→SIGKILL 级联终止
 dispatch_堆 按 (-priority, timestamp) 堆排序替代 FIFO deque
 确保关键约束优先求解
 
-二轮增强 — 外部求解器支持：除 Z3 Python 绑定外，支持通过 subprocess
+二轮增强 - 外部求解器支持：除 Z3 Python 绑定外，支持通过 subprocess
 调用外部求解器二进制文件（如 cvc5 --lang smt2），以 stdin/stdout 交互
 
-四轮增强 — AdaptivePoolSizing：监控平均队列等待时间和求解器利用率
+四轮增强 - AdaptivePoolSizing：监控平均队列等待时间和求解器利用率
 avg_wait > 2s 且 utilization > 80% 时扩容 +2 worker
 utilization < 30% 持续 5 分钟时缩容 -1（下限 1），带入滞后带防振荡
 
-五轮增强 — SolverWarmupCache：worker 启动时预求解常见约束模式
+五轮增强 - SolverWarmupCache：worker 启动时预求解常见约束模式
 (x>0, x<10, strlen>0 等)，预热求解器内部数据结构
 
-六轮增强 — CrossSessionReuse：SolverSession.检查() 对合并约束集哈希
+六轮增强 - CrossSessionReuse：SolverSession.检查() 对合并约束集哈希
 跨会话复用历史求解结果
 """
 
@@ -245,11 +245,11 @@ class SolverWorker:
 
 class SolverPool:
     """管理 a fixed-size 池 SolverWorkers auto-重启 监控
-    
-    二轮增强 — 进程监控线程：每 5s 检查所有 worker 进程存活状态
+
+    二轮增强 - 进程监控线程：每 5s 检查所有 worker 进程存活状态
     崩溃的 worker 自动重启并恢复 IDLE
-    
-    四轮增强 — 自适应扩缩容：AdaptivePoolSizing 监控队列等待和利用率
+
+    四轮增强 - 自适应扩缩容：AdaptivePoolSizing 监控队列等待和利用率
     在高负载时扩容，低负载时缩容"""
 
     _MONITOR_INTERVAL = 5.0
@@ -409,7 +409,7 @@ class SolverPool:
 
 class AdaptivePoolSizing:
     """动态调整求解器池大小，基于队列等待时间和利用率
-    
+
     扩容条件：avg_wait > 2s 且 utilization > 80% → +2 worker
     缩容条件：utilization < 30% 持续 5 分钟 → -1 worker（下限 1）
     滞后带：每次调整后冷却 120s，防止振荡"""
@@ -501,7 +501,7 @@ class AdaptivePoolSizing:
 
 class SolverWarmupCache:
     """Worker 启动时预求解常见约束模式，预热求解器内部数据结构
-    
+
     常见模式涵盖整数比较、字符串长度、逻辑组合等
     提前填充求解器的增量缓存"""
 
@@ -527,7 +527,7 @@ class SolverWarmupCache:
 
     def warmup(self, config: SolverConfig) -> int:
         """执行预热：对每个模式创建临时求解器并求解，缓存结果
-        
+
         返回:
         成功预热求解的模式数量
         """
@@ -617,8 +617,8 @@ _CROSS_SESSION_LOCK = threading.RLock()
 
 class SolverSession:
     """单个求解会话，管理约束集合并和求解
-    
-    六轮增强 — CrossSessionReuse：check() 对合并约束集哈希
+
+    六轮增强 - CrossSessionReuse：check() 对合并约束集哈希
     跨会话复用历史求解结果"""
 
     def __init__(self, pool: SolverPool):
@@ -634,7 +634,7 @@ class SolverSession:
 
     def check(self) -> Optional[SolverResponse]:
         """求解合并约束集。优先查跨会话缓存，命中则直接返回
-        
+
         CrossSessionReuse：对 combined constraints 取 SHA256
         若之前任一 SolverSession 求解过相同约束集，直接复用结果"""
         combined = "\n".join(self._constraints)

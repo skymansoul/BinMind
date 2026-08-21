@@ -1,9 +1,7 @@
-# created: 2026-08-07
-# modified: 2026-08-22 — corrected novelty claims; SPRT is Wald, contribution is domain-specific prior estimation and evidence decay
-# 序贯假设检验——在线漏洞检测中的证据累积决策
+# 序贯假设检验-在线漏洞检测中的证据累积决策
 #
 # 核心问题: 现有漏洞检测是单次分类。在持续扫描场景中，
-# 同一二进制被多次扫描但各次独立判断——浪费了历史信息。
+# 同一二进制被多次扫描但各次独立判断-浪费了历史信息。
 #
 # 技术方案（Wald SPRT + 领域特定的先验估计和证据衰减）:
 #   1. Wald序贯概率比检验: 维护证据累积器，每次扫描更新似然比
@@ -25,7 +23,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -48,11 +45,11 @@ class SPRTConfig:
     beta: float = 0.05           # Type II error rate (漏报率)
     evidence_decay_days: float = 90.0  # 证据半衰期（天）
     min_observations: int = 3    # 最小观测数才做决策
-    max_observations: int = 50   # 最大观测数——强制决策
+    max_observations: int = 50   # 最大观测数-强制决策
 
 
 class SequentialVulnDetector:
-    """序贯假设检验——在线漏洞检测中累积证据。
+    """序贯假设检验-在线漏洞检测中累积证据。
 
     Wald SPRT决策规则:
       A = (1-β)/α: 接受H1的阈值
@@ -93,16 +90,7 @@ class SequentialVulnDetector:
     def update(self, target_id: str,
                model_output: float,   # 模型输出的漏洞概率 [0, 1]
                observation_time: Optional[float] = None) -> EvidenceState:
-        """观测到新证据后更新累积证据状态。
-
-        Args:
-            target_id: 监控目标ID
-            model_output: 本次模型预测的漏洞概率
-            observation_time: 观测时间戳
-
-        Returns:
-            更新后的EvidenceState
-        """
+        """观测到新证据后更新累积证据状态。"""
         if observation_time is None:
             observation_time = time.time()
 
@@ -168,15 +156,7 @@ class SequentialVulnDetector:
                      observations: List[Tuple[str, float]],
                      current_time: Optional[float] = None
                      ) -> Dict[str, EvidenceState]:
-        """批量更新——对一次扫描的多个函数结果同时更新。
-
-        Args:
-            observations: [(target_id, model_output), ...]
-            current_time: 批量观测时间戳
-
-        Returns:
-            所有更新后的状态
-        """
+        """批量更新-对一次扫描的多个函数结果同时更新。"""
         if current_time is None:
             current_time = time.time()
         for target_id, model_output in observations:
@@ -184,11 +164,7 @@ class SequentialVulnDetector:
         return dict(self._states)
 
     def get_decided_targets(self) -> Tuple[List[str], List[str]]:
-        """获取已做出决策的目标。
-
-        Returns:
-            (vulnerable_ids, benign_ids)
-        """
+        """获取已做出决策的目标。"""
         vuln = []
         benign = []
         for tid, state in self._states.items():
@@ -199,11 +175,7 @@ class SequentialVulnDetector:
         return vuln, benign
 
     def get_undecided_ranking(self) -> List[Tuple[str, float, int]]:
-        """获取尚未决策的目标按风险排序。
-
-        Returns:
-            [(target_id, posterior_prob, n_observations), ...] 按后验概率降序
-        """
+        """获取尚未决策的目标按风险排序。"""
         undecided = []
         for tid, state in self._states.items():
             if state.decision == "continue":

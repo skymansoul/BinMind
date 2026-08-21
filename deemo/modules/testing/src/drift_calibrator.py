@@ -1,15 +1,14 @@
-# 修改记录:
-# 2025-07-30 11:23 - 从固定窗口改为指数加权窗口，对近期变化敏感度更高
-# 2025-08-01 09:45 - 增加历史策略有效性追踪，避免反复推荐已被证明无效的策略
-# 2025-08-03 15:17 - 引入 CUSUM 变点检测替代简单阈值，降低误报率
+# 从固定窗口改为指数加权窗口，对近期变化敏感度更高
+# 增加历史策略有效性追踪，避免反复推荐已被证明无效的策略
+# 引入 CUSUM 变点检测替代简单阈值，降低误报率
 
-# Fuzzing 覆盖漂移校准器 — 检测覆盖率增长停滞并建议策略调整
+# Fuzzing 覆盖漂移校准器 - 检测覆盖率增长停滞并建议策略调整
 #
 # 设计动机:
-#   长期 fuzzing (数小时→数天) 的覆盖增长非单调:
+#   长期 fuzzing (数小时-数天) 的覆盖增长非单调:
 # 初期: 快速增长, 新边频繁
 # 中期: 增长放缓, 发现新边需要更深度变异
-# 后期: 饱和/漂移——在低价值区域反复变异, 覆盖几乎不变
+# 后期: 饱和/漂移-在低价值区域反复变异, 覆盖几乎不变
 #
 #   现有 power_schedule.py 单次调度种子能量, seed_selector.py 选种子,
 #   但两者均无全局视角: 当前整体 fuzzing 策略是否仍然有效?
@@ -28,12 +27,12 @@
 #
 # 文献:
 #   Page 1954, "Continuous Inspection Schemes", Biometrika 41(1/2):100-115
-#     — CUSUM 变点检测的奠基性工作。本项目使用其单侧均值上升/下降
+#     - CUSUM 变点检测的奠基性工作。本项目使用其单侧均值上升/下降
 #       检测公式: S_t = max(0, S_{t-1} + (x_t - μ_0 - k))
-#   UNIFUZZ — 系统性评估多种 fuzzer 发现:
+#   UNIFUZZ - 系统性评估多种 fuzzer 发现:
 #       不同阶段切换策略可显著提升长期覆盖率; 本项目取其阶段性策略
 #       切换思想但以数据驱动替代预设时间表。
-#   CollAFL — 覆盖冲突解决; 本项目借鉴其
+#   CollAFL - 覆盖冲突解决; 本项目借鉴其
 #       "覆盖质量退化"检测概念, 扩展为漂移校准器。
 import math
 import time
@@ -53,14 +52,14 @@ class DriftPhase(str, Enum):
 
 
 class StrategyCategory(str, Enum):
-    """建议策略的类型——与现有模块的接合点。"""
-    SWITCH_POWER_SCHEDULE = "switch_power"    # → power_schedule.py
-    INCREASE_HAVOC = "increase_havoc"          # → adaptive_mutator 调高 epsilon
-    INJECT_FRESH_SEEDS = "inject_seeds"        # → 从外部语料导入新种子
-    DIRECTED_FOCUS = "directed_focus"           # → directed_fuzz.py 激活
-    DICTIONARY_ON = "dictionary_on"             # → dictionary_builder 产物注入
-    CONCOLIC_BOOST = "concolic_boost"           # → concolic_bridge.py 求解新输入
-    RESHUFFLE_CORPUS = "reshuffle_corpus"       # → coverage_index 蒸馏后重新排序
+    """建议策略的类型-与现有模块的接合点。"""
+    SWITCH_POWER_SCHEDULE = "switch_power"    # power_schedule.py
+    INCREASE_HAVOC = "increase_havoc"          # adaptive_mutator 调高 epsilon
+    INJECT_FRESH_SEEDS = "inject_seeds"        # 从外部语料导入新种子
+    DIRECTED_FOCUS = "directed_focus"           # directed_fuzz.py 激活
+    DICTIONARY_ON = "dictionary_on"             # dictionary_builder 产物注入
+    CONCOLIC_BOOST = "concolic_boost"           # concolic_bridge.py 求解新输入
+    RESHUFFLE_CORPUS = "reshuffle_corpus"       # coverage_index 蒸馏后重新排序
 
 
 @dataclass
@@ -136,7 +135,7 @@ class DriftCalibrator:
         # 策略追踪
         self._strategy_history: Dict[str, List[Tuple[float, bool]]] = (
             defaultdict(list))
-        self._strategy_cooldown: Dict[str, float] = {}  # strategy → cooldown_end_time
+        self._strategy_cooldown: Dict[str, float] = {}  # strategy - cooldown_end_time
         # 基准: 最近一次的覆盖峰值
         self._peak_rate: float = 0.0
         # 轮次
@@ -334,7 +333,7 @@ class DriftCalibrator:
 
     # 反馈
     def mark_advice_applied(self, advice: CalibrationAdvice) -> None:
-        """标记一条建议已被采纳。设置冷却期防抖——同策略在 5min 内不再推荐。"""
+        """标记一条建议已被采纳。设置冷却期防抖-同策略在 5min 内不再推荐。"""
         self._strategy_cooldown[advice.strategy.value] = (
             time.monotonic() + 300.0)
 

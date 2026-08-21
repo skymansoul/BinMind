@@ -1,7 +1,3 @@
-# 修改记录:
-# 2025-07-22 14:38 — 初始创建: 寄存器级前向污点传播+source-sink映射
-# 2025-07-28 09:15 — 增加过程间分析: 调用图+跨函数污点传播+抽象内存建模
-# 2025-08-03 16:42 — 增加污点净化检测: 边界检查/编码/加密识别, 区分活污点与死污点
 # 二进制污点流追踪器: 过程间数据流 / 抽象内存建模 / 污点净化检测
 # 技术问题: 动态污点追踪 (Colorstreams/BINSEC) 受限于代码覆盖率;
 #   静态方法 (CodeQL/Infer) 需源码或IR. 对闭源二进制, 需一种
@@ -203,8 +199,7 @@ class BinaryTaintTracer:
                 sink_func=func,
                 propagation=list(tags)[:10],
                 sanitized=sanitized,
-                sanitizer=("bounds_check" if sanitized and not
-                           self._sanitizer_active.get(reg, False) else ""),
+                sanitizer=("bounds_check" if sanitized else ""),
                 crosses_functions=[self._current_func],
                 risk=("low" if sanitized else
                      "critical" if func in ("system", "execve", "mprotect")

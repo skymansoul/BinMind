@@ -22,7 +22,7 @@ from .constants import (
 )
 from .utils import shannon_entropy
 
-# 模糊匹配容差 — INTJ权衡: 4字节差异/256 = 1.56%容差。
+# 模糊匹配容差 — 权衡: 4字节差异/256 = 1.56%容差。
 # P(随机256B序列偶然匹配) ≈ sum_{k=0}^{4} C(256,k)/2^256 ≈ 2^{-183}。
 _FUZZY_HAMMING_TOLERANCE = 4
 
@@ -124,7 +124,7 @@ def _match_full_sbox(data: bytes, sbox: bytes, start: int) -> bool:
 # S-box模糊匹配
 # 计算`start`处256字节窗口与参考`sbox`的逐字节Hamming距离。
 # 返回 (is_match, distance, entropy)。
-# INTJ设计选择: 精确匹配优先; 模糊匹配仅在精确失败时触发。
+# 设计选择: 精确匹配优先; 模糊匹配仅在精确失败时触发。
 def _fuzzy_match_sbox(data: bytes, sbox: bytes, start: int,
                       tolerance: int = _FUZZY_HAMMING_TOLERANCE) -> tuple:
     """

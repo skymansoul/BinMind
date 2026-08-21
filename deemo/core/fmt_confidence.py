@@ -4,6 +4,7 @@
 
 
 import logging
+import math
 from typing import Any, Dict, List
 
 _log = logging.getLogger(__name__)
@@ -14,45 +15,43 @@ def llm_enhance_findings(
     binary_path: str,
 ) -> List[Dict[str, Any]]:
     """
-    调用 LLM 对静态检测结果进行深度分析。
+    调用 LLM 对静态检测结果进行深度分析, 之后无条件做置信度融合。
 
-    将反编译代码和检测到的模式发送给 LLM，
-    获取利用可行性评估和详细的利用步骤建议。
+    将检测到的模式发送给 LLM 获取利用可行性评估;
+    无 API 密钥或 LLM 失败时跳过增强, 融合步骤始终执行。
     """
     try:
         from config import OPENAI_API_KEY
-        if not OPENAI_API_KEY:
-            return findings
+        if OPENAI_API_KEY:
+            from core.ai_backends import query_llm
 
-        from core.ai_backends import query_llm
-
-        for finding in findings[:3]:
-            system_prompt = (
-                "You are an expert binary exploitation analyst specializing in "
-                "format string vulnerabilities. Evaluate the exploitability of "
-                "the given finding concisely."
-            )
-            user_prompt = (
-                f"Format string finding:\n"
-                f"Function: {finding['function']}\n"
-                f"Dangerous call: {finding['format_func']}({finding['format_arg']})\n"
-                f"Estimated offset: {finding.get('offset', -1)}\n\n"
-                f"Provide: 1) Is this exploitable? 2) What is the most likely "
-                f"attack vector? 3) Key constraints. Keep it under 200 words."
-            )
-            try:
-                response = query_llm(
-                    system=system_prompt,
-                    user=user_prompt,
-                    temperature=0.2,
-                    max_tokens=256,
+            for finding in findings[:3]:
+                system_prompt = (
+                    "You are an expert binary exploitation analyst specializing in "
+                    "format string vulnerabilities. Evaluate the exploitability of "
+                    "the given finding concisely."
                 )
-                finding['llm_analysis'] = response.strip()
-                finding['confidence'] = min(1.0, finding['confidence'] + 0.15)
-            except Exception as e:
-                _log.debug("LLM format string analysis failed: %s", e)
+                user_prompt = (
+                    f"Format string finding:\n"
+                    f"Function: {finding['function']}\n"
+                    f"Dangerous call: {finding['format_func']}({finding['format_arg']})\n"
+                    f"Estimated offset: {finding.get('offset', -1)}\n\n"
+                    f"Provide: 1) Is this exploitable? 2) What is the most likely "
+                    f"attack vector? 3) Key constraints. Keep it under 200 words."
+                )
+                try:
+                    response = query_llm(
+                        system=system_prompt,
+                        user=user_prompt,
+                        temperature=0.2,
+                        max_tokens=256,
+                    )
+                    finding['llm_analysis'] = response.strip()
+                    finding['confidence'] = min(1.0, finding['confidence'] + 0.15)
+                except Exception as e:
+                    _log.debug("LLM format string analysis failed: %s", e)
 
-    except (ImportError, Exception) as e:
+    except Exception as e:
         _log.debug("LLM enhancement unavailable: %s", e)
 
     findings = fuse_confidence(findings)
@@ -69,7 +68,6 @@ def fuse_confidence(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
       L0(汇编): 0.6, L1(静态): 0.5, L1.5(污点): 0.7,
       L1.7(def-use): 0.65, L2(符号): 0.8
     """
-    import math
     weights = {'asm': 0.6, 'static': 0.5, 'taint': 0.7,
                'defuse': 0.65, 'symbolic': 0.8}
 
@@ -102,13 +100,7 @@ def fuse_confidence(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def format_offset_to_arg_position(offset: int, arch_bits: int = 64) -> str:
     """
     将格式化字符串栈偏移转换为人类可读的参数位置描述。
-
-    Args:
-        offset: 格式化字符串在栈上的偏移（以指针为单位）
-        arch_bits: 架构位数
-
-    Returns:
-        例如 "第 6 个参数 (printf 的第 1 个栈参数)"
+    例如 "argument #6 (1st stack argument after r9)"。
     """
     if offset <= 0:
         return "unknown"

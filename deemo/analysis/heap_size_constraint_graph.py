@@ -179,11 +179,9 @@ class HeapSizeConstraintGraph:
 
     def may_overflow(self, alloc_var: str, alloc_size: int,
                      write_size: int, write_var: str = "") -> bool:
-        """检查是否可能溢出: write_size > alloc_size 但约束图可能排除.
+        """检查是否可能溢出: write_size > alloc_size 但约束图可能排除。
 
-        Returns:
-          True if overflow is possible (constraints don't rule it out)
-          False if constraints prove safety
+        True 表示溢出可能 (约束未排除), False 表示约束可证安全。
         """
         if not self._built:
             self.build_closure()

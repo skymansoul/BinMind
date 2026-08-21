@@ -26,7 +26,7 @@ class LLVMIRAnalyzer(BaseAnalyzer):
         (r'load\s+[\w.]+,\s*[\w.]*\s*\*.*align\s+(\d+)', 'under_aligned_load',
          'load 对齐值 < 自然对齐'),
     ]
-    # clang static analyzer 风格的检查——未初始化的栈变量使用
+    # clang static analyzer 风格的检查, 未初始化的栈变量使用
     _UNINIT_STACK_PAT = re.compile(
         r'alloca\s+([\w.]+)\s*\n(?:.*\n){0,20}.*load.*\1', re.MULTILINE)
 

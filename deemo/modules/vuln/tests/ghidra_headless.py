@@ -1,5 +1,4 @@
-# 创建: 2026-05-12 | Ghidra无头分析脚本模板
-"""Ghidra无头模式——自动化静态审计。
+"""Ghidra无头模式-自动化静态审计。
 
 使用: $GHIDRA_HOME/support/analyzeHeadless <project_dir> <project_name> \
         -import <binary> -postScript ghidra_headless.py
@@ -14,7 +13,7 @@ for _c in ["analyzeHeadless", "/opt/ghidra/support/analyzeHeadless"]:
     if _p.returncode == 0: GHIDRA_HEADLESS = _p.stdout.strip(); break
 
 def analyze(binary: str) -> dict:
-    """Ghidra分析——若不可用则回退到objdump。"""
+    """Ghidra分析-若不可用则回退到objdump。"""
     if not GHIDRA_HEADLESS:
         return _fallback_objdump(binary)
     import time; _t0 = time.time()

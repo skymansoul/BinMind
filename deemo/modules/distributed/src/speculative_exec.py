@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-07-25 10:44 - 投机预算分配从固定比例改为汤普森采样自适应
-# 2025-07-28 16:31 - 增加投机副本超时自动取消逻辑
+# 投机预算分配从固定比例改为汤普森采样自适应
+# 增加投机副本超时自动取消逻辑
 
 # 关键路径感知的投机执行引擎
 #
@@ -38,7 +37,7 @@ from .grl_graph import TaskDependencyGraph
 
 @dataclass
 class SpeculationRecord:
-    """单次投机执行的记录 — 用于在线更新任务的执行时间分布。"""
+    """单次投机执行的记录 - 用于在线更新任务的执行时间分布。"""
     task_id: str
     primary_ms: float         # 主副本完成时间 (ms)
     speculative_ms: float     # 投机副本完成时间 (ms)，无投机时为 0
@@ -47,7 +46,7 @@ class SpeculationRecord:
 
 
 class CriticalPathTracker:
-    """关键路径追踪器 — 基于 DAG 的 exec_time 计算多条关键路径。
+    """关键路径追踪器 - 基于 DAG 的 exec_time 计算多条关键路径。
 
     维护 top-K 关键路径 (默认 K=3)，因为第 2、3 条关键路径在
     主路径被投机加速后可能成为新的瓶颈。
@@ -117,8 +116,8 @@ class SpeculativeExecutor:
       1. CPM 追踪 top-K 关键路径
       2. 对每条路径上的任务，按历史执行时间方差排序 (高方差优先投机)
       3. 汤普森采样分配投机预算: 每轮决策从 Beta(成功次数, 失败次数) 采样
-         — "成功" = 投机副本比主副本先完成
-         — "失败" = 投机副本浪费 (主副本已完成或投机超时)
+         - "成功" = 投机副本比主副本先完成
+         - "失败" = 投机副本浪费 (主副本已完成或投机超时)
       4. 预算耗尽或方差过低时停止投机
 
     资源感知: max_speculative_copies 限制同时运行的投机副本总数，
@@ -150,7 +149,7 @@ class SpeculativeExecutor:
     ) -> List[str]:
         """返回本轮应投机执行的任务 ID 列表。
 
-        不负责实际发起投机 — 由外部调度器使用返回的列表做副本分发。
+        不负责实际发起投机 - 由外部调度器使用返回的列表做副本分发。
         """
         if self._active_speculations >= self._max_copies or len(dag) == 0:
             return []
@@ -212,7 +211,7 @@ class SpeculativeExecutor:
         """历史执行时间的变异系数 CV = std / mean。无历史时返回最大 CV。"""
         hist = self._task_history.get(task_id)
         if not hist or len(hist) < 3:
-            return 1.0  # 无历史 → 高不确定性 → 倾向投机
+            return 1.0  # 无历史 -> 高不确定性 -> 倾向投机
         vals = list(hist)
         mean = sum(vals) / len(vals)
         if mean <= 0:

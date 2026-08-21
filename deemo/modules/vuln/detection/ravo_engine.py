@@ -1,22 +1,20 @@
 # coding: utf-8
-# 创建: 2026-05-03  |  RAVO编排引擎
-# 修改: 2026-05-03  |  审计后补充文件头与错误处理
 #
 """
-风险感知的漏洞修复优先级优化——编排引擎与多策略对比。
+风险感知的漏洞修复优先级优化-编排引擎与多策略对比。
 
 提供三种修复策略的并列对比:
   1. GREEDY_RISK_DENSITY: 按risk/fix_hours降序(理论最优)
-  2. CVSS_FIRST: 按CVSS降序(传统方法——基线)
+  2. CVSS_FIRST: 按CVSS降序(传统方法-基线)
   3. WEAPONIZATION_FIRST: 按武器化概率降序(MEWF驱动)
 
 策略对比量化了"使用智能优化相对于传统CVSS排序的收益"
-——这是专利审查中"可量化的技术效果提升"的关键证据。
+-这是专利审查中"可量化的技术效果提升"的关键证据。
 
 累积风险曲线:
   横轴: 累计修复工时(小时)
   纵轴: 已消除的累积风险比例(%)
-  三条曲线→可视化对比→证明RISK_DENSITY策略在任何工时截断点
+  三条曲线-可视化对比-证明RISK_DENSITY策略在任何工时截断点
   都优于或等于CVSS_FIRST策略。
 """
 
@@ -44,14 +42,14 @@ class StrategyComparison:
     risk_density_schedule: Optional[FixSchedule] = None
     cvss_first_schedule: Optional[FixSchedule] = None
     weapon_first_schedule: Optional[FixSchedule] = None
-    # 策略收益——RISK_DENSITY vs CVSS_FIRST的改进
+    # 策略收益-RISK_DENSITY vs CVSS_FIRST的改进
     improvement_vs_cvss_pct: float = 0.0    # 风险削减改进百分点
     improvement_vs_weapon_pct: float = 0.0  # vs WEAPON_FIRST
 
 
 @dataclass
 class RavoReport:
-    """RAVO完整报告——最优调度+策略对比+实操建议"""
+    """RAVO完整报告-最优调度+策略对比+实操建议"""
     optimal_schedule: Optional[FixSchedule] = None
     comparison: Optional[StrategyComparison] = None
     # 实操建议
@@ -124,7 +122,7 @@ class RavoEngine:
         # Top-5修复
         top5 = optimal.ordered_fixes[:5]
 
-        # 速赢——低工时(≤4h)+高影响(risk_density > median)
+        # 速赢-低工时(≤4h)+高影响(risk_density > median)
         med_density = (sorted(f.risk_density for f in optimal.ordered_fixes)
                        [len(optimal.ordered_fixes) // 2]
                        if optimal.ordered_fixes else 0)

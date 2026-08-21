@@ -1,5 +1,4 @@
-# core — 共享模型/类型/opcode表，全模块依赖
-# 不拆: 拆了只会增加循环 import
+# core - 共享模型/类型/opcode表，全模块依赖
 
 from .models import (
     EVMInstruction,

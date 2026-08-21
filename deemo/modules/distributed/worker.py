@@ -181,14 +181,7 @@ def get_worker_id() -> str:
 
 def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
     """
-    注册 Worker 心跳。
-
-    Args:
-        worker_id: Worker ID
-        tags: Worker 标签列表
-
-    Returns:
-        是否注册成功
+    注册 Worker 心跳, 返回是否注册成功。
     """
     r = get_redis_client()
     if r is None:
@@ -230,17 +223,9 @@ def update_worker_heartbeat(
     tasks_failed: int = 0
 ) -> bool:
     """
-    更新 Worker 心跳。
+    更新 Worker 心跳, 返回是否更新成功。
 
-    Args:
-        worker_id: Worker ID
-        status: Worker 状态 (idle, busy, error)
-        current_task: 当前任务 ID
-        tasks_completed: 已完成任务数
-        tasks_failed: 失败任务数
-
-    Returns:
-        是否更新成功
+    status 取值 idle/busy/error。
     """
     r = get_redis_client()
     if r is None:
@@ -296,13 +281,7 @@ def update_worker_heartbeat(
 
 def unregister_worker_heartbeat(worker_id: str) -> bool:
     """
-    注销 Worker 心跳。
-
-    Args:
-        worker_id: Worker ID
-
-    Returns:
-        是否注销成功
+    注销 Worker 心跳, 返回是否注销成功。
     """
     r = get_redis_client()
     if r is None:
@@ -406,13 +385,7 @@ def get_all_workers_status() -> Dict[str, Any]:
 
 def check_cached_result(cache_key: str) -> Optional[Dict[str, Any]]:
     """
-    检查缓存中是否已有分析结果。
-
-    Args:
-        cache_key: 缓存键
-
-    Returns:
-        缓存的结果，不存在则返回 None
+    检查缓存中是否已有分析结果, 不存在返回 None。
     """
     r = get_redis_client()
     if r is None:
@@ -431,15 +404,7 @@ def check_cached_result(cache_key: str) -> Optional[Dict[str, Any]]:
 
 def save_cached_result(cache_key: str, result: Dict[str, Any], ttl: int = None) -> bool:
     """
-    保存分析结果到缓存。
-
-    Args:
-        cache_key: 缓存键
-        result: 要缓存的结果
-        ttl: 缓存过期时间（秒），默认使用 Config.CACHE_TTL
-
-    Returns:
-        是否保存成功
+    保存分析结果到缓存, ttl 缺省用 Config.CACHE_TTL; 返回是否成功。
     """
     r = get_redis_client()
     if r is None:
@@ -463,15 +428,7 @@ def save_cached_result(cache_key: str, result: Dict[str, Any], ttl: int = None) 
 
 def update_task_progress(task_id: str, progress: int, message: str = '') -> bool:
     """
-    更新任务进度。
-
-    Args:
-        task_id: 任务 ID
-        progress: 进度百分比 (0-100)
-        message: 进度消息
-
-    Returns:
-        是否更新成功
+    更新任务进度, 返回是否更新成功。
     """
     r = get_redis_client()
     if r is None:
@@ -496,14 +453,7 @@ def execute_analysis_pipeline(
     options: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """
-    执行完整的分析流水线（供 Worker 调用）。
-
-    Args:
-        binary_path: 二进制文件路径
-        options: 分析选项
-
-    Returns:
-        分析结果字典
+    执行完整的分析流水线（供 Worker 调用）, 返回分析结果字典。
     """
     from core.pipeline import run_pipeline
 
@@ -605,14 +555,6 @@ if CELERY_AVAILABLE:
     def analyze_binary_task(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         核心分析任务（中等优先级，默认）。
-
-        Args:
-            self: Celery 任务实例
-            binary_path: 二进制文件路径
-            options: 分析选项
-
-        Returns:
-            分析结果
         """
         global _tasks_completed, _tasks_failed
 
@@ -729,13 +671,7 @@ def submit_analysis_task(
     """
     提交分析任务到 Celery 队列。
 
-    Args:
-        binary_path: 二进制文件路径
-        options: 分析选项
-        priority: 任务优先级 ('high', 'medium', 'low')
-
-    Returns:
-        任务 ID，提交失败返回 None
+    priority 取值 high/medium/low; 返回任务 ID, 失败返回 None。
     """
     if not CELERY_AVAILABLE:
         logger.warning("[Worker] Celery 未安装，无法提交分布式任务")
@@ -768,14 +704,7 @@ def submit_analysis_task(
 
 def get_task_result(task_id: str, timeout: float = 1.0) -> Optional[Dict[str, Any]]:
     """
-    获取任务结果。
-
-    Args:
-        task_id: 任务 ID
-        timeout: 等待超时时间（秒）
-
-    Returns:
-        任务结果，任务未完成或不存在返回 None
+    获取任务结果, 未完成或不存在返回 None。
     """
     if not CELERY_AVAILABLE:
         return None
@@ -804,11 +733,7 @@ def get_task_result(task_id: str, timeout: float = 1.0) -> Optional[Dict[str, An
 
 def start_worker_heartbeat_daemon(worker_id: str, tags: List[str] = None):
     """
-    启动 Worker 心跳守护线程。
-
-    Args:
-        worker_id: Worker ID
-        tags: Worker 标签列表
+    启动 Worker 心跳守护线程 (已运行则跳过)。
     """
     global _heartbeat_thread, _heartbeat_stop_event
 
@@ -855,12 +780,6 @@ def start_worker(
 ):
     """
     启动 Celery Worker（用于命令行模式）。
-
-    Args:
-        concurrency: Worker 并发数
-        queues: 要监听的队列列表
-        tags: Worker 标签
-        hostname: Worker 主机名
     """
     if not CELERY_AVAILABLE:
         logger.error("[Worker] Celery 未安装，无法启动 Worker")

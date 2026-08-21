@@ -15,7 +15,7 @@ Angr 漏洞点分析 — 使用 Angr 的 CFG 和函数调用图,
 import os, sys, json, time
 from typing import Any, Dict, List, Optional, Tuple
 
-from eval.angr_helpers import (
+from .angr_helpers import (
     _ALLOC_SIZE_ARG, _WRITE_SIZE_ARG, _ARG_REGS_SYSV, _ARG_REGS_WIN64,
     extract_arg_from_disasm)
 

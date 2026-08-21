@@ -9,13 +9,13 @@
 
 from typing import List, Optional
 
-from heapov.clexer import Token, tokenize, strip_suffixes
-from heapov.expr_ast import Expr, Binary, Call
-from heapov.exprparse import (
+from .clexer import Token, tokenize, strip_suffixes
+from .expr_ast import Expr, Binary, Call
+from .exprparse import (
     ExprParserMixin, ParseError,
     _TYPE_WORDS, _STRUCT_KEYWORDS, _ASSIGN_OPS,
 )
-from heapov.stmts import (
+from .stmts import (
     Assign, CallStmt, ExprStmt, If, For, While, Return, Block, Decl, Func,
 )
 
@@ -164,7 +164,7 @@ class ExprParserMixin:
             raise ParseError('unexpected EOF')
         if t.kind == 'num':
             self._next()
-            from heapov.clexer import strip_suffixes
+            from .clexer import strip_suffixes
             return Const(int(strip_suffixes(t.value)))
         if t.kind == 'str':
             self._next()

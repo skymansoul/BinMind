@@ -1,4 +1,4 @@
-# 自适应计算预算分配——根据任务难度动态调整LLM token分配
+# 自适应计算预算分配-根据任务难度动态调整LLM token分配
 #
 # 核心问题: token_consumption_tracker.py仅追踪token消耗，不做动态分配。
 # 在LLM辅助二进制分析中（函数命名、反混淆、漏洞分析），不同函数的
@@ -10,16 +10,16 @@
 #      调用深度、间接调用比例）预估分析难度(0-1)
 #   2. 预算池: 全局token预算被分配到任务队列，每个任务的分配额
 #      ∝ difficulty_score
-#   3. 动态再分配: 任务提前完成（token有剩余）→将剩余加入池中
-#      → 分配给尚未完成的复杂任务
-#   4. 截断策略: 任务在分配额用完时触发截断——
+#   3. 动态再分配: 任务提前完成（token有剩余），将剩余加入池中
+#      、分配给尚未完成的复杂任务
+#   4. 截断策略: 任务在分配额用完时触发截断-
 #      对简单函数提前截断（可能已得到满意结果），
 #      对复杂函数允许适度超支（如超支20%）
 #
 # 新颖性:
 # 首次将计算预算的难度感知分配引入LLM辅助二进制分析
-# 动态再分配实现了全局最优——区别于固定配额的局部约束
-# 难度预估使用零成本静态特征——不增加额外LLM调用
+# 动态再分配实现了全局最优-区别于固定配额的局部约束
+# 难度预估使用零成本静态特征-不增加额外LLM调用
 #
 # 技术效果:
 # 同等总预算下分析质量提升12-18%（BPTC/ROUGE-L等指标）
@@ -38,7 +38,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -74,11 +73,11 @@ class DifficultyEstimator:
     """基于零成本静态特征的难度预估器。
 
     特征选择理由:
-      - 圈复杂度: 分支数→推理路径数→分析难度
-      - 指令数: 输入长度→LLM处理量
-      - 调用深度: 上下文范围→需要的全局理解
-      - 间接调用比例: 不确定性→需要更多推理
-      - 基本块数: CFG复杂度→结构理解难度
+      - 圈复杂度: 分支数、推理路径数、分析难度
+      - 指令数: 输入长度、LLM处理量
+      - 调用深度: 上下文范围、需要的全局理解
+      - 间接调用比例: 不确定性、需要更多推理
+      - 基本块数: CFG复杂度、结构理解难度
     """
 
     def estimate(self, **features) -> float:
@@ -107,9 +106,9 @@ class AdaptiveBudgetAllocator:
 
     分配算法:
       1. 对任务队列中每个任务预估难度
-      2. 对难度分数做softmax归一化→分配权重
+      2. 对难度分数做softmax归一化，分配权重
       3. 每个任务的初始预算 = 总预算 × 权重
-      4. 任务提前完成→剩余token加入surplus_pool
+      4. 任务提前完成，剩余token加入surplus_pool
       5. surplus_pool中的token重新按剩余任务的难度分配
       6. 重复直至所有任务完成或预算耗尽
     """
@@ -119,13 +118,6 @@ class AdaptiveBudgetAllocator:
                  min_per_task: int = 200,
                  max_per_task: int = 8000,
                  overrun_tolerance: float = 0.2):
-        """
-        Args:
-            total_budget: 全局token预算上限
-            min_per_task: 单任务最低分配额（防止过于简单的任务得0）
-            max_per_task: 单任务最高分配额（防止单个任务耗尽预算）
-            overrun_tolerance: 复杂度任务允许的超支比例
-        """
         self._pool = BudgetPool(total_budget=total_budget,
                                remaining=total_budget, allocated=0)
         self._estimator = DifficultyEstimator()
@@ -136,14 +128,7 @@ class AdaptiveBudgetAllocator:
     def allocate(self,
                  tasks: List[Dict[str, Any]]
                  ) -> Dict[str, TaskEstimate]:
-        """为任务队列分配token预算。
-
-        Args:
-            tasks: [{task_id, function_name, cyclomatic_complexity, ...}, ...]
-
-        Returns:
-            {task_id: TaskEstimate with allocated_budget}
-        """
+        """为任务队列分配token预算。"""
         estimates = {}
         for task in tasks:
             tid = task['task_id']
@@ -189,13 +174,7 @@ class AdaptiveBudgetAllocator:
     def report_completion(self, task_id: str,
                           tokens_used: int,
                           result_quality: float = 0.5):
-        """任务完成后报告——回收剩余token到surplus_pool。
-
-        Args:
-            task_id: 完成的任务ID
-            tokens_used: 实际使用的token数
-            result_quality: 0-1的结果质量（可选——用于评估分配效率）
-        """
+        """任务完成后报告-回收剩余token到surplus_pool。"""
         if task_id not in self._pool.task_estimates:
             return
         est = self._pool.task_estimates[task_id]
@@ -209,7 +188,7 @@ class AdaptiveBudgetAllocator:
                              pending_tasks: List[str]) -> Dict[str, int]:
         """将surplus_pool重新分配给未完成的任务。
 
-        偏向复杂任务——它们从额外token中获益更多。
+        偏向复杂任务-它们从额外token中获益更多。
         """
         if not pending_tasks or self._pool.surplus_pool <= 0:
             return {}

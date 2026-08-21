@@ -1,20 +1,17 @@
 # coding: utf-8
-# 创建: 2026-04-16  |  CADE编排引擎
-# 修改: 2026-04-16  |  审计后补充文件头与错误处理
-#
 """
-代码库自适应偏差引擎——编排器与未知漏洞发现。
+代码库自适应偏差引擎-编排器与未知漏洞发现。
 
 管线流程:
   1. 输入: 二进制反汇编(函数列表+基本块+指令)
   2. 画像: 构建每函数的FunctionProfile(统计特征向量)
-  3. 常态模型: NormModelBuilder→代码库自适应的统计基线
-  4. 异常评分: AnomalyScorer→每函数的多维偏差评分
-  5. 排序: 按异常评分降序→Top-K最异常函数
-  6. 关联: 与已知漏洞检测结果交叉验证→区分已知/未知异常
+  3. 常态模型: NormModelBuilder-代码库自适应的统计基线
+  4. 异常评分: AnomalyScorer-每函数的多维偏差评分
+  5. 排序: 按异常评分降序-Top-K最异常函数
+  6. 关联: 与已知漏洞检测结果交叉验证-区分已知/未知异常
 
-  已知异常: 评分高+已知检测器也标记→已知漏洞模式(高置信)
-  未知异常: 评分高+已知检测器未标记→潜在未知漏洞(需人工审查)
+  已知异常: 评分高+已知检测器也标记-已知漏洞模式(高置信)
+  未知异常: 评分高+已知检测器未标记-潜在未知漏洞(需人工审查)
 
 输出:
   Top-K异常函数列表(含异常分数+每特征偏差+已知检测器交叉标记)
@@ -60,7 +57,7 @@ class AnomalyFinding:
 
 @dataclass
 class CadeReport:
-    """CADE完整报告——代码库异常函数全景"""
+    """CADE完整报告-代码库异常函数全景"""
     binary_name: str
     total_functions: int
     norm_model: Optional[CodebaseNorm] = None
@@ -99,7 +96,7 @@ class CadeEngine:
 
         参数:
           profiles: 函数画像列表
-          known_findings: {函数名: [检测器名称]}——其他检测器的输出
+          known_findings: {函数名: [检测器名称]}-其他检测器的输出
           binary_name: 二进制名称
 
         返回CadeReport。
@@ -116,7 +113,7 @@ class CadeEngine:
         findings = []
         for p in profiles:
             score, per_feat = self._scorer.score(p, norm)
-            if score < self._threshold * 0.5:  # 低于半阈值→跳过
+            if score < self._threshold * 0.5:  # 低于半阈值-跳过
                 continue
 
             flagged_by = known.get(p.function_name, [])
@@ -169,7 +166,7 @@ class CadeEngine:
 
     def quick_scan(self, profiles: List[FunctionProfile],
                     top_k: int = 10) -> List[AnomalyFinding]:
-        """快速扫描——仅返回Top-K异常函数(跳过完整报告)"""
+        """快速扫描-仅返回Top-K异常函数(跳过完整报告)"""
         report = self.analyze(profiles)
         return report.findings[:top_k]
 

@@ -1,4 +1,4 @@
-# 多模态漏洞评分融合器——将静态分析、LLM判断、历史CVE匹配、二进制特征
+# 多模态漏洞评分融合器-将静态分析、LLM判断、历史CVE匹配、二进制特征
 # 等异构信号加权聚合为单一可利用性评分。
 # AMMF 注意力增强多特征融合和Cascaded Vulnerability
 # Attacks HGAT节点-边联合建模。
@@ -13,8 +13,8 @@
 # cvss_normalized: CVSS评分归一化 (0-1)
 #   - sandbox_verification: 沙箱验证结果 (0/1 或 0-1置信度)
 #
-# —— 初版仅加权平均
-# —— 新增证据置信度衰减与模糊积分替代方法
+# - 初版仅加权平均
+# - 新增证据置信度衰减与模糊积分替代方法
 
 import math, logging
 from typing import Dict, List, Optional, Any, Tuple
@@ -26,7 +26,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class ModalEvidence:
-    """单模态证据——带置信度元数据的评分条目。"""
+    """单模态证据-带置信度元数据的评分条目。"""
     source: str                         # 来源标识: static/llm/cve/graph/exploit/dynamic
     score: float                       # 0-1归一化评分
     confidence: float                   # 该来源置信度 (0-1)
@@ -36,7 +36,7 @@ class ModalEvidence:
 
 @dataclass
 class FusionResult:
-    """多模态融合输出——含各维度分解与最终评分。"""
+    """多模态融合输出-含各维度分解与最终评分。"""
     final_score: float                  # 0-1 综合严重度
     severity_label: str                 # CRITICAL/HIGH/MEDIUM/LOW
     confidence: float                   # 融合置信度
@@ -48,9 +48,9 @@ class FusionResult:
 
 
 class MultiModalVulnFuser:
-    """多模态漏洞评分融合器——异构信号加权聚合为单一可利用性评分。"""
+    """多模态漏洞评分融合器-异构信号加权聚合为单一可利用性评分。"""
 
-    # 领域先验权重——静态分析最可靠(可解释)，LLM次之(语义理解但有幻觉)
+    # 领域先验权重-静态分析最可靠(可解释)，LLM次之(语义理解但有幻觉)
     _DEFAULT_WEIGHTS = {
         'static': 0.30,
         'cve':    0.25,
@@ -91,7 +91,7 @@ class MultiModalVulnFuser:
             return self._fuse_weighted_avg(evidences)
 
     def _fuse_weighted_avg(self, evidences: List[ModalEvidence]) -> FusionResult:
-        """加权平均融合——置信度衰减权重。
+        """加权平均融合-置信度衰减权重。
 
         公式: score = Σ(w_i * c_i * s_i) / Σ(w_i * c_i)
         其中w为先验权重，c为置信度，s为评分。
@@ -112,7 +112,7 @@ class MultiModalVulnFuser:
 
         final_score = weighted_sum / total_weight
 
-        # 检测证据冲突——同来源评分偏差>0.4视为冲突
+        # 检测证据冲突-同来源评分偏差>0.4视为冲突
         source_scores: Dict[str, List[float]] = {}
         for ev in evidences:
             source_scores.setdefault(ev.source, []).append(ev.score)
@@ -124,7 +124,7 @@ class MultiModalVulnFuser:
                         f"{src}证据不一致: 范围={rng:.2f} ({min(scores):.2f}-{max(scores):.2f})")
 
         severity = self._score_to_label(final_score)
-        # 融合置信度——证据来源越多元越可信
+        # 融合置信度-证据来源越多元越可信
         unique_sources = len({ev.source for ev in evidences})
         diversity_bonus = min(1.0, unique_sources / len(self._DEFAULT_WEIGHTS))
         avg_confidence = sum(ev.confidence for ev in evidences) / len(evidences)
@@ -141,7 +141,7 @@ class MultiModalVulnFuser:
             recommendation=self._gen_recommendation(final_score, severity))
 
     def _fuse_sugeno(self, evidences: List[ModalEvidence]) -> FusionResult:
-        """Sugeno模糊积分融合——适用于互补性强的多模态证据。
+        """Sugeno模糊积分融合-适用于互补性强的多模态证据。
 
         按评分升序排列，对每个证据h(x_i)计算min(h(x_i), g(A_i))，
         取最大值作为积分结果。g为模糊测度(简化为归一化权重累积和)。
@@ -199,7 +199,7 @@ class MultiModalVulnFuser:
                     "关注是否有公开Exploit可利用。")
         elif severity == "MEDIUM":
             return "评分中等，建议结合人工审计判断是否为可利用的漏洞路径。"
-        return "低风险——可能为误报或利用难度极高的理论漏洞。"
+        return "低风险-可能为误报或利用难度极高的理论漏洞。"
 
 
 # 便捷构造函数
@@ -226,7 +226,7 @@ def fuse_vulnerability_scores(
         dynamic_conf: float = 0.9,
         method: str = "weighted_average"
 ) -> FusionResult:
-    """一站式融合函数——传入各模态评分获取FusionResult。
+    """一站式融合函数-传入各模态评分获取FusionResult。
 
     参数:
         static_score: 静态分析分数 (0-1)
@@ -262,7 +262,7 @@ def fuse_vulnerability_scores(
 # Cascaded Vulnerability Attacks论文中HGAT聚合前的可信度校验步骤。
 
 def compute_evidence_discord(evidences: List[ModalEvidence]) -> float:
-    """计算证据间不一致度——评分方差规范化为[0,1]。
+    """计算证据间不一致度-评分方差规范化为[0,1]。
 
     0=完全一致，1=完全矛盾。
     """
@@ -272,5 +272,5 @@ def compute_evidence_discord(evidences: List[ModalEvidence]) -> float:
     mu = sum(scores) / len(scores)
     # MAD (Mean Absolute Deviation) 规范化
     mad = sum(abs(s - mu) for s in scores) / len(scores)
-    # 2.5倍缩放——满分0.4 MAD视为完全不一致
+    # 2.5倍缩放-满分0.4 MAD视为完全不一致
     return min(1.0, mad * 2.5)

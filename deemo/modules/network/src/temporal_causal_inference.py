@@ -214,18 +214,7 @@ def infer_state_machine_from_timing(
     significance_level: float = 0.01,
     n_permutations: int = 1000,
 ) -> ProtocolStateMachine:
-    """从报文时序序列推断协议状态机。
-
-    Args:
-        messages: 按时间排序的消息列表。
-        max_delay_steps: 最大因果延迟搜索范围。
-        te_threshold: 转移熵最小阈值，低于此值的边被丢弃。
-        significance_level: 置换检验显著性水平。
-        n_permutations: 每次检验的置换次数。
-
-    Returns:
-        推断出的ProtocolStateMachine实例。
-    """
+    """从报文时序序列推断协议状态机。"""
     if len(messages) < 50:
         return ProtocolStateMachine()
 

@@ -14,7 +14,6 @@ from _common import HERE as _HERE, list_samples, setup_paths
 setup_paths(with_format=False)
 from orchestrator import analyze_heap as analyze_heap_baseline
 from pcfv import analyze_heap_pcfv
-from orchestrator import analyze_heap as analyze_heap_baseline
 
 CORPUS = os.path.join(_HERE, 'corpus')
 

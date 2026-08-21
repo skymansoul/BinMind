@@ -1,17 +1,14 @@
-# 2026-08-01
-"""
-仿真 facade — Unicorn引擎 hybrid 符号执行 封装
+"""仿真门面 — Unicorn 引擎混合符号执行封装。
 
-Wraps engine/unicorn_hybrid.py. 提供 a clean Python API for:
-- Partial binary 仿真 (lift a function out a full binary)
-- Multi-arch 支持 (x86, x64, ARM, ARM64, MIPS)
-- 快照 检查点ing for state-space exploration
-- LRU-block-缓存for translated code
-- Speculative indirect-branch resolution
+封装 engine/unicorn_hybrid.py, 提供干净的 Python API:
+- 局部二进制仿真 (从完整二进制中提取函数)
+- 多架构支持 (x86, x64, ARM, ARM64, MIPS)
+- 快照/检查点以支持状态空间探索
+- 翻译代码的 LRU 块缓存
+- 推测式间接分支解析
 
-underlying engine/unicorn_hybrid.py a 合并 conflict residue:
-UC_ARCH_X86_64 = None repeated line ~65. facade fixes
-re-importing cleanly normalizing arch constants
+注: 底层 engine/unicorn_hybrid.py 曾存在 UC_ARCH_X86_64 =
+None 重复赋值问题, 本门面在重新导入时规范化架构常量。
 """
 
 from __future__ import annotations
@@ -28,8 +25,8 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 log = logging.getLogger(__name__)
 
-# Architecture constants — normalized engine/unicorn_hybrid.py
-# Fixes UC_ARCH_X86_64 = None repetition bug (合并 conflict residue)
+# 架构常量 — 规范化自 engine/unicorn_hybrid.py
+# 修复 UC_ARCH_X86_64 = None 重复赋值问题
 
 class Arch(str, Enum):
     X86 = "x86"
@@ -39,7 +36,7 @@ class Arch(str, Enum):
     MIPS = "mips"
 
 
-# replace duplicated None assignments old file
+# 替换旧文件中重复的 None 赋值
 _UC_ARCH_MAP: Dict[str, int] = {
     "x86": 3,
     "x64": 3,  # CS_ARCH_X86
@@ -57,7 +54,7 @@ _UC_MODE_MAP: Dict[str, int] = {
 }
 
 
-# Data types
+# 数据类型
 
 class EmulationState(str, Enum):
     IDLE = "idle"
@@ -116,26 +113,25 @@ class CodeBlock:
     branch_target: Optional[int] = None
 
 
-# UnicornHybrid — main 仿真 engine
+# UnicornHybrid — 主仿真引擎
 
 class UnicornHybrid:
-    """Unicorn引擎 hybrid 符号执行 engine
-    
-    Combines concrete 仿真 via Unicorn optional 符号执行
-    for 路径探索. 支持:
-    
-    - Multi-architecture 仿真 (x86, x64, ARM, ARM64, MIPS)
-    - Partial binary 仿真 (function-level)
-    - Memory-mapped /O handling
-    - 钩子-based 插桩 (code, memory, 系统调用 钩子s)
-    - 快照/恢复 for state-space backtracking
-    
-    Usage::
-    
+    """Unicorn 引擎混合符号执行引擎。
+
+    结合 Unicorn 的具体仿真与可选符号执行用于路径探索。支持:
+
+    - 多架构仿真 (x86, x64, ARM, ARM64, MIPS)
+    - 局部二进制仿真 (函数级)
+    - 内存映射 I/O 处理
+    - 基于钩子的插桩 (代码, 内存, 系统调用钩子)
+    - 快照/恢复以支持状态空间回溯
+
+    用法::
+
     emu = UnicornHybrid(Arch.X64)
     emu.map_memory(0x400000, 0x10000)
     emu.write_memory(0x400000, binary_bytes)
-    emu.write_寄存器("rip", 0x400000)
+    emu.write_register("rip", 0x400000)
     result = emu.emulate(timeout_seconds=30)
     print(f"Executed {result.instructions_executed} instructions")
     """
@@ -160,7 +156,7 @@ class UnicornHybrid:
         self._check_unicorn()
 
     def _check_unicorn(self) -> None:
-        """检查 Unicorn引擎 available"""
+        """检查 Unicorn 引擎是否可用。"""
         try:
             import unicorn  # type: ignore
             self.UC_AVAILABLE = True
@@ -171,34 +167,34 @@ class UnicornHybrid:
 # 内存管理
 
     def map_memory(self, address: int, size: int, permissions: str = "rwx") -> None:
-        """Map a memory region"""
+        """映射一段内存区域。"""
         log.debug("Mapping memory: %#x size=%d perm=%s", address, size, permissions)
         self._memory[address] = b"\x00" * size
 
     def write_memory(self, address: int, data: bytes) -> None:
-        """写入 raw bytes emulated memory"""
+        """向仿真内存写入原始字节。"""
         log.debug("Writing %d bytes to %#x", len(data), address)
         self._memory[address] = data
 
     def read_memory(self, address: int, size: int) -> bytes:
-        """读取 raw bytes emulated memory"""
+        """从仿真内存读取原始字节。"""
         data = self._memory.get(address, b"")
         if len(data) < size:
             return data + b"\x00" * (size - len(data))
         return data[:size]
 
     def write_register(self, reg_name: str, value: int) -> None:
-        """Set a 寄存器 value"""
+        """设置寄存器值。"""
         if hasattr(self._registers, reg_name):
             setattr(self._registers, reg_name, value)
         else:
             log.warning("Unknown register: %s", reg_name)
 
     def read_register(self, reg_name: str) -> int:
-        """a 寄存器 value"""
+        """读取寄存器值。"""
         return getattr(self._registers, reg_name, 0)
 
-# 仿真 control
+# 仿真控制
 
     def emulate(
         self,
@@ -207,10 +203,10 @@ class UnicornHybrid:
         max_instructions: Optional[int] = None,
         timeout_seconds: int = 30,
     ) -> EmulationResult:
-        """运行 仿真 start_address until end or timeout
-        
-        Unicorn available, 返回 a simulated result
-        placeholder 寄存器 values for testing
+        """从 start_address 起运行仿真, 直到 end 或超时。
+
+        Unicorn 不可用时返回仿真模式结果, 寄存器值为测试
+        占位值。
         """
         start_time = time.time()
 
@@ -239,14 +235,14 @@ class UnicornHybrid:
     def _emulate_with_unicorn(
         self, end_address: Optional[int], max_insns: int, timeout: int
     ) -> EmulationResult:
-        """Real 仿真 using Unicorn引擎"""
+        """使用 Unicorn 引擎执行真实仿真。"""
         try:
             import unicorn
             import unicorn.x86_const
 
             mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
 
-            # Map segments self._memory
+            # 映射内存段到 Unicorn
             code_end = 0
             for addr, data in self._memory.items():
                 size = max(len(data), 0x1000)
@@ -256,11 +252,11 @@ class UnicornHybrid:
                 # 该边界即可终止，避免落入映射区的零填充区域。
                 code_end = max(code_end, addr + len(data))
 
-            # Set up 栈
+            # 设置栈
             mu.mem_map(self._DEFAULT_STACK_ADDR, self._DEFAULT_STACK_SIZE)
             self._registers.esp = self._DEFAULT_STACK_ADDR + self._DEFAULT_STACK_SIZE - 0x1000
 
-            # 写入 寄存器s
+            # 写入寄存器
             reg_writers = {
                 "eip": unicorn.x86_const.UC_X86_REG_RIP,
                 "esp": unicorn.x86_const.UC_X86_REG_RSP,
@@ -276,7 +272,7 @@ class UnicornHybrid:
                 val = getattr(self._registers, reg_name, 0)
                 mu.reg_write(uc_reg, val)
 
-            # 启动 仿真
+            # 启动仿真
             # end 取映射代码段的实际写入末尾：NOP 类线性执行到达边界时
             # 由 Unicorn 正常返回，避免对零填充区/未映射地址的读取被判为崩溃。
             run_end = end_address or (code_end if code_end > self._registers.eip else self._registers.eip + 0x10000)
@@ -287,7 +283,7 @@ class UnicornHybrid:
                 count=max_insns,
             )
 
-            # 读取 back 寄存器s
+            # 读回寄存器
             reg_readers = reg_writers
             for reg_name, uc_reg in reg_readers.items():
                 try:
@@ -317,7 +313,7 @@ class UnicornHybrid:
             return self._emulate_simulated(max_insns)
 
     def _emulate_simulated(self, max_insns: int) -> EmulationResult:
-        """Simulated 仿真 Unicorn available"""
+        """Unicorn 不可用时的仿真模式。"""
         self._registers.eip += 4 * max_insns
         self._registers.eax = max_insns
         self._state = EmulationState.TERMINATED
@@ -329,34 +325,34 @@ class UnicornHybrid:
             instructions_executed=max_insns,
         )
 
-# 钩子s
+# 钩子
 
     def add_code_hook(
         self, callback: Callable[[int, int, bytes], None], begin: int = 0, end: int = 0
     ) -> None:
-        """寄存器 a code-execution 钩子"""
+        """注册代码执行钩子。"""
         self._hooks.append({"type": "code", "callback": callback, "begin": begin, "end": end})
 
     def add_mem_hook(
         self, hook_type: str, callback: Callable[[int, int, int, int], None]
     ) -> None:
-        """寄存器 a memory-access 钩子 (读取/写入)"""
+        """注册内存访问钩子 (读取/写入)。"""
         self._hooks.append({"type": hook_type, "callback": callback})
 
     def set_breakpoint(self, address: int) -> None:
-        """Set a breakpoint address"""
+        """设置断点地址。"""
         self._breakpoints.add(address)
 
     def clear_breakpoint(self, address: int) -> None:
-        """Remove a breakpoint"""
+        """移除断点。"""
         self._breakpoints.discard(address)
 
-# Code lifting
+# 代码提升
 
     def lift_code_block(
         self, address: int, max_bytes: int = 64
     ) -> Optional[CodeBlock]:
-        """Lift a code block emulated memory using Capstone"""
+        """使用 Capstone 从仿真内存中提升代码块。"""
         data = self.read_memory(address, max_bytes)
         if not data or data == b"\x00" * len(data):
             return None
@@ -379,14 +375,14 @@ class UnicornHybrid:
             log.debug("Capstone not available for code lifting")
         return CodeBlock(address=address, raw_bytes=data[:max_bytes], size=max_bytes)
 
-# State management
+# 状态管理
 
     def get_state(self) -> EmulationState:
-        """current 仿真 state"""
+        """返回当前仿真状态。"""
         return self._state
 
     def reset(self) -> None:
-        """重置 仿真 initial state"""
+        """重置仿真到初始状态。"""
         self._state = EmulationState.IDLE
         self._registers = RegisterSet()
         self._memory.clear()

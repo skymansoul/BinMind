@@ -3,7 +3,7 @@
 # Design: generator replaces explicit 状态机
 #
 # 2025 增强: ASLR 熵估计 + 地址空间布局熵量化
-# ASLR 的有效性取决于随机化位的"信息熵"——若某段仅随机化了 8 位
+# ASLR 的有效性取决于随机化位的"信息熵" - 若某段仅随机化了 8 位
 #（256 种可能），则暴力枚举在秒级可行。本模块增加每段的熵位计数
 # 和整体熵评分（以 bit 为单位）
 import logging, os, json, random, hashlib, math as _math
@@ -47,7 +47,7 @@ class AddressSpaceSnapshot:
     allocations: list = field(default_factory=list)
     dependencies: list = field(default_factory=list)
     aslr_seed: int = 0
-    entropy_bits: float = 0.0  # 总熵位——越高越难暴力破解
+    entropy_bits: float = 0.0  # 总熵位, 越高越难暴力破解
 
 
 class ASLRRandomizer:
@@ -85,7 +85,7 @@ class ASLRRandomizer:
 
     @classmethod
     def entropy_bits_of_range(cls, range_bytes: int, page_size: int = 4096) -> float:
-        """计算给定随机化范围的熵位——若范围=0则为0（固定地址）"""
+        """计算给定随机化范围的熵位 - 若范围=0则为0（固定地址）"""
         if range_bytes <= 0: return 0.0
         n_positions = range_bytes // page_size
         if n_positions <= 1: return 0.0
@@ -93,7 +93,7 @@ class ASLRRandomizer:
 
     @classmethod
     def overall_entropy(cls, segments: List[MemorySegment]) -> float:
-        """计算整个地址空间的复合熵——取各段熵位的几何平均"""
+        """计算整个地址空间的复合熵 - 取各段熵位的几何平均"""
         total = 0.0; count = 0
         for seg in segments:
             if seg.is_randomized:

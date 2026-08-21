@@ -1,18 +1,17 @@
 # coding: utf-8
-# 创建: 2026-04-30  |  三检测器统一调度——堆溢出/UAF/格式化字符串联合分析
 #
 """
-统一检测管线——串联堆生命周期分析→三检测器→约束过滤→聚合输出。
+统一检测管线: 串联堆生命周期分析, 三检测器, 约束过滤, 聚合输出。
 
 管线流程:
-  1. HeapLifecycleAnalyzer → 提取alloc_size_map + 时序UAF候选
-  2. detect_heap_overflow(alloc_size_map) → 堆溢出候选
-  3. detect_uaf(temporal_filter=时序UAF) → UAF候选
-  4. SimplifiedTaintTracker → 污点分析 → 格式化字符串候选
-  5. ConstraintFilter → 滤除不可行路径
+  1. HeapLifecycleAnalyzer, 提取alloc_size_map + 时序UAF候选
+  2. detect_heap_overflow(alloc_size_map), 堆溢出候选
+  3. detect_uaf(temporal_filter=时序UAF), UAF候选
+  4. SimplifiedTaintTracker, 污点分析, 格式化字符串候选
+  5. ConstraintFilter, 滤除不可行路径
   6. 聚合为统一VulnReport
 
-输出: VulnReport — 按置信度降序, 含漏洞类型/位置/证据/置信度。
+输出: VulnReport, 按置信度降序, 含漏洞类型/位置/证据/置信度。
 """
 
 import logging
@@ -24,7 +23,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class VulnCandidate:
-    """统一漏洞候选——三检测器的公共输出格式。"""
+    """统一漏洞候选: 三检测器的公共输出格式。"""
     vuln_type: str            # heap_overflow / uaf / format_string
     function_name: str = ""
     address: int = 0
@@ -35,7 +34,7 @@ class VulnCandidate:
 
 @dataclass
 class VulnReport:
-    """统一漏洞报告——聚合三检测器输出。"""
+    """统一漏洞报告: 聚合三检测器输出。"""
     binary_name: str = ""
     total_functions: int = 0
     candidates: List[VulnCandidate] = field(default_factory=list)
@@ -49,7 +48,7 @@ class VulnReport:
 
 
 class VulnDetectionPipeline:
-    """统一检测管线——编排三个核心检测器+生命周期+约束过滤。"""
+    """统一检测管线: 编排三个核心检测器+生命周期+约束过滤。"""
 
     def run(self, function_instructions: Dict[str, List[str]],
              binary_name: str = "",
@@ -211,7 +210,7 @@ class VulnDetectionPipeline:
 def run_full_detection(functions: Dict[str, List[str]],
                         binary_name: str = ""
                         ) -> VulnReport:
-    """便捷入口——一键运行全部检测器。"""
+    """便捷入口: 一键运行全部检测器。"""
     return VulnDetectionPipeline().run(functions, binary_name)
 
 

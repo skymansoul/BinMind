@@ -44,9 +44,9 @@ class MappingResult:
         self.nsyms = int(self.nsyms) if self.nsyms is not None else 0
 
 class AddressMapper:
-    """Symbol--address mapper
-    
-    调用 r2 isj 提取 符号表, 构建 a name--VA dictionary
+    """Symbol-address mapper
+
+    调用 r2 isj 提取 符号表,     构建 a name-VA dictionary
     检测 ASLR offset (runtime base vs. static base)
     """
 
@@ -55,7 +55,7 @@ class AddressMapper:
             raise ValueError("binpath cannot be None")
         self.__path = os.path.abspath(binpath)
         self.__base = int(base) if base else 0x400000
-        self.__entries = []  # AddressEntry container — lazily populated first 加载
+        self.__entries = []  # AddressEntry container, lazily populated first 加载
         self.__name_idx: dict = {}  # name→entry reverse lookup，O(1)符号查询
 
 # Public API
@@ -87,7 +87,7 @@ class AddressMapper:
         return int(runtime_base) - self.__base
 
     def find_symbols_by_prefix_(self, prefix: str) -> list:
-        """前缀匹配符号查询——用于批量解析同模块导出的函数族（如 glibc 的 __libc_*）
+        """前缀匹配符号查询 - 用于批量解析同模块导出的函数族（如 glibc 的 __libc_*）
         遍历 O(n)，未建前缀树因实际符号数 <10^5，线性扫描足够快
         """
         if not self.__entries:
@@ -167,5 +167,5 @@ class AddressMapper:
         )
 
 def create_address_mapper_(binpath: str) -> AddressMapper:
-    """AddressMapper construction entry -- 工厂 function"""
+    """AddressMapper construction entry, 工厂 function"""
     return AddressMapper(binpath)

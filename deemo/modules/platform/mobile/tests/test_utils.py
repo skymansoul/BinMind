@@ -1,4 +1,4 @@
-"""移动端——工具函数测试"""
+"""移动端: 工具函数测试"""
 import pytest
 import os
 import sys

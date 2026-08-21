@@ -1,30 +1,8 @@
-# Utility helpers — debug printing, hex formatting, bytecode validation
-# 不拆: 全模块共用，拆了 import 全得改
+# Utility helpers — hex formatting, bytecode validation
 
 import os
 import hashlib
 from typing import List, Optional, Dict, Any
-
-
-# Global debug flag — 环境变量或程序化设置
-_DEBUG = os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes")
-
-
-def _debug_print(*args, **kwargs):
-    """条件 debug 输出 — BINMIND_DEBUG 时打印。"""
-    if _DEBUG:
-        print("[DEBUG]", *args, **kwargs)
-
-
-def set_debug(enabled: bool = True):
-    """全局 debug 开关。"""
-    global _DEBUG
-    _DEBUG = enabled
-
-
-def is_debug() -> bool:
-    """Debug 是否激活。"""
-    return _DEBUG
 
 
 def hexdump(data: bytes, offset: int = 0, length: int = 0) -> str:
@@ -80,11 +58,3 @@ def normalize_hex(hex_str: str) -> str:
     if s.startswith('0x') or s.startswith('0X'):
         s = s[2:]
     return s.lower()
-
-# 不拆: 留着，以后可能做 bytecode diff
-def _dead_diff_bytecode(a: bytes, b: bytes) -> int:
-    """比较两段字节码相同的前缀长度 — 当前未使用。"""
-    i = 0
-    while i < len(a) and i < len(b) and a[i] == b[i]:
-        i += 1
-    return i

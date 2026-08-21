@@ -1,10 +1,9 @@
-# 创建: 2023-07-22 10:12
-# 修改: 2023-08-28 — 多污点 + 控制流标记 -> Spectre v1/v2/v4 检测
-# 修改: 2023-10-04 — 移除装饰性引用, 替换为 Schwartz et al.
+# 多污点 + 控制流标记 -> Spectre v1/v2/v4 检测
+# 移除装饰性引用, 替换为 Schwartz et al.
 """
-二进制级推测执行小工具检测器 — Spectre 类漏洞的静态发现。
+二进制级推测执行小工具检测器 - Spectre 类漏洞的静态发现。
 
-现有常量时间验证 (const_time_pipeline.py) 检测秘密依赖的分支/访存——
+现有常量时间验证 (const_time_pipeline.py) 检测秘密依赖的分支/访存-
 假设 CPU 按程序顺序执行。推测执行打破此假设:
   - 即使分支条件依赖秘密, CPU 可能推测执行错误路径
   - 推测执行期间的访存会改变缓存状态 → 可被侧信道观测
@@ -20,13 +19,13 @@
   - 不确定性跟踪: 区分 confirmed gadget (必然可利用) vs potential (条件触发)
   - 缓存效应建模: 仅标记会改变缓存状态 (非寄存器) 的推测访存
 
-ref: SCOUT-CT — multi-taint + uncertainty tracking for
+ref: SCOUT-CT - multi-taint + uncertainty tracking for
      binary-level CT analysis, 本项目将其 uncertainty tracking 扩展到推测执行场景
-ref: ExfilState — timer-free cache side channel discovery
-ref: Spectre — Spectre v1/v2/v4 的原始论文,
+ref: ExfilState - timer-free cache side channel discovery
+ref: Spectre - Spectre v1/v2/v4 的原始论文,
      本模块的 gadget 分类 (bounds-check-bypass/branch-target-injection/store-bypass)
      直接对应其三类 Spectre 变体
-ref: 多污点追踪 — 二进制级污点分析基础,
+ref: 多污点追踪 - 二进制级污点分析基础,
      本项目将其适配到推测执行场景 (控制流标记+条件分支标记)
 """
 
@@ -45,14 +44,14 @@ class GadgetType(Enum):
 
 
 class Certainty(Enum):
-    CONFIRMED = 'confirmed'      # 必然可利用——无需手动审查
-    POTENTIAL = 'potential'     # 条件触发——需要动态验证确认
+    CONFIRMED = 'confirmed'      # 必然可利用-无需手动审查
+    POTENTIAL = 'potential'     # 条件触发-需要动态验证确认
     FALSE_ALARM = 'false_alarm'  # 过近似导致的假阳性
 
 
 @dataclass
 class TaintSource:
-    """秘密输入源——攻击者可控或安全敏感的数据。"""
+    """秘密输入源-攻击者可控或安全敏感的数据。"""
     pc: int
     source_type: str = ''      # 'user_input' | 'secrets' | 'key_material'
     confidence: float = 0.0    # [0,1] 秘密源置信度
@@ -76,7 +75,7 @@ class SpecGadget:
 # 多污点追踪
 
 class SpeculationTaintTracker:
-    """多污点追踪——同时追踪秘密标记和控制流标记。
+    """多污点追踪-同时追踪秘密标记和控制流标记。
 
     控制流标记 (control taint): 标记受秘密影响的条件分支。
     当控制流标记的分支被推测执行时, 其后的访存即为潜在小工具。"""
@@ -92,7 +91,7 @@ class SpeculationTaintTracker:
         self._ins_count = 0
 
     def mark_secret_source(self, pc: int, reg_id: int) -> None:
-        """标记秘密源——例如从用户输入读取的寄存器。"""
+        """标记秘密源-例如从用户输入读取的寄存器。"""
         self._secret_taint.add(reg_id)
 
     def track_instruction(self, pc: int, mnemonic: str,
@@ -157,7 +156,7 @@ class SpeculationTaintTracker:
             self._secret_taint.add(dst_reg)
 
     def _find_nearest_source(self, pc: int) -> int:
-        """找到指定 PC 之前的最近秘密源——用于生成可读的 gadget 描述。"""
+        """找到指定 PC 之前的最近秘密源-用于生成可读的 gadget 描述。"""
         return 0  # 简化: 调用方从外部标记
 
     def gadgets(self) -> list[SpecGadget]:
@@ -180,7 +179,7 @@ class SpeculationTaintTracker:
 
 
 # 小工具验证器
-# 对检测到的 potential gadget 进行约束求解验证——确认推测执行是否真的
+# 对检测到的 potential gadget 进行约束求解验证-确认推测执行是否真的
 # 会导致可观测的缓存状态变化。
 
 class GadgetValidator:

@@ -156,10 +156,10 @@ class FpCalibrator:
                   samples: List[str],
                   param_grid: Optional[List[CalibrationConfig]] = None,
                   ) -> Tuple[CalibrationConfig, MetricsPoint]:
-        """网格搜索最优参数.
+        """网格搜索最优参数。
 
-        param_grid: 参数组合列表. 若为 None, 使用默认搜索空间.
-        返回: (最优配置, 最优指标)
+        param_grid 为参数组合列表 (None 时使用默认搜索空间);
+        返回 (最优配置, 最优指标)。
         """
         if param_grid is None:
             param_grid = self._default_grid()

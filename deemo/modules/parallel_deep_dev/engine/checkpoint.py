@@ -2,7 +2,7 @@
 import os
 import json
 from datetime import datetime
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 CHECKPOINT_FILE = os.path.join(CONFIG.ROOT_DIR, ".parallel_deep_checkpoint.json")
 

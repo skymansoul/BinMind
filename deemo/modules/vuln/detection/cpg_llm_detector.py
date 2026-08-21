@@ -1,10 +1,9 @@
-# CPG-LLM-Vuln —— CPG 引导的 LLM 漏洞检测器 + 反事实增强鲁棒性评估。
+# CPG-LLM-Vuln - CPG 引导的 LLM 漏洞检测器 + 反事实增强鲁棒性评估。
 #
 # 创新点相对现有 LLMVulnerabilityDetector(纯文本输入):
 #   1. CPG 结构上下文: 将伪代码构建为代码属性图, 序列化关键数据流/控制流路径
-#      拼接进 LLM prompt —— 提升跨函数数据流理解。
+#      拼接进 LLM prompt - 提升跨函数数据流理解。
 #   2. 多特征融合注意力: 文本嵌入 + CPG 结构特征经 softmax 注意力加权融合打分
-#。
 #   3. 反事实增强鲁棒性: 对样本做最小扰动(边界偏移/重命名/去注释等)评估检测器
 #      一致性, 无 LLM 时退化为启发式变换 (VISION, [待验证];
 #      NatGVD, [待验证])。
@@ -27,7 +26,7 @@ def _import_cpg_builder():
             CodePropertyGraph, DEFAULT_SINKS, build_cpg)
         return CodePropertyGraph, DEFAULT_SINKS, build_cpg
     except ImportError:
-        from vuln_detection.cpg_builder import (
+        from deemo.modules.vuln.detection.cpg_builder import (
             CodePropertyGraph, DEFAULT_SINKS, build_cpg)
         return CodePropertyGraph, DEFAULT_SINKS, build_cpg
 
@@ -37,7 +36,7 @@ def _import_path_serializer():
         from modules.vuln.detection.cpg_path_serializer import build_cpg_context
         return build_cpg_context
     except ImportError:
-        from vuln_detection.cpg_path_serializer import build_cpg_context
+        from deemo.modules.vuln.detection.cpg_path_serializer import build_cpg_context
         return build_cpg_context
 
 
@@ -47,7 +46,7 @@ def _import_augmenter():
             CounterfactualAugmenter, RobustnessReport)
         return CounterfactualAugmenter, RobustnessReport
     except ImportError:
-        from vuln_detection.counterfactual_augmenter import (
+        from deemo.modules.vuln.detection.counterfactual_augmenter import (
             CounterfactualAugmenter, RobustnessReport)
         return CounterfactualAugmenter, RobustnessReport
 
@@ -61,7 +60,7 @@ def _import_fusion():
                 extract_structure_features, extract_text_features,
                 structural_risk_score, text_risk_score)
     except ImportError:
-        from vuln_detection.multi_feature_fusion import (
+        from deemo.modules.vuln.detection.multi_feature_fusion import (
             FeatureAttentionFuser, FusionResult, extract_structure_features,
             extract_text_features, structural_risk_score, text_risk_score)
         return (FeatureAttentionFuser, FusionResult,
@@ -70,7 +69,7 @@ def _import_fusion():
 
 
 def _import_llm_detector():
-    """加载既有 LLM 检测器 —— 双路径兼容 import。
+    """加载既有 LLM 检测器 - 双路径兼容 import。
 
     框架内 `vuln_detection.*` 别名与独立运行时的 `modules.vuln.detection.*`
     均可能生效; 两者都失败时返回 None, 由调用方走纯统计降级路径。
@@ -81,7 +80,7 @@ def _import_llm_detector():
         return LLMVulnerabilityDetector, LLMVulnReport
     except ImportError:
         try:
-            from vuln_detection.llm_vuln_detector import (
+            from deemo.modules.vuln.detection.llm_vuln_detector import (
                 LLMVulnerabilityDetector, LLMVulnReport)
             return LLMVulnerabilityDetector, LLMVulnReport
         except ImportError:
@@ -125,10 +124,10 @@ class CPGLLMVulnDetector:
 
     核心流程:
         1. CPG 构建: build_cpg(pseudocode)
-        2. 路径序列化: build_cpg_context -> 结构上下文
+        2. 路径序列化: build_cpg_context, 结构上下文
         3. LLM 检测: 既有 LLMVulnerabilityDetector, prompt 拼接结构上下文
-        4. 融合打分: 文本风险分 + 结构风险分 -> softmax 注意力加权
-        5. 鲁棒性评估: 反事实扰动 -> 一致性/最坏偏移
+        4. 融合打分: 文本风险分 + 结构风险分, softmax 注意力加权
+        5. 鲁棒性评估: 反事实扰动, 一致性/最坏偏移
 
     参考:
         - LLMxCPG: CPG 路径序列化增强 LLM 上下文
@@ -157,7 +156,7 @@ class CPGLLMVulnDetector:
                 if model_name:
                     self.llm_detector.backend.model_name = model_name
             except Exception as e:
-                # 既有 LLM 检测器在无 API key 时可能抛错 —— 视为不可用
+                # 既有 LLM 检测器在无 API key 时可能抛错 - 视为不可用
                 logger.debug(f"LLM 检测器初始化失败, 降级为纯统计路径: {e}")
                 self.llm_detector = None
 
@@ -188,7 +187,7 @@ class CPGLLMVulnDetector:
 
     def fast_score(self, pseudocode: str,
                    function_names: Optional[Sequence[str]] = None) -> Tuple[float, Dict]:
-        """快速结构+文本融合打分 —— 不调用 LLM。
+        """快速结构+文本融合打分 - 不调用 LLM。
 
         用于鲁棒性评估的 scorer 与无 LLM 时的降级路径。
         返回 (fused_score, detail_dict)。
@@ -312,7 +311,7 @@ class CPGLLMVulnDetector:
     def _inject_cpg_context(self, pseudocode: str, path_context: str) -> str:
         """将 CPG 序列化路径拼接进 LLM prompt 的伪代码段。
 
-        保留原始源码, 附加结构线索注释块 —— LLM 可同时利用
+        保留原始源码, 附加结构线索注释块 - LLM 可同时利用
         表面文本与结构路径, 对应 LLMxCPG 的上下文增强方式。
         """
         if not path_context or len(path_context) < 20:
@@ -340,7 +339,7 @@ class CPGLLMVulnDetector:
         return lambda code: self.fast_score(code, function_names)[0]
 
     def batch_detect(self, functions: List[Dict]) -> List[CPGVulnReport]:
-        """批量检测 —— 顺序执行(结构构建为轻量操作, 无需线程池)。"""
+        """批量检测 - 顺序执行(结构构建为轻量操作, 无需线程池)。"""
         results = []
         for func in functions:
             try:
@@ -361,7 +360,7 @@ def detect_with_cpg(pseudocode: str, function_name: str = "",
                     danger_funcs: List[str] = None,
                     arch: str = "x86_64",
                     use_robustness: bool = True) -> CPGVulnReport:
-    """便捷函数 —— 单次 CPG 引导漏洞检测。"""
+    """便捷函数 - 单次 CPG 引导漏洞检测。"""
     detector = CPGLLMVulnDetector(use_robustness=use_robustness)
     return detector.detect(function_name=function_name,
                            pseudocode=pseudocode, arch=arch,
@@ -371,7 +370,7 @@ def detect_with_cpg(pseudocode: str, function_name: str = "",
 def analyze_cpg_robustness(pseudocode: str,
                            function_names: Optional[Sequence[str]] = None
                            ) -> Any:
-    """便捷函数 —— 仅做结构+文本融合与反事实鲁棒性评估(不调用 LLM)。"""
+    """便捷函数 - 仅做结构+文本融合与反事实鲁棒性评估(不调用 LLM)。"""
     detector = CPGLLMVulnDetector()
     cpg = detector.build_cpg(pseudocode)
     score, _detail = detector.fast_score(pseudocode, function_names)

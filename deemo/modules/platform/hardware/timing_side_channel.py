@@ -1,4 +1,4 @@
-"""时序侧信道检测器——常数时间违规识别。"""
+"""时序侧信道检测器,常数时间违规识别。"""
 
 import dis
 import logging
@@ -88,7 +88,7 @@ def _cohens_d(a: List[float], b: List[float]) -> float:
 
 
 def _autocorr_lag1(samples: List[float]) -> float:
-    """一阶自相关系数。检测时序中的周期模式——隐蔽定时间隔信道。"""
+    """一阶自相关系数。检测时序中的周期模式,隐蔽定时间隔信道。"""
     n = len(samples)
     if n < 4:
         return 0.0

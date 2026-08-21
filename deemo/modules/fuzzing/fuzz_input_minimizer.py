@@ -35,6 +35,7 @@ class MinimizeResult:
     elapsed: float
     strategy: str
     removed_bytes: int = 0
+    minimized_data: bytes = b""
     # 各阶段尺寸变化记录，用于绘制收缩曲线
     size_history: List[Tuple[int, int]] = field(default_factory=list)
 
@@ -77,7 +78,7 @@ class InputMinimizer:
                 original_size=orig_size, minimized_size=orig_size,
                 original_coverage=set(), final_coverage=set(),
                 iterations=0, elapsed=time.time() - t0,
-                strategy=strategy.value,
+                strategy=strategy.value, minimized_data=seed,
             )
 
         size_hist: List[Tuple[int, int]] = []
@@ -105,6 +106,7 @@ class InputMinimizer:
             elapsed=elapsed,
             strategy=strategy.value,
             removed_bytes=orig_size - len(result_data),
+            minimized_data=result_data,
             size_history=size_hist,
         )
 
@@ -309,8 +311,7 @@ def minimize_corpus(
 
         out_path = os.path.join(output_dir, fname)
         with open(out_path, 'wb') as f:
-            f.write(b'')  # 占位写入
-            # 注: 此处简化，实际流程应写入 result 数据
+            f.write(result.minimized_data)
 
     return {
         "seeds_processed": total_seeds,

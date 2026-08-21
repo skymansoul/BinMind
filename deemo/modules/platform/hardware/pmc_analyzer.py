@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Optional
 # 再利用这些参数估算标准 PMC 事件的期望值。
 #
 #
-#   - GoFetch 的 DMP 检测方法——指针追逐识别预取器行为
+#   - GoFetch 的 DMP 检测方法, 指针追逐识别预取器行为
 # gem5 缓存模拟中的步长-延迟曲线拟合思路
 
 

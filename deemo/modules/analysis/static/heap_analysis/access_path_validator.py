@@ -1,4 +1,4 @@
-"""访问路径验证器 — 综合溯源信息与对象模型判定堆访问安全性.
+"""访问路径验证器 - 综合溯源信息与对象模型判定堆访问安全性.
 
 核心逻辑:
   给定一次堆内存访问 *(ptr + offset),
@@ -30,9 +30,9 @@ from .heap_object_model import HeapObjectModel, HeapObjectLayout
 
 
 class AccessVerdict(Enum):
-    SAFE = "safe"             # 可证明合法 — 过滤
-    UNSAFE = "unsafe"         # 可证明越界 — 保留
-    UNCERTAIN = "uncertain"   # 无法证明 — 保守保留
+    SAFE = "safe"             # 可证明合法 - 过滤
+    UNSAFE = "unsafe"         # 可证明越界 - 保留
+    UNCERTAIN = "uncertain"   # 无法证明 - 保守保留
 
 
 @dataclass
@@ -54,7 +54,7 @@ class AccessValidationResult:
 
 
 class AccessPathValidator:
-    """综合验证器 — 判定堆访问是否为合法操作.
+    """综合验证器 - 判定堆访问是否为合法操作.
 
     使用方式:
       validator = AccessPathValidator(prov_tracker, object_model)
@@ -124,7 +124,7 @@ class AccessPathValidator:
 
         # 默认: 无法证明安全 → 保守保留
         result.verdict = AccessVerdict.UNCERTAIN
-        result.reason = "cannot prove safety — conservatively retained"
+        result.reason = "cannot prove safety - conservatively retained"
         return result
 
     @staticmethod

@@ -5,7 +5,7 @@
      I-GUARD、GAPSBV、MIVR、贝叶斯融合、桥接模块等。
 """
 
-# 2023-11-02 深度分析模块
+# 深度分析模块
 # CFG构建 (从heap_path_analyzer提取)
 from analysis.heap_cfg_builder import (
     HeapCFGBuilder, build_heap_cfg,
@@ -161,7 +161,7 @@ from analysis.gapsbv_pipeline import (
     GapsbvVerdict, DimensionResult, GapsbvReport,
     detect_heap_overflow_gapsbv, detect_heap_gapsbv_quick,
 )
-# GAPSBV 四维度分析函数 ()
+# GAPSBV 四维度分析函数
 from analysis.gapsbv_dimensions import (
     _resolve_macros,
     dim1_affine_relations, dim2_guard_analysis,

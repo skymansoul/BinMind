@@ -1,7 +1,5 @@
-# 创建: 2026-08-02 10:15
-# 修改: 2026-08-02 22:20 — 审计修复: random_check改用标准random.random()
 """
-管道执行异常检测 (PEAD) —— 在线 CUSUM + 自适应阈值的钩子级异常告警.
+管道执行异常检测 (PEAD) - 在线 CUSUM + 自适应阈值的钩子级异常告警.
 
 CUSUM (Cumulative Sum) 检测序列均值偏移, 对渐变劣化比静态阈值敏感.
 针对二进制分析管道的特性:
@@ -34,11 +32,11 @@ class AnomalyEvent:
     cusum_value: float    # 触发时的 CUSUM 累积值
     current_mean: float   # 当前估计均值
     baseline_mean: float  # 基线均值
-    severity: float       # 0–1, 基于偏差幅度
+    severity: float       # 0-1, 基于偏差幅度
 
 
 class OnlineQuantile:
-    """在线分位数估计 — 基于 Frugal-2U 流式算法.
+    """在线分位数估计 - 基于 Frugal-2U 流式算法.
     每步 O(1) 时间, O(1) 空间, 无需存储历史数据.
     精度在偏态分布上劣于 t-digest, 但速度优势对实时检测更具价值.
     """
@@ -66,7 +64,7 @@ class OnlineQuantile:
 
 
 def random_check(prob: float) -> bool:
-    """Frugal-2U 随机判定 — 使用标准随机源保证均匀性."""
+    """Frugal-2U 随机判定 - 使用标准随机源保证均匀性."""
     import random
     return random.random() < prob
 
@@ -75,9 +73,9 @@ class CUSUMDetector:
     """单指标 CUSUM 检测器.
 
     参数:
-      k: 允许漂移 (allowable slack) — 小于此值的偏移不累积, 防噪声触发.
-      h: 判决阈值 — CUSUM 累积值超过此值时告警.
-      drift: 指数衰减系数 — 使基线缓慢跟踪概念漂移.
+      k: 允许漂移 (allowable slack) - 小于此值的偏移不累积, 防噪声触发.
+      h: 判决阈值 - CUSUM 累积值超过此值时告警.
+      drift: 指数衰减系数 - 使基线缓慢跟踪概念漂移.
 
     CUSUM 递推:
       S⁺_t = max(0, S⁺_{t-1} + (x_t - μ₀) - k)
@@ -103,11 +101,11 @@ class CUSUMDetector:
             self._current_ewma = value
             return False, 0.0
 
-        # 基线缓慢跟踪 — 低通滤波
+        # 基线缓慢跟踪 - 低通滤波
         self._baseline += self.drift * (value - self._baseline)
         self._current_ewma = 0.3 * value + 0.7 * self._current_ewma
 
-        # CUSUM 递推 — 仅检测正向偏移 (性能劣化)
+        # CUSUM 递推 - 仅检测正向偏移 (性能劣化)
         deviation = value - self._baseline - self.k
         self._cusum = max(0.0, self._cusum + deviation)
 
@@ -148,7 +146,7 @@ class HookAnomalyDetector:
         self.failure = CUSUMDetector(k=failure_k, h=failure_h)
         self._last_latency: float = 0.0
         self._last_success: bool = True
-        self._latency_q90 = OnlineQuantile(0.90)  # P90 延迟 — 用于 severity
+        self._latency_q90 = OnlineQuantile(0.90)  # P90 延迟 - 用于 severity
 
     def observe(self, latency_ms: float, success: bool):
         self._last_latency = latency_ms
@@ -172,7 +170,7 @@ class HookAnomalyDetector:
                 severity=round(severity, 3),
             ))
 
-        # 失败率通道 — 输入为 binary (0=成功, 1=失败)
+        # 失败率通道 - 输入为 binary (0=成功, 1=失败)
         fail_val = 0.0 if self._last_success else 1.0
         triggered, cval = self.failure.update(fail_val)
         if triggered:
@@ -188,7 +186,7 @@ class HookAnomalyDetector:
 
 
 class PipelineAnomalyMonitor:
-    """全管道异常监控器 — 管理多个钩子的检测器并支持跨钩子关联.
+    """全管道异常监控器 - 管理多个钩子的检测器并支持跨钩子关联.
 
     用法:
       monitor = PipelineAnomalyMonitor()
@@ -202,7 +200,7 @@ class PipelineAnomalyMonitor:
     def __init__(self, cross_hook_threshold: int = 3):
         self._detectors: Dict[str, HookAnomalyDetector] = {}
         self._cross_threshold = cross_hook_threshold
-        # 全局事件历史 — 用于跨钩子关联
+        # 全局事件历史 - 用于跨钩子关联
         self._event_log: deque = deque(maxlen=200)
         self._total_observations = 0
 

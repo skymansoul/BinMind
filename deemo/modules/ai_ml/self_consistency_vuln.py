@@ -1,11 +1,9 @@
-# created: 2026-08-09
-# modified: 2026-08-28 — added calibrate_path_weights() for data-driven path reliability estimation
-# 自洽性漏洞验证——多推理路径交叉验证漏洞发现的一致性
+# 自洽性漏洞验证-多推理路径交叉验证漏洞发现的一致性
 #
 # 核心问题: 单模型漏洞检测存在误报。2025年ARES用自回归推理验证做错误检测，
-# VERiCOT用形式逻辑验证CoT——但都针对自然语言，非二进制漏洞检测。
+# VERiCOT用形式逻辑验证CoT-但都针对自然语言，非二进制漏洞检测。
 #
-# 技术方案（多路径自洽性——self-consistency在漏洞检测领域的应用）:
+# 技术方案（多路径自洽性-self-consistency在漏洞检测领域的应用）:
 #   1. 三条独立推理路径: CFG结构分析 / 数据流追踪 / 符号执行验证
 #   2. 一致性交叉验证: 全部一致→高置信度，多数一致→中等，完全分歧→不确定
 #   3. 路径可靠性加权: 数据流(0.4) > CFG(0.35) > 符号执行(0.25)
@@ -21,7 +19,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -102,9 +99,6 @@ class SelfConsistencyVerifier:
 
         对每个路径在标注集上计算precision/recall，
         以F1分数归一化为权重。使用bootstrap估计置信区间。
-
-        Returns:
-            {path_kind: (weight, std_error)}
         """
         n = len(labeled_samples)
         if n < 10:
@@ -233,7 +227,7 @@ class SelfConsistencyVerifier:
 
 
 class ReasoningChainBuilder:
-    """推理链构建器——将模型输出转为可审计的观测→推论链"""
+    """推理链构建器-将模型输出转为可审计的观测→推论链"""
 
     @staticmethod
     def build_from_attributions(

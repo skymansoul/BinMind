@@ -42,9 +42,6 @@ class SemanticRoleLabeler:
         SemanticRole.FLAG: ["and", "or", "test"]
     }
 
-    def __init__(self):
-        pass
-
     def label_variables(self, variables):
         for var in variables:
             scores = {}

@@ -36,9 +36,9 @@ class MemoryManipulationResult:
 class MemoryManipulationDetector:
     """Scan binaries for code injection, process hollowing, memory manipulation
     patterns common malware game hacking
-    
+
     Usage::
-    
+
     detector = MemoryManipulationDetector()
     indicators = detector.检测("./suspicious_binary.exe")
     """

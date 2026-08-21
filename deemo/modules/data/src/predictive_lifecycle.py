@@ -15,8 +15,8 @@
 #
 # 区别: lifecycle.py 纯 TTL, 无预测. 本方案在线自适应.
 #
-# 创建: 2026-06-30  初始版本, HoeffdingTree + Platt + 三态分类
-# 修改: 2026-06-30  重写 _best_split: 直方图 IG 替代固定常数近似,
+
+# 重写 _best_split: 直方图 IG 替代固定常数近似,
 #                   增加 _second_best 真实计算, 移除未验证引用
 
 import math

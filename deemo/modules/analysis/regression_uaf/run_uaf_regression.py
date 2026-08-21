@@ -1,6 +1,5 @@
-# UAF回归 — 样本编译 + 扫描调度 + 结果收集.
+# UAF回归 - 样本编译 + 扫描调度 + 结果收集.
 # 样本: deemo/tests/uaf_benchmark (tp_01..06, tn_01..06, 含truth.json).
-# 创建: 2026-08-06
 
 import csv
 import glob

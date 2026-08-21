@@ -14,7 +14,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
-import hashlib  # 保留--未使用
 
 
 class SignatureType(Enum):
@@ -37,6 +36,12 @@ class SemanticSignature:
     address: int
     features: Dict[str, Any]
     hash: str = ""
+    function_name: Optional[str] = None
+    call_targets: List[str] = field(default_factory=list)
+    constant_values: List[int] = field(default_factory=list)
+    instruction_count: int = 0
+    basic_block_count: int = 0
+    cyclomatic_complexity: int = 0
 
     def __post_init__(self):
         self.hash = self._compute_hash()
@@ -70,6 +75,17 @@ class PatchDelta:
     description: str
     severity: str
     trigger_condition: Optional[str]
+    function_name: Optional[str] = None
+    old_hash: str = ""
+    new_hash: str = ""
+    similarity: float = 1.0
+    instruction_diff: int = 0
+    block_diff: int = 0
+    call_changes: List[str] = field(default_factory=list)
+    constant_changes: List[str] = field(default_factory=list)
+    structural_changes: List[str] = field(default_factory=list)
+    security_impact: str = "none"
+    is_patch: bool = False
 
 
 @dataclass
@@ -198,6 +214,10 @@ class SymbolicSignatureExtractor:
 class SemanticDiffer:
     def __init__(self):
         self.signature_threshold = 0.8
+        self._similarity_cache: Dict[Tuple[str, str], float] = {}
+        self._cache_size = 1024
+        self._cache_hits = 0
+        self._cache_misses = 0
 
     def compare_functions(self, old_func: FunctionSemantics, new_func: FunctionSemantics) -> PatchDelta:
         old_sig = old_func.get_unique_signature()
@@ -313,22 +333,52 @@ class SemanticDiffer:
                 if sig.features.get("is_write") and sig.features.get("is_indirect"):
                     return f"Indirect memory write at {hex(sig.address)}"
 
+    def compute_similarity(self, sig_a: SemanticSignature, sig_b: SemanticSignature) -> float:
+        """基于特征哈希和Jaccard相似度计算两签名的语义相似度。"""
+        cache_key = (sig_a.hash, sig_b.hash)
+        if cache_key in self._similarity_cache:
+            self._cache_hits += 1
+            return self._similarity_cache[cache_key]
+
+        self._cache_misses += 1
+        if sig_a.hash == sig_b.hash:
+            sim = 1.0
+        else:
+            keys_a = set(sig_a.features.keys())
+            keys_b = set(sig_b.features.keys())
+            union = keys_a | keys_b
+            if not union:
+                sim = 0.0
+            else:
+                shared = keys_a & keys_b
+                matching = sum(1 for k in shared if sig_a.features[k] == sig_b.features[k])
+                sim = matching / len(union)
+
+        if len(self._similarity_cache) < self._cache_size:
+            self._similarity_cache[cache_key] = sim
+        return sim
+
+    def _assess_security_impact(self, similarity: float,
+                                call_changes: List[str],
+                                structural_changes: List[str]) -> str:
+        """根据相似度和变更类型推断安全影响等级。"""
+        if similarity < 0.3:
+            return "critical"
+        has_call_change = any("Removed call" in c for c in call_changes)
+        has_struct_change = bool(structural_changes)
+        if has_call_change and has_struct_change:
+            return "high"
+        if has_call_change or (similarity < 0.7 and has_struct_change):
+            return "medium"
+        return "low"
+
     def diff_functions(
         self,
         sig_a: SemanticSignature,
         sig_b: SemanticSignature,
         threshold: float = 0.9,
     ) -> PatchDelta:
-        """Compare two function versions and produce a patch delta.
-
-        Args:
-            sig_a: Old version signature.
-            sig_b: New version signature.
-            threshold: Similarity threshold for considering unchanged.
-
-        Returns:
-            PatchDelta with detailed change information.
-        """
+        """Compare two function versions and produce a patch delta."""
         similarity = self.compute_similarity(sig_a, sig_b)
 
         call_changes: List[str] = []

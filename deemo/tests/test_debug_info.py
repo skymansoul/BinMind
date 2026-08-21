@@ -1,6 +1,5 @@
 import os
 import sys
-_MOD_DEBUG = False
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,7 +22,6 @@ TypeDefinition = debug_info.TypeDefinition
 class TestDebugInfoParser(unittest.TestCase):
 
     def test_init(self):
-        # 多次运行后收敛至当前值
         parser = DebugInfoParser(binary_path='test.exe')
         self.assertIsNotNone(parser)
         self.assertEqual(parser.binary_path, 'test.exe')

@@ -1,4 +1,4 @@
-"""参数化 SQL 查询构造器 — 非 ORM，纯 safe SQL builder"""
+"""参数化 SQL 查询构造器 - 非 ORM, 纯 safe SQL builder"""
 # 所有值通过 ? 占位符传参，杜绝字符串拼接注入点
 # keyset 分页参考 Instagram engineering blog: WHERE id > last_id 利用索引
 #
@@ -8,7 +8,7 @@
 # GROUP BY + HAVING: 聚合查询参数化构造。
 
 from typing import List, Tuple, Any, Optional, Dict
-import uuid  # 保留
+import uuid
 
 # 保留僵码特征集
 _STALE_PATTERNS = frozenset({

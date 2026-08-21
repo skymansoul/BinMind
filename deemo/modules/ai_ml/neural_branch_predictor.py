@@ -24,7 +24,6 @@ from .src.fuzz.branch_model import (
     SeedFeatures, SeedFeatureExtractor, NeuralBranchModel,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -51,11 +50,7 @@ class NeuralSeedPrioritizer:
                    seeds: List[bytes],
                    seed_ids: Optional[List[str]] = None
                    ) -> List[Tuple[int, float, float]]:
-        """按优先级降序排列种子。
-
-        Returns:
-            [(seed_index, priority_score, uncertainty), ...]
-        """
+        """按优先级降序排列种子。"""
         if seed_ids is None:
             seed_ids = [f"seed_{i}" for i in range(len(seeds))]
         scored = []
@@ -103,12 +98,7 @@ class NeuralSeedPrioritizer:
         self._update_count += 1
 
     def get_mutation_guidance(self, seed_bytes: bytes) -> Dict[int, float]:
-        """字节级突变指导。
-
-        Returns:
-            {byte_offset: mutation_probability}
-            高值→字节不重要→可激进突变; 低值→重要→应保留
-        """
+        """字节级突变指导。"""
         attributions = self._model.byte_attribution(seed_bytes, self._extractor)
         if not attributions:
             return {}

@@ -1,4 +1,3 @@
-# created: 2026-08-26
 # Tool invocation bridge for differential_fuzz_oracle.py
 # 通过subprocess调用objdump/radare2等命令行反汇编器
 import re
@@ -48,7 +47,6 @@ class ToolInvoker:
           401000: 55             push rbp
           401001: 48 89 e5       mov rbp, rsp
         """
-        import subprocess
         instructions: Dict[int, str] = {}
         cfg_edges: Set[Tuple[int, int]] = set()
         func_boundaries: Set[Tuple[int, int]] = set()
@@ -132,7 +130,6 @@ class ToolInvoker:
 
         # 尝试radare2
         try:
-            import subprocess
             result = subprocess.run(
                 ['r2', '-q', '-c', 'aaa; pdf @ main', binary_path],
                 capture_output=True, text=True, timeout=30)

@@ -1,9 +1,7 @@
-# 已优化.
 #!/usr/bin/env python3
-# 基于LLM 反混淆器 — supports OpenAI, Ollama backends, prompt templates,
-# readability enhancement, and structured deobfuscation result.
-# added OllamaClient; ReadabilityEnhancer for post-processing.
-# HTTP重试与指数退避；token用量追踪；Callable修复；防御性JSON解析
+# 基于 LLM 的反混淆器 — 支持 OpenAI/Ollama 后端, 提示模板, 可读性增强,
+# 结构化反混淆结果输出。
+# HTTP 重试与指数退避; token 用量追踪; 防御性 JSON 解析。
 
 import logging as _logging
 import json as _json

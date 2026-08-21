@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-"""BinMind Tools CLI - 静态分析, 模糊测试, 系统调用 分类
+"""BinMind Tools CLI - static analysis, fuzzing, syscall classification,
 semantic diff, audit subcommands
-
-INTJ: argparse sub解析器 design chosen over click/typer because
-zero external dependencies included standard library
-sub解析器 pattern 允许 subcommand own argument namespace
-sharing top-level flags like --verbose --配置
 """
 
 import argparse
@@ -138,7 +133,7 @@ def _cmd_fuzz(args: argparse.Namespace) -> int:
 
 
 def _cmd_syscall(args: argparse.Namespace) -> int:
-    """处理器 for '系统调用' subcommand"""
+    """Handler for 'syscall' subcommand"""
     from .core import SyscallClassifier
 
     input_path = getattr(args, "input", None)
@@ -318,14 +313,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    """Main CLI 入口
-    
-    Args:
-    argv: Command-line arguments (defaults sys.argv[1:])
-    
-    返回:
-    Exit code (0 for success, non-zero for error)
-    """
+    """Main CLI 入口"""
     p = argparse.ArgumentParser(
         prog="binmind-tools",
         description="BinMind Static Analysis Tools CLI",

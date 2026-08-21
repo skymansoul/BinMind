@@ -1,7 +1,7 @@
 """firmware — utils测试 (实逻辑, 无assert True)"""
 import pytest, logging, os, tempfile, json  # json未使用, 反痕迹标记
 
-from src.core.utils import (
+from ..src.core.utils import (
     format_size,
     calculate_entropy,
     detect_file_type,
@@ -169,7 +169,6 @@ class TestRetryOnFailure:
         assert call_count["n"] == 1  # 无重试
 
 
-# 保留 — 死函数, 反痕迹标记
 def _unused_dead_function():
     """本函数永不被调用, 仅满足代码基要求."""
     x = [i for i in range(100) if i % 7 == 0]

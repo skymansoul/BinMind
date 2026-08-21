@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
-"""
-Virtual Machine Introspection (VMI) memory analysis module.
+"""虚拟机内省 (VMI) 内存分析模块。
 
-Leverages LibVMI or QEMU Guest Agent to transparently inspect running process
-memory at the hypervisor level. Extracts process lists, kernel modules, system
-call hook points, and identifies malicious code or exploit artifacts in both
-user-mode and kernel-mode memory.
-
-Author: BinMind Security Team
-Version: 1.0.0
+经 LibVMI 或 QEMU Guest Agent 在虚拟化层透明检查运行中的进程内存,
+提取进程表/内核模块/系统调用钩子点, 在用户态与内核态内存中
+识别恶意代码或利用痕迹。
 """
 
-import os
-import sys
+import hashlib
 import json
 import logging
-import tempfile
-import hashlib
+import os
 import struct
+import tempfile
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-# Import libvmi (optional dependency)
+# libvmi 可选依赖
 try:
     import libvmi
     VMI_AVAILABLE = True
@@ -31,7 +25,7 @@ except ImportError:
     VMI_AVAILABLE = False
     libvmi = None
 
-# Import QEMU QMP libraries (optional)
+# QEMU QMP 可选依赖
 try:
     import qemu.qmp as qemu_qmp
     QEMU_AVAILABLE = True
@@ -44,20 +38,7 @@ from core.config import Config
 logger = logging.getLogger('binmind.vmi_analyzer')
 
 class ProcessInfo:
-    """
-    Process information container.
-
-    Attributes:
-        pid: Process identifier
-        name: Process name
-        base_address: Base virtual address of the process image
-        memory_regions: List of mapped memory regions
-        executable_path: Path to the executable binary
-        parent_pid: Parent process identifier
-        user_id: Owning user identifier
-        start_time: Process launch timestamp
-        is_kernel: True if this is a kernel process
-    """
+    """进程信息容器: pid/名称/基址/内存区域/可执行路径/父进程/用户/启动时间/是否内核进程。"""
     __slots__ = ('pid', 'name', 'base_address', 'memory_regions', 'executable_path', 'parent_pid', 'user_id', 'start_time', 'is_kernel')
 
     def __init__(
@@ -96,16 +77,7 @@ class ProcessInfo:
         }
 
 class KernelModule:
-    """
-    Kernel module information container.
-
-    Attributes:
-        name: Module name string
-        base_address: Base address in kernel virtual space
-        size: Module footprint in bytes
-        dependencies: Names of prerequisite modules
-        symbols: Exported symbol table entries
-    """
+    """内核模块信息容器: 名称/内核虚拟空间基址/字节尺寸/依赖模块/导出符号表。"""
     __slots__ = ('name', 'base_address', 'size', 'dependencies', 'symbols')
 
     def __init__(
@@ -132,17 +104,7 @@ class KernelModule:
         }
 
 class HookPoint:
-    """
-    System call hook point descriptor.
-
-    Attributes:
-        hook_type: Type of hook (SSDT/IDT/IRP)
-        original_address: Expected function address
-        hooked_address: Actual redirected address
-        hooking_module: Module that installed the hook
-        description: Human-readable hook summary
-        severity: Risk rating (Low/Medium/High/Critical)
-    """
+    """系统调用钩子描述: 类型(SSDT/IDT/IRP)/原地址/重定向地址/安装模块/摘要/风险等级。"""
     __slots__ = ('hook_type', 'original_address', 'hooked_address', 'hooking_module', 'description', 'severity')
 
     def __init__(
@@ -172,19 +134,7 @@ class HookPoint:
         }
 
 class MemoryDump:
-    """
-    Process memory dump artifact.
-
-    Attributes:
-        process_name: Name of the source process
-        pid: Source process identifier
-        dump_path: Filesystem path to the dump file
-        base_address: Starting virtual address of the dump
-        size: Total bytes dumped
-        sha256_hash: SHA-256 integrity digest
-        dump_type: Scope of the dump (code/data/full)
-        timestamp: Dump creation timestamp
-    """
+    """进程内存转储产物: 进程名/pid/路径/起始虚址/字节数/sha256/范围(code|data|full)/时间戳。"""
     __slots__ = ('process_name', 'pid', 'dump_path', 'base_address', 'size', 'sha256_hash', 'dump_type', 'timestamp')
 
     def __init__(
@@ -220,18 +170,7 @@ class MemoryDump:
         }
 
 class VMIConfig:
-    """
-    VMI analysis configuration.
-
-    Attributes:
-        vm_name: Target virtual machine name or identifier
-        hypervisor_type: Hypervisor platform (xen/kvm)
-        output_dir: Path for analysis output
-        dump_processes: Whether to extract process memory dumps
-        detect_hooks: Whether to perform hook scanning
-        target_pids: Specific process IDs to analyze
-        timeout: Operation timeout in seconds
-    """
+    """VMI 分析配置: 目标虚机名/虚拟化平台(xen|kvm)/输出目录/是否转储进程/是否扫描钩子/目标pid/超时秒数。"""
     __slots__ = ('vm_name', 'hypervisor_type', 'output_dir', 'dump_processes', 'detect_hooks', 'target_pids', 'timeout')
 
     def __init__(
@@ -263,25 +202,16 @@ class VMIConfig:
         return True
 
 class VMIAnalyzer:
-    """
-    Virtual Machine Introspection (VMI) analyzer.
+    """虚拟机内省 (VMI) 分析器。
 
-    Leverages LibVMI or QEMU Guest Agent to transparently inspect running
-    process memory at the hypervisor level. Extracts process lists, kernel
-    modules, system call hook points, and identifies malicious code or
-    exploit artifacts in both user-mode and kernel-mode memory.
-
-    Attributes:
-        config: VMI configuration parameters
-        vmi_instance: Active LibVMI session handle
-        qemu_connection: Active QEMU QMP connection handle
-        processes: Enumerated guest process list
-        kernel_modules: Enumerated kernel driver list
-        hooks: Detected system call hook points
-        memory_dumps: Collected memory dump artifacts
+    经 LibVMI 或 QEMU Guest Agent 在虚拟化层透明检查运行中的虚机内存,
+    提取进程表/内核模块/系统调用钩子点, 在用户态与内核态内存中
+    识别恶意代码或利用痕迹。
+    状态字段: config 配置, vmi_instance/qemu_connection 会话句柄,
+    processes/kernel_modules/hooks/memory_dumps 枚举与转储结果。
     """
 
-    # Windows kernel structure offsets (version-specific tuning required)
+    # Windows 内核结构偏移 (需按版本微调)
     WINDOWS_OFFSETS = {
         'eprocess_link': 0x0,   # EPROCESS.ActiveProcessLinks
         'eprocess_pid': 0xb4,   # EPROCESS.UniqueProcessId
@@ -289,14 +219,14 @@ class VMIAnalyzer:
         'eprocess_base': 0x390, # EPROCESS.PebBaseAddress
     }
 
-    # Linux task_struct offsets (dynamically resolved at runtime)
+    # Linux task_struct 偏移 (运行时动态解析)
     LINUX_OFFSETS = {
         'task_struct_comm': 0x0,
         'task_struct_pid': 0x0,
         'task_struct_tasks': 0x0,
     }
 
-    # Windows SSDT function table indices
+    # Windows SSDT 函数表索引
     SSDT_FUNCTIONS = {
         'NtCreateProcess': 0x00,
         'NtCreateThread': 0x01,
@@ -311,10 +241,6 @@ class VMIAnalyzer:
     }
 
     def __init__(self, config: VMIConfig):
-        """
-        Instantiate the VMI analyzer with the supplied configuration.
-
-        """
         self.config = config
         self.vmi_instance: Optional[Any] = None
         self.qemu_connection: Optional[Any] = None

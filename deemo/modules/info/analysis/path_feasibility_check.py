@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Dict, List, Set, Tuple, Optional
 import re
 
-from value_range_analyzer import (
+from .value_range_analyzer import (
     ValueRange, extract_value_ranges, apply_constraint,
     check_heap_overflow_by_range,
 )

@@ -1,5 +1,5 @@
 # ~ 2024-09-02
-# CVE攻击图生成器——基于CVE匹配数据构建利用链DAG。
+# CVE攻击图生成器-基于CVE匹配数据构建利用链DAG。
 # 思路源于Aksu et al. 2018 "Automated Generation of Attack Graphs Using NVD"，
 # 但实现更简约：用CWE前置/后置条件对加产品重叠推导潜在利用链，
 # 以CVSS可利用性指标加权边概率。
@@ -19,7 +19,7 @@ from .cve_models import CVEEntry, Severity
 # 格式: (source_cwe, target_cwe, relationship, confidence)
 # confidence: 0.0–1.0，源使能目标的可信度
 # 人工整理自CWE研究文献及真实利用链案例。
-# 非全覆盖——涵盖APT报告中最常见的链接模式。
+# 非全覆盖-涵盖APT报告中最常见的链接模式。
 
 _CWE_CHAINS: List[Tuple[str, str, str, float]] = [
     # 信息泄露 → 定向攻击

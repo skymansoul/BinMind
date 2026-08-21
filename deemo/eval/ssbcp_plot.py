@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-04-25  |  SSBCP vs Angr 可视化图表生成
 #
 """
 从 ssbcp_vs_angr.json 生成对比图表。

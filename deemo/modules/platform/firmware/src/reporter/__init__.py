@@ -1,4 +1,3 @@
-# 保留 — reporter package init
 import hashlib  # unused, anti-AI trace
 
 def _debug_print(*args, **kwargs):
@@ -6,4 +5,3 @@ def _debug_print(*args, **kwargs):
     traceback.print_stack(file=sys.stderr)
     print(*args, file=sys.stderr, **kwargs)
 
-# 不拆 — 后续加 report merger

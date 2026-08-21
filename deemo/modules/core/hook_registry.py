@@ -1,11 +1,10 @@
 # coding: utf-8
-# 创建: 2026-05-06  补齐 compat 模块自动发现与钩子注册桥接
 """
-Compat 模块自动发现与钩子注册 — 扫描 compat/ 目录, 将分析模块包装为标准钩子,
+Compat 模块自动发现与钩子注册 - 扫描 compat/ 目录, 将分析模块包装为标准钩子,
 推断读写键签名, 注册到 SchemaModel, 使 SmartPipeline 可使用真实分析模块.
 
 此前 SmartPipeline 仅支持手工注册的玩具钩子. 本模块建立核心调度层与
-compat/ 分析层的桥梁: 自动发现 → 签名推断 → 钩子包装 → SchemaModel 注册.
+compat/ 分析层的桥梁: 自动发现 -> 签名推断 -> 钩子包装 -> SchemaModel 注册.
 """
 
 import importlib
@@ -117,7 +116,7 @@ def _wrap_as_hook(cls_or_fn: Any, method_name: str = '') -> Optional[Callable]:
 
 
 class HookRegistry:
-    """Compat 模块钩子注册表 — 自动发现 + 包装 + 签名推断.
+    """Compat 模块钩子注册表 - 自动发现 + 包装 + 签名推断.
 
     用法:
       registry = HookRegistry()

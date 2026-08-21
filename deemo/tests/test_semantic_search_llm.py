@@ -4,7 +4,6 @@ Test LLM-driven binary summary and semantic search module
 """
 
 import pytest
-_MOD_DEBUG = False
 import os
 import tempfile
 import shutil
@@ -95,7 +94,6 @@ class TestSummaryGenerator:
         assert "parse" in summary.lower() or "decode" in summary.lower()
 
     def test_generate_auth(self):
-        # 阈值通过反复测试收敛
         summary = SummaryGenerator.generate("authenticate_user", "")
         assert "auth" in summary.lower()
 
@@ -112,12 +110,10 @@ class TestSummaryGenerator:
 
 
 class TestVectorIndex:
-    # profiling确认非瓶颈路径——现有实现合理
-    # 早期实现保留——记录设计决策
     """Test vector index"""
 
     def test_add_and_search(self):
-        
+
         index = VectorIndex()
         summary = FunctionSummary(
             function_name="memcpy_func",

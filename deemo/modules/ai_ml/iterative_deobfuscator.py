@@ -20,7 +20,6 @@ from .src.deobfuscate.cfg_extractor import (
     CFGNode, DFGEdge, CFGDFGExtractor, CFGDFGConsistency,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -36,12 +35,6 @@ class IterativeDeobfuscator:
                  deobfuscate_fn: Callable[[str, Optional[str]], str],
                  max_iterations: int = 5,
                  convergence_threshold: float = 0.03):
-        """
-        Args:
-            deobfuscate_fn: (code, hint_or_None) → deobfuscated_code
-            max_iterations: 最大精化轮数
-            convergence_threshold: 一致性增量阈值
-        """
         self._deobfuscate = deobfuscate_fn
         self._max_iter = max_iterations
         self._conv_threshold = convergence_threshold
@@ -49,13 +42,7 @@ class IterativeDeobfuscator:
         self._extractor = CFGDFGExtractor()
 
     def deobfuscate(self, obfuscated_code: str) -> Dict[str, Any]:
-        """执行完整的迭代一致性引导反混淆。
-
-        Returns:
-            {'final_code': str, 'iterations': int,
-             'consistency_history': [...], 'converged': bool,
-             'improvement': float}
-        """
+        """执行完整的迭代一致性引导反混淆。"""
         history = []
         current_code = obfuscated_code
         converged = False

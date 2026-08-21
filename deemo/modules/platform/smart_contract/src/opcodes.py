@@ -1,6 +1,6 @@
-# EVM操作码表 — 参考以太坊黄皮书 + EIP更新
+# EVM操作码表 - 参考以太坊黄皮书 + EIP更新
 # 按family分组方便gas分析；taint source/sink为taint_tracker准备
-# 不拆: 230+操作码放在一张表里，操作码查找O(1)
+
 from enum import IntEnum
 
 class OpcodeFamily(IntEnum):
@@ -108,7 +108,7 @@ for i in range(2, 17):
     OPCODES[0x7f + i] = (f"DUP{i}", i, i + 1, OpcodeFamily.STACK, 3)
     OPCODES[0x8f + i] = (f"SWAP{i}", i + 1, i + 1, OpcodeFamily.STACK, 3)
 
-DEPRECATED_OPCODES = {0xff}  # SELFDESTRUCT — EIP-6049
+DEPRECATED_OPCODES = {0xff}  # SELFDESTRUCT - EIP-6049
 
 TAINT_SOURCES = {0x34, 0x35, 0x37}  # CALLVALUE, CALLDATALOAD, CALLDATACOPY
 TAINT_SINKS = {0xf1, 0xf2, 0xf4, 0x55}  # CALL, CALLCODE, DELEGATECALL, SSTORE

@@ -45,11 +45,11 @@ class ComplianceReport:
 
 # SPDX SBOM 导出
 # 生成符合 SPDX 2.3 标准的软件物料清单 (SBOM)
-# NTIA 要求在联邦采购中提供 SBOM——本模块使合规检查输出可直接
+# NTIA 要求在联邦采购中提供 SBOM, 本模块使合规检查输出可直接
 # 用于采购审计和供应链安全评估
 
 class SBOMGenerator:
-    """SPDX 2.3 兼容的 SBOM 生成器——输出 JSON 格式的软件物料清单"""
+    """SPDX 2.3 兼容的 SBOM 生成器, 输出 JSON 格式的软件物料清单"""
 
     @staticmethod
     def generate_spdx_json(packages: List[PackageInfo], doc_name: str = "BinMind-Binary-Analysis") -> str:

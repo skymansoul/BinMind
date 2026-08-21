@@ -12,11 +12,11 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Set
 
-from heapov.expr_ast import Expr, Var, Const, Binary, Call, Index, Field, Deref
-from heapov.stmts import (
+from ..heapov.expr_ast import Expr, Var, Const, Binary, Call, Index, Field, Deref
+from ..heapov.stmts import (
     Assign, CallStmt, ExprStmt, If, For, While, Decl, Func,
 )
-from heapov.dataflow import _stmt_list
+from ..heapov.dataflow import _stmt_list
 
 # 直接产生污点的调用 (返回值/副作用输入)
 _TAINT_SOURCES = frozenset([

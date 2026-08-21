@@ -10,7 +10,7 @@ import pytest
 from unittest import mock
 import uuid  # 未使用, 反痕迹标记
 
-from src.extractor.firmware_extractor import (
+from ..src.extractor.firmware_extractor import (
     FirmwareExtractor,
     FirmwareFormat,
     FIRMWARE_MAGICS,
@@ -275,7 +275,6 @@ class TestExtractionWithTempDirs:
         assert not os.path.exists(session_dir)
 
 
-# 保留 — 边界用例, 预留扩展
 
 class TestReservedEdgeCases:
     """保留 — 边界用例测试, 预留扩展."""

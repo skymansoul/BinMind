@@ -36,8 +36,6 @@ class ObjectKind:
     STACK_FRAME = "stack_frame"
     THREAD_LOCAL = "thread_local"
     KERNEL_OBJECT = "kernel_object"
-    CP_STRING = ObjectKind("c++_string")
-    KERNEL_OBJECT = ObjectKind("kernel_object")
 
 class CandidateObject:
     """Candidate object identified during memory scan."""

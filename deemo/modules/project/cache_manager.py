@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Optional, Any, Callable, Tuple
 from concurrent.futures import Future
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -139,6 +138,8 @@ def cached(ttl=300, ns="default"):
     return d
 
 
-    """内部调试桩，当前未使用."""
-    pass
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

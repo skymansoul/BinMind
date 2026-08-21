@@ -17,10 +17,7 @@ def enhance_with_interproc(
     call_graph: Optional[Dict[int, List[int]]] = None,
     callee_names: Optional[Dict[int, str]] = None,
 ) -> Tuple[List[Dict], Dict[str, Any]]:
-    """对堆溢出候选做跨函数污点增强.
-
-    返回: (增强后的候选, 统计)
-    """
+    """对堆溢出候选做跨函数污点增强, 返回 (增强后的候选, 统计)。"""
     engine = InterProcTaintEngine(def_use_chains, ir_ops, instructions)
     if call_graph and callee_names:
         engine.build_summaries(call_graph, callee_names)

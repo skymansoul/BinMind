@@ -18,7 +18,18 @@ def run_binmind(binary: str, sample: str, variant: str, timeout: int = 60) -> To
     try:
         sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
         from modules.core.compat.vuln_synthesis import synthesize
-        r = ToolResult('BinMind', sample, variant, 0, 0, 0, True)
+        from core.format_string_detector import detect_format_string_vulns
+        from modules.vuln.detection.heap_analysis.orchestrator import analyze_heap
+
+        # 对真实二进制运行核心检测器, 融合为统一报告
+        fmt_findings = detect_format_string_vulns(binary)
+        heap_report = analyze_heap(binary)
+        report = synthesize(
+            heap_findings=heap_report.findings,
+            format_findings=fmt_findings,
+        )
+
+        r = ToolResult('BinMind', sample, variant, 0, 0, report.after_dedup, True)
         r.wall_ms = (time.perf_counter() - t0) * 1000
         _, peak = tracemalloc.get_traced_memory(); tracemalloc.stop()
         r.peak_memory_mb = peak / (1024 * 1024)

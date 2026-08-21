@@ -142,10 +142,7 @@ class UafConstraintSystem:
 
     def check_uaf(self, use_site: int, use_ts: int,
                   ptr: str = '') -> Tuple[bool, str, float]:
-        """检查一个 use 事件是否为 UAF.
-
-        返回: (is_uaf, reason, confidence).
-        """
+        """检查一个 use 事件是否为 UAF, 返回 (is_uaf, reason, confidence)。"""
         # 解析别名 → 找到 use 的真正目标对象
         obj_id = ''
         if ptr and self._aliases.resolve_ptr(ptr):

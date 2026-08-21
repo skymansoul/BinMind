@@ -224,7 +224,7 @@ class HeapFPFilterV2:
                          ) -> Tuple[List[dict], List[FilterResult]]:
         """对一批检测发现做批量过滤.
 
-        返回: (保留的告警, 所有过滤结果)
+        返回 (保留的告警, 所有过滤结果)。
         """
         retained = []
         all_results = []

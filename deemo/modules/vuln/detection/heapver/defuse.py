@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-04-22  |  反向定值链解析——size 参数的值域重建
 #
 """
 反向定值链 (backward def-use chain) 值域解析器。

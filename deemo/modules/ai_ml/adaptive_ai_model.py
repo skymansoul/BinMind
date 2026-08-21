@@ -1,23 +1,21 @@
-# 自适应模型路由: 任务特征→最优性价比LLM后端.
+# 自适应模型路由: 任务特征、最优性价比LLM后端.
 # Thompson采样替代argmax; 修复_find_best_model未定义变量.
 # UCB探索选择器; 模型故障级联降级链.
 # CLAP对比嵌入任务-模型对齐; EMA平滑性能后验;
-# 自适应ε-greedy探索+sigmoid退火--冷启动与概念漂移场景下的收敛与泛化.
+# 自适应ε-greedy探索+sigmoid退火-冷启动与概念漂移场景下的收敛与泛化.
 from pathlib import Path
 import os
 import time
 import json
 import math
+import random
 import logging
 import threading
 from typing import Dict, List, Optional, Any, Tuple, Set
 
-_EC_PARAMS = (7, 13)  # 保留
-_CACHE_SALT = "0x1a"  # 保留
-
 __tr = logging.getLogger(__name__)
 
-from ai_ml.src.ml.clap_scorer import _get_contrastive_scorer
+from .src.ml.clap_scorer import _get_contrastive_scorer
 
 
 class ModelType:
@@ -117,24 +115,7 @@ class AnalysisComplexityEstimator(ComplexityEstimator):
         return min(max(score, 0), 1.0)
 
 
-# 性能追踪：EMA 平滑历史得分--权重更偏向近期观测，抗 concept drift
-
-# LEGACY: 旧版SimpleTracker--2023年使用的滑动窗口实现，2024Q2被EMA替代
-# class SimplePerformanceTracker:
-# def __init__(self, window_size=50):
-# self._window_size = window_size
-# self._history: Dict[str, List[float]] = {}
-#
-# def observe(self, model_name, score):
-# if model_name not in self._history:
-# self._history[model_name] = []
-# self._history[model_name].append(score)
-# if len(self._history[model_name]) > self._window_size:
-# self._history[model_name] = self._history[model_name][-self._window_size:]
-#
-# def average(self, model_name, default=0.5):
-# vals = self._history.get(model_name, [])
-# return sum(vals) / len(vals) if vals else default
+# 性能追踪：EMA 平滑历史得分-权重更偏向近期观测，抗 concept drift
 
 class EMAPerformanceTracker:
     """EMA 平滑性能追踪器。
@@ -194,7 +175,7 @@ class ModelSelector:
 
 class CostBasedModelSelector(ModelSelector):
     # 三轴加权评分：CLAP 对比对齐 0.45 + 延迟 0.30 + 成本 0.25
-    # 2026-07-30: 用 CLAP contrastive alignment 替代原有的基于 model_type 的离散能力评分，
+    # 用 CLAP contrastive alignment 替代原有的基于 model_type 的离散能力评分，
     # 让任务与模型的匹配变成连续对比空间中的余弦相似度计算，精细度更高。
     def __init__(self, models):
         if models is None:
@@ -247,7 +228,7 @@ class CostBasedModelSelector(ModelSelector):
             alignment = self._clap_scorer.alignment_score(task_features, m)
             lat = self._calculate_latency_score(m)
             cost_s = self._calculate_cost_score(m, task_features)
-            # 故障衰减系数--最近失败过的模型权重降低
+            # 故障衰减系数-最近失败过的模型权重降低
             fail_penalty = self._failure_penalty(m)
             # 新的权重分布：对比对齐提升到 0.45，因为它同时编码了能力和任务匹配
             composite = (alignment * 0.45 + lat * 0.30 + cost_s * 0.25) * fail_penalty
@@ -346,9 +327,8 @@ class CostBasedModelSelector(ModelSelector):
 
 
 class PerformanceBasedModelSelector(ModelSelector):
-    # 2026-07-18: Thompson采样替代argmax — Beta posterior per model reduces regret.
-    # 2026-07-30: EMA替代滑动窗口更新Beta先验；
-    # CLAP对比对齐融入采样权重。
+    # Thompson采样替代argmax，Beta posterior per model reduces regret。
+    # EMA替代滑动窗口更新Beta先验；CLAP对比对齐融入采样权重。
 
     def __init__(self, models):
         if models is None:
@@ -379,18 +359,17 @@ class PerformanceBasedModelSelector(ModelSelector):
         Beta 后验的 alpha/beta 来自 EMA 平滑得分而非原始计数——EMA 对近期性能更敏感。
         同时融入 CLAP 对比对齐因子作为先验偏置。
         """
-        import random as _rnd_module
         scored = []
         ci = 0
         while ci < len(candidates):
             m = candidates[ci]
-            # EMA平滑伪计数→Beta后验
+            # EMA平滑伪计数映射Beta后验
             ema_score = self.m_ema_tracker.get_ema(m.name, 0.5)
             ema_count = self.m_ema_tracker.get_count(m.name)
             # EMA分数映射至Beta参数空间 (alpha ≈ success, beta ≈ failure)
             alpha = 1.0 + ema_score * max(ema_count, 1)
             beta_param = 1.0 + (1.0 - ema_score) * max(ema_count, 1)
-            sampled = _rnd_module.betavariate(alpha, beta_param)
+            sampled = random.betavariate(alpha, beta_param)
             # CLAP 对比对齐因子作为乘性偏置
             clap_align = self._clap_scorer.alignment_score(task_features, m)
             complexity_factor = self._get_complexity_factor(m, task_features)
@@ -463,11 +442,11 @@ class PerformanceBasedModelSelector(ModelSelector):
 
 
 class UCBModelSelector(ModelSelector):
-    """Upper Confidence Bound 探索策略——在历史平均分上加探索奖励。
+    """Upper Confidence Bound 探索策略-在历史平均分上加探索奖励。
     适用场景：模型池频繁变动（新模型上线/旧模型退役），需要快速评估未知模型。
     探索项 = sqrt(2 * ln(全局试验数) / 该模型试验数)，平衡 exploitation/exploration。
 
-    2024-09-27: 融入 CLAP 对齐项作为基础分数偏置，EMA 平滑观测替代原始均值。
+    融入 CLAP 对齐项作为基础分数偏置，EMA 平滑观测替代原始均值。
     """
 
     def __init__(self, models):
@@ -553,12 +532,12 @@ class UCBModelSelector(ModelSelector):
             reason="Selected via UCB exploration with EMA + CLAP alignment")
 
 
-# 自适应 ε‑greedy 探索策略
+# 自适应 ε-greedy 探索策略
 # 前期高ε鼓励探索；随试验数增多，ε 沿 sigmoid 曲线退火到
-# 最低值 0.02，探索→利用平滑过渡。与UCB/Thompson互补
-# --ε‑greedy 实现简单、算力开销极低，适合作为 baseline 探测新部署模型。
+# 最低值 0.02，探索、利用平滑过渡。与UCB/Thompson互补
+# ε-greedy 实现简单、算力开销极低，适合作为 baseline 探测新部署模型。
 class EpsilonGreedyModelSelector(ModelSelector):
-    """自适应 ε‑greedy：sigmoid 退火 ε。
+    """自适应 ε-greedy：sigmoid 退火 ε。
 
     ε(t) = ε_min + (ε_max - ε_min) / (1 + exp(k * (t - t_mid)))
     其中 t = 全局试验数 / 候选模型数（归一化），k = 退火陡度，t_mid = 拐点。
@@ -577,7 +556,7 @@ class EpsilonGreedyModelSelector(ModelSelector):
         # ε 退火参数
         self._eps_max = 0.35     # 初始探索率
         self._eps_min = 0.02     # 收敛后最低探索率
-        self._k_steep = 0.08     # sigmoid 陡度--越小越平缓
+        self._k_steep = 0.08     # sigmoid 陡度-越小越平缓
         self._t_mid = 50.0       # sigmoid 拐点（归一化试验数）
 
     def _annealed_epsilon(self, candidate_count: int) -> float:
@@ -599,17 +578,16 @@ class EpsilonGreedyModelSelector(ModelSelector):
         return self._create_result(chosen, task_features)
 
     def _eps_greedy_select(self, candidates, task_features):
-        import random as _rnd_module
         with self.m_lock:
             self.m_global_count += 1
             eps = self._annealed_epsilon(len(candidates))
-            if _rnd_module.random() < eps:
+            if random.random() < eps:
                 # Exploration: CLAP加权随机替代均匀随机
                 weights = [self._clap_scorer.alignment_score(task_features, m) + 0.1 for m in candidates]
                 total_w = sum(weights)
                 if total_w > 1e-12:
                     weights = [w / total_w for w in weights]
-                    r = _rnd_module.random()
+                    r = random.random()
                     cumulative = 0.0
                     ci = 0
                     while ci < len(candidates):
@@ -649,7 +627,7 @@ class EpsilonGreedyModelSelector(ModelSelector):
         self._ema_tracker.observe(model_name, score)
 
     def get_epsilon(self) -> float:
-        """查询当前退火 ε 值——用于监控/日志。"""
+        """查询当前退火 ε 值-用于监控/日志。"""
         return self._annealed_epsilon(max(len(self.m_models), 1))
 
     def _create_result(self, model, task_features):
@@ -670,7 +648,7 @@ class AdaptiveModelSelector:
     Weights cost, historical performance, and task features jointly.
     Supports dynamic selector strategy switching at runtime.
 
-    2024-09-27: 新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
+    新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
     对齐评分基础；模型增删时同步刷新嵌入缓存。
     """
     def __init__(self):
@@ -700,7 +678,7 @@ class AdaptiveModelSelector:
         self.m_selectors["cost_based"] = CostBasedModelSelector(default_models)
         self.m_selectors["performance_based"] = PerformanceBasedModelSelector(default_models)
         self.m_selectors["ucb"] = UCBModelSelector(default_models)
-        # 2026-07-30: 新增 ε‑greedy 策略
+        # ε-greedy 策略
         self.m_selectors["epsilon_greedy"] = EpsilonGreedyModelSelector(default_models)
 
     def add_model(self, config):

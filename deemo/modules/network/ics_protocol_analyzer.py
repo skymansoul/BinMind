@@ -375,10 +375,71 @@ class ICSProtocolAnalyzer:
         return list(dict.fromkeys(detected))
 
     def identify_ics_functions(self) -> List[ICSFunction]:
-        return []
+        """在二进制中定位协议处理函数 —— 以协议特征串出现位置为锚点。
+
+        对每个检测到的协议，在当前已识别的协议处理字节窗口内查找
+        特征串，并向前回溯常见的函数序言(push rbp; mov rbp,rsp)以
+        确定函数真实起始地址；找不到序言则以特征串偏移作为候选。
+        """
+        funcs: List[ICSFunction] = []
+        data = self.binary_data or b""
+        _PROLOGUE = b"\x55\x48\x89\xe5"
+        seen: set = set()
+        for proto, needles in self._PROTOCOL_STRINGS.items():
+            for needle in needles:
+                start = 0
+                while True:
+                    idx = data.find(needle, start)
+                    if idx < 0:
+                        break
+                    probe = max(0, idx - 256)
+                    func_start = data.rfind(_PROLOGUE, probe, idx)
+                    if func_start < 0:
+                        func_start = idx
+                    if func_start not in seen:
+                        seen.add(func_start)
+                        funcs.append(ICSFunction(
+                            name="%s_handler_0x%x" % (proto.name.lower(), func_start),
+                            protocol=proto,
+                            address=func_start,
+                            risk_score=40 if proto == ICSProtocol.MODBUS_TCP else 25,
+                        ))
+                    start = idx + 1
+        funcs.sort(key=lambda f: f.address)
+        return funcs
 
     def analyze_vulnerabilities(self) -> List[dict]:
-        return []
+        """基于函数锚点做漏洞启发式评估 —— 粗略指令流特征检查。
+
+        轻量级启发式，不依赖完整反汇编：在每个候选函数入口后取一小段
+        指令窗口，若出现"长度加载后未做边界比较即调用"的特征(缺少
+        cmp/test 类比较指令但存在靠近内存访问的调用)，标记为长度未
+        校验/越界风险。
+        """
+        vulnerabilities: List[dict] = []
+        data = self.binary_data or b""
+        for func in self.identify_ics_functions():
+            end = min(func.address + 128, len(data))
+            window = data[func.address:end]
+            if not window:
+                continue
+            # 常见边界比较指令前缀
+            has_bound_cmp = any(
+                byte in window for byte in (b"\x3b", b"\x39", b"\x83\xf8", b"\x81\xf8")
+            )
+            has_unsafe_call = b"\xe8" in window  # call rel32
+            if not has_bound_cmp and has_unsafe_call:
+                vtype = VulnerabilityType.LENGTH_NOT_CHECKED
+                vulnerabilities.append({
+                    "function_name": func.name,
+                    "function_address": hex(func.address),
+                    "protocol": func.protocol.value,
+                    "vulnerability_type": vtype.value,
+                    "description": self._get_vulnerability_description(vtype),
+                    "severity": self._get_vulnerability_severity(vtype),
+                    "exploit_difficulty": self._get_exploit_difficulty(vtype),
+                })
+        return vulnerabilities
 
     def generate_malformed_packets(self, protocol: ICSProtocol,
                                    count: int = 5) -> List[MalformedPacket]:

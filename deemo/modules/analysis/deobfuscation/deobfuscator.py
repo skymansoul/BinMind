@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Primary interface: 去混淆Level associated 流水线 classes
+# 主接口：去混淆级别关联的流水线类
 import json
 import logging
 import os
@@ -112,8 +112,8 @@ def _apply_peephole(instrs):
     return [l for l in joined.split("\n") if l.strip()], removed
 
 
-# Switch-case jump table recovery
-# Ghidra SwitchOverride.java 和 IDA switch_info_t 的算法:
+# Switch-case 跳转表恢复
+# 参考 Ghidra SwitchOverride.java 和 IDA switch_info_t 的算法:
 # 1) 定位间接跳转 jmp [base + reg*scale]
 # 2) 回溯范围检查 guard (cmp reg, max_val; ja default)
 # 3) 从 base 地址读取连续的指针作为 case 目标
@@ -226,14 +226,14 @@ def _compute_dominators_raw(cfg):
 
 class FunctionDeobfuscator:
     """
-    Function-level deobfuscator
-    
-    Capabilities:
-    1. Dead code elimination
-    2. 控制流平坦化 recovery
-    3. Constant propagation folding
-    4. 不透明谓词 elimination
-    5. 去混淆 effectiveness evaluation
+    函数级去混淆器
+
+    能力:
+    1. 死代码消除
+    2. 控制流平坦化恢复
+    3. 常量传播折叠
+    4. 不透明谓词消除
+    5. 去混淆效果评估
     """
 
     def __init__(self, binary_path=None, deobfuscation_level=DeobfuscationLevel.MEDIUM):
@@ -273,7 +273,7 @@ class FunctionDeobfuscator:
         return edges - len(cfg.blocks) + 2 if len(cfg.blocks) > 1 else 1
 
     def recover_jump_tables(self) -> int:
-        """Switch-case 跳转表恢复 —— 在 去混淆() 中 dead code elimination 之前调用
+        """Switch-case 跳转表恢复 - 在去混淆() 中死代码消除之前调用
         成功恢复后，CFG 中会新增 case 目标块，后续的死代码消除和
         常量传播可以处理这些新块
         """
@@ -527,7 +527,7 @@ class FunctionDeobfuscator:
             logger.info(f"Detected: {pattern.value}")
             modifications = []
 
-# 跳转表恢复 (aggressive 模式)
+# 跳转表恢复（aggressive 模式）
             if self.deobfuscation_level == DeobfuscationLevel.AGGRESSIVE:
                 jtr = self.recover_jump_tables()
                 if jtr > 0:

@@ -69,9 +69,6 @@ class LatticeSideChannelAnalyzer:
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
 
-    def __init__(self):
-        pass
-
     # -- public API -----------------------------------------------------------
 
     def analyze(self, impl: Any, n: int = 256, q: int = 3329,

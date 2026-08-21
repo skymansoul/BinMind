@@ -1,9 +1,9 @@
-# 值范围传播器——在基本块内沿def-use链传播数值区间
+# 值范围传播器-在基本块内沿def-use链传播数值区间
 # 与buffer_size_infer.py的区别:
 #   buffer_size_infer: 只在call附近5条指令内查找立即数常量
 #   本模块: 追踪完整的寄存器MOV链、算术运算的区间效应、跨基本块的保守传播
 #
-# 核心创新: 不依赖常量折叠——即使参数来自函数输入或非确定性源，
+# 核心创新: 不依赖常量折叠-即使参数来自函数输入或非确定性源，
 # 也通过区间收缩(如cmp约束)推导尽可能紧的范围
 #
 # 理论依据:
@@ -18,7 +18,6 @@ import logging
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 # x86-64寄存器宽度归一化: 32位写零扩展到64位, eax→rax
@@ -31,7 +30,7 @@ def _norm_reg(r: str) -> str:
 
 @dataclass
 class ValueRange:
-    """数值的区间表示 [lo, hi]——闭区间"""
+    """数值的区间表示 [lo, hi]-闭区间"""
     lo: int
     hi: int
 
@@ -84,7 +83,7 @@ class ValueRange:
 
 @dataclass
 class DefUseNode:
-    """def-use链中的一个节点——记录哪个寄存器在哪个索引被定义"""
+    """def-use链中的一个节点-记录哪个寄存器在哪个索引被定义"""
     reg: str
     instr_idx: int
     value: ValueRange
@@ -92,7 +91,7 @@ class DefUseNode:
 
 
 class ValueRangePropagator:
-    """值范围传播器——指令序列中追踪寄存器值区间, 双ABI语法"""
+    """值范围传播器-指令序列中追踪寄存器值区间, 双ABI语法"""
 
     _PARAM_REGS = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9',
                    'edi', 'esi', 'edx', 'ecx', 'r8d', 'r9d']

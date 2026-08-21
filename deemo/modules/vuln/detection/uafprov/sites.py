@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-06  |  UAF 站点扫描——free 点与解引用点
 #
 """
 函数内 UAF 站点扫描。
@@ -17,8 +16,8 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-from heapver.insn import Instruction, callee_name
-from heapver.abi import find_free
+from ..heapver.insn import Instruction, callee_name
+from ..heapver.abi import find_free
 
 from .provenance import ProvenanceResolver, FreeSite, DerefSite
 

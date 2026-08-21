@@ -1,7 +1,6 @@
-# 创建: 2026-04-21
-# 修改: 2026-04-21 — 基础热度追踪升级为FTPL遗憾最优在线缓存
+# 基础热度追踪升级为FTPL遗憾最优在线缓存
 #
-# 遗憾最优在线缓存放置 — Follow-the-Perturbed-Leader + 局部性感知
+# 遗憾最优在线缓存放置 - Follow-the-Perturbed-Leader + 局部性感知
 #
 # 旧版 DataLocalityTracker 用 LRU 热度向量 + 综合评分做放置决策。
 # LRU 在对抗性访问模式下遗憾 Ω(N) (N = 缓存槽位数)。

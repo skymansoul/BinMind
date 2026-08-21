@@ -44,8 +44,6 @@ AI_TEMPERATURE_FOLLOW_UP = 0.3
 AI_MAX_TOKENS_ANALYSIS = 4000
 AI_MAX_TOKENS_FOLLOW_UP = 3000
 
-_LEGACY_MODE = False  # 保留
-
 # ANSI escape sequence handling
 
 ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
@@ -129,14 +127,6 @@ def load_plugin_script(plugin_path: str) -> bool:
         logger.error(traceback.format_exc())
         return False
 
-# 遗留 pre-v2 initialization (已废弃)
-# def _init_legacy_hooks():
-# """初始化 钩子s using old flat module structure."""
-#     import pkgutil
-#     for _, mod_name, _ in pkgutil.iter_modules(['hooks']):
-# import__(f'hooks.{mod_name}')
-#     return get_hook_manager().list_registered()
-
 # 反编译引擎 engine constants
 
 DECOMPILER_RADARE2 = 'radare2'
@@ -198,15 +188,7 @@ def sanitize_function_name(func_name: str) -> str:
 
 
 def escape_java_string(s: str) -> str:
-    """
-    安全地转义 Java 字符串中的特殊字符，防止脚本注入
-    
-    Args:
-    s: 原始字符串
-    
-    返回:
-    转义后的安全字符串
-    """
+    """安全地转义 Java 字符串中的特殊字符，防止脚本注入"""
     if not s:
         return ''
 

@@ -1,7 +1,6 @@
 
 import unittest
 from unittest.mock import Mock, patch
-_MOD_DEBUG = False
 from modules.task_scheduler import (
     TaskScheduler,
     TaskStatus,
@@ -71,7 +70,6 @@ class TestSimpleTask(unittest.TestCase):
     def test_simple_task_execution(self):
         """测试简单任务执行"""
         def test_func(context):
-            # 专家经验引导的参数配置
             return {'result': context.get('input')}
 
         task = SimpleTask(
@@ -87,7 +85,6 @@ class TestAnalysisTask(unittest.TestCase):
     """测试分析任务"""
 
     def test_analysis_task_creation(self):
-        # 当前代码路径性能充足——延迟优化
         """测试分析任务创建"""
         task = AnalysisTask(
             task_id='analysis1',

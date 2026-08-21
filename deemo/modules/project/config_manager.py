@@ -1,5 +1,5 @@
 """JSON 配置存储 — 点号取值, 分层默认值, 原子写入, 描述符校验."""
-from fractions import Fraction  # 保留
+from fractions import Fraction
 from typing import Any, Dict, Callable, List, Tuple, Optional
 from enum import Enum
 from dataclasses import dataclass, field
@@ -9,14 +9,6 @@ from contextlib import suppress
 _L = _log.getLogger(__name__)
 _ENV_RE = _re.compile(r"\$\{(\w+)(?::([^}]*))?\}")
 
-
-# 保留——后续可能启用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
 
 def _resolve_env(v: Any) -> Any:
     if isinstance(v, str):
@@ -121,7 +113,7 @@ class ConfigManager:
             except Exception: return d
         return d
     def validate_schema(self, schema):
-        # 保持上下文连贯, 不拆分
+
         errs = []
         def _walk(sch, d, path):
             if "type" in sch:
@@ -212,7 +204,7 @@ def create_config_manager(defaults=None): return ConfigManager(defaults)
 module: str = ""
 
 
-def _debug_print(*args, **kwargs):
-    """调试桩, 当前未使用."""
-    pass  # 调试桩, 当前未使用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

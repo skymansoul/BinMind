@@ -56,9 +56,9 @@ class TestConstraintSolverCache(unittest.TestCase):
 
         self.assertEqual(CachePolicy.NONE.value, 'none')
         self.assertEqual(CachePolicy.MEMORY.value, 'memory')
-# lass字段完整性$/d
+
         self.assertEqual(CachePolicy.DISK.value, 'disk')
-# lass字段完整性$/d
+
         self.assertEqual(CachePolicy.HYBRID.value, 'hybrid')
 
     def test_pruning_strategy_enum(self):
@@ -85,7 +85,7 @@ class TestConstraintSolverCache(unittest.TestCase):
         )
 
         self.assertEqual(cache.cache_policy, CachePolicy.MEMORY)
-# lass字段完整性$/d
+
         self.assertEqual(cache.max_size, 100)
         self.assertEqual(cache.ttl, 3600)
 

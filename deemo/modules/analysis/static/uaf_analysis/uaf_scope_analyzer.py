@@ -1,14 +1,14 @@
-"""分支作用域与置空区间分析 — UAF 误报抑制的证据基础.
+"""分支作用域与置空区间分析 - UAF 误报抑制的证据基础.
 
 误报根源:
-  R1: 路径不敏感 — free 与 use 位于互斥分支仍被报告
+  R1: 路径不敏感 - free 与 use 位于互斥分支仍被报告
   R4: 条件置空 — free 后分支内 p=NULL, 分支外 free(p) ≡ free(NULL)
 本模块从指令流提取:
   1. 分支区间: jcc → target, 划分 taken/fallthrough 两个地址区间
   2. 置空点: mov [slot],0 / mov reg,0 / xor reg,reg
 判定 API:
-  are_mutex(free_addr, use_addr) — 两地址位于同一 jcc 的互斥分支
-  is_nulled_before(use_addr, slot) — 槽在 use 前被置空 (无中间写入)
+  are_mutex(free_addr, use_addr) - 两地址位于同一 jcc 的互斥分支
+  is_nulled_before(use_addr, slot) - 槽在 use 前被置空 (无中间写入)
 """
 
 import re
@@ -22,7 +22,7 @@ _SLOT_RE = re.compile(r"\[(rbp|rsp)\s*([+-]\s*0x[0-9a-f]+|\+\s*\d+|\s*-\s*\d+)?\
 
 
 class ScopeAnalyzer:
-    """分支作用域分析器 — 一次构建, 多次查询."""
+    """分支作用域分析器 - 一次构建, 多次查询."""
 
     def __init__(self, insns: list):
         self._insns = insns
@@ -99,7 +99,7 @@ class ScopeAnalyzer:
     def are_mutex(self, addr_a: int, addr_b: int) -> bool:
         """两地址位于同一 jcc 的互斥分支区间.
 
-        约束: ft 块末尾 (target 前 4 条) 必须有 jmp/ret 出口 —
+        约束: ft 块末尾 (target 前 4 条) 必须有 jmp/ret 出口 -
         无出口的分支 (顺序汇合, 如 if (c) free(p); use(p)) 中
         use 与 free 同路径可达, 不构成互斥 (防误滤真 UAF).
         """

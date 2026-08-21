@@ -1,4 +1,3 @@
-form: str = ""
 import struct
 import logging
 import hashlib
@@ -398,15 +397,49 @@ class WasmParser:
         content_size = len(self.data) - self.offset
 
         if sName == 'name':
-            self._parse_name_section()
+            # 剩余子段载荷 = section_size - 名称长度前缀 - 名称字节数
+            name_bytes = len(sName.encode('utf-8'))
+            leb_len = max(1, (name_bytes.bit_length() + 6) // 7)
+            section_end = self.offset + (section_size - leb_len - name_bytes)
+            self._parse_name_section(section_end)
         elif sName == 'sourceMappingURL':
             self.result.custom_sections['source_map'] = self._read_bytes(content_size).decode('utf-8', errors='replace')
         else:
             self._read_bytes(section_size - len(sName) - 1)
 
 
-    def _parse_name_section(self):
-        pass
+    def _parse_name_section(self, section_end: int):
+        """解析 WASM name 段子段: 模块名(0)/函数名(1)/局部名(2)。
+
+        子段格式: id(1字节) + size(varuint) + 载荷; 其余子段跳过。
+        """
+        names = {'module_name': '', 'function_names': {}, 'local_names': {}}
+        end = min(section_end, len(self.data))
+        while self.offset < end:
+            sub_id = self._read_byte()
+            sub_size = self._read_varuint()
+            sub_end = min(self.offset + sub_size, end)
+            if sub_id == 0:
+                names['module_name'] = self._read_name()
+            elif sub_id == 1:
+                count = self._read_varuint()
+                for _ in range(count):
+                    idx = self._read_varuint()
+                    names['function_names'][idx] = self._read_name()
+            elif sub_id == 2:
+                count = self._read_varuint()
+                for _ in range(count):
+                    func_idx = self._read_varuint()
+                    local_count = self._read_varuint()
+                    for _ in range(local_count):
+                        local_idx = self._read_varuint()
+                        local_name = self._read_name()
+                        names['local_names'].setdefault(func_idx, {})[local_idx] = local_name
+            else:
+                # 其余子段 (type/table/memory/global/element/data) 跳过载荷
+                self._read_bytes(sub_end - self.offset)
+            self.offset = max(self.offset, sub_end)
+        self.result.custom_sections['name_section'] = names
 
 
     def _parse_start_section(self):

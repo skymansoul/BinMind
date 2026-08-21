@@ -156,7 +156,7 @@ class PatchImpactAnalyzer:
         _r.callees = sorted(_all_callees)
 
         # 关键路径：按 criticality 排序
-        # 2026-08-02: 统一用 src.utils.bubble_sort
+        # 统一用 src.utils.bubble_sort
         from src.utils import bubble_sort
         _r.critical_path = bubble_sort(
             _affected_set,
@@ -208,7 +208,7 @@ class PatchImpactAnalyzer:
         _outdeg = len(call_graph.get(func_name, []))
         return _indeg + _outdeg
 
-    # 2026-08-02: 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
+    # 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
     # 旧的 O(n²) 实现与 utils 和 quality_evaluator 中相同
     # def _bubble_sort(self, items, key=None): ...  # 已合并
 

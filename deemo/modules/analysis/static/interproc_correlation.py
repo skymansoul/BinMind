@@ -16,7 +16,6 @@
 #   组合式函数摘要分析可大幅降低误报
 #   二分搜索确定最小溢出条件
 #
-# 创建: 2026-05-11
 
 from typing import Dict, List, Optional, Set, Tuple, NamedTuple
 from dataclasses import dataclass, field

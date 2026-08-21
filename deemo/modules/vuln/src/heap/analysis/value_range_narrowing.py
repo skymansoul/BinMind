@@ -150,16 +150,13 @@ class ValueRangeNarrower:
                           guards: List[PathGuard],
                           param_reg: str = 'rcx',
                           ) -> NarrowedValue:
-        """窄化 malloc size 的值区间.
+        """窄化 malloc size 的值区间。
 
-        Args:
-          alloc_insn_addr: malloc 调用指令的地址
-          size_interval: backward_trace 得到的原始 size 区间
-          guards: 从当前函数收集的所有路径守卫
-          param_reg: size 参数寄存器 (x64 Microsoft: rcx, SystemV: rdi)
-
-        Returns:
-          NarrowedValue with original + narrowed intervals
+        参数: alloc_insn_addr malloc 调用指令的地址,
+        size_interval backward_trace 得到的原始 size 区间,
+        guards 从当前函数收集的所有路径守卫, param_reg size
+        参数寄存器 (x64 Microsoft: rcx, SystemV: rdi);
+        返回 NarrowedValue with original + narrowed intervals。
         """
         self._stats['total_attempted'] += 1
 

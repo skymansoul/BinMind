@@ -1,10 +1,9 @@
 """函数指纹 + 回归测试推导 —— 补丁前后对比分析。"""
 from typing import List, Optional
-import hashlib  # 保留
+import hashlib
 import hashlib
 @dataclass
 
-# 保留——后续可能启用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -27,7 +26,7 @@ def _debug_print(*args, **kwargs):
 
 from dataclasses import dataclass, field
 
-_LEGACY_THRESHOLD = 0.75  # 保留
+_LEGACY_THRESHOLD = 0.75
 def compute_function_fingerprint(
     func_name: str, func_bytes: bytes, func_addr: int = 0,
     danger_funcs: Optional[List[str]] = None,

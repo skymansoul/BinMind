@@ -1,21 +1,20 @@
 # coding: utf-8
-# 创建: 2026-08-04  |  路径约束过滤器——基于区间抽象解释滤除不可行路径
 #
 """
-路径约束过滤器——对检测候选做路径可达性验证, 滤除虚假路径。
+路径约束过滤器 - 对检测候选做路径可达性验证, 滤除虚假路径。
 
 解决的问题:
-  混淆/优化后的代码产生大量虚假控制流路径——检测器沿这些路径
+  混淆/优化后的代码产生大量虚假控制流路径 - 检测器沿这些路径
   报告"漏洞", 但实际执行中不可能到达。例如:
     O2优化可能将循环展开为条件分支路径, 其中某些路径的缓冲区
     约束矛盾（如x<0且x>100同时成立）, 实际不可达。
 
 方法:
   复用spcv_abstract_domain.py的区间抽象域, 对从入口到漏洞点的路径
-  做轻量抽象解释——若路径上存在矛盾约束(区间为空→BOTTOM),
+  做轻量抽象解释 - 若路径上存在矛盾约束(区间为空, BOTTOM),
   则该路径不可达, 候选被滤除。
 
-  仅处理数值约束（比较指令的立即数）——不追踪指针/内存。
+  仅处理数值约束（比较指令的立即数）, 不追踪指针/内存。
   复杂度: O(P*I) P=候选数, I=每条路径上的指令数。
 """
 
@@ -44,10 +43,10 @@ class PathFeasibility:
 
 
 class ConstraintFilter:
-    """路径约束过滤器——区间抽象解释的轻量应用。
+    """路径约束过滤器 - 区间抽象解释的轻量应用。
 
-    仅处理cmp reg, imm → jcc模式的比较-跳转约束。
-    若两条约束对同一寄存器产生矛盾区间→路径标记为不可行。
+    仅处理cmp reg, imm 到 jcc模式的比较-跳转约束。
+    若两条约束对同一寄存器产生矛盾区间, 路径标记为不可行。
     """
 
     def filter(self, candidates: List[Dict],
@@ -74,7 +73,7 @@ class ConstraintFilter:
             cand_addr = cand.get('address', 0)
             cand_idx = self._find_idx(instructions, cand_addr, base_addr)
             if cand_idx < 0:
-                filtered.append(cand)  # 无法定位→保留(不误删)
+                filtered.append(cand)  # 无法定位, 保留(不误删)
                 continue
 
             # 收集从入口(0)到cand_idx的约束
@@ -111,7 +110,7 @@ class ConstraintFilter:
 
     def _check_feasibility(self, constraints: List[ConstraintCheck]
                              ) -> PathFeasibility:
-        """检查约束集是否存在矛盾——区间交为空→不可行。"""
+        """检查约束集是否存在矛盾 - 区间交为空, 不可行。"""
         # 每变量的有效区间
         intervals: Dict[str, List[Tuple[int,int]]] = defaultdict(list)
 
@@ -144,7 +143,7 @@ class ConstraintFilter:
                       'jl':'lt','jb':'lt','jg':'gt','ja':'gt',
                       'je':'eq','jne':'eq'}
             return op_map.get(mnem, 'le')
-        return 'le'  # 默认——保守假设上界约束
+        return 'le'  # 默认, 保守假设上界约束
 
     def _parse(self, insn: str):
         s = insn.strip()

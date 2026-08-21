@@ -44,22 +44,10 @@ class UafHoigPipeline:
                 func_bodies: Optional[Dict[str, str]] = None,
                 calls: Optional[List[Tuple[str, str]]] = None,
                 ) -> Dict[str, Any]:
-        """运行完整的 HOIG UAF 分析.
+        """运行完整的 HOIG UAF 分析。
 
-        Args:
-            pseudocode: 主函数伪代码
-            func_name: 主函数名
-            func_bodies: 所有相关函数体 (用于跨函数分析)
-            calls: 调用关系 [(caller, callee), ...]
-
-        Returns:
-            {
-                'verdict': overall verdict,
-                'intra_func': intra-function findings,
-                'cross_func': cross-function findings,
-                'realloc': realloc findings,
-                'stats': performance stats,
-            }
+        func_bodies/calls 用于跨函数分析; 返回 {verdict, intra_func,
+        cross_func, realloc, stats}。
         """
         import time
         start = time.perf_counter()
@@ -135,15 +123,7 @@ class UafHoigPipeline:
     def refine_existing(self, existing_verdict: str,
                         hoig_result: Dict[str, Any]
                         ) -> Tuple[str, float, str]:
-        """用 HOIG 结果精化已有管线判定.
-
-        Args:
-            existing_verdict: PTASM/Temporal 的判定
-            hoig_result: HOIG 管线的分析结果
-
-        Returns:
-            (final_verdict, confidence, reason)
-        """
+        """用 HOIG 结果精化已有管线判定, 返回 (final_verdict, confidence, reason)。"""
         hoig_v = hoig_result.get('verdict', 'UNCERTAIN')
         hoig_c = hoig_result.get('confidence', 0.0)
 

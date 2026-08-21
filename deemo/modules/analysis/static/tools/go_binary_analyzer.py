@@ -1,11 +1,9 @@
-# 2026-07-29
 import re
 import struct
 from typing import List, Dict, Optional, Tuple
 
-
 class GoBinaryAnalyzer:
-    """binary detection, version extraction, pclntab recovery, -specific vuln patterns"""
+    """Go二进制检测: 版本提取, pclntab函数恢复, Go特有漏洞模式"""
 
 # 初始化: Go特征签名
 
@@ -177,7 +175,7 @@ class GoBinaryAnalyzer:
             'indicators': _indicators,
         }
 
-    # //// Go版本提取 ////
+    # Go版本提取
 
     def extract_version(self, data: bytes) -> Optional[str]:
         for _pat in self._go_version_patterns:
@@ -281,7 +279,7 @@ class GoBinaryAnalyzer:
 
         return _findings
 
-    # //// Go依赖检测 ////
+    # Go依赖检测
 
     def extract_dependencies(self, data: bytes, strings: List[str]) -> List[Dict]:
         _deps = []

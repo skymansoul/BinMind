@@ -1,5 +1,4 @@
-# 创建: 2026-06-14 19:10
-# 修改: 2026-06-14 — L* Observation Table + Mealy 机构造 + 反例生成
+# L* Observation Table + Mealy 机构造 + 反例生成
 """主动协议状态机推断 — L* 算法适配 Mealy 机 + 消息子类型发现。
 
 现有协议逆向是被动推断, 状态覆盖度受限于 trace 完整性。

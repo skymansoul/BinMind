@@ -69,7 +69,7 @@ def _beta_ppf_approx(alpha: float, beta_param: float, q: float) -> float:
         raw = mean + z * sd
         return max(0.0, min(1.0, raw))
 
-    # 小参数场景——用均值附近的二次插值
+    # 小参数场景, 用均值附近的二次插值
     # 精度足够：在 α,β ∈ [1, 5] 范围内误差 < 0.03
     mean = alpha / total
     return max(0.0, min(1.0, mean + (q - 0.5) * 0.5))
@@ -81,7 +81,7 @@ def _beta_ppf_approx_inv(alpha: float, beta_param: float, q: float) -> float:
 
 
 def _normal_ppf_approx(q: float) -> float:
-    """标准正态分位数近似——Abramowitz-Stegun 公式 26.2.23。"""
+    """标准正态分位数近似 - Abramowitz-Stegun 公式 26.2.23。"""
     if q <= 0.0:
         return -8.0
     if q >= 1.0:
@@ -178,7 +178,7 @@ class AdversarialHardeningEngine:
     def robust_risk_scores(self, risk_scorer_fn,
                            robustness_level: float = 0.95
                            ) -> Tuple[Dict[str, float], Dict[str, float]]:
-        """计算鲁棒风险评分——使用每条边 HDI 下界（最坏情况）。
+        """计算鲁棒风险评分: 使用每条边 HDI 下界（最坏情况）。
 
         risk_scorer_fn: Callable[[PropagationGraph], Dict[str, float]]
         robustness_level: 鲁棒性水平（0.9=宽松，0.95=标准，0.99=严格）
@@ -263,7 +263,7 @@ class AdversarialHardeningEngine:
         return sorted(anomalies, key=lambda x: abs(x[1]), reverse=True)
 
     def edge_adversarial_robustness(self) -> Dict[Tuple[str, str], float]:
-        """逐边的对抗鲁棒性评分——值越高越难操纵。
+        """逐边的对抗鲁棒性评分: 值越高越难操纵。
 
         评分=1.0 - 95% HDI 宽度。
         宽度越小（证据越多），评分越接近 1.0 → 越鲁棒。

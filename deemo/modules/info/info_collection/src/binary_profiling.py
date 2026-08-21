@@ -1,5 +1,3 @@
-# Created: 2026-07-22 11:50:14
-#
 # binary_profiling — 二进制深度分析原语
 # 提供 binary_scanner.py 所需的熵/ngram/加密常量/shellcode/APIhashing/XOR混淆/IOC 函数
 # 原有代码从 ..info_collect 导入但函数未定义，此处补齐实现

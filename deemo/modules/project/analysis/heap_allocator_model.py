@@ -219,12 +219,11 @@ class HeapAllocatorModel:
                                write_offset: int,
                                requested_alloc_min: int,
                                ) -> Tuple[bool, str]:
-        """判断一个写入是否确定安全 (基于分配器行为模型).
+        """判断一个写入是否确定安全 (基于分配器行为模型)。
 
-        Returns:
-          (is_safe, reason) — 若is_safe=True, 该发现应被过滤为误报.
-          此方法比 ConstraintSimplifier 的L0更精确, 因为它使用
-          实际可用空间而非请求大小.
+        返回 (is_safe, reason) — 若is_safe=True, 该发现应被过滤
+        为误报。此方法比 ConstraintSimplifier 的L0更精确, 因为
+        它使用实际可用空间而非请求大小。
         """
         actual_usable = self.get_usable_size(requested_alloc_min)
         safe_bound = max(0, actual_usable - write_offset)

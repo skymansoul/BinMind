@@ -71,7 +71,7 @@ class JITPatternExtractor:
         return regions[:50]
 
     def estimate_code_cache_size(self) -> int:
-        """估计 JIT 代码缓存的总大小——所有含执行权限的非只读页面的总和"""
+        """估计 JIT 代码缓存的总大小, 所有含执行权限的非只读页面的总和"""
         self._load(); total = 0
         # 扫描 4KB 对齐的页，检测代码密度
         for offset in range(0, min(len(self._data), 0x200000), 0x1000):

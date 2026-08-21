@@ -1,5 +1,5 @@
 # Embedding utilities extracted from deep_search.py.
-# INTJ rationale: EmbeddingStore and FunctionEmbedder form the core representation
+# Rationale: EmbeddingStore and FunctionEmbedder form the core representation
 # layer — 向量 storage, similarity metrics, and neural 嵌入 构造.
 # Extracting them into a dedicated module decouples the representation concern
 # from the 训练/推理 orchestration in deep_search.py, allowing each
@@ -267,11 +267,7 @@ class FunctionEmbedder:
         return emb
 
     def forward_with_activations_fe(self, features):
-        """前向传播并保留所有中间激活值，供反向传播用。
-
-        Returns:
-            (embedding, [input_vec, h1_pre, h1_post, h2_pre, h2_post, emb_pre])
-        """
+        """前向传播并保留所有中间激活值，供反向传播用。"""
         if features is None:
             dummy = [0.0] * self.m_output_dim
             return dummy, []
@@ -297,13 +293,6 @@ class FunctionEmbedder:
 
         用于 contrastive loss 训练时更新 embedder 参数。
         链式法则：dL/dW = dL/d(emb) · d(emb)/d(act) · d(act)/dW
-
-        Args:
-            features: 输入特征向量
-            target_grad: dL/d(embedding)，即损失对最终嵌入的梯度
-
-        Returns:
-            (list of grad_w matrices, list of grad_b vectors)
         """
         emb, acts = self.forward_with_activations_fe(features)
         if not acts:

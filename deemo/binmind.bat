@@ -31,4 +31,4 @@ if %ERRORLEVEL% neq 0 (
 
 rem Execute — all arguments forwarded to the Python script
 rem Note: paths with spaces in cmd must be quoted
-"%g_PYTHON_BIN%" "%g_SCRIPT_DIR%binmind.py" %*
+"%g_PYTHON_BIN%" "%g_SCRIPT_DIR%main.py" %*

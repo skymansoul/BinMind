@@ -75,18 +75,14 @@ def classify_patch_type(added_lines: list[str], removed_lines: list[str],
 
 def compute_semantic_diff(before_cfg: dict, after_cfg: dict) -> dict:
     """比较补丁前后 CFG 的语义差异。
-    before_cfg/after_cfg: {block_addr: {'instructions': [...], 'successors': [...]}}
 
-    返回:
-    {
-        'added_blocks': int,        # 新增基本块数
-        'removed_blocks': int,      # 删除基本块数
-        'changed_blocks': int,      # 修改基本块数（指令变更但地址未变）
-        'added_edges': int,         # 新增控制流边的数量
-        'removed_edges': int,
-        'complexity_delta': float,  # 圈复杂度变化 (正=增加)
-        'security_impact': str,     # none|low|medium|high|critical
-    }"""
+    before_cfg/after_cfg 为 {block_addr: {'instructions': [...],
+    'successors': [...]}}; 返回 {'added_blocks': 新增基本块数,
+    'removed_blocks': 删除基本块数, 'changed_blocks': 修改基本块数
+    (指令变更但地址未变), 'added_edges': 新增控制流边数,
+    'removed_edges': 删除边数, 'complexity_delta': 圈复杂度变化
+    (正=增加), 'security_impact': none|low|medium|high|critical}。
+    """
     before_addrs = set(before_cfg.keys())
     after_addrs = set(after_cfg.keys())
 

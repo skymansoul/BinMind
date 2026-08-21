@@ -1,4 +1,4 @@
-# 堆溢出误报过滤器——通过三阶段验证压低误报率
+# 堆溢出误报过滤器-通过三阶段验证压低误报率
 # 核心创新: 不是简单地标记所有memcpy/strcpy为漏洞，
 # 而是对每个sink执行: (1)源参数可控性验证 (2)分配大小vs拷贝大小比较
 # (3)路径可达性确认。三层过滤后仅保留真正的溢出。
@@ -24,15 +24,14 @@ from ..taint.backward_taint import (
 from .buffer_size_infer import (
     BufferSizeInferer, OverflowVerdict, IntervalValue)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class FilterVerdict(Enum):
-    CONFIRMED = 'confirmed'       # 三层验证全部通过——确定漏洞
-    LIKELY = 'likely'             # 两层通过——高概率漏洞
-    UNCERTAIN = 'uncertain'       # 仅一层通过——需人工审查
-    FILTERED = 'filtered'         # 全部未通过——误报已排除
+    CONFIRMED = 'confirmed'       # 三层验证全部通过-确定漏洞
+    LIKELY = 'likely'             # 两层通过-高概率漏洞
+    UNCERTAIN = 'uncertain'       # 仅一层通过-需人工审查
+    FILTERED = 'filtered'         # 全部未通过-误报已排除
 
 
 @dataclass
@@ -60,13 +59,12 @@ class HeapOverflowFilter:
     阶段2 (SIZE): 分配大小是否小于拷贝大小
       比较最近的malloc(size)参数与memcpy(dst,src,n)的n参数
       n <= size → 排除(合法拷贝)
-
     阶段3 (PATH): sink是否在从入口可达的执行路径上
-      CFG中从函数入口基本块出发BFS——不可达的sink→排除
+      CFG中从函数入口基本块出发BFS-不可达的sink→排除
       (排除死代码中的危险函数调用)
     """
 
-    # 拷贝类危险函数——需要验证参数
+    # 拷贝类危险函数-需要验证参数
     _COPY_SINKS = {'memcpy', 'memmove', 'strcpy', 'strncpy',
                    'sprintf', 'snprintf', 'gets', 'read',
                    'fread', 'recv'}
@@ -85,9 +83,7 @@ class HeapOverflowFilter:
                           ) -> List[HeapOverflowReport]:
         """对单个函数执行三阶段堆溢出过滤。
 
-        Returns:
-            过滤后的HeapOverflowReport列表——
-            仅CONFIRMED/LIKELY的值得关注，UNCERTAIN建议人工审查
+        仅CONFIRMED/LIKELY的值得关注，UNCERTAIN建议人工审查
         """
         n = len(instructions)
         if n < 3:
@@ -111,11 +107,11 @@ class HeapOverflowFilter:
             if sink is None:
                 continue
 
-            # 阶段1: 污点验证——拷贝目标是用户可控的?
+            # 阶段1: 污点验证-拷贝目标是用户可控的?
             taint_r = self._taint.trace_param(i, 'rdi', instructions)
             taint_ok = self._taint.is_vulnerable_sink(taint_r)
 
-            # 阶段2: 大小验证——分配大小 < 拷贝大小?
+            # 阶段2: 大小验证-分配大小 < 拷贝大小?
             size_ok = False
             alloc_idx = self._find_nearest_alloc(instructions, i)
             alloc_size = None
@@ -135,7 +131,7 @@ class HeapOverflowFilter:
                             size_ok = True  # 区间重叠→潜在溢出
                         break
 
-            # 阶段3: 路径可达性——sink所在基本块是否从入口可达?
+            # 阶段3: 路径可达性-sink所在基本块是否从入口可达?
             path_ok = self._is_reachable_block(i, bb_boundaries, reachable)
 
             # 综合判定
@@ -192,7 +188,7 @@ class HeapOverflowFilter:
                             bb_boundaries: List[Tuple[int, int]],
                             cfg_edges: List[Tuple[int, int]]
                             ) -> Set[int]:
-        """从入口块(bb 0) BFS——返回所有可达的基本块索引"""
+        """从入口块(bb 0) BFS-返回所有可达的基本块索引"""
         if not bb_boundaries:
             return set()
         reachable = {0}
@@ -223,7 +219,7 @@ class HeapOverflowFilter:
                       reports: List[HeapOverflowReport],
                       min_level: FilterVerdict = FilterVerdict.LIKELY
                       ) -> List[HeapOverflowReport]:
-        """批量过滤——仅保留指定级别以上的报告"""
+        """批量过滤-仅保留指定级别以上的报告"""
         levels = {FilterVerdict.CONFIRMED: 3, FilterVerdict.LIKELY: 2,
                  FilterVerdict.UNCERTAIN: 1, FilterVerdict.FILTERED: 0}
         threshold = levels.get(min_level, 2)

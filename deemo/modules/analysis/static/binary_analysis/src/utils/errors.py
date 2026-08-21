@@ -68,13 +68,13 @@ class TimeoutError(AnalysisError):
         self.seconds = seconds
 
 
-# //// 解析与校验错误 —— 2026-08-01 从 analysis_core 错误体系迁移
+# 解析与校验错误 - 2026-08-01 从 analysis_core 错误体系迁移
 
 
 class ParseError(AnalysisError):
     """解析阶段错误：格式错误、字段超出范围、magic 不匹配等
-    
-    INTJ策略: 与 BinaryParseError 不同，ParseError 关注的是结构化数据解析
+
+    与 BinaryParseError 不同，ParseError 关注的是结构化数据解析
     （YAML/JSON/protobuf），而非二进制文件头解析。分离两者便于调用方精确定位
     """
 
@@ -89,8 +89,8 @@ class ParseError(AnalysisError):
 
 class ValidationError(AnalysisError):
     """数据校验错误：输入不满足 schema 约束
-    
-    INTJ策略: 校验层独立于解析层。解析只负责结构化，校验负责语义正确性
+
+    校验层独立于解析层。解析只负责结构化，校验负责语义正确性
     这样可以对同一种数据格式（如 YAML）应用多套不同 schema
     """
 

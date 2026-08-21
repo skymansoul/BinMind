@@ -1,12 +1,11 @@
-# 类型枚举 — ContractType与VulnerabilityType，二者均继承Python Enum并以字符串为值
-# 不拆: 这些枚举是全局约定，拆了反而散
+# 类型枚举 - ContractType与VulnerabilityType，二者均继承Python Enum并以字符串为值
 
 from enum import Enum
-from typing import Any  # 不拆：留着，以后可能加自定义验证
+from typing import Any
 
 
 class ContractType(str, Enum):
-    """合约类型枚举 — 对应 EVM/WASM 编译目标。
+    """合约类型枚举 - 对应 EVM/WASM 编译目标。
 
     继承 str 以便与字符串字面量直接比较：
         ContractType.EVM == "evm"  # True
@@ -20,7 +19,7 @@ class ContractType(str, Enum):
 
 
 class VulnerabilityType(str, Enum):
-    """漏洞类型枚举 — 字节码静态分析可检测的各类弱点。
+    """漏洞类型枚举 - 字节码静态分析可检测的各类弱点。
 
     继承 str 以便与字符串字面量直接比较：
         VulnerabilityType.REENTRANCY == "reentrancy"  # True
@@ -52,7 +51,7 @@ class VulnerabilityType(str, Enum):
 
 
 class Severity(int, Enum):
-    """严重等级 — 数值间隔允许中间插入。
+    """严重等级 - 数值间隔允许中间插入。
 
     继承 int 以便与整数字面量直接比较：
         Severity.CRITICAL > Severity.HIGH  # True
@@ -63,11 +62,3 @@ class Severity(int, Enum):
     MEDIUM = 40
     LOW = 15
     INFO = 5
-
-
-# 不拆: 用来做 severity 加权平均，以后可能用
-def _dead_severity_weighted_avg(sev_list: list) -> float:
-    """加权平均 severity 数值 — 当前未使用，留给 dashboard。"""
-    if not sev_list:
-        return 0.0
-    return sum(sev_list) / len(sev_list)

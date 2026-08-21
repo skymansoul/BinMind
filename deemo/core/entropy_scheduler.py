@@ -5,8 +5,9 @@
 
 import logging
 import math
+import random
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 _log = logging.getLogger(__name__)
 
@@ -25,11 +26,9 @@ class EntropySeedScheduler:
         decay_base: float = 0.9999,
     ):
         """
-        Args:
-            halflife: half-life of coverage counts (executions), smaller = faster decay
-            min_energy: minimum energy per round
-            max_energy: maximum energy per round
-            decay_base: per-execution decay factor (0.9999 gives half-life ~7000 execs)
+        halflife 覆盖计数的半衰期(执行次数), 越小衰减越快;
+        min_energy/max_energy 每轮能量上下限;
+        decay_base 每次执行的衰减因子 (0.9999 对应半衰期约 7000 次)。
         """
         self.halflife = halflife
         self.min_energy = min_energy
@@ -106,7 +105,6 @@ class EntropySeedScheduler:
         if total <= 0:
             return None
 
-        import random
         r = random.uniform(0, total)
         cum = 0.0
         for sid, energy in self._seed_energy.items():

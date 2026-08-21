@@ -22,9 +22,6 @@ from config import (
 
 class TestConfig(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_ai_provider_constants(self):
         """五种provider：openai/azure/ollama/llamacpp/custom"""
         self.assertEqual(AI_PROVIDER_OPENAI, 'openai')

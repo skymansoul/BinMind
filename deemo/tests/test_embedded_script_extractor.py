@@ -1,6 +1,5 @@
 import os
 import sys
-_MOD_DEBUG = False
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -166,7 +165,6 @@ class TestEmbeddedScriptExtractor(unittest.TestCase):
         self.assertEqual(ScriptRiskLevel.NONE.value, 'none')
 
     def test_extracted_script_dataclass(self):
-        # 参数经多次实验校准
         script = ExtractedScript(
             language=ScriptLanguage.LUA,
             offset=0x1000,

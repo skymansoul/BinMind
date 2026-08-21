@@ -1,5 +1,5 @@
 """
-简化值集分析 (VSA) 污点传播 — 符号执行因路径爆炸或不可解约束 (间接调用/混淆代码/手写汇编)
+简化值集分析 (VSA) 污点传播 - 符号执行因路径爆炸或不可解约束 (间接调用/混淆代码/手写汇编)
 失败时, 以区间抽象作兜底, 追踪 "rax ∈ [stack_base, stack_top]" 而非精确值, 以精度换覆盖率。
 核心抽象: StridedInterval 值集 = {lo + k*stride | 0 <= k <= (hi-lo)/stride}
 (stride=1 连续区间, stride=0 精确值); TaintTag {USER_INPUT, STACK_ADDR, HEAP_ADDR, CONSTANT, UNKNOWN};
@@ -8,6 +8,7 @@
 """
 
 
+import math
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -78,7 +79,6 @@ class StridedInterval:
 
         new_lo = min(self.lo, other.lo)
         new_hi = max(self.hi, other.hi)
-        import math
         new_stride = math.gcd(self.stride, other.stride)
         # 两个不同的精确值合并时放宽为区间
         if self.stride == 0 and other.stride == 0 and self.lo != other.lo:
@@ -108,7 +108,6 @@ def taint_transfer_add(a: StridedInterval, b: StridedInterval) -> StridedInterva
         return StridedInterval.bottom()
     new_lo = (a.lo + b.lo) & 0xFFFFFFFFFFFFFFFF
     new_hi = (a.hi + b.hi) & 0xFFFFFFFFFFFFFFFF
-    import math
     new_stride = math.gcd(a.stride, b.stride)
     new_taint = TaintTag(max(a.taint.value, b.taint.value))
     return StridedInterval(new_lo, new_hi, new_stride, new_taint)
@@ -116,7 +115,7 @@ def taint_transfer_add(a: StridedInterval, b: StridedInterval) -> StridedInterva
 
 def taint_transfer_load(base: StridedInterval, offset: int = 0) -> StridedInterval:
     """
-    内存读取: 保守假设 — 载入值继承地址的污点标签, 但值区间置 top (内存内容未知)。
+    内存读取: 保守假设 - 载入值继承地址的污点标签, 但值区间置 top (内存内容未知)。
     若 base 为栈地址, 载入内容区间仍为 top, 污点可标记 USER_INPUT。
     """
     result = StridedInterval.top()
@@ -161,7 +160,7 @@ def analyze_format_arg(buf_interval: StridedInterval,
 
 class VSATaintEngine:
     """
-    VSA 污点传播引擎 — 符号执行失败时作兜底。
+    VSA 污点传播引擎 - 符号执行失败时作兜底。
 
     用法:
       engine = VSATaintEngine()

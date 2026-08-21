@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-04 10:33 - 逆向切片深度自限: 回溯 <=32 条指令, 超出部分保守标记为 UNKNOWN
-# 2025-08-05 09:12 - 污点源分类: INPUT_BYTE/FILE_CONTENTS/NETWORK_DATA/HEAP_SPRAY/UNKNOWN
+# 逆向切片深度自限: 回溯 <=32 条指令, 超出部分保守标记为 UNKNOWN
+# 污点源分类: INPUT_BYTE/FILE_CONTENTS/NETWORK_DATA/HEAP_SPRAY/UNKNOWN
 
 """崩溃状态逆向符号切片 - 从崩溃寄存器状态反推攻击者可控性
 

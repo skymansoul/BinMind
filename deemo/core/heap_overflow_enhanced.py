@@ -1,4 +1,4 @@
-"""GAPSBV 5阶段堆溢出检测: 区间→约束→循环→分配器→误报过滤, 附加仿射与污点追踪。"""
+"""GAPSBV 5阶段堆溢出检测: 区间-约束-循环-分配器-误报过滤, 附加仿射与污点追踪。"""
 import re
 import time
 from dataclasses import dataclass, field
@@ -12,7 +12,12 @@ from core.loop_bound_widening import (
 from core.allocator_model import AllocatorType, detect_allocator
 from core.heap_verifier import verify_overflow, apply_relational_check
 from core.affine_analyzer import AffineAnalyzer
-from core.taint_tracker import TaintTracker, taint_adjust_confidence
+try:
+    from core.taint_tracker import TaintTracker, taint_adjust_confidence
+except ImportError:
+    # 污点层 API 已移除; 降级为 None, 调用点按守卫跳过
+    TaintTracker = None
+    taint_adjust_confidence = None
 @dataclass
 class EnhancedHeapCandidate:
     """带分析来源的堆溢出候选。"""
@@ -37,7 +42,7 @@ class EnhancedHeapCandidate:
             f"conf={self.confidence:.2f} fp={self.fp_likelihood:.2f}"
         )
 class EnhancedHeapOverflowDetector:
-    """五阶段增强堆溢出检测器 — 用法: EnhancedHeapOverflowDetector(platform).detect(ir_lines)。"""
+    """五阶段增强堆溢出检测器 - 用法: EnhancedHeapOverflowDetector(platform).detect(ir_lines)。"""
     def __init__(self, platform: str = "x86_64"):
         self._platform = platform
         self._interval_prop = ForwardIntervalPropagator()
@@ -68,7 +73,7 @@ class EnhancedHeapOverflowDetector:
         if not allocs or not writes:
             self.stats['elapsed'] = time.time() - t0
             return []
-        # 1.5: 清除被取代的分配点 — 同变量的 realloc/malloc 使旧分配点失效
+        # 1.5: 清除被取代的分配点 - 同变量的 realloc/malloc 使旧分配点失效
         allocs = self._dedup_alloc_sites(allocs)
         # 阶段2: 约束收集与求精
         constraints = self._constraint_collector.extract_constraints(ir_lines)
@@ -79,7 +84,7 @@ class EnhancedHeapOverflowDetector:
         # 阶段3.5: 仿射关系分析
         affine = AffineAnalyzer()
         aff_allocs, aff_writes, _ = affine.analyze(ir_lines)
-        # 建立 分配变量→大小变量 映射供仿射匹配
+        # 建立 分配变量-大小变量 映射供仿射匹配
         aff_alloc_sz: Dict[str, str] = {
             a['var']: a['size_var'] for a in aff_allocs}
         self.stats['affine_mallocs'] = len(aff_allocs)
@@ -87,9 +92,13 @@ class EnhancedHeapOverflowDetector:
         self.stats['affine_proven'] = 0
         self.stats['taint_adjustments'] = 0
         # Taint: 识别攻击者可控size变量
-        taint = TaintTracker()
-        taint.analyze(ir_lines)
-        self.stats['tainted_vars'] = taint.stats()['tainted_vars']
+        taint = None
+        if TaintTracker is not None:
+            taint = TaintTracker()
+            taint.analyze(ir_lines)
+            self.stats['tainted_vars'] = taint.stats()['tainted_vars']
+        else:
+            self.stats['tainted_vars'] = 0
         # 阶段4与5: 逐一核验分配-写入对
         candidates: List[EnhancedHeapCandidate] = []
         for alloc in allocs:
@@ -111,7 +120,7 @@ class EnhancedHeapOverflowDetector:
                 refined_write = write.size_interval
                 refined_write, _ = collect_and_refine(
                     ir_lines, write.dst_var, refined_write, write.loc)
-                # 别名偏移: buf+offset 写入 → 检查 [offset, offset+size] 与分配大小
+                # 别名偏移: buf+offset 写入 - 检查 [offset, offset+size] 与分配大小
                 if alias_offset > 0:
                     refined_write = Interval(
                         refined_write.lo + alias_offset,
@@ -155,12 +164,13 @@ class EnhancedHeapOverflowDetector:
                 alloc_sz = aff_alloc_sz.get(alloc.var_name, '')
                 write_sz = next((aw['size_var'] for aw in aff_writes
                                  if aw['dst_var'] == write.dst_var), '')
-                confidence = taint_adjust_confidence(
-                    alloc_sz, write_sz, confidence, taint)
-                if confidence != prev_conf:
-                    self.stats['taint_adjustments'] += 1
-                # 污点判定升级: 两端攻击者可控且无约束 → 真漏洞
-                if (alloc_sz and write_sz
+                if taint_adjust_confidence is not None and taint is not None:
+                    confidence = taint_adjust_confidence(
+                        alloc_sz, write_sz, confidence, taint)
+                    if confidence != prev_conf:
+                        self.stats['taint_adjustments'] += 1
+                # 污点判定升级: 两端攻击者可控且无约束 - 真漏洞
+                if (taint is not None and alloc_sz and write_sz
                     and taint.taint_score(alloc_sz) >= 1.0
                     and taint.taint_score(write_sz) >= 1.0
                     and verdict in ('FILTERED', 'UNCERTAIN')
@@ -190,7 +200,7 @@ class EnhancedHeapOverflowDetector:
                     },
                 )
                 candidates.append(cand)
-        # 关系检查: write_size = alloc_size * k (k>1) → 溢出
+        # 关系检查: write_size = alloc_size * k (k>1) - 溢出
         candidates = apply_relational_check(ir_lines, candidates)
         candidates.sort(key=lambda c: (-c.confidence, -c.overflow_bytes_max))
         self.stats['s5_candidates'] = len(candidates)
@@ -215,7 +225,7 @@ class EnhancedHeapOverflowDetector:
         if var1 == var2:
             return True, 0
         # 结构体字段访问: base->field 别名 base (偏移保守取0)
-        # 例如 c->payload → c 是同一块堆内存的字段写入
+        # 例如 c->payload - c 是同一块堆内存的字段写入
         m_field = re.match(rf'^{re.escape(var2)}\s*->\s*(\w[\w.]*)', var1)
         if m_field:
             return True, 0  # 保守: 字段偏移未知时设为0

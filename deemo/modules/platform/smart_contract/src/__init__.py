@@ -1,6 +1,5 @@
-# smart_contract/src — EVM bytecode analysis pipeline
+# smart_contract/src - EVM bytecode analysis pipeline
 # Lazy-load submodules via _submodules registry
-# 不拆: 懒加载 table 集中管理
 
 __version__ = "0.5.0"
 

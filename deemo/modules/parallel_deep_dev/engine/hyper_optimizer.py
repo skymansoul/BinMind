@@ -49,7 +49,7 @@ import time
 from dataclasses import dataclass, field
 
 # GP回归 + 线性代数委托给 engine/gp_regression.py
-from parallel_deep_dev.engine.gp_regression import (
+from .gp_regression import (
     gp_predict, expected_improvement,
 )
 
@@ -65,7 +65,7 @@ PARAM_BOUNDS: dict[str, tuple[float, float]] = {
 PARAM_INTEGER: set[str] = {"max_tokens", "worker_count"}
 PARAM_LOG_SCALE: set[str] = {"max_tokens"}
 
-from parallel_deep_dev.config import _data_dir
+from ..config import _data_dir
 _OBSERVATIONS_PATH = os.path.join(_data_dir(), "hyper_observations.json")
 
 

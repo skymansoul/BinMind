@@ -2,20 +2,11 @@ import logging, struct, os
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
 logger = logging.getLogger(__name__)
 
-
-# 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
 
 class MmapProtection: NONE=0; READ=1; WRITE=2; EXEC=4; RW=3; RX=5; RWX=7
 
@@ -130,9 +121,4 @@ def analyze_mmap_regions(maps_content: str, **kwargs) -> Dict[str, Any]:
     return MmapBinaryAnalyzer().analyze(maps_content=maps_content)
 
 __all__ = ["MmapBinaryAnalyzer", "MmapParser", "ElfHeaderParser", "MappedRegion", "MmapProtection", "ElfSegment", "analyze_mmap_regions"]
-
-
-def _debug_print(*args, **kwargs):
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前未使用
 

@@ -1,13 +1,12 @@
-# 创建: 2026-04-21
-# 修改: 2026-04-21 — 基础等边际分配升级为contract算法+竞比分析
+# 基础等边际分配升级为contract算法+竞比分析
 #
-# Contract算法驱动的Anytime调度 — 竞比保证的中断策略
+# Contract算法驱动的Anytime调度 - 竞比保证的中断策略
 #
-# 旧版用凹精度函数的等边际贪心——这在固定预算下最优，但忽略了
+# 旧版用凹精度函数的等边际贪心 - 这在固定预算下最优, 但忽略了
 # anytime调度的核心挑战: 中断时机的不确定性。
 #
 # Contract算法: 将 anytime 任务分解为
-# 一系列 contract (契约)——每个 contract 分配固定时间片 t_i,
+# 一系列 contract (契约), 每个 contract 分配固定时间片 t_i,
 # 返回精度 increment Δq_i。中断可在任意 contract 之间安全发生。
 #
 # 中断的最优策略: 给定 K 个 contracts, 每个有 (t_i, Δq_i),

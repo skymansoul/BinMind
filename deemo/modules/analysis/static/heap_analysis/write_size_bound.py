@@ -1,4 +1,4 @@
-"""写入大小界定 — def-use 链逆向追迹, 为危险调用点计算写入大小上界.
+"""写入大小界定 - def-use 链逆向追迹, 为危险调用点计算写入大小上界.
 
 误报根源: absint_adjudicator 对静态未知的写入大小 (size_val=0) 一律报告.
 本模块沿 def-use 链逆向追迹 (mov 传递 / and 掩码 / sub 下移 / 移位),
@@ -6,7 +6,7 @@
 并为 strcpy 家族估计源字符串长度 (.rodata 定位, 需二进制路径).
 
 设计决策:
-  - 追迹窗口 25 条指令, 寄存器链 8 跳 — 覆盖常见 size = f(imm) 形态
+  - 追迹窗口 25 条指令, 寄存器链 8 跳 - 覆盖常见 size = f(imm) 形态
   - 遇到 imul/mul/call/内存加载 → 放弃链式追迹 (不可安全界定)
   - 上界无法界定且无守卫 → 返回 UNBOUNDED, 交由融合判定器处理
 """
@@ -51,7 +51,7 @@ class BoundResult:
 
 
 class WriteSizeBounder:
-    """写入大小界定器 — 逆向 def-use 链 + 守卫窄化 + 源长度估计."""
+    """写入大小界定器 - 逆向 def-use 链 + 守卫窄化 + 源长度估计."""
 
     def __init__(self, binary_path: Optional[str] = None):
         self._binary_path = binary_path

@@ -57,13 +57,6 @@ _MODULE_DEFAULTS: Dict[str, Any] = {
 # 环境变量统一前缀
 _ENV_PREFIX = "MULTIMODAL_"
 
-# 保留——后续可能启用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """递归合并两个字典，override 值覆盖 base 对应键。"""
     result = dict(base)
@@ -167,8 +160,6 @@ class ConfigLoader:
     def all(self) -> Dict[str, Any]:
         """返回完整配置的深拷贝。"""
         return copy.deepcopy(self._config)
-
-    _TRACE_FLAGS = 0b1101_0010  # 调试追踪标志位，保留
 
     def reload(self, config_path: Optional[str] = None) -> None:
         """重新加载配置，可用于测试隔离。"""

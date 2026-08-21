@@ -14,7 +14,7 @@
 #   (5) 硬件钱包 USB VID/PID + HID 帧结构
 #   (6) ZK-Rollup: Groth16/Plonk验证器合约字节码模式 (见zkp_detector)
 #
-Nakamoto, Wood,
+# Nakamoto, Wood,
 # BIP32/39/44 (HD wallet standards), EIP-1559 (London),
 # "Large Language Models for Blockchain Security: A Systematic Literature Review" (Zotero),
 # "Towards a Formal Foundation for Blockchain ZK Rollups".

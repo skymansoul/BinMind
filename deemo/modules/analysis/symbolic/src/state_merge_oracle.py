@@ -1,28 +1,27 @@
-# 修改记录:
-# 2025-08-05 13:02 - 密率递减调度: 合并密度随状态池增长而指数降低, 防止合并开销超过收益
-# 2025-08-05 16:41 - 合并收益预估: Deltastates x avg_solver_time vs merge_overhead -> 收益为正才执行
+# 密率递减调度: 合并密度随状态池增长而指数降低, 防止合并开销超过收益
+# 合并收益预估: Deltastates x avg_solver_time vs merge_overhead -> 收益为正才执行
 
 """符号状态合并决策 oracle - 基于 LSH 候选的精度感知合并策略
 
-state_merge_lsh.py 提供 O(1) 的合并候选发现--但它不知道哪些候选
+state_merge_lsh.py 提供 O(1) 的合并候选发现, 但它不知道哪些候选
 真正值得合并。不是所有 LSH 碰撞都意味着高相似度, 也不是所有相似状态
 合并后都能带来性能收益
 
 本模块的决策流水线:
   1. LSH 候选过滤: 只考虑至少 2 张哈希表碰撞的候选 (TF-IDF 风格去噪)
-  2. 快速相似度验证: 对候选对计算 Jaccard 估计--< 0.5 的丢弃
+  2. 快速相似度验证: 对候选对计算 Jaccard 估计, < 0.5 的丢弃
   3. 合并收益预估: 预估合并后节省的求解时间 vs 合并本身的约束膨胀开销
   4. 合并密度调度: 状态池 < 100 -> 激进合并; 100-500 -> 中等; > 500 -> 保守
   5. 调用栈相容性: 不同调用栈的状态即使 PC 相同也不合并
 
 合并精度控制:
   precision_loss = |dropped_constraints| / |total_constraints|
-  若 > 0.3 -> 拒绝合并--损失的约束信息过多 (与 symbolic_path_merge.py 一致)
+  若 > 0.3 -> 拒绝合并, 损失的约束信息过多 (与 symbolic_path_merge.py 一致)
 
 设计依据:
   合并收益 = avg_solver_time x merged_states - merge_cost
   merge_cost = constraint_union_time + expression_simplify_time
-  当状态池超过 500 时, merge_cost 可能超过收益--此时降低合并密度
+  当状态池超过 500 时, merge_cost 可能超过收益, 此时降低合并密度
 """
 
 from __future__ import annotations
@@ -79,7 +78,7 @@ class StateMergeOracle:
         self._reject_count = 0
 
     def index_states(self, states: List[Any]) -> None:
-        """批量索引状态--提取指纹 + 插入 LSH"""
+        """批量索引状态, 提取指纹 + 插入 LSH"""
         for s in states:
             fp = self._fingerprinter.fingerprint(s)
             self._fingerprints[s.state_id] = fp
@@ -101,7 +100,7 @@ class StateMergeOracle:
         """为当前状态池生成合并计划
 
         states: 当前活跃状态列表
-        avg_solver_time_ms: 平均每次求解的耗时 (毫秒)--用于收益预估
+        avg_solver_time_ms: 平均每次求解的耗时 (毫秒), 用于收益预估
 
         返回: [(state_a_id, state_b_id, merge_confidence), ...]
         按 confidence 降序排列
@@ -162,7 +161,7 @@ class StateMergeOracle:
             if fp_a is None or fp_b is None:
                 continue
 
-            # Jaccard 估计--基于约束类型直方图
+            # Jaccard 估计, 基于约束类型直方图
             jaccard = self._estimate_jaccard(fp_a, fp_b)
             candidate.jaccard_estimate = jaccard
 
@@ -199,7 +198,7 @@ class StateMergeOracle:
         return merge_plan
 
     def on_state_merged(self, absorbed_id: int) -> None:
-        """合并完成后--从索引中移除被吸收的状态"""
+        """合并完成后, 从索引中移除被吸收的状态"""
         self._lsh.remove(absorbed_id)
         self._fingerprints.pop(absorbed_id, None)
         self._callstack_cache.pop(absorbed_id, None)
@@ -236,7 +235,7 @@ class StateMergeOracle:
     def _estimate_precision_loss(
         fp_a: StateFingerprint, fp_b: StateFingerprint
     ) -> float:
-        """预估合并精度损失--基于约束类型分布的差异
+        """预估合并精度损失, 基于约束类型分布的差异
 
         分布差异大 -> 合并会丢失有区分度的约束 -> 精度损失大
         使用 1 - histogram_intersection 作为损失估计

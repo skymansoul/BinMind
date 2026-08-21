@@ -44,7 +44,7 @@ SIZE_OVERFLOW_THRESHOLD = 0xFFFFFFFF  # 4GB
 def find_alloc_calls(proj: angr.Project) -> List[Tuple[int, str, int]]:
     """找到所有对 alloc 函数的调用点.
 
-    Returns: [(call_addr, func_name, size_arg_idx), ...]
+    返回 [(call_addr, func_name, size_arg_idx), ...]。
     """
     cfg = proj.analyses.CFGFast()
     calls = []

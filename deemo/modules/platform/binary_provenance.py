@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-30 10:44 - 增加 SBOM 节点到格节点的自动映射逻辑
-# 2025-08-01 13:52 - 修复跨版本漏洞传递的传递闭包计算溢出
+# 增加 SBOM 节点到格节点的自动映射逻辑
+# 修复跨版本漏洞传递的传递闭包计算溢出
 
 """
-二进制来源追踪——传递漏洞分析。
+ 二进制来源追踪 - 传递漏洞分析。
 
 SBOM依赖图嵌入VersionLattice时间维。每个二进制实体同时持有
 空间来源（编译者、依赖链）和时间来源（版本、引入时刻）。交叉查询：
@@ -15,7 +14,7 @@ SBOM依赖图嵌入VersionLattice时间维。每个二进制实体同时持有
   ProvenanceLatticeIntegrator — 桥接层
 
 权衡：
-  依赖图可有环（A→B, B→A）。不消环——以SCC压缩将强连通分量坍缩为超节点，
+  依赖图可有环（A→B, B→A）。不消环, 以SCC压缩将强连通分量坍缩为超节点，
   在超节点级做传递闭包。
 
 ref: CVE-2024-3094 (XZ backdoor) — 恶意代码经构建依赖注入，仅SBOM不足，
@@ -124,7 +123,7 @@ class ProvenanceGraph:
     def _build_scc_dag(self) -> None:
         """Kosaraju算法做SCC分解，超节点级建DAG。
 
-        SCC数超MAX_SCC_NODES时终止——大规模图可走外部图数据库（Neo4j等）。
+        SCC数超MAX_SCC_NODES时终止, 大规模图可走外部图数据库（Neo4j等）。
         """
         n = len(self._nodes)
         if n == 0:

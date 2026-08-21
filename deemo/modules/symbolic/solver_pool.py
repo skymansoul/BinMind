@@ -34,7 +34,6 @@ class SolverType:
     Z3 = "z3"
     CVC4 = "cvc4"
     YICES = "yices"
-    CVC4 = SolverType("cvc4")
 
 
 @dataclass

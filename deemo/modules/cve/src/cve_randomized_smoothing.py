@@ -1,6 +1,4 @@
-# 创建: 2026-05-10 13:16
-# 修改: 2026-05-10 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 随机平滑对抗鲁棒认证
+# 随机平滑对抗鲁棒认证
 # 随机平滑 — CVE评分模型的对抗鲁棒性认证
 #
 # 问题: CVE评分模型可能被恶意操纵. 攻击者通过微小地修改CVE元数据
@@ -106,10 +104,10 @@ class RandomizedSmoothingCertifier:
         self._threshold = threshold
 
     def certify(self, x: List[float]) -> Dict[str, float]:
-        """认证单个CVE的鲁棒性半径.
+        """认证单个 CVE 的鲁棒性半径。
 
-        Returns: {prediction, p_exploited, p_lower, certified_radius}.
-        若 certified_radius=0 → 无法认证 → 预测不可靠.
+        返回 {prediction, p_exploited, p_lower, certified_radius};
+        certified_radius=0 表示无法认证, 预测不可靠。
         """
         d = len(x)
         # 采样扰动
@@ -154,10 +152,7 @@ class RandomizedSmoothingCertifier:
 
     def evaluate(self, X: List[List[float]],
                  y_true: List[int]) -> Dict[str, Any]:
-        """评估认证器性能.
-
-        Returns: 认证准确率@多个半径, 平均/中位半径, 脆弱CVE列表.
-        """
+        """评估认证器性能, 返回多半径认证准确率、平均/中位半径与脆弱 CVE 列表。"""
         results = self.certify_batch(X)
         correct = [r for r, y in zip(results, y_true)
                    if r["prediction"] == y]

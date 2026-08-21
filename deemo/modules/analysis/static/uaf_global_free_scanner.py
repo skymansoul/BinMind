@@ -6,10 +6,9 @@
 #
 # 本模块在 finalize 阶段做后处理扫描:
 #   1. 收集所有 free(g) 调用 (通过 RIP 相对寻址识别全局变量)
-#   2. 检查 free 是否标记了对应对象 — 未标记则补标记
+#   2. 检查 free 是否标记了对应对象 - 未标记则补标记
 #   3. 检查 free 后是否存在全局变量解引用 → UAF
 #
-# 创建: 2026-05-28
 
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -164,7 +163,7 @@ class GlobalFreeScanner:
 
         反汇编按地址排序, 函数布局可能与执行顺序不同:
           cleanup(0x760) → free(g)    但setup(0x77a) → malloc + store 在后面
-        
+
         策略: 双向扫描找 mov [rip+global], reg,
         再追踪reg来源到call malloc, 通过alloc_addr匹配_objects.
         """
@@ -179,7 +178,7 @@ class GlobalFreeScanner:
     def _find_store_to_global(self, instructions: List[dict],
                               free_idx: int,
                               global_addr: int) -> Tuple[Optional[int], Optional[str]]:
-        """双向扫描找 mov [rip+global_addr], reg — 回溯优先, 前向兜底."""
+        """双向扫描找 mov [rip+global_addr], reg - 回溯优先, 前向兜底."""
         # 向后: free之前同函数的store
         for j in range(free_idx - 1, max(-1, free_idx - 30), -1):
             ins = instructions[j]

@@ -1,5 +1,5 @@
 """
-LLM 语义搜索 —— 函数摘要与语义相似度检索。
+LLM 语义搜索 - 函数摘要与语义相似度检索。
 
 输入函数名与伪代码，生成摘要并向量化；查询时按余弦相似度检索。
 向量索引使用 numpy 回退，FAISS 可用时自动加速。
@@ -31,13 +31,12 @@ class FunctionSummary:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'name': self.name,
+            'name': self.function_name,
             'address': self.address,
             'summary': self.summary,
             'purpose': self.purpose,
             'embedding': self.embedding,
-            'keywords': self.keywords,
-            'metadata': self.metadata,
+            'tags': self.tags,
         }
 
 @dataclass

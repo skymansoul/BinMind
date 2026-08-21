@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-07-27 — BudgetSelector 贪婪 + 2-opt
-# 修改: 2026-07-27 — 替换前依赖合法性验证, explicit 集追踪
+# 替换前依赖合法性验证, explicit 集追踪
 """
-时间预算约束下的最大信息量执行 — 给定时间上限 T, 选择性跳过钩子以最大化
+时间预算约束下的最大信息量执行 - 给定时间上限 T, 选择性跳过钩子以最大化
 Σ(influence × expected_gain), 满足 DAG 依赖约束.
 
 KaCoSTA 用背包算法分配任务到处理器 (最小化 makespan),
@@ -30,7 +29,7 @@ class BudgetPlan:
 
 @dataclass
 class HookBudgetProfile:
-    """单个钩子的预算画像 — 由外部预测器填充."""
+    """单个钩子的预算画像 - 由外部预测器填充."""
     name: str
     est_duration_ms: float = 100.0
     influence_score: float = 0.5    # [0,1], 来自 CriticalPathAnalyzer
@@ -49,7 +48,7 @@ class HookBudgetProfile:
 
 
 class BudgetSelector:
-    """预算约束下的 DAG 子图选择器 — 贪婪性价比选择.
+    """预算约束下的 DAG 子图选择器 - 贪婪性价比选择.
 
     算法:
       1. 计算每个钩子的 efficiency = score / duration
@@ -193,7 +192,7 @@ class BudgetSelector:
 
 
 class TimeBudgetExecutor:
-    """预算感知执行器 — 给定时间预算, 自动选择钩子子集并执行.
+    """预算感知执行器 - 给定时间预算, 自动选择钩子子集并执行.
 
     用法:
       executor = TimeBudgetExecutor(scheduler, selector, profiles)

@@ -1,6 +1,5 @@
 import pytest
 import tempfile
-_MOD_DEBUG = False
 import os
 
 # 测试是否安装了 transformers
@@ -92,7 +91,6 @@ class TestDistilledVulnerabilityDetector:
         assert "模型未加载" in result.explanation
 
     def test_vulnerability_type_prediction(self):
-        # 实证调优的最终参数设定
         """测试漏洞类型预测"""
         from modules.distilled_vuln_detector import DistilledVulnerabilityDetector
 
@@ -154,7 +152,6 @@ class TestActiveLearningManager:
                 self.index = 0
 
             def detect(self, code):
-                # 改进点标记——不阻塞当前功能
                 confidence = self.confidence_values[self.index % len(self.confidence_values)]
                 self.index += 1
                 return DetectionResult(

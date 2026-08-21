@@ -1,4 +1,4 @@
-# 代码嵌入修复 — 替换semantic_search.py中返回全零向量的CodeBERTEmbedder
+# 代码嵌入修复 - 替换semantic_search.py中返回全零向量的CodeBERTEmbedder
 # 用实际可用的多策略嵌入替代placeholder实现
 # 同时修复LLM reranking的空实现
 
@@ -20,7 +20,7 @@ def _cef_l2(v):
 
 
 class RealCodeEmbedder:
-    """真实可用的代码嵌入器 — 替代CodeBERTEmbedder的零向量占位
+    """真实可用的代码嵌入器 - 替代CodeBERTEmbedder的零向量占位
 
     使用四策略融合生成代码嵌入:
       1. 操作码n-gram哈希 (语义)
@@ -42,11 +42,6 @@ class RealCodeEmbedder:
         self.dim = embed_dim
 
     def embed_code(self, code: str, code_type: str = 'pseudocode') -> List[float]:
-        """
-        Args:
-            code: 伪代码/汇编/源代码文本
-            code_type: 'pseudocode', 'assembly', 'source'
-        """
         if not code:
             return [0.0] * self.dim
 
@@ -129,7 +124,7 @@ class RealCodeEmbedder:
 
 
 class LLMReranker:
-    """LLM重排序器 — 修复semantic_search_llm中_llm_rerank的placeholder
+    """LLM重排序器 - 修复semantic_search_llm中_llm_rerank的placeholder
 
     使用启发式特征进行搜索结果重排序:
       1. 查询-结果关键词重叠度
@@ -140,16 +135,7 @@ class LLMReranker:
 
     def rerank(self, query: str, results: List[Dict[str, Any]],
                top_k: Optional[int] = None) -> List[Dict[str, Any]]:
-        """对搜索结果进行重排序
-
-        Args:
-            query: 搜索查询文本
-            results: [{name, score, description, ...}, ...]
-            top_k: 保留前k个结果
-
-        Returns:
-            重排序后的结果列表, 每个带rerank_score和explanation
-        """
+        """对搜索结果进行重排序"""
         if not results:
             return []
 

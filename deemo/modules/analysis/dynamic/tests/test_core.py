@@ -1,5 +1,4 @@
-# 2026-08-01
-"""dynamic — core logic tests (engine, passes, 追踪)"""
+"""dynamic - core logic tests (engine, passes, 追踪)"""
 
 import tempfile
 import time

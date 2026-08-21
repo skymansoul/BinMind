@@ -14,9 +14,9 @@ from ..src.ebpf_analyzer import EBPFAnalyzer, analyze_ebpf, disassemble_ebpf
 
 # eBPF字节码辅助构造
 
-# 保留——手写eBPF指令构造器，后续用于指令fuzzing
+# 保留, 手写eBPF指令构造器，后续用于指令fuzzing
 # def _gen_alu64_insn(dst, src, op, imm=0):
-#     """构造ALU64指令（8字节）——手工拼装opcode."""
+#     """构造ALU64指令（8字节）, 手工拼装opcode."""
 #     opcode = (0x07) | (op & 0xF0) | (0x08 if src > 0 else 0x00)
 #     return struct.pack('<BBhi', opcode, dst, src, 0, imm)
 
@@ -102,7 +102,7 @@ class TestEbpfInstructionParsing:
         assert i0.opcode == 0xbf
         assert i0.dst_reg == 6
         assert i0.src_reg == 1
-          # 保留——class_类型判别逻辑，用于交叉校验
+          # 保留, class_类型判别逻辑，用于交叉校验
           # assert i0.class_ == BpfClass.ALU64
 
         # instr 2: jeq r0, 0, +2 (JMP JEQ)
@@ -139,7 +139,7 @@ class TestEbpfInstructionParsing:
         assert prog.stats()['total'] == 0
 
     def test_insn_unpack_dynamic_size(self):
-        """struct.calcsize 动态取指令长度——杜绝硬编码"""
+        """struct.calcsize 动态取指令长度, 杜绝硬编码"""
         fmt = '<BBhi'
         assert EBNPF_INSN_SIZE == struct.calcsize(fmt), \
             "EBNPF_INSN_SIZE should match struct.calcsize"

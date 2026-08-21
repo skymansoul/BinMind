@@ -1,4 +1,4 @@
-# 增强格式串过滤器——将format_string_deep.py的三阶段分析接入检测管线
+# 增强格式串过滤器-将format_string_deep.py的三阶段分析接入检测管线
 # 原有format_string_check.py: 仅检查fmt是否来自函数参数
 #   缺陷1: 不区分printf(gettext("hello")) vs printf(user_input)
 #   缺陷2: 无格式符vs参数计数一致性验证
@@ -6,8 +6,8 @@
 #
 # 改进(三阶段管线):
 #   阶段1(FormatStringDeepAnalyzer): fmt来源分类(const/stack/arg/heap) + %n检测
-#   阶段2: 参数计数一致性——格式符>参数→栈泄露, 格式符<参数→信息泄露
-#   阶段3: 综合风险评估——SAFE/SUSPICIOUS/DANGEROUS/CRITICAL
+#   阶段2: 参数计数一致性-格式符>参数→栈泄露, 格式符<参数→信息泄露
+#   阶段3: 综合风险评估-SAFE/SUSPICIOUS/DANGEROUS/CRITICAL
 #
 # 判定规则: DANGEROUS/CRITICAL→CONFIRMED, SUSPICIOUS→LIKELY, SAFE→FILTERED
 # created: 2026-06-08
@@ -22,7 +22,6 @@ from enum import Enum
 from .format_string_deep import (
     FormatStringDeepAnalyzer, DeepFmtVerdict, FmtSource, FmtRisk)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +43,7 @@ class EnhancedFmtReport:
 
 
 class EnhancedFmtFilter:
-    """增强格式串过滤管线——包装FormatStringDeepAnalyzer并输出统一裁决。
+    """增强格式串过滤管线-包装FormatStringDeepAnalyzer并输出统一裁决。
 
     使用方式:
       eff = EnhancedFmtFilter()

@@ -1,6 +1,5 @@
-# fmt回归 — 扫描全部format_string样本并收集对比.
+# fmt回归 - 扫描全部format_string样本并收集对比.
 # 样本truth按vuln.c源码人工判定: 用户可控格式串/%n/泄漏 → vuln.
-# 创建: 2023-09-01
 
 import csv
 import glob

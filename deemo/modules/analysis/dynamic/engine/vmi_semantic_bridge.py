@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-14 10:12 - 偏移->字段映射: 从二进制分析推断的结构体布局桥接 VMI 原始内存
-# 2025-08-14 15:40 - 无符号回退: 无 DWARF/debug 符号时的启发式类型推断
-# 2025-08-16 13:20 - 指针合理性检查: 使用 mmap_min_addr 和地址空间上限替代固定 0x1000 阈值
+# 偏移->字段映射: 从二进制分析推断的结构体布局桥接 VMI 原始内存
+# 无符号回退: 无 DWARF/debug 符号时的启发式类型推断
+# 指针合理性检查: 使用 mmap_min_addr 和地址空间上限替代固定 0x1000 阈值
 
 """VMI 语义间隙桥接 - 用二进制分析推断的结构体布局映射原始内存
 
@@ -135,11 +134,10 @@ class VMISemanticBridge:
         self, address: int, size: int,
         raw_reader: Optional[Any] = None,
     ) -> List[ResolvedField]:
-        """解析内存地址--返回字段分解
+        """解析内存地址--返回字段分解。
 
-        raw_reader: callable(addr, size) -> bytes (可选的原始内存读取器)
-
-        返回: 推断的字段列表
+        raw_reader: callable(addr, size) -> bytes (可选的原始内存读取器);
+        返回推断的字段列表。
         """
         # 查找匹配的结构体
         struct_name = self._find_matching_struct(size)

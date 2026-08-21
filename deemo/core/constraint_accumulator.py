@@ -1,4 +1,4 @@
-"""约束累加器 — 在值流图上做仿射约束推理.
+"""约束累加器: 在值流图上做仿射约束推理.
 提取线性约束 (x=y, x=c, x=y+z, x=y*c) 证明或推翻堆写入安全;
 沿值流路径累积约束, 证 write_offset<alloc_size 则判安全(滤FP), 证反则判不安全, 否则不确定. 参考 Crab-LLVM."""
 
@@ -74,12 +74,6 @@ class ConstraintSet:
     source_node: Optional[VFGNode] = None   # 分配点
     sink_node: Optional[VFGNode] = None     # 写入点
 
-    def can_prove_safe(self) -> Optional[bool]:
-        """试图证明 write_offset < alloc_size。返回 None 表示不确定。"""
-        # 提取分配大小和写入偏移的约束并尝试比较
-        # 将由 ConstraintAccumulator 的子类方法处理
-        return None
-
 class ConstraintAccumulator:
     """从值流图中提取并推理线性约束。
 
@@ -89,12 +83,12 @@ class ConstraintAccumulator:
     3. 如果两者共享同一个根源变量, 构建两个表达式并比较
 
     例:
-      alloc_site:  p = malloc(n)      → alloc_size = n
-      write_site:  store(p + n - 4)   → write_offset = n - 4
+      alloc_site:  p = malloc(n)      即 alloc_size = n
+      write_site:  store(p + n - 4)   即 write_offset = n - 4
       共享根源: n
-      → 约束: alloc_size = n, write_offset = n - 4
-      → 证明: write_offset < alloc_size (因为 n-4 < n 对于 n > 0)
-      → 判定: SAFE (这是FP, 需要滤除)
+      约束: alloc_size = n, write_offset = n - 4
+      证明: write_offset < alloc_size (因为 n-4 < n 对于 n > 0)
+      判定: SAFE (这是FP, 需要滤除)
 
     保守原则: 只在能*证明*安全时才滤除。无法证明时保留 (宁可误报, 不漏报)。
     """
@@ -247,9 +241,9 @@ def prove_heap_write_safety(
       accumulator: 已构建的约束累加器
 
     返回:
-      True:  可证明安全 (写入偏移 < 分配大小) → 滤除的FP
-      False: 可证明不安全 (写入偏移 ≥ 分配大小) → 保留的真阳性
-      None:  无法确定 → 保留, 交给下游处理
+      True:  可证明安全 (写入偏移 < 分配大小), 滤除的FP
+      False: 可证明不安全 (写入偏移 >= 分配大小), 保留的真阳性
+      None:  无法确定, 保留, 交给下游处理
     """
     alloc_val = accumulator.get_value(alloc_size_var)
 

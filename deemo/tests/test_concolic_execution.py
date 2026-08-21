@@ -24,7 +24,6 @@ class TestConcolicMode:
     def test_mode_values(self):
         """四种模式：dynamic_first, symbolic_first, hybrid, seed_only"""
         assert ConcolicMode.DYNAMIC_FIRST.value == "dynamic_first"
-# lass字段完整性$/d
         assert ConcolicMode.SYMBOLIC_FIRST.value == "symbolic_first"
         assert ConcolicMode.HYBRID.value == "hybrid"
         assert ConcolicMode.SEED_ONLY.value == "seed_only"
@@ -104,7 +103,6 @@ class TestConcolicPath:
 
 
 class TestConcolicResult:
-    # 当前代码路径性能充足——延迟优化
 
     def test_result_init(self):
         result = ConcolicResult(status=ConcolicStatus.COMPLETED)
@@ -189,7 +187,6 @@ class TestConcolicExecutor:
 
     def test_is_available_with_both_modules(self, executor):
         """两个模块都在才算available"""
-# lass字段完整性$/d
         assert executor.is_available() is True
 
     def test_is_available_with_no_modules(self):
@@ -197,7 +194,7 @@ class TestConcolicExecutor:
         executor = ConcolicExecutor('/tmp/test_binary')
         executor.dynamic_tracker = None
         executor.symbolic_executor = None
-# lass字段完整性$/d
+
         assert executor.is_available() is False
 
     def test_run_dynamic_seeding(self, executor):
@@ -235,7 +232,6 @@ class TestConcolicExecutor:
         assert result is False
 
     def test_run_concolic_analysis_hybrid(self, executor):
-        # 当前代码路径性能充足——延迟优化
         """hybrid mode —— 先动态收集种子，再符号执行，最常用"""
         result = executor.run_concolic_analysis(
             timeout=30,
@@ -272,7 +268,6 @@ class TestConcolicExecutor:
 
         executor._validate_symbolic_paths()
 
-# lass字段完整性$/d
         assert len(executor.paths) == 1
 
     def test_validate_symbolic_paths_no_tracker(self):

@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-08-22 10:30 - 初始创建: 基于分配/写入尺寸比较的静态堆溢出检测
-# 2025-08-23 15:05 - 增加跨函数追踪
-# 2025-08-24 09:20 - 寄存器宽度归一化: edi/rdi/dil 统一匹配, 解决GCC O2下32-bit传参问题
+# 初始创建: 基于分配/写入尺寸比较的静态堆溢出检测
+# 增加跨函数追踪
+# 寄存器宽度归一化: edi/rdi/dil 统一匹配, 解决GCC O2下32-bit传参问题
 
-"""堆溢出静态检测 — 分配/写入尺寸比较 + 跨函数传播
+"""堆溢出静态检测, 分配/写入尺寸比较 + 跨函数传播
 
 不依赖符号执行, 从指令序列提取常量大小做比较。
 过滤增强版请用 heap_overflow_filtered.FilteredHeapOverflowDetector
@@ -140,10 +139,7 @@ class HeapOverflowDetector:
     def _match_alloc(
         self, text: str, addr: int, asm_lines: List[Tuple[int, str]],
     ) -> Tuple[int, str]:
-        """匹配堆分配调用, 提取分配大小
-
-        返回: (size, return_register), size=-1 表示未匹配
-        """
+        """匹配堆分配调用, 提取分配大小, 返回 (size, return_register), size=-1 表示未匹配。"""
         if 'call' not in text:
             return -1, ''
         for alloc_func, (size_arg_idx, ret_reg) in _HEAP_ALLOCATORS.items():
@@ -155,10 +151,7 @@ class HeapOverflowDetector:
     def _match_write(
         self, text: str, addr: int, asm_lines: List[Tuple[int, str]],
     ) -> Tuple[int, str]:
-        """匹配堆写入调用, 提取写入大小
-
-        返回: (size, dst_register), size=-1 表示未匹配
-        """
+        """匹配堆写入调用, 提取写入大小, 返回 (size, dst_register), size=-1 表示未匹配。"""
         if 'call' not in text:
             return -1, ''
         for write_func, (dst_idx, size_idx) in _HEAP_WRITERS.items():

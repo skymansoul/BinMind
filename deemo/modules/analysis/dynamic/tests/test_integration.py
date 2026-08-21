@@ -1,5 +1,4 @@
-# 2026-08-01
-"""dynamic — integration tests"""
+"""dynamic - integration tests"""
 
 import os
 import tempfile
@@ -40,7 +39,7 @@ from modules.analysis.dynamic.src.vmi import (
 
 
 class TestFullPipeline:
-    """Test full analysis 流水线 end--end"""
+    """Test full analysis 流水线 end-to-end"""
 
     def test_binary_trace_pipeline(self):
         """运行 a complete trace analysis 流水线"""

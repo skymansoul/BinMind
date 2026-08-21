@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-03  |  堆溢出误报削减——粗筛→不相交分析→约束过滤三级管线
 import re, logging, time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -16,23 +15,23 @@ class HoFpStats:
 
 class HoFpFilter:
     """三级堆溢出误报削减管线。
-    
-    Layer 1 (heap_overflow_detector): 粗筛——所有alloc-write size比较
-    Layer 2 (heap_disjoint): 精筛——仅同allocation site的pair保留
-    Layer 3 (constraint_filter): 终筛——不可行路径滤除
-    
-    核心创新——Layer 2堆不相交分析:
+
+    Layer 1 (heap_overflow_detector): 粗筛-所有alloc-write size比较
+    Layer 2 (heap_disjoint): 精筛-仅同allocation site的pair保留
+    Layer 3 (constraint_filter): 终筛-不可行路径滤除
+
+    核心创新-Layer 2堆不相交分析:
       两次malloc返回不重叠区域, 若memcpy的dst指向alloc#2而size来自alloc#1,
-      则size比较无意义——这是静态分析中堆溢出误报的主要来源。
+      则size比较无意义-这是静态分析中堆溢出误报的主要来源。
       通过追踪malloc返回寄存器到memcpy参数的数据流关联, 仅保留
       同一allocation site的(alloc_size, write_size)对, 削减FP率2-4x。
     """
-    
+
     def filter(self, instructions, func_name="", base_addr=0x400000):
         t0 = time.time()
         stats = HoFpStats()
 
-        # Layer 1+2: 堆不相交分析——直接替代粗筛(比simple const更精确)
+        # Layer 1+2: 堆不相交分析-直接替代粗筛(比simple const更精确)
         try:
             from .heap_disjoint import HeapDisjointAnalyzer
             dr = HeapDisjointAnalyzer().analyze(instructions, func_name, base_addr)

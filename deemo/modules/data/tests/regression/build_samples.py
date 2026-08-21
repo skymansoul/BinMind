@@ -1,5 +1,4 @@
 # 漏洞样本自动编译模块 — 支持 gcc/clang, 多架构, 多优化级别.
-# 创建: 2026-06-13
 
 import os, sys, subprocess, glob
 from dataclasses import dataclass

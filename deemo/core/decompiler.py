@@ -27,7 +27,9 @@ def _run_radare2(binary_path: str, commands: List[str], timeout: int = 300) -> s
         cmd.extend(['-c', c])
     cmd.append(binary_path)
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              encoding='utf-8', errors='replace',
+                              timeout=timeout)
         return proc.stdout
     except subprocess.TimeoutExpired:
         return ''
@@ -131,7 +133,11 @@ def ai_analyze_function(func_name: str, pseudocode: str,
     if not pseudocode or not pseudocode.strip():
         return {'function': func_name, 'vulnerabilities': [], 'summary': ''}
 
-    if not OPENAI_API_KEY:
+    # 无 provider 凭据时跳过——query_llm 内部也会跳过并记录, 但提前检查
+    # 可避免构造无意义的 prompt 文本
+    from core.ai_backends import _effective_provider, _provider_configured
+    _provider = _effective_provider()
+    if not _provider_configured(_provider):
         return {
             'function': func_name,
             'vulnerabilities': [],

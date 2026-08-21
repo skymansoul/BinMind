@@ -1,6 +1,5 @@
 """
 UAF 跨函数CFG便捷函数 — build_interproc_cfg 和 enhance_tarps_with_interproc.
-
 """
 
 
@@ -26,10 +25,7 @@ def enhance_tarps_with_interproc(
       - 若跨函数不可达 → 直接判定 SAFE, 跳过 TARPS
       - 若可达 → 继续 TARPS 五阶段分析
 
-    Returns:
-      (should_skip_tarps, reason)
-      - True  = 确认安全, 跳过 TARPS
-      - False = 需要 TARPS 进一步分析
+    返回 (should_skip_tarps, reason), True 表示确认安全跳过 TARPS。
     """
     builder = InterProcCFGBuilder()
     cg = builder.build(source_code)

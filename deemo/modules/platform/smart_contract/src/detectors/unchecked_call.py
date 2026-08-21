@@ -1,5 +1,5 @@
-# SWC-104: CALL/DELEGATECALL 返回值未检查 — 静默失败
-# 不拆: 简单线性扫描
+# SWC-104: CALL/DELEGATECALL 返回值未检查 - 静默失败
+
 from typing import List
 from .base import BaseDetector
 from ..core.models import VulnerabilityReport
@@ -7,7 +7,7 @@ from ..parser.evm_parser import EVMBytecodeParser
 
 
 class UncheckedCallDetector(BaseDetector):
-	"""SWC-104 未检查调用返回值 — EVM CALL 成功/失败用返回值表示。"""
+	"""SWC-104 未检查调用返回值 - EVM CALL 成功/失败用返回值表示。"""
 
 	_CALL_OPS = frozenset({'CALL', 'CALLCODE', 'DELEGATECALL', 'STATICCALL', 'CREATE', 'CREATE2'})
 	_CHECK_OPS = frozenset({'ISZERO', 'EQ', 'REVERT', 'JUMPI'})

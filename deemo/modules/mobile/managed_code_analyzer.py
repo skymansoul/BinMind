@@ -427,8 +427,54 @@ class ManagedCodeAnalyzer:
             self._analyze_dotnet_builtin()
 
     def _parse_ilspy_output(self, stdout):
-        """解析ILSpy输出——占位实现。"""
-        pass
+        """解析ILSpy输出，扫描反编译代码中的危险方法。"""
+        text_parts = []
+        for line in (stdout or "").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            cand = line
+            if not os.path.isabs(cand):
+                cand = os.path.join(self.output_dir, line)
+            try:
+                if os.path.isfile(cand):
+                    with open(cand, 'r', encoding='utf-8', errors='replace') as fh:
+                        text_parts.append(fh.read())
+            except OSError:
+                continue
+
+        if not text_parts:
+            try:
+                for root, _dirs, files in os.walk(self.output_dir):
+                    for fn in files:
+                        if not fn.endswith('.cs'):
+                            continue
+                        fp = os.path.join(root, fn)
+                        try:
+                            with open(fp, 'r', encoding='utf-8', errors='replace') as fh:
+                                text_parts.append(fh.read())
+                        except OSError:
+                            continue
+            except OSError:
+                pass
+
+        text = '\n'.join(text_parts)
+        if not text:
+            return
+
+        class_re = re.compile(r'\b(?:class|interface|struct|record)\s+(\w+)', re.IGNORECASE)
+        seen_classes = set()
+        for m in class_re.finditer(text):
+            name = m.group(1)
+            if name not in seen_classes:
+                seen_classes.add(name)
+                self.classes.append(ClassInfo(name=name))
+
+        for pattern, danger_info in DOTNET_DANGEROUS_METHODS.items():
+            if pattern in text:
+                desc = danger_info if isinstance(danger_info, str) else str(danger_info)
+                self.dangerous_methods.append(MethodInfo(
+                    name=pattern, is_dangerous=True, danger_type=desc))
 
     def _analyze_dotnet_builtin(self):
         """内置.NET分析引擎。"""

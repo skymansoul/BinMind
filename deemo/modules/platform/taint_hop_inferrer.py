@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-08-03 16:38 - 增加 eBPF map 类型推断，区分 PERCPU_ARRAY 与常规 ARRAY 的泄漏风险
+# 增加 eBPF map 类型推断，区分 PERCPU_ARRAY 与常规 ARRAY 的泄漏风险
 
 """
-TaintHop 自动推断器——从子模块分析结果自动推导跨层污点传播跳步。
+TaintHop 自动推断器，从子模块分析结果自动推导跨层污点传播跳步。
 
 替代手动调用 TaintBridge.register_* 的流程。输入各子模块的分析结果，
 输出 TaintHop 列表，可直接喂入 TaintBridge.trace_paths()。
@@ -18,7 +17,7 @@ TaintHop 自动推断器——从子模块分析结果自动推导跨层污点�
   自动推断从现有分析器的结构化输出中提取这些信息，将专家知识编码为
   推断规则，降低使用门槛。
 
-ref: STAFF 的污点源自动发现——从固件输入点自动标记
+ref: STAFF 的污点源自动发现，从固件输入点自动标记
      污点源，本项目将类似思路扩展到 MMIO→内核→侧信道三层。
 """
 
@@ -119,7 +118,7 @@ class TaintHopInferrer:
             severity = getattr(bp, 'severity', 'medium')
             address = getattr(bp, 'address', 0)
 
-            # 推断被拦截的寄存器——基于描述文本中的模式
+            # 推断被拦截的寄存器，基于描述文本中的模式
             intercepted = self._extract_regs_from_description(desc)
 
             # eBPF map 类型影响泄漏风险评估
@@ -133,7 +132,7 @@ class TaintHopInferrer:
                 conf = 0.80 if severity == 'critical' else (
                     0.65 if severity == 'high' else 0.50
                 )
-                # PERCPU map 泄漏风险更低——数据不跨 CPU
+                # PERCPU map 泄漏风险更低，数据不跨 CPU
                 if is_percpu:
                     conf *= 0.6
 
@@ -174,11 +173,11 @@ class TaintHopInferrer:
             t_stat = getattr(result, 't_statistic', 0.0)
             mi_bps = getattr(result, 'mutual_information', 0.0)  # bits/sec
 
-            # 效应量筛选——t 统计量 < 阈值或 MI 过低的跳过
+            # 效应量筛选，t 统计量 < 阈值或 MI 过低的跳过
             if abs(t_stat) < 3.0 and mi_bps < 0.1:
                 continue
 
-            # 推断泄漏的寄存器槽位——基于测试类型
+            # 推断泄漏的寄存器槽位，基于测试类型
             leak_slots = self._infer_leak_slots(test_type, result)
 
             conf = min(0.85, 0.35 + 0.10 * abs(t_stat) + 0.05 * mi_bps)
@@ -204,7 +203,7 @@ class TaintHopInferrer:
 
     @staticmethod
     def _extract_regs_from_description(desc: str) -> List[str]:
-        """从 bypass 描述中提取寄存器名——'r0', 'r1', ..., 'r10'。"""
+        """从 bypass 描述中提取寄存器名，'r0', 'r1', ..., 'r10'。"""
         import re
         regs = re.findall(r'\br(\d+)\b', desc)
         return [f"R{int(r):d}" if int(r) > 0 else f"RAX" for r in regs[:4]]
@@ -226,5 +225,5 @@ class TaintHopInferrer:
             return ['RAX[0]']
         else:
             details = getattr(result, 'details', {})
-            # 通用回退——默认 RAX[0]
+            # 通用回退，默认 RAX[0]
             return ['RAX[0]']

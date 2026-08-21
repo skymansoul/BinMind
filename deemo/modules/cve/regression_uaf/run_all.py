@@ -1,9 +1,8 @@
-# 一键 UAF 回归流水线: 生成样本 → 编译 → 扫描 → 收集对比.
+# 一键 UAF 回归流水线: 生成样本 -> 编译 -> 扫描 -> 收集对比.
 #
 # 用法:
 #   python run_all.py
 #
-# 创建: 2025-01-13
 
 import subprocess
 import sys

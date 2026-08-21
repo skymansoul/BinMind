@@ -340,6 +340,14 @@ class FaultInjectionFuzzer:
 
     def _simulate_fault(self, at_addr: int,
                          inject_fn: Callable) -> bool:
+        """故障注入仿真核心 — 基于 Unicorn 真实内存破坏判断。
+
+        判定逻辑:
+        1. 仿真正程中若触发 UC_ERR_WRITE_UNMAPPED/READ_UNMAPPED/FETCH_UNMAPPED,
+           视为真实内存破坏 (SIGSEGV 等价), 记录为 crash。
+        2. 敏感函数名 (system/execve 等) 的字节匹配仅作启发式辅助信号,
+           不单独构成漏洞判定。参考: AFL Unicorn 模式§3 crash dedup。
+        """
         if not UC_AVAILABLE or not self._code:
             return False
         try:
@@ -355,29 +363,42 @@ class FaultInjectionFuzzer:
             def hook_code(mu, address, size, user_data):
                 if address == at_addr:
                     inject_fn(mu, address)
+                # 启发式: 检测敏感函数名字节模式 (辅助信号, 非独立判定)
                 chunk = mu.mem_read(address, min(64, size))
                 for pattern in self.SENSITIVE_PATTERNS:
                     if pattern in chunk:
-                        user_data['hit'] = True
-                        user_data['sensitive_addr'] = address
+                        user_data['heuristic_hit'] = True
                 for pattern in self._FORMAT_VULN_PATTERNS:
                     if pattern in chunk:
-                        user_data['fmt_hit'] = True
+                        user_data['fmt_heuristic'] = True
 
-            hit_flag: Dict[str, bool] = {
-                'hit': False, 'fmt_hit': False, 'sensitive_addr': 0
+            hit_flag: Dict[str, Any] = {
+                'crash': False, 'heuristic_hit': False,
+                'fmt_heuristic': False, 'crash_addr': 0,
             }
             mu.hook_add(unicorn.UC_HOOK_CODE, hook_code, hit_flag)
 
             try:
                 mu.emu_start(at_addr, at_addr + 200, timeout=500000, nCount=200)
-            except unicorn.UcError:
-                pass
+            except unicorn.UcError as uc_err:
+                # 区分内存访问违规: 这些 err_code 表示真实内存破坏
+                _CRASH_ERRORS = {
+                    unicorn.UC_ERR_WRITE_UNMAPPED,
+                    unicorn.UC_ERR_READ_UNMAPPED,
+                    unicorn.UC_ERR_FETCH_UNMAPPED,
+                    unicorn.UC_ERR_WRITE_PROT,
+                    unicorn.UC_ERR_READ_PROT,
+                    unicorn.UC_ERR_FETCH_PROT,
+                }
+                if uc_err.errno in _CRASH_ERRORS:
+                    hit_flag['crash'] = True
+                    hit_flag['crash_addr'] = mu.reg_read(UC_X86_REG_RIP)
 
-            if hit_flag.get('sensitive_addr', 0):
-                self._coverage_heat[hit_flag['sensitive_addr']] += 1
+            if hit_flag.get('crash_addr', 0):
+                self._coverage_heat[hit_flag['crash_addr']] += 1
 
-            return hit_flag['hit'] or hit_flag.get('fmt_hit', False)
+            # 真实内存破坏优先; 启发式仅作辅助不单独判定
+            return hit_flag['crash'] or hit_flag.get('heuristic_hit', False)
 
         except Exception as e:
             logger.debug("Unicorn 故障模拟异常: %s", e)

@@ -21,11 +21,11 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from parallel_deep_dev.engine._io import safe_read
+from ._io import safe_read
 
 
 # 持久化路径: 统一使用 .parallel_deep_data/ 目录
-from parallel_deep_dev.config import _data_dir
+from ..config import _data_dir
 _CRYSTAL_PATH = os.path.join(_data_dir(), "knowledge_crystal.json")
 
 

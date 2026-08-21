@@ -1,19 +1,19 @@
-# 对抗鲁棒微调——梯度正则化+输入扰动联合训练
+# 对抗鲁棒微调-梯度正则化+输入扰动联合训练
 #
 # 核心问题: custom_ai_finetune_pipeline.py做标准微调（最小化训练损失），
 # 对对抗样本无抵抗力。adversarial_testing.py测试鲁棒性但不训练鲁棒模型。
 # 标准对抗训练（FGSM+重训练）计算成本高且可能导致标准精度下降。
 #
 # 技术方案:
-#   1. 梯度惩罚: 在损失中加入梯度范数惩罚——L_total = L_task + λ·||∇_x L_task||²
+#   1. 梯度惩罚: 在损失中加入梯度范数惩罚-L_total = L_task + λ·||∇_x L_task||²
 #      直觉: 梯度范数小的模型对输入扰动不敏感（平滑决策边界）
-#   2. 谱归一化: 对GNN的权重矩阵施加谱归一化——控制Lipschitz常数
+#   2. 谱归一化: 对GNN的权重矩阵施加谱归一化-控制Lipschitz常数
 #   3. 双温度logit蒸馏: 从原始模型的softmax(logits/T1)蒸馏到
 #      鲁棒模型的softmax(logits/T2)，保持功能一致性
-#   4. 对抗样本注入: 每K步注入一次PGD对抗样本——在鲁棒性收益和训练成本间平衡
+#   4. 对抗样本注入: 每K步注入一次PGD对抗样本-在鲁棒性收益和训练成本间平衡
 #
 # 新颖性:
-# 梯度惩罚+谱归一化联合应用于二进制GNN——每种单独存在但联合应用是新的
+# 梯度惩罚+谱归一化联合应用于二进制GNN-每种单独存在但联合应用是新的
 # 双温度蒸馏确保鲁棒模型同时保持标准精度
 # 稀疏PGD注入减少了对抗训练的计算开销约60%
 #
@@ -32,7 +32,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +48,7 @@ class RobustTrainConfig:
 
 
 class SpectralNormalization:
-    """谱归一化——通过幂迭代估计权重矩阵的谱范数并缩放。
+    """谱归一化-通过幂迭代估计权重矩阵的谱范数并缩放。
 
     对GNN的每一层权重W做: W_sn = W / σ(W)
     其中σ(W) ≈ ||W||_2（最大奇异值）。
@@ -60,11 +59,7 @@ class SpectralNormalization:
 
     @staticmethod
     def normalize(W: np.ndarray, n_iter: int = 3) -> np.ndarray:
-        """对权重矩阵施加谱归一化。
-
-        Returns:
-            W_normalized: 谱范数为1的权重矩阵
-        """
+        """对权重矩阵施加谱归一化。"""
         if W.size == 0:
             return W
         # 幂迭代估计最大奇异值对应的左右奇异向量
@@ -88,10 +83,10 @@ class SpectralNormalization:
 
 
 class GradientPenalty:
-    """梯度惩罚——计算模型输出对输入的梯度范数。
+    """梯度惩罚-计算模型输出对输入的梯度范数。
 
     ||∇_x f(x)||² 作为正则项加入损失:
-      直觉: 梯度越小→决策边界越平滑→对抗扰动越难改变预测
+      直觉: 梯度越小，决策边界越平滑，对抗扰动越难改变预测
     """
 
     @staticmethod
@@ -133,12 +128,12 @@ class GradientPenalty:
 
 
 class AdversarialRobustFinetuner:
-    """对抗鲁棒微调器——梯度惩罚+谱归一化+蒸馏+稀疏对抗注入。
+    """对抗鲁棒微调器-梯度惩罚+谱归一化+蒸馏+稀疏对抗注入。
 
     训练流程:
       1. 前向: 原始模型 + 鲁棒模型双前向
       2. 损失: L_task + λ_gp·L_grad_penalty + λ_dist·L_distillation
-      3. 每K步: 生成PGD对抗样本→额外对抗损失
+      3. 每K步: 生成PGD对抗样本，额外对抗损失
     """
 
     def __init__(self, config: Optional[RobustTrainConfig] = None):
@@ -152,11 +147,7 @@ class AdversarialRobustFinetuner:
                            adjacency: np.ndarray,
                            labels: np.ndarray,
                            ) -> Dict[str, float]:
-        """计算联合损失。
-
-        Returns:
-            {total_loss, task_loss, grad_penalty, distillation_loss, adv_loss}
-        """
+        """计算联合损失。"""
         self._step_count += 1
         cfg = self.config
 
@@ -217,7 +208,7 @@ class AdversarialRobustFinetuner:
                                labels: np.ndarray) -> float:
         """简化PGD对抗样本生成并计算损失。
 
-        仅扰动节点特征（不扰动图结构——CFG结构扰动复杂度高）。
+        仅扰动节点特征（不扰动图结构-CFG结构扰动复杂度高）。
         """
         cfg = self.config
         if not isinstance(features, np.ndarray):
@@ -233,7 +224,7 @@ class AdversarialRobustFinetuner:
             except Exception:
                 break
 
-            # 简化: 随机扰动方向（非精确梯度——交换计算效率）
+            # 简化: 随机扰动方向（非精确梯度-交换计算效率）
             grad_sign = np.random.choice([-1, 1], features_adv.shape)
             features_adv += cfg.pgd_epsilon * grad_sign / cfg.pgd_steps
             # 投影回ε球

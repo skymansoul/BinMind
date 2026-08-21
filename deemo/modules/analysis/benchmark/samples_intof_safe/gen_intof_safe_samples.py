@@ -1,4 +1,4 @@
-# intof 精度基准 — 独立 vuln/safe 二进制生成器
+# intof 精度基准 - 独立 vuln/safe 二进制生成器
 #
 # 决策:
 #   现有 samples_intof 将 vuln/safe 函数混编于同一二进制, 检测结果
@@ -7,7 +7,6 @@
 #   输出独立二进制, 使检出可精确归因.
 #
 # 判定: vuln 二进制检出=TP; safe 二进制检出=FP.
-# 创建: 2023-06-23
 
 import json
 import re

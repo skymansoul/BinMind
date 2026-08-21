@@ -14,7 +14,7 @@ from ..src.side_channel.timing import (
 
 
 def _debug_print(msg: str) -> None:
-	pass  # 保留——后续可用logging替代
+	pass
 
 
 # 统计辅助测试
@@ -195,7 +195,6 @@ def test_analysis_result_dataclass():
 	assert result.cohens_d == 0.8
 
 
-# 保留——后续可用：隐蔽信道1-bit编码测试
 # def test_covert_channel_encoding():
 # 	detector = TimingSideChannelDetector()
 # 	start = time.perf_counter_ns()

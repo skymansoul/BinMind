@@ -1,4 +1,4 @@
-# core/report_enhancement.py - 报告增强 (findings → Markdown 摘要)
+# core/report_enhancement.py - 报告增强 (findings -> Markdown 摘要)
 #
 # 把 findings 关键字段压缩为紧凑 Markdown 列表: 类型、置信度
 # (含污点验证与跨函数标注)、函数位置、证据首行。只做汇总呈现,
@@ -24,7 +24,10 @@ def _confidence_line(v: Dict[str, Any]) -> str:
 
 def build_enhanced_summary(findings: List[Dict],
                            binary_info: Dict = None) -> str:
-    """生成告警摘要 Markdown 文本。无告警时返回占位说明。"""
+    """生成告警摘要 Markdown 文本。无告警时返回占位说明。
+
+    优先使用静态 Markdown 压缩; LLM 可用时追加自然语言汇总段。
+    """
     if not findings:
         return "## 告警摘要\n\n未检出漏洞。\n"
 
@@ -48,4 +51,37 @@ def build_enhanced_summary(findings: List[Dict],
             first_line = ev.splitlines()[0] if ev else ''
             lines.append(f"- 证据: {first_line[:200]}")
         lines.append("")
-    return '\n'.join(lines).rstrip() + '\n'
+
+    static_summary = '\n'.join(lines).rstrip() + '\n'
+
+    # LLM 汇总: 可用时生成自然语言评估, 不可用时仅返回静态摘要
+    llm_summary = _try_llm_summary(findings, binary_info)
+    if llm_summary:
+        return static_summary + "\n## LLM 评估\n\n" + llm_summary + "\n"
+    return static_summary
+
+
+def _try_llm_summary(findings: List[Dict],
+                     binary_info: Dict = None) -> str:
+    """调用 LLM 生成告警汇总; 不可用时返回空串。"""
+    try:
+        from core.ai_backends import query_llm
+        # 构造紧凑上下文: 每条 finding 取类型/严重度/函数/描述
+        vuln_lines = []
+        for v in findings[:20]:
+            vuln_lines.append(
+                f"- {v.get('type', '?')} [{v.get('severity', '?')}] "
+                f"@ {v.get('function_name', '?')}: "
+                f"{str(v.get('description', ''))[:100]}")
+        user_prompt = (
+            f"Binary: {binary_info.get('filename', '?') if binary_info else '?'}\n"
+            f"Findings ({len(findings)}):\n" + '\n'.join(vuln_lines) +
+            "\n\nSummarize the vulnerability profile in 3-5 sentences."
+        )
+        resp = query_llm(
+            system="You are a binary vulnerability analyst. Summarize findings concisely.",
+            user=user_prompt,
+        )
+        return resp.strip() if resp else ''
+    except Exception:
+        return ''

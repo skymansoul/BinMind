@@ -16,7 +16,10 @@ class MovementTechnique(StrEnum):
     PSREMOTING = "psremoting"
     SCHEDULED_TASK = "scheduled_task"
     SERVICE_CREATION = "service_creation"
-    DCOM = "dcom"@dataclass
+    DCOM = "dcom"
+
+
+@dataclass
 class MovementIndicator:
     indicator_id: Any = None
     technique: Any = None

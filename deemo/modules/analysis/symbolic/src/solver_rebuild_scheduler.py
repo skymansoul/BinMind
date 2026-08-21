@@ -1,31 +1,30 @@
-# 修改记录:
-# 2025-07-21 14:32 - 增加 rebuild cost estimator，预判重建是否值得
-# 2025-07-25 09:18 - 引入 gradual_state_transfer：不完全重建而是逐层替换
-# 2025-07-29 16:55 - 增加 memory_pressure 感知，高压下更激进地触发重建
+# 增加 rebuild cost estimator，预判重建是否值得
+# 引入 gradual_state_transfer：不完全重建而是逐层替换
+# 增加 memory_pressure 感知，高压下更激进地触发重建
 
 """求解器状态的周期性重建调度器
 
 IncrementalSolver缓存(symexec_opt_passes.py) 使用 Z3 push/pop 管理增量求解
-状态。但 push/pop 累积的内部状态导致内存从 ~10MB 增长到 >500MB——
+状态。但 push/pop 累积的内部状态导致内存从 ~10MB 增长到 >500MB-
 Z3 在 push 后保留所有学习到的引理 (lemmas)、简化规则和内部启发式状态
 解过 200 次后继续复用旧 solver 实例的收益可能低于重建成本
 
 本模块提供智能重建决策：
 a. RebuildCostEstimator: 预估重建后的求解时间 vs 不重建
 只有预期净收益 >10% 才执行重建
-b. GradualStateTransfer: 不完全丢弃旧 solver 状态——
+b. GradualStateTransfer: 不完全丢弃旧 solver 状态-
 在重建时传递 warm_start 模型和 SAT 解变量赋值
 c. MemoryPressureSensor: 内存超过阈值时降低重建触发条件
-d. 双阈值策略——硬阈值（强制重建）和软阈值（触发评估）
+d. 双阈值策略-硬阈值（强制重建）和软阈值（触发评估）
 
 权衡：重建丢失所有已学习引理，首次求解可能更慢；
 但减少内存占用和求解器内部遍历开销，长期更稳定
 
-ref: Z3 GitHub #7203 讨论了 incremental solver 的状态累积问题——
+ref: Z3 GitHub #7203 讨论了 incremental solver 的状态累积问题-
 solver2 的 push/pop 比 solver1 快但内部状态随 push 次数线性增长
-本模块直接解决此权衡——通过成本预估决定何时丢弃累积状态
+本模块直接解决此权衡-通过成本预估决定何时丢弃累积状态
 ref: FSE 2024 "Partial Solu Based 约束求解缓存" 的
-partial solu 缓存机制——本模块的 warm_start 传递复用类似思想
+partial solu 缓存机制-本模块的 warm_start 传递复用类似思想
 但应用于求解器实例生命周期而非约束缓存
 """
 
@@ -39,7 +38,7 @@ from collections import deque
 
 @dataclass
 class RebuildMetrics:
-    """求解器实例的性能指标——用于重建决策"""
+    """求解器实例的性能指标-用于重建决策"""
     push_count: int = 0
     solve_count: int = 0
     total_solve_time_ms: float = 0.0
@@ -54,12 +53,12 @@ class RebuildMetrics:
 
 class RebuildCostEstimator:
     """预估重建 vs 不重建的成本差异
-    
+
     核心假设（基于 Z3 行为观测）：
     - 新 solver 首次求解比复用慢 ~40%（无已学习引理）
     - solver 内部遍历开销与 push_count 正相关，近似 O(sqrt(n))
     - 内存增长与 constraint_count 近似线性
-    
+
     成本预估公式：
     cost_rebuild = sum(剩余约束的预估首次求解时间) * 1.4
     cost_no_rebuild = sum(剩余约束的预估求解时间) + push_overhead
@@ -90,8 +89,8 @@ class RebuildCostEstimator:
 
 
 class MemoryPressureSensor:
-    """内存压力感知——高压下降低重建触发阈值
-    
+    """内存压力感知-高压下降低重建触发阈值
+
     不使用 psutil（可选依赖），改为从 RebuildMetrics 推断：
     estimated_memory_mb 超过硬阈值 → 无条件重建
     超过软阈值 → 降低 RebuildCostEstimator 的收益阈值
@@ -102,7 +101,7 @@ class MemoryPressureSensor:
 
     def assess(self, metrics: RebuildMetrics) -> Tuple[float, bool]:
         """返回 (收益阈值倍率, 是否强制重建)
-        
+
         收益阈值倍率 < 1.0 表示更容易触发重建
         """
         mem = metrics.estimated_memory_mb
@@ -111,7 +110,7 @@ class MemoryPressureSensor:
             return 0.0, True  # 强制重建
 
         if mem >= self.SOFT_THRESHOLD_MB:
-            # 软阈值——收益阈值从 0.9 降到 0.7
+            # 软阈值-收益阈值从 0.9 降到 0.7
             return 0.7, False
 
         return 1.0, False
@@ -119,7 +118,7 @@ class MemoryPressureSensor:
 
 class SolverRebuildScheduler:
     """求解器实例的周期性重建调度
-    
+
     使用模式：
     scheduler = SolverRebuildScheduler()
     for constraint_batch batches:
@@ -134,8 +133,8 @@ class SolverRebuildScheduler:
                  hard_rebuild_solves: int = 200,
                  warm_start_transfer: bool = True):
         """
-        hard_rebuild_pushes: push 次数硬上限——超过必重建
-        hard_rebuild_solves: 求解次数硬上限——超过必重建
+        hard_rebuild_pushes: push 次数硬上限-超过必重建
+        hard_rebuild_solves: 求解次数硬上限-超过必重建
         warm_start_transfer: 重建时是否传递 warm_start 模型
         """
         self._hard_push_limit = hard_rebuild_pushes
@@ -152,7 +151,7 @@ class SolverRebuildScheduler:
     def record_solve(self, push_count: int, solve_time_ms: float,
                      constraint_count: int, warm_start_hit: bool = False,
                      estimated_memory_mb: float = 0.0) -> RebuildMetrics:
-        """记录一次求解——更新内部指标"""
+        """记录一次求解-更新内部指标"""
         with self._lock:
             m = self._metrics
             m.push_count = push_count
@@ -185,12 +184,12 @@ class SolverRebuildScheduler:
     def should_rebuild(self, metrics: Optional[RebuildMetrics] = None,
                        remaining_constraints: int = 0) -> Tuple[bool, str]:
         """判断是否重建求解器实例
-        
+
         返回 (should_rebuild, reason)
         """
         m = metrics or self._metrics
 
-        # 硬阈值——无条件重建
+        # 硬阈值-无条件重建
         if m.push_count >= self._hard_push_limit:
             return True, f'push_count={m.push_count} >= {self._hard_push_limit}'
         if m.solve_count >= self._hard_solve_limit:
@@ -225,11 +224,11 @@ class SolverRebuildScheduler:
             self._metrics.push_count = 0
             self._metrics.solve_count = 0
             self._metrics.last_rebuild_time = time.time()
-            # 保留 warm_start 缓存——重建的 solver 可用上一轮的 SAT 解
+            # 保留 warm_start 缓存-重建的 solver 可用上一轮的 SAT 解
             # 不清空 self._warm_start_cache
 
     def store_warm_start(self, var_values: Dict[str, int]) -> None:
-        """存储 SAT 解的变量赋值——在重建时传递给新 solver"""
+        """存储 SAT 解的变量赋值-在重建时传递给新 solver"""
         if self._warm_start_transfer:
             self._warm_start_cache.update(var_values)
 

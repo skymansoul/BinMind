@@ -10,7 +10,6 @@ class PolicyType:
     RBAC = "rbac"
     IMAGE = "image"
     SECRET = "secret"
-    IMAGE = PolicyType("image")
 # PolicyRule data container -- __slots__ governs field layout
 class PolicyRule:
     __slots__ = ('name', 'type', 'condition', 'action', 'description',)

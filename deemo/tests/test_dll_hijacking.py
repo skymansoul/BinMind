@@ -1,6 +1,5 @@
 import unittest
 import sys
-_MOD_DEBUG = False
 import os
 import tempfile
 
@@ -28,7 +27,6 @@ class TestDLLHijacking(unittest.TestCase):
         analyzer = DLLHijackAnalyzer()
 
         # 测试已知可劫持DLL的风险评估
-# lass字段完整性$/d
         self.assertEqual(
             analyzer._eval_risk("version.dll", False, False, True, ImportType.BY_NAME),
             HijackRiskLevel.HIGH

@@ -1,14 +1,14 @@
-# 增强堆溢出过滤器——整合三个分析模块形成四级验证管线
-# 这是"一个大创新"的主入口——替代简单三阶段过滤的进阶方案
+# 增强堆溢出过滤器-整合三个分析模块形成四级验证管线
+# 这是"一个大创新"的主入口-替代简单三阶段过滤的进阶方案
 #
 # 四级验证管线:
-#   L1: 约束配对——确保memcpy的dst确实来自某个malloc的返回值
-#   L2: 分配器感知大小检查——用heap allocator model纠正对齐误判
-#   L3: 值范围传播——追踪完整def-use链而非仅看近邻常量
-#   L4: 路径可达性——CFG级验证(保留原有逻辑)
+#   L1: 约束配对-确保memcpy的dst确实来自某个malloc的返回值
+#   L2: 分配器感知大小检查-用heap allocator model纠正对齐误判
+#   L3: 值范围传播-追踪完整def-use链而非仅看近邻常量
+#   L4: 路径可达性-CFG级验证(保留原有逻辑)
 #
 # 与heap_overflow_filter.py的关系:
-#   本模块不替代heap_overflow_filter.py。两者并行运行——
+#   本模块不替代heap_overflow_filter.py。两者并行运行-
 #   heap_overflow_filter提供基本三阶段过滤(保持兼容性),
 #   enhanced_heap_filter提供更精确的四级过滤(用于benchmark对比)
 #
@@ -36,15 +36,14 @@ from .value_range_propagator import (
 from .guard_constraint_tracker import (
     GuardConstraintTracker, GuardConstraint)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class EnhancedVerdict(Enum):
-    CONFIRMED = 'confirmed'       # 四级全过——确定溢出
-    LIKELY = 'likely'             # 三级过——高概率
-    UNCERTAIN = 'uncertain'       # 两级过——低概率需审查
-    FILTERED = 'filtered'         # ≤一级过——误报已排除
+    CONFIRMED = 'confirmed'       # 四级全过-确定溢出
+    LIKELY = 'likely'             # 三级过-高概率
+    UNCERTAIN = 'uncertain'       # 两级过-低概率需审查
+    FILTERED = 'filtered'         # ≤一级过-误报已排除
 
 
 @dataclass
@@ -97,12 +96,12 @@ class EnhancedHeapFilter:
         pairs, unpaired_allocs, unpaired_copies = self._pairer.find_pairs(
             instructions)
 
-        # L5守卫约束预收集——cmp+jcc→exit模式提取
+        # L5守卫约束预收集-cmp+jcc→exit模式提取
         guards = self._guard_tracker.collect_guards(instructions)
 
         reports = []
         for pair in pairs:
-            # L1已过——存在明确的分配-拷贝配对
+            # L1已过-存在明确的分配-拷贝配对
             lp1 = True
 
             # L2: 分配器感知大小检查
@@ -123,7 +122,7 @@ class EnhancedHeapFilter:
                 lp2 = not self._alloc_model.is_safe_copy(
                     alloc_requested, copy_max, margin=0)
 
-            # L3: 值范围传播——追踪拷贝size参数的完整来源
+            # L3: 值范围传播-追踪拷贝size参数的完整来源
             size_range = self._value_prop.trace_backward(
                 pair.copy.instr_idx,
                 self._get_size_reg_for_copy(pair.copy.copy_func),
@@ -161,15 +160,15 @@ class EnhancedHeapFilter:
                 lp3_value_confirmed=lp3, lp4_path_reachable=lp4,
                 evidence=evidence))
 
-        # 对未配对的拷贝点——可能是栈上的memcpy, 不报告
-        # 对未配对的alloc——不做任何事(可能在其他函数中使用)
+        # 对未配对的拷贝点-可能是栈上的memcpy, 不报告
+        # 对未配对的alloc-不做任何事(可能在其他函数中使用)
 
         return reports
 
     def filter_confirmed(self,
                           reports: List[EnhancedHeapReport]
                           ) -> List[EnhancedHeapReport]:
-        """仅返回CONFIRMED级别的报告——最低误报率"""
+        """仅返回CONFIRMED级别的报告-最低误报率"""
         return [r for r in reports
                 if r.verdict == EnhancedVerdict.CONFIRMED]
 

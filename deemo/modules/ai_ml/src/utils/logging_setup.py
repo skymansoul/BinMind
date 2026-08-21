@@ -1,5 +1,4 @@
-# utils/logging_setup.py — unified 日志 with file handler + debug flag
-# 不拆 — setup is a single procedural block
+# utils/logging_setup.py - unified 日志 with file handler + debug flag
 
 import logging as _logging
 import os as _os
@@ -51,7 +50,7 @@ def setup_logging(
 	console.setFormatter(formatter)
 	root.addHandler(console)
 
-	# File handler — rotating to avoid unbounded disk usage
+	# File handler - rotating to avoid unbounded disk usage
 	if log_file:
 		log_dir = _os.path.dirname(log_file)
 		if log_dir and not _os.path.isdir(log_dir):
@@ -79,4 +78,3 @@ def get_logger(name: str = "") -> _logging.Logger:
 	else:
 		full = _ROOT_LOGGER
 	return _logging.getLogger(full)
-# 不拆

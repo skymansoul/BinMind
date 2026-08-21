@@ -1,8 +1,15 @@
-/* CWE-122: Heap-based Buffer Overflow ¡ª linear index */
+/* CWE-122: Heap-based Buffer Overflow ï¿½ï¿½ linear index */
+#include <stdlib.h>
+
 void cwe122_linear(int user_idx, char val) {
     char *buf = (char *)malloc(64);
     if (buf) {
-        buf[user_idx] = val;  /* user_idx unguarded ¡ª OVERFLOW risk */
+        buf[user_idx] = val;  /* user_idx unguarded ï¿½ï¿½ OVERFLOW risk */
         free(buf);
     }
+}
+
+int main(void) {
+    cwe122_linear(100, 'X');  /* 100 > 64 */
+    return 0;
 }

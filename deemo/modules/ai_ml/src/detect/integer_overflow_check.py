@@ -1,4 +1,4 @@
-# 整数溢出检测——基于运算结果与操作数关系的静态检查
+# 整数溢出检测-基于运算结果与操作数关系的静态检查
 # 原理: 若 a + b < min(a, b) (无符号) 或符号翻转, 则发生溢出
 # 通过模式匹配识别危险算术操作+缺少检查的组合
 #
@@ -17,13 +17,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class IntOverflowSeverity(Enum):
-    CRITICAL = 3    # 溢出结果直接用于malloc/calloc——堆缓冲区分配不足
-    HIGH = 2        # 溢出结果用于memcpy长度——越界拷贝
+    CRITICAL = 3    # 溢出结果直接用于malloc/calloc-堆缓冲区分配不足
+    HIGH = 2        # 溢出结果用于memcpy长度-越界拷贝
     MEDIUM = 1      # 溢出存在但无直接危险使用
     LOW = 0         # 溢出存在但结果未被危险使用
 
@@ -55,7 +54,7 @@ class IntegerOverflowChecker:
 
     # 溢出后应出现的检查指令
     _OVERFLOW_CHECKS = {'jo', 'jno', 'jc', 'jnc', 'jb', 'jnb', 'jbe'}
-    # 危险使用——运算结果传递到这些函数
+    # 危险使用-运算结果传递到这些函数
     _DANGEROUS_SINKS = {'malloc', 'calloc', 'realloc', 'memcpy',
                         'memmove', 'strncpy', 'alloca'}
 
@@ -136,7 +135,7 @@ class IntegerOverflowChecker:
         return reports
 
     def _extract_operands(self, instr: str) -> List[str]:
-        """提取操作数——处理AT&T语法: op src, dst"""
+        """提取操作数-处理AT&T语法: op src, dst"""
         parts = instr.replace('%', '').split()
         operands = []
         for p in parts[1:]:

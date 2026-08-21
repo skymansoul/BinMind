@@ -1,9 +1,3 @@
-# Created: 2026-08-05 08:45:00
-# Modified: 2025-07-30 11:20:00 — replaced cascade of if-else rules with Bayesian
-#   decision framework. Each action (BLOCK/QUARANTINE/INVESTIGATE/MONITOR/ALLOW)
-#   has an explicit utility function over the risk-belief space. Decision maximizes
-#   expected utility given posterior risk distribution from evidence fusion.
-#
 # security_decision_engine — 贝叶斯决策框架
 # 将分析信号转化为后验风险分布，在风险-置信度空间中为每个决策动作
 # 计算期望效用，选择最大期望效用的动作。效用函数编码了假阳性/假阴性的

@@ -1,12 +1,10 @@
-# UPX加壳对比测试 —— 对样本加壳后重新扫描, 对比检出率变化。
-# 评估检测方法对加壳代码的容忍度——这是专利的核心技术效果指标之一。
-# 创建: 自主执行轮次
+# UPX加壳对比测试 - 对样本加壳后重新扫描, 对比检出率变化。
+# 评估检测方法对加壳代码的容忍度-这是专利的核心技术效果指标之一。
 
 import os, subprocess, sys, json, time, shutil
 
 SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "testing", "regression", "samples")
 UPX = shutil.which("upx") or ""
-
 
 def pack_sample(binary_path: str, output_dir: str) -> str:
     """对二进制用UPX加壳, 返回加壳后路径。"""

@@ -1,9 +1,10 @@
 """
-DD-BVF求解器桥接 — CJ INCONCLUSIVE时触发BVF反向值流证明.
+DD-BVF求解器桥接: CJ INCONCLUSIVE时触发BVF反向值流证明.
 
 提供BVF证明入口和循环偏移证明.
 """
 from __future__ import annotations
+import re
 from typing import Optional
 
 from core.cj_constraint_types import SolverVerdict, SolverResult
@@ -14,7 +15,7 @@ def try_bvf_proof(
     ir_lines: list[str],
     platform: str,
 ) -> Optional[SolverResult]:
-    """DD-BVF反向值流证明 — CJ INCONCLUSIVE时的精确化判定.
+    """DD-BVF反向值流证明: CJ INCONCLUSIVE时的精确化判定.
 
     从告警点反向追踪alloc_size和write_size的符号表达式,
     通过相关性分析判定安全/溢出. 不影响召回率:
@@ -118,9 +119,9 @@ def _try_lsp_layered_proof(
     offset_expr: Optional[SymbolicExpr],
     bvf_result: CorrelationResult,
 ) -> Optional[SolverResult]:
-    """LSP分层安全证明 — BVF-INCONCLUSIVE时的精确化判定.
+    """LSP分层安全证明: BVF-INCONCLUSIVE时的精确化判定.
 
-    Layer 2(不变式推导)→Layer 3(分配器对齐)级联,
+    Layer 2(不变式推导) - Layer 3(分配器对齐)级联,
     任一层判定成功即返回SolverResult.
     """
     from core.lsp_orchestrator import try_lsp_proof
@@ -174,13 +175,12 @@ def _try_call_site_constant_injection(
         candidate,
         bvf,
 ) -> Optional[SolverResult]:
-    """调用点常量注入 — 当BVF无法关联不同参数时, 从调用处提取常量实参.
+    """调用点常量注入: 当BVF无法关联不同参数时, 从调用处提取常量实参.
 
     模式: 在IR中搜索被分析函数的调用点,
     将常量实参代入alloc/write表达式后重新correlate.
     仅当代入后能明确判定时返回结果, 否则返回None.
     """
-    import re
     from core.cj_bvf_types import SymbolicExpr
 
     if not alloc_expr.has_vars() or not write_expr.has_vars():

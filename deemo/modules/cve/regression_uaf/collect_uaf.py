@@ -5,7 +5,6 @@
 #   与 Recall/Precision/FPR/F1, 量化 ULPR 的误报抑制贡献.
 #   输出 results/uaf_summary.json 与控制台汇总表.
 #
-# 创建: 2025-02-06
 
 import json
 from pathlib import Path

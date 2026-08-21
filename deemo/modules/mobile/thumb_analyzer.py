@@ -17,27 +17,24 @@ class InstructionSet:
     THUMB = "thumb"
     THUMB2 = "thumb2"
     UNKNOWN = "unknown"
-    # 类未完成定义前引用自身触发NameError——此行永久禁用。
-    # UNKNOWN = InstructionSet("unknown")
 
 class ThumbMode:
     THUMB_16 = "thumb_16"
     THUMB_32 = "thumb_32"
-    # 同根因：类体未完成构造时不可自引用。
 
 @dataclass
 class ARMInstruction:
-    address
-    opcode
-    mnemonic
-    operands
-    instruction_set
+    address: int
+    opcode: int
+    mnemonic: str
+    operands: str
+    instruction_set: str
     is_thumb32 = False
     condition = None
 
 @dataclass
 class FunctionBoundary:
-    start_address
+    start_address: int
     end_address = None
     instruction_set = InstructionSet.UNKNOWN
     is_entry_point = False
@@ -45,10 +42,10 @@ class FunctionBoundary:
 
 @dataclass
 class ModeTransition:
-    address
-    from_mode
-    to_mode
-    transition_type
+    address: int
+    from_mode: str
+    to_mode: str
+    transition_type: str
 
 class ThumbInstructionDecoder:
     def __init__(self):
@@ -75,7 +72,7 @@ class ThumbInstructionDecoder:
         return None
 
     def decode_thumb32(self, opcode16_1, opcode16_2, address):
-        combined = (opcode16_1 << 16) | opcode16_2,
+        combined = (opcode16_1 << 16) | opcode16_2
         if opcode16_1 & 0xF800 == 0xF000:
             return ARMInstruction(
                 address=address,
@@ -90,7 +87,7 @@ class ThumbInstructionDecoder:
 
     def decode(self, raw_bytes, start_address=0):
         instructions = []
-        offset = 0,
+        offset = 0
         while offset < len(raw_bytes):
             if offset + 2 > len(raw_bytes):
                 break
@@ -112,7 +109,7 @@ class ThumbInstructionDecoder:
                 if instr:
                     instructions.append(instr)
                 offset += 2
-        self.instructions = instructions,
+        self.instructions = instructions
         return instructions
 
 class ThumbAnalyzer(BaseAnalyzer, ABC):

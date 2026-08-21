@@ -1,13 +1,12 @@
-# 创建: 2026-05-11 下午
-# 修改: 2026-05-11 — 间接调用定位 + 函数类型恢复 + landing pad 插入
+# 间接调用定位 + 函数类型恢复 + landing pad 插入
 """
-前向边控制流完整性 (CFI) — 剥离二进制的间接调用保护。
+前向边控制流完整性 (CFI) - 剥离二进制的间接调用保护。
 
 现有 CFI 方案 (Intel CET/BTI, ARM PAuth) 需要硬件支持且仅检查目标是否
-为合法 landing pad——不验证调用方/被调用方的类型兼容性。源码级 CFI
+为合法 landing pad - 不验证调用方/被调用方的类型兼容性。源码级 CFI
 (Clang CFI/IFCC) 需要重新编译, 无法保护 COTS 二进制。
 
-本模块实现纯软件的前向边 CFI——在剥离二进制上直接插桩:
+本模块实现纯软件的前向边 CFI - 在剥离二进制上直接插桩:
   1. 间接调用定位: 扫描所有 call reg / jmp reg / call [mem] 指令
   2. 函数类型恢复: 从调用约定和参数使用模式推断函数签名 (arg count + type hints)
   3. landing pad 插入: 在每个函数入口插入类型标识, 间接调用前插入类型检查
@@ -22,12 +21,12 @@
   COTS 二进制 (特别是嵌入式/IoT) 运行在没有 CET/BTI/PAuth 的旧硬件上。
   软件方案虽然开销更高 (~5% vs ~0.5%), 但覆盖了硬件方案无法覆盖的存量设备。
 
-ref: MOBIUS — 首个 COTS ARM 二进制的前向边
+ref: MOBIUS - 首个 COTS ARM 二进制的前向边
      CFI, 使用 BTI 硬件 + 函数类型推断。本项目推广到 x86-64 (无 BTI 可用)
      且将类型检查从硬件 BTI 替换为软件 landing pad 插桩
-ref: Clang CFI — 源码级前向边 CFI 的工业实现,
+ref: Clang CFI - 源码级前向边 CFI 的工业实现,
      本项目将其函数类型哈希概念改编到二进制级
-ref: Branch Landing — Bloom filter 源授权,
+ref: Branch Landing - Bloom filter 源授权,
      本项目取其 src+dst 双重验证思路, 简化为类型签名匹配
 """
 
@@ -39,7 +38,7 @@ from typing import Optional
 
 @dataclass
 class IndirectCallSite:
-    """一处间接调用——需要 CFI 保护的位置。"""
+    """一处间接调用 - 需要 CFI 保护的位置。"""
     pc: int
     target_reg: str = ''       # 间接跳转的目标寄存器
     is_tail_call: bool = False
@@ -85,7 +84,7 @@ def locate_indirect_calls(instructions: list[dict]) -> list[IndirectCallSite]:
 
 
 def infer_function_signatures(functions: dict[int, list[dict]]) -> dict[int, FunctionSignature]:
-    """从函数体指令推断函数签名——arg count + return type。"""
+    """从函数体指令推断函数签名 - arg count + return type。"""
     sigs = {}
     for func_addr, ins_list in functions.items():
         # 参数计数: 统计函数入口处的寄存器读取 (rdi/rsi/rdx/rcx/r8/r9)
@@ -128,7 +127,7 @@ def infer_function_signatures(functions: dict[int, list[dict]]) -> dict[int, Fun
 def generate_cfi_landing_pad(type_id: int, arch: str = 'x86_64') -> bytes:
     """在函数入口生成 CFI landing pad 标识。
 
-    x86-64: NOP 序列中嵌入 type_id——NOP [4-byte id] → 5 bytes total
+    x86-64: NOP 序列中嵌入 type_id - NOP [4-byte id] → 5 bytes total
     ARM64: MOVK x16, #type_id → 4 bytes
     生产环境建议使用 Intel CET endbr64 或 ARM BTI 指令。"""
     if arch == 'x86_64':

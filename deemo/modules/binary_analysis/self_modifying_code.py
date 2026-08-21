@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SMCRecord:
-    address
-    original_code
-    modified_code
-    modification_time
+    address: int
+    original_code: str
+    modified_code: str
+    modification_time: float
 
 @dataclass
 class ExecutionResult:
-    success
-    smc_records = field(default_factory=list)
+    success: bool
+    smc_records: list = field(default_factory=list)
     static_binary = None
 
 class SMCExecutor:

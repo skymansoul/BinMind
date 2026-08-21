@@ -1,9 +1,8 @@
-# Ghidra UAF基线检测器 v1 — 模拟Ghidra decompiler的UAF检测
+# Ghidra UAF基线检测器 v1 - 模拟Ghidra decompiler的UAF检测
 #
 # 策略: 通过函数级xref模式匹配寻找free→deref序列
 # 不追踪寄存器值流, 不做路径分析 → 预期高误报
 #
-# 创建: 2026-08-04
 
 import sys, time, subprocess
 from pathlib import Path

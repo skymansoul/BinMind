@@ -1,5 +1,3 @@
-# Created: 2026-08-09 09:42:37
-#
 # fuzz_prioritizer — 模糊测试面优先级排序器
 # 基于 exploit chain + import reachability + segment risk 的综合分析，
 # 为二进制中的函数/区域生成模糊测试优先级排序。

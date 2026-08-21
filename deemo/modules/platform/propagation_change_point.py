@@ -25,7 +25,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class GraphSnapshot:
-    """传播图在某一时刻的结构快照——用于时间序列分析。"""
+    """传播图在某一时刻的结构快照, 用于时间序列分析。"""
     timestamp: float
     node_count: int
     edge_count: int
@@ -102,7 +102,7 @@ class BayesianChangePointDetector:
         return math.exp(self._run_length_log_probs[0]), max(probs)
 
     def _log_predictive(self, run_length: int) -> float:
-        """计算 P(x_t | r_{t-1}) 的对数——使用后验预测 Student-t 分布。"""
+        """计算 P(x_t | r_{t-1}) 的对数, 使用后验预测 Student-t 分布。"""
         n = min(run_length, len(self._observations))
         if n == 0:
             # 先验预测
@@ -249,7 +249,7 @@ class PropagationChangeDetector:
         return self._changes[-lookback:] if self._changes else []
 
     def campaign_score(self) -> float:
-        """协调利用活动评分 —— 融合多指标变点概率的加权几何平均。
+        """协调利用活动评分, 融合多指标变点概率的加权几何平均。
 
         评分>0.5表示传播图结构正在经历统计显著的相变，可能对应
         一次跨层协调利用活动（如 APT 组织同时利用固件+内核+硬件漏洞）。
@@ -273,7 +273,7 @@ class PropagationChangeDetector:
     def push_snapshot_joint(self, graph: PropagationGraph,
                             timestamp: Optional[float] = None
                             ) -> Optional[ChangePoint]:
-        """多变量联合变点检测 -- 共享游程后验的图级变点识别。
+        """多变量联合变点检测 - 共享游程后验的图级变点识别。
 
         与独立检测(push_snapshot)的本质区别:
           独立检测: 每个指标有各自的游程后验, 各自独立判断变点。

@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-11  |  UAF 指针来源归因管线
 #
 """
 UAF 指针来源归因 (UAF-PROV) 管线。
@@ -22,7 +21,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from heapver.insn import Instruction, parse_disasm
+from ..heapver.insn import Instruction, parse_disasm
 
 from .provenance import ProvenanceResolver, FreeSite, DerefSite
 from .sites import SiteScanner

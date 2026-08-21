@@ -34,7 +34,7 @@ class CounterfactualQuery:
 
 @dataclass
 class CounterfactualResult:
-    """反事实查询结果——事实 vs 反事实风险对比。"""
+    """反事实查询结果, 事实 vs 反事实风险对比。"""
     query: CounterfactualQuery
     factual_risk: Dict[str, float]           # {node_id: 原风险值}
     counterfactual_risk: Dict[str, float]    # {node_id: 干预后风险值}
@@ -60,7 +60,7 @@ class StructuralCausalPropagator:
         self._w_in = 0.6
 
     def fit_noise(self, risk_scores: Dict[str, float]) -> None:
-        """外展阶段——从观测风险反推噪声项。
+        """外展阶段, 从观测风险反推噪声项。
 
         risk_scores: RiskScorer.score_all() 的输出。
         """
@@ -75,7 +75,7 @@ class StructuralCausalPropagator:
             self._noise_terms[nid] = obs_logit - pred_logit
 
     def intervene(self, patched_nodes: List[str]) -> PropagationGraph:
-        """干预阶段——do()操作，返回修改后的传播图（深拷贝）。
+        """干预阶段, do()操作，返回修改后的传播图（深拷贝）。
 
         对每个被干预节点:
           - severity 置零（漏洞已修复）
@@ -112,7 +112,7 @@ class StructuralCausalPropagator:
     def predict_counterfactual(self, modified_graph: PropagationGraph,
                                risk_scorer_callable: Callable[[PropagationGraph], Dict[str, float]],
                                outcome_nodes: List[str]) -> Dict[str, float]:
-        """预测阶段——在修改后的图上重跑风险评分，得到反事实风险。
+        """预测阶段, 在修改后的图上重跑风险评分，得到反事实风险。
 
         risk_scorer_callable: 接受 PropagationGraph，返回 {node_id: risk}。
                              通常是 RiskScorer 的包装函数。
@@ -123,7 +123,7 @@ class StructuralCausalPropagator:
     def answer(self, query: CounterfactualQuery,
                risk_scorer: Callable[[PropagationGraph], Dict[str, float]],
                max_trace_paths: int = 5) -> CounterfactualResult:
-        """执行完整的反事实查询——外展→干预→预测。
+        """执行完整的反事实查询, 外展→干预→预测。
 
         risk_scorer: 接受 PropagationGraph → Dict[str, float] 的评分函数。
         """
@@ -158,7 +158,7 @@ class StructuralCausalPropagator:
 # 内部
 
     def _predict_risk_from_structure(self, node_id: str) -> float:
-        """仅用结构信息预测风险（不含噪声）——结构方程的确定性部分。"""
+        """仅用结构信息预测风险（不含噪声）, 结构方程的确定性部分。"""
         node = self._graph._nodes.get(node_id)
         if node is None:
             return 0.0
@@ -180,14 +180,14 @@ class StructuralCausalPropagator:
 
     @staticmethod
     def _logit(p: float) -> float:
-        """logit 变换——R → [0,1] 的逆映射。"""
+        """logit 变换, R → [0,1] 的逆映射。"""
         p = max(1e-9, min(1.0 - 1e-9, p))
         return math.log(p / (1.0 - p))
 
     def _trace_blocked_paths(self, patched: List[str],
                              outcomes: List[str],
                              max_paths: int) -> Dict[str, List[List[str]]]:
-        """枚举因干预而被阻断的传播路径——仅用于可解释性输出。"""
+        """枚举因干预而被阻断的传播路径, 仅用于可解释性输出。"""
         blocked: Dict[str, List[List[str]]] = {}
         patched_set = frozenset(patched)
 
@@ -228,7 +228,7 @@ class CounterfactualBatchAnalyzer:
                            risk_scorer: Callable[[PropagationGraph], Dict[str, float]],
                            outcome_nodes: Optional[List[str]] = None,
                            ) -> List[Tuple[List[str], float]]:
-        """贪心排序——每次选择边际风险降幅最大的节点加入补丁集。
+        """贪心排序, 每次选择边际风险降幅最大的节点加入补丁集。
 
         使用子模性质的 (1-1/e) 近似保证（见 minimal_witness_set 的设计依据）。
         返回 [(补丁组合, 总风险降幅), ...]，按降幅降序。
@@ -275,7 +275,7 @@ class CounterfactualBatchAnalyzer:
         return rankings
 
     def individual_attribution(self) -> Dict[str, float]:
-        """逐节点的独立归因风险——每个节点单独修复时，全局风险的降幅。
+        """逐节点的独立归因风险, 每个节点单独修复时，全局风险的降幅。
 
         用于生成"修复优先级"报告。计算结果与 RiskScorer.top_risk_paths 互补：
         RiskScorer 输出图拓扑风险，此处输出干预效果。

@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-07-14  |  约束提取器
-# 修改: 2026-07-14  |  审计后补充文件头与错误处理
-#
 """
-数据流感知的二进制种子合成——约束提取器。
+数据流感知的二进制种子合成-约束提取器。
 
 从数据流切片中提取缓冲区/指针操作的数值约束，
 构建可满足的约束系统用于种子合成。
@@ -15,13 +12,13 @@
   4. 范围约束: value in [min, max] (循环界限/数组索引)
   5. 类型约束: sizeof(type) 影响步长计算
 
-约束表示——SMT-LIB2子集:
+约束表示-SMT-LIB2子集:
   使用简单的(declare-const / assert / check-sat)子集，
-  不依赖Z3——内置轻量回溯求解器处理≤10变量的小规模约束系统。
+  不依赖Z3-内置轻量回溯求解器处理≤10变量的小规模约束系统。
 
 设计依据:
   FieldsFuzz需要运行时taint tracking, PBFuzz需要LLM API,
-  本模块仅需静态分析结果——消除执行/API依赖，
+  本模块仅需静态分析结果-消除执行/API依赖，
   使种子合成在离线/无GPU/无LLM环境中可运行。
 """
 
@@ -54,7 +51,7 @@ class ConstraintType:
 
 @dataclass
 class VariableConstraint:
-    """单变量约束——变量名+约束类型+边界值"""
+    """单变量约束-变量名+约束类型+边界值"""
     var_name: str                # 约束的变量名(寄存器/操作数映射后的名称)
     constraint_type: str         # ConstraintType值
     value: int = 0               # 边界值(对range为(lo, hi)对)
@@ -66,7 +63,7 @@ class VariableConstraint:
 
 @dataclass
 class SeedConstraint:
-    """单条种子的约束集合——用于合成一个测试输入"""
+    """单条种子的约束集合-用于合成一个测试输入"""
     # 约束列表
     constraints: List[VariableConstraint] = field(default_factory=list)
     # 目标缓冲区信息
@@ -75,7 +72,7 @@ class SeedConstraint:
     # 约束系统的复杂度度量
     variable_count: int = 0
     constraint_count: int = 0
-    # 合成提示——帮助种子合成器生成更有效的测试值
+    # 合成提示-帮助种子合成器生成更有效的测试值
     boundary_values: List[int] = field(default_factory=list)
     # 例: [0, 1, capacity-1, capacity, capacity+1]
 
@@ -101,7 +98,7 @@ class ConstraintExtractor:
 
     def extract(self, slices: List[BufferSlice],
                  function_name: str = "") -> List[SeedConstraint]:
-        """从多个切片中提取约束——每条切片产出一个SeedConstraint。
+        """从多个切片中提取约束-每条切片产出一个SeedConstraint。
 
         如果多条切片操作同一缓冲区，合并约束以减少冗余种子。
         """
@@ -122,7 +119,7 @@ class ConstraintExtractor:
                 off_var = f"off_{self._var_counter}"
                 self._var_counter += 1
 
-                # 边界约束——从bound_constraints提取
+                # 边界约束-从bound_constraints提取
                 for op, val in sl.bound_constraints:
                     vc = VariableConstraint(
                         var_name=size_var,
@@ -140,7 +137,7 @@ class ConstraintExtractor:
                         source_addr=check_addr,
                         source_type="null_check"))
 
-                # 类型约束——从type_casts提取对齐
+                # 类型约束-从type_casts提取对齐
                 for cast in sl.type_casts:
                     align = _alignment_from_cast(cast)
                     if align > 1:
@@ -181,19 +178,19 @@ class ConstraintExtractor:
         return mapping.get(op, ConstraintType.BOUND_LE)
 
 
-# 轻量约束求解——回溯法(O(k^n), k≤10, n≤256)
+# 轻量约束求解-回溯法(O(k^n), k≤10, n≤256)
 
 
 def solve_seed_constraints(seed_constraint: SeedConstraint) -> Dict[str, int]:
-    """对种子约束系统求解——返回{变量名: 具体值}映射。
+    """对种子约束系统求解-返回{变量名: 具体值}映射。
 
     求解策略:
       1. 每个变量取其约束区间的最小值作为"安全默认值"
       2. 对边界变量(size/offset)额外产出边界值变体
-      3. 不调用外部求解器——纯回溯，适用于≤10变量的规模
+      3. 不调用外部求解器-纯回溯，适用于≤10变量的规模
 
     复杂度: O(k^n)最坏，k=值域大小(≤256), n=变量数(≤10)
-    实用中秒级完成——大多数约束系统有3-5个变量。
+    实用中秒级完成-大多数约束系统有3-5个变量。
     """
     if not seed_constraint.constraints:
         return {}
@@ -235,10 +232,10 @@ def solve_seed_constraints(seed_constraint: SeedConstraint) -> Dict[str, int]:
             lo = ((lo + align - 1) // align) * align
 
         if lo > hi:
-            # 约束冲突——回退至非约束值
+            # 约束冲突-回退至非约束值
             solution[var_name] = max(0, lo)
         else:
-            # 优先边界值——这些是种子合成的关键
+            # 优先边界值-这些是种子合成的关键
             solution[var_name] = lo
 
     return solution
@@ -263,7 +260,7 @@ def _alignment_from_cast(cast_str: str) -> int:
 
 
 def _generate_boundary_values(sc: SeedConstraint) -> List[int]:
-    """生成边界测试值——用于探索缓冲区溢出/下溢。
+    """生成边界测试值-用于探索缓冲区溢出/下溢。
 
     规则:
       - 包含0, 1（最小有效值）

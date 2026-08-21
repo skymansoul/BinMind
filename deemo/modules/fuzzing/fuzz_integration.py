@@ -1190,8 +1190,18 @@ def _check_command(cmd: List[str]) -> bool:
         return False
 
 def _check_binary_has_libfuzzer() -> bool:
-    # 假设二进制已链接 LibFuzzer
-    return True
+    # 探测环境是否具备 libFuzzer 工具链 (随 clang 分发)
+    for tool in ('clang', 'clang++'):
+        try:
+            result = subprocess.run(
+                [tool, '--version'], capture_output=True, text=True, timeout=10
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+        output = (result.stdout + result.stderr).lower()
+        if 'clang' in output or 'llvm' in output:
+            return True
+    return False
 
 def _check_aflpp_variant() -> bool:
     # 通过 afl-fuzz -V 输出中的 "afl++" 标识区分 AFL++ 与原始 AFL

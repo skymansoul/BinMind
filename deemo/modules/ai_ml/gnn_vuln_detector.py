@@ -1,5 +1,4 @@
-# CFG分支边解析/边类型语义化/检测器单例缓存+模型持久化 — 保持原有逻辑全量兼容
-# 已优化.
+# CFG分支边解析/边类型语义化/检测器单例缓存+模型持久化 - 保持原有逻辑全量兼容
 import logging, os, re, json, math, pickle, random
 from collections import defaultdict
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -16,7 +15,7 @@ class NodeFeature:
     HAS_ARITH=6; BRANCH_COUNT=7; BLOCK_DEGREE=8; IS_ENTRY=9; IS_EXIT=10; SIZE_BYTES=11; FEATURE_DIM=12
 
 class EdgeType:
-    """边类型枚举 — 语义化控制流传递，GNN消息传递时区分不同控制流路径"""
+    """边类型枚举 - 语义化控制流传递，GNN消息传递时区分不同控制流路径"""
     FALLTHROUGH = 0     # 顺序下降边，无条件落入下一个基本块
     COND_BRANCH = 1     # 条件分支边 (je/jne/jg/jl 等)
     UNCOND_JUMP = 2     # 无条件跳转边 (jmp/ret)
@@ -44,9 +43,9 @@ class GNNPrediction:
 
 class GraphBuilder:
     DANGEROUS={"strcpy","system","execve","popen","sprintf","gets","scanf","memcpy","free","malloc","alloc"}
-    # 无条件跳转指令集 — 结尾为这些指令的块不会顺序落入下一块
+    # 无条件跳转指令集 - 结尾为这些指令的块不会顺序落入下一块
     UNCOND_JUMPS = {"jmp", "ret", "retn", "iret", "iretq"}
-    # 条件跳转指令集 — 会产生两条出边（fallthrough + branch target）
+    # 条件跳转指令集 - 会产生两条出边（fallthrough + branch target）
     COND_JUMPS = {"je", "jne", "jz", "jnz", "jg", "jge", "jl", "jle",
                   "ja", "jae", "jb", "jbe", "jo", "jno", "js", "jns",
                   "jp", "jnp", "jcxz", "jecxz"}
@@ -57,11 +56,11 @@ class GraphBuilder:
             r=subprocess.run(['r2','-q','-c','pdf @ {}; q'.format(func_name),binary_path],capture_output=True,text=True,timeout=60,encoding='utf-8',errors='replace')
         except Exception as e: _g_log.warning("disasm failed: %s",e); return Graph(func_name=func_name)
         text=r.stdout; graph=Graph(func_name=func_name)
-        # 解析基本块及其地址映射 — 记录每个块的起始地址以便分支目标解析
+        # 解析基本块及其地址映射 - 记录每个块的起始地址以便分支目标解析
         blocks, block_addrs = self._split_blocks(text)
         i=0
         while i<len(blocks): node=self._featurize_block(blocks[i],i,len(blocks)); graph.nodes.append(node); i+=1
-        # 构建控制流边：顺序下降 + 分支目标解析 — GNN 图结构决定消息传递路径
+        # 构建控制流边：顺序下降 + 分支目标解析 - GNN 图结构决定消息传递路径
         addr_to_idx = {block_addrs[i]: i for i in range(len(block_addrs))}
         i=0
         while i<len(blocks):
@@ -71,7 +70,7 @@ class GraphBuilder:
             is_uncond = any(kw in (last_ins or "") for kw in self.UNCOND_JUMPS)
             is_call   = "call" in (last_ins or "")
             has_cond  = any(kw in (last_ins or "").lower() for kw in self.COND_JUMPS)
-            # call 指令视为特殊边类型 — 可能跨函数传播漏洞信号
+            # call 指令视为特殊边类型 - 可能跨函数传播漏洞信号
             if is_call and jmp_target is not None and jmp_target in addr_to_idx:
                 graph.edges.append((i, addr_to_idx[jmp_target]))
                 graph.edge_attr.append(self._edge_feat(EdgeType.CALL_EDGE))
@@ -103,20 +102,20 @@ class GraphBuilder:
             feat[edge_type] = 1.0
         return feat
     def _extract_last_instruction(self, block_text):
-        """提取基本块最后一条有效汇编指令 — 用于判断块出口类型（fallthrough/branch/call/ret）"""
+        """提取基本块最后一条有效汇编指令 - 用于判断块出口类型（fallthrough/branch/call/ret）"""
         if not block_text: return None
         lines = [l.strip() for l in block_text.split("\n") if l.strip() and re.match(r"0x[0-9a-f]+\s+", l.strip())]
         return lines[-1] if lines else None
     def _extract_jump_target(self, ins_text):
-        """从跳转/调用指令中提取目标地址 — 返回十六进制字符串或 None"""
+        """从跳转/调用指令中提取目标地址 - 返回十六进制字符串或 None"""
         if not ins_text: return None
         # 匹配形如 "jmp 0x401000" 或 "call 0x401050" 的直接地址跳转
         m = re.search(r'(?:jmp|call|je|jne|jz|jnz|jg|jge|jl|jle|ja|jae|jb|jbe|jo|jno|js|jns|jp|jnp|jcxz|jecxz)\s+(0x[0-9a-fA-F]+)', ins_text)
         if m: return m.group(1).lower()
-        # r2 风格符号引用 "call sym.func" 无具体地址 — 返回 None，不做跨函数边
+        # r2 风格符号引用 "call sym.func" 无具体地址 - 返回 None，不做跨函数边
         return None
     def _split_blocks(self, asm):
-        """拆分基本块，同时返回块文本列表和对应的起始地址列表 — 供分支目标地址映射使用"""
+        """拆分基本块，同时返回块文本列表和对应的起始地址列表 - 供分支目标地址映射使用"""
         if asm is None: return [], []
         blocks=[]; block_addrs=[]; current=[]; current_addr=None; lines=asm.split("\n"); i=0
         while i<len(lines):
@@ -221,12 +220,12 @@ class SimpleGNN:
             i+=1
         return loss_total/max(1,len(graphs))
     def _serialize_weights(self):
-        """将权重序列化为可pickle的纯Python结构 — 不依赖numpy对象引用"""
+        """将权重序列化为可pickle的纯Python结构 - 不依赖numpy对象引用"""
         if NUMPY_AVAILABLE:
             return {'W1':self.W1.tolist(),'W_layers':[w.tolist() for w in self.W_layers],'W_out':self.W_out.tolist(),'b':self.b.tolist()}
         return {'W1':self.W1,'W_layers':self.W_layers,'W_out':self.W_out,'b':self.b}
     def _deserialize_weights(self, data):
-        """从序列化数据恢复权重 — 兼容numpy和纯Python两种后端"""
+        """从序列化数据恢复权重 - 兼容numpy和纯Python两种后端"""
         if NUMPY_AVAILABLE:
             self.W1=np.array(data['W1'],dtype=np.float32); self.W_layers=[np.array(w,dtype=np.float32) for w in data['W_layers']]
             self.W_out=np.array(data['W_out'],dtype=np.float32); self.b=np.array(data['b'],dtype=np.float32)
@@ -234,13 +233,13 @@ class SimpleGNN:
             self.W1=data['W1']; self.W_layers=data['W_layers']; self.W_out=data['W_out']; self.b=data['b']
 
 class GNNVulnDetector:
-    _instance = None  # 单例句柄 — 避免重复初始化GraphBuilder和未训练模型，共享训练状态
+    _instance = None  # 单例句柄 - 避免重复初始化GraphBuilder和未训练模型，共享训练状态
 
     def __init__(self): self.builder=GraphBuilder(); self.gnn=SimpleGNN(); self._trained=False
 
     @classmethod
     def get_instance(cls):
-        """获取全局单例 — 多次调用共享同一检测器状态，保留训练权重不丢失"""
+        """获取全局单例 - 多次调用共享同一检测器状态，保留训练权重不丢失"""
         if cls._instance is None: cls._instance = cls()
         return cls._instance
 
@@ -257,7 +256,7 @@ class GNNVulnDetector:
         self._trained=True
 
     def save_model(self, filepath):
-        """持久化模型权重到磁盘 — 使用pickle序列化，包含超参数以便恢复时重建GNN结构"""
+        """持久化模型权重到磁盘 - 使用pickle序列化，包含超参数以便恢复时重建GNN结构"""
         if filepath is None: return False
         try:
             data = {
@@ -270,13 +269,13 @@ class GNNVulnDetector:
         except Exception as e: _g_log.error("save_model failed: %s",e); return False
 
     def load_model(self, filepath):
-        """从磁盘恢复模型权重 — 反序列化pickle文件，按超参数重建GNN后灌入权重"""
+        """从磁盘恢复模型权重 - 反序列化pickle文件，按超参数重建GNN后灌入权重"""
         if filepath is None or not os.path.exists(filepath): return False
         try:
             with open(filepath,'rb') as f: data = pickle.load(f)
             self._trained = data.get('trained', False)
             hp = data.get('hyperparams', {})
-            # 基于保存时的超参数重建GNN，再将权重灌入 — 确保结构与权重一致
+            # 基于保存时的超参数重建GNN，再将权重灌入 - 确保结构与权重一致
             self.gnn = SimpleGNN(
                 hidden_dim=hp.get('hidden_dim', 32),
                 num_layers=hp.get('num_layers', 2),
@@ -286,11 +285,11 @@ class GNNVulnDetector:
             return True
         except Exception as e: _g_log.error("load_model failed: %s",e); return False
 
-# 模块级全局检测器引用 — 懒初始化，向后兼容原有的 detect_with_gnn 无状态函数接口
+# 模块级全局检测器引用 - 懒初始化，向后兼容原有的 detect_with_gnn 无状态函数接口
 _global_detector = None
 
 def _ensure_detector():
-    """懒初始化全局检测器 — 首次调用时构建GraphBuilder+SimpleGNN，后续调用复用同一实例"""
+    """懒初始化全局检测器 - 首次调用时构建GraphBuilder+SimpleGNN，后续调用复用同一实例"""
     global _global_detector
     if _global_detector is None: _global_detector = GNNVulnDetector()
     return _global_detector

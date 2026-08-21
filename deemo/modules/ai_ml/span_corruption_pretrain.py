@@ -1,6 +1,6 @@
-# 跨度损坏预训练——面向二进制代码的CFG感知跨度掩码语言模型
+# 跨度损坏预训练-面向二进制代码的CFG感知跨度掩码语言模型
 #
-# 核心问题: mlm_pretrain.py使用token级随机掩码——一条指令的助记符和操作数
+# 核心问题: mlm_pretrain.py使用token级随机掩码-一条指令的助记符和操作数
 # 被分别掩码，模型通过部分操作数即可推断掩码内容（捷径学习）。
 #
 # 技术方案:
@@ -23,12 +23,11 @@ from .src.pretrain.span_masker import (
     AssemblyTokenizer, SpanMask, CFGSpanCorrupter,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class SpanCorruptionTrainer:
-    """跨度损坏预训练——二进制代码的CFG感知掩码语言模型。
+    """跨度损坏预训练-二进制代码的CFG感知掩码语言模型。
 
     训练目标: 给定corrupted序列+哨兵token，预测被掩码的token序列。
     此目标迫使模型理解指令语义和控制流上下文，而非token共现。
@@ -107,7 +106,7 @@ class SpanCorruptionTrainer:
                         instructions: List[str],
                         cfg_blocks: Optional[List[Tuple[int, int]]] = None
                         ) -> np.ndarray:
-        """将二进制函数编码为密集嵌入——用于下游漏洞检测等任务。"""
+        """将二进制函数编码为密集嵌入-用于下游漏洞检测等任务。"""
         tokenized = self._tokenizer.tokenize_instructions(instructions)
         all_tokens = []
         for instr_tokens in tokenized:

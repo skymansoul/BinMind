@@ -1,7 +1,6 @@
 # UAF C源码模板 (UAF C Source Templates)
 # 15种UAF漏洞模式的C代码模板, 供 gen_uaf_samples.py 调用.
 # 每种模式模拟一个真实CVE的核心UAF机制.
-# 创建: 2026-05-06
 
 SAMPLE_DEFS = [
     ("CVE-2016-10150", "cve_2016_10150_kvm",

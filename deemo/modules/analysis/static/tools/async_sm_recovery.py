@@ -4,7 +4,7 @@
 # Design: dict dispatch over -else chains; reduces cyclomatic complexity
 #
 # 2025 增强: 支持 Rust async/await 状态机（Future::poll + Pin）
-# Rust 异步状态机不同于 goroutine 的 M:N 调度——每个 async fn
+# Rust 异步状态机不同于 goroutine 的 M:N 调度, 每个 async fn
 # 被编译为实现了 Future trait 的状态机结构体，poll 函数包含
 # match 多路分支对应每个.await 点
 import logging, os
@@ -41,7 +41,7 @@ class CoroutineFunction:
     states: list = field(default_factory=list)
     transitions: list = field(default_factory=list)
     local_variables: list = field(default_factory=list)
-    poll_count: int = 0  # Rust: poll 调用次数——每个.await 增加一次
+    poll_count: int = 0  # Rust: poll 调用次数, 每个.await 增加一次
 
 
 @dataclass
@@ -114,7 +114,7 @@ class StateMachineExtractor:
         return await_addrs
 
     def detect_rust_future_poll(self) -> Optional[int]:
-        """检测 Rust Future::poll 函数——寻找 core::future::Future::poll 的虚表条目"""
+        """检测 Rust Future::poll 函数, 寻找 core::future::Future::poll 的虚表条目"""
         try:
             with open(self.binary_path, "rb") as f: data = f.read()
             poll_sig = rb'_ZN.*7poll17h'  # Rust mangled poll symbol

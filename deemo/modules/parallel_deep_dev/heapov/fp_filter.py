@@ -7,8 +7,8 @@ UNCERTAIN 一律不进入报告(误报主来源); 记录过滤理由
 
 from typing import List, Tuple
 
-from heapov import verdict as V
-from heapov.model import Finding
+from . import verdict as V
+from .model import Finding
 
 
 def finalize(findings: List[Finding], threshold: float = V.CONF_REPORT_MIN,

@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import hashlib
-import hashlib as _hashlib
 import math as _math
 from collections import defaultdict as _defaultdict
 import struct as _struct
@@ -21,8 +20,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
-
-__dbg = logging.getLogger(__name__)
 
 
 # Enums
@@ -87,10 +84,8 @@ class SuspiciousPattern:
     pattern_type: str = ""
     location: str = ""
     description: str = ""
-    location: str = ""
-    evidence: str = ""
-    confidence: float = 0.0
     evidence: Dict[str, Any] = field(default_factory=dict)
+    confidence: float = 0.0
 
 
 @dataclass
@@ -116,36 +111,6 @@ class ScanResult:
     risk_score: float = 0.0
     safe: bool = True
     scan_time: float = 0.0
-
-
-class ONNXParser:
-    """ONNX 模型解析器 —— 校验魔数并抽取操作符。"""
-
-    def __init__(self, data: bytes):
-        self.data = data or b""
-        self.proto: Any = None
-        if self.data.startswith(b"ONNX"):
-            self.proto = {"magic": "ONNX", "size": len(self.data)}
-
-    def get_operators(self) -> List[str]:
-        if self.proto is None:
-            return []
-        # 从字符串中抽取常见操作符
-        operators = []
-        for op in ["Conv", "Relu", "MaxPool", "Gemm", "Softmax", "Reshape"]:
-            if op.encode() in self.data:
-                operators.append(op)
-        return operators or ["Conv"]
-
-
-class TFLiteParser:
-    """TFLite 模型解析器 —— 校验 FlatBuffer 魔数。"""
-
-    def __init__(self, data: bytes):
-        self.data = data or b""
-        self.flatbuffer: Any = None
-        if self.data.startswith(b"TFL3"):
-            self.flatbuffer = {"magic": "TFL3", "size": len(self.data)}
 
 
 def _detect_format_from_magic(filepath: str) -> Tuple[ModelFormat, str, float]:
@@ -239,7 +204,7 @@ class ONNXParser:
         metadata = ModelMetadata(format=ModelFormat.ONNX)
 
         if not _os.path.exists(filepath):
-            __dbg.error("ONNX file not found: %s", filepath)
+            logger.error("ONNX file not found: %s", filepath)
             return metadata
 
         file_size = _os.path.getsize(filepath)
@@ -248,7 +213,7 @@ class ONNXParser:
         with open(filepath, 'rb') as fh:
             data = fh.read()
 
-        metadata.file_hash = _hashlib.sha256(data).hexdigest()
+        metadata.file_hash = hashlib.sha256(data).hexdigest()
         metadata.entropy_score = _compute_shannon_entropy(data)
 
         # Scan for ONNX protobuf fields using wire-format heuristics
@@ -330,7 +295,7 @@ class TFLiteParser:
         metadata = ModelMetadata(format=ModelFormat.TFLITE)
 
         if not _os.path.exists(filepath):
-            __dbg.error("TFLite file not found: %s", filepath)
+            logger.error("TFLite file not found: %s", filepath)
             return metadata
 
         file_size = _os.path.getsize(filepath)
@@ -339,7 +304,7 @@ class TFLiteParser:
         with open(filepath, 'rb') as fh:
             data = fh.read()
 
-        metadata.file_hash = _hashlib.sha256(data).hexdigest()
+        metadata.file_hash = hashlib.sha256(data).hexdigest()
         metadata.entropy_score = _compute_shannon_entropy(data)
 
         if len(data) >= 4:
@@ -378,8 +343,7 @@ class TFLiteParser:
 # Backdoor Detector
 
 class BackdoorDetector:
-    """Detects neural network backdoors via pattern analysis.
-       2026-07-31: 新增权重熵异常检测——木马触发层权重分布通常异常集中（低熵）"""
+    """Detects neural network backdoors via pattern analysis."""
 
     __slots__ = ('m_trigger_patterns', 'm_thresholds', 'model_data', '_trigger_patterns')
 
@@ -466,7 +430,7 @@ class SerializationAttackDetector:
 class ModelReconstructor:
     """Attempts to reconstruct model structure from partial/broken files."""
 
-    __slots__ = ('m_recovery_log',)
+    __slots__ = ('nodes',)
 
     def __init__(self):
         self.nodes: List[Dict[str, Any]] = []

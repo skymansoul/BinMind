@@ -33,12 +33,9 @@ def extract_alloc_write_pairs(
 ) -> List[Dict[str, Any]]:
     """从单个函数的伪代码中提取所有 alloc+write pair。
 
-    realloc 追踪: 当 realloc(var, new_size) 出现且已有同一 var 的 alloc site 时,
-    更新该 site 的 alloc_size 为新值, 避免用旧 malloc size 误判溢出。
-
-    Returns:
-        List of dicts with keys: func_name, line, alloc_func, alloc_size,
-        write_size, size_var
+    realloc 追踪: 当 realloc(var, new_size) 出现且已有同一 var 的
+    alloc site 时, 更新该 site 的 alloc_size, 避免旧 size 误判溢出。
+    返回 dict 列表, 键: func_name/line/alloc_func/alloc_size/write_size/size_var。
     """
     results = []
     lines = code.splitlines()
@@ -130,11 +127,7 @@ def apply_interproc_summaries(
 def compute_final_verdict(pf: Any) -> Tuple[float, float, bool, str]:
     """综合所有阶段计算最终判定。
 
-    Args:
-        pf: PipelineFinding (或 duck-typed 对象含各阶段字段)
-
-    Returns:
-        (fp_likelihood, confidence, is_true_positive, reasoning)
+    返回 (fp_likelihood, confidence, is_true_positive, reasoning)。
     """
     fp_score = 0.0
 

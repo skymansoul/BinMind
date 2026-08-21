@@ -38,7 +38,7 @@ class MetricsRecorder:
         return dict(self._durations)
 
 # 通用 record/ 接口
-    # INTJ策略: 除了 start/stop 的耗时模式，保留 record/ 作为通用 kv 存储
+    # 策略: 除了 start/stop 的耗时模式，保留 record/ 作为通用 kv 存储
     # 方便非耗时类指标（如函数计数、错误数）也能用同一个 recorder
 
     def record(self, key: str, value: float) -> None:

@@ -38,12 +38,7 @@ class ReportGeneratorCore:
     """
 
     def __init__(self, output_dir: str = './reports'):
-        """
-        初始化输出目录与步骤追踪器。
-
-        Args:
-            output_dir: 报告产出目录
-        """
+        """初始化输出目录与步骤追踪器, output_dir 为报告产出目录。"""
         self.output_dir = output_dir
         self.analysis_steps = []
         self.steps = []
@@ -58,14 +53,7 @@ class ReportGeneratorCore:
             logger.error(f"创建输出目录失败: {e}")
 
     def add_step(self, name: str, data=None, result=None):
-        """
-        追加分析步骤记录。
-
-        Args:
-            name: 步骤标识
-            data: 步骤输入数据
-            result: 步骤产出
-        """
+        """追加分析步骤记录: name 步骤标识, data 步骤输入, result 步骤产出。"""
         self.steps.append({
             'name': name,
             'data': data,
@@ -395,15 +383,7 @@ class ReportGeneratorCore:
         return '\n'.join(output)
 
     def generate_markdown_report(self, output_path: str = None):
-        """
-        基于已记录步骤拼接 Markdown 报告。
-
-        Args:
-            output_path: 输出文件路径
-
-        Returns:
-            Markdown 字符串
-        """
+        """基于已记录步骤拼接 Markdown 报告, 返回 Markdown 字符串。"""
         report = "# Analysis Report\n\n"
         for step in self.steps:
             report += f"## {step['name']}\n"
@@ -837,11 +817,7 @@ class ReportGeneratorCore:
         decomp_results: List[Dict[str, Any]],
         symbolic_result: Dict[str, Any] = None
     ) -> Tuple[str, str]:
-        """构造 vis.js 调用图 (Call Graph) + 控制流图 (CFG) 的 HTML 片段。
-
-        Returns:
-            (call_graph_html, cfg_html) 元组
-        """
+        """构造 vis.js 调用图 (Call Graph) + 控制流图 (CFG) 的 HTML 片段, 返回 (call_graph_html, cfg_html) 元组。"""
         functions = []
         call_edges = []
 
@@ -996,13 +972,9 @@ class ReportGeneratorCore:
         """
         构造 Ghidra Python 标注脚本 (书签 + 着色 + 注释)。
 
-        Args:
-            binary_path: 二进制文件路径
-            decomp_results: 反编译分析结果
-            crash_analysis: 崩溃分析结果
-
-        Returns:
-            可导入 Ghidra Script Manager 的 Python 脚本源码
+        参数: binary_path 二进制文件路径, decomp_results 反编译
+        分析结果, crash_analysis 崩溃分析结果;
+        返回可导入 Ghidra Script Manager 的 Python 脚本源码。
         """
         logger.info("[Report] 生成 Ghidra 标注脚本")
 
@@ -1227,18 +1199,12 @@ if __name__ == "__main__":
         """
         批量产出多种格式报告。
 
-        Args:
-            binary_path: 二进制文件路径
-            binary_info: 二进制元信息
-            decomp_results: 反编译分析结果
-            crash_analysis: 崩溃分析
-            exploit_result: 利用脚本结果
-            similar_vulns: 相似漏洞匹配
-            symbolic_result: 符号执行结果
-            formats: 目标格式列表 ['md', 'json', 'html', 'pdf', 'sarif']
-
-        Returns:
-            {format: filepath} 映射
+        参数: binary_path 二进制文件路径, binary_info 二进制
+        元信息, decomp_results 反编译分析结果, crash_analysis
+        崩溃分析, exploit_result 利用脚本结果, similar_vulns
+        相似漏洞匹配, symbolic_result 符号执行结果,
+        formats 目标格式列表 ['md', 'json', 'html', 'pdf',
+        'sarif']; 返回 {format: filepath} 映射。
         """
         if formats is None:
             formats = ['md', 'json']

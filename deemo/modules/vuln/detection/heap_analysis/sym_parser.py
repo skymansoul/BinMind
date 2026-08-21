@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-28  |  从sym_constraint_engine.py拆分 — 指令解析工具
 """objdump指令行解析: 寄存器归一化/立即数提取/操作数分割/ABI检测.
 
 """

@@ -24,7 +24,7 @@ def detect_loop_accumulated(insns: List[Instruction],
           向后扫描循环体内的 add 归纳变量和 memset 调用,
           计算 trip_count * per_iter_size 累积溢出.
 
-    返回: 每个循环中累积 memcpy 的额外 findings (可能为空).
+    返回每个循环中累积 memcpy 的额外 findings (可能为空)。
     """
     if len(insns) < 6:
         return []

@@ -1,7 +1,5 @@
-# 创建: 2026-08-09 22:31
-# 修改: 2026-08-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 共形分位数回归自适应区间
-# 共形分位数回归 — CVE评分的自适应宽度预测区间
+# 共形分位数回归自适应区间
+# 共形分位数回归 - CVE评分的自适应宽度预测区间
 #
 # 问题: 标准共形预测 (cve_conformal) 使用全局常数q_hat,
 # 对每个CVE产生等宽预测区间. 但CVE的评分不确定性是异方差的:
@@ -46,7 +44,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 
 class PinballQuantileRegressor:
-    """Pinball损失分位数回归器 — 梯度增强风格.
+    """Pinball损失分位数回归器 - 梯度增强风格.
 
     使用坐标下降+pinball损失拟合条件分位数.
     Pinball损失: L_τ(y, ŷ) = max(τ·(y-ŷ), (τ-1)·(y-ŷ)).
@@ -132,7 +130,7 @@ class PinballQuantileRegressor:
 
 
 class CQRScorer:
-    """共形分位数回归评分器 — 自适应宽度预测区间.
+    """共形分位数回归评分器 - 自适应宽度预测区间.
 
     训练两个分位数回归器 (下界α/2, 上界1-α/2),
     用共形校准修正系统性偏差.

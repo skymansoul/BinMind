@@ -84,7 +84,6 @@ _DEFAULT_MATURITY_WEIGHTS = {
 
 
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -133,7 +132,6 @@ def compute_weighted_maturity(metrics: dict,
 # 度量从 CVE 公布到二进制补丁发布的时间差 → 暴露窗口越长，风险越高
 import time as _time
 
-# 保留
 _ARIA_S1 = "0x3f"
 
 
@@ -171,5 +169,8 @@ def compute_patch_latency(cve_published: float, patch_applied: float,
     }
 
 
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

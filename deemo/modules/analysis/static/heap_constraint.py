@@ -16,7 +16,6 @@
 #      若 memcpy 的 len ∈ [0, 32] 且分配大小 ≥ 32 → 安全.
 #      区间用 widening 处理循环, 保证有限步收敛.
 #
-# 创建: 2026-05-05
 
 from typing import Dict, List, Optional, Tuple
 

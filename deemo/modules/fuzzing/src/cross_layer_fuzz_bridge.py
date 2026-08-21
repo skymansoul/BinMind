@@ -1,22 +1,21 @@
-# 修改记录:
-# 2025-07-28 16:52 - 种子→Task 映射增加 energy 优先级的对数归一化, 补偿偏态分布
-# 2025-07-31 11:23 - coverage_feedback 改为增量式, 避免每次拉取全量位图
-# 2025-08-02 14:07 - 增加 node_affinity_cache 减少重复划分计算
+# 种子->Task 映射增加 energy 优先级的对数归一化, 补偿偏态分布
+# coverage_feedback 改为增量式, 避免每次拉取全量位图
+# 增加 node_affinity_cache 减少重复划分计算
 
-"""跨层模糊测试-分布式调度桥接 — GRL 调度与种子选择的联合优化。
+"""跨层模糊测试-分布式调度桥接 - GRL 调度与种子选择的联合优化。
 
 现状: 分布式调度器 (GRL-Sched) 决定任务在哪些节点上以何种顺序执行,
 模糊测试调度器 (Scheduler) 决定哪些种子以何种能量被变异。
-两者独立运作 — 分布层不关心种子质量, 模糊层不感知节点拓扑。
+两者独立运作 - 分布层不关心种子质量, 模糊层不感知节点拓扑。
 
 本模块将模糊测试活动建模为 TaskDependencyGraph, 其中:
   - 每个种子是一个 TaskNode (exec_time = 历史变异耗时, priority = AFLfast 评分)
   - 种子间的父子关系构成 data 依赖边 (comm_cost = 覆盖差异度)
   - 节点间通信代价从 ISRG 覆盖差异导出, 使得「覆盖互补」的种子
-    被分配到不同节点并行探索 → 联合最大化 makespan 效率与覆盖率增长
+    被分配到不同节点并行探索 -> 联合最大化 makespan 效率与覆盖率增长
 
 核心洞见: 在分布式模糊测试中, 将"覆盖高度重叠"的两个种子分配给
-不同节点是浪费 — 两者会重复探索同一程序区域。相反, 将"覆盖互补"
+不同节点是浪费 - 两者会重复探索同一程序区域。相反, 将"覆盖互补"
 的种子分到不同节点, 各自独立变异, 最大化单位时间的净新覆盖。
 这等价于 GRL-Sched 的图划分问题: 最小化割边 = 最小化同节点内
 种子间的覆盖冗余。Graphuzz 证明了 GNN 可以
@@ -41,7 +40,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Set, Tuple
 
-# 跨模块引用 — 懒导入以避免循环依赖
+# 跨模块引用 - 懒导入以避免循环依赖
 # fuzzing 侧
 try:
     from modules.fuzzing.src.core import Seed
@@ -52,7 +51,7 @@ except ImportError:
     FuzzScheduler = None  # type: ignore
     SeedRelationGraph = None  # type: ignore
 
-# distributed 侧 — 直接导入源文件以避开 distributed/__init__.py 的 worker 预加载
+# distributed 侧 - 直接导入源文件以避开 distributed/__init__.py 的 worker 预加载
 # (worker.py 依赖 config.py, 后者在非标准环境可能加载失败)
 try:
     import importlib
@@ -86,10 +85,10 @@ class CrossLayerFuzzBridge:
     """模糊测试-分布式调度跨层桥接。
 
     使用流程:
-      1. build_campaign_dag(seeds, isrg) → TaskDependencyGraph
-      2. partition_dag(n_nodes) → 将种子分配到各节点
-      3. schedule_node_seeds(node_id) → 该节点内部种子的最优变异顺序
-      4. feedback(coverage_delta) → 更新 DAG 中的边权与优先级
+      1. build_campaign_dag(seeds, isrg) -> TaskDependencyGraph
+      2. partition_dag(n_nodes) -> 将种子分配到各节点
+      3. schedule_node_seeds(node_id) -> 该节点内部种子的最优变异顺序
+      4. feedback(coverage_delta) -> 更新 DAG 中的边权与优先级
       5. 循环 — 每 coverage_sync_interval 重新划分
     """
 
@@ -99,9 +98,9 @@ class CrossLayerFuzzBridge:
         self._grl = GRLScheduler(machine_count=self._cfg.n_nodes) if GRLScheduler else None
         self._partitioner = GraphPartitioner() if GraphPartitioner else None
         self._partition: Optional[Partition] = None
-        self._seed_to_node: Dict[str, int] = {}      # seed_id → node_id
+        self._seed_to_node: Dict[str, int] = {}      # seed_id -> node_id
         self._node_seeds: Dict[int, List[str]] = defaultdict(list)
-        self._node_affinity_cache: Dict[str, int] = {}  # seed_id → preferred_node
+        self._node_affinity_cache: Dict[str, int] = {}  # seed_id -> preferred_node
         self._last_sync: float = 0.0
         self._stats = {'partitions': 0, 'repairs': 0, 'syncs': 0}
 
@@ -111,13 +110,13 @@ class CrossLayerFuzzBridge:
         """从种子列表 + 种子覆盖关系图构建 GRL 任务依赖图。
 
         节点属性:
-          exec_time = 历史单次变异耗时 (ms) → 秒, 作为调度权重
+          exec_time = 历史单次变异耗时 (ms) -> 秒, 作为调度权重
           priority   = AFLfast 评分, 高优先级的种子在本地队列中优先变异
           comm_weight = 种子在 ISRG 中的多样性贡献
 
         边属性:
           comm_cost = 1.0 - Jaccard(seed_a.coverage, seed_b.coverage)
-                     覆盖越不相似 → 边权越大 → GRL 倾向于分配到不同节点
+                     覆盖越不相似 -> 边权越大 -> GRL 倾向于分配到不同节点
         """
         dag = TaskDependencyGraph()
         if not seeds:
@@ -151,8 +150,8 @@ class CrossLayerFuzzBridge:
             ))
 
         # 建边: 仅对覆盖差异最大的种子对建边 (top-k 按 Jaccard 距离)
-        # 小覆盖差异 → 边权小 → 同节点代价小 → 倾向于放一起
-        # 大覆盖差异 → 边权大 → 不同节点代价小 → 倾向于分开
+        # 小覆盖差异 -> 边权小 -> 同节点代价小 -> 倾向于放一起
+        # 大覆盖差异 -> 边权大 -> 不同节点代价小 -> 倾向于分开
         if n >= 2 and isrg and SeedRelationGraph:
             # 复用 ISRG 的覆盖关系: 用 fingerprint 计算 Jaccard 距离
             for i in range(n):
@@ -171,7 +170,7 @@ class CrossLayerFuzzBridge:
                     if union == 0:
                         continue
                     jaccard_sim = inter / union
-                    comm_cost = 1.0 - jaccard_sim  # 越不相似 → 边权越大
+                    comm_cost = 1.0 - jaccard_sim  # 越不相似 -> 边权越大
                     if comm_cost > 0.3:  # 仅对显著差异的种子对建边
                         sid_i = si.id if hasattr(si, 'id') else str(i)
                         sid_j = sj.id if hasattr(sj, 'id') else str(j)
@@ -240,7 +239,7 @@ class CrossLayerFuzzBridge:
                           dag: TaskDependencyGraph = None) -> List[str]:
         """为指定节点生成局部最优的种子变异顺序。
 
-        使用 HEFT 排级 — 高 priority (AFLfast 评分) + 低 exec_time 的种子优先。
+        使用 HEFT 排级 - 高 priority (AFLfast 评分) + 低 exec_time 的种子优先。
         与每个节点内部 FuzzScheduler 的本地调度独立且互补。
         """
         d = dag or self._dag
@@ -264,7 +263,7 @@ class CrossLayerFuzzBridge:
                           exec_time_ms: float):
         """接收到一个种子的覆盖反馈 — 更新其在 DAG 中的属性。
 
-        new_edges > 0 → 覆盖有新发现, 提升该种子及其邻居的 priority。
+        new_edges > 0 -> 覆盖有新发现, 提升该种子及其邻居的 priority。
         在下一个 sync 周期, 高 priority 种子将在 repartition 时获得更优分配。
         """
         if self._dag is None:
@@ -273,7 +272,7 @@ class CrossLayerFuzzBridge:
         if nd is None:
             return
 
-        # 新覆盖发现 → 提升优先级
+        # 新覆盖发现 -> 提升优先级
         if new_edges > 0:
             nd.priority *= (1.0 + math.log2(1 + new_edges) * 0.1)
             nd.metadata['last_new_find'] = time.time()
@@ -291,7 +290,7 @@ class CrossLayerFuzzBridge:
 
     def _round_robin_assign(self, dag: TaskDependencyGraph,
                             n_nodes: int) -> Dict[int, List[str]]:
-        """无划分器时的退化分配 — 简单轮询。"""
+        """无划分器时的退化分配 - 简单轮询。"""
         result: Dict[int, List[str]] = defaultdict(list)
         assignments = {}
         for i, nid in enumerate(dag.node_ids):

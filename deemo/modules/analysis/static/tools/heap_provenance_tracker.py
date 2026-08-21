@@ -1,5 +1,5 @@
-# 指针来源追踪引擎 — 确定每个寄存器中的堆指针来自哪个 malloc 调用
-# 方法论依据: Heap Disjointness — 堆对象区分是误报控制的核心
+# 指针来源追踪引擎, 确定每个寄存器中的堆指针来自哪个 malloc 调用
+# 方法论依据: Heap Disjointness, 堆对象区分是误报控制的核心
 # 本模块将 symbolic heap location 的概念适配为 binary-level 的寄存器追踪
 
 import re
@@ -16,7 +16,7 @@ class HeapProvenance:
     escaped: bool = False      # 指针是否逃逸到内存/全局变量
 
 class HeapProvenanceTracker:
-    """追踪堆指针的来源——确定每个写操作的目标是哪个 malloc 分配的缓冲区
+    """追踪堆指针的来源, 确定每个写操作的目标是哪个 malloc 分配的缓冲区
 
     核心思路: 静态检测的误报主因是堆对象混淆
     malloc(64) 和 memcpy(128) 若操作不同的缓冲区→不是漏洞

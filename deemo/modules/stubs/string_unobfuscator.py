@@ -8,6 +8,8 @@ import importlib.util as _iu
 _target = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'string_unobfuscator.py')
 _spec = _iu.spec_from_file_location('string_unobfuscator', _target)
 _m = _types.ModuleType('string_unobfuscator')
+# 目标模块按 __file__ 相对定位自身, 隔离命名空间需先注入 __file__
+_m.__file__ = _target
 _spec.loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 

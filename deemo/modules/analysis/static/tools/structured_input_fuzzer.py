@@ -32,7 +32,7 @@ class FuzzingResult:
 # LLM 驱动的协议语法提取
 # Meng et al., "ChatAFL: Large Language Model guided 协议 模糊测试"
 # 核心方法: 将协议消息序列输入 LLM, 让 LLM 提取结构化的文法规则（字段名/类型/约束）
-# 本实现提供语法提取的骨架——在实际部署中，LLM prompt 由外部调用者注入
+# 本实现提供语法提取的骨架, 在实际部署中，LLM prompt 由外部调用者注入
 
 
 class GrammarRule:
@@ -48,7 +48,7 @@ class GrammarRule:
 
 
 class ProtocolGrammarExtractor:
-    """从消息迹中提取协议语法——ChatAFL 启发的语法推断器
+    """从消息迹中提取协议语法, ChatAFL 启发的语法推断器
     通过分析消息样本的结构特征（定长/变长字段、分隔符、TLV模式）
     构建一个可用于指导结构化变异的 BNF 风格文法
     """
@@ -62,7 +62,7 @@ class ProtocolGrammarExtractor:
         self._rules: Dict[str, GrammarRule] = {}
 
     def infer_from_samples(self, samples: List[bytes]) -> Dict[str, GrammarRule]:
-        """从一组消息样本推断文法——分析每个偏移位置的字节分布
+        """从一组消息样本推断文法, 分析每个偏移位置的字节分布
         将固定位置归为 'constant'，变化位置归为 'variable' 并推断其范围
         """
         if not samples:
@@ -78,7 +78,7 @@ class ProtocolGrammarExtractor:
                     byte_set.add(s[offset])
             field_name = f"field_{offset}"
             if len(byte_set) <= 2:
-                # 固定字段——可能是类型标记或魔数
+                # 固定字段, 可能是类型标记或魔数
                 val = list(byte_set)[0] if byte_set else 0
                 self._rules[field_name] = GrammarRule(
                     field_name, [f"0x{val:02x}"], "constant",
@@ -91,7 +91,7 @@ class ProtocolGrammarExtractor:
                     InputConstraint(field_name, "range", {"min": lo, "max": hi})
                 )
 
-        # 处理变长部分——超出最小长度的字节归为可变长度 payload
+        # 处理变长部分, 超出最小长度的字节归为可变长度 payload
         if max_len > min_len:
             self._rules["payload"] = GrammarRule(
                 "payload", ["<variable_length>"], "bytes",
@@ -111,7 +111,7 @@ class ProtocolGrammarExtractor:
 # 语义反馈驱动的种子排序
 # arXiv 2511.03995, "Hybrid 模糊测试 LLM-Guided Input
 # 变异 Semantic Feedback"
-# 使用嵌入向量的余弦相似度评估输入的"行为新颖性"——覆盖路径之外的语义信号
+# 使用嵌入向量的余弦相似度评估输入的"行为新颖性", 覆盖路径之外的语义信号
 
 
 class SemanticNoveltyScorer:
@@ -126,11 +126,11 @@ class SemanticNoveltyScorer:
         self._seen_features: List[List[float]] = []
 
     def _extract_features(self, payload: bytes) -> List[float]:
-        """从载荷提取轻量语义特征向量——不依赖执行迹"""
+        """从载荷提取轻量语义特征向量, 不依赖执行迹"""
         n = len(payload) if payload else 1
         mean_v = sum(payload) / n if payload else 0.0
         variance = sum((b - mean_v) ** 2 for b in payload) / n if payload else 0.0
-        # 字节熵——编码了结构 vs 随机的程度
+        # 字节熵, 编码了结构 vs 随机的程度
         byte_counts: Dict[int, int] = {}
         for b in payload:
             byte_counts[b] = byte_counts.get(b, 0) + 1
@@ -161,7 +161,7 @@ class SemanticNoveltyScorer:
         return 1.0 - max_sim
 
 
-# math 模块函数——避免重复 import
+# math 模块函数, 避免重复 import
 _math_log2 = __import__('math').log2 if hasattr(__import__('math'), 'log2') else lambda x: __import__('math').log(x, 2)
 _math_sqrt = __import__('math').sqrt
 
@@ -229,7 +229,7 @@ class FormatParser:
                 logger.warning("Unrecognized field type: %s. Skipping %s.", type_spec, field_name)
 
     def infer_grammar_from_samples(self, samples: List[bytes]) -> str:
-        """从字节样本推断协议语法并导出 BNF——ChatAFL 启发的语法自动提取"""
+        """从字节样本推断协议语法并导出 BNF, ChatAFL 启发的语法自动提取"""
         rules = self._grammar_extractor.infer_from_samples(samples)
         return self._grammar_extractor.to_bnf()
 
@@ -313,7 +313,7 @@ class StructuredInputFuzzer:
             gen = ContradictionGenerator(self.parser.constraints)
             inputs = gen.generate(count)
 
-            # 语义新颖度评分——对生成的输入计算行为多样性
+            # 语义新颖度评分, 对生成的输入计算行为多样性
             semantic_scores: List[float] = []
             for inp in inputs:
                 payload = str(inp.fields).encode('utf-8')

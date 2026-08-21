@@ -1,18 +1,16 @@
 # coding: utf-8
-# 创建: 2026-05-17  |  Git提交追溯
-# 修改: 2026-05-17  |  审计后补充文件头与错误处理
 #
 """
-Git提交溯源追踪器——从源码仓库提取漏洞相关提交的因果特征。
+Git提交溯源追踪器-从源码仓库提取漏洞相关提交的因果特征。
 
 技术路径:
-  1. git blame限定行范围 → 定位每行的引入提交
-  2. 按提交聚合 + git log补充元数据 → 提取因果特征
+  1. git blame限定行范围 - 定位每行的引入提交
+  2. 按提交聚合 + git log补充元数据 - 提取因果特征
   3. 产出ProvenanceHypothesis列表供贝叶斯引擎推断
 
 关键优化:
   仅blame漏洞相关行（程序切片限定范围），避免全仓库线性扫描。
-  作者经验计算限定在目标文件内——跨文件经验不可迁移。
+  作者经验计算限定在目标文件内-跨文件经验不可迁移。
 """
 
 import os
@@ -30,7 +28,7 @@ _log = logging.getLogger(__name__)
 
 def _run_git(repo: str, args: List[str], timeout: int = 30,
               retries: int = 2) -> Tuple[int, str, str]:
-    """执行git命令——含重试机制与网络错误处理。
+    """执行git命令-含重试机制与网络错误处理。
 
     瞬态错误(网络波动/锁文件竞争)自动重试。
     永久错误(仓库不存在/权限不足)立即返回。
@@ -59,7 +57,7 @@ def _run_git(repo: str, args: List[str], timeout: int = 30,
 
 
 def _parse_iso_to_unix(iso_str: str) -> float:
-    """ISO 8601→Unix时间戳"""
+    """ISO 8601-Unix时间戳"""
     iso_str = iso_str.strip()
     for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S'):
         try:
@@ -71,11 +69,11 @@ def _parse_iso_to_unix(iso_str: str) -> float:
 
 
 class CommitFeatureExtractor:
-    """提交特征提取器——blame + log + 因果特征计算。
+    """提交特征提取器-blame + log + 因果特征计算。
 
     缓存策略:
-      _author_file_history: (作者, 文件)→提交数，避免重复git log --author
-      _file_total_commits: 文件→总提交数，跨函数共享
+      _author_file_history: (作者, 文件)-提交数，避免重复git log --author
+      _file_total_commits: 文件-总提交数，跨函数共享
     """
 
     def __init__(self, repo_path: str):
@@ -91,7 +89,7 @@ class CommitFeatureExtractor:
                                    ) -> List[ProvenanceHypothesis]:
         """对指定行范围执行blame，返回候选提交假设列表。
 
-        git blame --line-porcelain → 逐行解析 → 按提交聚合 → 补充元数据。
+        git blame --line-porcelain - 逐行解析 - 按提交聚合 - 补充元数据。
         """
         line_range = f"-L{start_line},{end_line}"
         retcode, stdout, _ = _run_git(
@@ -102,7 +100,7 @@ class CommitFeatureExtractor:
             _log.debug("git blame失败: %s (行%d-%d)", file_path, start_line, end_line)
             return []
 
-        # 解析porcelain输出——逐提交聚合行数与作者
+        # 解析porcelain输出-逐提交聚合行数与作者
         commit_data: Dict[str, Dict] = {}
         current = None
         for line in stdout.split('\n'):
@@ -138,7 +136,7 @@ class CommitFeatureExtractor:
         return hypotheses
 
     def _enrich(self, commit_hash: str, file_path: str) -> Optional[Dict]:
-        """提取提交元数据——numstat + 衍生因果特征"""
+        """提取提交元数据-numstat + 衍生因果特征"""
         retcode, stdout, _ = _run_git(
             self._repo,
             ['log', '--format=%H%n%aI%n%s%n%P', '--numstat', '--no-renames',
@@ -175,7 +173,7 @@ class CommitFeatureExtractor:
                 'churn': code_churn, 'path': causal_path}
 
     def _author_expertise(self, author: str, file_path: str) -> float:
-        """作者在目标文件的经验量化——对数缩放。
+        """作者在目标文件的经验量化-对数缩放。
 
         公式: 1 - exp(-0.3 × author_commits)
         5次提交≈0.78, 10次提交≈0.95。
@@ -192,7 +190,7 @@ class CommitFeatureExtractor:
         return min(1.0, 1.0 - math.exp(-0.3 * self._author_file_history[cache_key]))
 
     def _get_file_lines(self, file_path: str) -> int:
-        """文件当前行数——用于churn归一化"""
+        """文件当前行数-用于churn归一化"""
         if file_path in self._file_lines:
             return self._file_lines[file_path]
         try:
@@ -222,7 +220,7 @@ class CommitFeatureExtractor:
 
 
 class RepositoryTemporalAnalyzer:
-    """仓库时态分析——文件年龄、提交频率、安全敏感标记。
+    """仓库时态分析-文件年龄、提交频率、安全敏感标记。
 
     为贝叶斯模型提供根节点先验数据。
     """
@@ -270,8 +268,7 @@ class RepositoryTemporalAnalyzer:
         return freq
 
     def is_security_sensitive(self, file_path: str) -> bool:
-        """路径模式匹配——安全敏感文件启发式判断"""
-        import re
+        """路径模式匹配-安全敏感文件启发式判断"""
         path_l = file_path.lower()
         return any(re.search(p, path_l) for p in self._SEC_PATTERNS)
 

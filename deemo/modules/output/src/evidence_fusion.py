@@ -81,12 +81,11 @@ def _source_to_bpa(src: EvidenceSource) -> Dict[str, float]:
     return bpa
 
 def fuse_evidence(sources: List[EvidenceSource]) -> Dict[str, Any]:
-    """
-    多源 D-S 融合入口。级联 Dempster 组合 ≥2 个证据源。
+    """多源 D-S 融合入口, 级联 Dempster 组合 ≥2 个证据源。
 
-    返回: {belief_v, plausibility_v, conflict, ignorance, combined_mass,
-           fusion_count, warning}
-    冲突度 >0.7 → warning 提示人工复核。
+    返回 {belief_v, plausibility_v, conflict, ignorance,
+    combined_mass, fusion_count, warning}; 冲突度 >0.7 时
+    warning 提示人工复核。
     """
     if not sources:
         return {'belief_v': 0.0, 'plausibility_v': 1.0, 'conflict': 0.0,

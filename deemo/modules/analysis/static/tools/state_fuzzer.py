@@ -5,12 +5,12 @@ from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
-# capstone import──优先capstone，回退到r2 流水线
-# 2026-08-03: capstone>=5.0 已作为[full] extra声明，但用户可能只装了core
+# capstone import, 优先capstone，回退到r2 流水线
+# capstone>=5.0 已作为[full] extra声明，但用户可能只装了core
 try:
     import capstone as _cs_mod
     _HAS_CAPSTONE = True
-    # 延迟构造Cs对象——架构在parse时动态确定
+    # 延迟构造Cs对象, 架构在parse时动态确定
 except ImportError:
     _HAS_CAPSTONE = False
     logger.debug("capstone未安装，fallback到radare2 subprocess pipeline")
@@ -32,7 +32,7 @@ except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
 
 @dataclass
 class BasicBlock:
-    """反汇编提取的基本块——以控制流转移指令为边界划分"""
+    """反汇编提取的基本块, 以控制流转移指令为边界划分"""
     start_addr: int
     end_addr: int
     instructions: List[str] = field(default_factory=list)
@@ -72,12 +72,12 @@ class FuzzingResult:
 
 
 # 二进制段提取
-# 从PE/ELF提取.text段字节——无需完整文件解析，仅取代码段
+# 从PE/ELF提取.text段字节, 无需完整文件解析，仅取代码段
 # 兼容裸二进制：直接用整个文件作为代码
 
 def _extract_text_section(binary_path: str) -> Tuple[bytearray, int, str]:
     """提取代码段。返回 (bytes, base_vaddr, arch_hint)
-    
+
     arch_hint: 'x86', 'x86-64', 'arm', 'arm64', 'unknown'
     代码段优先.text，PE回退到第一个可执行section
     裸二进制则返回整个文件内容，base=0x0
@@ -167,7 +167,7 @@ def _extract_text_section(binary_path: str) -> Tuple[bytearray, int, str]:
                     logger.debug("PE: section=%s vaddr=0x%x size=%d arch=%s",
                                  sec_name, sec_vaddr, len(code), arch)
                     return code, sec_vaddr, arch
-                    # 不break——继续找.text，最后一个可执行段覆盖
+                    # 不break, 继续找.text，最后一个可执行段覆盖
             # 回退：取第一个CNT_CODE段
             fh2.seek(opt_start + opt_hdr_size)
             for _sec_i in range(n_sections):
@@ -183,7 +183,7 @@ def _extract_text_section(binary_path: str) -> Tuple[bytearray, int, str]:
                         return code, sec_vaddr, arch
         return bytearray(), 0x400000, arch
 
-    # 裸二进制——未知格式，假设整个文件即代码
+    # 裸二进制, 未知格式，假设整个文件即代码
     code = bytearray(header + open(binary_path, 'rb').read()[64:])
     return code, 0x0, 'unknown'
 
@@ -223,7 +223,7 @@ def _disassemble_capstone(code: bytearray, base_addr: int,
     if not insn_list:
         return []
 
-    # 判断控制流转移类指令——基本块边界
+    # 判断控制流转移类指令, 基本块边界
     _CFLOW = {
         'jmp', 'jne', 'je', 'jz', 'jnz', 'jg', 'jge', 'jl', 'jle',
         'ja', 'jae', 'jb', 'jbe', 'jo', 'jno', 'js', 'jns', 'jc', 'jnc',
@@ -232,7 +232,7 @@ def _disassemble_capstone(code: bytearray, base_addr: int,
         'cbz', 'cbnz', 'tbnz', 'tbz', 'bx', 'bl', 'blr',
     }
 
-    # 第二遍：按基本块划分——以分支/跳转目标/ret为边界
+    # 第二遍：按基本块划分, 以分支/跳转目标/ret为边界
     blocks: List[BasicBlock] = []
     bb_start = insn_list[0].address
     current_insns: List[str] = []
@@ -273,7 +273,7 @@ def _disassemble_capstone(code: bytearray, base_addr: int,
             mnemonic_set=set(current_mnems)
         ))
 
-    # 第三遍：解析后继——从最后一条指令提取跳转目标
+    # 第三遍：解析后继, 从最后一条指令提取跳转目标
     block_by_addr: Dict[int, BasicBlock] = {}
     addr_list: List[int] = []
     for bb in blocks:
@@ -320,7 +320,7 @@ def _disassemble_capstone(code: bytearray, base_addr: int,
             if idx >= 0 and idx + 1 < len(addr_list):
                 bb.successors.append(addr_list[idx + 1])
 
-    # 第四遍：检测循环头——后继地址 ≤ 自身地址且后继在addr_set中
+    # 第四遍：检测循环头, 后继地址 ≤ 自身地址且后继在addr_set中
     for bb in blocks:
         for succ in bb.successors:
             if succ <= bb.start_addr and succ in addr_set:
@@ -333,7 +333,7 @@ def _disassemble_capstone(code: bytearray, base_addr: int,
 
 
 def _disassemble_r2(binary_path: str) -> List[BasicBlock]:
-    """使用radare2提取基本块——当capstone不可用时的fallback"""
+    """使用radare2提取基本块, 当capstone不可用时的fallback"""
     if not _HAS_R2:
         return []
     try:
@@ -392,23 +392,24 @@ def _build_cfg(blocks: List[BasicBlock]) -> Dict[int, List[int]]:
 
 # 状态机推断内核
 # 从真实控制流推断状态：基本块聚类→状态，条件跳转→迁移，回边→自环
-# 2026-08-03: 从硬编码模板迁移到真实二进制分析
 # 启发式规则来源于协议状态机推断的 CFG→状态映射算法
+
+
 
 def _blocks_to_state_model(blocks: List[BasicBlock],
                            cfg: Dict[int, List[int]],
                            arch_hint: str = 'unknown') -> StateMachineModel:
     """将基本块和CFG映射到StateMachineModel
-    
+
     映射策略：
-    - 每个基本块聚类为一个"微状态"——按照函数内偏移分桶
+    - 每个基本块聚类为一个"微状态", 按照函数内偏移分桶
     - 三条及以上后继 → 决策状态（dispatch/switch类比）
     - 回边 → self-loop
     - 有敏感操作（call, 系统调用, int）→ authenticated/protected状态
     - 无后继（ret）→ terminal状态
     """
     if not blocks:
-        # 空二进制——返回最小模型
+        # 空二进制, 返回最小模型
         s_init = ProtocolState(name="init")
         return StateMachineModel(
             states={"init": s_init}, transitions=[], initial_state="init"
@@ -417,7 +418,7 @@ def _blocks_to_state_model(blocks: List[BasicBlock],
     states: Dict[str, ProtocolState] = {}
     transitions: List[StateTransition] = []
 
-    # 按地址分桶——将相邻基本块聚合为"状态簇"
+    # 按地址分桶, 将相邻基本块聚合为"状态簇"
     # 桶大小=512字节，覆盖同一个函数内的BB
     BUCKET_SIZE = 0x200
     buckets: Dict[int, List[BasicBlock]] = defaultdict(list)
@@ -501,7 +502,7 @@ def _blocks_to_state_model(blocks: List[BasicBlock],
                 guard_str=guard
             ))
 
-    # 自环——回边
+    # 自环, 回边
     for bb in blocks:
         if bb.is_loop_header:
             src_state = state_name_by_addr.get(bb.start_addr, "init")
@@ -527,18 +528,18 @@ def _blocks_to_state_model(blocks: List[BasicBlock],
 
 # SAEG 启发的状态ful利用图
 # 将SAEG的Exploit Graph概念移植到协议状态机fuzzing：
-# 每个状态迁移对应一个"利用步骤"——未认证→认证→提权
+# 每个状态迁移对应一个"利用步骤", 未认证→认证→提权
 # 异常迁移（绕过认证的提权）标记为高危利用路径
 
 
 class ExploitStateGraph:
-    """SAEG风格的利用状态图——将状态机Fuzzing结果映射到利用路径"""
+    """SAEG风格的利用状态图, 将状态机Fuzzing结果映射到利用路径"""
 
     def __init__(self, model: StateMachineModel):
         self._model = model
 
     def find_privilege_escalation_paths(self) -> List[List[str]]:
-        """发现提权路径——从任何状态直接到达privileged状态的迁移"""
+        """发现提权路径, 从任何状态直接到达privileged状态的迁移"""
         paths: List[List[str]] = []
         privileged = {name for name, s in self._model.states.items() if s.is_privileged}
         for t in self._model.transitions:
@@ -550,7 +551,7 @@ class ExploitStateGraph:
         return paths
 
     def compute_attack_surface(self) -> Dict[str, int]:
-        """计算每个状态的攻击面——入度（可达方式数）+出度（可攻击目标数）"""
+        """计算每个状态的攻击面, 入度（可达方式数）+出度（可攻击目标数）"""
         in_deg: Dict[str, int] = defaultdict(int)
         out_deg: Dict[str, int] = defaultdict(int)
         for t in self._model.transitions:
@@ -563,8 +564,8 @@ class ExploitStateGraph:
 
 
 class StateMachineInferrer:
-    """从二进制实际控制流推断状态机——不再使用硬编码模板
-    
+    """从二进制实际控制流推断状态机, 不再使用硬编码模板
+
     提取流程：
     1. 定位代码段（.text或可执行段）
     2. capstone反汇编→基本块+CFG
@@ -575,7 +576,7 @@ class StateMachineInferrer:
 
     def infer_from_binary(self, binary_path: str) -> StateMachineModel:
         """从二进制提取真实CFG并映射为状态机模型
-        
+
         真实实现：
         - 不再返回硬编码的5状态模板
         - 解析PE/ELF代码段，使用capstone反汇编
@@ -610,7 +611,7 @@ class StateMachineInferrer:
                 cfg = _build_cfg(blocks)
                 logger.info("r2: %d BBs, CFG with %d nodes", len(blocks), len(cfg))
 
-        # Level 3: degenerate——至少有一个可用的模型
+        # Level 3: degenerate, 至少有一个可用的模型
         if not blocks:
             logger.warning("No disassembly available for %s, returning minimal model",
                            binary_path)
@@ -625,9 +626,9 @@ class StateMachineInferrer:
         return _blocks_to_state_model(blocks, cfg, arch_hint)
 
     def infer_from_network_trace(self, packets: List[Dict[str, Any]]) -> StateMachineModel:
-        """从网络包序列推断状态机——每个包类型对应一个状态
-        
-        2024-08-12: 增强发现能力——相同连续包类型合并
+        """从网络包序列推断状态机, 每个包类型对应一个状态
+
+        2024-08-12: 增强发现能力, 相同连续包类型合并
         合并后的序列用于状态推导
         """
         if not packets:

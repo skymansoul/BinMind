@@ -1,6 +1,4 @@
-# 创建: 2025-01-13 11:08
-# 修改: 2025-01-13 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: MI/SU/CMI信息论特征归因
+# MI/SU/CMI信息论特征归因
 # 信息论特征归因 — 基于MI/SU/CMI的漏洞可解释性评分
 #
 # 问题: 现有漏洞评分系统 (CVSS/EPSS/GNN/Hawkes) 给出一个数字,
@@ -312,12 +310,11 @@ def _conditional_mi(x_i: List[int], x_j: List[int], y: List[int]) -> float:
 # CVE适配
 
 def analyze_cve_features(kb, max_samples: int = 2000) -> Dict:
-    """从KB提取特征并运行信息论分析 — 一站式接口.
+    """从 KB 提取特征并运行信息论分析 — 一站式接口。
 
-    Returns: 完整报告, 可直接用于:
-      - 评分模型的输入特征选择
-      - ConformalExploitScorer的sigma自适应估计
-      - CausalFeatureSelector的互补验证
+    返回完整报告, 可直接用于: 评分模型的输入特征选择、
+    ConformalExploitScorer 的 sigma 自适应估计、
+    CausalFeatureSelector 的互补验证。
     """
     entries, _ = kb.search(limit=max_samples)
     if not entries:

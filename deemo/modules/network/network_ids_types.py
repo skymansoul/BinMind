@@ -5,8 +5,6 @@ from typing import List, Dict
 
 _log = logging.getLogger(__name__)
 
-# 内置规则SID范围
-# SID_RANGE =
 
 @dataclass
 class SuricataRule:

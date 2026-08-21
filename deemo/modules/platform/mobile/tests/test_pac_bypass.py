@@ -156,7 +156,7 @@ class TestARM64InstructionScanning:
         assert mnem == ''
 
 
-# 2. PAC操作码检测——完整二进制分析
+# 2. PAC操作码检测: 完整二进制分析
 
 class TestPACOpcodeDetection:
     """验证PACBypassAnalyzer正确分类二进制中的签名、认证、剥离和分支认证gadget。"""
@@ -270,7 +270,7 @@ class TestPACOpcodeDetection:
         assert len(result.signing_gadgets) >= 1
 
 
-# 3. 熵评估——旁路难度判断
+# 3. 熵评估: 旁路难度判断
 
 class TestEntropyEvaluation:
     """验证_entropy_assessment对不同签名/认证/剥离gadget比例生成正确的难度字符串。"""

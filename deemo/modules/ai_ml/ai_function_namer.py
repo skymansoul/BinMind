@@ -486,17 +486,7 @@ class FunctionNamer:
         return None, 0.0
 
     def name_function_fn(self, decompiled_code, strings=None, imports=None, addr=None):
-        """Propose a descriptive name for a decompiled function.
-
-        Args:
-            decompiled_code: string of pseudo-C / decompiled code.
-            strings: list of referenced string literals.
-            imports: list of imported function names.
-            addr: function address (for history/dedup).
-
-        Returns:
-            dict with 'name', 'confidence', 'reason', 'method'.
-        """
+        """Propose a descriptive name for a decompiled function."""
         if decompiled_code is None or len(decompiled_code.strip()) == 0:
             return {'name': 'empty_function', 'confidence': 0.3,
                     'reason': 'empty body', 'method': 'default'}
@@ -615,12 +605,7 @@ class FunctionNamer:
                 'method': 'fallback'}
 
     def batch_name_fn(self, functions, min_confidence=None):
-        """Name multiple functions, returning a dict mapping addr -> name dict.
-
-        Args:
-            functions: list of dicts with 'code', 'strings', 'imports', 'addr'.
-            min_confidence: override instance threshold.
-        """
+        """Name multiple functions, returning a dict mapping addr -> name dict."""
         threshold = min_confidence if min_confidence is not None else self.m_min_conf
         results = {}
         fi = 0
@@ -665,20 +650,16 @@ def create_function_namer(min_confidence=0.45):
     return FunctionNamer(min_confidence=min_confidence)
 
 
-# ── 结构化命名 API ────────────────────────────────────────────────────────────
+# 结构化命名 API
 # 面向测试与批量分析的可组合接口：签名提取 → 启发式/模型预测 → 结果聚合。
 
-from dataclasses import dataclass, field
-from enum import Enum as _Enum
-from typing import List, Dict, Any, Optional
 
-
-class NamingStrategy(_Enum):
+class NamingStrategy(Enum):
     AI_PREDICTION = "ai_prediction"
     HEURISTIC = "heuristic"
 
 
-class FunctionCategory(_Enum):
+class FunctionCategory(Enum):
     IO = "io"
     MEMORY = "memory"
     CRYPTO = "crypto"
@@ -835,7 +816,7 @@ class FunctionSignatureExtractor:
 
 
 class AIFunctionNamer:
-    """AI 函数命名器——启发式底座 + 结果缓存。"""
+    """AI 函数命名器-启发式底座 + 结果缓存。"""
 
     def __init__(self):
         self.heuristic_namer = HeuristicFunctionNamer()

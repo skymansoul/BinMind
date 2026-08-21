@@ -40,10 +40,12 @@ def run_all(sample_dir=SAMPLE_DIR):
             if f.startswith('vuln') and '.' not in f[4:]:
                 binary = os.path.join(dp, f)
                 entry = {'sample': d, 'binary': f}
-                for tool_func in [run_binmind, run_angr]:
+                for tool_func in [run_binmind, run_angr, run_qemu,
+                                  run_ghidra]:
                     try:
                         entry.update(tool_func(binary))
-                    except: pass
+                    except Exception:
+                        pass
                 results.append(entry)
                 break
     return results

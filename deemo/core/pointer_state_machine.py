@@ -1,6 +1,6 @@
 """
 指针状态机: 追踪堆指针的分配/释放/逃逸状态。
-每个堆指针遵循 ALLOCATED→FREED→(ESCAPED|DANGLING) 状态转移;
+每个堆指针遵循 ALLOCATED-FREED-(ESCAPED|DANGLING) 状态转移;
 用状态机而非完整数据流分析: 堆指针模式结构化、转移条件简单、函数摘要支持跨函数跟踪。
 """
 import re
@@ -59,8 +59,7 @@ class PointerStateMachine:
         'free', 'delete', 'delete[]', 'operator_delete',
         'realloc',  # realloc(NULL, size) 等价于 malloc; realloc(ptr, 0) 等价于 free
     })
-    # 变量名模式: 支持普通变量与结构体字段 (a->b, a.b)
-    _VAR_PATTERN = re.compile(r'\b([a-zA-Z_]\w{0,31}(?:->\w+)?(?:\.\w+)?)\b')
+    # 赋值与调用模式: 支持普通变量与结构体字段 (a->b, a.b)
     _ASSIGN_PATTERN = re.compile(r'([a-zA-Z_]\w{0,31}(?:->\w+)?(?:\.\w+)?)\s*=\s*(.+)')
     _CALL_PATTERN = re.compile(r'(\b[a-zA-Z_]\w{0,31}\b)\s*\(([^)]*)\)')
 

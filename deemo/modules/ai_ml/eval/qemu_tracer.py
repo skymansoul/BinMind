@@ -1,4 +1,4 @@
-# QEMU user mode + 自写轻量插桩——抓取运行时的内存操作作为ground truth
+# QEMU user mode + 自写轻量插桩: 抓取运行时的内存操作作为ground truth
 # 方法: 用QEMU user mode的 -d 选项记录所有内存访问，
 #       解析执行日志提取malloc/memcpy参数，计算实际溢出情况
 #
@@ -13,7 +13,7 @@
 #      若 n > alloc_size → 溢出
 #
 # 备选方案(若无LD_PRELOAD):
-#   使用gdb script自动化断点——break malloc, break memcpy, break free
+#   使用gdb script自动化断点: break malloc, break memcpy, break free
 #   在每个断点处打印参数寄存器
 
 import subprocess
@@ -156,7 +156,7 @@ def compile_hook(output_dir: Path) -> Optional[Path]:
             print(f"Failed to compile hook: {proc.stderr}", file=sys.stderr)
             return None
     except FileNotFoundError:
-        # gcc不可用——尝试使用环境中可用的编译器
+        # gcc不可用: 尝试使用环境中可用的编译器
         print("gcc not available for hook compilation", file=sys.stderr)
         return None
 

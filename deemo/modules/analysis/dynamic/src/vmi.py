@@ -1,13 +1,9 @@
-# 2026-08-01
-"""
-VMI (虚拟机内省) facade — transparent VM memory reading
-via LibVMI or QEMU backend
+"""VMI (虚拟机内省) 门面 — 通过 LibVMI 或 QEMU 后端透明读取虚拟机内存。
 
-Wraps engine/vmi_analyzer.py
+封装 engine/vmi_analyzer.py。
 
-// WATCH: LibVMI requires VM's.vmms file (ReKall profile) for
-// accurate kernel symbol resolution., physical memory
-// scanning possible — semantic extraction
+注意: LibVMI 需要虚拟机的 vmms 文件 (ReKall profile) 才能准确
+解析内核符号; 物理内存扫描仅限原始字节, 语义提取需额外处理。
 """
 
 from __future__ import annotations
@@ -44,32 +40,32 @@ class VMIProcess:
     name: str
     dtb: int  # Directory table base (CR3 value)
     modules: List[Dict[str, Any]] = field(default_factory=list)
-    vads: List[Dict[str, Any]] = field(default_factory=list)  # 虚拟地址 Descriptors
+    vads: List[Dict[str, Any]] = field(default_factory=list)  # 虚拟地址描述符
 
 
 class VMIAccessError(Exception):
-    """Raised VMI access fails (permissions, connection, etc.)"""
+    """VMI 访问失败时抛出（权限、连接等问题）。"""
     pass
 
 
 class VMIAnalyzer:
-    """虚拟机内省 analyzer
-    
-    Transparently 读取 VM memory agent software inside VM
-    支持 LibVMI (Xen, KVM) QEMU 监控 backends
-    
-    Core capabilities:
-    - List running VMs/domains
-    - 读取 physical/virtual memory a VM
-    - Enumerate 处理 (via kernel struct walking)
-    - 提取 process memory (DTB-based address translation)
-    
-    Usage::
-    
+    """虚拟机内省分析器。
+
+    无需虚拟机内安装 agent 软件即可透明读取 VM 内存,
+    支持 LibVMI (Xen, KVM) 与 QEMU 监控后端。
+
+    核心能力:
+    - 列出运行中的 VM/domain
+    - 读取 VM 的物理/虚拟内存
+    - 枚举进程 (内核结构遍历)
+    - 提取进程内存 (基于 DTB 的地址转换)
+
+    用法::
+
     vmi = VMIAnalyzer(backend="libvmi")
     vmi.connect("win10_vm")
-    处理 = vmi.list_processes()
-    for proc 处理:
+    procs = vmi.list_processes()
+    for proc in procs:
     mem = vmi.read_process_memory(proc.pid, 0x400000, 4096)
     vmi.disconnect()
     """
@@ -87,16 +83,13 @@ class VMIAnalyzer:
         self._current_domain_id: int = 0
         self._current_domain_name: str = ""
 
-# Connection management
+# 连接管理
 
     def connect(self, domain_name: str) -> bool:
-        """Connect a VM/domain for introspection
-        
-        Args:
-        domain_name: Name VM domain (e.g., "win10_vm")
-        
-        返回:
-        True connection succeeded
+        """连接 VM/domain 以进行内省。
+
+        domain_name: VM domain 名称 (e.g., "win10_vm");
+        返回连接成功与否。
         """
         log.info("Connecting to VM domain: %s (backend=%s)", domain_name, self._backend.value)
         self._current_domain_name = domain_name
@@ -115,7 +108,7 @@ class VMIAnalyzer:
         return False
 
     def _connect_libvmi(self, domain_name: str) -> bool:
-        """Connect via LibVMI"""
+        """通过 LibVMI 连接。"""
         try:
             # production: import libvmi; vmi = libvmi.VMI(domain_name)
             log.info("LibVMI connection initiated for %s", domain_name)
@@ -127,7 +120,7 @@ class VMIAnalyzer:
             return False
 
     def _connect_qemu(self, domain_name: str) -> bool:
-        """Connect via QEMU 监控 套接字"""
+        """通过 QEMU 监控套接字连接"""
         if not self._socket_path:
             self._socket_path = f"/var/run/qemu/{domain_name}.monitor"
         log.info("QEMU monitor socket: %s", self._socket_path)
@@ -139,15 +132,15 @@ class VMIAnalyzer:
         return True
 
     def disconnect(self) -> None:
-        """Disconnect current VM"""
+        """断开当前 VM 连接。"""
         log.info("Disconnecting from domain %s", self._current_domain_name)
         self._connected = False
         self._current_domain_name = ""
 
-# VM discovery
+# VM 发现
 
     def list_domains(self) -> List[VMINode]:
-        """List available VM domains"""
+        """列出可用的 VM 域。"""
         if not self._connected:
             raise VMIAccessError("Not connected to any VM")
 
@@ -162,41 +155,28 @@ class VMIAnalyzer:
             )
         ]
 
-# Memory reading
+# 内存读取
 
     def read_physical_memory(self, paddr: int, size: int) -> bytes:
-        """读取 physical memory VM
-        
-        Args:
-        paddr: 物理地址 读取
-        size: Number bytes 读取
-        
-        返回:
-        Raw bytes physical memory
-        
-        Raises:
-        VMIAccessError: connected or 读取 fails
+        """读取 VM 的物理内存。
+
+        paddr 要读取的物理地址, size 读取的字节数;
+        返回物理内存原始字节。未连接或读取失败时抛
+        VMIAccessError。
         """
         if not self._connected:
             raise VMIAccessError("Not connected to any VM")
 
         log.debug("VMI read physical: %#x (%d bytes)", paddr, size)
-        # Simulated: 返回 zero-filled placeholder
+        # 仿真模式：返回零填充占位数据
         return b"\x00" * size
 
     def read_virtual_memory(self, vaddr: int, size: int, pid: int = 0) -> bytes:
-        """读取 virtual memory a process inside VM
-        
-        Args:
-        vaddr: 虚拟地址 读取
-        size: Number bytes 读取
-        pid: Target process PID (0 = kernel space)
-        
-        返回:
-        Raw bytes virtual memory
-        
-        Raises:
-        VMIAccessError: address translation fails
+        """读取 VM 内某进程的虚拟内存。
+
+        参数: vaddr 要读取的虚拟地址, size 读取的字节数,
+        pid 目标进程 PID (0 = 内核空间); 返回虚拟内存原始字节。
+        地址转换失败时抛 VMIAccessError。
         """
         if not self._connected:
             raise VMIAccessError("Not connected to any VM")
@@ -204,36 +184,35 @@ class VMIAnalyzer:
         log.debug("VMI read virtual: %#x (%d bytes, PID=%d)", vaddr, size, pid)
 
         if self._backend == VMIBackend.SIMULATED:
-            # 返回 a simulated PE header for demo
+            # 仿真模式：返回模拟 PE 头部供演示
             return b"MZ\x90\x00" + b"\x00" * (size - 4)
 
         return b"\x00" * size
 
     def read_memory_string(self, vaddr: int, max_len: int = 256, pid: int = 0) -> str:
-        """读取 a null-terminated string VM memory"""
+        """读取 VM 内存中以 null 结尾的字符串。"""
         data = self.read_virtual_memory(vaddr, max_len, pid)
         null_byte = data.find(b"\x00")
         if null_byte >= 0:
             data = data[:null_byte]
         return data.decode("utf-8", errors="replace")
 
-# Process enumeration
+# 进程枚举
 
     def list_processes(self) -> List[VMIProcess]:
-        """Enumerate 处理 VM via kernel struct walking
-        
-        Windows: walks PsActiveProcessHead linked list
-        Linux: walks task_struct list via init_task
-        
-        返回:
-        List VMIProcess objects sorted PID
+        """通过内核结构遍历枚举 VM 中的进程。
+
+        Windows: 遍历 PsActiveProcessHead 链表;
+        Linux: 通过 init_task 遍历 task_struct 链表。
+
+        返回按 PID 排序的 VMIProcess 对象列表。
         """
         if not self._connected:
             raise VMIAccessError("Not connected to any VM")
 
         log.info("Enumerating processes in domain %s", self._current_domain_name)
 
-        # Simulated process list
+        # 仿真进程列表
         processes = [
             VMIProcess(pid=4, name="System", dtb=0x187000),
             VMIProcess(pid=360, name="csrss.exe", dtb=0x1A7000),
@@ -247,27 +226,26 @@ class VMIAnalyzer:
         return sorted(processes, key=lambda p: p.pid)
 
     def get_process_by_name(self, name: str) -> Optional[VMIProcess]:
-        """查找 a process name (case-insensitive)"""
+        """按名称查找进程 (不区分大小写)。"""
         for proc in self.list_processes():
             if proc.name.lower() == name.lower():
                 return proc
         return None
 
     def get_process_by_pid(self, pid: int) -> Optional[VMIProcess]:
-        """查找 a process PID"""
+        """按 PID 查找进程。"""
         for proc in self.list_processes():
             if proc.pid == pid:
                 return proc
         return None
 
-# Process memory
+# 进程内存
 
     def read_process_memory(self, pid: int, vaddr: int, size: int) -> bytes:
-        """读取 memory a specific process's 虚拟地址 space
-        
-        Performs DTB-based address translation: PID DTB (CR3)
-        解析 虚拟地址 a 物理地址
-        读取 physical memory
+        """读取特定进程虚拟地址空间中的内存。
+
+        执行基于 DTB 的地址转换: 取 PID 的 DTB (CR3), 将虚拟
+        地址解析为物理地址, 再读取物理内存。
         """
         proc = self.get_process_by_pid(pid)
         if not proc:
@@ -275,18 +253,18 @@ class VMIAnalyzer:
 
         return self.read_virtual_memory(vaddr, size, pid)
 
-# Kernel inspection
+# 内核检查
 
     def get_kernel_base(self) -> int:
-        """kernel 基址 (ntoskrnl.exe Windows)"""
+        """内核基址 (Windows 下为 ntoskrnl.exe)。"""
         if not self._connected:
             raise VMIAccessError("Not connected to any VM")
-        return 0xFFFFF80000000000  # Typical x64 Windows kernel base
+        return 0xFFFFF80000000000  # 典型 x64 Windows 内核基址
 
     def read_kernel_symbol(self, symbol_name: str, size: int = 8) -> bytes:
-        """读取 value a kernel symbol name"""
+        """按符号名读取内核符号的值。"""
         log.debug("Reading kernel symbol: %s", symbol_name)
-        # Simulated kernel symbols
+        # 仿真内核符号
         _KNOWN_SYMBOLS = {
             "PsActiveProcessHead": 0xFFFFF80001234560,
             "PsLoadedModuleList": 0xFFFFF80002345670,
@@ -297,19 +275,19 @@ class VMIAnalyzer:
             return self.read_virtual_memory(addr, size)
         return b"\x00" * size
 
-# VM control
+# VM 控制
 
     def pause_vm(self) -> bool:
-        """Pause VM for consistent memory reading"""
+        """暂停 VM 以保证内存读取一致性。"""
         log.info("Pausing VM %s", self._current_domain_name)
         return True
 
     def resume_vm(self) -> bool:
-        """Resume VM pausing"""
+        """恢复暂停的 VM。"""
         log.info("Resuming VM %s", self._current_domain_name)
         return True
 
-# Status
+# 状态
 
     @property
     def is_connected(self) -> bool:

@@ -220,11 +220,10 @@ class PtrIdentityTracker:
         return None
 
     def match_alloc_write(self, target_root: str) -> Optional[PtrAllocSite]:
-        """检查写入目标根指针是否对应已知堆分配.
+        """检查写入目标根指针是否对应已知堆分配。
 
-        Returns:
-            匹配的 PtrAllocSite (若 write 目标是某个 malloc 的缓冲区)
-            None 表示 write 目标是栈变量/全局变量/未知 — 不应触发堆溢出告警
+        命中返回 PtrAllocSite; None 表示目标是栈/全局/未知,
+        不应触发堆溢出告警。
         """
         if not target_root:
             return None

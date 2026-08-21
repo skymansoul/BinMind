@@ -1,5 +1,3 @@
-SignedGadgetFinder=None
-from typing import Dict, List, Optional, Any, Tuple, Set
 """
 ARM PAC bypass surface analysis.
 Maps signing/verification gadgets, strip chains, signing oracles, brute-force viability.
@@ -199,5 +197,3 @@ class PACBypassAnalyzer:
 
 def create_pac_bypass_analyzer() -> PACBypassAnalyzer:
     return PACBypassAnalyzer()
-PACBypassPath=None
-PACSignatureDetector=None

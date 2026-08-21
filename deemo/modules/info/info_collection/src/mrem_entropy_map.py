@@ -1,5 +1,3 @@
-# Created: 2026-04-27 17:21:12
-#
 # mrem_entropy_map — 多分辨率熵图 (Multi-Resolution Entropy Map)
 # 沿两个维度同时计算 Shannon 熵: 字节偏移 (x轴) 和窗口尺度 (y轴, 指数增长)
 # 输出 2D 熵矩阵，每个 cell[i][j] = offset_i 处 window_j 尺度的熵值

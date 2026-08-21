@@ -1,4 +1,4 @@
-# 推理引擎 -- LRU缓存 + 多任务推理 + Platt/Temperature校准
+# 推理引擎 - LRU缓存 + 多任务推理 + Platt/Temperature校准
 # 战略设计：模型注册表驱动路由，特征提取就地流水线，缓存减少重复encode开销
 
 import time

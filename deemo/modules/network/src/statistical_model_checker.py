@@ -1,4 +1,3 @@
-# 创建: 2026-06-02  修改: 2026-08-13 (make_deadlock_checker补全精确死锁判定逻辑)
 # 统计协议模型检验 —— SPRT序贯假设检验替代穷举CTL验证。
 #
 # 现有protocol_model_checker做CTL风格穷举状态空间探索,

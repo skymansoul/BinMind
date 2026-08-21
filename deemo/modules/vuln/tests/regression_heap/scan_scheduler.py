@@ -12,7 +12,7 @@ import subprocess
 import time
 from typing import Dict, List, Optional
 
-from sample_compiler import SAMPLE_ROOT
+from .sample_compiler import SAMPLE_ROOT
 
 try:
     from modules.analysis.static.disasm_util import disassemble_binary

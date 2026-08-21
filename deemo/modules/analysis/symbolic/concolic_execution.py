@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-#  (c) 2024-2025 h1016 — Concolic execution: dynamic taint → symbolic seed injection
+"""动态执行引擎 — 动态污点 → 符号种子注入。
 
-"""Concolic execution engine
+流程:
+1. 用动态污点跟踪器 (Frida/DBI) 采集具体输入种子
+2. 分类种子来源类型 (文件/输入/环境)
+3. 把种子作为具体约束送入符号执行器
+4. 动态重执行交叉校验符号路径
+5. 迭代 concolic 循环: 污点 → 符号 → 校验 → 重复
 
-Fuses dynamic 污点分析 符号执行:
-1. Collect concrete input seeds a dynamic taint tracker (Frida/DBI)
-2. Classify seed source types (file, input, environment)
-3. Feed seeds symbolic executor concrete constraints
-4. Cross-校验 symbolic paths re-executing dynamically
-5. 迭代 a concolic loop: taint → symbolic → 校验 → repeat
-
-Seed quality decays over 舍入 覆盖率 gain — a sigmoid decay
-function reduces injection weight once stagnation detected
+种子质量随轮次覆盖率收益衰减 — 检测到停滞时以 sigmoid 衰减函数
+降低注入权重。
 """
 
 import logging
@@ -112,12 +110,12 @@ class ConcolicResult:
 
 class ConcolicExecutor:
     """调度 concolic 流水线
-    
+
     数据流:
     dynamic taint tracker → ConcolicSeed → symbolic executor
     symbolic paths → dynamic re-校验 → feasibility verdict
     taint flows → TaintGuidedConstraint → guided symbolic exploration
-    
+
     concolic loop 迭代 up max_concolic_iterations, cycle
     collecting fresh taint data, generating constraints, validating
     newly discovered paths
@@ -316,7 +314,7 @@ class ConcolicExecutor:
 
     def _classify_source_typeCx(self, f_source_name):
         """Map a function name a seed source category
-        
+
         检查 specific patterns first avoid partial 匹配
         (e.g. 'fread' 包含 '读取', 'fread' tested first)"""
         if f_source_name is None:
@@ -333,7 +331,7 @@ class ConcolicExecutor:
 
     def _generate_seed_valueCx(self, f_source_type, f_size):
         """Synthesize a concrete byte pattern appropriate for seed's source type
-        
+
         input → printable fill ('A' * size)
         file → BMP header prefix + null 填充
         environment → "TEST=value\\0" truncated size
@@ -354,7 +352,7 @@ class ConcolicExecutor:
 
     def seed_symbolic_executorCx(self, f_seeds):
         """Inject collected seeds symbolic executor's state
-        
+
         注：当停滞计数器 > 0 时，会对种子按熵值排序，优先注入高熵种子
         因为低熵种子（全 'A' 之类）不太可能触达新路径"""
         if self.symbolic_executor is None or not self.symbolic_executor.is_available():
@@ -393,7 +391,7 @@ class ConcolicExecutor:
     def _classify_vulnerability_crashes(self, result: ConcolicResult) -> None:
         """Tag 漏洞 *result* a crash category via
         CrashTriage分类器, purely augmenting existing entry dicts
-        
+
         不修改 result.vulnerabilities 的顶层结构，只在每条记录中添加
         crash_category / triage_confidence 键，保持向后兼容
         """
@@ -426,7 +424,7 @@ class ConcolicExecutor:
                               f_max_paths=100,
                               f_exploration_depth=500):
         """执行 full concolic analysis 流水线
-        
+
         Flow 依赖 mode:
         DYNAMIC_FIRST → collect seeds, 运行 symbolic seeds
         HYBRID → full 流水线: seeds + symbolic + concolic loop + 校验
@@ -522,7 +520,7 @@ class ConcolicExecutor:
                                  f_max_paths=100,
                                  f_exploration_depth=500):
         """运行 symbolic executor seeds applied
-        
+
         Collects paths crash_path, auto_explore_dangerous_functions
         污点分析. path source contributes a different
         覆盖率_increase weight"""
@@ -602,10 +600,10 @@ class ConcolicExecutor:
 
     def _collect_taint_guided_constraintsCx(self, f_taint_result):
         """转换 污点分析 flows TaintGuidedConstraint objects
-        
+
         flow's source address sink list iterated; confidence
         proportional tainted_bytes / 8, capped 1.0
-        
+
         增强：引入 flow_depth 字段追踪污点传播步数
         深度越大的流越可能穿过循环结构，其置信度乘以衰减因子
         (0.85 ** depth) 以防止过深传播路径的噪声约束淹没真实信号
@@ -652,7 +650,7 @@ class ConcolicExecutor:
 
     def _generate_constraint_from_flowCx(self, f_flow):
         """Map a taint flow's operation type a symbolic constraint string
-        
+
         strcmp/strncmp → inequality compared value
         memcmp → memcmp_result!= 0
         strcpy/strncpy → input length exceeds max_length
@@ -682,11 +680,11 @@ class ConcolicExecutor:
 
     def _run_taint_guided_symbolic_executionCx(self, f_constraints):
         """使用 taint-derived constraints steer 符号执行
-        
+
         过滤 constraints confidence < 0.3. surviving constraint
         triggers a guided analysis 运行; discovered paths vulnerabilities
         tagged 'taint_guided'
-        
+
         2025 增强：循环相关的约束获得额外的探索深度 (max_depth × 1.5)
         因为循环中的污点传播路径往往需要更多步数才能触达边界条件
         """
@@ -743,14 +741,14 @@ class ConcolicExecutor:
 
     def _concolic_loopCx(self, f_args=None, f_timeout=60):
         """Core concolic iteration loop
-        
+
         cycle:
         1. 运行 dynamic 污点分析
         2. Collect taint-guided constraints
         3. 运行 taint-guided 符号执行
         4. 去重 discovered paths (discovered_from, input_hash)
         5. 校验 new paths dynamically
-        
+
         停止 max_concolic_iterations, timeout, or 50 new paths"""
         new_paths = []
         start_time = time.time()
@@ -801,7 +799,7 @@ class ConcolicExecutor:
     # 按 覆盖率_gain + entropy 排序，输出 AFL/lib模糊测试器 字典
     def _build_fuzz_dictionary_from_seeds(self) -> None:
         """Populate FuzzDictGenerator collected seeds
-        
+
         high-entropy seeds (>= 2.0 Shannon) considered; 覆盖率
         gain inferred stagnation counter delta — seeds collected
         stagnation dropped assigned higher gain
@@ -827,7 +825,7 @@ class ConcolicExecutor:
 
     def export_fuzz_dictionary(self, output_path: str) -> int:
         """写入 AFL/lib模糊测试器 dictionary *output_path*
-        
+
         返回 number entries written, or 0 generator
         entries (call analysis completes)
         """
@@ -838,7 +836,7 @@ class ConcolicExecutor:
     def _validate_single_pathCx(self, f_path):
         """Re-运行 dynamic tracker a path's concrete input verify
         feasibility. Sets f_path.is_feasible accordingly
-        
+
         最多尝试验证 2 次 — 第一次失败可能是环境状态不一致
         重试一次以排除瞬态错误。两次都失败则标记为不可行
         """
@@ -888,7 +886,7 @@ class ConcolicExecutor:
 
     def _calculate_coverageCx(self, f_result):
         """估算 覆盖率 improvement path count
-        
+
         Formula: base 10% + 2% per path, capped 80% bonus
         a heuristic approximation — real 覆盖率 requires
         basic-block 插桩"""

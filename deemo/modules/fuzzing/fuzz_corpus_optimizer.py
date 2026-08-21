@@ -1,9 +1,9 @@
-"""语料库多样性与优化 -- RandSet/KRAKEN-FUZZ 风格的运行时语料修剪。
+"""语料库多样性与优化 - RandSet/KRAKEN-FUZZ 风格的运行时语料修剪。
 
-  RandSet      -- 随机化集合覆盖的语料规约, 高频调度友好
-  KRAKEN-FUZZ    -- 动态飞行中语料最小化
-  MCM                  -- 历史模糊测试结果驱动的多语料最小化
-  ISC4DGF                 -- LLM驱动定向模糊测试初始语料生成
+  RandSet       - 随机化集合覆盖的语料规约, 高频调度友好
+  KRAKEN-FUZZ   - 动态飞行中语料最小化
+  MCM           - 历史模糊测试结果驱动的多语料最小化
+  ISC4DGF       - LLM驱动定向模糊测试初始语料生成
 
 提供:
   - 基于覆盖集合覆盖的语料贪心规约 (afl-cmin 算法)
@@ -188,7 +188,6 @@ class CorpusOptimizer:
 # KRAKEN-FUZZ 飞行中修剪
 
     def inflight_prune(self, threshold_ratio: float = 0.1) -> int:
-    # 不拆——保持上下文连贯性
         """淘汰综合评分最低的种子。
 
         KRAKEN-FUZZ 的核心思想: 在模糊测试进行中,

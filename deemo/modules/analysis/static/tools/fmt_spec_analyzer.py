@@ -1,7 +1,7 @@
-# 格式说明符解析器 — 区分危险格式字符串 (%n) 与只读格式字符串 (%s/%d)
+# 格式说明符解析器, 区分危险格式字符串 (%n) 与只读格式字符串 (%s/%d)
 # 方法论依据: 格式字符串漏洞的可利用性取决于格式说明符类型
 # %n (写入) > %s (内存读取) > %d/%x (信息泄露) > 纯文本 (无害)
-# 本模块不替代 format_string_detector — 作为其下游增强, 提供利用性评级
+# 本模块不替代 format_string_detector, 作为其下游增强, 提供利用性评级
 
 import re
 from dataclasses import dataclass
@@ -40,7 +40,7 @@ _FMT_SPEC_RE = re.compile(
 )
 
 class FormatSpecAnalyzer:
-    """格式说明符分析器 — 评估格式字符串的可利用性
+    """格式说明符分析器, 评估格式字符串的可利用性
 
     用法:
       analyzer = FormatSpecAnalyzer()
@@ -106,6 +106,6 @@ class FormatSpecAnalyzer:
         )
 
     def quick_scan(self, format_string: str) -> Tuple[FormatRisk, float]:
-        """快速扫描 — 返回 (risk, exploitability)"""
+        """快速扫描, 返回 (risk, exploitability)"""
         analysis = self.analyze(format_string)
         return analysis.risk_level, analysis.estimated_exploitability

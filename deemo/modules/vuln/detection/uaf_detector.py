@@ -1,22 +1,20 @@
 """
-UAF专项检测 — free点→use点可达性 + dangling pointer追踪。
+UAF专项检测: free点-use点可达性 + dangling pointer追踪。
 
 检测逻辑:
-  1. 定位free/delete调用 → 标记被释放的指针
-  2. 前向扫描 → 检测该指针在后续指令中被解引用 (mov/load/call via)
-  3. 若在free和use之间无重新赋值 → UAF告警
+  1. 定位free/delete调用, 标记被释放的指针
+  2. 前向扫描, 检测该指针在后续指令中被解引用 (mov/load/call via)
+  3. 若在free和use之间无重新赋值, UAF告警
   4. 特殊检测: 多次free同一指针 (double free)
 
 与路径分析的关系:
-  仅做intra-procedural分析——跨函数UAF需要调用图支持。
+  仅做intra-procedural分析, 跨函数UAF需要调用图支持。
   跨函数情形标记为"possible"而非"confirmed"。
-
-修改记录:
-  创建 2024-11-05
 """
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
+import re
 
 
 @dataclass
@@ -36,8 +34,7 @@ _DELETE_ARRAY = {'_ZdaPv', 'operator delete[]'}
 
 
 def _extract_pointer_reg(insn: str) -> Optional[str]:
-    """从指令提取被操作的指针寄存器——含方括号内的寄存器。"""
-    import re
+    """从指令提取被操作的指针寄存器, 含方括号内的寄存器。"""
     insn_lower = insn.lower().strip()
     if ':' in insn_lower[:20]: insn_lower = insn_lower.split(':',1)[1].strip()
     x86_regs = {'rax','rbx','rcx','rdx','rsi','rdi','r8','r9','r10','r11',
@@ -70,7 +67,7 @@ def detect_uaf(
     inter_procedural: bool = False,
 ) -> List[UafFinding]:
     findings: List[UafFinding] = []
-    freed_pointers: Dict[str, int] = {}  # reg_name → free_insn_idx
+    freed_pointers: Dict[str, int] = {}  # reg_name - free_insn_idx
 
     for i, insn in enumerate(instructions):
         insn_lower = insn.lower().strip()
@@ -82,7 +79,7 @@ def detect_uaf(
                 callee = parts[-1].lstrip('*').strip('<>').split('@')[0]
                 if callee in _FREE_FUNCS or callee in _DELETE_ARRAY:
                     ptr = _extract_pointer_reg(insn)
-                    if not ptr:  # 从call free回溯——找mov rdi, <reg>
+                    if not ptr:  # 从call free回溯, 找mov rdi, <reg>
                         for j in range(i-1, max(0, i-5), -1):
                             prev = instructions[j].lower().strip()
                             if ':' in prev[:20]: prev = prev.split(':',1)[1].strip()
@@ -114,7 +111,7 @@ def detect_uaf(
                 for j in range(free_idx + 1, i):
                     prev_insn = instructions[j].lower()
                     if 'mov' in prev_insn and ptr in prev_insn:
-                        # mov reg, imm 或 mov reg, other_reg → 重新赋值
+                        # mov reg, imm 或 mov reg, other_reg, 重新赋值
                         parts = prev_insn.replace(',', ' ').split()
                         if len(parts) >= 2 and parts[1] == ptr:
                             reassigned = True

@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
 """
-约束求解器 — Z3-based 约束求解 graceful 回退
+约束求解器 — 基于 Z3, 带优雅降级的具体值回退。
 
-Architecture:
-- Composition over inheritance: ConstraintSolver wraps a Z3 context
-inheriting. 隔离 Z3-specific code
-concrete- 回退 trivially swappable
-- Z3ExpressionBuilder a separate builder class for constructing
-Z3 AST nodes IR operations. 处理 BitVector theory
-(QF_BV) appropriate for 二进制分析
+架构:
+- 组合优于继承: ConstraintSolver 包装 Z3 上下文而非继承,
+  隔离 Z3 相关代码, 具体值回退可平凡替换
+- Z3ExpressionBuilder 是独立的构造器类, 把 IR 操作构造成
+  Z3 AST 节点, 使用适合二进制分析的 BitVector 理论 (QF_BV)
 
-Edge cases:
-- Solver timeout: a call solver.检查() exceeds timeout_ms
-返回 UNSAT (safe under-approximation — avoid reporting
-a false positive)
-- Memory limit: large constraint sets OOM Z3; catch
-gracefully degrade
-- Mixed concrete/symbolic expressions: automatically lifted BV
+边界情况:
+- 求解器超时: 调用超过 timeout_ms 时返回不可解 (安全下近似,
+  避免报出假阳性)
+- 内存限制: 大规模约束集导致 Z3 OOM 时捕获并优雅降级
+- 混合具体/符号表达式: 自动提升为 BV
 
-Time complexity:
-- solve(): O(|constraints| * BV_size) for conversion + Z3 solver time
-(exponential worst-case for BV theory, typically polynomial for QF_BV)
-- is_satisfiable(): same solve() but model extraction
-- simplify(): O(|expr|) Z3 internal simplification pass
-- model_to_dict(): O(|variables|) iteration over model
+时间复杂度:
+- solve(): O(|constraints| * BV_size) 转换 + Z3 求解时间
+  (BV 理论最坏指数, QF_BV 通常多项式)
+- is_satisfiable(): 同 solve() 但不提取模型
+- simplify(): O(|expr|) Z3 内部化简
+- model_to_dict(): O(|variables|) 遍历模型
 """
 # from collections import OrderedDict  # python3.7+不需要了
 from __future__ import annotations
@@ -38,17 +34,17 @@ _log = logging.getLogger(__name__)
 # Error hierarchy
 
 class SymbolicError(Exception):
-    """Base error for 符号执行 operations"""
+    """符号执行操作的基类异常。"""
     pass
 
 
 class SolverTimeout(SymbolicError):
-    """Raised 约束求解 exceeds time budget"""
+    """约束求解超出时间预算时抛出。"""
     pass
 
 
 class SolverNotFound(SymbolicError):
-    """Raised Z3 installed an operation requires"""
+    """Z3 未安装但操作需要它时抛出。"""
     pass
 
 
@@ -58,7 +54,7 @@ _HAS_Z3: Optional[bool] = None
 
 
 def has_z3() -> bool:
-    """检查 Z3 available.缓存s result. O(1) first call"""
+    """检查 Z3 是否可用, 结果缓存, 首次调用后 O(1)。"""
     global _HAS_Z3
     if _HAS_Z3 is None:
         try:
@@ -73,18 +69,18 @@ def has_z3() -> bool:
 
 class Z3ExpressionBuilder:
     """
-    构建 Z3 expressions IR operations symbolic expressions
-    
-    支持 BitVector theory (QF_BV) for 二进制分析. expressions
-    built BitVec specified width (default 32 bits)
-    
-    INTJ策略: 使用 BitVec rather Int theory because:
-    1. Binary operations naturally bit-vector arithmetic
-    2. Overflow semantics match CPU behavior (wrapping)
-    3. QF_BV solvers efficient for domain LIA
-    
-    Trade-off: BitVec solves slower for purely arithmetic constraints
-    but models hardware faithfully (wrapping, shifts, sign extension)
+    把 IR 操作与符号表达式构造成 Z3 表达式。
+
+    使用适合二进制分析的 BitVector 理论 (QF_BV), 表达式按指定
+    位宽构造 (默认 32 位)。
+
+    设计策略: 用 BitVec 而非 Int 理论, 因为:
+    1. 二进制操作天然是位向量算术
+    2. 溢出语义与 CPU 行为一致 (回绕)
+    3. QF_BV 求解器在本领域比 LIA 高效
+
+    权衡: 纯算术约束上 BitVec 求解更慢, 但忠实建模硬件行为
+    (回绕、移位、符号扩展)。
     """
 
     def __init__(self, default_bits: int = 32):
@@ -101,18 +97,13 @@ class Z3ExpressionBuilder:
         return self._z3
 
     def make_bv(self, name: str, bits: int = 0) -> Any:
-        """创建 a fresh BitVec variable. O(1)
-        
-        Args:
-        name: Variable name (Z3-safe identifier)
-        bits: Bit width (defaults self.default_bits)
-        """
+        """创建新的 BitVec 变量, bits 默认取 default_bits。"""
         if bits <= 0:
             bits = self.default_bits
         return self.z3.BitVec(name, bits)
 
     def make_const(self, value: int, bits: int = 0) -> Any:
-        """创建 a BitVec constant. O(1)"""
+        """创建 BitVec 常量。"""
         if bits <= 0:
             bits = self.default_bits
         return self.z3.BitVecVal(value, bits)
@@ -124,19 +115,19 @@ class Z3ExpressionBuilder:
     def bv_mul(self, lhs: Any, rhs: Any) -> Any: return lhs * rhs
 
     def bv_div(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned division. O(BV_size) Z3"""
+        """无符号除法。"""
         return self.z3.UDiv(lhs, rhs)
 
     def bv_sdiv(self, lhs: Any, rhs: Any) -> Any:
-        """Signed division"""
+        """有符号除法。"""
         return lhs / rhs
 
     def bv_mod(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned modulo"""
+        """无符号取模。"""
         return self.z3.URem(lhs, rhs)
 
     def bv_smod(self, lhs: Any, rhs: Any) -> Any:
-        """Signed modulo"""
+        """有符号取模。"""
         return lhs % rhs
 
 # Bitwise
@@ -147,11 +138,11 @@ class Z3ExpressionBuilder:
     def bv_shl(self, lhs: Any, rhs: Any) -> Any: return lhs << rhs
 
     def bv_shr(self, lhs: Any, rhs: Any) -> Any:
-        """Logical (unsigned) right shift"""
+        """逻辑右移 (无符号)。"""
         return self.z3.LShR(lhs, rhs)
 
     def bv_ashr(self, lhs: Any, rhs: Any) -> Any:
-        """Arithmetic (signed) right shift"""
+        """算术右移 (有符号)。"""
         return lhs >> rhs
 
 # Comparisons
@@ -160,19 +151,19 @@ class Z3ExpressionBuilder:
     def bv_ne(self, lhs: Any, rhs: Any) -> Any: return lhs != rhs
 
     def bv_ult(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned less"""
+        """无符号小于。"""
         return self.z3.ULT(lhs, rhs)
 
     def bv_ugt(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned greater"""
+        """无符号大于。"""
         return self.z3.UGT(lhs, rhs)
 
     def bv_ule(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned less or equal"""
+        """无符号小于等于。"""
         return self.z3.ULE(lhs, rhs)
 
     def bv_uge(self, lhs: Any, rhs: Any) -> Any:
-        """Unsigned greater or equal"""
+        """无符号大于等于。"""
         return self.z3.UGE(lhs, rhs)
 
     def bv_slt(self, lhs: Any, rhs: Any) -> Any: return lhs < rhs
@@ -184,42 +175,42 @@ class Z3ExpressionBuilder:
 
     def make_memory_array(self, name: str, addr_bits: int = 32, data_bits: int = 8) -> Any:
         """
-        创建 an Array for symbolic memory modeling
-        Array(address_bitvec, data_bitvec) for byte-level memory
-        
-        // INTJ策略: Array theory precise ITE-chains for memory
-        // but Z3's array solver slower large numbers 存储
-        // For small functions (<100 存储), array fine
-        // For larger ones, consider concretizing "cold" memory pages
+        创建符号内存建模用的 Array: Array(address_bitvec, data_bitvec),
+        字节级内存。
+
+        // 设计策略: Array 理论比 ITE 链更精确
+        // 但 Z3 的数组求解器在大规模存储操作下更慢
+        // 小函数 (<100 次存储) 用 array 即可
+        // 更大规模时考虑把"冷"内存页具体化
         """
         addr_sort = self.z3.BitVecSort(addr_bits)
         data_sort = self.z3.BitVecSort(data_bits)
         return self.z3.Array(name, addr_sort, data_sort)
 
     def array_select(self, arr: Any, idx: Any) -> Any:
-        """读取 array: arr[idx]. O(1) Z3 term construction"""
+        """读数组: arr[idx], O(1) Z3 项构造。"""
         return self.z3.Select(arr, idx)
 
     def array_store(self, arr: Any, idx: Any, val: Any) -> Any:
-        """写入 array: 存储(arr, idx, val). 创建 new SSA array. O(1)"""
+        """写数组: Store(arr, idx, val), 创建新的 SSA 数组, O(1)。"""
         return self.z3.Store(arr, idx, val)
 
 # Utility
 
     def bool_to_bv(self, cond: Any) -> Any:
-        """转换 a Bool BitVec(1): (cond, 1, 0). O(1)"""
+        """把 Bool 转为 BitVec(1): If(cond, 1, 0)。"""
         return self.z3.If(cond, self.make_const(1, 1), self.make_const(0, 1))
 
     def bv_to_bool(self, bv: Any) -> Any:
-        """转换 BitVec(1) Bool: bv == 1. O(1)"""
+        """把 BitVec(1) 转为 Bool: bv == 1。"""
         return bv == self.make_const(1, bv.size() if hasattr(bv, 'size') else 1)
 
     def concat(self, hi: Any, lo: Any) -> Any:
-        """Concatenate two BitVecs: Concat(hi, lo). O(1)"""
+        """拼接两个 BitVec: Concat(hi, lo)。"""
         return self.z3.Concat(hi, lo)
 
     def extract(self, bv: Any, high: int, low: int) -> Any:
-        """提取 bits [high:low] BitVec. O(1)"""
+        """提取 BitVec 的 [high:low] 位。"""
         return self.z3.Extract(high, low, bv)
 
 
@@ -227,21 +218,18 @@ class Z3ExpressionBuilder:
 
 class ConstraintSolver:
     """
-    约束求解器 Z3 backend concrete- 回退
-    
-    Design:
-    - Z3 available, 使用 z3.Solver() 配置urable timeout
-    - Z3 available, falls back concrete- mode
-    constraints dictionary-based simple integer comparisons
-    supported. 允许 unit tests basic workflows Z3
-    
-    INTJ策略: Timeout handling 使用 a background-thread approach because
-    z3.Solver.set("timeout", N) works for SAT calls, for
-    model enumeration. wrap entire 检查() a timer
-    
-    Trade-off: Concrete- mode sound but incomplete — cannot
-    solve for symbolic variables. 's useful for testing for
-    targets values analysis time
+    带 Z3 后端与具体值回退的约束求解器。
+
+    设计:
+    - Z3 可用时使用带可配置超时的 z3.Solver()
+    - Z3 不可用时回退到具体值模式, 支持基于字典的简单整数
+      比较约束, 使单元测试能在无 Z3 环境下跑通基本流程
+
+    超时处理: z3.Solver.set("timeout", N) 对 SAT 调用生效,
+    超时结果按不可解处理 (安全下近似)。
+
+    权衡: 具体值模式 sound 但不完整 — 无法求解符号变量,
+    适合测试与目标值在分析期已知的场景。
     """
 
     def __init__(self, timeout_ms: int = 5000, memory_mb: int = 256):
@@ -258,7 +246,7 @@ class ConstraintSolver:
         return self._builder
 
     def _get_solver(self) -> Any:
-        """Lazy-init Z3 solver 配置ured timeout/memory. O(1)"""
+        """惰性初始化带超时/内存配置的 Z3 solver。"""
         if self._z3_solver is None:
             if not has_z3():
                 raise SolverNotFound("Z3 is not installed. Cannot create solver.")
@@ -274,19 +262,13 @@ class ConstraintSolver:
 
     def solve(self, constraints: List[Any], target_var: str) -> Optional[int]:
         """
-        Solve constraints for a concrete value target_var
-        
-        Args:
-        constraints: List constraint dicts or Z3 BoolRefs
-        target_var: Name variable solve for
-        
-        返回:
-        Concrete integer value satisfiable, None otherwise
-        
-        Time: O(|constraints| + solver_time). Space: O(|constraints| * BV_size)
-        
-        # 2025-10-17: 这个workaround估计后面版本修复了就能删
-        # Z3 versions 返回 negative values for unsigned BV — mask
+        求解约束, 得到 target_var 的具体值。
+
+        constraints 为约束字典列表或 Z3 BoolRef; 可满足时返回
+        具体整数值, 否则返回 None。
+
+        # Z3 旧版 workaround: 无符号 BV 会返回负值, 提取时取模掩码
+        # 后续版本修复后可删
         """
         if not has_z3():
             return self._solve_concrete_only(constraints, target_var)
@@ -318,14 +300,10 @@ class ConstraintSolver:
 
     def is_satisfiable(self, constraints: List[Any]) -> bool:
         """
-        检查 a set constraints satisfiable
-        
-        core predicate used path pruning: a path's
-        constraints UNSAT, path infeasible pruned
-        
-        Time: O(|constraints| + solver_time). Space: O(|constraints| * BV_size)
-        
-        Edge case: empty constraint list trivially SAT
+        检查约束集是否可满足。
+
+        用于路径剪枝的核心谓词: 某路径的约束 UNSAT 则该路径
+        不可行, 应被剪除。边界情况: 空约束列表平凡可满足。
         """
         if not constraints:
             return True
@@ -352,12 +330,10 @@ class ConstraintSolver:
 
     def simplify(self, expr: Any) -> Any:
         """
-        Simplify a Z3 expression using Z3's built- simplifier
-        
-        // NOTE: Z3's simplify() heuristic-; doesn't guarantee
-        // minimal form but usually good enough for 90% cases
-        
-        Time: O(|expr|) Z3 simplify pass
+        用 Z3 内置化简器化简表达式。
+
+        // 注意: Z3 的 simplify() 是启发式的, 不保证最简形式,
+        // 但通常对大多数场景足够
         """
         if not has_z3():
             return expr  # -op concrete mode
@@ -368,17 +344,7 @@ class ConstraintSolver:
             return expr
 
     def model_to_dict(self, z3_model: Any) -> Dict[str, Any]:
-        """
-        提取 variable bindings a Z3 model a plain dict
-        
-        Args:
-        z3_model: A z3.ModelRef solver.model()
-        
-        返回:
-        Dict mapping variable names integer values
-        
-        Time: O(|variables|). Space: O(|variables|)
-        """
+        """把 Z3 模型的变量绑定提取为普通字典, 键为变量名。"""
         result: Dict[str, Any] = {}
         if z3_model is None:
             return result
@@ -400,7 +366,7 @@ class ConstraintSolver:
         return result
 
     def _extract_var_value(self, model: Any, var_name: str) -> Optional[int]:
-        """提取 a single variable's value a Z3 model. O(|decls|)"""
+        """从 Z3 模型提取单个变量的值, 无匹配时返回 None。"""
         try:
             for decl in model.decls():
                 if decl.name() == var_name:
@@ -416,12 +382,10 @@ class ConstraintSolver:
 
     def _constraints_to_z3(self, constraints: List[Any]) -> List[Any]:
         """
-        转换 a list constraint dicts or Z3 expressions Z3 BoolRefs
-        
-        Constraint dict 格式化: {"type": "eq"|"neq"|"lt"|"gt"|""|"or"
-        "var": str, "value": int,.}
-        
-        Time: O(|constraints|). conversion O(1)
+        把约束字典列表或 Z3 表达式转为 Z3 BoolRef 列表。
+
+        约束字典格式: {"type": "eq"|"neq"|"lt"|"gt"|"le"|"ge"|"and"|"or",
+        "var": str, "value": int, ...}, 转换单条 O(1)。
         """
         import z3  # noqa: F811
         bld = self.builder
@@ -437,7 +401,7 @@ class ConstraintSolver:
         return result
 
     def _dict_to_z3(self, bld: Z3ExpressionBuilder, c: Dict[str, Any]) -> Optional[Any]:
-        """转换 a constraint dict a Z3 BoolRef. O(1)"""
+        """把约束字典转为 Z3 BoolRef, O(1)。"""
         typ = c.get("type", "")
         var_name = c.get("var", "")
         value = c.get("value", 0)
@@ -462,28 +426,28 @@ class ConstraintSolver:
             z3_children = [self._dict_to_z3(bld, ch) for ch in children]
             z3_children = [x for x in z3_children if x is not None]
             if z3_children:
-                return z3.And(*z3_children)
+                return bld.z3.And(*z3_children)
             return None
         elif typ == "or":
             children = c.get("children", [])
             z3_children = [self._dict_to_z3(bld, ch) for ch in children]
             z3_children = [x for x in z3_children if x is not None]
             if z3_children:
-                return z3.Or(*z3_children)
+                return bld.z3.Or(*z3_children)
             return None
         return None
 
-# Concrete- 回退
+# 具体值回退
 
     def _solve_concrete_only(self, constraints: List[Any], target_var: str) -> Optional[int]:
         """
-        Solve constraints concrete- mode (Z3)
-        
-        支持 simple eq/neq integer values
-        返回 value constraints consistent, else None
-        
-        // a severely limited subset — for full symbolic solving
-        // install Z3: pip install z3-solver
+        具体值模式求解 (无 Z3)。
+
+        仅支持简单的 eq/neq 整数值; 约束一致时返回该值,
+        否则返回 None。
+
+        // 这是严重受限的子集 — 完整符号求解请安装 Z3:
+        // pip install z3-solver
         """
         target_val = None
         for c in constraints:
@@ -502,12 +466,7 @@ class ConstraintSolver:
         return target_val
 
     def _is_satisfiable_concrete(self, constraints: List[Any]) -> bool:
-        """
-        检查 satisfiability concrete- mode
-        返回 True contradictions found
-        
-        Time: O(N^2) for checking pairs
-        """
+        """具体值模式的可满足性检查, 发现矛盾返回 False。"""
         eq_map: Dict[str, int] = {}
         neq_map: Dict[str, Set[int]] = {}
         for c in constraints:
@@ -532,13 +491,11 @@ class ConstraintSolver:
         return dict(self._stats)
 
 
-# Dead code — 留着备用，后面可能用
+def simplify_expression_ast(expr_tree: dict) -> dict:
+    """用局部规则化简符号表达式 AST。
 
-def _symbolic_SimplifyExpression(expr_tree: dict) -> dict:
-    """Simplify a symbolic expression AST using local rules. Never
-    
-    an attempt Z3-independent simplification integrated
-    Z3's simplify(). Kept 回退 for offline mode
+    与 Z3 无关的化简, 作为离线模式下的回退; 目前支持
+    const op const 的常量折叠。
     """
     if not isinstance(expr_tree, dict):
         return expr_tree
@@ -558,5 +515,5 @@ __all__ = [
     "ConstraintSolver", "Z3ExpressionBuilder",
     "SymbolicError", "SolverTimeout", "SolverNotFound",
     "has_z3",
-    "_symbolic_SimplifyExpression",
+    "simplify_expression_ast",
 ]

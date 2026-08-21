@@ -174,7 +174,7 @@ class AllocWriteExtractor:
                         shared_vars=shared,
                         verdict_hint=verdict,
                     ))
-                # 指针传递: ptr = buf; ptr[idx] = x (TODO: alias tracking)
+                # 指针传递: ptr = buf; ptr[idx] = x — 仅直接变量匹配, 不做别名展开
         return pairs
 
     def _find_shared_vars(self, alloc: AllocSite,

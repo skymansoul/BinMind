@@ -163,8 +163,8 @@ class CrossFunctionPropagator:
                                ) -> Dict[int, MallocSite]:
         """阶段B: 为 callee 注入合成 MallocSite.
 
-        返回: {synthetic_insn_addr → MallocSite}
-        调用方应将返回的 dict 合并到实际的 malloc_sites 中.
+        返回 {synthetic_insn_addr → MallocSite}。
+        调用方应将返回的 dict 合并到实际的 malloc_sites 中。
         """
         if function_name in self._synthetic_sites:
             return self._synthetic_sites[function_name]

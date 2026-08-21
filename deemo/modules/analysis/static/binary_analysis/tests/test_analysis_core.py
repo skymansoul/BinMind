@@ -90,5 +90,5 @@ class TestSymbolicAnalysis:
     def test_lazy_z3_import(self):
         """Verify z3 lazily loaded"""
         from modules.analysis.static.binary_analysis.symbolic_analysis import _has_z3
-        # 返回 bool — True z3 installed, False otherwise
+        # 返回 bool - True z3 installed, False otherwise
         assert isinstance(_has_z3(), bool)

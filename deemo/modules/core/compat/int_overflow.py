@@ -162,14 +162,12 @@ def detect_int_overflow(operations: List[IntOperation],
                         known_ranges: Dict[str, Tuple[int, int]],
                         alloc_sites: Dict[str, int] = None,
                         ) -> List[Dict]:
-    """检测整数溢出候选并判定安全影响.
+    """检测整数溢出候选并判定安全影响。
 
-    Args:
-      operations: 算术运算列表
-      known_ranges: 已知变量值区间 {var_name: (lo, hi)}
-      alloc_sites: 分配点 {var_name: alloc_size} (用于判定安全影响)
-
-    Returns: 溢出候选列表 [{op, overflow_type, is_dangerous, ...}]
+    参数: operations 算术运算列表, known_ranges 已知变量值区间
+    {var_name: (lo, hi)}, alloc_sites 分配点 {var_name:
+    alloc_size} (用于判定安全影响);
+    返回溢出候选列表 [{op, overflow_type, is_dangerous, ...}]。
     """
     if alloc_sites is None:
         alloc_sites = {}
@@ -212,10 +210,7 @@ def prove_int_overflow_safe(
     alloc_size: int = 0,
     width: IntWidth = IntWidth.I32,
 ) -> Tuple[bool, str]:
-    """便捷判定: 证明一次算术运算不会导致可利用的溢出.
-
-    返回: (可证明安全 → True, 理由).
-    """
+    """便捷判定: 证明一次算术运算不会导致可利用的溢出, 返回 (可证明安全 → True, 理由)。"""
     analyzer = IntRangeAnalyzer(width=width)
     analyzer.set_range(left_var, known_range[0], known_range[1])
 

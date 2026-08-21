@@ -235,7 +235,6 @@ class TriModalBinaryEmbedder:
             sem_emb[idx] += 1.0
 
         # 投影到共享空间
-        byte_proj = [_hb_dot(self.proj_bytes, byte_emb) for _ in [0]]  # fixme
         byte_proj = [_hb_dot(row, byte_emb) for row in self.proj_bytes]
         struct_proj = [_hb_dot(row, struct_emb) for row in self.proj_struct]
         sem_proj = [_hb_dot(row, sem_emb) for row in self.proj_semantic]

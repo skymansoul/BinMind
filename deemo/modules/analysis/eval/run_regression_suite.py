@@ -1,7 +1,6 @@
 # coding: utf-8
 # 自动化回归测试套件 v1
 # 统一运行 CVE + FP-safe + SAWCE 三类样本, 输出 TP/FP/TN/FN/Recall/Precision/F1.
-# 创建: 2026-05-17
 #
 # 样本分类:
 # CVE: 已知漏洞二进制 → 期望检出(TP), 未检出=FN
@@ -231,7 +230,7 @@ def compute_metrics(cve_r, fp_r, sawce_r):
 
 def main():
     print("=" * 70)
-    print("BinMind Regression Test Suite — Heap Overflow Detection")
+    print("BinMind Regression Test Suite - Heap Overflow Detection")
     print("=" * 70)
 
     cve_results = test_cve_samples()

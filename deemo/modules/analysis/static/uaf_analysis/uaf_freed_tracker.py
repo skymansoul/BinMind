@@ -1,4 +1,4 @@
-"""UAF 释放指针追踪器 — 寄存器级 freed 标记传播 + realloc 别名悬空检测.
+"""UAF 释放指针追踪器 - 寄存器级 freed 标记传播 + realloc 别名悬空检测.
 
 核心数据结构: FreedPtr(释放地址, 原始寄存器, 传播链)
 追踪规则:
@@ -49,7 +49,7 @@ class UafFinding:
 
 
 class FreedPtrTracker:
-    """释放指针追踪器 — 寄存器级 freed 状态管理.
+    """释放指针追踪器 - 寄存器级 freed 状态管理.
 
     与 BinaryUafScanner 解耦: 专注追踪逻辑, 检测器负责指令解释和判定.
     """

@@ -1,7 +1,6 @@
 # 偏移值域追踪器数据类型 — 从offset_range_tracker.py拆分.
 # 提取到独立模块以消除_offset_trace_mixin与主文件之间的循环依赖.
-# 创建: 2026-07-30
-# 修改: 2026-07-30 — 增加顶层导入回退, 修复orchestrator sys.path注入导致的
+# 增加顶层导入回退, 修复orchestrator sys.path注入导致的
 #        "attempted relative import with no known parent package" 崩溃.
 
 from dataclasses import dataclass, field

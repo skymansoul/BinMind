@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-05-29  |  种子合成器
-# 修改: 2026-05-29  |  审计后补充文件头与错误处理
-#
 """
-DABSS种子合成引擎——从约束系统合成面向fuzzer的二进制种子。
+DABSS种子合成引擎-从约束系统合成面向fuzzer的二进制种子。
 
 合成策略: 边界精确→溢出探测→对齐攻击→空指针探测。
 输出兼容AFL++命名规范(id:xxxxxx,src:xxxxxx)。
@@ -34,7 +31,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class SynthesizedSeed:
-    """单条合成种子——可直接写入文件"""
+    """单条合成种子-可直接写入文件"""
     filename: str
     data: bytes
     # 元数据
@@ -49,7 +46,7 @@ class SynthesizedSeed:
 
 @dataclass
 class SeedCorpus:
-    """完整种子语料——可直接注入fuzzer输入目录"""
+    """完整种子语料-可直接注入fuzzer输入目录"""
     target_function: str
     target_binary: str
     seeds: List[SynthesizedSeed] = field(default_factory=list)
@@ -67,7 +64,7 @@ class SeedCorpus:
 
 
 class SeedSynthesizer:
-    """种子合成器——约束→边界测试值→二进制种子。
+    """种子合成器-约束→边界测试值→二进制种子。
 
     合成逻辑:
       边界精确: 取边界值±{0, 1}作为种子字节
@@ -75,7 +72,7 @@ class SeedSynthesizer:
       对齐攻击: 取对齐值+{1, 3, 7}作为非对齐输入
     """
 
-    # 字节序映射——架构→struct格式
+    # 字节序映射-架构→struct格式
     _ENDIAN_MAP = {
         'x86_64': '<', 'x86': '<', 'amd64': '<',
         'arm64': '<', 'arm32': '<', 'aarch64': '<',
@@ -125,7 +122,7 @@ class SeedSynthesizer:
                             constraint_satisfaction_rate=0.0))
                         corpus.overflow_seeds += 1
 
-            # 3. 对齐攻击种子——偏移1/3/7字节破坏对齐
+            # 3. 对齐攻击种子-偏移1/3/7字节破坏对齐
             for vc in sc.constraints:
                 if vc.constraint_type == ConstraintType.ALIGN and vc.value > 1:
                     for misalign in [1, 3, 7]:
@@ -139,7 +136,7 @@ class SeedSynthesizer:
                             constraint_satisfaction_rate=0.0))
                         corpus.alignment_seeds += 1
 
-            # 4. 空指针探测种子——0x0/0x1/0xFF等小地址值
+            # 4. 空指针探测种子-0x0/0x1/0xFF等小地址值
             for null_val in [0, 1, 0xFF, 0x1000]:
                 seed_data = self._pack_value(null_val, sc.buffer_size_hint)
                 corpus.seeds.append(SynthesizedSeed(
@@ -170,7 +167,7 @@ class SeedSynthesizer:
         data = b'\x41' * size  # 用'A'填充基线
 
         if val == 0:
-            return data  # 零值——保留基线填充
+            return data  # 零值-保留基线填充
         # 在缓冲区末尾附近放置边界值
         offset = max(0, size - self._ptr_size)
         try:
@@ -183,7 +180,7 @@ class SeedSynthesizer:
 
     def _pack_unaligned(self, buf_hint: int, alignment: int,
                           misalign: int) -> bytes:
-        """生成非对齐数据——在预期对齐位置插入偏移"""
+        """生成非对齐数据-在预期对齐位置插入偏移"""
         size = max(buf_hint, 16)
         data = bytearray(b'\x42' * size)
         # 在对齐边界处插入非对齐标记
@@ -193,7 +190,7 @@ class SeedSynthesizer:
 
     def _write_metadata(self, corpus: SeedCorpus,
                          constraints: List[SeedConstraint]) -> str:
-        """写入语料元数据JSON——含约束信息与路径期望"""
+        """写入语料元数据JSON-含约束信息与路径期望"""
         meta = {
             'target_function': corpus.target_function,
             'target_binary': corpus.target_binary,
@@ -220,7 +217,7 @@ class SeedSynthesizer:
         return hashlib.md5(str(val).encode()).hexdigest()[:8]
 
 
-# 种子导出——适配fuzzer输入格式
+# 种子导出-适配fuzzer输入格式
 
 
 def export_to_fuzzer_dir(corpus: SeedCorpus, output_dir: str,
@@ -262,7 +259,7 @@ def synthesize_seeds_from_slices(slices: List[BufferSlice],
                                    function_name: str = "",
                                    output_dir: str = ""
                                    ) -> SeedCorpus:
-    """从数据流切片直接合成种子——单行调用。
+    """从数据流切片直接合成种子-单行调用。
 
     返回SeedCorpus。
     """

@@ -7,8 +7,6 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
-name: str = "unpacker"
-module: str = "unpacker"
 
 _UPX_SIGNATURES = [
     b"UPX!", b"UPX0", b"UPX1", b"UPX2",
@@ -58,13 +56,13 @@ _SECTION_NAME_INDICATORS = {"UPX0", "UPX1", "UPX2", ".aspack", ".adata", ".pec",
 _PE_MAGIC = b"PE\x00\x00"
 
 
-# 微型 NRV2B 解压器 —— 纯 Python 实现，参考 UCL/NRV 规范
+# 微型 NRV2B 解压器 - 纯 Python 实现，参考 UCL/NRV 规范
 # NRV (Not Really Vanished) 是 UPX 使用的 LZSS 变种算法家族。
 # NRV2B 格式: 逐 bit 解码，0=literal byte, 1=(offset, length) 对
 # 允许在没有外部 upx 二进制时直接从 stub 进行静态解压
 
 def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
-    """NRV2B 解压——UPX 最常用的压缩算法变种
+    """NRV2B 解压-UPX 最常用的压缩算法变种
     输入: 压缩数据（不含 UPX 魔数头）
     输出: 解压后的字节，失败返回 None
     """
@@ -157,7 +155,7 @@ def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
 
 
 def _try_builtin_upx_unpack(raw: bytes, out_path: str) -> Optional[str]:
-    """尝试从 UPX stub 中直接提取解压数据——无需外部 upx 二进制
+    """尝试从 UPX stub 中直接提取解压数据-无需外部 upx 二进制
     支持 NRV2B/NRV2D/NRV2E/LZMA 四种 UPX 压缩算法
     """
     # 定位 UPX 尾部标记

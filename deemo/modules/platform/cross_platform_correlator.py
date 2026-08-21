@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-07-26 15:33 - 增加共享内存区域匹配规则，覆盖 RowHammer→内核的传播路径
-# 2025-07-29 08:47 - 正则规则引擎从线性扫描重构为预编译的规则 DAG
+# 增加共享内存区域匹配规则，覆盖 RowHammer→内核的传播路径
+# 正则规则引擎从线性扫描重构为预编译的规则 DAG
 
 """
 跨平台漏洞关联器。
@@ -9,7 +8,7 @@
 （共享符号、地址重叠、时序关联等），输出PropagationEdge。
 
 设计：
-  - 规则以声明式DAG组织——先跑廉价规则初筛，再对候选集跑高成本规则，
+  - 规则以声明式DAG组织-先跑廉价规则初筛，再对候选集跑高成本规则，
     避免O(N²)跨层全量匹配。
   - 每条规则输出 (source_node, target_node, confidence, evidence) 元组。
 
@@ -34,7 +33,7 @@ CorrelationRule = Callable[[PropagationGraph, Dict[str, Any]], List[Tuple[str, s
 
 def _symbol_co_occurrence(graph: PropagationGraph,
                           ctx: Dict[str, Any]) -> List[Tuple[str, str, float, str]]:
-    """共享符号名匹配——最低成本规则。
+    """共享符号名匹配-最低成本规则。
 
     固件导出符号与内核导入符号重合 → 高置信度传播边。
     """
@@ -55,7 +54,7 @@ def _memory_region_overlap(graph: PropagationGraph,
     """物理内存区域重叠检测。
 
     固件MMIO区间与硬件侧信道目标区间重叠 → 传播边。
-    ref: CVE-2015-5692及RowHammer类漏洞跨层利用链——硬件位翻转经内存映射传播至内核页表。
+    ref: CVE-2015-5692及RowHammer类漏洞跨层利用链-硬件位翻转经内存映射传播至内核页表。
     """
     edges: List[Tuple[str, str, float, str]] = []
     fw_regions = ctx.get('firmware_mmio_regions', [])    # [(start, end, node_id)]
@@ -77,7 +76,7 @@ def _memory_region_overlap(graph: PropagationGraph,
 
 def _syscall_table_correlation(graph: PropagationGraph,
                                ctx: Dict[str, Any]) -> List[Tuple[str, str, float, str]]:
-    """系统调用表关联——内核syscall被恶意软件/移动端调用。
+    """系统调用表关联-内核syscall被恶意软件/移动端调用。
 
     eBPF钩子挂载的syscall与恶意软件行为trace中的syscall号重合。
     """
@@ -94,10 +93,10 @@ def _syscall_table_correlation(graph: PropagationGraph,
 
 def _temporal_causality(graph: PropagationGraph,
                         ctx: Dict[str, Any]) -> List[Tuple[str, str, float, str]]:
-    """时序因果检测——固件漏洞披露时间先于内核漏洞利用PoC，
+    """时序因果检测-固件漏洞披露时间先于内核漏洞利用PoC，
     且共享相同影响范围（如同驱动），则建立传播边。
 
-    置信度较低——时序相关不等同因果——仅作辅助信号。
+    置信度较低-时序相关不等同因果-仅作辅助信号。
     """
     edges: List[Tuple[str, str, float, str]] = []
     fw_timeline = ctx.get('firmware_vuln_timeline', [])    # [(timestamp, node_id, scope)]
@@ -106,7 +105,7 @@ def _temporal_causality(graph: PropagationGraph,
     for fw_ts, fw_id, fw_scope in fw_timeline:
         for kern_ts, kern_id, kern_scope in kern_timeline:
             if fw_ts < kern_ts and _scope_overlap(fw_scope, kern_scope):
-                # 时序差距越小，置信度越低——可能只是巧合
+                # 时序差距越小，置信度越低-可能只是巧合
                 time_gap_days = (kern_ts - fw_ts) / 86400.0
                 conf = max(0.35, 0.65 - 0.05 * time_gap_days)
                 edges.append((fw_id, kern_id, conf, 'temporal_causality'))
@@ -114,7 +113,7 @@ def _temporal_causality(graph: PropagationGraph,
 
 
 def _scope_overlap(scope_a: str, scope_b: str) -> bool:
-    """简易范围重叠——空格/逗号分词后取集合交集。"""
+    """简易范围重叠-空格/逗号分词后取集合交集。"""
     tokens_a = set(re.split(r'[\s,]+', scope_a.lower()))
     tokens_b = set(re.split(r'[\s,]+', scope_b.lower()))
     return bool(tokens_a & tokens_b)
@@ -131,7 +130,7 @@ _RULE_PHASES: List[List[CorrelationRule]] = [
 
 
 class CrossPlatformCorrelator:
-    """跨平台关联引擎——规则驱动发现传播边并更新图。
+    """跨平台关联引擎-规则驱动发现传播边并更新图。
 
     用法::
 
@@ -149,7 +148,7 @@ class CrossPlatformCorrelator:
         self._custom_rules: List[CorrelationRule] = []
 
     def register_rule(self, rule: CorrelationRule, phase: int = 1) -> None:
-        """注册自定义关联规则——phase越大执行越晚。"""
+        """注册自定义关联规则-phase越大执行越晚。"""
         self._custom_rules.append(rule)
         # 自定义规则归入 phase 1，后续可扩展为按 phase 参数分类
 
@@ -193,7 +192,7 @@ class CrossPlatformCorrelator:
         self, graph: PropagationGraph,
         new_evidence: Dict[Tuple[str, str], Tuple[float, float]],
     ) -> int:
-        """新证据对已有边做贝叶斯更新——不创建新边。
+        """新证据对已有边做贝叶斯更新-不创建新边。
 
         new_evidence: {(source_id, target_id): (likelihood, weight)}
         """
@@ -213,7 +212,7 @@ class CrossPlatformCorrelator:
         hardware_findings: Optional[List[Dict]] = None,
         malware_findings: Optional[List[Dict]] = None,
     ) -> Dict[str, Any]:
-        """从各平台分析结果构建关联上下文——桥接现有模块数据格式。"""
+        """从各平台分析结果构建关联上下文-桥接现有模块数据格式。"""
         ctx: Dict[str, Any] = {}
 
         if firmware_findings:

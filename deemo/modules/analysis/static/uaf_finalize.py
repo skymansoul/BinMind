@@ -1,7 +1,6 @@
 # UAF 后处理与统计.
 # 职责: 多阶段后过滤(去重/CRT/nulled/路径) + 全局变量延迟free扫描 + 统计输出
-# 创建: 2026-06-07
-# 修改: 2026-06-07 — 集成 GlobalFreeScanner 补检跨函数全局变量 UAF
+# 集成 GlobalFreeScanner 补检跨函数全局变量 UAF
 
 from collections import defaultdict
 from typing import Dict, List, Tuple

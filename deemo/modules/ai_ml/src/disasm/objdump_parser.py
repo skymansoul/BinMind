@@ -1,6 +1,6 @@
-# objdump -d 输出解析器——从x86-64 ELF二进制中提取结构化反汇编信息
+# objdump -d 输出解析器-从x86-64 ELF二进制中提取结构化反汇编信息
 # 为检测管线提供: 指令序列、基本块边界、CFG边
-# 无需调试符号或源码——仅依赖objdump文本输出
+# 无需调试符号或源码-仅依赖objdump文本输出
 #
 # 设计决策:
 #   - 用objdump而非capstone/pyelftools: objdump无处不在, 无需额外依赖
@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -89,7 +88,7 @@ class ObjdumpParser:
         self._objdump = objdump_path
 
     def parse_binary(self, binary_path: str) -> List[FunctionInfo]:
-        """解析整个二进制文件——返回所有函数的FunctionInfo列表"""
+        """解析整个二进制文件-返回所有函数的FunctionInfo列表"""
         disasm = self._run_objdump(binary_path)
         return self._parse_output(disasm)
 
@@ -130,7 +129,7 @@ class ObjdumpParser:
             return ""
 
     def _parse_output(self, disasm: str) -> List[FunctionInfo]:
-        """解析objdump输出——提取函数、指令、基本块、CFG"""
+        """解析objdump输出-提取函数、指令、基本块、CFG"""
         funcs = []
         current_func = None
         current_instrs = []

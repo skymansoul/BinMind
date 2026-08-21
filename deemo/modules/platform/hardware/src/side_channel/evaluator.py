@@ -32,7 +32,7 @@ AES_SBOX: list[int] = [
 
 # 独立工具函数
 def compute_hamming_weight(value: int) -> int:
-    """popcount —— 逐比特位计数"""
+    """popcount, 逐比特位计数"""
     _v = value
     _v = (_v & 0x55) + ((_v >> 1) & 0x55)
     _v = (_v & 0x33) + ((_v >> 2) & 0x33)
@@ -86,7 +86,7 @@ class SideChannelEvaluator:
 # 不完全Beta函数（连分式近似）
     # 用于Student t分布CDF计算
     def _incomplete_beta_approx(self, x: float, a: float, b: float) -> float:
-        """正则化不完全Beta函数 —— Lentz连分式算法"""
+        """正则化不完全Beta函数, Lentz连分式算法"""
         if x <= 0.0:
             return 0.0
         if x >= 1.0:
@@ -129,7 +129,7 @@ class SideChannelEvaluator:
                 break
         return _front * (_h - 1.0)
 
-# TVLA —— Welch's t-test
+# TVLA, Welch's t-test
     # 固定vs随机明文泄漏检测
     def tvla_test(
         self, traces_fixed: list[list[float]], traces_random: list[list[float]]
@@ -174,7 +174,7 @@ class SideChannelEvaluator:
             "sample_indices": exceeded,
         }
 
-# CPA —— 相关功耗分析
+# CPA, 相关功耗分析
     # 汉明重量模型 + AES S-box
     def cpa_attack(
         self,
@@ -221,7 +221,7 @@ class SideChannelEvaluator:
     def _detect_central_reduction_leak(
         self, traces_group_a: list[list[float]], traces_group_b: list[list[float]]
     ) -> list[int]:
-        """F-test方差比较 —— 差分方差分析"""
+        """F-test方差比较, 差分方差分析"""
         if not traces_group_a or not traces_group_b:
             return []
         _len = len(traces_group_a[0])
@@ -246,7 +246,7 @@ class SideChannelEvaluator:
         return _leaky
 
 # 格密码侧信道分析
-    # Kyber/Dilithium —— 中心二项分布 vs 均匀分布泄漏
+    # Kyber/Dilithium, 中心二项分布 vs 均匀分布泄漏
     def lattice_side_channel(
         self, traces: list[list[float]], modulus: int = 3329
     ) -> dict:

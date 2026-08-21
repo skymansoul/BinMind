@@ -1,5 +1,4 @@
-# 2026-07-29
-# VM-based 混淆 detection de-虚拟化
+# VM-based 混淆检测与去虚拟化
 """Detection analysis VM-based software protection (VMProtect, Themida, etc.)"""
 
 import logging
@@ -51,16 +50,10 @@ class VMIdentifier:
     def detect_dispatch_patterns(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """检测 VM dispatch loop patterns instruction sequences
-        
-        Looks for indirect jumps tables, pushf/popf pairs
-        (VMProtect 签名), heavy bitwise rotation patterns
-        
-        Args:
-        instructions: List instruction dicts 'mnemonic' 'operands'
-        
-        返回:
-        List detected dispatch pattern evidence
+        """在指令序列中检测 VM dispatch 循环模式。
+
+        查找间接跳转表、pushf/popf 对 (VMProtect 签名) 与大量
+        位旋转模式; 返回检测到的 dispatch 模式证据列表。
         """
         findings: List[Dict[str, Any]] = []
         mnemonics = [
@@ -107,14 +100,7 @@ class VMIdentifier:
     def detect_handler_table(
         self, instructions: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Identify VM处理器 function tables switch-case dispatch
-        
-        Args:
-        instructions: List instruction dicts
-        
-        返回:
-        Dict 处理器 address information
-        """
+        """识别 switch-case 分发的 VM handler 函数表, 返回 handler 地址信息。"""
         result: Dict[str, Any] = {
             "found": False,
             "handler_count": 0,
@@ -140,16 +126,10 @@ class VMIdentifier:
     def detect_bytecode_interpreter(
         self, instructions: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """检测 字节码 fetch-解码-dispatch interpreter pattern
-        
-        key pattern: 加载 byte -> look up 处理器 -> jump 处理器 -> advance PC
-        fetch-解码-dispatch loop universal VM 签名
-        
-        Args:
-        instructions: List instruction dicts
-        
-        返回:
-        Dict interpreter detection results
+        """检测字节码 fetch-decode-dispatch 解释器模式。
+
+        关键模式: 加载 byte -> 查 handler -> 跳转 handler -> 推进
+        PC; fetch-decode-dispatch 循环是通用 VM 签名。
         """
         result: Dict[str, Any] = {
             "found": False,
@@ -182,18 +162,11 @@ class VMIdentifier:
         return result
 
     def identify(self, filepath: str) -> Dict[str, Any]:
-        """Full VM identification 流水线
-        
-        Args:
-        filepath: Path file 分析
-        
-        返回:
-        Dict vm_type, confidence, evidence
-        """
+        """完整 VM 识别流水线, 返回含 vm_type/confidence/evidence 的字典。"""
         self._logger.info("Identifying VM protector in %s", filepath)
 
-        # a file-based API; actual instruction data come
-        # a 反汇编r (r2, capstone, etc.). For 检测 raw bytes
+        # file-based API; actual instruction data comes
+        # from a disassembler (r2, capstone, etc.). For detecting raw bytes
         try:
             with open(filepath, "rb") as fh:
                 raw = fh.read()
@@ -264,11 +237,11 @@ class VMIdentifier:
 
 
 class VMUnvirtualizer:
-    """Recover 原生代码 VM-字节码 protected functions
-    
-    INTJ策略: 使用 pattern-based reconstruction rather full 仿真
-    because 仿真 requires 系统调用/hardware state 't reliably reproduce
-    Pattern matching 处理器 semantics ~80% accurate but 1000x faster
+    """Recover native code from VM-bytecode protected functions
+
+    Uses pattern-based reconstruction rather than full emulation
+    because emulation requires syscall/hardware state that can't be reliably reproduced.
+    Pattern matching handler semantics is ~80% accurate but 1000x faster
     """
 
     def __init__(self) -> None:
@@ -277,14 +250,7 @@ class VMUnvirtualizer:
     def trace_bytecode_flow(
         self, handlers: Dict[int, str]
     ) -> List[Dict[str, Any]]:
-        """Trace execution flow VM处理器s
-        
-        Args:
-        处理器s: Map 处理器 address -> 处理器 name
-        
-        返回:
-        List trace entries address transitions
-        """
+        """追踪 VM handler 间的执行流, 返回地址迁移的 trace 条目列表。"""
         trace: List[Dict[str, Any]] = []
         handler_addrs = sorted(handlers.keys())
 
@@ -305,19 +271,15 @@ class VMUnvirtualizer:
         bytecode_trace: List[Dict[str, Any]],
         handler_addrs: List[int],
     ) -> Dict[int, str]:
-        """Map 字节码 opcodes 处理器 function addresses
-        
-        Args:
-        字节码_trace: Trace byte代码执行
-        处理器_addrs: List 处理器 addresses
-        
-        返回:
-        Dict mapping opcode (int) 处理器 address description
+        """把字节码 opcode 映射到 handler 函数地址。
+
+        bytecode_trace 为字节码执行轨迹, handler_addrs 为 handler
+        地址列表; 返回 opcode (int) -> handler 描述的映射。
         """
         op_map: Dict[int, str] = {}
 
         for i, addr in enumerate(handler_addrs):
-            # Map sequentially discovered 处理器s opcodes
+            # 按发现顺序把 handler 映射到 opcode
             op_map[i] = f"handler_{hex(addr)}"
 
         return op_map
@@ -327,15 +289,7 @@ class VMUnvirtualizer:
         bytecode: List[int],
         op_map: Dict[int, str],
     ) -> List[str]:
-        """重建 native instruction mnemonics 字节码
-        
-        Args:
-        字节码: List 字节码 opcodes
-        op_map: Mapping opcode index 处理器 description
-        
-        返回:
-        List reconstructed instruction strings
-        """
+        """从字节码重建原生指令助记符, 返回重建指令字符串列表。"""
         instructions: List[str] = []
 
         # opcode x86 mnemonic mapping (simplified)
@@ -373,15 +327,7 @@ class VMUnvirtualizer:
     def unvirtualize(
         self, filepath: str, vm_info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Full de-虚拟化 流水线
-        
-        Args:
-        filepath: Path protected file
-        vm_info: VM identification result VMIdentifier
-        
-        返回:
-        Dict reconstructed instructions metadata
-        """
+        """完整去虚拟化流水线, 返回含重建指令与元数据的字典。"""
         self._logger.info(
             "Attempting unvirtualization of %s (VM: %s)",
             filepath,
@@ -396,19 +342,28 @@ class VMUnvirtualizer:
                 "reconstructed_functions": {},
             }
 
-        # Placeholder: actual de-虚拟化 require:
-        # 1. Locate VM 入口
-        # 2. Trace byte代码执行
-        # 3. Map 处理器s opcodes
-        # 4. 重建 native instructions
-        bytecode_pos = 0  # snake_case intentional - 表示 字节码 offset
+        # 完整去虚拟化需要反汇编器集成:
+        # 1. 定位 VM 入口
+        # 2. 追踪字节码执行
+        # 3. 把 handler 映射到 opcode
+        # 4. 重建原生指令
+        # 无反汇编器时返回失败标记与可用证据, 不伪造重建结果
+        bytecode_pos = 0  # 字节码偏移
+        handlers = vm_info.get("handlers") or []
+        handler_addrs = [
+            h if isinstance(h, int) else h.get("addr", 0) for h in handlers
+        ]
+        op_map = self.map_handlers([], handler_addrs) if handler_addrs else {}
+        bytecode = vm_info.get("bytecode") or []
+        instructions = self.reconstruct_instructions(bytecode, op_map)
 
         return {
             "success": False,
             "note": "Full unvirtualization requires disassembler integration",
             "vm_type": vm_info.get("vm_type"),
             "confidence": vm_info.get("confidence", 0.0),
-            "instructions": [],
+            "instructions": instructions,
+            "op_map": op_map,
             "reconstructed_functions": {},
             "bytecode_position": bytecode_pos,
         }

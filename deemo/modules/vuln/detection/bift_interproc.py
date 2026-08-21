@@ -1,14 +1,13 @@
 # coding: utf-8
-# 创建: 2026-06-07  |  跨函数污点传播——调用图驱动的递归污点追踪
 #
 """
-跨函数污点传播——基于调用图的递归跨函数污点追踪。
+跨函数污点传播 - 基于调用图的递归跨函数污点追踪。
 
 技术问题:
   bift_taint.TaintPropagator的跨函数传播仅在call指令层面
   标记参数为污点, 不实际进入被调用函数执行污点传播。
-  这导致: 若recv→funcA→funcB→memcpy, 且funcA内部有寄存器清除,
-  但funcB内没有——当前实现可能误标记为"可达"或"不可达"。
+  这导致: 若recv, funcA, funcB, memcpy, 且funcA内部有寄存器清除,
+  但funcB内没有 - 当前实现可能误标记为"可达"或"不可达"。
 
 解决方案:
   调用图驱动的递归污点追踪:
@@ -16,9 +15,9 @@
        递归进入被调用函数执行完整的污点传播
     2. 被调用函数的返回寄存器(rax)若被污点, 则传播回调用者
     3. 递归深度限制(max_call_depth)防止无限递归
-    4. 缓存已分析的(函数, 污点输入)对→避免重复计算
+    4. 缓存已分析的(函数, 污点输入)对, 避免重复计算
 
-  这是对bift_taint.py中过度近似的实质性修正——
+  这是对bift_taint.py中过度近似的实质性修正 -
   从"同一函数内任何污点都可能到达任何汇"变为
   "仅通过明确的调用图路径且无寄存器清除的污点才可达"。
 """
@@ -30,7 +29,7 @@ _log = logging.getLogger(__name__)
 
 
 class InterProcTaintTracker:
-    """跨函数递归污点追踪——调用图驱动的精确污点分析。
+    """跨函数递归污点追踪 - 调用图驱动的精确污点分析。
 
     使用示例:
         tracker = InterProcTaintTracker(call_graph, functions)
@@ -44,7 +43,7 @@ class InterProcTaintTracker:
         self._call_graph = call_graph
         self._functions = functions
         self._max_depth = max_call_depth
-        # 缓存: (func_name, frozenset(tainted_regs)) → set(reachable_sinks)
+        # 缓存: (func_name, frozenset(tainted_regs)), set(reachable_sinks)
         self._cache: Dict[Tuple[str, Tuple[str, ...]],
                            Set[str]] = {}
 
@@ -83,14 +82,14 @@ class InterProcTaintTracker:
             # 寄存器传播: mov/add/lea/xor
             defs, uses = self._reg_flow(mnem, ops_str)
 
-            # 清除检测: xor reg,reg → 从污点集中移除reg
+            # 清除检测: xor reg,reg - 从污点集中移除reg
             if mnem == 'xor':
                 ops = ops_str.split(',')
                 if len(ops) >= 2 and ops[0].strip().lower() == ops[1].strip().lower():
                     cleared_reg = ops[0].strip().lower()
                     current_tainted.discard(cleared_reg)
 
-            # 传播: 若use在污点集中→def也被污点
+            # 传播: 若use在污点集中, def也被污点
             if uses & current_tainted:
                 current_tainted.update(defs)
 
@@ -107,7 +106,7 @@ class InterProcTaintTracker:
                            if cf.lower() == called_func or
                            called_func in cf.lower()]
                 for cf in matched[:1]:  # 追踪第一个匹配的
-                    # 确定哪些参数被污点→被调用函数的参数寄存器
+                    # 确定哪些参数被污点, 被调用函数的参数寄存器
                     callee_tainted = set()
                     for reg in sorted(current_tainted):
                         if reg in ('rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9'):

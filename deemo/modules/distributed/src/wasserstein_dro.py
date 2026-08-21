@@ -1,13 +1,12 @@
-# 创建: 2026-05-28
-# 修改: 2026-05-28 — 场景化对抗扰动改为独立采样
-# 修改: 2026-05-28 — 增加 CVaR 模式
+# 场景化对抗扰动改为独立采样
+# 增加 CVaR 模式
 #
-# Wasserstein 分布鲁棒调度 — 有限样本下的执行时间不确定性对冲
+# Wasserstein 分布鲁棒调度 - 有限样本下的执行时间不确定性对冲
 #
 # GRL-Sched 假设 DAG 节点的 exec_time 是确定值。实际只有少量历史样本，
-# 样本均值的估计方差大——导致调度在观测样本上最优而在真实分布上退化。
+# 样本均值的估计方差大-导致调度在观测样本上最优而在真实分布上退化。
 #
-# 分布鲁棒优化 (DRO) 不对真实分布做点估计，而是构造一个"模糊集"——
+# 分布鲁棒优化 (DRO) 不对真实分布做点估计，而是构造一个"模糊集"-
 # 以经验分布 P̂_N 为中心、半径 ε 的 Wasserstein 球:
 #   B_ε(P̂_N) = {Q : W(P̂_N, Q) ≤ ε},  W = 1-Wasserstein 距离
 # 目标: min_{order} max_{Q∈B_ε} E_Q[makespan(order)]
@@ -21,7 +20,7 @@
 #
 # 与 Lu et al. 的区别:
 #   该文做单机调度的 Wasserstein DRO (MILP 重构)。
-#   本模块做 DAG 调度——更复杂的组合结构，使用场景化近似而非精确重构。
+#   本模块做 DAG 调度-更复杂的组合结构，使用场景化近似而非精确重构。
 
 from __future__ import annotations
 
@@ -34,7 +33,7 @@ from .grl_scheduler import MakespanSimulator, heft_order
 
 
 def wasserstein1(samples_a: List[float], samples_b: List[float]) -> float:
-    """1-Wasserstein 距离 — 两经验分布间的地球移动距离。
+    """1-Wasserstein 距离 - 两经验分布间的地球移动距离。
 
     对于 1D 数据等价于排序后逐点差的绝对值和。
     """
@@ -65,7 +64,7 @@ class WassersteinRobustScheduler:
     """Wasserstein 分布鲁棒调度器。
 
     对每个任务维护执行时间的历史样本 (而非点估计)。
-    调度时在 Wasserstein 球的最坏分布上评估 makespan——
+    调度时在 Wasserstein 球的最坏分布上评估 makespan-
     等价于对经验样本施加对抗性扰动后取最坏 makespan。
     """
 
@@ -75,7 +74,7 @@ class WassersteinRobustScheduler:
         self._S = n_scenarios       # 场景采样数
         self._beta = robustness     # 真实分布在球外的概率上界
         self._rng = random.Random(seed)
-        # task_id → 历史执行时间列表
+        # task_id -> 历史执行时间列表
         self._task_samples: Dict[str, List[float]] = {}
 
     def add_sample(self, task_id: str, exec_time: float):
@@ -91,9 +90,9 @@ class WassersteinRobustScheduler:
         """Wasserstein 鲁棒调度。
 
         mode:
-          "robust"  — 对抗最坏分布的 makespan 最小化
-          "nominal" — 对经验均值使用 HEFT (基线)
-          "cvar"    — 对 top-α 最坏场景的 CVaR 最小化
+          "robust"  - 对抗最坏分布的 makespan 最小化
+          "nominal" - 对经验均值使用 HEFT (基线)
+          "cvar"    - 对 top-α 最坏场景的 CVaR 最小化
         """
         ids = dag.node_ids
         if not ids:
@@ -125,7 +124,7 @@ class WassersteinRobustScheduler:
                 best_order = order
 
         if mode == "cvar":
-            # CVaR: 对最坏 α 分位场景求均值 → 选择最小 CVaR 的 order
+            # CVaR: 对最坏 α 分位场景求均值 -> 选择最小 CVaR 的 order
             alpha = 0.2
             all_ms = []
             all_orders = []
@@ -151,7 +150,7 @@ class WassersteinRobustScheduler:
         }
 
     def _nominal_schedule(self, dag: TaskDependencyGraph) -> dict:
-        """经验均值调度 — HEFT 基线。"""
+        """经验均值调度 - HEFT 基线。"""
         sim = MakespanSimulator(self._M)
         # 用样本均值替换 exec_time
         dag_mean = self._mean_dag(dag)
@@ -179,7 +178,7 @@ class WassersteinRobustScheduler:
     def _perturb_dag(self, dag: TaskDependencyGraph,
                      radii: Dict[str, float],
                      adversarial: bool = True) -> TaskDependencyGraph:
-        """构造扰动 DAG — 每个任务的 exec_time 偏移 ±radius。"""
+        """构造扰动 DAG - 每个任务的 exec_time 偏移 ±radius。"""
         from copy import copy
         new_dag = TaskDependencyGraph()
         for nid in dag.node_ids:

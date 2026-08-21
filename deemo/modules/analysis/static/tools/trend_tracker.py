@@ -46,7 +46,7 @@ class TrendAnalysisResult:
     trends: List[VulnerabilityTrend] = field(default_factory=list)
     summary: Dict[str, Any] = field(default_factory=dict)
     anomalies: List[Dict[str, Any]] = field(default_factory=list)
-    archetype: str = "unknown"  # GHP 启发的行为——cold_start/early_burst/oscillator/taper
+    archetype: str = "unknown"  # GHP 启发的行为, cold_start/early_burst/oscillator/taper
 
 @dataclass
 class AnalysisRecord:
@@ -68,7 +68,7 @@ class AnalysisRecord:
 
 
 class EngagementArchetype:
-    """行为模式原型分类器——识别趋势序列所属的聚类原型
+    """行为模式原型分类器, 识别趋势序列所属的聚类原型
     Leiden 论文识别了五种模式：cold_start, early_burst, oscillator
     steady_taper, front_loaded
     """
@@ -108,7 +108,7 @@ class EngagementArchetype:
 
     @classmethod
     def risk_baseline(cls, archetype: str) -> float:
-        """每种原型的基线风险乘数——front_loaded 最高，cold_start 最低
+        """每种原型的基线风险乘数, front_loaded 最高，cold_start 最低
         数值来源于 Leiden 论文的 漏洞利用ation signal 对齐 数据
         """
         return {
@@ -121,7 +121,7 @@ class EngagementArchetype:
 
 
 class ShortWindowPredictor:
-    """短期窗口预测器——使用最近 N 个周期的特征预测趋势方向
+    """短期窗口预测器, 使用最近 N 个周期的特征预测趋势方向
     方法论移植自 Leiden 2025 的 GitHub PoC 预测框架
     发现 5-7 个周期的观测窗口足以产生可靠预测（Spearman >0.91）
     """
@@ -136,7 +136,7 @@ class ShortWindowPredictor:
         # 取最近 window 个周期
         recent = trends[-self._window:]
         values = [t.total_vulnerabilities for t in recent]
-        # 加权线性趋势——越近的周期权重越大
+        # 加权线性趋势, 越近的周期权重越大
         n = len(values)
         sum_x, sum_y, sum_xy, sum_x2 = 0.0, 0.0, 0.0, 0.0
         for i in range(n):
@@ -163,7 +163,7 @@ class ShortWindowPredictor:
 class TrendTracker(BaseAnalyzer):
     """
     Analysis results time-series tracker
-    
+
     存储 historical analysis results, 计算 漏洞 trends
     构造 trend 报告. 2025 升级: GHP 启发的短期预测+原型分类
     """

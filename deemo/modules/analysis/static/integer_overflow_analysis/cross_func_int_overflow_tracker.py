@@ -1,4 +1,4 @@
-"""跨函数整数溢出追踪 — callee 返回 tainted rax → 调用者 malloc 欠分配.
+"""跨函数整数溢出追踪 - callee 返回 tainted rax → 调用者 malloc 欠分配.
 
 问题: 函数A中 imul 结果未检查, 通过 rax 返回 → 调用者B直接传入 malloc.
 当前 binary_int_overflow_scanner 在 ret 时清除 taint, 错过此跨函数场景.
@@ -13,7 +13,7 @@ from ..heap_analysis.instruction_parser import InstructionParser, ParsedInstruct
 
 
 class CrossFuncIntOverflowTracker:
-    """跨函数整数溢出追踪 — 检测哪些函数通过 rax 返回溢出结果."""
+    """跨函数整数溢出追踪 - 检测哪些函数通过 rax 返回溢出结果."""
 
     def __init__(self):
         self._tainted_returns: Set[str] = set()

@@ -1,4 +1,4 @@
-# 弱随机数检测器 — 区块环境变量作为RNG来源
+# 弱随机数检测器 - 区块环境变量作为RNG来源
 # 从smart_contract_analyzer.py内联实现拆分
 from typing import List, FrozenSet
 from .base import BaseDetector
@@ -6,7 +6,7 @@ from ..core.models import VulnerabilityReport
 from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 
-_LEGACY_RNG_TRACE = True # 保留
+_LEGACY_RNG_TRACE = True
 
 # 遗留代码: v1版本的随机性评分
 # def _compute_randomness_score(self, ops):

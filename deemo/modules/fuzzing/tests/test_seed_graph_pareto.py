@@ -9,11 +9,11 @@
 import math
 import pytest
 
-from fuzzing.src.core import Seed
-from fuzzing.src.coverage import CoverageBitmap, encode_edge_id
-from fuzzing.src.scheduler import Scheduler
-from fuzzing.src.seed_relation_graph import SeedRelationGraph, SeedNode
-from fuzzing.src.pareto_archive import (
+from ..src.core import Seed
+from ..src.coverage import CoverageBitmap, encode_edge_id
+from ..src.scheduler import Scheduler
+from ..src.seed_relation_graph import SeedRelationGraph, SeedNode
+from ..src.pareto_archive import (
     ParetoArchive, ParetoEntry, _dominates, _non_dominated_sort,
 )
 

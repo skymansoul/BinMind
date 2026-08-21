@@ -1,6 +1,5 @@
 # 最终对比图表生成器 — 从统一CSV生成论文级图表.
 # 依赖: matplotlib
-# 创建: 2026-06-08
 
 import csv, os
 from pathlib import Path

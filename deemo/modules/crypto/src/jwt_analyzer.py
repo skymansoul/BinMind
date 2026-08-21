@@ -13,14 +13,13 @@ import hmac
 import hashlib
 import time
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
 
 @dataclass
 
-# 保留 -- 后续可能启用
+
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -52,7 +51,6 @@ _JWT_RE = re.compile(rb'[A-Za-z0-9\-_=]{20,}\.[A-Za-z0-9\-_=]{20,}\.[A-Za-z0-9\-
 
 def find_jwt_tokens(data: bytes) -> List[bytes]:
     """从二进制数据中提取 JWT token (ASCII + UTF-16LE)."""
-    # 不拆 -- 上下文连贯
     _found = []
     _seen = set()
 
@@ -78,7 +76,6 @@ def find_jwt_tokens(data: bytes) -> List[bytes]:
 
 def decode_jwt(token: bytes) -> JWTResult:
     """解码 JWT, 不验证签名."""
-    # 不拆 -- 上下文连贯
     _parts = token.split(b'.')
     if len(_parts) != 3:
         return JWTResult(valid=False, header={}, payload={}, raw_token=token)
@@ -105,7 +102,6 @@ def decode_jwt(token: bytes) -> JWTResult:
 
 def check_vulnerabilities(result: JWTResult) -> List[str]:
     """检测 JWT 常见漏洞, 返回描述列表."""
-    # 不拆 -- 上下文连贯
     _vulns = []
     _h = result.header
     _p = result.payload
@@ -162,7 +158,6 @@ def check_vulnerabilities(result: JWTResult) -> List[str]:
 
 def check_hmac_signature(token: bytes, secret: bytes) -> bool:
     """验证 HMAC 签名的 JWT."""
-    # 不拆 -- 上下文连贯
     _parts = token.split(b'.')
     if len(_parts) != 3:
         return False

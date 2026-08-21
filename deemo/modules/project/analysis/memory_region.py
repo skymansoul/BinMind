@@ -235,10 +235,9 @@ class MemoryWriteValidator:
                       base_reg_value_lo: int = 0,
                       base_reg_value_hi: int = 0
                       ) -> Tuple[bool, MemoryAccessInfo]:
-        """判定内存写入是否针对堆区域.
+        """判定内存写入是否针对堆区域。
 
-        Returns:
-          (is_heap_write, access_info) — True表示应继续传递给检测管道
+        返回 (is_heap_write, access_info) — True表示应继续传递给检测管道。
         """
         info = self._resolver.resolve_syntactic(dst_operand)
 

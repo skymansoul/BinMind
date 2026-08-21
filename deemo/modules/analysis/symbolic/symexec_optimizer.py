@@ -1,19 +1,18 @@
-"""符号执行 优化器: control-plane 调度器
+"""符号执行优化器: 控制面调度器。
 
-SymExec优化器 composite 入口 wires together
-优化 passes. individual 优化 passes live
-src.symexec_opt_passes 包含:
-- ConstraintSolver缓存(two-tier memory + disk缓存)
-- IncrementalSolver缓存(Z3 push/pop incremental solving)
-- PathPruner (loop-bound, similarity, 覆盖率-guided pruning)
-- ConstraintSimplifier (dedup, arithmetic, CSE, contradiction removal)
-- 并行Solver (thread-池 solver auto-scaling 性能分析)
-- ConstraintComplexityEstimator (pre-solve time prediction)
-- 优化流水线 (配置urable DAG: Simplify -> CSE -> 缓存-> Solve)
-- SolverBudgetManager (global solver time budget token bucket)
+SymExecOptimizer 作为组合入口串起各优化 pass, 具体 pass 位于
+src.symexec_opt_passes:
+- ConstraintSolverCache (内存 + 磁盘两级缓存)
+- IncrementalSolverCache (Z3 push/pop 增量求解)
+- PathPruner (循环界、相似度、覆盖率引导剪枝)
+- ConstraintSimplifier (去重、算术化简、CSE、矛盾移除)
+- ParallelSolver (线程池求解器自动扩缩与性能分析)
+- ConstraintComplexityEstimator (求解前耗时预测)
+- 优化流水线 (可配置 DAG: Simplify -> CSE -> cache -> Solve)
+- SolverBudgetManager (全局求解时间预算令牌桶)
 
-module retains SymExec优化器 调度器 re-exports
-public names symexec_opt_passes for backward 兼容性
+本模块保留 SymExecOptimizer 调度器, 并从 symexec_opt_passes
+再导出公共名称以保持向后兼容。
 """
 
 import logging
@@ -44,7 +43,7 @@ from .src.symexec_opt_passes import (
 
 logger = logging.getLogger(__name__)
 
-# Default 配置 for 优化器
+# 优化器默认配置
 
 DEFAULT_CONFIG = {
     'cache_enabled': True,
@@ -72,18 +71,18 @@ DEFAULT_CONFIG = {
 }
 
 
-# SymExec优化器 — top-level control-plane 调度器
+# SymExecOptimizer — 顶层控制面调度器
 
 class SymExecOptimizer:
-    """Composite 优化器: wires缓存, pruner, simplifier, 并行
-    solver a single interface for 符号执行 流水线
-    
-    增强 — 可选 IncrementalSolverCache 用于增量求解场景；
-    可选 hotspot profiling 用于识别高耗时的约束类别；
-    可选 adaptive pruning 根据内存压力动态调整路径上限
-    
-    四轮增强 — 集成 ConstraintComplexityEstimator、优化流水线、
-    SolverBudgetManager，提供求解前预测、管道化执行和全局预算控制
+    """组合优化器: 把缓存、剪枝器、化简器与并行求解器接成
+    符号执行流水线的单一接口。
+
+    增强: 可选 IncrementalSolverCache 用于增量求解场景; 可选
+    hotspot profiling 识别高耗时约束类别; 可选 adaptive pruning
+    根据内存压力动态调整路径上限。
+
+    四轮增强: 集成 ConstraintComplexityEstimator、优化流水线、
+    SolverBudgetManager, 提供求解前预测、管道化执行与全局预算控制。
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -146,22 +145,16 @@ class SymExecOptimizer:
         logger.info("[SymExecOptimizer] Symbolic execution optimizer initialized")
 
     def optimize_solve(self, constraints: List[Any]) -> Optional[Dict[str, Any]]:
-        """Simplify constraints, solve 缓存"""
+        """化简约束后经缓存求解。"""
         if self.config.get('simplify_constraints', True):
             constraints = self.simplifier.simplify(constraints)
         return self.parallel_solver._solve_with_cache(constraints)
 
     def optimize_solve_pipeline(self, constraints: List[Any]) -> Tuple[Optional[Dict[str, Any]], List[PassResult]]:
-        """执行 full 优化 流水线: Simplify -> CSE -> 缓存-> Solve
-        
-        四轮增强 — 通过 OptimizationPipeline 执行完整的优化通道
-        返回求解结果和各阶段耗时明细
-        
-        Args:
-        constraints: 待求解的约束列表
-        
-        返回:
-        (result_dict, pass_results_list)
+        """执行完整优化流水线: Simplify -> CSE -> cache -> Solve。
+
+        四轮增强: 通过 OptimizationPipeline 执行全部优化通道,
+        返回求解结果与各阶段耗时明细。
         """
         return self.pipeline.execute(constraints)
 
@@ -169,10 +162,10 @@ class SymExecOptimizer:
         base_constraints: List[Any],
         new_constraints: List[Any]
     ) -> Dict[str, Any]:
-        """增量求解：在 base_constraints 上追加 new_constraints
-        
-        仅在配置 incremental_solving=True 且 缓存为 IncrementalSolver缓存时有效
-        否则回退为全量求解 + 缓存查找
+        """增量求解: 在 base_constraints 上追加 new_constraints。
+
+        仅在配置 incremental_solving=True 且缓存为
+        IncrementalSolverCache 时有效, 否则回退为全量求解 + 缓存查找。
         """
         if isinstance(self.cache, IncrementalSolverCache):
             simplified_base = (self.simplifier.simplify(base_constraints)
@@ -188,11 +181,11 @@ class SymExecOptimizer:
             return self.parallel_solver._solve_with_cache(combined) or {}
 
     def should_prune_path(self, path_info: PathInfo) -> Tuple[bool, str]:
-        """Delegate pruner"""
+        """委托给 pruner 判断。"""
         return self.pruner.should_prune(path_info)
 
     def get_optimization_stats(self) -> Dict[str, Any]:
-        """Aggregate stats sub-components"""
+        """聚合各子组件的统计。"""
         stats: Dict[str, Any] = {
             'cache': self.cache.get_stats(),
             'pruning': self.pruner.get_stats().__dict__,
@@ -207,28 +200,26 @@ class SymExecOptimizer:
         return stats
 
     def profile_hotspots(self) -> Optional[Dict[str, Any]]:
-        """手动触发求解器热点分析报告
-        
-        返回:
-        {'hotspots': [(category, avg_time, count, total_time),.], 'total_queries': int}
-        如果采样窗口未满则返回 None
+        """手动触发求解器热点分析报告。
+
+        返回 {'hotspots': [(category, avg_time, count, total_time), ...],
+        'total_queries': int}, 采样窗口未满时返回 None。
         """
         return self.parallel_solver.profile_solver_hotspots()
 
     def cleanup(self) -> None:
-        """Clear缓存, shut down solver 池, 停止 budget manager"""
+        """清空缓存, 关闭求解器线程池, 停止预算管理器。"""
         self.budget_manager.stop()
         self.cache.clear()
         self.parallel_solver.shutdown()
 
 
 def create_optimizer(config: Optional[Dict[str, Any]] = None) -> SymExecOptimizer:
-    """工厂 for SymExec优化器 optional 配置 override"""
+    """SymExecOptimizer 工厂, 可用配置覆盖默认值。"""
     return SymExecOptimizer(config)
 
 
-# Backward-compatible re-exports: name old __all__
-# importable symexec_优化器 exactly
+# 向后兼容再导出: 旧模块名下的 __all__ 仍可按原名导入
 
 __all__ = [
     # Control plane

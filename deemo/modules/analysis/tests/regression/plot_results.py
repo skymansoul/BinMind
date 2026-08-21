@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-23 11:00 - 初始创建: matplotlib柱状图绘制, 对比工具检出率/误报率/耗时
+# 初始创建: matplotlib柱状图绘制, 对比工具检出率/误报率/耗时
 
-"""实验结果可视化 — matplotlib柱状图: 各工具检出率/误报率/平均耗时对比"""
+"""实验结果可视化 - matplotlib柱状图: 各工具检出率/误报率/平均耗时对比"""
 
 import json
 from pathlib import Path

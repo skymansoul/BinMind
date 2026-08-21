@@ -1,4 +1,4 @@
-"""WASI沙箱分析——扫描WASM导入及宿主边界，识别逃逸路径。"""
+"""WASI沙箱分析: 扫描WASM导入及宿主边界, 识别逃逸路径。"""
 import logging, os, re, subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List
@@ -13,7 +13,7 @@ class WASMImport: module:str=""; function:str=""; signature:str=""; is_dangerous
 class EscapeRisk: type:str=""; severity:str=""; description:str=""; proof_of_concept:str=""
 
 class WASISandboxAnalyzer:
-    DANGEROUS_IMPORTS={"wasi_snapshot_preview1":{"fd_write":"写入任意文件描述符","fd_read":"读取任意fd","fd_seek":"文件指针操作","path_open":"路径打开——文件系统逃逸主向量","sock_send":"网络发送","sock_recv":"网络接收","proc_exec":"进程执行——最高危WASI能力","proc_raise":"信号发送"},"env":{"getenv":"环境变量读取"},"unknown":{"system":"系统调用","mmap":"内存映射","munmap":"内存释放"}}
+    DANGEROUS_IMPORTS={"wasi_snapshot_preview1":{"fd_write":"写入任意文件描述符","fd_read":"读取任意fd","fd_seek":"文件指针操作","path_open":"路径打开——文件系统逃逸主向量","sock_send":"网络发送","sock_recv":"网络接收","proc_exec":"进程执行: 最高危WASI能力","proc_raise":"信号发送"},"env":{"getenv":"环境变量读取"},"unknown":{"system":"系统调用","mmap":"内存映射","munmap":"内存释放"}}
     _ESCAPE_CHAINS=[(("path_open","fd_write"),"CRITICAL","path_open+fd_write→写入沙箱外任意文件"),(("path_open","fd_read"),"HIGH","path_open+fd_read→读取沙箱外任意文件"),(("sock_open","sock_connect"),"HIGH","sock_open+sock_connect→C2通道建立"),(("fd_read","sock_send"),"CRITICAL","fd_read+sock_send→本地文件外泄"),(("proc_exec","path_open"),"CRITICAL","proc_exec+path_open→执行沙箱外程序")]
 
     def __init__(s,wp=""): s.wasm_path=os.path.abspath(wp) if wp else ""
@@ -55,7 +55,7 @@ class WASISandboxAnalyzer:
         if st!="unknown": lr.append(EscapeRisk("sandbox_fingerprint","INFO",f"推断WASI运行时:{st}"))
         # 资源耗尽: poll_oneoff密集+sock_open多路 → DoS攻击面
         if 'poll_oneoff' in dfs and len([i for i in li if 'sock' in i.function])>2:
-            lr.append(EscapeRisk("resource_exhaustion","MEDIUM","poll_oneoff+多socket——资源耗尽型DoS攻击面"))
+            lr.append(EscapeRisk("resource_exhaustion","MEDIUM","poll_oneoff+多socket: 资源耗尽型DoS攻击面"))
         return lr
 
     def run(s)->dict:
@@ -70,7 +70,7 @@ def analyze_wasi_sandbox(wp:str="")->dict:
 
 # 保留: 调试空操作占位
 
-# 不拆: WASI运行时指纹缓存——免去重复r2调用
+
 _WASI_RUNTIME_CACHE: dict = {}
 
 def _dead_wasm_bubble_sort(arr):

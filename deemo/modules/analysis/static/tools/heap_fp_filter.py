@@ -1,6 +1,6 @@
-# 堆溢出误报过滤器 — 组合来源追踪+对齐归一化, 系统性地压低误报率
+# 堆溢出误报过滤器, 组合来源追踪+对齐归一化, 系统性地压低误报率
 # 核心创新: 仅当 (1)写目标与分配来自同一malloc AND (2)写入超出对齐后有效大小 → 才报告
-# 方法论依据: Cross-Domain Sparse Abstract Execution — 值域交叉验证降低96.63%误报
+# 方法论依据: Cross-Domain Sparse Abstract Execution, 值域交叉验证降低96.63%误报
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -28,7 +28,7 @@ class FilteredFinding:
     reason: str = ''
 
 class HeapFalsePositiveFilter:
-    """组合过滤器——系统性地压低堆溢出误报
+    """组合过滤器, 系统性地压低堆溢出误报
 
     三层过滤:
       1. 来源过滤: 写目标与分配是否来自同一个 malloc (provenance track)
@@ -76,12 +76,10 @@ class HeapFalsePositiveFilter:
 
     def check_write(self, write_addr: int, write_size: int,
                     dst_reg: str, asm_context: str = '') -> FilteredFinding:
-        """检查一次堆写入是否为真正的溢出
+        """检查一次堆写入是否为真正的溢出。
 
-        dst_reg: 写入目标地址所在的寄存器
-        asm_context: 周围的汇编文本 (用于安全检查检测)
-
-        返回: FilteredFinding
+        dst_reg 为写入目标地址所在的寄存器, asm_context 为周围
+        的汇编文本 (用于安全检查检测); 返回 FilteredFinding。
         """
         # 层1: 来源过滤
         origin = self._tracker.get_origin(dst_reg)
@@ -140,4 +138,4 @@ class HeapFalsePositiveFilter:
     def _extract_immediate(text: str, arg_idx: int) -> int:
         import re
         # 找 call 前的 mov rdi, const
-        return -1  # 简化实现——const提取由heap_overflow_detector负责
+        return -1  # 简化实现, const提取由heap_overflow_detector负责

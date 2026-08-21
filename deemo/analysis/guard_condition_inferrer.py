@@ -184,16 +184,8 @@ class GuardConditionInferrer:
     ) -> bool:
         """检查守卫是否支配写入操作, 并保证写入安全。
 
-        简单的后继检查: 守卫行 < 写入行 (在同一个基本块内)。
-
-        Args:
-            guard: 守卫条件集
-            write_line: 写入操作的行号
-            write_var: 写入偏移的变量名
-            alloc_size: 分配大小
-
-        Returns:
-            True 如果守卫能证明写入在分配范围内
+        简单的后继检查: 守卫行 < 写入行 (同一基本块内);
+        True 表示守卫能证明写入在分配范围内。
         """
         if guard.line >= write_line:
             return False

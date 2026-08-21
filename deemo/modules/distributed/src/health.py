@@ -13,7 +13,6 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Callable, Optional
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -39,7 +38,7 @@ class HealthStatus(enum.Enum):
 # 单项健康检查
 
 class HealthCheck:
-    """单个健康检查项 — 封装名称、检测函数及最近结果。"""
+    """单个健康检查项 - 封装名称、检测函数及最近结果。"""
 
     __slots__ = ('name', 'check_fn', 'last_result', 'last_run')
 
@@ -65,7 +64,7 @@ _START_TIME = time.time()
 
 
 class _HealthHandler(BaseHTTPRequestHandler):
-    """内联 handler — 通过 self.server.parent 访问外层 HealthServer 实例"""
+    """内联 handler - 通过 self.server.parent 访问外层 HealthServer 实例"""
 
     def log_message(self, format, *args):
         pass  # 静默，避免日志污染 stderr
@@ -126,7 +125,6 @@ class _HealthHandler(BaseHTTPRequestHandler):
 
     def _handle_metrics(self, server: 'HealthServer'):
         # 输出 Prometheus text 格式
-        # 不拆——保持上下文连贯性，拆了反而难读
         server_uptime = time.time() - _START_TIME
         lines = [
             "# HELP binmind_uptime_seconds Server uptime in seconds",
@@ -160,9 +158,9 @@ class HealthServer:
     """零依赖健康检查 HTTP 服务。
 
     端点：
-    - /health → 整体健康状态 + 各子项检查结果
-    - /ready → K8s readiness probe（阈值高于 liveness）
-    - /metrics → Prometheus text 格式（聚合内置指标 + 外部 metrics 模块）
+    - /health -> 整体健康状态 + 各子项检查结果
+    - /ready -> K8s readiness probe（阈值高于 liveness）
+    - /metrics -> Prometheus text 格式（聚合内置指标 + 外部 metrics 模块）
 
     示例:
         server = HealthServer(port=9090)

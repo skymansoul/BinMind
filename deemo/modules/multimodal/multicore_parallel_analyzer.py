@@ -192,7 +192,7 @@ class TaskPartitioner:
 
     def partition(self, tasks: List[AnalysisTask],
                   num_workers: int) -> List[List[AnalysisTask]]:
-        # 上下文连贯，不拆分
+
         tasks_sorted = sorted(tasks, key=lambda t: t.estimated_seconds, reverse=True)
         buckets = [[] for _ in range(num_workers)]
         bucket_loads = [0.0] * num_workers
@@ -241,10 +241,9 @@ class TaskPartitioner:
         return _queues
 
     def topological_layers(self, tasks: List[AnalysisTask]) -> List[List[AnalysisTask]]:
-        # 2026-08-02 重写拓扑排序——原实现中 in_degree 用依赖名称做 key，
+        # 重写拓扑排序：原实现中 in_degree 用依赖名称做 key，
         # 但判断时却以 task_id 查 dict，两个命名空间不一致导致依赖解析紊乱。
         # 现在显式维护 task_id→[后继task_id] 邻接表，统一使用 task_id 做 in_degree key。
-        # 之前能跑通纯因 dep 和 task_id 恰好同值。
         task_id_set = {t.task_id for t in tasks}
         in_degree: Dict[str, int] = {t.task_id: 0 for t in tasks}
         adj: Dict[str, List[str]] = {t.task_id: [] for t in tasks}

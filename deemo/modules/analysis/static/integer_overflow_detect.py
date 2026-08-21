@@ -19,8 +19,8 @@
 #   3. 常见模式: malloc(a * b) 若无溢出检查 → 报告.
 #      malloc(a + b) 若 a 和 b 均可控 → 报告.
 #
-# 创建: 2026-05-19
-# 修改: 2026-05-19 — 实参寄存器解析, 适配 objdump 指令格式
+
+# 实参寄存器解析, 适配 objdump 指令格式
 
 import re
 from typing import Dict, List, Optional, Tuple
@@ -32,7 +32,7 @@ _SYSV_ARGS = ("rdi", "rsi", "rdx", "rcx", "r8", "r9")
 
 
 class IntegerOverflowDetector(IntOverflowGuardMixin):
-    """整数溢出检测器 — 安全上下文感知.
+    """整数溢出检测器 - 安全上下文感知.
 
     只报告可能被用于内存操作的溢出, 忽略纯计算溢出.
     """
@@ -289,11 +289,6 @@ class IntegerOverflowDetector(IntOverflowGuardMixin):
         self._instructions = []
         self._ins_idx = 0
         self._jno_targets.clear()
-
-    @staticmethod
-
-
-    @staticmethod
 
     @staticmethod
     def _normalize(op: str) -> str:

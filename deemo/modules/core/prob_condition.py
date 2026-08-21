@@ -1,7 +1,6 @@
 # coding: utf-8
-# 创建: 2026-04-15  修改: 2026-07-31 (Thompson采样+动态阈值)
 """
-概率条件执行 — 二值条件 → 贝叶斯信念驱动的软阈值调度.
+概率条件执行 - 二值条件 -> 贝叶斯信念驱动的软阈值调度.
 
 管道中的 condition 函数是确定性二值谓词, 但 "是否需要执行某钩子" 本身
 随上下文变化: 虚表恢复对纯 C 二进制几乎无产出, ARM64 小二进制上密码参数
@@ -26,7 +25,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 @dataclass
 class BetaBelief:
-    """Beta(α, β) 分布 — 共轭先验下的信念状态.
+    """Beta(α, β) 分布 - 共轭先验下的信念状态.
 
     均值 = α / (α + β), 方差 = αβ / ((α+β)²(α+β+1))
     """
@@ -159,14 +158,14 @@ class ProbConditionModel:
 
 
 class ProbCondition:
-    """概率条件包装 — 将传统的二值 condition(context)→bool 升级为概率决策.
+    """概率条件包装 - 将传统的二值 condition(context)→bool 升级为概率决策.
 
     三层决策逻辑:
       1. 若确定性 condition 返回 False → 直接跳过 (保留原始语义)
       2. 否则从信念模型中采样, 按阈值判定:
-         - sampled_prob < θ_skip → 跳过 (概率性节省)
-         - sampled_prob > θ_force → 执行  (高价值钩子)
-         - 中间 → 以 P=sampled_prob 的概率执行 (exploration)
+         - sampled_prob < θ_skip -> 跳过 (概率性节省)
+          - sampled_prob > θ_force -> 执行  (高价值钩子)
+          - 中间 -> 以 P=sampled_prob 的概率执行 (exploration)
 
     θ_skip 和 θ_force 随模型的精度动态调整:
       精度低 (等效样本量 < 10) → 缩小跳过区间, 加大探索
@@ -194,7 +193,7 @@ class ProbCondition:
 
         返回 True/False, 可被 HookDAG 的 condition 字段直接消费.
         """
-        # 第 1 层: 确定性条件 — 保留程序员意图
+        # 第 1 层: 确定性条件 - 保留程序员意图
         if self.base_condition is not None and not self.base_condition(context):
             return False
 
@@ -228,9 +227,9 @@ class ProbCondition:
         """钩子执行完毕后调用, 报告产出质量.
 
         reward 建议值:
-          1.0 — 产出关键发现 (漏洞、重要配置、可利用点)
-          0.5 — 产出常规信息
-          0.0 — 无产出或纯噪声
+          1.0 - 产出关键发现 (漏洞、重要配置、可利用点)
+          0.5 - 产出常规信息
+          0.0 - 无产出或纯噪声
         """
         features = self._feature_extractor(context)
         self.model.update(self.hook_name, reward, features)
@@ -277,7 +276,7 @@ class RewardEstimator:
         new_keys = set(output) - (prev_context_keys or set())
         novelty_score = len(new_keys) / max(1, total_keys) if total_keys > 0 else 0.0
 
-        # 体积分: 用序列化长度的 sigmoid 函数 — 10~10000 字符区间线性映射
+        # 体积分: 用序列化长度的 sigmoid 函数 - 10~10000 字符区间线性映射
         try:
             raw_len = len(str(output))
         except Exception:

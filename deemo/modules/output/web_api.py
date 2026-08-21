@@ -30,7 +30,7 @@ except ImportError:
 
 
 if FASTAPI_AVAILABLE:
-    
+
     class AnalysisRequest(BaseModel):
         """分析请求参数体"""
         binary_name: str = Field(..., description="二进制文件名")
@@ -43,7 +43,7 @@ if FASTAPI_AVAILABLE:
         fuzzer_type: Optional[str] = Field(None, description="Fuzzer 类型: libfuzzer, afl")
         expert_mode: bool = Field(False, description="专家模式")
         report_formats: List[str] = Field(default_factory=lambda: ['md', 'html'], description="报告格式")
-        
+
         class Config:
             schema_extra = {
                 "example": {
@@ -58,7 +58,7 @@ if FASTAPI_AVAILABLE:
                     "report_formats": ["md", "html", "json"]
                 }
             }
-    
+
     class VulnerabilityQuery(BaseModel):
         """漏洞查询过滤条件"""
         vulnerability_type: Optional[str] = Field(None, description="漏洞类型")
@@ -68,7 +68,7 @@ if FASTAPI_AVAILABLE:
         severity: Optional[str] = Field(None, description="严重程度")
         limit: int = Field(20, ge=1, le=100, description="返回数量限制")
         offset: int = Field(0, ge=0, description="偏移量")
-    
+
     class AnalysisTaskStatus(BaseModel):
         """分析任务状态快照"""
         task_id: str
@@ -78,42 +78,34 @@ if FASTAPI_AVAILABLE:
         progress: int
         message: Optional[str]
         result: Optional[Dict[str, Any]]
-    
+
     class APIResponse(BaseModel):
         """统一 API 应答信封"""
         success: bool
         message: Optional[str]
         data: Optional[Any]
-    
-    
+
+
     class AnalysisTaskManager:
         """
         分析任务调度器。
 
         管理异步分析任务的创建、执行与状态追踪。
         """
-        
+
         def __init__(self, tasks_dir: str = None):
             self.tasks: Dict[str, Dict[str, Any]] = {}
             self.tasks_dir = tasks_dir or os.path.join(Config.DATA_DIR, 'api_tasks')
             self._ensure_tasks_dir()
-        
+
         def _ensure_tasks_dir(self):
             if not os.path.exists(self.tasks_dir):
                 os.makedirs(self.tasks_dir, exist_ok=True)
-        
+
         def create_task(self, request: AnalysisRequest) -> str:
-            """
-            新建分析任务并持久化。
-
-            Args:
-                request: 分析请求参数
-
-            Returns:
-                UUID 任务标识
-            """
+            """新建分析任务并持久化。"""
             task_id = str(uuid.uuid4())
-            
+
             task = {
                 'task_id': task_id,
                 'status': 'pending',
@@ -124,18 +116,18 @@ if FASTAPI_AVAILABLE:
                 'request': request.dict(),
                 'result': None
             }
-            
+
             self.tasks[task_id] = task
             self._save_task(task_id, task)
-            
+
             logger.info(f"[TaskManager] 创建分析任务: {task_id}")
             return task_id
-        
+
         def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
             """按 ID 检索任务；内存未命中则回退磁盘加载。"""
             if task_id in self.tasks:
                 return self.tasks[task_id]
-            
+
             task_file = os.path.join(self.tasks_dir, f"{task_id}.json")
             if os.path.exists(task_file):
                 try:
@@ -144,9 +136,9 @@ if FASTAPI_AVAILABLE:
                         return json.load(f)
                 except (OSError, json.JSONDecodeError):  # 异常窄化: bare except → OSError/JSONDecodeError
                     pass
-            
+
             return None
-        
+
         def update_task(self, task_id: str, **kwargs) -> bool:
             """合并更新任务字段并写回持久化存储。"""
             if task_id not in self.tasks:
@@ -155,14 +147,14 @@ if FASTAPI_AVAILABLE:
                     self.tasks[task_id] = task
                 else:
                     return False
-            
+
             task = self.tasks[task_id]
             task.update(kwargs)
             task['updated_at'] = datetime.now().isoformat()
-            
+
             self._save_task(task_id, task)
             return True
-        
+
         def _save_task(self, task_id: str, task: Dict[str, Any]):
             """JSON 序列化任务至磁盘文件。"""
             import json
@@ -172,11 +164,11 @@ if FASTAPI_AVAILABLE:
                     json.dump(task, f, indent=2, ensure_ascii=False)
             except Exception as e:
                 logger.warning(f"[TaskManager] 保存任务失败: {e}")
-        
+
         def list_tasks(self, status: str = None, limit: int = 100) -> List[Dict[str, Any]]:
             """枚举任务清单，支持按状态过滤。"""
             result = []
-            
+
             for task_id, task in self.tasks.items():
                 if status and task.get('status') != status:
                     continue
@@ -188,33 +180,27 @@ if FASTAPI_AVAILABLE:
                     'progress': task.get('progress', 0),
                     'binary_name': task.get('request', {}).get('binary_name', 'Unknown')
                 })
-            
+
             result.sort(key=lambda x: x['created_at'], reverse=True)
             return result[:limit]
-    
-    
-    task_manager = AnalysisTaskManager()
-    
-    
-    def run_analysis_task(task_id: str, request: AnalysisRequest):
-        """
-        后台执行完整分析流水线：收集→反编译→检查→产出报告。
 
-        Args:
-            task_id: 任务标识
-            request: 分析请求参数
-        """
+
+    task_manager = AnalysisTaskManager()
+
+
+    def run_analysis_task(task_id: str, request: AnalysisRequest):
+        """后台执行完整分析流水线：收集→反编译→检查→产出报告。"""
         from modules.output.report import ReportGenerator
-        
+
         logger.info(f"[TaskRunner] 开始执行任务: {task_id}")
-        
+
         try:
             task_manager.update_task(task_id, status='running', progress=5, message='正在初始化分析...')
-            
+
             reports_dir = os.path.join(task_manager.tasks_dir, task_id, 'reports')
             if not os.path.exists(reports_dir):
                 os.makedirs(reports_dir, exist_ok=True)
-            
+
             # 上传目录优先, 其次 binary_name 本身视为路径
             binary_path = os.path.join(
                 task_manager.tasks_dir, 'uploads', request.binary_name)
@@ -319,9 +305,9 @@ if FASTAPI_AVAILABLE:
                     'reports': report_paths
                 }
             )
-            
+
             logger.info(f"[TaskRunner] 任务完成: {task_id}")
-            
+
         except Exception as e:
             logger.error(f"[TaskRunner] 任务执行失败: {e}")
             task_manager.update_task(
@@ -330,15 +316,10 @@ if FASTAPI_AVAILABLE:
                 progress=100,
                 message=f'分析失败: {str(e)}'
             )
-    
-    
-    def create_app() -> FastAPI:
-        """
-        构造带完整路由挂载的 FastAPI 实例。
 
-        Returns:
-            预配置的 FastAPI 应用对象
-        """
+
+    def create_app() -> FastAPI:
+        """构造带完整路由挂载的 FastAPI 实例。"""
         app = FastAPI(
             title="Deemo LLM 二进制漏洞分析 API",
             description="REST API 服务，用于二进制漏洞分析的团队协作",
@@ -346,9 +327,9 @@ if FASTAPI_AVAILABLE:
             docs_url="/docs",
             redoc_url="/redoc"
         )
-        
+
         origins = os.getenv('CORS_ORIGINS', '*').split(',')
-        
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
@@ -356,12 +337,12 @@ if FASTAPI_AVAILABLE:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
         @app.on_event("startup")
         async def startup_event():
             logger.info("[WebAPI] API 服务启动中...")
             os.makedirs(Config.DATA_DIR, exist_ok=True)
-        
+
         @app.get("/")
         async def root():
             """根路径 — 服务状态快照"""
@@ -381,7 +362,7 @@ if FASTAPI_AVAILABLE:
                     "cache_stats": "/api/cache/stats"
                 }
             }
-        
+
         @app.get("/api/health")
         async def health_check():
             """存活探针：返回服务运行状态。"""
@@ -390,7 +371,7 @@ if FASTAPI_AVAILABLE:
                 "timestamp": datetime.now().isoformat(),
                 "uptime": "unknown"
             }
-        
+
         @app.post("/api/analyze", response_model=APIResponse)
         async def submit_analysis(
             request: AnalysisRequest,
@@ -400,18 +381,11 @@ if FASTAPI_AVAILABLE:
             提交异步分析请求。
 
             创建任务即返回；任务由 BackgroundTasks 异步调度执行。
-
-            Args:
-                request: 分析请求体
-                background_tasks: FastAPI 后台任务队列
-
-            Returns:
-                含 task_id 的应答
             """
             try:
                 task_id = task_manager.create_task(request)
                 background_tasks.add_task(run_analysis_task, task_id, request)
-                
+
                 return APIResponse(
                     success=True,
                     message="分析任务已提交",
@@ -424,45 +398,36 @@ if FASTAPI_AVAILABLE:
             except Exception as e:
                 logger.error(f"[WebAPI] 提交分析任务失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @app.post("/api/analyze/upload")
         async def upload_and_analyze(
             file: UploadFile = File(...),
             background_tasks: BackgroundTasks = None
         ):
-            """
-            上传二进制 → SHA-256 校验 → 入队分析任务。
-
-            Args:
-                file: 上传的二进制文件流
-                background_tasks: 后台任务调度器
-
-            Returns:
-                含 task_id 与 file_hash 的应答
-            """
+            """上传二进制 → SHA-256 校验 → 入队分析任务。"""
             try:
                 upload_dir = os.path.join(task_manager.tasks_dir, 'uploads')
                 os.makedirs(upload_dir, exist_ok=True)
-                
+
                 file_hash = hashlib.sha256()
                 file_path = os.path.join(upload_dir, file.filename)
-                
+
                 with open(file_path, 'wb') as f:
                     while chunk := await file.read(8192):
                         file_hash.update(chunk)
                         f.write(chunk)
-                
+
                 hex_hash = file_hash.hexdigest()
-                
+
                 request = AnalysisRequest(
                     binary_name=file.filename,
                     binary_hash=hex_hash,
                     report_formats=['md', 'html', 'json']
                 )
-                
+
                 task_id = task_manager.create_task(request)
                 background_tasks.add_task(run_analysis_task, task_id, request)
-                
+
                 return APIResponse(
                     success=True,
                     message="文件已上传，分析任务已提交",
@@ -476,19 +441,10 @@ if FASTAPI_AVAILABLE:
             except Exception as e:
                 logger.error(f"[WebAPI] 文件上传失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @app.get("/api/tasks")
         async def list_tasks(status: str = None, limit: int = 100):
-            """
-            列举已提交的分析任务。
-
-            Args:
-                status: 按状态过滤 (pending/running/completed/failed)
-                limit: 最大返回条目数
-
-            Returns:
-                任务列表与计数
-            """
+            """列举已提交的分析任务。"""
             try:
                 tasks = task_manager.list_tasks(status=status, limit=limit)
                 return APIResponse(
@@ -499,74 +455,50 @@ if FASTAPI_AVAILABLE:
             except Exception as e:
                 logger.error(f"[WebAPI] 列出任务失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @app.get("/api/tasks/{task_id}")
         async def get_task_status(task_id: str):
-            """
-            按 ID 拉取单个任务的状态与结果载荷。
-
-            Args:
-                task_id: 任务标识
-
-            Returns:
-                含完整任务数据的应答
-            """
+            """按 ID 拉取单个任务的状态与结果载荷。"""
             task = task_manager.get_task(task_id)
-            
+
             if not task:
                 raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
-            
+
             return APIResponse(
                 success=True,
                 message="任务状态",
                 data=task
             )
-        
+
         @app.delete("/api/tasks/{task_id}")
         async def cancel_task(task_id: str):
-            """
-            标记任务为已取消。
-
-            Args:
-                task_id: 任务标识
-
-            Returns:
-                确认应答
-            """
+            """标记任务为已取消。"""
             task = task_manager.get_task(task_id)
-            
+
             if not task:
                 raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
-            
+
             task_manager.update_task(task_id, status='cancelled', message='任务已取消')
-            
+
             return APIResponse(
                 success=True,
                 message="任务已取消",
                 data={"task_id": task_id}
             )
-        
+
         @app.get("/api/reports/{task_id}")
         async def list_reports(task_id: str):
-            """
-            枚举某任务产出的所有报告文件及格式。
-
-            Args:
-                task_id: 任务标识
-
-            Returns:
-                报告清单与下载入口
-            """
+            """枚举某任务产出的所有报告文件及格式。"""
             task = task_manager.get_task(task_id)
-            
+
             if not task:
                 raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
-            
+
             if task.get('status') != 'completed':
                 raise HTTPException(status_code=400, detail="任务尚未完成")
-            
+
             reports = task.get('result', {}).get('reports', {})
-            
+
             return APIResponse(
                 success=True,
                 message="报告列表",
@@ -582,37 +514,28 @@ if FASTAPI_AVAILABLE:
                     ]
                 }
             )
-        
+
         @app.get("/api/reports/{task_id}/{format}")
         async def download_report(task_id: str, format: str):
-            """
-            以 FileResponse 流式下发指定格式的报告文件。
-
-            Args:
-                task_id: 任务标识
-                format: 报告格式 (md, json, html, pdf)
-
-            Returns:
-                FileResponse 流
-            """
+            """以 FileResponse 流式下发指定格式的报告文件。"""
             task = task_manager.get_task(task_id)
-            
+
             if not task:
                 raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
-            
+
             reports = task.get('result', {}).get('reports', {})
-            
+
             if format not in reports:
                 raise HTTPException(
                     status_code=404, 
                     detail=f"格式 {format} 的报告不存在。可用格式: {list(reports.keys())}"
                 )
-            
+
             report_path = reports[format]
-            
+
             if not os.path.exists(report_path):
                 raise HTTPException(status_code=404, detail="报告文件不存在")
-            
+
             media_types = {
                 'md': 'text/markdown',
                 'json': 'application/json',
@@ -620,37 +543,29 @@ if FASTAPI_AVAILABLE:
                 'pdf': 'application/pdf',
                 'sarif': 'application/sarif+json'
             }
-            
+
             return FileResponse(
                 path=report_path,
                 filename=os.path.basename(report_path),
                 media_type=media_types.get(format, 'application/octet-stream')
             )
-        
+
         @app.post("/api/vulnerabilities")
         async def query_vulnerabilities(query: VulnerabilityQuery):
-            """
-            按多种维度检索本地漏洞数据库。
-
-            Args:
-                query: 过滤条件组合
-
-            Returns:
-                匹配的漏洞记录数组
-            """
+            """按多种维度检索本地漏洞数据库。"""
             try:
                 from modules.vuln.vuln_db import VulnerabilityDatabase
-                
+
                 db = VulnerabilityDatabase()
                 results = []
-                
+
                 if query.function_name:
                     results = db.search_by_function(query.function_name, limit=query.limit)
                 elif query.vulnerability_type:
                     results = db.search_by_vulnerability_type(query.vulnerability_type, limit=query.limit)
                 else:
                     results = db.get_all(limit=query.limit, offset=query.offset)
-                
+
                 return APIResponse(
                     success=True,
                     message=f"找到 {len(results)} 条漏洞记录",
@@ -663,7 +578,7 @@ if FASTAPI_AVAILABLE:
             except Exception as e:
                 logger.error(f"[WebAPI] 查询漏洞数据库失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @app.get("/api/vulnerabilities/stats")
         async def get_vulnerability_stats():
             """
@@ -671,10 +586,10 @@ if FASTAPI_AVAILABLE:
             """
             try:
                 from modules.vuln.vuln_db import VulnerabilityDatabase
-                
+
                 db = VulnerabilityDatabase()
                 stats = db.get_statistics()
-                
+
                 return APIResponse(
                     success=True,
                     message="漏洞数据库统计",
@@ -683,27 +598,19 @@ if FASTAPI_AVAILABLE:
             except Exception as e:
                 logger.error(f"[WebAPI] 获取统计信息失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @app.get("/api/vulnerabilities/{vuln_id}")
         async def get_vulnerability(vuln_id: int):
-            """
-            按主键取单个漏洞详情。
-
-            Args:
-                vuln_id: 漏洞记录主键
-
-            Returns:
-                漏洞完整数据
-            """
+            """按主键取单个漏洞详情。"""
             try:
                 from modules.vuln.vuln_db import VulnerabilityDatabase
-                
+
                 db = VulnerabilityDatabase()
                 vuln = db.get_by_id(vuln_id)
-                
+
                 if not vuln:
                     raise HTTPException(status_code=404, detail=f"漏洞不存在: {vuln_id}")
-                
+
                 return APIResponse(
                     success=True,
                     message="漏洞详情",
@@ -716,7 +623,6 @@ if FASTAPI_AVAILABLE:
                 raise HTTPException(status_code=500, detail=str(e))
 
 # 增量报告与内容寻址缓存
-        # 2025-07-19 10:11 追加
 
         class DiffRequest(BaseModel):
             """增量差异请求体"""
@@ -797,7 +703,6 @@ if FASTAPI_AVAILABLE:
             )
 
 # CVSS 环境评分 (从二进制加固自动推断)
-        # 2025-07-24 09:53 新增
 
         class EnvironmentalScoreRequest(BaseModel):
             """CVSS 环境评分请求"""
@@ -860,17 +765,7 @@ if FASTAPI_AVAILABLE:
             cve_id: str = None,
             binary_name: str = None
         ):
-            """
-            联合查询外部漏洞源（NVD + OSV + GHSA）。
-
-            Args:
-                package_name: 目标包名
-                cve_id: CVE 标识符
-                binary_name: 二进制文件名
-
-            Returns:
-                跨源聚合查询结果
-            """
+            """联合查询外部漏洞源（NVD + OSV + GHSA）。"""
             try:
                 from modules.vuln.vuln_db import VulnerabilityDatabase
 
@@ -892,31 +787,24 @@ if FASTAPI_AVAILABLE:
 
         logger.info("[WebAPI] API 应用创建完成")
         return app
-    
-    
+
+
     def start_server(
         host: str = "0.0.0.0",
         port: int = 8000,
         reload: bool = False
     ):
-        """
-        通过 uvicorn 启动 API 服务进程。
-
-        Args:
-            host: 监听地址
-            port: 监听端口
-            reload: 开发热重载开关
-        """
+        """通过 uvicorn 启动 API 服务进程。"""
         if not FASTAPI_AVAILABLE:
             logger.error("[WebAPI] FastAPI 或 uvicorn 未安装，无法启动服务器")
             logger.error("[WebAPI] 请运行: pip install fastapi uvicorn python-multipart")
             return
-        
+
         app = create_app()
-        
+
         logger.info(f"[WebAPI] 启动 API 服务器: {host}:{port}")
         logger.info(f"[WebAPI] 文档地址: http://{host}:{port}/docs")
-        
+
         uvicorn.run(
             app,
             host=host,
@@ -924,7 +812,7 @@ if FASTAPI_AVAILABLE:
             reload=reload,
             log_level="info"
         )
-    
+
     app = create_app()
 
 else:

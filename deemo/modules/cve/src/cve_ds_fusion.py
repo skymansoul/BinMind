@@ -1,10 +1,9 @@
-# 修改记录:
-# 2025-07-17 16:22 - 实现基本质量函数构造与 Dempster 组合规则
-# 2025-07-20 11:05 - 增加冲突门控: 高冲突时自动降级为加权平均
-# 2025-07-23 09:48 - 添加源可靠性动态折扣 (基于历史一致性的贝叶斯估计)
-# 2025-07-26 14:10 - 集成 belief/plausibility 区间输出, 适配 SemDedup MergedRecord
+# 实现基本质量函数构造与 Dempster 组合规则
+# 增加冲突门控: 高冲突时自动降级为加权平均
+# 添加源可靠性动态折扣 (基于历史一致性的贝叶斯估计)
+# 集成 belief/plausibility 区间输出, 适配 SemDedup MergedRecord
 #
-# DSF: Dempster-Shafer Fusion — 基于证据理论的多源 CVE 情报融合
+# DSF: Dempster-Shafer Fusion - 基于证据理论的多源 CVE 情报融合
 #
 # 核心参考文献:
 #
@@ -53,10 +52,10 @@ _IDX_E = 0       # {E}: 会被利用
 _IDX_NOT_E = 1   # {¬E}: 不会被利用
 _IDX_THETA = 2   # {E, ¬E}: 不确定
 
-# 冲突门控阈值 — 超过此值降级为 Yager 规则
+# 冲突门控阈值 - 超过此值降级为 Yager 规则
 _CONFLICT_THRESHOLD = 0.70
 
-# 源先验准确率 — 基于对 NVD/GHSA/OSV/ExploitDB 发布数据的历史一致性估计
+# 源先验准确率 - 基于对 NVD/GHSA/OSV/ExploitDB 发布数据的历史一致性估计
 # 此段后续可微调, 当前基于人工标注的 500 条交叉验证样本
 _SOURCE_PRIOR_ACCURACY = {
     "nvd": 0.92,
@@ -67,10 +66,10 @@ _SOURCE_PRIOR_ACCURACY = {
     "default": 0.70,
 }
 
-# 可靠性折扣衰减系数 — 冲突比率每 0.1 折扣准确率衰减 β * 0.1
+# 可靠性折扣衰减系数 - 冲突比率每 0.1 折扣准确率衰减 β * 0.1
 _DISCOUNT_BETA = 0.5
 
-# 不确定性上限 — m({E, ¬E}) 不低于此值, 反映情报固有的不完全性
+# 不确定性上限 - m({E, ¬E}) 不低于此值, 反映情报固有的不完全性
 _MIN_UNCERTAINTY = 0.05
 
 
@@ -118,7 +117,7 @@ class MassFunction:
 
 @dataclass
 class FusionResult:
-    """D-S 融合结果 — 包含信度/似然度区间和 pignistic 概率."""
+    """D-S 融合结果 - 包含信度/似然度区间和 pignistic 概率."""
     belief_E: float       # Bel({E}): 证据必然支持利用的下界
     plausibility_E: float  # Pl({E}): 证据可能支持利用的上界
     belief_notE: float
@@ -147,7 +146,7 @@ class FusionResult:
 
 
 class SourceReliabilityTracker:
-    """源可靠性跟踪器 — 基于历史冲突比率动态调整源折扣因子.
+    """源可靠性跟踪器 - 基于历史冲突比率动态调整源折扣因子.
 
     对每个源维护最近 N 次融合的冲突记录 (滑动窗口). 当源频繁
     与其他源产生高冲突时, 其折扣因子自动衰减, 降低其对后续
@@ -211,13 +210,12 @@ class DSFusionEngine:
         self._fusion_count = 0
 
     def fuse(self, source_assessments: Dict[str, Dict[str, Any]]) -> FusionResult:
-        """多源融合 — 主要入口.
+        """多源融合 - 主要入口。
 
-        source_assessments: {source_name: {severity, cvss_score, epss_score, cisa_kev, ...}}
-          至少需要一个源. 字段缺失取合理默认值.
-
-        Returns:
-          FusionResult: 包含信度/似然度/pignistic概率/冲突系数.
+        source_assessments 为 {source_name: {severity, cvss_score,
+        epss_score, cisa_kev, ...}}, 至少需要一个源, 字段缺失取
+        合理默认值; 返回含信度/似然度/pignistic 概率/冲突系数的
+        FusionResult。
         """
         if not source_assessments:
             return FusionResult(
@@ -342,7 +340,7 @@ class DSFusionEngine:
         m_E = 0.3 * cvss_norm + 0.25 * epss_val + 0.25 * mat_val + (0.2 if kev else 0.0)
         m_E = max(0.0, min(0.95, m_E))
 
-        # m({¬E}): 反向证据 — 评分很低且无利用迹象
+        # m({¬E}): 反向证据 - 评分很低且无利用迹象
         indicators_against = 0.0
         if cvss_norm < 0.3:
             indicators_against += 0.3
@@ -365,7 +363,7 @@ class DSFusionEngine:
         return MassFunction(m_E=m_E, m_notE=m_notE, m_theta=m_theta, source=source)
 
     def fuse_from_merged(self, merged_record) -> FusionResult:
-        """从 SemDedup 的 MergedRecord 直接融合 — 便捷接口.
+        """从 SemDedup 的 MergedRecord 直接融合 - 便捷接口.
 
         MergedRecord.source_data 包含各来源的 SourceRecord,
         提取后调用 fuse(). 适用于 SemDedup 去重后的结果.
@@ -381,7 +379,7 @@ class DSFusionEngine:
         return self.fuse(assessments)
 
     def batch_fuse(self, entries: List[CVEEntry]) -> List[Tuple[str, FusionResult]]:
-        """批量融合 — 对多个 CVEEntry 逐一执行.
+        """批量融合 - 对多个 CVEEntry 逐一执行.
 
         每个 entry 的 source 字段指示其来源. 同 CVE ID 的多个条目
         按 source 分组融合. 返回 [(cve_id, FusionResult), ...].
@@ -418,7 +416,7 @@ def fuse_cve_assessments(
     sources: Dict[str, Dict[str, Any]],
     tracker: Optional[SourceReliabilityTracker] = None,
 ) -> Dict[str, Any]:
-    """一站式 D-S 融合 — 返回可序列化 dict."""
+    """一站式 D-S 融合 - 返回可序列化 dict."""
     engine = DSFusionEngine(tracker)
     result = engine.fuse(sources)
     return result.to_dict()
@@ -427,7 +425,7 @@ def fuse_cve_assessments(
 def batch_ds_fusion(
     entries: List[CVEEntry],
 ) -> Dict[str, Any]:
-    """批量 D-S 融合 — 返回融合结果 + 统计摘要."""
+    """批量 D-S 融合 - 返回融合结果 + 统计摘要."""
     engine = DSFusionEngine()
     results = engine.batch_fuse(entries)
 

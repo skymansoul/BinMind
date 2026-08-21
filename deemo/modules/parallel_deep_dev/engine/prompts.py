@@ -1,6 +1,6 @@
 """Prompt 生成 — 为每个子模块构建完整的开发 prompt。"""
 import os
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 
 def generate_sub_prompt(module_key: str, module_def: dict) -> str:
@@ -36,7 +36,7 @@ def generate_sub_prompt(module_key: str, module_def: dict) -> str:
 1. **保留所有原有功能**: 不得删除、精简或修改任何现有的功能、接口和注释。
    所有新增代码必须作为增量添加(新函数/新类/新模块)，现有代码行一个字都不能少。
 
-2. **新增注释风格 (中文 INTJ 理性风格)**:
+2. **新增注释风格 (中文理性风格)**:
    - 使用中文书写，仅陈述设计意图、算法依据、边界条件和权衡理由。
    - 禁止任何情感词(如"优秀""完美""惊人""显然")、口号或无关事实。
    - 禁止添加与代码功能无关的注释。

@@ -1,7 +1,6 @@
-# 跨检测器交叉验证 —— 同一二进制用四个检测器独立扫描, 统计一致性。
+# 跨检测器交叉验证 - 同一二进制用四个检测器独立扫描, 统计一致性。
 # 若堆溢出和整数溢出在同一函数都触发→高置信度(整数溢出常是堆溢出前导)。
 # 若UAF和堆溢出在同一指针上触发→时间线矛盾(堆溢出要求alloc后use, UAF要求free后use)。
-# 创建: 自主执行轮次
 
 from __future__ import annotations
 
@@ -20,8 +19,8 @@ class CrossValidationResult:
     int_findings: int
     edge_findings: int
     # 交叉信号
-    heap_int_correlated: bool    # 堆溢出+整数溢出同函数→高置信度
-    uaf_heap_conflict: bool      # UAF+堆溢出同指针→时间线矛盾
+    heap_int_correlated: bool    # 堆溢出+整数溢出同函数, 高置信度
+    uaf_heap_conflict: bool      # UAF+堆溢出同指针, 时间线矛盾
     consensus_score: float       # 0-1, 多检测器一致性得分
 
 
@@ -34,8 +33,8 @@ def cross_validate(
 ) -> List[CrossValidationResult]:
     """多检测器结果交叉验证。
 
-    输入各检测器的原始输出, 按函数名聚合→计算交叉信号。
-    输出含consensus_score: 多检测器一致→高分, 矛盾→低分。
+    输入各检测器的原始输出, 按函数名聚合, 计算交叉信号。
+    输出含consensus_score: 多检测器一致, 高分; 矛盾, 低分。
     """
     heap = heap_results or []
     uaf = uaf_results or []
@@ -63,9 +62,9 @@ def cross_validate(
         total_types = sum(1 for c in counts.values() if c > 0)
         consensus = total_types / 5.0  # 5个检测器
         if heap_int:
-            consensus += 0.2  # 堆溢出+整数溢出→加分
+            consensus += 0.2  # 堆溢出+整数溢出, 加分
         if uaf_heap:
-            consensus -= 0.1  # 可能矛盾→减分
+            consensus -= 0.1  # 可能矛盾, 减分
 
         results.append(CrossValidationResult(
             func_name=fn,

@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2025-03-03  |  破坏类型分类器
-# 修改: 2025-03-03  |  审计后补充文件头与错误处理
-#
 """
-崩溃状态语义分析——内存破坏类型分类器。
+崩溃状态语义分析-内存破坏类型分类器。
 
 技术问题:
   现有崩溃分类方法存在两难:
@@ -17,7 +14,7 @@
   从崩溃点寄存器状态+栈帧内存+故障指令三个信号源提取特征,
   基于启发式规则+统计先验推断内存破坏根因类型。
 
-  分类目标——覆盖CWE Top-25内存安全弱点:
+  分类目标-覆盖CWE Top-25内存安全弱点:
     STACK_OVERFLOW: 栈缓冲区溢出(返回地址被覆盖)
     HEAP_OVERFLOW: 堆缓冲区溢出(邻近堆元数据破坏)
     USE_AFTER_FREE: 悬垂指针解引用(释放后填充模式)
@@ -30,13 +27,13 @@
     STACK_EXHAUSTION: 栈耗尽(栈指针越界)
 
 与现有模块集成:
-  fuzzing_orchestrator → CrashTriager → 本模块 → 根因分类
-  runtime_vuln_verifier → VerificationResult → 本模块 → 破坏类型确认
+  fuzzing_orchestrator, CrashTriager, 本模块, 根因分类
+  runtime_vuln_verifier, VerificationResult, 本模块, 破坏类型确认
 
 技术依据:
   DumpStorm: 寄存器填充模式检测UAF/未初始化内存
   Lancet: 所有权语义形式化
-  本模块: 融合寄存器+内存+指令三维特征——首次实现纯崩溃转储的
+  本模块: 融合寄存器+内存+指令三维特征-首次实现纯崩溃转储的
          无源码/无sanitizer内存破坏十分类
 """
 
@@ -64,9 +61,9 @@ class CorruptionType(str, Enum):
     UNKNOWN = "unknown"
 
 
-# 寄存器填充模式——DumpStorm风格检测
+# 寄存器填充模式-DumpStorm风格检测
 
-# 释放后堆填充模式 (32位→64位变体)
+# 释放后堆填充模式 (32位-64位变体)
 _FREED_HEAP_PATTERNS = {
     0xDDDDDDDD: ('MSVC_DEBUG_FREED', 0.9),
     0xFEEEFEEE: ('WINDOWS_HEAPFREE', 0.85),
@@ -84,7 +81,7 @@ _UNINIT_PATTERNS = {
 
 @dataclass
 class CrashState:
-    """崩溃点状态快照——来自GDB/ASAN/核心转储"""
+    """崩溃点状态快照-来自GDB/ASAN/核心转储"""
     # 寄存器
     registers: Dict[str, int] = field(default_factory=dict)
     # 故障信息
@@ -121,21 +118,21 @@ class CorruptionClassification:
 class CorruptionClassifier:
     """从崩溃状态推断内存破坏根因类型。
 
-    分类策略——三维特征融合:
+    分类策略-三维特征融合:
       1. 寄存器维度: 填充模式(释放后/未初始化)+寄存器值范围
       2. 内存维度: 故障地址特征(NULL/栈/堆/代码段)
       3. 指令维度: 故障指令类型(load/store/call/jmp)与操作数特征
 
     决策树(简化):
-      故障地址 < 0x1000 → NULL_DEREF或NULL+偏移
-      故障地址在栈范围(接近SP) → STACK_OVERFLOW
-      寄存器含0xDD/0xCD等填充模式 → USE_AFTER_FREE或UNINIT_READ
-      故障指令为ret且返回地址异常 → STACK_OVERFLOW(ROP前)
-      signal=SIGABRT且asan_report含"heap-buffer-overflow" → HEAP_OVERFLOW
-      signal=SIGABRT且asan_report含"double-free" → DOUBLE_FREE
+      故障地址 < 0x1000 - NULL_DEREF或NULL+偏移
+      故障地址在栈范围(接近SP) - STACK_OVERFLOW
+      寄存器含0xDD/0xCD等填充模式 - USE_AFTER_FREE或UNINIT_READ
+      故障指令为ret且返回地址异常 - STACK_OVERFLOW(ROP前)
+      signal=SIGABRT且asan_report含"heap-buffer-overflow" - HEAP_OVERFLOW
+      signal=SIGABRT且asan_report含"double-free" - DOUBLE_FREE
     """
 
-    # 信号→破坏类型的先验映射
+    # 信号-破坏类型的先验映射
     _SIGNAL_HINTS = {
         11: [CorruptionType.WILD_WRITE, CorruptionType.STACK_OVERFLOW,
              CorruptionType.NULL_DEREF],   # SIGSEGV: 内存访问违规
@@ -155,7 +152,7 @@ class CorruptionClassifier:
 
         # 维度1: 寄存器模式检测
         for reg_name, reg_val in crash.registers.items():
-            # 32位截断——填充模式通常仅低32位有效
+            # 32位截断-填充模式通常仅低32位有效
             val32 = reg_val & 0xFFFFFFFF
             val64 = reg_val & 0xFFFFFFFFFFFFFFFF
             for pattern_val, (desc, conf) in _FREED_HEAP_PATTERNS.items():
@@ -196,7 +193,7 @@ class CorruptionClassifier:
         if 'call' in insn and self._indirect_call_to_bad_addr(crash):
             evidence.append("间接调用至无效地址→控制流劫持")
 
-        # 维度4: 寄存器填充模式→类型修正
+        # 维度4: 寄存器填充模式-类型修正
         freed_hits = [p for p in reg_patterns if 'FREED' in p or 'HEAPFREE' in p]
         uninit_hits = [p for p in reg_patterns if 'UNINIT' in p or 'GUARD' in p]
         if freed_hits:
@@ -269,12 +266,12 @@ class CorruptionClassifier:
     def _assess_exploitability(self, ctype: str,
                                 crash: CrashState) -> str:
         if ctype in (CorruptionType.STACK_OVERFLOW, CorruptionType.USE_AFTER_FREE):
-            return "高——控制流劫持可行(RIP可控或间接调用目标可控)"
+            return "高-控制流劫持可行(RIP可控或间接调用目标可控)"
         if ctype == CorruptionType.HEAP_OVERFLOW:
-            return "中——需堆布局操纵; 若邻近对象含函数指针则可升级"
+            return "中-需堆布局操纵; 若邻近对象含函数指针则可升级"
         if ctype in (CorruptionType.NULL_DEREF, CorruptionType.WILD_WRITE):
-            return "低-中——取决于是否可控制解引用偏移"
-        return "待定——需额外分析"
+            return "低-中-取决于是否可控制解引用偏移"
+        return "待定-需额外分析"
 
     def _recommend(self, ctype: str) -> str:
         recs = {

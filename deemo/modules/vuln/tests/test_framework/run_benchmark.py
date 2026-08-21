@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-23  |  基准测试入口——编译→扫描→统计 一键运行
 #
 """
 运行完整基准测试: 编译CVE样本→执行检测管线→统计TP/FP/FN。
@@ -8,7 +7,7 @@ import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from compile_samples import compile_all
+from .compile_samples import compile_all
 from scan_runner import ScanRunner
 from result_parser import parse_results, print_report, BenchmarkStats
 

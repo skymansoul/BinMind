@@ -1,7 +1,6 @@
-# 创建: 2026-07-28 18:55
-# 修改: 2026-07-28 — 确定性模式匹配 I/O 签名 + 算法意图 + 倒排索引
+# 确定性模式匹配 I/O 签名 + 算法意图 + 倒排索引
 """
-可解释的二进制特征提取器 — 结构化推理, 无需训练。
+可解释的二进制特征提取器 - 结构化推理, 无需训练。
 
 GNN 嵌入模型输出不可解释的向量 → 用户不知道两个函数为什么被判定为相似。
 本模块提供互补路径: 从汇编代码中提取人类可读的结构化特征:
@@ -10,17 +9,17 @@ GNN 嵌入模型输出不可解释的向量 → 用户不知道两个函数为�
   - 算法意图: hash, encrypt, compress, parse, sort, search 等模式识别
   - 常量分析: 魔术数字、加密常量表、协议标识符
 
-所有特征通过模式匹配 + 轻量抽象解释提取——不需要训练数据,
+所有特征通过模式匹配 + 轻量抽象解释提取 - 不需要训练数据,
 不需要 GPU, 跨架构可移植 (x86/ARM/MIPS 共享同一套特征模式)。
 
 特征以 JSON-like 结构存储, 配合倒排索引实现亚秒级搜索。
 
-ref: "Beyond Embeddings" — 可解释特征提取,
+ref: "Beyond Embeddings" - 可解释特征提取,
      本项目采用确定性模式匹配 + 抽象解释替代模型特征提取,
      消除外部 API 依赖同时保持跨架构泛化能力
-ref: AutoBERT — BERT-based embedding for cross-ISA,
+ref: AutoBERT - BERT-based embedding for cross-ISA,
      本项目与其互补: 嵌入模型做语义近似, 本模块做精确语义标注
-ref: Hex-Rays microcode — 中间表示的启发式语义标注, 本项目
+ref: Hex-Rays microcode - 中间表示的启发式语义标注, 本项目
      将其思路扩展到无源码二进制 + 跨架构场景
 """
 
@@ -244,7 +243,7 @@ class InterpretableFeatureExtractor:
     """从反编译输出中提取可解释特征。
 
     输入: 反编译器输出的结构化数据 (instructions, callees, args)
-    输出: FunctionFeatures 结构——可直接 JSON 序列化, 支持倒排索引搜索。"""
+    输出: FunctionFeatures 结构 - 可直接 JSON 序列化, 支持倒排索引搜索。"""
 
     def extract(self, function_name: str, function_addr: int,
                 instructions: list[dict],
@@ -295,7 +294,7 @@ class InterpretableFeatureExtractor:
         feats.logic_ratio = n_logic / max(1, n)
         feats.memory_ratio = n_mem / max(1, n)
 
-        # 置信度: 基于信息量——特征越多, 置信度越高
+        # 置信度: 基于信息量 - 特征越多, 置信度越高
         f_count = (len(feats.algorithm_intents) + len(feats.side_effects)
                    + len(feats.io_signature) + len(feats.constant_tables))
         feats.confidence = min(1.0, f_count / 8.0 + 0.3)
@@ -303,7 +302,7 @@ class InterpretableFeatureExtractor:
         return feats
 
     def to_searchable_dict(self, feats: FunctionFeatures) -> dict:
-        """转为可搜索的字典——键为特征维度, 值为可读标签。"""
+        """转为可搜索的字典 - 键为特征维度, 值为可读标签。"""
         return {
             'name': feats.function_name,
             'addr': feats.function_addr,
@@ -325,7 +324,7 @@ class InterpretableFeatureExtractor:
 # 按特征维度的值建索引, O(1) 时间查找"所有做 encryption 的函数"。
 
 class InvertedFeatureIndex:
-    """可解释特征的倒排索引——按特征值快速检索函数。"""
+    """可解释特征的倒排索引 - 按特征值快速检索函数。"""
 
     __slots__ = ('_index', '_entries')
 

@@ -1,14 +1,13 @@
-# 对比实验可视化 — 真实 CSV 数据绘图
+# 对比实验可视化 - 真实 CSV 数据绘图
 #
 # 读取 eval/results/multi_tool_comparison.csv (run_benchmark.py 输出),
 # 生成:
-#   1. comparison_recall.png — 检出率(召回)柱状图
-#   2. comparison_fpr.png    — 误报率柱状图 (核心创新锚点)
-#   3. comparison_bar.png    — 召回+误报双指标组合图
+#   1. comparison_recall.png - 检出率(召回)柱状图
+#   2. comparison_fpr.png    - 误报率柱状图 (核心创新锚点)
+#   3. comparison_bar.png    - 召回+误报双指标组合图
 #
 # 决策: 只用实测数据, 不用文献估计 (避免注水).
 # QEMU/Ghidra 不可用时其数据为 0 且标注 unavailable.
-# 创建: 2026-06-20
 
 import csv
 import sys

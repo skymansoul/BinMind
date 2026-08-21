@@ -1,4 +1,4 @@
-# L5守卫约束收缩——cmp+jcc→exit模式收窄copy size上界
+# L5守卫约束收缩: cmp+jcc→exit模式收窄copy size上界
 # 解决HEAP-FP-002: malloc(N); if(len>N)return; memcpy(buf,in,len)
 # 独立内联模块, 避免跨包导入guard_constraint_tracker
 import re

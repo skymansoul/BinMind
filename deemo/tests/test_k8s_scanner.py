@@ -4,7 +4,6 @@
 Kubernetes集群扫描模块测试
 """
 import os
-_MOD_DEBUG = False
 import sys
 import unittest
 import tempfile
@@ -64,7 +63,6 @@ class TestK8sClusterScanner(unittest.TestCase):
         self.assertEqual(len(container.ports), 2)
 
     def test_container_info_to_dict(self):
-        # 参数经多次实验校准
         """测试 ContainerInfo 转换为字典"""
         container = ContainerInfo(
             name='web',

@@ -1,6 +1,5 @@
 # 整数溢出基准测试模板 v4 (Integer Overflow Benchmark Templates)
 # 12个独立CVE溢出模式, O2/Os抗优化消除.
-# 创建: 2026-06-08
 # v2: volatile vuln_sink (失败 — 常量传播)
 # v3: noinline + volatile count + vuln_sink (失败 — GCC O2仍消除函数体)
 # v5: asm volatile barriers (防止常量传播/死代码消除), 允许O2优化非关键路径.
@@ -69,7 +68,7 @@ int main(int argc, char **argv) {{
 def get_template(pattern: str, safe_name: str) -> str:
     """返回对应模式的C源码 (v3: noinline + volatile count, 三重O2/Os防护)."""
 
-    # ── 1. mul_overflow: count*sizeof(T) wraps before malloc ──
+    # 1. mul_overflow: count*sizeof(T) wraps before malloc
     if pattern == "mul_overflow":
         return _build(safe_name, "mul_overflow: count*sizeof(T) wraps",
             ['size_t sz = (size_t)count * sizeof(int);',
@@ -90,7 +89,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, sz);',
              'free(buf);'])
 
-    # ── 2. u16_overflow: 16-bit multiplication wraps ──
+    # 2. u16_overflow: 16-bit multiplication wraps
     if pattern == "u16_overflow":
         return _build(safe_name, "u16_overflow: 16-bit mul wraps before promotion",
             ['uint16_t c16 = (uint16_t)count;',
@@ -109,7 +108,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, sz);',
              'free(buf);'])
 
-    # ── 3. add_overflow: offset+len wraps u32, 用count控制offset使编译器无法静态证明 ──
+    # 3. add_overflow: offset+len wraps u32, 用count控制offset使编译器无法静态证明
     if pattern == "add_overflow":
         return _build(safe_name, "add_overflow: offset+len wraps u32",
             ['uint32_t offset = (uint32_t)count * 256U + 0xFFFFFF00U;  /* offset depends on count */',
@@ -207,7 +206,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, total);',
              'free(buf);'])
 
-    # ── 7. shl_mul: nr<<12 wraps before page alloc ──
+    # 7. shl_mul: nr<<12 wraps before page alloc
     if pattern == "shl_mul":
         return _build(safe_name, "shl_mul: nr<<12 wraps before page alloc",
             ['int nr_pages = count;',
@@ -230,7 +229,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, sz);',
              'free(buf);'])
 
-    # ── 8. loop_add: accumulator wraps u16 in loop ──
+    # 8. loop_add: accumulator wraps u16 in loop
     if pattern == "loop_add":
         return _build(safe_name, "loop_add: u16 accumulator wraps in loop",
             ['uint16_t total = 0;',
@@ -257,7 +256,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, total);',
              'free(buf);'])
 
-    # ── 9. add_underflow: len+addr overflows, subtraction underflows ──
+    # 9. add_underflow: len+addr overflows, subtraction underflows
     if pattern == "add_underflow":
         return _build(safe_name, "add_underflow: len+addr wraps 64-bit",
             ['uint64_t addr = 0xFFFFFFFFFFFFFF00ULL;',
@@ -284,7 +283,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, sz);',
              'free(buf);'])
 
-    # ── 10. downcast: uid_t (u32) truncated from u64, 用除法代替乘法防止常量折叠 ──
+    # 10. downcast: uid_t (u32) truncated from u64, 用除法代替乘法防止常量折叠
     if pattern == "downcast":
         return _build(safe_name, "downcast: u64->u32 truncation to uid_t",
             ['uint64_t kuid = (uint64_t)count * 0x10000001ULL;  /* large factor */',
@@ -313,7 +312,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, ngroups * 8 + 1);',
              'free(buf);'])
 
-    # ── 11. signed_negative: ssize_t evades check, becomes huge size_t ──
+    # 11. signed_negative: ssize_t evades check, becomes huge size_t
     if pattern == "signed_negative":
         return _build(safe_name, "signed_negative: negative ssize_t -> huge size_t",
             ['ssize_t len = (ssize_t)count;  /* count is volatile, may be large */',
@@ -338,7 +337,7 @@ def get_template(pattern: str, safe_name: str) -> str:
              'memset(buf, 0, sz);',
              'free(buf);'])
 
-    # ── 12. calloc_dual: nmemb*size wraps inside calloc wrapper ──
+    # 12. calloc_dual: nmemb*size wraps inside calloc wrapper
     if pattern == "calloc_dual":
         return _build(safe_name, "calloc_dual: nmemb*size wraps in calloc wrapper",
             ['size_t nmemb = (size_t)count;',

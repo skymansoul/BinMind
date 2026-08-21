@@ -1,4 +1,3 @@
-# 已优化.
 # 持久化支持、子图提取、综合图统计指标，数据生命周期才算闭环
 import logging
 import json

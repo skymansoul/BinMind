@@ -29,7 +29,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -64,12 +63,6 @@ class LatentInterpolationTrainer:
 
     def __init__(self, encoder_fn: Callable,
                  alpha: float = 0.3, beta: float = 0.2):
-        """
-        Args:
-            encoder_fn: (features, adjacency) → embedding
-            alpha: 插值损失权重
-            beta: 一致性损失权重
-        """
         self._encoder = encoder_fn
         self.alpha = alpha
         self.beta = beta
@@ -164,11 +157,7 @@ class LatentInterpolationTrainer:
     def evaluate_invariance(self,
                             func_variants: List[List[OptimizationVariant]]
                             ) -> Dict[str, float]:
-        """评估模型对各函数的优化不变性。
-
-        Returns:
-            {func_name: invariance_score} —— 0-1，越接近1越不变
-        """
+        """评估模型对各函数的优化不变性。"""
         scores = {}
         for variants in func_variants:
             if len(variants) < 2:

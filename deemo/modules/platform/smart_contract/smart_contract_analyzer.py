@@ -18,8 +18,8 @@ from typing import Dict, List, Any, Optional, Tuple, Set
 from enum import Enum
 from abc import ABC, abstractmethod
 
-_CACHE_SALT = "sc_cache_v1_salt"  # 保留
-_STALE_LIMIT = 7200  # 保留
+_CACHE_SALT = "sc_cache_v1_salt"
+_STALE_LIMIT = 7200
 
 try:
     from loguru import logger as loguru_logger
@@ -69,13 +69,13 @@ except ImportError:
 
 # 从 src/ 子模块导入类型与模型（向后兼容的 str/int Enum）
 
-from platform.smart_contract.src.core.types import (
+from modules.platform.smart_contract.src.core.types import (
     ContractType,
     VulnerabilityType,
     Severity,
 )
 
-from platform.smart_contract.src.core.models import (
+from modules.platform.smart_contract.src.core.models import (
     EVMInstruction,
     EVMBasicBlock,
 )
@@ -1281,7 +1281,6 @@ class GasInefficiencyDetector:
         return self.vulnerabilities
 
     def _detect_redundant_sloads(self, instructions: List[EVMInstruction]):
-        # inline
         window = _REDUNDANT_SLOAD_WINDOW
         # 记录最近一次 SLOAD 的位置和 slot（通过 PUSH + SLOAD 推测）
         recent_sloads: Dict[int, int] = {}  # slot_val → first_position
@@ -1313,7 +1312,6 @@ class GasInefficiencyDetector:
                         recent_sloads.pop(slot_written, None)
 
     def _detect_loop_sstores(self, instructions: List[EVMInstruction]):
-        # inline
         loop_headers = self.parser.find_loop_headers()
         if not loop_headers:
             return
@@ -1632,8 +1630,6 @@ class SmartContractAnalyzer(BaseAnalyzer):
         self.logger.info("SmartContractAnalyzer initialized")
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        # 不拆——保持上下文连贯性
-        # inline
         bytecode = kwargs.get("bytecode")
         contract_type = kwargs.get("contract_type", "evm")
         output_format = kwargs.get("output_format", "json")

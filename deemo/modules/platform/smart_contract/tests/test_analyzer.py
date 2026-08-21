@@ -357,4 +357,4 @@ class TestSmartContractAnalyzer:
 		assert len(result["report"]["vulnerabilities"]) <= 1
 
 
-	print("[test_analyzer debug]", *args)
+	

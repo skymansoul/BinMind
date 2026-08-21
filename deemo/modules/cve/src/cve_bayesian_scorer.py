@@ -1,8 +1,6 @@
-# 创建: 2026-08-01 07:03
-# 修改: 2026-08-01 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 修改: 2026-08-01 09:45 (解析梯度替换数值梯度: 手动推导异方差损失反向传播, mini-batch SGD)
-# 简述: MC Dropout贝叶斯评分 — 认知+偶然不确定性分解
-# 贝叶斯CVE评分 — MC Dropout驱动的认知+偶然不确定性估计
+# (解析梯度替换数值梯度: 手动推导异方差损失反向传播, mini-batch SGD)
+# MC Dropout贝叶斯评分 - 认知+偶然不确定性分解
+# 贝叶斯CVE评分 - MC Dropout驱动的认知+偶然不确定性估计
 #
 # 问题: 现有CVE评分模型输出点估计, 不区分两种不确定性:
 #   1. 认知 (Epistemic): 模型知识不足 → 可通过更多数据减少.
@@ -17,7 +15,7 @@
 # 双头架构 + 异方差损失:
 #   共享编码器 → 分数头 (μ) + 方差头 (log σ²).
 #   损失: L = (y-μ)²/(2σ²) + log(σ²)/2.
-#   高噪声样本的σ²自动增大, 降低其对梯度贡献 — 自动加权.
+#   高噪声样本的σ²自动增大, 降低其对梯度贡献 - 自动加权.
 #
 # 关键改进 (相对原数值梯度版本):
 #   解析反向传播: 手动推导异方差损失的梯度, 消除O(n²)复杂度.
@@ -35,7 +33,7 @@ import math, random
 from typing import Dict, List, Optional, Tuple
 
 class MCDropoutScorer:
-    """MC Dropout贝叶斯评分器 — 解析梯度, 双头架构, mini-batch SGD."""
+    """MC Dropout贝叶斯评分器 - 解析梯度, 双头架构, mini-batch SGD."""
 
     def __init__(self, input_dim=8, hidden_dim=24, dropout_rate=0.3):
         self._d_in = input_dim; self._d_h = hidden_dim; self._p = dropout_rate

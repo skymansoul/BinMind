@@ -1,4 +1,3 @@
-# 2026-07-18
 # 多技术进程内存转储 —— Linux (gcore, /proc/pid/mem) + Windows (procdump, MiniDumpWriteDump via ctypes)
 # 设计思路：按可用方法顺序尝试，失败则回退到次选方案
 # ProcessScanner 提供跨平台的进程枚举能力

@@ -1,5 +1,4 @@
-# 2026-07-22
-# ROP链合成器 — 从二进制字节码中自动提取gadget并组装成利用链(execve/mprotect)
+# ROP链合成器, 从二进制字节码中自动提取gadget并组装成利用链(execve/mprotect)
 # 设计思路：Capstone反汇编→向后扫描RET指令→按长度(2-5条指令)提取gadget→按功能分类→贪心匹配
 # 权衡：Capstone不可用时回退到常见gadget字节模式匹配，覆盖主流编译结果但非完备
 

@@ -105,7 +105,7 @@ class SelfCorrectionLoop:
         all_entries = blackboard.query("", max_results=200)
 
         # 延迟导入——避免与 self_correction_exec 的循环依赖
-        from parallel_deep_dev.engine.self_correction_exec import (
+        from .self_correction_exec import (
             infer_source, extract_filepath, infer_severity,
         )
 

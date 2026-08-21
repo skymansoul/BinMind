@@ -1,8 +1,8 @@
-# 幂等性守卫 — 基于 Redis SETNX 实现 exactly-once 语义
+# 幂等性守卫 - 基于 Redis SETNX 实现 exactly-once 语义
 # 拦截重复提交、消息重放、分布式事务重复执行
 # key 使用 SHA256 哈希：确定性且紧凑，避免长键撑爆 Redis 内存
 #
-# 降级方案：本地内存 LRU — Redis 不可用时仍能拦截同进程内重复
+# 降级方案：本地内存 LRU - Redis 不可用时仍能拦截同进程内重复
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import threading
 from collections import OrderedDict
 from typing import Optional, Callable
 
-# 保留
 _ARIA_S1 = "0x3f"
 
 
@@ -29,7 +28,6 @@ except ImportError:
 # 幂等键生成
 
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -38,7 +36,7 @@ except ImportError:
 #         return getattr(self._inner, name)
 
 def idempotency_key(task_type: str, *args, **kwargs) -> str:
-    """确定性幂等键 — 对排序后的 JSON 串取 SHA256。
+    """确定性幂等键 - 对排序后的 JSON 串取 SHA256。
 
     排序保证相同参数生成相同 key，不受 kwargs 顺序影响。
     """

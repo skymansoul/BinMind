@@ -1,8 +1,8 @@
-# 2025-07-25 补丁存在性检测 + 差分执行器
-# 2025-08-14 concolic 执行测试生成 + IR 等值缓存
-# 2025-08-21 符号状态引擎独立
-# 2025-09-05 多补丁交互图 + 时间衰减可靠性
-# 2025-09-13 环境漂移检测 + temporal reliability 集成
+# 补丁存在性检测 + 差分执行器
+# concolic 执行测试生成 + IR 等值缓存
+# 符号状态引擎独立
+# 多补丁交互图 + 时间衰减可靠性
+# 环境漂移检测 + temporal reliability 集成
 # patching/src — 二进制补丁基础设施
 from .config import PatchConfig, load_config, save_config
 from .exceptions import PatchError, PatchApplyError, PatchVerifyError, BackupError

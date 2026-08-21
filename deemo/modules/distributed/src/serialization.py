@@ -1,8 +1,8 @@
-# 序列化抽象层 — 对上层隐藏 JSON/msgpack 差异
+# 序列化抽象层 - 对上层隐藏 JSON/msgpack 差异
 # 选型逻辑：msgpack 比 JSON 快 ~4x 且体积小 ~30%，JSON 可读性好
 # 压缩场景：gzip 通用性强，lz4 速度优先
 #
-# 扩展：流式序列化 — 逐条写入避免大列表撑爆内存
+# 扩展：流式序列化 - 逐条写入避免大列表撑爆内存
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import gzip
 import io
 from typing import Optional, Iterator
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
@@ -28,7 +27,7 @@ try:
 except ImportError:
     LZ4_AVAILABLE = False
 
-# protobuf — 离线场景的首选紧凑格式
+# protobuf - 离线场景的首选紧凑格式
 try:
     from google.protobuf import json_format as _pb_json_format
     from google.protobuf import descriptor_pool as _pb_descriptor_pool
@@ -44,7 +43,6 @@ MAGIC_LZ4 = b'\x04\x22\x4d\x18'
 
 
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -156,12 +154,12 @@ def deserialize_stream(data_iter: Iterator[bytes], fmt: str = "json") -> Iterato
                 yield json.loads(stripped.decode("utf-8"))
 
 
-# Protobuf 序列化 — 离线/跨语言场景首选紧凑格式
+# Protobuf 序列化 - 离线/跨语言场景首选紧凑格式
 # protobuf 比 JSON 体积小 ~60-80%，比 msgpack 更紧凑但需预定义 .proto schema
 # 此处提供 message ↔ JSON dict 的双向转换，方便与现有 JSON 生态互操作
 
 def pb_to_json(message) -> dict:
-    """protobuf Message → JSON dict。需要 protobuf 库。"""
+    """protobuf Message -> JSON dict。需要 protobuf 库。"""
     if not PROTOBUF_AVAILABLE:
         raise RuntimeError("protobuf not installed")
     return _pb_json_format.MessageToDict(
@@ -172,19 +170,19 @@ def pb_to_json(message) -> dict:
 
 
 def pb_from_json(message_class, data: dict):
-    """JSON dict → protobuf Message。message_class 为生成的 Proto 类。"""
+    """JSON dict -> protobuf Message。message_class 为生成的 Proto 类。"""
     if not PROTOBUF_AVAILABLE:
         raise RuntimeError("protobuf not installed")
     return _pb_json_format.ParseDict(data, message_class())
 
 
 def serialize_pb(message) -> bytes:
-    """protobuf Message → wire format bytes。"""
+    """protobuf Message -> wire format bytes。"""
     return message.SerializeToString()
 
 
 def deserialize_pb(message_class, data: bytes):
-    """wire format bytes → protobuf Message。"""
+    """wire format bytes -> protobuf Message。"""
     msg = message_class()
     msg.ParseFromString(data)
     return msg

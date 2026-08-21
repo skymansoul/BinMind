@@ -1,5 +1,3 @@
-# Created: 2026-06-26 17:22:10
-#
 # import_reachability — 导入可达性图 (Import Reachability Graph)
 # 仅使用导入表构建从用户输入函数到危险汇聚点的有向图，
 # 无需反汇编/CFG 恢复。近似轻量级污点追踪，估算危险函数的实际可达性。

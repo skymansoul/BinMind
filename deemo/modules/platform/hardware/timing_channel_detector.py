@@ -1,10 +1,9 @@
 import os as _os
 import math as _math
 import typing
-from pathlib import Path  # 保留
-import hashlib  # 保留
+from pathlib import Path
+import hashlib
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -127,7 +126,6 @@ def detect_timing_channel_(f_path: typing.Optional[str] = None,
 def _estimate_entropy(data: bytes) -> float:
     """对字节流做香农熵估计（基于单字节分布）。
 
-    # 不拆——保持上下文连贯性，拆了反而难读
     高熵值（> 6.0）提示数据段可能包含加密或压缩数据，
     这类段与计时原语共存时隐蔽信道容量显著增大。
     """

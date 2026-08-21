@@ -1,5 +1,5 @@
 """
-现代语言运行时分析——Rust协程/Go协程/Swift ARC + Ruby风格unsafe Rust探测。
+现代语言运行时分析, Rust协程/Go协程/Swift ARC + Ruby风格unsafe Rust探测。
 
 Ruby 核心结论：
   unsafe Rust编译后safe/unsafe边界在二进制中不可见。
@@ -42,15 +42,15 @@ def _demangle_rust_name(mangled:str)->Optional[str]:
 # Ruby风格unsafe Rust启发规则
 # unsafe代码在ARM64二进制中的指纹指令模式
 _UNSAFE_RUST_PATTERNS = [
-    # volatile访存——unsafe指针操作的标志（addr_of!或裸*ptr）
+     # volatile访存, unsafe指针操作的标志（addr_of!或裸*ptr）
     (re.compile(rb'(?:ldar|ldarb|stlr|stlrb)\s',re.I), "volatile_memory_access", 0.6),
-    # 无边界检查的数组访问——safe Rust应插入panic越界检查
+     # 无边界检查的数组访问, safe Rust应插入panic越界检查
     (re.compile(rb'ldr\s+x\d+,\s*\[x\d+,\s*x\d+,\s*lsl\s*#\d+\]',re.I), "unchecked_array_index", 0.7),
-    # 裸指针比较——safe Rust中极少出现
+     # 裸指针比较, safe Rust中极少出现
     (re.compile(rb'cmp\s+x\d+,\s*x\d+\s*\n.{0,16}(?:b\.ne|b\.eq)\s',re.I), "raw_pointer_comparison", 0.5),
-    # FFI边界——BL跳转至外部符号暗示unsafe FFI调用
+     # FFI边界, BL跳转至外部符号暗示unsafe FFI调用
     (re.compile(rb'bl\s+[a-z_][a-z0-9_]*\s*<\w+@plt>',re.I), "ffi_boundary_call", 0.4),
-    # 内联汇编痕迹——safe Rust禁止内联汇编
+     # 内联汇编痕迹, safe Rust禁止内联汇编
     (re.compile(rb'(?:msr|mrs|sys|isb|dsb)\s',re.I), "inline_assembly", 0.8),
 ]
 
@@ -102,8 +102,8 @@ class RustCoroutineAnalyzer:
         vulns=[]
         for coro in s.coroutines:
             if coro.state_size>10000: vulns.append({'type':'Large Coroutine State','severity':'Medium','description':f'协程{coro.name}状态过大:{coro.state_size}bytes','addr':f'0x{coro.resume_fn:x}'})
-            if coro.drop_fn==0: vulns.append({'type':'Missing Drop','severity':'Low' if coro.has_poll_ready else 'Medium','description':f'协程{coro.name}缺少drop——资源泄露','addr':f'0x{coro.resume_fn:x}'})
-            if len(coro.unsafe_regions)>5: vulns.append({'type':'Extensive Unsafe Code','severity':'Medium','description':f'协程{coro.name}包含{len(coro.unsafe_regions)}个unsafe区域——Ruby启发式检测','addr':f'0x{coro.resume_fn:x}','recommendation':'建议审查unsafe代码的正确性'})
+            if coro.drop_fn==0: vulns.append({'type':'Missing Drop','severity':'Low' if coro.has_poll_ready else 'Medium','description':f'协程{coro.name}缺少drop, 资源泄露','addr':f'0x{coro.resume_fn:x}'})
+            if len(coro.unsafe_regions)>5: vulns.append({'type':'Extensive Unsafe Code','severity':'Medium','description':f'协程{coro.name}包含{len(coro.unsafe_regions)}个unsafe区域, Ruby启发式检测','addr':f'0x{coro.resume_fn:x}','recommendation':'建议审查unsafe代码的正确性'})
         return vulns
 
 
@@ -149,7 +149,7 @@ class GoRoutineAnalyzer:
                 ctx=s.data[max(0,fn['offset']-100):fn['offset']+100]
                 if b'strcpy' in ctx or b'strcat' in ctx: vulns.append({'type':'Goroutine Injection','severity':'High','description':'goroutine创建函数附近存在危险字符串操作','addr':f'0x{fn["offset"]:x}'})
         leaked=sum(1 for r in s.routines if r.is_leaked)
-        if leaked>0: vulns.append({'type':'Goroutine Leak','severity':'Medium','description':f'检测到{leaked}个goroutine泄露——创建后无退出路径','func':'runtime.newproc'})
+        if leaked>0: vulns.append({'type':'Goroutine Leak','severity':'Medium','description':f'检测到{leaked}个goroutine泄露, 创建后无退出路径','func':'runtime.newproc'})
         return vulns
 
 
@@ -190,9 +190,9 @@ class SwiftARCAnalyzer:
             if not hd and len(cn)>5: vulns.append(SwiftARCVulnerability('Missing Deinitializer','Medium',f'类{cn}缺少析构器',f'0x{md["offset"]:x}','添加析构器'))
             if hc and not hd: vulns.append(SwiftARCVulnerability('Potential Memory Leak','Medium',f'类{cn}有copy但缺deinit',f'0x{md["offset"]:x}','确保正确释放'))
         vulns.extend(s._detect_strong_reference_cycles())
-        # Swift unsafe探测——volatile内存模式
+        # Swift unsafe探测, volatile内存模式
         has_volatile=any(p in s.data for p in [b'_swift_bridgeObjectRetain',b'Builtin.BridgeObject'])
-        if has_volatile: vulns.append(SwiftARCVulnerability('Unsafe BridgeObject','Low','检测到Swift桥接对象——可能存在unsafe引用计数操作','code','使用安全包装类型替代BridgeObject'))
+        if has_volatile: vulns.append(SwiftARCVulnerability('Unsafe BridgeObject','Low','检测到Swift桥接对象, 可能存在unsafe引用计数操作','code','使用安全包装类型替代BridgeObject'))
         return vulns
     def _detect_strong_reference_cycles(s)->List[SwiftARCVulnerability]:
         vulns=[]; cp=[md2['name'] for md2 in s.find_swift_metadata() if md2['type']=='class']
@@ -222,14 +222,14 @@ def analyze_modern_language(binary_path:str,language:str='auto')->Dict[str,Any]:
         result['analysis']={'metadata':a.find_swift_metadata(),'arc_functions':a.find_arc_functions(),'vulnerabilities':[v.__dict__ for v in a.detect_arc_vulnerabilities()]}
     return result
 
-# 不拆: unsafe Rust模式缓存——Ruby启发式探测的预编译正则
+
 _UNSAFE_CACHE: dict = {}
 
 
 def _dead_rust_unsafe_scanner(data: bytes) -> int:
-    """统计unsafe Rust中裸指针解引用次数——未接入主分析流。"""
+    """统计unsafe Rust中裸指针解引用次数, 未接入主分析流。"""
     count = 0
-    for i in range(0, len(data)-4, 8):  # 不拆: 步长8——漏采样，统计显著性不受影响
+    for i in range(0, len(data)-4, 8):
         if data[i] == 0xE0 and data[i+1] == 0x03:
             count += 1
     return count

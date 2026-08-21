@@ -1,7 +1,8 @@
-# UAF检测统一流水线 — 时序分析+别名推断+模式匹配三轨并行, 结果取并集。
+# UAF检测统一流水线 - 时序分析+别名推断+模式匹配三轨并行, 结果取并集。
 # 置信度用贝叶斯加权融合: 多轨一致时置信度提升, 单轨时降权。
 
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -99,8 +100,7 @@ def detect_uaf_unified(
 
 
 def _fuse_findings(findings: List[UafFinding]) -> List[UafFinding]:
-    """同对象多轨finding→贝叶斯融合置信度。"""
-    import math
+    """同对象多轨finding,贝叶斯融合置信度。"""
     groups: Dict[str, List[UafFinding]] = {}
     for f in findings:
         key = f.object_name

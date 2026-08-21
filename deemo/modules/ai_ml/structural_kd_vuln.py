@@ -1,8 +1,8 @@
-# 结构感知知识蒸馏——将教师GNN的图注意力模式注入学生模型
+# 结构感知知识蒸馏-将教师GNN的图注意力模式注入学生模型
 #
 # 核心问题: 现有知识蒸馏（包括本模块的distilled_vuln_detector.py）仅传递
 # 教师模型的输出logits（软标签），忽略了教师GNN内部的图结构推理过程。
-# 教师模型对CFG中哪些边/节点给予了更多注意力——这种结构知识对学生模型
+# 教师模型对CFG中哪些边/节点给予了更多注意力-这种结构知识对学生模型
 # 理解漏洞模式至关重要，但标准KD完全丢弃了它。
 #
 # 技术方案:
@@ -11,7 +11,7 @@
 #   2. 结构蒸馏损失: L_struct = KL(A_teacher || A_student)，强制学生
 #      学习与教师相同的图注意力分布
 #   3. 多级结构对齐: 在GNN的每一层（而非仅输出层）对齐注意力模式
-#   4. 自适应温度: 根据图的稀疏度调整KL散度的温度参数——
+#   4. 自适应温度: 根据图的稀疏度调整KL散度的温度参数-
 #      稀疏图用更低温度（更严格的匹配），密集图用更高温度（允许灵活性）
 #
 # 新颖性:
@@ -35,7 +35,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -125,7 +124,7 @@ class StructuralKnowledgeExtractor:
 
 
 class StructuralDistillation:
-    """结构感知知识蒸馏——将教师GNN的图注意力模式传递给学生。
+    """结构感知知识蒸馏-将教师GNN的图注意力模式传递给学生。
 
     总损失: L = α·L_logit + β·L_struct + γ·L_feat
     其中:
@@ -156,11 +155,7 @@ class StructuralDistillation:
                      student_hidden: Optional[List[np.ndarray]] = None,
                      adjacency: Optional[np.ndarray] = None
                      ) -> DistillationLoss:
-        """计算完整的结构蒸馏损失。
-
-        Returns:
-            DistillationLoss with component breakdown
-        """
+        """计算完整的结构蒸馏损失。"""
         # 自适应温度: 图越稀疏→温度越低（更严格匹配）
         if self.adaptive_temp and adjacency is not None:
             n_edges = np.sum(adjacency > 0)

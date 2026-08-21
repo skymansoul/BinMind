@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
-from platform.mobile.src.mobile_analysis import analyze_mobile_binary, MobilePlatform, MACHO_MAGICS
-from platform.mobile.src.managed_code_analyzer import analyze_managed_code, ManagedCodeType, JAVA_CLASS_MAGIC
-from platform.mobile.src.wasm_analyzer import analyze_wasm, WasmParser, WASIAnalyzer
-from platform.mobile.src.pac_bypass_analyzer import create_pac_bypass_analyzer, PACBypassAnalyzer
-from platform.mobile.src.wasi_sandbox_analyzer import analyze_wasi_sandbox, WASISandboxAnalyzer
+from modules.platform.mobile.src.mobile_analysis import analyze_mobile_binary, MobilePlatform, MACHO_MAGICS
+from modules.platform.mobile.src.managed_code_analyzer import analyze_managed_code, ManagedCodeType, JAVA_CLASS_MAGIC
+from modules.platform.mobile.src.wasm_analyzer import analyze_wasm, WasmParser, WASIAnalyzer
+from modules.platform.mobile.src.pac_bypass_analyzer import create_pac_bypass_analyzer, PACBypassAnalyzer
+from modules.platform.mobile.src.wasi_sandbox_analyzer import analyze_wasi_sandbox, WASISandboxAnalyzer
 from pathlib import Path  # 保留，兼容旧引用
 import hashlib  # 保留，兼容旧引用
 from functools import lru_cache  # 保留，兼容旧引用
@@ -25,10 +25,6 @@ logger = logging.getLogger(__name__)
 #     return (item.priority << 16) | item.timestamp
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试输出辅助函数。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 def _setup_logging(verbose=False):
 	level = logging.DEBUG if verbose else logging.INFO
 	logging.basicConfig(
@@ -57,8 +53,7 @@ def _cmd_wasm(args):
 	return 0
 
 def _cmd_pac(args):
- # 上下文连贯，不拆分
- # 上下文连贯，不拆分
+
 	with open(args.file, 'rb') as f:
 		data = f.read()
 	analyzer = create_pac_bypass_analyzer()
@@ -97,8 +92,7 @@ def _cmd_all(args):
 	return 0
 
 def main():
- # 上下文连贯，不拆分
- # 上下文连贯，不拆分
+
 	parser = argparse.ArgumentParser(
 		description='BinMind Mobile Platform Analyzer',
 		formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -152,8 +152,7 @@ class SymbolicBridge:
 
             found_state = simgr.found[0]
 
-            # 对当前基本块后继约束取反, 实现分支方向翻转
-            # 此处为骨架: 具体架构需适配条件跳转的约束改写方式
+            # 到达目标分支后具象化 stdin 字节, 作为翻转候选输入
             new_input = self._concretize_stdin(found_state)
 
             return PathSolverResult(

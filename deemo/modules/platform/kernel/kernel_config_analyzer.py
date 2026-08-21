@@ -15,7 +15,7 @@ class Severity(Enum):
     LOW = 2
     INFO = 1
 
-# 检查项分类——与严重等级解耦，用于按功能域计算得分
+# 检查项分类, 与严重等级解耦，用于按功能域计算得分
 # 分类体系遵循 KSPP 推荐的层次化审计模型
 HARDENING_CATEGORY_MAP = {
     "mem": "内存安全", "cfi": "CFI/控制流", "spec": "推测执行缓解",
@@ -96,31 +96,31 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("PGTABLE_LEVELS",            ">=4",  3, Severity.MEDIUM, "页表层级检查", "misc"),
 
 # 容器/运行时特化 (KernelCTF / CBL-Mariner 配置基准)
-    ("BPF_JIT",                   "y",  4, Severity.HIGH,     "BPF JIT——容器运行时基础设施", "container"),
-    ("BPF_JIT_ALWAYS_ON",         "y",  3, Severity.MEDIUM,   "JIT始终可用——避免解释器回退的攻击面", "container"),
-    ("CGROUP_BPF",                "y",  3, Severity.MEDIUM,   "cgroup BPF——容器安全策略挂载点", "container"),
-    ("USER_NS",                   "n",  4, Severity.HIGH,     "用户命名空间——主要容器逃逸向量", "container"),
-    ("X86_MSR",                   "n",  3, Severity.MEDIUM,   "MSR访问限制——防内核地址泄漏", "container"),
-    ("KALLSYMS",                  "n",  3, Severity.MEDIUM,   "kallsyms——非调试场景不应导出", "container"),
-    ("KALLSYMS_ALL",              "n",  4, Severity.HIGH,     "/proc/kallsyms 全量导出——KASLR 无效化", "container"),
+    ("BPF_JIT",                   "y",  4, Severity.HIGH,     "BPF JIT, 容器运行时基础设施", "container"),
+    ("BPF_JIT_ALWAYS_ON",         "y",  3, Severity.MEDIUM,   "JIT始终可用, 避免解释器回退的攻击面", "container"),
+    ("CGROUP_BPF",                "y",  3, Severity.MEDIUM,   "cgroup BPF, 容器安全策略挂载点", "container"),
+    ("USER_NS",                   "n",  4, Severity.HIGH,     "用户命名空间, 主要容器逃逸向量", "container"),
+    ("X86_MSR",                   "n",  3, Severity.MEDIUM,   "MSR访问限制, 防内核地址泄漏", "container"),
+    ("KALLSYMS",                  "n",  3, Severity.MEDIUM,   "kallsyms, 非调试场景不应导出", "container"),
+    ("KALLSYMS_ALL",              "n",  4, Severity.HIGH,     "/proc/kallsyms 全量导出, KASLR 无效化", "container"),
 
 # CBL-Mariner / KernelCTF 特定
     ("PAX_REFCOUNT",              "y",  4, Severity.HIGH,     "引用计数溢出保护 (grsec/PaX)", "cbl"),
-    ("BUG_ON_DATA_CORRUPTION",    "y",  4, Severity.HIGH,     "数据损坏立刻panic——防静默利用", "cbl"),
-    ("SLAB_MERGE_DEFAULT",        "n",  3, Severity.MEDIUM,   "跨缓存合并——增加heap exploit难度", "cbl"),
-    ("RANDOM_TRUST_CPU",          "n",  4, Severity.HIGH,     "不信任CPU RNG——防微码后门", "cbl"),
+    ("BUG_ON_DATA_CORRUPTION",    "y",  4, Severity.HIGH,     "数据损坏立刻panic, 防静默利用", "cbl"),
+    ("SLAB_MERGE_DEFAULT",        "n",  3, Severity.MEDIUM,   "跨缓存合并, 增加heap exploit难度", "cbl"),
+    ("RANDOM_TRUST_CPU",          "n",  4, Severity.HIGH,     "不信任CPU RNG, 防微码后门", "cbl"),
     ("RANDOM_TRUST_BOOTLOADER",   "n",  3, Severity.MEDIUM,   "不信任bootloader RNG种子", "cbl"),
 # IOMMU/DMA 保护
-    ("IOMMU_SUPPORT",             "y",  5, Severity.CRITICAL, "IOMMU 基础支持——DMA 攻击的首道防线", "misc"),
-    ("INTEL_IOMMU",               "y",  5, Severity.CRITICAL, "Intel VT-d——外设 DMA 隔离", "misc"),
-    ("INTEL_IOMMU_DEFAULT_ON",    "y",  5, Severity.CRITICAL, "IOMMU 默认启用——关闭启动期 DMA 窗口", "misc"),
-    ("AMD_IOMMU",                 "y",  5, Severity.CRITICAL, "AMD-Vi——外设 DMA 隔离", "misc"),
-    ("IOMMU_DMA",                 "y",  4, Severity.HIGH,     "IOMMU DMA 映射 API——驱动层 DMA 保护", "misc"),
-    ("IOMMU_STRICT",              "y",  3, Severity.MEDIUM,   "严格 IOMMU 模式——禁止惰性取消映射", "misc"),
-    ("PCI_PRI",                   "n",  4, Severity.HIGH,     "PCIe PRI/ATS——IOMMU 绕过向量 (Thunderclap)", "misc"),
-    ("PCI_PASID",                 "n",  4, Severity.HIGH,     "PCIe PASID——扩大 DMA 攻击面", "misc"),
-    ("THUNDERBOLT",               "n",  3, Severity.MEDIUM,   "Thunderbolt——物理 DMA 攻击向量", "misc"),
-    ("HOTPLUG_PCI",               "n",  2, Severity.LOW,      "PCI 热插拔——运行时外设注入风险", "misc"),
+    ("IOMMU_SUPPORT",             "y",  5, Severity.CRITICAL, "IOMMU 基础支持, DMA 攻击的首道防线", "misc"),
+    ("INTEL_IOMMU",               "y",  5, Severity.CRITICAL, "Intel VT-d, 外设 DMA 隔离", "misc"),
+    ("INTEL_IOMMU_DEFAULT_ON",    "y",  5, Severity.CRITICAL, "IOMMU 默认启用, 关闭启动期 DMA 窗口", "misc"),
+    ("AMD_IOMMU",                 "y",  5, Severity.CRITICAL, "AMD-Vi, 外设 DMA 隔离", "misc"),
+    ("IOMMU_DMA",                 "y",  4, Severity.HIGH,     "IOMMU DMA 映射 API, 驱动层 DMA 保护", "misc"),
+    ("IOMMU_STRICT",              "y",  3, Severity.MEDIUM,   "严格 IOMMU 模式, 禁止惰性取消映射", "misc"),
+    ("PCI_PRI",                   "n",  4, Severity.HIGH,     "PCIe PRI/ATS, IOMMU 绕过向量 (Thunderclap)", "misc"),
+    ("PCI_PASID",                 "n",  4, Severity.HIGH,     "PCIe PASID, 扩大 DMA 攻击面", "misc"),
+    ("THUNDERBOLT",               "n",  3, Severity.MEDIUM,   "Thunderbolt, 物理 DMA 攻击向量", "misc"),
+    ("HOTPLUG_PCI",               "n",  2, Severity.LOW,      "PCI 热插拔, 运行时外设注入风险", "misc"),
 ]
 
 # CVE 到配置的映射
@@ -312,23 +312,23 @@ def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
 
     _runtime_checks = [
         ("kernel.kptr_restrict",        ">=2", "high",
-         "内核指针泄漏限制——0 时 /proc/kallsyms 对非特权用户可见"),
+         "内核指针泄漏限制, 0 时 /proc/kallsyms 对非特权用户可见"),
         ("kernel.dmesg_restrict",       "1",   "medium",
-         "dmesg 访问限制——防止内核日志泄漏地址"),
+         "dmesg 访问限制, 防止内核日志泄漏地址"),
         ("kernel.perf_event_paranoid",  ">=3", "high",
-         "perf_event 限制——低值允许非特权性能事件采样"),
+         "perf_event 限制, 低值允许非特权性能事件采样"),
         ("kernel.yama.ptrace_scope",    ">=2", "medium",
-         "ptrace 限制——防进程注入"),
+         "ptrace 限制, 防进程注入"),
         ("kernel.unprivileged_bpf_disabled", "1", "critical",
-         "非特权 BPF 禁用——主要容器逃逸向量"),
+         "非特权 BPF 禁用, 主要容器逃逸向量"),
         ("kernel.unprivileged_userns_clone", "0", "critical",
-         "非特权用户命名空间克隆——主要容器逃逸向量"),
+         "非特权用户命名空间克隆, 主要容器逃逸向量"),
         ("net.core.bpf_jit_enable",     "1",   "high",
          "BPF JIT 应硬启用（避免解释器回退的攻击面）"),
         ("net.core.bpf_jit_harden",     "2",   "medium",
-         "BPF JIT 加固——2=禁用常量折叠 防 JIT spray"),
+         "BPF JIT 加固, 2=禁用常量折叠 防 JIT spray"),
         ("kernel.modules_disabled",     "1",   "high",
-         "模块加载禁用——完全消除 LKM rootkit 攻击面"),
+         "模块加载禁用, 完全消除 LKM rootkit 攻击面"),
     ]
 
     for _path, _expected, _severity, _desc in _runtime_checks:
@@ -346,19 +346,19 @@ def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
 
 # 修复建议产出
 # 编译器加固标志审计
-# .config 选项是必要条件而非充分条件——编译器标志决定运行时行为。
+# .config 选项是必要条件而非充分条件, 编译器标志决定运行时行为。
 # 例如 CONFIG_FORTIFY_SOURCE=y 仅在 CFLAGS 包含 -D_FORTIFY_SOURCE=2 时实际生效。
 
 _COMPILER_HARDENING_FLAGS = [
     ("-D_FORTIFY_SOURCE=2", "critical", "编译期缓冲区溢出检测（需配合 CONFIG_FORTIFY_SOURCE=y）"),
-    ("-fstack-protector-strong", "critical", "强栈 canary——比 -fstack-protector 覆盖更多函数"),
-    ("-fcf-protection=full", "high", "Intel CET (IBT + Shadow Stack)——控制流完整性"),
-    ("-fzero-call-used-regs=all", "high", "函数返回前清零寄存器——防 ROP 数据泄漏"),
-    ("-mretpoline", "high", "retpoline——Spectre v2 缓解"),
+    ("-fstack-protector-strong", "critical", "强栈 canary, 比 -fstack-protector 覆盖更多函数"),
+    ("-fcf-protection=full", "high", "Intel CET (IBT + Shadow Stack), 控制流完整性"),
+    ("-fzero-call-used-regs=all", "high", "函数返回前清零寄存器, 防 ROP 数据泄漏"),
+    ("-mretpoline", "high", "retpoline, Spectre v2 缓解"),
     ("-Werror=implicit-function-declaration", "medium", "隐式函数声明为错误"),
     ("-Werror=implicit-int", "medium", "隐式 int 为错误"),
-    ("-Wl,-z,relro", "high", "Full RELRO——GOT 不可写"),
-    ("-Wl,-z,now", "high", "BIND_NOW——立即解析所有 PLT 条目"),
+    ("-Wl,-z,relro", "high", "Full RELRO, GOT 不可写"),
+    ("-Wl,-z,now", "high", "BIND_NOW, 立即解析所有 PLT 条目"),
     ("-fno-delete-null-pointer-checks", "medium", "保留 NULL 指针检查"),
     ("-fno-strict-overflow", "medium", "禁用严格溢出优化"),
     ("-fno-strict-aliasing", "low", "禁用严格别名优化（Linux 内核必需）"),

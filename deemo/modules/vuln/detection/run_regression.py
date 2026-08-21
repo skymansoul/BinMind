@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""一键回归测试入口 — 编译样本 → 运行扫描 → 收集结果 → 生成报告.
+"""一键回归测试入口 - 编译样本 - 运行扫描 - 收集结果 - 生成报告.
 
-创建: 2025-03-03
 用途: 一行命令完成完整回归测试管线, 确保改动算法后可以一键验证效果。
       集成了 DP-TVRA 三阶段过滤作为核心检测后端。
 
 管线:
-  1. compile   — 用 gcc 编译所有 C 样本为 ELF
-  2. scan      — 对每个 ELF 运行 DP-TVRA 检测
-  3. collect   — 聚合结果, 计算 precision/recall/F1
-  4. report    — 生成 Markdown 报告 + JSON 摘要
-  5. benchmark — 多工具对比 (BinMind/Angr/QEMU/Ghidra)
-  6. plot      — 生成对比图表
+  1. compile   - 用 gcc 编译所有 C 样本为 ELF
+  2. scan      - 对每个 ELF 运行 DP-TVRA 检测
+  3. collect   - 聚合结果, 计算 precision/recall/F1
+  4. report    - 生成 Markdown 报告 + JSON 摘要
+  5. benchmark - 多工具对比 (BinMind/Angr/QEMU/Ghidra)
+  6. plot      - 生成对比图表
 
 使用方式:
   python run_regression.py              # 全部阶段

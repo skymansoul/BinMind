@@ -1,11 +1,11 @@
 """
-鞅校准检验 -- 用鞅差分检验统计验证传播模型置信度的校准质量。
+ 鞅校准检验 - 用鞅差分检验统计验证传播模型置信度的校准质量。
 
 问题：
   PropagationGraph的贝叶斯更新机制对边置信度做逐次更新。
   若更新是良好校准的，则预测误差序列应构成鞅差序列(martingale difference):
     E[error_{t+1} | past_errors] = 0
-  若偏离此性质，说明模型存在系统性偏差——要么过度自信(低估不确定性)，
+  若偏离此性质，说明模型存在系统性偏差, 要么过度自信(低估不确定性)，
   要么过度保守(高估不确定性)。
 
 方案：
@@ -14,7 +14,7 @@
   2. Lo-MacKinlay方差比检验: Var(k步和)/(k * Var(1步)) 是否≈1
   3. Kolmogorov-Smirnov检验: 标准化errors是否服从标准正态
 
-  复合校准评分 = 三检验p值的调和平均——任意一项不通过即拉低总分。
+  复合校准评分 = 三检验p值的调和平均, 任意一项不通过即拉低总分。
 
 与已有工作的区分：
   鞅检验广泛用于金融市场的有效性检验(弱式有效市场假说)和
@@ -22,7 +22,7 @@
   本模块填补了传播模型的形式化统计校准评估空白。
 
 ref: Lo & MacKinlay "Stock Market Prices do not Follow Random Walks".
-ref: Dawid "Statistical Theory: The Prequential Approach" -- 概率预测校准。
+ref: Dawid "Statistical Theory: The Prequential Approach" - 概率预测校准。
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ class CalibrationReport:
 
 
 class MartingaleCalibrationTester:
-    """鞅校准检验器 -- 传播模型置信度更新的统计验证。
+    """鞅校准检验器 - 传播模型置信度更新的统计验证。
 
     用法::
 
@@ -130,7 +130,7 @@ class MartingaleCalibrationTester:
 
     def _ljung_box_test(self, errors: List[float]
                          ) -> Tuple[float, float]:
-        """Ljung-Box Q检验 -- H0: errors无序列自相关。
+        """Ljung-Box Q检验 - H0: errors无序列自相关。
 
         Q = n*(n+2) * sum_{j=1..h} r_j^2 / (n-j)
         r_j = 滞后j的自相关系数。
@@ -193,7 +193,7 @@ class MartingaleCalibrationTester:
 
     def _ks_normality_test(self, errors: List[float]
                             ) -> Tuple[float, float]:
-        """KS检验 -- H0: 标准化errors服从标准正态。
+        """KS检验 - H0: 标准化errors服从标准正态。
 
         标准化: (e - mean) / std
         """

@@ -24,7 +24,6 @@ from .src.robust.smoothing import (
     CertifiedBinaryRobustness,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

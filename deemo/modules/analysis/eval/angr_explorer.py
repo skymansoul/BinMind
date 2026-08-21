@@ -1,4 +1,4 @@
-# Angr 堆溢出检测基线 — CFG + capstone 指令级调用点定位
+# Angr 堆溢出检测基线 - CFG + capstone 指令级调用点定位
 #
 # 作为对比基线: Angr 代表"通用反汇编+CFG 工具"的典型能力.
 # 检测逻辑:

@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Dict, Optional
 import re
 
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 from size_expr_evaluator import eval_size_expr, resolve_defines
 from taint_confirm import _seed_sources, _propagate
 

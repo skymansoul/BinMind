@@ -1,16 +1,15 @@
-# 创建: 2026-06-03 | 扫描调度模块
 #
-"""扫描调度——读取build_manifest, 对每个ELF调用扫描器, 超时控制。
+"""扫描调度-读取build_manifest, 对每个ELF调用扫描器, 超时控制。
 
 当前扫描器入口:
 - BIFT引擎: vuln.detection.bift_engine.BiftEngine
 - 新增模块: value_composer, path_sensitive_checker, heap_state_model, taint_format_checker
   通过 python -c 调用各模块的 main-like 入口。
 
-若直接import失败(路径/依赖问题), 回退到基础检测——基于objdump/symbols的
+若直接import失败(路径/依赖问题), 回退到基础检测-基于objdump/symbols的
 静态特征提取作为ground truth近似。
 
-输出: scan_results.json — {sample_id: {findings, elapsed, exit_code}}。
+输出: scan_results.json - {sample_id: {findings, elapsed, exit_code}}。
 """
 
 import json
@@ -29,13 +28,13 @@ def load_manifest(manifest_path: str = "build_manifest.json") -> dict:
     """加载build_module输出的编译清单。"""
     _p = Path(manifest_path)
     if not _p.exists():
-        print(f"[scan] manifest {manifest_path} not found — discovering binaries")
+        print(f"[scan] manifest {manifest_path} not found - discovering binaries")
         return _discover_binaries()
     return json.loads(_p.read_text())
 
 
 def _discover_binaries() -> dict:
-    """回退——直接扫描samples/下所有vuln文件。"""
+    """回退-直接扫描samples/下所有vuln文件。"""
     _manifest = {}
     for _d in sorted(_SAMPLES_ROOT.iterdir()):
         if not _d.is_dir():
@@ -55,14 +54,14 @@ def _discover_binaries() -> dict:
 
 
 def run_basic_scan(binary_path: str) -> dict:
-    """基础扫描——不依赖复杂引擎, 用readelf+objdump做静态特征提取。
+    """基础扫描-不依赖复杂引擎, 用readelf+objdump做静态特征提取。
 
     提取: 危险函数调用(strcpy/system/memcpy/gets/printf) + 段权限。
-    这作为ground truth近似——已知漏洞样本预期被检出。
+    这作为ground truth近似-已知漏洞样本预期被检出。
     """
     _findings: list[dict] = []
 
-    # 1. 符号表——检查危险函数
+    # 1. 符号表-检查危险函数
     try:
         _r = subprocess.run(
             ["objdump", "-T", binary_path],
@@ -81,7 +80,7 @@ def run_basic_scan(binary_path: str) -> dict:
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
 
-    # 2. 段权限——W+X检查
+    # 2. 段权限-W+X检查
     try:
         _r = subprocess.run(
             ["readelf", "-l", binary_path],
@@ -101,7 +100,7 @@ def run_basic_scan(binary_path: str) -> dict:
 
 def scan_sample(sample_id: str, binary_path: str,
                 scan_method: str = "basic") -> dict:
-    """扫描单个样本——超时控制。返回scan_result字典。"""
+    """扫描单个样本-超时控制。返回scan_result字典。"""
     _t0 = time.time()
 
     try:
@@ -131,7 +130,7 @@ def scan_sample(sample_id: str, binary_path: str,
 
 def scan_all(manifest_path: str = "build_manifest.json",
              output_path: str = "scan_results.json") -> str:
-    """扫描所有已编译样本——写结果JSON。"""
+    """扫描所有已编译样本-写结果JSON。"""
     _manifest = load_manifest(manifest_path)
     _results = {}
     _success = 0

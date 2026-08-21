@@ -1,12 +1,12 @@
 #
-# 路径多样性收敛分析器 — 检测自适应阈值系统的稳定/振荡/发散状态
+# 路径多样性收敛分析器 - 检测自适应阈值系统的稳定/振荡/发散状态
 #
-# PathDiversityTracker._auto_adjust_threshold 是比例控制器——
+# PathDiversityTracker._auto_adjust_threshold 是比例控制器-
 # 探索速度 < 0.5/s 降阈值（促进更多路径被认定为"独特"从而保留）
 # 探索速度 > 5/s 升阈值（减少冗余）。但纯比例控制在一个交替循环
-# 的程序上可能持续振荡——阈值在两个相邻值间反复跳变，永不安全收敛
+# 的程序上可能持续振荡-阈值在两个相邻值间反复跳变，永不安全收敛
 #
-# 本模块不替代自适应阈值——它在外部观测其行为，诊断当前处于何种动力学状态：
+# 本模块不替代自适应阈值-它在外部观测其行为，诊断当前处于何种动力学状态：
 #   (a) 收敛 (converged): 阈值稳定在单个值 ± 死区范围内
 #   (b) 振荡 (oscillating): 阈值在两个（较少情况下三个）值间周期性跳变
 #   (c) 发散 (diverging): 阈值单方向漂移，未表现出收敛趋势
@@ -18,11 +18,11 @@
 #
 # 理论基础：
 # 自适应滤波理论 (Haykin, Adapt 过滤 Theory, 5th ed.) 中的
-# LMS 收敛性分析——误差信号的二阶统计量可区分稳定与振荡状态
+# LMS 收敛性分析-误差信号的二阶统计量可区分稳定与振荡状态
 #   本模块将阈值序列视为一维信号的采样值，应用滑动窗口方差 +
 # 符号变化率 + 一阶导数符号一致性三个指标判定状态
 #
-# — 符号执行中自适应搜索策略的收敛性
+# 符号执行中自适应搜索策略的收敛性
 # 分析框架，其 stabili metric 定义被本模块的 _stability_index 借鉴并
 # 扩展为三维判定（方差+符号变化率+导数一致性）
 
@@ -45,13 +45,13 @@ class ConvergenceState:
 
 class ConvergenceAnalyzer:
     """观测自适应阈值的时间序列并诊断动力学状态
-    
+
     调用方每隔 N 秒调用 observe(threshold, metric) 推入最新观测
     get_st() 返回基于滑动窗口的诊断结果
-    
+
     分离于 PathDiversityTracker 的设计理由：
-    PathDiversityTracker 有 ~1800 行业务逻辑——路径特征提取、SimHash、
-    ANN 索引、配额管理、热力图。收敛分析是"元观测"——它不参与路径管理
+    PathDiversityTracker 有 ~1800 行业务逻辑-路径特征提取、SimHash、
+    ANN 索引、配额管理、热力图。收敛分析是"元观测"-它不参与路径管理
     只观测管理器的输出。独立模块避免循环依赖，且可复用于 Threshold 之外的
     自适应参数（如 SimHash 排斥汉明距离、预算刷新周期）
     """
@@ -63,7 +63,7 @@ class ConvergenceAnalyzer:
                  divergence_trend_samples: int = 10):
         """
         window_s: 滑动窗口大小（观测次数），默认 30
-        dead_zone_ratio: 死区占当前阈值的比例——在此范围内的阈值变化
+        dead_zone_ratio: 死区占当前阈值的比例--在此范围内的阈值变化
         不计为"变化"，默认 0.05（5%）
         oscillation_max_period: 判定振荡的最大周期（窗口内）
         若阈值在 ≤此数 的观测内反复跳变即判定振荡
@@ -83,7 +83,7 @@ class ConvergenceAnalyzer:
     def observe(self, threshold: float, exploration_rate: float,
                 new_paths: int = 0):
         """记录一次观测
-        
+
         threshold: 当前相似度阈值
         exploration_r: 当前探索速度（路径/秒）
         new_paths: 此步新增的独立路径数
@@ -92,7 +92,7 @@ class ConvergenceAnalyzer:
         self._thresholds.append(threshold)
         self._metrics.append(exploration_rate)
 
-        # 追踪路径多样性增长率——二阶导数信息
+        # 追踪路径多样性增长率--二阶导数信息
         if len(self._diversity_growth) >= 1:
             prev_total = sum(self._diversity_growth)
             # 增长率变化 = 当前新增 vs 窗口内平均新增
@@ -105,12 +105,12 @@ class ConvergenceAnalyzer:
         else:
             self._diversity_growth.append(float(new_paths))
 
-        # 更新状态——仅在有足够样本时
+        # 更新状态--仅在有足够样本时
         if self._observation_count >= max(5, self._window_size // 3):
             self._diagnose()
 
     def _diagnose(self):
-        """核心诊断逻辑——三维判定"""
+        """核心诊断逻辑--三维判定"""
         thresholds = list(self._thresholds)
         if len(thresholds) < 5:
             return
@@ -118,12 +118,12 @@ class ConvergenceAnalyzer:
         current = thresholds[-1]
         dead_zone = max(0.005, current * self._dead_zone_ratio)
 
-        # 维度 1: 方差——阈值在窗口内的离散程度
+        # 维度 1: 方差--阈值在窗口内的离散程度
         mean_t = sum(thresholds) / len(thresholds)
         variance = sum((t - mean_t) ** 2 for t in thresholds) / len(thresholds)
         std = math.sqrt(variance)
 
-        # 维度 2: 符号变化率——阈值改变方向的频率
+        # 维度 2: 符号变化率--阈值改变方向的频率
         # 先构建"显著变化"序列（过滤死区内抖动）
         significant = [thresholds[0]]
         for t in thresholds[1:]:
@@ -137,7 +137,7 @@ class ConvergenceAnalyzer:
                 if prev_dir * curr_dir < 0:  # 方向反转
                     direction_changes += 1
 
-        # 维度 3: 一阶导数符号一致性——连续同号则趋势明确
+        # 维度 3: 一阶导数符号一致性--连续同号则趋势明确
         if len(thresholds) >= self._divergence_trend_samples:
             deltas = [thresholds[i + 1] - thresholds[i]
                       for i in range(len(thresholds) - 1)]
@@ -160,7 +160,7 @@ class ConvergenceAnalyzer:
         if std <= dead_zone * 2:
             status = "converged"
             stability = 0.95
-            recommendation = "阈值已稳定——可固化 ANN 索引以减少重建"
+            recommendation = "阈值已稳定-可固化 ANN 索引以减少重建"
         elif osc_indicator > 0.3 and len(significant) <= 4:
             status = "oscillating"
             # 振荡越频繁→稳定性越低
@@ -169,9 +169,9 @@ class ConvergenceAnalyzer:
             amp = max(abs(significant[i] - significant[i - 1])
                       for i in range(1, len(significant))) if len(significant) >= 2 else 0.0
             if amp < dead_zone * 3:
-                recommendation = "微幅振荡——建议将死区扩大至当前值的 1.5x"
+                recommendation = "微幅振荡--建议将死区扩大至当前值的 1.5x"
             else:
-                recommendation = "大幅振荡——建议引入滞回（hysteresis），步长减半"
+                recommendation = "大幅振荡--建议引入滞回（hysteresis），步长减半"
         elif trend_strength > 0.7 and std > dead_zone * 3:
             status = "diverging"
             # 趋势越强→越不稳定
@@ -181,13 +181,13 @@ class ConvergenceAnalyzer:
             avg_trend = sum(last_deltas[-self._divergence_trend_samples:]) / \
                         max(1, len(last_deltas[-self._divergence_trend_samples:]))
             if avg_trend > 0:
-                recommendation = "阈值持续上升——可能过度排斥路径，建议干预上限"
+                recommendation = "阈值持续上升--可能过度排斥路径，建议干预上限"
             else:
-                recommendation = "阈值持续下降——可能路径冗余严重，检查配额管理"
+                recommendation = "阈值持续下降--可能路径冗余严重，检查配额管理"
         else:
             status = "unstable"
             stability = 0.5
-            recommendation = "暂未稳定——继续观测，当前样本数不足以判定"
+            recommendation = "暂未稳定--继续观测，当前样本数不足以判定"
 
         self._state = ConvergenceState(
             status=status,
@@ -202,7 +202,7 @@ class ConvergenceAnalyzer:
 
     def _count_since_last_change(self, thresholds: List[float],
                                   dead_zone: float) -> int:
-        """从序列末尾向前计数——连续未发生显著变化的样本数"""
+        """从序列末尾向前计数--连续未发生显著变化的样本数"""
         count = 1
         for i in range(len(thresholds) - 1, 0, -1):
             if abs(thresholds[i] - thresholds[i - 1]) > dead_zone:
@@ -214,14 +214,14 @@ class ConvergenceAnalyzer:
         return self._state
 
     def should_stabilize(self, consecutive_stable_samples: int = 15) -> bool:
-        """返回 True 表示阈值已连续稳定足够长时间——可以降低观测频率
+        """返回 True 表示阈值已连续稳定足够长时间--可以降低观测频率
         或固化 ANN 索引参数"""
         return (self._state.status == "converged" and
                 self._state.samples_since_change >= consecutive_stable_samples)
 
     def recommended_step_size(self, current_step: float) -> float:
         """根据诊断状态调整后的阈值步长
-        
+
         振荡状态下步长减半，发散状态下步长加倍以加速收敛
         调用方（_auto_adjust_threshold）可选择采纳或忽略此
         """

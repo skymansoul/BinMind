@@ -3,7 +3,6 @@
 # 提供内存访问模式判定和立即数解析,
 # 供 uaf_detect 的指针追踪模块使用.
 #
-# 创建: 2026-05-24
 
 import re
 from typing import Optional

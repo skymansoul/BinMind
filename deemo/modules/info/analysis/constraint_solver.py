@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional
-from value_range_analyzer import ValueRange, extract_value_ranges
+from .value_range_analyzer import ValueRange, extract_value_ranges
 from heap_layout_model import AllocatorModel, get_allocator_model
 from size_expr_evaluator import (
     eval_size_expr, eval_write_size, resolve_defines, is_size_var,

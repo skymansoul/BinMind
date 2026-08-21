@@ -1,27 +1,26 @@
-# 修改记录:
-# 2025-08-01 13:55 - 引入约束距离的加权编辑距离替代简单 token Jaccard
+# 引入约束距离的加权编辑距离替代简单 token Jaccard
 #
-# 冷点引导探索器 -- 从 PathHeatmap 冷点出发，计算最小约束修改以重定向执行
+# 冷点引导探索器 从 PathHeatmap 冷点出发，计算最小约束修改以重定向执行
 #
 # PathHeatmap.identify_cold_spots() 回答了"哪里没探索到"。但仅知道坐标
-# (depth=6, constraints=15) 是冷点没有任何可操作的信息——你需要知道如何
+# (depth=6, constraints=15) 是冷点没有任何可操作的信息--你需要知道如何
 # 让符号执行到达那里。本模块填补这个从""到""的缺口
 #
 # 核心思路：
 #   1. 从当前已探索路径池中找到与冷点最近的 k 条路径
 #   2. 对每条近邻路径，计算其约束集与"理想冷点约束集"的约束编辑距离
-# 3. 约束编辑距离最小化 -> 输出具体的约束修改（如"将第 3 个约束
+#      3. 约束编辑距离最小化 -> 输出具体的约束修改（如"将第 3 个约束
 #      的 bvult 改为 bvuge"），供符号执行引擎在下一轮 fork 时使用
 #
 # 与 PALM 的差异：
 # PALM 用 LLM 生成到达目标路径的测试用例，依赖大模型的外部推理能力
-# 本模块完全在符号执行框架内求解——不依赖 LLM，可离线运行
+# 本模块完全在符号执行框架内求解--不依赖 LLM，可离线运行
 #
 # 文献：
 # PALM: "Path-Aware 符号执行 LLMs", Wu et al., 2025
-# -- 提出路径覆盖热力图可视化，但利用 LLM 生成
+# 提出路径覆盖热力图可视化，但利用 LLM 生成
 # 测试用例，不涉及约束集编辑距离计算
-#   Concrete Constraint Guided SE: Sun et al., ICSE 2024 --
+#   Concrete Constraint Guided SE: Sun et al., ICSE 2024
 # 用数据依赖分析引导覆盖具体分支条件，但聚焦于具体值而非约束结构
 
 import math
@@ -30,7 +29,7 @@ from dataclasses import dataclass, field
 from collections import Counter
 
 
-# 操作类型分类——与 EntropyBudgetAllocator 共享相同的分类体系
+# 操作类型分类--与 EntropyBudgetAllocator 共享相同的分类体系
 
 _OP_PATTERNS = {
     'cmp': ('bvult', 'bvule', 'bvugt', 'bvuge', 'bvslt', 'bvsle',
@@ -43,7 +42,7 @@ _OP_PATTERNS = {
     'bool': ('ite', 'if', 'implies', 'and', 'or', 'not', '=>'),
 }
 
-# 操作类型替换成本矩阵——值越大越不相似
+# 操作类型替换成本矩阵--值越大越不相似
 _OP_REPLACE_COST = {
     ('cmp', 'arith'): 2, ('cmp', 'bitwise'): 2, ('cmp', 'mem'): 3, ('cmp', 'bool'): 1,
     ('arith', 'bitwise'): 1, ('arith', 'mem'): 2, ('arith', 'bool'): 2,
@@ -70,7 +69,7 @@ class RedirectionPlan:
 
 class ColdSpotGuidedExplorer:
     """从冷点坐标出发，计算约束修改方案以引导符号执行
-    
+
     用法：
     explorer = ColdSpotGuidedExplorer()
     paths = {'p1': ['(bvult x 10)', '(bvadd y z)'],.}
@@ -187,9 +186,9 @@ class ColdSpotGuidedExplorer:
             target_depth_bucket: int,
             target_cons_bucket: int) -> List[str]:
         """估计冷点区域的典型约束集
-        
+
         基于现有路径的约束类型分布，外推目标数量的约束
-        这不是精确预测——而是提供"如果在那个区域，约束应该长什么样"
+        这不是精确预测--而是提供"如果在那个区域，约束应该长什么样"
         的统计估计。后续可替换为基于 GNN 的约束预测模型
         """
         if not existing:

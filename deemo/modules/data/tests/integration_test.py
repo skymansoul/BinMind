@@ -1,6 +1,5 @@
 # 自包含集成测试 — 用模拟指令流验证全检测管线.
 # 不依赖外部反汇编器, 用手工构造的指令序列模拟5种漏洞场景.
-# 创建: 2026-05-27
 
 import sys, os, json
 sys.path.insert(0, os.path.normpath(os.path.join(

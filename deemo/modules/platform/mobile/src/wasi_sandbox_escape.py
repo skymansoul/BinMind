@@ -1,20 +1,20 @@
 """
-WASI沙箱逃逸综合分析器——多层次逃逸风险评估。
+WASI沙箱逃逸综合分析器: 多层次逃逸风险评估。
 
 检测维度:
-  1. 导入函数审计——危险WASI API识别
-  2. 线性内存分析——guard page突破与OOB（WBSan shadow memory模型）
-  3. Table操作——间接调用劫持
-  4. 文件系统——路径穿越与预打开目录滥用
-  5. 网络——C2通道建立与原始套接字
-  6. 能力模型——最小权限原则违反
-  7. SeeWasm风格路径探索——导入函数组合形成的逃逸路径
-  8. Wemby风格内存损坏——检测memory corruption实现沙箱逃逸的先决条件
-  9. PoC构建——可操作的逃逸验证概念代码
+  1. 导入函数审计: 危险WASI API识别
+  2. 线性内存分析: guard page突破与OOB（WBSan shadow memory模型）
+  3. Table操作: 间接调用劫持
+  4. 文件系统: 路径穿越与预打开目录滥用
+  5. 网络: C2通道建立与原始套接字
+  6. 能力模型: 最小权限原则违反
+  7. SeeWasm风格路径探索: 导入函数组合形成的逃逸路径
+  8. Wemby风格内存损坏: 检测memory corruption实现沙箱逃逸的先决条件
+  9. PoC构建: 可操作的逃逸验证概念代码
 
 设计原则：
   逐层叠加风险信号，加权汇总为0-10的综合评分。
-  能力组合爆炸是沙箱逃逸的主要模式——单一能力无害，组合致命。
+  能力组合爆炸是沙箱逃逸的主要模式, 单一能力无害, 组合致命。
 """
 
 import logging, re, struct, os, json, subprocess
@@ -170,12 +170,12 @@ class MemoryEscapeAnalyzer:
         hm=ms.get("has_max",True if mx>0 else False); go=ws.get("memory_grow_ops",0)
         ta=ws.get("total_allocated_pages",ip); gs=ws.get("guard_size",65536)
         iss=False; rs=[]
-        if not hm or mx==0: iss=True; rs.append("内存无最大页数限制——允许无限增长突破guard page")
+        if not hm or mx==0: iss=True; rs.append("内存无最大页数限制, 允许无限增长突破guard page")
         ps=65536
         if ta*ps>gs: iss=True; rs.append(f"内存分配({ta}页)超过guard区域({gs}字节)")
-        if go>100: iss=True; rs.append(f"大量内存增长操作({go}次)——可能探测边界")
+        if go>100: iss=True; rs.append(f"大量内存增长操作({go}次), 可能探测边界")
         if ip<16 and ta>1000: iss=True; rs.append(f"内存从{ip}页爆炸增长至{ta}页")
-        if ta>65536: iss=True; rs.append(f"内存分配超过4GB({ta}页)——可能导致整数溢出")
+        if ta>65536: iss=True; rs.append(f"内存分配超过4GB({ta}页), 可能导致整数溢出")
         pat=MemoryGrowthPattern(ip,mx if hm else 0,go,ta,ta*ps>gs,gs,iss,"; ".join(rs) if rs else "无异常")
         # Wemby内存损坏检测: 无上限+增长操作 → 损坏前提条件达成
         pat.wemby_corruption_risk = (not hm or mx==0) and (go>0)
@@ -187,9 +187,9 @@ class MemoryEscapeAnalyzer:
         ts=ws.get("table",{}); ip=ts.get("initial",0); mx=ts.get("maximum",0)
         go=ws.get("table_grow_ops",0); es=ws.get("element_segments",0); ic=ws.get("indirect_calls",0)
         iss=False; rs=[]
-        if go>0 and ic>0: iss=True; rs.append("table.grow与call_indirect共存——间接调用劫持可行")
+        if go>0 and ic>0: iss=True; rs.append("table.grow与call_indirect共存, 间接调用劫持可行")
         if mx==0 and ip>0: iss=True; rs.append("Table无最大大小限制，允许无限增长")
-        if es>50: iss=True; rs.append(f"大量元素段({es}个)——可能覆盖关键函数索引")
+        if es>50: iss=True; rs.append(f"大量元素段({es}个), 可能覆盖关键函数索引")
         if ip>10000 or (mx>0 and mx>100000): iss=True; rs.append(f"Table大小异常(初始{ip},最大{mx})")
         eo=ws.get("element_offsets",[]); nc=sum(1 for o in eo if o>0)
         if nc>10: iss=True; rs.append(f"大量非零偏移元素段({nc}个)")
@@ -230,7 +230,7 @@ class FileSystemEscapeAnalyzer:
     @classmethod
     def detect_preopen_abuse(cls,pos):
         if pos is None: return []
-        fs=[]; dd={"/":"根目录预打开——完全文件系统访问","/etc":"系统配置目录","/home":"用户主目录","/root":"root主目录","/tmp":"临时目录","/var":"可变数据目录","/proc":"进程文件系统","/sys":"内核sysfs","/dev":"设备文件","/mnt":"挂载点","/media":"可移动媒体","C:\\":"Windows根目录"}
+        fs=[]; dd={"/":"根目录预打开, 完全文件系统访问","/etc":"系统配置目录","/home":"用户主目录","/root":"root主目录","/tmp":"临时目录","/var":"可变数据目录","/proc":"进程文件系统","/sys":"内核sysfs","/dev":"设备文件","/mnt":"挂载点","/media":"可移动媒体","C:\\":"Windows根目录"}
         for po in pos:
             pth=po.get("path","")
             for dp,r in dd.items():
@@ -278,7 +278,7 @@ class CapabilityModelAnalyzer:
                 r["capability_score"]=min(max(r["capability_score"]-ded,0.0),10.0)
         if WASICapability.PATH_OPEN in sc and WASICapability.PATH_SYMLINK not in sc: r["missing_sandboxing"].append("path_open存在但未检查符号链接限制策略")
         if WASICapability.SOCK_OPEN in sc: r["missing_sandboxing"].append("网络功能启用但未检测网络访问控制策略")
-        if WASICapability.PROC_EXEC in sc: r["missing_sandboxing"].append("proc_exec存在——进程执行是最危险的WASI能力")
+        if WASICapability.PROC_EXEC in sc: r["missing_sandboxing"].append("proc_exec存在, 进程执行是最危险的WASI能力")
         return r
 
 
@@ -300,7 +300,7 @@ class PoCGenerator:
 class WASISandboxEscapeAnalyzer(BaseAnalyzer):
     def __init__(s): super().__init__(); s.wasm_path=""; s.imports_data=[]; s.wasm_sections={}; s.fd_trace=[]; s.socket_ops=[]; s.preopens=[]; s.bytecode_text=""
     @classmethod
-    def get_metadata(cls): return AnalyzerMetadata(name="WASI Sandbox Escape Analyzer",type=AnalyzerType.VULNERABILITY_DETECTOR,version="2.0.0",description="WASI沙箱逃逸分析器——集成SeeWasm路径探索+WBSan内存模型+Wemby内存损坏检测",dependencies=["wasi_sandbox_analyzer","wasm_analyzer"],supported_platforms=["wasm","wasi"])
+    def get_metadata(cls): return AnalyzerMetadata(name="WASI Sandbox Escape Analyzer",type=AnalyzerType.VULNERABILITY_DETECTOR,version="2.0.0",description="WASI沙箱逃逸分析器: 集成SeeWasm路径探索+WBSan内存模型+Wemby内存损坏检测",dependencies=["wasi_sandbox_analyzer","wasm_analyzer"],supported_platforms=["wasm","wasi"])
     def validate_input(s,**kw):
         wp=kw.get("wasm_path","")
         if not wp: return True,None
@@ -503,5 +503,5 @@ _SHADOW_MEM_CACHE: dict = {}
 
 
 def _dead_seewasm_path_ranker(paths: list) -> list:
-    """SeeWasm逃逸路径复杂度排序——按涉及的import数量降序。"""
+    """SeeWasm逃逸路径复杂度排序: 按涉及的import数量降序。"""
     return sorted(paths, key=lambda p: len(p) if isinstance(p, (list, tuple)) else 0, reverse=True)

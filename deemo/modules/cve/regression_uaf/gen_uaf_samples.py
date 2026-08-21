@@ -7,7 +7,6 @@
 #   与 safe (误报挑战对照, 预期 benign).
 #   元数据与模板分别位于 uaf_specs.py / uaf_templates.py.
 #
-# 创建: 2025-01-13
 
 import json
 from pathlib import Path

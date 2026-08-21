@@ -1,11 +1,11 @@
 """
-稀有级联模拟器 -- 重要性采样+分裂法估计传播图中小概率灾难性级联。
+稀有级联模拟器 - 重要性采样+分裂法估计传播图中小概率灾难性级联。
 
 问题：
-  正常风险评估关注"平均情况"——大多数漏洞只在单层内传播。
+  正常风险评估关注"平均情况"，大多数漏洞只在单层内传播。
   但灾难性场景（固件漏洞经内核触发硬件侧信道再被移动端恶意软件利用、
   最终影响智能合约）虽然概率极低，后果却是毁灭性的。
-  标准蒙特卡洛模拟需要数百万次采样才能可靠估计10^-6量级的概率。
+   标准蒙特卡洛模拟需要数百万次采样才能可靠估计10^-6量级的概率。
 
 方案：
   1. 重要性采样 (Importance Sampling):
@@ -21,11 +21,11 @@
 
   3. 层重要性函数:
      重要性函数 I(state) = 当前级联跨越的层数。
-     阈值集合: {2, 3, 4, 5, 6} —— 跨越2层时第一次分裂。
+      阈值集合: {2, 3, 4, 5, 6}，跨越2层时第一次分裂。
 
 创新点：
   首次将稀有事件模拟技术应用于漏洞传播图的灾难性级联估计。
-  传播图的DAG性质使分裂法特别高效——无环结构避免了重复访问。
+  传播图的DAG性质使分裂法特别高效，无环结构避免了重复访问。
   层重要性函数利用了跨平台层的自然层级结构。
 
 ref: Bucklew "Introduction to Rare Event Simulation".
@@ -161,7 +161,7 @@ class RareCascadeSimulator:
                         new_paths.append(path)
                         continue
 
-                    # 跨越阈值——分裂
+                    # 跨越阈值，分裂
                     for _ in range(split_factor):
                         cp = CascadePath(
                             visited_nodes=list(path.visited_nodes),
@@ -196,7 +196,7 @@ class RareCascadeSimulator:
 
     def monte_carlo_baseline(self, n_samples: int = 10000,
                              seed: int = 0) -> Dict[int, CascadeEstimate]:
-        """标准蒙特卡洛基线 -- 用于对比IS/分裂法的方差缩减效果。"""
+        """标准蒙特卡洛基线 - 用于对比IS/分裂法的方差缩减效果。"""
         random.seed(seed)
         layer_hits: Dict[int, float] = {}
         layer_sq: Dict[int, float] = {}
@@ -261,7 +261,7 @@ class RareCascadeSimulator:
         return weight, layers_hit
 
     def _extend_path(self, path: CascadePath) -> bool:
-        """沿传播边延伸路径一步 -- 返回是否成功延伸。"""
+        """沿传播边延伸路径一步 - 返回是否成功延伸。"""
         current = path.visited_nodes[-1]
         for tgt, orig_prob in self._out_edges.get(current, []):
             if tgt in path.visited_nodes:

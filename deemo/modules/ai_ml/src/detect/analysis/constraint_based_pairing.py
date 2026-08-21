@@ -1,4 +1,4 @@
-# 约束传播分配-拷贝配对器——liveness链追踪关联malloc↔memcpy, 替代最近30条指令启发式
+# 约束传播分配-拷贝配对器-liveness链追踪关联malloc↔memcpy, 替代最近30条指令启发式
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class AllocCopyPair:
 
 
 class ConstraintBasedPairer:
-    """约束传播分配-拷贝配对器——liveness链追踪替代'最近30条指令'启发式"""
+    """约束传播分配-拷贝配对器-liveness链追踪替代'最近30条指令'启发式"""
 
     _ALLOC_PATTERN = re.compile(
         r'\b(malloc|calloc|realloc|alloca)\b', re.I)
@@ -99,7 +99,7 @@ class ConstraintBasedPairer:
                 continue
 
             alloc_func = m.group(1).lower()
-            # 分配结果在rax——找下一条mov: mov reg, rax
+            # 分配结果在rax-找下一条mov: mov reg, rax
             result_reg = self._resolve_alloc_result(instructions, i)
             # 推断size参数(rdi/edi中的值)
             size_lo, size_hi = self._infer_param_size(instructions, i, 0)
@@ -123,9 +123,9 @@ class ConstraintBasedPairer:
             copy_func = m.group(1).lower()
             # 确定size参数索引
             size_param_idx = self._get_copy_size_param(copy_func)
-            # 推断size——双ABI
+            # 推断size-双ABI
             size_lo, size_hi = self._infer_param_size(instructions, i, size_param_idx)
-            # 解析第一个参数寄存器——双ABI: Linux(rdi)/Windows(rcx)
+            # 解析第一个参数寄存器-双ABI: Linux(rdi)/Windows(rcx)
             dst_reg = self._resolve_copy_dst(instructions, i)
 
             sites.append(CopySite(
@@ -143,7 +143,7 @@ class ConstraintBasedPairer:
         return mapping.get(func, 2)
 
     def _resolve_copy_dst(self, instructions, call_idx):
-        """解析拷贝dst寄存器——双ABI: Linux(rdi)/Windows(rcx)"""
+        """解析拷贝dst寄存器-双ABI: Linux(rdi)/Windows(rcx)"""
         for j in range(call_idx - 1, max(-1, call_idx - 4), -1):
             instr = instructions[j].strip().lower()
             if not instr:
@@ -157,7 +157,7 @@ class ConstraintBasedPairer:
     def _resolve_alloc_result(self,
                                instructions: List[str],
                                call_idx: int) -> str:
-        """malloc返回rax——下一条指令通常将rax移到目标寄存器, 双ABI"""
+        """malloc返回rax-下一条指令通常将rax移到目标寄存器, 双ABI"""
         for j in range(call_idx + 1, min(call_idx + 3, len(instructions))):
             instr = instructions[j].strip().lower()
             # AT&T: mov %(rax|eax), %reg
@@ -249,7 +249,7 @@ class ConstraintBasedPairer:
     def _trace_register_liveness(self, from_idx, target_reg, instructions):
         """反向追踪target_reg的def-use链+栈槽别名, 双ABI。
         栈槽穿透: mov %rax,N(%rbp)存储→mov N(%rbp),%rdi加载→rdi←rax链成立"""
-        # 预扫描栈存储映射——委托共享函数(减少20行内联代码)
+        # 预扫描栈存储映射-委托共享函数(减少20行内联代码)
         stack_map = build_stack_alias_map(instructions)
         chain = [target_reg.lower()]
         current = target_reg.lower()

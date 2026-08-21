@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import logging, re, subprocess, json as _json
+import logging, re, subprocess, json as _json, os
 from typing import Dict, List, Any, Set
 from dataclasses import dataclass, field
 
@@ -73,7 +73,7 @@ class SyscallPatternMatcher:
         return sorted(matches, key=lambda m: m['coverage'], reverse=True)
 
     def calculate_threat_score(self) -> float:
-        """计算整体威胁评分——按严重级别加权求和所有匹配的覆盖率
+        """计算整体威胁评分, 按严重级别加权求和所有匹配的覆盖率
         CRITICAL=4, HIGH=3, MEDIUM=2, LOW=1"""
         weights = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1}
         matches = self.match_patterns()

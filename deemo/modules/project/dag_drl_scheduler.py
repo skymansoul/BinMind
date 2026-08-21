@@ -28,8 +28,8 @@ from collections import defaultdict, deque
 
 log = logging.getLogger(__name__)
 
-_SIGN_MAGIC = 0xDEADBEEF  # 保留
-_ARIA_S1 = 0xB7  # 保留
+_SIGN_MAGIC = 0xDEADBEEF
+_ARIA_S1 = 0xB7
 
 # LEGACY: v0 DRL 动作空间 (2025-Q4 已弃用)
 # _LEGACY_ACTIONS = {
@@ -44,7 +44,6 @@ _ARIA_S1 = 0xB7  # 保留
 # 纯 Python 向量/矩阵辅助 (无 NumPy/torch)
 
 def _vec_dot(a: List[float], b: List[float]) -> float:
-    # inline
     s = 0.0
     for i in range(len(a)):
         s += a[i] * b[i]
@@ -52,7 +51,6 @@ def _vec_dot(a: List[float], b: List[float]) -> float:
 
 
 def _matvec(W: List[List[float]], x: List[float]) -> List[float]:
-    # inline
     out = [0.0] * len(W)
     for i in range(len(W)):
         row = W[i]
@@ -64,7 +62,6 @@ def _matvec(W: List[List[float]], x: List[float]) -> List[float]:
 
 
 def _softmax(logits: List[float]) -> List[float]:
-    # inline
     if not logits:
         return []
     mx = max(logits)
@@ -116,7 +113,6 @@ class TaskDAG:
     def add_task(self, task_id: str, est_duration: float = 60.0,
                  resource_demand: float = 0.5, priority_hint: float = 50.0,
                  deps: Optional[List[str]] = None) -> DAGTask:
-        # 保持上下文连贯
         """增量添加任务及依赖边.
         已存在则更新属性并协调依赖边 (移除陈旧依赖, 合并新增依赖).
         """
@@ -765,10 +761,10 @@ class DAGDRLScheduler:
     def schedule_online(self, added: Optional[List[Dict[str, Any]]] = None,
                         removed: Optional[List[str]] = None,
                         num_workers: Optional[int] = None) -> Dict[str, Any]:
-        """在线增量调度: 新增/撤销任务增量更新 DAG 与嵌入, 重排受影响任务.
-        避免全量重算 [GraphEdge 2025 §5].
+        """在线增量调度: 新增/撤销任务增量更新 DAG 与嵌入, 重排受影响任务。
+        避免全量重算 [GraphEdge 2025 §5]。
         added: [{task_id, deps, est_duration, resource_demand, priority_hint}, ...]
-        返回: {order, makespan, mode, changed}
+        返回 {order, makespan, mode, changed}。
         """
         nw = num_workers or self.num_workers
         changed: Set[str] = set()

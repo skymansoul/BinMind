@@ -194,18 +194,10 @@ class AffineSafetyProver:
                        stmt_guards: List[Tuple[str, str, int]],
                        chunk_slack: int = 16,
                        diff_constraints: List[Tuple[str, str, int]] = None) -> Optional[bool]:
-        """尝试证明 alloc-write 对安全.
+        """尝试证明 alloc-write 对安全。
 
-        Args:
-          alloc_var: 分配目标变量名 (如 ie_buf)
-          alloc_expr: 分配大小表达式 (如 "ie_len + 4")
-          write_var: 写入目标变量名 (如 ie_buf)
-          write_expr: 写入大小表达式 (如 "ie_len" 或 "copy")
-          stmt_assignments: 函数内的赋值关系 [(target, source, delta), ...]
-          stmt_guards: 函数内的守卫条件 [(var, op, val), ...]
-          chunk_slack: allocator chunk slack
-
-        Returns: True=可证明安全(应过滤), False=可证明溢出, None=不确定.
+        stmt_assignments/stmt_guards 为函数内赋值关系与守卫条件。
+        返回 True=可证安全(应过滤), False=可证溢出, None=不确定。
         """
         if alloc_var != write_var:
             return None  # 不同缓冲区 — 不是堆溢出FP场景
@@ -242,7 +234,6 @@ class AffineSafetyProver:
         cs.close()
 
         # 无符号下溢检测: 若写变量可能为负(数学模型), 实际值会回绕至巨大值
-# W - _0 ≤ c 且 c < 0 → 可能是uint下溢 → 不能证明安全
         w_bound = cs.get_bound("_W", "_0")
         if w_bound is not None and w_bound < 0:
             return None
@@ -258,7 +249,6 @@ class AffineSafetyProver:
 
     @staticmethod
     def _is_zero_size(expr: str) -> bool:
-        import re
         e = expr.strip()
         return (e == '0' or bool(re.match(r'^0\s*\*\s*\d+$', e))
                 or bool(re.match(r'^\d+\s*\*\s*0$', e)))
@@ -271,7 +261,6 @@ class AffineSafetyProver:
         "ie_len"     → [('_W', 'ie_len', 0)]
         "copy"       → [('_W', 'copy', 0)]
         """
-        import re
         expr = expr.strip()
         if re.match(r'^[a-zA-Z_]\w*$', expr):
             return [(target, expr, 0)]

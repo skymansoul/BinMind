@@ -244,10 +244,10 @@ class PTVulnerabilityAnalyzer:
 # 舍入 6: Side-channel constant-time auditor
 class SideChannelAuditor:
     """基于PT trace的侧信道恒定时间审计器
-    
+
     原理：通过PT的TSC/CYC包计算每个基本块的执行周期变异系数(CV)
     CV > 0.3 的块如果处于权限检查或密码运算路径上，则构成侧信道风险
-    
+
     与密码专用常数时间检测不同，此审计器适用于所有代码路径——
     包括权限检查（如sudoers解析）、认证比较（如memcmp式密码验证）、
     和访问控制决策——这些路径同样需要恒定时间保护

@@ -1,4 +1,3 @@
-
 import os
 import sys
 _MOD_DEBUG = False
@@ -58,7 +57,6 @@ class TestZ3Solver(unittest.TestCase):
         self.assertIsNotNone(solver)
 
     def test_z3_add_constraints_without_z3(self):
-        # 实证驱动的配置项
         """测试无z3库时添加约束"""
         solver = Z3Solver()
         constraints = [
@@ -148,15 +146,6 @@ class TestConvenienceFunctions(unittest.TestCase):
         solver = create_algebraic_heap_solver()
         self.assertIsInstance(solver, AlgebraicHeapSolver)
 
-
-# Removed tests for classes that no longer exist
-# AllocatorType, PtmallocModel, MallocNgModel, HeapChunk, HeapChunkState,
-# solve_heap_layout(), generate_heap_fengshui_code() were removed.
-# The module was refactored into:
-# AlgebraicHeapSolver (main solver)
-#   - Z3Solver / HeuristicSolver (solve strategies)
-#   - LayoutConstraint / AllocationSequence / SolveResult (data types)
-#   - create_algebraic_heap_solver (factory function)
 
 
 

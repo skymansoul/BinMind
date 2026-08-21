@@ -12,7 +12,7 @@ from config import AI_PROVIDER, OPENAI_API_KEY, ANTHROPIC_API_KEY, LLM_ENDPOINTS
 
 __log = logging.getLogger(__name__)
 
-# 调用日志落盘路径 — deemo/logs/llm_calls.jsonl，运行时追加
+# 调用日志落盘路径 - deemo/logs/llm_calls.jsonl，运行时追加
 _LLM_LOG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'logs', 'llm_calls.jsonl')
@@ -56,7 +56,7 @@ def _provider_configured(provider: str) -> bool:
     return bool(LLM_ENDPOINTS.get(provider))
 
 
-# Claude 通道常量 — Messages API 契约与 SDK messages.create 等价
+# Claude 通道常量 - Messages API 契约与 SDK messages.create 等价
 _CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'
 _CLAUDE_MAX_TOKENS = 2048
 _CLAUDE_TEMPERATURE = 0.3
@@ -104,7 +104,7 @@ class BaseBackend:
 class ClaudeBackend(BaseBackend):
     """Claude 后端。
 
-    密钥优先级: ANTHROPIC_API_KEY 环境变量 → deemo/.temp_claude_key。
+    密钥优先级: ANTHROPIC_API_KEY 环境变量 - deemo/.temp_claude_key。
     两者均无时回退模拟模式 (status=skipped, reason=no_key)。
     异常 (超时/认证/限流) 记入 error 字段, 返回回退结果, 不中断流水线。
     """
@@ -160,7 +160,6 @@ def get_backend():
     return None
 
 
-# TODO: custom 通道忽略 model 参数, 迁移 DeepSeek 代理时需透传到 _custom_chat
 def query_llm(system: str, user: str, model: str = None,
               temperature: float = 0.3, max_tokens: int = 4096) -> str:
     """向配置的 LLM 后端发提示, 返回文本响应。
@@ -209,7 +208,14 @@ def query_llm(system: str, user: str, model: str = None,
 def _openai_chat(system: str, user: str, model: str,
                  temperature: float, max_tokens: int) -> str:
     import openai
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    # base_url / organization 透传 - 缺失时为 None, SDK 使用官方默认端点
+    from config import Config
+    client_kwargs = {'api_key': OPENAI_API_KEY}
+    if Config.OPENAI_BASE_URL:
+        client_kwargs['base_url'] = Config.OPENAI_BASE_URL
+    if Config.OPENAI_ORGANIZATION:
+        client_kwargs['organization'] = Config.OPENAI_ORGANIZATION
+    client = openai.OpenAI(**client_kwargs)
     resp = client.chat.completions.create(
         model=model or 'gpt-4o',
         messages=[
@@ -275,7 +281,9 @@ def _custom_chat(system: str, user: str, model: str,
     url = LLM_ENDPOINTS['custom']
     if not url:
         raise RuntimeError("CUSTOM_LLM_URL not set")
+    # OpenAI 兼容端点必须显式携带 model; DeepSeek 代理缺省 deepseek-chat
     resp = requests.post(url, json={
+        'model': model or 'deepseek-chat',
         'messages': [
             {'role': 'system', 'content': system},
             {'role': 'user', 'content': user},

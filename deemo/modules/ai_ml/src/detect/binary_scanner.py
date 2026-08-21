@@ -1,4 +1,4 @@
-# 端到端二进制扫描器——反汇编→检测管线→结构化报告
+# 端到端二进制扫描器-反汇编→检测管线→结构化报告
 # 输入: ELF二进制路径, 输出: 完整的漏洞检测报告(含新旧管线对比)
 #
 # 流程: binary → objdump → FunctionInfo列表 → DetectionPipeline × 每个函数
@@ -32,7 +32,6 @@ from src.detect.analysis.cross_function_tracker import (
 from src.detect.analysis.cross_function_heap_tracker import (
     CrossFunctionHeapTracker)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -78,7 +77,7 @@ class BinaryScanner:
         self._pipeline = DetectionPipeline()
 
     def _resolve_path(self, binary_path: str) -> str:
-        """解析二进制路径——处理Windows .exe后缀"""
+        """解析二进制路径-处理Windows .exe后缀"""
         import os as _os
         p = str(Path(binary_path).resolve())
         if not _os.path.exists(p) and _os.name == 'nt':
@@ -87,7 +86,7 @@ class BinaryScanner:
         return p
 
     def scan_binary(self, binary_path: str) -> BinaryScanReport:
-        """扫描单个二进制文件——完整管线"""
+        """扫描单个二进制文件-完整管线"""
         t0 = time.perf_counter()
         resolved = self._resolve_path(binary_path)
 
@@ -224,7 +223,7 @@ class BinaryScanner:
 
 
 def scan_binary_quick(binary_path: str) -> Dict:
-    """便捷函数——扫描二进制并返回字典格式报告"""
+    """便捷函数-扫描二进制并返回字典格式报告"""
     scanner = BinaryScanner()
     report = scanner.scan_binary(binary_path)
     return {
@@ -249,7 +248,7 @@ def scan_binary_quick(binary_path: str) -> Dict:
 
 
 def _infer_vuln_type(report: BinaryScanReport) -> str:
-    """从报告推断漏洞类型——优先级: 堆溢出>UAF>格式串"""
+    """从报告推断漏洞类型-优先级: 堆溢出>UAF>格式串"""
     if report.confirmed > 0 or report.likely > 0 or report.heap_cross_func > 0:
         return 'buffer_overflow'
     if report.uaf_confirmed > 0 or report.uaf_likely > 0 or report.uaf_cross_func > 0:
@@ -269,7 +268,7 @@ def _infer_vuln_type(report: BinaryScanReport) -> str:
 
 
 def _compute_confidence(report: BinaryScanReport) -> float:
-    """计算整体检测置信度——含UAF+UAF跨函数+格式串管线"""
+    """计算整体检测置信度-含UAF+UAF跨函数+格式串管线"""
     heap_confirmed = report.confirmed + report.likely + report.uncertain + report.filtered + report.heap_cross_func
     uaf_confirmed = report.uaf_confirmed + report.uaf_likely + report.uaf_cross_func
     fmt_confirmed = report.fmt_confirmed + report.fmt_likely

@@ -1,6 +1,6 @@
-"""FOVF 格式参数值流分类 — 核心判定格式参数是否可控。
-字面量→LITERAL (安全); 用户输入源→USER (漏洞); 栈缓冲全常量填充→CONST_BUFFER (安全),
-常量模板+用户实参生成→TEMPLATE (间接可控); 函数形参绑定调用点实参分类 (跨函数); 无法确定→UNKNOWN。
+"""FOVF 格式参数值流分类: 核心判定格式参数是否可控。
+字面量判 LITERAL (安全); 用户输入源判 USER (漏洞); 栈缓冲全常量填充判 CONST_BUFFER (安全),
+常量模板+用户实参生成判 TEMPLATE (间接可控); 函数形参绑定调用点实参分类 (跨函数); 无法确定判 UNKNOWN。
 与 format_string_taint (仅 user/safe/const 三元) 的差异: 增加 CONST_BUFFER 负向证明与 TEMPLATE
 间接可控识别, 两者均需跨写入点值流而非单点来源判定。"""
 
@@ -92,7 +92,7 @@ class FovfArgClassifier:
             if re.search(rf'\b{re.escape(var)}\s*\[[^\]]*\]\s*=', line):
                 found = True
                 if not re.search(r"=\s*'", line):
-                    return 'unknown' if _has_var_rhs(line) else 'const'
+                    return 'unknown' if has_var_rhs(line) else 'const'
                 continue
             m = re.search(
                 rf'\b{re.escape(var)}\s*=\s*(\w+)\s*\(([^)]*)\)\s*;', line)

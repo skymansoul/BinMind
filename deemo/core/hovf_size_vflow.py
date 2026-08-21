@@ -1,5 +1,5 @@
 """
-HOVF 分配大小值流解析 — 沿赋值链向后解析动态分配大小, 折叠为区间 [lo, hi]。
+HOVF 分配大小值流解析 - 沿赋值链向后解析动态分配大小, 折叠为区间 [lo, hi]。
 支持常量赋值、算术表达式、类型转换、守卫钳位; 无解析时返回 (None, 原因)。
 """
 
@@ -40,7 +40,10 @@ def _const_arith(expr: str) -> Optional[int]:
         try:
             norm = re.sub(r'\b0x([0-9a-fA-F]+)\b',
                           lambda m: str(int(m.group(1), 16)), expr)
-            norm = norm.replace('>>', '//2').replace('<<', '*2')
+            norm = re.sub(r'>>\s*(\d+)',
+                          lambda m: f'//{2 ** int(m.group(1))}', norm)
+            norm = re.sub(r'<<\s*(\d+)',
+                          lambda m: f'*{2 ** int(m.group(1))}', norm)
             if re.fullmatch(r'[-+*/()\d\s]*', norm):
                 val = eval(norm, {'__builtins__': {}})  # noqa: S307
                 if isinstance(val, int) and 0 < val < 2**48:
@@ -56,8 +59,8 @@ def _sizeof_val(expr: str) -> Optional[int]:
     if not m:
         return None
     base = {
-        'char': 1, 'short': 2, 'int': 4, 'long': 4, 'float': 4,
-        'double': 8, 'long': 8, 'size_t': 8, 'void': 8,
+        'char': 1, 'short': 2, 'int': 4, 'long': 8, 'float': 4,
+        'double': 8, 'size_t': 8, 'void': 8,
     }.get(m.group(1).lower())
     if base:
         return base

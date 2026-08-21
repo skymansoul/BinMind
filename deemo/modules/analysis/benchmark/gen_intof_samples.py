@@ -1,6 +1,5 @@
 # 整数溢出基准测试样本生成器 (Integer Overflow Benchmark Sample Generator)
 # 生成12个CVE复现样本: 12种不同的溢出模式 × 3优化级 = 36个二进制.
-# 创建: 2026-04-21
 
 import json
 import subprocess
@@ -14,7 +13,7 @@ SAMPLES_DIR = ROOT / "samples_intof"
 def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
     body = get_template(pattern, safe_name)
     return f'''/**
- * {cve} — {desc}
+ * {cve} - {desc}
  * 模式: {pattern}
  *
  * 对静态分析的挑战:
@@ -35,20 +34,20 @@ def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
 
 def _makefile(cve: str, target: str, src: str) -> str:
     T = "\t"
-    return f'''# {cve} — Integer Overflow Benchmark
+    return f'''# {cve} - Integer Overflow Benchmark
 CC = gcc
 CFLAGS = -Wall -no-pie -fno-pie
 
 all: {target}_O0 {target}_O2 {target}_Os
 
 {target}_O0: {src}
-{T}$ $(CFLAGS) -O0 -o $@ $<
+{T}$(CC) $(CFLAGS) -O0 -o $@ $<
 
 {target}_O2: {src}
-{T}$ $(CFLAGS) -O2 -o $@ $<
+{T}$(CC) $(CFLAGS) -O2 -o $@ $<
 
 {target}_Os: {src}
-{T}$ $(CFLAGS) -Os -o $@ $<
+{T}$(CC) $(CFLAGS) -Os -o $@ $<
 
 clean:
 {T}rm -f {target}_O0 {target}_O2 {target}_Os
@@ -79,7 +78,7 @@ def generate_all(compile: bool = True):
 
     # Write README
         readme = sample_dir / "README.md"
-        readme.write_text(f"# {cve} — Integer Overflow Benchmark\n"
+        readme.write_text(f"# {cve} - Integer Overflow Benchmark\n"
                           f"- Pattern: {pattern}\n- Description: {desc}\n",
                           encoding="utf-8")
 

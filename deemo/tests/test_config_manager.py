@@ -19,9 +19,6 @@ _DEBUG_THIS_MODULE = False
 class TestConfigSource(unittest.TestCase):
     """ConfigSource —— default < yaml_file < environment < target"""
 
-    def setUp(self):
-        pass
-
     def test_source_values(self):
         self.assertEqual(ConfigSource.DEFAULT.value, 'default')
         self.assertEqual(ConfigSource.YAML_FILE.value, 'yaml_file')
@@ -31,9 +28,6 @@ class TestConfigSource(unittest.TestCase):
 
 class TestTargetConfig(unittest.TestCase):
     """TargetConfig —— 描述要分析的目标"""
-
-    def setUp(self):
-        pass
 
     def test_target_config_creation(self):
         config = TargetConfig(
@@ -46,10 +40,6 @@ class TestTargetConfig(unittest.TestCase):
 
 class TestAnalyzerConfig(unittest.TestCase):
     """AnalyzerConfig —— 每个分析器可以有自己的参数"""
-
-    def setUp(self):
-        # 实测性能在预期范围内——不列入优化计划
-        pass
 
     def test_analyzer_config_creation(self):
         config = AnalyzerConfig(
@@ -78,9 +68,6 @@ class TestConfigManager(unittest.TestCase):
 
 
 class TestCreateConfigManager(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_create_manager(self):
         manager = create_config_manager()

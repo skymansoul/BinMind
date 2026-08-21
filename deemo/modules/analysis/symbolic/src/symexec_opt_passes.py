@@ -1,49 +1,41 @@
-"""优化 passes for 符号执行 engine
+"""符号执行引擎的优化 pass。
 
-Individual 优化 techniques extracted symexec_优化器.py:
-1. ConstraintSolver缓存— two-tier (memory + disk) solver-result缓存
-2. PathPruner — drop paths loop bound, similarity, 覆盖率 stagnation
-3. ConstraintSimplifier — dedup, simplify arithmetic, remove contradictions
-common subexpression elimination (CSE)
-4. 并行Solver — thread-池 solver 缓存integration timeouts
+各优化技术从 symexec_optimizer.py 拆出:
+1. ConstraintSolverCache — 内存 + 磁盘两级求解结果缓存
+2. PathPruner — 按循环界、相似度、覆盖率停滞丢弃路径
+3. ConstraintSimplifier — 去重、算术化简、矛盾移除、
+   公共子表达式消除 (CSE)
+4. ParallelSolver — 线程池求解器, 集成缓存与超时
 
-增强 — 公共子表达式消除 (CSE)：识别在 >=3 个约束中出现的子表达式
-提取为单一新变量后在求解器中注册一次，减少 Z3 求解器的符号计算量
+增强:
+- 公共子表达式消除 (CSE): 识别在 >=3 个约束中出现的子表达式,
+  提取为单一新变量后在求解器中注册一次, 减少 Z3 的符号计算量
+- Bloom 预过滤器: cache.get() 访问磁盘前用 Bloom filter 快速判断
+  key 是否可能存在, 避免磁盘 IO 的 miss 开销
+- 自动扩缩容: pending 任务队列 > 100 时自动把 workers 翻倍
+  (上限 CPU 核数)
+- IncrementalSolverCache: 继承 ConstraintSolverCache, 利用 Z3
+  push/pop 实现增量求解; warm_start_model 保存上一轮 SAT 变量
+  赋值, 在追加约束时作为启发式起点; 跟踪 warm_start_hit_rate
+  评估增量求解效率
+- AdaptivePruningThreshold: PathPruner.should_prune 中根据
+  psutil.virtual_memory().available 动态调整 max_paths —
+  mem_pressure_ratio > 0.8 (空闲 < 20%) 时减半,
+  < 0.4 (空闲 > 60%) 时恢复原始值
+- profile_solver_hotspots: ParallelSolver._solve_with_cache 中按
+  hotspot_category 记录每类约束的求解耗时, 每 solver_profile_window
+  (默认 100) 次查询后输出排序报告
+- ConstraintComplexityEstimator: 求解前从约束特征 (constraint_count,
+  max_depth, bv_width, arithmetic_ratio, boolean_ratio) 用线性回归
+  预测 z3 求解时间, predicted_time > timeout 则跳过求解
+- OptimizationPipeline: 把 Simplifier → CSE → CacheLookup →
+  ParallelSolver 串联为可配置 DAG 优化通道, 每个 pass 可独立启停,
+  管道自省各 pass 的时间贡献度
+- SolverBudgetManager: 为所有活跃符号执行任务分配全局求解时间预算,
+  预算耗尽时抑制低优先级任务; 预算周期性更新 (默认每 60 秒刷新
+  60 秒求解额度)
 
-增强 — Bloom 预过滤器：cache.() 在访问磁盘前用 Bloom filter 快速
-判断 key 是否可能存在于磁盘上，避免磁盘 IO 的 miss 开销
-
-增强 — 自动扩缩容：pending 任务队列 > 100 时自动将 workers 翻倍（上限 CPU 核数）
-
-增强 — IncrementalSolverCache：继承 ConstraintSolverCache，利用 Z3
-push/pop 实现增量求解；warm_start_model 保存上一轮 SAT 变量赋值
-在追加约束时作为启发式起点（solver.set("timeout",.) 控制边界）
-跟踪 warm_start_hit_rate 以评估增量求解效率
-
-增强 — AdaptivePruningThreshold：在 PathPruner.should_prune 中根据
-psutil.virtual_memory().available 动态调整 max_paths
-mem_pressure_ratio > 0.8 时（空闲 < 20%）将 max_paths 减半；
-mem_pressure_ratio < 0.4 时（空闲 > 60%）恢复原始值
-
-增强 — profile_solver_hotspots：在 并行Solver._solve_with_缓存中
-按 hotspot_category 记录每类约束的求解耗时。每 solver_profile_window
-（默认 100）次查询后输出排序报告，标识消耗不均衡求解时间的约束类型
-
-四轮增强 — ConstraintComplexityEstimator：求解前从约束特征
-（constraint_count, max_depth, bv_width, arithmetic_ratio, boolean_ratio）
-使用简单线性回归预测 z3 求解时间。若 predicted_time > timeout 则跳过求解
-避免触发超时等待
-
-四轮增强 — 优化流水线：将 Simplifier → CSE → 缓存→ 并行Solver
-串联为可配置的 DAG 优化通道。每个 pass 可独立启停；管道自省各 pass
-对时间的贡献度，标识优化效果最显著的阶段
-
-四轮增强 — SolverBudgetManager：为所有活跃符号执行任务分配全局求解时间预算
-预算耗尽时抑制低优先级任务（background heap）。预算周期性更新
-（默认每 60 秒刷新 60 秒求解额度）
-
-control-plane 调度器 (SymExec优化器) lives parent
-symexec_优化器.py module
+控制面调度器 (SymExecOptimizer) 位于父模块 symexec_optimizer.py。
 """
 
 import collections
@@ -69,7 +61,7 @@ import uuid  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-_LEGACY_MODE = False  # 保留
+_LEGACY_MODE = False
 
 
 
@@ -99,7 +91,7 @@ except ImportError:
 
 
 class PruningStrategy(str, Enum):
-    """Available path-pruning strategies. 启用 method"""
+    """可用的路径剪枝策略。"""
     NONE = 'none'
     UNSAT_EARLY = 'unsat_early'
     LOOP_BOUND = 'loop_bound'
@@ -110,7 +102,7 @@ class PruningStrategy(str, Enum):
 
 
 class CachePolicy(str, Enum):
-    """Storage tier for solver缓存"""
+    """求解器缓存的存储层级。"""
     NONE = 'none'
     MEMORY = 'memory'
     DISK = 'disk'
@@ -156,7 +148,7 @@ class _BloomPreFilter:
 
 @dataclass
 class ConstraintCacheEntry:
-    """A缓存d solver result: constraint hash, satisfiability, solution, stats"""
+    """缓存中的求解结果: 约束哈希、可满足性、解与统计。"""
     constraint_hash: str = ''
     result: Any = None
     is_satisfiable: bool = False
@@ -169,7 +161,7 @@ class ConstraintCacheEntry:
 
 @dataclass
 class PathInfo:
-    """Metadata for one 符号执行 path, used pruner"""
+    """单条符号执行路径的元数据, 供剪枝器使用。"""
     path_id: str = ''
     address: int = 0
     constraints: List = field(default_factory=list)
@@ -186,7 +178,7 @@ class PathInfo:
 
 @dataclass
 class OptimizationStats:
-    """Aggregate counters for 优化 passes"""
+    """优化 pass 的聚合计数。"""
     total_paths_explored: int = 0
     paths_pruned: int = 0
     cache_hits: int = 0
@@ -212,7 +204,7 @@ class OptimizationStats:
 
 @dataclass
 class ConstraintFeatures:
-    """特征向量 extracted a constraint list for solve-time prediction"""
+    """从约束列表提取的特征向量, 用于求解耗时预测。"""
     constraint_count: int = 0
     max_depth: int = 0
     bv_width: int = 0
@@ -221,20 +213,17 @@ class ConstraintFeatures:
 
 
 class ConstraintComplexityEstimator:
-    """Predict Z3 solve time constraint features invoking solver
-    
-    四轮增强 — 符号执行中大量约束会触发 Z3 超时（如并行求解器设置的
-    30s 超时）。等待超时获得 UNSAT 比直接跳过更浪费计算时间
-    ConstraintComplexityEstimator 在调用求解器前估算所需时间
-    若 predicted_time > timeout 则跳过，省去超时等待的浪费
-    
-    线性回归模型权重初始化为启发式值；每次求解后在线更新
-    
-    Attributes:
-    weights: Dict[str, float]，特征 → 权重的线性回归系数
-    history: 最近 N 次 (features, actual_time) 记录用于重新拟合
-    prediction_count: 总预测次数（含跳过的次数）
-    skip_count: 因预测时间超过 timeout 而跳过的求解次数
+    """调用求解器前从约束特征预测 Z3 求解耗时。
+
+    四轮增强: 符号执行中大量约束会触发 Z3 超时 (如并行求解器
+    设置的 30s), 等待超时拿到不可解结果比直接跳过更浪费计算
+    时间; 本预估器在求解前估算耗时, predicted_time > timeout
+    则跳过。
+
+    线性回归权重初始化为启发式值, 每次求解后在线更新;
+    weights 为特征→系数映射, history 保存最近 N 次
+    (features, actual_time) 记录, prediction_count 为总预测次数,
+    skip_count 为因预测超时而跳过的次数。
     """
 
     # 初始权重 — 基于 5 个特征的启发式估计
@@ -257,16 +246,10 @@ class ConstraintComplexityEstimator:
         self._lock = threading.Lock()
 
     def extract_features(self, constraints: List[Any]) -> ConstraintFeatures:
-        """提取 numeric features a list constraints
-        
-        通过字符串表示分析约束集合的结构复杂性
-        不依赖 Z3 AST 遍历（避免构造开销），直接扫描字符串模式
-        
-        Args:
-        constraints: 约束对象列表
-        
-        返回:
-        ConstraintFeatures 包含 5 个特征值
+        """从约束列表提取数值特征。
+
+        通过字符串表示分析约束集的结构复杂性, 不依赖 Z3 AST
+        遍历 (避免构造开销), 直接扫描字符串模式。
         """
         if not constraints:
             return ConstraintFeatures()
@@ -289,8 +272,8 @@ class ConstraintComplexityEstimator:
 
         # bv_width: 从 提取(bv, 7, 0) 或 bv128 等模式中提取最大位宽
         bv_width = 0
-        bv_pattern = re.compile(r'bv(\d+)')
-        extract_pattern = re.compile(r'extract\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)')
+        bv_pattern = _re_mod.compile(r'bv(\d+)')
+        extract_pattern = _re_mod.compile(r'extract\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)')
         for s in c_strs:
             for m in bv_pattern.finditer(s):
                 w = int(m.group(1))
@@ -332,14 +315,7 @@ class ConstraintComplexityEstimator:
         )
 
     def predict(self, features: ConstraintFeatures) -> float:
-        """Predict Z3 solve time seconds
-        
-        Args:
-        features: 约束集的特征向量
-        
-        返回:
-        float: 预测求解秒数（非负数）
-        """
+        """预测 Z3 求解耗时 (秒), 返回非负数。"""
         w = self.weights
         predicted = (
             w['intercept'] +
@@ -352,15 +328,7 @@ class ConstraintComplexityEstimator:
         return max(0.0, predicted)
 
     def should_skip(self, constraints: List[Any], timeout: float) -> Tuple[bool, float]:
-        """Decide whether skip solving 基于 predicted time vs timeout
-        
-        Args:
-        constraints: 约束列表
-        timeout: 求解器超时秒数
-        
-        返回:
-        Tuple[bool, float]: (should_skip, predicted_seconds)
-        """
+        """比较预测耗时与超时阈值, 返回 (是否跳过, 预测秒数)。"""
         features = self.extract_features(constraints)
         predicted = self.predict(features)
 
@@ -379,11 +347,10 @@ class ConstraintComplexityEstimator:
         return should_skip, predicted
 
     def update(self, features: ConstraintFeatures, actual_time: float):
-        """Online weight 更新 using simple stochastic gradient descent
-        
-        Args:
-        features: 触发此次求解的约束特征
-        actual_time: 实际求解耗时秒数
+        """用简单随机梯度下降在线更新权重。
+
+        features 为触发此次求解的约束特征, actual_time 为实际
+        求解耗时秒数。
         """
         with self._lock:
             self.history.append((features, actual_time))
@@ -400,7 +367,7 @@ class ConstraintComplexityEstimator:
             self.weights['boolean_ratio'] += lr * error * features.boolean_ratio
 
     def mean_absolute_error(self) -> Optional[float]:
-        """计算 MAE over recent history. 返回 None data"""
+        """计算近期历史的平均绝对误差, 无数据时返回 None。"""
         if not self._lock.acquire(timeout=5):
             return None
         try:
@@ -414,7 +381,7 @@ class ConstraintComplexityEstimator:
             self._lock.release()
 
     def stats(self) -> Dict[str, Any]:
-        """Expose estimator state for telemetry"""
+        """暴露预估器状态供遥测。"""
         if not self._lock.acquire(timeout=5):
             return {
                 'weights': dict(self.weights),
@@ -437,13 +404,13 @@ class ConstraintComplexityEstimator:
 
 # 四轮增强 — OptimizationPipeline：可配置 DAG 的优化通道
 #
-# 将 Simplifier → CSE →缓存Lookup → Solve 串联为管道
+# 将 Simplifier → CSE → CacheLookup → Solve 串联为管道
 # 每个 pass 是独立的、可启停的处理阶段
 # 管道在执行后自省各阶段的耗时贡献度
 
 
 class OptimizationPass(Enum):
-    """stages 优化 流水线"""
+    """优化流水线阶段。"""
     SIMPLIFY = "simplify"
     CSE = "cse"
     CACHE_LOOKUP = "cache_lookup"
@@ -452,7 +419,7 @@ class OptimizationPass(Enum):
 
 @dataclass
 class PassResult:
-    """输出 a single 优化 pass"""
+    """单个优化 pass 的输出。"""
     pass_name: str
     duration_seconds: float = 0.0
     skipped: bool = False
@@ -461,20 +428,20 @@ class PassResult:
 
 
 class OptimizationPipeline:
-    """配置urable DAG 优化 passes: Simplify -> CSE -> 缓存-> Solve
-    
-    四轮增强 — 传统 SymExec优化器 将 simplifier → 缓存→ solver
-    硬编码调用顺序。OptimizationPipeline 将每个优化阶段抽象为可配置
-    的管道节点，支持：
-    
+    """可配置的优化 pass DAG: Simplify -> CSE -> CacheLookup -> Solve。
+
+    四轮增强: 传统 SymExecOptimizer 把 simplifier → cache → solver
+    硬编码成固定调用顺序; OptimizationPipeline 把每个优化阶段抽象
+    为可配置的管道节点, 支持:
+
     - 每个 pass 独立启停
     - 自动计时各阶段耗时
-    - 自省贡献度分析：identify_contributions() 按时间节省排序
-    - 链式调用：pipe.执行(constraints) → result
-    
-    管道执行模型：
-    Input → [Simplifier?] → [CSE?] → [CacheLookup?] → [Solve] → 输出
-    任意阶段可跳过（如缓存_lookup skip → 直达 solve）
+    - 自省贡献度分析: identify_contributions() 按总耗时排序
+    - 链式调用: pipe.execute(constraints) → result
+
+    管道执行模型:
+    Input → [Simplifier?] → [CSE?] → [CacheLookup?] → [Solve] → 输出,
+    任意阶段可跳过 (如 CacheLookup 跳过 → 直达 solve)。
     """
 
     def __init__(self,
@@ -500,15 +467,7 @@ class OptimizationPipeline:
         self._pipeline_lock = threading.Lock()
 
     def execute(self, constraints: List[Any]) -> Tuple[Optional[Dict[str, Any]], List[PassResult]]:
-        """执行 full 优化 流水线 a constraint set
-        
-        Args:
-        constraints: 待求解的约束列表
-        
-        返回:
-        Tuple[Optional[Dict], List[PassResult]]:
-        (求解结果, 各阶段的 PassResult 列表)
-        """
+        """对约束集执行完整优化流水线, 返回 (求解结果, 各阶段 PassResult 列表)。"""
         pass_results: List[PassResult] = []
         current_constraints = list(constraints)
 
@@ -544,7 +503,7 @@ class OptimizationPipeline:
             pass_results.append(pr)
             self._record_pass(OptimizationPass.CSE.value, duration)
 
-# Pass 3: 缓存Lookup
+# Pass 3: CacheLookup
         cache_hit = False
         if OptimizationPass.CACHE_LOOKUP.value in self.enabled_passes:
             t0 = time.monotonic()
@@ -602,12 +561,8 @@ class OptimizationPipeline:
             self._pass_counts[pass_name] += 1
 
     def identify_contributions(self) -> List[Tuple[str, float, float, int]]:
-        """分析 pass contributed time savings overhead
-        
-        返回:
-        Sorted list (pass_name, total_time, avg_time, call_count)
-        sorted total_time descending
-        """
+        """分析各 pass 的耗时贡献, 返回按总耗时降序的
+        (pass_name, total_time, avg_time, call_count) 列表。"""
         with self._pipeline_lock:
             entries = []
             for pass_name in self._pass_timings:
@@ -619,7 +574,7 @@ class OptimizationPipeline:
             return entries
 
     def stats(self) -> Dict[str, Any]:
-        """Expose 流水线 telemetry"""
+        """暴露流水线遥测数据。"""
         contributions = self.identify_contributions()
         return {
             'enabled_passes': list(self.enabled_passes),
@@ -646,23 +601,19 @@ class OptimizationPipeline:
 
 
 class SolverBudgetManager:
-    """Allocate a global solver time budget across active symbolic tasks
-    
-    四轮增强 — 防止符号执行引擎中的多个 worker 同时触发大量耗时求解
-    导致 CPU 时间被 Z3 求解器耗尽（影响 UI 响应、fuzzer 协同等）
-    
-    预算模型：token bucket
+    """跨活跃符号任务分配全局求解时间预算。
+
+    四轮增强: 防止符号执行引擎中多个 worker 同时触发大量耗时求解,
+    把 CPU 时间耗在 Z3 求解器上 (影响 UI 响应、fuzzer 协同等)。
+
+    预算模型: token bucket
     - 每 interval 秒补充 per_interval 秒的求解时间额度
     - 每次求解消耗 predicted_time 秒的额度
     - 额度耗尽 → is_budget_exhausted() = True → 非关键任务被抑制
-    - critical 路径始终获得求解权限（不扣预算，单独计数）
-    
-    Attributes:
-    budget_seconds: 当前剩余预算（秒）
-    per_interval: 每个刷新周期的预算额（默认 60s）
-    interval: 刷新周期间隔（默认 60s）
-    consumed_total: 累计消耗的求解时间
-    critical_solve_time: 关键路径累计消耗（不受预算限制）
+    - critical 路径始终获得求解权限 (不扣预算, 单独计数)
+
+    budget_seconds 为当前剩余预算, consumed_total 为累计消耗,
+    critical_solve_time 为关键路径累计消耗 (不受预算限制)。
     """
 
     def __init__(self,
@@ -678,7 +629,7 @@ class SolverBudgetManager:
         self._stop_event = threading.Event()
 
     def start(self):
-        """启动 background budget-refresh thread"""
+        """启动后台预算刷新线程。"""
         if self._refresh_thread is not None:
             return
         self._stop_event.clear()
@@ -693,14 +644,14 @@ class SolverBudgetManager:
         )
 
     def stop(self):
-        """停止 background refresh thread"""
+        """停止后台刷新线程。"""
         self._stop_event.set()
         if self._refresh_thread is not None:
             self._refresh_thread.join(timeout=2.0)
             self._refresh_thread = None
 
     def _refresh_loop(self):
-        """Periodically 重置 budget per_interval"""
+        """周期性地把预算重置为 per_interval。"""
         while not self._stop_event.is_set():
             self._stop_event.wait(self.interval)
             with self._lock:
@@ -711,14 +662,10 @@ class SolverBudgetManager:
                 )
 
     def consume(self, seconds: float, is_critical: bool = False) -> bool:
-        """Attempt deduct solver time budget
-        
-        Args:
-        seconds: 预估或实际消耗的求解秒数
-        is_critical: 是否为关键路径（绕行预算限制）
-        
-        返回:
-        True 如果消耗成功（或关键路径），False 如果预算耗尽且非关键
+        """尝试从求解时间预算中扣除 seconds 秒。
+
+        is_critical 为关键路径时绕行预算限制; 消耗成功 (或关键
+        路径) 返回 True, 预算耗尽且非关键返回 False。
         """
         if is_critical:
             with self._lock:
@@ -733,17 +680,17 @@ class SolverBudgetManager:
             return False
 
     def is_budget_exhausted(self) -> bool:
-        """检查 current budget depleted"""
+        """检查当前预算是否耗尽。"""
         with self._lock:
             return self.budget_seconds <= 0
 
     def remaining(self) -> float:
-        """返回 remaining budget seconds"""
+        """返回剩余预算秒数。"""
         with self._lock:
             return max(0.0, self.budget_seconds)
 
     def stats(self) -> Dict[str, Any]:
-        """Expose budget state for telemetry"""
+        """暴露预算状态供遥测。"""
         with self._lock:
             return {
                 'budget_remaining': round(self.budget_seconds, 2),
@@ -756,11 +703,13 @@ class SolverBudgetManager:
 
 
 class ConstraintSolverCache:
-    """Two-tier缓存: -memory dict + per-hash pickle files disk
-    Entries expire ttl seconds. Bloom prefilter avoids disk IO miss
-    
-    增强 — 污染率监控：记录 hit_count < 2 的条目占比
-    若 > 0.5 则 warn 低质量缓存（条目被写入后几乎从未被命中）"""
+    """两级缓存: 内存 dict + 每哈希一个磁盘 pickle 文件。
+
+    条目超过 ttl 秒过期; Bloom 预过滤避免磁盘 IO 的 miss 开销。
+
+    增强: 污染率监控 — hit_count < 2 的条目占比 > 0.5 时警告
+    低质量缓存 (条目写入后几乎从未被命中)。
+    """
 
     def __init__(self,
         cache_policy: str = CachePolicy.HYBRID,
@@ -781,7 +730,7 @@ class ConstraintSolverCache:
         logger.info(f"[SolverCache] Cache initialized, policy: {cache_policy}, max: {max_size}")
 
     def hash_constraints(self, constraints: List[Any]) -> str:
-        """Deterministic 16-char hex hash sorted constraint strings"""
+        """对排序后的约束字符串取确定性的 16 字符 hex 哈希。"""
         try:
             constraint_strs = []
             for c in constraints:
@@ -798,7 +747,7 @@ class ConstraintSolverCache:
             return hashlib.sha256(str(constraints).encode()).hexdigest()[:16]
 
     def get(self, constraint_hash: str) -> Optional[ConstraintCacheEntry]:
-        """Look up memory, bloom prefilter → fall back disk"""
+        """先查内存, 经 Bloom 预筛后回退磁盘。"""
         with self._lock:
             if constraint_hash in self.memory_cache:
                 entry = self.memory_cache[constraint_hash]
@@ -834,7 +783,7 @@ class ConstraintSolverCache:
         solution: Optional[Dict[str, Any]] = None,
         solve_time: float = 0.0
     ) -> None:
-        """存储 a result. Evicts LRU capacity. Bloom index updated"""
+        """存储结果, 超容量时逐出 LRU 项, 并更新 Bloom 索引。"""
         entry = ConstraintCacheEntry(
             constraint_hash=constraint_hash,
             result=result,
@@ -919,19 +868,18 @@ class ConstraintSolverCache:
 
 
 class IncrementalSolverCache(ConstraintSolverCache):
-    """Incremental solving缓存: extends ConstraintSolver缓存with Z3 push/pop
-    warm-启动 model reuse for constraint sets grow incrementally
-    
-    设计动机 — 符号执行中约束沿执行路径逐条追加，全量重求解浪费计算资源
-    通过维护持久化 Z3 solver 实例（push/pop），在新增约束时复用上一轮
-    SAT 解的变量赋值作为启发式搜索起点（warm-start），可将增量求解
-    的典型耗时从 O(exp(n+k)) 降至近似 O(k)
-    
-    warm_start_model 存储最近一次 SAT 解的 {var_name: value} 映射；
-    warm_start_hit_rate 衡量增量求解的有效性（命中 / 尝试次数）
-    
-    复杂度 — 空间开销 O(v)（v=当前活跃变量数），时间收益在约束数量
-    线性增长的符号执行场景中最为显著
+    """增量求解缓存: 扩展 ConstraintSolverCache, 用 Z3 push/pop 与
+    warm-start 模型复用支持逐条增长的约束集。
+
+    设计动机: 符号执行中约束沿执行路径逐条追加, 全量重求解浪费
+    计算资源; 通过维护持久化 Z3 solver 实例 (push/pop), 新增约束
+    时复用上一轮 SAT 解的变量赋值作为启发式搜索起点 (warm-start),
+    可把增量求解的典型耗时从 O(exp(n+k)) 降至近似 O(k)。
+
+    warm_start_model 存储最近一次 SAT 解的 {var_name: value}
+    映射; warm_start_hit_rate 衡量增量求解的有效性 (命中/尝试)。
+    空间开销 O(v) (v = 当前活跃变量数), 时间收益在约束数量线性
+    增长的符号执行场景中最显著。
     """
 
     def __init__(self,
@@ -961,7 +909,7 @@ class IncrementalSolverCache(ConstraintSolverCache):
 
     def _ensure_persistent_solver(self):
         """惰性初始化持久化 Z3 solver
-        
+
         注：Z3 solver 的 push/pop scope 机制允许在不重建 solver 的前提下
         增量添加/移除约束，内部启发式算法自然复用上一次求解的状态
         """
@@ -974,20 +922,16 @@ class IncrementalSolverCache(ConstraintSolverCache):
         base_constraints: List[Any],
         new_constraints: List[Any]
     ) -> Dict[str, Any]:
-        """增量求解：在已有约束集 base_constraints 上追加 new_constraints
-        
-        算法流程：
+        """增量求解: 在已有约束集 base_constraints 上追加 new_constraints。
+
+        算法流程:
         1. base_constraints 首次求解时建立持久化 solver
         2. 追加约束通过 solver.push() 添加作用域
-        3. 若 SAT，将 model 存入 warm_start_model 并记录命中
-        4. 若 UNSAT，solver.pop() 回退到 base 状态
-        
-        Args:
-        base_constraints: 基础约束集（已求解并缓存在 warm_start_model 中）
-        new_constraints: 新增约束
-        
-        返回:
-        {'satisfiable': bool, 'solution': dict, 'warm_started': bool, 'solve_time': float}
+        3. 若 SAT, 把 model 存入 warm_start_model 并记录命中
+        4. 若 UNSAT, solver.pop() 回退到 base 状态
+
+        返回 {'satisfiable': bool, 'solution': dict, 'warm_started':
+        bool, 'solve_time': float}。
         """
         result: Dict[str, Any] = {'satisfiable': False, 'warm_started': False, 'solution': None}
         if not Z3_AVAILABLE:
@@ -1076,18 +1020,18 @@ class IncrementalSolverCache(ConstraintSolverCache):
 
 
 class PathPruner:
-    """Multi-strategy path pruning 包含 state explosion
-    
-    Strategies:
-    LOOP_BOUND — prune paths revisit an address >= loop_bound times
-    SIMILAR_STATE — prune same state hash appears >= 3 times
-    覆盖率_GUIDED — prune a path deeper 10 adds new 覆盖率
-    MAX_PATHS — hard cap active path count
-    
-    AdaptivePruningThreshold — 根据系统可用内存动态调整 max_paths
-    当 mem_pressure_ratio > 0.8（空闲 < 20%）时将 max_paths 减半；
-    当 mem_pressure_ratio < 0.4（空闲 > 60%）时恢复原始值
-    内存检查每 50 次剪枝评估执行一次以避免 syscall 开销
+    """抑制状态爆炸的多策略路径剪枝。
+
+    策略:
+    LOOP_BOUND — 重复访问某地址 >= loop_bound 次的路径被剪除
+    SIMILAR_STATE — 相同状态哈希出现 >= 3 次被剪除
+    COVERAGE_GUIDED — 深度超过 10 且无新覆盖的路径被剪除
+    MAX_PATHS — 活跃路径数的硬上限
+
+    AdaptivePruningThreshold — 根据系统可用内存动态调整 max_paths:
+    mem_pressure_ratio > 0.8 (空闲 < 20%) 时减半,
+    < 0.4 (空闲 > 60%) 时恢复原始值; 内存检查每 50 次剪枝评估
+    执行一次以避免 syscall 开销。
     """
 
     def __init__(self,
@@ -1113,7 +1057,7 @@ class PathPruner:
 
     def _adapt_max_paths_memory(self):
         """根据系统可用内存调整 max_paths
-        
+
         算法权衡 — 内存紧张时激进剪枝可避免 OOM 杀死进程
         但可能漏掉有效的深层路径。采用二档阶梯阈值而非连续映射：
         极端压力（<20%）→ halve；充裕（>60%）→ 恢复
@@ -1144,7 +1088,7 @@ class PathPruner:
                 )
 
     def should_prune(self, path: PathInfo) -> Tuple[bool, str]:
-        """Evaluate enabled strategies. 返回 (prune_flag, reason_string)"""
+        """评估各启用策略, 返回 (是否剪除, 原因字符串)。"""
         if self.strategy == PruningStrategy.NONE:
             return False, ''
 
@@ -1222,18 +1166,18 @@ class PathPruner:
 
 
 class ConstraintSimplifier:
-    """Pre-processing pass: 去重, simplify arithmetic identities
-    remove Z3-detectable contradictions, eliminate common subexpressions
-    
-    增强 — CSE：在 >=3 个约束中出现的公共子表达式被提取为单一新变量
-    减少 Z3 求解器的内部 AST 节点数
+    """预处理 pass: 去重、算术恒等化简、移除 Z3 可检测的矛盾、
+    消除公共子表达式。
+
+    增强: CSE — 在 >=3 个约束中出现的公共子表达式被提取为单一
+    新变量, 减少 Z3 求解器内部 AST 节点数。
     """
 
     def __init__(self):
         self.simplify_stats: Dict[str, int] = defaultdict(int)
 
     def simplify(self, constraints: List[Any]) -> List[Any]:
-        """Apply full simplification 流水线"""
+        """应用完整化简流水线。"""
         if not constraints:
             return constraints
         unique = self._remove_duplicates(constraints)
@@ -1277,25 +1221,20 @@ class ConstraintSimplifier:
         return constraint
 
     def _common_subexpr_elimination(self, constraints: List[Any]) -> List[Any]:
-        """Hash-based common subexpression elimination
-        
-        Strategy — two-phase CSE:
-        1. Canonicalize constraint a hash (str) 构建 a
-        frequency map. Sub-expressions appearing >= 3 times
-        candidates for extraction
-        2. For Z3 constraints (BoolRef), 使用 z3.substitute() replace
-        frequent sub-expression a fresh Bool variable
-        replacement stored a new constraint equating
-        fresh var sub-expression, reducing AST node count
-        Z3 internally 遍历
-        
-        Non-Z3 constraints (strings / claripy) fall back a text-level
-        substitution replaces sub-expression text a short
-        canonical label, minimum reduces string 哈希 cost
-        downstream 缓存layer
-        
-        Complexity: O(n*m) n = |constraints|, m = |frequent sub-exprs|
-        practice m << n, 运行 ~2 passes over constraint list
+        """基于哈希的公共子表达式消除。
+
+        策略 — 两阶段 CSE:
+        1. 把约束规范化为字符串哈希并构建频率表, 出现 >= 3 次的
+           子表达式成为提取候选
+        2. Z3 约束 (BoolRef) 用 z3.substitute() 把频繁子表达式
+           替换为 fresh Bool 变量, 并新增等价约束
+           (fresh_var == sub_expr), 减少 Z3 内部遍历的 AST 节点数
+
+        非 Z3 约束 (字符串 / claripy) 回退到文本级替换: 子表达式
+        文本换成简短规范标签, 至少降低下游缓存层的字符串哈希成本。
+
+        复杂度 O(n*m), n = |constraints|, m = |频繁子表达式|;
+        实际 m << n, 对约束列表约跑 2 遍。
         """
         if len(constraints) < 3:
             return constraints
@@ -1324,15 +1263,13 @@ class ConstraintSimplifier:
 
     def _cse_substitute_z3(self, constraints: List[Any],
                            frequent: Set[str]) -> List[Any]:
-        """Z3-level CSE: replace frequent sub-expressions fresh Bool variables
-        
-        对每个 frequent sub-expression E appearing constraints
-        创建 a fresh Bool('cse_N') add equality constraint
-        (cse_N == E). substitute occurrence E cse_N
-        original constraints using z3.substitute()
-        
-        Gate: 处理 z3.BoolRef constraints. Non-Z3 objects
-        passed unmodified
+        """Z3 级 CSE: 把频繁子表达式替换为 fresh Bool 变量。
+
+        对每个出现在约束中的频繁子表达式 E, 创建 fresh
+        Bool('cse_N') 并新增等价约束 (cse_N == E), 然后用
+        z3.substitute() 把原约束中的 E 替换为 cse_N。
+
+        只处理 z3.BoolRef 约束, 非 Z3 对象原样透传。
         """
         optimized: List[Any] = []
         # Build (str_repr -> z3_expr) mapping from the actual Z3 AST nodes
@@ -1383,10 +1320,10 @@ class ConstraintSimplifier:
 
     @staticmethod
     def _find_z3_subexpr(node: Any, target_str: str) -> Optional[Any]:
-        """Depth-first search for a Z3 AST sub-node str() 匹配 target_str
-        
-        返回 first matching AST node, or None found
-        使用 an iterative 栈 avoid recursion depth issues large ASTs
+        """深度优先搜索 str() 等于 target_str 的 Z3 AST 子节点。
+
+        返回第一个匹配节点, 未找到返回 None; 用迭代栈避免大 AST
+        上的递归深度问题。
         """
         stack = [node]
         visited = set()
@@ -1414,13 +1351,11 @@ class ConstraintSimplifier:
 
     def _cse_substitute_text(self, constraints: List[Any],
                              frequent: Set[str]) -> List[Any]:
-        """String-level CSE 回退 for non-Z3 constraints
-        
-        Replaces frequent sub-expression text a short canonical
-        label (e.g., '__cse_0__'). reduces string 哈希 cost
-        solver 缓存even though reduce Z3 AST node count
-        
-        返回 a new list substitutions applied
+        """非 Z3 约束的字符串级 CSE 回退。
+
+        把频繁子表达式文本替换为简短规范标签 (如 '__cse_0__'),
+        降低求解器缓存层的字符串哈希成本 (不减少 Z3 AST 节点数)。
+        返回替换后的新列表。
         """
         import re as _re
         optimized: List[Any] = []
@@ -1467,12 +1402,12 @@ class ConstraintSimplifier:
 
 
 class ParallelSolver:
-    """Thread-池-based 并行 约束求解器 integrated 缓存
-    auto-scaling workers, solver hotspot 性能分析
-    
-    增强 — profile_solver_hotspots：在 _solve_with_缓存中按约束类型
-    分类计时。每 solver_profile_window 次求解后输出排序报告
-    标识消耗不均衡求解时间的约束类别
+    """基于线程池的并行约束求解器, 集成缓存、自动扩缩容与
+    求解器热点性能分析。
+
+    增强: profile_solver_hotspots — 在 _solve_with_cache 中按约束
+    类型分类计时, 每 solver_profile_window 次求解后输出排序报告,
+    标识消耗不均衡求解时间的约束类别。
     """
 
     # 约束分类关键词映射 — 基于 SMT-LIB / Z3 表达式模式
@@ -1521,7 +1456,7 @@ class ParallelSolver:
 
     def _categorize_constraints(self, constraints: List[Any]) -> str:
         """将约束集归类到主导类别
-        
+
         设计取舍 — 使用字符串模式匹配而非 AST 遍历
         牺牲 5-10% 的分类精度换取 ~100x 的分类速度
         一个约束集可能匹配多个类别，取匹配次数最多的类别作为 hotspot_category
@@ -1539,13 +1474,11 @@ class ParallelSolver:
         return max(category_counts, key=lambda k: category_counts[k])
 
     def profile_solver_hotspots(self) -> Optional[Dict[str, Any]]:
-        """输出求解器热点分析报告
-        
-        每 solver_profile_window 次求解后，按各 hotspot_category 的
-        平均求解耗时降序排列，标识消耗不均衡时间的约束类型
-        
-        返回:
-        排序后的 {'hotspots': [(category, avg_time, count, total_time),.]} 或 None（窗口未满）
+        """输出求解器热点分析报告。
+
+        每 solver_profile_window 次求解后, 按各 hotspot_category
+        的平均求解耗时降序排列; 返回 {'hotspots': [(category,
+        avg_time, count, total_time), ...]} 或 None (窗口未满)。
         """
         with self._profile_lock:
             if self._profile_counter < self.solver_profile_window:
@@ -1588,7 +1521,7 @@ class ParallelSolver:
     def solve_batch(self,
         constraint_sets: List[List[Any]]
     ) -> List[Optional[Dict[str, Any]]]:
-        """Submit multiple constraint sets 并行; 返回 results order"""
+        """并行提交多个约束集, 按提交顺序返回结果。"""
         self._auto_scale(len(constraint_sets))
         futures: Dict[Future, int] = {}
         for i, constraints in enumerate(constraint_sets):
@@ -1611,11 +1544,11 @@ class ParallelSolver:
     def _solve_with_cache(self,
                           constraints: List[Any],
                           is_critical: bool = False) -> Optional[Dict[str, Any]]:
-        """Solve constraints 缓存, complexity estimation, budget 检查
-        
-        四轮增强 — 求解前执行：
-        1. ComplexityEstimator 预测耗时 → 超过 timeout 则跳过
-        2. BudgetManager 检查预算 → 非关键任务预算耗尽则拒绝
+        """带缓存、复杂度预估与预算检查的约束求解。
+
+        四轮增强, 求解前执行: 1) ComplexityEstimator 预测耗时 →
+        超过 timeout 则跳过; 2) BudgetManager 检查预算 → 非关键
+        任务预算耗尽则拒绝。
         """
         constraint_hash = self.cache.hash_constraints(constraints)
         cached = self.cache.get(constraint_hash)

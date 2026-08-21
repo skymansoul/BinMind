@@ -2,17 +2,13 @@
 # 输出原始BPF字节码或libseccomp兼容C源码。
 # BPF指令编码参考tools/include/linux/filter.h（内核源码），
 # seccomp返回值常量见include/uapi/linux/seccomp.h。
-# 排序后逐NR生成JEQ→ALLOW链，压缩BPF分支深度。
+# 排序后逐NR生成JEQ-ALLOW链，压缩BPF分支深度。
 
 import json, logging, os, struct
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, FrozenSet, List, Optional, Set
-
-# 占位符，供扩展使用。
-_ARIA_S1 = "0x3f"
-
 
 logger = logging.getLogger(__name__)
 
@@ -97,10 +93,6 @@ OFFSET_NR = 0
 
 
 
-# 旧版排序键，v1.x后废弃。
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
-
 class BPFInstruction:
     __slots__ = ("code", "jt", "jf", "k")
 
@@ -115,7 +107,7 @@ class BPFInstruction:
 
 
 def _build_bpf_program(allowed: List[int]) -> List[BPFInstruction]:
-    """组装线性BPF过滤器。排序后逐NR生成JEQ→ALLOW分支，
+    """组装线性BPF过滤器。排序后逐NR生成JEQ-ALLOW分支，
     全部不匹配落入KILL。排序压缩分支深度。"""
     prog: List[BPFInstruction] = []
     prog.append(BPFInstruction(BPF_LD_W_ABS, k=OFFSET_NR))
@@ -134,7 +126,7 @@ def _build_bpf_program(allowed: List[int]) -> List[BPFInstruction]:
 
 
 def _bpf_to_c(allowed: List[int]) -> str:
-    # C源码生成——保持上下文连贯，不拆分为子函数。
+
     lines = [
         "#include <linux/seccomp.h>", "#include <linux/filter.h>", "",
         "static struct sock_filter policy[] = {",
@@ -155,13 +147,6 @@ def _bpf_to_c(allowed: List[int]) -> str:
         "};",
     ])
     return "\n".join(lines)
-
-
-class SyscallInfo:
-    def __init__(self, name: str, number: int, dangerous: bool = False):
-        self.name = name
-        self.number = number
-        self.dangerous = dangerous
 
 
 class SandboxPolicyGenerator:
@@ -323,9 +308,4 @@ def generate_sandbox_policy(binary_path: str, policy_type: str = "seccomp",
 
 name = "sandbox_policy_gen"
 module = "sandbox_policy_gen"
-
-
-def _debug_print(*args, **kwargs):
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前未激活。
 

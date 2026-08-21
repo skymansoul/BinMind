@@ -35,26 +35,26 @@ _log = logging.getLogger(__name__)
 class ConstraintSimplifier:
     """
     Simplifies constraint sets eliminating redundancies folding constants
-    
+
     Operations:
     1. Duplicate elimination: identical constraints removed
     2. Contradiction detection: var==a var==b a!=b -> UNSAT
     3. Constant folding: evaluate concrete sub-expressions
     4. Tautology removal: constraints always true (x==x)
-    
+
     Time: O(N) for N constraints dict-based dedup
     Space: O(N) for result list
-    
-    INTJ策略: apply simplification solver invocation because
-    Z3's internal simplifier general-purpose doesn't 漏洞利用
-    domain knowledge path constraints (mostly equality/
-    inequality comparisons individual variables)
+
+    策略: apply simplification before solver invocation because
+    Z3's internal simplifier is general-purpose, doesn't exploit
+    domain knowledge of path constraints (mostly equality/
+    inequality comparisons on individual variables)
     """
 
     def simplify(self, constraints: List[Any]) -> List[Any]:
         """
         Simplify a list constraints. 返回 a (possibly shorter) list
-        
+
         Time: O(N) single pass dedup. Space: O(N)
         """
         if not constraints:
@@ -92,12 +92,12 @@ class ConstraintSimplifier:
     def eliminate_redundant(self, constraints: List[Any]) -> List[Any]:
         """
         Remove constraints logically implied others
-        
+
         For, a structural 检查: x>5 x>3
         x>3 implied x>5 dropped
-        
+
         Time: O(N^2) for pairwise comparison. Space: O(N)
-        
+
         Trade-off: O(N^2) but N typically small (<100 per path)
         For larger sets, consider using Z3's reduce or a proper SMT solver
         """
@@ -133,7 +133,7 @@ class ConstraintSimplifier:
 
     def _implies(self, stronger: Dict, weaker: Dict) -> bool:
         """检查 'stronger' constraint logically implies 'weaker'
-        
+
         Currently 检查 simple cases:
         - x>5 implies x>3 (same var, same type, stronger value)
         - x==5 implies x!=3
@@ -168,18 +168,18 @@ class ConstraintSimplifier:
 class PathOptimizer:
     """
     优化 符号执行 pruning, merging, summarizing
-    
+
     Components:
     1. Path pruning: remove infeasible states (constraints UNSAT)
     2. State merging: combine states same PC
     3. Loop unrolling: bounded symbolic unrolling
     4. Function summaries: pre-computed input/输出 constraints
-    
-    INTJ策略: Pruning 运行 merging — pruning eliminates
-    dead states c堆ly, reducing N for expensive O(N^2) 合并
-    Merging join points impactful for code lots control
-    flow convergence (-else chains, switch statements)
-    
+
+    策略: Pruning before merging — pruning eliminates
+    dead states cheaply, reducing N for expensive O(N^2) merging.
+    Merging at join points is most impactful for code with lots of control
+    flow convergence (if-else chains, switch statements)
+
     Trade-off: Merging loses path sensitivity (forget branch
     came), but acceptable for analysis dramatically
     reduces state explosion
@@ -207,13 +207,13 @@ class PathOptimizer:
     def prune_infeasible_paths(self, states: List[Any]) -> List[Any]:
         """
         Remove paths unsatisfiable constraints
-        
+
         对每个 state, simplifies constraints 检查 satisfiability
         Infeasible states dropped counted
-        
+
         Time: O(N * solver_time). Space: O(N) for result
         solver None, skips pruning 返回 states
-        
+
         # NOTE: solver errs side SAT (default for timeouts)
         # infeasible paths survive — conservative for pruning
         """
@@ -245,13 +245,13 @@ class PathOptimizer:
     def merge_states(self, states: List[Any]) -> List[Any]:
         """
         合并 states same PC compatible constraints
-        
+
         States grouped PC. group, attempt 合并
         pairs compatible constraint sets (union doesn't 创建 UNSAT)
-        
+
         Time: O(N * 记录 N) for sorting PC, O(K^2) per group K
         group size. Groups typically small (<5)
-        
+
         Trade-off: Merging reduces state count but loses path-sensitivity
         Good for: switch/-else convergence. Bad for: divergent paths
         tracked separately
@@ -285,10 +285,10 @@ class PathOptimizer:
     def _merge_group(self, group: List[Any]) -> Tuple[List[Any], List[Any]]:
         """
         Attempt 合并 states a group
-        
+
         Greedy algorithm: 启动 first state, try 合并
         subsequent state. 合并 fails, state stays unmerged
-        
+
         Time: O(K^2 * solver_time) worst case. Space: O(K)
         """
         if len(group) <= 1:
@@ -315,14 +315,14 @@ class PathOptimizer:
     def _try_merge_pair(self, s1: Any, s2: Any) -> Optional[Any]:
         """
         Try 合并 two states one
-        
+
         Merging possible iff:
         1. states same PC (caller 确保)
         2. union constraints satisfiable
         3. 寄存器 values merged via ITE (--else)
-        
+
         success, 返回 merged state; failure, 返回 None
-        
+
         Time: O(solver_time) for satisfiability 检查
         """
         c1 = getattr(s1, 'path_constraints', [])
@@ -352,16 +352,16 @@ class PathOptimizer:
     ) -> List[Any]:
         """
         Bounded loop unrolling symbolic trip count
-        
+
         Strategy:
         1. Unroll up loop_unroll_bound times (concrete copies)
         2. bound, add a fresh symbolic variable for remaining iters
         3. a sound over-approximation: cover bounded executions
         exactly model rest symbolically
-        
+
         Time: O(bound * |loop_body| * instruction_time)
         Space: O(bound * state_size)
-        
+
         Corner case: trip_count concrete < bound, unroll
         exactly times don't add symbolic tail
         """
@@ -408,10 +408,10 @@ class PathOptimizer:
     def register_summary(self, func_name: str, summary: Any) -> None:
         """
         寄存器 a pre-computed function summary
-        
+
         Summary 格式化: {"inputs": [.], "输出": [.], "constraints": [.]
         "side_effects": ["写入",.], "may_return": bool}
-        
+
         Time: O(1). Space: O(1) per summary
         """
         self._summaries[func_name] = summary
@@ -423,7 +423,7 @@ class PathOptimizer:
     def get_summary(self, func_name: str) -> Optional[Any]:
         """
         Retrieve a function summary. 返回 None found. O(1)
-        
+
         使用摘要可以避免进入库函数内部，大幅减少状态空间
         // 比如memcpy/memset/strlen这种常用的，预定义好摘要后能省大量时间
         """
@@ -436,13 +436,13 @@ class PathOptimizer:
         """
         Apply a function summary a state — skip function body
         directly 更新 state per summary
-        
+
         Time: O(|summary.constraints|). Space: O(state + summary size)
-        
-        // INTJ策略: Function summaries trade precision for speed
-        // For security analysis, want precise modeling dangerous
-        // functions (memcpy, system) coarse models for 工具集
-        // tiered approach gives us best ROI
+
+        // 策略: Function summaries trade precision for speed
+        // For security analysis, we want precise modeling of dangerous
+        // functions (memcpy, system) and coarse models for utility sets —
+        // a tiered approach gives us best ROI
         """
         summary = self.get_summary(func_name)
         if summary is None:
@@ -471,7 +471,7 @@ def _compute_StateFingerprint(state: Any) -> int:
     """
     计算 a deterministic hash for state comparison
     Used for state deduplication but currently wired
-    
+
     这个是基于PC+寄存器快照的哈希，merge前先检查是否完全一样可以跳过
     """
     h = 0

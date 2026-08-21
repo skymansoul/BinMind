@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-08-11 11:42 - 常量池熵剖面: 不同加密算法的常量表产生独特熵签名
-# 2025-08-11 17:30 - 字节级滑动窗口扫描: 不依赖函数边界
-# 2025-08-16 13:00 - 放宽签名容差
-# 2025-08-21 09:30 - 卡方 S-box 置换检验: 区分256字节排列与随机数据, 消除对AES的假阳性
+# 常量池熵剖面: 不同加密算法的常量表产生独特熵签名
+# 字节级滑动窗口扫描: 不依赖函数边界
+# 放宽签名容差
+# 卡方 S-box 置换检验: 区分256字节排列与随机数据, 消除对AES的假阳性
 
 """加密算法常量熵指纹 - 通过常量池熵剖面识别加密函数
 
@@ -48,7 +47,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# 已知加密算法的常量熵签名--(均值, 标准差, 块大小)
+# 已知加密算法的常量熵签名, (均值, 标准差, 块大小)
 
 _CRYPTO_SIGNATURES: Dict[str, Tuple[float, float, int]] = {
     # AES: 256 字节全排列 S-box, 全窗熵 8.0 (理论最大)
@@ -65,7 +64,7 @@ _CRYPTO_SIGNATURES: Dict[str, Tuple[float, float, int]] = {
     'ChaCha20':   (3.20, 1.50, 16),
     # Salsa20: 类似 ChaCha20
     'Salsa20':    (3.15, 1.55, 16),
-    # RC4: 256 字节初始 S-box (与 AES 不同--RC4 的 S-box 是 identity)
+    # RC4: 256 字节初始 S-box (与 AES 不同, RC4 的 S-box 是 identity)
     'RC4':        (6.50, 0.80, 256),
     # Blowfish: 4KB S-box->高熵区域
     'Blowfish':   (7.50, 0.25, 4096),
@@ -132,7 +131,7 @@ class CryptoConstantFingerprinter:
 
             # 与每已知算法签名匹配
             for algo, (sig_mean, sig_std, sig_size) in _CRYPTO_SIGNATURES.items():
-                # 均值匹配: 放宽容差--编译器数据对齐和常量合并改变熵剖面
+                # 均值匹配: 放宽容差, 编译器数据对齐和常量合并改变熵剖面
                 mean_match = abs(h_mean - sig_mean) < max(0.45, sig_std * 3.0)
                 if not mean_match:
                     continue
@@ -151,8 +150,8 @@ class CryptoConstantFingerprinter:
                     # S-box 算法额外验证: 卡方置换检验
                     if algo in ('AES', 'DES', 'RC4', 'Blowfish'):
                         chi2, is_perm = self._chi_squared_permutation_test(window)
-                        if not is_perm:
-                            continue  # 非真排列 -> 不是 S-box, 跳过
+                    if not is_perm:
+                        continue  # 非真排列 -> 不是 S-box, 跳过
                         # 卡方值越低置信度越高
                         chi2_bonus = max(0, 0.15 * (1.0 - min(1.0, chi2 / 100.0)))
                         confidence = min(1.0, confidence + chi2_bonus)
@@ -175,7 +174,7 @@ class CryptoConstantFingerprinter:
         )
 
     def _window_entropy_stats(self, data: bytes) -> Tuple[float, float]:
-        """计算窗口字节熵--全窗统计+子块标准差
+        """计算窗口字节熵, 全窗统计+子块标准差
 
         均值: 全 256 字节窗的 Shannon 熵 (最大 8.0)
         标准差: 8 个 32 字节子块熵的散布
@@ -220,16 +219,13 @@ class CryptoConstantFingerprinter:
 
     @staticmethod
     def _chi_squared_permutation_test(data: bytes) -> Tuple[float, bool]:
-        """卡方置换检验: 判断 256 字节是否构成 0..255 的排列
+        """卡方置换检验: 判断 256 字节是否构成 0..255 的排列。
 
-        真 S-box (如 AES): 每字节值恰好出现一次, 期望频数=1
-        χ² = Σ(O_i - 1)², 自由度=255
-        真排列: χ² ≈ 0 (每值恰出现 1 次)
-        随机数据: χ² ≈ 255±22 (泊松分布, λ=1)
-        重复模式: χ² >> 10³ (部分值出现多次)
-
-        返回: (χ²值, 是否为真排列的布尔判定)
-        阈值 50: 允许少量偏差 (编译器可能在 S-box 前后插入对齐填充)
+        真 S-box (如 AES): 每字节值恰好出现一次, 期望频数=1,
+        χ² = Σ(O_i - 1)², 自由度=255; 真排列 χ² ≈ 0, 随机数据
+        χ² ≈ 255±22 (泊松分布, λ=1), 重复模式 χ² >> 10³。
+        返回 (χ²值, 是否为真排列), 阈值 50 允许少量偏差
+        (编译器可能在 S-box 前后插入对齐填充)。
         """
         if len(data) < 256:
             return float('inf'), False
@@ -245,7 +241,7 @@ class CryptoConstantFingerprinter:
     def _merge_overlapping(
         self, detections: List[CryptoDetection]
     ) -> List[CryptoDetection]:
-        """合并重叠的检测--相邻窗口同算法->同一常量表"""
+        """合并重叠的检测, 相邻窗口同算法->同一常量表"""
         if len(detections) < 2:
             return detections
 

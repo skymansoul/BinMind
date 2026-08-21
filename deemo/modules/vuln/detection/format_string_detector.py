@@ -1,5 +1,5 @@
 """
-格式化字符串漏洞检测 — 参数偏移推断 + %n可用性分析。
+格式化字符串漏洞检测 - 参数偏移推断 + %n可用性分析。
 
 检测逻辑:
   1. 定位printf/sprintf/fprintf/syslog等格式化函数调用
@@ -12,7 +12,7 @@
   format_string_scorer: 量化已检出漏洞的利用精度 (scoring)
 
 修改记录:
-  创建 2025-03-28
+  初始实现
 """
 
 from dataclasses import dataclass

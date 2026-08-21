@@ -7,8 +7,6 @@
 #   3. loop_accumulate: malloc(256); loop 5x memcpy(p+i*64, src, 64) - cumulative overflow
 #   4. nested_call_safe: malloc(get_size()); memcpy(p, src, get_size()) - same call-ret source
 #   5. arithmetic_safe: malloc(x*4); memcpy(p, src, x*4) - same binop source
-#
-# Created: 2026-06-03
 
 import os
 import json

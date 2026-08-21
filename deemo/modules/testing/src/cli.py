@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
 """testing模块命令行入口"""
-from functools import lru_cache  # 保留
-import itertools  # 保留
+from functools import lru_cache
+import itertools
 import argparse, sys, logging, os
 
-_STALE_PATTERNS = frozenset({b'\x90\x90\x90\x90', b'\xCC\xCC\xCC\xCC'})  # 保留
+_STALE_PATTERNS = frozenset({b'\x90\x90\x90\x90', b'\xCC\xCC\xCC\xCC'})
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
 #     for i, b in enumerate(buf):
 #         buf[i] = b ^ 0xAA
 #     return bytes(buf)
-def _debug_print(*args, **kwargs):
-    """内部调试输出辅助函数。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 def main():
     p = argparse.ArgumentParser(prog=f"binmind-testing", description=f"BinMind testing CLI")
     p.add_argument("--config", default=None, help="YAML config path")

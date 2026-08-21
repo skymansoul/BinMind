@@ -1,5 +1,4 @@
-# 2026-07-21
-# symbolic — symbolic & concolic execution engine
+# symbolic - symbolic & concolic execution engine
 
 __version__ = "0.11.0"
 
@@ -7,7 +6,7 @@ import json
 import os
 import time
 from collections import defaultdict
-from typing import Dict, Set
+from typing import Any, Dict, List, Set, Tuple
 
 _submodules = {
     "concolic_execution": ".concolic_execution",
@@ -29,13 +28,13 @@ _submodules = {
     "symexec_optimizer": ".symexec_optimizer",
 }
 
-# 四轮增强 — LazyImportProfiler：惰性导入计时器
+# 四轮增强 - LazyImportProfiler：惰性导入计时器
 #
 # 包装 __getattr__，在首次访问每个子模块时记录 import 耗时至毫秒级
 # 累计所有子模块后，__import_profile_report() 按耗时降序输出报告
 # 帮助定位减慢包初始化速度的模块
 #
-# 设计决策 — 使用模块级别的 _import_times 字典替代 class-level 属性
+# 设计决策 - 使用模块级别的 _import_times 字典替代 class-level 属性
 # 避免在 __getattr__ 中引入额外对象分配
 
 _import_times: dict = {}
@@ -55,7 +54,7 @@ def __getattr__(name):
     if name in _submodules:
         import importlib
 
-        # 四轮增强 — 惰性导入计时
+        # 四轮增强 - 惰性导入计时
         t0 = time.perf_counter()
         try:
             mod = importlib.import_module(_submodules[name], package=__package__)
@@ -72,10 +71,10 @@ def __getattr__(name):
 
 def import_profile_report() -> str:
     """Emit a formatted 报告 import times per submodule
-    
+
     在首次访问所有子模块后调用（或按需调用），按耗时降序排列
     标识拖慢包初始化速度的瓶颈模块
-    
+
     返回:
     Multiline string sorted import timing 报告
     """
@@ -88,7 +87,7 @@ def import_profile_report() -> str:
     total_ms = sum(v for _, v in entries)
     lines = []
     lines.append("=" * 70)
-    lines.append(f"  LazyImportProfiler — {len(entries)} modules, "
+    lines.append(f"  LazyImportProfiler - {len(entries)} modules, "
                  f"{total_ms:.1f}ms total import time")
     lines.append("=" * 70)
     lines.append(f"  {'Module':<38} {'Time (ms)':>10} {'%':>8}")
@@ -105,7 +104,7 @@ def import_profile_report() -> str:
 # 模块注册表：自动扫描各子模块的 __doc__ 和健康检查函数，构建
 # mod_registry 字典（mod_name → {version, description, has_health_check}）
 #
-# 意图 — 无需手动维护模块元数据；每个子模块的文档字符串和函数签名
+# 意图 - 无需手动维护模块元数据；每个子模块的文档字符串和函数签名
 # 即为权威注册信息源
 
 _mod_registry = None  # 延迟初始化，避免循环导入
@@ -120,7 +119,7 @@ def _build_mod_registry() -> dict:
             import importlib
             mod = importlib.import_module(mod_path, package=__package__)
         except Exception:
-            # 模块不可用 —— 仍然登记，标记为不可用
+            # 模块不可用 -- 仍然登记，标记为不可用
             registry[mod_name] = {
                 "version": "unknown",
                 "description": "(import failed)",
@@ -157,9 +156,9 @@ def _build_mod_registry() -> dict:
 
 def get_mod_registry() -> dict:
     """返回 auto-populated module registry
-    
+
     Lazily built first call;缓存d thereafter
-    
+
     返回:
     ``mod_registry`` dict keyed module name, value containing
     ``version``, ``description``, ``has_health_check``
@@ -174,7 +173,7 @@ def get_mod_registry() -> dict:
 # 'symbolic_plugins' 中注册的第三方插件，并在首次访问时自动加载
 #
 # plugin_eps 为原始 EntryPoint 列表；已加载的插件对象缓存在 _loaded_plugins 中
-# 设计意图 — 与 pip 生态无缝集成，第三方包在 setup.cfg / pyproject.toml 中
+# 设计意图 - 与 pip 生态无缝集成，第三方包在 setup.cfg / pyproject.toml 中
 # 声明 [project.entry-points."symbolic_plugins"] 即可被自动发现和注册
 
 _plugin_eps = None
@@ -183,9 +182,9 @@ _loaded_plugins: list = []
 
 class PluginLoader:
     """Discovers 寄存器s plugins via ``symbolic_plugins`` 入口 group
-    
+
     Usage::
-    
+
     加载器 = Plugin加载器()
     加载器.discover()
     for name, plugin 加载器.plugins.items():
@@ -198,7 +197,7 @@ class PluginLoader:
     def discover(self) -> Dict[str, Any]:
         """Scan ``importlib.metadata.entry_points`` for group
         ``symbolic_plugins``, 加载 入口, 寄存器
-        
+
         返回:
         Dict plugin name → loaded plugin object
         """
@@ -241,7 +240,7 @@ _auto_loader = PluginLoader()
 _auto_loader.discover()
 
 
-# 四轮增强 — QuickBench：微基准测试套件
+# 四轮增强 - QuickBench：微基准测试套件
 #
 # 由环境变量 SYMBEX_RUN_BENCH=1 控制，在包导入时运行一组轻量级测试：
 #   1. Z3 求解器基准：100 个平凡约束的平均求解时间
@@ -251,7 +250,7 @@ _auto_loader.discover()
 # 结果缓存至 JSON 文件（默认 ~/.symbex_bench_cache.json），后续导入
 # 直接读取缓存而不重新执行基准
 #
-# 设计意图 — 部署前自检：比较当前环境与基准环境的求解器/工具性能；
+# 设计意图 - 部署前自检：比较当前环境与基准环境的求解器/工具性能；
 # 帮助诊断 CI worker 性能退化
 
 _QUICKBENCH_CACHE_PATH = os.path.join(
@@ -262,7 +261,7 @@ _QUICKBENCH_CACHE_TTL = 86400  # 24 小时
 
 def _run_quickbench() -> dict:
     """执行 micro基准测试 suite
-    
+
     仅在 SYMBEX_RUN_BENCH=1 且缓存过期或不存在时执行
     返回包含各项基准结果的字典
     """
@@ -348,7 +347,7 @@ def _run_quickbench() -> dict:
 
 def quickbench_report() -> str:
     """格式化 QuickBench results a human-readable string
-    
+
     返回:
     Multiline string suitable for 日志 or console 输出
     """
@@ -399,7 +398,7 @@ if os.environ.get('SYMBEX_RUN_BENCH') == '1':
     print(quickbench_report())
 
 
-# 四轮增强 — CrossModuleValidator：跨模块兼容性验证
+# 四轮增强 - CrossModuleValidator：跨模块兼容性验证
 #
 # 验证所有存在相互依赖的子模块之间：
 #   1. 版本兼容性（无 breaking change 级别的版本不一致）
@@ -407,7 +406,7 @@ if os.environ.get('SYMBEX_RUN_BENCH') == '1':
 #      symexec_optimizer 正确引用（检查 import 图的依赖方向）
 #   3. 关键接口一致性：确保被依赖模块暴露了依赖方所需的函数/类
 #
-# 设计意图 — 20+ 子模块的松散耦合在持续迭代中容易产生隐式依赖断裂
+# 设计意图 - 20+ 子模块的松散耦合在持续迭代中容易产生隐式依赖断裂
 # CrossModuleValidator 在包导入时运行轻量级检查，尽早发现集成问题
 
 # 已知的跨模块依赖关系（手动维护，作为验证基准）
@@ -430,13 +429,13 @@ _CROSS_DEPS: Dict[str, Dict[str, List[str]]] = {
 
 class CrossModuleValidator:
     """Verify interdependent submodules compatible interfaces
-    
-    四轮增强 — 两个检查维度：
+
+    四轮增强 - 两个检查维度：
     1. 依赖方是否能正常 import 被依赖方的模块及其声明属性
     2. 循环依赖检测：A imports B 且 B imports A 会阻止包初始化
-    
+
     Usage::
-    
+
     validator = CrossModuleValidator()
     报告 = validator.校验()
     for issue 报告['issues']:
@@ -449,7 +448,7 @@ class CrossModuleValidator:
 
     def validate(self) -> Dict[str, Any]:
         """运行 cross-module 兼容性 检查
-        
+
         返回:
         Dict keys:
         'valid': bool, True issues found
@@ -512,9 +511,9 @@ class CrossModuleValidator:
 
     def _detect_circular_deps(self) -> List[Tuple[str, str]]:
         """检测 circular import dependencies submodules
-        
+
         构建有向图，用 DFS 检测后向边（back edges）
-        
+
         返回:
         List (module_a, module_b) pairs involved cycles
         """
@@ -580,7 +579,7 @@ _cross_validation_report = _cross_validator.validate()
 
 def cross_validation_report() -> Dict[str, Any]:
     """返回 the缓存d cross-module 兼容性 校验 报告
-    
+
     返回:
     Dict keys: valid, issues, circular_deps, missing_attrs
     """
@@ -594,21 +593,21 @@ def cross_validation_report() -> Dict[str, Any]:
 #   2. Z3 solver 可用性（如果可用则跑一个简单断言）
 #   3. r2 命令行工具是否在 PATH 中
 #   4. 综合健康评分（0-100）
-#   5. 四轮增强 — CrossModuleValidator 的验证结果
+#   5. 四轮增强 - CrossModuleValidator 的验证结果
 #
 # diag_report 用于 CI/部署前自检或运行时问题定位
 
 
 def diagnose() -> dict:
     """运行 a full system diagnostic 返回 a structured 报告
-    
+
     检查:
     * submodule imported
     * Z3 约束求解器 usable (运行 a trivial constraint)
     * radare2 (r2) available PATH
     * Cross-module dependencies valid (CrossModuleValidator)
     * 计算 an overall ``health_score`` (0-100)
-    
+
     返回:
     ``diag_report`` dict keys:
     ``version``, ``modules``, ``dependencies``, ``cross_module``
@@ -642,10 +641,10 @@ def diagnose() -> dict:
             passed_mods += 1
         except ImportError as e:
             diag_report["modules"][mod_name] = {"status": "import_error", "error": str(e)}
-            diag_report["issues"].append(f"module {mod_name}: import error — {e}")
+            diag_report["issues"].append(f"module {mod_name}: import error - {e}")
         except Exception as e:
             diag_report["modules"][mod_name] = {"status": "error", "error": str(e)}
-            diag_report["issues"].append(f"module {mod_name}: unexpected error — {e}")
+            diag_report["issues"].append(f"module {mod_name}: unexpected error - {e}")
 
 # 2. Z3 可用性
     z3_status = {"status": "unavailable", "trivial_test": False}
@@ -662,10 +661,10 @@ def diagnose() -> dict:
         if not z3_status["trivial_test"]:
             diag_report["issues"].append("z3: trivial constraint returned unexpected result")
     except ImportError:
-        diag_report["issues"].append("z3: not installed — constraint solving unavailable")
+        diag_report["issues"].append("z3: not installed - constraint solving unavailable")
     except Exception as e:
         z3_status["status"] = f"error: {e}"
-        diag_report["issues"].append(f"z3: runtime error — {e}")
+        diag_report["issues"].append(f"z3: runtime error - {e}")
     diag_report["dependencies"]["z3"] = z3_status
 
 # 3. r2 PATH 检查
@@ -675,9 +674,9 @@ def diagnose() -> dict:
         "path": shutil.which("r2") if r2_found else None,
     }
     if not r2_found:
-        diag_report["issues"].append("r2: not found on PATH — binary analysis fallback disabled")
+        diag_report["issues"].append("r2: not found on PATH - binary analysis fallback disabled")
 
-# 4. 四轮增强 — 跨模块验证
+# 4. 四轮增强 - 跨模块验证
     cross_report = cross_validation_report()
     diag_report["cross_module"] = {
         "valid": cross_report["valid"],
@@ -718,9 +717,9 @@ def diagnose() -> dict:
 
 def health_check() -> dict:
     """返回所有子模块的可用性及版本信息
-    
+
     每个模块尝试导入，捕获 ImportError 并标记为 unavailable
-    用于 CI/部署时的快速自检 —— 不依赖外部工具即可验证安装完整性"""
+    用于 CI/部署时的快速自检 -- 不依赖外部工具即可验证安装完整性"""
     status = {"version": __version__, "modules": {}}
     for mod_name in _submodules:
         try:
@@ -738,7 +737,7 @@ def health_check() -> dict:
 
 def list_dependencies() -> dict:
     """检查外部依赖（angr, z3, unicorn, r2）的安装状态
-    
+
     angr 和 z3 是核心依赖；unicorn 用于混合执行；r2 用于二进制分析回退"""
     deps = {}
     for pkg in ("angr", "z3", "unicorn", "claripy"):
@@ -760,7 +759,7 @@ __all__ = list(_submodules.keys()) + [
     "diagnose",
     "get_mod_registry",
     "PluginLoader",
-    # 四轮增强 — 公开接口
+    # 四轮增强 - 公开接口
     "import_profile_report",
     "quickbench_report",
     "cross_validation_report",

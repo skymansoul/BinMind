@@ -10,16 +10,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TLSCallback:
-    address
-    name
-    type
+    address: int
+    name: str
+    type: str
     is_malicious = False
     suspicious_score = 0.0
 
 @dataclass
 class DetectionResult:
-    success
-    callbacks
+    success: bool
+    callbacks: list
 
     suspicious_count = 0
 

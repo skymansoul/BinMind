@@ -21,13 +21,12 @@ from __future__ import annotations
 import math
 import logging
 from typing import Dict, List, Optional, Tuple, Any, Callable
-from collections import defaultdict
+from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -188,17 +187,7 @@ class MultiLevelSummarizer:
                               func_name: str = "",
                               call_targets: List[str] = None
                               ) -> Dict[SummaryLevel, List[HierarchicalSummary]]:
-        """一步构建完整的四级层次摘要。
-
-        Args:
-            instructions: 所有指令列表
-            basic_blocks: [(block_id, [instr_indices]), ...]
-            func_name: 函数名
-            call_targets: 被调用函数列表
-
-        Returns:
-            {L1: [...], L2: [...], L3: [...], L4: [...]}
-        """
+        """一步构建完整的四级层次摘要。"""
         hierarchy = {}
         all_l1 = []
 

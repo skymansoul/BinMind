@@ -1,4 +1,4 @@
-# intof 精度基准 — 独立 vuln/safe 二进制误报控制量化
+# intof 精度基准 - 独立 vuln/safe 二进制误报控制量化
 #
 # 决策: 量化 IntegerOverflowDetector 在"安全整数运算 + 溢出检查"
 # 样本上的误报率. 独立二进制 (vuln 应检出=TP, safe 检出=FP)
@@ -6,7 +6,6 @@
 #
 # 判定依据: vuln 二进制含溢出→malloc 链; safe 二进制含溢出检查
 # (如 sz/sizeof != count 拒绝). 检测器对 safe 样本不应告警.
-# 创建: 2023-10-02
 
 import json
 import sys

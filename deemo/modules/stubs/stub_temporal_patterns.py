@@ -22,7 +22,7 @@
 #   4. 衰减趋势: 线性回归斜率 × 调用间隔的符号。
 #   5. 综合模式分类: bursty | periodic | decaying | steady | cold
 #
-bursty_dynamics
+# bursty_dynamics
 #   本模块将 BP+MC 分析框架适配到桩系统调用时序场景，
 #   并增加了周期性检测与衰减趋势两个独立维度。
 import math as _math

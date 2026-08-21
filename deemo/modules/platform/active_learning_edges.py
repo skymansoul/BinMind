@@ -1,5 +1,5 @@
 """
-主动学习边选择 -- 基于模型不确定性的最优传播边调查策略。
+  主动学习边选择 - 基于模型不确定性的最优传播边调查策略。
 
 问题：
   传播图中有数十条候选边待验证，安全分析师资源有限。
@@ -26,7 +26,7 @@
           应用于漏洞传播图的边调查优先级排序。
 
 ref: Settles "Active Learning Literature Survey".
-ref: Smart Cuts -- 主动学习在漏洞检测中的最新应用。
+ref: Smart Cuts 主动学习在漏洞检测中的最新应用。
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ class EdgeQueryCandidate:
 
 
 class ActiveEdgeSelector:
-    """主动学习边选择器 -- 不确定性驱动的边调查优先级排序。
+    """主动学习边选择器 - 不确定性驱动的边调查优先级排序。
 
     用法::
 
@@ -72,7 +72,7 @@ class ActiveEdgeSelector:
     def register_model(self, name: str,
                        predict_fn: Callable[[PropagationGraph], Dict[str, float]]
                        ) -> None:
-        """注册一个风险预测模型 -- 用于委员会查询。"""
+        """注册一个风险预测模型, 用于委员会查询。"""
         self._models[name] = predict_fn
 
     def refresh_predictions(self) -> None:
@@ -89,10 +89,10 @@ class ActiveEdgeSelector:
         """选择最值得调查的k条边。
 
         strategy:
-          'uncertainty' -- 不确定性采样 (需单模型, 用边置信度方差)
-          'committee'   -- 委员会查询 (需多模型, 用预测分歧度)
-          'impact'      -- 预期模型变化 (模拟移除每条边后重算风险)
-          'composite'   -- 三策略融合得分
+          'uncertainty' - 不确定性采样 (需单模型, 用边置信度方差)
+          'committee'   - 委员会查询 (需多模型, 用预测分歧度)
+          'impact'      - 预期模型变化 (模拟移除每条边后重算风险)
+          'composite'   - 三策略融合得分
         """
         candidates = self._build_candidates()
 
@@ -125,7 +125,7 @@ class ActiveEdgeSelector:
         return candidates
 
     def _topological_impact(self, edge_key: Tuple[str, str]) -> float:
-        """计算边的拓扑影响力----下游可达节点数加权。
+        """计算边的拓扑影响力: 下游可达节点数加权。
 
         传播图中的边具有不对称重要性：连接桥接节点的边比末梢边
         影响更多下游节点的风险估计。此度量捕获该不对称性。
@@ -149,7 +149,7 @@ class ActiveEdgeSelector:
 
         纯熵只考虑边缘自身的置信度不确定性。
         拓扑影响力加权使连接高影响力下游节点的边获得更高优先级
-        ——这是传播图特有的非对称重要性，标准主动学习无法捕获。
+        - 这是传播图特有的非对称重要性，标准主动学习无法捕获。
         """
         for cand in candidates:
             edge = self._graph._edges.get(cand.edge_key)
@@ -220,7 +220,7 @@ class ActiveEdgeSelector:
             max_diff = 0.0
 
             for sim_conf in [max(0.01, old_conf - 0.5), min(0.99, old_conf + 0.5)]:
-                # 临时修改边置信度(在内部数据结构上操作——需恢复)
+                # 临时修改边置信度(在内部数据结构上操作, 需恢复)
                 # 用传播信念近似: 边置信度变化 → 目标节点可达置信度变化
                 reachable = self._graph.propagate_belief(src, max_depth=3)
                 delta = abs(sim_conf - old_conf)
@@ -234,7 +234,7 @@ class ActiveEdgeSelector:
         return candidates
 
     def _compute_risk_proxy(self) -> Dict[str, float]:
-        """计算风险代理值 -- 简化版(severity + indegree归一化)。"""
+        """计算风险代理值 - 简化版(severity + indegree归一化)。"""
         scores = {}
         for nid, node in self._graph._nodes.items():
             indeg = len(self._graph._rev_adj.get(nid, []))
@@ -245,7 +245,7 @@ class ActiveEdgeSelector:
                      c_list: List[EdgeQueryCandidate],
                      i_list: List[EdgeQueryCandidate]
                      ) -> List[EdgeQueryCandidate]:
-        """三策略得分融合 -- min-max归一化后等权加和。"""
+        """三策略得分融合 - min-max归一化后等权加和。"""
 
         def normalize(vals, field):
             if not vals:

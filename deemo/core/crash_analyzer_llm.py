@@ -1,5 +1,5 @@
-"""LLM 深度崩溃分析 — 对模糊测试/符号执行的崩溃结果做语义级根因分析。
-补充 crash_analysis.py 的关键词匹配: 该模块做快速分类 (SIGSEGV→栈/堆→可利用), 本模块做深度推理 (反编译代码+寄存器+栈回溯);
+"""LLM 深度崩溃分析: 对模糊测试/符号执行的崩溃结果做语义级根因分析。
+补充 crash_analysis.py 的关键词匹配: 该模块做快速分类 (SIGSEGV判栈/堆判可利用), 本模块做深度推理 (反编译代码+寄存器+栈回溯);
 输入支持原始崩溃文本 (ASAN/GDB/coredump)、结构化崩溃数据或带反编译上下文的增强模式, 输出含漏洞类型、触发链、利用方向与置信度的结构化报告。
 参考: Xu et al., 2024, USENIX Security "VulnRepair"; Pearce et al., 2022, IEEE S&P "Asleep at the Keyboard?"。"""
 
@@ -17,7 +17,7 @@ from core.crash_llm_helpers import (
 
 _log = logging.getLogger(__name__)
 
-# LLM 系统提示 —— 要求结构化 JSON 输出
+# LLM 系统提示: 要求结构化 JSON 输出
 _CRASH_ANALYSIS_SYSTEM = """You are a senior binary exploitation researcher.
 Analyze the crash information and provide a structured root cause analysis.
 
@@ -43,18 +43,9 @@ def analyze_crash_with_llm(
     """
     调用 LLM 对崩溃进行深度分析。
 
-    与 crash_analysis.py 的 analyze_crash_for_exploit 返回格式兼容，
-    额外增加了 root_cause、trigger_chain 和 confidence 字段。
-
-    Args:
-        crash_data:         崩溃数据（raw 文本或结构化 dict）
-        binary_path:        崩溃来源的二进制路径（用于获取反编译上下文）
-        decompiled_context: 崩溃所在函数的反编译代码（可选）
-        binfo:              二进制信息
-
-    Returns:
-        增强的崩溃分析 dict，包含 LLM 的深度分析字段。
-        若 LLM 不可用则降级为关键词分析结果。
+    与 crash_analysis.py 的 analyze_crash_for_exploit 返回格式兼容,
+    额外增加 root_cause/trigger_chain/confidence 字段;
+    LLM 不可用时降级为关键词分析结果。
     """
     result: Dict[str, Any] = {
         'crash_type': crash_data.get('crash_type', 'unknown'),
@@ -142,15 +133,8 @@ def batch_analyze_crashes(
     parallel: bool = False,
 ) -> List[Dict[str, Any]]:
     """
-    批量分析多个崩溃, 按严重级别排序 (最严重在前)。
-
-    Args:
-        crashes: 崩溃数据 dict 列表
-        binary_path: 源二进制
-        parallel: 为 True 且崩溃数 >1 时使用 ThreadPoolExecutor
-
-    Returns:
-        按严重级别排序的分析结果
+    批量分析多个崩溃, 按严重级别排序 (最严重在前);
+    parallel=True 且崩溃数 >1 时用 ThreadPoolExecutor 并发。
     """
     results = []
 

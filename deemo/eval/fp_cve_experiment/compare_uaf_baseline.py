@@ -13,7 +13,6 @@ from _common import HERE as _HERE, list_samples, setup_paths
 setup_paths(with_format=False)
 from uaf_orchestrator import analyze_uaf as analyze_uaf_baseline
 from uaf_tovs import analyze_uaf_tovs
-from uaf_orchestrator import analyze_uaf as analyze_uaf_baseline
 
 CORPUS = os.path.join(_HERE, 'corpus_uaf')
 

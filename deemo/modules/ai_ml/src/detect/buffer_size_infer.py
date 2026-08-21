@@ -1,5 +1,5 @@
 # created: 2026-05-14
-# 缓冲区大小推断——基于抽象值区间的堆/栈溢出验证
+# 缓冲区大小推断-基于抽象值区间的堆/栈溢出验证
 # 从malloc/memcpy参数推断分配大小和拷贝长度，比较两者检测溢出
 # 理论依据: 区间抽象解释思想
 
@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +23,7 @@ class OverflowVerdict(Enum):
 
 @dataclass
 class IntervalValue:
-    """抽象值区间 [lo, hi]——表示一个值可能的最小/最大范围"""
+    """抽象值区间 [lo, hi]-表示一个值可能的最小/最大范围"""
     lo: int
     hi: int
 
@@ -64,7 +63,7 @@ class BufferOverflowVerdict:
 
 
 class BufferSizeInferer:
-    """缓冲区大小推断器——追踪malloc参数和memcpy参数的值。
+    """缓冲区大小推断器-追踪malloc参数和memcpy参数的值。
 
     追踪策略:
       对malloc(N)和memcpy(dst, src, N)中的N做反向常量传播，
@@ -166,11 +165,7 @@ class BufferSizeInferer:
                         instructions: List[str],
                         buf_ptr_reg: Optional[str] = None
                         ) -> BufferOverflowVerdict:
-        """检查是否存在缓冲区溢出——比较分配大小和拷贝大小。
-
-        Returns:
-            BufferOverflowVerdict with verdict level
-        """
+        """检查是否存在缓冲区溢出-比较分配大小和拷贝大小。"""
         alloc_size = self.infer_alloc_size(alloc_instr_idx, instructions)
         copy_size = self.infer_copy_size(copy_instr_idx, copy_func, instructions)
 

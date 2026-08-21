@@ -1,5 +1,5 @@
 #
-# 函数级差异 —— 将块匹配提升到函数级编辑脚本
+# 函数级差异 - 将块匹配提升到函数级编辑脚本
 #
 # 两个版本的同一函数之间产生以下编辑操作之一：
 #   MODIFIED: 至少一个基本块被修改，但调用图上下文不变
@@ -8,7 +8,7 @@
 #   REFACTORED: 50%+ 的基本块改变但函数语义签名不变（调用相同子函数、相同栈帧大小）
 # IDENT: 所有块的语义哈希一致
 #
-# diff_pipeline 是面向两个完整二进制文件的入口——它需要：
+# diff_pipeline 是面向两个完整二进制文件的入口-它需要：
 #   前置条件：两个二进制文件的反汇编输出（Capstone 或 r2 均可）
 # 输出：按 漏洞利用abili 排序的 patch 列表
 
@@ -59,8 +59,8 @@ def _classify_edit(similarity: float, matched: int,
                    src_n: int, dst_n: int,
                    shared_calls: int = 0, total_calls: int = 0) -> EditOp:
     """根据块级相似度和调用上下文分类编辑操作类型
-    
-    关键是 REFACTORED 的识别——当块变化大但调用图上下文不变时
+
+    关键是 REFACTORED 的识别-当块变化大但调用图上下文不变时
     可能是重构（循环展开、内联/去内联等），而非安全修复
     """
     if similarity >= 0.98:
@@ -87,14 +87,14 @@ def diff_functions(
     dst_calls: Optional[set] = None,
 ) -> FuncDiffResult:
     """比较一个函数的两个版本
-    
+
     参数:
     src_name, src_addr: 源函数名称和地址
     src_blocks: {addr: [(mnemonic, [ops.]),.]} 源函数的基本块
     dst_name, dst_addr: 目标函数名称和地址（可能为 None 如果未找到）
     dst_blocks: 目标函数的基本块
     src_calls, dst_calls: 被调用函数集合（用于 REFACTORED 检测）
-    
+
     如果目标中不存在对应的函数，返回 BLOCKS_REMOVED 且 similari=0
     """
     if dst_addr is None or not dst_blocks:
@@ -109,7 +109,7 @@ def diff_functions(
     src_n = len(src_blocks)
     dst_n = len(dst_blocks)
 
-    # 自适应阈值：函数越大容差越低——大函数中匹配标准应更严格
+    # 自适应阈值：函数越大容差越低-大函数中匹配标准应更严格
     adaptive_threshold = 0.45 - min(src_n, dst_n) * 0.005
     adaptive_threshold = max(adaptive_threshold, 0.30)
 
@@ -134,7 +134,7 @@ def diff_functions(
     elif edit_op == EditOp.BLOCKS_REMOVED:
         detail = f"移除 {src_n - dst_n} 个基本块（从 {src_n}→{dst_n}）"
     elif edit_op == EditOp.REFACTORED:
-        detail = f"重构——{src_n - len(matches)}/{src_n} 个块变化，但调用上下文不变"
+        detail = f"重构-{src_n - len(matches)}/{src_n} 个块变化，但调用上下文不变"
     else:
         detail = f"{len(matches)}/{max(src_n, dst_n)} 个块匹配，{src_n - len(matches)} 个块变化"
 
@@ -153,13 +153,13 @@ def diff_pipeline(
     progress_callback: Optional[Callable[[int, int], None]] = None,
 ) -> List[FuncDiffResult]:
     """对两个二进制文件的所有函数做差异分析
-    
+
     参数:
     src_functions: {name: (addr, {block_addr: insns}, calls_set)}
     dst_functions: {name: (addr_or_None, {block_addr: insns}, calls_set)}
     progress_回调: 可选回调 (current, total) 用于 CLI 进度显示
-    
-    返回 FuncDiffResult 列表——仅包含有差异的函数（edit_op!= IDENT）
+
+    返回 FuncDiffResult 列表-仅包含有差异的函数（edit_op!= IDENT）
     """
     results = []
     total = len(src_functions)

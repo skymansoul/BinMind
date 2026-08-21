@@ -1,11 +1,11 @@
 #
-# 自适应复杂度校准器 — 在线检测约束求解时间预测器的精度退化并触发重校准
+# 自适应复杂度校准器 - 在线检测约束求解时间预测器的精度退化并触发重校准
 #
 # ConstraintComplexityEstimator 用 SGD 线性回归预测 Z3 求解时间
 # 在符号执行的长运行周期中，约束特征分布随探索区域变化而漂移
 # （如从数值计算密集区进入字符串处理区），导致初始回归系数失效
 #
-# 本模块不替代 Estimator——而是在其外侧包装一层漂移检测逻辑：
+# 本模块不替代 Estimator--而是在其外侧包装一层漂移检测逻辑：
 #   1. 用指数移动平均 (EMA) 追踪预测误差
 #   2. 当 EMA 超过阈值或连续 N 次误差超标时，触发重校准
 #   3. 重校准策略：增大学习率临时加速适应，或回退到启发式初始权重
@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
 # ConstraintComplexityEstimator 和 ConstraintFeatures 定义在 symexec_opt_passes 中
-# 此处仅做类型引用层面的耦合——不 import 具体实现，由调用方注入
+# 此处仅做类型引用层面的耦合--不 import 具体实现，由调用方注入
 # 这保持了模块的零依赖特性，也意味着 calibrator 可以用在任何实现了
 # predict(features)->float + 更新(features, actual_time) 接口的预测器上。
 
@@ -37,10 +37,10 @@ class DriftState:
 
 class AdaptiveComplexityCalibrator:
     """在线检测预测精度退化，触发自适应重校准
-    
+
     调用方在每个求解周期后调用 observe(predicted, actual)
     calibrator 内部维护预测误差的 EMA。当误差系统性偏离基线时
-    触发回调——调用方自行决定是临时提学习率还是重置权重
+    触发回调--调用方自行决定是临时提学习率还是重置权重
     """
 
     def __init__(self,
@@ -66,7 +66,7 @@ class AdaptiveComplexityCalibrator:
 
     def observe(self, predicted: float, actual: float) -> DriftState:
         """记录一次预测-实际对，更新 EMA 并检测漂移
-        
+
         返回当前 DriftSt 供调用方判断是否需要干预
         """
         error = abs(predicted - actual)
@@ -119,7 +119,7 @@ class AdaptiveComplexityCalibrator:
         state.last_recalibration_time = time.time()
         state.recalibration_count += 1
         state.consecutive_violations = 0
-        # 重置基线——重校准后预测精度应恢复到新水平
+        # 重置基线--重校准后预测精度应恢复到新水平
         self._baseline_error = None
         for handler in self._recalibration_handlers:
             try:
@@ -133,7 +133,7 @@ class AdaptiveComplexityCalibrator:
 
     def recommended_learning_rate(self, base_lr: float = 0.01) -> float:
         """根据漂移程度临时学习率
-        
+
         连续超限次数越多 → 学习率越高（加速适应新分布）
         上限为 base_lr * 5，避免单步更新过冲
         """
@@ -145,8 +145,8 @@ class AdaptiveComplexityCalibrator:
 
     def should_reset_weights(self) -> bool:
         """连续超限超过 2 倍阈值时，直接重置为启发式初始权重
-        
-        此时 SGD 增量调整已无法有效追踪分布变化——需要硬重置
+
+        此时 SGD 增量调整已无法有效追踪分布变化--需要硬重置
         """
         return self._state.consecutive_violations >= self._consecutive_threshold * 2
 

@@ -18,7 +18,7 @@ _MODULES_DIR = os.path.dirname(os.path.dirname(_CORE_DIR))
 sys.path.insert(0, _CORE_DIR)
 sys.path.insert(0, _MODULES_DIR)
 
-from tests.regression.objdump_parser import (
+from .objdump_parser import (
     disassemble_sample, detect_malloc_write)
 
 

@@ -1,4 +1,3 @@
-# 2026-07-17
 
 import time
 import logging
@@ -157,14 +156,14 @@ def _map_flat(data: bytes, mu, uc, base: int = 0x100000) -> int:
     return base
 
 
-# //// SMC (Self-Modifying Code) detection 钩子 ////
-# 原理: 利用 Unicorn 的 UC_HOOK_MEM_WRITE 追踪所有内存写入
+# //// SMC 自修改代码检测钩子 ////
+# 原理：利用 Unicorn 的 UC_HOOK_MEM_WRITE 追踪所有内存写入
 # 当写入目标落入代码区域时记录为 SMC 事件。后续在 UC_HOOK_CODE
-# 中检查是否有指令从被写入过的地址执行 —— 该行为是解壳/反混淆的
+# 中检查是否有指令从被写入过的地址执行 - 该行为是解壳/反混淆的
 # 典型特征（如 UPX 自解压、XOR 代码段解密等）
 #
-# Unicorn Issue #2041 —— UC_钩子_MEM_WRITE 会自动触发
-# TLB dirty 标记，确保自修改代码的缓存一致性
+# Unicorn Issue #2041 - 内存写钩子自动触发 TLB dirty 标记，
+# 保证自修改代码的缓存一致性
 
 def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]]):
     """当写入目标在代码区域内时，记录 SMC 事件"""
@@ -200,7 +199,7 @@ def _make_smc_code_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int
     return _hook_code
 
 
-# //// Standard 钩子s ////
+# //// 标准钩子 ////
 
 def _make_code_hook(trace: EmulationTrace, start_time: float, capstone_md,
                     inst_counter: List[int], inst_limit: int, raw_data: bytes,
@@ -289,7 +288,7 @@ def _make_mem_unmapped_hook(uc_ref_class):
 # 仿真Tracer
 
 class EmulationTracer:
-    """Unicorn-driven dynamic execution 追踪 (x86/x64)"""
+    """基于 Unicorn 的动态执行追踪 (x86/x64)"""
 
     def __init__(self, binary_path: str, arch: str = 'x86'):
         self.binary_path = binary_path
@@ -354,7 +353,7 @@ class EmulationTracer:
         mem_read_hook = _make_mem_read_hook(trace)
         mem_unmapped_hook = _make_mem_unmapped_hook(uc)
 
-        # SMC 检测 钩子s
+        # SMC 检测钩子
         smc_write_hook = _make_smc_write_hook(trace, code_regions)
         smc_code_hook = _make_smc_code_hook(trace, code_regions, smc_write_hook)
 

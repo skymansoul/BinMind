@@ -1,4 +1,4 @@
-# 熔断器 — Michael Nygard "Release It!" 经典模式
+# 熔断器 - Michael Nygard "Release It!" 经典模式
 # CLOSED → (连续失败 >= threshold) → OPEN → (等 cooldown) → HALF_OPEN
 # HALF_OPEN 允许一次探测：成功 → CLOSED，失败 → OPEN
 # 按 handler/服务 独立计数，一个下游故障不至于拖死全局
@@ -13,7 +13,6 @@ import enum
 from collections import deque
 from typing import Optional
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",

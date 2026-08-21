@@ -78,25 +78,14 @@ def retry_on_failure(
 ) -> Callable[[F], F]:
     """通用重试装饰器 — 指数退避 + 随机抖动.
 
-    INTJ 注: 这个装饰器的设计哲学是 "尽力而为但不无限等待"。
+    注: 这个装饰器的设计哲学是 "尽力而为但不无限等待"。
     每次失败的退避 = min(backoff * 2^attempt + random(-jitter, +jitter), max_backoff)
     参考 AWS SDK 的 retry mode: standard。
-
-    Args:
-        max_retries: 最大重试次数 (总调用次数 = max_retries + 1)
-        backoff: 初始退避基数 (秒)
-        jitter: 随机抖动幅度 (秒, uniform[-jitter, +jitter])
-        max_backoff: 单次退避上限 (秒)
-        retryable_exceptions: 可重试的异常类型元组
-        logger: 日志记录器 (None = 使用调用模块的 logger)
 
     Usage:
         @retry_on_failure(max_retries=3)
         def flaky_r2_call(binary_path: str) -> str:
             ...
-
-    Returns:
-        装饰后的函数, 签名不变。
     """
 
     def decorator(func: F) -> F:
@@ -158,7 +147,7 @@ def retry_subprocess(
     - OSError: 磁盘 IO / 权限错误
 
     此类失败通常是瞬时的 (系统负载、临时文件锁)，可安全重试。
-    INTJ 注: FileNotFoundError 重试成功率低 (除非用户恰好在那 3 秒内安装 r2),
+    注: FileNotFoundError 重试成功率低 (除非用户恰好在那 3 秒内安装 r2),
     但保留它是为了避免 CI 竞态条件 — 见 atlassian/ci-fails 讨论串。
     """
     return retry_on_failure(
@@ -225,15 +214,6 @@ def setup_module_logging(
     - 双输出: 控制台 stderr + 可选文件
     - 时间戳格式: ISO 8601
     - logger 命名空间: fuzzing.{name}
-
-    Args:
-        name: 子模块名称 (如 "fault_injection", "cluster")
-        level: 日志级别
-        log_file: 日志文件路径 (None = 仅控制台)
-        log_format: 自定义格式 (None = 默认)
-
-    Returns:
-        配置好的 Logger 实例。
     """
     if log_format is None:
         log_format = "[%(asctime)s] [%(name)s] %(levelname)s: %(message)s"
@@ -268,7 +248,7 @@ def _debug_trace(func_name: str, **kwargs: object) -> None:
     """仅在 BINMIND_DEBUG=1 时输出调试追踪.
 
     这是临时的诊断钩子 — 生产环境不应该依赖它。
-    INTJ 注: 以后换成 opentelemetry tracing, 但这个 print 在
+    注: 以后换成 opentelemetry tracing, 但这个 print 在
     docker logs 里足够直观。
     """
     if os.environ.get("BINMIND_DEBUG"):

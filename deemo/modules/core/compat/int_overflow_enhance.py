@@ -8,7 +8,7 @@ from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # 复用已有模块
-from compat.int_overflow import (
+from .int_overflow import (
     IntWidth, OverflowType, IntOperation, OverflowResult,
     IntRangeAnalyzer, detect_int_overflow)
 

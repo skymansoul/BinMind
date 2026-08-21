@@ -1,13 +1,12 @@
-# 修改记录:
-# 2025-07-25 09:12 - 操作符分组衰减耦合，避免同类操作符同时被压制
-# 2025-07-28 16:44 - 奖励归一化为分位排名，消除绝对值漂移
-# 2025-08-02 11:08 - 添加 operator_entropy() 诊断接口
+# 操作符分组衰减耦合，避免同类操作符同时被压制
+# 奖励归一化为分位排名，消除绝对值漂移
+# 添加 operator_entropy() 诊断接口
 
-# 自适应变异操作符选择器 — 基于覆盖反馈的操作符概率分布动态调整
+# 自适应变异操作符选择器 - 基于覆盖反馈的操作符概率分布动态调整
 #
 # 设计动机:
 #   power_schedule.py调度"哪个种子值得变异"，seed_selector.py决定"下一轮选哪个种子"。
-#   两者均未回答"对这个种子，哪种变异操作符最可能产生新覆盖"——
+#   两者均未回答"对这个种子，哪种变异操作符最可能产生新覆盖"-
 #   这是正交于种子调度的第三维度。
 #
 # 核心方法:
@@ -15,13 +14,13 @@
 #   选择时按 softmax(EWMA / temperature) 采样。定期注入epsilon均匀探索防止局部最优。
 #
 # 操作符分组衰减:
-#   同类操作符（如bitflip_1/bitflip_2/bitflip_4）共享衰减因子——
+#   同类操作符（如bitflip_1/bitflip_2/bitflip_4）共享衰减因子-
 #   若bitflip组整体表现差，组内各操作符概率同步压低，避免组内轮换维持虚假多样性。
 #
 # 文献:
-#   CovRL-Fuzz — coverage-guided RL for fuzzer mutator;
+#   CovRL-Fuzz - coverage-guided RL for fuzzer mutator;
 #       本项目取其覆盖反馈驱动变异选择思想但替换为轻量EWMA在线学习。
-#   CTFuzz — multi-level mutation action
+#   CTFuzz - multi-level mutation action
 #       sequences learned via deep Q-learning; 本项目借鉴操作符分层思想
 #       但采用非参数统计 (分位排名) 替代神经网络，降低计算开销。
 import math
@@ -31,7 +30,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 
-# 操作符分组: 组名 -> [操作符名...]
+# 操作符分组: 组名 - [操作符名...]
 # 同组内操作符共享衰减耦合，防止"bitflip 1/1不好但bitflip 2/2尚可"
 # 导致该组长期占据概率质量。
 _OPERATOR_GROUPS: Dict[str, List[str]] = {
@@ -64,9 +63,9 @@ class AdaptiveMutationSelector:
     """自适应变异操作符选择器。
 
     工作流:
-      select_operator() -> 按当前概率分布选操作符
-      record_outcome(operator_name, new_edges) -> 更新该操作符的EWMA奖励
-      decay_epoch() -> 每N轮调用一次全局衰减
+      select_operator() - 按当前概率分布选操作符
+      record_outcome(operator_name, new_edges) - 更新该操作符的EWMA奖励
+      decay_epoch() - 每N轮调用一次全局衰减
 
     选择策略:
       概率 ∝ softmax(ewma_reward / temperature)
@@ -195,7 +194,7 @@ class AdaptiveMutationSelector:
                 continue
             grp_min = min(active)
             grp_mean = sum(active) / len(active)
-            # 组内最小值远低于均值 -> 组整体被压制
+            # 组内最小值远低于均值 - 组整体被压制
             ratio = grp_min / max(0.01, grp_mean)
             group_penalty[grp] = 0.7 + 0.3 * ratio  # 在 [0.7, 1.0] 区间
 
@@ -209,7 +208,7 @@ class AdaptiveMutationSelector:
     def operator_entropy(self) -> float:
         """操作符概率分布的香农熵 [0, log2(N)]。
 
-        高熵 -> 选择接近均匀（探索充分）；低熵 -> 集中于少数操作符。
+        高熵 - 选择接近均匀（探索充分）；低熵 - 集中于少数操作符。
         """
         if not self._operators:
             return 0.0

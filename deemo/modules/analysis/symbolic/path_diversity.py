@@ -68,7 +68,7 @@ __all__ = [
     "_simhash",
     "_hamming_distance",
     "_feature_to_vector",
-    # 已废弃 fake parts — preserved for backward 兼容性
+    # 已废弃 fake parts - preserved for backward 兼容性
     "DynamicPathExplorator",
     "run_path_diversity_exploration",
 ]
@@ -77,7 +77,7 @@ __all__ = [
 class DynamicPathExplorator:
     """Top-level exploration 驱动. Accepts path candidates, selects
     via a DiversityAwarePathSelector, simulates exploration
-    
+
     已废弃::
     a fake exploration stub 使用 ``time.sleep`` random
     values instead performing real 符号执行. 使用 core
@@ -132,12 +132,12 @@ class DynamicPathExplorator:
 
     def _explore_path(self, path_id: str) -> Dict[str, Any]:
         """Explore a path solving constraints deriving new branches
-        
+
         Retrieves path's constraint list diversity tracker
         attempts SAT solving via Z3 (falling back claripy), 构造
-        new branches negating individual constraints — standard
+        new branches negating individual constraints - standard
         concolic-execution (DART) pattern for branch discovery
-        
+
         solver available or path stored constraints
         falls back a heuristic 估算 derived path's structural
         features (depth) rather random data
@@ -193,7 +193,7 @@ class DynamicPathExplorator:
     @staticmethod
     def _solve_path_constraints(constraints: List[str]) -> tuple:
         """Attempt SAT solving a list constraint strings
-        
+
         返回 (satisfiable: bool, solution: dict or None)
         Tries Z3 first, claripy
         """
@@ -315,7 +315,7 @@ def run_path_diversity_exploration(
 ) -> Dict[str, Any]:
     """One-shot: 构造 a synthetic path population, explore chosen
     diversity strategy, 返回 stats
-    
+
     已废弃::
     function 使用 已废弃 ``DynamicPathExplorator``
     构造 fake random results. For real path diversity analysis

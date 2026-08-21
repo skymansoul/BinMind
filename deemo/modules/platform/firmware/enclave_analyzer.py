@@ -189,6 +189,7 @@ class EnclaveAnalyzer:
                     "code", f"Large SMC surface ({len(smc_immediates)} unique values)"))
 
     def _detect_smc_surface(self, data, result):
+        """ARM SMC 调用面检测 — 已并入 _check_tz_el_escalation, 此入口保留兼容。"""
         pass
 
     def _check_sev_attestation(self, data, result):

@@ -40,13 +40,10 @@ class PcapReader:
             self._mmap_obj = mmap.mmap(self._fd.fileno(), 0, access=mmap.ACCESS_READ)
             _header = self._mmap_obj[:24]
         else:
-            with open(filepath, "rb") as _f:
-                _header = _f.read(24)
-                self._data = _f.read()
             # 文件不大，全读入内存
-            if self._data is None and self._file_size > 0:
-                with open(filepath, "rb") as _f:
-                    self._data = _f.read()
+            with open(filepath, "rb") as _f:
+                self._data = _f.read()
+            _header = self._data[:24]
 
         self._parse_global_header(_header)
 

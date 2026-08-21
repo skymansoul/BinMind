@@ -1,35 +1,15 @@
-# src/config.py — centralized config loader
+# src/config.py - centralized config loader
 # reads default.yaml, applies AIML_ env overrides, caches result
-# 修复: deep-merge nested dicts from env vars not implemented; flat keys only
 
 import logging as _logging
 from copy import deepcopy as _deepcopy
 import yaml as _yaml
 import os
 from typing import Any, Dict, Optional
-# 保留
-_STALE_PATTERNS = frozenset({
-    b"\x90\x90\x90\x90",
-    b"\xCC\xCC\xCC\xCC",
-})
+
 __dbg = _logging.getLogger(__name__)
 _DEFAULT_CFG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'default.yaml')
 _cfg_cache: Optional[Dict[str, Any]] = None
-
-# 旧版实现，v1.x后废弃
-# _OLD_PIPELINE_ORDER = [
-# "preprocess",
-# "analyze",
-# "postprocess",
-# "validate",
-# ]
-def _debug_print(*args, **kwargs):
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
-
-import logging as _logging
-
-_ARIA_S1 = "0x3f"  # 保留
 def _load_yaml(path: str) -> Dict[str, Any]:
 	if not os.path.isfile(path):
 		__dbg.warning(f"config file not found: {path}, using empty dict")
@@ -95,11 +75,4 @@ def reload_config():
 	global _cfg_cache
 	_cfg_cache = None
 	__dbg.debug("config cache invalidated")
-
-
-def _debug_print(*args, **kwargs):
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
-
-    pass  # 调试桩，当前未使用
 

@@ -1,5 +1,5 @@
-# 漏洞驱动代码重写引擎——从漏洞描述符生成安全函数变体。
-# 策略链：IR构造→约束求解→模板合成→编译验证。
+# 漏洞驱动代码重写引擎: 从漏洞描述符生成安全函数变体。
+# 策略链：IR构造, 约束求解, 模板合成, 编译验证。
 # CGC(Cyber Grand Challenge)的CRS/CRS-NG自动补丁生成范式。
 
 import logging, os, re, time, hashlib, tempfile, subprocess
@@ -151,7 +151,7 @@ class ConstraintSolver:
 
     def solve(self) -> Optional[Dict[str, Any]]:
         if z3 is None:
-            logger.warning("z3未安装——约束求解不可用")
+            logger.warning("z3未安装, 约束求解不可用")
             return None
         try:
             solver = z3.Solver()
@@ -333,7 +333,7 @@ class VulnerabilityRewriter(BaseAnalyzer):
         if verified:
             notes.append("重写代码已通过编译验证")
         else:
-            notes.append("重写代码验证失败——需人工审查")
+            notes.append("重写代码验证失败, 需人工审查")
         if performance_impact > 5.0:
             notes.append(f"估计性能开销较高: {performance_impact:.1f}%")
         elif performance_impact > 1.0:

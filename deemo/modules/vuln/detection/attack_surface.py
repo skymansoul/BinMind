@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 攻击面枚举引擎。从二进制目标提取导出函数、网络端点、文件路径、IPC/RPC接口。
 # 风险评分按远程可达性、鉴权门控、危险函数暴露度、攻击面类型加权。
-# 端口→协议对照表手工维护，非完备，覆盖常见场景。
+# 端口-协议对照表手工维护，非完备，覆盖常见场景。
 # 积分公式: type_weight + remote*30 + no_auth*20 + params>3*15 + bufsize>1k*10 + danger_name*25
 # 总分/1.2调校因子后钳位至[0, 100]。
 
@@ -259,7 +259,7 @@ class AttackSurfaceMapper:
                 self._calc_risk(pt)
                 rpt.points.append(pt)
 
-    # 端口→协议手工映射，覆盖常见服务
+    # 端口-协议手工映射，覆盖常见服务
     @staticmethod
     def _guess_proto(port):
         _MAP = {80: 'HTTP', 443: 'HTTPS', 21: 'FTP', 22: 'SSH', 23: 'Telnet',
@@ -387,7 +387,7 @@ class AttackSurfaceMapper:
             self._extract_ipc(rpt)
             self._extract_rpc(rpt)
             self._extract_cli(rpt)
-            # 去重——同(name, type)只保留一次
+            # 去重-同(name, type)只保留一次
             seen = set()
             uniq = []
             for p in rpt.points:
@@ -434,5 +434,5 @@ class AttackSurfaceMapper:
         return content
 
     def generate_report(self, out=None):
-        """generate_report 与 gen_report 同义——统一外部调用命名。"""
+        """generate_report 与 gen_report 同义-统一外部调用命名。"""
         return self.gen_report(out=out)

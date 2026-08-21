@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Hyperedge:
-    """超边——连接≥2个节点的高阶关系"""
+    """超边-连接≥2个节点的高阶关系"""
     edge_id: str
     node_indices: List[int]
     edge_type: str = "generic"
@@ -37,7 +37,7 @@ class HyperGraphConvolution:
 
     与GCN的差异:
       - GCN用邻接矩阵A（成对），超图用关联矩阵H（高阶）
-      - 超边权重W门控信息流——重要超边传递更多信息
+      - 超边权重W门控信息流-重要超边传递更多信息
     """
 
     def __init__(self, in_dim: int, out_dim: int):

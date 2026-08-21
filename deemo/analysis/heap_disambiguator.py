@@ -116,14 +116,9 @@ def classify_memory_access(
     ir_line: str,
     alloc_vars: Optional[Set[str]] = None,
 ) -> MemAccess:
-    """分类单条IR行中的内存访问。
+    """分类单条 IR 行中的内存访问, 返回带区域分类的 MemAccess。
 
-    Args:
-        ir_line: 一条IR行 (如 'mov [rax + 0x10], rbx' 或 'store rax+16 <- rbx')
-        alloc_vars: 已知从malloc分配返回的变量名集合
-
-    Returns:
-        MemAccess with region classification.
+    alloc_vars 为已知从 malloc 分配返回的变量名集合。
     """
     result = MemAccess(line=ir_line)
 

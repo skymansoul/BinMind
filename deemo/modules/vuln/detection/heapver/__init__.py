@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-30  |  GASRI 堆溢出误报抑制包
 #
 """
 GASRI (Guard-Aware Size-Region Inference) — 堆溢出静态检测误报抑制。

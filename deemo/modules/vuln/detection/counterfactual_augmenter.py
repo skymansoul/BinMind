@@ -1,8 +1,8 @@
-# 反事实增强器 —— 对漏洞样本施加最小扰动以构造对抗变体，评估检测器鲁棒性分数。
+# 反事实增强器 - 对漏洞样本施加最小扰动以构造对抗变体，评估检测器鲁棒性分数。
 #
 # 对应论文: VISION 用反事实增强提升漏洞检测的鲁棒性与可解释性
 # (最小扰动下保持语义等价, 但改变攻击面语法); NatGVD 论证
-# 基于图结构的漏洞检测对自然对抗样本的脆弱性 —— 名称重命名、边界偏移等攻击。
+# 基于图结构的漏洞检测对自然对抗样本的脆弱性 - 名称重命名、边界偏移等攻击。
 #
 # 设计意图:
 #   LLM 不可用时退化为启发式变换(边界条件偏移/标识符重命名/去注释/常量扰动/
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class CounterfactualTransform(str, Enum):
-    """反事实变换类型 —— 与 VISION 的最小扰动类别对应。"""
+    """反事实变换类型 - 与 VISION 的最小扰动类别对应。"""
     BOUNDARY_SHIFT = "boundary_shift"        # 条件边界偏移(> vs >=, ±1)
     RENAME = "rename"                        # 标识符重命名
     DECOMMENT = "decomment"                  # 去注释
@@ -72,7 +72,7 @@ class RobustnessReport:
 
 
 def _levenshtein_ratio(a: str, b: str) -> float:
-    """归一化编辑距离 —— O(mn) DP, 结果归一化到 [0,1]。
+    """归一化编辑距离 - O(mn) DP, 结果归一化到 [0,1]。
 
     算法依据: Wagner-Fischer 动态规划, 空间优化为两行滚动数组。
     """
@@ -96,7 +96,7 @@ class CounterfactualAugmenter:
     """反事实样本构造与鲁棒性评估器。
 
     边界条件:
-      - 启发式变换仅在文本层面成立, 不保证语义严格等价 —— 用于鲁棒性
+      - 启发式变换仅在文本层面成立, 不保证语义严格等价 - 用于鲁棒性
         评估而非精确对抗样本构造, 与 VISION 的最小扰动约束相容。
       - 语句重排仅交换相邻"简单语句"(非分支/非 return), 避免破坏控制流。
     """
@@ -114,7 +114,7 @@ class CounterfactualAugmenter:
 
         变换顺序与扰动预算:
           边界偏移 -> 重命名 -> 去注释 -> 常量扰动 -> 重排。
-        每类变换只保留编辑距离 <= budget 的变体 —— 保证扰动"最小"。
+        每类变换只保留编辑距离 <= budget 的变体, 保证扰动"最小"。
         """
         samples: List[CounterfactualSample] = []
         if not code or len(code.strip()) < 4:
@@ -200,7 +200,7 @@ class CounterfactualAugmenter:
         """条件边界偏移: `>` -> `>=`, `<` -> `<=`, 并同步偏移相邻常量 ±1。
 
         参考:
-          VISION 的"改变条件边界"最小扰动 —— 使脆弱边界检查在攻击者视角
+          VISION 的"改变条件边界"最小扰动 - 使脆弱边界检查在攻击者视角
           下可被绕过(off-by-one), 是缓冲区溢出类漏洞的典型逃逸手法。
         """
         repl = [
@@ -241,7 +241,7 @@ class CounterfactualAugmenter:
 
     @staticmethod
     def _decomment(code: str) -> Optional[str]:
-        """去除注释 —— 使检测器无法依赖注释中的线索词。"""
+        """去除注释 - 使检测器无法依赖注释中的线索词。"""
         if "//" not in code and "/*" not in code and "#" not in code:
             return None
         cleaned = re.sub(r'//[^\n]*', '', code)
@@ -251,7 +251,7 @@ class CounterfactualAugmenter:
 
     @staticmethod
     def _perturb_constant(code: str) -> Optional[str]:
-        """常量 ±1 扰动 —— 针对边界检查附近的常量。
+        """常量 ±1 扰动 - 针对边界检查附近的常量。
 
         原理:
           边界常量是漏洞根因(如缓冲区大小/最大长度), 扰动后检测器若仍
@@ -333,12 +333,12 @@ class CounterfactualAugmenter:
 
 def augment_counterfactuals(code: str, max_variants: int = 6,
                             backend: Any = None) -> List[CounterfactualSample]:
-    """便捷函数 —— 构造反事实变体。"""
+    """便捷函数 - 构造反事实变体。"""
     return CounterfactualAugmenter(max_variants=max_variants,
                                    backend=backend).augment(code)
 
 
 def evaluate_detector_robustness(code: str, scorer: Callable[[str], float],
                                  threshold: float = 0.5) -> RobustnessReport:
-    """便捷函数 —— 单次鲁棒性评估。"""
+    """便捷函数 - 单次鲁棒性评估。"""
     return CounterfactualAugmenter().evaluate_robustness(code, scorer, threshold)

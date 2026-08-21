@@ -1,12 +1,10 @@
-# 格式化字符串检测共享常量 — 判定级别、printf 家族、ABI 参数寄存器.
+# 格式化字符串检测共享常量 - 判定级别、printf 家族、ABI 参数寄存器.
 #
-# 创建: 2024-10-11
 
 class FmtVerdict:
     CONFIRMED = "confirmed"
     SUSPECTED = "suspected"
     BENIGN = "benign"
-
 
 # puts 不解析格式串, 非格式化字符串汇点.
 PRINTF_FAMILY = {

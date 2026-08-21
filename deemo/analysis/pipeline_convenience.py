@@ -53,10 +53,9 @@ def run_format_string_pipeline(
 def run_int_overflow_pipeline(
         exprs: List[Tuple[str, str, int]],
         insns: List[Tuple[int, str]]) -> List[Any]:
-    """运行整数溢出值范围验证.
+    """运行整数溢出值范围验证。
 
-    Args:
-      exprs: [(expr, func_name, call_site), ...]
+    exprs 为 [(expr, func_name, call_site), ...]。
     """
     try:
         from .int_overflow_verifier import IntOverflowVerifier

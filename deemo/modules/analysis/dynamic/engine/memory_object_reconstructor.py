@@ -68,7 +68,7 @@ class StackVariable:
 class WYTIWYGRecovery:
     """WYTIWYG式迭代栈变量恢复——通过动态追踪数据将栈布局恢复分解为
     四个相继的分析通道，每通道利用前一通道的结果作为先验约束
-    
+
     ASPLOS '24论文报告了94.4% precision和87.6% recall
     关键突破是放弃了一次性静态恢复，转而采用迭代动态方法"""
 

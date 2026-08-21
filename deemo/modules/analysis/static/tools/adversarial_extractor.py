@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-02 14:08 - LSH 桶对死代码插入的鲁棒性: 使用统计分布相似度替代精确匹配
-# 2025-08-03 18:04 - 集成三类特征为统一向量: 块内不变量 + CFG n-gram + 块签名分布
+# LSH 桶对死代码插入的鲁棒性: 使用统计分布相似度替代精确匹配
+# 集成三类特征为统一向量: 块内不变量 + CFG n-gram + 块签名分布
 
 """对抗鲁棒特征提取器 - 集成多尺度特征为统一指纹向量
 
@@ -51,9 +50,9 @@ def block_signature_distribution(
 ) -> List[float]:
     """将每基本块的 multiset 签名散列到固定数量 LSH 桶
 
-    返回 32 维归一化直方图--每个条目是落入该桶的块比例
+    返回 32 维归一化直方图, 每个条目是落入该桶的块比例
     同一程序的不同编译版本（仅因寄存器分配或指令调度不同）
-    产生高度相似的桶分布--因为桶使用 XOR 签名而非精确指令序列
+    产生高度相似的桶分布, 因为桶使用 XOR 签名而非精确指令序列
     """
     if not block_insns:
         return [0.0] * num_buckets
@@ -81,7 +80,7 @@ def aggregate_block_invariants(
     附加 4 个全局统计量 (总块数, 总指令数, 间接调用比例, 间接跳转比例)
     总计 64 维
 
-    分位数对极端值 (异常大的块) 鲁棒--一个混淆器插入的超大死代码块
+    分位数对极端值 (异常大的块) 鲁棒, 一个混淆器插入的超大死代码块
     只影响 max 分位而不影响 median 和 Q1/Q3
     """
     if not block_invariants:
@@ -90,7 +89,7 @@ def aggregate_block_invariants(
     vec: List[float] = []
 
     # 每类不变量提取分位数
-    # 类 0: semantic_class_distribution (已有12维--直接取均值)
+    # 类 0: semantic_class_distribution (已有12维, 直接取均值)
     cls_means = [0.0] * 12
     for bi in block_invariants:
         for c in range(12):
@@ -150,7 +149,7 @@ def compress_cfg_ngrams(
 
     使用特征哈希 (feature hashing / "hashing trick"):
     每 n-gram 的散列值取模 target_dim 后累加权重
-    无需维护完整字典--内存 O(target_dim)
+    无需维护完整字典, 内存 O(target_dim)
     对未见 n-gram 天然泛化
 
     三个独立的加权维度:
@@ -221,9 +220,6 @@ class AdversarialRobustExtractor:
     # rfv.full_vector: 128 维浮点向量
     """
 
-    def __init__(self):
-        pass
-
     def extract(
         self,
         blocks: Dict[int, List[str]],
@@ -272,7 +268,7 @@ class AdversarialRobustExtractor:
     def vector_distance(
         a: RobustFeatureVector, b: RobustFeatureVector
     ) -> float:
-        """两个鲁棒特征向量的 L2 距离--已归一化为 [0, 1]"""
+        """两个鲁棒特征向量的 L2 距离, 已归一化为 [0, 1]"""
         if len(a.full_vector) != len(b.full_vector):
             return 1.0
         d2 = sum(

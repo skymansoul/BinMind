@@ -15,7 +15,7 @@
 from __future__ import annotations
 from typing import Dict, List, Optional
 import re
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 
 def extract_relevant_guards(
     code: str,

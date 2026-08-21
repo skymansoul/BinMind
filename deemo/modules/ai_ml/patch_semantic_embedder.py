@@ -33,7 +33,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -169,12 +168,7 @@ class PatchSemanticEmbedder:
                     added_lines: List[str],
                     patch_id: str = "",
                     cve_id: str = "") -> PatchEmbedding:
-        """将补丁差分编码为语义嵌入。
-
-        Args:
-            removed_lines: 补丁中删除的代码行
-            added_lines: 补丁中添加的代码行
-        """
+        """将补丁差分编码为语义嵌入。"""
         # 编码删除行
         if removed_lines:
             removed_vecs = [self._encoder.encode_line(l) for l in removed_lines]
@@ -209,11 +203,7 @@ class PatchSemanticEmbedder:
     def embed_batch(self,
                     patches: List[Tuple[List[str], List[str], str, str]]
                     ) -> List[PatchEmbedding]:
-        """批量编码补丁。
-
-        Args:
-            patches: [(removed_lines, added_lines, patch_id, cve_id), ...]
-        """
+        """批量编码补丁。"""
         return [self.embed_patch(rem, add, pid, cve)
                 for rem, add, pid, cve in patches]
 
@@ -224,9 +214,6 @@ class PatchSemanticEmbedder:
         """基于Δ方向向量的无监督聚类（简化K-Means）。
 
         聚类揭示修复模式——同一类漏洞的修复往往具有相似的Δ方向。
-
-        Returns:
-            {cluster_id: [embeddings, ...]}
         """
         if not embeddings:
             return {}

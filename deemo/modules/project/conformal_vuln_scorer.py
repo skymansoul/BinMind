@@ -1,7 +1,3 @@
-# 修改记录:
-# 2025-07-21 15:42 — 初始创建: 归纳式CP+滑动校准集+EPSS/CVSS nonconformity score
-# 2025-07-23 09:17 — 增加批量评分和校准统计接口
-# 2025-08-14 11:30 — 移除未验证的性能数字, 修正为技术描述
 # 保形漏洞评分器: 基于保形预测的CVE风险评分校准
 # 技术问题: CVSS和EPSS评分均为点估计, 不提供置信区间,
 #   安全团队无法量化评分的不确定性. 同一个CVSS 7.5的漏洞,
@@ -10,8 +6,6 @@
 # 解决手段: 使用归纳式保形预测 (Inductive CP) 包裹EPSS概率,
 #   产出校准后的风险评分区间 [lower, upper] 及credibility指标.
 #   校准集由CISA KEV历史利用数据构建, 保证有限样本有效性
-# 技术效果: 在CISA KEV 2024测试集上, 90%置信区间覆盖率达
-#   89.7% (接近名义覆盖率90%), 区间宽度中位数0.18
 #
 #   Carlevaro et al. "Conformal Predictions for Probabilistically Robust
 #     Scalable ML Classification" — 保形安全集概念

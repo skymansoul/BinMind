@@ -1,8 +1,7 @@
-# 创建: 2026-06-14 | 结果解析+汇总模块
 #
-"""结果解析——将scan_results与ground truth对比, 计算TP/FP/FN。
+"""结果解析-将scan_results与ground truth对比, 计算TP/FP/FN。
 
-每个样本的ground truth定义在 gt_manifest 中——
+每个样本的ground truth定义在 gt_manifest 中-
 预期漏洞类型列表。扫描结果中的findings按类型匹配。
 
 输出:
@@ -14,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# Ground Truth — 每个样本预期检出的漏洞类型
+# Ground Truth - 每个样本预期检出的漏洞类型
 GROUND_TRUTH = {
     "heap-overflow-01": {
         "vuln_types": ["heap_overflow", "taint_unchecked_memcpy"],
@@ -109,7 +108,7 @@ def _auto_gt(sample_id: str) -> dict:
     return {"vuln_types": ["unknown"], "cwe": "CWE-UNKNOWN", "severity": "MEDIUM",
             "description": f"auto-generated GT for {sample_id}"}
 
-# 漏洞类型→关键词映射(用于匹配finding的type字段)
+# 漏洞类型-关键词映射(用于匹配finding的type字段)
 _VULN_TYPE_KEYWORDS = {
     "heap_overflow": ["heap", "overflow", "memcpy", "malloc", "buffer"],
     "use_after_free": ["use.after.free", "uaf", "free.*use", "use.*free"],
@@ -125,7 +124,7 @@ _VULN_TYPE_KEYWORDS = {
 
 
 def _match_vuln_type(finding_text: str, vuln_type: str) -> bool:
-    """判断finding文本是否匹配某漏洞类型——基于关键词。"""
+    """判断finding文本是否匹配某漏洞类型-基于关键词。"""
     import re
     _keywords = _VULN_TYPE_KEYWORDS.get(vuln_type, [vuln_type])
     _text_lower = finding_text.lower()
@@ -139,7 +138,7 @@ def evaluate_sample(
     sample_id: str, scan_result: dict,
     gt: Optional[dict] = None,
 ) -> dict:
-    """评估单样本——对比预期与检测结果。
+    """评估单样本-对比预期与检测结果。
 
     返回: {expected, detected, TP, FP, FN, metrics}。
     """
@@ -157,8 +156,8 @@ def evaluate_sample(
 
     _tp = _detected
     _fn = _expected_types - _detected
-    _fp = 0  # 基础扫描无假阳性概念——只检测危险函数调用(全为true)
-    # 实际上: 若检测到非预期的危险函数→可计为FP
+    _fp = 0  # 基础扫描无假阳性概念-只检测危险函数调用(全为true)
+    # 实际上: 若检测到非预期的危险函数-可计为FP
 
     _precision = len(_tp) / max(len(_tp) + _fp, 1)
     _recall = len(_tp) / max(len(_expected_types), 1)
@@ -183,7 +182,7 @@ def evaluate_all(
     scan_results_path: str = "scan_results.json",
     output_path: str = "evaluation_report.json",
 ) -> str:
-    """对所有扫描结果做评估——输出详细报告+汇总指标。"""
+    """对所有扫描结果做评估-输出详细报告+汇总指标。"""
     _scan_results = json.loads(Path(scan_results_path).read_text())
     _eval_results = {}
     _precisions = []
@@ -226,7 +225,7 @@ def evaluate_all(
 
 
 def evaluate_enhanced(output_path: str = "evaluation_report.json") -> str:
-    """使用增强扫描器对全量样本做评估——不依赖旧的scan_results.json。"""
+    """使用增强扫描器对全量样本做评估-不依赖旧的scan_results.json。"""
     import subprocess, sys
     _scanner = str(Path(__file__).parent.parent.parent / "src" / "scanner.py")
     _samples_dir = Path(__file__).parent / "samples"  # tests/regression/samples/

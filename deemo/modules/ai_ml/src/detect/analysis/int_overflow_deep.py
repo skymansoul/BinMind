@@ -1,4 +1,4 @@
-# 整数溢出深层分析——值范围传播+分配关联+guard检测
+# 整数溢出深层分析-值范围传播+分配关联+guard检测
 # 核心: 轻量区间追踪(int→size_t转换/符号扩展)+ 守卫(cmp+jcc)识别 + 分配因果链
 # 理论: 区间抽象的二进制级简化实现
 
@@ -10,7 +10,6 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +44,7 @@ class DeepOverflowReport:
 
 
 class IntOverflowDeepAnalyzer:
-    """整数溢出深层分析器——区间追踪+守卫检测+分配因果链。
+    """整数溢出深层分析器-区间追踪+守卫检测+分配因果链。
 
     与integer_overflow_check.py的区别: 引入操作数值范围追踪和守卫检测，
     而非仅检查jo/jc指令是否存在。-O2优化通常消除显式溢出检查但守卫仍在。

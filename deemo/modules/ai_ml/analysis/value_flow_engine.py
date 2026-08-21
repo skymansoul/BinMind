@@ -1,4 +1,4 @@
-# 按需后向值流追踪v2——跨块strided interval+栈槽位+同源检测
+# 按需后向值流追踪v2: 跨块strided interval+栈槽位+同源检测
 from __future__ import annotations
 
 import re
@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -67,7 +66,7 @@ def _norm_reg(r): return _REG_ALIAS.get(r.lower(), r.lower())
 
 
 class ValueFlowEngine:
-    """后向值流引擎——sink出发沿def-use链反向传播,跨块DFS,遇非堆call截断,v2栈槽位"""
+    """后向值流引擎: sink出发沿def-use链反向传播,跨块DFS,遇非堆call截断,v2栈槽位"""
 
     _HEAP_SINKS = {'malloc','calloc','realloc','memcpy','memmove','strcpy','strncpy','sprintf','snprintf'}
     _ALLOC_SIZE_PARAM = {'malloc':0,'calloc':1,'realloc':1,'alloca':0,'memcpy':2,'memmove':2,'strncpy':2,'snprintf':1}
@@ -128,7 +127,7 @@ class ValueFlowEngine:
                     if sv is not None: cur_si = sv
                     break
 
-            # mov/movsx/movsxd/movzx/movslq reg,reg——语法感知DST
+            # mov/movsx/movsxd/movzx/movslq reg,reg, 语法感知DST
             m = re.match(r'mov(?:sx|sxd|zx|slq|sbq|swq|zbq|zwq|sq|zq)?\s+(\S+),\s*(\S+)', instr, re.I)
             if m:
                 r1, r2 = _norm_reg(m.group(1)), _norm_reg(m.group(2))
@@ -267,7 +266,7 @@ class ValueFlowEngine:
         return None
 
     def _trace_reg_backward(self, reg, from_idx, instructions):
-        """反向追踪寄存器值(≤10条)——AT&T+Intel双语法"""
+        """反向追踪寄存器值(≤10条): AT&T+Intel双语法"""
         nr = _norm_reg(reg); _i = lambda s: int(s, 16) if '0x' in s.lower() else int(s)
         _intel = any('%' not in (instructions[j].strip().lower() or '')
                      for j in range(max(0, from_idx - 5), min(len(instructions), from_idx + 1))
@@ -315,7 +314,7 @@ class ValueFlowEngine:
         return self.trace_sink_param(idx, func, self._ALLOC_SIZE_PARAM.get(func, 2), instrs).final_interval
 
     def is_same_source(self, alloc_idx, alloc_func, copy_idx, copy_func, instructions):
-        """alloc/copy大小参数同源检测——遍历ABI候选寄存器"""
+        """alloc/copy大小参数同源检测: 遍历ABI候选寄存器"""
         ap = self._ALLOC_SIZE_PARAM.get(alloc_func, 0); cp = self._ALLOC_SIZE_PARAM.get(copy_func, 2)
         a_cands = self._PARAM_CANDS[ap] if ap < len(self._PARAM_CANDS) else ('rdi',)
         c_cands = self._PARAM_CANDS[cp] if cp < len(self._PARAM_CANDS) else ('rdx',)

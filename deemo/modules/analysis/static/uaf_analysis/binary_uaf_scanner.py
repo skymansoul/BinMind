@@ -1,4 +1,4 @@
-"""二进制级 UAF 扫描器 — objdump → free/realloc → 释放后使用 + 栈槽 + 跨函数.
+"""二进制级 UAF 扫描器 - objdump → free/realloc → 释放后使用 + 栈槽 + 跨函数.
 检测: deref_after_free | double_free | pass_as_arg | realloc_dangling
       realloc_zero_free | cross_func_return | stack_slot_propagate
 架构: scanner (指令解释) + freed_tracker (寄存器+栈槽追踪) + cross_func (ret 逃逸)
@@ -82,7 +82,7 @@ class BinaryUafScanner:
             self._add_finding(UafFinding(
                 insn_addr=ins.address, subtype="cross_func_return",
                 freed_at=ins.address,
-                reason=f"{callee}() returns freed ptr via rax — "
+                    reason=f"{callee}() returns freed ptr via rax - "
                        f"caller's rax now dangling",
                 confidence=0.60))
 

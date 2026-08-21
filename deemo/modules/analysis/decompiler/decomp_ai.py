@@ -76,14 +76,7 @@ class DecompilerAI:
     """
 
     def __init__(self, binary_path: str, openai_client=None, decompiler: str = DECOMPILER_AUTO):
-        """
-        初始化反编译分析器
-        
-        Args:
-        binary_path: 二进制文件路径
-        openai_client: OpenAI 客户端实例（可选）
-        反编译引擎: 反编译引擎类型 (auto/radare2/ghidra/ida)
-        """
+        """初始化反编译分析器"""
         from modules.info.info_collect import validate_binary_path
         try:
             self.binary_path = validate_binary_path(binary_path)
@@ -298,15 +291,7 @@ class DecompilerAI:
         return False
 
     def decompile(self, function_name: str = 'main') -> Optional[str]:
-        """
-        使用选中的反编译引擎反编译指定函数
-        
-        Args:
-        function_name: 要反编译的函数名
-        
-        返回:
-        反编译的伪代码，如果失败返回 None
-        """
+        """使用选中的反编译引擎反编译指定函数"""
         if self.active_decompiler == 'ghidra':
             return self.decompile_with_ghidra(function_name)
         elif self.active_decompiler == 'ida':
@@ -976,13 +961,13 @@ if seg:
     ) -> Dict[str, Any]:
         """
         调用 OpenAI API 分析反编译代码
-        
-        
+
+
         pseudocode: 反编译的伪代码
         binary_info: 二进制文件信息
         function_name: 函数名
-        
-        
+
+
         分析结果
         """
         if not self.client:
@@ -1242,8 +1227,8 @@ if seg:
     ) -> Dict[str, Any]:
         """
         模拟 分析（当没有 API 密钥时使用）
-        
-        
+
+
         """
         vulnerabilities = []
 
@@ -1308,16 +1293,7 @@ if seg:
         function_name: str,
         binary_info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        完整分析一个函数：反编译 + 分析
-        
-        Args:
-        function_name: 函数名
-        binary_info: 二进制文件信息
-        
-        返回:
-        完整分析结果
-        """
+        """完整分析一个函数：反编译 + 分析"""
         logger.info(f"开始分析函数: {function_name} (使用 {self.active_decompiler})")
 
         pre_context = {
@@ -1368,21 +1344,11 @@ if seg:
         return analysis
 
     def get_available_decompilers(self) -> Dict[str, bool]:
-        """
-        获取可用的反编译引擎列表
-        
-        返回:
-        可用反编译引擎字典
-        """
+        """获取可用的反编译引擎列表"""
         return self.available_decompilers.copy()
 
     def get_active_decompiler(self) -> str:
-        """
-        获取当前使用的反编译引擎
-        
-        返回:
-        当前反编译引擎名称
-        """
+        """获取当前使用的反编译引擎"""
         return self.active_decompiler
 
     def _add_to_history(self, user_msg: Dict[str, str], assistant_msg: Dict[str, str]) -> None:
@@ -1409,15 +1375,7 @@ if seg:
         logger.info("对话历史已清空")
 
     def follow_up_analysis(self, question: str) -> Dict[str, Any]:
-        """
-        进行多轮对话分析，基于之前的上下文追问问题
-        
-        Args:
-        question: 追问的问题
-        
-        返回:
-        回复结果
-        """
+        """进行多轮对话分析，基于之前的上下文追问问题"""
         if not self.client:
             logger.warning("未配置 OpenAI 客户端，无法进行追问")
             return {'error': '未配置 AI 客户端'}

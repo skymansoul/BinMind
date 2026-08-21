@@ -208,7 +208,7 @@ class SafetyProver:
                      'func_name': str, 'access_size': int}, ...]
         alloc_info: {insn_addr: (alloc_size, ptr_reg)}
 
-        返回: 仅保留 SUSPICIOUS/CONFIRMED_OVERFLOW 的访问.
+        返回仅保留 SUSPICIOUS/CONFIRMED_OVERFLOW 的访问。
         """
         filtered = []
         for acc in accesses:

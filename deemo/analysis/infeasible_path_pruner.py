@@ -66,9 +66,10 @@ class InfeasiblePathPruner:
                     (-10**9, upper, ie.strict))
             else:
                 # var >= -constant/coef (因为 coef<0, 除以负数翻转不等号)
-                lower = -(ie.constant // coef) if ie.constant % coef == 0 else -(ie.constant // coef)
-                if coef < 0:
-                    lower = -(ie.constant // coef) if ie.constant % coef == 0 else -(ie.constant // coef) + 1
+                # 整数域上取整: 整除余数为 0 用商, 否则 +1
+                lower = -(ie.constant // coef)
+                if ie.constant % coef != 0:
+                    lower += 1
                 bounds.setdefault(var, []).append(
                     (lower, 10**9, ie.strict))
 
@@ -104,7 +105,7 @@ class InfeasiblePathPruner:
                             ) -> List[Tuple[str, int, int]]:
         """在约束列表中找出所有矛盾点.
 
-        Returns: [(var, lo, hi), ...] 每个矛盾变量及其冲突区间.
+        返回 [(var, lo, hi), ...] 每个矛盾变量及其冲突区间.
         """
         pcs = [PathCondition(tuple(constraints))]
         results = self.check_multi(pcs)
@@ -127,18 +128,10 @@ class GuardPatternDetector:
       n = max(n, 0);                     → n∈[0, ∞)
     """
 
-    # 守卫模式正则
-    _GUARD_PATTERNS = [
-        (r'if\s*\((\w+)\s*>\s*(\d+)\)\s*\1\s*=\s*\2', 'upper'),
-        (r'if\s*\((\w+)\s*>=\s*(\d+)\)\s*\1\s*=\s*\2', 'upper'),
-        (r'(\w+)\s*=\s*min\((\w+),\s*(\d+)\)', 'upper_var'),
-        (r'(\w+)\s*=\s*max\((\w+),\s*(\d+)\)', 'lower_var'),
-    ]
-
     def detect(self, text: str) -> Optional[Tuple[str, str, int]]:
         """检测单行文本中的守卫模式.
 
-        Returns: (var, 'upper'|'lower', bound) 或 None.
+        返回 (var, 'upper'|'lower', bound) 或 None.
         """
         import re
         tl = text.strip()

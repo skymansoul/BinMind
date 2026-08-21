@@ -240,7 +240,7 @@ def conformal_ensemble(calibrator_scores: List[Tuple[List[float], List[int]]],
 
 __all__ = [
     "ConformalPredictionResult",
-    "conformal_predict", "adaptive_conformal_predict",
+    "conformal_predict",
     "jackknife_plus_intervals",
     "AdaptiveConformalPredictor",
     "mean_prediction_set_size", "empirical_coverage",

@@ -1,10 +1,10 @@
-# Public API: 5 classes — IPCType, IPCSecurityIssue, IPCEndpoint, IPCInteraction, IPCAnalysisResult
+# Public API: 5 classes, IPCType, IPCSecurityIssue, IPCEndpoint, IPCInteraction, IPCAnalysisResult
 # Dependency: os (文件系统), 日志, typing, dataclasses
 # Computational bound: O(n*m) per scan pass; memory: O(n) for raw binary 缓冲区s
 #
 # 2025 升级: GUARD 启发的通用 API 反混淆
 # GUARD 使用模拟执行 + 栈布局分析 + sIAT 恢复被混淆的导入函数
-# 本模块集成简化版栈布局分析——通过解析 push/call 序列推断
+# 本模块集成简化版栈布局分析, 通过解析 push/call 序列推断
 # 被混淆 API 的参数数量，辅助 sIAT 重构
 import os
 import logging
@@ -77,7 +77,7 @@ class IPCAnalysisResult:
 
 
 class StackLayoutAnalyzer:
-    """栈布局分析器——GUARD 启发的方法
+    """栈布局分析器, GUARD 启发的方法
     通过解析 call 指令前的 push 序列推断被混淆 API 的参数数量和调用约定
     x86: push argN;.; push arg1; call [api] → N 个 push = N 个参数
     x64: mov rcx/rdx/r8/r9 + 栈上参数 → 更复杂但模式可辨
@@ -92,7 +92,7 @@ class StackLayoutAnalyzer:
     )
 
     def count_params_before_call(self, asm_window: bytes) -> int:
-        """计算 call 指令前的参数推送数——用于恢复混淆 API 的参数签名"""
+        """计算 call 指令前的参数推送数, 用于恢复混淆 API 的参数签名"""
         push_count = 0
         for m in self._PUSH_PAT.finditer(asm_window):
             push_count += 1
@@ -101,7 +101,7 @@ class StackLayoutAnalyzer:
 
     def reconstruct_siat_entry(self, binary_data: bytes,
                                  call_offset: int) -> Dict[str, Any]:
-        """重建单个 sIAT 条目——从 call [addr] 模式的上下文恢复 API 信息"""
+        """重建单个 sIAT 条目, 从 call [addr] 模式的上下文恢复 API 信息"""
         # 检索 call 指令前 64 字节
         window_start = max(0, call_offset - 64)
         window = binary_data[window_start:call_offset + 8]

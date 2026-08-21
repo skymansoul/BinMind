@@ -1,4 +1,4 @@
-"""string_decoder — Base64/Hex/XOR 字符串解码 scoring"""
+"""string_decoder - Base64/Hex/XOR 字符串解码 scoring"""
 import base64
 import binascii
 import pytest

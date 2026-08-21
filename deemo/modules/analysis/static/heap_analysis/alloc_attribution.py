@@ -1,4 +1,4 @@
-"""溯源门控分配归属 — 以目标寄存器溯源替代空间最近邻分配匹配.
+"""溯源门控分配归属 - 以目标寄存器溯源替代空间最近邻分配匹配.
 
 误报根源: absint_adjudicator._find_nearest_alloc 在指针溯源缺失时,
 将任意危险调用 (memcpy/strcpy...) 的目标匹配到"最近"的 malloc.
@@ -41,7 +41,7 @@ class DestInfo:
 
 
 class AllocAttributor:
-    """目标溯源分类器 — 对危险调用点的目标寄存器做归属判定.
+    """目标溯源分类器 - 对危险调用点的目标寄存器做归属判定.
 
     输入: prov_alloc 缺失的调用点 (call_idx, dest_reg).
     输出: DestInfo — heap (带分配地址/大小), non_heap, unknown.

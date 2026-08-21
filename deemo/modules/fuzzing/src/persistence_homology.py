@@ -1,7 +1,6 @@
-# 创建: 2026-05-25 11:53
-# 修改: 2026-05-25 — Vietoris-Rips + 单链聚类 Betti-0 持久性
-# 修改: 2026-05-25 — 修正标注: 仅计算连通分量, 非完整持久同调
-"""基于 landmark 的稀疏持久同调计算 — 为 TopologicalCoverageNavigator 提供拓扑特征.
+# Vietoris-Rips + 单链聚类 Betti-0 持久性
+# 修正标注: 仅计算连通分量, 非完整持久同调
+"""基于 landmark 的稀疏持久同调计算 - 为 TopologicalCoverageNavigator 提供拓扑特征.
 
 修改记录:
 2025-08-04 14:55 - 从 topological_coverage_navigator.py 分离, 独立的持久性计算模块

@@ -7,7 +7,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from heapov.expr_ast import Expr
+from .expr_ast import Expr
 
 
 @dataclass

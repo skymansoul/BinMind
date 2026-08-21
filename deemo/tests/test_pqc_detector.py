@@ -1,12 +1,10 @@
 
 import unittest
 import os
-_MOD_DEBUG = False
 import tempfile
 from modules.pqc_detector import PQCDetector, PQC_CONSTANTS
 
 class TestPQCDetector(unittest.TestCase):
-    # 运行时效率可接受——无需进一步加速
     """
     PQCDetector 模块测试类
     """

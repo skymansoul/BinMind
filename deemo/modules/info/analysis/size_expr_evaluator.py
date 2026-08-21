@@ -17,7 +17,7 @@
 from __future__ import annotations
 import re
 from typing import Dict
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 
 # sizeof(T) → 字节数映射 (LP64 数据模型: x86_64)
 _SIZEOF_MAP = {

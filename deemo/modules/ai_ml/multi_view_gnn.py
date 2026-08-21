@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-# Multi-view GNN for binary function similarity -- CFG/DFG/mnemonic views,
-# GNN 编码器, contrastive loss, and integration with BaseAnalyzer.
-# added ContrastiveLoss; MultiViewGNNEmbedderAnalyzer.
-# 注意力-based view fusion; GraphAugmenter; EdgeDrop regularization.
+# 二进制函数相似度多视图 GNN — CFG/DFG/助记符三视图, GNN 编码器,
+# 对比损失, 与 BaseAnalyzer 集成。
+# 注意力视图融合; GraphAugmenter 增广; EdgeDrop 正则化。
 
 import logging as _logging
 import math as _math
@@ -56,7 +55,7 @@ class FunctionGraph:
     mnemonic_sequence: List[str] = field(default_factory=list)
     num_basic_blocks: int = 0
     num_instructions: int = 0
-    # 2024-09-27: 图结构全局统计特征 -- 用于图分类和快速过滤
+    # 图结构全局统计特征，用于图分类和快速过滤
     cyclomatic_complexity: int = 0  # E - N + 2 近似
     avg_degree: float = 0.0
     edge_density: float = 0.0
@@ -97,7 +96,7 @@ class EmbeddingResult:
     view_embeddings: Dict[str, List[float]] = field(default_factory=dict)
     embedding_dim: int = 128
     compute_time_ms: float = 0.0
-    # 2024-09-27: 注意力 scores 存储每个视图的重要性权重
+    # 注意力 scores 存储每个视图的重要性权重
     view_attention_scores: Dict[str, float] = field(default_factory=dict)
 
 
@@ -118,8 +117,7 @@ class SimilarityResult:
 # GNN Encoder (message-passing with mean-pool aggregation + EdgeDrop)
 
 class GNNEncoder:
-    """Message-passing GNN encoder for function graphs.
-    2024-09-27: 引入EdgeDrop正则化 -- 随机丢弃边防止过平滑"""
+    """Message-passing GNN encoder for function graphs."""
 
     __slots__ = ('m_input_dim', 'm_hidden_dim', 'm_output_dim', 'm_num_layers',
                  'm_weights', 'm_biases', 'm_trained', 'm_edge_dropout')
@@ -180,7 +178,7 @@ class GNNEncoder:
                 h[i].extend([0.0] * pad_len)
                 i += 1
 
-        # 2024-09-27: EdgeDrop mask -- 每层独立采样
+        # EdgeDrop mask，每层独立采样
         layer = 0
         while layer < self.m_num_layers:
             w = self.m_weights[layer]
@@ -272,8 +270,7 @@ class GNNEncoder:
 # Multi-View GNN (with 注意力-based view fusion)
 
 class MultiViewGNN:
-    """Multi-view GNN combining CFG, DFG, call, and mnemonic views.
-    2024-09-27: 引入注意力融合 -- 根据各视图嵌入质量动态分配权重，替代固定融合系数"""
+    """Multi-view GNN combining CFG, DFG, call, and mnemonic views."""
 
     __slots__ = ('m_cfg_encoder', 'm_dfg_encoder', 'm_call_encoder',
                  'm_mnemonic_encoder', 'm_fusion_weights', 'm_output_dim',
@@ -289,7 +286,7 @@ class MultiViewGNN:
         self.m_fusion_weights = [0.3, 0.25, 0.2, 0.25]  # 保留作为 回退
         self.m_training = False
 
-        # 2024-09-27: 可学习的注意力投影向量 (查询/key 维度 = output_dim)
+        # 可学习的注意力投影向量 (查询/key 维度 = output_dim)
         import random as _r
         _r.seed(42)
         self.m_attn_query: List[float] = []
@@ -394,7 +391,7 @@ class MultiViewGNN:
 
         result.view_embeddings = dict(view_embs)
 
-        # 2024-09-27: 注意力融合替代固定权重
+        # 注意力融合替代固定权重
         fused, attn_scores = self._attention_fusion(view_embs)
         result.view_attention_scores = attn_scores
 
@@ -800,7 +797,7 @@ def build_function_graph_from_blocks(function_name: str, function_address: int,
             total_edges += 1
             ei += 1
 
-    # 2024-09-27: 计算图结构全局特征
+    # 计算图结构全局特征
     n = len(graph.nodes)
     if n > 0:
         # 圈复杂度近似: E - N + 2 (McCabe's cyclomatic complexity)

@@ -104,7 +104,6 @@ class TestSignedGadgetFinder:
 
 
 class TestPACBypassAnalyzer:
-    # 技术债条目——未来迭代重构目标
     """测试PAC绕过分析器"""
 
     def test_analyzer_init_requires_path(self):

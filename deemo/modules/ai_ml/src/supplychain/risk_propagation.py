@@ -1,5 +1,3 @@
-# created: 2026-08-03
-# modified: 2026-08-22 — replaced hardcoded exposure=0.5 with type-based _estimate_exposure()
 # 供应链风险传播核心: 时敏衰减 + 传递性风险传播引擎
 # 用于 supply_chain_risk.py
 

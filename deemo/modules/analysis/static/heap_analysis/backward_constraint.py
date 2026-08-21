@@ -1,4 +1,4 @@
-"""后向约束窄化器 — 在危险调用点逆向查找条件分支, 窄化参数区间.
+"""后向约束窄化器 - 在危险调用点逆向查找条件分支, 窄化参数区间.
 
 创建: 2023-07-11
 用途: 当 absint 引擎无法静态确定 memcpy 的 size 参数 (来自运行时变量) 时,
@@ -64,7 +64,7 @@ def _extract_jmp_target(ins: ParsedInstruction) -> Optional[int]:
     op = ins.operands[0].strip()
     # 取空格前的纯地址部分: "113d <main+0x3d>" → "113d"
     addr_part = op.split()[0] if op else ""
-    # objdump 跳转目标为十六进制地址 — 先按 hex 解析
+    # objdump 跳转目标为十六进制地址 - 先按 hex 解析
     try:
         return int(addr_part, 16)
     except ValueError:
@@ -72,7 +72,7 @@ def _extract_jmp_target(ins: ParsedInstruction) -> Optional[int]:
 
 
 class BackwardConstraintNarrower:
-    """逆向约束窄化器 — 在危险调用点查找 bounds check 条件.
+    """逆向约束窄化器 - 在危险调用点查找 bounds check 条件.
 
     使用方式:
       narrower = BackwardConstraintNarrower()

@@ -1,18 +1,17 @@
-# 修改记录:
-# 2025-07-29 16:28 - 增加进度回调和部分失败容错，单个子模块异常不中断整体流程
-# 2025-08-01 10:11 - 集成 RiskScorer 和 VersionLattice，输出从简单汇总升级为结构化风险报告
-# 2025-08-02 15:44 - 增加 DryRun 模式，供 CI 管线做预检查
+# 增加进度回调和部分失败容错，单个子模块异常不中断整体流程
+# 集成 RiskScorer 和 VersionLattice，输出从简单汇总升级为结构化风险报告
+# 增加 DryRun 模式，供 CI 管线做预检查
 
 """
-平台协调器——跨平台层统一分析调度。
+ 平台协调器, 跨平台层统一分析调度。
 
 协调6个平台子模块（firmware/kernel/hardware/mobile/malware/smart_contract），
 结果汇入PropagationGraph，执行跨层关联，输出统一风险评估。
 
 设计：
-  - 子模块惰性加载——目标系统含对应层时才import，避免冷启动加载全量
+  - 子模块惰性加载, 目标系统含对应层时才import，避免冷启动加载全量
     （firmware的binwalk import耗时显著）。
-  - 各子模块分析失败独立——单个固件解包失败不阻断内核eBPF分析。
+  - 各子模块分析失败独立, 单个固件解包失败不阻断内核eBPF分析。
   - DryRun模式仅做可达性检查（工具链、目标文件存在性），不执行实际分析，
     供CI管线使用。
 
@@ -59,7 +58,7 @@ class LayerAnalysisResult:
 
 @dataclass
 class OrchestratorReport:
-    """统一分析报告——跨所有平台层汇总。"""
+    """统一分析报告, 跨所有平台层汇总。"""
     target_id: str
     timestamp: float
     layers: Dict[PlatformLayer, LayerAnalysisResult]
@@ -72,7 +71,7 @@ class OrchestratorReport:
 
 
 class PlatformOrchestrator:
-    """跨平台协调器——调度子模块分析、汇总结果。
+    """跨平台协调器, 调度子模块分析、汇总结果。
 
     用法::
 
@@ -99,7 +98,7 @@ class PlatformOrchestrator:
 
     def register_target(self, layer: PlatformLayer, path: str,
                         options: Optional[Dict[str, Any]] = None) -> None:
-        """注册目标——指定某平台层分析对象路径。"""
+        """注册目标, 指定某平台层分析对象路径。"""
         if not os.path.exists(path):
             raise FileNotFoundError(f"target not found: {path}")
         self._targets[layer] = path
@@ -107,11 +106,11 @@ class PlatformOrchestrator:
             self._options[layer] = options
 
     def on_progress(self, callback: Callable[[str, float], None]) -> None:
-        """注册进度回调——(stage_name, fraction) → None。"""
+        """注册进度回调, (stage_name, fraction) → None。"""
         self._progress_cb = callback
 
     def dry_run(self) -> Dict[str, bool]:
-        """检查全部注册目标的工具链可用性——不执行实际分析。"""
+        """检查全部注册目标的工具链可用性, 不执行实际分析。"""
         results: Dict[str, bool] = {}
         for layer, path in self._targets.items():
             key = f"{layer.name}:{os.path.basename(path)}"
@@ -294,7 +293,7 @@ class PlatformOrchestrator:
         return findings
 
     def _analyze_mobile(self, path: str, opts: Dict) -> List[Dict]:
-        # TODO：适配ARM平台——当前仅处理安卓APK和通用二进制
+        # TODO：适配ARM平台, 当前仅处理安卓APK和通用二进制
         return [{'node_id': f"mobile_{os.path.basename(path)}",
                 'type': 'mobile_stub',
                 'note': 'mobile analysis requires APK or IPA target'}]
@@ -354,7 +353,7 @@ class PlatformOrchestrator:
         return 0.3
 
     def _check_layer_toolchain(self, layer: PlatformLayer) -> bool:
-        """检查某层工具链可用性——供dry_run使用。"""
+        """检查某层工具链可用性, 供dry_run使用。"""
         checks = {
             PlatformLayer.FIRMWARE: lambda: True,  # pure Python
             PlatformLayer.KERNEL: lambda: True,

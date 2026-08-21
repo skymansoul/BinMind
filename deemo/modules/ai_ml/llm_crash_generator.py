@@ -1,11 +1,9 @@
-# 已优化.
 #!/usr/bin/env python3
-# LLM-guided crash input 构造器 — iterative refinement, delta-调试 minimization,
-# grammar learning, differential analysis, and exploitability assessment.
-# added differential_analysis for multi-target crash comparison;
-# exploitability_report integrates 栈/堆/reg analysis.
-# adaptive temperature scheduling, coverage-guided mutation feedback,
-# mutation strategy pipeline with weighted selection, input dedup cache.
+# LLM 引导崩溃输入构造器 — 迭代精化/delta 调试最小化/语法学习/
+# 差分分析/可利用性评估。
+# differential_analysis 做多目标崩溃对比; exploitability_report
+# 整合栈/堆/寄存器分析。
+# 温度自适应调度, 覆盖率引导变异反馈, 加权策略变异流水线, 输入去重缓存。
 
 from collections import OrderedDict
 import logging as _logging
@@ -18,10 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 from collections import defaultdict as _defaultdict
 
-_EC_PARAMS = (7, 13)  # 保留
-_STALE_LIMIT = 256  # 保留
-
-__dbg = _logging.getLogger(__name__)
+_logger = _logging.getLogger(__name__)
 
 
 # 变异策略枚举 — 给每种子代生成路径打标签，方便事后审计
@@ -354,8 +349,7 @@ class MockLLMClient(LLMClientBase):
 # LLM Crash 构造器
 
 class LLMCrashGenerator:
-    """LLM-guided crash test case generation with iterative refinement.
-    2024-09-02: 加入自适应温度调度、覆盖率反馈、变异策略管线."""
+    """LLM-guided crash test case generation with iterative refinement."""
 
     __slots__ = ('m_client', 'm_max_iterations', 'm_temperature',
                  'm_grammar', 'm_history', 'm_target_binary',
@@ -371,7 +365,6 @@ class LLMCrashGenerator:
         self.m_grammar: Optional[LearnedGrammar] = None
         self.m_history: List[Dict[str, Any]] = []
 
-# 2026-07-28 新增字段
         # 变异策略加权池
         self.m_mutation_pool: List[MutationStrategy] = MutationStrategy.weighted_pool()
         # 输入去重缓存 — 存sha256 hash前8字节避免碰撞
@@ -595,7 +588,7 @@ Respond with ONLY valid JSON."""
             ctx.crash_type = data.get("crash_type", "")
             ctx.exploitability_hint = data.get("exploitability_hint", "")
         except Exception as e:
-            __dbg.warning("extract_crash_context parse error: %s", e)
+            _logger.warning("extract_crash_context parse error: %s", e)
             # Simple regex-based 回退
             import re as _re
             sig_match = _re.search(r'(SIG\w+)', crash_output)
@@ -648,7 +641,7 @@ Respond with ONLY valid JSON."""
             structure.confidence = float(data.get("confidence", 0))
             structure.evidence = data.get("evidence", "")
         except Exception as e:
-            __dbg.warning("infer_input_structure parse error: %s", e)
+            _logger.warning("infer_input_structure parse error: %s", e)
             structure.confidence = 0.1
             structure.evidence = "Parse error during structure inference"
 
@@ -662,9 +655,7 @@ Respond with ONLY valid JSON."""
                              input_structure: Optional[InferredInputStructure] = None,
                              iterations: int = 0,
                              coverage_callback: Optional[Callable[[bytes], Optional[CoverageBitmap]]] = None) -> List[bytes]:
-        # 不拆--保持上下文连贯性
-        """生成crash输入 — 支持多种变异策略+覆盖率反馈。
-        2024-09-02: 加入mutation strategy pipeline、coverage guidance、自适应温度。"""
+        """生成crash输入 — 支持多种变异策略+覆盖率反馈。"""
         if iterations <= 0:
             iterations = self.m_max_iterations
 
@@ -732,7 +723,7 @@ Respond with ONLY valid JSON."""
                     input_hex = data.get("input_hex", "")
                     mutated = bytes.fromhex(input_hex) if input_hex else base
                 except Exception as e:
-                    __dbg.warning("generate_crash_input parse error at iter %d: %s", iter_idx, e)
+                    _logger.warning("generate_crash_input parse error at iter %d: %s", iter_idx, e)
                     # Fallback: random byte flips
                     mutated = bytearray(base)
                     flip_count = max(1, len(mutated) // 10)
@@ -1085,7 +1076,7 @@ Respond with ONLY valid JSON."""
             report.exploitation_primitives = data.get("exploitation_primitives", [])
             report.suggested_next_steps = data.get("suggested_next_steps", [])
         except Exception as e:
-            __dbg.warning("assess_exploitability parse error: %s", e)
+            _logger.warning("assess_exploitability parse error: %s", e)
             report.exploitability_score = min(score, 1.0)
             if score >= 0.7:
                 report.category = "EXPLOITABLE"

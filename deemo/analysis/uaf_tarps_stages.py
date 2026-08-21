@@ -18,7 +18,7 @@ def check_type_state(free_site: int, use_site: int,
                      insns: List[Tuple[int, str]]) -> bool:
     """T阶段: Type-state 追踪.
 
-    Returns: True=危险(应保留), False=安全(可过滤).
+    返回 True=危险(应保留), False=安全(可过滤).
 
     查找 free 和 use 之间的 NULL 赋值.
     """
@@ -42,7 +42,7 @@ def check_alias(free_site: int, use_site: int,
       4. 在 use_site 识别被使用的指针
       5. 若两者不在同一等价类 → 安全(可过滤), 否则 → 危险
 
-    Returns: True=危险(应保留), False=安全(可过滤).
+    返回 True=危险(应保留), False=安全(可过滤).
     """
     # 收集指针赋值: q = p 或 q = p->field
     aliases: Dict[str, str] = {}  # dst → src
@@ -110,7 +110,7 @@ def check_reachability(free_site: int, use_site: int,
                        dom_result=None) -> bool:
     """R阶段: 可达性检查 (v3: 优先CFG支配关系).
 
-    Returns: True=free和use在同一可达路径上(危险), False=不可达(安全).
+    返回 True=free和use在同一可达路径上(危险), False=不可达(安全).
 
     v3策略:
       1. 若有 dominator result: free_dominates_use=True → 所有到use的路径必经free → 危险
@@ -140,7 +140,7 @@ def check_path_guard(use_site: int,
                      dom_result=None) -> bool:
     """P阶段: 路径守卫 (v3: 优先CFG guard detection).
 
-    Returns: True=无守卫(危险), False=有守卫(安全).
+    返回 True=无守卫(危险), False=有守卫(安全).
 
     v3策略:
       1. 若有 dominator result: guard_protected=True → use在守卫块内 → 安全
@@ -165,7 +165,7 @@ def check_path_guard(use_site: int,
 def check_sanitization(ir_text: str = "") -> bool:
     """S阶段: 安全模式检测.
 
-    Returns: True=无sanitization(危险), False=有安全模式(安全).
+    返回 True=无sanitization(危险), False=有安全模式(安全).
 
     检测 refcount保护, scope_guard, realloc后非空检查.
     """

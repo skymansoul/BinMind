@@ -118,16 +118,13 @@ def _extract_imm(line_lower: str) -> Optional[int]:
     return None
 
 
-__all__ = ["Interval", "infer_offset_interval"]
-# 不调用 SMT — 仅区间算术, 以精度换速度。
-import re
-from typing import Dict, Tuple
-
-Interval = Tuple[float, float]
+__all__ = ["Interval", "IntervalAbstractor", "infer_offset_interval"]
+# 不调用 SMT - 仅区间算术, 以精度换速度。
 
 class IntervalAbstractor:
+    """基于浮点区间对的轻量抽象解释器, 与 Interval dataclass 独立。"""
     def __init__(self):
-        self._vars: Dict[str, Interval] = {}
+        self._vars: Dict[str, Tuple[float, float]] = {}
     def set_var(self, name: str, low: float, high: float) -> None:
         self._vars[name] = (low, high)
     def set_from_comparison(self, var: str, op: str, val: float) -> bool:
@@ -153,7 +150,5 @@ class IntervalAbstractor:
             return self.set_from_comparison(m.group(1), m.group(2), float(m.group(3)))
         except ValueError:
             return True
-    def get_interval(self, name: str) -> Interval:
+    def get_interval(self, name: str) -> Tuple[float, float]:
         return self._vars.get(name, (float('-inf'), float('inf')))
-
-__all__ = ['IntervalAbstractor']

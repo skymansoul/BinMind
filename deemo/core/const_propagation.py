@@ -1,7 +1,8 @@
-# 过程内稀疏常量传播 — 区分 printf(const) 与 printf(variable)。
+# 过程内稀疏常量传播: 区分 printf(const) 与 printf(variable)。
 # format_string_detector 的正则把所有 printf(user_var) 标记为漏洞 (含安全的 printf("hello"));
 # 在反编译代码的 SSA 形式上做格传播 (top/const/bottom), printf 首参数 meet 后为 const 即安全。
 
+import re
 from typing import Dict, Optional, Set, Tuple
 from enum import Enum
 
@@ -43,7 +44,6 @@ class ConstPropagator:
 
 def propagate_constants(decompiled_code: str, target_func: str) -> ConstPropagator:
     cp = ConstPropagator()
-    import re
     lines = decompiled_code.splitlines()
     in_func = False
     for line in lines:
@@ -65,7 +65,6 @@ def propagate_constants(decompiled_code: str, target_func: str) -> ConstPropagat
 def is_format_arg_constant(decompiled_code: str, func_name: str,
                            call_line: str) -> bool:
     cp = propagate_constants(decompiled_code, func_name)
-    import re
     m = re.match(r'.*(printf|fprintf|sprintf|snprintf)\s*\(\s*(\w+)', call_line)
     if m:
         arg_var = m.group(2)
@@ -74,7 +73,7 @@ def is_format_arg_constant(decompiled_code: str, func_name: str,
 
 
 class SparseConstantPropagation:
-    """稀疏常量传播 — 判定反编译代码中变量是否为编译期常量。
+    """稀疏常量传播: 判定反编译代码中变量是否为编译期常量。
 
     包装 ConstPropagator, 对外提供变量格值查询, 供误报过滤器
     判断危险调用的参数是否来自常量字符串。
@@ -102,14 +101,13 @@ class SparseConstantPropagation:
         识别两种赋值: var = "const" 与 var = other_var(常量传递)。
         返回 self 供链式调用。
         """
-        import re as _re
         propagator = ConstPropagator()
         for line in (ir or []):
-            m = _re.match(r'\s*(\w+)\s*=\s*"([^"]*)"\s*;?', line)
+            m = re.match(r'\s*(\w+)\s*=\s*"([^"]*)"\s*;?', line)
             if m:
                 propagator.set_constant(m.group(1), m.group(2))
                 continue
-            m = _re.match(r'\s*(\w+)\s*=\s*(\w+)\s*;?', line)
+            m = re.match(r'\s*(\w+)\s*=\s*(\w+)\s*;?', line)
             if m:
                 src_val = propagator.is_constant(m.group(2))
                 if src_val is not None:

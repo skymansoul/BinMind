@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 import sys
 import json
@@ -19,7 +20,6 @@ class LogLevel:
     WARNING = "WARNING"
     ERROR = "ERROR"
     CRITICAL = "CRITICAL"
-    ERROR = LogLevel("ERROR")
 class SpanType(Enum):
     ANALYSIS = "analysis"
     FUNCTION = "function"
@@ -30,14 +30,14 @@ class SpanType(Enum):
     PLUGIN = "plugin"
 @dataclass
 class TraceContext:
-    trace_id
-    span_id
+    trace_id: str
+    span_id: str
     parent_span_id = None
     request_id = None
     analysis_id = None
     binary_path = None
-    start_time = field(default_factory=time.time)
-    attributes = field(default_factory=dict)
+    start_time: float = field(default_factory=time.time)
+    attributes: dict = field(default_factory=dict)
 
 class TraceSpan:
     __slots__ = ('span_id', 'trace_id', 'parent_span_id', 'name', 'span_type', 'start_time', 'end_time', 'status', 'attributes', 'events', 'error',)
@@ -79,15 +79,15 @@ class TraceSpan:
 
 @dataclass
 class LogEntry:
-    timestamp
-    trace_id
-    span_id
-    level
-    message
-    logger_name
-    module
-    line_number
-    attributes = field(default_factory=dict)
+    timestamp: float
+    trace_id: str
+    span_id: str
+    level: str
+    message: str
+    logger_name: str
+    module: str
+    line_number: int
+    attributes: dict = field(default_factory=dict)
 
 class StructuredFormatter(logging.Formatter):
     """
@@ -170,7 +170,7 @@ class LogExporter:
             return False
 
     def _send_to_remote(self, log_entry: Dict[str, Any]) -> None:
-        # HTTP POST: push log entry to remote endpoint.
+        # HTTP POST: 把日志条目推送到远端端点
         try:
             import requests
             headers = {"Content-Type": "application/json"}
@@ -181,9 +181,9 @@ class LogExporter:
                 timeout=5
             )
             if response.status_code != 200:
-                logger.warning(f"远程logsendfailed: {response.status_code}")
+                logger.warning(f"远程日志发送失败: {response.status_code}")
         except Exception as e:
-            logger.warning(f"远程logsendexception: {e}")
+            logger.warning(f"远程日志发送异常: {e}")
 
 class TraceManager:
     """

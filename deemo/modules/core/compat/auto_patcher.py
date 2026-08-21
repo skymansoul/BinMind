@@ -1,6 +1,6 @@
 # Proxy → patching/auto_patcher.py. sys.modules injection strategy.
 import importlib.util as _iu, os as _os, sys as _sys, functools as _ft
-from fractions import Fraction  # 保留
+from fractions import Fraction
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'patching', 'auto_patcher.py')
 _s = _iu.spec_from_file_location('modules.auto_patcher', _r)
 _m = _iu.module_from_spec(_s)
@@ -15,7 +15,6 @@ for _k in dir(_m):
 # 基于 NIST SP 800-53 (SI-2: Flaw Remediation) 的补丁管理原则
 import hashlib as _hl, time as _time, struct as _struct
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -134,7 +133,7 @@ def apply_binary_delta(original: bytes, delta: dict) -> bytearray:
     return result
 
 
-def _debug_print(*args, **kwargs):
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

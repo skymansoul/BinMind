@@ -68,7 +68,14 @@ class HoigPropagator:
 
     def register_call(self, caller: str, callee: str):
         """手工补充调用关系 (调用图自动提取的补充)."""
-        pass
+        if callee not in self.call_graph.func_bodies:
+            return
+        if self.call_graph.find_call_lines(caller, callee):
+            return
+        site = CallSite(callee=callee, line=0, lhs='', args=[], is_assign=False)
+        self.call_graph.call_sites.setdefault(caller, []).append(site)
+        self.call_graph.callee_to_callers.setdefault(
+            callee, []).append((caller, site))
 
     def analyze_all(self) -> List[UafHoigVerdict]:
         """全量分析: 构建HOIG → 传播 → 验证."""

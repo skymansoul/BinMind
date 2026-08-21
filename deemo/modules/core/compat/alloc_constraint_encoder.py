@@ -15,10 +15,10 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from compat.constraint_solver import (
+from .constraint_solver import (
     Constraint, ConstraintOp, ConstraintSystem,
 )
-from compat.alloc_constraints import (
+from .alloc_constraints import (
     AllocConstraints, get_constraints,
 )
 
@@ -92,12 +92,12 @@ def prove_safe_with_allocator(
     allocator_type: str = 'glibc_ptmalloc',
     arch: str = 'x86_64',
 ) -> Tuple[bool, str]:
-    """分配器感知约束判定 — 结合区间传播与同余精化.
+    """分配器感知约束判定 — 结合区间传播与同余精化。
 
-    两阶段: (1) 同余精化快速路径 (O(1)) (2) 约束系统区间传播 (fallback).
-    返回: (溢出不可行 → True, 证明理由).
+    两阶段: (1) 同余精化快速路径 (O(1)); (2) 约束系统区间传播
+    (fallback)。返回 (溢出不可行 → True, 证明理由)。
     """
-    from compat.congruence_domain import prove_with_congruence
+    from .congruence_domain import prove_with_congruence
 
     ac = get_constraints(allocator_type, arch)
 

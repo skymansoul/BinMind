@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-24 09:15 - 增加贝叶斯置信度更新路径，修复 DAG 环路检测的边界条件
-# 2025-07-27 16:42 - 增加稀疏化策略以控制大规模固件集的图规模
-# 2025-07-30 11:08 - 路径枚举增加深度上限和提前剪枝逻辑
+# 增加贝叶斯置信度更新路径，修复 DAG 环路检测的边界条件
+# 增加稀疏化策略以控制大规模固件集的图规模
+# 路径枚举增加深度上限和提前剪枝逻辑
 
 """
 跨平台漏洞传播有向无环图 (CPVPG)。
@@ -10,7 +9,7 @@
   firmware → kernel → hardware → mobile → smart_contract
 
 每条边带置信度权重，支持贝叶斯更新。与通用攻击图的关键区分：
-  (a) 边权重非静态——随新证据更新（贝叶斯置信传播）
+  (a) 边权重非静态，随新证据更新（贝叶斯置信传播）
   (b) 节点按平台层类型化，支持层间规则引擎自动边发现
   (c) 稀疏化基于边权重的边际信息增益，非简单top-k
 
@@ -30,7 +29,7 @@ from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 
 class PlatformLayer(IntEnum):
-    """平台层枚举——按攻击面从低到高，数值越大越近用户空间。"""
+    """平台层枚举, 按攻击面从低到高，数值越大越近用户空间。"""
     FIRMWARE = 0
     KERNEL = 1
     HARDWARE = 2
@@ -39,7 +38,7 @@ class PlatformLayer(IntEnum):
     SMART_CONTRACT = 5
 
 
-# 合法层间传播方向——仅允许低层→高层，保证DAG性质
+# 合法层间传播方向，仅允许低层→高层，保证DAG性质
 _ALLOWED_PROPAGATIONS: Dict[PlatformLayer, FrozenSet[PlatformLayer]] = {
     PlatformLayer.FIRMWARE: frozenset({
         PlatformLayer.KERNEL, PlatformLayer.HARDWARE,
@@ -62,7 +61,7 @@ _ALLOWED_PROPAGATIONS: Dict[PlatformLayer, FrozenSet[PlatformLayer]] = {
 
 @dataclass
 class VulnNode:
-    """漏洞节点——绑定到特定平台层和二进制实体。"""
+    """漏洞节点，绑定到特定平台层和二进制实体。"""
     node_id: str
     layer: PlatformLayer
     vuln_type: str           # CWE 标识或项目内分类
@@ -113,7 +112,7 @@ class PropagationGraph:
 
     约束：
       - 边仅允许低层→高层（_ALLOWED_PROPAGATIONS）
-      - 贝叶斯置信度传播——沿路径累积的不确定性用对数空间计算
+      - 贝叶斯置信度传播，沿路径累积的不确定性用对数空间计算
       - 环路检测在add_edge时O(1)完成（利用层序拓扑性质）
     """
 
@@ -142,7 +141,7 @@ class PropagationGraph:
 
     def add_edge(self, source_id: str, target_id: str,
                  confidence: float = 0.5, rule_name: str = "") -> PropagationEdge:
-        """添加传播边——自动验证DAG性质和层间合法性。"""
+        """添加传播边，自动验证DAG性质和层间合法性。"""
         src = self._nodes.get(source_id)
         tgt = self._nodes.get(target_id)
         if src is None or tgt is None:
@@ -174,10 +173,10 @@ class PropagationGraph:
         return edge
 
     def propagate_belief(self, source_id: str, max_depth: int = 5) -> Dict[str, float]:
-        """从给定源节点做置信度传播——沿DAG做BFS，累积对数置信度。
+        """从给定源节点做置信度传播，沿DAG做BFS，累积对数置信度。
 
         返回 {node_id: reachability_confidence}，仅含可达节点。
-        对数空间乘法避免浮点下溢——长路径联合置信度退化为加法。
+        对数空间乘法避免浮点下溢，长路径联合置信度退化为加法。
         """
         if source_id not in self._nodes:
             return {}
@@ -275,7 +274,7 @@ class PropagationGraph:
 
     # 此段后续可微调，当前先保证正确性
     def _sparsify_isolated(self) -> None:
-        """移除无出入边的孤立节点——超容量时调用。"""
+        """移除无出入边的孤立节点，超容量时调用。"""
         isolated = []
         for nid in list(self._nodes.keys()):
             if not self._adj.get(nid) and not self._rev_adj.get(nid):

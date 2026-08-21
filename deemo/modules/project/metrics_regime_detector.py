@@ -95,9 +95,7 @@ class BOCPDDetector:
         self._lk = threading.Lock()
 
     def update(self, value: float) -> Dict:
-        """输入观测, 返回状态信息.
-        Returns: {run_length_dist, change_prob, regime_changed}
-        """
+        """输入观测, 返回状态信息 {run_length_dist, change_prob, regime_changed}。"""
         with self._lk:
             self._buffer.append(value)
             self._step += 1

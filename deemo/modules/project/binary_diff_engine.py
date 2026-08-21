@@ -156,12 +156,10 @@ class BinaryDiffEngine:
 
     def diff(self, left_segs: List[CodeSegment], right_segs: List[CodeSegment],
              func_sensitivity: Callable[[CodeSegment], float] = None) -> DiffReport:
-        """差异分析.
+        """差异分析。
 
-        Args:
-            left_segs: 旧版本段列表
-            right_segs: 新版本段列表
-            func_sensitivity: 可选, 返回[0,1]重要性分数，按此排序.
+        参数: left_segs 旧版本段列表, right_segs 新版本段列表,
+        func_sensitivity 可选, 返回[0,1]重要性分数，按此排序。
 
         匹配策略:
           阶段1 - SHA-256精确匹配 (O(n) via dict)

@@ -12,14 +12,13 @@
 #
 # 支持的间接 free 模式:
 # free(rcx): 直接释放第一个参数
-#   - free(*rcx): 释放参数指向的对象 (双重指针) — mov rax,[rcx]; mov rcx,rax; call free
-#   - free(rcx->field): 释放参数结构体字段 — mov rax,[rcx+offset]; call free
+#   - free(*rcx): 释放参数指向的对象 (双重指针) - mov rax,[rcx]; mov rcx,rax; call free
+#   - free(rcx->field): 释放参数结构体字段 - mov rax,[rcx+offset]; call free
 # callee 内部调用其他 free-like 函数: 递归摘要 (1层)
 #
 # 理论依据:
 #   二进制级过程间分析, 以函数摘要传播 free 参数
 #
-# 创建: 2026-06-15
 
 import re
 from typing import Dict, List, Optional, Set, Tuple
@@ -35,7 +34,7 @@ _ALLOC_FUNCS = {"malloc", "calloc", "_Znwm", "_Znam",
 
 
 class FreeSummary:
-    """单个函数的 free 摘要 — 描述哪些参数被间接释放."""
+    """单个函数的 free 摘要 - 描述哪些参数被间接释放."""
     __slots__ = ("func_name", "func_start", "func_end",
                  "freed_params", "has_direct_free", "calls_free_like")
 
@@ -232,7 +231,7 @@ class InterprocFreeAnalyzer:
             return base, off
         return None, 0
 
-    
+
     def _check_deref_free_pattern(self, func_ins: List[dict], call_idx: int,
                                   call_addr: int, summary: FreeSummary,
                                   arg_map: Dict[str, int]):
@@ -317,7 +316,7 @@ class InterprocFreeAnalyzer:
 
     @staticmethod
     def _infer_func_name(func_ins: List[dict], func_start: int) -> Optional[str]:
-        """保留接口兼容性 — 实际函数名由 _build_func_table 提供."""
+        """保留接口兼容性 - 实际函数名由 _build_func_table 提供."""
         return None
 
     @staticmethod

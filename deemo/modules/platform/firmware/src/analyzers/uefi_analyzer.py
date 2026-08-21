@@ -258,7 +258,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] analyzer initialized: {}".format(firmware_path))
         logger.info("[UEFI] output directory: {}".format(self.output_dir))
 
-    # 不拆 — 旧版逐模块沙箱方案，后续可能复用
+
     # def _sandbox_extract(self, module, blob):
     #     import subprocess
     #     try:

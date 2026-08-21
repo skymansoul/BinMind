@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-08-10  |  扫描调度——调用检测器对编译后的ELF样本执行漏洞检测
 #
 """
-扫描调度模块——加载编译后样本，调用检测管线，收集原始输出。
+扫描调度模块-加载编译后样本，调用检测管线，收集原始输出。
 """
 
 import os
@@ -31,7 +30,7 @@ class ScanResult:
 
 
 class ScanRunner:
-    """扫描调度器——从编译后的样本目录加载ELF，调用核心检测器。"""
+    """扫描调度器-从编译后的样本目录加载ELF，调用核心检测器。"""
 
     def __init__(self, project_root: str = None):
         if project_root is None:
@@ -43,7 +42,7 @@ class ScanRunner:
               ) -> ScanResult:
         """对单个ELF二进制执行检测管线。
 
-        当前管线: 反汇编→堆溢出检测+UAF检测+格式化字符串检测
+        当前管线: 反汇编-堆溢出检测+UAF检测+格式化字符串检测
         """
         t0 = time.time()
         result = ScanResult(
@@ -52,7 +51,7 @@ class ScanRunner:
             vuln_type=sample_meta.get('vuln_type', ''))
 
         try:
-            # 反汇编——调用objdump提取指令
+            # 反汇编-调用objdump提取指令
             disasm = self._disassemble(binary_path)
             if not disasm:
                 result.error = "反汇编失败"
@@ -87,7 +86,7 @@ class ScanRunner:
                 capture_output=True, text=True, timeout=30)
             return proc.stdout if proc.returncode == 0 else ''
         except Exception:
-            # objdump不可用时回退——加载预生成的反汇编
+            # objdump不可用时回退-加载预生成的反汇编
             return ''
 
     def _group_by_function(self, disasm: str) -> Dict[str, List[str]]:

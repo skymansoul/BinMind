@@ -1,7 +1,7 @@
-# 对抗鲁棒性测试 : 对抗扰动→测量性能退化
+# 对抗鲁棒性测试 : 对抗扰动，测量性能退化
 # 依据: GraphRAG Under Fire
 # GragPoison三策略: 关系注入/增强/叙述构造
-# 对抗样本→敏感性测量→鲁棒性报告
+# 对抗样本，敏感性测量，鲁棒性报告
 
 from __future__ import annotations
 import math
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AttackMethod(Enum):
     FGSM = 'fgsm'                    # 快速梯度符号法(FGSM)
-    PGD = 'pgd'                      # 投影梯度下降(PGD)(PGD)(PGD)(PGD)
+    PGD = 'pgd'                      # 投影梯度下降(PGD)
     EDGE_FLIP = 'edge_flip'          # 图结构扰动: 随机边翻转
     FEATURE_NOISE = 'feature_noise'   # 特征加噪
     GRAGPOISON_INJECT = 'gragpoison'  # GragPoison关系注入

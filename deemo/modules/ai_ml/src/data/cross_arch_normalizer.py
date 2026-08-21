@@ -4,14 +4,14 @@
 # 同一 C 源码编译到 x86_64 和 ARM32 产生的汇编在指令层面完全不同：
 # x86: cmp eax, 0x41; je 0x401000
 # ARM: CMP r0, #0x41; BEQ 0x1000
-# 但它们的 IR 语义是相同的--都是一次比较 + 一次条件跳转。
+# 但它们的 IR 语义是相同的-都是一次比较 + 一次条件跳转。
 #
 # 本模块不替代反汇编器（Capstone 仍负责将机器码→助记符）。
-# 它在反汇编器的输出之上做一层归一化--将各架构的助记符映射到
+# 它在反汇编器的输出之上做一层归一化-将各架构的助记符映射到
 # 统一的 IR 操作类型（arith/logic/mem/branch/call/other），
 # 供 graph_builder.py 的 12 维特征提取使用。
 #
-# 归一化后的操作类型分布在不同架构的同一源码函数上应高度一致--
+# 归一化后的操作类型分布在不同架构的同一源码函数上应高度一致-
 # 这是跨架构 GNN 匹配的前提。没有这层归一化，ARM 条件执行指令
 # （ADDNE, MOVCS 等）会被 graph_builder 分类为"arith"和"mem"，
 # 而它们在 x86 上的等价位（cmp+jcc+add/mov）会被分类为"branch"+各自类型
@@ -49,7 +49,7 @@ _X86_IR_MAP: Dict[str, str] = {
 
 # ARM32 指令 → IR 操作类型
 # ARM 条件执行（ADDEQ, MOVNE 等后缀）的归一化策略：
-# 条件后缀被视为独立的"条件检查"--即每个条件执行指令等价于
+# 条件后缀被视为独立的"条件检查"-即每个条件执行指令等价于
 # (cmp + op) 的组合。在 IR 分类时，条件后缀指令同时标记为 'branch'
 # 和其基础操作类型。这使得 ARM 的 CFG 分支结构与 x86 的显式 cmp+jcc
 # 在特征空间中趋于一致。
@@ -80,7 +80,7 @@ _ARM_IR_MAP: Dict[str, str] = {
 
 # MIPS32 指令 → IR 操作类型
 # MIPS 延迟槽 (delay slot) 指令的归一化：
-# 分支指令后的延迟槽指令在原始 CFG 中产生一条额外的"延迟边"--
+# 分支指令后的延迟槽指令在原始 CFG 中产生一条额外的"延迟边"-
 # 该边不对应程序逻辑的控制流，纯粹是 ISA artifact。
 # 归一化策略：延迟槽指令合并到其所属基本块的末尾，不生成独立的基本块。
 # 这由调用方（CFG 构建器）在基本块划分阶段处理，本模块仅负责指令分类。
@@ -107,13 +107,13 @@ _MIPS_IR_MAP: Dict[str, str] = {
 # AArch64 (ARM64) 指令 → IR 操作类型 — 2025-07-28 新增
 #
 # AArch64 与 ARM32 的关键差异（影响归一化策略）：
-# (a) 无条件执行--AArch64 取消了条件执行后缀，条件分支仅通过 B.cond。
-# 因此无需双重分类--每条指令恰好映射到一种 IR 类型。
-# (b) 零寄存器 XZR/WZR--语义是"硬零"而非异或清零，归入 arith。
-# (c) CSEL/CSINC 等条件选择--通用寄存器承载条件码，等价于 x86 cmov。
-# (d) 位域操作 BFI/UBFM/SBFM--AArch64 特有，在 Z3 约束中对应 extract/concat，
-# 归入 logic 是合理的--它们本质是位向量切片/拼接。
-# (e) LDXR/STXR 独占加载/存储--原子操作，ir 分类暂不区分原子性，归入 mem。
+# (a) 无条件执行-AArch64 取消了条件执行后缀，条件分支仅通过 B.cond。
+# 因此无需双重分类-每条指令恰好映射到一种 IR 类型。
+# (b) 零寄存器 XZR/WZR-语义是"硬零"而非异或清零，归入 arith。
+# (c) CSEL/CSINC 等条件选择-通用寄存器承载条件码，等价于 x86 cmov。
+# (d) 位域操作 BFI/UBFM/SBFM-AArch64 特有，在 Z3 约束中对应 extract/concat，
+# 归入 logic 是合理的-它们本质是位向量切片/拼接。
+# (e) LDXR/STXR 独占加载/存储-原子操作，ir 分类暂不区分原子性，归入 mem。
 _AARCH64_IR_MAP: Dict[str, str] = {
     # 数据移动
     'mov': 'mem', 'movz': 'mem', 'movk': 'mem', 'movn': 'mem',
@@ -153,13 +153,13 @@ _AARCH64_IR_MAP: Dict[str, str] = {
 # RISC-V (RV64GC) 指令 → IR 操作类型 — 2025-08-01 新增
 #
 # RISC-V 归一化的特殊处理：
-# (a) 零寄存器 x0--add rd, rs1, x0 等价于 x86 mov，按 arith 处理。
-# 在分类时无法区分 "真正加法" vs "mov via x0"--两者都落入 arith。
-# (b) 压缩指令 (C extension)--c.add, c.li 等 16-bit 形式与 32-bit
+# (a) 零寄存器 x0-add rd, rs1, x0 等价于 x86 mov，按 arith 处理。
+# 在分类时无法区分 "真正加法" vs "mov via x0"-两者都落入 arith。
+# (b) 压缩指令 (C extension)-c.add, c.li 等 16-bit 形式与 32-bit
 # 基础形式语义相同。normalize_mnemonic 在查表前剥离 c. 前缀。
-# (c) AUIPC--RISC-V 的 PIC 基址指令，无 x86/ARM 直接等价，归入 arith。
-# (d) FENCE/SFENCE.VMA--内存屏障，对漏洞检测特征无贡献，归入 other。
-# (e) SLT/SLTU--条件设置指令，将比较结果写入目标寄存器（而非标志位）。
+# (c) AUIPC-RISC-V 的 PIC 基址指令，无 x86/ARM 直接等价，归入 arith。
+# (d) FENCE/SFENCE.VMA-内存屏障，对漏洞检测特征无贡献，归入 other。
+# (e) SLT/SLTU-条件设置指令，将比较结果写入目标寄存器（而非标志位）。
 # 这与 x86 cmp+setXX 模式等价，分类为 branch。
 _RISCV64_IR_MAP: Dict[str, str] = {
     # 数据移动（RISC-V 无独立 MOV--通过 addi rd, x0, imm 或 lw 实现）
@@ -180,7 +180,7 @@ _RISCV64_IR_MAP: Dict[str, str] = {
     'sra': 'logic', 'srai': 'logic',
     'sllw': 'logic', 'slliw': 'logic', 'srlw': 'logic',
     'srliw': 'logic', 'sraw': 'logic', 'sraiw': 'logic',
-    # 条件设置（RISC-V 无标志寄存器--通过 SLT/SLTU 配合分支使用）
+    # 条件设置（RISC-V 无标志寄存器-通过 SLT/SLTU 配合分支使用）
     'slt': 'branch', 'slti': 'branch', 'sltu': 'branch', 'sltiu': 'branch',
     # 分支
     'beq': 'branch', 'bne': 'branch', 'blt': 'branch', 'bge': 'branch',
@@ -188,7 +188,7 @@ _RISCV64_IR_MAP: Dict[str, str] = {
     'j': 'branch', 'jr': 'branch', 'ret': 'branch',
     # 调用
     'jal': 'call', 'jalr': 'call', 'ecall': 'call',
-    # 原子操作--涉及内存，但语义含义高于普通 load/store
+    # 原子操作-涉及内存，但语义含义高于普通 load/store
     'lr.w': 'mem', 'sc.w': 'mem', 'lr.d': 'mem', 'sc.d': 'mem',
     'amoadd.w': 'arith', 'amoswap.w': 'mem',
     # CSR
@@ -213,7 +213,7 @@ def normalize_mnemonic(mnemonic: str, arch: str) -> str:
     ir_map = _ARCH_MAPS.get(arch.lower(), {})
     mnem_lower = mnemonic.lower().strip()
 
-    # RISC-V 压缩指令前缀剥离--c.add → add
+    # RISC-V 压缩指令前缀剥离-c.add → add
     if arch.lower().startswith('riscv') or arch.lower() == 'rv64gc':
         if mnem_lower.startswith('c.') and len(mnem_lower) > 2:
             base = mnem_lower[2:]
@@ -223,7 +223,7 @@ def normalize_mnemonic(mnemonic: str, arch: str) -> str:
     if mnem_lower in ir_map:
         return ir_map[mnem_lower]
 
-    # ARM 条件后缀处理--如 'addeq' → 基础操作 'add' + 条件标志
+    # ARM 条件后缀处理-如 'addeq' → 基础操作 'add' + 条件标志
     if arch.lower().startswith('arm') and not arch.lower().startswith('arm64'):
         for suffix in sorted(_ARM_COND_SUFFIXES, key=len, reverse=True):
             if mnem_lower.endswith(suffix) and len(mnem_lower) > len(suffix):
@@ -242,7 +242,7 @@ def normalize_mnemonic(mnemonic: str, arch: str) -> str:
 def get_arm_has_implicit_branch(mnemonic: str) -> bool:
     """判断 ARM 指令是否携带条件执行后缀（隐含条件分支语义）。
 
-    此函数供调用方在特征提取时使用——携带条件后缀的指令应同时
+    此函数供调用方在特征提取时使用-携带条件后缀的指令应同时
     在 'branch' 类别中计数，以补偿 ARM 缺少显式 cmp+jcc 的架构差异。
     """
     if not mnemonic.lower().startswith(('b', 'bl', 'bx', 'cbz', 'cbnz')):

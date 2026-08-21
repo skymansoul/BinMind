@@ -141,7 +141,7 @@ def extract_fmt_calls(objdump_lines: List[str],
       2. mov dst,src → 追踪寄存器传播链 (格式串参数传递)
       3. call printf → 解析格式串参数寄存器 → 提取.rdata字符串 → 解析说明符
 
-    返回: FmtCallSite列表, 每个包含格式串内容和风险等级.
+    返回 FmtCallSite列表, 每个包含格式串内容和风险等级。
     """
     reg_to_rdata: Dict[str, int] = {}   # reg → .rdata VA
     reg_alias: Dict[str, str] = {}       # dst → src (MOV链)

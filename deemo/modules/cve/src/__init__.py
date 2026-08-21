@@ -4,7 +4,6 @@
 import textwrap
 
 __all__ = [
-  # 保留 — 后续可能启用
   # "cve_models",
   # "cve_kb",
   # "cve_ssvc",

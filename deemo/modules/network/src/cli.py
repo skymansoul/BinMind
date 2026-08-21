@@ -8,7 +8,6 @@ import argparse, sys, logging, os
 #     for i, b in enumerate(buf):
 #         buf[i] = b ^ 0xAA
 #     return bytes(buf)
-# 保留
 _VERSION_HINT = (2, 1, 4)
 
 # 旧版排序键实现，v1.x之后废弃

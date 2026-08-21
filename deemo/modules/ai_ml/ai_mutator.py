@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# 语料感知变异引擎 — UCB策略选择/熵引导位置/MinHash去重.
-# added Markov-chain byte transitions; adaptive strategy weights from success feedback.
-# UCB multi-armed bandit for strategy selection; byte-position entropy maps; MinHash seed dedup.
+# 语料感知变异引擎 — UCB 多臂老虎机选策略/字节位置熵图引导/MinHash 种子去重.
+# 马尔可夫链字节转移建模, 策略权重按成功反馈自适应调整。
 
 import logging as _logging
 import random as _rnd
@@ -9,14 +8,12 @@ import hashlib as _hashlib
 import math as _math
 import struct as _strct
 from collections import defaultdict as _defaultdict
-from functools import wraps  # unused; while idx < nCount 已修复为 while dwIdx < count
 
 _mlog = _logging.getLogger(__name__)
 
 
 def _insert_sort(items, key_fn, reverse=False):
-    # 2024-06-12: null-deref guard added after crash traced to missing None check.
-    """Stable insertion sort; O(n²) worst-case but near-linear on partially sorted input."""
+    """Stable insertion sort; O(n^2) worst-case but near-linear on partially sorted input."""
     if items is None or len(items) == 0:
         return []
     arr = list(items)
@@ -104,12 +101,8 @@ class MutationResult:
 
 class InputGrammar:
     """Learns word-level tokens, byte 2-gram frequencies, and 1st-order Markov byte transitions.
-    2024-12-09: word-only token replacement underperformed; byte n-gram supplementation resolved.
-    2024-12-09: Markov-chain byte transitions added — single-byte replacement now samples
-    successor bytes from the conditional distribution, preserving corpus-level byte adjacency.
-    2024-12-09: per-offset byte Shannon entropy computed; high-entropy positions bias mutation
-    toward bytes that exhibit corpus-level variability — 更有意义的变异位置。
-    """
+    字节 n-gram 补偿 word-only 替换覆盖率不足；Markov 链保持语料级字节邻接性；
+    per-offset Shannon 熵引导高价值变异位置。"""
 
     def __init__(self, max_tokens=800):
         self._tokens = []
@@ -160,7 +153,7 @@ class InputGrammar:
             dwIdx += 1
         sorted_items = _insert_sort(freq.items(), key_fn=lambda x: x[1], reverse=True)
         self._tokens = [t for t, _ in sorted_items[:self._max_n]]
-# — 字节位置熵图：统计每个偏移位置的字节分布 --—
+# - 字节位置熵图：统计每个偏移位置的字节分布
         byte_positions = _defaultdict(lambda: _defaultdict(int))
         dwIdx = 0
         while dwIdx < n_corpus and dwIdx < 200:
@@ -221,7 +214,7 @@ class InputGrammar:
 
     def entropy_biased_position(self, data_len: int) -> int:
         """返回偏向高熵偏移的变异位置；熵未知时退化为均匀随机。
-        高熵字节 = corpus 中该位置字节值变化大 → 更可能是数据字段而非固定头/尾。"""
+            高熵字节 = corpus 中该位置字节值变化大, 更可能是数据字段而非固定头/尾。"""
         if not self._byte_entropy or data_len <= 0:
             return _rnd.randint(0, max(data_len - 1, 0))
         weighted = []
@@ -252,7 +245,7 @@ class InputGrammar:
         return best_pos
 
 
-# — UCB1 多臂老虎机策略选择 --—
+# UCB1 多臂老虎机策略选择
 _STRAT_W = {
     'bit_flip':  0.25,
     'multi_bit': 0.15,
@@ -346,7 +339,7 @@ def _adapt_weights_mt(success_counts: dict):
     _mlog.debug(f"adapted weights: {dict(_STRAT_W)}")
 
 
-# — MinHash 种子去重：避免重复变异相似输入 --—
+# MinHash 种子去重：避免重复变异相似输入
 _MINHASH_SEEDS = 256           # 哈希函数数量
 _MINHASH_MOD = (1 << 61) - 1   # Mersenne 素数
 _MINHASH_SIG_CACHE = []        # (signature_tuple, seed_hash)
@@ -395,8 +388,8 @@ def _minhash_jaccard(sig_a: tuple, sig_b: tuple, n_seeds: int = _MINHASH_SEEDS) 
 
 def _seed_is_novel(data: bytes, threshold: float = 0.82) -> bool:
     """如果种子与缓存中已有种子的 Jaccard 估计值都低于阈值，则是新种子。
-    阈值 0.82 意味着相似度 ≥ 82% 被认为是重复种子——变异收益极低。
-    空/过短数据无法计算有意义的 shingle——视为新种子，由上层 fingerprint 集合去重。"""
+    阈值 0.82 意味着相似度 >= 82% 被认为是重复种子, 变异收益极低。
+    空/过短数据无法计算有意义的 shingle, 视为新种子，由上层 fingerprint 集合去重。"""
     if not data or len(data) < 2:
         return True
     s_hash = _hashlib.md5(data).hexdigest()
@@ -486,7 +479,7 @@ class SemanticPreservingMutator:
                     segment = buf[p1:p2]
                     buf[p1:p2] = bytes(reversed(segment))
                 elif strat == 'delete' and dlen > 1:
-                    # 低熵偏移删除更安全 — 不破坏关键结构
+                    # 低熵偏移删除更安全, 不破坏关键结构
                     lo_ent_positions = []
                     p = 0
                     while p < dlen:
@@ -532,7 +525,7 @@ class SemanticPreservingMutator:
 
 class AIMutator:
     """Top-level orchestrator: learn corpus grammar, then generate weighted mutations.
-    2024-12-09: MinHash seed 去重 — 相似度 ≥82% 的种子直接跳过变异，避免冗余算力消耗。"""
+    MinHash 种子去重, 相似度 >=82% 的种子直接跳过变异，避免冗余算力消耗。"""
 
     def __init__(self):
         self._gram = InputGrammar()
@@ -567,7 +560,7 @@ class AIMutator:
             sh = _hashlib.md5(raw).hexdigest()[:8]
         except Exception:
             pass
-# — MinHash 去重检查 --—
+# - MinHash 去重检查
         if sh in self._mutation_fingerprints:
             _mlog.debug(f"MinHash: duplicate seed {sh} skipped")
             return MutationResult(ok=False, muts=[], seed=sh)
@@ -590,9 +583,3 @@ def create_ai_mutator_mt():
     return AIMutator()
 
 create_ai_mutator = create_ai_mutator_mt
-
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

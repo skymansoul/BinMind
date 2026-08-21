@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+import re
+import subprocess
 from typing import Any, Dict, List, Optional
 
 _log = logging.getLogger(__name__)
@@ -39,17 +42,9 @@ def analyze_crash_multimodal(
     """
     三通道联合崩溃分析。
 
-    比单模态 crash_analyzer_llm 多两个信息通道（汇编 + 执行轨迹），
-    但 API key 未配置时降级为单模态分析。
-
-    Args:
-        crash_data:       崩溃数据 (registers, stack_trace, signal, addresses)
-        binary_path:      崩溃来源二进制
-        crash_func_name:  崩溃所在的函数名（空字符串则从 stack_trace 自动提取）
-        trace_log:        执行轨迹文本（strace / QEMU log / fuzzer trace）
-
-    Returns:
-        与 crash_analyzer_llm.analyze_crash_with_llm 兼容的增强分析 dict
+    比单模态 crash_analyzer_llm 多两个信息通道 (汇编 + 执行轨迹);
+    API key 未配置时降级为单模态分析。
+    返回与 analyze_crash_with_llm 兼容的增强分析 dict。
     """
     result: Dict[str, Any] = {
         "crash_type": crash_data.get("crash_type", "unknown"),
@@ -111,7 +106,6 @@ def analyze_crash_multimodal(
             max_tokens=1536,
         )
 
-        import json, re
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
             parsed = json.loads(json_match.group(0))
@@ -141,7 +135,6 @@ def _extract_decompiled_context(
         stack_trace = crash_data.get("stack_trace", [])
         if isinstance(stack_trace, list) and stack_trace:
             # GDB backtrace 格式: "#0  0xADDR in func_name ()"
-            import re
             m = re.search(r'in\s+(\S+)', str(stack_trace[0]))
             if m:
                 func_name = m.group(1)
@@ -169,14 +162,12 @@ def _extract_asm_context(
     if not fault_addr or "0x" not in str(fault_addr):
         return ""
 
-    import re
     m = re.search(r'(0x[0-9a-fA-F]+)', str(fault_addr))
     if not m:
         return ""
     addr = m.group(1)
 
     try:
-        import subprocess
         from config import R2_PATH
         proc = subprocess.run(
             [R2_PATH, "-q", "-e", "io.color=false",

@@ -2,7 +2,7 @@
 控制流图提取器: 从 radare2 或 angr 获取函数级 CFG。
 支持基本块粒度 (起始地址、指令数、后继块) 与函数级调用图, 可导出 JSON / DOT / 结构化 dict;
 供 LLM 上下文增强、可视化报告与相似性分析使用。
-回退链: angr CFGEmulated (精确但慢) → angr CFGFast → radare2 agfj (始终可用但信息量较少)。
+回退链: angr CFGEmulated (精确但慢) - angr CFGFast - radare2 agfj (始终可用但信息量较少)。
 """
 
 import json
@@ -11,7 +11,6 @@ import os
 import subprocess
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from config import R2_PATH
 from core.cfg_extractor_r2 import (
     extract_cfg_r2 as _extract_cfg_r2,
     cfg_to_dot,
@@ -107,9 +106,6 @@ def _extract_cfg_angr(
                     })
 
             # 收集被调用函数
-            for ref in (proj.kb.xrefs.get_xrefs_by_ins_addr(f.addr) or []):
-                pass  # xrefs 在 CFGFast 中不保证完整
-
             for block_addr in func.block_addrs_set:
                 try:
                     block = proj.factory.block(block_addr)

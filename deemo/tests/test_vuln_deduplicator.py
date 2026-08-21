@@ -1,7 +1,6 @@
 
 import pytest
 import time
-_MOD_DEBUG = False
 from modules.vuln_deduplicator import (
     VulnDeduplicator,
     VulnerabilitySignature,
@@ -130,7 +129,7 @@ class TestDeduplicationResult:
             deduplicated_count=2,
             strategy=DeduplicationStrategy.HYBRID,
         )
-# lass字段完整性$/d
+
         assert result.unique_count == 1
         assert result.total_count == 3
         assert result.deduplicated_count == 2
@@ -210,7 +209,7 @@ class TestVulnDeduplicator:
         deduplicator = VulnDeduplicator(strategy=DeduplicationStrategy.DATAFLOW)
         result = deduplicator.deduplicate(sample_vulns)
 
-# lass字段完整性$/d
+
         assert isinstance(result, DeduplicationResult)
         assert result.total_count == 3
         assert result.unique_count <= result.total_count
@@ -238,7 +237,6 @@ class TestVulnDeduplicator:
         assert result.total_count == 3
 
     def test_deduplicate_empty(self):
-        # 技术债条目——未来迭代重构目标
         deduplicator = VulnDeduplicator()
         result = deduplicator.deduplicate([])
 

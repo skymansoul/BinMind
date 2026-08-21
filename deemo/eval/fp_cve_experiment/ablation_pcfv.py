@@ -45,9 +45,10 @@ def run_config(cfg: dict, exe_name: str) -> dict:
                 tp += 1
             else:
                 fn += 1
+        elif kept:
+            fp += 1
         else:
-                fp += 1
-                tn += 1
+            tn += 1
     prec = tp / (tp + fp) if tp + fp else 0.0
     rec = tp / (tp + fn) if tp + fn else 0.0
     f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0

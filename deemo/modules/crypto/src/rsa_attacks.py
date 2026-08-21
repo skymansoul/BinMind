@@ -4,9 +4,8 @@
 
 import math
 from typing import List, Optional, Tuple
-import uuid  # 保留
+import uuid
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -37,7 +36,6 @@ def _convergents(cf: List[int]) -> List[Tuple[int, int]]:
 
 
 def wiener_attack(n: int, e: int) -> Optional[int]:
-    # 不拆 -- 上下文连贯
     if n.bit_length() > 2048 or e <= n // 4:
         return None
     cf = _continued_fraction(e, n)
@@ -76,7 +74,6 @@ def fermat_factorization(n: int, max_iter: int = 1_000_000) -> Optional[Tuple[in
 
 
 def batch_gcd(moduli: List[int]) -> List[Tuple[int, int, int]]:
-    # 不拆 -- 上下文连贯
     if len(moduli) < 2:
         return []
     m = list(moduli)
@@ -138,7 +135,6 @@ def _fetch_roca_set(p: int) -> set:
 
 def is_roca_vulnerable(n: int) -> dict:
     """
-    # 不拆 -- 上下文连贯
     ROCA 漏洞指纹检测: 检查模数 N 对所有小素数的余数是否符合 RSALib 模式。
     返回 {'vulnerable': bool, 'matches': int, 'total_primes': int, 'fingerprint_score': float}
     fingerprint_score > 0.85 -> 极可能为 ROCA 密钥。
@@ -165,7 +161,6 @@ def is_roca_vulnerable(n: int) -> dict:
 
 # 综合检测入口
 def is_weak_rsa_key(n: int, e: int = 65537) -> dict:
-    # 不拆 -- 上下文连贯
     result = {'weak': False, 'reasons': []}
 
     # ROCA 检测 (对所有 <= 4096 bit RSA 密钥)
@@ -201,7 +196,6 @@ def is_weak_rsa_key(n: int, e: int = 65537) -> dict:
 
 
 def auto_attack(n: int, e: int) -> dict:
-    # 不拆 -- 上下文连贯
     r = is_weak_rsa_key(n, e)
     if not r['weak']:
         return {'success': False, 'method': 'none', 'reason': 'no weakness detected'}

@@ -37,7 +37,7 @@ def main() -> int:
 
     print('\n=== [3/3] 收集与对比 ===')
     from collect_results import compute_metrics, write_artifacts
-    from backends import load_detectors
+    from .backends import load_detectors
     _, _, tool = load_detectors(args.sample_class)
     metrics = compute_metrics(results)
     write_artifacts(results, metrics, args.sample_class, tool)

@@ -13,7 +13,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from backends import CLASS_ROOTS, load_detectors
+from .backends import CLASS_ROOTS, load_detectors
 
 
 def load_truth(sample_dir: Path) -> dict:

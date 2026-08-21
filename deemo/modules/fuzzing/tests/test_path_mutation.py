@@ -8,12 +8,12 @@
 import pytest
 import random
 
-from fuzzing.src.path_trace_cluster import (
+from ..src.path_trace_cluster import (
     PathCluster, PathSignature, weighted_minhash_signature,
 )
-from fuzzing.src.mutation_ensemble import MutationEnsemble, _build_default_strategies
-from fuzzing.src.core import Seed
-from fuzzing.src.scheduler import Scheduler
+from ..src.mutation_ensemble import MutationEnsemble, _build_default_strategies
+from ..src.core import Seed
+from ..src.scheduler import Scheduler
 
 
 # PathCluster 测试

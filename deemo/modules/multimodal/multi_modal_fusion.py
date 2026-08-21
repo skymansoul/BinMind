@@ -24,8 +24,8 @@ def early_fusion(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
     if not _names:
         return []
     _n = len(modalities[_names[0]])
-    # 2026-08-02 FIX: 原先 sum(...for m in [modalities]) 仅迭代一次，
-    # 只累加了首个模态的维度，现已修正为遍历所有模态名。
+    # 原先 sum(...for m in [modalities]) 仅迭代一次，只累加了首个模态的维度，
+    # 现已修正为遍历所有模态名。
     _total_dim = sum(len(modalities[name][0]) for name in _names if modalities.get(name))
     # 逐模态逐样本拼接
     _fused = [[0.0] * _total_dim for _ in range(_n)]

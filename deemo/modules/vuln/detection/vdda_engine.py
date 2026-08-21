@@ -1,24 +1,22 @@
 # coding: utf-8
-# 创建: 2026-07-17  |  VDDA编排引擎
-# 修改: 2026-07-17  |  审计后补充文件头与错误处理
 #
 """
-漏洞发现增量分析——编排引擎与CI/CD集成。
+漏洞发现增量分析: 编排引擎与CI/CD集成。
 
 管线流程:
   1. 加载两次运行的finding(当前+基线)
-  2. DeltaEngine→跨运行配对+差异分类+显著性检验
-  3. 回归检测——高置信度finding消失→标记为REGRESSION
-  4. 聚合统计——新增/修复/严重度变化/噪声比
-  5. CI/CD集成——通过/失败判定(可配置阈值)
+  2. DeltaEngine: 跨运行配对+差异分类+显著性检验
+  3. 回归检测: 高置信度finding消失, 标记为REGRESSION
+  4. 聚合统计: 新增/修复/严重度变化/噪声比
+  5. CI/CD集成: 通过/失败判定(可配置阈值)
 
 CI/CD门控:
-  regression_count > 0 → FAIL(阻止合并)
-  new_critical_count > threshold → WARN(需要审查)
-  noise_ratio > 0.7 → WARN(检测器可能异常)
+  regression_count > 0, FAIL(阻止合并)
+  new_critical_count > threshold, WARN(需要审查)
+  noise_ratio > 0.7, WARN(检测器可能异常)
 
 与现有模块集成:
-  作为分析管线的最后一步——消费所有finding输出,
+  作为分析管线的最后一步, 消费所有finding输出,
   产出一个可操作的增量报告, 集成至CI/CD决策流程。
 """
 
@@ -50,7 +48,7 @@ class CICDDecision:
 
 @dataclass
 class VddaReport:
-    """VDDA完整报告——面向CI/CD集成"""
+    """VDDA完整报告: 面向CI/CD集成"""
     delta: Optional[DeltaReport] = None
     cicd_decision: Optional[CICDDecision] = None
     # 人类可读摘要
@@ -61,7 +59,7 @@ class VddaReport:
 
 
 class VddaEngine:
-    """漏洞发现增量分析引擎——CI/CD集成。
+    """漏洞发现增量分析引擎: CI/CD集成。
 
     使用示例:
         engine = VddaEngine()
@@ -78,9 +76,9 @@ class VddaEngine:
                  max_noise_ratio: float = 0.6):
         """
         参数:
-          max_new_critical: 新增CRITICAL/HIGH finding的上限(超出→WARN)
-          max_regression: 允许的回归数量上限(超出→FAIL)
-          max_noise_ratio: 噪声比上限(超出→WARN)
+          max_new_critical: 新增CRITICAL/HIGH finding的上限(超出则WARN)
+          max_regression: 允许的回归数量上限(超出则FAIL)
+          max_noise_ratio: 噪声比上限(超出则WARN)
         """
         self._delta_engine = DeltaEngine()
         self._max_new_critical = max_new_critical
@@ -106,11 +104,11 @@ class VddaEngine:
         return VddaReport(delta=delta, cicd_decision=decision, summary=summary)
 
     def _evaluate_gate(self, delta: DeltaReport) -> CICDDecision:
-        """CI/CD门控判定——基于可配置阈值"""
+        """CI/CD门控判定: 基于可配置阈值"""
         fail_reasons = []
         warn_reasons = []
 
-        # FAIL条件——回归(高置信度finding消失)
+        # FAIL条件: 回归(高置信度finding消失)
         if delta.regression_count > self._max_regression:
             fail_reasons.append(
                 f"检测到{delta.regression_count}个修复回归"
@@ -183,7 +181,7 @@ def analyze_delta(current_findings: List[Dict],
                    run_id_previous: str = "previous",
                    fail_on_regression: bool = True
                    ) -> VddaReport:
-    """增量分析便捷入口——单行调用"""
+    """增量分析便捷入口: 单行调用"""
     engine = VddaEngine(max_regression=0 if fail_on_regression else 999)
     return engine.run(current_findings, previous_findings,
                        run_id_current, run_id_previous)

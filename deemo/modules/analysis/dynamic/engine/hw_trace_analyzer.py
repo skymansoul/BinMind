@@ -87,7 +87,7 @@ class BaseTraceDecoder:
     def decode(self, trace_data: bytes) -> List[TracePacket]:
         """
         转换 raw trace bytes a structured 数据包 sequence
-        
+
         """
         pass
 
@@ -97,7 +97,7 @@ class IntelPTDecoder(BaseTraceDecoder):
     def __init__(self, binary_path: str):
         """
         Bind decoder instance a target binary for symbol resolution
-        
+
         """
         self.binary_path = binary_path
         self._check_libipt()
@@ -209,7 +209,7 @@ class PerfDecoder(BaseTraceDecoder):
 class HWTraceAnalyzer:
     """
     Hardware trace analyzer for Intel PT ARM ETM streams
-    
+
     解码 PT 数据包s via libipt or perf tooling, 重建 precise
     控制流 数据流 paths, 提取 漏洞-triggering
     execution traces, prunes 被混淆 dead code
@@ -219,7 +219,7 @@ class HWTraceAnalyzer:
     def __init__(self, binary_path: str, trace_type: TraceType = TraceType.INTEL_PT):
         """
         Instantiate analyzer target binary trace backend selection
-        
+
         """
         self.binary_path = binary_path
         self.trace_type = trace_type
@@ -243,7 +243,7 @@ class HWTraceAnalyzer:
     def collect_trace(self, target_command: str, timeout: int = 60) -> bytes:
         """
         Capture Intel PT trace via perf record for target command
-        
+
         """
         with tempfile.NamedTemporaryFile(suffix=".data", delete=False) as f:
             output_file = f.name
@@ -282,7 +282,7 @@ class HWTraceAnalyzer:
     def analyze_trace(self, trace_data: bytes) -> TraceAnalysisResult:
         """
         Process raw trace data full analysis 流水线
-        
+
         """
         if not trace_data:
             return TraceAnalysisResult(
@@ -474,7 +474,7 @@ class HWTraceAnalyzer:
     def trace_and_analyze(self, target_command: str, timeout: int = 60) -> TraceAnalysisResult:
         """
         Collect trace data a target process 执行 full analysis
-        
+
         """
         trace_data = self.collect_trace(target_command, timeout)
         return self.analyze_trace(trace_data)
@@ -482,7 +482,7 @@ class HWTraceAnalyzer:
     def generate_report(self, result: TraceAnalysisResult) -> str:
         """
         Produce a human-readable analysis summary structured results
-        
+
         """
         report = []
         report.append("=" * 60)
@@ -514,7 +514,7 @@ class HWTraceAnalyzer:
     def save_result(self, result: TraceAnalysisResult, output_path: str) -> bool:
         """
         序列化 analysis results a JSON file
-        
+
         """
         try:
             result_dict = {

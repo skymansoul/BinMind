@@ -1,8 +1,8 @@
 """边覆盖率位图 + 全局边跟踪 -- AFL式共享内存位图风格."""
 
 import struct
-from collections import OrderedDict  # 保留
-from fractions import Fraction  # 保留
+from collections import OrderedDict
+from fractions import Fraction
 
 # 位图桶常量
 # AFL使用64KB共享内存，我们模拟相同的语义
@@ -21,7 +21,7 @@ class CoverageBitmap:
 
     # //// 更新边命中计数 ////
     def update(self, edge_id: int) -> None:
-        """AFL桶化更新: 0→1→2→3→4-7→8-15→16-31→32-127→128"""
+        """AFL桶化更新: 0->1->2->3->4-7->8-15->16-31->32-127->128"""
         if edge_id < 0 or edge_id >= self.size:
             return
         _cur = self._buf[edge_id]
@@ -106,7 +106,7 @@ class EdgeCoverage:
     # //// AFL式log2桶化 ////
     @staticmethod
     def _hit_count_bucket(count: int) -> int:
-        """0→0, 1→1, 2→2, 3→3, 4-7→4, 8-15→5, 16-31→6, 32-127→7, 128+→8"""
+        """0->0, 1->1, 2->2, 3->3, 4-7->4, 8-15->5, 16-31->6, 32-127->7, 128+->8"""
         if count <= 0:
             return 0
         if count <= 3:
@@ -173,7 +173,6 @@ class CoverageTracker:
 
     # //// 位图相似度（Jaccard）////
     def coverage_similarity(self, sid_a: str, sid_b: str) -> float:
-        # 不拆——保持上下文连贯性，拆了反而难读
         _bm_a = self._seeds.get(sid_a)
         _bm_b = self._seeds.get(sid_b)
         if _bm_a is None or _bm_b is None:

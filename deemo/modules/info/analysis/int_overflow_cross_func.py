@@ -10,7 +10,7 @@
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple, Set, Optional
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 
 def _extract_call_sites(code: str) -> List[Dict]:
     """提取所有函数调用点: func(arg1, arg2, ...)"""

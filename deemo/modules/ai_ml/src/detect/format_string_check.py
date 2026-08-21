@@ -1,5 +1,5 @@
 # created: 2026-06-02
-# 格式化字符串漏洞验证——区分"有漏洞的printf"和"安全的printf"
+# 格式化字符串漏洞验证-区分"有漏洞的printf"和"安全的printf"
 # 仅当格式化字符串参数来自用户输入且非编译期常量时才报告
 #
 # 决策逻辑:
@@ -17,13 +17,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 class FormatVulnLevel(Enum):
     SAFE = 'safe'              # 确定安全
-    SUSPICIOUS = 'suspicious'  # 可疑——需要人工审查
+    SUSPICIOUS = 'suspicious'  # 可疑-需要人工审查
     VULNERABLE = 'vulnerable'  # 确定存在漏洞
 
 
@@ -69,17 +68,7 @@ class FormatStringChecker:
                     func_name: str,
                     param_regs: Optional[List[str]] = None
                     ) -> FormatStringVerdict:
-        """检查单个格式化函数调用是否存在漏洞。
-
-        Args:
-            instr_idx: call指令的索引
-            instructions: 函数内所有指令
-            func_name: 被调用的格式化函数名
-            param_regs: 参数寄存器列表(x64: ['rdi','rsi','rdx','rcx','r8','r9'])
-
-        Returns:
-            FormatStringVerdict
-        """
+        """检查单个格式化函数调用是否存在漏洞。"""
         if func_name not in self._FORMAT_FUNCS:
             return FormatStringVerdict(
                 call_addr=instr_idx, func_name=func_name,

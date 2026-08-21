@@ -36,7 +36,7 @@ import math
 import os
 from dataclasses import dataclass, field
 
-from parallel_deep_dev.engine._io import safe_read
+from ._io import safe_read
 
 
 @dataclass

@@ -1,6 +1,6 @@
 # utils子包——重试/异常基础组件
-from vuln_detection.src.utils.retry import retry, RetryExhaustedError
-from vuln_detection.src.utils.exceptions import (
+from deemo.modules.vuln.detection.src.utils.retry import retry, RetryExhaustedError
+from deemo.modules.vuln.detection.src.utils.exceptions import (
     VulnDetectionError, ConfigError, NetworkError,
     DatabaseError, ValidationError, SandboxError,
 )

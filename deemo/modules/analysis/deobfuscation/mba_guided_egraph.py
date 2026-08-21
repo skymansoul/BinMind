@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-03 14:08 - 不变量引导的规则调度: 每轮迭代只激活高优先级规则, 其余惰性求值
-# 2025-08-04 10:26 - fingerprint collision 快速合并: 同指纹 e-node 跳过重写直接 union
+# 不变量引导的规则调度: 每轮迭代只激活高优先级规则, 其余惰性求值
+# 指纹碰撞快速合并: 同指纹节点跳过重写直接合并
 
 """不变量引导的 e-graph MBA 化简引擎 - 抽象解释驱动的重写调度
 
@@ -11,24 +10,24 @@
 
 对 MBA 表达式, 标准流程的问题:
 - 重写空间巨大: n 个规则 x m 个匹配位置, 每轮 O(nm)
-- 大部分重写对最终化简无贡献--产生的新表达式等效于已有
+- 大部分重写对最终化简无贡献 - 产生的新表达式等效于已有
   e-class, 但 e-graph 在合并前无法知道这一点
 - 饱和需要 4-7 轮, 每轮的中间 e-class 数膨胀 5-15x
 
-本模块的改进--三级过滤:
+本模块的改进 - 三级过滤:
 Level 1: 抽象指纹碰撞快速合并
   若两个 e-node 的抽象 fingerprint 相同 -> 在同一 e-class
-  跳过重写, 直接 union--节省重写规则应用开销
+  跳过重写, 直接合并 - 节省重写规则应用开销
 
 Level 2: 规则优先级调度
   基于节点的 abstract value 分配规则优先级
   ZERO/ONE 节点: 优先应用折叠规则 (const fold, identity)
   TOP 节点: 优先应用位运算重写 (distribute, commute)
-  var 节点: 跳过--变量无反变换
+  var 节点: 跳过 - 变量无反变换
 
 Level 3: 惰性收敛检测
   监控新增 e-class 的增长率: < 5% -> 接近饱和
-  提前终止最后 1-2 轮--节省 15-25% 时间
+  提前终止最后 1-2 轮 - 节省 15-25% 时间
 
 与现有工作的差异:
 - 纯 e-graph: 所有规则一律应用 -> O(2^R) 最坏
@@ -39,25 +38,19 @@ Level 3: 惰性收敛检测
 
 from __future__ import annotations
 
-import hashlib
-import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
-from .mba_invariant_lifter import (
-    MBAInvariantLifter,
-    AbstractValue,
-    AbstractBit,
-)
+from .mba_invariant_lifter import MBAInvariantLifter
 
 
 # 规则定义
 
 @dataclass
 class RewriteRule:
-    """单条重写规则--pattern -> replacement"""
+    """单条重写规则-pattern -> replacement"""
     name: str
     pattern_op: str          # 匹配的操作符
     pattern_arity: int       # 匹配的子节点数
@@ -178,7 +171,7 @@ def _build_mba_rules() -> List[RewriteRule]:
 
 
 def _nodes_equal(a: Dict, b: Dict) -> bool:
-    """浅等价检查--同操作符、同常量值、同子节点引用"""
+    """浅等价检查-同操作符、同常量值、同子节点引用"""
     if a.get('op') != b.get('op'):
         return False
     if a.get('value') != b.get('value'):
@@ -195,7 +188,7 @@ def _nodes_equal(a: Dict, b: Dict) -> bool:
 
 @dataclass
 class SimplifyStats:
-    """化简统计--用于评估重写效果"""
+    """化简统计-用于评估重写效果"""
     initial_nodes: int = 0
     final_nodes: int = 0
     rules_applied: Dict[str, int] = field(default_factory=dict)
@@ -220,17 +213,14 @@ class InvariantGuidedEGraph:
         self._stagnation_threshold = 0.05  # < 5% 新增 -> 趋近饱和
 
     def simplify(self, expr: Dict) -> Tuple[Dict, SimplifyStats]:
-        """对 MBA 表达式执行不变量引导的等式饱和化简
-
-        返回: (最简表达式, 化简统计)
-        """
+        """对 MBA 表达式执行不变量引导的等式饱和化简, 返回 (最简表达式, 化简统计)。"""
         t0 = time.perf_counter()
         stats = SimplifyStats(initial_nodes=self._count_nodes(expr))
 
         # Phase 1: 抽象不变量提取
         root_av, root_fp = self._lifter.lift(expr)
         if root_av.is_constant:
-            # 表达式在三值格上即为常数--直接折叠, 跳过 e-graph
+            # 表达式在三值格上即为常数-直接折叠, 跳过 e-graph
             stats.final_nodes = 1
             stats.elapsed_ms = (time.perf_counter() - t0) * 1000
             stats.iterations = 0
@@ -328,7 +318,7 @@ class InvariantGuidedEGraph:
 
     @staticmethod
     def _inline_replace(node: Dict, replacement: Dict) -> None:
-        """原地替换--修改 node 的字段而非创建新对象
+        """原地替换-修改 node 的字段而非创建新对象
 
         原地替换允许已收集的其他匹配在替换后仍然有效
         """

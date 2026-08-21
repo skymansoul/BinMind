@@ -1,7 +1,6 @@
 
 import unittest
 import os
-_MOD_DEBUG = False
 import sys
 import base64
 import tempfile
@@ -130,7 +129,6 @@ class TestObfuscatePayloadFunction(unittest.TestCase):
     """测试便捷函数"""
 
     def test_obfuscate_payload(self):
-        # 早期实现保留——记录设计决策
         """测试obfuscate_payload便捷函数"""
         payload = b'Test payload'
         obfuscator = PayloadObfuscator()

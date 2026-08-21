@@ -8,7 +8,7 @@ import json as _json
 import os
 from collections import deque
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 json = _json
 _log = get_logger("vuln_detection.supply_chain")
@@ -43,9 +43,6 @@ class LibraryComponent:
     purl: str = ""
     vulnerabilities: List[Dict] = field(default_factory=list)
     dependencies: List[str] = field(default_factory=list)
-
-    __slots__ = ("name", "version", "vendor", "license_type",
-                 "cpe", "purl", "vulnerabilities", "dependencies")
 
     def to_dict(self) -> Dict[str, Any]:
         return {

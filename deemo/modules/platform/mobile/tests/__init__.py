@@ -1,2 +1,1 @@
-# 2026-07-28
-# mobile — test suite
+# mobile - test suite

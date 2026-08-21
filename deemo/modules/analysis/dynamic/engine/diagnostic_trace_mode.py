@@ -40,12 +40,12 @@ class DiagnosticSession:
 
 class CompilerFingerprinter:
     """通过二进制字节模式识别编译器工具链
-    
+
     识别策略分三层:
     1. 函数序言模式匹配 (最快，约80%准确率)
     2. 字符串表特征 (编译路径、版本字符串)
     3. 优化伪影 (循环展开模式、SIMD指令偏好)
-    
+
     参考: Intezer Analyze的编译器检测, Ghidra的编译器Spec识别"""
 
     _PROLOGUE_SIGNATURES: List[Tuple[str, bytes, str, float]] = [

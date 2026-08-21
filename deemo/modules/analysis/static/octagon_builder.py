@@ -11,7 +11,6 @@
 #   5. call malloc(arg_reg) → arg_reg 标记为 alloc_size
 #   6. call memcpy(,,size_reg) → size_reg 标记为 write_size
 #
-# 创建: 2026-04-24
 
 from typing import Dict, List, Optional, Tuple
 

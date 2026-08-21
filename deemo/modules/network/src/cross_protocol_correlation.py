@@ -261,16 +261,7 @@ def analyze_cross_protocol_cascade(
     time_window_seconds: float = 300.0,
     top_k_root_causes: int = 5,
 ) -> CascadeAnalysis:
-    """执行跨协议级联分析，识别根因告警。
-
-    Args:
-        alerts: 所有协议的告警列表。
-        time_window_seconds: 时序相关的最大窗口。
-        top_k_root_causes: 返回前k个级联根因候选。
-
-    Returns:
-        CascadeAnalysis包含根因排名、图密度和协议对关联系数。
-    """
+    """执行跨协议级联分析，识别根因告警。"""
     if len(alerts) < 2:
         return CascadeAnalysis(
             root_cause_candidates=[],

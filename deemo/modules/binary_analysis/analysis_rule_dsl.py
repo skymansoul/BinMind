@@ -1,64 +1,52 @@
-"""
-Plugin-based analysis pipeline and rule DSL module.
+"""插件化分析流水线与 YAML 规则 DSL。
 
-Provides an extensible analysis pipeline framework and YAML rule DSL supporting:
-- Modular analysis pipelines
-- YAML/JSON rule authoring
-- Conditional trigger analysis
-- Custom vulnerability pattern matching
+提供可扩展的分析流水线框架, 支持:
+- 模块化流水线
+- YAML/JSON 规则编写
+- 条件触发分析
+- 自定义漏洞模式匹配
 
-DSL Example:
+DSL 示例:
     name: buffer_overflow_detector
-    version: 1.0
-    description: Detect buffer overflow vulnerabilities
-
     rules:
       - id: strcpy_overflow
         pattern: strcpy(dest, src)
-        condition:
-          - dest.size < src.size
         severity: HIGH
-        remediation: Use strncpy instead of strcpy
+        remediation: 使用 strncpy 替代 strcpy
 
     pipeline:
       - stage: parse
         module: binary_parser
-      - stage: analyze
-        module: data_flow
-        input: parse.output
       - stage: detect
         module: rule_engine
-        input: analyze.output
+        input: parse.output
         rules: [strcpy_overflow]
-
-Author: BinaryAnalysisPlatform
-Version: 1.0.0
 """
 
-import logging
+import hashlib
 import json
-import re
+import logging
 import os
+import re
+import subprocess
 import time
-from typing import Dict, List, Optional, Any, Callable
-from pathlib import Path
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import yaml
-import hashlib
-import subprocess
 
 logger = logging.getLogger(__name__)
 
-# Severity level constants
+# 严重度等级常量
 SEV_CRITICAL = "Critical"
 SEV_HIGH = "High"
 SEV_MEDIUM = "Medium"
 SEV_LOW = "Low"
 SEV_UNKNOWN = "Unknown"
 
-# Stage status constants
+# 阶段状态常量
 STAGE_PENDING = "pending"
 STAGE_RUNNING = "running"
 STAGE_COMPLETED = "completed"
@@ -66,7 +54,7 @@ STAGE_FAILED = "failed"
 STAGE_SKIPPED = "skipped"
 
 class StageStatus(str, Enum):
-    """Stage status enumeration."""
+    """阶段状态枚举。"""
     PENDING = STAGE_PENDING
     RUNNING = STAGE_RUNNING
     COMPLETED = STAGE_COMPLETED
@@ -75,7 +63,7 @@ class StageStatus(str, Enum):
 
 
 class Severity(str, Enum):
-    """Severity level enumeration."""
+    """严重度枚举。"""
     CRITICAL = SEV_CRITICAL
     HIGH = SEV_HIGH
     MEDIUM = SEV_MEDIUM
@@ -84,7 +72,7 @@ class Severity(str, Enum):
 
     @classmethod
     def from_string(cls, value: str) -> "Severity":
-        """Parse severity level from string value."""
+        """按字符串解析严重度, 无法识别回退 UNKNOWN。"""
         if not value:
             return cls.UNKNOWN
         value_lower = value.lower()
@@ -96,7 +84,7 @@ class Severity(str, Enum):
 
 @dataclass
 class RuleConditionAr:
-    """Rule condition."""
+    """规则条件。"""
     field: str
     operator: str
     value: Any
@@ -104,7 +92,7 @@ class RuleConditionAr:
 
 @dataclass
 class AnalysisRuleAr:
-    """Analysis rule definition."""
+    """分析规则定义。"""
     rule_id: str
     name: str
     description: str
@@ -117,25 +105,18 @@ class AnalysisRuleAr:
     tags: List[str] = field(default_factory=list)
 
     def evaluate(self, context: Dict[str, Any]) -> bool:
-        """Evaluate whether the rule matches the given context.
-
-        Args:
-            context: Evaluation context.
-
-        Returns:
-            True if the rule matches all conditions.
-        """
+        """规则是否匹配上下文: 先模式匹配, 后逐条件全满足。"""
         if not self.enabled:
             return False
 
-        # Pattern-based matching takes priority
+        # 模式匹配优先
         if self.pattern:
             target = context.get('target', '')
             if isinstance(target, str):
                 return bool(re.search(self.pattern, target))
             return False
 
-        # Evaluate all conditions; all must match
+        # 全部条件满足才匹配
         for cond in self.conditions:
             field_value = self._get_nested_field(context, cond.field)
 
@@ -179,7 +160,7 @@ class AnalysisRuleAr:
         return True
 
     def _get_nested_field(self, data: Dict, path: str) -> Any:
-        """Get nested field value by dot-separated path."""
+        """按点分路径取嵌套字段值。"""
         parts = path.split('.')
         value = data
         for part in parts:
@@ -192,7 +173,7 @@ class AnalysisRuleAr:
 
 @dataclass
 class PipelineStageAr:
-    """Analysis pipeline stage."""
+    """分析流水线阶段。"""
     stage_id: str
     name: str
     module: str
@@ -205,7 +186,7 @@ class PipelineStageAr:
 
 @dataclass
 class RuleMatchAr:
-    """Rule match result."""
+    """规则匹配结果。"""
     rule_id: str
     rule_name: str
     severity: str
@@ -218,7 +199,7 @@ class RuleMatchAr:
 
 @dataclass
 class StageResultAr:
-    """Stage execution result."""
+    """阶段执行结果。"""
     stage_id: str
     status: StageStatus
     output: Any = None
@@ -229,7 +210,7 @@ class StageResultAr:
 
 @dataclass
 class PipelineResultAr:
-    """Pipeline execution result."""
+    """流水线执行结果。"""
     pipeline_id: str
     success: bool
     stages: Dict = field(default_factory=dict)
@@ -239,20 +220,13 @@ class PipelineResultAr:
 
 
 class RuleParserAr:
-    """Rule parser."""
+    """规则解析器 (YAML/JSON)。"""
 
     def __init__(self):
         self.rules: Dict[str, AnalysisRuleAr] = {}
 
     def parse_yaml(self, yaml_content: str) -> List[AnalysisRuleAr]:
-        """Parse YAML rules.
-
-        Args:
-            yaml_content: YAML content string.
-
-        Returns:
-            List of parsed rules.
-        """
+        """解析 YAML 规则, 异常记日志并返回空表。"""
         try:
             data = yaml.safe_load(yaml_content)
             if not data or 'rules' not in data:
@@ -271,7 +245,7 @@ class RuleParserAr:
             return []
 
     def parse_json(self, json_content: str) -> List[AnalysisRuleAr]:
-        """Parse JSON rules."""
+        """解析 JSON 规则。"""
         try:
             data = json.loads(json_content)
             if not data or 'rules' not in data:
@@ -290,7 +264,7 @@ class RuleParserAr:
             return []
 
     def load_from_file(self, file_path: str) -> List[AnalysisRuleAr]:
-        """Load rules from a file."""
+        """按扩展名从文件加载规则。"""
         path = Path(file_path)
         if not path.exists():
             logger.error(f"Rule file not found: {file_path}")
@@ -307,7 +281,7 @@ class RuleParserAr:
             return []
 
     def _parse_rule(self, data: Dict) -> Optional[AnalysisRuleAr]:
-        """Parse a single rule from dict."""
+        """单条规则字典 → AnalysisRuleAr。"""
         if 'id' not in data:
             logger.warning("Rule missing ID, skipping")
             return None
@@ -333,11 +307,11 @@ class RuleParserAr:
             tags=data.get('tags', []))
 
     def get_rule(self, rule_id: str) -> Optional[AnalysisRuleAr]:
-        """Get a rule by ID."""
+        """按 ID 取规则。"""
         return self.rules.get(rule_id)
 
     def list_rules(self, category: Optional[str] = None, enabled_only: bool = True) -> List[AnalysisRuleAr]:
-        """List rules, optionally filtered by category and enabled status."""
+        """列出规则, 可按类别与启用状态过滤。"""
         rules = list(self.rules.values())
 
         if enabled_only:
@@ -350,26 +324,18 @@ class RuleParserAr:
 
 
 class RuleEngineAr:
-    """Rule engine."""
+    """规则引擎。"""
 
     def __init__(self, parser: Optional[RuleParserAr] = None):
         self.parser = parser or RuleParserAr()
         self.match_callbacks: List[Callable] = []
 
     def register_match_callback(self, callback: Callable) -> None:
-        """Register a match callback."""
+        """注册匹配回调。"""
         self.match_callbacks.append(callback)
 
     def evaluate(self, context: Dict[str, Any], rule_ids: Optional[List[str]] = None) -> List[RuleMatchAr]:
-        """Evaluate rules against the given context.
-
-        Args:
-            context: Evaluation context.
-            rule_ids: Optional list of rule IDs to evaluate.
-
-        Returns:
-            List of match results.
-        """
+        """对上下文求值规则, 命中即构造结果并通知回调。"""
         matches = []
 
         rules = self.parser.list_rules()
@@ -389,7 +355,7 @@ class RuleEngineAr:
                     description=rule.description)
                 matches.append(match)
 
-                # Notify callbacks with exception protection
+                # 通知回调, 异常不中断
                 for callback in self.match_callbacks:
                     try:
                         callback(match)
@@ -399,7 +365,7 @@ class RuleEngineAr:
         return matches
 
     def evaluate_batch(self, contexts: List[Dict[str, Any]], rule_ids: Optional[List[str]] = None) -> List[RuleMatchAr]:
-        """Batch evaluation across multiple contexts."""
+        """多上下文批量求值。"""
         all_matches = []
         for ctx in contexts:
             matches = self.evaluate(ctx, rule_ids)
@@ -408,7 +374,7 @@ class RuleEngineAr:
 
 
 class PipelineExecutorAr:
-    """Pipeline executor."""
+    """流水线执行器 (DAG 依赖调度)。"""
 
     def __init__(self, rule_engine: Optional[RuleEngineAr] = None):
         self.rule_engine = rule_engine or RuleEngineAr()
@@ -417,18 +383,18 @@ class PipelineExecutorAr:
         self._register_default_handlers()
 
     def _register_default_handlers(self) -> None:
-        """Register default stage handlers."""
+        """注册内置阶段处理器。"""
         self.register_handler('rule_match', self._handle_rule_match)
         self.register_handler('filter', self._handle_filter)
         self.register_handler('transform', self._handle_transform)
         self.register_handler('aggregate', self._handle_aggregate)
 
     def register_handler(self, stage_type: str, handler: Callable) -> None:
-        """Register a stage handler."""
+        """注册阶段类型处理器。"""
         self.stage_handlers[stage_type] = handler
 
     def load_pipeline(self, pipeline_config: Union[str, Dict]) -> bool:
-        """Load pipeline configuration."""
+        """加载流水线配置 (文件路径或字典)。"""
         try:
             if isinstance(pipeline_config, str):
                 path = Path(pipeline_config)
@@ -441,7 +407,7 @@ class PipelineExecutorAr:
             else:
                 config = pipeline_config
 
-            # Parse stage configuration
+            # 解析阶段配置
             for stage_data in config.get('pipeline', []):
                 stage = PipelineStageAr(
                     stage_id=stage_data['id'],
@@ -460,15 +426,7 @@ class PipelineExecutorAr:
             return False
 
     def execute(self, initial_input: Any, pipeline_id: str = "default") -> PipelineResultAr:
-        """Execute the pipeline.
-
-        Args:
-            initial_input: Initial input data.
-            pipeline_id: Pipeline identifier.
-
-        Returns:
-            Pipeline execution result.
-        """
+        """按拓扑序执行流水线, 依赖未就绪的阶段跳过, 全部就绪后返回结果。"""
         start_time = time.time()
 
         result = PipelineResultAr(
@@ -476,15 +434,15 @@ class PipelineExecutorAr:
             success=True,
             stages={})
 
-        # Topological-order execution
+        # 按拓扑序执行
         executed: set = set()
         all_matches: list = []
 
         def execute_stage(stage: PipelineStageAr) -> StageResultAr:
-            """Execute a single pipeline stage."""
+            """执行单阶段: 依赖检查 → 收集输入 → 处理器 → 规则求值。"""
             stage_start = time.time()
 
-            # Check dependency satisfaction
+            # 依赖未满足 → 跳过
             for dep_id in stage.depends_on:
                 if dep_id not in executed:
                     return StageResultAr(
@@ -492,7 +450,7 @@ class PipelineExecutorAr:
                         status=StageStatus.SKIPPED,
                         error=f"Dependency stage {dep_id} not complete")
 
-            # Gather inputs
+            # 收集输入
             inputs = []
             for ref in stage.input_refs:
                 if ref == 'initial':
@@ -500,13 +458,13 @@ class PipelineExecutorAr:
                 elif ref in result.stages:
                     inputs.append(result.stages[ref].output)
 
-            # Execute the handler
+            # 执行处理器
             try:
                 stage_type = stage.config.get('type', 'default')
                 handler = self.stage_handlers.get(stage_type, self._handle_default)
                 output = handler(stage, inputs)
 
-                # Apply rules
+                # 应用规则
                 matches = []
                 if stage.rules:
                     for item in (output if isinstance(output, list) else [output]):
@@ -530,7 +488,7 @@ class PipelineExecutorAr:
                     error=str(e),
                     execution_time=time.time() - stage_start)
 
-        # Execute stages in topological order until all complete
+        # 循环直至全部阶段执行完毕或无法推进
         while len(executed) < len(self.stages):
             made_progress = False
 
@@ -538,7 +496,7 @@ class PipelineExecutorAr:
                 if stage_id in executed:
                     continue
 
-                # Check dependency satisfaction
+                # 依赖全部满足才执行
                 deps_ready = all(dep in executed for dep in stage.depends_on)
 
                 if deps_ready:
@@ -561,13 +519,13 @@ class PipelineExecutorAr:
         return result
 
     def _handle_default(self, stage: PipelineStageAr, inputs: List[Any]) -> Any:
-        """Default handler: return first input."""
+        """默认处理器: 返回首个输入。"""
         if not inputs:
             return None
         return inputs[0]
 
     def _handle_rule_match(self, stage: PipelineStageAr, inputs: List[Any]) -> List[Dict]:
-        """Rule match handler."""
+        """规则匹配处理器。"""
         results = []
         for ctx in inputs:
             if isinstance(ctx, dict):
@@ -582,7 +540,7 @@ class PipelineExecutorAr:
         return results
 
     def _handle_filter(self, stage: PipelineStageAr, inputs: List[Any]) -> List[Any]:
-        """Filter handler."""
+        """条件过滤处理器。"""
         filtered = []
         condition = stage.config.get('condition', {})
 
@@ -599,7 +557,7 @@ class PipelineExecutorAr:
         return filtered
 
     def _handle_transform(self, stage: PipelineStageAr, inputs: List[Any]) -> List[Any]:
-        """Transform handler."""
+        """字段映射变换处理器。"""
         transformed = []
         mapping = stage.config.get('mapping', {})
 
@@ -613,7 +571,7 @@ class PipelineExecutorAr:
         return transformed
 
     def _handle_aggregate(self, stage: PipelineStageAr, inputs: List[Any]) -> Dict[str, Any]:
-        """Aggregation handler."""
+        """聚合处理器 (count/sum/group_by)。"""
         aggregation = stage.config.get('aggregation', 'count')
 
         if aggregation == 'count':
@@ -636,14 +594,7 @@ class PipelineExecutorAr:
 
 
 class AnalysisPipelineAr:
-    """Analysis pipeline framework.
-
-    Core functionality:
-    1. YAML/JSON rule parsing
-    2. Modular pipeline execution
-    3. Rule matching engine
-    4. DAG dependency scheduling
-    """
+    """分析流水线框架: 规则解析 + 模块化执行 + 规则匹配引擎 + DAG 依赖调度。"""
 
     def __init__(self):
         self.rule_parser = RuleParserAr()
@@ -652,7 +603,7 @@ class AnalysisPipelineAr:
         self.pipelines: Dict[str, Dict] = {}
 
     def load_rules(self, rule_files: List[str]) -> int:
-        """Load rule files."""
+        """从文件列表批量加载规则, 返回加载总数。"""
         total_rules = 0
         for file_path in rule_files:
             rules = self.rule_parser.load_from_file(file_path)
@@ -661,19 +612,19 @@ class AnalysisPipelineAr:
         return total_rules
 
     def load_rules_yaml(self, yaml_content: str) -> int:
-        """Load rules from YAML content."""
+        """从 YAML 文本加载规则, 返回条数。"""
         rules = self.rule_parser.parse_yaml(yaml_content)
         return len(rules)
 
     def register_pipeline(self, pipeline_id: str, pipeline_config: Union[str, Dict]) -> bool:
-        """Register a pipeline."""
+        """注册流水线, 配置加载成功才记录。"""
         if self.executor.load_pipeline(pipeline_config):
             self.pipelines[pipeline_id] = pipeline_config
             return True
         return False
 
     def execute_pipeline(self, pipeline_id: str, input_data: Any) -> PipelineResultAr:
-        """Execute a registered pipeline."""
+        """执行已注册流水线。"""
         if pipeline_id not in self.pipelines:
             logger.error(f"Pipeline not registered: {pipeline_id}")
             return PipelineResultAr(
@@ -684,19 +635,19 @@ class AnalysisPipelineAr:
         return self.executor.execute(input_data, pipeline_id)
 
     def evaluate_rules(self, context: Dict[str, Any], rule_ids: Optional[List[str]] = None) -> List[RuleMatchAr]:
-        """Directly evaluate rules."""
+        """直接对上下文求值规则。"""
         return self.rule_engine.evaluate(context, rule_ids)
 
     def register_match_callback(self, callback: Callable) -> None:
-        """Register a match callback."""
+        """注册匹配回调。"""
         self.rule_engine.register_match_callback(callback)
 
     def list_pipelines(self) -> List[str]:
-        """List registered pipelines."""
+        """列出已注册流水线 ID。"""
         return list(self.pipelines.keys())
 
     def list_rules(self, category: Optional[str] = None) -> List[Dict]:
-        """List rules."""
+        """列出规则概要。"""
         rules = self.rule_parser.list_rules(category)
         return [
             {
@@ -712,7 +663,7 @@ class AnalysisPipelineAr:
         ]
 
 
-# Built-in rule templates
+# 内置规则模板
 
 BUFFER_OVERFLOW_RULES = r"""
 name: buffer_overflow_detector
@@ -773,12 +724,12 @@ rules:
 
 
 def create_analysis_pipeline() -> AnalysisPipelineAr:
-    """Create an analysis pipeline instance."""
+    """创建分析流水线实例。"""
     return AnalysisPipelineAr()
 
 
 def load_builtin_rules(pipeline: AnalysisPipelineAr) -> None:
-    """Load built-in rules into a pipeline."""
+    """把内置规则装载进流水线。"""
     pipeline.load_rules_yaml(BUFFER_OVERFLOW_RULES)
 
 # 别名指向 AnalysisPipelineAr 而非 RuleEngineAr：后者缺少 rule_parser/
@@ -789,11 +740,9 @@ RuleParser = RuleParserAr
 
 RuleEngine = RuleEngineAr
 
-PipelineExecutor = RuleEngineAr
+PipelineExecutor = PipelineExecutorAr
 
 AnalysisRule = AnalysisRuleAr
-
-RuleCondition = RuleConditionAr
 
 RuleCondition = RuleConditionAr
 

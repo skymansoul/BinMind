@@ -1,6 +1,5 @@
-# 格式化字符串 LaTeX 对比表格生成器 — 从 fmt_benchmark.json 聚合工具指标.
+# 格式化字符串 LaTeX 对比表格生成器 - 从 fmt_benchmark.json 聚合工具指标.
 #
-# 创建: 2024-08-14
 
 import json
 from pathlib import Path

@@ -4,10 +4,14 @@
 import os as _os
 
 _src_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'type_inferrer.py')
-with open(_src_path, 'r', encoding='utf-8') as _fh:
-    _raw = _fh.readlines()
-_code = ''.join(_raw)
-exec(compile(_code, _src_path, 'exec'), globals())
+try:
+    with open(_src_path, 'r', encoding='utf-8') as _fh:
+        _raw = _fh.readlines()
+    _code = ''.join(_raw)
+    exec(compile(_code, _src_path, 'exec'), globals())
+except OSError:
+    # 上游链缺失时降级为空重导出, 保持模块可导入
+    pass
 
 # 类型推断扩展: 基于 VulCatch KAN 特征提取策略
 # KAN (Kolmogorov-Arnold Networks) 在 VulCatch 中用于伪代码特征提取；

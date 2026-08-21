@@ -1,4 +1,4 @@
-"""提取 Python 字节码 PyInstaller-packed 可执行文件s (CArchive + PYZ)"""
+"""从 PyInstaller 打包的可执行文件中提取 Python 字节码 (CArchive + PYZ)"""
 
 import io
 import logging
@@ -126,7 +126,6 @@ class UnpackResult:
     output_dir: str = ""
     extracted_files: List[PycFile] = field(default_factory=list)
     decompiled_files: List[PycFile] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
     pyinstaller_version: Optional[str] = None
     is_onefile: bool = True
     bootloader_type: str = ""
@@ -169,14 +168,14 @@ class CArchiveHeader:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'packer_type': self.packer_type.value if hasattr(self.packer_type, 'value') else str(self.packer_type),
-            'pyc_files': [f.to_dict() if hasattr(f, 'to_dict') else str(f) for f in self.pyc_files],
-            'source_files': list(self.source_files),
-            'metadata': dict(self.metadata),
-            'errors': list(self.errors),
-            'output_dir': self.output_dir,
-            'pyinstaller_version': self.pyinstaller_version,
-            'is_onefile': self.is_onefile,
+            'packer_type': self.packer_type,
+            'len_of_package': self.len_of_package,
+            'toc': self.toc,
+            'toc_count': self.toc_count,
+            'pyvers': self.pyvers,
+            'pylib_name_offset': self.pylib_name_offset,
+            'major': self.major,
+            'minor': self.minor,
         }
 
 
@@ -260,7 +259,7 @@ class PyInstallerUnpacker:
             json.dump(payload, fh, indent=2)
         return out_path
 
-    # 多 CArchive 叠加扫描 —— 某些 PyInstaller 打包器会在 PE overlay
+    # 多 CArchive 叠加扫描 - 某些 PyInstaller 打包器会在 PE overlay
     # 区域附加多个 CArchive（典型场景：多阶段解包器）
     # 主 CArchive 解析后继续向后扫描额外的 MAGIC 标记
 
@@ -443,13 +442,15 @@ class PyInstallerUnpacker:
             buf = io.StringIO(); uncompyle6.decompile_file(pyc_path, buf); return buf.getvalue()
         except ImportError:
             pass
-        except Exception: _log.debug("suppressed", exc_info=True)
+        except Exception as e:
+            _log.debug("uncompyle6 failed: %s", e)
         try:
             import subprocess
             proc = subprocess.run(["pycdc", pyc_path], capture_output=True, text=True, timeout=10)
             if proc.returncode == 0: return proc.stdout
         except (FileNotFoundError, subprocess.TimeoutExpired): pass
-        except Exception: _log.debug("suppressed", exc_info=True)
+        except Exception as e:
+            _log.debug("pycdc failed: %s", e)
         try:
             import dis, marshal
             with open(pyc_path, "rb") as fh:

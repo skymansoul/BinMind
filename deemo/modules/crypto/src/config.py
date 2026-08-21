@@ -14,7 +14,6 @@ import json
 import logging
 from typing import Any, Optional
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 

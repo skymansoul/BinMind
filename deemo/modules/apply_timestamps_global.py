@@ -1,1 +1,1 @@
-# Stub — reserved for future instrumentation
+# Stub - reserved for future instrumentation

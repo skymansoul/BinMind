@@ -1,18 +1,18 @@
-# 语义保持的二进制水印嵌入——通过指令重排嵌入可验证的溯源水印
+# 语义保持的二进制水印嵌入-通过指令重排嵌入可验证的溯源水印
 #
 # 核心问题: 二进制文件被盗用/逆向工程后难以溯源。
 # 现有水印方案修改二进制结构（添加新节/修改导入表），容易被检测和移除。
 # 需要一种不改变二进制语义、不影响执行、且难以被检测和移除的水印方法。
 #
 # 技术方案:
-#   1. 独立指令重排: 识别基本块内无数据依赖的相邻指令对→交换顺序
+#   1. 独立指令重排: 识别基本块内无数据依赖的相邻指令对，交换顺序
 #      语义完全不变（独立指令的执行顺序不影响结果）
-#   2. 水印编码: 指令对(A,B)的顺序编码1bit信息——
+#   2. 水印编码: 指令对(A,B)的顺序编码1bit信息-
 #      原始序(A→B)=0，交换后(B→A)=1
-#   3. 水印提取: 扫描二进制→定位被标记的基本块→检测指令顺序→解码水印
-#   4. 冗余编码: 使用Hamming(7,4)纠错码——每4bit水印扩展为7bit，
-#      可纠正1bit错误——抵抗部分水印位被后续编译优化破坏
-#   5. 容量估计: 对给定二进制估计最大水印容量——取决于独立指令对的数量
+#   3. 水印提取: 扫描二进制，定位被标记的基本块，检测指令顺序，解码水印
+#   4. 冗余编码: 使用Hamming(7,4)纠错码-每4bit水印扩展为7bit，
+#      可纠正1bit错误-抵抗部分水印位被后续编译优化破坏
+#   5. 容量估计: 对给定二进制估计最大水印容量-取决于独立指令对的数量
 
 from __future__ import annotations
 
@@ -26,13 +26,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class IndependentPair:
-    """可交换的独立指令对——交换后语义不变"""
+    """可交换的独立指令对-交换后语义不变"""
     block_addr: int
     instr_a_offset: int
     instr_b_offset: int
@@ -42,7 +41,7 @@ class IndependentPair:
 
 
 class DependencyAnalyzer:
-    """指令依赖分析——检测可安全交换的独立指令对。
+    """指令依赖分析-检测可安全交换的独立指令对。
 
     两条指令可交换的条件:
       1. A不写入B读取的寄存器（无RAW依赖）
@@ -79,7 +78,7 @@ class DependencyAnalyzer:
 
         a_regs = extract_regs(a_tokens)
         b_regs = extract_regs(b_tokens)
-        # 无寄存器重叠→保守认为可交换
+        # 无寄存器重叠，保守认为可交换
         return len(a_regs & b_regs) == 0
 
     @staticmethod
@@ -97,9 +96,9 @@ class DependencyAnalyzer:
 
 
 class HammingCodec:
-    """Hamming(7,4)纠错编解码——4bit数据→7bit码字，可纠正1bit错误。
+    """Hamming(7,4)纠错编解码-4bit数据→7bit码字，可纠正1bit错误。
 
-    用于水印的冗余编码——部分水印位可能被后续处理破坏。
+    用于水印的冗余编码-部分水印位可能被后续处理破坏。
     """
 
     # 生成矩阵 G = [I_4 | P] 产生(7,4)系统码
@@ -128,11 +127,7 @@ class HammingCodec:
 
     @classmethod
     def decode(cls, codeword: List[int]) -> Tuple[List[int], bool]:
-        """7bit→4bit Hamming解码+纠错。
-
-        Returns:
-            (decoded_bits, corrected) — corrected表示是否进行了纠错
-        """
+        """7bit→4bit Hamming解码+纠错。"""
         r = np.array(codeword[:7], dtype=np.int32)
         syndrome = (cls.H @ r) % 2
         error_pos = int(syndrome[0] * 4 + syndrome[1] * 2 + syndrome[2]) - 1
@@ -145,13 +140,13 @@ class HammingCodec:
 
 
 class BinaryWatermarkEmbedder:
-    """二进制水印嵌入器——通过独立指令重排嵌入可溯源水印。
+    """二进制水印嵌入器-通过独立指令重排嵌入可溯源水印。
 
     流程:
-      1. 分析二进制→定位所有独立指令对
+      1. 分析二进制，定位所有独立指令对
       2. 用Hamming编码水印数据
-      3. 将编码后的bit分配到独立指令对→根据bit值决定是否交换
-      4. 记录水印位置映射表→用于提取验证
+      3. 将编码后的bit分配到独立指令对，根据bit值决定是否交换
+      4. 记录水印位置映射表，用于提取验证
     """
 
     def __init__(self, seed: int = 42):
@@ -163,15 +158,7 @@ class BinaryWatermarkEmbedder:
               watermark_data: bytes,
               analyzer: Optional[DependencyAnalyzer] = None
               ) -> Tuple[List[Tuple[int, List[str]]], Dict[str, Any]]:
-        """在二进制基本块中嵌入水印。
-
-        Args:
-            basic_blocks: [(block_addr, [instructions]), ...]
-            watermark_data: 要嵌入的水印数据(bytes)
-
-        Returns:
-            (modified_blocks, embedding_report)
-        """
+        """在二进制基本块中嵌入水印。"""
         if analyzer is None:
             analyzer = DependencyAnalyzer()
 
@@ -181,10 +168,10 @@ class BinaryWatermarkEmbedder:
             pairs = analyzer.find_independent_pairs(instrs, addr)
             all_pairs.extend(pairs)
 
-            if not all_pairs:
-                return basic_blocks, {'success': False, 'reason': '无可用指令对', 'capacity_bits': 0}
+        if not all_pairs:
+            return basic_blocks, {'success': False, 'reason': '无可用指令对', 'capacity_bits': 0}
 
-        # 水印数据→bits→Hamming编码
+        # 水印数据，bits，Hamming编码
         data_bits = []
         for byte in watermark_data:
             for bit_pos in range(8):
@@ -202,7 +189,7 @@ class BinaryWatermarkEmbedder:
                 'reason': f'容量不足: 需要{len(encoded_bits)}bit, 可用{len(all_pairs)}bit',
                 'capacity_bits': len(all_pairs)}
 
-        # 嵌入: bit→指令对顺序
+        # 嵌入: bit，指令对顺序
         n_embedded = 0
         modified_blocks = dict(basic_blocks)
 
@@ -234,7 +221,7 @@ class BinaryWatermarkEmbedder:
                 n_bits: int) -> Tuple[Optional[bytes], bool]:
         """从可能被修改的二进制中提取水印。
 
-        通过比较当前指令顺序与原始顺序——不一致的位=1，一致的=0。
+        通过比较当前指令顺序与原始顺序-不一致的位=1，一致的=0。
         """
         original_map = {}
         for addr, instrs in original_blocks:
@@ -252,7 +239,7 @@ class BinaryWatermarkEmbedder:
                     pair.instr_b_offset < len(instrs)):
                     current_a = instrs[pair.instr_a_offset]
                     current_b = instrs[pair.instr_b_offset]
-                    # 如果当前顺序与原始不同→bit=1
+                    # 如果当前顺序与原始不同，bit=1
                     bit = 1 if (current_a == pair.instr_b and
                                current_b == pair.instr_a) else 0
                     extracted_bits.append(bit)
@@ -274,7 +261,7 @@ class BinaryWatermarkEmbedder:
             if corrected:
                 corrections += 1
 
-        # bits→bytes
+        # bits，bytes
         watermarked = bytearray()
         for i in range(0, len(decoded_bits), 8):
             byte = 0

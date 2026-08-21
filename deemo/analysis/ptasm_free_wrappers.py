@@ -27,7 +27,7 @@ def scan_free_wrappers(lines: List[str]) -> Dict[str, int]:
     例如: free_request(Request *req) { ... free(req); ... }
           → free_request(r) 等价于 free(r).
 
-    Returns: {func_name → param_index} dict.
+    返回 {func_name → param_index} dict.
     """
     free_wrappers: Dict[str, int] = {}
     i = 0

@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-03 10:15 - 三位抽象格: ZERO/ONE/TOP 替代完整 bit-vector 抽象, 覆盖 MBA 92% 的化简场景
-# 2025-08-04 09:42 - 增加 pattern fingerprint: 将抽象值的空间分布编码为 64-bit 哈希, 用于快速等价类查找
+# 三位抽象格: ZERO/ONE/TOP 替代完整 bit-vector 抽象, 覆盖 MBA 92% 的化简场景
+# 增加 pattern fingerprint: 将抽象值的空间分布编码为 64-bit 哈希, 用于快速等价类查找
 
 """MBA 表达式的抽象解释不变量提取 - 轻量级语义引导 e-graph 重写
 
@@ -8,12 +7,12 @@ MBA 混淆利用位运算和算术运算的交互来隐藏简单表达式
 例如 x+y 可能被混淆为 (x^y)+2*(x&y) 或 (x|y)+(x&y) 等多种等价形式
 
 传统 e-graph 方法 对所有重写规则一视同仁地应用
-直到饱和--这在 MBA 场景下导致严重冗余: 大量中间等价类对最终化简无贡献
+直到饱和-这在 MBA 场景下导致严重冗余: 大量中间等价类对最终化简无贡献
 却消耗了 e-graph 的内存和 CPU
 
 本模块的解决方案: 在执行重写前, 对每个 e-node 做轻量级抽象解释
 使用 3 值抽象格 (ZERO/ONE/TOP) 在 bit-vector 域上推导不变量
-具有相同抽象指纹的表达式在 e-graph 中合并--大幅缩减搜索空间
+具有相同抽象指纹的表达式在 e-graph 中合并-大幅缩减搜索空间
 
 3 值格的设计依据:
 - ZERO: 表达式的所有 bit 恒为 0（独立于变量取值）
@@ -46,7 +45,7 @@ class AbstractBit(IntEnum):
     """三位抽象格: ZERO < TOP, ONE < TOP, ZERO 和 ONE 不可比较"""
     ZERO = 0
     ONE = 1
-    TOP = 2          # 未知--可能是 0 也可能是 1
+    TOP = 2          # 未知-可能是 0 也可能是 1
 
     def __repr__(self):
         return self.name
@@ -143,7 +142,7 @@ _MBA_ABSTRACT_SEMANTICS = {
 
 @dataclass
 class AbstractValue:
-    """一个 bit-vector 的抽象状态--使用 bit-width 无关的摘要
+    """一个 bit-vector 的抽象状态-使用 bit-width 无关的摘要
 
     不追踪具体 bit 宽度。对于 MBA 化简,我们只需要知道:
     表达式恒为 0? 恒为全 1? 还是依赖变量?
@@ -198,7 +197,7 @@ class MBAInvariantLifter:
     哈希碰撞意味着两个子表达式在三值格上不可区分
     -> 在 e-graph 中可以直接合并, 无需进一步重写
 
-    复杂度: O(N) N=AST 节点数--每个节点访问一次
+    复杂度: O(N) N=AST 节点数-每个节点访问一次
     """
 
     def __init__(self):
@@ -210,14 +209,12 @@ class MBAInvariantLifter:
         expr: Dict,
         var_assignments: Optional[Dict[str, AbstractValue]] = None,
     ) -> Tuple[AbstractValue, int]:
-        """对表达式树做抽象解释
+        """对表达式树做抽象解释。
 
         expr 格式: {'op': '&', 'children': [...], 'const': None, 'var': None}
-        或叶节点: {'op': 'const', 'value': 0} / {'op': 'var', 'name': 'x'}
-
-        var_assignments: 变量到抽象值的绑定。None 时所有变量初始为 TOP
-
-        返回: (根节点抽象值, pattern fingerprint)
+        或叶节点: {'op': 'const', 'value': 0} / {'op': 'var', 'name': 'x'};
+        var_assignments 为变量到抽象值的绑定, None 时所有变量初始为
+        TOP; 返回 (根节点抽象值, pattern fingerprint)。
         """
         if var_assignments is None:
             var_assignments = {}
@@ -259,7 +256,7 @@ class MBAInvariantLifter:
             self._fingerprints[node_id] = fp
             return av
 
-        # 复合节点--递归求值子节点
+        # 复合节点-递归求值子节点
         children = node.get('children', [])
         child_values = [
             self._lift_node(c, var_assignments) for c in children
@@ -344,17 +341,18 @@ class MBAInvariantLifter:
         """查询已计算的节点抽象值 (必须先调用 lift)"""
         return self._abstract_values.get(id(node), AbstractValue.top())
 
+
 # 便利方法: 直接简化常见模式
     @staticmethod
     def detect_constant_fold(
         expr: Dict,
         var_assignments: Optional[Dict[str, AbstractValue]] = None,
     ) -> Optional[int]:
-        """快速常量折叠检测--无需完整 e-graph
+        """快速常量折叠检测-无需完整 e-graph
 
         若表达式在三值格上的抽象值为 ZERO 或 ONE
         返回 0 或 1。否则返回 None (无法折叠)
-        仅对极简单模式有效--复杂 MBA 仍需 e-graph
+        仅对极简单模式有效-复杂 MBA 仍需 e-graph
         """
         lifter = MBAInvariantLifter()
         av, _ = lifter.lift(expr, var_assignments)

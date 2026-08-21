@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-03  |  符号化大小约束传播引擎 — SSBCP核心
 # 拆分: 2026-08-09 | sym_types+sym_parser+sym_solver独立, 本文件仅保留引擎主类
 """符号化大小约束传播 (Symbolic Size-Bound Constraint Propagation).
 
@@ -24,6 +23,9 @@ from modules.vuln.detection.heap_analysis.sym_parser import (
     normalize_reg, extract_imm, parse_insn, get_callee, get_addr,
     detect_abi, parse_mem_operand, ARG_REGS_SYSV, ARG_REGS_WIN64,
     _ALLOC_FUNCS, _WRITE_FUNCS,
+    normalize_reg as _normalize_reg,
+    extract_imm as _extract_imm,
+    parse_insn as _parse_insn,
 )
 from modules.vuln.detection.heap_analysis.sym_solver import (
     solve_write, find_jcc_op, find_alloc_by_label, extract_offset,

@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-30 16:45 - 模糊匹配字节模式哈希，处理跨引擎函数名不一致
-# 2025-08-02 10:12 - coverage_gap()诊断接口，快速定位各引擎独有覆盖的代码路径
-# 2025-08-03 12:34 - 地址规范化fallback链调整为函数名优先，再试邻近锚点插值
+# 模糊匹配字节模式哈希，处理跨引擎函数名不一致
+# coverage_gap()诊断接口，快速定位各引擎独有覆盖的代码路径
+# 地址规范化fallback链调整为函数名优先，再试邻近锚点插值
 
-# 跨引擎覆盖融合 — 统一多分析引擎的地址空间并做差异分析
+# 跨引擎覆盖融合 - 统一多分析引擎的地址空间并做差异分析
 #
 # 设计动机:
 #   differential_tester.py / engine_differential_test.py在多种二进制分析引擎
@@ -16,18 +15,18 @@
 #     2. 覆盖差异分析: 在规范空间中做集合运算，定位各引擎独有的覆盖。
 #
 # 映射策略 (三级fallback):
-#   Level 1: 直接函数名匹配 -> 以函数名为键建立地址映射对
-#   Level 2: 字节模式哈希 -> 对函数体前32字节做SHA256，匹配跨引擎函数
-#   Level 3: 锚点插值 -> 基于最近已匹配函数做线性外推
+#   Level 1: 直接函数名匹配 - 以函数名为键建立地址映射对
+#   Level 2: 字节模式哈希 - 对函数体前32字节做SHA256，匹配跨引擎函数
+#   Level 3: 锚点插值 - 基于最近已匹配函数做线性外推
 #     (假设函数在二进制中的相对偏移与引擎地址线性相关——对主流
 #     反编译器成立，因其通常保持Section内地址单调性)。
 #
 # 文献:
-#   BinDiff — 结构化二进制差分，函数匹配的
+#   BinDiff - 结构化二进制差分，函数匹配的
 #     图同构+调用图指纹方法。本项目取其多级匹配策略但简化了图同构。
-#   Diaphora — IDA二进制差分插件，多级启发式
+#   Diaphora - IDA二进制差分插件，多级启发式
 #     函数匹配。本项目参考其"从强匹配外推到弱匹配"的渐进式映射思想。
-#   FirmUp — 跨编译器变体的二进制代码精确匹配，
+#   FirmUp - 跨编译器变体的二进制代码精确匹配，
 #     基于stranded-ness图同构。本项目取其规范化地址空间概念但面向
 #     工具链对比而非编译器变体对比。
 import hashlib
@@ -84,13 +83,13 @@ class CrossEngineFuser:
     """
 
     def __init__(self):
-        # engine_name -> {engine_addr -> FunctionAnchor}
+        # engine_name - {engine_addr - FunctionAnchor}
         self._engine_anchors: Dict[str, Dict[int, FunctionAnchor]] = (
             defaultdict(dict))
         # engine_name -> List[FunctionAnchor] (sorted by engine_address)
         self._engine_sorted: Dict[str, List[FunctionAnchor]] = (
             defaultdict(list))
-        # canonical_offset -> {engine_name -> engine_address}
+        # canonical_offset - {engine_name - engine_address}
         self._canon_to_engine: Dict[int, Dict[str, int]] = defaultdict(dict)
         # 覆盖快照
         self._profiles: Dict[str, EngineCoverageProfile] = {}
@@ -167,7 +166,7 @@ class CrossEngineFuser:
                           engine_address: int) -> Optional[int]:
         """将引擎地址映射到规范偏移。使用最近锚点插值。
 
-        若精确命中某锚点 -> 直接返回其canonical_offset。
+        若精确命中某锚点 - 直接返回其canonical_offset。
         否则在已排序锚点列表中二分查找最近锚点做线性插值。
         """
         sorted_a = self._engine_sorted.get(engine_name, [])
@@ -269,7 +268,7 @@ class CrossEngineFuser:
                                 reference_engine: str) -> Dict[str, Any]:
         """报告各引擎相对于参考引擎缺少的覆盖。
 
-        参考引擎覆盖但其他引擎未覆盖的边 -> 潜在工具缺陷。
+        参考引擎覆盖但其他引擎未覆盖的边 - 潜在工具缺陷。
         """
         ref_prof = self._profiles.get(reference_engine)
         if not ref_prof:

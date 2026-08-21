@@ -1,17 +1,14 @@
-# 2026-07-28
-# 配置 tests for 去混淆 module
-"""Tests for 配置 loading 校验"""
+# 配置测试 for 去混淆 module
+"""配置加载与校验测试"""
 
 import os
 import tempfile
 import pytest
 
-
 class TestConfigLoading:
-    """配置 loading tests"""
+    """配置加载测试"""
 
     def test_load_defaults(self) -> None:
-        """Loading a file 返回 defaults"""
         defaults = {
             "paths": {"data_dir": "data", "output_dir": "output", "log_dir": "logs"},
             "logging": {"level": "INFO"},
@@ -21,21 +18,18 @@ class TestConfigLoading:
         assert defaults["logging"]["level"] == "INFO"
 
     def test_env_override_basic(self) -> None:
-        """Environment variable override 配置 values"""
         config = {"timeout": 30}
         env_val = "60"
         config["timeout"] = int(env_val)
         assert config["timeout"] == 60
 
     def test_env_override_nested(self) -> None:
-        """Nested key override via dot notation"""
         config = {"analysis": {"timeout": 30}}
         # Simulate DEOBF_ANALYSIS_TIMEOUT=60 override
         config["analysis"]["timeout"] = 60
         assert config["analysis"]["timeout"] == 60
 
     def test_env_override_prefix_filtering(self) -> None:
-        """keys correct prefix override"""
         prefix = "DEOBF_"
         env_vars = {
             "DEOBF_TIMEOUT": "120",
@@ -52,7 +46,6 @@ class TestConfigLoading:
         assert overrides["timeout"] == "120"
 
     def test_validate_valid_config(self) -> None:
-        """Valid 配置 pass 校验"""
         config = {
             "paths": {"data_dir": "data", "output_dir": "out"},
             "logging": {"level": "INFO"},
@@ -62,14 +55,12 @@ class TestConfigLoading:
         assert isinstance(config["paths"], dict)
 
     def test_validate_missing_section(self) -> None:
-        """Missing required section catchable"""
         config: dict = {}
         required = ["paths", "logging"]
         missing = [r for r in required if r not in config]
         assert len(missing) > 0
 
     def test_validate_missing_path_key(self) -> None:
-        """Missing optional path key default"""
         config = {"paths": {"data_dir": "data"}, "logging": {"level": "INFO"}}
         paths = config["paths"]
         assert "data_dir" in paths
@@ -79,10 +70,9 @@ class TestConfigLoading:
 
 
 class TestYamlLoading:
-    """YAML file loading tests (回退 for missing PyYAML)"""
+    """YAML 文件加载测试（无 PyYAML 时回退）"""
 
     def test_yaml_load_or_fallback(self) -> None:
-        """work or PyYAML installed"""
         try:
             import yaml
             has_yaml = True
@@ -111,10 +101,9 @@ class TestYamlLoading:
 
 
 class TestEnvVarSubstitution:
-    """${VAR} substitution YAML values"""
+    """YAML 值中的 ${VAR} 环境变量替换"""
 
     def test_substitution_basic(self) -> None:
-        """${VAR} patterns replaced"""
         import re
         os.environ["TEST_DEOBF_DIR"] = "/tmp/test"
         value = "${TEST_DEOBF_DIR}/subdir"
@@ -127,23 +116,20 @@ class TestEnvVarSubstitution:
         del os.environ["TEST_DEOBF_DIR"]
 
     def test_substitution_missing_var(self) -> None:
-        """Missing env var left -"""
         value = "${MISSING_VAR_12345}/path"
         assert "${MISSING_VAR_12345}" in value
 
 
 class TestConfigEdgeCases:
-    """Edge case handling"""
+    """边界情况处理"""
 
     def test_empty_config(self) -> None:
-        """Empty 配置 defaults"""
         config: dict = {}
         config.setdefault("paths", {})
         config["paths"].setdefault("data_dir", "data")
         assert config["paths"]["data_dir"] == "data"
 
     def test_none_config(self) -> None:
-        """None 配置 handled"""
         config = None
         if config is None:
             config = {"paths": {}, "logging": {"level": "WARNING"}}

@@ -1,10 +1,10 @@
-# 贝叶斯主动学习——通过后验分歧选择最有信息量的二进制函数标注
+# 贝叶斯主动学习-通过后验分歧选择最有信息量的二进制函数标注
 #
 # 核心问题: fewshot_active_sampler.py用不确定性/多样性/委员会查询选择样本，
 # 但使用的是确定性模型（单组权重）——不确定性估计来自softmax熵，
 # 它反映的是"预测分布是否平坦"（aleatoric uncertainty），
 # 不反映"模型是否因缺乏训练数据而不确定"（epistemic uncertainty）。
-# 主动学习应该优先查询epistemic不确定性高的样本——即"模型没见过类似样本"。
+# 主动学习应该优先查询epistemic不确定性高的样本-即"模型没见过类似样本"。
 #
 # 技术方案:
 #   1. 贝叶斯神经网络近似: 用MC Dropout模拟贝叶斯推理——
@@ -29,13 +29,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class BayesianSample:
-    """贝叶斯样本——多次MC前向传播的预测分布"""
+    """贝叶斯样本-多次MC前向传播的预测分布"""
     sample_id: str
     embedding: np.ndarray
     mc_predictions: List[np.ndarray]    # 每次MC Dropout的预测
@@ -59,21 +58,15 @@ class QueryBatch:
 
 
 class MCDropoutInference:
-    """MC Dropout推理——通过多次随机前向传播估计认知不确定性。
+    """MC Dropout推理-通过多次随机前向传播估计认知不确定性。
 
     关键: dropout在推理时保持开启（与通常做法相反），
-    每次前向传播的dropout mask不同→产生不同的预测→
+    每次前向传播的dropout mask不同，产生不同的预测，
     预测方差=模型对权重的不确定性=认知不确定性。
     """
 
     def __init__(self, model_fn: Callable,
                  n_samples: int = 30, dropout_rate: float = 0.3):
-        """
-        Args:
-            model_fn: (features, adjacency, training=True) → logits
-            n_samples: MC采样次数
-            dropout_rate: 推理时的dropout率
-        """
         self._model = model_fn
         self.n_samples = n_samples
         self.dropout_rate = dropout_rate
@@ -130,13 +123,13 @@ class MCDropoutInference:
 
 
 class BayesianActiveLearner:
-    """贝叶斯主动学习器——BALD + 批次多样性 + 预算感知。
+    """贝叶斯主动学习器-BALD + 批次多样性 + 预算感知。
 
     查询策略:
-      1. 对未标注池中所有样本做MC Dropout推理→BALD分数
+      1. 对未标注池中所有样本做MC Dropout推理， BALD分数
       2. 按BALD分数降序取top-2K作为候选
-      3. 用k-means++初始化从候选中选K个——保证嵌入空间的多样性
-      4. 选中的K个样本送人工标注→加入训练集→更新模型
+      3. 用k-means++初始化从候选中选K个-保证嵌入空间的多样性
+      4. 选中的K个样本送人工标注，加入训练集，更新模型
     """
 
     def __init__(self, mc_inference: MCDropoutInference,
@@ -151,14 +144,7 @@ class BayesianActiveLearner:
     def score_unlabeled_pool(self,
                               unlabeled: List[Tuple[Any, Any, str]]
                               ) -> List[BayesianSample]:
-        """对未标注池中的每个样本计算BALD分数。
-
-        Args:
-            unlabeled: [(features, adjacency, sample_id), ...]
-
-        Returns:
-            按BALD分数降序排序的样本列表
-        """
+        """对未标注池中的每个样本计算BALD分数。"""
         scored = []
         for feats, adj, sid in unlabeled:
             sample = self._mc.infer(feats, adj, sid)
@@ -169,7 +155,7 @@ class BayesianActiveLearner:
     def query_batch(self,
                     unlabeled: List[Tuple[Any, Any, str]]
                     ) -> QueryBatch:
-        """选择下一个查询批次——BALD top-K + 多样性过滤。
+        """选择下一个查询批次-BALD top-K + 多样性过滤。
 
         k-means++多样性过滤:
           从BALD top-2K候选中，选K个在嵌入空间中最分散的样本。
@@ -199,7 +185,7 @@ class BayesianActiveLearner:
     def _kmeans_pp_select(self,
                            candidates: List[BayesianSample],
                            K: int) -> List[BayesianSample]:
-        """k-means++初始化选择——保证嵌入空间覆盖。
+        """k-means++初始化选择-保证嵌入空间覆盖。
 
         算法:
           1. 随机选第一个中心
@@ -218,7 +204,7 @@ class BayesianActiveLearner:
             for i in range(n):
                 d = float(np.sum((embs[i] - embs[selected_idx[-1]]) ** 2))
                 min_dists[i] = min(min_dists[i], d)
-            # 按距离平方的概率采样——距离越大概率越高
+            # 按距离平方的概率采样-距离越大概率越高
             probs = min_dists / (min_dists.sum() + 1e-12)
             new_idx = np.random.choice(n, p=probs)
             selected_idx.append(new_idx)
@@ -226,7 +212,7 @@ class BayesianActiveLearner:
         return [candidates[i] for i in selected_idx]
 
     def _compute_diversity(self, samples: List[BayesianSample]) -> float:
-        """批次多样性——嵌入间平均欧氏距离"""
+        """批次多样性-嵌入间平均欧氏距离"""
         if len(samples) < 2:
             return 0.0
         embs = np.stack([s.embedding for s in samples])

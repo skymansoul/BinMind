@@ -1,7 +1,6 @@
-# 创建: 2026-06-26 -- 扫描调度模块: 批量调用扫描器+收集结果
 import subprocess, sys, os, json, time
 from pathlib import Path
-from build_samples import BUILD_DIR, compile_samples
+from .build_samples import BUILD_DIR, compile_samples
 
 def run_scan(binary_path, timeout_sec=60):
     """对单个二进制运行扫描, 返回(耗时, 发现列表, 峰值内存KB)."""

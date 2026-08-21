@@ -12,7 +12,6 @@
 #      格式说明符超过6个 → 攻击面增大.
 #   4. 误报抑制: 排除字面量格式字符串(编译时常量).
 #
-# 创建: 2026-06-01  初始版本
 
 import re
 from typing import Dict, List, Optional, Tuple
@@ -66,7 +65,7 @@ class FormatStringDetector:
         if fmt_source == "literal":
             return None  # 编译时常量, 安全
 
-        # 格式字符串来自寄存器 — 无法静态确定内容, 保守标记
+        # 格式字符串来自寄存器 - 无法静态确定内容, 保守标记
         fmt_arg = args[fmt_idx].strip().lower().lstrip("%")
         # RIP 相对寻址 [rip+0x...] → 需区分目标节:
         #   .rdata/.rodata (只读字面量) → 安全
@@ -85,7 +84,7 @@ class FormatStringDetector:
             self._findings.append(f)
             return f
 
-        # 栈/堆内存操作数 ([rbp+0x10], [rax]) — 内容可能是运行时可控数据
+        # 栈/堆内存操作数 ([rbp+0x10], [rax]) - 内容可能是运行时可控数据
         is_mem_operand = ("[" in fmt_arg and "]" in fmt_arg
                           and not is_rip_relative)
         is_literal = (fmt_arg.startswith("0x") or

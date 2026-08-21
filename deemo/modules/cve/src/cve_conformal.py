@@ -1,7 +1,5 @@
-# 创建: 2026-06-27 11:42
-# 修改: 2026-06-27 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 共形预测CVE不确定性量化
-# 共形预测 — CVE利用评分的分布无关不确定性量化
+# 共形预测CVE不确定性量化
+# 共形预测 - CVE利用评分的分布无关不确定性量化
 #
 # 问题: 现有评分系统 (CVSS/EPSS/SSVC/GNN分数) 均为点估计, 无不确定性度量.
 # NIST CSWP 41 (2025年5月) 明确指出 "LEV分数的误差范围当前未知".
@@ -16,9 +14,9 @@
 #   4. 保证: P(y ∈ [ŷ - q·σ, ŷ + q·σ]) ≥ 1 - α (边际覆盖).
 #
 # 本实现的三个层次:
-#   Level 1 — 回归共形: 对GNN/EPSS等点估计附加预测区间.
-#   Level 2 — 分位数共形: 使用多个分位数回归器获取自适应区间宽度.
-#   Level 3 — 自适应共形: 在线更新校准集, 检测分布偏移, 调整区间.
+#   Level 1 - 回归共形: 对GNN/EPSS等点估计附加预测区间.
+#   Level 2 - 分位数共形: 使用多个分位数回归器获取自适应区间宽度.
+#   Level 3 - 自适应共形: 在线更新校准集, 检测分布偏移, 调整区间.
 #
 # 非显而易见性:
 # 将conformal prediction首次引入CVE漏洞评分领域
@@ -32,7 +30,7 @@
 #
 # Algorithmic Learning in a Random World
 # A Gentle Introduction to Conformal Prediction
-# LEV metric — 明确承认误差范围未知
+# LEV metric - 明确承认误差范围未知
 # 未发现conformal prediction在CVE评分中的现有应用
 
 import math
@@ -44,7 +42,7 @@ from .cve_conformal_calibrator import AdaptiveCalibrator, CalibrationWindow
 
 
 class ConformalExploitScorer:
-    """Level 1: 回归共形 — 对任何点估计器附加有效的预测区间.
+    """Level 1: 回归共形 - 对任何点估计器附加有效的预测区间.
 
     输入: 点预测器 f: X → [0,1] (可以是GNN分数/EPSS/C3E分数等).
     输出: 预测区间 [L, U] 满足 P(Y ∈ [L, U]) ≥ 1 - α (边际保证).
@@ -119,12 +117,9 @@ class ConformalExploitScorer:
 
     def predict(self, y_pred: float, sigma: float = 0.05,
                 use_adaptive: bool = True) -> Dict[str, Any]:
-        """生成预测区间.
-
-        Returns:
-          {prediction, lower_bound, upper_bound, interval_width,
-           confidence, q_hat, coverage_guarantee, uncertainty_level}
-        """
+        """生成预测区间, 返回 {prediction, lower_bound, upper_bound,
+        interval_width, confidence, q_hat, coverage_guarantee,
+        uncertainty_level}。"""
         if not self._calibrated:
             # 未校准 → 宽区间 (安全侧)
             lower = max(0.0, y_pred - 0.3)
@@ -208,12 +203,12 @@ class ConformalExploitScorer:
 
 
 class QuantileConformalScorer:
-    """Level 2: 分位数共形 — 使用多个分位数回归器获得自适应区间宽度.
+    """Level 2: 分位数共形 - 使用多个分位数回归器获得自适应区间宽度.
 
     标准共形预测对每个样本使用相同宽度的区间 (共形分数为常数).
     分位数共形使用条件分位数:
-      Lower: Q_{α/2}(x)  — 条件分位数下界
-      Upper: Q_{1-α/2}(x) — 条件分位数上界
+      Lower: Q_{α/2}(x)  - 条件分位数下界
+      Upper: Q_{1-α/2}(x) - 条件分位数上界
     然后用共形校准修正分位数回归的系统性偏差:
       [L'(x), U'(x)] = [Q_{α/2}(x) - q_lo·σ_lo, Q_{1-α/2}(x) + q_hi·σ_hi]
 
@@ -292,7 +287,7 @@ class QuantileConformalScorer:
 # 便捷集成接口
 
 class ConformalCVEAnalyzer:
-    """一站式共形CVE分析器 — 组合点预测与预测区间.
+    """一站式共形CVE分析器 - 组合点预测与预测区间.
 
     使用模式:
       analyzer = ConformalCVEAnalyzer(alpha=0.1)
@@ -359,11 +354,7 @@ class ConformalCVEAnalyzer:
     def analyze(self, cve_id: str, point_score: float,
                 sigma: float = 0.05,
                 features: Optional[List[float]] = None) -> Dict[str, Any]:
-        """对单个CVE产生共形预测分析.
-
-        Returns:
-          完整分析, 含预测区间、不确定性水平、决策建议.
-        """
+        """对单个 CVE 产生共形预测分析, 返回含预测区间、不确定性水平与决策建议的完整分析。"""
         result = self._scorer.predict(point_score, sigma)
 
         if features is not None:

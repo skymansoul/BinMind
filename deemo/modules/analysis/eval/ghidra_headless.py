@@ -1,4 +1,4 @@
-# Ghidra 无头分析脚本 — 自动化静态审计危险函数调用点
+# Ghidra 无头分析脚本 - 自动化静态审计危险函数调用点
 # 依赖: GHIDRA_HOME 环境变量或 ghidra 在 PATH 中
 
 import subprocess, sys, time, json, os, tempfile
@@ -22,7 +22,7 @@ public class FindDangerousCalls extends GhidraScript {
 '''
 
 def analyze_binary(binary_path: str) -> dict:
-    """Ghidra headless 分析binary, 标记危险函数调用
+    """Ghidra 无头模式分析二进制, 标记危险函数调用
 
     返回: {detected, findings, time_ms, error}
     """

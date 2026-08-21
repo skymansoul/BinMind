@@ -49,7 +49,7 @@ class CoverageMinimizationResult:
 
 class CoverageGuidedMinimizer:
     """以覆盖率边集等价为 oracle 的 ddmin 变体
-    
+
     与现有 DeltaDebugger 的关系：DeltaDebugger 处理"崩溃/非崩溃"二值 oracle；
     本模块处理"覆盖率边集等价"的多值 oracle。两者互补——DeltaDebugger 用于
     崩溃输入的最终缩减，本模块用于非崩溃 PoC 和种子最小化
@@ -76,7 +76,7 @@ class CoverageGuidedMinimizer:
 
     def minimize(self, data: bytes) -> CoverageMinimizationResult:
         """对输入执行覆盖率引导的最小化
-        
+
         流程：
         1. 执行原始输入，记录目标边集 → pinned_edges
         2. 自适应调节 Jaccard 阈值（基于覆盖率密度）
@@ -175,7 +175,7 @@ class CoverageGuidedMinimizer:
     @staticmethod
     def _jaccard(edge_set: Set[int], pinned: frozenset) -> float:
         """计算边集与目标集的 Jaccard 相似度
-        
+
         J(A,B) = |A ∩ B| / |A ∪ B|
         用 pinned 作为全集 B——因为我们不需要超出 pinned 的边
         """
@@ -194,7 +194,7 @@ class CoverageGuidedMinimizer:
 
 class ByteImportanceRanker:
     """基于覆盖率反馈的字节重要性排序器
-    
+
     用于加速 CoverageGuidedMinimizer——提前标记"安全删除区"
     使 ddmin 优先尝试这些区间而非均匀分块
     """
@@ -215,7 +215,7 @@ class ByteImportanceRanker:
 
     def safe_deletion_score(self, start: int, end: int) -> float:
         """返回区间 [start, end) 的"安全删除"概率估计
-        
+
         得分 = mean(safe_count[pos] / trials[pos]) for pos [启动, end)
         得分 > 0.8 的区间应在 ddmin 中优先尝试
         """
@@ -230,7 +230,7 @@ class ByteImportanceRanker:
     def rank_intervals(self, data_len: int,
                        interval_count: int = 8) -> List[Tuple[int, int, float]]:
         """将输入等分为 interval_count 个区间，按安全得分升序排列
-        
+
         得分最低的区间最"关键"——包含覆盖率依赖的字节——应在缩减中保留
         """
         chunk = max(1, data_len // interval_count)

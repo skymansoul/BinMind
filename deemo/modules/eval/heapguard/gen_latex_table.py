@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# 创建: 2026-06-21  |  LaTeX 结果表生成
 #
 """
 从 benchmark_results.json 生成 LaTeX 对比表 result_table.tex。

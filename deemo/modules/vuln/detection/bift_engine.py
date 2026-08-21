@@ -1,18 +1,17 @@
 # coding: utf-8
-# 创建: 2026-06-17  |  BIFT编排引擎
-# 修改: 2026-06-17  |  审计后补充文件头与错误处理
+# |  审计后补充文件头与错误处理
 #
 """
-二进制级前向污点分析——编排引擎与攻击面映射。
+二进制级前向污点分析 - 编排引擎与攻击面映射。
 
 输出:
   1. 从每个输入源可达的危险操作列表(污点汇)
-  2. 攻击面度量——按函数聚合的可达危险操作密度
-  3. 污点传播深度——从输入到危险操作的平均步数(越小越危险)
+  2. 攻击面度量 - 按函数聚合的可达危险操作密度
+  3. 污点传播深度 - 从输入到危险操作的平均步数(越小越危险)
 
 攻击面可视化数据:
   每函数: 输入源数 + 可达汇数 + 传播深度
-  → 生成攻击面热力图(高密度=优先审查)
+  生成攻击面热力图(高密度=优先审查)
 """
 
 import logging
@@ -79,7 +78,7 @@ class BiftEngine:
         reached_sinks, paths = self._propagator.propagate(
             functions, call_graph)
 
-        # 攻击面度量——按函数聚合
+        # 攻击面度量 - 按函数聚合
         func_source_count: Dict[str, int] = defaultdict(int)
         func_sink_count: Dict[str, int] = defaultdict(int)
         for p in paths:
@@ -108,7 +107,7 @@ class BiftEngine:
         high_risk = [a.function_name for a in attack_surface
                      if a.risk_level == 'HIGH'][:10]
 
-        # 关键路径——路径最短的(从源到汇步数最少→最危险)
+        # 关键路径 - 路径最短的(从源到汇步数最少, 最危险)
         paths_sorted = sorted(paths, key=lambda p: p.path_length)
 
         return BiftReport(

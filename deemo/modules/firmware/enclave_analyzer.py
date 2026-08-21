@@ -676,8 +676,21 @@ class EnclaveAnalyzer:
                     f"Large SMC surface ({len(smc_immediates)} unique immediate values)"))
 
     def _detect_smc_surface(self, data: bytes, result: EnclaveAnalysisResult):
-        """ARM SMC calling convention surface area — delegated to _check_tz_el_escalation."""
-        pass
+        """ARM SMC instruction surface scan; high relative density flags anomalous monitor calls."""
+        if not data:
+            return
+        count = 0
+        for i in range(0, len(data) - 3, 2):
+            if data[i:i + 2] == b"\xd4\x00":  # SMC #imm
+                count += 1
+        if count:
+            result.metadata["smc_surface_count"] = count
+            density = (count * 16) / len(data)
+            result.metadata["smc_surface_density"] = round(density, 6)
+            if density > 0.1:
+                result.findings.append(EnclaveFinding(
+                    EnclaveIssueType.ORACLE_EXPOSURE, RiskLevel.MEDIUM, "code",
+                    f"High SMC density ({count} instructions) — abnormal monitor-call footprint"))
 
     def _check_sev_attestation(self, data: bytes, result: EnclaveAnalysisResult):
         """Record SEV measurement; full attestation requires AMD-SP chain verification at runtime."""

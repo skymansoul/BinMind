@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-04-28 — BinaryProfile + SmartPipeline 框架
-# 修改: 2026-04-28 — 策略选择从布尔决策树升级为 UCB 上下文多臂老虎机
+# 策略选择从布尔决策树升级为 UCB 上下文多臂老虎机
 """
-智能管道入口 — 上下文多臂老虎机在线学习最优执行策略.
+智能管道入口 - 上下文多臂老虎机在线学习最优执行策略.
 
 原版用 if-else 决策树选策略 (固化规则). 本版用 UCB bandit:
   每执行一次管道, 将 (quality×speed) 作为 reward 反馈给该策略在
@@ -76,7 +75,7 @@ class PipelineResult:
 
 
 class StrategyBandit:
-    """上下文 UCB bandit — 每个 (context_key, strategy_key) 维护估值.
+    """上下文 UCB bandit - 每个 (context_key, strategy_key) 维护估值.
 
     UCB 公式: score = mean_reward + sqrt(2*ln(total_pulls) / arm_pulls)
     冷启动时返回 None, 调用方回退到启发式默认.
@@ -114,7 +113,7 @@ class StrategyBandit:
 
 
 class SmartPipeline:
-    """智能管道 — UCB bandit 在线学习最优策略 + 统一执行入口."""
+    """智能管道 - UCB bandit 在线学习最优策略 + 统一执行入口."""
 
     def __init__(self, hook_pool: Optional[Dict[str, Callable]] = None,
                  schema_model=None, cache_dir: str = './.pipeline_cache'):

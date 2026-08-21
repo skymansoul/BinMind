@@ -1,34 +1,24 @@
-"""Symbolic state merging 配置urable similarity heuristics
+"""符号状态合并: 基于相似度的启发式路径合并, 缓解路径爆炸。
 
-路径爆炸 fundamental bottleneck 符号执行
-State merging collapses semantically similar states same program
-counter, trading precision for memory. 合并 decision 比较
-constraints, 寄存器s, memory, local variables against a threshold
+合并把语义相似的状态坍缩为同一程序计数器状态, 以精度换内存;
+相似度比较约束集、寄存器、内存与局部变量。
 
-增强 — 动态阈值调整：若 merge_all() 在 1 轮内收敛（所有可合并对都已合并）
-则阈值上调 0.05（更激进合并）；若超过 5 轮才收敛，下调 0.05
-
-增强 — 调用栈感知合并：即使 PC 相同，若调用栈不同也不合并
-两个状态到达同一地址但通过不同调用路径，其行为语义可能完全不同
-
-三轮增强 — 合并代价估算 (MergeCostEstimator)：合并前计算
-precision_loss_ratio = len(dropped_constraints) / len(total_constraints)
-若比例超过 0.3 则跳过合并，防止因丢失关键约束导致误报/漏报
-
-三轮增强 — 增量合并 (IncrementalMerge)：维护 dist_mtx 距离矩阵
-合并一对状态后仅重新计算受影响的行/列，避免全量 O(n^2) 重算
-
-三轮增强 — 合并回退：undo_last_merge() 通过 deep copy 保存的
-pre_merge_snapshot 恢复到最近一次 merge_states() 调用前的状态列表
-
-四轮增强 — MergePolicyEngine：可配置策略决定何时尝试合并（不仅是怎样合并）
-EAGER（每步后合并）、LAZY（状态数 > 阈值时合并）、ADAPTIVE（状态增长率 > 探索率时合并）
-
-四轮增强 — MergeQualityScore：合并后重新执行 1-2 步，检查合并状态是否产生
-与原始状态相同的分支结果。评分 0-1，低于阈值的合并被标记为低质量并可选回退
-
-四轮增强 — StateHydration：惰性反序列化 —— 延迟 pickle.load 直到状态
-实际被需要用于比较或执行。避免在 merge pool 中大量空转时的不必要 IO
+增强:
+- 动态阈值调整: merge_all() 在 1 轮内收敛则阈值上调 0.05 (更激进),
+  超过 5 轮才收敛则下调 0.05
+- 调用栈感知合并: PC 相同但调用栈不同则不合并, 不同调用路径的行为
+  语义可能完全不同
+- 合并代价估算 (MergeCostEstimator): precision_loss_ratio 超过 0.3
+  时跳过合并, 防止丢失关键约束导致误报/漏报
+- 增量合并 (IncrementalMerge): 距离矩阵缓存相似度, 合并后仅重算
+  受影响的行/列, 避免全量 O(n^2) 重算
+- 合并回退: undo_last_merge() 通过 deep copy 的 pre_merge_snapshot
+  恢复最近一次 merge_states() 调用前的状态列表
+- MergePolicyEngine: 可配置策略决定何时尝试合并 (EAGER/LAZY/ADAPTIVE)
+- MergeQualityScore: 合并后重执行 1-2 步检查分支结果是否与原始状态
+  一致, 低质量合并可回退
+- StateHydration: 惰性反序列化, 延迟 pickle.load 直到状态实际被
+  需要, 避免合并池空转时的不必要 IO
 """
 
 import copy
@@ -50,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 class MergeStrategy(Enum):
-    """state dimensions 包含 similarity comparison"""
+    """相似度比较所涉及的维度。"""
     NONE = "none"
     BY_PC = "by_pc"
     BY_CONSTRAINTS = "by_constraints"
@@ -63,7 +53,7 @@ class MergeStrategy(Enum):
 
 @dataclass
 class MergeResult:
-    """Outcome a single 合并 attempt"""
+    """单次合并尝试的结果。"""
     merged_states: int = 0
     states_reduced: int = 0
     merged_pairs: List = field(default_factory=list)
@@ -71,8 +61,8 @@ class MergeResult:
 
 
 class MergePolicy:
-    """trigger 合并 procedure 符号执行
-    
+    """控制符号执行中的合并触发时机。
+
     EAGER — 每步执行后立即合并，最大化内存节省但增加合并计算开销
     LAZY — 仅当活跃状态数超过阈值时才触发合并，减少不必要的比较
     ADAPTIVE — 监视状态增长率 vs 探索率，当状态膨胀速度超过新覆盖产生速度时合并
@@ -90,7 +80,7 @@ MergePolicy.ADAPTIVE = MergePolicy(max_states_before_merge=50)
 
 @dataclass
 class SymbolicState:
-    """Minimal symbolic state for 合并 evaluation"""
+    """用于合并评估的最小符号状态。"""
     pc: int = 0
     state_id: str = ""
     constraints: List = field(default_factory=list)
@@ -103,7 +93,7 @@ class SymbolicState:
 
 @dataclass
 class MergeCandidate:
-    """Result comparing two states for 合并 eligibility"""
+    """两状态可合并资格的评估结果。"""
     state1: Any = None
     state2: Any = None
     similarity_score: float = 0.0
@@ -121,11 +111,11 @@ class MergeCandidate:
 
 @dataclass
 class MergeQualityReport:
-    """Post-合并 quality evaluation result
-    
-    quality_score: 0-1, well merged state replicates original branch behavior
-    branch_match_ratio: fraction branches merged == original
-    divergent_branches: list PC targets merged state diverged
+    """合并后质量评估结果。
+
+    quality_score: 0-1, 越接近 1 表示合并状态复现了原始分支行为;
+    branch_match_ratio: 合并分支与原始分支一致的占比;
+    divergent_branches: 合并状态发生分歧的 PC 目标列表。
     """
     quality_score: float = 0.0
     branch_match_ratio: float = 0.0
@@ -135,11 +125,11 @@ class MergeQualityReport:
 
 
 class StateComparator:
-    """Static methods 计算 Jaccard-like similarity per dimension"""
+    """各维度的 Jaccard 相似度静态方法。"""
 
     @staticmethod
     def compare_constraints(c1: List[str], c2: List[str]) -> float:
-        """Jaccard index over constraint string sets"""
+        """约束字符串集合的 Jaccard 指数。"""
         if not c1 and not c2:
             return 1.0
         if not c1 or not c2:
@@ -152,7 +142,7 @@ class StateComparator:
 
     @staticmethod
     def compare_registers(r1: Dict[str, Any], r2: Dict[str, Any]) -> Tuple[float, Set[str]]:
-        """Fraction 寄存器s identical values; 返回 divergent keys"""
+        """相同值寄存器占比, 返回差异键集合。"""
         common = set(r1.keys()) & set(r2.keys())
         different = set()
         matches = 0
@@ -167,7 +157,7 @@ class StateComparator:
 
     @staticmethod
     def compare_memory(m1: Dict[int, Any], m2: Dict[int, Any]) -> Tuple[float, Set[int]]:
-        """Fraction memory addresses identical values"""
+        """相同值内存地址占比, 返回差异地址集合。"""
         common = set(m1.keys()) & set(m2.keys())
         different = set()
         matches = 0
@@ -182,7 +172,7 @@ class StateComparator:
 
     @staticmethod
     def compare_local_vars(v1: Dict[str, Any], v2: Dict[str, Any]) -> Tuple[float, Set[str]]:
-        """Fraction local variables identical values"""
+        """相同值局部变量占比, 返回差异键集合。"""
         common = set(v1.keys()) & set(v2.keys())
         different = set()
         matches = 0
@@ -198,7 +188,7 @@ class StateComparator:
     @staticmethod
     def compare_call_stacks(cs1: List[int], cs2: List[int]) -> float:
         """调用栈相似度：从栈底对齐比较，匹配的返回地址比例
-        
+
         两个空栈视为完全匹配。栈深不同时，较短的栈与较长栈的前缀比较"""
         if not cs1 and not cs2:
             return 1.0
@@ -210,15 +200,7 @@ class StateComparator:
 
     @staticmethod
     def count_divergent_constraints(c1: List[str], c2: List[str]) -> Tuple[int, int]:
-        """计算两个约束集之间的差异量和总量
-        
-        Args:
-        c1: 状态 1 的约束字符串列表
-        c2: 状态 2 的约束字符串列表
-        
-        返回:
-        Tuple[int, int]: (divergent_count, total_count)
-        """
+        """计算两个约束集之间的差异量与总量, 返回 (divergent, total)。"""
         if not c1 and not c2:
             return 0, 0
         s1 = set(c1)
@@ -241,11 +223,11 @@ class _MergeHeuristicMeta(type):
 
 
 class MergeHeuristic(metaclass=_MergeHeuristicMeta):
-    """计算 a weighted similarity score across chosen dimensions
-    States different PCs never merged. Above-threshold candidates
-    flagged mergeable
-    
-    增强 — 调用栈检查 + 动态阈值"""
+    """按选定维度计算加权相似度。
+
+    PC 不同的状态永不合并; 超过阈值的候选对标记为可合并;
+    增强: 调用栈检查 + 动态阈值。
+    """
 
     def __init__(self, strategy: MergeStrategy = MergeStrategy.COMBINED):
         self._strategy = strategy
@@ -258,7 +240,7 @@ class MergeHeuristic(metaclass=_MergeHeuristicMeta):
         return self._strategy.value
 
     def should_merge(self, state1: SymbolicState, state2: SymbolicState) -> MergeCandidate:
-        """Evaluate 合并 eligibility for a state pair"""
+        """评估一对状态的可合并资格。"""
         candidate = MergeCandidate(
             state1=state1,
             state2=state2,
@@ -314,7 +296,7 @@ class MergeHeuristic(metaclass=_MergeHeuristicMeta):
 
     def adjust_threshold(self, merge_passes: int):
         """动态调整合并阈值
-        
+
         ≤1 轮收敛 → 阈值 +0.05（符号执行状态过于保守，可更激进合并）
         ≥5 轮收敛 → 阈值 −0.05（状态分化严重，需放宽合并条件）
         阈值范围锁定在 [0.5, 0.95]"""
@@ -326,15 +308,12 @@ class MergeHeuristic(metaclass=_MergeHeuristicMeta):
 
 
 class PathMerger:
-    """Holds a 池 active states, pairwise-比较, removes
-    mergeable duplicates. merge_all() 运行 repeatedly until pair 合并
-    
-    增强 — 收敛后自动调用 MergeHeuristic.adjust_threshold()
-    
-    三轮增强 — 支持 undo_last_merge() 回退最近一次合并操作
-    通过 deep copy 保存 pre_merge_快照 实现
-    
-    四轮增强 — 集成 MergePolicyEngine 和 MergeQualityScore 评估合并质量
+    """状态合并器: 维护活跃状态池, 逐对比较并移除可合并的重复状态。
+
+    merge_all() 反复执行直到无可合并对; 收敛后调用
+    MergeHeuristic.adjust_threshold(); 支持 undo_last_merge() 回退
+    (通过 deep copy 保存 pre_merge 快照); 集成 MergePolicyEngine
+    与 MergeQualityScore 评估合并质量。
     """
 
     def __init__(self, strategy: MergeStrategy = MergeStrategy.COMBINED):
@@ -358,14 +337,13 @@ class PathMerger:
         return merger.get_states()
 
     def add_state(self, state: SymbolicState) -> None:
-        """寄存器 a state 合并 池"""
+        """将状态加入合并池。"""
         self._states.append(state)
 
     def merge_states(self) -> List[Tuple[SymbolicState, SymbolicState]]:
-        """One pass: 查找 mergeable pairs remove second
-        
-        三轮增强 — 调用前自动保存 pre_merge_快照（deep copy）
-        以便 undo_last_merge() 恢复
+        """一轮合并: 查找可合并对并移除被吸收者。
+
+        调用前自动保存 pre_merge 快照 (deep copy), 以便 undo_last_merge() 恢复。
         """
         # 保存合并前的状态快照 — deep copy 确保完全隔离
         self.pre_merge_snapshot = copy.deepcopy(self._states)
@@ -394,7 +372,7 @@ class PathMerger:
         return merged_pairs
 
     def merge_all(self) -> int:
-        """迭代 merge_states() until convergence. 返回 total pairs merged"""
+        """迭代 merge_states() 直到收敛, 返回总合并对数。"""
         total_merged = 0
         pass_count = 0
         while True:
@@ -409,13 +387,10 @@ class PathMerger:
         return total_merged
 
     def undo_last_merge(self) -> bool:
-        """恢复最近一次 merge_states() 调用前的状态列表
-        
-        三轮增强 — 利用 merge_states() 开始时保存的 pre_merge_快照
-        （deep copy）完全恢复到合并前的状态集合
-        
-        返回:
-        bool: True 表示成功恢复，False 表示无可用快照
+        """恢复最近一次 merge_states() 调用前的状态列表。
+
+        利用 merge_states() 开始时保存的 pre_merge 快照 (deep copy)
+        完全恢复; 无可用快照时返回 False。
         """
         if self.pre_merge_snapshot is None:
             logger.warning("undo_last_merge: no pre_merge_snapshot available")
@@ -438,7 +413,7 @@ class PathMerger:
         return self._states
 
     def get_merged_count(self) -> int:
-        """Total 合并 performed across passes"""
+        """历次合并的总对数。"""
         return self._merged_count
 
     def clear(self) -> None:
@@ -450,15 +425,7 @@ class PathMerger:
     # 四轮增强 — 策略驱动合并
 
     def should_attempt_merge(self, step_count: int, new_coverage_addrs: int = 0) -> bool:
-        """委托给 MergePolicyEngine 决定当前步骤是否应触发合并
-        
-        Args:
-        step_count: 当前执行步数
-        new_coverage_addrs: 最近一步新覆盖的地址数（用于 ADAPTIVE 策略）
-        
-        返回:
-        True 如果应在此步尝试合并
-        """
+        """委托 MergePolicyEngine 决定当前步骤是否应触发合并。"""
         return self.policy_engine.should_merge_now(
             state_count=len(self._states),
             step_count=step_count,
@@ -469,16 +436,10 @@ class PathMerger:
                                merged_state: SymbolicState,
                                original_states: List[SymbolicState],
                                branch_fn: Optional[Callable] = None) -> MergeQualityReport:
-        """评估合并后的状态质量
-        
-        Args:
-        merged_state: 合并后的状态
-        original_states: 被合并的原始状态列表
-        branch_fn: 可选的 step 函数，签名为 (SymbolicState) -> List[int]
-        （给定状态，返回下一步可达的 PC 列表）
-        
-        返回:
-        MergeQualityReport 包含质量评分和分支匹配详情
+        """评估合并后的状态质量。
+
+        branch_fn 可选, 签名为 (SymbolicState) -> List[int];
+        返回含质量评分与分支匹配详情的 MergeQualityReport。
         """
         return self.quality_scorer.evaluate(
             merged_state=merged_state,
@@ -488,19 +449,18 @@ class PathMerger:
 
 
 class SymbolicExecutor:
-    """Minimal symbolic executor demonstrates 合并 流水线
-    step forks active state two branches, 合并"""
+    """最小符号执行器, 演示合并流水线: 每步把活跃状态分叉为两分支后合并。"""
 
     def __init__(self):
         self._path_merger = PathMerger()
         self._current_states: List[SymbolicState] = []
 
     def add_state(self, state: SymbolicState) -> None:
-        """Inject a state current step's 池"""
+        """向当前步的状态池注入一个状态。"""
         self._current_states.append(state)
 
     def fork_state(self, state: SymbolicState, constraint: str) -> SymbolicState:
-        """创建 a child state one extra constraint"""
+        """创建带额外约束的子状态。"""
         new_state = SymbolicState(
             pc=state.pc,
             constraints=state.constraints + [constraint],
@@ -512,7 +472,7 @@ class SymbolicExecutor:
         return new_state
 
     def execute_step(self) -> None:
-        """Fork active state two, 合并 resulting 池"""
+        """把活跃状态分叉为两分支, 然后合并结果池。"""
         new_states = []
         for state in self._current_states:
             branches = self._get_branches(state)
@@ -530,25 +490,25 @@ class SymbolicExecutor:
         self._current_states = self._path_merger.get_states()
 
     def _get_branches(self, state: SymbolicState) -> List[Dict[str, Any]]:
-        """Always forks two branches pc+4 pc+8"""
+        """固定分叉为 pc+4 / pc+8 两个分支。"""
         return [
             {"constraint": "condition=true", "next_pc": state.pc + 4},
             {"constraint": "condition=false", "next_pc": state.pc + 8}
         ]
 
     def get_state_count(self) -> int:
-        """Active state count last 合并"""
+        """最近一次合并后的活跃状态数。"""
         return len(self._current_states)
 
 
 def create_path_merger(strategy: str = "combined") -> PathMerger:
-    """Instantiate a PathMerger 配置ured strategy"""
+    """按策略名创建 PathMerger。"""
     strategy_enum = MergeStrategy(strategy.lower())
     return PathMerger(strategy_enum)
 
 
 def merge_states(states: List[SymbolicState], strategy: str = "combined") -> List[SymbolicState]:
-    """One-shot: 合并 a list states 返回 survivors"""
+    """一次性合并状态列表, 返回幸存状态。"""
     merger = create_path_merger(strategy)
     for state in states:
         merger.add_state(state)
@@ -563,29 +523,19 @@ def merge_states(states: List[SymbolicState], strategy: str = "combined") -> Lis
 # 约 2.5 倍，而合并带来的内存节省仅 ~15%
 
 class MergeCostEstimator:
-    """Evaluate precision loss merging two states
-    
-    三轮增强 — 合并两个状态会丢弃它们之间不共享的约束（dropped constraints）
-    在合并前计算 precision_loss_ratio，若超过预设阈值则跳过合并
-    
-    合并的真实代价：
-    - merged_state.constraints = intersect(s1.constraints, s2.constraints)
-    - dropped_constraints = union - intersection（将被永久丢弃的路径条件）
-    - 路径条件丢失 → 后续分支探索时可能产生 false positives/negatives
-    
-    Attributes:
-    max_precision_loss_ratio: 允许的最大精度损失比例，默认 0.3
+    """合并前评估精度损失, 超过阈值则跳过合并。
+
+    合并两个状态会丢弃不共享的约束 (dropped_constraints =
+    union - intersection), 路径条件永久丢失会让后续分支探索
+    产生误报; precision_loss_ratio 超过 max_precision_loss_ratio
+    (默认 0.3) 时放弃合并。
     """
 
     # 默认最大精度损失比例 — 超过此值则不合并
     _DEFAULT_MAX_LOSS = 0.3
 
     def __init__(self, max_precision_loss_ratio: float = _DEFAULT_MAX_LOSS):
-        """初始化代价估算器
-        
-        Args:
-        max_precision_loss_ratio: 允许的最大精度损失比例 (0.0~1.0)
-        """
+        """初始化代价估算器, 参数为允许的最大精度损失比例 (0.0~1.0)。"""
         self.max_precision_loss_ratio = max_precision_loss_ratio
 
     def compute_precision_loss(
@@ -593,17 +543,10 @@ class MergeCostEstimator:
         state1: SymbolicState,
         state2: SymbolicState,
     ) -> float:
-        """计算合并 state1 和 state2 的精度损失比例
-        
-        precision_loss_ratio = len(constraints_not_in_intersection) / len(total_constraints)
-        分子越接近分母 → 两个状态的约束几乎不重叠 → 合并后信息损失严重
-        
-        Args:
-        state1: 第一个候选状态
-        state2: 第二个候选状态
-        
-        返回:
-        float: 精度损失比例（0.0~1.0），0.0 表示完全重叠，1.0 表示无重叠
+        """计算合并两状态的精度损失比例。
+
+        分子越接近分母 → 约束几乎不重叠 → 合并后信息损失严重;
+        返回 0.0~1.0, 0 表示完全重叠。
         """
         dropped_count, total_count = StateComparator.count_divergent_constraints(
             state1.constraints, state2.constraints
@@ -618,18 +561,7 @@ class MergeCostEstimator:
         state1: SymbolicState,
         state2: SymbolicState,
     ) -> Tuple[bool, float]:
-        """判断是否应跳过合并
-        
-        返回 (should_skip, precision_loss_ratio) 二元组，方便调用方
-        记录决策依据
-        
-        Args:
-        state1: 第一个候选状态
-        state2: 第二个候选状态
-        
-        返回:
-        Tuple[bool, float]: (是否跳过, 精度损失比例)
-        """
+        """判断是否应跳过合并, 返回 (should_skip, precision_loss_ratio) 二元组。"""
         precision_loss_ratio = self.compute_precision_loss(state1, state2)
         should_skip = precision_loss_ratio > self.max_precision_loss_ratio
         if should_skip:
@@ -647,20 +579,11 @@ class MergeCostEstimator:
 # 被合并状态的行/列，其余相似度值不变
 
 class IncrementalMerge:
-    """Incremental state merging a缓存d distance matrix
-    
-    三轮增强 — 传统 merge_all() 每轮对所有状态对重新计算相似度
-    （O(n^2) per pass）。IncrementalMerge 将已计算的相似度缓存在
-    dist_mtx 中，合并后只重新计算受影响的行/列：
-    
-    - 合并 (s_i, s_j) → s_i 吸收 s_j，s_j 被移除
-    - 重算范围：s_i 与所有其他剩余状态的相似度
-    - 其他行列保持不变（未被合并的状态对之间相似度不受影响）
-    
-    Attributes:
-    dist_mtx: Dict[Tuple[int, int], float]
-    键为 (state_i_index, state_j_index) 且 < j
-    值为对应状态对的相似度得分
+    """增量状态合并, 相似度缓存于距离矩阵。
+
+    合并 (s_i, s_j) 时 s_j 被移除, 仅重算 s_i 与其余状态的相似度,
+    其他行列不变, 避免传统 merge_all() 每轮 O(n^2) 全量重算。
+    dist_mtx 键为 (i, j) 且 i < j。
     """
 
     def __init__(self, strategy: MergeStrategy = MergeStrategy.COMBINED):
@@ -674,13 +597,7 @@ class IncrementalMerge:
         self._merged_count = 0
 
     def add_state(self, state: SymbolicState) -> None:
-        """向池中添加新状态并分配唯一 ID
-        
-        添加新状态后需要计算它与所有现有状态的相似度
-        
-        Args:
-        state: 待添加的符号状态
-        """
+        """添加新状态并分配唯一 ID, 随后计算与所有现有状态的相似度。"""
         new_id = self._next_id
         self._next_id += 1
         self._states.append(state)
@@ -694,12 +611,9 @@ class IncrementalMerge:
             self.dist_mtx[key] = score
 
     def merge_states(self) -> List[Tuple[SymbolicState, SymbolicState]]:
-        """执行一轮增量合并：找到最相似的可合并对并合并
-        
-        合并后仅更新受影响的行/列，而非全量重建 dist_mtx
-        
-        返回:
-        List[Tuple]: 本轮被合并的状态对列表
+        """执行一轮增量合并, 返回本轮被合并的状态对列表。
+
+        合并后仅更新受影响的行/列, 不全量重建 dist_mtx。
         """
         if len(self._states) < 2:
             return []
@@ -785,11 +699,7 @@ class IncrementalMerge:
         return merged_pairs
 
     def merge_all(self) -> int:
-        """迭代调用 merge_states() 直到无更多可合并对
-        
-        返回:
-        int: 总合并对数
-        """
+        """迭代调用 merge_states() 直到无更多可合并对, 返回总合并对数。"""
         total_merged = 0
         pass_count = 0
         while True:
@@ -802,15 +712,7 @@ class IncrementalMerge:
         return total_merged
 
     def _compute_pair(self, idx_i: int, idx_j: int) -> Tuple[bool, float]:
-        """计算一对状态的 merge 可行性和相似度得分
-        
-        Args:
-        idx_i: 状态 的索引
-        idx_j: 状态 j 的索引
-        
-        返回:
-        Tuple[bool, float]: (mergeable, similarity_score)
-        """
+        """计算一对状态的合并可行性与相似度得分, 返回 (mergeable, score)。"""
         candidate = self._heuristic.should_merge(
             self._states[idx_i], self._states[idx_j]
         )
@@ -818,7 +720,7 @@ class IncrementalMerge:
 
     def _recompute_affected(self) -> None:
         """重新计算所有剩余状态对的相似度并更新 dist_mtx
-        
+
         在移除被合并状态后调用，重建完整距离矩阵
         """
         for i in range(len(self._states)):
@@ -834,11 +736,11 @@ class IncrementalMerge:
         return self._states
 
     def get_merged_count(self) -> int:
-        """Total 合并 performed"""
+        """返回已执行的合并总数。"""
         return self._merged_count
 
     def clear(self) -> None:
-        """重置 池, IDs, distance matrix"""
+        """重置状态池、ID 与距离矩阵。"""
         self._states = []
         self._state_ids = []
         self._next_id = 0
@@ -857,20 +759,13 @@ class IncrementalMerge:
 
 
 class MergePolicyEngine:
-    """配置urable policy decides attempt merging
-    
-    四轮增强 — 独立控制合并触发时机与合并执行方式
-    三种策略覆盖符号执行的主要资源权衡场景
-    
-    EAGER（默认） — 每步合并，内存优先
-    LAZY — 达到阈值后合并，计算优先
-    ADAPTIVE — 依据状态膨胀/覆盖增长率动态决策，平衡优先
-    
-    Attributes:
-    policy: 当前合并策略
-    lazy_threshold: LAZY 策略的状态数阈值（默认 50）
-    growth_window: ADAPTIVE 策略的滑动窗口大小（默认 10 步）
-    growth_trigger_ratio: state_growth_rate / 覆盖率_growth_rate 超过此值触发合并
+    """可配置的合并策略引擎, 独立控制合并触发时机与执行方式。
+
+    EAGER (默认) — 每步合并, 内存优先;
+    LAZY — 状态数超过 lazy_threshold (默认 50) 后合并, 计算优先;
+    ADAPTIVE — 依据 growth_window (默认 10 步) 内的状态膨胀率与
+    覆盖增长率动态决策, 前者超过后者的 growth_trigger_ratio
+    (默认 3.0) 倍时触发合并。
     """
 
     # ADAPTIVE 策略：当状态增长率超过覆盖率增长率的此比例时触发合并
@@ -895,16 +790,7 @@ class MergePolicyEngine:
                          state_count: int,
                          step_count: int = 0,
                          new_coverage_addrs: int = 0) -> bool:
-        """返回 True policy dictates a 合并 attempt point
-        
-        Args:
-        state_count: 当前活跃状态数
-        step_count: 当前执行步数（用于 EAGER 强制每步触发）
-        new_coverage_addrs: 最近一步新覆盖的地址数（用于 ADAPTIVE 策略）
-        
-        返回:
-        True 合并 attempted
-        """
+        """按策略判断当前步是否应尝试合并。"""
         self._step_counter += 1
 
         if self.policy == MergePolicy.EAGER:
@@ -951,15 +837,7 @@ class MergePolicyEngine:
 
     @staticmethod
     def _compute_growth_rate(window: deque) -> float:
-        """计算滑动窗口内的平均增长率
-        
-        比较窗口首尾值，除以窗口大小。正值表示增长，0 表示停滞
-        
-        Args:
-        window: 数值滑动窗口（deque）
-        返回:
-        平均变化率（每步）
-        """
+        """计算滑动窗口平均增长率: 比较首尾值除以窗口大小, 正值增长, 0 停滞。"""
         if len(window) < 2:
             return 0.0
         values = list(window)
@@ -968,7 +846,7 @@ class MergePolicyEngine:
         return (last - first) / max(1, len(values) - 1)
 
     def stats(self) -> Dict[str, Any]:
-        """Expose policy state for telemetry"""
+        """暴露策略状态供遥测。"""
         return {
             'policy': self.policy.strategy.value,
             'lazy_threshold': self.lazy_threshold,
@@ -994,21 +872,15 @@ class MergePolicyEngine:
 
 
 class MergeQualityScore:
-    """Evaluate quality a merged state re-executing 1-2 steps
-    
-    四轮增强 — 合并是精度换内存的 trade-off。此评估器在合并后执行
-    轻量级验证：检查合并状态是否保留了原始状态的分支可达性
-    
-    评分公式：
-    branch_match = merged_branches ∩ original_union_branches / original_union_branches
-    quality = branch_match * precision_retention_ratio（0~1）
-    
-    Usage::
-    
-    scorer = MergeQualityScore()
-    报告 = scorer.evaluate(merged_state, [s1, s2], branch_fn=my_step_fn)
-    报告.quality_score < 0.7:
-    merger.undo_last_merge() # 低质量合并 → 回退
+    """合并后质量评估, 重执行 1-2 步验证分支可达性。
+
+    合并是精度换内存的 trade-off; 评估器检查合并状态是否保留
+    原始状态的分支可达性:
+    branch_match = |M_branches ∩ (S1_branches ∪ S2_branches)| /
+                   |S1_branches ∪ S2_branches|
+    quality = branch_match * precision_retention_ratio (0~1),
+    其中 precision_retention_ratio 由 MergeCostEstimator 提供。
+    质量低于 low_quality_threshold (默认 0.7) 时调用方应回退合并。
     """
 
     # 低质量合并阈值 — 低于此值的合并回退
@@ -1024,22 +896,12 @@ class MergeQualityScore:
                  merged_state: SymbolicState,
                  original_states: List[SymbolicState],
                  branch_fn: Optional[Callable[[SymbolicState], List[int]]] = None) -> MergeQualityReport:
-        """Evaluate merged state against original states
-        
-        重新执行 1-2 步，比较分支结果：
-        1. 对每个原始状态调用 branch_fn 获取其可达 PC 列表
-        2. 对合并状态调用 branch_fn 获取其可达 PC 列表
-        3. 计算 merged_branches 覆盖了 original_branches 的比例
-        
-        Args:
-        merged_state: 合并后的状态
-        original_states: 被合并的原始状态（通常 2 个）
-        branch_fn: 单步执行函数，签名为 f(state) -> List[int]（下一PC列表）
-        若未提供，则基于状态本身的 PC 做启发式近似
-        
-        返回:
-        MergeQualityReport quality_score (0-1), branch_match_ratio
-        divergent_branches, re_execution_steps
+        """评估合并状态相对原始状态的质量。
+
+        对原始状态与合并状态各调用一次 branch_fn 重执行 1-2 步,
+        计算合并后分支对原始分支的覆盖率; branch_fn 签名为
+        f(state) -> List[int] (下一 PC 列表), 未提供时基于状态 PC
+        做启发式近似。
         """
         report = MergeQualityReport(
             re_execution_steps=1,
@@ -1107,14 +969,7 @@ class MergeQualityScore:
         return report
 
     def is_low_quality(self, report: MergeQualityReport) -> bool:
-        """判断合并结果是否为低质量（回退）
-        
-        Args:
-        报告: evaluate() 返回的质量报告
-        
-        返回:
-        True 如果质量评分低于阈值
-        """
+        """质量评分低于阈值时返回 True, 调用方据此回退合并。"""
         return report.quality_score < self.low_quality_threshold
 
     def average_quality(self) -> float:
@@ -1124,7 +979,7 @@ class MergeQualityScore:
         return sum(self._score_history) / len(self._score_history)
 
     def stats(self) -> Dict[str, Any]:
-        """Expose quality metrics for telemetry"""
+        """暴露质量指标供遥测。"""
         return {
             'low_quality_threshold': self.low_quality_threshold,
             'average_quality': round(self.average_quality(), 4),
@@ -1142,53 +997,30 @@ class MergeQualityScore:
 #
 # 行为：
 # __init__ 仅保存路径，不加载
-# 属性访问时自动触发 _hydrate() → pickle.加载
+# 属性访问时自动触发 _hydrate() → pickle.load
 # - _hydrate() 用 threading.Lock 保证线程安全（只加载一次）
 # - 加载后直接修改 __class__ 绕过代理（Object.__class__ assignment pattern）
 
 
 class StateHydration:
-    """Lazy 反序列化 封装: defer pickle.加载 until first attribute access
-    
-    四轮增强 — 符号执行引擎在 checkpoint 时将状态序列化到磁盘以释放内存
-    当需要重新加载这些状态时（如合并比较、恢复执行），传统方式一次性
-    反序列化所有状态造成 IO 突发和内存尖峰。StateHydration 将反序列化
-    推迟到状态属性首次被访问的瞬间，分散 IO 负载并避免为不需要的状态浪费内存
-    
-    Usage::
-    
-    封装 = StateHydration(检查点_path="/path//state.pkl")
-    # 此时尚未读取磁盘
-    pc = 封装.pc # 触发 pickle.加载，从此表现为普通 SymbolicState
-    
-    池 = []
-    for path 检查点_paths:
-    池.append(StateHydration(检查点_path=path))
-    # 合并时只有被 pairwise 比较的状态才会被反序列化
-    merger = PathMerger()
-    for s 池:
-    merger.add_state(s) # MergeHeuristic 访问属性 → 按需加载
+    """惰性反序列化封装: 首次属性访问时才执行 pickle.load。
+
+    符号执行引擎 checkpoint 时把状态序列化到磁盘释放内存; 传统方式
+    重新加载时一次性反序列化全部状态, 造成 IO 突发和内存尖峰。
+    本封装推迟反序列化到属性首次被访问的瞬间, 分散 IO 负载;
+    _hydrate() 用 threading.Lock 保证线程安全 (只加载一次),
+    加载后通过修改 __class__ 绕过代理。
     """
 
     def __init__(self, checkpoint_path: str):
-        """初始化惰性反序列化包装器
-        
-        仅保存路径引用，不执行任何磁盘 IO
-        
-        Args:
-        检查点_path: 指向 pickle 序列化 SymbolicState 的文件路径
-        """
+        """仅保存检查点路径引用, 不执行磁盘 IO, 首次访问时才反序列化。"""
         self._checkpoint_path = checkpoint_path
         self._state: Optional[SymbolicState] = None
         self._is_hydrated: bool = False
         self._hydrate_lock = threading.Lock()
 
     def _hydrate(self) -> SymbolicState:
-        """执行一次性反序列化。线程安全 —— 多线程同时访问时仅第一个线程执行加载
-        
-        返回:
-        反序列化后的 SymbolicState 实例
-        """
+        """一次性反序列化, 线程安全 —— 仅第一个线程执行加载。"""
         if self._is_hydrated:
             return self._state
 
@@ -1294,17 +1126,10 @@ class StateHydration:
 
 def save_state_to_checkpoint(state: SymbolicState,
                              checkpoint_dir: Optional[str] = None) -> str:
-    """序列化 a SymbolicState a 检查点 file
-    
-    用于 StateHydration 的前置步骤：将活跃状态序列化到磁盘后
-    从内存中移除，替换为 StateHydration 包装器
-    
-    Args:
-    state: 待序列化的符号状态
-    检查点_dir: 检查点 目录（默认使用临时目录）
-    
-    返回:
-    检查点 文件路径，可直接传给 StateHydration.__init__()
+    """将 SymbolicState 序列化为检查点文件, 返回可直接传给 StateHydration 的路径。
+
+    用于状态水合的前置步骤: 活跃状态落盘后从内存移除, 替换为惰性包装器;
+    checkpoint_dir 默认使用临时目录。
     """
     if checkpoint_dir is None:
         checkpoint_dir = tempfile.gettempdir()

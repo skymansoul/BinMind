@@ -104,14 +104,11 @@ class TypeStateTracker:
     def check_type_confusion(self, obj_addr: int,
                              access_offset: int,
                              access_site: int) -> Optional[TCDetection]:
-        """检查是否存在类型混淆.
+        """检查是否存在类型混淆。
 
-        Args:
-          obj_addr: 被访问的对象地址
-          access_offset: 字段访问偏移
-          access_site: 访问点地址
-
-        Returns: TCDetection 或 None (安全).
+        参数: obj_addr 被访问的对象地址, access_offset 字段访问
+        偏移, access_site 访问点地址; 返回 TCDetection 或
+        None (安全)。
         """
         if obj_addr not in self._objects:
             return None
@@ -182,13 +179,11 @@ class TypeStateTracker:
 def detect_type_confusion_from_ir(
     ir_ops: Dict[int, Dict], callee_names: Dict[int, str],
 ) -> Tuple[List[TCDetection], Dict]:
-    """从 IR 操作中检测类型混淆.
+    """从 IR 操作中检测类型混淆。
 
-    输入格式:
-      ir_ops: {addr: {'op_type': str, 'dest': str, 'src': str, ...}}
-      callee_names: {addr: 'function_name'}
-
-    返回: (detections, stats).
+    输入格式: ir_ops {addr: {'op_type': str, 'dest': str, 'src':
+    str, ...}}, callee_names {addr: 'function_name'};
+    返回 (detections, stats)。
     """
     tracker = TypeStateTracker()
     detections = []

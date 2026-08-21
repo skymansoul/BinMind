@@ -30,8 +30,8 @@
 #     EVT 不做分布假设, 从数据中学习尾部形状.
 # 无已知论文将 EVT 应用于二进制相似度的异常检测.
 #
-# 创建: 2026-08-06  初始版本, POT + GPD MLE
-# 修改: 2026-08-06  增加 streaming GPD: reservoir尾采样 + 在线梯度更新
+
+# 增加 streaming GPD: reservoir尾采样 + 在线梯度更新
 
 import math
 import random

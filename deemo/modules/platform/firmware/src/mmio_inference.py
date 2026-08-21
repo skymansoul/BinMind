@@ -1,9 +1,8 @@
-# 创建: 2026-07-08 16:48
-# 修改: 2026-07-08 — T0-T4 MMIO 寄存器分类 + LMS 模式检测
+# T0-T4 MMIO 寄存器分类 + LMS 模式检测
 """
 MMIO 外设模型推断 — 从裸机固件中自动识别外设寄存器和中断映射。
 
-裸机固件通过 MMIO (Memory-Mapped I/O) 与硬件外设交互——没有标准驱动框架,
+裸机固件通过 MMIO (Memory-Mapped I/O) 与硬件外设交互，没有标准驱动框架,
 没有设备树, 没有 datasheet。传统分析依赖手工标注 MMIO 地址范围。
 
 本模块实现全自动 MMIO 推断管线:
@@ -18,7 +17,7 @@ MMIO 寄存器类型 (ref: μEmu, ES-Fuzz):
   T3 (Interrupt-Related): 在 ISR 中被访问, 关联中断源
   T4 (Unclassified): 不匹配以上任何模式
 
-外设推断: 同时考虑地址邻近性和行为相似性——两个 MMIO 地址即使不相邻,
+外设推断: 同时考虑地址邻近性和行为相似性，两个 MMIO 地址即使不相邻,
 如果共享相同的访问模式(LMS/func/ISR), 也可能属于同一外设。
 
 ref: XtractIO — LMS/FRI/SIV 模式检测,
@@ -62,7 +61,7 @@ class MMIORegister:
 
 @dataclass
 class Peripheral:
-    """推断出的外设——MMIO 寄存器组 + 中断关联。"""
+    """推断出的外设，MMIO 寄存器组 + 中断关联。"""
     base_addr: int
     end_addr: int
     registers: list[int] = field(default_factory=list)
@@ -155,8 +154,8 @@ def infer_peripherals(registers: dict[int, MMIORegister],
                       behavior_threshold: float = 0.5) -> list[Peripheral]:
     """从 MMIO 寄存器集合推断外设边界。
 
-    cluster_radius: 空间邻近阈值 (字节)——ARM Cortex-M 外设通常 ≤256B
-    behavior_threshold: 行为相似度阈值——共享 ≥50% 的访问函数 → 同外设"""
+    cluster_radius: 空间邻近阈值 (字节)，ARM Cortex-M 外设通常 ≤256B
+    behavior_threshold: 行为相似度阈值，共享 ≥50% 的访问函数 → 同外设"""
     if not registers:
         return []
 

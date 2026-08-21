@@ -1,4 +1,4 @@
-"""支配增强语义图 (DESG) 构建器 — 将 CFG 基本块关系扩展为异构图.
+"""支配增强语义图 (DESG) 构建器: 将 CFG 基本块关系扩展为异构图.
 三种边: E_bb 控制流边, E_dom 支配树边, E_pdom 后支配树边; 对控制流平坦化 (ollvm -fla) 天然鲁棒, 后支配树可恢复被 switch-case 打散的汇合点;
 节点嵌入字节熵特征 (语义等价块熵相近, 编译优化不改变熵分布), 支配树用 Cooper-Harvey-Kennedy 迭代算法 (O(N²) worst). 参考 ORCAS."""
 
@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 _log = logging.getLogger(__name__)
 
-# 支配深度阈值——超出此深度的 basic block 在 E_dom 中被剪枝
-# 过深的支配链通常是编译器展开的循环体，对语义差异不敏感
+# 支配深度阈值: 超出此深度的 basic block 在 E_dom 中被剪枝
+# 过深的支配链通常是编译器展开的循环体, 对语义差异不敏感
 _MAX_DOM_DEPTH = 8
 
 
@@ -20,20 +20,9 @@ def build_desg(
     """
     从 CFG 基本块列表构建支配增强语义图。
 
-    Args:
-        cfg_blocks: cfg_extractor.extract_cfg() 中单个函数的 blocks 列表，
-                    每项含 addr, size, successors (地址列表)
-        compute_entropy: 是否计算每个基本块的字节熵嵌入
-
-    Returns:
-        {
-          "nodes": {addr: {"entropy": float, "size": int, "n_succ": int}},
-          "edges_bb":   [(src, dst)],           # CFG 控制流边
-          "edges_dom":  [(idom, node)],          # 支配树边
-          "edges_pdom": [(ipdom, node)],         # 后支配树边
-          "entry": int,                          # 入口地址
-          "exit_addrs": [int],                   # 出口地址列表
-        }
+    cfg_blocks 为 cfg_extractor.extract_cfg() 中单个函数的 blocks 列表,
+    每项含 addr/size/successors; compute_entropy 控制是否计算字节熵嵌入。
+    返回 {nodes, edges_bb, edges_dom, edges_pdom, entry, exit_addrs}。
     """
     if not cfg_blocks:
         return {"nodes": {}, "edges_bb": [], "edges_dom": [],
@@ -163,7 +152,7 @@ def _compute_dominators(
         if n == entry:
             continue
         candidates = dom_sets[n] - {n}
-        # idom 是 dom 集合中"最接近" n 的节点——即被所有其他支配者支配
+        # idom 是 dom 集合中"最接近" n 的节点, 即被所有其他支配者支配
         best = entry
         for c in candidates:
             if c != n and best in dom_sets.get(c, set()):
@@ -179,8 +168,8 @@ def _estimate_block_entropy(size: int, n_succ: int) -> float:
 
     不对基本块逐字节计算（需要读取原始二进制），而是通过
     块的 size 和出边数 n_succ 进行启发式估计:
-      - 大块倾向于高熵（更多指令=更多不同的字节）
-      - 多出边块（switch/jump table）倾向于低熵（dispatcher pattern）
+      - 大块倾向于高熵 (更多指令=更多不同的字节)
+      - 多出边块 (switch/jump table) 倾向于低熵 (dispatcher pattern)
       - 归一化到 [0, 1]
     """
     if size <= 0:
@@ -193,7 +182,7 @@ def _estimate_block_entropy(size: int, n_succ: int) -> float:
 
 def desg_structural_hash(desg: Dict[str, Any]) -> str:
     """
-    计算 DESG 的结构哈希——对编译器优化不敏感的 CFG 指纹。
+    计算 DESG 的结构哈希: 对编译器优化不敏感的 CFG 指纹。
 
     仅使用支配树和后支配树的拓扑特征（节点度数分布），
     不使用字节级信息——使哈希对指令选择不敏感。

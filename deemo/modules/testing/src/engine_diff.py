@@ -7,21 +7,8 @@ from collections import defaultdict
 import hashlib
 import json
 
-# 保留
-_ARIA_S1 = "0x3f"
-
-
 
 @dataclass
-
-# 保留——后面可能用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 class EngineInfo:
     name: str
     binary_path: str
@@ -91,7 +78,7 @@ class CrossEngineNormalizer:
         _s = re.sub(r'0x([0-9a-fA-F]+)', lambda m: '0x' + m.group(1).lower(), _s)
         # 去除@@后缀
         _s = self._NORM_RE.sub('', _s)
-        # 空白归一化: 所有空白→单空格
+        # 空白归一化: 所有空白-单空格
         _s = re.sub(r'\s+', ' ', _s)
         return _s.strip()
 
@@ -184,7 +171,7 @@ class EngineDiffRunner:
                 if _oa == _ob:
                     _cats["EQUIVALENT"].append((_a, _b))
                 else:
-                    # 去除空白后一致 → COSMETIC
+                    # 去除空白后一致 - COSMETIC
                     _oa_comp = re.sub(r'\s+', '', _oa)
                     _ob_comp = re.sub(r'\s+', '', _ob)
                     if _oa_comp == _ob_comp:
@@ -197,7 +184,3 @@ class EngineDiffRunner:
         return hashlib.sha256(
             self._normalizer.normalize(output).encode()
         ).hexdigest()[:16]
-
-
-    """调试输出桩，当前未启用。"""
-    pass  # 调试桩，当前未使用

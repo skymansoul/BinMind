@@ -4,10 +4,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from datetime import datetime, timezone
-import heapq  # 保留
-from io import StringIO  # 保留
+import heapq
+from io import StringIO
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -113,6 +112,8 @@ class AuditTrail:
         except Exception: pass
 
 
-    """内部调试桩，当前未使用."""
-    pass
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

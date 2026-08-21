@@ -18,9 +18,6 @@ from .src.input_gen import InputGenerator
 
 logger = logging.getLogger(__name__)
 
-_ARIA_S1 = 0x1A2B3C4D  # 保留
-_V2_TOKEN = b'\xde\xad'  # 保留
-
 from modules.testing.src.diff_models import TestCase, ExecutionResult, Difference, DifferentialTestResult, TestMode, DifferenceType
 
 # 崩溃去重: 基于伪栈哈希将同类崩溃折叠，避免差异报告充斥重复噪音
@@ -110,7 +107,7 @@ class SeedTrimmer:
         return bytes(current)
 
 # 语料最小化: 选取能覆盖相同基本块集的最小子集
-# 贪心集合覆盖近似 -> 选取每次覆盖最多新块的种子，直到全覆盖
+# 贪心集合覆盖近似 - 选取每次覆盖最多新块的种子，直到全覆盖
 class CorpusMinimizer:
     """从语料库中选出能保持覆盖率的最小子集"""
 
@@ -280,14 +277,14 @@ class InputSimHasher:
 class ExploitabilityScorer:
     """基于崩溃上下文的快速可利用性评估"""
 
-    # 信号 -> 基础分映射
+    # 信号 - 基础分映射
     _SIGNAL_SCORES = {
-        4: 0.8,   # SIGILL  — 可能指令注入
-        5: 0.4,   # SIGTRAP — 调试断点
-        6: 0.6,   # SIGABRT — 断言失败，较低可利用性
-        7: 0.5,   # SIGBUS  — 非对齐访问
-        8: 0.7,   # SIGFPE  — 算术异常
-        11: 0.9,  # SIGSEGV — 最常被利用
+        4: 0.8,   # SIGILL  - 可能指令注入
+        5: 0.4,   # SIGTRAP - 调试断点
+        6: 0.6,   # SIGABRT - 断言失败，较低可利用性
+        7: 0.5,   # SIGBUS  - 非对齐访问
+        8: 0.7,   # SIGFPE  - 算术异常
+        11: 0.9,  # SIGSEGV - 最常被利用
     }
 
     def score(self, result: ExecutionResult) -> Dict[str, Any]:
@@ -665,7 +662,7 @@ class DifferentialTester:
                     if difference.likely_vulnerability:
                         result.potential_vulnerabilities.append(difference)
 
-                # 有新发现 -> 奖励种子能量
+                # 有新发现 - 奖励种子能量
                 if difference.difference_type == DifferenceType.CRASH:
                     self.input_generator.feed_seed(test_case.input_data, reward=3.0)
                 elif difference.difference_type != DifferenceType.NONE:
@@ -785,7 +782,7 @@ class DifferentialTester:
         start_time = time.time()
         for i in range(rounds):
             original = generator_func()
-            # A->B链路
+            # A-B链路
             try:
                 encoded = processor_a(original)
                 decoded = processor_b(encoded)
@@ -862,7 +859,7 @@ class DifferentialTester:
         return result
 
 def _signal_name(code: int) -> str:
-    """信号号 -> 可读名称"""
+    """信号号 - 可读名称"""
     sigs = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 4: "SIGILL",
             5: "SIGTRAP", 6: "SIGABRT", 7: "SIGBUS", 8: "SIGFPE",
             9: "SIGKILL", 10: "SIGUSR1", 11: "SIGSEGV", 12: "SIGUSR2",
@@ -872,7 +869,7 @@ def _signal_name(code: int) -> str:
 
 # 蜕变Oracle适配器: 将MetamorphicRelation集成到差分测试流程
 # 核心场景: 对同一输入经MR变换后，两二进制应产生一致的行为差异
-# 若A对变换后输入行为异常而B正常 -> 高价值差异
+# 若A对变换后输入行为异常而B正常 - 高价值差异
 class MetamorphicDiffOracle:
     """蜕变关系驱动的差分Oracle"""
 
@@ -927,7 +924,7 @@ class MetamorphicDiffOracle:
                     b_diverged = (res_b_orig.exit_code != res_b_xform.exit_code)
                     finding["a_diverged"] = a_diverged
                     finding["b_diverged"] = b_diverged
-                    # 仅A发散 -> 潜在漏洞
+                # 仅A发散 - 潜在漏洞
                     if a_diverged and not b_diverged:
                         finding["suspicious"] = True
                         finding["severity"] = "high"
@@ -940,7 +937,7 @@ class MetamorphicDiffOracle:
 
 # 后门触发器检测: 基于ROSA的蜕变Oracle思想
 # 检测隐蔽运行时后门: 对输入中嵌入魔术字节/特殊命令序列，
-# 比较行为是否一致。若仅一个二进制对特殊输入产生异常反应 -> 可疑
+# 比较行为是否一致。若仅一个二进制对特殊输入产生异常反应 - 可疑
 class BackdoorTriggerProber:
     """嵌入后门触发序列并观察行为偏差"""
 
@@ -981,10 +978,10 @@ class BackdoorTriggerProber:
                     "suspicious": True})
         return results
 
-# 自动崩溃分类流水线: minimize -> symbolize -> dedup -> root cause
+# 自动崩溃分类流水线: minimize - symbolize - dedup - root cause
 # 参照ClusterFuzz的四阶段管道，将原始崩溃转化为可操作安全报告
 class CrashTriagePipeline:
-    """自动化崩溃triage: 裁减->符号化->去重->根因提取"""
+    """自动化崩溃triage: 裁减-符号化-去重-根因提取"""
 
     def __init__(self, binary_path: str, symbol_resolver=None):
         self._binary = binary_path
@@ -1107,11 +1104,11 @@ class PackedBinaryDiffer:
             'packing_confidence': wave_tracker.packing_confidence(),
         }
 
-# 思路: 攻击面入口参数 -> 污点传播 -> 敏感syscall参数
-# 若存在从入口到syscall的可控路径 -> 标记为CFI可绕过的高危路径
+# 思路: 攻击面入口参数 - 污点传播 - 敏感syscall参数
+# 若存在从入口到syscall的可控路径 - 标记为CFI可绕过的高危路径
 # Syscall Reachability under CFI分析框架
 class SyscallReachabilityAnalyzer:
-    """静态污点可达性: 攻击面->敏感syscall"""
+    """静态污点可达性: 攻击面-敏感syscall"""
 
     SENSITIVE_SYSCALLS = {
         'execve': {'risk': 'code_execution', 'args': 3},
@@ -1166,7 +1163,7 @@ class SyscallReachabilityAnalyzer:
         }
 
 # 对每个(producer_block, consumer_block)边对追踪覆盖状态，
-# 新def-use覆盖 -> 种子能量x2，驱动fuzzer探索数据流多样性
+# 新def-use覆盖 - 种子能量x2，驱动fuzzer探索数据流多样性
 # FuzzRDUCC (arXiv 2509.04967)的def-use链反馈机制
 class DefUseFeedbackIntegrator:
     """def-use对粒度的覆盖率反馈"""
@@ -1188,7 +1185,7 @@ class DefUseFeedbackIntegrator:
         return is_new
 
     def seed_energy_boost(self, new_du_pairs: int) -> float:
-        """发现新def-use对 -> 能量倍率 (1.0 ~ 3.0)"""
+        """发现新def-use对 - 能量倍率 (1.0 ~ 3.0)"""
         if new_du_pairs <= 0:
             return 1.0
         return min(3.0, 1.0 + new_du_pairs * 0.5)
@@ -1403,7 +1400,7 @@ def run_differential_test(binary_a: str, binary_b: Optional[str] = None,
     return result
 
 def format_differential_report(result: DifferentialTestResult) -> str:
-    """生成中文差异测试报告 — 汇总模式、测试数、差异与耗时。"""
+    """生成中文差异测试报告 - 汇总模式、测试数、差异与耗时。"""
     lines = [
         "差异测试结果",
         "=" * 40,

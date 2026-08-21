@@ -1,17 +1,17 @@
-# 对比图检索——动态难负样本挖掘 + 动量编码器
+# 对比图检索-动态难负样本挖掘 + 动量编码器
 #
 # 核心问题: graph_contrastive_search.py使用静态负样本池（随机采样），
 # 负样本的"难度"不随训练进展调整。训练初期需要简单负样本（区分明显不同的函数），
-# 训练后期需要难负样本（区分同源但不同版本或不同编译选项的函数）——
+# 训练后期需要难负样本（区分同源但不同版本或不同编译选项的函数）-
 # 静态池无法满足这个课程需求。
 #
 # 技术方案:
-#   1. 动量编码器: 维护一个EMA更新的编码器副本——用于生成稳定的负样本嵌入
+#   1. 动量编码器: 维护一个EMA更新的编码器副本-用于生成稳定的负样本嵌入
 #   2. 动态难负样本队列: 维护FIFO队列（最近K个batch的嵌入），
 #      每个batch从队列中选出与anchor嵌入余弦相似度最高的top-M作为难负样本
 #   3. 课程式难度调度: 训练早期M小（少量难负样本），后期M大（多难负样本）
-#      ——等价于从简单→困难的课程
-#   4. 负样本去偏: 对队列中的负样本做去偏校正——
+#      -等价于从简单-困难的课程
+#   4. 负样本去偏: 对队列中的负样本做去偏校正-
 #      队列中的样本可能来自同一类别（假阴性），
 #      使用重要性采样权重校正此偏差
 #
@@ -36,7 +36,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -50,10 +49,10 @@ class RetrievalResult:
 
 
 class MomentumEncoder:
-    """动量编码器——EMA更新的编码器副本。
+    """动量编码器-EMA更新的编码器副本。
 
     θ_momentum = m · θ_momentum + (1 - m) · θ_online
-    其中m = 0.999（高动量→慢更新→稳定负样本嵌入）
+    其中m = 0.999（高动量-慢更新-稳定负样本嵌入）
 
     用途: 为负样本队列生成稳定的嵌入表示。
     如果使用在线编码器（快速更新），队列中的嵌入会迅速过时，
@@ -81,7 +80,7 @@ class MomentumEncoder:
 
 
 class DynamicHardNegativeQueue:
-    """动态难负样本队列——FIFO + 课程难度调度。
+    """动态难负样本队列-FIFO + 课程难度调度。
 
     队列大小: K = 4096（典型MoCo设置）
     难负样本数: M从M_min线性增长到M_max（课程调度）
@@ -114,16 +113,7 @@ class DynamicHardNegativeQueue:
                                anchor_emb: np.ndarray,
                                anchor_label: int,
                                current_epoch: int) -> List[np.ndarray]:
-        """从队列中采样难负样本。
-
-        Args:
-            anchor_emb: 锚点嵌入
-            anchor_label: 锚点标签（用于排除同类别假阴性）
-            current_epoch: 当前训练epoch（用于课程调度）
-
-        Returns:
-            难负样本嵌入列表
-        """
+        """从队列中采样难负样本。"""
         if len(self._queue) < self._hard_min:
             return []
 
@@ -160,7 +150,7 @@ class DynamicHardNegativeQueue:
 
 
 class ContrastiveGraphRetriever:
-    """对比图检索器——动量编码器+动态难负样本队列。
+    """对比图检索器-动量编码器+动态难负样本队列。
 
     训练流程:
       1. 在线编码器对anchor和positive编码
@@ -202,16 +192,7 @@ class ContrastiveGraphRetriever:
                query_emb: np.ndarray,
                index_pool: List[Tuple[str, np.ndarray]],
                top_k: int = 10) -> RetrievalResult:
-        """在索引池中检索相似函数。
-
-        Args:
-            query_emb: 查询函数嵌入
-            index_pool: [(func_id, embedding), ...]
-            top_k: 返回数量
-
-        Returns:
-            RetrievalResult
-        """
+        """在索引池中检索相似函数。"""
         import time as _time
         t0 = _time.perf_counter()
 

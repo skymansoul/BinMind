@@ -75,11 +75,12 @@ class MixHopLayer:
     """
 
     def __init__(self, in_dim: int, hidden_dim: int, hop_powers: List[int],
-                 activation: str = 'relu'):
+                 activation: str = 'relu', use_layer_norm: bool = True):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.hop_powers = hop_powers
         self.activation_name = activation
+        self.use_layer_norm = use_layer_norm
         self.num_hops = len(hop_powers)
 
         # 每跳独立权重矩阵
@@ -144,7 +145,7 @@ class MixHopLayer:
             for hop_idx in range(self.num_hops):
                 merged.extend(hop_outputs[hop_idx][i])
             # LayerNorm
-            if True:  # use_layer_norm
+            if self.use_layer_norm:
                 merged = self._layer_norm(merged)
             # 激活
             for j in range(len(merged)):
@@ -220,6 +221,7 @@ class MixHopGNN:
                     hidden_dim=dims[li + 1] // len(self.cfg.hop_powers),
                     hop_powers=self.cfg.hop_powers,
                     activation=self.cfg.activation,
+                    use_layer_norm=self.cfg.use_layer_norm,
                 )
             else:
                 # 后续层: 单跳 (hop_powers=[1]) 因为输入已经是混合特征
@@ -228,6 +230,7 @@ class MixHopGNN:
                     hidden_dim=dims[li + 1],
                     hop_powers=[1],
                     activation=self.cfg.activation,
+                    use_layer_norm=self.cfg.use_layer_norm,
                 )
             self.layers.append(layer)
 
@@ -341,8 +344,3 @@ def create_mixhop_encoder(in_dim: int = 12, hop_powers: List[int] = None,
 def create_descg_classifier() -> DESCGEncodingClassifier:
     return DESCGEncodingClassifier()
 
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

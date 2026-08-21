@@ -1,5 +1,5 @@
-# Taint tracking —— 栈级数据流追踪，intra-block 符号模拟 + inter-block BFS
-# 不拆: dispatch table 在文件末尾动态构建，拆了会丢初始化逻辑
+# Taint tracking: 栈级数据流追踪, intra-block 符号模拟 + inter-block BFS
+
 # 策略：不追求完备（solver 太慢），只追踪直接数据流
 from dataclasses import dataclass, field
 from typing import List, Dict, Set, Optional, Tuple
@@ -52,7 +52,7 @@ class TaintTracker:
     """栈级污点追踪器。模拟 EVM 栈的 push/pop/dup/swap，
     标记 TAINT_SOURCES 引入的数据并追踪其流向 TAINT_SINKS 的路径。
 
-    不执行实际计算——只追踪标签传播。
+    不执行实际计算, 只追踪标签传播。
     """
 
     def __init__(self):
@@ -369,7 +369,7 @@ class TaintTracker:
 
     def _merge_states(self, a: TaintState, b: TaintState) -> TaintState:
         """在交汇点合并两个前驱块的污点状态。
-        取并集——保守策略（任一前驱有 taint 则认为有 taint）。
+        取并集, 保守策略（任一前驱有 taint 则认为有 taint）。
         """
         _merged = a.copy()
         for _k, _v in b.stack_taint.items():

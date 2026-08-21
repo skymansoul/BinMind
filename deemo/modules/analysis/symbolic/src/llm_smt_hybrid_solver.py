@@ -1,12 +1,11 @@
-# 创建: 2023-12-08 08:10
-# 修改: 2025-01-13 — LLM 草图生成 + SMT 验证 + 结构哈希模板缓存
-# 修改: 2025-01-13 — 移除装饰性引用, 替换为 Z3
+# LLM 草图生成 + SMT 验证 + 结构哈希模板缓存
+# 移除装饰性引用, 替换为 Z3
 """
-LLM-SMT 混合约束求解器 — 神经符号约束求解管线。
+LLM-SMT 混合约束求解器 - 神经符号约束求解管线。
 
 传统符号执行中, 每个路径约束都调用 Z3 求解。问题:
   - 大量约束具有结构相似性 (同一循环展开的不同迭代)
-  - 中等复杂度约束——Z3 可解但耗时, LLM 可"猜"但不可靠
+  - 中等复杂度约束-Z3 可解但耗时, LLM 可"猜"但不可靠
   - 现有缓存 (IncrementalSolverCache) 仅命中精确匹配, 不利用语义相似性
 
 本模块在 Z3 之前插入 LLM 草图生成层:
@@ -16,13 +15,13 @@ LLM-SMT 混合约束求解器 — 神经符号约束求解管线。
   4. 增量学习: 成功的草图缓存为模板, 加速后续相似约束
 
 为什么选择 "LLM 草图 + SMT 验证" 而非 "LLM 替代 SMT":
-  SMT 保证 soundness——验证步骤消除 LLM 幻觉风险。
-  LLM 提供 speed——位向量代数对人类直观但 SMT 需 BDD/bit-blasting,
+  SMT 保证 soundness-验证步骤消除 LLM 幻觉风险。
+  LLM 提供 speed-位向量代数对人类直观但 SMT 需 BDD/bit-blasting,
   LLM 可从语义层"看出"解的结构, 跳过低级搜索。
 
 LLM 不可用时的降级路径: 直接调用 Z3, 行为等价于现有求解器。
 
-ref: — LLM 求解路径约束的实证研究,
+ref: LLM 求解路径约束的实证研究,
      本项目将 LLM 候选解生成 + SMT 验证的两阶段架构首次应用于二进制符号执行
 ref: Z3 — SMT 求解器,
      本项目的验证层基于 Z3 的 BitVec 模型检查
@@ -42,7 +41,7 @@ from typing import Any, Optional, Callable
 # 启发式: 按 'And(' 边界、'=='、'!=' 关系、独立变量集分组。
 
 def _decompose_constraint(constraint_str: str) -> list[str]:
-    """将复合约束拆分为独立子句。仅处理顶层 And 连接——嵌套 And 保留。"""
+    """将复合约束拆分为独立子句。仅处理顶层 And 连接-嵌套 And 保留。"""
     s = constraint_str.strip()
     if not s:
         return []
@@ -131,7 +130,7 @@ def _validate_sketch_z3(
     # 简化为: 将候选值代入约束, 检查是否满足
     try:
         s = Z3Solver()
-        s.set("timeout", 5000)  # 验证超时 5 秒——候选无效则放弃
+        s.set("timeout", 5000)  # 验证超时 5 秒-候选无效则放弃
 
         # 添加候选值作为等式约束
         for name, value in var_assignments.items():
@@ -150,7 +149,7 @@ def _validate_sketch_z3(
                 val = int(val_str, 16) if val_str.startswith('0x') else int(val_str)
                 if vname not in var_map:
                     var_map[vname] = BitVec(vname, 64)
-                    # 变量未在草图中——仍添加约束, 由 Z3 求解
+                    # 变量未在草图中-仍添加约束, 由 Z3 求解
                     s.add(Eq(var_map[vname], BitVecVal(val, 64)))
                     continue
                 if op == 'eq':
@@ -181,7 +180,7 @@ def _validate_sketch_z3(
 # 对于相似约束 (同一循环展开), 直接复用上次成功的草图结构。
 
 class ConstraintTemplateCache:
-    """约束解模板的 LRU 缓存。模式基于约束的"结构哈希"——去除具体常量,
+    """约束解模板的 LRU 缓存。模式基于约束的"结构哈希"-去除具体常量,
     仅保留变量名和操作符, 使得 x>10 和 x>20 共享同一模板。"""
 
     __slots__ = ('_cache', '_max_size', '_hits', '_misses')
@@ -193,7 +192,7 @@ class ConstraintTemplateCache:
         self._misses = 0
 
     def _structural_hash(self, constraint: str) -> str:
-        """约束的结构哈希——将具体常量替换为占位符。"""
+        """约束的结构哈希-将具体常量替换为占位符。"""
         normalized = re.sub(r'\b0x[0-9a-fA-F]+\b', '<HEX>', constraint)
         normalized = re.sub(r'\b\d+\b', '<INT>', normalized)
         normalized = re.sub(r'\s+', '', normalized)
@@ -274,7 +273,7 @@ class LLMSMTHybridSolver:
         return all_solutions if all_solutions else None
 
     def _solve_single(self, clause: str) -> dict[str, int] | None:
-        """求解单个约束子句——先查缓存, 再试 LLM, 最后回退 Z3。"""
+        """求解单个约束子句-先查缓存, 再试 LLM, 最后回退 Z3。"""
         # 第一层: 模板缓存
         if self._cache_enabled:
             cached = self._cache.get(clause)
@@ -298,7 +297,7 @@ class LLMSMTHybridSolver:
                             self._cache.put(clause, validated)
                             return validated
                     else:
-                        # 无 SMT 可用——直接信任 LLM (不推荐, 但至少返回)
+                        # 无 SMT 可用-直接信任 LLM (不推荐, 但至少返回)
                         self._stats['llm_sketch_hits'] += 1
                         return sketch
             except Exception:
@@ -315,7 +314,7 @@ class LLMSMTHybridSolver:
         return None
 
     def _z3_fallback(self, constraint_str: str) -> dict[str, int] | None:
-        """纯 Z3 求解——与现有 symexec_opt_passes 行为一致。"""
+        """纯 Z3 求解-与现有 symexec_opt_passes 行为一致。"""
         if not self._z3_factory:
             return None
         try:

@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-05-26  |  区间抽象域
-# 修改: 2026-05-26  |  审计后补充文件头与错误处理
 #
 """
-区间抽象域——轻量级抽象解释基础设施。
+区间抽象域-轻量级抽象解释基础设施。
 
 抽象域: 区间抽象（Box Domain），O(n×k²)。
 仅处理安全敏感操作(memcpy/strcpy等)的缓冲区语义，其余回退TOP。
@@ -19,7 +17,7 @@ _log = logging.getLogger(__name__)
 
 
 class AbstractValue:
-    """区间抽象值——变量的可能取值区间[min, max]。
+    """区间抽象值-变量的可能取值区间[min, max]。
 
     BOTTOM: 不可达(lo>hi); TOP: 任意值(±inf)
     """
@@ -54,7 +52,7 @@ class AbstractValue:
 
 @dataclass
 class AbstractState:
-    """抽象程序状态——变量名→AbstractValue映射"""
+    """抽象程序状态-变量名→AbstractValue映射"""
     variables: Dict[str, AbstractValue] = field(default_factory=dict)
     path_condition: str = ""
 
@@ -65,7 +63,7 @@ class AbstractState:
 
 
 class AbstractInterpreter:
-    """区间抽象解释器——对C代码片段执行区间抽象域语义分析。
+    """区间抽象解释器-对C代码片段执行区间抽象域语义分析。
 
     支持: 赋值/条件精化/敏感函数调用(memcpy等)
     限制: 无指针解引用/循环用加宽/跨函数回退TOP
@@ -78,7 +76,7 @@ class AbstractInterpreter:
     def interpret_sequence(self, lines: List[str],
                             initial_state: AbstractState = None
                             ) -> AbstractState:
-        """对代码行序列执行抽象解释——逐行更新区间状态"""
+        """对代码行序列执行抽象解释-逐行更新区间状态"""
         state = initial_state.copy() if initial_state else AbstractState()
         for line in lines:
             stripped = line.strip()
@@ -106,7 +104,7 @@ class AbstractInterpreter:
             self._model_call(m.group(1), m.group(2), state)
 
     def _eval(self, expr: str, state: AbstractState) -> Optional[AbstractValue]:
-        """表达式求值——常量/变量/二元运算的区间抽象"""
+        """表达式求值-常量/变量/二元运算的区间抽象"""
         expr = expr.strip().rstrip(';')
         try:
             v = float(expr)
@@ -134,7 +132,7 @@ class AbstractInterpreter:
         return None
 
     def _refine(self, cond: str, state: AbstractState):
-        """条件精化——保守区间收缩"""
+        """条件精化-保守区间收缩"""
         for op in ('>=', '<=', '>', '<', '=='):
             parts = cond.split(op)
             if len(parts) != 2:
@@ -155,7 +153,7 @@ class AbstractInterpreter:
             break
 
     def _model_call(self, func: str, args_str: str, state: AbstractState):
-        """敏感函数调用建模——缓冲区写入的抽象效果"""
+        """敏感函数调用建模-缓冲区写入的抽象效果"""
         args = [a.strip() for a in args_str.split(',')]
         if func in self._MEMORY_OPS and len(args) >= 2:
             dst = args[0]

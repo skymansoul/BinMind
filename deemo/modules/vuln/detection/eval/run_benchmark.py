@@ -1,4 +1,3 @@
-# 创建: 2026-07-24 | 多工具对比基准测试(重写)
 """对所有样本调binmind/angr/qemu/ghidra, 输出CSV。"""
 
 import csv, json, os, subprocess, sys, time

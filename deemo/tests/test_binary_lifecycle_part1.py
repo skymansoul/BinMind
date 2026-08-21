@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
 # 测试BinaryLifecycleManager的完整pipeline: register -> analyze -> trend -> alerts -> report
-# trends计算那块的sliding window逻辑有点绕
 
 import os
 import unittest
 import tempfile
 import shutil
 import time
-# import sys
 
 from modules.binary_lifecycle import (
     BinaryLifecycleManager,
@@ -21,7 +18,6 @@ from modules.binary_lifecycle import (
     format_lifecycle_report
 )
 
-_DEBUG_FLAG = False
 
 class TestBinarySignature(unittest.TestCase):
 
@@ -37,7 +33,6 @@ class TestBinarySignature(unittest.TestCase):
         self.assertEqual(sig.file_size, 1024)
 
 class TestSecurityMetrics(unittest.TestCase):
-    # 阈值通过反复测试收敛
 
     def test_initialization(self):
         metrics = SecurityMetrics(

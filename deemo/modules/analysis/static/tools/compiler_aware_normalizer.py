@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-08-22 14:10 - 初始创建: 编译器感知的函数归一化, 解决GCC内联libc别名问题
-# 2025-08-23 16:45 - 增加编译器模式识别: 区分GCC -O2消除的安全检查 vs 真正的缺失
+# 初始创建: 编译器感知的函数归一化, 解决GCC内联libc别名问题
+# 增加编译器模式识别: 区分GCC -O2消除的安全检查 vs 真正的缺失
 
-"""编译器感知的函数归一化 — 处理跨编译器/优化级别的语义等价差异
+"""编译器感知的函数归一化, 处理跨编译器/优化级别的语义等价差异
 
 GCC -O2 会将 malloc 内联为 __libc_malloc, 将 printf 替换为 __printf_chk
 若检测器只识别标准名称→跨编译器测试时漏报率急剧升高
@@ -64,7 +63,7 @@ _LIBC_ALIAS_MAP: Dict[str, str] = {
     '___pthread_mutex_unlock': 'pthread_mutex_unlock',
 }
 
-# FORTIFY_SOURCE 安全检查函数——这些不是漏洞
+# FORTIFY_SOURCE 安全检查函数, 这些不是漏洞
 _FORTIFY_FUNCTIONS: Set[str] = {
     '__chk_fail', '__stack_chk_fail', '__fortify_fail',
     '__stack_chk_fail_local',
@@ -93,11 +92,9 @@ class CompilerAwareNormalizer:
     def normalize_function_calls(
         self, asm_lines: List[Tuple[int, str]]
     ) -> List[Tuple[int, str]]:
-        """归一化所有函数调用名
+        """归一化所有函数调用名。
 
-        asm_lines: [(地址, 反汇编行)]
-
-        返回: 归一化后的列表 (地址不变)
+        asm_lines: [(地址, 反汇编行)]; 返回归一化后的列表 (地址不变)。
         """
         result = []
         for addr, text in asm_lines:

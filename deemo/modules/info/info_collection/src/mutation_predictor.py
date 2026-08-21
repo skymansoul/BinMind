@@ -1,9 +1,3 @@
-# Created: 2026-08-07 13:00:00
-# Modified: 2025-08-01 09:30:00 — replaced linear superposition with pairwise
-#   interaction model + greedy marginal-benefit optimization. Interaction effects
-#   between hardening measures (e.g., PIE+RELRO are more effective together than
-#   sum of individual effects) are captured by a 2-way interaction matrix.
-#
 # mutation_predictor — 交互感知的加固措施优化
 # 在给定实施预算约束下，选择最大化风险降幅的加固措施组合。
 # 使用贪心边际效益（每单位成本的风险降幅）选择，天然近似次模优化。

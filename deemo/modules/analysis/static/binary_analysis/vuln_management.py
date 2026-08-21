@@ -1,4 +1,4 @@
-# INTJ策略: SQLite而非JSON——CVE数据量大（10万+条），全量加载内存爆炸
+# 策略: SQLite而非JSON - CVE数据量大（10万+条），全量加载内存爆炸
 # SQLite FTS5全文搜索比手写倒排索引可靠，且支持并发读
 
 from __future__ import annotations

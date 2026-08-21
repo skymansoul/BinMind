@@ -2,15 +2,15 @@
 #
 # 对应论文:
 # Beyond Embeddings: Interpretable 特征提取 for Binary Code
-#   Similarity — [待验证]
+#   Similarity - [待验证]
 #
 # 设计意图:
-# 端到端嵌入(embedding)是黑盒——它能给出相似度分数，却无法回答"为何相似"
+# 端到端嵌入(embedding)是黑盒-它能给出相似度分数，却无法回答"为何相似"
 #   本模块在反编译伪代码文本上提取结构化语义特征:
-# (1) 调用模式 call patterns —— 被调函数集合 + 实参个数分布
-# (2) 常量统计 constants —— 整型/十六进制常量的量级与位宽分布
-# (3) CFG 形态 cfg morphology —— 控制块类型分布、嵌套深度、圈复杂度
-# (4) 字符串引用 string refs —— 字符串字面量及其语义分类
+# (1) 调用模式 call patterns - 被调函数集合 + 实参个数分布
+# (2) 常量统计 constants - 整型/十六进制常量的量级与位宽分布
+# (3) CFG 形态 cfg morphology - 控制块类型分布、嵌套深度、圈复杂度
+# (4) 字符串引用 string refs - 字符串字面量及其语义分类
 # 这些特征既可向量化供下游 ANN 排序，又可序列化为 JSON 供人工审计
 # 从而把"相似性判定"从不可解释的分数降级为可审计的证据链
 #
@@ -65,7 +65,7 @@ class CallPattern:
 @dataclass
 class ConstantStats:
     """常量统计：按位宽分桶，辅助识别 magic number 与哨兵值
-    
+
     value_hist 记录常量具体值（去重后的字符串形式）→ 出现次数
     使相似性对"具体魔数"敏感而非仅对位宽敏感；小常量在代码中
     常见（循环步长、布尔旗标），位宽直方图会把它们坍缩到同一桶
@@ -179,7 +179,7 @@ class FunctionFeature:
 
 class FeatureExtractor:
     """从反编译伪代码文本中提取 FunctionFeature
-    
+
     算法依据:
     调用模式/常量/字符串引用经正则扫描伪代码文本；
     CFG 形态优先使用 structured_pseudocode 模块的结构化提升结果
@@ -313,7 +313,7 @@ class FeatureExtractor:
                 cyclomatic_complexity=1 + decision_count,
                 branch_factor=round(decision_count / max(1, len(blocks)), 4),
             )
-        except Exception as e:  # noqa: BLE001 — 回退路径，不影响主流水线
+        except Exception as e:  # noqa: BLE001 - 回退路径，不影响主流水线
             logger.debug("structured_pseudocode 不可用，回退关键字启发式: %s", e)
             return self._extract_cfg_heuristic(code)
 
@@ -409,7 +409,7 @@ class SimilarityReport:
 
 class InterpretableSimilarity:
     """可解释相似性判定
-    
+
     对应论文: Beyond Embeddings
     差异点: 论文端到端黑盒嵌入；本实现叠加结构化特征，逐维度给出
     可审计的相似度证据，供安全分析人员复核而非盲信分数
@@ -521,7 +521,7 @@ class InterpretableSimilarity:
         if va or vb:
             lines.append(f"A 魔数值 {sorted(va)[:8]}，B 魔数值 {sorted(vb)[:8]}")
         if ha.get('64') or hb.get('64'):
-            lines.append("存在 64 位常量——可能是地址/指针或大整数")
+            lines.append("存在 64 位常量-可能是地址/指针或大整数")
         return lines
 
     @staticmethod

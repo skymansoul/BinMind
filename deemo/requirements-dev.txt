@@ -1,0 +1,24 @@
+# 开发与测试依赖 — 在 requirements-core 基础上追加
+-r requirements-core.txt
+
+# 符号执行
+angr>=9.2.0
+claripy>=9.2.0
+cle>=9.2.0
+pyvex>=9.2.0
+
+# Web API
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# 动态插桩
+frida>=16.0.0
+
+# 测试
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# 数值计算
+numpy>=1.24.0

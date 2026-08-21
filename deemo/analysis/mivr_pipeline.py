@@ -1,11 +1,8 @@
 """
 MIVR 管道集成 — 作为 GAPSBV 维度6, 提供路径敏感约束传播证明.
 
-与现有维度的关系:
-  - 互补于 dim1 (仿射关系): MIVR添加了传递性约束传播
-  - 强化 dim2 (守卫分析): MIVR做路径敏感传播而非简单的守卫匹配
-  - 精于 dim3 (StridedInterval): MIVR在then分支内精确传播而非全局区间
-  - 覆盖 dim4 (分配器语义): MIVR的L3层已包含chunk slack计算
+提供 L1/L2/L3 三层证明 (守卫约束/仿射传递/分配器语义),
+补充现有维度的路径敏感约束传播能力.
 
 设计原则 (功能只增不减):
   - 仅 FILTER 可证明安全的候选项
@@ -25,10 +22,9 @@ from analysis.mivr_pair_prover import PairProof, MIVRPairProver
 def dim6_mivr_constraint_proof(pseudocode: str) -> DimensionResult:
     """维度6: MIVR约束传播证明 — 路径敏感守卫→写入约束传播. (权重 0.30)
 
-    比 dim1-4 更精确的证明, 因为:
-      1. 只在then分支内传播约束 (真·路径敏感)
-      2. 通过赋值链传递性解析变量关系
-      3. 三层证明体系 (守卫/仿射/语义), 逐级降级
+    1. 只在then分支内传播约束 (真·路径敏感)
+    2. 通过赋值链传递性解析变量关系
+    3. 三层证明体系 (守卫/仿射/语义), 逐级降级
 
     保守性: 仅当 L1(硬证明) 或 L2(仿射证明) 或 L3(语义证明)
     任一返回 SAFE 时才判定 SAFE. 否则 UNCERTAIN.

@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-18  |  回归套件——结果收集与对比模块
 #
 """
 结果收集与对比模块: 读取 scan_results.json + expected.csv,

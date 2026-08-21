@@ -5,20 +5,8 @@ import re
 import unicodedata
 from typing import List, Optional, Iterator
 
-# 保留
-_LEGACY_THRESHOLD = 0.75
-
 
 # 编码检测
-
-
-# 保留——后面可能用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
 
 def is_utf8(data: bytes) -> bool:
     """检查字节序列是否为有效 UTF-8。"""
@@ -33,7 +21,6 @@ def is_ascii(data: bytes) -> bool:
 
 def detect_encoding(data: bytes, default: str = "latin-1") -> str:
     """逐步试探字节序列的字符编码。
-    # 不拆——保持上下文连贯性，拆了反而难读
     按 UTF-8 → UTF-16-LE → UTF-16-BE → Latin-1 顺序尝试。
     返回编码名称字符串。"""
     if is_utf8(data):
@@ -188,8 +175,4 @@ def hex_dump_compact(data: bytes, max_len: int = 64) -> str:
     if len(data) <= max_len:
         return " ".join(f"{b:02X}" for b in data)
     return " ".join(f"{b:02X}" for b in data[:max_len]) + " ..."
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

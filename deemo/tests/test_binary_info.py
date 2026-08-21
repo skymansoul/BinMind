@@ -37,32 +37,32 @@ class TestDetectFormat(unittest.TestCase):
     """Binary format auto-detection from magic bytes."""
 
     def test_pe_detection(self):
-        """MZ magic → PE"""
+        """MZ magic - PE"""
         data = b'MZ' + b'\x00' * 0x3C + struct.pack('<I', 0x40)
         self.assertEqual(detect_format(data), "PE")
 
     def test_elf_detection(self):
-        """\\x7fELF magic → ELF"""
+        """\x7fELF magic - ELF"""
         data = b'\x7fELF\x02\x01\x01\x00' + b'\x00' * 50
         self.assertEqual(detect_format(data), "ELF")
 
     def test_macho_64_detection(self):
-        """Mach-O 64-bit magic → MACHO"""
+        """Mach-O 64-bit magic - MACHO"""
         # 0xFEEDFACF in little-endian
         data = struct.pack('<I', 0xFEEDFACF) + b'\x00' * 30
         self.assertEqual(detect_format(data), "MACHO")
 
     def test_macho_32_detection(self):
-        """Mach-O 32-bit magic → MACHO"""
+        """Mach-O 32-bit magic - MACHO"""
         data = struct.pack('<I', 0xFEEDFACE) + b'\x00' * 30
         self.assertEqual(detect_format(data), "MACHO")
 
     def test_unknown_format(self):
-        """未知 magic → UNKNOWN"""
+        """未知 magic - UNKNOWN"""
         self.assertEqual(detect_format(b'\x00\x00\x00\x00'), "UNKNOWN")
 
     def test_empty_data(self):
-        """空数据 → UNKNOWN"""
+        """空数据 - UNKNOWN"""
         self.assertEqual(detect_format(b''), "UNKNOWN")
 
 
@@ -112,7 +112,7 @@ class TestParseELF(unittest.TestCase):
         self.assertEqual(result["class"], 1)
 
     def test_not_elf(self):
-        """非 ELF → None"""
+        """非 ELF - None"""
         result = parse_elf(b'MZ' + b'\x00' * 50)
         self.assertIsNone(result)
 
@@ -131,7 +131,7 @@ class TestParseMachO(unittest.TestCase):
         self.assertEqual(result["format"], "MACHO")
 
     def test_not_macho(self):
-        """非 Mach-O → None"""
+        """非 Mach-O - None"""
         result = parse_macho(b'\x00' * 10)
         self.assertIsNone(result)
 
@@ -186,9 +186,12 @@ class TestGetBinaryInfo(unittest.TestCase):
             info = get_binary_info("/nonexistent/file.bin")
             # 如果没抛异常，至少应有错误指示
             self.assertIsInstance(info, dict)
+            self.assertIn("format", info)
         except (FileNotFoundError, IOError):
-            # 预期行为
-            self.assertTrue(True)
+            # 预期行为：文件不存在时允许抛出
+            return
+        except Exception as e:
+            self.fail(f"非预期异常: {e!r}")
 
 
 if __name__ == "__main__":

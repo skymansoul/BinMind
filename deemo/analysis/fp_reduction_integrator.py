@@ -50,10 +50,9 @@ class AblationReport:
         return tp / remaining if remaining > 0 else 1.0
 
     def to_ablation_rows(self, tp_at_stages: List[int]) -> List[Dict[str, Any]]:
-        """生成消融表行 (论文Table 2格式).
+        """生成消融表行 (论文 Table 2 格式)。
 
-        Args:
-            tp_at_stages: 每阶段后的TP数 (需ground truth).
+        tp_at_stages 为每阶段后的 TP 数 (需 ground truth)。
         """
         rows = []
         for i, s in enumerate(self.stages):

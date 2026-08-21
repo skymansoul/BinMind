@@ -11,7 +11,7 @@ Merkle 树差异比较 — 利用树结构在 O(log n) 层级上短路，仅递�
 
 from __future__ import annotations
 
-from parallel_deep_dev.engine.merkle import MerkleNode
+from .merkle import MerkleNode
 
 
 def diff_trees(

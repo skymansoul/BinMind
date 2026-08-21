@@ -1,5 +1,5 @@
 """
-路径敏感约束收集器 — 在每条CFG路径上单独收集约束, 避免跨路径约束泄露与误报.
+路径敏感约束收集器, 在每条CFG路径上单独收集约束, 避免跨路径约束泄露与误报.
 从反编译文本构建简化CFG, 对每个(alloc,write)对枚举有界路径集, 每条路径收集基础约束+路径级guard约束;
 路径数超限或CFG构建失败时回退到全局收集(单路径, 含全部guard).
 """
@@ -129,7 +129,7 @@ def _strip_guard_constraints(
 
     路径无关约束: ALLOC_SIZE, COPY_SIZE, WRITE_OFFSET, LOOP_BOUND,
     TYPE_BOUND, AFFINE_RELATION, ALIGNMENT。
-    路径相关约束: GUARD_CONDITION — 需按路径重新注入。
+    路径相关约束: GUARD_CONDITION, 需按路径重新注入。
     """
     stripped = _clone_system(sys)
     stripped.constraints = [

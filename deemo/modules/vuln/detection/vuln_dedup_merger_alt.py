@@ -1,5 +1,5 @@
 # CRDT风格多源漏洞合并。
-# 三趟匹配：CVE ID精确→函数名+类型→地址邻近(±8字节)。
+# 三趟匹配：CVE ID精确, 函数名+类型, 地址邻近(±8字节)。
 # 冲突解决按字段优先级选取，产出统一合并结果。
 
 from dataclasses import dataclass, field
@@ -47,7 +47,7 @@ class MergeResult:
     total_input: int = 0
 
 
-# 字段优先级表——各工具对同一字段的可靠性排序。
+# 字段优先级表: 各工具对同一字段的可靠性排序。
 _FIELD_PRECEDENCE = {
     "function_name": ["ida", "ghidra", "r2"],
     "severity": ["ghidra", "ida", "r2"],
@@ -65,7 +65,7 @@ class VulnDedupMerger:
     """多源漏洞发现合并器。
 
     核心入口:
-        merge_from_sources(ghidra_findings, ida_findings, r2_findings) → MergeResult
+        merge_from_sources(ghidra_findings, ida_findings, r2_findings) - MergeResult
         三趟匹配+CRDT字段合并。
     """
 

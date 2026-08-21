@@ -1,11 +1,10 @@
-# LaTeX 对比表格生成器 — 从 benchmark.json 聚合工具指标.
+# LaTeX 对比表格生成器 - 从 benchmark.json 聚合工具指标.
 #
 # 决策逻辑:
 #   对每个工具计算 TP/FP/FN/TN, Recall, Precision, FPR, F1,
 #   平均耗时与平均峰值内存, 输出 LaTeX booktabs 表格.
 #   工具未运行 (全部 error) 时标注 n/a.
 #
-# 创建: 2026-05-18
 
 import json
 from pathlib import Path

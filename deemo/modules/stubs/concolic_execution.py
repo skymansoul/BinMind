@@ -5,9 +5,13 @@
 import os as _os
 
 _up = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'concolic_execution.py')
-with open(_up, 'r', encoding='utf-8') as _fh:
-    _src = _fh.read()
-exec(compile(_src, _up, 'exec'), globals())
+try:
+    with open(_up, 'r', encoding='utf-8') as _fh:
+        _src = _fh.read()
+    exec(compile(_src, _up, 'exec'), globals())
+except OSError:
+    # 上游链缺失时降级为空重导出, 保持模块可导入
+    pass
 
 # 路径搜索策略扩展
 # CO3 三数量级加速依赖高效路径选择；

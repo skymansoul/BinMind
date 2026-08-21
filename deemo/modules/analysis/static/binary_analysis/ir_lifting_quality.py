@@ -1,26 +1,25 @@
-# 创建: 2026-07-12 上午
-# 修改: 2026-07-12 — 虚拟栈检测 + 内存模型一致性评分
+# 虚拟栈检测 + 内存模型一致性评分
 """
-二进制 IR 提升质量评估器 — 无需 ground truth 的 IR 质量自动化度量。
+二进制 IR 提升质量评估器 - 无需 ground truth 的 IR 质量自动化度量。
 
 二进制提升器 (RetDec/Ghidra/McSema) 输出的 LLVM IR 在"功能正确性"和
 "分析适用性"两个维度上差异显著。Emulation-style IR (EIR) 使用虚拟栈、
-寄存器变量、缺少类型信息——功能正确但下游分析工具无法直接使用。
+寄存器变量、缺少类型信息 - 功能正确但下游分析工具无法直接使用。
 High-level IR (HIR) 尝试恢复变量和类型但可能引入语义错误。
 
 本模块提供三个维度的自动化质量评估 (不需要源码作为 ground truth):
-  1. 虚拟栈检测: 识别 alloca + store/load 模式——虚拟栈操作越多, IR 质量越低
+  1. 虚拟栈检测: 识别 alloca + store/load 模式 - 虚拟栈操作越多, IR 质量越低
   2. 内存模型一致性: 检测 IR 中的 load/store 是否与原始二进制的访存模式一致
   3. 分析适用性: 评估 IR 是否可被下游工具 (angr/Binsec) 直接消费
 
 每个维度 0-100 分, 综合加权为总质量分。
 60+ 分 → 适合下游分析; 40-59 → 需要手动标注; <40 → 仅适合模拟执行。
 
-ref: An & Lee — EIR vs HIR 转换, 本项目将其质量维度
+ref: An & Lee - EIR vs HIR 转换, 本项目将其质量维度
      量化为三个可自动计算的指标, 不依赖源码 ground truth
-ref: RetDec LLVM IR output format — 虚拟栈模式的定义参考,
+ref: RetDec LLVM IR output format - 虚拟栈模式的定义参考,
      本项目将其作为"低质量"基线
-ref: McSema (Trail of Bits) — 二进制提升器的语义正确性验证,
+ref: McSema (Trail of Bits) - 二进制提升器的语义正确性验证,
      本项目的内存模型一致性检查借鉴其"指令→IR 1:1 映射"思路
 """
 
@@ -42,7 +41,7 @@ class IRQualityReport:
 
 
 def detect_virtual_stack(ir_lines: list[str]) -> tuple[float, list[str]]:
-    """检测 EIR 的虚拟栈模式——alloca/load/store 围绕单个栈基址。
+    """检测 EIR 的虚拟栈模式 - alloca/load/store 围绕单个栈基址。
 
     虚拟栈特征: alloca 单个巨大数组 (模拟硬件栈), 所有局部变量
     通过 GEP 索引到此数组。越多此类模式 → 越低分。"""
@@ -103,7 +102,7 @@ def detect_memory_fidelity(ir_lines: list[str],
     # load/store 比率检查: 极端不对称暗示语义错误
     if load_count > 0 and store_count == 0 and original_ins_count > 10:
         score -= 15
-        issues.append('有 load 无 store——缺少副作用建模')
+        issues.append('有 load 无 store - 缺少副作用建模')
 
     return round(max(0, score), 1), issues
 
@@ -135,7 +134,7 @@ def detect_analysis_suitability(ir_lines: list[str]) -> tuple[float, list[str]]:
     # PHI nodes: 有 → +分 (SSA 完整)
     if phi_count == 0 and total_vars > 10:
         score -= 10
-        issues.append('无 PHI node——SSA 形式不完整, angr/Binsec 可能无法工作')
+        issues.append('无 PHI node - SSA 形式不完整, angr/Binsec 可能无法工作')
 
     # 未命名变量惩罚
     if unnamed_ratio > 0.5:

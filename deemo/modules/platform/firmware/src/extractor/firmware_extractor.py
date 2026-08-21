@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from core.config import Config, mask_sensitive_data
-from src.core import ResourceNode
+from ..src.core import ResourceNode
 
 logger = logging.getLogger(__name__)
 
@@ -351,7 +351,6 @@ class FirmwareExtractor:
                     continue
         return findings
 
-    # 保留 — binwalk 路径作为外部工具回退
     # def _extract_with_sasquatch(self, output_dir):
     #     """旧方案：直接用 sasquatch 提取 SquashFS（已弃用）。"""
     #     pass

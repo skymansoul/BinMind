@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-LLM-guided exploration 适配器 — bridges llm_explorer/ SymbolicExecutor
+LLM 引导探索适配器 — 桥接 llm_explorer/ 与 SymbolicExecutor。
 
-Architecture:
-- Composition over inheritance: LLMGuidedExplorer wraps llm_explorer's
-LLMGuidedPathExplorer SymbolicExecutor collaborators
-- PathRanker适配器 StrategySwitcher适配器 translate
-executor's state representation llm_explorer's PathState model
+架构:
+- 组合优于继承: LLMGuidedExplorer 把 llm_explorer 的
+  LLMGuidedPathExplorer 与 SymbolicExecutor 作为协作者包装
+- PathRankerAdapter / StrategySwitcherAdapter 负责在 executor 的
+  状态表示与 llm_explorer 的 PathState 模型之间转换
 
-Edge cases:
-- LLM API unavailable, 适配器 falls back heuristic ranking
-(built LLMPathRanker)
-- SymbolicExecutor initialized, lazy-init first explore
+边界情况:
+- LLM API 不可用时, 适配器回退到启发式排序 (内置 LLMPathRanker)
+- SymbolicExecutor 未初始化时, 首次 explore 前惰性初始化
 
-Time complexity:
-- explore_with_guidance(): O(max_steps * (step_time + ranking_time))
-Ranking O(P * 记录 P) for P active paths heuristic mode
-O(P + API_延迟) LLM mode
+时间复杂度:
+- explore_with_guidance(): O(max_steps * (step_time + ranking_time));
+  启发式模式下 P 条活跃路径的排序 O(P * log P),
+  LLM 模式 O(P + API 延迟)
 """
 # from collections import OrderedDict  # python3.7+不需要了
 from __future__ import annotations
@@ -27,22 +26,21 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 _log = logging.getLogger(__name__)
 
 
-# PathRanker适配器
+# PathRankerAdapter
 
 class PathRankerAdapter:
     """
-    Adapts llm_explorer's LLMPathRanker SymbolicExecutor's state interface
-    
-    转换 SymbolicState objects PathState objects ranker
-    consume. 处理 batch ranking 配置urable top-K
-    
-    INTJ策略: rank 50 states per batch stay LLM
-    context limits keep 延迟 sub-1-second for heuristic mode
-    For larger workloads, 使用 舍入-robin batching
+    把 llm_explorer 的 LLMPathRanker 适配到 SymbolicExecutor 的状态接口。
+
+    把 SymbolicState 对象转换为 ranker 消费的 PathState 对象,
+    处理批量排序与可配置 top-K。
+
+    设计策略: 每批排序 50 个状态, 保持在 LLM 上下文限制内,
+    启发式模式延迟亚秒级; 更大工作负载用轮询分批。
     """
 
     def __init__(self, api_key: str = "", model: str = ""):
-        from analysis.symbolic.llm_explorer.ranker import LLMPathRanker
+        from modules.analysis.symbolic.llm_explorer.ranker import LLMPathRanker
         self._ranker = LLMPathRanker(api_key=api_key, model=model) if model else LLMPathRanker(api_key=api_key)
 
     def rank_states(
@@ -51,20 +49,16 @@ class PathRankerAdapter:
         top_k: int = 10,
     ) -> List[Any]:
         """
-        Rank SymbolicState objects LLM interest score 返回 top-K
-        
-        转换 SymbolicState PathState, ranks, 返回
-        corresponding original states rank order
-        
-        Time: O(S * conversion + ranking). Space: O(S)
-        
-        Trade-off: Conversion overhead minimal (field copying)
-        real cost LLM API 延迟 (~200-500ms per batch)
+        按 LLM 兴趣分给 SymbolicState 对象排序, 返回 top-K。
+
+        把 SymbolicState 转为 PathState 后排序, 按排名顺序返回
+        对应的原始状态。转换开销极小 (字段复制), 实际成本是
+        LLM API 延迟 (~200-500ms 每批)。
         """
         if not states:
             return []
 
-        from analysis.symbolic.llm_explorer.ranker import PathState
+        from modules.analysis.symbolic.llm_explorer.ranker import PathState
 
         path_states: List[PathState] = []
         state_map: Dict[str, Any] = {}
@@ -93,12 +87,8 @@ class PathRankerAdapter:
         return result
 
     def score_single_state(self, state: Any) -> float:
-        """
-        Score a single state using heuristic ranking. O(1)
-        
-        返回 a float 0.0-1.0 higher = interesting
-        """
-        from analysis.symbolic.llm_explorer.ranker import PathState
+        """用启发式排序给单个状态打分, 返回 0.0-1.0, 越高越有趣。"""
+        from modules.analysis.symbolic.llm_explorer.ranker import PathState
         ps = PathState(
             state_id=str(getattr(state, 'state_id', 0)),
             address=getattr(state, 'pc', 0),
@@ -112,23 +102,22 @@ class PathRankerAdapter:
         return 0.0
 
 
-# StrategySwitcher适配器
+# StrategySwitcherAdapter
 
 class StrategySwitcherAdapter:
     """
-    Adapts llm_explorer's AdaptiveStrategySwitcher for SymbolicExecutor
-    strategy changes
-    
-    监控 execution metrics (active paths, 覆盖率 growth rate
-    danger function detection) decides switch strategies
-    
-    INTJ策略: Strategy switching triggered stagnation detection —
-    don't new 覆盖率 for N steps, rotate next
-    strategy. prevents stuck deep loops or dead code
+    把 llm_explorer 的 AdaptiveStrategySwitcher 适配到 SymbolicExecutor
+    的策略切换。
+
+    监控执行指标 (活跃路径数、覆盖率增长率、危险函数检测),
+    据此决定是否切换策略。
+
+    设计策略: 停滞检测触发策略切换 — 连续 N 步无新覆盖则轮换
+    到下一策略, 防止卡在深层循环或死代码中。
     """
 
     def __init__(self, stagnation_threshold: int = 20):
-        from analysis.symbolic.llm_explorer.strategy import AdaptiveStrategySwitcher
+        from modules.analysis.symbolic.llm_explorer.strategy import AdaptiveStrategySwitcher
         self._switcher = AdaptiveStrategySwitcher(stagnation_threshold=stagnation_threshold)
         self._strategy_map = {
             "bfs": "BFS",
@@ -144,14 +133,7 @@ class StrategySwitcherAdapter:
         new_coverage: bool,
         danger_detected: bool,
     ) -> str:
-        """
-        更新 strategy 基于 execution metrics
-        
-        返回 recommended strategy name (compatible
-        ExecutionStrategy enum)
-        
-        Time: O(1). Space: O(1)
-        """
+        """根据执行指标更新策略, 返回兼容 ExecutionStrategy 枚举的推荐策略名。"""
         llm_strategy = self._switcher.update(active_path_count, new_coverage, danger_detected)
         return self._strategy_map.get(llm_strategy.value, "DFS")
 
@@ -161,8 +143,8 @@ class StrategySwitcherAdapter:
         return self._strategy_map.get(llm_val, "DFS")
 
     def reset(self) -> None:
-        """重置 strategy default (BFS). O(1)"""
-        from analysis.symbolic.llm_explorer.strategy import AdaptiveStrategySwitcher
+        """把策略重置为默认 (BFS), O(1)。"""
+        from modules.analysis.symbolic.llm_explorer.strategy import AdaptiveStrategySwitcher
         self._switcher = AdaptiveStrategySwitcher()
 
 
@@ -170,20 +152,16 @@ class StrategySwitcherAdapter:
 
 class LLMGuidedExplorer:
     """
-    High-level LLM-guided symbolic exploration 入口
-    
-    Wraps SymbolicExecutor LLM-based path ranking adaptive
-    strategy switching. Designed a drop- replacement for direct
-    executor.explore() calls
-    
-    Design rationale:
-    - Composition over inheritance: wraps executor, doesn't extend
-    keeps executor interface clean LLM guidance
-    an optional enhancement layer
-    - Lazy initialization: ranker switcher 适配器s created
-    first 使用 允许 headless (-API-key) operation
-    
-    Time: explore_with_guidance()
+    高层 LLM 引导符号探索入口。
+
+    把 SymbolicExecutor 与基于 LLM 的路径排序、自适应策略切换
+    包装在一起, 设计为 executor.explore() 直接调用的即插即用替代。
+
+    设计依据:
+    - 组合优于继承: 包装 executor 而非扩展, 保持 executor 接口
+      干净, LLM 引导只是可选增强层
+    - 惰性初始化: ranker 与 switcher 适配器首次使用时创建,
+      允许无 API key 的无头运行
     """
 
     def __init__(
@@ -212,35 +190,23 @@ class LLMGuidedExplorer:
         max_steps: int = 5000,
     ) -> Dict[str, Any]:
         """
-        运行 LLM-guided symbolic exploration target_func
-        
-        1. 配置ures SymbolicExecutor LLM_GUIDED strategy
-        2. Periodically 调用 LLM path ranking prune/prioritize
-        3. 使用 adaptive strategy switching 检测 stagnation
-        4. 返回 aggregate results dict form
-        
-        Args:
-        target_func: Function name 分析
-        ir_fetcher: Callable address -> IRInstruction
-        entry_address: Starting PC for function
-        max_steps: Maximum exploration steps
-        
-        返回:
-        Dict keys: function, stats, 覆盖率, paths_explored
-        strategy_log, elapsed_seconds
-        
-        Time: O(max_steps * (step_time + ranking_time))
-        Space: O(max_states * state_size)
-        
-        Edge case: ir_fetcher None, 返回 empty results
-        (useful for testing a binary target)
+        对 target_func 运行 LLM 引导的符号探索。
+
+        1. 把 SymbolicExecutor 配置为 LLM_GUIDED 策略
+        2. 周期性调用 LLM 路径排序做剪枝/优先级调整
+        3. 用自适应策略切换检测停滞
+        4. 返回聚合结果字典, 键含 function、stats、coverage_count、
+           paths_explored、strategy_log、elapsed_seconds
+
+        ir_fetcher 为 address -> IRInstruction 的可调用;
+        为 None 时返回空结果 (适合无二进制目标的测试)。
         """
-        from analysis.symbolic.src.executor import SymbolicExecutor, SymbolicState, ExecutionStrategy
+        from modules.analysis.symbolic.src.executor import SymbolicExecutor, SymbolicState, ExecutionStrategy
         import time
 
         start_time = time.perf_counter()
 
-        # Lazy-init 适配器s
+        # 惰性初始化适配器
         if self._ranker_adapter is None:
             self._ranker_adapter = PathRankerAdapter(api_key=self._api_key)
         if self._strategy_adapter is None:
@@ -257,7 +223,7 @@ class LLMGuidedExplorer:
 
         # Inject LLM ranker executor
         try:
-            from analysis.symbolic.llm_explorer.ranker import LLMPathRanker
+            from modules.analysis.symbolic.llm_explorer.ranker import LLMPathRanker
             executor._llm_ranker = LLMPathRanker(api_key=self._api_key)
         except ImportError:
             _log.info("llm_explorer not available — using heuristic exploration")
@@ -272,7 +238,7 @@ class LLMGuidedExplorer:
             )
         else:
             # 返回 empty result for -binary case
-            from analysis.symbolic.src.executor import SymbolicExplorationResult
+            from modules.analysis.symbolic.src.executor import SymbolicExplorationResult
             result = SymbolicExplorationResult()
 
         elapsed = time.perf_counter() - start_time
@@ -294,37 +260,26 @@ class LLMGuidedExplorer:
         self,
         executor: Any,
     ) -> None:
-        """
-        Integrate LLM guidance an existing SymbolicExecutor
-        
-        Sets executor's strategy LLM_GUIDED injects
-        LLM ranker for path prioritization
-        
-        Time: O(1). Space: O(1)
-        """
-        from analysis.symbolic.src.executor import ExecutionStrategy
+        """把 LLM 引导集成进现有 SymbolicExecutor: 策略设为
+        LLM_GUIDED 并注入路径优先级排序用的 LLM ranker。"""
+        from modules.analysis.symbolic.src.executor import ExecutionStrategy
         self._executor = executor
         executor.strategy = ExecutionStrategy.LLM_GUIDED
 
         # Inject LLM ranker
         try:
-            from analysis.symbolic.llm_explorer.ranker import LLMPathRanker
+            from modules.analysis.symbolic.llm_explorer.ranker import LLMPathRanker
             executor._llm_ranker = LLMPathRanker(api_key=self._api_key)
         except ImportError:
             _log.info("LLM ranker injection failed — heuristic fallback")
 
     def get_stats(self) -> Dict[str, Any]:
-        """返回 exploration statistics. O(1)"""
+        """返回探索统计, O(1)。"""
         return dict(self._stats)
 
 
-# Dead code — 留着备用，后面可能用
-
-def _generate_ExplorationSummaryReport(results: Dict[str, Any]) -> str:
-    """构造 a markdown summary exploration results. Never
-    
-    这个函数是用来生成探索结果的Markdown报告的，暂时没用上
-    """
+def generate_exploration_summary_report(results: Dict[str, Any]) -> str:
+    """把探索结果渲染为 Markdown 摘要。"""
     lines = [
         f"# Exploration Summary: {results.get('function', 'unknown')}",
         "",
@@ -345,5 +300,5 @@ __all__ = [
     "LLMGuidedExplorer",
     "PathRankerAdapter",
     "StrategySwitcherAdapter",
-    "_generate_ExplorationSummaryReport",
+    "generate_exploration_summary_report",
 ]

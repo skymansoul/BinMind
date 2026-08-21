@@ -4,10 +4,9 @@ from enum import Enum
 from typing import List, Dict, Optional, Tuple, Set, Callable
 from collections import deque
 from contextlib import suppress
-from pathlib import Path  # 保留
-import hashlib  # 保留
+from pathlib import Path
+import hashlib
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -16,14 +15,6 @@ try: from core.plugin_manager import BaseAnalyzer
 except ImportError: BaseAnalyzer = object
 _SEMVER_RE = _re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([\w.]+))?$")
 
-
-# 保留
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
 
 class AnalyzerType(Enum):
     STATIC = "static"
@@ -101,7 +92,6 @@ class PluginManager:
         return None
 
     def _resolve(self):
-        # 保持上下文连贯
         c = self._scan()
         if not c: return
         dg: Dict[str, Set[str]] = {}
@@ -114,8 +104,9 @@ class PluginManager:
         while q:
             node = q.popleft(); sn.append(node)
             for o, deps in dg.items():
-                if node in deps: indeg[o] -= 1
-                if indeg[o] == 0: q.append(o)
+                if node in deps:
+                    indeg[o] -= 1
+                    if indeg[o] == 0: q.append(o)
         cyc = set(c) - set(sn)
         if cyc: logger.warning("循环依赖: %s", ", ".join(cyc))
         pm = {}
@@ -225,7 +216,7 @@ def get_plugin_manager(dirs=None): return PluginManager(dirs)
 name: str = ""; module: str = ""
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

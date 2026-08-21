@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-04-26  |  修复优先级优化器
-# 修改: 2026-04-26  |  审计后补充文件头与错误处理
 #
 """
-风险感知的漏洞修复优先级优化——资源约束下的最优修复调度。
+风险感知的漏洞修复优先级优化-资源约束下的最优修复调度。
 
 技术问题:
   现有漏洞优先级系统(CVSS/EPSS/SSVC/KEV)评分个体漏洞,
@@ -11,7 +9,7 @@
     给定N个漏洞+每漏洞修复成本+有限的工程师时间预算,
     以何种顺序修复可使预期损失最小化?
 
-  这是一个受资源约束的序列决策问题——
+  这是一个受资源约束的序列决策问题-
   修复顺序影响时间线上的累积风险暴露。
 
 解决方案:
@@ -34,9 +32,9 @@
     本模块: 输出最优修复序列+累积风险曲线+资源分配方案
 
   与MEWF/EPASS的集成:
-    MEWF → weaponization_prob_30d(武器化时间线)
-    EPASS → 临时沙箱防护(降低暴露风险直至修复完成)
-    VAGS  → 攻击图(复合漏洞链的风险放大)
+    MEWF - weaponization_prob_30d(武器化时间线)
+    EPASS - 临时沙箱防护(降低暴露风险直至修复完成)
+    VAGS  - 攻击图(复合漏洞链的风险放大)
 """
 
 import math
@@ -52,7 +50,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class FixItem:
-    """单个待修复漏洞——含风险与成本估计"""
+    """单个待修复漏洞-含风险与成本估计"""
     vuln_id: str
     cve_id: str = ""
     function_name: str = ""
@@ -70,13 +68,13 @@ class FixItem:
     depends_on: List[str] = field(default_factory=list)  # 前置修复的vuln_id
     # 计算字段
     risk_score: float = 0.0
-    risk_density: float = 0.0               # risk/cost——排序依据
+    risk_density: float = 0.0               # risk/cost-排序依据
     optimal_position: int = -1              # 最优修复顺序中的位置
 
 
 @dataclass
 class FixSchedule:
-    """修复调度——最优修复序列+累积风险"""
+    """修复调度-最优修复序列+累积风险"""
     ordered_fixes: List[FixItem] = field(default_factory=list)
     total_fix_hours: float = 0.0
     # 累积风险指标
@@ -94,10 +92,10 @@ class FixSchedule:
 class RavoOptimizer:
     """风险感知的漏洞修复优先级优化器。
 
-    核心算法——贪心风险密度排序:
+    核心算法-贪心风险密度排序:
       1. 计算每漏洞的risk_score = CVSS_norm × weapon_prob × (1 - complexity)
       2. 计算risk_density = risk_score / fix_hours
-      3. 按risk_density降序排列→最优修复顺序
+      3. 按risk_density降序排列-最优修复顺序
       4. 考虑依赖拓扑: 依赖项必须先于被依赖项修复
       5. 考虑沙箱防护: 有临时防护的漏洞可延后(风险暂时被抑制)
 
@@ -146,7 +144,7 @@ class RavoOptimizer:
                 depends_on=v.get('depends_on', []),
                 risk_score=round(risk, 4))
 
-            # 沙箱延迟: 有临时防护→有效风险降低
+            # 沙箱延迟: 有临时防护-有效风险降低
             if enable_sandbox_delay and item.sandbox_mitigation_available:
                 item.risk_score *= (1.0 - item.sandbox_risk_reduction)
 
@@ -156,7 +154,7 @@ class RavoOptimizer:
         if not items:
             return FixSchedule()
 
-        # 拓扑排序——依赖项优先
+        # 拓扑排序-依赖项优先
         ordered = self._topological_sort(items)
 
         # 按risk_density降序稳定排序(保持拓扑约束)
@@ -179,7 +177,7 @@ class RavoOptimizer:
                 cumulative_hours += item.estimated_fix_hours
                 # 修复后此漏洞的剩余暴露=0
             else:
-                # 超出预算——此漏洞及后续未被修复, 暴露持续
+                # 超出预算-此漏洞及后续未被修复, 暴露持续
                 residual += item.risk_score
 
             # 追踪50%风险削减的里程碑
@@ -207,10 +205,10 @@ class RavoOptimizer:
             fixes_until_80pct_coverage=fixes_80pct)
 
     def _topological_sort(self, items: List[FixItem]) -> List[FixItem]:
-        """拓扑排序——保证依赖项在依赖者之前。
+        """拓扑排序-保证依赖项在依赖者之前。
 
-        Kahn算法——O(|V| + |E|)。
-        若存在循环依赖→保留原始顺序(不打断——循环依赖本身是问题)。
+        Kahn算法-O(|V| + |E|)。
+        若存在循环依赖-保留原始顺序(不打断-循环依赖本身是问题)。
         """
         id_to_item = {item.vuln_id: item for item in items}
         in_degree = {item.vuln_id: len(item.depends_on) for item in items}

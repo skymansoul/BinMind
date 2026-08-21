@@ -1,7 +1,5 @@
-# 创建: 2026-04-25 15:52
-# 修改: 2026-04-25 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: EBM玻璃盒CVE评分
-# 可解释增强机 — CVE评分的玻璃盒模型
+# EBM玻璃盒CVE评分
+# 可解释增强机 - CVE评分的玻璃盒模型
 #
 # 问题: XGBoost/LightGBM在CVE评分中表现优异 (82.3-82.9%准确率,
 # IEEE Access 2025), 但属于黑盒. 黑盒模型在安全运维中面临信任障碍:
@@ -45,7 +43,7 @@ from typing import Dict, List, Optional, Tuple
 # 在>1000样本时建议替换为解析梯度 (手动反向传播) 或 autograd.
 # 当前实现适用于原型验证和小规模实验.
 class ExplainableBoostingMachine:
-    """简化EBM — 循环增强+分箱形状函数."""
+    """简化EBM - 循环增强+分箱形状函数."""
 
     def __init__(self, n_bins=20, n_rounds=30, lr=0.05, max_interactions=5):
         self._B = n_bins; self._R = n_rounds; self._lr = lr

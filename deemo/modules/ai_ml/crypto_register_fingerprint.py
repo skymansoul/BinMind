@@ -1,20 +1,20 @@
-# 密码原语寄存器指纹识别——从寄存器分配模式推断密码算法
+# 密码原语寄存器指纹识别-从寄存器分配模式推断密码算法
 #
 # 核心问题: register_pattern_ml.py分析寄存器使用模式用于编译器识别，
-# 但忽略了更深层的信号——密码算法的寄存器使用模式高度特征化。
+# 但忽略了更深层的信号-密码算法的寄存器使用模式高度特征化。
 # AES使用大量XMM寄存器+固定的xor/shift模式，RSA使用大整数乘法
 # （mul/adc链），ChaCha20使用固定的quarter-round旋转模式。
 # 这些模式在寄存器分配中留下了可识别的"指纹"。
 #
 # 技术方案:
 #   1. 寄存器活动矩阵: 对每条指令记录"读寄存器集合"和"写寄存器集合"，
-#      构建指令→寄存器访问的二部图
+#      构建指令-寄存器访问的二部图
 #   2. 密码原语模板匹配: 对已知密码原语（AES/SHA/ChaCha/RSA/ECC）
-#      构建寄存器使用模板——特定模式的寄存器活动序列
-#   3. 滑动窗口匹配: 在函数指令流上滑动窗口→与模板比较
+#      构建寄存器使用模板-特定模式的寄存器活动序列
+#   3. 滑动窗口匹配: 在函数指令流上滑动窗口-与模板比较
 #   4. 置信度评分: 匹配分数考虑了模板覆盖率+序列一致性+上下文
 #
-# 新颖性: 首次通过寄存器分配模式识别密码原语——无需反编译到高级语言
+# 新颖性: 首次通过寄存器分配模式识别密码原语-无需反编译到高级语言
 
 from __future__ import annotations
 
@@ -27,7 +27,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -87,7 +86,7 @@ class CryptoRegisterFingerprinter:
         CryptoPrimitive.MD5: {'rol', 'add', 'xor', 'and', 'or', 'not', 'mov'},
     }
 
-    # 寄存器使用模式——各原语的特征寄存器组
+    # 寄存器使用模式-各原语的特征寄存器组
     _REGISTER_PATTERNS = {
         CryptoPrimitive.AES: {'xmm', 'ymm'},
         CryptoPrimitive.SHA256: {'eax', 'ebx', 'ecx', 'edx', 'esi', 'edi'},
@@ -166,11 +165,7 @@ class CryptoRegisterFingerprinter:
     def identify(self,
                  instructions: List[str],
                  start_addr: int = 0) -> List[CryptoMatch]:
-        """识别指令序列中的密码原语。
-
-        Returns:
-            匹配到的密码原语列表，按置信度降序
-        """
+        """识别指令序列中的密码原语。"""
         accesses = self.extract_reg_accesses(instructions, start_addr)
         if len(accesses) < 10:
             return []
@@ -209,7 +204,7 @@ class CryptoRegisterFingerprinter:
 
     def _match_window(self, accesses: List[RegAccess]
                       ) -> Tuple[CryptoPrimitive, float]:
-        """在指令窗口内匹配密码原语——频率+转移概率双通道"""
+        """在指令窗口内匹配密码原语-频率+转移概率双通道"""
         mnemonic_counts = defaultdict(int)
         xmm_count = 0
         bigrams = defaultdict(int)
@@ -264,7 +259,7 @@ class CryptoRegisterFingerprinter:
         return best_prim, best_score
 
     def _detect_key_schedule(self, accesses: List[RegAccess]) -> bool:
-        """检测密钥扩展模式——连续的常量加载+移位/xor操作"""
+        """检测密钥扩展模式-连续的常量加载+移位/xor操作"""
         const_loads = 0
         shift_xor = 0
         for acc in accesses:

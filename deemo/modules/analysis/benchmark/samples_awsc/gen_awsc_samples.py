@@ -1,4 +1,4 @@
-# AWSC 验证样本生成器 — 同源分配-写入关联测试集
+# AWSC 验证样本生成器 - 同源分配-写入关联测试集
 #
 # 目标: 量化 AWSC (Allocation-Write Co-Sourcing) 引擎对
 # "分配大小 = 写入大小且同根来源" 类误报的过滤能力.
@@ -16,7 +16,6 @@
 #
 # 判定依据: AWSC 引擎后向根来源追踪, 若 alloc_root == write_root
 # 且 write_const <= alloc_const → SAFE; 若偏移超过 padding → 溢出.
-# 创建: 2026-06-26
 
 import json
 import subprocess

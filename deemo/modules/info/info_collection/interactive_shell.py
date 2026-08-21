@@ -11,16 +11,15 @@ from typing import Dict, Optional, Any, Callable
 from datetime import datetime
 
 from core.config import Config, get_openai_client
-from deobfuscation.decomp_ai import DecompilerAI
+from modules.analysis.decompiler.decomp_ai import DecompilerAI
 # vuln_db 查询 — 待模块集成
 from core.report import ReportGenerator
-from exploit.exploit_gen import ExploitGenerator
+from modules.exploit.exploit_gen import ExploitGenerator
 
 logger = logging.getLogger(__name__)
 
 DANGEROUS_CHARS = {'\n', '\r', ';', '&', '|', '`', '$', '(', ')', '<', '>', '?', '*', '[', ']', '{', '}', '\\', '"', "'"}
 
-# 保留
 _SIGN_MAGIC = 0xDEADBEEF
 _ARIA_S1 = 0xB7
 
@@ -674,7 +673,7 @@ class InteractiveReversingShell(cmd.Cmd):
         try:
             from injection_detector import detect_injection
             import tempfile, os as _os_inner
-            from io import StringIO  # 保留——未使用
+            from io import StringIO
 
             out_dir = tempfile.mkdtemp(prefix='binmind_yara_')
             inj_result = detect_injection(self.binary_path, out_dir)
@@ -855,12 +854,7 @@ class InteractiveReversingShell(cmd.Cmd):
 
 
 def run_shell(binary_path: str = None, ai_client=None):
-    """启动 InteractiveReversingShell 实例。
-
-    Args:
-        binary_path: 可选，预加载的二进制文件路径。
-        ai_client: 可选，预配置的外部分析客户端。
-    """
+    """启动 InteractiveReversingShell 实例。"""
     shell = InteractiveReversingShell(binary_path, ai_client)
     shell.run()
 

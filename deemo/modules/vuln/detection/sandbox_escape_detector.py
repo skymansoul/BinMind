@@ -1,5 +1,5 @@
 # 沙箱逃逸检测。解析strace/sysdig调用序列，标记危险syscall并评估逃逸概率。
-# 核心信号：ptrace→execve→setuid提权链、mmap/mprotect PROT_EXEC标志、
+# 核心信号：ptrace-exec-setuid提权链、mmap/mprotect PROT_EXEC标志、
 # chroot/pivot_root namespace突破路径。参考Linux seccomp内核文档。
 # PROT_EXEC(0x4)位标记可执行内存分配，为shellcode暂存前置特征。
 
@@ -204,20 +204,20 @@ class SandboxEscapeDetector:
 
     def _generate_description(self, syscall_name, syscall):
         dct_descriptions = {
-            'ptrace': 'ptrace调用——debugger attach或代码注入向量',
-            'execve': 'execve调用——进程镜像替换，可能启动恶意二进制',
-            'execveat': 'execveat调用——相对路径exec，风险等同于execve',
-            'fork': 'fork调用——子进程创建，可能指示持久化机制',
-            'clone': 'clone调用——轻量进程/线程创建，共享资源',
-            'setuid': 'setuid调用——用户身份变更，提权尝试',
-            'setgid': 'setgid调用——组身份变更，提权尝试',
-            'chroot': 'chroot调用——文件系统根目录切换，沙箱逃逸标志',
-            'pivot_root': 'pivot_root调用——namespace根交换，容器逃逸标志',
-            'mount': 'mount调用——文件系统挂载操作，可能暴露宿主机路径',
-            'mmap': 'mmap调用——可配置保护标志的内存映射',
-            'mprotect': 'mprotect调用——运行时内存保护修改，可能为shellcode暂存',
-            'socket': 'socket调用——网络套接字创建，沙箱出口尝试',
-            'syscall': '原始syscall指令——绕过libc封装，可能规避seccomp过滤器'}
+            'ptrace': 'ptrace调用-debugger attach或代码注入向量',
+            'execve': 'execve调用-进程镜像替换，可能启动恶意二进制',
+            'execveat': 'execveat调用-相对路径exec，风险等同于execve',
+            'fork': 'fork调用-子进程创建，可能指示持久化机制',
+            'clone': 'clone调用-轻量进程/线程创建，共享资源',
+            'setuid': 'setuid调用-用户身份变更，提权尝试',
+            'setgid': 'setgid调用-组身份变更，提权尝试',
+            'chroot': 'chroot调用-文件系统根目录切换，沙箱逃逸标志',
+            'pivot_root': 'pivot_root调用-namespace根交换，容器逃逸标志',
+            'mount': 'mount调用-文件系统挂载操作，可能暴露宿主机路径',
+            'mmap': 'mmap调用-可配置保护标志的内存映射',
+            'mprotect': 'mprotect调用-运行时内存保护修改，可能为shellcode暂存',
+            'socket': 'socket调用-网络套接字创建，沙箱出口尝试',
+            'syscall': '原始syscall指令-绕过libc封装，可能规避seccomp过滤器'}
         return dct_descriptions.get(syscall_name,
                                     f'检测到危险syscall: {syscall_name}')
 

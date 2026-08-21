@@ -93,11 +93,7 @@ def _dim7_pre_alloc_constraint(pseudocode: str) -> DimensionResult:
 def detect_heap_overflow_gapsbv(pseudocode: str) -> GapsbvReport:
     """GAPSBV 端到端堆溢出检测。
 
-    Args:
-        pseudocode: C 源码或 Ghidra/IDA 反编译伪代码
-
-    Returns:
-        GapsbvReport 包含最终 verdict, confidence, 各维度详情
+    返回含最终 verdict/confidence/各维度详情的 GapsbvReport。
     """
     # 先展开宏, 再提取守卫边界 (用于精化仿射关系分析)
     expanded = _resolve_macros(pseudocode)

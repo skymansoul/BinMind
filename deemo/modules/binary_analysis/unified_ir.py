@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import json
+from enum import Enum
 from typing import Dict, Any, List, Optional, Set
 from collections import defaultdict
 
@@ -246,7 +247,7 @@ class R2ESILBackend(IRBackend):
         return result
 
 class GhidraPcodeBackend(IRBackend):
-    """Ghidra Pcode backend — 通过 headless modeexport p-code JSON"""
+    """Ghidra Pcode backend - 通过 headless modeexport p-code JSON"""
 
     NAME = "ghidra_pcode"
 
@@ -410,7 +411,7 @@ if func:
         return result
 
 class BinaryNinjaLLILBackend(IRBackend):
-    """Binary Ninja LLIL backend — 通过 binaryninja Python API 提升"""
+    """Binary Ninja LLIL backend - 通过 binaryninja Python API 提升"""
 
     NAME = "binja_llil"
 
@@ -638,4 +639,3 @@ def lift_and_analyze(binary_path: str, func_name: str,
         'patterns': patterns
     }
 
-taint_track = taint_trackmatch_vuln_patterns = match_vuln_patternslift_and_analyze = lift_and_analyze

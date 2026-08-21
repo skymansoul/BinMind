@@ -1,7 +1,6 @@
 # 偏移值域追踪器 — 从堆分配到访问的偏移值流分析, 用路径约束窄化区间.
 # 数据类型已提取到 _offset_types.py, 后向追踪和工具方法已提取到 _offset_trace_mixin.py.
 # 本文件保留核心追踪逻辑: track/_parse_offset_reg/_apply_branch_narrowing/_try_prove.
-# 创建: 2025-06-09 | 拆分: 2025-06-09
 
 import re
 from typing import List, Optional, Tuple

@@ -1,11 +1,17 @@
-# 对比实验主启动脚本 —— 喂样本→跑四工具→收集指标。
+# 对比实验主启动脚本 - 喂样本→跑四工具→收集指标。
 # 用法: python -m testing.benchmark.run_benchmark --samples <dir> [--timeout N]
-# 创建: 2026-07-23
 
 import json, os, sys, time
-from testing.benchmark.collect_metrics import collect_all_metrics, generate_latex_table
-from testing.benchmark.plot_results import generate_plots
+from .collect_metrics import collect_all_metrics, generate_latex_table
 
+# plot_results 位于 scripts/ 下, 此处按相对包名导入失败时降级为提示,
+# 不影响本模块其余功能 (图表生成由 scripts/plot_results.py 单独完成)
+try:
+    from .plot_results import generate_plots
+except ImportError:
+    def generate_plots(report, output_dir):
+        print(f"  [WARN] 未找到 testing.benchmark.plot_results, 图表生成跳过 "
+              f"(可使用 scripts/plot_results.py 输出相同图表)")
 
 MULTI_TOOL = False  # angr/QEMU/Ghidra 需单独安装, 默认只跑本工具
 
@@ -21,8 +27,8 @@ def main(samples_dir: str, timeout_sec: int = 120):
 
     # 收集本工具指标
     print("\n[1/3] 本工具扫描...")
-    from testing.regression.compile_samples import compile_all
-    from testing.regression.scan_runner import run_scan, ScanResult
+    from ..regression.compile_samples import compile_all
+    from ..regression.scan_runner import run_scan
 
     binaries = compile_all(samples_dir)
     our_results = []

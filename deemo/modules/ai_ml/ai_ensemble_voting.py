@@ -1,8 +1,8 @@
-# 多提供商集成投票 — 汇总OpenAI/Ollama/本地启发式判定.
-# fixed indentation bugs, added provider diversity scoring for uncertainty estimation.
-# 跨模态对比置信度校准（CLAP范式）— 将异源provider视为不同模态，利用 pairwise 一致性矩阵反推信息冗余度，惩罚高度相关provider间的一致性虚高。
-# EMA时间衰减精度追踪 — 替换简单滑动平均，增强对模型概念漂移的响应速度。
-# 熵基不确定性量化 — Shannon熵归一化替代CV变异系数，后验概率空间的置信度调节更符合贝叶斯纠偏。
+# 多提供商集成投票 - 汇总OpenAI/Ollama/本地启发式判定.
+# 提供商置信度离散度 (CV) 纳入最终置信度调节, 分歧越大置信度越低。
+# 跨模态对比置信度校准（CLAP范式）- 将异源provider视为不同模态，利用 pairwise 一致性矩阵反推信息冗余度，惩罚高度相关provider间的一致性虚高。
+# EMA时间衰减精度追踪 - 替换简单滑动平均，增强对模型概念漂移的响应速度。
+# 熵基不确定性量化 - Shannon熵归一化替代CV变异系数，后验概率空间的置信度调节更符合贝叶斯纠偏。
 import logging
 import os
 import time
@@ -52,7 +52,7 @@ class BaseProvider:
         if name is None: raise ValueError("provider name must not be empty")
         self.name = name; self.model = model; self.weight = weight
         self._accuracy_window = deque(maxlen=200); self._lock = threading.Lock()
-        # EMA时间衰减追踪 — 区别于简单滑动平均，赋予近期样本指数级更高的权重
+        # EMA时间衰减追踪 - 区别于简单滑动平均，赋予近期样本指数级更高的权重
         self._ema_accuracy = 0.7           # 先验值，避免冷启动归零
         self._ema_alpha = ema_alpha
     def analyze(self, code, context): raise NotImplementedError
@@ -70,7 +70,7 @@ class BaseProvider:
             total = 0.0; i = 0
             while i < len(acc_win): total += acc_win[i]; i += 1
             window_mean = total / len(acc_win)
-            # 0.7 * EMA + 0.3 * window_mean — EMA响应快，窗口均值防过拟合
+            # 0.7 * EMA + 0.3 * window_mean - EMA响应快，窗口均值防过拟合
             return 0.7 * self._ema_accuracy + 0.3 * window_mean
     def dynamic_weight(self):
         a = self.accuracy()
@@ -87,7 +87,7 @@ class OpenAIProvider(BaseProvider):
         try:
             import openai
             client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
-            sys_prompt = "你是一个binarysecurity analysis专家。请based on以下pseudocode/汇编判断是否存在漏洞。严格以 JSON 输出 {vulnerable: bool, confidence: float(0-1), vuln_type: str, cwe_id: str, severity: str, explanation: str}。"
+            sys_prompt = "你是二进制安全分析专家。请根据以下伪代码/汇编判断是否存在漏洞。严格以 JSON 输出 {vulnerable: bool, confidence: float(0-1), vuln_type: str, cwe_id: str, severity: str, explanation: str}。"
             user_prompt = "代码:\n```\n{}\n```\n\ncontext:\n{}".format(code[:6000], json.dumps(context, ensure_ascii=False)[:1500])
             resp = client.chat.completions.create(model=self.model, messages=[{"role":"system","content":sys_prompt},{"role":"user","content":user_prompt}], temperature=0.0, response_format={"type":"json_object"})
             content = resp.choices[0].message.content; data = json.loads(content)
@@ -106,7 +106,7 @@ class OllamaProvider(BaseProvider):
         start = time.time()
         try:
             import requests
-            sys_prompt = "你是一个binarysecurity analysis专家。请based on以下pseudocode/汇编判断是否存在漏洞。严格以 JSON 输出。"
+            sys_prompt = "你是二进制安全分析专家。请根据以下伪代码/汇编判断是否存在漏洞。严格以 JSON 输出。"
             user_prompt = "代码:\n```\n{}\n```\ncontext:\n{}\n输出 JSON: {{\"vulnerable\": bool, \"confidence\": float, \"vuln_type\": str, \"cwe_id\": str, \"severity\": str, \"explanation\": str}}".format(code[:4000], json.dumps(context, ensure_ascii=False)[:1000])
             r = requests.post("{}/api/chat".format(self.host), json={"model":self.model,"messages":[{"role":"system","content":sys_prompt},{"role":"user","content":user_prompt}],"format":"json","stream":False}, timeout=120)
             r.raise_for_status(); data = json.loads(r.json()["message"]["content"])
@@ -134,19 +134,15 @@ class LocalHeuristicProvider(BaseProvider):
         return ModelVerdict(provider=self.name, model=self.model, is_vulnerable=False, confidence=0.3, latency_ms=(time.time()-start)*1000)
 
 class AIEnsembleVoter:
-    """
-    多源集成投票器 — 新版支持五种策略（含跨模态对比重校准）。
+    """多源集成投票器 - 支持硬/软/加权软/置信度最大/跨模态重校准五种策略。
 
-    跨模态对比校准思路（CLAP范式映射）：
-    - 各provider视为异质"模态"（OpenAI/GPT视觉-语言、Ollama本地-推理、Heuristic符号-规则）
-    - 维护 pairwise 一致性矩阵 C[pi][pj]，跟踪历史决策中两两provider的标签一致性
-    - 高一致性 → 模态间存在信息冗余 → 一致性虚高应被惩罚
-    - 重校准因子 = 1 - normalized_correlation，降低冗余provider对后验置信度的过度贡献
+    跨模态校准: 各 provider 视为异质模态, pairwise 一致性矩阵跟踪
+    历史两两标签一致率, 高一致率视为信息冗余并按比例惩罚。
     """
     def __init__(self, providers=None, strategy=VoteStrategy.WEIGHTED_SOFT, min_providers=2, max_concurrency=4):
         self.providers = providers or [LocalHeuristicProvider(weight=0.3)]
         self.strategy = strategy; self.min_providers = min_providers; self.max_concurrency = max_concurrency
-        # 跨模态 pairwise 一致性矩阵 — 键为 (pi_name, pj_name) 按字典序排序，值为 (一致次数, 总次数)
+        # 跨模态 pairwise 一致性矩阵 - 键为 (pi_name, pj_name) 按字典序排序，值为 (一致次数, 总次数)
         self._pairwise_agreement = defaultdict(lambda: [0, 0])
         self._contrastive_lock = threading.Lock()
         self._contrastive_counter = 0  # 触发周期：每 N 次分析才重算一次矩阵，降低计算开销
@@ -189,15 +185,13 @@ class AIEnsembleVoter:
         variance = sum((c - mean) ** 2 for c in confs) / n
         return (variance ** 0.5) / mean
 
-    # ========== 熵基不确定性量化 — Shannon entropy over posterior ==========
+    # ========== 熵基不确定性量化 - Shannon entropy over posterior ==========
     def _entropy_uncertainty(self, verdicts):
-        """
-        将每个provider的输出视为二项后验概率 p_vuln = conf（若标记为vulnerable）或 1-conf（若标记为safe）。
-        对所有provider的[p_vuln, 1-p_vuln]做均值得到集成后验分布，计算其Shannon熵。
-        最大熵 = ln(2) ≈ 0.693（完全不确定的二项分布），归一化到[0,1]。
+        """熵基不确定性量化。
 
-        熵高（>0.7归一化）→ providers输出的概率分布分歧大 → 不确定性高 → 应压低置信度。
-        这是对原始CV方法的贝叶斯替代，熵在信息论上是最小充分统计量。
+        每个 provider 输出视为二项后验 p_vuln: 判 vuln 取 conf, 判 safe 取 1-conf。
+        集成后验取均值后计算 Shannon 熵, 按最大熵 ln2 归一化到 [0,1];
+        熵高表示各 provider 分歧大, 用于压低最终置信度。
         """
         if verdicts is None or len(verdicts) < 2:
             return 0.0
@@ -220,7 +214,7 @@ class AIEnsembleVoter:
 
 # 跨模态对比一致性矩阵 & 重校准惩罚因子
     def _record_pairwise_agreement(self, verdicts):
-        """每次集成分析后更新pairwise一致性矩阵 — 低开销，只统计二元标签"""
+        """每次集成分析后更新pairwise一致性矩阵 - 低开销，只统计二元标签"""
         prov_names = [v.provider for v in verdicts]
         m = len(prov_names)
         pi = 0
@@ -236,18 +230,10 @@ class AIEnsembleVoter:
             pi += 1
 
     def _contrastive_recalibration_penalty(self):
-        """
-        计算跨模态冗余惩罚因子 ∈ [0, 1)。
+        """跨模态冗余惩罚因子 ∈ [0, 1)。
 
-        CLAP范式核心：不同"模态"的provider如果历史一致性异常高 → 它们的信息源可能高度重叠
-        （例如OpenAI和Ollama都被相同的预训练数据偏向）→ 它们的一致性不具备独立证据价值。
-
-        对每对(pi, pj)，计算 agreed_ratio = agreed / total。
-        若 agreed_ratio > 0.5（超随机基线），差值累计作为冗余信号。
-        最终 penalty = mean(agreed_ratio - 0.5, across all pairs, clamped to positive)。
-
-        penalty = 0  → 各模态完全独立，无需惩罚
-        penalty → 1  → 高冗余，大幅压低集成置信度
+        对每对 provider 计算历史标签一致率 agreed/total (至少 3 次观测),
+        超出随机基线 0.5 的差值按对平均后归一化; 冗余越高惩罚越大。
         """
         with self._contrastive_lock:
             items = list(self._pairwise_agreement.items())
@@ -285,7 +271,7 @@ class AIEnsembleVoter:
                 i += 1
         if not verdicts: return EnsembleResult(False, 0.0, "", "", "low", [], self.strategy, 0.0, 0.0, 0.0)
 
-        # 传统投票逻辑 — 四种已有策略 + 新增跨模态重校准
+        # 传统投票逻辑 - 四种已有策略 + 新增跨模态重校准
         if self.strategy == VoteStrategy.HARD:
             is_vuln, conf = self._vote_hard(verdicts)
         elif self.strategy == VoteStrategy.SOFT:
@@ -329,7 +315,7 @@ class AIEnsembleVoter:
         contrastive_damp = max(0.3, 1.0 - contrastive_penalty)    # 高冗余 → damp < 1，压低置信度
         # 综合damp取几何平均，平衡两种不确定性来源
         combined_damp = (entropy_damp * contrastive_damp) ** 0.5
-        # 保留原有diversity damp，给新调节器留渐入空间 — 取最保守者
+        # 保留原有diversity damp，给新调节器留渐入空间 - 取最保守者
         legacy_damp = max(0.4, 1.0 - diversity)
         final_damp = min(combined_damp, legacy_damp)
         adjusted_conf = conf * final_damp

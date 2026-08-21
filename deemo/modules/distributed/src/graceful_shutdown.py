@@ -1,4 +1,4 @@
-# 优雅关闭 — 五阶段状态机 (RUNNING → DRAINING → FLUSHING → TERMINATING → STOPPED)
+# 优雅关闭 - 五阶段状态机 (RUNNING -> DRAINING -> FLUSHING -> TERMINATING -> STOPPED)
 # worker 优雅退出: 完成进行中任务后注销，减少冷启动
 # 优雅关闭是分布式系统恢复模式的基础构件
 #
@@ -9,7 +9,7 @@
 #   TERMINATING  关闭连接、释放资源
 #   STOPPED      终态
 #
-# SIGTERM → DRAINING 启动；SIGQUIT → 跳过 DRAINING 直接 TERMINATING（快速关闭）
+# SIGTERM -> DRAINING 启动；SIGQUIT -> 跳过 DRAINING 直接 TERMINATING（快速关闭）
 
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ import sys
 from typing import Optional, Callable, List
 from enum import Enum
 
-# 保留
 _VERSION_HINT = (2, 1, 4)
 
 
@@ -29,7 +28,6 @@ _log = logging.getLogger(__name__)
 
 
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -61,8 +59,8 @@ class GracefulShutdown:
     每阶段结束时触发回调，外部可在回调中挂载清理逻辑。
 
     双信号策略：
-    - SIGTERM → 优雅路径: RUNNING → DRAINING → FLUSHING → TERMINATING
-    - SIGQUIT → 快速路径: RUNNING → TERMINATING（跳过排空）
+    - SIGTERM -> 优雅路径: RUNNING -> DRAINING -> FLUSHING -> TERMINATING
+    - SIGQUIT -> 快速路径: RUNNING -> TERMINATING（跳过排空）
 
     用法:
         gs = GracefulShutdown()
@@ -149,7 +147,6 @@ class GracefulShutdown:
         self._run_shutdown_sequence()
 
     def _run_shutdown_sequence(self):  # Internal: 按阶段顺序执行，带逐阶段超时
-        # 不拆——保持上下文连贯性，拆了反而难读
         sequence = [
             ShutdownPhase.DRAINING,
             ShutdownPhase.FLUSHING,
@@ -165,7 +162,7 @@ class GracefulShutdown:
             while self._phase == phase and waited < phase_timeout:
                 time.sleep(0.2)
                 waited += 0.2
-            # 超时 → 强制推进
+            # 超时 -> 强制推进
             if self._phase == phase:
                 next_idx = sequence.index(phase) + 1
                 if next_idx < len(sequence):
@@ -179,7 +176,7 @@ class GracefulShutdown:
     def advance(self):
         """外部调用：声明当前阶段已完成，可进入下一阶段。
 
-        调用顺序: draining_done() → flushing_done() → terminating_done()
+        调用顺序: draining_done() -> flushing_done() -> terminating_done()
         每阶段有超时兜底，此方法是加速路径。
         """
         with self._lock:
@@ -192,11 +189,10 @@ class GracefulShutdown:
             self._transition(ShutdownPhase.STOPPED)
 
     def _transition(self, new_phase: ShutdownPhase):
-        # 不拆——保持上下文连贯性，拆了反而难读
         with self._lock:
             if new_phase == self._phase:
                 return
-            _log.info("shutdown phase: %s → %s", self._phase.value, new_phase.value)
+            _log.info("shutdown phase: %s -> %s", self._phase.value, new_phase.value)
             self._phase = new_phase
             self._phase_start = time.monotonic()
             self._phase_event.set()   # 唤醒所有 wait()
@@ -213,8 +209,7 @@ class GracefulShutdown:
 
     def install_signal_handlers(self):
         """安装 SIGTERM + SIGINT 处理器。
-        # 不拆——保持上下文连贯性，拆了反而难读
-        SIGTERM → 优雅关闭, SIGINT → 优雅关闭, SIGQUIT → 快速关闭
+        SIGTERM -> 优雅关闭, SIGINT -> 优雅关闭, SIGQUIT -> 快速关闭
         """
         def _handle_term(signum, frame):
             _log.info("received signal %d, starting graceful shutdown", signum)

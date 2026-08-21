@@ -13,10 +13,10 @@ from __future__ import annotations
 from typing import Dict, List
 import re
 
-from value_range_analyzer import ValueRange
+from .value_range_analyzer import ValueRange
 from size_expr_evaluator import eval_size_expr
 from heap_layout_model import get_allocator_model
-from pointer_tracker import extract_heap_ptrs
+from .pointer_tracker import extract_heap_ptrs
 
 
 def detect_direct_writes(code: str, ranges: Dict, defines: Dict,

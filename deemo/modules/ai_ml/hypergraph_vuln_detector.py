@@ -26,7 +26,6 @@ from .src.hypergraph.hg_convolution import (
     Hyperedge, HyperGraph, HyperGraphConvolution, DualScaleHyperGNN,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

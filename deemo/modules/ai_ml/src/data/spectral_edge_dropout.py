@@ -1,22 +1,21 @@
-# 修改记录:
-# 2025-07-22 13:47 - 增加 spectral_gap_monitor，检测 dropout 是否破坏图连通性
-# 2025-07-27 10:33 - 引入 adaptive_temperature，根据图密度自动调整 dropout 强度
-# 2025-07-31 15:09 - 增加 low_degree_protection 阈值，度数≤1 的节点的边永不丢弃
+# 增加 spectral_gap_monitor，检测 dropout 是否破坏图连通性
+# 引入 adaptive_temperature，根据图密度自动调整 dropout 强度
+# 增加 low_degree_protection 阈值，度数≤1 的节点的边永不丢弃
 
-"""度数感知边丢弃——带谱保持约束的图增强策略。
+"""度数感知边丢弃-带谱保持约束的图增强策略。
 
 GNN 在二进制 CFG 上的应用面临天然稀疏性挑战：
 CFG 中 70-85% 的节点度数 ≤ 2（线性代码块链），随机丢弃边容易
 切断关键路径，导致信息传递中断。
 
 gravity_edge_dropout (graph_builder.py) 的丢弃概率 p ∝ 1/max(deg(u), deg(v))
-缓解了此问题——低度数节点的边获得保护。但存在两个盲区：
+缓解了此问题-低度数节点的边获得保护。但存在两个盲区：
 
-  a. 谱特性未考虑——边的全局重要性不仅取决于端点度数，
+  a. 谱特性未考虑-边的全局重要性不仅取决于端点度数，
      还取决于其在图拉普拉斯矩阵谱中的贡献。桥边（cut-edge）
      即使连接两个高度数节点，丢弃也会切断子图连通性。
 
-  b. 丢弃强度不随图密度自适应——密集子图（如 switch-case 分发块）
+  b. 丢弃强度不随图密度自适应-密集子图（如 switch-case 分发块）
      需要更激进丢弃；稀疏子图（如直线代码链）需要更保守。
 
 本模块在 gravity_edge_dropout 基础上增加：
@@ -27,9 +26,9 @@ gravity_edge_dropout (graph_builder.py) 的丢弃概率 p ∝ 1/max(deg(u), deg(
   3. Adaptive temperature: 图密度越高 → temperature 越低 → 丢弃越激进
   4. Low-degree anchor: 度数 ≤1 的节点的所有边 p = 0（永不丢弃）
 
-ref: DropEdge 提出固定概率随机边丢弃作为 GNN 正则化——
+ref: DropEdge 提出固定概率随机边丢弃作为 GNN 正则化-
      但 CFG 不是社交网络，其稀疏性和方向性使固定概率方案不适用。
-ref: BEGA 提出度数感知的边增强——本模块在此基础上增加
+ref: BEGA 提出度数感知的边增强-本模块在此基础上增加
      谱保持约束和自适应温度，将增强策略从"度数感知"推进到"谱感知"。
 ref: 图稀疏性在 GNN 验证场景中对模型性能的影响。
 """
@@ -74,11 +73,11 @@ class BridgeEdgeDetector:
 class SpectralGapMonitor:
     """监控边丢弃前后的图连通性变化。
 
-    不做完整的特征值分解——通过 BFS 计数连通分量数。
+    不做完整的特征值分解-通过 BFS 计数连通分量数。
     若丢弃一条边后连通分量数增加 → 该边是全局桥 → 拒绝丢弃。
 
     注意：此检查在每 N 次丢弃后执行一次全图 BFS，N 默认可配置。
-    连续丢弃多条边时累积效果可能导致连通性破坏——
+    连续丢弃多条边时累积效果可能导致连通性破坏-
     设置 monitor_interval 平衡安全性和开销。
     """
 
@@ -95,7 +94,7 @@ class SpectralGapMonitor:
         """
         self._drop_counter += 1
         if self._drop_counter % self._interval != 0:
-            return True  # 非检查周期--默认通过
+            return True  # 非检查周期-默认通过
 
         u, v = edge_to_drop
         before = self._count_components(adj)
@@ -169,7 +168,7 @@ class DegreeAwareSpectralDropout:
 
         edges: [(u, v), ...] 边列表
         node_degrees: {node_id: degree}
-        adj: 邻接表——提供时启用桥边检测和谱监控
+        adj: 邻接表-提供时启用桥边检测和谱监控
 
         返回保留的边列表。
         """

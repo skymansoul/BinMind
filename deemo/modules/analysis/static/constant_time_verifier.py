@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# 修改记录:
-# 2025-08-02 11:37 - 补全 secret-indexed 加载 在 x86 SIB 寻址下的检测（base+index*scale）
-# 2025-08-04 14:28 - 加入循环边界的 secret 依赖检测（回边计数的污点传播）
+# 补全 secret-indexed 加载 在 x86 SIB 寻址下的检测（base+index*scale）
+# 加入循环边界的 secret 依赖检测（回边计数的污点传播）
 """
-二进制层面的常量时间违规检测 —— 不需要源码级标注的静态数据流方法
+二进制层面的常量时间违规检测 - 不需要源码级标注的静态数据流方法
 
 现有方案:
 - Binsec/Rel: 关系符号执行，精确但需要全 SE 管线
@@ -22,7 +21,7 @@ B. 秘密索引访存: MOV RAX, [RBX + RCX*4] 中 RCX 被 secret 污染
 C. 秘密边界循环: 循环回边的迭代计数依赖 secret 值
 
 ref: Schneider et al. "Breaking Bad: 编译器s Break Constant-Time."
- —— 编译器在 -O2 以上引入的 CT 违规 43% 仅出现在
+ - 编译器在 -O2 以上引入的 CT 违规 43% 仅出现在
 二进制层面，IR/源码层面不可见。本模块的二进制直接分析规避了此盲区
 """
 
@@ -40,11 +39,11 @@ logger = logging.getLogger(__name__)
 
 class InsnKind(IntEnum):
     MOV = 0
-    ARITH = 1       # ADD/SUB/MUL/IMUL/
-    BITWISE = 2     # /OR/XOR//
+    ARITH = 1       # ADD/SUB/MUL/IMUL 等
+    BITWISE = 2     # AND/OR/XOR/NOT
     SHIFT = 3       # SHL/SHR/SAR/ROL/ROR
-    BRANCH = 4      # JMP/JCC/CALL/RET
-    COND_BR = 5     # JCC: JZ/JNZ/JL/JG/. —— 条件分支
+    BRANCH = 4      # JMP/CALL/RET
+    COND_BR = 5     # JZ/JNZ/JL/JG 等条件跳转
     CMOV = 6        # 条件 MOV
     LOAD = 7        # 内存读取
     STORE = 8       # 内存写入
@@ -68,7 +67,7 @@ _COND_BR_CC_MAP = {
 
 @dataclass
 class InsnOperand:
-    """指令操作数 —— 寄存器或内存引用"""
+    """指令操作数 - 寄存器或内存引用"""
     kind: str = "reg"           # "reg" | "mem" | "imm"
     name: str = ""              # 寄存器名 或 基址寄存器名
     index_reg: str = ""         # SIB index 寄存器（内存操作数）
@@ -79,25 +78,25 @@ class InsnOperand:
 
 @dataclass
 class InsnInfo:
-    """反汇编指令的抽象表示 —— 架构无关
-    
+    """反汇编指令的抽象表示 - 架构无关
+
     不需要完整解码所有指令语义，只需要提取数据流相关的操作数和控制流类型
     """
     addr: int = 0
     mnemonic: str = ""
     kind: InsnKind = InsnKind.OTHER
     operands: List[InsnOperand] = field(default_factory=list)
-    # 隐式数据流 —— 如 CMP 写 FLAGS，DIV 写 RDX:RAX
+    # 隐式数据流 - 如 CMP 写 FLAGS，DIV 写 RDX:RAX
     implicit_writes: List[str] = field(default_factory=list)
     implicit_reads: List[str] = field(default_factory=list)
 
 
-# 污点追踪（寄存器级别 —— 简化，配合 subreg_taint.py 可升级为字节级）
+# 污点追踪（寄存器级别 - 简化，配合 subreg_taint.py 可升级为字节级）
 
 @dataclass
 class TaintState:
     """指令级数据流污点追踪状态
-    
+
     跟踪每条指令执行后的活跃污点。secret_regs 是用户标记的初始污染寄存器集合
     """
     tainted_regs: Set[str] = field(default_factory=set)
@@ -105,8 +104,8 @@ class TaintState:
 
 
 class ForwardTaintPropagator:
-    """前向污点传播引擎 —— 在基本块序列上模拟数据流
-    
+    """前向污点传播引擎 - 在基本块序列上模拟数据流
+
     每遇到一条指令，根据其操作数类型决定污点传播规则:
     - MOV dst, src: dst 继承 src 的所有污点
     - ARITH dst, src: dst 继承 src ∪ dst（两个操作数）
@@ -132,13 +131,24 @@ class ForwardTaintPropagator:
                     new_state.tainted_regs.add(dst.name)
                 elif _is_reg(dst) and src.kind == "imm":
                     new_state.tainted_regs.discard(dst.name)  # 常量清零
-                # LEA 不访存但计算地址 —— operand 在 reg 中
+                # LEA 不访存但计算地址 - operand 在 reg 中
                 if insn.kind == InsnKind.LEA and _is_reg(dst):
                     if src.name in new_state.tainted_regs or src.index_reg in new_state.tainted_regs:
                         new_state.tainted_regs.add(dst.name)
 
-        elif insn.kind in (InsnKind.ARITH, InsnKind.BITWISE):
+        elif insn.kind == InsnKind.ARITH:
             if len(ops) >= 2 and _is_reg(ops[0]):
+                dst_name = ops[0].name
+                src_names = {op.name for op in ops[1:] if op.kind == "reg"}
+                if dst_name in new_state.tainted_regs or (src_names & new_state.tainted_regs):
+                    new_state.tainted_regs.add(dst_name)
+
+        elif insn.kind == InsnKind.BITWISE:
+            # XOR reg, reg 清零惯用语: 清除污点, 其余按位传播
+            if len(ops) >= 2 and _is_reg(ops[0]) and _is_reg(ops[1]) \
+                    and ops[0].name == ops[1].name:
+                new_state.tainted_regs.discard(ops[0].name)
+            elif len(ops) >= 2 and _is_reg(ops[0]):
                 dst_name = ops[0].name
                 src_names = {op.name for op in ops[1:] if op.kind == "reg"}
                 if dst_name in new_state.tainted_regs or (src_names & new_state.tainted_regs):
@@ -159,14 +169,7 @@ class ForwardTaintPropagator:
                 # 显式写入 FLAGS 的指令（如 SAHF）
             if flag_seeds:
                 new_state.tainted_flags.update(flag_seeds)
-            for iw in insn.implicit_writes:
-                if iw in ("FLAGS", "EFLAGS", "RFLAGS"):
-                    pass  # 已处理
 
-        elif insn.kind == InsnKind.XOR and _is_reg(ops[0]) and ops[0].name == ops[1].name if len(ops) > 1 else False:
-            # XOR reg, reg: 清零惯用语 —— 清除此寄存器的所有污点
-            if len(ops) >= 2 and ops[0].name == ops[1].name and ops[0].kind == "reg":
-                new_state.tainted_regs.discard(ops[0].name)
 
         # 隐式寄存器写入
         for iw in insn.implicit_writes:
@@ -190,13 +193,13 @@ class CTViolation:
 
 class ConstantTimeVerifier:
     """二进制层面的常量时间违规静态检测器
-    
+
     工作流程:
     1. 接收反汇编的基本块列表 + 用户标记的 secret 寄存器集合
     2. 在 CFG 上执行前向数据流分析，传播 secret 污点
     3. 在每个基本块中检测三类违规
     4. 输出违规位置 + 从注入点到违规点的数据流路径（用于溯源）
-    
+
     限制:
     - 间接跳转（JMP [RAX]）的目标不确定 → 分析在该点保守终止
     - 跨函数分析需要调用图，当前仅支持单函数内分析
@@ -205,11 +208,6 @@ class ConstantTimeVerifier:
 
     def __init__(self, secret_regs: Optional[Set[str]] = None,
                  secret_mem_regions: Optional[List[Tuple[int, int]]] = None):
-        """
-        Args:
-        secret_regs: 初始携带秘密值的寄存器集合（如 'RDI' ← 密钥指针参数）
-        secret_mem_regions: [(addr, s),.] 秘密数据所在的内存区域
-        """
         self.secret_regs = secret_regs or set()
         self.secret_mem = secret_mem_regions or []
         self._propagator = ForwardTaintPropagator()
@@ -219,19 +217,12 @@ class ConstantTimeVerifier:
                          blocks: List[List[InsnInfo]],
                          cfg_edges: Dict[int, List[int]]) -> List[CTViolation]:
         """分析单个函数的所有基本块
-        
+
         对 CFG 做 worklist 迭代直到污点状态达到不动点
         每轮迭代在基本块级别传播污点状态
-        
-        Args:
-        blocks: 基本块列表，每个基本块是 InsnInfo 的列表
-        cfg_edges: {block_addr → [successor_block_addrs]} 控制流边
-        
-        返回:
-        按地址排序的 CTViola 列表
         """
         self.violations.clear()
-        # block_addr → TaintSt entry
+        # block_addr → 基本块入口污点状态
         entry_states: Dict[int, TaintState] = {}
         worklist: List[int] = []
 
@@ -322,10 +313,8 @@ class ConstantTimeVerifier:
                             confidence=0.90,
                         ))
 
-            # 检测 C: secret-bounded loop —— 在回边处检测
-            if insn.kind in (InsnKind.COND_BR, InsnKind.BRANCH):
-                # 简化: 若分支目标在当前基本块之前且条件依赖 secret → 标记
-                pass  # 循环检测需要 dominator 树，由外部编排器提供上下文
+            # 检测 C: secret-bounded loop - 循环回边计数依赖 secret
+            # 需要 dominator 树上下文, 由外部编排器在调用点处理
 
             # 传播污点到下一条指令
             state = self._propagator.propagate(insn, state)

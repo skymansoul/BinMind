@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class AugmentParams:
     """增强操作的分布参数（mean + log-std）。
 
-    输出分布参数而非具体值——同一图每次采样产生不同增强，
+    输出分布参数而非具体值-同一图每次采样产生不同增强，
     天然支持对比学习的多视图生成。
     """
     node_drop_mean: float

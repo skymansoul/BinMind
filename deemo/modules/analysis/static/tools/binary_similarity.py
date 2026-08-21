@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # 条件导入：capstone 用于指令归一化
 try:
     import capstone
-    from functools import lru_cache  # 保留——未使用
+    from functools import lru_cache
     _HAS_CAPSTONE = True
     _CS_MD_X86 = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
     _CS_MD_X86.detail = True
@@ -54,7 +54,7 @@ class SimilarityResult:
 
 
 class InstructionNormalizer:
-    # 将操作数抽象化：寄存器→REG，立即数→IMM，内存引用→[MEM]
+    # 将操作数抽象化：寄存器-REG，立即数-IMM，内存引用-[MEM]
     # 消除地址和立即数的噪声影响 [BinMetric 2505.07360]
     _REG = re.compile(
         r'\b(?:r[abcd]x|r[sd]i|r[bp]|r[sd]p|r\d+\w?|'
@@ -76,7 +76,7 @@ class InstructionNormalizer:
 class NgramHasher:
     """
     n-gram 指令序列哈希器
-    
+
     对归一化后的指令序列计算滑动窗口 MinHash
     用于 O(n) 级别的快速相似函数对筛选 Sec 3.2
     """
@@ -142,12 +142,10 @@ class CFGSimilarity:
         bb_features_a: Optional[Dict[int, str]] = None,
         bb_features_b: Optional[Dict[int, str]] = None
     ) -> float:
-        """
-        计算两个 CFG 的结构相似度
+        """计算两个 CFG 的结构相似度。
 
-        Args:
-            cfg_a, cfg_b: address -> [successor addresses]
-            bb_features_a, bb_features_b: address -> 归一化指令摘要
+        cfg_a/cfg_b: address -> [successor addresses];
+        bb_features_a/bb_features_b: address -> 归一化指令摘要。
         """
         if not cfg_a or not cfg_b:
             return 0.0
@@ -260,12 +258,12 @@ class LLMEmbeddingSimilarity:
 class BinarySimilarityAnalyzer:
     """
     多层次二进制函数相似度分析器
-    
+
     三层融合策略（权重可调）：
     - L1: n-gram MinHash 快速初筛（权重 w1）
     - L2: CFG WL 子树核结构分析（权重 w2）
     - L3: LLM 嵌入语义分析（权重 w3）
-    
+
     多层融合的权重机制参考 [BinMetric 2505.07360] 的 benchmark 最优配置
     """
 
@@ -359,7 +357,7 @@ class BinarySimilarityAnalyzer:
     ) -> List[SimilarityResult]:
         """
         批量相似度比较，返回超过阈值的函数对
-        
+
         排序策略：综合得分降序，优先返回高置信度匹配
         """
         results = []
@@ -407,7 +405,7 @@ class BinarySimilarityAnalyzer:
     ) -> List[Tuple[str, str, float]]:
         """
         发现函数级别的重复（静态链接库识别）
-        
+
         阈值 0.85 基于 [BinMetric 2505.07360] 对静态链接识别的经验值
         """
         duplicates = []
@@ -440,8 +438,8 @@ def compute_function_similarity(
 ) -> Dict[str, Any]:
     """
     便捷函数：计算两个函数的语义相似度
-    
-    终端用户接口，封装了完整的初始化→注册→比较流程
+
+    终端用户接口，封装了完整的初始化-注册-比较流程
     """
     analyzer = BinarySimilarityAnalyzer()
     analyzer.register_function(name_a, instrs_a, cfg_a, pseudo_a)

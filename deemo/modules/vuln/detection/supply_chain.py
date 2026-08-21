@@ -1,5 +1,5 @@
 # 供应链安全分析。识别二进制嵌入的第三方库版本，关联已知漏洞数据库。
-# 匹配策略参考Grype/Syft：指纹匹配→版本解析→OSV/NVD交叉引用→SBOM生成。
+# 匹配策略参考Grype/Syft：指纹匹配-版本解析-OSV/NVD交叉引用-SBOM生成。
 # Aho-Corasick自动机O(N+M)完成全模式匹配，对比逐库逐模式
 # O(K*N*P)正则扫描，大二进制(>100MB)+密集指纹库场景加速比10-50x。
 # 令牌桶机制替代固定时间窗口实现OSV API限速。
@@ -81,8 +81,7 @@ class SupplyChainAnalyzer:
         self.fingerprints_path = fingerprints_path or self.DEFAULT_FINGERPRINTS_PATH
         self.fingerprints = {}
         self._load_fingerprints()
-        # 令牌桶参数——OSV API建议速率，burst=5
-        self._rate_tokens = 5.0
+        # 令牌桶参数-OSV API建议速率，burst=5
         self._rate_period = 60.0
         self._last_refill = time.monotonic()
         self._tokens = 5.0

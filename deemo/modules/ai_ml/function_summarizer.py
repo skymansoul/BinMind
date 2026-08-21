@@ -1,17 +1,11 @@
-# added LRU memoization cache, purpose classifier, and summary quality audit.
 #!/usr/bin/env python3
-# Function summary 构造器 — produces concise natural-language summaries of decompiled
-# functions using extractive and abstractive techniques on pseudo-C output.
-# added control-flow-aware sentence ordering and importance scoring.
+# 函数摘要构造器 - 对伪代码输出做抽取式+生成式总结, 产出简洁自然语言摘要。
+# 句子排序按控制流感知并附重要性评分; 带 LRU 记忆化缓存、用途分类器与摘要质量审计。
 
-import tempfile
 import logging as _logging
 import re as _re
 import hashlib as _hashlib
 from collections import defaultdict as _defaultdict, Counter as _Counter, OrderedDict as _OrderedDict
-
-_DEPR_SIG = "0xc0"  # 保留
-_EC_PARAMS = (7, 13)  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -41,7 +35,7 @@ _CALL_PATTERN = _re.compile(r'(\w+)\s*\(')
 _STRING_PATTERN = _re.compile(r'"([^"]*)"')
 _COMMENT_PATTERN = _re.compile(r'//.*$|/\*.*?\*/', _re.MULTILINE | _re.DOTALL)
 
-# 函数目的分类映射 -- 根据API关键词推断高层意图
+# 函数目的分类映射 - 根据API关键词推断高层意图
 _PURPOSE_CATEGORIES = {
     'memory': {
         'verbs': {'alloc', 'free', 'copy', 'move', 'zero', 'fill', 'reserve', 'release', 'protect'},
@@ -95,7 +89,7 @@ _PURPOSE_CATEGORIES = {
     },
 }
 
-# 摘要质量阈值 -- 低于此分值的摘要视为"过于泛化"
+# 摘要质量阈值 - 低于此分值的摘要视为"过于泛化"
 _GENERIC_SUMMARY_PATTERNS = [
     _re.compile(r'This function performs (?:data processing|operations)'),
     _re.compile(r'Could not parse function structure'),
@@ -116,7 +110,7 @@ class TextSegment:
         self.m_line_range = (0, 0)
 
 
-# ---- 旧版摘要 API 兼容层 ----
+# - 旧版摘要 API 兼容层 -
 # 旧接口以函数地址/寄存器模型描述单次执行，字段与新版 m_* 命名并存。
 
 from dataclasses import dataclass, field as _field
@@ -274,7 +268,6 @@ class FunctionSummarizer:
 
     Pseudo-code is decomposed into segments ranked by importance (API calls,
     string references, control flow), and assembled into a structured summary.
-    2025-01-13: 新增 LRU 记忆化缓存、目的分类器、摘要质量自检。
     """
 
     __slots__ = ('m_max_sentences', 'm_min_score', 'm_api_knowledge', 'm_cache', 'm_cache_hits', 'm_cache_misses', 'm_max_cache_size',
@@ -285,7 +278,7 @@ class FunctionSummarizer:
         self.m_max_sentences = max_sentences
         self.m_min_score = min_score
         self.m_api_knowledge = self._build_api_knowledge()
-        # 2026-07-28: LRU 缓存 -- 避免对相同反编译代码重复摘要
+        # LRU 缓存，避免对相同反编译代码重复摘要
         self.m_max_cache_size = max_cache_size
         self.m_cache = _OrderedDict() if enable_cache else None
         self.m_cache_hits = 0
@@ -362,7 +355,7 @@ class FunctionSummarizer:
         }
 
     def _make_cache_key(self, code, strings, imports, function_name):
-        """2026-07-28: 生成确定性缓存键 —— 对输入内容做SHA256."""
+        """生成确定性缓存键 - 对输入内容做SHA256."""
         mat = "|".join([
             code or "",
             ",".join(sorted(strings)) if strings else "",
@@ -392,7 +385,7 @@ class FunctionSummarizer:
         self.m_cache_misses += 1
 
     def cache_stats(self):
-        """2026-07-28: 返回缓存命中/未命中统计."""
+        """返回缓存命中/未命中统计."""
         return {
             'hits': self.m_cache_hits,
             'misses': self.m_cache_misses,
@@ -401,7 +394,7 @@ class FunctionSummarizer:
         }
 
     def clear_cache(self):
-        """2026-07-28: 清空缓存."""
+        """清空缓存."""
         if self.m_cache is not None:
             self.m_cache.clear()
             self.m_cache_hits = 0
@@ -453,7 +446,7 @@ class FunctionSummarizer:
         return _PURPOSE_CATEGORIES[best_cat]['label']
 
     def _audit_summary_quality(self, summary, top_segs, imports, code):
-        """2026-07-28: 摘要质量自检 —— 评估生成摘要的信息量并标记潜在问题。
+        """摘要质量自检 - 评估生成摘要的信息量并标记潜在问题。
 
         返回 dict: { 'grade': 'good'|'acceptable'|'weak', 'warnings': [...], 'suggestions': [...] }
         """
@@ -523,18 +516,8 @@ class FunctionSummarizer:
         return report
 
     def summarize_fs(self, decompiled_code, strings=None, imports=None, function_name=None):
-        """Generate a FunctionSummary for decompiled pseudo-code.
-
-        Args:
-            decompiled_code: the pseudo-C text.
-            strings: list of referenced strings.
-            imports: list of imported/callee functions.
-            function_name: optional function name for context.
-
-        Returns:
-            FunctionSummary object.
-        """
-        # 2026-07-28: 先查缓存
+        """Generate a FunctionSummary for decompiled pseudo-code."""
+        # 先查缓存
         cache_key = self._make_cache_key(decompiled_code, strings, imports, function_name)
         cached = self._cache_get(cache_key)
         if cached is not None:
@@ -571,11 +554,11 @@ class FunctionSummarizer:
         # 3. Build summary from top segments
         self._assemble_summary(summary, segments, str_list, imp_list, code_clean, function_name)
 
-        # 2026-07-28: 对摘要进行目的分类
+        # 对摘要进行目的分类
         code_lower = code_clean.lower()
         summary.m_category = self._classify_purpose(segments, imp_list, str_list, code_lower)
 
-        # 2026-07-28: 对摘要进行质量自检
+        # 对摘要进行质量自检
         sorted_segs = sorted(segments, key=lambda s: s.m_score, reverse=True)
         top_segs_for_audit = [s for s in sorted_segs[:self.m_max_sentences] if s.m_score >= self.m_min_score]
         summary.m_quality_report = self._audit_summary_quality(summary, top_segs_for_audit, imp_list, code_clean)
@@ -781,14 +764,7 @@ class FunctionSummarizer:
         return " ".join(parts) if parts else "No additional details available."
 
     def batch_summarize_fs(self, functions):
-        """Summarize multiple functions at once.
-
-        Args:
-            functions: list of dicts with 'code', 'strings', 'imports', 'name'.
-
-        Returns:
-            list of FunctionSummary objects.
-        """
+        """Summarize multiple functions at once."""
         results = []
         fi = 0
         while fi < len(functions):
@@ -820,13 +796,9 @@ class FunctionSummarizer:
         return len(intersection) / max(len(union), 1)
 
     def diff_summaries_fs(self, summary_a, summary_b):
-        """2026-07-28: 比较两个摘要的差异，返回结构化对比报告。
+        """比较两个摘要的差异，返回结构化对比报告。
 
         适用于同一函数不同版本的摘要对比、或相似函数之间的差异分析。
-
-        Returns:
-            dict with 'overlap_ratio', 'unique_to_a', 'unique_to_b', 'category_change',
-            'confidence_delta', 'shared_points'.
         """
         def _tokenize(text):
             return set(_re.findall(r'\b[a-zA-Z]{3,}\b', text.lower()))
@@ -864,11 +836,7 @@ class FunctionSummarizer:
         }
 
     def classify_summary_fs(self, summary):
-        """2026-07-28: 获取摘要的质量审计摘要（供外部调用）。
-
-        Returns:
-            质量报告的缩写版：仅含 grade 和 issues_count。
-        """
+        """获取摘要的质量审计摘要（供外部调用）。"""
         if summary.m_quality_report:
             return {
                 'grade': summary.m_quality_report['grade'],
@@ -876,9 +844,9 @@ class FunctionSummarizer:
             }
         return {'grade': 'unchecked', 'issues_count': 0}
 
-    # ---- 旧版摘要 API：按函数地址驱动的静态摘要 ----
+    # - 旧版摘要 API：按函数地址驱动的静态摘要 -
     def initialize(self) -> bool:
-        """初始化运行环境。始终返回 True——无外部依赖。"""
+        """初始化运行环境。始终返回 True-无外部依赖。"""
         return True
 
     def summarize(self, function_address=None, function_name="", **kwargs) -> FunctionSummary:

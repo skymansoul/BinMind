@@ -279,12 +279,9 @@ def track_interprocedural_affine(
         functions: Dict[str, str],
         caller: str,
         caller_body: str) -> List[CrossFuncRelation]:
-    """便捷入口: 对一组函数做过程间仿射追踪.
+    """便捷入口: 对一组函数做过程间仿射追踪。
 
-    Args:
-        functions: {func_name → pseudocode} 映射
-        caller: 调用者函数名
-        caller_body: 调用者伪代码
+    functions 为 {函数名 → 伪代码} 映射。
     """
     tracker = InterproceduralAffineTracker()
     for fname, fbody in functions.items():

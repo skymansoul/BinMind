@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-02 16:47 - 1 维持续同调使用 Dudziak 矩阵归约 (O(N^3) 但 CFG 边数少)
-# 2025-08-03 11:08 - 条形码熵编码替代原始条形码比较, 向量长度固定 64
+# 1 维持续同调使用 Dudziak 矩阵归约 (O(N^3) 但 CFG 边数少)
+# 条形码熵编码替代原始条形码比较, 向量长度固定 64
 
 """CFG 持续同调条形码计算与指纹编码
 
@@ -8,13 +7,13 @@
 - 使用并查集 + 时间戳 高效计算
 - 每个节点初始为独立分量 (birth=节点加入时间)
 - 当一条边连接两个分量时, 较新分量 death=边加入时间
-- 最终仍独立的分量 death=1.0 (永不消失--在过滤终点仍存在)
+- 最终仍独立的分量 death=1.0 (永不消失, 在过滤终点仍存在)
 
 1 维持续同调 (环):
 - 只关注 CFG 中独立于生成树的边产生的环
 - 使用 Dudziak 边界矩阵归约的简化版: 无需全单工复形
   构造, 直接对生成树外的边计算最短环的生灭
-- 复杂度: O(E·alpha(V)) -- 并查集主导, CFG 边数有限
+- 复杂度: O(E·alpha(V)), 并查集主导, CFG 边数有限
 
 条形码熵编码:
 - 将每条持续区间 (birth, death) 映射到固定维度的密度向量
@@ -112,13 +111,11 @@ def compute_zerodim_persistence(
     edge_list: List[Tuple[int, int, float]],
     channel: str,
 ) -> List[PersistenceInterval]:
-    """计算 0 维持续同调 - 连通分量的生灭
+    """计算 0 维持续同调, 连通分量的生灭。
 
-    sorted_node_ids: 按过滤值降序排列的节点 ID
-    node_filtration_values: 对应的过滤值
-    edge_list: (src, dst, filtration_value), 按过滤值升序排列
-
-    返回: 0 维持久区间列表
+    sorted_node_ids 为按过滤值降序排列的节点 ID,
+    node_filtration_values 为对应过滤值, edge_list 为按过滤值
+    升序的 (src, dst, filtration_value); 返回 0 维持久区间列表。
     """
     n = len(sorted_node_ids)
     if n == 0:
@@ -164,11 +161,11 @@ def compute_onedim_persistence(
     2. 维护生成树 (并查集)
     3. 当边连接已连通的两个节点时 -> 形成环 -> 记录持久区间
        birth = 此边的过滤值 (环出现的时间)
-       death = 1.0 (环在过滤终点仍存在--CFG 中的环是永久特征)
-    4. 自环 (src==dst) 忽略--不是有意义的拓扑特征
+       death = 1.0 (环在过滤终点仍存在, CFG 中的环是永久特征)
+     4. 自环 (src==dst) 忽略, 不是有意义的拓扑特征
 
     注意: CFG 的 1 维同调通常不会消失 (death≈∞)
-    因为环代表着代码中的循环--这是 CFG 的固有拓扑, 在过滤终点仍存在
+    因为环代表着代码中的循环, 这是 CFG 的固有拓扑, 在过滤终点仍存在
     """
     n = len(sorted_node_ids)
     if n <= 2:
@@ -203,7 +200,7 @@ def compute_onedim_persistence(
         if si is None or di is None:
             continue
         if si == di:
-            continue  # 自环--非拓扑特征
+            continue  # 自环, 非拓扑特征
 
         if not _union(si, di):
             # 已在同一分量 -> 形成环
@@ -233,7 +230,7 @@ _BIRTH_DEATH_BINS = 15
 
 
 def _interval_to_persistence_entropy(intervals: List[PersistenceInterval]) -> float:
-    """持久区间的 Shannon 熵--反映条形码的"结构丰富度"
+    """持久区间的 Shannon 熵, 反映条形码的"结构丰富度"
 
     所有区间 persist 相同 -> 低熵 -> 结构单调
     区间 persist 分布广阔 -> 高熵 -> 拓扑结构丰富
@@ -267,7 +264,7 @@ def encode_barcode(
     - 1 维 (环): 同上 -> 32 维
     - 最终 64 维向量: concat(0d_32, 1d_32)
 
-    每维独立哈希混合--使向量对小的输入扰动稳定
+    每维独立哈希混合, 使向量对小的输入扰动稳定
     """
     fp = BarcodeFingerprint(
         channel=channel,
@@ -327,7 +324,7 @@ def _encode_dimension(intervals: List[PersistenceInterval], dim: int) -> List[fl
         vec[i] = dval
 
     # 剩余维度: 使用持久值的加权散列填充
-    # 关键: 使用确定性哈希 (非随机投影)--保证相同输入产生相同指纹
+    # 关键: 使用确定性哈希 (非随机投影), 保证相同输入产生相同指纹
     remaining = dim - n_bins
     if remaining > 0 and intervals:
         # 取前 8 个最长 persist 的区间作为显著特征
@@ -386,7 +383,7 @@ def fingerprint_distance(
     l1_sum = sum(abs(cdf1[i] - cdf2[i]) for i in range(len(v1)))
 
     # 通道权重融合: 同一通道的距离直接比较
-    # 跨通道 (不同 channel) 的比较无意义--此时返回 1.0
+    # 跨通道 (不同 channel) 的比较无意义, 此时返回 1.0
     if fp1.channel != fp2.channel:
         return 1.0
 

@@ -150,7 +150,7 @@ class PathConditionTracker:
 
         reg: 被约束的寄存器名
         current_umin/umax: 当前值域的下/上界
-        返回: (新umin, 新umax)
+        返回 (新umin, 新umax)。
         """
         new_umin, new_umax = current_umin, current_umax
 

@@ -19,7 +19,6 @@
 # 本引擎仅依赖后向线性归约, 不构建全局符号表达式,
 #     天然处理寄存器 clobber 与函数边界 (遇到 call 即终止或标记未知).
 #
-# 创建: 2026-07-29
 
 from typing import Dict, List, Optional, Tuple
 

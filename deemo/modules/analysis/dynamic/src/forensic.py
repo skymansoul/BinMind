@@ -1,13 +1,11 @@
-# 2026-08-01
-"""
-Forensic facade — PE/ELF header timestamp extraction, file operation
-analysis, time anomaly detection, timeline reconstruction
+"""取证门面 — PE/ELF 头部时间戳提取, 文件操作分析,
+时间异常检测, 时间线重建。
 
-Wraps engine/forensic_path_recorder.py
-engine/forensic_timeline_reconstructor.py
+封装 engine/forensic_path_recorder.py 与
+engine/forensic_timeline_reconstructor.py。
 
-// O(n 记录 n) O(n) space — 合并 排序 beats quicksort because
-// file operation timestamps arrive nearly sorted OS
+注: 归并排序 O(n log n) / O(n) 空间 — 优于快排, 因为文件
+操作时间戳到达时接近有序。
 """
 
 from __future__ import annotations
@@ -24,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 log = logging.getLogger(__name__)
 
 
-# PE/ELF header parsing
+# PE/ELF 头部解析
 
 @dataclass
 class BinaryHeaderInfo:
@@ -39,7 +37,7 @@ class BinaryHeaderInfo:
 
 
 def _parse_pe_header(filepath: str) -> Optional[BinaryHeaderInfo]:
-    """解析 key fields a PE (Portable 可执行文件) header"""
+    """解析 PE 头部的关键字段。"""
     try:
         with open(filepath, "rb") as f:
             # DOS header
@@ -84,7 +82,7 @@ def _parse_pe_header(filepath: str) -> Optional[BinaryHeaderInfo]:
 
 
 def _parse_elf_header(filepath: str) -> Optional[BinaryHeaderInfo]:
-    """解析 key fields an ELF header"""
+    """解析 ELF 头部的关键字段。"""
     try:
         with open(filepath, "rb") as f:
             ident = f.read(16)
@@ -104,7 +102,7 @@ def _parse_elf_header(filepath: str) -> Optional[BinaryHeaderInfo]:
             arch_map = {3: "x86", 62: "x64", 40: "ARM", 183: "ARM64", 8: "MIPS"}
             arch = arch_map.get(machine, f"unknown({machine})")
 
-            # ELF doesn't a standard timestamp — fall back file mtime
+            # ELF 无标准时间戳 — 回退到文件 mtime
             file_ts = os.path.getmtime(filepath)
             ts_readable = datetime.datetime.fromtimestamp(file_ts, tz=datetime.timezone.utc).isoformat()
 
@@ -120,13 +118,13 @@ def _parse_elf_header(filepath: str) -> Optional[BinaryHeaderInfo]:
         return None
 
 
-# File operation record
+# 文件操作记录
 
 @dataclass
 class FileOperation:
     op_id: str
     filepath: str
-    operation: str  # "创建", "读取", "写入", "删除", "rename", "执行"
+    operation: str  # "创建", "读取", "写入", "删除", "重命名", "执行"
     timestamp: float
     process_name: str = ""
     pid: int = 0
@@ -134,20 +132,19 @@ class FileOperation:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-# TimelineReconstructor
+# 时间线重建器
 
 class TimelineReconstructor:
-    """重建 timeline binary activity PE/ELF headers
-    file operation 记录
-    
-    Performs:
-    
-    1. PE/ELF header timestamp extraction (compile time)
-    2. File operation timeline analysis
-    3. Time anomaly detection (tampered timestamps, clock skew)
-    
-    Usage::
-    
+    """从 PE/ELF 头部与文件操作记录重建二进制活动时间线。
+
+    执行:
+
+    1. PE/ELF 头部时间戳提取 (编译时间)
+    2. 文件操作时间线分析
+    3. 时间异常检测 (被篡改的时间戳, 时钟偏移)
+
+    用法::
+
     tr = TimelineReconstructor()
     tr.record_file_op("创建", "C:\\\\temp\\\\dropper.exe", time.time())
     tr.record_file_op("写入", "C:\\\\temp\\\\payload.dll", time.time() + 1)
@@ -161,13 +158,13 @@ class TimelineReconstructor:
         self._binary_headers: Dict[str, BinaryHeaderInfo] = {}
         self._op_counter: int = 0
 
-# Binary header analysis
+# 二进制头部分析
 
     def extract_binary_info(self, filepath: str) -> Optional[BinaryHeaderInfo]:
-        """提取 PE/ELF header information a file
-        
-        Automatically 检测 格式化 (PE vs ELF) 提取 compile
-        timestamp, 入口, architecture
+        """提取文件的 PE/ELF 头部信息。
+
+        自动检测格式 (PE vs ELF), 提取编译时间戳, 入口点与
+        架构。
         """
         if filepath in self._binary_headers:
             return self._binary_headers[filepath]
@@ -181,7 +178,7 @@ class TimelineReconstructor:
             )
         return info
 
-# File operation recording
+# 文件操作记录
 
     def record_file_op(
         self,
@@ -192,7 +189,7 @@ class TimelineReconstructor:
         pid: int = 0,
         size_bytes: int = 0,
     ) -> FileOperation:
-        """Record a file operation event"""
+        """记录文件操作事件。"""
         self._op_counter += 1
         op = FileOperation(
             op_id=f"fop_{self._op_counter:06d}",
@@ -206,20 +203,20 @@ class TimelineReconstructor:
         self._operations.append(op)
         return op
 
-# Timeline construction
+# 时间线构建
 
     def build_timeline(self) -> List[Dict[str, Any]]:
-        """构建 a chronological timeline operations
-        
-        排序 operations timestamp using 合并 排序 (stable, O(n 记录 n))
-        包含 binary header compile times timeline markers
+        """构建操作的时间顺序时间线。
+
+        按时间戳对操作排序 (稳定归并排序, O(n log n)),
+        并包含二进制头部的编译时间标记。
         """
-        # 排序 file operations timestamp (合并 排序 — stable)
+        # 按时间戳排序文件操作 (归并排序 — 稳定)
         sorted_ops = sorted(self._operations, key=lambda o: o.timestamp)
 
         timeline: List[Dict[str, Any]] = []
 
-        # 插入 binary compile-time markers
+        # 插入二进制编译时间标记
         for filepath, info in self._binary_headers.items():
             timeline.append({
                 "type": "compile_time",
@@ -230,7 +227,7 @@ class TimelineReconstructor:
                 "architecture": info.architecture,
             })
 
-        # 插入 file operations
+        # 插入文件操作
         for op in sorted_ops:
             timeline.append({
                 "type": "file_operation",
@@ -246,25 +243,25 @@ class TimelineReconstructor:
                 "size_bytes": op.size_bytes,
             })
 
-        # 排序 merged timeline timestamp
+        # 按时间戳排序合并后的时间线
         timeline.sort(key=lambda e: e["timestamp"])
         return timeline
 
-# Anomaly detection
+# 异常检测
 
     def detect_anomalies(self) -> List[Dict[str, Any]]:
-        """检测 temporal anomalies timeline
-        
-        检查 for:
-        - Future timestamps (clock skew or tampering)
-        - Compile-time vs runtime gaps (old binaries)
-        - Rapid file creation bursts (ransomware pattern)
-        - Timestamps epoch 0 (forged or missing)
+        """检测时间线中的时间异常。
+
+        检查:
+        - 未来时间戳 (时钟偏移或篡改)
+        - 编译时间与运行时间的差距 (旧二进制)
+        - 快速文件创建突发 (勒索软件模式)
+        - epoch 0 时间戳 (伪造或缺失)
         """
         anomalies: List[Dict[str, Any]] = []
         now = time.time()
 
-        # 检查 for future timestamps
+        # 检查未来时间戳
         for op in self._operations:
             if op.timestamp > now + 3600:  # 1 hour future
                 anomalies.append({
@@ -276,7 +273,7 @@ class TimelineReconstructor:
                     "message": f"Timestamp {op.timestamp} is in the future (now={now:.0f})",
                 })
 
-        # 检查 for epoch-zero timestamps (forged/missing)
+        # 检查 epoch 零点时间戳 (伪造/缺失)
         for op in self._operations:
             if abs(op.timestamp - 0) < 1.0 or abs(op.timestamp - 946684800) < 1.0:
                 anomalies.append({
@@ -288,7 +285,7 @@ class TimelineReconstructor:
                     "message": "Timestamp is near epoch — possibly forged or missing",
                 })
 
-        # 检查 compile-time vs runtime gap
+        # 检查编译时间与运行时间的差距
         for filepath, info in self._binary_headers.items():
             age_days = (now - info.timestamp) / 86400.0
             if age_days > 365 * 3:  # Binary older 3 years
@@ -300,7 +297,7 @@ class TimelineReconstructor:
                     "message": f"Binary compiled {age_days:.0f} days ago — may be unpatched",
                 })
 
-        # 检查 for rapid file creation bursts (>10 files <5 seconds)
+        # 检查快速文件创建突发 (>10 个文件, <5 秒)
         create_ops = [o for o in self._operations if o.operation in ("create", "write")]
         for i in range(len(create_ops)):
             window_end = create_ops[i].timestamp + 5
@@ -320,10 +317,10 @@ class TimelineReconstructor:
 
         return anomalies
 
-# 报告 generation
+# 报告生成
 
     def generate_report(self) -> Dict[str, Any]:
-        """构造 a comprehensive forensic timeline 报告"""
+        """构造全面的取证时间线报告。"""
         return {
             "binary_count": len(self._binary_headers),
             "operation_count": len(self._operations),
@@ -342,7 +339,7 @@ class TimelineReconstructor:
         }
 
     def clear(self) -> None:
-        """清除 recorded operations header data"""
+        """清除已记录的操作与头部数据。"""
         self._operations.clear()
         self._binary_headers.clear()
         self._op_counter = 0

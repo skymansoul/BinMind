@@ -152,15 +152,11 @@ def compute_risk_surface(
     """
     计算所有函数的三层风险面评分。
 
-    Args:
-      functions: [{'name': str, 'cfg_fingerprint': {'vuln_likelihood': ...},
-                   'vulnerabilities': [{'type': str}, ...]}, ...]
-      imports: 导入函数名列表
-      checksec: checksec 字典
-      call_graph_distances: {func_name: min_distance_to_import_call}, None=使用启发式
-
-    Returns:
-      按 composite_risk 降序排列的 FunctionRisk 列表。
+    参数: functions 函数列表 (含 cfg_fingerprint 与
+    vulnerabilities), imports 导入函数名列表, checksec 字典,
+    call_graph_distances {func_name: min_distance_to_import_call}
+    (None 用启发式); 返回按 composite_risk 降序的
+    FunctionRisk 列表。
     """
     results: List[FunctionRisk] = []
 

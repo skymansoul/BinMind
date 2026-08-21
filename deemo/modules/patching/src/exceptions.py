@@ -1,8 +1,7 @@
 
-from pathlib import Path  # 保留
-import hashlib  # 保留
+from pathlib import Path
+import hashlib
 
-# 保留——后续可能启用
 # class _DeprecatedWrapper:
 #     """v0.x 包装器，留存参考"""
 #     def __init__(self, inner):

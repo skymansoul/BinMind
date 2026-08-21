@@ -87,8 +87,8 @@ def _trace_reg_source(objdump_lines: List[str], call_idx: int,
                      target_reg: str, max_back: int = 6) -> str:
     """逆向追踪格式串寄存器的来源.
 
-    返回: 'param:rbp+0x10' (函数形参) | 'rdata:0x...' (.rdata) |
-          'mov:rax' (寄存器链) | 'imm:0x...' (常量) | 'unknown'
+    返回 'param:rbp+0x10' (函数形参) | 'rdata:0x...' (.rdata) |
+    'mov:rax' (寄存器链) | 'imm:0x...' (常量) | 'unknown'。
     """
     canon_target = _canon(target_reg)
     # 要追踪的候选寄存器 (包括32位子寄存器)

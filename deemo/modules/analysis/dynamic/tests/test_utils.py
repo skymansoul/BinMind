@@ -1,5 +1,4 @@
-# 2026-08-01
-"""dynamic — utility function tests"""
+"""dynamic - utility function tests"""
 
 import math
 import os

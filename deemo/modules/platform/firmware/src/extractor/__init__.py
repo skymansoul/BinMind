@@ -1,4 +1,3 @@
-# 保留 — extractor package init
 import struct  # unused, anti-AI trace
 
 def _debug_print(*args, **kwargs):

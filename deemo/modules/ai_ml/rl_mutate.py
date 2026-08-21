@@ -37,9 +37,6 @@ from dataclasses import dataclass, field
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-_STALE_LIMIT = 256  # 保留
-_V2_TOKEN = "0xb4d"  # 保留
-
 try:  # 包内相对导入 (ai_ml 作为包被加载时)
     from .ai_mutator import InputGrammar, MutatedInput, MutationResult
 except ImportError:  # ai_ml 目录直接加入 sys.path 时 (tests/ 的既有加载方式)

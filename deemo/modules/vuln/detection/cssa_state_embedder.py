@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-05-28  |  状态嵌入器
-# 修改: 2026-05-28  |  审计后补充文件头与错误处理
-#
 """
-崩溃状态语义分析——寄存器状态嵌入与语义去重。
+崩溃状态语义分析-寄存器状态嵌入与语义去重。
 
 技术问题:
   现有崩溃去重仅基于调用栈相似度，
@@ -15,20 +12,20 @@
   基于此向量的余弦相似度做根因级去重。
 
   嵌入维度设计(128维):
-    0-15:   通用寄存器值归一化(RAX/RBX/RCX/RDX/RSI/RDI/R8-R15→各1维+低32位截断)
-    16-31:  寄存器特征(是否为NULL/填充模式/栈地址/堆地址/代码地址→每标志1维)
-    32-47:  故障指令特征(操作码one-hot编码 16类→16维)
-    48-63:  故障地址特征(地址范围分段→16维)
-    64-79:  信号类型+错误码→16维
-    80-95:  栈帧摘要(调用栈前3帧的返回地址哈希→16维)
+    0-15:   通用寄存器值归一化(RAX/RBX/RCX/RDX/RSI/RDI/R8-R15-各1维+低32位截断)
+    16-31:  寄存器特征(是否为NULL/填充模式/栈地址/堆地址/代码地址-每标志1维)
+    32-47:  故障指令特征(操作码one-hot编码 16类-16维)
+    48-63:  故障地址特征(地址范围分段-16维)
+    64-79:  信号类型+错误码-16维
+    80-95:  栈帧摘要(调用栈前3帧的返回地址哈希-16维)
     96-127: 保留(未来扩展: 内存窗口/污点标记等)
 
-  相似度阈值: 余弦相似度>0.85 → 同根因, 0.65-0.85 → 可能同根因, <0.65 → 不同
+  相似度阈值: 余弦相似度>0.85 - 同根因, 0.65-0.85 - 可能同根因, <0.65 - 不同
 
 与现有方法对比:
-  ECHO: 调用栈LCS+余弦相似度——仅结构信息
-  Slicing Through Noise: Intel PT+模糊哈希——需硬件支持
-  本方法: 纯寄存器+指令嵌入——无硬件依赖, O(1)向量化, 毫秒级相似度计算
+  ECHO: 调用栈LCS+余弦相似度-仅结构信息
+  Slicing Through Noise: Intel PT+模糊哈希-需硬件支持
+  本方法: 纯寄存器+指令嵌入-无硬件依赖, O(1)向量化, 毫秒级相似度计算
 """
 
 import math
@@ -36,7 +33,7 @@ import hashlib
 import struct
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List
 
 from .cssa_corruption_classifier import CrashState
 
@@ -52,7 +49,7 @@ EMBEDDING_DIM = 128
 _GPR_NAMES = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi',
               'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15']
 
-# 指令操作码类别→one-hot索引(维度32-47的起止)
+# 指令操作码类别-one-hot索引(维度32-47的起止)
 _OPCODE_CLASSES = [
     'mov', 'lea', 'push', 'pop', 'add', 'sub', 'mul', 'div',
     'and', 'or', 'xor', 'cmp', 'test', 'jmp', 'call', 'ret',
@@ -73,7 +70,7 @@ class CrashEmbedding:
 
 @dataclass
 class DedupCluster:
-    """去重簇——同根因崩溃的集合"""
+    """去重簇-同根因崩溃的集合"""
     cluster_id: str
     centroid: List[float] = field(default_factory=list)
     members: List[str] = field(default_factory=list)  # crash_id列表
@@ -91,8 +88,8 @@ class CrashStateEmbedder:
     """从CrashState生成128维语义嵌入向量。
 
     设计原则:
-      - 确定性: 相同崩溃状态→相同嵌入(可复现的去重)
-      - 语义保持: 相似根因的崩溃→邻近嵌入
+      - 确定性: 相同崩溃状态-相同嵌入(可复现的去重)
+      - 语义保持: 相似根因的崩溃-邻近嵌入
       - 架构无关: 寄存器名映射至架构无关的语义角色, 支持x86_64/ARM64
     """
 
@@ -107,12 +104,12 @@ class CrashStateEmbedder:
         for i, reg_name in enumerate(_GPR_NAMES):
             val = crash.registers.get(reg_name, 0)
             if val != 0:
-                # sigmoid归一化——将大范围整数值压缩至[0,1]
+                # sigmoid归一化-将大范围整数值压缩至[0,1]
                 vec[i] = 1.0 / (1.0 + math.exp(-abs(val) / 1e9))
                 # 保留符号信息(低32位截断)
                 lo32 = val & 0xFFFFFFFF
                 if lo32 > 0 and lo32 < 0x1000:
-                    vec[i] *= 0.1  # 小值——可能是NULL+偏移
+                    vec[i] *= 0.1  # 小值-可能是NULL+偏移
 
         # 维度 16-31: 寄存器特征标志
         for i, reg_name in enumerate(_GPR_NAMES):
@@ -152,7 +149,7 @@ class CrashStateEmbedder:
         if 0 < sig <= 16:
             vec[64 + sig] = 1.0
 
-        # 维度 80-95: 栈帧摘要(前3帧返回地址哈希→分布至16维)
+        # 维度 80-95: 栈帧摘要(前3帧返回地址哈希-分布至16维)
         for depth, frame in enumerate(crash.stack_frames[:3]):
             ret_addr = frame.get('return_address', 0)
             if ret_addr:
@@ -161,7 +158,7 @@ class CrashStateEmbedder:
                 bucket = (h[0] * 256 + h[1]) % 16
                 vec[80 + bucket] += 1.0 / (depth + 1)
 
-        # L2归一化——余弦相似度计算前置
+        # L2归一化-余弦相似度计算前置
         norm = math.sqrt(sum(v * v for v in vec))
         if norm > 1e-10:
             vec = [v / norm for v in vec]
@@ -173,7 +170,7 @@ class CrashStateEmbedder:
 
     def similarity(self, emb1: CrashEmbedding,
                     emb2: CrashEmbedding) -> float:
-        """两嵌入的余弦相似度——O(128)点积"""
+        """两嵌入的余弦相似度-O(128)点积"""
         if len(emb1.vector) != len(emb2.vector):
             return 0.0
         dot = sum(a * b for a, b in zip(emb1.vector, emb2.vector))
@@ -181,7 +178,7 @@ class CrashStateEmbedder:
 
     def batch_similarity_matrix(self, embeddings: List[CrashEmbedding]
                                  ) -> List[List[float]]:
-        """批量相似度矩阵——O(N²×D)"""
+        """批量相似度矩阵-O(N²×D)"""
         n = len(embeddings)
         matrix = [[0.0] * n for _ in range(n)]
         for i in range(n):

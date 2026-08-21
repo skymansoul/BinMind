@@ -27,7 +27,7 @@ def refine_int_overflow_findings(
       2. 用 IOSV 验证是否有守卫保护
       3. 用 IOSV 值范围验证是否真可能溢出
 
-    Returns: {filtered_count, confirmed_count, detail}
+    返回 {filtered_count, confirmed_count, detail}.
     """
     if not findings:
         return {'filtered_count': 0, 'confirmed_count': 0, 'detail': 'no findings'}

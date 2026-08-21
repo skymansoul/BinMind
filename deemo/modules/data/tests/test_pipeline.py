@@ -1,6 +1,6 @@
 """数据流水线功能单元测试"""
 import unittest
-from src.pipeline import Pipeline, ParallelPipeline, FanOutPipeline, \
+from ..src.pipeline import Pipeline, ParallelPipeline, FanOutPipeline, \
     make_hash_stage, make_compress_stage, batch_iter
 
 

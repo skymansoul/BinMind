@@ -1,23 +1,21 @@
-# created: 2026-08-12
-# modified: 2026-08-26 — added cross-optimization stability evaluation specific to binary GNNs
-# 随机均衡微调——通过平坦极值搜索稳定二进制GNN的泛化性能
+# 随机均衡微调-通过平坦极值搜索稳定二进制GNN的泛化性能
 #
-# 核心问题: 标准SGD微调收敛到尖锐极小值——编译器优化级别微小差异(O2 vs O3)
+# 核心问题: 标准SGD微调收敛到尖锐极小值-编译器优化级别微小差异(O2 vs O3)
 # 即导致嵌入偏移和预测波动。SWA通过权重平均找到更平坦的区域。
 # 尖锐极小值的模型对此类扰动异常敏感。
 #
 # 技术方案:
-#   1. 循环学习率: 在微调中周期性升降学习率——迫使模型穿越损失景观的
+#   1. 循环学习率: 在微调中周期性升降学习率-迫使模型穿越损失景观的
 #      不同区域，找到对学习率不敏感的平坦区域
 #   2. 随机权重平均(SWA): 在循环LR的每个低谷处保存权重快照，
-#      最终模型 = 所有快照的均值——均值化平滑掉各快照的个体偏差
-#   3. 均衡验证: 在SWA模型上测量"扰动敏感度"——
+#      最终模型 = 所有快照的均值-均值化平滑掉各快照的个体偏差
+#   3. 均衡验证: 在SWA模型上测量"扰动敏感度"-
 #      对权重施加高斯噪声后测量预测的变化，作为泛化质量的指标
-#   4. 平坦度-精度权衡: 报告模型的标准精度和扰动鲁棒性——
+#   4. 平坦度-精度权衡: 报告模型的标准精度和扰动鲁棒性-
 #      微调可以在精度损失<1%的代价下提升鲁棒性30-50%
 #
 # 新颖性: SWA+循环LR是通用技术但其应用于二进制GNN的编译器不变性
-# 是全新的——目标不是ImageNet精度而是跨优化级别的稳定性
+# 是全新的-目标不是ImageNet精度而是跨优化级别的稳定性
 
 from __future__ import annotations
 
@@ -29,13 +27,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class SWASnapshot:
-    """SWA权重快照——在循环LR的低谷处保存"""
+    """SWA权重快照-在循环LR的低谷处保存"""
     epoch: int
     learning_rate: float
     weights: List[np.ndarray]
@@ -56,7 +53,7 @@ class EquilibriumReport:
 
 
 class CyclicalLearningRate:
-    """循环学习率调度——余弦退火周期。
+    """循环学习率调度-余弦退火周期。
 
     lr(t) = lr_min + (lr_max - lr_min) · (1 + cos(π · t/T)) / 2
     其中T = 半个周期的步数
@@ -84,7 +81,7 @@ class CyclicalLearningRate:
 
 
 class StochasticEquilibriumFinetuner:
-    """随机均衡微调器——循环LR + SWA + 平坦度评估。
+    """随机均衡微调器-循环LR + SWA + 平坦度评估。
 
     训练流程:
       1. 使用循环LR进行多轮微调
@@ -111,15 +108,7 @@ class StochasticEquilibriumFinetuner:
                                          Tuple[List[np.ndarray], float, float]],
                  total_steps: Optional[int] = None
                  ) -> EquilibriumReport:
-        """执行循环LR+SWA微调。
-
-        Args:
-            train_step_fn: (weights, lr) → (updated_weights, loss, accuracy)
-            total_steps: 总训练步数(None→自动计算)
-
-        Returns:
-            EquilibriumReport
-        """
+        """执行循环LR+SWA微调。"""
         if total_steps is None:
             total_steps = self._n_cycles * self._lr_scheduler.cycle_length
 
@@ -191,7 +180,7 @@ class StochasticEquilibriumFinetuner:
                          eval_fn: Callable,
                          features, adjacency,
                          n_trials: int = 20) -> Dict[str, float]:
-        """比较两个模型的平坦度——哪个在权重扰动下更稳定。
+        """比较两个模型的平坦度-哪个在权重扰动下更稳定。
 
         对两个模型的权重分别施加随机噪声，测量预测输出的方差。
         方差更小的模型=更平坦=更鲁棒。
@@ -217,20 +206,10 @@ class StochasticEquilibriumFinetuner:
                                                eval_fn: Callable,
                                                opt_variants: List[Tuple[Any, Any, str]],
                                                ) -> Dict[str, float]:
-        """评估模型在不同编译优化级别间的预测稳定性——二进制GNN的核心指标。
+        """评估模型在不同编译优化级别间的预测稳定性-二进制GNN的核心指标。
 
         对同一函数的不同优化版本(O0/O1/O2/O3)，测量SWA模型预测的方差。
         方差越低→模型对编译器优化越不敏感→泛化越好。
-
-        Args:
-            model_weights: SWA合并后的权重
-            eval_fn: (features, adjacency, weights) → prediction
-            opt_variants: [(features, adjacency, opt_level), ...]
-                          同一函数的不同优化版本
-
-        Returns:
-            {'mean_prediction': ..., 'cross_opt_variance': ...,
-             'max_deviation': ..., 'stability_score': ...}
         """
         if len(opt_variants) < 2:
             return {'mean_prediction': 0, 'cross_opt_variance': 0,

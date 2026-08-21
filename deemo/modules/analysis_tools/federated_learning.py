@@ -293,7 +293,7 @@ class VulnerabilityDetectionClient(FLClient):
         return gradient, metrics
 
     def evaluate_local(self, model):
-        return FLMetrics(round=self.config.max_rounds, client_id=self.client_id, loss=0.3, accuracy=0.85, precision=0.82, recall=0.88, f1_score=0.85)
+        return FLMetrics(round=self.config.max_rounds, client_id=self.client_id)
 
 class VulnerabilityDetectionServer(FLServer):
     """FL server specialized for vulnerability detection model aggregation."""

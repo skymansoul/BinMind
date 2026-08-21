@@ -85,7 +85,7 @@ from analysis.heap_confidence_scorer import (
 from analysis.heap_analysis_pipeline import (
     run_heap_analysis_pipeline, PipelineStats,
 )
-# 值范围约束过滤 — 直接从core.value_range导入(DPRECATED shim已移除)
+# 值范围约束过滤 — 直接从core.value_range导入(DEPRECATED shim已移除)
 from core.value_range import (
     analyze_heap_bounds, extract_alloc_sites, extract_heap_writes,
     check_bounds, Interval, AllocSite, HeapWrite, BoundsViolation,

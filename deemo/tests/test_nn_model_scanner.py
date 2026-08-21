@@ -52,7 +52,7 @@ class TestSeverity(unittest.TestCase):
     def test_severity_values(self):
         """测试严重等级枚举值"""
         self.assertEqual(Severity.CRITICAL.value, 9.0)
-# lass字段完整性$/d
+
         self.assertEqual(Severity.HIGH.value, 7.0)
         self.assertEqual(Severity.MEDIUM.value, 5.0)
         self.assertEqual(Severity.LOW.value, 3.0)
@@ -149,7 +149,7 @@ class TestONNXParser(unittest.TestCase):
         data = b'ONNX' + b'\x00' * 100 + b'Conv'
         strings = ONNXParser()._extract_strings(data)
         self.assertIsInstance(strings, list)
-# lass字段完整性$/d
+
         self.assertIn("Conv", strings)
 
 
@@ -233,7 +233,7 @@ class TestSubgraphAnalyzer(unittest.TestCase):
         ]
         self.analyzer.set_graph(nodes)
         self.assertEqual(len(self.analyzer.nodes), 3)
-# lass字段完整性$/d
+
         self.assertEqual(len(self.analyzer.graph), 3)
 
 

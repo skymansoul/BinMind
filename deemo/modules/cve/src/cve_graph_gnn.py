@@ -316,8 +316,7 @@ class CVEExploitGraph:
         不使用 ReLU 以避免小图上特征塌缩; 使用 LeakyReLU (α=0.2)
         保留负信号用于区分性. 同时添加自环 (self-loop) 以稳定传播.
 
-        Returns:
-          {cve_id: {score, confidence, contributing_paths, breakdown}}
+        返回 {cve_id: {score, confidence, contributing_paths, breakdown}}。
         """
         if not self._built:
             self.build()
@@ -649,10 +648,7 @@ def score_cves_with_gnn(kb: CVEKnowledgeBase) -> Dict[str, Dict[str, Any]]:
 
 
 def top_exploitable_cves(kb: CVEKnowledgeBase, top_n: int = 20) -> List[Tuple[str, float, str]]:
-    """返回 GNN 可利用性分数最高的 top_n 个 CVE.
-
-    Returns: [(cve_id, score, label), ...] 按分数降序排列.
-    """
+    """返回 GNN 可利用性分数最高的 top_n 个 CVE, 按分数降序的 [(cve_id, score, label), ...]。"""
     scores = score_cves_with_gnn(kb)
     ranked = sorted(scores.items(), key=lambda x: x[1].get("score", 0), reverse=True)
     return [(cid, info["score"], info["label"]) for cid, info in ranked[:top_n]]

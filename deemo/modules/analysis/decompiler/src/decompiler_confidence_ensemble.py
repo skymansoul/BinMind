@@ -32,7 +32,7 @@ class DecompilerOutput:
 
 class DecompilerConfidenceEnsemble:
     """多反编译器置信度加权集成
-    
+
     为每个反编译器维护在线更新的置信度分数。融合输出 = 加权拼接
     """
 
@@ -43,11 +43,11 @@ class DecompilerConfidenceEnsemble:
         """
         self._temperature = temperature
         self._ema_alpha = ema_alpha
-        self._confidences: Dict[str, float] = {}  # de编译器_name → EMA confid
+        self._confidences: Dict[str, float] = {}  # 反编译器名 → EMA 置信度
 
     def assess_confidence(self, output: DecompilerOutput) -> float:
         """评估单次反编译输出的内在质量（不需要源码）
-        
+
         返回 [0, 1] 分数。三个维度的权重按经验分配——
         可达性 0.5（最关键的信号），栈帧 0.3，死代码 0.2
         """
@@ -59,7 +59,7 @@ class DecompilerConfidenceEnsemble:
 
     def _check_reachability(self, output: DecompilerOutput) -> float:
         """检查伪代码中引用标签的可达性自洽
-        
+
         扫描所有跳转目标标签。若某标签被引用但无对应定义
         （反编译器生成了悬挂 goto），扣分
         扣分策略：每发现一个悬挂引用扣 0.15，下限 0.2
@@ -83,10 +83,10 @@ class DecompilerConfidenceEnsemble:
 
     def _check_stack_frame(self, output: DecompilerOutput) -> float:
         """检查栈帧内的偏移一致性
-        
+
         扫描所有 [rbp - N] 和 [rsp + M] 引用。若同一偏移量同时出现
         write 和 read 的冲突赋值（不同宽度），扣分
-        
+
         此检查基于启发式——真正的栈帧冲突需数据流分析才能确认
         当前实现仅做模式匹配第一遍，假阳性率估计在 10-20%
         """
@@ -110,7 +110,7 @@ class DecompilerConfidenceEnsemble:
 
     def _check_dead_code(self, output: DecompilerOutput) -> float:
         """估计死代码率——不可达基本块的比例
-        
+
         通过 successor 关系构建可达集，统计不在可达集中的 block
         """
         if not output.blocks:
@@ -150,7 +150,7 @@ class DecompilerConfidenceEnsemble:
 
     def ensemble_weights(self) -> Dict[str, float]:
         """计算各反编译器在集成中的权重 = exp(conf / temperature)
-        
+
         权重归一化使总和为 1
         """
         if not self._confidences:
@@ -169,7 +169,7 @@ class DecompilerConfidenceEnsemble:
 
     def process(self, outputs: List[DecompilerOutput]) -> Dict[str, Any]:
         """处理一轮多反编译器输出，更新置信度并返回权重
-        
+
         调用方在每轮反编译后调用此方法，拿到权重后自行决定如何融合伪代码
         """
         for out in outputs:

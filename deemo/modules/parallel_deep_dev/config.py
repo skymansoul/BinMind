@@ -8,6 +8,11 @@
 
 import os
 
+# 数据目录 — bandit/evo/hyper 优化器的持久化数据存放位置
+def _data_dir() -> str:
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+
 
 class CONFIG:
     """全局配置 — 修改此类的属性以适配你的环境。"""

@@ -144,15 +144,7 @@ class FormatSpecAnalyzer:
     ) -> FormatExploitAssessment:
         """对格式字符串漏洞进行完整的利用性评估。
 
-        Args:
-            format_func: 格式化函数名 (printf/sprintf/...)
-            format_arg: 格式参数变量名
-            format_string_content: 如果能静态提取格式字符串内容
-            is_user_controlled: 格式字符串是否来自用户输入
-            stack_offset: 格式字符串在栈上的参数位置 (-1=未知)
-
-        Returns:
-            FormatExploitAssessment with 0-10 scores
+        返回 0-10 分制的 FormatExploitAssessment。
         """
         specs = cls.parse_format_string(format_string_content) if format_string_content else []
 

@@ -1,7 +1,6 @@
 # 最终统一多工具对比报告生成器 — 汇总所有实验数据输出CSV/LaTeX/图表.
 # 聚合来源: final_multi_tool_comparison.json (123样本) + cve_multi_tool_20260809_150130.json (16 CVE)
 #          + regression_*.json (消融) + gapsbv_final_metrics.json (17 CVE CJ基准)
-# 创建: 2026-05-10
 
 import json, os, csv
 from pathlib import Path

@@ -26,7 +26,8 @@ class TestContainerImageScanner(unittest.TestCase):
         """确保模块能导入，如果docker SDK没装就跳过"""
         try:
             from modules.container_scanner import ContainerImageScanner, DOCKER_SDK_AVAILABLE
-            self.assertTrue(True)
+            self.assertIsNotNone(ContainerImageScanner)
+            self.assertIsInstance(DOCKER_SDK_AVAILABLE, bool)
         except ImportError as e:
             self.skipTest(f"容器扫描模块导入失败: {e}")
 

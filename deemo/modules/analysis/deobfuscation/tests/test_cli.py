@@ -1,16 +1,13 @@
-# 2026-07-28
 # CLI tests for 去混淆 module
-"""Tests for 去混淆 CLI 入口"""
+"""去混淆 CLI 入口测试"""
 
 import pytest
 import sys
 
-
 class TestCLI:
-    """Tests for 去混淆 CLI"""
+    """去混淆 CLI 测试"""
 
     def test_help_runs(self) -> None:
-        """Verify --help produces 输出 error"""
         try:
             from ..src.cli import main
             result = main(["--help"])
@@ -19,7 +16,6 @@ class TestCLI:
             assert exc.code == 0
 
     def test_subcommands_registered(self) -> None:
-        """Verify 6 subcommands 寄存器ed"""
         import argparse
         from ..src.cli import main as cli_main_module
 
@@ -41,7 +37,6 @@ class TestCLI:
         assert args2.command == "decode-strings"
 
     def test_config_flag(self) -> None:
-        """Verify --配置 flag accepted"""
         import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--config", default=None)
@@ -49,7 +44,6 @@ class TestCLI:
         assert args.config == "/path/to/config.yaml"
 
     def test_verbose_flag(self) -> None:
-        """Verify --verbose flag works"""
         import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--verbose", "-v", action="store_true")
@@ -57,7 +51,6 @@ class TestCLI:
         assert args.verbose is True
 
     def test_missing_command(self) -> None:
-        """Verify missing command exits error"""
         import argparse
         p = argparse.ArgumentParser()
         sp = p.add_subparsers(dest="command")
@@ -68,10 +61,9 @@ class TestCLI:
 
 
 class TestSubcommandArgs:
-    """Test argument parsing 对每个 subcommand"""
+    """各子命令参数解析测试"""
 
     def test_deobfuscate_args(self) -> None:
-        """去混淆 subcommand accepts input level"""
         import argparse
         p = argparse.ArgumentParser()
         sp = p.add_subparsers(dest="command")
@@ -83,7 +75,6 @@ class TestSubcommandArgs:
         assert args.level == "aggressive"
 
     def test_unpack_args(self) -> None:
-        """脱壳 subcommand accepts input 输出"""
         import argparse
         p = argparse.ArgumentParser()
         sp = p.add_subparsers(dest="command")

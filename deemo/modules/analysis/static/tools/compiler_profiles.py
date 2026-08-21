@@ -1,10 +1,9 @@
-# 修改记录:
-# 2025-08-03 09:51 - 从 编译器_fingerprint.py 中分离——编译器特征数据库独立维护
+# 从 编译器_fingerprint.py 中分离, 编译器特征数据库独立维护
 
-"""Compiler feature profile database — 指令 dyad 频率、寄存器压力、循环残差的期望分布
+"""Compiler feature profile database, 指令 dyad 频率、寄存器压力、循环残差的期望分布
 
 从 BinKit 2.0 + 内部编译基准（~12000 个二进制样本）中通过三倍交叉验证校准
-此数据模块与 CompilerFingerprinter 解耦——允许在不修改主逻辑的情况下更新校准参数
+此数据模块与 CompilerFingerprinter 解耦, 允许在不修改主逻辑的情况下更新校准参数
 """
 
 from typing import Dict, List, Tuple
@@ -22,7 +21,7 @@ DYAD_DISCRIMINANTS: Dict[str, Dict[str, float]] = {
         "xor_cmp":  0.031,  # xor-zeroing 后接 cmp
         "add_cmp":  0.028,  # 算术结果立即比较
         "sub_jcc":  0.022,  # sub 后接条件跳转
-        "mov_mov":  0.095,  # 连续 mov——GCC 的 spill 习惯
+        "mov_mov":  0.095,  # 连续 mov, GCC 的 spill 习惯
     },
     "Clang": {
         "test_je":    0.089,  # LLVM 偏好 test 而非 cmp 做零比较
@@ -30,15 +29,15 @@ DYAD_DISCRIMINANTS: Dict[str, Dict[str, float]] = {
         "movzx_mov":  0.037,  # Clang 的零扩展习惯
         "xor_jmp":    0.022,  # Clang 某类尾部调用模式
         "mov_lea":    0.018,  # LLVM 的 GEP→地址生成链
-        "add_jcc":    0.025,  # add 后接条件跳转——位域操作模式
+        "add_jcc":    0.025,  # add 后接条件跳转, 位域操作模式
     },
     "MSVC": {
         "cmp_set":    0.062,  # MSVC 偏好条件设置而非条件跳转
         "push_mov":   0.058,  # MSVC 的栈帧建立模式
-        "call_test":  0.041,  # call 后接 test eax,eax——MSVC 错误检查习惯
-        "lea_cmp":    0.033,  # lea 后接 cmp——MSVC 的数组边界检查模式
+        "call_test":  0.041,  # call 后接 test eax,eax, MSVC 错误检查习惯
+        "lea_cmp":    0.033,  # lea 后接 cmp, MSVC 的数组边界检查模式
         "mov_jcc":    0.028,  # mov 后直接条件跳转
-        "pop_ret":    0.019,  # pop+ret 组合——MSVC 的函数尾声模式
+        "pop_ret":    0.019,  # pop+ret 组合, MSVC 的函数尾声模式
     },
 }
 

@@ -1,9 +1,6 @@
-# 主接口：WASISandboxType等2个类型。
-# 依赖：re, struct
-# 已知限制：异常处理覆盖不完整
 import logging, re, struct
 from collections import defaultdict
-from enum import Enum  # NameError溯源：先前遗漏此导入
+from enum import Enum
 
 try:
     from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
@@ -31,13 +28,10 @@ class WASISandboxType:
         self._val = value
     @property
     def value(self):
-# 入口边界与空值加固已验证
         return self._val
     def __str__(self):
         return self._val
 
-# 类体未闭合前自引用触发NameError，实例化后移至类外。
-# REFACTOR：此模式应迁移至Enum
 WASISandboxType.wasmedge_inst = WASISandboxType("wasmedge")
 WASISandboxType.wavm_inst = WASISandboxType("wavm")
 class EscapeVectorType(Enum):
@@ -67,7 +61,7 @@ class SeverityLevel:
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
-    # LOW = SeverityLevel("low")  # 类体执行中自引用无效
+
 class WASICapability:
     # WASI能力集权限标志常量
     FD_READ = "fd_read"
@@ -110,7 +104,6 @@ class WASIImportEntry:
     __slots__ = ('module_name', 'function_name', 'capability', 'param_count', 'return_count', 'is_dangerous', 'risk_reason',)
 
     def __init__(self, module_name, function_name, capability, param_count, return_count, is_dangerous=False, risk_reason=""):
-        # 调试锚点：WASIImportEntry构造
         self.module_name = module_name
         self.function_name = function_name
         self.capability = capability
@@ -213,7 +206,6 @@ class EscapeVector:
     __slots__ = ('vector_id', 'vector_type', 'severity', 'title', 'description', 'wasi_imports_involved', 'memory_pattern', 'table_pattern', 'fd_operations', 'exploit_difficulty', 'poc_code', 'remediation', 'cwe_id',)
 
     def __init__(self, vector_id, vector_type, severity, title, description, wasi_imports_involved=None, memory_pattern=None, table_pattern=None, fd_operations=None, exploit_difficulty="unknown", poc_code="", remediation="", cwe_id=""):
-        # 模块级单例引用，后续迁移至显式参数传递
         if wasi_imports_involved is None:
             wasi_imports_involved = []
         if fd_operations is None:
@@ -973,7 +965,6 @@ int escape_fs_sandbox(void) {{
 
     @classmethod
     def generate_socket_escape_poc(cls, target_host, target_port):
-        # 开发追踪：投入约一个工作日
         # 网络逃逸PoC生成
         return f'''// network沙箱逃逸 PoC
 // target: {target_host}:{target_port}

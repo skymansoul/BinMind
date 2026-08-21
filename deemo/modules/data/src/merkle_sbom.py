@@ -1,7 +1,6 @@
-# 创建: 2026-05-21 14:05
-# 修改: 2026-05-21 — SHA-256 Merkle 树 + inclusion proof + 选择性披露
+# SHA-256 Merkle 树 + inclusion proof + 选择性披露
 """
-加密 Merkle SBOM — 内容寻址防篡改 + 选择性披露.
+加密 Merkle SBOM - 内容寻址防篡改 + 选择性披露.
 
 Merkle 树封装 SBOM, 支持两个关键属性:
   (a) 防篡改性 — 每条目内容寻址 (SHA-256), 根哈希作为完整性锚点.

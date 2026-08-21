@@ -13,14 +13,14 @@ import numpy as np
 
 @dataclass
 class TopologyProfile:
-    """图的拓扑特征剖面——策略网络的输入。
+    """图的拓扑特征剖面-策略网络的输入。
 
     特征选择理由:
-      avg_degree: 图密度——影响边丢弃的容忍度上限
-      clustering_coeff: 循环体特征——影响子图采样策略
-      degree_entropy: 结构异质性——影响特征掩码强度
-      leaf_ratio: 直线代码段比例——影响节点丢弃策略
-      avg_path_length + diameter: 图尺度——影响子图采样半径
+      avg_degree: 图密度-影响边丢弃的容忍度上限
+      clustering_coeff: 循环体特征-影响子图采样策略
+      degree_entropy: 结构异质性-影响特征掩码强度
+      leaf_ratio: 直线代码段比例-影响节点丢弃策略
+      avg_path_length + diameter: 图尺度-影响子图采样半径
     """
     n_nodes: int
     n_edges: int
@@ -51,7 +51,7 @@ class TopologyProfile:
 
 
 class TopologyAnalyzer:
-    """从CFG邻接矩阵提取拓扑特征——O(N+E)在线分析"""
+    """从CFG邻接矩阵提取拓扑特征-O(N+E)在线分析"""
 
     @staticmethod
     def analyze(adjacency: List[List[int]], directed: bool = True) -> TopologyProfile:

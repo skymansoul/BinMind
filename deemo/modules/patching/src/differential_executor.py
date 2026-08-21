@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-20 14:22 — 增加 coverage 导向的输入变异策略
-# 2025-07-24 16:07 — 引入差分 fuzzing 核心循环（基于遗传算法）
-# 2025-07-27 11:55 — 添加 syscall 序列比较（strace 解析），捕获更深层差异
+# 增加 coverage 导向的输入变异策略
+# 引入差分 fuzzing 核心循环（基于遗传算法）
+# 添加 syscall 序列比较（strace 解析），捕获更深层差异
 
 """Differential Execution Oracle — 轻量差分执行验证。
 

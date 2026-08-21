@@ -1,5 +1,4 @@
-# 2026-07-20
-# mobile — mobile & embedded platform analysis
+# mobile - mobile & embedded platform analysis
 
 __version__ = "0.6.0"
 

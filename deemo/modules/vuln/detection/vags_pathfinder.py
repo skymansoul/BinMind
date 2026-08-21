@@ -1,25 +1,23 @@
 # coding: utf-8
-# 创建: 2026-07-18  |  攻击路径发现
-# 修改: 2026-07-18  |  审计后补充文件头与错误处理
 #
 """
-漏洞驱动攻击图——攻击路径发现与排序。
+漏洞驱动攻击图: 攻击路径发现与排序。
 
 从AttackGraph中搜索从入口点到高价值目标的最优攻击路径，
 按路径难度排序并输出可操作的攻击链描述。
 
 路径搜索算法:
-  Dijkstra变体——边权重=攻击难度×时间估算，
+  Dijkstra变体, 边权重=攻击难度×时间估算,
   寻找从入口点到目标的加权最短路径。
-  支持多条路径(非仅最短)——k-最短路径(Yen算法简化版)。
+  支持多条路径(非仅最短), k-最短路径(Yen算法简化版)。
 
 路径评分:
   score = Σ(1 - edge.difficulty) / path_length × target_value
-  较短的路径+较低的难度+高价值目标=最高评分路径
+  较短的路径+较低的难度+高价值目标 = 最高评分路径
 
 输出:
   每条路径含: 节点序列/所需能力/估计时间/防护绕过分析
-  按风险评分降序排列——Top-K对应最危险的攻击链
+  按风险评分降序排列, Top-K对应最危险的攻击链
 """
 
 import math
@@ -39,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class AttackPath:
-    """单条攻击路径——从入口到目标的漏洞利用链"""
+    """单条攻击路径: 从入口到目标的漏洞利用链"""
     path_id: str
     nodes: List[AttackNode] = field(default_factory=list)
     edges: List[AttackEdge] = field(default_factory=list)
@@ -76,12 +74,12 @@ class PathAnalysisResult:
 
 
 class AttackPathFinder:
-    """攻击路径发现——Dijkstra加权最短路径+k-最短路径。
+    """攻击路径发现: Dijkstra加权最短路径+k-最短路径。
 
     边权重: difficulty × estimated_hours(归一化至[0.1, 10.0])
     权重倾向于选择难度低且时间短的攻击步骤。
 
-    多路径: Yen算法简化——找到最短路径后暂时移除其关键边，
+    多路径: Yen算法简化, 找到最短路径后暂时移除其关键边,
     搜索次优路径，最多返回K=10条。
     """
 
@@ -109,11 +107,11 @@ class AttackPathFinder:
                     entry, target, adj, graph, self._max_paths)
                 all_paths.extend(paths)
 
-        # 去重+排序
+        # 去重, 排序
         unique = self._dedup_paths(all_paths)
         unique.sort(key=lambda p: p.risk_score, reverse=True)
 
-        # 识别关隘节点——出现在多条高危路径中的节点
+        # 识别关隘节点, 出现在多条高危路径中的节点
         chokepoints = self._find_chokepoints(unique[:5], graph)
 
         # 防护覆盖
@@ -214,7 +212,7 @@ class AttackPathFinder:
             description=" → ".join(steps))
 
     def _dedup_paths(self, paths: List[AttackPath]) -> List[AttackPath]:
-        """路径去重——相同节点集合视为重复"""
+        """路径去重: 相同节点集合视为重复"""
         seen = set()
         unique = []
         for p in paths:
@@ -226,7 +224,7 @@ class AttackPathFinder:
 
     def _find_chokepoints(self, top_paths: List[AttackPath],
                             graph: AttackGraph) -> List[str]:
-        """识别关隘节点——出现在≥2条高危路径中的节点"""
+        """识别关隘节点: 出现在≥2条高危路径中的节点"""
         counts = defaultdict(int)
         for p in top_paths:
             seen_in_path = set()
@@ -249,7 +247,7 @@ def find_attack_paths(graph: AttackGraph,
 def build_and_analyze(vulnerabilities: List[Dict],
                        protections: Dict[str, str] = None
                        ) -> PathAnalysisResult:
-    """端到端便捷入口——构建攻击图+发现路径"""
+    """端到端便捷入口: 构建攻击图+发现路径"""
     from .vags_graph import AttackGraphBuilder
     graph = AttackGraphBuilder().build(vulnerabilities, protections)
     return AttackPathFinder().find_paths(graph)

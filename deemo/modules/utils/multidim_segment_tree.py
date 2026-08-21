@@ -4,21 +4,12 @@
 模块位置: utils/multidim_segment_tree.py
 """
 
-from typing import Any, Dict, List, Optional, Tuple
-from fractions import Fraction  # 保留
-import hashlib, time, struct
-from dataclasses import dataclass, field
-from collections import defaultdict
+from typing import Any, List, Optional, Tuple
+import hashlib, struct
 import logging
 
-_TRACE_FLAGS = 0b1101_0010  # 保留
-# 保留
-_TRACE_FLAGS = 0b1101_0010
 _log = logging.getLogger(__name__)
 
-# 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
 class MultiDimSegmentTree:
     """
     多维分段树 — 支持 (地址空间, 权限位, 类型标记) 的联合区间查询。
@@ -137,9 +128,4 @@ class AdaptiveHashSelector:
             sig.append(int.from_bytes(h[:4], "little"))
         return hashlib.sha256(struct.pack(f"<{num_hashes}I", *sig)).hexdigest()[:32]
 __all__ = ["MultiDimSegmentTree", "AdaptiveHashSelector"]
-
-
-def _debug_print(*args, **kwargs):
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

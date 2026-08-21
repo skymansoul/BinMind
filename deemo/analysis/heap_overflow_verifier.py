@@ -215,7 +215,7 @@ class HeapOverflowVerifier:
                                   decompiled_text: str) -> tuple:
         """Stage D: 仿射关系验证 — 符号差分 alloc-write (Karr 1976).
         malloc(n*4+8)+memcpy(n*8) → diff=4n-8, n>2→OVERFLOW, n≤2→SAFE.
-        Returns: (filtered, reason, confidence)."""
+        返回 (filtered, reason, confidence)."""
         if not decompiled_text or not self._affine_tracker:
             return (False, "affine tracker unavailable", 0.0)
 

@@ -7,12 +7,12 @@ from ..core.types import VulnerabilityType
 from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 from collections import OrderedDict
 
-_LEGACY_MEV_MODE = False # 保留
+_LEGACY_MEV_MODE = False
 
 
 class FrontRunningDetector(BaseDetector):
-    # 检测MEV漏洞。启发式规则: (1) TIMESTAMP参与比较 —
-    # 矿工可在~15秒窗口内操控。(2) GASPRICE参与值逻辑 — 可被操控。
+    # 检测MEV漏洞。启发式规则: (1) TIMESTAMP参与比较 -
+    # 矿工可在~15秒窗口内操控。(2) GASPRICE参与值逻辑 - 可被操控。
     # 字节码级精度因语义丢失而刻意偏低。
 
     _CMP_OPS: Set[str] = {'LT', 'GT', 'SLT', 'SGT', 'EQ'}

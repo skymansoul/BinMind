@@ -13,7 +13,6 @@ class SyscallCategory:
     IPC = "ipc"
     SYSTEM = "system"
     CRYPTO = "crypto"
-    MEMORY = SyscallCategory("memory")
 class SyscallNode:
     __slots__ = ('name', 'number', 'category', 'permissions', 'calls', 'called_by',)
 

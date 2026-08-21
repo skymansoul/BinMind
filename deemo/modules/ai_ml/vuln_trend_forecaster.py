@@ -169,11 +169,7 @@ class VulnHistoryStore:
             """)
 
     def add(self, tp: VulnTimePoint) -> None:
-        """Add a time point to the store.
-
-        Args:
-            tp: VulnTimePoint to store.
-        """
+        """Add a time point to the store."""
         with self._lock, self._conn() as c:
             c.execute(
                 "INSERT INTO history (timestamp, binary_id, vuln_type, severity, count) "
@@ -182,11 +178,7 @@ class VulnHistoryStore:
             )
 
     def add_batch(self, points: List[VulnTimePoint]) -> None:
-        """Add multiple time points at once.
-
-        Args:
-            points: List of VulnTimePoint to store.
-        """
+        """Add multiple time points at once."""
         with self._lock, self._conn() as c:
             c.executemany(
                 "INSERT INTO history (timestamp, binary_id, vuln_type, severity, count) "
@@ -203,16 +195,7 @@ class VulnHistoryStore:
         since_ts: Optional[float] = None,
         vuln_type: Optional[str] = None,
     ) -> List[VulnTimePoint]:
-        """Query time points for a binary.
-
-        Args:
-            binary_id: Binary identifier.
-            since_ts: Optional timestamp lower bound.
-            vuln_type: Optional vulnerability type filter.
-
-        Returns:
-            List of VulnTimePoint objects.
-        """
+        """Query time points for a binary."""
         query = (
             "SELECT timestamp, binary_id, vuln_type, severity, count "
             "FROM history WHERE binary_id = ?"
@@ -243,11 +226,7 @@ class VulnHistoryStore:
         ]
 
     def get_all_binaries(self) -> List[str]:
-        """Get list of all known binary IDs.
-
-        Returns:
-            List of binary identifiers.
-        """
+        """Get list of all known binary IDs."""
         with self._lock, self._conn() as c:
             rows = c.execute(
                 "SELECT DISTINCT binary_id FROM history"
@@ -255,14 +234,7 @@ class VulnHistoryStore:
         return [r[0] for r in rows]
 
     def get_vuln_types(self, binary_id: str) -> List[str]:
-        """Get vulnerability types seen for a binary.
-
-        Args:
-            binary_id: Binary identifier.
-
-        Returns:
-            List of vulnerability type strings.
-        """
+        """Get vulnerability types seen for a binary."""
         with self._lock, self._conn() as c:
             rows = c.execute(
                 "SELECT DISTINCT vuln_type FROM history WHERE binary_id = ?",
@@ -271,14 +243,7 @@ class VulnHistoryStore:
         return [r[0] for r in rows]
 
     def count(self, binary_id: Optional[str] = None) -> int:
-        """Count stored time points.
-
-        Args:
-            binary_id: Optional filter.
-
-        Returns:
-            Count of records.
-        """
+        """Count stored time points."""
         with self._lock, self._conn() as c:
             if binary_id:
                 row = c.execute(
@@ -290,11 +255,7 @@ class VulnHistoryStore:
         return int(row[0]) if row else 0
 
     def clear(self, binary_id: Optional[str] = None) -> None:
-        """Clear stored data.
-
-        Args:
-            binary_id: Optional filter to clear only one binary's data.
-        """
+        """Clear stored data."""
         with self._lock, self._conn() as c:
             if binary_id:
                 c.execute(
@@ -314,16 +275,7 @@ class TimeSeriesForecaster:
         horizon: int = 1,
         method: TrendMethod = TrendMethod.MOVING_AVG,
     ) -> Tuple[float, float, float]:
-        """Forecast next value(s) from a series.
-
-        Args:
-            series: Historical values.
-            horizon: Steps to forecast ahead.
-            method: Forecasting method.
-
-        Returns:
-            Tuple of (predicted_mean, lower_bound, upper_bound).
-        """
+        """Forecast next value(s) from a series."""
         if not series:
             return (0.0, 0.0, 0.0)
 
@@ -415,7 +367,7 @@ class TimeSeriesForecaster:
         last = s[-1]
         return (last, max(0.0, last * 0.5), last * 1.5)
 
-    # ---- Holt-Winters 三重指数平滑 (Triple Exponential Smoothing) ----
+    # Holt-Winters 三重指数平滑 (Triple Exponential Smoothing)
     # 同时建模水平(level)、趋势(trend)、季节性(seasonality)三个分量
     # Holt 1957, Winters 1960; 在漏洞爆发预测中，季节性对应补丁周期
     @staticmethod
@@ -429,17 +381,6 @@ class TimeSeriesForecaster:
     ) -> Tuple[float, float, float]:
         """Holt-Winters additive triple exponential smoothing.
         加性模型 — 适用于季节性振幅相对恒定的漏洞数据。
-
-        Args:
-            s: 历史时间序列值
-            horizon: 预测步长
-            season_length: 季节周期长度（默认7=周模式）
-            alpha: 水平平滑系数
-            beta: 趋势平滑系数
-            gamma: 季节平滑系数
-
-        Returns:
-            (predicted, lower_bound, upper_bound)
         """
         n = len(s)
         if n < season_length * 2:
@@ -502,16 +443,7 @@ class TimeSeriesForecaster:
         series: List[float],
         holdout_days: int = 3,
     ) -> List[ForecastMetrics]:
-        """Backtest all available methods against historical holdout data.
-
-        Args:
-            series: 完整的历史时间序列
-            holdout_days: 验证集大小（留出最后 N 天）
-
-        Returns:
-            List of ForecastMetrics, sorted by RMSE ascending (best first).
-            返回按 RMSE 升序排列的各方法评估指标
-        """
+        """Backtest all available methods against historical holdout data."""
         if len(series) < holdout_days + 3:
             return []
 
@@ -595,15 +527,7 @@ class SeasonalPatternDetector:
         series: List[Tuple[float, int]],
         period_days: int = 30,
     ) -> Optional[Dict[str, float]]:
-        """Detect seasonal patterns in timestamped data.
-
-        Args:
-            series: List of (timestamp, value) tuples.
-            period_days: Expected seasonal period in days.
-
-        Returns:
-            Dict of season labels to average values, or None if insufficient data.
-        """
+        """Detect seasonal patterns in timestamped data."""
         if len(series) < period_days * 2:
             return None
 
@@ -649,13 +573,6 @@ class AnomalyScorer:
         - 对每个点计算其相对于窗口内分布的偏离度
         - 取最近 window 个点的最大 Modified Z-Score 作为整体异常评分
         - Modified Z-Score > 3.5 视为异常（对应经典 Z-Score 约 > 3.0）
-
-        Args:
-            series: 漏洞计数的日序列
-            window: 滑动窗口大小，默认14天
-
-        Returns:
-            异常评分（0.0 = 完全正常，越高越异常）
         """
         n = len(series)
         if n < window:
@@ -701,19 +618,11 @@ class VulnTrendForecaster:
         self.anomaly_scorer = AnomalyScorer()
 
     def record(self, tp: VulnTimePoint) -> None:
-        """Record a vulnerability data point.
-
-        Args:
-            tp: VulnTimePoint to record.
-        """
+        """Record a vulnerability data point."""
         self.store.add(tp)
 
     def record_batch(self, points: List[VulnTimePoint]) -> None:
-        """Record multiple data points.
-
-        Args:
-            points: List of time points.
-        """
+        """Record multiple data points."""
         self.store.add_batch(points)
 
     def analyze(
@@ -722,16 +631,7 @@ class VulnTrendForecaster:
         method: TrendMethod = TrendMethod.MOVING_AVG,
         horizon: int = 7,
     ) -> TrendAnalysis:
-        """Analyze vulnerability trends for a binary.
-
-        Args:
-            binary_id: Binary identifier.
-            method: Forecasting method.
-            horizon: Forecast horizon in time units.
-
-        Returns:
-            TrendAnalysis with forecast and trend detection.
-        """
+        """Analyze vulnerability trends for a binary."""
         history = self.store.get(binary_id)
 
         if not history:
@@ -784,10 +684,10 @@ class VulnTrendForecaster:
 
         seasonality = self.seasonal.detect(ts_series)
 
-# 异常评分 — 检测漏洞爆发信号
+        # 异常评分 - 检测漏洞爆发信号
         anomaly = self.anomaly_scorer.score(series) if len(series) >= 7 else 0.0
 
-# 回测评估 — 对比所有方法的预测精度
+        # 回测评估 - 对比所有方法的预测精度
         backtest_metrics = None
         if len(series) >= 10:
             backtest_metrics = TimeSeriesForecaster.evaluate_methods(series)
@@ -820,15 +720,7 @@ class VulnTrendForecaster:
         binary_ids: List[str],
         method: TrendMethod = TrendMethod.MOVING_AVG,
     ) -> Dict[str, TrendAnalysis]:
-        """Compare trends across multiple binaries.
-
-        Args:
-            binary_ids: List of binary identifiers.
-            method: Forecasting method.
-
-        Returns:
-            Dict of binary_id to TrendAnalysis.
-        """
+        """Compare trends across multiple binaries."""
         return {
             bid: self.analyze(bid, method=method)
             for bid in binary_ids
@@ -840,16 +732,7 @@ def forecast_vuln_trend(
     method: str = "moving_avg",
     horizon: int = 7,
 ) -> Dict[str, Any]:
-    """Convenience function for vulnerability trend forecasting.
-
-    Args:
-        binary_id: Binary identifier.
-        method: Method name ('moving_avg', 'exponential', 'linear_regression', 'naive').
-        horizon: Forecast horizon.
-
-    Returns:
-        Forecast result dict.
-    """
+    """Convenience function for vulnerability trend forecasting."""
     try:
         m = TrendMethod(method)
     except ValueError:
@@ -881,9 +764,3 @@ def forecast_vuln_trend(
             if result.backtest_metrics else None
         ),
     }
-
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

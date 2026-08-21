@@ -1,25 +1,24 @@
-# 修改记录:
-# 2025-08-05 09:55 - 初始实现：Little's Law+排队论的分析管道瓶颈自动检测
+# 初始实现: Little's Law+排队论的分析管道瓶颈自动检测
 
-"""分析管道瓶颈检测 — 基于排队论的阶段级吞吐量分析与瓶颈定位。
+"""分析管道瓶颈检测 - 基于排队论的阶段级吞吐量分析与瓶颈定位。
 
 多阶段二进制分析管道（反汇编→CFG构建→漏洞检测→利用生成→报告）
 各阶段计算特性不同（I/O密集、CPU密集、内存密集），
 瓶颈可能出现在任一阶段，且随二进制特征变化。
 
-核心机制——排队论驱动的瓶颈识别：
+核心机制-排队论驱动的瓶颈识别：
 1. 将管道建模为串联队列（M/M/1 或 G/G/1 取决于到达/服务时间分布）。
 2. 追踪每阶段的: 到达率(λ)、服务率(μ)、队列长度(L_q)、利用率(ρ)。
 3. 瓶颈指标：ρ > 0.85 → 该阶段过载，需增加资源。
    L_q持续增长 → 到达超过服务能力，需横向扩容或算法优化。
-4. Little's Law验证：L = λ·W —— 若实测违反，说明存在批处理/并发效应。
+4. Little's Law验证: L = λ·W - 若实测违反, 说明存在批处理/并发效应。
 
 与既有 checkpoint_manager 的关系：
 - checkpoint_manager：管道状态的持久化（故障恢复）。
 - 本模块：管道性能的实时监控与优化建议（在线调优）。
 
 - Little's Law: 排队系统的守恒定律。
-- Amdahl's Law在分析管道中的应用——识别串行瓶颈。
+- Amdahl's Law在分析管道中的应用-识别串行瓶颈。
 """
 
 import math
@@ -81,7 +80,7 @@ class BottleneckReport:
     recommendation: str
 
 class PipelineBottleneckDetector:
-    """管道瓶颈检测器——基于排队论的实时性能分析。
+    """管道瓶颈检测器-基于排队论的实时性能分析。
 
     使用范式：
       detector = PipelineBottleneckDetector(["disasm", "cfg", "vuln", "report"])
@@ -167,7 +166,7 @@ class PipelineBottleneckDetector:
                     f"Consider pre-batching or flow control."
                 )
 
-            # Little's Law检查：L should ≈ λ·W
+            # Little's Law检查: L should ≈ λ·W
             _lambda = _stage.arrival_rate
             _W = _stage.avg_service_time
             _L_predicted = _lambda * _W
@@ -176,7 +175,7 @@ class PipelineBottleneckDetector:
             if _L_observed > _L_predicted * 3 and _L_observed > 3:
                 _rec += (
                     f" Little's Law violation: observed L={_L_observed:.1f} "
-                    f"> predicted L={_L_predicted:.1f} — "
+                    f"> predicted L={_L_predicted:.1f} - "
                     f"possible batching/concurrency effect inflating queue."
                 )
 
@@ -209,7 +208,7 @@ def _smoke_test():
         "disasm", "cfg_build", "vuln_detect", "report",
     ])
 
-    # 模拟管道运行——每个任务流过4个阶段
+    # 模拟管道运行-每个任务流过4个阶段
     _base_time = time.time()
     for _step in range(100):
         _t_arrival = _base_time + _step * 0.5  # 每0.5s一个任务
@@ -225,7 +224,7 @@ def _smoke_test():
         _detector.record_completion("cfg_build", 0.4)
 
         _detector.record_arrival("vuln_detect")
-        # vuln_detect更慢——服务时间1.5s
+        # vuln_detect更慢-服务时间1.5s
         _detector.record_completion("vuln_detect", 1.5 + random.uniform(0, 0.5))
         # 累积队列
         if _step % 3 == 0:  # 每3个任务采样队列状态

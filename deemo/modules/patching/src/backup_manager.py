@@ -196,7 +196,6 @@ class BackupManager:
         self._conn.close()
         logger.debug("BackupManager connection closed")
 
-# 保留 — v1.3 后废弃, 仅兼容旧 pipeline
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     if data is None:

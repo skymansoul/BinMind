@@ -1,5 +1,3 @@
-# Created: 2026-06-11 16:23:50
-#
 # confidence_calibrator — 跨检测器置信度校准
 # 不同检测器 (injection/lateral/persistence/spoofing/leak) 的置信度评分尺度不一致:
 #   injection 可能 0.4 即高置信，lateral 可能 0.7 才中等置信。

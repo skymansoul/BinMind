@@ -81,17 +81,7 @@ def build_hetero_edges_from_cfg(
     node_types: Optional[List[NodeType]] = None,
     node_instructions: Optional[List[List[str]]] = None,
 ) -> Tuple[List[NodeType], Dict[Tuple[int, int, int], List[Tuple[int, int]]]]:
-    """Construct typed edges from homogeneous CFG adjacency.
-
-    Args:
-      adj: (N, N) adjacency matrix
-      node_types: pre-annotated types, auto-inferred if None
-      node_instructions: per-node instruction lists for call-block refinement
-
-    Returns:
-      node_types: confirmed/inferred node type list
-      typed_edges: {(src_type, edge_type, dst_type) -> [(src_idx, dst_idx), ...]}
-    """
+    """Construct typed edges from homogeneous CFG adjacency."""
     n = adj.shape[0]
     loop_heads = _detect_loop_heads(adj)
 
@@ -159,11 +149,6 @@ class HeteroMetaPathEncoder:
       In the CFG context, node pairs are sparse, so this implementation
       pre-computes the transition matrix per meta-path and aggregates via
       a single matrix multiplication, avoiding O(N^2) pairwise traversal.
-
-    Args:
-      meta_paths: list of (src_type, edge_type, dst_type) patterns
-      embed_dim: node embedding dimension
-      path_weights: per-path fusion weights, uniform if None
     """
 
     DEFAULT_META_PATHS = [
@@ -196,14 +181,7 @@ class HeteroMetaPathEncoder:
         ]
 
     def encode(self, node_features, typed_edges):
-        """Encode node features via meta-path attention aggregation.
-
-        Args:
-          node_features: (N, D) original node features
-          typed_edges: output of build_hetero_edges_from_cfg()
-
-        Returns: (N, D) meta-path enhanced node embeddings
-        """
+        """Encode node features via meta-path attention aggregation."""
         n, d = node_features.shape
         accumulated = np.zeros((n, d), dtype=np.float32)
 

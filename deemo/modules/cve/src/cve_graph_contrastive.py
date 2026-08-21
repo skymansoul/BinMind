@@ -1,6 +1,4 @@
-# 创建: 2026-06-05 16:55
-# 修改: 2026-06-05 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: GRACE图对比学习CVE异构图
+# GRACE图对比学习CVE异构图
 # 图对比学习 — CVE异构图上的自监督节点表示学习
 #
 # 问题: 现有CVE评分模型 (GNN/Hawkes/C3E) 依赖标注数据 (KEV收录/利用成熟度).
@@ -89,13 +87,12 @@ class GraphContrastiveEncoder:
                  node_types: Optional[List[int]] = None,
                  epochs: int = 100,
                  batch_size: int = 256) -> Dict[int, List[float]]:
-        """自监督预训练 — 图对比学习.
+        """自监督预训练 — 图对比学习。
 
-        features: N×d 节点特征矩阵.
-        adj_lists: {rel_type: {src: [dst]}} 邻接表 (与CVEExploitGraph._adj兼容).
-        node_types: 可选, 用于类型感知增强.
-
-        Returns: {node_idx: embedding_vector} 预训练嵌入.
+        features 为 N×d 节点特征矩阵, adj_lists 为
+        {rel_type: {src: [dst]}} 邻接表 (与 CVEExploitGraph._adj
+        兼容), node_types 可选用于类型感知增强;
+        返回 {node_idx: embedding_vector} 预训练嵌入。
         """
         N = len(features)
         if N < 10:

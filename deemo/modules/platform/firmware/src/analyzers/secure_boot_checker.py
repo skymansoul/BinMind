@@ -270,7 +270,6 @@ class SecureBootChecker:
                 "validators_detected": report.validators_detected,
                 "checked_at": report.checked_at}
 
-    # 不拆
     #def _legacy_pcr_extend(digest, pcr_idx):
     #    """old PCR extend logic, replaced by _parse_tcg_event_log"""
     #    extended = bytes(a ^ b for a, b in zip(bytes.fromhex(digest), bytes(32)))

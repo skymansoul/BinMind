@@ -5,7 +5,7 @@
 #
 # 2025 增强: 集成 LLM4Decompile + ReF Decompile 的 Relabeling 策略
 # LLM4Decompile v2 (https://github.com/albertan017/LLM4Decompile)
-# Relabeling 保留跳转目标语义——在反编译的伪代码中保留原始二进制中的跳转地址
+# Relabeling 保留跳转目标语义, 在反编译的伪代码中保留原始二进制中的跳转地址
 # 作为标签前缀，使 LLM 能区分"同签名不同行为"的函数。本模块在报告生成时
 # 对反编译结果应用此策略，提升后续 LLM 分析的准确度
 from enum import Enum
@@ -81,7 +81,7 @@ class ReportData:
 
 
 class RelabelingStrategy:
-    """跳转目标保留标注器——LLM4Decompile v2 启发的 relabeling 实现
+    """跳转目标保留标注器, LLM4Decompile v2 启发的 relabeling 实现
     对伪代码中的标签应用规范化命名，保留原始地址语义信息
     """
 
@@ -90,7 +90,7 @@ class RelabelingStrategy:
 
     @classmethod
     def relabel(cls, pseudocode: str, func_addr: int = 0) -> str:
-        """对伪代码应用 relabeling——将匿名标签替换为地址保留的语义标签
+        """对伪代码应用 relabeling, 将匿名标签替换为地址保留的语义标签
         同时保留原始跳转目标地址作为前缀，以便 LLM 跨函数关联控制流
         """
         lines = pseudocode.split('\n')
@@ -106,7 +106,7 @@ class RelabelingStrategy:
                     line = cls._ADDR_LABEL_PAT.sub(
                         f"L_{orig_addr:08x}", line, count=1)
                     label_ctr += 1
-            # 保留裸跳转地址——作为 LLM 的跨函数引用锚点
+            # 保留裸跳转地址, 作为 LLM 的跨函数引用锚点
             jm = cls._JUMP_PAT.search(line)
             if jm:
                 target_addr = int(jm.group(1), 16)
@@ -117,7 +117,7 @@ class RelabelingStrategy:
 
     @classmethod
     def extract_call_targets(cls, pseudocode: str) -> List[int]:
-        """从反编译伪代码中提取所有 call 目标地址——用于 LLM 分析的上下文增强"""
+        """从反编译伪代码中提取所有 call 目标地址, 用于 LLM 分析的上下文增强"""
         targets: List[int] = []
         call_pat = _re.compile(r'(?:call|invoke)\s+(?:sub_)?(0x[0-9a-fA-F]+)', _re.IGNORECASE)
         for m in call_pat.finditer(pseudocode):
@@ -128,7 +128,7 @@ class RelabelingStrategy:
 class ReverseReportGenerator:
     """
     LLM-based reverse engineering 报告 generator
-    
+
     Core functions:
     1. Aggregates data analysis steps
     2. Drives 报告 generation via 提示词模板 relabeling

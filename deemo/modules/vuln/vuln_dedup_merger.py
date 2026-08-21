@@ -273,6 +273,7 @@ class VulnDedupMerger:
                 entries.append((src, normed[src][idx]))
                 srcs.add(src)
             merged_fields, confs = self._merge_fields(entries)
+            self._conflicts.extend(confs)
             mf = MergedFinding(
                 cve_id=merged_fields.get("cve_id", ""),
                 vuln_type=merged_fields.get("vuln_type", ""),

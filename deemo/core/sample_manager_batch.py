@@ -1,5 +1,5 @@
 """
-样本管理器 —— 批量扫描与导出 mixin。
+样本管理器 - 批量扫描与导出 mixin。
 
 封装目录批量扫描、CSV/Markdown 导出及统计摘要，供 SampleManager 组合复用。
 """
@@ -29,15 +29,8 @@ class _BatchMixin:
         register: bool = True,
     ) -> List[Dict[str, Any]]:
         """
-        批量扫描目录中的二进制文件。
-
-        Args:
-            directory: 目录路径
-            recursive: 是否递归扫描子目录
-            register:  是否自动注册发现的样本
-
-        Returns:
-            发现的二进制摘要列表
+        批量扫描目录中的二进制文件, 返回发现的二进制摘要列表;
+        register=True 时自动注册并回读完整记录。
         """
         if not os.path.isdir(directory):
             return []

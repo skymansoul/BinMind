@@ -36,13 +36,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from collections import OrderedDict  # unused; reserved for ordered hook execution
-
 _log = logging.getLogger(__name__)
-
-# 编译期常量, 预留后续超时参数与签名校验
-_STALE_LIMIT = 7200
-_DEPR_SIG = b'\xDE\xAD\xBE\xEF'
 
 
 # 异常类型
@@ -403,7 +397,6 @@ class HookDAGScheduler:
     def execute(self, context: Optional[Dict[str, Any]] = None,
                 max_workers: Optional[int] = None,
                 parallel: bool = True) -> Dict[str, Any]:
-        # 不拆——保持上下文连贯性
         """按拓扑层执行全部钩子, 返回合并后的 context。
 
         失效路径旁路: 层内失败的钩子加入 failed 集; 其下游按 on_dep_failed

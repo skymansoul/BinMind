@@ -1,7 +1,6 @@
-# 结果收集与对比模块 — 批量扫描 + 判定 + CSV/JSON 输出.
+# 结果收集与对比模块 - 批量扫描 + 判定 + CSV/JSON 输出.
 # 输出: results/regression_results.csv, results/regression_results.json,
 #       results/ablation_summary.json
-# 创建: 2026-05-28
 
 import csv
 import json

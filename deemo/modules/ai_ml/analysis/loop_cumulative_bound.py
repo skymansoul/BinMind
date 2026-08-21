@@ -1,4 +1,4 @@
-﻿# 循环累积拷贝上界——用迭代上界×单次拷贝量证明循环内拷贝安全
+# 循环累积拷贝上界: 用迭代上界×单次拷贝量证明循环内拷贝安全
 # 误报根源: 循环内的memcpy(dst+off, src, per)被直接视为溢出候选,
 #   但循环被cmp守卫约束N次迭代, 累积写入量=N×per可能仍≤分配量
 #   现有管线对循环仅做likelihood×1.5的加权, 无实际累积量计算
@@ -6,7 +6,7 @@
 # 方法: (1)找sink所在循环(双向可达闭合) (2)提取循环头迭代守卫上界N
 #   (3)单次拷贝量=值流解析 (4)累积=per_hi×N; 累积≤usable→可证安全
 # 安全性: 累积采用过近似(迭代上界×单次上界), 只用于"证明安全"的过滤,
-#   不用于判定溢出——过近似只会少过滤, 不会误杀真漏洞
+#   不用于判定溢出, 过近似只会少过滤, 不会误杀真漏洞
 #
 # 与循环摘要的区别: 不做完整循环摘要, 仅提取守卫上界乘单次量;
 #   与interval widening的区别: 不用迭代收敛, 直接闭合计算
@@ -23,7 +23,6 @@ from dataclasses import dataclass
 from .param_size_equality import ParamSizeEquality
 from .path_size_resolver import PathSizeResolver
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 _ASCEND_JCC = {'jl', 'jle', 'jb', 'jbe', 'jne', 'jnz'}  # 计数器递增→回循环体
@@ -158,7 +157,7 @@ class LoopCumulativeBound:
 
     def _iteration_bound(self, header, instructions, bb_boundaries,
                          loop_bbs) -> Optional[int]:
-        """从循环头守卫提取迭代上界——cmp counter,N; 递增型jcc回循环体"""
+        """从循环头守卫提取迭代上界: cmp counter,N; 递增型jcc回循环体"""
         if header >= len(bb_boundaries):
             return None
         start, end = bb_boundaries[header]
@@ -220,7 +219,7 @@ class LoopCumulativeBound:
 
     def _per_iteration_size(self, instructions, copy_idx,
                             copy_func) -> Optional[int]:
-        """单次拷贝量上界——值流解析为常量"""
+        """单次拷贝量上界: 值流解析为常量"""
         abi = self._param_eq._detect_abi(instructions, copy_idx)
         reg = (_WIN_SIZE_REG if abi == 'win' else _LINUX_SIZE_REG).get(
             copy_func, 'rdx' if abi == 'linux' else 'r8')

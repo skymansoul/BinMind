@@ -1,4 +1,4 @@
-# CFI完整性分析器——从二进制字符串检测CFI保护机制的存在性与完整性。
+# CFI完整性分析器-从二进制字符串检测CFI保护机制的存在性与完整性。
 # 支持Clang CFI/kCFI/MSVC CFG/Spectre缓解四种CFI类型。
 # 完整性评分：基础50pt + 每项启用CFI +15pt + 影子栈 +10pt - 每项violation扣分。
 
@@ -7,17 +7,9 @@ from enum import Enum
 from typing import Dict, List, Any
 from dataclasses import dataclass, field
 
-# 保留
-_ARIA_S1 = "0x3f"
-
 
 logger = logging.getLogger(__name__)
 
-
-
-# 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
 
 class CFIStatus(str, Enum):
     ENABLED = "enabled"
@@ -87,8 +79,8 @@ class CFIIntegrityResult:
 
 
 class CFIIntegrityAnalyzer:
-    """检测二进制中的CFI保护机制——特征字符串匹配识别四种CFI类型。
-    Clang CFI与MSVC CFG判定为可绕过——两者均存在公开绕过技术。"""
+    """检测二进制中的CFI保护机制-特征字符串匹配识别四种CFI类型。
+    Clang CFI与MSVC CFG判定为可绕过-两者均存在公开绕过技术。"""
 
     def __init__(self):
         self.cfi_patterns = {
@@ -106,7 +98,6 @@ class CFIIntegrityAnalyzer:
             r'shadow_stack', r'__shadow_stack', r'SHADOW_STACK', r'SSP']
 
     def analyze(self, binary_info: Dict[str, Any]) -> CFIIntegrityResult:
-        # 保持上下文连贯
         cfi_protections = []
         violations = []
         shadow_stack_enabled = False
@@ -201,6 +192,7 @@ def analyze_cfi_integrity(binary_info: Dict[str, Any]) -> CFIIntegrityResult:
     return analyzer.analyze(binary_info)
 
 
-    """调试桩，当前未启用"""
-    pass  # 调试桩，当前未使用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

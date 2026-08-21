@@ -47,11 +47,11 @@ _GADGET_PATTERNS = [
 
 class ShadowStackDetector:
     """返回-address overwrite detector via 反汇编 pattern matching
-    
+
     Scans 反汇编 for 栈-relative 写入 (rbp/rsp displacement)
     检查 whether a RET follows next four instructions. A hit
     indicates a likely 返回-address clobber — a ROP or 栈-smash signal
-    
+
     舍入 5: Added ROP构件 cataloging for 漏洞利用原语 assessment
     """
 
@@ -133,7 +133,7 @@ class ShadowStackDetector:
         """从二进制中提取并分类ROP gadget。使用radare2的/R命令搜索
         ret-terminated指令序列，然后按功能分类（栈操作/寄存器加载/
         内存写入/系统调用/间接跳转）
-        
+
         分类结果用于评估ROP利用难度：若存在syscall gadget+寄存
         器加载gadget，那么实现execve("/bin/sh")的难度显著降低"""
         gadgets = []

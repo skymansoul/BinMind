@@ -1,14 +1,14 @@
 """
-区间抽象解释过滤器 — intra-procedural, O(n)复杂度, 筛除静态误报。
+区间抽象解释过滤器 - intra-procedural, O(n)复杂度, 筛除静态误报。
 
 设计决策:
   1. 使用区间域 [lb, ub] 近似每个变量的值范围
-  2. 单遍遍历基本块序列 (非迭代到不动点) — 牺牲精度换 O(n)
-  3. 检测数组越界: 若访问 a[i] 且 i 的区间不完全在 [0, len(a)-1] 内 → 告警
-  4. 检测空指针: 若指针区间含 0 → 告警
+  2. 单遍遍历基本块序列 (非迭代到不动点) - 牺牲精度换 O(n)
+  3. 检测数组越界: 若访问 a[i] 且 i 的区间不完全在 [0, len(a)-1] 内, 告警
+  4. 检测空指针: 若指针区间含 0, 告警
 
 为什么是区间域而不是多面体域:
-  区间域 O(n) vs 多面体域 O(n^3) — 对二进制分析场景, 精度损失可接受。
+  区间域 O(n) vs 多面体域 O(n^3) - 对二进制分析场景, 精度损失可接受。
   多面体域对复杂约束 (x+y≤10) 更精确, 但二进制中此类约束罕见。
 
 与false_positive_filter.py的分工:
@@ -16,7 +16,7 @@
   本模块: 基于抽象解释的语义分析 (程序逻辑)
 
 修改记录:
-  创建 2024-11-05 — 区间抽象域 + O(n) forward analysis
+  创建 2024-11-05 - 区间抽象域 + O(n) forward analysis
 """
 
 from dataclasses import dataclass
@@ -51,20 +51,20 @@ class Interval:
             self.ub + delta if self.ub is not None else None)
 
     def is_definitely_outside(self, lo: int, hi: int) -> bool:
-        """区间是否完全在 [lo, hi] 之外 → 确定越界。"""
+        """区间是否完全在 [lo, hi] 之外, 确定越界。"""
         return ((self.ub is not None and self.ub < lo) or
                 (self.lb is not None and self.lb > hi))
 
 
 @dataclass
 class AbstractState:
-    """寄存器→区间的映射 (简化——仅追踪rax/rbx/rcx/rdx/rsi/rdi)。"""
+    """寄存器到区间的映射 (简化 - 仅追踪rax/rbx/rcx/rdx/rsi/rdi)。"""
     regs: Dict[str, Interval]
     zero_flag: Optional[bool] = None  # ZF: True/False/None
 
 
 def _parse_mov_imm(insn: str) -> Optional[Tuple[str, int]]:
-    """mov reg, imm → (reg, imm)。不支持则返回None。"""
+    """mov reg, imm - (reg, imm)。不支持则返回None。"""
     parts = insn.lower().replace(',', ' ').split()
     if len(parts) >= 3 and parts[0] == 'mov':
         try:
@@ -79,7 +79,7 @@ def _parse_mov_imm(insn: str) -> Optional[Tuple[str, int]]:
 
 
 def _parse_cmp_imm(insn: str) -> Optional[Tuple[str, int]]:
-    """cmp reg, imm → (reg, imm)。"""
+    """cmp reg, imm - (reg, imm)。"""
     parts = insn.lower().replace(',', ' ').split()
     if len(parts) >= 3 and parts[0] == 'cmp':
         try:
@@ -97,7 +97,7 @@ def abstract_interpret(
     """
     单遍前向区间分析。返回 {reg_name: Interval}。
 
-    array_bounds: {'reg_or_var': (lo, hi)} — 已知的数组边界。
+    array_bounds: {'reg_or_var': (lo, hi)} - 已知的数组边界。
     用于在访问 a[reg] 时检查 reg 的区间是否超出边界。
     """
     state = AbstractState(regs={}, zero_flag=None)
@@ -111,7 +111,7 @@ def abstract_interpret(
             state.regs[mv[0]] = Interval(mv[1], mv[1])
             continue
 
-        # cmp reg, imm → 更新 ZF
+        # cmp reg, imm - 更新 ZF
         cmp_info = _parse_cmp_imm(insn)
         if cmp_info:
             reg, imm = cmp_info
@@ -122,7 +122,7 @@ def abstract_interpret(
                 elif iv.lb == imm:
                     state.zero_flag = True
 
-        # xor reg, reg → reg = 0
+        # xor reg, reg - reg = 0
         parts = insn.lower().replace(',', ' ').split()
         if len(parts) >= 3 and parts[0] == 'xor' and parts[1] == parts[2]:
             state.regs[parts[1]] = Interval(0, 0)
@@ -153,7 +153,7 @@ def filter_by_abstract_analysis(
     用抽象解释筛除不可能的告警。
 
     findings: [{'type': 'overflow', 'relevant_reg': 'rsi', ...}, ...]
-    返回: (filtered_findings, warnings)
+    返回 (filtered_findings, warnings)。
     """
     intervals = abstract_interpret(instructions, array_bounds)
     kept: List[Dict] = []
@@ -165,7 +165,7 @@ def filter_by_abstract_analysis(
 
         if reg and reg in intervals:
             iv = intervals[reg]
-            # if区间完全在合法范围内 → 误报, 筛除
+            # if区间完全在合法范围内 - 误报, 筛除
             if iv.lb is not None and iv.ub is not None:
                 if iv.lb >= 0 and iv.ub <= size and size > 0:
                     warnings.append(

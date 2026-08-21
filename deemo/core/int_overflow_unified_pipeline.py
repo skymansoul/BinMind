@@ -1,5 +1,5 @@
 """
-整数溢出统一检测管线 — 整合 4 个算法级模块, 替代 7 个分散的 IntOverflowDetector。
+整数溢出统一检测管线 - 整合 4 个算法级模块, 替代 7 个分散的 IntOverflowDetector。
 三轨并行 + 贝叶斯融合: 区间抽象解释 / 符号执行验证 / 污点源验证。
 """
 
@@ -16,7 +16,7 @@ _MIN_CONFIDENCE = 0.25  # 轨道B缺席时的最低置信度
 
 @dataclass
 class IntOverflowFinding:
-    """整数溢出发现 — 统一输出格式."""
+    """整数溢出发现 - 统一输出格式."""
     func_name: str = ""
     expr_type: str = ""        # mul / add / shl
     operands: List[str] = field(default_factory=list)
@@ -121,7 +121,7 @@ class IntOverflowPipeline:
                 if result_hi is not None and result_hi > INT32_MAX:
                     confidence = 0.75
                 elif result_hi is None:
-                    confidence = 0.40  # 无法确定 → 保守告警
+                    confidence = 0.40  # 无法确定 - 保守告警
 
                 findings.append(IntOverflowFinding(
                     expr_type=etype,
@@ -159,7 +159,7 @@ class IntOverflowPipeline:
                         f.is_smt_verified = True
                         f.reachable = True
                     else:
-                        # SMT证明不可达 → 降低置信度
+                        # SMT证明不可达 - 降低置信度
                         f.confidence *= 0.30
                         f.reachable = False
                         f.is_smt_verified = True
@@ -223,14 +223,9 @@ class IntOverflowPipeline:
     def analyze(self, pseudocode: str,
                 binary_path: Optional[str] = None) -> Tuple[
                     List[IntOverflowFinding], PipelineStats]:
-        """执行完整三轨分析管线.
+        """执行完整三轨分析管线。
 
-        Args:
-            pseudocode: 反编译伪代码文本
-            binary_path: 可选的ELF路径(轨道B需要)
-
-        Returns:
-            (confirmed_findings, stats)
+        binary_path 为轨道 B (SMT) 所需, 返回 (confirmed_findings, stats)。
         """
         t0 = time.perf_counter()
         stats = PipelineStats()

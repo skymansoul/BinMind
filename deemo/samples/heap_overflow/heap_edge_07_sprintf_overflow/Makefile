@@ -8,12 +8,12 @@ LDFLAGS =
 SRC = vuln.c
 BIN = vuln
 
-all: 
+all: $(BIN)
 
-: 
-	  -o  $^ 
+$(BIN): $(SRC)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f 
+	rm -f $(BIN)
 
 .PHONY: all clean

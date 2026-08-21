@@ -1,5 +1,3 @@
-# created: 2026-07-20
-# modified: 2026-08-25 — expanded abstract value lattice to 5-level (top/const/addr_range/set/bottom)
 # 间接调用目标解析——通过抽象值集分析推断函数指针和虚表调用的目标
 #
 # 核心问题: 剥离二进制中，间接调用（call rax / call [rbx+0x10]）
@@ -24,7 +22,6 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -157,17 +154,7 @@ class IndirectCallResolver:
                 cfg_edges: List[Tuple[int, int]],
                 known_functions: Set[int]
                 ) -> Dict[int, List[int]]:
-        """解析间接调用的可能目标。
-
-        Args:
-            instructions: 汇编指令列表
-            basic_block_boundaries: [(start_idx, end_idx), ...] 基本块范围
-            cfg_edges: [(from_block, to_block), ...] 控制流边
-            known_functions: 已知函数入口地址集合
-
-        Returns:
-            {instruction_index: [possible_target_addresses, ...]}
-        """
+        """解析间接调用的可能目标。"""
         n_blocks = len(basic_block_boundaries)
         if n_blocks == 0:
             return {}

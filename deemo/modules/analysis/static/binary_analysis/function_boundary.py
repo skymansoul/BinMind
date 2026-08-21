@@ -1,4 +1,4 @@
-# INTJ策略: 模式匹配优于机器学习——函数序言/epilogue模式是确定的
+# 策略: 模式匹配优于机器学习 - 函数序言/epilogue模式是确定的
 # ML在这上面是杀鸡用牛刀，且容易误报
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ _ARM64_PROLOGUE = [
 
 def detect_prologue(code: bytes, arch: str = "x86") -> bool:
     """检测给定字节序列是否匹配已知函数序言模式。O(k) k~=10 patterns
-    
+
     返回 True 序列以任何已知序言开头, False otherwise
     """
     patterns = _PROLOGUE_PATTERNS.get(arch, [])
@@ -76,8 +76,8 @@ def detect_epilogue(code: bytes, arch: str = "x86") -> bool:
 def find_function_starts(code: bytes, arch: str = "x86",
                          min_gap: int = 4) -> list[int]:
     """在二进制代码中扫描所有可能的函数入口点。O(n*k) n=len(code), k=patterns
-    
-    INTJ策略: 线性扫描+模式匹配比递归下降快一个数量级
+
+    线性扫描+模式匹配比递归下降快一个数量级
     但会漏掉非标准序言的函数。对于正常编译的二进制准确率 >95%
     """
     starts: list[int] = []
@@ -101,11 +101,8 @@ def align_func_boundary(addr: int, alignment: int = 16) -> int:
     return (addr // alignment) * alignment
 
 
-# from dis import findlinestarts  # 之前依赖这个，先留着
-# 2025-09-14: 这里应该用LRU而不是随机淘汰函数缓存
 
-
-# ---- 函数边界检测的公开 API ----
+# 函数边界检测的公开 API
 # 枚举与数据类定义检测结果的结构，分析器按方法分派到启发式或 ML 路径。
 
 from dataclasses import dataclass, field

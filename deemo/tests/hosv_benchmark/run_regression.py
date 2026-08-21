@@ -20,7 +20,7 @@ from typing import Dict, List
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", ".."))
 
-from _load_samples import load_samples, SAMPLES_DIR  # noqa: E402
+from ._load_samples import load_samples, SAMPLES_DIR  # noqa: E402
 from _scan import HosvScanScheduler  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))

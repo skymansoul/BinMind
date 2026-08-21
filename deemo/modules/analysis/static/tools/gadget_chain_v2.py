@@ -72,7 +72,7 @@ class ConditionalGadget(Gadget):
 class ExploitChain:
     """
     完整 漏洞利用 链
-    
+
     由多个 stage 组成，最终实现任意代码执行
     """
     name: str
@@ -86,7 +86,7 @@ class ExploitChain:
 class GadgetFinder:
     """
     增强型 gadget 查找器
-    
+
     支持 的多原语 构件 分类
     """
 
@@ -149,7 +149,7 @@ class GadgetFinder:
     ) -> List[Gadget]:
         """
         在二进制数据中查找 ROP gadgets
-        
+
         返回所有以 ret 结尾的有效指令序列
         """
         if self._capstone:
@@ -300,7 +300,7 @@ class GadgetFinder:
 class ChainSynthesizer:
     """
     Exploit 链合成器
-    
+
     基于 [ARCANIST 2025] 的组合方法
     自动将 gadget 组装为有效的 exploit 链
     """
@@ -315,9 +315,9 @@ class ChainSynthesizer:
     ) -> Optional[ExploitChain]:
         """
         合成 execve 链
-        
+
         需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, 系统调用; ret
-        
+
         如果缺少某些 gadget，尝试替代路径 [ARCANIST 2025]
         """
         chain = ExploitChain(
@@ -388,7 +388,7 @@ class ChainSynthesizer:
     ) -> Optional[ExploitChain]:
         """
         合成 mprotect 链 → 壳代码 执行
-        
+
         mprotect(壳代码_page, page_size, PROT_READ|PROT_WRITE|PROT_EXEC)
         → jmp 壳代码_addr
         """
@@ -449,7 +449,7 @@ class ChainSynthesizer:
     ) -> List[ExploitChain]:
         """
         多原语组合合成 [ARCANIST 2025]
-        
+
         将不同类型的 exploit 原语组合为单一利用链
         """
         chains = []
@@ -478,7 +478,7 @@ class ChainSynthesizer:
 class PayloadEncoder:
     """
     载荷编码器
-    
+
     将 exploit 链编码为可发送的字节载荷
     处理坏字节、对齐和端序 [ARCANIST 2025]
     """
@@ -491,15 +491,10 @@ class PayloadEncoder:
     def encode_chain(
         self, chain: ExploitChain, padding_before: int = 0
     ) -> bytes:
-        """
-        将 漏洞利用 链编码为 ROP payload
-        
-        Args:
-        chain: 漏洞利用 链定义
-        填充_before: payload 之前的填充字节数
-        
-        返回:
-        编码后的 payload 字节
+        """把漏洞利用链编码为 ROP payload。
+
+        chain 为漏洞利用链定义, padding_before 为 payload 之前
+        的填充字节数; 返回编码后的 payload 字节。
         """
         payload = bytearray()
 
@@ -538,7 +533,7 @@ def synthesize_chain_v2(
 ) -> Dict[str, Any]:
     """
     便捷函数：通用 exploit 链合成（v2）
-    
+
     基于 [ARCANIST 2025] 和 [PBAEG 2025] 的方法
     """
     g_list = [

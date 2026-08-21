@@ -16,7 +16,6 @@
 #      - fprintf(stderr, "error: %d", code) → 字面量格式字符串
 #      - snprintf(buf, sizeof(buf), "%s", src) → 长度受限 + 字面量
 #
-# 创建: 2026-05-22
 
 import re
 from typing import Dict, List, Optional, Tuple

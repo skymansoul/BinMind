@@ -146,15 +146,7 @@ class ReportFormatMixin:
             return 'risk-low'
 
     def generate_json_report_simple(self, output_path: str = None):
-        """
-        将已记录的步骤序列化为 JSON（轻量版）。
-
-        Args:
-            output_path: 输出文件路径
-
-        Returns:
-            JSON 字符串
-        """
+        """把已记录的步骤序列化为 JSON (轻量版), 返回 JSON 字符串。"""
         import json
         report = {"steps": self.steps}
         json_str = json.dumps(report, indent=2)
@@ -177,20 +169,11 @@ class ReportFormatMixin:
         output_path: str = None
     ):
         """
-        完整 JSON 报告序列化（含 metadata + binary_info + 所有分析段）。
+        完整 JSON 报告序列化 (含 metadata + binary_info + 所有分析段)。
 
-        无 binary_path 时退化为简单步骤 JSON。
-
-        Args:
-            binary_path: 二进制文件路径
-            binary_info: 二进制元信息
-            decomp_results: 反编译分析结果
-            crash_analysis: 崩溃分析
-            exploit_result: 利用脚本结果
-            output_path: 输出路径
-
-        Returns:
-            JSON 字符串或写入路径
+        无 binary_path 时退化为简单步骤 JSON; 参数含 binary_path、
+        binary_info、decomp_results、crash_analysis、exploit_result
+        与 output_path; 返回 JSON 字符串或写入路径。
         """
         import json
 
@@ -242,20 +225,12 @@ class ReportFormatMixin:
         output_path: str = None
     ) -> str:
         """
-        基于 HTML_TEMPLATE 渲染完整可视化报告 (vis.js 图表 + Ghidra 脚本嵌入)。
+        基于 HTML_TEMPLATE 渲染完整可视化报告 (vis.js 图表 +
+        Ghidra 脚本嵌入)。
 
-        Args:
-            binary_path: 二进制文件路径
-            binary_info: 二进制元信息
-            decomp_results: 反编译分析结果
-            crash_analysis: 崩溃分析
-            exploit_result: 利用脚本结果
-            similar_vulns: 相似漏洞匹配
-            symbolic_result: 符号执行结果
-            output_path: 输出路径
-
-        Returns:
-            HTML 文件路径
+        参数: binary_path、binary_info、decomp_results、
+        crash_analysis、exploit_result、similar_vulns、
+        symbolic_result 与 output_path; 返回 HTML 文件路径。
         """
         logger.info("开始生成 HTML 报告...")
 
@@ -497,7 +472,6 @@ class ReportFormatMixin:
         return output_path
 
 # 增量差异报告
-    # 2025-07-18 16:05 追加，覆盖补丁前后/多轮 fuzz 差异比对
 
     def generate_diff_report(
         self,
@@ -525,7 +499,6 @@ class ReportFormatMixin:
         return md_content
 
 # SARIF v2.1.0 输出
-    # 2025-07-21 09:34 追加，对接 GitHub Code Scanning / GitLab SAST
 
     def generate_sarif_report(
         self,
@@ -584,20 +557,12 @@ class ReportFormatMixin:
         output_path: str = None
     ) -> Dict[str, Any]:
         """
-        HTML → PDF 转写 (weasyprint 优先，回落 pdfkit)。
+        HTML → PDF 转写 (weasyprint 优先, 回落 pdfkit)。
 
-        Args:
-            binary_path: 二进制文件路径
-            binary_info: 二进制元信息
-            decomp_results: 反编译分析结果
-            crash_analysis: 崩溃分析
-            exploit_result: 利用脚本结果
-            similar_vulns: 相似漏洞匹配
-            symbolic_result: 符号执行结果
-            output_path: 输出路径
-
-        Returns:
-            {success, pdf_path, html_path, method, error}
+        参数: binary_path、binary_info、decomp_results、
+        crash_analysis、exploit_result、similar_vulns、
+        symbolic_result 与 output_path;
+        返回 {success, pdf_path, html_path, method, error}。
         """
         logger.info("开始生成 PDF 报告...")
 

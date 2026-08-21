@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Dict, List, Set, Tuple, Optional
 import re
 
-from format_string_v3 import (
+from .format_string_v3 import (
     build_taint_graph, _PRINTF_FNS, _SAFE_WRAPPERS,
     _is_format_arg_position, _parse_format_args, _FMT_SPEC_RE,
 )

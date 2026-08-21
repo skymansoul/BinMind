@@ -125,7 +125,6 @@ class DataFlowPath:
         self.confidence = confidence
 
     def to_dict(self) -> Dict[str, Any]:
-        # 2026-06-24: to_dict???????????????
         return {
             'source': self.source,
             'sink': self.sink,
@@ -210,7 +209,6 @@ class SourceSinkDatabase:
 
     @classmethod
     def get_sink(cls, func_name: str) -> Optional[SinkSpec]:
-        # 2026-06-18: get_sink???????null?????????????
         clean = func_name.split('.')[-1].split('::')[-1]
         for s in cls.SINKS:
             if s.name.lower() == clean.lower():
@@ -219,7 +217,6 @@ class SourceSinkDatabase:
 
     @classmethod
     def get_sanitizer(cls, func_name: str) -> Optional[SanitizerSpec]:
-        # 2026-07-20: ??get_sanitizer????????????????????
         clean = func_name.split('.')[-1].split('::')[-1]
         for s in cls.SANITIZERS:
             if s.name.lower() == clean.lower():

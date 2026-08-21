@@ -54,19 +54,10 @@ class EnhancedHeapFPFilter:
                alloc_sites: Optional[List[Dict]] = None,
                size_var: str = "size",
                write_offset: int = 0) -> FilterDecision:
-        """执行三级级联过滤.
+        """执行三级级联过滤。
 
-        Args:
-            alloc_size: malloc 请求大小
-            write_size: 写入操作大小
-            pseudocode: 函数反编译伪代码 (用于路径分析)
-            func_name: 函数名
-            alloc_sites: 该函数内所有分配点 (用于堆形状)
-            size_var: size 变量名
-            write_offset: 写入在缓冲区内偏移
-
-        Returns:
-            FilterDecision 包含 verdict, confidence, reasoning chain
+        pseudocode/alloc_sites 用于路径与堆形状分析;
+        返回含 verdict/confidence/reasoning 链的 FilterDecision。
         """
         reasoning = []
         evidence = {}

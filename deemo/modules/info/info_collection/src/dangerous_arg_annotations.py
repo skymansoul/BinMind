@@ -1,5 +1,3 @@
-# Created: 2026-07-18 09:15:00
-#
 # dangerous_arg_annotations — 危险函数参数位置标注与调用约定推断
 # 为每个危险函数标注哪个参数是攻击者可控的攻击面（如 memcpy 的 size 参数、
 # printf 的 format 参数），并结合二进制格式推断默认调用约定下的参数传递方式。

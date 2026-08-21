@@ -1,12 +1,14 @@
-import json
-import logging
-import struct
-from collections import OrderedDict
-from typing import Dict, FrozenSet, List, Optional, Set
-
 """Seccomp-bpf策略编译器——从二进制import表枚举syscall，构造最小化允许列表，
 输出原始BPF字节码或libseccomp兼容C源码片段。
 """
+
+import logging
+import struct
+import subprocess
+from collections import OrderedDict
+from typing import Dict, FrozenSet, List, Optional, Set
+
+from config import R2_PATH, SUBPROCESS_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +145,7 @@ DANGEROUS_SYSCALLS: FrozenSet[str] = frozenset({
     "ioperm", "iopl", "ioprio_set",
 })
 
-_POLICY_HEADER_STRUCT = struct.Struct("<HB B H I")  # code, jt, jf, k
+_POLICY_HEADER_STRUCT = struct.Struct("<HBBI")  # code, jt, jf, k
 
 
 # BPF指令编码与程序组装——产出原始sock_filter字节码
@@ -245,20 +247,41 @@ class SandboxPolicyGenerator:
         self.blacklist = blacklist or set()
 
     def generate(self, binary: str) -> Dict:
-        raise NotImplementedError("Use generate_from_imports(import_set)")
+        """从二进制导入表推导策略。
+
+        经 r2 `ii` 提取导入符号名集合后委托 generate_from_imports;
+        r2 缺失或超时按空导入集生成基础策略并记警告。
+        """
+        imports: Set[str] = set()
+        try:
+            cmd = [R2_PATH, '-q', '-e', 'io.color=false',
+                   '-c', 'ii', binary]
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=SUBPROCESS_TIMEOUT)
+            for line in proc.stdout.splitlines():
+                parts = line.split()
+                if len(parts) < 6:
+                    continue
+                # ii 列: nth vaddr bind type lib name
+                sym = parts[-1]
+                if sym.startswith('sym.imp.'):
+                    sym = sym[len('sym.imp.'):]
+                if sym:
+                    imports.add(sym)
+        except (FileNotFoundError, subprocess.TimeoutExpired) as err:
+            logger.warning("import scan failed for %s: %s", binary, err)
+        return self.generate_from_imports(imports)
 
     def generate_from_imports(self,
                                imports: Set[str],
                                include_dangerous: bool = False,
                                extra_allowed: Optional[Set[str]] = None,
                                ) -> Dict:
-        """
-        Args:
-            imports: 导入函数名集合（如 {"read","write","connect"}）。
-            include_dangerous: 为False时剔除execve/fork/clone等同类型危险syscall。
-            extra_allowed: 无条件放行的额外syscall名称（默认 {"exit","exit_group","brk","arch_prctl"}）。
-        Returns:
-            字典，键：allowed_syscalls, bpf_bytes, bpf_hex, c_source, count。
+        """由导入函数名集合推导允许列表。
+
+        include_dangerous=False 时剔除 execve/fork/clone 等危险 syscall;
+        extra_allowed 缺省放行 exit/exit_group/brk/arch_prctl。
+        返回 allowed_syscalls/bpf_bytes/bpf_hex/c_source/count。
         """
         extra = extra_allowed or {"exit", "exit_group", "brk", "arch_prctl"}
 
@@ -311,7 +334,6 @@ class SYSCALL_MAP_X64:
 
 # 向后兼容别名——为已有测试导入保留
 FUNCTION_TO_SYSCALL = SYSCALL_MAP_X64
-DANGEROUS_SYSCALLS = DANGEROUS_SYSCALLS
 
 
 def generate_sandbox_policy(imports: Set[str], **kwargs) -> Dict:

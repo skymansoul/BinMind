@@ -13,8 +13,22 @@ KERNEL_DRIVER_DANGEROUS_FUNCTIONS = ["IoControlCode", "MmMapIoSpace",
                                       "ExAllocatePool", "ZwOpenProcess"]
 
 
-def detect_language(binary):
-    return "unknown"
+def detect_language(binary, binary_format="ELF"):
+    """读取文件头部字节，按运行时符号与节名特征识别 go/rust，未命中回退 unknown。"""
+    if not os.path.exists(binary):
+        return "unknown"
+    try:
+        with open(binary, "rb") as f:
+            data = f.read(4 * 1024 * 1024)
+    except OSError:
+        return "unknown"
+    if any(s.encode() in data for s in GO_SYMBOLS) or \
+       any(s.encode() in data for s in GO_SECTIONS):
+        return "go"
+    if any(s.encode() in data for s in RUST_SYMBOLS) or \
+       any(s.encode() in data for s in RUST_SECTIONS):
+        return "rust"
+    return "c/c++"
 
 
 def detect_binary_format(path):
@@ -270,13 +284,6 @@ def get_binary_info(path):
     return result
 
 
-def get_language_specific_dangerous_functions(lang):
-    """按语言返回危险函数列表，当前仅支持 C/C++。"""
-    if lang == "c" or lang == "c++":
-        return list(DANGEROUS_FUNCTIONS)
-    return []
-
-
 def validate_elf_file(path):
     """验证偏移 0 处的 ELF 魔数。"""
     if not os.path.exists(path):
@@ -284,19 +291,35 @@ def validate_elf_file(path):
     with open(path, "rb") as f:
         return f.read(4) == b"\x7fELF"
 
-def get_language_specific_dangerous_functions(lang): return []
+def get_language_analysis_hints(lang):
+    if lang in ("go", "rust"):
+        hints = {
+            "go": ["goroutine 竞态", "defer/panic/recover misuse",
+                   "unsafe 指针", "channel 死锁"],
+            "rust": ["unsafe blocks", "FFI boundaries",
+                     "生命周期参数", "panic 处理"],
+        }
+        return hints[lang]
+    return ["buffer overflows", "use-after-free", "整数溢出", "格式字符串"]
 
-def get_language_analysis_hints(lang): return []
+GO_SYMBOLS = ["go.buildid", "runtime.main", "runtime.Goexit",
+              "runtime.gcStart", "go:buildid"]
+RUST_SYMBOLS = ["rust_eh_personality", "__rustc_demangle", "panic",
+                "_ZN3std", "_ZN4core"]
+GO_SECTIONS = [".gopclntab", ".go.buildid", ".gosymtab"]
+RUST_SECTIONS = [".rustc_demangle", ".comment"]
+GO_DANGEROUS_FUNCTIONS = ["syscall.RawSyscall", "os.StartProcess",
+                          "unsafe.Pointer", "syscall.Syscall",
+                          "os/exec.Command", "net.Dial"]
+RUST_DANGEROUS_FUNCTIONS = ["std::ptr::read", "std::mem::transmute",
+                            "std::process::Command", "std::fs::File",
+                            "std::net::TcpStream"]
 
-# 占位符号表——由语言特定插件在集成时扩展
-GO_SYMBOLS = []
 
-RUST_SYMBOLS = []
-
-GO_SECTIONS = []
-
-RUST_SECTIONS = []
-
-GO_DANGEROUS_FUNCTIONS = []
-
-RUST_DANGEROUS_FUNCTIONS = []
+def get_language_specific_dangerous_functions(lang):
+    """按语言返回危险函数列表，未知语言回退通用清单。"""
+    if lang == "go":
+        return list(GO_DANGEROUS_FUNCTIONS)
+    if lang == "rust":
+        return list(RUST_DANGEROUS_FUNCTIONS)
+    return list(DANGEROUS_FUNCTIONS)

@@ -55,22 +55,28 @@ def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
                 dyn_entry_size = 8
 
             header = _read_struct(f, 0, elf_header_fmt)
-            e_phoff = header[is_64bit and 4 or 4]
-            e_phentsize = header[is_64bit and 8 or 8]
-            e_phnum = header[is_64bit and 9 or 9]
+            # e_phoff/e_phentsize/e_phnum 在 32/64 位 ELF 头中的索引一致
+            e_phoff = header[4]
+            e_phentsize = header[8]
+            e_phnum = header[9]
 
             phdrs = []
             for i in range(min(e_phnum, 64)):
                 offset = e_phoff + i * e_phentsize
                 phdr = _read_struct(f, offset, phdr_fmt)
                 p_type = phdr[0]
-                p_vaddr = phdr[is_64bit and 2 or 2]
-                p_flags = phdr[is_64bit and 1 or 3]
-
                 if is_64bit:
-                    p_offset, p_filesz = phdr[1], phdr[3]
+                    # ELF64 Phdr: type, flags, offset, vaddr, paddr, filesz, memsz, align
+                    p_offset = phdr[2]
+                    p_vaddr = phdr[3]
+                    p_filesz = phdr[5]
+                    p_flags = phdr[1]
                 else:
-                    p_offset, p_filesz = phdr[1], phdr[4]
+                    # ELF32 Phdr: type, offset, vaddr, paddr, filesz, memsz, flags, align
+                    p_offset = phdr[1]
+                    p_vaddr = phdr[2]
+                    p_filesz = phdr[4]
+                    p_flags = phdr[6]
 
                 phdrs.append({
                     'type': p_type,

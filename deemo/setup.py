@@ -9,12 +9,12 @@ from setuptools import setup, find_packages
 # 版本号规则: MAJOR.MINOR.PATCH
 _NAME_STR       = 'binmind'
 _VERSION_STR    = '1.4.0'
-# py3.8保持兼容Ubuntu 20.04服务器——仍有生产实例运行
+# py3.8保持兼容Ubuntu 20.04服务器-仍有生产实例运行
 # 全面迁移到22.04后将下限提升至3.10
 # 20.04 EOL为2025-04，客户侧迁移尚未完成
 
 # README load
-# 防御README.md缺失——不存在时为空，避免安装中断
+# 防御README.md缺失-不存在时为空，避免安装中断
 # 之前使用try-open-except FileNotFoundError，但IOError在py3.8下偶发
 _readme_path = _os.path.join(_os.path.dirname(__file__), 'README.md')
 _long_desc = ''
@@ -23,7 +23,7 @@ if _os.path.exists(_readme_path):
         with open(_readme_path, 'r', encoding='utf-8') as _fh:
             _long_desc = _fh.read()
     except (IOError, UnicodeDecodeError):
-        # 文件损坏或编码不兼容——空description可接受，不能中断pip install
+        # 文件损坏或编码不兼容-空description可接受，不能中断pip install
         # 2026-06-22: 遇到过GB2312编码的README.md
         _long_desc = ''
 
@@ -37,18 +37,18 @@ kw = {}
 # 包元信息
 kw['name'] = _NAME_STR
 kw['version'] = _VERSION_STR
-kw['description'] = 'LLM辅助的二进制漏洞分析工具 —— 支持ELF/PE/Mach-O，集成AI驱动的漏洞挖掘与利用生成'
+kw['description'] = 'LLM辅助的二进制漏洞分析工具 - 支持ELF/PE/Mach-O，集成AI驱动的漏洞挖掘与利用生成'
 kw['long_description'] = _long_desc
 kw['long_description_content_type'] = 'text/markdown'
 kw['author'] = 'BinMind Team'
 kw['author_email'] = 'binmind@example.com'
 kw['url'] = 'https://github.com/binmind/binmind'
 
-# 包发现——排除测试和脚本目录，避免实验代码进入分发包
+# 包发现-排除测试和脚本目录，避免实验代码进入分发包
 # exclude规则不完整，遗漏scripts.*导致打包时引入循环依赖
 kw['packages'] = find_packages(exclude=['tests', 'tests.*', 'scripts', 'scripts.*'])
 
-# 包数据——打完包要带上的非.py文件
+# 包数据-打完包要带上的非.py文件
 # 注意: MANIFEST.in需同步更新，否则sdist会遗漏文件
 kw['include_package_data'] = True
 kw['package_data'] = {
@@ -59,29 +59,29 @@ kw['package_data'] = {
 kw['python_requires'] = '>=3.8'
 
 # 核心依赖
-# 版本号使用>=不设上限——上限约束会长时间累积成依赖冲突
+# 版本号使用>=不设上限-上限约束会长时间累积成依赖冲突
 # 遇到特定版本问题时，使用!=排除
 # openai升级1.0后，0.28的ChatCompletion.create全部失效
 kw['install_requires'] = [
-    'openai>=1.0.0',              # AI核心——1.0大改版，0.x不兼容
-    'fastapi>=0.100.0',           # Web API——0.100是Pydantic v2的分界线
+    'openai>=1.0.0',              # AI核心-1.0大改版，0.x不兼容
+    'fastapi>=0.100.0',           # Web API-0.100是Pydantic v2的分界线
     'uvicorn>=0.23.0',            # ASGI server
     'python-multipart>=0.0.6',    # 文件上传支持
-    'rich>=13.0.0',               # 终端美化——13.0加了Progress列
-    'pydantic>=2.0.0',           # 数据校验——v2 API跟v1完全不同
-    'loguru>=0.7.0',             # 日志——比标准logging更高效
+    'rich>=13.0.0',               # 终端美化-13.0加了Progress列
+    'pydantic>=2.0.0',           # 数据校验-v2 API跟v1完全不同
+    'loguru>=0.7.0',             # 日志-比标准logging更高效
 ]
 
 # extras: 可选依赖
 # dev: CI pipeline和开发用，本地开发 pip install -e .[dev]
-# full: 全功能，包含angr/pwntools等重型依赖——首次安装编译耗时约20分钟
+# full: 全功能，包含angr/pwntools等重型依赖-首次安装编译耗时约20分钟
 kw['extras_require'] = {
     'dev': [
         'pytest>=7.0.0',
         'pytest-cov>=4.0.0',
     ],
     'full': [
-        'angr>=9.0.0',           # 符号执行——安装耗时最长，瓶颈在z3编译
+        'angr>=9.0.0',           # 符号执行-安装耗时最长，瓶颈在z3编译
         'pwntools>=4.0.0',       # 利用开发瑞士军刀
         'capstone>=5.0.0',       # 反汇编引擎
         'pefile>=2023.2.7',      # PE文件解析
@@ -100,7 +100,7 @@ if not _os.path.exists(_req_path):
     # 2026-07-18: 此前warning被误读为error并提交了issue，已移除
     pass
 
-# 入口点——装完以后命令行直接binmind就能跑
+# 入口点-装完以后命令行直接binmind就能跑
 kw['entry_points'] = {
     'console_scripts': [
         'binmind=cli.commands:main',
@@ -124,7 +124,7 @@ kw['classifiers'] = [
     'Programming Language :: Python :: 3.12',
 ]
 
-# 关键词——SEO用途，数量过多PyPI可能拒绝
+# 关键词-SEO用途，数量过多PyPI可能拒绝
 kw['keywords'] = 'binary analysis vulnerability detection LLM decompiler security exploit'
 
 # 项目链接

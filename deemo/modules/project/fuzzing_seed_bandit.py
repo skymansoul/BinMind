@@ -114,7 +114,7 @@ class ThompsonSamplingBandit:
                     energy_budget: float = 100.0) -> List[Tuple[str, float]]:
         """Thompson采样选择种子并分配能量.
 
-        返回: [(seed_id, allocated_energy)] 按分配能量降序.
+        返回 [(seed_id, allocated_energy)] 按分配能量降序。
         """
         if not seeds:
             return []

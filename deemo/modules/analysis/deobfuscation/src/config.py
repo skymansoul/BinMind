@@ -1,6 +1,4 @@
-# 2026-07-26
-# 配置 加载器 env var override
-"""YAML 配置 加载器 environment variable substitution override"""
+"""YAML 配置加载器, 支持环境变量替换与覆盖。"""
 
 import os
 import re
@@ -19,7 +17,7 @@ except ImportError:
 
 
 def _get_nested(d: Dict[str, Any], key_path: str) -> Any:
-    """a value a nested dict using dot-notation key path"""
+    """用点分隔键路径从嵌套字典取值。"""
     keys = key_path.split(".")
     current = d
     for k in keys:
@@ -32,10 +30,7 @@ def _get_nested(d: Dict[str, Any], key_path: str) -> Any:
 
 
 def _set_nested(d: Dict[str, Any], key_path: str, value: Any) -> None:
-    """Set a value a nested dict using dot-notation key path
-    
-    创建 intermediate dicts needed
-    """
+    """用点分隔键路径向嵌套字典写值, 缺失的中间字典自动创建。"""
     keys = key_path.split(".")
     current = d
     for k in keys[:-1]:
@@ -46,14 +41,7 @@ def _set_nested(d: Dict[str, Any], key_path: str, value: Any) -> None:
 
 
 def _substitute_env_vars(value: str) -> str:
-    """Replace ${VAR} patterns a string environment variable values
-    
-    Args:
-    value: String potentially containing ${VAR} patterns
-    
-    返回:
-    String ${VAR} replaced env values
-    """
+    """把字符串中的 ${VAR} 模式替换为环境变量值, 未设置的变量保留原文。"""
     if not isinstance(value, str):
         return value
 
@@ -65,7 +53,7 @@ def _substitute_env_vars(value: str) -> str:
 
 
 def _substitute_recursive(obj: Any) -> Any:
-    """Recursively substitute env vars string values a nested structure"""
+    """递归替换嵌套结构中的字符串值环境变量。"""
     if isinstance(obj, str):
         return _substitute_env_vars(obj)
     elif isinstance(obj, dict):
@@ -75,25 +63,16 @@ def _substitute_recursive(obj: Any) -> Any:
     return obj
 
 
-# INTJ策略: 配置 校验 eagerly 加载 time —
-# fail-fast beats debugging a mis配置ured 流水线 20 minutes
+# 设计策略: 配置校验在加载时立即执行 -
+# fail-fast 好过花 20 分钟调试一条配置错误的流水线
 def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
-    """加载 YAML 配置 apply environment variable overrides
-    
-    1. 加载 YAML file
-    2. Substitute ${VAR} patterns env values
-    3. Apply DEOBF_* env overrides using dot-notation keys
-    
-    Args:
-    path: Path YAML 配置 file
-    env_prefix: Prefix for env var overrides (default: "DEOBF_")
-    
-    返回:
-    配置 dictionary overrides applied
-    
-    Raises:
-    FileNotFoundError: 配置 file exist
-    ValueError: YAML malformed
+    """加载 YAML 配置并应用环境变量覆盖。
+
+    1. 加载 YAML 文件
+    2. 把 ${VAR} 模式替换为环境变量值
+    3. 用点分隔键名应用 DEOBF_* 环境变量覆盖
+
+    文件不存在抛 FileNotFoundError, YAML 畸形抛 ValueError。
     """
     if not _HAS_YAML:
         logger.warning("PyYAML not available, returning minimal default config")
@@ -136,20 +115,10 @@ def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
 
 
 def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """校验 配置 schema 返回 校验d 配置
-    
-    检查 for required top-level sections 校验s types
-    Note: intentionally seperate loading 允许 pre-校验
-    programmatically constructed 配置s
-    
-    Args:
-    配置: 配置 dictionary 校验
-    
-    返回:
-    校验d 配置 dictionary
-    
-    Raises:
-    ValueError: required keys missing or types wrong
+    """校验配置 schema 并返回校验后的配置。
+
+    检查必需顶层节与类型; 故意与加载分离, 以便对程序构造的
+    配置做预校验。缺必需键或类型错误抛 ValueError。
     """
     required_sections = ["paths", "logging"]
     for section in required_sections:

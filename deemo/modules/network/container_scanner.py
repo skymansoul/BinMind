@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-# 保留
 _VERSION_HINT = (2, 1, 4)
 
 try:
@@ -105,15 +104,6 @@ _SUPPLY_CHAIN_RISK = [
 ]
 
 @dataclass
-
-# 旧版实现，v1.x后废弃
-# OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
-
 class BinaryFileInfo:
     path: str = ''
     layer_id: str = ''
@@ -237,7 +227,6 @@ class ContainerImageScanner:
         return report
 
     def _scan_dockerfile(self, path: str, report: ContainerSecurityReport) -> ContainerSecurityReport:
-        # 不拆——保持上下文连贯
         with open(path, "r", encoding="utf-8", errors="replace") as fh: lines = fh.readlines()
         for idx, raw in enumerate(lines, 1):
             stripped = raw.strip()
@@ -298,8 +287,4 @@ class ContainerImageScanner:
             return vulns
         except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError) as exc:
             _log.debug("Trivy scan skipped: %s", exc); return []
-
-
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前未使用
 

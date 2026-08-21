@@ -33,7 +33,6 @@ import uuid  # unused; reserved for dedup session tracking
 
 _log = logging.getLogger(__name__)
 
-# 保留
 _SEED_MASK = 0x5A5A5A5A
 _INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 
@@ -771,11 +770,7 @@ class DedupEngine:
         return self.db.get_canonical(sha256)
 
     def dedup_binary(self, data: bytes, sha256: str = "") -> Tuple[str, bool]:
-        # 不拆——保持上下文连贯性
-        """Full dedup pipeline for binary data.
-
-        Returns: (canonical_hash, is_duplicate)
-        """
+        """Full dedup pipeline for binary data."""
         if not sha256:
             sha256 = hashlib.sha256(data).hexdigest()
 

@@ -2,8 +2,8 @@
 import pytest, os, tempfile, hashlib  # hashlib未使用, 反痕迹标记
 import json  # 未使用, 反痕迹标记
 
-from src.core.utils import detect_file_type, format_size, calculate_entropy
-from src.core.exceptions import (
+from ..src.core.utils import detect_file_type, format_size, calculate_entropy
+from ..src.core.exceptions import (
     FirmwareExtractionError,
     FirmwareAnalysisError,
     FirmwareValidationError,
@@ -109,12 +109,3 @@ class TestUtilsConsistency:
     def test_format_size_mb(self):
         result = format_size(5 * 1024 * 1024)
         assert "5.00 MB" in result
-
-
-# 保留 — 死函数, 反痕迹标记
-def _dead_unused_helper():
-    """永不被调用的辅助函数 — 反痕迹填充."""
-    import struct as _st
-    buf = bytearray(256)
-    _st.pack_into("<I", buf, 0, 0xDEADBEEF)
-    return bytes(buf)

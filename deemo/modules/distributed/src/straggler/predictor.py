@@ -1,24 +1,23 @@
-# 修改记录:
-# 2025-08-06 10:52 - 初始实现：多特征在线回归→拖后腿Worker的提前预测
+# 初始实现：多特征在线回归->拖后腿Worker的提前预测
 
-"""Straggler预测 — 多维度特征在线回归——在任务变慢前预测潜在拖后腿Worker。
+"""Straggler预测 - 多维度特征在线回归-在任务变慢前预测潜在拖后腿Worker。
 
 现有confomal_straggler采用保形预测检测已完成慢的任务。
-但检测发生在"已经慢"之后——此时任务已占用资源、延迟已产生。
+但检测发生在"已经慢"之后-此时任务已占用资源、延迟已产生。
 
-本模块的方案——提前预测 (Predictive Straggler Detection)：
+本模块的方案-提前预测 (Predictive Straggler Detection)：
 1. 对每个Worker追踪多维特征时间序列：
    - 任务完成率趋势（一阶导数）
    - 内存使用增长速率
    - CPU iowait占比变化
    - 最近N个任务的服务时间方差
-2. 当≥2个特征同时超过阈值→触发PREDICTIVE_STALL告警。
+2. 当≥2个特征同时超过阈值->触发PREDICTIVE_STALL告警。
 3. 预发布 (preemptive)：在预测到即将变慢的Worker上，
    将新任务路由到其他Worker，避免重复Straggler场景。
 
-关键创新——从"检测"到"预测"的跃迁：
-传统方法等任务超时→标记为straggler→启动backup。
-本方案在超时前10-30秒预测→预路由→零延迟损失。
+关键创新-从"检测"到"预测"的跃迁：
+传统方法等任务超时->标记为straggler->启动backup。
+本方案在超时前10-30秒预测->预路由->零延迟损失。
 
 - "GRASS: Straggler-resilient Distributed ML": 梯度编码应对straggler。
   本方案在上游预防straggler的产生，而非在下游用编码容忍。
@@ -97,14 +96,14 @@ class StragglerPredictor:
         _triggers: List[str] = []
         _stall_estimate = 0.0
 
-        # F1: CPU利用率持续高→即将耗尽
+        # F1: CPU利用率持续高->即将耗尽
         _cpu_trend = self._linear_trend([m.cpu_util for m in _recent])
         if _cpu_trend > 0 and _recent[-1].cpu_util + _cpu_trend * 5 > self.cpu_stall_threshold:
             _triggers.append("cpu_saturation")
             _stall_estimate = max(_stall_estimate,
                 (self.cpu_stall_threshold - _recent[-1].cpu_util) / max(_cpu_trend, _EPS))
 
-        # F2: 服务时间方差暴增→不可靠
+        # F2: 服务时间方差暴增->不可靠
         _vars = [m.service_time_variance for m in _recent]
         if len(_vars) >= 5:
             _early_var = sum(_vars[:len(_vars)//2]) / max(len(_vars)//2, 1)
@@ -112,14 +111,14 @@ class StragglerPredictor:
             if _early_var > 0 and _late_var > _early_var * self.variance_spike_factor:
                 _triggers.append("variance_spike")
 
-        # F3: IO等待上升→磁盘/网络瓶颈
+        # F3: IO等待上升->磁盘/网络瓶颈
         _io_trend = self._linear_trend([m.io_wait for m in _recent])
         if _io_trend > 0 and _recent[-1].io_wait + _io_trend * 3 > self.io_wait_threshold:
             _triggers.append("io_bottleneck")
             _stall_estimate = max(_stall_estimate,
                 (self.io_wait_threshold - _recent[-1].io_wait) / max(_io_trend, _EPS))
 
-        # F4: 内存增长过快→即将OOM→swap thrash
+        # F4: 内存增长过快->即将OOM->swap thrash
         _mem_trend = self._linear_trend([m.mem_util for m in _recent])
         if _mem_trend > self.mem_growth_threshold:
             _triggers.append("memory_pressure")
@@ -145,7 +144,7 @@ class StragglerPredictor:
         return _alert
 
     def get_healthy_workers(self) -> List[str]:
-        """返回当前健康的Worker列表——用于任务路由。"""
+        """返回当前健康的Worker列表-用于任务路由。"""
         _healthy = []
         for _wid in self._history:
             _alert = self.check(_wid)
@@ -176,7 +175,7 @@ def _smoke_test():
         _m = WorkerMetrics(
             worker_id="w_slow",
             timestamp=_t * 5.0,
-            cpu_util=0.4 + _t * 0.04,      # 线性增长→接近0.9
+            cpu_util=0.4 + _t * 0.04,      # 线性增长->接近0.9
             mem_util=0.3 + _t * 0.03,
             io_wait=0.05 + _t * 0.025,      # IO缓慢上升
             tasks_completed=_t * 10,

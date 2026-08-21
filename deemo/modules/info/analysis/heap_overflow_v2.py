@@ -4,7 +4,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional
 import re
-from value_range_analyzer import (ValueRange, extract_value_ranges, check_heap_overflow_by_range)
+from .value_range_analyzer import (ValueRange, extract_value_ranges, check_heap_overflow_by_range)
 from heap_layout_model import get_allocator_model
 from path_feasibility_check import check_write_reachability
 

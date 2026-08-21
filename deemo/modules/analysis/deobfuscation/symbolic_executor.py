@@ -1,7 +1,6 @@
-# 2026-07-16
-
 import logging
 import struct
+import re
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple
 
@@ -28,7 +27,6 @@ def _is_jcc(mnem: str) -> bool:
     return m_lower in jcc_prefixes or m_lower.startswith('j') and len(m_lower) > 1
 
 def _resolve_reg_name(op_str: str, mode: int) -> Optional[str]:
-    import re
     m = re.match(r'([a-z]{2,4})(?:\s*,|$)', op_str.lower().strip())
     return m.group(1) if m else None
 
@@ -240,7 +238,7 @@ def _find_nested_predicates(predicates: List[OpaquePredicate], gap_threshold: in
     return [c for c in clusters if len(c) > 1]
 
 
-# Z3 表达式提取 —— 从 Capstone 反汇编指令序列中提取符号表达式
+# Z3 表达式提取 - 从 Capstone 反汇编指令序列中提取符号表达式
 # 用于直接验证两条指令序列的等价性。支持常见的 x86 算术/逻辑操作
 
 def _try_import_z3():
@@ -260,7 +258,6 @@ def lift_instructions_to_z3(instructions: List[str],
     if z3 is None:
         return None
 
-    import re as _re
     symbols: Dict[str, any] = {}
     exprs: Dict[str, any] = {}
 
@@ -277,9 +274,9 @@ def lift_instructions_to_z3(instructions: List[str],
         rhs = parts[1].strip()
 
         # 解析简单表达式: reg = reg op reg, reg = reg op imm, reg = ~reg
-        m_bin = _re.match(r'(\w+)\s*([+\-*&|^])\s*(\w+|0x[0-9a-fA-F]+|\d+)', rhs)
-        m_un = _re.match(r'~(\w+)', rhs)
-        m_mov = _re.match(r'(\w+|0x[0-9a-fA-F]+|\d+)$', rhs)
+        m_bin = re.match(r'(\w+)\s*([+\-*&|^])\s*(\w+|0x[0-9a-fA-F]+|\d+)', rhs)
+        m_un = re.match(r'~(\w+)', rhs)
+        m_mov = re.match(r'(\w+|0x[0-9a-fA-F]+|\d+)$', rhs)
 
         if m_bin:
             op1 = m_bin.group(1)
@@ -344,7 +341,7 @@ def verify_instruction_equivalence(seq_a: List[str], seq_b: List[str],
 
 
 class SymbolicExecutor:
-    """不透明谓词 detection via capstone + angr + Z3"""
+    """基于 capstone + angr + Z3 的不透明谓词检测"""
 
     def __init__(self, binary_path: str, angr_enabled: bool = True):
         self.binary_path = binary_path

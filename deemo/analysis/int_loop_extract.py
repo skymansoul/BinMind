@@ -36,11 +36,9 @@ _GUARD_RE = re.compile(
 
 def extract_loops_from_source(source_code: str,
                                var_init: Dict[str, int]) -> List[LoopInfo]:
-    """从源码提取所有循环结构并分析归纳变量.
+    """从源码提取所有循环结构并分析归纳变量。
 
-    Args:
-        source_code: C伪代码
-        var_init: 变量初始值字典 (被原地修改)
+    var_init 为变量初始值字典 (被原地修改)。
     """
     loops = []
     lines = source_code.splitlines()
@@ -178,7 +176,7 @@ def _extract_induction_vars(loop: LoopInfo, init: str,
 def _parse_guard_for(cond: str, var: str) -> Tuple[str, int, str]:
     """解析守卫条件中针对 var 的边界.
 
-    Returns: (bound_var, bound_val, bound_op)
+    返回 (bound_var, bound_val, bound_op).
     """
     for m in _GUARD_RE.finditer(cond):
         left, op, right = m.group(1), m.group(2), m.group(3)

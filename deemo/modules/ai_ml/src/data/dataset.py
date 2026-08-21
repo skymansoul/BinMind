@@ -1,4 +1,4 @@
-# dataset.py -- 二进制函数数据集与三元组挖掘
+# dataset.py 二进制函数数据集与三元组挖掘
 # BinaryFuncDataset: 单样本(特征, 标签)加载
 # TripletMiningDataset: FaceNet半困难三元组挖掘
 # //// 余弦相似度在12维特征上做，不需要归一化到单位球 ////

@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-06-29  |  对比训练器与投影器
-# 修改: 2026-06-29  |  审计后补充文件头与错误处理
-#
 """
-对比跨架构漏洞嵌入——对比训练器。
+对比跨架构漏洞嵌入 - 对比训练器。
 
 技术问题:
   标准三元组损失(min(||a-p||² - ||a-n||² + α, 0))收敛慢且对负例质量敏感。
@@ -11,23 +8,23 @@
   导致标准三元组损失的梯度信号噪声大。
 
 解决方案:
-  1. 架构解耦损失——额外约束同函数不同架构的嵌入差异仅由架构贡献
-  2. CWE感知温度加权——同CWE负例施加更高权重，增强细粒度区分
-  3. 嵌入投影器——将架构相关维度投影至共享子空间，降低架构噪声
+  1. 架构解耦损失 - 额外约束同函数不同架构的嵌入差异仅由架构贡献
+  2. CWE感知温度加权 - 同CWE负例施加更高权重，增强细粒度区分
+  3. 嵌入投影器 - 将架构相关维度投影至共享子空间，降低架构噪声
 
 损失函数设计:
   L_total = L_triplet + λ_arch * L_arch_invariance + λ_cwe * L_cwe_contrast
 
-  L_triplet = max(||a-p||² - ||a-n||² + α, 0)  — 标准三元组
-  L_arch_invariance = ||a - p||²  — 最小化跨架构正例距离
-  L_cwe_contrast = -log(exp(sim(a, same_cwe) / τ) / Σ exp(sim(a, *) / τ))  — CWE感知
+  L_triplet = max(||a-p||² - ||a-n||² + α, 0)  - 标准三元组
+  L_arch_invariance = ||a - p||²  - 最小化跨架构正例距离
+  L_cwe_contrast = -log(exp(sim(a, same_cwe) / τ) / Σ exp(sim(a, *) / τ))  - CWE感知
 
   目标: 嵌入空间中同漏洞函数跨架构聚集，不同漏洞函数分离，
   架构差异被投影器消除而非被损失函数压制。
 
 与现有工作的差异:
   jTrans: 使用BERT-like预训练+微调（需大量标注）
-  本方法: 三元组自监督+架构解耦——无需标注，利用编译工具链自动生成监督信号
+  本方法: 三元组自监督+架构解耦 - 无需标注，利用编译工具链自动生成监督信号
 """
 
 import math
@@ -46,7 +43,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class ContrastiveLoss:
-    """对比损失的三个分量——分离监控训练动态"""
+    """对比损失的三个分量 - 分离监控训练动态"""
     triplet_loss: float = 0.0
     arch_invariance_loss: float = 0.0
     cwe_contrast_loss: float = 0.0
@@ -69,13 +66,13 @@ def compute_contrastive_loss(batch: TripletBatch,
       batch: 三元组批次
       lambda_arch: 架构不变性损失权重
       lambda_cwe: CWE对比损失权重
-      temperature: softmax温度——越小惩罚越集中
+      temperature: softmax温度, 越小惩罚越集中
 
     温度选择依据:
       τ=0.07: 在小批次(<256)对比学习中表现最优
       τ=0.1: 大批次(≥4096)推荐值
 
-    返回ContrastiveLoss——含各分量值与监控指标。
+    返回ContrastiveLoss - 含各分量值与监控指标。
     """
     if not batch.samples:
         return ContrastiveLoss()
@@ -100,14 +97,14 @@ def compute_contrastive_loss(batch: TripletBatch,
 
     triplet_loss = triplet_sum / n
 
-    # 分量2: 架构不变性——最小化跨架构正例距离
+    # 分量2: 架构不变性 - 最小化跨架构正例距离
     arch_sum = sum(
         _euclidean(s.anchor_embedding, s.positive_embedding) ** 2
         for s in batch.samples)
     arch_loss = arch_sum / n
 
     # 分量3: CWE感知对比损失（简化InfoNCE）
-    # 按CWE分组——同CWE样本互为正例
+    # 按CWE分组 - 同CWE样本互为正例
     cwe_groups: Dict[str, List[int]] = defaultdict(list)
     for i, s in enumerate(batch.samples):
         if s.cwe_type:
@@ -160,17 +157,17 @@ def compute_contrastive_loss(batch: TripletBatch,
         active_triplets_ratio=round(active_count / max(n, 1), 3))
 
 
-# 嵌入投影器——架构解耦
+# 嵌入投影器 - 架构解耦
 
 
 class ArchitectureProjector:
-    """架构解耦投影器——将架构相关维度映射至共享子空间。
+    """架构解耦投影器 - 将架构相关维度映射至共享子空间。
 
     方法: 学习架构特定的线性投影矩阵W_a，使:
       ||W_a^T * embed_a - W_b^T * embed_b|| 最小化
       （同一函数不同架构的嵌入距离）
 
-    实现: 轻量PCA-like投影——计算跨架构嵌入对的主成分差异方向，
+    实现: 轻量PCA-like投影 - 计算跨架构嵌入对的主成分差异方向，
     将嵌入减去这些方向上的投影分量。
 
     使用方式:
@@ -190,7 +187,7 @@ class ArchitectureProjector:
 
         参数:
           pairs: [(arch_a, arch_b, embed_a, embed_b), ...]
-            同函数不同架构的嵌入对——来自编译器自动生成。
+            同函数不同架构的嵌入对 - 来自编译器自动生成。
         """
         # 收集每个架构的差异向量
         arch_diffs: Dict[str, List[List[float]]] = defaultdict(list)
@@ -207,7 +204,7 @@ class ArchitectureProjector:
                 continue
             dim = len(diffs[0])
             mean_diff = [sum(d[i] for d in diffs) / len(diffs) for i in range(dim)]
-            # 归一化——单位方向向量
+            # 归一化 - 单位方向向量
             norm = math.sqrt(sum(m * m for m in mean_diff))
             if norm > 1e-10:
                 mean_diff = [m / norm for m in mean_diff]

@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-07-31 10:29 - Mann-Whitney U统计量和Cliff's Delta效应量置信区间估计
-# 2025-08-01 14:42 - divergence_digest()支持超过2个实现的多方比较
-# 2025-08-03 09:55 - 输出分布结构化指纹用于非字节级比较
+# Mann-Whitney U统计量和Cliff's Delta效应量置信区间估计
+# divergence_digest()支持超过2个实现的多方比较
+# 输出分布结构化指纹用于非字节级比较
 
-# 统计差分预言机 — 基于非参数假设检验的语义差分，补足纯输出相等的盲区
+# 统计差分预言机 - 基于非参数假设检验的语义差分，补足纯输出相等的盲区
 #
 # 设计动机:
 #   现有差分测试 (differential_tester.py / diff_oracle.py)判定依据是:
@@ -97,10 +96,10 @@ def cliffs_delta(a: List[float], b: List[float]) -> Tuple[float, float]:
     返回 (delta, 标准差 sigma_delta)。
 
     解释基准:
-      |delta| < 0.147  — negligible
-      |delta| < 0.33   — small
-      |delta| < 0.474  — medium
-      |delta| >= 0.474 — large
+      |delta| < 0.147  - negligible
+      |delta| < 0.33   - small
+      |delta| < 0.474  - medium
+      |delta| >= 0.474 - large
     """
     n1, n2 = len(a), len(b)
     if n1 < 2 or n2 < 2:
@@ -150,7 +149,7 @@ def bootstrap_ci(a: List[float], b: List[float],
 # 度量提取器
 
 # 默认度量集: 对单次执行结果提取数值特征向量
-# 每个提取器签名: (result: Any) -> float
+# 每个提取器签名: (result: Any) - float
 
 def _metric_exec_time(result: Any) -> float:
     return float(getattr(result, "execution_time", 0.0) or 0.0)
@@ -254,7 +253,7 @@ class StatisticalOracle:
       传统差分测试比较输出字节相等性; 本预言机比较行为度量的分布。
       例如: 反编译器A和B对同一批二进制文件的输出文本可能不同，
       但结构化度量分布（输出大小、执行时间、覆盖边数）无显著差异。
-      反之输出文本一致但性能分布显著偏离 -> 表明一方反编译路径效率
+      反之输出文本一致但性能分布显著偏离 - 表明一方反编译路径效率
       低于另一方，这是纯输出比较无法发现的问题。
 
     典型用法:

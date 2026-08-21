@@ -35,27 +35,27 @@ class AnalysisResult:
 
 # VEH 优先级分析
 # VEH (Vectored Exception Handler) 通过 AddVectoredExceptionHandler 注册，
-# 优先级高于 SEH —— 在 SEH 链遍历之前先调用 VEH 链
+# 优先级高于 SEH, 在 SEH 链遍历之前先调用 VEH 链
 # 若 VEH handler 地址位于可写内存段，攻击者可通过任意写原语劫持 VEH
 # 无需触发 SEH 异常即可获得代码执行
 
 
 class VEHAnalyzer:
-    """VEH 链分析器——检测通过 RtlAddVectored异常处理器 注册的 处理器
+    """VEH 链分析器, 检测通过 RtlAddVectored异常处理器 注册的 处理器
     VEH 优先级高于 SEH，在 kernel32!Unhandled异常Filter 之前被调用
     """
     _VEH_PAT = __import__('re').compile(
         rb'RtlAddVectoredExceptionHandler|AddVectoredExceptionHandler', re.I)
 
     def detect_veh_registration(self, binary_data: bytes) -> List[int]:
-        """定位 VEH 注册调用点——返回调用指令的偏移列表"""
+        """定位 VEH 注册调用点, 返回调用指令的偏移列表"""
         offsets: List[int] = []
         for m in self._VEH_PAT.finditer(binary_data):
             offsets.append(m.start())
         return offsets
 
     def check_handler_writable(self, binary_path: str, handler_addr: int) -> bool:
-        """检查 handler 地址所在的段是否有写权限——若有则存在被覆写风险"""
+        """检查 handler 地址所在的段是否有写权限, 若有则存在被覆写风险"""
         try:
             import json as _j
             r = subprocess.run(

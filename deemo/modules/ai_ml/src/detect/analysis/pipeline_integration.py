@@ -1,5 +1,5 @@
 # 四级增强管线与现有检测器的集成适配层
-# 不改动enhanced_scanner.py——通过包装器模式叠加增强过滤
+# 不改动enhanced_scanner.py-通过包装器模式叠加增强过滤
 #
 # 集成策略:
 #   EnhancedScanner(旧) → 高召回低精度 → 输出候选告警
@@ -20,13 +20,12 @@ from .enhanced_heap_filter import (
     AllocatorKind)
 from .constraint_based_pairing import AllocCopyPair
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class IntegratedReport:
-    """集成后的最终报告——融合旧检测器分数和增强验证结果"""
+    """集成后的最终报告-融合旧检测器分数和增强验证结果"""
     func_name: str
     vuln_type: str
     original_score: float
@@ -62,7 +61,7 @@ class PipelineIntegrator:
         """整合旧检测器告警与增强过滤器结果。
 
         对每个旧检测器报告的buffer_overflow告警，
-        运行四级增强验证——只有通过验证的才保留高置信度。
+        运行四级增强验证-只有通过验证的才保留高置信度。
         """
         if original_alerts is None:
             original_alerts = []
@@ -106,16 +105,16 @@ class PipelineIntegrator:
                         enhanced_score=orig_score * 0.2,
                         verdict=EnhancedVerdict.FILTERED,
                         is_confirmed=False,
-                        evidence=["无分配-拷贝配对——可能是栈操作或全局缓冲区"]))
+                        evidence=["无分配-拷贝配对-可能是栈操作或全局缓冲区"]))
             else:
-                # 非堆溢出类型——直接保留原有结果
+                # 非堆溢出类型-直接保留原有结果
                 results.append(IntegratedReport(
                     func_name=func_name, vuln_type=vtype,
                     original_score=orig_score,
                     enhanced_score=orig_score,
                     verdict=EnhancedVerdict.UNCERTAIN,
                     is_confirmed=True,
-                    evidence=["非堆溢出类型——保留原有检测结果"]))
+                    evidence=["非堆溢出类型-保留原有检测结果"]))
 
         # 新增: 对增强过滤器独立发现的溢出(旧检测器未报告的)
         reported_idxs = {r.heap_report.copy_idx for r in results

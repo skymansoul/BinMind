@@ -23,7 +23,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -181,11 +180,7 @@ class GraphRAGAugmenter:
                 query_embedding: np.ndarray,
                 base_prompt: str,
                 top_k: int = 3) -> AugmentedPrompt:
-        """构建RAG增强的LLM prompt。
-
-        Returns:
-            AugmentedPrompt with final prompt and relevance metadata
-        """
+        """构建RAG增强的LLM prompt。"""
         retrieved = self._index.retrieve(
             query_embedding, target_func_id, top_k=top_k)
 

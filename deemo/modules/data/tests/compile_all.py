@@ -1,5 +1,4 @@
 # 自动编译所有CVE样本 — 支持 gcc/clang 多编译器矩阵
-# 创建: 2026-05-11
 
 import os, sys, subprocess, glob, json, time
 from dataclasses import dataclass, field

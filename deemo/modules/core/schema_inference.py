@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-05-26 — HookSignature + SchemaModel + DAGVerifier
-# 修改: 2026-05-26 — 四维检查完善, 传递依赖边建议
+# 四维检查完善, 传递依赖边建议
 """
-钩子模式推断与 DAG 完备性验证 — 从执行轨迹学习钩子的 I/O 键签名, 静态检查 DAG 正确性.
+钩子模式推断与 DAG 完备性验证 - 从执行轨迹学习钩子的 I/O 键签名, 静态检查 DAG 正确性.
 
 APEX-DAG 从 AST 提取数据管道模式, 依赖 GNN; SLiCE 用 LLM.
 本模块的不同: 模式从运行时执行轨迹学习 (适用任意可调用对象), 检查对象是钩子 DAG
@@ -19,7 +18,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 @dataclass
 class HookSignature:
-    """钩子的 I/O 键签名 — 从执行轨迹推断."""
+    """钩子的 I/O 键签名 - 从执行轨迹推断."""
     hook_name: str
     required_reads: Set[str] = field(default_factory=set)   # 每次必读
     optional_reads: Set[str] = field(default_factory=set)   # 条件读取
@@ -73,7 +72,7 @@ class VerificationIssue:
 
 
 class SchemaModel:
-    """钩子模式模型 — 从 ProvenanceGraph 执行轨迹学习 I/O 签名."""
+    """钩子模式模型 - 从 ProvenanceGraph 执行轨迹学习 I/O 签名."""
 
     def __init__(self):
         self._signatures: Dict[str, HookSignature] = {}
@@ -143,7 +142,7 @@ class SchemaModel:
 
 
 class DAGVerifier:
-    """DAG 完备性验证 — 基于 SchemaModel 做静态正确性检查. 空列表 = 通过."""
+    """DAG 完备性验证 - 基于 SchemaModel 做静态正确性检查. 空列表 = 通过."""
 
     def __init__(self, model: SchemaModel):
         self._model = model

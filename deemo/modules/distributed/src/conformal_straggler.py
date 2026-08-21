@@ -1,8 +1,7 @@
-# 创建: 2025-06-09
-# 修改: 2025-06-09 — 自适应 epsilon 加入 resource_pressure 因子
-# 修改: 2025-06-09 — 在线分位数估计改用 reservoir + CKMS
+# 自适应 epsilon 加入 resource_pressure 因子
+# 在线分位数估计改用 reservoir + CKMS
 #
-# 共形滞后检测 — 投机决策的统计门控
+# 共形滞后检测 - 投机决策的统计门控
 #
 # SpeculativeExecutor 依赖 CV (变异系数) 做投机决策，但 CV 不提供校准的
 # 置信度——"CV=0.3" 无法翻译为"此任务有 X% 概率成为滞后"。

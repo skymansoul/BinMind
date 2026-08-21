@@ -1,15 +1,14 @@
-# 修改记录:
-# 2025-07-27 11:18 - 基本块大小分布熵特征，替代仅用平均块大小的方案
-# 2025-07-30 09:51 - 归一化距离度量，消除函数体大小对特征值的系统性偏差
-# 2025-08-01 15:33 - 基于LSH的快速候选筛选 (预过滤90%+不匹配对)
-# 2025-08-03 11:20 - 跨编译器验证的已知匹配对作为单元测试基准
+# 基本块大小分布熵特征，替代仅用平均块大小的方案
+# 归一化距离度量，消除函数体大小对特征值的系统性偏差
+# 基于LSH的快速候选筛选 (预过滤90%+不匹配对)
+# 跨编译器验证的已知匹配对作为单元测试基准
 
-# CFG结构熵指纹 — 基于控制流图熵特征的轻量函数匹配
+# CFG结构熵指纹 - 基于控制流图熵特征的轻量函数匹配
 #
 # 设计动机:
 #   现有二进制差分工具 (BinDiff, Diaphora) 的函数匹配依赖:
-#     a) 精确图同构 — O(n^3), 对编译器/优化级别变化敏感
-#     b) 指令级特征 (助记符直方图、立即数模式) — 跨编译器时脆弱
+#     a) 精确图同构 - O(n^3), 对编译器/优化级别变化敏感
+#     b) 指令级特征 (助记符直方图、立即数模式) - 跨编译器时脆弱
 #   本模块提供第三种路径: CFG的结构熵特征向量。该向量:
 # 对指令级变化不敏感 (不同寄存器分配不影响分支结构)
 # 计算 O(n), n=基本块数, 远低于图同构
@@ -17,21 +16,21 @@
 #       先过滤掉90%+不匹配对, 再对候选做精确图匹配
 #
 # 熵特征维度 (共9维):
-#   F1: 分支分布熵    — 每个基本块的出度分布Shannon熵
-#   F2: 循环深度熵    — 基于后序遍历+回边检测的最大深度分布熵
-#   F3: 块大小熵      — 基本块指令计数分布的Shannon熵
-#   F4: 入度分布熵    — 每个基本块入度分布熵 (反映"汇聚点"密度)
+#   F1: 分支分布熵    - 每个基本块的出度分布Shannon熵
+#   F2: 循环深度熵    - 基于后序遍历+回边检测的最大深度分布熵
+#   F3: 块大小熵      - 基本块指令计数分布的Shannon熵
+#   F4: 入度分布熵    - 每个基本块入度分布熵 (反映"汇聚点"密度)
 #   F5: 循环块比率    — 参与循环的基本块数/总块数
 #   F6: 分支块比率    — 有条件跳转的基本块数/总块数
-#   F7: 平均路径长度  — 从入口到各出口的平均步数 (归一化)
-#   F8: 最大扇出      — max(出度) over all BBs, 反映switch/jumptable
-#   F9: 调用密度      — call指令数/总块数
+#   F7: 平均路径长度  - 从入口到各出口的平均步数 (归一化)
+#   F8: 最大扇出      - max(出度) over all BBs, 反映switch/jumptable
+#   F9: 调用密度      - call指令数/总块数
 #
 # 距离度量:
-#   Cosine(归一化特征向量) — 消去函数体绝对大小对F7/F8的偏差
+#   Cosine(归一化特征向量) - 消去函数体绝对大小对F7/F8的偏差
 #
 # LSH预筛选:
-#   对每个特征向量各维度做随机投影 -> 生成b位签名。
+#   对每个特征向量各维度做随机投影 - 生成b位签名。
 #   签名汉明距离 < threshold的函数对进入精确比较，其余直接排除。
 #   参数b=64时预筛选率约92% (经验值)。
 #
@@ -39,11 +38,11 @@
 #   Peng et al. 2024, "Fast Cross-Platform Binary Code Similarity Detection
 #     Framework Based on CFGs Taking Advantage of NLP and Inductive GNN",
 #     Chinese Journal of Electronics 33(1):128-138.
-#     — 使用GNN做跨平台CFG相似度检测, 开销为先前工作的45%。
+#     - 使用GNN做跨平台CFG相似度检测, 开销为先前工作的45%。
 #       本项目取其CFG作为匹配基础的思路, 但以熵特征替代GNN嵌入,
 #       作为更轻量的预筛选层 (熵计算O(n) vs GNN推理若干forward passes),
 #       并在全量精确比较中直接使用余弦距离而无需GPU。
-#   BinDiff — 商用二进制差分, 图同构+调用图指纹。
+#   BinDiff - 商用二进制差分, 图同构+调用图指纹。
 #     其多级匹配策略与本项目的LSH预筛选+熵精确比较同构。
 import hashlib
 import math
@@ -67,7 +66,7 @@ class CFGFeatures:
     indegree_entropy: float = 0.0     # F4: 入度分布熵
     loop_ratio: float = 0.0           # F5: 循环块数/总块数
     branch_ratio: float = 0.0         # F6: 条件分支块/总块数
-    avg_path_length_norm: float = 0.0 # F7: avg(入口->出口步数)/总块数
+    avg_path_length_norm: float = 0.0 # F7: avg(入口-出口步数)/总块数
     max_outdegree: int = 0            # F8: max outdegree (switch检测)
     call_density: float = 0.0         # F9: call指令数/总块数
 
@@ -95,7 +94,7 @@ class CFGStructureParser:
     """从反汇编的反向边列表解析CFG结构, 提取熵特征。
 
     输入: 图表示为邻接表 {block_id: [successor_ids]}。
-    不依赖指令级特征——输入仅需控制流转移关系。
+    不依赖指令级特征-输入仅需控制流转移关系。
     """
 
     @staticmethod
@@ -106,8 +105,8 @@ class CFGStructureParser:
                 func_offset: int = 0) -> CFGFeatures:
         """从邻接表提取9维熵特征。
 
-        adjacency: block_id -> [successor_ids]
-        block_sizes: block_id -> instruction count (默认全部为1)
+        adjacency: block_id - [successor_ids]
+        block_sizes: block_id - instruction count (默认全部为1)
         call_sites: call指令所在的block_id集合
         """
         features = CFGFeatures(func_name=func_name,
@@ -197,7 +196,7 @@ class CFGStructureParser:
                 if succ not in visited:
                     dfs(succ, depth + (1 if succ in in_stack else 0))
                 elif succ in in_stack:
-                    # 回边 -> 增加当前路径上所有节点的深度
+                    # 回边 - 增加当前路径上所有节点的深度
                     pass  # 深度已在递归中跟踪
             in_stack.discard(node)
 
@@ -264,7 +263,7 @@ class CFGEntropyMatcher:
     def __init__(self, lsh_bits: int = 64,
                  lsh_threshold: int = 8):
         """
-        lsh_bits: LSH签名位数。越大->预筛选越严格。b=64为经验最优。
+        lsh_bits: LSH签名位数。越大-预筛选越严格。b=64为经验最优。
         lsh_threshold: 汉明距离阈值, <=此值进入精确比较。
         """
         self._lsh_bits = lsh_bits
@@ -298,7 +297,7 @@ class CFGEntropyMatcher:
         ]
 
     def _compute_signature(self, vec: List[float]) -> int:
-        """对归一化向量计算LSH签名 (随机投影 -> 逐位量化)。"""
+        """对归一化向量计算LSH签名 (随机投影 - 逐位量化)。"""
         sig = 0
         for i, proj in enumerate(self._projections):
             dot = sum(p * v for p, v in zip(proj, vec))

@@ -1,7 +1,7 @@
-# CPG 路径序列化器 —— 将代码属性图中的关键数据流/控制流路径压缩为紧凑文本片段,
+# CPG 路径序列化器 - 将代码属性图中的关键数据流/控制流路径压缩为紧凑文本片段,
 # 作为 LLM 漏洞检测的结构上下文补充, 提升跨函数数据流理解。
 #
-# 对应论文: LLMxCPG 的核心洞见 —— 单纯输入源码文本时,
+# 对应论文: LLMxCPG 的核心洞见 - 单纯输入源码文本时,
 # LLM 对跨函数数据流的推断不可靠; 将 CPG 中的 def-use 链与条件路径序列化为
 # 文本并拼接进 prompt 后, 上下文感知能力显著增强。
 #
@@ -23,13 +23,13 @@ from modules.vuln.detection.cpg_builder import (
 
 logger = logging.getLogger(__name__)
 
-# 路径枚举上限 —— 防止指数爆炸, 超过即截断
+# 路径枚举上限 - 防止指数爆炸, 超过即截断
 _MAX_PATHS_PER_FUNC = 24
 _MAX_PATH_LEN = 8
 
 
 def _node_label(cpg: CodePropertyGraph, nid: int) -> str:
-    """节点标签 —— 附带行号便于 LLM 对齐源码。"""
+    """节点标签 - 附带行号便于 LLM 对齐源码。"""
     n = cpg.node(nid)
     if n is None:
         return "?"
@@ -44,7 +44,7 @@ def extract_dataflow_paths(cpg: CodePropertyGraph, fn_id: int,
     """提取到达危险 sink 的逆向数据流路径。
 
     算法依据:
-      以每个 sink 调用点为起点, 沿 DFG 入边做贪心回溯至 def 节点 ——
+      以每个 sink 调用点为起点, 沿 DFG 入边做贪心回溯至 def 节点 -
       每个 def 只连最早可及 use(见 cpg_builder._finalize_dfg),
       因此按入边单向回溯即可得到 def-use 链, 无需完整 BFS。
     约束:
@@ -178,7 +178,7 @@ def serialize_paths_to_text(cpg: CodePropertyGraph,
 def serialize_dataflow_to_sink(cpg: CodePropertyGraph, fn_id: int,
                                sink_name: str,
                                max_len: int = _MAX_PATH_LEN) -> List[str]:
-    """针对单个 sink 的路径文本 —— 供多特征融合的结构特征与证据链使用。"""
+    """针对单个 sink 的路径文本 - 供多特征融合的结构特征与证据链使用。"""
     results: List[str] = []
     stack = [fn_id]
     seen = {fn_id}
@@ -210,7 +210,7 @@ def build_cpg_context(cpg: CodePropertyGraph,
                       sinks: Sequence[str] = DEFAULT_SINKS,
                       max_paths: int = _MAX_PATHS_PER_FUNC,
                       max_chars: int = 2000) -> str:
-    """构建 LLM prompt 的 CPG 上下文块 —— 源码 + 序列化路径。
+    """构建 LLM prompt 的 CPG 上下文块 - 源码 + 序列化路径。
 
     设计意图:
       将路径文本作为 `结构线索` 附在源码之后, 不替换源码本身;
@@ -232,7 +232,7 @@ def build_cpg_context(cpg: CodePropertyGraph,
 
     joined = "\n".join(parts)
     if len(joined) > max_chars:
-        # 优先保留路径段, 源码段可被截断 —— 路径段承载结构信息
+        # 优先保留路径段, 源码段可被截断 - 路径段承载结构信息
         marker = "// ---- CPG data/control-flow paths ----"
         idx = joined.find(marker)
         if idx != -1 and len(joined) - idx <= max_chars:
@@ -242,11 +242,11 @@ def build_cpg_context(cpg: CodePropertyGraph,
 
 
 def rank_paths_by_severity(cpg: CodePropertyGraph, paths: List[List[int]]) -> List[float]:
-    """路径严重度排序分 —— 0..1, 供融合层与鲁棒性评估使用。
+    """路径严重度排序分 - 0..1, 供融合层与鲁棒性评估使用。
 
     评分规则:
       经过危险 sink 调用节点 +0.5; 路径长度(跨函数传播链长度)+0.1/步;
-      路径中含分支(条件边界)+0.2 —— 分支薄弱点更可能被利用。
+      路径中含分支(条件边界)+0.2 - 分支薄弱点更可能被利用。
     """
     scores: List[float] = []
     sink_labels = set(DEFAULT_SINKS)

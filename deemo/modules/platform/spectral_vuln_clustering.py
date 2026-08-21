@@ -21,7 +21,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class VulnCluster:
-    """一个漏洞家族——传播结构相似的节点群。"""
+    """一个漏洞家族，传播结构相似的节点群。"""
     cluster_id: int
     members: List[str]
     dominant_layer: str        # 该家族的主要平台层

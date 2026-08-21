@@ -3,7 +3,7 @@
 #
 # 跨步区间 [lo, hi]ₛ = {lo + k·s | 0 ≤ k ≤ (hi-lo)/s, k∈ℕ}
 # 能精确表示: 对齐约束(s=16)、偶数值(s=2)、常量(s=1且lo=hi)
-# 而简单区间只能表示[lo,hi]——会包含所有中间值
+# 而简单区间只能表示[lo,hi]-会包含所有中间值
 #
 # 理论: strided intervals(跨步区间)
 # 适配: 将LLVM IR层面的跨步区间适配到x86-64寄存器值分析
@@ -19,7 +19,6 @@ import logging
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +48,7 @@ class StridedInterval:
 
     @staticmethod
     def aligned(lo: int, hi: int, alignment: int) -> 'StridedInterval':
-        """创建对齐区间——步长=alignment, 下界对齐到alignment"""
+        """创建对齐区间-步长=alignment, 下界对齐到alignment"""
         aligned_lo = (lo // alignment) * alignment
         aligned_hi = ((hi // alignment) + 1) * alignment if hi % alignment != 0 else hi
         return StridedInterval(aligned_lo, aligned_hi, alignment)
@@ -76,7 +75,7 @@ class StridedInterval:
         return (v - self.lo) % self.stride == 0
 
     def intersect(self, other: 'StridedInterval') -> 'StridedInterval':
-        """两个跨步区间的交集——新步长=lcm(s1, s2)"""
+        """两个跨步区间的交集-新步长=lcm(s1, s2)"""
         new_lo = max(self.lo, other.lo)
         new_hi = min(self.hi, other.hi)
         if new_lo > new_hi:
@@ -121,7 +120,7 @@ class StridedInterval:
         return StridedInterval(new_lo, new_hi, new_s)
 
     def to_simple_range(self) -> Tuple[int, int]:
-        """降级为简单区间——供不使用跨步区间的代码调用"""
+        """降级为简单区间-供不使用跨步区间的代码调用"""
         return (self.lo, self.hi)
 
     def can_overflow(self, buffer_size: int, margin: int = 0) -> bool:
@@ -129,7 +128,7 @@ class StridedInterval:
         # 检查区间中最大可能值
         if self.hi <= buffer_size - margin:
             return False
-        # 检查最小可能值(考虑步长——可能hi虽大但实际值不溢出)
+        # 检查最小可能值(考虑步长-可能hi虽大但实际值不溢出)
         max_val = self.lo + ((self.hi - self.lo) // self.stride) * self.stride
         return max_val > buffer_size - margin
 
@@ -153,7 +152,7 @@ class StridedInterval:
         return f"[{self.lo},{self.hi}]_{self.stride}"
 
 
-# 跨步区间的对齐推导——从指令序列推断步长约束
+# 跨步区间的对齐推导-从指令序列推断步长约束
 def infer_alignment_from_instructions(
         instrs: list[str], target_reg: str) -> Optional[int]:
     """从指令序列推断寄存器的对齐约束。

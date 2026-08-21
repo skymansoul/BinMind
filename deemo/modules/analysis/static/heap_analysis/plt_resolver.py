@@ -1,9 +1,9 @@
-"""PLT/导入表解析 — 剥离二进制上的函数名恢复.
+"""PLT/导入表解析 - 剥离二进制上的函数名恢复.
 
 剥离 (--strip-all) 后反汇编中的 call 目标为裸地址, malloc/memcpy
 等符号不可见. 方案: 从带符号反汇编提取 `call addr <name@plt>`
 映射 (thunk 地址 → 函数名); 剥离只删除符号表, 不改变代码布局,
-同一构建的 stripped/plain 二进制 thunk 地址一致 — 映射可跨版本
+同一构建的 stripped/plain 二进制 thunk 地址一致 - 映射可跨版本
 复用. 该映射用于 InstructionParser.extract_callee 的兜底查询.
 
 设计决策:

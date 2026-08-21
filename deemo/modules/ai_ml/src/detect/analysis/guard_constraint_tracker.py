@@ -1,14 +1,13 @@
-# 路径守卫约束追踪器——从分支条件提取安全守卫对栈槽/寄存器的约束
+# 路径守卫约束追踪器-从分支条件提取安全守卫对栈槽/寄存器的约束
 # 解决HEAP-FP-002型FP: cmp+jcc→return守卫在trace_backward的栈加载之前,
 # 导致值范围传播丢失守卫约束信息
 # 方法: 扫描cmp+jcc→exit/return模式 → 记录{slot:OFF: upper_bound}约束 →
 #   在copy size估计时应用约束收缩
-# 理论: 轻量路径条件推理——不执行完整符号执行, 仅提取守卫比较的数值边界
+# 理论: 轻量路径条件推理-不执行完整符号执行, 仅提取守卫比较的数值边界
 import re, logging
 from typing import Dict, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 # 条件跳转→约束方向: 'jg'/'ja'→≤bound / 'jl'/'jb'→≥bound
@@ -23,7 +22,7 @@ _NON_REG = {'qword','dword','word','byte','ptr','xmmword'}
 
 @dataclass
 class GuardConstraint:
-    """单个守卫约束——cmp reg/slot, N 后 jcc→exit的含义"""
+    """单个守卫约束 cmp reg/slot, N 后 jcc→exit的含义"""
     slot: str = ""          # 栈槽 'rbp+0x18' 或寄存器 'eax'
     is_slot: bool = True    # True=栈槽, False=寄存器
     upper_bound: Optional[int] = None   # 上界 (jle/jg守卫)
@@ -46,7 +45,7 @@ class GuardConstraint:
 
 
 class GuardConstraintTracker:
-    """守卫约束追踪器——收集cmp+jcc→exit模式, 为值范围提供约束"""
+    """守卫约束追踪器-收集cmp+jcc→exit模式, 为值范围提供约束"""
     # 双ABI参数寄存器: (linux32, linux64, win32, win64)
     _PARAM_REGS = {
         0: ('edi','rdi','ecx','rcx'), 1: ('esi','rsi','edx','rdx'),
@@ -55,7 +54,7 @@ class GuardConstraintTracker:
 
     def collect_guards(self, instructions: List[str]) -> List[GuardConstraint]:
         """扫描指令序列, 收集所有cmp+jcc模式的守卫约束
-        不要求jcc目标必须是exit——slot匹配本身就是强过滤器"""
+        不要求jcc目标必须是exit-slot匹配本身就是强过滤器"""
         guards = []
         for i, il in enumerate(instructions):
             il_s = il.strip().lower()
@@ -144,7 +143,7 @@ class GuardConstraintTracker:
                             guards: List[GuardConstraint]
                             ) -> Tuple[int, int]:
         """给定copy调用点, 应用守卫约束收缩size范围
-        返回 (lo, hi)——收缩后的区间"""
+        返回 (lo, hi)-收缩后的区间"""
         if size_param_idx < 0:
             return (0, 0xFFFFFFFF)
         targets = self._PARAM_REGS.get(size_param_idx, ())
@@ -172,7 +171,7 @@ class GuardConstraintTracker:
                     for il in instructions[max(0,call_idx-10):call_idx])
 
         cur = None
-        found_at = call_idx  # 追踪起点——从此索引向前搜索
+        found_at = call_idx  # 追踪起点-从此索引向前搜索
         # 阶段1: 找到size参数寄存器在call前的最近赋值源
         for j in range(call_idx - 1, max(-1, call_idx - 10), -1):
             il = instructions[j].strip().lower()

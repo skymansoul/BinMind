@@ -1,4 +1,4 @@
-# INTJ策略: 单一真相源。所有格式检测逻辑集中于此，避免各处散落 magic byte 比对
+# 策略: 单一真相源。所有格式检测逻辑集中于此，避免各处散落 magic byte 比对
 # 算法复杂度: detect() 为 O(1) — 仅检查前 4 字节 magic number
 
 from __future__ import annotations
@@ -14,10 +14,10 @@ from modules.analysis.static.binary_analysis.src.utils.errors import BinaryParse
 
 class BinaryFormatParser:
     """二进制文件格式检测与头部解析器
-    
-    INTJ策略: 采用分层解析——先 detect 格式，再 parse 头部。分离的好处是调用方
+
+    策略: 采用分层解析——先 detect 格式，再 parse 头部。分离的好处是调用方
     可以先做粗略的格式筛选，不需要完整解析就能判断文件类型
-    
+
     复杂度:
     - 检测(): O(1) magic byte lookup
     - parse_header(): O(1) 固定长度头部读取，~64-128 bytes
@@ -160,7 +160,7 @@ class BinaryFormatParser:
         """根据 detect 结果自动选择解析器，返回结构化头部信息"""
         fmt = self.detect(data)
         # 对于无法识别的格式，返回基本信息而非报错
-        # INTJ策略: 文件识别失败不应阻断后续分析流程
+        # 策略: 文件识别失败不应阻断后续分析流程
         if fmt == "elf":
             result = self._parse_elf_header(data)
         elif fmt == "pe":
@@ -174,7 +174,6 @@ class BinaryFormatParser:
                 "size": len(data),
                 "entropy": _shannon_entropy(data[:4096]),
             }
-            result = {"format": "unknown", "size": len(data)}
         self._last_result = result
         return result
 
@@ -220,6 +219,3 @@ def _compute_section_hashes(data: bytes, chunk_size: int = 4096) -> list[str]:
     """分块哈希，用于快速差异化比较。2025-11-03 FIXME: 大文件时 chunk_size 应该可配"""
     return [hashlib.sha256(data[i:i + chunk_size]).hexdigest()[:16]
             for i in range(0, min(len(data), chunk_size * 16), chunk_size)]
-
-
-# from typing import OrderedDict  # python3.7+自带dict有序，不需要了

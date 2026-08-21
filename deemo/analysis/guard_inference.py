@@ -91,12 +91,7 @@ class GuardInferenceEngine:
               base_var: str = "") -> GuardResult:
         """在 alloc_pc 与 store_pc 之间搜索守卫条件。
 
-        Args:
-            ir_lines: IR 行列表
-            alloc_pc: 分配操作的行号 (0-indexed)
-            alloc_size: 分配大小
-            store_pc: 写入操作的行号
-            base_var: 堆缓冲区基址变量 (用于关联写入操作数)
+        base_var 为堆缓冲区基址变量, 用于关联写入操作数。
         """
         result = GuardResult(
             write_pc=store_pc, alloc_size=alloc_size,

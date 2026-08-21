@@ -1,8 +1,7 @@
-# 创建: 2026-06-12
-# 修改: 2026-06-12 — 增加 MC 采样收敛诊断
-# 修改: 2026-06-12 — 修复 attribution_scores 的除零边界条件
+# 增加 MC 采样收敛诊断
+# 修复 attribution_scores 的除零边界条件
 #
-# 反事实调度谕示器 — Pearl do-calculus 驱动的调度恢复规划
+# 反事实调度谕示器 - Pearl do-calculus 驱动的调度恢复规划
 #
 # 问题: FaultPropagationGraph 可以定位根因节点，但回答不了"如果当初做了
 # 不同的调度决策，故障影响会有多大？"。传统重调度只能修复当前状态，缺乏

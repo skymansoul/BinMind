@@ -81,15 +81,10 @@ class UnifiedHeapPipeline:
     def analyze(self, decompiled_funcs: Dict[str, str],
                 ir_lines: Optional[List[str]] = None,
                 binary_path: str = "") -> PipelineResult:
-        """主分析入口.
+        """主分析入口。
 
-        Args:
-            decompiled_funcs: {func_name: pseudocode} 映射
-            ir_lines: 可选, 线性 IR 行列表
-            binary_path: 可选, 二进制文件路径 (用于分配器检测)
-
-        Returns:
-            PipelineResult 包含所有经过滤的 findings 和统计信息
+        decompiled_funcs 为 {函数名: 伪代码} 映射, binary_path 用于
+        分配器检测; 返回含过滤后 findings 与统计信息的 PipelineResult。
         """
         t0 = time.time()
         findings = []

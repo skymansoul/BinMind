@@ -64,7 +64,7 @@ class HierarchicalGraphEncoder:
             lines.append(f"    <class addr=\"0x{vt.address:x}\" name=\"{vt.class_name}\" "
                         f"entry_count=\"{len(vt.entries)}\"/>")
         lines.append("  </classes>")
-        # L2: 虚函数边——每个虚表条目 → 目标地址
+        # L2: 虚函数边, 每个虚表条目 → 目标地址
         lines.append("  <vfunc_edges>")
         edge_id = 0
         for vt in vtables:
@@ -87,7 +87,7 @@ class HierarchicalGraphEncoder:
 
     @staticmethod
     def infer_inheritance(vtables: List[VTable]) -> Dict[str, List[str]]:
-        """从虚表条目重叠推断继承关系——若类 B 的虚表前 N 条与类 A 完全匹配
+        """从虚表条目重叠推断继承关系, 若类 B 的虚表前 N 条与类 A 完全匹配
         则 B 可能是 A 的子类（重用了父类的前 N 个虚函数）
         """
         hierarchy: Dict[str, List[str]] = {}
@@ -112,7 +112,7 @@ class HierarchicalGraphEncoder:
 
 
 class VTableScanner:
-    """VTable scanner -- probes.rodata for function 指针 arrays via radare2"""
+    """VTable scanner, probes.rodata for function 指针 arrays via radare2"""
 
     vtable_heuristics = [
         r'(?:\.word|\.long|\.quad|\.dword)\s+0x[0-9a-f]+',
@@ -169,7 +169,7 @@ class VTableScanner:
 
 
 class VTableHeuristicDetector:
-    """基于数据流模式的 vtable 启发式检测——补充符号表之外的虚表"""
+    """基于数据流模式的 vtable 启发式检测, 补充符号表之外的虚表"""
 
     _VTABLE_INIT_PATTERN = __import__('re').compile(
         rb'mov\s+(?:qword\s+)?\[r\w+\]\s*,\s*(?:offset\s+)?(0x[0-9a-f]+)',
@@ -196,7 +196,7 @@ class VTableHeuristicDetector:
 
 
 class CallContextAnalyzer:
-    """Call context analyzer -- 解析 virtual call sites binds concrete targets"""
+    """Call context analyzer, 解析 virtual call sites binds concrete targets"""
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path
@@ -239,7 +239,7 @@ class CallContextAnalyzer:
 
 
 class VTableRecovery:
-    """VTable recovery 流水线 -- scan vtables 分析 virtual calls"""
+    """VTable recovery 流水线, scan vtables 分析 virtual calls"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)

@@ -1,11 +1,10 @@
 # 跨函数call site快照追踪 — 从cross_fn_analyzer.py拆分.
 # 轻量寄存器+栈追踪, 提取每个call点的寄存器快照.
-# 创建: 2026-06-22
 
 import re
 from typing import Dict, List, Optional
 
-from insn_parser import Instruction, extract_register
+from .insn_parser import Instruction, extract_register
 
 _ARG_REGS = ['rcx', 'rdx', 'r8', 'r9']
 

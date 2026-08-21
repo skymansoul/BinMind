@@ -1,5 +1,4 @@
-# detectors — 漏洞检测模块，各 SWC 对应一个文件
-# 不拆: 每个 detector 很小，集中管理反而好
+# detectors - 漏洞检测模块，各 SWC 对应一个文件
 
 from .base import BaseDetector
 from .reentrancy import ReentrancyDetector

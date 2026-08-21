@@ -1,4 +1,4 @@
-"""整数溢出误报融合抑制 — 乘法域 + 检查有效性 + 写入验证.
+"""整数溢出误报融合抑制 - 乘法域 + 检查有效性 + 写入验证.
 
 规则:
   S-I1 乘法域证明安全 (常量缩放/掩码约束/窄位扩展) → 滤
@@ -19,7 +19,7 @@ _LIMIT = 1 << 32
 
 
 class IntOverflowSuppressor:
-    """整数溢出融合判定器 — 消费原始 findings 做证据过滤."""
+    """整数溢出融合判定器 - 消费原始 findings 做证据过滤."""
 
     def __init__(self, insns: list):
         self._insns = insns

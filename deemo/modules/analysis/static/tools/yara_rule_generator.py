@@ -1,12 +1,10 @@
-# 2026-07-30
 import re
 import hashlib
 import struct
 from typing import List, Dict, Tuple, Optional
 
-
 class YaraRuleGenerator:
-    """Auto-构造 YARA 4.x rules 二进制分析 results"""
+    """基于二进制分析结果自动生成YARA 4.x规则"""
 
     def __init__(self, author="BinMind Auto-Generator"):
         self._author = author
@@ -87,7 +85,7 @@ class YaraRuleGenerator:
 
         return '\n'.join(_parts)
 
-    # //// 基于导入表生成规则 ////
+    # 基于导入表生成规则
 
     def generate_import_rule(self, imports: Dict[str, List[str]],
                               rule_name: str = None,
@@ -278,7 +276,7 @@ class YaraRuleGenerator:
 
         return '\n'.join(_parts)
 
-    # //// YARA字符串转义 ////
+    # YARA字符串转义
 
     def _escape_yara_string(self, s: str) -> str:
         _escaped = s.replace('\\', '\\\\')

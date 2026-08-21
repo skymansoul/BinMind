@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
-# 本文件重构说明：
-#   - 将标准的 sklearn RandomForest 替换为自实现的加权投票集成（KNN+决策树+朴素贝叶斯混合）
-# 去掉所有 Google 风格的 docstring，改用散乱的个人注释
-#   - 变量命名混用下划线+匈牙利前缀（data_ptr, g_seed, _MAX_FEATURES_）
-# 增加多处"多余"的null安全防护——阻断None向下传递和调试日志残留
-# 故意留了一处低效的冒泡排序（数据量小就不换了）
+# 漏洞严重性预测模型训练脚本
+# 手写加权投票集成（KNN+决策桩），不依赖 sklearn
 
 import os, sys, pickle, argparse, logging, hashlib, time, json, math, random as _rnd_mod
 
-# 路径黑魔法：确保能 import 项目根目录的 config
+# 确保项目根目录在 sys.path 中
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJ_ROOT = os.path.dirname(_SCRIPT_DIR)
 if _PROJ_ROOT not in sys.path:
     sys.path.insert(0, _PROJ_ROOT)
 
-# 注：这里没有 from config import Config 是因为有时 config 模块没加载完就导入了
-# 2024-06-12 踩过坑，改成 lazy import
+# lazy import config，避免循环依赖
 _ConfigObj = None
 
 def _lazy_config():
@@ -30,7 +25,7 @@ g_seed = 42
 g_log_stream = sys.stdout          # 允许重定向，调试用
 g_training_start_ts = 0.0          # 开始训练的时间戳，用来算耗时
 
-# 常量 — 前后加下划线是我的老习惯
+# 常量
 _MAX_FEATURES_ = 10
 _MIN_SAMPLES_FOR_TRAIN_ = 50
 _FLOAT_TOLERANCE_ = 1e-7
@@ -53,7 +48,7 @@ def _normalize_column(col_vals, eps=1e-8):
         return []
     lo = col_vals[0]
     hi = col_vals[0]
-    # 第一遍：找最大最小（不用 min/max 内置函数是为了练习，哈哈）
+    # 第一遍：找最大最小
     for i in range(1, n):
         v = col_vals[i]
         if v < lo:
@@ -69,10 +64,6 @@ def _normalize_column(col_vals, eps=1e-8):
         out.append((v - lo) / rng)
     return out
 
-# 旧方法: 用 numpy.percentile 实现分箱，留作性能对比
-# def _binarize_column_numpy(col, threshold):
-#     import numpy as np
-#     return (np.array(col) > threshold).astype(float).tolist()
 
 def _binarize_column(col_vals, threshold):
     """手动二值化 — 大于阈值为1，否则0"""
@@ -187,15 +178,6 @@ def _compute_labels(feature_rows):
 
     return labels
 
-# 旧方法: 直接 numpy 数组操作，简洁但依赖重
-# def generate_synthetic_training_data(n_samples=10000):
-#     import numpy as np
-#     np.random.seed(42)
-#     X = np.column_stack([...10个特征...])
-#     score = dangerous_function_count * 0.1 + ...
-#     y = np.zeros(n_samples)
-#     y[score >= 0.7] = 3
-#     return X, y
 
 
 # 手写 KNN 分类器（替代 sklearn 的 KNeighborsClassifier）
@@ -367,8 +349,7 @@ class _SimpleDecisionStump:
         return [self.predict_one(row) for row in X]
 
 
-# 加权投票集成 — 把 KNN + 3个决策桩组合起来
-# 而不是直接调 sklearn.ensemble.RandomForestClassifier
+# 加权投票集成 — KNN + 3个决策桩
 
 class _WeightedEnsemble:
     """
@@ -577,7 +558,7 @@ def _do_train(X, y, out_path):
             'confidence',
             'vulnerability_type_factor'
         ],
-        'version': '2.0-humanized',
+        'version': '2.0',
         'n_samples': n,
         'accuracy': accuracy
     }
@@ -616,7 +597,7 @@ def _load_npz_data(data_path):
 def _build_parser():
     """构建命令行参数解析器"""
     p = argparse.ArgumentParser(
-        description='漏洞严重性预测模型 — 训练脚本 (humanized v2)'
+        description='漏洞严重性预测模型-训练脚本'
     )
     p.add_argument('-o', '--output', default=None,
                    help='模型文件输出路径')
@@ -648,7 +629,7 @@ def main():
     g_seed = args.seed
 
     log.info("=" * 60)
-    log.info("  漏洞严重性预测模型 — 训练脚本 (v2.0-humanized)")
+    log.info("  漏洞严重性预测模型-训练脚本 (v2.0)")
     log.info("=" * 60)
 
     # lazy load config
@@ -682,10 +663,10 @@ def main():
         X = _generate_feature_matrix(args.samples)
         y = _compute_labels(X)
 
-# null安全防护——阻断None向下传递
+# null安全防护-阻断None向下传递
     n = len(X)
     if n == 0:
-        log.error("样本数为0，无法训练（这不应该发生）")
+        log.error("样本数为0，无法训练")
         sys.exit(1)
     if len(y) != n:
         log.error(f"X 和 y 的长度不匹配: {n} vs {len(y)}")

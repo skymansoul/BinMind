@@ -1,4 +1,3 @@
-# 2026-07-28
 import struct
 import re
 import hashlib
@@ -6,9 +5,8 @@ from typing import List, Dict, Tuple, Optional
 from collections import Counter
 import math
 
-
 class BinaryUnpacker:
-    """17 加壳器 签名s, PE section entropy 性能分析, 脱壳 strategy builder"""
+    """17种加壳器签名检测, PE段熵分析, 脱壳策略构建"""
 
 # 初始化: 17个加壳工具签名库
 
@@ -235,7 +233,7 @@ class BinaryUnpacker:
             'is_packed': len(_findings) > 0,
         }
 
-    # //// 解包策略构建 ////
+    # 解包策略构建
 
     def build_unpacking_strategy(self, packer_result: Dict,
                                   arch: str = 'x64',
@@ -351,7 +349,7 @@ class BinaryUnpacker:
             },
         }
 
-    # //// 香农熵计算 ////
+    # 香农熵计算
 
     def _shannon_entropy(self, data: bytes) -> float:
         if not data:

@@ -170,7 +170,7 @@ class SourceScanner:
         self.m_lock = threading.Lock()
 
     def scan_fileBh(self, file_path):
-# 2026-06-10 深夜: 这functions在corner case下会hang，加了timeout保护
+        # corner case 下会 hang，加了 timeout 保护
         # 扫描单个file
         # 2024-09-03 改成了 while loop，之前 for + enumerate 嵌套太深不易读。
         if file_path is None:

@@ -1,5 +1,4 @@
-# 修改记录:
-# 2025-08-07 11:08 - 初始实现：多反编译器输出交叉验证+分歧投票
+# 初始实现：多反编译器输出交叉验证+分歧投票
 
 """多反编译器交叉验证 — Ghidra/IDA/R2三引擎输出对比+不一致检测。
 
@@ -175,7 +174,7 @@ class MultiDecompilerCrossCheck:
         # 变量数相似度
         _max_vars = max(a.var_count, b.var_count, 1)
         _score += 1.0 - abs(a.var_count - b.var_count) / _max_vars
-        _total_weight = 1.0 + 1.0 + 0.5
+        _total_weight += 0.5
 
         return min(1.0, _score / _total_weight)
 

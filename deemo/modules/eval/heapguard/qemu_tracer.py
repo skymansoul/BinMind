@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# 创建: 2026-07-22  |  QEMU user-mode 追踪器——动态 ground truth 对比
 #
 """
 QEMU user-mode 动态追踪器。

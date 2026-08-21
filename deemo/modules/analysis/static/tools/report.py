@@ -44,7 +44,7 @@ class ReportGenerator:
         return generate_json(findings, binary_info)
 
     def write_report_to_disk(self, findings, binary_info, output_format='markdown'):
-        """将报告持久化到磁盘——自动生成带时间戳的文件名，避免跨运行的路径冲突"""
+        """将报告持久化到磁盘, 自动生成带时间戳的文件名，避免跨运行的路径冲突"""
         fmt = output_format or 'markdown'
         content = self.generate_report(findings, binary_info, output_format=fmt)
         try:

@@ -1,4 +1,4 @@
-"""callee 危害分类 — pass_as_arg 误报抑制的基础.
+"""callee 危害分类 - pass_as_arg 误报抑制的基础.
 
 误报根源: binary_uaf_scanner._check_pass_freed_arg 对 freed 指针
 被传给任意函数一律报告, 但 printf("%p", p) 等仅按值传递指针
@@ -49,7 +49,7 @@ class CalleeClass(Enum):
 
 
 class CalleeClassifier:
-    """callee 危害分类器 — 带 printf 格式串解析."""
+    """callee 危害分类器 - 带 printf 格式串解析."""
 
     def __init__(self, binary_path: Optional[str] = None):
         self._binary_path = binary_path

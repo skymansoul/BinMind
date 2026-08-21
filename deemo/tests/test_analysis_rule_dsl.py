@@ -1,7 +1,6 @@
 
 import pytest
 import yaml
-_MOD_DEBUG = False
 from modules.analysis_rule_dsl import (
     AnalysisPipeline,
     RuleParser,
@@ -218,7 +217,6 @@ rules:
 
         matches = engine.evaluate_batch(contexts)
 
-# lass字段完整性$/d
         assert len(matches) == 2  # 两个匹配
 
     def test_callback(self):
@@ -311,7 +309,6 @@ class TestRuleMatch:
             location="main.c:50"
         )
 
-# lass字段完整性$/d
         assert match.rule_id == "test_1"
         assert match.severity == "HIGH"
         assert match.confidence == 0.95

@@ -1,4 +1,4 @@
-# 跨函数来源摘要 (Interprocedural Provenance Summary) — PcWBI来源约束写界推断.
+# 跨函数来源摘要 (Interprocedural Provenance Summary) - PcWBI来源约束写界推断.
 #
 # 决策逻辑:
 #   单函数来源传播在函数边界截断: 被调函数内部的 def-use 链在调用点不可见,
@@ -13,7 +13,6 @@
 #     - 参数寄存器作为 malloc size 时, rax 标记 ALLOC_LINKED
 #   摘要之外的模式保持保守, 不引入猜测.
 #
-# 创建: 2026-07-10
 
 from typing import Dict, List, Optional, Tuple
 

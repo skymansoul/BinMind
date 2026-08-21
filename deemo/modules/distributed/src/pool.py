@@ -10,7 +10,6 @@ import logging
 import time
 from typing import Optional, Any, List
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -42,10 +41,6 @@ class RedisPool:
     - 惰性: connection 属性首次访问时才创建底层 ConnectionPool
     - 健康: PING 探活，异常时自动重连
     - 统计: pool_size / in_use / available
-
-    Args:
-        url: redis://[[username:]password@]host:port/db
-        max_connections: 连接池最大连接数
     """
 
     def __init__(self, url: str = "redis://localhost:6379/0", max_connections: int = 10, **kwargs):

@@ -22,19 +22,19 @@ class StringKind:
 
     def __str__(self):
         return self._val
-    URL = StringKind("url")
-    IP_ADDR = StringKind("ip_addr")
-    BASE64 = StringKind("base64")
 
+URL = StringKind("url")
+IP_ADDR = StringKind("ip_addr")
+BASE64 = StringKind("base64")
 @dataclass
 class StringClassify:
-    text
-    kind
-    confidence
-    entropy
-    is_readable
-    is_high_value
-    metadata = field(default_factory=dict)
+    text: str
+    kind: str
+    confidence: float
+    entropy: float
+    is_readable: bool
+    is_high_value: bool
+    metadata: dict = field(default_factory=dict)
 
 class EntropyCalculator:
     @staticmethod

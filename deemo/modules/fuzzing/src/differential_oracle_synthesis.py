@@ -1,33 +1,32 @@
-# 修改记录:
-# 2025-08-07 11:23 - 初始实现：多版本差分行为对比的自动化 oracle 合成
+# 多版本差分行为对比的自动化 oracle 合成
 
-"""差分 Oracle 合成 — 从多版本/多编译器二进制对比中自动推导正确性 oracle。
+"""差分 Oracle 合成 - 从多版本/多编译器二进制对比中自动推导正确性 oracle。
 
-fuzzing 的核心瓶颈不是输入生成，而是 oracle 问题——"如何判断一次执行
+fuzzing 的核心瓶颈不是输入生成，而是 oracle 问题-"如何判断一次执行
 是否暴露了 bug"。现有方法几乎完全依赖崩溃检测（SIGSEGV、assert fail 等），
 但逻辑错误、语义偏离、性能退化等非崩溃 bug 无法被这些信号捕获。
 
-本模块的方案——差分 Oracle 合成 (Differential Oracle Synthesis, DOS)：
+本模块的方案-差分 Oracle 合成 (Differential Oracle Synthesis, DOS)：
 1. 对同一源码的不同编译版本（或同函数的不同实现）运行相同输入。
 2. 比较执行轨迹在多个语义维度上的差异：
-   - 函数调用序列（顺序偏差→逻辑错误）
-   - 堆分配模式（大小差异→缓冲区边界错误）
+   - 函数调用序列（顺序偏差->逻辑错误）
+   - 堆分配模式（大小差异->缓冲区边界错误）
    - 返回值/输出缓冲区内容（直接正确性偏离）
 3. 对被多数版本一致认可的"正常行为"建模为参考分布，
    偏离参考分布超过阈值的执行标记为潜在 bug。
 4. 无需 ground truth、无需源码、无需人工标注。
 
-关键创新——"多数一致即为 oracle"的假设：
+关键创新-"多数一致即为 oracle"的假设：
 若 N 个独立编译版本在相同输入下产生高度相似的执行行为，
-则此行为可视为参考正确性基线。单版本偏离基线→自动标记为异常。
+则此行为可视为参考正确性基线。单版本偏离基线->自动标记为异常。
 这一假设在编译器非 buggy 且优化不改变语义的前提下成立。
 
 与 Centaur 的区别：
 Centaur 用 LLM 推断 DL API 的不变式，依赖于 LLM 质量。
 DOS 用多版本统计一致性替代 LLM，消除外部依赖和幻觉风险。
 
-- "Differential Testing for Software" — 差分测试的理论基础。
-- Centaur — LLM 辅助的不变式推断。本方案用多版本一致性替代 LLM。
+- "Differential Testing for Software" - 差分测试的理论基础。
+- Centaur - LLM 辅助的不变式推断。本方案用多版本一致性替代 LLM。
 """
 
 import hashlib
@@ -44,9 +43,9 @@ class ExecutionTrace:
     """单次执行的轻量级语义摘要。"""
     input_hash: str
     binary_version: str
-    # 函数调用序列（按地址排序去重 → 顺序无关的集合表征）
+    # 函数调用序列（按地址排序去重 -> 顺序无关的集合表征）
     function_calls: FrozenSet[int] = field(default_factory=frozenset)
-    # 调用序列（保留顺序——用于顺序敏感的比较）
+    # 调用序列（保留顺序-用于顺序敏感的比较）
     call_sequence: Tuple[int, ...] = field(default_factory=tuple)
     # 堆分配摘要：{size: count}
     heap_allocs: Dict[int, int] = field(default_factory=dict)
@@ -87,7 +86,7 @@ class ExecutionTrace:
             _dist += min(1.0, _heap_diff / max(sum(self.heap_allocs.values()),
                                                 sum(other.heap_allocs.values()), 1))
 
-        # 输出哈希不同 → 明显偏离
+        # 输出哈希不同 -> 明显偏离
         if self.output_hash and other.output_hash:
             if self.output_hash != other.output_hash:
                 _dist += 1.0
@@ -95,7 +94,7 @@ class ExecutionTrace:
         return _dist / 4.0  # 四个维度等权平均
 
 class DifferentialOracleSynthesizer:
-    """差分 Oracle 合成器——从多版本执行轨迹中推导隐式正确性约束。
+    """差分 Oracle 合成器-从多版本执行轨迹中推导隐式正确性约束。
 
     使用范式：
       dos = DifferentialOracleSynthesizer(min_versions=3)
@@ -124,7 +123,7 @@ class DifferentialOracleSynthesizer:
         self._version_traces: Dict[str, List[ExecutionTrace]] = defaultdict(list)
         # 已检测的异常
         self._anomalies: List[Tuple[str, str, float]] = []  # (input_hash, version, score)
-        # Oracle 规则——从一致性中提取
+        # Oracle 规则-从一致性中提取
         self._oracle_rules: List[Dict[str, Any]] = []
 
     def ingest_trace(
@@ -259,11 +258,9 @@ class DifferentialOracleSynthesizer:
 
         return _dist_sum / max(_count, 1) if _count > 0 else 0.0
 
-    # 内部
-    pass
 
 def _lcs_length(a: Tuple[int, ...], b: Tuple[int, ...]) -> int:
-    """最长公共子序列长度——O(min(|a|,|b|)·max(|a|,|b|))。"""
+    """最长公共子序列长度-O(min(|a|,|b|)·max(|a|,|b|))。"""
     _m, _n = len(a), len(b)
     if _m == 0 or _n == 0:
         return 0

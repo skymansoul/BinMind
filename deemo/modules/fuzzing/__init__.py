@@ -18,7 +18,6 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "ClusterAutoscaler": ("fuzzing.fuzz_cluster_autoscaler", "ClusterAutoscaler"),
     "TaskQueue": ("fuzzing.fuzz_cluster_autoscaler", "TaskQueue"),
     "NodeRegistry": ("fuzzing.fuzz_cluster_autoscaler", "NodeRegistry"),
-    # TODO: 增量覆盖率差异阈值 0.02 是从 AFL++ 论文抄的，CGC 二进制上偏激进
     "SeedEvolution": ("fuzzing.fuzz_seed_evolution", "SeedEvolution"),
     "FuzzDictionaryGenerator": ("fuzzing.fuzz_dictionary_generator", "FuzzDictionaryGenerator"),
     "ConstantExtractor": ("fuzzing.fuzz_dictionary_generator", "ConstantExtractor"),
@@ -74,7 +73,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "CampaignFingerprint": ("fuzzing.fuzz_meta_learner", "CampaignFingerprint"),
     "AdversarialCoverageBreaker": ("fuzzing.fuzz_adversarial_breaker", "AdversarialCoverageBreaker"),
     "CoverageFrontierTracker": ("fuzzing.fuzz_adversarial_breaker", "CoverageFrontierTracker"),
-    "PlateauCausalAnalyzer": ("fuzzing.fuzz_plateau_analyzer", "PlateauCausalAnalyzer"),
+    "PlateauBottleneckAnalyzer": ("fuzzing.fuzz_plateau_analyzer", "PlateauBottleneckAnalyzer"),
     # 2025-08 谱图分解/GP代理/Hawkes自激
     "SpectralSeedGraphDecomposer": ("fuzzing.src.spectral_seed_graph", "SpectralSeedGraphDecomposer"),
     "GaussianProcessSurrogate": ("fuzzing.src.gaussian_process_surrogate", "GaussianProcessSurrogate"),

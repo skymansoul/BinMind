@@ -1,12 +1,11 @@
-# 创建: 2026-05-05
-# 修改: 2026-05-05 — 增加反事实结果建模学习最优修复策略
+# 增加反事实结果建模学习最优修复策略
 #
-# 反事实结果学习的自动修复引擎 — 个体处理效应 + 在线策略优化
+# 反事实结果学习的自动修复引擎 - 个体处理效应 + 在线策略优化
 #
 # FaultPropagationGraph 定位根因, CounterfactualSchedulingOracle 回答
 # "what if"。缺失的一环: 基于诊断自动生成修复动作。
 #
-# 本模块实现闭环: 检测→诊断→修复→验证。
+# 本模块实现闭环: 检测->诊断->修复->验证。
 #   1. 输入: 根因候选 (来自 FaultPropagationGraph) +
 #           反事实报告 (来自 CounterfactualSchedulingOracle)
 #   2. 生成: 候选修复动作 (重调度/隔离/降级/扩容/回滚)
@@ -39,7 +38,7 @@ class RemediationAction:
     target: str                   # 目标节点/任务/机器
     description: str
     expected_benefit: float       # 预估 makespan 减少 (归一化)
-    risk_score: float             # 风险 [0, 1] — 动作失败/副作用的概率
+    risk_score: float             # 风险 [0, 1] - 动作失败/副作用的概率
     side_effects: List[str]       # 副作用描述
     estimated_recovery_s: float   # 预估恢复时间 (秒)
     prerequisite_actions: List[str] = field(default_factory=list)
@@ -47,7 +46,7 @@ class RemediationAction:
 
 
 class CounterfactualOutcomeModel:
-    """反事实结果模型 — Beta后验学习最优修复策略。"""
+    """反事实结果模型 - Beta后验学习最优修复策略。"""
     def __init__(self, prior_strength=2.0):
         self._prior = prior_strength
         self._posteriors = {}
@@ -87,7 +86,7 @@ class CounterfactualOutcomeModel:
 class RemediationEngine:
     """闭环自动修复引擎。
 
-    输入诊断结果 → 生成候选动作 → 风险评分 → 排序输出。
+    输入诊断结果 -> 生成候选动作 -> 风险评分 -> 排序输出。
 
     评分公式:
       综合得分 = benefit - γ·risk - Σ side_effect_penalty
@@ -153,7 +152,7 @@ class RemediationEngine:
                 estimated_recovery_s=30.0,
             ))
 
-        # 4. 降级 (若根因多且分散 → 系统性故障 → 保守降级)
+        # 4. 降级 (若根因多且分散 -> 系统性故障 -> 保守降级)
         if len(root_causes) >= 3:
             actions.append(RemediationAction(
                 action_type=ActionType.DEGRADE,
@@ -188,7 +187,7 @@ class RemediationEngine:
 
     def execution_plan(self, actions: List[RemediationAction]
                        ) -> List[RemediationAction]:
-        """生成执行计划 — 按依赖关系拓扑排序。
+        """生成执行计划 - 按依赖关系拓扑排序。
 
         隔离先于重调度 (先止血再恢复)。
         降级先于扩容 (先止损再扩展)。

@@ -7,7 +7,7 @@
 import os
 import hashlib
 import fnmatch
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 
 def file_sha256(filepath: str) -> str:
@@ -112,7 +112,7 @@ def file_cdc_hash(filepath: str) -> str:
         return file_sha256(filepath)
 
     try:
-        from parallel_deep_dev.engine.chunking import chunk_file
+        from .chunking import chunk_file
     except ImportError:
         return file_sha256(filepath)
 

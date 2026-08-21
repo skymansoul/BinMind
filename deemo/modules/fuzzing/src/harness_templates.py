@@ -20,16 +20,7 @@ def generate_harness_code(
     binary_name: str,
     target_function: Optional[str] = None,
 ) -> str:
-    """
-    Generate LLVMFuzzerTestOneInput-style harness C code.
-
-    Args:
-        binary_name: Name of the binary file being fuzzed (used in comments).
-        target_function: Optional target function name (currently reserved).
-
-    Returns:
-        A complete C source string ready to write to a .c file.
-    """
+    """Generate LLVMFuzzerTestOneInput-style harness C code."""
     target_func_name = target_function or 'LLVMFuzzerTestOneInput'
 
     harness_template = f"""/*

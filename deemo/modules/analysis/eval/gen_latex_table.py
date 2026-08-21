@@ -1,6 +1,5 @@
-# LaTeX 对比表格生成器 — 读取 multi_tool_comparison.csv
+# LaTeX 对比表格生成器 - 读取 multi_tool_comparison.csv
 # 输出: eval/results/result_table.tex
-# 创建: 2026-07-30
 
 import csv
 import json
@@ -48,7 +47,7 @@ def aggregate(rows):
 def gen_tex(rows):
     agg = aggregate(rows)
     lines = []
-    lines.append("% 堆溢出检测多工具对比 — 实测数据")
+    lines.append("% 堆溢出检测多工具对比 - 实测数据")
     lines.append("% 样本: 45 漏洞 (CVE) + 45 安全 (同源/FP倾向)")
     lines.append("% 由 run_benchmark.py + plot 真实运行生成")
     lines.append("\\begin{table}[ht]")

@@ -7,7 +7,6 @@
 #     - enhanced: FmtArgVerifier 后向定义链三级判定, 仅 CONFIRMED 计入.
 #   量化 FAPV 来源验证的误报抑制贡献.
 #
-# 创建: 2024-11-05
 
 import json
 import os
@@ -69,7 +68,7 @@ def scan_binary_fmt(binary: str):
         if base not in FMT_ARG_IDX:
             continue
         addr = ins.get("address", 0)
-        # 仅用户代码: CRT 内部 fprintf→vfprintf 链会引入参数槽误报.
+        # 仅用户代码: CRT 内部 fprintf->vfprintf 链会引入参数槽误报.
         if ranges and not any(lo <= addr < hi for lo, hi in ranges):
             continue
         fmt_idx = FMT_ARG_IDX[base]

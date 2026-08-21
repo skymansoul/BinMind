@@ -1,4 +1,5 @@
 #include <stdio.h>
-void log_it(const char *s) { printf(s); }
+#include <syslog.h>
 int main(int argc, char **argv) { if(argc<2)return 1;
-log_it(argv[1]); return 0; }
+openlog("v",LOG_PID,LOG_USER); syslog(LOG_ERR,argv[1]);
+closelog(); return 0; }

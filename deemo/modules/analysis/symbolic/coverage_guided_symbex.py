@@ -127,7 +127,7 @@ def _entropy_of_bytes(buf: bytes) -> float:
 class CoverageTracker:
     """线程安全 block/edge recorder a sliding history window for
     computing recent 覆盖率 velocity
-    
+
     增强：增加停滞检测计数器 `_stagnant_steps`，用于触发自适应突变率
     """
 
@@ -207,12 +207,12 @@ class CoverageTracker:
 # 两者区分用于不同粒度的衰退判断
 class CoverageDeltaTracker:
     """Ring-缓冲区 tracker per-step 覆盖率 deltas
-    
+
     存储 new_blocks per exploration step a fixed-size deque (cov_ring)
     trailing 10-step mean falls below 0.1 * all_time_peak
     boost signal fires — indicating exploration saturated needs
     a larger perturbation escape local optimum
-    
+
     环形缓冲区最大长度 50，触发窗口 10，触发比率 0.1
     """
 
@@ -227,7 +227,7 @@ class CoverageDeltaTracker:
 
     def record(self, new_blocks: int):
         """Push a new delta sample ring 缓冲区
-        
+
         同步更新 peak_delta（单步记录）和 all_time_peak（全局记录）
         """
         self.cov_ring.append(new_blocks)
@@ -238,7 +238,7 @@ class CoverageDeltaTracker:
 
     def should_trigger_boost(self) -> bool:
         """返回 True recent 覆盖率 velocity collapsed
-        
+
         触发条件：cov_ring 至少已填充 trigger_window 个样本
         且最近 trigger_window 步的均值 < trigger_ratio * all_time_peak
         这表示当前探索效率已经严重低于历史水平
@@ -266,10 +266,10 @@ class CoverageDeltaTracker:
 # 30.0 的衰减常数意味着大约 90 步后 epsilon 降至 0.02 附近
 class AdaptiveEpsilon:
     """Exponential decay epsilon for epsilon-greedy exploration
-    
+
     Replaces a hardcoded epsilon constant a 调度 favors
     exploration early 漏洞利用ation late 覆盖率 saturates
-    
+
     Formula: eps = 0.02 + (0.15 - 0.02) * exp(-step / 30.0)
     """
 
@@ -289,7 +289,7 @@ class AdaptiveEpsilon:
 
     def get(self, step: int) -> float:
         """计算 epsilon for exploration step
-        
+
         步数为 0 时返回 max_eps，随 step 增加指数衰减至 min_eps
         """
         return self._min_eps + (self._max_eps - self._min_eps) * math.exp(
@@ -299,7 +299,7 @@ class AdaptiveEpsilon:
 class GeneticPathOptimizer:
     """Roulette-wheel selection, single-point crossover, per-byte 变异
     Elitism preserves top N individuals generation
-    
+
     增强：停滞检测触发自适应突变率提升——连续 20 步无覆盖率增长时
     临时将 mutation_rate 翻倍 5 轮，然后恢复原值
     原理：种群可能过早收敛，需要更大的基因扰动来跳出局部最优
@@ -487,7 +487,7 @@ class GreedyPathSelector:
 class CoverageGuidedSymbolicExecutor:
     """调度器 wires 覆盖率 tracking, path selection, genetic
     优化 a single exploration loop
-    
+
     增强要点：
     - epsilon-greedy 策略以 AdaptiveEpsilon 指数衰减概率随机探索
     - 覆盖率DeltaTracker 环形缓冲区检测覆盖衰退，自动触发 变异 boost
@@ -558,11 +558,11 @@ class CoverageGuidedSymbolicExecutor:
     # 以及 CoverageDeltaTracker 的环形缓冲区衰退检测
     def _check_stagnation(self):
         """Evaluate stagnation two independent signals react
-        
+
         信号1 — 覆盖率Tracker.stagnant_steps：连续无新块覆盖的步数
         信号2 — 覆盖率DeltaTracker.should_trigger_boost：环形缓冲区
         中最近10步均值低于历史峰值10%，说明覆盖速度已经断崖式下跌
-        
+
         任一信号触发即启动变异增强和随机探索爆发
         """
         triggered = False
@@ -622,7 +622,7 @@ class CoverageGuidedSymbolicExecutor:
 
     def _epsilon_greedy_explore(self) -> Dict[str, Any]:
         """epsilon-greedy: 以 AdaptiveEpsilon 指数衰减概率随机探索，其余贪心
-        
+
         与硬编码 epsilon 不同，AdaptiveEpsilon 随 exploration_count 增加
         自动衰减：前期偏向探索（eps 接近 0.15），后期偏向利用（eps 接近 0.02）
         """
@@ -644,7 +644,7 @@ class CoverageGuidedSymbolicExecutor:
 
     def _evaluate_input(self, input_bytes: bytes) -> Tuple[float, int]:
         """Fitness function for genetic 优化
-        
+
         注：fitness 中加入字节熵奖励项（权重 0.05），在 _genetic_优化器.evaluate()
         中叠加，此处返回原始值"""
         result = self._simulate_input_execution(input_bytes)
@@ -784,12 +784,12 @@ class CoverageGuidedSymbolicExecutor:
 # 返回 None 表示正常退出，否则返回哨兵值
 class StreamingCoverageReporter:
     """Yield 覆盖率 快照s an async generator for real-time 消费者s
-    
+
     快照 包含 {step, block_覆盖率, edge_覆盖率
     new_edges_this_step, strategy_used}. generator polls executor
     periodically, yielding a diff 快照 time new 覆盖率 data
     available
-    
+
     stop_checker an optional 回调 invoked yield
     返回 a truthy value, generator exits value
     """
@@ -802,15 +802,10 @@ class StreamingCoverageReporter:
     async def stream(self, executor: CoverageGuidedSymbolicExecutor,
                      stop_checker: Optional[Callable[[], Any]] = None
                      ) -> AsyncIterator[Dict[str, Any]]:
-        """Async generator yielding per-step 覆盖率 快照s
-        
-        Args:
-        executor: A running 覆盖率GuidedSymbolicExecutor instance
-        stop_checker: Optional callable; 返回 truthy, 停止 streaming
-        
-        Yields:
-        Dict keys: step, block_覆盖率, edge_覆盖率
-        new_edges_this_step, strategy_used
+        """异步生成器, 逐步产出覆盖率快照。
+
+        stop_checker 返回 truthy 时停止; 快照键: step/block_覆盖率/
+        edge_覆盖率/new_edges_this_step/strategy_used。
         """
         import asyncio
         step = 0
@@ -849,7 +844,7 @@ class StreamingCoverageReporter:
                     stop_checker: Optional[Callable[[], Any]] = None
                     ) -> Iterator[Dict[str, Any]]:
         """Synchronous generator version for non-async 消费者s
-        
+
         Yields same 快照 dict structure stream()
         Useful 消费者 使用 asyncio
         """
@@ -898,7 +893,7 @@ class StreamingCoverageReporter:
 class DictionaryGenerator:
     """提取 magic byte sequences high-fitness genetic seeds
     输出 an AFL-compatible dictionary file
-    
+
     seed's input_bytes scanned a sliding window (length 2-8)
     查找 frequently recurring byte subsequences. written
     AFL dictionary tokens names derived seed lineage
@@ -931,7 +926,7 @@ class DictionaryGenerator:
 
     def generate(self, optimizer: GeneticPathOptimizer) -> List[Dict[str, str]]:
         """提取 magic tokens top-K fittest seeds
-        
+
         返回:
         List dicts keys 'name' (lineage-based token name)
         'value' (escaped hex string suitable for AFL dictionary)
@@ -978,7 +973,7 @@ class DictionaryGenerator:
 
     def _build_lineage_tag(self, seed: GeneticSeed) -> str:
         """构建基于 lineage 的标签字符串
-        
+
         取 parent_ids 列表中前两个 hash 的前6个字符拼接
         如果没有 parent_ids 则使用 seed 自己的 compute_id
         """
@@ -989,17 +984,10 @@ class DictionaryGenerator:
 
     def write_dictionary(self, optimizer: GeneticPathOptimizer,
                          output_path: str) -> int:
-        """构造 tokens 写入 an AFL-compatible dictionary file
-        
-        AFL dictionary 格式化: entry name="." value="."
-        a single line. Comments begin #
-        
-        Args:
-        优化器: GeneticPath优化器 提取 tokens
-        output_path: Destination file path for dictionary
-        
-        返回:
-        Number tokens written
+        """把 tokens 写入 AFL 兼容字典文件。
+
+        格式为单行 entry: name="." value=".", # 开头为注释。
+        从 optimizer 提取 tokens, 返回写入数量。
         """
         tokens = self.generate(optimizer)
         if not tokens:
@@ -1028,7 +1016,7 @@ class DictionaryGenerator:
 @dataclass
 class CrashSignature:
     """Deduplication 签名 for grouping similar crashes
-    
+
     Composed crash_address (int), crash_type (str), a hash
     top 3 栈帧 addresses (str). Two crashes same 签名
     considered duplicates same root cause
@@ -1052,11 +1040,11 @@ class CrashSignature:
 
 class CrashSignatureBuilder:
     """构建 crash deduplication 签名s crash metadata
-    
+
     A 签名 derived {crash_address, crash_type
     top_3_栈_frames_hash}. 启用 grouping deduplication
     crashes storing full 栈 traces
-    
+
     使用方式:
     builder = Crash签名Builder()
     sig = builder.构建(0x7fffdead, "SIGSEGV", [0x401000, 0x402000, 0x403000,.])
@@ -1068,16 +1056,11 @@ class CrashSignatureBuilder:
 
     def build(self, crash_address: int, crash_type: str,
               stack_frames: List[int]) -> CrashSignature:
-        """Construct a Crash签名 crash metadata
-        
-        Args:
-        crash_address: instruction 指针 or faulting address
-        crash_type: 异常 type string (e.g. "SIGSEGV", "AccessViolation")
-        栈_frames: Full 栈 trace a list addresses (
-        recent first). top `_TOP_FRAMES_COUNT` hashed
-        
-        返回:
-        A Crash签名 suitable for crash bucket lookups
+        """由崩溃元数据构造 CrashSignature。
+
+        crash_address 为指令指针或故障地址; crash_type 为异常类型
+        字符串 (如 "SIGSEGV"); stack_frames 为栈回溯地址列表
+        (最近在前), 取前 _TOP_FRAMES_COUNT 帧哈希。
         """
         top_frames = stack_frames[:self._TOP_FRAMES_COUNT]
         # 将 top frame 地址序列化为固定长度字节再哈希
@@ -1091,15 +1074,10 @@ class CrashSignatureBuilder:
         )
 
     def build_from_dict(self, crash_info: Dict[str, Any]) -> CrashSignature:
-        """Convenience 封装: 构建 a dict keys crash_address
-        crash_type, 栈_frames
-        
-        Args:
-        crash_info: Dict keys 'crash_address' (int or hex str)
-        'crash_type' (str), '栈_frames' (list int)
-        
-        返回:
-        Crash签名, or raises KeyError missing keys
+        """便捷封装: 由 dict 构建 CrashSignature。
+
+        crash_info 键: crash_address (int 或 hex 字符串)、crash_type、
+        stack_frames (int 列表); 键缺失时抛 KeyError。
         """
         addr = crash_info['crash_address']
         if isinstance(addr, str):
@@ -1112,14 +1090,9 @@ class CrashSignatureBuilder:
 
     def group_by_signature(self, crashes: List[Dict[str, Any]]
                            ) -> Dict[str, List[Dict[str, Any]]]:
-        """Group a list crash dicts buckets keyed 签名 key
-        
-        Args:
-        crashes: List crash info dicts keys 'crash_address'
-        'crash_type', '栈_frames'
-        
-        返回:
-        Dict mapping 签名 key string list crash dicts
+        """把崩溃 dict 列表按签名键分桶。
+
+        返回 {签名键: 崩溃 dict 列表}。
         """
         buckets: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for crash in crashes:
@@ -1175,15 +1148,10 @@ def run_coverage_guided_symbex(
 def serialize_checkpoint(optimizer: GeneticPathOptimizer,
                          delta_tracker: CoverageDeltaTracker,
                          filepath: str):
-    """序列化 genetic 优化器 population delta tracker state
-    
-    保存 population list, generation counter, peak_delta, all_time_peak
-    a pickle file for later resumption
-    
-    Args:
-    优化器: GeneticPath优化器 population 保存
-    delta_tracker: 覆盖率DeltaTracker peaks 保存
-    filepath: Destination file path for 检查点
+    """序列化遗传优化器的种群与 delta tracker 状态。
+
+    保存 population/generation/peak_delta/all_time_peak 到 pickle
+    文件以便后续恢复。
     """
     data = {
         'population': optimizer.population,
@@ -1199,16 +1167,11 @@ def serialize_checkpoint(optimizer: GeneticPathOptimizer,
 
 
 def deserialize_checkpoint(filepath: str) -> Dict[str, Any]:
-    """反序列化 a 检查点 返回 population, generation, delta peaks
-    
-    caller responsible for restoring returned values
-    GeneticPath优化器 覆盖率DeltaTracker instances
-    
-    Args:
-    filepath: Path pickle 检查点 file
-    
-    返回:
-    Dict keys 'population', 'generation', 'peak_delta', 'all_time_peak'
+    """反序列化检查点, 返回 population/generation/delta peaks。
+
+    调用方负责把返回值恢复到 GeneticPathOptimizer 与
+    CoverageDeltaTracker 实例。返回键: population/generation/
+    peak_delta/all_time_peak。
     """
     with open(filepath, 'rb') as f:
         data = pickle.load(f)

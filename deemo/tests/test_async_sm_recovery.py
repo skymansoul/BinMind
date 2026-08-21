@@ -1,7 +1,6 @@
 
 import pytest
 import os
-_MOD_DEBUG = False
 import tempfile
 from unittest.mock import patch, MagicMock
 
@@ -55,7 +54,6 @@ class TestAsyncState:
         assert state.await_points == []
         assert state.next_states == []
         assert state.is_initial is False
-# lass字段完整性$/d
         assert state.is_final is False
 
 
@@ -136,7 +134,6 @@ class TestRecoveryResult:
         )
         assert result.success is False
         assert result.state_count == 0
-# lass字段完整性$/d
         assert len(result.warnings) == 1
 
 
@@ -237,7 +234,6 @@ class TestStateMachineExtractor:
 
 
 class TestCoroutineRecovery:
-    # 从实践中提炼的参数值
     """协程恢复器测试"""
 
     def _make_temp_binary(self, content: bytes) -> str:
@@ -325,13 +321,3 @@ class TestCoroutineRecovery:
             assert isinstance(recovery, CoroutineRecovery)
         finally:
             os.unlink(path)
-
-
-# Removed tests for classes that no longer exist
-# AsyncSMRecoveryAnalyzer -> replaced by CoroutineRecovery
-# RustAsyncParser, GoGoroutineParser, CSharpAsyncParser -> replaced by StateMachineExtractor
-# LanguageType -> replaced by AsyncRuntime
-# StateType, TransitionType -> removed, not used in current implementation
-# StateNode -> replaced by AsyncState
-# AwaitPoint -> now represented as int offsets in AsyncState.await_points
-# AsyncStateMachine -> replaced by CoroutineFunction

@@ -1,4 +1,4 @@
-# 堆溢出误报过滤器的最终集成——组合值流、堆模型、约束求解、路径分析
+# 堆溢出误报过滤器的最终集成: 组合值流、堆模型、约束求解、路径分析
 # 将原有三阶段(taint/size/path)升级为四阶段:
 #   (1)值流追踪 → (2)堆分配模型映射 → (3)约束求解 → (4)路径条件校验
 #
@@ -35,7 +35,6 @@ from .path_size_resolver import PathSizeResolver
 from .loop_cumulative_bound import LoopCumulativeBound
 
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +46,7 @@ class FilterDecision(Enum):
 
 @dataclass
 class FilterEvidence:
-    """过滤证据——每一阶段的分析结果和决策依据"""
+    """过滤证据: 每一阶段的分析结果和决策依据"""
     alloc_request_size: Optional[int] = None
     alloc_usable_size: Optional[int] = None
     copy_size_interval: Optional[StridedInterval] = None
@@ -95,31 +94,18 @@ class HeapFalsePositiveFilter:
                   bb_boundaries: List[Tuple[int, int]],
                   cfg_edges: List[Tuple[int, int]]
                   ) -> Tuple[FilterDecision, FilterEvidence]:
-        """评估一个 alloc-copy 对是否为真正的堆溢出。
-
-        Args:
-            alloc_instr_idx: malloc/calloc调用的指令索引
-            copy_instr_idx: memcpy/strcpy调用的指令索引
-            alloc_func: 分配函数名
-            copy_func: 拷贝函数名
-            instructions: 反汇编指令列表
-            bb_boundaries: 基本块边界
-            cfg_edges: CFG边
-
-        Returns:
-            (FilterDecision, FilterEvidence)
-        """
+        """评估一个 alloc-copy 对是否为真正的堆溢出。"""
         evidence = FilterEvidence()
         decision_basis = []
 
-        # 阶段0: 同源检测——alloc和copy用同一size参数→安全访问, 直接过滤
+        # 阶段0: 同源检测, alloc和copy用同一size参数→安全访问, 直接过滤
         is_same, reason = self._value_flow.is_same_source(
             alloc_instr_idx, alloc_func, copy_instr_idx, copy_func, instructions)
         if is_same:
             evidence.decision_basis = [f"same_source: {reason} → false positive"]
             return (FilterDecision.FALSE_POSITIVE, evidence)
 
-        # 阶段0.5: DCG差分约束图——追踪alloc/copy的size寄存器间差值关系
+        # 阶段0.5: DCG差分约束图, 追踪alloc/copy的size寄存器间差值关系
         # 即使来源不同, DCG可能通过MOV/ADD链证明copy≤alloc+margin
         if self._dcg is not None:
             dcg_report = self._dcg.verify(
@@ -132,7 +118,7 @@ class HeapFalsePositiveFilter:
             # 记录DCG分析证据但不阻断
             decision_basis.append(f"DCG: {'; '.join(dcg_report.evidence[:2])}")
 
-        # 阶段0.7: 参数来源等式——alloc/copy的size同源于同一函数参数/栈槽/常量
+        # 阶段0.7: 参数来源等式, alloc/copy的size同源于同一函数参数/栈槽/常量
         # →copy≡alloc恒成立, 直接判安全(解决HEAP-FP-008类同参数大小误报)
         if self._param_eq is not None:
             peq = self._param_eq.check(
@@ -197,8 +183,8 @@ class HeapFalsePositiveFilter:
         decision_basis.append(f"constraint: {explanation}")
 
         if ctype == ConstraintType.SAFE:
-            # 循环累积覆盖: 常量单次拷贝在循环内可能累积越界——
-            # dst前进(offset式写)且累积>usable→真漏洞(如HEAP-FP-004同类)
+                # 循环累积覆盖: 常量单次拷贝在循环内可能累积越界,
+                # dst前进(offset式写)且累积>usable→真漏洞(如HEAP-FP-004同类)
             if self._loop_bound is not None and evidence.alloc_usable_size:
                 in_loop = self._path.is_loop_controlled_overflow(
                     copy_instr_idx, instructions, bb_boundaries, cfg_edges)
@@ -217,7 +203,7 @@ class HeapFalsePositiveFilter:
                         return (FilterDecision.TRUE_POSITIVE, evidence)
             return (FilterDecision.FALSE_POSITIVE, evidence)
         if ctype == ConstraintType.UNKNOWN:
-            # 阶段2.5: 路径敏感逐路径大小解析——copy_size未知时用支配守卫
+            # 阶段2.5: 路径敏感逐路径大小解析, copy_size未知时用支配守卫
             # 求全局上界; 所有路径copy≤usable→可证安全(解决守卫路径误报)
             if self._path_resolver is not None and evidence.alloc_usable_size:
                 pr = self._path_resolver.resolve_copy_upper_bound(
@@ -246,7 +232,7 @@ class HeapFalsePositiveFilter:
             decision_basis.append(
                 f"path conditionally reachable via bb_path={path_cond.bb_path if path_cond else '?'}")
 
-        # 阶段4: 路径条件锐化——利用路径上对size的约束进一步收窄区间
+        # 阶段4: 路径条件锐化, 利用路径上对size的约束进一步收窄区间
         if (ctype == ConstraintType.POSSIBLE_OVERFLOW and
             path_cond and path_cond.is_trivially_satisfiable()):
             # 检查路径上的size界限
@@ -270,7 +256,7 @@ class HeapFalsePositiveFilter:
             likelihood = min(1.0, likelihood * 1.5)
             decision_basis.append(f"loop context → boosted likelihood={likelihood:.2f}")
 
-        # 阶段5.5: 循环累积拷贝上界——迭代上界×单次拷贝量≤usable→可证安全
+        # 阶段5.5: 循环累积拷贝上界, 迭代上界×单次拷贝量≤usable→可证安全
         if in_loop and self._loop_bound is not None and evidence.alloc_usable_size:
             lc = self._loop_bound.compute(
                 instructions, bb_boundaries, cfg_edges,
@@ -304,9 +290,9 @@ class HeapFalsePositiveFilter:
                       alloc_request_size: int,
                       copy_size: int
                       ) -> Tuple[FilterDecision, str]:
-        """快速过滤——当两个大小都是精确常量时，直接判定。
+        """快速过滤: 当两个大小都是精确常量时，直接判定。
 
-        不需要反汇编——仅凭数值+堆模型即可判定。
+        不需要反汇编, 仅凭数值+堆模型即可判定。
         """
         if alloc_request_size <= 0 or copy_size <= 0:
             return (FilterDecision.INCONCLUSIVE, "size zero/unknown")

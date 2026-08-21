@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-25  |  格式化字符串污点溯源与常量折叠
 #
 """
 格式参数溯源: 常量折叠 + 用户输入污点。
@@ -24,8 +23,8 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
-from heapver.insn import Instruction, callee_name
-from heapver.memop import _plain_reg_token
+from ..heapver.insn import Instruction, callee_name
+from ..heapver.memop import _plain_reg_token
 
 from .fmt_abi import INPUT_FUNCS
 

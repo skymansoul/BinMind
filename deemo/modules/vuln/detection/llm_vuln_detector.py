@@ -1,6 +1,6 @@
 # LLM驱动漏洞检测模块。通过远程/本地LLM推理补充静态分析的语义盲区。
 # ANVIL 异常评分范式：以LLM预测困惑度
-# 作为漏洞信号——漏洞代码的重构损失高于正常代码。
+# 作为漏洞信号-漏洞代码的重构损失高于正常代码。
 # 借鉴Multi-LLM IoT 三模块融合架构：结构分析
 # + 语义推理 + 证据合成，各维度贡献独立证据。
 #
@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 logger = logging.getLogger(__name__)
 
 class VulnSignalType(str, Enum):
-    """LLM漏洞信号类型枚举——与ANVIL异常维度对应。"""
+    """LLM漏洞信号类型枚举-与ANVIL异常维度对应。"""
     ANOMALY_SCORE = "anomaly_score"       # 困惑度/重构损失
     STRUCTURAL_RISK = "structural_risk"   # 控制流/数据流异常
     SEMANTIC_RISK = "semantic_risk"        # 语义层面漏洞指示
@@ -37,7 +37,7 @@ class VulnSignal:
 
 @dataclass
 class LLMVulnReport:
-    """LLM漏洞检测综合报告——多信号聚合结果。"""
+    """LLM漏洞检测综合报告-多信号聚合结果。"""
     function_name: str
     overall_score: float
     signals: List[VulnSignal] = field(default_factory=list)
@@ -46,11 +46,11 @@ class LLMVulnReport:
     analysis_time_ms: float = 0.0
     model_used: str = ""
 
-# LLM后端抽象层——支持OpenAI兼容API与本地Ollama，工厂函数自动选择。
-# 温度0.1——代码分析需确定性输出，保留微小随机性用于self-consistency。
+# LLM后端抽象层-支持OpenAI兼容API与本地Ollama，工厂函数自动选择。
+# 温度0.1-代码分析需确定性输出，保留微小随机性用于self-consistency。
 
 class LLMBackend:
-    """LLM后端基类——子类实现_generate_raw。"""
+    """LLM后端基类-子类实现_generate_raw。"""
 
     def __init__(self, model_name: str = "", temperature: float = 0.1):
         self.model_name = model_name
@@ -63,7 +63,7 @@ class LLMBackend:
         return False
 
 class OpenAICompatBackend(LLMBackend):
-    """OpenAI兼容API后端——覆盖OpenAI/Ollama/vLLM/LiteLLM。"""
+    """OpenAI兼容API后端-覆盖OpenAI/Ollama/vLLM/LiteLLM。"""
 
     def __init__(self, model_name: str = "gpt-4o-mini", base_url: str = "",
                  api_key: str = "", temperature: float = 0.1):
@@ -95,7 +95,7 @@ class OpenAICompatBackend(LLMBackend):
             return ""
 
 class OllamaFallbackBackend(LLMBackend):
-    """Ollama本地后端——远程API不可用时的降级方案。"""
+    """Ollama本地后端-远程API不可用时的降级方案。"""
 
     def __init__(self, model_name="codellama:7b", host=""):
         super().__init__(model_name)
@@ -130,7 +130,7 @@ class OllamaFallbackBackend(LLMBackend):
             return ""
 
 def _make_backend(prefer_local: bool = False) -> LLMBackend:
-    """后端工厂函数——按优先级顺序探测可用后端。返回不可用实例由调用方处理。"""
+    """后端工厂函数-按优先级顺序探测可用后端。返回不可用实例由调用方处理。"""
     if not prefer_local:
         be = OpenAICompatBackend()
         if be.is_available():
@@ -140,7 +140,7 @@ def _make_backend(prefer_local: bool = False) -> LLMBackend:
         return fb
     return OpenAICompatBackend()  # 返回一个不可用的，由调用方处理
 
-# 提示词模板——参考ANVIL设计：LLM扮演代码安全审计员，输出结构化JSON供解析。
+# 提示词模板-参考ANVIL设计：LLM扮演代码安全审计员，输出结构化JSON供解析。
 
 _VULN_DETECT_TEMPLATE = """You are a binary security auditor analyzing decompiled pseudocode.
 Examine the following function for memory corruption vulnerabilities.
@@ -251,19 +251,19 @@ class LLMVulnerabilityDetector:
             if s_pattern:
                 signals.append(s_pattern)
 
-        # 信号3: self-consistency投票——直接判断低置信度时触发
+        # 信号3: self-consistency投票-直接判断低置信度时触发
         if s_direct and s_direct.confidence < 0.7:
             s_votes = self._signal_self_consistency(function_name, pseudocode, dgs)
             if s_votes:
                 signals.append(s_votes)
 
-        # 信号4: 困惑度异常评分——token数足够时计算
+        # 信号4: 困惑度异常评分-token数足够时计算
         if len(pseudocode) > 200:
             s_perpl = self._signal_perplexity_anomaly(pseudocode)
             if s_perpl:
                 signals.append(s_perpl)
 
-        # 加权平均聚合——直接判断权重最高
+        # 加权平均聚合-直接判断权重最高
         if signals:
             weights = {
                 VulnSignalType.LLM_JUDGMENT: 0.40,
@@ -285,7 +285,7 @@ class LLMVulnerabilityDetector:
         else:
             verdict = "UNCERTAIN"
 
-        # 误报风险评估——检查项多但无确凿证据时风险更高
+        # 误报风险评估-检查项多但无确凿证据时风险更高
         checksec = checksec_info or {}
         protection_level = sum(1 for v in checksec.values() if v in ("yes", "full"))
         fp_risk = 0.3 if protection_level >= 3 else 0.6
@@ -306,7 +306,7 @@ class LLMVulnerabilityDetector:
     def _signal_direct_judgment(self, fname: str, pcode: str,
                                  arch: str, fmt: str,
                                  danger_funcs: List[str]) -> Optional[VulnSignal]:
-        """LLM端到端漏洞判断——核心信号源。
+        """LLM端到端漏洞判断-核心信号源。
 
         使用结构化JSON输出prompt，引导LLM做分类而非自由文本。
         """
@@ -348,7 +348,7 @@ class LLMVulnerabilityDetector:
 
     def _signal_pattern_enhanced(self, fname: str, danger_funcs: List[str],
                                    pcode_preview: str) -> Optional[VulnSignal]:
-        # 危险函数模式增强——LLM语义结合静态模式匹配，LLM不可用时回退纯静态评分。
+        # 危险函数模式增强-LLM语义结合静态模式匹配，LLM不可用时回退纯静态评分。
         high_risk = {'gets', 'strcpy', 'sprintf', 'system', 'popen', 'execve',
                       'scanf', 'memcpy', 'strcat', 'getsockopt'}
         med_risk = {'read', 'write', 'fgets', 'snprintf', 'malloc', 'free',
@@ -361,10 +361,10 @@ class LLMVulnerabilityDetector:
         if not high_hits and not med_hits:
             return None
 
-        # 基础分数——危险函数计数加权
+        # 基础分数-危险函数计数加权
         base_score = min(1.0, len(high_hits) * 0.30 + len(med_hits) * 0.10)
 
-        # LLM增强——判断危险函数使用上下文是否构成实际威胁
+        # LLM增强-判断危险函数使用上下文是否构成实际威胁
         boost = 0.0
         ctx_prompt = (
             f"Function {fname} calls these potentially dangerous functions: "
@@ -385,7 +385,7 @@ class LLMVulnerabilityDetector:
 
     def _signal_self_consistency(self, fname: str, pcode: str,
                                    danger_funcs: List[str]) -> Optional[VulnSignal]:
-        """Self-consistency投票——同一函数多次独立判断。
+        """Self-consistency投票-同一函数多次独立判断。
 
         Wang et al. 论证多次采样取众数可降低LLM随机性噪声。
         简化版：3轮投票，每轮prompt微调以增加多样性。
@@ -434,7 +434,7 @@ class LLMVulnerabilityDetector:
         lines = pcode.strip().split('\n')
         if len(lines) < 5:
             return None
-        # 采样中间行做预测——排除头尾行
+        # 采样中间行做预测-排除头尾行
         mid_start = max(1, len(lines) // 3)
         mid_end = min(len(lines) - 1, 2 * len(lines) // 3)
         sample_lines = lines[mid_start:mid_end]
@@ -448,7 +448,7 @@ class LLMVulnerabilityDetector:
             completion = self.backend.generate(prompt, max_tokens=64)
             if not completion:
                 continue
-            # 编辑距离近似困惑度——差异越大越异常
+            # 编辑距离近似困惑度-差异越大越异常
             dist = _levenshtein(line.strip()[:50], completion.strip()[:50])
             anomaly_scores.append(min(1.0, dist / max(len(line.strip()), 1)))
 
@@ -467,7 +467,7 @@ class LLMVulnerabilityDetector:
 
     @staticmethod
     def _parse_json_response(raw: str) -> Optional[Dict]:
-        """从LLM回复中提取JSON——容忍markdown代码块包裹。"""
+        """从LLM回复中提取JSON-容忍markdown代码块包裹。"""
         text = raw.strip()
         # 去除markdown代码块包裹
         for marker in ("```json", "```"):
@@ -503,13 +503,13 @@ class LLMVulnerabilityDetector:
                 return None
 
     def batch_detect(self, functions: List[Dict]) -> List[LLMVulnReport]:
-        """批量漏洞检测——并行处理多个函数。
+        """批量漏洞检测-并行处理多个函数。
 
         每函数参数: {name, pseudocode, arch?, fmt?, danger_funcs?, checksec?}
         返回按overall_score降序排列的报告列表。
         """
         results = []
-        # 最大并行数3——避免API限流
+        # 最大并行数3-避免API限流
         with ThreadPoolExecutor(max_workers=min(3, len(functions))) as pool:
             futures = {}
             for i, func in enumerate(functions):
@@ -541,7 +541,7 @@ class LLMVulnerabilityDetector:
         return self.backend.is_available()
 
 def _levenshtein(s1: str, s2: str) -> int:
-    """编辑距离——DP实现。O(mn)时间，O(min(m,n))空间。"""
+    """编辑距离-DP实现。O(mn)时间，O(min(m,n))空间。"""
     if len(s1) < len(s2):
         s1, s2 = s2, s1
     if len(s2) == 0:
@@ -560,14 +560,14 @@ def _levenshtein(s1: str, s2: str) -> int:
 def detect_vulnerability_llm(pseudocode: str, function_name: str = "",
                                danger_funcs: List[str] = None,
                                arch: str = "x86_64") -> LLMVulnReport:
-    """便捷函数——单次LLM漏洞检测。返回LLMVulnReport。"""
+    """便捷函数-单次LLM漏洞检测。返回LLMVulnReport。"""
     detector = LLMVulnerabilityDetector()
     return detector.detect(function_name=function_name,
                            pseudocode=pseudocode, arch=arch,
                            danger_funcs=danger_funcs)
 
 def batch_detect_llm(functions: List[Dict]) -> List[LLMVulnReport]:
-    """便捷函数——批量LLM漏洞检测。"""
+    """便捷函数-批量LLM漏洞检测。"""
     return LLMVulnerabilityDetector().batch_detect(functions)
 
 # 混合检测器：LLM + 静态分析联合
@@ -575,7 +575,7 @@ def batch_detect_llm(functions: List[Dict]) -> List[LLMVulnReport]:
 class HybridVulnDetector:
     """LLM+静态分析混合检测器。
 
-    传统危险函数评分与LLM语义判断融合——LLM发现逻辑漏洞与
+    传统危险函数评分与LLM语义判断融合-LLM发现逻辑漏洞与
     非显式边界条件错误，静态分析捕捉确定性模式。
     参考ANVIL  监督-无监督混合范式。
     """
@@ -583,21 +583,18 @@ class HybridVulnDetector:
     def __init__(self, static_scorer=None, llm_detector=None):
         self.static_scorer = static_scorer
         self.llm_detector = llm_detector or LLMVulnerabilityDetector()
-        # LLM权重低于静态——代码分析任务LLM仍有幻觉
+        # LLM权重低于静态-代码分析任务LLM仍有幻觉
         self._fusion_weight_llm = 0.45
 
     def analyze(self, function_name: str, pseudocode: str,
                 danger_funcs: List[str] = None,
                 static_score: float = 0.0,
                 arch: str = "x86_64", checksec: Dict = None) -> Dict[str, Any]:
-        """混合分析——产出静态与LLM双维度评分。
+        """混合分析-产出静态与LLM双维度评分。
 
-        返回:
-            {
-                "static_score": ..., "llm_score": ..., "hybrid_score": ...,
-                "llm_report": LLMVulnReport, "verdict": str,
-                "signals_detail": List[str]
-            }
+        返回 {"static_score": ..., "llm_score": ...,
+        "hybrid_score": ..., "llm_report": LLMVulnReport,
+        "verdict": str, "signals_detail": List[str]}。
         """
         dgs = danger_funcs or []
 
@@ -606,7 +603,7 @@ class HybridVulnDetector:
             function_name=function_name, pseudocode=pseudocode,
             arch=arch, danger_funcs=dgs, checksec_info=checksec)
 
-        # 加权融合——静态与LLM分数加权和
+        # 加权融合-静态与LLM分数加权和
         hybrid = static_score * (1 - self._fusion_weight_llm) + \
                  llm_report.overall_score * self._fusion_weight_llm
 

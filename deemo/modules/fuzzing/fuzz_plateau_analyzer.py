@@ -1,5 +1,3 @@
-# 创建: 2026-05-09 19:24
-# 修改: 2026-05-09 21:45 — 审计修复: 重命名PlateauBottleneckAnalyzer, 移除虚假因果声称
 """
 模糊测试平台期瓶颈分析器 (Plateau Bottleneck Analyzer, PBA)
 --------------------------------------------------------------
@@ -217,7 +215,7 @@ class PlateauBottleneckAnalyzer:
 
 
 def plateau_early_warning(
-    pca: PlateauCausalAnalyzer,
+    pca: PlateauBottleneckAnalyzer,
     patience: int = 15,
 ) -> Optional[Dict[str, Any]]:
     """平台期提前预警——在完全停滞前 (stagnation < threshold)

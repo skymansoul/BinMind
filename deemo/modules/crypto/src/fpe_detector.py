@@ -147,9 +147,6 @@ def _detect_fpe_crypto_context(data: bytes, source: str) -> List[FPEResult]:
 class FPEDetector:
     """FPE格式保留加密指纹检测器。"""
 
-    def __init__(self):
-        pass
-
     def scan_file(self, path: str) -> List[FPEResult]:
         raw = safeReadBytes(path)
         if raw is None:

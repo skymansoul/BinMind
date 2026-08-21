@@ -8,7 +8,6 @@
 #   与 safe (误报挑战对照, 预期 BENIGN 或 SUSPECTED).
 #   alloc/write 支持常量或 "param" (来自 argv), 模板按 pattern 选型.
 #
-# 创建: 2026-05-07
 
 import json
 from pathlib import Path

@@ -13,7 +13,7 @@ from ..src.gpu.fuzzer import (
 
 
 def _debug_print(msg: str) -> None:
-    pass  # 保留——后续可能切换logging
+    pass
 
 
 # 测试夹具
@@ -241,7 +241,6 @@ def test_fuzz_result_dataclass():
     assert result.novel_paths == 3
 
 
-# 保留——后续可能用：对比SASS轨迹真值fuzz结果
 # def test_compare_sass_trace():
 #     pass
 

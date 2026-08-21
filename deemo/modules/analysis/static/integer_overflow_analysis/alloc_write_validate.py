@@ -1,7 +1,7 @@
-"""溢出后写入验证 — 欠分配后的写入量是否构成利用路径.
+"""溢出后写入验证 - 欠分配后的写入量是否构成利用路径.
 
 误报根源: binary_int_overflow_scanner 只报告 imul→malloc 数据流,
-不验证分配后的写入 — 固定小写入的样本 (不可利用) 与
+不验证分配后的写入 - 固定小写入的样本 (不可利用) 与
 循环大写入的样本 (CWE-680) 被同等对待.
 本模块对 malloc 调用点之后的指令窗口 (≤40 条) 检查:
   1. memcpy/memset/memmove 调用: 目标为分配指针, 大小参数
@@ -20,7 +20,7 @@ _COPY_FUNCS = {"memcpy", "memmove", "memset", "strcpy", "strncpy",
 
 
 class WriteValidation:
-    """分配后写入验证器 — 返回写入形态证据."""
+    """分配后写入验证器 - 返回写入形态证据."""
 
     def __init__(self, insns: list):
         self._insns = insns
@@ -101,7 +101,7 @@ class WriteValidation:
                         ptrs.add(dst)
                         changed = True
                 elif ins.mnemonic in ("add", "lea"):
-                    # add rdx, rax / lea rdx, [rax*4] — 基址传播
+                    # add rdx, rax / lea rdx, [rax*4] - 基址传播
                     ops_text = " ".join(ins.operands)
                     if any(r in ptrs for r in
                            InstructionParser.KNOWN_REGS
@@ -111,7 +111,7 @@ class WriteValidation:
         return ptrs
 
     def _in_loop_after(self, idx: int) -> bool:
-        """写指令之后 (≤20 条) 是否存在回跳 jcc — 循环写形态."""
+        """写指令之后 (≤20 条) 是否存在回跳 jcc - 循环写形态."""
         for j in range(idx + 1, min(idx + 20, len(self._insns))):
             ins = self._insns[j]
             if not ins.mnemonic.startswith("j") or not ins.operands:

@@ -241,7 +241,6 @@ def _parse_pe_imports(data: bytes, import_rva: int, import_size: int) -> dict:
             for _j in range(2048):
                 if _thunk_off + 8 > len(data):
                     break
-                _hint_name_rva = struct.unpack_from('<Q' if False else '<I', data, _thunk_off)[0] if False else struct.unpack_from('<I', data, _thunk_off)[0]
                 _hint_name_rva = struct.unpack_from('<I', data, _thunk_off)[0]
                 if _hint_name_rva == 0:
                     break

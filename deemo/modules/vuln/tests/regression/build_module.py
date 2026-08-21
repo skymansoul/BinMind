@@ -1,11 +1,10 @@
-# 创建: 2026-07-12 | 回归测试编译模块
 #
-"""自动化样本编译——遍历samples/目录, 调用gcc编译vuln.c, 记录产出。
+"""自动化样本编译-遍历samples/目录, 调用gcc编译vuln.c, 记录产出。
 
 每个样本目录下必须包含 vuln.c。
 编译产物: vuln (ELF可执行文件)。
 
-输出: build_manifest.json — {sample_id: {success, binary_path, compiler_output}}。
+输出: build_manifest.json - {sample_id: {success, binary_path, compiler_output}}。
 """
 
 import json
@@ -15,7 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# GCC路径探测——Windows环境可能需要在PATH中
+# GCC路径探测-Windows环境可能需要在PATH中
 _GCC_CANDIDATES = ["gcc", "x86_64-w64-mingw32-gcc", "/d/mingw64/bin/gcc"]
 _GCC_PATH: str = ""
 for _gc in _GCC_CANDIDATES:
@@ -36,7 +35,7 @@ def find_samples(root: Path = _SAMPLES_ROOT) -> list[Path]:
 
 
 def build_sample(sample_dir: Path) -> dict:
-    """编译单个样本——调用gcc直接编译vuln.c。"""
+    """编译单个样本-调用gcc直接编译vuln.c。"""
     _src = sample_dir / "vuln.c"
     _binary = sample_dir / "vuln"
 
@@ -83,7 +82,7 @@ def build_sample(sample_dir: Path) -> dict:
 
 
 def build_all(root: Path = _SAMPLES_ROOT, out_json: str = "build_manifest.json") -> str:
-    """编译所有样本——写manifest JSON到文件。"""
+    """编译所有样本-写manifest JSON到文件。"""
     _samples = find_samples(root)
     _manifest = {}
     _success = 0

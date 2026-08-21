@@ -1,5 +1,5 @@
-"""集成 FP 过滤器 — 3 引擎 (值流切片+守卫关联+污点) 抑制堆溢出假阳性.
-加权委员会投票: 全票一致→直接采纳; 2:1+REVIEW→多数决; 三向分裂→REVIEW.
+"""集成 FP 过滤器: 3 引擎 (值流切片+守卫关联+污点) 抑制堆溢出假阳性.
+加权委员会投票: 全票一致直接采纳; 2:1+REVIEW多数决; 三向分裂判REVIEW.
 参考: Dietterich MCS 2000; Sridharan et al. OOPSLA 2011."""
 
 from dataclasses import dataclass, field
@@ -8,7 +8,12 @@ import json, time
 
 from core.value_flow_slicer import ValueFlowSlicer, SlicedWrite
 from core.guard_correlator import GuardCorrelator, GuardCorrelationResult
-from core.taint_propagator import TaintPropagator, HeapWriteTaint
+from core.taint_propagator import TaintPropagator
+try:
+    from core.taint_propagator import HeapWriteTaint
+except ImportError:
+    # HeapWriteTaint 已移除; 污点投票引擎降级, 调用点按 None 守卫跳过
+    HeapWriteTaint = None
 
 
 # 判定域 ──────────────────────────────────────────────────────────────
@@ -125,7 +130,7 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _vfs_vote(vfs: SlicedWrite, alloc_size: int) -> EngineVote:
-        """值流切片器 → 投票."""
+        """值流切片器投票."""
         reasons = []
         fp_score = vfs.fp_likelihood  # 高 → 疑似 FP
 
@@ -161,7 +166,7 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _guard_vote(gr: GuardCorrelationResult) -> EngineVote:
-        """守卫关联器 → 投票."""
+        """守卫关联器投票."""
         reasons = []
         score = gr.safe_confidence  # 高 → 疑似安全 (FP)
 
@@ -191,7 +196,7 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _taint_vote(ht: HeapWriteTaint) -> EngineVote:
-        """污点传播器 → 投票."""
+        """污点传播器投票."""
         reasons = []
         # 分数: 0=干净(安全/FP), 1=被污染(真实溢出)
         # 反转: 高 taint_score → 低 FP 分数
@@ -221,7 +226,7 @@ class EnsembleFpFilter:
 
     @staticmethod
     def _threshold(score: float) -> str:
-        """将 0-1 分数映射为判定. 分数→1 = FP (抑制), 分数→0 = 真实 (保留)."""
+        """将 0-1 分数映射为判定. 分数趋向1 = FP (抑制), 分数趋向0 = 真实 (保留)."""
         if score >= 0.65:
             return 'SUPPRESS'
         elif score <= 0.35:

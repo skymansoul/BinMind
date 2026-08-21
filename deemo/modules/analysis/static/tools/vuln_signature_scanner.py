@@ -1,11 +1,9 @@
-# 2026-07-28
 import re
 from typing import List, Dict, Tuple, Optional
 from collections import Counter
 
-
 class VulnSignatureScanner:
-    """15+ built- 漏洞 签名s CVE/CWE 引用s, multi-method detection"""
+    """15+内置漏洞签名扫描, CVE/CWE引用, 多方法检测"""
 
 # 初始化: 15+ CVE级漏洞签名库
 
@@ -244,7 +242,7 @@ class VulnSignatureScanner:
 
         return _found
 
-    # //// 检测方法2: API对匹配 (pair analysis) ////
+    # 检测方法2: API对匹配
 
     def _scan_api_pairs(self, imports: Dict[str, List[str]], signatures: List[Dict]) -> List[Dict]:
         _found = []
@@ -373,7 +371,7 @@ class VulnSignatureScanner:
 
         return _found
 
-    # //// 综合扫描入口 ////
+    # 综合扫描入口
 
     def scan(self, imports: Dict[str, List[str]] = None,
              strings: List[str] = None,

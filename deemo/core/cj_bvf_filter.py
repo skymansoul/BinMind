@@ -1,8 +1,9 @@
 """
-DD-BVF 误报过滤器 — 在 CJ 返回 INCONCLUSIVE 时触发反向值流安全证明: 追踪 alloc_size/write_size 的符号表达式, 用 correlate() 判定 alloc-write 符号相关性; 共享变量 + 子集关系 → PROVEN_SAFE, 共享变量 + 系数溢出 → PROVEN_OVERFLOW, 无法判定 → 保留 (零召回损失)。
-CJ 在前, BVF 在后: CJ 能判定的不触发 BVF, BVF 只在 CJ 无法判定时启动, 利用跨跳赋值链信息; 判定 SAFE 时纳入分配器对齐余量 (chunk_slack), write_end <= alloc_size + chunk_slack → SAFE。
+DD-BVF 误报过滤器: 在 CJ 返回 INCONCLUSIVE 时触发反向值流安全证明: 追踪 alloc_size/write_size 的符号表达式, 用 correlate() 判定 alloc-write 符号相关性; 共享变量 + 子集关系判 PROVEN_SAFE, 共享变量 + 系数溢出判 PROVEN_OVERFLOW, 无法判定则保留 (零召回损失)。
+CJ 在前, BVF 在后: CJ 能判定的不触发 BVF, BVF 只在 CJ 无法判定时启动, 利用跨跳赋值链信息; 判定 SAFE 时纳入分配器对齐余量 (chunk_slack), write_end <= alloc_size + chunk_slack 判 SAFE。
 """
 
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.cj_bvf_tracer import (
@@ -169,7 +170,6 @@ def _trace_offset_expr(
 
     if store.offset_is_dynamic:
         line = ir_lines[store.pc] if store.pc < len(ir_lines) else ""
-        import re
         m = re.search(r'\[(\w+)\s*\+\s*(\w+)\]', line)
         if m:
             return bvf.trace_var(ir_lines, m.group(2), store.pc)

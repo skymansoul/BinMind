@@ -10,7 +10,23 @@ class KernelDriverAnalyzer:
         self.ioctls: List[dict] = []
 
     def analyze(self, data: bytes) -> dict:
-        return {"driver_type": "unknown", "ioctls": self.ioctls}
+        """分析内核驱动: 识别驱动类型并提取 IOCTL 常量"""
+        driver_type = "unknown"
+        if data and b"\\Driver\\" in data:
+            driver_type = "windows"
+        elif data and b"module_init" in data:
+            driver_type = "linux"
+        ioctls = self._extract_ioctls(data) if data else []
+        return {"driver_type": driver_type, "ioctls": ioctls}
+
+    def _extract_ioctls(self, data: bytes) -> List[dict]:
+        """从字节流中提取疑似 IOCTL 常量"""
+        ioctls: List[dict] = []
+        for i in range(0, max(0, len(data) - 4), 4):
+            val = int.from_bytes(data[i:i + 4], "little")
+            if val & 0xC0000000 and (val & 0x3FFF) < 0x1000:
+                ioctls.append({"offset": i, "code": hex(val)})
+        return ioctls[:64]
 
 
 class DriverAnalyzer:

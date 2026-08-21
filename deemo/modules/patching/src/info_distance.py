@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-09-05 15:49 — 初始实现：JSD/NCD/MI 三种信息论距离
-# 2025-09-06 09:13 — 增加 permutation test 显著性检验
+# 初始实现：JSD/NCD/MI 三种信息论距离
+# 增加 permutation test 显著性检验
 
 """Information-Theoretic Patch Distance — 基于信息论的补丁相似度。
 

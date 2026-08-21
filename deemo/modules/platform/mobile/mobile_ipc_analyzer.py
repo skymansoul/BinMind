@@ -3,15 +3,15 @@
 移动端进程间通信 (IPC) 安全审计。
 
 覆盖范围:
-  1. Android Binder 事务安全——AIDL接口解析, 权限检查审计
-  2. Android Intent/Bundle 注入风险——隐式Intent劫持, Parcel序列化漏洞
-  3. Broadcast 接收器安全——有序广播拦截, 粘性广播泄露
-  4. iOS XPC 服务安全——Mach message 分析, XPC dictionary 审计
-  5. iOS Mach Port 权限泄露——task_for_pid, thread_get_state 越权访问
-  6. 进程间共享内存/文件风险——ashmem, tmpfs 竞态, ContentProvider 数据泄露
-  7. IPC 调用图——识别跨进程调用链, 定位未授权的边界穿越
-  8. AIDL Stub/Proxy 模式识别——Binder事务自动分析
-  9. Binder事务重放攻击检测——ioctl序列基础的事务签名碰撞分析
+  1. Android Binder 事务安全: AIDL接口解析, 权限检查审计
+  2. Android Intent/Bundle 注入风险: 隐式Intent劫持, Parcel序列化漏洞
+  3. Broadcast 接收器安全: 有序广播拦截, 粘性广播泄露
+  4. iOS XPC 服务安全: Mach message 分析, XPC dictionary 审计
+  5. iOS Mach Port 权限泄露: task_for_pid, thread_get_state 越权访问
+  6. 进程间共享内存/文件风险: ashmem, tmpfs 竞态, ContentProvider 数据泄露
+  7. IPC 调用图: 识别跨进程调用链, 定位未授权的边界穿越
+  8. AIDL Stub/Proxy 模式识别: Binder事务自动分析
+  9. Binder事务重放攻击检测: ioctl序列基础的事务签名碰撞分析
 
 技术基础:
   - Android Binder 内核驱动协议 (ioctl: BINDER_WRITE_READ)
@@ -101,7 +101,7 @@ class IPCFinding:
     severity: IPCSeverity = IPCSeverity.MEDIUM; description: str = ""
     evidence: str = ""; component: str = ""; recommendation: str = ""
 
-# Binder事务重放检测——事务码+参数签名碰撞分析
+# Binder事务重放检测: 事务码+参数签名碰撞分析
 
 def _compute_transaction_signature(code: int, param_count: int, data_size: int) -> bytes:
     """计算Binder事务的轻量级签名。以code+参数计数+数据大小构成指纹。"""
@@ -111,7 +111,7 @@ def _compute_transaction_signature(code: int, param_count: int, data_size: int) 
 class BinderIPCAnalyzer:
     """Android Binder & IPC 安全分析器。
 
-    Binder安全模型——各事务经ioctl(BINDER_WRITE_READ)穿越内核，
+    Binder安全模型: 各事务经ioctl(BINDER_WRITE_READ)穿越内核,
     调用者UID/PID由内核保证真实性，权限校验依赖服务端实现。
     核心审计点：onTransact中是否调用checkCallingPermission。
     未受保护AIDL接口 = 任意应用可触发的内核级IPC入口。
@@ -140,8 +140,8 @@ class BinderIPCAnalyzer:
         (rb'new\s+Intent\s*\(\s*\)[^;]*\.setAction\s*\(', 'setAction 无 component'),
         (rb'sendBroadcast\s*\(\s*new\s+Intent', 'sendBroadcast 显式构造'),
         (rb'startService\s*\(\s*new\s+Intent', 'startService 隐式Intent'),
-        (rb'sendOrderedBroadcast\s*\(', '有序广播——可被拦截或修改'),
-        (rb'sendStickyBroadcast\s*\(', '粘性广播——数据泄露风险 (deprecated)')]
+        (rb'sendOrderedBroadcast\s*\(', '有序广播, 可被拦截或修改'),
+        (rb'sendStickyBroadcast\s*\(', '粘性广播, 数据泄露风险 (deprecated)')]
 
     _PARCEL_PATTERNS = [
         (rb'Parcel\.obtain\s*\(', 'Parcel获取'), (rb'readFromParcel\s*\(', 'Parcel反序列化入口'),
@@ -174,7 +174,7 @@ class BinderIPCAnalyzer:
                 iface_name = iface_name_raw.decode('ascii', errors='ignore').split('.')[0]
                 if iface_name in found and code not in found[iface_name].transaction_codes:
                     found[iface_name].transaction_codes.append(code)
-                    # 计算事务签名——相同code+参数模式暗示重放攻击面
+                    # 计算事务签名: 相同code+参数模式暗示重放攻击面
                     sig = _compute_transaction_signature(code, 0, 0)
                     found[iface_name].transaction_signatures[code] = sig
 
@@ -185,7 +185,7 @@ class BinderIPCAnalyzer:
                 self.findings.append(IPCFinding(
                     category='binder_replay', vuln_type=IPCVulnerabilityType.BINDER_REPLAY,
                     severity=IPCSeverity.HIGH,
-                    description=f'AIDL接口 "{iface.name}" 存在事务签名碰撞——可能允许Binder重放',
+                    description=f'AIDL接口 "{iface.name}" 存在事务签名碰撞, 可能允许Binder重放',
                     component=iface.name,
                     recommendation='为每个事务码使用唯一的事务标识符或nonce'))
 
@@ -223,19 +223,19 @@ class BinderIPCAnalyzer:
                     self.findings.append(IPCFinding(category='sticky_broadcast',
                         vuln_type=IPCVulnerabilityType.STICKY_BROADCAST_LEAK,
                         severity=IPCSeverity.HIGH,
-                        description='使用粘性广播 (deprecated)——数据可被任意应用读取',
+                        description='使用粘性广播 (deprecated), 数据可被任意应用读取',
                         evidence=desc, recommendation='使用非粘性广播或局部广播 (LocalBroadcastManager)'))
                 elif is_broadcast and b'Ordered' not in m.group(0):
                     self.findings.append(IPCFinding(category='implicit_broadcast',
                         vuln_type=IPCVulnerabilityType.BROADCAST_HIJACK,
                         severity=IPCSeverity.MEDIUM,
-                        description=f'发送隐式广播 "{action}"——可被任意应用接收',
+                        description=f'发送隐式广播 "{action}", 可被任意应用接收',
                         evidence=desc, recommendation='使用 setPackage() 指定目标包或改用显式 Intent'))
                 elif b'startService' in m.group(0):
                     self.findings.append(IPCFinding(category='implicit_service_intent',
                         vuln_type=IPCVulnerabilityType.INTENT_INJECTION,
                         severity=IPCSeverity.HIGH,
-                        description='使用隐式Intent启动服务——可被恶意应用拦截',
+                        description='使用隐式Intent启动服务, 可被恶意应用拦截',
                         evidence=desc, recommendation='使用显式 Intent (new Intent(context, ServiceClass.class))'))
         self.intents = intents
         return intents
@@ -352,21 +352,21 @@ class XPCIPCAnalyzer:
                     self.findings.append(IPCFinding(category='mach_task_port',
                         vuln_type=IPCVulnerabilityType.MACH_PORT_LEAK,
                         severity=IPCSeverity.HIGH,
-                        description=f'{desc}——可获取其他进程的任务端口',
+                        description=f'{desc}, 可获取其他进程的任务端口',
                         evidence=f'offset: {m.start():#x}',
                         recommendation='需要 com.apple.security.system-task entitlement'))
                 elif b'thread_set_state' in sig or b'vm_write' in sig:
                     self.findings.append(IPCFinding(category='mach_code_injection',
                         vuln_type=IPCVulnerabilityType.MACH_PORT_LEAK,
                         severity=IPCSeverity.CRITICAL,
-                        description=f'{desc}——可用于代码注入',
+                        description=f'{desc}, 可用于代码注入',
                         evidence=f'offset: {m.start():#x}',
                         recommendation='审查此调用的必要性'))
                 elif b'bootstrap_register' in sig:
                     self.findings.append(IPCFinding(category='mach_bootstrap_register',
                         vuln_type=IPCVulnerabilityType.BINDER_PRIV_ESCALATION,
                         severity=IPCSeverity.LOW,
-                        description=f'{desc}——注册全局 Mach 服务',
+                        description=f'{desc}, 注册全局 Mach 服务',
                         evidence=f'offset: {m.start():#x}',
                         recommendation='确保服务名唯一且不被其他进程冒充'))
         return dict(ops)

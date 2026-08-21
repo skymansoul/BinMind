@@ -1,8 +1,8 @@
-# Fuzzing字典构建器 — 从二进制/样本中自动提取变异token
+# Fuzzing字典构建器 - 从二进制/样本中自动提取变异token
 # 核心方法:
 #   1. 字符串提取: 扫描二进制中长度>=3的ASCII/UTF-16可打印序列
 #   2. 常量扫描: 识别LE/BE编码的常见整数边界值
-#   3. 语料token: 对多份样本做n-gram频率分析 -> 高频token -> 字典条目
+#   3. 语料token: 对多份样本做n-gram频率分析 - 高频token - 字典条目
 #   4. 结构token: 基于已知协议/格式模板注入分隔符、length前缀等
 #
 # AFL/AFL++字典文件格式
@@ -13,7 +13,6 @@ import struct
 import os
 from typing import List, Dict, Set, Optional, Tuple
 from collections import Counter, defaultdict
-from collections import OrderedDict  # 保留——未使用
 
 
 class TokenExtractor:

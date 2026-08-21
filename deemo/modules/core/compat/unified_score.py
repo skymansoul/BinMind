@@ -104,10 +104,7 @@ class ExploitabilityAssessor:
 
     def assess(self, vuln_type: str, variables: List[str],
                complexity: str = 'moderate') -> Tuple[float, float]:
-        """评估可利用性.
-
-        Returns: (exploitability_score, impact_score).
-        """
+        """评估可利用性, 返回 (exploitability_score, impact_score)。"""
         # 可达性: 取所有相关变量的最差(最高)可达性
         if variables:
             reach_scores = [
@@ -160,17 +157,14 @@ def score_vulnerability(
     confidence: float = 0.75,
     mitigations: List[str] = None,
 ) -> UnifiedScore:
-    """计算统一可利用性评分.
+    """计算统一可利用性评分。
 
-    Args:
-      vuln_type: 漏洞类型 (heap_overflow, use_after_free, ...)
-      variables: 涉及的数据流变量列表
-      input_sources: {var: source_type} 变量到输入源类型
-      complexity: 攻击复杂度 (trivial/simple/moderate/complex/theoretical)
-      confidence: 检测置信度 [0, 1]
-      mitigations: 检测到的缓解措施列表
-
-    Returns: UnifiedScore.
+    参数: vuln_type 漏洞类型 (heap_overflow, use_after_free,
+    ...), variables 涉及的数据流变量列表, input_sources {var:
+    source_type} 变量到输入源类型, complexity 攻击复杂度
+    (trivial/simple/moderate/complex/theoretical), confidence
+    检测置信度 [0, 1], mitigations 检测到的缓解措施列表;
+    返回 UnifiedScore。
     """
     assessor = ExploitabilityAssessor()
 

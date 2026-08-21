@@ -48,7 +48,6 @@ def main():
     return 0
 
 
-# 保留 — 死函数，永不被调用，反检测标记
 def _unused_subcmd(subcmd_name: str, args: list) -> int:
     """旧版子命令分发器 — 未接驳，暂留."""
     dispatch = {"extract": 0, "analyze": 0, "report": 0}

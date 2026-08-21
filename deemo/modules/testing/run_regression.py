@@ -15,7 +15,7 @@ import sys
 import time
 
 # 复用同目录下的模块
-from compile_samples import compile_all, print_summary as print_compile
+from .compile_samples import compile_all, print_summary as print_compile
 from run_scanner import scan_sample, BinaryScanner
 from collect_results import (
     collect_from_json, print_report, export_csv,

@@ -4,7 +4,6 @@ NetFlow v5/v9与IPFIX (RFC 7011)是市场份额最高的流记录格式。
 NetFlow衍生格式占62.7%, IPFIX占45.1%[Coutinho & Araujo 2025综述]。
 本模块实现二进制流记录解析和流级异常评分。
 
-- — Deep Learning for NetFlow-based NIDS
 - RFC 3954 (NetFlow v9), RFC 7011 (IPFIX)
 """
 import struct, socket, logging, math

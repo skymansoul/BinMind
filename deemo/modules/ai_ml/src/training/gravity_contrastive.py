@@ -1,10 +1,9 @@
-# 创建: 2026-05-18 11:15
-# 修改: 2026-05-18 — 引力模型 CFG 增广 + MoCo 动量对比 + InfoNCE
+# 引力模型 CFG 增广 + MoCo 动量对比 + InfoNCE
 """
 引力模型对比学习二进制嵌入 — 自监督预训练, 无需标注。
 
 BEGA 的简化实现: 将 CFG 节点视为具有"质量"的质点,
-节点间的"引力"决定边丢弃概率——模拟不同编译器/优化级别对 CFG 的扰动。
+节点间的"引力"决定边丢弃概率-模拟不同编译器/优化级别对 CFG 的扰动。
 
 核心思想:
   1. 节点质量 = degree^(1/2) (度大的节点引力更大, 边更稳定)
@@ -20,7 +19,7 @@ BEGA 的简化实现: 将 CFG 节点视为具有"质量"的质点,
   - 两者互补: 先预训练 → 再微调 (或冻结嵌入 + 下游分类头)
 
 为什么用 MoCo 而非 SimCLR:
-  负样本队列大小不依赖 batch size——128 的队列在 CPU-only 环境下可维持,
+  负样本队列大小不依赖 batch size-128 的队列在 CPU-only 环境下可维持,
   而 SimCLR 需要大 batch (≥256) 才有足够的负样本多样性。
 
 ref: BEGA — gravity-model augmentation for CFG contrastive
@@ -106,7 +105,7 @@ def generate_augmented_view(
     base_dropout: float = 0.15,
     seed: int = 0,
 ) -> list[tuple[int, int]]:
-    """生成 CFG 的一个增广视图——引力感知边丢弃 + 特征掩码。
+    """生成 CFG 的一个增广视图-引力感知边丢弃 + 特征掩码。
 
     与随机 DropEdge 不同: 弱引力边优先丢弃, 保留图的核心结构。
     两个不同 seed 产生两个不同的视图用于对比学习。"""
@@ -190,7 +189,7 @@ class MomentumContrastEmbedder:
     """动量对比学习 — 单 GPU/CPU 可运行的自监督预训练。
 
     key_encoder 的权重 = EMA(query_encoder 的权重)。
-    负样本队列: 固定大小, FIFO 更新——新 batch 的嵌入入队, 最旧的出队。"""
+    负样本队列: 固定大小, FIFO 更新-新 batch 的嵌入入队, 最旧的出队。"""
 
     __slots__ = ('_dim', '_queue', '_queue_size', '_momentum', '_t',
                  '_query_weights', '_key_weights', '_loss_history')

@@ -292,7 +292,6 @@ class TEEAnalyzer:
                 result.warnings.append(
                     "inter-TA communication surface detected (review trust domain boundaries)")
 
-    # 不拆
     #def _legacy_cmd_parser(data: bytes) -> list:
     #    """old command-table walker, replaced by _extract_cmd_table"""
     #    cmds = []

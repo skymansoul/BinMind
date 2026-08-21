@@ -1,9 +1,9 @@
-"""循环界分析 — 识别有界计数循环, 判定循环内堆写入是否越界.
+"""循环界分析 - 识别有界计数循环, 判定循环内堆写入是否越界.
 
 误报根源: absint_adjudicator.handle_memory_write 对未知偏移的堆写入
 (循环写 p[i]) 一律报告. 本模块识别 back-edge 计数循环, 支持两类
 计数器: 寄存器计数器 (cmp reg, imm / inc reg) 与栈槽计数器
-(add QWORD PTR [rbp-0x10], 1 — MinGW -O0 默认代码生成形态).
+(add QWORD PTR [rbp-0x10], 1 - MinGW -O0 默认代码生成形态).
 循环次数上界 + 元素宽度 → 写入字节上界, 上界 ≤ 可用大小 → 安全过滤.
 
 设计决策:
@@ -38,7 +38,7 @@ class LoopInfo:
 
 
 class LoopBoundAnalyzer:
-    """循环界分析器 — 一次分析, 多次查询."""
+    """循环界分析器 - 一次分析, 多次查询."""
 
     def __init__(self, insns: List[ParsedInstruction],
                  addr_to_idx: Dict[int, int]):

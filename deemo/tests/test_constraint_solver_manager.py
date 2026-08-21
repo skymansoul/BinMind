@@ -214,20 +214,6 @@ class TestSolverPoolHealth(unittest.TestCase):
         self.assertEqual(self.health.get("z3"), 100.0)
 
 
-
-"""
-Tests for the multi-backend SMT solver manager, TDigest, health scoring,
-and cross-solver consensus tracking.
-
-Covers:
-- TDigest: insertion, percentile approximation, compression
-- SolverTracing: per-solver latency recording and retrieval
-- SolverPoolHealth: 0-100 composite health score with EWMA smoothing
-- CrossSolverConsensus: sliding-window agreement tracking
-- ConstraintSolverManager: registration, fallback, classification, selection
-"""
-
-
 class TestCrossSolverConsensus(unittest.TestCase):
     """Cross-solver agreement tracking with sliding window."""
 

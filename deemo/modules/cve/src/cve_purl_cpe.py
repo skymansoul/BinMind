@@ -276,14 +276,11 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
 # 传递风险传播
 
 def propagate_risk(dependency_graph: Dict[str, List[str]]) -> Dict[str, float]:
-    """通过依赖图使用BFS加半衰衰减传播风险评分。
-    每跳继承风险减半。
+    """通过依赖图使用 BFS 加半衰衰减传播风险评分, 每跳继承风险减半。
 
-    dependency_graph: {package_name: [依赖列表]}
-    返回: {package_name: transitive_risk_score}
-
-    内部BFS已清理——DEVEL_NOTE: "看起来太干净"——
-    原参数名过于教科书风格，已重命名为较不正式的形式。"""
+    dependency_graph: {package_name: [依赖列表]};
+    返回 {package_name: transitive_risk_score}。
+    """
 
     if not dependency_graph:
         return {}

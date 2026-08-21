@@ -1,5 +1,4 @@
-# SWC-101: 整数溢出/下溢 — 算术操作无安全检查
-# 不拆: 算法简单固定
+# SWC-101: 整数溢出/下溢 - 算术操作无安全检查
 
 from typing import List
 from .base import BaseDetector
@@ -8,7 +7,7 @@ from ..parser.evm_parser import EVMBytecodeParser
 
 
 class IntegerOverflowDetector(BaseDetector):
-    """SWC-101 溢出检测 — ADD/MUL/SUB 后无 ISZERO/EQ 即告警。"""
+    """SWC-101 溢出检测 - ADD/MUL/SUB 后无 ISZERO/EQ 即告警。"""
 
     _ARITH_OPS = frozenset({'ADD', 'MUL', 'SUB', 'SDIV', 'SMOD', 'DIV', 'MOD'})
     _CHECK_OPS = frozenset({'ISZERO', 'EQ', 'LT', 'GT', 'SLT', 'SGT'})

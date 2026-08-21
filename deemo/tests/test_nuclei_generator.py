@@ -330,7 +330,7 @@ class TestHttpRequest(unittest.TestCase):
     def test_raw_request(self):
         request = HttpRequest(
             method='GET', path='/',
-            raw='GET / HTTP/1.1\r\nHost: example.com\r\n\r\n',
+            raw='GET / HTTP/1.1\r\n\nHost: example.com\r\n\r\n',
         )
         self.assertIsNotNone(request.raw)
 

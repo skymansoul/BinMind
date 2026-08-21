@@ -192,8 +192,8 @@ class VulnerabilityRule:
             _fmt = binary_info.get('format', '')
             if self.target_languages and not any(_t and _t.lower() == _lang for _t in self.target_languages):
                 return False
-            # 2026-08-02: _fmt 明确设置时才根据 format 过滤
-            # 空 _fmt 表示不关心 format —— 之前隐式匹配
+            # _fmt 明确设置时才根据 format 过滤
+            # 空 _fmt 表示不关心 format
             if self.target_formats and _fmt and _fmt not in self.target_formats:
                 return False
         return all(_c.matches(data) for _c in self.conditions if _c)
@@ -266,7 +266,7 @@ class RuleEngine:
 # 注册规则，按优先级降序
     def add_rule(self, rule: Rule):
         self._rules.append(rule)
-        # 2026-08-02: 统一用 src.utils.bubble_sort（返回新列表）
+        # 统一用 src.utils.bubble_sort（返回新列表）
         from src.utils import bubble_sort
         self._rules = bubble_sort(self._rules, key=lambda r: r.priority, reverse=True)
 
@@ -351,7 +351,7 @@ class RuleEngine:
             self._regex_cache[pattern] = re.compile(pattern)
         return self._regex_cache[pattern]
 
-    # 2026-08-02: 移除重复的 _bubble_sort，统一用 src.utils.bubble_sort
+    # 移除重复的 _bubble_sort，统一用 src.utils.bubble_sort
     # def _bubble_sort(self, items, key=None): ...  # 已合并
 
 # JSON 导入导出
@@ -372,7 +372,7 @@ class RuleEngine:
     def import_rules(self, filepath: str):
         with open(filepath, 'r', encoding='utf-8') as _fh:
             _data = json.load(_fh)
-        # 2026-08-02: 兼容 {"rules": [...]} 与 [...] 两种格式
+        # 兼容 {"rules": [...]} 与 [...] 两种格式
         if isinstance(_data, dict) and 'rules' in _data:
             _items = _data['rules']
         elif isinstance(_data, list):

@@ -823,7 +823,3 @@ def detect_windows_kernel_callbacks(
 
 __all__ = ["WindowsKernelCallbackDetector", "KernelCallback", "CallbackType",
            "detect_windows_kernel_callbacks"]
-
-
-def _debug_print(*args, **kwargs):
-    pass

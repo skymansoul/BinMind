@@ -1,5 +1,5 @@
 """
-样本管理器 —— CRUD mixin。
+样本管理器 - CRUD mixin。
 
 封装样本注册、检索、筛选、删除及 JSON 持久化，供 SampleManager 组合复用。
 """
@@ -34,19 +34,9 @@ class _CrudMixin:
         notes: str = '',
     ) -> str:
         """
-        注册一个样本。
+        注册一个样本, 返回样本 ID（文件 SHA256 前 16 字符）。
 
-        Args:
-            binary_path: 二进制文件路径
-            vuln_type:   漏洞类型（如 stack-overflow, format-string）
-            difficulty:  难度评估（easy/medium/hard/insane）
-            source:      样本来源（CTF名称/CVE编号/课程名）
-            tags:        标签列表
-            run_args:    运行参数
-            notes:       备注
-
-        Returns:
-            样本 ID（SHA256 哈希的前 16 字符）
+        自动采集 checksec 并在 vuln_type 缺省时推断; 记录立即持久化。
         """
         abs_path = os.path.abspath(binary_path)
         if not os.path.isfile(abs_path):

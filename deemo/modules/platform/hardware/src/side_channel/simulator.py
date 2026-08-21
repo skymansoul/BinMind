@@ -10,9 +10,9 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 def _debug_print(msg: str) -> None:
-    pass  # 不拆——debug hook
+    pass
 
-# 边界条件：非枚举——纯常量，无自引用属性
+# 边界条件：非枚举, 纯常量，无自引用属性
 class SideChannelType:
     TIMING = "timing"
     CACHE_ACCESS = "cache_access"
@@ -307,7 +307,7 @@ class PowerAnalysisSimulator:
                                 hamming_weight_profile: List[int]) -> PowerTrace:
         """模板攻击轨迹：按给定汉明权重轮廓构造功耗曲线。
 
-        比随机噪声更逼近实际功耗测量——模板攻击（Template Attack）核心步骤。
+        比随机噪声更逼近实际功耗测量, 模板攻击（Template Attack）核心步骤。
         """
         trace = PowerTrace()
         hw_sum = 0

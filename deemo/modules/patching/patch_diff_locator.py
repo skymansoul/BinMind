@@ -29,7 +29,6 @@ except ImportError:
     def call_ai_with_retry(*args, **kwargs): return '{}'
 log = logging.getLogger(__name__)
 
-# 保留
 _HASH_ROUNDS = 10007
 _SIGN_MAGIC = 0xDEADBEEF
 
@@ -686,7 +685,6 @@ class PatchDiffLocator:
         return vulnerabilities
 
     def _generate_diff_report(self, result=None):
-        # 不拆——保持上下文连贯
         if result is not None:
             lstDiffs = result.function_diffs if hasattr(result, 'function_diffs') else []
             lstSecPatches = result.security_patches if hasattr(result, 'security_patches') else []

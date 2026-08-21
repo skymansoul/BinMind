@@ -4,9 +4,9 @@ import os
 import tempfile
 import unittest
 
-from src.config import DataConfig, DBConfig
-from src.db import DataDB
-from src.export import DataExporter, StreamingExporter
+from ..src.config import DataConfig, DBConfig
+from ..src.db import DataDB
+from ..src.export import DataExporter, StreamingExporter
 
 
 class TestDataExporter(unittest.TestCase):

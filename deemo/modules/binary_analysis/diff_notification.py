@@ -4,8 +4,9 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 import typing
+from typing import Dict, Optional
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ChangeType(str, Enum):
@@ -102,7 +103,7 @@ class DiffAnalyzer:
             changes.append(DiffChange(
                 change_type=ChangeType.VULNERABILITY_FIXED,
                 level=NotificationLevel.INFO,
-                description=f"漏洞已fix: {vuln.get('cve_id', 'Unknown')}",
+                description=f"漏洞已修复: {vuln.get('cve_id', 'Unknown')}",
                 details=vuln,
                 affected_items=[vuln.get('function_name', '')]
             ))
@@ -114,7 +115,7 @@ class DiffAnalyzer:
                 changes.append(DiffChange(
                     change_type=ChangeType.VULNERABILITY_CHANGED,
                     level=NotificationLevel.WARNING,
-                    description=f"漏洞status变更: {curr_vuln.get('cve_id', 'Unknown')}",
+                    description=f"漏洞状态变更: {curr_vuln.get('cve_id', 'Unknown')}",
                     details={
                         "previous": prev_vuln,
                         "current": curr_vuln
@@ -151,7 +152,7 @@ class DiffAnalyzer:
             changes.append(DiffChange(
                 change_type=ChangeType.FUNCTION_DELETED,
                 level=NotificationLevel.WARNING,
-                description=f"函数已delete: {func.get('name', 'Unknown')}",
+                description=f"函数已删除: {func.get('name', 'Unknown')}",
                 details=func,
                 affected_items=[func.get('name', '')]
             ))

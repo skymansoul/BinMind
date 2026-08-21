@@ -1,4 +1,4 @@
-# 参数来源等式检测——证明alloc_size与copy_size恒等则拷贝必然安全
+# 参数来源等式检测: 证明alloc_size与copy_size恒等则拷贝必然安全
 # 误报根源: 同函数参数len同时流向malloc(len)与memcpy(buf,in,len),
 #   值流引擎因跨栈槽写回链断裂解析为TOP, 落入"未知→保守保留"分支→FP
 # 解决: 溯源到同一函数参数索引/同一栈槽/同一常量→copy≡alloc→不溢出
@@ -19,7 +19,6 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 _REG_ALIAS = {'eax':'rax','ebx':'rbx','ecx':'rcx','edx':'rdx',
@@ -29,7 +28,7 @@ _REG_ALIAS = {'eax':'rax','ebx':'rbx','ecx':'rcx','edx':'rdx',
 _PARAM_IDX = {'rdi':0,'rsi':1,'rdx':2,'rcx':3,'r8':4,'r9':5}
 _NON_REG = {'qword','dword','word','byte','ptr','xmmword','rip','eip'}
 
-# 各危险函数size参数寄存器——按ABI分开, 避免Linux寄存器在Windows二进制中误命中
+# 各危险函数size参数寄存器, 按ABI分开, 避免Linux寄存器在Windows二进制中误命中
 _LINUX_SIZE_REG: Dict[str, str] = {
     'malloc':'rdi','calloc':'rsi','realloc':'rsi','alloca':'rdi',
     'memcpy':'rdx','memmove':'rdx','strncpy':'rdx','snprintf':'rsi',
@@ -52,7 +51,7 @@ class EqualityKind(Enum):
 
 @dataclass
 class SizeOrigin:
-    """size参数的来源签名——签名相等即值恒等"""
+    """size参数的来源签名: 签名相等即值恒等"""
     kind: str                     # slot|param|imm|zero|transformed|external|unknown
     sig: str = ""                 # 签名: 栈槽/参数索引/常量值
     traced: bool = False
@@ -70,7 +69,7 @@ class ParamEqualityReport:
 
 
 class ParamSizeEquality:
-    """参数来源等式检测器——alloc/copy大小同源→判安全"""
+    """参数来源等式检测器: alloc/copy大小同源→判安全"""
 
     def __init__(self, max_trace_depth: int = 12):
         self._max_depth = max_trace_depth
@@ -143,7 +142,7 @@ class ParamSizeEquality:
 
     def _best_origin(self, instructions: List[str], call_idx: int,
                      cands: Tuple[str, ...]) -> SizeOrigin:
-        """遍历候选寄存器取最优来源——优先级: 非unknown且非transformed"""
+        """遍历候选寄存器取最优来源, 优先级: 非unknown且非transformed"""
         best = SizeOrigin(kind='unknown')
         for reg in cands:
             o = self._trace_reg(instructions, call_idx, reg)
@@ -155,7 +154,7 @@ class ParamSizeEquality:
 
     def _trace_reg(self, instructions: List[str], call_idx: int,
                    start_reg: str) -> SizeOrigin:
-        """沿纯mov链反向溯源——终止于栈槽/参数/常量/算术/调用"""
+        """沿纯mov链反向溯源, 终止于栈槽/参数/常量/算术/调用"""
         cur = self._norm(start_reg)
         for i in range(call_idx - 1, max(-1, call_idx - self._max_depth), -1):
             if i < 0:
@@ -164,7 +163,7 @@ class ParamSizeEquality:
             if not il or il.startswith((';', '.')):
                 continue
 
-            # 立即数赋值——双语法: AT&T mov $imm,%reg / Intel mov reg,imm
+            # 立即数赋值, 双语法: AT&T mov $imm,%reg / Intel mov reg,imm
             m = re.match(r'mov\s+\$?(0x[0-9a-f]+|\d+),\s*%?(\w+)', il)
             if m and self._norm(m.group(2)) == cur:
                 return SizeOrigin(kind='imm', sig=m.group(1), traced=True)
@@ -172,7 +171,7 @@ class ParamSizeEquality:
             if m and self._norm(m.group(1)) == cur and m.group(1) not in _NON_REG:
                 return SizeOrigin(kind='imm', sig=m.group(2), traced=True)
 
-            # 栈槽读取——双语法: AT&T mov off(%rbp),%reg / Intel mov reg,[rbp+off]
+            # 栈槽读取, 双语法: AT&T mov off(%rbp),%reg / Intel mov reg,[rbp+off]
             m = re.match(r'mov\s+([+\-]?(?:0x[0-9a-f]+|\d+))\s*\(\s*%?(rbp|rsp)\s*\)\s*,\s*%?(\w+)', il)
             if m and self._norm(m.group(3)) == cur:
                 return SizeOrigin(kind='slot', sig=f"{m.group(2)}{m.group(1)}",
@@ -182,7 +181,7 @@ class ParamSizeEquality:
                 return SizeOrigin(kind='slot', sig=f"{m.group(1)}{m.group(2)}",
                                   traced=True)
 
-            # 寄存器间mov/movsx/movzx/movsxd/movslq——语法感知的DST判定
+            # 寄存器间mov/movsx/movzx/movsxd/movslq, 语法感知的DST判定
             # AT&T: mov %src,%dst(第二操作数是dst); Intel: mov dst,src(第一操作数dst)
             m = re.match(r'mov(?:sx|sxd|zx|slq|sbq|swq|zbq|zwq|sq|zq)?\s+(\S+),\s*(\S+)', il)
             if m:
@@ -195,14 +194,14 @@ class ParamSizeEquality:
                     cur = r2
                     continue
 
-            # lea写当前寄存器——地址/值计算→变换, 不判等
+            # lea写当前寄存器, 地址/值计算→变换, 不判等
             m = re.match(r'lea\s+(\S+)', il)
             if m:
                 dst = m.group(1).lstrip('%')
                 if self._norm(dst) == cur:
                     return SizeOrigin(kind='transformed', sig=dst, traced=True)
 
-            # cdqe/cltq——eax→rax纯宽化, 值来源为eax的低32位
+            # cdqe/cltq, eax→rax纯宽化, 值来源为eax的低32位
             if cur == 'rax' and il in ('cdqe', 'cltq'):
                 cur = 'rax'
                 continue
@@ -225,7 +224,7 @@ class ParamSizeEquality:
             if 'call' in il:
                 break
 
-        # 循环结束——cur若是参数寄存器(函数入口未定义)→参数来源
+        # 循环结束, cur若是参数寄存器(函数入口未定义)→参数来源
         if cur in _PARAM_IDX:
             return SizeOrigin(kind='param', sig=str(_PARAM_IDX[cur]), traced=True)
         return SizeOrigin(kind='unknown', sig=cur, traced=False)

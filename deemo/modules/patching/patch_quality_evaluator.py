@@ -180,7 +180,7 @@ class PatchQualityEvaluator:
         _raw = _branches + _max_depth * 2
         return min(1.0, _raw / 50.0)
 
-    # 2026-08-02: 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
+    # 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
     # def _bubble_sort(self, items, key=None): ...  # 已合并，从未被调用
 
     def _compute_hash(self, text: str) -> str:

@@ -1,4 +1,4 @@
-"""基于格的密码侧信道分析——多项式乘法时序泄漏。"""
+"""基于格的密码侧信道分析，多项式乘法时序泄漏。"""
 
 import logging
 import math
@@ -112,9 +112,6 @@ class LatticeSideChannelAnalyzer:
         analyzer = LatticeSideChannelAnalyzer()
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
-
-    def __init__(self):
-        pass
 
 # 公开 API
 

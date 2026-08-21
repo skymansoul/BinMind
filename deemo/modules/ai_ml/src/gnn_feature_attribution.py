@@ -1,16 +1,15 @@
-# 修改记录:
-# 2025-07-25 10:33 - IG 插值步数从 20 增加到 50, 降低有限差分近似误差
-# 2025-07-28 14:12 - 增加互补特征对检测 (ablation 中两特征同时置零效果远超单独置零)
-# 2025-07-31 08:45 - 修复孤立节点 (全零入度) 的特征归因为 NaN 的问题
+# IG 插值步数从 20 增加到 50, 降低有限差分近似误差
+# 增加互补特征对检测 (ablation 中两特征同时置零效果远超单独置零)
+# 修复孤立节点 (全零入度) 的特征归因为 NaN 的问题
 
-"""GNN 特征归因与消融分析 — 12 维节点特征的可解释性工具。
+"""GNN 特征归因与消融分析 - 12 维节点特征的可解释性工具。
 
 专利差距分析 §3 指出: GNN 漏洞检测的 12 维特征 (in_degree, out_degree,
 num_instructions, num_calls, num_arith, num_logic, num_mem, num_branch,
 size_bytes, has_loop, cyclomatic_contrib, is_entry) 的设计原理未文档化,
 各维度的重要性排序和独立贡献均未量化。本模块提供:
 
-  1. Integrated Gradients (IG) 特征归因 — 以零向量为基线,
+  1. Integrated Gradients (IG) 特征归因 - 以零向量为基线,
      沿直线路径积分梯度, 得到每个特征对模型输出的贡献。
      IG 满足 Sensitivity 和 Implementation Invariance 公理,
      是特征归因的事实标准。
@@ -23,13 +22,13 @@ size_bytes, has_loop, cyclomatic_contrib, is_entry) 的设计原理未文档化,
      供特征选择和模型简化决策。
 
 ref: Sundararajan et al. "Axiomatic Attribution for Deep Networks"
-     (ICML) — Integrated Gradients 的原始论文, 公理化了特征归因问题。
+      (ICML) - Integrated Gradients 的原始论文, 公理化了特征归因问题。
 ref: Samek et al. "Explaining Deep Neural Networks and Beyond"
-     (Neural Networks) — 综述了 post-hoc 解释方法的评估标准。
+      (Neural Networks) - 综述了 post-hoc 解释方法的评估标准。
 ref: Yuan et al. "Ablation-based Explanations for Graph Neural
-     Networks" (AAAI) — 图神经网络的消融解释方法。
+      Networks" (AAAI) - 图神经网络的消融解释方法。
 
-本模块不依赖 torch/tf — 有限差分近似 IG 的梯度, 纯 NumPy 实现,
+本模块不依赖 torch/tf - 有限差分近似 IG 的梯度, 纯 NumPy 实现,
 与 GATVulnDetector/GCNBinaryClassifier 的 NumPy 前向传播兼容。
 """
 
@@ -57,7 +56,7 @@ class GNNFeatureAttribution:
          和 (N, N) 邻接矩阵) + 一个样本图。
     输出: 每个特征的归因分数、消融敏感度、重要性排名。
 
-    纯 NumPy 实现 — 使用有限差分 (ε=1e-3) 近似 ∂output/∂feature,
+    纯 NumPy 实现 - 使用有限差分 (ε=1e-3) 近似 ∂output/∂feature,
     适用于任何 forward(x, adj) → scalar 的模型。
     """
 
@@ -114,7 +113,7 @@ class GNNFeatureAttribution:
     ) -> Dict[str, float]:
         """汇总所有节点的 IG 归因 → 每个特征的全局重要性。
 
-        使用绝对归因的均值 — 方向不重要, 幅度代表影响量。
+        使用绝对归因的均值 - 方向不重要, 幅度代表影响量。
         """
         ig = self.integrated_gradients(model, x, adj)
         abs_ig = np.abs(ig).mean(axis=0)  # (D,)
@@ -165,7 +164,7 @@ class GNNFeatureAttribution:
 
         # 检测互补特征对: 两特征同时消融的效果 >> 单独消融之和
         # 若 joint_delta > 1.5 * (delta_a + delta_b), 标记为互补对
-        # 互补对的存在说明特征间有非线性交互 — 需联合保留
+        # 互补对的存在说明特征间有非线性交互 - 需联合保留
         top_k = min(D, 6)
         top_indices = [r['index'] for r in results[:top_k]]
         for i, j in itertools.combinations(top_indices, 2):
@@ -237,7 +236,7 @@ class GNNFeatureAttribution:
     def _scalar_output(
         self, model, x: np.ndarray, adj: np.ndarray,
     ) -> float:
-        """获取模型的标量输出 — 图级或节点平均。"""
+        """获取模型的标量输出 - 图级或节点平均。"""
         try:
             out = model.forward(x, adj)
             if out.ndim == 2:
@@ -252,7 +251,7 @@ class GNNFeatureAttribution:
 # 便捷函数
 
 def quick_feature_report(model, x: np.ndarray, adj: np.ndarray) -> dict:
-    """一站式 GNN 特征分析报告 — IG + 消融 + 稳定排序。
+    """一站式 GNN 特征分析报告 - IG + 消融 + 稳定排序。
 
     返回字典可直接序列化为 JSON 供前端或报告使用。
     """

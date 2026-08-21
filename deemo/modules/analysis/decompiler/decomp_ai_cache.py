@@ -1,11 +1,10 @@
-"""
-decomp_ai_cache.py：缓存管理 for 反编译结果
+"""Cache management for decompilation results.
 
-提供 LRU内存与磁盘双级缓存 for 反编译
-results external API响应s. 包含 速率限制 for API调用s
+Provides LRU in-memory and on-disk dual-level cache for decompilation
+results and external API responses. Includes rate limiting for API calls.
 
-All缓存-related 模块级变量与函数 extracted
-decomp_ai.py keep 核心模块 focused 业务逻辑
+All cache-related module-level variables and functions extracted from
+decomp_ai.py to keep the core module focused on business logic.
 """
 
 import os
@@ -21,7 +20,7 @@ from config import Config
 logger = logging.getLogger(__name__)
 
 
-# 缓存模块级 variables
+# Cache module-level variables
 
 DECOMP_CACHE: Dict[str, Dict[str, Any]] = {}
 DECOMP_CACHE_DIR = os.path.join(os.getcwd(), '.deemo_cache')
@@ -29,8 +28,6 @@ API_CACHE_DIR = os.path.join(os.getcwd(), '.api_cache')
 API_RATE_LIMIT = getattr(Config, 'EXTERNAL_API_RATE_LIMIT', 10)
 _last_api_call_time = 0.0
 _api_call_count = 0
-
-_LEGACY_MODE = False  # 保留
 
 
 # Utility
@@ -51,7 +48,7 @@ def compute_binary_hash(binary_path: str) -> Optional[str]:
         return None
 
 
-# Internal 辅助函数
+# Internal helpers
 
 def _ensure_cache_dir() -> None:
     """
@@ -62,7 +59,7 @@ def _ensure_cache_dir() -> None:
 
 
 def _format_size(size: int) -> str:
-    # 格式化 byte size human-readable string
+    # 格式化字节大小为人类可读字符串
     for unit in ['B', 'KB', 'MB', 'GB']:
         if size < 1024.0:
             return f"{size:.2f} {unit}"
@@ -70,7 +67,7 @@ def _format_size(size: int) -> str:
     return f"{size:.2f} TB"
 
 
-# 遗留 disk-缓存CRC 校验 (已废弃 v2)
+# Legacy disk-cache CRC validation (deprecated in v2)
 # def _validate_cache_integrity(cache_file):
 #     with open(cache_file, 'rb') as f:
 #         raw = f.read()
@@ -78,22 +75,13 @@ def _format_size(size: int) -> str:
 #         actual_crc = zlib.crc32(raw[:-4]) & 0xFFFFFFFF
 #         return expected_crc == actual_crc
 
-# 反编译 缓存
+# Decompilation cache
 
 def get_cached_decompilation(binary_hash: str, func_name: str) -> Optional[Dict[str, Any]]:
-    """
-    从持久化缓存获取反编译结果
-    
-    Args:
-    binary_hash: 二进制文件的 SHA256 哈希值
-    func_name: 函数名
-    
-    返回:
-    缓存的反编译结果字典，如果不存在则返回 None
-    
-    Example:
+    """Retrieve decompilation result from persistent cache.
+
     >>> binary_hash = compute_binary_hash('binary.exe')
-    >>> result = get_cached_反编译(binary_hash, 'main')
+    >>> result = get_cached_decompilation(binary_hash, 'main')
     """
     if not binary_hash or not func_name:
         return None
@@ -133,17 +121,7 @@ def cache_decompilation(
     func_name: str,
     decomp_result: Dict[str, Any]
 ) -> bool:
-    """
-    缓存反编译结果到内存和磁盘
-    
-    Args:
-    binary_hash: 二进制文件的 SHA256 哈希值
-    func_name: 函数名
-    decomp_result: 反编译结果字典
-    
-    返回:
-    是否缓存成功
-    """
+    """缓存反编译结果到内存和磁盘"""
     if not binary_hash or not func_name or not decomp_result:
         return False
 
@@ -173,19 +151,10 @@ def cache_decompilation(
         return False
 
 
-# API 缓存
+# API cache
 
 def get_cached_api_response(api_key: str, ttl: int = None) -> Optional[Any]:
-    """
-    从缓存获取 API 响应
-    
-    Args:
-    api_key: API 请求的唯一标识（使用 URL + 参数的哈希）
-    ttl: 缓存有效期（秒），默认使用配置值
-    
-    返回:
-    缓存的响应数据，不存在或过期时返回 None
-    """
+    """从缓存获取 API 响应"""
     if not api_key:
         return None
 
@@ -216,16 +185,7 @@ def get_cached_api_response(api_key: str, ttl: int = None) -> Optional[Any]:
 
 
 def cache_api_response(api_key: str, response: Any) -> bool:
-    """
-    缓存 API 响应
-    
-    Args:
-    api_key: API 请求的唯一标识
-    response: 响应数据（需要可 JSON 序列化）
-    
-    返回:
-    是否缓存成功
-    """
+    """缓存 API 响应"""
     if not api_key:
         return False
 
@@ -250,17 +210,14 @@ def cache_api_response(api_key: str, response: Any) -> bool:
         return False
 
 
-# 速率限制
+# Rate limiting
 
 def check_api_rate_limit() -> bool:
     """
     检查 API 调用速率限制
-    
+
     根据时间窗口和最大调用次数判断是否允许调用
     简单实现：使用滑动窗口算法
-    
-    返回:
-    True 表示允许调用，False 表示触发速率限制
     """
     global _last_api_call_time, _api_call_count
 
@@ -282,15 +239,7 @@ def check_api_rate_limit() -> bool:
 
 
 def wait_for_api_rate_limit(timeout: float = 10.0) -> bool:
-    """
-    等待直到 API 速率限制解除
-    
-    Args:
-    timeout: 最大等待时间（秒）
-    
-    返回:
-    True 表示可以调用，False 表示等待超时
-    """
+    """等待直到 API 速率限制解除"""
     start_time = time.time()
 
     while time.time() - start_time < timeout:
@@ -302,15 +251,10 @@ def wait_for_api_rate_limit(timeout: float = 10.0) -> bool:
     return False
 
 
-# 缓存cleanup
+# Cache cleanup
 
 def clear_decomp_cache() -> int:
-    """
-    清除所有反编译缓存
-    
-    返回:
-    清除的缓存文件数量
-    """
+    """清除所有反编译缓存"""
     cleared_count = 0
 
     try:
@@ -331,12 +275,7 @@ def clear_decomp_cache() -> int:
 
 
 def clear_api_cache() -> int:
-    """
-    清除所有 API 缓存
-    
-    返回:
-    清除的缓存文件数量
-    """
+    """清除所有 API 缓存"""
     cleared_count = 0
 
     try:
@@ -355,12 +294,7 @@ def clear_api_cache() -> int:
 
 
 def get_cache_stats() -> Dict[str, Any]:
-    """
-    获取缓存统计信息
-    
-    返回:
-    包含缓存统计信息的字典
-    """
+    """获取缓存统计信息"""
     try:
         decomp_cache_count = 0
         decomp_cache_size = 0

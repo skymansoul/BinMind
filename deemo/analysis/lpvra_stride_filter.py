@@ -10,9 +10,6 @@ LPVRA 步长区间精化过滤器 — 将 StridedInterval 域集成到LPVRA管�
   2. 从循环守卫推断n的范围: for(i=0;i<10;i++) → n∈[0,10) → alloc_size∈8[0,72]
   3. 步长感知的安全检查: write_total ≤ min(alloc with matching stride alignment)
 
-  Balakrishnan & Reps: WYSINWYX — strided interval 完备性证明
-  Cod: stride-aware heap disjointness analysis
-
 与 lpvra_affine 互补:
   - 仿射域: 证明两个变量间的关系 (write ≤ alloc)
   - 步长域: 精化单个变量的值集合 (排除不可能的值)
@@ -54,7 +51,7 @@ class StrideRefiner:
     def infer_stride(self, source: str, var: str) -> Optional[int]:
         """推断变量var的步长.
 
-        Returns: stride值 (≥2), 或 None (无法推断).
+        返回 stride值 (≥2), 或 None (无法推断).
         """
         for line in source.splitlines():
             s = line.strip()
@@ -112,15 +109,11 @@ class StrideAwareChecker:
 
     def check(self, alloc_iv: Interval, write_total: int,
               stride: int, chunk_slack: int = 16) -> Optional[bool]:
-        """步长感知安全检查.
+        """步长感知安全检查。
 
-        Args:
-          alloc_iv: 从LPVRA得到的分配大小区间
-          write_total: 写入总字节数 (offset + size)
-          stride: 推断的步长 (1=无步长约束)
-          chunk_slack: chunk对齐松弛
-
-        Returns: True=可证明安全, False=可证明溢出, None=不确定.
+        alloc_iv 为 LPVRA 分配大小区间, write_total 为写入总字节数,
+        stride=1 表示无步长约束。返回 True=可证安全, False=可证溢出,
+        None=不确定。
         """
         if alloc_iv.is_top() or alloc_iv.is_bottom():
             return None
@@ -163,7 +156,7 @@ def enhance_heap_verdict_with_stride(
 ) -> Optional[bool]:
     """便捷函数: 对alloc-write对做步长增强检查.
 
-    Returns: True=安全(应过滤), False=溢出, None=不确定.
+    返回 True=安全(应过滤), False=溢出, None=不确定.
     """
     refiner = StrideRefiner()
     stride = refiner.infer_stride(source, alloc_var) or 1

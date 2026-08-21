@@ -200,7 +200,12 @@ class IcsDialectProber:
             p.is_exception = False
 
 
-from .dialect_matcher import DialectFingerprinter, fingerprint_device
+# 懒加载: 与 dialect_matcher 互相引用, 延迟到属性访问 (PEP 562)
+def __getattr__(name):
+    if name in ("DialectFingerprinter", "fingerprint_device"):
+        from .dialect_matcher import DialectFingerprinter, fingerprint_device
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [

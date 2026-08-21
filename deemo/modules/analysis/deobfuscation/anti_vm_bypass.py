@@ -1,4 +1,3 @@
-from typing import Dict, List, Set, Any
 """
 Anti-VM detection bypass module.
 
@@ -7,6 +6,8 @@ via DMI product strings, MAC address prefixes, PCI vendor IDs, and CPUID
 hypervisor-present bit.  Generates bypass configuration snippets appropriate
 to each detected technique.
 """
+
+from typing import Dict, List, Set, Any
 
 import ctypes
 import logging
@@ -66,7 +67,7 @@ _VM_DRIVER_NAMES = {
 }
 
 
-# SMBIOS 表转储解析 —— 参考 Linux kernel 驱动s/firmware/dmi_scan.c
+# SMBIOS 表转储解析 - 参考 Linux kernel 驱动s/firmware/dmi_scan.c
 # 读取 /sys/firmware/dmi/tables/ 下的原始 SMBIOS 表（DMI type 0,1,2,3）
 # 匹配制造商特征字节串。这比简单的 sysfs 属性读取更底层
 # 能检测到被 sysfs 过滤但原始表中仍存在 VM 特征的情况
@@ -195,7 +196,7 @@ def _check_loaded_drivers() -> Set[str]:
     return detected
 
 
-# PCI 总线设备枚举 —— 比 lspci -n 更底层，直接读取
+# PCI 总线设备枚举 - 比 lspci -n 更底层，直接读取
 # /sys/bus/pci/devices/*/vendor + /sys/bus/pci/devices/*/device
 # 避免依赖外部命令，且能检测到 lspci 过滤的隐藏设备
 

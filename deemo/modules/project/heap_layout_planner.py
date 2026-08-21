@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-23 11:05 — 初始创建: 漏洞类型→操作序列的Dig&Fill规划框架
-# 2025-07-29 14:22 — 增加线性Diophantine方程求解器, 实现精确Dig&Fill
-# 2025-08-04 09:38 — 增加tcache/fastbin容量约束传播+多bin分配建模
+# 初始创建: 漏洞类型→操作序列的Dig&Fill规划框架
+# 增加线性Diophantine方程求解器, 实现精确Dig&Fill
+# 增加tcache/fastbin容量约束传播+多bin分配建模
 # 堆布局策略规划器: Dig&Fill Diophantine求解 / bin容量约束 / 多阶段分配
 # 技术问题: 手工规划堆操作序列需推导 (分配大小×计数) 的整数解.
 #   例如: 目标释放3个0x40 chunk到tcache, 但同时有0x30的噪声分配2次.
@@ -148,13 +147,12 @@ class HeapLayoutPlanner:
                        available_chunk_sizes: List[int],
                        noise_alloc_sizes: Optional[List[int]] = None,
                        ) -> Optional[Dict[str, List[Tuple[int, int]]]]:
-        """Diophantine求解: 找到创建目标空洞所需的alloc/free序列.
+        """Diophantine求解: 找到创建目标空洞所需的alloc/free序列。
 
-        target_free_size: 需要释放的总字节数
-        available_chunk_sizes: 可用的chunk大小列表
-        noise_alloc_sizes: 干扰分配的大小列表 (需额外消化)
-
-        返回: {"free": [(size, count)], "alloc": [(size, count)]}
+        target_free_size 需要释放的总字节数,
+        available_chunk_sizes 可用的chunk大小列表,
+        noise_alloc_sizes 干扰分配的大小列表 (需额外消化);
+        返回 {"free": [(size, count)], "alloc": [(size, count)]}。
         """
         coeffs = [-(cs) for cs in available_chunk_sizes]  # free → 负系数
         if noise_alloc_sizes:

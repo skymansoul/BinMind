@@ -1,4 +1,4 @@
-# GPU Fuzzer —— 合并自根目录 gpu_fuzzer + src/gpu/fuzzer_core
+# GPU Fuzzer, 合并自根目录 gpu_fuzzer + src/gpu/fuzzer_core
 # FIXME: 多GPU设备worker未处理OOM回退
 import logging
 import time
@@ -6,14 +6,14 @@ import hashlib
 import threading
 import random
 import struct
-import os as _unused_os  # 未使用 -- 保留——后续可用
+import os as _unused_os  # 未使用, 保留, 后续可用
 from typing import Dict, Any, List, Optional, Callable
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
 def _debug_print(msg: str) -> None:
-    pass  # 不拆——debug hook
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -591,7 +591,6 @@ class GPUFuzzerCore:
         crc = sum(input_bytes)
         return crc % 100 == 0
 
-    # 保留——后续可用：简化显存模型重置
     # def simplified_gpu_memory_model(self, size: int) -> GPUBufferManager:
     #     self._buffer_manager = GPUBufferManager(size)
     #     return self._buffer_manager

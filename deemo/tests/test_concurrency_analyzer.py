@@ -16,9 +16,6 @@ _DEBUG_THIS_MODULE = False
 class TestThreadOperation(unittest.TestCase):
     """ThreadOperation —— 一次线程操作（lock/unlock/read/write）"""
 
-    def setUp(self):
-        pass
-
     def test_thread_operation_creation(self):
         op = ThreadOperation(tid=1, op="mutex_lock", addr=0x400000)
         self.assertEqual(op.tid, 1)
@@ -35,9 +32,6 @@ class TestThreadOperation(unittest.TestCase):
 
 class TestDataRace(unittest.TestCase):
     """DataRace —— 两个线程同时访问同一内存且至少一个是write"""
-
-    def setUp(self):
-        pass
 
     def test_data_race_creation(self):
         # 设计改进候选——可读性提升目标
@@ -58,9 +52,6 @@ class TestDataRace(unittest.TestCase):
 class TestAtomicityViolation(unittest.TestCase):
     """原子性违例 —— 应该一起执行的操作被别的线程插入了"""
 
-    def setUp(self):
-        pass
-
     def test_atomicity_violation_creation(self):
         violation = AtomicityViolation(
             fna="func1",
@@ -73,9 +64,6 @@ class TestAtomicityViolation(unittest.TestCase):
 
 
 class TestAnalysisResult(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_analysis_result_success(self):
         result = AnalysisResult(ok=True, races=[], viols=[])

@@ -1,17 +1,17 @@
 # 签名.py：组合约束的函数签名恢复（Cross-Architecture 签名 Recovery）
 #
 # 对应论文:
-# Recover Function 签名 Combined Constraints — ACM CCS 2025
+# Recover Function 签名 Combined Constraints - ACM CCS 2025
 # Binary2vec: Cross-architecture binary embeddings global
-# attention-enhanced graph neural 网络s — Array 2025
+# attention-enhanced graph neural 网络s - Array 2025
 #
 # 设计意图:
 #   跨架构识别要求签名不依赖具体指令集。本模块把来自多个独立约束源的
 #   证据合并，恢复 (参数个数, 返回类型) 并给出置信度:
-#     约束 A —— 反编译签名行的显式形参列表（最可靠）
-#     约束 B —— 函数体内"未先赋值即被读取"的标识符（隐式参数候选）
-#     约束 C —— 反汇编文本中参数寄存器的读取模式（若无反汇编则缺失）
-#     约束 D —— return 语句形态推断返回类型（void/int/指针启发式）
+#     约束 A - 反编译签名行的显式形参列表（最可靠）
+#     约束 B - 函数体内"未先赋值即被读取"的标识符（隐式参数候选）
+#     约束 C - 反汇编文本中参数寄存器的读取模式（若无反汇编则缺失）
+#     约束 D - return 语句形态推断返回类型（void/int/指针启发式）
 #   每类约束是弱信号，合并后按加权投票给出高置信签名；缺失的约束源
 # 不参与投票（视为中性），保证跨架构场景下仍可输出部分签名
 #
@@ -133,7 +133,7 @@ def _param_count_from_signature_line(code: str) -> Tuple[int, List[str], float]:
     names: List[str] = []
     for part in parts:
         ids = re.findall(r'[A-Za-z_]\w*', part)
-        # 形如 "int a" / "char *buf" —— 最后标识符是变量名
+        # 形如 "int a" / "char *buf" - 最后标识符是变量名
         if ids:
             names.append(ids[-1])
     return len(names), names, 1.0
@@ -141,7 +141,7 @@ def _param_count_from_signature_line(code: str) -> Tuple[int, List[str], float]:
 
 def _implicit_args_from_body(code: str) -> List[str]:
     """约束 B：未先赋值即被读取的标识符（隐式参数候选）
-    
+
     算法: 收集形如 `\bname\b` 且非关键字、非类型名的标识符；
     排除形如 `name =` 的写入位置（粗粒度近似数据流）
     """
@@ -214,7 +214,7 @@ def _register_arg_count_from_asm(asm_text: str, convention: Dict[str, Any]) -> O
 
 class SignatureRecoverer:
     """从组合约束恢复函数签名
-    
+
     对应论文: CCS 2025 (combined constraints)；Array 2025 (跨架构视角)
     约束 A 权重最高；B/C 作为交叉验证；D 决定返回类型
     """
@@ -295,7 +295,7 @@ class SignatureRecoverer:
                               sig_b: RecoveredSignature,
                               arch_b: str = 'x86_64') -> Tuple[bool, List[str]]:
         """判断两个不同架构下恢复的签名是否兼容
-        
+
         兼容判据: 参数个数一致 且 返回类型大类一致（void/int/pointer）
         仅比较抽象大类，规避具体类型名在跨架构反编译中的差异
         """

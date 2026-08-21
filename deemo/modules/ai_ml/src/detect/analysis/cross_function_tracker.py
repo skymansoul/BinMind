@@ -1,4 +1,4 @@
-# 跨函数全局变量追踪器——预扫描所有函数, 构建全局数据流映射
+# 跨函数全局变量追踪器-预扫描所有函数, 构建全局数据流映射
 # 核心: malloc结果→全局store→跨函数load→free/use模式
 # 解决5个UAF跨函数FN(全局指针free/use在不同函数) + 1堆FN(跨函数alloc/copy)
 # 理论: 调用图可达性 + 全局变量def-use链
@@ -9,13 +9,12 @@ import logging
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 _NON_REG = {'qword', 'dword', 'word', 'byte', 'ptr', 'xmmword',
            'ymmword', 'zmmword', 'tbyte', 'oword', 'mmword'}
 
-# CRT/系统函数前缀——跨函数检测需排除
+# CRT/系统函数前缀-跨函数检测需排除
 _CRT_PREFIXES = ('__', '_', '.', 'mingw', 'msvc', 'pre_c_init', 'pre_cpp_init',
                  'dyn_tls', 'pei386', 'gnu_exception', 'register_frame',
                  'deregister_frame', 'do_global', 'mark_section', 'restore_',
@@ -49,7 +48,7 @@ class CrossFunctionMap:
 
 
 class CrossFunctionTracker:
-    """跨函数全局变量追踪器——RIP相对寻址store/load + 调用图 + free/use摘要"""
+    """跨函数全局变量追踪器-RIP相对寻址store/load + 调用图 + free/use摘要"""
 
     def build_map(self, functions: List) -> CrossFunctionMap:
         """主入口: 从FunctionInfo列表构建跨函数映射"""

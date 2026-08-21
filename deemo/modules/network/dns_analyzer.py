@@ -72,7 +72,6 @@ def analyze(queries: List[DnsQuery]) -> DnsAnalysisReport:
     return _r
 
 
-# 保持原文件公共API完全不变
 __all__ = [
     "shannon_entropy", "label_entropies", "bigram_frequency_score",
     "vowel_consonant_ratio", "length_penalty",

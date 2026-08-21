@@ -1,0 +1,231 @@
+# FSFP — Format-String False-Positive Reducer (格式字符串误报抑制器).
+#
+# 定位: 源码级格式化字符串漏洞验证. 判定规则:
+#   1. printf 族调用: 格式参数位置定位 (printf 1st, fprintf/dprintf 2nd,
+#      snprintf 3rd, syslog 1st).
+#   2. 格式参数 tainted (用户输入/argv/read/recv) → VULN.
+#   3. 格式参数为常量字符串字面量 → SAFE.
+#   4. 格式参数经守卫约束 (if(len<=N) printf(buf)) → SAFE.
+#   5. 非 printf 族 (puts 系) → 排除.
+#
+# 本文件为 FSFP 独立实现, 算法与 modules/exploit/src/analysis/fmt_fs/
+# fmt_verify.py 一致, 仅标准库, 可直接 `from analysis.fsfp_impl import
+# verify_fmt_string` 使用.
+
+import re
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Set
+
+
+class FsVerdict(Enum):
+    VULN = "VULN"
+    SAFE = "SAFE"
+    UNCERTAIN = "UNCERTAIN"
+
+
+@dataclass
+class FmtSink:
+    line: int
+    func: str
+    fmt_arg: str
+    verdict: FsVerdict
+    confidence: float = 0.0
+    reason: str = ""
+    stage: str = ""       # tainted|literal|guarded|unknown
+
+
+# printf族: 函数 → 格式参数位置 (0-based)
+_FMT_POS = {
+    'printf': 0, 'vprintf': 0, 'dprintf': 1, 'fprintf': 1,
+    'vfprintf': 1, 'snprintf': 2, 'vsnprintf': 2, 'sprintf': 1,
+    'vsprintf': 1, 'syslog': 0, 'vsyslog': 0, '__printf_chk': 1,
+    'fscanf': 1, 'scanf': 0, 'sscanf': 1, 'vscanf': 0,
+}
+_CALL_RE = re.compile(r'(\w+)\s*\(\s*([^)]*)\s*\)\s*;')
+_STR_LITERAL_RE = re.compile(r'^"')
+
+_TAINT_API = re.compile(
+    r'\b(?:read|recv|fgets|gets|scanf|getenv|getline|fread|strcpy|'
+    r'strcat|memcpy|sprintf|snprintf|vsnprintf|printf|fprintf|sprintf)\s*\('
+)
+_ARGV_RE = re.compile(r'\bargv\b')
+
+
+def _args_of(line: str, fname: str) -> List[str]:
+    """提取行内所有 fname 调用的参数 (平衡括号)."""
+    out = []
+    for m in re.finditer(r'\b' + re.escape(fname) + r'\s*\(', line):
+        open_p = m.end() - 1
+        depth = 1
+        end = len(line)
+        for i in range(open_p + 1, len(line)):
+            if line[i] == '(':
+                depth += 1
+            elif line[i] == ')':
+                depth -= 1
+                if depth == 0:
+                    end = i
+                    break
+        body = line[open_p + 1:end]
+        out.append([a.strip() for a in body.split(',')])
+    return out[0] if out else []
+
+
+class FmtTaintTracker:
+    """轻量污点: 识别用户输入到变量/参数的传播."""
+
+    def __init__(self, lines: List[str]):
+        self._lines = lines
+        self._tainted: Set[str] = set()
+        self._build()
+
+    def _build(self) -> None:
+        # 源: argv 引用 或 main(int c, char **v) 参数
+        for line in self._lines:
+            if _ARGV_RE.search(line):
+                self._tainted.add('argv')
+            mm = re.search(r'\bint\s+main\s*\(\s*int\s+\w+\s*,\s*'
+                           r'char\s*\*\*\s*(\w+)', line)
+            if mm:
+                self._tainted.add(mm.group(1))
+        # 赋值: x = argv[1] / x = fgets(...)
+        for line in self._lines:
+            am = re.search(r'\b(\w+)\s*=\s*([^;]+);', line)
+            if am:
+                lhs, rhs = am.group(1), am.group(2)
+                if _ARGV_RE.search(rhs) or _TAINT_API.search(rhs):
+                    self._tainted.add(lhs)
+        # 传播: 函数参数 (v[1] → log_input 形参 s)
+        for _ in range(3):
+            changed = False
+            for line in self._lines:
+                am = re.search(r'\b(\w+)\s*=\s*([^;]+);', line)
+                if am and am.group(1) not in self._tainted:
+                    rhs_vars = set(re.findall(r'[A-Za-z_]\w*',
+                                              am.group(2)))
+                    if rhs_vars & self._tainted:
+                        self._tainted.add(am.group(1))
+                        changed = True
+                cm = re.search(r'\b(\w+)\s*\(\s*([^)]*)\s*\)\s*\{',
+                               line)
+                if cm:
+                    params = [p.strip().split()[-1].lstrip('*')
+                              for p in cm.group(2).split(',')
+                              if p.strip()]
+                    # 调用点: 实参 tainted → 形参 tainted
+                    for cl in self._lines:
+                        cm2 = re.search(
+                            r'\b' + re.escape(cm.group(1)) +
+                            r'\s*\(\s*(.*)\s*\)\s*;', cl)
+                        if not cm2:
+                            continue
+                        args = [a.strip() for a in
+                                cm2.group(1).split(',')]
+                        for pi, pa in enumerate(params):
+                            if pi < len(args) and (
+                                    args[pi] in self._tainted or
+                                    any(t in args[pi] for t in
+                                        self._tainted)):
+                                if pa not in self._tainted:
+                                    self._tainted.add(pa)
+                                    changed = True
+            if not changed:
+                break
+
+    def is_tainted(self, expr: str) -> bool:
+        """表达式是否 tainted."""
+        if _ARGV_RE.search(expr):
+            return True
+        if _STR_LITERAL_RE.match(expr.strip()):
+            return False
+        vars_in = set(re.findall(r'[A-Za-z_]\w*', expr))
+        return bool(vars_in & self._tainted)
+
+
+def _guard_bounded(lines: List[str], fmt_arg: str,
+                   call_line: int) -> bool:
+    """格式参数受守卫约束 → SAFE."""
+    if not fmt_arg or fmt_arg.startswith('"'):
+        return False
+    for i, line in enumerate(lines, start=1):
+        if i > call_line:
+            break
+        gm = re.search(r'\bif\s*\(\s*strlen\s*\(\s*' + re.escape(fmt_arg)
+                       + r'\s*\)\s*<\s*\d+\s*\)', line)
+        if gm:
+            return True
+        gm2 = re.search(r'\bif\s*\(\s*' + re.escape(fmt_arg) +
+                        r'\s*!=\s*NULL\s*\)\s*\{?\s*'
+                        r'printf\s*\(\s*' + re.escape(fmt_arg), line)
+        if gm2:
+            return True
+    return False
+
+
+def verify_fmt_string(source: str) -> List[FmtSink]:
+    """主入口: 源码 → 格式字符串漏洞判定列表."""
+    lines = source.splitlines()
+    tracker = FmtTaintTracker(lines)
+    sinks: List[FmtSink] = []
+    seen = set()
+    for i, line in enumerate(lines, start=1):
+        for fname, fpos in _FMT_POS.items():
+            if fname not in line:
+                continue
+            for m in re.finditer(r'\b' + re.escape(fname) + r'\s*\(', line):
+                open_p = m.end() - 1
+                depth = 1
+                end = len(line)
+                for ci in range(open_p + 1, len(line)):
+                    if line[ci] == '(':
+                        depth += 1
+                    elif line[ci] == ')':
+                        depth -= 1
+                        if depth == 0:
+                            end = ci
+                            break
+                body = line[open_p + 1:end]
+                args = [a.strip() for a in body.split(',')]
+                if not args or fpos >= len(args):
+                    continue
+                fmt_arg = args[fpos]
+                key = (i, fname, fmt_arg)
+                if key in seen:
+                    continue
+                seen.add(key)
+                if fmt_arg.startswith('"'):
+                    sinks.append(FmtSink(
+                        line=i, func=fname, fmt_arg=fmt_arg,
+                        verdict=FsVerdict.SAFE, confidence=0.95,
+                        stage='literal',
+                        reason=f'{fname} with literal format string'))
+                    continue
+                if _guard_bounded(lines, fmt_arg, i):
+                    sinks.append(FmtSink(
+                        line=i, func=fname, fmt_arg=fmt_arg,
+                        verdict=FsVerdict.SAFE, confidence=0.80,
+                        stage='guarded',
+                        reason=f'{fname}: guarded format arg {fmt_arg}'))
+                    continue
+                if tracker.is_tainted(fmt_arg):
+                    sinks.append(FmtSink(
+                        line=i, func=fname, fmt_arg=fmt_arg,
+                        verdict=FsVerdict.VULN, confidence=0.90,
+                        stage='tainted',
+                        reason=f'{fname}: tainted format arg {fmt_arg}'))
+                    continue
+                sinks.append(FmtSink(
+                    line=i, func=fname, fmt_arg=fmt_arg,
+                    verdict=FsVerdict.UNCERTAIN, confidence=0.40,
+                    stage='unknown',
+                    reason=f'{fname}: format arg {fmt_arg} source unknown'))
+    return sinks
+
+
+def verify_fmt(source: str) -> List[FmtSink]:
+    return verify_fmt_string(source)
+
+
+__all__ = ["FsVerdict", "FmtSink", "FmtTaintTracker",
+           "verify_fmt_string", "verify_fmt"]

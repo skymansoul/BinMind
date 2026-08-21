@@ -41,7 +41,7 @@ _log = logging.getLogger(__name__)
 # 搜索策略枚举
 
 class SearchStrategy(Enum):
-    """路径探索策略 — 可在运行时动态切换"""
+    """路径探索策略 - 可在运行时动态切换"""
     BFS = "bfs"              # 广度优先 (默认)
     DFS = "dfs"              # 深度优先 (快速到达叶子)
     RANDOM = "random"        # 随机选择 (多样性探索)
@@ -54,8 +54,8 @@ class SearchStrategy(Enum):
 @dataclass
 class PathState:
     """
-    符号执行路径状态 — 封装 angr 状态的元数据
-    
+    符号执行路径状态 - 封装 angr 状态的元数据
+
     设计意图:
     在不直接依赖 angr 的情况下, 存储路径探索所需的最小信息
     actual_state 字段持有原始 angr SimState (若有), 用于深度集成
@@ -74,12 +74,12 @@ class PathState:
 
 class LLMPathRanker:
     """
-    基于 LLM 的路径语义排名器 — ReCopilot/FoC 启发
-    
+    基于 LLM 的路径语义排名器 - ReCopilot/FoC 启发
+
     设计意图:
     对一组活跃的符号执行路径状态, 使用 LLM 评估每条路径包含漏洞模式
     的可能性。排名后的路径用于状态修剪: 仅保留 top-K 继续探索
-    
+
     LLM 评估维度:
     1. 是否接近危险函数 (system, execve, memcpy,.)
     2. 是否包含用户可控的输入 (污点传播)
@@ -104,14 +104,14 @@ class LLMPathRanker:
     ) -> List[PathState]:
         """
         对路径进行 LLM 语义排名, 返回 top-K
-        
+
         若 LLM 不可用 (无 API 密钥), 回退到启发式排名:
         基于危险函数接近度 + 路径深度 + 约束复杂度
-        
+
         参数:
         paths: 活跃路径状态列表
         top_k: 保留的路径数
-        
+
         返回:
         按 LLM 兴趣评分降序排列的路径列表 (最多 top_K 条)
         """
@@ -126,12 +126,12 @@ class LLMPathRanker:
         self, paths: List[PathState], top_k: int
     ) -> List[PathState]:
         """
-        启发式排名 — LLM 不可用时的降级方案
-        
+        启发式排名 - LLM 不可用时的降级方案
+
         评分公式:
         score = danger_proximity * 0.5 + depth_bonus * 0.2
         + constraint_penalty * 0.2 + novelty_bonus * 0.1
-        
+
         此处使用伪代码中危险函数关键词的密度作为 danger_proximity 的代理
         启发式设计的理论基础来自 FoC 的词汇特征分析
         """
@@ -169,8 +169,8 @@ class LLMPathRanker:
         self, paths: List[PathState], top_k: int
     ) -> List[PathState]:
         """
-        LLM 语义排名 — 将反编译片段发送给 LLM 进行评分
-        
+        LLM 语义排名 - 将反编译片段发送给 LLM 进行评分
+
         使用批量模式: 将多个路径的伪代码打包到一个 prompt 中
         减少 API 调用次数
         """
@@ -217,7 +217,7 @@ class LLMPathRanker:
                     paths[idx].llm_interest_score = sc
 
         except Exception as e:
-            _log.debug("LLM 排名失败: %s — 回退到启发式", e)
+            _log.debug("LLM 排名失败: %s - 回退到启发式", e)
             return self._heuristic_rank(paths, top_k)
 
         paths.sort(key=lambda p: p.llm_interest_score, reverse=True)
@@ -228,13 +228,13 @@ class LLMPathRanker:
 
 class AdaptiveStrategySwitcher:
     """
-    自适应搜索策略切换器 — 根据覆盖增长率动态选择最优策略
-    
+    自适应搜索策略切换器 - 根据覆盖增长率动态选择最优策略
+
     设计意图:
     - BFS: 初始阶段, 快速探索函数入口
     - LLM_GUIDED: 中期阶段, 路径数超过阈值后用 LLM 修剪
     - DFS: 后期阶段, 深入特定路径寻找崩溃
-    
+
     切换条件:
     1. 活跃路径数 > 50: BFS → LLM_GUIDED (路径爆炸, 需要修剪)
     2. 最近 N 步无新覆盖: 当前策略 → 下一个策略 (停滞)
@@ -259,7 +259,7 @@ class AdaptiveStrategySwitcher:
     ) -> SearchStrategy:
         """
         根据当前状态更新策略
-        
+
         返回:
         新的搜索策略 (可能与当前相同)
         """
@@ -296,13 +296,13 @@ class AdaptiveStrategySwitcher:
 class LLMGuidedPathExplorer:
     """
     LLM 引导的混合符号执行路径探索器
-    
+
     设计意图:
     包装 SymbolicExecutor, 在不修改其内部代码的前提下添加:
     1. LLM 路径排名 (状态修剪)
     2. 自适应策略切换
     3. 探索进度追踪
-    
+
     使用方式:
     explorer = LLMGuidedPathExplorer(symbolic_executor)
     explorer.explore_with_llm_guidance(max_steps=200, top_k=10)
@@ -336,15 +336,15 @@ class LLMGuidedPathExplorer:
     ) -> Dict[str, Any]:
         """
         执行 LLM 引导的路径探索
-        
+
         参数:
         function_name: 入口函数名
         top_k: 每次 step 后保留的最大路径数 (默认 10)
         max_steps: 最大探索步数
-        
+
         返回:
         包含探索统计和发现路径的字典
-        
+
         实现说明:
         当前版本提供独立于 angr 的参考实现。与 SymbolicExecutor 的
         深度集成需要修改 _explore_for_vulnerabilities 的 step 循环
@@ -363,7 +363,7 @@ class LLMGuidedPathExplorer:
             "danger_funcs_found": [],
         }
 
-        # 模拟活跃路径 — 实际集成中从 simgr.active 获取
+        # 模拟活跃路径 - 实际集成中从 simgr.active 获取
         active_paths: List[PathState] = []
         explored: List[PathState] = []
 

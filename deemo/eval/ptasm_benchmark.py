@@ -36,7 +36,7 @@ UAF_NEGATIVE_SAMPLES = {
 def discover_uaf_samples() -> Tuple[List[dict], List[dict]]:
     """发现 UAF 正例和负例样本.
 
-    Returns:
+    返回:
         (positive_samples, negative_samples)
         每个样本: {'name': str, 'path': str, 'source': str}
     """
@@ -81,7 +81,7 @@ def read_source(path: str) -> str:
 def run_ptasm_detect(code: str) -> Dict:
     """PTASM 检测: 形式化指针时序状态机分析.
 
-    Returns:
+    返回:
         {
             detected: bool,
             findings: List[dict],
@@ -149,7 +149,7 @@ def run_ptasm_detect(code: str) -> Dict:
 def run_baseline_uaf_detect(code: str) -> Dict:
     """基线 UAF 检测: 简单 free→use 正则 (参考 tests/uaf_detector.py).
 
-    Returns:
+    返回:
         {detected: bool, count: int, reason: str}
     """
     result = {'detected': False, 'count': 0, 'reason': ''}

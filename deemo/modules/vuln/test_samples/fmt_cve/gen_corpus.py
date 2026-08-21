@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-21  |  格式串语料生成器
 #
 """格式串语料生成器 (逻辑部分).
 
@@ -14,7 +13,7 @@
 import argparse
 from pathlib import Path
 
-from samples_fmt_a import SAMPLES_FMT_A
+from .samples_fmt_a import SAMPLES_FMT_A
 from samples_fmt_b import SAMPLES_FMT_B
 from samples_fmt_safe import SAMPLES_FMT_SAFE
 

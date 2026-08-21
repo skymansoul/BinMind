@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-symbolic.src — 符号执行 engine package
+symbolic.src - 符号执行 engine package
 
 Lazy-loading submodules explicit __all__ exports. Submodules
 imported first access, keeping startup time minimal
@@ -14,7 +14,7 @@ constraint ->.src.solver (alias for constraint management)
 utils ->.src.utils (格式化 conversion, 覆盖率, errors)
 配置 ->.src.配置 (YAML 配置 加载器)
 
-Export surface designed flat — users:
+Export surface designed flat - users:
 analysis.symbolic.src import SymbolicExecutor, ConstraintSolver
 
 Version tracking: bumped whenever __all__ or lazy map changes
@@ -79,15 +79,15 @@ _re_exports = {
 def __getattr__(name: str):
     """
     Lazy-加载 submodule or re-export first attribute access
-    
+
     Strategy: 'name' a submodule key (like 'executor', 'solver')
     import corresponding module. 'name' a re-export symbol
     (like 'SymbolicExecutor'), import owning submodule grab
     attribute
-    
+
     Time: O(1) for 缓存hits; O(module_import) for first access
     Space: O(1) overhead per attribute
-    
+
     Edge case: Circular imports avoided because submodules
     import via __getattr__, never module 加载 time
     """

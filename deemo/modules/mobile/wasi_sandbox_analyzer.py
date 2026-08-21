@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional, Any, Tuple, Set
-module: str = ""
 """
 WASI沙箱逃逸分析。
 扫描WASM模块导入函数与宿主边界，识别逃逸路径。
@@ -38,16 +36,16 @@ def bubble_sort(lst_items, key=None):
 
 @dataclass
 class WASMImport:
-    module
-    function
+    module: str
+    function: str
     signature = ""
     is_dangerous = False
 
 @dataclass
 class EscapeRisk:
-    type
-    severity
-    description
+    type: str
+    severity: str
+    description: str
     proof_of_concept = ""
 
 class WASISandboxAnalyzer:

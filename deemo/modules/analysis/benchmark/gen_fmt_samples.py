@@ -1,6 +1,5 @@
 # 格式字符串基准测试样本生成器 (Format String Benchmark Sample Generator)
 # 一键生成15个CVE复现样本: 源码 + Makefile + README + manifest.
-# 创建: 2026-07-02
 
 import json
 from pathlib import Path
@@ -13,7 +12,7 @@ SAMPLES_DIR = ROOT / "samples_fmt"
 def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
     body = get_template(pattern, safe_name)
     return f'''/**
- * {cve} — {desc}
+ * {cve} - {desc}
  * 模式: {pattern}
  *
  * 样本设计: 精简化复现格式字符串漏洞核心机制.
@@ -33,20 +32,20 @@ def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
 
 def _makefile(cve: str, target: str, src: str) -> str:
     T = "\t"
-    return f'''# {cve} — Format String Benchmark
+    return f'''# {cve} - Format String Benchmark
 CC = gcc
 CFLAGS = -Wall -no-pie -fno-pie
 
 all: {target}_O0 {target}_O2 {target}_Os
 
 {target}_O0: {src}
-{T}$ $(CFLAGS) -O0 -o $@ $<
+{T}$(CC) $(CFLAGS) -O0 -o $@ $<
 
 {target}_O2: {src}
-{T}$ $(CFLAGS) -O2 -o $@ $<
+{T}$(CC) $(CFLAGS) -O2 -o $@ $<
 
 {target}_Os: {src}
-{T}$ $(CFLAGS) -Os -o $@ $<
+{T}$(CC) $(CFLAGS) -Os -o $@ $<
 
 clean:
 {T}rm -f {target}_O0 {target}_O2 {target}_Os
@@ -74,7 +73,7 @@ def generate_all():
             _makefile(cve, target_name, src_name), encoding="utf-8")
 
         readme = sample_dir / "README.md"
-        readme.write_text(f"# {cve} — Format String Benchmark\n"
+        readme.write_text(f"# {cve} - Format String Benchmark\n"
                           f"- Pattern: {pattern}\n- Description: {desc}\n",
                           encoding="utf-8")
 

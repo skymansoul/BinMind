@@ -1,6 +1,5 @@
-# 一键回归入口 — 编译 → 扫描 → 收集对比.
+# 一键回归入口 - 编译 → 扫描 → 收集对比.
 # 用法: python run_all.py
-# 创建: 2026-07-17
 
 import json
 import sys

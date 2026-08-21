@@ -8,6 +8,8 @@ import importlib.util as _iu
 _target_file = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'vm_unvirtualizer.py')
 _spec = _iu.spec_from_file_location('vm_unvirtualizer', _target_file)
 _proxy_mod = _types.ModuleType('vm_unvirtualizer')
+# 目标模块按 __file__ 相对定位自身, 隔离命名空间需先注入 __file__
+_proxy_mod.__file__ = _target_file
 _spec.loader.exec_module(_proxy_mod)
 
 globals().update({_k: _v for _k, _v in _proxy_mod.__dict__.items() if not _k.startswith('_')})

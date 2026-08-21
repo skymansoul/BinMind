@@ -1,9 +1,3 @@
-# Created: 2026-05-09 11:30:00
-# Modified: 2025-07-29 15:10:00 — replaced univariate z-score with Mahalanobis
-#   distance + bootstrap confidence intervals. Covariance structure captures
-#   inter-feature correlations that simple per-dimension z-scores miss.
-#   Bootstrap provides distribution-free CIs without normality assumption.
-#
 # corpus_baseline — 马氏距离 + Bootstrap 统计异常检测
 # 从已知良性语料库学习多维特征的均值向量和协方差矩阵，
 # 对新样本计算马氏距离 (捕获特征间相关结构)，用 Bootstrap 重采样

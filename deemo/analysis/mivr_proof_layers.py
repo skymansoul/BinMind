@@ -35,13 +35,10 @@ class PairProof:
 
 def prove_single(alloc: Tuple, write: Tuple,
                  propagator=None, graph=None) -> PairProof:
-    """单点证明: 对单个alloc-write对执行三层级联验证.
+    """单点证明: 对单个 alloc-write 对执行三层级联验证。
 
-    Args:
-        alloc: (line, var, func, expr, size, col)
-        write: (line, func, target, offset, write_size, size_expr, col)
-        propagator: MIVRPathPropagator 实例
-        graph: MIVRConstraintGraph 实例
+    alloc 为 (line, var, func, expr, size, col), write 为
+    (line, func, target, offset, write_size, size_expr, col)。
     """
     a_line, a_var, a_func, a_expr, a_size = alloc[:5]
     w_line = write[0]
@@ -58,9 +55,6 @@ def prove_single(alloc: Tuple, write: Tuple,
         write_expr=w_func, write_offset=w_off,
         write_size=w_sz,
     )
-
-    if a_size <= 0:
-        pass  # fall through to L2
 
     # L1: 守卫直接证明 (需要数值alloc_size)
     if a_size > 0 and propagator is not None:

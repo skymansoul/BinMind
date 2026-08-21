@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-07-18 14:36 - 增加 loop_unroll 的跨函数展开检测
-# 2025-07-23 10:51 - idiom_subst 新增除常数的 magic number 逆推
+# 增加 loop_unroll 的跨函数展开检测
+# idiom_subst 新增除常数的 magic number 逆推
 
 """编译器产物归一化 — 消除不同编译器/优化级别的语义等价语法差异。
 

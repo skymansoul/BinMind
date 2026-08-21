@@ -17,7 +17,6 @@
 #   4. 可解释输出: 每个评分附带 decomposition (分项得分明细),
 #      供分析师复核.
 #
-# 创建: 2026-06-07  初始版本
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

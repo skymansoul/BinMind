@@ -17,8 +17,6 @@ _ARITH = re.compile(
     r'(\w[\w]*)\s*=\s*(\w[\w]*)\s*([+\-*/])\s*(\w[\w]*|\d+)\s*;')
 # atoi 赋值
 _ATOI = re.compile(r'(\w[\w]*)\s*=\s*atoi\s*\(')
-# argc 赋值
-_ARGC_COND = re.compile(r'argc\s*>\s*(\d+)')
 
 
 class RangePropagator:
@@ -82,11 +80,6 @@ class RangePropagator:
             else:
                 rhs_r = ranges.get(rhs_str, ValueRange())
             ranges[dst] = self._compute(lhs_r, op, rhs_r)
-            return
-        # argc 在 main 中 > 1 → argc 无界
-        m = _ARGC_COND.search(text)
-        if m:
-            pass  # argc 本身不传播
 
     @staticmethod
     def _compute(a: ValueRange, op: str, b: ValueRange) -> ValueRange:

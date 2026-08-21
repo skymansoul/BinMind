@@ -76,16 +76,10 @@ class UnifiedFPFilter:
         candidates: Optional[List[Any]] = None,
         write_size: int = 0,
     ) -> FilterReport:
-        """执行五阶段过滤流水线.
+        """执行五阶段过滤流水线。
 
-        Args:
-          ir_lines: IR/伪代码行列表
-          pseudocode: 完整伪代码文本
-          candidates: 堆溢出候选列表 (HeapOverflowCandidate)
-          write_size: 全局写入大小 (若 candidates 未携带)
-
-        Returns:
-          FilterReport — 完整过滤统计
+        candidates 为堆溢出候选列表, write_size 在候选未携带时全局
+        补充; 返回含完整过滤统计的 FilterReport。
         """
         t0 = time.time()
 

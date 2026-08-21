@@ -1,4 +1,4 @@
-# CVE真二进制基准测试——对回归样本编译产物运行全管线+消融实验
+# CVE真二进制基准测试: 对回归样本编译产物运行全管线+消融实验
 # 与deep_benchmark.py互补: 该文件用合成objdump, 本文件用真实编译的CVE二进制
 import json, csv, time, sys, subprocess, logging
 from pathlib import Path
@@ -135,7 +135,7 @@ def compute_metrics(results: List[CveSampleResult], vuln_type: Optional[str] = N
 def main():
     bins = _discover_binaries()
     if not bins:
-        print("[cve_benchmark] 未找到编译好的二进制文件——请先运行 tests/regression/compile_samples.py")
+        print("[cve_benchmark] 未找到编译好的二进制文件, 请先运行 tests/regression/compile_samples.py")
         print(f"[cve_benchmark] 预期位置: {BUILD_DIR}")
         return None, None
     print(f"[cve_benchmark] {len(bins)} 个编译好的二进制文件")

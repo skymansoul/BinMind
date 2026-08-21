@@ -170,12 +170,12 @@ class HWBPDetectionResult:
 
 class HWBreakpointDetector:
     """Multi-method 硬件断点 反调试 detection engine
-    
+
     Combines 寄存器 scanning, timing 性能分析, CET shadow 栈
     instruction detection, Trap Flag manipulation analysis
     a unified detection 流水线. method produces independent
     results aggregated confidence-weighted voting
-    
+
     策略优先级：
     1. 直接寄存器扫描（最可靠，但需要 ptrace/内核级访问）
     2. 时序异常检测（无需特权，但受噪声影响）
@@ -207,7 +207,7 @@ class HWBreakpointDetector:
         self._trap_flag_detections: List[TrapFlagDetection] = []
 
     def _loaded_binary(self) -> None:
-        """加载 binary file a memory 缓冲区 for 静态分析"""
+        """将二进制文件加载到内存缓冲区以进行静态分析。"""
         if not self._binary_path or not os.path.exists(self._binary_path):
             return
         try:
@@ -222,10 +222,10 @@ class HWBreakpointDetector:
 
     def detect_via_register_scan(self) -> HWBPDetectionResult:
         """Directly 读取 DR0-DR7 检测 active 硬件断点s
-        
+
         Linux: 通过 ptrace(PTRACE_PEEKUSER, offsetof(debugreg)) 读取
         Windows: 通过 GetThreadContext 读取 CONTEXT 结构中的 Dr0-Dr7
-        
+
         限制：此方法需要 ptrace 附加权限或 PROCESS_QUERY_INFORMATION
         如果没有权限，返回 detected=False 而非抛出异常
         """
@@ -282,14 +282,14 @@ class HWBreakpointDetector:
 
     def detect_cet_shadow_stack(self) -> HWBPDetectionResult:
         """Scan binary for Intel CET shadow 栈 instructions
-        
+
         检测 rdsspq、incsspq、rstorssp、saveprevssp、wrssq、wrussq
         等 CET 硬件影子栈操作指令。这些指令的出现表明：
-        
+
         1. 二进制在 CET 感知的编译器中编译（GCC -fcf-protection=full）
         2. 二进制使用了影子栈保护（可能阻碍传统的栈溢出利用）
         3. 运行时环境（CPU + OS）可能启用了 CET 强制保护
-        
+
         检测意义：
         - 攻击面评估：CET 影子栈使传统 ROP 无法工作（ret 指令会触发 #CP）
         - 兼容性：在非 CET 硬件上这些指令被视为 NOP（F3 前缀忽略）
@@ -372,18 +372,18 @@ class HWBreakpointDetector:
 
     def detect_via_timing_analysis(self) -> HWBPDetectionResult:
         """检测 硬件断点s via RDTSC-based timing anomaly analysis
-        
+
         原理：x86 硬件断点触发时，处理器需要执行微码辅助流程
         （保存 DR6、调用 #DB 处理程序、单步恢复），这个开销在微秒级别
         正常执行没有这个开销，因此多次采样中如果某些执行明显慢于
         基线，可能表明硬件断点被安装在相关地址上
-        
+
         检测流程：
         1. 为每个目标代码块采集 N 次 RDTSC 测量
         2. 计算均值、标准差
         3. 标记超出 threshold 个标准差的异常样本
         4. 异常样本比例超过 20% 的代码块标记为"suspected HWBP"
-        
+
         限制：
         - 系统负载、缓存未命中、中断都可能产生类似的时序抖动
         - 需要多次采样来抵消噪声（采样数越多，置信度越高）
@@ -489,7 +489,7 @@ class HWBreakpointDetector:
 
     def _collect_rdtsc_samples(self, block_address: int) -> List[int]:
         """Collect RDTSC samples for timing analysis (stub)
-        
+
         完整实现需要内联汇编或通过性能计数器读取
         此处返回合成数据用于框架验证
         """
@@ -501,17 +501,17 @@ class HWBreakpointDetector:
 
     def detect_step_debugging(self) -> HWBPDetectionResult:
         """检测 Trap Flag (TF) single-step debugging patterns
-        
+
         TF (bit 8 RFLAGS/EFLAGS) 启用 x86 单步执行模式——
         每条指令执行后触发 INT1 (#DB 异常)。调试器通过 TF 实现
         "单步步入"功能
-        
+
         检测的恶意/反调试模式：
         1. PUSHFQ + OR [rsp], 0x100 + POPFQ 序列 —— 显式设置 TF
         2. PUSHFQ + BTR [rsp], 8 序列 —— 通过位测试设置 TF
         3. OR [rsp], imm32 模式（立即数包含 0x100）—— 更隐蔽的 TF 设置
         4. [rsp], ~0x100 序列 —— 清除 TF（调试器退出单步模式）
-        
+
         风险评估：
         - HIGH: 显式的 PUSHFQ/OR/POPFQ 序列，几乎肯定是调试相关
         - MEDIUM: 间接的 TF 操作（通过 XOR/BTR 等）
@@ -643,9 +643,9 @@ class HWBreakpointDetector:
 
     def run_all_detections(self) -> List[HWBPDetectionResult]:
         """执行 detection methods 返回 aggregated results
-        
+
         检测顺序按可靠性降序排列：寄存器扫描 > CET 指令 > TF 扫描 > 时序分析
-        
+
         聚合投票：任何方法返回 detected=True 即标记为整体检测到 HWBP
         """
         self._detection_results.clear()
@@ -664,7 +664,7 @@ class HWBreakpointDetector:
 
     def get_overall_confidence(self) -> float:
         """Aggregate confidence across detection methods
-        
+
         加权投票：寄存器扫描（权重 0.5）、CET 检测（0.25）、
         TF 扫描（0.15）、时序分析（0.1）
         """
@@ -699,7 +699,7 @@ class HWBreakpointDetector:
         return list(self._trap_flag_detections)
 
     def get_detection_summary(self) -> Dict[str, Any]:
-        """构造 a diagnostic summary detection results"""
+        """构造检测结果的诊断摘要。"""
         suspicious_blocks = [
             m for m in self._timing_measurements if m.suspected_hwbp
         ]

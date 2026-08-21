@@ -1,4 +1,4 @@
-# AWSC 同源关联过滤器 (Co-Source FP Filter) — finalize 管线 Stage 10.
+# AWSC 同源关联过滤器 (Co-Source FP Filter) - finalize 管线 Stage 10.
 #
 # 决策:
 #   在 Stage9 SAWCE 之后追加 AWSC 同源过滤, 专门消除
@@ -9,7 +9,6 @@
 #   分配根 vs 写入根 的 def-use 同源比较.
 # 判定为 safe 的告警标注 fp_stage="stage10_awsc" 供消融审计.
 #
-# 创建: 2026-07-03
 
 from typing import Dict, List, Optional, Tuple
 

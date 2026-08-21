@@ -16,7 +16,7 @@
 为何不用现成的 GUDHI/Ripser 库：
   1. 外部依赖对管线集成不友好
   2. 传播图是小型加权有向图（通常 <500 节点），自定义 O(N²) 算法可接受
-  3. 需要对有向边做非对称处理——标准 Rips 复形假设对称距离
+  3. 需要对有向边做非对称处理，标准 Rips 复形假设对称距离
 
 ref: Edelsbrunner & Harer "Computational Topology" — 持续同调理论。
 ref: Snopov & Golubinskiy — 持续同调用于漏洞检测，
@@ -73,7 +73,7 @@ def bottleneck_distance(diag_a: PersistenceDiagram,
                         dim: int = 0) -> float:
     """计算两个持续图在指定维数上的瓶颈距离。
 
-    匹配算法：贪心最近邻（非精确——精确瓶颈距离需要二分图匹配，
+    匹配算法：贪心最近邻（非精确，精确瓶颈距离需要二分图匹配，
     Hungarian算法 O(N³)，对小型持续图不划算）。
     实现 Wasserstein-∞ 距离的简化版本。
     """
@@ -214,7 +214,7 @@ class PropagationHomologyAnalyzer:
                 parent2[ri] = rj
                 tree_edges.add((min(si, ti), max(si, ti)))
 
-        # 非树边产生1维特征——birth=边置信度，death由环中最低置信度决定
+        # 非树边产生1维特征，birth=边置信度，death由环中最低置信度决定
         # 此处使用简化近似：非树边的 death 取其对偶生成树边的最小置信度
         edge_conf_map: Dict[Tuple[int, int], float] = {}
         for src, tgt, conf in edges:
@@ -242,10 +242,10 @@ class PropagationHomologyAnalyzer:
     def fingerprint(self, graph: PropagationGraph,
                     graph_id: str = "",
                     n_bins: int = 20) -> List[float]:
-        """将持续图向量化为固定长度的指纹向量——用于快速比对。
+        """将持续图向量化为固定长度的指纹向量，用于快速比对。
 
         将0维特征按 (birth, persistence) 分桶，生成直方图。
-        持久性取对数——大幅差异压缩为小范围变化，小差异放大。
+        持久性取对数，大幅差异压缩为小范围变化，小差异放大。
         """
         diagram = self.compute_persistence(graph, graph_id)
         pts_0 = [p for p in diagram.points_by_dim(0) if not p.is_essential]
@@ -279,7 +279,7 @@ class PropagationHomologyAnalyzer:
 
     def compare_graphs(self, g1: PropagationGraph, g2: PropagationGraph,
                        id1: str = "A", id2: str = "B") -> Dict[str, float]:
-        """比较两个传播图的拓扑相似性——返回多种距离度量。"""
+        """比较两个传播图的拓扑相似性，返回多种距离度量。"""
         d1 = self.compute_persistence(g1, id1)
         d2 = self.compute_persistence(g2, id2)
 

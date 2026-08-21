@@ -1,7 +1,6 @@
 
 import unittest
 import sys
-_MOD_DEBUG = False
 import os
 import importlib.util
 
@@ -9,7 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 
 class TestPreciseVTableRecovery(unittest.TestCase):
-    # 阈值通过反复测试收敛
     """测试精确虚表恢复"""
 
     def test_recoverer_initialization(self):

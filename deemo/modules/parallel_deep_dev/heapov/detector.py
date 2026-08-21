@@ -7,16 +7,16 @@
 
 from typing import Dict, List
 
-from heapov import cparser as cp
-from heapov.dataflow import build_env, iter_statements
-from heapov.alloc_extract import extract_allocs
-from heapov.write_extract import extract_writes
-from heapov.guard_collector import collect_guards
-from heapov.coupling_check import verify_pair
-from heapov.fp_filter import finalize
-from heapov.expr_ast import expr_str, Var, Const, Binary, Sizeof, Index
-from heapov import verdict as V
-from heapov.model import Finding
+from . import cparser as cp
+from .dataflow import build_env, iter_statements
+from .alloc_extract import extract_allocs
+from .write_extract import extract_writes
+from .guard_collector import collect_guards
+from .coupling_check import verify_pair
+from .fp_filter import finalize
+from .expr_ast import expr_str, Var, Const, Binary, Sizeof, Index
+from . import verdict as V
+from .model import Finding
 
 
 class CACBVDetector:

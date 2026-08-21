@@ -1,9 +1,8 @@
-# 样本模板 — C 源码 / Makefile / README 的生成模板.
+# 样本模板 - C 源码 / Makefile / README 的生成模板.
 #
 # 模板按 pattern 选型, 元数据定义于 sample_specs.py.
 # vuln/safe 两类模板的差异在于写入模式与预期判定, 由生成器分发.
 #
-# 创建: 2025-03-03
 
 _VULN_TEMPLATES = {
     "fixed_alloc_tainted_write": """/* {cve} {desc}.

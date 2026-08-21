@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-栈溢出自动化验证 —— 对单个样本执行完整"画像→分析→利用→验证"链路。
+栈溢出自动化验证 - 对单个样本执行完整"画像→分析→利用→验证"链路。
 
 使用 BinMind 管线对指定 ELF 二进制进行栈溢出自动分析，验证
 stack_overflow_analyzer 的 padding 计算精度和 feedback_loop 的

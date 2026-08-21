@@ -14,7 +14,6 @@
 #   - malloc(n); memcpy(p, src, n-1) → write < alloc → 安全
 #   - malloc(n*4); memcpy(p, src, n*4) → write = alloc → 安全
 #
-# 创建: 2026-06-24
 
 from typing import Dict, List, Optional
 

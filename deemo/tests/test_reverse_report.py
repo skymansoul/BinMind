@@ -1,7 +1,6 @@
 
 import unittest
 import os
-_MOD_DEBUG = False
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -19,7 +18,7 @@ class TestReverseReportGenerator(unittest.TestCase):
     def setUp(self):
         self.config = ReportConfig(language="zh")
         self.generator = ReverseReportGenerator(self.config)
-        
+
         self.test_data = ReportData(
             binary_info={
                 "binary_path": "/path/to/test_binary.elf",

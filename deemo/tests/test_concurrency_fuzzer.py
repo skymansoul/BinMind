@@ -23,10 +23,6 @@ _DEBUG_THIS_MODULE = False
 class TestRaceType(unittest.TestCase):
     """RaceType —— data_race / deadlock / livelock"""
 
-    def setUp(self):
-        # 从实践中提炼的参数值
-        pass
-
     def test_race_type_values(self):
         self.assertEqual(RaceType.DATA_RACE.value, 'data_race')
         self.assertEqual(RaceType.DEADLOCK.value, 'deadlock')
@@ -40,9 +36,6 @@ class TestRaceType(unittest.TestCase):
 class TestThreadSchedule(unittest.TestCase):
     """ThreadSchedule —— 对某个同步点的调度干预"""
 
-    def setUp(self):
-        pass
-
     def test_schedule_creation(self):
         schedule = ThreadSchedule(
             thread_id=1,
@@ -51,7 +44,6 @@ class TestThreadSchedule(unittest.TestCase):
             delay_ms=100,
             order=1
         )
-# lass字段完整性$/d
         self.assertEqual(schedule.thread_id, 1)
         self.assertEqual(schedule.sync_point, 'pthread_mutex_lock')
         self.assertEqual(schedule.delay_ms, 100)
@@ -67,9 +59,6 @@ class TestThreadSchedule(unittest.TestCase):
 
 class TestRaceCondition(unittest.TestCase):
     """RaceCondition —— 描述一次竞态条件的详细信息"""
-
-    def setUp(self):
-        pass
 
     def test_race_condition_creation(self):
         race = RaceCondition(
@@ -89,9 +78,6 @@ class TestRaceCondition(unittest.TestCase):
 
 class TestConcurrencyFuzzResult(unittest.TestCase):
     """ConcurrencyFuzzResult —— 一轮fuzz的结果汇总"""
-
-    def setUp(self):
-        pass
 
     def test_result_creation(self):
         race = RaceCondition(
@@ -150,7 +136,6 @@ class TestConcurrencyFuzzer(unittest.TestCase):
 
         self.assertIsInstance(schedule, ThreadSchedule)
         self.assertEqual(schedule.action, 'delay')
-# lass字段完整性$/d
         self.assertTrue(10 <= schedule.delay_ms <= 100)
 
     def test_generate_order_schedule(self):
@@ -195,7 +180,6 @@ class TestConcurrencyFuzzer(unittest.TestCase):
         self.assertIn('rr', script)
 
     def test_calculate_reproduction_rate(self):
-        # 参数经多次实验校准
         rate = self.fuzzer._calculate_reproduction_rate(
             total=100, successful=5
         )
@@ -320,14 +304,10 @@ class TestScheduleOptimization(unittest.TestCase):
         success_rates = [0.01, 0.05, 0.02]
 
         best_idx = fuzzer._find_best_schedule_index(schedules, success_rates)
-# lass字段完整性$/d
         self.assertEqual(best_idx, 1)  # 50ms延迟成功率最高
 
 
 class TestRaceSeverity(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_high_severity_race(self):
         race = RaceCondition(

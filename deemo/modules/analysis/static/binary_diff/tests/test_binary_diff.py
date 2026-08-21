@@ -37,14 +37,14 @@ class TestInstructionHash:
         assert op_seq1 == op_seq2 == 'rr'
 
     def test_different_immediates_small(self):
-        """小立即数折叠——0x41 和 0x42 的哈希距离应接近"""
+        """小立即数折叠-0x41 和 0x42 的哈希距离应接近"""
         h1, _ = semantic_hash_insn('cmp', ['rax', '0x41'])
         h2, _ = semantic_hash_insn('cmp', ['rax', '0x42'])
         # 两个小立即数都是 'pos_small' → 哈希相同
         assert h1 == h2
 
     def test_different_immediates_large(self):
-        """大立即数区分——0x1000 和 0x2000 的哈希距离应较大"""
+        """大立即数区分-0x1000 和 0x2000 的哈希距离应较大"""
         h1, _ = semantic_hash_insn('mov', ['rax', '0x1000'])
         h2, _ = semantic_hash_insn('mov', ['rax', '0x2000'])
         assert h1 != h2
@@ -54,7 +54,7 @@ class TestInstructionHash:
         h1, _ = semantic_hash_insn('cmp', ['rax', 'rbx'])
         h2, _ = semantic_hash_insn('sub', ['rax', 'rbx'])
         # cmp 和 sub 都是 flags_class=2 → 操作码部分不同但标志类可以相同
-        # 实际上 hash 不同，但 flags_class 相同——验证的是正确分类
+        # 实际上 hash 不同，但 flags_class 相同-验证的是正确分类
         assert h1 != h2  # 操作码不同导致哈希不同
         # 这验证了 flags_class 的提取不会崩溃
 
@@ -158,7 +158,7 @@ class TestExploitRanker:
     """Exploit 排名器测试"""
 
     def test_score_security_patch(self):
-        """安全修复的 exploitabili 评分——至少产生有效分数"""
+        """安全修复的 exploitabili 评分-至少产生有效分数"""
         diff = FuncDiffResult(
             func_name='parse_request', src_addr=0x1000, dst_addr=0x2000,
             edit_op=EditOp.MODIFIED, similarity=0.6,

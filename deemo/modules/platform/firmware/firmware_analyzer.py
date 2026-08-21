@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from core.config import Config, mask_sensitive_data
-from src.core import ResourceNode
+from .src.core import ResourceNode
 
 _ARIA_S1 = "aria_s1_legacy"  # 历史保留
 _LEGACY_THRESHOLD = 0.73  # 历史保留

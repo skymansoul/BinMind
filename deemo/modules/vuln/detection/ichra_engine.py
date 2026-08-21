@@ -1,16 +1,14 @@
 # coding: utf-8
-# 创建: 2024-12-09  |  ICHRA编排引擎
-# 修改: 2024-12-09  |  审计后补充文件头与错误处理
 #
 """
-间接调用劫持风险评估——编排引擎+CFI加固建议生成。
+间接调用劫持风险评估-编排引擎+CFI加固建议生成。
 
 管线流程:
   1. 输入: 函数反汇编+CFI策略信息+漏洞分析管线产出
-  2. 调用点分析: IndirectCallAnalyzer→提取间接调用点+可达性评估
-  3. 风险评估: 三维评分(可达性+替换面+影响)→综合风险排序
+  2. 调用点分析: IndirectCallAnalyzer-提取间接调用点+可达性评估
+  3. 风险评估: 三维评分(可达性+替换面+影响)-综合风险排序
   4. 加固建议: 按风险优先级生成逐调用点的CFI加固方案
-  5. 输出: ICHRA报告——风险排序+防护优先级+部署指导
+  5. 输出: ICHRA报告-风险排序+防护优先级+部署指导
 
 CFI加固策略推荐(按风险等级):
   CRITICAL: FineIBT paranoid(caller-side hash) + kCFI type-signature check
@@ -19,14 +17,14 @@ CFI加固策略推荐(按风险等级):
   LOW:      标准CFI策略(Clang CFI / Windows CFG)
 
 与cfi_integrity_analyzer的集成:
-  cfi_integrity_analyzer → CFI是否存在+是否完整
-  ichra_engine → 在CFI存在的前提下, 哪些调用点最脆弱
+  cfi_integrity_analyzer - CFI是否存在+是否完整
+  ichra_engine - 在CFI存在的前提下, 哪些调用点最脆弱
   互补: 前者检查CFI覆盖, 后者评估CFI内的残余风险
 
 技术依据:
   SACK: 函数替换攻击可绕过精确CFI
   FineIBT paranoid: caller-side hash可防御但需选择性部署
-  本模块: 提供选择依据——哪些调用点最需要额外防护
+  本模块: 提供选择依据-哪些调用点最需要额外防护
 """
 
 import logging
@@ -62,7 +60,7 @@ class HardeningRecommendation:
 
 @dataclass
 class IchraReport:
-    """ICHRA完整报告——间接调用劫持风险全景"""
+    """ICHRA完整报告-间接调用劫持风险全景"""
     binary_name: str
     # 调用点统计
     total_call_sites: int = 0
@@ -147,13 +145,13 @@ class IchraEngine:
         low = sum(1 for a in assessments
                   if a.risk_level == CallSiteRisk.LOW)
 
-        # 整体风险——加权平均
+        # 整体风险-加权平均
         weights = {CallSiteRisk.CRITICAL: 1.0, CallSiteRisk.HIGH: 0.7,
                    CallSiteRisk.MEDIUM: 0.4, CallSiteRisk.LOW: 0.1}
         overall = (sum(weights.get(a.risk_level, 0.0) for a in assessments) /
                    max(len(assessments), 1))
 
-        # CFI防护差距——当前vs最优(所有CRITICAL/HIGH加固后)
+        # CFI防护差距-当前vs最优(所有CRITICAL/HIGH加固后)
         current_protected = 1.0 if cfi_enabled else 0.0
         optimal_protected = 0.9  # 最优CFI仍无法防御所有替换攻击
         gap = optimal_protected - current_protected

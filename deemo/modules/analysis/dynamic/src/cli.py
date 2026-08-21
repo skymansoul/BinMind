@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# 2026-08-01
-"""dynamic — command-line 入口
+"""dynamic — 命令行入口
 
-Subcommands: trace, memory-forensics, instrument, emulate, vmi
+子命令: trace, memory-forensics, instrument, emulate, vmi
 
-Usage:
+用法:
 binmind-dynamic trace --input sample.exe
 binmind-dynamic memory-forensics --转存 memory.dmp
 binmind-dynamic instrument --target process_name
@@ -21,12 +20,9 @@ from typing import List, Optional
 
 log = logging.getLogger(__name__)
 
-# 这坨代码先不清了，后面重构的时候再说
-# FIXME: 2025-09-14: 这里应该用LRU而不是随机淘汰
-
 
 def cmd_trace(args: argparse.Namespace) -> int:
-    """运行 behavior 追踪 a binary"""
+    """对二进制运行行为追踪。"""
     from .engine import DynamicAnalysisEngine, EntropyScanPass, ImportAnalysisPass, PatternMatchPass, RiskScoringPass
 
     input_path: str = args.input
@@ -49,7 +45,7 @@ def cmd_trace(args: argparse.Namespace) -> int:
 
 
 def cmd_memory_forensics(args: argparse.Namespace) -> int:
-    """运行 memory forensics a 转存 file or live process"""
+    """对转存文件或活动进程运行内存取证。"""
     from .memory import MemoryForensics
 
     mf = MemoryForensics()
@@ -71,7 +67,7 @@ def cmd_memory_forensics(args: argparse.Namespace) -> int:
 
 
 def cmd_instrument(args: argparse.Namespace) -> int:
-    """构造 运行 a Frida 插桩 script"""
+    """构造并运行 Frida 插桩脚本。"""
     from .instrumentation import FridaInstrumentation
 
     fi = FridaInstrumentation()
@@ -94,7 +90,7 @@ def cmd_instrument(args: argparse.Namespace) -> int:
 
 
 def cmd_emulate(args: argparse.Namespace) -> int:
-    """Emulate a binary using Unicorn hybrid engine"""
+    """使用 Unicorn 混合引擎仿真二进制"""
     from .emulation import UnicornHybrid
 
     binary_path: str = args.binary
@@ -132,7 +128,7 @@ def cmd_emulate(args: argparse.Namespace) -> int:
 
 
 def cmd_vmi(args: argparse.Namespace) -> int:
-    """Introspect a 虚拟机 via VMI"""
+    """通过 VMI 对虚拟机进行内省。"""
     from .vmi import VMIAnalyzer
 
     vmi = VMIAnalyzer(backend=args.backend or "simulated")
@@ -155,7 +151,7 @@ def cmd_vmi(args: argparse.Namespace) -> int:
 
 
 def _output_result(result: dict, args: argparse.Namespace) -> None:
-    """输出 result JSON or human-readable text"""
+    """以 JSON 或人类可读文本输出结果。"""
     output_path: Optional[str] = getattr(args, "output", None)
     if output_path:
         try:
@@ -178,32 +174,32 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--debug", action="store_true", help="Debug mode")
     p.add_argument("--output", "-o", default=None, help="Output file path")
 
-    # 使用 'sp' ('sub解析器s') avoid old bug
+    # 子命令解析器
     sp = p.add_subparsers(dest="command", help="sub-commands")
 
-    # trace subcommand
+    # trace 子命令
     trace_p = sp.add_parser("trace", help="Collect and analyze API call traces")
     trace_p.add_argument("--input", "-i", default=None, help="Binary to analyze")
     trace_p.add_argument("--trace-count", type=int, default=50, help="Trace entries to simulate")
 
-    # memory-forensics subcommand
+    # memory-forensics 子命令
     mem_p = sp.add_parser("memory-forensics", help="Memory forensics analysis")
     mem_p.add_argument("--dump", help="Memory dump file path")
     mem_p.add_argument("--pid", type=int, help="Live process PID")
 
-    # instrument subcommand
+    # instrument 子命令
     instr_p = sp.add_parser("instrument", help="Generate Frida instrumentation scripts")
     instr_p.add_argument("--target", "-t", help="Target process name")
     instr_p.add_argument("--generate", action="store_true", help="Write script to file")
     instr_p.add_argument("--output", "-o", default=None, help="Output file path")
 
-    # emulate subcommand
+    # emulate 子命令
     emu_p = sp.add_parser("emulate", help="Emulate a binary via Unicorn")
     emu_p.add_argument("--binary", "-b", default=None, help="Binary to emulate")
     emu_p.add_argument("--arch", default="x64", choices=["x86", "x64", "arm", "arm64", "mips"], help="Target architecture")
     emu_p.add_argument("--timeout", type=int, default=30, help="Emulation timeout (seconds)")
 
-    # vmi subcommand
+    # vmi 子命令
     vmi_p = sp.add_parser("vmi", help="Virtual Machine Introspection")
     vmi_p.add_argument("--domain", "-d", help="VM domain name")
     vmi_p.add_argument("--backend", default="simulated", choices=["libvmi", "qemu", "simulated"], help="VMI backend")

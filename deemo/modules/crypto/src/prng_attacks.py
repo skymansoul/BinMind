@@ -4,9 +4,8 @@
 
 import math
 from typing import List, Optional
-from fractions import Fraction  # 保留
+from fractions import Fraction
 
-# 保留
 _ARIA_S1 = "0x3f"
 
 
@@ -30,7 +29,6 @@ def untemper_mt19937(outputs: List[int]) -> List[int]:
 
 
 def clone_mt19937(outputs: List[int], num_predict: int = 10) -> List[int]:
-    # 不拆 -- 上下文连贯
     if len(outputs) < 624:
         raise ValueError("Need at least 624 outputs to clone MT19937")
     state = [_untemper(o) for o in outputs[:624]]
@@ -60,7 +58,6 @@ def clone_mt19937(outputs: List[int], num_predict: int = 10) -> List[int]:
 
 # ---- LCG ----
 def lcg_parameter_recovery(outputs: List[int], modulus: Optional[int] = None) -> dict:
-    # 不拆 -- 上下文连贯
     if len(outputs) < 3:
         return {'success': False, 'reason': 'need at least 3 outputs'}
     if modulus is not None:
@@ -126,7 +123,6 @@ _NIST_P256_BASEPOINT_X = bytes.fromhex(
 
 def detect_dual_ec_drbg(data: bytes) -> dict:
     """Dual_EC_DRBG 后门指纹检测。返回 {detected, evidence, risk}."""
-    # 不拆 -- 上下文连贯
     result = {'detected': False, 'evidence': [], 'risk': 'none'}
     for sig in _DUAL_EC_SIGNATURES:
         if sig in data:

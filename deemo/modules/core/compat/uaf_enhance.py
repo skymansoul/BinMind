@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 from collections import Counter
 
-from compat.uaf_constraint import UafCandidate, AliasGraph
+from .uaf_constraint import UafCandidate, AliasGraph
 
 
 # L5: 时序约束窄化

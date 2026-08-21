@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-16 11:18 - 完成随机平滑认证核心逻辑, 支持节点特征高斯噪声注入
-# 2025-07-20 09:55 - 添加对抗训练循环, 实现 PGD 拓扑攻击模拟
-# 2025-07-24 14:30 - 集成认证半径计算, 支持批量认证查询
-# 2025-07-27 16:05 - 增加降级模式: 无 numpy 时回退到纯 Python 多数投票
+# 完成随机平滑认证核心逻辑, 支持节点特征高斯噪声注入
+# 添加对抗训练循环, 实现 PGD 拓扑攻击模拟
+# 集成认证半径计算, 支持批量认证查询
+# 增加降级模式: 无 numpy 时回退到纯 Python 多数投票
 #
 # RobustGNN: 对抗鲁棒的图神经网络用于漏洞可利用性预测
 #
@@ -87,13 +86,12 @@ class RobustnessCertifier:
 
     def certify(self, graph: CVEExploitGraph,
                 node_ids: Optional[List[str]] = None) -> Dict[str, Dict[str, Any]]:
-        """对图中指定 (或全部) CVE 节点执行鲁棒性认证.
+        """对图中指定 (或全部) CVE 节点执行鲁棒性认证。
 
-        graph: 已构建的 CVEExploitGraph 实例 (需先 build() 后 propagate()).
-        node_ids: 待认证的 CVE ID 列表, None 表示全部 CVE 节点.
-
-        Returns:
-          {cve_id: {predicted_label, certified_radius, p_value, is_certified}}
+        graph 为已构建的 CVEExploitGraph 实例 (需先 build() 后
+        propagate()), node_ids 为待认证 CVE ID 列表 (None 表示
+        全部); 返回 {cve_id: {predicted_label, certified_radius,
+        p_value, is_certified}}。
         """
         if not graph._built:
             return {}
@@ -467,10 +465,7 @@ class RobustExploitGraph:
         return [self.predict(cid) for cid in cve_ids]
 
     def top_robust_cves(self, top_n: int = 20) -> List[Tuple[str, float, float, bool]]:
-        """返回鲁棒分数最高的 top_n 个 CVE.
-
-        Returns: [(cve_id, clean_score, robust_score, is_certified), ...]
-        """
+        """返回鲁棒分数最高的 top_n 个 CVE, [(cve_id, clean_score, robust_score, is_certified), ...]。"""
         if not self._clean_scores:
             self._clean_scores = self._graph.propagate()
 
@@ -595,11 +590,7 @@ def robust_score_cves(kb: CVEKnowledgeBase,
                       sigma: float = _DEFAULT_SIGMA,
                       n_samples: int = _DEFAULT_N_SAMPLES,
                       train: bool = True) -> Dict[str, Any]:
-    """一站式鲁棒 GNN 评分.
-
-    Returns:
-      {stats, certified_cves, top_robust, untrusted_cves}
-    """
+    """一站式鲁棒 GNN 评分, 返回 {stats, certified_cves, top_robust, untrusted_cves}。"""
     reg = RobustExploitGraph(kb, sigma=sigma, n_samples=n_samples)
     train_stats = {}
     if train:

@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 # ConfigDict: 带属性访问的 dict —— 弥合 config.get('key')
 # 与 config.KEY 之间的差异，CLI 和旧模块都期望这两者。
-# INTJ: 一个对象统一所有，不再猜测用哪个 API。
 class ConfigDict(dict):
     """带属性访问的 dict 子类。支持 config.KEY 和 config.get('key')。"""
 
@@ -17,7 +16,7 @@ class ConfigDict(dict):
         try:
             return self[name]
         except KeyError:
-            # 2026-08-02: 返回 None 而非 AttributeError，
+            # 返回 None 而非 AttributeError，
             # 防止 getattr(config, 'LOG_LEVEL', 'INFO') 炸掉
             return None
 
@@ -96,7 +95,7 @@ def _parse_yaml_simple(text: str) -> dict:
         if (value.startswith('"') and value.endswith('"')) or \
            (value.startswith("'") and value.endswith("'")):
             value = value[1:-1]
-        # 2026-08-02: 处理路径展开
+        # 处理路径展开
         if value.startswith('~/'):
             value = os.path.expanduser(value)
         # 类型强制转换
@@ -170,7 +169,7 @@ def load_config(filepath: str = None):
                 config[k_upper] = v
 
     # BINMIND_PATCH_* 环境变量覆盖（遗留兼容）
-    # 2026-08-02: 修复 off-by-one —— BINMIND_PATCH_ 是 14 字符非 15。
+    # 修复 off-by-one：BINMIND_PATCH_ 是 14 字符非 15，
     # 之前切掉了每个字段名的首字母。
     PREFIX = "BINMIND_PATCH_"
     for key in os.environ:

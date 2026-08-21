@@ -1,8 +1,8 @@
-# 二进制语义差分意图分类——汇编级变更语义识别
+# 二进制语义差分意图分类-汇编级变更语义识别
 # 核心问题: semantic_diff.py比较函数相似度但不能回答"变更意图是什么"
 # 2025年LLMCC/AACC在源码级做意图分类，二进制级无源码无法直接使用
 # 方案: 汇编操作语义类别指纹 + 轻量分类器 + 分级LLM增强(仅top-5%高风险)
-# 核心: 操作类别统计是ISA无关的——x86和ARM的边界检查添加在操作层面表现一致
+# 核心: 操作类别统计是ISA无关的-x86和ARM的边界检查添加在操作层面表现一致
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class ChangeIntent(Enum):
 # 汇编操作语义类别
 
 class AsmOpCategory(Enum):
-    """汇编操作的语义类别——ISA无关"""
+    """汇编操作的语义类别-ISA无关"""
     ARITH = 'arith'           # 算术: add/sub/mul/div/inc/dec
     LOGIC = 'logic'           # 逻辑: and/or/xor/not/shl/shr
     COMPARE = 'compare'       # 比较: cmp/test
@@ -66,9 +66,9 @@ _MNEMONIC_CAT = {
 
 # 安全相关操作模式（指示可能存在安全检查的添加）
 _SECURITY_OPS = {
-    'cmp', 'test',       # 比较——可能是边界/空指针检查的前置
-    'je', 'jne', 'jz', 'jnz', 'jb', 'ja',  # 条件跳转——检查后分支
-    'call',              # 调用——可能是新增的安全函数调用
+    'cmp', 'test',       # 比较-可能是边界/空指针检查的前置
+    'je', 'jne', 'jz', 'jnz', 'jb', 'ja',  # 条件跳转-检查后分支
+    'call',              # 调用-可能是新增的安全函数调用
 }
 
 # 危险API（变更涉及这些API时提高安全敏感度）
@@ -213,7 +213,7 @@ class AsmChangeAnalyzer:
 class DiffIntentClassifier:
     """二进制变更意图分类器。
 
-    使用逻辑回归（softmax）而非深度网络——特征维度低（~30维），
+    使用逻辑回归（softmax）而非深度网络-特征维度低（~30维），
     深度网络在此场景下过拟合风险高。
     """
 
@@ -228,11 +228,7 @@ class DiffIntentClassifier:
         self._analyzer = AsmChangeAnalyzer()
 
     def predict(self, fingerprint: ChangeFingerprint) -> Tuple[ChangeIntent, float]:
-        """预测变更意图及置信度。
-
-        Returns:
-            (intent, confidence) — confidence为softmax最大概率
-        """
+        """预测变更意图及置信度。"""
         vec = fingerprint.to_vector()
         if len(vec) < self.FEATURE_DIM:
             vec = np.pad(vec, (0, self.FEATURE_DIM - len(vec)))
@@ -247,11 +243,7 @@ class DiffIntentClassifier:
                       removed_instrs: List[str],
                       added_instrs: List[str],
                       func_name: str = "") -> Tuple[ChangeIntent, float, float]:
-        """一步分类: 分析汇编diff→指纹→意图分类。
-
-        Returns:
-            (intent, confidence, security_sensitivity)
-        """
+        """一步分类: 分析汇编diff→指纹→意图分类。"""
         fp = self._analyzer.analyze(removed_instrs, added_instrs, func_name)
         intent, conf = self.predict(fp)
 

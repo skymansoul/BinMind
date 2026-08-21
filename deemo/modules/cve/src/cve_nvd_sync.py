@@ -244,3 +244,41 @@ def quick_sync(kb: CVEKnowledgeBase, full: bool = False) -> Dict[str, Any]:
     """一次性：创建引擎并运行同步。返回统计字典。"""
     engine = NVDSyncEngine(kb)
     return engine.sync(full=full)
+
+
+def fetch_single_cve(cve_id: str, kb: CVEKnowledgeBase = None,
+                     cache_only: bool = False) -> Optional[Any]:
+    """按需拉取单条 CVE/NVD 数据并缓存。
+
+    查询顺序: 本地知识库 → NVD API 按需拉取 → 缓存到 kb。
+    无网络时降级返回缓存中的条目或 None, 不静默失败。
+    NVD API 2.0 支持 ?cveId=CVE-YYYY-NNNN 查精确条目。
+    """
+    # 优先查本地缓存
+    if kb is not None and hasattr(kb, 'get'):
+        existing = kb.get(cve_id)
+        if existing is not None:
+            return existing
+
+    if cache_only or not _HAS_URLLIB:
+        return None
+
+    url = f"{_NVD_API_BASE}?cveId={cve_id}"
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "BinMind-CVE/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        vulns = data.get("vulnerabilities", [])
+        if not vulns:
+            return None
+        cve_data = vulns[0].get("cve", {})
+        entry = CVEEntry.from_nvd_item({"cve": cve_data})
+        if kb is not None and hasattr(kb, 'insert'):
+            kb.insert(entry)
+        return entry
+    except Exception as e:
+        print(f"[NVD] fetch_single_cve({cve_id}) failed: {e}")
+        return None

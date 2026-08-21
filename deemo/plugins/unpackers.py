@@ -4,6 +4,7 @@ executables. Each unpacker is optional — if the tool isn't installed,
 the step is silently skipped.
 """
 
+import importlib.util
 import logging
 import os
 import shutil
@@ -96,39 +97,69 @@ def unpack_pyinstaller(path: str, output_dir: str = None) -> Dict:
         with open(path, 'rb') as f:
             data = f.read()
 
-        # Find PyInstaller CArchive magic
-        magic_pos = data.find(b'MEI\014\013\012\013\016')
-        if magic_pos == -1:
+        # CArchive cookie 位于文件尾部：
+        # magic(8) + lengthofpackage(4) + toc offset(4) + toc len(4) + pyvers(4)
+        magic = b'MEI\014\013\012\013\016'
+        magic_pos = data.rfind(magic)
+        if magic_pos == -1 or magic_pos + 20 > len(data):
+            return result
+
+        toc_offset = struct.unpack('>I', data[magic_pos + 12:magic_pos + 16])[0]
+        toc_len = struct.unpack('>I', data[magic_pos + 16:magic_pos + 20])[0]
+
+        toc_start = toc_offset
+        toc_end = toc_offset + toc_len
+        if toc_start > len(data) or toc_end > len(data):
             return result
 
         os.makedirs(output_dir, exist_ok=True)
 
-        # parse table of contents at the end
-        # This is a simplified parser — real PyInstaller format has more fields
-        # For full extraction use pyinstxtractor or unpy2exe
+        # PYC 文件头（magic + flags + timestamp + size，flags=0 时为时间戳模式）
+        pyc_header = importlib.util.MAGIC_NUMBER + b'\x00' * 12
+
         pyc_count = 0
-        pos = magic_pos + 8
-        while pos < len(data) - 16:
-            try:
-                name_len = struct.unpack('<I', data[pos:pos + 4])[0]
-                if name_len > 256 or name_len == 0:
-                    break
-                pos += 4
-                entry_name = data[pos:pos + name_len].rstrip(b'\x00').decode(
-                    'utf-8', errors='replace')
-                pos += name_len
-
-                # skip some fields
-                pos += 12  # position, size, compression flag
-
-                if entry_name.endswith('.pyc'):
-                    name = os.path.basename(entry_name)
-                    with open(os.path.join(output_dir, name), 'wb') as outf:
-                        outf.write(b'\x00' * 16)  # placeholder PYC header
-                    pyc_count += 1
-                    result['pyc_files'].append(name)
-            except (IndexError, struct.error):
+        pos = toc_start
+        while pos + 4 <= toc_end:
+            # TOC 条目：4 字节名字长度 + 名字 + pos/len/ulen/flag 各 4 字节，
+            # 条目按 16 字节边界对齐
+            entry_len = struct.unpack('>I', data[pos:pos + 4])[0]
+            if entry_len == 0 or entry_len > 4096:
                 break
+            if pos + 4 + entry_len > toc_end:
+                break
+            pos += 4
+            raw_name = data[pos:pos + entry_len].rstrip(b'\x00')
+            entry_name = raw_name.decode('utf-8', errors='replace')
+            pos += entry_len
+            align = (16 - (pos % 16)) % 16
+            pos += align
+
+            if pos + 16 > toc_end:
+                break
+            e_pos, e_len, _e_ulen, e_flag = struct.unpack('>IIII',
+                                                          data[pos:pos + 16])
+            pos += 16
+
+            if not entry_name or not e_len:
+                continue
+            if e_pos + e_len > len(data):
+                continue
+
+            blob = data[e_pos:e_pos + e_len]
+            # flag==1 表示 zlib 压缩
+            if e_flag == 1:
+                try:
+                    blob = zlib.decompress(blob)
+                except zlib.error:
+                    _log.debug("zlib decompress failed for %s", entry_name)
+
+            if entry_name.endswith(('.pyc', '.pyo')):
+                name = os.path.basename(entry_name)
+                with open(os.path.join(output_dir, name), 'wb') as outf:
+                    outf.write(pyc_header)
+                    outf.write(blob)
+                pyc_count += 1
+                result['pyc_files'].append(name)
 
         result['success'] = pyc_count > 0
         return result

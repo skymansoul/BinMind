@@ -1,9 +1,4 @@
 """
-动态污点测试 — 数据类与基础功能.
-
-测试内容:
-- DynamicTaintSource / DynamicTaintSink / DynamicTaintFlow / DynamicVulnerability
-
 动态污点分析测试 — Part 2: FridaTaintTracker.
 
 测试 Frida 后端的污点追踪器初始化、脚手架生成、自定义源/汇、兼容格式.
@@ -182,10 +177,6 @@ class TestFridaTaintTracker(unittest.TestCase):
             self.assertIn('type', vuln_data)
             self.assertIn('severity', vuln_data)
             self.assertIn('address', vuln_data)
-
-
-if __name__ == '__main__':
-    unittest.main()
 
 
 """

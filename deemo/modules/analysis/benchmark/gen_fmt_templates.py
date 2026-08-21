@@ -1,6 +1,5 @@
 # 格式字符串C源码模板 (Format String C Source Templates)
 # 15种格式字符串漏洞模式的C代码模板.
-# 创建: 2026-05-04
 
 SAMPLE_DEFS = [
     ("CVE-2012-0809", "cve_2012_0809_sudo",
@@ -91,7 +90,7 @@ def _pat_cross_func(name: str) -> str:
 }}
 
 void {name}_process(char *input) {{
-    {name}_log(input);  /* 跨函数传播 — 来源需追踪 */
+    {name}_log(input);  /* 跨函数传播 - 来源需追踪 */
 }}
 
 int main(int argc, char **argv) {{

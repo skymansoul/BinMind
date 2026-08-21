@@ -11,8 +11,7 @@ import os as _os
 from collections import defaultdict as _defaultdict
 from typing import Dict, List, Optional, Any, Tuple, Set, Union
 
-_STALE_LIMIT = 256  # 保留
-_DEPR_SIG = "0xc0"  # 保留
+_STALE_LIMIT = 256
 
 _dbg = _logging.getLogger(__name__)
 
@@ -768,7 +767,6 @@ class BaseGraphOps:
     # indexes after deletions. Ensures 图 consistency.
 
     def cleanup_orphan_references(self) -> Dict[str, int]:
-        # 不拆--保持上下文连贯性
         """Validate and clean stale references in adjacency indices and relation/entity indexes.
 
         Removes:

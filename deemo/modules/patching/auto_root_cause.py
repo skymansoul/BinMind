@@ -586,8 +586,7 @@ class AutoRootCauseAnalyzer:
                         best_type = ctype
 
         # 寄存器启发式精炼分类
-        # 2026-08-02: 空 registers 时跳过寄存器规则 — 默认 fake 值 'rip':'0'
-        # 不应触发 NULL_DEREFERENCE。
+        # 空 registers 时跳过寄存器规则，默认 fake 值 'rip':'0' 不应触发 NULL_DEREFERENCE
         if context.registers and len(context.registers) > 0:
             for condition, interpretation, boost in _REGISTER_RULES:
                 try:

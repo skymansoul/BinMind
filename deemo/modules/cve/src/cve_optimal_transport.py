@@ -1,6 +1,4 @@
-# 创建: 2026-07-09 19:25
-# 修改: 2026-07-09 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: GW最优传输跨厂商对齐
+# GW最优传输跨厂商对齐
 # 最优传输 — CVE漏洞画像的跨厂商/跨生态系统分布对齐
 #
 # 问题: 不同厂商/生态系统的CVE漏洞分布差异显著.
@@ -223,10 +221,7 @@ def align_vendor_profiles(source_features: List[List[float]],
                           target_features: List[List[float]],
                           source_labels: List[float]
                           ) -> Dict[str, Any]:
-    """一站式: 对齐两个厂商的CVE画像并传输标签.
-
-    Returns: {target_scores, domain_shift, transport_quality}.
-    """
+    """一站式: 对齐两个厂商的 CVE 画像并传输标签, 返回 {target_scores, domain_shift, transport_quality}。"""
     aligner = GromovWassersteinAligner()
     aligner.fit(source_features, target_features)
     target_scores = aligner.transfer_labels(source_labels)

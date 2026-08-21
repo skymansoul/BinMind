@@ -54,7 +54,7 @@ def path_sensitive_analyze(
                             state: Dict[str, PtrState]) -> Tuple[int, int, int, int, Dict[str, PtrState], bool]:
             """递归分析 [start, end) 行区间.
 
-            Returns: (uaf, safe, total, use_line, final_state, guarded)
+            返回 (uaf, safe, total, use_line, final_state, guarded).
             """
             st = dict(state)
             u = 0

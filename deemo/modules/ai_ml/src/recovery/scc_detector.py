@@ -1,9 +1,8 @@
-# created: 2026-08-02
 # Tarjan SCC detection for loop_structure_recovery.py
 from typing import Dict, List, Set
 
 class TarjanSCC:
-    """Tarjan强连通分量检测——在CFG中找循环候选"""
+    """Tarjan强连通分量检测-在CFG中找循环候选"""
     def __init__(self, adjacency: Dict[int, List[int]]):
         self._adj = adjacency
         self._index = 0

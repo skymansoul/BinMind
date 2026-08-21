@@ -23,7 +23,7 @@ from datetime import datetime
 from collections import deque
 
 # 从vuln_mgmt_core引入核心数据模型——规则推理依赖CVEFootprint等类型
-from vuln_detection.src.core.vuln_mgmt_core import (
+from deemo.modules.vuln.detection.src.core.vuln_mgmt_core import (
     CVEFootprint,          # CVE指纹匹配结果传递
     DataFlowPath,          # 数据流路径建模
     InferenceRule,         # 推理规则定义
@@ -630,7 +630,7 @@ class DynamicAnalysisEnvironmentManager:
         self, env_name: str, os_type: str = "ubuntu",
         os_version: str = "20.04", config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        # 保持上下文连贯性，不拆分
+
         env_info: Dict[str, Any] = {"name": env_name, "os_type": os_type,
                                     "os_version": os_version, "status": "creating",
                                     "vagrantfile": "", "snapshot_list": [],

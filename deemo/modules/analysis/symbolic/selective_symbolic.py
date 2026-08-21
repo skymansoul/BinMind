@@ -2,7 +2,7 @@
 """
 选择性符号执行引擎
 
-基于 的选择性状态传播策略
+基于污点的选择性状态传播策略
 仅对污点相关的分支进行符号化约束求解
 非污点路径保持具体执行以减少状态爆炸
 
@@ -11,7 +11,7 @@
 - 符号执行仅在污点影响范围内展开
 - 非污点路径使用具体值快速通过
 
-参考 的 def-使用 链引导策略
+采用 def-use 链引导的剪枝策略
 """
 
 import logging
@@ -58,9 +58,9 @@ class TaintRegion:
 class SelectiveState:
     """
     选择性符号状态
-    
+
     区别于全符号状态，仅标记有限的符号变量和约束
-    参考 的剪枝状态表示
+    采用剪枝状态表示
     """
     addr: int = 0
     state_id: str = ""
@@ -91,18 +91,17 @@ class SelectiveExecutionResult:
 class TaintPropagator:
     """
     污点传播器（寄存器级 + 内存级）
-    
+
     轻量实现：基于指令模式匹配的污点传播
     避免重量级 IR 转换
-    参考 的零开销推断策略
     """
 
     # x86-64 数据移动指令（源→目标传播模式）
     _PROPAGATE_PATTERNS = [
         # mov dst, src
-        (re.compile(r'mov\s+(\w+),\s*(\w+)', re.I), (2, 1)),
+        (re.compile(r'mov\s+(\w+),\s*(\w+)', re.I), (1, 2)),
         # lea dst, [src]
-        (re.compile(r'lea\s+(\w+),\s*\[(\w+)', re.I), (2, 1)),
+        (re.compile(r'lea\s+(\w+),\s*\[(\w+)', re.I), (1, 2)),
         # push src (→ rsp 指向的内存)
         (re.compile(r'push\s+(\w+)', re.I), None),
         # pop dst
@@ -135,11 +134,7 @@ class TaintPropagator:
         tainted_regs: Optional[Set[str]] = None,
         tainted_mem: Optional[Set[int]] = None
     ) -> Tuple[Set[str], Set[int]]:
-        """
-        单条指令的污点传播
-        
-        返回更新后的 (tainted_regs, tainted_mem)
-        """
+        """单条指令的污点传播, 返回更新后的 (tainted_regs, tainted_mem)。"""
         new_regs = set(tainted_regs or set())
         new_mem = set(tainted_mem or set())
 
@@ -151,20 +146,18 @@ class TaintPropagator:
                 new_regs.discard(cleared_reg)
                 return new_regs, new_mem
 
-        # 传播模式检查
-        for pat, (dst_idx, src_idx) in [
-            (p, (2, 1)) for p, (d, s) in [
-                (self._PROPAGATE_PATTERNS[0][0], self._PROPAGATE_PATTERNS[0][1])
-            ]
-        ]:
-            pat, indices = self._PROPAGATE_PATTERNS[0]
+        # 传播模式检查 (push/pop/xchg 等无源目标索引的模式跳过)
+        for pat, indices in self._PROPAGATE_PATTERNS:
+            if indices is None:
+                continue
             m = pat.match(instruction.strip())
-            if m and indices:
-                dst, src = m.group(indices[0]).lower(), m.group(indices[1]).lower()
-                if src in tainted_regs:
-                    new_regs.add(dst)
-                elif dst in tainted_regs:
-                    pass  # 如果目标是已污点寄存器，不自动清除（保守策略）
+            if not m:
+                continue
+            dst, src = m.group(indices[0]).lower(), m.group(indices[1]).lower()
+            if src in tainted_regs:
+                new_regs.add(dst)
+            elif dst in tainted_regs:
+                pass  # 如果目标是已污点寄存器，不自动清除（保守策略）
 
         # 二元操作: add/sub/or//xor dst, src
         m = self._BINARY_OP.match(instruction.strip())
@@ -176,12 +169,7 @@ class TaintPropagator:
         return new_regs, new_mem
 
     def is_sink(self, instruction: str) -> Optional[str]:
-        """
-        检查是否为敏感汇点指令
-        
-        返回:
-        汇点类型字符串或 None
-        """
+        """检查是否为敏感汇点指令, 返回汇点类型字符串或 None。"""
         call_match = re.search(r'call\s+(.+)', instruction, re.I)
         if not call_match:
             return None
@@ -264,7 +252,7 @@ class SelectiveSymbolicExecutor:
     ) -> SelectiveExecutionResult:
         """
         基于污点引导的选择性符号执行
-        
+
         核心算法：
         1. 初始化具体状态，仅将污点输入区域设为符号
         2. 步进执行，对每条指令检查：
@@ -272,15 +260,9 @@ class SelectiveSymbolicExecutor:
         b. 是否遇到敏感汇点 + 污点参数 → 报告漏洞
         c. 是否无污点且无分支 → 快速具体执行
         3. 污点约束剪枝：在非污点分支处不产生新状态
-        
-        Args:
-        taint_regions: 污点输入区域定义
-        target_addr: 目标地址
-        avoid_addrs: 规避地址
-        max_paths: 最大路径数
-        
-        返回:
-        SelectiveExecutionResult
+
+        参数: taint_regions 污点输入区域定义, target_addr 目标地址,
+        avoid_addrs 规避地址, max_paths 最大路径数。
         """
         result = SelectiveExecutionResult(paths_found=0, tainted_paths=0)
 
@@ -304,7 +286,7 @@ class SelectiveSymbolicExecutor:
 
         sm = self.project.factory.simulation_manager(state)
 
-        # 选择性探索
+        # 选择性探索簿记: 镜像活跃状态的优先级
         selective_states: List[SelectiveState] = [
             SelectiveState(addr=state.addr, priority=1.0)
         ]
@@ -312,26 +294,22 @@ class SelectiveSymbolicExecutor:
         step_count = 0
         vulns_found = 0
 
-        while step_count < self.max_steps and len(selective_states) > 0:
+        while step_count < self.max_steps and len(sm.active) > 0:
             if step_count % 500 == 0:
                 logger.debug(
                     f"[SelectiveSym] step={step_count}, "
-                    f"active_states={len(selective_states)}"
+                    f"active_states={len(sm.active)}"
                 )
-
-            # 按优先级排序（污染路径优先）
-            selective_states.sort(key=lambda s: s.priority, reverse=True)
-            sel_state = selective_states.pop(0)
 
             # 推进 angr 状态
             try:
-                sm = self.project.factory.simulation_manager(
-                    self.project.factory.entry_state()
-                )
                 sm.step()
             except Exception:
                 step_count += 1
                 continue
+
+            # 按优先级排序（污染路径优先）
+            selective_states.sort(key=lambda s: s.priority, reverse=True)
 
             for active in sm.active:
                 result.paths_found += 1
@@ -345,15 +323,12 @@ class SelectiveSymbolicExecutor:
                     if vuln:
                         result.vulnerabilities.append(vuln)
                         vulns_found += 1
-                        if vulns_found >= 10:
-                            break
 
                 # 动态调整优先级
                 priority = 1.5 if is_tainted else 0.5
                 selective_states.append(
                     SelectiveState(
                         addr=active.addr,
-                        depth=sel_state.depth + 1,
                         priority=priority
                     )
                 )
@@ -377,10 +352,9 @@ class SelectiveSymbolicExecutor:
     ) -> Any:
         """
         创建部分符号化的标准输入
-        
+
         仅将污点区域的字节设为符号变量
         其余填充具体值（零）
-        参考 [Hybrid Taint 2025] 的选择性符号化策略
         """
         if not _HAS_ANGR:
             return b'\x00' * size
@@ -460,15 +434,10 @@ def run_selective_symbolic_execution(
 ) -> Dict[str, Any]:
     """
     便捷函数：选择性符号执行
-    
-    Args:
-    binary_path: 二进制文件路径
-    taint_spec: 污点规格，如 [{"启动": 0, "end": 256, "type": "stdin"}]
-    target_addr: 目标地址
-    timeout_seconds: 超时
-    
-    返回:
-    执行结果字典
+
+    参数: binary_path 二进制文件路径, taint_spec 污点规格
+    (如 [{"start": 0, "end": 256, "type": "stdin"}]), target_addr
+    目标地址, timeout_seconds 超时。
     """
     if not _HAS_ANGR:
         return {'error': 'angr 不可用', 'success': False}

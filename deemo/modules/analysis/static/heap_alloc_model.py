@@ -13,7 +13,6 @@
 # jemalloc 5.3: size class lookup table
 # tcmalloc: page-level sizing
 #
-# 创建: 2026-04-29
 
 from enum import Enum
 from typing import Dict, Optional, Tuple

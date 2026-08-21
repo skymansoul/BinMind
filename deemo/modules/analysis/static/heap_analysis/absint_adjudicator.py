@@ -1,4 +1,4 @@
-"""抽象解释判定器 — 消费引擎收集的分配/写入/危险调用数据, 输出最终判定.
+"""抽象解释判定器 - 消费引擎收集的分配/写入/危险调用数据, 输出最终判定.
 
 创建: 2024-09-26
 用途: 独立执行安全判定逻辑.
@@ -153,7 +153,7 @@ def step_add_sub(state: AbsState, ins: ParsedInstruction):
 # 判定器
 
 class AbsintAdjudicator:
-    """抽象解释判定器 — 消费引擎中间数据, 输出最终安全判定."""
+    """抽象解释判定器 - 消费引擎中间数据, 输出最终安全判定."""
 
     def __init__(self):
         self._narrower = BackwardConstraintNarrower()

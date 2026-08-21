@@ -1,6 +1,5 @@
-# Ghidra headless脚本自动化 —— 批量分析二进制并导出漏洞相关特征。
+# Ghidra headless脚本自动化 - 批量分析二进制并导出漏洞相关特征。
 # 需要: Ghidra安装目录 + analyzeHeadless可执行文件。
-# 创建: 2026-04-23
 
 import os, subprocess, time
 

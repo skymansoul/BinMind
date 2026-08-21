@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-07-05  |  调用点契约推断
-# 修改: 2026-07-05  |  审计后补充文件头与错误处理
 #
 """
-语义补丁完整性验证——调用点契约推断器。
+语义补丁完整性验证-调用点契约推断器。
 
 技术问题:
   现有补丁质量评估（patch_quality_evaluator）仅做静态模式匹配，
@@ -15,9 +13,9 @@
   构建函数应有的行为边界。补丁必须使修复后代码满足此边界。
 
 创新点:
-  1. 调用点契约挖掘——从参数约束与实际使用模式反推前置条件
-  2. 边界值合成——基于类型信息与调用上下文生成契约边界测试用例
-  3. 与patch_quality_evaluator互补——后者检查代码模式，前者检查语义完备性
+  1. 调用点契约挖掘-从参数约束与实际使用模式反推前置条件
+  2. 边界值合成-基于类型信息与调用上下文生成契约边界测试用例
+  3. 与patch_quality_evaluator互补-后者检查代码模式，前者检查语义完备性
 
 与现有工作差异:
   - COBRA/SRIF推断函数签名（非契约），用于漏洞检测而非补丁验证
@@ -39,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class FunctionContract:
-    """函数的隐式契约——从调用点推断的行为边界"""
+    """函数的隐式契约-从调用点推断的行为边界"""
     function_name: str
     # 前置条件: 调用者必须保证的条件
     preconditions: List[str] = field(default_factory=list)
@@ -51,7 +49,7 @@ class FunctionContract:
     nonnull_params: Set[str] = field(default_factory=set)
     # 返回码约束: 返回值检查模式
     return_check_pattern: str = ""        # always_checked | sometimes_checked | unchecked
-    # 调用点统计——契约推断的证据基础
+    # 调用点统计-契约推断的证据基础
     call_site_count: int = 0
     evidence_lines: List[int] = field(default_factory=list)
 
@@ -87,25 +85,25 @@ class ContractInferrer:
 
     # 调用点前置检查模式
     _PRECONDITION_PATTERNS = [
-        # if (ptr != NULL) → nonnull约束
+        # if (ptr != NULL) - nonnull约束
         (r'if\s*\(\s*(\w+)\s*!=\s*(?:NULL|0|nullptr)\s*\)', 'nonnull'),
-        # if (len <= size) → 缓冲区大小约束
+        # if (len <= size) - 缓冲区大小约束
         (r'if\s*\(\s*(\w+)\s*<=\s*(\w+)\s*\)', 'bound'),
-        # assert(ptr != NULL) → 断言前置条件
+        # assert(ptr != NULL) - 断言前置条件
         (r'assert\s*\(\s*(\w+)\s*!=\s*(?:NULL|0|nullptr)\s*\)', 'assert_nonnull'),
-        # if (index < max) → 索引边界
+        # if (index < max) - 索引边界
         (r'if\s*\(\s*(\w+)\s*<\s*(\w+)\s*\)', 'index_bound'),
-        # if (size > 0) → 正数约束
+        # if (size > 0) - 正数约束
         (r'if\s*\(\s*(\w+)\s*>\s*0\s*\)', 'positive'),
     ]
 
-    # 调用后检查模式——推断后置条件
+    # 调用后检查模式-推断后置条件
     _POSTCONDITION_PATTERNS = [
-        # if (ret < 0) → 错误处理期望
+        # if (ret < 0) - 错误处理期望
         (r'if\s*\(\s*(\w+)\s*<\s*0\s*\)', 'error_check'),
-        # if (ret == -1) → 精确错误码检查
+        # if (ret == -1) - 精确错误码检查
         (r'if\s*\(\s*(\w+)\s*==\s*-1\s*\)', 'exact_error'),
-        # if (!ptr) after call → 空返回值检查
+        # if (!ptr) after call - 空返回值检查
         (r'if\s*\(\s*!\s*(\w+)\s*\)', 'null_return_check'),
         # errno check
         (r'if\s*\(\s*errno\s*==', 'errno_check'),
@@ -129,7 +127,7 @@ class ContractInferrer:
         contract.call_site_count = len(calls)
 
         if not calls:
-            _log.debug("函数%s无调用点——契约为空", function_name)
+            _log.debug("函数%s无调用点-契约为空", function_name)
             return contract
 
         # 对每个调用点提取前后3行的上下文
@@ -176,7 +174,7 @@ class ContractInferrer:
 
     def _find_call_sites(self, lines: List[str],
                           func_name: str) -> List[int]:
-        """在源码中定位函数调用点——返回行号列表(0-based)。
+        """在源码中定位函数调用点-返回行号列表(0-based)。
 
         使用词边界匹配避免子串误匹配（如'free'误匹配'freeze'）。
         """
@@ -202,14 +200,14 @@ class ContractInferrer:
 def infer_param_bounds(source_lines: List[str],
                         function_name: str,
                         param_names: List[str]) -> Dict[str, Tuple[float, float]]:
-    """从调用点推断参数边界——用于合成测试值。
+    """从调用点推断参数边界-用于合成测试值。
 
     对每个参数:
       - 扫描所有调用点中作为该参数传入的表达式
       - 统计传入值的范围（常量、sizeof表达式、数组长度等）
       - 返回[min, max]边界估计
 
-    返回{param_name: (min_val, max_val)}——用于补丁完备性的边界测试。
+    返回{param_name: (min_val, max_val)}-用于补丁完备性的边界测试。
     """
     bounds = {}
     pattern = re.compile(r'\b' + re.escape(function_name) + r'\s*\((.*?)\)')
@@ -218,7 +216,7 @@ def infer_param_bounds(source_lines: List[str],
         if not m:
             continue
         args_str = m.group(1)
-        # 简单分割——不处理嵌套括号
+        # 简单分割-不处理嵌套括号
         args = [a.strip() for a in args_str.split(',')]
         for i, arg_expr in enumerate(args):
             if i >= len(param_names):
@@ -235,17 +233,17 @@ def infer_param_bounds(source_lines: List[str],
 
 
 def _extract_numeric_hint(expr: str) -> Optional[float]:
-    """从参数表达式中提取数值提示——常量/sizeof/strlen返回值"""
+    """从参数表达式中提取数值提示-常量/sizeof/strlen返回值"""
     expr = expr.strip()
     # 直接常量
     try:
         return float(expr)
     except ValueError:
         pass
-    # sizeof表达式 → 提示为大缓冲区
+    # sizeof表达式 - 提示为大缓冲区
     if 'sizeof' in expr:
         return 256.0  # 典型缓冲区大小下限
-    # strlen → 提示为字符串长度
+    # strlen - 提示为字符串长度
     if 'strlen' in expr:
         return 64.0
     # 十六进制常量

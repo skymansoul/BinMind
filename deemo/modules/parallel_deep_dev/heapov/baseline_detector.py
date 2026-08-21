@@ -9,12 +9,12 @@
 
 from typing import List
 
-from heapov import cparser as cp
-from heapov.dataflow import build_env
-from heapov.alloc_extract import extract_allocs
-from heapov.write_extract import extract_writes
-from heapov.interval import Interval, eval_expr
-from heapov.expr_ast import expr_str, Const
+from . import cparser as cp
+from .dataflow import build_env
+from .alloc_extract import extract_allocs
+from .write_extract import extract_writes
+from .interval import Interval, eval_expr
+from .expr_ast import expr_str, Const
 
 
 class BaselineDetector:

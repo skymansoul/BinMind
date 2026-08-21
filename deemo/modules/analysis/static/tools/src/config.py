@@ -1,14 +1,9 @@
-"""配置 loading YAML parsing, environment variable overrides
-schema 校验
+"""Config loading, YAML parsing, environment variable overrides,
+schema validation
 
-Environment variables prefixed ATOOLS_ automatically applied
+Environment variables prefixed ATOOLS_ are automatically applied as
 overrides. Nested keys specified via double underscore or dot notation:
 e.g., ATOOLS_ANALYSIS__TIMEOUT_SECONDS -> analysis.timeout_seconds
-
-INTJ: Env var override 使用 dot-notation rather flat keys because
-dot-notation preserves hierarchical structure 配置 flat keys
-require a naming convention 's harder remember
-dot-notation, env var name mirrors YAML path exactly
 """
 
 import logging
@@ -47,21 +42,10 @@ _RANGE_CONSTRAINTS: dict[str, tuple[Optional[float], Optional[float]]] = {
 
 def load_config(path: str, env_prefix: str = _DEFAULT_ENV_PREFIX) -> dict[str, Any]:
     """加载 YAML 配置 file apply environment variable overrides
-    
+
     Environment variables prefix converted lowercase
     dot-notation 配置 keys. For example, ``ATOOLS_ANALYSIS_TIMEOUT_SECONDS``
     becomes ``analysis.timeout_seconds``
-    
-    Args:
-    path: Path YAML 配置 file (e.g. ``配置/default.yaml``)
-    env_prefix: Prefix for environment variables override
-    配置 values. Defaults ``ATOOLS_``
-    
-    返回:
-    Merged 配置 dictionary
-    
-    Raises:
-    FileNotFoundError: 配置 file exist
     """
     from .utils import load_yaml_config
 
@@ -99,17 +83,8 @@ def load_config(path: str, env_prefix: str = _DEFAULT_ENV_PREFIX) -> dict[str, A
 
 def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     """校验 配置 schema: required keys, types, value ranges
-    
+
     // validate_config这个函数可能写得有点over-engineered，但以后扩展方便
-    
-    Args:
-    配置: 配置 dict 校验
-    
-    返回:
-    校验d 配置 (unchanged valid)
-    
-    Raises:
-    ValueError: a required key missing, wrong type, or out range
     """
     errors: list[str] = []
 
@@ -153,7 +128,7 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
                     f"Config key '{key_path}' value {value} is above maximum {hi}"
                 )
         except TypeError:
-            # value 't compared (e.g. string vs int), skip range 检查
+            # value 无法比较(如 string vs int), 跳过 range 检查
             # Type constraints 校验d separately above
             pass
 
@@ -167,16 +142,7 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def _deep_get(data: dict[str, Any], key_path: str, sep: str = ".") -> Any:
-    """a nested value a dict using a dot-separated key path
-    
-    Args:
-    data: Dict 遍历
-    key_path: Dot-separated path, e.g. 'analysis.timeout_seconds'
-    sep: Key separator (default '.')
-    
-    返回:
-    value path, or None found
-    """
+    """a nested value a dict using a dot-separated key path"""
     keys = key_path.split(sep)
     current: Any = data
     for key in keys:
@@ -191,14 +157,8 @@ def _deep_get(data: dict[str, Any], key_path: str, sep: str = ".") -> Any:
 
 def _deep_set(data: dict[str, Any], key_path: str, value: Any, sep: str = ".") -> None:
     """Set a nested value a dict using a dot-separated key path
-    
+
     创建 intermediate dicts needed
-    
-    Args:
-    data: Dict modify -place
-    key_path: Dot-separated path, e.g. 'analysis.timeout_seconds'
-    value: Value set
-    sep: Key separator (default '.')
     """
     keys = key_path.split(sep)
     current = data

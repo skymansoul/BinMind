@@ -13,11 +13,6 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-# 原文件顶层占位符 —— 保持兼容
-ProtocolReverser = None
-ProtocolInferResult = None
-WiresharkGenerator = None
-
 @dataclass
 class FieldInfo:
     """协议字段描述。"""

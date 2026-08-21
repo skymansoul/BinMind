@@ -2,13 +2,16 @@
 UAF深度检测统一入口 — 集成语义VRF + 增强VRF(字段/Realloc/循环/跨函数) + CFG + TARPS.
 提供 analyze_uaf_deep() 作为 analyze_uaf() 的增强替代.
 """
+import logging
 from typing import Dict, List
+
+_log = logging.getLogger(__name__)
 
 
 def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
     """UAF深度分析: 基础VRF + 增强VRF(字段/realloc/循环/跨函数) + TARPS.
 
-    Returns: 与 analyze_uaf() 兼容的 Dict, 额外包含各层级计数.
+    返回与 analyze_uaf() 兼容的 Dict, 额外包含各层级计数.
     """
     result = {
         'total': 0, 'confirmed': 0, 'likely': 0,
@@ -48,8 +51,8 @@ def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
         result['detected'] = base['detected']
         for s in base.get('sites', []):
             seen_ptrs.add(f'base:{s.ptr_name}:{s.free_line}')
-    except Exception:
-        pass
+    except Exception as _e:
+        _log.warning('uaf_semantic_vrf failed: %s', _e)
 
     # Level 2: 增强VRF (结构体字段 + Realloc旧指针 + 循环double-free + 跨函数double-free)
     try:
@@ -60,8 +63,8 @@ def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
         result['realloc_count'] = enhanced.get('by_type', {}).get('realloc_old', 0)
         result['loop_df_count'] = enhanced.get('by_type', {}).get('loop_double_free', 0)
         result['interproc_count'] = enhanced.get('by_type', {}).get('interproc_double_free', 0)
-    except Exception:
-        pass
+    except Exception as _e:
+        _log.warning('uaf_field_realloc_vrf failed: %s', _e)
 
     # Level 3: Realloc 别名悬空检测 (补充增强VRF遗漏的realloc场景)
     try:
@@ -69,8 +72,8 @@ def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
         realloc_findings = check_realloc_uaf(code)
         _merge_findings(realloc_findings, 'realloc')
         result['realloc_count'] += len(realloc_findings)
-    except Exception:
-        pass
+    except Exception as _e:
+        _log.warning('uaf_realloc_integration failed: %s', _e)
 
     # Level 4: 跨函数CFG UAF检测 (alloc/free/use分散在不同函数)
     try:
@@ -82,8 +85,8 @@ def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
                 interproc_uafs = builder.find_cross_function_uaf(node)
                 _merge_findings(interproc_uafs, 'cfg')
                 result['interproc_count'] += len(interproc_uafs)
-    except Exception:
-        pass
+    except Exception as _e:
+        _log.warning('uaf_interproc_cfg failed: %s', _e)
 
     return result
 

@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-07-27  |  字节模式挖掘器
-# 修改: 2026-07-27  |  审计后补充文件头与错误处理
-#
 """
-二进制YARA规则合成——跨编译器弹性字节模式挖掘。
+二进制YARA规则合成-跨编译器弹性字节模式挖掘。
 
 技术问题:
   现有YARA规则生成方法存在局限:
@@ -12,7 +9,7 @@
   (c) 基于字符串的规则: 仅适用于明文常量, 无法捕获函数逻辑
 
   一个易受攻击的函数经不同编译器/优化级别编译后,
-  字节码完全不同但语义等价——传统字节级YARA规则失效。
+   字节码完全不同但语义等价-传统字节级YARA规则失效。
 
 解决方案:
   基于ORCAS支配增强语义图的思想:
@@ -25,12 +22,12 @@
   之所以选择助记符序列作为锚点:
     - 助记符(mov/cmp/jmp)跨编译器高度一致(语义等价)
     - 操作数(寄存器/立即数)因寄存器分配/立即数编码差异变化
-    - 助记符序列定位→字节模式提取→通配符填充操作数变化位
+    - 助记符序列定位-字节模式提取-通配符填充操作数变化位
 
 与Threatray/GenRex的差异:
   Threatray: 手工+代码相似度, 不自动合成YARA规则
   GenRex: 从artifact提取正则, 不利用指令语义
-  本模块: 助记符锚点→字节模式→通配符→验证, 全自动+跨编译器弹性
+  本模块: 助记符锚点-字节模式-通配符-验证, 全自动+跨编译器弹性
 """
 
 import re
@@ -48,7 +45,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class BytePattern:
-    """YARA兼容的字节模式——含通配符"""
+    """YARA兼容的字节模式-含通配符"""
     pattern_id: str
     # 字节序列: 每个位置为(byte_value, is_wildcard)
     bytes_raw: List[Tuple[int, bool]] = field(default_factory=list)
@@ -66,7 +63,7 @@ class BytePattern:
 
 @dataclass
 class FunctionPatterns:
-    """单个函数的模式集合——用于合成YARA规则"""
+    """单个函数的模式集合-用于合成YARA规则"""
     function_name: str
     function_hash: str
     patterns: List[BytePattern] = field(default_factory=list)
@@ -82,22 +79,22 @@ class PatternMiner:
     """从二进制函数中挖掘跨编译器弹性的字节模式。
 
     算法流程:
-      1. 反汇编→提取助记符序列(语义骨架)
-      2. 滑动窗口(窗口=5-8条指令)→计算每窗口的稀有度分数
-      3. 对Top-K稀有窗口→反向映射至字节码范围
+      1. 反汇编-提取助记符序列(语义骨架)
+      2. 滑动窗口(窗口=5-8条指令)-计算每窗口的稀有度分数
+      3. 对Top-K稀有窗口-反向映射至字节码范围
       4. 在字节范围内运行稳定字节检测(变体间的公共字节)
       5. 对非公共字节替换为'?'(通配符)
       6. 在良性函数库中验证独特性
     """
 
-    # 常见助记符——高频出现, 非稀有窗口
+    # 常见助记符-高频出现, 非稀有窗口
     _COMMON_MNEMONICS = {
         'mov', 'lea', 'push', 'pop', 'add', 'sub', 'xor',
         'cmp', 'test', 'jmp', 'je', 'jne', 'call', 'ret',
         'nop', 'int3', 'and', 'or',
     }
 
-    # 稀有助记符——出现时窗口更有区分度
+    # 稀有助记符-出现时窗口更有区分度
     _RARE_MNEMONICS = {
         'syscall', 'cpuid', 'rdtsc', 'in', 'out', 'cli', 'sti',
         'xlat', 'bswap', 'cmpxchg', 'xadd', 'rdrand', 'rdseed',
@@ -139,7 +136,7 @@ class PatternMiner:
                                      function_hash=hashlib.md5(
                                          function_bytes).hexdigest()[:12])
 
-        # 滑动窗口→稀有度评分
+        # 滑动窗口-稀有度评分
         window_scores = []
         for i in range(len(mnemonics) - self._window + 1):
             win = mnemonics[i:i + self._window]
@@ -150,7 +147,7 @@ class PatternMiner:
         window_scores.sort(key=lambda x: x[1], reverse=True)
         top_windows = window_scores[:self._top_k]
 
-        # 对每窗口→字节模式提取
+        # 对每窗口-字节模式提取
         patterns = []
         for idx, score, win_mnems in top_windows:
             if score < 0.3:
@@ -166,12 +163,12 @@ class PatternMiner:
             if len(byte_range) < 3:
                 continue
 
-            # 稳定字节检测——保留公共字节, 其余通配
+            # 稳定字节检测-保留公共字节, 其余通配
             stable_bytes = self._find_stable_bytes(byte_range)
             wc_ratio = sum(1 for _, is_wc in stable_bytes if is_wc) / max(len(stable_bytes), 1)
 
             if wc_ratio > 0.6:
-                continue  # 通配符过多——区分度不足
+                continue  # 通配符过多-区分度不足
 
             patterns.append(BytePattern(
                 pattern_id=f"{function_name}_{idx}",
@@ -190,7 +187,7 @@ class PatternMiner:
                 1.0 / max(len(patterns), 1) if patterns else 1.0, 3))
 
     def _window_rarity(self, mnemonics: List[str]) -> float:
-        """窗口稀有度——稀有助记符越多, 分数越高"""
+        """窗口稀有度-稀有助记符越多, 分数越高"""
         score = 0.0
         for m in mnemonics:
             if m in self._RARE_MNEMONICS:
@@ -200,9 +197,9 @@ class PatternMiner:
         return min(1.0, score / self._window)
 
     def _find_stable_bytes(self, data: bytes) -> List[Tuple[int, bool]]:
-        """检测字节序列中的稳定字节——启发式: 非0x00/0xFF/0xCC的字节视为稳定。
+        """检测字节序列中的稳定字节-启发式: 非0x00/0xFF/0xCC的字节视为稳定。
 
-        简化版本——完整版需多个编译器变体对比取交集。
+        简化版本-完整版需多个编译器变体对比取交集。
         当前实现用于单编译器产物的初始模式提取。
         """
         result = []

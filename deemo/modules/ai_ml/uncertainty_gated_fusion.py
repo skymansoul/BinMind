@@ -1,4 +1,4 @@
-# 不确定性门控双通道融合——动态加权而非固定权重
+# 不确定性门控双通道融合-动态加权而非固定权重
 #
 # 核心问题: two_channel_vuln_detector.py使用两个通道（控制流+数据流）
 # 独立推理后取平均或固定加权融合。但对不同样本，两个通道的可靠性不同:
@@ -9,11 +9,11 @@
 # 技术方案:
 #   1. 每通道不确定性估计: 使用MC Dropout对每个通道独立估计预测不确定性
 #      (预测熵或方差)
-#   2. 不确定性门控: 融合权重与不确定性成反比——
+#   2. 不确定性门控: 融合权重与不确定性成反比-
 #      w_cfg = σ(-uncertainty_cfg) / (σ(-uncertainty_cfg) + σ(-uncertainty_dataflow))
 #   3. 自适应融合: 高确定性通道获得更高权重，低确定性通道被抑制
 #   4. 通道一致性惩罚: 当两通道高度不一致时（预测方向相反），
-#      降低最终置信度——这是两个通道各自高置信但互相矛盾的信号
+#      降低最终置信度-这是两个通道各自高置信但互相矛盾的信号
 #
 # 新颖性:
 # 首次将不确定性门控用于多通道二进制漏洞检测融合
@@ -34,7 +34,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -60,7 +59,7 @@ class GatedFusionResult:
 
 
 class UncertaintyGatedFusion:
-    """不确定性门控——动态加权多通道预测融合。
+    """不确定性门控-动态加权多通道预测融合。
 
     融合权重公式:
       u_i = uncertainty_i（预测熵或MC方差）
@@ -69,7 +68,7 @@ class UncertaintyGatedFusion:
     通道一致性:
       agreement = cosine(emb_cfg, emb_dataflow)
       若两通道预测方向相反(agreement < 0)且各自都高置信度，
-      则降低最终置信度——这是一个有价值的"矛盾信号"。
+      则降低最终置信度-这是一个有价值的"矛盾信号"。
     """
 
     def __init__(self,
@@ -126,14 +125,7 @@ class UncertaintyGatedFusion:
     def fuse(self,
              channel_outputs: Dict[str, ChannelOutput]
              ) -> GatedFusionResult:
-        """基于不确定性的门控融合。
-
-        Args:
-            channel_outputs: {channel_name: ChannelOutput}
-
-        Returns:
-            GatedFusionResult with fused prediction and confidence
-        """
+        """基于不确定性的门控融合。"""
         if not channel_outputs:
             return GatedFusionResult(
                 fused_prediction=0.5, fused_confidence=0.0,

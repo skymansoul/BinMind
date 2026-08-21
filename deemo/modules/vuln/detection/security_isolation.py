@@ -1,4 +1,4 @@
-# 多级安全隔离执行框架。代码脱敏→沙箱选择→安全执行→结果净化流水线。
+# 多级安全隔离执行框架。代码脱敏-沙箱选择-安全执行-结果净化流水线。
 # gVisor/Docker/Firecracker/Subprocess四级回退链，优先最强隔离等级。
 # gVisor论文(SOSP'17)哨兵架构及Kata Containers VM级隔离策略。
 
@@ -154,7 +154,7 @@ class FirecrackerExecutor(SandboxExecutor):
                 timeout: int = 300, working_dir: Optional[str] = None) -> Dict[str, Any]:
         if not self.firecracker_path:
             return {'success': False, 'error': 'Firecracker不可用'}
-        return {'success': False, 'error': 'Firecracker执行需VM配置——回退至Docker', 'sandbox_type': 'firecracker'}
+        return {'success': False, 'error': 'Firecracker执行需VM配置-回退至Docker', 'sandbox_type': 'firecracker'}
 
 
 class DockerExecutor(SandboxExecutor):

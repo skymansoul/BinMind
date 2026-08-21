@@ -1,5 +1,4 @@
 # 批量扫描调度 — 调用HeapOverflowDetector分析所有编译好的样本
-# 创建: 2026-07-23
 
 import os, sys, json, time, glob
 

@@ -1,5 +1,5 @@
 # created: 2026-06-18
-# UAF状态机检测——追踪内存分配→释放→使用的完整生命周期
+# UAF状态机检测-追踪内存分配→释放→使用的完整生命周期
 # 与gnn_vulnerability_detector.py的纯函数名匹配不同，
 # 此处用状态机建模同一指针对象的状态转移
 #
@@ -16,7 +16,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +39,7 @@ class PointerTracker:
 
 
 class UAFStateMachine:
-    """UAF状态机——在函数CFG内追踪指针生命周期。
+    """UAF状态机-在函数CFG内追踪指针生命周期。
 
     三个关键转移:
       ALLOC→FREE: mov rdi, ptr; call free → ptr状态变为FREED
@@ -66,17 +65,7 @@ class UAFStateMachine:
                           cfg_edges: List[Tuple[int, int]],
                           func_args: Optional[List[str]] = None
                           ) -> List[PointerTracker]:
-        """分析单个函数内的所有指针生命周期。
-
-        Args:
-            instructions: 汇编指令列表
-            bb_boundaries: 基本块边界 [(start_idx, end_idx), ...]
-            cfg_edges: 控制流边 [(from_bb, to_bb), ...]
-            func_args: 函数参数(用于追踪外部传入的指针)
-
-        Returns:
-            所有被追踪的PointerTracker，其中is_vulnerable=True的为UAF
-        """
+        """分析单个函数内的所有指针生命周期。"""
         trackers: Dict[str, PointerTracker] = {}
         n = len(instructions)
 
@@ -88,7 +77,7 @@ class UAFStateMachine:
             # 分配检测: mov reg, call malloc → reg状态=ALLOCATED
             alloc_m = self._alloc_pattern.search(instr)
             if alloc_m and 'call' in instr:
-                # 查找前一条指令——通常将返回值mov到寄存器
+                    # 查找前一条指令-通常将返回值mov到寄存器
                 if i > 0:
                     prev = instructions[i-1].strip().lower()
                     m_mov = re.match(r'mov\s+(\w+),\s*rax', prev) if 'call' in instr else None
@@ -136,7 +125,7 @@ class UAFStateMachine:
     def _resolve_free_target(self,
                               instructions: List[str],
                               free_idx: int) -> Optional[str]:
-        """解析free调用的目标指针——查找free之前的mov rdi, ptr"""
+        """解析free调用的目标指针-查找free之前的mov rdi, ptr"""
         for j in range(free_idx - 1, max(-1, free_idx - 4), -1):
             instr = instructions[j].strip().lower()
             # mov rdi, reg
@@ -168,16 +157,7 @@ class UAFStateMachine:
                                  callee_trackers: List[PointerTracker],
                                  call_sites: List[int]
                                  ) -> List[PointerTracker]:
-        """跨函数扩展——若子函数中有UAF，检查父函数中是否继续使用该指针。
-
-        Args:
-            caller_instrs: 父函数指令
-            callee_trackers: 子函数中检测到的UAF追踪器
-            call_sites: 父函数中调用子函数的指令索引
-
-        Returns:
-            父函数层级的新追踪器(若发现cross-function UAF)
-        """
+        """跨函数扩展-若子函数中有UAF，检查父函数中是否继续使用该指针。"""
         new_trackers = []
         for tracker in callee_trackers:
             if not tracker.is_vulnerable:

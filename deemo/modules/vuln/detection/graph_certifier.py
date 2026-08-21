@@ -1,13 +1,12 @@
 # coding: utf-8
-# 创建: 2024-09-02  |  图嵌入认证鲁棒性
-# 修改: 2024-09-02  |  审计后补充文件头与错误处理
+# |  审计后补充文件头与错误处理
 #
 """
-图嵌入认证鲁棒性证明器——随机平滑在图域的自适应实现。
+图嵌入认证鲁棒性证明器-随机平滑在图域的自适应实现。
 
 理论基础:
   Cohen et al.: 随机平滑为分类器提供L2认证半径。
-  本模块将该框架扩展至离散图域——噪声机制从高斯替换为随机边翻转。
+  本模块将该框架扩展至离散图域-噪声机制从高斯替换为随机边翻转。
 
 认证半径推导:
   设p_A = majority_count / N为胜出类别的经验频率。
@@ -15,13 +14,13 @@
   认证半径: 在R次边翻转后，预测不变的最大R。
 
   保守下界（基于噪声转移核的Chernoff界）:
-    P(未改变 | R次翻转) ≥ (1 - 2×edge_flip_prob)^R
-    → R < log(0.5) / log(1 - 2×edge_flip_prob)
+    P(未改变 | R次翻转) >= (1 - 2*edge_flip_prob)^R
+     - R < log(0.5) / log(1 - 2*edge_flip_prob)
 
 与ANVIL v2共形预测的互补性:
-  ANVIL → 模型输出校准（分布外检测）
-  本模块 → 输入鲁棒性认证（对抗扰动不变性）
-  组合 → 模型+数据双重安全保证——完整可信漏洞检测框架
+  ANVIL - 模型输出校准（分布外检测）
+  本模块 - 输入鲁棒性认证（对抗扰动不变性）
+  组合 - 模型+数据双重安全保证-完整可信漏洞检测框架
 """
 
 import math
@@ -35,7 +34,7 @@ from .graph_noise import GraphNoiseConfig, perturb_edges, clopper_pearson_lower
 
 @dataclass
 class CertifiedPrediction:
-    """认证预测——含鲁棒性保证"""
+    """认证预测-含鲁棒性保证"""
     predicted_class: int = 0
     certified_radius: float = 0.0
     majority_count: int = 0
@@ -50,8 +49,8 @@ def compute_certified_radius(majority_count: int, total_samples: int,
     """基于随机平滑理论的认证半径计算。
 
     步骤:
-      1. p_lower = Clopper-Pearson(k, N, α) ——胜出类别真实比例的保守下界
-      2. 若p_lower ≤ 0.5: 无法认证 → abstain
+      1. p_lower = Clopper-Pearson(k, N, alpha) -胜出类别真实比例的保守下界
+      2. 若p_lower <= 0.5: 无法认证 - abstain
       3. 认证半径 = floor(log(0.5) / log(1 - 2×flip_prob))
          辅以p_lower收紧: min(上述, floor(log(0.5) / log(p_lower)))
     """
@@ -82,13 +81,13 @@ def compute_certified_radius(majority_count: int, total_samples: int,
 
 
 class GraphEmbeddingCertifier:
-    """图嵌入认证器——随机平滑 + 认证半径估计。
+    """图嵌入认证器-随机平滑 + 认证半径估计。
 
     使用流程:
       certifier = GraphEmbeddingCertifier(embed_fn)
       certified, distances = certifier.certify(function_graph)
 
-    embed_fn: Callable[[graph], embedding] —— 须返回含.vector属性的对象
+    embed_fn: Callable[[graph], embedding] - 须返回含.vector属性的对象
     噪声样本数N: 越大认证越精确，但线性增加计算成本（典型: 1000）
     """
 

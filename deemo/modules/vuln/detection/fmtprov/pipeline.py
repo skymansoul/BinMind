@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-05-10  |  格式化字符串验证管线
 #
 """
 FMTPROV 管线: 扫描格式调用点 → 溯源 fmt 参数 → 判定。
@@ -18,7 +17,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from heapver.insn import Instruction, parse_disasm, callee_name
+from ..heapver.insn import Instruction, parse_disasm, callee_name
 
 from .fmt_abi import find_format
 from .taint import FmtTaintWalker, CONST, TAINT, UNKNOWN

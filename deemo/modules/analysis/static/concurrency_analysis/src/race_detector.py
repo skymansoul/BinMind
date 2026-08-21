@@ -1,10 +1,10 @@
 #
-# 数据竞争检测 —— 静态分析两函数是否可能在不互斥的情况下并发访问共享数据
+# 数据竞争检测 - 静态分析两函数是否可能在不互斥的情况下并发访问共享数据
 #
 # 竞争条件：两个不同线程中的操作访问同一内存位置，至少一个是写操作
 # 且没有共同的互斥锁保护
 #
-# 本模块是静态近似——不执行程序，因此：
+# 本模块是静态近似-不执行程序，因此：
 # 真阳性率较低（会报告"可能"的竞争而非确认）
 # 但假阴性率也较低（任何可能竞争都能捕获，适合 CI 安全门禁）
 #
@@ -55,7 +55,7 @@ class RaceReport:
 
 
 def _is_thread_create_call(mnemonic: str, operands: List[str]) -> bool:
-    """检测线程创建调用——检查 callee 是否为已知的线程创建函数"""
+    """检测线程创建调用-检查 callee 是否为已知的线程创建函数"""
     if mnemonic != 'call':
         return False
     if not operands:
@@ -67,12 +67,12 @@ def _is_thread_create_call(mnemonic: str, operands: List[str]) -> bool:
 
 def collect_thread_entries(func_insns: Dict[str, List[Tuple[str, List[str]]]],
                            func_addr_map: Dict[str, int]) -> Dict[str, Set[str]]:
-    """收集线程入口——通过线程创建调用的参数推断
-    
+    """收集线程入口-通过线程创建调用的参数推断
+
     返回 {thread_func_name: {entry_func_names}}
     pthread_cre(func_ptr,.) 的第三个参数是线程函数指针
     此处用简化方法：收集所有被线程创建函数引用的函数名
-    精确的参数提取需要完整的反汇编→IR→值流分析——这超出了静态扫描的范围
+    精确的参数提取需要完整的反汇编→IR→值流分析-这超出了静态扫描的范围
     """
     thread_entries: Dict[str, Set[str]] = defaultdict(set)
 
@@ -80,7 +80,7 @@ def collect_thread_entries(func_insns: Dict[str, List[Tuple[str, List[str]]]],
         for mn, ops in insns:
             if _is_thread_create_call(mn, ops):
                 # 在线程创建调用附近寻找被引用的函数名
-                # 实际应用中这需要更精确的常数传播——这里是启发式
+                # 实际应用中这需要更精确的常数传播-这里是启发式
                 for mn2, ops2 in insns:
                     if mn2 == 'lea' and ops2:
                         # lea rcx, [thread_func] → thread_func 是线程入口
@@ -98,7 +98,7 @@ def find_shared_accesses(func_name: str, func_addr: int,
                          global_vars: Dict[str, int],
                          ) -> List[SharedAccess]:
     """在一个函数的指令序列中查找对全局变量的访问
-    
+
     启发式：mov 和算术指令的 mem 操作数如果引用了全局符号 → 共享访问
     """
     accesses = []
@@ -106,7 +106,7 @@ def find_shared_accesses(func_name: str, func_addr: int,
 
     for mn, ops in insns:
         for op_str in ops:
-            # 匹配全局变量引用（简化——假设全局符号被引用为 [rip+offset] 或绝对地址）
+            # 匹配全局变量引用（简化-假设全局符号被引用为 [rip+offset] 或绝对地址）
             for gvar_name, gvar_addr in global_vars.items():
                 if gvar_name in op_str and gvar_name not in seen:
                     seen.add(gvar_name)
@@ -139,12 +139,12 @@ def detect_potential_races(
     func_locks: Dict[str, Set[str]],
 ) -> List[RaceReport]:
     """检测潜在的数据竞争
-    
+
     对每对在不同线程上下文中执行的函数，检查：
     (a) 两者是否访问同一全局变量
     (b) 至少一个是写或读写
     (c) 共同锁集为空
-    
+
     参数:
     thread_entries: {thread_func: {creator_funcs}}
     shared_accesses: {func_name: [SharedAccess]}
@@ -194,7 +194,7 @@ def detect_potential_races(
                     severity=severity,
                 ))
 
-    # 去重——按共享数据+函数对
+    # 去重-按共享数据+函数对
     seen_pairs = set()
     unique = []
     for r in reports:

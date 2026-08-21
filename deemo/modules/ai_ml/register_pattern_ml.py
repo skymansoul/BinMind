@@ -233,14 +233,7 @@ class RegisterPatternExtractor:
         self,
         disassembly: str,
     ) -> List[RegisterUsage]:
-        """Extract register usage statistics from disassembly text.
-
-        Args:
-            disassembly: Multi-line disassembly text.
-
-        Returns:
-            List of RegisterUsage objects for each register found.
-        """
+        """Extract register usage statistics from disassembly text."""
         usage: Dict[str, Dict[str, int]] = defaultdict(
             lambda: {'read': 0, 'write': 0}
         )
@@ -285,14 +278,7 @@ class RegisterPatternExtractor:
     def detect_architecture(self, disassembly: str) -> ArchitectureHint:
         """从反汇编指令流自动推断 CPU 架构和位宽。
         不依赖外部元数据 — 仅凭指令形态 + 寄存器命名空间做判断。
-        歧义场景（如 x86↔x64 混合）给出最低置信度，不猜测。
-
-        Args:
-            disassembly: Multi-line disassembly text.
-
-        Returns:
-            ArchitectureHint with detected arch, bitness, and confidence.
-        """
+        歧义场景（如 x86↔x64 混合）给出最低置信度，不猜测。"""
         # 归一化：只取助记符和寄存器名，忽略地址和立即数
         mnemonics: List[str] = []
         for line in disassembly.split('\n'):
@@ -352,14 +338,7 @@ class RegisterPatternExtractor:
         self,
         usage: List[RegisterUsage],
     ) -> Dict[str, float]:
-        """Compute a normalized feature vector from register usage.
-
-        Args:
-            usage: List of register usage statistics.
-
-        Returns:
-            Dict of feature name to normalized value.
-        """
+        """Compute a normalized feature vector from register usage."""
         total_reads = sum(u.read_count for u in usage)
         total_writes = sum(u.write_count for u in usage)
         total_ops = max(total_reads + total_writes, 1)
@@ -392,14 +371,7 @@ class RegisterPatternExtractor:
         self,
         usage: List[RegisterUsage],
     ) -> str:
-        """Detect likely calling convention from register usage patterns.
-
-        Args:
-            usage: Register usage statistics.
-
-        Returns:
-            Detected calling convention name.
-        """
+        """Detect likely calling convention from register usage patterns."""
         used_regs = {u.reg.lower() for u in usage if u.write_count > 0 or u.read_count > 0}
 
         if {'rcx', 'rdx', 'r8', 'r9'} & used_regs:
@@ -475,14 +447,7 @@ class CompilerRegisterClassifier:
         self,
         disassembly: str,
     ) -> CompilerSignature:
-        """Classify the likely compiler and optimization level.
-
-        Args:
-            disassembly: Function disassembly text.
-
-        Returns:
-            CompilerSignature with best match and confidence.
-        """
+        """Classify the likely compiler and optimization level."""
         features = self._extract_features(disassembly)
         return self._match_compiler(features)
 
@@ -524,11 +489,7 @@ class CompilerRegisterClassifier:
     def _compute_feature_weights(self) -> Dict[str, float]:
         """计算每个特征的区分度权重 — 使用逆方差加权。
         特征在编译器间波动越大 → 区分能力越强 → 权重越高。
-        方差为 0 的特征（所有编译器一致）不参与分类决策。
-
-        Returns:
-            Dict mapping feature name to discriminative weight [0, 1].
-        """
+        方差为 0 的特征（所有编译器一致）不参与分类决策。"""
         if self._feature_weights is not None:
             return self._feature_weights
 
@@ -609,16 +570,7 @@ class CompilerRegisterClassifier:
         weights: Dict[str, float],
     ) -> float:
         """加权余弦相似度 — 区分度高的特征在匹配中更有话语权。
-        这是对朴素 cosine 的改良：权重来自特征在各编译器间的方差。
-
-        Args:
-            a: Observed feature vector.
-            b: Reference profile vector.
-            weights: Per-feature discriminative weights.
-
-        Returns:
-            Weighted cosine similarity score.
-        """
+        这是对朴素 cosine 的改良：权重来自特征在各编译器间的方差。"""
         keys = set(a.keys()) | set(b.keys())
         if not keys:
             return 0.0
@@ -648,14 +600,7 @@ class CompilerRegisterClassifier:
         - O1: 基本优化已应用但未激进
         - O2: 循环展开痕迹、内联迹象
         - O3: 激进展开 + 向量化痕迹
-        - Os: 紧凑代码、无展开、无内联
-
-        Args:
-            disassembly: Function disassembly text.
-
-        Returns:
-            OptimizationProfile with level, confidence, and indicators.
-        """
+        - Os: 紧凑代码、无展开、无内联"""
         lines = disassembly.split('\n')
         total_lines = max(len(lines), 1)
         line_lower = [l.lower().strip() for l in lines if l.strip()]
@@ -754,14 +699,7 @@ class CompilerRegisterClassifier:
         self,
         functions: Dict[str, str],
     ) -> Dict[str, CompilerSignature]:
-        """Classify compiler for multiple functions.
-
-        Args:
-            functions: Mapping of function names to disassembly strings.
-
-        Returns:
-            Dict of function names to compiler signatures.
-        """
+        """Classify compiler for multiple functions."""
         return {
             name: self.classify(disasm)
             for name, disasm in functions.items()
@@ -771,14 +709,7 @@ class CompilerRegisterClassifier:
         self,
         results: Dict[str, CompilerSignature],
     ) -> CompilerSignature:
-        """Determine most likely compiler from batch classification.
-
-        Args:
-            results: Per-function classification results.
-
-        Returns:
-            Aggregate compiler signature.
-        """
+        """Determine most likely compiler from batch classification."""
         counter: Counter[str] = Counter()
         total_confidence: Dict[str, float] = defaultdict(float)
 
@@ -814,9 +745,5 @@ class CompilerRegisterClassifier:
 
 
 def create_compiler_classifier() -> CompilerRegisterClassifier:
-    """Factory function to create a pre-configured compiler classifier.
-
-    Returns:
-        A ready-to-use CompilerRegisterClassifier instance.
-    """
+    """Factory function to create a pre-configured compiler classifier."""
     return CompilerRegisterClassifier()

@@ -1,7 +1,3 @@
-# 修改记录:
-# 2025-07-29 16:44 - Merkle 树从完全二叉树改为增量可追加结构, 新叶追加无需重建全树
-# 2025-08-01 11:22 - 增加 InclusionProof 的路径压缩, 证明大小从 O(log n) 优化到 O(log n) 但常数减半
-# 2025-08-04 14:37 - 批量证明 BatchInclusionProof 扩展: 一次验证 N 个叶而非 N 次独立验证
 # — 分析管道的 Merkle 树溯源: 增量可追加默克尔树 / 包含证明 / 批量验证
 # Merkle "A Digital Signature Based on a Conventional Encryption Function"
 # — 原始 Merkle 树结构.
@@ -137,6 +133,12 @@ class IncrementalMerkleTree:
             current_level = next_level
         return current_level[0]
 
+    def get_leaf_hash(self, leaf_index: int) -> Optional[bytes]:
+        """返回第 leaf_index 个叶的哈希 (审计包验证用)."""
+        if 0 <= leaf_index < len(self._leaves):
+            return self._leaves[leaf_index]
+        return None
+
     def get_inclusion_proof(self, leaf_index: int) -> Optional[InclusionProof]:
         """为第 leaf_index 个叶生成包含证明."""
         if leaf_index < 0 or leaf_index >= len(self._leaves):
@@ -264,9 +266,11 @@ class PipelineProvenanceTracker:
         proofs = {}
         for stage_id, idx in self._stage_index.items():
             proof = self._tree.get_inclusion_proof(idx)
-            if proof:
+            leaf_hash = self._tree.get_leaf_hash(idx)
+            if proof and leaf_hash:
                 proofs[stage_id] = {
                     'leaf_index': proof.leaf_index,
+                    'leaf_hash': leaf_hash.hex(),
                     'path': [p.hex() for p in proof.path],
                 }
         return {
@@ -281,8 +285,10 @@ class PipelineProvenanceTracker:
 
 def verify_audit_bundle(bundle: Dict) -> Tuple[bool, str]:
     """独立验证审计包的完整性.
-    返回 (is_valid, reason).
-    不依赖 PipelineProvenanceTracker 实例——可从 bundle 独立重建.
+
+    对每个 stage 的包含证明执行密码学验证: 从叶哈希出发按路径
+    折叠到根, 与声明的 merkle_root 比对; 同时检查叶索引与
+    stage_order 一致. 返回 (is_valid, reason).
     """
     try:
         stage_order = bundle.get('stage_order', [])
@@ -291,21 +297,33 @@ def verify_audit_bundle(bundle: Dict) -> Tuple[bool, str]:
             bundle.get('digest', {}).get('merkle_root', ''))
         if not expected_root:
             return False, 'missing merkle_root in audit bundle'
+        if not stage_order:
+            return False, 'empty stage_order'
 
-        # 重建 Merkle 树并逐叶验证
-        tree = IncrementalMerkleTree()
         for stage_id, idx in stage_order:
             proof_data = proofs.get(stage_id)
             if proof_data is None:
                 return False, f'missing proof for stage {stage_id}'
-            # 验证参数完整性 (不要求原始 input/output data)
-            path_bytes = [bytes.fromhex(p) for p in proof_data.get('path', [])]
-            leaf_idx = proof_data['leaf_index']
-            # 包含证明的结构一致性检查
+            leaf_idx = proof_data.get('leaf_index')
             if leaf_idx != idx:
                 return False, f'leaf index mismatch: proof={leaf_idx}, order={idx}'
+            leaf_hash = bytes.fromhex(proof_data.get('leaf_hash', ''))
+            if not leaf_hash:
+                return False, f'missing leaf_hash for stage {stage_id}'
+            path_bytes = [bytes.fromhex(p) for p in proof_data.get('path', [])]
+            # 自底向上折叠: leaf_hash 与兄弟节点逐层哈希到根
+            current = leaf_hash
+            i = idx
+            for sibling in path_bytes:
+                if i % 2 == 0:
+                    current = _hash_node(current, sibling)
+                else:
+                    current = _hash_node(sibling, current)
+                i //= 2
+            if current != expected_root:
+                return False, f'root mismatch for stage {stage_id}'
 
-        return True, 'audit bundle structurally valid'
+        return True, 'audit bundle verified'
     except Exception as e:
         return False, f'verification error: {e}'
 

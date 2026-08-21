@@ -1,4 +1,4 @@
-# 漏洞知识图谱 — 实体/关系存储与图谱导出。
+# 漏洞知识图谱 - 实体/关系存储与图谱导出。
 # 实体为二进制、函数、CVE 等节点；关系描述节点间的语义连接。
 # 支持 JSON 导出，供下游关联分析与报告使用。
 
@@ -46,7 +46,7 @@ class KnowledgeGraphRelation:
 
 
 class VulnKnowledgeGraph:
-    """漏洞知识图谱 — 实体与关系的增删查与导出。"""
+    """漏洞知识图谱 - 实体与关系的增删查与导出。"""
 
     def __init__(self, storage_path: str = None):
         self.storage_path = storage_path

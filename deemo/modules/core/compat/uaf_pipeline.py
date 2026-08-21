@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from compat.uaf_constraint import (
+from .uaf_constraint import (
     UafConstraintSystem, UafCandidate, UafEventType,
     LifetimeInterval, AliasGraph, encode_uaf_lifetime,
     prove_uaf_infeasible,

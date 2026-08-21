@@ -1,11 +1,9 @@
-# 2026-07-23
 import struct
 import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-
 
 @dataclass
 class Process:
@@ -65,8 +63,7 @@ REFLECTIVE_PATTERNS = [
 
 
 class MemoryForensicsToolkit:
-    """Memory forensics analysis engine: process enumeration, injection
-    detection, rootkit hunting, hidden module scanning"""
+    """内存取证分析引擎: 进程枚举, 注入检测, rootkit狩猎, 隐藏模块扫描"""
 
     def __init__(self, dump_path: str, platform: Optional[str] = None) -> None:
         with open(dump_path, "rb") as fh:
@@ -439,7 +436,7 @@ class MemoryForensicsToolkit:
             })
         return findings
 
-# Primitive 辅助函数
+# 辅助函数
 
     def _read_ptr(self, data: bytes, addr: int) -> int:
         if addr < 0 or addr + 8 > len(data):

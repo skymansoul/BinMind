@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-22 10:31 — 初始实现：taint source/sink/propagation 在补丁前后的差分
-# 2025-08-23 15:44 — 增加净化验证：检查补丁是否在 sink 前插入了清洗操作
+# 初始实现：taint source/sink/propagation 在补丁前后的差分
+# 增加净化验证：检查补丁是否在 sink 前插入了清洗操作
 
 """Patch Differential Taint Tracker — 补丁前后的污点流差分分析。
 

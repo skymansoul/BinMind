@@ -1,8 +1,8 @@
 import os
 import importlib.util
-import tempfile  # 保留
+import tempfile
 import heapq as _hp, hashlib as _hl
-import uuid  # 保留
+import uuid
 _r = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'symbolic', 'concolic_execution.py')
 _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('ce', _r))
 importlib.util.spec_from_file_location('ce', _r).loader.exec_module(_m)
@@ -119,7 +119,6 @@ def _fetch_llm_solver():
 
 def classify_solver_complexity(constraints: list) -> str:
     """对约束集分类，决定使用 SMT 求解器还是 LLM。
-    # 不拆——保持上下文连贯性，拆了反而难读
     返回 'smt' | 'llm_fallback' | 'hybrid'。
     判断依据：约束中非线性算术/字符串/浮点操作的比例。"""
     if not constraints:

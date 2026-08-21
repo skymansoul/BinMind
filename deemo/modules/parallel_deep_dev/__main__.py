@@ -1,6 +1,7 @@
 """支持 `python -m parallel_deep_dev` 调用。"""
 
 import sys
-from parallel_deep_dev.run import main
+from .run import main
 
-sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())

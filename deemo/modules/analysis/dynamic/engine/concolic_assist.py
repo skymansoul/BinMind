@@ -1,4 +1,3 @@
-# 2026-07-17
 # TACE 风格 混合执行辅助 —— 污点桥接 + 约束分类 + 路径求解
 # 设计思路：只对污点相关的约束做符号求解，减少 SMT 求解器压力
 # DependencyTracker 追踪寄存器/Mem依赖，Constraint分类器 按污点分类
@@ -243,11 +242,11 @@ def create_concolic_assistant(tainted_addrs=None,
 
 class BranchPrioritizer:
     """覆盖率引导的分支优先级调度器 — MD2U (Min-Distance--Uncovered)
-    
+
     从每个未覆盖节点反向BFS计算距离矩阵。已覆盖节点距离为0
     未覆盖节点距离为其BFS层数。分支按距离排序：距离越近优先级越高
     平局时优先选择探索次数少的分支（避免重复探索同一区域）
-    
+
     复杂度: O(V+E) per recompute, O(N 记录 N) per 排序
     对10K+基本块的二进制，5K路径内通常比BFS多覆盖15-25%基本块
     """
@@ -299,7 +298,7 @@ class BranchPrioritizer:
 
 class ConcolicExplorer:
     """Concolic执行探索器 — 结合具体执行与符号约束求解
-    
+
     舍入 7: 集成BranchPrioritizer实现MD2U策略的路径排序
     """
 

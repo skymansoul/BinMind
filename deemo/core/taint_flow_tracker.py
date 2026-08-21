@@ -3,6 +3,7 @@
 # def-use分析。供format_string_detector判断printf格式参数是否来自用户输入。
 
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -59,22 +60,22 @@ def trace_register_source(
 
         visited_regs.add(current_reg)
 
-        # 情形1: mov reg, imm → 常量值
+        # 情形1: mov reg, imm - 常量值
         imm = _extract_immediate(lower)
         if imm is not None:
             return TaintSource("constant", f"immediate {hex(imm)}", 0.95, depth)
 
-        # 情形2: mov reg, reg2 → 继续追踪 reg2
+        # 情形2: mov reg, reg2 - 继续追踪 reg2
         src_reg = _extract_source_register(lower, current_reg)
         if src_reg and src_reg not in visited_regs:
             current_reg = src_reg
             continue
 
-        # 情形3: lea reg, [mem] → 内存地址 (非用户控制)
+        # 情形3: lea reg, [mem] - 内存地址 (非用户控制)
         if 'lea' in lower and current_reg in lower:
             return TaintSource("constant", "stack/global address", 0.7, depth)
 
-        # 情形4: call 后取返回值 → 函数返回值
+        # 情形4: call 后取返回值 - 函数返回值
         if 'call' in lower:
             callee = _extract_call_target(line)
             if callee and callee in _INPUT_FUNCTIONS:
@@ -111,7 +112,6 @@ def _defines_register(line_lower: str, reg: str) -> bool:
 
 def _extract_immediate(line_lower: str) -> Optional[int]:
     """从指令行提取立即数, 返回 int 或 None。"""
-    import re
     m = re.search(r'(?:^|[,\s])(0x[0-9a-fA-F]+|\d+)\s*(?:$|[,\s\]])', line_lower)
     if m:
         try:
@@ -140,7 +140,6 @@ def _extract_source_register(line_lower: str, dest_reg: str) -> Optional[str]:
 
 def _extract_call_target(line: str) -> Optional[str]:
     """从 call 指令行提取被调函数名。"""
-    import re
     m = re.search(r'call\s+(\S+)', line, re.IGNORECASE)
     if m:
         target = m.group(1)

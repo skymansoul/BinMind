@@ -129,7 +129,7 @@ class ExceptionRecovery:
     def detect_double_fault_risk(self) -> List[str]:
         """检测可能导致双重故障（double fault）的异常处理结构缺陷
         若 catch(.) 块中调用了可能再次抛出异常的函数，且无嵌套 try 保护
-        则标记为潜在双重故障风险——这在嵌入式/内核代码中可能导致三重故障重启
+        则标记为潜在双重故障风险, 这在嵌入式/内核代码中可能导致三重故障重启
         """
         risks: List[str] = []
         for frame in self.exception_frames:
@@ -138,7 +138,7 @@ class ExceptionRecovery:
                 has_catch_all = any(cb.is_ellipsis for cb in tb.catch_blocks)
                 if has_catch_all and len(tb.catch_blocks) == 1:
                     risks.append(
-                        f"{frame.function_name}: catch(...) without nested handler — "
+                        f"{frame.function_name}: catch(...) without nested handler, "
                         f"double fault risk if exception thrown in handler")
         return risks
 

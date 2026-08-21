@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Dict, List
 import re
 
-from value_range_analyzer import ValueRange, extract_value_ranges
+from .value_range_analyzer import ValueRange, extract_value_ranges
 from size_expr_evaluator import eval_size_expr, resolve_defines
 from flow_pair_generator import generate_correlated_pairs, CorrelatedPair
 from size_equivalence import sizes_equivalent, write_bounded_by_alloc

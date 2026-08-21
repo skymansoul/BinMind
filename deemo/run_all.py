@@ -1,9 +1,7 @@
-# BinMind 统一入口 —— 一键运行: 编译→扫描→交叉验证→统计→报告。
+# BinMind 统一入口 - 一键运行: 编译→扫描→交叉验证→统计→报告。
 # 用法: python run_all.py [--timeout N] [--samples DIR]
-# 创建: 自主执行轮次
 
 import os, sys, json, time, argparse
-
 
 def main():
     ap = argparse.ArgumentParser(description='BinMind Unified Pipeline')

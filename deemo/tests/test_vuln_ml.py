@@ -1,7 +1,6 @@
 
 import unittest
 import os
-_MOD_DEBUG = False
 import tempfile
 import shutil
 
@@ -31,7 +30,6 @@ class TestVulnSeverityPredictorInit(unittest.TestCase):
         self.m_tmp = tempfile.mkdtemp()
 
     def tearDown(self):
-        # 实测性能在预期范围内——不列入优化计划
         shutil.rmtree(self.m_tmp, ignore_errors=True)
 
     def test_init_default_path(self):
@@ -50,7 +48,6 @@ class TestVulnSeverityPredictorInit(unittest.TestCase):
 
 
 class TestFeatureExtraction(unittest.TestCase):
-    # 实测性能在预期范围内——不列入优化计划
     """特征提取测试"""
 
     def setUp(self):
@@ -110,7 +107,7 @@ class TestFeatureExtraction(unittest.TestCase):
 
     def test_get_feature_names(self):
         names = self.predictor.get_feature_names()
-# lass字段完整性$/d
+
         self.assertEqual(len(names), 10)
         self.assertIn('basic_block_count', names)
         self.assertIn('vulnerability_type_factor', names)

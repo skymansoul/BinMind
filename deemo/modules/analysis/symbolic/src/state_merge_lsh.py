@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-05 11:28 - 约束类型指纹: 不比较约束内容, 仅比较约束操作符分布 (O(1) vs O(|Z3 AST|))
-# 2025-08-05 15:33 - 双通道 MinHash: 约束类型通道 + 寄存器符号集通道, 并行哈希
-# 2025-08-16 13:15 - Z3 安全性: fingerprint() 中约束类型提取增加多层异常保护
+# 约束类型指纹: 不比较约束内容, 仅比较约束操作符分布 (O(1) vs O(|Z3 AST|))
+# 双通道 MinHash: 约束类型通道 + 寄存器符号集通道, 并行哈希
+# Z3 安全性: fingerprint() 中约束类型提取增加多层异常保护
 
 """基于 MinHash 的符号状态合并候选发现 - 亚线性时间近似近邻检测
 
@@ -47,7 +46,7 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 # 状态指纹提取
 
-# 约束操作符的类型分类--不追踪具体操作数, 仅追踪约束的"形状"
+# 约束操作符的类型分类, 不追踪具体操作数, 仅追踪约束的"形状"
 _CONSTRAINT_TYPE_CLASSES = {
     '==': 0, '!=': 1, '<': 2, '<=': 3, '>': 4, '>=': 5,
     'And': 6, 'Or': 7, 'Not': 8,
@@ -61,9 +60,9 @@ _CONSTRAINT_TYPE_CLASSES = {
 
 
 def _constraint_type_signature(constraint) -> str:
-    """从 Z3 约束对象提取操作符类型--多层保护防止非 Z3 对象崩溃"""
+    """从 Z3 约束对象提取操作符类型, 多层保护防止非 Z3 对象崩溃"""
     try:
-        # 仅对具有 decl() 方法的对象调用--非 Z3 对象回退到类型名
+        # 仅对具有 decl() 方法的对象调用, 非 Z3 对象回退到类型名
         if hasattr(constraint, 'decl') and callable(constraint.decl):
             return str(constraint.decl().name())
     except Exception:
@@ -86,13 +85,13 @@ def _constraint_type_class(constraint) -> int:
 
 @dataclass
 class StateFingerprint:
-    """符号状态的轻量级指纹--用于快速相似度估计"""
+    """符号状态的轻量级指纹, 用于快速相似度估计"""
     state_id: int
     pc: int
     depth: int
     # 约束类型分布: 32 维向量 (对应 _CONSTRAINT_TYPE_CLASSES 的 32 类)
     constraint_type_histogram: List[float] = field(default_factory=lambda: [0.0] * 32)
-    # 寄存器符号名集合 (归一化--去架构特定前缀)
+    # 寄存器符号名集合 (归一化, 去架构特定前缀)
     symbolic_register_set: Set[str] = field(default_factory=set)
     # 活跃内存页的粗粒度标识
     active_memory_pages: Set[int] = field(default_factory=set)
@@ -103,7 +102,7 @@ class StateFingerprinter:
     """从 SymbolicState 提取轻量指纹
 
     复杂度: O(|constraints| + |registers| + |memory|) per state
-    不访问 Z3 AST 内部--仅通过 decl().name() 获取操作符类型
+    不访问 Z3 AST 内部, 仅通过 decl().name() 获取操作符类型
     """
 
     @staticmethod
@@ -124,7 +123,7 @@ class StateFingerprinter:
         for i in range(32):
             fp.constraint_type_histogram[i] /= n_constraints
 
-        # 2. 符号寄存器集合--只追踪哪些寄存器被符号化, 不追踪具体值
+        # 2. 符号寄存器集合, 只追踪哪些寄存器被符号化, 不追踪具体值
         for reg_name, val in state.registers.items():
             try:
                 if hasattr(val, 'decl'):
@@ -132,7 +131,7 @@ class StateFingerprinter:
             except Exception:
                 pass
 
-        # 3. 活跃内存页 (4KB 页粒度--足够粗以避免噪声)
+        # 3. 活跃内存页 (4KB 页粒度, 足够粗以避免噪声)
         for addr in state.memory.keys():
             fp.active_memory_pages.add(addr >> 12)
 
@@ -145,11 +144,11 @@ class StateFingerprinter:
 # MinHash 签名计算
 
 class MinHasher:
-    """MinHash 签名计算器--使用确定性置换 (SHA-256 based)
+    """MinHash 签名计算器, 使用确定性置换 (SHA-256 based)
 
     标准 MinHash 使用随机置换但对每个状态重新生成置换不切实际
     本实现将每哈希函数建模为: h_i(x) = SHA-256(i || x) mod M
-    其中 M 是大的素数--等价于随机置换的确定性模拟
+    其中 M 是大的素数, 等价于随机置换的确定性模拟
 
     K=128 个哈希函数 -> 128 个 int32 签名值
     """
@@ -184,7 +183,7 @@ class MinHasher:
         # 调用栈 shingle
         shingles.append(f'S:{fingerprint.call_stack_depth}')
 
-        # PC 地址粗粒度 shingle (256 字节对齐--函数级)
+        # PC 地址粗粒度 shingle (256 字节对齐, 函数级)
         shingles.append(f'P:{fingerprint.pc >> 8}')
 
         if not shingles:
@@ -268,9 +267,9 @@ class MergeCandidateLSH:
         return candidates
 
     def remove(self, state_id: int) -> None:
-        """从 LSH 索引移除状态 (惰性--不重建, 仅标记)
+        """从 LSH 索引移除状态 (惰性, 不重建, 仅标记)
 
-        在实际合并发生后调用--被合并的状态已不存在
+        在实际合并发生后调用, 被合并的状态已不存在
         """
         for band in range(self._L):
             bucket = self._tables[band]
@@ -283,7 +282,7 @@ class MergeCandidateLSH:
 
     @property
     def total_states_indexed(self) -> int:
-        """LSH 中索引的状态总数 (含重复--同一状态可跨多表)"""
+        """LSH 中索引的状态总数 (含重复, 同一状态可跨多表)"""
         total = 0
         for band in range(self._L):
             for ids in self._tables[band].values():

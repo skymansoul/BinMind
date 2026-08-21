@@ -1,5 +1,3 @@
-# Created: 2026-07-24 17:28:46
-#
 # bypass_likelihood — 防护机制条件绕过可能性评估
 # 超越 checksec 的二元存在/缺失: 估计"已启用但可能被绕过"的概率。
 # 对每种保护,基于其他特征推断条件绕过路径 (canary+fmtstr→leak, NX+mprotect→ROP bypass)

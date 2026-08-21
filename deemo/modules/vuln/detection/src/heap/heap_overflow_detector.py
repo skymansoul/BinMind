@@ -19,7 +19,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from .allocator_model import Ptmalloc2Model
+from deemo.modules.vuln.src.heap.allocator_model import Ptmalloc2Model
 from .value_set_analyzer import ValueSetAnalyzer, StridedInterval
 from .controllability_filter import ControllabilityFilter
 

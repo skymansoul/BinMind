@@ -1,4 +1,4 @@
-"""二进制级 PPA-HAV 扫描器 — objdump 反汇编 → 五层过滤管线.
+"""二进制级 PPA-HAV 扫描器 - objdump 反汇编 → 五层过滤管线.
 
 管线: 指令解析 → malloc识别 → 寄存器溯源 → 对象结构学习 → 三维验证 → 过滤
 输入: objdump -d -M intel 文本
@@ -50,7 +50,7 @@ class BinaryScanResult:
 
 
 class BinaryPpahavScanner:
-    """二进制 PPA-HAV 五层扫描器 — 从 objdump 输出执行完整管线."""
+    """二进制 PPA-HAV 五层扫描器 - 从 objdump 输出执行完整管线."""
 
     def __init__(self):
         self._ppa = ProvenanceAwareFilter()

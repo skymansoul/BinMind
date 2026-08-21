@@ -1,4 +1,4 @@
-"""格密码侧信道分析——多项式乘法时序泄漏。"""
+"""格密码侧信道分析, 多项式乘法时序泄漏。"""
 
 import logging
 import math
@@ -42,7 +42,7 @@ class SideChannelVulnerability:
 
 
 # 统计工具：互信息与 Cliff's Delta
-# 直方图互信息估计——比 t-test 更善捕捉非线性依赖。
+# 直方图互信息估计, 比 t-test 更善捕捉非线性依赖。
 # Cliff's delta：无分布假设效应量，适配非正态时序样本。
 # Mainali & Ghimire (2025) "Statistical Side-Channel Risk Model"
 
@@ -111,9 +111,6 @@ class LatticeSideChannelAnalyzer:
         analyzer = LatticeSideChannelAnalyzer()
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
-
-    def __init__(self):
-        pass
 
 # 公开接口
 

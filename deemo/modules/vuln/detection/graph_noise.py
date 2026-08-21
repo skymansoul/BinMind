@@ -1,23 +1,21 @@
 # coding: utf-8
-# 创建: 2026-05-28  |  图噪声机制与统计原语
-# 修改: 2026-05-28  |  审计后补充文件头与错误处理
 #
 """
 图噪声注入与随机平滑统计原语。
 
 噪声机制:
-  边翻转——每条边独立以概率p删除/插入。这是对离散图结构的
+  边翻转-每条边独立以概率p删除/插入。这是对离散图结构的
   自然噪声模型（类比连续域的加性高斯噪声）。
 
 设计选择:
-  - 边翻转而非节点增删——节点增删改变图语义过强，
+  - 边翻转而非节点增删-节点增删改变图语义过强，
     边翻转保持函数的基本控制流结构
-  - preserve_connectivity默认开启——避免桥边删除导致连通分量分裂，
+  - preserve_connectivity默认开启-避免桥边删除导致连通分量分裂，
     这在二进制函数CFG中几乎不会自然发生
-  - 插入上限max_edge_insertions——防止过度稠密化改变图统计特征
+  - 插入上限max_edge_insertions-防止过度稠密化改变图统计特征
 
 统计工具:
-  Clopper-Pearson精确二项下置信界——保守但保证覆盖率的认证界估计。
+  Clopper-Pearson精确二项下置信界-保守但保证覆盖率的认证界估计。
   正态近似在小p情况下低估尾部，精确方法在此场景更合理。
 """
 
@@ -46,7 +44,7 @@ def perturb_edges(edges: List[Tuple[int, int]], num_nodes: int,
       - 现有边以p概率删除（桥边保留）
       - 缺失边以p概率插入（受max_edge_insertions限制）
 
-    返回扰动后边列表——顺序不保持（已随机化）。
+    返回扰动后边列表-顺序不保持（已随机化）。
     时间复杂度: O(|E| + max_insertions)
     """
     if rng is None:
@@ -63,7 +61,7 @@ def perturb_edges(edges: List[Tuple[int, int]], num_nodes: int,
         else:
             new_edges.add(e)
 
-    # 候选插入边——随机采样缺失边
+    # 候选插入边-随机采样缺失边
     candidates = _sample_missing(edge_set, num_nodes,
                                   config.max_edge_insertions * 3, rng)
     for cand in candidates:
@@ -78,7 +76,7 @@ def perturb_edges(edges: List[Tuple[int, int]], num_nodes: int,
 
 def _is_bridge(edge: Tuple[int, int], edge_set: Set[Tuple[int, int]],
                 num_nodes: int) -> bool:
-    """检测edge是否为桥——BFS验证删除后两端连通性"""
+    """检测edge是否为桥-BFS验证删除后两端连通性"""
     if len(edge_set) <= 1:
         return True
     u, v = edge
@@ -102,7 +100,7 @@ def _is_bridge(edge: Tuple[int, int], edge_set: Set[Tuple[int, int]],
 
 def _sample_missing(edge_set: Set[Tuple[int, int]], num_nodes: int,
                      max_n: int, rng: _random.Random) -> List[Tuple[int, int]]:
-    """随机采样不存在的边——候选插入集"""
+    """随机采样不存在的边-候选插入集"""
     existing = edge_set | {(b, a) for a, b in edge_set}
     result = []
     attempts = 0
@@ -117,14 +115,14 @@ def _sample_missing(edge_set: Set[Tuple[int, int]], num_nodes: int,
     return result
 
 
-# 二项置信界——认证半径计算依赖
+# 二项置信界-认证半径计算依赖
 
 
 def clopper_pearson_lower(k: int, n: int, alpha: float) -> float:
     """Clopper-Pearson二项比例精确下置信界。
 
     返回p满足P(Bin(n, p) >= k) = α的下界解。
-    实现: 二分查找——50次迭代→精度~2⁻⁵⁰。
+    实现: 二分查找-50次迭代-精度~2^-50。
     对n>1000时使用Wilson得分区间近似（误差<1e-3）。
     """
     if k == 0:
@@ -132,7 +130,7 @@ def clopper_pearson_lower(k: int, n: int, alpha: float) -> float:
     if k > n:
         return 1.0
     if n > 1000:
-        # Wilson得分区间——大规模近似
+        # Wilson得分区间-大规模近似
         p_hat = k / n
         z = _norm_quantile(1.0 - alpha)
         denom = 1.0 + z * z / n
@@ -143,9 +141,9 @@ def clopper_pearson_lower(k: int, n: int, alpha: float) -> float:
     for _ in range(50):
         mid = (lo + hi) / 2
         if _binom_sf(k - 1, n, mid) < alpha:
-            lo = mid   # 尾部太小→p太小→增大下界
+            lo = mid   # 尾部太小-p太小-增大下界
         else:
-            hi = mid   # 尾部够大→p够大→降低上界
+            hi = mid   # 尾部够大-p够大-降低上界
     return lo
 
 
@@ -172,7 +170,7 @@ def _binom_sf(k: int, n: int, p: float) -> float:
 
 
 def _norm_quantile(p: float) -> float:
-    """标准正态分位数——Abramowitz & Stegun有理近似26.2.23"""
+    """标准正态分位数-Abramowitz & Stegun有理近似26.2.23"""
     if p <= 0.0:
         return float('-inf')
     if p >= 1.0:

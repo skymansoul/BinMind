@@ -89,11 +89,9 @@ class ValueRangePropagator:
     def propagate(self, ir_lines: List[str],
                   track_vars: Optional[Set[str]] = None) -> Dict[str, VarRange]:
         """正向传播值域。
-        Args:
-            ir_lines: IR行列表
-            track_vars: 显式跟踪的变量集; None=自动发现所有赋值目标
-        Returns:
-            {var_name: VarRange(各程序点的区间)}
+
+        track_vars 缺省时自动发现所有赋值目标;
+        返回 {var_name: VarRange(各程序点的区间)}。
         """
         discovered = set(track_vars) if track_vars else set()
         if not track_vars:

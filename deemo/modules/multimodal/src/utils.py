@@ -69,16 +69,7 @@ def retry_with_backoff(
     retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,),
     logger: Optional[logging.Logger] = None,
 ):
-    """指数退避重试装饰器。
-
-    Args:
-        max_attempts: 总尝试次数（含首次）
-        base_delay: 首次重试前等待秒数
-        backoff_factor: 每次重试的延迟乘数
-        max_delay: 延迟上限（秒）
-        retryable_exceptions: 触发重试的异常类型（默认全捕获）
-        logger: 可选logger，用于记录重试事件。
-    """
+    """指数退避重试装饰器。"""
     _log = logger or logging.getLogger(__name__)
 
     def decorator(func: Callable) -> Callable:

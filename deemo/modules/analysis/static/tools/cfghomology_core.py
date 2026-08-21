@@ -1,15 +1,14 @@
-# 修改记录:
-# 2025-08-02 14:23 - 三通道并行过滤: 指令熵 + 中介中心性 + 边频率
-# 2025-08-03 10:51 - 单工复形的索引从 Python dict 改为 array-based,降低 GC 压力
+# 三通道并行过滤: 指令熵 + 中介中心性 + 边频率
+# 单工复形的索引从 Python dict 改为 array-based,降低 GC 压力
 
 """CFG 持续同调指纹 - 核心数据结构与多通道过滤构造
 
 传统二进制相似度方法（Gemini/Asm2Vec/SAFE）依赖指令嵌入或 GNN
-在图结构上学习,但对编译器版本和优化级别的变化敏感--同一源码
+在图结构上学习,但对编译器版本和优化级别的变化敏感, 同一源码
 经不同编译器产生的 CFG 在节点特征层面差异可达 40%+
 
 本模块采用拓扑数据分析（TDA）视角：CFG 的持续同调特征（连通分量
-的合并/消失、环的生灭）在图的小范围变形下具有稳定性--这是经典
+的合并/消失、环的生灭）在图的小范围变形下具有稳定性, 这是经典
 持续同调理论的直接推论（Cohen-Steiner et al., 2007, "Stability of
 Persistence Diagrams", Discrete & Computational Geometry 37(1)）
 
@@ -18,13 +17,13 @@ Persistence Diagrams", Discrete & Computational Geometry 37(1)）
 2. 中介中心性过滤 - 图结构的全局属性, 对局部指令替换不敏感
 3. 边频率过滤 - 来自符号执行/模糊测试的动态覆盖数据, 补充静态盲区
 
-三通道的条形码分别编码为指纹向量后拼接--任一通道匹配即产生候选
+三通道的条形码分别编码为指纹向量后拼接, 任一通道匹配即产生候选
 
 关键设计决策:
-- 使用 0 维和 1 维持续同调--更高维同调在 CFG 中极少出现
+- 使用 0 维和 1 维持续同调, 更高维同调在 CFG 中极少出现
   非平凡特征（CFG 是稀疏有向图,2-simplex 的概率 < 0.3%）
-- 过滤函数值归一化到 [0, 1] 区间--使不同二进制的条形码直接可比
-- 距离计算使用 bottleneck 距离的 L2 近似--比 Wasserstein 快 O(N^3)->O(N)
+- 过滤函数值归一化到 [0, 1] 区间, 使不同二进制的条形码直接可比
+- 距离计算使用 bottleneck 距离的 L2 近似, 比 Wasserstein 快 O(N^3)->O(N)
 """
 
 from __future__ import annotations
@@ -40,7 +39,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 @dataclass
 class CFGNode:
-    """CFG 基本块节点--用于持续同调计算的轻量表示"""
+    """CFG 基本块节点, 用于持续同调计算的轻量表示"""
     node_id: int
     address: int
     size: int                           # 字节数
@@ -84,7 +83,7 @@ class BarcodeFingerprint:
 
 # 指令熵计算 - 对编译器指令选择的具体差异不敏感
 
-# 编译器无关的指令分类--将具体指令映射到语义类别
+# 编译器无关的指令分类, 将具体指令映射到语义类别
 # 同一类别内的指令替换（如 add↔lea↔inc 做加法）不影响熵计算
 _INSN_SEMANTIC_CLASS: Dict[str, int] = {
     # 数据移动 (class 0)
@@ -111,7 +110,7 @@ _INSN_SEMANTIC_CLASS: Dict[str, int] = {
 
 
 def _classify_instruction(mnemonic: str) -> int:
-    """将指令助记符映射到语义类别--编译器无关"""
+    """将指令助记符映射到语义类别, 编译器无关"""
     m = mnemonic.lower().strip()
     # VEX/EVEX 前缀剥离: vaddps->addps
     if m.startswith('v') and len(m) > 1:
@@ -130,7 +129,7 @@ def _classify_instruction(mnemonic: str) -> int:
 def compute_block_entropy(instructions: List[str]) -> float:
     """计算基本块的指令语义类别 Shannon 熵
 
-    同一语义类别的不同指令视为等价--编译器将 add 替换为 lea
+    同一语义类别的不同指令视为等价, 编译器将 add 替换为 lea
     不改变熵值。这使得熵特征对指令选择的具体差异不敏感
     """
     if not instructions:
@@ -252,10 +251,10 @@ class CFGFiltrationBuilder:
     def build_entropy_filtration(self) -> Tuple[
         List[int], List[float], List[Tuple[int, int, float]]
     ]:
-        """构建指令熵过滤通道
+        """构建指令熵过滤通道。
 
-        返回: (sorted_node_ids, node_filtration_values, edge_list)
-        edge_list: (src, dst, filtration_value) 按过滤值升序排列
+        返回 (sorted_node_ids, node_filtration_values, edge_list),
+        edge_list 为按过滤值升序的 (src, dst, filtration_value)。
         """
         # 计算每节点熵
         node_entropies: Dict[int, float] = {}
@@ -298,8 +297,8 @@ class CFGFiltrationBuilder:
     ]:
         """将节点过滤值转换为排序列表和带过滤值的边列表
 
-        节点按过滤值降序排列--高值节点先加入（birth 早）
-        边的过滤值 = max(两端点过滤值)--端点都加入后才出现
+        节点按过滤值降序排列, 高值节点先加入（birth 早）
+        边的过滤值 = max(两端点过滤值), 端点都加入后才出现
         """
         # 补齐缺失节点
         for nid in self._nodes:
@@ -319,7 +318,7 @@ class CFGFiltrationBuilder:
                 f_val = max(node_values[e.src_id], node_values[e.dst_id])
                 edge_list.append((e.src_id, e.dst_id, f_val))
 
-        # 边按过滤值升序--低值边先加入（因为其端点已经加入了）
+        # 边按过滤值升序, 低值边先加入（因为其端点已经加入了）
         edge_list.sort(key=lambda x: x[2])
 
         node_fvals = [node_values[nid] for nid in sorted_ids]

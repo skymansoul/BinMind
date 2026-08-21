@@ -1,8 +1,8 @@
-from typing import Dict, Any
-from typing import List, Optional
 """CHERI capability硬件安全分析。
 针对Morello/ARM CHERI架构编译的二进制，检测capability误用、bounds检查缺失、seal/unseal违规。
 """
+from typing import Dict, Any
+from typing import List, Optional
 import logging
 
 __log = logging.getLogger(__name__)
@@ -67,7 +67,21 @@ class CHERIAnalyzer:
 
     def _disassemble(self, binary_path):
         """通过r2反汇编引擎提取CHERI指令。"""
-        return ""
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["r2", "-q", "-c", "aaaa; pdf @ main; q", binary_path],
+                capture_output=True, text=True, timeout=120,
+                encoding="utf-8", errors="replace")
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout
+            r = subprocess.run(
+                ["r2", "-q", "-c", "aa; pd 1000; q", binary_path],
+                capture_output=True, text=True, timeout=120,
+                encoding="utf-8", errors="replace")
+            return r.stdout if r.returncode == 0 else ""
+        except Exception:
+            return ""
 
     def _extract_capabilities(self, disasm):
         """从反汇编文本解析CHERI capability指令。"""

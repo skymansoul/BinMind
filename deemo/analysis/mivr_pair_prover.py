@@ -22,17 +22,14 @@ from analysis.mivr_constraint_graph import (
 from analysis.mivr_path_propagator import (
     WriteSafetyVerdict, MIVRPathPropagator,
 )
-# PairProof + L1/L2/L3 证明方法 → 已提取至 mivr_proof_layers
 from analysis.mivr_proof_layers import PairProof, prove_single
 
 
 class MIVRPairProver:
     """分配-写入对证明器 — MIVR 的核心证明引擎.
 
-    作为 GAPSBV 管线的新增维度 (维度6), 提供:
-      - 比 dim1(仿射) 更精确: 结合守卫约束的仿射关系
-      - 比 dim2(守卫) 更强大: 传递性约束 + 语义层证明
-      - 比 dim3(SI) 更精确: 路径感知而非区间抽象
+    作为 GAPSBV 管线的新增维度 (维度6): 结合守卫约束的仿射关系,
+    传递性约束传播和分配器语义做三层证明.
     """
 
     _MALLOC_RE = re.compile(
@@ -191,7 +188,6 @@ class MIVRPairProver:
         return -1
 
 
-# 向后兼容: 辅助函数 → 已提取至 mivr_proof_layers
 from analysis.mivr_proof_layers import (  # noqa: F401
     _shared_vars, _is_complex_expr,
     _extract_var_coef, _extract_const_term,

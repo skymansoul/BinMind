@@ -1,10 +1,8 @@
-# .rdata/.rodata 节字节提取 — 供BWR从RIP相对地址读取字符串字面量.
+# .rdata/.rodata 节字节提取 - 供BWR从RIP相对地址读取字符串字面量.
 # objdump -s 输出的数据行格式: <va> 4×32bit hex  ASCII
-# 创建: 2026-07-07
 
 import subprocess
 from typing import Dict
-
 
 def extract_rodata_bytes(binary: str) -> Dict[int, bytes]:
     """提取二进制只读数据节的 {虚拟地址: 字节串} 映射.

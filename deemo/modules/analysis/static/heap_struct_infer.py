@@ -1,7 +1,7 @@
 # 堆对象结构推断 (Heap Object Structure Inference)
 #
 # 核心决策:
-#   堆溢出误报的第二大来源 — 对堆对象的合法字段访问
+# 堆溢出误报的第二大来源 - 对堆对象的合法字段访问
 #   被误认为是越界写入. 例如: struct { int a; char b[32]; } 的
 #   [rax+0x24] 是合法的字段访问, 不是溢出.
 #
@@ -15,7 +15,6 @@
 #   堆对象不相交性降低误报; 结构推断用于区分字段访问与越界;
 #   访问模式驱动的类型推断.
 #
-# 创建: 2026-05-15
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

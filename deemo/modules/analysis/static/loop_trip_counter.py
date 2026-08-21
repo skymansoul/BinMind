@@ -8,7 +8,6 @@
 #      从 lea reg2,[base+offset] 提取总偏移,
 #      从 add reg1, step 提取步长, trip = offset/step
 #
-# 创建: 2026-05-05
 
 from typing import List, Optional, Tuple
 from .disasm_util import norm_reg

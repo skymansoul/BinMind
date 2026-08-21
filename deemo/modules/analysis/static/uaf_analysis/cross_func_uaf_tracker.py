@@ -1,4 +1,4 @@
-"""二进制级跨函数 UAF 追踪 — freed 指针通过 rax 返回值逃逸到调用者.
+"""二进制级跨函数 UAF 追踪 - freed 指针通过 rax 返回值逃逸到调用者.
 
 问题: 函数A中 free(ptr) 后 return ptr → 调用者B接收 rax 后继续使用.
 当前 binary_uaf_scanner 在 call 时清除 caller-saved regs, 错过此场景.

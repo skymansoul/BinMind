@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 def detect_signed_index_underflow(code: str) -> List[Dict]:
     """检测有符号整数负索引绕过边界检查.
 
-    Returns: List of {lineno, expr, var, upper_bound, reason}
+    返回 {lineno, expr, var, upper_bound, reason} 列表.
     """
     lines = code.splitlines()
     results = []

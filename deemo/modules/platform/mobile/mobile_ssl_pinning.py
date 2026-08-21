@@ -10,7 +10,7 @@
   5. Pinning绕过可行性评估 (无备选pin, 过期证书, 弱验证回调)
   6. 原生层 TLS 回调挂钩点检测 (JNI_OnLoad + SSL_CTX_set_verify)
   7. 证书透明度 (Certificate Transparency) SCT 验证支持
-  8. HPKP回溯兼容——检测已弃用但被引用的静态pinning模式
+  8. HPKP回溯兼容: 检测已弃用但被引用的静态pinning模式
 
 技术基础：
   - 字符串/常量匹配 + 模式推导
@@ -93,7 +93,7 @@ _SHA1_B64_PATTERN = re.compile(rb'sha1/([A-Za-z0-9+/=]{28})')
 _SHA256_HEX_PATTERN = re.compile(rb'[0-9a-fA-F]{64}')
 
 _SSL_BYPASS_PATTERNS: List[Tuple[bytes, str, str]] = [
-    (b'X509TrustManager', 'custom_trust_manager', '自定义TrustManager——可能接受所有证书'),
+    (b'X509TrustManager', 'custom_trust_manager', '自定义TrustManager, 可能接受所有证书'),
     (b'checkServerTrusted', 'override_check', 'checkServerTrusted可能被覆盖'),
     (b'HostnameVerifier', 'custom_hostname_verifier', '自定义HostnameVerifier'),
     (b'verify\\(.*true\\)', 'always_true_verify', 'verify()始终返回true'),
@@ -188,20 +188,20 @@ class NetworkSecurityConfigParser:
         findings: List[PinningFinding] = []
         if self.cleartext_allowed:
             findings.append(PinningFinding(category='cleartext_traffic', severity=PinningSeverity.HIGH,
-                description='cleartextTrafficPermitted="true"——允许明文HTTP通信',
+                description='cleartextTrafficPermitted="true", 允许明文HTTP通信',
                 recommendation='设置 cleartextTrafficPermitted="false" 或仅在特定域启用'))
         if self.debug_overrides_present:
             findings.append(PinningFinding(category='debug_overrides', severity=PinningSeverity.MEDIUM,
-                description='debug-overrides 存在——生产构建中未移除调试覆盖项',
+                description='debug-overrides 存在, 生产构建中未移除调试覆盖项',
                 recommendation='确认发布构建中已移除 <debug-overrides>'))
         if self.trusts_user_ca:
             findings.append(PinningFinding(category='user_ca_trust', severity=PinningSeverity.MEDIUM,
-                description='信任用户安装的CA证书——可被中间人攻击',
+                description='信任用户安装的CA证书, 可被中间人攻击',
                 recommendation='仅信任系统CA，使用 <certificates src="system" />'))
         for dc in self.domains:
             if dc.pins and not dc.backup_pins_exist:
                 findings.append(PinningFinding(category='no_backup_pin', severity=PinningSeverity.MEDIUM,
-                    description=f'{dc.domain}: 仅有一个pin，无备份——证书轮换时服务不可用',
+                    description=f'{dc.domain}: 仅有一个pin，无备份, 证书轮换时服务不可用',
                     recommendation=f'为 {dc.domain} 添加第二个备份pin'))
             if dc.expiration_date:
                 findings.append(PinningFinding(category='pin_expiration', severity=PinningSeverity.INFO,
@@ -241,7 +241,7 @@ class ATSConfigParser:
         findings: List[PinningFinding] = []
         if self.ats_disabled:
             findings.append(PinningFinding(category='ats_disabled', severity=PinningSeverity.HIGH,
-                description='NSAllowsArbitraryLoads=true——ATS完全禁用，允许任意非安全连接',
+                description='NSAllowsArbitraryLoads=true, ATS完全禁用，允许任意非安全连接',
                 recommendation='移除 NSAllowsArbitraryLoads 或仅对特定域设置例外'))
         if self.exception_domains:
             findings.append(PinningFinding(category='ats_exceptions', severity=PinningSeverity.INFO,
@@ -325,7 +325,7 @@ class SSLPinningAnalyzer:
                 'description': f'检测到 SSL Pinning 库: {[lib.value for lib in self.detected_libs]}'})
         else:
             all_findings.append({'category': 'no_pinning', 'severity': PinningSeverity.MEDIUM,
-                'description': '未检测到 SSL Pinning——应用易受中间人攻击',
+                'description': '未检测到 SSL Pinning, 应用易受中间人攻击',
                 'recommendation': '集成 OkHttp CertificatePinner (Android) 或 TrustKit (iOS)'})
 
         for pin in self.pins:

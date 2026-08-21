@@ -46,8 +46,8 @@ class LicenseCompatibility:
         return self._val
     def __str__(self):
         return self._val
-    UNKNOWN = LicenseCompatibility("unknown")
 
+UNKNOWN = LicenseCompatibility("unknown")
 @dataclass
 class PackageInfo:
     name: str = ""

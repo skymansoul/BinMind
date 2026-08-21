@@ -18,10 +18,5 @@ class VulnerabilityDatabase(VulnerabilityDatabaseCore, VulnerabilityDatabaseStat
 
 
 def get_vuln_db() -> VulnerabilityDatabase:
-    """
-    获取漏洞数据库单例
-
-    Returns:
-        VulnerabilityDatabase实例
-    """
+    """获取漏洞数据库单例, 返回 VulnerabilityDatabase实例。"""
     return VulnerabilityDatabase()

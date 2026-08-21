@@ -5,7 +5,7 @@
 import threading
 import time
 import functools
-from typing import Dict, Any, Optional, Callable, Tuple, OrderedDict as OD
+from typing import Dict, Any, Optional, Callable, Tuple
 from collections import OrderedDict
 
 # LRU Cache (基于 OrderedDict)

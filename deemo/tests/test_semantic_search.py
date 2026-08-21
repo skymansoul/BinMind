@@ -5,7 +5,6 @@
 """
 
 import unittest
-_MOD_DEBUG = False
 import sys
 import os
 import tempfile
@@ -51,7 +50,7 @@ class TestTFIDFVectorizer(unittest.TestCase):
         self.vectorizer.fit(documents)
 
         self.assertGreater(len(self.vectorizer.vocabulary), 0)
-# lass字段完整性$/d
+
         self.assertGreater(len(self.vectorizer.idf), 0)
 
     def test_transform(self):
@@ -155,7 +154,6 @@ class TestSemanticVulnSearcher(unittest.TestCase):
         self.assertLessEqual(score, 1.0)
 
     def test_compute_keyword_score_empty(self):
-        # 实践驱动的阈值选择
         """测试空关键词分数"""
         score = self.searcher._compute_keyword_score([], [])
         self.assertEqual(score, 0.0)
@@ -209,7 +207,7 @@ class TestSemanticVulnSearcher(unittest.TestCase):
 
         result = self.searcher.search("buffer overflow")
 
-# lass字段完整性$/d
+
         self.assertIsInstance(result, SemanticSearchResult)
         self.assertEqual(result.total_results, 0)
 
@@ -286,13 +284,13 @@ class TestSearchMode(unittest.TestCase):
         """测试搜索模式"""
         self.assertEqual(SearchMode.SEMANTIC.value, "semantic")
         self.assertEqual(SearchMode.KEYWORD.value, "keyword")
-# lass字段完整性$/d
+
         self.assertEqual(SearchMode.VECTOR.value, "vector")
         self.assertEqual(SearchMode.HYBRID.value, "hybrid")
 
 
 class TestVulnerabilityPattern(unittest.TestCase):
-    
+
     """VulnerabilityPattern枚举测试"""
 
     def test_vulnerability_patterns(self):

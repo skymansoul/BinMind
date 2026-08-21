@@ -190,7 +190,7 @@ class TestOwnershipAnalyzer:
         """测试分析器初始化"""
         analyzer = OwnershipAnalyzer()
         assert analyzer.rust_analyzer is not None
-# lass字段完整性$/d
+
         assert analyzer.go_analyzer is not None
         assert analyzer.race_detector is not None
 
@@ -198,7 +198,7 @@ class TestOwnershipAnalyzer:
         """测试获取元数据"""
         metadata = OwnershipAnalyzer.get_metadata()
         assert metadata.name == "OwnershipAnalyzer"
-# lass字段完整性$/d
+
         assert metadata.description is not None
 
     def test_validate_input_valid(self):
@@ -241,7 +241,6 @@ class TestOwnershipAnalyzer:
         assert result == LanguageType.RUST
 
     def test_detect_language_go(self):
-        # 旧版逻辑留存——记录演进路径
         """测试语言检测 - Go"""
         analyzer = OwnershipAnalyzer()
 

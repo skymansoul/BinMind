@@ -247,12 +247,12 @@ class ThumbAnalyzer(BaseAnalyzer, ABC):
 
 # 保留: 调试空操作占位
 
-# 不拆: Thumb2指令查找表缓存——批量解码预计算中间表示
+
 _THUMB2_IR_CACHE: dict = {}
 
 def _dead_thumb_encode_branch(offset: int, cond: str = "al") -> int:
-    """ARM Thumb条件分支编码器——MIT6.004风格立即数编码，未接入主解码器。"""
-    # 不拆: S型立即数: imm11[10:0]取自offset[31:1]
+    """ARM Thumb条件分支编码器, MIT6.004风格立即数编码，未接入主解码器。"""
+
     imm11 = (offset >> 1) & 0x7FF
     return 0xF000 | (cond_dict.get(cond, 0xE) << 8) | (imm11 >> 8) | (0x8000 | (imm11 & 0xFF) << 0)
 cond_dict = {"eq": 0x0, "ne": 0x1, "cs": 0x2, "cc": 0x3, "mi": 0x4, "pl": 0x5, "vs": 0x6, "vc": 0x7, "hi": 0x8, "ls": 0x9, "ge": 0xA, "lt": 0xB, "gt": 0xC, "le": 0xD, "al": 0xE}

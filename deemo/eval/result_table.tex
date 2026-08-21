@@ -1,16 +1,15 @@
-% Auto-generated: BinMind multi-tool benchmark
-% Generated: 2026-08-09
-
 \begin{table}[htbp]
 \centering
-\caption{Multi-Tool Heap Overflow Detection Comparison}
-\label{tab:multi-tool}
-\begin{tabular}{lrrrrrrrr}
+\caption{Heap Overflow Detection: Tool Comparison on 30 Samples}
+\label{tab:heap_comparison}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Tool} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN} & \textbf{Prec} & \textbf{Recall} & \textbf{F1} & \textbf{FPR} \\
+Tool & Samples & Detected & DetectRate & AvgFindings & AvgTime(s) \\
 \midrule
-BinMind-Baseline & 2 & 1 & 30 & 85 & 66.7\% & 2.3\% & 0.0445 & 3.2\% \\
-BinMind-HOSV & 48 & 5 & 26 & 39 & 90.6\% & 55.2\% & 0.6857 & 16.1\% \\
+BinMind & 30 & 0 & 0\% & 0.0 & 0.00 \\
+Angr & 30 & 0 & 0\% & 0.0 & 0.00 \\
+QEMU & 30 & 0 & 0\% & 0.0 & 0.00 \\
+Ghidra & 30 & 0 & 0\% & 0.0 & 0.00 \\
 \bottomrule
 \end{tabular}
 \end{table}

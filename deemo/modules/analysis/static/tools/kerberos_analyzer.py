@@ -21,7 +21,10 @@ class KerberosTicket:
     flags: int = 0; pac_present: bool = False; pac_signed: bool = False
     is_weak: bool = False
     @property
-    def lifetime_hours(self) -> float: return 10.0
+    def lifetime_hours(self) -> float:
+        if self.validity_end > 0 and self.validity_start > 0:
+            return (self.validity_end - self.validity_start) / 3600.0
+        return 0.0
     def to_dict(self) -> Dict[str, Any]:
         return {'ticket_type': self.ticket_type, 'realm': self.realm,
                 'service_name': self.service_name, 'encryption_type': self.encryption_type,
@@ -39,7 +42,11 @@ class KerberosFinding:
         self.encryption_type = encryption_type; self.remediation = remediation
         self.mitre_technique = mitre_technique
     def to_dict(self) -> Dict[str, Any]:
-        return {k: v for k, v in self.__dict__.items()}
+        return {'finding_id': self.finding_id, 'attack_type': self.attack_type,
+                'severity': self.severity, 'description': self.description,
+                'affected_account': self.affected_account, 'spn': self.spn,
+                'encryption_type': self.encryption_type, 'remediation': self.remediation,
+                'mitre_technique': self.mitre_technique}
 
 class KerberosAnalyzer:
     WEAK_ETYPES = {EncryptionType.RC4_HMAC, EncryptionType.DES_CBC_CRC, EncryptionType.DES_CBC_MD5}
@@ -63,7 +70,7 @@ class KerberosAnalyzer:
                     severity='high',
                     description=f'Service {spn} uses weak encryption type ({etype})',
                     spn=spn, encryption_type=str(etype),
-                    mitigation='Rotate service account password to 25+ characters',
+                    remediation='Rotate service account password to 25+ characters',
                     mitre_technique='T1558.003'))
         for ticket in tickets:
             if any(p.lower() in ticket.get('service_name','').lower()
@@ -73,7 +80,7 @@ class KerberosAnalyzer:
                     severity='critical' if 'MSSQLSvc' in ticket.get('service_name','') else 'high',
                     description=f'High-value SPN: {ticket.get("service_name","")}',
                     spn=ticket.get('service_name',''),
-                    mitigation='Audit service account privileges; consider gMSA',
+                    remediation='Audit service account privileges; consider gMSA',
                     mitre_technique='T1558.003'))
         self._findings.extend(findings)
         return {'total_tickets': len(tickets), 'findings': [f.to_dict() for f in findings]}
@@ -130,7 +137,7 @@ class KerberosAnalyzer:
         return {'findings': [f.to_dict() for f in findings]}
 
     def detect_diamond_ticket(self, domain_info: Dict[str, Any]) -> Dict[str, Any]:
-        """检测 Diamond Ticket 攻击条件——AES key 已被泄露或可被解密
+        """检测 Diamond Ticket 攻击条件, AES key 已被泄露或可被解密
         Diamond Ticket 比 Golden Ticket 更难检测，因为它使用正确的 AES key
         而不是 RC4，绕过了基于加密类型异常（事件 4769）的检测
         """

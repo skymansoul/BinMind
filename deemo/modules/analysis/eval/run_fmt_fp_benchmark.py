@@ -1,4 +1,4 @@
-"""fmt 误报基准 — baseline 量化脚本.
+"""fmt 误报基准 - baseline 量化脚本.
 
 对 samples_fmt_fp/ 的 16 个样本 (8 误报诱发 + 8 真实漏洞),
 运行三个既有检测器:

@@ -152,12 +152,11 @@ def _infer_automatable(cvss_vector: Optional[str]) -> bool:
 
 def _infer_exploit_from_epss(epss_score: Optional[float],
                               epss_percentile: Optional[float]) -> str:
-    """从EPSS评分统计推测exploit状态。
+    """从 EPSS 评分统计推测 exploit 状态。
 
-    EPSS（Exploit Prediction Scoring System）给出CVE在接下来30天内
-    被利用的概率。评分越高 → 越可能处于活跃利用。
-
-    返回: 'none', 'poc', 'active' 之一
+    EPSS (Exploit Prediction Scoring System) 给出 CVE 在接下来
+    30 天内被利用的概率, 评分越高越可能处于活跃利用;
+    返回 'none'/'poc'/'active' 之一。
     """
     if epss_score is None and epss_percentile is None:
         return "none"

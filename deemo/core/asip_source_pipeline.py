@@ -4,7 +4,6 @@ ASIP 源码级管线: 将 ASIP 误报削减集成到源码级检测流程。
 路径条件感知过滤 (asip_filter_by_path) 与一键增强入口 (asip_source_enhance)。
 """
 
-import re
 from typing import Dict, List, Optional, Tuple
 
 from modules.patching.src.asip_hinted_widen import (
@@ -67,7 +66,7 @@ def asip_filter_by_path(
         if alloc_conds and write_conds:
             is_mutex, _ = check_path_mutex(alloc_conds, write_conds)
             if is_mutex:
-                continue  # 路径互斥 → 过滤
+                continue  # 路径互斥, 过滤
 
         kept.append(c)
     return kept
@@ -94,7 +93,7 @@ def _extract_alloc_line(candidate) -> int:
     if hasattr(candidate, 'alloc_site'):
         site = candidate.alloc_site
         if hasattr(site, 'pc'):
-            return site.pc + 1  # 0-indexed → 1-indexed
+            return site.pc + 1  # 0-indexed 转 1-indexed
         if hasattr(site, 'line'):
             return site.line
     return -1

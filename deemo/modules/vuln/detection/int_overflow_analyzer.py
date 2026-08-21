@@ -1,15 +1,15 @@
 """
-整数溢出下游影响分析器 — 溢出点→危险使用的路径追踪。
+整数溢出下游影响分析器 - 溢出点-危险使用的路径追踪。
 
 与integer_overflow_triage.py(在output模块)的分工:
   triage: 对已发现的溢出做L0-L5分类和exploitability评分
-  本模块: 在检测阶段做溢出→危险使用的可达性分析
+  本模块: 在检测阶段做溢出-危险使用的可达性分析
 
 核心方法:
-  1. 定位add/sub/mul/imul等算术指令 → 标记可能溢出点
+  1. 定位add/sub/mul/imul等算术指令 - 标记可能溢出点
   2. 追踪溢出结果(mov链)到后续使用点
-  3. 若使用点是malloc/memcpy/数组索引 → 高危; 仅cmp → 低危
-  4. 结合前序约束: 若溢出前有bounds check → 降危
+  3. 若使用点是malloc/memcpy/数组索引 - 高危; 仅cmp - 低危
+  4. 结合前序约束: 若溢出前有bounds check - 降危
 
 修改记录:
   创建 2024-12-09
@@ -77,7 +77,7 @@ def analyze_overflow_paths(
     instructions: List[str],
 ) -> List[IntOverflowPath]:
     """
-    分析整数溢出→下游危险使用的路径。
+    分析整数溢出-下游危险使用的路径。
     返回按 danger_score 降序排列。
     """
     reg_values: Dict[str, int] = {}  # 追踪寄存器值的简单传播

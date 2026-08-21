@@ -268,7 +268,7 @@ class Interval:
                      signed: Signedness = Signedness.UNSIGNED) -> Tuple[bool, str]:
         """此区间在指定位宽/符号下是否会溢出.
 
-        Returns: (may_overflow, reason)
+        返回 (may_overflow, reason)。
         """
         if self.is_bottom():
             return (False, "unreachable")

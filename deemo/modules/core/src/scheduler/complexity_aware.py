@@ -1,23 +1,22 @@
-# 修改记录:
-# 2025-08-07 10:12 - 初始实现：基于二进制复杂度的自适应分析调度
+# 初始实现: 基于二进制复杂度的自适应分析调度
 
-"""复杂度感知调度 — 按二进制复杂度动态分配分析资源的最短剩余时间优先调度。
+"""复杂度感知调度 - 按二进制复杂度动态分配分析资源的最短剩余时间优先调度。
 
-现有分析管道按FIFO处理二进制——一个5MB的striped binary和一个50MB的
+现有分析管道按FIFO处理二进制-一个5MB的striped binary和一个50MB的
 全符号binary获得相同的分析时间和资源。导致小文件等待大文件，整体延迟恶化。
 
-核心机制——复杂度估计 + 最短处理时间优先(SPT)调度：
+核心机制-复杂度估计 + 最短处理时间优先(SPT)调度：
 1. 在分析开始前，用轻量级特征（段数/导入函数数/文件大小/熵）
    估计每个二进制的分析耗时（线性回归）。
-2. 按估计耗时升序排列分析队列——短任务优先完成，降低平均等待时间。
-3. 对耗时异常超过估计值150%的任务，触发"复杂度再估计"——
+2. 按估计耗时升序排列分析队列-短任务优先完成，降低平均等待时间。
+3. 对耗时异常超过估计值150%的任务，触发"复杂度再估计"-
    更新模型参数并可能重新排队。
 4. 自适应批处理：复杂度相近的二进制归入同批，减少上下文切换。
 
 与既有 adaptive_pool.py 的关系：
 - adaptive_pool：线程/进程池的大小自适应（How many workers）。
 - 本模块：任务调度顺序自适应（Which task next）。
-- 两者正交——分别优化并发度和优先级。
+- 两者正交-分别优化并发度和优先级。
 
 参考：SPT调度理论，应用于二进制分析的新场景。
 """
@@ -116,7 +115,7 @@ class ComplexityAwareScheduler:
         return [p.binary_id for p in self._queue]
 
     def schedule_batches(self) -> List[List[str]]:
-        """按复杂度相近原则分组——减少上下文切换。"""
+        """按复杂度相近原则分组-减少上下文切换。"""
         _sorted = sorted(self._queue, key=lambda p: p.estimated_seconds)
         _batches: List[List[str]] = []
         _current: List[BinaryProfile] = []
@@ -139,12 +138,12 @@ class ComplexityAwareScheduler:
         return _batches
 
     def feedback(self, binary_id: str, actual_seconds: float):
-        """反馈实际分析耗时——在线更新回归模型。"""
+        """反馈实际分析耗时-在线更新回归模型。"""
         for _p in self._queue:
             if _p.binary_id == binary_id:
                 _p.actual_seconds = actual_seconds
 
-                # 若实际耗时远超估计→触发重新估计+模型更新
+                # 若实际耗时远超估计->触发重新估计+模型更新
                 if (_p.estimated_seconds > 0 and
                         actual_seconds > _p.estimated_seconds * self.reestimate_threshold):
                     _feat = self._extract_features(
@@ -185,7 +184,7 @@ class ComplexityAwareScheduler:
         return max(1.0, _z)
 
     def _online_update(self, features: List[float], actual: float):
-        """SGD更新回归权重——最小化(预测-实际)²。"""
+        """SGD更新回归权重-最小化(预测-实际)²。"""
         _pred = self._predict(features)
         _error = _pred - actual
 
@@ -217,7 +216,7 @@ def _smoke_test():
     _batches = _scheduler.schedule_batches()
     print(f"[sched] batches: {len(_batches)} batches, sizes={[len(b) for b in _batches]}")
 
-    # 反馈——更新模型
+    # 反馈-更新模型
     _scheduler.feedback("tiny_bin", 12.0)
     _remaining = _scheduler.estimate_remaining({"tiny_bin"})
     print(f"[sched] remaining time: {_remaining:.1f}s")

@@ -121,11 +121,6 @@ class RLVulnAgent:
             iterations=max(1, target_iterations),
         )
 
-        action = AgentAction(
-            action_type=_FUZZ_ACTIONS[action_idx],
-            action_index=action_idx,
-        )
-
 def create_rl_agent() -> RLVulnAgent:
     """构造漏洞发现优化代理。"""
     return RLVulnAgent()

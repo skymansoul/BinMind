@@ -1,17 +1,17 @@
 #
-# 秘密依赖访存检测 —— 检测秘密数据是否用作内存访问的地址或偏移
+# 秘密依赖访存检测 - 检测秘密数据是否用作内存访问的地址或偏移
 #
 # 违规条件：秘密污点出现在以下位置时：
-#   (a) [reg] 中 reg 被污染 —— 以秘密值为地址读取内存（查表攻击、cache 侧信道）
-#   (b) [base + index*scale] 中 index 被污染 —— base 不变但 index 依赖于秘密
-#   (c) [base + index*scale] 中 base 被污染 —— 指向不同表的基址选择
-#   (d) xlatb 指令 —— x86 的 S-box 查表指令，AL = 索引
+#   (a) [reg] 中 reg 被污染 - 以秘密值为地址读取内存（查表攻击、cache 侧信道）
+#   (b) [base + index*scale] 中 index 被污染 - base 不变但 index 依赖于秘密
+#   (c) [base + index*scale] 中 base 被污染 - 指向不同表的基址选择
+#   (d) xlatb 指令 - x86 的 S-box 查表指令，AL = 索引
 #
 # 排除规则：
-# 栈访问 [rsp+N] / [rbp-N] 不视为违规——栈偏移不携带秘密信息
+# 栈访问 [rsp+N] / [rbp-N] 不视为违规-栈偏移不携带秘密信息
 # 立即数偏移量不视为秘密依赖（[array+0x10] 中的 0x10 不是秘密）
 #
-# "Cache-timing attacks AES" — T-t 访问模式泄露密钥；
+# "Cache-timing attacks AES" - T-t 访问模式泄露密钥；
 # "Spectre Attacks: 漏洞利用ing Speculat Execu"
 
 import logging
@@ -37,13 +37,13 @@ class MemoryViolation:
     severity: str
 
 
-# 栈指针寄存器——这些寄存器用于栈帧访问，不传递秘密（正常编译的代码中）
+# 栈指针寄存器-这些寄存器用于栈帧访问，不传递秘密（正常编译的代码中）
 _STACK_REGS = {'rsp', 'rbp', 'esp', 'ebp', 'sp', 'bp'}
 
 
 def _parse_memory_operand(op_str: str) -> List[str]:
     """从 [base + index*scale + disp] 中提取所有寄存器引用
-    
+
     返回寄存器名列表（不含立即数）
     """
     if '[' not in op_str:
@@ -82,7 +82,7 @@ def check_secret_dependent_memory(
         elif mn_lower in ('pop',):
             access_type = 'READ'
         elif mn_lower == 'xlatb':
-            # XLATB: AL = [RBX + AL] —— AL 作为索引
+            # XLATB: AL = [RBX + AL] - AL 作为索引
             if 'al' in taints:
                 violations.append(MemoryViolation(
                     func_name=func_name,

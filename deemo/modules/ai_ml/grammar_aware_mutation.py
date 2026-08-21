@@ -1,16 +1,14 @@
-# created: 2026-08-17
-# modified: 2026-08-22 — replaced lossy tokens_to_bytes with byte-preserving token span mapping
-# 语法感知突变——学习输入格式的概率文法以引导fuzzing突变
+# 语法感知突变-学习输入格式的概率文法以引导fuzzing突变
 #
 # 核心问题: ai_mutator.py和rl_mutate.py使用随机字节级突变（位翻转、
 # 字节替换、块插入/删除），对结构化输入（JSON/XML/protobuf/ELF）
-# 产生大量语法无效的测试用例——被目标程序的解析器直接拒绝，
+# 产生大量语法无效的测试用例-被目标程序的解析器直接拒绝，
 # 浪费fuzzing算力且无法深入测试业务逻辑。
 #
 # 技术方案:
 #   1. 概率上下文无关文法(PCFG)学习: 从有效种子输入中学习输入格式的
-#      PCFG——产生式规则+概率（如"JSON object→{ members }"概率0.8）
-#   2. 文法引导突变: 突变操作在语法树层面进行——
+#      PCFG-产生式规则+概率（如"JSON object: { members }"概率0.8）
+#   2. 文法引导突变: 突变操作在语法树层面进行-
 #      替换子树、复制节点、删除可选节点——保证输出语法有效
 #   3. 稀有规则探索: 优先选择训练数据中出现频率低的产生式——
 #      这些规则对应的代码路径可能未被充分测试
@@ -31,7 +29,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -216,11 +213,7 @@ class GrammarAwareMutator:
 
     def _map_tokens_to_bytes(self, tokens: List[str],
                               raw: bytes) -> List[Tuple[int, int]]:
-        """将token序列映射到原始字节偏移区间。
-
-        Returns:
-            [(start_offset, end_offset), ...] 每个token对应的字节范围
-        """
+        """将token序列映射到原始字节偏移区间。"""
         spans = []
         byte_pos = 0
         for token in tokens:

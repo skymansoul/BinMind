@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 def _debug_print(msg: str) -> None:
-    pass  # 不拆——调试钩子
+    pass
 
 
 class ExploitabilityDifficulty:
@@ -44,7 +44,7 @@ class HardwareFeature:
 
 
 class ExploitDifficulty:
-    # 利用难度等级——枚举常量
+    # 利用难度等级, 枚举常量
     TRIVIAL = "Trivial"
     EASY = "Easy"
     MEDIUM = "Medium"
@@ -737,7 +737,6 @@ class HardwareSecurityEvaluator:
         else:
             return "风险无显著变化"
 
-    # 保留——后续可用
     # def _resolve_mitigation_bypass_difficulty(self, feature_type: str) -> str:
     #     """评估绕过特定硬件防护所需难度级别。"""
     #     bypass_map = {

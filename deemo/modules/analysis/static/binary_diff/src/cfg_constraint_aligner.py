@@ -1,11 +1,10 @@
-# 修改记录:
-# 2025-08-06 11:52 - 两阶段对齐: 粗粒度支配树匹配 -> 细粒度节点对齐
-# 2025-08-06 15:40 - 贪婪初始化 + 局部搜索: 避免完整 ILP 在大 CFG 上的指数开销
+# 两阶段对齐: 粗粒度支配树匹配 -> 细粒度节点对齐
+# 贪婪初始化 + 局部搜索: 避免完整 ILP 在大 CFG 上的指数开销
 
 """约束驱动的 CFG 对齐器 - 树编辑距离 + 局部搜索的混合求解
 
 cfg_edit_model.py 定义了编辑代价和结构分解
-本模块执行实际的对齐--将源 CFG 映射到目标 CFG 以最小化编辑距离
+本模块执行实际的对齐 - 将源 CFG 映射到目标 CFG 以最小化编辑距离
 
 两阶段策略:
   阶段 1 (粗粒度): 对支配树的树状区域做 Zhang-Shasha 树编辑距离
@@ -13,7 +12,7 @@ cfg_edit_model.py 定义了编辑代价和结构分解
     输出: 区域级别的匹配 (哪些区域对应哪些区域)
 
   阶段 2 (细粒度): 对匹配区域内的节点做约束求解
-    使用贪婪初始化 + 2-opt 局部搜索--在多项式时间内获得近似最优
+    使用贪婪初始化 + 2-opt 局部搜索 - 在多项式时间内获得近似最优
     约束条件: (a) 节点属性匹配度 (b) 边一致性 (匹配的边应连接匹配的节点)
 
 与精确 ILP 求解的区别:
@@ -73,9 +72,9 @@ def _tree_edit_distance(
     node_ids_a: List[int],
     node_ids_b: List[int],
 ) -> Tuple[float, Dict[int, int]]:
-    """计算两棵支配树的树编辑距离--简化版 Zhang-Shasha
+    """计算两棵支配树的树编辑距离 - 简化版 Zhang-Shasha
 
-    只支持节点替换/插入/删除 (无子树移动--支配树是纯树结构)
+    只支持节点替换/插入/删除 (无子树移动 - 支配树是纯树结构)
     返回: (距离, {node_id_a: node_id_b} 匹配)
     """
     # 转换为后序遍历索引
@@ -104,7 +103,7 @@ def _tree_edit_distance(
             cost_ins = dp[i][j-1] + 1.0
             dp[i][j] = min(cost_sub, cost_del, cost_ins)
 
-    # 回溯--提取匹配
+    # 回溯 - 提取匹配
     mapping: Dict[int, int] = {}
     i, j = na, nb
     while i > 0 and j > 0:
@@ -143,7 +142,7 @@ class CFGConstraintAligner:
         dst_nodes: List[EditCFGNode],
         dst_edges: List[EditCFGEdge],
     ) -> CFGAlignmentResult:
-        """执行完整的 CFG 对齐--两阶段策略"""
+        """执行完整的 CFG 对齐 - 两阶段策略"""
         self._src_nodes = {nd.node_id: nd for nd in src_nodes}
         self._dst_nodes = {nd.node_id: nd for nd in dst_nodes}
 
@@ -153,7 +152,7 @@ class CFGConstraintAligner:
 
         n_src, n_dst = len(src_nodes), len(dst_nodes)
 
-        # 阶段 1: 贪婪初始化--基于节点替换代价
+        # 阶段 1: 贪婪初始化 - 基于节点替换代价
         mapping = self._greedy_initial_mapping(src_nodes, dst_nodes)
 
         # 节点替换代价函数
@@ -162,7 +161,7 @@ class CFGConstraintAligner:
             d_node = dst_nodes[j]
             return node_substitution_cost(s_node, d_node, self._costs) / self._costs.node_substitution
 
-        # 阶段 2: 2-opt 局部搜索--改善匹配
+        # 阶段 2: 2-opt 局部搜索 - 改善匹配
         mapping = self._two_opt_refinement(
             mapping, src_nodes, dst_nodes, src_edges, dst_edges,
             max_iterations=50,
@@ -197,7 +196,7 @@ class CFGConstraintAligner:
         src_nodes: List[EditCFGNode],
         dst_nodes: List[EditCFGNode],
     ) -> Dict[int, int]:
-        """贪婪初始化匹配--每源节点选择最优未匹配目标节点"""
+        """贪婪初始化匹配 - 每源节点选择最优未匹配目标节点"""
         mapping: Dict[int, int] = {}
         used_dst: Set[int] = set()
 
@@ -236,10 +235,10 @@ class CFGConstraintAligner:
         dst_edges: List[EditCFGEdge],
         max_iterations: int = 50,
     ) -> Dict[int, int]:
-        """2-opt 局部搜索--交换两对匹配以降低总代价
+        """2-opt 局部搜索 - 交换两对匹配以降低总代价
 
         每次迭代随机选择两对匹配 (a↔x, b↔y)
-        尝试交换为 (a↔y, b↔x)--若总代价降低则接受
+        尝试交换为 (a↔y, b↔x) - 若总代价降低则接受
         """
         current = dict(mapping)
         rng = random.Random(42)

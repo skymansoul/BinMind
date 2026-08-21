@@ -1,10 +1,11 @@
 """
-栈溢出静态回退分析 —— 反向污点追踪 + 缓冲区大小估算。
+栈溢出静态回退分析 - 反向污点追踪 + 缓冲区大小估算。
 
 """
 
 
 import logging
+import re
 from typing import Any, Dict, Optional
 
 _log = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def static_overflow_analysis(
     binfo: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
-    静态回退分析(增强版)——反向污点追踪 + 缓冲区大小估算。
+    静态回退分析(增强版)-反向污点追踪 + 缓冲区大小估算。
 
     与旧版区别: 不再仅靠函数名正则匹配判断危险调用。
     对每个危险调用做反向def-use链追踪, 验证参数是否来自用户输入源。
@@ -38,13 +39,12 @@ def static_overflow_analysis(
         if not pseudocode:
             return result
 
-        # 污点追踪 —— 验证危险调用的参数是否来自用户输入
+        # 污点追踪 - 验证危险调用的参数是否来自用户输入
         try:
             from core.taint_source_tracker import trace_taint_source, is_arg_tainted
             call_sigs = []
-            import re as _re
             for call in DIRTY_CALLS:
-                for m in _re.finditer(rf'({call})\s*\(\s*([^,)]+)', pseudocode):
+                for m in re.finditer(rf'({call})\s*\(\s*([^,)]+)', pseudocode):
                     call_sigs.append((call, m.group(2).strip()))
 
             taint_result = trace_taint_source(pseudocode, func_name, call_sigs)
@@ -75,7 +75,6 @@ def static_overflow_analysis(
 
         # 估算缓冲区大小
         if result['overflowable']:
-            import re
             buf_matches = re.findall(
                 r'char\s+\w+\s*\[(\d+)\]', pseudocode
             )

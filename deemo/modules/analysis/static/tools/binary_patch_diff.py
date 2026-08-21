@@ -1,5 +1,4 @@
-# 2026-07-22
-# 二进制补丁差异分析 — 通过函数级多特征指纹匹配定位patch引入/移除/修改的函数
+# 二进制补丁差异分析 - 通过函数级多特征指纹匹配定位patch引入/移除/修改的函数
 # 设计思路：四阶段渐进式匹配(名称→mnemonic hash→mnemonic profile→模糊匹配)，安全相关性标记
 # 权衡：不做基本块级控制流图同构匹配(BinDiff策略)，用助记符分布+哈希在速度vs精度间取平衡
 
@@ -56,7 +55,7 @@ _SECURITY_KEYWORDS = [
 ]
 
 # //// 指令助记符抽取 ////
-# CPU指令助记符正则 — 提取纯指令部分，剥离操作数
+# CPU指令助记符正则 - 提取纯指令部分，剥离操作数
 _INSN_RE = re.compile(r'^\s*([a-zA-Z][a-zA-Z0-9]*)')
 
 
@@ -78,7 +77,7 @@ def extract_mnemonics(asm_lines: List[str]) -> List[str]:
 
 # mnemonic哈希
 def compute_mnemonic_hash(mnemonics: List[str]) -> str:
-    """助记符序列的SHA256 — 严格匹配用，不抗指令重排"""
+    """助记符序列的SHA256 - 严格匹配用，不抗指令重排"""
     _joined = '|'.join(mnemonics)
     return hashlib.sha256(_joined.encode('utf-8', errors='replace')).hexdigest()
 
@@ -100,7 +99,7 @@ def build_mnemonic_profile(mnemonics: List[str]) -> Dict[str, float]:
 
 # 余弦相似度
 def cosine_similarity(vec1: Dict[str, float], vec2: Dict[str, float]) -> float:
-    """归一化词频向量的余弦相似度 — 1.0=完全相同, 0.0=正交"""
+    """归一化词频向量的余弦相似度 - 1.0=完全相同, 0.0=正交"""
     if not vec1 or not vec2:
         return 0.0
     _all_keys = set(vec1.keys()) | set(vec2.keys())
@@ -272,7 +271,7 @@ _SR_PATTERN = re.compile(
 
 
 def is_security_relevant(func_name: str) -> bool:
-    """判断函数是否与安全相关 — 基于关键字模式匹配"""
+    """判断函数是否与安全相关 - 基于关键字模式匹配"""
     if not func_name:
         return False
     return bool(_SR_PATTERN.search(func_name))

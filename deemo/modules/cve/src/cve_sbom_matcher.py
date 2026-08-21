@@ -593,18 +593,17 @@ def match_component(kb, component: Dict) -> Dict[str, Dict]:
 # SBOM报告构建（单片式约130行——有意为之）
 
 def build_sbom_report(kb, components: List[Dict]) -> Dict:
-    """构建综合SBOM漏洞报告。
-    统计聚合、按严重度排序、SSVC富化、传递风险传播——全部在一个函数中完成。
-    有意保持单片式。提取子函数会对每次报告仅调用一次的逻辑增加函数调用开销。
-    若增长超过约200行再考虑清理。
+    """构建综合 SBOM 漏洞报告。
 
-    返回:
-      {
-        summary: {total_components, components_with_matches, total_matches},
-        matches: [{component, cve_id, severity, ...}],
-        top_priorities: [{cve_id, severity, component, fix_suggestion}],
-        risk_tree: {...},   # 来自transitive_risk_report
-      }
+    统计聚合、按严重度排序、SSVC 富化、传递风险传播 — 全在一个
+    函数中完成, 有意保持单片式 (提取子函数会对每次报告仅调用
+    一次的逻辑增加函数调用开销, 增长超过约 200 行再考虑清理)。
+
+    返回 {summary: {total_components, components_with_matches,
+    total_matches}, matches: [{component, cve_id, severity, ...}],
+    top_priorities: [{cve_id, severity, component, fix_suggestion}],
+    risk_tree: {...}   # 来自 transitive_risk_report
+    }。
     """
 
     total_components = len(components)

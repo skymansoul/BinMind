@@ -3,6 +3,7 @@
 # BEGA 边丢弃策略：在稀疏 CFG 上保留关键结构，防止过拟合
 
 import numpy as np
+from typing import Dict
 
 
 # InfoNCE Loss: 自监督对比学习的核心损失
@@ -242,8 +243,8 @@ def _semi_hard_negative_indices(anchor, positive, negatives):
 # 变体集：
 # no_drop: 不做边丢弃（基线）
 # uniform_drop: 固定概率 δ 随机丢弃所有边
-# degree_drop: 丢弃概率 ∝ 度数（高度节点边更易丢--作为反例对照）
-# gravity_drop: 丢弃概率 ∝ 1/度数（高度节点边更不易丢--本方案）
+# degree_drop: 丢弃概率 ∝ 度数（高度节点边更易丢，作为反例对照）
+# gravity_drop: 丢弃概率 ∝ 1/度数（高度节点边更不易丢，本方案）
 # semantic_drop: 按边类型（条件跳转/无条件跳转/调用）差异化丢弃概率
 
 class AblationFramework:
@@ -303,7 +304,7 @@ class AblationFramework:
             return adj * mask * mask.T
 
         if variant == 'gravity_drop':
-            # 与度数成反比 -- 本方案的默认策略
+            # 与度数成反比，本方案的默认策略
             adj_out = adj.copy().astype(np.float64)
             for i in range(n):
                 for j in range(i + 1, n):
@@ -318,7 +319,7 @@ class AblationFramework:
             return adj_out
 
         if variant == 'semantic_drop':
-            # 按边类型差异化--调用边（高语义重要性）保留概率更高
+            # 按边类型差异化，调用边（高语义重要性）保留概率更高
             # 当前实现: 占位，留待后续通过 CFG 边语义标注接入
             return gravity_edge_dropout(adj, rate)
 
@@ -328,7 +329,7 @@ class AblationFramework:
         """测量增强后图断裂为不连通分量的比例。
 
         断裂判定：连通分量数量 > 1。
-        低度节点（deg ≤ 1）边的丢弃是图断裂的主要原因——
+        低度节点（deg ≤ 1）边的丢弃是图断裂的主要原因-
         本指标量化了增强策略对连通性的破坏程度。
         """
         fractured = 0
@@ -356,16 +357,16 @@ class AblationFramework:
         return fractured / max(1, len(self._train))
 
     def _measure_downstream_f1(self, variant: str, rate: float) -> float:
-        """下游 F1 占位——实际训练和评估由外部编排器完成。
+        """下游 F1 占位-实际训练和评估由外部编排器完成。
 
         此方法返回的占位值需由调用方替换为真实指标。
         """
-        return 0.0  # 占位--实际值由外部编排器填充
+        return 0.0  # 占位，实际值由外部编排器填充
 
     def _measure_embedding_dispersion(self, variant: str, rate: float) -> float:
-        """嵌入分散度占位——同类内方差 / 异类间方差。
+        """嵌入分散度占位-同类内方差 / 异类间方差。
 
-        > 1.0 表示类内方差超过了类间方差——嵌入空间在退化。
+        > 1.0 表示类内方差超过了类间方差-嵌入空间在退化。
         占位值 1.0 表示"未测量"。
         """
         return 1.0  # 占位

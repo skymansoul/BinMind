@@ -8,7 +8,7 @@ from scipy.sparse import coo_matrix, eye, issparse
 
 # node_drop
 # 随机丢弃节点并重建邻接矩阵
-# 度>5的桥接节点不可丢弃 -- 保证图结构不过度破碎
+# 度>5的桥接节点不可丢弃 保证图结构不过度破碎
 
 def node_drop(x, adj, drop_prob=0.1):
     """x: (n_nodes, n_features), adj: (n_nodes, n_nodes) sparse or dense"""

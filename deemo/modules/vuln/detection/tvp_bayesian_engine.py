@@ -1,24 +1,22 @@
 # coding: utf-8
-# 创建: 2026-04-24  |  贝叶斯推断引擎
-# 修改: 2026-04-24  |  审计后补充文件头与错误处理
 #
 """
-贝叶斯时态溯源推断引擎——综合先验与因果似然，产出提交级后验概率分布。
+贝叶斯时态溯源推断引擎-综合先验与因果似然，产出提交级后验概率分布。
 
 核心公式:
   P(commit_i | evidence) ∝ P(evidence | commit_i) × P(commit_i)
   prior ∝ exp(-|t_i - t_report| / τ) × log(1 + churn_i)
 
 因果图结构（默认DAG）:
-  author_expertise ──→ code_churn ──→ vuln_introduction
+  author_expertise ---- code_churn ---- vuln_introduction
        │                                    ↑
-       └──→ review_quality ────────────────→│
+       └---- review_quality ----------------│
                 ↑                            │
-  file_age ────→│                            │
-  commit_freq ─→│                            │
-  security_sensitive ───────────────────────→│
+  file_age ----│                            │
+  commit_freq -│                            │
+  security_sensitive -----------------------│
 
-后门调整: 使用IPW校正code_churn→vuln_introduction路径上的混淆偏差。
+后门调整: 使用IPW校正code_churn-vuln_introduction路径上的混淆偏差。
 最小充分调整集: {author_expertise}（后门准则推导）。
 """
 
@@ -38,7 +36,7 @@ _log = logging.getLogger(__name__)
 
 
 class VulnerabilityCausalModel:
-    """漏洞引入结构因果模型——贝叶斯网络 + do-calculus反事实推断。
+    """漏洞引入结构因果模型-贝叶斯网络 + do-calculus反事实推断。
 
     线性高斯条件分布（连续型节点）:
       P(child | parents) ~ N(Σ coeff_i × parent_i, sigma²)
@@ -53,7 +51,7 @@ class VulnerabilityCausalModel:
         self._build_graph()
 
     def _build_graph(self):
-        """构建默认因果DAG——根节点→中介节点→结果节点"""
+        """构建默认因果DAG-根节点-中介节点-结果节点"""
         self._nodes['author_expertise'] = CausalNode(
             name='author_expertise', node_type='root_cause',
             is_continuous=True, sigma=0.3)
@@ -86,12 +84,12 @@ class VulnerabilityCausalModel:
             sigma=0.5)
 
     def compute_likelihood(self, hypothesis: ProvenanceHypothesis) -> float:
-        """计算单条假设的对数似然——沿因果拓扑序求条件概率积。
+        """计算单条假设的对数似然-沿因果拓扑序求条件概率积。
 
         连续型节点: 线性高斯 log P(child | parents)
         离散型节点: 查对数概率表
         """
-        # 证据映射——hypothesis字段→因果节点名
+        # 证据映射-hypothesis字段-因果节点名
         evidence = {
             'author_expertise': hypothesis.author_expertise,
             'code_churn': hypothesis.code_churn,
@@ -112,9 +110,9 @@ class VulnerabilityCausalModel:
 
     def adjust_for_confounders(self, hypotheses: List[ProvenanceHypothesis],
                                 confounder_values: Dict[str, float] = None):
-        """IPW后门调整——倾向得分加权校正混淆偏差。
+        """IPW后门调整-倾向得分加权校正混淆偏差。
 
-        高搅动+低经验→更高的偶然引入概率，施加倾向得分降权。
+        高搅动+低经验-更高的偶然引入概率，施加倾向得分降权。
         """
         if not confounder_values:
             return
@@ -127,7 +125,7 @@ class VulnerabilityCausalModel:
             h.log_likelihood += math.log(max(propensity, 1e-6))
 
     def get_adjustment_set(self, treatment: str, outcome: str) -> List[str]:
-        """后门准则——返回阻塞所有后门路径的最小节点集。
+        """后门准则-返回阻塞所有后门路径的最小节点集。
 
         treatment='code_churn', outcome='vuln_introduction'时:
           后门路径: code_churn ← author_expertise → review_quality → vuln_introduction
@@ -139,17 +137,17 @@ class VulnerabilityCausalModel:
 
 
 class TemporalProvenanceEstimator:
-    """时态溯源估计器——先验×似然→后验→时间窗口。
+    """时态溯源估计器-先验×似然-后验-时间窗口。
 
     先验设计:
-      - 时间衰减: exp(-|t_i - t_report| / τ) ——越接近报告时间越可疑
-      - 搅动先验: log(1 + churn) ——大变更先验概率更高
+      - 时间衰减: exp(-|t_i - t_report| / τ) -越接近报告时间越可疑
+      - 搅动先验: log(1 + churn) -大变更先验概率更高
       τ = 90天（时间衰减常数）
 
     后验导出:
-      MAP估计 → 最可能的漏洞引入提交
-      95% HPD区间 → 引入时间窗口
-      模型证据(log marginal likelihood) → 整体拟合优度
+      MAP估计 - 最可能的漏洞引入提交
+      95% HPD区间 - 引入时间窗口
+      模型证据(log marginal likelihood) - 整体拟合优度
     """
 
     def __init__(self, time_decay_days: float = 90.0):
@@ -160,7 +158,7 @@ class TemporalProvenanceEstimator:
                   vuln_report_time: float,
                   confounders: Dict[str, float] = None,
                   prior_strength: float = 1.0) -> TemporalProvenanceResult:
-        """执行溯源估计——完整贝叶斯推断管线。
+        """执行溯源估计-完整贝叶斯推断管线。
 
         返回TemporalProvenanceResult含MAP、HPD区间及诊断信息。
         """
@@ -243,7 +241,7 @@ def aggregate_provenance_signals(
     """贝叶斯模型平均(BMA)融合多源溯源信号。
 
     权重: git=0.50, static=0.30, llm=0.20
-    对数空间加权求和——避免浮点下溢。
+    对数空间加权求和-避免浮点下溢。
     """
     weights = {'git': 0.50, 'static': 0.30, 'llm': 0.20}
     static_hints = static_hints or {}

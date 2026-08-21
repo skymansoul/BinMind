@@ -1,5 +1,5 @@
 #
-# 并发分析管线 —— 编排静态并发缺陷分析的完整流程
+# 并发分析管线 - 编排静态并发缺陷分析的完整流程
 #
 # 输入: 反汇编后的函数指令数据 + 导入表
 # 输出: ConcurrencyReport（死锁 + 数据竞争 + 同步误用）
@@ -64,13 +64,13 @@ def analyze_binary_concurrency(
     global_vars: Optional[Dict[str, int]] = None,
 ) -> ConcurrencyReport:
     """对二进制文件做完整的静态并发分析
-    
+
     参数:
     binary_path: 二进制文件路径（用于报告）
     imports: 导入符号列表（如 r2 的 iE 输出）
     func_insns: {name: (addr, [(mnemonic, [operands]),.])}
     global_vars: {name: addr} 全局变量映射（如 r2 的 输出）
-    
+
     返回 并发Report
     """
     if global_vars is None:
@@ -102,7 +102,7 @@ def analyze_binary_concurrency(
                     break
 
             if matched:
-                # 锁标识符推导——简化：使用被调用符号的第一个操作数作为 ID
+                # 锁标识符推导-简化：使用被调用符号的第一个操作数作为 ID
                 lock_id = ops[1] if len(ops) > 1 else f"anon_{func_name}_{offset}"
                 site = SyncSite(
                     func_addr=func_addr,

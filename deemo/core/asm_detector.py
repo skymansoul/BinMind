@@ -9,31 +9,25 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import struct
 from typing import Any, Dict, List, Optional
 
 _log = logging.getLogger(__name__)
 
-# Capstone x86_64 操作码常量
-_X86_INS_CALL = 0
-_X86_INS_LEA = 0
-_X86_INS_MOV = 0
-_X86_REG_RDI = 0
-_X86_REG_RSP = 0
-
 # 危险调用目标（按函数名）
 _DANGER_CALLS = {
     'printf', 'fprintf', 'sprintf', 'snprintf',   # 格式字符串
-    'gets', 'strcpy', 'strcat', 'sprintf',         # 栈溢出
-    'free',                                          # UAF/double-free
-    'system', 'popen',                               # 命令注入
+    'gets', 'strcpy', 'strcat',                    # 栈溢出
+    'free',                                         # UAF/double-free
+    'system', 'popen',                              # 命令注入
 }
 
 def detect_from_assembly(
     binary_path: str,
     func_name: str | None = None,
 ) -> list[dict[str, Any]]:
-    """从汇编代码检测漏洞——反编译无关的独立检测路径。
+    """从汇编代码检测漏洞, 反编译无关的独立检测路径。
 
     返回 finding 列表，格式与 format_string_detector/stack_overflow_analyzer 兼容。
     若 Capstone 不可用或文件非 ELF，返回空列表。
@@ -159,12 +153,11 @@ def _detect_stack_overflow_asm(
             prev_addr, prev_mnem, prev_op, _ = instructions[j]
             if prev_mnem == 'lea' and 'rdi' in prev_op and 'rsp' in prev_op:
                 # 尝试解析 rsp 偏移量
-                import re
                 offset_m = re.search(r'\[\s*rsp\s*[-+]\s*(\w+)\]', prev_op)
                 if offset_m:
                     try:
                         offset = int(offset_m.group(1), 16) if offset_m.group(1).startswith('0x') else int(offset_m.group(1))
-                        # 偏移量小 (<256 字节) → 小缓冲区，溢出风险高
+                        # 偏移量小 (<256 字节), 小缓冲区, 溢出风险高
                         if offset < 256:
                             findings.append({
                                 'rule_id': 'ASM-SO',
@@ -196,7 +189,7 @@ def _detect_uaf_asm(
 
     for addr, mnem, op_str, group in instructions:
         if mnem == 'call' and 'free' in op_str:
-            # 向前找 rdi 的值来源——通常是 mov rdi, reg
+            # 向前找 rdi 的值来源, 通常是 mov rdi, reg
             for j in range(len(instructions)):
                 if instructions[j][0] == addr:
                     for k in range(max(0, j - 3), j):

@@ -1,12 +1,11 @@
 """
-ARM64e PAC绕过面分析——v8.3-A+ 指针认证旁路可行性。
+ARM64e PAC绕过面分析: v8.3-A+ 指针认证旁路可行性。
 基于指令编码匹配32-bit PAC操作码；PACGA视为签名神谕。
 """
 import struct, re
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -21,14 +20,6 @@ RETAA=0xD65F0BFF; RETAB=0xD65F0FFF; BRAA=0xD61F0800; BRAB=0xD61F0C00; BLRAA=0xD6
 _KEY_DOMAIN_INSNS={"IA":{"PACIA","PACIASP","AUTIA","AUTIASP"},"IB":{"PACIB","PACIBSP","AUTIB","AUTIBSP"},"DA":{"PACDA","PACDASP","AUTDA","AUTDASP"},"DB":{"PACDB","PACDBSP","AUTDB","AUTDBSP"}}
 
 @dataclass
-
-# 保留——后面可能用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
 
 class PACGadget: address:int; kind:str; mnemonic:str; regs:str
 @dataclass
@@ -83,7 +74,7 @@ class PACBypassAnalyzer:
             if "PAC" in mnem and "AUTH" not in mnem and "XPAC" not in mnem:
                 g=PACGadget(i,"sign",mnem,regs); s._signing.append(g)
                 if "PACGA" in mnem:
-                    pacga_count+=1; s._leaks.append(PACLeak(i,"signing_oracle",f"PACGA at {i:#x}: 签名神谕——可生成任意PAC签名"))
+                    pacga_count+=1; s._leaks.append(PACLeak(i,"signing_oracle",f"PACGA at {i:#x}: 签名神谕, 可生成任意PAC签名"))
             elif "AUTH" in mnem: s._auth.append(PACGadget(i,"auth",mnem,regs))
             elif "XPAC" in mnem:
                 s._strip.append(PACGadget(i,"strip",mnem,regs))
@@ -104,7 +95,7 @@ def quick_scan(binary:bytes)->dict:
 PACBypassPath=None; PACSignatureDetector=None
 
 
-def _debug_print(*args, **kwargs):
-    """调试桩——占位，无输出逻辑。"""
-    pass  # 调试桩，当前禁用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

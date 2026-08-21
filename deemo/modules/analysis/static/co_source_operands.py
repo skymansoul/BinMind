@@ -1,4 +1,4 @@
-# AWSC 操作数解析 mixin — 指令反推与内存操作数解析
+# AWSC 操作数解析 mixin - 指令反推与内存操作数解析
 #
 # 职责:
 #   - 单步反推 (step_reg / step_slot): 从寄存器/栈槽反推其 def 来源
@@ -8,7 +8,6 @@
 #
 # 设计: 反推状态机由 trace_size_root 驱动, 本 mixin 只做单步决策,
 # 返回统一元组 (kind, payload, coeff, const) 或 Root.
-# 创建: 2026-04-27
 
 import re
 from typing import Dict, List, Optional, Tuple
@@ -82,7 +81,7 @@ class CoSourceOperandMixin:
             # 判定失效. 与 lea rcx,[rcx+rdx] 的语义保持一致.
             return ("reg", current, coeff, const)
 
-        # and current, imm — 位掩码收窄宽度, 不改变根来源与系数
+        # and current, imm - 位掩码收窄宽度, 不改变根来源与系数
         if mnem == "and" and len(ops) >= 2:
             if dst != current:
                 return None

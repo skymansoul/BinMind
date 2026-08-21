@@ -1,13 +1,12 @@
-# 创建: 2026-06-24 13:30
-# 修改: 2026-06-24 — CTL_CODE/_IOC 解码 + switch-case 分发表恢复
+# CTL_CODE/_IOC 解码 + switch-case 分发表恢复
 """
 IOCTL 调度面自动映射器 — 从二进制驱动中恢复控制码分发表。
 
-内核驱动通过 IOCTL (I/O Control) 接口暴露大量攻击面——每个控制码
+内核驱动通过 IOCTL (I/O Control) 接口暴露大量攻击面, 每个控制码
 对应一个处理函数, 其中很多未做输入校验。传统方法依赖人工逆向或
 符号执行枚举所有 IOCTL, 速度慢且覆盖率低。
 
-本模块使用静态二进制分析——零符号执行, 单 pass 完成:
+本模块使用静态二进制分析, 零符号执行, 单 pass 完成:
   1. 定位 IOCTL 分发函数: 识别包含 switch-case 模式 + IoControlCode 引用的函数
   2. 解码控制码: 从 CTL_CODE 宏的位布局 (DeviceType|Function|Method|Access)
      逆向提取每个 case 的完整 IOCTL 码
@@ -110,7 +109,7 @@ def locate_dispatch_function(instructions: list[dict],
     启发式:
       1. 搜索包含 switch-case 模式 (cmp + ja + jmp table) 的函数
       2. 检查该函数的参数是否包含 IoControlCode 或 cmd 引用
-      3. 统计 case 数量——IOCTL 分发函数通常有 ≥3 个 case
+      3. 统计 case 数量, IOCTL 分发函数通常有 ≥3 个 case
     """
     funcs = _group_by_function(instructions)
     best_addr = 0
@@ -181,7 +180,7 @@ def find_buffered_input_sinks(instructions: list[dict],
     """寻找 handler 中的 buffered-input 数据使用点 (污点 sink)。
 
     从 copy_from_user/ProbeForRead 等入口向下追踪数据流,
-    标记所有使用用户输入数据的内存访问——这些是需要输入校验的位置。"""
+    标记所有使用用户输入数据的内存访问, 这些是需要输入校验的位置。"""
     sinks: list[int] = []
     func_ins = [i for i in instructions
                 if _func_of(i.get('address', 0), instructions) == handler_addr]
@@ -200,7 +199,7 @@ def find_buffered_input_sinks(instructions: list[dict],
     if not taint_sources:
         return sinks
 
-    # 污点传播——简化: 入口后的所有内存读取
+    # 污点传播, 简化: 入口后的所有内存读取
     past_source = False
     for ins in func_ins:
         addr = ins.get('address', 0)

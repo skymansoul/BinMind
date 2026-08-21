@@ -1,4 +1,4 @@
-"""微架构侧信道验证——缓存时序、Spectre/Meltdown 模式检测。"""
+"""微架构侧信道验证, 缓存时序、Spectre/Meltdown 模式检测。"""
 
 import logging
 import statistics
@@ -10,7 +10,7 @@ from typing import Any, Callable, List, Tuple
 
 _log = logging.getLogger(__name__)
 
-# Flush+Reload 阈值（周期）——平台相关，初始化时校准
+# Flush+Reload 阈值（周期）, 平台相关，初始化时校准
 _CACHE_HIT_THRESHOLD: int = 120
 _FLUSH_RELOAD_ITERATIONS = 1000
 
@@ -94,7 +94,7 @@ class MicroarchSideChannelValidator:
 
 # Prime+Probe 检测
     # Mastik 工具包 Prime+Probe 模式：先用攻击者数据填充缓存组，
-    # 再测重访耗时——慢则说明被 victim 踢出缓存。
+    # 再测重访耗时, 慢则说明被 victim 踢出缓存。
 
     def detect_prime_probe(self, probe_sets: List[int], n_ways: int = 8,
                            trials: int = 500) -> SideChannelEvidence:

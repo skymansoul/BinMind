@@ -75,7 +75,7 @@ make
 """
 
 
-from gen_fp_samples_data import SAMPLES
+from .gen_fp_samples_data import SAMPLES
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)

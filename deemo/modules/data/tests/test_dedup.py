@@ -2,7 +2,7 @@
 import hashlib
 import unittest
 
-from src.dedup import (
+from ..src.dedup import (
     SimHashDedup, SimHashIndex, MinHashDedup, OPHMinHash,
     cdc_chunk, cdc_chunk_iter, cdc_chunk_stats,
     BloomFilter, CuckooFilter, HyperLogLog, TDigest,

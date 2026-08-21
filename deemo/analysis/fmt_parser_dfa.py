@@ -201,10 +201,9 @@ class FmtStringParser:
 
 
 def classify_fmt_danger(fmt_str: str) -> Tuple[FmtDanger, bool]:
-    """快速分类格式字符串的危险等级.
+    """快速分类格式字符串的危险等级。
 
-    Returns:
-        (danger_level, has_user_controlled_fmt_hint)
+    返回 (max_danger, has_write_spec)。
     """
     parser = FmtStringParser()
     parsed = parser.parse(fmt_str)

@@ -1,10 +1,9 @@
 """
-安全性证明器 — 尝试证明堆写入在约束系统下安全: 对 copy 操作证明 copy_size <= effective_alloc_size, 对偏移写入证明 offset + store_size <= effective_alloc_size, 对循环写入证明 loop_bound * elem_size <= alloc_size。
-方法: 构造"安全约束" write_end - effective_alloc_size <= 0 并加入系统, 对非安全相关变量做 Fourier-Motzkin 消元, 剩余常量约束矛盾 → 原系统蕴含安全 → PROVEN_SAFE; 无矛盾 → 返回 None。
+安全性证明器: 尝试证明堆写入在约束系统下安全: 对 copy 操作证明 copy_size <= effective_alloc_size, 对偏移写入证明 offset + store_size <= effective_alloc_size, 对循环写入证明 loop_bound * elem_size <= alloc_size。
+方法: 构造"安全约束" write_end - effective_alloc_size <= 0 并加入系统, 对非安全相关变量做 Fourier-Motzkin 消元, 剩余常量约束矛盾则原系统蕴含安全, 判 PROVEN_SAFE; 无矛盾则返回 None。
 保守性: 证明失败时返回 None, 不影响召回率 (候选保留)。
 """
 
-import math
 from typing import Optional
 from dataclasses import dataclass, field
 
@@ -39,7 +38,7 @@ def prove_write_safety(
     """尝试证明写入安全(不溢出).
 
     策略: 计算write_end和boundary的值/表达式,
-    若能确定write_end <= boundary → PROVEN_SAFE.
+    若能确定write_end <= boundary, 判 PROVEN_SAFE.
 
     对纯常量场景直接比较; 对含变量场景用假设+消元法.
     返回None表示无法证明安全(保守保留候选).
@@ -58,7 +57,7 @@ def prove_write_safety(
             if write_end_val <= alloc_usable:
                 return ProofResult(
                     verdict="PROVEN_SAFE",
-                    reason=f"{write_end_desc} <= {alloc_usable} (usabile_size)",
+                    reason=f"{write_end_desc} <= {alloc_usable} (usable_size)",
                     confidence_delta=-0.45,
                     proof_chain=[
                         f"Step 1: write_end = {write_end_val}",
@@ -120,7 +119,7 @@ def prove_overflow(
     """尝试确认溢出(证明写入确实超出边界).
 
     策略: 计算write_end和boundary的值/表达式,
-    若能确定write_end > boundary → PROVEN_OVERFLOW.
+    若能确定write_end > boundary, 判 PROVEN_OVERFLOW.
 
     仅在约束非常充分时触发, 避免过度自信.
     """

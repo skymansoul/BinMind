@@ -1,7 +1,3 @@
-# 对外接口: BLERadioAnalyzer, analyze_ble_firmware 及全部类型再导出
-# 依赖: os, struct, re
-# 限制: 仅单线程操作 (binary_data 缓冲区无线程安全)
-
 import logging
 import os
 import re

@@ -30,7 +30,7 @@ class SectionType:
     CODE = 10; DATA = 11; DATA_COUNT = 12
 
 class ValType(IntEnum):
-    """WASM 值类型——WBSan shadow memory 粒度依此定义。"""
+    """WASM 值类型, WBSan shadow memory 粒度依此定义。"""
     I32 = 0x7F; I64 = 0x7E; F32 = 0x7D; F64 = 0x7C
     V128 = 0x7B; FUNCREF = 0x70; EXTERNREF = 0x6F
 
@@ -291,13 +291,13 @@ class WasmParser:
             bEnvOrWasi = imp.module in ('env', 'wasi_unstable', 'wasi_snapshot_preview1')
             if bEnvOrWasi and imp.name in ('fd_write', 'fd_read', 'path_open', 'sock_open'):
                 vulns.append({'type': 'File Operation', 'severity': 'Medium',
-                    'description': f'导入函数 {imp.module}.{imp.name}——可能访问敏感资源',
+                    'description': f'导入函数 {imp.module}.{imp.name}, 可能访问敏感资源',
                     'location': f'import:{imp.index}'})
 
         for mem in self.result.memories:
             if mem.maximum == 0:
                 vulns.append({'type': 'Unbounded Memory', 'severity': 'Medium',
-                    'description': '内存无最大限制——guard page突破可导致沙箱逃逸',
+                    'description': '内存无最大限制, guard page突破可导致沙箱逃逸',
                     'location': 'memory:0'})
             if mem.initial > 32768:
                 vulns.append({'type': 'Large Memory Allocation', 'severity': 'Low',
@@ -317,7 +317,7 @@ class WasmParser:
         for i, tab in enumerate(self.result.tables):
             if tab.maximum == 0 and tab.initial > 0:
                 vulns.append({'type': 'Unbounded Table', 'severity': 'Medium',
-                    'description': f'Table无最大限制(初始{tab.initial})——table.grow可劫持间接调用',
+                    'description': f'Table无最大限制(初始{tab.initial}), table.grow可劫持间接调用',
                     'location': f'table:{i}'})
 
         self.result.vulnerabilities = vulns
@@ -338,7 +338,7 @@ class WasmParser:
                 issues.append({
                     'type': 'missing_red_zone',
                     'severity': 'Medium',
-                    'description': f'Memory[{i}]无上限——无法保证red zone不被覆盖',
+                    'description': f'Memory[{i}]无上限, 无法保证red zone不被覆盖',
                     'location': f'memory:{i}',
                     'remediation': '设置合理的maximum pages以预留guard/red zone空间'
                 })
@@ -346,7 +346,7 @@ class WasmParser:
                 issues.append({
                     'type': 'thin_red_zone',
                     'severity': 'Low',
-                    'description': f'Memory[{i}]的red zone仅{mem.maximum - mem.initial}页——推荐至少2页',
+                    'description': f'Memory[{i}]的red zone仅{mem.maximum - mem.initial}页, 推荐至少2页',
                     'location': f'memory:{i}'
                 })
 
@@ -359,7 +359,7 @@ class WasmParser:
             issues.append({
                 'type': 'uninitialized_growth',
                 'severity': 'Low',
-                'description': 'Memory可增长且无上限——grow出的新页可能包含未初始化数据',
+                'description': 'Memory可增长且无上限, grow出的新页可能包含未初始化数据',
                 'remediation': '在memory.grow后显式清零新分配的页'
             })
 
@@ -388,7 +388,7 @@ class WasmParser:
                         findings.append({
                             'type': 'potential_memcpy',
                             'severity': 'Info',
-                            'description': f'函数[{i}]接受{i32_params}个i32参数无返回值——可能是memcpy/memset模式',
+                            'description': f'函数[{i}]接受{i32_params}个i32参数无返回值, 可能是memcpy/memset模式',
                             'location': f'func:{i}',
                             'recommendation': '审查此函数的bounds checking是否充分'
                         })
@@ -400,7 +400,7 @@ class WasmParser:
             findings.append({
                 'type': 'dual_unbounded',
                 'severity': 'High',
-                'description': 'Memory和Table均无上限——同时暴露内存溢出和间接调用劫持两个攻击面',
+                'description': 'Memory和Table均无上限, 同时暴露内存溢出和间接调用劫持两个攻击面',
                 'recommendation': '为memory和table均设置合理上限'
             })
 
@@ -414,7 +414,7 @@ class WASIAnalyzer:
         'fd_write': '写入文件描述符', 'fd_read': '读取文件描述符',
         'fd_close': '关闭文件描述符', 'fd_seek': '移动文件指针',
         'fd_tell': '获取文件位置', 'fd_fdstat_get': '获取文件状态',
-        'path_open': '打开路径——文件系统逃逸主向量',
+        'path_open': '打开路径, 文件系统逃逸主向量',
         'path_create_directory': '创建目录', 'path_unlink_file': '删除文件',
         'proc_exit': '退出进程', 'proc_raise': '发送信号',
         'sched_yield': '让出调度', 'random_get': '获取随机数',
@@ -483,7 +483,7 @@ def analyze_wasm(binary_path: str) -> Dict[str, Any]:
         'wasi': wasi_info
     }
 
-# 兼容层——旧API桩
+# 兼容层, 旧API桩
 from dataclasses import dataclass as _dc, field as _f
 
 @_dc

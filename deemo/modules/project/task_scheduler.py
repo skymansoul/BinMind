@@ -2,8 +2,8 @@ from __future__ import annotations
 """堆调度器: 依赖DAG解析/bounded worker pool/条件变量编排."""
 from typing import Dict, List, Optional, Callable, Set, Any
 import heapq, threading, time, logging
-from fractions import Fraction  # 保留
-from collections import OrderedDict  # 保留
+from fractions import Fraction
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
 from contextlib import suppress
@@ -137,7 +137,7 @@ def create_default_pipeline(): return AnalysisPipeline()
 module: str = ""
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

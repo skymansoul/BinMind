@@ -344,7 +344,7 @@ class BinarySigner:
         except Exception as _e: logger.error(f'save fail: {_e}'); return None
 
     def get_by_sha_Sg(self, f_sha):
-# 2026-06-25 深夜: 这functions在corner case下会hang，加了timeout保护
+        # corner case 下会 hang，加了 timeout 保护
         if not f_sha: return None
         try:
             c = _sqlite.connect(self.__db); cu = c.cursor()

@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
-from typing import Dict, List, Optional
-"""
-Code signing certificate verification and abuse detection module.
+"""代码签名证书验证与滥用检测模块。
 
-Extracts digital signatures (Authenticode) from PE files and verifies their
-validity and trust chain. Detects expired, self-signed, weak-algorithm, or
-compromised certificates. Compares against known leaked certificate databases.
-
-Author: BinMind Security Team
-Version: 1.0.0
+从 PE 文件提取数字签名 (Authenticode) 并验证其有效性与信任链,
+检测过期/自签名/弱算法/已泄露证书, 与已知泄露证书库比对。
 """
 
-import os
-import sys
+import hashlib
 import json
 import logging
-import hashlib
+import os
 import struct
-import tempfile
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-# Attempt to import optional dependencies
+# 可选依赖
 try:
     from asn1crypto import cms, core, x509
     ASN1_AVAILABLE = True
@@ -47,13 +39,11 @@ except ImportError:
     SIGNIFY_AVAILABLE = False
     signify = None
 
-from core.config import Config
-
 logger = logging.getLogger('binmind.code_signing')
 
 
 class SignatureStatus(str, Enum):
-    """Signature status enumeration."""
+    """签名状态枚举。"""
     VALID = 'valid'
     INVALID = 'invalid'
     EXPIRED = 'expired'
@@ -66,7 +56,7 @@ class SignatureStatus(str, Enum):
 
 
 class AlgorithmStrength(str, Enum):
-    """Algorithm strength enumeration."""
+    """算法强度枚举。"""
     STRONG = 'strong'
     MEDIUM = 'medium'
     WEAK = 'weak'
@@ -75,22 +65,7 @@ class AlgorithmStrength(str, Enum):
 
 @dataclass
 class CertificateInfo:
-    """
-    Certificate information data structure.
-
-    Attributes:
-        subject: Certificate subject
-        issuer: Certificate issuer
-        serial_number: Serial number
-        not_before: Validity start
-        not_after: Validity end
-        algorithm: Signature algorithm
-        is_self_signed: Whether self-signed
-        is_trusted: Whether trusted
-        chain_depth: Certificate chain depth
-        thumbprint: SHA1 fingerprint
-        sha256_thumbprint: SHA256 fingerprint
-    """
+    """证书信息结构: 主体/颁发者/序列号/有效期/算法/自签名/受信/链深/指纹。"""
     subject: str = ''
     issuer: str = ''
     serial_number: str = ''
@@ -119,7 +94,7 @@ class CertificateInfo:
         }
 
     def is_expired(self) -> bool:
-        """Check if certificate is expired."""
+        """证书是否已过期。"""
         if not self.not_after:
             return False
         try:
@@ -131,20 +106,7 @@ class CertificateInfo:
 
 @dataclass
 class SignatureResult:
-    """
-    Signature verification result data structure.
-
-    Attributes:
-        status: Signature status
-        certificates: Certificate chain
-        algorithm_strength: Algorithm strength
-        file_hash: File hash
-        signature_hash: Signature hash
-        is_abused: Whether abused
-        abuse_indicators: Abuse indicators
-        warnings: Warning list
-        timestamp: Timestamp signature info
-    """
+    """签名验证结果: 状态/证书链/算法强度/文件与签名哈希/滥用标记/警告/时间戳。"""
     status: SignatureStatus = SignatureStatus.UNSIGNED
     certificates: List[CertificateInfo] = field(default_factory=list)
     algorithm_strength: AlgorithmStrength = AlgorithmStrength.MEDIUM
@@ -171,17 +133,7 @@ class SignatureResult:
 
 @dataclass
 class SigningConfig:
-    """
-    Signature verification configuration.
-
-    Attributes:
-        check_revocation: Whether to check certificate revocation
-        check_leaked_db: Whether to check leaked certificate database
-        leaked_db_path: Path to leaked certificate database
-        trusted_root_path: Path to trusted root certificates
-        verify_chain: Whether to verify certificate chain
-        weak_algorithms: List of weak algorithms
-    """
+    """签名验证配置: 吊销检查/泄露库检查/泄露库路径/信任根路径/链验证/弱算法表。"""
     check_revocation: bool = True
     check_leaked_db: bool = True
     leaked_db_path: str = './data/leaked_certs.json'
@@ -194,25 +146,19 @@ class SigningConfig:
             self.weak_algorithms = ['md5', 'sha1']
 
     def validate(self) -> bool:
-        """Validate configuration."""
+        """配置校验。"""
         return True
 
 
 class CodeSigningChecker:
-    """
-    Code signing verifier.
+    """代码签名验证器。
 
-    Extracts digital signatures (Authenticode) from PE files and verifies
-    their validity and trust chain. Detects expired, self-signed,
-    weak-algorithm, or compromised certificates.
-
-    Attributes:
-        config: Signature verification configuration
-        leaked_certificates: Known leaked certificate list
-        trusted_roots: Trusted root certificate list
+    从 PE 提取 Authenticode 签名并验证信任链, 检测过期/自签名/
+    弱算法/泄露证书。字段: config 配置, leaked_certificates 泄露库,
+    trusted_roots 信任根证书列表。
     """
 
-    # Weak algorithm mapping
+    # 弱算法映射
     ALGORITHM_STRENGTH_MAP = {
         'md5': AlgorithmStrength.DEPRECATED,
         'sha1': AlgorithmStrength.WEAK,
@@ -223,41 +169,41 @@ class CodeSigningChecker:
         'ecdsa': AlgorithmStrength.STRONG,
     }
 
-    # Known leaked certificate serial numbers (sample data)
+    # 已知泄露证书序列号 (内置样本数据)
     KNOWN_LEAKED_CERTS = [
-        # D-Link leaked certificate
+        # D-Link 泄露证书
         '5e4c5b7a8d9e0f1a2b3c4d5e6f7a8b9c',
-        # Asus leaked certificate
+        # Asus 泄露证书
         '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d',
         'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
     ]
 
-    # Known malware-abused certificate subjects
+    # 已知被恶意软件滥用的证书主体
     KNOWN_ABUSED_SUBJECTS = [
         'D-Link Corporation',
         'ASUSTeK Computer Inc.',
         'Adobe Systems Incorporated',
-        'Microsoft Corporation',  # Requires further verification
+        'Microsoft Corporation',  # 需进一步核实
     ]
 
     def __init__(self, config: Optional[SigningConfig] = None):
-        """Initialize the signature verifier."""
+        """初始化签名验证器。"""
         self.config = config or SigningConfig()
         self.leaked_certificates: List[str] = []
         self.trusted_roots: List[Any] = []
 
-        # Load leaked certificate database
+        # 加载泄露证书库
         if self.config.check_leaked_db:
             self._load_leaked_certificates()
 
-        # Load trusted root certificates
+        # 加载信任根证书
         if self.config.trusted_root_path:
             self._load_trusted_roots()
 
         logger.info("[CodeSign] Code signing verifier initialized")
 
     def _load_leaked_certificates(self) -> None:
-        """Load known leaked certificate database."""
+        """加载已知泄露证书库。"""
         try:
             if os.path.exists(self.config.leaked_db_path):
                 with open(self.config.leaked_db_path, 'r', encoding='utf-8') as f:
@@ -265,7 +211,7 @@ class CodeSigningChecker:
                     self.leaked_certificates = data.get('serial_numbers', [])
                 logger.info(f"[CodeSign] Loaded {len(self.leaked_certificates)} leaked certificate records")
             else:
-                # Use built-in data
+                # 回退内置数据
                 self.leaked_certificates = self.KNOWN_LEAKED_CERTS
                 logger.info(f"[CodeSign] Using built-in leaked certificate data: {len(self.leaked_certificates)} records")
         except Exception as e:
@@ -273,16 +219,28 @@ class CodeSigningChecker:
             self.leaked_certificates = self.KNOWN_LEAKED_CERTS
 
     def _load_trusted_roots(self) -> None:
-        """Load trusted root certificates."""
+        """从信任根路径加载 CA 证书 (PEM/DER, 单文件或目录)。"""
         try:
-            if OPENSSL_AVAILABLE and os.path.exists(self.config.trusted_root_path):
-                pass  # Actual implementation needs to load certificate files
+            if not (OPENSSL_AVAILABLE and os.path.exists(self.config.trusted_root_path)):
+                return
+            p = self.config.trusted_root_path
+            if os.path.isdir(p):
+                paths = [os.path.join(p, fname) for fname in os.listdir(p)
+                         if fname.endswith(('.pem', '.crt', '.cer', '.der'))]
+            else:
+                paths = [p]
+            for fp in paths:
+                with open(fp, 'rb') as f:
+                    data = f.read()
+                ftype = crypto.FILETYPE_PEM if b'-----BEGIN' in data else crypto.FILETYPE_ASN1
+                self.trusted_roots.append(crypto.load_certificate(ftype, data))
+            logger.info(f"[CodeSign] Loaded {len(self.trusted_roots)} trusted root certificates")
         except Exception as e:
             logger.warning(f"[CodeSign] Failed to load trusted root certificates: {e}")
 
     def check_signature(self, file_path: str) -> SignatureResult:
-        """Check file signature."""
-        # Path safety validation
+        """验证文件签名, 按可用库顺序 signify → asn1crypto → OpenSSL → PE 结构解析。"""
+        # 路径安全校验
         file_path = os.path.abspath(file_path)
         if not os.path.exists(file_path):
             logger.error(f"[CodeSign] File not found: {file_path}")
@@ -290,10 +248,10 @@ class CodeSigningChecker:
 
         logger.info(f"[CodeSign] Checking file signature: {file_path}")
 
-        # Calculate file hash
+        # 计算文件哈希
         file_hash = self._calculate_file_hash(file_path)
 
-        # Attempt to extract signature
+        # 按可用依赖选择验证通道
         if SIGNIFY_AVAILABLE:
             return self._check_with_signify(file_path, file_hash)
         elif ASN1_AVAILABLE:
@@ -301,11 +259,11 @@ class CodeSigningChecker:
         elif OPENSSL_AVAILABLE:
             return self._check_with_openssl(file_path, file_hash)
         else:
-            # Use PE structure parsing
+            # 回退 PE 结构解析
             return self._check_pe_signature(file_path, file_hash)
 
     def _calculate_file_hash(self, file_path: str) -> str:
-        """Calculate file SHA256 hash."""
+        """计算文件 SHA256。"""
         sha256 = hashlib.sha256()
         with open(file_path, 'rb') as f:
             chunk = f.read(8192)
@@ -315,7 +273,7 @@ class CodeSigningChecker:
         return sha256.hexdigest()
 
     def _check_with_signify(self, file_path: str, file_hash: str) -> SignatureResult:
-        """Check signature using signify library."""
+        """signify 库验证通道。"""
         try:
             result = SignatureResult(file_hash=file_hash)
 
@@ -333,11 +291,11 @@ class CodeSigningChecker:
                 result.status = SignatureStatus.INVALID
                 return result
 
-            # Parse certificate chain
+            # 解析证书链
             certs = self._parse_certificates_from_signature(signature_data)
             result.certificates = certs
 
-            # Validate signature status
+            # 验证签名状态
             result = self._validate_signature_status(result, file_path)
 
             return result
@@ -349,7 +307,7 @@ class CodeSigningChecker:
                 warnings=[f"Verification failed: {str(e)}"])
 
     def _check_with_asn1crypto(self, file_path: str, file_hash: str) -> SignatureResult:
-        """Check signature using asn1crypto."""
+        """asn1crypto 验证通道。"""
         try:
             result = SignatureResult(file_hash=file_hash)
 
@@ -366,7 +324,7 @@ class CodeSigningChecker:
                 result.status = SignatureStatus.INVALID
                 return result
 
-            # Parse PKCS7 signature
+            # 解析 PKCS7 签名
             try:
                 signed_data = cms.ContentInfo.load(signature_data)
                 if signed_data['content_type'].native == 'signed_data':
@@ -378,7 +336,7 @@ class CodeSigningChecker:
             except Exception as e:
                 logger.warning(f"[CodeSign] PKCS7 parsing failed: {e}")
 
-            # Validate signature status
+            # 验证签名状态
             result = self._validate_signature_status(result, file_path)
 
             return result
@@ -387,7 +345,7 @@ class CodeSigningChecker:
             return SignatureResult(status=SignatureStatus.INVALID, file_hash=file_hash)
 
     def _check_with_openssl(self, file_path: str, file_hash: str) -> SignatureResult:
-        """Check signature using OpenSSL."""
+        """OpenSSL 验证通道。"""
         try:
             result = SignatureResult(file_hash=file_hash)
 
@@ -404,10 +362,10 @@ class CodeSigningChecker:
                 result.status = SignatureStatus.INVALID
                 return result
 
-            # Use OpenSSL to parse PKCS7
+            # OpenSSL 解析 PKCS7
             pkcs7 = crypto.load_pkcs7_data(crypto.FILETYPE_ASN1, signature_data)
 
-            # Get certificate chain
+            # 提取证书链
             if pkcs7:
                 certs = pkcs7.get_certificates()
                 for cert in certs:
@@ -422,25 +380,25 @@ class CodeSigningChecker:
             return SignatureResult(status=SignatureStatus.INVALID, file_hash=file_hash)
 
     def _check_pe_signature(self, file_path: str, file_hash: str) -> SignatureResult:
-        """Check signature using PE structure parsing."""
+        """PE 结构解析验证通道 (无验证库时的降级)。"""
         try:
             result = SignatureResult(file_hash=file_hash)
 
             with open(file_path, 'rb') as f:
                 pe_data = f.read()
 
-            # Check PE signature
+            # 校验 PE 魔数
             if pe_data[:2] != b'MZ':
                 result.warnings.append("Not a PE file")
                 return result
 
-            # Find PE header
+            # 定位 PE 头
             pe_header_offset = struct.unpack('<I', pe_data[0x3C:0x40])[0]
             if pe_data[pe_header_offset:pe_header_offset+4] != b'PE\x00\x00':
                 result.warnings.append("Invalid PE header")
                 return result
 
-            # Find security directory
+            # 定位安全目录
             security_dir_offset = self._find_security_directory(pe_data)
             if security_dir_offset == 0:
                 result.status = SignatureStatus.UNSIGNED
@@ -450,7 +408,7 @@ class CodeSigningChecker:
             signature_data = self._extract_signature_data(pe_data, security_dir_offset)
             if signature_data:
                 result.signature_hash = hashlib.sha256(signature_data).hexdigest()
-                result.status = SignatureStatus.VALID  # Basic check, needs further verification
+                result.status = SignatureStatus.VALID  # 仅基础检查, 完整验证需签名库
                 result.warnings.append("Signature exists but cannot be fully verified (missing verification library)")
             else:
                 result.status = SignatureStatus.INVALID
@@ -461,30 +419,30 @@ class CodeSigningChecker:
             return SignatureResult(status=SignatureStatus.INVALID, file_hash=file_hash)
 
     def _find_security_directory(self, pe_data: bytes) -> int:
-        """Find PE security directory offset."""
+        """定位 PE 安全目录 (WIN_CERTIFICATE) 偏移。"""
         try:
-            # Check MZ header
+            # 校验 MZ 头
             if pe_data[:2] != b'MZ':
                 return 0
 
-            # Get PE header offset
+            # 取 PE 头偏移
             pe_header_offset = struct.unpack('<I', pe_data[0x3C:0x40])[0]
 
-            # Check PE signature
+            # 校验 PE 签名
             if pe_data[pe_header_offset:pe_header_offset+4] != b'PE\x00\x00':
                 return 0
 
-            # Get optional header size
+            # 取可选头大小
             optional_header_size = struct.unpack('<H', pe_data[pe_header_offset + 20:pe_header_offset + 22])[0]
 
-            # Security directory is the 11th data directory in the optional header
-            # Data directory table offset = PE header + 24 (signature) + 96 (optional header standard part) + 11 * 8
+            # 安全目录是可选头数据目录表中第 11 项:
+            # 表偏移 = PE头 + 24(签名) + 96(可选头标准段) + 11*8
             security_dir_entry_offset = pe_header_offset + 24 + 96 + 11 * 8
 
             if security_dir_entry_offset + 8 > len(pe_data):
                 return 0
 
-            # Get security directory virtual address and size
+            # 取安全目录虚拟地址与大小
             rva, size = struct.unpack('<II', pe_data[security_dir_entry_offset:security_dir_entry_offset + 8])
 
             if rva == 0 or size == 0:
@@ -496,9 +454,9 @@ class CodeSigningChecker:
             return 0
 
     def _extract_signature_data(self, pe_data: bytes, security_dir_offset: int) -> Optional[bytes]:
-        """Extract signature data from PE."""
+        """从 PE 提取签名数据。"""
         try:
-            # Read security directory entry
+            # 读安全目录条目
             if security_dir_offset + 8 > len(pe_data):
                 return None
 
@@ -513,7 +471,7 @@ class CodeSigningChecker:
             return None
 
     def _parse_certificates_from_signature(self, signature_data: bytes) -> List[CertificateInfo]:
-        """Parse certificate chain from signature data."""
+        """从签名数据解析证书链。"""
         certs = []
 
         try:
@@ -529,42 +487,42 @@ class CodeSigningChecker:
         return certs
 
     def _parse_asn1_certificate(self, cert: Any) -> CertificateInfo:
-        """Parse ASN.1 certificate."""
+        """解析 ASN.1 证书。"""
         try:
             cert_info = CertificateInfo()
 
-            # Get subject
+            # 主体
             if hasattr(cert, 'subject'):
                 subject = cert.subject
                 cert_info.subject = self._format_dn(subject)
 
-            # Get issuer
+            # 颁发者
             if hasattr(cert, 'issuer'):
                 issuer = cert.issuer
                 cert_info.issuer = self._format_dn(issuer)
 
-            # Get serial number
+            # 序列号
             if hasattr(cert, 'serial_number'):
                 cert_info.serial_number = str(cert.serial_number.native)
 
-            # Get validity period
+            # 有效期
             if hasattr(cert, 'not_before'):
                 cert_info.not_before = str(cert.not_before.native)
             if hasattr(cert, 'not_after'):
                 cert_info.not_after = str(cert.not_after.native)
 
-            # Get signature algorithm
+            # 签名算法
             if hasattr(cert, 'signature_algorithm'):
                 algo = cert.signature_algorithm.native
                 cert_info.algorithm = algo
 
-            # Calculate fingerprints
+            # 指纹
             if hasattr(cert, 'sha1'):
                 cert_info.thumbprint = cert.sha1.hex()
             if hasattr(cert, 'sha256'):
                 cert_info.sha256_thumbprint = cert.sha256.hex()
 
-            # Check if self-signed
+            # 自签名判定
             cert_info.is_self_signed = cert_info.subject == cert_info.issuer
 
             return cert_info
@@ -573,22 +531,22 @@ class CodeSigningChecker:
             return CertificateInfo()
 
     def _parse_openssl_certificate(self, cert: Any) -> CertificateInfo:
-        """Parse OpenSSL certificate."""
+        """解析 OpenSSL 证书。"""
         try:
             cert_info = CertificateInfo()
 
-            # Get subject
+            # 主体
             subject = cert.get_subject()
             cert_info.subject = self._format_x509_name(subject)
 
-            # Get issuer
+            # 颁发者
             issuer = cert.get_issuer()
             cert_info.issuer = self._format_x509_name(issuer)
 
-            # Get serial number
+            # 序列号
             cert_info.serial_number = str(cert.get_serial_number())
 
-            # Get validity period
+            # 有效期
             not_before = cert.get_notBefore()
             not_after = cert.get_notAfter()
             if not_before:
@@ -596,10 +554,10 @@ class CodeSigningChecker:
             if not_after:
                 cert_info.not_after = not_after.decode() if isinstance(not_after, bytes) else not_after
 
-            # Get signature algorithm
+            # 签名算法
             cert_info.algorithm = cert.get_signature_algorithm()
 
-            # Check if self-signed
+            # 自签名判定
             cert_info.is_self_signed = cert_info.subject == cert_info.issuer
 
             return cert_info
@@ -608,7 +566,7 @@ class CodeSigningChecker:
             return CertificateInfo()
 
     def _format_dn(self, dn: Any) -> str:
-        """Format DN string."""
+        """DN 字符串格式化。"""
         try:
             if hasattr(dn, 'native'):
                 return str(dn.native)
@@ -617,7 +575,7 @@ class CodeSigningChecker:
             return ''
 
     def _format_x509_name(self, name: Any) -> str:
-        """Format X509 name."""
+        """X509 名称格式化。"""
         try:
             components = []
             for component in name.get_components():
@@ -630,14 +588,14 @@ class CodeSigningChecker:
             return ''
 
     def _validate_signature_status(self, result: SignatureResult, file_path: str) -> SignatureResult:
-        """Validate signature status."""
-        # Check certificate chain
+        """综合验证: 证书链/算法强度/过期/自签名/泄露库/滥用模式。"""
+        # 证书链缺失
         if not result.certificates:
             result.status = SignatureStatus.INVALID
             result.warnings.append("Unable to extract certificate chain")
             return result
 
-        # Check signature algorithm strength
+        # 签名算法强度
         for cert in result.certificates:
             algo_strength = self._get_algorithm_strength(cert.algorithm)
             if algo_strength == AlgorithmStrength.WEAK or algo_strength == AlgorithmStrength.DEPRECATED:
@@ -646,27 +604,27 @@ class CodeSigningChecker:
                 if algo_strength == AlgorithmStrength.DEPRECATED:
                     result.status = SignatureStatus.WEAK_ALGORITHM
 
-        # Check certificate expiration
+        # 过期检查
         for cert in result.certificates:
             if cert.is_expired():
                 result.status = SignatureStatus.EXPIRED
                 result.warnings.append(f"Certificate expired: {cert.subject}")
 
-        # Check self-signed certificates
+        # 自签名检查
         for cert in result.certificates:
             if cert.is_self_signed:
                 result.warnings.append(f"Found self-signed certificate: {cert.subject}")
                 if result.status == SignatureStatus.VALID:
                     result.status = SignatureStatus.SELF_SIGNED
 
-        # Check leaked certificates
+        # 泄露证书检查
         for cert in result.certificates:
             if self._check_leaked_certificate(cert):
                 result.is_abused = True
                 result.status = SignatureStatus.LEAKED
                 result.abuse_indicators.append(f"Certificate may be leaked: {cert.serial_number}")
 
-        # Check certificate abuse patterns
+        # 滥用模式检查
         abuse_indicators = self._check_abuse_patterns(result.certificates)
         if abuse_indicators:
             result.is_abused = True
@@ -675,7 +633,7 @@ class CodeSigningChecker:
         return result
 
     def _get_algorithm_strength(self, algorithm: str) -> AlgorithmStrength:
-        """Get algorithm strength."""
+        """按映射表判定算法强度, 未知回退 MEDIUM。"""
         algo_lower = algorithm.lower()
 
         for key, strength in self.ALGORITHM_STRENGTH_MAP.items():
@@ -685,23 +643,23 @@ class CodeSigningChecker:
         return AlgorithmStrength.MEDIUM
 
     def _check_leaked_certificate(self, cert: CertificateInfo) -> bool:
-        """Check if certificate is in the leaked list."""
-        # Check serial number
+        """证书序列号或指纹是否命中泄露库。"""
+        # 序列号
         if cert.serial_number in self.leaked_certificates:
             return True
 
-        # Check fingerprint
+        # 指纹
         if cert.thumbprint in self.leaked_certificates:
             return True
 
         return False
 
     def _check_abuse_patterns(self, certificates: List[CertificateInfo]) -> List[str]:
-        """Check certificate abuse patterns."""
+        """检测已知被滥用证书主体。"""
         indicators = []
 
         for cert in certificates:
-            # Check known abused subjects
+            # 比对已知滥用主体
             for abused_subject in self.KNOWN_ABUSED_SUBJECTS:
                 if abused_subject.lower() in cert.subject.lower():
                     indicators.append(f"Certificate subject in known abuse list: {cert.subject}")
@@ -709,7 +667,7 @@ class CodeSigningChecker:
         return indicators
 
     def generate_report(self, result: SignatureResult, file_path: str) -> Dict[str, Any]:
-        """Generate signature verification report."""
+        """生成签名验证报告。"""
         report = {
             'file_path': os.path.basename(file_path),
             'file_hash': result.file_hash,
@@ -727,7 +685,7 @@ class CodeSigningChecker:
         return report
 
     def _generate_recommendation(self, result: SignatureResult) -> str:
-        """Generate security recommendation."""
+        """按状态给出处置建议。"""
         if result.status == SignatureStatus.VALID:
             return "Signature valid, file is trusted"
         elif result.status == SignatureStatus.UNSIGNED:
@@ -746,7 +704,7 @@ class CodeSigningChecker:
             return "Further verification needed"
 
     def save_report(self, result: SignatureResult, file_path: str, output_path: Optional[str] = None) -> str:
-        """Save verification report."""
+        """保存验证报告到 JSON。"""
         if not output_path:
             output_dir = './reports/signature'
             os.makedirs(output_dir, exist_ok=True)
@@ -763,13 +721,13 @@ class CodeSigningChecker:
         return output_path
 
     def analyze(self, file_path: str) -> Dict[str, Any]:
-        """Execute full signature analysis."""
+        """执行完整签名分析并返回报告。"""
         result = self.check_signature(file_path)
         report = self.generate_report(result, file_path)
         return report
 
 
 def create_signing_checker(**kwargs) -> CodeSigningChecker:
-    """Convenience function to create a signature verifier."""
+    """便捷工厂: 创建签名验证器。"""
     config = SigningConfig(**kwargs)
     return CodeSigningChecker(config)

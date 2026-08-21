@@ -1,4 +1,4 @@
-# 嵌入漂移监测——检测二进制嵌入空间随时间的系统性偏移
+# 嵌入漂移监测-检测二进制嵌入空间随时间的系统性偏移
 #
 # 核心问题: 新编译器/优化/ISA导致嵌入分布缓慢漂移，模型精度无声退化。
 # explanation_shift_monitor.py检测归因偏移但不检测嵌入空间系统性漂移。
@@ -6,7 +6,7 @@
 # 技术方案:
 #   1. 滑动基线: 维护最近W天嵌入样本作为移动参考分布
 #   2. MMD双样本检验: 移动基线 vs 当前批次
-#   3. 漂移速率估计: MMD序列线性回归——区分紧急漂移vs正常老化
+#   3. 漂移速率估计: MMD序列线性回归-区分紧急漂移vs正常老化
 #   4. 漂移归因+自适应重训练触发
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +47,7 @@ class DriftReport:
 
 
 class SlidingBaseline:
-    """滑动基线——维护最近W天嵌入样本作为移动参考分布"""
+    """滑动基线-维护最近W天嵌入样本作为移动参考分布"""
 
     def __init__(self, window_days: float = 30.0, max_samples: int = 5000):
         self._window_seconds = window_days * 86400.0
@@ -86,7 +85,7 @@ class SlidingBaseline:
 
 
 class EmbeddingDriftMonitor:
-    """嵌入漂移监测器——MMD+漂移速率+归因+自适应重训练触发"""
+    """嵌入漂移监测器-MMD+漂移速率+归因+自适应重训练触发"""
 
     def __init__(self, window_days: float = 30.0,
                  drift_rate_window: int = 20,

@@ -4,7 +4,6 @@
 """
 
 import unittest
-_MOD_DEBUG = False
 import sys
 import os
 import tempfile
@@ -23,7 +22,7 @@ class TestReproducerGenerator(unittest.TestCase):
     """
     漏洞复现环境生成器测试类
     """
-    
+
     def setUp(self):
         """
         测试前准备
@@ -31,18 +30,18 @@ class TestReproducerGenerator(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
             f.write('int main() { return 0; }')
             self.test_binary_path = f.name
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write('# Exploit script\nprint("exploit")')
             self.test_exploit_path = f.name
 
     def tearDown(self):
-        
+
         os.unlink(self.test_binary_path)
         os.unlink(self.test_exploit_path)
 
     def test_config_init(self):
-        
+
         """
         测试配置初始化
         """
@@ -50,7 +49,7 @@ class TestReproducerGenerator(unittest.TestCase):
         self.assertEqual(config.binary_path, self.test_binary_path)
         self.assertEqual(config.architecture, 'amd64')
         self.assertTrue(config.run_as_non_root)
-        
+
         generator = ReproducerGenerator(config)
         self.assertEqual(generator.config.binary_name, os.path.basename(self.test_binary_path))
 
@@ -183,13 +182,13 @@ class TestReproducerGenerator(unittest.TestCase):
                 libc_version='2.31',
                 network_ports=[8080]
             )
-            
+
             self.assertTrue(result['success'])
             self.assertEqual(result['output_dir'], tmpdir)
             self.assertEqual(result['base_image'], 'debian:bullseye')
             self.assertEqual(result['config']['libc_version'], '2.31')
             self.assertEqual(result['config']['network_ports'], [8080])
-            
+
             generated_files = [f['file_name'] for f in result['generated_files']]
             self.assertIn('Dockerfile', generated_files)
             self.assertIn('docker-compose.yml', generated_files)
@@ -201,7 +200,7 @@ class TestReproducerGenerator(unittest.TestCase):
             generator = ReproducerGenerator(config)
             generator.generate_all(tmpdir)
             commands = generator.get_quick_start_commands()
-            
+
             self.assertGreaterEqual(len(commands), 4)
             self.assertTrue(any('docker-compose build' in cmd for cmd in commands))
             self.assertTrue(any('docker-compose up' in cmd for cmd in commands))
@@ -216,12 +215,11 @@ class TestReproducerGenerator(unittest.TestCase):
             )
             generator = ReproducerGenerator(config)
             files = generator.generate_all(tmpdir)
-            
+
             exploit_dest = os.path.join(tmpdir, os.path.basename(self.test_exploit_path))
             self.assertTrue(os.path.exists(exploit_dest))
 
     def test_architecture_selection(self):
-        # 设计改进候选——可读性提升目标
         architectures = ['amd64', 'i386', 'arm64']
         for arch in architectures:
             config = ReproConfig(

@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2025-03-28  |  时态传播引擎
-# 修改: 2025-03-28  |  审计后补充文件头与错误处理
 #
 """
-传递式供应链漏洞传播——时态生存分析与传播引擎。
+传递式供应链漏洞传播: 时态生存分析与传播引擎。
 
 技术问题:
   现有漏洞传播分析仅回答"哪些组件受影响"，
@@ -11,16 +9,16 @@
   安全团队需要量化风险优先级: 先修哪个传递式依赖？
 
 解决方案:
-  1. 贝叶斯生存分析——估计漏洞沿传递链被利用的时间分布
-  2. 路径风险评分——结合CVSS/传播概率/时间衰减的复合评分
-  3. 修复优先级排序——Top-K最危险的传递式传播路径
+   1. 贝叶斯生存分析: 估计漏洞沿传递链被利用的时间分布
+   2. 路径风险评分: 结合CVSS/传播概率/时间衰减的复合评分
+   3. 修复优先级排序: Top-K最危险的传递式传播路径
 
 生存分析模型:
   对每条传递路径，漏洞被利用的时间T服从威布尔分布:
     S(t) = P(T > t) = exp(-(t/λ)^k)
   其中:
-    λ(尺度参数) ∝ 1/(CVSS × 传播概率)  —— 高风险漏洞传播更快
-    k(形状参数) = 1.5 —— 风险率随时间递增(漏洞工具化加速)
+    λ(尺度参数) ∝ 1/(CVSS × 传播概率)  - 高风险漏洞传播更快
+    k(形状参数) = 1.5 - 风险率随时间递增(漏洞工具化加速)
 
   路径的t天生存概率 = 各段传播的生存概率乘积
 
@@ -29,9 +27,9 @@
   本模块: 时态生存模型(时间维度+概率衰减+路径比较)
 
 与supply_chain.py和tvp_tsa_depgraph的集成:
-  supply_chain.py → 包级CVE发现
-  tvp_tsa_depgraph → 函数级传递路径
-  本模块 → 路径风险量化+修复优先级
+   supply_chain.py - 包级CVE发现
+   tvp_tsa_depgraph - 函数级传递路径
+   本模块 - 路径风险量化+修复优先级
 """
 
 import math
@@ -53,8 +51,8 @@ class PathRiskScore:
     """单条传递路径的风险评分"""
     path: TransitivePath
     # 生存分析
-    weibull_lambda: float = 30.0     # 尺度参数(天)——越小越快
-    weibull_k: float = 1.5           # 形状参数——>1表示风险递增
+    weibull_lambda: float = 30.0     # 尺度参数(天)-越小越快
+    weibull_k: float = 1.5           # 形状参数, >1表示风险递增
     survival_30d: float = 0.0        # 30天生存概率
     survival_90d: float = 0.0        # 90天生存概率
     median_time_to_exploit: float = 0.0  # 中位利用时间(天)
@@ -68,7 +66,7 @@ class PathRiskScore:
 
 @dataclass
 class PropagationRiskReport:
-    """传播风险报告——所有传递路径的风险排序"""
+    """传播风险报告: 所有传递路径的风险排序"""
     analysis: Optional[DepGraphAnalysis] = None
     path_risks: List[PathRiskScore] = field(default_factory=list)
     # 汇总统计
@@ -85,15 +83,15 @@ class PropagationRiskReport:
 
 
 class TemporalPropagationEngine:
-    """时态传播引擎——生存分析+路径评分+优先级排序。
+    """时态传播引擎: 生存分析+路径评分+优先级排序。
 
     使用示例:
         engine = TemporalPropagationEngine()
         report = engine.analyze(dep_analysis, disclosure_days=45)
 
     与tvp_tsa_depgraph.FunctionLevelDepGraph协同:
-      depgraph → analyze_propagation() → DepGraphAnalysis
-      engine → analyze(DepGraphAnalysis) → PropagationRiskReport
+      depgraph - analyze_propagation() - DepGraphAnalysis
+      engine - analyze(DepGraphAnalysis) - PropagationRiskReport
     """
 
     def __init__(self,
@@ -101,8 +99,8 @@ class TemporalPropagationEngine:
                  weibull_k: float = 1.5):
         """
         参数:
-          base_lambda_days: 基础尺度参数(天)——CVSS=5.0时的预期利用时间
-          weibull_k: 威布尔形状参数——>1.0表示风险率递增
+          base_lambda_days: 基础尺度参数(天), CVSS=5.0时的预期利用时间
+          weibull_k: 威布尔形状参数, >1.0表示风险率递增
         """
         self._base_lambda = base_lambda_days
         self._k = weibull_k
@@ -148,7 +146,7 @@ class TemporalPropagationEngine:
         report.critical_paths = sum(1 for p in path_risks if p.risk_score >= 0.7)
         report.high_risk_paths = sum(1 for p in path_risks if p.risk_score >= 0.4)
 
-        # 中位首次利用时间——取最近的风险路径
+        # 中位首次利用时间, 取最近的风险路径
         if path_risks:
             report.median_days_to_first_exploit = path_risks[0].median_time_to_exploit
             report.top_fix_targets = [
@@ -162,17 +160,17 @@ class TemporalPropagationEngine:
                      eval_days: List[float]) -> PathRiskScore:
         """对单条传播路径计算生存分析与风险评分。
 
-        λ估计——CVSS与传播概率联合决定:
+        λ估计: CVSS与传播概率联合决定:
           λ = base_lambda / (cvss_factor × propagation_factor)
           其中:
-            cvss_factor = (CVSS - 4.0) / 3.0 —— CVSS 4→1.0, 7→2.0, 10→3.0
-            propagation_factor = 传播概率^(1/深度) —— 路径越长衰减越大
+            cvss_factor = (CVSS - 4.0) / 3.0, CVSS 4-1.0, 7-2.0, 10-3.0
+            propagation_factor = 传播概率^(1/深度), 路径越长衰减越大
 
         生存函数:
           S(t) = exp(-(t/λ)^k)
           中位时间 T_median = λ × (ln(2))^(1/k)
 
-        风险评分——多维加权:
+        风险评分: 多维加权:
           risk = 0.4 × (1 - S_30d)     # 30天内被利用的概率
                + 0.3 × CVSS_norm       # CVSS归一化
                + 0.2 × (1/prop_prob)    # 低传播概率反而不确定
@@ -238,7 +236,7 @@ class TemporalPropagationEngine:
 def analyze_propagation_risk(dep_analysis: DepGraphAnalysis,
                                disclosure_days: float = 0.0
                                ) -> PropagationRiskReport:
-    """传播风险分析便捷入口——单行调用"""
+    """传播风险分析便捷入口: 单行调用"""
     engine = TemporalPropagationEngine()
     return engine.analyze(dep_analysis, disclosure_days)
 

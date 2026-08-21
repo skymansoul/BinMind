@@ -12,18 +12,18 @@ class UafLifecycleResult:
     fp_reduction_pct: float = 0.0
 
 class UafLifecycleFilter:
-    """UAF生命周期过滤器——基于alloc/free配对时序削减误报。
+    """UAF生命周期过滤器: 基于alloc/free配对时序削减误报。
 
     当前detect_uaf仅检测free后deref模式, 不区分:
-    (a) free(ptrA), malloc→复用ptrA, 使用ptrA ← 合法, 当前误报为UAF
-    (b) free(ptrA), 无重新分配, 使用ptrA ← 真实UAF
+    (a) free(ptrA), malloc, 复用ptrA, 使用ptrA - 合法, 当前误报为UAF
+    (b) free(ptrA), 无重新分配, 使用ptrA - 真实UAF
 
     本过滤器在detect_uaf基础上增加时序验证:
-    - 若free和deref之间存在对同一寄存器的重新赋值(mov ptr, new_val)→ 滤除
-    - 若free和deref之间存在新的malloc调用且返回值存入同一寄存器→ 滤除
-    - 仅保留free后、下次alloc前、无重新赋值的deref → 确认UAF
+    - 若free和deref之间存在对同一寄存器的重新赋值(mov ptr, new_val), 滤除
+    - 若free和deref之间存在新的malloc调用且返回值存入同一寄存器, 滤除
+    - 仅保留free后、下次alloc前、无重新赋值的deref, 确认UAF
 
-    方法依据: Lancet 所有权语义——指针在free后失去cell owner,
+    方法依据: Lancet 所有权语义, 指针在free后失去cell owner,
     新的alloc创建新的cell owner, 旧指针变为dangling。
     """
     _ALLOC_FUNCS = {"malloc", "calloc", "realloc"}
@@ -41,7 +41,7 @@ class UafLifecycleFilter:
             if free_idx < 0 or use_idx < 0:
                 result.confirmed.append((free_idx, use_idx)); continue
 
-            # 检查free→use之间是否有重新赋值
+            # 检查free-use之间是否有重新赋值
             reassigned = False
             new_alloc = False
             for j in range(free_idx + 1, use_idx):

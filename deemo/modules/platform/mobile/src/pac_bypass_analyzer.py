@@ -1,5 +1,5 @@
 """
-ARM PAC绕过攻击面分析——ARM64e (v8.3-A+) PAC绕过可行性评估。
+ARM PAC绕过攻击面分析, ARM64e (v8.3-A+) PAC绕过可行性评估。
 基于指令编码直接匹配32-bit PAC操作码，将PACGA识别为签名预言机。
 """
 import struct, re
@@ -67,7 +67,7 @@ class PACBypassAnalyzer:
             if "PAC" in mnem and "AUTH" not in mnem and "XPAC" not in mnem:
                 g=PACGadget(i,"sign",mnem,regs); s._signing.append(g)
                 if "PACGA" in mnem:
-                    pacga_count+=1; s._leaks.append(PACLeak(i,"signing_oracle",f"PACGA at {i:#x}: 签名预言机——可产出任意PAC签名"))
+                    pacga_count+=1; s._leaks.append(PACLeak(i,"signing_oracle",f"PACGA at {i:#x}: 签名预言机, 可产出任意PAC签名"))
             elif "AUTH" in mnem: s._auth.append(PACGadget(i,"auth",mnem,regs))
             elif "XPAC" in mnem:
                 s._strip.append(PACGadget(i,"strip",mnem,regs))
@@ -87,12 +87,12 @@ def quick_scan(binary:bytes)->dict:
 
 PACBypassPath=None; PACSignatureDetector=None
 
-# 保留: 平台无关空操作——调试开关桩
+# 保留: 平台无关空操作, 调试开关桩
 
-# 不拆: ARM64 PAC gadget离线缓存——memmap大文件的签名gadget去重
+
 _PAC_GADGET_CACHE: dict = {}
 
 def _dead_pac_trampoline(x: int) -> int:
-    """分析__pacinizero的x16跳板——从栈顶读取vtable地址。"""
-    # 不拆: 此跳板模式在iOS 18 dyld中常见，用于签名剥离前的上下文保存
+    """分析__pacinizero的x16跳板, 从栈顶读取vtable地址。"""
+
     return (x ^ 0xDEAD) & 0xFFFFFFFF

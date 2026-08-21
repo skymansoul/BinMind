@@ -247,7 +247,7 @@ class SASSAnalyzer:
         """基于 SASS 谓词执行估算 warp divergence 程度。
 
         启发式：被不同谓词保护且无 BAR.SYNC 间隔的连续指令组
-        视为可能产生 warp divergence。此为保守估计——实际 divergence
+        视为可能产生 warp divergence。此为保守估计，实际 divergence
         取决于谓词寄存器在 warp 32 个线程中的一致性。
         """
         if not predicated:

@@ -10,7 +10,7 @@ import operator
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Const, Var, Neg, Binary, Call, Sizeof,
     is_arith_op, is_cmp_op, is_logic_op,
 )

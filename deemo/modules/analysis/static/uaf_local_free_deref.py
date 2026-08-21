@@ -6,7 +6,6 @@
 # 线性指令流中ret会清空寄存器映射, 导致error path上的free→deref漏检.
 # 本模块在finalize阶段做后处理, 通过全指令流回溯重建关联.
 #
-# 创建: 2026-05-16
 
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -161,7 +160,7 @@ class LocalFreeDerefScanner:
 
         两阶段策略避免单遍反向扫描的顺序敏感问题:
         Pass1扩展别名集: 从free_reg反向扫描, 当遇到mov rcx,rax时
-        将rax加入别名集——此时rax在更早的mov [slot],rax中才有效.
+        将rax加入别名集-此时rax在更早的mov [slot],rax中才有效.
         Pass2收集栈slot: 用完整别名集重新反向扫描, 收集所有
         mov [slot], reg(∈别名集) 的slot.
         """
@@ -173,7 +172,7 @@ class LocalFreeDerefScanner:
                          free_idx: int, free_reg: str) -> Set[str]:
         """Pass1: 反向扫描构建被释放指针的完整寄存器别名集.
 
-        当遇到mov reg, [slot]时kill reg——此时reg被重新赋值为slot内容,
+        当遇到mov reg, [slot]时kill reg-此时reg被重新赋值为slot内容,
         不再持有被释放指针. 这防止将更早的同名寄存器存储误纳入别名.
         """
         alias: Set[str] = {free_reg}

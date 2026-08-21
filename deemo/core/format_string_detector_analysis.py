@@ -1,9 +1,9 @@
 """格式化字符串检测深度分析 — 符号执行偏移计算/LLM增强/置信度融合/污点预过滤。"""
 
 
-from typing import Any, Dict, List
-
 import logging
+import math
+from typing import Any, Dict, List
 
 _log = logging.getLogger(__name__)
 
@@ -122,7 +122,6 @@ def _fuse_confidence(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
     各层视为独立证据源, 用对数似然比(log-odds)累加而非直接加减置信度。
     """
-    import math
     weights = {'asm': 0.6, 'static': 0.5, 'taint': 0.7,
                'defuse': 0.65, 'symbolic': 0.8}
 

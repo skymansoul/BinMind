@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-04-30  |  从sym_constraint_engine.py拆分 — 约束求解与判定
 """SSBCP约束求解器 — write_size vs alloc_size+offset 的约束关系判定.
 
 - 常量比较判定
@@ -24,7 +23,7 @@ def solve_write(
 ) -> str:
     """求解 write_size vs alloc_size + offset 的约束关系
 
-    返回: "safe" / "overflow" / "uncertain"
+    返回 "safe" / "overflow" / "uncertain"。
     """
     if write.linked_alloc is None:
         return "uncertain"

@@ -1,9 +1,8 @@
-# UAF 样本元数据 — 漏洞样本与安全对照的规格定义.
+# UAF 样本元数据 - 漏洞样本与安全对照的规格定义.
 #
 # 每条样本: (sample_id, cve, pattern, expected, desc).
 # expected ∈ confirmed|benign; 模板按 pattern 选型, 定义于 uaf_templates.py.
 #
-# 创建: 2025-05-12
 
 VULN = [
     ("cve_2016_10150_kvm", "CVE-2016-10150", "printf_use", "confirmed",

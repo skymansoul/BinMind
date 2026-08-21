@@ -8,7 +8,7 @@ _src_dir = os.path.join(os.path.dirname(__file__), '..')
 if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
-from semantic_search import (
+from semantic_search_engine import (
     SemanticSearchEngine, SearchIndex, FunctionEmbedding,
     TFIDFVectorizer, TokenEmbedder, FunctionEmbedder,
     SearchResult, SemanticSearchResult,

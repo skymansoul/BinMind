@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-28 10:53 - 增加 CFG 边方向反转检测，处理编译器尾调用优化导致的控制流镜像
-# 2025-07-31 15:09 - 寄存器重命名表从 hardcoded 改为平台描述字典，x86/ARM/MIPS 可配
-# 2025-08-03 09:41 - NOP 消除增加边界检查，跨页 padding 不能简单移除 (影响 ELF segment 对齐)
+# 增加 CFG 边方向反转检测，处理编译器尾调用优化导致的控制流镜像
+# 寄存器重命名表从 hardcoded 改为平台描述字典，x86/ARM/MIPS 可配
+# NOP 消除增加边界检查，跨页 padding 不能简单移除 (影响 ELF segment 对齐)
 # — 编译优化不变的二进制规范化: NOP消除 / 寄存器正则化 / 数据流拓扑重排
 # KHAos (Cai et al., ACM TACO 2025) — 利用编译器优化混淆对抗二进制 diff,
 #       本项目反向操作: 使用规范化消除编译器 artifacts 以提高跨优化级 diff 精度.
@@ -102,9 +101,11 @@ def canonicalize_registers(code: bytes, arch: str = 'x86_64') -> bytes:
         # REX prefix (0x40-0x4F): 标记后续操作码使用 64-bit 操作数
         rex_b = False
         rex_r = False
+        rex_pos = -1
         if 0x40 <= b <= 0x4F:
             rex_b = bool(b & 0x01)
             rex_r = bool(b & 0x04)
+            rex_pos = i
             i += 1
             if i >= n:
                 break
@@ -115,11 +116,11 @@ def canonicalize_registers(code: bytes, arch: str = 'x86_64') -> bytes:
             if i + 1 < n:
                 modrm = code[i + 1]
                 # 保留 mod 和 r/m 字段, 仅规范化 reg 字段 (bits 3-5)
-                reg = ((modrm >> 3) & 0x07) | (4 if rex_r else 0)
-                canonical_idx = reg % 8  # 映射到 r0-r7
-                # 无损方案: 保持原 reg 字段不变 (不确定性太高)
-                # TODO: 基于 capstone 做精确操作数解析后再实现
-                pass
+                reg = ((modrm >> 3) & 0x07) | (8 if rex_r else 0)
+                canonical_idx = reg % 8  # r8-r15 折叠到 r0-r7
+                result[i + 1] = (modrm & 0xC7) | ((canonical_idx & 0x07) << 3)
+                if rex_r and rex_pos >= 0:
+                    result[rex_pos] &= 0xFB  # 清 REX.R
         i += 1
     return bytes(result)
 
@@ -178,7 +179,7 @@ class BinaryNormalizer:
         c1 = elide_nops(code, self.arch)
         stats['nop_elided'] = len(code) - len(c1)
         c2 = canonicalize_registers(c1, self.arch)
-        stats['reg_mutations'] = 0  # 当前版本不实施 (保守策略)
+        stats['reg_mutations'] = sum(1 for a, b in zip(c1, c2) if a != b)
         c3 = builder_order_normalize(c2, self.arch)
         stats['reorder_windows'] = max(0, len(c3) // 3)
         return c3, stats

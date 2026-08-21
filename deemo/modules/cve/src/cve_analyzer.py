@@ -1,12 +1,12 @@
 # ~ 2026-09-12
-# CVE分析入口——串联各子模块的统一调度层。
+# CVE分析入口-串联各子模块的统一调度层。
 # 双KB架构为已知技术债：CVEKnowledgeBase基于SQLite，另有一个CVEKB JSON版本。
 # 分析器惰性加载可用者。长期应将两者合并为单一实现。
 #
-# semantic_search()每次调用新建CVESearchEngine——少量查询适用，批量场景需缓存。
+# semantic_search()每次调用新建CVESearchEngine-少量查询适用，批量场景需缓存。
 # 此为待优化项，非缺陷。
 #
-# prioritize()逐个try/except各评分模块——单模块失败不影响其余环节。
+# prioritize()逐个try/except各评分模块-单模块失败不影响其余环节。
 
 import os
 from typing import List, Dict, Optional, Any, Union
@@ -16,12 +16,12 @@ from .cve_kb import CVEKnowledgeBase, get_kb
 
 
 class CVEAnalyzer:
-    """CVE分析主入口——文件/二进制/SBOM分发调度。"""
+    """CVE分析主入口-文件/二进制/SBOM分发调度。"""
 
     def __init__(self, kb: Optional[CVEKnowledgeBase] = None):
         """初始化分析器。
         kb: 可选注入点。None时使用模块级单例。
-        兼容双KB模式——按需传入CVEKB JSON实例。"""
+        兼容双KB模式-按需传入CVEKB JSON实例。"""
         self._kb = kb if kb is not None else get_kb()
 
 # 主分发
@@ -63,7 +63,7 @@ class CVEAnalyzer:
 
 # 兼容方法
     def analyze_strings(self, strings: List[str]) -> List[CVEEntry]:
-        """兼容方法——从提取的字符串中解析CVE ID并检索知识库。
+        """兼容方法-从提取的字符串中解析CVE ID并检索知识库。
         匹配CVE-YYYY-NNNNN格式。"""
         import re
 
@@ -93,7 +93,7 @@ class CVEAnalyzer:
 # 语义搜索
     def semantic_search(self, query: str, top_n: int = 10) -> List[Tuple[CVEEntry, float]]:
         """基于BM25的CVE描述语义检索。
-        每次调用新建CVESearchEngine——引擎未缓存。
+        每次调用新建CVESearchEngine-引擎未缓存。
         少量查询适用，批量场景需优化：将引擎缓存到实例上。"""
         from .cve_search import CVESearchEngine
 
@@ -109,13 +109,13 @@ class CVEAnalyzer:
             client = EPSSClient()
             return client.fetch_scores(cve_ids)
         except ImportError:
-            # cve_epss不可用——返回空富化
+            # cve_epss不可用-返回空富化
             return {cve_id: {"epss_score": None, "epss_percentile": None} for cve_id in cve_ids}
 
 # 优先级排序
     def prioritize(self, entries: List[CVEEntry]) -> List[CVEEntry]:
         """按严重度 + EPSS评分 + SSVC决策排序。
-        各评分模块独立try/except——单模块失败不中断整个管道。"""
+        各评分模块独立try/except-单模块失败不中断整个管道。"""
         enriched = list(entries)
 
         # 收集cve_id做批量富化
@@ -141,7 +141,7 @@ class CVEAnalyzer:
             for entry in enriched:
                 try:
                     decision = evaluate_ssvc(entry)
-                    # 将决策暂存于entry上（临时方案——应作为正式字段）
+                    # 将决策暂存于entry上（临时方案-应作为正式字段）
                     entry.__dict__["_ssvc_decision"] = decision
                 except Exception:
                     pass
@@ -161,7 +161,7 @@ class CVEAnalyzer:
 
 # 内部分析器
     def _analyze_file(self, path: str) -> Dict[str, Any]:
-        """分析文本文件——读取内容并搜索知识库。"""
+        """分析文本文件-读取内容并搜索知识库。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
         try:
@@ -187,7 +187,7 @@ class CVEAnalyzer:
         return findings
 
     def _analyze_binary(self, path: str) -> Dict[str, Any]:
-        """分析二进制——提取字符串并搜索知识库中的CVE。"""
+        """分析二进制-提取字符串并搜索知识库中的CVE。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
         # 简易二进制字符串提取（无pefile/elf依赖）
@@ -208,7 +208,7 @@ class CVEAnalyzer:
         return findings
 
     def _analyze_sbom(self, path: str) -> Dict[str, Any]:
-        """分析SBOM文件——解析并匹配包到已知CVE。"""
+        """分析SBOM文件-解析并匹配包到已知CVE。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
         try:
@@ -240,7 +240,7 @@ class CVEAnalyzer:
     @staticmethod
     def _extract_strings(data: bytes, min_len: int = 4) -> List[str]:
         """从二进制数据提取可打印ASCII字符串。
-        静态方法——不依赖实例状态。"""
+        静态方法-不依赖实例状态。"""
         strings: List[str] = []
         current: List[int] = []
 

@@ -7,13 +7,6 @@
   3. AttackSurfaceComputer: 三层评分分解 (格式串可控×写入原语×地址可控)
   4. L1/L2/L3 分层架构: 参数建模→污点传播→攻击面量化
 
-理论基 (论文引用):
-  - Cousot & Cousot: worklist fixpoint → Abstract Interpretation
-  - Kildall: def-use lattice框架
-  - System V AMD64 ABI §3.2.3: 调用约定参数映射
-  - FMTStrHunter: stack-frame aware格式串分析
-  - CWE-134: Externally-Controlled Format String
-
 与FSCS关系: 正则级classify + 本引擎约束精化 → 最终综合评分.
 """
 
@@ -212,11 +205,16 @@ class AttackSurfaceComputer:
 
 
 # ═══ 集成入口 → 已提取至 analysis.fmt_constraint_pipeline ═══
-# 保持向后兼容: 从此处重新导出
-from analysis.fmt_constraint_pipeline import (
-    analyze_format_string_deep, deep_score_exploitability,
-    enhance_with_constraints,
-)
+# 保持向后兼容: 从此处重新导出 (懒加载, 避免与 pipeline 循环导入)
+def __getattr__(name):
+    if name in ("analyze_format_string_deep", "deep_score_exploitability",
+                "enhance_with_constraints"):
+        from analysis.fmt_constraint_pipeline import (
+            analyze_format_string_deep, deep_score_exploitability,
+            enhance_with_constraints,
+        )
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ['FmtPrimitive', 'FormatArgModel', 'FmtCallModel',

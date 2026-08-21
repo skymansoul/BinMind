@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""语义搜索第二套实现（英文命名空间）—— 从 semantic_search.py 迁移。
+"""语义搜索第二套实现（英文命名空间）- 从 semantic_search.py 迁移。
 
 semantic_search.py 原文件含两套同名实现：顶部中文版与远程基线同源的
 英文版。英文版遮蔽中文版导致测试失败；迁移后两套各自独立可导入。
@@ -10,53 +10,21 @@ from __future__ import annotations
 import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import field
 
 import numpy as np
 
 
 class FunctionEmbedding:
     """A function's embedding vector with metadata."""
-    name: str = ""
-    address: int = 0
-    pseudocode: str = ""
-    vector: List[float] = field(default_factory=list)
-
-
-class TokenEmbedder:
-    """Token 级嵌入器 —— 词袋哈希映射 + L2 归一化。
-
-    维度固定为 128，保证不同函数文本产出等长向量。
-    """
-
-    DIMENSION = 128
-
-    def __init__(self, dimension: int = DIMENSION) -> None:
-        self.dimension = dimension
-
-    def embed(self, text: str) -> List[float]:
-        tokens = re.findall(r'[a-z_]+', (text or '').lower())
-        vec = [0.0] * self.dimension
-        for tok in tokens:
-            idx = abs(hash(tok)) % self.dimension
-            vec[idx] += 1.0
-        norm = math.sqrt(sum(v * v for v in vec))
-        if norm > 0:
-            vec = [v / norm for v in vec]
-        return vec
-
-
-class FunctionEmbedder:
-    """函数级嵌入封装 —— 优先伪代码，缺省回退函数名。"""
-
-    def __init__(self, dimension: int = TokenEmbedder.DIMENSION) -> None:
-        self._token_embedder = TokenEmbedder(dimension=dimension)
-
-    def embed(self, func: Dict[str, Any]) -> List[float]:
-        pseudocode = func.get('pseudocode') or ''
-        if pseudocode:
-            return self._token_embedder.embed(pseudocode)
-        name = func.get('name', '')
-        return self._token_embedder.embed(name)
+    def __init__(self, name: str = "", address: int = 0,
+                 pseudocode: str = "", vector: Optional[List[float]] = None,
+                 metadata: Optional[Dict[str, Any]] = None) -> None:
+        self.name = name
+        self.address = address
+        self.pseudocode = pseudocode
+        self.vector = vector or []
+        self.metadata = metadata or {}
 
 
 class SemanticSearchEngine:
@@ -85,10 +53,12 @@ class SemanticSearchEngine:
         return dot / (na * nb)
 
     def index_function(self, name: str, address: int,
-                       vector: List[float]) -> None:
+                       vector: List[float],
+                       metadata: Optional[Dict[str, Any]] = None) -> None:
         """登记一条函数嵌入。"""
         self._embeddings.append(FunctionEmbedding(
-            name=name, address=address, vector=list(vector)))
+            name=name, address=address, vector=list(vector),
+            metadata=metadata or {}))
 
     def search(self, query: List[float], top_k: int = 10
                ) -> List[Tuple[FunctionEmbedding, float]]:
@@ -119,18 +89,6 @@ class SemanticSearchEngine:
     def __len__(self) -> int:
         return len(self._embeddings)
 
-    def clear(self) -> None:
-        """Clear all indexed embeddings."""
-        self.embeddings.clear()
-        self._name_index.clear()
-        self._address_index.clear()
-        if self._use_faiss:
-            try:
-                import faiss
-                self._faiss_index = faiss.IndexFlatL2(self.dimension)
-            except ImportError:
-                self._faiss_index = None
-
 
 class TFIDFVectorizer:
     """TF-IDF vectorizer for text-based function representation."""
@@ -141,23 +99,12 @@ class TFIDFVectorizer:
         self._document_count: int = 0
 
     def fit_transform(self, documents: List[str]) -> List[List[float]]:
-        """Fit and transform documents in one step.
-
-        Args:
-            documents: List of text documents.
-
-        Returns:
-            TF-IDF weighted vectors.
-        """
+        """Fit and transform documents in one step."""
         self.fit(documents)
         return self.transform(documents)
 
     def fit(self, documents: List[str]) -> None:
-        """Build vocabulary and compute IDF.
-
-        Args:
-            documents: List of text documents.
-        """
+        """Build vocabulary and compute IDF."""
         doc_freq: Dict[str, int] = {}
         self._document_count = len(documents)
 
@@ -175,14 +122,7 @@ class TFIDFVectorizer:
             ) + 1.0
 
     def transform(self, documents: List[str]) -> List[List[float]]:
-        """Transform documents to TF-IDF vectors.
-
-        Args:
-            documents: List of text documents.
-
-        Returns:
-            TF-IDF weighted vectors.
-        """
+        """Transform documents to TF-IDF vectors."""
         if not self.vocabulary_:
             return [[0.0] for _ in documents]
 
@@ -206,7 +146,6 @@ class TFIDFVectorizer:
     @staticmethod
     def _tokenize(text: str) -> List[str]:
         """Simple tokenization."""
-        import re
         return re.findall(r'[a-zA-Z_]\w*', text.lower())
 
 
@@ -340,17 +279,7 @@ def semantic_search(
     embedder: Optional[TokenEmbedder] = None,
     top_k: int = 10,
 ) -> SemanticSearchResult:
-    """Perform semantic search over function embeddings.
-
-    Args:
-        query: Search query string.
-        index: SearchIndex to query against.
-        embedder: Optional embedder for query encoding.
-        top_k: Number of results.
-
-    Returns:
-        SemanticSearchResult with matched functions.
-    """
+    """Perform semantic search over function embeddings."""
     if embedder is None:
         embedder = TokenEmbedder()
     query_vec = embedder.embed(query)
@@ -359,14 +288,7 @@ def semantic_search(
 
 
 def format_search_report(result: SemanticSearchResult) -> str:
-    """Format search results into a report.
-
-    Args:
-        result: SemanticSearchResult to format.
-
-    Returns:
-        Formatted report string.
-    """
+    """Format search results into a report."""
     lines = [
         f"Semantic Search Results for: '{result.query}'",
         "-" * 40,

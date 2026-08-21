@@ -1,5 +1,4 @@
-# 2026-07-21
-# 污点追踪引擎 — 静态指令级数据流分析，标记敏感输入→危险sink的传播路径
+# 污点追踪引擎, 静态指令级数据流分析，标记敏感输入→危险sink的传播路径
 # 设计思路：模拟x86_64常见指令的污点传播语义，维护寄存器/内存污点标签映射
 # 权衡：不做符号执行和路径分支；XOR清零识别用于消减假阳性；sanitizer检测补充完整性检查
 
@@ -52,14 +51,14 @@ class TaintPolicy:
 
 
 class TaintPropagator:
-    """指令级污点传播模拟 — 不依赖动态trace，纯静态推演"""
+    """指令级污点传播模拟, 不依赖动态trace，纯静态推演"""
 
     def __init__(self, policy: Optional[TaintPolicy] = None):
         self._policy = policy or TaintPolicy()
         self._reg_taint: Dict[str, Set[TaintSource]] = {}
         self._mem_taint: Dict[int, Set[TaintSource]] = {}
         self._sanitizers: List[Tuple[int, str]] = []
-        # 模拟栈指针 — 从某个初始SP开始递减
+        # 模拟栈指针, 从某个初始SP开始递减
         self._rsp = 0x7ffffffde00
         # 污点传播统计
         self._propagate_count = 0
@@ -158,7 +157,7 @@ class TaintPropagator:
 
 # sink检查
     def check_sink(self, instruction: str, sink: TaintSink) -> bool:
-        """检查污点数据是否到达危险sink — 返回值True表示发现注入点"""
+        """检查污点数据是否到达危险sink, 返回值True表示发现注入点"""
         _opc, _dst, _srcs = self._parse_operands(instruction)
         _args = []
 
@@ -180,7 +179,7 @@ class TaintPropagator:
 
     # //// sanitizer检测 ////
     def detect_sanitizers(self, instructions: List[str]):
-        """在危险调用前检测长度检查和空指针检查 — 减少误报"""
+        """在危险调用前检测长度检查和空指针检查, 减少误报"""
         if not self._policy.sanitizer_detection:
             return
 
@@ -290,7 +289,7 @@ class TaintPropagator:
         _m = re.search(r'\[(0x[0-9a-fA-F]+)\]', _s)
         if _m:
             return int(_m.group(1), 16)
-        # [reg + offset] — 简单情况: [rsp+0x8]
+        # [reg + offset] , 简单情况: [rsp+0x8]
         _m2 = re.search(r'\[(\w+)\s*[-+]\s*(0x[0-9a-fA-F]+|\d+)\]', _s)
         if _m2:
             _base_reg = _m2.group(1)

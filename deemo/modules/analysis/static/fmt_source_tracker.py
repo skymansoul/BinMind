@@ -1,6 +1,6 @@
 # 格式字符串来源追踪器 v4 (Format String Source Provenance Tracker)
 #
-# v4: 全局函数指针追踪 — 支持通过全局变量间接调用的格式字符串检测.
+# v4: 全局函数指针追踪 - 支持通过全局变量间接调用的格式字符串检测.
 # 追踪 refptr→寄存器→全局变量→寄存器→间接调用的完整链
 # 两阶段分析: 预扫阶段建立全局函数指针映射, 主分析阶段使用该映射
 # 解决callback/函数指针模式下的漏报问题
@@ -28,7 +28,6 @@
 #   "UAFx: Use-After-Free Detection with Path-Sensitive Analysis":
 #     全局变量状态追踪对二进制级漏洞检测至关重要.
 #
-# 创建: 2024-12-11
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -36,7 +35,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from .disasm_util import norm_reg, resolve_rip_relative, extract_func_name, extract_stack_slot
 
 
-# printf族函数名模式 — 用于从refptr符号名中识别
+# printf族函数名模式 - 用于从refptr符号名中识别
 _PRINTF_NAME_PATTERNS = [
     "printf", "fprintf", "sprintf", "snprintf",
     "vprintf", "vfprintf", "vsprintf", "vsnprintf",
@@ -69,7 +68,7 @@ def _is_printf_func(name: str) -> bool:
 
 
 class FmtSourceTracker:
-    """格式字符串来源追踪 — 四通道传播 (v4: 含全局函数指针)."""
+    """格式字符串来源追踪 - 四通道传播 (v4: 含全局函数指针)."""
 
     def __init__(self, use_win64: bool = False):
         # reg → source_type 映射: "literal" | "stack_var" | "heap" | "argv" | "unknown"

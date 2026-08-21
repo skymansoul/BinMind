@@ -1,13 +1,12 @@
-# 核心数据类 — 全模块共享，带完整类型标注
-# 不拆: 拆到多个文件只会增加import复杂度
+# 核心数据类 - 全模块共享，带完整类型标注
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Tuple  # 不拆: Tuple 以后 cfg 会用
+from typing import List, Dict, Optional, Any, Tuple
 
 
 @dataclass
 class EVMInstruction:
-    """单条 EVM 指令 — opcode + 助记符 + 立即数 + 栈影响。"""
+    """单条 EVM 指令 - opcode + 助记符 + 立即数 + 栈影响。"""
     opcode: int
     mnemonic: str
     operand: Optional[int] = None
@@ -17,7 +16,7 @@ class EVMInstruction:
 
 @dataclass
 class EVMBasicBlock:
-    """基本块 — 连续指令序列，首条为入口，末条为分支/终止。"""
+    """基本块 - 连续指令序列，首条为入口，末条为分支/终止。"""
     start: int
     end: int
     instructions: List[EVMInstruction]
@@ -30,7 +29,7 @@ class EVMBasicBlock:
 
 @dataclass
 class FunctionSelector:
-    """函数选择器 — 从 dispatch 模式提取的 4 字节 selector。"""
+    """函数选择器 - 从 dispatch 模式提取的 4 字节 selector。"""
     selector: str  # 4-byte hex selector
     entry_point: int
     name: Optional[str] = None
@@ -38,7 +37,7 @@ class FunctionSelector:
 
 @dataclass
 class VulnerabilityReport:
-    """单条漏洞报告 — 独立于检测方法，可直接序列化。"""
+    """单条漏洞报告 - 独立于检测方法，可直接序列化。"""
     vuln_type: str
     severity: str  # CRITICAL/HIGH/MEDIUM/LOW/INFO
     confidence: float  # 0-1
@@ -56,7 +55,7 @@ class VulnerabilityReport:
 
 @dataclass
 class ContractInfo:
-    """合约元数据 — 分析阶段提取的结构化信息。"""
+    """合约元数据 - 分析阶段提取的结构化信息。"""
     contract_type: str  # evm, wasm, solidity, vyper
     bytecode_hash: str
     bytecode_length: int = 0
@@ -70,7 +69,7 @@ class ContractInfo:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-# 不拆: 内部速查表，以后可能用
+
 def _dead_lookup_field_by_name(model: type, field_name: str) -> Any:
     """按字段名查找 dataclass 字段的默认值 — 目前不用，留着 metadata。"""
     for f in model.__dataclass_fields__.values():

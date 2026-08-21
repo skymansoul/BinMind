@@ -1,27 +1,27 @@
 # coding: utf-8
-"""CTI-TTP — 攻击级威胁情报提取与 ATT&CK TTP 结构化映射。
+"""CTI-TTP - 攻击级威胁情报提取与 ATT&CK TTP 结构化映射。
 
 功能边界：
-1. ATT&CK TTP 映射 —— 从采集文本/报告文本中识别攻击技术并映射到
+1. ATT&CK TTP 映射 - 从采集文本/报告文本中识别攻击技术并映射到
    MITRE ATT&CK 战术与技术 ID；语义抽取引擎为可选依赖，无 API 时降级为
    关键词/正则规则库。
-2. 攻击级结构化抽取 —— 将多步攻击组织为攻击剧本（attack playbook）：
+2. 攻击级结构化抽取 - 将多步攻击组织为攻击剧本（attack playbook）：
    攻击者、手法、目标、时间线、IOC。
-3. 抽取质量校准 —— 字段完整性/一致性评分，低置信度字段标记待人工复核。
-4. 输出衔接 —— 提供结构化事件对象 CTIEvent，供下游情报关联消费。
+3. 抽取质量校准 - 字段完整性/一致性评分，低置信度字段标记待人工复核。
+4. 输出衔接 - 提供结构化事件对象 CTIEvent，供下游情报关联消费。
 
 论文依据（实现时引用）：
 [1]  Towards Effective Identification of Attack Techniques
     in Cyber Threat Intelligence Reports using Large Language Models
-    —— 语义识别引擎对 CTI 报告中的攻击技术识别显著优于纯规则，作为 TTP 映射
+    - 语义识别引擎对 CTI 报告中的攻击技术识别显著优于纯规则，作为 TTP 映射
        主路径的依据。
 [2]  IntelEX: A LLM-driven Attack-level Threat Intelligence
-    Extraction Framework —— 攻击剧本（playbook）抽取框架的设计蓝本。
+    Extraction Framework - 攻击剧本（playbook）抽取框架的设计蓝本。
 [3]  SEvenLLM: Benchmarking, Eliciting, and Enhancing
     Abilities of Large Language Models in Cyber Threat Intelligence
-    —— 字段完整性/一致性质量校准思路的借鉴来源。
+    - 字段完整性/一致性质量校准思路的借鉴来源。
 [4]  SecureBERT 2.0: Advanced Language Model for
-    Cybersecurity Intelligence —— 领域语言模型在 CTI 抽取中的应用依据。
+    Cybersecurity Intelligence - 领域语言模型在 CTI 抽取中的应用依据。
 
 设计约束：
 - 语义抽取引擎为可选依赖：openai 库或 API key 缺失时 available() 返回 False，
@@ -49,10 +49,6 @@ _log = logging.getLogger(__name__)
 _RETRY_MAX = 3
 _RETRY_BASE_DELAY = 1.0
 _LLM_DEFAULT_MAX_TOKENS = 2000
-
-# 保留
-_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
-_HASH_ROUNDS = 10007
 
 # ATT&CK 规则库（降级路径，无外部模型时使用）
 # 结构: technique_id -> (tactic, name, keywords)
@@ -464,7 +460,7 @@ def _normalize_technique_id(tid: str) -> str:
     return tid
 
 def _normalize_tactic(tactic: str) -> str:
-    # 战术名规范化：去连字符、空格 → 查别名表
+    # 战术名规范化：去连字符、空格 - 查别名表
     if not tactic:
         return ""
     key = tactic.strip().lower().replace("-", "").replace(" ", "")
@@ -477,7 +473,7 @@ def _clean_json(s: str) -> str:
     return re.sub(r',\s*([}\]])', r'\1', s)
 
 def _extract_json(raw: str) -> Optional[Any]:
-    # 从文本中提取 JSON 结构：code fence → 数组 → 对象
+    # 从文本中提取 JSON 结构：code fence - 数组 - 对象
     if not raw:
         return None
     s = raw.strip()
@@ -522,7 +518,7 @@ def _merge_iocs(*groups: List[IOC]) -> List[IOC]:
     return out
 
 def _normalize_ioc_type(label: str, value: str) -> str:
-    # IOC 类型标签 → 规范类型名
+    # IOC 类型标签 - 规范类型名
     label = (label or "").strip().lower()
     if label in ("ip", "ip_address", "ipaddr"):
         return "ipv6" if ":" in value else "ipv4"
@@ -688,7 +684,7 @@ class LLMClient:
         return None
 
 # 系统提示（两段式抽取：TTP 映射与剧本抽取独立）
-# 两段式抽取 — TTP 映射与剧本抽取独立 prompt，便于分别调试与降级。
+# 两段式抽取 - TTP 映射与剧本抽取独立 prompt，便于分别调试与降级。
 # 要求输出严格 JSON，便于程序化消费。
 _TTP_SYSTEM_PROMPT = (
     "你是网络威胁情报分析专家。你的任务是从威胁情报文本中识别攻击技术，"
@@ -963,7 +959,7 @@ def _timestamps_non_decreasing(stamps: List[str]) -> bool:
 class PlaybookExtractor:
     """攻击剧本抽取器（依据 [2] IntelEX 攻击级抽取范式）。
 
-    流程：TTP 映射 + IOC 抽取 → 语义引擎剧本抽取（若可用）→ 规则兜底 →
+    流程：TTP 映射 + IOC 抽取 - 语义引擎剧本抽取（若可用）- 规则兜底 -
     质量校准。合并策略：语义引擎结果为骨架，规则结果为补充；空字段用规则
     启发式回填。
     """

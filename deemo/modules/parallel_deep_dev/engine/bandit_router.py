@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 _TEMPERATURE_GRID = [0.1, 0.2, 0.3, 0.5, 0.7]
 _TOKENS_GRID = [4000, 8000, 12000, 16000, 20000]
 
-from parallel_deep_dev.config import _data_dir
+from ..config import _data_dir
 _CONFIGS_PATH = os.path.join(_data_dir(), "bandit_configs.json")
 
 

@@ -10,7 +10,7 @@ import os
 import re
 import hashlib
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 _log = get_logger("vuln_detection.attack_surface")
 

@@ -1,6 +1,5 @@
 import pytest
 import sys
-_MOD_DEBUG = False
 import os
 import tempfile
 
@@ -14,7 +13,6 @@ class TestDigitalTwinRiskAnalyzer:
 
     @classmethod
     def setup_class(cls):
-        # 实测性能在预期范围内——不列入优化计划
         """测试类初始化"""
         cls.analyzer = DigitalTwinRiskAnalyzer()
 

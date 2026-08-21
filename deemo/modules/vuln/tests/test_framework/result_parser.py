@@ -1,8 +1,7 @@
 # coding: utf-8
-# 创建: 2026-06-22  |  结果解析——统计TP/FP/FN/TN，输出基准测试报告
 #
 """
-结果解析模块——将扫描结果与预期标签比对，计算检出率/误报率/漏报率。
+结果解析模块-将扫描结果与预期标签比对，计算检出率/误报率/漏报率。
 """
 
 import json
@@ -12,7 +11,7 @@ from typing import Dict, List, Optional
 
 @dataclass
 class BenchmarkStats:
-    """基准测试统计——按漏洞类型分组"""
+    """基准测试统计-按漏洞类型分组"""
     total_samples: int = 0
     # 总体
     true_positives: int = 0
@@ -64,7 +63,7 @@ def parse_results(scan_results, expected_labels: Dict[str, Dict]
     """将扫描结果与预期标签比对。
 
     参数:
-      scan_results: [ScanResult] — 扫描器输出
+      scan_results: [ScanResult] - 扫描器输出
       expected_labels: {cve_id: {vuln_type, expected_vulnerable}}
 
     返回BenchmarkStats。

@@ -71,11 +71,7 @@ class BufferDisjointness:
         self._aliases.clear()
 
     def scan_function(self, code: str) -> Dict[str, BufferInfo]:
-        """扫描函数, 建立缓冲区分类.
-
-        Returns:
-            {变量名: BufferInfo} 映射
-        """
+        """扫描函数, 建立缓冲区分类, 返回 {变量名: BufferInfo} 映射。"""
         self.clear()
         lines = code.split('\n')
 
@@ -141,11 +137,7 @@ class BufferDisjointness:
         return dict(self._buffers)
 
     def classify_target(self, target_expr: str) -> str:
-        """判定写入目标的缓冲区类型.
-
-        Returns:
-            "heap" | "stack" | "global" | "param" | "unknown"
-        """
+        """判定写入目标的缓冲区类型: heap/stack/global/param/unknown。"""
         root = _extract_var(target_expr)
         if root is None:
             return "unknown"

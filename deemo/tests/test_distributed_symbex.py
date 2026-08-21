@@ -1,6 +1,5 @@
 import pytest
 import time
-_MOD_DEBUG = False
 from modules.distributed_symbex import (
     DistributedSymbolicExecutionEngine,
     SymbolicState,
@@ -209,7 +208,6 @@ class TestDistributedSymbolicExecutionEngine:
         assert isinstance(engine, DistributedSymbolicExecutionEngine)
 
     def test_invalid_backend(self):
-        # 技术债条目——未来迭代重构目标
         """测试无效后端"""
         with pytest.raises(ValueError):
             DistributedSymbolicExecutionEngine(backend="invalid")

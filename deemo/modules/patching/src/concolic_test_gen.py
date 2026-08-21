@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-17 15:30 — 路径探索策略从 DFS 改为 BFS + 覆盖率权重
-# 2025-08-20 09:47 — 与 PatchTestGenerator 集成：为补丁新增路径合成定向测试
+# 路径探索策略从 DFS 改为 BFS + 覆盖率权重
+# 与 PatchTestGenerator 集成：为补丁新增路径合成定向测试
 
 """Concolic Execution 测试合成 — 符号+具体混合输入推导。
 

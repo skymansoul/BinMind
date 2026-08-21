@@ -130,7 +130,7 @@ def _cmd_lifecycle(args):
 
 def _cmd_plugins(args):
     """插件发现与注册"""
-    from vuln_detection.src.core.plugin import discover_plugins, PluginManager
+    from deemo.modules.vuln.detection.src.core.plugin import discover_plugins, PluginManager
     mgr = PluginManager()
     discovered = discover_plugins(args.dir or "")
     for p in discovered:
@@ -143,13 +143,13 @@ def _cmd_plugins(args):
 
 def _cmd_config(args):
     """配置读写与初始化"""
-    from vuln_detection.src.config import load_config, save_config, config_to_dict
+    from deemo.modules.vuln.detection.src.config import load_config, save_config, config_to_dict
     cfg_path = args.file or ""
     if args.action == "show":
         cfg = load_config(cfg_path)
         print(json.dumps(config_to_dict(cfg), indent=2))
     elif args.action == "init":
-        from vuln_detection.src.config import Config
+        from deemo.modules.vuln.detection.src.config import Config
         cfg = Config()
         out_path = args.output or "vuln_detection_config.json"
         save_config(cfg, out_path)

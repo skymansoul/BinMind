@@ -7,7 +7,7 @@ automatic enforcement timeout, memory, path-count limits
 参考: "LIFT: LLM-Driven IR 优化 for 符号执行"
 核心方法: 使用符号代价模型识别高开销 IR 语句，优先将资源
 分配给这些语句的符号执行。在有限时间/内存约束下，最大化
-代码覆盖率——将资源视作投资组合，按语句的"求解器负担"分配
+代码覆盖率, 将资源视作投资组合，按语句的"求解器负担"分配
 """
 
 import json
@@ -64,7 +64,7 @@ class ExecutionResult:
 
 
 class ResourceRule:
-    """Single resource allocation rule — 匹配 names via compiled regex"""
+    """Single resource allocation rule, 匹配 names via compiled regex"""
 
     def __init__(self, rule_type: ResourceLimitType, name_pattern: str,
                  limits: ResourceLimits, priority: int = 0) -> None:
@@ -79,7 +79,7 @@ class ResourceRule:
 
 
 # IR 优化代价模型
-# 将符号执行资源视作投资组合——按每条IR语句的"求解器负担"分配资源
+# 将符号执行资源视作投资组合, 按每条IR语句的"求解器负担"分配资源
 # 包含除法/取模/浮点运算的语句消耗更多求解器时间，应获得更大的
 # 资源配额（timeout/memory）。代价模型按指令类型特征计算权重
 
@@ -114,7 +114,7 @@ class IRCostModel:
         return cost if cost > 0 else 1.0  # 默认代价 = 1.0
 
     def estimate_function_cost(self, ir_body: str) -> float:
-        """估计整个函数的累积 IR 代价——用于按比例分配资源"""
+        """估计整个函数的累积 IR 代价, 用于按比例分配资源"""
         total = 0.0
         for line in ir_body.split('\n'):
             total += self.estimate_statement_cost(line.strip())
@@ -142,7 +142,7 @@ class IRCostModel:
 
 class HierarchicalResourceController:
     """Multi-level resource controller
-    
+
     Rule priority descending: Path -> Function -> Module -> Default
     """
 
@@ -223,7 +223,7 @@ class HierarchicalResourceController:
     def allocate_by_ir_cost(self, ir_functions: Dict[str, str],
                              total_timeout: int = 300,
                              total_memory: int = 2048) -> Dict[str, ResourceLimits]:
-        """按 IR 代价模型分配资源——高代价函数获得更多配额"""
+        """按 IR 代价模型分配资源, 高代价函数获得更多配额"""
         return self._ir_cost_model.allocate_resources(
             ir_functions, total_timeout, total_memory)
 

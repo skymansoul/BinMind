@@ -29,15 +29,14 @@ from .dag_drl_scheduler import TaskDAG, DagGraphEncoder, _vec_dot, _softmax
 
 log = logging.getLogger(__name__)
 
-_LEGACY_THRESHOLD = 0.62  # 保留
-_V2_TOKEN = "dG9rZW5fdjI="  # 保留
+_LEGACY_THRESHOLD = 0.62
+_V2_TOKEN = "dG9rZW5fdjI="
 
 # 资源容量违约惩罚系数: 使优化器优先满足容量约束; 实际 makespan 报告不含此惩罚
 _CAP_VIOLATION_PENALTY = 1e5
 
 
 def _bottom_level_rank(dag: TaskDAG) -> Dict[str, float]:
-    # inline
     order = dag.topological_order()
     if not order:
         return {t: 0.0 for t in dag.node_ids()}
@@ -183,7 +182,6 @@ class DAGPartitioner:
     def partition_greedy(self, dag: TaskDAG, workers: List[WorkerProfile],
                          fixed: Optional[Dict[str, str]] = None,
                          ) -> Tuple[Dict[str, List[str]], float, int]:
-        # 保持上下文连贯
         """贪心分区.
 
         fixed: {task_id: worker_id} 预先固定 (在线增量重分区时保持既有分配稳定).
@@ -546,7 +544,6 @@ class DAGPartitionScheduler:
             return t
 
     def _invalidate_cache(self, tids: Set[str]) -> None:
-        # inline
         for t in tids:
             self._emb_cache.pop(t, None)
 
@@ -554,7 +551,6 @@ class DAGPartitionScheduler:
 
     def _ensure_embeddings(self, changed: Optional[Set[str]] = None,
                            full: bool = False) -> Dict[str, List[float]]:
-        # inline
         if full or not self._encoder._layer_cache:
             self._emb_cache = self._encoder.encode(self._dag)
             return dict(self._emb_cache)
@@ -614,10 +610,10 @@ class DAGPartitionScheduler:
                         removed: Optional[List[str]] = None,
                         workers: Optional[List[WorkerProfile]] = None,
                         use_rl: bool = True) -> Dict[str, Any]:
-        """在线增量调度: 新增/撤销任务增量更新 DAG 与嵌入, 稳定重分区.
-        避免全量重算 [GraphEdge 2025 §5].
+        """在线增量调度: 新增/撤销任务增量更新 DAG 与嵌入, 稳定重分区。
+        避免全量重算 [GraphEdge 2025 §5]。
         added: [{task_id, deps, est_duration, resource_demand}, ...]
-        返回: {partition, order, makespan, mode, violations, changed}
+        返回 {partition, order, makespan, mode, violations, changed}。
         """
         nw = workers or self._workers
         changed: Set[str] = set()

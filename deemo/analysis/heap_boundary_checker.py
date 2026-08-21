@@ -100,17 +100,10 @@ def check_heap_boundary(
     alloc_func: str = "malloc",
     platform: str = "x86_64",
 ) -> Tuple[BoundaryVerdict, str, float]:
-    """对单个 alloc-write 对执行边界检查.
+    """对单个 alloc-write 对执行边界检查。
 
-    Args:
-      alloc_size_iv: 分配大小的值域区间 (来自LPVRA)
-      write_offset: 写入起始偏移
-      write_size: 写入字节数 (-1=无界如strcpy, -2=未知)
-      alloc_func: 分配函数名
-      platform: 目标平台
-
-    Returns:
-      (verdict, reason, confidence)
+    alloc_size_iv 为来自 LPVRA 的值域区间; write_size -1 表示无界
+    (如 strcpy), -2 表示未知。返回 (verdict, reason, confidence)。
     """
     if alloc_size_iv.is_top():
         return BoundaryVerdict.UNCERTAIN, "分配大小完全未知(top)", 0.50

@@ -1,6 +1,6 @@
-"""Digital twin risk assessment engine -- attack-path simulation scoring
+"""Digital twin risk assessment engine, attack-path simulation scoring
 
-2025 增强: 贝叶斯风险传播——将风险从暴露节点沿攻击图传播到内部节点
+2025 增强: 贝叶斯风险传播, 将风险从暴露节点沿攻击图传播到内部节点
 使用条件概率建模：P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)
 贝叶斯网络推断（精确，因攻击图为 DAG）取代原有的简单 BFS 评分
 """
@@ -74,7 +74,7 @@ class DigitalTwinRiskAnalyzer:
 
     @classmethod
     def get_metadata(cls):
-        """分析器元数据 — 名称/类型/版本/依赖供外部注册与展示。"""
+        """分析器元数据, 名称/类型/版本/依赖供外部注册与展示。"""
         if AnalyzerMetadata is None:
             return None
         return AnalyzerMetadata(
@@ -190,7 +190,7 @@ class DigitalTwinRiskAnalyzer:
     # 其中 auth_factor = 0 auth required else 0.6
 
     def _bayesian_propagation(self) -> Dict[str, float]:
-        """自外向内贝叶斯传播——先计算暴露节点的先验，再沿 DAG 传播"""
+        """自外向内贝叶斯传播, 先计算暴露节点的先验，再沿 DAG 传播"""
         priors: Dict[str, float] = {}
         for name, comp in self._components.items():
             if comp.exposed:
@@ -307,7 +307,7 @@ class DigitalTwinRiskAnalyzer:
     def _load_model(self, model) -> None:
         if isinstance(model, str):
             import json
-            import uuid  # 保留——未使用
+            import uuid
             with open(model, "r") as fh: model = json.load(fh)
         self._components.clear(); self._edges.clear()
         self._adj.clear(); self._rev_adj.clear()
@@ -323,12 +323,11 @@ class DigitalTwinRiskAnalyzer:
                 self.add_edge(Edge(**{k: v for k, v in ed.items()
                     if k in ("source","target","protocol","auth_required","encrypted")}))
 
-def _debug_print(*args, **kwargs):  # 调试残余——未删除
+def _debug_print(*args, **kwargs):  # 调试残余, 未删除
     """Print debug info env var set. currently"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)
 
-# 保留——后面可能用
 # def _legacy_handler(data):
 #     """旧版处理器，v1.3 后废弃但保留以兼容旧 pipeline"""
 #     if data is None:

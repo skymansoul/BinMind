@@ -169,7 +169,6 @@ class TestGitVersionManagement:
         assert versions[-1]['commit_message'] == 'Version 0'
 
     def test_get_repo_info_nonexistent(self, manager):
-        # 运行时效率可接受——无需进一步加速
         """不存在的项目返回None"""
         # 2026-06-15 这里之前返回的是空dict，改成了None，跟其他方法保持一致
         repo_info = manager.get_repo_info('nonexistent_project')

@@ -1,9 +1,9 @@
-# 代码属性图（Code Property Graph）构造器 —— 从源码/反编译伪代码提取
+# 代码属性图（Code Property Graph）构造器 - 从源码/反编译伪代码提取
 # AST / 控制流(CFG) / 数据流(DFG) / 调用图(CallGraph) 并统一为一张属性图。
 #
 # 对应论文: LLMxCPG 将 CPG 作为 LLM 漏洞检测的结构上下文,
 # CodeSAGE 以 CPG 作为多特征融合的图输入。
-# 本模块不依赖 tree-sitter / libclang —— 对反编译伪代码(IDA/Ghidra 风格 C)与
+# 本模块不依赖 tree-sitter / libclang - 对反编译伪代码(IDA/Ghidra 风格 C)与
 # Python 源码采用轻量启发式解析, 精度足以支撑下游的路径序列化与结构特征打分。
 #
 # 边界条件:
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class CPGNodeKind(str, Enum):
-    """CPG 节点类型 —— 覆盖四种图的节点集合。"""
+    """CPG 节点类型 - 覆盖四种图的节点集合。"""
     FUNCTION = "function"        # 函数
     PARAM = "param"              # 形参
     STMT = "stmt"                # 语句
@@ -38,14 +38,14 @@ class CPGNodeKind(str, Enum):
 
 
 class CPGEdgeKind(str, Enum):
-    """CPG 边类型 —— AST / CFG / DFG / CallGraph 四类边。"""
-    AST = "ast"                  # 语法树父->子
-    CFG = "cfg"                  # 控制流前驱->后继
-    DFG = "dfg"                  # 数据依赖 def->use
-    CALL = "call"                # 调用者->被调用者
+    """CPG 边类型 - AST / CFG / DFG / CallGraph 四类边。"""
+    AST = "ast"                  # 语法树父到子
+    CFG = "cfg"                  # 控制流前驱到后继
+    DFG = "dfg"                  # 数据依赖 def到use
+    CALL = "call"                # 调用者到被调用者
 
 
-# 常见危险 sink 关键字 —— 用于下游的路径优先级排序与结构风险打分
+# 常见危险 sink 关键字 - 用于下游的路径优先级排序与结构风险打分
 DEFAULT_SINKS: Tuple[str, ...] = (
     "strcpy", "strcat", "sprintf", "vsprintf", "gets", "memcpy", "strncpy",
     "snprintf", "scanf", "system", "popen", "execve", "free", "malloc",
@@ -78,7 +78,7 @@ class CodePropertyGraph:
     设计意图:
       以节点 id 为键的邻接表存储四类边, 支持 O(1) 邻居查询;
       `functions` 维护 函数名 -> 函数节点 id, 用于按函数裁剪。
-      裁剪语义为 AST 后代闭包上的导出子图 —— 保留函数内部完整结构,
+      裁剪语义为 AST 后代闭包上的导出子图 - 保留函数内部完整结构,
       跨函数边是否保留由 `cross_function` 参数控制。
     """
 
@@ -132,7 +132,7 @@ class CodePropertyGraph:
         if not source:
             return cpg
         lines = source.splitlines()
-        func_starts = cls._scan_functions(lines)   # 行号 -> 函数名
+        func_starts = cls._scan_functions(lines)   # 行号到函数名
 
         current_func: Optional[int] = None
         block_stack: List[int] = []          # AST 父节点栈(函数/分支/控制块)
@@ -192,7 +192,7 @@ class CodePropertyGraph:
 
 # 闭合块
             if stripped == "}":
-                # 仅当回退到最外层(函数体)时才闭合函数 —— 内层块 `}` 不触发
+                # 仅当回退到最外层(函数体)时才闭合函数 - 内层块 `}` 不触发
                 if pending_func_sig is not None and len(block_stack) == 1:
                     exit_id = cpg.add_node(CPGNodeKind.EXIT,
                                            f"exit:{cpg.node(current_func).label}",
@@ -220,11 +220,11 @@ class CodePropertyGraph:
                     current_func, block_stack, prev_stmt, stripped, line_no)
                 prev_stmt = stmt_id
             else:
-                # 顶层(函数外)语句 —— 归为 STMT
+                # 顶层(函数外)语句, 归为 STMT
                 sid = cpg.add_node(CPGNodeKind.STMT, stripped, line_no)
                 prev_stmt = sid
 
-# 数据流边: def -> use (按文本顺序约束)
+# 数据流边: def 到 use (按文本顺序约束)
         cpg._finalize_dfg()
         return cpg
 
@@ -237,7 +237,7 @@ class CodePropertyGraph:
         if parent is None:
             return None
 
-        # 赋值形: `lhs = rhs` 或 `type lhs = rhs` —— lhs 为定义, rhs 标识符为使用
+        # 赋值形: `lhs = rhs` 或 `type lhs = rhs` - lhs 为定义, rhs 标识符为使用
         massign = re.match(r'^\s*(?:[A-Za-z_]\w*\s+[*&]?\s*)?([A-Za-z_]\w*)\s*=\s*(.+?)\s*;?\s*$', text)
         if massign:
             var_name, rhs = massign.group(1), massign.group(2)
@@ -304,8 +304,8 @@ class CodePropertyGraph:
 
         覆盖 C 风格 `ret __fastcall name(args) {` 与 Python `def name(args):`。
         关键判别:
-          - 形参列表内不允许出现分号 —— 反编译调用语句参数几乎不含分号。
-          - 函数名不得为控制流关键字 —— `if (...)` / `while (...)` 形如调用,
+          - 形参列表内不允许出现分号 - 反编译调用语句参数几乎不含分号。
+          - 函数名不得为控制流关键字 - `if (...)` / `while (...)` 形如调用,
             需排除, 否则与分支识别冲突。
         """
         m = re.match(
@@ -323,7 +323,7 @@ class CodePropertyGraph:
 
     @staticmethod
     def _scan_functions(lines: List[str]) -> Dict[int, str]:
-        """预扫描函数签名 —— 带前向窥探处理 `{` 单独成行的 C 风格写法。
+        """预扫描函数签名 - 带前向窥探处理 `{` 单独成行的 C 风格写法。
 
         算法依据:
           IDA/Ghidra 反编译伪代码通常将 `{` 置于签名下一行, 单行正则
@@ -385,7 +385,7 @@ class CodePropertyGraph:
         self._order.setdefault(node_id, line_no)
 
     def _record_call(self, caller: Optional[int], callee: str, call_node: int) -> None:
-        """记录调用边: 已知函数 -> 直接连; 未知函数 -> 建立孤立 callee 桩节点。"""
+        """记录调用边: 已知函数, 直接连; 未知函数, 建立孤立 callee 桩节点。"""
         callee_id = self.functions.get(callee)
         if callee_id is None:
             callee_id = self.add_node(CPGNodeKind.FUNCTION, callee, 0,
@@ -411,7 +411,7 @@ class CodePropertyGraph:
         return list(self.functions.values())
 
     def _ast_descendants(self, root: int) -> Set[int]:
-        """AST 后代闭包 —— 含自身。"""
+        """AST 后代闭包 - 含自身。"""
         seen: Set[int] = set()
         stack = [root]
         while stack:
@@ -435,7 +435,7 @@ class CodePropertyGraph:
 
     def clip_to_functions(self, names: List[str],
                           cross_function: bool = True) -> "CodePropertyGraph":
-        """跨函数裁剪 —— 合并多个函数子图, 保留它们之间的调用/数据流关系。"""
+        """跨函数裁剪 - 合并多个函数子图, 保留它们之间的调用/数据流关系。"""
         keep: Set[int] = set()
         for name in names:
             fn_id = self.functions.get(name)
@@ -473,7 +473,7 @@ class CodePropertyGraph:
         return sub
 
     def cyclomatic_complexity(self, fn_id: int) -> int:
-        """圈复杂度近似 —— M = 分支节点数 + 1 (单入口单出口假设)。"""
+        """圈复杂度近似 - M = 分支节点数 + 1 (单入口单出口假设)。"""
         descendants = self._ast_descendants(fn_id)
         branches = sum(1 for nid in descendants
                        if self._nodes[nid].kind == CPGNodeKind.BRANCH)
@@ -483,7 +483,7 @@ class CodePropertyGraph:
         return max(1, branches + 1)
 
     def reachable_sinks(self, fn_id: int, sinks: Tuple[str, ...] = DEFAULT_SINKS) -> List[Tuple[str, int]]:
-        """函数内经 CFG/DFG 可达的 sink 列表 —— (sink名, 最近的调用节点id)。"""
+        """函数内经 CFG/DFG 可达的 sink 列表 - (sink名, 最近的调用节点id)。"""
         sink_set = set(sinks)
         result: List[Tuple[str, int]] = []
         for nid in self._ast_descendants(fn_id):
@@ -505,7 +505,7 @@ class CodePropertyGraph:
         return json.dumps(data, ensure_ascii=False)
 
     def stats(self) -> Dict[str, Any]:
-        """CPG 规模统计 —— 供多特征融合的结构特征使用。"""
+        """CPG 规模统计 - 供多特征融合的结构特征使用。"""
         kinds = defaultdict(int)
         for n in self._nodes.values():
             kinds[n.kind.value] += 1
@@ -524,12 +524,12 @@ class CodePropertyGraph:
 
 
 def build_cpg(source: str, source_name: str = "") -> CodePropertyGraph:
-    """便捷函数 —— 从源码构建 CPG。"""
+    """便捷函数 - 从源码构建 CPG。"""
     return CodePropertyGraph.from_source(source, source_name)
 
 
 def build_function_cpg(source: str, function_name: str,
                        cross_function: bool = True) -> CodePropertyGraph:
-    """便捷函数 —— 构建单函数级 CPG 子图。"""
+    """便捷函数 - 构建单函数级 CPG 子图。"""
     cpg = CodePropertyGraph.from_source(source)
     return cpg.clip_to_function(function_name, cross_function=cross_function)

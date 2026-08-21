@@ -1,6 +1,5 @@
 # 双重释放基准测试样本生成器 (Double-Free Benchmark Sample Generator)
 # 12个CVE复现样本 × 3优化级 = 36个二进制.
-# 创建: 2026-05-19
 
 import json, subprocess
 from pathlib import Path
@@ -13,7 +12,7 @@ SAMPLES_DIR = ROOT / "samples_doublefree"
 def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
     body = get_template(pattern, safe_name)
     return f'''/**
- * {cve} — {desc}
+ * {cve} - {desc}
  * 模式: {pattern}
  *
  * 对静态分析的挑战:
@@ -34,20 +33,20 @@ def _c_source(cve: str, desc: str, pattern: str, safe_name: str) -> str:
 
 def _makefile(cve: str, target: str, src: str) -> str:
     T = "\t"
-    return f'''# {cve} — Double-Free Benchmark
+    return f'''# {cve} - Double-Free Benchmark
 CC = gcc
 CFLAGS = -Wall -no-pie -fno-pie -fno-builtin
 
 all: {target}_O0 {target}_O2 {target}_Os
 
 {target}_O0: {src}
-{T}$ $(CFLAGS) -O0 -o $@ $<
+{T}$(CFLAGS) -O0 -o $@ $<
 
 {target}_O2: {src}
-{T}$ $(CFLAGS) -O2 -o $@ $<
+{T}$(CFLAGS) -O2 -o $@ $<
 
 {target}_Os: {src}
-{T}$ $(CFLAGS) -Os -o $@ $<
+{T}$(CFLAGS) -Os -o $@ $<
 
 clean:
 {T}rm -f {target}_O0 {target}_O2 {target}_Os

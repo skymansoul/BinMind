@@ -77,14 +77,7 @@ class VulnTrendPredictor:
         period: str = "weekly",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Add a data point to the predictor.
-
-        Args:
-            vuln_type: Vulnerability type or category.
-            count: Occurrence count.
-            period: Time period label (weekly, monthly, quarterly).
-            metadata: Optional extra data.
-        """
+        """Add a data point to the predictor."""
         key = f"{vuln_type}:{period}"
         self._history[key].append(count)
         if metadata:
@@ -95,15 +88,7 @@ class VulnTrendPredictor:
         counts: List[int],
         window: int = 4,
     ) -> Tuple[int, str, float]:
-        """Simple moving average forecast with trend direction.
-
-        Args:
-            counts: Historical count series.
-            window: Moving average window size.
-
-        Returns:
-            Tuple of (predicted_next, trend_direction, confidence).
-        """
+        """Simple moving average forecast with trend direction."""
         if len(counts) < window:
             avg = sum(counts) // max(1, len(counts))
             return (avg, "stable", 0.3)
@@ -132,15 +117,7 @@ class VulnTrendPredictor:
         counts: List[int],
         alpha: float = 0.3,
     ) -> Tuple[int, str, float]:
-        """Exponential smoothing forecast.
-
-        Args:
-            counts: Historical count series.
-            alpha: Smoothing factor (0-1).
-
-        Returns:
-            Tuple of (predicted_next, trend_direction, confidence).
-        """
+        """Exponential smoothing forecast."""
         if not counts:
             return (0, "stable", 0.0)
 
@@ -174,7 +151,7 @@ class VulnTrendPredictor:
         ``multiplier * IQR`` from Q1 or Q3. An empty list means no outliers.
 
         为什么用 IQR？
-        比 z-score 更适合漏洞数据 —— 漏洞爆发通常是尖峰分布，IQR 对
+        比 z-score 更适合漏洞数据 - 漏洞爆发通常是尖峰分布，IQR 对
         极端值更鲁棒，不会因为一两个爆发数据把整个标准差拉大。
         """
         if len(counts) < 4:
@@ -204,7 +181,7 @@ class VulnTrendPredictor:
 
         return anomalies
 
-    # ---- 增强功能 2: 趋势强度 (slope-based trend strength) ----
+    # 增强功能 2: 趋势强度 (slope-based trend strength)
     # 用简单线性回归的斜率来衡量趋势的"劲度"，不是只看方向
     def compute_trend_strength(self, counts: List[int]) -> float:
         """Compute trend strength as the absolute slope of a simple linear
@@ -245,7 +222,7 @@ class VulnTrendPredictor:
         normalized = abs(slope) / abs(mean_y)
         return normalized
 
-    # ---- 增强功能 3: 预测方法可切换 (pluggable forecast method) ----
+    # 增强功能 3: 预测方法可切换 (pluggable forecast method)
     # 允许 analyze() 通过 forecast_method 参数选择 MA 或指数平滑
     # 原先 exponential_forecast 是死代码，现在把它接入主流程
     def _dispatch_forecast(
@@ -254,16 +231,7 @@ class VulnTrendPredictor:
         method: str = "moving_average",
         **kwargs: Any,
     ) -> Tuple[int, str, float]:
-        """Route to the correct forecasting implementation.
-
-        Args:
-            counts: Historical count series.
-            method: One of 'moving_average' (default) or 'exponential'.
-            **kwargs: Passed through to the forecasting function.
-
-        Returns:
-            Tuple of (predicted_next, trend_direction, confidence).
-        """
+        """Route to the correct forecasting implementation."""
         if method == "exponential":
             alpha = kwargs.get('alpha', kwargs.get('smoothing_factor', 0.3))
             return self.exponential_forecast(counts, alpha=alpha)
@@ -276,19 +244,7 @@ class VulnTrendPredictor:
         historical_data: Optional[List[Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze vulnerability trends.
-
-        Args:
-            historical_data: Optional list of data point dicts.
-            **kwargs: Additional options.
-                - forecast_method: 'moving_average' (default) or 'exponential'
-                - ma_window: window size for moving average (default 4)
-                - alpha: smoothing factor for exponential (default 0.3)
-                - anomaly_multiplier: IQR multiplier for outlier detection (default 1.5)
-
-        Returns:
-            Analysis result dict.
-        """
+        """Analyze vulnerability trends."""
         forecast_method = kwargs.get('forecast_method', 'moving_average')
         anomaly_mult = kwargs.get('anomaly_multiplier', 1.5)
 
@@ -381,17 +337,7 @@ class VulnTrendPredictor:
         forecast_method: str = "moving_average",
         **kwargs: Any,
     ) -> Optional[VulnTrend]:
-        """Get trend for a specific vulnerability type.
-
-        Args:
-            vuln_type: Vulnerability type.
-            period: Time period.
-            forecast_method: 'moving_average' or 'exponential'.
-            **kwargs: Passed to forecast function.
-
-        Returns:
-            VulnTrend or None if not found.
-        """
+        """Get trend for a specific vulnerability type."""
         key = f"{vuln_type}:{period}"
         if key not in self._history:
             return None
@@ -427,15 +373,6 @@ def predict_vuln_trends(
     historical_data: List[Dict[str, Any]],
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Convenience function for vulnerability trend prediction.
-
-    Args:
-        historical_data: List of dicts with vuln_type, count, period keys.
-        **kwargs: Additional options (forecast_method, ma_window, alpha,
-                  anomaly_multiplier).
-
-    Returns:
-        Prediction result dict.
-    """
+    """Convenience function for vulnerability trend prediction."""
     predictor = VulnTrendPredictor()
     return predictor.analyze(historical_data=historical_data, **kwargs)

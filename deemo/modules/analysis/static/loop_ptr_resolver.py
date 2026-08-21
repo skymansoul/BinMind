@@ -5,7 +5,6 @@
 #   避免全局ptr_map被CRT函数的栈帧复用污染.
 #   本模块模拟函数内mov/lea指令传播堆指针, 并反向解析call目标寄存器.
 #
-# 创建: 2026-04-20
 
 from typing import Optional
 from .disasm_util import norm_reg, extract_func_name, extract_stack_slot

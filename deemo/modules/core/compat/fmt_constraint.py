@@ -132,10 +132,7 @@ class FmtParser:
         )
 
 def classify_fmt_risk(analysis: FmtStringAnalysis) -> Tuple[str, float]:
-    """根据格式串分析结果计算风险等级.
-
-    返回: (risk_level, exploitability_score).
-    """
+    """根据格式串分析结果计算风险等级, 返回 (risk_level, exploitability_score)。"""
     if not analysis.is_user_controlled:
         return 'SAFE', 0.01
     if not analysis.has_write_primitive:
@@ -151,10 +148,7 @@ def classify_fmt_risk(analysis: FmtStringAnalysis) -> Tuple[str, float]:
 
 def prove_fmt_safe(fmt_str: str, fmt_source: FmtArgSource
                    ) -> Tuple[bool, str]:
-    """便捷判定: 证明该格式串不能用于任意写.
-
-    返回: (可证明安全 → True, 理由).
-    """
+    """便捷判定: 证明该格式串不能用于任意写, 返回 (可证明安全 → True, 理由)。"""
     analysis = FmtParser.parse(fmt_str, fmt_source)
 
     if not analysis.is_user_controlled:
@@ -170,12 +164,11 @@ def prove_fmt_safe(fmt_str: str, fmt_source: FmtArgSource
 
 def check_arg_count_mismatch(fmt_str: str,
                               passed_args: int = 0) -> Tuple[bool, str]:
-    """检测格式说明符数量与实际传入参数数量的不匹配.
+    """检测格式说明符数量与实际传入参数数量的不匹配。
 
-    若格式串要求的参数数 > 传入参数数 → 栈越界读取 (信息泄露).
-    这是格式串漏洞的独立维度 — 即使无 %n, 参数不足也可导致信息泄露.
-
-    返回: (存在不匹配 → True, 原因).
+    若格式串要求的参数数 > 传入参数数 → 栈越界读取 (信息泄露);
+    这是格式串漏洞的独立维度 — 即使无 %n, 参数不足也可导致
+    信息泄露。返回 (存在不匹配 → True, 原因)。
     """
     analysis = FmtParser.parse(fmt_str)
     if not analysis.specifiers:
@@ -195,10 +188,7 @@ def classify_fmt_risk_enhanced(
     fmt_str: str, fmt_source: FmtArgSource,
     passed_args: int = 0,
 ) -> Tuple[str, float, List[str]]:
-    """增强风险分类 — 结合写原语 + 参数不匹配 + 源可控性.
-
-    返回: (risk_level, exploitability_score, evidence_reasons).
-    """
+    """增强风险分类 — 结合写原语 + 参数不匹配 + 源可控性, 返回 (risk_level, exploitability_score, evidence_reasons)。"""
     analysis = FmtParser.parse(fmt_str, fmt_source)
     reasons = []
 

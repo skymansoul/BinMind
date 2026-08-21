@@ -133,7 +133,7 @@ def phase0_pattern_safety(candidates: List[UafCandidate],
 
     五种安全模式的检测:
       NULL置零 / 立即复用 / 重新赋值 / 条件守卫 / 互斥分支
-    Returns: (kept_candidates, filtered_count)
+    返回 (kept_candidates, filtered_count).
     """
     kept: List[UafCandidate] = []
     filtered = 0
@@ -257,8 +257,7 @@ def phase1_alias_lifetime(candidates: List[UafCandidate],
     构建别名图, 追踪每个堆对象从 alloc → free → use 的生命周期.
     若 use_lineno < free_lineno → 时序安全.
     若 use 通过别名变量 (q=p; free(p); use(q)) → 正确追踪.
-
-    Returns: (kept_candidates, filtered_count)
+    返回 (kept_candidates, filtered_count).
     """
     tracker = AliasTracker()
     kept: List[UafCandidate] = []
@@ -417,7 +416,7 @@ def phase2_path_dominance(candidates: List[UafCandidate],
     对每个候选:
       - free块不能到达use块 → MUTUAL_EXCLUSIVE → FILTER
       - 可到达 → LIKELY_TP, 升级置信度
-    Returns: (kept_candidates, filtered_count)
+    返回 (kept_candidates, filtered_count).
     """
     blocks = _build_simple_cfg(lines)
     if len(blocks) < 2:
@@ -508,7 +507,7 @@ def phase3_escape_analysis(candidates: List[UafCandidate],
     """Phase 3: 逃逸分析 + 可利用性分级.
 
     STACK only → 置信度下调; HEAP/GLOBAL → 上调; VTABLE → CONFIRMED.
-    Returns: (kept_candidates, downgraded_count)
+    返回 (kept_candidates, downgraded_count).
     """
     kept: List[UafCandidate] = []
     downgraded = 0
@@ -548,14 +547,9 @@ def phase3_escape_analysis(candidates: List[UafCandidate],
 
 def run_uaf_cascade(pseudocode: str,
                      func_name: str = "") -> Tuple[List[UafCandidate], CascadeReport]:
-    """运行完整的四阶段 UAF FP 削减级联.
+    """运行完整的四阶段 UAF FP 削减级联。
 
-    Args:
-        pseudocode: C源码或反编译伪代码
-        func_name: 函数名 (可选)
-
-    Returns:
-        (final_candidates, cascade_report)
+    返回 (final_candidates, cascade_report)。
     """
     lines = pseudocode.splitlines()
     if not lines:

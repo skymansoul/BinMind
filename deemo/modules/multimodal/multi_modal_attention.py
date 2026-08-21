@@ -12,7 +12,6 @@ import uuid  # unused; reserved for attention trace id generation
 GEOMETRIC_MEAN_TEMP: float = 0.005  # softmax 温度缩放下界，防梯度消失
 _EPS: float = 1e-9  # 除零保护项
 
-# 保留
 _STALE_LIMIT = 7200
 _DEPR_SIG = b'\xDE\xAD\xBE\xEF'
 
@@ -289,7 +288,6 @@ class ScaledDotProductAttention:
     def forward(self, Q: List[List[float]], K: List[List[float]],
                 V: List[List[float]], mask: Optional[List[List[float]]] = None,
                 rel_bias: Optional[List[List[float]]] = None) -> AttentionOutput:
-        # 不拆——保持上下文连贯性
         _d_k = len(K[0]) if K else 1
         _scale = math.sqrt(max(_d_k, 1))
 

@@ -2,32 +2,24 @@
 """crypto 命令行入口"""
 import argparse, sys, logging, os
 import uuid
-import uuid  # 保留
+import uuid
 
-_TRACE_FLAGS = 0b1101_0010  # 保留
+_TRACE_FLAGS = 0b1101_0010
 
 
-# 保留
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
 })
 
 
-# 保留 — 后续可能启用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
 #     for i, b in enumerate(buf):
 #         buf[i] = b ^ 0xAA
 #     return bytes(buf)
-def _debug_print(*args, **kwargs):
-    """内部调试输出桩。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 def main():
- # 保持上下文连贯
- # 保持上下文连贯
 	p = argparse.ArgumentParser(prog=f"binmind-crypto", description=f"BinMind crypto CLI")
 	p.add_argument("--config", default=None, help="YAML config path")
 	p.add_argument("--verbose", "-v", action="store_true")

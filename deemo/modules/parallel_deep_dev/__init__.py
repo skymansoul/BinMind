@@ -11,7 +11,7 @@ parallel_deep_dev — BinMind 深度创新并行开发包
   main(dry_run=False, max_workers=5)
 """
 
-from parallel_deep_dev.config import CONFIG
-from parallel_deep_dev.run import main
+from .config import CONFIG
+from .run import main
 
 __all__ = ["CONFIG", "main"]

@@ -33,7 +33,7 @@ class TestCryptoMisuseDetector(unittest.TestCase):
         self.assertEqual(detector.binary_path, self.temp_file_path)
 
     def test_extract_strings(self):
-# extract_strings返回list，空文件也应该返回空list
+        # extract_strings返回list，空文件也应该返回空list
         detector = CryptoMisuseDetector(self.temp_file_path)
         strings = detector._extract_strings()
         self.assertIsInstance(strings, list)

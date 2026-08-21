@@ -1,5 +1,4 @@
-# created: 2026-07-28
-# 栈帧边界检测——通过调用约定模式识别推断函数边界和栈帧布局
+# 栈帧边界检测-通过调用约定模式识别推断函数边界和栈帧布局
 #
 # 核心问题: 剥离二进制丢失了函数边界和栈帧信息。现有方法依赖
 # 符号表(如果有)或启发式(函数序言/尾声模式)，对非标准序言
@@ -21,7 +20,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +48,7 @@ class StackFrame:
 
 
 class StackFrameDetector:
-    """栈帧边界检测器——通过调用约定模式识别。
+    """栈帧边界检测器-通过调用约定模式识别。
 
     检测策略(按优先级):
       1. 函数序言识别: push rbp; mov rbp, rsp → 标准帧指针
@@ -82,16 +80,7 @@ class StackFrameDetector:
                addresses: List[int],
                hint_entry: Optional[int] = None
                ) -> List[StackFrame]:
-        """检测指令序列中的所有函数栈帧。
-
-        Args:
-            instructions: 汇编指令列表
-            addresses: 每条指令的地址
-            hint_entry: 提示的入口地址(可选)
-
-        Returns:
-            检测到的栈帧列表，按置信度降序
-        """
+        """检测指令序列中的所有函数栈帧。"""
         n = len(instructions)
         if n < 3:
             return []
@@ -132,7 +121,7 @@ class StackFrameDetector:
         convention = CallingConvention.UNKNOWN
         confidence = 0.3  # 基础置信度
 
-        # 检测序言——看前5条指令
+        # 检测序言-看前5条指令
         prologue_text = ' '.join(
             instructions[j] for j in range(start_idx, min(start_idx + 5, n)))
         for pattern, ptype in self._prologue_patterns:
@@ -150,7 +139,7 @@ class StackFrameDetector:
                     saved_regs = len(re.findall(r'push\s+(r\w+)', prologue_text, re.I))
                     confidence += 0.1
 
-        # 检测调用约定——在前10条指令中搜索参数寄存器使用
+        # 检测调用约定-在前10条指令中搜索参数寄存器使用
         param_text = ' '.join(
             instructions[j] for j in range(start_idx, min(start_idx + 10, n)))
         x64_params_used = sum(1 for reg in self._param_regs_x64
@@ -168,7 +157,7 @@ class StackFrameDetector:
                 convention = CallingConvention.FASTCALL
                 confidence += 0.08
 
-        # 检测尾声——向后搜索ret/leave
+        # 检测尾声-向后搜索ret/leave
         end_idx = start_idx
         for j in range(start_idx + 2, min(start_idx + 500, n)):
             instr = instructions[j].strip().lower()

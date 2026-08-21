@@ -152,7 +152,7 @@ class BayesianDependencyGraph:
             child_risk = 1-∏_{c∈children}(1-P(c)·P(v→c))
             其中P(c)是子节点c的后验风险, P(v→c)是边(v,c)的Beta均值.
           使用拓扑序, 叶子节点先计算.
-        返回: {comp_id: (posterior_mean, lower_ci, upper_ci)}
+        返回 {comp_id: (posterior_mean, lower_ci, upper_ci)}。
         """
         order = self._topological_order()
         posteriors: Dict[str, Tuple[float, float, float]] = {}

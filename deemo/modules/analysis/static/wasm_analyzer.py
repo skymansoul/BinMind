@@ -127,18 +127,13 @@ class WASMAnalysisResult:
 class LEB128Decoder:
     """
     LEB128 变长整数解码器
-    
+
     WASM 二进制格式使用有符号和无符号 LEB128 编码
     """
 
     @staticmethod
     def decode_unsigned(data: bytes, offset: int) -> Tuple[int, int]:
-        """
-        解码无符号 LEB128
-        
-        返回:
-        (value, new_offset)
-        """
+        """解码无符号 LEB128"""
         result = 0
         shift = 0
         while offset < len(data):
@@ -152,12 +147,7 @@ class LEB128Decoder:
 
     @staticmethod
     def decode_signed(data: bytes, offset: int) -> Tuple[int, int]:
-        """
-        解码有符号 LEB128
-        
-        返回:
-        (value, new_offset)
-        """
+        """解码有符号 LEB128"""
         result = 0
         shift = 0
         byte = 0
@@ -183,7 +173,7 @@ class LEB128Decoder:
 class WASMAnalyzer:
     """
     WebAssembly 模块分析器
-    
+
     解析 WASM 二进制格式，提取结构化信息
     并进行安全性评估
     """
@@ -561,16 +551,7 @@ def analyze_wasm(
     wasm_path_or_data: str,
     is_file: bool = True
 ) -> Dict[str, Any]:
-    """
-    便捷函数：分析 WASM 模块
-    
-    Args:
-    WASM_path_or_data: WASM 文件路径或二进制数据（hex 字符串/bytes）
-    is_file: True 表示文件路径，False 表示数据
-    
-    返回:
-    分析结果字典
-    """
+    """便捷函数：分析 WASM 模块"""
     analyzer = WASMAnalyzer()
 
     if is_file:
@@ -616,7 +597,7 @@ def analyze_wasm(
 
 @dataclass
 class WasmImport:
-    """WASM 导入项 — 沙箱逃逸分析关注的外部函数声明。"""
+    """WASM 导入项 - 沙箱逃逸分析关注的外部函数声明。"""
     module: str = ""
     name: str = ""
     params: List[str] = field(default_factory=list)
@@ -625,7 +606,7 @@ class WasmImport:
 
 @dataclass
 class TaintedParam:
-    """污点参数 — 导入函数参数流向的可达函数集合。"""
+    """污点参数 - 导入函数参数流向的可达函数集合。"""
     import_name: str = ""
     param_index: int = 0
     reachable_functions: Set[int] = field(default_factory=set)
@@ -633,7 +614,7 @@ class TaintedParam:
 
 @dataclass
 class SandboxEscape:
-    """沙箱逃逸线索 — 危险导入触发的潜在逃逸路径。"""
+    """沙箱逃逸线索 - 危险导入触发的潜在逃逸路径。"""
     entry_point: int = 0
     import_used: str = ""
     escape_path: List[int] = field(default_factory=list)
@@ -655,7 +636,7 @@ _MEDIUM_RISK_IMPORTS = {'open', 'write', 'read', 'unlink', 'rename', 'chmod'}
 
 
 class WasmParser:
-    """WASM 导入表解析 — 提取 import 段的外部函数声明。
+    """WASM 导入表解析 - 提取 import 段的外部函数声明。
 
     MAGIC 与 VERSION 常量用于头部校验；文件不存在或非 WASM 格式时返回空列表。
     """
@@ -688,7 +669,7 @@ class WasmParser:
 
 
 class TaintPropagator:
-    """污点传播 — 为每个导入函数的每个参数建立污点标记。"""
+    """污点传播 - 为每个导入函数的每个参数建立污点标记。"""
 
     def __init__(self, imports: List[WasmImport]):
         self._imports = imports
@@ -706,7 +687,7 @@ class TaintPropagator:
 
 
 class EscapeDetector:
-    """逃逸检测 — 按导入名称归类危险程度，输出逃逸线索。"""
+    """逃逸检测 - 按导入名称归类危险程度，输出逃逸线索。"""
 
     @staticmethod
     def detect(imports: List[WasmImport]) -> List[SandboxEscape]:
@@ -730,7 +711,7 @@ class EscapeDetector:
 
 
 class WasmSandboxAnalyzer:
-    """WASM 沙箱逃逸分析入口 — 解析导入表，执行污点传播与逃逸判定。"""
+    """WASM 沙箱逃逸分析入口 - 解析导入表，执行污点传播与逃逸判定。"""
 
     def __init__(self, binary_path: str = ""):
         self.binary_path = binary_path
@@ -751,5 +732,5 @@ class WasmSandboxAnalyzer:
 
 
 def create_wasm_analyzer(binary_path: str = "") -> WasmSandboxAnalyzer:
-    """工厂函数 — 统一构造沙箱分析器。"""
+    """工厂函数 - 统一构造沙箱分析器。"""
     return WasmSandboxAnalyzer(binary_path=binary_path)

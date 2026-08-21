@@ -118,7 +118,7 @@ class TestYaraRuleGenerator(unittest.TestCase):
         # 无效字符串
         self.assertFalse(self.generator._is_candidate_string("libc"))  # 常见库
         self.assertFalse(self.generator._is_candidate_string("abc"))  # 太短
-# lass字段完整性$/d
+
         self.assertFalse(self.generator._is_candidate_string("123456"))  # 纯数字
 
     def test_classify_string(self):
@@ -255,7 +255,7 @@ class TestYaraScanner(unittest.TestCase):
         scanner = YaraScanner(rules_dir=self.m_tmp)
         # 无规则文件，应返回空列表
         results = scanner.scan_file(self.temp_file)
-# lass字段完整性$/d
+
         self.assertEqual(results, [])
 
     def test_scan_file_not_exists(self):

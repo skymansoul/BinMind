@@ -1,7 +1,7 @@
 """
-FM 边界推理增强 — 从 Fourier-Motzkin 消元残差约束中推导变量边界: 消元后残差如 `2*var <= 100` 可直接推出 var <= 50, 但原流程只检查纯常量矛盾而返回 INCONCLUSIVE。
-本模块追加一步: 从残差约束提取单变量不等式 `c*var + k <= 0` → var <= -k/c, 计算每个变量的 [lo, hi] 区间, 区间能确定 write_end <= alloc_usable 则 SAFE, 能确定 write_end > alloc_usable 则 OVERFLOW。
-不替代 SMT 求解器 — 仅处理单变量线性边界推导, 理论依据为区间算术传播规则。
+FM 边界推理增强: 从 Fourier-Motzkin 消元残差约束中推导变量边界: 消元后残差如 `2*var <= 100` 可直接推出 var <= 50, 但原流程只检查纯常量矛盾而返回 INCONCLUSIVE。
+本模块追加一步: 从残差约束提取单变量不等式 `c*var + k <= 0` 推出 var <= -k/c, 计算每个变量的 [lo, hi] 区间, 区间能确定 write_end <= alloc_usable 则 SAFE, 能确定 write_end > alloc_usable 则 OVERFLOW。
+不替代 SMT 求解器, 仅处理单变量线性边界推导, 理论依据为区间算术传播规则。
 """
 
 
@@ -35,11 +35,11 @@ def derive_bounds(
     """从约束列表推导每个变量的区间边界.
 
     对每条单变量约束 c*var + k OP 0:
-      c > 0, OP '<=' → var <= -k/c (hi bound)
-      c < 0, OP '<=' → var >= -k/c (lo bound)
-      c > 0, OP '>=' → var >= -k/c (lo bound)
-      c < 0, OP '>=' → var <= -k/c (hi bound)
-      OP '==' → var = -k/c (both bounds)
+      c > 0, OP '<=' 即 var <= -k/c (hi bound)
+      c < 0, OP '<=' 即 var >= -k/c (lo bound)
+      c > 0, OP '>=' 即 var >= -k/c (lo bound)
+      c < 0, OP '>=' 即 var <= -k/c (hi bound)
+      OP '==' 即 var = -k/c (both bounds)
 
     多变量约束不在本步处理 (需要FM消元先消去其他变量).
     """
@@ -92,19 +92,15 @@ def eval_write_end_with_bounds(
     安全判定需要write_end_hi: 对coef>0取var.hi, 对coef<0取var.lo
     溢出判定需要write_end_lo: 对coef>0取var.lo, 对coef<0取var.hi
 
-    write_end_hi <= alloc_usable → PROVEN_SAFE
-    write_end_lo > alloc_usable → PROVEN_OVERFLOW
-    否则 → None
+    write_end_hi <= alloc_usable 判 PROVEN_SAFE
+    write_end_lo > alloc_usable 判 PROVEN_OVERFLOW
+    否则返回 None
     """
     if not write_end_expr:
         return None
 
     NEG_INF = float('-inf')
     POS_INF = float('inf')
-
-    for var, coef in write_end_expr.items():
-        if coef == 0:
-            continue
 
     hi_acc = const_offset
     hi_ok = True
@@ -215,8 +211,8 @@ def _compute_const_offset(sys: ConstraintSystem) -> float:
     """从约束系统提取write_end表达式的常量偏移.
 
     _compute_write_end返回的系数dict只含变量, 常量偏移在描述字符串中.
-      copy操作: write_end = copy_var + offset_val → const = offset_val
-      store操作: write_end = offset_var + store_size → const = store_size
+      copy操作: write_end = copy_var + offset_val, const = offset_val
+      store操作: write_end = offset_var + store_size, const = store_size
     """
     is_copy_op = sys.mnemonic in (
         'strcpy', 'strcat', 'memcpy', 'strncpy',

@@ -1,6 +1,5 @@
-# 创建: 2026-07-02 16:45
-# 修改: 2026-07-02 — 四维差分 (output x coverage x perf x syscall)
-# 修改: 2026-07-02 — 移除 DDYF 装饰性引用, 替换为 McKeeman
+# 四维差分 (output x coverage x perf x syscall)
+# 移除 DDYF 装饰性引用, 替换为 McKeeman
 """
 二进制语义差分 Oracle — 无需源码的比较两个二进制版本的行为差异。
 

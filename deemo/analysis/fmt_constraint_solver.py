@@ -11,10 +11,6 @@
   - 编译时常量格式串 → SAFE (不报告)
   - 不含 %n/%s 写/读原语 → LOW (仅信息泄露, 非任意写)
   - 位置参数不足 → UNCERTAIN (保守保留)
-
-  - scut/team teso: Exploiting Format String Vulnerabilities
-  - CWE-134: Use of Externally-Controlled Format String
-  - FMTStrHunter
 """
 
 from __future__ import annotations

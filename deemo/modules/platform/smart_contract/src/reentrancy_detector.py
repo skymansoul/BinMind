@@ -1,16 +1,16 @@
 #
 # EVM 重入漏洞检测器 — 基于 EVM 字节码静态数据流的重入模式识别。
 #
-# 重入（reentrancy）是智能合约最经典的漏洞类型——合约 A 调用合约 B，
+# 重入（reentrancy）是智能合约最经典的漏洞类型: 合约 A 调用合约 B,
 # B 在 A 更新自身状态之前回调 A，导致 A 的状态不一致。
-# EVM 层面的重入判断不依赖 Solidity 源码——仅从字节码的控制流和数据流即可识别。
+# EVM 层面的重入判断不依赖 Solidity 源码, 仅从字节码的控制流和数据流即可识别。
 #
-# 检测逻辑——识别以下模式的同时出现：
-#   (a) CALL 指令前有 SSTORE（状态变更）且 SSTORE 在 CALL 之后——
-#       即"先外部调用，再更新状态"——违反了 check-effects-interactions 模式
-#   (b) CALL 的目标地址受 CALLER 或 CALLDATALOAD 影响——
+# 检测逻辑: 识别以下模式的同时出现：
+#   (a) CALL 指令前有 SSTORE（状态变更）且 SSTORE 在 CALL 之后:
+#       即"先外部调用，再更新状态", 违反了 check-effects-interactions 模式
+#   (b) CALL 的目标地址受 CALLER 或 CALLDATALOAD 影响:
 #       即外部调用目标是用户可控的（而非硬编码的已知地址）
-#   (c) CALL 的 gas 参数为 ALL（gasleft() 的结果）或极大值——
+#   (c) CALL 的 gas 参数为 ALL（gasleft() 的结果）或极大值:
 #       给了被调用方足够的 gas 来执行回调
 #
 # 输出: {vulnerable_locations: [pc_offset, ...], severity: 'critical'|'high'|'medium'}
@@ -27,7 +27,7 @@ def detect_reentrancy(bytecode_hex: str) -> Dict:
     返回:
       {vulnerable, locations, confidence, evidence}
     """
-    # EVM 操作码定义——仅包含重入检测需要的子集
+    # EVM 操作码定义, 仅包含重入检测需要的子集
     OPCODES = {
         0x54: 'SLOAD', 0x55: 'SSTORE',
         0xf1: 'CALL', 0xf2: 'CALLCODE', 0xf4: 'DELEGATECALL',
@@ -66,7 +66,7 @@ def detect_reentrancy(bytecode_hex: str) -> Dict:
             user_controlled_locs.add(i)
         elif opcode == 'GAS':
             # GAS 出现在 CALL 的 gas 参数位置时是重入的高风险信号
-            # 静态无法精确判断 GAS 的值流向哪个 CALL——
+            # 静态无法精确判断 GAS 的值流向哪个 CALL,
             # 保守处理：记录 GAS 位置，后续与 CALL 位置做邻近匹配
             user_controlled_locs.add(i)  # 复用 user_controlled set 追踪
 
@@ -79,8 +79,8 @@ def detect_reentrancy(bytecode_hex: str) -> Dict:
     if not call_locs:
         return {'vulnerable': False, 'reason': 'no external calls found'}
 
-    # 第二遍：检测"先 CALL 后 SSTORE"——即 SSTORE 的 PC 在 CALL 之后但仍在同一执行路径上
-    # 静态无法精确判断执行路径——用启发式：同一基本块内或相邻基本块
+    # 第二遍：检测"先 CALL 后 SSTORE", 即 SSTORE 的 PC 在 CALL 之后但仍在同一执行路径上
+    # 静态无法精确判断执行路径, 用启发式：同一基本块内或相邻基本块
     violations = []
     for call_pc in call_locs:
         for store_pc in store_locs:
@@ -103,7 +103,7 @@ def detect_reentrancy(bytecode_hex: str) -> Dict:
                     })
 
     if violations:
-        # 严重性判定——存在用户可控的 CALL → 后续 SSTORE → critical
+        # 严重性判定: 存在用户可控的 CALL → 后续 SSTORE → critical
         critical_violations = [v for v in violations if v['user_influenced']]
         return {
             'vulnerable': True,

@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-19 09:41 - 增加跨合约调用链分析，单合约→多合约攻击路径
-# 2025-07-24 14:33 - 引入 storage slot 的 SLOAD-after-CALL 读后写检测
-# 2025-07-30 10:18 - 增加 CEI pattern violation 的自动识别
+# 增加跨合约调用链分析，单合约→多合约攻击路径
+# 引入 storage slot 的 SLOAD-after-CALL 读后写检测
+# 增加 CEI pattern violation 的自动识别
 
 """EVM 字节码层面的重入漏洞检测。
 

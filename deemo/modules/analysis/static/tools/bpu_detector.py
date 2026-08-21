@@ -111,7 +111,7 @@ class BPUAnalyzer:
                       conflicts: List[BPUConflict],
                       v1_count: int, v2_count: int) -> Tuple[str, str]:
         high_count = sum(1 for b in branches if b.spectre_risk == 'HIGH')
-        # Spectre v1 + v2 组合威胁——最高风险级别
+        # Spectre v1 + v2 组合威胁, 最高风险级别
         if v1_count > 0 and v2_count > 0:
             return ("CRITICAL", "Spectre v1 + v2 both present. Full mitigation required: "
                     "lfence after bounds check (v1) + Retpoline/IBRS (v2).")

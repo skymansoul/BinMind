@@ -1,6 +1,5 @@
-# UAF扫描调度 — 运行UAFDetector于单个二进制.
+# UAF扫描调度 - 运行UAFDetector于单个二进制.
 # 复用堆回归的 disassemble_binary + resolve_call_targets 管线.
-# 创建: 2026-07-13
 
 import sys
 import time

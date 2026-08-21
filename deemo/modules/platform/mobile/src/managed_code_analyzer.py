@@ -7,7 +7,7 @@ try:
 except ImportError:
     from config_fallback import Config
     def get_current_ai_model(): return Config.instance().get('AI_MODEL', 'claude-sonnet-4-20250514')
-    def call_ai_with_retry(*a, **kw): return ""  # 保留: AI调用fallback——无AI环境返回空
+    def call_ai_with_retry(*a, **kw): return ""  # 保留: AI调用fallback, 无AI环境返回空
 
 logger=logging.getLogger(__name__)
 
@@ -24,40 +24,40 @@ _ML_MODEL_SIGNATURES = {
     b'TFL3': ('TensorFlow Lite Model', 'tflite', 'flatbuffer',
               '可通过TFLite Interpreter API提取权重和架构'),
     b'FlatBuffers': ('FlatBuffer Container (probable TFLite)', 'tflite_fb', 'flatbuffer',
-                     'FlatBuffer格式的ML模型——可能是TFLite或MediaPipe'),
+                     'FlatBuffer格式的ML模型, 可能是TFLite或MediaPipe'),
     # ONNX
     b'ONNX': ('ONNX Model', 'onnx', 'protobuf',
-              '开放神经网络交换格式——支持跨框架模型提取'),
+               '开放神经网络交换格式, 支持跨框架模型提取'),
     b'\x08\x03': ('Possible ONNX protobuf', 'onnx_pb', 'protobuf',
-                  'ONNX protobuf编码——IR version≥3'),
+                   'ONNX protobuf编码, IR version≥3'),
     # PyTorch Mobile
     b'PK\x03\x04': ('ZIP container (possible PyTorch Mobile .ptl)', 'pytorch_mobile', 'zip',
                     'PyTorch Mobile模型以ZIP包裹的TorchScript格式分发'),
     b'torch.jit': ('TorchScript JIT Module', 'torchscript', 'torchjit',
-                   'TorchScript编译模型——可通过torch.jit.load反序列化'),
+                   'TorchScript编译模型, 可通过torch.jit.load反序列化'),
     # Apple CoreML
     b'MLModel': ('Apple CoreML Model', 'coreml', 'protobuf',
-                 'Apple CoreML格式——mlmodel文件可从IPA中提取'),
+                 'Apple CoreML格式, mlmodel文件可从IPA中提取'),
     b'CoreML': ('CoreML Container', 'coreml_container', 'unknown',
                'CoreML模型容器'),
     # 通用ML容器
     b'neural-network': ('Neural Network descriptor', 'ml_generic', 'unknown',
-                        '通用神经网络描述符——可能是自定义格式'),
+                         '通用神经网络描述符, 可能是自定义格式'),
     b'paddle': ('PaddlePaddle Model', 'paddle', 'unknown',
-                '百度PaddlePaddle框架——常见于国内应用'),
+                 '百度PaddlePaddle框架, 常见于国内应用'),
     b'caffe': ('Caffe Model', 'caffe', 'protobuf',
-               'Caffe框架模型——遗留设备上的ML'),
+                'Caffe框架模型, 遗留设备上的ML'),
     b'ncnn': ('ncnn Model', 'ncnn', 'binary',
-              '腾讯ncnn——移动端高性能推理框架'),
+               '腾讯ncnn, 移动端高性能推理框架'),
     # 模型加密/保护的迹象
     b'encrypted_model': ('Encrypted ML Model', 'encrypted_ml', 'encrypted',
-                         '加密的ML模型——可能尝试保护IP但可通过动态分析提取'),
+                          '加密的ML模型, 可能尝试保护IP但可通过动态分析提取'),
     b'model_key': ('ML Model Decryption Key Hint', 'ml_key_hint', 'text',
-                   '模型解密密钥的引用——泄露了解密方法的线索'),
+                    '模型解密密钥的引用, 泄露了解密方法的线索'),
 }
 
 # DeMistify: 82.73%成功率识别ML模型
-# 移动端ML框架的典型文件扩展名——在APK/ZIP中检测
+# 移动端ML框架的典型文件扩展名, 在APK/ZIP中检测
 _ML_FRAMEWORK_EXTENSIONS = {
     '.tflite': 'TensorFlow Lite', '.lite': 'TFLite (alt ext)',
     '.onnx': 'ONNX Runtime', '.ort': 'ONNX Runtime (alt)',
@@ -136,7 +136,7 @@ class ManagedCodeAnalyzer:
                                     data=zf.read(entry)
                                     fh=hashlib.sha256(data).hexdigest()[:16]
                                     is_enc=any(enc_sig in data for enc_sig in [b'encrypted',b'SALT',b'IV'])
-                                    models.append(MLModelInfo(entry,fw,ext[1:],'模型文件可从APK中直接提取——存在模型窃取风险',fh,len(data),is_enc))
+                                    models.append(MLModelInfo(entry,fw,ext[1:],                                    '模型文件可从APK中直接提取, 存在模型窃取风险',fh,len(data),is_enc))
                                 except (zipfile.BadZipFile, OSError): pass  # 修复: bare except → zipfile/OSError
                                 break
                         # 签名匹配
@@ -513,12 +513,12 @@ def detect_managed_code_type(fp):
     except OSError: pass  # 修复: bare except → OSError
     return ManagedCodeType.UNKNOWN
 
-# 不拆: DeMistify/ModelXray ML模型签名去重缓存
+
 _ML_SIG_CACHE: dict = {}
 
 
 def _dead_bytecode_opcode_counter(bytecode: bytes) -> int:
-    """Java字节码指令频次统计——NOP计数，用于反混淆评估。"""
+    """Java字节码指令频次统计, NOP计数，用于反混淆评估。"""
     nop_count = 0
     i = 0
     while i < len(bytecode):

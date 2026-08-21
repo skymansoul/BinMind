@@ -1,12 +1,9 @@
 # coding: utf-8
-# 创建: 2026-06-23  |  污点传播引擎
-# 修改: 2026-06-23  |  审计后补充文件头与错误处理
-#
 """
-二进制级静态前向污点传播——寄存器/内存级保守过近似, 零执行成本。
+二进制级静态前向污点传播 - 寄存器/内存级保守过近似, 零执行成本。
 
-算法: 标记参数/输入为源→迭代传播mov/lea/算术→检测到达危险操作的汇。
-过近似: 牺牲精度换覆盖率——保证零漏报(所有真正可达路径必被标记)。
+算法: 标记参数/输入为源, 迭代传播mov/lea/算术, 检测到达危险操作的汇。
+过近似: 牺牲精度换覆盖率 - 保证零漏报(所有真正可达路径必被标记)。
 
 与DABSS互补: DABSS后向切片(源追溯), BIFT前向污点(汇可达性)。
 """
@@ -24,7 +21,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class TaintSource:
-    """污点源——外部输入进入程序的位置"""
+    """污点源 - 外部输入进入程序的位置"""
     source_id: str
     source_type: str          # func_param | recv_call | read_call | global_var
     location: str = ""        # "func::argN" 或 "insn_addr"
@@ -35,7 +32,7 @@ class TaintSource:
 
 @dataclass
 class TaintSink:
-    """污点汇——危险操作(污点数据到达此处可能触发漏洞)"""
+    """污点汇 - 危险操作(污点数据到达此处可能触发漏洞)"""
     sink_id: str
     sink_type: str            # memcpy | system | execve | strcpy | ...
     address: int = 0
@@ -47,7 +44,7 @@ class TaintSink:
 
 @dataclass
 class TaintPath:
-    """单条污点传播路径——源→汇"""
+    """单条污点传播路径 - 源到汇"""
     source: TaintSource
     sink: TaintSink
     # 中间指令地址序列
@@ -61,23 +58,23 @@ class TaintPath:
 
 
 class TaintPropagator:
-    """跨函数前向污点传播——寄存器/内存级别的保守过近似。
+    """跨函数前向污点传播 - 寄存器/内存级别的保守过近似。
 
-    传播规则(保守——牺牲精度换覆盖):
-      1. mov dst, src: 若src被污点→dst被污点
-      2. add/sub/xor dst, src: 若任一操作数被污点→dst被污点
-      3. lea dst, [src+off]: 若src被污点→dst被污点(地址计算)
+    传播规则(保守 - 牺牲精度换覆盖):
+      1. mov dst, src: 若src被污点, dst被污点
+      2. add/sub/xor dst, src: 若任一操作数被污点, dst被污点
+      3. lea dst, [src+off]: 若src被污点, dst被污点(地址计算)
       4. push src / pop dst: 栈传播
-      5. call func: 若参数被污点→被调用函数对应参数标记为污点
-      6. store [addr], src: 若src被污点→目标内存地址标记为污点
-      7. load dst, [addr]: 若内存地址被污点→dst被污点
+      5. call func: 若参数被污点, 被调用函数对应参数标记为污点
+      6. store [addr], src: 若src被污点, 目标内存地址标记为污点
+      7. load dst, [addr]: 若内存地址被污点, dst被污点
 
     不追踪(保守假设为不传播):
-      - 条件分支后的污点(路径敏感→爆炸)
+      - 条件分支后的污点(路径敏感, 爆炸)
       - 复杂指针链(双重/三重解引用)
     """
 
-    # x86_64调用约定——参数寄存器顺序
+    # x86_64调用约定 - 参数寄存器顺序
     _CALLER_ARG_REGS = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
 
     # 外部输入函数
@@ -118,7 +115,7 @@ class TaintPropagator:
                     self._CALLER_ARG_REGS) else f'stack_{src.arg_index}'
                 tainted[src.function_name].add(f'reg:{reg}')
             elif src.source_type == 'recv_call':
-                # recv的返回值(rax)被污点→通常存入某寄存器
+                # recv的返回值(rax)被污点, 通常存入某寄存器
                 tainted[src.function_name].add('reg:rax')
 
         # 识别危险操作(污点汇)
@@ -168,7 +165,7 @@ class TaintPropagator:
                                  call_graph: Dict[str, List[str]],
                                  global_tainted: Dict[str, Set[str]]
                                  ) -> Set[str]:
-        """在单函数内传播污点——返回新增污点标记"""
+        """在单函数内传播污点 - 返回新增污点标记"""
         new_taints = set(current_tainted)
 
         for insn_str in insns:
@@ -190,7 +187,7 @@ class TaintPropagator:
                         if '[' in dst:
                             new_taints.add(f'mem:{dst}')
 
-            # 算术(add/sub/xor)——若操作数被污点→目标被污点
+            # 算术(add/sub/xor) - 若操作数被污点, 目标被污点
             if mnem in ('add', 'sub', 'xor', 'and', 'or') and len(parts) >= 2:
                 ops = ' '.join(parts[1:]).split(',')
                 if len(ops) >= 2:
@@ -201,7 +198,7 @@ class TaintPropagator:
                         if dst_reg:
                             new_taints.add(f'reg:{dst_reg}')
 
-            # lea——地址计算的传播
+            # lea - 地址计算的传播
             if mnem == 'lea' and len(parts) >= 2:
                 ops = ' '.join(parts[1:]).split(',')
                 if len(ops) >= 2:
@@ -216,10 +213,10 @@ class TaintPropagator:
 
     def _identify_sources(self, functions: Dict[str, List[str]]
                             ) -> List[TaintSource]:
-        """自动识别污点源——入口函数参数+输入函数调用"""
+        """自动识别污点源 - 入口函数参数+输入函数调用"""
         sources = []
         for func_name, insns in functions.items():
-            # 入口函数的所有参数→污点源
+            # 入口函数的所有参数, 污点源
             if func_name in ('main', '_start', 'entry', 'WinMain'):
                 for i in range(6):
                     sources.append(TaintSource(
@@ -227,7 +224,7 @@ class TaintPropagator:
                         source_type='func_param',
                         function_name=func_name, arg_index=i))
 
-            # 输入函数调用→污点源
+            # 输入函数调用, 污点源
             for insn in insns:
                 for inp_func in self._INPUT_FUNCTIONS:
                     if inp_func in insn.lower():
@@ -254,7 +251,7 @@ class TaintPropagator:
 
     def _can_reach_sink(self, sink: TaintSink, taint_item: str,
                           functions: Dict[str, List[str]]) -> bool:
-        """判断污点项是否可能到达汇——基于指令级数据流可达性。
+        """判断污点项是否可能到达汇 - 基于指令级数据流可达性。
 
         不采用'同一函数内总是True'的过度近似。
         而是检查: 污点所在的指令位置是否在sink之前,
@@ -267,7 +264,7 @@ class TaintPropagator:
         # 从taint_item提取寄存器名
         taint_reg = taint_item.replace('reg:', '').strip()
         if not taint_reg:
-            return True  # 无法提取寄存器→保守返回True
+            return True  # 无法提取寄存器, 保守返回True
 
         # 定位sink指令和追踪污点清除
         sink_idx = -1
@@ -281,13 +278,13 @@ class TaintPropagator:
                 parts = insn.strip().split()
                 if len(parts) >= 2:
                     mnem = parts[0].lower()
-                    # xor reg, reg → 清除寄存器
+                    # xor reg, reg - 清除寄存器
                     if mnem == 'xor' and taint_reg in insn.lower():
                         ops = ' '.join(parts[1:]).split(',')
                         if len(ops) >= 2 and ops[0].strip().lower() == taint_reg and \
                            ops[0].strip().lower() == ops[1].strip().lower():
                             reg_clobbered_at = i
-                    # mov reg, 0 → 清除寄存器
+                    # mov reg, 0 - 清除寄存器
                     if mnem == 'mov' and taint_reg in insn.lower():
                         ops = ' '.join(parts[1:]).split(',')
                         if len(ops) >= 2 and ops[0].strip().lower() == taint_reg:
@@ -296,10 +293,10 @@ class TaintPropagator:
                                 reg_clobbered_at = i
 
         if sink_idx < 0:
-            return True  # sink不在本函数→保守
+            return True  # sink不在本函数, 保守
         if reg_clobbered_at >= 0 and reg_clobbered_at > sink_idx:
-            return False  # 寄存器在sink后被清除→不影响
-        # 寄存器在sink前被清除→污点不达
+            return False  # 寄存器在sink后被清除, 不影响
+        # 寄存器在sink前被清除, 污点不达
         if reg_clobbered_at >= 0:
             return False
         return True

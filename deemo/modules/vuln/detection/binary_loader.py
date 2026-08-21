@@ -1,5 +1,5 @@
 """
-二进制加载器 — 解析ELF/PE头部, 提取.text段用于capstone反汇编。
+二进制加载器 - 解析ELF/PE头部, 提取.text段用于capstone反汇编。
 
 设计决策:
   capstone从固定偏移0x1000反汇编PE文件只能得到6条指令(PE头数据被误解析为代码)。
@@ -36,7 +36,7 @@ def _parse_elf_text_section(data: bytes) -> Optional[Tuple[int, int, int]]:
         p_vaddr = struct.unpack_from('<Q', data, off + 16)[0]
         p_filesz = struct.unpack_from('<Q', data, off + 32)[0]
         p_flags = struct.unpack_from('<I', data, off + 4)[0]
-        if p_flags & 5:  # PF_X | PF_R = executable+readable → .text
+        if p_flags & 5:  # PF_X | PF_R = executable+readable - .text
             return int(p_offset), int(p_vaddr), int(p_filesz)
     return None
 

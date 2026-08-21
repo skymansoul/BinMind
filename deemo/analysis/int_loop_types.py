@@ -82,14 +82,9 @@ def integrate_loop_analysis_with_iguard(
     source_code: str,
     existing_findings: Optional[List[dict]] = None,
 ) -> Tuple[List[LoopOverflowRisk], List[dict]]:
-    """将循环归纳变量分析注入 I-GUARD 管线.
+    """将循环归纳变量分析注入 I-GUARD 管线。
 
-    Args:
-        source_code: C源码
-        existing_findings: I-GUARD 现有检测结果
-
-    Returns:
-        (loop_risks, enhanced_findings)
+    返回 (loop_risks, enhanced_findings)。
     """
     from analysis.int_loop_induction import LoopInductionTracker
 

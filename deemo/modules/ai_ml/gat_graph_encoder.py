@@ -1,9 +1,9 @@
-# 图注意力网络编码器 — 替代GCN的注意力消息传递
+# 图注意力网络编码器 - 替代GCN的注意力消息传递
 # 设计边界: 纯Python实现, 不依赖PyTorch/NumPy; 支持多头注意力和EdgeDrop正则化
 #
 # 架构参考:
-# BobGAT — 分层GAT, 按函数边界聚合
-# GATv2 — 动态注意力, 修复了原始GAT的静态排序问题
+# BobGAT - 分层GAT, 按函数边界聚合
+# GATv2 - 动态注意力, 修复了原始GAT的静态排序问题
 
 from __future__ import annotations
 import math
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# 辅助数学函数 — 纯Python线性代数
+# 辅助数学函数 - 纯Python线性代数
 
 def _vec_dot(a: List[float], b: List[float]) -> float:
     """向量内积，不做维度检查（调用方保证长度一致）"""
@@ -153,7 +153,7 @@ def _apply_activation(x: float, name: str) -> float:
 
 
 class GATGraphEncoder:
-    """分层图注意力编码器 — 输入层 -> [GATLayer * N] -> L2归一化输出.
+    """分层图注意力编码器 - 输入层 -> [GATLayer * N] -> L2归一化输出.
     参照 BobGAT [LLNL 2024] 分层GAT架构 + GATv2 [Brody et al. ICLR 2022] 动态注意力."""
     def __init__(self, config: GATEncoderConfig):
         self.config = config
@@ -216,15 +216,7 @@ class GATGraphEncoder:
 
     def encode(self, node_features: List[List[float]],
                adjacency: List[List[int]]) -> List[float]:
-        """编码单个图到嵌入向量
-
-        Args:
-            node_features: [N, in_dim] 节点特征矩阵
-            adjacency: [N, List[neighbor_idx]] 邻接表 (不含自环, 会在内部添加)
-
-        Returns:
-            [out_dim] 图级嵌入向量
-        """
+        """编码单个图到嵌入向量"""
         h = [row[:] for row in node_features]  # deep copy
 
         for li, layer in enumerate(self.layers):
@@ -412,7 +404,7 @@ class GATBinarySimilarityEncoder:
         self._proj_b: Optional[List[float]] = None
 
     def _init_projection(self, in_dim: int):
-        """跨架构对齐投影层 — GBsim式BERT投影"""
+        """跨架构对齐投影层 - GBsim式BERT投影"""
         if self._proj_w is not None:
             return
         out_d = in_dim
@@ -422,13 +414,7 @@ class GATBinarySimilarityEncoder:
     def encode_function(self, blocks: List[List[str]],
                         edges: List[Tuple[int, int, str]],
                         node_features: Optional[List[List[float]]] = None) -> List[float]:
-        """编码汇编函数到嵌入
-
-        Args:
-            blocks: 每个基本块的指令序列列表
-            edges: CFG边列表 [(src_idx, dst_idx, edge_type)]
-            node_features: 预计算的特征 (可选; None时从blocks提取)
-        """
+        """编码汇编函数到嵌入"""
         N = len(blocks)
         if node_features is None:
             node_features = self._extract_block_features(blocks)
@@ -509,9 +495,3 @@ def create_gat_similarity_encoder(in_dim: int = 12, hidden_dims: List[int] = Non
         out_dim=out_dim, num_heads=num_heads,
     )
     return GATBinarySimilarityEncoder(gat_cfg=cfg, contrastive_temp=contrastive_temp)
-
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

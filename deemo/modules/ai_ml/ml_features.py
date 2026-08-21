@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# ML features module — compiler identification, password bypass simulation,
-# micro-基准测试, function heatmaps, CVE pattern learning, 智能 栈 variable
-# analysis, LLM function guessing, and 智能 decompiler optimization advisor.
-# added GCG/clang/MSVC register allocation signatures with cosine similarity.
-# added CVSS 预测, async 基准测试, and variable lifetime analysis.
+# ML 特征模块 — 编译器识别/密码绕过模拟/微基准/函数热图/CVE 模式学习/
+# 栈变量智能分析/LLM 函数猜测/反编译优化建议。
+# GCG/clang/MSVC 寄存器分配特征签名用余弦相似度比对;
+# CVSS 预测 + 异步基准 + 变量生命周期分析。
 
 import hashlib
 import logging as _logging
@@ -14,9 +13,6 @@ import json as _json
 import re as _re
 from typing import Dict, List, Optional, Any, Tuple, Set, Callable, Union
 import hashlib as _hashlib
-
-_ARIA_S1 = "0x3f"  # 保留
-_CACHE_SALT = "0x1a"  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -113,12 +109,7 @@ class RegisterAllocationClassifier:
         return dot / (_math.sqrt(norm_a) * _math.sqrt(norm_b))
 
     def classify(self, pattern: RegisterAllocationPattern) -> Tuple[str, str, float]:
-        # 不拆--保持上下文连贯性
-        """Classify compiler and optimization level.
-
-        Returns:
-            Tuple of (compiler_name, optimization_level, confidence).
-        """
+        """Classify compiler and optimization level."""
         vec = pattern.to_vector()
         if len(vec) == 0:
             return ("unknown", "unknown", 0.0)
@@ -483,7 +474,6 @@ class BenchmarkResult:
     std_dev_ms: float = 0.0
     operations_per_second: float = 0.0
     memory_kb: float = 0.0
-    # 2026-07-29: 增加百分位延迟字段，用于尾部延迟分析
     p95_time_ms: float = 0.0
     p99_time_ms: float = 0.0
 
@@ -558,8 +548,7 @@ class MicroBenchmarkFramework:
         self.m_results[name] = result
         return result
 
-    # 2026-07-29: 异步函数基准测试 — 适配现代 Python 协程调用链的延迟测量
-    # INTJ：async/await 场景下 perf_counter 仍测量真实耗时，但需处理事件循环开销
+    # 异步函数基准测试，适配协程调用链的延迟测量
     def benchmark_async(self, name: str, coro_func: Callable[[], Any],
                         iterations: int = 100) -> BenchmarkResult:
         """Benchmark an async callable by driving it through the event loop.
@@ -647,7 +636,7 @@ class MicroBenchmarkFramework:
             "faster": name_a if speedup > 1 else name_b,
         }
 
-    # 2026-07-29: 多路比较 — 一次输出全部基准的速度比率矩阵（INTJ：批量分析更高效）
+    # 多路比较，一次输出全部基准的速度比率矩阵
     def compare_multiple(self, names: Optional[List[str]] = None) -> Dict[str, Any]:
         """Compare all (or a subset of) benchmarks, returning a speedup matrix.
 
@@ -829,9 +818,9 @@ class CVEPatternLearner:
     """
 
     __slots__ = ('m_cve_db', 'm_patterns', 'm_rules', 'm_feature_vectors',
-                 'm_cvss_profile')  # 2025-03-28: 新增 CVSS 档案缓存
+                 'm_cvss_profile')
 
-    # 2026-07-29: CVSS 严重性等级映射 — 参考 NVD CVSS v3.1 规范
+    # CVSS 严重性等级映射，参考 NVD CVSS v3.1 规范
     CVSS_SEVERITY_MAP = {
         "NONE": (0.0, 0.0),
         "LOW": (0.1, 3.9),
@@ -840,7 +829,7 @@ class CVEPatternLearner:
         "CRITICAL": (9.0, 10.0),
     }
 
-    # 2026-07-29: 危险关键词权重表 — 用于从描述文本推断 CVSS 分数
+    # 危险关键词权重表，用于从描述文本推断 CVSS 分数
     SEVERITY_KEYWORD_WEIGHTS = {
         "remote": 1.5, "code": 1.2, "execution": 1.8, "overflow": 1.6,
         "privilege": 1.3, "escalation": 1.4, "bypass": 1.2, "injection": 1.5,
@@ -856,7 +845,7 @@ class CVEPatternLearner:
         self.m_patterns: Dict[str, List[Dict[str, Any]]] = _defaultdict(list)
         self.m_rules: List[str] = []
         self.m_feature_vectors: Dict[str, List[List[float]]] = _defaultdict(list)
-        self.m_cvss_profile: Dict[str, Dict[str, Any]] = {}  # 2025-03-28
+        self.m_cvss_profile: Dict[str, Dict[str, Any]] = {}
 
     def load_cve_data(self, cve_entries: List[Dict[str, Any]]):
         """Load CVE entries for training."""
@@ -975,9 +964,9 @@ class CVEPatternLearner:
         predictions.sort(key=lambda x: -x[1])
         return predictions[:10]
 
-    # 2026-07-29: CVSS 分数预测 — 基于描述文本中的危险关键词加权评分
-    # INTJ：这不是精确的 CVSS 计算器，而是一种启发式快速分级工具，
-    # 用于在缺少完整 CVSS 向量字符串时给出合理的严重性估计。
+    # CVSS 分数预测，基于描述文本中的危险关键词加权评分
+    # 启发式快速分级工具，非精确 CVSS 计算器，
+    # 在缺少完整 CVSS 向量字符串时给出合理的严重性估计
     def predict_cvss(self, description: str) -> Dict[str, Any]:
         """Estimate CVSS v3.1 base score from vulnerability description text.
 
@@ -985,7 +974,7 @@ class CVEPatternLearner:
         estimated base score, severity label, and confidence breakdown.
         """
         desc_lower = description.lower()
-        base_score = 5.0  # 从 MEDIUM 中位起步（INTJ：贝叶斯先验）
+        base_score = 5.0  # 从 MEDIUM 中位起步
         matched_keywords: Dict[str, float] = {}
         total_weight = 0.0
 
@@ -1036,7 +1025,7 @@ class CVEPatternLearner:
         self.m_cvss_profile[description[:80]] = result
         return result
 
-    # 2026-07-29: 批量 CVSS 预测 — 一次处理多个描述（INTJ：流水线式批量推理）
+    # 批量 CVSS 预测，一次处理多个描述
     def predict_cvss_batch(self, descriptions: List[str]) -> List[Dict[str, Any]]:
         """Estimate CVSS scores for multiple descriptions at once."""
         results: List[Dict[str, Any]] = []
@@ -1052,7 +1041,7 @@ class CVEPatternLearner:
 class AIStackVariableAnalyzer:
     """Infers variable purpose and annotates pseudocode using pattern recognition."""
 
-    __slots__ = ('m_var_types', 'm_annotations', 'm_lifetime_graph')  # 2025-03-28
+    __slots__ = ('m_var_types', 'm_annotations', 'm_lifetime_graph')
 
     # Variable purpose patterns
     TYPE_PATTERNS = [
@@ -1070,9 +1059,9 @@ class AIStackVariableAnalyzer:
         (r'(?:chk|checksum|crc|hash)', "checksum/hash"),
     ]
 
-    # 2026-07-29: 危险生命周期模式 — 检测潜在的 use-after-free / double-free
-    # INTJ：CWE-416（use-after-free）和 CWE-415（double-free）在二进制分析中极为常见，
-    # 通过伪代码中的分配/释放/访问序列模式匹配可快速定位嫌疑点。
+    # 危险生命周期模式，检测潜在的 use-after-free / double-free
+    # CWE-416（use-after-free）和 CWE-415（double-free）在二进制分析中极为常见，
+    # 通过伪代码中的分配/释放/访问序列模式匹配可快速定位嫌疑点
     LIFETIME_ANOMALY_PATTERNS = [
         # (pattern, anomaly_type, severity)
         # free 后仍有解引用 → use-after-free
@@ -1088,7 +1077,7 @@ class AIStackVariableAnalyzer:
     def __init__(self):
         self.m_var_types: Dict[str, str] = {}
         self.m_annotations: List[Dict[str, Any]] = []
-        self.m_lifetime_graph: Dict[str, List[Tuple[str, int]]] = _defaultdict(list)  # 2025-03-28
+        self.m_lifetime_graph: Dict[str, List[Tuple[str, int]]] = _defaultdict(list)
 
     def infer_variable_purpose(self, var_name: str,
                                usage_context: str = "") -> Tuple[str, float]:
@@ -1169,9 +1158,9 @@ class AIStackVariableAnalyzer:
 
         return annotated
 
-    # 2026-07-29: 变量生命周期异常检测 — 扫描伪代码中的 use-after-free / double-free 模式
-    # INTJ：不依赖完整的数据流分析，仅通过模式匹配快速筛出高风险代码段，
-    # 适合在大规模二进制审计中作为一级过滤。
+    # 变量生命周期异常检测，扫描伪代码中的 use-after-free / double-free 模式
+    # 仅通过模式匹配快速筛出高风险代码段，不依赖完整数据流分析，
+    # 适合在大规模二进制审计中作为一级过滤
     def detect_lifetime_anomalies(self, pseudocode: str) -> List[Dict[str, Any]]:
         """Scan pseudocode for variable lifetime anomalies (use-after-free, double-free, etc.).
 

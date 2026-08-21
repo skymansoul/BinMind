@@ -1,6 +1,5 @@
-# QEMU user mode + 自定义插桩 —— 动态执行追踪危险函数调用。
+# QEMU user mode + 自定义插桩 - 动态执行追踪危险函数调用。
 # 需要: qemu-x86_64 和自定义plugin, 当前为框架级实现。
-# 创建: 2026-07-31
 # 注: 完整QEMU plugin需编译C共享库(.so), 本模块提供Python侧调度逻辑;
 #     plugin源码应放在 testing/benchmark/qemu_plugin/ 下单独编译。
 
@@ -9,7 +8,7 @@ import os, shutil, subprocess, time
 QEMU_BIN = shutil.which("qemu-x86_64") or ""
 
 def run_qemu_scan(binaries: dict, timeout_sec: int = 120) -> list:
-    """QEMU user mode扫描 —— 检查qemu是否可用, 调用plugin。"""
+    """QEMU user mode扫描 - 检查qemu是否可用, 调用plugin。"""
     results = []
     if not QEMU_BIN:
         return results

@@ -1,4 +1,4 @@
-# 横向对比实验 — 堆溢出检测: BinMind vs Angr vs QEMU vs Ghidra
+# 横向对比实验 - 堆溢出检测: BinMind vs Angr vs QEMU vs Ghidra
 # 统管脚本: 编译样本→喂给各工具→收集指标→绘图+LaTeX
 
 import json, os, sys, time, subprocess

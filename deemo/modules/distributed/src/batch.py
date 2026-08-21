@@ -1,8 +1,8 @@
-# 批处理 — 积累一批再处理，减少网络往返
+# 批处理 - 积累一批再处理, 减少网络往返
 # BatchCollector: 时间+数量双触发，线程安全
 # BatchPipeline: 链式变换，函数式 map
 #
-# 扩展：错误回调 — flush 失败时不静默吞掉，通知外部
+# 扩展: 错误回调 - flush 失败时不静默吞掉, 通知外部
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import threading
 import time
 from typing import Callable, Optional, List, Any
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 

@@ -1,11 +1,9 @@
-# 保留 — 固件魔数数据库，提取时用于格式识别
 import os
 import struct
 import logging
 
 logger = logging.getLogger(__name__)
 
-# 保留 — 主固件魔数字典（20+ 条目），键为格式名，值为魔数字节串
 FIRMWARE_MAGICS = {
 	'uImage':		b'\x27\x05\x19\x56',
 	'TRX':			b'HDR0',
@@ -37,7 +35,6 @@ FIRMWARE_MAGICS = {
 	'UBI_EC':		b'\x55\x42\x49\x21',
 }
 
-# 保留 — 嵌套格式魔数，递归解包时识别内层文件
 NESTED_MAGICS = {
 	'ELF':			b'\x7fELF',
 	'PE':			b'MZ',
@@ -51,7 +48,6 @@ NESTED_MAGICS = {
 	'EXT4':			b'\x53\xef',
 }
 
-# 保留 — 扩展名 -> 格式类型映射
 FIRMWARE_EXTENSIONS = {
 	'.bin': 'generic',
 	'.img': 'generic',
@@ -80,10 +76,8 @@ FIRMWARE_EXTENSIONS = {
 	'.cramfs': 'CramFS',
 }
 
-# 保留 — 压缩格式集合，判断是否需要解压
 COMPRESSION_FORMATS = {'GZIP', 'BZIP2', 'XZ', 'LZMA', 'LZO', 'LZ4', 'ZSTD'}
 
-# 保留 — 文件系统格式集合
 FILESYSTEM_FORMATS = {'SquashFS', 'SquashFS_LZ4', 'SquashFS_XZ', 'SquashFS_ZSTD',
 					  'JFFS2', 'UBIFS', 'YAFFS2', 'CPIO', 'CPIO_NEW',
 					  'CramFS', 'RomFS', 'EXT2', 'FAT', 'ISO9660'}
@@ -102,7 +96,6 @@ def detect_format(data: bytes, offset: int = 0) -> list[dict]:
 
 	chunk = data[offset:offset + 128]
 
-	# 保留 — 优先匹配固件主格式魔数
 	for fmt_name, magic in FIRMWARE_MAGICS.items():
 		if chunk.startswith(magic):
 			confidence = _estimate_confidence(fmt_name, chunk)
@@ -113,7 +106,6 @@ def detect_format(data: bytes, offset: int = 0) -> list[dict]:
 				'source': 'FIRMWARE_MAGICS',
 			})
 
-	# 保留 — 嵌套格式作为回退匹配
 	for fmt_name, magic in NESTED_MAGICS.items():
 		if chunk.startswith(magic):
 			results.append({
@@ -123,7 +115,6 @@ def detect_format(data: bytes, offset: int = 0) -> list[dict]:
 				'source': 'NESTED_MAGICS',
 			})
 
-	# 保留 — 置信度降序排列
 	results.sort(key=lambda x: x['confidence'], reverse=True)
 	return results
 
@@ -147,13 +138,11 @@ def detect_format_from_file(file_path: str) -> list[dict]:
 		logger.error("Cannot read file %s: %s", file_path, e)
 		return []
 
-	# 保留 — 多偏移位扫描魔数
 	for off in [0, 512, 1024, 2048]:
 		if off < len(data):
 			results = detect_format(data, off)
 			all_results.extend(results)
 
-	# 保留 — 扩展名推断附加
 	ext = os.path.splitext(file_path)[1].lower()
 	if ext in FIRMWARE_EXTENSIONS:
 		all_results.append({
@@ -163,7 +152,6 @@ def detect_format_from_file(file_path: str) -> list[dict]:
 			'source': 'EXTENSION',
 		})
 
-	# 保留 — 按置信度去重排序
 	seen = set()
 	unique = []
 	for r in sorted(all_results, key=lambda x: x['confidence'], reverse=True):
@@ -187,7 +175,6 @@ def _estimate_confidence(fmt_name: str, data: bytes) -> float:
 	elif fmt_name in medium_confidence:
 		confidence += 0.25
 
-	# 保留 — uImage CRC 校验增强置信度
 	if fmt_name == 'uImage' and len(data) >= 64:
 		import zlib
 		try:

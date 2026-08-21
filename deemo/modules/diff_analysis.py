@@ -1,4 +1,4 @@
-# 二进制差异分析 — 对比两个版本的函数特征，识别新增/删除/修改函数
+# 二进制差异分析 - 对比两个版本的函数特征，识别新增/删除/修改函数
 # 及漏洞回归（新增危险调用等）。
 
 import os
@@ -7,7 +7,7 @@ from typing import Dict, List, Set, Any, Optional
 
 
 class FunctionFeatures:
-    """单个函数的特征集合 — 用于跨版本相似度比较。"""
+    """单个函数的特征集合 - 用于跨版本相似度比较。"""
 
     DANGEROUS_CALLS = {
         'gets', 'strcpy', 'strcat', 'sprintf', 'vsprintf', 'scanf',
@@ -26,7 +26,7 @@ class FunctionFeatures:
         self.cfg_hash = ""
 
     def _count_basic_blocks(self, pseudocode: str) -> int:
-        """统计伪代码中的基本块数 — 以条件/循环/返回语句为分割点。"""
+        """统计伪代码中的基本块数 - 以条件/循环/返回语句为分割点。"""
         if not pseudocode:
             return 0
         count = 0
@@ -87,7 +87,7 @@ class BinaryDiffAnalyzer:
 
     def _calculate_cosine_similarity(self, vec1: List[float],
                                      vec2: List[float]) -> float:
-        """余弦相似度 — 维度对齐的浮点向量。"""
+        """余弦相似度 - 维度对齐的浮点向量。"""
         if not vec1 or not vec2 or len(vec1) != len(vec2):
             return 0.0
         dot = sum(a * b for a, b in zip(vec1, vec2))
@@ -98,7 +98,7 @@ class BinaryDiffAnalyzer:
         return dot / (norm1 * norm2)
 
     def _calculate_jaccard_similarity(self, set1: Set, set2: Set) -> float:
-        """Jaccard 相似度 — 集合交集/并集。"""
+        """Jaccard 相似度 - 集合交集/并集。"""
         if not set1 and not set2:
             return 1.0
         inter = set1 & set2
@@ -108,7 +108,7 @@ class BinaryDiffAnalyzer:
         return len(inter) / len(union)
 
     def _compare_pseudocode(self, pseudo1: str, pseudo2: str) -> float:
-        """伪代码相似度 — 基于危险调用集合的 Jaccard。"""
+        """伪代码相似度 - 基于危险调用集合的 Jaccard。"""
         calls1 = set(re.findall(r'\b(\w+)\s*\(', pseudo1 or ''))
         calls2 = set(re.findall(r'\b(\w+)\s*\(', pseudo2 or ''))
         return self._calculate_jaccard_similarity(calls1, calls2)
@@ -144,7 +144,7 @@ class BinaryDiffAnalyzer:
         return "\n".join(lines)
 
     def check_vulnerability_regression(self) -> List[Dict[str, Any]]:
-        """检测漏洞回归 — 修改函数中新增的危险调用。"""
+        """检测漏洞回归 - 修改函数中新增的危险调用。"""
         regressions = []
         for mod in self.modified_functions:
             name = mod.get('function_name', '')

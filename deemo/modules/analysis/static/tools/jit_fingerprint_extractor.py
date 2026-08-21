@@ -1,28 +1,6 @@
-# 修改记录:
-# 2025-08-10 10:45 - 四引擎 JIT 指纹库: V8 TurboFan / JVM C2 / .NET RyuJIT / LuaJIT
-# 2025-08-10 15:20 - 去优化检查点密度: 每引擎有独特的 deopt checkpoint 模式
-
-"""JIT 优化指纹提取 - 识别 JIT 编译器及其优化遍
-
-JIT 编译器 (V8 TurboFan, JVM C2, .NET RyuJIT, LuaJIT) 产生的二进制
-与 AOT 编译器 (GCC/Clang) 有根本性的结构差异:
-  1. 去优化检查点--JIT 在优化代码中嵌入回退点 (若假设被违反)
-  2. 内联缓存--方法调用处嵌入类型检查桩 (monomorphic/polymorphic)
-  3. 隐藏类转换--对象属性访问前的类型检查序列
-  4. 栈上替换 (OSR)--循环中的入口点标记
-  5. 垃圾回收安全点--GC 可中断线程的标记指令序列
-
-这些模式对逆向工程有双重意义:
-  - 识别 JIT 引擎: 不同引擎有独特的模式组合
-  - 定位关键结构: deopt checkpoint -> 回溯找优化假设 -> 理解代码语义
-
-本模块维护四个主流 JIT 引擎的指令模式指纹库
-通过在反汇编中匹配模式+密度计算->引擎识别+置信度
-
-与现有工作的关系:
-- jit_pattern_extractor.py (98 行): 基本模式匹配 -> 本模块: 密度评分+引擎推断
-- 现有 JIT 研究: 面向源码或 IR 级 -> 本模块: 二进制级, 不依赖调试符号
-"""
+# 四引擎 JIT 指纹库: V8 TurboFan / JVM C2 / .NET RyuJIT / LuaJIT
+# 去优化检查点密度: 每引擎有独特的 deopt checkpoint 模式
+# JIT 优化指纹提取: 识别 JIT 编译器及其优化遍, 通过模式匹配+密度计算推断引擎
 
 from __future__ import annotations
 
@@ -104,12 +82,7 @@ class JITFingerprintResult:
 
 
 class JITFingerprintExtractor:
-    """JIT 编译器指纹提取器
-
-    用法:
-    extractor = JITFingerprintExtractor()
-    result = extractor.extract(asm_lines, arch='x86_64')
-    """
+    """JIT 编译器指纹提取器"""
 
     def __init__(self):
         self._total_insns = 0

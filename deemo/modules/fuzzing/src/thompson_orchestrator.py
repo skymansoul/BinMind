@@ -1,10 +1,9 @@
-# 创建: 2026-04-20 14:35
-# 修改: 2026-04-20 — Beta-Bernoulli Thompson 采样 + Cheng BA 算法
+# Beta-Bernoulli Thompson 采样 + Cheng BA 算法
 """
-Thompson 采样多模糊器编排器 — Bayesian 在线学习动态资源分配。
+Thompson 采样多模糊器编排器 - Bayesian 在线学习动态资源分配。
 
 问题: 多个异构模糊器并行运行, 各自对不同目标的"产出率"未知且时变。
-  均匀分配浪费算力——比如 AFL++ 在解析型目标上找到 80% 的独特崩溃,
+  均匀分配浪费算力-比如 AFL++ 在解析型目标上找到 80% 的独特崩溃,
   而 libFuzzer 几乎找不到新东西, 但两者获得相同 CPU。
 
 方案: 每个模糊器视为一个 bandit arm, 其"找到有价值的独特崩溃"的概率
@@ -20,10 +19,10 @@ Thompson 采样的优势 (vs ε-greedy / UCB):
   - 无超参数: 不像 ε-greedy 需要手动调 ε, UCB 需要调置信界宽度
 
 ref: Thompson "On the Likelihood that One Unknown Probability
-     Exceeds Another..." — 原始论文
+     Exceeds Another..." - 原始论文
 ref: Chapelle & Li "An Empirical Evaluation of Thompson Sampling"
-     (NIPS) — 证明 TS 在 bandit 问题上优于 UCB
-ref: BandFuzz  — 多臂赌博机协作模糊测试,
+     (NIPS) - 证明 TS 在 bandit 问题上优于 UCB
+ref: BandFuzz  - 多臂赌博机协作模糊测试,
      本项目将 bandit 建模推广到异构模糊器编排而非同构协作
 ref: Scott "A modern Bayesian look at the multi-armed bandit"
      (Applied Stochastic Models in Business and Industry)
@@ -40,7 +39,7 @@ from collections import defaultdict
 from typing import Any, Optional
 
 # Beta 分布与 Thompson 采样
-# 无 scipy 依赖 — 使用 Cheng 的 BA 算法从 Gamma 分布采样,
+# 无 scipy 依赖 - 使用 Cheng 的 BA 算法从 Gamma 分布采样,
 # 再用 Gamma(α,1) / (Gamma(α,1) + Gamma(β,1)) 构造 Beta 样本。
 
 def _gamma_sample(shape: float) -> float:
@@ -85,7 +84,7 @@ class FuzzerArm:
     """单个模糊器实例的 Thompson 采样状态。
     α = 找到独特崩溃的"成功"次数 + prior_success
     β = 产生重复崩溃的"失败"次数 + prior_failure
-    prior 使用 Beta(1, 1) (均匀分布) — 无信息先验。"""
+    prior 使用 Beta(1, 1) (均匀分布) - 无信息先验。"""
 
     __slots__ = ('name', 'fuzzer_type', 'alpha', 'beta',
                  'total_execs', 'unique_crashes', 'dup_crashes',
@@ -114,7 +113,7 @@ class FuzzerArm:
                 self.alpha += 1.0
             else:
                 self.dup_crashes += 1
-                self.beta += 0.5  # 重复崩溃的惩罚较轻——仍证明 fuzzer 能触发
+                self.beta += 0.5  # 重复崩溃的惩罚较轻-仍证明 fuzzer 能触发
 
     def sample(self) -> float:
         """从当前后验采样 θ̂ ∼ Beta(α, β)。"""
@@ -127,7 +126,7 @@ class FuzzerArm:
         return self.alpha / total if total > 0 else 0.5
 
     def uncertainty(self) -> float:
-        """后验方差 ≈ αβ / ((α+β)²(α+β+1))。值越大 → 越需探索。"""
+        """后验方差 ≈ αβ / ((α+β)²(α+β+1))。值越大 - 越需探索。"""
         total = self.alpha + self.beta
         if total < 2:
             return 1.0
@@ -142,7 +141,7 @@ class FuzzerArm:
         self._crash_set.clear()
 
 # 全局崩溃去重
-# 跨模糊器的崩溃签名去重——检测同一崩溃是否已被其他模糊器发现。
+# 跨模糊器的崩溃签名去重-检测同一崩溃是否已被其他模糊器发现。
 # 签名基于: 崩溃地址 (前 2 字节) + 调用栈哈希 (前 4 hex chars)
 
 def make_crash_signature(fault_addr: int, stack_trace: list[int],
@@ -216,7 +215,7 @@ class ThompsonOrchestrator:
         # 过滤非正采样值
         total_sample = sum(v for v in samples.values() if v > 0)
         if total_sample <= 0:
-            # 所有 arm 的后验退化 — 均匀分配
+            # 所有 arm 的后验退化 - 均匀分配
             each = total_cpus // len(self._arms)
             return {name: max(1, each) for name in self._arms}
 
@@ -275,7 +274,7 @@ class ThompsonOrchestrator:
         return crash_signature not in self._global_crashes
 
     def observe_stagnation(self, arm_name: str) -> None:
-        """记录 arm 的无产出周期 — 用于漂移检测和选择性重启。"""
+        """记录 arm 的无产出周期 - 用于漂移检测和选择性重启。"""
         self._stagnation_counter[arm_name] += 1
 
     def observe_progress(self, arm_name: str) -> None:
@@ -293,12 +292,12 @@ class ThompsonOrchestrator:
                 continue  # 预热期不判断
             # 检查后验均值是否从峰值显著退化
             if arm.mean() < 0.1 and arm.uncertainty() < 0.01:
-                # 后验集中且均值低 → arm 已"死"
+                # 后验集中且均值低 - arm 已"死"
                 stale.append(name)
         return stale
 
     def restart_arm(self, name: str) -> None:
-        """重置 arm 的后验 — 等效于重启模糊器实例。
+        """重置 arm 的后验 - 等效于重启模糊器实例。
         保留 _global_crashes 中的崩溃签名以继续全局去重。"""
         if name in self._arms:
             self._arms[name].reset()
@@ -326,7 +325,7 @@ class ThompsonOrchestrator:
 
 # 与现有模糊调度器的桥接
 # 在增强管线中注册后, Thompson 编排器接管 FuzzingScheduler 的
-# 能量分配职责——但保留现有的种子选择逻辑 (Scheduler/rarity/energy 等)。
+# 能量分配职责-但保留现有的种子选择逻辑 (Scheduler/rarity/energy 等)。
 # 仅替换"哪个模糊器实例获得多少 CPU 周期"这一层。
 
 def thompson_guided_schedule(orchestrator: ThompsonOrchestrator,

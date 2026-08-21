@@ -15,7 +15,6 @@
 #   CodeQL 的 ExternalFlowSources/SummaryModels 同样依赖按函数签名
 #   建模参数语义; 静态分析精度首先取决于调用点参数角色的正确性.
 #
-# 创建: 2026-05-27
 
 from typing import Dict, Optional, Tuple
 

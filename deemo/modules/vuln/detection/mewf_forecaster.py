@@ -1,25 +1,23 @@
 # coding: utf-8
-# 创建: 2026-05-30  |  武器化预测编排
-# 修改: 2026-05-30  |  审计后补充; 2026-08-05  |  二次审计修复——跨模块数据流+BYRS跳过+批量预测参数过滤
 #
 """
-多因子漏洞武器化预测——时态预测编排器。
+多因子漏洞武器化预测-时态预测编排器。
 
 集成复杂度量化+时态生存分析+外部信号融合，
 产出漏洞武器化的多维概率预测。
 
 管线流程:
-  1. 复杂度量化: ExploitComplexityEstimator→代码级利用难度
-  2. 时态预测: WeibullAFT→生存曲线+关键时间点+风险率
-  3. 信号融合: PoC活动/CISA KEV/社交媒体信号→先验修正
+  1. 复杂度量化: ExploitComplexityEstimator-代码级利用难度
+  2. 时态预测: WeibullAFT-生存曲线+关键时间点+风险率
+  3. 信号融合: PoC活动/CISA KEV/社交媒体信号-先验修正
   4. 武器化分级: IMMINENT/WEEKS/MONTHS/UNLIKELY
   5. 优先级排序: Top-K最可能被武器化的漏洞
 
 与现有评分系统对比:
-  CVSS: 严重度(静态)→本模块包含
-  EPSS: 30天概率(黑盒)→本模块输出全时域生存曲线(白盒)
-  LEV: 已被利用概率(回顾)→本模块预测未来武器化(前瞻)
-  AEAS: exploit代码成熟度(需代码)→本模块预测武器化(代码之前)
+  CVSS: 严重度(静态)-本模块包含
+  EPSS: 30天概率(黑盒)-本模块输出全时域生存曲线(白盒)
+  LEV: 已被利用概率(回顾)-本模块预测未来武器化(前瞻)
+  AEAS: exploit代码成熟度(需代码)-本模块预测武器化(代码之前)
 """
 
 import math
@@ -37,10 +35,10 @@ _log = logging.getLogger(__name__)
 
 
 class WeaponizationTier(str):
-    IMMINENT = "IMMINENT"       # <7天——已有活跃利用信号
-    WEEKS = "WEEKS"             # 7-30天——PoC开发中
-    MONTHS = "MONTHS"           # 30-90天——需要显著开发
-    UNLIKELY = "UNLIKELY"       # >90天——利用条件苛刻
+    IMMINENT = "IMMINENT"       # <7天-已有活跃利用信号
+    WEEKS = "WEEKS"             # 7-30天-PoC开发中
+    MONTHS = "MONTHS"           # 30-90天-需要显著开发
+    UNLIKELY = "UNLIKELY"       # >90天-利用条件苛刻
     UNKNOWN = "UNKNOWN"
 
 
@@ -69,7 +67,7 @@ class WeaponizationForecast:
 
 
 class WeaponizationForecaster:
-    """多因子漏洞武器化预测引擎——复杂度+时态+信号的完整预测管线。
+    """多因子漏洞武器化预测引擎-复杂度+时态+信号的完整预测管线。
 
     使用示例:
         forecaster = WeaponizationForecaster()
@@ -83,7 +81,7 @@ class WeaponizationForecaster:
 
     信号来源:
       poc_activity: GitHub PoC仓库数/Exploit-DB引用/社交媒体讨论量
-        聚合为[0, 1]分数——0.5≈平均活动量
+        聚合为[0, 1]分数-0.5约等于平均活动量
       kev_listed: CISA Known Exploited Vulnerabilities目录收录
       exploitdb_referenced: Exploit-DB是否有相关条目
     """
@@ -131,14 +129,14 @@ class WeaponizationForecaster:
         tier = self._assign_tier(temporal, kev_listed, poc_activity,
                                   disclosure_days)
 
-        # 30天武器化概率——1 - S(30)
+        # 30天武器化概率-1 - S(30)
         prob_30d = 1.0 - temporal.survival_30d
         if kev_listed:
             prob_30d = max(prob_30d, 0.85)
         if exploitdb_ref:
             prob_30d = max(prob_30d, 0.65)
 
-        # 优先级评分——多维加权
+        # 优先级评分-多维加权
         priority = self._compute_priority(complexity, temporal, prob_30d,
                                            kev_listed, cvss_score)
 
@@ -161,7 +159,7 @@ class WeaponizationForecaster:
     def _assign_tier(self, temporal: TemporalForecast,
                       kev: bool, poc: float,
                       disclosure_days: float) -> str:
-        """武器化分级——结合生存分析+外部信号"""
+        """武器化分级-结合生存分析+外部信号"""
         if kev:
             return WeaponizationTier.IMMINENT
         if temporal.survival_7d < 0.7:
@@ -178,7 +176,7 @@ class WeaponizationForecaster:
                            temporal: TemporalForecast,
                            prob_30d: float, kev: bool,
                            cvss: float) -> float:
-        """优先级评分——0(低)~1(高)"""
+        """优先级评分-0(低)~1(高)"""
         score = 0.0
         score += 0.35 * prob_30d
         score += 0.25 * (cvss / 10.0)
@@ -204,12 +202,12 @@ class WeaponizationForecaster:
 
     def batch_forecast(self, vulnerabilities: List[Dict]
                         ) -> List[WeaponizationForecast]:
-        """批量预测——按优先级降序返回。
+        """批量预测-按优先级降序返回。
 
         vulnerabilities中的每条记录可含id/cve_id等元数据字段,
-        这些字段不会传递给forecast()——仅提取匹配的参数。
+        这些字段不会传递给forecast()-仅提取匹配的参数。
         """
-        # forecast()接受的参数——过滤掉元数据字段
+        # forecast()接受的参数-过滤掉元数据字段
         _valid_params = {'vuln_type', 'cve_id', 'function_name',
                          'overflow_size', 'cvss_score', 'protections',
                          'info_leak', 'stack_addr_leak', 'libc_base_leak',
@@ -232,7 +230,7 @@ def forecast_weaponization(vuln_type: str, cvss_score: float = 5.0,
                             poc_activity: float = 0.0,
                             kev_listed: bool = False
                             ) -> WeaponizationForecast:
-    """武器化预测便捷入口——单行调用"""
+    """武器化预测便捷入口-单行调用"""
     return WeaponizationForecaster().forecast(
         vuln_type=vuln_type, cvss_score=cvss_score,
         overflow_size=overflow_size, protections=protections,

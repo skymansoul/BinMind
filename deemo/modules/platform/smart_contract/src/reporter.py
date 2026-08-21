@@ -1,7 +1,7 @@
-# 报告格式化器 — JSON/Text/Markdown/HTML/SARIF 2.1.0
-# 不拆: 所有输出格式集中管理
+# 报告格式化器 - JSON/Text/Markdown/HTML/SARIF 2.1.0
+
 import json
-from typing import List, Dict, Any, Optional  # 不拆: Optional 以后可能加 metadata
+from typing import List, Dict, Any, Optional
 
 from .core.models import VulnerabilityReport
 
@@ -15,14 +15,14 @@ _SEV_COLORS = {
 
 
 class ReportFormatter:
-  """漏洞报告格式化器 — 支持 JSON/Text/Markdown/HTML/SARIF。"""
+  """漏洞报告格式化器 - 支持 JSON/Text/Markdown/HTML/SARIF。"""
 
   def __init__(self, findings: List[VulnerabilityReport], contract_name: str = ""):
     self.findings = findings
     self.name = contract_name or "smart_contract"
 
   def to_json(self) -> str:
-    """JSON output — machine-readable, one object per finding."""
+    """JSON output - machine-readable, one object per finding."""
     return json.dumps([{
       "type": f.vuln_type,
       "severity": f.severity,
@@ -37,7 +37,7 @@ class ReportFormatter:
     } for f in self.findings], indent=2)
 
   def to_text(self) -> str:
-    """Plain text report — grouped by severity."""
+    """Plain text report - grouped by severity."""
     lines = [f"Smart Contract Analysis: {self.name}", "=" * 50]
     by_sev: Dict[str, list] = {
       "CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "INFO": []
@@ -59,7 +59,7 @@ class ReportFormatter:
     return "\n".join(lines)
 
   def to_markdown(self) -> str:
-    """Markdown table — sorted by confidence descending."""
+    """Markdown table - sorted by confidence descending."""
     lines = [
       f"# Smart Contract Analysis: `{self.name}`",
       "",
@@ -97,7 +97,7 @@ class ReportFormatter:
     )
 
   def to_sarif(self) -> str:
-    """SARIF v2.1.0 — GitHub Code Scanning compatible."""
+    """SARIF v2.1.0 - GitHub Code Scanning compatible."""
     results: List[Dict[str, Any]] = []
     for f in self.findings:
       level = (

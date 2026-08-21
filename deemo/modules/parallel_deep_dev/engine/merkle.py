@@ -18,7 +18,7 @@ import os
 import hashlib
 import fnmatch
 from typing import Optional
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 
 # 域分隔前缀常量
@@ -254,4 +254,4 @@ def verify_proof(
 
 # diff_trees / _diff_nodes / _collect_files 已迁移至 engine/merkle_diff.py
 # 保持单一职责——merkle.py 仅负责树的构建和增量更新。
-from parallel_deep_dev.engine.merkle_diff import diff_trees  # noqa: E402, F401 — 向后兼容重导出
+from .merkle_diff import diff_trees  # noqa: E402, F401 — 向后兼容重导出

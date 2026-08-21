@@ -54,20 +54,11 @@ class HeapBoundsProver:
         alloc_func: str = "malloc",
         platform: str = "x86_64",
     ) -> ProofResult:
-        """证明给定堆写是否安全.
+        """证明给定堆写是否安全。
 
-        Args:
-          alloc_size: 分配的请求大小 (字节)
-          write_offset: 相对 buffer 起始的写入偏移
-          write_size: 写入字节数
-          path_constraints: 路径约束列表 (BranchConstraint, 来自 path_constraint_collector)
-          si_alloc: 分配大小的 strided interval (若 size 表达式涉及 stride)
-          si_offset: 写入偏移的 strided interval
-          alloc_func: 分配函数名 (malloc/calloc/realloc)
-          platform: 目标平台
-
-        Returns:
-          ProofResult — is_safe=True 表示可以安全过滤此告警
+        path_constraints 来自 path_constraint_collector;
+        si_alloc/si_offset 为 size 表达式的 strided interval。
+        返回 ProofResult, is_safe=True 表示可安全过滤此告警。
         """
         t0 = time.time()
 
@@ -278,11 +269,7 @@ def prove_store_safety(
     alloc_si: Optional[StridedInterval] = None,
     offset_si: Optional[StridedInterval] = None,
 ) -> Tuple[bool, str]:
-    """便捷接口: 证明单次 store 是否安全.
-
-    Returns:
-      (safe_to_filter, reason)
-    """
+    """便捷接口: 证明单次 store 是否安全, 返回 (safe_to_filter, reason)。"""
     prover = HeapBoundsProver()
     result = prover.prove_safety(
         alloc_size=alloc_size,

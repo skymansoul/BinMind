@@ -91,7 +91,7 @@ class SemanticRoleLabeler:
         return SemanticRole.UNKNOWN
 
     def cross_function_consensus(self, var_name: str) -> Optional[SemanticRole]:
-        """跨函数角色投票——若同一变量名在多个函数中被标注为同一角色
+        """跨函数角色投票, 若同一变量名在多个函数中被标注为同一角色
         则该标注的可信度更高（类似于跨函数类型推断的投票机制）
         """
         if var_name not in self._label_history:

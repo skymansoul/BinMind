@@ -1,4 +1,4 @@
-# 数据导出 —— JSON/CSV/YAML/msgpack/jsonl/bin 六种格式
+# 数据导出 - JSON/CSV/YAML/msgpack/jsonl/bin 六种格式
 # msgpack/YAML 是可选依赖, import 失败不影响其他格式
 # 大文件自动分片 (max_rows_per_file)
 # binary record 格式: 每条记录以 varint 长度前缀 + msgpack body 串联
@@ -11,10 +11,9 @@ import os
 import struct
 import time
 from typing import Optional, List, Dict, Any, Iterator
-import tempfile  # 保留
-import uuid  # 保留
+import tempfile
+import uuid
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
@@ -60,7 +59,6 @@ def _decode_varint(data: bytes, offset: int = 0) -> tuple:
 
 def read_bin(path: str) -> Iterator[Dict]:
     """读取 binary record 文件, 逐条 yield dict。
-    # 不拆——保持上下文连贯性, 拆了反而难读
     格式: varint_len + msgpack_body, 与 DataExporter._write_bin 对应。
 
     内存友好: 每次只解析一条记录, 适合 GB 级导出文件的流式读取。
@@ -173,7 +171,6 @@ class DataExporter:
 def import_bin_to_db(path: str, db) -> int:
     """从 binary record 文件回写到数据库 —— round-trip 恢复。
 
-    # 不拆——保持上下文连贯性, 拆了反而难读
     读取 _write_bin 生成的 .bin 文件, 逐条解析后通过
     db.add_signature() 写回。返回导入条数。
 

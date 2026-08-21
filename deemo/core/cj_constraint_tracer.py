@@ -1,5 +1,5 @@
 """
-约束追踪辅助函数 — 从 IR/伪代码中反向追踪变量约束: 常量赋值追踪 (var = N → 等式约束)、类型上界推断 (uint8_t var → var <= 255)、守卫上界搜索 (if(var>N) var=N 或 var=min(var,N) → 上界约束)。
+约束追踪辅助函数: 从 IR/伪代码中反向追踪变量约束: 常量赋值追踪 (var = N 判等式约束)、类型上界推断 (uint8_t var 判 var <= 255)、守卫上界搜索 (if(var>N) var=N 或 var=min(var,N) 判上界约束)。
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def trace_constant_assignment(
             # 递归追踪other_var
             trace_constant_assignment(
                 ir_lines, other_var, i, sys, ctype, label)
-            # 添加线性关系: var = other_var + N → var - other_var = N
+            # 添加线性关系: var = other_var + N 即 var - other_var = N
             sys.add(LinearConstraint(
                 coefficients={var: 1.0, other_var: -1.0},
                 constant=float(-const_offset),
@@ -96,7 +96,7 @@ def trace_type_bound(
         'uint8_t': 255, 'int8_t': 127,
         'uint16_t': 65535, 'int16_t': 32767,
         'uint32_t': 0xFFFFFFFF, 'int32_t': 0x7FFFFFFF,
-        'size_t': 0xFFFFFFFF if False else 0xFFFFFFFFFFFFFFFF,
+        'size_t': 0xFFFFFFFFFFFFFFFF,
         'unsigned int': 0xFFFFFFFF,
         'unsigned': 0xFFFFFFFF,
     }

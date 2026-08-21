@@ -1,5 +1,5 @@
 # created: 2026-05-27
-# 增强检测调度器——整合4个新检测模块到现有管线中
+# 增强检测调度器-整合4个新检测模块到现有管线中
 # 不改动任何现有文件，通过封装+增强实现检测精度提升
 #
 # 与原有gnn_vulnerability_detector.py的关系:
@@ -28,7 +28,6 @@ from .format_string_check import (
 from .buffer_size_infer import (
     BufferSizeInferer, OverflowVerdict, BufferOverflowVerdict)
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +46,7 @@ class EnhancedVulnReport:
 
 
 class EnhancedScanner:
-    """增强检测调度器——整合污点传播+UAF状态机+格式串检查+缓冲区推断。
+    """增强检测调度器-整合污点传播+UAF状态机+格式串检查+缓冲区推断。
 
     使用方式:
       scanner = EnhancedScanner()
@@ -69,19 +68,7 @@ class EnhancedScanner:
                        func_args: Optional[List[str]] = None,
                        original_alerts: Optional[List[Dict[str, Any]]] = None
                        ) -> List[EnhancedVulnReport]:
-        """对单个函数执行增强检测。
-
-        Args:
-            instructions: 反汇编指令列表
-            bb_boundaries: 基本块边界
-            cfg_edges: 控制流边
-            func_name: 函数名
-            func_args: 函数参数名列表
-            original_alerts: 原有检测器输出的告警列表(可选——若无则独立检测)
-
-        Returns:
-            增强后的漏洞报告列表
-        """
+        """对单个函数执行增强检测。"""
         reports = []
         if original_alerts is None:
             original_alerts = []
@@ -123,7 +110,7 @@ class EnhancedScanner:
                                 func_name: str,
                                 original_alert: Dict
                                 ) -> Optional[EnhancedVulnReport]:
-        """增强堆/栈溢出检测——污点传播+缓冲区大小验证"""
+        """增强堆/栈溢出检测-污点传播+缓冲区大小验证"""
         evidence = []
         taint_result = None
         overflow_verdict = None
@@ -134,7 +121,7 @@ class EnhancedScanner:
         for i, instr in enumerate(instructions):
             for cf in copy_funcs:
                 if cf in instr.lower() and 'call' in instr.lower():
-                    # a: 污点追踪——检查dst参数是否TAINTED
+                    # a: 污点追踪-检查dst参数是否TAINTED
                     taint_result = self._taint_engine.trace_param(
                         i, 'rdi', instructions)
                     if self._taint_engine.is_vulnerable_sink(taint_result):
@@ -142,7 +129,7 @@ class EnhancedScanner:
                             f"copy dst tainted: {taint_result.source_origin}")
                         is_verified = True
 
-                    # b: 缓冲区大小验证——比较分配大小和拷贝大小
+                    # b: 缓冲区大小验证-比较分配大小和拷贝大小
                     # 向前查找最近的malloc调用
                     alloc_idx = self._find_nearest_alloc(instructions, i)
                     if alloc_idx >= 0:
@@ -175,7 +162,7 @@ class EnhancedScanner:
                     func_args: Optional[List[str]],
                     original_alert: Dict
                     ) -> Optional[EnhancedVulnReport]:
-        """增强UAF检测——状态机验证"""
+        """增强UAF检测-状态机验证"""
         trackers = self._uaf_sm.analyze_function(
             instructions, bb_boundaries, cfg_edges, func_args)
         vuln_trackers = [t for t in trackers if t.is_vulnerable]
@@ -191,7 +178,7 @@ class EnhancedScanner:
                 f"UAF: {uaf_tracker.ptr_name} alloc@{uaf_tracker.alloc_site} "
                 f"free@{uaf_tracker.free_site} use@{uaf_tracker.use_sites}")
         elif trackers:
-            # 有free但无use——降级
+            # 有free但无use-降级
             freed = [t for t in trackers if t.state.name == 'FREED']
             if freed:
                 evidence.append(
@@ -211,7 +198,7 @@ class EnhancedScanner:
                               func_name: str,
                               original_alert: Dict
                               ) -> Optional[EnhancedVulnReport]:
-        """增强格式化字符串检测——参数来源验证"""
+        """增强格式化字符串检测-参数来源验证"""
         evidence = []
         fmt_verdict = None
         is_verified = False
@@ -226,7 +213,7 @@ class EnhancedScanner:
                         evidence.extend(fmt_verdict.evidence)
                     elif fmt_verdict.vuln_level == FormatVulnLevel.SUSPICIOUS:
                         evidence.extend(fmt_verdict.evidence)
-                        evidence.append('降级为suspicious——无法确认fmt来源')
+                        evidence.append('降级为suspicious-无法确认fmt来源')
                     else:
                         evidence.append(f'fmt is const → safe: {fmt_verdict.fmt_origin}')
                     break

@@ -12,14 +12,14 @@
 
 from typing import Dict, List, Tuple
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Var, Const, Binary, Call, Sizeof, linearize, substitute,
     substitute_sizeof,
 )
-from heapov.interval import Interval, eval_expr, align_up, le_provable, gt_provable
-from heapov import cparser as cp
-from heapov.model import AllocSite, WriteSite, GuardConstraint
-from heapov import verdict as V
+from .interval import Interval, eval_expr, align_up, le_provable, gt_provable
+from . import cparser as cp
+from .model import AllocSite, WriteSite, GuardConstraint
+from . import verdict as V
 
 _GLIBC_ALIGN = 16
 

@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
 # 测试DocumenterConfig/FunctionDoc/BinaryDocumenter的主流程，generate_doc -> save -> verify
-# 等有时间把JSON schema校验也加上
 
 import os
 import unittest
 import tempfile
-# import sys
 import json
 from pathlib import Path
 
@@ -13,8 +10,6 @@ from modules.binary_documenter import (
     BinaryDocumenter, DocumenterConfig, FunctionDoc,
     create_documenter
 )
-
-_DEBUG_FLAG = False
 
 
 class TestDocumenterConfig(unittest.TestCase):
@@ -54,10 +49,6 @@ class TestDocumenterConfig(unittest.TestCase):
 class TestFunctionDoc(unittest.TestCase):
     """FunctionDoc: init / to_dict / to_markdown"""
 
-    def setUp(self):
-        """没什么需要特别准备的"""
-        pass
-
     def test_function_doc_init(self):
         """main函数: cdecl, Low risk"""
         func_doc = FunctionDoc(
@@ -94,7 +85,6 @@ class TestFunctionDoc(unittest.TestCase):
 
 
 class TestBinaryDocumenter(unittest.TestCase):
-    # 手工校准的配置值
     """BinaryDocumenter核心流程: load -> extract -> analyze -> generate -> save"""
 
     def setUp(self):
@@ -128,7 +118,6 @@ class TestBinaryDocumenter(unittest.TestCase):
         self.assertEqual(self.documenter.pseudocode, pseudocode)
 
     def test_extract_functions(self):
-        # 重构候选——代码结构待优化
         """3个函数: main/helper/calculate"""
         pseudocode = """
         int main() { return 0; }

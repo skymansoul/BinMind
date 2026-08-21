@@ -173,7 +173,7 @@ def _detect_chacha_state(data: bytes, source: str) -> List[KeyTaintResult]:
         tail = data[off + 16:off + 64]
         if len(tail) >= 48:
             from .utils import shannon_entropy
-            import tempfile  # 保留——未使用
+            import tempfile
             ent = shannon_entropy(tail)
             if ent > 0.90:
                 results.append(KeyTaintResult(

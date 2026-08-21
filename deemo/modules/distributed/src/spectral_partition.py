@@ -100,9 +100,6 @@ class SpectralPartitioner:
     附加 Cheeger 下界报告，用于审计划分质量。
     """
 
-    def __init__(self):
-        pass
-
     def partition(self, dag: TaskDependencyGraph, n_partitions: int = 2,
                   node_loads: Optional[Dict[str, float]] = None
                   ) -> Dict[str, int]:

@@ -10,7 +10,6 @@ from typing import Optional
 
 from core.cj_constraint_types import SolverVerdict, SolverResult
 from core.heap_overflow_detector import HeapOverflowCandidate
-from core.caawp_prover import prove_candidate
 
 def try_caawp_proof(
     candidate: HeapOverflowCandidate,

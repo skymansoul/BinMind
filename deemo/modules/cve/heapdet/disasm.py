@@ -1,4 +1,4 @@
-# 反汇编前端 — objdump 优先, angr 回退.
+# 反汇编前端 - objdump 优先, angr 回退.
 #
 # 决策逻辑:
 #   objdump -d 在 mingw/GNU binutils 下对 PE 与 ELF 均可用, 输出
@@ -7,7 +7,6 @@
 #   保证检测器输入 (List[dict]: address/mnemonic/operands) 一致.
 #   PE 间接 call (call [rip+...]) 经 import_resolver 改写为函数名.
 #
-# 创建: 2026-05-03
 
 import subprocess
 from typing import List, Optional, Tuple

@@ -2,8 +2,8 @@
 import time
 import traceback
 from typing import Optional
-from parallel_deep_dev.config import CONFIG
-from parallel_deep_dev.engine.prompts import build_api_messages
+from ..config import CONFIG
+from .prompts import build_api_messages
 
 # 韧性层组件在模块加载时初始化（全局单例，跨 worker 共享）
 _circuit_breaker = None
@@ -19,7 +19,7 @@ def _init_resilience():
         return
     if not CONFIG.RESILIENCE_ENABLED:
         return
-    from parallel_deep_dev.engine.resilience import (
+    from .resilience import (
         CircuitBreaker, TokenBudget, AdaptiveConcurrency, CompositeHealth,
     )
     _circuit_breaker = CircuitBreaker(

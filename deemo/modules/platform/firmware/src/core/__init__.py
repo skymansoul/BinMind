@@ -8,7 +8,7 @@ from .exceptions import (FirmwareExtractionError, FirmwareAnalysisError,
                          FirmwareValidationError, ConfigError)
 from .logger import setup_logging, getLogger
 
-# 不拆 — these were for the old plugin loader, might come back if we do modular FV parsing
+
 # from .plugin_loader import PluginLoader, PluginRegistry
 # from .compat import _legacy_import
 

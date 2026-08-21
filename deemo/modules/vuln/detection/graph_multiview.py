@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-04-19  |  多视图对抗检测
-# 修改: 2026-04-19  |  审计后补充文件头与错误处理
 #
 """
-多视图一致性对抗检测器——检测图级对抗性结构扰动。
+多视图一致性对抗检测器-检测图级对抗性结构扰动。
 
 核心假设: 对抗性图扰动破坏视图间联合一致性。CFG边翻转主要影响
 结构视图，对语义/序列视图的影响非线性且不完全耦合。
@@ -26,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class GraphView:
-    """图的单一视图——从特定角度观察图结构"""
+    """图的单一视图-从特定角度观察图结构"""
     view_name: str
     feature_vector: List[float] = field(default_factory=list)
     extracted_features: Dict[str, float] = field(default_factory=dict)
@@ -34,10 +32,10 @@ class GraphView:
 
 
 class MultiViewDecomposer:
-    """三视图分解器——结构/语义/序列互补表示。
+    """三视图分解器-结构/语义/序列互补表示。
 
     每个视图由对应的FeatureExtractor生成（复用graph_binary_embedder）。
-    三个视图覆盖不同的不变性属性——对抗扰动难以同时欺骗全部。
+    三个视图覆盖不同的不变性属性-对抗扰动难以同时欺骗全部。
     """
 
     def __init__(self, rng_seed: int = 0):
@@ -84,10 +82,10 @@ def _sig(feats: Dict[str, float], precision: int = 4) -> str:
 
 
 def jensen_shannon_divergence(vecs: List[List[float]]) -> float:
-    """多向量平均成对JS散度——主分歧指标。
+    """多向量平均成对JS散度-主分歧指标。
 
     对每对视图计算JS散度取均值，归一化至[0, 1]。
-    JS散度对称且在[0, ln(2)]——适合衡量概率分布差异。
+    JS散度对称且在[0, ln(2)]-适合衡量概率分布差异。
     """
     n = len(vecs)
     if n < 2:
@@ -102,7 +100,7 @@ def jensen_shannon_divergence(vecs: List[List[float]]) -> float:
 
 
 def _pair_jsd(p: List[float], q: List[float]) -> float:
-    """两向量Jensen-Shannon散度——对称KL散度变体"""
+    """两向量Jensen-Shannon散度-对称KL散度变体"""
     if len(p) != len(q):
         return float('inf')
     sp = sum(p) or 1.0
@@ -123,7 +121,7 @@ def _kl(p: List[float], q: List[float]) -> float:
 
 
 def energy_distance(vecs: List[List[float]]) -> float:
-    """多向量能量距离——无需归一化的辅助分歧指标。
+    """多向量能量距离-无需归一化的辅助分歧指标。
 
     Székely & Rizzo: 对零值维度鲁棒，补充JS散度。
     """
@@ -154,11 +152,11 @@ class AdversarialDetectionResult:
 
 
 class GraphAdversarialDetector:
-    """图对抗样本检测器——多视图一致性检验。
+    """图对抗样本检测器-多视图一致性检验。
 
     自适应阈值标定:
       在干净样本集上估计JS散度基线分布。
-      阈值 = min(μ + 3σ, P95)——兼顾正态假设与长尾鲁棒性。
+      阈值 = min(mu + 3sigma, P95)-兼顾正态假设与长尾鲁棒性。
       标定应与ANVIL v2共形校准并行，共享数据集以降低维护成本。
     """
 
@@ -212,12 +210,12 @@ class GraphAdversarialDetector:
     def calibrate(self, clean_graphs: List,
                    stats_ext=None, insn_ext=None, rw_ext=None,
                    sigma_mult: float = 3.0):
-        """在干净样本上标定自适应阈值——μ + kσ vs P95取保守值。
+        """在干净样本上标定自适应阈值-μ + kσ vs P95取保守值。
 
         需≥10个样本，否则保持默认阈值。
         """
         if len(clean_graphs) < 10:
-            _log.warning("标定样本不足(%d)——保持默认阈值", len(clean_graphs))
+            _log.warning("标定样本不足(%d)-保持默认阈值", len(clean_graphs))
             return
         jsd_vals = []
         for g in clean_graphs:
@@ -231,11 +229,11 @@ class GraphAdversarialDetector:
 
         self._calibrated = min(sigma_based, p95)
         self._clean_jsd = jsd_vals
-        _log.info("对抗检测阈值标定: μ=%.4f σ=%.4f σ-based=%.4f p95=%.4f → %.4f",
+        _log.info("对抗检测阈值标定: mu=%.4f sigma=%.4f sigma-based=%.4f p95=%.4f - %.4f",
                    mu, sigma, sigma_based, p95, self._calibrated)
 
     def get_threshold_info(self) -> Dict:
-        """阈值标定信息——审计/调试"""
+        """阈值标定信息-审计/调试"""
         info = {'default_jsd': self._jsd_thresh,
                 'calibrated': self._calibrated,
                 'energy': self._energy_thresh,
@@ -263,12 +261,12 @@ class RobustPrediction:
 
 
 def robust_predict(certified, detection, require_cert: bool = False) -> RobustPrediction:
-    """联合认证+检测——防御纵深判定。
+    """联合认证+检测-防御纵深判定。
 
     决策逻辑:
-      certification_abstain + require_cert → 拒绝
-      is_adversarial                      → 拒绝
-      均通过                              → 接受
+      certification_abstain + require_cert - 拒绝
+      is_adversarial                      - 拒绝
+      均通过                              - 接受
     """
     accepted = True
     reason = "none"

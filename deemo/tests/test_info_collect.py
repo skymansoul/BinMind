@@ -35,7 +35,7 @@ class TestValidateElfFile(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
             f.write(b'\x7fEL')
             temp_path = f.name
-        
+
         try:
             result = validate_elf_file(temp_path)
             self.assertFalse(result)
@@ -47,7 +47,7 @@ class TestValidateElfFile(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
             f.write(b'\x7fPE\x00\x00\x00\x00')
             temp_path = f.name
-        
+
         try:
             result = validate_elf_file(temp_path)
             self.assertFalse(result)
@@ -59,7 +59,7 @@ class TestValidateElfFile(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
             f.write(b'\x7fELF\x02\x01\x01\x00')
             temp_path = f.name
-        
+
         try:
             result = validate_elf_file(temp_path)
             self.assertTrue(result)
@@ -109,7 +109,7 @@ class TestFormatInfoForReport(unittest.TestCase):
             }
         }
         result = format_info_for_report(info)
-        
+
         self.assertIn('amd64', result)
         self.assertIn('64', result)
         self.assertIn('NX', result)
@@ -163,7 +163,7 @@ class TestFormatInfoForReport(unittest.TestCase):
             }
         }
         result = format_info_for_report(info)
-        
+
         self.assertIn('重要符号', result)
         self.assertIn('main', result)
         self.assertIn('win', result)

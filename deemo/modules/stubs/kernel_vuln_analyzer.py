@@ -19,7 +19,7 @@ class KernelVulnCandidate:
 # FUZE 识别的内核高风险模式
 _KERNEL_RISK_PATTERNS = {
     'uaf': [
-        _re.compile(r'(?:kfree|free)\s*\(.*\).*\n.*\1', _re.DOTALL),
+        _re.compile(r'(?:kfree|free)\s*\(([^)]*)\).*\n.*\1', _re.DOTALL),
         _re.compile(r'(?:kmem_cache_free|vfree)\s*\(.*\)'),
     ],
     'race': [

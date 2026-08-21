@@ -1,7 +1,7 @@
 """
-栈canary绕过路径检测 — 识别可泄露/绕过栈canary的代码模式。
+栈canary绕过路径检测 - 识别可泄露/绕过栈canary的代码模式。
 覆盖四类绕过: 信息泄露、fork逐字节爆破、覆写__stack_chk_fail GOT、非连续溢出。
-将"canary存在→不可利用"提升为"有泄露路径→可利用"的精细分级。
+将"canary存在-不可利用"提升为"有泄露路径-可利用"的精细分级。
 """
 import re
 from typing import Dict, List, Tuple
@@ -15,7 +15,7 @@ _CANARY_LEAK_PATTERNS = [
 
 # fork模式: fork()后canary在父子进程间共享, 可逐字节爆破
 _FORK_PATTERN = re.compile(r'\bfork\s*\(')
-# __stack_chk_fail的GOT覆写检测——若能任意写则可拦截canary失败
+# __stack_chk_fail的GOT覆写检测-若能任意写则可拦截canary失败
 _CHK_FAIL_GOT = re.compile(r'__stack_chk_fail')
 
 def detect_canary_bypass(pseudocode: str, func_name: str = "",
@@ -29,7 +29,7 @@ def detect_canary_bypass(pseudocode: str, func_name: str = "",
     if not has_canary:
         return findings
 
-    # 1. 信息泄露——格式化字符串泄露栈内容
+    # 1. 信息泄露-格式化字符串泄露栈内容
     for pattern, ptype in _CANARY_LEAK_PATTERNS:
         for m in re.finditer(pattern, pseudocode):
             findings.append({
@@ -46,7 +46,7 @@ def detect_canary_bypass(pseudocode: str, func_name: str = "",
                 ),
             })
 
-    # 2. fork场景——子进程canary不变
+    # 2. fork场景-子进程canary不变
     if _FORK_PATTERN.search(pseudocode):
         findings.append({
             'bypass_type': 'fork_canary_reuse',
@@ -62,7 +62,7 @@ def detect_canary_bypass(pseudocode: str, func_name: str = "",
             ),
         })
 
-    # 3. __stack_chk_fail引用——攻击面指示
+    # 3. __stack_chk_fail引用-攻击面指示
     if _CHK_FAIL_GOT.search(pseudocode):
         findings.append({
             'bypass_type': 'chk_fail_reference',
@@ -95,7 +95,7 @@ def assess_canary_risk(pseudocode: str, func_name: str = "",
     if not findings:
         return 'protected', 0.10, []
 
-    # 有泄露路径 → canary保护弱化
+    # 有泄露路径 - canary保护弱化
     max_conf = max((f['confidence'] for f in findings), default=0)
     if max_conf >= 0.55:
         return 'leakable', max_conf, findings

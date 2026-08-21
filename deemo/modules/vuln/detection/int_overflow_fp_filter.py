@@ -1,5 +1,5 @@
 # coding: utf-8
-# 整数溢出误报过滤——验证溢出结果是否流向malloc/memcpy等危险操作
+# 整数溢出误报过滤-验证溢出结果是否流向malloc/memcpy等危险操作
 import re, logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -12,14 +12,14 @@ class IntOverflowFpResult:
     fp_reduction_pct: float = 0.0
 
 class IntOverflowFpFilter:
-    """整数溢出误报过滤器——仅保留溢出结果流向危险操作的候选。
+    """整数溢出误报过滤器-仅保留溢出结果流向危险操作的候选。
 
-    逻辑: 整数溢出本身不构成漏洞——只有当溢出结果被用作
+    逻辑: 整数溢出本身不构成漏洞-只有当溢出结果被用作
     malloc参数或memcpy的size参数时才形成可利用漏洞。
-    若溢出指令的目标寄存器在后续未被用于危险操作→滤除。
+    若溢出指令的目标寄存器在后续未被用于危险操作-滤除。
 
     危险操作: malloc(size)/calloc(n,size)/memcpy(,,size)/realloc(,size)
-    追踪: 溢出指令的目标寄存器→后续mov传递→危险操作的参数寄存器
+    追踪: 溢出指令的目标寄存器-后续mov传递-危险操作的参数寄存器
     """
     _DANGER_SINKS = {'malloc', 'calloc', 'realloc', 'memcpy', 'memmove', 'alloca'}
 
@@ -83,7 +83,7 @@ class IntOverflowFpFilter:
         # 优先使用显式dst_reg字段
         dr = getattr(cand, 'dst_reg', '')
         if dr: return dr
-        # 回退——从operation字符串解析
+        # 回退-从operation字符串解析
         op = getattr(cand, 'operation', '')
         m = re.match(r'(add|mul|shl)\s+(\w+)', op)
         if m: return m.group(2)

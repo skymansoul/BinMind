@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 
-_LEGACY_MODE = False  # 保留
+_LEGACY_MODE = False
 
 VECTOR_STORAGE_AVAILABLE = False
 try:
@@ -184,11 +184,9 @@ class VulnerabilityDatabaseCore:
 # end legacy
 
     def __init__(self, db_path: str = None):
-        """
-        初始化漏洞数据库连接与表结构
+        """初始化漏洞数据库连接与表结构。
 
-        Args:
-            db_path: 数据库路径
+        db_path: 数据库路径。
         """
         self.db_type = Config.DB_TYPE
         self.db_path = db_path
@@ -279,14 +277,9 @@ class VulnerabilityDatabaseCore:
             self._init_db()
 
     def _hash_pseudocode(self, pseudocode: str) -> str:
-        """
-        生成伪代码的哈希值（用于相似性匹配
+        """生成伪代码的哈希值（用于相似性匹配）。
 
-        Args:
-            pseudocode: 伪代码字符串
-
-        Returns:
-            MD5 哈希值
+        pseudocode: 伪代码字符串; 返回 MD5 哈希值。
         """
         if not pseudocode:
             return ""
@@ -312,28 +305,17 @@ class VulnerabilityDatabaseCore:
         notes: str = "",
         call_graph_summary: Dict[str, Any] = None
     ) -> Optional[int]:
-        """
-        添加漏洞记录到数据库
+        """添加漏洞记录到数据库。
 
-        Args:
-            vulnerability_type: 漏洞类型
-            binary_name: 二进制文件名
-            binary_format: 文件格式 (ELF/PE/MACH-O)
-            architecture: 架构 (amd64, i386 等)
-            bits: 位数 (32/64)
-            function_name: 受影响的函数名
-            pseudocode: 伪代码
-            exploit_script: 利用脚本
-            dangerous_functions: 危险函数列表
-            checksec: 保护机制信息
-            symbols: 符号表
-            severity: 严重程度
-            description: 漏洞描述
-            notes: 额外说明
-            call_graph_summary: 调用图摘要
-
-        Returns:
-            新记录的 ID，失败返回 None
+        参数: vulnerability_type 漏洞类型, binary_name 二进制
+        文件名, binary_format 文件格式 (ELF/PE/MACH-O),
+        architecture 架构 (amd64, i386 等), bits 位数 (32/64),
+        function_name 受影响的函数名, pseudocode 伪代码,
+        exploit_script 利用脚本, dangerous_functions 危险函数
+        列表, checksec 保护机制信息, symbols 符号表, severity
+        严重程度, description 漏洞描述, notes 额外说明,
+        call_graph_summary 调用图摘要;
+        返回新记录的 ID，失败返回 None。
         """
         if not self.connection:
             logger.error("数据库未初始化失败")
@@ -376,15 +358,7 @@ class VulnerabilityDatabaseCore:
             return None
 
     def get_by_id(self, vuln_id: int) -> Optional[Dict[str, Any]]:
-        """
-        按 ID 获取漏洞记录
-
-        Args:
-            vuln_id: 漏洞 ID
-
-        Returns:
-            漏洞记录字典，不存在返回 None
-        """
+        """按 ID 获取漏洞记录, vuln_id 漏洞 ID; 返回漏洞记录字典，不存在返回 None。"""
         if not self.connection:
             return None
 
@@ -405,15 +379,10 @@ class VulnerabilityDatabaseCore:
         limit: int = 100,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """
-        获取所有漏洞记录
+        """获取所有漏洞记录。
 
-        Args:
-            limit: 返回结果数量限制
-            offset: 偏移量
-
-        Returns:
-            漏洞记录列表
+        参数: limit 返回结果数量限制, offset 偏移量;
+        返回漏洞记录列表。
         """
         if not self.connection:
             return []
@@ -439,15 +408,10 @@ class VulnerabilityDatabaseCore:
         vuln_id: int,
         **kwargs
     ) -> bool:
-        """
-        更新漏洞记录
+        """更新漏洞记录。
 
-        Args:
-            vuln_id: 漏洞 ID
-            **kwargs: 要更新的字段
-
-        Returns:
-            是否成功
+        参数: vuln_id 漏洞 ID, **kwargs 要更新的字段;
+        返回是否成功。
         """
         if not self.connection:
             return False
@@ -491,15 +455,7 @@ class VulnerabilityDatabaseCore:
             return False
 
     def delete_vulnerability(self, vuln_id: int) -> bool:
-        """
-        删除漏洞记录
-
-        Args:
-            vuln_id: 漏洞 ID
-
-        Returns:
-            是否成功
-        """
+        """删除漏洞记录, vuln_id 漏洞 ID; 返回是否成功。"""
         if not self.connection:
             return False
 
@@ -514,15 +470,7 @@ class VulnerabilityDatabaseCore:
             return False
 
     def _row_to_dict(self, row: sqlite3.Row) -> Dict[str, Any]:
-        """
-        将数据库行转换为字典
-
-        Args:
-            row: 数据库行
-
-        Returns:
-            字典形式的漏洞记录
-        """
+        """将数据库行转换为字典, row 数据库行; 返回字典形式的漏洞记录。"""
         result = dict(row)
 
         for key in ['dangerous_functions', 'checksec', 'symbols']:
@@ -558,16 +506,10 @@ class VulnerabilityDatabaseCore:
         embedding: List[float],
         model_name: str = 'default'
     ) -> Optional[int]:
-        """
-        添加代码嵌入向量到数据库
+        """添加代码嵌入向量到数据库。
 
-        Args:
-            vuln_id: 漏洞记录 ID
-            embedding: 嵌入向量列表
-            model_name: 使用的嵌入模型名称
-
-        Returns:
-            新记录的 ID
+        参数: vuln_id 漏洞记录 ID, embedding 嵌入向量列表,
+        model_name 使用的嵌入模型名称; 返回新记录的 ID。
         """
         if not self.connection:
             return None
@@ -599,15 +541,9 @@ class VulnerabilityDatabaseCore:
             return None
 
     def cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
-        """
-        计算两个向量的余弦相似度
+        """计算两个向量的余弦相似度。
 
-        Args:
-            vec1: 向量 1
-            vec2: 向量 2
-
-        Returns:
-            余弦相似度 (0-1)
+        参数: vec1 向量 1, vec2 向量 2; 返回余弦相似度 (0-1)。
         """
         if not VECTOR_STORAGE_AVAILABLE:
             dot_product = sum(a * b for a, b in zip(vec1, vec2))
@@ -637,17 +573,11 @@ class VulnerabilityDatabaseCore:
         min_similarity: float = 0.7,
         model_name: str = None
     ) -> List[Dict[str, Any]]:
-        """
-        基于嵌入向量的语义搜索
+        """基于嵌入向量的语义搜索。
 
-        Args:
-            query_embedding: 查询向量
-            limit: 返回结果数量限制
-            min_similarity: 最小相似度阈值
-            model_name: 模型名称过滤（可选）
-
-        Returns:
-            按相似度排序的结果列表
+        参数: query_embedding 查询向量, limit 返回结果数量限制,
+        min_similarity 最小相似度阈值, model_name 模型名称过滤
+        （可选）; 返回按相似度排序的结果列表。
         """
         if not self.connection:
             return []
@@ -697,15 +627,7 @@ class VulnerabilityDatabaseCore:
             return []
 
     def export_database(self, export_path: str) -> bool:
-        """
-        导出数据库到 JSON 文件
-
-        Args:
-            export_path: 导出文件路径
-
-        Returns:
-            是否成功
-        """
+        """导出数据库到 JSON 文件, export_path 导出文件路径; 返回是否成功。"""
         try:
             all_records = self.get_all(limit=10000)
 
@@ -725,15 +647,10 @@ class VulnerabilityDatabaseCore:
             return False
 
     def import_database(self, import_path: str, merge: bool = True) -> int:
-        """
-        从 JSON 文件导入数据库
+        """从 JSON 文件导入数据库。
 
-        Args:
-            import_path: 导入文件路径
-            merge: 是否合并导入（True）或替换（False）
-
-        Returns:
-            导入的记录数
+        参数: import_path 导入文件路径, merge 是否合并导入
+        （True）或替换（False）; 返回导入的记录数。
         """
         try:
             with open(import_path, 'r', encoding='utf-8') as f:
@@ -794,15 +711,10 @@ class VulnerabilityDatabaseCore:
         vuln_id: int,
         export_path: str = None
     ) -> Optional[str]:
-        """
-        导出漏洞特征为 JSON
+        """导出漏洞特征为 JSON。
 
-        Args:
-            vuln_id: 漏洞 ID
-            export_path: 导出路径（可选，默认返回 JSON 字符串）
-
-        Returns:
-            JSON 字符串或文件路径
+        参数: vuln_id 漏洞 ID, export_path 导出路径（可选，
+        默认返回 JSON 字符串）; 返回 JSON 字符串或文件路径。
         """
         if not self.connection:
             return None
@@ -853,17 +765,11 @@ class VulnerabilityDatabaseCore:
         use_cache: bool = True,
         timeout: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        查询外部CVE数据库（可选功能）
+        """查询外部CVE数据库（可选功能）。
 
-        Args:
-            binary_name: 二进制文件名
-            binary_hash: 二进制文件哈希（可选）
-            use_cache: 是否使用本地缓存
-            timeout: 请求超时时间
-
-        Returns:
-            CVE 记录列表
+        参数: binary_name 二进制文件名, binary_hash 二进制文件
+        哈希（可选）, use_cache 是否使用本地缓存, timeout 请求
+        超时时间; 返回 CVE 记录列表。
         """
         results = []
 
@@ -882,9 +788,15 @@ class VulnerabilityDatabaseCore:
                 for row in cursor.fetchall():
                     try:
                         cve_data = json.loads(row['cve_data'])
-                        cve_data['from_cache'] = True
-                        results.append(cve_data)
-                    except json.JSONDecodeError:  # 修复: bare except → JSONDecodeError
+                        if not isinstance(cve_data, list):
+                            cve_data = [cve_data]
+                        for item in cve_data:
+                            if isinstance(item, dict):
+                                item['from_cache'] = True
+                                results.append(item)
+                            else:
+                                results.append(item)
+                    except json.JSONDecodeError:
                         continue
 
                 if results:
@@ -982,16 +894,10 @@ class VulnerabilityDatabaseCore:
         use_cache: bool = True,
         timeout: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        查询 Exploit-DB（可选功能）
+        """查询 Exploit-DB（可选功能）。
 
-        Args:
-            search_term: 搜索关键词
-            use_cache: 是否使用缓存
-            timeout: 请求超时
-
-        Returns:
-            Exploit-DB 记录列表
+        参数: search_term 搜索关键词, use_cache 是否使用缓存,
+        timeout 请求超时; 返回 Exploit-DB 记录列表。
         """
         results = []
 
@@ -1046,12 +952,8 @@ class VulnerabilityDatabaseCore:
 
         Jaccard 相似度 = |A ∩ B| / |A ∪ B|
 
-        Args:
-            set1: 第一个集合
-            set2: 第二个集合
-
-        Returns:
-            0.0 到 1.0 之间的相似度值
+        参数: set1 第一个集合, set2 第二个集合;
+        返回 0.0 到 1.0 之间的相似度值。
         """
         if not set1 or not set2:
             return 0.0
@@ -1072,15 +974,11 @@ class VulnerabilityDatabaseCore:
         dangerous_functions: List[str],
         vulnerability_type: str = None
     ) -> Dict[str, Any]:
-        """
-        基于危险函数组合计算模糊搜索评分
+        """基于危险函数组合计算模糊搜索评分。
 
-        Args:
-            dangerous_functions: 危险函数列表
-            vulnerability_type: 漏洞类型（可选）
-
-        Returns:
-            包含评分和匹配信息的字典
+        参数: dangerous_functions 危险函数列表,
+        vulnerability_type 漏洞类型（可选）;
+        返回包含评分和匹配信息的字典。
         """
         if not dangerous_functions:
             return {'score': 0, 'matches': [], 'notes': []}
@@ -1150,16 +1048,10 @@ class VulnerabilityDatabaseCore:
         dangerous_functions: List[str] = None,
         call_depth: int = 3
     ) -> Dict[str, Any]:
-        """
-        生成调用图摘要（用于导出 JSON）
+        """生成调用图摘要（用于导出 JSON）。
 
-        Args:
-            function_name: 函数名
-            dangerous_functions: 危险函数列表
-            call_depth: 调用深度
-
-        Returns:
-            调用图摘要字典
+        参数: function_name 函数名, dangerous_functions 危险函数
+        列表, call_depth 调用深度; 返回调用图摘要字典。
         """
         summary = {
             'function_name': function_name,
@@ -1190,15 +1082,11 @@ class VulnerabilityDatabaseCore:
         OSV是Google维护的开源漏洞数据库，包含Linux发行版、
         npm、PyPI、Go、Rust 等生态系统的漏洞信息。
 
-        Args:
-            package_name: 包名（如 'openssl', 'python-requests'）
-            commit_hash: 提交哈希（用于精确匹配）
-            vuln_id: 漏洞 ID（如 'CVE-2023-12345', 'GHSA-xxxx-xxxx'）
-            use_cache: 是否使用本地缓存
-            timeout: 请求超时时间（秒）
-
-        Returns:
-            OSV 漏洞记录列表
+        参数: package_name 包名（如 'openssl',
+        'python-requests'）, commit_hash 提交哈希（用于精确匹配）,
+        vuln_id 漏洞 ID（如 'CVE-2023-12345',
+        'GHSA-xxxx-xxxx'）, use_cache 是否使用本地缓存,
+        timeout 请求超时时间（秒）; 返回 OSV 漏洞记录列表。
         """
         logger.info(f"[VulnDB] 查询 OSV 数据库: package={package_name}, vuln_id={vuln_id}")
 
@@ -1368,16 +1256,11 @@ class VulnerabilityDatabaseCore:
         GitHub Advisory 数据库包含 npm、PyPI、Maven、NuGet 等
         生态系统的安全漏洞信息。
 
-        Args:
-            package_name: 包名
-            ecosystem: 生态系统（npm, pypi, maven, nuget, go, rust）
-            ghsa_id: GHSA 漏洞 ID（如 'GHSA-xxxx-xxxx-xxxx'）
-            cve_id: CVE ID
-            use_cache: 是否使用本地缓存
-            timeout: 请求超时时间（秒）
-
-        Returns:
-            GitHub Advisory 漏洞记录列表
+        参数: package_name 包名, ecosystem 生态系统（npm,
+        pypi, maven, nuget, go, rust）, ghsa_id GHSA 漏洞 ID
+        （如 'GHSA-xxxx-xxxx-xxxx'）, cve_id CVE ID, use_cache
+        是否使用本地缓存, timeout 请求超时时间（秒）;
+        返回 GitHub Advisory 漏洞记录列表。
         """
         logger.info(f"[VulnDB] 查询 GitHub Advisory: package={package_name}, ghsa={ghsa_id}, cve={cve_id}")
 
@@ -1618,15 +1501,9 @@ class VulnerabilityDatabaseCore:
         - OSV (新增)
         - GitHub Advisory (新增)
 
-        Args:
-            package_name: 包名
-            cve_id: CVE ID
-            binary_name: 二进制文件名
-            use_cache: 是否使用缓存
-            deduplicate: 是否去重
-
-        Returns:
-            包含各数据源结果和合并结果的字典
+        参数: package_name 包名, cve_id CVE ID, binary_name
+        二进制文件名, use_cache 是否使用缓存, deduplicate
+        是否去重; 返回包含各数据源结果和合并结果的字典。
         """
         logger.info(f"[VulnDB] 综合外部漏洞查询: pkg={package_name}, cve={cve_id}")
 
@@ -1857,14 +1734,9 @@ class VulnerabilityDatabaseCore:
             return False
 
     def clear_external_cache(self, source: str = None) -> int:
-        """
-        清除外部 API 缓存
+        """清除外部 API 缓存。
 
-        Args:
-            source: 指定数据源清除，None 清除所有
-
-        Returns:
-            清除的记录数
+        source: 指定数据源清除，None 清除所有; 返回清除的记录数。
         """
         if not self.connection:
             return 0

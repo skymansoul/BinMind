@@ -1,5 +1,5 @@
-# EVM字节码解析器 — 操作码流 → 结构化表示
-# 不拆: 简化版解析器，cfg.py/detectors.py/pattern_matcher.py共用
+# EVM字节码解析器 - 操作码流 → 结构化表示
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from .opcodes import OPCODES, PUSH_OPCODES
@@ -20,7 +20,7 @@ class EVMOp:
 
 
 class EVMBytecodeParser:
-    """EVM 字节码解析 —— 返回 op 列表 + 自动 PUSH data 提取。"""
+    """EVM 字节码解析 - 返回 op 列表 + 自动 PUSH data 提取。"""
 
     def __init__(self, bytecode: bytes):
         self.raw = bytecode

@@ -186,10 +186,16 @@ class ConstraintExtractor:
         return mods
 
 
-from .rule_hardener import (
-    EvasionGapAnalyzer, RuleHardener,
-    analyze_rule_evasion_surface, batch_harden_rules,
-)
+# 懒加载: 与 rule_hardener 互相引用, 延迟到属性访问 (PEP 562)
+def __getattr__(name):
+    if name in ("EvasionGapAnalyzer", "RuleHardener",
+                "analyze_rule_evasion_surface", "batch_harden_rules"):
+        from .rule_hardener import (
+            EvasionGapAnalyzer, RuleHardener,
+            analyze_rule_evasion_surface, batch_harden_rules,
+        )
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [

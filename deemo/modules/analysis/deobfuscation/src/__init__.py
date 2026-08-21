@@ -1,6 +1,5 @@
-# 2026-07-24
-# 去混淆 module - lazy loading 入口
-# INTJ策略: __getattr__ lazy loading chosen over eager __init__.py imports
+# Deobfuscation module - lazy loading entry point
+# 策略: __getattr__ lazy loading chosen over eager __init__.py imports
 # 因为本模块包含多个重型依赖(radare2/capstone),延迟加载可将CLI冷启动从2.3s降到0.4s
 # 且大多数用户每次只使用一个子功能,不需要一次性加载所有模块
 

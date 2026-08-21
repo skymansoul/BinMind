@@ -1,4 +1,4 @@
-"""移动端——核心模块测试"""
+"""移动端: 核心模块测试"""
 import pytest
 import os
 import sys

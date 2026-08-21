@@ -1,7 +1,7 @@
-﻿# 路径敏感逐路径大小解析——用支配性守卫约束解析未知拷贝大小
+# 路径敏感逐路径大小解析: 用支配性守卫约束解析未知拷贝大小
 # 误报根源: copy_size解析为TOP(未知)→"约束未知→保守保留"→FP
 # 典型: malloc(N); if(len>N) return; memcpy(buf,in,len)
-#   ——len上界=支配性cmp+jcc守卫给出的N, 实际不可能溢出
+#   len上界=支配性cmp+jcc守卫给出的N, 实际不可能溢出
 #
 # 方法: 守卫约束在sink的支配基本块上→对所有到达sink的路径生效
 #   (1)溯源copy_size→栈槽/参数键 (2)计算sink基本块的支配集
@@ -22,7 +22,6 @@ from dataclasses import dataclass
 
 from .param_size_equality import ParamSizeEquality
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 _NON_REG = {'qword','dword','word','byte','ptr','xmmword'}
@@ -47,7 +46,7 @@ class PathSizeResult:
 
 
 class PathSizeResolver:
-    """路径敏感大小解析器——支配性守卫约束求解拷贝上界"""
+    """路径敏感大小解析器: 支配性守卫约束求解拷贝上界"""
 
     def __init__(self, max_paths: int = 64):
         self._max_paths = max_paths
@@ -58,7 +57,7 @@ class PathSizeResolver:
                                  bb_boundaries: List[Tuple[int, int]],
                                  cfg_edges: List[Tuple[int, int]],
                                  abi: str = 'auto') -> PathSizeResult:
-        """解析copy_size的全局上界——所有支配路径守卫的紧上界"""
+        """解析copy_size的全局上界: 所有支配路径守卫的紧上界"""
         sink_bb = self._bb_of(instructions, copy_idx, bb_boundaries)
         if sink_bb is None:
             return PathSizeResult(None)
@@ -100,7 +99,7 @@ class PathSizeResolver:
     def _bb_guard_upper(self, instructions, bb_boundaries, bb,
                         sink_bb, cfg_edges, key) -> Optional[int]:
         """提取基本块末尾条件分支产生的size上界(若存在)。
-        方向性: 根据"通向sink的分支边"判定约束——taken边用jle/jbe,
+        方向性: 根据"通向sink的分支边"判定约束, taken边用jle/jbe,
         fall-through边用jg/ja; 选错边会导致误杀真漏洞
         """
         if bb >= len(bb_boundaries):
@@ -122,7 +121,7 @@ class PathSizeResolver:
             sink_via_taken, sink_via_fall = self._sink_branch_side(
                 bb, sink_bb, cfg_edges, bb_boundaries)
             if sink_via_taken == sink_via_fall:
-                continue  # 分支边不唯一/无信息——保守跳过
+                continue  # 分支边不唯一/无信息, 保守跳过
             bound = self._guard_bound(operands, jcc, key, sink_via_taken)
             if bound is not None:
                 return bound
@@ -132,7 +131,7 @@ class PathSizeResolver:
     def _sink_branch_side(bb: int, sink_bb: int, cfg_edges,
                           bb_boundaries) -> Tuple[bool, bool]:
         """判定通向sink的分支边: (经跳转taken, 经fall-through)。
-        基于CFG后继可达性——跳转边=非顺序后继, fall-through=顺序后继
+        基于CFG后继可达性, 跳转边=非顺序后继, fall-through=顺序后继
         """
         succs = {v for (s, v) in cfg_edges if s == bb and v != bb}
         fall_bb = PathSizeResolver._fallthrough_bb(bb, bb_boundaries)
@@ -267,7 +266,7 @@ class PathSizeResolver:
 
     @staticmethod
     def _dominates(bb_boundaries, cfg_edges) -> Dict[int, Set[int]]:
-        """计算每个基本块的支配者集合——删点可达性 O(V·(V+E))"""
+        """计算每个基本块的支配者集合: 删点可达性 O(V·(V+E))"""
         # TODO: 大函数(>500基本块)改用迭代数据流/Lengauer-Tarjan, 当前O(V^2)在极端CFG上偏慢
         n = len(bb_boundaries)
         adj = defaultdict(list)
@@ -305,7 +304,7 @@ class PathSizeResolver:
         return dom
 
 
-# 按ABI的size寄存器——与param_size_equality保持一致
+# 按ABI的size寄存器, 与param_size_equality保持一致
 _WIN_SIZE_REG = {'memcpy':'r8','memmove':'r8','strncpy':'r8','snprintf':'rdx',
                  'read':'r8','recv':'r8','fread':'rdx'}
 _LINUX_SIZE_REG = {'memcpy':'rdx','memmove':'rdx','strncpy':'rdx','snprintf':'rsi',

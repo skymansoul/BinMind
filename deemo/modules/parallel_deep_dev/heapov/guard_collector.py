@@ -8,11 +8,11 @@ memcpy 安全的通用模式, 也是误报过滤的核心守卫信号。
 
 from typing import Dict, List
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Const, Var, Binary, Neg, Call,
 )
-from heapov import cparser as cp
-from heapov.model import GuardConstraint
+from . import cparser as cp
+from .model import GuardConstraint
 
 _CMP = frozenset(['<', '<=', '>', '>=', '==', '!='])
 

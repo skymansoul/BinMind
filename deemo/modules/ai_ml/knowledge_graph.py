@@ -39,8 +39,8 @@ class VulnKnowledgeGraph(BaseGraphOps):
     def __init__(self, name="vuln_kg"):
         super().__init__(name)
 
-    # 2026-07-25: Centrality analysis — identify the most critical hub nodes
-    # in a vulnerability knowledge 图.
+    # Centrality analysis — identify the most critical hub nodes
+    # in a vulnerability knowledge graph.
     # 度中心性: C_D(v) = deg(v) / (N-1), 度量局部影响力
     # 介数中心性: 经过节点的最短路径比例,
     # Brandes算法(unweighted), measures bridging capacity
@@ -168,9 +168,9 @@ class VulnKnowledgeGraph(BaseGraphOps):
 
         return result[:top_n]
 
-    # 2026-07-25: Graph differential comparison — for vulnerability data version tracking.
+    # Graph differential comparison — for vulnerability data version tracking.
     # Returns added/removed/modified entities and relations, enabling
-    # audit trails and 回归 检测 across 图 snapshots.
+    # audit trails and regression detection across graph snapshots.
 
     def diff(self, other: 'VulnKnowledgeGraph') -> Dict[str, Any]:
         """Compare this graph (baseline) with another graph (incoming).

@@ -1,4 +1,4 @@
-# 合并完整对比数据——将O0实测(OurMethod+Angr)与O3 OurMethod及Ghidra/QEMU文献估计
+# 合并完整对比数据: 将O0实测(OurMethod+Angr)与O3 OurMethod及Ghidra/QEMU文献估计
 # 汇总为最终 eval/benchmark_results.csv + benchmark_summary.json
 # 输入: 现有CSV(OurMethod O0 + Angr O0 实测) + O3 OurMethod实测
 import csv, json, sys, subprocess

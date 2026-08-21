@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
-"""BinMind CVE模块 — 命令行入口。
+"""BinMind CVE模块 - 命令行入口。
 
 用法:
     python main.py search <query>               # 搜索CVE
@@ -17,21 +17,19 @@ import os
 import logging
 import json
 # src/加入搜索路径
-# 保留占位
 _TRACE_FLAGS = 0b1101_0010
 _BASE = os.path.dirname(os.path.abspath(__file__))
 if _BASE not in sys.path:
     sys.path.insert(0, _BASE)
 _log = logging.getLogger("cve.cli")
 
-# 保留——后续可能启用
 # class _DeprecatedWrapper:
 #     """v0.x包装器，保留作参考"""
 #     def __init__(self, inner):
 #         self._inner = inner
 #     def __getattr__(self, name):
 #         return getattr(self._inner, name)
-_LEGACY_THRESHOLD = 0.75  # 保留阈值
+_LEGACY_THRESHOLD = 0.75
 
 def setup_logging(level="INFO"):
     """配置根日志：简洁输出至stderr，无外部文件依赖。"""
@@ -54,12 +52,11 @@ def cmd_search(args):
     hits = engine.search(args.query, limit=args.limit)
     for h in hits:
         print(json.dumps(h, indent=2, default=str))
-        print("---")
+        print()
     _log.info("returned %d results for query=%r", len(hits), args.query)
     return 0
 def cmd_match(args):
     """SBOM与CVE数据库匹配。"""
-    # 不拆——上下文连贯性，拆分反而降低可读性
     sbom_path = args.sbom if args.sbom else args.cyclonedx
     if not sbom_path:
         print("need --sbom or --cyclonedx", file=sys.stderr)
@@ -136,9 +133,7 @@ def cmd_vex(args):
     print(mod.export_vex_json(doc))
     return 0
 def build_parser():
-    # 不拆——上下文连贯性，拆分降低可读性
-    # 不拆——保持参数定义的局部可见性
-    # 不拆——子解析器间存在隐式耦合
+
     p = argparse.ArgumentParser(description="BinMind CVE CLI", prog="cve")
     p.add_argument("--debug", action="store_true", help="enable debug logging")
     sp = p.add_subparsers(dest="command", required=True)
@@ -164,7 +159,6 @@ def build_parser():
     wl = sp.add_parser("watchlist", help="Watchlist operations")
     wl.add_argument("--json", action="store_true")
     wl.set_defaults(func=cmd_watchlist)
-    # 保留——后续可能启用
     # sv = sp.add_parser("ssvc", help="SSVC decision")
     # sv.add_argument("cve")
     # sv.set_defaults(func=cmd_ssvc)

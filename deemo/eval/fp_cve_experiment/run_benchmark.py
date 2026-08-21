@@ -38,7 +38,7 @@ def peak_mem_mb() -> float:
         pass
     try:
         import psutil
-        return psutil.Process().memory_info().peak_wset / (1024 * 1024)(1024 * 1024)
+        return psutil.Process().memory_info().peak_wset / (1024 * 1024)
     except Exception:
         return 0.0
 
@@ -124,7 +124,7 @@ def main():
         tr = [r for r in rows if r['tool'] == tool]
         if not tr:
             continue
-        tp = sum(1 for r in tr if r['expected_vuln'] and r['fn_count'] == '0')
+        tp = sum(1 for r in tr if r['expected_vuln'] and r['fn_count'] == 0)
         fn = sum(r['fn_count'] for r in tr)
         fp = sum(r['fp_count'] for r in tr)
         tn = sum(1 for r in tr

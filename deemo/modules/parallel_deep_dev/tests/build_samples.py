@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from backends import CLASS_ROOTS
+from .backends import CLASS_ROOTS
 
 OLEVELS = ['-O0', '-O2', '-Os']
 

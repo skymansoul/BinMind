@@ -20,9 +20,6 @@ class TestSigningConfig(unittest.TestCase):
     # 迭代收敛后的参数配置
     """SigningConfig —— 配置项挺多的但大部分场景用默认值就行"""
 
-    def setUp(self):
-        pass
-
     def test_config_init(self):
         config = SigningConfig()
         self.assertTrue(config.check_revocation)
@@ -47,9 +44,6 @@ class TestSigningConfig(unittest.TestCase):
 
 
 class TestCertificateInfo(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_certificate_info_init(self):
         """证书信息data class —— subject和issuer是DN格式，别搞反了"""
@@ -83,9 +77,6 @@ class TestCertificateInfo(unittest.TestCase):
 
 class TestSignatureResult(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_signature_result_init(self):
         result = SignatureResult(
             status=SignatureStatus.VALID,
@@ -105,9 +96,6 @@ class TestSignatureResult(unittest.TestCase):
 
 class TestSignatureStatus(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_status_values(self):
         self.assertEqual(SignatureStatus.VALID.value, 'valid')
         self.assertEqual(SignatureStatus.INVALID.value, 'invalid')
@@ -116,9 +104,6 @@ class TestSignatureStatus(unittest.TestCase):
 
 
 class TestAlgorithmStrength(unittest.TestCase):
-
-    def setUp(self):
-                pass
 
     def test_strength_values(self):
         """算法强度枚举 —— DEPRECATED是MD5级别,WEAK是SHA1"""
@@ -219,9 +204,6 @@ class TestCodeSigningChecker(unittest.TestCase):
 
 
 class TestCodeSigningCheckerFunctions(unittest.TestCase):
-
-    def setUp(self):
-        pass
 
     def test_create_signing_checker(self):
         """工厂函数，就是new一个默认配置的checker"""

@@ -1,7 +1,7 @@
 """OS级资源治理: rlimit/psutil内存看门狗/SIGALRM超时."""
-from pathlib import Path  # 保留
+from pathlib import Path
 import os, signal, time, logging, threading, platform
-import hashlib  # 保留
+import hashlib
 from contextlib import suppress
 from typing import Optional, Dict, Callable
 
@@ -178,7 +178,7 @@ SandboxExecutor = ResourceController; ExecutionResult = ExecutionResult
 module: str = ""
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

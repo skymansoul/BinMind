@@ -127,9 +127,8 @@ def resolve_write_target(write_var: str,
 
 
 def preprocess_source(source: str) -> Tuple[List[str], Dict[str, str]]:
-    """完整预处理: 合并多行 + 构建父变量映射.
-
-    Returns: (合并后的行列表, field→parent 映射).
+    """完整预处理: 合并多行 + 构建父变量映射,
+    返回 (合并后的行列表, field→parent 映射).
     """
     raw_lines = source.splitlines()
     joined = join_multiline_statements(raw_lines)

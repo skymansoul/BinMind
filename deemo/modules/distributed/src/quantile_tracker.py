@@ -1,19 +1,18 @@
-# 创建: 2026-07-05
-# 修改: 2026-07-05 — 基础梯度分位数替换为 t-digest 算法
+# 基础梯度分位数替换为 t-digest 算法
 #
-# t-digest 合并式分位数追踪 — 极端分位数的可合并精确估计
+# t-digest 合并式分位数追踪 - 极端分位数的可合并精确估计
 #
-# 增量梯度下降分位数 (旧版) 在 P99+ 极端分位数上收敛极慢——尾部观测
+# 增量梯度下降分位数 (旧版) 在 P99+ 极端分位数上收敛极慢-尾部观测
 # 稀疏导致梯度信号弱。t-digest (Dunning 2019, "Computing Extremely
 # Accurate Quantiles Using t-Digests") 用自适应聚类解决此问题:
 # 观测值按"接近度"聚合为质心 (cluster)
-# 聚类密度 ∝ 1/(q·(1-q)) — 尾部聚类更密 → 极端分位更准
+# 聚类密度 ∝ 1/(q·(1-q)) - 尾部聚类更密 -> 极端分位更准
 #   - 合并式 (mergeable): 两个 t-digest 合并 = 质心集求和 + 重聚类
-#     这一性质使 t-digest 适合分布式聚合——各节点维护本地 digest,
+#     这一性质使 t-digest 适合分布式聚合-各节点维护本地 digest,
 #     定期合并得到全局分位数，无需传输全部原始数据。
 #
 # 本实现的特化:
-# 质心数上限可配, 默认 100 → ~4KB 内存
+# 质心数上限可配, 默认 100 -> ~4KB 内存
 # 增量 add() O(log C), 合并 O(C log C), C=质心数
 # 精度保证: 对任意 q∈[0.01, 0.99], 相对误差 ≤ 0.5%;
 #     对 q∈[0.001, 0.999], 误差 ≤ 2% (经验值, 依赖压缩参数)
@@ -36,7 +35,7 @@ class TDigest:
     """
 
     def __init__(self, delta: int = 100):
-        self._delta = delta          # 压缩参数 — 越大越准, 内存越多
+        self._delta = delta          # 压缩参数 - 越大越准, 内存越多
         self._centroids: List[Tuple[float, int]] = []  # [(mean, weight)]
         self._total_weight: float = 0.0
         self._n_merged: int = 0
@@ -53,7 +52,7 @@ class TDigest:
             self._centroids.insert(idx, (value, weight))
         else:
             self._centroids.append((value, weight))
-        # 超过容量限制 → 压缩
+        # 超过容量限制 -> 压缩
         if len(self._centroids) > self._delta * 2:
             self._compress()
 
@@ -105,7 +104,7 @@ class TDigest:
         self._centroids = new_centroids
 
     def merge(self, other: "TDigest") -> "TDigest":
-        """合并两个 t-digest — O(C log C)。"""
+        """合并两个 t-digest - O(C log C)。"""
         result = TDigest(self._delta)
         result._centroids = sorted(
             self._centroids + other._centroids, key=lambda x: x[0]
@@ -120,7 +119,7 @@ class TDigest:
         return len(self._centroids)
 
     def cdf(self, value: float) -> float:
-        """P(X ≤ value) 的估计 — 累积分布函数。"""
+        """P(X ≤ value) 的估计 - 累积分布函数。"""
         if not self._centroids or self._total_weight <= 0:
             return 0.0
         cum = 0.0

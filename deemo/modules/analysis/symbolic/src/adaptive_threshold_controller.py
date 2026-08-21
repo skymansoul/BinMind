@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-07-19 13:14 - 增加 hysteresis band 防抖机制
-# 2025-07-22 10:37 - 引入 integral accumulator，解决稳态误差问题
-# 2025-07-26 15:03 - 增加 converg detector，长期稳定后冻结阈值
+# 增加 hysteresis band 防抖机制
+# 引入 integral accumulator，解决稳态误差问题
+# 增加 converg detector，长期稳定后冻结阈值
 
 """带滞环防抖的自适应阈值控制器
 
@@ -10,14 +9,14 @@ path_diversity_core.py 中的 _auto_adjust_threshold 是比例控制器：
 探索速度 > 5/s → 升阈值 0.02
 
 比例控制在 23 个离散状态上运作（阈值 0.50-0.95，step 0.02）
-当探索速度在 0.4-0.6 间振荡时——交替循环的程序容易触发——
+当探索速度在 0.4-0.6 间振荡时--交替循环的程序容易触发--
 阈值在相邻两值间跳变，导致簇边界反复移动，增加不必要的重聚类开销
 
 本模块提供 PID 风格的阈值控制器，叠加在原有控制器之上：
 a. Hysteresis band: 进入新阈值后，只有探索速度持续偏离超过 band 宽度
 才允许再次改变，防止阈值在相邻值间跳动
 b. Integral accumulator: 累积历史偏差，消除比例控制无法解决的稳态误差
-（如探索速度稳定在 0.45/s——比例控制不会调整，积分项会）
+（如探索速度稳定在 0.45/s--比例控制不会调整，积分项会）
 c. Dead zone: 速度在 [target_low, target_high] 内时不做任何调整
 d. Converg detector: 连续 N 次无需调整后冻结阈值，节省计算
 e. Sigmoid 压缩: 将阈值调整量映射到 [-0.04, +0.04]，比固定步长 ±0.02 更精细
@@ -25,7 +24,7 @@ e. Sigmoid 压缩: 将阈值调整量映射到 [-0.04, +0.04]，比固定步长 
 ref: KLEE 的启发式搜索策略无阈值自适应
 ref: DiversePath 使用固定阈值，未涉及自适应调整
 本模块的比例-积分结构受工业 PID 控制器的积分项启发，但应用于符号执行的
-路径多样性管理场景是新的——离散阈值空间中的滞环控制
+路径多样性管理场景是新的--离散阈值空间中的滞环控制
 """
 
 import math
@@ -48,7 +47,7 @@ class ControllerState:
 
 class OscillationDampedController:
     """滞环防抖 + 积分项 + 收敛检测的阈值控制器
-    
+
     使用模式：
     controller = OscillationDampedController(initial_threshold=0.80)
     对每个 epoch:
@@ -81,7 +80,7 @@ class OscillationDampedController:
 
     def adjust(self, exploration_velocity: float) -> float:
         """根据当前探索速度计算新阈值
-        
+
         返回调整后的阈值（可能与输入相同，表示无需调整）
         """
         state = self._state
@@ -102,16 +101,16 @@ class OscillationDampedController:
 
         state.consecutive_stable = 0
 
-        # 计算偏差——用对数缩放避免高低速度区间的不对称
+        # 计算偏差--用对数缩放避免高低速度区间的不对称
         if exploration_velocity < self._target_low:
             raw_error = exploration_velocity - self._target_low  # 负值
         else:
             raw_error = exploration_velocity - self._target_high  # 正值
 
-        # Sigmoid 压缩误差——大偏差时调整幅度饱和而非线性增长
+        # Sigmoid 压缩误差--大偏差时调整幅度饱和而非线性增长
         compressed_error = 0.04 * (2.0 / (1.0 + math.exp(-raw_error)) - 1.0)
 
-        # 积分项更新——带 anti-windup
+        # 积分项更新--带 anti-windup
         state.integral_accumulator += compressed_error * 0.1
         state.integral_accumulator = max(-self._integral_limit,
                                          min(self._integral_limit,
@@ -126,13 +125,13 @@ class OscillationDampedController:
         direction = 1 if adjustment > 0 else (-1 if adjustment < 0 else 0)
         if state.last_adjustment_direction != 0 and direction != 0:
             if direction != state.last_adjustment_direction:
-                # 方向翻转——上一次刚调整完又反向，记录振荡
+                # 方向翻转--上一次刚调整完又反向，记录振荡
                 state.oscillation_count += 1
                 # 连续振荡时扩大 band 以增强阻尼
                 effective_band = self._hysteresis_band * (
                     1.0 + 0.5 * min(state.oscillation_count, 6))
                 if abs(adjustment) < effective_band * 0.02:
-                    # 调整量太小且在振荡——忽略此次调整
+                    # 调整量太小且在振荡--忽略此次调整
                     return threshold
 
         if abs(adjustment) < 0.005:
@@ -179,7 +178,7 @@ class OscillationDampedController:
         return max(0.0, 1.0 - oscillation_ratio)
 
     def get_diagnostics(self) -> dict:
-        """返回诊断信息——供外部仪表板或日志"""
+        """返回诊断信息--供外部仪表板或日志"""
         s = self._state
         return {
             'current_threshold': s.current_threshold,

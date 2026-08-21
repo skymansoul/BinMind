@@ -1,4 +1,4 @@
-"""CVE 模块 — 懒加载子包"""
+"""CVE 模块 - 懒加载子包"""
 # 重型模块 (cve_epss、cve_exploitdb、cve_kev) 按需加载，
 # 避免 import 时触发网络请求
 
@@ -21,7 +21,6 @@ def __getattr__(name: str):
       "ExploitDBClient": ".src.cve_exploitdb",
       "ExploitMaturity": ".src.cve_exploitdb",
       "get_exploitdb": ".src.cve_exploitdb",
-      # 保留 — 后续可能启用
       # "detect_poc_from_urls": ".src.cve_exploitdb",
       # "maturity_from_score_and_sources": ".src.cve_exploitdb",
       "KEVClient": ".src.cve_kev",

@@ -3,11 +3,12 @@ import logging
 import math
 import os
 import re
+import subprocess
 import time as _time_mod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Optional, Tuple
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,6 @@ class ObfuscationDetector:
 
     def detect(self, binary_path: str, func_name: str) -> Tuple[ObfuscationKind, float]:
         try:
-            import subprocess
             r = subprocess.run(
                 ['r2', '-q', '-c', f'pdf @ {func_name}; q', binary_path],
                 capture_output=True, text=True, timeout=self.DEFAULT_TIMEOUT,
@@ -169,7 +169,6 @@ class ObfuscationDetector:
 
     def detect_compiler(self, binary_path: str) -> str:
         try:
-            import subprocess
             r = subprocess.run(
                 ['r2', '-q', '-c', 'pD 2000 @@f; q', binary_path],
                 capture_output=True, text=True, timeout=self.DEFAULT_TIMEOUT,
@@ -208,7 +207,6 @@ class RecoveryScorer:
         return min(max(score, self.MIN_SCORE), self.MAX_SCORE)
 
     def _entropy(self, s: str) -> float:
-        from collections import Counter
         if not s:
             return 0.0
         cnt = Counter(s)
@@ -216,7 +214,7 @@ class RecoveryScorer:
         return -sum((c / n) * math.log2(c / n) for c in cnt.values())
 
 
-# 持久化策略有效性存储 —— 跨会话学习
+# 持久化策略有效性存储 - 跨会话学习
 # 将每次运行的策略效果存入 JSON，下次运行时用历史数据调整
 # 预期恢复率。使用指数衰减权重（最近 10 次会话权重更高）
 

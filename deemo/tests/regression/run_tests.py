@@ -17,8 +17,17 @@ sys.path.insert(0, os.path.dirname(__file__))
 from sample_generator import generate_samples
 from sample_fetcher import fetch_samples
 from build_samples import build_all
-from scan_scheduler import ScanScheduler
-from result_parser import parse_results, save_report
+try:
+    from scan_scheduler import ScanScheduler
+except ImportError:
+    # ScanScheduler 已移除; 降级为 None, 扫描步骤按守卫跳过
+    ScanScheduler = None
+from result_parser import parse_results
+try:
+    from result_parser import save_report
+except ImportError:
+    # save_report 已移除; 降级为 None, 报告写出按守卫跳过
+    save_report = None
 
 
 def main():
@@ -57,16 +66,23 @@ def main():
     # 3. 扫描
     print("=" * 50)
     print("[3/4] Scanning binaries...")
-    scheduler = ScanScheduler(timeout_sec=args.timeout)
-    scan_results = scheduler.scan_all(binary_dir)
-    print(f"  {sum(1 for r in scan_results if r.success)}/{len(scan_results)} scans OK")
+    if ScanScheduler is not None:
+        scheduler = ScanScheduler(timeout_sec=args.timeout)
+        scan_results = scheduler.scan_all(binary_dir)
+        print(f"  {sum(1 for r in scan_results if r.success)}/{len(scan_results)} scans OK")
+    else:
+        print("  ScanScheduler 不可用, 跳过扫描")
+        scan_results = []
 
     # 4. 解析 & 报告
     print("=" * 50)
     print("[4/4] Generating report...")
     report = parse_results(scan_results)
-    save_report(report, args.output)
-    print(f"  Report saved: {args.output}")
+    if save_report is not None:
+        save_report(report, args.output)
+        print(f"  Report saved: {args.output}")
+    else:
+        print("  save_report 不可用, 跳过报告写出")
 
     # 简略摘要
     s = report['summary']

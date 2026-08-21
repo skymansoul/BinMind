@@ -1,32 +1,29 @@
 # coding: utf-8
-# 创建: 2026-05-20  |  去重引擎
-# 修改: 2026-05-20  |  审计后补充文件头与错误处理
-#
 """
-崩溃状态语义分析——去重与聚类引擎。
+崩溃状态语义分析-去重与聚类引擎。
 
 基于寄存器状态嵌入的语义相似度, 将根因相同的崩溃聚类,
 产出去重后的唯一崩溃列表+每簇的根因分类+利用性评估。
 
-聚类算法: 贪心凝聚聚类——无需预设簇数K, 自适应相似度阈值。
+聚类算法: 贪心凝聚聚类-无需预设簇数K, 自适应相似度阈值。
   1. 初始每崩溃独立成簇
   2. 迭代合并余弦相似度>阈值的最近邻簇对
   3. 更新质心为簇成员的向量均值
   4. 收敛至无簇对可合并
 
 复杂度: O(N²)最坏(N=崩溃数), N≤1000时秒级完成。
-阈值: 0.85(同根因)/0.65(可能同根因)——基于实证调参。
+阈值: 0.85(同根因)/0.65(可能同根因)-基于实证调参。
 
 与fuzzing_orchestrator.CrashTriager的集成:
-  CrashTriager: 入门级去重(栈哈希→是否同一崩溃路径)
-  CssaDedupEngine: 专家级去重(状态嵌入→是否同一根因类型)
+  CrashTriager: 入门级去重(栈哈希-是否同一崩溃路径)
+  CssaDedupEngine: 专家级去重(状态嵌入-是否同一根因类型)
   互补: Triager做快速初筛, Cssa引擎做精确根因归类
 """
 
 import math
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List
 
 from .cssa_corruption_classifier import (
     CrashState, CorruptionType, CorruptionClassification, CorruptionClassifier,
@@ -56,12 +53,12 @@ class DedupResult:
 
 
 class CssaDedupEngine:
-    """崩溃语义去重引擎——嵌入+聚类+根因归类全链路。
+    """崩溃语义去重引擎-嵌入+聚类+根因归类全链路。
 
     使用示例:
         engine = CssaDedupEngine()
         result = engine.deduplicate(crashes=[CrashState(...), ...])
-        print(f"去重: {result.total_crashes}→{result.unique_root_causes}个根因")
+        print(f"去重: {result.total_crashes}-{result.unique_root_causes}个根因")
     """
 
     def __init__(self,
@@ -74,7 +71,7 @@ class CssaDedupEngine:
 
     def deduplicate(self, crashes: List[CrashState]
                      ) -> DedupResult:
-        """对崩溃列表执行语义去重——嵌入→相似度→聚类→分类。
+        """对崩溃列表执行语义去重-嵌入-相似度-聚类-分类。
 
         返回DedupResult含去重簇、根因统计、利用性优先级。
         """
@@ -90,7 +87,7 @@ class CssaDedupEngine:
         # 聚类
         clusters = self._agglomerative_cluster(embeddings)
 
-        # 对每簇做统一的根因分类——取成员中置信度最高的分类
+        # 对每簇做统一的根因分类-取成员中置信度最高的分类
         dedup_clusters = []
         for cluster in clusters:
             # 取代表崩溃(最接近质心)
@@ -112,7 +109,7 @@ class CssaDedupEngine:
             ct = dc.dominant_corruption_type
             type_counts[ct] = type_counts.get(ct, 0) + 1
 
-        # 利用性排序——高利用性根因优先
+        # 利用性排序-高利用性根因优先
         high_exploit_types = {CorruptionType.STACK_OVERFLOW,
                               CorruptionType.USE_AFTER_FREE,
                               CorruptionType.HEAP_OVERFLOW}
@@ -131,12 +128,12 @@ class CssaDedupEngine:
 
     def _agglomerative_cluster(self, embeddings: List[CrashEmbedding]
                                 ) -> List[DedupCluster]:
-        """贪心凝聚聚类——迭代合并最相似簇对。
+        """贪心凝聚聚类-迭代合并最相似簇对。
 
         终止条件: 无簇对的相似度超过阈值。
         """
         n = len(embeddings)
-        # 初始化——每嵌入独立成簇
+        # 初始化-每嵌入独立成簇
         clusters = [DedupCluster(
             cluster_id=f"tmp_{i}",
             centroid=list(emb.vector),
@@ -175,7 +172,7 @@ class CssaDedupEngine:
     def _find_representative(self, cluster: DedupCluster,
                                embeddings: List[CrashEmbedding]
                                ) -> CrashEmbedding:
-        """找到簇中最接近质心的成员——作为代表崩溃"""
+        """找到簇中最接近质心的成员-作为代表崩溃"""
         best_sim = -1.0
         best_emb = None
         for emb in embeddings:

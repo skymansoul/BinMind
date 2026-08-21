@@ -1,11 +1,11 @@
 """
-帕累托最优补丁选择 -- NSGA-II多目标优化在传播图补丁策略中的应用.
+ 帕累托最优补丁选择 - NSGA-II多目标优化在传播图补丁策略中的应用.
 
 三目标:最大化风险降幅,最小化补丁成本,最小化运维影响.
 首次将NSGA-II非支配排序+counterfactual适应度+层特定成本模型联合应用.
 
 ref: Deb et al. "A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II".
-ref: CyGATE -- 博弈论补丁优化,最接近的已有工作.
+ref: CyGATE - 博弈论补丁优化,最接近的已有工作.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class PatchCandidate:
-    """单个补丁候选----传播图中的一个可修复节点."""
+    """单个补丁候选, 传播图中的一个可修复节点."""
     node_id: str
     layer: PlatformLayer
     cost: float           # 补丁成本 (0-1归一化)
@@ -30,7 +30,7 @@ class PatchCandidate:
 
 @dataclass
 class PatchSolution:
-    """一个补丁方案----选中的节点子集及其评估指标."""
+    """一个补丁方案, 选中的节点子集及其评估指标."""
     selected_nodes: List[str]
     risk_reduction: float      # 总风险降幅 (应最大化)
     total_cost: float           # 总成本 (应最小化)
@@ -124,7 +124,7 @@ class NSGA2PatchOptimizer:
                 for sol in front:
                     sol.rank = rank
 
-        # 最终非支配排序----返回 Pareto 前沿
+        # 最终非支配排序, 返回 Pareto 前沿
         final_fronts = self._non_dominated_sort(population)
         for sol in final_fronts[0]:
             sol.rank = 0
@@ -167,7 +167,7 @@ class NSGA2PatchOptimizer:
 
     def _non_dominated_sort(self, population: List[PatchSolution]
                             ) -> List[List[PatchSolution]]:
-        """Deb的快速非支配排序 -- O(M·N²),M=3个目标."""
+        """Deb的快速非支配排序 - O(M·N²),M=3个目标."""
         dominated_by: Dict[int, Set[int]] = defaultdict(set)
         dominates_count: Dict[int, int] = defaultdict(int)
         fronts: List[List[int]] = [[]]
@@ -201,7 +201,7 @@ class NSGA2PatchOptimizer:
 
     @staticmethod
     def _dominates(a: PatchSolution, b: PatchSolution) -> bool:
-        """a支配b:a在所有目标上不差于b,且至少一个目标严格优于b.
+        """a支配b: a在所有目标上不差于b,且至少一个目标严格优于b.
 
         目标方向:risk_reduction最大化 -> 取负转最小化
                    cost最小化,impact最小化
@@ -216,7 +216,7 @@ class NSGA2PatchOptimizer:
         return better
 
     def _crowding_distance(self, front: List[PatchSolution]) -> None:
-        """拥挤距离----每目标边界解=inf,内部解按归一化目标差累加."""
+        """拥挤距离: 每目标边界解=inf,内部解按归一化目标差累加."""
         for sol in front:
             sol.crowding_distance = 0.0
         if len(front) <= 2:
@@ -252,7 +252,7 @@ class NSGA2PatchOptimizer:
 
     def _crossover(self, p1: PatchSolution, p2: PatchSolution
                    ) -> Tuple[PatchSolution, PatchSolution]:
-        """均匀交叉----每个基因位50%概率从父代之一继承."""
+        """均匀交叉: 每个基因位50%概率从父代之一继承."""
         s1 = set(p1.selected_nodes)
         s2 = set(p2.selected_nodes)
         child1: Set[str] = set()
@@ -270,7 +270,7 @@ class NSGA2PatchOptimizer:
         return self._make_solution(child1), self._make_solution(child2)
 
     def _mutate(self, sol: PatchSolution) -> None:
-        """逐位变异----每位以 1/n 概率翻转."""
+        """逐位变异: 每位以 1/n 概率翻转."""
         current = set(sol.selected_nodes)
         all_nodes = [c.node_id for c in self._candidates]
         for nid in all_nodes:

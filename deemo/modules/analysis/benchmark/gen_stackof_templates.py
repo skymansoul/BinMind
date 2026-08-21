@@ -1,7 +1,6 @@
 # 栈溢出基准测试模板生成器 (Stack Overflow Benchmark Templates)
 # 12个CVE复现样本: O0/O2/Os × 12 = 36个二进制.
 # v1: asm barrier反优化, 保持O2/Os下的漏洞函数体存活.
-# 创建: 2026-04-17
 
 SAMPLE_DEFS = [
     ("CVE-2014-9322", "cve_2014_9322_badiret", "gets(stack_buf) 无界读取", "gets"),
@@ -70,7 +69,7 @@ def get_template(pattern: str, safe_name: str) -> str:
     """返回给定溢出模式的C源码."""
     S = _SINK
 
-    # 1. gets — 无界读取
+    # 1. gets - 无界读取
     if pattern == "gets":
         vuln = _vuln(safe_name, pattern, [
             _CLOBBER,
@@ -90,7 +89,7 @@ def get_template(pattern: str, safe_name: str) -> str:
         ])
         return f'{S}\n\n{vuln}\n{safe}\n{_main(safe_name)}'
 
-    # 2. strcpy — 无界拷贝
+    # 2. strcpy - 无界拷贝
     if pattern == "strcpy":
         vuln = _vuln(safe_name, pattern, [
             _CLOBBER,
@@ -110,7 +109,7 @@ def get_template(pattern: str, safe_name: str) -> str:
         ])
         return f'{S}\n\n{vuln}\n{safe}\n{_main(safe_name)}'
 
-    # 3. sprintf — 无界格式化
+    # 3. sprintf - 无界格式化
     if pattern == "sprintf":
         vuln = _vuln(safe_name, pattern, [
             _CLOBBER,
@@ -243,7 +242,7 @@ def get_template(pattern: str, safe_name: str) -> str:
         ])
         return f'{S}\n\n{vuln}\n{safe}\n{_main(safe_name)}'
 
-    # 10. loop_copy — CVE-2019-9213: 循环拷贝后off-by-one写null终止符
+    # 10. loop_copy - CVE-2019-9213: 循环拷贝后off-by-one写null终止符
     #  模拟: while循环计数漏-1 → memcpy(buf,src,sizeof(buf)) 然后 buf[sizeof(buf)]=0
     if pattern == "loop_copy":
         vuln = _vuln(safe_name, pattern, [

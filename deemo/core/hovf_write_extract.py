@@ -1,5 +1,5 @@
 """
-HOVF 指针算术写入通道 — 补齐强类型解引用写入、数组索引写入与带偏移库拷贝的候选提取。
+HOVF 指针算术写入通道 - 补齐强类型解引用写入、数组索引写入与带偏移库拷贝的候选提取。
 只负责提取 (alloc, write) 候选对, 不做溢出判定; 判定由 hovf_engine 完成。
 """
 
@@ -9,22 +9,8 @@ from typing import List, Optional, Tuple
 from core.heap_overflow_detector import (
     HeapAllocSite, HeapStore, HeapOverflowCandidate,
 )
-_CAST_DEREF_RE = re.compile(
-    r'\*\s*\(\s*((?:un)?signed\s+)?[a-z_]\w*\s*\*+\s*\)\s*'
-    r'\(\s*(\w+)\s*\+\s*([^)]+?)\s*\)\s*=')
-_CAST_SIMPLE_RE = re.compile(
-    r'\*\s*\(\s*((?:un)?signed\s+)?[a-z_]\w*\s*\*+\s*\)\s*(\w+)\s*=')
-# 无类型解引用: *(buf + 72) = ... / *buf = ...
-_PLAIN_OFF_RE = re.compile(r'\*\s*\(\s*(\w+)\s*\+\s*([^)]+?)\s*\)\s*=')
-_PLAIN_SIMPLE_RE = re.compile(r'\*\s*(\w+)\s*=')
-# 数组索引写入: buf[i] = / buf[i + 1] +=
-_ARR_WRITE_RE = re.compile(
-    r'(\w+)\s*\[\s*([^]]+?)\s*\]\s*(?:\+\+|\+=|-=|=)')
-# 带偏移库写入: memcpy(buf + off, src, n)
-_LIB_OFF_RE = re.compile(
-    r'(memcpy|memmove|memset|strcpy|strcat|strncpy)\s*\(\s*'
-    r'(\w+)\s*\+\s*([^,]+?)\s*(?:,|\))')
 
+# 正则与辅助函数统一由 hovf_write_patterns 提供, 避免双份定义漂移
 from core.hovf_write_patterns import (
     _CAST_DEREF_RE, _CAST_SIMPLE_RE, _PLAIN_OFF_RE, _PLAIN_SIMPLE_RE,
     _ARR_WRITE_RE, _LIB_OFF_RE, _DECL_RE,

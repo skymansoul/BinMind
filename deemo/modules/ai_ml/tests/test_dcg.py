@@ -1,4 +1,4 @@
-"""DCG差分约束图单元测试——验证FW传递闭包、约束提取、安全证明"""
+"""DCG差分约束图单元测试: 验证FW传递闭包、约束提取、安全证明"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -87,7 +87,7 @@ class TestDCGCore:
         assert dcg.query('rax', 'rbx') == 0
 
     def test_reachable_vars(self):
-        """可达变量集合——约束rbx≤rax+0, rcx≤rbx+16 → 从rcx可达rax和rbx"""
+        """可达变量集合: 约束rbx≤rax+0, rcx≤rbx+16 → 从rcx可达rax和rbx"""
         dcg = DifferenceConstraintGraph()
         dcg.add_constraint('rbx', 'rax', 0)     # rbx ≤ rax → dist[rbx][rax]=0
         dcg.add_constraint('rcx', 'rbx', 16)    # rcx ≤ rbx+16 → dist[rcx][rbx]=16

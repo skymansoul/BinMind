@@ -76,13 +76,6 @@ class SizeConstraintCollector:
         r'(\w+)\s*=\s*\(\s*\w+\s*>\s*(\d+)\s*\)\s*\?\s*\2\s*:\s*\w+',
         re.IGNORECASE)
 
-    # 已知安全宏: 这些宏本身就表达了上界约束
-    _KNOWN_SAFE_MACROS = {
-        'BUFSIZ', 'PATH_MAX', 'MAX_PATH', 'MAX_LINE', 'MAX_BUF',
-        'PIPE_BUF', 'NAME_MAX', 'ARG_MAX', 'SSIZE_MAX',
-        'MAX_ALLOC', 'MAX_SIZE', 'MAX_LEN', 'MAX_BUFFER',
-    }
-
     def __init__(self, search_window: int = 30):
         self._window = search_window
 
@@ -90,16 +83,10 @@ class SizeConstraintCollector:
         self, ir_lines: List[str], alloc_pc: int,
         size_var: str, size_value: int = -1,
     ) -> SizeVarSummary:
-        """从alloc_pc向上游收集size_var的约束.
+        """从 alloc_pc 向上游收集 size_var 的约束。
 
-        Args:
-            ir_lines: IR行列表
-            alloc_pc: malloc调用在ir_lines中的索引
-            size_var: malloc的size参数变量名 (如 "len", "size")
-            size_value: 若已知常量值则传入 (加速), -1=未知
-
-        Returns:
-            SizeVarSummary 含所有约束的交集范围
+        size_value 已知时直接返回常量范围 (加速); 否则在 search_window
+        内收集约束交集, 返回 SizeVarSummary。
         """
         summary = SizeVarSummary(var=size_var)
         if size_value > 0:
@@ -204,12 +191,6 @@ class SizeConstraintCollector:
                     summary.is_proved_bounded = True
                 continue
 
-            # 已知安全宏: #define MAX_BUF 4096
-            for macro in self._KNOWN_SAFE_MACROS:
-                if macro in stripped and size_var in stripped:
-                    if re.search(rf'{macro}\s+(\d+)', stripped):
-                        pass  # 宏定义行, 不需要额外处理
-
         return summary
 
     @staticmethod
@@ -227,13 +208,10 @@ def apply_size_constraints_to_findings(
     findings: List[dict],
     ir_lines: List[str],
 ) -> Tuple[List[dict], int]:
-    """管线集成: 对已有findings应用size约束过滤.
+    """管线集成: 对已有 findings 应用 size 约束过滤。
 
-    对每个含动态size的finding, 收集malloc上游的size约束,
-    若约束证明安全则降级置信度.
-
-    Returns:
-        (filtered_findings, num_adjusted)
+    对每个含动态 size 的 finding, 收集 malloc 上游的 size 约束,
+    若约束证明安全则降级置信度; 返回 (filtered_findings, num_adjusted)。
     """
     collector = SizeConstraintCollector()
     adjusted = 0

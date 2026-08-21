@@ -1,12 +1,10 @@
-# 2026-07-26
 import re
 import struct
 from typing import List, Dict, Tuple, Optional
 from collections import Counter
 
-
 class SandboxEvasionDetector:
-    """5-pass detection: strings -> imports -> opcodes -> timing -> hardware fingerprint"""
+    """沙箱规避检测: 5阶段(字符串->导入->操作码->时序->硬件指纹)"""
 
 # 初始化: 构建各维度的特征pattern库
 
@@ -159,7 +157,7 @@ class SandboxEvasionDetector:
             'debugger_score': _dbg_score,
         }
 
-    # //// Pass 2: 导入表分析 ////
+    # Pass 2: 导入表分析
 
     def _pass_imports(self, imports: Dict[str, List[str]]) -> Dict:
         _hits = []
@@ -224,7 +222,7 @@ class SandboxEvasionDetector:
 
         return {'hits': _hits, 'timing_score': _timing_score}
 
-    # //// Pass 5: 硬件指纹收集 ////
+    # Pass 5: 硬件指纹收集
 
     def _pass_hardware_fingerprint(self, strings: List[str], imports: dict) -> Dict:
         _hits = []
@@ -251,10 +249,7 @@ class SandboxEvasionDetector:
 
     def analyze(self, data: bytes, strings: List[str] = None,
                 imports: Dict[str, List[str]] = None) -> Dict:
-        """
-        5-pass composite evasiveness analysis
-        返回 score 0-100 per-pass details
-        """
+        # 5阶段综合规避性分析, 返回0-100评分及各阶段详情
         if strings is None:
             strings = self._extract_strings(data)
         if imports is None:

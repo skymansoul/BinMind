@@ -1,4 +1,3 @@
-# created: 2025-06-09
 # 神经子图同构——结合GNN嵌入剪枝和子图匹配的函数克隆检测
 #
 # 核心问题: 现有的二进制相似性搜索用GNN嵌入做近似匹配——速度快但精度有限。
@@ -99,11 +98,7 @@ class NeuralPruningMatcher:
         return pruned
 
     def semantic_node_match(self, a: CFGNode, b: CFGNode) -> float:
-        """语义等价节点匹配——操作码分布相似度。
-
-        Returns:
-            0-1的匹配分数，>=sem_thresh视为匹配
-        """
+        """语义等价节点匹配——操作码分布相似度。"""
         return self._cosine_sim(a.opcode_dist, b.opcode_dist)
 
     def subgraph_isomorphism(self,
@@ -232,12 +227,7 @@ class NeuralCloneDetector:
                        query_func: Tuple[str, Any, Any, List[CFGNode]],
                        target_pool: List[Tuple[str, Any, Any, List[CFGNode]]],
                        top_k: int = 20) -> List[CloneMatch]:
-        """两阶段克隆检测。
-
-        Args:
-            query_func: (func_id, features, adjacency, cfg_nodes)
-            target_pool: [(func_id, features, adjacency, cfg_nodes), ...]
-        """
+        """两阶段克隆检测。"""
         qid, q_feat, q_adj, q_nodes = query_func
         q_emb = self._encoder(q_feat, q_adj)
 

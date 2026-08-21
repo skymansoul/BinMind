@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
@@ -127,7 +126,7 @@ def integrate_with_siem(findings, fmt="cef", **kw): return SIEMIntegrator().anal
 __all__ = ["SIEMIntegrator", "SIEMEvent", "SIEMFormat", "integrate_with_siem", "register_formatter"]
 
 
-def _debug_print(*args, **kwargs):
-    """内部调试桩，当前未使用."""
-    pass
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

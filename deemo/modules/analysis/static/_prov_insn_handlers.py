@@ -8,7 +8,6 @@
 #   - cmp/test 守卫: 被比较对象 (寄存器或栈槽) 升级为 GUARDED,
 #     通过对象同一性同步到所有当前别名, 解决 O2 下守卫作用于副本.
 #
-# 创建: 2024-08-28
 
 from typing import Dict, List, Optional, Tuple
 

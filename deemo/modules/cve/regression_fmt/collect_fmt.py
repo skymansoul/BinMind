@@ -4,7 +4,6 @@
 #   读取 fmt_scan_results.json, 按 基线/增强 分组计算 TP/FP/FN/TN
 #   与 Recall/Precision/FPR/F1, 量化 FAPV 来源验证的误报抑制贡献.
 #
-# 创建: 2025-05-12
 
 import json
 from pathlib import Path

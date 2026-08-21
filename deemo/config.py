@@ -10,6 +10,7 @@ AI_PROVIDER_AZURE = 'azure'
 AI_PROVIDER_OLLAMA = 'ollama'
 AI_PROVIDER_LLAMACPP = 'llamacpp'
 AI_PROVIDER_CUSTOM = 'custom'
+AI_PROVIDER_DEEPSEEK = 'deepseek'
 
 
 def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
@@ -33,31 +34,31 @@ def mask_sensitive_data(text: str) -> str:
     """脱敏日志中的 API key / token / secret——前4后4保留，中间替换为*"""
     if not text or not isinstance(text, str):
         return text
-    
+
     def replace_partial(match):
         prefix = match.group(1) if len(match.groups()) >= 2 else ''
         key = match.group(2) if len(match.groups()) >= 2 else match.group(1)
-        
+
         if key:
             masked_key = mask_api_key(key)
             return prefix + masked_key
-        
+
         return match.group(0)
-    
+
     def replace_full(match):
         prefix = match.group(1) if len(match.groups()) >= 2 else ''
         env_name = match.group(2) if len(match.groups()) >= 2 else ''
         key = match.group(3) if len(match.groups()) >= 3 else match.group(1)
-        
+
         if key and env_name and 'key' in env_name.lower():
             masked_key = mask_api_key(key)
             return prefix + masked_key
         elif key:
             masked_key = mask_api_key(key)
             return prefix + masked_key
-        
+
         return match.group(0)
-    
+
     api_key_patterns = [
         r'(api[_-]?key\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
         r'(key\s*[=:]\s*["\']?)(sk-[a-zA-Z0-9_\-]{32,})',
@@ -66,30 +67,30 @@ def mask_sensitive_data(text: str) -> str:
         r'(AZURE_OPENAI_API_KEY\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
         r'(CUSTOM_API_KEY\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
     ]
-    
+
     masked = text
     for pattern in api_key_patterns:
         masked = re.sub(pattern, replace_partial, masked, flags=re.IGNORECASE)
-    
+
     token_patterns = [
         r'(token\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
         r'(access[_-]?token\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
         r'(secret\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
         r'(password\s*[=:]\s*["\']?)([^"\'\s]{4,})',
     ]
-    
+
     for pattern in token_patterns:
         masked = re.sub(pattern, replace_partial, masked, flags=re.IGNORECASE)
-    
+
     env_patterns = [
         r'([A-Z0-9_]+_API_KEY)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
         r'([A-Z0-9_]+_SECRET)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
         r'([A-Z0-9_]+_TOKEN)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
     ]
-    
+
     for pattern in env_patterns:
         masked = re.sub(pattern, r'\1=***MASKED***', masked, flags=re.IGNORECASE)
-    
+
     return masked
 
 
@@ -97,18 +98,18 @@ class SensitiveFilter(logging.Filter):
     """
     日志过滤器，自动脱敏敏感信息
     """
-    
+
     def filter(self, record):
         if isinstance(record.msg, str):
             record.msg = mask_sensitive_data(record.msg)
-        
+
         if record.args:
             args_list = list(record.args)
             for i, arg in enumerate(args_list):
                 if isinstance(arg, str):
                     args_list[i] = mask_sensitive_data(arg)
             record.args = tuple(args_list)
-        
+
         return True
 
 
@@ -138,30 +139,34 @@ class Config:
     TASK_CACHE_TTL = int(os.environ.get('TASK_CACHE_TTL', '3600'))
 
     # AI 服务配置请直接在这里填写，不再通过环境变量读取。
-    # 可选值: openai / azure / ollama / llamacpp / custom
-    AI_PROVIDER = AI_PROVIDER_OPENAI
-    
-    # OpenAI 或 OpenAI 兼容服务
-    OPENAI_API_KEY = ''
+    # 可选值: openai / azure / ollama / llamacpp / custom / deepseek
+    AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OPENAI)
+    # 统一模型名称入口，覆盖各 provider 默认模型
+    AI_MODEL = os.environ.get('AI_MODEL', '')
+    # Ollama 兼容端点（含 /v1 路径），供 OpenAI SDK 直接调用
+    OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
+
+    # AI 凭据优先从环境变量注入, 亦可直接填写于此; 空值时降级为启发式模式
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
     OPENAI_MODEL = 'gpt-4'
-    OPENAI_BASE_URL = None
+    OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL') or None
     # 本地 DeepSeek 代理端口，Cloudflare Tunnel 转发的目标
     # OPENAI_BASE_URL = 'http://localhost:8800/v1'
     OPENAI_ORGANIZATION = None
-    
+
     # Azure OpenAI
     AZURE_API_KEY = ''
     AZURE_ENDPOINT = ''
     AZURE_API_VERSION = '2024-02-15-preview'
     AZURE_DEPLOYMENT = ''
-    
+
     # Ollama
     OLLAMA_HOST = 'http://localhost:11434'
     OLLAMA_MODEL = 'llama2'
-    
+
     # llama.cpp
     LLAMACPP_HOST = 'http://localhost:8080'
-    
+
     # 自定义 OpenAI 兼容 API
     CUSTOM_API_KEY = ''
     CUSTOM_BASE_URL = ''
@@ -170,7 +175,7 @@ class Config:
     # 外部威胁情报 API
     VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-    
+
     LOGS_DIR = './logs'
     REPORTS_DIR = './reports'
     EXPLOITS_DIR = './exploits'
@@ -178,40 +183,40 @@ class Config:
     DATA_DIR = './data'
     CACHE_DIR = './data/cache'
     CORPUS_DIR = './data/corpus'
-    
+
     MAX_ITERATIONS = 5
     SUBPROCESS_TIMEOUT = 30
     RADARE2_TIMEOUT = 120
     GHIDRA_TIMEOUT = 300
     IDA_TIMEOUT = 300
     ANGR_TIMEOUT = 300
-    
+
     REQUIRED_FIELDS_CRASH_DATA = ['registers']
     OPTIONAL_FIELDS_CRASH_DATA = ['stack_trace', 'fault_instruction', 'output', 'stdout', 'stderr']
-    
+
     DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
     ENABLE_SYMBOLIC_EXECUTION = _is_enabled('ENABLE_SYMBOLIC_EXECUTION')
-    
+
     DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
-    
+
     SANDBOX_MODE = os.environ.get('SANDBOX_MODE', 'none').lower()
     SANDBOX_IMAGE = os.environ.get('SANDBOX_IMAGE', 'deemo-analyzer:latest')
     SANDBOX_TIMEOUT = int(os.environ.get('SANDBOX_TIMEOUT', '60'))
     SANDBOX_MEMORY_LIMIT = os.environ.get('SANDBOX_MEMORY_LIMIT', '512m')
     SANDBOX_CPU_LIMIT = float(os.environ.get('SANDBOX_CPU_LIMIT', '1.0'))
     SANDBOX_NETWORK_ENABLED = _is_enabled('SANDBOX_NETWORK_ENABLED')
-    
+
     DB_TYPE = os.environ.get('DB_TYPE', 'sqlite').lower()
     POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'localhost')
     POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', '5432'))
     POSTGRES_USER = os.environ.get('POSTGRES_USER', 'deemo')
     POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', '')
     POSTGRES_DB = os.environ.get('POSTGRES_DB', 'deemo_vuln_db')
-    
+
     API_HOST = os.environ.get('API_HOST', '0.0.0.0')
     API_PORT = int(os.environ.get('API_PORT', '8000'))
     API_RELOAD = _is_enabled('API_RELOAD')
-    
+
     CACHE_TTL = int(os.environ.get('CACHE_TTL', '3600'))
     EXTERNAL_API_RATE_LIMIT = int(os.environ.get('EXTERNAL_API_RATE_LIMIT', '10'))
     EXTERNAL_API_RATE_PERIOD = int(os.environ.get('EXTERNAL_API_RATE_PERIOD', '60'))
@@ -219,7 +224,7 @@ class Config:
     # 外部威胁情报与漏洞数据库服务凭据
     VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-    
+
     FUZZER_MAX_RUNTIME = int(os.environ.get('FUZZER_MAX_RUNTIME', '3600'))
     FUZZER_MAX_CPU = int(os.environ.get('FUZZER_MAX_CPU', '1'))
     FUZZER_MEMORY_LIMIT = int(os.environ.get('FUZZER_MEMORY_LIMIT', '2048'))
@@ -236,18 +241,18 @@ def check_openai_api_key() -> bool:
 def get_openai_client():
     """
     获取 AI 客户端实例，支持多种 AI 提供商
-    
+
         OpenAI 兼容的客户端实例，如果未配置则返回 None
     """
     provider = Config.AI_PROVIDER
     logger.info(f"正在初始化 AI 客户端，提供商: {provider}")
-    
+
     try:
         from openai import OpenAI, AzureOpenAI
     except ImportError:
         logger.error("openai 库未安装，请运行: pip install openai")
         return None
-    
+
     try:
         if provider == AI_PROVIDER_OPENAI:
             return _create_openai_client()
@@ -259,6 +264,8 @@ def get_openai_client():
             return _create_llamacpp_client()
         elif provider == AI_PROVIDER_CUSTOM:
             return _create_custom_client()
+        elif provider == AI_PROVIDER_DEEPSEEK:
+            return _create_deepseek_client()
         else:
             logger.warning(f"未知的 AI 提供商: {provider}，使用 OpenAI 作为默认")
             return _create_openai_client()
@@ -274,19 +281,19 @@ def _create_openai_client():
     if not check_openai_api_key():
         logger.warning("Config.OPENAI_API_KEY 未配置，将使用启发式分析模式")
         return None
-    
+
     from openai import OpenAI
-    
+
     client_kwargs = {'api_key': Config.OPENAI_API_KEY}
     if Config.OPENAI_BASE_URL:
         client_kwargs['base_url'] = Config.OPENAI_BASE_URL
         logger.info(f"使用自定义 OpenAI Base URL: {Config.OPENAI_BASE_URL}")
-    
+
     if Config.OPENAI_ORGANIZATION:
         client_kwargs['organization'] = Config.OPENAI_ORGANIZATION
-    
+
     client = OpenAI(**client_kwargs)
-    
+
     masked_key = mask_api_key(Config.OPENAI_API_KEY)
     logger.info(f"OpenAI 客户端初始化成功，API Key: {masked_key}, 模型: {Config.OPENAI_MODEL}")
     return client
@@ -299,20 +306,20 @@ def _create_azure_client():
     if not Config.AZURE_API_KEY:
         logger.warning("Config.AZURE_API_KEY 未配置")
         return None
-    
+
     if not Config.AZURE_ENDPOINT:
         logger.warning("Config.AZURE_ENDPOINT 未配置")
         return None
-    
+
     from openai import AzureOpenAI
-    
+
     client = AzureOpenAI(
         api_key=Config.AZURE_API_KEY,
         azure_endpoint=Config.AZURE_ENDPOINT,
         api_version=Config.AZURE_API_VERSION,
         azure_deployment=Config.AZURE_DEPLOYMENT if Config.AZURE_DEPLOYMENT else None
     )
-    
+
     masked_key = mask_api_key(Config.AZURE_API_KEY)
     logger.info(f"Azure OpenAI 客户端初始化成功，API Key: {masked_key}")
     return client
@@ -320,18 +327,18 @@ def _create_azure_client():
 
 def _create_ollama_client():
     """
-    创建 Ollama 本地模型客户端
+    创建 Ollama 本地模型客户端（OpenAI 兼容端点）
     """
     from openai import OpenAI
-    
-    ollama_base = f"{Config.OLLAMA_HOST}/v1"
-    
+
+    ollama_base = Config.OLLAMA_BASE_URL or f"{Config.OLLAMA_HOST}/v1"
+
     client = OpenAI(
         api_key="ollama",
         base_url=ollama_base
     )
-    
-    logger.info(f"Ollama 客户端初始化成功，Host: {Config.OLLAMA_HOST}, Model: {Config.OLLAMA_MODEL}")
+
+    logger.info(f"Ollama 客户端初始化成功，Base URL: {ollama_base}, Model: {Config.OLLAMA_MODEL}")
     return client
 
 
@@ -340,14 +347,14 @@ def _create_llamacpp_client():
     创建 llama.cpp 本地模型客户端
     """
     from openai import OpenAI
-    
+
     llamacpp_base = f"{Config.LLAMACPP_HOST}/v1"
-    
+
     client = OpenAI(
         api_key="llama-cpp",
         base_url=llamacpp_base
     )
-    
+
     logger.info(f"llama.cpp 客户端初始化成功，Host: {Config.LLAMACPP_HOST}")
     return client
 
@@ -359,39 +366,63 @@ def _create_custom_client():
     if not Config.CUSTOM_BASE_URL:
         logger.warning("CUSTOM_BASE_URL 未配置")
         return None
-    
+
     from openai import OpenAI
-    
+
     api_key = Config.CUSTOM_API_KEY or "custom"
     client_kwargs = {
         'api_key': api_key,
         'base_url': Config.CUSTOM_BASE_URL
     }
-    
+
     client = OpenAI(**client_kwargs)
-    
+
     if Config.CUSTOM_API_KEY:
         masked_key = mask_api_key(Config.CUSTOM_API_KEY)
         logger.info(f"自定义 API 客户端初始化成功，API Key: {masked_key}, Base URL: {Config.CUSTOM_BASE_URL}")
     else:
         logger.info(f"自定义 API 客户端初始化成功（无 API Key），Base URL: {Config.CUSTOM_BASE_URL}")
-    
+
+    return client
+
+
+def _create_deepseek_client():
+    """
+    创建 DeepSeek API 客户端（OpenAI 兼容接口）
+    """
+    from openai import OpenAI
+
+    api_key = os.environ.get('CUSTOM_API_KEY', '') or os.environ.get('OPENAI_API_KEY', '')
+    if not api_key:
+        logger.warning("DeepSeek 模式需要 CUSTOM_API_KEY 或 OPENAI_API_KEY")
+        return None
+
+    base_url = os.environ.get('CUSTOM_BASE_URL', '') or Config.CUSTOM_BASE_URL or 'https://api.deepseek.com/v1'
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    masked_key = mask_api_key(api_key)
+    logger.info(f"DeepSeek 客户端初始化成功，API Key: {masked_key}, Base URL: {base_url}")
     return client
 
 
 def get_current_ai_model() -> str:
-    """返回当前 provider 对应的模型名称；未显式配置则回退到 OPENAI_MODEL"""
+    """返回当前 provider 对应的模型名称；AI_MODEL 环境变量优先，未显式配置则回退到 provider 默认"""
+    if Config.AI_MODEL:
+        return Config.AI_MODEL
+
     provider = Config.AI_PROVIDER
 
     if provider == AI_PROVIDER_OLLAMA:
         return Config.OLLAMA_MODEL
+    elif provider == AI_PROVIDER_DEEPSEEK:
+        return Config.CUSTOM_MODEL or 'deepseek-chat'
     elif provider == AI_PROVIDER_CUSTOM:
         if Config.CUSTOM_MODEL:
             return Config.CUSTOM_MODEL
     elif provider == AI_PROVIDER_AZURE:
         if Config.AZURE_DEPLOYMENT:
             return Config.AZURE_DEPLOYMENT
-    
+
     return Config.OPENAI_MODEL
 
 
@@ -407,7 +438,7 @@ def ensure_directories():
         Config.CACHE_DIR,
         Config.CORPUS_DIR
     }
-    
+
     for dir_path in dirs_to_create:
         try:
             if not os.path.exists(dir_path):
@@ -421,18 +452,18 @@ def validate_sandbox_config() -> Dict[str, Any]:
     """校验 SANDBOX_MODE / docker / podman 可用性，返回 {valid, mode, issues}"""
     sandbox_mode = Config.SANDBOX_MODE
     valid_modes = ['none', 'docker', 'podman']
-    
+
     result = {
         'valid': sandbox_mode in valid_modes,
         'mode': sandbox_mode,
         'issues': []
     }
-    
+
     if sandbox_mode not in valid_modes:
         result['issues'].append(
             f"无效的 SANDBOX_MODE: {sandbox_mode}。有效值: {valid_modes}"
         )
-    
+
     if sandbox_mode == 'docker':
         try:
             import docker
@@ -443,7 +474,7 @@ def validate_sandbox_config() -> Dict[str, Any]:
             result['issues'].append("Docker SDK 未安装，请运行: pip install docker")
         except Exception as e:
             result['issues'].append(f"Docker 不可用: {e}")
-    
+
     if sandbox_mode == 'podman':
         try:
             import subprocess
@@ -451,7 +482,7 @@ def validate_sandbox_config() -> Dict[str, Any]:
             result['podman_available'] = True
         except (FileNotFoundError, subprocess.CalledProcessError):
             result['issues'].append("Podman 未安装或不在 PATH 中")
-    
+
     return result
 
 
@@ -459,11 +490,11 @@ def get_postgres_connection_string() -> Optional[str]:
     """拼装 postgresql:// 连接串；DB_TYPE 非 postgres 或无密码时返回 None"""
     if Config.DB_TYPE != 'postgres':
         return None
-    
+
     if not Config.POSTGRES_PASSWORD:
         logger.warning("POSTGRES_PASSWORD 未设置")
         return None
-    
+
     return (
         f"postgresql://{Config.POSTGRES_USER}:{Config.POSTGRES_PASSWORD}"
         f"@{Config.POSTGRES_HOST}:{Config.POSTGRES_PORT}/{Config.POSTGRES_DB}"
@@ -474,13 +505,13 @@ def validate_crash_data(crash_data: dict) -> tuple:
     """验证崩溃数据格式 — 返回 (is_valid, error_message)"""
     if not isinstance(crash_data, dict):
         return False, "崩溃数据必须是字典格式"
-    
+
     has_required = any(field in crash_data for field in Config.REQUIRED_FIELDS_CRASH_DATA)
     has_optional = any(field in crash_data for field in Config.OPTIONAL_FIELDS_CRASH_DATA)
-    
+
     if not has_required and not has_optional:
         return False, f"崩溃数据缺少必要字段，至少需要包含: {Config.REQUIRED_FIELDS_CRASH_DATA}"
-    
+
     return True, None
 
 
@@ -520,42 +551,42 @@ def get_crash_data_example() -> dict:
     }
 
 
-def call_ai_with_retry(client, **kwargs) -> Optional[str]:
-    """AI API 调用——指数退避重试（最多3次），全部失败后降级为启发式分析"""
+def call_ai_with_retry(fn, max_retries: int = 3) -> Optional[str]:
+    """AI API 调用——接收可调用对象，指数退避重试，全部失败后返回 None"""
     import time
-    
-    max_retries = 3
+
     base_delay = 1
-    
     last_exception = None
-    
+
     for attempt in range(max_retries):
         try:
             logger.info(f"[AI] 调用 API (尝试 {attempt + 1}/{max_retries})")
-            
-            response = client.chat.completions.create(**kwargs)
+            response = fn()
             result_text = response.choices[0].message.content
             logger.info("[AI] API 调用成功")
             return result_text
-            
         except Exception as e:
             last_exception = e
             logger.warning(f"[AI] API 调用失败 (尝试 {attempt + 1}/{max_retries}): {e}")
-            
+
             if attempt < max_retries - 1:
                 delay = base_delay * (2 ** attempt)
                 logger.info(f"[AI] 等待 {delay} 秒后重试...")
                 time.sleep(delay)
-    
+
     logger.error(f"[AI] 所有重试均失败: {last_exception}")
     logger.warning("[AI] 切换到启发式分析模式")
-    
     return None
 
 
-def test_api_connection(client) -> bool:
-    """发送一条简短的 chat completion 请求确认 AI API 连通性"""
+def test_api_connection(client=None) -> bool:
+    """发送一条简短的 chat completion 请求确认 AI API 连通性；client 为 None 时自动获取"""
     try:
+        if client is None:
+            client = get_openai_client()
+        if client is None:
+            logger.error("AI 客户端未初始化，无法测试连接")
+            return False
         model = get_current_ai_model()
         response = client.chat.completions.create(
             model=model,

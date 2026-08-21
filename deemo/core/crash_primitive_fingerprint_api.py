@@ -18,13 +18,9 @@ def fingerprint_crash(
 ) -> CrashFingerprint:
     """多轴崩溃原语指纹。
 
-    Args:
-        crash_data: parse_crash() 输出的结构化崩溃数据
-        stack_bounds: (stack_low, stack_high)
-        heap_bounds: [(heap_start, heap_end), ...]
-
-    Returns:
-        含各轴评分与推荐策略的 CrashFingerprint
+    crash_data 为 parse_crash() 输出的结构化崩溃数据;
+    stack_bounds/heap_bounds 可选, 供寄存器可控性判定使用。
+    返回含各轴评分与推荐策略的 CrashFingerprint。
     """
     raw_text = crash_data.get('raw', '')
     crash_type = crash_data.get('crash_type', 'unknown')
@@ -72,7 +68,7 @@ def fingerprint_crash(
 
     # 7. 堆破坏类崩溃的堆布局推断
     if crash_type in ('heap_corruption', 'uaf', 'double_free'):
-        heap_ctx = infer_heap_layout(regs, crash_type)
+        heap_ctx = infer_heap_layout(registers_raw, crash_type)
         fingerprint.metadata['heap_context'] = heap_ctx
 
     return fingerprint

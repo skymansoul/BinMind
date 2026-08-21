@@ -1,7 +1,6 @@
-# 创建: 2026-05-02
-# 修改: 2026-05-02 — x86-64 JMP rel32 + ARM64 B rel26 编码
-# 修改: 2026-05-02 — 原子 8-byte jmp 写入, 多线程安全
-# 修改: 2026-05-02 — arm64_load_addr 补全 4 指令序列 (movz+movk×3)
+# x86-64 JMP rel32 + ARM64 B rel26 编码
+# 原子 8-byte jmp 写入, 多线程安全
+# arm64_load_addr 补全 4 指令序列 (movz+movk×3)
 """
 Trampoline 二进制函数钩子重写器 — 无源码的函数级插桩。
 

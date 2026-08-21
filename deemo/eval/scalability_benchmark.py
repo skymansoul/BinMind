@@ -19,7 +19,7 @@ from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
 def gen_c_source(n_allocs: int, n_writes: int,
                  safe_ratio: float = 0.5) -> str:
     """合成C源码: n_allocs个分配点 + n_writes个写入点.
-    
+
     safe_ratio为安全写入比例(写入大小≤分配大小).
     每个分配约3行(malloc+check+free), 每个写入约2行.
     """

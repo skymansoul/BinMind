@@ -1,11 +1,10 @@
-# 修改记录:
-# 2025-08-09 10:15 - 四尺度结构熵: 块级(1)/函数级(2)/模块级(3)/全局(4) CFG 变形检测
-# 2025-08-09 16:42 - 层级指纹叠加: 多混淆技术的熵特征线性叠加->逐个剥离识别
+# 四尺度结构熵: 块级(1)/函数级(2)/模块级(3)/全局(4) CFG 变形检测
+# 层级指纹叠加: 多混淆技术的熵特征线性叠加, 逐个剥离识别
 
 """多尺度结构熵混淆层检测 - 识别"哪些"混淆技术被应用
 
 现有混淆检测 回答"是否存在混淆"
-不回答"哪些技术被同时使用"--而多技术层叠是当前恶意软件的主流
+不回答"哪些技术被同时使用"-而多技术层叠是当前恶意软件的主流
 
 本模块通过在不同 CFG 粒度上测量结构熵的异常偏差来识别各层技术:
   尺度 1 (基本块级): 块内指令熵异常 -> 指令替换/MBA
@@ -20,7 +19,7 @@
   FLA (控制流扁平化), SUB (指令替换), BCF (虚假控制流),
   SPLIT (基本块分裂), VIRT (虚拟化), MBA (混合布尔算术)
 
-层级叠加的熵效应近似线性--可以从总偏差中逐个减去已识别技术的签名
+层级叠加的熵效应近似线性-可以从总偏差中逐个减去已识别技术的签名
 (残差分析) 以识别底层技术
 
 与现有方法的关系:
@@ -37,24 +36,24 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# 混淆技术熵签名--四尺度偏差向量
+# 混淆技术熵签名-四尺度偏差向量
 # [block_level, func_level, module_level, global_level]
 # 每维: 归一化熵偏差 (正=熵增, 负=熵减)
 
 _OBFUSCATION_SIGNATURES: Dict[str, List[float]] = {
-    # 指令替换--块级熵显著增加 (指令变为不常见形式)
+    # 指令替换-块级熵显著增加 (指令变为不常见形式)
     'SUB':  [0.45, 0.10, 0.02, 0.00],
-    # MBA--块级+函数级熵增加 (位运算+算术混合)
+    # MBA-块级+函数级熵增加 (位运算+算术混合)
     'MBA':  [0.55, 0.25, 0.05, 0.00],
-    # 控制流扁平化--函数级熵剧增+块级出度统一化
+    # 控制流扁平化-函数级熵剧增+块级出度统一化
     'FLA':  [-0.10, 0.70, 0.15, 0.00],
-    # 虚假控制流--函数级熵增 (额外的不透明分支)
+    # 虚假控制流-函数级熵增 (额外的不透明分支)
     'BCF':  [0.05, 0.50, 0.10, 0.00],
-    # 基本块分裂--函数级熵增+块级规模减小
+    # 基本块分裂-函数级熵增+块级规模减小
     'SPLIT': [-0.20, 0.40, 0.08, 0.00],
-    # 虚拟化--模块级熵剧增 (VM dispatcher+handlers)
+    # 虚拟化-模块级熵剧增 (VM dispatcher+handlers)
     'VIRT': [0.10, 0.30, 0.80, 0.10],
-    # 打包/加密--全局熵剧增
+    # 打包/加密-全局熵剧增
     'PACK': [0.05, 0.05, 0.20, 0.90],
 }
 
@@ -65,7 +64,7 @@ class LayerDetection:
     technique: str           # SUB | MBA | FLA | BCF | SPLIT | VIRT | PACK
     confidence: float        # [0,1]
     evidence_scale: str      # 最强信号出现的尺度
-    residual_match: float    # 残差匹配度--越高越确信
+    residual_match: float    # 残差匹配度-越高越确信
 
 
 @dataclass
@@ -74,7 +73,7 @@ class ObfuscationLayerReport:
     detected_layers: List[LayerDetection]
     # 四尺度原始熵偏差
     entropy_deviations: List[float]
-    # 残差分析--去除已识别技术后的剩余熵
+    # 残差分析-去除已识别技术后的剩余熵
     residual_deviations: List[float]
     # 所有可能技术的得分
     all_scores: Dict[str, float]
@@ -108,7 +107,7 @@ def _block_entropy(
 def _cfg_edge_entropy(
     edges: List[Tuple[int, int, str]],
 ) -> float:
-    """CFG 边类型分布的熵--检测扁平化的均匀出度模式"""
+    """CFG 边类型分布的熵-检测扁平化的均匀出度模式"""
     if not edges:
         return 0.0
     etype_counts: Dict[str, int] = defaultdict(int)
@@ -137,7 +136,7 @@ class ObfuscationLayerDetector:
     )
     """
 
-    # 语义类映射--简化为 8 类 (与 semantic_graph_hash 一致)
+    # 语义类映射-简化为 8 类 (与 semantic_graph_hash 一致)
     _CLASS_MAP = {
         'mov': 0, 'lea': 0, 'push': 0, 'pop': 0,
         'add': 1, 'sub': 1, 'mul': 1, 'div': 1, 'inc': 1, 'dec': 1,
@@ -147,7 +146,7 @@ class ObfuscationLayerDetector:
         'nop': 6,
     }
 
-    # 基线熵值--来自未混淆的二进制 (GCC -O2)
+    # 基线熵值-来自未混淆的二进制 (GCC -O2)
     _BASELINE_ENTROPY = {
         'block_mean': 1.45,        # 平均块级熵
         'block_std': 0.35,
@@ -175,7 +174,7 @@ class ObfuscationLayerDetector:
         # 2. 匹配混淆技术签名
         scores = self._match_signatures(deviations)
 
-        # 3. 残差分析--逐个剥离已检测技术
+        # 3. 残差分析-逐个剥离已检测技术
         layers = self._residual_analysis(deviations, scores)
 
         return ObfuscationLayerReport(
@@ -195,7 +194,7 @@ class ObfuscationLayerDetector:
         """提取四尺度熵偏差向量"""
         bl = self._BASELINE_ENTROPY
 
-        # 尺度 1: 块级熵--所有块的指令熵均值偏差
+        # 尺度 1: 块级熵-所有块的指令熵均值偏差
         block_entropies = [
             _block_entropy(insns, self._CLASS_MAP)
             for insns in blocks.values()
@@ -247,14 +246,14 @@ class ObfuscationLayerDetector:
         deviations: List[float],
         scores: Dict[str, float],
     ) -> List[LayerDetection]:
-        """残差剥离--逐个移除已检测技术, 识别底层技术"""
+        """残差剥离-逐个移除已检测技术, 识别底层技术"""
         layers: List[LayerDetection] = []
         residual = list(deviations)
         self._residual: List[List[float]] = [list(deviations)]
         used: Set[str] = set()
         threshold = 0.35
 
-        # 按得分降序迭代--每次去除最高得分技术
+        # 按得分降序迭代-每次去除最高得分技术
         sorted_techs = sorted(scores.items(), key=lambda x: -x[1])
 
         for tech, score in sorted_techs:

@@ -1,7 +1,6 @@
 
 import os
 import sys
-_MOD_DEBUG = False
 import unittest
 import tempfile
 import importlib.util
@@ -23,7 +22,6 @@ PoCOutputFormat = poc_generator.PoCOutputFormat
 class TestPOCGenerator(unittest.TestCase):
 
     def setUp(self):
-        # 阈值通过反复测试收敛
         """设置测试环境"""
         # 创建临时测试文件
         self.temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)

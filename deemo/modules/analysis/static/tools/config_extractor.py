@@ -165,7 +165,7 @@ class ConfigExtractor:
             self.results.configs.append(cfg); self.results.urls.append(cfg)
 
     def _extract_aws_keys(self, s: str):
-        """检测 AWS IAM 访问密钥——AKIA/ASIA 前缀 + 16位 base62"""
+        """检测 AWS IAM 访问密钥, AKIA/ASIA 前缀 + 16位 base62"""
         for m in self._AWS_KEY_PAT.finditer(s):
             cfg = ExtractedConfig(
                 type=ConfigType.AWS_KEY, key="aws_access_key", value=self._mask_sensitive(m.group()),
@@ -174,7 +174,7 @@ class ConfigExtractor:
             self.results.configs.append(cfg); self.results.api_keys.append(cfg)
 
     def _extract_jwt_tokens(self, s: str):
-        """检测 JWT token——标准三段式 base64url 编码"""
+        """检测 JWT token, 标准三段式 base64url 编码"""
         for m in self._JWT_PAT.finditer(s):
             cfg = ExtractedConfig(
                 type=ConfigType.JWT_TOKEN, key="jwt", value=self._mask_sensitive(m.group()),

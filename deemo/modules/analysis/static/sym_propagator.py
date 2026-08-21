@@ -1,5 +1,5 @@
 """
-DDSSC符号传播器 (Symbolic Propagator) — 指令级符号表达式构建.
+DDSSC符号传播器 (Symbolic Propagator) - 指令级符号表达式构建.
 
 核心决策:
   在堆溢出检测器的指令分析循环中, 同步维护每个寄存器/栈槽的
@@ -33,7 +33,7 @@ class SymComplexHandlerMixin:
     """lea/imul复杂指令的符号表达式处理, 由SymbolicPropagator继承."""
 
     def _handle_lea(self, ops: List[str]):
-        """lea dst, [base + index*scale + offset] — 完整x86内存地址计算.
+        """lea dst, [base + index*scale + offset] - 完整x86内存地址计算.
 
         支持: [rbp-0x8], [rax+rax*1], [rcx+rdx*8+0x10] 等形式.
         符号表达式: result = base_expr + index_expr*scale + offset
@@ -143,7 +143,7 @@ class SymComplexHandlerMixin:
 
     def _handle_imul(self, ops: List[str],
                      constants: Dict[str, int]):
-        """imul dst, src[, imm] — 乘法更新符号表达式.
+        """imul dst, src[, imm] - 乘法更新符号表达式.
 
         三操作数: imul dst, src, imm → dst = src * imm (线性, 可精确追踪)
         两操作数: imul dst, src → dst = dst * src
@@ -231,7 +231,7 @@ class SymbolicPropagator(SymComplexHandlerMixin):
             self._handle_call(ops)
 
     def _handle_mov(self, ops: List[str], constants: Dict[str, int]):
-        """mov dst, src — 传播符号表达式."""
+        """mov dst, src - 传播符号表达式."""
         dst_raw = ops[0].strip()
         dst_reg = norm_reg(dst_raw)
         src = ops[1].strip().lstrip("$").split("#")[0].strip()
@@ -281,7 +281,7 @@ class SymbolicPropagator(SymComplexHandlerMixin):
             self._tracker.clear(dst_reg)
 
     def _handle_cmov(self, ops: List[str]):
-        """cmov* dst, src — 条件移动, 保守传播."""
+        """cmov* dst, src - 条件移动, 保守传播."""
         dst_reg = norm_reg(ops[0])
         src_reg = norm_reg(ops[1])
         expr = self._tracker.get_expr(src_reg)
@@ -290,7 +290,7 @@ class SymbolicPropagator(SymComplexHandlerMixin):
 
     def _handle_arith(self, mnem: str, ops: List[str],
                       constants: Dict[str, int]):
-        """add/sub/shl/shr — 线性算术更新."""
+        """add/sub/shl/shr - 线性算术更新."""
         dst_reg = norm_reg(ops[0])
         src = ops[1].strip().lstrip("$").split("#")[0].strip()
 
@@ -333,7 +333,7 @@ class SymbolicPropagator(SymComplexHandlerMixin):
                 constants.pop(dst_reg, None)
 
     def _handle_call(self, ops: List[str]):
-        """call func — 调用后处理返回值寄存器.
+        """call func - 调用后处理返回值寄存器.
 
         外部输入函数(read/recv等)的返回值创建为新的符号变量.
         不清除caller-saved寄存器: 检测器需在call指令处理中

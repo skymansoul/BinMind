@@ -1,12 +1,11 @@
-# 创建: 2026-05-19 15:40
-# 修改: 2026-05-19 — union-find e-graph + 等式饱和 + cost-guided 提取
+# union-find 并查集 e-graph + 等式饱和 + 代价引导提取
 """
-E-Graph 等式饱和 MBA 简化器 — 用 e-graph + 等式饱和替代传统代数重写。
+E-Graph 等式饱和 MBA 简化器 - 用 e-graph + 等式饱和替代传统代数重写。
 
 现有 MBA 去混淆 (semilinear_mba.py, mba_deobfuscator.py) 使用固定规则集
-做确定性简化——规则硬编码, 无法发现非显而易见的等价形式。
+做确定性简化-规则硬编码, 无法发现非显而易见的等价形式。
 例如: (x⊕y)+2·(x∧y) 与 x+y 在 bitvector 中等价, 但固定规则链难以从
-前者归约到后者——需要中间步骤发现 2·(x∧y) = (x+y)-(x⊕y)。
+前者归约到后者-需要中间步骤发现 2·(x∧y) = (x+y)-(x⊕y)。
 
 e-graph 解决此问题: 将表达式的所有等价形式压缩为单个数据结构,
 等式饱和 (equality saturation) 迭代应用重写规则直至不动点,
@@ -18,22 +17,22 @@ e-graph 解决此问题: 将表达式的所有等价形式压缩为单个数据�
      a. 对所有规则 lhs→rhs, 在 e-graph 中匹配 lhs 模式
      b. 将匹配的 lhs e-node 与对应 rhs e-node union 到同一 e-class
      c. 重复直到无新 union (饱和) 或达到迭代上限
-  3. Cost-guided extraction: 从根 e-class 中提取总 cost 最小的表达式
+  3. Cost-guided 提取: 从根 e-class 中提取总代价最小的表达式
 
 为什么选择 e-graph 而非 LLM 或纯暴力搜索:
-  e-graph 保证完全性 (在给定规则集内)——所有可达的等价形式都被探索,
+  e-graph 保证完全性 (在给定规则集内)-所有可达的等价形式都被探索,
   且压缩表示使指数级等价形式的探索在多项式空间内完成。
-  LLM 的幻觉问题在 MBA 去混淆中尤为严重——一个错误常数推导可能导致
-  语义不等价的"简化", 而 e-graph 由重写规则保证语义正确性。
+  LLM 的幻觉问题在 MBA 去混淆中尤为严重-一个错误常数推导可能导致
+   语义不等价的"简化", 而 e-graph 由重写规则保证语义正确性。
 
-ref: ProMBA — 程序合成 + 等式饱和, 84% 成功率
+ref: ProMBA - 程序合成 + 等式饱和, 84% 成功率
      on 4000+ MBA 表达式。本项目将其从"学习规则"扩展到"cost-guided
      提取 + 局部规则动态排序"。
-ref: SaMBA — 等式饱和用于 MBA 混淆生成, 本项目将其
-     反转为去混淆方向——cost model 最小化而非最大化。
-ref: egg — Rust e-graph 库, 本项目
+ref: SaMBA - 等式饱和用于 MBA 混淆生成, 本项目将其
+     反转为去混淆方向-cost model 最小化而非最大化。
+ref: egg - Rust e-graph 库, 本项目
      在 Python 中实现其核心 (union-find + e-class + pattern match)
-ref: GAMBA — 非线性 MBA 的代数重写, 本项目的
+ref: GAMBA - 非线性 MBA 的代数重写, 本项目的
      规则集参考其位向量代数恒等式
 """
 
@@ -60,7 +59,7 @@ class Op(Enum):
 
 @dataclass
 class ENode:
-    """e-graph 中的一个节点——(操作符, 子节点 e-class id 列表)。"""
+    """e-graph 中的一个节点-(操作符, 子节点 e-class id 列表)。"""
     op: Op
     children: tuple[int, ...]
     value: int = 0           # CONST: 常量值; VAR: 变量 id
@@ -69,7 +68,7 @@ class ENode:
 
 @dataclass
 class EClass:
-    """一个等价类——包含共享同一语义值的所有 e-node。"""
+    """一个等价类-包含共享同一语义值的所有 e-node。"""
     id: int
     nodes: list[ENode] = field(default_factory=list)
     # 提取缓存
@@ -187,7 +186,7 @@ class EGraph:
 
     def _match_pattern(self, pattern: ENode, eclass_id: int) -> list[dict[str, int]]:
         """在 e-class 中匹配模式。返回绑定列表 [{var_name: eclass_id}, ...]。
-        简单结构匹配——不处理嵌套 ∀。"""
+        简单结构匹配-不处理嵌套 ∀。"""
         eclass = self._classes.get(self._find(eclass_id))
         if eclass is None:
             return []
@@ -248,7 +247,7 @@ class EGraph:
         return unions
 
     def extract(self, eclass_id: int, cost_fn=None) -> str:
-        """Cost-guided 提取——从 e-class 中提取最小代价的表达式字符串。"""
+        """Cost-guided 提取-从 e-class 中提取最小代价的表达式字符串。"""
         return self._extract_impl(eclass_id, cost_fn, set())
 
     def _extract_impl(self, eclass_id: int, cost_fn, visiting: set[int]) -> str:
@@ -330,19 +329,19 @@ def _default_cost(node: ENode) -> float:
 
 # MBA 规则集
 # bitvector 代数恒等式, 参考:
-#   GAMBA — 非线性 MBA 的代数重写规则
-#   Hacker's Delight — bit-twiddling 恒等式大全
-#   SiMBA — 线性 MBA 的代数简化
+#   GAMBA - 非线性 MBA 的代数重写规则
+#   Hacker's Delight - bit-twiddling 恒等式大全
+#   SiMBA - 线性 MBA 的代数简化
 # 每条规则 (rule_name, method_name_in_class), 在 simplify() 循环中逐条应用
 
 
 def _build_mba_rules() -> list[tuple[str, str]]:
     """构建 MBA 简化规则注册表。每个条目 (规则名, 方法名)。
 
-    规则按代价从低到高排序——廉价规则先应用, 减少后续规则的工作集。
+    规则按代价从低到高排序-廉价规则先应用, 减少后续规则的工作集。
     """
     return [
-        # 恒等律 — O(N) per rule, 先处理掉常量折叠
+        # 恒等律 - O(N) per rule, 先处理掉常量折叠
         ('identity_xor_zero', '_apply_id_xor_zero'),
         ('identity_and_self', '_apply_id_and_self'),
         ('identity_or_self', '_apply_id_or_self'),
@@ -351,9 +350,9 @@ def _build_mba_rules() -> list[tuple[str, str]]:
         ('identity_mul_one', '_apply_id_mul_one'),
         ('identity_mul_zero', '_apply_id_mul_zero'),
         ('identity_sub_self', '_apply_id_sub_self'),
-        # 分配律 — O(N) per rule
+        # 分配律 - O(N) per rule
         ('distributive_and_xor', '_apply_distributive_and_xor'),
-        # MBA 核心恒等式 — O(N^2) per rule, 放最后
+        # MBA 核心恒等式 - O(N^2) per rule, 放最后
         ('mba_add_xor_and', '_apply_mba_add_rule'),
         ('mba_sub_xor_and', '_apply_mba_sub_rule'),
         ('mba_xor_to_or_and', '_apply_mba_xor_to_add_sub'),
@@ -534,7 +533,7 @@ class EGraphMBASimplifier:
         return u
 
     def _apply_distributive_and_xor(self, eg: EGraph) -> int:
-        """x & (y ^ z) = (x & y) ^ (x & z) — 右方向, 将 AND 推入内部。
+        """x & (y ^ z) = (x & y) ^ (x & z) - 右方向, 将 AND 推入内部。
         仅当结果 cost 更低时应用 (cost-guided)。"""
         u = 0
         for cid, ec in list(eg._classes.items()):
@@ -558,7 +557,7 @@ class EGraphMBASimplifier:
         return u
 
     def _apply_mba_xor_to_add_sub(self, eg: EGraph) -> int:
-        """x ^ y = (x | y) - (x & y) — XOR 展开为 OR/AND 组合。
+        """x ^ y = (x | y) - (x & y) - XOR 展开为 OR/AND 组合。
         从 XOR-heavy 表达式转换到 ADD/SUB, 触发其他规则的链式简化。"""
         u = 0
         for cid, ec in list(eg._classes.items()):
@@ -574,7 +573,7 @@ class EGraphMBASimplifier:
         return u
 
     def _apply_mba_sub_rule(self, eg: EGraph) -> int:
-        """(x | y) - (x & y) = x ^ y — MBA 减法的逆方向。
+        """(x | y) - (x & y) = x ^ y - MBA 减法的逆方向。
         与 _apply_mba_xor_to_add_sub 形成双向规则, 促进收敛。"""
         u = 0
         for cid, ec in list(eg._classes.items()):

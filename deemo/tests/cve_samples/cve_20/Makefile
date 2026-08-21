@@ -1,5 +1,11 @@
-# CVE-2024-1111
-all:
-	gcc -o sample sample.c -no-pie -fno-stack-protector
+CC=gcc
+CFLAGS=-O0 -g -fno-stack-protector
+TARGET=vuln
+
+all: $(TARGET)
+
+$(TARGET): vuln.c
+	$(CC) $(CFLAGS) -o $(TARGET) vuln.c
+
 clean:
-	rm -f sample
+	rm -f $(TARGET)

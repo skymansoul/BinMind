@@ -354,9 +354,9 @@ def compute_kill_gen(insn_effects: List[InsnEffect]
                      ) -> Tuple[Dict[int, Set[str]], Dict[int, Set[str]]]:
     """计算每个程序点的KILL/GEN集合.
 
-    返回: (kill_at, gen_at) — 每个行号的kill集合和gen集合.
-    kill: 该指令清除的寄存器对象身份.
-    gen: 该指令生成的对象身份 (malloc).
+    返回 (kill_at, gen_at) — 每个行号的kill集合和gen集合。
+    kill: 该指令清除的寄存器对象身份;
+    gen: 该指令生成的对象身份 (malloc)。
     """
     kill_at: Dict[int, Set[str]] = {}
     gen_at: Dict[int, Set[str]] = {}

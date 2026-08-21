@@ -1,28 +1,19 @@
-"""MapReduce-style 分布式 符号执行
+"""MapReduce 风格的分布式符号执行。
 
-Partitions a binary function, 执行 function's symbolic analysis
-an independent sub-problem (map), 去重 合并
-resulting path sets (reduce). Falls back r2 反汇编 angr
-unavailable
+把二进制按函数拆分, 每个函数的符号分析作为一个独立子问题 (map),
+随后去重合并各路径集 (reduce); angr 不可用时回退到 r2 反汇编。
 
-增强 — MapReduce 级 检查点：map 阶段完成后将所有 SubResult
-
-三轮增强 — 推测性 Reduce + 二进制缓存：SpeculativeMap 在 map 进行中
-即启动后台线程增量合并已完成的 SubResult。BinarySegmentCache 缓存
-(binary_path, file_mtime) → 函数列表，避免对同一 binary 重复调用 r2
-序列化至磁盘，重启时从检查点恢复，避免重复计算
-
-增强 — 约束 DAG 同构比较：两个路径即使 path_id 不同，若其约束
-依赖图同构，则被视为重复。使用拓扑排序 + 哈希比较检测同构
-
-四轮增强 — WorkStealingScheduler：worker 完成自身子问题后从最慢
-worker 的队列窃取未处理子问题，用 mp.Manager dict 追踪各 worker 队列
-
-五轮增强 — ResultRanker：reduce 后按新颖性、覆盖影响、漏洞密度
-对合并路径排序，返回 top-N 路径供下游深度分析
-
-六轮增强 — MapPhaseTimeout：每子问题超时强制终止，挽救已发现的
-部分路径，标记为 PARTIAL 而非 FAILED
+增强:
+- MapReduce 级检查点: map 阶段完成后把所有 SubResult 序列化至
+  磁盘, 重启时从检查点恢复, 避免重复计算
+- 约束 DAG 同构比较: 两个路径即使 path_id 不同, 若其约束依赖图
+  同构则视为重复, 使用拓扑排序 + 哈希比较检测同构
+- WorkStealingScheduler: worker 完成自身子问题后从最慢 worker 的
+  队列窃取未处理子问题, 用 mp.Manager dict 追踪各 worker 队列
+- ResultRanker: reduce 后按新颖性、覆盖影响、漏洞密度对合并路径
+  排序, 返回 top-N 路径供下游深度分析
+- MapPhaseTimeout: 每子问题超时强制终止, 挽救已发现的部分路径,
+  标记为 PARTIAL 而非 FAILED
 """
 
 import logging
@@ -48,7 +39,7 @@ except ImportError:
 
 @dataclass
 class SubProblem:
-    """A single function's symbolic analysis task dispatched a worker"""
+    """单个函数的符号分析任务, 分发给一个 worker。"""
     sub_id: str = ""
     func_name: str = ""
     binary_path: str = ""
@@ -74,10 +65,11 @@ class SubProblem:
 
 @dataclass
 class SubResult:
-    """Result one worker processing a SubProblem
-    
-    六轮增强 — completion_status 字段区分 complete / partial / failed
-    partial 表示超时终止但挽救了部分路径"""
+    """单个 worker 处理一个 SubProblem 的结果。
+
+    completion_status 区分 complete / partial / failed;
+    partial 表示超时终止但挽救了部分路径。
+    """
     sub_id: str = ""
     success: bool = False
     paths: List = field(default_factory=list)
@@ -97,7 +89,7 @@ class SubResult:
 
 @dataclass
 class MapReduceResult:
-    """Aggregate 输出 a full MapReduce 运行"""
+    """一次完整 MapReduce 运行的聚合输出。"""
     sub_problems: List = field(default_factory=list)
     sub_results: List = field(default_factory=list)
     merged_paths: List = field(default_factory=list)
@@ -112,7 +104,7 @@ class MapReduceResult:
 
 
 class FunctionBoundaryDetector:
-    """使用 r2 enumerate function boundaries (name, offset, size) a binary"""
+    """用 r2 枚举二进制的函数边界 (name, offset, size)。"""
 
     def detect(self, binary_path: str) -> List[Dict[str, Any]]:
         """运行 r2 'aflj' 解析 JSON function list"""
@@ -138,7 +130,7 @@ class FunctionBoundaryDetector:
 
 def _build_constraint_dag_hash(constraints: List[str]) -> str:
     """构建约束 DAG 的规范哈希
-    
+
     每个约束字符串被视作一个节点，依赖关系通过变量名共享推导
     拓扑排序后拼接所有节点得到规范形式，再 SHA-256 哈希"""
     if not constraints:
@@ -150,7 +142,7 @@ def _build_constraint_dag_hash(constraints: List[str]) -> str:
 
 
 def _subproblem_worker(sub: SubProblem) -> SubResult:
-    """Per-subproblem worker. Prefers angr; degrades r2 反汇编 failure"""
+    """逐子问题 worker: 优先 angr, 失败时回退 r2 反汇编。"""
     start = time.time()
     try:
         try:
@@ -170,7 +162,7 @@ def _subproblem_worker(sub: SubProblem) -> SubResult:
                 if func_addr:
                     func_addr = func_addr.rebased_addr
             except Exception:
-                logger.debug("suppressed", exc_info=True)
+                logger.debug("symbol lookup failed", exc_info=True)
         if func_addr is None:
             try:
                 import subprocess as _sp
@@ -188,7 +180,7 @@ def _subproblem_worker(sub: SubProblem) -> SubResult:
                         except ValueError:
                             continue
             except Exception:
-                logger.debug("suppressed", exc_info=True)
+                logger.debug("r2 symbol lookup failed", exc_info=True)
 
         if func_addr is None:
             return SubResult(sub_id=sub.sub_id, success=False,
@@ -209,7 +201,7 @@ def _subproblem_worker(sub: SubProblem) -> SubResult:
                     val = s.solver.eval(s.registers.load(reg))
                     output[reg] = val
                 except Exception:
-                    logger.debug("suppressed", exc_info=True)
+                    logger.debug("register eval failed", exc_info=True)
             paths.append({
                 'path_id': f"{sub.sub_id}_p{i}",
                 'constraints': sub.constraints + constraints,
@@ -228,7 +220,7 @@ def _subproblem_worker(sub: SubProblem) -> SubResult:
 
 
 def _fallback_r2_worker(sub: SubProblem, start: float) -> SubResult:
-    """回退: 使用 r2 aflj JSON function, 反汇编"""
+    """回退: 用 r2 aflj 获取函数信息并反汇编。"""
     try:
         import subprocess as _sp
         r = _sp.run(
@@ -245,7 +237,7 @@ def _fallback_r2_worker(sub: SubProblem, start: float) -> SubResult:
                     if func_info:
                         break
         except Exception:
-            logger.debug("suppressed", exc_info=True)
+            logger.debug("aflj parse failed", exc_info=True)
 
         if func_info:
             paths.append({
@@ -265,9 +257,21 @@ def _fallback_r2_worker(sub: SubProblem, start: float) -> SubResult:
                          completion_status="failed")
 
 
+def _timeout_worker_entry(s: SubProblem, q: mp.Queue) -> None:
+    """超时 worker 的子进程入口: 执行子问题并把结果放入队列。
+
+    必须是模块级函数, Windows spawn 才能 pickle 进程 target。
+    """
+    try:
+        r = _subproblem_worker(s)
+        q.put(('done', r))
+    except Exception as e:
+        q.put(('error', str(e)))
+
+
 def _subproblem_worker_with_timeout(sub: SubProblem, timeout: int) -> SubResult:
     """带超时控制的子问题 worker
-    
+
     在独立进程中执行子问题求解，超时则终止进程并挽救已写入队列的部分路径
     标记 completion_status 为 partial 而非 failed
     """
@@ -276,14 +280,7 @@ def _subproblem_worker_with_timeout(sub: SubProblem, timeout: int) -> SubResult:
     # 用 Queue 收集 worker 的输出
     result_queue: mp.Queue = mp.Queue()
 
-    def _wrapped_worker(s: SubProblem, q: mp.Queue):
-        try:
-            r = _subproblem_worker(s)
-            q.put(('done', r))
-        except Exception as e:
-            q.put(('error', str(e)))
-
-    proc = mp.Process(target=_wrapped_worker, args=(sub, result_queue), daemon=True)
+    proc = mp.Process(target=_timeout_worker_entry, args=(sub, result_queue), daemon=True)
     proc.start()
     proc.join(timeout=timeout)
 
@@ -337,7 +334,7 @@ def _subproblem_worker_with_timeout(sub: SubProblem, timeout: int) -> SubResult:
 
 class WorkStealingScheduler:
     """工作窃取调度器：worker 完成自身子问题后从最慢 worker 窃取任务
-    
+
     用 mp.Manager dict 追踪各 worker 的待处理子问题队列
     窃取策略：选择队列最长的 worker 为目标，从尾部弹出以减少争用"""
 
@@ -393,7 +390,7 @@ class WorkStealingScheduler:
 
     def steal(self, worker_id: int) -> Optional[int]:
         """从队列最长的其他 worker 尾部窃取一个子问题索引
-        
+
         选队列最长的 worker 作为目标（= 最慢）
         尾部弹出减少窃取方之间的争用
         """
@@ -438,11 +435,11 @@ class WorkStealingScheduler:
 
 class ResultRanker:
     """合并路径排序器：按新颖性、覆盖影响、漏洞密度三维评分
-    
+
     新颖性：路径中唯一约束（非全局重复）的比例
     覆盖影响：约束深度（路径长度）和输出寄存器数
     漏洞密度：约束字符串中安全敏感关键字（memcpy, strcpy 等）的密度
-    
+
     综合得分 = 0.4 * 新颖性 + 0.35 * 覆盖影响 + 0.25 * 漏洞密度"""
 
     VULN_PATTERNS = [
@@ -457,14 +454,9 @@ class ResultRanker:
 
     @classmethod
     def rank(cls, merged_paths: List[Dict[str, Any]], top_n: int = 20) -> List[Dict[str, Any]]:
-        """对合并路径排序，返回 top-N
-        
-        Args:
-        merged_paths: PathMerger.合并() 的输出
-        top_n: 返回的路径数
-        
-        返回:
-        按综合得分降序排列的 top-N 路径列表
+        """对合并路径按综合得分降序排序, 返回 top-N 路径列表。
+
+        merged_paths 为 PathMerger.merge() 的输出。
         """
         if not merged_paths:
             return []
@@ -524,15 +516,15 @@ class ResultRanker:
 
 
 class PathMerger:
-    """Reduce phase: 去重 paths constraint DAG hash
-    
-    增强 — 使用约束 DAG 同构哈希而非 (path_id, constraints) 元组：
-    两个路径即使 ID 不同，若约束依赖图同构则视为重复
+    """Reduce 阶段: 按约束 DAG 哈希去重路径。
+
+    增强: 使用约束 DAG 同构哈希而非 (path_id, constraints) 元组 —
+    两个路径即使 ID 不同, 若约束依赖图同构则视为重复。
     """
 
     @staticmethod
     def merge(results: List[SubResult]) -> List[Dict[str, Any]]:
-        """Collect paths sub-results, drop DAG-isomorphic duplicates"""
+        """收集子结果中的路径, 丢弃 DAG 同构的重复项。"""
         all_paths: List[Dict[str, Any]] = []
         for r in results:
             for p in r.paths:
@@ -554,14 +546,13 @@ class PathMerger:
 
 
 class SymbExMapReduce:
-    """调度器: partition → map (并行) → reduce (合并)
-    
-    增强 — 中间 checkpoint：map 阶段完成后自动保存中间结果
-    后续如果 reduce 失败可以从 checkpoint 恢复而不重新 map
-    
-    四轮增强 — 集成 WorkStealingScheduler
-    五轮增强 — 集成 ResultRanker：返回 top-N 排序路径
-    六轮增强 — MapPhaseTimeout 每子问题超时控制"""
+    """调度器: partition → map (并行) → reduce (合并)。
+
+    增强: 中间 checkpoint (map 完成后自动保存中间结果, reduce 失败
+    可从 checkpoint 恢复而不重新 map); 集成 WorkStealingScheduler;
+    集成 ResultRanker 返回 top-N 排序路径; MapPhaseTimeout 每子问题
+    超时控制。
+    """
 
     # map 阶段每个子问题的默认超时（秒）
     DEFAULT_SUBPROBLEM_TIMEOUT = 300
@@ -593,7 +584,7 @@ class SymbExMapReduce:
     def partition(self, binary_path: str,
                   target_funcs: Optional[List[str]] = None,
                   max_problems: int = 50) -> List[SubProblem]:
-        """分割 binary per-function SubProblems. Optionally 过滤 name"""
+        """把二进制按函数拆分为 SubProblem, 可选按名称过滤。"""
         funcs = self.boundary.detect(binary_path)
         if target_funcs:
             funcs = [f for f in funcs if f['name'] in target_funcs]
@@ -619,10 +610,10 @@ class SymbExMapReduce:
                   use_processes: bool = True,
                   subproblem_timeout: Optional[int] = None,
                   use_work_stealing: bool = False) -> List[SubResult]:
-        """执行 sub-problems, optionally via Process池Executor
-        
-        六轮增强 — MapPhaseTimeout：每子问题超时后终止并挽救部分结果
-        四轮增强 — WorkStealingScheduler
+        """执行子问题, 可选经 ProcessPoolExecutor。
+
+        六轮增强: MapPhaseTimeout 每子问题超时后终止并挽救部分结果;
+        四轮增强: WorkStealingScheduler。
         """
         timeout = subproblem_timeout or self.DEFAULT_SUBPROBLEM_TIMEOUT
         results: List[SubResult] = []
@@ -641,7 +632,7 @@ class SymbExMapReduce:
 
     def _map_with_process_pool(self, subs: List[SubProblem],
                                 timeout: int) -> List[SubResult]:
-        """使用 Process池Executor 执行 map，带超时控制"""
+        """使用 ProcessPoolExecutor 执行 map, 带超时控制。"""
         results: List[SubResult] = []
         with ProcessPoolExecutor(max_workers=self.num_workers) as pool:
             futures = {pool.submit(_subproblem_worker, s): s for s in subs}
@@ -722,9 +713,9 @@ class SymbExMapReduce:
 
     def reduce_phase(self, results: List[SubResult],
                      top_n: Optional[int] = None) -> List[Dict[str, Any]]:
-        """合并 去重 results workers
-        
-        五轮增强 — 若指定 top_n，通过 ResultRanker 返回 top-N 排序路径
+        """合并并去重各 worker 的结果。
+
+        五轮增强: 指定 top_n 时通过 ResultRanker 返回 top-N 排序路径。
         """
         merged = PathMerger.merge(results)
         if top_n is not None and top_n > 0:
@@ -737,9 +728,9 @@ class SymbExMapReduce:
             top_n: Optional[int] = None,
             subproblem_timeout: Optional[int] = None,
             use_work_stealing: bool = False) -> MapReduceResult:
-        """Full 流水线: partition → map → reduce
-        
-        五轮增强 — top_n 参数通过 ResultRanker 返回排序路径
+        """完整流水线: partition → map → reduce。
+
+        五轮增强: top_n 参数通过 ResultRanker 返回排序路径。
         """
         if not binary_path:
             empty_stats = {
@@ -779,7 +770,7 @@ def _work_stealing_worker_entry(worker_id: int,
                                  subs: List[SubProblem],
                                  timeout: int) -> None:
     """工作窃取 worker 进程入口
-    
+
     1. 从自身队列取子问题
     2. 自身队列空 → 从最慢 worker 窃取
     3. 无可窃取 → 退出
@@ -804,7 +795,7 @@ def run_distributed_symbex(binary_path: str,
                            top_n: Optional[int] = None,
                            subproblem_timeout: Optional[int] = None,
                            use_work_stealing: bool = False) -> Dict[str, Any]:
-    """One-shot: instantiate MapReduce engine, partition binary, 执行, 合并"""
+    """一次性流程: 实例化 MapReduce 引擎, 拆分二进制, 执行并合并。"""
     mr = SymbExMapReduce(num_workers=num_workers)
     result = mr.run(
         binary_path, target_funcs, max_problems,

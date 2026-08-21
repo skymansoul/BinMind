@@ -72,16 +72,7 @@ class MIVRPathPropagator:
     def check_write_safety(
         self, write_line: int, write_target: str, alloc_size: int,
     ) -> WriteSafetyVerdict:
-        """检查写入点的安全性.
-
-        Args:
-            write_line: 写入点行号
-            write_target: 写入目标变量 (buf/ptr)
-            alloc_size: 分配大小 (字节)
-
-        Returns:
-            WriteSafetyVerdict
-        """
+        """检查写入点的安全性, 返回 WriteSafetyVerdict。"""
         if self._graph is None:
             return WriteSafetyVerdict(
                 "UNCERTAIN", 0.0, "no constraint graph", -1, alloc_size)
@@ -141,12 +132,6 @@ class MIVRPathPropagator:
                     f"→ offset ≤ {tc.hi} < alloc {alloc_size}",
                     tc.hi, alloc_size,
                 )
-
-        # 方法3: 常量偏移 — buf[32] = ... 且 32 < alloc_size
-        lines = []
-        if hasattr(self._graph, '_alloc_sites'):
-            # 用伪代码行查常量偏移
-            pass
 
         return WriteSafetyVerdict(
             "UNCERTAIN", 0.0,

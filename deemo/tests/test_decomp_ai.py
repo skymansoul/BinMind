@@ -16,7 +16,6 @@ from modules.analysis.decompiler.decomp_ai import (
 
 
 class TestStripAnsiEscape(unittest.TestCase):
-    # 早期实现保留——记录设计决策
     """strip_ansi_escape -- 去除ANSI颜色转义码，radare2输出经常带这个"""
 
     def test_empty_text(self):
@@ -33,7 +32,6 @@ class TestStripAnsiEscape(unittest.TestCase):
         self.assertEqual(strip_ansi_escape(text), 'Red')
 
     def test_multiple_color_codes(self):
-        # 早期实现保留——记录设计决策
         text = '\x1b[31mRed\x1b[32mGreen\x1b[33mYellow\x1b[0m'
         self.assertEqual(strip_ansi_escape(text), 'RedGreenYellow')
 
@@ -120,7 +118,6 @@ class TestSanitizeFunctionName(unittest.TestCase):
 
 
 class TestDecompilerAI(unittest.TestCase):
-    # profiling确认非瓶颈路径——现有实现合理
     """DecompilerAI -- AI驱动的反编译分析主类"""
 
     def setUp(self):

@@ -1,13 +1,11 @@
-# 2026-07-27
 import re
 import hashlib
 import base64
 from typing import List, Dict, Tuple, Optional
 from collections import Counter
 
-
 class CryptoAuditor:
-    """Hardcoded secret + weak crypto + PEM detection + crypto lib fingerprinting"""
+    """硬编码密钥检测 + 弱加密识别 + PEM私钥提取 + 加密库指纹"""
 
 # 初始化: 定义风险模式库
 
@@ -121,7 +119,7 @@ class CryptoAuditor:
                     })
         return _r
 
-    # //// 弱加密/哈希/RNG检测 ////
+    # 弱加密/哈希/RNG检测
 
     def detect_weak_crypto(self, strings: List[str]) -> List[Dict]:
         _findings = []
@@ -212,10 +210,8 @@ class CryptoAuditor:
 # 自定义/自制加密检测
 
     def detect_custom_crypto(self, strings: List[str], imports: dict) -> List[Dict]:
-        """
-        自制加密启发式: 检测到XOR/移位/轮函数模式但没有标准crypto库imports时
-        可能是自定义加密 (cryptographic gatekeeping failure)
-        """
+        # 自制加密启发式: 检测XOR/移位/轮函数模式但无标准crypto库imports时
+        # 可能是自定义加密
         _findings = []
         _strs_all = ' '.join(strings)
         _imp_flat = set()
@@ -224,10 +220,7 @@ class CryptoAuditor:
                 _imp_flat.add(_f.lower())
 
         # 检查是否有标准加密库
-        _has_crypto_lib = any(
-            _imp in _strs_all.lower() or any(kw in _strs_all.lower() for kw in pats)
-            for _imp, pats in _item for _item in self._crypto_libs
-        ) if False else False
+        _has_crypto_lib = False
 
         # 检查 import names
         for _lib, _pats in self._crypto_libs.items():
@@ -255,7 +248,7 @@ class CryptoAuditor:
 
         return _findings
 
-    # //// Crypto library fingerprinting ////
+    # 加密库指纹识别
 
     def fingerprint_crypto_lib(self, strings: List[str], imports: dict) -> List[Dict]:
         _found = []

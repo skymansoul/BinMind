@@ -91,6 +91,7 @@ class DiffFuzzer:
         self.perf_factor = perf_regression_factor
         self._results: List[DiffResult] = []
         self._diff_counts: Dict[DiffCategory, int] = defaultdict(int)
+        self._seeds_tested = 0
 
     def run(self, seeds: List[bytes],
             max_seeds: int = 5000) -> List[DiffResult]:
@@ -100,8 +101,10 @@ class DiffFuzzer:
         """
         self._results.clear()
         self._diff_counts.clear()
+        self._seeds_tested = 0
 
         for i, seed in enumerate(seeds[:max_seeds]):
+            self._seeds_tested += 1
             try:
                 v1_result = self.v1_exec(seed)
                 v2_result = self.v2_exec(seed)
@@ -283,7 +286,7 @@ class DiffFuzzer:
     def summary(self) -> Dict:
         total_diffs = len(self._results)
         return {
-            "total_seeds_tested": 0,  # FIXME: 应从外部传入种子总数
+            "total_seeds_tested": self._seeds_tested,
             "differences_found": total_diffs,
             "by_category": dict(self._diff_counts),
             "critical": [

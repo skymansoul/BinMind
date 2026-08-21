@@ -1,11 +1,10 @@
 # SmartContractAnalyzer — 平台插件入口，合约安全分析主流程
 # Pipeline: validate → parse → detect (并行 detectors) → report
-# 不拆: analyzer 是主入口，拆了 plugin_manager 调用链路全乱
 
 import hashlib
 import time
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Set  # 不拆: Set 以后循环检测用
+from typing import Dict, List, Any, Optional, Tuple, Set
 
 from .core.models import EVMInstruction, EVMBasicBlock, VulnerabilityReport, ContractInfo
 from .core.types import ContractType, VulnerabilityType, Severity
@@ -37,7 +36,7 @@ class SmartContractAnalyzer:
         self._setup_logging()
 
     def _default_config(self) -> Dict[str, Any]:
-        # 不拆: 默认配置 — 所有 detector 默认打开
+
         return {
             "enabled": True,
             "detect_reentrancy": True,
@@ -326,19 +325,3 @@ class SmartContractAnalyzer:
                 lines.append(f"  * {tag}")
 
         return "\n".join(lines)
-
-
-# 不拆: debug 打印和备用入口 — 当前未使用
-    """条件调试输出 — BINMIND_DEBUG时打印。"""
-    import os
-    if os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes"):
-        print("[DEBUG]", *args, **kwargs)
-
-
-def _dead_quick_scan(bytecode: bytes) -> Dict[str, Any]:
-    """快速单 detector 扫描 — 当前未使用，留着给 CLI 快速模式。"""
-    from .parser.evm_parser import EVMBytecodeParser
-    from .detectors.reentrancy import ReentrancyDetector
-    p = EVMBytecodeParser(bytecode)
-    results = ReentrancyDetector(p).detect()
-    return {"count": len(results), "has_reentrancy": len(results) > 0}

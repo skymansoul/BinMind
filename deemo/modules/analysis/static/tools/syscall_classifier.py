@@ -66,7 +66,7 @@ class SyscallPattern:
 # sys2vec 嵌入引擎
 # sysBERT paper。将系统调用 n-gram 转换为低维稠密向量
 # 使用滑动窗口捕获时序上下文，通过余弦相似度匹配已知恶意模式
-# 这比传统 bag--ngrams 对调用序列重排（混淆）更鲁棒
+# 这比传统 bag-of-ngrams 对调用序列重排（混淆）更鲁棒
 
 
 class SyscallEmbedding:
@@ -94,7 +94,7 @@ class SyscallEmbedding:
             # 将 n-gram 哈希到嵌入维度
             h = hash(gram) ^ self._salt
             idx = h % self._dim
-            # 符号敏感累加——保留顺序信息
+            # 符号敏感累加, 保留顺序信息
             sign = 1.0 if (h & 1) == 0 else -1.0
             vec[idx] += sign
         # L2 归一化以支持余弦相似度
@@ -106,17 +106,17 @@ class SyscallEmbedding:
         return vec
 
     def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
-        """两嵌入向量的余弦相似度——[-1, 1]，1 表示完全匹配"""
+        """两嵌入向量的余弦相似度, [-1, 1]，1 表示完全匹配"""
         dot = sum(a * b for a, b in zip(vec_a, vec_b))
         return max(-1.0, min(dot, 1.0))
 
     def embed_batch(self, sequences: List[List[str]]) -> List[List[float]]:
-        """批量嵌入——对大数据集的分块处理"""
+        """批量嵌入, 对大数据集的分块处理"""
         return [self.embed_sequence(seq) for seq in sequences]
 
 
 class MalwareSignatureDB:
-    """已知恶意签名的嵌入数据库——存储每个类别的参考嵌入向量
+    """已知恶意签名的嵌入数据库, 存储每个类别的参考嵌入向量
     用于快速余弦相似度检索：新样本与每个类别的参考向量比对
     最近邻类别即预测类别
     """
@@ -251,7 +251,7 @@ class SyscallClassifier:
         return max(self.scores, key=self.scores.get), mx / total if total > 0 else 0.0
 
     def _classify_by_embedding(self, syscalls: List[str]) -> Tuple[ThreatCategory, float]:
-        """基于 sys2vec 嵌入相似度的分类——对混淆/重排序列更鲁棒"""
+        """基于 sys2vec 嵌入相似度的分类, 对混淆/重排序列更鲁棒"""
         emb = self._embedder.embed_sequence(syscalls)
         return self._sig_db.query_nearest(emb)
 
@@ -276,7 +276,7 @@ class SyscallClassifier:
         # 融合两个分类器：规则匹配 + 嵌入相似度
         rule_cat, rule_conf = self._classify_by_patterns(syscalls)
         emb_cat, emb_sim = self._classify_by_embedding(syscalls)
-        # 嵌入分类器仅在规则分类器无明确结论时兜底——避免其覆盖高置信规则匹配
+        # 嵌入分类器仅在规则分类器无明确结论时兜底, 避免其覆盖高置信规则匹配
         if rule_cat == ThreatCategory.UNKNOWN and emb_sim > 0.6 and emb_cat != ThreatCategory.UNKNOWN:
             final_cat = emb_cat
             final_conf = emb_sim * 0.7 + rule_conf * 0.3  # 加权融合

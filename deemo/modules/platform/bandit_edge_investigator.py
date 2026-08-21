@@ -1,5 +1,5 @@
 """
-上下文赌博机边调查优化 -- LinUCB算法分配有限的边验证资源。
+ 上下文赌博机边调查优化 - LinUCB算法分配有限的边验证资源。
 
 问题：
   传播图中有数十到数百条候选边，安全分析师的验证时间有限。
@@ -25,7 +25,7 @@
   上下文特征编码传播特有的语义（层跨度、跨层标记、规则名哈希）。
 
 ref: Li et al. "A Contextual-Bandit Approach to Personalized News Article Recommendation".
-ref: AdvBandit -- 神经上下文赌博机的对抗攻击，最接近的已有工作。
+ref: AdvBandit - 神经上下文赌博机的对抗攻击，最接近的已有工作。
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class ArmContext:
 
 @dataclass
 class InvestigationResult:
-    """一次边调查的结果 -- 反馈给赌博机的奖励信号。"""
+    """一次边调查的结果 - 反馈给赌博机的奖励信号。"""
     edge_key: Tuple[str, str]
     confidence_before: float
     confidence_after: float
@@ -58,7 +58,7 @@ class InvestigationResult:
 
 
 class LinUCBEdgeInvestigator:
-    """LinUCB边调查优化器 -- 上下文线性赌博机。
+    """LinUCB边调查优化器 - 上下文线性赌博机。
 
     用法::
 
@@ -84,7 +84,7 @@ class LinUCBEdgeInvestigator:
         # 每臂的参数: A_a = (D_a^T D_a + lambda*I)^{-1}, b_a = D_a^T r_a
         self._A: Dict[Tuple[str, str], List[List[float]]] = {}  # [d x d]
         self._b: Dict[Tuple[str, str], List[float]] = {}        # [d]
-        self._theta: Dict[Tuple[str, str], List[float]] = {}    # [d] -- 缓存
+        self._theta: Dict[Tuple[str, str], List[float]] = {}    # [d] 缓存
 
         # 边上下文缓存
         self._contexts: Dict[Tuple[str, str], ArmContext] = {}
@@ -107,7 +107,7 @@ class LinUCBEdgeInvestigator:
             self._theta[key] = [0.0] * self._d
 
     def _build_context(self, key: Tuple[str, str]) -> ArmContext:
-        """构建边的上下文特征向量 -- 8维。
+        """构建边的上下文特征向量 - 8维。
 
         维度:
           0: source_severity
@@ -145,7 +145,7 @@ class LinUCBEdgeInvestigator:
         return ArmContext(key, features, edge.confidence, edge.evidence_count)
 
     def select_edge(self) -> Tuple[str, str]:
-        """选择下一条应调查的边 -- UCB策略。
+        """选择下一条应调查的边 - UCB策略。
 
         对每条边计算: expected_reward + alpha * uncertainty
         expected_reward = theta_a^T * x_a
@@ -181,7 +181,7 @@ class LinUCBEdgeInvestigator:
 
     def update(self, edge_key: Tuple[str, str],
                new_confidence: float, timestamp: float = 0.0) -> None:
-        """用调查结果更新臂的参数 -- 岭回归在线更新。
+        """用调查结果更新臂的参数 - 岭回归在线更新。
 
         Sherman-Morrison公式增量更新 A^{-1}，避免每轮O(d^3)求逆。
         """
@@ -224,7 +224,7 @@ class LinUCBEdgeInvestigator:
 
     def _compute_uncertainty(self, key: Tuple[str, str],
                              x: List[float]) -> float:
-        """计算 x^T A^{-1} x -- 用当前缓存的theta近似。"""
+        """计算 x^T A^{-1} x - 用当前缓存的theta近似。"""
         A = self._A.get(key)
         if A is None:
             return 1.0
@@ -237,7 +237,7 @@ class LinUCBEdgeInvestigator:
 
     @staticmethod
     def _invert_small_matrix(A: List[List[float]]) -> List[List[float]]:
-        """小型矩阵求逆 -- Gauss-Jordan消元，适用于d<=10。"""
+        """小型矩阵求逆 - Gauss-Jordan消元，适用于d<=10。"""
         n = len(A)
         # 增广矩阵 [A | I]
         aug = [row[:] + [1.0 if i == j else 0.0 for j in range(n)]

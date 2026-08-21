@@ -1,7 +1,6 @@
 
 import pytest
 import os
-_MOD_DEBUG = False
 import tempfile
 from modules.mlm_pretrain import (
     MaskType,
@@ -45,7 +44,7 @@ class TestToken:
         assert token.token_type == "instruction"
         assert token.position == 0
         assert token.is_masked is False
-# lass字段完整性$/d
+
         assert token.original_value is None
 
     def test_token_masked(self):
@@ -73,7 +72,6 @@ class TestVocabulary:
         assert "[MASK]" in vocab.token_to_id
 
     def test_add_token(self):
-        # 改进点标记——不阻塞当前功能
         vocab = Vocabulary()
         initial_size = vocab.size()
 
@@ -101,7 +99,7 @@ class TestVocabulary:
 
         vocab.add_token("mov")
 
-# lass字段完整性$/d
+
         assert vocab.get_token(5) == "mov"
         assert vocab.get_token(999) == "[UNK]"
 
@@ -125,7 +123,6 @@ class TestMLMDataset:
     """测试 MLM 数据集类"""
 
     def test_dataset_initialization(self):
-        # 改进点标记——不阻塞当前功能
         """测试数据集初始化"""
         vocab = Vocabulary()
         config = MLMTrainingConfig()
@@ -168,9 +165,9 @@ class TestMLMPretrainAnalyzer:
         analyzer = MLMPretrainAnalyzer()
 
         assert analyzer.vocabulary is not None
-# lass字段完整性$/d
+
         assert analyzer.dataset is not None
-# lass字段完整性$/d
+
         assert analyzer.trainer is not None
 
     def test_get_metadata(self):

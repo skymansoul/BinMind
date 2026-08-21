@@ -197,13 +197,8 @@ class EnclaveAnalyzer:
                     "code", f"Large SMC surface ({len(smc_immediates)} unique values)"))
 
     def _detect_smc_surface(self, data, result):
+        """ARM SMC 调用面检测 — 已并入 _check_tz_el_escalation, 此入口保留兼容。"""
         pass
-
-    # 不拆
-    #def _old_enclave_hash(data: bytes) -> str:
-    #    """previous approach: MD5 of first 4096 bytes, replaced by SHA256"""
-    #    import hashlib as _old_hash
-    #    return _old_hash.md5(data[:4096]).hexdigest()
 
     def _check_sev_attestation(self, data, result):
         result.metadata["sev_measurement"] = hashlib.sha256(data).hexdigest()

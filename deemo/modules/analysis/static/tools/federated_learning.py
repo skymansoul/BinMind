@@ -97,7 +97,7 @@ class PrivacyProtector:
         return protected
 
     def compute_privacy_spent(self, steps: int, delta: float = 1e-5) -> float:
-        """Rényi DP 会计——基于 moments accountant 的隐私预算追踪
+        """Rényi DP 会计, 基于 moments accountant 的隐私预算追踪
         返回 (ε, δ) 组合用于判断训练是否违反预设隐私上限
         简化实现：假设每次查询独立，使用高斯机制的组合定理
         """
@@ -148,7 +148,7 @@ class GradientAggregator:
         return self._fedavg_aggregate(gradients)
 
 class FLClient(ABC):
-    """联邦学习客户端基类 — 不可直接实例化, 子类必须实现 train_local 和 evaluate_local。
+    """联邦学习客户端基类, 不可直接实例化, 子类必须实现 train_local 和 evaluate_local。
     具体实现: VulnerabilityDetectionClient。
     """
 
@@ -158,7 +158,7 @@ class FLClient(ABC):
 
     @abstractmethod
     def load_local_data(self, data_path):
-        """加载本地训练数据。子类必须覆盖——数据格式取决于具体应用场景。"""
+        """加载本地训练数据。子类必须覆盖, 数据格式取决于具体应用场景。"""
         ...
 
     @abstractmethod
@@ -182,7 +182,7 @@ class FLClient(ABC):
         return {'client_id': self.client_id, 'status': self.status.value, 'config': {'local_epochs': self.config.local_epochs, 'learning_rate': self.config.learning_rate, 'epsilon': self.config.epsilon}}
 
 class FLServer(ABC):
-    """联邦学习服务端基类 — 不可直接实例化。
+    """联邦学习服务端基类, 不可直接实例化。
     子类必须实现 initialize_global_model 和 update_global_model。
     具体实现: VulnerabilityDetectionServer。
     """
@@ -320,7 +320,7 @@ class VulnerabilityDetectionClient(FLClient):
         return features
 
     def train_local(self, global_model):
-        """本地 SGD 训练 — 前向传播 -> 交叉熵损失 -> 手动反向传播求梯度。
+        """本地 SGD 训练, 前向传播 -> 交叉熵损失 -> 手动反向传播求梯度。
         模型为 2 层 MLP: input_dim -> 10(hidden,ReLU) -> 5(hidden,ReLU) -> 4(softmax).
         梯度通过链式法则逐层计算, 不含自动微分框架依赖。
         """
@@ -404,7 +404,7 @@ class VulnerabilityDetectionClient(FLClient):
                          loss=avg_loss, accuracy=accuracy))
 
     def evaluate_local(self, model):
-        """本地评估 — 在验证集上计算损失和准确率。"""
+        """本地评估, 在验证集上计算损失和准确率。"""
         if not self.local_data or not model or not model.parameters:
             return FLMetrics(round=self.config.max_rounds, client_id=self.client_id,
                            loss=999.0, accuracy=0.0, note='no validation data')

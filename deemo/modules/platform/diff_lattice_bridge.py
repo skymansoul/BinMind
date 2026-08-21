@@ -1,9 +1,8 @@
-# 修改记录:
-# 2025-08-01 09:22 - 增加 FSS 阈值自适应——基于历史 diff 的 FSS 分布动态调整阈值
-# 2025-08-03 11:37 - 修复 diff 块与格节点绑定时的 hash 碰撞处理
+# 增加 FSS 阈值自适应, 基于历史 diff 的 FSS 分布动态调整阈值
+# 修复 diff 块与格节点绑定时的 hash 碰撞处理
 
 """
-Diff→格桥接——连接OTA差分分析与版本格。
+ Diff→格桥接, 连接OTA差分分析与版本格。
 
 将firmware/ota_diff_analyzer.py的OTADiffResult映射到VersionLattice，
 创建VersionNode并检测漏洞引入/回归。
@@ -46,7 +45,7 @@ class DiffClassification(str, Enum):
 
 @dataclass
 class ClassifiedDiff:
-    """经安全分类的差分条目——在OTADiffResult.DiffEntry基础上增加分类标签。"""
+    """经安全分类的差分条目, 在OTADiffResult.DiffEntry基础上增加分类标签。"""
     change_type: str                        # added / modified / deleted
     block_name: str
     offset: int
@@ -69,7 +68,7 @@ class DiffLatticeBridge:
         witness = bridge.locate_introductions()
     """
 
-    # FSS分类阈值——历史数据自适应调整的初始值
+    # FSS分类阈值, 历史数据自适应调整的初始值
     _FSS_VULN_INTRO_THRESHOLD = 0.55
     _FSS_SECURITY_FIX_THRESHOLD = 0.60
 
@@ -78,12 +77,12 @@ class DiffLatticeBridge:
         self._classified_diffs: List[ClassifiedDiff] = []
         self._old_hash: str = ""
         self._new_hash: str = ""
-        self._fss_history: List[float] = []  # 历史 FSS 值——用于自适应阈值校准
+        self._fss_history: List[float] = []  # 历史 FSS 值, 用于自适应阈值校准
 
     def ingest_diff(self, old_path: str, new_path: str,
                     diff_result: Any, old_version_tag: str = "",
                     new_version_tag: str = "") -> Tuple[VersionNode, VersionNode]:
-        """摄入OTA差分结果——创建VersionNode并分类所有DiffEntry。
+        """摄入OTA差分结果, 创建VersionNode并分类所有DiffEntry。
 
         diff_result: firmware/ota_diff_analyzer.py的OTADiffResult对象。
         返回 (old_version_node, new_version_node)。
@@ -124,7 +123,7 @@ class DiffLatticeBridge:
                 if classified.vuln_hash:
                     new_vuln_hashes.add(classified.vuln_hash)
             elif classified.classification == DiffClassification.SECURITY_FIX:
-                # 安全修复意味着旧版本可能含漏洞——标记旧节点
+                # 安全修复意味着旧版本可能含漏洞, 标记旧节点
                 if classified.vuln_hash and old_node.binary_hash:
                     old_node.vuln_hashes.add(classified.vuln_hash)
 
@@ -133,7 +132,7 @@ class DiffLatticeBridge:
 
         # 更新格节点及_vuln_to_versions索引
         # add_version内部已按当时的vuln_hashes建索引，之后修改的
-        # vuln_hashes需手动同步——否则find_introduction_point查不到。
+        # vuln_hashes需手动同步, 否则find_introduction_point查不到。
         if self._old_hash in self._lattice._nodes:
             self._lattice._nodes[self._old_hash] = old_node
             for vh in old_node.vuln_hashes:
@@ -171,7 +170,7 @@ class DiffLatticeBridge:
         return witnesses
 
     def detect_regressions(self) -> List[str]:
-        """检测已分类漏洞是否回归——之前修复过的漏洞重新出现。
+        """检测已分类漏洞是否回归, 之前修复过的漏洞重新出现。
 
         比较SECURITY_FIX与VULN_INTRODUCTION的block_name交集。
         同一函数先被修复（SECURITY_FIX）后又被标记为引入（VULN_INTRODUCTION），
@@ -217,7 +216,7 @@ class DiffLatticeBridge:
         classification = DiffClassification.UNKNOWN
         vuln_hash = ""
 
-        # 安全敏感关键词——与ota_diff_analyzer._SECURITY_SENSITIVE对齐
+        # 安全敏感关键词, 与ota_diff_analyzer._SECURITY_SENSITIVE对齐
         _SENSITIVE_KEYWORDS = {
             'auth', 'bypass', 'password', 'root', 'admin', 'encrypt', 'decrypt',
             'aes_', 'rsa_', 'sha', 'ssl_', 'tls_', 'key_', 'nonce',
@@ -262,7 +261,7 @@ class DiffLatticeBridge:
         )
 
     def _adaptive_fss_threshold(self) -> float:
-        """基于历史FSS分布动态调整阈值——取历史中位数。"""
+        """基于历史FSS分布动态调整阈值, 取历史中位数。"""
         if len(self._fss_history) < 10:
             return self._FSS_VULN_INTRO_THRESHOLD
         sorted_fss = sorted(self._fss_history)
@@ -271,7 +270,7 @@ class DiffLatticeBridge:
 
     @staticmethod
     def _make_vuln_hash(block_name: str, offset: int, content_hash: str) -> str:
-        """为疑似漏洞引入生成唯一标识——用于格vuln_hashes追踪。"""
+        """为疑似漏洞引入生成唯一标识, 用于格vuln_hashes追踪。"""
         raw = f"{block_name}:{offset}:{content_hash}"
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
@@ -285,7 +284,7 @@ class DiffLatticeBridge:
 
     @staticmethod
     def _parse_version(tag: str) -> Tuple[int, ...]:
-        """版本标签解析为元组——"v2.1.3" → (2, 1, 3)。"""
+        """版本标签解析为元组, "v2.1.3" → (2, 1, 3)。"""
         import re
         nums = re.findall(r'\d+', tag)
         return tuple(int(n) for n in nums) if nums else (0, 0, 0)

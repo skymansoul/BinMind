@@ -1,4 +1,4 @@
-# Angr漏洞点探索脚本——利用Angr的CFG+exploration找出可达的危险函数调用
+# Angr漏洞点探索脚本: 利用Angr的CFG+exploration找出可达的危险函数调用
 # 方法: 构建CFG→识别所有危险函数调用点→对每个点尝试符号执行验证可达性
 # 输出: JSON格式的漏洞点列表(地址、函数名、可达性、参数是否符号化)
 #
@@ -28,13 +28,13 @@ except ImportError:
     sys.exit(0)
 
 
-# 危险函数——C标准库中常见的溢出源
+# 危险函数, C标准库中常见的溢出源
 DANGEROUS_SINKS = {
     'memcpy', 'memmove', 'strcpy', 'strncpy', 'sprintf', 'snprintf',
     'gets', 'read', 'recv', 'fread', 'fgets', 'scanf', 'strcat', 'strncat',
 }
 
-# 输入源——标记为符号值的函数返回值/参数
+# 输入源, 标记为符号值的函数返回值/参数
 INPUT_SOURCES = {
     'read', 'recv', 'recvfrom', 'fread', 'fgets', 'scanf', 'gets',
     'readfile', 'recvmsg',
@@ -43,11 +43,7 @@ INPUT_SOURCES = {
 
 def analyze_binary(binary_path: str,
                     timeout: int = 120) -> Dict:
-    """用Angr分析二进制中的堆溢出风险点。
-
-    Returns:
-        {"vulns": [...], "time_ms": float, "cfg_nodes": int, "error": str}
-    """
+    """用Angr分析二进制中的堆溢出风险点。"""
     t0 = time.perf_counter()
     result = {"vulns": [], "time_ms": 0, "cfg_nodes": 0, "error": "", "available": True}
 
@@ -63,7 +59,7 @@ def analyze_binary(binary_path: str,
         cfg = proj.analyses.CFGFast(normalize=True)
         result["cfg_nodes"] = len(cfg.nodes())
     except Exception:
-        # CFG失败——回退到简单的函数枚举
+        # CFG失败, 回退到简单的函数枚举
         cfg = None
 
     # 获取入口点可达的所有节点
@@ -115,7 +111,7 @@ def analyze_binary(binary_path: str,
                         if target_addr in proj.kb.functions:
                             called_name = proj.kb.functions[target_addr].name
                     except Exception:
-                        # 间接调用——跳过
+                        # 间接调用, 跳过
                         continue
 
                     if called_name and called_name.split('.')[-1].split('@')[0] in DANGEROUS_SINKS:
@@ -124,7 +120,7 @@ def analyze_binary(binary_path: str,
                         is_reachable = (
                             not reachable_addrs or
                             block_addr in reachable_addrs)
-                        # 检查参数——尝试符号化参数看是否约束不足
+                        # 检查参数, 尝试符号化参数看是否约束不足
                         args_symbolic = False
                         try:
                             state = proj.factory.blank_state(addr=block_addr)

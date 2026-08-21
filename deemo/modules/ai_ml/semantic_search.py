@@ -1,5 +1,5 @@
 """
-语义漏洞搜索 —— TF-IDF 向量化 + 关键词匹配 + 漏洞模式标注。
+语义漏洞搜索 - TF-IDF 向量化 + 关键词匹配 + 漏洞模式标注。
 
 索引构建、保存/加载、查询与高亮均在本模块内闭环，
 不依赖外部模型或网络服务。
@@ -37,7 +37,7 @@ class VulnerabilityPattern(Enum):
 
 
 class TFIDFVectorizer:
-    """TF-IDF 向量化器 —— 词频加权与逆文档频率。"""
+    """TF-IDF 向量化器 - 词频加权与逆文档频率。"""
 
     def __init__(self) -> None:
         self.vocabulary: Dict[str, int] = {}
@@ -344,7 +344,7 @@ class SemanticVulnSearcher:
 
 
 def semantic_search(query: str, max_results: int = 10) -> SemanticSearchResult:
-    """便捷入口 —— 无索引时返回空结果。"""
+    """便捷入口 - 无索引时返回空结果。"""
     searcher = SemanticVulnSearcher()
     return searcher.search(query, max_results=max_results)
 

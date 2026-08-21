@@ -1,20 +1,19 @@
-# 修改记录:
-# 2025-07-29 13:55 - 覆盖位图替换为mmh3哈希，降低Python int开销
-# 2025-07-31 09:17 - corpus_distill()贪心近似，复杂度 O(N*M) -> O(N*logM)
-# 2025-08-02 16:30 - edge_index超高覆盖率下内存膨胀修复，增加LRU淘汰
+# 覆盖位图替换为mmh3哈希，降低Python int开销
+# corpus_distill()贪心近似，复杂度 O(N*M) - O(N*logM)
+# edge_index超高覆盖率下内存膨胀修复，增加LRU淘汰
 
-# 双向覆盖索引 — 覆盖边与输入的高效双向映射
+# 双向覆盖索引 - 覆盖边与输入的高效双向映射
 #
 # 设计动机:
 #   现有coverage.py仅单向记录"哪些边被覆盖了"；seed_selector.py
 #   从种子池中按bandit策略选择种子。缺少以下关键查询能力:
-#     a) "边0x7f3a被哪些输入覆盖？" — 定位覆盖特定代码的输入
-#     b) "给定一组输入，哪些覆盖了最多独有边？" — 语料库蒸馏
-#     c) "这个新输入覆盖了哪些已有输入未覆盖的边？" — 新颖性判定
+#     a) "边0x7f3a被哪些输入覆盖？" - 定位覆盖特定代码的输入
+#     b) "给定一组输入，哪些覆盖了最多独有边？" - 语料库蒸馏
+#     c) "这个新输入覆盖了哪些已有输入未覆盖的边？" - 新颖性判定
 #
 # 数据结构:
-#   edge_index: Dict[int, Set[str]] — 边ID -> 覆盖该边的输入ID集合
-#   input_index: Dict[str, Set[int]] — 输入ID -> 该输入覆盖的边集合
+#   edge_index: Dict[int, Set[str]] - 边ID - 覆盖该边的输入ID集合
+#   input_index: Dict[str, Set[int]] - 输入ID - 该输入覆盖的边集合
 #   两个索引互为逆映射，任一更新时另一同步更新。
 #
 # 内存控制:
@@ -22,10 +21,10 @@
 #   (只保留最后64个输入ID)。对极热边 (如循环入口) 这避免集合无限膨胀。
 #
 # 文献:
-#   AFL++'s afl-cmin — corpus minimization via edge->input mapping;
+#   AFL++'s afl-cmin - corpus minimization via edge-input mapping;
 #     本项目在其基础上去除full bitmap比较，改为双向索引查询，
 #     使蒸馏阶段无需O(N^2)成对比较。
-#   LibAFL — CorpusScheduler with
+#   LibAFL - CorpusScheduler with
 #     IndexedFeedbacks; 本项目的edge_index追踪类似其
 #     MapIndexedFeedback但增加了LRU淘汰的采样模式。
 import hashlib
@@ -41,10 +40,10 @@ class CoverageIndex:
         idx = CoverageIndex()
         idx.record("input_1", {0x1001, 0x1005, 0x200a})
         idx.record("input_2", {0x1001, 0x3000})
-        edges_for_input_1 = idx.edges_for("input_1")   # -> {0x1001, 0x1005, 0x200a}
-        inputs_for_edge = idx.inputs_for_edge(0x1001)   # -> {"input_1", "input_2"}
-        novel_edges = idx.novel_edges({"0x4000", "0x1001"})  # -> {"0x4000"}
-        distilled = idx.corpus_distill()  # -> 覆盖全部已见边的最小种子子集
+        edges_for_input_1 = idx.edges_for("input_1")   # {0x1001, 0x1005, 0x200a}
+        inputs_for_edge = idx.inputs_for_edge(0x1001)   # {"input_1", "input_2"}
+        novel_edges = idx.novel_edges({"0x4000", "0x1001"})  # {"0x4000"}
+        distilled = idx.corpus_distill()  # 覆盖全部已见边的最小种子子集
     """
 
     def __init__(self,
@@ -58,7 +57,7 @@ class CoverageIndex:
         self._input_index: Dict[str, Set[int]] = {}
         self._max_edge_inputs = max_edge_inputs
         self._max_inputs = max_total_inputs
-        # LRU追踪: input_id -> last_access_time
+        # LRU追踪: input_id - last_access_time
         self._input_lru: Dict[str, float] = {}
         self._total_edges_seen = 0
 
@@ -79,7 +78,7 @@ class CoverageIndex:
             # 全局新颖性判定
             if e not in self._edge_index:
                 novel += 1
-            # 更新 edge -> inputs
+            # 更新 edge - inputs
             if input_id not in self._edge_index[e]:
                 if len(self._edge_index[e]) >= self._max_edge_inputs:
                     # 采样模式: 概率64/当前大小决定是否替换旧成员

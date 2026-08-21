@@ -25,7 +25,7 @@ def run_taint_track(binary_path: str, input_data: bytes = None,
     Run dynamic taint analysis on a binary.
 
     engine: 'frida' or 'qbdi'
-    Returns: {success, taint_sources, taint_sinks, traces}
+    返回 {success, taint_sources, taint_sinks, traces}
     """
     result = {
         'success': False,
@@ -128,6 +128,76 @@ def _taint_frida(binary_path: str, input_data: bytes,
 
 
 def _taint_qbdi(path: str, data: bytes, timeout: int) -> Dict:
-    # QBDI integration would go here
-    return {'success': False, 'engine': 'qbdi',
-            'error': 'QBDI integration not implemented yet'}
+    """
+    用 QBDI 动态二进制翻译框架对目标做污点跟踪：
+    将输入 data 载入模拟内存标记为污染源，记录指令流中
+    对污染地址的读取（传播观察）与写入（汇点）。
+    需要 PyQBDI（pip install qbdi）与 pyelftools。
+    """
+    try:
+        import qbdi
+    except ImportError:
+        return {'success': False, 'engine': 'qbdi',
+                'error': 'qbdi not installed (pip install qbdi)'}
+
+    # PyQBDI 版本差异：新版暴露 Platform 枚举，旧版为 Architecture
+    if hasattr(qbdi, 'Platform') and hasattr(qbdi.Platform, 'X86_64'):
+        platform = qbdi.Platform.X86_64
+    else:
+        platform = qbdi.Architecture.X86_64
+
+    sources = []
+    sinks = []
+
+    # 输入缓冲模拟地址，选用进程映射区外的保留区间避免冲突
+    buf_addr = 0x10000000
+    buf_size = max(len(data), 1)
+    tainted = set(range(buf_addr, buf_addr + buf_size))
+
+    # 从 ELF 头取入口地址，作为翻译起点
+    try:
+        from elftools.elf.elffile import ELFFile
+        with open(path, 'rb') as f:
+            entry = ELFFile(f).header['e_entry']
+    except Exception:
+        logger.warning("cannot resolve ELF entry point of %s", path)
+        return {'success': False, 'engine': 'qbdi',
+                'error': 'cannot resolve ELF entry point'}
+
+    def mem_read_cb(vm_inst, addr, size, _ud):
+        if size and addr + size - 1 in tainted:
+            sources.append({'func': 'qbdimemread',
+                            'addr': hex(addr), 'size': size})
+        return qbdi.CallbackReturn.CONTINUE
+
+    def mem_write_cb(vm_inst, addr, size, _ud):
+        if size and addr + size - 1 in tainted:
+            sinks.append({'func': 'qbdimemwrite',
+                          'addr': hex(addr), 'size': size})
+        return qbdi.CallbackReturn.CONTINUE
+
+    try:
+        vm = qbdi.VM(platform)
+
+        # 注册内存回调：命中污染区间的读取记录为传播，写入记录为汇点
+        mem_ro = getattr(qbdi.MemAccessKind, 'MEM_READ', qbdi.MEM_READ)
+        mem_wo = getattr(qbdi.MemAccessKind, 'MEM_WRITE', qbdi.MEM_WRITE)
+        vm.addMemAccessCB(mem_ro, mem_read_cb, None)
+        vm.addMemAccessCB(mem_wo, mem_write_cb, None)
+
+        vm.addInstrumentedModule(path)
+        vm.setDumpExecCode(True)
+
+        # 限定翻译窗口：从入口地址运行一段虚拟地址范围
+        vm.run(entry, entry + 0x100000)
+
+        return {
+            'success': True,
+            'engine': 'qbdi',
+            'taint_sources': sources,
+            'taint_sinks': sinks,
+            'traces': [],
+        }
+    except Exception as ex:
+        logger.warning("QBDI taint analysis failed: %s", ex)
+        return {'success': False, 'engine': 'qbdi', 'error': str(ex)}

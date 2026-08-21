@@ -1,5 +1,5 @@
 """
-五模态证据融合——扩展MultiModalVulnFuser至五模态(static+dynamic+LLM+fuzzing+symbex)。
+五模态证据融合-扩展MultiModalVulnFuser至五模态(static+dynamic+LLM+fuzzing+symbex)。
 
 理论依据:
   FuseBinRepr: 文本-图交叉注意力+三任务训练，
@@ -36,7 +36,7 @@ _log = logging.getLogger(__name__)
 @dataclass
 class ModalEvidence:
     """
-    模态证据——单一分析模态的输出。
+    模态证据-单一分析模态的输出。
 
     扩展字段（相较原MultiModalVulnFuser）:
       - reachability_confidence: 该模态确认的可达性置信度
@@ -53,7 +53,7 @@ class ModalEvidence:
 
 @dataclass
 class FusionResult:
-    """融合结果——五模态证据综合输出"""
+    """融合结果-五模态证据综合输出"""
     final_score: float
     severity_label: str          # CRITICAL/HIGH/MEDIUM/LOW/INFO
     confidence: float
@@ -84,7 +84,7 @@ _FIVE_MODAL_WEIGHTS = {
 
 class FiveModalFuser:
     """
-    五模态证据融合器——扩展MultiModalVulnFuser至完整五模态。
+    五模态证据融合器-扩展MultiModalVulnFuser至完整五模态。
 
     模态说明:
       static:   传统静态分析（危险函数评分、数据流路径）
@@ -96,7 +96,7 @@ class FiveModalFuser:
     融合方法:
       - weighted_avg: 加权平均（权重×置信度×分数）
       - sugeno: Sugeno模糊积分
-      - adaptive: 自适应权重——根据证据冲突程度动态调权
+      - adaptive: 自适应权重-根据证据冲突程度动态调权
 
     自适应权重原理:
       多模态评分高度不一致(discord > 0.3)时，降低冲突模态权重，
@@ -114,7 +114,7 @@ class FiveModalFuser:
         self._weights = custom_weights or dict(_FIVE_MODAL_WEIGHTS)
 
     def fuse(self, evidences: List[ModalEvidence]) -> FusionResult:
-        """融合多模态证据——主入口"""
+        """融合多模态证据-主入口"""
         if not evidences:
             return FusionResult(
                 final_score=0.0, severity_label="INFO", confidence=0.0,
@@ -124,7 +124,7 @@ class FiveModalFuser:
                 recommendation="无可用证据",
             )
 
-        # 冲突检测——在所有方法之前运行
+        # 冲突检测-在所有方法之前运行
         conflicts = _detect_conflicts(evidences)
 
         if self._method == "weighted_avg":
@@ -180,7 +180,7 @@ class FiveModalFuser:
 
         sorted_ev = sorted(evidences, key=lambda e: e.score)
 
-        # 计算模糊测度g(A_i)——以权重作为测度
+        # 计算模糊测度g(A_i)-以权重作为测度
         weights = [self._weights.get(e.source, 0.1) for e in sorted_ev]
         total_w = sum(weights)
         if total_w == 0:
@@ -221,7 +221,7 @@ class FiveModalFuser:
         self, evidences: List[ModalEvidence], conflicts: List[Dict]
     ) -> FusionResult:
         """
-        自适应权重融合——根据证据冲突动态调权。
+        自适应权重融合-根据证据冲突动态调权。
 
         策略:
           1. 计算证据discord分数（平均绝对偏差）
@@ -299,7 +299,7 @@ def _score_to_label(score: float) -> str:
 
 
 def _compute_discord(scores: List[float]) -> float:
-    """计算证据discord——平均绝对偏差×2.5（与现有多模态模块一致）"""
+    """计算证据discord-平均绝对偏差×2.5（与现有多模态模块一致）"""
     if len(scores) < 2:
         return 0.0
     avg = sum(scores) / len(scores)
@@ -359,7 +359,7 @@ def make_evidence(
     reachability: float = 0.0,
     **metadata,
 ) -> ModalEvidence:
-    """创建模态证据——与现有多模态模块接口兼容"""
+    """创建模态证据-与现有多模态模块接口兼容"""
     return ModalEvidence(
         source=source,
         score=min(1.0, max(0.0, score)),
@@ -378,7 +378,7 @@ def fuse_five_modals(
     symbex_score: float = 0.0, symbex_conf: float = 0.0,
     method: str = "adaptive",
 ) -> FusionResult:
-    """便捷函数: 五模态融合——单行调用"""
+    """便捷函数: 五模态融合-单行调用"""
     evidences = []
     if static_conf > 0:
         evidences.append(make_evidence("static", static_score, static_conf))

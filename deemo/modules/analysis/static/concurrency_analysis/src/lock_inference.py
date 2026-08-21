@@ -1,12 +1,11 @@
-# 修改记录:
-# 2025-08-07 09:40 - 概率评分替代二值模式匹配: 原子指令权重 0.4 + 自旋循环 0.35 + 内存屏障 0.25
-# 2025-08-07 18:25 - unlock 配对: lock 函数识别后, 沿调用图正向搜索配对的 unlock
+# 概率评分替代二值模式匹配: 原子指令权重 0.4 + 自旋循环 0.35 + 内存屏障 0.25
+# unlock 配对: lock 函数识别后, 沿调用图正向搜索配对的 unlock
 
 """概率锁函数识别 - 从剥离二进制中推断同步原语
 
 现有二进制级竞态检测面临的首要障碍:
   源码级分析知道 mutex_lock()/spin_lock() 的位置
-  二进制级分析不知道--符号被剥离, 只剩下原始指令序列
+  二进制级分析不知道, 符号被剥离, 只剩下原始指令序列
 
 传统方法 使用模式匹配: 找 xchg + loop -> spinlock
 但此方法在以下场景失效:
@@ -71,7 +70,7 @@ def _classify_atomic(mnemonic: str, arch: str = 'x86_64') -> bool:
         return m in _ARM64_ATOMIC_INSNS
     # x86: lock 前缀或隐式原子指令
     if m == 'lock':
-        return True  # 单独出现--作为下一条指令的前缀
+        return True  # 单独出现, 作为下一条指令的前缀
     return m in _X86_ATOMIC_INSNS
 
 
@@ -89,7 +88,7 @@ def _has_spin_loop(
     instructions: List[str],
     max_loop_size: int = 8,
 ) -> Tuple[bool, float]:
-    """检测函数是否包含自旋循环--短循环体 + 条件退出 + 无副作用
+    """检测函数是否包含自旋循环: 短循环体 + 条件退出 + 无副作用
 
     自旋锁的典型模式 (x86):
       lock cmpxchg [mem], reg    ; 原子比较交换
@@ -160,7 +159,7 @@ class LockFunctionScore:
 
 
 class LockFunctionInferrer:
-    """概率锁函数识别器--从指令序列推断同步原语
+    """概率锁函数识别器: 从指令序列推断同步原语
 
     用法:
     inferrer = LockFunctionInferrer()
@@ -169,7 +168,7 @@ class LockFunctionInferrer:
     )
     """
 
-    # 三维权重--通过交叉验证校准
+    # 三维权重, 通过交叉验证校准
     _WEIGHTS = {'atomic': 0.40, 'spin': 0.35, 'fence': 0.25}
 
     # 分类阈值
@@ -287,7 +286,7 @@ class LockFunctionInferrer:
                     )
 
     def _is_unlock_pattern(self, instructions: List[str]) -> bool:
-        """检测 unlock 模式--写操作 + 屏障 (无原子读-改-写)
+        """检测 unlock 模式: 写操作 + 屏障 (无原子读-改-写)
 
         unlock 通常比 lock 简单: 不需要原子 compare-and-swap
         仅需一个带屏障的 store

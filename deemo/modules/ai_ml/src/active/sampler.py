@@ -33,7 +33,6 @@ class UncertaintySampler:
             _idx = np.arange(n)
         return np.asarray(_idx)
 
-    # ////
     @staticmethod
     def _entropy(probs):
         _eps = 1e-12
@@ -91,7 +90,6 @@ class CommitteeSampler:
                 for m in self._models]
         return np.stack(_all, axis=0)
 
-    # ////
     def _vote_entropy(self, _votes):
         """_votes: (n_models, n_samples, n_classes)"""
         _n_models = _votes.shape[0]
@@ -145,7 +143,6 @@ class DiversitySampler:
             _result = self._farthest_first(_x, n, _selected)
         return np.asarray(_result)
 
-    # ////
     def _kmeans_plus_plus(self, _x, n, _selected):
         _n_samples = len(_x)
         _selected = list(_selected)

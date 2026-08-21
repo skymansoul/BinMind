@@ -1,5 +1,5 @@
 """前后验证 — API 密钥预检、生成文件语法检查、脚本自检。"""
-from parallel_deep_dev.config import CONFIG
+from ..config import CONFIG
 
 
 def validate_api_key() -> bool:

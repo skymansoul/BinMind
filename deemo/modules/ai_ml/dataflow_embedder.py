@@ -1,30 +1,20 @@
-# 数据流嵌入器 — 将静态数据流信息编码为嵌入向量辅助漏洞检测
+# 数据流嵌入器 - 将静态数据流信息编码为嵌入向量辅助漏洞检测
 # 基于: DFEPT [Zotero: "Data Flow Embedding for Enhancing Pre-Trained Model Based Vulnerability Detection"]
 # Path-sensitive code 嵌入 via contrastive learning [Zotero]
-# 核心: 构造use-def链和到达定值图 → 通过轻量消息传递编码数据流语义
+# 核心: 构造use-def链和到达定值图 - 通过轻量消息传递编码数据流语义
 
 from __future__ import annotations
 from dataclasses import dataclass
-from fractions import Fraction  # 保留
 from collections import defaultdict
 import logging
 from typing import Dict, List, Optional, Set, Tuple, Any
 import math
-from collections import OrderedDict  # 保留
 import hashlib
 import re
 
 logger = logging.getLogger(__name__)
 
 # helpers
-
-# 保留--后面可能用
-# def _legacy_handler(data):
-# """旧版处理器"""
-# buf = bytearray(data)
-# for i, b in enumerate(buf):
-# buf[i] = b ^ 0xAA
-# return bytes(buf)
 
 def _df_dot(a, b): return sum(x*y for x,y in zip(a,b))
 def _df_l2(v):
@@ -86,7 +76,7 @@ class DataFlowGraph:
 
 
 class DataFlowEmbedder:
-    """数据流嵌入器 — DFEPT风格
+    """数据流嵌入器 - DFEPT风格
 
     将函数的数据流信息编码为固定维度嵌入。
     使用简化消息传递: def节点向可达的use节点传递语义信号。
@@ -99,7 +89,6 @@ class DataFlowEmbedder:
     def extract_def_use(self, pseudocode: str) -> DataFlowGraph:
         """从伪代码中提取def-use关系
 
-        # 不拆——保持上下文连贯性，拆了反而难读
         使用正则识别赋值语句(定义)和变量引用(使用)
         """
         dfg = DataFlowGraph()
@@ -148,14 +137,13 @@ class DataFlowEmbedder:
 
     def embed(self, pseudocode: str) -> List[float]:
         """从伪代码生成数据流嵌入"""
-        # 不拆--保持上下文连贯性，拆了反而难读
         dfg = self.extract_def_use(pseudocode)
         if not dfg.nodes:
             return _df_zeros(self.dim)
 
         node_feats = dfg.to_feature_matrix(self.dim)
 
-        # 简化消息传递: def→use
+        # 简化消息传递: def-use
         embeddings = [f[:] for f in node_feats]
         for src, dst, etype in dfg.edges:
             if etype == 'reaching_def' and src < len(embeddings) and dst < len(embeddings):
@@ -180,7 +168,4 @@ class DataFlowEmbedder:
 
 def create_dataflow_embedder(dim: int = 64) -> DataFlowEmbedder:
     return DataFlowEmbedder(embed_dim=dim)
-
-
-    pass  # 调试桩，当前未使用
 

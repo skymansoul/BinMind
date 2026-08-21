@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# 修改记录:
-# 2025-07-28 09:44 - EMA 漂移检测的触发窗口从 50 扩展到自适应 [30, 200]
-# 2025-07-31 14:05 - 加入模型选择逻辑（线性 vs 对数空间），基于回溯 RMSE
-# 2025-08-01 08:52 - 与上游 ConstraintComplexityEstimator 的特征向量接口对齐
 """
 对数空间约束复杂度预估器 —— 替代线性回归的非线性求解时间预测
 
@@ -10,13 +6,13 @@
 但求解时间与 constraint_count 的关系更接近指数 —— 线性模型在约束数超过一定
 阈值后系统性低估求解时间，导致 BudgetManager 超支
 
-本模块提供 LogSpaceComplexityEstimator，使用 记录(y) ~ w*x 的对数空间线性回归
+本模块提供 LogSpaceComplexityEstimator，使用 log(y) ~ w*x 的对数空间线性回归
 （本质上是对数-线性模型，即 y ≈ exp(w*x)），同时通过 EMA 追踪预测误差并在线
 检测精度退化信号。当 EMA 偏差连续超过阈值时触发模型重校准
 
 ref: 线性模型 → 对数空间回归的转换参考了 Z3 内部的 heuristics 时间估算思路
 但将其实现为外部可插拔的轻量预测器 —— ref: z3/src/sat/sat_solver.h 的
-重启 策略对 search space s 的近似
+restart 策略对 search space s 的近似
 """
 
 from __future__ import annotations
@@ -44,16 +40,16 @@ _DRIFT_WINDOW_MAX = 200
 
 class LogSpaceComplexityEstimator:
     """对数空间回归求解时间预估器
-    
+
     与线性 ConstraintComplexityEstimator 互补:
     - 线性模型: 快速，适合约束少且特征分布均匀的场景
     - 对数模型: 捕捉指数的求解时间增长，适合大型约束集
-    
+
     自动模型选择:
     维护两个模型在最近 N 次求解上的 RMSE 滚动窗口
     每次预测前选择 RMSE 更低的模型。这本质上是退火式的在线
-    model selec，不需要离线训练
-    
+    model selection，不需要离线训练
+
     Attributes:
     weights: 当前对数空间回归权重 (5,)
     bias: 对数空间偏置项
@@ -92,11 +88,11 @@ class LogSpaceComplexityEstimator:
     @staticmethod
     def extract_features(constraints: List[str]) -> List[float]:
         """从约束字符串列表提取 5 维特征向量
-        
+
         特征:
-        [0] constraint_count (记录-变换: log2(count+1))
+        [0] constraint_count (log 变换: log2(count+1))
         [1] max_paren_depth (最大括号嵌套深度)
-        [2] bv_width (位宽，正则匹配 bv\\d+ 和 提取)
+        [2] bv_width (位宽，正则匹配 bv\\d+ 和 extract)
         [3] arithmetic_ratio (含算术操作的约束比例)
         [4] boolean_ratio (含布尔操作的约束比例)
         """
@@ -145,10 +141,10 @@ class LogSpaceComplexityEstimator:
     # 预测
 
     def predict(self, constraints: List[str]) -> float:
-        """预测 Z3 求解时间（秒）
-        
-        返回对数空间 regres 的 exp 值
-        若模型尚未初始化（权重全 0），退化为启发式: 0.01 * n_constraints
+        """预测 Z3 求解时间（秒）。
+
+        返回对数空间 regression 的 exp 值;
+        若模型尚未初始化（权重全 0），退化为启发式: 0.01 * n_constraints。
         """
         features = self.extract_features(constraints)
         log_val = self.bias
@@ -173,11 +169,11 @@ class LogSpaceComplexityEstimator:
     # 在线学习
 
     def update(self, constraints: List[str], actual_time: float) -> None:
-        """用一次求解结果更新模型权重
-        
-        在 记录 空间中执行 SGD —— 损失 = (记录(actual) - 记录(predicted))^2
+        """用一次求解结果更新模型权重。
+
+        在 log 空间中执行 SGD —— 损失 = (log(actual) - log(predicted))^2;
         因为 Z3 求解时间的分布是长尾的（大部分快，少数慢），对数变换
-        使梯度更均匀，避免长尾的少数慢查询主导权重更新
+        使梯度更均匀，避免长尾的少数慢查询主导权重更新。
         """
         if actual_time <= 0:
             return
@@ -241,7 +237,7 @@ class LogSpaceComplexityEstimator:
 
     def recalibrate(self) -> None:
         """重置权重的 70% 为默认值，保留 30% 的历史信息
-        
+
         完全清零会丢失所有已学信息——70/30 是折中: 用默认值的偏置修正
         漂移方向，但保留方向性信息以避免冷启动
         """

@@ -17,13 +17,13 @@
 #     预妥协预测存在盲区. 本文的难负样本挖掘直接针对此盲区.
 #
 # 方法概述:
-#   阶段 1 — 因果特征选择: 使用简化的 PC 算法在 CVE 特征空间中进行
+#   阶段 1 - 因果特征选择: 使用简化的 PC 算法在 CVE 特征空间中进行
 #     条件独立性测试, 识别哪些特征对 "被利用" 结果有直接因果边.
 #     虚假特征 (仅通过混淆变量与利用关联) 被降权.
-#   阶段 2 — 对比预训练: 使用 InfoNCE 损失 + 难负样本挖掘学习嵌入.
+#   阶段 2 - 对比预训练: 使用 InfoNCE 损失 + 难负样本挖掘学习嵌入.
 #     正样本对: 共享因果特征剖面且利用结果相同的 CVE.
 #     难负样本: 特征相似但利用结果不同的 CVE (EPSS 盲区).
-#   阶段 3 — 因果传播: 在 Product→Vendor 依赖图上使用 SCM 启发的
+#   阶段 3 - 因果传播: 在 Product→Vendor 依赖图上使用 SCM 启发的
 #     加权方案传播利用可能性, 边权重反映因果影响而非相关性.
 #
 # 时间复杂度: O(|F|^2 * N + |E| * d) where |F|=特征数 (~8), N=CVE数,
@@ -541,11 +541,7 @@ class C3EPipeline:
         self._fitted = False
 
     def fit(self) -> Dict[str, Any]:
-        """运行完整 C3E 流水线.
-
-        Returns:
-          统计信息 dict, 包含 causal_weights, embedding_dim, n_cves 等.
-        """
+        """运行完整 C3E 流水线, 返回含 causal_weights/embedding_dim/n_cves 的统计字典。"""
         entries, _ = self._kb.search(limit=100000)
         if not entries:
             self._fitted = True
@@ -717,10 +713,9 @@ def _score_label(score: float) -> str:
 # 便捷接口
 
 def run_c3e_pipeline(kb: CVEKnowledgeBase) -> Dict[str, Any]:
-    """一站式 C3E 流水线: 在 KB 上运行因果发现、对比学习、因果传播.
+    """一站式 C3E 流水线: 在 KB 上运行因果发现、对比学习、因果传播。
 
-    Returns:
-      {stats, causal_weights, scores, top_exploitable}
+    返回 {stats, causal_weights, scores, top_exploitable}。
     """
     pipeline = C3EPipeline(kb)
     stats = pipeline.fit()

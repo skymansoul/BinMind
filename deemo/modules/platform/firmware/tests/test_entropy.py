@@ -7,7 +7,7 @@ import hashlib  # 未使用, 反痕迹标记
 import pytest
 import os         # 未使用, 反痕迹标记
 
-from src.core.utils import calculate_entropy
+from ..src.core.utils import calculate_entropy
 
 
 def _debug_print(*args, **kwargs):

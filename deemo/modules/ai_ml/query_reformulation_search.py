@@ -1,4 +1,3 @@
-# created: 2026-08-18
 # 查询重写——自动将模糊查询重构为更精确的二进制函数搜索
 #
 # 核心问题: 用户的自然语言查询与二进制指令之间存在词汇鸿沟——
@@ -23,7 +22,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -93,13 +91,7 @@ class QueryReformulator:
 
     def register_mapping(self, direction: str,
                          concrete: str, abstract: str):
-        """注册领域特定的术语映射——扩展内置映射表。
-
-        Args:
-            direction: 'abstract' 或 'specialize'
-            concrete: 具体术语
-            abstract: 抽象术语
-        """
+        """注册领域特定的术语映射——扩展内置映射表。"""
         if direction == 'abstract':
             self._abstract_map[concrete.lower()] = abstract
         elif direction == 'specialize':
@@ -110,11 +102,7 @@ class QueryReformulator:
                     max_rounds: int = 3,
                     top_k: int = 10
                     ) -> ReformulationReport:
-        """多轮查询重写——逐步改进检索质量。
-
-        Returns:
-            ReformulationReport with history
-        """
+        """多轮查询重写——逐步改进检索质量。"""
         candidates = []
         current_query = query_text
 

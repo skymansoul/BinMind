@@ -1,12 +1,10 @@
 # UAF 解引用检查器.
 # 职责: 检测已释放指针的解引用 + cleanup-pattern 误报抑制
-# 创建: 2026-07-12
-# 修改: 2026-07-12 — cleanup抑制增加读写区分和同对象校验
+# cleanup抑制增加读写区分和同对象校验
 
 from typing import Dict, List, Optional
 
 from .disasm_util import norm_reg, resolve_rip_relative, extract_func_name
-
 
 class DerefChecker:
     """已释放指针解引用检测器."""

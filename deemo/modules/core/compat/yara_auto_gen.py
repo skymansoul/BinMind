@@ -9,7 +9,6 @@ globals().update({k: getattr(_m, k) for k in dir(_m) if not k.startswith('_')})
 # YARA 规则自动生成增强 — 熵过滤和条件优化
 import re as _re, math as _math
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 
@@ -26,7 +25,6 @@ _YARA_KEYWORDS = frozenset({
 
 
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -127,6 +125,8 @@ def generate_behavioral_rule(api_sequence: list[str], rule_name: str = '',
     return '\n'.join(lines)
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

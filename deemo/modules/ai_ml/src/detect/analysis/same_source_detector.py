@@ -1,6 +1,6 @@
-# 同源大小检测器——追踪alloc_size/copy_size的栈槽/寄存器来源→同源则安全
+# 同源大小检测器-追踪alloc_size/copy_size的栈槽/寄存器来源→同源则安全
 # L5 FP压制: 若alloc_size≡copy_size同源且未修改, copy_size≤alloc_size恒成立→不可能溢出
-# 理论: provenance tracking——典型样本HEAP-FP-008(同一栈槽两次读取)
+# 理论: provenance tracking-典型样本HEAP-FP-008(同一栈槽两次读取)
 
 from __future__ import annotations
 
@@ -21,14 +21,14 @@ class SourceVerdict(Enum):
 
 @dataclass
 class Provenance:
-    """值的来源——栈槽、寄存器@指令、全局变量或立即数"""
+    """值的来源-栈槽、寄存器@指令、全局变量或立即数"""
     kind: str               # 'stack_slot' | 'register' | 'global' | 'immediate' | 'param'
     location: str           # 具体位置: [rbp+0x18] | rax@5 | [rip+0x1234] | 0x40
     source_instr_idx: int   # 定义该值的指令索引
     source_instr: str = ""  # 定义指令原文
 
     def signature(self) -> str:
-        """来源签名——相同签名=同源"""
+        """来源签名-相同签名=同源"""
         return f"{self.kind}:{self.location}"
 
 
@@ -41,7 +41,7 @@ class SameSourceReport:
 
 
 class SameSourceDetector:
-    """同源大小检测器——L5 FP压制:追踪alloc/copy的size来源,同源→SAFE"""
+    """同源大小检测器-L5 FP压制:追踪alloc/copy的size来源,同源→SAFE"""
 
     _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', 'alloca'}
     _COPY_FUNCS = {'memcpy', 'memmove', 'strncpy', 'strcpy', 'snprintf',
@@ -61,7 +61,7 @@ class SameSourceDetector:
 
     def detect(self, instructions: List[str], alloc_site_idx: int,
                copy_site_idx: int, copy_func: str = "memcpy") -> SameSourceReport:
-        """检测alloc-copy对的size来源是否同源——追踪参数→比较Provenance签名"""
+        """检测alloc-copy对的size来源是否同源-追踪参数→比较Provenance签名"""
         alloc_prov = self._trace_size_source(instructions, alloc_site_idx, self._ALLOC_SIZE_REG)
         size_reg = self._COPY_SIZE_REGS.get(copy_func, 'r8')
         copy_prov = self._trace_size_source(instructions, copy_site_idx, size_reg)
@@ -113,7 +113,7 @@ class SameSourceDetector:
 
     def _trace_provenance_chain(self, instructions: List[str], start_idx: int,
                                  depth: int = 0) -> Provenance:
-        """MOV链递归反向追踪——终止于栈槽/全局/立即数/参数/深度上限"""
+        """MOV链递归反向追踪-终止于栈槽/全局/立即数/参数/深度上限"""
         if depth >= self._max_depth or start_idx < 0:
             return Provenance(
                 kind='unknown', location=f'@depth_limit',

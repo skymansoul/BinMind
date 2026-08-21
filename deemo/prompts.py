@@ -1,5 +1,5 @@
 DECOMP_ANALYSIS_TEMPLATE = """
-你是一个资深的二进制安全研究员和漏洞挖掘专家。请分析以下反编译后的 C 代码，识别潜在的安全漏洞。
+你是资深二进制安全研究员。分析以下反编译代码，识别安全漏洞。
 
 # 二进制文件信息
 - 文件路径: {binary_path}
@@ -17,42 +17,36 @@ DECOMP_ANALYSIS_TEMPLATE = """
 # 关键字符串:
 {key_strings}
 
+# 崩溃日志:
+{crash_log}
+
 # 反编译代码:
 ```c
 {pseudocode}
 ```
 
 # 分析要求:
-1. 仔细阅读代码，识别可能存在的安全漏洞
-2. 关注以下常见漏洞类型:
-   - 栈溢出 (Stack Overflow)
-   - 格式化字符串漏洞 (Format String)
-   - 堆溢出 (Heap Overflow)
-   - 使用后释放 (Use-After-Free)
-   - 空指针引用 (Null Pointer Dereference)
-   - 整数溢出 (Integer Overflow)
-   - 条件竞争 (Race Condition)
-   - 命令注入 (Command Injection)
-3. 对每个发现的漏洞，提供:
-   - 漏洞类型
-   - 漏洞位置 (行号或代码片段)
-   - 触发条件
-   - 严重程度 (Critical/High/Medium/Low)
-   - 可能的利用方式
-4. 如果没有发现明显漏洞，请说明代码的安全特性
+1. 逐函数审查代码，识别安全漏洞
+2. 重点关注: 栈溢出、格式化字符串、堆溢出、UAF、空指针、整数溢出、竞争条件、命令注入
+3. 对每个发现，提供: 漏洞类型、位置(地址或行号)、输入源、危险操作、置信度(0.0-1.0)、证据片段
+4. 无漏洞时说明代码安全特性
 
-请以 JSON 格式输出分析结果，并将结果放在 ```json 代码块中，格式如下:
+# 输出格式（严格 JSON，放在 ```json 代码块中）:
 
 ```json
 {{
     "vulnerabilities": [
         {{
             "type": "漏洞类型",
-            "location": "漏洞位置",
+            "function": "函数名",
+            "location": "地址或行号",
+            "input_source": "触发输入来源",
+            "dangerous_op": "危险操作描述",
+            "confidence": 0.0,
+            "code_snippet": "证据代码片段",
             "description": "漏洞描述",
-            "severity": "严重程度",
-            "exploitation": "利用方式说明",
-            "code_snippet": "相关代码"
+            "severity": "Critical/High/Medium/Low",
+            "exploitation": "利用方式"
         }}
     ],
     "summary": "总体分析摘要",
@@ -239,4 +233,58 @@ KERNEL_EXPLOIT_STRATEGY_TEMPLATE = """
 
 ## 输出要求
 只输出理论分析结论与验证思路，不提供任何可执行的利用代码。
+"""
+
+# 三个典型提示词用例，供 B 端到端联调用
+PROMPT_EXAMPLE_STACK_OVERFLOW = """
+你是资深二进制安全研究员。分析以下栈溢出场景。
+
+# checksec: NX=disabled, PIE=enabled, Canary=disabled
+# 危险函数:strcpy, read
+# 关键字符串:"/bin/sh"
+
+# 反编译代码:
+```c
+void vuln() {
+    char buf[64];
+    read(0, buf, 256);
+    strcpy(dest, buf);
+}
+```
+
+识别栈溢出漏洞，给出溢出偏移、利用思路和置信度。输出 JSON。
+"""
+
+PROMPT_EXAMPLE_FORMAT_STRING = """
+你是资深二进制安全研究员。分析以下格式化字符串场景。
+
+# checksec: NX=enabled, PIE=enabled, Canary=enabled
+# 危险函数:printf
+# 关键字符串:"%p %p %p"
+
+# 反编译代码:
+```c
+void handle_input(char *user_input) {
+    printf(user_input);
+}
+```
+
+识别格式化字符串漏洞，给出泄露/写入原语和置信度。输出 JSON。
+"""
+
+PROMPT_EXAMPLE_UAF = """
+你是资深二进制安全研究员。分析以下 UAF 场景。
+
+# checksec: NX=enabled, PIE=enabled, RELRO=full
+# 危险函数:free, malloc, memcpy
+# 关键字符串:"use after free"
+
+# 反编译代码:
+```c
+void* ptr = malloc(0x40);
+free(ptr);
+memcpy(ptr, attacker_data, 0x40);
+```
+
+识别 UAF 漏洞，给出悬垂指针利用路径和置信度。输出 JSON。
 """

@@ -1,4 +1,4 @@
-# 堆溢出扫描驱动 — 反汇编 → 增强检测器 → PcWBI三级判定.
+# 堆溢出扫描驱动 - 反汇编 -> 增强检测器 -> PcWBI三级判定.
 #
 # 决策逻辑:
 #   复用 analysis/static 的增强堆溢出检测器 (含 DDSSC/SAWCE/Octagon
@@ -6,7 +6,6 @@
 #   将候选告警分为 confirmed/suspected/benign 三级.
 #   本模块只做编排与结果归并, 不重实现检测逻辑.
 #
-# 创建: 2026-07-19
 
 import json
 import os

@@ -1,9 +1,9 @@
-# 深度基准测试——脱离objdump依赖, 对合成但真实的汇编模式运行全管线
+# 深度基准测试: 脱离objdump依赖, 对合成但真实的汇编模式运行全管线
 # 与standalone_benchmark.py的区别:
-# 不依赖编译好的.exe——使用预定义的objdump文本模式
+# 不依赖编译好的.exe: 使用预定义的objdump文本模式
 # 对每条L1-L4管线做消融实验: 逐步启用各层, 测量每层的FP减少贡献
 #   - 输出: deep_benchmark_results.csv + ablation_study.json
-# created: 2026-06-30
+
 
 import json, csv, time, sys, os, logging
 from pathlib import Path
@@ -25,15 +25,13 @@ EVAL_DIR = Path(__file__).parent
 # 每个样本: (id, vuln_type, is_true_vuln, 期望行为, 函数名, 指令列表)
 # 使用make_objdump()生成标准objdump格式(含hex字节码填充)
 
-SAMPLE_PATTERNS = {}
-
 def _make_objdump(func_name: str, start_addr: int, instructions: list) -> str:
-    """用指令列表生成标准objdump格式——地址递增+hex字节码填充
+    """用指令列表生成标准objdump格式: 地址递增+hex字节码填充
     字节码为假值(仅满足parser格式要求), 不影响检测逻辑(检测只看指令文本)"""
     lines = [f"{start_addr:016x} <{func_name}>:"]
     addr = start_addr
     for instr in instructions:
-        fake_bytes = "00"  # 最小合法hex——满足parser的_INSTR_LINE正则
+        fake_bytes = "00"  # 最小合法hex: 满足parser的_INSTR_LINE正则
         lines.append(f"  {addr:x}: {fake_bytes}                   {instr}")
         addr += len(instr.encode())  # 近似地址递增
     return "\n".join(lines)
@@ -41,7 +39,7 @@ def _make_objdump(func_name: str, start_addr: int, instructions: list) -> str:
 SAMPLE_PATTERNS = {}
 
 # 堆溢出正样本(malloc+copy, size不匹配)
-# 各指令列表——make_objdump自动注入hex字节码
+# 各指令列表: make_objdump自动注入hex字节码
 SAMPLE_PATTERNS['HEAP-01'] = {'vuln_type': 'buffer_overflow', 'is_vuln': True,
     'desc': 'malloc(64)+memcpy(0x50=80)→definite overflow',
     'asm': _make_objdump('vuln_heap01', 0x401136, [
@@ -204,7 +202,7 @@ def run_one(sample_id: str, meta: dict) -> SampleResult:
                 'integer_overflow': (CombinedVerdict.INTOVF_CONFIRMED, CombinedVerdict.INTOVF_LIKELY),
             }
             type_verdicts = _TYPE_VERDICT_MAP.get(r.vuln_type, ())
-            # 找匹配类型的报告——仅同类型管线裁决才计为对该类型的检测
+            # 找匹配类型的报告: 仅同类型管线裁决才计为对该类型的检测
             typed = [c for c in combined_list if c.combined_verdict in type_verdicts]
             if typed:
                 best = max(typed, key=lambda c: c.confidence)

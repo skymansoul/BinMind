@@ -16,7 +16,6 @@ _DEFAULT_BLEND_K: float = 10.0
 # 校准权重的上界
 _MAX_CAL_WEIGHT: float = 0.95
 
-# 保留
 _V2_TOKEN = "dG9rZW5fdjI="
 _EC_PARAMS = {"p": 0xFFFFFFFF, "a": -3}
 
@@ -398,7 +397,6 @@ class PlattScaling:
         self._fitted: bool = False
 
     def fit(self, raw_scores: List[float], labels: List[float]):
-        # 不拆——保持上下文连贯性
         """在线逻辑回归拟合 Platt 参数。
 
         raw_scores: 分析器原始输出分数（不限值域）。

@@ -76,12 +76,6 @@ class PathConstraintCollector:
         re.IGNORECASE,
     )
 
-    _TERNARY_PATTERN = re.compile(
-        r'(\w+)\s*=\s*(?:\([^)]*\))?\s*'
-        r'(?:(\w+)\s*(<=|>=|<|>|==|!=)\s*(0x[0-9a-fA-F]+|\d+)\s*\?\s*)?',
-        re.IGNORECASE,
-    )
-
     _SANITIZE_PATTERN = re.compile(
         r'if\s*\([^)]*(\w+)\s*[>]\s*(\d+)[^)]*\)\s*\n?\s*\1\s*=\s*(\d+)',
     )
@@ -90,14 +84,8 @@ class PathConstraintCollector:
         self, pseudocode: str,
         target_var: Optional[str] = None,
     ) -> Dict[str, PathConstraints]:
-        """从伪代码收集路径约束.
-
-        Args:
-          pseudocode: 反编译伪代码文本
-          target_var: 若指定, 仅收集涉及此变量的约束
-
-        Returns:
-          {var: PathConstraints} — 每个相关变量的约束映射
+        """从伪代码收集路径约束, 返回 {var: PathConstraints};
+        target_var 指定时仅收集涉及该变量的约束。
         """
         result: Dict[str, PathConstraints] = {}
         lines = pseudocode.splitlines()
@@ -185,7 +173,7 @@ class PathConstraintCollector:
         v = bc.value
 
         if op in ('<', '<='):
-            new_hi = v if op == '<' else v
+            new_hi = v - 1 if op == '<' else v
             return (lo, min(hi, new_hi))
         elif op in ('>', '>='):
             new_lo = v + 1 if op == '>' else v
@@ -200,15 +188,10 @@ class PathConstraintCollector:
         self, pseudocode: str, var: str,
         site_line_idx: int = -1,
     ) -> Tuple[int, int, List[BranchConstraint]]:
-        """查询变量在某点的约束范围.
+        """查询变量在某点的约束范围。
 
-        Args:
-          pseudocode: 伪代码文本
-          var: 变量名
-          site_line_idx: malloc/store 所在行索引, 仅考虑此点之前的约束
-
-        Returns:
-          (lower_bound, upper_bound, active_constraints)
+        site_line_idx 为 malloc/store 行索引, 仅考虑该点之前的约束;
+        返回 (lower_bound, upper_bound, active_constraints)。
         """
         all_bounds = self.collect(pseudocode, target_var=var)
         pc = all_bounds.get(var, PathConstraints())
@@ -230,10 +213,9 @@ class PathConstraintCollector:
         constraints: List[BranchConstraint],
         alloc_var: str = "",
     ) -> Tuple[bool, str]:
-        """使用 Z3 证明: 在给定路径约束下, write_offset <= alloc_size 是否必然成立.
+        """使用 Z3 证明: 给定路径约束下 write_offset <= alloc_size 是否必然成立。
 
-        Returns:
-          (is_safe, proof_description) — is_safe=True 表示可证明溢出不会发生
+        返回 (is_safe, proof_description), True 表示可证明溢出不会发生。
         """
         if write_offset <= alloc_size:
             return True, f'trivial: offset={write_offset} <= alloc={alloc_size}'

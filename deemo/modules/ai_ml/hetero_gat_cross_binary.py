@@ -1,5 +1,3 @@
-# created: 2026-08-13
-# modified: 2026-08-28 — added proper metapath-guided neighbor sampling with attention weighting
 # 异构图注意力网络——跨二进制漏洞模式挖掘
 #
 # 核心问题: 现有GNN（包括gnn_vuln_detector.py）在单个二进制内分析函数关系，
@@ -30,7 +28,6 @@ from enum import Enum
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -103,11 +100,7 @@ class HeteroGATLayer:
                 adjacency: Dict[EdgeType, List[Tuple[int, int, int, int]]],
                 # [(src_type_idx, src_node, dst_type_idx, dst_node), ...]
                 ) -> Dict[NodeType, np.ndarray]:
-        """异构图注意力前向传播。
-
-        Returns:
-            每种节点类型更新后的特征
-        """
+        """异构图注意力前向传播。"""
         updated = {}
         node_types = list(NodeType)
 
@@ -194,9 +187,6 @@ class HeteroGATCrossBinary:
         例如沿 F→C→F 从函数A出发:
           1. 沿CALLS边→找到被调函数列表
           2. 从每个被调函数再沿CALLS边→找到二阶邻居
-
-        Returns:
-            每步采样到的节点索引列表
         """
         if len(metapath.edge_types) == 0:
             return []

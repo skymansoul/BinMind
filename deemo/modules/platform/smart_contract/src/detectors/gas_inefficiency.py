@@ -1,4 +1,4 @@
-# Gas低效检测器 — 冗余SLOAD、循环内SSTORE模式
+# Gas低效检测器 - 冗余SLOAD、循环内SSTORE模式
 # 从smart_contract_analyzer.py内联实现拆分
 from typing import List, Dict, Set
 from .base import BaseDetector
@@ -12,7 +12,7 @@ from ..parser.evm_parser import EVMBytecodeParser, EVMOp
 # 冗余SLOAD检测窗口大小
 _REDUNDANT_SLOAD_WINDOW = 128
 
-_LEGACY_GAS_THRESHOLD = 50000  # 保留
+_LEGACY_GAS_THRESHOLD = 50000
 
 # 遗留: 旧gas合并函数，将相邻检查合并
 # def _consolidate_gas_findings(self, findings):
@@ -28,8 +28,8 @@ class GasInefficiencyDetector(BaseDetector):
     """检测EVM字节码中的Gas低效代码模式。
 
     规则:
-    1. 同槽位短窗口内重复SLOAD — 应缓存至本地变量
-    2. 循环体内的SSTORE — 每次写入5000-20000 gas每次迭代
+    1. 同槽位短窗口内重复SLOAD - 应缓存至本地变量
+    2. 循环体内的SSTORE - 每次写入5000-20000 gas每次迭代
     """
 
     def __init__(self, parser: EVMBytecodeParser):

@@ -17,7 +17,7 @@ Core methods:
 参考: "Transformer-Based Memory Reverse Engineering for Malware
 Behavior Reconstruction"
 核心方法: 将原始内存字节视为"语言 token"，使用地址感知位置编码
-建立跨内存区域的长距离依赖关系。本模块实现简化版注意力机制——
+建立跨内存区域的长距离依赖关系。本模块实现简化版注意力机制,
 不使用完整 Transformer，而是用滑动窗口自注意力对内存区域评分
 """
 
@@ -106,7 +106,7 @@ class ObjectPointerGraph:
 
 # Transformer启发的内存注意力
 # 将QWORD视为token，对每个地址计算其与周围内存的注意力权重
-# 高注意力区域往往对应活跃的数据结构——对象边界、vtable指针等
+# 高注意力区域往往对应活跃的数据结构, 对象边界、vtable指针等
 # 这与Transformer Memory RE论文的核心思想一致：字节级注意力热图
 # 揭示内存中分散结构的关联（注入存根、PE头、解密例程等）
 
@@ -118,13 +118,13 @@ class MemoryAttentionScorer:
     不使用完整 transformer 编码器以保持线性复杂度 O(n·w)
     """
 
-    _TEMPERATURE = 8.0  # softmax 温度参数——越高越平滑
+    _TEMPERATURE = 8.0  # softmax 温度参数, 越高越平滑
 
     def __init__(self, window_size: int = 32):
         self._window = window_size  # QWORD 窗口大小
 
     def score_region(self, data: bytes, base_addr: int, ptr_size: int = 8) -> Dict[int, float]:
-        """逐QWORD计算注意力评分——每个位置对其窗口内邻居的相关性加权和"""
+        """逐QWORD计算注意力评分, 每个位置对其窗口内邻居的相关性加权和"""
         scores: Dict[int, float] = {}
         n_qwords = (len(data) - ptr_size) // ptr_size
         if n_qwords < 2:
@@ -223,7 +223,7 @@ class ObjectPointerReconstructor:
     def scan_memory(self, data: bytes, base_addr: int = 0x400000) -> ObjectPointerGraph:
         graph = ObjectPointerGraph(metadata={'base': hex(base_addr), 'size': len(data)})
 
-        # 注意力评分——在扫描对象前计算，用于过滤低注意力区域
+        # 注意力评分, 在扫描对象前计算，用于过滤低注意力区域
         attn_scorer = MemoryAttentionScorer(window_size=32)
         graph.attention_scores = attn_scorer.score_region(data, base_addr, self.ptr_size)
 

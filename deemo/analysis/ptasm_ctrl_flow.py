@@ -131,7 +131,7 @@ def find_branch_bodies(lines: List[str], cond_idx: int
       - 带括号: if (cond) { ... } else { ... }
       - 单行:   if (cond) stmt;  (无括号, then-body仅为预处理插入的虚拟行)
 
-    Returns: (then_start, then_end, else_start, else_end, merge_idx)
+    返回 (then_start, then_end, else_start, else_end, merge_idx).
     若找不到: 返回 (-1, -1, -1, -1, cond_idx+1)
     """
     line = lines[cond_idx]

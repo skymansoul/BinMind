@@ -1,14 +1,13 @@
-# 修改记录:
-# 2025-08-04 15:33 - 增加 delegatecall proxy 模式的启发式解析
-# 2025-08-07 09:18 - 引入调用置信度衰减，跨合约传播时不确定性量化
+# 增加 delegatecall proxy 模式的启发式解析
+# 引入调用置信度衰减，跨合约传播时不确定性量化
 
 """
-跨合约污点流分析器 —— 在合约边界间追踪污染数据，检测单合约分析
+跨合约污点流分析器: 在合约边界间追踪污染数据, 检测单合约分析
 遗漏的跨合约重入和状态不一致漏洞。
 
 设计依据:
   - SmartReco: 跨DApp只读重入检测, 边界识别+细粒度静态分析。
-    本模块取其"边界识别"思路, 用静态调用图替代fuzzing——降低部署
+    本模块取其"边界识别"思路, 用静态调用图替代fuzzing, 降低部署
     复杂度, 以精度换速度。
     注: doi:10.1109/ICSE55347.2025.00057 经验证为无效 DOI,
     此处保留为概念引用。
@@ -19,7 +18,7 @@
 
 与现有 taint_tracker.py 的关系:
   taint_tracker 处理单合约内的栈级污点传播。本模块在其输出基础上
-  扩展跨合约维度——当 taint 到达 CALL/DELEGATECALL 时，跨越合约
+  扩展跨合约维度: 当 taint 到达 CALL/DELEGATECALL 时, 跨越合约
   边界继续追踪。两者为互补关系而非替代。
 """
 
@@ -27,17 +26,17 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-# 跨合约调用置信度衰减因子——每跨一层合约边界，taint置信度乘以此值
+# 跨合约调用置信度衰减因子: 每跨一层合约边界, taint置信度乘以此值
 _TAINT_CROSS_CONTRACT_DECAY = 0.75
-# 最大跨合约追踪深度——防止在循环调用图中无限展开
+# 最大跨合约追踪深度: 防止在循环调用图中无限展开
 _MAX_CROSS_CONTRACT_DEPTH = 4
-# 最小置信度阈值——低于此值的taint路径不再追踪
+# 最小置信度阈值: 低于此值的taint路径不再追踪
 _MIN_CONFIDENCE = 0.20
 
 
 @dataclass
 class ContractCallEdge:
-    """合约间调用边——记录一个外部调用的源和目标。"""
+    """合约间调用边: 记录一个外部调用的源和目标。"""
     source_contract: str       # 调用者地址或标识
     target_contract: str       # 被调用者地址或标识（静态已知则填充）
     call_type: str             # "CALL" | "DELEGATECALL" | "CALLCODE" | "STATICCALL"
@@ -60,7 +59,7 @@ class CrossContractTaintPath:
 
 
 class CrossContractCallGraph:
-    """跨合约调用图——节点为合约，边为外部调用关系。
+    """跨合约调用图: 节点为合约, 边为外部调用关系。
 
     支持动态调用目标的概率解析（通过识别 proxy/dispatcher 模式）。
     """
@@ -91,7 +90,7 @@ class CrossContractCallGraph:
         """
         candidates: List[Tuple[str, float]] = []
 
-        # 启发式1: proxy模式——若此合约有已知的实现合约
+        # 启发式1: proxy模式, 若此合约有已知的实现合约
         if contract_id in self._proxy_impl:
             for impl in self._proxy_impl[contract_id]:
                 candidates.append((impl, 0.7))
@@ -109,7 +108,7 @@ class CrossContractCallGraph:
         return [(t, c / total) for t, c in candidates]
 
     def register_proxy(self, proxy_id: str, impl_ids: List[str]) -> None:
-        """注册proxy→implementation映射——由外部分析（如反编译）提供。"""
+        """注册proxy→implementation映射, 由外部分析（如反编译）提供。"""
         self._proxy_impl[proxy_id] = impl_ids
 
     def get_callees(self, contract_id: str) -> List[str]:
@@ -154,16 +153,7 @@ class CrossContractTaintAnalyzer:
         taint_sources: List[Tuple[int, str]],  # [(pc_offset, description), ...]
         taint_sinks: Dict[str, List[int]],     # {contract_id: [pc_offset, ...]}
     ) -> List[CrossContractTaintPath]:
-        """从start_contract中的污点源出发，沿调用图追踪到所有已知sink。
-
-        Args:
-            start_contract: 起始合约标识
-            taint_sources: [(pc, 描述)] 在起始合约中的污染源
-            taint_sinks: {合约: [pc]} 各合约中已知的危险汇聚点
-
-        Returns:
-            跨合约污点路径列表，按置信度降序
-        """
+        """从start_contract中的污点源出发，沿调用图追踪到所有已知sink。"""
         results: List[CrossContractTaintPath] = []
 
         for src_pc, src_desc in taint_sources:
@@ -196,7 +186,7 @@ class CrossContractTaintAnalyzer:
                 edges = self._call_graph.get_edges_from(cur_contract)
                 for edge in edges:
                     if edge.target_is_dynamic:
-                        # 动态目标——展开所有候选
+                        # 动态目标, 展开所有候选
                         candidates = self._call_graph.resolve_dynamic_target(
                             cur_contract, edge.call_offset,
                         )
@@ -235,24 +225,24 @@ class CrossContractTaintAnalyzer:
         contract_id: str,
         entry_points: List[int],  # 外部可调用的入口函数pc
     ) -> List[CrossContractTaintPath]:
-        """检测跨合约重入——特别关注delegatecall链中的状态不一致。
+        """检测跨合约重入: 特别关注delegatecall链中的状态不一致。
 
         核心检测逻辑:
           若合约A通过CALL调用合约B，B又回调A的函数（或A的proxy的
           implementation函数），且此回调路径修改了A在第一次调用中
-          假设不变的状态——则为跨合约重入。
+          假设不变的状态, 则为跨合约重入。
 
         本方法构建以contract_id为根、深度≤_MAX_CROSS_CONTRACT_DEPTH
         的回调闭合环路检测。
         """
         results: List[CrossContractTaintPath] = []
 
-        # 收集所有可能的回调路径——从contract_id出发，看能否回到contract_id
+        # 收集所有可能的回调路径, 从contract_id出发, 看能否回到contract_id
         edges_from_self = self._call_graph.get_edges_from(contract_id)
 
         for edge in edges_from_self:
             if edge.call_type == "DELEGATECALL":
-                # delegatecall在同一上下文中执行——更危险
+                # delegatecall在同一上下文中执行, 更危险
                 tgt = edge.target_contract
                 # 检查tgt是否会回调contract_id
                 back_edges = self._call_graph.get_edges_from(tgt)
@@ -285,11 +275,11 @@ class CrossContractTaintAnalyzer:
         call_types = {e.call_type for e in path}
 
         if "DELEGATECALL" in call_types and len(path) >= 2:
-            # delegatecall链长度≥2——典型的proxy→impl→external模式
+            # delegatecall链长度>=2, 典型的proxy→impl→external模式
             return "cross_reentrancy"
 
         if "CALL" in call_types and len(path) >= 2:
-            # 跨合约调用链——可能的状态不一致或价格操控
+            # 跨合约调用链, 可能的状态不一致或价格操控
             return "state_inconsistency"
 
         if "STATICCALL" in call_types:

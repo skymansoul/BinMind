@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-06 14:05 - 跨编译器相似度: 归一化 IR 签名距离替代指令级比较
-# 2025-08-06 17:18 - 编译器特异性标记: 识别并标记 GCC/Clang/MSVC 特有的指令模式
+# 跨编译器相似度: 归一化 IR 签名距离替代指令级比较
+# 编译器特异性标记: 识别并标记 GCC/Clang/MSVC 特有的指令模式
 
 """二进制归一化器 - 编译器无关的 IR 规范化与跨编译器比较
 
@@ -48,7 +47,7 @@ from .ir_canonical_passes import (
 
 # 编译器特异性模式标记
 
-# 每编译器的"指纹"指令模式--用于识别编译器来源
+# 每编译器的"指纹"指令模式, 用于识别编译器来源
 _COMPILER_PATTERNS = {
     'GCC': [
         r'endbr64',           # Intel CET - GCC 默认插入
@@ -57,7 +56,7 @@ _COMPILER_PATTERNS = {
     ],
     'Clang': [
         r'mov\s+\w+,\s*0',    # mov reg,0 清零 (Clang 偏好)
-        r'ud2',               # 未定义指令--Clang 的 unreachable
+        r'ud2',               # 未定义指令, Clang 的 unreachable
     ],
     'MSVC': [
         r'int3',              # MSVC 调试填充
@@ -68,10 +67,7 @@ _COMPILER_PATTERNS = {
 
 
 def detect_compiler_family(asm_lines: List[str]) -> Tuple[str, float]:
-    """基于指令模式检测编译器家族
-
-    返回: (compiler_name, confidence)
-    """
+    """基于指令模式检测编译器家族, 返回 (编译器名, 置信度)。"""
     text = '\n'.join(asm_lines)
     scores: Dict[str, int] = defaultdict(int)
 
@@ -126,7 +122,7 @@ class CrossCompilerComparison:
 
 
 class BinaryCanonicalizer:
-    """二进制归一化器--跨编译器比较的主入口
+    """二进制归一化器, 跨编译器比较的主入口
 
     用法:
     canon = BinaryCanonicalizer()
@@ -143,7 +139,7 @@ class BinaryCanonicalizer:
         arch: str = 'x86_64',
         func_address: int = 0,
     ) -> NormalizedFunction:
-        """归一化单个函数--汇编 -> 规范化 IR"""
+        """归一化单个函数, 汇编 -> 规范化 IR"""
         nf = NormalizedFunction(
             func_name=func_name,
             func_address=func_address,
@@ -161,7 +157,7 @@ class BinaryCanonicalizer:
         functions: Dict[str, List[str]],
         arch: str = 'x86_64',
     ) -> Dict[str, NormalizedFunction]:
-        """归一化整个二进制--所有函数并行处理"""
+        """归一化整个二进制, 所有函数并行处理"""
         result = {}
         for name, asm_lines in functions.items():
             result[name] = self.normalize_function(name, asm_lines, arch)
@@ -174,11 +170,9 @@ class BinaryCanonicalizer:
         arch: str = 'x86_64',
         similarity_threshold: float = 0.60,
     ) -> CrossCompilerComparison:
-        """比较两个二进制--通过归一化 IR 签名
+        """通过归一化 IR 签名比较两个二进制。
 
-        binary_a/binary_b: {func_name: [asm_lines]}
-
-        返回: CrossCompilerComparison
+        binary_a/binary_b: {func_name: [asm_lines]}; 返回 CrossCompilerComparison。
         """
         # 归一化两个二进制
         norm_a = self.normalize_binary(binary_a, arch)
@@ -189,7 +183,7 @@ class BinaryCanonicalizer:
         sigs_b = {name: nf.ir_signature for name, nf in norm_b.items()
                   if nf.ir_signature}
 
-        # Jaccard 相似度--签名集的交并比
+        # Jaccard 相似度, 签名集的交并比
         set_a = set(sigs_a.values())
         set_b = set(sigs_b.values())
         intersection = set_a & set_b
@@ -197,7 +191,7 @@ class BinaryCanonicalizer:
 
         jaccard = len(intersection) / max(1, len(union))
 
-        # 加权相似度--按函数大小 (指令数) 加权
+        # 加权相似度, 按函数大小 (指令数) 加权
         weighted_num = 0.0
         weighted_den = 0.0
         for sig in intersection:

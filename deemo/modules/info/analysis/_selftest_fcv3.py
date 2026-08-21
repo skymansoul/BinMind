@@ -25,10 +25,15 @@ CASES = {
         "int n = 128;\nchar *other = malloc(32);\nchar *buf = malloc(128);\nmemcpy(buf, src, n);\n", False),
 }
 
-print(f"{'name':<30} {'expect':<6} {'detected':<8} {'conf':<6} {'fp_red':<7} {'pairs'}")
-for name, (code, expect) in CASES.items():
-    r = detect_heap_overflow_fcv3(code=code)
-    found = r["stats"]["total"] > 0
-    conf = max((f["confidence"] for f in r["findings"]), default=0)
-    verdict = "OK" if (found == expect) else "MISMATCH"
-    print(f"{name:<30} {str(expect):<6} {str(found):<8} {conf:<6.2f} {r['fp_reduction_pct']:<7.1f} {r['alloc_write_pairs_total']:<4} {verdict}")
+def main():
+    print(f"{'name':<30} {'expect':<6} {'detected':<8} {'conf':<6} {'fp_red':<7} {'pairs'}")
+    for name, (code, expect) in CASES.items():
+        r = detect_heap_overflow_fcv3(code=code)
+        found = r["stats"]["total"] > 0
+        conf = max((f["confidence"] for f in r["findings"]), default=0)
+        verdict = "OK" if (found == expect) else "MISMATCH"
+        print(f"{name:<30} {str(expect):<6} {str(found):<8} {conf:<6.2f} {r['fp_reduction_pct']:<7.1f} {r['alloc_write_pairs_total']:<4} {verdict}")
+
+
+if __name__ == "__main__":
+    main()

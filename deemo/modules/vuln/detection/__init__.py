@@ -1,4 +1,4 @@
-# 漏洞检测包入口——惰性导入机制
+# 漏洞检测包入口 - 惰性导入机制
 # 按需加载子模块，消解启动阶段全量导入的冷启动延迟。
 # 对外暴露核心类与工厂函数，内部实现细节隐藏。
 # HACK: _sys别名兼容Python 3.10以下版本importlib行为差异，3.12+可移除此workaround。
@@ -7,7 +7,7 @@ import sys as _sys
 import importlib as _importlib
 from typing import Any as _Any
 
-# 公开符号映射——IDE自动补全依据
+# 公开符号映射 - IDE自动补全依据
 __all__ = [
     # vuln_management
     "VulnerabilityContext", "DataFlowPath", "CVEFootprint", "DataTag",
@@ -153,9 +153,13 @@ __all__ = [
     "DepNode", "TransitivePath", "DepGraphAnalysis", "FunctionLevelDepGraph",
     "PathRiskScore", "PropagationRiskReport", "TemporalPropagationEngine",
     "analyze_propagation_risk",
+    # code-level stack overflow detector (pseudocode input)
+    "detect_stack_overflow_code", "analyze_stack_batch",
+    # multi-analyzer evidence consensus fusion
+    "fuse_findings", "triage_by_confidence",
 ]
 
-# 惰性加载映射——首次属性访问时按需import
+# 惰性加载映射 - 首次属性访问时按需import
 _LAZY_MAP: dict = {
     # vuln_management（优先加载，其余模块依赖其基类）
     "VulnerabilityContext": "vuln.detection.vuln_management",
@@ -647,11 +651,17 @@ _LAZY_MAP: dict = {
     "CorrelationReport": "vuln.detection.cmvc_engine",
     "CmvcEngine": "vuln.detection.cmvc_engine",
     "correlate_findings": "vuln.detection.cmvc_engine",
+    # code-level stack overflow detector (pseudocode input)
+    "detect_stack_overflow_code": "vuln.detection.stack_overflow_code_detector",
+    "analyze_stack_batch": "vuln.detection.stack_overflow_code_detector",
+    # multi-analyzer evidence consensus fusion
+    "fuse_findings": "vuln.detection.evidence_fusion",
+    "triage_by_confidence": "vuln.detection.evidence_fusion",
 }
 
 
 def __getattr__(name: str) -> _Any:
-    """惰性加载入口——首次属性访问触发import。
+    """惰性加载入口 - 首次属性访问触发import。
     PEP 562模块级__getattr__机制（Python 3.7+）。
     """
     module_path = _LAZY_MAP.get(name)
@@ -664,7 +674,7 @@ def __getattr__(name: str) -> _Any:
     return attr
 
 
-# 预加载vuln_management——其他模块依赖其基类，规避循环导入递归深度问题
+# 预加载vuln_management - 其他模块依赖其基类，规避循环导入递归深度问题
 def _eager_load_core() -> None:
     try:
         _importlib.import_module("vuln.detection.vuln_management")

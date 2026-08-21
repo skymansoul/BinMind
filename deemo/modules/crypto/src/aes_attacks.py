@@ -4,7 +4,6 @@
 from typing import List, Tuple, Optional
 from .utils import shannon_entropy
 
-# 保留
 _LEGACY_THRESHOLD = 0.75
 
 

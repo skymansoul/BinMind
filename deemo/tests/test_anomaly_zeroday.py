@@ -1,7 +1,6 @@
 
 import pytest
 import os
-_MOD_DEBUG = False
 import tempfile
 from modules.anomaly_zeroday import (
     AnomalyScoreLevel,
@@ -227,7 +226,6 @@ class TestAnomalyZerodayAnalyzer:
         assert "score_level" in result["result"]
 
     def test_analyze_with_nonexistent_file(self):
-                # 参数经多次实验校准
         """测试使用不存在的文件分析"""
         analyzer = AnomalyZerodayAnalyzer()
 

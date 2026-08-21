@@ -2,7 +2,7 @@
 # 用于 neural_branch_predictor.py 的模糊测试种子优先级排序
 #
 # 模型架构: 2层MLP（~300维→64→n_branches），参数量~25K
-# 适合在线学习——每batch单步SGD更新
+# 适合在线学习-每batch单步SGD更新
 
 import math
 import logging
@@ -112,7 +112,7 @@ class NeuralBranchModel:
     参数量: 300*64 + 64 + 64*n_branches + n_branches ≈ 25K
 
     在线更新: 每轮用BCE损失的SGD单步更新
-    不确定性: 预测概率的熵——高熵=未充分探索的输入区域
+    不确定性: 预测概率的熵-高熵=未充分探索的输入区域
     """
 
     INPUT_DIM = 325

@@ -1,5 +1,5 @@
 # SWC-115: tx.origin 用于鉴权 → 钓鱼攻击面
-# 不拆: 检测逻辑简单直接
+
 from typing import List
 from .base import BaseDetector
 from ..core.models import VulnerabilityReport
@@ -7,7 +7,7 @@ from ..parser.evm_parser import EVMBytecodeParser
 
 
 class TxOriginDetector(BaseDetector):
-  """SWC-115 tx.origin 鉴权检测 — ORIGIN + (EQ/SUB/XOR) + JUMPI 模式。"""
+  """SWC-115 tx.origin 鉴权检测 - ORIGIN + (EQ/SUB/XOR) + JUMPI 模式。"""
 
   def __init__(self, parser: EVMBytecodeParser):
     super().__init__(parser)

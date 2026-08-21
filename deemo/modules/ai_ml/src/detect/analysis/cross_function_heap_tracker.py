@@ -1,10 +1,9 @@
-# 跨函数堆溢出检测——malloc/copy包装器识别 + 调用点合成配对
+# 跨函数堆溢出检测-malloc/copy包装器识别 + 调用点合成配对
 # 解决CVE-2020-25656型FN: alloc和copy在不同函数中(包装器模式)
 import re, logging
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', 'alloca'}
 _COPY_FUNCS = {'memcpy', 'memmove', 'strcpy', 'strncpy', 'memset',
@@ -26,7 +25,7 @@ _REG64 = {v: k for k, v in _REG32.items()}
 
 @dataclass
 class FuncSummary:
-    """函数alloc/copy行为摘要——轻量malloc/memcpy包装器识别"""
+    """函数alloc/copy行为摘要-轻量malloc/memcpy包装器识别"""
     name: str
     is_alloc_wrapper: bool = False   # 调用malloc并返回rax
     is_copy_wrapper: bool = False    # 调用memcpy且dst来自参数
@@ -38,7 +37,7 @@ class FuncSummary:
 
 
 class CrossFunctionHeapTracker:
-    """跨函数堆溢出检测——包装器摘要 + 调用点数据流合成配对"""
+    """跨函数堆溢出检测-包装器摘要 + 调用点数据流合成配对"""
     def build_summaries(self, functions: List) -> Dict[str, FuncSummary]:
         summaries: Dict[str, FuncSummary] = {}
         for func in functions:

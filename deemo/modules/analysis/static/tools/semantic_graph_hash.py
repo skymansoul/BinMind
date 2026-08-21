@@ -1,10 +1,9 @@
-# 修改记录:
-# 2025-08-08 11:53 - 支配树拓扑排序替代地址排序: 同一源码不同编译器产生相同节点序
-# 2025-08-08 17:15 - 数据流边编码: def-use 链作为图边加入邻接签名
+# 支配树拓扑排序替代地址排序: 同一源码不同编译器产生相同节点序
+# 数据流边编码: def-use 链作为图边加入邻接签名
 
 """语义图哈希 - 编译器/架构无关的函数级结构签名
 
-semantic_function_hash.py 使用基本块统计特征直方图--但统计特征
+semantic_function_hash.py 使用基本块统计特征直方图, 但统计特征
 对编译器优化敏感: GCC 的 loop unrolling 会改变入度/出度分布
 
 本模块的改进: 将 CFG 和 def-use 数据流合并为单一语义图
@@ -16,7 +15,7 @@ semantic_function_hash.py 使用基本块统计特征直方图--但统计特征
   3. CFG 细微差异: 支配树拓扑排序消除编译器 CFG 结构差异 -> 鲁棒
 
 哈希构造:
-  1. 支配树拓扑排序--节点的规范顺序
+  1. 支配树拓扑排序, 节点的规范顺序
   2. 每节点的语义特征向量 -> 64-bit node hash
   3. CFG 边的规范化表示 (src_rank, dst_rank, edge_type) -> 边列表
   4. 数据流边的规范化表示 (producer_rank, consumer_rank) -> 边列表
@@ -40,7 +39,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# 语义类 (复用项目全局分类--12 个等价类)
+# 语义类 (复用项目全局分类, 12 个等价类)
 
 _SEMANTIC_CLASS = {
     'mov': 0, 'lea': 0, 'push': 0, 'pop': 0, 'xchg': 0,
@@ -78,7 +77,7 @@ class SemanticBlockNode:
 
 @dataclass
 class DataflowEdge:
-    """语义数据流边--块间 def-use 关系"""
+    """语义数据流边, 块间 def-use 关系"""
     producer_block: int       # 定义变量的块
     consumer_block: int       # 使用变量的块
     semantic_class: int = 0   # 变量的语义类
@@ -107,13 +106,11 @@ class SemanticGraphHasher:
         cfg_edges: List[Tuple[int, int, str]],
         dataflow_edges: Optional[List[DataflowEdge]] = None,
     ) -> str:
-        """计算函数的语义图哈希
+        """计算函数的语义图哈希。
 
-        blocks: {block_id: [指令助记符列表]}
-        cfg_edges: [(src_id, dst_id, edge_type)]
-        dataflow_edges: 可选的数据流边列表
-
-        返回: 64 字符的十六进制哈希字符串
+        blocks: {block_id: [指令助记符列表]},
+        cfg_edges: [(src_id, dst_id, edge_type)],
+        dataflow_edges 可选; 返回 64 字符的十六进制哈希字符串。
         """
         # 构建语义节点
         nodes = self._build_nodes(blocks)
@@ -174,7 +171,7 @@ class SemanticGraphHasher:
         nodes: List[SemanticBlockNode],
         cfg_edges: List[Tuple[int, int, str]],
     ) -> Dict[int, int]:
-        """支配树拓扑排序--节点的规范顺序
+        """支配树拓扑排序, 节点的规范顺序
 
         算法: 从 entry (address 最小的节点) 开始 BFS
         访问顺序即拓扑 rank
@@ -213,7 +210,7 @@ class SemanticGraphHasher:
                 if neighbor not in visited:
                     queue.append(neighbor)
 
-        # 未访问的节点--追加到末尾
+        # 未访问的节点, 追加到末尾
         for n in nodes:
             if n.block_id not in ranks:
                 ranks[n.block_id] = rank_counter

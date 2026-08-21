@@ -112,17 +112,7 @@ class DiversityAwareTaskSelector:
         thief_aggregate_simhash: Optional[int] = None,
         count: int = 3,
     ) -> List[StealableTask]:
-        """从可用任务中选择与 thief 现有路径差异最大的 count 个。
-
-        Args:
-            available_tasks: victim 的待处理任务列表。
-            thief_node_id: 窃取方节点标识。
-            thief_aggregate_simhash: thief 的当前聚合指纹 (可从心跳获取)。
-            count: 要选择的任务数。
-
-        Returns:
-            按"与 thief 指纹的汉明距离"降序排列的任务列表。
-        """
+        """从可用任务中选择与 thief 现有路径差异最大的 count 个。"""
         if not available_tasks:
             return []
 

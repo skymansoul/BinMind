@@ -1,8 +1,7 @@
-# Use-After-Free 检测器 v6 — PDL-UAF
-# v6: PDL-UAF (Path-Dominance Lifespan) — 分支范围路径互斥判定
+# Use-After-Free 检测器 v6 - PDL-UAF
+# v6: PDL-UAF (Path-Dominance Lifespan) - 分支范围路径互斥判定
 #   + 过程间free摘要 + cleanup-pattern误报抑制 + pre_analyze提取到独立模块.
 # v4: 路径敏感free-use验证 + 全局变量重赋值检测 + realloc生命周期.
-# 创建: 2026-07-31
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
@@ -34,12 +33,12 @@ class HeapObject:
 
 
 class UAFDetector(UserScopeMixin):
-    """UAF 生命周期检测器 v6 — PDL-UAF.
+    """UAF 生命周期检测器 v6 - PDL-UAF.
 
     新增能力:
-      1. 分支范围路径互斥判定 (PathAnalyzer) — 消除互斥路径上的FP
-      2. 过程间free摘要 (InterprocFreeAnalyzer) — 检测间接free的UAF
-      3. cleanup-pattern抑制 — free(obj);free(obj->data)语义安全
+      1. 分支范围路径互斥判定 (PathAnalyzer) - 消除互斥路径上的FP
+      2. 过程间free摘要 (InterprocFreeAnalyzer) - 检测间接free的UAF
+      3. cleanup-pattern抑制 - free(obj);free(obj->data)语义安全
     """
 
     ALLOC_FUNCS = {"malloc", "calloc", "_Znwm", "_Znam",

@@ -1,17 +1,16 @@
 # coding: utf-8
-# 创建: 2024-12-09  |  跨编译器多变体字节模式共识提取
 #
 """
-跨编译器多变体模式共识——从同一源码的多架构/多编译器产物中提取稳定字节模式。
+跨编译器多变体模式共识-从同一源码的多架构/多编译器产物中提取稳定字节模式。
 
 技术问题:
-  byrs_pattern_miner在单编译器产物上提取模式——通配符基于启发式
+  byrs_pattern_miner在单编译器产物上提取模式-通配符基于启发式
   (非0x00/0xFF/0xCC字节视为稳定)。此启发式在O0优化级别可接受,
-  但在O2/O3或跨编译器场景下失效——寄存器分配/指令调度差异导致
+  但在O2/O3或跨编译器场景下失效-寄存器分配/指令调度差异导致
   大量字节变化, 简单启发式产生超过60%通配符的模式。
 
 解决方案:
-  多变体共识提取——对同一函数的多个编译变体(如gcc-O0/gcc-O2/clang-O2
+  多变体共识提取-对同一函数的多个编译变体(如gcc-O0/gcc-O2/clang-O2
   的x86_64产物)做字节序列对齐, 仅保留所有变体中一致的字节为稳定字节,
   其余通配。此方法直接利用编译差异作为"噪声过滤器"——
   语义等价的字节在不同变体中保持一致, 编译差异引入的变化被通配符吸收。
@@ -20,7 +19,7 @@
   1. 对每个变体提取函数字节码+指令序列
   2. 以指令助记符序列为锚点做多序列对齐(Needleman-Wunsch全局对齐简化版)
   3. 对齐后在每个位置计算字节共识度(一致变体数/总变体数)
-  4. 共识度=1.0→稳定字节; 共识度<1.0→通配符
+  4. 共识度=1.0-稳定字节; 共识度<1.0-通配符
   5. 输出跨编译器弹性的YARA-ready字节模式
 
 技术效果(基于ORCAS数据集的理论预期):
@@ -39,7 +38,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class VariantSample:
-    """单个编译变体——同一源码的不同编译产物"""
+    """单个编译变体-同一源码的不同编译产物"""
     compiler: str             # 'gcc-13-O0' / 'clang-15-O2' 等
     arch: str                 # 'x86_64' / 'arm64'
     function_bytes: bytes     # 函数字节码
@@ -49,12 +48,12 @@ class VariantSample:
 
 @dataclass
 class ConsensusPattern:
-    """多变体共识字节模式——跨编译器弹性的YARA-ready模式"""
+    """多变体共识字节模式-跨编译器弹性的YARA-ready模式"""
     pattern_id: str
     # 共识字节: [(byte_val, consensus_ratio)]
-    # consensus_ratio=1.0→所有变体一致; <1.0→部分变体一致
+    # consensus_ratio=1.0-所有变体一致; <1.0-部分变体一致
     consensus_bytes: List[Tuple[int, float]] = field(default_factory=list)
-    # YARA-ready: 仅共识字节的hex表示(非共识字节→'?')
+    # YARA-ready: 仅共识字节的hex表示(非共识字节-'?')
     yara_hex: str = ""
     # 质量指标
     consensus_ratio: float = 0.0   # 平均共识度
@@ -71,9 +70,9 @@ class ConsensusPattern:
 class MultiVariantConsensus:
     """从多编译变体中提取共识字节模式。
 
-    多变体对齐——基于助记符锚点:
+    多变体对齐-基于助记符锚点:
       不使用字节级序列对齐(计算成本O(N²)且对指令长度差异敏感),
-      而是使用助记符序列作为语义锚点进行对齐——
+      而是使用助记符序列作为语义锚点进行对齐-
       助记符序列跨编译器高度一致(同一源码的语义骨架不变),
       但对应的字节码因寄存器分配/立即数编码而变化。
     """
@@ -81,7 +80,7 @@ class MultiVariantConsensus:
     def __init__(self, consensus_threshold: float = 1.0):
         """
         参数:
-          consensus_threshold: 共识度阈值——共识度≥此值的字节视为稳定
+          consensus_threshold: 共识度阈值-共识度≥此值的字节视为稳定
             1.0=所有变体必须一致(最严格, 通配比最高但FP最低)
             0.75=至少75%变体一致(平衡)
             0.5=多数一致(高召回, 适合批量初筛)
@@ -93,7 +92,7 @@ class MultiVariantConsensus:
                  ) -> List[ConsensusPattern]:
         """从多变体样本中提取共识字节模式。
 
-        返回ConsensusPattern列表——按稳定字节占比降序。
+        返回ConsensusPattern列表-按稳定字节占比降序。
         """
         if len(variants) < 2:
             return self._single_variant_fallback(variants, function_name)
@@ -125,15 +124,15 @@ class MultiVariantConsensus:
                     byte_ranges.append(v_range)
 
             if len(byte_ranges) < max(2, len(variants) * self._threshold):
-                continue  # 不足够多变体支持→跳过
+                continue  # 不足够多变体支持-跳过
 
-            # 多序列字节对齐——在重叠区域做逐字节共识计算
+            # 多序列字节对齐-在重叠区域做逐字节共识计算
             consensus = self._compute_byte_consensus(
                 byte_ranges, variants)
             if not consensus:
                 continue
 
-            # 过滤——共识度≥阈值的字节保留
+            # 过滤-共识度≥阈值的字节保留
             stable_count = sum(
                 1 for _, ratio in consensus if ratio >= self._threshold)
             total = len(consensus)
@@ -161,7 +160,7 @@ class MultiVariantConsensus:
                                ref_start: int) -> Optional[Tuple[int, int]]:
         """在变体中定位与参考助记符窗口匹配的字节范围。
 
-        使用滑动窗口+最长公共子序列(LCS)近似匹配——
+        使用滑动窗口+最长公共子序列(LCS)近似匹配-
         允许少量助记符差异(编译器优化引入的指令重排)。
         """
         v_mnems = variant.mnemonics
@@ -191,13 +190,13 @@ class MultiVariantConsensus:
                                   ) -> List[Tuple[int, float]]:
         """在多变体的重叠字节区域计算逐字节共识度。
 
-        使用动态时间规整(DTW)的简化版——
+        使用动态时间规整(DTW)的简化版-
         对变体间的字节插入/删除做最小化处理。
         """
         if not byte_ranges:
             return []
 
-        # 取最小长度做对齐基准——避免超范围访问
+        # 取最小长度做对齐基准-避免超范围访问
         min_len = min(end - start for start, end in byte_ranges)
         if min_len < 4:
             return []
@@ -227,7 +226,7 @@ class MultiVariantConsensus:
 
     def _single_variant_fallback(self, variants: List[VariantSample],
                                    func_name: str) -> List[ConsensusPattern]:
-        """单变体回退——无法做多变体共识时使用启发式稳定字节"""
+        """单变体回退-无法做多变体共识时使用启发式稳定字节"""
         if not variants:
             return []
         v = variants[0]

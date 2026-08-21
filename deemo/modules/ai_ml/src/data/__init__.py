@@ -1,4 +1,4 @@
-# data/__init__.py -- 数据层统一导出
+# data/__init__.py 数据层统一导出
 
 from .preprocessing import (
     normalize_instruction,

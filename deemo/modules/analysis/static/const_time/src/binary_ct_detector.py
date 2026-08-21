@@ -1,6 +1,5 @@
-# 修改记录:
-# 2025-08-07 11:45 - 编译器模式数据库: GCC/Clang/MSVC 的已知优化模式, 用于假阳性抑制
-# 2025-08-07 16:30 - 秘密依赖度评分: 从二值 (CT-violation/not) 升级为连续值 [0,1]
+# 编译器模式数据库: GCC/Clang/MSVC 的已知优化模式, 用于假阳性抑制
+# 秘密依赖度评分: 从二值 (CT-violation/not) 升级为连续值 [0,1]
 
 """二进制级常量时间违规检测 - 编译器感知的侧信道分析
 
@@ -9,15 +8,15 @@
 
 例如:
   GCC -O2 的 if-conversion: if (secret) x = a; else x = b;
-  被转换为 cmov--常量时间。但若 cmov 不可用 (x86 无 64-bit cmov)
-  GCC 回退为分支--引入时序差异
+  被转换为 cmov, 常量时间。但若 cmov 不可用 (x86 无 64-bit cmov)
+  GCC 回退为分支, 引入时序差异
 
   Clang -O2 的 Loop Unrolling: 展开后循环体大小变化, cache line 访问模式改变
 
 二进制级检测的必要性:
-  1. 源码级 CT 不能保证二进制级 CT--编译器可能破坏它
-  2. 闭源库没有源码可用--只能分析二进制
-  3. CT 违规的利用可能性依赖于具体指令序列--源码级无法评估
+  1. 源码级 CT 不能保证二进制级 CT, 编译器可能破坏它
+  2. 闭源库没有源码可用, 只能分析二进制
+  3. CT 违规的利用可能性依赖于具体指令序列, 源码级无法评估
 
 本模块在二进制级做三件事:
   A. 秘密依赖追踪: 从 taint 源标记秘密数据, 沿数据流传播
@@ -39,52 +38,52 @@ from enum import Enum, auto
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
-# 编译器模式--用于假阳性抑制
+# 编译器模式, 用于假阳性抑制
 
-# 编译器生成的"伪 CT 违规"模式--这些是编译器优化产生的
+# 编译器生成的"伪 CT 违规"模式, 这些是编译器优化产生的
 # 非秘密依赖的分支/访存, 不应标记为侧信道
 _COMPILER_CT_SAFE_PATTERNS = {
     # GCC
     'GCC': [
-        # cmov 类--常量时间条件移动, 非分支
+        # cmov 类, 常量时间条件移动, 非分支
         (r'cmov(?:ne|e|a|ae|b|be|g|ge|l|le|s|ns|o|no|p|np)\s', 'cmov'),
-        # setcc 类--条件设置, 结果可用于常量时间 select
+        # setcc 类, 条件设置, 结果可用于常量时间 select
         (r'set(?:ne|e|a|ae|b|be|g|ge|l|le)\s', 'setcc'),
-        # endbr64 -- Intel CET, 非秘密依赖
+        # endbr64, Intel CET, 非秘密依赖
         (r'endbr64', 'cet'),
     ],
     # Clang
     'Clang': [
         (r'cmov(?:ne|e|a|ae|b|be|g|ge|l|le|s|ns|o|no|p|np)\s', 'cmov'),
         (r'set(?:ne|e|a|ae|b|be|g|ge|l|le)\s', 'setcc'),
-        # ud2 -- Clang unreachable 标记
+        # ud2, Clang unreachable 标记
         (r'ud2', 'unreachable'),
     ],
     # MSVC
     'MSVC': [
         (r'cmov(?:ne|e|a|ae|b|be|g|ge|l|le)\s', 'cmov'),
-# security_check_cookie -- 栈保护, 非秘密依赖
+# security_check_cookie, 栈保护, 非秘密依赖
         (r'__security_check_cookie', 'stack_guard'),
         (r'int\s*3', 'debug_break'),
     ],
 }
 
 
-# 编译器可能引入的 CT 违规模式--这些需要注意
+# 编译器可能引入的 CT 违规模式, 这些需要注意
 _COMPILER_CT_RISK_PATTERNS = {
     'GCC': [
-        # if-conversion 回退--当 cmov 不可用时使用分支
+        # if-conversion 回退, 当 cmov 不可用时使用分支
         # 模式: cmp/test + jcc + mov 的两条路径 (无 cmov)
         (r'(?:cmp|test)\s.*\n\s*(?:j(?:ne|e|a|ae|b|be|g|ge|l|le))\s',
          'if_conversion_fallback'),
     ],
     'Clang': [
-        # select 回退--Clang 的 ?: 在某些条件下生成分支
+        # select 回退, Clang 的 ?: 在某些条件下生成分支
         (r'(?:cmp|test)\s.*\n\s*(?:j(?:ne|e))\s.*\n\s*mov\s',
          'select_fallback'),
     ],
     'MSVC': [
-        # MSVC 对某些模式不支持 cmov--总是使用分支
+        # MSVC 对某些模式不支持 cmov, 总是使用分支
         (r'(?:cmp|test)\s.*\n\s*(?:j(?:ne|e))\s.*\n\s*(?:mov|lea)\s',
          'msvc_branch_select'),
     ],
@@ -149,7 +148,7 @@ class BinaryCTDetector:
     """
 
     def __init__(self):
-        # 秘密依赖寄存器集合--动态更新
+        # 秘密依赖寄存器集合, 动态更新
         self._secret_regs: Set[str] = set()
         self._violations: List[CTViolation] = []
         self._fp_suppressed = 0
@@ -167,7 +166,7 @@ class BinaryCTDetector:
         instructions: [(address, disasm, metadata), ...]
            metadata: {'secret_dep': bool, 'regs_read': [...], 'regs_written': [...]}
         secret_vars: 初始秘密变量集合 (函数参数或全局变量)
-        compiler_hint: 编译器提示--若 'auto' 则自动检测
+        compiler_hint: 编译器提示, 若 'auto' 则自动检测
         """
         self._secret_regs = secret_vars or set()
         self._violations = []
@@ -187,7 +186,7 @@ class BinaryCTDetector:
         )
 
         for addr, text, meta in instructions:
-            # 更新秘密寄存器集合--从数据流
+            # 更新秘密寄存器集合, 从数据流
             regs_written = meta.get('regs_written', [])
             regs_read = meta.get('regs_read', [])
 
@@ -246,7 +245,7 @@ class BinaryCTDetector:
         for pattern, pattern_name in safe_patterns:
             if re.search(pattern, text_lower):
                 self._fp_suppressed += 1
-                return None  # 编译器优化--抑制假阳性
+                return None  # 编译器优化, 抑制假阳性
 
         # 检查编译器风险模式
         compiler_risk = ''
@@ -296,16 +295,16 @@ class BinaryCTDetector:
 
     def _estimate_branch_leakage(self, text: str) -> float:
         """估算条件分支的潜在信息泄漏量 (bit)"""
-        # 直接比较--泄漏 1 bit (条件成立/不成立)
+        # 直接比较, 泄漏 1 bit (条件成立/不成立)
         if any(op in text for op in ('je', 'jne', 'jz', 'jnz')):
             return 1.0
-        # 大小比较--泄漏 > 1 bit (结合多次执行可推断值)
+        # 大小比较, 泄漏 > 1 bit (结合多次执行可推断值)
         if any(op in text for op in ('jb', 'jae', 'ja', 'jbe', 'jl', 'jge', 'jg', 'jle')):
             return 2.0
         return 0.5
 
     def _compute_ct_score(self, total_insns: int) -> float:
-        """计算整体 CT 安全评分--违规越少/置信度越低 -> 评分越高"""
+        """计算整体 CT 安全评分, 违规越少/置信度越低 -> 评分越高"""
         if not self._violations:
             return 1.0
 

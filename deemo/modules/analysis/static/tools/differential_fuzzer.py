@@ -35,7 +35,7 @@ except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
 
 def _r2_function_diff(binary_a: str, binary_b: str) -> List[Dict[str, Any]]:
     """使用radare2比较两个二进制文件的函数差异
-    
+
     返回差异度列表: [{func_name, similarity_pct, diff_type,.}]
     """
     if not _HAS_R2:
@@ -50,7 +50,7 @@ def _r2_function_diff(binary_a: str, binary_b: str) -> List[Dict[str, Any]]:
             capture_output=True, text=True, timeout=120,
             encoding='utf-8', errors='replace'
         )
-        # 即使radiff2失败也继续——尝试per-function方式
+        # 即使radiff2失败也继续, 尝试per-function方式
         if r.returncode == 0 and r.stdout.strip():
             for line in r.stdout.splitlines():
                 parts = line.strip().split(None, 2)
@@ -137,7 +137,7 @@ def _execute_and_capture(binary_path: str, args: List[str],
 
 # 语义相似度差分引擎
 # "Hybrid 模糊测试 LLM-Guided Input 变异 Semantic Feedback"
-# 利用嵌入向量的余弦相似度量化两次运行的"行为差异"——不仅比对输出，更比对
+# 利用嵌入向量的余弦相似度量化两次运行的"行为差异", 不仅比对输出，更比对
 # 执行迹的语义特征：基本块分布、系统调用频率、内存分配模式等
 # 此方法优于纯文本 diff，因语义等价但语法不同的代码段会被正确识别为"相同行为"
 
@@ -155,7 +155,7 @@ class SemanticDiffFuzzer:
         self._runs: List[Dict[str, float]] = []
 
     def run_and_collect(self, args: List[str], timeout_s: int = 10) -> Dict[str, float]:
-        """执行一次并收集语义特征——不依赖具体输入格式"""
+        """执行一次并收集语义特征, 不依赖具体输入格式"""
         features = {k: 0.0 for k in self._FEATURE_KEYS}
         try:
             r = subprocess.run(
@@ -165,7 +165,7 @@ class SemanticDiffFuzzer:
             )
             features['crash'] = 1.0 if r.returncode != 0 else 0.0
             features['timeout'] = 0.0
-            # 基本块计数——通过输出中的地址线数估算
+            # 基本块计数, 通过输出中的地址线数估算
             features['bb_count'] = float(r.stdout.count('\n') + r.stderr.count('\n'))
         except subprocess.TimeoutExpired:
             features['timeout'] = 1.0
@@ -179,7 +179,7 @@ class SemanticDiffFuzzer:
     def semantic_distance(self, run_a: Dict[str, float],
                            run_b: Dict[str, float]) -> float:
         """计算两次运行的语义距离（0=完全相同，1=完全不同）
-        使用加权余弦距离——crash/timeout 的权重高于 bb_count
+        使用加权余弦距离, crash/timeout 的权重高于 bb_count
         """
         weights = {'crash': 3.0, 'timeout': 3.0, 'bb_count': 1.0,
                    'syscall_count': 1.5, 'alloc_total': 1.0}
@@ -200,7 +200,7 @@ class SemanticDiffFuzzer:
 
     def find_divergent_behaviors(self, args_list: List[List[str]],
                                   threshold: float = 0.3) -> List[Tuple[int, int, float]]:
-        """发现行为发散——返回 (run_i, run_j, distance) 的差异列表
+        """发现行为发散, 返回 (run_i, run_j, distance) 的差异列表
         阈值 0.3 来源于实验校准
         """
         divergences: List[Tuple[int, int, float]] = []
@@ -246,8 +246,8 @@ class DifferentialFuzzer:
             return {'success': False, 'error': str(e)}
 
     def _run_cross_compiler_diff(self) -> Dict[str, Any]:
-        """跨编译器差分分析——v2.0真实实现
-        
+        """跨编译器差分分析, v2.0真实实现
+
         分析流程：
         1. 解析二进制头→元信息（格式、架构、编译器指纹）
         2. 提取代码段字节
@@ -337,7 +337,7 @@ class DifferentialFuzzer:
                 'description': 'Unable to compute code chunk hashes'
             })
 
-        # 5. 执行测试——运行二进制并捕获输出
+        # 5. 执行测试, 运行二进制并捕获输出
         test_inputs = [['--help'], ['--version'], []]
         exec_results = []
         for args in test_inputs:
@@ -368,8 +368,8 @@ class DifferentialFuzzer:
         }
 
     def _run_cross_version_diff(self) -> Dict[str, Any]:
-        """跨版本差分分析——v2.0真实实现
-        
+        """跨版本差分分析, v2.0真实实现
+
         分析流程：
         1. 解析二进制头→元信息
         2. 提取代码段，统计大小差异
@@ -493,8 +493,8 @@ class DifferentialFuzzer:
         return version_strings
 
     def _run_cross_arch_diff(self) -> Dict[str, Any]:
-        """跨架构差分分析——v2.0真实实现
-        
+        """跨架构差分分析, v2.0真实实现
+
         分析流程：
         1. 从二进制头检测架构（x86/x86-64/ARM/ARM64）
         2. 检测字节序（LE/）
@@ -574,7 +574,7 @@ class DifferentialFuzzer:
                 'description': 'Unable to extract code section for instruction analysis'
             })
 
-        # 4. 字长检测——从二进制结构确认
+        # 4. 字长检测, 从二进制结构确认
         self.differences_found.append({
             'type': 'word_size',
             'description': f'{meta.bits}-bit architecture: '
@@ -631,7 +631,7 @@ class DifferentialFuzzer:
 
     def diff_against_reference(self, reference_path: str) -> Dict[str, Any]:
         """与此二进制的参考版本进行真实差分比较
-        
+
         执行：
         - 二进制头比较
         - 代码段块哈希Jaccard相似度
@@ -675,7 +675,7 @@ class DifferentialFuzzer:
                 'details': r2_diffs[:20]
             })
 
-        # 执行比较——用相同输入
+        # 执行比较, 用相同输入
         test_args = [['--help'], ['--version'], []]
         exec_diffs: List[Dict] = []
         for args in test_args:

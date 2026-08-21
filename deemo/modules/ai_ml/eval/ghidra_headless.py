@@ -1,4 +1,4 @@
-# Ghidra无头分析脚本——模拟自动化静态审计
+# Ghidra无头分析脚本: 模拟自动化静态审计
 # 方法: 通过Ghidra的headless analyzer导入二进制→反汇编→扫描危险函数调用
 # 输出: JSON格式的审计结果
 #
@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
 
-# 危险函数签名——Ghirda的pcode分析关注点
+# 危险函数签名: Ghirda的pcode分析关注点
 DANGEROUS_CALLS = {
     'memcpy':  {'params': 3, 'danger': 'size > dst_alloc'},
     'strcpy':  {'params': 2, 'danger': 'implicit size'},
@@ -53,7 +53,7 @@ def find_ghidra_headless() -> Optional[str]:
 
 
 def analyze_with_objdump(binary_path: str) -> Dict:
-    """objdump回退方案——当Ghidra不可用时使用"""
+    """objdump回退方案: 当Ghidra不可用时使用"""
     t0 = time.perf_counter()
     result = {
         "tool": "objdump_ghidra_fallback",
@@ -79,10 +79,10 @@ def analyze_with_objdump(binary_path: str) -> Dict:
 
     output = proc.stdout
 
-    # 解析objdump输出——找call指令和对应函数名
+    # 解析objdump输出: 找call指令和对应函数名
     call_pattern = re.compile(r'call\s+[0-9a-f]+\s+<([^>]+)>', re.I)
 
-    # 提取.dynsym和.plt中的符号——用于解析call的目标
+    # 提取.dynsym和.plt中的符号: 用于解析call的目标
     sym_to_addr = {}
     addr_to_sym = {}
     try:
@@ -157,7 +157,7 @@ def analyze_with_ghidra(binary_path: str, ghidra_path: str) -> Dict:
         "-import", str(binary),
         "-postScript", "FindDangerousCalls.java",
         "-scriptPath", str(Path(__file__).parent),
-        "-noanalysis",  # 加速——不做完整分析
+        "-noanalysis",  # 加速: 不做完整分析
         "-deleteProject",
     ]
 

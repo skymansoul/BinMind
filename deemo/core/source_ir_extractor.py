@@ -1,5 +1,5 @@
 """
-C源码→伪代码IR提取器 — 从C源文件提取malloc/memcpy/赋值等关键IR行,
+C源码-伪代码IR提取器 - 从C源文件提取malloc/memcpy/赋值等关键IR行,
 生成与增强检测器兼容的伪代码。Binary IR提取移至 core/ir_from_binary.py。
 """
 
@@ -44,7 +44,7 @@ _INPUT_CALL_RE = re.compile(
     r'(\w[\w.]*)\s*,')
 
 
-# 堆操作提取 ───────────────────────────────────────────────────────
+# 堆操作提取
 
 # 匹配 malloc/calloc/realloc — 提取 size 参数
 _HEAP_ALLOC_CALL_RE = re.compile(
@@ -66,12 +66,23 @@ _SIZE_ASSIGN_RE = re.compile(
 _IF_CMP_RE = re.compile(
     r'if\s*\(\s*(\w[\w.]*)\s*(<|<=|>|>=|==|!=)\s*(\d+)\s*\)')
 
-# 扩展: 匹配溢出守卫 (var > CONST / expr 则 return → 变量免于溢出)
+# 扩展: 匹配溢出守卫 (var > CONST / expr 则 return - 变量免于溢出)
 # CONST 可为 SIZE_MAX, UINT_MAX, INT_MAX 或十六进制字面量
 _IF_MAX_GUARD_RE = re.compile(
     r'if\s*\(\s*(\w[\w.]*)\s*(>|>=)\s*'
     r'(?:SIZE_MAX|UINT_MAX|INT_MAX|ULLONG_MAX|0x[0-9a-fA-F]+)\s*'
     r'/\s*(?:\([^)]*\)\s*)?(\w[\w.(]*)\s*\)')
+
+
+# 指针解引用写: p->field = val; p[idx] = val
+_PTR_USE_RE = re.compile(
+    r'(?:(\w[\w.]*)\s*->\s*(\w[\w.]*)|'
+    r'(\w[\w.]*)\s*\[[^\]]*\])\s*=\s*')
+
+# 指针解引用读: p->field / p[idx] (非赋值场景)
+_PTR_READ_RE = re.compile(
+    r'(?:(\w[\w.]*)\s*->\s*\w[\w.]*|'
+    r'(\w[\w.]*)\s*\[[^\]]*\])')
 
 
 def extract_from_source(c_source: str) -> List[str]:
@@ -113,7 +124,7 @@ def extract_from_source(c_source: str) -> List[str]:
             continue
 
         # 跳过仅有花括号的行
-        if line in ('{', '}', '{', '}'):
+        if line in ('{', '}'):
             continue
         # 跳过 return / goto / break / continue
         if re.match(r'^(?:return|goto|break|continue|case|default)\b', line):
@@ -147,8 +158,8 @@ def extract_from_source(c_source: str) -> List[str]:
             ir_lines.append(normalized)
             continue
 
-        # 检测用户输入源 (fgets/scanf/recv → 隐式赋值)
-        # fgets(buf, ...) → 发出 "buf = fgets(...)" 用于溯源
+        # 检测用户输入源 (fgets/scanf/recv - 隐式赋值)
+        # fgets(buf, ...) - 发出 "buf = fgets(...)" 用于溯源
         im = _INPUT_CALL_RE.search(line)
         if im:
             fn = im.group(1)
@@ -206,9 +217,6 @@ def extract_from_source(c_source: str) -> List[str]:
 
         # 检测指针解引用赋值 (p->field = val; p[idx] = val)
         # 使用normalized避免C类型声明中的 * 被误判为解引用
-        _PTR_USE_RE = re.compile(
-            r'(?:(\w[\w.]*)\s*->\s*(\w[\w.]*)|'
-            r'(\w[\w.]*)\s*\[[^\]]*\])\s*=\s*')
         pm = _PTR_USE_RE.search(normalized)
         if pm:
             ptr_name = (pm.group(1) or pm.group(3) or '')
@@ -225,9 +233,6 @@ def extract_from_source(c_source: str) -> List[str]:
             continue
 
         # 指针解引用读取 (printf/条件中)
-        _PTR_READ_RE = re.compile(
-            r'(?:(\w[\w.]*)\s*->\s*\w[\w.]*|'
-            r'(\w[\w.]*)\s*\[[^\]]*\])')
         if '=' not in normalized or normalized.strip().startswith('if'):
             rm = _PTR_READ_RE.search(normalized)
             if rm:

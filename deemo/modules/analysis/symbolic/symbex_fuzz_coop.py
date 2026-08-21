@@ -1,32 +1,26 @@
-"""Bidirectional symbex–模糊测试器 cooperation bus
+"""符号执行与模糊测试器的双向协作总线。
 
-符号执行 produces constraint hints guide 模糊测试器 toward
-hard--reach branches. 模糊测试器 feeds back 覆盖率 报告 seeds
-symbex 使用 prune -covered paths. A message-bus decouples
-two side swapped independently
+符号执行产出约束提示, 引导 fuzzer 向难以到达的分支逼近;
+fuzzer 回传覆盖率报告与种子, symbex 据此剪枝已覆盖路径。
+消息总线解耦两侧, 可独立替换。
 
-增强 — 种子年龄衰减：种子超过 5 个 tick 后，其评分权重指数递减
-
-三轮增强 — 优先级反转检测 + 前馈预测：PriorityInversionDetector 追踪
-高难度 hint 是否在 5 tick 内产出种子，超时则重发。FeedForwardPredictor
-用 SGD 维护线性模型 (w1·ent + w2·difficulty + w3) 预测覆盖率增益
-低预测值的种子在运行前被过滤，节省 fuzzer 的计算预算
-（0.95^age），防止过时种子占据队列
-
-增强 — 覆盖率速度监控：维护最近 5 个 tick 的 edges/tick 滑动窗口
-当速度连续 3 个窗口低于历史峰值的 20% 时发出停滞警告
-
-增强 — 种子三分法 (triage)：自动将种子分类为 crash / 覆盖率_gain / stale
-便于 fuzzer 侧做差异化处理
-
-四轮增强 — SeedGenealogyTree：追踪种子亲缘关系，构建父→子演化树
-支持导出 DOT/Graphviz 格式可视化种子进化路径
-
-五轮增强 — 覆盖率FrontierTracker：识别覆盖前沿——
-已发现但其邻接边尚未覆盖的边，优先调度指向前沿邻接分支的 hint
-
-六轮增强 — MutualInformationScoring：计算种子特征（熵、长度、字节模式）
-与覆盖率增益之间的互信息，用 MI 得分筛选最能预测覆盖率增益的特征
+增强:
+- 种子年龄衰减: 种子超过 5 个 tick 后评分权重按 0.95^age 指数递减,
+  防止过时种子占据队列
+- 优先级反转检测 + 前馈预测: PriorityInversionDetector 追踪高难度
+  hint 是否在 5 tick 内产出种子, 超时则重发; FeedForwardPredictor
+  用 SGD 维护线性模型 (w1·ent + w2·difficulty + w3) 预测覆盖率增益,
+  低预测值的种子在运行前被过滤, 节省 fuzzer 的计算预算
+- 覆盖率速度监控: 维护最近 5 个 tick 的 edges/tick 滑动窗口,
+  速度连续 3 个窗口低于历史峰值的 20% 时发出停滞警告
+- 种子三分法 (triage): 自动将种子分类为 crash / coverage_gain / stale,
+  便于 fuzzer 侧做差异化处理
+- SeedGenealogyTree: 追踪种子亲缘关系, 构建父→子演化树,
+  支持导出 DOT/Graphviz 格式可视化种子进化路径
+- CoverageFrontierTracker: 识别覆盖前沿——已发现但其邻接边尚未覆盖
+  的边, 优先调度指向前沿邻接分支的 hint
+- MutualInformationScoring: 计算种子特征 (熵、长度、字节模式) 与
+  覆盖率增益之间的互信息, 用 MI 得分筛选最能预测覆盖率增益的特征
 """
 
 import logging
@@ -61,7 +55,7 @@ class MessageKind:
 
 @dataclass
 class CoopMessage:
-    """Single message across symbex–模糊测试器 bus"""
+    """跨 symbex-模糊测试器总线的单条消息。"""
     kind: str
     sender: str
     timestamp: float
@@ -71,7 +65,7 @@ class CoopMessage:
 
 @dataclass
 class SeedItem:
-    """A 模糊测试器-produced input 覆盖率 fingerprint crash flag"""
+    """fuzzer 产生的输入, 含覆盖率指纹与崩溃标记。"""
     data: bytes
     coverage_hash: str
     crash: bool = False
@@ -84,7 +78,7 @@ class SeedItem:
 
 @dataclass
 class ConstraintHint:
-    """Symbex-produced hint: a branch condition 模糊测试器 target"""
+    """symbex 产出的提示: 让 fuzzer 瞄准的分支条件。"""
     func_name: str
     constraints: List
     target_path: Any
@@ -94,7 +88,7 @@ class ConstraintHint:
 
 @dataclass
 class CoverageReport:
-    """模糊测试器's periodic 覆盖率 快照 sent symbex"""
+    """fuzzer 周期发送给 symbex 的覆盖率快照。"""
     total_edges: int
     new_edges: int
     edge_bitmap: str
@@ -103,7 +97,7 @@ class CoverageReport:
 
 @dataclass
 class CoopStats:
-    """Running counters for cooperation channel"""
+    """协作通道的运行计数。"""
     messages_sent: int = 0
     messages_received: int = 0
     symbex_to_fuzzer: int = 0
@@ -115,8 +109,8 @@ class CoopStats:
 
 
 class MessageBus:
-    """Unidirectional 队列s per role. Priority messages (constraint_hint
-    difficulty > 0.7) delivered first"""
+    """每角色一条单向队列, 高优先级消息 (difficulty > 0.7 的
+    constraint_hint) 先投递。"""
 
     def __init__(self):
         self.queues: Dict[str, deque] = {
@@ -148,10 +142,10 @@ class MessageBus:
 
 
 class CoverageTracker:
-    """维护 a set covered edges derives a bitmap hash
-    
-    增强 — 速度监控：维护最近 5 次更新的 edges 增量滑动窗口
-    计算 edges/tick 速度，在速度 < 峰值的 20% 时递增 stagnation counter
+    """维护已覆盖边集合并推导位图哈希。
+
+    增强: 速度监控 — 维护最近 5 次更新的 edges 增量滑动窗口,
+    计算 edges/tick 速度, 速度 < 峰值的 20% 时递增停滞计数。
     """
 
     def __init__(self, max_edges: int = 65536):
@@ -198,12 +192,13 @@ class CoverageTracker:
 
 class SeedGenealogyTree:
     """种子亲缘演化树：追踪父种子→子种子的变异关系
-    
+
     每个种子有唯一 seed_id，记录其父种子 ID 和诞生的 tick
     支持导出 DOT/Graphviz 格式，可视化 fuzz 种子的进化路径"""
 
     def __init__(self):
-        self._lock = threading.Lock()
+        # RLock: get_statistics 持锁时会再调用 get_ancestry_chain
+        self._lock = threading.RLock()
         # seed_id → {parent_id, tick_born, data_hash, crash}
         self._nodes: Dict[str, Dict[str, Any]] = {}
         # parent_id → [child_id,.]
@@ -212,14 +207,10 @@ class SeedGenealogyTree:
 
     def register_seed(self, seed_id: str, parent_id: Optional[str],
                       tick_born: int, data_hash: str, crash: bool = False) -> None:
-        """注册一个种子及其亲缘关系
-        
-        Args:
-        seed_id: 当前种子的唯一标识
-        parent_id: 父种子 ID，若为根种子则为 None
-        tick_born: 种子诞生的 tick 编号
-        data_hash: 种子数据的哈希值
-        crash: 是否触发崩溃
+        """注册一个种子及其亲缘关系。
+
+        parent_id 为父种子 ID, 根种子为 None; tick_born 为种子
+        诞生的 tick 编号。
         """
         with self._lock:
             self._nodes[seed_id] = {
@@ -255,11 +246,7 @@ class SeedGenealogyTree:
         return chain
 
     def export_dot(self, max_nodes: int = 200) -> str:
-        """导出 DOT/Graphviz 格式的演化树
-        
-        返回:
-        Graphviz DOT 格式字符串，可直接用 dot/neato 渲染
-        """
+        """导出 DOT/Graphviz 格式的演化树, 可直接用 dot/neato 渲染。"""
         lines = ['digraph SeedGenealogy {',
                  '  rankdir=TB;',
                  '  node [shape=ellipse, style=filled, fontsize=10];',
@@ -308,10 +295,10 @@ class SeedGenealogyTree:
 
 class CoverageFrontierTracker:
     """覆盖前沿识别器：找出已覆盖但其邻接边尚未覆盖的边
-    
+
     前沿边是 fuzz 最有价值的探索目标——邻接未覆盖区域意味着
     该处附近存在未探索的代码路径。优先发送指向前沿邻接分支的 hint
-    
+
     邻接定义：边 ID 数值差在 NEIGHBOR_THRESHOLD 以内的视为邻接"""
 
     NEIGHBOR_THRESHOLD = 256  # 邻接判定阈值（边 ID 数值差）
@@ -324,11 +311,7 @@ class CoverageFrontierTracker:
         self._neighbor_cache: Dict[int, Set[int]] = {}
 
     def update(self, covered_edges: Set[int]) -> Set[int]:
-        """用最新覆盖边集合更新前沿
-        
-        返回:
-        新识别的前沿边集合
-        """
+        """用最新覆盖边集合更新前沿, 返回新识别的前沿边集合。"""
         with self._lock:
             # 清除已不在 covered 中的边缓存
             removed = self._covered_edges - covered_edges
@@ -387,7 +370,7 @@ class CoverageFrontierTracker:
 
     def score_hint_frontier_proximity(self, hint: ConstraintHint) -> float:
         """评估 hint 的 target_path 与前沿边的接近程度
-        
+
         若 hint 的目标路径接近前沿邻接分支，返回高优先级分数
         """
         try:
@@ -416,7 +399,7 @@ class CoverageFrontierTracker:
                 total_neighbors = max(1, len(neighbors))
                 return (frontier_neighbor_count * 1.5 + uncovered_neighbor_count) / total_neighbors
         except Exception:
-            logger.debug("suppressed", exc_info=True)
+            logger.debug("score_hint_frontier_proximity failed", exc_info=True)
             return 0.0
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -430,7 +413,7 @@ class CoverageFrontierTracker:
 
 class MutualInformationScoring:
     """种子特征与覆盖率增益之间的互信息计算
-    
+
     对每个种子提取特征向量（熵、长度分桶、特定字节模式）
     计算其与二元覆盖率增益标签之间的互信息 MI(feature; gain)
     MI 高的特征在种子选择中获得更高权重"""
@@ -443,13 +426,14 @@ class MutualInformationScoring:
     MIN_SAMPLES_FOR_MI = 20
 
     def __init__(self):
-        self._lock = threading.Lock()
-        # 特征名 → {feature_value → {覆盖率_gain → count}}
+        # RLock: get_statistics 持锁时会再调用 compute_mi
+        self._lock = threading.RLock()
+        # 特征名 → {feature_value → {coverage_gain → count}}
         self._joint_counts: Dict[str, Dict[Any, Dict[bool, int]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(int)))
         # feature_value → count (marginal)
         self._feature_marginal: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))
-        # 覆盖率_gain → count (marginal)
+        # coverage_gain → count (marginal)
         self._gain_marginal: Dict[str, Dict[bool, int]] = defaultdict(lambda: defaultdict(int))
         self._total_samples = 0
 
@@ -532,10 +516,10 @@ class MutualInformationScoring:
                 self._gain_marginal[fname][coverage_gain] += 1
 
     def compute_mi(self, feature_name: str) -> float:
-        """计算指定特征与覆盖率增益之间的互信息
-        
+        """计算指定特征与覆盖率增益之间的互信息。
+
         MI(f; g) = sum_{f_val} sum_{g_val} P(f_val, g_val) *
-        记录(P(f_val, g_val) / (P(f_val) * P(g_val)))
+        log(P(f_val, g_val) / (P(f_val) * P(g_val)))
         """
         with self._lock:
             if self._total_samples < self.MIN_SAMPLES_FOR_MI:
@@ -601,13 +585,13 @@ class MutualInformationScoring:
 
 
 class SymbExFuzzCoop:
-    """调度器 wires symbex hints 模糊测试器 seeds bus
-    
-    tick() 运行 one iteration sides, drains message 队列s
-    更新 shared 覆盖率 view
-    
-    四轮增强 — 集成 SeedGenealogyTree、覆盖率FrontierTracker、
-    MutualInformationScoring 三大组件"""
+    """把 symbex 提示与 fuzzer 种子接上消息总线的调度器。
+
+    tick() 运行两侧各一次迭代, 排空消息队列, 更新共享覆盖率视图。
+
+    四轮增强: 集成 SeedGenealogyTree、CoverageFrontierTracker、
+    MutualInformationScoring 三大组件。
+    """
 
     # 种子年龄衰减因子：每 tick 乘 0.95
     SEED_AGE_DECAY = 0.95
@@ -751,11 +735,11 @@ class SymbExFuzzCoop:
         return selected
 
     def triage_seeds(self) -> Dict[str, List[SeedItem]]:
-        """三分法：crash / 覆盖率_gain / stale
-        
-        crash → seed.crash 为 True
-        stale → 年龄 > SEED_STALE_AGE
-        coverage_gain → 其余（有覆盖率潜力的活跃种子）"""
+        """三分法: crash / coverage_gain / stale。
+
+        crash → seed.crash 为 True; stale → 年龄 > SEED_STALE_AGE;
+        coverage_gain → 其余 (有覆盖率潜力的活跃种子)。
+        """
         out: Dict[str, List[SeedItem]] = {'crash': [], 'coverage_gain': [], 'stale': []}
         for s in list(self.seeds):
             if s.crash:
@@ -874,7 +858,7 @@ def run_cooperation(
     symbex_iter: int = 1,
     fuzz_iter: int = 1
 ) -> Dict[str, Any]:
-    """One-shot: instantiate SymbExFuzzCoop, 运行 N 舍入, 返回 statistics"""
+    """一次性流程: 实例化 SymbExFuzzCoop, 运行 N 轮, 返回统计。"""
     coop = SymbExFuzzCoop()
     for r in range(rounds):
         coop.tick(symbex_iter=symbex_iter, fuzz_iter=fuzz_iter)

@@ -117,10 +117,6 @@ def detect_uaf_semantic(code: str, func_name: str = "") -> List[UafSite]:
             ptr = m.group(1)
             if _is_valid_ptr(ptr):
                 allocs[ptr] = i
-                # 检查立即复用: 此malloc是否为某free后的重分配
-                for fp, fi in frees:
-                    if _resolve_aliases(alias_map, fp) == ptr:
-                        break  # 标记但不在此处处理
 
         # free
         for m in _RE_FREE.finditer(line):

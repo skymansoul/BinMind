@@ -3,7 +3,6 @@
 PyInstaller/Nuitka 解包模块测试
 """
 import os
-_MOD_DEBUG = False
 import sys
 import unittest
 import tempfile
@@ -37,7 +36,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
         self.assertIn((3, 9), PYTHON_MAGIC_NUMBERS)
         self.assertIn((3, 10), PYTHON_MAGIC_NUMBERS)
         self.assertIn((3, 11), PYTHON_MAGIC_NUMBERS)
-        
+
         # 检查魔数格式
         magic_38 = PYTHON_MAGIC_NUMBERS[(3, 8)]
         self.assertEqual(len(magic_38), 4)
@@ -47,7 +46,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
         test_file = os.path.join(self.m_tmp, 'test.txt')
         with open(test_file, 'wb') as f:
             f.write(b'Hello World')
-        
+
         result = self.unpacker.detect_packer(test_file)
         self.assertEqual(result, PackerType.NONE)
 
@@ -59,7 +58,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             # PyInstaller 签名
             f.write(b'MEI\x0c\x0b\x0a\x0b\x0e')
             f.write(b'\x00' * 100)
-        
+
         result = self.unpacker.detect_packer(test_file)
         self.assertEqual(result, PackerType.PYINSTALLER)
 
@@ -70,7 +69,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             # Nuitka 签名
             f.write(b'Nuitka')
             f.write(b'\x00' * 100)
-        
+
         result = self.unpacker.detect_packer(test_file)
         self.assertEqual(result, PackerType.NUITKA)
 
@@ -83,7 +82,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             content=b'\x00' * 100,
             source_code=None
         )
-        
+
         self.assertEqual(pyc.filename, 'test.pyc')
         self.assertEqual(pyc.python_version, (3, 10))
         self.assertIsNotNone(pyc.magic_number)
@@ -98,7 +97,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             metadata={'version': '3.10'},
             errors=[]
         )
-        
+
         self.assertEqual(result.packer_type, PackerType.PYINSTALLER)
         self.assertIsInstance(result.pyc_files, list)
         self.assertIn('version', result.metadata)
@@ -108,16 +107,16 @@ class TestPyInstallerUnpacker(unittest.TestCase):
         # 创建包含 pyc 魔数的数据
         magic_310 = PYTHON_MAGIC_NUMBERS.get((3, 10), b'\xa7\r\r\n')
         test_data = b'\x00' * 50 + magic_310 + b'\x00' * 100
-        
+
         pyc_files = self.unpacker._find_embedded_pyc(test_data)
-        
+
         # 应该至少找到一个
         self.assertGreaterEqual(len(pyc_files), 1)
 
     def test_unpack_nonexistent_file(self):
         """测试解包不存在的文件"""
         result = self.unpacker.unpack('/nonexistent/file.exe')
-        
+
         self.assertEqual(result.packer_type, PackerType.NONE)
         self.assertGreater(len(result.errors), 0)
 
@@ -130,7 +129,7 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             content=b'\x00' * 100,
             source_code='def test(): pass'
         )
-        
+
         result = UnpackResult(
             packer_type=PackerType.PYINSTALLER,
             pyc_files=[pyc_file],
@@ -138,9 +137,9 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             metadata={'version': '3.10'},
             errors=[]
         )
-        
+
         report = self.unpacker.generate_report(result)
-        
+
         self.assertIn('PyInstaller', report)
         self.assertIn('test.pyc', report)
         self.assertIn('test.py', report)
@@ -154,9 +153,9 @@ class TestPyInstallerUnpacker(unittest.TestCase):
             metadata={'test': 'value'},
             errors=[]
         )
-        
+
         saved_path = self.unpacker.save_result(result, 'test_result')
-        
+
         self.assertTrue(os.path.exists(saved_path))
         self.assertTrue(saved_path.endswith('.json'))
 
@@ -188,9 +187,9 @@ class TestPycFile(unittest.TestCase):
             content=b'test content',
             source_code='print("hello")'
         )
-        
+
         result = pyc.to_dict()
-        
+
         self.assertIn('filename', result)
         self.assertIn('python_version', result)
         self.assertIn('source_code', result)
@@ -198,7 +197,6 @@ class TestPycFile(unittest.TestCase):
 
 
 class TestUnpackResult(unittest.TestCase):
-    # 实测性能在预期范围内——不列入优化计划
     """UnpackResult 数据类测试"""
 
     def test_to_dict(self):
@@ -210,9 +208,9 @@ class TestUnpackResult(unittest.TestCase):
             metadata={'entry': 'main'},
             errors=['test error']
         )
-        
+
         data = result.to_dict()
-        
+
         self.assertIn('packer_type', data)
         self.assertIn('source_files', data)
         self.assertIn('metadata', data)

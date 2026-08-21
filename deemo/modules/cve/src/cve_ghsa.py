@@ -261,14 +261,12 @@ def search_and_dedup(
     ecosystem: Optional[str] = None,
     limit: int = 200,
 ) -> Dict[str, Any]:
-    """搜索 GHSA，然后通过 CVE ID + 描述重叠与 KB 去重。
-    返回:
-      {merged: [...], ghsa_only: [...], nvd_only: [...], stats: {...}}
+    """搜索 GHSA, 然后通过 CVE ID + 描述重叠与 KB 去重。
 
-    有 CVE ID 的 GHSA 条目与 KB 条目 1:1 匹配。
-    无 CVE ID 的 GHSA 条目通过描述重叠模糊匹配
-    (归一化 token 的 Jaccard > 0.6)。未匹配的 GHSA 专有条目
-    放入 ghsa_only 供人工审核。
+    有 CVE ID 的 GHSA 条目与 KB 条目 1:1 匹配; 无 CVE ID 的
+    通过描述重叠模糊匹配 (归一化 token 的 Jaccard > 0.6);
+    未匹配的 GHSA 专有条目放入 ghsa_only 供人工审核。
+    返回 {merged, ghsa_only, nvd_only, stats}。
     """
     ghsa_entries = search_ghsa(query, ecosystem=ecosystem, limit=limit)
 

@@ -1,4 +1,4 @@
-"""UAF 误报融合抑制 — 消费 BinaryUafScanner 原始 findings 做证据过滤.
+"""UAF 误报融合抑制 - 消费 BinaryUafScanner 原始 findings 做证据过滤.
 
 规则 (每条给出可审计证据, 无法证明安全的保持原样):
   S1 pass_as_arg 无害化 — callee 分类 HARMLESS (printf %p 等)
@@ -16,7 +16,7 @@ from .uaf_scope_analyzer import ScopeAnalyzer
 
 
 class UafFpSuppressor:
-    """UAF 误报抑制器 — findings 级后处理."""
+    """UAF 误报抑制器 - findings 级后处理."""
 
     def __init__(self, insns: list, binary_path: Optional[str] = None,
                  func_map: Optional[Dict[int, str]] = None):
@@ -93,8 +93,8 @@ class UafFpSuppressor:
         # 其它参数寄存器无 freed 链 (单参函数形态)
         if call_idx is not None and self._stale_marker(
                 call_idx, freed_reg):
-            return "drop", f"S7 arg {freed_reg} redefined by non-freed " \
-                           f"source — stale marker, no freed chain in args"
+                return "drop", f"S7 arg {freed_reg} redefined by non-freed " \
+                               f"source - stale marker, no freed chain in args"
         return "keep", ""
 
     def _stale_marker(self, call_idx: int, freed_reg: str) -> bool:
@@ -269,7 +269,7 @@ class UafFpSuppressor:
         """被调函数内 free 之后到 ret 之间 rax 是否被显式定义.
 
         扫描被调函数的指令区间 (call 目标 → 下一函数起始),
-        而非调用点之后的调用者指令 — 调用者区间不包含函数体.
+        而非调用点之后的调用者指令 - 调用者区间不包含函数体.
         """
         idx = self._addr_idx(call_addr)
         if idx is None:
@@ -278,7 +278,7 @@ class UafFpSuppressor:
         target = self._jmp_target_of(ins)
         if target is None:
             return False
-        # 函数边界: 下一函数起始地址 (符号表) — 缺省为指令流末
+        # 函数边界: 下一函数起始地址 (符号表) - 缺省为指令流末
         # TODO: 剥离二进制的函数边界恢复, 当前退化为指令流末,
         # 跨函数 rax 定义判定可能误扫到相邻函数
         func_end = 0xFFFFFFFFFFFFFFFF
@@ -317,7 +317,7 @@ class UafFpSuppressor:
         target = self._jmp_target_of(ins)
         if target is None:
             return False
-        # 函数边界: 下一函数起始地址 (符号表) — 缺省为指令流末
+        # 函数边界: 下一函数起始地址 (符号表) - 缺省为指令流末
         # TODO: 剥离二进制的函数边界恢复, 当前退化为指令流末,
         # 跨函数 rax 定义判定可能误扫到相邻函数
         func_end = 0xFFFFFFFFFFFFFFFF
@@ -348,7 +348,7 @@ class UafFpSuppressor:
             if ins.mnemonic in ("mov", "movabs", "lea") and \
                     len(ins.operands) >= 2:
                 dst_raw = ins.operands[0].strip().lower()
-                # 只认 64 位 rax 定义 — mov eax, -1 是显式返回值,
+                # 只认 64 位 rax 定义 - mov eax, -1 是显式返回值,
                 # 不是逃逸 freed 指针的证据
                 if dst_raw.startswith("r") and \
                         self._reg_of(dst_raw) == "rax":
@@ -420,7 +420,7 @@ class UafFpSuppressor:
         """call 点实参寄存器 (reg 的赋值来源), 递归追迹到槽.
 
         处理 movzx/movsx/movsxd 读取链: edx ← eax ← movzx eax,[rax]
-        ← rax ← mov rax,[rbp-0x8] — 返回槽 [rbp-0x8].
+        ← rax ← mov rax,[rbp-0x8] - 返回槽 [rbp-0x8].
         """
         if hops <= 0:
             return None

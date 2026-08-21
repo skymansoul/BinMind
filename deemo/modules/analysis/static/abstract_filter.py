@@ -15,7 +15,6 @@
 #      保证在所有具体执行中都是安全的 (sound under-approximation
 #      of danger). 反之, 标记为 "maybe_unsafe" 的路径仍需精确分析.
 #
-# 创建: 2026-05-07  初始版本
 
 from typing import Dict, List, Optional, Tuple
 

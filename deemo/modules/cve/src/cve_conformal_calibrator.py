@@ -1,7 +1,5 @@
-# 创建: 2026-08-02 14:08
-# 修改: 2026-08-02 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 自适应校准器+分布偏移检测
-# 自适应校准器 — 分布偏移检测与校准集动态维护
+# 自适应校准器+分布偏移检测
+# 自适应校准器 - 分布偏移检测与校准集动态维护
 #
 # 问题: 标准共形预测假设校准集与测试集同分布 (exchangeability).
 # 但在CVE场景中, NVD发布策略变更 (2026年4月后停止全量富化)、
@@ -86,7 +84,7 @@ class CalibrationWindow:
         return indexed[-1][1][0]
 
     def get_unweighted_quantile(self, q: float) -> float:
-        """等权分位数 — 用于KS检验."""
+        """等权分位数 - 用于KS检验."""
         if not self._scores:
             return float('inf')
         scores = sorted(s[0] for s in self._scores)
@@ -167,7 +165,7 @@ class DriftDetector:
 
 
 class AdaptiveCalibrator:
-    """自适应共形校准器 — 组合校准窗口与偏移检测.
+    """自适应共形校准器 - 组合校准窗口与偏移检测.
 
     核心逻辑:
     1. 从校准窗口获取基准分位数 q_hat.

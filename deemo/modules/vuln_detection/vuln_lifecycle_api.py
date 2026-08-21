@@ -14,8 +14,6 @@ class VulnStatus:
     CLOSED = "closed"
     WONT_FIX = "wont_fix"
     FALSE_POSITIVE = "false_positive"
-    FIXING = VulnStatus("fixing")
-    FALSE_POSITIVE = VulnStatus("false_positive")
 
 
 class VulnSeverity:
@@ -23,7 +21,6 @@ class VulnSeverity:
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
-    LOW = VulnSeverity("low")
 
 
 class VulnRecord:

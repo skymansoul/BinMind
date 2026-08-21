@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-07-09  |  GASRI 管线——Guard-Aware Size-Region Inference
 #
 """
 GASRI (Guard-Aware Size-Region Inference) 分析管线。

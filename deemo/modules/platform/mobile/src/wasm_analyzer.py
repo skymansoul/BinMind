@@ -29,7 +29,7 @@ class SectionType:
     CODE = 10; DATA = 11; DATA_COUNT = 12
 
 class ValType(IntEnum):
-    """WASM值类型——WBSan shadow memory的粒度基于这些类型。"""
+    """WASM值类型: WBSan shadow memory的粒度基于这些类型。"""
     I32 = 0x7F; I64 = 0x7E; F32 = 0x7D; F64 = 0x7C
     V128 = 0x7B; FUNCREF = 0x70; EXTERNREF = 0x6F
 
@@ -286,13 +286,13 @@ class WasmParser:
             bEnvOrWasi = imp.module in ('env', 'wasi_unstable', 'wasi_snapshot_preview1')
             if bEnvOrWasi and imp.name in ('fd_write', 'fd_read', 'path_open', 'sock_open'):
                 vulns.append({'type': '文件操作', 'severity': 'Medium',
-                    'description': f'导入函数 {imp.module}.{imp.name}——可能访问敏感资源',
+                    'description': f'导入函数 {imp.module}.{imp.name}: 可能访问敏感资源',
                     'location': f'import:{imp.index}'})
 
         for mem in self.result.memories:
             if mem.maximum == 0:
                 vulns.append({'type': '无上限内存', 'severity': 'Medium',
-                    'description': '内存无最大限制——guard page突破可导致沙箱逃逸',
+                    'description': '内存无最大限制: guard page突破可导致沙箱逃逸',
                     'location': 'memory:0'})
             if mem.initial > 32768:
                 vulns.append({'type': '过大内存分配', 'severity': 'Low',
@@ -312,7 +312,7 @@ class WasmParser:
         for i, tab in enumerate(self.result.tables):
             if tab.maximum == 0 and tab.initial > 0:
                 vulns.append({'type': '无上限Table', 'severity': 'Medium',
-                    'description': f'Table无最大限制(初始{tab.initial})——table.grow可劫持间接调用',
+                    'description': f'Table无最大限制(初始{tab.initial}): table.grow可劫持间接调用',
                     'location': f'table:{i}'})
 
         self.result.vulnerabilities = vulns
@@ -322,7 +322,7 @@ class WasmParser:
         """对每个memory段构建shadow memory模型，检查red zone配置与UAF风险。
 
         WBSan (WWW '25) 提出：在memory周围设置red zone，通过shadow memory追踪
-        每个字节的有效性。此处做静态模拟——检测memory配置是否预留了red zone空间，
+        每个字节的有效性。        此处做静态模拟, 检测memory配置是否预留了red zone空间,
         以及是否存在memory.grow后未清零的未初始化内存访问风险。
         """
         issues = []
@@ -333,7 +333,7 @@ class WasmParser:
                 issues.append({
                     'type': '缺少red_zone',
                     'severity': 'Medium',
-                    'description': f'Memory[{i}]无上限——无法保证red zone不被覆盖',
+                    'description': f'Memory[{i}]无上限: 无法保证red zone不被覆盖',
                     'location': f'memory:{i}',
                     'remediation': '设定合理的maximum pages以预留guard/red zone空间'
                 })
@@ -341,7 +341,7 @@ class WasmParser:
                 issues.append({
                     'type': 'red_zone过薄',
                     'severity': 'Low',
-                    'description': f'Memory[{i}]的red zone仅{mem.maximum - mem.initial}页——推荐至少2页',
+                    'description': f'Memory[{i}]的red zone仅{mem.maximum - mem.initial}页, 推荐至少2页',
                     'location': f'memory:{i}'
                 })
 
@@ -352,7 +352,7 @@ class WasmParser:
             issues.append({
                 'type': '未初始化增长',
                 'severity': 'Low',
-                'description': 'Memory可增长且无上限——grow出的新页可能包含未初始化数据',
+                'description': 'Memory可增长且无上限: grow出的新页可能包含未初始化数据',
                 'remediation': '在memory.grow后显式清零新分配的页'
             })
 
@@ -381,7 +381,7 @@ class WasmParser:
                         findings.append({
                             'type': '潜在memcpy模式',
                             'severity': 'Info',
-                            'description': f'函数[{i}]接受{i32_params}个i32参数无返回值——可能是memcpy/memset模式',
+                            'description': f'函数[{i}]接受{i32_params}个i32参数无返回值: 可能是memcpy/memset模式',
                             'location': f'func:{i}',
                             'recommendation': '审查此函数的bounds checking是否充分'
                         })
@@ -394,7 +394,7 @@ class WasmParser:
             findings.append({
                 'type': '双重无上限',
                 'severity': 'High',
-                'description': 'Memory和Table均无上限——同时暴露内存溢出和间接调用劫持两个攻击面',
+                'description': 'Memory和Table均无上限: 同时暴露内存溢出和间接调用劫持两个攻击面',
                 'recommendation': '为memory和table均设置合理上限'
             })
 
@@ -408,7 +408,7 @@ class WASIAnalyzer:
         'fd_write': '写入文件描述符', 'fd_read': '读取文件描述符',
         'fd_close': '关闭文件描述符', 'fd_seek': '移动文件指针',
         'fd_tell': '获取文件位置', 'fd_fdstat_get': '获取文件状态',
-        'path_open': '打开路径——文件系统逃逸主向量',
+        'path_open': '打开路径: 文件系统逃逸主向量',
         'path_create_directory': '创建目录', 'path_unlink_file': '删除文件',
         'proc_exit': '退出进程', 'proc_raise': '发送信号',
         'sched_yield': '让出调度', 'random_get': '获取随机数',
@@ -508,12 +508,12 @@ class EscapeDetector:
 def create_wasm_analyzer(binary_path=""):
     return WasmSandboxAnalyzer(binary_path=binary_path)
 
-# WASM shadow memory有效性状态缓存——WBSan redzone预计算
+# WASM shadow memory有效性状态缓存: WBSan redzone预计算
 _SHADOW_STATE_CACHE: dict = {}
 
 
 def _dead_wasm_opcode_counter(data: bytes) -> int:
-    """WASM opcode频率统计——nullary指令计数, 未接入主分析。"""
+    """WASM opcode频率统计: nullary指令计数, 未接入主分析。"""
     cnt = 0
     for b in data:
         if b in (0x00, 0x01, 0x0F, 0x1A, 0x1B, 0x45, 0x46):  # nullary opcode集合

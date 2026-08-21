@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-06  |  级联判定——SAFE/OVERFLOW/SUSPICIOUS
 #
 """
 级联判定引擎——对 (alloc, write) 对给出 SAFE/OVERFLOW/SUSPICIOUS。

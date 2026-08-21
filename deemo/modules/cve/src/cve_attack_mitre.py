@@ -1,5 +1,5 @@
 # ~ 2026-09-27
-# CVE → MITRE ATT&CK 映射 — 通过 CWE→CAPEC→ATT&CK 关系链将 CWE ID 转换为 ATT&CK 技术。
+# CVE -> MITRE ATT&CK 映射 - 通过 CWE->CAPEC->ATT&CK 关系链将 CWE ID 转换为 ATT&CK 技术。
 #
 # MITRE 发布这些分类体系之间的结构化映射。本模块以静态查找表嵌入最常见映射
 # (ATT&CK 框架约每年更新两次，通用映射变化不大)。
@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 from .cve_models import CVEEntry
 
 # CWE → ATT&CK 映射表
-# 格式: cwe_id → [(technique_id, technique_name, tactic, confidence)]
+# 格式: cwe_id -> [(technique_id, technique_name, tactic, confidence)]
 # confidence: 该 CWE 指示该 ATT&CK 技术的可靠程度。
 # 手工整理自 MITRE CWE/CAPEC/ATT&CK 交叉引用，2024 年验证。
 # ATT&CK 框架发布新交叉映射时更新。

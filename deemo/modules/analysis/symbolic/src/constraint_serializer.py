@@ -1,16 +1,6 @@
-"""Constraint 序列化 反序列化 for persistent storage
-
-转换 constraints -memory representations persistent
-格式化: canonical normalized strings, JSON-safe dictionaries, SQLite
-row tuples. Normalization rewrites SMT-LIB operators semantically
-identical constraints share same 缓存key
-
-Usage:
-analysis.symbolic.src.constraint_serializer import (
-normalize_constraint, compute_constraint_hash_bytes
-entry_to_dict, entry_to_db_params, db_row_to_init_kwargs
-)
-"""
+# 约束序列化/反序列化: 持久化存储
+# 转换约束的内存表示为持久格式: 规范化字符串, JSON字典, SQLite行元组
+# 规范化重写SMT-LIB算子, 语义相同的约束共享相同缓存key
 
 from __future__ import annotations
 
@@ -39,9 +29,8 @@ NORMALIZE_PATTERNS: List[Tuple[str, str]] = [
     ("bvuge", ">="),
 ]
 
-# Fast category 签名s: matched against lowercased canonical form
-# First match wins; order matters (bitvector checked integer because
-# 包含 overlapping tokens like "+")
+# 快速分类签名: 匹配规范化形式的小写
+# 首个匹配生效; 顺序敏感(bitvector先于integer检查, 因包含"+"等重叠token)
 CATEGORY_SIGNATURES: List[Tuple[str, List[str]]] = [
     ("bitvector", ["bvadd", "bvmul", "bvand", "bvor", "bvxor", "bvshl", "concat", "extract"]),
     ("integer",   ["Int", "int", "+", "*", "mod"]),
@@ -51,12 +40,8 @@ CATEGORY_SIGNATURES: List[Tuple[str, List[str]]] = [
 
 
 def normalize_constraint(constraint: str) -> str:
-    """Canonicalize a constraint string for consistent 哈希
-    
-    流水线: collapse whitespace -> lowercase -> 标准化 SMT-LIB
-    operators -> clean parenthesis spacing. 返回 canonical form
-    suitable for SHA256 哈希
-    """
+    # 规范化约束字符串: 折叠空白->小写->替换SMT-LIB算子->清理括号间距
+    # 返回适合SHA256哈希的规范形式
     normalized = " ".join(constraint.split())
     normalized = normalized.lower()
 
@@ -73,11 +58,8 @@ def normalize_constraint(constraint: str) -> str:
 
 
 def classify_constraint_category(normalized: str) -> str:
-    """Infer constraint category operator 签名s canonical form
-    
-    返回 one: 'bitvector', 'integer', 'string', 'boolean', 'unknown'
-    Used for statistics grouping eviction policy decisions
-    """
+    # 根据规范化形式的算子签名推断约束类别
+    # 返回: bitvector/integer/string/boolean/unknown
     lower = normalized.lower()
     for cat, sigs in CATEGORY_SIGNATURES:
         if any(sig.lower() in lower for sig in sigs):
@@ -86,34 +68,21 @@ def classify_constraint_category(normalized: str) -> str:
 
 
 def compute_constraint_hash_bytes(normalized: str) -> bytes:
-    """SHA256 digest *normalized* raw bytes
-    
-    Raw bytes avoid hex-编码/解码 overhead hot paths shard
-    indexing 使用 first two bytes directly
-    """
+    # 对规范化字符串的原始字节做SHA256摘要
+    # 使用原始字节避免hex编解码开销, 分片索引直接取前两字节
     return hashlib.sha256(normalized.encode("utf-8")).digest()
 
 
 def compute_constraint_hash(normalized: str) -> str:
-    """SHA256 digest *normalized* hex string
-    
-    Convenience 封装; prefer:func:`compute_constraint_hash_bytes`
-    性能-sensitive paths
-    """
+    # SHA256摘要的hex字符串封装, 性能敏感路径优先用compute_constraint_hash_bytes
     return compute_constraint_hash_bytes(normalized).hex()
 
 
-# Entry <-> dict conversion (JSON-compatible)
-# *entry* duck-typed: object exposing the缓存dConstraint attribute
-# interface works. avoids a circular import main module
+# Entry <-> dict转换 (JSON兼容)
+# entry为duck-typed对象, 暴露cachedConstraint属性接口即可, 避免循环导入
 
 def entry_to_dict(entry: Any) -> Dict[str, Any]:
-    """序列化 a 缓存entry a JSON-safe dictionary
-    
-    *entry* expose: constraint_hash, original_constraint
-    normalized_constraint, solution, solver_name, solve_time_ms, timestamp
-    hit_count, constraint_category, ttl_seconds
-    """
+    # 序列化缓存entry为JSON安全字典
     return {
         "constraint_hash": entry.constraint_hash,
         "original_constraint": entry.original_constraint,
@@ -129,11 +98,8 @@ def entry_to_dict(entry: Any) -> Dict[str, Any]:
 
 
 def json_item_to_init_kwargs(item: Dict[str, Any]) -> Dict[str, Any]:
-    """转换 a JSON-imported dict keyword arguments for缓存dConstraint()
-    
-    Missing keys 接收 sensible defaults. Timestamp defaults current
-    time absent JSON payload
-    """
+    # 转换JSON导入的字典为CachedConstraint()的关键字参数
+    # 缺失键使用合理默认值, 时间戳缺省为当前时间
     return {
         "constraint_hash": item.get("constraint_hash", ""),
         "original_constraint": item.get("original_constraint", ""),
@@ -148,18 +114,15 @@ def json_item_to_init_kwargs(item: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# SQLite row conversion
-# Column order (constraint_缓存table):
+# SQLite行转换
+# 列顺序(constraint缓存表):
 # constraint_hash, original_constraint, normalized_constraint
 # solution, solver_name, solve_time_ms, timestamp, hit_count
-#   constraint_category, ttl_seconds
+# constraint_category, ttl_seconds
 
 def entry_to_db_params(entry: Any) -> tuple:
-    """转换 a 缓存entry a 10-element parameter tuple for SQLite 插入
-    
-    Stringifies *solution* for storage; None maps NULL SQLite
-    *entry* expose same attributes as缓存dConstraint
-    """
+    # 转换缓存entry为10元素参数元组, 用于SQLite插入
+    # solution字符串化存储; None映射为SQLite NULL
     return (
         entry.constraint_hash,
         entry.original_constraint,
@@ -175,11 +138,8 @@ def entry_to_db_params(entry: Any) -> tuple:
 
 
 def db_row_to_init_kwargs(row: tuple) -> Dict[str, Any]:
-    """转换 a SQLite row tuple keyword arguments for缓存dConstraint()
-    
-    处理 variable column counts for forward 兼容性 -- older rows
-    lack ``constraint_category`` (col 8) or ``ttl_seconds`` (col 9)
-    """
+    # 转换SQLite行元组为CachedConstraint()的关键字参数
+    # 处理变量列数的前向兼容: 旧行可能缺少constraint_category(col 8)或ttl_seconds(col 9)
     return {
         "constraint_hash": row[0],
         "original_constraint": row[1],

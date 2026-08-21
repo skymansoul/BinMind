@@ -1,10 +1,10 @@
-# 写界推断器 (Write-Bound Inferer) — PcWBI来源约束写界推断.
+# 写界推断器 (Write-Bound Inferer) - PcWBI来源约束写界推断.
 #
 # 决策逻辑:
 #   将检测器产生的原始堆写入告警按来源重新分级, 输出三级判定:
-#     CONFIRMED — 可证明存在使写入越过分配可用边界的路径
-#     BENIGN    — 可证明所有路径上写入均不越过分配可用边界
-#     SUSPECTED — 信息不足, 保守保留但不计入确认告警
+#     CONFIRMED - 可证明存在使写入越过分配可用边界的路径
+#     BENIGN    - 可证明所有路径上写入均不越过分配可用边界
+#     SUSPECTED - 信息不足, 保守保留但不计入确认告警
 #   分级依据优先级从高到低:
 #     1. 数值边界: 写入来源为常量且 bound ≤ usable_size(alloc) → BENIGN.
 #     2. 守卫边界: 来源为 GUARDED 且 guard_upper ≤ usable_size(alloc) → BENIGN.
@@ -16,7 +16,6 @@
 #   只有 CONFIRMED 计入检出统计, SUSPECTED 单独汇报, 从而在保持
 #   "真溢出必被确认" 的前提下, 将区间重叠类系统性误报剔除出报告.
 #
-# 创建: 2026-07-02
 
 from dataclasses import dataclass
 from typing import List, Optional
@@ -50,7 +49,7 @@ class WriteBoundResult:
 
 
 class WriteBoundInferer:
-    """写界推断器 — 将原始告警映射到三级判定."""
+    """写界推断器 - 将原始告警映射到三级判定."""
 
     def __init__(self, alloc_model: Optional[HeapAllocModel] = None):
         self._alloc_model = alloc_model or HeapAllocModel()

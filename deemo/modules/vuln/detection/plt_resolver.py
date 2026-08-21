@@ -1,23 +1,20 @@
 """
-PLT/导入表解析器 — 从PE提取导入函数名, 用于解析call目标。
+PLT/导入表解析器 - 从PE提取导入函数名, 用于解析call目标。
 
 方法:
   1. 解析PE section headers, 定位 .idata 和 .text 段
   2. 从 .idata 段的导入描述符表中提取 DLL名+函数名
-  3. 建立 {IAT虚拟地址 → 函数名} 映射
+  3. 建立 {IAT虚拟地址 - 函数名} 映射
 
-RVA→文件偏移使用 section header 映射表。
+RVA-文件偏移使用 section header 映射表。
 若导入解析失败, 回退到直接从 .idata 段扫描可打印字符串作为候选函数名。
-
-修改记录:
-  创建 2025-05-12
 """
 import struct, re
 from typing import Dict, List, Optional
 
 
 def _pe_sections(data: bytes) -> List[dict]:
-    """解析PE section headers → [{name, va, size, raw_ptr, raw_size}]。"""
+    """解析PE section headers - [{name, va, size, raw_ptr, raw_size}]。"""
     if len(data) < 512 or data[:2] != b'MZ':
         return []
     pe_off = struct.unpack_from('<I', data, 60)[0]
@@ -76,7 +73,7 @@ def _parse_pe_imports(data: bytes) -> Dict[int, str]:
         if name_rva == 0 and orig_thunk_rva == 0:
             break
 
-        # IAT地址对应导入函数→这是我们的映射键
+        # IAT地址对应导入函数-这是我们的映射键
         if iat_rva:
             thunk_off = _rva_to_offset(sections, orig_thunk_rva or iat_rva)
             if thunk_off:
@@ -117,7 +114,7 @@ def _parse_pe_imports(data: bytes) -> Dict[int, str]:
 def _fallback_string_scan(data: bytes, sections: List[dict]) -> Dict[int, str]:
     """
     回退方案: 扫描 .idata 段中的可打印字符串作为候选函数名。
-    无法建立精确的地址→函数名映射, 但提供候选集供模式匹配。
+    无法建立精确的地址-函数名映射, 但提供候选集供模式匹配。
     """
     result: Dict[int, str] = {}
     for s in sections:

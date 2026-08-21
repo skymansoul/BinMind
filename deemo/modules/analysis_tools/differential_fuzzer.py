@@ -23,23 +23,14 @@ class DifferentialFuzzer:
             elif self.mode == 'cross-architecture':
                 return self._run_cross_arch_diff()
             else:
-                logger.warning("未知的fuzzmode: %s", self.mode)
+                logger.warning("未知的 fuzz 模式: %s", self.mode)
                 return {'success': False, 'error': f"Unknown mode: {self.mode}"}
 
         except Exception as e:
-            logger.error("fuzzerexception: %s", e)
+            logger.error("fuzzer 异常: %s", e)
             return {'success': False, 'error': str(e)}
 
     def _run_cross_compiler_diff(self):
-        self.differences_found.append({
-            'type': 'compiler_difference',
-            'description': 'Potential compiler-specific behavior differences'
-        })
-        self.differences_found.append({
-            'type': 'optimization_diff',
-            'description': 'Different optimization levels may affect behavior'
-        })
-
         self._generate_report()
         return {
             'success': True,
@@ -48,11 +39,6 @@ class DifferentialFuzzer:
         }
 
     def _run_cross_version_diff(self):
-        self.differences_found.append({
-            'type': 'version_mismatch',
-            'description': 'Version differences may introduce behavioral changes'
-        })
-
         self._generate_report()
         return {
             'success': True,
@@ -61,15 +47,6 @@ class DifferentialFuzzer:
         }
 
     def _run_cross_arch_diff(self):
-        self.differences_found.append({
-            'type': 'architecture_difference',
-            'description': 'Endianness and instruction set differences'
-        })
-        self.differences_found.append({
-            'type': 'word_size_diff',
-            'description': '32-bit vs 64-bit word size differences'
-        })
-
         self._generate_report()
         return {
             'success': True,

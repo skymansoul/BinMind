@@ -1,11 +1,11 @@
 """
-集成卡尔曼风险估计 -- 多源风险评分的动态状态融合。
+ 集成卡尔曼风险估计 - 多源风险评分的动态状态融合。
 
 问题：
   传播图中每个节点的真实风险值是潜在状态(latent state)。
   多个风险估计方法（RiskScorer的PageRank传播、纯severity基准、
   GNN预测、专家标注）各自提供带噪声的观测。
-  单一方法的选择引入方法学偏差——PageRank低估孤立高风险节点，
+  单一方法的选择引入方法学偏差, PageRank低估孤立高风险节点，
   severity忽略拓扑上下文。
 
 方案：
@@ -28,7 +28,7 @@
   本模块首次将EnKF应用于传播图的多源风险评分融合。
 
 ref: Evensen "Data Assimilation: The Ensemble Kalman Filter".
-ref: EnKF for power systems -- 最接近的工程应用，但不涉及安全风险。
+ref: EnKF for power systems - 最接近的工程应用，但不涉及安全风险。
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class RiskMeasurement:
-    """单次风险观测 -- 来自某个风险估计方法。"""
+    """单次风险观测 - 来自某个风险估计方法。"""
     source_name: str             # 估计方法名 (e.g. "RiskScorer", "GNN", "severity")
     values: Dict[str, float]     # {node_id: risk_score}
     noise_std: float = 0.10      # 该方法的观测噪声标准差(先验估计)
@@ -59,7 +59,7 @@ class EnKFState:
 
 
 class EnsembleKalmanRiskFilter:
-    """集成卡尔曼滤波器 -- 多源风险观测的在线状态融合。
+    """集成卡尔曼滤波器 - 多源风险观测的在线状态融合。
 
     用法::
 
@@ -97,7 +97,7 @@ class EnsembleKalmanRiskFilter:
         # 状态转移矩阵 A: [n x n]
         self._A = self._build_transition_matrix()
 
-        # Ensemble: [n x N] -- 每列是一个ensemble member
+        # Ensemble: [n x N] 每列是一个ensemble member
         self._ensemble: List[List[float]] = []
         self._initialized = False
 
@@ -131,7 +131,7 @@ class EnsembleKalmanRiskFilter:
 
     def initialize(self, initial_guess: Optional[Dict[str, float]] = None,
                    init_std: float = 0.15) -> None:
-        """初始化ensemble -- 从先验分布采样。
+        """初始化ensemble - 从先验分布采样。
 
         initial_guess: 初始风险猜测({node_id: value})，默认全部0.5
         init_std: 先验标准差
@@ -150,7 +150,7 @@ class EnsembleKalmanRiskFilter:
         self._initialized = True
 
     def predict(self) -> None:
-        """预测步 -- 经状态转移矩阵传播每个ensemble member。
+        """预测步 - 经状态转移矩阵传播每个ensemble member。
 
         x_{t+1}^{(k)} = A * x_t^{(k)} + w_t^{(k)}
         w_t^{(k)} ~ N(0, q^2 * I) 是过程噪声。
@@ -171,7 +171,7 @@ class EnsembleKalmanRiskFilter:
         self._ensemble = new_ensemble
 
     def update(self, measurement: RiskMeasurement) -> Dict[str, Any]:
-        """更新步 -- 用新观测同化ensemble。
+        """更新步 - 用新观测同化ensemble。
 
         标准EnKF更新公式：
           x^a = x^f + K * (z - H*x^f)
@@ -239,7 +239,7 @@ class EnsembleKalmanRiskFilter:
         return {"assimilated": updated, "source": measurement.source_name}
 
     def current_state(self) -> EnKFState:
-        """返回当前状态估计 -- ensemble均值+标准差。"""
+        """返回当前状态估计 - ensemble均值+标准差。"""
         if not self._initialized:
             self.initialize()
 
@@ -262,7 +262,7 @@ class EnsembleKalmanRiskFilter:
     def fuse_multiple(self,
                       measurements: List[RiskMeasurement],
                       n_predict_between: int = 1) -> EnKFState:
-        """融合多个观测源 -- 顺序同化。
+        """融合多个观测源 - 顺序同化。
 
         measurements按noise_std升序排列(低噪声优先)，中间插入预测步。
         """

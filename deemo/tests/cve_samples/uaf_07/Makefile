@@ -1,14 +1,11 @@
-# UAF sample — 双目标构建: vuln (回归测试) + sample (对比实验)
 CC=gcc
-CFLAGS=-O0 -g -fno-stack-protector -no-pie
+CFLAGS=-O0 -g -fno-stack-protector
+TARGET=vuln
 
-all: vuln sample
+all: $(TARGET)
 
-vuln: vuln.c
-	$(CC) $(CFLAGS) -o vuln vuln.c
-
-sample: sample.c
-	$(CC) $(CFLAGS) -o sample sample.c
+$(TARGET): vuln.c
+	$(CC) $(CFLAGS) -o $(TARGET) vuln.c
 
 clean:
-	rm -f vuln sample
+	rm -f $(TARGET)

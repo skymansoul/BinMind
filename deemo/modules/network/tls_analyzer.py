@@ -13,6 +13,8 @@ from typing import List, Tuple
 from .tls_types import (
     TlsFingerprint, CertInfo,
     CIPHER_DECIMAL_MAP, cipher_to_decimal,
+    CIPHER_SUITE_SCORES, score_cipher_suites,
+    decimal_to_cipher,
 )
 from .tls_cert import parse_cert
 
@@ -161,10 +163,6 @@ def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
         _fp.ja4 = compute_ja4("tcp", _fp.ciphers, _fp.extensions)
 
     return _fp
-
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*a, **kw)
 
 
 __all__ = [

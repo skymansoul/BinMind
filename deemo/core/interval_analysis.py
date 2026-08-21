@@ -2,6 +2,7 @@
 # 若溢出条件在区间内可证明不可满足, 则排除该候选; 实现最简子集: 函数内区间分析 O(n*k)。
 
 from typing import Dict, Tuple, Optional
+import re
 
 class Interval:
     """区间 [lo, hi], 特殊值: bottom(矛盾), top(无界)。"""
@@ -25,7 +26,7 @@ class Interval:
         prods = [self.lo*other.lo, self.lo*other.hi, self.hi*other.lo, self.hi*other.hi]
         return Interval(min(prods), max(prods))
     def widen(self, other):
-        """宽化算子 — 保证不动点迭代收敛。"""
+        """宽化算子 - 保证不动点迭代收敛。"""
         if self.is_top or other.is_top: return Interval.top()
         if self.is_bottom: return other
         return Interval(min(self.lo, other.lo), max(self.hi, other.hi))
@@ -74,12 +75,11 @@ class IntervalAnalyzer:
 
     def analyze(self, lines, func_name: str = ''):
         """逐行处理 IR，更新缓冲区/区间状态，记录越界写入。"""
-        import re
         for line in (lines or []):
-            self._process_line(line, re)
+            self._process_line(line)
         return self
 
-    def _process_line(self, line: str, re) -> None:
+    def _process_line(self, line: str) -> None:
         decl = re.match(
             r'\s*(?:char|int|unsigned\s+int|long|short|size_t|void)\s+(\w+)\s*\[\s*(\d+)\s*\]',
             line)
@@ -90,14 +90,14 @@ class IntervalAnalyzer:
         assign = re.match(r'\s*(\w+)\s*=\s*(.+)', line)
         if assign:
             var, expr = assign.group(1), assign.group(2).strip()
-            self._ranges[var] = self._eval_expr(expr, re)
+            self._ranges[var] = self._eval_expr(expr)
             return
 
         write = re.match(r'\s*(\w+)\s*\[\s*([^\]]+)\s*\]\s*=', line)
         if write:
-            self._check_write(write.group(1), write.group(2).strip(), re)
+            self._check_write(write.group(1), write.group(2).strip())
 
-    def _eval_expr(self, expr: str, re) -> Interval:
+    def _eval_expr(self, expr: str) -> Interval:
         """解析表达式为区间：常量、变量、变量±常量偏移；其余返回 top。"""
         expr = expr.split('//')[0].strip()
         if re.fullmatch(r'-?\d+', expr):
@@ -114,12 +114,12 @@ class IntervalAnalyzer:
                 return Interval(base.lo - off, base.hi - off)
         return Interval.top()
 
-    def _check_write(self, buf: str, idx_expr: str, re) -> None:
+    def _check_write(self, buf: str, idx_expr: str) -> None:
         """将写入索引区间与缓冲区容量比较，越界则记录违规。"""
         size = self._buffers.get(buf)
         if size is None:
             return
-        idx = self._eval_expr(idx_expr, re)
+        idx = self._eval_expr(idx_expr)
         if idx.is_top or idx.is_bottom:
             return
         if idx.lo < 0 or idx.hi >= size:

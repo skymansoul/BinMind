@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typing import List
 
-from uafov import verdict as V
-from uafov.model import Finding
-from uafov.flow import extract_events
+from . import verdict as V
+from .model import Finding
+from .flow import extract_events
 
 
 def branch_exclusive(p1, p2) -> bool:

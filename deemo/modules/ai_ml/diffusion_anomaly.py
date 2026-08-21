@@ -66,11 +66,7 @@ class DiffusionSimulator:
 
     def simulate(self, features: List[List[float]],
                  adjacency: List[List[int]]) -> List[List[List[float]]]:
-        """运行扩散过程, 返回每一步的节点表示轨迹
-
-        Returns:
-            trajectories: [step][node_idx][feature_dim]
-        """
+        """运行扩散过程, 返回每一步的节点表示轨迹"""
         N = len(features)
         if N == 0:
             return []

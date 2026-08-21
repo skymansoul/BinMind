@@ -31,7 +31,7 @@ import re
 from dataclasses import dataclass, field
 
 # 发散思维约束库委托给 engine/divergent_constraints.py
-from parallel_deep_dev.engine.divergent_constraints import DIVERGENT_PAIRS
+from .divergent_constraints import DIVERGENT_PAIRS
 
 # 默认相似度阈值
 _DEFAULT_SIMILARITY_THRESHOLD: float = 0.45

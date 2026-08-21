@@ -1,27 +1,18 @@
 """
 LPVRA过滤管线 — 基于轻量级路径敏感值域分析的统一误报过滤器.
 
-核心创新: 将零散的正则规则替换为统一的抽象解释框架, 在保留高召回的同时
-大幅压低堆溢出检测的误报率.
-
 管线架构 (3阶段):
   Stage 1: LPVRA引擎 → 对每个 alloc-write 对, 路径敏感地追踪值域区间
   Stage 2: 堆边界检查器 → 将区间与glibc chunk语义结合, 计算有效安全边界
   Stage 3: 保守分类器 → 仅过滤可证明安全的候选 (SAFE verdict)
 
-与传统方法的对比:
+判定规则:
   传统: store_offset > malloc_size → 溢出 (误报率高, 忽略slack/guard/路径)
   LPVRA: ∀路径: write_end ≤ effective_boundary(lo) → SAFE → 过滤
           ∃路径: write_end > effective_boundary(hi) → OVERFLOW → 保留
           其他 → UNCERTAIN → 保守保留
 
-预期效果 (基于文献和LPVRA理论分析):
-  基础检测器 (regex匹配):            FP率 ~75%  召回率 ~85%
-  + 现有BinMind过滤器 (7套分散):     FP率 ~55%  召回率 ~80%
-  + LPVRA管线 (统一抽象解释):        FP率 ~20%  召回率 ~80%
-  目标: 相比基础检测器FP率下降 >40pp, 召回率不降
-
-模块化设计: 本模块仅做管线编排, 实际分析委托给 lpvra_engine + heap_boundary_checker.
+本模块仅做管线编排, 实际分析委托给 lpvra_engine + heap_boundary_checker.
 与现有管线并行运行, 不替换任何现有过滤器 (功能只增不减).
 """
 
@@ -91,17 +82,11 @@ class LPVRAFilterPipeline:
     def execute(self, source: str, func_name: str = "",
                 existing_candidates: Optional[List[Any]] = None,
                 ) -> Tuple[List[Any], PipelineReport]:
-        """执行LPVRA过滤管线.
+        """执行 LPVRA 过滤管线。
 
-        Args:
-          source: C源码文本
-          func_name: 函数名
-          existing_candidates: 现有检测器产出的候选列表 (可选, 用于兼容)
-
-        Returns:
-          (filtered_candidates, pipeline_report)
-          若 existing_candidates 为None, filtered_candidates 为空列表
-          (仅使用LPVRA内部的alloc-write对).
+        返回 (filtered_candidates, pipeline_report);
+        existing_candidates 为 None 时过滤结果为空列表,
+        仅使用 LPVRA 内部提取的 alloc-write 对。
         """
         t0 = time.time()
         report = PipelineReport()

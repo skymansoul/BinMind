@@ -86,9 +86,6 @@ class EntropyAnalyzer:
     _TEXT_ENTROPY_MAX = 5.5
     _MARKOV_KEY_THRESHOLD = 0.02  # 马尔可夫可预测性 <2% → 密钥特征
 
-    def __init__(self):
-        pass
-
 # 公共API
 
     def analyze_file(self, path: str, chunk_size: int = 4096,

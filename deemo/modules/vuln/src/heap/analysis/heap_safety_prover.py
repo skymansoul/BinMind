@@ -93,20 +93,16 @@ class HeapSafetyProver:
               param_reg: str = 'rcx',
               write_reg: str = 'r8',
               ) -> SafetyProof:
-        """证明一次堆访问的安全性.
+        """证明一次堆访问的安全性。
 
-        Args:
-          alloc_insn_addr: malloc 调用地址
-          size_interval: backward_trace 得到的 size 区间 (可能为 TOP)
-          offset: 内存访问偏移
-          access_size: 访问字节数
-          guards: 函数内的所有路径守卫
-          write_insn_addr: memcpy/memset 调用地址 (可选, 用于写大小约束)
-          write_size_interval: memcpy/memset 的 size 参数区间 (可选)
-          param_reg: alloc 的 size 寄存器
-          write_reg: memcpy 的 size 寄存器
-
-        Returns: SafetyProof
+        参数: alloc_insn_addr malloc 调用地址, size_interval
+        backward_trace 得到的 size 区间 (可能为 TOP), offset
+        内存访问偏移, access_size 访问字节数, guards 函数内的
+        所有路径守卫, write_insn_addr memcpy/memset 调用地址
+        (可选, 用于写大小约束), write_size_interval
+        memcpy/memset 的 size 参数区间 (可选), param_reg alloc
+        的 size 寄存器, write_reg memcpy 的 size 寄存器;
+        返回 SafetyProof。
         """
         self._stats['total_proved'] += 1
 

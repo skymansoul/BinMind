@@ -1,20 +1,19 @@
-# 修改记录:
-# 2025-08-09 11:38 - 关键路径识别: DAG 长路径上的约束优先求解->快速判定 UNSAT
-# 2025-08-09 17:05 - 路径敏感性权重: 循环路径上的约束权重 2.0x (更可能产生冲突)
+# 关键路径识别: DAG 长路径上的约束优先求解->快速判定 UNSAT
+# 路径敏感性权重: 循环路径上的约束权重 2.0x (更可能产生冲突)
 
 """约束关键路径求解排序 - 依赖图中的关键路径优先策略
 
 constraint_dependency_graph.py 按拓扑层级排序约束
-本模块在此基础上识别关键路径--依赖链最长的路径
+本模块在此基础上识别关键路径-依赖链最长的路径
 关键路径上的约束优先求解
 
 动机:
   若一组路径约束不可满足 (UNSAT), 冲突通常集中在变量间
-  有最强约束关系的子集--即关键路径。在最坏情况下
+  有最强约束关系的子集-即关键路径。在最坏情况下
   求解器需要遍历整个约束集才能发现矛盾
 
   按关键路径优先求解->若关键路径 UNSAT, 直接报告不可满足
-  跳过剩余约束的求解--在最坏情况下可节省 60-80% 的求解时间
+  跳过剩余约束的求解-在最坏情况下可节省 60-80% 的求解时间
 
 算法:
   1. 在约束依赖图 (CDG) 上计算每节点的最早开始时间 (EST)
@@ -92,12 +91,12 @@ class ConstraintCriticalPathSorter:
         nodes = self._build_nodes(variable_deps)
         edges = self._build_edges(nodes)
 
-        # 1. 拓扑排序--计算最早开始层级
+        # 1. 拓扑排序-计算最早开始层级
         topo_order = self._topological_sort(nodes, edges)
         for level, nid in enumerate(topo_order):
             nodes[nid].earliest_start = level
 
-        # 2. 关键路径识别--反向传播最晚完成层级
+        # 2. 关键路径识别-反向传播最晚完成层级
         self._compute_critical_path(nodes, edges)
 
         # 3. 按 (earliest_start * critical_weight) 排序
@@ -118,10 +117,10 @@ class ConstraintCriticalPathSorter:
             List[Tuple[Set[str], Set[str]]]
         ] = None,
     ) -> List[List[int]]:
-        """分批求解--关键路径逐层, 同层约束可并行
+        """分批求解-关键路径逐层, 同层约束可并行
 
         每批 = 同一拓扑层级的约束集合
-        关键路径上的层级优先--非关键层延迟
+        关键路径上的层级优先-非关键层延迟
         """
         order = self.compute_order(constraints, variable_deps)
         if not order:
@@ -205,10 +204,10 @@ class ConstraintCriticalPathSorter:
         nodes: List[WeightedConstraintNode],
         edges: Dict[int, List[int]],
     ) -> None:
-        """计算关键路径--最长依赖链上的节点
+        """计算关键路径-最长依赖链上的节点
 
         方法: 正向传播最早完成 (EF), 反向传播最晚完成 (LF)
-        slack = LF - EF--0 的节点在关键路径上
+        slack = LF - EF-0 的节点在关键路径上
         """
         n = len(nodes)
 
@@ -244,7 +243,7 @@ class ConstraintCriticalPathSorter:
     def _extract_deps(
         self, constraints: List[str]
     ) -> List[Tuple[Set[str], Set[str]]]:
-        """从约束文本提取变量定义和使用--简化实现"""
+        """从约束文本提取变量定义和使用-简化实现"""
         import re
         deps = []
         var_pat = re.compile(r'\b([a-zA-Z_]\w*)\b')
@@ -255,7 +254,7 @@ class ConstraintCriticalPathSorter:
         for c_text in constraints:
             tokens = var_pat.findall(c_text)
             vars_found = {t for t in tokens if t not in keywords}
-            # 简化: 无法精确区分 define/use--标记所有变量同时为 def 和 use
+            # 简化: 无法精确区分 define/use-标记所有变量同时为 def 和 use
             deps.append((vars_found, vars_found))
 
         return deps

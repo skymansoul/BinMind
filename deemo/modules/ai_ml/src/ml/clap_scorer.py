@@ -5,7 +5,7 @@ machinery.  The ContrastiveAlignmentScorer maps task features and model
 configurations into a shared 16-dimensional embedding space where cosine
 similarity replaces heuristic weighted summation for model ranking.
 
-Rationale: the CLAP scorer is a self-contained computational kernel -- it only
+Rationale: the CLAP scorer is a self-contained computational kernel, it only
 depends on math/hashlib/threading and a single enum (ModelType).  Keeping it
 in the monolithic adaptive_ai_model.py obscured its responsibility and made
 it harder to unit-test, swap out embedding strategies, or reuse in other
@@ -19,7 +19,7 @@ import threading
 from typing import Dict, List, Optional
 
 
-# 对比嵌入空间的维度--在精度与计算开销之间折中，经验值 16 维对 <50 候选模型够用
+# 对比嵌入空间的维度，在精度与计算开销之间折中，经验值 16 维对 <50 候选模型够用
 _CONTRASTIVE_EMBEDDING_DIM = 16
 
 
@@ -171,7 +171,7 @@ class ContrastiveAlignmentScorer:
         return (raw + 1.0) / 2.0  # [-1,1] → [0,1]
 
     def purge_model_cache(self, model_name: Optional[str] = None):
-        """清除模型嵌入缓存——模型配置变更后调用。"""
+        """清除模型嵌入缓存-模型配置变更后调用。"""
         with self._lock:
             if model_name is None:
                 self._model_embeddings_cache.clear()

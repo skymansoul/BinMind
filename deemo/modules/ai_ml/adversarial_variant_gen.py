@@ -1,13 +1,13 @@
-# 语义保持的二进制变体生成——对抗鲁棒性训练数据增强
+# 语义保持的二进制变体生成-对抗鲁棒性训练数据增强
 #
-# 核心问题: 二进制分析ML模型对编译器/优化/混淆敏感——
+# 核心问题: 二进制分析ML模型对编译器/优化/混淆敏感-
 # 同一代码O0 vs O3编译导致GNN嵌入偏移到不同区域。
 # 现有obfuscation_resilience.py检测混淆但不生成对抗训练数据。
 #
 # 技术方案:
 #   1. 汇编级语义等价变换: 寄存器重命名、独立指令重排、等价指令替换、NOP填充
 #   2. 可控扰动半径: 量化变换对嵌入空间的扰动幅度
-#   3. 对抗训练数据: 原始函数→多个变体，标签一致（语义未变）
+#   3. 对抗训练数据: 原始函数、多个变体，标签一致（语义未变）
 #   4. 与certified_binary_robustness.py形成防御-训练闭环
 #
 # 核心变换器实现在 src/variant/semantic_transforms.py
@@ -22,7 +22,6 @@ from .src.variant.semantic_transforms import (
     TransformKind, TransformResult, SemanticPreservingTransform,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -43,11 +42,7 @@ class AdversarialVariantGenerator:
                           n_variants: int = 5,
                           radius_levels: Optional[List[float]] = None
                           ) -> List[Tuple[str, float, List[TransformResult]]]:
-        """为一个函数生成多个语义保持变体。
-
-        Returns:
-            [(variant_code, actual_radius, transforms_applied), ...]
-        """
+        """为一个函数生成多个语义保持变体。"""
         if radius_levels is None:
             radius_levels = [0.05, 0.10, 0.20, 0.30, 0.50][:n_variants]
 
@@ -98,11 +93,7 @@ class AdversarialVariantGenerator:
                               functions: List[Tuple[str, List[str]]],
                               variants_per_func: int = 3
                               ) -> List[Tuple[str, List[str], str]]:
-        """为训练集生成对抗增强数据。
-
-        Returns:
-            [(variant_func_id, variant_instructions, original_func_id), ...]
-        """
+        """为训练集生成对抗增强数据。"""
         augmented = []
         for func_id, instrs in functions:
             variants = self.generate_variants(instrs, n_variants=variants_per_func)

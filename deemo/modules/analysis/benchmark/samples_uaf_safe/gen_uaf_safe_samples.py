@@ -1,7 +1,6 @@
 # UAF FP-Safe 多优化级样本生成器 v1
 # 10种UAF模式 × 2变体(vuln/safe) × 3优化级(O0/O2/Os) = 60个二进制
 # 目标: 建立UAF检测器的FP/召回基准, 类比堆溢出的FP-safe v2.
-# 创建: 2026-06-08
 #
 # 每个模式设计一对(c_vuln, c_safe), 其中safe变体看起来像UAF但实际安全.
 # 用于测试检测器在以下维度的区分能力:
@@ -505,7 +504,7 @@ def generate_samples():
     compile_sh = BENCH_DIR / "compile_all.sh"
     with open(compile_sh, "w") as f:
         f.write("#!/bin/bash\n")
-        f.write("# UAF FP-Safe 样本编译脚本 — 自动生成\n")
+        f.write("# UAF FP-Safe 样本编译脚本 - 自动生成\n")
         f.write(f"# {datetime.now().isoformat()}\n\n")
         f.write(f"mkdir -p {BUILD_DIR}\n\n")
         f.write("CC=x86_64-w64-mingw32-gcc\n")

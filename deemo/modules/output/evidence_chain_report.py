@@ -18,8 +18,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 import logging
-from pathlib import Path  # 保留
-import hashlib  # 保留
+from pathlib import Path
+import hashlib
 
 from modules.output.src.evidence_merkle import (
     build_merkle_tree,
@@ -33,7 +33,6 @@ _log = logging.getLogger(__name__)
 
 
 
-# 保留——后续可能复用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -42,7 +41,6 @@ _log = logging.getLogger(__name__)
 #     return bytes(buf)
 
 
-# 保留——后续可能复用
 # def _legacy_handler(data):
 #     """旧版处理器"""
 #     buf = bytearray(data)
@@ -76,12 +74,6 @@ class ReportSection:
     collapsible: bool = True
 
 
-
-def _dbg(*args, **kwargs):
-    """调试输出辅助函数，写入 stderr 避免污染 stdout。"""
-    # 不拆——保持上下文连贯性
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 
 class EvidenceChainReporter:
     """
@@ -226,7 +218,6 @@ class EvidenceChainReporter:
 
     def generate_ai_summary(self, findings: List[Dict]) -> str:
         """RAG 增强摘要 — CVE 描述作为检索语料库。"""
-        # 不拆——保持上下文连贯性
         if not self._api_key or not findings:
             return ""
         try:

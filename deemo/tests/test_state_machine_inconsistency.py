@@ -4,7 +4,6 @@
 """
 
 import pytest
-_MOD_DEBUG = False
 import os
 import sys
 
@@ -26,7 +25,7 @@ class TestStateMachineInconsistency:
     def test_analyze(self):
         """测试分析功能"""
         result = analyze_state_machine("/tmp/test.bin")
-        
+
         assert result["success"] == True
         assert "binary_path" in result
         assert "states" in result

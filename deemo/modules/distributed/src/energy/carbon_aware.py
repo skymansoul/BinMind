@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-05 15:42 - 初始实现：碳感知调度——延迟容忍任务向低碳时段迁移
+# 初始实现：碳感知调度-延迟容忍任务向低碳时段迁移
 
-"""碳感知分布式调度 — 基于电网碳强度的延迟容忍任务时移调度。
+"""碳感知分布式调度 - 基于电网碳强度的延迟容忍任务时移调度。
 
 分布式二进制分析任务具备天然的延迟容忍度差异：
 - CI/CD安全扫描：严格延迟约束（≤5min）
@@ -12,14 +11,14 @@
 完全忽略能耗与碳排放。lyapunov_carbon 面向数据中心总能耗优化，
 但不感知电网实时碳排放强度（gCO₂/kWh）。
 
-本模块的方案——碳感知延迟容忍调度：
+本模块的方案-碳感知延迟容忍调度：
 1. 为每个任务标注延迟容忍度等级（strict / moderate / flexible）。
 2. 实时获取电网碳强度信号（来自 ElectricityMaps/WattTime API）。
-3. strict任务立即调度；flexible任务进入推迟队列——等待低碳窗口。
+3. strict任务立即调度；flexible任务进入推迟队列-等待低碳窗口。
 4. 当碳强度低于24h均值的70%时→释放推迟队列中的flexible任务。
 5. Lyapunov优化保证：推迟队列长度有界（≤Q_max），避免无限积压。
 
-关键创新——碳信号+延迟容忍的联合优化：
+关键创新-碳信号+延迟容忍的联合优化：
 不同于简单"关掉非必要负载"（数据中心常见策略），
 本方案利用二进制分析管道中各阶段的天然延迟差异，
 在不影响业务SLA的前提下将flexible负载时移至低碳窗口。
@@ -84,7 +83,7 @@ class CarbonAwareScheduler:
         """
         max_queue: 推迟队列最大容量（Lyapunov界的Q_max）。
         carbon_ratio_threshold: 碳强度低于均值的比例→释放推迟任务。
-        urgency_factor: 紧急度权重——截止时间越近，优先级越高。
+        urgency_factor: 紧急度权重-截止时间越近，优先级越高。
         """
         self.max_queue = max_queue
         self.carbon_ratio_threshold = carbon_ratio_threshold
@@ -94,7 +93,7 @@ class CarbonAwareScheduler:
         self._carbon_signal: Optional[CarbonSignal] = None
         self._carbon_history: deque = deque(maxlen=288)  # 24h * 12 samples/h
 
-        # 推迟队列——按优先级排序
+        # 推迟队列-按优先级排序
         self._deferred: List[CarbonTask] = []
 
         # 统计
@@ -123,7 +122,7 @@ class CarbonAwareScheduler:
     def submit(self, task: CarbonTask):
         """提交一个碳感知任务。"""
         if task.tolerance == DelayTolerance.STRICT:
-            # 严格任务——立即分发，不入推迟队列
+            # 严格任务-立即分发，不入推迟队列
             self._total_dispatched += 1
             return
 

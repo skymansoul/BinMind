@@ -1,27 +1,26 @@
 # coding: utf-8
-# 创建: 2026-06-07  |  堆操作生命周期——malloc/free配对+时序+跨指令值流追踪
 #
 """
-堆操作生命周期建模——追踪malloc/free配对时序+size参数跨指令值流。
+堆操作生命周期建模-追踪malloc/free配对时序+size参数跨指令值流。
 
 解决的问题:
   A. 堆溢出检测中size参数在当前指令之前（mov edi, n; call malloc）,
      当前heap_overflow_detector依赖外部传入known_constants字典,
      无法追踪变量传递场景（n来自更早的指令或函数参数）。
-  B. UAF检测中缺少时序维度——free后重新malloc同大小内存并复用指针
+  B. UAF检测中缺少时序维度-free后重新malloc同大小内存并复用指针
      是合法行为, 但当前detect_uaf标记为UAF（误报）。
 
 解决方案:
-  A. 到达-定值分析（reaching definitions）——从call malloc反向扫描,
+  A. 到达-定值分析（reaching definitions）-从call malloc反向扫描,
      追踪size参数寄存器(rdi)的定义链, 提取常量值或标记为"外部输入"。
      仅在同基本块内做线性扫描, O(N)复杂度。
-  B. 每指针的alloc/free配对时序——维护{ptr_reg: [(op_type, insn_idx)]}列表,
+  B. 每指针的alloc/free配对时序-维护{ptr_reg: [(op_type, insn_idx)]}列表,
      在检测deref时验证时序: 仅当use发生在free之后且在下一次alloc之前
      才标记为UAF。
 
 输出:
   - LifecycleReport: 每指针的完整生命周期事件列表
-  - alloc_size_map: {insn_idx: size_value}——供heap_overflow_detector消费
+  - alloc_size_map: {insn_idx: size_value}-供heap_overflow_detector消费
   - temporal_uaf_candidates: 经时序验证的UAF候选列表
 """
 
@@ -41,7 +40,7 @@ class LifecycleEvent:
     address: int
     op_type: str          # malloc / calloc / realloc / free / deref_read / deref_write
     pointer_reg: str = "" # 涉及的指针寄存器
-    size_value: int = 0   # 若为alloc且提取到size→此处存储; 0=未知
+    size_value: int = 0   # 若为alloc且提取到size-此处存储; 0=未知
     size_source: str = "" # constant / param / unknown
 
 
@@ -51,7 +50,7 @@ class LifecycleReport:
     function_name: str
     # 按指针分组的事件序列
     per_pointer: Dict[str, List[LifecycleEvent]] = field(default_factory=dict)
-    # alloc_size_map: 指令索引→分配大小(供heap_overflow_detector消费)
+    # alloc_size_map: 指令索引-分配大小(供heap_overflow_detector消费)
     alloc_sizes: Dict[int, int] = field(default_factory=dict)
     # 时序UAF候选
     temporal_uaf: List[Tuple[int, int, str]] = field(default_factory=list)
@@ -59,7 +58,7 @@ class LifecycleReport:
 
 
 class HeapLifecycleAnalyzer:
-    """堆操作生命周期分析器——malloc/free配对+时序+size值流。
+    """堆操作生命周期分析器-malloc/free配对+时序+size值流。
 
     用法:
       analyzer = HeapLifecycleAnalyzer()
@@ -68,7 +67,7 @@ class HeapLifecycleAnalyzer:
       # report.temporal_uaf 是经时序过滤的UAF候选
     """
 
-    # 分配函数→大小参数在调用约定中的位置
+    # 分配函数-大小参数在调用约定中的位置
     _ALLOC_SIZE_ARG = {'malloc': 0, 'calloc': 1, 'realloc': 1,
                        '_Znwm': 0, '_Znam': 0}
 
@@ -151,7 +150,7 @@ class HeapLifecycleAnalyzer:
 
         # 识别call指令
         if mnem != 'call' or len(parts) < 2:
-            # 非call指令——检查是否为指针解引用
+            # 非call指令-检查是否为指针解引用
             return self._check_deref(rest, idx, addr)
 
         callee = parts[1].strip().lower()
@@ -205,7 +204,7 @@ class HeapLifecycleAnalyzer:
             insn_idx=idx, address=addr, op_type=dtype,
             pointer_reg=ptr_reg)
 
-    # 32位→64位寄存器名映射
+    # 32位-64位寄存器名映射
     _REG32_TO_64 = {'edi': 'rdi', 'esi': 'rsi', 'edx': 'rdx', 'ecx': 'rcx',
                     'eax': 'rax', 'ebx': 'rbx', 'r8d': 'r8', 'r9d': 'r9'}
 
@@ -242,7 +241,7 @@ class HeapLifecycleAnalyzer:
                                 return int(src)
                             except ValueError:
                                 return 0
-            # lea也可表示大小——lea edi/rdi, [rax+imm]中imm可能是大小
+            # lea也可表示大小-lea edi/rdi, [rax+imm]中imm可能是大小
             if any(f'lea {tgt},' in insn and '+' in insn for tgt in all_names):
                 m = re.search(r'\+0x([0-9a-fA-F]+)', insn)
                 if m:
@@ -251,7 +250,7 @@ class HeapLifecycleAnalyzer:
 
     def _trace_ptr_arg(self, insns: List[str], call_idx: int,
                          arg_idx: int) -> str:
-        """从call指令反向追踪指针参数——返回寄存器名。"""
+        """从call指令反向追踪指针参数-返回寄存器名。"""
         target_reg = self._ARG_REGS[arg_idx] if arg_idx < len(
             self._ARG_REGS) else 'rdi'
         for j in range(call_idx - 1, max(-1, call_idx - 10), -1):

@@ -1,7 +1,6 @@
 # coding: utf-8
-# 创建: 2026-06-16 — 基础断点续传; 修改: 2026-08-04 — 增量+内容寻址+智能恢复
 """
-增量差分检查点 — 首个全量, 后续仅存变更键 delta; 大值 blob 去重; 智能恢复
+增量差分检查点 - 首个全量, 后续仅存变更键 delta; 大值 blob 去重; 智能恢复
 仅重跑输入变化的钩子; N 次后链压缩合并.
 """
 
@@ -39,7 +38,7 @@ class CheckpointManifest:
 
 
 class CheckpointManager:
-    """增量差分检查点 — 首个全量/后续delta/blob去重/智能恢复/链压缩."""
+    """增量差分检查点 - 首个全量/后续delta/blob去重/智能恢复/链压缩."""
 
     def __init__(self, checkpoint_dir: str = './.pipeline_checkpoints',
                  max_checkpoints: int = 5, compact_after: int = 8):

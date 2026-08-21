@@ -80,10 +80,11 @@ class RLSeedFuzz:
                 rl_kwargs=rl_kwargs,
                 context_dim=context_dim,
             )
+            self._seed_context_extractor = seed_context_features
         except ImportError:
             _log.error("fuzz_rl_sequence_scheduler 不可用, RL 调度降级为 None")
             self._hybrid = None
-        self._seed_context_extractor = seed_context_features
+            self._seed_context_extractor = None
         self._per_target = max(1, int(per_target))
         self._cold_start_count = 0
         self._corpus = []

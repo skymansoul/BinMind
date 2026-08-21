@@ -1,4 +1,4 @@
-# 多工具对比实验主控脚本 — BinMind vs Angr vs QEMU vs Ghidra
+# 多工具对比实验主控脚本 - BinMind vs Angr vs QEMU vs Ghidra
 #
 # 目标: 在堆溢出 CVE 样本 + 同源安全样本上, 统一输出
 #   (工具名, 样本ID, 检出数, 误报数, 漏报数, 耗时, 峰值内存) CSV.
@@ -13,7 +13,6 @@
 # 判定: 样本有 ground truth (is_vuln). 工具检出=至少1 finding:
 #   vuln 样本检出 → TP; 未检出 → FN
 #   safe 样本检出 → FP; 未检出 → TN
-# 创建: 2026-06-15
 
 import csv
 import json

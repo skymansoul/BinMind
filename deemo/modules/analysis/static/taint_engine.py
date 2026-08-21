@@ -14,8 +14,8 @@
 #      call指令 → 仅当被调用函数标记为"wrapper"或属于libc时传播;
 #      条件分支 → 两分支都传播(过近似, 宁可误报不可漏报).
 #
-# 创建: 2026-06-23  初始版本
-# 修改: 2026-06-23  增加 max_depth 和循环展开限制
+
+# 增加 max_depth 和循环展开限制
 
 import re
 from collections import defaultdict, deque

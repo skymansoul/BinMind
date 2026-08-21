@@ -1,9 +1,8 @@
-# Angr UAF基线检测器 v1 — 模拟符号执行的UAF检测baseline
+# Angr UAF基线检测器 v1 - 模拟符号执行的UAF检测baseline
 #
 # 策略: 通过CFG分析识别malloc→free→use模式, 但不做路径敏感分析
 # → 预期高召回但高误报(无法区分互斥路径/NULL赋值/reassign)
 #
-# 创建: 2026-07-04
 
 import sys, time, subprocess
 from pathlib import Path

@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-07-18  |  类型定义与概率原语
-# 修改: 2026-07-18  |  审计后补充文件头与错误处理
 #
 """
-时态漏洞溯源类型定义——贝叶斯因果模型的概率原语与数据结构。
+时态漏洞溯源类型定义-贝叶斯因果模型的概率原语与数据结构。
 
 设计依据:
   - 连续型节点: 线性高斯条件分布，避免离散化精度损失
@@ -20,7 +18,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 def logsumexp(values: List[float]) -> float:
-    """log-sum-exp——减去最大值防止指数溢出"""
+    """log-sum-exp-减去最大值防止指数溢出"""
     if not values:
         return float('-inf')
     mx = max(values)
@@ -44,8 +42,8 @@ def normal_logpdf(x: float, mu: float, sigma: float) -> float:
 class CausalNode:
     """结构因果模型节点。
 
-    is_continuous=False → log_prob_table: 父节点取值组合→当前取值→对数概率
-    is_continuous=True  → mu_coeffs: 父节点名→线性系数; sigma: 条件标准差
+    is_continuous=False - log_prob_table: 父节点取值组合-当前取值-对数概率
+    is_continuous=True  - mu_coeffs: 父节点名-线性系数; sigma: 条件标准差
     """
     name: str
     node_type: str           # root_cause | mediator | confounder | outcome
@@ -63,7 +61,7 @@ class CausalNode:
 
 @dataclass
 class ProvenanceHypothesis:
-    """单条溯源假设——候选提交作为漏洞引入点"""
+    """单条溯源假设-候选提交作为漏洞引入点"""
     commit_hash: str
     commit_timestamp: float
     author_expertise: float          # [0, 1]

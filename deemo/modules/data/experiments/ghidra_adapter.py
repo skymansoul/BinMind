@@ -1,6 +1,5 @@
-# Ghidra Headless 适配器 — 批量脚本自动化分析
+# Ghidra Headless 适配器 - 批量脚本自动化分析
 # 调用 analyzeHeadless 在无GUI模式下运行自定义分析脚本.
-# 创建: 2026-07-14
 
 import os, sys, json, time, subprocess, tempfile
 

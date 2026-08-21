@@ -13,7 +13,7 @@ _log = logging.getLogger(__name__)
 SymbExBridge = None  # 在下方类定义后绑定
 
 # //// 能力检测缓存
-# INTJ策略: 使用模块级缓存而非懒加载属性——符号引擎的选择影响全局分析路径
+# 策略: 使用模块级缓存而非懒加载属性 - 符号引擎的选择影响全局分析路径
 # 缓存可以避免多次 importlib 检查带来的 /O 开销
 
 _CAPABILITY_CACHE: dict[str, Optional[bool]] = {
@@ -25,7 +25,7 @@ _CAPABILITY_CACHE: dict[str, Optional[bool]] = {
 
 def _has_z3() -> bool:
     """检查 z3-solver 是否可用。O(1) 缓存查询
-    
+
     不直接 import z3——z3 的初始化较慢（~200ms），仅在需要时加载
     此函数只检查 importlib 是否能找到模块
     """
@@ -62,9 +62,9 @@ def _has_claripy() -> bool:
 
 class SymbolicAnalysisBridge:
     """符号/约束求解的统一桥接
-    
-    INTJ策略: 桥接模式而非直接依赖。当 z3 和 angr 都不可用时
-    降级到纯静态模式而非崩溃——宁可少报不可漏报的原则在此不适用
+
+    桥接模式而非直接依赖。当 z3 和 angr 都不可用时
+    降级到纯静态模式而非崩溃 - 宁可少报不可漏报的原则在此不适用
     因为符号执行本身就是增强项，不是基础项
     """
 

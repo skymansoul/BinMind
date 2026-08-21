@@ -2,7 +2,7 @@
 """
 AdaThermoLBF 兼容桥接层 —— 为现有 dedup/cache 接口提供温度自适应替换方案。
 
-桥接映射 (INTJ):
+桥接映射:
   - BloomLikeFilter: 替代 dedup.BloomFilter, DedupEngine._bloom 可直插替换。
   - CuckooLikeFilter: 替代 dedup.CuckooFilter (insert/contains/delete)。
   - ThermoFilterCache: 替代 cache.LRUCache 的值缓存 (get/set/delete/clear),

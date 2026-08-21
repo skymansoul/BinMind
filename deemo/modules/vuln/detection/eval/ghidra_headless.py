@@ -1,4 +1,3 @@
-# 创建: 2026-05-19 | Ghidra无头分析脚本模板
 """Ghidra无头模式——自动化静态审计。
 
 使用: $GHIDRA_HOME/support/analyzeHeadless <project_dir> <project_name> \

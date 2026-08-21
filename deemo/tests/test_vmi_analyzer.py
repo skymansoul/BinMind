@@ -7,7 +7,6 @@ VMI辅助内存分析模块单元测试
 """
 
 import os
-_MOD_DEBUG = False
 import sys
 import unittest
 import tempfile
@@ -295,7 +294,6 @@ class TestVMIAnalyzer(unittest.TestCase):
         self.assertIn('summary', result)
 
     def test_risk_assessment(self):
-        # 人工调校的阈值设定
         """
         测试风险评估
         """
@@ -319,7 +317,7 @@ class TestVMIAnalyzer(unittest.TestCase):
 
         with open(report_path, 'r', encoding='utf-8') as f:
             report_data = json.load(f)
-# lass字段完整性$/d
+
         self.assertIsInstance(report_data, dict)
 
 

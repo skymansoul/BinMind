@@ -36,7 +36,7 @@ class VTableEntry:
 @dataclass
 class VTableInfo:
     address
-    entries = field(default_factory=list)
+    entries: list = field(default_factory=list)
     class_name = ""
     parent_vtable = None
     children_vtables = field(default_factory=list)

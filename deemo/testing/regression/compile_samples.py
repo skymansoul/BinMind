@@ -1,11 +1,9 @@
-# 编译模块 —— 遍历samples目录, 对每个CVE样本执行make。
+# 编译模块 - 遍历samples目录, 对每个CVE样本执行make。
 # 独立于扫描逻辑, 可单独运行做批量编译验证。
-# 创建: 2026-05-04
 
 import os, subprocess, sys, json
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
-
 
 def compile_all(samples_dir: str = None) -> dict:
     """编译所有样本, 返回 {sample_name: {success, binary_path, error}}。"""
@@ -48,7 +46,7 @@ def compile_all(samples_dir: str = None) -> dict:
         except subprocess.TimeoutExpired:
             results[entry] = {"success": False, "error": "编译超时"}
         except FileNotFoundError:
-            results[entry] = {"success": False, "error": "make命令不可用——需安装build-essential"}
+            results[entry] = {"success": False, "error": "make命令不可用-需安装build-essential"}
         except Exception as e:
             results[entry] = {"success": False, "error": str(e)[:200]}
 

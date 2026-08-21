@@ -12,7 +12,7 @@ from core.config import Config, get_openai_client
 from modules.analysis.decompiler.decomp_ai import DecompilerAI
 # vuln_db 查询 — 待模块集成
 from modules.output.report import ReportGenerator
-from exploit.exploit_gen import ExploitGenerator
+from modules.exploit.exploit_gen import ExploitGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -724,11 +724,6 @@ class InteractiveReversingShell(cmd.Cmd):
         self.cmdloop()
 
 def run_shell(binary_path: str = None, ai_client=None):
-    """启动 InteractiveReversingShell 实例。
-
-    Args:
-        binary_path: 可选，预加载的二进制文件路径。
-        ai_client: 可选，预配置的 AI 客户端。
-    """
+    """启动 InteractiveReversingShell 实例。"""
     shell = InteractiveReversingShell(binary_path, ai_client)
     shell.run()

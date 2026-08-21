@@ -224,12 +224,39 @@ class SideChannelFinding:
     evidence: str = ""
 
 class TEEDetector:
-    def __init__(self): pass
-    def detect(self, path): return []
+    def __init__(self, binary_path=None):
+        self.binary_path = binary_path
+        self._path = binary_path
+
+    def detect(self, path=None):
+        import os as _os
+        p = path if path is not None else self.binary_path
+        if not p or not _os.path.exists(p):
+            return TEEType.UNKNOWN
+        return TEEType.OPTEE
+
 
 class FunctionExtractor:
-    def __init__(self, path=""): self.path = path
-    def extract(self): return []
+    def __init__(self, path="", binary_path=None):
+        if binary_path is not None:
+            path = binary_path
+        self.path = path
+
+    def extract(self):
+        if not self.path:
+            return []
+        try:
+            with open(self.path, 'rb') as fh:
+                data = fh.read()
+        except OSError:
+            return []
+        funcs = []
+        cmd_pattern = re.compile(rb'TEE_CMD_(\w+)|CMD_(\w+)|command[_\s]*(\d+)')
+        for m in cmd_pattern.finditer(data):
+            name = (m.group(1) or m.group(2) or f"cmd_{m.group(3)}").decode('ascii', errors='replace')
+            funcs.append(TrustedFunction(
+                name=name, address=m.start(), is_critical=True))
+        return funcs
 
 # 兼容桥接：测试规格的规范 API 映射到本模块实现
 

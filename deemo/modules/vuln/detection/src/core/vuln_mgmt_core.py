@@ -24,7 +24,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from vuln_detection.src.core.vuln_mgmt_slicer import VulnerabilitySlicer
+from deemo.modules.vuln.detection.src.core.vuln_mgmt_slicer import VulnerabilitySlicer
 
 _logger = logging.getLogger(__name__)
 logger = _logger
@@ -1031,7 +1031,7 @@ class ThreatIntelClient:
         return result
 
     def lookup_cve(self, cve_id: str) -> Dict[str, Any]:
-        # 保持上下文连贯性，不拆分
+
         """查询NVD REST API 2.0获取CVE详情。"""
         cache_key = f"nvd:{cve_id}"
         cached = self._check_cache(cache_key)

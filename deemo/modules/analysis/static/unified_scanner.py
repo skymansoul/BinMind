@@ -1,5 +1,4 @@
-# 统一漏洞扫描编排器 — 整合全部5种检测引擎, 单次扫描产出综合报告.
-# 创建: 2026-04-19
+# 统一漏洞扫描编排器 - 整合全部5种检测引擎, 单次扫描产出综合报告.
 
 from typing import Dict, List, Optional
 from .heap_overflow_detect import HeapOverflowDetector
@@ -14,7 +13,7 @@ from .vuln_scores import VulnScoreCalibrator
 
 
 class UnifiedScanner:
-    """统一扫描编排器 — 单次扫描覆盖5种漏洞类型.
+    """统一扫描编排器 - 单次扫描覆盖5种漏洞类型.
 
     各引擎独立运行, 结果经 VulnScoreCalibrator 交叉验证后输出.
     """

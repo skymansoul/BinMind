@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""模块脚手架生成器 —— create_module.py 的全新实现。
+"""模块脚手架生成器 - create_module.py 的全新实现。
 
 原 create_module.py 的远程基线内容为 git 错误文本（75 字节），任何分支、
 提交链与 worktree 中均无有效版本，且当前文件按决策保持原样不动。
@@ -24,7 +24,7 @@ MODULES_DIR = os.path.join(REPO_ROOT, "modules")
 _IDENT_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
 _INIT_TMPL = '''# -*- coding: utf-8 -*-
-"""{title} 模块 —— 自动生成骨架，待填充实现。"""
+"""{title} 模块 - 自动生成骨架，待填充实现。"""
 
 __version__ = "0.1.0"
 

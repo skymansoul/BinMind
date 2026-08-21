@@ -8,7 +8,6 @@
 # 理论依据:
 #   选择性路径枚举平衡精度与效率; 分支条件窄化消除系统性误报.
 #
-# 创建: 2026-07-29
 
 from typing import Dict, List, Optional, Tuple
 

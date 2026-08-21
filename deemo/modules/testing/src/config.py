@@ -1,13 +1,10 @@
-# 配置加载器 — JSON/YAML + BINMIND_TESTING__前缀环境变量覆盖
-# 三层合并策略: 默认值 -> 文件 -> 环境变量
+# 配置加载器 - JSON/YAML + BINMIND_TESTING__前缀环境变量覆盖
+# 三层合并策略: 默认值 - 文件 - 环境变量
 # 优先JSON（无外部依赖），YAML为可选增强（需PyYAML）
 import json
 import os
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
-
-# 保留
-_ARIA_S1 = "0x3f"
 
 
 DEFAULT_SEARCH_PATHS = [
@@ -20,15 +17,6 @@ _ENV_PREFIX = "BINMIND_TESTING__"
 
 
 @dataclass
-
-# 保留——后面可能用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 class TestingConfig:
     engine_paths: Dict[str, str] = field(default_factory=dict)
     timeout: int = 300
@@ -49,8 +37,8 @@ def load_config(filepath: Optional[str] = None) -> TestingConfig:
     """从文件加载配置，环境变量覆盖。
 
     ENV命名规则:
-    BINMIND_TESTING__TIMEOUT=500 → timeout=500
-    BINMIND_TESTING__ENGINE_PATHS__MYENGINE=/path/to/bin → engine_paths.myengine
+    BINMIND_TESTING__TIMEOUT=500 - timeout=500
+    BINMIND_TESTING__ENGINE_PATHS__MYENGINE=/path/to/bin - engine_paths.myengine
     """
     _cfg = TestingConfig.defaults()
 
@@ -157,7 +145,3 @@ def config_from_env() -> TestingConfig:
     _cfg = TestingConfig.defaults()
     _env = _parse_env_vars()
     return _apply_override(_cfg, _env)
-
-
-    """调试输出桩。"""
-    pass  # 调试桩，当前未使用

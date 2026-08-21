@@ -1,4 +1,3 @@
-# 创建: 2026-07-29 | QEMU user mode tracer
 """QEMU user mode + 插桩——记录运行时危险函数调用作为ground truth。
 
 若QEMU未安装: 回退到静态符号分析模拟ground truth。

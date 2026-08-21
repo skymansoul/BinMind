@@ -1,4 +1,4 @@
-# 堆分配器行为模型——建模glibc ptmalloc的内部约束
+# 堆分配器行为模型-建模glibc ptmalloc的内部约束
 # 关键事实: malloc(N)因对齐而实际可用 > N
 # 不建模: malloc(32)+memcpy(38)被误判溢出，但实际可用≥40字节
 #
@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +28,7 @@ class AllocatorKind(Enum):
 
 @dataclass(frozen=True)
 class AllocatorParams:
-    """堆分配器的行为参数——每个分配器有不同的对齐/overhead策略"""
+    """堆分配器的行为参数-每个分配器有不同的对齐/overhead策略"""
     min_alignment: int       # 最小对齐字节数
     chunk_overhead: int      # chunk header大小(bytes)
     min_chunk_size: int      # 最小chunk大小(bytes,含header)
@@ -37,7 +36,7 @@ class AllocatorParams:
     use_bins: bool = True    # 是否使用bin管理(影响小chunk的合并)
 
 
-# 常见分配器参数——实测和源码验证
+# 常见分配器参数-实测和源码验证
 _ALLOCATOR_PARAMS = {
     AllocatorKind.GLIBC_PTMALLOC2: AllocatorParams(
         # overhead=8 (SIZE_SZ): next chunk的prev_size字段可被当前chunk数据复用
@@ -56,7 +55,7 @@ _ALLOCATOR_PARAMS = {
 
 
 class HeapAllocatorModel:
-    """堆分配器行为模型——计算malloc(N)的实际可用空间。
+    """堆分配器行为模型-计算malloc(N)的实际可用空间。
 
     一个size参数为N的malloc调用实际提供多少可安全写入的字节?
     答: usable_size(N) = round_up(N + overhead, alignment) - overhead
@@ -90,7 +89,7 @@ class HeapAllocatorModel:
         """给定malloc(N)中的N, 返回实际可安全写入的字节数。
 
         调用方可以安全写入usable_size(N)字节而不会溢出到相邻chunk。
-        用于与memcpy的拷贝大小对比——若copy_size <= usable_size(alloc_size),
+        用于与memcpy的拷贝大小对比-若copy_size <= usable_size(alloc_size),
         则不是溢出。
         """
         if requested_bytes <= 0:
@@ -116,7 +115,7 @@ class HeapAllocatorModel:
         return copy_bytes <= usable - margin
 
     def overflow_bytes(self, alloc_requested: int, copy_bytes: int) -> int:
-        """计算溢出字节数——负数或0表示安全"""
+        """计算溢出字节数-负数或0表示安全"""
         usable = self.usable_size(alloc_requested)
         return copy_bytes - usable
 
@@ -125,7 +124,7 @@ class HeapAllocatorModel:
     def usable_size_for_func(self, alloc_func: str,
                               args: list[int]) -> int:
         """对特定分配函数计算可用空间。
-        calloc(nmemb, size)需要特殊处理——arg[0]*arg[1]后需要同样的对齐。
+        calloc(nmemb, size)需要特殊处理-arg[0]*arg[1]后需要同样的对齐。
         """
         func = alloc_func.lower()
         if func == 'calloc':

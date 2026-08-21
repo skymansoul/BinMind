@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-08-07  |  PHS编排引擎
-# 修改: 2026-08-07  |  审计后补充文件头与错误处理
 #
 """
-指针危险评分——编排引擎与批量分析。
+指针危险评分-编排引擎与批量分析。
 
 管线:
   1. 对二进制中每个函数执行PointerHazardAnalyzer
@@ -12,13 +10,13 @@
   4. 输出Top-K最危险指针操作+每函数危险摘要
 
 与模糊测试的协同:
-  高PHS分数的指针操作→DABSS种子合成的优先目标
-  →模糊测试引擎分配的变异预算倾斜
-  →提高发现新崩溃的概率
+  高PHS分数的指针操作-DABSS种子合成的优先目标
+  -模糊测试引擎分配的变异预算倾斜
+  -提高发现新崩溃的概率
 
 与补丁验证的协同:
-  补丁前后的PHS分数比较→补丁是否真正降低了指针操作的危险
-  →SPCV语义完备性验证的辅助信号
+  补丁前后的PHS分数比较-补丁是否真正降低了指针操作的危险
+  -SPCV语义完备性验证的辅助信号
 """
 
 import logging
@@ -46,7 +44,7 @@ class FunctionHazardSummary:
 
 @dataclass
 class PhsReport:
-    """PHS完整报告——二进制指针危险全景"""
+    """PHS完整报告-二进制指针危险全景"""
     binary_name: str
     total_functions: int = 0
     total_ptr_ops: int = 0
@@ -67,7 +65,7 @@ class PhsReport:
 
 
 class PhsEngine:
-    """指针危险评分引擎——批量函数分析+聚合报告。
+    """指针危险评分引擎-批量函数分析+聚合报告。
 
     使用示例:
         engine = PhsEngine()
@@ -120,7 +118,7 @@ class PhsEngine:
         # 全局排序
         all_scores.sort(key=lambda s: s.overall_hazard, reverse=True)
 
-        # 模糊测试目标——危险操作最多的函数
+        # 模糊测试目标-危险操作最多的函数
         summaries.sort(key=lambda s: s.max_hazard, reverse=True)
         fuzz_targets = [s.function_name for s in summaries[:5]
                         if s.max_hazard >= 0.5]

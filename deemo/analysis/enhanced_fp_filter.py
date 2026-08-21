@@ -181,13 +181,7 @@ def run_enhanced_filter(
 ) -> Tuple[List[Any], Dict[str, int]]:
     """运行完整的增强误报过滤管道。
 
-    Args:
-        candidates: HeapOverflowCandidate 列表
-        ir_lines: IR 行列表
-        min_confidence: 最终置信度阈值
-
-    Returns:
-        (filtered_candidates, stats_dict)
+    min_confidence 为最终置信度阈值, 返回 (filtered_candidates, stats_dict)。
     """
     stats = {'input': len(candidates)}
 

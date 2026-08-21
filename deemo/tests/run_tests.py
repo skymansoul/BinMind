@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 2026-07重构：把注册表拆到_test_registry.py，这里只留调度逻辑
+# 注册表拆到_test_registry.py, 这里只留调度逻辑
 
 import os
 import sys

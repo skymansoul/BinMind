@@ -1,14 +1,12 @@
-# 创建: 2026-06-29 08:22
-# 修改: 2026-06-29 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 反事实解释CVE风险评分
-# 反事实解释 — CVE风险评分的可操作归因
+# 反事实解释CVE风险评分
+# 反事实解释 - CVE风险评分的可操作归因
 #
 # 问题: SHAP/LIME给出特征贡献排名, 但不告诉防御者"怎么做才能改变评分".
 # 2025-2026年研究 证实:
 # SHAP归因在模型重训时高度不稳定 (不同seed导致特征排序完全翻转)
 #   - 预测鲁棒性 ≠ 解释稳定性 (XGBoost RI≈0.98 但 ESI≈0.06)
 # 特征重要性不能区分因果与相关
-# 结论: SHAP对安全运维不可操作 — 知道"EPSS贡献了30%"无助于决策.
+# 结论: SHAP对安全运维不可操作 - 知道"EPSS贡献了30%"无助于决策.
 #
 # 解决方案: 反事实解释 (Counterfactual Explanations).
 # 基于Wachter et al. 的框架, 适配到CVE风险评分:
@@ -17,11 +15,11 @@
 #   其中 d(x, x') 为特征空间距离 (加权L1/L2混合).
 #
 # 反事实类型:
-#   Type 1 — 最小扰动: 使评分跨过决策边界的最近邻点.
+#   Type 1 - 最小扰动: 使评分跨过决策边界的最近邻点.
 #     回答: "最少需要改变什么?"
-#   Type 2 — 稀疏反事实: 限制最多k个特征可变.
+#   Type 2 - 稀疏反事实: 限制最多k个特征可变.
 #     回答: "只改一个特征能做到吗?"
-#   Type 3 — 可行反事实: 仅允许某些方向的变化 (如"EPSS只能升不能降").
+#   Type 3 - 可行反事实: 仅允许某些方向的变化 (如"EPSS只能升不能降").
 #     回答: "在现实约束下, 什么变化是可能的?"
 #
 # 本实现的三阶段管线:
@@ -95,15 +93,13 @@ class CounterfactualExplainer:
                 lambda_pred: float = 10.0,
                 lambda_dist: float = 1.0,
                 lambda_sparse: float = 2.0) -> List[Dict[str, Any]]:
-        """生成反事实解释.
+        """生成反事实解释。
 
-        features: 当前特征向量 (需与feature_names顺序一致).
-        target_class: 目标风险类别 ("LOW"|"MEDIUM"|"HIGH"|"CRITICAL").
-        max_features_to_change: 最多改变的特征数 (稀疏性约束).
-        n_counterfactuals: 最多返回N个反事实.
-        lambda_pred/lambda_dist/lambda_sparse: 损失权重.
-
-        Returns: 按综合评分排序的反事实列表.
+        features 为当前特征向量 (需与 feature_names 顺序一致),
+        target_class 为目标风险类别, max_features_to_change 为
+        最多改变的特征数 (稀疏性约束), n_counterfactuals 为最多
+        返回个数, lambda_pred/lambda_dist/lambda_sparse 为损失
+        权重; 返回按综合评分排序的反事实列表。
         """
         current_score = self._scoring_fn(features)
         target_bound = self._threshold_to_bound(target_class)
@@ -349,7 +345,7 @@ def explain_cve_risk(scoring_fn, features: List[float],
 
 def build_scoring_fn_from_weights(weights: Dict[str, float],
                                   feature_names: List[str]) -> callable:
-    """从特征权重构建评分函数 — 用于测试/demo."""
+    """从特征权重构建评分函数 - 用于测试/demo."""
     w = [weights.get(n, 0.0) for n in feature_names]
 
     def scoring_fn(features: List[float]) -> float:

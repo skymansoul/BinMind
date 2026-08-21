@@ -51,7 +51,7 @@ _UNSAFE_PRUNE_SYMBOLS: frozenset = frozenset({
 
 def _count_ite_nesting(constraint_str: str) -> int:
     """统计约束字符串中的 ITE 嵌套层数
-    
+
     连续的 '(ite' 前缀代表嵌套的条件分支，深度过大表示该状态
     处于极度分支密集的代码区域，继续 DFS 可能导致状态爆炸"""
     depth = 0
@@ -72,7 +72,7 @@ def _count_ite_nesting(constraint_str: str) -> int:
 
 class SymbolicExecutor:
     """Light 封装 angr for single-binary 符号执行
-    
+
     Accepts a target address or a step budget. 返回 per-state
     instruction-指针 快照s"""
 
@@ -127,7 +127,7 @@ class SymbolicExecutor:
 
     def concrete_write_detector(self, max_steps: int = 500) -> list[dict]:
         """查找 paths symbolic stdin reaches a 写入()/发送() 系统调用 arg
-        
+
         使用 angr 的 SimulationManager 配合 查找=write_addr 探测
         返回每条路径的 syscall 地址以及被写入数据的符号约束摘要"""
         try:
@@ -155,7 +155,7 @@ class SymbolicExecutor:
 
     def assess_explosion_risk(self) -> list[dict]:
         """扫描当前所有 angr 状态，标记 ITE 嵌套过深的风险状态
-        
+
         返回 [(state_id, ite_depth, risk_level),.]
         ITE depth > 20 → 'critical', 10-20 → 'warning', <10 → 'normal'"""
         try:
@@ -189,7 +189,7 @@ class SymbolicExecutor:
 class PathExplorer:
     """Explores paths entry a target address, collecting basic-block
     traces. 支持 BFS DFS strategies
-    
+
     二轮增强 — 循环感知策略切换：当单路径深度 > 200 时自动从 DFS
     切换到 BFS，因为极大可能陷入循环展开。且增加了 Veritesting
     作为可选的第三个策略
@@ -314,11 +314,11 @@ def function_arg_taint(binary: str, func_addr: int, arg_index: int = 0) -> dict[
 def function_arg_taint_matrix(binary: str, func_addr: int,
                                num_args: int = 4) -> dict[str, Any]:
     """同时污点追踪前 num_args 个参数，返回 N×M 交互矩阵
-    
+
     每个参数独立标记为一个 64-bit 符号变量 (BVS)
     在 200 步后收集所有 sink 约束，构建 arg→sink 的关联矩阵
     M[][j] = True 表示 arg 的约束出现在 sink j 中
-    
+
     增强 — 爆炸风险评估：在 50 步后检查 ITE 嵌套深度
     若超过阈值则提前终止并标记 truncated=True"""
     try:
@@ -379,12 +379,12 @@ def function_arg_taint_matrix(binary: str, func_addr: int,
 class SymbolicMemoryModel:
     """Wraps angr memory 提供 high-level symbolic 读取/写入 taint
     source resolution
-    
+
     三轮增强 — 利用 angr 内建 BVS 命名约定追踪每个内存地址的输入依赖
     sym_read 返回 claripy AST（BVS/BVV）而非具体整数，sym_write 将具体
     值转换为固定宽度 BVV 后写入以保持约束系统一致性
     get_taint_source 递归遍历表达式树，收集影响指定地址的输入字节索引
-    
+
     Attributes:
     sym_mem: 对外暴露的 angr SimState.memory 引用，供调用方直接操作
     taint_sources: Dict[int, List[int]]，地址到输入索引的映射缓存
@@ -394,11 +394,7 @@ class SymbolicMemoryModel:
     _TAINT_PREFIX = 'taint_arg'
 
     def __init__(self, state):
-        """绑定一个 angr SimState，后续所有操作基于其 memory/solver 接口
-        
-        Args:
-        state: angr SimState 对象
-        """
+        """绑定一个 angr SimState, 后续所有操作基于其 memory/solver 接口。"""
         self._state = state
         # 对外暴露内部 memory 对象 — 策略性决定：不封装 state.memory 的
         # 所有方法，而是让高级调用方在需要精细控制时直接访问
@@ -407,17 +403,11 @@ class SymbolicMemoryModel:
         self.taint_sources: Dict[int, List[int]] = {}
 
     def sym_read(self, addr: int, size: int):
-        """从指定地址读取 size 字节，返回符号表达式
-        
-        底层调用 state.memory.load() 保持与 angr 约束引擎的耦合
-        读取成功后立即解析并缓存污点来源
-        
-        Args:
-        addr: 内存地址
-        size: 读取字节数
-        
-        返回:
-        claripy AST 表达式（BVS 或 BVV），None 表示读取失败
+        """从指定地址读取 size 字节, 返回符号表达式。
+
+        底层调用 state.memory.load() 保持与 angr 约束引擎的耦合;
+        读取成功后立即解析并缓存污点来源。
+        返回 claripy AST (BVS 或 BVV), None 表示读取失败。
         """
         try:
             expr = self.sym_mem.load(addr, size, endness='Iend_LE')
@@ -431,14 +421,10 @@ class SymbolicMemoryModel:
             return None
 
     def sym_write(self, addr, value) -> None:
-        """向指定地址写入符号或具体值
-        
-        若 value 为具体 int，先转为 64-bit BVV（避免 claripy 隐式类型推导
-        导致宽度不匹配）；写入后清除该地址的污点缓存（数据已改变）
-        
-        Args:
-        addr: 目标内存地址
-        value: 待写入的值，int 或 claripy AST
+        """向指定地址写入符号或具体值。
+
+        若 value 为具体 int, 先转为 64-bit BVV (避免 claripy 隐式类型
+        推导导致宽度不匹配); 写入后清除该地址的污点缓存。
         """
         try:
             if isinstance(value, int):
@@ -454,16 +440,11 @@ class SymbolicMemoryModel:
             _log.warning("SymbolicMemoryModel.sym_write@0x%x failed", addr)
 
     def get_taint_source(self, addr: int) -> List[int]:
-        """返回影响此地址的输入字节索引列表（升序）
-        
-        查询顺序：缓存命中 → 从地址加载 1 字节表达式做符号依赖分析
-        利用 angr BVS 命名规则解析 taint_arg{N} 中的 N
-        
-        Args:
-        addr: 要查询污点来源的内存地址
-        
-        返回:
-        List[int]: 输入字节索引。无符号依赖时返回空列表
+        """返回影响此地址的输入字节索引列表 (升序)。
+
+        查询顺序: 缓存命中 → 从地址加载 1 字节表达式做符号依赖分析;
+        利用 angr BVS 命名规则解析 taint_arg{N} 中的 N。
+        无符号依赖时返回空列表。
         """
         if addr in self.taint_sources:
             return self.taint_sources[addr]
@@ -479,7 +460,7 @@ class SymbolicMemoryModel:
 
     def _resolve_taint_indices(self, expr) -> List[int]:
         """递归遍历 claripy 表达式树，收集 BVS 名称中编码的输入参数索引
-        
+
         只提取前缀为 taint_arg 的变量名中的数字部分
         结果去重后升序返回
         """
@@ -492,7 +473,7 @@ class SymbolicMemoryModel:
 
     def _walk_ast(self, node, indices: Set[int]) -> None:
         """深度优先遍历 AST，从叶子节点的 BVS 名称提取索引
-        
+
         一个 BVS 命名如 taint_arg2_0_64 表示第 2 个输入参数的第 0 字节、
         宽度 64 位。提取 2 作为输入索引
         """
@@ -533,18 +514,18 @@ except ImportError:
 
 class PathPruningHook(_PRUNING_BASE):
     """angr SimStatePlugin drops states reaching -unsafe library code
-    
+
     三轮增强 — 在分支解析后检查 state 的 IP 是否命中不安全终止函数
     若命中则标记该状态为可丢弃（pruned），避免在不可能产生有用结果
     （如信息泄露、控制流劫持）的路径上继续探索
-    
+
     使用方式:
     prune_钩子 = PathPruning钩子()
     state.寄存器_plugin('prune_钩子', prune_钩子)
     # 后续在 exploration 回调 中:
     state.prune_钩子.should_prune(state):
     simgr.move('active', 'pruned', state)
-    
+
     Attributes:
     pruned_count: 累计剪枝计数
     pruned_reasons: 剪枝原因列表（匹配到的函数名）
@@ -561,7 +542,7 @@ class PathPruningHook(_PRUNING_BASE):
 
     def copy(self, _memo=None):
         """SimStatePlugin.copy — 深拷贝剪枝钩子的计数器与原因列表
-        
+
         angr 在 fork 状态时会自动调用此方法，确保子状态继承父状态的
         剪枝记录
         """
@@ -572,7 +553,7 @@ class PathPruningHook(_PRUNING_BASE):
 
     def merge(self, others, merge_conditions, common_ancestor=None):
         """合并多个 SimStatePlugin — 取 pruned_count 的最大值并合并原因列表
-        
+
         按 angr merge 语义，将 others 中所有剪枝信息归并入 self
         """
         for o in others:
@@ -588,17 +569,13 @@ class PathPruningHook(_PRUNING_BASE):
 
     def should_prune(self, state=None) -> bool:
         """判断当前 IP 是否指向不安全的终止函数
-        
+
         两阶段解析：
         1. 通过 loader.find_symbol(ip) 获取符号名直接匹配
         2. 反向地址映射 — 遍历 _UNSAFE_SYMS 在 binary 中的地址
-        逐项匹配（适用于符号表被 strip 但部分符号仍在的场景）
-        
-        Args:
-        state: 可选，若不传则使用 self.state
-        
-        返回:
-        bool: True 表示该状态应被丢弃
+        逐项匹配 (适用于符号表被 strip 但部分符号仍在的场景)。
+
+        state 缺省使用 self.state; True 表示该状态应被丢弃。
         """
         target_state = state if state is not None else getattr(self, 'state', None)
         if target_state is None:
@@ -650,18 +627,11 @@ class PathPruningHook(_PRUNING_BASE):
 # 适用场景：跨工具验证 / 约束持久化 / 结果复现
 
 def extract_path_constraints_smt2(path_state) -> Optional[str]:
-    """序列化 constraint set an angr state SMT-LIB2 格式化
-    
-    三轮增强 — 将 path_state.solver.constraints 转为符合 SMT-LIB2 标准
-    的文本脚本。输出包含变量声明（declare-fun）、约束合取（assert）、
-    可满足性检查（check-sat）和模型获取（-model）指令
-    
-    Args:
-    path_state: angr SimState，其 solver.constraints 将被序列化
-    
-    返回:
-    str: SMT-LIB2 格式的约束脚本（变量名 smt2_serialized）
-    None: 序列化失败或约束集为空时返回 None
+    """把 angr 状态的约束集序列化为 SMT-LIB2 格式。
+
+    输出含变量声明 (declare-fun)、约束合取 (assert)、可满足性检查
+    (check-sat) 与模型获取 (get-model) 指令; 变量名统一
+    smt2_serialized。序列化失败或约束集为空返回 None。
     """
     try:
         import claripy

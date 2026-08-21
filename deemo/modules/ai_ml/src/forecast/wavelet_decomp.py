@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # db4 小波基
 
 class WaveletPacketDecomposition:
-    """离散小波包分解——将信号分解为等带宽的频率子带。
+    """离散小波包分解-将信号分解为等带宽的频率子带。
 
     与标准DWT的差异: 同时对近似和细节系数进行递归分解，
     提供全频带的均匀频率分辨率。

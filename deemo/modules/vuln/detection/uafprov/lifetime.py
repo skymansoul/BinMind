@@ -1,5 +1,4 @@
 # coding: utf-8
-# 创建: 2026-06-24  |  UAF 生命周期与重分配感知判定
 #
 """
 生命周期时间线 + 重分配感知判定。
@@ -19,10 +18,10 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from heapver.insn import Instruction, callee_name
-from heapver.abi import find_alloc
-from heapver.defuse import DefUseResolver
-from heapver.link import DstAllocLinker
+from ..heapver.insn import Instruction, callee_name
+from ..heapver.abi import find_alloc
+from ..heapver.defuse import DefUseResolver
+from ..heapver.link import DstAllocLinker
 
 from .provenance import FreeSite, DerefSite
 

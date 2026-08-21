@@ -1,11 +1,10 @@
-# 修改记录:
-# 2025-08-04 16:09 - 跨函数类型约束传播: 调用者->被调用者 和 被调用者->调用者 双向
-# 2025-08-05 11:37 - 结构体字段推断: memcpy/memset 的目标大小推导 struct 布局
+# 跨函数类型约束传播: 调用者->被调用者 和 被调用者->调用者 双向
+# 结构体字段推断: memcpy/memset 的目标大小推导 struct 布局
 
 """跨函数类型约束传播 - 从调用上下文推断函数参数和返回值类型
 
 现有二进制类型恢复方法 (Ghidra/IDA type recovery) 在单函数范围内推断类型
-遇到库函数边界即终止--因为库函数的签名信息在二进制中不可用
+遇到库函数边界即终止, 因为库函数的签名信息在二进制中不可用
 
 本模块的差异: 利用调用图中的类型信息流双向传播
   正向 (调用者->被调用者):
@@ -14,13 +13,13 @@
     若 callee 的返回值被 caller 作为指针解引用 -> callee 返回指针
     若 callee 的返回值被 caller 参与算术 -> callee 返回整数
 
-迭代至不动点--整个调用图的类型信息达到一致状态
-在 LLVM 和 GCC 编译的二进制上测试--跨越 5-50 个函数的链
+迭代至不动点, 整个调用图的类型信息达到一致状态
+在 LLVM 和 GCC 编译的二进制上测试, 跨越 5-50 个函数的链
 
 技术基础:
 - 抽象解释的 chaotic iteration
 - 类型格的 widening: int->ptr 是合法的, ptr->int 也是合法的
-  (union 类型允许两者)--但需要记录置信度差异
+  (union 类型允许两者), 但需要记录置信度差异
 - 收敛保证: 类型格有限高度 (int/ptr/struct/float/unknown, 5 层)
   最坏迭代次数 = |调用图边数| x 格高度
 
@@ -41,7 +40,7 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 # 类型格定义
 
 # 格的偏序关系: UNKNOWN < everything, INT/PTR/FLOAT 不可比较, STRUCT 是复合
-_TYPE_LATTICE_HEIGHT = 5  # 格高度--保证迭代终止
+_TYPE_LATTICE_HEIGHT = 5  # 格高度, 保证迭代终止
 
 # 类型合并规则: join(t1, t2) -> 最小上界
 _TYPE_JOIN = {
@@ -140,7 +139,7 @@ class InterprocTypePropagator:
     def propagate(self, max_iterations: int = 20) -> Dict[str, FunctionTypeSignature]:
         """执行跨函数类型传播直到不动点或达到最大迭代次数
 
-        使用 worklist 算法--仅当函数的推断签名改变时才重新传播到其调用者/被调用者
+        使用 worklist 算法, 仅当函数的推断签名改变时才重新传播到其调用者/被调用者
         """
         worklist: deque = deque(self._types.keys())
         iteration = 0
@@ -172,7 +171,7 @@ class InterprocTypePropagator:
         return dict(self._types)
 
     def _propagate_from(self, func_name: str) -> bool:
-        """从给定函数正向和反向传播类型约束--返回签名是否改变"""
+        """从给定函数正向和反向传播类型约束, 返回签名是否改变"""
         sig = self._types.get(func_name)
         if sig is None:
             return False
@@ -221,7 +220,7 @@ class InterprocTypePropagator:
         source: TypeConstraint,
         source_func: str,
     ) -> bool:
-        """尝试用 source 约束更新 target--返回 target 是否改变"""
+        """尝试用 source 约束更新 target, 返回 target 是否改变"""
         if idx not in constraints:
             constraints[idx] = TypeConstraint()
 

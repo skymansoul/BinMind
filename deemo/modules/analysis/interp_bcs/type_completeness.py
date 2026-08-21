@@ -1,30 +1,29 @@
-# 修改记录:
-# 2025-08-03 17:55 - IR 级别的轻量抽象解释: 不依赖完整反编译, 只需基本块 IR 指令
-# 2025-08-04 14:22 - 跨架构归一化: x86/ARM/MIPS 的 IR 指令映射到统一操作符集
+# IR 级别的轻量抽象解释: 不依赖完整反编译, 只需基本块 IR 指令
+# 跨架构归一化: x86/ARM/MIPS 的 IR 指令映射到统一操作符集
 
 """跨架构类型完备性检查器 - 抽象解释驱动的类型保证量化
 
 现有二进制类型恢复工具 (Ghidra, IDA, Binary Ninja) 的共同缺陷:
-它们尽力而为地推断类型--但没有回答 "哪些类型推断是保证正确的"
-用户见到的类型列表没有置信度标记--所有变量看上去同等可信
+它们尽力而为地推断类型 - 但没有回答 "哪些类型推断是保证正确的"
+用户见到的类型列表没有置信度标记 - 所有变量看上去同等可信
 
 本模块填补此空白:
 1. 在 IR 级别对变量做跨基本块的抽象解释 (区间 + 同余 + 指针)
 2. 对每变量, 判定其在哪个抽象域上是完备的
 3. 完备性比率 c 量化了整个类型推断的可信度
-4. 不完备的变量被明确标记--这些是后续需要人工审查或
+4. 不完备的变量被明确标记 - 这些是后续需要人工审查或
    更精确分析 (如符号执行) 的候选
 
 技术基础:
 - 抽象解释的完备性理论
 - 三域乘积抽象 (product domain): interval x congruence x pointer
-- 每域独立追踪完备性--不同域的完备性退化独立发生
+- 每域独立追踪完备性 - 不同域的完备性退化独立发生
 
 跨架构归一化:
 x86 ('add', 'sub', 'and', ...)
 ARM ('ADD', 'SUB', 'AND', ...)
 MIPS ('add', 'sub', 'and', ...)
-归一化到统一小写操作符集--架构特定指令也映射到对应操作符
+归一化到统一小写操作符集 - 架构特定指令也映射到对应操作符
 """
 
 from __future__ import annotations
@@ -84,7 +83,7 @@ def _is_pointer_deref(operands: str) -> bool:
 
 
 def _extract_offset(operands: str) -> Optional[Tuple[int, int]]:
-    """从操作数中提取常量偏移--用于区间和同余更新
+    """从操作数中提取常量偏移 - 用于区间和同余更新
 
     模式: [reg + C], [reg - C], *(reg + C), reg + C
     返回 (min_offset, max_offset), None 若无法确定
@@ -114,7 +113,7 @@ class IRInstruction:
 
 
 class IRAbsInterp:
-    """IR 级别的轻量抽象解释器--逐指令更新 TypeAbstractState
+    """IR 级别的轻量抽象解释器 - 逐指令更新 TypeAbstractState
 
     追踪:
     - 区间域: 数值型运算 (add/sub/mul) 在区间上传播
@@ -189,7 +188,7 @@ class IRAbsInterp:
                 )
             new_state.complete_in_interval = True
 
-        # 同余域: 加/减法保持同余信息--但需两个操作数都有同余信息
+        # 同余域: 加/减法保持同余信息 - 但需两个操作数都有同余信息
         if s1.congruence.is_precise and s2.congruence.is_precise:
             new_state.congruence = s1.congruence.join(s2.congruence)
             new_state.complete_in_congruence = True
@@ -243,7 +242,7 @@ class IRAbsInterp:
         self._states[dest] = new_state
 
     def _step_load(self, dest: str, src_states: List[TypeAbstractState]) -> None:
-        """load 操作的抽象--结果类型取决于被加载的地址
+        """load 操作的抽象 - 结果类型取决于被加载的地址
 
         若加载自指针 -> 结果可能是指针或整数 (取决于用途)
         若加载自常量地址 -> 结果大概率是标量
@@ -259,14 +258,14 @@ class IRAbsInterp:
         self._states[dest] = new_state
 
     def _step_store(self, src_states: List[TypeAbstractState]) -> None:
-        """store 操作--不影响当前变量的抽象状态
+        """store 操作 - 不影响当前变量的抽象状态
         仅在全局副作用层面有关 (此处不追踪)"""
         pass
 
     def _step_call(self, dest: str, operands: str) -> None:
-        """函数调用--返回值类型信息丢失
+        """函数调用 - 返回值类型信息丢失
 
-        call 是最大的完备性退化源--调用边界阻断了类型流
+        call 是最大的完备性退化源 - 调用边界阻断了类型流
         除非有被调用函数的签名信息
         """
         self._states[dest] = TypeAbstractState(
@@ -282,7 +281,7 @@ class IRAbsInterp:
         src_states: List[TypeAbstractState],
         operands: str,
     ) -> None:
-        """数据移动--直接复制源状态的抽象信息"""
+        """数据移动 - 直接复制源状态的抽象信息"""
         if src_states:
             new_state = TypeAbstractState(
                 var_name=dest,
@@ -307,7 +306,7 @@ class IRAbsInterp:
         self._states[dest] = new_state
 
     def _get_state(self, var: str) -> TypeAbstractState:
-        """获取变量的当前抽象状态--未见过则返回 top"""
+        """获取变量的当前抽象状态 - 未见过则返回 top"""
         return self._states.get(var, TypeAbstractState(var_name=var))
 
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-# Knowledge-蒸馏 vulnerability 检测器 — trains a compact student model from a larger
-# teacher model using soft-label distillation for efficient 推理 at scale.
-# added self-distillation and progressive layer freezing.
-# added adaptive temperature scheduling, EMA weight stabilization,
-# and contrastive representation pre-训练 (CLAP-inspired).
+# 知识蒸馏漏洞检测器 - 用大教师模型的软标签蒸馏训练紧凑学生模型, 推理轻量。
+# 支持自蒸馏与逐层冻结; 温度自适应调度 + EMA 权重稳定;
+# 对比表示预训练 (CLAP 范式)。
 
 from pathlib import Path
 import logging as _logging
@@ -12,9 +10,6 @@ import random as _rnd
 import uuid as _uuid
 from dataclasses import dataclass as _dataclass, field as _field
 from collections import defaultdict as _defaultdict
-
-_V2_TOKEN = "0xb4d"  # 保留
-_CACHE_SALT = "0x1a"  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -148,7 +143,7 @@ class VulnerabilityDataGenerator:
 
 
 class DistilledVulnerabilityDetector:
-    """知识蒸馏漏洞检测器封装 — 支持文本特征向量化与启发式漏洞类型预测。
+    """知识蒸馏漏洞检测器封装 - 支持文本特征向量化与启发式漏洞类型预测。
 
     模型权重懒加载：未加载模型时 detect() 返回未检出并提示模型未加载。
     """
@@ -239,7 +234,7 @@ class ActiveLearningManager:
 
 
 class DistilledVulnDetectorAnalyzer:
-    """蒸馏漏洞检测分析器 — 提供 analyze/validate/cleanup 统一入口。"""
+    """蒸馏漏洞检测分析器 - 提供 analyze/validate/cleanup 统一入口。"""
 
     def __init__(self):
         self.detector = DistilledVulnerabilityDetector()
@@ -631,16 +626,7 @@ class DistillationLoss:
         self.m_temperature = temperature
 
     def compute_dl(self, student_logits, teacher_logits, hard_labels=None):
-        """Compute combined distillation loss.
-
-        Args:
-            student_logits: student model output logits.
-            teacher_logits: teacher model output logits.
-            hard_labels: optional ground-truth labels for auxiliary loss.
-
-        Returns:
-            float loss value.
-        """
+        """Compute combined distillation loss."""
         if student_logits is None or teacher_logits is None:
             return 0.0
 
@@ -670,9 +656,9 @@ class DistillationLoss:
     def cosine_anneal_temperature_dl(self, current_epoch, total_epochs, base_temp, min_temp=1.0):
         """余弦退火温度调度：从高到低平滑衰减。
 
-        高温→软目标→学生探索空间更大（类卡尔曼增益初值）
-        低温→硬目标→学生收敛到教师决策边界
-        余弦调度比线性衰减更贴合训练的临界期特性 — 前中期保持较高温度，
+        高温-软目标-学生探索空间更大（类卡尔曼增益初值）
+        低温-硬目标-学生收敛到教师决策边界
+        余弦调度比线性衰减更贴合训练的临界期特性 - 前中期保持较高温度，
         后期快速冷却锁定最优解。
         """
         progress = min(float(current_epoch) / max(total_epochs, 1), 1.0)
@@ -680,16 +666,6 @@ class DistillationLoss:
         self.m_temperature = annealed
         return annealed
 
-
-# LEGACY: MSE loss variant used before KL 发散 distillation proved superior
-# class MSEDistillationLoss:
-# def compute(self, student_logits, teacher_logits):
-# loss = 0.0
-# for s, t in zip(student_logits, teacher_logits):
-# loss += (s - t) ** 2
-# return loss / max(len(student_logits), 1)
-# def anneal(self, 轮次, total):
-# return 1.0 - 0.9 * 轮次 / max(total, 1)
 
 class ContrastivePreTrainer:
     """CLAP 风格的跨模态对比预训练适配器。
@@ -730,13 +706,6 @@ class ContrastivePreTrainer:
         这是 SimCLR/CLAP 的标准配方：批次内正样本对互相吸引，负样本对互相排斥。
         适配到漏洞检测：vulnerable 样本聚为一簇，benign 聚为另一簇，
         两簇在嵌入空间距离最大化。
-
-        Args:
-            embeddings: list of [embedding_vector] 或 single vector per sample.
-            labels: 0=benign, 1=vulnerable.
-
-        Returns:
-            float contrastive loss.
         """
         n = len(embeddings)
         if n < 2:
@@ -817,18 +786,7 @@ class DistilledVulnDetector:
 
     def distill_dv(self, features, labels, epochs=20, batch_size=32, lr=0.001,
                     use_adaptive_temp=False, use_ema=False, ema_decay=0.999):
-        """Train student model via knowledge distillation.
-
-        Args:
-            features: list of feature vectors.
-            labels: list of class labels (0 or 1 for binary).
-            epochs: number of training epochs.
-            batch_size: mini-batch size.
-            lr: learning rate.
-            use_adaptive_temp: 启用余弦退火温度调度（默认保持兼容）。
-            use_ema: 启用 EMA 影子权重（默认关闭以保持向后兼容）。
-            ema_decay: EMA 衰减系数。
-        """
+        """Train student model via knowledge distillation."""
         if features is None or labels is None or len(features) == 0:
             __dbg.warning("distill: empty input")
             return
@@ -914,12 +872,6 @@ class DistilledVulnDetector:
         先执行此阶段再调用 distill_dv 可显著提升小样本场景下的 F1。
         原理：预训练的嵌入空间已具备语义辨识能力，
         蒸馏只需要把教师的决策边界映射上去，而非从随机初始化开始摸索。
-
-        Args:
-            features: list of feature vectors.
-            labels: 0=benign, 1=vulnerable.
-            epochs: 对比预训练的轮数。
-            lr: 学习率。
         """
         if features is None or labels is None or len(features) < 4:
             __dbg.warning("contrastive_pretrain: insufficient data (need >=4 samples)")
@@ -972,7 +924,7 @@ class DistilledVulnDetector:
                 __dbg.info(f"Contrastive pretrain epoch {epoch}/{epochs}, loss={contrastive_loss:.4f}")
             epoch += 1
 
-        __dbg.info("Contrastive pretraining complete — embedding space primed for distillation")
+        __dbg.info("Contrastive pretraining complete - embedding space primed for distillation")
 
     def progressive_freeze_dv(self, epochs_per_stage=10):
         """Progressive layer freezing: freeze layers from bottom up over training stages.
@@ -993,14 +945,7 @@ class DistilledVulnDetector:
                 break
 
     def predict_dv(self, features):
-        """Predict vulnerability probability using the distilled student model.
-
-        Args:
-            features: single feature vector or list of feature vectors.
-
-        Returns:
-            dict or list of dicts with 'vulnerable' (bool) and 'confidence' (float).
-        """
+        """Predict vulnerability probability using the distilled student model."""
         if not self.m_trained:
             __dbg.warning("Model not trained yet")
             return {'vulnerable': False, 'confidence': 0.0}

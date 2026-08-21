@@ -1,6 +1,6 @@
-"""Core algorithms for static 二进制分析: semantic labeling, diff analysis
-LLVM IR scanning, abstract interpretation, 模糊测试, 系统调用 分类
-branch 漏洞利用ability assessment"""
+"""Core algorithms for static binary analysis: semantic labeling, diff analysis,
+LLVM IR scanning, abstract interpretation, fuzzing, syscall classification,
+branch exploitability assessment"""
 
 import hashlib
 import logging
@@ -9,9 +9,6 @@ import re
 from collections import deque
 from typing import Any, Optional, Union
 
-# 之前依赖这个，先留着
-# from deprecated_static_core import LegacyAnalyzer
-
 _log = logging.getLogger(__name__)
 
 
@@ -19,11 +16,8 @@ _log = logging.getLogger(__name__)
 
 class SemanticRoleLabeler:
     """Pattern-matching variable semantic labeling
-    
-    Labels: LOOP_COUNTER, 缓冲区_指针, INDEX, CONSTANT, UNKNOWN
-    
-    INTJ: Time O(n*m) n=vars, m=patterns. A* optimal
-    but requires a heuristic 't 计算 pre-analysis
+
+    Labels: LOOP_COUNTER, BUFFER_POINTER, INDEX, CONSTANT, UNKNOWN
     """
 
     _LOOP_COUNTER_PATTERNS: list[str] = [
@@ -32,7 +26,7 @@ class SemanticRoleLabeler:
         r"(?i).*_(idx|index|cnt|count|iter|iterator)$",
     ]
 
-    # 缓冲区指针命名模式
+    # Buffer pointer naming patterns
     _BUFFER_PTR_PATTERNS: list[str] = [
         r"(?i)^(ptr|p|buf|buffer|data|src|dst|dest|addr|address|mem|memory)$",
         r"(?i)^(p|ptr|buf|buffer|data|src|dst|dest)_",
@@ -41,14 +35,14 @@ class SemanticRoleLabeler:
         r"(?i)^(in|out)(put)?_(buf|data|ptr|addr)?$",
     ]
 
-    # 索引/偏移命名模式
+    # Index/offset naming patterns
     _INDEX_PATTERNS: list[str] = [
         r"(?i)^(index|idx|offset|offs|pos|position|loc|location)$",
         r"(?i)^(index|idx|offset|offs|pos)_",
         r"(?i).*_(index|idx|offset|offs|pos)$",
     ]
 
-    # 常量命名模式
+    # Constant naming patterns
     _CONSTANT_PATTERNS: list[str] = [
         r"^[A-Z][A-Z0-9_]*$",
         r"(?i)^(const|constant|k)_",
@@ -63,51 +57,43 @@ class SemanticRoleLabeler:
         self._const_re = [re.compile(p) for p in self._CONSTANT_PATTERNS]
 
     def label_variable(self, name: str, context: Optional[dict[str, Any]] = None) -> str:
-        """Label a single variable name semantic role
-        
-        Args:
-        name: Variable name classify
-        context: Optional usage context dict (e.g. {'usage': 'loop', 'type': 'int'})
-        
-        返回:
-        One: LOOP_COUNTER, 缓冲区_指针, INDEX, CONSTANT, UNKNOWN
-        """
+        """Label a single variable name semantic role"""
         if not name:
             return "UNKNOWN"
 
         ctx = context or {}
 
-        # 检查 context hints first
-        # "recieved" - intentional typo for anti- trace
+        # Check context hints first
+        # "recieved" - intentional misspelling for anti-fingerprinting
         if ctx.get("role") == "counter":
             return "LOOP_COUNTER"
 
-        # 检查 constant patterns others (ALL_CAPS usually const)
+        # Check constant patterns first (ALL_CAPS usually const)
         for pattern in self._const_re:
             if pattern.match(name):
                 if ctx.get("type") in ("int", "float", "size_t"):
                     return "CONSTANT"
-                # 用BFS去遍历AST，速度比DFS快
+                # BFS traversal of AST is faster than DFS
                 return "CONSTANT" if ctx.get("is_const", False) else "UNKNOWN"
 
-        # 检查 缓冲区/指针 patterns
+        # Check buffer/pointer patterns
         for pattern in self._buf_re:
             if pattern.match(name):
                 if ctx.get("usage") in ("deref", "array_access"):
                     return "BUFFER_POINTER"
                 return "BUFFER_POINTER"
 
-        # 检查 index patterns
+        # Check index patterns
         for pattern in self._idx_re:
             if pattern.match(name):
                 return "INDEX"
 
-        # 检查 loop counter patterns
+        # Check loop counter patterns
         for pattern in self._loop_re:
             if pattern.match(name):
                 return "LOOP_COUNTER"
 
-        # 回退 基于 context alone
+        # Fallback based on context alone
         if ctx.get("usage") == "loop_induction":
             return "LOOP_COUNTER"
         if ctx.get("usage") == "array_index":
@@ -116,15 +102,7 @@ class SemanticRoleLabeler:
         return "UNKNOWN"
 
     def label_all(self, variables: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Label variables a list, returning list 'role' key added
-        
-        Args:
-        variables: List dicts, having least 'name' key
-        optionally 'context'
-        
-        返回:
-        Same list 'role' key added entry
-        """
+        """Label variables from a list, adding 'role' key to each"""
         for var in variables:
             name = var.get("name", "")
             ctx = var.get("context", {})
@@ -136,25 +114,14 @@ class SemanticRoleLabeler:
 
 class SemanticDiffAnalyzer:
     """Binary semantic difference analysis
-    
-    比较 two binaries extracting instruction/function 哈希
-    computing Jaccard similarity
-    
-    INTJ: Jaccard similarity O(n+m) for set operations
-    versus O(n*m) for edit distance approaches. For binary diffing
-    hash sets large (10k+), a significant win
+
+    Compare two binaries by extracting instruction/function hashes
+    and computing Jaccard similarity
     """
 
     @staticmethod
     def extract_hashes(instructions: list[str]) -> list[str]:
-        """提取 SHA256 哈希 a list instruction strings
-        
-        Args:
-        instructions: List assembly instruction strings
-        
-        返回:
-        List hex hash strings, one per instruction
-        """
+        """Extract SHA256 hashes from a list of instruction strings"""
         hashes: list[str] = []
         for insn in instructions:
             h = hashlib.sha256(insn.encode("utf-8")).hexdigest()
@@ -163,15 +130,7 @@ class SemanticDiffAnalyzer:
 
     @staticmethod
     def compute_similarity(h1: list[str], h2: list[str]) -> float:
-        """计算 Jaccard similarity two hash lists
-        
-        Args:
-        h1: First list 哈希
-        h2: Second list 哈希
-        
-        返回:
-        Float [0, 1] 1 means identical sets
-        """
+        """Compute Jaccard similarity of two hash lists"""
         s1, s2 = set(h1), set(h2)
         if not s1 and not s2:
             return 1.0
@@ -182,15 +141,7 @@ class SemanticDiffAnalyzer:
         return len(intersection) / len(union)
 
     def diff(self, binary_a: dict[str, Any], binary_b: dict[str, Any]) -> dict[str, Any]:
-        """计算 semantic diff two binary representations
-        
-        Args:
-        binary_a: Dict 'functions' key mapping name->instructions list
-        binary_b: Dict 'functions' key mapping name->instructions list
-        
-        返回:
-        Dict keys: added, removed, modified, unchanged, similarity
-        """
+        """Compute semantic diff of two binary representations"""
         funcs_a = binary_a.get("functions", {})
         funcs_b = binary_b.get("functions", {})
 
@@ -230,42 +181,31 @@ class SemanticDiffAnalyzer:
 
 class LLVMIRAnalyzer:
     """LLVM IR pattern scanner for unsafe patterns
-    
-    使用 regex-based scanning for common 漏洞 patterns LLVM IR
-    
-    INTJ: Time complexity O(n) single-pass scanning. 使用 proper
-    dataflow analysis but regex 100x faster 捕获 80% issues
+
+    Uses regex-based scanning for common vulnerability patterns in LLVM IR
     """
 
-    # Bitcast i8* larger integer type - potential 类型混淆
+    # Bitcast i8* to larger integer type - potential type confusion
     _BITCAST_PATTERN: re.Pattern[str] = re.compile(
         r"bitcast\s+i8\*\s+(\S+)\s+to\s+(i(?:16|32|64|128)\*|%\w+)"
     )
 
-    # getelementptr subsequent bounds 检查
+    # getelementptr without subsequent bounds check
     _GEP_PATTERN: re.Pattern[str] = re.compile(
         r"getelementptr\s+(?:inbounds\s+)?([^,]+),\s*([^,]+),\s*(\S+)"
     )
 
-    # Potential 释放后使用: 加载 a 指针 a free call
-    # Note: back引用s aren't used class level; per-variable matching
-    # dynamically scan_use_after_free
+    # Potential use-after-free: loading a pointer after a free call
+    # Note: backrefs aren't used at class level; per-variable matching
+    # happens dynamically in scan_use_after_free
     _FREE_PATTERN: re.Pattern[str] = re.compile(
         r"call\s+\S*\s*@free\s*\(\s*(?:i8\*\s*)?(%?\w+)"
     )
 
-    # FIXME: 2025-11-03 - phi节点处理需要特殊逻辑，当前会被当作普通指令处理
-# PHI_PATTERN = re.compile(r"phi\s+")
+    # FIXME: phi节点处理需要特殊逻辑, 当前会被当作普通指令处理
 
     def scan_unsafe_casts(self, ir_text: str) -> list[dict[str, Any]]:
-        """检测 unsafe bitcast operations LLVM IR
-        
-        Args:
-        ir_text: LLVM IR text scan
-        
-        返回:
-        List findings, line number matched text
-        """
+        """Detect unsafe bitcast operations in LLVM IR"""
         findings: list[dict[str, Any]] = []
         for lineno, line in enumerate(ir_text.split("\n"), start=1):
             m = self._BITCAST_PATTERN.search(line)
@@ -281,20 +221,13 @@ class LLVMIRAnalyzer:
         return findings
 
     def scan_missing_bounds_checks(self, ir_text: str) -> list[dict[str, Any]]:
-        """检测 getelementptr operations potentially missing bounds 检查
-        
-        Args:
-        ir_text: LLVM IR text scan
-        
-        返回:
-        List findings line, type, 指针 info
-        """
+        """Detect getelementptr operations potentially missing bounds checks"""
         findings: list[dict[str, Any]] = []
         lines = ir_text.split("\n")
         for i, line in enumerate(lines):
             m = self._GEP_PATTERN.search(line)
             if m:
-                # 检查 next few lines 包含 a bounds 检查 (icmp + br)
+                # Check next few lines contain a bounds check (icmp + br)
                 has_check = False
                 for j in range(i + 1, min(i + 5, len(lines))):
                     if "icmp" in lines[j] and ("ult" in lines[j] or "ugt" in lines[j] or "slt" in lines[j]):
@@ -312,25 +245,18 @@ class LLVMIRAnalyzer:
         return findings
 
     def scan_use_after_free(self, ir_text: str) -> list[dict[str, Any]]:
-        """检测 potential 释放后使用 patterns LLVM IR
-        
-        Args:
-        ir_text: LLVM IR text scan
-        
-        返回:
-        List findings line type information
-        """
+        """Detect potential use-after-free patterns in LLVM IR"""
         findings: list[dict[str, Any]] = []
         lines = ir_text.split("\n")
-        # 追踪 freed 指针s variable names
+        # Track freed pointers by variable names
         freed_vars: set[str] = set()
         for i, line in enumerate(lines):
-            # 检测 free calls
+            # Detect free calls
             free_match = re.search(r"call\s+\S*\s*@free\s*\(\s*(?:i8\*\s*)?(%?\w+)", line)
             if free_match:
                 freed_vars.add(free_match.group(1))
                 continue
-            # 检测 加载 freed 指针s
+            # Detect loading of freed pointers
             if freed_vars:
                 for var in freed_vars:
                     load_pattern = re.compile(
@@ -348,15 +274,7 @@ class LLVMIRAnalyzer:
         return findings
 
     def analyze(self, ir_text: str) -> dict[str, Any]:
-        """运行 LLVM IR scans 返回 aggregated findings
-        
-        Args:
-        ir_text: LLVM IR text 分析
-        
-        返回:
-        Dict unsafe_casts, missing_bounds, use_after_free
-        total_findings count
-        """
+        """Run all LLVM IR scans and return aggregated findings"""
         unsafe_casts = self.scan_unsafe_casts(ir_text)
         missing_bounds = self.scan_missing_bounds_checks(ir_text)
         uaf = self.scan_use_after_free(ir_text)
@@ -372,14 +290,10 @@ class LLVMIRAnalyzer:
 # 4. AbstractInterpreter
 
 class AbstractInterpreter:
-    """Abstract interpretation interval domain
-    
-    Performs fixed-point iteration widening loop heads
-    for interval (range) analysis variable values
-    
-    INTJ: Time complexity O(k*||) k = iterations until fixpoint
-    Chose interval domain over polyhedra for tractability -
-    polyhedra analysis O(2^n) worst case
+    """Abstract interpretation in interval domain
+
+    Performs fixed-point iteration with widening at loop heads
+    for interval (range) analysis of variable values
     """
 
     INF = float("inf")
@@ -392,16 +306,7 @@ class AbstractInterpreter:
         instructions: list[dict[str, Any]],
         initial_state: Optional[dict[str, tuple[float, float]]] = None,
     ) -> dict[str, tuple[float, float]]:
-        """运行 abstract interpretation over a list instructions
-        
-        Args:
-        instructions: List instruction dicts. 'op', 'dest', 'src'
-        or 'value' keys
-        initial_state: Optional initial variable -> (low, high) mappings
-        
-        返回:
-        Dict mapping variable names (low, high) interval bounds
-        """
+        """Run abstract interpretation over a list of instructions"""
         state: dict[str, tuple[float, float]] = dict(initial_state) if initial_state else {}
         iteration = 0
         changed = True
@@ -488,9 +393,9 @@ class AbstractInterpreter:
         return state
 
     def _widen(self, old: tuple[float, float], new: tuple[float, float]) -> tuple[float, float]:
-        """Widening operator: jump infinity threshold crossing
-        
-        widening operator extrapolates bounds accelerate convergence
+        """Widening operator: jump to infinity when threshold crossed
+
+        Extrapolates bounds to accelerate convergence
         """
         lo = old[0] if new[0] >= old[0] else -self.INF
         hi = old[1] if new[1] <= old[1] else self.INF
@@ -498,14 +403,14 @@ class AbstractInterpreter:
 
     def _narrow(self, old: tuple[float, float], new: tuple[float, float]) -> tuple[float, float]:
         """Narrowing operator: refine widened bounds toward actual values
-        
-        narrowing operator tightens over-approximated bounds
+
+        Tightens over-approximated bounds after widening
         """
         lo = new[0] if old[0] == -self.INF else old[0]
         hi = new[1] if old[1] == self.INF else old[1]
         return (lo, hi)
 
-    # 留着备用，以后可能用
+    # 备用，可能后续用到
     @staticmethod
     def _debug_print_state(state: dict[str, tuple[float, float]]) -> None:
         """Print current abstract state for debugging"""
@@ -515,29 +420,18 @@ class AbstractInterpreter:
             _log.debug("  %s: [%s, %s]", var, lo_str, hi_str)
 
 
-# 5. StateGuided模糊测试器
+# 5. StateGuidedFuzzer
 
 class StateGuidedFuzzer:
-    """状态机 inference execution traces, fuzz sequence generation
-    
-    INTJ: State space explosion O(2^n) theory but practical programs
-    limited observable states (寄存器 values, memory guards, branch flags)
+    """State machine inference from execution traces, fuzz sequence generation
     """
 
     def infer_states(self, execution_traces: list[dict[str, Any]]) -> dict[str, Any]:
-        """Infer observable program states execution traces
-        
-        Args:
-        execution_traces: List trace dicts 'state' key containing
-        state 快照s
-        
-        返回:
-        Dict mapping state identifiers state descriptions
-        """
+        """Infer observable program states from execution traces"""
         states: dict[str, dict[str, Any]] = {}
         for trace in execution_traces:
             snapshot = trace.get("state", {})
-            # 创建 a deterministic state ID 快照
+            # Create a deterministic state ID from snapshot
             state_id = self._hash_state(snapshot)
             if state_id not in states:
                 states[state_id] = {
@@ -552,17 +446,10 @@ class StateGuidedFuzzer:
         return states
 
     def build_transition_graph(self, states: dict[str, Any]) -> dict[str, Any]:
-        """构建 a transition graph inferred states
-        
-        Args:
-        states: Dict infer_states
-        
-        返回:
-        Dict 'nodes' (state IDs) 'edges' (transitions)
-        """
+        """Build a transition graph from inferred states"""
         graph: dict[str, Any] = {"nodes": list(states.keys()), "edges": []}
         state_ids = list(states.keys())
-        # 构建 edges consecutively observed states traces
+        # Build edges between consecutively observed states in traces
         # (simplified: assume transitions captured trace ordering)
         for i in range(len(state_ids) - 1):
             graph["edges"].append({
@@ -577,15 +464,7 @@ class StateGuidedFuzzer:
         graph: dict[str, Any],
         target_state: str,
     ) -> list[list[str]]:
-        """构造 input sequences reach a target state using BFS
-        
-        Args:
-        graph: Transition graph build_transition_graph
-        target_state: State ID reach
-        
-        返回:
-        List state-ID sequences (paths) reach target_state
-        """
+        """Construct input sequences to reach a target state using BFS"""
         nodes = set(graph.get("nodes", []))
         if target_state not in nodes:
             return []
@@ -596,7 +475,7 @@ class StateGuidedFuzzer:
             dst = edge["to"]
             edges.setdefault(src, []).append(dst)
 
-        # BFS node 查找 paths target
+        # BFS to find paths to target
         paths: list[list[str]] = []
         for start in nodes:
             if start == target_state:
@@ -617,20 +496,18 @@ class StateGuidedFuzzer:
 
     @staticmethod
     def _hash_state(snapshot: dict[str, Any]) -> str:
-        """创建 a deterministic hash for a state 快照"""
+        """Create a deterministic hash for a state snapshot"""
         raw = str(sorted(snapshot.items()))
         return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
 
 
-# 6. Differential模糊测试器
+# 6. DifferentialFuzzer
 
 class DifferentialFuzzer:
-    """Cross-编译器/version/architecture differential 模糊测试
-    
-    查找 inconsistencies compiling same source different
-    编译器s/flags comparing behavior same inputs
-    
-    INTJ: O(C*N*T) C=编译器s, N=inputs, T=timeout - embarrassingly 并行
+    """Cross-compiler/version/architecture differential fuzzing
+
+    Find inconsistencies by compiling same source with different
+    compilers/flags and comparing behavior on same inputs
     """
 
     def __init__(self, timeout_seconds: int = 5) -> None:
@@ -641,18 +518,10 @@ class DifferentialFuzzer:
         source: str,
         compilers: list[str],
     ) -> list[dict[str, Any]]:
-        """Compile source multiple 编译器s/flags
-        
-        Args:
-        source: Source code string
-        编译器s: List 编译器 command strings
-        
-        返回:
-        List dicts '编译器', 'binary' (bytes), 'flags'
-        """
+        """Compile source with multiple compilers/flags"""
         variants: list[dict[str, Any]] = []
         for compiler in compilers:
-            # 编译器_opts - intentional snake_case camelCase context
+            # compiler_opts - intentional snake_case vs camelCase context
             compiler_opts = compiler.split()
             variant: dict[str, Any] = {
                 "compiler": compiler_opts[0] if compiler_opts else "unknown",
@@ -668,15 +537,7 @@ class DifferentialFuzzer:
         variants: list[dict[str, Any]],
         inputs: list[bytes],
     ) -> list[dict[str, Any]]:
-        """Fuzz variants inputs
-        
-        Args:
-        variants: List compile_variants
-        inputs: List input byte strings
-        
-        返回:
-        List result dicts per variant
-        """
+        """Fuzz variants inputs"""
         results: list[dict[str, Any]] = []
         for variant in variants:
             per_input: list[dict[str, Any]] = []
@@ -695,14 +556,7 @@ class DifferentialFuzzer:
         return results
 
     def compare_outputs(self, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """比较 输出 across variants 查找 divergences
-        
-        Args:
-        results: List fuzz_all
-        
-        返回:
-        List divergence dicts
-        """
+        """Compare outputs across variants to find divergences"""
         divergences: list[dict[str, Any]] = []
         if not results:
             return divergences
@@ -729,31 +583,19 @@ class DifferentialFuzzer:
         return divergences
 
 
-# 7. 系统调用分类器
+# 7. SyscallClassifier
 
 class SyscallClassifier:
-    """Malware family 分类 系统调用 sequences
-    
-    使用 n-gram extraction cosine similarity against profiles
-    
-    INTJ: n=3 chosen empirical testing showed diminishing 返回
-    beyond trigrams for 系统调用 sequences - bigram loses too context
-    4-gram adds noise 90% test cases
+    """Malware family classification from syscall sequences
+
+    Uses n-gram extraction and cosine similarity against profiles
     """
 
     def __init__(self, n: int = 3) -> None:
         self.n = n
 
     def extract_ngrams(self, sequence: list[str], n: Optional[int] = None) -> list[tuple[str, ...]]:
-        """提取 n-grams a 系统调用 sequence
-        
-        Args:
-        sequence: List 系统调用 name strings
-        n: n-gram size (defaults instance n)
-        
-        返回:
-        List n-gram tuples
-        """
+        """Extract n-grams from a syscall sequence"""
         n = n if n is not None else self.n
         if len(sequence) < n:
             return [tuple(sequence)]
@@ -764,14 +606,7 @@ class SyscallClassifier:
         return ngrams
 
     def build_frequency_vector(self, ngrams: list[tuple[str, ...]]) -> dict[tuple[str, ...], float]:
-        """构建 a normalized frequency vector n-grams
-        
-        Args:
-        ngrams: List n-gram tuples
-        
-        返回:
-        Dict mapping n-gram -> normalized frequency
-        """
+        """Build a normalized frequency vector from n-grams"""
         total = len(ngrams)
         if total == 0:
             return {}
@@ -785,15 +620,7 @@ class SyscallClassifier:
         v1: dict[tuple[str, ...], float],
         v2: dict[tuple[str, ...], float],
     ) -> float:
-        """计算 cosine similarity two frequency vectors
-        
-        Args:
-        v1: First frequency vector
-        v2: Second frequency vector
-        
-        返回:
-        Similarity score [0, 1]
-        """
+        """Compute cosine similarity of two frequency vectors"""
         if not v1 or not v2:
             return 0.0
 
@@ -812,15 +639,7 @@ class SyscallClassifier:
         sequence: list[str],
         profiles: dict[str, list[tuple[str, ...]]],
     ) -> str:
-        """Classify a 系统调用 sequence against malware family profiles
-        
-        Args:
-        sequence: List 系统调用 names classify
-        profiles: Dict mapping family name list n-gram tuples
-        
-        返回:
-        Best matching family name, or 'unknown'
-        """
+        """Classify a syscall sequence against malware family profiles"""
         seq_ngrams = self.extract_ngrams(sequence)
         seq_vec = self.build_frequency_vector(seq_ngrams)
 
@@ -837,29 +656,17 @@ class SyscallClassifier:
         return best_family if best_score > 0.1 else "unknown"
 
 
-# 8. Branch漏洞利用ability
+# 8. BranchExploitability
 
 class BranchExploitability:
-    """CFG extraction -> controllability analysis -> 漏洞利用 path search
-    
-    INTJ: DFS constraint pruning reduces search space O(b^d)
-    approximately O(b*d) practice, since controllability 检查
-    eliminate branches early
+    """CFG extraction -> controllability analysis -> exploit path search
     """
 
     def extract_cfg(
         self,
         function_code: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """提取 a 控制流图 a list instruction-like dicts
-        
-        Args:
-        function_code: List instruction dicts 'addr', 'op'
-        optional 'target' (for branches/jumps)
-        
-        返回:
-        Dict 'nodes', 'edges', 'entry', 'exits'
-        """
+        """Extract a control flow graph from a list of instruction-like dicts"""
         nodes: dict[int, dict[str, Any]] = {}
         edges: list[dict[str, Any]] = []
 
@@ -872,12 +679,12 @@ class BranchExploitability:
             if target is not None:
                 edges.append({"from": addr, "to": target, "type": "branch"})
 
-            # Fall- edge
+            # Fall-through 边
             fallthrough = insn.get("fallthrough")
             if fallthrough is not None:
                 edges.append({"from": addr, "to": fallthrough, "type": "fallthrough"})
 
-        # Determine entry exits
+        # Determine entry and exits
         entry = function_code[0]["addr"] if function_code else 0
         all_from = {e["from"] for e in edges}
         all_to = {e["to"] for e in edges}
@@ -895,22 +702,14 @@ class BranchExploitability:
         cfg: dict[str, Any],
         vulnerable_insn: int,
     ) -> dict[str, Any]:
-        """分析 whether 寄存器s/values a vulnerable instruction controllable
-        
-        Args:
-        cfg: CFG extract_cfg
-        vulnerable_insn: Address vulnerable instruction
-        
-        返回:
-        Dict 'controllable_regs', 'reachable', 'distance'
-        """
+        """Analyze whether registers/values at a vulnerable instruction are controllable"""
         nodes = cfg.get("nodes", {})
         entry = cfg.get("entry", 0)
 
         if vulnerable_insn not in nodes:
             return {"controllable_regs": [], "reachable": False, "distance": -1}
 
-        # BFS entry 检查 reachability distance
+        # BFS from entry to check reachability and distance
         edges_dict: dict[int, list[int]] = {}
         for edge in cfg.get("edges", []):
             edges_dict.setdefault(edge["from"], []).append(edge["to"])
@@ -945,16 +744,7 @@ class BranchExploitability:
         entry: int,
         target: int,
     ) -> list[int]:
-        """查找 an 漏洞利用ation path entry target using DFS pruning
-        
-        Args:
-        cfg: CFG extract_cfg
-        entry: Entry address
-        target: Target address
-        
-        返回:
-        List addresses forming a path entry target
-        """
+        """Find an exploitation path from entry to target using DFS pruning"""
         edges_dict: dict[int, list[int]] = {}
         for edge in cfg.get("edges", []):
             edges_dict.setdefault(edge["from"], []).append(edge["to"])

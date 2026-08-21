@@ -1,11 +1,11 @@
-# 数据流水线 — 惰性求值 + 线程池并行处理
-# 每 stage 是 callable(item) → transformed_item
-# ParallelPipeline 对独立 item 并发处理，barrier 收集
+# 数据流水线 - 惰性求值 + 线程池并行处理
+# 每 stage 是 callable(item) -> transformed_item
+# ParallelPipeline 对独立 item 并发处理, barrier 收集
 # retry + exponential backoff 借鉴 Faust async agent 模式
 #
-# FanOutPipeline: 扇出流水线 — 单 item 分发给 N 个 worker 并行处理，
-# 结果按输入顺序合并后流向下游。类似 Apache Beam ParDo 但更轻。
-# 适用场景: 单条数据需多个独立 I/O 操作（如同时查 NVD + Exploit-DB + GHSA）。
+# FanOutPipeline: 扇出流水线 - 单 item 分发给 N 个 worker 并行处理,
+# 结果按输入顺序合并后流向下游. 类似 Apache Beam ParDo 但更轻.
+# 适用场景: 单条数据需多个独立 I/O 操作(如同时查 NVD + Exploit-DB + GHSA).
 
 import hashlib
 import time
@@ -122,7 +122,6 @@ class FanOutPipeline:
             yield self._fan_out_one(item)
 
     def _fan_out_one(self, item: Any) -> Any:
-        # 不拆——保持上下文连贯性
         if len(self._fan_stages) == 0:
             return item
         if len(self._fan_stages) == 1:

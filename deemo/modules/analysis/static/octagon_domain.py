@@ -13,7 +13,6 @@
 # 在结构推断之后、FP filter 之前,
 # 消除区间重叠类的 heap_overflow_possible 告警.
 #
-# 创建: 2026-08-08
 
 from typing import Dict, List, Optional, Tuple
 import math

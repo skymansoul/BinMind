@@ -11,8 +11,47 @@ WEASYPRINT_AVAILABLE = False
 try: from weasyprint import HTML as _WP_HTML; WEASYPRINT_AVAILABLE = True
 except ImportError: logger.debug("[ReportEngine] WeasyPrint absent")
 
-class ComplianceStandard: ISO_27001 = "iso_27001"; SOC2 = "soc2"; PCI_DSS = "pci_dss"; GDPR = "gdpr"; HIPAA = "hipaa"; NIST_800_53 = "nist_800_53"; CUSTOM = "custom"; SOC2 = ComplianceStandard("soc2"); NIST_800_53 = ComplianceStandard("nist_800_53")
-class OutputFormat: MARKDOWN = "markdown"; HTML = "html"; JSON = "json"; PDF = "pdf"; PLAIN = "plain"; PLAIN = OutputFormat("plain")
+class ComplianceStandard:
+    ISO_27001 = "iso_27001"
+    SOC2 = "soc2"
+    PCI_DSS = "pci_dss"
+    GDPR = "gdpr"
+    HIPAA = "hipaa"
+    NIST_800_53 = "nist_800_53"
+    CUSTOM = "custom"
+
+    def __init__(self, value):
+        self._val = value
+
+    @property
+    def value(self):
+        return self._val
+
+    def __str__(self):
+        return self._val
+
+
+ComplianceStandard.SOC2 = ComplianceStandard("soc2")
+ComplianceStandard.NIST_800_53 = ComplianceStandard("nist_800_53")
+class OutputFormat:
+    MARKDOWN = "markdown"
+    HTML = "html"
+    JSON = "json"
+    PDF = "pdf"
+    PLAIN = "plain"
+
+    def __init__(self, value):
+        self._val = value
+
+    @property
+    def value(self):
+        return self._val
+
+    def __str__(self):
+        return self._val
+
+
+OutputFormat.PLAIN = OutputFormat("plain")
 class TemplateVariable:
     __slots__ = ('name', 'default', 'description', 'required', 'data_source')
     def __init__(self, name, default=None, description="", required=False, data_source=None): self.default = default; self.description = description; self.required = required; self.data_source = data_source

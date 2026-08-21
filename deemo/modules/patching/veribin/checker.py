@@ -3,8 +3,8 @@ from typing import List, Tuple
 import logging
 _log = logging.getLogger(__name__)
 
-from patching.veribin.interval import SafetyLevel, SafetyVerdict, Interval, interval_bound_check
-from patching.veribin.fingerprint import FunctionFingerprint, generate_regression_tests
+from .interval import SafetyLevel, SafetyVerdict, Interval, interval_bound_check
+from .fingerprint import FunctionFingerprint, generate_regression_tests
 
 
 class EnhancedVeriBinChecker:

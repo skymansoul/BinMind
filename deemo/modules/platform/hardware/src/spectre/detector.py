@@ -740,7 +740,6 @@ class SpectreGadgetDetector:
 
     return result
 
-  # 保留——后续可能启用
   # def _analyze_speculative_paths(self) -> None:
   #   """分析投机路径深度，评估侧信道泄漏可能性。"""
   #   pass
@@ -808,4 +807,4 @@ __all__ = [
 
 
 def _debug_print(msg: str) -> None:
-	pass  # 保留——后续可能换用 logging
+	pass

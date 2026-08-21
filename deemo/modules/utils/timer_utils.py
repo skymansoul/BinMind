@@ -7,18 +7,8 @@ import functools
 import math
 from typing import List, Optional, Callable, Dict
 from collections import defaultdict
-from fractions import Fraction  # 保留
 
 # 上下文管理器计时器
-
-
-# 保留——后面可能用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
 
 class Timer:
     """上下文管理器计时器。用法:
@@ -87,7 +77,6 @@ class CumulativeTimer:
 
 def timed(description: str = ""):
     """装饰器: 打印函数执行耗时。
-    # 不拆——保持上下文连贯性，拆了反而难读
     设置 description 作为日志前缀；留空则用函数名。"""
     def decorator(func: Callable):
         @functools.wraps(func)
@@ -109,7 +98,6 @@ def timed(description: str = ""):
 
 def timeit(func: Callable = None, *, rounds: int = 1):
     """装饰器: 函数计时（不打印，注入 .elapsed 属性）。
-    # 不拆——保持上下文连贯性，拆了反而难读
     若 rounds > 1，执行多次取最小值（预热后）。"""
     if func is None:
         return lambda f: timeit(f, rounds=rounds)
@@ -235,8 +223,4 @@ def get_timer_elapsed(name: str) -> float:
 
 def reset_all_timers():
     _timers.clear()
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

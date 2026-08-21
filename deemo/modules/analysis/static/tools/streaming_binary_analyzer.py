@@ -17,7 +17,7 @@ class BinaryChunk:
 
 
 class ChunkCache:
-    """LRU chunk cache——避免对大文件的重复 mmap 读取"""
+    """LRU chunk cache, 避免对大文件的重复 mmap 读取"""
     __slots__ = ('_max', '_store', '_order')
     def __init__(self, max_entries: int = 32):
         self._max = max_entries; self._store: Dict[str, BinaryChunk] = {}
@@ -80,7 +80,7 @@ class StreamingBinaryAnalyzer:
         self.analysis_callbacks[name] = callback
 
     def on_progress(self, callback: Callable):
-        """注册进度回调——每处理完一个 chunk 后调用，参数为 (chunk_offset, total_chunks, elapsed_seconds)"""
+        """注册进度回调, 每处理完一个 chunk 后调用，参数为 (chunk_offset, total_chunks, elapsed_seconds)"""
         self._progress_cb = callback
 
     def analyze(self, section_size: int = 1024 * 1024, max_chunks: int = 0):
@@ -105,7 +105,7 @@ class StreamingBinaryAnalyzer:
 
     def analyze_parallel(self, section_size: int = 1024 * 1024,
                           num_workers: int = 4) -> List[Dict]:
-        """多线程并行分析——将文件分片交给线程池处理。适合 IO 密集型的分析 pass"""
+        """多线程并行分析, 将文件分片交给线程池处理。适合 IO 密集型的分析 pass"""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         self.loader.open(); results = [None] * num_workers
         chunk_size = max(section_size, self.loader.file_size // num_workers)

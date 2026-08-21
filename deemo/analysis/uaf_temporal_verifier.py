@@ -77,15 +77,7 @@ class UafTemporalVerifier:
     def verify(
         self, pseudocode: str, ptr_name: str,
     ) -> TemporalResult:
-        """对单个指针执行时序验证。
-
-        Args:
-            pseudocode: 函数反编译伪代码
-            ptr_name: 要追踪的指针名
-
-        Returns:
-            TemporalResult with temporal verdict
-        """
+        """对单个指针执行时序验证, 返回带时序判定的 TemporalResult。"""
         lines = pseudocode.splitlines()
 
         # 1. 找到所有free和use的位置

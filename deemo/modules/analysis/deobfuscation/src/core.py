@@ -1,6 +1,4 @@
-# 2026-08-01
-# Core 去混淆 Engine
-"""Core 去混淆 algorithms: CFG recovery, constant propagation, predicate elimination, 字符串解码, 自然语言处理 分类"""
+"""核心去混淆算法: CFG 恢复、常量传播、谓词消除、字符串解码与 NLP 分类。"""
 
 import base64
 import binascii
@@ -13,97 +11,75 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# 之前依赖这个，先留着
-# from .legacy_deobf import old_sccp
-
 
 # FunctionDeobfuscator
 
 
 class FunctionDeobfuscator:
-    """控制流 去混淆 engine
-    
-    提供 multiple passes: dead code elimination, constant propagation
-    不透明谓词 elimination, OLLVM 控制流平坦化 recovery
-    
-    INTJ策略: SCCP algorithm O(V*E) chosen over simple reaching-defs because
-    处理 conditional constants simple analysis misses - critical
-    for 去混淆 constants often hidden behind conditional
-    branches intentionally
+    """控制流去混淆引擎。
+
+    提供多个 pass: 死代码消除、常量传播、不透明谓词消除与
+    OLLVM 控制流平坦化恢复。
+
+    设计策略: 选 O(V*E) 的 SCCP 而非简单 reaching-defs,
+    因为后者漏掉条件常量 - 而混淆常量常被刻意藏在条件分支后。
     """
 
     def __init__(self) -> None:
         self._logger = logging.getLogger(__name__)
 
-# Dead Code Elimination
+# 死代码消除
 
     def eliminate_dead_code(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Mark--sweep dead code elimination
-        
-        Algorithm:
-        1. Mark reachable: BFS 入口 控制流
-        2. 计算 live variables: backwards scan for used definitions
-        3. Sweep: remove instructions unreachable OR 定义 unused values
-        
-        Time: O() = instruction count
-        Space: O() for reachability liveness sets
-        
-        Args:
-        instructions: List instruction dicts keys 'addr', 'mnemonic', 'operands'
-        
-        返回:
-        Filtered list live instructions
+        """标记-清除式死代码消除。
+
+        算法:
+        1. 标记可达: 从入口沿控制流线性扫描
+        2. 计算活跃变量: 反向扫描使用过的定义
+        3. 清除: 移除不可达指令与定义了无用值的指令
+
+        线性扫描在首个无条件 jmp/ret 处停止 (无 CFG 元数据时的
+        保守近似); 返回过滤后的活跃指令列表。
         """
         if not instructions:
             return []
 
-        # 构建 address--instruction mapping
-        addr_to_insn: Dict[int, Dict[str, Any]] = {
-            insn["addr"]: insn for insn in instructions
-        }
-
-        # 查找 入口 (lowest address or explicit entry marker)
-        entry_addr = min(addr_to_insn.keys()) if addr_to_insn else 0
-
-        # Mark reachable instructions via simple linear scan
-        # (full CFG analysis need 反汇编 metadata)
+        # 可达标记: 线性扫描, 无条件 jmp/ret 之后的指令视为不可达
         reachable: set = set()
-        current_addr = entry_addr
-
         for insn in instructions:
-            addr = insn["addr"]
-            # Simple heuristic: instructions sequence reachable
-            # unless preceded unconditional jmp/ret
-            reachable.add(addr)
+            reachable.add(insn["addr"])
+            if insn.get("mnemonic", "").lower() in ("jmp", "ret"):
+                break
 
-        # 计算 live variables backwards scan
+        # 反向扫描计算活跃变量, 记录死定义
         live_vars: set = set()
+        dead_addrs: set = set()
         for insn in reversed(instructions):
             mnemonic = insn.get("mnemonic", "").lower()
             operands = insn.get("operands", "")
 
-            # 检查 instruction's 输出 used downstream
+            # 检查指令输出是否在下游被使用
             parts = operands.replace(",", " ").split()
             if parts:
                 dest = parts[0].strip()
                 if dest and not dest.startswith("["):
                     if dest not in live_vars:
-                        # def dead - mark for removal
-                        pass
+                        # 定义未被使用 - 标记为死指令
+                        dead_addrs.add(insn["addr"])
                     live_vars.discard(dest)
 
-            # Mark source operands live ('re used instruction)
+            # 源操作数在下游被使用
             for part in parts[1:]:
                 part = part.strip()
                 if part and not part.startswith("[") and not _is_immediate(part):
                     live_vars.add(part)
 
-        # Sweep: keep reachable instructions
+        # Sweep: 保留可达且非死定义的指令
         result = [
             insn for insn in instructions
-            if insn["addr"] in reachable
+            if insn["addr"] in reachable and insn["addr"] not in dead_addrs
         ]
 
         self._logger.debug(
@@ -115,26 +91,19 @@ class FunctionDeobfuscator:
 
         return result
 
-# Constant Propagation
+# 常量传播
 
     def propagate_constants(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Sparse Conditional Constant Propagation (SCCP)
-        
-        使用 a lattice 对每个 寄存器/variable:
-        - TOP (None): undefined/unknown
-        - CONST (int): constant value
-        - BOTTOM (-1 sentinel): variable/multiple possible values
-        
-        Time: O(V*E) worst case V = variables, E = edges
-        Space: O(V) for lattice storage
-        
-        Args:
-        instructions: List instruction dicts
-        
-        返回:
-        Instructions constants propagated folded
+        """稀疏条件常量传播 (SCCP)。
+
+        对每个寄存器/变量使用格:
+        - TOP (None): 未定义/未知
+        - CONST (int): 常量值
+        - BOTTOM (-1 哨兵): 可变/多可能值
+
+        返回常量已传播折叠的指令列表。
         """
         result: List[Dict[str, Any]] = []
         lattice: Dict[str, Optional[int]] = {}
@@ -202,7 +171,7 @@ class FunctionDeobfuscator:
                     lattice[dest] = None
 
             elif mnemonic in ("ret", "jmp", "call", "syscall"):
-                # 控制流 - lattice clipping
+                # 控制流 - 截断格
                 pass
 
             result.append(new_insn)
@@ -212,27 +181,20 @@ class FunctionDeobfuscator:
         )
         return result
 
-# 不透明谓词 Elimination
+# 不透明谓词消除
 
     def eliminate_opaque_predicates(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Eliminate 不透明谓词s (always-true/always-false branches)
-        
-        patterns detected:
-        - xor reg, reg + jz target (always true, ZF=1)
-        - cmp reg, reg + je target (always true)
-        - test reg, reg + jz target xor reg,reg (always true)
-        - add reg, imm imm!= 0 + jz target (always false)
-        
-        Time: O() single pass
-        Space: O(1) - 追踪 previous instruction
-        
-        Args:
-        instructions: List instruction dicts
-        
-        返回:
-        Instructions unreachable branches flagged/removed
+        """消除不透明谓词 (恒真/恒假分支)。
+
+        检测的模式:
+        - xor reg, reg + jz target (恒真, ZF=1)
+        - cmp reg, reg + je target (恒真)
+        - test reg, reg + jz target 在 xor reg,reg 之后 (恒真)
+        - add reg, imm (imm != 0) + jz target (恒假)
+
+        单遍扫描, 标记/移除不可达分支。
         """
         result: List[Dict[str, Any]] = []
         predicates_eliminated = 0
@@ -267,35 +229,26 @@ class FunctionDeobfuscator:
         )
         return result
 
-# OLLVM CFF Recovery
+# OLLVM 控制流平坦化恢复
 
     def recover_ollvm_cff(
         self, instructions: List[Dict[str, Any]], entry: int
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        """Recover OLLVM 控制流平坦化
-        
-        Algorithm:
-        1. Identify 分发器 block (high -degree, indirect jump)
-        2. 查找 state variable (寄存器 modified 分发器 jump)
-        3. Trace state value corresponding real block
-        4. 重建 original non-flattened 控制流
-        
-        INTJ策略: OLLVM CFF recovery 使用 dominator-tree analysis
-        O(N 记录 N) - faster 符号执行
-        O(2^N) due 路径爆炸 flattened code
-        
-        Time: O(N 记录 N) for dominator analysis
-        Space: O(N)
-        
-        Args:
-        instructions: List instruction dicts
-        entry: 入口 address
-        
-        返回:
-        Tuple (clean_instructions, recovery_metadata)
+        """恢复 OLLVM 控制流平坦化。
+
+        算法:
+        1. 识别分发器块 (高出度、间接跳转)
+        2. 查找状态变量 (分发器跳转所修改的寄存器)
+        3. 追踪状态值对应的真实块
+        4. 重建原始非平坦化控制流
+
+        设计策略: OLLVM CFF 恢复用支配树分析, O(N log N),
+        快于对平坦化代码做符号执行 (因路径爆炸达 O(2^N))。
+
+        返回 (clean_instructions, recovery_metadata)。
         """
-        # 查找 分发器 block
-        # 分发器 characteristics: indirect jump, multiple predecessors
+        # 查找分发器块
+        # 分发器特征: 间接跳转, 多个前驱
         dispatcher_idx: int = -1
         for i, insn in enumerate(instructions):
             mnemonic = insn.get("mnemonic", "").lower()
@@ -316,7 +269,7 @@ class FunctionDeobfuscator:
             return instructions, metadata
 
         # Identify state variable
-        # Look for mov/cmp a 寄存器 分发器 jump
+        # 查找分发器跳转附近的 mov/cmp 寄存器
         relevant_blocks: List[Dict[str, Any]] = []
         for i, insn in enumerate(instructions):
             if i != dispatcher_idx:
@@ -341,20 +294,11 @@ class FunctionDeobfuscator:
         entry: int,
         level: str = "medium",
     ) -> Dict[str, Any]:
-        """运行 full 去混淆 流水线 specified level
-        
-        Levels:
-        - "light": dead code elimination
-        - "medium": dead code + constants + 不透明谓词s
-        - "aggressive": passes including CFF recovery
-        
-        Args:
-        instructions: List instruction dicts
-        entry: 入口 address
-        level: 去混淆 aggressiveness level
-        
-        返回:
-        Dict 'instructions' 'stats'
+        """按指定 level 运行完整去混淆流水线。
+
+        Level: "light" 仅死代码消除; "medium" 死代码 + 常量 +
+        不透明谓词; "aggressive" 全部 pass 含 CFF 恢复。
+        返回 {'instructions', 'stats'}。
         """
         current = list(instructions)
         stats: Dict[str, int] = {
@@ -365,7 +309,7 @@ class FunctionDeobfuscator:
             "cff_blocks_recovered": 0,
         }
 
-        # Pass 1: Dead code elimination (always 运行)
+        # Pass 1: 死代码消除 (总是运行)
         before = len(current)
         current = self.eliminate_dead_code(current)
         stats["dead_code_removed"] = before - len(current)
@@ -376,7 +320,7 @@ class FunctionDeobfuscator:
             current = self.propagate_constants(current)
             stats["constants_folded"] = len(current)  # approximate
 
-            # Pass 3: 不透明谓词 elimination
+            # Pass 3: 不透明谓词消除
             current = self.eliminate_opaque_predicates(current)
             stats["predicates_eliminated"] = sum(
                 1 for i in current if i.get("eliminated")
@@ -402,26 +346,16 @@ class FunctionDeobfuscator:
             "level": level,
         }
 
-    # 留着备用，以后可能用
     def _peephole_optimize(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Peephole 优化器 - experimental, integrated main 流水线
-        
-        Patterns:
-        - mov reg, reg -> NOP
-        - push reg; pop reg -> NOP (reg unchanged)
-        - add reg, 0 -> NOP
-        - mul reg, 1 -> NOP
-        
-        seperate main 流水线 because occasionally
-        break CFG analysis applied too aggressively CFF recovery
-        
-        Args:
-        instructions: List instruction dicts
-        
-        返回:
-        Optimized instruction list
+        """窥孔优化, 未接入主流水线。
+
+        模式: mov reg, reg -> NOP; push reg; pop reg -> NOP
+        (寄存器不变); add reg, 0 -> NOP; mul reg, 1 -> NOP。
+
+        与主流水线分离, 因为对 CFF 恢复后的代码过度应用会
+        破坏 CFG 分析; 返回优化后的指令列表。
         """
         result: List[Dict[str, Any]] = []
         for insn in instructions:
@@ -443,24 +377,20 @@ class FunctionDeobfuscator:
         return result
 
 
-# Deobf调度器
+# DeobfOrchestrator
 
 
 class DeobfOrchestrator:
-    """Strategy selection orchestration for 去混淆
-    
-    Probes binary characteristics, classifies 混淆 type
-    selects optimal sequence 去混淆 passes
-    
-    INTJ策略: 分类 使用 weighted heuristics rather ML because
-    obfuscator 签名s change faster training data keep up
-    A heuristic approach trivially explainable debugging
-    false 分类s
-    
-    // 用加权打分比纯规则匹配稳，误报率低多
-    
-    Time: O(S +) for probe (section scan + instruction pattern matching)
-    Space: O(S) for entropy windows
+    """去混淆的策略选择编排。
+
+    探测二进制特征, 分类混淆类型, 选择最优的去混淆 pass 序列。
+
+    设计策略: 分类用加权启发式而非 ML - 混淆器签名变化比训练
+    数据更新更快; 启发式方法可平凡解释, 便于调试误分类。
+
+    用加权打分比纯规则匹配稳, 误报率低得多。
+
+    探测复杂度 O(S + n) (节扫描 + 指令模式匹配), 空间 O(S)。
     """
 
     # 分类 weights
@@ -474,15 +404,10 @@ class DeobfOrchestrator:
         self._logger = logging.getLogger(__name__)
 
     def probe_binary(self, filepath: str) -> Dict[str, Any]:
-        """Probe binary file for 混淆 indicators
-        
-        分析 entropy distribution, section names, file size
-        
-        Args:
-        filepath: Path binary file
-        
-        返回:
-        Dict entropy profile, section info, file metadata
+        """探测二进制文件的混淆迹象。
+
+        分析熵分布、节名与文件大小; 返回含熵剖面、节信息与
+        文件元数据的字典。
         """
         import math
         from collections import Counter
@@ -509,7 +434,7 @@ class DeobfOrchestrator:
                 "indicators": [],
             }
 
-        # 计算 per-4KB-block entropy
+        # 按 4KB 块计算熵
         block_size = 4096
         entropies: List[float] = []
         for offset in range(0, file_size, block_size):
@@ -526,7 +451,7 @@ class DeobfOrchestrator:
         avg_entropy = sum(entropies) / len(entropies) if entropies else 0.0
         max_entropy = max(entropies) if entropies else 0.0
 
-        # Look for section-like strings
+        # 查找类节名字符串
         indicators: List[str] = []
         try:
             text_sample = data[: min(file_size, 65536)].decode(
@@ -541,9 +466,8 @@ class DeobfOrchestrator:
                 if s in text_sample:
                     section_names.append(s)
 
-            # FIXME 2025-11-03: entropy thresholds need refinement
-            # Current 7.0 threshold too aggressive for
-            # binaries embedded PNG/JPEG resources
+            # FIXME: 熵阈值需要精调
+            # 当前 7.0 阈值对嵌入 PNG/JPEG 资源的二进制过于激进
             if avg_entropy > 7.0:
                 indicators.append("high_entropy")
             if max_entropy > 7.5:
@@ -566,15 +490,10 @@ class DeobfOrchestrator:
         }
 
     def classify(self, indicators: Dict[str, Any]) -> str:
-        """Classify 混淆 type binary indicators
-        
-        返回 one: CFF, BCF, SUB, CustomVM, MBA, PACKED, UNKNOWN
-        
-        Args:
-        indicators: Probe results dict probe_binary()
-        
-        返回:
-        分类 string
+        """按二进制迹象分类混淆类型。
+
+        indicators 为 probe_binary() 的结果字典; 返回
+        CFF/BCF/SUB/CustomVM/MBA/PACKED/UNKNOWN 之一。
         """
         inds = indicators.get("indicators", [])
         sections = indicators.get("sections", [])
@@ -592,15 +511,15 @@ class DeobfOrchestrator:
         if avg_entropy > 7.2:
             scores["PACKED"] = scores.get("PACKED", 0.0) + 0.30
 
-        # Default: 检查 for common patterns
+        # 默认: 检查常见模式
         if not scores:
-            # 反汇编 access, a best guess section entropy
+            # 无反汇编访问时, 按节熵做最佳猜测
             if avg_entropy > 6.5:
                 scores["UNKNOWN"] = 0.30
             else:
                 scores["UNKNOWN"] = 0.10
 
-        # 返回 highest scoring 分类
+        # 返回最高分分类
         best = max(scores, key=scores.get)
         self._logger.info(
             "Classification: %s (scores: %s)", best, scores
@@ -608,14 +527,7 @@ class DeobfOrchestrator:
         return best
 
     def select_strategy(self, classification: str) -> List[str]:
-        """Select 去混淆 strategy 基于 分类
-        
-        Args:
-        分类: 混淆 type string
-        
-        返回:
-        Ordered list 去混淆 pass names
-        """
+        """按分类选择去混淆策略, 返回有序的去混淆 pass 名列表。"""
         strategies: Dict[str, List[str]] = {
             "CFF": ["cff_recovery", "dead_code", "constants", "peephole"],
             "BCF": ["dead_code", "constants", "opaque_predicates", "peephole"],
@@ -633,13 +545,9 @@ class DeobfOrchestrator:
         return strategy
 
     def orchestrate(self, filepath: str) -> Dict[str, Any]:
-        """Full orchestration 流水线: probe -> classify -> select strategy
-        
-        Args:
-        filepath: Path binary file
-        
-        返回:
-        Dict 分类, strategy, indicators, status
+        """完整编排流水线: probe -> classify -> select strategy。
+
+        返回含 classification、strategy、indicators、status 的字典。
         """
         indicators = self.probe_binary(filepath)
         classification = self.classify(indicators)
@@ -658,16 +566,16 @@ class DeobfOrchestrator:
 
 
 class StringDecoder:
-    """Automatic 字符串解码 confidence scoring
-    
-    Tries multiple 解码 methods scores result 查找
-    likely correct 解码
-    
-    INTJ策略: O(256*n) for XOR brute force — key insight: single-byte XOR
-    common 编码 malware, exhaustive search feasible
-    Multi-byte XOR O(65536*n) tractable for short strings
-    
-    Confidence formula: 0.4 * printable_ratio + 0.4 * english_score + 0.2 * structural_score
+    """自动字符串解码与置信度评分。
+
+    尝试多种解码方法并评分, 选出最可能正确的解码结果。
+
+    设计策略: 单字节 XOR 暴力搜索 O(256*n) - 关键在于单字节
+    XOR 是恶意软件中的常见编码, 穷举可行; 多字节 XOR
+    O(65536*n) 对短字符串也可接受。
+
+    置信度公式: 0.4 * printable_ratio + 0.4 * english_score
+    + 0.2 * structural_score。
     """
 
     # Common English letter frequencies for scoring
@@ -683,12 +591,10 @@ class StringDecoder:
         max_length: int = 4096,
         confidence_threshold: float = 0.5,
     ) -> None:
-        """初始化 StringDecoder
-        
-        Args:
-        min_length: Minimum string length attempt 解码
-        max_length: Maximum string length
-        confidence_threshold: Minimum confidence 返回 a result
+        """初始化 StringDecoder。
+
+        min_length/max_length 为尝试解码的字符串长度范围,
+        confidence_threshold 为返回结果的最低置信度。
         """
         self.min_length = min_length
         self.max_length = max_length
@@ -696,17 +602,10 @@ class StringDecoder:
         self._logger = logging.getLogger(__name__)
 
     def _decode_base64(self, s: str) -> Optional[Tuple[str, float]]:
-        """Try Base64 解码 (standard + urlsafe)
-        
-        Args:
-        s: Potentially Base64-encoded string
-        
-        返回:
-        Tuple (decoded_string, confidence) or None
-        """
+        """尝试 Base64 解码 (标准 + urlsafe), 返回 (解码串, 置信度) 或 None。"""
         if len(s) < self.min_length:
             return None
-        # Remove whitespace 填充 needed
+        # 去掉空白并补上填充
         cleaned = s.strip().replace(" ", "")
         # Base64 strings typically length multiple 4 = 填充
         padding = (4 - len(cleaned) % 4) % 4
@@ -725,14 +624,7 @@ class StringDecoder:
         return None
 
     def _decode_hex(self, s: str) -> Optional[Tuple[str, float]]:
-        """Try hexadecimal 解码 various prefix styles
-        
-        Args:
-        s: Potentially hex-encoded string
-        
-        返回:
-        Tuple (decoded_string, confidence) or None
-        """
+        """尝试多种前缀风格的十六进制解码, 返回 (解码串, 置信度) 或 None。"""
         if len(s) < self.min_length * 2:
             return None
 
@@ -761,15 +653,10 @@ class StringDecoder:
         return None
 
     def _decode_xor(self, data: bytes) -> Optional[Tuple[str, float, int]]:
-        """Brute-force single-byte XOR 解码
-        
-        Tries 256 possible keys 返回 best result
-        
-        Args:
-        data: XOR-encoded bytes
-        
-        返回:
-        Tuple (decoded_string, confidence, key) or None
+        """暴力单字节 XOR 解码。
+
+        尝试全部 256 个密钥, 返回置信度超过阈值的
+        (解码串, 置信度, 密钥) 或 None。
         """
         if len(data) < self.min_length:
             return None
@@ -797,14 +684,7 @@ class StringDecoder:
         return None
 
     def _decode_rot13(self, s: str) -> Optional[Tuple[str, float]]:
-        """ROT13 解码
-        
-        Args:
-        s: Potentially ROT13-encoded string
-        
-        返回:
-        Tuple (decoded_string, confidence) or None
-        """
+        """ROT13 解码, 返回 (解码串, 置信度) 或 None。"""
         if len(s) < self.min_length:
             return None
 
@@ -829,14 +709,7 @@ class StringDecoder:
         return (decoded, conf)
 
     def _decode_url(self, s: str) -> Optional[Tuple[str, float]]:
-        """URL 解码 (percent-编码)
-        
-        Args:
-        s: Potentially URL-encoded string
-        
-        返回:
-        Tuple (decoded_string, confidence) or None
-        """
+        """URL 解码 (percent-encoding), 返回 (解码串, 置信度) 或 None。"""
         if "%" not in s or len(s) < self.min_length:
             return None
         try:
@@ -849,14 +722,7 @@ class StringDecoder:
             return None
 
     def _score_printable(self, s: str) -> float:
-        """Score 基于 ratio printable ASCII characters
-        
-        Args:
-        s: String score
-        
-        返回:
-        Score 0.0 1.0
-        """
+        """按可打印 ASCII 字符占比评分, 返回 0.0-1.0。"""
         if not s:
             return 0.0
         printable = sum(
@@ -865,14 +731,7 @@ class StringDecoder:
         return printable / len(s)
 
     def _score_english(self, s: str) -> float:
-        """Score 基于 English letter frequency distribution
-        
-        Args:
-        s: String score
-        
-        返回:
-        Score 0.0 1.0
-        """
+        """按英文字母频率分布评分, 返回 0.0-1.0。"""
         if not s:
             return 0.0
 
@@ -889,14 +748,7 @@ class StringDecoder:
         return min(total_score / letter_count, 1.0)
 
     def decode(self, s: str) -> Tuple[str, str, float]:
-        """Try 解码 methods 返回 best result
-        
-        Args:
-        s: String 解码
-        
-        返回:
-        Tuple (decoded_string, method_name, confidence)
-        """
+        """尝试全部解码方法, 返回置信度最高的 (解码串, 方法名, 置信度)。"""
         if not s or len(s) < self.min_length:
             return (s, "none", 0.0)
 
@@ -941,33 +793,25 @@ class StringDecoder:
     def decode_batch(
         self, strings: List[str]
     ) -> Dict[str, Tuple[str, str, float]]:
-        """解码 multiple strings
-        
-        Args:
-        strings: List strings 解码
-        
-        返回:
-        Dict mapping original -> (decoded, method, confidence)
-        """
+        """批量解码多个字符串, 返回 原文 -> (解码, 方法, 置信度) 映射。"""
         result: Dict[str, Tuple[str, str, float]] = {}
         for s in strings:
             result[s] = self.decode(s)
         return result
 
 
-# 自然语言处理String分类器
+# NLPStringClassifier
 
 
 class NLPStringClassifier:
-    """Classify string types using regex patterns statistical analysis
-    
-    INTJ策略: Regex 分类 O(n) per string 捕获 95%+
-    common string types found 二进制分析 (URLs, IPs, paths, GUIDs, etc.)
-    Using an ML 分类器 accurate for ambiguous cases but
-    adds significant dependency weight (sklearn/numpy) for marginal gains
-    
-    INTJ策略: CJK detection 使用 Unicode block ranges rather ICU library
-    avoid native dependencies complicate 跨平台 deployment
+    """用正则模式与统计分析对字符串类型分类。
+
+    设计策略: 每条字符串 O(n) 的正则分类可捕获二进制分析中
+    95%+ 的常见字符串类型 (URL、IP、路径、GUID 等); ML 分类器
+    对模糊场景更准, 但引入 sklearn/numpy 依赖, 收益有限。
+
+    CJK 检测用 Unicode 块区间而非 ICU 库, 避免原生依赖
+    复杂化跨平台部署。
     """
 
     # Compiled patterns
@@ -993,7 +837,7 @@ class NLPStringClassifier:
     _PATH_PATTERN_WIN = re.compile(r"^[A-Za-z]:\\")
 
     # CJK Unicode ranges
-    cjk_ranges = [  # intentional snake_case camelCase context
+    cjk_ranges = [
         (0x4E00, 0x9FFF),   # CJK Unified Ideographs
         (0x3040, 0x309F),   # Hiragana
         (0x30A0, 0x30FF),   # Katakana
@@ -1004,25 +848,11 @@ class NLPStringClassifier:
         self._logger = logging.getLogger(__name__)
 
     def classify_url(self, s: str) -> bool:
-        """检查 string a URL
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string 匹配 URL pattern
-        """
+        """检查字符串是否为 URL。"""
         return bool(self._URL_PATTERN.match(s.strip()))
 
     def classify_ip(self, s: str) -> bool:
-        """检查 string an IP address (IPv4 or IPv6)
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string 匹配 IP address pattern
-        """
+        """检查字符串是否为 IP 地址 (IPv4 或 IPv6)。"""
         stripped = s.strip()
         return bool(
             self._IPV4_PATTERN.match(stripped)
@@ -1030,14 +860,7 @@ class NLPStringClassifier:
         )
 
     def classify_path(self, s: str) -> bool:
-        """检查 string a file path (Unix or Windows)
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string 匹配 file path pattern
-        """
+        """检查字符串是否为文件路径 (Unix 或 Windows)。"""
         stripped = s.strip()
         return bool(
             self._PATH_PATTERN_UNIX.match(stripped)
@@ -1045,38 +868,15 @@ class NLPStringClassifier:
         )
 
     def classify_registry(self, s: str) -> bool:
-        """检查 string a Windows registry key
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string 匹配 registry key pattern
-        """
+        """检查字符串是否为 Windows 注册表键。"""
         return bool(self._REGISTRY_PATTERN.match(s.strip()))
 
     def classify_guid(self, s: str) -> bool:
-        """检查 string a GUID/UUID
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string 匹配 GUID pattern
-        """
+        """检查字符串是否为 GUID/UUID。"""
         return bool(self._GUID_PATTERN.match(s.strip()))
 
     def classify_base64_like(self, s: str) -> bool:
-        """检查 string looks like Base64 encoded data
-        
-        使用 character set length heuristics
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True string appears Base64
-        """
+        """用字符集与长度启发式检查字符串是否像 Base64 编码。"""
         stripped = s.strip().rstrip("=")
         if len(stripped) < 8:
             return False
@@ -1089,14 +889,7 @@ class NLPStringClassifier:
         return ratio > 0.90
 
     def detect_cjk(self, s: str) -> bool:
-        """检测 CJK (Chinese/Japanese/Korean) characters
-        
-        Args:
-        s: String 检查
-        
-        返回:
-        True CJK character found
-        """
+        """检测字符串是否包含 CJK (中/日/韩) 字符。"""
         for c in s:
             cp = ord(c)
             for low, high in self.cjk_ranges:
@@ -1105,15 +898,10 @@ class NLPStringClassifier:
         return False
 
     def detect_encoding(self, s: str) -> str:
-        """Heuristically guess 编码 a string
-        
-        使用 entropy character distribution analysis
-        
-        Args:
-        s: String 分析
-        
-        返回:
-        编码 guess string (e.g., 'ascii', 'base64', 'hex', 'binary', 'utf8')
+        """启发式猜测字符串编码。
+
+        用熵与字符分布分析, 返回 'ascii'/'base64'/'hex'/'binary'/
+        'utf8'/'utf8_cjk'/'empty' 之一。
         """
         if not s:
             return "empty"
@@ -1144,17 +932,11 @@ class NLPStringClassifier:
         return "utf8"
 
     def readability_score(self, s: str) -> float:
-        """计算 English readability score
-        
-        基于 word length distribution common English letter frequency
-        a simplified Flesch-inspired heuristic, a full linguistic
-        analysis. score artificially low for very short strings
-        
-        Args:
-        s: String score
-        
-        返回:
-        Score 0.0 1.0
+        """计算英文可读性评分。
+
+        基于词长分布与常见英文字母频率的简化 Flesch 风格
+        启发式, 非完整语言学分析; 极短字符串评分人为压低。
+        返回 0.0-1.0。
         """
         if not s:
             return 0.0
@@ -1183,15 +965,9 @@ class NLPStringClassifier:
         return 0.5 * vowel_score + 0.5 * freq_score
 
     def classify(self, s: str) -> Dict[str, Any]:
-        """Full string 分类
-        
-        Args:
-        s: String classify
-        
-        返回:
-        Dict type, 编码, readability, confidence
-        Note: 'recieve' handling for multi-line strings basic;
-        pre-分割 calling classify() for per-line analysis
+        """完整字符串分类, 返回含 type/encoding/readability/confidence 的字典。
+
+        多行字符串按行分析需由调用方预先分割。
         """
         if not s:
             return {
@@ -1205,7 +981,7 @@ class NLPStringClassifier:
         # Determine type
         string_type = "unknown"
         type_conf = 0.0
-        # 优先级低，后面再说 - TODO: add email address 分类
+        # email 地址分类暂缓
         if self.classify_url(s):
             string_type = "url"
             type_conf = 0.90
@@ -1250,7 +1026,7 @@ class NLPStringClassifier:
 
 
 def _is_immediate(s: str) -> bool:
-    """检查 a string 表示 an immediate/constant value"""
+    """检查字符串是否表示立即数/常量值。"""
     s = s.strip()
     if s.startswith("0x") or s.startswith("0X"):
         return True
@@ -1260,7 +1036,7 @@ def _is_immediate(s: str) -> bool:
 
 
 def _parse_immediate(s: str) -> int:
-    """解析 an immediate value string int"""
+    """把立即数字符串解析为整数。"""
     s = s.strip()
     if s.startswith("0x") or s.startswith("0X"):
         return int(s, 16)

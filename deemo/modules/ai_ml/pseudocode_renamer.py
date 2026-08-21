@@ -123,17 +123,7 @@ class VariableRoleInferer:
         api_calls: Optional[Dict[str, int]] = None,
         min_confidence: float = 0.0,
     ) -> Optional[Tuple[str, float]]:
-        """Infer a meaningful name for a variable based on usage context.
-
-        Args:
-            var_name: Current (compiler-generated) variable name.
-            context: Surrounding pseudocode lines for context analysis.
-            api_calls: Mapping of API function names to call counts.
-            min_confidence: Minimum confidence threshold (0.0-1.0).
-
-        Returns:
-            (Suggested new name, confidence) tuple, or None if below threshold.
-        """
+        """Infer a meaningful name for a variable based on usage context."""
         # Check immediate surrounding lines for clues
         surrounding = self._get_relevant_lines(context, var_name)
 
@@ -245,15 +235,7 @@ class VariableRoleInferer:
         func_name: str,
         pseudocode: str,
     ) -> Optional[str]:
-        """Infer a meaningful function name from its behavior.
-
-        Args:
-            func_name: Current name (e.g., sub_401000).
-            pseudocode: Full function pseudocode.
-
-        Returns:
-            Suggested name, or None.
-        """
+        """Infer a meaningful function name from its behavior."""
         code_lower = pseudocode.lower()
 
         if re.search(r'\b(memcpy|memmove|memset|strcpy|strncpy|strcat|sprintf|snprintf)\s*\(', code_lower):
@@ -333,16 +315,7 @@ class PseudocodeRenamer:
         pseudocode: str,
         function_map: Optional[Dict[str, str]] = None,
     ) -> Tuple[str, List[RenameOperation]]:
-        """Rename generated identifiers in pseudocode with meaningful names.
-
-        Args:
-            pseudocode: The decompiled pseudocode text.
-            function_map: Optional mapping of function addresses to pseudocode
-                          for cross-function context.
-
-        Returns:
-            Tuple of (renamed pseudocode, list of rename operations performed).
-        """
+        """Rename generated identifiers in pseudocode with meaningful names."""
         self._rename_log = []
         self._func_rename_map = {}
         # 每次 rename 前重置推断器计数器，避免跨轮次累积
@@ -473,15 +446,7 @@ class PseudocodeRenamer:
         identifier: str,
         context: str,
     ) -> Optional[str]:
-        """Suggest a better name without modifying code.
-
-        Args:
-            identifier: Current identifier name.
-            context: Surrounding code for context.
-
-        Returns:
-            Suggested name or None.
-        """
+        """Suggest a better name without modifying code."""
         if self._is_generated_name(identifier):
             result = self.inferer.infer_name(identifier, context)
             if result is not None:
@@ -492,14 +457,7 @@ class PseudocodeRenamer:
         self,
         function_dict: Dict[str, str],
     ) -> Dict[str, Tuple[str, List[RenameOperation]]]:
-        """Rename multiple functions at once.
-
-        Args:
-            function_dict: Mapping of function names/addresses to pseudocode.
-
-        Returns:
-            Mapping of original names to (renamed code, operations list).
-        """
+        """Rename multiple functions at once."""
         results: Dict[str, Tuple[str, List[RenameOperation]]] = {}
         # 批量分析时重置一次，全局计数器统一管理
         self.inferer.reset()
@@ -513,11 +471,7 @@ class PseudocodeRenamer:
         return self._rename_log
 
     def get_stats(self) -> Dict[str, int]:
-        """返回最近一次 rename() 的统计摘要。
-
-        Returns:
-            Dict with keys: total, functions, variables, high_confidence.
-        """
+        """返回最近一次 rename() 的统计摘要。"""
         total = len(self._rename_log)
         by_type: Dict[str, int] = {}
         high_conf = 0
@@ -537,14 +491,6 @@ def rename_pseudocode(
     pseudocode: str,
     mode: str = 'balanced',
 ) -> Tuple[str, List[RenameOperation]]:
-    """Convenience function for one-shot pseudocode renaming.
-
-    Args:
-        pseudocode: Decompiled pseudocode with generated identifiers.
-        mode: Confidence mode — 'strict', 'balanced', or 'aggressive'.
-
-    Returns:
-        Tuple of (renamed code, list of rename operations).
-    """
+    """Convenience function for one-shot pseudocode renaming."""
     renamer = PseudocodeRenamer(mode=mode)
     return renamer.rename(pseudocode)

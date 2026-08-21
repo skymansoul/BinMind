@@ -1,8 +1,8 @@
-# 解释偏移监控——通过特征归因分布变化检测模型行为退化
+# 解释偏移监控-通过特征归因分布变化检测模型行为退化
 #
 # 核心问题: data_quality.py检查训练数据的统计特性（缺失值、分布），
 # 但不监控生产环境中模型行为相对于训练时的偏移。
-# 传统方法监控输入/输出分布，但对二进制分析模型效果差——
+# 传统方法监控输入/输出分布，但对二进制分析模型效果差-
 # 输入分布（CFG拓扑统计）自然随软件版本演变而改变，不必然表示模型退化。
 #
 # 技术方案（基于explanation shift概念）:
@@ -10,16 +10,16 @@
 #      （使用GNNExplainer风格的边掩码梯度归因）
 #   2. 归因分布基线: 在训练集上建立归因向量的参考分布（多变量核密度估计）
 #   3. 两样本检验: 对生产批次与训练基线的归因分布做MMD（Maximum Mean Discrepancy）检验
-#   4. 归因偏移定位: MMD显著时，逐特征分析哪些维度的归因发生了偏移——
+#   4. 归因偏移定位: MMD显著时，逐特征分析哪些维度的归因发生了偏移-
 #      归因偏移的特征对应模型依赖了"不该依赖"的图结构特征
-#   5. 自适应阈值: MMD阈值不是固定的——使用EWMA追踪历史MMD值，
+#   5. 自适应阈值: MMD阈值不是固定的-使用EWMA追踪历史MMD值，
 #      当当前MMD超过3σ区间时告警
 #
 # 新颖性:
 #   - explanation shift应用于表格/图像数据，
 #     本工作首次将其扩展到图结构数据（二进制CFG的GNN模型）
 # MMD + EWMA自适应阈值提供无参数的偏移检测
-# 归因偏移定位指出"模型在哪些图特征上改变了推理方式"——
+# 归因偏移定位指出"模型在哪些图特征上改变了推理方式"-
 #     这比单纯的"模型可能退化了"更有诊断价值
 #
 # 技术效果:
@@ -70,9 +70,9 @@ class ExplanationShiftMonitor:
 
     核心流程:
       1. 建立训练基线: 在参考数据集上计算归因分布
-      2. 生产监控: 对新批次计算归因→MMD检验 vs 基线
+      2. 生产监控: 对新批次计算归因-MMD检验 vs 基线
       3. 偏移定位: MMD显著时分解到特征维度
-      4. 自适应阈值: EWMA追踪历史MMD→3σ告警
+      4. 自适应阈值: EWMA追踪历史MMD-3σ告警
 
     MMD (Maximum Mean Discrepancy):
       MMD² = E[k(x,x')] + E[k(y,y')] - 2E[k(x,y)]
@@ -94,11 +94,7 @@ class ExplanationShiftMonitor:
 
     def fit_baseline(self,
                      attributions: List[np.ndarray]):
-        """建立归因分布基线。
-
-        Args:
-            attributions: 每个训练样本的归因向量列表
-        """
+        """建立归因分布基线。"""
         if not attributions:
             return
         self._baseline_attr = np.stack(attributions, axis=0)
@@ -112,11 +108,7 @@ class ExplanationShiftMonitor:
     def monitor_batch(self,
                       batch_attributions: List[np.ndarray],
                       batch_id: str = "") -> ShiftReport:
-        """对生产批次执行偏移检测。
-
-        Returns:
-            ShiftReport with MMD, p-value, shift status, etc.
-        """
+        """对生产批次执行偏移检测。"""
         if self._baseline_attr is None or len(batch_attributions) < 5:
             return ShiftReport(
                 batch_id=batch_id, mmd_statistic=0.0, p_value=1.0,
@@ -127,7 +119,7 @@ class ExplanationShiftMonitor:
         batch_arr = np.stack(batch_attributions, axis=0)
         mmd = self._compute_mmd(self._baseline_attr, batch_arr)
 
-        # 置换检验 → p-value
+        # 置换检验 - p-value
         p_val = self._permutation_test(self._baseline_attr, batch_arr, mmd)
 
         # 自适应阈值: EWMA + 3σ
@@ -219,9 +211,9 @@ class ExplanationShiftMonitor:
 
 
 class GNNAttributionExtractor:
-    """GNN特征归因提取——生成explanation shift监控所需的归因向量。
+    """GNN特征归因提取-生成explanation shift监控所需的归因向量。
 
-    使用梯度归因: attr_i = |∂pred/∂feat_i| ——特征i对预测的敏感度。
+    使用梯度归因: attr_i = |∂pred/∂feat_i| -特征i对预测的敏感度。
     对于边归因: 邻接矩阵元素的梯度绝对值。
     """
 

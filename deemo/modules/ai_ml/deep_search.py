@@ -1,6 +1,6 @@
 # 跨模态对比对齐 + 半硬负样本挖掘 + 自适应优化器集成
 #!/usr/bin/env python3
-# 深度学习二进制代码搜索 — 函数嵌入语义搜索/Siamese网络/代码相似度对训练.
+# 深度学习二进制代码搜索 - 函数嵌入语义搜索/Siamese网络/代码相似度对训练.
 # 对比损失+triplet挖掘半硬负样本; CLAP式跨模态对比预训练.
 # 半硬负样本挖掘+Kaiming初始化+momentum SGD+余弦退火.
 
@@ -47,14 +47,7 @@ class AdaptiveOptimizer:
                (1.0 + _math.cos(_math.pi * progress))
 
     def step_ao(self, weight_matrix, bias_vector, grad_w, grad_b):
-        """对一组 (weight, bias) 执行一步 SGD with momentum + weight decay。
-
-        Args:
-            weight_matrix: list of list (out_dim × in_dim)
-            bias_vector: list of float
-            grad_w: gradient w.r.t. weight (same shape)
-            grad_b: gradient w.r.t. bias (same shape)
-        """
+        """对一组 (weight, bias) 执行一步 SGD with momentum + weight decay。"""
         w_id = id(weight_matrix)
         b_id = id(bias_vector)
 
@@ -107,7 +100,7 @@ class TripletMiner:
     """对比学习困难负样本三元组挖掘。
 
     每锚点-正样本对找最近非匹配负样本构成(锚点,正样本,负样本)三元组。
-    半硬负样本策略 — d(a,n)>d(a,p)且d(a,n)<d(a,p)+margin,
+    半硬负样本策略 - d(a,n)>d(a,p)且d(a,n)<d(a,p)+margin,
     避免过难样本致训练崩溃。
     """
 
@@ -263,15 +256,7 @@ class ContrastiveLoss:
         self.m_margin = margin
 
     def compute_cl(self, vec_a, vec_b, label):
-        """Compute contrastive loss for a pair.
-
-        Args:
-            vec_a, vec_b: the two vectors.
-            label: 1 for similar pair, 0 for dissimilar.
-
-        Returns:
-            float loss value.
-        """
+        """Compute contrastive loss for a pair."""
         dist = EmbeddingStore._euclidean_distance(vec_a, vec_b)
         if label > 0.5:
             return 0.5 * dist * dist
@@ -310,15 +295,7 @@ class CrossModalContrastiveLoss:
         self.m_epsilon = 1e-9
 
     def compute_cmcl(self, modality_a_embs, modality_b_embs):
-        """计算跨模态 InfoNCE 损失。
-
-        Args:
-            modality_a_embs: list of vectors from modality A (e.g., opcode features)
-            modality_b_embs: list of vectors from modality B (e.g., CFG features)
-
-        Returns:
-            float: symmetric cross-modal contrastive loss.
-        """
+        """计算跨模态 InfoNCE 损失。"""
         if not modality_a_embs or not modality_b_embs:
             return 0.0
         N = len(modality_a_embs)
@@ -341,7 +318,7 @@ class CrossModalContrastiveLoss:
             sim_matrix.append(row)
             ri += 1
 
-        # A→B 方向
+        # A-B 方向
         loss_a2b = 0.0
         ri = 0
         while ri < N:
@@ -358,7 +335,7 @@ class CrossModalContrastiveLoss:
             ri += 1
         loss_a2b /= N
 
-        # B→A 方向 （对称）
+        # B-A 方向 （对称）
         loss_b2a = 0.0
         cj = 0
         while cj < N:
@@ -418,13 +395,7 @@ class CrossModalAligner:
                  'm_projection_dim')
 
     def __init__(self, embedders=None, temperature=0.07, projection_dim=64):
-        """初始化跨模态对齐器。
-
-        Args:
-            embedders: dict modality_name -> FunctionEmbedder instance
-            temperature: InfoNCE 温度参数
-            projection_dim: 共享投影空间维度
-        """
+        """初始化跨模态对齐器。"""
         self.m_embedders = embedders if embedders else {}
         self.m_loss_fn = CrossModalContrastiveLoss(temperature)
         self.m_alignment_temperature = temperature
@@ -436,18 +407,7 @@ class CrossModalAligner:
 
     def align_pair_cma(self, modality_a, modality_b, paired_samples,
                         epochs=20, lr=0.005):
-        """训练两个模态的编码器在共享空间中对齐。
-
-        Args:
-            modality_a: 第一个模态名称
-            modality_b: 第二个模态名称
-            paired_samples: list of (features_a, features_b) 配对的跨模态样本
-            epochs: 训练迭代次数
-            lr: 学习率
-
-        Returns:
-            dict: 训练历史（每轮损失和对齐分数）
-        """
+        """训练两个模态的编码器在共享空间中对齐。"""
         if modality_a not in self.m_embedders or modality_b not in self.m_embedders:
             __dbg.error(f"Unknown modality: {modality_a} or {modality_b}")
             return []
@@ -516,18 +476,7 @@ class CrossModalAligner:
 
     def cross_modal_search_cma(self, query_features, query_modality,
                                 target_modality, top_k=10, threshold=0.5):
-        """跨模态搜索：用一种模态的查询在另一种模态的索引中搜索。
-
-        Args:
-            query_features: 查询特征（query_modality 格式）
-            query_modality: 查询模态名称
-            target_modality: 目标模态名称
-            top_k: 返回结果数
-            threshold: 相似度阈值
-
-        Returns:
-            list of (func_id, similarity, metadata)
-        """
+        """跨模态搜索：用一种模态的查询在另一种模态的索引中搜索。"""
         if query_modality not in self.m_embedders:
             return []
         query_emb = self.m_embedders[query_modality].embed_fe(query_features)
@@ -614,13 +563,7 @@ class DeepBinarySearcher:
                 input_dim, hidden_dim, output_dim, modality=name)
 
     def index_function_ds(self, func_id, features, metadata=None):
-        """Compute embedding for a function and add to the search index.
-
-        Args:
-            func_id: unique function identifier.
-            features: feature vector (list of floats).
-            metadata: optional dict with function name, binary name, etc.
-        """
+        """Compute embedding for a function and add to the search index."""
         if func_id is None or features is None:
             return
         emb = self.m_embedder.embed_fe(features)
@@ -629,13 +572,7 @@ class DeepBinarySearcher:
 
     def index_function_multimodal_ds(self, func_id, modality_features,
                                       metadata=None):
-        """跨模态索引：为同一函数在不同模态下的特征建索引。
-
-        Args:
-            func_id: 函数唯一标识
-            modality_features: dict {modality_name: feature_vector}
-            metadata: 可选元数据
-        """
+        """跨模态索引：为同一函数在不同模态下的特征建索引。"""
         if func_id is None or not modality_features:
             return
         for mod_name, feat_vec in modality_features.items():
@@ -646,11 +583,7 @@ class DeepBinarySearcher:
         self.m_indexed_count += 1
 
     def index_batch_ds(self, function_list):
-        """Index multiple functions at once.
-
-        Args:
-            function_list: list of (func_id, features, metadata) tuples.
-        """
+        """Index multiple functions at once."""
         fi = 0
         while fi < len(function_list):
             fid, feat, meta = function_list[fi]
@@ -658,16 +591,7 @@ class DeepBinarySearcher:
             fi += 1
 
     def search_ds(self, query_features, top_k=10, threshold=0.5):
-        """Search for semantically similar functions.
-
-        Args:
-            query_features: feature vector of the query function.
-            top_k: number of results to return.
-            threshold: minimum similarity score.
-
-        Returns:
-            list of (func_id, similarity, metadata) tuples.
-        """
+        """Search for semantically similar functions."""
         if query_features is None:
             return []
         query_emb = self.m_embedder.embed_fe(query_features)
@@ -675,17 +599,7 @@ class DeepBinarySearcher:
 
     def search_cross_modal_ds(self, query_features, query_modality,
                                target_modality, top_k=10, threshold=0.5):
-        """跨模态搜索：用一种模态查另一种模态的索引。
-
-        Args:
-            query_features: 查询特征向量
-            query_modality: 查询所属模态名
-            target_modality: 目标模态名
-            top_k, threshold: 标准搜索参数
-
-        Returns:
-            list of (func_id, similarity, metadata)
-        """
+        """跨模态搜索：用一种模态查另一种模态的索引。"""
         if query_features is None:
             return []
         if query_modality not in self.m_modality_embedders:
@@ -710,16 +624,9 @@ class DeepBinarySearcher:
         return filtered_results[:top_k]
 
     def train_contrastive_ds(self, pairs, labels, epochs=10, lr=0.01):
-        """Train embedder with contrastive learning on similarity pairs.
+        """Train embedder with contrastive learning on similarity pairs。
 
-        增强：使用动量 SGD + 余弦退火替代固定学习率。
-
-        Args:
-            pairs: list of (vec_a, vec_b) feature vector pairs.
-            labels: list of binary labels (1=similar, 0=dissimilar).
-            epochs: number of training epochs.
-            lr: learning rate.
-        """
+        增强：使用动量 SGD + 余弦退火替代固定学习率。"""
         if pairs is None or labels is None or len(pairs) == 0:
             return
 
@@ -790,13 +697,7 @@ class DeepBinarySearcher:
 
     def train_cross_modal_ds(self, modality_a, modality_b, paired_samples,
                               epochs=20, lr=0.005):
-        """跨模态对比预训练：对齐两个模态的嵌入空间。
-
-        Args:
-            modality_a, modality_b: 模态名称
-            paired_samples: [(features_a, features_b), ...]
-            epochs, lr: 训练参数
-        """
+        """跨模态对比预训练：对齐两个模态的嵌入空间。"""
         aligner = CrossModalAligner(
             embedders=self.m_modality_embedders,
             temperature=self.m_cross_modal_aligner.m_temperature,
@@ -875,23 +776,9 @@ def create_deep_searcher(input_dim=128, hidden_dim=256, output_dim=64):
 
 def create_multimodal_searcher(input_dim=128, hidden_dim=256, output_dim=64,
                                 modalities=None):
-    """创建支持跨模态对齐的搜索器。
-
-    Args:
-        input_dim, hidden_dim, output_dim: 网络架构参数
-        modalities: list of modality names to pre-register
-
-    Returns:
-        DeepBinarySearcher with modality embedders registered
-    """
+    """创建支持跨模态对齐的搜索器。"""
     searcher = DeepBinarySearcher(input_dim, hidden_dim, output_dim)
     if modalities:
         for mod in modalities:
             searcher.register_modality_ds(mod, input_dim, hidden_dim, output_dim)
     return searcher
-
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

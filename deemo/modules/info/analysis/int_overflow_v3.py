@@ -16,7 +16,7 @@
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple, Set, Optional
-from value_range_analyzer import ValueRange, extract_value_ranges
+from .value_range_analyzer import ValueRange, extract_value_ranges
 
 _TYPE_BOUNDS = {
     "uint8_t": 255, "int8_t": 127, "uint16_t": 65535, "int16_t": 32767,

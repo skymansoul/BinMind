@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# 修改记录:
-# 2025-08-01 16:12 - 扩充 AVX-512 掩码寄存器 k0-k7 的 lane 级 taint 传播
-# 2025-08-03 10:35 - ARM NEON 的 Vn.2S/Vn.4H 等排列限定符建模
+# 扩充 AVX-512 掩码寄存器 k0-k7 的 lane 级 taint 传播
+# ARM NEON 的 Vn.2S/Vn.4H 等排列限定符建模
 """
 字节粒度寄存器污点追踪引擎 —— 处理部分寄存器写入和 SIMD lane 操作
 
@@ -17,10 +16,9 @@ vinserti128 只影响向量寄存器的特定 lane
 - x86_64: RAX→EAX→AX→AH:AL 及其 R8-R15 变体
 - ARM64: X0-X30 + V0-V31 (128-bit NEON)，支持.B/.H/.S/.D/.Q 排列限定符
 
-ref: Intel SDM Vol.1 §3.4.1.1 (General-Purpose 寄存器s 64-Bit Mode);
-ARM ARM §C1.2.5 (NEON scalar operations arrange specifiers);
-Schwartz et al. " Ever Wanted Dynamic 污点分析."
- — 全寄存器模型的局限性在第 4.2 节讨论
+参考: Intel SDM Vol.1 §3.4.1.1（通用寄存器 64 位模式）;
+ARM ARM §C1.2.5（NEON 标量操作排列限定符）;
+Schwartz 等关于动态污点分析中对全寄存器模型局限性的讨论
 """
 
 from __future__ import annotations
@@ -78,7 +76,7 @@ class Arch(IntEnum):
 @dataclass
 class _RegTaint:
     """单个寄存器的字节级污点状态
-    
+
     小端存储: byte 0 = 最低有效字节（AL x86_64, bits [7:0]）
     taint_bytes[] 的每个 bit 代表一个独立的污点标签（最多 64 个标签同时存在）
     """
@@ -95,21 +93,20 @@ class _RegTaint:
 
 class SubregTaintTracker:
     """架构无关的字节粒度寄存器污点追踪引擎
-    
+
     核心操作:
     - 读取(reg, offset, s) → taint_mask → 查询指定字节范围的污点状态
     - 写入(reg, offset, s, taint_mask) → 将污点写入指定字节范围
     - propag(src_reg, dst_reg, operation_semantics) → 按指令语义传播
-    
+
     特性:
     - 每个 taint_bit (0-63) 代表一个独立的污染源（用户输入、文件读取、网络数据等）
     - 读操作返回所有活跃 taint_bit 的 OR（即只要有任何污染源就标记）
     - 写操作支持部分字节写入而不清除寄存器其余部分的污点
-    
-    Attributes:
-    arch: 目标架构（影响寄存器布局和 SIMD lane 建模）
-    regs: {canonical_name → _RegTaint} 所有寄存器的当前污点状态
-    label_names: {bit_index → label} 污点标签的语义含义（可选，用于诊断输出）
+
+    字段: arch 目标架构（影响寄存器布局和 SIMD lane 建模）,
+    regs {canonical_name → _RegTaint} 所有寄存器的当前污点状态,
+    label_names {bit_index → label} 污点标签的语义含义（可选，用于诊断输出）
     """
 
     def __init__(self, arch: Arch = Arch.X86_64, max_taint_labels: int = 16):
@@ -163,7 +160,7 @@ class SubregTaintTracker:
 
     def _resolve_x86(self, reg_name: str) -> Tuple[str, int, int]:
         """将 x86 寄存器名解析为 (canonical_name, byte_offset, byte_s)
-        
+
         'AL' → ('RAX', 0, 1), 'AX' → ('RAX', 0, 2), 'AH' → ('RAX', 1, 1)
         """
         upper = reg_name.upper()
@@ -176,7 +173,7 @@ class SubregTaintTracker:
 
     def _resolve_arm64(self, reg_name: str) -> Tuple[str, int, int, Optional[Tuple[int, int]]]:
         """ARM64 寄存器解析 —— 支持 NEON 排列限定符
-        
+
         'V0.4S[2]' → ('V0', offset=8, s=4, lane=(2, 4))
         即 V0 的 4×32-bit 排列中的第 2 个 32-bit lane
         """
@@ -203,7 +200,7 @@ class SubregTaintTracker:
 
     def read(self, reg_name: str, offset: int = 0, size: int = 0) -> int:
         """读取寄存器指定字节范围的污点掩码
-        
+
         offset 和 s 为 0 时读取整个寄存器
         返回所有活跃标签的 OR（bitw union）
         """
@@ -225,7 +222,7 @@ class SubregTaintTracker:
     def write(self, reg_name: str, taint_mask: int,
               offset: int = 0, size: int = 0) -> None:
         """将污点掩码写入寄存器指定字节范围
-        
+
         不清除范围外的现有污点。高位寄存器别名的部分写入
         自动传播到对应的 canon 寄存器区域
         """
@@ -264,7 +261,7 @@ class SubregTaintTracker:
 
     def read_lane(self, reg_name: str, lane: int, el_size: int) -> int:
         """读取 SIMD 寄存器的特定 lane
-        
+
         'V0.4S[2]' → read_lane('V0', 2, 4) 读取 bytes [8:12)
         """
         byte_offset = lane * el_size
@@ -273,7 +270,7 @@ class SubregTaintTracker:
     def write_lane(self, reg_name: str, lane: int, el_size: int,
                    taint_mask: int) -> None:
         """写入 SIMD 寄存器的特定 lane
-        
+
         不改变其他 lane 的污点状态。适用于 vinserti128、NEON Vn.4S[2] 等指令
         """
         byte_offset = lane * el_size
@@ -293,7 +290,7 @@ class SubregTaintTracker:
 
     def propagate_shift(self, dst: str, count_reg: str, direction: str = "right") -> None:
         """移位操作：污染沿字节边界扩散
-        
+
         SHR RAX, CL: RAX 的每个字节继承其自身和相邻字节的污点（向右扩散）
         精确建模需要知道 CL 的具体值；此处执行保守的传播上限——
         将所有被移位字节和相邻字节的 union 写回
@@ -317,7 +314,7 @@ class SubregTaintTracker:
 
     def propagate_arith(self, dst: str, *srcs: str) -> None:
         """算术/逻辑操作：dst = fn(src1, src2,.)
-        
+
         dst 继承所有源操作数的污点 union。这是保守近似——
         实际上某些位可能被常量操作数清除，但保守策略避免漏报
         """

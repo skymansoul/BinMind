@@ -78,14 +78,7 @@ class VectorSearchAccelerator:
         features: List[float],
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Add a vector to the index.
-
-        Args:
-            vec_id: Unique vector identifier.
-            label: Vector label/category.
-            features: Feature vector values.
-            metadata: Optional metadata dictionary.
-        """
+        """Add a vector to the index."""
         padded = self._pad_features(features)
         fv = FeatureVector(
             vec_id=vec_id,
@@ -112,17 +105,6 @@ class VectorSearchAccelerator:
         逐个调用 add_vector 在大量数据时效率低下，因为每次 add 都会
         触发 FAISS 内部的单条插入逻辑。本方法先将所有向量缓存到内存，
         最后一次性写入 FAISS 索引，减少 Python↔C 交互次数。
-
-        Args:
-            entries: 字典列表，每项需包含 'vec_id', 'label', 'features' 字段，
-                    可选 'metadata' 字段。
-            progress_callback: 可选回调，签名为 callback(current, total)。
-
-        Returns:
-            成功添加的向量数量。
-
-        Raises:
-            ValueError: 如果某条目缺少必填字段。
         """
         total = len(entries)
         padded_list: List[List[float]] = []
@@ -199,15 +181,7 @@ class VectorSearchAccelerator:
         query: List[float],
         top_k: int = 10,
     ) -> List[Tuple[FeatureVector, float]]:
-        """Search for nearest neighbors.
-
-        Args:
-            query: Query feature vector.
-            top_k: Number of results to return.
-
-        Returns:
-            List of (FeatureVector, similarity_score) tuples.
-        """
+        """Search for nearest neighbors."""
         q = self._pad_features(query)
 
         if self._use_faiss and self._index is not None:
@@ -243,16 +217,7 @@ class VectorSearchAccelerator:
         label_filter: str,
         top_k: int = 10,
     ) -> List[Tuple[FeatureVector, float]]:
-        """Search with label filtering.
-
-        Args:
-            query: Query vector.
-            label_filter: Only return vectors with this label.
-            top_k: Number of results.
-
-        Returns:
-            Filtered search results.
-        """
+        """Search with label filtering."""
         q = self._pad_features(query)
         scores: List[Tuple[FeatureVector, float]] = []
         for vec_id, vec in self._vectors.items():
@@ -263,15 +228,10 @@ class VectorSearchAccelerator:
         return scores[:top_k]
 
     def build_index(self, use_faiss: bool = True) -> None:
-        """Build or rebuild the search index.
-
-        Args:
-            use_faiss: Attempt to use FAISS.
-        """
+        """Build or rebuild the search index."""
         if use_faiss and not self._use_faiss:
             try:
                 import faiss
-                # from collections import OrderedDict # 保留--未使用，修复缩进
                 self._index = faiss.IndexFlatL2(self.dimensions)
                 if self._vectors:
                     data = np.array(
@@ -289,14 +249,7 @@ class VectorSearchAccelerator:
             self._index = {'type': 'brute_force', 'size': len(self._vectors)}
 
     def remove_vector(self, vec_id: str) -> bool:
-        """Remove a vector by ID.
-
-        Args:
-            vec_id: Vector identifier to remove.
-
-        Returns:
-            True if removed.
-        """
+        """Remove a vector by ID."""
         if vec_id in self._vectors:
             del self._vectors[vec_id]
             self._id_list.remove(vec_id)
@@ -306,14 +259,7 @@ class VectorSearchAccelerator:
         return False
 
     def get_vector(self, vec_id: str) -> Optional[FeatureVector]:
-        """Get a vector by ID.
-
-        Args:
-            vec_id: Vector identifier.
-
-        Returns:
-            FeatureVector or None.
-        """
+        """Get a vector by ID."""
         return self._vectors.get(vec_id)
 
     def analyze(
@@ -323,17 +269,7 @@ class VectorSearchAccelerator:
         top_k: int = 10,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze vectors and optionally search.
-
-        Args:
-            vectors: Vectors to index.
-            query: Optional query vector.
-            top_k: Result count.
-            **kwargs: Additional options.
-
-        Returns:
-            Analysis results dict.
-        """
+        """Analyze vectors and optionally search."""
         if vectors:
             for v in vectors:
                 self.add_vector(
@@ -410,9 +346,6 @@ class VectorSearchAccelerator:
         — 全零维度（特征提取 bug）
         — 方差过低维度（区分度不足）
         — 异常偏移（数据分布问题）
-
-        Returns:
-            包含 per_dimension 统计和全局汇总的字典。
         """
         if not self._vectors:
             return {
@@ -470,14 +403,7 @@ class VectorSearchAccelerator:
         self,
         similarity_threshold: float = 0.7,
     ) -> List[List[str]]:
-        """Find clusters of similar vectors.
-
-        Args:
-            similarity_threshold: Minimum similarity for clustering.
-
-        Returns:
-            List of clusters, each a list of vector IDs.
-        """
+        """Find clusters of similar vectors."""
         visited: set = set()
         clusters: List[List[str]] = []
 
@@ -520,21 +446,6 @@ def search_similar_vectors(
     top_k: int = 10,
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Convenience function for vector search.
-
-    Args:
-        vectors: List of vector dicts with 'features' and optional 'label'.
-        query: Optional query vector.
-        top_k: Number of results.
-        **kwargs: Additional options.
-
-    Returns:
-        Search results dict.
-    """
+    """Convenience function for vector search."""
     accelerator = VectorSearchAccelerator(**kwargs)
     return accelerator.analyze(vectors=vectors, query=query, top_k=top_k)
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

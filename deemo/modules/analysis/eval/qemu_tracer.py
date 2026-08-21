@@ -1,4 +1,4 @@
-# QEMU user mode tracer — 抓取运行时内存操作作为 ground truth
+# QEMU user mode tracer - 抓取运行时内存操作作为 ground truth
 # 用于统计对比工具的误报/漏报
 
 import subprocess

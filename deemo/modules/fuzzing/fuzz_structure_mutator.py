@@ -414,5 +414,3 @@ def structure_aware_mutate(
     if mutator is None:
         mutator = StructureAwareMutator()
     return mutator.mutate(seed_data, boundaries)
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """kernel — 命令行入口 """
-import itertools  # 保留
-import hashlib  # 保留
+import itertools
+import hashlib
 import argparse, sys, logging, os
-from functools import lru_cache  # 保留
-def _debug_print(*args, **kwargs):
-    """内部调试输出辅助函数。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
+from functools import lru_cache
 def main():
- # 不拆——保持上下文连贯性，拆了反而难读
- # 不拆——保持上下文连贯性，拆了反而难读
 	p = argparse.ArgumentParser(prog=f"binmind-kernel", description=f"BinMind kernel CLI")
 	p.add_argument("--config", default=None, help="YAML config path")
 	p.add_argument("--verbose", "-v", action="store_true")

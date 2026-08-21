@@ -14,9 +14,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-_CACHE_SALT = "0x1a"  # 保留
-_V2_TOKEN = "0xb4d"  # 保留
-
 # 可选依赖 - 真正的LLM后端不会空转，但不强制安装
 try:
     import httpx
@@ -249,16 +246,7 @@ class PseudocodeExplainer:
         level: ExplanationLevel = ExplanationLevel.STANDARD,
         use_ai: bool = False,
     ) -> CodeExplanation:
-        """Generate an explanation for a block of pseudocode.
-
-        Args:
-            pseudocode: The pseudocode to explain.
-            level: Desired detail level of the explanation.
-            use_ai: If True, use AI model; otherwise use heuristic analysis.
-
-        Returns:
-            CodeExplanation with structured analysis.
-        """
+        """Generate an explanation for a block of pseudocode."""
         cache_key = f"{hash(pseudocode)}:{level.value}"
         if cache_key in self._explanation_cache:
             return self._explanation_cache[cache_key]
@@ -340,7 +328,7 @@ class PseudocodeExplainer:
         template = EXPLANATION_TEMPLATES.get(level, EXPLANATION_TEMPLATES[ExplanationLevel.STANDARD])
         prompt = template.format(code=pseudocode)
 
-        if self.api_key and self.api_base_url and _HTTPX_AVAILABLE:
+        if self.api_key or self.api_base_url:
             try:
                 raw = self._call_llm_api(prompt)
                 return CodeExplanation(
@@ -365,46 +353,25 @@ class PseudocodeExplainer:
         )
 
     def _call_llm_api(self, prompt: str) -> str:
-        """实际调用 OpenAI 兼容的 /v1/chat/completions 端点。
+        """通过统一适配层调用 LLM
 
-        设计为与 LiteLLM / Ollama / vLLM 等都兼容的通用路径。
-        仅在有 httpx 且配置了 api_base_url 时被调用。
+        走 modules.llm_client.call_llm_simple，支持 ollama/deepseek/openai 三后端。
         """
-        if not _HTTPX_AVAILABLE:
-            raise RuntimeError("httpx is required for API calls. Install with: pip install httpx")
-        if not self.api_base_url:
-            raise ValueError("api_base_url not configured")
+        from modules.llm_client import call_llm_simple
 
-        # 超长伪代码截断 — 不静默截断，标记出来让调用者知道
-        max_chars = 32000
-        truncated = len(prompt) > max_chars
-        body_prompt = prompt[:max_chars]
-        if truncated:
-            body_prompt += "\n\n[... CODE TRUNCATED — input exceeded 32000 chars ...]"
+        result = call_llm_simple(
+            prompt=prompt,
+            system_prompt="You are an expert reverse engineer and security analyst. Provide structured, concise analysis.",
+            model=self.model_name,
+            max_tokens=self.max_tokens,
+            temperature=0.2,
+            use_cache=True,
+        )
 
-        endpoint = self.api_base_url.rstrip('/') + '/v1/chat/completions'
-        payload = {
-            "model": self.model_name,
-            "messages": [
-                {"role": "system", "content": "You are an expert reverse engineer and security analyst. Provide structured, concise analysis."},
-                {"role": "user", "content": body_prompt},
-            ],
-            "max_tokens": self.max_tokens,
-            "temperature": 0.2,
-        }
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        if result.get('simulation'):
+            raise RuntimeError(f"AI backend unavailable: {result.get('error', 'simulation mode')}")
 
-        with httpx.Client(timeout=self.request_timeout) as client:
-            resp = client.post(endpoint, json=payload, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            content: str = data["choices"][0]["message"]["content"]
-            if truncated:
-                content = "(Note: input was truncated to 32000 chars)\n\n" + content
-            return content
+        return result.get('text', '')
 
     # LLM段落抽取
     @staticmethod
@@ -513,7 +480,6 @@ class PseudocodeExplainer:
 
     @staticmethod
     def _estimate_complexity(code: str) -> str:
-        # 不拆--保持上下文连贯性
         """Estimate algorithmic complexity — 用静态特征猜，不是定理证明."""
         lines = code.split('\n')
         depth = 0
@@ -592,15 +558,7 @@ class PseudocodeExplainer:
         name: str,
         pseudocode: str,
     ) -> FunctionAnalysis:
-        """Analyze a single function in detail.
-
-        Args:
-            name: Function name.
-            pseudocode: The function's decompiled pseudocode.
-
-        Returns:
-            FunctionAnalysis with structured results.
-        """
+        """Analyze a single function in detail."""
         sig_match = re.match(r'(\w[\w\s*]*?\s+)?(\w+)\s*\(([^)]*)\)', pseudocode.split('\n')[0] if pseudocode else '')
         signature = sig_match.group(0) if sig_match else name + '()'
 
@@ -640,15 +598,7 @@ class PseudocodeExplainer:
         functions: Dict[str, str],
         level: ExplanationLevel = ExplanationLevel.STANDARD,
     ) -> Dict[str, FunctionAnalysis]:
-        """Batch-analyze multiple functions.
-
-        Args:
-            functions: Mapping of function names to their pseudocode.
-            level: Explanation detail level.
-
-        Returns:
-            Dict of function names to their analyses.
-        """
+        """Batch-analyze multiple functions."""
         results: Dict[str, FunctionAnalysis] = {}
         for name, code in functions.items():
             results[name] = self.analyze_function(name, code)
@@ -688,16 +638,7 @@ class PseudocodeExplainer:
 
         补丁分析核心方法 — 不逐行diff，而是从语义层面比较：
         哪些API调用被新增/移除，调用图是否变化，安全风险升降。
-        用于判断一个补丁是修了漏洞还是引入了后门。
-
-        Args:
-            old_pseudocode: The pseudocode before modification.
-            new_pseudocode: The pseudocode after modification.
-            function_name: Optional function name for context.
-
-        Returns:
-            DiffSummary with structured comparison.
-        """
+        用于判断一个补丁是修了漏洞还是引入了后门。"""
         old_lines = [l.strip() for l in old_pseudocode.split('\n') if l.strip()]
         new_lines = [l.strip() for l in new_pseudocode.split('\n') if l.strip()]
 

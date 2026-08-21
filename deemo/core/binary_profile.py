@@ -8,8 +8,6 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from config import R2_PATH
-
 _log = logging.getLogger(__name__)
 
 def build_binary_profile(
@@ -111,7 +109,7 @@ def _summarize_gadget_types(gadgets: List[Dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 def _assess_exploit_difficulty(profile: Dict[str, Any]) -> str:
-    """基于保护机制的利用难度评估: 无 NX → Easy (shellcode), NX 无 PIE 无 Canary 且有 system@PLT → Easy (ret2libc), NX+PIE 无 Canary → Medium, NX+PIE+Canary+Full RELRO → Hard。"""
+    """基于保护机制的利用难度评估: 无 NX 判 Easy (shellcode), NX 无 PIE 无 Canary 且有 system@PLT 判 Easy (ret2libc), NX+PIE 无 Canary 判 Medium, NX+PIE+Canary+Full RELRO 判 Hard。"""
     cs = profile.get('checksec', {})
     score = 0
     if cs.get('nx', True):

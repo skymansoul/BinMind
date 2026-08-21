@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 
-_LEGACY_MODE = False  # 保留
+_LEGACY_MODE = False
 
 
 class VulnerabilityDatabaseStats:
@@ -28,15 +28,10 @@ class VulnerabilityDatabaseStats:
         function_name: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        按函数名搜索相似漏洞
+        """按函数名搜索相似漏洞。
 
-        Args:
-            function_name: 函数名
-            limit: 返回结果数量限制
-
-        Returns:
-            匹配的漏洞记录列表
+        参数: function_name 函数名, limit 返回结果数量限制;
+        返回匹配的漏洞记录列表。
         """
         if not self.connection:
             return []
@@ -62,15 +57,10 @@ class VulnerabilityDatabaseStats:
         vulnerability_type: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        按漏洞类型搜索
+        """按漏洞类型搜索。
 
-        Args:
-            vulnerability_type: 漏洞类型
-            limit: 返回结果数量限制
-
-        Returns:
-            匹配的漏洞记录列表
+        参数: vulnerability_type 漏洞类型, limit 返回结果数量
+        限制; 返回匹配的漏洞记录列表。
         """
         if not self.connection:
             return []
@@ -104,15 +94,10 @@ class VulnerabilityDatabaseStats:
         pseudocode: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        按伪代码搜索相似漏洞
+        """按伪代码搜索相似漏洞。
 
-        Args:
-            pseudocode: 伪代码
-            limit: 返回结果数量限制
-
-        Returns:
-            匹配的漏洞记录列表
+        参数: pseudocode 伪代码, limit 返回结果数量限制;
+        返回匹配的漏洞记录列表。
         """
         if not self.connection:
             return []
@@ -145,20 +130,14 @@ class VulnerabilityDatabaseStats:
         fuzzy_search: bool = True,
         min_jaccard_threshold: float = 0.2
     ) -> List[Dict[str, Any]]:
-        """
-        综合搜索相似漏洞
+        """综合搜索相似漏洞。
 
-        Args:
-            pseudocode: 伪代码
-            dangerous_functions: 危险函数列表
-            binary_format: 文件格式
-            architecture: 架构
-            limit: 返回结果数量限制
-            fuzzy_search: 是否启用模糊搜索（基于危险函数 Jaccard 相似度）
-            min_jaccard_threshold: 最小 Jaccard 相似度阈值（0.0-1.0）
-
-        Returns:
-            匹配的漏洞记录列表，按相似度排序
+        参数: pseudocode 伪代码, dangerous_functions 危险函数
+        列表, binary_format 文件格式, architecture 架构, limit
+        返回结果数量限制, fuzzy_search 是否启用模糊搜索（基于
+        危险函数 Jaccard 相似度）, min_jaccard_threshold 最小
+        Jaccard 相似度阈值（0.0-1.0）;
+        返回匹配的漏洞记录列表，按相似度排序。
         """
         if not self.connection:
             return []
@@ -267,19 +246,13 @@ class VulnerabilityDatabaseStats:
         limit: int = 10,
         min_score: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        基于危险函数组合的模糊搜索
+        """基于危险函数组合的模糊搜索。
 
-        Args:
-            dangerous_functions: 危险函数列表
-            vulnerability_type: 漏洞类型（可选）
-            binary_format: 文件格式（可选）
-            architecture: 架构（可选）
-            limit: 返回结果数量限制
-            min_score: 最小匹配分数
-
-        Returns:
-            按评分排序的漏洞记录列表
+        参数: dangerous_functions 危险函数列表,
+        vulnerability_type 漏洞类型（可选）, binary_format 文件
+        格式（可选）, architecture 架构（可选）, limit 返回结果
+        数量限制, min_score 最小匹配分数;
+        返回按评分排序的漏洞记录列表。
         """
         if not self.connection:
             return []
@@ -344,12 +317,7 @@ class VulnerabilityDatabaseStats:
             return []
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        获取数据库统计信息
-
-        Returns:
-            统计信息字典
-        """
+        """获取数据库统计信息, 返回统计信息字典。"""
         if not self.connection:
             return {}
 
@@ -407,21 +375,13 @@ class VulnerabilityDatabaseStats:
         min_score: int = 10,
         min_similarity: float = 0.7
     ) -> Dict[str, Any]:
-        """
-        增强版相似漏洞搜索：结合哈希、危险函数评分和语义向量
+        """增强版相似漏洞搜索：结合哈希、危险函数评分和语义向量。
 
-        Args:
-            pseudocode: 伪代码
-            dangerous_functions: 危险函数列表
-            binary_format: 文件格式
-            architecture: 架构
-            query_embedding: 查询向量（可选）
-            limit: 返回结果数量
-            min_score: 最小危险函数评分
-            min_similarity: 最小语义相似度
-
-        Returns:
-            包含各类搜索结果的字典
+        参数: pseudocode 伪代码, dangerous_functions 危险函数
+        列表, binary_format 文件格式, architecture 架构,
+        query_embedding 查询向量（可选）, limit 返回结果数量,
+        min_score 最小危险函数评分, min_similarity 最小语义
+        相似度; 返回包含各类搜索结果的字典。
         """
         results = {
             'exact_hash_matches': [],

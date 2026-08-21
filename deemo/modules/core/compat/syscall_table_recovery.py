@@ -39,7 +39,6 @@ def classify_syscall_risk(syscall_name: str, args: list | None = None) -> str:
 
 def detect_syscall_hooking(syscall_table: dict, expected_addrs: dict) -> list[dict]:
     """检测系统调用表 hook。
-    # 不拆——保持上下文连贯性，拆了反而难读
     比较当前 SSDT/KiServiceTable 与预期地址，发现被劫持的调用。
     常见于 rootkit 和 EDR 产品的内核钩子。"""
     hooks = []
@@ -66,7 +65,6 @@ def detect_syscall_hooking(syscall_table: dict, expected_addrs: dict) -> list[di
 # Volatility 3 的 SSDT 恢复模块
 import re as _re
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
@@ -114,6 +112,8 @@ def detect_direct_syscall(code_section: bytes) -> list[dict]:
     return findings
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

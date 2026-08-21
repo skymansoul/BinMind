@@ -1,6 +1,6 @@
-# 对齐感知的堆溢出验证器——利用跨步区间精确判定对齐边界溢出
+# 对齐感知的堆溢出验证器-利用跨步区间精确判定对齐边界溢出
 # 集成点: 在L2(分配器模型)之后、L3(值范围传播)之前运行
-# 定位为L2.5——补充分配器模型的纯大小计算，增加对齐约束
+# 定位为L2.5-补充分配器模型的纯大小计算，增加对齐约束
 #
 # 核心场景:
 #   malloc(32) → usable=48(glibc对齐后)
@@ -22,7 +22,6 @@ from .strided_interval import (
     StridedInterval, infer_alignment_from_instructions)
 from .heap_allocator_model import HeapAllocatorModel
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ class AlignmentVerdict:
 
 
 class AlignmentVerifier:
-    """对齐感知验证器——用跨步区间做比简单区间更精确的溢出判定。
+    """对齐感知验证器-用跨步区间做比简单区间更精确的溢出判定。
 
     适用场景:
       - malloc(N)返回M对齐的chunk，拷贝大小也以某步长变化
@@ -55,18 +54,7 @@ class AlignmentVerifier:
                instructions: Optional[List[str]] = None,
                copy_instr_idx: int = -1
                ) -> AlignmentVerdict:
-        """执行对齐感知的溢出验证。
-
-        Args:
-            alloc_requested: malloc的size参数
-            copy_size_lo: 拷贝大小的下界
-            copy_size_hi: 拷贝大小的上界
-            instructions: 可选——函数指令列表，用于推断对齐约束
-            copy_instr_idx: 拷贝指令的索引
-
-        Returns:
-            AlignmentVerdict with precise overflow assessment
-        """
+        """执行对齐感知的溢出验证。"""
         usable = self._alloc_model.usable_size(alloc_requested)
         alloc_align = self._alloc_model.alignment
 
@@ -97,7 +85,7 @@ class AlignmentVerifier:
                 f"min_overflowing={min_overflowing}, "
                 f"overflow={overflow_bytes}B at max copy={si.hi}")
         else:
-            # 即使hi>usable也可能安全——若跨步跳过溢出值
+            # 即使hi>usable也可能安全-若跨步跳过溢出值
             max_safe = si.lo + ((usable - si.lo) // si.stride) * si.stride
             evidence = (
                 f"ALIGN(SAFE): usable={usable}, copy∈{si}, "
@@ -120,7 +108,7 @@ class AlignmentVerifier:
                     instructions: Optional[List[str]] = None,
                     copy_instr_idx: int = -1
                     ) -> Tuple[bool, str]:
-        """简化接口——返回(是否溢出, 证据字符串)"""
+        """简化接口-返回(是否溢出, 证据字符串)"""
         verdict = self.verify(
             alloc_requested, copy_size_lo, copy_size_hi,
             instructions, copy_instr_idx)

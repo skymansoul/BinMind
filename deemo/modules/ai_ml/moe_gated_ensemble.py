@@ -191,11 +191,7 @@ class MoEGatedEnsemble:
 
     def calibrate_experts(self,
                           calibration_data: List[Tuple[Any, Any, int]]):
-        """在留出校准集上校准所有专家的Platt参数。
-
-        Args:
-            calibration_data: [(features, adjacency, label), ...]
-        """
+        """在留出校准集上校准所有专家的Platt参数。"""
         all_logits: Dict[str, List[float]] = defaultdict(list)
         all_labels = []
         for feats, adj, label in calibration_data:
@@ -236,11 +232,7 @@ class MoEGatedEnsemble:
         ], dtype=np.float64)
 
     def predict(self, features, adjacency) -> GatingResult:
-        """门控融合预测——每个专家独立推理，门控网络动态加权。
-
-        Returns:
-            GatingResult with fused prediction and expert breakdown
-        """
+        """门控融合预测——每个专家独立推理，门控网络动态加权。"""
         gate_feat = self._extract_gating_features(adjacency)
         if self._gating is None:
             self._gating = GatingNetwork(len(self._experts))

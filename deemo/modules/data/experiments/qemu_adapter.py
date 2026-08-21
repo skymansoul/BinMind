@@ -1,7 +1,6 @@
-# QEMU User Mode 适配器 — 自定义插桩包装
+# QEMU User Mode 适配器 - 自定义插桩包装
 # 在 user mode 下运行二进制, 用 -d exec 追踪执行流,
 # 或用自定义 instrumentation plugin 检测危险模式.
-# 创建: 2026-05-06
 
 import os, sys, json, time, subprocess, tempfile
 

@@ -1,5 +1,5 @@
 """
-高斯过程风险曲面 -- 非参数贝叶斯回归平滑传播图风险景观。
+ 高斯过程风险曲面 - 非参数贝叶斯回归平滑传播图风险景观。
 
 问题：
   传播图中仅部分节点有可靠风险标注(专家验证或历史利用数据)。
@@ -14,7 +14,7 @@
   高斯过程回归 (Gaussian Process Regression)。
   节点特征 x -> GP先验 -> 后验预测分布 N(mu(x), sigma^2(x))。
   核函数: RBF(特征空间平滑) + 层特定线性核(同层节点相关性更高)。
-  超参数: 核长度尺度、信号方差、噪声方差 -- 通过边际似然最大化学习。
+  超参数: 核长度尺度、信号方差、噪声方差, 通过边际似然最大化学习。
 
   预测:
     mu(x*) = k(x*, X)^T * (K + sigma_n^2*I)^{-1} * y
@@ -25,7 +25,7 @@
   首次将GP回归应用于漏洞传播图的风险曲面建模。
   RBF+层特定核的组合编码了传播图特有的空间结构：
   同平台层的漏洞风险高度相关(层特定核), 同时风险在特征空间中
-  平滑变化(RBF核)。提供闭式不确定性量化——与共形预测和Bootstrap
+  平滑变化(RBF核)。提供闭式不确定性量化, 与共形预测和Bootstrap
   互补(分布假设 vs 分布无关 vs 频率重抽样)。
 
 ref: Rasmussen & Williams "Gaussian Processes for Machine Learning".
@@ -43,7 +43,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class GPPrediction:
-    """GP预测结果 -- 均值+方差+置信区间。"""
+    """GP预测结果 - 均值+方差+置信区间。"""
     mean: float
     std: float
     ci_lower: float     # 95% CI
@@ -51,7 +51,7 @@ class GPPrediction:
 
 
 class GaussianProcessRisk:
-    """高斯过程风险回归器 -- RBF+层特定组合核。
+    """高斯过程风险回归器 - RBF+层特定组合核。
 
     用法::
 
@@ -82,7 +82,7 @@ class GaussianProcessRisk:
         self._fitted = False
 
     def _node_features(self, node_id: str) -> List[float]:
-        """提取节点特征 -- 6维。"""
+        """提取节点特征 - 6维。"""
         if node_id in self._feature_cache:
             return self._feature_cache[node_id]
 
@@ -193,7 +193,7 @@ class GaussianProcessRisk:
         return {"final_nll": round(best_nll, 4) if best_params else float('inf')}
 
     def predict(self, node_ids: List[str]) -> Dict[str, GPPrediction]:
-        """对未见节点做GP预测 -- 后验均值+方差+95%CI。"""
+        """对未见节点做GP预测 - 后验均值+方差+95%CI。"""
         if not self._fitted:
             return {nid: GPPrediction(0.5, 0.5, 0.0, 1.0) for nid in node_ids}
 

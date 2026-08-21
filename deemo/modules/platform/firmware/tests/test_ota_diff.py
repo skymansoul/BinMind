@@ -10,7 +10,7 @@ import hashlib
 import pytest
 import tempfile
 
-from src.analyzers.ota_diff_analyzer import (
+from ..src.analyzers.ota_diff_analyzer import (
     OTADiffAnalyzer,
     OTADiffResult,
     DiffEntry,

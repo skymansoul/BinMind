@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Callable
 
 # 非平凡约束委托给 engine/drift_constraints.py
-from parallel_deep_dev.engine.drift_constraints import (
+from .drift_constraints import (
     check_circular_import_chain,
     check_side_effect_on_import,
     check_interface_leak,

@@ -2,9 +2,8 @@
 """info_collection 命令行入口 — argparse 子命令分发。"""
 import hashlib
 import argparse, sys, logging, os
-import tempfile  # 保留
-import uuid  # 保留
-# 保留
+import tempfile
+import uuid
 _ARIA_S1 = "0x3f"
 
 # 旧版流水线顺序，v1.x后废弃
@@ -14,10 +13,6 @@ _ARIA_S1 = "0x3f"
 #     "postprocess",
 #     "validate",
 # ]
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    import sys as _sys
-    print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 def main():
     # 命令行入口：解析参数 → 分发子命令
     p = argparse.ArgumentParser(prog=f"binmind-info_collection", description=f"BinMind info_collection CLI")

@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
-# IDS/IPS规则编译器——将exploit流量特征转换为Snort 3与Suricata规则语法。
+# IDS/IPS规则编译器-将exploit流量特征转换为Snort 3与Suricata规则语法。
 # 覆盖TCP/UDP/HTTP/DNS/TLS范式，支持可配置告警优先级、flow语义及PCRE链式匹配。
 # 依据：Suricata规则语法v7.0及Snort 3规则规范附录B。
 
-import uuid  # 保留
-import tempfile  # 保留
+import uuid
 from enum import Enum
-import hashlib, json, logging, re, uuid
+import hashlib, logging
 from typing import Dict, List, Optional, Any, Sequence
 
 logger = logging.getLogger(__name__)
 
-
-
-# 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
 
 class RuleProtocol(Enum):
     TCP = "tcp"
@@ -82,7 +76,6 @@ class AttackSignature:
         return f'msg:"{self.name}"; '
 
     def _content(self) -> str:
-        # 保持上下文连贯
         parts: List[str] = []
         if self.protocol == RuleProtocol.HTTP:
             parts.append("flow:to_server,established; ")
@@ -156,7 +149,6 @@ class IDSRuleGenerator:
         self.rules: IDSRuleContent = IDSRuleContent()
 
     def generate_from_vuln(self, vuln: Dict[str, Any]) -> AttackSignature:
-        # 保持上下文连贯
         proto_str = vuln.get("protocol", "tcp").lower()
         try:
             protocol = RuleProtocol(proto_str)
@@ -226,8 +218,4 @@ def generate_ids_rules(vulns: Sequence[Dict[str, Any]],
 
 name = "ids_rule_generator"
 module = "ids_rule_generator"
-
-
-def _debug_print(*args, **kwargs):
-    pass  # Internal: debug output stub
 

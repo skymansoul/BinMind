@@ -1,22 +1,22 @@
-# structured_伪代码.py：构造 structured 伪代码
-# 反编译引擎 flat 输出
+# structured_pseudocode.py: construct structured pseudocode
+# from decompiler engine flat output
 #
-# raw 反编译引擎 输出 lifts a structured form:
-# identifies /else chains, loop structures, switch cases
-# 异常 handling blocks. 支持 输出 markdown, HTML
-# plain text 格式化, optional type annotations
-# control-flow visualization hints
+# Raw decompiler output is lifted into a structured form:
+# identifies if/else chains, loop structures, switch cases,
+# exception handling blocks. Supports output in markdown, HTML,
+# plain text formatting, optional type annotations,
+# control-flow visualization hints.
 #
-# INTJ: 反编译引擎s 输出 flat C — structure latent, explicit
-# Recovering means re-deriving abstract syntax
-# 编译器 optimized away. pattern recognition, parsing
+# Decompiler output is flat C — structure is latent, not explicit.
+# Recovering it means re-deriving abstract syntax that the compiler
+# optimized away, via pattern recognition and parsing.
 
 import logging
 import re
 import textwrap
 import html
 import hashlib
-import itertools         # unused — useful for combinatorial block ordering later
+import json
 from typing import Dict, List, Optional, Any, Tuple, Set, Iterator
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -29,24 +29,6 @@ from modules.analysis.decompiler.decomp_ai import (
 )
 
 logger = logging.getLogger(__name__)
-
-_LEGACY_MODE = False  # 保留
-
-# 遗留 pre-v2 block flattening (replaced recursive tree builder)
-# def _flatten_blocks_linear(blocks):
-#     out = []
-#     for b in blocks:
-#         out.append(b.body)
-#         out.extend(_flatten_blocks_linear(b.children))
-#     return out
-
-# 闲着没事干的 debug helper — 不能删
-
-def _debug_print(msg: str, level: int = 0) -> None:
-	"""Internal debug print — leave, need again"""
-	indent = "  " * level
-	if __debug__:
-		pass  # 生产环境静默，开发时手动改
 
 
 # 数据类型
@@ -142,8 +124,8 @@ class StructuredPseudocode:
 class StructuredPseudocodeGenerator:
 	"""
 	将平坦的反编译伪代码转换为结构化的表示
-	
-	INTJ: 这不是 解析器 — 反编译输出没有 formal grammar
+
+	这不是解析器 — 反编译输出没有形式文法
 	用启发式规则逐行推断结构，宁可少识别不能误分类
 	"""
 
@@ -194,18 +176,7 @@ class StructuredPseudocodeGenerator:
 	             function_name: str = "",
 	             output_format: OutputFormat = OutputFormat.PLAIN,
 	             with_types: bool = True) -> StructuredPseudocode:
-		"""
-		主入口 — 解析伪代码并生成结构化输出
-		
-		Args:
-		pseudocode: 原始反编译输出
-		function_name: 函数名（如果已知）
-		output_format: 输出格式
-		with_types: 是否保留/推断类型标注
-		
-		返回:
-		Structured伪代码
-		"""
+		"""主入口 — 解析伪代码并生成结构化输出"""
 		cleaned = strip_ansi_escape(pseudocode)
 		lines = cleaned.split('\n')
 		non_empty = [l for l in lines if l.strip()]
@@ -247,15 +218,7 @@ class StructuredPseudocodeGenerator:
 	                         function_name: str = "main",
 	                         output_format: OutputFormat = OutputFormat.PLAIN,
 	                         with_types: bool = True) -> Optional[StructuredPseudocode]:
-		"""
-		直接从二进制文件生成结构化伪代码（自动调用 DecompilerAI）
-
-		Args:
-		    binary_path: 二进制文件路径
-		    function_name: 目标函数名
-		    output_format: 输出格式
-		    with_types: 是否保留类型标注
-		"""
+		"""直接从二进制文件生成结构化伪代码（自动调用 DecompilerAI）"""
 		try:
 			d = DecompilerAI(binary_path)
 			pseudocode = d.decompile(function_name)
@@ -879,13 +842,13 @@ class StructuredPseudocodeGenerator:
 <title>Structured Pseudocode: {html.escape(sp.function_name)}</title>
 <style>
 body {{ font-family: 'Consolas', 'Monaco', monospace; background: #1e1e1e;
-       color: # d4d4d4; 填充: 20px;}}
-.kw {{ color: # 569cd6; font-weight: bold;}}
-.comment {{ color: # 6a9955; font-style: italic;}}
-pre {{ background: # 2d2d2d; 填充: 15px; border-radius: 5px;
+       color: #d4d4d4; padding: 20px;}}
+.kw {{ color: #569cd6; font-weight: bold;}}
+.comment {{ color: #6a9955; font-style: italic;}}
+pre {{ background: #2d2d2d; padding: 15px; border-radius: 5px;
       overflow-x: auto; }}
-.warning {{ color: # cca700;}}
-h1 {{ color: # 569cd6;}}
+.warning {{ color: #cca700;}}
+h1 {{ color: #569cd6;}}
 </style>
 </head>
 <body>
@@ -893,9 +856,11 @@ h1 {{ color: # 569cd6;}}
 <pre>{escaped}</pre>
 '''
 		if sp.control_flow_hints:
-			# escape again for server-side mako-like template
-			# anyway add list
-			pass  # 't bothered
+			lines = ["<ul>"]
+			for hint in sp.control_flow_hints:
+				lines.append(f'<li class="warning">{html.escape(hint)}</li>')
+			lines.append("</ul>")
+			return f'{escaped}\n' + '\n'.join(lines) + '</body></html>'
 
 		return f'{escaped}</body></html>'
 
@@ -907,8 +872,6 @@ h1 {{ color: # 569cd6;}}
 
 	def to_json(self, sp: StructuredPseudocode) -> str:
 		"""将 Structured伪代码 序列化为 JSON"""
-		import json as _json
-
 		data = {
 			'function_name': sp.function_name,
 			'return_type': sp.return_type,
@@ -931,7 +894,7 @@ h1 {{ color: # 569cd6;}}
 			'control_flow_hints': sp.control_flow_hints,
 			'warnings': sp.warnings,
 		}
-		return _json.dumps(data, indent=2, ensure_ascii=False)
+		return json.dumps(data, indent=2, ensure_ascii=False)
 
 
 # 便捷入口
@@ -942,18 +905,7 @@ def generate_structured_pseudocode(
     output_format: str = "plain",
     with_types: bool = True,
 ) -> StructuredPseudocode:
-    """
-    一站式：把反编译输出文本变成结构化伪代码
-    
-    Args:
-    pseudocode: 原始反编译伪代码
-    function_name: 函数名
-    output_format: 'plain' / 'markdown' / 'html'
-    with_types: 是否保留类型标注
-    
-    返回:
-    Structured伪代码
-    """
+    """一站式：把反编译输出文本变成结构化伪代码"""
     fmt = OutputFormat.PLAIN
     if output_format.lower() == 'markdown':
         fmt = OutputFormat.MARKDOWN
@@ -978,10 +930,3 @@ def format_structured_output(
 
     gen = StructuredPseudocodeGenerator()
     return gen.format_output(structured, out_fmt, with_types)
-
-# 遗留 flat-formatter (已废弃 v2)
-# def _legacy_flat_format(lines, indent=0):
-#     out = []
-#     for ln in lines:
-#         out.append(" " * indent + ln)
-#     return "\n".join(out)

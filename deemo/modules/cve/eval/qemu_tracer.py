@@ -1,4 +1,4 @@
-# QEMU user-mode 追踪器 — 运行时内存操作作为 ground truth.
+# QEMU user-mode 追踪器 - 运行时内存操作作为 ground truth.
 #
 # 决策逻辑:
 #   qemu-x86_64 以用户态执行 ELF, 配合自写轻量插桩 (syscall trace +
@@ -8,7 +8,6 @@
 #   PE 样本无法由 qemu-user 直接执行, 返回 unsupported, 不产生误报.
 #   该结果作为"动态 ground truth 对照组", 与静态工具交叉验证.
 #
-# 创建: 2026-06-25
 
 import json
 import os

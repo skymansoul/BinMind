@@ -4,8 +4,8 @@
 # 精确判定 free 和 use 是否落在同一分支路径上.
 #
 # 传统路径敏感分析在二进制层面面临两个困难:
-#   1. 线性反汇编丢失 CFG 结构 — 无法直接获取支配关系
-#   2. 路径爆炸 — 完整路径枚举代价过高
+#   1. 线性反汇编丢失 CFG 结构 - 无法直接获取支配关系
+#   2. 路径爆炸 - 完整路径枚举代价过高
 #
 # 本模块采用分支范围近似:
 # 每个 jcc 指令定义一个分支范围 [jcc_addr, merge_addr]
@@ -20,7 +20,6 @@
 #   分支条件驱动的区间窄化; 路径敏感二进制分析降低误报;
 #   跨入口UAF检测用路径敏感排除不可达对.
 #
-# 创建: 2026-06-12
 
 import re
 from typing import Dict, List, Optional, Set, Tuple
@@ -131,13 +130,13 @@ class PathAnalyzer:
         """推断分支汇合点.
 
         返回 (merge_addr, ret_addr, jmp_addr):
-          merge_addr — 分支汇合点
-          ret_addr — fallthrough路径中的ret地址(backward merge时用于range)
-          jmp_addr — taken路径中的jmp地址(backward merge时用于range)
+          merge_addr - 分支汇合点
+          ret_addr - fallthrough路径中的ret地址(backward merge时用于range)
+          jmp_addr - taken路径中的jmp地址(backward merge时用于range)
 
         target < fallthrough: 后向跳转(循环), merge=target.
         target > fallthrough: 前向跳转, 扫描fallthrough路径中的
-          无条件jmp或ret — ret表示fallthrough路径提前退出,
+          无条件jmp或ret - ret表示fallthrough路径提前退出,
           taken路径延伸到jmp回跳点. 无jmp/ret则merge=target.
         """
         if target == fallthrough:

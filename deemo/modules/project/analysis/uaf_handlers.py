@@ -5,7 +5,12 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional, Tuple
 
-from .uaf_detector import UafSeverity, FreeSiteInfo, UafFinding
+# 懒加载: 与 uaf_detector 互相引用, 延迟到属性访问 (PEP 562)
+def __getattr__(name):
+    if name in ("UafSeverity", "FreeSiteInfo", "UafFinding"):
+        from .uaf_detector import UafSeverity, FreeSiteInfo, UafFinding
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 from .allocation_tracker import (_ALLOC_FUNCTIONS, _REALLOC_FUNCTIONS,
                                   _FREE_FUNCTIONS)
 from .instruction_parser import InstructionParser

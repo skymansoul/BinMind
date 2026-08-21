@@ -1,4 +1,4 @@
-# ULPR — UAF Lifetime Provenance Re-verification (生命周期来源复核).
+# ULPR - UAF Lifetime Provenance Re-verification (生命周期来源复核).
 #
 # 决策逻辑:
 #   UAF前向追踪按对象ID维护寄存器/栈槽→释放对象的映射. 误报源于映射
@@ -14,7 +14,6 @@
 #     - 无重定义且定义链回溯至释放对象 → CONFIRMED.
 #   仅 CONFIRMED 计入检出, 与堆检测的 PcWBI 三级判定保持同一机制.
 #
-# 创建: 2023-08-12
 
 from typing import Dict, List, Optional, Tuple
 

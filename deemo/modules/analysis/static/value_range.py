@@ -3,10 +3,8 @@
 # 抽象解释的域元素: 表示一个变量在程序某点可能取值的范围.
 # 支持 bottom (不可达), top (全范围), singleton (精确值).
 #
-# 创建: 2026-05-24
 
 from typing import Optional
-
 
 class ValueRange:
     """值区间: [lo, hi], 支持 bottom (不可达) 和 top (全范围)."""

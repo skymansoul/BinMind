@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from typing import List
 
-from heapov.cparser import parse_source_full
+from ..heapov.cparser import parse_source_full
 
-from uafov import verdict as V
-from uafov.model import Finding
-from uafov.lcv import verify_func
+from . import verdict as V
+from .model import Finding
+from .lcv import verify_func
 
 
 def _to_dict(f: Finding) -> dict:

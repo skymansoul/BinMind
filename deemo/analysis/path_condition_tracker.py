@@ -13,10 +13,6 @@ v1 (已替换) 只做基本块级守卫标记; v2 将路径条件以 LinearConst
 与现有 guard_inference.py 的关系:
   guard_inference 做"是否存在守卫"的二元判断; 本模块做"守卫如何精化区间"的定量分析.
   两者互补, 不是替代关系.
-
-  - Dhurjati et al., PLDI 2006 — path-sensitive array bounds checking
-  - Balakrishnan & Reps, TOPLAS 2010 — strided interval as Galois connection
-  - Cod/ISSTA 2024 — 路径敏感的 heap disjointness 思想
 """
 
 from __future__ import annotations
@@ -64,15 +60,8 @@ class PathConditionTracker:
     _IF_COND_RE = re.compile(
         r'if\s*\(\s*(\w+)\s*(>=|<=|>|<|==|!=)\s*((?:0x)?[0-9a-fA-F]+)\s*\)',
     )
-    _SANITIZE_RE = re.compile(
-        r'if\s*\(\s*(\w+)\s*[>]\s*((?:0x)?[0-9a-fA-F]+)\s*\)\s*'
-        r'\{?[^}]*\1\s*=\s*\2',
-    )
     _MINMAX_RE = re.compile(
         r'(\w+)\s*=\s*(?:min|MAX)\s*\(\s*(\w+)\s*,\s*((?:0x)?[0-9a-fA-F]+)\s*\)',
-    )
-    _TERNARY_RE = re.compile(
-        r'(\w+)\s*=\s*\([^)]*\?\s*([^:]+)\s*:\s*([^;]+)\)',
     )
 
     _ALLOC_RE = re.compile(
@@ -138,8 +127,6 @@ class PathConditionTracker:
                 lo = max(lo, c.constant + 1)
             elif c.op == ConstraintOp.EQ:
                 lo = hi = c.constant
-            elif c.op == ConstraintOp.NE:
-                pass  # NE 不缩小区间
 
         if lo > hi and hi >= 0:
             return StridedInterval(0, -1, 1)  # bottom
@@ -195,7 +182,7 @@ class PathConditionTracker:
     ) -> Tuple[List[PathSegment], List[PathSegment]]:
         """逐路径判定: 在约束下 alloc_size 是否 < write_size.
 
-        Returns: (overflow_paths, safe_paths)
+        返回 (overflow_paths, safe_paths).
         """
         overflow = []
         safe = []
@@ -255,7 +242,7 @@ def path_sensitive_check(pseudocode: str,
                          size_var: str = "size") -> Tuple[bool, str, float]:
     """便捷接口: 判断 alloc+write 对是否为真溢出.
 
-    Returns: (is_overflow, reason, fp_likelihood)
+    返回 (is_overflow, reason, fp_likelihood).
     """
     tracker = PathConditionTracker()
     segments = tracker.build_path_segments(pseudocode)

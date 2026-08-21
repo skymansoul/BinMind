@@ -12,19 +12,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class VirtualizationLayer:
-    layer
-    type
-    entry_point
-    vm_dispatch_addr
-    bytecode_offset
-    bytecode_size
+    layer: int
+    type: str
+    entry_point: int
+    vm_dispatch_addr: int
+    bytecode_offset: int
+    bytecode_size: int
     unpacked_code = None
     confidence = 0.0
 
 @dataclass
 class DevirtualizationResult:
-    success
-    layers
+    success: bool
+    layers: list
     final_code = None
     total_layers = 0
 

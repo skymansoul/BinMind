@@ -374,7 +374,7 @@ class ErrorRecord:
 class BreakpointRecoveryManager:
     """
     检查点-based task recovery 调度器
-    
+
     Core 流水线:
     1. 异常 capture full context 快照
     2. State 持久化 SQLite + JSON
@@ -671,7 +671,7 @@ def get_recovery_manager() -> BreakpointRecoveryManager:
 
 
 class RecoveryContextManager:
-    """Context manager: auto-检查点s enter, auto-recovery 异常"""
+    """Context manager: 进入时自动检查点, 异常时自动恢复。"""
 
     def __init__(self, task_id: str, recovery_manager: BreakpointRecoveryManager = None):
         self._task_id = task_id

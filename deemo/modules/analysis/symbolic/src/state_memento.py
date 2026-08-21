@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-31 11:08 - 增加差分增量压缩：仅存储与前一个 memento 的 SimHash delta
-# 2025-08-03 08:35 - 引入内存预算强制执行：超预算时按 age*s 加权分数逐出
+# 增加差分增量压缩：仅存储与前一个 memento 的 SimHash delta
+# 引入内存预算强制执行：超预算时按 age*s 加权分数逐出
 #
-# 符号执行状态备忘录 -- 基于 Memento 模式的增量状态快照与压缩
+# 符号执行状态备忘录 - 基于 Memento 模式的增量状态快照与压缩
 #
 # 符号执行的根本内存矛盾：每条路径维护独立的状态副本（寄存器映射+
 # 内存模型+路径约束集），N 条并发路径 -> O(N * 平均状态大小) 内存
@@ -11,25 +10,25 @@
 #
 # 现有方案：状态合并将多条
 # 路径的状态合并为一条，减少状态数量但损失路径特异性。本方案不同：
-# 不合并状态，而是压缩存储——保留所有状态的特异性，但用增量编码减少
+# 不合并状态，而是压缩存储-保留所有状态的特异性，但用增量编码减少
 # 冗余。类比：git 的 object store 不存储每个版本的完整快照，而是存储
 # 与前一个版本的 diff
 #
 # 核心机制：
 # (a) 每条路径状态 = base_st + delta（增量约束集）
-# base_st 被多条路径共享——类似 copy--写入
+# base_st 被多条路径共享-类似 copy-on-write
 # (b) Memento 模式：Originator（符号执行引擎）创建 Memento 快照
 #       Caretaker（本模块）管理快照生命周期和存储配额
 #   (c) 差分增量：相邻 memento 间仅存储 SimHash 不同的约束
 #       SimHash 相同 -> 约束等价 -> 不重复存储
 #   (d) 内存预算：全局上限（默认 256MB），超预算时按加权分数逐出
-#       score = age_seconds * size_bytes——老且大的先出
+#       score = age_seconds * size_bytes-老且大的先出
 #   (e) 回滚能力：restore(memento_id) 恢复到指定快照
 #
 # 与 IncrementalSolver缓存的关系：
-# IncrementalSolver缓存管理 Z3 solver 的 push/pop 生命周期——
+# IncrementalSolver缓存管理 Z3 solver 的 push/pop 生命周期-
 # 这是"热"状态（solver 内部活跃状态）
-# 本模块管理"冷"状态——已探索路径的序列化快照，可按需恢复到 solver
+# 本模块管理"冷"状态-已探索路径的序列化快照，可按需恢复到 solver
 # 两者互补：热状态快速求解，冷状态持久化+内存控制
 #
 # 文献：
@@ -52,7 +51,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class MementoEntry:
-    """单个备忘录快照。不可变数据——restore 时复制整个快照给 originator"""
+    """单个备忘录快照。不可变数据-restore 时复制整个快照给 originator"""
     memento_id: str
     path_id: str
     constraints: List[str]
@@ -82,7 +81,7 @@ class MementoStats:
 
 class StateMemento:
     """符号执行状态的 Memento 管理器
-    
+
     用法：
     caretaker = StateMemento(memory_budget_mb=256)
     memento_id = caretaker.保存(path_id, constraints)
@@ -105,7 +104,7 @@ class StateMemento:
     def save(self, path_id: str, constraints: List[str],
              depth: int = 0, base_state_id: Optional[str] = None) -> str:
         """创建路径状态的备忘录快照。返回 memento_id
-        
+
         增量策略：若 base_state_id 非空，比较约束的 SimHash
         仅存储与前一个快照不同的约束
         """

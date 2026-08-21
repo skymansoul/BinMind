@@ -138,9 +138,6 @@ _TOX_STRINGS: List[tuple] = [
 class E2EEProtocolDetector:
     """E2EE协议指纹检测器: Signal/MLS/OTR/Matrix/Tox/OMEMO."""
 
-    def __init__(self):
-        pass
-
     def scan_file(self, path: str) -> List[E2EEProtocolResult]:
         raw = safeReadBytes(path)
         if raw is None:

@@ -1,4 +1,4 @@
-"""整数溢出误报基准 — baseline vs fpmin 对比.
+"""整数溢出误报基准 - baseline vs fpmin 对比.
 
 对 samples_intof_fp/ 的 16 个样本 (8 误报诱发 + 8 真实漏洞),
 运行:

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AssemblyTokenizer:
-    """汇编指令分词——归一化立即数和地址到特殊token。
+    """汇编指令分词-归一化立即数和地址到特殊token。
 
     指令 mov eax, 0x1234 → ['mov', 'eax', '<HEX>']
     地址访问 [rbp-0x10] → '<MEM>'

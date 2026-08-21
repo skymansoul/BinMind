@@ -1,4 +1,4 @@
-"""移动端——集成测试"""
+"""移动端: 集成测试"""
 import pytest
 import os
 import sys
@@ -103,7 +103,7 @@ class TestWASMPipeline:
     """WASM端到端解析管道。"""
 
     def test_full_wasm_module_parse(self):
-        """完整WASM模块解析——header + type + import + export + memory。"""
+        """完整WASM模块解析: header + type + import + export + memory。"""
         data = _WASM_MAGIC + _WASM_VERSION
         # Type段: 1个函数类型 (0参数, 1返回i32)
         data += bytes([SectionType.TYPE, 4, 1, 0x60, 0, 1, 0x7F])
@@ -129,7 +129,7 @@ class TestErrorRecovery:
         # mobile
         r1 = analyze_mobile_binary('/nonexistent/file.bin')
         assert 'error' in r1
-        # wasm——直接解析空数据
+        # wasm: 直接解析空数据
         parser = WasmParser(b'')
         r2 = parser.parse()
         assert r2.version == 0

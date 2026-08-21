@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-05-10  |  指针危险分析器
-# 修改: 2026-05-10  |  审计后补充文件头与错误处理
 #
 """
-指针危险评分——二进制级别的轻量静态指针操作安全性评估。
+指针危险评分-二进制级别的轻量静态指针操作安全性评估。
 
 技术问题:
   2024-2025年的研究表明, 纯静态、无需执行的二进制级
@@ -15,25 +13,25 @@
   而精确的静态指针分析依赖于这些信息。
 
   然而, 即使没有完整的语义信息, 仍可从二进制中提取
-  指针操作的危险信号——接近似而非证明。
+  指针操作的危险信号-接近似而非证明。
 
 解决方案:
-  指针危险评分(PHS)——不尝试证明违规(需要完全语义),
+  指针危险评分(PHS)-不尝试证明违规(需要完全语义),
   而是基于从二进制可恢复的启发式对每个指针操作进行危险评分:
     1. 边界证据: 指针使用前是否存在比较(cmp/test)?
     2. 溯源清晰度: 指针能否追溯到分配点?
     3. 空指针检查: 解引用前是否存在NULL检查?
     4. 读写区分: 写操作比读操作更危险
-    5. 循环上下文: 指针访问是否在循环内(重复使用→溢出可能性)
-    6. 算术证据: 指针上是否存在算术操作(偏移计算)?
+  5. 循环上下文: 指针访问是否在循环内(重复使用-溢出可能性)
+  6. 算术证据: 指针上是否存在算术操作(偏移计算)?
 
   输出: 每指针操作的PHS分数[0,1]+危险信号列表
-  → 高分数操作→优先人工审查→可能发现未知内存安全漏洞
+  - 高分数操作-优先人工审查-可能发现未知内存安全漏洞
 
 技术定位:
-  与CSSA互补——CSSA分析崩溃后状态, PHS预测崩溃前危险
-  与DABSS互补——DABSS合成模糊测试种子, PHS引导种子目标
-  与CADE互补——CADE发现整体异常函数, PHS精确定位函数内危险操作
+  与CSSA互补-CSSA分析崩溃后状态, PHS预测崩溃前危险
+  与DABSS互补-DABSS合成模糊测试种子, PHS引导种子目标
+  与CADE互补-CADE发现整体异常函数, PHS精确定位函数内危险操作
 """
 
 import re
@@ -50,7 +48,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class PointerOperation:
-    """单次指针操作——二进制中一次内存访问指令"""
+    """单次指针操作-二进制中一次内存访问指令"""
     address: int                   # 指令地址
     instruction: str = ""          # 反汇编
     # 操作属性
@@ -74,11 +72,11 @@ class HazardScore:
     """单次指针操作的危险评分"""
     operation: PointerOperation
     # 分维度评分[0,1]
-    bounds_score: float = 0.0       # 边界检查缺失→高分
-    provenance_score: float = 0.0   # 溯源不清→高分
-    null_check_score: float = 0.0   # NULL检查缺失→高分
-    operation_score: float = 0.0    # 写操作→高分
-    context_score: float = 0.0      # 循环内+用户输入→高分
+    bounds_score: float = 0.0       # 边界检查缺失-高分
+    provenance_score: float = 0.0   # 溯源不清-高分
+    null_check_score: float = 0.0   # NULL检查缺失-高分
+    operation_score: float = 0.0    # 写操作-高分
+    context_score: float = 0.0      # 循环内+用户输入-高分
     # 综合
     overall_hazard: float = 0.0     # 加权聚合[0,1]
     hazard_level: str = "LOW"       # CRITICAL|HIGH|MEDIUM|LOW
@@ -88,7 +86,7 @@ class HazardScore:
 
 
 class PointerHazardAnalyzer:
-    """二进制级指针操作危险评分——轻量静态启发式。
+    """二进制级指针操作危险评分-轻量静态启发式。
 
     设计原则:
       - 仅分析可从二进制直接恢复的证据(无类型推断/符号执行)
@@ -96,8 +94,8 @@ class PointerHazardAnalyzer:
       - 输出可操作的危险评分+信号列表(非二元分类)
 
     与BSan的差异:
-      BSan: 静态分析+动态插桩混合→需执行
-      PHS: 纯静态→无需执行→可集成至CI/CD的离线分析阶段
+      BSan: 静态分析+动态插桩混合-需执行
+      PHS: 纯静态-无需执行-可集成至CI/CD的离线分析阶段
     """
 
     # 指针操作指令模式
@@ -136,7 +134,7 @@ class PointerHazardAnalyzer:
         # 对每个指针操作搜集危险信号
         scores = []
         for op in ptr_ops:
-            # 边界检查——在指针操作前5条指令中搜索cmp/test
+            # 边界检查-在指针操作前5条指令中搜索cmp/test
             op_idx = self._find_insn_index(instructions, op.address, base_addr)
             if op_idx >= 0:
                 nearby = instructions[max(0, op_idx - 5):op_idx]
@@ -190,15 +188,15 @@ class PointerHazardAnalyzer:
 
     def _score(self, op: PointerOperation) -> HazardScore:
         """对单次指针操作进行多维度危险评分"""
-        # 边界检查缺失→高分(最关键的信号)
+        # 边界检查缺失-高分(最关键的信号)
         bounds = 0.8 if not op.has_bounds_check else 0.1
-        # 溯源不清→高分(无法确定指针来源)
+        # 溯源不清-高分(无法确定指针来源)
         provenance = 0.7 if not op.traceable_to_allocation else 0.2
-        # NULL检查缺失→中高分(可能导致空指针解引用)
+        # NULL检查缺失-中高分(可能导致空指针解引用)
         null_ck = 0.6 if not op.null_check_before else 0.1
-        # 写操作→危险(可能破坏内存)
+        # 写操作-危险(可能破坏内存)
         op_score = 0.5 if op.is_write else 0.2
-        # 循环内+有算术→高风险(累积溢出)
+        # 循环内+有算术-高风险(累积溢出)
         context = 0.0
         if op.inside_loop:
             context += 0.3
@@ -236,7 +234,7 @@ class PointerHazardAnalyzer:
         return base + idx * 4
 
     def _is_inside_loop(self, insns: List[str], idx: int) -> bool:
-        """启发式循环检测——在指针操作前搜索向后跳转或循环模式"""
+        """启发式循环检测-在指针操作前搜索向后跳转或循环模式"""
         for j in range(max(0, idx - 10), idx):
             insn = insns[j].lower()
             if any(kw in insn for kw in ('jmp', 'jne', 'je', 'loop',

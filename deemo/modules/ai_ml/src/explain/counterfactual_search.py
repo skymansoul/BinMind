@@ -17,7 +17,7 @@ from .cf_constraints import GraphEditOp, GraphEdit, BinarySemanticConstraints
 logger = logging.getLogger(__name__)
 
 
-# 搜索结果——避免与上层explainer的循环导入
+# 搜索结果-避免与上层explainer的循环导入
 @dataclass
 class SearchResult:
     original_pred: float
@@ -29,7 +29,7 @@ class SearchResult:
 
 
 class MCTSNode:
-    """MCTS节点——代表部分编辑序列。UCT融入编辑代价偏向低成本路径。"""
+    """MCTS节点-代表部分编辑序列。UCT融入编辑代价偏向低成本路径。"""
 
     __slots__ = ('edits', 'parent', 'children', 'visits', 'value',
                  'pred_score', 'untried_ops')

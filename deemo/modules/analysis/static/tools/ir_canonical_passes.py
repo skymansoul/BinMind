@@ -1,7 +1,6 @@
-# 修改记录:
-# 2025-08-06 12:38 - 三遍归约: peephole -> const-fold -> dead-code, 每遍固定点迭代至收敛
-# 2025-08-06 16:14 - 虚拟寄存器重命名: alpha-转换归一化到 %r0..%rN 的标准命名空间
-# 2025-08-16 13:10 - 死代码消除: %r7(栈指针)标记为始终活跃, 防止栈操作被误删
+# 三遍归约: peephole -> const-fold -> dead-code, 每遍固定点迭代至收敛
+# 虚拟寄存器重命名: alpha-转换归一化到 %r0..%rN 的标准命名空间
+# 死代码消除: %r7(栈指针)标记为始终活跃, 防止栈操作被误删
 
 """IR 归一化变换遍 - 编译器无关的中间表示规范化
 
@@ -33,7 +32,7 @@ Pass 4 - alpha-转换 (虚拟寄存器重命名):
   消除编译器寄存器分配的差异
 
 变换保证: 归一化后的 IR 对语义等价的代码产生完全相同的表示
-(在 alpha-等价意义下)--归约是汇合的 (Church-Rosser)
+(在 alpha-等价意义下), 归约是汇合的 (Church-Rosser)
 """
 
 from __future__ import annotations
@@ -49,12 +48,12 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 @dataclass
 class CanonicalIRInsn:
-    """归一化 IR 指令--架构无关的最小操作集"""
+    """归一化 IR 指令, 架构无关的最小操作集"""
     op: str                              # mov | add | sub | and | or | xor | shl | shr |
                                          # load | store | cmp | jmp | cjmp | call | ret | nop
     dest: str = ''                       # 目标虚拟寄存器 (%rN) 或空 (store/cjmp/ret)
     srcs: List[str] = field(default_factory=list)  # 源操作数 (%rN | #imm | @addr)
-    # 元数据--保留以支持反向映射
+    # 元数据, 保留以支持反向映射
     original_address: int = 0
     original_text: str = ''
 
@@ -124,13 +123,13 @@ def lift_to_canonical_ir(
 
     从反汇编文本提取核心语义:
     mov/lea -> mov (数据移动)
-    add/sub/mul/div -> add/sub (算术--具体操作符保留)
+    add/sub/mul/div -> add/sub (算术, 具体操作符保留)
     and/or/xor -> 对应的位操作
     cmp/test -> cmp
     jmp/j<cc>/call/ret -> 对应的控制流
     push/pop -> load/store (相对于 sp)
 
-    不完整支持: SIMD、浮点、特权指令--这些保留原始操作符
+    不完整支持: SIMD、浮点、特权指令, 这些保留原始操作符
     """
     ir_list: List[CanonicalIRInsn] = []
     # 操作符映射表
@@ -246,10 +245,10 @@ _PEEPHOLE_RULES = [
 
 
 def apply_peephole(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRInsn]:
-    """应用窥孔归约--扫描指令序列匹配已知模式
+    """应用窥孔归约, 扫描指令序列匹配已知模式
 
     复杂度 O(N·R) N=指令数, R=规则数
-    固定点迭代--直到无规则能应用
+    固定点迭代, 直到无规则能应用
     """
     changed = True
     result = list(ir_list)
@@ -303,11 +302,11 @@ def _apply_combined_peephole(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIR
 # Pass 2: 常量折叠 - IR 级别的预计算
 
 def apply_constant_folding(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRInsn]:
-    """IR 级别的常量折叠--计算编译时常量表达式
+    """IR 级别的常量折叠, 计算编译时常量表达式
 
     模式: add %rN, #A, #B -> mov %rN, #(A+B)
     模式: sub %rN, #A, #B -> mov %rN, #(A-B)
-    仅处理两个立即数的情况--含寄存器的表达式无法折叠
+    仅处理两个立即数的情况, 含寄存器的表达式无法折叠
     """
     result = []
     for insn in ir_list:
@@ -354,12 +353,12 @@ def apply_constant_folding(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRIn
 # Pass 3: 死代码消除
 
 def apply_dead_code_elimination(ir_list: List[CanonicalIRInsn]) -> List[CanonicalIRInsn]:
-    """消除对输出无影响的指令--后向活性分析
+    """消除对输出无影响的指令, 后向活性分析
 
     从末尾向回扫描: 寄存器在最后一次使用后即可消除其定义
     保守策略: 仅消除明确无用的 mov/nop
     """
-    # 反向扫描--收集活跃寄存器
+    # 反向扫描, 收集活跃寄存器
     # ABI: 返回值寄存器 + 栈指针在函数出口处天然活跃
     live: Set[str] = {'%r0', '%r7'}  # rax/x0 返回值, rsp/sp 栈指针
     keep: List[bool] = [False] * len(ir_list)
@@ -379,7 +378,7 @@ def apply_dead_code_elimination(ir_list: List[CanonicalIRInsn]) -> List[Canonica
                     live.add(s)
             continue
 
-        # nop 不保留--除非在整个序列中无其他操作
+        # nop 不保留, 除非在整个序列中无其他操作
         if insn.op == 'nop':
             continue
 
@@ -406,9 +405,9 @@ def canonicalize(
     arch: str = 'x86_64',
     passes: int = 2,
 ) -> List[CanonicalIRInsn]:
-    """执行完整的归一化流水线--多遍迭代至不动点
+    """执行完整的归一化流水线, 多遍迭代至不动点
 
-    passes: 执行遍数--2 遍足够覆盖 95% 的编译器特有模式
+    passes: 执行遍数, 2 遍足够覆盖 95% 的编译器特有模式
     """
     ir = lift_to_canonical_ir(asm_lines, arch)
 
@@ -425,9 +424,9 @@ def canonicalize(
 
 
 def canonical_ir_signature(ir: List[CanonicalIRInsn]) -> str:
-    """生成归一化 IR 的签名--用于快速等价比较
+    """生成归一化 IR 的签名, 用于快速等价比较
 
-    签名忽略原始地址和文本--仅基于规范化的操作符和操作数
+    签名忽略原始地址和文本, 仅基于规范化的操作符和操作数
     """
     import hashlib
     parts = []

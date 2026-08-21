@@ -1,15 +1,14 @@
-# 修改记录:
-# 2025-08-13 09:30 - 安全元数据注入: 将二进制分析发现映射为 LLVM 函数属性+全局元数据
-# 2025-08-13 15:18 - Hardening 遍选择: 基于注解类型推荐 Clang/GCC 安全编译选项
-# 2025-08-16 12:05 - 修复元数据格式: 生成合法 LLVM IR 元数据节点 (!N = !{...})
-# 2025-08-20 09:40 - 增加编译片段生成: 输出可直接 include 的 Makefile/CMake 安全选项片段
+# 安全元数据注入: 将二进制分析发现映射为 LLVM 函数属性+全局元数据
+# Hardening 遍选择: 基于注解类型推荐 Clang/GCC 安全编译选项
+# 修复元数据格式: 生成合法 LLVM IR 元数据节点 (!N = !{...})
+# 增加编译片段生成: 输出可直接 include 的 Makefile/CMake 安全选项片段
 
 """二进制分析->编译器安全选项的桥接映射
 
 本模块聚合二进制分析的发现, 输出:
   1. 每函数的推荐编译器安全属性 (sanitize/stack-protector/cfi 等)
-  2. 全局 LLVM IR 元数据节点--可被自定义 LLVM pass 消费
-  3. Clang/GCC 命令行选项--可直接用于重编译
+  2. 全局 LLVM IR 元数据节点, 可被自定义 LLVM pass 消费
+  3. Clang/GCC 命令行选项, 可直接用于重编译
 
 输出格式:
   - 函数属性: __attribute__((annotate("binsec:taint=NETWORK")))
@@ -17,7 +16,7 @@
   - 编译器选项: -fstack-protector-strong -fsanitize=cfi
 
 适用场景: 假设二进制已被 Forklift/LeanBin 提升至 LLVM IR
-本模块的输出作为重编译阶段的辅助输入--而非独立的 IR 变换遍
+本模块的输出作为重编译阶段的辅助输入, 而非独立的 IR 变换遍
 """
 
 from __future__ import annotations
@@ -31,7 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 @dataclass
 class SecurityAnnotation:
-    """单个安全注解--二进制分析->IR 的映射"""
+    """单个安全注解, 二进制分析->IR 的映射"""
     annotation_type: str       # taint_source | crypto_primitive | exploit_primitive
                                # | ct_violation | heap_operation
     ir_location: str           # IR 中的位置: 'func:<name>' 或 'func:<name>:bb:<id>'
@@ -47,7 +46,7 @@ class AnnotationReport:
     annotations_by_type: Dict[str, List[SecurityAnnotation]]
     # 推荐的 LLVM hardening 遍
     recommended_passes: List[str]
-    # IR 元数据文本--可直接嵌入 .ll 文件
+    # IR 元数据文本, 可直接嵌入 .ll 文件
     ir_metadata_lines: List[str]
 
 
@@ -97,7 +96,7 @@ class LLVMIRSecurityBridge:
         ct_findings: Optional[List[Dict[str, Any]]] = None,
         heap_ops: Optional[List[Dict[str, Any]]] = None,
     ) -> AnnotationReport:
-        """聚合所有二进制分析发现->生成 IR 注解
+        """聚合所有二进制分析发现, 生成 IR 注解
 
         每类 finding 格式: [{'function': str, 'address': int, 'confidence': float, ...}]
 
@@ -195,7 +194,7 @@ class LLVMIRSecurityBridge:
         self,
         annotations: Dict[str, List[SecurityAnnotation]],
     ) -> List[str]:
-        """生成 LLVM IR 兼容的元数据--合法 !N = !{...} 格式
+        """生成 LLVM IR 兼容的元数据, 合法 !N = !{...} 格式
 
         每注解产生一个 LLVM 具名元数据节点
         格式: !binsec_N = !{!"type", !"location_str", f64 confidence}

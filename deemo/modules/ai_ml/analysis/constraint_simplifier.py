@@ -1,7 +1,7 @@
-# 约束简化器——将值流分析得到的区间约束精简为溢出判定
+# 约束简化器: 将值流分析得到的区间约束精简为溢出判定
 # 处理三类约束: (1)分配大小区间 (2)拷贝大小区间 (3)两者关系
 #
-# 关键算法: 区间减法——给定 alloc ∈ [A_lo, A_hi] 和 copy ∈ [C_lo, C_hi],
+# 关键算法: 区间减法, 给定 alloc ∈ [A_lo, A_hi] 和 copy ∈ [C_lo, C_hi],
 #   判定是否存在满足 copy > alloc + margin 的解。
 #   若 ∀a∈alloc, ∀c∈copy: c ≤ a + margin → SAFE (必然不溢出)
 #   若 ∀a∈alloc, ∀c∈copy: c > a + margin → CERTAIN_OVERFLOW (必然溢出)
@@ -90,7 +90,7 @@ class SizeConstraint:
 
 
 class ConstraintSimplifier:
-    """约束简化器——把值流分析的结果变成可判定的约束。
+    """约束简化器: 把值流分析的结果变成可判定的约束。
 
     核心流程:
       1. 从ValueFlowResult中提取alloc区间和copy区间
@@ -111,15 +111,7 @@ class ConstraintSimplifier:
                           alloc_request_si: StridedInterval,
                           copy_si: StridedInterval,
                           ) -> SizeConstraint:
-        """构建分配vs拷贝的尺寸约束。
-
-        Args:
-            alloc_request_si: malloc参数的跨步区间
-            copy_si: memcpy参数的跨步区间
-
-        Returns:
-            SizeConstraint with usable size applied
-        """
+        """构建分配vs拷贝的尺寸约束。"""
         # 将请求大小转换为可用大小
         alloc_lo_usable = self._heap._layout.usable_size(alloc_request_si.lo)
         alloc_hi_usable = self._heap._layout.usable_size(
@@ -143,11 +135,7 @@ class ConstraintSimplifier:
     def simplify_to_verdict(self,
                              constraint: SizeConstraint
                              ) -> Tuple[ConstraintType, float, str]:
-        """将约束简化为最终判定。
-
-        Returns:
-            (constraint_type, confidence, explanation)
-        """
+        """将约束简化为最终判定。"""
         ctype = constraint.classify()
         likelihood = constraint.overflow_likelihood()
 
@@ -175,11 +163,7 @@ class ConstraintSimplifier:
                                copy_si: StridedInterval,
                                min_likelihood: float = 0.3
                                ) -> Tuple[bool, str]:
-        """高层API: 判断一个堆溢出告警是否为误报。
-
-        Returns:
-            (is_false_positive, reason)
-        """
+        """高层API: 判断一个堆溢出告警是否为误报。"""
         constraint = self.build_constraint(alloc_request_si, copy_si)
         ctype, likelihood, expl = self.simplify_to_verdict(constraint)
 

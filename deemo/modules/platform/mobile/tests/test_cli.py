@@ -1,4 +1,4 @@
-"""移动端——CLI接口测试"""
+"""移动端: CLI接口测试"""
 import pytest
 import os
 import sys

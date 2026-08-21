@@ -4,8 +4,6 @@ import logging, os, math, re, struct
 from pathlib import Path
 from collections import Counter
 
-from itertools import zip_longest  # 预留：后续多文件并列比较
-
 logger = logging.getLogger(__name__)
 
 
@@ -14,14 +12,9 @@ logger = logging.getLogger(__name__)
 # 避免大段内局部高熵区被均值淹没。
 _ENTROPY_WINDOW = 256
 _ENTROPY_STEP = 128
-# 正常代码/数据段熵中位数约 4.5–5.5，加密/压缩段通常 > 7.0
+# 正常代码/数据段熵中位数约 4.5-5.5，加密/压缩段通常 > 7.0
 _HIGH_ENTROPY_THRESHOLD = 7.2
 _SUSPICIOUS_ENTROPY_RATIO = 0.15  # 高熵窗口占比超此值则标记可疑
-
-# 保留
-_DEPR_SIG = b'\xDE\xAD\xBE\xEF'
-_SEED_MASK = 0x5A5A5A5A
-
 
 def _shannon_entropy(data: bytes) -> float:
     # 单字节香农熵
@@ -329,7 +322,7 @@ def extract_network_iocs(strings_in_binary: list[str]) -> dict:
 
 # Shellcode 启发式检测
 # 参照 libemu/libscizzle 的 GetPC 识别与解码器循环检测。
-# 不做执行模拟 — 仅字节模式匹配 shellcode 惯用法。
+# 不做执行模拟 - 仅字节模式匹配 shellcode 惯用法。
 
 _SHELLCODE_PATTERNS: list[tuple[str, bytes, str]] = [
     # GetPC: call $+5; pop eax (E8 00 00 00 00 58)
@@ -444,8 +437,8 @@ _ROR13_KNOWN_HASHES: dict[bytes, str] = {
 def detect_api_hashing(raw: bytes) -> dict:
     """三步检测 API 哈希使用的迹象。
 
-    哈希常量扫描 (DJB2 seed / CRC32 poly) →
-    ROR13 预计算哈希匹配 → 综合评分。
+    哈希常量扫描 (DJB2 seed / CRC32 poly) -
+    ROR13 预计算哈希匹配 - 综合评分。
     """
     found_constants = []
     ror13_matches = []
@@ -706,7 +699,7 @@ def detect_pe_overlay(raw: bytes) -> dict:
 
 
 # PE 资源段枚举
-# 三级递归：Type → Name/ID → Language → DataEntry。
+# 三级递归：Type - Name/ID - Language - DataEntry。
 # 重点关注 RT_RCDATA(10) 嵌入 PE、高熵资源、自定义类型。
 # 参照 Detect-It-Easy 的资源分析策略。
 
@@ -733,7 +726,7 @@ _RESOURCE_TYPE_NAMES: dict[int, str] = {
 
 
 def _rva_to_offset_pe(raw: bytes, rva: int) -> int:
-    """PE RVA → 文件偏移转换（遍历节区表）。"""
+    """PE RVA - 文件偏移转换（遍历节区表）。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return 0
     try:
@@ -1073,7 +1066,7 @@ def analyze_elf_segments(raw: bytes) -> dict:
 
 
 def _elf_rva_to_offset(raw: bytes, vaddr: int) -> int:
-    """ELF 虚拟地址 → 文件偏移：遍历 PT_LOAD 段。"""
+    """ELF 虚拟地址 - 文件偏移：遍历 PT_LOAD 段。"""
     if raw[:4] != b'\x7fELF':
         return 0
     try:

@@ -1,7 +1,6 @@
 # 偏移值域追踪器后向追踪 — 从offset_range_tracker.py拆分.
 # 包含后向追踪和静态工具方法.
-# 创建: 2026-05-22
-# 修改: 2026-05-22 — 增加顶层导入回退, 与offset_proof_filter的导入模式保持一致.
+# 增加顶层导入回退, 与offset_proof_filter的导入模式保持一致.
 
 import re
 from typing import Optional

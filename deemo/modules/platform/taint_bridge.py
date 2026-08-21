@@ -1,5 +1,4 @@
-# 修改记录:
-# 2025-08-02 16:51 - 增加 MMIO→DMA 的污点传播路径，覆盖 GPU/PCIe 外设场景
+# 增加 MMIO→DMA 的污点传播路径，覆盖 GPU/PCIe 外设场景
 
 """
 Cross-Layer Memory-Mapped Taint Bridge — 跨平台层 MMIO 污点传播追踪。
@@ -20,7 +19,7 @@ subreg_taint 的字节级污点引擎连接起来，追踪数据从硬件寄存�
 
 与传统污点分析的区别：
   传统污点分析在单一二进制或内核内部运行。本桥接器在固件/内核/硬件
-  三个隔离的执行域之间传递污点——每个域内部使用自己的分析器（固件用
+  三个隔离的执行域之间传递污点，每个域内部使用自己的分析器（固件用
   静态 MMIO 扫描，内核用 eBPF 钩子分析，硬件用侧信道评估），本模块
   负责跨域的对齐与关联。
 
@@ -49,7 +48,7 @@ class TaintHopDirection(str, Enum):
 
 @dataclass
 class TaintHop:
-    """单步污点传播——源地址/寄存器到目标地址/寄存器的字节级映射。"""
+    """单步污点传播，源地址/寄存器到目标地址/寄存器的字节级映射。"""
     direction: TaintHopDirection
     source_spec: str            # 源描述: "MMIO:0xfed00000" 或 "reg:RAX[3:0]"
     target_spec: str            # 目标描述
@@ -65,7 +64,7 @@ class TaintHop:
 
 @dataclass
 class TaintPath:
-    """完整的跨层污点传播路径——从 MMIO 寄存器到用户空间。"""
+    """完整的跨层污点传播路径，从 MMIO 寄存器到用户空间。"""
     hops: List[TaintHop] = field(default_factory=list)
     source_node_id: str = ""     # 在 PropagationGraph 中的源节点
     target_node_id: str = ""     # 在 PropagationGraph 中的目标节点
@@ -76,7 +75,7 @@ class TaintPath:
 
     @property
     def joint_confidence(self) -> float:
-        """路径联合置信度——各跳置信度的乘积。"""
+        """路径联合置信度，各跳置信度的乘积。"""
         result = 1.0
         for hop in self.hops:
             result *= hop.confidence
@@ -101,7 +100,7 @@ class MMIOToRegisterMapper:
 
     def add_mmio_region(self, phys_start: int, phys_end: int,
                         target_reg: str, slot_range: Tuple[int, int]) -> None:
-        """注册一个 MMIO 区间——物理地址 [start, end) 映射到寄存器槽位。"""
+        """注册一个 MMIO 区间，物理地址 [start, end) 映射到寄存器槽位。"""
         self._regions.append((phys_start, phys_end, target_reg, slot_range))
 
     def lookup(self, phys_addr: int) -> Optional[Tuple[str, Tuple[int, int]]]:
@@ -119,7 +118,7 @@ class MMIOToRegisterMapper:
         """从固件 Flash 布局解析结果构建映射表。
 
         固件 MTD 分区表给出逻辑分区→物理地址的映射，结合内核
-        /proc/iomem 可还原 MMIO 区间。此处实现的是简化版本——
+        /proc/iomem 可还原 MMIO 区间。此处实现的是简化版本，
         假设每个 MTD 分区映射到连续的物理地址段。
         """
         mapper = cls()
@@ -156,7 +155,7 @@ class TaintBridge:
 
     def register_mmio_source(self, phys_spec: str, byte_count: int,
                              confidence: float = 0.80) -> None:
-        """注册 MMIO 源——固件/内核通过 MMIO 读取的物理地址。
+        """注册 MMIO 源，固件/内核通过 MMIO 读取的物理地址。
 
         phys_spec: "MMIO:0xfed00000" 格式的物理地址描述。
         """
@@ -170,7 +169,7 @@ class TaintBridge:
     def register_kernel_hook(self, ebpf_hook_spec: str,
                              intercepts: List[str],
                              confidence: float = 0.70) -> None:
-        """注册内核 eBPF 钩子——拦截特定寄存器/内存位置。
+        """注册内核 eBPF 钩子，拦截特定寄存器/内存位置。
 
         ebpf_hook_spec: "ebpf:sys_read" 或 "ebpf:kprobe:__x64_sys_read"
         intercepts: 被拦截的寄存器名列表 ["RAX", "RDI"]
@@ -186,7 +185,7 @@ class TaintBridge:
     def register_sidechannel_leak(self, channel_spec: str,
                                   leaks: List[str],
                                   confidence: float = 0.55) -> None:
-        """注册硬件侧信道泄漏点——缓存集/PMC 事件/时序差异。
+        """注册硬件侧信道泄漏点，缓存集/PMC 事件/时序差异。
 
         channel_spec: "cache:l1d:set_128" 或 "pmc:BR_MISP_RETIRED"
         leaks: 泄漏的寄存器槽位 ["RAX[0]", "RBX[3:5]"]
@@ -202,7 +201,7 @@ class TaintBridge:
     def register_userspace_sink(self, sink_spec: str,
                                 source_hops: List[str],
                                 confidence: float = 0.45) -> None:
-        """注册用户空间的数据汇——恶意进程读取侧信道/ebpf map 的位置。
+        """注册用户空间的数据汇，恶意进程读取侧信道/ebpf map 的位置。
 
         sink_spec: "proc:/bin/malware:fd=3" 或 "socket:127.0.0.1:8080"
         source_hops: 前驱 hop 的 source_spec 列表
@@ -219,7 +218,7 @@ class TaintBridge:
                     max_depth: int = 4) -> List[TaintPath]:
         """从给定源追踪所有可达的污点传播路径。
 
-        使用 BFS——从 source 出发，沿 _hops 的有向边遍历，
+        使用 BFS，从 source 出发，沿 _hops 的有向边遍历，
         直到到达用户空间或达到最大深度。
         """
         if not source:

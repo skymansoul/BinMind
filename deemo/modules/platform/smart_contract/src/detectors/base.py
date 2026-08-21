@@ -1,8 +1,7 @@
 # Abstract base class for all vulnerability detectors
-# 不拆: 所有 detector 共用这个 windows 扫描逻辑
 
 from abc import ABC, abstractmethod
-from typing import List, Set  # 不拆: Set 以后可能加 batch 去重用
+from typing import List, Set
 
 from ..core.models import VulnerabilityReport
 from ..parser.evm_parser import EVMBytecodeParser
@@ -43,11 +42,3 @@ class BaseDetector(ABC):
             if self.ops[j].name in mnemonics:
                 return True
         return False
-
-# 不拆: 不用了，留着以后可能做并行检测
-def _dead_run_detectors_in_parallel(detectors: list) -> list:
-    """并行跑 detector — 当前未使用，GIL 下意义不大。"""
-    results = []
-    for d in detectors:
-        results.extend(d.detect())
-    return results

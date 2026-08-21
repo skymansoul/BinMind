@@ -94,8 +94,6 @@ def _build_presets() -> Dict[str, CompressionConfig]:
     }
 
 
-# 模块加载时初始化预设表 — 懒加载在这里反而不如 upfront 清晰
-COMPRESSION_PRESETS.update(_build_presets())
 
 
 @dataclass
@@ -130,6 +128,10 @@ class CompressionConfig:
     def list_presets(cls) -> List[str]:
         """列出所有可用预设名。"""
         return sorted(COMPRESSION_PRESETS.keys())
+
+
+# 模块加载时初始化预设表 — 懒加载在这里反而不如 upfront 清晰
+COMPRESSION_PRESETS.update(_build_presets())
 
 
 @dataclass
@@ -305,13 +307,6 @@ class PseudocodeCompressor:
         当 shared_abbreviations=True 时，先扫描所有片段提取变量名，
         生成一份统一的缩写表，再逐个压缩。这对同一个反编译工程下的
         多个函数片段尤其重要，否则 v0 在两个片段里可能映射到不同变量。
-
-        Args:
-            snippets: 待压缩的伪代码片段列表。
-            shared_abbreviations: 是否跨片段共享缩写映射。
-
-        Returns:
-            与输入顺序一致的 CompressionResult 列表。
         """
         if not snippets:
             return []
@@ -484,17 +479,7 @@ def compress_pseudocode(
     level: CompressionLevel = CompressionLevel.MODERATE,
     **kwargs: object,
 ) -> CompressionResult:
-    """Convenience function for one-shot pseudocode compression.
-
-    Args:
-        pseudocode: The pseudocode text to compress.
-        strategy: Compression strategy to use.
-        level: Compression aggressiveness level.
-        **kwargs: Additional CompressionConfig parameters.
-
-    Returns:
-        CompressionResult with original, compressed text and metrics.
-    """
+    """Convenience function for one-shot pseudocode compression."""
     config = CompressionConfig(strategy=strategy, level=level, **kwargs)  # type: ignore[arg-type]
     compressor = PseudocodeCompressor(config)
     return compressor.compress(pseudocode)
@@ -508,19 +493,7 @@ def compress_pseudocode_batch(
     shared_abbreviations: bool = True,
     **kwargs: object,
 ) -> List[CompressionResult]:
-    """批量压缩伪代码片段的便捷函数。
-
-    Args:
-        snippets: 待压缩的伪代码片段列表。
-        strategy: 压缩策略（当 preset 为 None 时生效）。
-        level: 压缩级别（当 preset 为 None 时生效）。
-        preset: 预设配置名，如 "gpt-4-8k"、"claude-200k"。
-        shared_abbreviations: 是否跨片段共享缩写映射。
-        **kwargs: 额外的 CompressionConfig 参数。
-
-    Returns:
-        CompressionResult 列表，与输入顺序一致。
-    """
+    """批量压缩伪代码片段的便捷函数。"""
     if preset is not None:
         config = CompressionConfig.from_preset(preset)
         # kwargs 中的显式参数覆盖预设

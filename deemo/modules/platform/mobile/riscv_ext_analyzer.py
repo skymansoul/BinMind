@@ -1,4 +1,4 @@
-"""RISC-V V/K 扩展分析——向量指令/加密扩展/向量循环/strip-mining 识别。"""
+"""RISC-V V/K 扩展分析: 向量指令/加密扩展/向量循环/strip-mining 识别。"""
 import os, re, logging, subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List
@@ -69,15 +69,15 @@ class RISCVExtAnalyzer:
         hr=[i for i in ci if i.security_risk=='high']
         if hr: issues.append(f"检测到高风险加密指令使用:{', '.join(i.mnemonic for i in hr)}")
         ki=[i for i in ci if 'key' in i.description.lower()]
-        if ki: issues.append(f"检测到密钥操作指令:{', '.join(i.mnemonic for i in ki)}——建议审查密钥处理流程")
+        if ki: issues.append(f"检测到密钥操作指令:{', '.join(i.mnemonic for i in ki)}, 建议审查密钥处理流程")
         sm4c=sum(1 for i in ci if i.opcode=='sm4key')
         if sm4c>0: issues.append(f"检测到{sm4c}次SM4密钥扩展操作")
         has_sc=any(i.extension=='Zkne' for i in ci); has_v=any(i.mnemonic in ('vadd','vmul') for i in ci)
-        if has_sc and has_v: issues.append("标量加密与向量运算混合——审查密钥材料在向量寄存器中的泄露风险")
+        if has_sc and has_v: issues.append("标量加密与向量运算混合, 审查密钥材料在向量寄存器中的泄露风险")
         # 寄存器活跃度检测: 高频vsetvli/vsetvl但零内存操作 → 配置异常
         vsetvl_count=sum(1 for i in vi if i.opcode in ('vsetvli','vsetvl')) if 'vi' in dir() else 0
         vmem_count=sum(1 for i in vi if i.opcode in ('vle','vse')) if 'vi' in dir() else 0
-        if vsetvl_count>10 and vmem_count==0: issues.append(f"检测到{vsetvl_count}次向量长度设置但无内存操作——配置可能冗余或错误")
+        if vsetvl_count>10 and vmem_count==0: issues.append(f"检测到{vsetvl_count}次向量长度设置但无内存操作, 配置可能冗余或错误")
         return issues
     def analyze_binary(s,bp):
         log.info(f"开始分析RISC-V扩展:{bp}")
@@ -94,7 +94,7 @@ class RISCVExtAnalyzer:
                 for i in vi:
                     for pat in RVV_INSTRUCTIONS.get(i.opcode,{}).get('patterns',[]):
                         if 'v' in pat.lower(): vregs_used.add(pat[:4])
-                if len(vregs_used)<4: rlf.append("向量寄存器利用率低——可能存在寄存器压力问题")
+                if len(vregs_used)<4: rlf.append("向量寄存器利用率低, 可能存在寄存器压力问题")
             sp=[]
             if vi: sp.append(f"发现{len(vi)}条向量指令")
             if ci: sp.append(f"发现{len(ci)}条加密指令")

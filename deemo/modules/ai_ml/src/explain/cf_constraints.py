@@ -9,7 +9,7 @@ from enum import Enum
 
 
 class GraphEditOp(Enum):
-    """图编辑操作类型——限定于二进制CFG的合法变换。
+    """图编辑操作类型-限定于二进制CFG的合法变换。
 
     EDGE_DROP: 删除控制流边（对应分支裁剪/死代码消除）
     EDGE_ADD: 添加合法控制流边（对应函数内联展开的逆操作）
@@ -89,11 +89,7 @@ class BinarySemanticConstraints:
                         adjacency: List[List[int]],
                         node_features: Optional[List[List[float]]] = None
                         ) -> Tuple[bool, str]:
-        """判断图编辑操作是否违反语义约束。
-
-        Returns:
-            (allowed, reason) — allowed=False时reason说明违规原因
-        """
+        """判断图编辑操作是否违反语义约束。"""
         if edit.op == GraphEditOp.EDGE_DROP:
             return self._check_edge_drop(edit, adjacency)
         elif edit.op == GraphEditOp.EDGE_ADD:
@@ -106,23 +102,23 @@ class BinarySemanticConstraints:
                          adjacency: List[List[int]]) -> Tuple[bool, str]:
         u, v = edit.src_node, edit.dst_node
         if (u, v) in self._loop_backedges:
-            return False, "循环回边不可删除——破坏自然循环结构"
+            return False, "循环回边不可删除-破坏自然循环结构"
         if v in self._call_targets and u in self._call_targets:
-            return False, "call目标基本块不可失联——破坏调用图封闭性"
+            return False, "call目标基本块不可失联-破坏调用图封闭性"
         if self.strict and v in self._entry_nodes:
             return False, "入口节点入边不可删除"
         # 删除后节点完全不可达检查
         remaining_in = sum(1 for i in range(len(adjacency))
                          if adjacency[i][v] and i != u)
         if remaining_in == 0 and v not in self._entry_nodes and self.strict:
-            return False, "删除后节点完全不可达——产生孤立节点"
+            return False, "删除后节点完全不可达-产生孤立节点"
         return True, ""
 
     def _check_edge_add(self, edit: GraphEdit,
                         adjacency: List[List[int]]) -> Tuple[bool, str]:
         u, v = edit.src_node, edit.dst_node
         if u == v and self.strict:
-            return False, "CFG自环破坏控制流语义——基本块不应跳转到自身"
+            return False, "CFG自环破坏控制流语义-基本块不应跳转到自身"
         if v in self._entry_nodes:
             return False, "不可添加边指向入口节点"
         return True, ""

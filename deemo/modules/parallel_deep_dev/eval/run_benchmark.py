@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import psutil  # noqa: E402
 
 from tool_runners import run_all, set_sample_class  # noqa: E402
-from tests.backends import CLASS_ROOTS  # noqa: E402
+from ..tests.backends import CLASS_ROOTS  # noqa: E402
 
 VULN_DIR = ROOT / 'samples' / 'heap_overflow_cve'
 SAFE_DIR = ROOT / 'samples' / 'heap_safe_fp'

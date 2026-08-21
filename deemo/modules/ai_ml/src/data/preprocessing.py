@@ -1,11 +1,11 @@
-# 预处理.py -- x86汇编指令归一化
+# 预处理.py x86汇编指令归一化
 # 核心思路：把变化的部分（立即数、偏移、地址）替换为占位符，
 # 保留操作语义不变。受ContraBin启发但简化了寄存器抽象。
 # //// 不抽象寄存器名，因为寄存器选择本身就是语义特征 ////
 
 import re
 
-# 正则模式 -- 编译一次复用
+# 正则模式 编译一次复用
 _HEX_IMM_RE = re.compile(r'\b0x[0-9a-fA-F]+\b')
 _DEC_IMM_RE = re.compile(r'(?<![a-zA-Z_])(\d+)(?![a-zA-Z_0-9])')
 _OFFSET_RE = re.compile(r'\[(?:[a-z]{3,6}:)?0x[0-9a-fA-F]+\]', re.IGNORECASE)
@@ -18,7 +18,7 @@ _SEGMENT_RE = re.compile(r'\b(?:cs|ds|es|fs|gs|ss):', re.IGNORECASE)
 _COMMENT_RE = re.compile(r'\s*;.*$')
 _MULTI_SPACE_RE = re.compile(r'\s+')
 
-# x86通用寄存器集合 -- 用于token判断
+# x86通用寄存器集合 用于token判断
 _X86_REGS = {
     'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
     'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',

@@ -28,7 +28,7 @@ TaintSource = TaintTag  # backwards-compat alias
 
 class TaintMap:
     """Per-寄存器 / per-memory-byte 污点追踪
-    
+
     byte 追踪 a bitmask TaintTag values. A byte tagged
     USER_INPUT | 网络_RECV means influenced
     """
@@ -89,7 +89,7 @@ class TaintMap:
             self._memory[addr + off] |= tag
 
     def propagate_binary_op(self, dst_reg: str, src_regs: List[str]) -> None:
-        """合并 taint source 寄存器s dst"""
+        """将 taint source 寄存器合并到 dst。"""
         merged = TaintTag.DERIVED
         for r in src_regs:
             merged |= self._registers.get(r, 0)
@@ -197,7 +197,7 @@ _SINK_SIGNATURES = {
 
 class FridaTaintTracker:
     """污点追踪 using Frida 插桩
-    
+
     Requires a Frida-capable environment. For headless 使用
     consider QBDI backend instead
     """
@@ -296,7 +296,7 @@ class FridaTaintTracker:
 
 class QBDITaintTracker:
     """污点追踪 using QBDI (QuarkslaB Dynamic binary 插桩)
-    
+
     Works entirely -process, external daemon needed
     """
 

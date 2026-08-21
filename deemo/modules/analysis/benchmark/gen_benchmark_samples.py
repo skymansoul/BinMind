@@ -1,7 +1,6 @@
 # 堆溢出基准测试样本生成器 (Heap Overflow Benchmark Sample Generator)
 # 一键生成15个CVE复现样本: 源码 + Makefile + README + manifest.
 # 每个样本模拟一个真实CVE的堆溢出核心模式.
-# 创建: 2026-05-01
 
 import os, json, stat
 from pathlib import Path

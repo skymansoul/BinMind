@@ -35,14 +35,10 @@ def elf_arch_name(path: str) -> str:
             if f.read(4) != ELFMAG:
                 return 'unknown'
             ei_class = f.read(1)[0]
-            if ei_class == ELFCLASS64:
-                f.seek(0x12)
-                machine = struct.unpack('<H', f.read(2))[0]
-            elif ei_class == ELFCLASS32:
-                f.seek(0x12)
-                machine = struct.unpack('<H', f.read(2))[0]
-            else:
+            if ei_class not in (ELFCLASS32, ELFCLASS64):
                 return 'unknown'
+            f.seek(0x12)
+            machine = struct.unpack('<H', f.read(2))[0]
     except (OSError, IOError):
         return 'unknown'
 

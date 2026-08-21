@@ -1,13 +1,12 @@
-# 修改记录:
-# 2025-08-06 15:42 - 初始实现：基于语义特征映射的跨二进制变异策略迁移
+# 初始实现：基于语义特征映射的跨二进制变异策略迁移
 
-"""跨二进制变异迁移 — 将变异策略效能从已知二进制迁移到新目标。
+"""跨二进制变异迁移 - 将变异策略效能从已知二进制迁移到新目标。
 
-现有变异策略（字节翻转、算术运算、字典替换等）对每个二进制独立学习——
+现有变异策略（字节翻转、算术运算、字典替换等）对每个二进制独立学习-
 经历数小时的冷启动期才收敛到有效策略。对新的二进制目标，
 学到的策略知识全部丢弃，从零开始。
 
-本模块的核心机制——语义特征桥接 (Semantic Feature Bridge, SFB)：
+本模块的核心机制-语义特征桥接 (Semantic Feature Bridge, SFB)：
 1. 对每个字节偏移量提取语义特征向量（上下文指令类型、所在基本块属性、
    距函数入口距离、数据流角色等），而非仅记录偏移量数值。
 2. 训练一个轻量级回归模型，输入语义特征向量，输出该偏移量的变异效能预估。
@@ -18,7 +17,7 @@
 区别于现有所有方案的要点：
 - 不是策略迁移（像迁移强化学习那样搬 policy），
   而是将"什么样的字节位置对变异敏感"这一知识跨二进制泛化。
-- 冷启动时间从数小时压缩到数分钟——模型预热后立即可生成变异热图。
+- 冷启动时间从数小时压缩到数分钟-模型预热后立即可生成变异热图。
 
 技术依据：
 - 同一编译器产出的二进制中，"函数序言中的立即数"、
@@ -79,7 +78,7 @@ class OffsetFeedback:
     efficacy_score: float = 0.0  # [0, 1] 变异效能
 
 class SemanticFeatureBridge:
-    """语义特征桥接器——字节偏移的语义画像提取。
+    """语义特征桥接器-字节偏移的语义画像提取。
 
     将二进制中的每个字节位置映射到语义特征空间，
     使不同二进制的"相似角色"字节在特征空间中相邻。
@@ -136,7 +135,7 @@ class CrossBinaryMutationTransfer:
         self.learning_rate = learning_rate
         self.regularization = regularization
 
-        # 线性回归权重：w^T · x → efficacy_score
+        # 线性回归权重：w^T · x -> efficacy_score
         self._weights: List[float] = [0.0] * feature_dim
         self._bias: float = 0.0
         # 在线学习统计
@@ -170,7 +169,7 @@ class CrossBinaryMutationTransfer:
         """对新目标二进制生成变异热图。
 
         返回：{offset: predicted_efficacy_score}。
-        score 越高 → 该位置被预测为变异高潜力点。
+        score 越高 -> 该位置被预测为变异高潜力点。
         """
         _hotmap: Dict[int, float] = {}
         for _offset, _profile in profiles.items():
@@ -184,7 +183,7 @@ class CrossBinaryMutationTransfer:
         target_profiles: Dict[int, ByteOffsetProfile],
         top_k: int = 100,
     ) -> List[int]:
-        """将学到的知识迁移到新目标——返回 top-k 推荐变异偏移量。
+        """将学到的知识迁移到新目标-返回 top-k 推荐变异偏移量。
 
         这些偏移量是预估变异效能最高的位置，
         可在 fuzzing 初期直接作为变异热区。
@@ -196,7 +195,7 @@ class CrossBinaryMutationTransfer:
     def get_feature_importance(self) -> Dict[str, float]:
         """返回各语义特征的相对重要性。
 
-        可用于解释模型为何推荐某些偏移量——
+        可用于解释模型为何推荐某些偏移量-
         例如"立即数字节对变异的敏感性权重最高"。
         """
         _names = [
@@ -218,7 +217,7 @@ class CrossBinaryMutationTransfer:
         return 1.0 / (1.0 + math.exp(-_z))
 
     def _online_update(self, feedback: OffsetFeedback):
-        """SGD 在线更新——对新目标的反馈持续微调模型。"""
+        """SGD 在线更新-对新目标的反馈持续微调模型。"""
         _feat = feedback.profile.to_feature_vector()
         _pred = self._predict_single(_feat)
         _target = feedback.efficacy_score
@@ -238,12 +237,12 @@ class CrossBinaryMutationTransfer:
         return self._total_updates >= 50 and len(self._learned_binaries) >= 1
 
 class GaussianProcessTransfer(CrossBinaryMutationTransfer):
-    """GP增强的跨二进制迁移——用非参数贝叶斯回归替代线性模型。
+    """GP增强的跨二进制迁移-用非参数贝叶斯回归替代线性模型。
 
     在CrossBinaryMutationTransfer的线性回归之上叠加GP层：
     1. 保留线性回归作为均值函数（先验趋势）。
-    2. GP核建模残差的局部相关性——相似的字节偏移产生相似的残差。
-    3. 对新二进制，GP输出预测均值+方差——方差高=高不确定性→优先探索。
+    2. GP核建模残差的局部相关性-相似的字节偏移产生相似的残差。
+    3. 对新二进制，GP输出预测均值+方差-方差高=高不确定性->优先探索。
     4. Expected Improvement (EI) 采集函数指导主动采样：
        自动选择"高预测效能+高不确定性"的字节偏移进行优先变异。
 
@@ -265,10 +264,10 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
     def predict_with_uncertainty(
         self, profile: ByteOffsetProfile,
     ) -> Tuple[float, float]:
-        """GP预测——返回(均值, 标准差)。
+        """GP预测-返回(均值, 标准差)。
 
         均值 = 线性预测 + GP残差修正。
-        方差来自GP后验——邻近训练点→低方差，远离→高方差。
+        方差来自GP后验-邻近训练点->低方差，远离->高方差。
         """
         _feat = profile.to_feature_vector()
         _linear_pred = self._predict_single(_feat)
@@ -308,7 +307,7 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
         """Expected Improvement (EI) 采集函数。
 
         EI(x) = E[max(0, f(x) - best_observed)]
-        高EI值意味着该点可能显著超越当前最优——应优先变异。
+        高EI值意味着该点可能显著超越当前最优-应优先变异。
         """
         _mean, _std = self.predict_with_uncertainty(profile)
         if _std < _TOLERANCE:
@@ -338,12 +337,12 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
         self._K_inv = self._compute_K_inv()
 
     def _rbf_kernel(self, a: List[float], b: List[float]) -> float:
-        """平方指数核——k(a,b) = exp(-||a-b||² / (2ℓ²))。"""
+        """平方指数核-k(a,b) = exp(-||a-b||² / (2ℓ²))。"""
         _sq_dist = sum((ai - bi) ** 2 for ai, bi in zip(a, b))
         return math.exp(-_sq_dist / (2.0 * self.gp_lengthscale ** 2))
 
     def _compute_K_inv(self) -> Optional[List[List[float]]]:
-        """计算 (K + σ²I)⁻¹ ——Cholesky分解求逆。"""
+        """计算 (K + σ²I)⁻¹ -Cholesky分解求逆。"""
         _n = len(self._gp_X)
         if _n == 0:
             return None
@@ -369,12 +368,12 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
         # 求逆: 先用前代后代解 L@L^T @ K_inv = I
         _n = len(_L)
         _inv = [[1.0 if i == j else 0.0 for j in range(_n)] for i in range(_n)]
-        # 前代 L @ Y = I → Y
+        # 前代 L @ Y = I -> Y
         for _col in range(_n):
             for _i in range(_n):
                 _sum = sum(_L[_i][_k] * _inv[_k][_col] for _k in range(_i))
                 _inv[_i][_col] = (_inv[_i][_col] - _sum) / max(_L[_i][_i], _TOLERANCE)
-        # 后代 L^T @ K_inv = Y → K_inv
+        # 后代 L^T @ K_inv = Y -> K_inv
         for _col in range(_n):
             for _i in range(_n - 1, -1, -1):
                 _sum = sum(_L[_k][_i] * _inv[_k][_col] for _k in range(_i + 1, _n))
@@ -383,7 +382,7 @@ class GaussianProcessTransfer(CrossBinaryMutationTransfer):
         return _inv
 
     def _sparsify_gp(self):
-        """最远点采样——保留最具代表性的诱导点子集。"""
+        """最远点采样-保留最具代表性的诱导点子集。"""
         if len(self._gp_X) <= self.n_inducing:
             return
         _selected = [0]

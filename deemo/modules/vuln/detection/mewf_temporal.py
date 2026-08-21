@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-04-18  |  时态生存分析
-# 修改: 2026-04-18  |  审计后补充文件头与错误处理
 #
 """
-多因子漏洞武器化预测——时态生存分析模型。
+多因子漏洞武器化预测-时态生存分析模型。
 
 技术问题:
   现有系统(EPSS/LEV)输出"未来30天被利用的概率"这一单一数值，
@@ -13,15 +11,15 @@
     - 何时可以降低此漏洞的监控优先级？
 
 解决方案:
-  威布尔加速失效时间(AFT)模型——协变量(漏洞复杂度+CVSS+PoC活动)
+  威布尔加速失效时间(AFT)模型-协变量(漏洞复杂度+CVSS+PoC活动)
   影响尺度参数λ，形状参数k捕获风险率时变特性。
     S(t|X) = exp(-(t/λ(X))^k)
     λ(X) = exp(β₀ + β₁×complexity + β₂×CVSS + β₃×PoC_activity)
-    h(t|X) = (k/λ) × (t/λ)^(k-1)  —— 风险率函数
+    h(t|X) = (k/λ) × (t/λ)^(k-1)  - 风险率函数
 
-  k>1: 风险递增(随着时间推移利用概率加速上升——漏洞自动化工具开发)
-  k<1: 风险递减(初始关注度过后利用概率下降——漏洞难以武器化)
-  k=1: 指数分布(恒定风险——基准情况)
+  k>1: 风险递增(随着时间推移利用概率加速上升-漏洞自动化工具开发)
+  k<1: 风险递减(初始关注度过后利用概率下降-漏洞难以武器化)
+  k=1: 指数分布(恒定风险-基准情况)
 
 与EPSS的差异:
   EPSS: 30天单体概率，黑盒ML，仅CVSS元数据
@@ -29,7 +27,7 @@
 
 理论基础:
   Cox比例风险模型(AFT参数化)在生存分析中的标准应用，
-  适配至漏洞利用时域——首次PoC公开时间等效于生物统计的"事件时间"。
+  适配至漏洞利用时域-首次PoC公开时间等效于生物统计的"事件时间"。
 """
 
 import math
@@ -44,7 +42,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class TemporalForecast:
-    """时态利用预测——生存曲线+风险率+关键时间点"""
+    """时态利用预测-生存曲线+风险率+关键时间点"""
     # 生存概率 S(t)
     survival_7d: float = 1.0       # 7天内存活(未被利用)概率
     survival_30d: float = 1.0
@@ -68,7 +66,7 @@ class TemporalForecast:
 
 
 class WeibullAFT:
-    """威布尔加速失效时间模型——协变量驱动的漏洞利用时域预测。
+    """威布尔加速失效时间模型-协变量驱动的漏洞利用时域预测。
 
     参数估计:
       基准尺度λ₀ = 180天(中位漏洞在180天内出现PoC)
@@ -76,23 +74,23 @@ class WeibullAFT:
 
     协变量定义:
       X₁ = exploit_complexity.overall_complexity ([-1, 1]标准化)
-          → 复杂度越高→λ越大→生存更长(更难利用)
+          - 复杂度越高-λ越大-生存更长(更难利用)
       X₂ = cvss_normalized ([-1, 1])
-          → CVSS越高→λ越小→生存更短(更快被利用)
+          - CVSS越高-λ越小-生存更短(更快被利用)
       X₃ = poc_activity ([-1, 1])
-          → GitHub/Exploit-DB活动越多→λ越小→更快武器化
+          - GitHub/Exploit-DB活动越多-λ越小-更快武器化
       X₄ = kev_listed (0或1)
-          → CISA KEV收录→λ×0.3(大幅加速)
+          - CISA KEV收录-λ×0.3(大幅加速)
 
     形状参数k:
-      k=1.3(默认): 温和递增——大部分漏洞展示"逐渐升温"的利用模式
-      k=0.8(低复杂度): 递减——容易利用的漏洞初期即被攻击
-      k=1.8(高复杂度): 陡增——需工具化后利用率才上升
+      k=1.3(默认): 温和递增-大部分漏洞展示"逐渐升温"的利用模式
+      k=0.8(低复杂度): 递减-容易利用的漏洞初期即被攻击
+      k=1.8(高复杂度): 陡增-需工具化后利用率才上升
     """
 
-    # 协变量系数——log(λ) = β₀ + Σ βᵢXᵢ
+    # 协变量系数-log(λ) = β₀ + Σ βᵢXᵢ
     _BETA = {
-        'intercept': math.log(180.0),   # β₀→基准λ=180天
+        'intercept': math.log(180.0),   # β₀-基准λ=180天
         'complexity': 1.2,              # β₁: 复杂度正相关
         'cvss': -0.8,                   # β₂: CVSS负相关
         'poc_activity': -0.6,           # β₃: PoC活动负相关
@@ -133,7 +131,7 @@ class WeibullAFT:
                    self._BETA['kev_listed'] * x_kev)
         lam = max(1.0, math.exp(log_lam))
 
-        # 形状参数k——基于复杂度调整
+        # 形状参数k-基于复杂度调整
         if complexity.complexity_tier == "EXTREME":
             k = 1.8
         elif complexity.complexity_tier == "HIGH":
@@ -143,7 +141,7 @@ class WeibullAFT:
         else:
             k = 1.2
 
-        # 条件生存——若已过disclosure_days天未被利用
+        # 条件生存-若已过disclosure_days天未被利用
         base_survival = {t: self._survival(t, lam, k)
                          for t in [7, 30, 90, 180]}
         if disclosure_days > 0:

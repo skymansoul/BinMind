@@ -10,12 +10,12 @@ memcpy 类调用取长度参数; 数组写 `buf[i]=x` 换算为
 
 from typing import List
 
-from heapov.expr_ast import (
+from .expr_ast import (
     Expr, Var, Const, Binary, Call, Index, Field, Deref,
 )
-from heapov import cparser as cp
-from heapov.dataflow import DataflowEnv, iter_statements
-from heapov.model import WriteSite
+from . import cparser as cp
+from .dataflow import DataflowEnv, iter_statements
+from .model import WriteSite
 
 _CALLS_LEN_ARG = {
     'memcpy': 2, 'memmove': 2, 'memset': 1, 'strncpy': 2,
@@ -174,5 +174,5 @@ def extract_writes(func: cp.Func, env: DataflowEnv) -> List[WriteSite]:
 
 
 def _sexpr(e: Expr) -> str:
-    from heapov.expr_ast import expr_str
+    from .expr_ast import expr_str
     return expr_str(e)

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # 行为追踪测试: ApiCall/BehaviorSequence/TraceResult的数据结构 + _categorize/_analyze的核心逻辑
-# 感觉_categorize_api_call的规则表得重写，现在硬编码太多
 
 import os
 import unittest
 import tempfile
 import shutil
-# import sys  -- path hack删了
 from datetime import datetime
 
 from modules.behavior_tracer import (
@@ -14,11 +12,8 @@ from modules.behavior_tracer import (
     BehaviorCategory, MALICIOUS_BEHAVIOR_PATTERNS
 )
 
-_DEBUG_FLAG = False
-
 
 class TestBehaviorTracer(unittest.TestCase):
-    # 旧版逻辑留存——记录演进路径
     """行为追踪器: 整个pipeline walkthrough"""
 
     def setUp(self):

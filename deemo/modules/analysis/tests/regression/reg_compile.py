@@ -5,7 +5,6 @@
 #
 # 决策: MinGW gcc 输出 PE 二进制, objdump 可解析;
 # 与 Linux ELF 仅格式差异, 分析管线 (disasm_util) 已兼容.
-# 创建: 2026-08-03
 
 import json
 import subprocess

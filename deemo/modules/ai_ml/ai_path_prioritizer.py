@@ -58,7 +58,7 @@ def _sigmoid_decay(distance, midpoint=_SIGMOID_MIDPOINT, steepness=_SIGMOID_STEE
     """sigmoid距离衰减：尾部风险不应被线性稀释。
 
     线性模型假设每步距离等权重衰减，但实证上taint-to-sink距离
-    对可利用性的影响呈S形——短距离内缓慢衰减（保持高风险），
+    对可利用性的影响呈S形-短距离内缓慢衰减（保持高风险），
     中段急剧下降（临界区域），远距离趋近于零。
     """
     if distance <= 0:
@@ -189,7 +189,7 @@ class ExecutionPath:
                 'diversity_penalty': self.m_diversity_penalty}
 
     def collect_op_signature_ep(self):
-        """收集路径级操作签名——所有节点的操作名并集。
+        """收集路径级操作签名-所有节点的操作名并集。
 
         用于Jaccard相似度计算和邻接链检测。
         """
@@ -202,7 +202,7 @@ class ExecutionPath:
 def _jaccard_similarity(set_a, set_b):
     """Jaccard系数：|A ∩ B| / |A ∪ B|。
 
-    空集对空集定义为0——两条无操作路径不应视为相似。
+    空集对空集定义为0-两条无操作路径不应视为相似。
     """
     if not set_a and not set_b:
         return 0.0
@@ -219,8 +219,8 @@ class PathPrioritizer:
     1. Per-node risk scoring via pattern matching on decompiled code.
     2. Taint-source proximity (user-controlled data reaching risky ops).
     3. Path length normalization to avoid bias toward long paths.
-    4. Adjacency chain bonus — compound risk from coupled ops (v2).
-    5. Diversity-aware ranking — Jaccard penalty on operation overlap (v2).
+    4. Adjacency chain bonus - compound risk from coupled ops (v2).
+    5. Diversity-aware ranking - Jaccard penalty on operation overlap (v2).
     """
 
     __slots__ = ('m_taint_sources', 'm_sinks', 'm_taint_distance_max',
@@ -234,12 +234,7 @@ class PathPrioritizer:
         self.m_diversity_strength = _DIVERSITY_PENALTY_STRENGTH
 
     def set_taint_config_pp(self, sources, sinks):
-        """Configure taint sources and sinks for proximity scoring.
-
-        Args:
-            sources: list of function/regex names that introduce user data.
-            sinks: list of function/regex names that are dangerous.
-        """
+        """Configure taint sources and sinks for proximity scoring."""
         if sources:
             si = 0
             while si < len(sources):
@@ -252,14 +247,7 @@ class PathPrioritizer:
                 si += 1
 
     def build_path_pp(self, nodes_data):
-        """Construct an ExecutionPath from node data.
-
-        Args:
-            nodes_data: list of dicts with 'addr', 'code', 'loop_depth'.
-
-        Returns:
-            ExecutionPath object.
-        """
+        """Construct an ExecutionPath from node data."""
         nodes = []
         ni = 0
         while ni < len(nodes_data):
@@ -275,13 +263,7 @@ class PathPrioritizer:
     def prioritize_paths_pp(self, paths):
         """Rank execution paths by risk score, highest first.
 
-        增强特性：操作邻接检测 → taint距离sigmoid衰减 → 多样性重排序。
-
-        Args:
-            paths: list of lists, each a list of node dicts.
-
-        Returns:
-            list of (ExecutionPath, rank) sorted by final score descending.
+        增强特性：操作邻接检测、 taint距离sigmoid衰减、 多样性重排序。
         """
         built = []
         pi = 0
@@ -296,7 +278,7 @@ class PathPrioritizer:
             built.append(ep)
             pi += 1
 
-        # 多样性重排序：贪心选取--每次取剩余中（原始分 * 多样性折扣）最高的
+        # 多样性重排序：贪心选取-每次取剩余中（原始分 * 多样性折扣）最高的
         ranked = self._diversity_rerank(built)
         return ranked
 
@@ -304,11 +286,11 @@ class PathPrioritizer:
         """检测路径内危险操作的邻接耦合。
 
         遍历节点序列，在窗口内查找匹配的已知危险链。
-        匹配成功时，加成与两节点的风险分乘积成正比——
+        匹配成功时，加成与两节点的风险分乘积成正比-
         两个高分节点相邻比孤立的节点对更具威胁。
 
         对比学习视角（CLAP-inspired）：操作共现构成了路径的"跨模态"特征，
-        单操作评分（pattern模态）+ 操作对评分（邻接模态）→ 联合风险表征。
+        单操作评分（pattern模态）+ 操作对评分（邻接模态），联合风险表征。
         """
         if path is None or not path.m_nodes or len(path.m_nodes) < 2:
             return
@@ -387,7 +369,7 @@ class PathPrioritizer:
                     active_taint.append((src_list[si], ni))
                 si += 1
 
-            # Check taint-to-sink proximity — sigmoid衰减替代线性
+            # Check taint-to-sink proximity - sigmoid衰减替代线性
             si = 0
             sink_list = list(self.m_sinks)
             while si < len(sink_list):
@@ -412,7 +394,7 @@ class PathPrioritizer:
         """多样性重排序：贪心选取，Jaccard相似度惩罚冗余路径。
 
         策略逻辑：fuzzer的资源有限。两条操作签名高度重叠的路径
-        大概率触发相同漏洞——保留一条即可，将算力分配给不同路径。
+        大概率触发相同漏洞-保留一条即可，将算力分配给不同路径。
         这与CLAP的对比学习目标一致：最大化不同类样本的间距。
 
         算法：贪心 + 滚动相似度惩罚。每轮选取（支配分 × 多样性折扣）最高的路径，
@@ -487,7 +469,7 @@ def create_path_prioritizer(taint_distance_max=5):
     return PathPrioritizer(taint_distance_max=taint_distance_max)
 
 
-# ── AI 辅助路径优先级排序 API ──────────────────────────────────────────────
+# AI 辅助路径优先级排序 API
 # 面向符号执行产出的路径对象排序: 按危险函数可达性、路径深度、覆盖率与
 # 特征权重综合打分, 输出 CRITICAL/HIGH/MEDIUM/LOW 四级优先级。
 # 与 PathPrioritizer 的区别: 本组接口直接消费 SymbolicPath 结构,
@@ -545,7 +527,7 @@ class PrioritizationResult:
     summary: _Dict[str, _Any] = _field(default_factory=dict)
 
 
-# 危险函数权重 — 高影响函数直接抬高路径得分
+# 危险函数权重 - 高影响函数直接抬高路径得分
 _PATH_FUNC_WEIGHTS = {
     'strcpy': 0.10, 'strcat': 0.10, 'sprintf': 0.10, 'gets': 0.15,
     'scanf': 0.10, 'memcpy': 0.10, 'memmove': 0.08, 'system': 0.20,

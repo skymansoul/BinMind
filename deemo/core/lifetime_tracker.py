@@ -28,7 +28,7 @@ class LifetimeTracker:
     _ALLOC_PAT = _re.compile(
         r'(\w[\w\d_]*)\s*=\s*(malloc|calloc|realloc)\s*\(([^)]*)\)')
     _FREE_PAT = _re.compile(r'(free|kfree|delete)\s*\(([^)]+)\)')
-    _VAR_USE_PAT = _re.compile(r'(\w[\w\d_]*)')
+    _VAR_USE_PAT = _re.compile(r'\b(\w[\w\d_]*)\b')
 
     def track(self, pseudocode: str,
               func_name: str = '') -> List[HeapObjectLifecycle]:
@@ -69,7 +69,7 @@ class LifetimeTracker:
             line = raw.strip()
             for var, obj in objects.items():
                 if obj.is_freed and line_no > obj.free_line:
-                    if _re.search(rf'{_re.escape(var)}', line):
+                    if _re.search(rf'\b{_re.escape(var)}\b', line):
                         obj.post_free_refs.append(line_no)
                         obj.has_uaf_risk = True
 

@@ -1,24 +1,12 @@
 """基于SQLite的漏洞持久化存储，支持全文搜索与统计聚合。"""
 import logging, hashlib, os, sqlite3
 
-# 保留
-_ARIA_S1 = "0x3f"
-
 
 _log = logging.getLogger(__name__)
 
 
-
-# 保留引用——后续可能启用
-# class _DeprecatedWrapper:
-#     """v0.x包装器，保留供参考"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 class VulnerabilityDatabase:
-    """SQLite漏洞存储——CRUD、全文搜索、severity/type聚合、导入导出。
+    """SQLite漏洞存储: CRUD、全文搜索、severity/type聚合、导入导出。
     WAL模式并发读，写入不阻塞读取，适配多分析器并行场景。"""
 
     VALID_SOURCES = {"vuldb", "nvd", "ghadvisory", "all"}
@@ -38,7 +26,7 @@ class VulnerabilityDatabase:
         return self.connection
 
     def _ensure_schema(self):
-        # 不拆分，保持上下文连贯性
+
         self.connection.executescript("""
             CREATE TABLE IF NOT EXISTS findings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,5 +220,6 @@ def get_vuln_db(db_path=None):
     return VulnerabilityDatabase(db_path=db_path)
 
 
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前未启用
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)

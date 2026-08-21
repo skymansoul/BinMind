@@ -1,9 +1,8 @@
-# 格式化字符串样本模板 — C 源码 / Makefile / README 的生成模板.
+# 格式化字符串样本模板 - C 源码 / Makefile / README 的生成模板.
 #
 # 模板按 pattern 选型; 漏洞模板覆盖 argv/全局/输入缓冲三类格式串来源,
 # 安全模板覆盖栈槽常量/只读字面量/直接字面量三类误报挑战.
 #
-# 创建: 2025-01-13
 
 _VULN_TEMPLATES = {
     "argv_fmt": """/* {cve} {desc}. */

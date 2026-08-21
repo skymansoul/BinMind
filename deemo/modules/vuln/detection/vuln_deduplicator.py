@@ -1,5 +1,5 @@
-# 漏洞去重引擎——数据流哈希+语法哈希+语义特征加权混合聚类。
-# 数据流哈希精确匹配权重0.4，语法与语义各0.3——数据流拓扑为漏洞指纹最强判别特征。
+# 漏洞去重引擎: 数据流哈希+语法哈希+语义特征加权混合聚类。
+# 数据流哈希精确匹配权重0.4，语法与语义各0.3, 数据流拓扑为漏洞指纹最强判别特征。
 # VUDDY与
 # CENTRIS混合哈希策略。
 
@@ -95,9 +95,9 @@ class DeduplicationResult:
 
 
 class VulnDeduplicator:
-    """混合去重器——三路哈希+Jaccard语义相似度+加权评分。
+    """混合去重器: 三路哈希+Jaccard语义相似度+加权评分。
     阈值按策略分级：dataflow(0.85)精确匹配要求最高；
-    semantic(0.70)最低——语义特征稀疏，允许较宽近似匹配。"""
+    semantic(0.70)最低, 语义特征稀疏，允许较宽近似匹配。"""
 
     def __init__(self, strategy: str = "hybrid"):
         self.strategy = strategy
@@ -250,7 +250,7 @@ class VulnDeduplicator:
 
     def _cluster_hybrid(self, signatures: List[VulnerabilitySignature]
                          ) -> List[VulnerabilityCluster]:
-        """加权混合聚类——dataflow(0.4)+syntax(0.3)+semantic(0.3)。"""
+        """加权混合聚类: dataflow(0.4)+syntax(0.3)+semantic(0.3)。"""
         clusters = []
         for sig in signatures:
             matched = False

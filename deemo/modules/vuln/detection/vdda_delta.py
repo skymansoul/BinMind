@@ -1,9 +1,7 @@
 # coding: utf-8
-# 创建: 2026-05-17  |  增量分析引擎
-# 修改: 2026-05-17  |  审计后补充文件头与错误处理
 #
 """
-漏洞发现增量分析——跨运行差异检测与统计显著性评估。
+漏洞发现增量分析: 跨运行差异检测与统计显著性评估。
 
 技术问题:
   在CI/CD管道中, 每次提交触发完整的漏洞分析管线。
@@ -13,7 +11,7 @@
     - 严重度变化(CVSS重评或分析精度提升)
     - 误报波动(检测器随机性)
 
-  人工审查所有变化不可行——需要统计方法区分
+  人工审查所有变化不可行, 需要统计方法区分
   "真实变化"(漏洞修复/引入)与"分析噪声"(检测器波动)。
 
 解决方案:
@@ -31,8 +29,8 @@
 
 与现有模块集成:
   消费所有13个分析系统的finding输出
-  → 跨运行统一增量视图
-  → CI/CD管道中的自动回归检测
+  - 跨运行统一增量视图
+  - CI/CD管道中的自动回归检测
 """
 
 import hashlib
@@ -53,7 +51,7 @@ class DeltaType(str, Enum):
     CONFIDENCE_UP = "confidence_up"
     CONFIDENCE_DOWN = "confidence_down"
     UNCHANGED = "unchanged"
-    REGRESSION = "regression"    # 消失的已确认finding→回归
+    REGRESSION = "regression"    # 消失的已确认finding, 回归
 
 
 @dataclass
@@ -109,10 +107,10 @@ class DeltaEngine:
     """跨运行增量分析引擎。
 
     分析流程:
-      1. 位置哈希→跨运行finding配对
+      1. 位置哈希, 跨运行finding配对
       2. 分类每对finding的差异类型
-      3. Bootstrap→显著性检验
-      4. 聚合→DeltaReport
+      3. Bootstrap, 显著性检验
+      4. 聚合, DeltaReport
     """
 
     def __init__(self,
@@ -149,7 +147,7 @@ class DeltaEngine:
             total_current=len(current_findings),
             total_previous=len(previous_findings))
 
-        # 位置哈希→finding索引
+        # 位置哈希, finding索引
         prev_index = {}
         for f in previous_findings:
             key = self._location_key(f)
@@ -189,7 +187,7 @@ class DeltaEngine:
 
             snapshots.append(snap)
 
-        # 消失的finding——在前一运行中存在但当前运行中不存在
+        # 消失的finding: 在前一运行中存在但当前运行中不存在
         for key, prev_f in prev_index.items():
             if key not in cur_keys:
                 snap = FindingSnapshot(
@@ -201,7 +199,7 @@ class DeltaEngine:
                     modality=prev_f.get('modality', ''),
                     source_run_id=run_id_previous,
                     delta_type=DeltaType.RESOLVED)
-                # 高置信度finding消失→可能的回归
+                # 高置信度finding消失, 可能的回归
                 if snap.previous_confidence > 0.7 and snap.previous_severity > 0.5:
                     snap.delta_type = DeltaType.REGRESSION
                 snapshots.append(snap)
@@ -215,7 +213,7 @@ class DeltaEngine:
                                        if abs(s.severity_delta) > 0.05)
         report.significant_changes = sum(1 for s in snapshots if s.is_significant)
 
-        # 噪声比估计——非显著变化/总变化
+        # 噪声比估计: 非显著变化/总变化
         total_delta = sum(1 for s in snapshots if s.delta_type != DeltaType.UNCHANGED)
         report.noise_ratio = round(
             1.0 - report.significant_changes / max(total_delta, 1), 3)
@@ -224,22 +222,22 @@ class DeltaEngine:
         if report.regression_count > 0:
             report.requires_manual_review = True
             report.review_recommendations.append(
-                f"检测到{report.regression_count}个可能的修复回归——"
+                f"检测到{report.regression_count}个可能的修复回归, "
                 f"高置信度finding在本次运行中消失")
         if report.new_count > report.total_previous * 0.3:
             report.requires_manual_review = True
             report.review_recommendations.append(
-                f"新增finding数量({report.new_count})超过基线的30%——"
+                f"新增finding数量({report.new_count})超过基线的30%, "
                 f"建议审查是否为检测器配置变更导致")
         if report.noise_ratio > 0.5:
             report.review_recommendations.append(
-                f"估计噪声比{report.noise_ratio:.0%}偏高——"
+                f"估计噪声比{report.noise_ratio:.0%}偏高, "
                 f"建议检查检测器阈值校准")
 
         return report
 
     def _location_key(self, finding: Dict) -> str:
-        """基于位置的finding哈希——用于跨运行配对"""
+        """基于位置的finding哈希, 用于跨运行配对"""
         func = finding.get('function_name', finding.get('function', ''))
         file = finding.get('file_path', finding.get('file', ''))
         line = finding.get('line_number', finding.get('line', 0))
@@ -266,13 +264,13 @@ class DeltaEngine:
 
     def _test_significance(self, snap: FindingSnapshot
                             ) -> Tuple[bool, float]:
-        """Bootstrap显著性检验——判断confidence变化是否超出噪声。
+        """Bootstrap显著性检验: 判断confidence变化是否超出噪声。
 
-        H₀: 变化由检测器噪声引起(Δ在噪声标准差范围内)
+        H0: 变化由检测器噪声引起(Δ在噪声标准差范围内)
         Bootstrap: 从N(0, noise_sigma)重采样, 计算|Δ|的分布
         p-value = P(|噪声| >= |观测Δ|)
 
-        若p < 0.05 → 拒绝H₀ → 变化显著(非噪声)
+        若p < 0.05, 拒绝H0, 变化显著(非噪声)
         """
         if snap.delta_type in (DeltaType.NEW, DeltaType.RESOLVED,
                                  DeltaType.REGRESSION):

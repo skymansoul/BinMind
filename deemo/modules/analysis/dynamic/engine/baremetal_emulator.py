@@ -70,7 +70,7 @@ class BareMetalEmulator:
     """Bare-metal firmware 仿真 engine backed Unicorn
     实现MMIO读写分发、NVIC中断向量表解析、外设hook注册，以及执行追踪
     不依赖操作系统抽象层 — 直接操作物理地址空间的加载与执行
-    
+
     舍入 2: Qiling-style rootfs abstraction — JSON profiles describe memory
     layouts, peripheral 寄存器 maps, 中断 vector tables. decouples
     hardware 配置 仿真器 core, enabling drop- 支持 for

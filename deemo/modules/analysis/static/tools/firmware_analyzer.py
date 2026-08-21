@@ -1,13 +1,11 @@
-# 2026-07-31
 import re
 import struct
 import hashlib
 from typing import List, Dict, Optional, Tuple
 import math
 
-
 class FirmwareAnalyzer:
-    """U-Boot/DTB/UEFI/ATF detection, FS extraction, IoT vuln scanning"""
+    """固件分析: U-Boot/DTB/UEFI/ATF检测, 文件系统提取, IoT漏洞扫描"""
 
 # 初始化: 固件特征库
 
@@ -191,7 +189,7 @@ class FirmwareAnalyzer:
 
         return _findings
 
-    # //// 文件系统检测 ////
+    # 文件系统检测
 
     def detect_filesystems(self, data: bytes) -> List[Dict]:
         _findings = []
@@ -342,7 +340,7 @@ class FirmwareAnalyzer:
                 return 1
         return 0
 
-    # //// 综合分析入口 ////
+    # 综合分析入口
 
     def analyze(self, data: bytes = None, filepath: str = None,
                 strings: List[str] = None) -> Dict:

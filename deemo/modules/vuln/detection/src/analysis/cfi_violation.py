@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any, Set, Tuple
 import os
 import re
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 _log = get_logger("vuln_detection.cfi_violation")
 

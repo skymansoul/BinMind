@@ -1,4 +1,3 @@
-# 创建: 2026-08-01 | 结果解析+汇总模块
 #
 """结果解析——将scan_results与ground truth对比, 计算TP/FP/FN。
 

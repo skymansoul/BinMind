@@ -38,14 +38,12 @@ def detect_buffer_underflow(
     metadata_size: int = 16,
     prev_chunk_size: Optional[int] = None,
 ) -> UnderflowAnalysis:
-    """L1-L2: 检测 buffer underflow — 负偏移访问.
+    """L1-L2: 检测 buffer underflow — 负偏移访问。
 
-    Args:
-      base_addr: 缓冲区基址
-      base_size: malloc(N) 中的 N
-      access_offset: 实际访问偏移 (负值表示向前)
-      write_size: 写入大小 (字节)
-      metadata_size: chunk 元数据大小 (默认 16 = prev_size+size)
+    参数: base_addr 缓冲区基址, base_size malloc(N) 中的 N,
+    access_offset 实际访问偏移 (负值表示向前), write_size 写入
+    大小 (字节), metadata_size chunk 元数据大小 (默认 16 =
+    prev_size+size)。
       prev_chunk_size: 前邻 chunk 的大小 (若已知)
     """
     if access_offset >= 0:

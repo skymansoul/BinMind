@@ -191,12 +191,10 @@ class AdaptiveScheduler:
         self.learner.update(features, utility)
 
     def suggest_batch_order(self, tasks: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
-        """批量任务排序建议.
+        """批量任务排序建议。
 
-        Args:
-            tasks: [(task_id, est_duration), ...]
-        Returns:
-            [(task_id, suggested_priority), ...] 降序
+        tasks: [(task_id, est_duration), ...]
+        返回 [(task_id, suggested_priority), ...] 降序。
         """
         for tid, dur in tasks:
             self.profiler.get_or_create(tid, est_duration=dur)

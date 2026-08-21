@@ -1,7 +1,5 @@
-# 创建: 2026-06-26 19:41
-# 修改: 2026-06-26 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: 上下文Thompson采样Bandit
-# 上下文Bandit — 自适应修复策略的在线策略学习
+# 上下文Thompson采样Bandit
+# 上下文Bandit - 自适应修复策略的在线策略学习
 #
 # 问题: 现有修复调度 (cve_remediation, cve_pareto_remediation) 使用
 # 静态规则 (SLA天数) 或离线优化 (NSGA-II). 这两种范式在2026年的
@@ -13,7 +11,7 @@
 #
 # 解决方案: 上下文Bandit (Contextual Multi-Armed Bandit).
 # 将修复动作建模为arm选择问题:
-# Arm 0: 立即修复 (patch_now) — 高成本, 高确定性
+# Arm 0: 立即修复 (patch_now) - 高成本, 高确定性
 # Arm 1: 24小时内修复 (patch_today)
 # Arm 2: 本周末前修复 (patch_this_week)
 # Arm 3: 下个维护窗口修复 (patch_next_window)
@@ -28,10 +26,10 @@
 #         3) 观察奖励 r, 4) 更新后验 (Bayesian linear regression).
 #
 # 相对于ADAPT 和 M-VP2 的优势:
-#   1. 无需离线训练 — 在线学习, 从零开始 (冷启动).
-#   2. 样本效率高 — Thompson采样在有限数据下优于ε-greedy和UCB.
-#   3. 不确定性量化 — 后验方差自然给出探索-利用权衡.
-#   4. 可解释 — 每个arm的参数可被检查 (β系数=特征影响).
+#   1. 无需离线训练 - 在线学习, 从零开始 (冷启动).
+#   2. 样本效率高 - Thompson采样在有限数据下优于ε-greedy和UCB.
+#   3. 不确定性量化 - 后验方差自然给出探索-利用权衡.
+#   4. 可解释 - 每个arm的参数可被检查 (β系数=特征影响).
 #
 # 非显而易见性:
 #   1. Contextual Bandit从未被应用于漏洞修复调度.
@@ -44,7 +42,7 @@
 #
 # Thompson Sampling for Contextual Bandits (ICML)
 # An Empirical Evaluation of Thompson Sampling (NIPS)
-# 零结果 — 确认该方向在漏洞修复领域未被探索
+# 零结果 - 确认该方向在漏洞修复领域未被探索
 
 import math
 import random
@@ -63,7 +61,7 @@ class BanditArm:
     description: str = ""
 
 
-# 默认arms — 按2026年威胁态势校准
+# 默认arms - 按2026年威胁态势校准
 _DEFAULT_ARMS = [
     BanditArm("patch_now", 0, cost_factor=1.0, speed_factor=0.0,
               description="立即修复, 最高成本, 零延迟"),
@@ -79,7 +77,7 @@ _DEFAULT_ARMS = [
 
 
 class ContextualThompsonSampler:
-    """上下文Thompson采样 — 在线学习的修复策略.
+    """上下文Thompson采样 - 在线学习的修复策略.
 
     每个arm维护独立的贝叶斯线性回归后验.
     使用Woodbury恒等式进行高效在线更新 (O(d²) per step, d=特征维度).

@@ -61,7 +61,7 @@ class SBOMExporter:
     def __init__(self, output_dir: str = None):
         self.output_dir = output_dir or './reports'
         os.makedirs(self.output_dir, exist_ok=True)
-        logger.info(f"SBOM exporter initialized — output directory: {self.output_dir}")
+        logger.info(f"SBOM exporter initialized - output directory: {self.output_dir}")
 
     def _generate_spdx_id(self, name: str) -> str:
         safe_name = name.replace(' ', '-').replace('.', '-').replace('_', '-')
@@ -179,7 +179,7 @@ class SBOMExporter:
                             'source': vuln.get('source', 'internal')})
         document = SBOMDocument(name=binary_name, components=components)
         document.relationships = self._build_relationships(components)
-        logger.info(f"SBOM document built — {len(components)} components")
+        logger.info(f"SBOM document built - {len(components)} components")
         return document
 
     def _build_relationships(self, components: List[SBOMComponent]) -> List[Dict[str, Any]]:
@@ -353,7 +353,7 @@ class SBOMExporter:
             cyclonedx_result = self.export_cyclonedx_json(document, cyclonedx_path)
             if cyclonedx_result:
                 results['cyclonedx'] = cyclonedx_result
-        logger.info(f"SBOM export complete — format: {format}")
+        logger.info(f"SBOM export complete - format: {format}")
         return results
 
     def validate_spdx_json(self, json_str: str) -> Dict[str, Any]:

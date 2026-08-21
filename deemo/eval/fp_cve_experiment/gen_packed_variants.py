@@ -64,9 +64,9 @@ def transform(src: str) -> str:
     m = re.search(r'(int\s+main\s*\([^)]*\)\s*\{)', out)
     if m:
         out = out[:m.end()] + _OPAQUE_PRED + out[m.end():]
-    # 3. 立即数偏移改写: "malloc(16)" → "malloc(16 + 0)" 形式仅对
-    #    局部常量做扰动, 保留语义 (常量折叠不受影响, 但干扰简单
-    #    文本匹配类启发式)
+    # 3. 立即数偏移改写: "malloc(16)" → "malloc(16+0)" 形式
+    #    常量折叠后语义不变, 但干扰简单文本匹配类启发式
+    out = re.sub(r'\b(malloc|calloc|realloc)\(\s*(\d+)', r'\1(\2+0', out)
     return out
 
 

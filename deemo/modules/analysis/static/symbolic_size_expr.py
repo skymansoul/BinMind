@@ -21,7 +21,6 @@
 #   符号化关联消除堆溢出检测中分类别误报的根本来源;
 #   符号化约束传播用于内核整数溢出.
 #
-# 创建: 2026-04-19
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Set

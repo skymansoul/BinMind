@@ -1,4 +1,4 @@
-# 供应链传递性风险传播——时敏依赖图上的动态风险重加权
+# 供应链传递性风险传播-时敏依赖图上的动态风险重加权
 #
 # 核心问题: CVSS/EPSS/VPSS是静态评分——CVE严重度不随依赖链上新漏洞的发现而更新。
 # 漏洞利用价值随时间衰减，但现有模型视修复状态为二元（已修复/未修复）。
@@ -23,7 +23,6 @@ from .src.supplychain.risk_propagation import (
     TransitiveRiskPropagator,
 )
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 

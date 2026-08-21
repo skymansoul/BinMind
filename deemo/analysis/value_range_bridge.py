@@ -57,12 +57,8 @@ def filter_by_value_range(
 ) -> Dict[str, Any]:
     """对 heap overflow findings 应用值范围过滤。
 
-    Args:
-        findings: source_scanner._pair_ops 返回的 finding dict 列表
-        source: C 源码字符串
-
-    Returns:
-        {filtered_count, safe_count_after, detail_parts}
+    findings 为 source_scanner._pair_ops 返回的 finding dict 列表;
+    返回 {filtered_count, safe_count_after, detail_parts}。
     """
     if not findings:
         return {'filtered_count': 0, 'detail': 'no findings'}

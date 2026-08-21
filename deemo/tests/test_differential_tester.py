@@ -57,9 +57,13 @@ class TestInputGenerator(unittest.TestCase):
         self.assertLessEqual(len(data), 100)
 
     def test_generate_random_deduplication(self):
-        data1 = self.generator.generate_random(min_size=10, max_size=20)
-        data2 = self.generator.generate_random(min_size=10, max_size=20)
-        self.assertIsInstance(data2, bytes)
+        first = self.generator.generate_random(min_size=10, max_size=20)
+        second = self.generator.generate_random(min_size=10, max_size=20)
+        self.assertIsInstance(first, bytes)
+        self.assertIsInstance(second, bytes)
+        # 去重语义: 碰撞时递归重生成, 两次结果必然不同且哈希集合记 2 条
+        self.assertNotEqual(first, second)
+        self.assertEqual(len(self.generator.generated_hashes), 2)
 
     def test_generate_http_request(self):
         data = self.generator._generate_http_request()
@@ -197,18 +201,6 @@ class TestDifferenceType(unittest.TestCase):
         self.assertEqual(DifferenceType.MEMORY_CORRUPTION.value, "memory_corruption")
         self.assertEqual(DifferenceType.NONE.value, "none")
 
-
-
-
-
-"""
-差异测试模块单元测试 -- enriched with OracleComparator, src/diff_tester coverage.
-
-Tests differential testing: input generation, test case creation, execution results,
-difference detection, majority-vote oracle comparison, and report formatting.
-"""
-
-# Prevent pytest from trying to collect dataclass/enum helpers as test classes
 
 class TestStandaloneDiffTester(unittest.TestCase):
     """Standalone DifferentialTester测试类"""

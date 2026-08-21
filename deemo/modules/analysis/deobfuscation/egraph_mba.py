@@ -151,7 +151,7 @@ class EGraph:
     def rebuild(self) -> int:
         """
         执行 congruence closure + union-查找 合并
-        
+
         返回本轮合并的 e-class 对数
         """
         merged = 0
@@ -246,7 +246,7 @@ class EGraph:
 class MBARewriteRules:
     """
     MBA 重写规则集
-    
+
     融合 [Lee 2024, 2404.05431] 的 25 条恒等规则
     与 [Skees 2024, 2406.10016] 的半线性扩展规则
     """
@@ -301,7 +301,7 @@ class MBARewriteRules:
     def apply_rules(cls, egraph: EGraph, max_iterations: int = 5) -> int:
         """
         将规则集迭代应用于 e-graph
-        
+
         返回新创建的等价类数量（即发现的新等价关系数）
         """
         total_new = 0
@@ -335,7 +335,7 @@ class MBARewriteRules:
     def _try_match_node(cls, egraph: EGraph, node: ENode) -> Set[int]:
         """
         尝试对单个 e-node 匹配所有规则
-        
+
         返回匹配到的等价 e-class ID 集合
         """
         results: Set[int] = set()
@@ -417,15 +417,7 @@ class MBASimplifier:
         self._var_map: Dict[str, int] = {}
 
     def simplify(self, expr_str: str) -> Dict[str, Any]:
-        """
-        简化 MBA 表达式
-        
-        Args:
-        expr_str: 待简化的表达式字符串
-        
-        返回:
-        dict 'original', 'simplified', 'steps', 'verified'
-        """
+        """简化 MBA 表达式, 返回含 original/simplified/steps/verified 的 dict。"""
         egraph = EGraph()
 
         # 解析 → AST → EGraph
@@ -572,7 +564,7 @@ class MBASimplifier:
     def _z3_verify(self, expr_a: str, expr_b: str) -> bool:
         """
         使用 Z3 验证两个表达式等价
-        
+
         对 32-bit 位向量进行全量词验证
         参考 [Skees 2024] 的验证策略
         """
@@ -622,7 +614,7 @@ class MBASimplifier:
 def simplify_mba_egraph(expr: str, bit_width: int = 32) -> Dict[str, Any]:
     """
     便捷函数：使用 e-graph 简化 MBA 表达式
-    
+
     终端用户接口，实现 [Lee 2024, 2404.05431] 的完整流程
     """
     simplifier = MBASimplifier(bit_width=bit_width, verify_z3=_HAS_Z3)

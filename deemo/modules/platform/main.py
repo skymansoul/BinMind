@@ -1,15 +1,14 @@
-# 修改记录:
-# 2025-08-03 14:42 - 增加 taint 子命令，桥接 MMIO→内核→侧信道污点追踪
+# 增加 taint 子命令，桥接 MMIO→内核→侧信道污点追踪
 
 """
 platform/ 统一命令行入口。
 
 子命令:
-  analyze   — 跨平台层分析 (firmware + kernel + hardware + mobile + malware + sc)
-  correlate — 对已有分析结果做跨层关联
-  provenance — 二进制来源追踪与版本格查询
-  diff      — OTA 差分安全分类与漏洞引入定位
-  taint     — MMIO→内核→侧信道跨层污点传播追踪
+  analyze   - 跨平台层分析 (firmware + kernel + hardware + mobile + malware + sc)
+  correlate - 对已有分析结果做跨层关联
+  provenance - 二进制来源追踪与版本格查询
+  diff      - OTA 差分安全分类与漏洞引入定位
+  taint     - MMIO、内核、侧信道跨层污点传播追踪
 
 用法:
   python -m platform.main analyze --firmware fw.bin --kernel vmlinux
@@ -110,7 +109,7 @@ def cmd_analyze(args) -> int:
 
 
 def cmd_correlate(args) -> int:
-    """跨层关联——将已有分析结果加载到传播图并运行规则引擎。"""
+    """跨层关联-将已有分析结果加载到传播图并运行规则引擎。"""
     from platform.propagation_graph import PropagationGraph, PlatformLayer, VulnNode
     from platform.cross_platform_correlator import CrossPlatformCorrelator
 
@@ -138,7 +137,7 @@ def cmd_correlate(args) -> int:
 
 
 def cmd_provenance(args) -> int:
-    """二进制来源追踪——构建 SBOM 依赖图并与版本格关联。"""
+    """二进制来源追踪-构建 SBOM 依赖图并与版本格关联。"""
     from platform.binary_provenance import (
         ProvenanceGraph, ProvenanceNode, DependencyEdge, ProvenanceLatticeIntegrator,
     )
@@ -181,7 +180,7 @@ def cmd_provenance(args) -> int:
 
 
 def cmd_diff(args) -> int:
-    """OTA 差分安全分类——桥接 ota_diff_analyzer 与 VersionLattice。"""
+    """OTA 差分安全分类-桥接 ota_diff_analyzer 与 VersionLattice。"""
     from platform.diff_lattice_bridge import DiffLatticeBridge
     from platform.version_lattice import VersionLattice
     from platform.firmware.ota_diff_analyzer import OTADiffResult
@@ -197,7 +196,7 @@ def cmd_diff(args) -> int:
     if args.diff_json:
         with open(args.diff_json, 'r') as f:
             diff_data = json.load(f)
-        # 简易构造 OTADiffResult——实际使用时建议直接调 ota_diff_analyzer
+        # 简易构造 OTADiffResult-实际使用时建议直接调 ota_diff_analyzer
         print("diff classification requires ota_diff_analyzer output")
         print(f"bridge ready: {lattice.summary()}")
     else:

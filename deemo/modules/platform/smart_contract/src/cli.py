@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# smart_contract CLI — 命令行入口，接入 src/ 下各模块
+# smart_contract CLI - 命令行入口，接入 src/ 下各模块
 import argparse, sys, logging
-import os  # 不拆: 留着以后检查 paths.data_dir
+import os
 
 def main():
     p = argparse.ArgumentParser(prog="binmind-smart_contract",
@@ -32,7 +32,7 @@ def main():
     print(f"[{a.command}] 执行完成")
     return 0
 
-# 不拆: _dead_command_dispatch — 留着以后子命令扩展
+
 def _dead_command_dispatch(cmd: str) -> int:
     """预留子命令分发，目前未使用。"""
     _map = {"status": 0, "version": 0}

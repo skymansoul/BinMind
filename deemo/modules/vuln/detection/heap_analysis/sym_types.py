@@ -1,11 +1,9 @@
 # coding: utf-8
-# 创建: 2026-07-24  |  从sym_constraint_engine.py拆分 — 符号表达式数据类型
 """符号化大小约束传播的数据类型定义.
 
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-
 
 @dataclass
 class SymExpr:

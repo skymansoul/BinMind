@@ -1,5 +1,5 @@
 # core/report.py - 报告生成 (Markdown + JSON)
-# FIX: 2026-08-15 补序列化规则 finding 与符号执行结果 —
+# FIX: 2026-08-15 补序列化规则 finding 与符号执行结果
 # write_report 原仅输出逐函数分析结果, 规则检测器 (unified_heap_pipeline)
 # 与符号执行 (symexec) 的产物只落 DB 不落报告, 导致 MD 摘要与 DB 记录矛盾。
 
@@ -34,7 +34,7 @@ def _collect_vulns(findings: List[Dict], rule_findings: List[Dict]) -> List[Dict
                                   'Low': 3, 'Unknown': 4}.get(
                                       v.get('severity', 'Unknown'), 5)
             all_vulns.append(v)
-    # FIX: 2026-08-15 规则 finding 并入报告 — 此前仅存在于 DB 与 report_enhance JSON
+    # FIX: 2026-08-15 规则 finding 并入报告 - 此前仅存在于 DB 与 report_enhance JSON
     for v in (rule_findings or []):
         if not isinstance(v, dict):
             continue
@@ -135,6 +135,14 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
             lines.append(f'- **Priority score:** {v["priority_score"]}')
         if v.get('evidence'):
             lines.append(f'- **Evidence:** {v["evidence"]}')
+        # 审核状态与分级
+        review = v.get('review_status', 'pending')
+        tier = v.get('tier', '')
+        lines.append(f'- **Review:** {review}')
+        if tier:
+            lines.append(f'- **Tier:** {tier}')
+        if v.get('simulation'):
+            lines.append(f'- **Simulation:** true')
         lines.append('')
 
     return '\n'.join(lines)
@@ -145,6 +153,13 @@ def generate_json(findings: List[Dict], binary_info: Dict,
                   rule_findings: List[Dict] = None,
                   symbolic_result: Dict = None) -> str:
     """JSON 报告。"""
+    # 为每个 finding 补审核状态字段
+    all_vulns = _collect_vulns(findings, rule_findings)
+    for v in all_vulns:
+        v.setdefault('review_status', 'pending')
+        v.setdefault('tier', '')
+        v.setdefault('simulation', False)
+
     return json.dumps({
         'metadata': {
             'binary': binary_info.get('path', ''),
@@ -152,7 +167,7 @@ def generate_json(findings: List[Dict], binary_info: Dict,
             'bits': binary_info.get('bits', 64),
             'timestamp': datetime.now().isoformat(),
         },
-        'findings': findings,
+        'findings': all_vulns,
         # FIX: 2026-08-15 规则 finding 与符号执行结果入 JSON 报告
         'rule_findings': rule_findings or [],
         'symbolic_execution': symbolic_result,
@@ -163,13 +178,15 @@ def generate_json(findings: List[Dict], binary_info: Dict,
 def write_report(findings: List[Dict], binary_info: Dict,
                  crash_result: Dict = None, fmt: str = 'markdown',
                  rule_findings: List[Dict] = None,
-                 symbolic_result: Dict = None) -> Dict[str, str]:
-    """写报告到 RESULTS_DIR, 返回 {format: path}。
+                 symbolic_result: Dict = None,
+                 output_dir: str = None) -> Dict[str, str]:
+    """写报告到 output_dir(缺省 RESULTS_DIR), 返回 {format: path}。
 
     参数向后兼容: rule_findings/symbolic_result 为可选追加项,
-    缺省时行为与旧版一致。
+    output_dir 供 CLI -o 显式指定报告目录。
     """
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    out_dir = output_dir or RESULTS_DIR
+    os.makedirs(out_dir, exist_ok=True)
     binary_stem = os.path.splitext(
         os.path.basename(binary_info.get('path', 'report')))[0]
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -178,14 +195,14 @@ def write_report(findings: List[Dict], binary_info: Dict,
 
     md_content = generate_markdown(findings, binary_info, crash_result,
                                    rule_findings, symbolic_result)
-    md_path = os.path.join(RESULTS_DIR, f'{binary_stem}_{ts}.md')
+    md_path = os.path.join(out_dir, f'{binary_stem}_{ts}.md')
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
     paths['markdown'] = md_path
 
     json_content = generate_json(findings, binary_info, crash_result,
                                  rule_findings, symbolic_result)
-    json_path = os.path.join(RESULTS_DIR, f'{binary_stem}_{ts}.json')
+    json_path = os.path.join(out_dir, f'{binary_stem}_{ts}.json')
     with open(json_path, 'w', encoding='utf-8') as f:
         f.write(json_content)
     paths['json'] = json_path

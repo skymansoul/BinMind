@@ -5,7 +5,6 @@
 #   并写出 samples_fmt/manifest.json 作为 ground truth.
 #   元数据与模板分别位于 fmt_specs.py / fmt_templates.py.
 #
-# 创建: 2025-03-28
 
 import json
 from pathlib import Path

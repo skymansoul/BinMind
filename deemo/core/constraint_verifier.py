@@ -1,4 +1,4 @@
-"""约束可满足性验证器 — 用angr符号执行验证静态告警沿可行路径的可达性.
+"""约束可满足性验证器: 用angr符号执行验证静态告警沿可行路径的可达性.
 三步策略: 地址可达性/参数符号性/最小输入, 按结果调整置信度 (不可达×0.3, 参数不可控×0.6, 可达且可控升至0.9+);
 只对可疑点做定向验证, 每点超时30s, 不做全路径探索. 参考: ISSTA 2025 Shimizu et al."""
 
@@ -21,10 +21,9 @@ def verify_call_reachability(
     call_address: int,
     timeout: int = _TIMEOUT_PER_POINT,
 ) -> Dict[str, Any]:
-    """验证angr符号执行能否到达目标调用地址。
+    """验证 angr 符号执行能否到达目标调用地址。
 
-    Returns:
-        {reachable: bool, path_count: int, min_input_len: int, error: str|None}
+    返回 {reachable, path_count, min_input_len, error}。
     """
     result: Dict[str, Any] = {
         'reachable': False,
@@ -116,11 +115,8 @@ def verify_arg_symbolicity(
 ) -> Dict[str, Any]:
     """验证在目标调用点处, 指定索引的参数是否符号化(用户可控)。
 
-    x86_64参数约定: arg0=rdi, arg1=rsi, arg2=rdx, arg3=rcx, arg4=r8, arg5=r9
-    i386参数约定: 全部在栈上
-
-    Returns:
-        {symbolic: bool, constraint_count: int, satisfiable: bool}
+    x86_64 参数约定: arg0=rdi ... arg5=r9; i386 全部在栈上。
+    返回 {symbolic, constraint_count, satisfiable}。
     """
     result: Dict[str, Any] = {
         'symbolic': False,
@@ -180,16 +176,15 @@ def verify_finding(
     arg_index: int = 0,
     confidence: float = 0.5,
 ) -> Tuple[Dict[str, Any], float]:
-    """综合验证——可达性+参数符号性, 返回修正后的置信度。
+    """综合验证: 可达性+参数符号性, 返回修正后的置信度。
 
     置信度调整规则:
-      不可达 → confidence × 0.3
-      可达但参数不符号化 → confidence × 0.6
-      可达且参数符号化 → confidence = max(confidence, 0.85)
-      无法验证(angr错误) → confidence 不变
+      不可达, confidence * 0.3
+      可达但参数不符号化, confidence * 0.6
+      可达且参数符号化, confidence = max(confidence, 0.85)
+      无法验证(angr错误), confidence 不变
 
-    Returns:
-        (verification_details, adjusted_confidence)
+    返回 (verification_details, adjusted_confidence)。
     """
     details: Dict[str, Any] = {
         'reachability': None,
@@ -203,7 +198,7 @@ def verify_finding(
     details['reachability'] = reach
 
     if reach.get('error') and not reach.get('reachable'):
-        return details, confidence  # angr出错 → 不调整
+        return details, confidence  # angr出错, 不调整
 
     if not reach.get('reachable', False):
         details['adjustment'] = 'unreachable'
@@ -238,7 +233,7 @@ def batch_verify(
     findings: List[Dict[str, Any]],
     max_points: int = 10,
 ) -> List[Dict[str, Any]]:
-    """批量验证——对findings列表逐条验证, 限制总数控制耗时。
+    """批量验证: 对findings列表逐条验证, 限制总数控制耗时。
 
     每项finding应含: function, call_address, arg_index(默认0), confidence
 

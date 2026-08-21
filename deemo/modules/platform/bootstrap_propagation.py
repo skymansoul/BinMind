@@ -1,5 +1,5 @@
 """
-Bootstrap传播置信区间 -- Efron重抽样估计传播图边置信度的经验分布。
+ Bootstrap传播置信区间 - Efron重抽样估计传播图边置信度的经验分布。
 
 问题：
   传播图中每条边的置信度来自有限的证据观测。
@@ -45,7 +45,7 @@ from .propagation_graph import PlatformLayer, PropagationGraph, VulnNode
 
 @dataclass
 class BootstrapResult:
-    """Bootstrap估计结果 -- 含点估计+置信区间。"""
+    """Bootstrap估计结果 - 含点估计+置信区间。"""
     node_id: str
     point_estimate: float          # 原始数据上的估计值
     bootstrap_mean: float          # B次bootstrap估计的均值
@@ -56,7 +56,7 @@ class BootstrapResult:
 
 
 class PropagationBootstrap:
-    """传播图Bootstrap重抽样 -- 经验置信区间估计。
+    """传播图Bootstrap重抽样 - 经验置信区间估计。
 
     用法::
 
@@ -203,12 +203,12 @@ class PropagationBootstrap:
                               risk_fn: Callable[[PropagationGraph], Dict[str, float]],
                               max_paths_per_node: int = 3
                               ) -> Dict[str, BootstrapResult]:
-        """路径块Bootstrap -- 以完整传播路径为抽样单元。
+        """路径块Bootstrap - 以完整传播路径为抽样单元。
 
         与边Bootstrap的本质区别:
           边Bootstrap独立抽样每条边, 破坏传播路径的连续性。
           路径块Bootstrap提取所有极大路径, 整条路径作为一块抽样。
-          这保持了同一条传播链上各边间的相关性结构——
+          这保持了同一条传播链上各边间的相关性结构,
           固件→内核→硬件的三跳路径不会在重抽样中被拆散。
         """
         random.seed(self._seed)

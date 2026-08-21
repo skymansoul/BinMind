@@ -91,7 +91,7 @@ _THREAT_TYPE_BASE_SCORE: Dict[ThreatType, float] = {
 
 
 class SourceReputation:
-    """情报源信誉评分 —— 每个来源有独立的历史准确度与新鲜度权值。
+    """情报源信誉评分 - 每个来源有独立的历史准确度与新鲜度权值。
 
     核心思路：来源的信誉并非静态常量，而是根据其历史贡献动态衰减。
     长期未报告高质量情报的来源，其权重自动下调（新鲜度衰减）。
@@ -233,14 +233,7 @@ class TimeWindowAggregator:
                 self._seen_hashes.clear()
 
     def add_intelligence(self, intelligence: ThreatIntelligence) -> bool:
-        """Add an intelligence entry and prune old ones.
-
-        Args:
-            intelligence: ThreatIntelligence to add.
-
-        Returns:
-            True if the entry was actually added (not a duplicate), False otherwise.
-        """
+        """Add an intelligence entry and prune old ones."""
         # 先计算哈希，避免持锁期间做 JSON 序列化
         content_hash = intelligence.compute_hash() if self._deduplicate else None
 
@@ -273,43 +266,27 @@ class TimeWindowAggregator:
         self._seen_hashes -= expired_hashes
 
     def get_intelligences_in_window(self) -> List[ThreatIntelligence]:
-        """Get all entries within the current window.
-
-        Returns:
-            List of ThreatIntelligence entries.
-        """
+        """Get all entries within the current window."""
         with self._lock:
             self._clean_old_intelligences()
             return list(self._intelligences)
 
     def aggregate_by_type(self) -> Dict[str, List[ThreatIntelligence]]:
-        """Group intelligence by threat type.
-
-        Returns:
-            Dict of type string to list of entries.
-        """
+        """Group intelligence by threat type."""
         result: Dict[str, List[ThreatIntelligence]] = defaultdict(list)
         for ti in self.get_intelligences_in_window():
             result[ti.threat_type.value].append(ti)
         return dict(result)
 
     def aggregate_by_level(self) -> Dict[str, List[ThreatIntelligence]]:
-        """Group intelligence by threat level.
-
-        Returns:
-            Dict of level string to list of entries.
-        """
+        """Group intelligence by threat level."""
         result: Dict[str, List[ThreatIntelligence]] = defaultdict(list)
         for ti in self.get_intelligences_in_window():
             result[str(ti.level)].append(ti)
         return dict(result)
 
     def get_threat_count(self) -> int:
-        """Get total threat count in window.
-
-        Returns:
-            Number of entries.
-        """
+        """Get total threat count in window."""
         return len(self.get_intelligences_in_window())
 
     @property
@@ -343,14 +320,7 @@ class ThreatAnalyzer:
         return self._aggregator
 
     def analyze(self, window_size: float = 3600.0) -> Dict[str, Any]:
-        """Analyze threats within a time window.
-
-        Args:
-            window_size: Time window in seconds.
-
-        Returns:
-            Analysis result dict.
-        """
+        """Analyze threats within a time window."""
         self._aggregator.window_size = max(60.0, min(window_size, 86400.0))
 
         with self._lock:
@@ -430,17 +400,7 @@ class ThreatAnalyzer:
         source: str,
         data: Optional[Dict[str, Any]] = None,
     ) -> Optional[ThreatIntelligence]:
-        """Add a threat intelligence entry.
-
-        Args:
-            threat_type: Type of threat.
-            level: Severity level.
-            source: Intelligence source.
-            data: Optional additional data.
-
-        Returns:
-            Created ThreatIntelligence, or None if the entry was deduplicated.
-        """
+        """Add a threat intelligence entry."""
         # 使用更细粒度的时间戳避免 ID 冲突
         ts = time.time()
         with ThreatIntelligence._id_lock:
@@ -467,11 +427,7 @@ class ThreatAnalyzer:
         return intelligence
 
     def get_summary(self) -> Dict[str, Any]:
-        """Get a quick summary of current threat landscape.
-
-        Returns:
-            Summary dict.
-        """
+        """Get a quick summary of current threat landscape."""
         analysis = self.analyze()
         return {
             'total': analysis['total_threats'],
@@ -490,15 +446,7 @@ def aggregate_threats(
     intelligences: List[Dict[str, Any]],
     window_size: float = 3600.0,
 ) -> Dict[str, Any]:
-    """Convenience function for one-shot threat aggregation.
-
-    Args:
-        intelligences: List of intelligence dicts with 'type', 'level', 'source' keys.
-        window_size: Time window in seconds.
-
-    Returns:
-        Analysis result dict.
-    """
+    """Convenience function for one-shot threat aggregation."""
     analyzer = ThreatAnalyzer()
 
     for intel in intelligences:

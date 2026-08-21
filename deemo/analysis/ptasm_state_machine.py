@@ -48,7 +48,7 @@ def apply_ptr_ops(
 ) -> Tuple[Dict[str, PtrState], str]:
     """应用一行中的操作, 更新状态并返回结果类型.
 
-    Returns: (new_state, result) where result in {uaf, safe, guard, neutral}
+    返回 (new_state, result), result ∈ {uaf, safe, guard, neutral}.
     """
     st = dict(state)
     result = 'neutral'

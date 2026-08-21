@@ -9,8 +9,6 @@ from typing import Optional, Iterator, List
 import os
 import re
 import tempfile
-from fractions import Fraction  # 保留
-from collections import OrderedDict  # 保留
 
 # 原子写入 ------------------------------------------------------------
 
@@ -152,8 +150,4 @@ def ensure_dir(filepath: str) -> str:
     if parent and not os.path.exists(parent):
         os.makedirs(parent, exist_ok=True)
     return filepath
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

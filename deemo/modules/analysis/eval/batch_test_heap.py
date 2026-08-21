@@ -1,6 +1,5 @@
-# 堆溢出检测批量基准测试 — CVE样本(召回) + FP倾向安全样本(精确率)
+# 堆溢出检测批量基准测试 - CVE样本(召回) + FP倾向安全样本(精确率)
 # 输出 JSON + CSV 结果供 plot_comparison.py 使用.
-# 创建: 2026-05-13
 
 import sys, json, time, csv
 from pathlib import Path
@@ -293,7 +292,7 @@ def compute_metrics(cve_results: List[dict], fp_results: List[dict]) -> dict:
 
 def main():
     print("=" * 60)
-    print("Heap Overflow Detection — Comprehensive Benchmark")
+    print("Heap Overflow Detection - Comprehensive Benchmark")
     print("=" * 60)
 
     print("\n--- CVE Samples (Recall Test) ---")

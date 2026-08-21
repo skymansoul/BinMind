@@ -18,7 +18,7 @@ import ast
 import os
 from dataclasses import dataclass
 
-from parallel_deep_dev.engine._io import safe_read
+from ._io import safe_read
 
 
 # 阶段 1: 接口一致性 — 提取签名 + 交叉校验
@@ -124,7 +124,7 @@ def run_semantic_validation(
         if not fpath.endswith(".py"):
             continue
         try:
-            from parallel_deep_dev.engine.property_tester import generate_property_tests
+            from .property_tester import generate_property_tests
             tests = generate_property_tests(fpath)
             if tests:
                 result["property_tests"].extend(

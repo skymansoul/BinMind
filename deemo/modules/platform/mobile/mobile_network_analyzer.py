@@ -1,4 +1,4 @@
-"""移动网络协议安全分析器——NAS/RRC/IMS审计及SUPI隐私及CellSecInspector SCA协议验证。"""
+"""移动网络协议安全分析器: NAS/RRC/IMS审计及SUPI隐私及CellSecInspector SCA协议验证。"""
 from enum import StrEnum
 import logging, re, struct
 from dataclasses import dataclass, field
@@ -51,7 +51,7 @@ _SCA_SECURITY_PROPERTIES = {
     "key_separation": "密钥隔离：不同安全上下文使用独立密钥材料",
 }
 
-# SCA状态机——NAS过程关键状态
+# SCA状态机: NAS过程关键状态
 _SCA_NAS_STATES = {
     "EMM_DEREGISTERED": 0, "EMM_COMMON_PROC": 1, "EMM_REGISTERED_INIT": 2,
     "EMM_REGISTERED": 3, "EMM_SERVICE_REQ_INIT": 4, "EMM_TAU_INIT": 5,
@@ -59,12 +59,12 @@ _SCA_NAS_STATES = {
     "5GMM_REGISTERED": 13, "5GMM_SERVICE_REQ_INIT": 14,
 }
 
-# SCA条件——操作安全/不安全的判定场景
+# SCA条件: 操作安全/不安全的判定场景
 _SCA_CONDITIONS = {
-    "before_auth": "认证前——仅允许AttachRequest, IdentityResponse",
-    "after_auth_plain": "认证后但安全模式前——应尽快转换到安全模式",
-    "security_mode_active": "安全模式激活——所有消息应加密+完整性保护",
-    "tau_without_security": "TAU无安全上下文——需完整重新认证",
+    "before_auth": "认证前, 仅允许AttachRequest, IdentityResponse",
+    "after_auth_plain": "认证后但安全模式前, 应尽快转换到安全模式",
+    "security_mode_active": "安全模式激活, 所有消息应加密+完整性保护",
+    "tau_without_security": "TAU无安全上下文, 需完整重新认证",
 }
 
 class MobileNetworkAnalyzer(BaseAnalyzer):
@@ -94,18 +94,18 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
         return {"success":True,"result":result.to_dict()}
 
     @classmethod
-    def get_metadata(cls): return AnalyzerMetadata(name="MobileNetworkAnalyzer",type=AnalyzerType.UTILITY,version="1.2.0",description="5G/4G协议安全分析——NAS/RRC/IMS+SUPI/SUCI隐私+SCA验证",author="BinaryAnalysisPlatform",dependencies=[],supported_platforms=["any"])
+    def get_metadata(cls): return AnalyzerMetadata(name="MobileNetworkAnalyzer",type=AnalyzerType.UTILITY,version="1.2.0",description="5G/4G协议安全分析: NAS/RRC/IMS+SUPI/SUCI隐私+SCA验证",author="BinaryAnalysisPlatform",dependencies=[],supported_platforms=["any"])
 
     def analyze_5g_nr_protocol(s)->List[ProtocolVulnerability]:
         v=[]; d=s._binary_data
         if (b"5G-AKA" in d or b"SUCI" in d) and b"null-scheme" in d:
-            vuln=ProtocolVulnerability("suci_null_scheme",ProtocolLayer.NAS,NetworkGeneration.NR,VulnSeverity.HIGH,"SUCI空方案——SUPI可被明文截获","", "null-scheme",["Initial Registration","Identification"])
+            vuln=ProtocolVulnerability("suci_null_scheme",ProtocolLayer.NAS,NetworkGeneration.NR,VulnSeverity.HIGH,"SUCI空方案, SUPI可被明文截获","", "null-scheme",["Initial Registration","Identification"])
             vuln.sca_state="5GMM_REGISTERED_INIT"; vuln.sca_condition="before_auth"; vuln.sca_violation="identity_protection"
             v.append(vuln)
         if (b"NRF" in d or b"Nnrf" in d) and b"TLS" not in d and b"OAuth" not in d:
             v.append(ProtocolVulnerability("sba_insecure_communication",ProtocolLayer.SIP,NetworkGeneration.NR,VulnSeverity.HIGH,"SBA接口未检测到TLS/OAuth2保护","","",["NF Discovery","NF Service Request"]))
         if b"5G-GUTI" in d and b"5G-S-TMSI" in d:
-            v.append(ProtocolVulnerability("guti_reallocation_missing",ProtocolLayer.NAS,NetworkGeneration.NR,VulnSeverity.MEDIUM,"GUTI重分配缺失——追踪风险","","",["GUTI Reallocation"]))
+            v.append(ProtocolVulnerability("guti_reallocation_missing",ProtocolLayer.NAS,NetworkGeneration.NR,VulnSeverity.MEDIUM,"GUTI重分配缺失, 追踪风险","","",["GUTI Reallocation"]))
         if b"NGSetup" in d:
             v.append(ProtocolVulnerability("ng_setup_no_mtls",ProtocolLayer.NGAP,NetworkGeneration.NR,VulnSeverity.HIGH,"gNB间NG接口缺少mTLS","","",["NG Setup"]))
         return v
@@ -113,7 +113,7 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
     def analyze_lte_protocol(s)->List[ProtocolVulnerability]:
         v=[]; d=s._binary_data
         if (b"EPS-AKA" in d or b"AKA" in d) and b"IMSI" in d:
-            vuln=ProtocolVulnerability("imsi_exposure",ProtocolLayer.NAS,NetworkGeneration.LTE,VulnSeverity.CRITICAL,"IMSI明文——IMSI Catcher","CVE-2019-0022","",["Attach Request"])
+            vuln=ProtocolVulnerability("imsi_exposure",ProtocolLayer.NAS,NetworkGeneration.LTE,VulnSeverity.CRITICAL,"IMSI明文, IMSI Catcher","CVE-2019-0022","",["Attach Request"])
             vuln.sca_state="EMM_DEREGISTERED"; vuln.sca_condition="before_auth"; vuln.sca_violation="no_plaintext_imsi"
             v.append(vuln)
         if b"S1Setup" in d: v.append(ProtocolVulnerability("s1ap_no_ipsec",ProtocolLayer.S1AP,NetworkGeneration.LTE,VulnSeverity.HIGH,"S1接口缺少IPSec","","",["S1 Setup"]))
@@ -159,18 +159,18 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
 
     def detect_protocol_downgrade(s)->List[str]:
         dg=[]; d=s._binary_data
-        if (b"5G" in d or b"5GS" in d) and (b"LTE" in d or b"EUTRA" in d) and (b"fallback" in d.lower() or b"inter-RAT" in d): dg.append("5G→4G inter-RAT回退——降级攻击面")
-        if b"LTE" in d and (b"UMTS" in d or b"GERAN" in d): dg.append("LTE→UMTS/GERAN回退——可降级至弱加密")
-        if b"EEA0" in d or b"EIA0" in d: dg.append("空加密/完整性(EEA0/EIA0)被支持——可强制使用")
+        if (b"5G" in d or b"5GS" in d) and (b"LTE" in d or b"EUTRA" in d) and (b"fallback" in d.lower() or b"inter-RAT" in d): dg.append("5G→4G inter-RAT回退, 降级攻击面")
+        if b"LTE" in d and (b"UMTS" in d or b"GERAN" in d): dg.append("LTE→UMTS/GERAN回退, 可降级至弱加密")
+        if b"EEA0" in d or b"EIA0" in d: dg.append("空加密/完整性(EEA0/EIA0)被支持, 可强制使用")
         if b"NSA" in d and b"EN-DC" in d: dg.append("EN-DC模式LTE锚点可被攻击")
         return dg
 
     def _detect_suci_privacy(s)->List[str]:
         f=[]; d=s._binary_data
         if b"SUCI" in d:
-            if b"null-scheme" in d: f.append("SUCI null-scheme——等同于明文SUPI")
-            if b"profile_a" not in d and b"profile_b" not in d: f.append("SUCI无保护方案profile——不安全回退")
-        if b"SUPI" in d and b"SUCI" not in d: f.append("SUPI但无SUCI——5G身份隐私未启用")
+            if b"null-scheme" in d: f.append("SUCI null-scheme, 等同于明文SUPI")
+            if b"profile_a" not in d and b"profile_b" not in d: f.append("SUCI无保护方案profile, 不安全回退")
+        if b"SUPI" in d and b"SUCI" not in d: f.append("SUPI但无SUCI, 5G身份隐私未启用")
         return f
 
 # CellSecInspector SCA验证
@@ -182,14 +182,14 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
         例如：EMM_DEREGISTERED状态下不得发送加密的ServiceRequest。
         """
         findings=[]; d=s._binary_data
-        # 检查1：auth_required——AKA认证前不得出现安全模式命令
+        # 检查1: auth_required, AKA认证前不得出现安全模式命令
         has_aka=b"Authentication Request" in d or b"AKA" in d
         has_sec_mode=b"Security Mode Command" in d or b"security mode" in d.lower()
         if has_sec_mode and not has_aka:
             findings.append({"property":"auth_required","violation":True,"severity":"HIGH",
-                "description":"检测到安全模式命令但未找到AKA认证过程——认证可能被绕过",
+                "description":"检测到安全模式命令但未找到AKA认证过程, 认证可能被绕过",
                 "sca_state":"EMM_COMMON_PROC","sca_condition":"before_auth"})
-        # 检查2：encryption_enforced——安全模式后仅应加密消息
+        # 检查2: encryption_enforced, 安全模式后仅应加密消息
         if has_sec_mode:
             # SecurityModeCommand后检测到0x02安全头（明文）即判违规
             sec_mode_pattern=re.compile(rb'Security Mode Command.{0,512}([\x02\x07\x0A\x2E])\x00',re.DOTALL)
@@ -198,23 +198,23 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
                 findings.append({"property":"encryption_enforced","violation":True,"severity":"HIGH",
                     "description":"安全模式命令后检测到未加密NAS消息（安全头=0x00）",
                     "sca_state":"security_mode_active","sca_condition":"after_auth_plain"})
-        # 检查3：downgrade_prevention——拒绝弱算法
+        # 检查3: downgrade_prevention, 拒绝弱算法
         if b"EEA0" in d or b"EIA0" in d:
             findings.append({"property":"downgrade_prevention","violation":True,"severity":"CRITICAL",
-                "description":"空加密/完整性算法(EEA0/EIA0)被支持——可被降级攻击利用",
+                "description":"空加密/完整性算法(EEA0/EIA0)被支持, 可被降级攻击利用",
                 "sca_condition":"security_mode_active"})
-        # 检查4：identity_protection——Identity Request应在安全模式启动后
+        # 检查4: identity_protection, Identity Request应在安全模式启动后
         has_id_req=b"Identity Request" in d
         if has_id_req and not has_sec_mode:
             findings.append({"property":"identity_protection","violation":True,"severity":"MEDIUM",
-                "description":"Identity Request在安全模式前发送——IMSI可能以明文泄露",
+                "description":"Identity Request在安全模式前发送, IMSI可能以明文泄露",
                 "sca_state":"EMM_COMMON_PROC","sca_condition":"before_auth"})
-        # 检查5：key_separation——5G与4G安全上下文不应共享密钥材料
+        # 检查5: key_separation, 5G与4G安全上下文不应共享密钥材料
         has_5g_context=b"5G" in d or b"5GS" in d or b"NR" in d
         has_4g_context=b"LTE" in d or b"EPC" in d
         if has_5g_context and has_4g_context:
             findings.append({"property":"key_separation","violation":False,"severity":"INFO",
-                "description":"5G和4G安全上下文共存——需审计密钥派生是否使用独立K_AMF/K_ASME"})
+                "description":"5G和4G安全上下文共存, 需审计密钥派生是否使用独立K_AMF/K_ASME"})
         return findings
 
     def _detect_generation(s)->str:

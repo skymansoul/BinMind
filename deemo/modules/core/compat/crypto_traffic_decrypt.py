@@ -8,7 +8,6 @@ for _k in dir(_m):
 
 # Synthetic enum member — emulates StrEnum for injected values.
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -106,7 +105,6 @@ for _n, _v in [('MEMORY_DUMP', 'memory_dump'), ('EXTERNAL', 'external')]:
 
 import struct as _struct
 
-# 保留
 _CHUNK_ALIGNMENT = 0x1000
 
 
@@ -140,7 +138,6 @@ def detect_nonce_reuse(packets: list[bytes], nonce_size: int = 12) -> list[int]:
 
 def carve_keys_from_memory(dump: bytes, key_lengths: list[int] | None = None) -> list[dict]:
     """从内存 dump 中雕刻密钥候选。
-    # 不拆——保持上下文连贯性，拆了反而难读
     基于香农熵和字节分布筛选高熵、高随机性的连续字节序列。
     key_lengths: 目标密钥长度列表，默认 [16, 24, 32]（AES-128/192/256）。"""
     if not dump:
@@ -169,7 +166,6 @@ def carve_keys_from_memory(dump: bytes, key_lengths: list[int] | None = None) ->
 
 def align_by_protocol(data: bytes, protocol: str = 'TLS') -> list[tuple[int, int]]:
     """按协议头部对齐数据流，返回各记录的 (offset, length) 对。"""
-    # 不拆——保持上下文连贯性，拆了反而难读
     hdr_size = _PROTO_HEADER_SIZES.get(protocol, 0)
     if hdr_size == 0 or len(data) < hdr_size:
         return [(0, len(data))]
@@ -191,6 +187,8 @@ def align_by_protocol(data: bytes, protocol: str = 'TLS') -> list[tuple[int, int
     return records
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+
+def _debug_print(*a, **kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*a, **kw)
 

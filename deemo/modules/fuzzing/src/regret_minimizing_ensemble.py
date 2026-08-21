@@ -1,5 +1,4 @@
-# 创建: 2026-06-28 17:37
-# 修改: 2026-06-28 — FTRL+Entropy 在线凸优化 + surprise bonus
+# FTRL+Entropy 在线凸优化 + surprise bonus
 """在线遗憾最小化变异集成 (Regret-Minimizing Ensemble, ARME).
 
 修改记录:

@@ -1,4 +1,4 @@
-# Ghidra 无头分析 — 模拟自动化静态审计.
+# Ghidra 无头分析 - 模拟自动化静态审计.
 #
 # 决策逻辑:
 #   analyzeHeadless 加载样本 → 运行 Ghidra 内建分析 (反编译/引用),
@@ -7,7 +7,6 @@
 #   Ghidra 作为"通用反编译工具"对比组: 其检测依赖符号表与反编译质量,
 #   对 stripped/PE 样本能力受限, 反映通用工具的实际精度.
 #
-# 创建: 2026-08-07
 
 import json
 import os

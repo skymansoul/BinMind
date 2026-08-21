@@ -1,24 +1,21 @@
 # coding: utf-8
-# 创建: 2026-06-04  |  跨模块集成管线入口
-# 修改: 2026-06-04  |  审计后补充
-# 修改: 2026-06-04  |  二次审计修复 2026-08-04  |  审计后新增——串联17个子系统的统一入口
 #
 """
-跨模块集成管线——串联17个子系统的统一分析与报告生成。
+跨模块集成管线-串联17个子系统的统一分析与报告生成。
 
 管线阶段:
-  1. 发现: CADE + PHS → 异常函数 + 指针危险评分
+  1. 发现: CADE + PHS - 异常函数 + 指针危险评分
   2. 检测: CSSA(若崩溃可用) + BYRS(YARA规则生成)
-  3. 溯源: TVP(若仓库可用) → 漏洞引入追溯
-  4. 预测: MEWF → 武器化概率 + RAVO → 修复优先级
-  5. 关联: CMVC → 跨模态证据关联 + 确认链
-  6. 防御: EPASS → seccomp策略生成
-  7. 运维: VDDA → 若有基线运行则生成增量报告
+  3. 溯源: TVP(若仓库可用) - 漏洞引入追溯
+  4. 预测: MEWF - 武器化概率 + RAVO - 修复优先级
+  5. 关联: CMVC - 跨模态证据关联 + 确认链
+  6. 防御: EPASS - seccomp策略生成
+  7. 运维: VDDA - 若有基线运行则生成增量报告
 
-输出: UnifiedVulnReport — JSON序列化的统一漏洞情报报告。
+输出: UnifiedVulnReport - JSON序列化的统一漏洞情报报告。
 
 设计约束:
-  - 每个阶段是可选的——根据输入数据的可用性自动跳过
+  - 每个阶段是可选的-根据输入数据的可用性自动跳过
   - 单阶段失败不影响其他阶段
   - 全阶段完成后聚合为统一报告
 """
@@ -44,7 +41,7 @@ class StageResult:
 
 @dataclass
 class UnifiedVulnReport:
-    """统一漏洞情报报告——17个子系统的聚合输出"""
+    """统一漏洞情报报告-17个子系统的聚合输出"""
     binary_name: str
     generated_at: str = ""
     # 发现阶段
@@ -70,18 +67,18 @@ class UnifiedVulnReport:
 
 
 class IntegrationPipeline:
-    """跨模块集成管线——按序执行各阶段并聚合结果。"""
+    """跨模块集成管线-按序执行各阶段并聚合结果。"""
 
     def __init__(self):
         self._stages: List[StageResult] = []
 
     def run(self, **inputs) -> UnifiedVulnReport:
-        """执行完整集成管线——所有阶段输入均为可选, 缺失则跳过。"""
+        """执行完整集成管线-所有阶段输入均为可选, 缺失则跳过。"""
         report = UnifiedVulnReport(
             binary_name=inputs.get('binary_name', 'unknown'),
             generated_at=datetime.now(timezone.utc).isoformat())
         t0 = time.time()
-        # 阶段间共享上下文——前序阶段产出可被后续阶段消费
+        # 阶段间共享上下文-前序阶段产出可被后续阶段消费
         ctx: Dict[str, Any] = dict(inputs)
 
         # Phase 1: 发现
@@ -95,13 +92,13 @@ class IntegrationPipeline:
         # Phase 3: 溯源
         self._run_stage('TVP', report, ctx, self._run_tvp)
 
-        # Phase 4: 预测 —— MEWF输出流入RAVO
+        # Phase 4: 预测 - MEWF输出流入RAVO
         self._run_stage('MEWF', report, ctx, self._run_mewf)
         # 将MEWF武器化概率注入漏洞列表供RAVO消费
         self._inject_weaponization(ctx, report)
         self._run_stage('RAVO', report, ctx, self._run_ravo)
 
-        # Phase 5: 关联 —— CADE/PHS异常流入CMVC
+        # Phase 5: 关联 - CADE/PHS异常流入CMVC
         self._inject_anomalies_to_correlation(ctx, report)
         self._run_stage('CMVC', report, ctx, self._run_cmvc)
 
@@ -266,7 +263,7 @@ class IntegrationPipeline:
 
 
 def run_full_pipeline(binary_name: str = "", **kwargs) -> Dict:
-    """集成管线便捷入口——返回JSON序列化的字典"""
+    """集成管线便捷入口-返回JSON序列化的字典"""
     pipeline = IntegrationPipeline()
     report = pipeline.run(binary_name=binary_name, **kwargs)
     return {

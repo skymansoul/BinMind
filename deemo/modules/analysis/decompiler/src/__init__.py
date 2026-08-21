@@ -1,4 +1,3 @@
-# 2026-08-01
 # 反编译引擎 — lazy-loading module 入口
 # Exports: decompile, 校验, enhance, IR conversion, 伪代码
 #

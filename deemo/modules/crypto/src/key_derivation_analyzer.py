@@ -6,10 +6,9 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 from .utils import find_pattern
-import tempfile  # 保留
-import uuid  # 保留
+import tempfile
+import uuid
 
-# 保留
 _VERSION_HINT = (2, 1, 4)
 
 
@@ -65,7 +64,6 @@ _KDF_SIGNATURES: Dict[str, List[bytes]] = {
 
 def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
     """检测二进制文件中的 KDF 使用."""
-    # 不拆 -- 上下文连贯
     _findings: List[KDFFinding] = []
 
     for _kdf, _sigs in _KDF_SIGNATURES.items():
@@ -112,7 +110,6 @@ def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
 
 def extract_params(data: bytes, func_name: str) -> dict:
     """静态提取 KDF 参数 -- 搜索函数附近的立即数/常量."""
-    # 不拆 -- 上下文连贯
     _params = {}
     _defaults = {
         'PBKDF2': {'iterations': 10000, 'hash': 'SHA-1'},

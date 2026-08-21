@@ -360,8 +360,7 @@ class LLMBasedGenerator:
     def generate(self, strings: List[str], max_entries: int = 200) -> List[Dict[str, Any]]:
         if not strings:
             return []
-        # 2026-08-02 fix: 原 import hashlib 在模块级缩进导致 IndentationError
-        # hashlib 现已在模块顶部导入，此处清理遗留的缩进异常
+        # hashlib 现已在模块顶部导入
         try:
             import requests
             sample_strings = strings[:50]
@@ -747,5 +746,3 @@ def generate_fuzz_dictionary(
         'metadata': info.metadata,
         'content': output
     }
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

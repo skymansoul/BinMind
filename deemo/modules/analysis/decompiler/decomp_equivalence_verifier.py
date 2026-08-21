@@ -1,5 +1,4 @@
-# 创建: 2026-05-18 08:15
-# 修改: 2026-05-18 — 重编译->I/O concolic->覆盖率匹配三层递进验证
+# 重编译->I/O concolic->覆盖率匹配三层递进验证
 """
 反编译等价性验证器 — I/O 行为级等价检查, 而非语法相似度。
 
@@ -33,6 +32,10 @@ ref: DEBENCH — multi-dimensional decompilation
 from __future__ import annotations
 
 import hashlib
+import os
+import random
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Callable
@@ -67,8 +70,6 @@ def check_recompilability(decompiled_code: str,
 
     策略: 使用 GCC/Clang 的 -fsyntax-only 模式——仅语法检查,
     不产生目标文件。对反编译代码做最小化预处理 (去除不完整行)。"""
-    import subprocess, tempfile, os
-
     # 最小化预处理: 在未闭合的括号/语句末尾补分号
     lines = decompiled_code.strip().split('\n')
     cleaned = []
@@ -102,7 +103,6 @@ def check_recompilability(decompiled_code: str,
 
 def generate_test_inputs(n_cases: int = 50, seed: int = 42) -> list[dict]:
     """生成 concolic 测试的输入用例。随机 int/string/buffer 组合。"""
-    import random
     rng = random.Random(seed)
     inputs = []
     for _ in range(n_cases):

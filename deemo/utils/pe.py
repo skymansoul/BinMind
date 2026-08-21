@@ -46,7 +46,7 @@ def pe_arch_name(path: str) -> str:
 
 
 def read_pe_sections(path: str):
-    """Return list of {name, va, size} dicts."""
+    """Return list of {name, addr, size} dicts."""
     try:
         import pefile
         p = pefile.PE(path)

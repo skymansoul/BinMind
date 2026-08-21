@@ -1,6 +1,5 @@
 import unittest
 import os
-_MOD_DEBUG = False
 import tempfile
 import shutil
 import uuid
@@ -37,7 +36,6 @@ class TestFirmwareFormat(unittest.TestCase):
     def test_firmware_format_repr(self):
         fmt = FirmwareFormat(name='uImage', offset=512, size=0)
         repr_str = repr(fmt)
-# lass字段完整性$/d
         self.assertIn('uImage', repr_str)
         self.assertIn('512', repr_str)
 
@@ -134,7 +132,6 @@ class TestFirmwareFormatDetection(unittest.TestCase):
         formats = extractor.detect_firmware_format()
 
         format_names = [f.name for f in formats]
-# lass字段完整性$/d
         self.assertIn('BZIP2', format_names)
 
     def test_detect_uimage_format(self):
@@ -261,7 +258,6 @@ class TestFileDetection(unittest.TestCase):
     """文件类型检测测试"""
 
     def setUp(self):
-        # 早期实现保留——记录设计决策
         self.m_tmp = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -283,7 +279,6 @@ class TestFileDetection(unittest.TestCase):
 
         extractor = FirmwareExtractor(test_file)
         file_type = extractor._detect_file_type(test_file)
-# lass字段完整性$/d
         self.assertEqual(file_type, 'SCRIPT')
 
     def test_detect_passwd(self):

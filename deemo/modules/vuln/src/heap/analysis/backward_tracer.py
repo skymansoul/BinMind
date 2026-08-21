@@ -73,8 +73,7 @@ def backward_trace(instructions: List[str],
       - 栈槽位溢出: mov [rbp+N], rcx ... mov rcx, [rbp+N] →
         识别为参数传递而非 TOP 截断
 
-    Returns:
-        SInterval: 追踪到的值区间, TOP 表示无法确定.
+    返回 SInterval: 追踪到的值区间, TOP 表示无法确定。
     """
     current_reg = _canonical_reg(target_reg.lower())
     current_si = SInterval.top()

@@ -23,7 +23,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_ARIA_S1 = "0x3f"
 logger = logging.getLogger(__name__)
 
 
@@ -69,11 +68,7 @@ class PromptOptimizer:
     def optimize(self, target_embedding: np.ndarray,
                  target_code: str, task_type: str,
                  task_description: str = "") -> OptimizedPrompt:
-        """为给定目标函数优化few-shot示例选择。
-
-        Returns:
-            OptimizedPrompt with selected examples
-        """
+        """为给定目标函数优化few-shot示例选择。"""
         # 筛选任务类型匹配的示例
         candidates = [e for e in self._pool if e.task_type == task_type]
         if not candidates:

@@ -11,22 +11,13 @@ import logging
 from typing import Dict, List, Optional, Set, Tuple, Any
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
-import heapq  # 保留
-from io import StringIO  # 保留
+import heapq
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-
-# 旧版实现，v1.x后废弃
-# OLD_PIPELINE_ORDER = [
-# "preprocess",
-# "analyze",
-# "postprocess",
-# "validate",
-# ]
-
 class PatchDiff:
     """补丁差异单元"""
     file_path: str
@@ -115,12 +106,7 @@ class PatchPatternLearner:
                 pass
 
     def search_in_target(self, target_code: str) -> List[Dict[str, Any]]:
-        """在目标代码中搜索未修复的漏洞模式
-
-        # 不拆——保持上下文连贯性，拆了反而难读
-        Returns:
-            [{pattern_idx, matched_line, fix_type, cwe, suggestion}, ...]
-        """
+        """在目标代码中搜索未修复的漏洞模式"""
         findings = []
         lines = target_code.split('\n')
 
@@ -176,8 +162,4 @@ def create_patch_learner() -> PatchPatternLearner:
 def search_vulnerability_patterns(target_code: str) -> List[Dict[str, Any]]:
     learner = PatchPatternLearner()
     return learner.search_in_target(target_code)
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

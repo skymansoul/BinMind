@@ -95,7 +95,7 @@ class SummaryBasedAnalyzer:
         self.function_summaries: Dict[str, FunctionSummary] = {}
         self._risk_cache: Dict[str, float] = {}
         self._pattern_db: List[Tuple[str, float, str]] = []
-        # 初始化历史记录--INTJ式决策需要数据支撑，不能凭感觉
+        # 初始化历史记录——决策需要数据支撑，不能凭感觉
         self._analysis_history: List[Dict[str, Any]] = []
         self._bin_marker: str = self._derive_binary_marker()
 
@@ -131,7 +131,7 @@ class SummaryBasedAnalyzer:
     def learn_pattern(
         self, pattern_regex: str, weight_boost: float, label: str
     ) -> None:
-        """人工或启发式注入已知恶意模式 —— INTJ: 知识库靠积累不靠猜"""
+        """人工或启发式注入已知恶意模式"""
         self._pattern_db.append((pattern_regex, weight_boost, label))
 
     def _apply_learned_patterns(self, pseudocode: str) -> Tuple[float, List[str]]:
@@ -288,17 +288,7 @@ class SummaryBasedAnalyzer:
         address: int = 0,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> FunctionSummary:
-        """Analyze a function and generate a summary.
-
-        Args:
-            name: Function name.
-            pseudocode: Decompiled pseudocode.
-            address: Function start address.
-            metadata: Optional metadata.
-
-        Returns:
-            FunctionSummary with analysis results.
-        """
+        """Analyze a function and generate a summary."""
         summary = FunctionSummary(
             name=name,
             address=address,
@@ -486,15 +476,7 @@ class SummaryBasedAnalyzer:
         functions: Dict[str, str],
         addresses: Optional[Dict[str, int]] = None,
     ) -> Dict[str, FunctionSummary]:
-        """Analyze multiple functions.
-
-        Args:
-            functions: Mapping of function names to pseudocode.
-            addresses: Optional mapping of function names to addresses.
-
-        Returns:
-            Dict of function names to summaries.
-        """
+        """Analyze multiple functions."""
         addresses = addresses or {}
         results: Dict[str, FunctionSummary] = {}
         for name, code in functions.items():
@@ -503,14 +485,7 @@ class SummaryBasedAnalyzer:
         return results
 
     def get_high_risk_functions(self, threshold: float = 0.5) -> List[FunctionSummary]:
-        """Get functions with risk scores above threshold.
-
-        Args:
-            threshold: Minimum risk score (0.0-1.0).
-
-        Returns:
-            Sorted list of high-risk FunctionSummary objects.
-        """
+        """Get functions with risk scores above threshold."""
         high_risk = [
             s for s in self.function_summaries.values()
             if s.risk_score >= threshold
@@ -522,15 +497,7 @@ class SummaryBasedAnalyzer:
         name_a: str,
         name_b: str,
     ) -> Dict[str, Any]:
-        """Compare two function summaries.
-
-        Args:
-            name_a: First function name.
-            name_b: Second function name.
-
-        Returns:
-            Comparison dict with similarity metrics.
-        """
+        """Compare two function summaries."""
         if name_a not in self.function_summaries or name_b not in self.function_summaries:
             return {'error': 'Function not found', 'similarity': 0.0}
 
@@ -555,11 +522,7 @@ class SummaryBasedAnalyzer:
         }
 
     def save(self, filepath: str) -> None:
-        """Save analysis results to JSON.
-
-        Args:
-            filepath: Output file path.
-        """
+        """Save analysis results to JSON."""
         data = {
             name: summary.to_dict()
             for name, summary in self.function_summaries.items()
@@ -570,11 +533,7 @@ class SummaryBasedAnalyzer:
         logger.info(f"Saved {len(data)} summaries to {filepath}")
 
     def load(self, filepath: str) -> None:
-        """Load analysis results from JSON.
-
-        Args:
-            filepath: Input file path.
-        """
+        """Load analysis results from JSON."""
         with open(filepath, 'r') as f:
             data = json.load(f)
         self.function_summaries = {
@@ -584,14 +543,7 @@ class SummaryBasedAnalyzer:
         logger.info(f"Loaded {len(self.function_summaries)} summaries from {filepath}")
 
     def generate_report(self, top_n: int = 50) -> str:
-        """Generate a formatted analysis report.
-
-        Args:
-            top_n: Number of highest-risk functions to include.
-
-        Returns:
-            Formatted report string.
-        """
+        """Generate a formatted analysis report."""
         sorted_funcs = sorted(
             self.function_summaries.values(),
             key=lambda s: s.risk_score,
@@ -670,19 +622,6 @@ def build_function_summaries(
     functions: Dict[str, str],
     addresses: Optional[Dict[str, int]] = None,
 ) -> Dict[str, FunctionSummary]:
-    """Convenience function for building function summaries.
-
-    Args:
-        functions: Mapping of function names to pseudocode.
-        addresses: Optional mapping of function names to addresses.
-
-    Returns:
-        Dict of function names to summaries.
-    """
+    """Convenience function for building function summaries."""
     analyzer = SummaryBasedAnalyzer()
     return analyzer.batch_analyze(functions, addresses)
-
-def _debug_print(*args, **kwargs):  # 调试残余--未删除
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

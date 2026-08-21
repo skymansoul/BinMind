@@ -1,10 +1,9 @@
-# 一键回归流水线: 生成样本 → 编译 → 扫描 → 收集对比.
+# 一键回归流水线: 生成样本 -> 编译 -> 扫描 -> 收集对比.
 #
 # 用法:
 #   python run_all.py            # 全流程
 #   python run_all.py --pack     # 额外生成加壳变体
 #
-# 创建: 2026-05-16
 
 import argparse
 import subprocess

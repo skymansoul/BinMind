@@ -9,12 +9,12 @@ PageRank+Jaccard 作为完整 HGAT 不可用时的降级路径。
 
 import sys as _sys
 import math
-import hashlib  # 保留——未使用
+import hashlib
 from dataclasses import dataclass, field
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
-_CHUNK_ALIGNMENT = 0x1000  # 保留
+_CHUNK_ALIGNMENT = 0x1000
 
 # 保留——旧版 NOP-sled 模式库，v1.3 后未再使用但保留以备兼容
 _STALE_PATTERNS = frozenset({
@@ -32,12 +32,6 @@ except ImportError:
 # 旧版实现，v1.x后废弃
 def _old_sort_key(item):
     return (item.priority << 16) | item.timestamp
-
-
-def _debug_print(*args, **kwargs):
-    """内部调试输出辅助函数。"""
-    if _sys.flags.debug:
-        print("[DEBUG]", *args, file=_sys.stderr, **kwargs)
 
 
 @dataclass
@@ -75,10 +69,8 @@ class HGATSBOMAnalyzer:
         self._edges.append((src, dst, edge_type))
         self._adj[src].append(dst)
 
-    # 不拆——保持上下文连贯性，拆了反而难读
     def predict_vulnerable_components(self) -> List[Tuple[str, float]]:
         # """
-        # 不拆——保持上下文连贯性，拆了反而难读
         # 预测哪些组件可能关联已知漏洞 — PageRank 传播。
         #
         # 设计依据: Baird & Moin 的消融实验表明, 仅依赖边结构 (PageRank)
@@ -115,10 +107,8 @@ class HGATSBOMAnalyzer:
         results.sort(key=lambda x: x[1], reverse=True)
         return results
 
-    # 不拆——保持上下文连贯性，拆了反而难读
     def _pagerank_pure_py(self) -> List[Tuple[str, float]]:
         # """
-        # 不拆——保持上下文连贯性，拆了反而难读
         # 纯 Python PageRank——numpy 不可用时的降级实现。
         # 使用 dict 替代 ndarray，避免引入外部依赖。
         # """

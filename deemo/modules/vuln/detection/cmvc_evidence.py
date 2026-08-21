@@ -1,9 +1,6 @@
 # coding: utf-8
-# 创建: 2026-07-17  |  证据归一化器
-# 修改: 2026-07-17  |  审计后补充文件头与错误处理
-#
 """
-跨模态漏洞关联——多模态证据表示。
+跨模态漏洞关联 - 多模态证据表示。
 
 技术问题:
   现有漏洞检测管线产出多种模态的独立finding:
@@ -13,20 +10,20 @@
     - 动态沙箱: '执行流到达memcpy时len=1024>buf=256'(score=0.9)
 
   这些finding可能指向同一漏洞, 但来自不同模态的独立输出
-  缺乏关联机制——安全分析师需手工判断"崩溃#1234是否验证了静态finding#567"。
+  缺乏关联机制 - 安全分析师需手工判断"崩溃#1234是否验证了静态finding#567"。
 
 解决方案:
-  统一证据表示——抽象为(位置, 类型, 严重度, 模态, 置信度)五元组:
-    - 位置归一化: 源码行号↔二进制地址↔函数名↔调用栈帧的互映射
-    - 类型归一化: 静态类型↔CWE↔崩溃信号↔LLM分类的通用分类法
+  统一证据表示 - 抽象为(位置, 类型, 严重度, 模态, 置信度)五元组:
+    - 位置归一化: 源码行号/二进制地址/函数名/调用栈帧的互映射
+    - 类型归一化: 静态类型/CWE/崩溃信号/LLM分类的通用分类法
     - 证据强度: 各模态的置信度校准至统一[0, 1]标度
 
   归一化后的证据可在统一空间中做空间-语义联合相似度计算,
   支撑后续的因果关联推断。
 
 与multimodal_vuln_fusion的差异:
-  multimodal_vuln_fusion → 分数级融合(加权平均/sugeno/自适应)
-  cmvc → 实例级关联(确认/争议/补充——finding间的推理关系)
+  multimodal_vuln_fusion, 分数级融合(加权平均/sugeno/自适应)
+  cmvc, 实例级关联(确认/争议/补充, finding间的推理关系)
 """
 
 import re
@@ -65,10 +62,10 @@ class CorrelationRelation(str, Enum):
 
 @dataclass
 class NormalizedEvidence:
-    """归一化漏洞证据——统一不同模态finding的结构"""
+    """归一化漏洞证据 - 统一不同模态finding的结构"""
     evidence_id: str
     modality: str                   # AnalysisModality值
-    # 位置——三要素至少一者非空
+    # 位置, 三要素至少一者非空
     function_name: str = ""
     file_path: str = ""
     line_number: int = 0
@@ -92,7 +89,7 @@ class NormalizedEvidence:
 
 @dataclass
 class EvidencePair:
-    """证据对——两条归一化证据及其关系"""
+    """证据对 - 两条归一化证据及其关系"""
     evidence_a: NormalizedEvidence
     evidence_b: NormalizedEvidence
     relation: str = CorrelationRelation.INDEPENDENT
@@ -101,7 +98,7 @@ class EvidencePair:
     semantic_similarity: float = 0.0    # 类型相似度[0, 1]
     correlation_score: float = 0.0      # 综合关联评分[0, 1]
     # 因果推断
-    causal_direction: str = ""          # A→B | B→A | bidirectional | none
+    causal_direction: str = ""          # A到B | B到A | bidirectional | none
     confounding_risk: float = 0.0       # 混淆风险(第三方因素导致二者相关)
     # 推理链
     reasoning: str = ""
@@ -113,19 +110,19 @@ class EvidencePair:
 class EvidenceNormalizer:
     """将各模态的原生finding归一化为统一的NormalizedEvidence。
 
-    归一化规则——漏洞类型映射:
-      静态分析memcpy无检查 → buffer_overflow(CWE-787)
-      LLM语义分析栈溢出   → buffer_overflow(CWE-787)
-      模糊测试SIGSEGV       → 取决于崩溃指令(memcpy→buffer_overflow)
-      ASAN堆溢出           → heap_overflow(CWE-122)
-      GDB崩溃分析          → 取决于崩溃类型分类器(CSSA)
+    归一化规则 - 漏洞类型映射:
+      静态分析memcpy无检查, buffer_overflow(CWE-787)
+      LLM语义分析栈溢出,   buffer_overflow(CWE-787)
+      模糊测试SIGSEGV,       取决于崩溃指令(memcpy, buffer_overflow)
+      ASAN堆溢出,           heap_overflow(CWE-122)
+      GDB崩溃分析,          取决于崩溃类型分类器(CSSA)
 
     位置归一化:
-      二进制地址↔函数名↔源码行号互映射(通过调试符号/IDA/反汇编)
+      二进制地址/函数名/源码行号互映射(通过调试符号/IDA/反汇编)
       无调试符号时回退至(二进制地址, 函数名)二元组匹配
     """
 
-    # 模态→置信度校准因子(基于各模态的实证FP/FN率)
+    # 模态到置信度校准因子(基于各模态的实证FP/FN率)
     _MODALITY_CALIBRATION = {
         AnalysisModality.ASAN: 0.95,
         AnalysisModality.DYNAMIC: 0.75,
@@ -169,16 +166,16 @@ class EvidenceNormalizer:
 
         返回NormalizedEvidence。
         """
-        # 类型归一化——含崩溃信号推断
+        # 类型归一化, 含崩溃信号推断
         raw_type = raw_finding.get('vuln_type', raw_finding.get('type', ''))
         norm_type = self._TYPE_NORMALIZATION.get(raw_type, '')
         if not norm_type:
-            # 从崩溃信号推断漏洞类型——SIGSEGV→可能溢出, SIGABRT→可能堆破坏
+            # 从崩溃信号推断漏洞类型 - SIGSEGV, 可能溢出; SIGABRT, 可能堆破坏
             sig = raw_finding.get('signal', raw_finding.get('crash_signal', 0))
             if sig == 11:
-                norm_type = 'buffer_overflow'  # SIGSEGV→最可能的类型
+                norm_type = 'buffer_overflow'  # SIGSEGV, 最可能的类型
             elif sig == 6:
-                norm_type = 'buffer_overflow'  # SIGABRT→asan常见
+                norm_type = 'buffer_overflow'  # SIGABRT, asan常见
             elif sig in (4, 8):
                 norm_type = 'buffer_overflow'
             else:

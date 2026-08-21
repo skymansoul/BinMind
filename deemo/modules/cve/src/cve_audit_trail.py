@@ -1,7 +1,5 @@
-# 创建: 2026-06-30 15:47
-# 修改: 2026-06-30 15:30 (审计修复: 引用验证, 性能警告标注, 边界条件补全)
-# 简述: Merkle证据树+HMAC审计证书
-# 可审计评分证书 — 密码学证据链用于漏洞评分的溯源
+# Merkle证据树+HMAC审计证书
+# 可审计评分证书 - 密码学证据链用于漏洞评分的溯源
 #
 # 问题: 自动化评分系统 (GNN/Hawkes/DS-Fusion) 的输出是数字,
 # 但SOAR/SIEM使用者无法验证分数的产生过程. 当分数驱动补丁决策时,
@@ -11,8 +9,8 @@
 # 每个分数附带一个证书对象, 记录:
 #   1. 使用的数据源及其时间窗口 (避免时间泄露)
 #   2. 评分算法标识和参数哈希
-#   3. 数据源哈希链 (Merkle树) — 可验证输入未被篡改
-#   4. 分数本身的HMAC签名 — 保证输出完整性
+#   3. 数据源哈希链 (Merkle树) - 可验证输入未被篡改
+#   4. 分数本身的HMAC签名 - 保证输出完整性
 #
 # 证书结构 (JSON可序列化):
 #   {
@@ -34,18 +32,18 @@
 #
 # 非显而易见的设计决策:
 #   1. 对数据源哈希采用Merkle树而非简单拼接:
-#      允许部分验证 — 如果NVD数据不可用但其他源一致,
+#      允许部分验证 - 如果NVD数据不可用但其他源一致,
 #      仍可确认其他源未被篡改.
 #   2. 时间窗口边界时钟: "end"永远为评分日期前一天,
 #      确保不会意外包含公布日期之后的"未来信息".
 #      这是防御时间泄露 (temporal leakage) 的关键机制.
 #   3. 算法参数哈希: 对参数dict进行确定性JSON序列化后SHA256,
-#      使评分可重现 — 同一参数组合始终产生相同的参数哈希.
+#      使评分可重现 - 同一参数组合始终产生相同的参数哈希.
 #
 #
 # Compute-Budgeted Evidence Graphs
-#     — 可审计证书概念的原型, 本文扩展为完整密码学实现
-#   [C2PA Specification 2.1] 内容溯源与真实性 — 证书链设计参考
+#     - 可审计证书概念的原型, 本文扩展为完整密码学实现
+#   [C2PA Specification 2.1] 内容溯源与真实性 - 证书链设计参考
 
 import hashlib
 import hmac
@@ -57,7 +55,7 @@ from typing import Dict, List, Optional, Any
 
 
 def _canonical_json(obj: Any) -> bytes:
-    """确定性JSON序列化 — 按key排序, 无空格, UTF-8."""
+    """确定性JSON序列化 - 按key排序, 无空格, UTF-8."""
     return json.dumps(obj, sort_keys=True, separators=(',', ':'),
                       ensure_ascii=False).encode('utf-8')
 
@@ -71,7 +69,7 @@ def _hmac_sha256_hex(key: bytes, data: bytes) -> str:
 
 
 class MerkleEvidenceTree:
-    """证据Merkle树 — 对多个数据源的哈希构造可部分验证的承诺.
+    """证据Merkle树 - 对多个数据源的哈希构造可部分验证的承诺.
 
     叶子 = H(source_name || source_data_hash).
     内部节点 = H(left_child || right_child).
@@ -173,7 +171,7 @@ class AuditCertificate:
         self.source_hashes[source_name] = data_hash
 
     def seal(self) -> Dict[str, Any]:
-        """封存证书 — 计算Merkle根和签名."""
+        """封存证书 - 计算Merkle根和签名."""
         tree = MerkleEvidenceTree()
         for src, hsh in sorted(self.source_hashes.items()):
             tree.add_leaf(src, hsh)
@@ -208,13 +206,11 @@ class AuditCertificate:
     @classmethod
     def verify(cls, certificate: Dict[str, Any],
                signing_key: Optional[bytes] = None) -> Dict[str, Any]:
-        """验证证书的完整性和签名.
+        """验证证书的完整性和签名。
 
-        检查:
-          1. signature存在且格式正确
-          2. HMAC签名验证通过
-          3. Merkle根与source_hashes一致
-        Returns: {valid: bool, checks: [...]}
+        检查: 1) signature 存在且格式正确; 2) HMAC 签名验证通过;
+        3) Merkle 根与 source_hashes 一致。
+        返回 {valid: bool, checks: [...]}。
         """
         checks = []
         key = signing_key or hashlib.sha256(b"binmind-cve-default").digest()
@@ -247,7 +243,7 @@ class AuditCertificate:
 
 
 class AuditTrailManager:
-    """审计追踪管理器 — 生成并存储多个证书, 维护完整性.
+    """审计追踪管理器 - 生成并存储多个证书, 维护完整性.
 
     使用模式:
       mgr = AuditTrailManager(signing_key=my_key)

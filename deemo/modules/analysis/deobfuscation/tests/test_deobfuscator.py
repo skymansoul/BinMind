@@ -1,4 +1,4 @@
-"""deobfuscator — dead code elimination, constant folding, peephole simplification"""
+"""deobfuscator - dead code elimination, constant folding, peephole simplification"""
 import pytest
 
 try:

@@ -1,5 +1,5 @@
 """
-最优传输图对齐 -- 基于Sinkhorn熵正则最优传输的传播图结构比对。
+ 最优传输图对齐 - 基于Sinkhorn熵正则最优传输的传播图结构比对。
 
 问题：
   比较两个传播图（如不同固件版本的漏洞传播结构）的传统方法：
@@ -43,17 +43,17 @@ from .propagation_graph import PlatformLayer, PropagationGraph
 
 @dataclass
 class TransportPlan:
-    """最优传输计划 -- 源图节点到目标图节点的软匹配矩阵。"""
+    """最优传输计划 - 源图节点到目标图节点的软匹配矩阵。"""
     source_nodes: List[str]
     target_nodes: List[str]
     plan_matrix: List[List[float]]       # [n_source x n_target], 行和≈源权重, 列和≈目标权重
-    transport_cost: float                 # <P, C>_F -- Frobenius内积
+    transport_cost: float                 # <P, C>_F Frobenius内积
     entropy: float                        # 传输计划的熵 (正则化强度指标)
     converged: bool                       # Sinkhorn是否收敛
 
 
 class SinkhornPropagationAligner:
-    """Sinkhorn传播图对齐器 -- 熵正则最优传输。
+    """Sinkhorn传播图对齐器 - 熵正则最优传输。
 
     用法::
 
@@ -70,7 +70,7 @@ class SinkhornPropagationAligner:
 
     def extract_node_features(self, graph: PropagationGraph
                               ) -> Dict[str, List[float]]:
-        """提取传播图节点的特征向量 -- 8维。
+        """提取传播图节点的特征向量 - 8维。
 
         维度设计：
           0: severity (自身严重度)
@@ -208,7 +208,7 @@ class SinkhornPropagationAligner:
               graph_b: PropagationGraph,
               uniform_weights: bool = True
               ) -> TransportPlan:
-        """对齐两个传播图 -- 返回Sinkhorn传输计划。
+        """对齐两个传播图 - 返回Sinkhorn传输计划。
 
         uniform_weights=True: 每节点权重=1/|V|（等权重）
         uniform_weights=False: 每节点权重正比于其严重度（按风险加权）
@@ -289,7 +289,7 @@ class SinkhornPropagationAligner:
 
     def graph_distance(self, graph_a: PropagationGraph,
                        graph_b: PropagationGraph) -> float:
-        """计算两个传播图的OT距离 -- 单值摘要度量。
+        """计算两个传播图的OT距离 - 单值摘要度量。
 
         距离已按 min(|V_a|, |V_b|) 归一化，使不同规模图可比。
         """

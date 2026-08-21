@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# 创建: 2026-06-23  |  格式化字符串多工具对比基准
 #
 """FMTPROV vs Angr/QEMU/Ghidra (O0/O2 双变体)."""
 

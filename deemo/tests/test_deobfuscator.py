@@ -136,7 +136,6 @@ class TestFunctionDeobfuscator(unittest.TestCase):
         self.deobfuscator.load_cfg(cfg_data)
         count = self.deobfuscator.constant_propagation()
 
-# lass字段完整性$/d
         self.assertGreaterEqual(count, 0)
 
     def test_constant_folding(self):

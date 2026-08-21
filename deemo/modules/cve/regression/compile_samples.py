@@ -5,7 +5,6 @@
 #   若 upx 可用, 额外生成加壳变体, 供"加壳/未加壳"分组实验.
 #   编译失败不中断, 记录到 manifest 的 compiled 字段.
 #
-# 创建: 2026-08-09
 
 import json
 import os

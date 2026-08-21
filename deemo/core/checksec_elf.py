@@ -87,9 +87,18 @@ def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
                 offset = e_phoff + i * e_phentsize
                 phdr = _read_struct(f, offset, phdr_fmt)
                 p_type = phdr[0]
-                p_vaddr = phdr[2]
-                p_flags = phdr[1] if is_64bit else phdr[3]
-                p_offset, p_filesz = (phdr[1], phdr[3]) if is_64bit else (phdr[1], phdr[4])
+                if is_64bit:
+                    # ELF64 Phdr: type, flags, offset, vaddr, paddr, filesz, memsz, align
+                    p_offset = phdr[2]
+                    p_vaddr = phdr[3]
+                    p_filesz = phdr[5]
+                    p_flags = phdr[1]
+                else:
+                    # ELF32 Phdr: type, offset, vaddr, paddr, filesz, memsz, flags, align
+                    p_offset = phdr[1]
+                    p_vaddr = phdr[2]
+                    p_filesz = phdr[4]
+                    p_flags = phdr[6]
 
                 phdrs.append({
                     'type': p_type,

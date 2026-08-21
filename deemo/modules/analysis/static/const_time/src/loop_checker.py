@@ -1,5 +1,5 @@
 #
-# 秘密依赖循环检测 —— 检测循环的迭代次数是否受秘密数据影响
+# 秘密依赖循环检测 - 检测循环的迭代次数是否受秘密数据影响
 #
 # 违规条件：
 #   (a) 循环计数器（ECX/RCX for rep, 或显式循环变量）被秘密数据污染
@@ -41,14 +41,14 @@ def check_secret_dependent_loops(
     func_addr: int = 0,
 ) -> List[LoopViolation]:
     """检测秘密依赖的循环结构
-    
+
     两种模式：
     1. 显式循环：后向条件跳转 + cmp/test 操作数被污染
     2. rep 前缀：ECX/RCX 被秘密污染
     """
     violations = []
 
-    # 模式 1: 显式循环——后向跳转 + 污染的比较操作数
+    # 模式 1: 显式循环-后向跳转 + 污染的比较操作数
     for offset, (mn, ops) in enumerate(insns):
         mn_lower = mn.lower()
 
@@ -86,7 +86,7 @@ def check_secret_dependent_loops(
                                 ))
                                 break
 
-    # 模式 2: rep 前缀——ECX/RCX 被秘密污染
+    # 模式 2: rep 前缀-ECX/RCX 被秘密污染
     rep_regs = {'ecx', 'rcx', 'cx'}
     for offset, (mn, ops) in enumerate(insns):
         if mn.lower().startswith('rep'):

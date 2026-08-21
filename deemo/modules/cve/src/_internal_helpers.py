@@ -3,7 +3,6 @@
 # _get_str/_get_num/_get_bool 原分布于 14 个文件, 存在单行/多行无注解/
 # 多行带注解三种文本形式, 行为等价, 此处收敛为多行形式.
 #
-# 创建: 2026-08-11
 
 def _get_str(entry, field: str, default: str = ""):
     if hasattr(entry, field):

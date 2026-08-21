@@ -1,4 +1,3 @@
-# 创建: 2026-06-13 | 堆状态机——UAF/Double-Free的静态检测
 #
 """堆生命周期状态机 — 对malloc/free/realloc的调用图+数据流建模。
 

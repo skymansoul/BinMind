@@ -1,18 +1,17 @@
-# 修改记录:
-# 2025-07-29 14:55 - 增加 AH 寄存器的比特位精确追踪 (8-bit high half)
-# 2025-07-31 15:41 - 修复 MOVZX/MOVSX 的符号扩展路径, 处理宽度 >32 的零扩展
-# 2025-08-02 08:17 - 增加 XMM/YMM 的低 64-bit 别名映射 (支持 SSE/AVX 混合代码)
-# 2025-08-04 11:33 - 添加 bitfield extract (BEXTR/BZHI) 的 taint 传播规则
+# 增加 AH 寄存器的比特位精确追踪 (8-bit high half)
+# 修复 MOVZX/MOVSX 的符号扩展路径, 处理宽度 >32 的零扩展
+# 增加 XMM/YMM 的低 64-bit 别名映射 (支持 SSE/AVX 混合代码)
+# 添加 bitfield extract (BEXTR/BZHI) 的 taint 传播规则
 
-# 子寄存器级污点追踪 — x86-64 重叠寄存器别名下的精确 taint 传播
+# 子寄存器级污点追踪 - x86-64 重叠寄存器别名下的精确 taint 传播
 #
 # 设计动机:
 #   现有 taint_tracker.py 在字节粒度上追踪输入→覆盖的因果关系。
 #   当分析颗粒度为 x86-64 指令级时, 字节级追踪不足以捕获:
-#     a) mov al, [input+0]   — AL 被污染, 但 EAX 的上 24 bit 未被更新
-#     b) movzx eax, al       — AL→EAX 零扩展, taint 从 AL 传播到完整 EAX
-#     c) shr rax, 8          — 右移使 taint 从一个字节迁移到相邻字节
-#     d) vmovq xmm0, rax     — 通用寄存器→SIMD 的 taint 跨域传播
+#     a) mov al, [input+0]   - AL 被污染, 但 EAX 的上 24 bit 未被更新
+#     b) movzx eax, al       - AL-EAX 零扩展, taint 从 AL 传播到完整 EAX
+#     c) shr rax, 8          - 右移使 taint 从一个字节迁移到相邻字节
+#     d) vmovq xmm0, rax     - 通用寄存器-SIMD 的 taint 跨域传播
 #
 #   这些模式在加密实现、协议解析器中频繁出现。若 taint 模型未考虑
 #   寄存器别名, 会导致:
@@ -26,17 +25,17 @@
 #
 # 支持的 x86-64 操作 (部分——当前覆盖最常见模式):
 #   MOV r,r / MOVZX / MOVSX / AND / OR / XOR / SHL / SHR / SAR / BEXTR
-#   跨域: VMOVQ (GPR↔XMM low 64)
+#   跨域: VMOVQ (GPR-XMM low 64)
 #
 # 文献:
 #   Bit-level Taint Analysis
-#     — 比特级污点分析用于反混淆。本项目取其 bitmask 表示思想,
+#     - 比特级污点分析用于反混淆。本项目取其 bitmask 表示思想,
 #       但限制为字节对齐 (8-bit 粒度 bitmap, 不做到 bit 级, 以控制
 #       状态空间大小), 并在该粒度上追踪寄存器别名。
-#   DECAF++ — 全系统动态污点分析框架,
+#   DECAF++ - 全系统动态污点分析框架,
 #     支持 x86-64 寄存器别名。本项目取其别名建模的完备性要求,
 #     但实现在 Python 层, 面向离线 trace 而非在线插桩。
-#   BitBlaze — 二进制分析平台, 中间语言
+#   BitBlaze - 二进制分析平台, 中间语言
 #     Vine 中的细粒度 taint 传播。本项目取其"每个临时值携带 taint 标签"
 #     的理念, 以 TaintBits 结构实现。
 # TODO：考虑适配 ARM 平台的 SIMD 别名 (Vn/Qn/Dn/Sn/Hn/Bn 重叠)
@@ -45,7 +44,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
 
-# x86-64 寄存器别名映射: 逻辑名 → (物理寄存器基, bit_offset, bit_width)
+# x86-64 寄存器别名映射: 逻辑名 - (物理寄存器基, bit_offset, bit_width)
 # "物理寄存器基" 为 GPR 索引 (0=RAX, 1=RCX, 2=RDX, 3=RBX, 4=RSP, ...)
 # 或 XMM 索引 (0=XMM0, ...)
 _GPR_BASE: Dict[str, int] = {
@@ -198,11 +197,11 @@ class SubRegTaintTracker:
     """
 
     def __init__(self):
-        # 通用寄存器: gpr[0..15] → TaintBits (64-bit)
+        # 通用寄存器: gpr[0..15] - TaintBits (64-bit)
         self._gpr: List[TaintBits] = [TaintBits() for _ in range(16)]
-        # XMM 低 64-bit: xmm_lo[0..15] → TaintBits
+        # XMM 低 64-bit: xmm_lo[0..15] - TaintBits
         self._xmm_lo: List[TaintBits] = [TaintBits() for _ in range(16)]
-        # 输入字节偏移→内容的映射 (用于具体执行辅助, 当前为类型占位)
+        # 输入字节偏移-内容的映射 (用于具体执行辅助, 当前为类型占位)
         self._input: bytearray = bytearray()
         # 统计
         self._instructions_executed = 0
@@ -410,7 +409,7 @@ class SubRegTaintTracker:
         self._write_operand(dst, result)
 
     def _exec_vmovq(self, _mnemonic: str, operands: List[str]) -> None:
-        """VMOVQ: GPR ↔ XMM low 64-bit 的 taint 传播。"""
+        """VMOVQ: GPR - XMM low 64-bit 的 taint 传播。"""
         dst, src = operands[0], operands[1]
         src_tb = self._resolve_operand(src)
         if src_tb is None:

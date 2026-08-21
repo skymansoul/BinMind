@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# 创建: 2026-06-22  |  Ghidra 无头分析器——自动化静态审计对比
 #
 """
 Ghidra 无头分析 (analyzeHeadless) 适配器。

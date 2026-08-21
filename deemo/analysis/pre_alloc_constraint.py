@@ -244,7 +244,7 @@ class PreAllocConstraint:
 def evaluate_pre_alloc_safety(source: str) -> Tuple[str, float, str]:
     """快速判定: 分配前约束能否证明写入安全.
 
-    Returns: (verdict, confidence, reason)
+    返回 (verdict, confidence, reason):
       SAFE — 约束上界≥写入大小, 可过滤
       UNCERTAIN — 无法确定, 保留
     """

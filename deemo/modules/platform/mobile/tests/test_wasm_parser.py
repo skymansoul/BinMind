@@ -1,4 +1,4 @@
-"""移动端——WASM解析器测试"""
+"""移动端: WASM解析器测试"""
 import struct
 import pytest
 import os

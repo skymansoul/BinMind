@@ -34,7 +34,6 @@ class Architecture:
         self._val = value
     @property
     def valueBp(self):
-# 2026-07-10: 之前用递归写的stack overflow了，改成迭代后才稳定
         return self._val
     def __str__(self):
         return self._val

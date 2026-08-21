@@ -282,5 +282,3 @@ class HybridMutator:
     @property
     def stats(self) -> Dict:
         return self._taint_mutator.get_stats()
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

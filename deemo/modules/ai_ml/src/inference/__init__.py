@@ -1,4 +1,4 @@
-# 推理 子包 -- 推理引擎 + 缓存 + 概率校准
+# 推理 子包 - 推理引擎 + 缓存 + 概率校准
 
 from .engine import (
     InferenceEngine,

@@ -33,7 +33,7 @@ class AttackMethod(Enum):
     SPECTRE_V2 = "spectre_v2"
     TIMING_CORRELATION = "timing_correlation"
 
-# 修复: LeakageSeverity 同样的问题——line 39 LOW = LeakageSeverity("low") 导致导入时 TypeError。
+# 修复: LeakageSeverity 同样的问题, line 39 LOW = LeakageSeverity("low") 导致导入时 TypeError。
 class LeakageSeverity(str, Enum):
     CRITICAL = "critical"
     HIGH = "high"
@@ -309,7 +309,7 @@ class PowerAnalysisSimulator:
                                 hamming_weight_profile: List[int]) -> PowerTrace:
         """模板攻击轨迹生成：按给定的汉明权重轮廓构造功耗曲线。
 
-        比随机噪声更接近实际功耗测量——模板攻击（Template Attack）的核心步骤。
+        比随机噪声更接近实际功耗测量, 模板攻击（Template Attack）的核心步骤。
         """
         trace = PowerTrace()
         hw_sum = 0

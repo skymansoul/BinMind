@@ -1,10 +1,9 @@
 """
-约束联结求解器 — 对约束系统做联合可行性判定: 常量代换简化 → 安全性证明 → 溢出确认 → FM 边界推理。
+约束联结求解器: 对约束系统做联合可行性判定: 常量代换简化、安全性证明、溢出确认、FM 边界推理。
 Fourier-Motzkin 消元从线性不等式组消去变量, 组合 a*x+..<=0 与 b*x+..>=0 (a>0, b<0), 消元后出现矛盾则系统不可行。
 无法证明安全或溢出时返回 INCONCLUSIVE (保守保留); 不符号化内存地址, 不调用 SMT 求解器, 复杂度 O(n^3) (n 为约束数)。
 """
 
-import math
 from typing import Optional
 
 from core.cj_constraint_types import (
@@ -29,10 +28,10 @@ class ConstraintJoinSolver:
 
     对单个(alloc, write)对的约束系统做联合判定.
     四步:
-      Step 1: 常量代换 — 将已知常量代入约束系统
-      Step 2: 安全性证明 — 尝试证明 write_end <= alloc_usable
-      Step 3: 溢出确认 — 尝试证明 write_end > alloc_usable
-      Step 4: FM边界推理 — 从残差约束推导变量边界, 补充判定
+      Step 1: 常量代换: 将已知常量代入约束系统
+      Step 2: 安全性证明: 尝试证明 write_end <= alloc_usable
+      Step 3: 溢出确认: 尝试证明 write_end > alloc_usable
+      Step 4: FM边界推理: 从残差约束推导变量边界, 补充判定
     """
 
     def __init__(self, platform: str = "x86_64"):
@@ -164,7 +163,7 @@ def solve_candidate(
     """便捷接口: 对单个候选构建约束系统并求解.
 
     返回 (solver_result, constraint_system).
-    求解顺序: 仿射关系证明 → 约束收集 → 区间域增强 → FM消元.
+    求解顺序: 仿射关系证明、约束收集、区间域增强、FM消元.
     """
     from core.cj_affine_bridge import try_affine_proof
     from core.cj_constraint_collector import collect_constraints
@@ -218,7 +217,7 @@ def solve_candidate_path_sensitive(
     decompiled_text: str = "",
     platform: str = "x86_64",
 ):
-    """路径敏感求解接口 — PS-CJ.
+    """路径敏感求解接口: PS-CJ.
 
     当反编译文本可用时, 使用路径敏感约束联结求解器;
     回退到全局CJ当路径枚举失败.

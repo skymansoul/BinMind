@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# On-demand symbolic summary 构造器 with 缓存 and incremental updates.
-# added SummaryCache with LRU eviction; SummaryIncrementalUpdater.
-# added async request coalescing (避免重复生成 — 多调用者共享同一pending结果);
-# added cache 序列化 via export_cache/import_cache (持久化缓存 — 跨会话复用);
-# added adaptive TTL extension on cache hit (热点摘要自动延长生命周期).
+# 按需符号摘要构造器, 带缓存与增量更新。
+# SummaryCache 用 LRU 淘汰; 异步请求合并 (多调用者共享同一 pending 结果);
+# export_cache/import_cache 持久化缓存跨会话复用;
+# 命中时自适应延长 TTL (热点摘要自动续期)。
 
 import logging as _logging
 import json as _json
@@ -424,9 +423,8 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
 class OnDemandSummaryGenerator:
     """Generates symbolic summaries on demand with caching and async options.
 
-    2025-04-17 增强：
-    - generate_async 内建请求合并: 同一pending key只跑一次symbolic执行，
-      所有等待者共享结果 (避免N个调用者触发N次angr/KLEE运行).
+    generate_async 内建请求合并: 同一pending key只跑一次symbolic执行，
+    所有等待者共享结果 (避免N个调用者触发N次angr/KLEE运行).
     """
 
     __slots__ = ('m_executor', 'm_cache', 'm_pending', 'm_lock',

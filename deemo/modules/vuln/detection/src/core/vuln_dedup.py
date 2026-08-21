@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import deque
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 _log = get_logger("vuln_detection.dedup")
 

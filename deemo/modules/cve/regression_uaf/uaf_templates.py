@@ -1,9 +1,8 @@
-# UAF 样本模板 — C 源码 / Makefile / README 的生成模板.
+# UAF 样本模板 - C 源码 / Makefile / README 的生成模板.
 #
-# 模板按 pattern 选型; 漏洞模板覆盖 free→use 的直接使用形态,
+# 模板按 pattern 选型; 漏洞模板覆盖 free->use 的直接使用形态,
 # 安全模板覆盖指针复活/置空/路径互斥/cleanup 四类误报挑战.
 #
-# 创建: 2024-11-05
 
 _VULN_TEMPLATES = {
     "printf_use": """/* {cve} {desc}. */
@@ -189,7 +188,7 @@ README = """# {sample}
 
 ## 为何该样本可验证检测器有效性
 
-- free→use 的指针流可从反汇编恢复 (寄存器/栈槽对象映射).
+- free->use 的指针流可从反汇编恢复 (寄存器/栈槽对象映射).
 - 期望 {expected} 判定: 检测器应在不丢失召回的前提下
   区分真实 UAF 与指针复活/置空/路径互斥/cleanup 安全模式.
 """

@@ -1,7 +1,6 @@
-# FP倾向安全样本 v2 — 分离 vuln/safe 为独立二进制
+# FP倾向安全样本 v2 - 分离 vuln/safe 为独立二进制
 # v1问题: vuln+safe在同一binary中导致检测结果分类困难.
 # v2: 每个pattern编译出 _vuln.exe (应检出) 和 _safe.exe (不应检出).
-# 创建: 2026-06-03
 
 import json, subprocess
 from pathlib import Path

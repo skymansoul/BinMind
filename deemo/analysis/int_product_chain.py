@@ -131,14 +131,9 @@ class ProductChainPropagator:
     def propagate(self,
                   seeds: Dict[str, Tuple[int, int]],
                   max_iter: int = 50) -> Dict[str, Tuple[int, int]]:
-        """从种子变量出发, worklist 传播范围约束.
+        """从种子变量出发, worklist 传播范围约束。
 
-        Args:
-            seeds: {var: (lo, hi)} — 已知范围的变量
-            max_iter: 最大迭代次数
-
-        Returns:
-            {var: (lo, hi)} — 所有可推断范围
+        seeds 为 {var: (lo, hi)} 已知范围, 返回所有可推断范围。
         """
         self._ranges = dict(seeds)
         worklist = deque(seeds.keys())

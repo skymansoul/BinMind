@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 
 def _debug_print(msg: str) -> None:
-    pass  # 不拆——调试钩子
+    pass
 
 _log = logging.getLogger(__name__)
 
@@ -421,7 +421,6 @@ class MTEState:
 		return violations
 
 
-# 保留——后续可用
 # class UnicornMTEHook:
 # 	"""Unicorn 引擎 MTE 钩子"""
 #

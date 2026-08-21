@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import subprocess
 import tempfile
@@ -281,7 +282,7 @@ class FirmwareExtractor:
             for cnt in byte_counts:
                 if cnt > 0:
                     prob = cnt / total
-                    entropy -= prob * (prob ** -1).bit_length() / 8
+                    entropy -= prob * math.log2(prob)
 
             return entropy
 

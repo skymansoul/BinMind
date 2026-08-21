@@ -1,7 +1,6 @@
-# UAF批量测试脚本 v1 — 对UAF样本执行BinMind检测并输出统一结果
+# UAF批量测试脚本 v1 - 对UAF样本执行BinMind检测并输出统一结果
 # 支持: CVE样本 (benchmark/samples_uaf/) + FP-safe样本 (benchmark/samples_uaf_safe/)
 # 多优化级: O0/O2/Os
-# 修改: 2026-06-23
 
 import sys, os, json, time, subprocess, csv, argparse
 try:

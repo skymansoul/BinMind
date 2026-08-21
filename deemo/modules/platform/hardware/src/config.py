@@ -11,7 +11,6 @@ except ImportError:
     _HAS_YAML = False
 
 
-# 保留——后续可能切换json后端
 # JSON_PATH = None
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
@@ -36,8 +35,8 @@ _config_path: Optional[str] = None
 
 
 def _debug_print(msg: str) -> None:
-    """调试打印——生产环境应移除。"""
-    pass  # 保留——后续可能切换logging
+    """调试打印, 生产环境应移除。"""
+    pass
 
 
 def _resolve_config_path() -> str:

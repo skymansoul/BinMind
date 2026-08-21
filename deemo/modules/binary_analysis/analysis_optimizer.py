@@ -1,47 +1,29 @@
-"""
-Analysis strategy self-optimization module.
+"""分析策略自优化模块。
 
-Features:
-    1. Reinforcement learning online tuning of analysis pipeline parameters
-    2. Bayesian optimization of parameter configuration
-    3. Dynamic resource configuration adjustment
-    4. Analysis performance monitoring and feedback
+功能:
+    1. 强化学习在线调优分析流水线参数
+    2. 贝叶斯优化参数配置
+    3. 动态资源分配调整
+    4. 分析性能监控与反馈
 
-Core technologies:
-    - Reinforcement learning strategy optimization
-    - Bayesian optimization
-    - Performance metric monitoring
-    - Adaptive parameter tuning
+核心方法: 强化学习策略优化 / 贝叶斯优化 / 性能指标监控 / 自适应调参。
 """
 
-import logging
-import random
-import math
 import json
+import logging
+import math
 import os
+import random
 import time
-from typing import Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
 
-try:
-    import numpy as np
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
-
-try:
-    from scipy.optimize import minimize
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
-
-
 class OptimizationStrategy(str, Enum):
-    """Optimization strategy."""
+    """优化策略。"""
     REINFORCEMENT_LEARNING = "reinforcement_learning"
     BAYESIAN = "bayesian"
     GRADIENT_DESCENT = "gradient_descent"
@@ -49,7 +31,7 @@ class OptimizationStrategy(str, Enum):
     GENETIC = "genetic"
 
 class ExplorationStrategy(str, Enum):
-    """Exploration strategy."""
+    """探索策略。"""
     EPSILON_GREEDY = "epsilon_greedy"
     SOFTMAX = "softmax"
     UCB = "ucb"
@@ -57,7 +39,7 @@ class ExplorationStrategy(str, Enum):
 
 @dataclass
 class OptimizationParameter:
-    """Optimization parameter."""
+    """优化参数定义。"""
     name: str
     min_value: float
     max_value: float
@@ -69,7 +51,7 @@ class OptimizationParameter:
 
 @dataclass
 class OptimizationState:
-    """Optimization state."""
+    """优化状态。"""
     parameters: Dict[str, Any]
     reward: float = 0.0
     timestamp: float = 0.0
@@ -78,7 +60,7 @@ class OptimizationState:
 
 @dataclass
 class PerformanceMetrics:
-    """Performance metrics."""
+    """性能指标。"""
     analysis_time: float = 0.0
     coverage: float = 0.0
     vulnerability_count: int = 0
@@ -90,7 +72,7 @@ class PerformanceMetrics:
 
 @dataclass
 class RLState:
-    """Reinforcement learning state."""
+    """强化学习状态。"""
     normalized_features: List[float]
     action: int
     reward: float
@@ -98,22 +80,17 @@ class RLState:
 
 
 class BayesianOptimizer:
-    """Bayesian optimizer."""
+    """贝叶斯优化器。"""
 
     def __init__(self, params: List[OptimizationParameter]):
-        """
-        Initialize Bayesian optimizer.
-
-        Args:
-            params: Optimization parameter list.
-        """
+        """初始化: 构建 GP 模型, sklearn 缺失时退化为随机搜索。"""
         self._params = params
         self._history = []
         self._gaussian_process = None
         self._init_gp()
 
     def _init_gp(self):
-        """Initialize Gaussian Process model."""
+        """初始化高斯过程模型。"""
         try:
             from sklearn.gaussian_process import GaussianProcessRegressor
             from sklearn.gaussian_process.kernels import RBF, ConstantKernel
@@ -128,16 +105,7 @@ class BayesianOptimizer:
             logger.warning("sklearn not available, using simplified Bayesian optimization")
 
     def _acquisition_function(self, x: List[float], exploration_weight: float = 0.1) -> float:
-        """
-        Acquisition function (Upper Confidence Bound).
-
-        Args:
-            x: Input parameter vector.
-            exploration_weight: Exploration weight.
-
-        Returns:
-            UCB value.
-        """
+        """采集函数 (UCB): 均值 + 探索权重 * 标准差。"""
         if self._gaussian_process is None or len(self._history) < 2:
             return random.uniform(0, 1)
 
@@ -148,16 +116,11 @@ class BayesianOptimizer:
             return random.uniform(0, 1)
 
     def suggest(self) -> Dict[str, float]:
-        """
-        Suggest next parameter set.
-
-        Returns:
-            Parameter suggestion dict.
-        """
+        """给出下一组参数建议。"""
         if len(self._history) == 0:
             return {p.name: p.default_value for p in self._params}
 
-        # Simple random search (when sklearn unavailable)
+        # sklearn 缺失时退化为随机搜索
         if self._gaussian_process is None:
             suggestion = {}
             for p in self._params:
@@ -167,7 +130,7 @@ class BayesianOptimizer:
                     suggestion[p.name] = random.uniform(p.min_value, p.max_value)
             return suggestion
 
-        # Use acquisition function optimization
+        # 随机采样 100 组候选, 取采集函数最大者
         best_acquisition = float('-inf')
         best_params = None
 
@@ -184,13 +147,7 @@ class BayesianOptimizer:
         return {p.name: best_params[i] for i, p in enumerate(self._params)}
 
     def update(self, params: Dict[str, float], reward: float):
-        """
-        Update model.
-
-        Args:
-            params: Parameter dict.
-            reward: Reward value.
-        """
+        """记录 (参数, 奖励) 并增量拟合 GP。"""
         self._history.append((params, reward))
 
         if self._gaussian_process and len(self._history) >= 2:
@@ -207,7 +164,7 @@ class BayesianOptimizer:
 
 
 class QLearningAgent:
-    """Q-learning agent."""
+    """Q-learning 智能体 (Q 表 + ε-greedy/softmax/UCB 探索)。"""
 
     def __init__(self,
         state_dim: int,
@@ -218,18 +175,7 @@ class QLearningAgent:
         epsilon: float = 0.1,
         temperature: float = 1.0
     ):
-        """
-        Initialize Q-learning agent.
-
-        Args:
-            state_dim: State dimension.
-            action_dim: Action dimension.
-            learning_rate: Learning rate.
-            discount_factor: Discount factor.
-            exploration_strategy: Exploration strategy.
-            epsilon: Epsilon value.
-            temperature: Temperature parameter.
-        """
+        """初始化 Q 表与超参数。"""
         self._state_dim = state_dim
         self._action_dim = action_dim
         self._alpha = learning_rate
@@ -243,24 +189,16 @@ class QLearningAgent:
         logger.info(f"Q-learning agent initialized, state dim: {state_dim}, action dim: {action_dim}")
 
     def _get_state_key(self, state: List[float]) -> tuple:
-        """Convert state to key."""
+        """状态向量 → 表键 (3 位小数取整)。"""
         return tuple(round(s, 3) for s in state)
 
     def _init_q_values(self, state_key: tuple):
-        """Initialize Q-values."""
+        """缺省初始化 Q 值。"""
         if state_key not in self._q_table:
             self._q_table[state_key] = [0.0] * self._action_dim
 
     def select_action(self, state: List[float]) -> int:
-        """
-        Select action based on state.
-
-        Args:
-            state: State vector.
-
-        Returns:
-            Action index.
-        """
+        """按探索策略选动作, 返回动作下标。"""
         state_key = self._get_state_key(state)
         self._init_q_values(state_key)
 
@@ -284,15 +222,7 @@ class QLearningAgent:
         return random.randint(0, self._action_dim - 1)
 
     def learn(self, state: List[float], action: int, reward: float, next_state: List[float]):
-        """
-        Learn and update Q-values.
-
-        Args:
-            state: Current state.
-            action: Action taken.
-            reward: Reward value.
-            next_state: Next state.
-        """
+        """Q 值更新: Q(s,a) += α*(r + γ*max Q(s') - Q(s,a))。"""
         state_key = self._get_state_key(state)
         next_state_key = self._get_state_key(next_state)
 
@@ -306,12 +236,12 @@ class QLearningAgent:
         self._q_table[state_key][action] = new_q
 
     def decay_epsilon(self, rate: float = 0.99):
-        """Decay epsilon value."""
+        """ε 衰减, 下限 0.01。"""
         self._epsilon = max(0.01, self._epsilon * rate)
 
 
 class AnalysisOptimizer:
-    """Analysis strategy optimizer."""
+    """分析策略优化器。"""
 
     DEFAULT_PARAMS = [
         OptimizationParameter(
@@ -376,17 +306,12 @@ class AnalysisOptimizer:
         strategy: OptimizationStrategy = OptimizationStrategy.BAYESIAN,
         params: List[OptimizationParameter] = None
     ):
-        """
-        Initialize analysis optimizer.
-
-        Args:
-            strategy: Optimization strategy.
-            params: Optimization parameter list.
-        """
+        """初始化: 按策略装配贝叶斯优化器或 Q-learning 智能体。"""
         self._strategy = strategy
         self._params = params or self.DEFAULT_PARAMS
         self._current_params = {p.name: p.default_value for p in self._params}
         self._iteration = 0
+        self._last_action = 0
         self._metrics_history: List[PerformanceMetrics] = []
         self._reward_history: List[float] = []
 
@@ -401,15 +326,7 @@ class AnalysisOptimizer:
         logger.info(f"Analysis optimizer initialized, strategy: {strategy.value}")
 
     def _normalize_metrics(self, metrics: PerformanceMetrics) -> List[float]:
-        """
-        Normalize performance metrics.
-
-        Args:
-            metrics: Performance metrics.
-
-        Returns:
-            Normalized feature vector.
-        """
+        """性能指标归一化为 5 维特征向量 [时间, 覆盖, 漏洞数, 准确率, 吞吐]。"""
         features = []
 
         normalized_time = min(max(metrics.analysis_time / 600.0, 0.0), 1.0)
@@ -427,15 +344,7 @@ class AnalysisOptimizer:
         return features
 
     def _calculate_reward(self, metrics: PerformanceMetrics) -> float:
-        """
-        Calculate reward value.
-
-        Args:
-            metrics: Performance metrics.
-
-        Returns:
-            Reward value.
-        """
+        """加权奖励: 覆盖 0.3 + 漏洞数 0.03/个 + 时效 0.2 + 准确率 0.2。"""
         reward = 0.0
 
         reward += metrics.coverage * 0.3
@@ -452,11 +361,11 @@ class AnalysisOptimizer:
         return reward
 
     def get_current_params(self) -> Dict[str, Any]:
-        """Get current parameter configuration."""
+        """返回当前参数副本。"""
         return self._current_params.copy()
 
     def suggest_params(self) -> Dict[str, Any]:
-        """Suggest new parameter configuration."""
+        """按策略给出下一组参数。"""
         if self._strategy == OptimizationStrategy.BAYESIAN:
             return self._bayesian_optimizer.suggest()
         elif self._strategy == OptimizationStrategy.REINFORCEMENT_LEARNING:
@@ -464,6 +373,8 @@ class AnalysisOptimizer:
                 latest_metrics = self._metrics_history[-1]
                 state = self._normalize_metrics(latest_metrics)
                 action = self._rl_agent.select_action(state)
+                # 记录所选动作, 供 update() 回放学习
+                self._last_action = action
                 return self._action_to_params(action)
             else:
                 return self._current_params.copy()
@@ -471,15 +382,7 @@ class AnalysisOptimizer:
         return self._current_params.copy()
 
     def _action_to_params(self, action: int) -> Dict[str, Any]:
-        """
-        Convert action to parameter adjustments.
-
-        Args:
-            action: Action index.
-
-        Returns:
-            Adjusted parameter dict.
-        """
+        """动作下标 → 参数调整: action//3 定位参数, action%3 为减/加/不变。"""
         params = self._current_params.copy()
         param_index = action // 3
         action_type = action % 3
@@ -496,12 +399,7 @@ class AnalysisOptimizer:
         return params
 
     def update(self, metrics: PerformanceMetrics):
-        """
-        Update optimizer state.
-
-        Args:
-            metrics: Performance metrics.
-        """
+        """记录指标并更新优化器状态, 随后给出新参数。"""
         self._metrics_history.append(metrics)
         reward = self._calculate_reward(metrics)
         self._reward_history.append(reward)
@@ -516,19 +414,14 @@ class AnalysisOptimizer:
                 prev_state = self._normalize_metrics(prev_metrics)
                 current_state = self._normalize_metrics(metrics)
 
-                self._rl_agent.learn(prev_state, 0, reward, current_state)
+                self._rl_agent.learn(prev_state, self._last_action, reward, current_state)
                 self._rl_agent.decay_epsilon()
 
         self._current_params = self.suggest_params()
         self._iteration += 1
 
     def save_state(self, filepath: str):
-        """
-        Save optimizer state.
-
-        Args:
-            filepath: File path.
-        """
+        """序列化优化器状态到 JSON。"""
         state = {
             'strategy': self._strategy.value,
             'current_params': self._current_params,
@@ -553,15 +446,7 @@ class AnalysisOptimizer:
         logger.info(f"Optimizer state saved: {filepath}")
 
     def load_state(self, filepath: str) -> bool:
-        """
-        Load optimizer state.
-
-        Args:
-            filepath: File path.
-
-        Returns:
-            Whether loading succeeded.
-        """
+        """从 JSON 反序列化优化器状态, 失败返回 False。"""
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 state = json.load(f)
@@ -591,12 +476,7 @@ class AnalysisOptimizer:
             return False
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get optimization statistics.
-
-        Returns:
-            Statistics dict.
-        """
+        """优化统计概要。"""
         if not self._reward_history:
             return {
                 'iteration': self._iteration,
@@ -615,10 +495,10 @@ class AnalysisOptimizer:
 
 
 class ResourceManager:
-    """Resource manager."""
+    """资源管理器。"""
 
     def __init__(self):
-        """Initialize resource manager."""
+        """初始化: 探测内存上限与 CPU 核数。"""
         self._max_memory = self._detect_max_memory()
         self._max_cpu = self._detect_cpu_count()
         self._current_allocation = {
@@ -630,7 +510,7 @@ class ResourceManager:
         logger.info(f"Resource manager initialized - max memory: {self._max_memory}MB, CPU cores: {self._max_cpu}")
 
     def _detect_max_memory(self) -> int:
-        """Detect maximum available memory (MB)."""
+        """探测可用内存上限 (MB), 失败回退 8192。"""
         try:
             import psutil
             return int(psutil.virtual_memory().total / (1024 * 1024))
@@ -638,7 +518,7 @@ class ResourceManager:
             return 8192
 
     def _detect_cpu_count(self) -> int:
-        """Detect CPU core count."""
+        """探测 CPU 核数, 失败回退 4。"""
         try:
             import psutil
             return psutil.cpu_count() or 4
@@ -647,14 +527,10 @@ class ResourceManager:
             return multiprocessing.cpu_count() or 4
 
     def adjust_resources(self, metrics: PerformanceMetrics) -> Dict[str, int]:
-        """
-        Adjust resource allocation based on performance metrics.
+        """按性能指标调整资源分配。
 
-        Args:
-            metrics: Performance metrics.
-
-        Returns:
-            New resource allocation.
+        内存 >80% 加 512MB, <30% 减 256MB;
+        CPU >90% 加核; 吞吐 <1 加 worker, >5 减 worker。
         """
         new_allocation = self._current_allocation.copy()
 
@@ -678,21 +554,12 @@ class ResourceManager:
         return new_allocation
 
     def get_current_allocation(self) -> Dict[str, int]:
-        """Get current resource allocation."""
+        """返回当前资源分配副本。"""
         return self._current_allocation.copy()
 
 
 def create_optimizer(strategy: str = 'bayesian', params: List[OptimizationParameter] = None) -> AnalysisOptimizer:
-    """
-    Create analysis optimizer.
-
-    Args:
-        strategy: Strategy name.
-        params: Parameter list.
-
-    Returns:
-        Analysis optimizer instance.
-    """
+    """工厂: 按策略名创建优化器, 未知策略回退贝叶斯。"""
     try:
         strategy_enum = OptimizationStrategy(strategy.lower())
     except ValueError:
@@ -703,5 +570,5 @@ def create_optimizer(strategy: str = 'bayesian', params: List[OptimizationParame
 
 
 def create_resource_manager() -> ResourceManager:
-    """Create resource manager."""
+    """创建资源管理器。"""
     return ResourceManager()

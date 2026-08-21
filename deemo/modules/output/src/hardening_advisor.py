@@ -80,17 +80,13 @@ def compute_hardening_gains(
     """
     为每个未启用的加固措施计算安全增益。
 
-    gain(measure) = Σ_i cvss_i × matrix[type_i][measure] × contagion_weight
-                   × marginal_decay(already_enabled_count)
+    gain(measure) = Σ_i cvss_i × matrix[type_i][measure] ×
+    contagion_weight × marginal_decay(already_enabled_count)。
 
-    Args:
-      vulnerabilities: [{'type': str, 'cvss_base': float}, ...]
-      current_checksec: checksec 输出 dict
-      contagion_weight: ≥1.0 放大枢纽二进制的加固收益
-      costs: 可选的成本覆盖
-
-    Returns:
-      已按 efficiency 降序排列的 HardeningOption 列表。
+    参数: vulnerabilities 漏洞列表, current_checksec checksec
+    输出, contagion_weight ≥1.0 放大枢纽二进制的加固收益,
+    costs 可选成本覆盖; 返回按 efficiency 降序的
+    HardeningOption 列表。
     """
     cost_map = costs or _DEFAULT_COSTS
     already = sum(1 for m in MEASURES if _measure_enabled(current_checksec, m))

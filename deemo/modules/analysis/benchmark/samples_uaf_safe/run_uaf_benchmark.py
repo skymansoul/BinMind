@@ -1,11 +1,10 @@
-# UAF 检测精度基准 — vuln/safe 独立二进制
+# UAF 检测精度基准 - vuln/safe 独立二进制
 #
 # 目标: 量化 UAF 检测器 (生命周期追踪 + 指针溯源) 在
 # "free 后非缺陷使用" 与 "真实 UAF" 之间的区分能力.
 # 每个 pattern 编译 vuln (应检出=TP) 与 safe (检出=FP) 配对.
 #
 # 输出: 汇总 TP/FP/TN/FN/Recall/Precision/FPR + JSON.
-# 创建: 2026-05-08
 
 import json
 import sys

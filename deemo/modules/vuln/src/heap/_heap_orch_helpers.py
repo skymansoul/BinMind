@@ -1,16 +1,15 @@
 # 堆溢出分析编排器辅助函数 — 从orchestrator.py拆分.
 # 包含发现收集、分类判定、memcpy处理等内部辅助.
-# 创建: 2026-06-05
 
 import re
 from typing import Dict, List, Tuple
 
-from heap_bound_infer import HeapBoundInferrer, HeapAccess, IntervalDomain
+from .heap_bound_infer import HeapBoundInferrer, HeapAccess, IntervalDomain
 from heap_fp_filter_v2 import HeapFPFilterV2
 from filter_types import FilterDecision
 from taint_propagation import TaintSourceType
 from allocator_model import Ptmalloc2Model
-from insn_parser import extract_malloc_addr
+from .insn_parser import extract_malloc_addr
 from offset_proof_filter import OffsetProofFilter, ProofResult
 
 _DEFAULT_ALLOC = 128

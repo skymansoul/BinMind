@@ -190,9 +190,6 @@ class PQCDetector:
         "vox": ("VOX (multivariate, Minus-Plus variant)", "NIST additional signatures"),
     }
 
-    def __init__(self):
-        pass
-
     def scan_file(self, path: str) -> List[PQCDetectionResult]:
         raw = safeReadBytes(path)
         if raw is None:

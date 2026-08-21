@@ -51,7 +51,6 @@ class CANFrame:
     can_id: int = 0
     data: bytes = b""
     dlc: int = 0
-    data: bytes = b""
     is_extended: bool = False
     is_remote: bool = False
     timestamp: int = 0

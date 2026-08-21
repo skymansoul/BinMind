@@ -1,4 +1,4 @@
-# 多工具对比基准测试——本方法(全管线) vs Angr/Ghidra/QEMU
+# 多工具对比基准测试: 本方法(全管线) vs Angr/Ghidra/QEMU
 # 样本: tests/heap_deep_samples (6正10负, O0/O3)
 # 输出: eval/benchmark_results.csv + eval/benchmark_summary.json + comparison_results.json
 # 本方法指标全部实测(完整DetectionPipeline); 外部工具可用则实测,
@@ -55,7 +55,7 @@ class BenchmarkRow:
 
 
 def scan_ourmethod(exe_path: Path) -> Dict:
-    """本方法全管线扫描——objdump(Intel)→完整DetectionPipeline"""
+    """本方法全管线扫描: objdump(Intel)→完整DetectionPipeline"""
     from src.disasm.objdump_parser import ObjdumpParser
     from src.detect.pipeline_bridge import DetectionPipeline
     t0 = time.perf_counter()
@@ -89,7 +89,7 @@ def scan_ourmethod(exe_path: Path) -> Dict:
 
 
 def scan_external(tool: str, exe_path: Path, timeout: int = 180) -> Optional[Dict]:
-    """调用外部工具脚本——Angr/QEMU/Ghidra"""
+    """调用外部工具脚本: Angr/QEMU/Ghidra"""
     script = EVAL_DIR / f"{'angr_explorer' if tool == 'Angr' else tool.lower()}.py"
     if tool == "Ghidra":
         script = EVAL_DIR / "ghidra_headless.py"

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import List
 
-from heapov.clexer import Token
-from heapov.expr_ast import (
+from .clexer import Token
+from .expr_ast import (
     Expr, Const, Var, Neg, Binary, Call, Index, Field, Deref, Addr,
     Sizeof,
 )
@@ -155,7 +155,7 @@ class ExprParserMixin:
             raise ParseError('unexpected EOF')
         if t.kind == 'num':
             self._next()
-            from heapov.clexer import strip_suffixes
+            from .clexer import strip_suffixes
             return Const(int(strip_suffixes(t.value)))
         if t.kind == 'str':
             self._next()

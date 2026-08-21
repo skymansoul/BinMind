@@ -25,25 +25,25 @@ _OAT_HEADER_OFFSETS={'magic':(0,4),'version':(4,8),'data_begin':(16,24),'exec_of
 # WOOTdroid/LEMON eBPF追踪模式
 # 检测二进制中eBPF内核追踪相关模式，加壳应用常见反追踪特征
 _ANTI_TRACING_PATTERNS:Dict[bytes,str]={
-    b'/sys/kernel/debug/tracing':'debugfs tracing检测——反eBPF/内核追踪',
-    b'/sys/fs/bpf':'bpffs挂载点检测——检测eBPF程序存在',
-    b'perf_event_open':'perf_event检测——反性能计数器追踪',
-    b'kprobe':'kprobe检测——反内核探针',
-    b'uprobe':'uprobe检测——反用户态探针',
-    b'BPF_PROG_LOAD':'BPF程序加载检测——反eBPF instrumentation',
-    b'bpf\\(\\s*0x':'BPF系统调用检测——内核追踪感知',
-    b'tracepoint':'tracepoint检测——反内核追踪点',
-    b'__arm64_sys_bpf':'sys_bpf调用检测——eBPF程序加载感知',
+    b'/sys/kernel/debug/tracing':'debugfs tracing检测, 反eBPF/内核追踪',
+    b'/sys/fs/bpf':'bpffs挂载点检测, 检测eBPF程序存在',
+    b'perf_event_open':'perf_event检测, 反性能计数器追踪',
+    b'kprobe':'kprobe检测, 反内核探针',
+    b'uprobe':'uprobe检测, 反用户态探针',
+    b'BPF_PROG_LOAD':'BPF程序加载检测, 反eBPF instrumentation',
+    b'bpf\\(\\s*0x':'BPF系统调用检测, 内核追踪感知',
+    b'tracepoint':'tracepoint检测, 反内核追踪点',
+    b'__arm64_sys_bpf':'sys_bpf调用检测, eBPF程序加载感知',
 }
 
 # WOOTdroid Binder syscall审计点集合
 _BINDER_SYSCALL_PATTERNS:Dict[bytes,str]={
-    b'__arm64_sys_ioctl':'ioctl调度——Binder IPC入口',
+    b'__arm64_sys_ioctl':'ioctl调度, Binder IPC入口',
     b'BINDER_WRITE_READ':'Binder读写事务',
     b'binder_ioctl_write_read':'Binder内核ioctl处理',
-    b'BC_TRANSACTION':'Binder命令——事务',
-    b'BC_REPLY':'Binder命令——回复',
-    b'BR_TRANSACTION':'Binder返回——接收事务',
+    b'BC_TRANSACTION':'Binder命令, 事务',
+    b'BC_REPLY':'Binder命令, 回复',
+    b'BR_TRANSACTION':'Binder返回, 接收事务',
 }
 
 
@@ -145,7 +145,7 @@ class AndroidRTAnalyzer:
             if 'android' not in jc.lower(): v.append({'type':'Native Code Injection','severity':'High','description':f'非系统类{jc}使用了原生代码','method_name':m['method_name']})
             mn=m['method_name'].lower()
             if 'exec' in mn or 'system' in mn or 'runtime' in mn: v.append({'type':'Command Injection','severity':'Critical','description':'原生方法可能执行命令注入','method_name':m['method_name']})
-        if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','description':'OAT编译过滤级别为verify-at-runtime——存在JIT代码注入风险','location':'oat file header'})
+        if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','description':'OAT编译过滤级别为verify-at-runtime, 存在JIT代码注入风险','location':'oat file header'})
         return v
 
 

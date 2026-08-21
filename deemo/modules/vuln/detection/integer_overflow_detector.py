@@ -16,7 +16,7 @@ class IntegerOverflowDetector:
     _ARITH_OPS = {'add':'add','sub':'sub','mul':'mul','imul':'mul','shl':'shl','sal':'shl'}
 
     def detect(self, instructions, func_name='', base_addr=0x400000):
-        # Phase 0: 反向追踪——对每寄存器提取最近一次赋值的立即数
+        # Phase 0: 反向追踪-对每寄存器提取最近一次赋值的立即数
         reg_values = {}  # reg -> int value (从最近赋值推断)
         reg_ranges = {}  # reg -> (lo, hi) (从cmp+jcc推断)
         for i, insn in enumerate(instructions):

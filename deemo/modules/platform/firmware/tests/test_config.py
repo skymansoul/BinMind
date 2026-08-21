@@ -47,40 +47,40 @@ class TestConfigModule:
     """基于真实Config类的测试."""
 
     def test_config_importable(self):
-        from src.core.config import Config
+        from ..src.core.config import Config
         assert hasattr(Config, "DATA_DIR")
         assert hasattr(Config, "MAX_FIRMWARE_SIZE")
 
     def test_config_data_dir_is_string(self):
-        from src.core.config import Config
+        from ..src.core.config import Config
         assert isinstance(Config.DATA_DIR, str)
         assert len(Config.DATA_DIR) > 0
 
     def test_config_max_firmware_size_is_int(self):
-        from src.core.config import Config
+        from ..src.core.config import Config
         assert isinstance(Config.MAX_FIRMWARE_SIZE, int)
         assert Config.MAX_FIRMWARE_SIZE > 0
 
     def test_config_singleton(self):
-        from src.core.config import Config
+        from ..src.core.config import Config
         c1 = Config()
         c2 = Config()
         assert c1 is c2
 
     def test_mask_sensitive_data(self):
-        from src.core.config import mask_sensitive_data
+        from ..src.core.config import mask_sensitive_data
         result = mask_sensitive_data("api_key=abcdef1234567890")
         assert "***" in result
         assert "abcdef" not in result
 
     def test_mask_aws_key(self):
-        from src.core.config import mask_sensitive_data
+        from ..src.core.config import mask_sensitive_data
         result = mask_sensitive_data("AKIA1234567890ABCD")
         assert "***" in result
         assert "AKIA1234" in result
 
     def test_mask_private_key(self):
-        from src.core.config import mask_sensitive_data
+        from ..src.core.config import mask_sensitive_data
         text = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgk=\n-----END PRIVATE KEY-----"
         result = mask_sensitive_data(text)
         assert "***" in result
@@ -97,7 +97,7 @@ class TestYAMLFallback:
 
         tmpdir = tempfile.mkdtemp()
         try:
-            from src.core.config import Config
+            from ..src.core.config import Config
             yaml_path = os.path.join(tmpdir, "test_config.yaml")
 
             original = getattr(Config, "MAX_FIRMWARE_SIZE", 200 * 1024 * 1024)
@@ -117,7 +117,6 @@ class TestYAMLFallback:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-# 保留 — 死函数, 反痕迹标记
 def _unused_config_helper():
     """不会被调用的配置辅助函数."""
     data = {"env": os.environ.get("PATH", ""), "pid": os.getpid()}

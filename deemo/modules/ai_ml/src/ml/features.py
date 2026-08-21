@@ -133,9 +133,6 @@ class FeatureExtractor:
     内部组合byte/entropy/ngram/compiler四个维度。
     """
 
-    def __init__(self):
-        pass
-
     # //// 主提取入口
 
     def extract(self, data: bytes, strings: list = None) -> dict:

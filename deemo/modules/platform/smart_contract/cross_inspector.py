@@ -103,11 +103,7 @@ class CrossInspector:
     })
 
     def __init__(self, contracts: dict[str, list[dict]] | None = None):
-        """
-        Args:
-            contracts: {contract_addr: [{"opcode": ..., "position": ..., "operand": ...}]}
-                       每个合约是一个指令列表，类似 EVMBytecodeParser 的输出
-        """
+        """初始化跨合约分析器。"""
         self._contracts = contracts or {}
         self._sdg: StateDependencyGraph = StateDependencyGraph()
         self._vulns: list[CrossContractVuln] = []

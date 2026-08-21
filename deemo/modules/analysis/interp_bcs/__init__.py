@@ -1,9 +1,9 @@
-# interp_bcs/ — 可解释特征二进制相似性 + 神经反编译等价校验
+# interp_bcs/ - 可解释特征二进制相似性 + 神经反编译等价校验
 #
 # 概览:
-# features.py：— 可解释特征提取
-# equivalence.py：— 细粒度等价校验
-# 签名.py：— 组合约束签名恢复
+# features.py：- 可解释特征提取
+# equivalence.py：- 细粒度等价校验
+# 签名.py：- 组合约束签名恢复
 #
 # 设计意图:
 #   现有反编译/相似性依赖端到端嵌入，是黑盒。本包在其上叠加三层
@@ -94,7 +94,7 @@ def analyze_function_bcs(pseudocode: Optional[str],
                          samples: int = 24,
                          use_symbolic: bool = True) -> Dict[str, Any]:
     """InterpBCS 一站式流水线
-    
+
     步骤:
     1. 提取可解释特征（审计 + 向量）
     2. 组合约束恢复签名
@@ -136,7 +136,7 @@ def decompile_and_audit(binary_path: str,
                         arch: str = 'x86_64',
                         use_symbolic: bool = True) -> Dict[str, Any]:
     """与 decomp_ai.py 衔接：反编译后执行 InterpBCS 流水线
-    
+
     惰性导入 DecompilerAI 避免在无反编译器环境下拖慢包导入；
     DecompilerAI 构造依赖 modules.info 采集子模块，若该子模块在
     当前代码库状态下不可用，则返回结构化错误而非中断调用方

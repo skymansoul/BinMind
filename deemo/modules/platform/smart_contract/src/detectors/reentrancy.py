@@ -1,5 +1,5 @@
-# SWC-107: 重入漏洞 — CALL 后跟 SSTORE 模式
-# 不拆: 算法简单稳定，一刀切
+# SWC-107: 重入漏洞 - CALL 后跟 SSTORE 模式
+
 from typing import List
 from .base import BaseDetector
 from ..core.models import VulnerabilityReport
@@ -7,7 +7,7 @@ from ..parser.evm_parser import EVMBytecodeParser
 
 
 class ReentrancyDetector(BaseDetector):
-  """SWC-107 重入检测 — heuristic: SSTORE after external CALL。"""
+  """SWC-107 重入检测 - heuristic: SSTORE after external CALL。"""
 
   def __init__(self, parser: EVMBytecodeParser):
     super().__init__(parser)

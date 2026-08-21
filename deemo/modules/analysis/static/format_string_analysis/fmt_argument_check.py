@@ -1,4 +1,4 @@
-"""说明符/实参一致性验证 — 常量格式串的合法性佐证.
+"""说明符/实参一致性验证 - 常量格式串的合法性佐证.
 
 用途: 为融合判定器提供第二证据 — 常量格式串的说明符数量
 与实际传入参数数量一致时, 该调用是正常格式化 (SAFE 佐证);
@@ -34,7 +34,7 @@ def count_specifiers(fmt: str) -> Dict[str, int]:
 
 
 class FmtArgumentCheck:
-    """实参计数 — 统计 call 点被填充的参数寄存器/栈槽."""
+    """实参计数 - 统计 call 点被填充的参数寄存器/栈槽."""
 
     _ARG_REGS = ("rdx", "r8", "r9")   # SysV: rsi/rdx/rcx/r8/r9; Win64: rdx/r8/r9
 

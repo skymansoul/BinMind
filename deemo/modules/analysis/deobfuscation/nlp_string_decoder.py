@@ -2,7 +2,6 @@ import logging
 import re
 import math
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import field
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -175,7 +174,7 @@ class ReadabilityScorer:
                 bigram_hits += 1
         bg_density = bigram_hits / bigram_total
 
-        # trigram 密度 —— 比 bigram 更具区分度，能更好区分随机字节和真实文本
+        # trigram 密度 - 比 bigram 更具区分度，能更好区分随机字节和真实文本
         trigram_hits = 0
         trigram_total = max(1, len(s_lower) - 2)
         for i in range(trigram_total):

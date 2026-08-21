@@ -1,8 +1,7 @@
-# 修改记录:
-# 2025-07-14 14:10 - 增加 MCI 条件独立性检验的 Fisher z-变换实现
-# 2025-07-18 10:02 - 重构时间窗口构造, 支持非均匀采样间隔
-# 2025-07-22 16:45 - 添加与 C3E Pipeline 的集成接口
-# 2025-07-25 08:30 - 修复 PC1 阶段对完全无条件独立的边过早移除问题
+# 增加 MCI 条件独立性检验的 Fisher z-变换实现
+# 重构时间窗口构造, 支持非均匀采样间隔
+# 添加与 C3E Pipeline 的集成接口
+# 修复 PC1 阶段对完全无条件独立的边过早移除问题
 #
 # TCE: Temporal Causal Exploitability — 时滞因果发现用于漏洞利用预测
 #
@@ -329,13 +328,11 @@ class TemporalCausalDiscovery:
 
     def predict_exploitability(self, features: List[float],
                                 time_horizon_days: int = 90) -> Dict[str, Any]:
-        """基于时滞因果图预测 CVE 的利用可能性.
+        """基于时滞因果图预测 CVE 的利用可能性。
 
-        features: 当前时间点的特征向量 (F维).
-        time_horizon_days: 预测时间范围, 决定使用哪些时滞的因果边.
-
-        Returns:
-          {score, causal_paths, top_drivers}
+        features 为当前时间点的 F 维特征向量, time_horizon_days
+        为预测时间范围 (决定使用哪些时滞因果边);
+        返回 {score, causal_paths, top_drivers}。
         """
         if not self._fitted or not self._causal_graph:
             return {"score": 0.0, "causal_paths": [], "top_drivers": []}

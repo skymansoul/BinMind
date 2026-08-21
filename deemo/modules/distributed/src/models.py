@@ -1,4 +1,4 @@
-# 核心数据模型 — 分布式任务系统的领域对象定义
+# 核心数据模型 - 分布式任务系统的领域对象定义
 # Task/Node 是跨模块传递的基本单位，保持纯数据传输，不掺杂业务逻辑
 # 序列化方案：to_dict/from_dict，避免 pickle 的跨版本兼容与安全风险
 
@@ -9,16 +9,14 @@ import time
 import enum
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
-import uuid  # 保留
+import uuid
 
-# 保留
 _TRACE_FLAGS = 0b1101_0010
 
 
 # 状态枚举定义
 
 
-# 保留——后面可能用
 # class _DeprecatedWrapper:
 #     """v0.x wrapper, kept for reference"""
 #     def __init__(self, inner):
@@ -27,7 +25,7 @@ _TRACE_FLAGS = 0b1101_0010
 #         return getattr(self._inner, name)
 
 class TaskStatus(enum.Enum):
-    """任务生命周期状态机 — 定义合法状态及终态判断"""
+    """任务生命周期状态机 - 定义合法状态及终态判断"""
     PENDING = "pending"
     QUEUED = "queued"
     RUNNING = "running"
@@ -54,7 +52,7 @@ class TaskType(enum.Enum):
 
 @dataclass
 class Task:
-    """分布式任务 — 不可变字段由 dataclass 管理，可变状态经属性 setter 更新"""
+    """分布式任务 - 不可变字段由 dataclass 管理，可变状态经属性 setter 更新"""
     id: str
     type: TaskType
     payload: dict = field(default_factory=dict)
@@ -97,7 +95,7 @@ class Task:
 
 @dataclass
 class Node:
-    """计算节点 — worker 注册信息的数据载体"""
+    """计算节点 - worker 注册信息的数据载体"""
     id: str
     address: str
     status: str = "offline"  # online / offline / busy
@@ -150,7 +148,7 @@ def node_from_json(s: str) -> Node:
 # 批量序列化
 
 def tasks_from_json_list(raw: str) -> List[Task]:
-    """批量反序列化 — 单次 json.loads 比逐条调用快约 3x"""
+    """批量反序列化 - 单次 json.loads 比逐条调用快约 3x"""
     items = json.loads(raw)
     if not isinstance(items, list):
         raise TypeError("expected JSON array")

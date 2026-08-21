@@ -1,9 +1,8 @@
-# 格式化字符串样本元数据 — 漏洞样本与安全对照的规格定义.
+# 格式化字符串样本元数据 - 漏洞样本与安全对照的规格定义.
 #
 # 每条样本: (sample_id, cve, pattern, expected, desc).
 # expected ∈ confirmed|benign; 模板按 pattern 选型, 定义于 fmt_templates.py.
 #
-# 创建: 2024-11-05
 
 VULN = [
     ("cve_2012_0809_sudo", "CVE-2012-0809", "argv_fmt", "confirmed",

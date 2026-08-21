@@ -1,4 +1,3 @@
-# 创建: 2026-06-21
 # 对比实验绘图脚本 — matplotlib柱状图: 各工具检出率/误报率/平均耗时
 import json, sys, os
 from pathlib import Path

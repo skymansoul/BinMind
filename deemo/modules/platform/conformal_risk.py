@@ -1,5 +1,5 @@
 """
-共形风险预测 -- 为传播图风险评分提供有限样本有效的预测区间.
+ 共形风险预测 - 为传播图风险评分提供有限样本有效的预测区间.
 
 问题:
   RiskScorer 输出点估计风险值(0-1),但无不确定性量化.
@@ -18,13 +18,13 @@
   则 P(Y_test ∈ interval) ≥ 1-alpha.
 
 创新点:
-  对传播图拓扑特征条件分层----节点按层类型和入度分桶,每桶独立校准.
+  对传播图拓扑特征条件分层: 节点按层类型和入度分桶,每桶独立校准.
   避免全局分位数在异构节点间的不适当覆盖(firmware节点和smart_contract
   节点的风险分布完全不同,强制共享分位数会导致区间过宽或覆盖不足).
 
 ref: Vovk, Gammerman, Shafer "Algorithmic Learning in a Random World".
-ref: Lei et al. "Distribution-Free Predictive Inference for Regression" --
-     split-conformal 的理论保证.
+ref: Lei et al. "Distribution-Free Predictive Inference for Regression" -
+      split-conformal 的理论保证.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class ConformalInterval:
 
 
 class StratifiedConformalCalibrator:
-    """分层共形校准器 -- 按节点拓扑特征分桶,每桶独立校准残差分位数.
+    """分层共形校准器 - 按节点拓扑特征分桶,每桶独立校准残差分位数.
 
     桶划分依据:平台层类型 + 入度分位数(低/中/高).
     分层防止全局分位数在异构节点间的不适当覆盖.
@@ -144,7 +144,7 @@ class StratifiedConformalCalibrator:
 
 
 class ConformalRiskAnalyzer:
-    """共形风险分析器 -- 端到端的共形预测管线.
+    """共形风险分析器 - 端到端的共形预测管线.
 
     用法::
 
@@ -194,7 +194,7 @@ class ConformalRiskAnalyzer:
                         risk_scorer_fn: Callable[[PropagationGraph], Dict[str, float]],
                         true_risks: Dict[str, float],
                         ) -> Dict[str, Any]:
-        """计算共形区间的实际覆盖率----用于模型验证.
+        """计算共形区间的实际覆盖率, 用于模型验证.
 
         true_risks: 专家标注的真实风险值(或更高精度的估计值).
         """

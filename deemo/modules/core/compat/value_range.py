@@ -139,11 +139,10 @@ def alloc_write_size_compare(
     ir_ops: Dict[int, Dict],
     constants: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
-    """比较 alloc 大小和 write 大小的区间关系, 判断是否可证明安全.
+    """比较 alloc 大小和 write 大小的区间关系, 判断是否可证明安全。
 
-    返回:
-      {'provably_safe': bool, 'alloc_interval': str, 'write_interval': str,
-       'reason': str}
+    返回 {'provably_safe': bool, 'alloc_interval': str,
+    'write_interval': str, 'reason': str}。
     """
     constants = constants or {}
     alloc_iv = infer_interval(alloc_size_var, alloc_site, def_use_chains, ir_ops, constants)

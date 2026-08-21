@@ -13,7 +13,7 @@ import json as _json
 import os
 from collections import deque
 
-from vuln_detection.src.logger import get_logger
+from deemo.modules.vuln.detection.src.logger import get_logger
 
 json = _json
 _log = get_logger("vuln_detection.lifecycle")

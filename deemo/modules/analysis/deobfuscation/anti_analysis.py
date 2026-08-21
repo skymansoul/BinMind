@@ -1,4 +1,4 @@
-"""反分析 detection bypass engine
+"""反分析检测绕过引擎
 
 对二进制文件执行反分析特征检测（调试器/虚拟机/时间检测/沙箱），
 为每个检出的技术构造绕过输入。检测基于字节模式匹配，绕过基于
@@ -10,10 +10,11 @@ import ctypes.util as _ctypes_util
 import logging
 import os
 import re
+import socket
 import struct
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ def _check_seccomp_filter() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# /proc/self/auxv 扫描 —— ELF 辅助向量 (Auxiliary Vector)
+# /proc/self/auxv 扫描 - ELF 辅助向量 (Auxiliary Vector)
 # 调试器/沙箱可能注入异常的 AT_* 条目。正常 auxv 中:
 #   AT_PHDR (3), AT_PHENT (4), AT_PHNUM (5), AT_ENTRY (9),
 #   AT_UID (11), AT_EUID (12), AT_GID (13), AT_EGID (14),
@@ -259,7 +260,6 @@ _DEBUGGER_PORTS = (23946, 4444, 5555, 31337, 1337, 27042, 27043, 9999)
 
 def _scan_debugger_ports() -> List[int]:
     """返回 list 打开 debugger-common ports via connect scan"""
-    import socket
     open_ports = []
     for port in _DEBUGGER_PORTS:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -330,7 +330,7 @@ _BYPASS_STRATEGIES: Dict[str, str] = {
         "In a container, use --cap-add=SYS_PTRACE."
     ),
     "seccomp": (
-        "seccomp filter detected—binary likely restricts syscalls via BPF. "
+        "seccomp filter detected-binary likely restricts syscalls via BPF. "
         "Bypass: LD_PRELOAD hook prctl() to drop SECCOMP_SET_MODE_FILTER calls."
     ),
     "maps_breakpoints": (
@@ -342,7 +342,7 @@ _BYPASS_STRATEGIES: Dict[str, str] = {
         "自定义调试器需 hook read/readv。"
     ),
     "sigtrap": (
-        "SIGTRAP handler registered—use LD_PRELOAD to intercept sigaction; "
+        "SIGTRAP handler registered-use LD_PRELOAD to intercept sigaction; "
         "or patch the handler table to SIG_DFL."
     ),
     "cgroup": (
@@ -359,7 +359,7 @@ _BYPASS_STRATEGIES: Dict[str, str] = {
         "可执行文件路径暴露了调试工具名。用 exec -a 或符号链接重命名。"
     ),
     "auxv_anomaly": (
-        "ELF auxiliary vector 异常——可能是 ptrace 或沙箱修改了 AT_SECURE/AT_UID。"
+        "ELF auxiliary vector 异常-可能是 ptrace 或沙箱修改了 AT_SECURE/AT_UID。"
         "检查 auxv 内容: xxd /proc/self/auxv。使用 Frida 的 --realm=emulated 可伪造。"
     ),
 }
@@ -382,7 +382,7 @@ class AntiAnalysisTechnique:
 
 @dataclass
 class BypassResult:
-    """绕过结果 — success 标记整体是否成功，techniques 为检测项。"""
+    """绕过结果 - success 标记整体是否成功，techniques 为检测项。"""
     success: bool
     techniques: List[AntiAnalysisTechnique]
     bypass_inputs: Dict[str, bytes] = field(default_factory=dict)
@@ -493,7 +493,7 @@ class BypassSolver:
 
 
 class AntiAnalysisBypass:
-    """反分析绕过执行器 — 检测后生成并保存绕过输入。"""
+    """反分析绕过执行器 - 检测后生成并保存绕过输入。"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)

@@ -1,4 +1,3 @@
-# 2026-07-28 ~ 2026-08-12
 # CVE data models — the core types everything else depends on
 # CVEEntry is a dataclass used by kb, ssvc, matcher, and sbom modules.
 # _exploit_maturity is a private attr but accessed externally — encapsulation leak

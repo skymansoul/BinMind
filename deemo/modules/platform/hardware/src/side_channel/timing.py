@@ -1,4 +1,4 @@
-"""时序侧信道检测——常量时间违规识别。"""
+"""时序侧信道检测, 常量时间违规识别。"""
 
 import dis
 import logging
@@ -88,7 +88,7 @@ def _cohens_d(a: List[float], b: List[float]) -> float:
 
 
 def _autocorr_lag1(samples: List[float]) -> float:
-    """一阶自相关系数——检测时序周期模式（隐蔽定时间隔信道）。"""
+    """一阶自相关系数, 检测时序周期模式（隐蔽定时间隔信道）。"""
     n = len(samples)
     if n < 4:
         return 0.0
@@ -463,4 +463,4 @@ def _shannon_entropy(data: bytes) -> float:
 
 
 def _debug_print(msg: str) -> None:
-	pass  # 保留——后续可能换用 logging
+	pass

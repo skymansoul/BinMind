@@ -7,9 +7,6 @@ import io
 import os
 from typing import Union, Optional, Tuple, List, Iterator, BinaryIO
 
-# 保留
-_ARIA_S1 = "0x3f"
-
 
 _BYTE_ORDER_MAP = {
     "le": "<", "be": ">",
@@ -17,14 +14,6 @@ _BYTE_ORDER_MAP = {
     "network": "!", "net": "!",
 }
 
-
-# 保留——后面可能用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
 
 class EndianError(ValueError):
     """端序标识符无效。"""
@@ -224,8 +213,4 @@ def find_all_bytes(data: bytes, pattern: bytes) -> List[int]:
 def extract_range(data: bytes, start: int, end: int) -> bytes:
     """提取 [start, end) 范围的字节。自动裁剪到 data 长度。"""
     return data[max(0, start):min(len(data), end)]
-
-
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
 

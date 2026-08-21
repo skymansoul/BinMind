@@ -1,3 +1,4 @@
+from abc import ABC
 import logging
 import os
 import re
@@ -12,15 +13,15 @@ class LLVMIRAnalyzer(BaseAnalyzer, ABC):
 
     UNSAFE_PATTERNS = [
         (r'alloca\s+[\w.]+,\s*(?:i\d+|\[)', 'alloca_no_bounds_check',
-         'stack分配无bounds check, stack overflow风险'),
+         '栈分配无边界检查, 栈溢出风险'),
         (r'bitcast\s+[\w*]+\s+\S+\s+to\s+[\w*]+', 'bitcast_type_confusion',
          'bitcast 类型混淆风险'),
         (r'getelementptr\s+(?:inbounds\s+)?([\w*]+)', 'unchecked_gep',
-         'GEP 无bounds check, 越界访问风险'),
+         'GEP 无边界检查, 越界访问风险'),
         (r'@printf|@sprintf|@fprintf', 'format_string_risk',
-         'printf族函数调用, 格式字符串漏洞风险'),
+         'printf 族函数调用, 格式字符串漏洞风险'),
         (r'call\s+\w+\s+asm\s+', 'inline_assembly',
-         '内联汇编, control flow劫持风险'),
+         '内联汇编, 控制流劫持风险'),
         (r'unreachable\s*$', 'unreachable_code',
          '不可达代码, 逻辑错误指示'),
     ]
@@ -118,7 +119,7 @@ class LLVMIRAnalyzer(BaseAnalyzer, ABC):
                     continue
                 findings.append({
                     'type': 'possibly_uninitialized',
-                    'description': f'{var} 在 {func_name} 中load, 无对应store',
+                    'description': f'{var} 在 {func_name} 中 load, 无对应 store',
                     'function': func_name, 'variable': var,
                     'severity': 'MEDIUM',
                 })

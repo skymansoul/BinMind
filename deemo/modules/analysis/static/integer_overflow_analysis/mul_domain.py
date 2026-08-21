@@ -1,6 +1,6 @@
-"""位宽感知乘法域 — 判定 imul/shl 结果是否可能溢出.
+"""位宽感知乘法域 - 判定 imul/shl 结果是否可能溢出.
 
-误报根源: binary_int_overflow_scanner 对 imul/shl 一律标记 —
+误报根源: binary_int_overflow_scanner 对 imul/shl 一律标记 -
   常量缩放 (imul r,r,0x30)、掩码约束 (and r,0xFFF 后乘法)、
   窄位扩展 (movzx 16 位) 均被当作溢出源.
 本模块沿操作数 def-use 链分类其数值域:
@@ -45,7 +45,7 @@ class MulResult:
 
 
 class MulDomainAnalyzer:
-    """乘法域分析器 — 逐调用点判定 imul/shl 可溢出性."""
+    """乘法域分析器 - 逐调用点判定 imul/shl 可溢出性."""
 
     def __init__(self, insns: list):
         self._insns = insns

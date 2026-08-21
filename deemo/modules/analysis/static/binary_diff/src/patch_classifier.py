@@ -1,12 +1,12 @@
 #
-# Patch 分类器 —— 基于函数级差异推断补丁类型
+# Patch 分类器 - 基于函数级差异推断补丁类型
 #
 # 分类粒度：
-#   SECURITY_FIX: 安全修复 —— 增加边界检查、空指针检查、整数溢出检查、
+#   SECURITY_FIX: 安全修复 - 增加边界检查、空指针检查、整数溢出检查、
 #                 改变内存操作的大小参数、增加 canary 检查
-#   FEATURE_CHANGE: 功能变更 —— 新增/移除调用、常量值变化
-#   REFACTOR: 重构 —— 大量块变化但调用图不变
-#   BUG_FIX: 非安全的普通 bug 修复 —— 小幅逻辑调整
+#   FEATURE_CHANGE: 功能变更 - 新增/移除调用、常量值变化
+#   REFACTOR: 重构 - 大量块变化但调用图不变
+#   BUG_FIX: 非安全的普通 bug 修复 - 小幅逻辑调整
 #   UNKNOWN: 无法归类
 #
 # 核心启发式规则（由 diff 结果 + 指令模式匹配驱动）：
@@ -73,10 +73,10 @@ _DANGEROUS_CALLEES = {
 def _check_bounds_hardening(diff: FuncDiffResult,
                             src_blocks: Dict, dst_blocks: Dict) -> Tuple[bool, str]:
     """检测边界检查加固：cmp 立即数变大 + 紧随的 jcc 保持不变
-    
+
     返回 (is_hardened, detail_str)
     """
-    # 此段需要在块匹配之外做指令级比较——匹配块中找到 cmp/jcc 对的变化
+    # 此段需要在块匹配之外做指令级比较-匹配块中找到 cmp/jcc 对的变化
     # 这里用简化的模式：寻找匹配块中新增的 cmp 指令
     if diff.edit_op not in (EditOp.MODIFIED, EditOp.BLOCKS_ADDED):
         return False, ''
@@ -136,12 +136,12 @@ def classify_patch(diff: FuncDiffResult,
                    src_blocks: Dict = None,
                    dst_blocks: Dict = None) -> PatchClassification:
     """将函数差异归类为补丁类型
-    
+
     参数:
     diff: 函数差异结果
     src_blocks: 源版本的基本块指令数据（用于指令级启发式）
     dst_blocks: 目标版本的基本块指令数据
-    
+
     返回 PatchClassifica 包含类型、置信度和证据链
     """
     if src_blocks is None:

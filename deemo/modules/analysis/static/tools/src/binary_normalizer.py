@@ -30,7 +30,7 @@ except ImportError:
     logger.debug("capstone not installed -- instruction-level diff degraded")
 
 
-# 二进制头解析——最小依赖，不引入pefile/pyelftools
+# 二进制头解析, 最小依赖，不引入pefile/pyelftools
 
 @dataclass
 class _BinaryMeta:
@@ -110,7 +110,7 @@ def _parse_binary_meta(binary_path: str) -> _BinaryMeta:
 
 def _detect_compiler_hints(binary_path: str, meta: _BinaryMeta) -> str:
     """扫描二进制字符串表检测编译器指纹
-    
+
     GCC:.comment节含 "GCC: (xxx) x.y.z"
     Clang: "clang version"
     MSVC:.rdata含 "Microsoft (R)" 或 Rich header
@@ -224,7 +224,7 @@ def _extract_code_section(binary_path: str) -> Tuple[bytes, int]:
 def _extract_instruction_fingerprint(code: bytes, base_addr: int,
                                      meta: _BinaryMeta) -> Dict[str, Any]:
     """反汇编代码段并返回指令级指纹特征
-    
+
     返回: {prologue_patterns, insn_histogram, call_targets, n_functions_est,.}
     """
     result: Dict[str, Any] = {
@@ -280,7 +280,7 @@ def _extract_instruction_fingerprint(code: bytes, base_addr: int,
             if count > 50000:
                 break
 
-        # 函数序言检测——启发式扫描
+        # 函数序言检测, 启发式扫描
         # x86-64 GCC: push rbp; mov rbp, rsp
         # x86-64 MSVC: push rbp; mov rbp, rsp; sub rsp, imm
         # ARM64: stp x29, x30, [sp, #-imm]!; mov x29, sp
@@ -297,7 +297,7 @@ def _extract_instruction_fingerprint(code: bytes, base_addr: int,
                                     key=lambda x: -x[1])[:30])
     result['floating_point_ratio'] = fp_count / count if count > 0 else 0.0
     result['simd_ratio'] = simd_count / count if count > 0 else 0.0
-    # 函数数量估算——基于ret指令数
+    # 函数数量估算, 基于ret指令数
     ret_count = histo.get('ret', 0) + histo.get('retn', 0)
     result['n_functions_est'] = max(1, ret_count)
     result['prologue_count'] = dict(prologue_counts)
@@ -308,18 +308,18 @@ def _extract_instruction_fingerprint(code: bytes, base_addr: int,
 
 
 class BinaryNormalizer:
-    """将二进制标准化为可比对形式——消除编译器无关的噪音（时间戳、构建ID等）
+    """将二进制标准化为可比对形式, 消除编译器无关的噪音（时间戳、构建ID等）
     采用局部敏感哈希 (ssdeep/TLSH) 思想：以固定块大小分片哈希，比较哈希相似度
     而非逐字节比对。这样跨编译器产生的偏移漂移、寄存器分配差异不影响比对结果
     """
-# _BLOCK_SIZE = 64  # 哈希块大小——64 字节是 -cache line 宽度，常见指令对齐边界
+# _BLOCK_SIZE = 64  # 哈希块大小, 64 字节是 cache line 宽度，常见指令对齐边界
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path
 
     def compute_block_hashes(self, section_start: int = 0x1000,
                               section_len: int = 0x100000) -> List[str]:
-        """计算代码节的块哈希序列——每个 64B 块一个 CRC32，返回 hex 字符串列表"""
+        """计算代码节的块哈希序列, 每个 64B 块一个 CRC32，返回 hex 字符串列表"""
         hashes: List[str] = []
         try:
             with open(self.binary_path, 'rb') as fh:

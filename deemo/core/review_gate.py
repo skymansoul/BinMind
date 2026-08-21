@@ -40,19 +40,9 @@ def write_gate(
     llm_feedback: str = "",
 ) -> str:
     """
-    写入待人工审查的门控文件。
+    写入待人工审查的门控文件, 返回其绝对路径。
 
     在每轮反馈循环迭代后调用 (含初始脚本生成), 自动创建 output_dir。
-
-    Args:
-        output_dir:    实验输出目录
-        iteration:     当前迭代轮次
-        script_content: 当前 exploit 脚本内容
-        exec_result:   exploit_executor 返回的执行结果
-        llm_feedback:  LLM 的修正建议（若已调用）
-
-    Returns:
-        门控文件的绝对路径
     """
     os.makedirs(output_dir, exist_ok=True)
     path = _gate_path(output_dir)
@@ -65,8 +55,8 @@ def write_gate(
     # TOML格式: 人工可编辑, 无需JSON转义
     content = (
         f'# BinMind Review Gate\n'
-        f'# Set status to approved / rejected / modify, then save.\n'
-        f'# The pipeline reads on next poll. If still pending after timeout, auto-skip.\n'
+        f'# 把 status 改为 approved / rejected / modify 后保存。\n'
+        f'# 流水线在下一轮轮询读取; 超时仍为 pending 则自动跳过。\n'
         f'\n'
         f'status = "pending"\n'
         f'iteration = {iteration}\n'
@@ -77,7 +67,7 @@ def write_gate(
         f'signal = "{signal_name}"\n'
         f'\n'
         f'[human_input]\n'
-        f'# If status = "modify", write correction instructions here for LLM reference\n'
+        f'# status = "modify" 时, 在此写入给 LLM 参考的修正指示\n'
         f'instruction = ""\n'
         f'\n'
         f'[llm_feedback]\n'
@@ -105,23 +95,15 @@ def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, A
     """
     读取门控状态。
 
-    门控文件不存在时返回 {"status": "skip", "reason": "no_gate_file"}, 调用方全自动继续;
-    pending 未超时返回 pending (调用方等待重试), 超时返回 skip 继续自动迭代。
-
-    Args:
-        output_dir: 实验输出目录
-        timeout:    pending 状态的超时秒数
-
-    Returns:
-        {"status": "approved"|"rejected"|"modify"|"skip",
-         "instruction": str (仅 modify 时有效),
-         "reason": str}
+    文件不存在返回 {status: skip, reason: no_gate_file}, 调用方全自动继续;
+    pending 未超时返回 pending (调用方等待重试), 超时返回 skip。
+    返回 {status, instruction, reason}。
     """
     path = _gate_path(output_dir)
     if not os.path.isfile(path):
         return {"status": "skip", "reason": "no_gate_file", "instruction": ""}
 
-    # 读取 TOML——不引入 tomli 依赖，用简单行解析
+    # 读取 TOML, 不引入 tomli 依赖, 用简单行解析
     status = "pending"
     instruction = ""
     timestamp_str = ""
@@ -135,7 +117,7 @@ def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, A
                 elif line.startswith("instruction = "):
                     # TOML 基本字符串: instruction = "value"
                     if '"""' in line:
-                        # 多行字符串暂不深度解析——人工可在下一行继续写
+                        # 多行字符串暂不深度解析, 人工可在下一行继续写
                         instruction = line.split('"""')[1] if '"""' in line else ""
                     elif '"' in line:
                         parts = line.split('"')
@@ -191,11 +173,7 @@ def gate_in_feedback_loop(
     """
     反馈循环中嵌入门控检查的便捷封装。
 
-    写入门控文件并轮询人工决策。
-
-    Returns:
-        {"action": "continue"|"accept"|"reject"|"modify"|"skip",
-         "instruction": str (valid when modify)}
+    写入门控文件并轮询人工决策, 返回 {action, instruction}。
     """
     write_gate(output_dir, iteration, current_script, exec_result, llm_feedback)
 
@@ -212,7 +190,7 @@ def gate_in_feedback_loop(
         if gate["status"] == "skip":
             return {"action": "skip", "instruction": ""}
 
-        # pending — 等待并重试
+        # pending - 等待并重试
         time.sleep(poll_interval)
         waited += poll_interval
 

@@ -1,9 +1,10 @@
 """
-指针生命周期状态机 — 跨函数追踪堆指针从分配到释放到悬垂使用的完整生命周期。
-状态转换: ALLOCATED → IN_USE → FREED → DANGLING (FREED 状态下再次解引用即 UAF)。
+指针生命周期状态机 - 跨函数追踪堆指针从分配到释放到悬垂使用的完整生命周期。
+状态转换: ALLOCATED - IN_USE - FREED - DANGLING (FREED 状态下再次解引用即 UAF)。
 跨函数策略: 调用者传入的指针在被调用者内释放, 以及全局/静态指针的跨函数传播。
 """
 
+import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -27,7 +28,6 @@ _PRINTF_LIKE = {'printf', 'fprintf', 'sprintf', 'snprintf'}
 
 def _extract_ptr_operations(pseudocode: str) -> List[Dict[str, Any]]:
     """从伪代码提取所有指针操作: alloc/free/use, 附带行号。"""
-    import re
     ops = []
     for i, line in enumerate(pseudocode.split('\n')):
         # 分配: var = malloc(size)
@@ -124,7 +124,7 @@ def inter_procedural_uaf_scan(
     func_pseudocodes: Dict[str, str],
     call_graph: Optional[Dict[str, List[str]]] = None,
 ) -> List[Dict[str, Any]]:
-    """跨函数UAF扫描 -- 在调用图中传播指针状态.
+    """跨函数UAF扫描 - 在调用图中传播指针状态.
 
     func_pseudocodes: {func_name: pseudocode}
     call_graph: {caller: [callee, ...]}

@@ -1,4 +1,4 @@
-"""轻量级栈帧追踪 — 在单函数内追踪 rbp/rsp 相对内存的存取值.
+"""轻量级栈帧追踪 - 在单函数内追踪 rbp/rsp 相对内存的存取值.
 
 创建: 2024-02-02
 用途: 二进制分析中, 编译器常将寄存器值溢出到栈帧再加载。不追踪这些存储-加载
@@ -8,7 +8,7 @@
 
 理论依据:
   Schwartz et al. "Native x86 Decompilation Using Semantics-Preserving
-  — 证明栈帧恢复对二进制级指针分析的必要性。
+  - 证明栈帧恢复对二进制级指针分析的必要性。
 
 算法:
   1. 在函数入口识别 rbp/rsp 设置 (push rbp; mov rbp, rsp)
@@ -44,7 +44,7 @@ class StackSlot:
 
 
 class StackFrameTracker:
-    """栈帧影子内存 — 追踪 rbp/rsp 相对的内存存取值.
+    """栈帧影子内存 - 追踪 rbp/rsp 相对的内存存取值.
 
     使用方式:
       tracker = StackFrameTracker()

@@ -3,7 +3,6 @@
 # 整合后向值流追踪 + 约束简化 + 多阶段FP过滤,
 # 在保留高召回的同时压低误报率.
 #
-# 创建: 2026-06-21
 
 from typing import Dict, List, Optional, Tuple
 
@@ -42,7 +41,7 @@ import re
 
 # 堆溢出检测器指令处理器.
 # 包含mov/rep_movs/inline_sse/direct_write的指令级分析.
-# 创建: 2024-05-02
+
 class HeapInsnHandlerMixin:
     """mov/rep_movs/sse/direct_write指令处理, 由HeapOverflowDetector继承."""
 
@@ -107,7 +106,7 @@ class HeapInsnHandlerMixin:
 
     def _handle_inline_sse_store(self, ins: dict, ops: List[str],
                                   addr: int):
-        """检测内联SSE存储 — 若目标为堆指针则检查溢出."""
+        """检测内联SSE存储 - 若目标为堆指针则检查溢出."""
         if len(ops) < 2 or not self._is_user_code(addr):
             return
         dst_op = ops[0].strip()
@@ -160,7 +159,7 @@ class HeapInsnHandlerMixin:
         return base_reg, offset
 
     def _handle_lea(self, ins: dict, ops: List[str], addr: int):
-        """lea dst, [base+offset] — 指针算术, 传播堆溯源.
+        """lea dst, [base+offset] - 指针算术, 传播堆溯源.
 
         lea rcx, [rax+0x20] 表示 rcx = 堆指针 + 0x20, 指向同一
         分配的字段/元素. ptr_map 保持同一 alloc, 偏移由后续
@@ -180,7 +179,7 @@ class HeapInsnHandlerMixin:
         self._struct_infer.feed_memory_access(ins, dst_reg)
 
     def _handle_shift_const(self, ins: dict, ops: List[str], addr: int):
-        """shl/sal/shr/sar dst, imm — 常量表更新 (移位乘法/除法).
+        """shl/sal/shr/sar dst, imm - 常量表更新 (移位乘法/除法).
 
         shl eax, 2 = eax * 4. 常量传播对分配大小解析至关重要:
         size = n*4 的模式经 shl 实现, 若不传播则分配大小未知.
@@ -206,7 +205,7 @@ class HeapInsnHandlerMixin:
                 self._known_constants[dst_reg] &= 0xFFFFFFFF
 
     def _handle_arith_const(self, ins: dict, ops: List[str], addr: int):
-        """add/sub dst, imm — 常量表更新."""
+        """add/sub dst, imm - 常量表更新."""
         if len(ops) < 2:
             return
         dst_raw = ops[0].strip()
@@ -340,7 +339,7 @@ class HeapInsnHandlerMixin:
 
 # 堆溢出检测器call指令处理器.
 # 包含alloc/write/free调用路径的指令级分析.
-# 创建: 2024-05-02
+
 class HeapCallHandlerMixin:
     """call指令处理, 由HeapOverflowDetector继承."""
 
@@ -467,14 +466,14 @@ class HeapCallHandlerMixin:
 
 # 堆溢出检测器finalize阶段.
 # 包含多阶段FP过滤管线: 去重→Stage4路径敏感→Stage5结构推断→Stage3.5 Octagon→Stage1-3→DDSSC→SAWCE.
-# 创建: 2024-03-08
-# 修改: 2024-04-14 — 插入Stage 3.5 Octagon关系型域过滤
+
+# 插入Stage 3.5 Octagon关系型域过滤
 class HeapFinalizeMixin:
     """finalize阶段多阶段FP过滤, 由HeapOverflowDetector继承."""
 
     @staticmethod
     def _dedup_by_alloc(findings: List[dict]) -> List[dict]:
-        """按(alloc_addr, write_addr)去重 — 同一分配点的不同写入操作各自独立保留."""
+        """按(alloc_addr, write_addr)去重 - 同一分配点的不同写入操作各自独立保留."""
         by_key: Dict[tuple, dict] = {}
         for f in findings:
             alloc_addr = f.get("_snapshot_alloc_addr",
@@ -617,7 +616,7 @@ class HeapFinalizeMixin:
             return False
         return True
 
-# 堆检测器 PcWBI 集成 mixin — 来源约束写界推断作为 finalize Stage 10.
+# 堆检测器 PcWBI 集成 mixin - 来源约束写界推断作为 finalize Stage 10.
 #
 # 决策逻辑:
 #   Stage 1-9 输出经多阶段过滤的候选告警 (self._filtered_findings).
@@ -628,7 +627,7 @@ class HeapFinalizeMixin:
 #   分级数据写入每条 finding 的 wb_* 字段, 原始候选本身不删除,
 #   保证"只增不减"约束下误报率可测量.
 #
-# 创建: 2023-10-12
+
 class HeapProvenanceMixin:
     """来源约束写界推断, 由 HeapOverflowDetector 继承."""
 
@@ -744,7 +743,7 @@ class HeapProvenanceMixin:
 #        消除区间重叠类误报.
 #   既有所有阶段原样保留, 本阶段仅插入与追加.
 #
-# 创建: 2024-11-21
+
 class HeapPrecisionStagesMixin:
     """PCST+BWR+栈槽符号解析, 由HeapOverflowDetector最先继承."""
 

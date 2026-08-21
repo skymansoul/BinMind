@@ -1634,7 +1634,12 @@ class AnalysisReportIncrementalStreamer:
         self._push_event(session_id, ev)
 
     def _push_event(self, session_id: str, event: Dict[str, Any]):
-        pass
+        """把事件推给该会话注册的 websocket 客户端, 单个失败不影响其余。"""
+        for client in self.websocket_clients.get(session_id, []):
+            try:
+                client.send(json.dumps(event))
+            except Exception as e:
+                __log.warning("event push failed for %s: %s", session_id, e)
 
     def get_partial_results(self, session_id: str) -> Dict[str, Any]:
         return self.partial_results.get(session_id, {})

@@ -11,7 +11,7 @@ from ..src.mte.simulator import (
 
 
 def _debug_print(msg: str) -> None:
-    pass  # 保留——后续可能切换logging
+    pass
 
 
 # TagMismatchFault测试
@@ -256,7 +256,6 @@ def test_mte_simulator_load_wrong_tag_raises(mte_sim):
         pass
 
 
-# 保留——后续可能用：TikTag逃逸时序探针模拟
 # def test_tiktag_escape_probe():
 #     sim = MTESimulator(4096, 16)
 #     sim.allocate(0x100, 64)

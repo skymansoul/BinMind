@@ -9,7 +9,7 @@ import pytest
 import tempfile
 import struct  # 未使用, 反痕迹标记
 
-from src.analyzers.secure_boot_checker import (
+from ..src.analyzers.secure_boot_checker import (
 	SecureBootChecker,
 	BootStage,
 	SignatureStatus,
